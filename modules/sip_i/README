@@ -36,7 +36,8 @@ Robert-Vladut Patrascu
 
               1.5.3. $isup_msg_type
 
-        1.6. String aliases
+        1.6. ISUP parameter subfields and string aliases
+        1.7. Mandatory ISUP parameters
 
    List of Examples
 
@@ -44,7 +45,7 @@ Robert-Vladut Patrascu
    1.2. Set isup_mime_str parameter
    1.3. add_isup_part usage
    1.4. isup_param usage
-   1.5. isup_param usage
+   1.5. isup_param_str usage
    1.6. isup_msg_type usage
 
 Chapter 1. Admin Guide
@@ -83,8 +84,8 @@ Chapter 1. Admin Guide
 1.3.1. param_subfield_separator (str)
 
    The character to be used as separator in the subname of the
-   $isup_param pseudovariable between the ISUP parameter name and
-   subfield.
+   $isup_param and $isup_param_str pseudovariables between the
+   ISUP parameter name and subfield name.
 
    Default value is "|".
 
@@ -128,7 +129,7 @@ on=itu-t")
    Meaning of the parameters is as follows:
      * isup_msg_type (string) - name of the ISUP message to be
        added, exactly as it appears in ITU-T Rec. Q.763 or an
-       abbreviation(eg. for "Initial address" - "IAM").
+       abbreviation(eg. IAM for "Initial address").
 
    If isup_msg_type is not explicitly provided, it is
    automatically deduced from the SIP message as follows:
@@ -139,8 +140,8 @@ on=itu-t")
      * 200 OK INVITE - ANM
      * 200 OK BYE - RLC
 
-   The abbreviations that can be given as isup_msg_type are the
-   following:
+   The abbreviations that can be given as isup_msg_type for each
+   ISUP message type are the following:
      * Initial address - IAM
      * Address complete - ACM
      * Answer - ANM
@@ -186,23 +187,27 @@ if ($rs == "183") {
    added ISUP message can be accessed through this read-write
    variable. For optional parameters, writing to a param_name that
    does not exist in this ISUP message will insert it. Assigning
-   null to this variable will remove an optional parameter from
-   the message or zeroize a mandatory parameter.
+   null to this variable will remove the optional parameter from
+   the message or zeroize the parameter in case of a mandatory
+   one.
 
    The format of the subname for $isup_param is the following:
      * param_name - name of the ISUP parameter as it appears in
        ITU-T Rec. Q.763
-     * sep - separator
+     * sep - separator, whitespaces allowed before/after
      * subfield_name - name of the subfield of the ISUP parameter
        as it appears in ITU-T Rec. Q.763
 
    The ISUP parameter can be addressed in different ways:
      * entire parameter - by providing as subname for the
        varaiable only the ISUP parameter name, allowing access to
-       the contents of the entire parameter as a hex
-       string(similar to a hex "dump") for read/write or as a
-       string alias or integer value for writing; when assigning a
-       hex string, the hex value must be preceded by "0x"
+       the contents of the entire parameter as: a hex
+       string(similar to a hex "dump") for read/write, a string
+       alias for writing, or an integer value for read/write; when
+       assigning a hex string, the hex value must be preceded by
+       "0x"; when reading, if string aliases are supported for
+       this parameter, an associated integer value will be
+       returned, otherwise a hex string is returned
      * at subfield level - by providing as subname for the
        varaiable the ISUP parameter name and the subfield name,
        allowing access to the specific subfield as an integer
@@ -210,9 +215,8 @@ if ($rs == "183") {
        such as Called Party Number) for read/write or as a string
        alias for writing
      * at byte level - by providing as subname for the variable
-       the ISUP parameter name and a variable index, allowing
-       access to the byte with the specific index as an integer
-       value
+       the ISUP parameter name and an index, allowing access to
+       the byte with the specified index as an integer value
 
    Addressing at entire parameter level as a hex string and at
    byte level are supported for all the ISUP parameters defined in
@@ -224,19 +228,26 @@ if ($rs == "183") {
    parameter subfields. Also, not all the possible values of a
    parameter or parameter subfield have a string alias defined.
 
+   For more information on supported subfields and aliases check
+   Section 1.6, “ISUP parameter subfields and string aliases”.
+
    Example 1.4. isup_param usage
 ...
         $isup_param(Called Party Number | Nature of address indicator) =
  3;
-        # string alias
+        ...
+        # use a string alias
         $isup_param(Called Party Number | Numbering plan indicator) = "I
 SDN";
+        ...
         $isup_param(Called Party Number | Address signal) = "99991234";
         $isup_param(Nature of connection indicators) = "0x01"
         $isup_param(Calling party's category) = 10;
-        # string alias
+        ...
+        # use a string alias
         $isup_param(Transmission Medium Requirement) = "speech";
-        # at byte level
+        ...
+        # access at byte level
         $(isup_param(Forward Call Indicators)[0]) = 96;
         $(isup_param(Forward Call Indicators)[1]) = 1;
 ...
@@ -249,26 +260,26 @@ SDN";
    except it will return the string alias for the value when
    possible.
 
-   The format of the subname for $isup_param is the following:
+   The format of the subname for $isup_param_str is the following:
      * param_name - name of the ISUP parameter as it appears in
        ITU-T Rec. Q.763
-     * sep - separator
+     * sep - separator, whitespaces allowed before/after
      * subfield_name - name of the subfield of the ISUP parameter
        as it appears in ITU-T Rec. Q.763
 
-   Example 1.5. isup_param usage
+   Example 1.5. isup_param_str usage
 ...
         # may print: "NOA is: national"
-        xlog("NOA is: $isup_param(Called Party Number | Nature of addres
-s indicator)");
+        xlog("NOA is: $isup_param_str(Called Party Number|Nature of addr
+ess indicator)");
         # may print: "CpN is: 99991234"
-        xlog("CpN is: $isup_param(Called Party Number | Address signal)"
-);
+        xlog("CpN is: $isup_param_str(Called Party Number|Address signal
+)");
         # may print: "nature of conn: 0x01"
-        xlog("nature of conn: $isup_param(Nature of connection indicator
-s)");
+        xlog("nature of conn: $isup_param_str(Nature of connection indic
+ators)");
         # may print: "Cg cat is: ordinary"
-        xlog("$isup_param(Calling party's category)");
+        xlog("$isup_param_str(Calling party's category)");
 ...
 
 1.5.3.  $isup_msg_type
@@ -281,10 +292,10 @@ s)");
         xlog("ISUP msg is: $isup_msg_type");
 ...
 
-1.6. String aliases
+1.6. ISUP parameter subfields and string aliases
 
-   The supported ISUP parameter subfields and the predefined
-   string aliases for values are the following:
+   The supported subfields for each ISUP parameter and the string
+   aliases for their values are the following:
      * Nature of Connection Indicators
           + Satellite indicator
                o no satellite - 0
@@ -511,3 +522,40 @@ s)");
           + 384 kbit/s - 8
           + 1536 kbit/s - 9
           + 1920 kbit/s - 10
+
+1.7. Mandatory ISUP parameters
+
+   The mandatory parameters(According to ITU-T Rec. Q.763) for
+   each supported ISUP message that requires this are the
+   following:
+     * Initial address
+          + Nature of connection indicators
+          + Forward call indicators
+          + Calling party's category
+          + Transmission medium requirement
+          + Called party number
+     * Address complete
+          + Backward call indicators
+     * Connect
+          + Backward call indicators
+     * Release
+          + Cause indicators
+     * Call progress
+          + Event information
+     * Facility reject
+          + Facility indicator
+          + Cause indicators
+     * Facility accepted
+          + Facility indicator
+     * Facility request
+          + Facility indicator
+     * Confusion
+          + Cause indicators
+     * Suspend
+          + Suspend/resume indicators
+     * Resume
+          + Suspend/resume indicators
+     * Subsequent address
+          + Subsequent number
+     * User-to-user information
+          + User-to-user information

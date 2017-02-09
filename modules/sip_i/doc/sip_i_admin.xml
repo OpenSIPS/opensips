@@ -51,7 +51,7 @@
 	<section>
 		<title><varname>param_subfield_separator</varname> (str)</title>
 		<para>
-		The character to be used as separator in the subname of the $isup_param pseudovariable between the ISUP parameter name and subfield.
+		The character to be used as separator in the subname of the <emphasis>$isup_param</emphasis> and <emphasis>$isup_param_str</emphasis> pseudovariables between the ISUP parameter name and subfield name.
 		</para>
 		<para>
 		<emphasis>
@@ -106,7 +106,7 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>isup_msg_type (string)</emphasis> - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. for "Initial address" - "IAM").
+			<para><emphasis>isup_msg_type (string)</emphasis> - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. <emphasis>IAM</emphasis> for "Initial address").
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -146,121 +146,121 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 		</itemizedlist>
 		</para>
 		<para>
-			The abbreviations that can be given as <emphasis>isup_msg_type</emphasis> are the following:
+			The abbreviations that can be given as <emphasis>isup_msg_type</emphasis> for each ISUP message type are the following:
 		<itemizedlist>
 			<listitem>
 			<para>
-				Initial address - IAM
+				Initial address - <emphasis>IAM</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Address complete - ACM
+				Address complete - <emphasis>ACM</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Answer - ANM
+				Answer - <emphasis>ANM</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Connect - CON
+				Connect - <emphasis>CON</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Connect - CON
+				Connect - <emphasis>CON</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Release - REL
+				Release - <emphasis>REL</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Release complete - RLC
+				Release complete - <emphasis>RLC</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Facility reject - FRJ
+				Facility reject - <emphasis>FRJ</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Facility accepted - FAA
+				Facility accepted - <emphasis>FAA</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Facility request - FAR
+				Facility request - <emphasis>FAR</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Confusion - CFN
+				Confusion - <emphasis>CFN</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Suspend - SUS
+				Suspend - <emphasis>SUS</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Resume - RES
+				Resume - <emphasis>RES</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Subsequent address - SAM
+				Subsequent address - <emphasis>SAM</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Forward transfer - FOT
+				Forward transfer - <emphasis>FOT</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				User-to-user information - USR
+				User-to-user information - <emphasis>USR</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Network resource management - NRM
+				Network resource management - <emphasis>NRM</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Facility - FAC
+				Facility - <emphasis>FAC</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Identification request - IRQ
+				Identification request - <emphasis>IRQ</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Identification response - IRS
+				Identification response - <emphasis>IRS</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Loop prevention - LPR
+				Loop prevention - <emphasis>LPR</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Application transport - APT
+				Application transport - <emphasis>APT</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				Pre-release information - PRI
+				Pre-release information - <emphasis>PRI</emphasis>
 			</para>
 			</listitem>
 		</itemizedlist>
@@ -291,17 +291,17 @@ if ($rs == "183") {
 
 	<section>
 	<title>
-		<function moreinfo="none">$(isup_param(param_name{sep}subfield_name)[byte_index])</function>
+		<varname>$(isup_param(param_name{sep}subfield_name)[byte_index])</varname>
 	</title>
-	<para>The ISUP parameter named <emphasis>param_name</emphasis> of a received or newly added ISUP message can be accessed through this read-write variable. For optional parameters, writing to a <emphasis>param_name</emphasis> that does not exist in this ISUP message will insert it. Assigning null to this variable will remove an optional parameter from the message or zeroize a mandatory parameter.
+	<para>The ISUP parameter named <emphasis>param_name</emphasis> of a received or newly added ISUP message can be accessed through this read-write variable. For optional parameters, writing to a <emphasis>param_name</emphasis> that does not exist in this ISUP message will insert it. Assigning null to this variable will remove the optional parameter from the message or zeroize the parameter in case of a mandatory one.
 	</para>
-	<para>The format of the subname for $isup_param is the following:</para>
+	<para>The format of the subname for <varname>$isup_param</varname> is the following:</para>
 	<itemizedlist>
 		<listitem>
 		<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
 		</listitem>
 		<listitem>
-		<para><emphasis>sep</emphasis> - separator </para>
+		<para><emphasis>sep</emphasis> - separator, whitespaces allowed before/after</para>
 		</listitem>
 		<listitem>
 		<para><emphasis>subfield_name</emphasis> - name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
@@ -311,7 +311,7 @@ if ($rs == "183") {
 	<itemizedlist>
 		<listitem>
 		<para>
-			entire parameter - by providing as subname for the varaiable only the ISUP parameter name, allowing access to the contents of the entire parameter as a hex string(similar to a hex "dump") for read/write or as a string alias or integer value for writing; when assigning a hex string, the hex value must be preceded by "0x"
+			entire parameter - by providing as subname for the varaiable only the ISUP parameter name, allowing access to the contents of the entire parameter as: a hex string(similar to a hex "dump") for read/write, a string alias for writing, or an integer value for read/write; when assigning a hex string, the hex value must be preceded by "0x"; when reading, if string aliases are supported for this parameter, an associated integer value will be returned, otherwise a hex string is returned
 		</para>
 		</listitem>
 		<listitem>
@@ -321,25 +321,30 @@ if ($rs == "183") {
 		</listitem>
 		<listitem>
 		<para>
-			at byte level - by providing as subname for the variable the ISUP parameter name and a variable index, allowing access to the byte with the specific index as an integer value
+			at byte level - by providing as subname for the variable the ISUP parameter name and an index, allowing access to the byte with the specified index as an integer value
 		</para>
 		</listitem>
 	</itemizedlist>
 	<para>Addressing at entire parameter level as a hex string and at byte level are supported for all the ISUP parameters defined in the ITU-T Rec. Q.763. Addressing at subfield level is supported only for some ISUP parameters and not all of the subfields of a parameter defined in the ITU Recommandation are supported.</para>
 	<para>String aliases are not available for all parameters or parameter subfields. Also, not all the possible values of a parameter or parameter subfield have a string alias defined.</para>
+	<para>For more information on supported subfields and aliases check <xref linkend="subfields_aliases"/>.</para>
 	<example>
-	<title><function>isup_param</function> usage</title>
+	<title><varname>isup_param</varname> usage</title>
 	<programlisting format="linespecific">
 ...
 	$isup_param(Called Party Number | Nature of address indicator) = 3;
-	# string alias
+	...
+	# use a string alias
 	$isup_param(Called Party Number | Numbering plan indicator) = "ISDN";
+	...
 	$isup_param(Called Party Number | Address signal) = "99991234";
 	$isup_param(Nature of connection indicators) = "0x01"
 	$isup_param(Calling party's category) = 10;
-	# string alias
+	...
+	# use a string alias
 	$isup_param(Transmission Medium Requirement) = "speech";
-	# at byte level
+	...
+	# access at byte level
 	$(isup_param(Forward Call Indicators)[0]) = 96;
 	$(isup_param(Forward Call Indicators)[1]) = 1;
 ...
@@ -349,34 +354,34 @@ if ($rs == "183") {
 
 	<section>
 	<title>
-		<function moreinfo="none">$isup_param_str(param_name{sep}subfield_name)</function>
+		<varname>$isup_param_str(param_name{sep}subfield_name)</varname>
 	</title>
 	<para>The ISUP parameter named <emphasis>param_name</emphasis> of a received or newly added ISUP message can also be accessed through this read-only variable. This variable is similar in usage with <emphasis>$isup_param</emphasis> except it will return the string alias for the value when possible.
 	</para>
-	<para>The format of the subname for $isup_param is the following:</para>
+	<para>The format of the subname for <varname>$isup_param_str</varname> is the following:</para>
 	<itemizedlist>
 		<listitem>
 		<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
 		</listitem>
 		<listitem>
-		<para><emphasis>sep</emphasis> - separator </para>
+		<para><emphasis>sep</emphasis> - separator, whitespaces allowed before/after</para>
 		</listitem>
 		<listitem>
 		<para><emphasis>subfield_name</emphasis> - name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
 		</listitem>
 	</itemizedlist>
 	<example>
-	<title><function>isup_param</function> usage</title>
+	<title><varname>isup_param_str</varname> usage</title>
 	<programlisting format="linespecific">
 ...
 	# may print: "NOA is: national"  
-	xlog("NOA is: $isup_param(Called Party Number | Nature of address indicator)");
+	xlog("NOA is: $isup_param_str(Called Party Number|Nature of address indicator)");
 	# may print: "CpN is: 99991234"
-	xlog("CpN is: $isup_param(Called Party Number | Address signal)");
+	xlog("CpN is: $isup_param_str(Called Party Number|Address signal)");
 	# may print: "nature of conn: 0x01"
-	xlog("nature of conn: $isup_param(Nature of connection indicators)");
+	xlog("nature of conn: $isup_param_str(Nature of connection indicators)");
 	# may print: "Cg cat is: ordinary"
-	xlog("$isup_param(Calling party's category)");
+	xlog("$isup_param_str(Calling party's category)");
 ...
 	</programlisting>
 	</example>
@@ -384,13 +389,13 @@ if ($rs == "183") {
 
 	<section>
 	<title>
-		<function moreinfo="none">$isup_msg_type</function>
+		<varname>$isup_msg_type</varname>
 	</title>
 	<para>
 		Read-only variable, returns the ISUP message type as string.
 	</para>
 	<example>
-	<title><function>isup_msg_type</function> usage</title>
+	<title><varname>isup_msg_type</varname> usage</title>
 	<programlisting format="linespecific">
 ...
 	# may print: "ISUP msg is: Initial address"
@@ -402,9 +407,9 @@ if ($rs == "183") {
 
 </section>
 
-<section>
-	<title>String aliases</title>
-	<para>The supported ISUP parameter subfields and the predefined string aliases for values are the following: </para>
+<section id="subfields_aliases">
+	<title>ISUP parameter subfields and string aliases</title>
+	<para>The supported subfields for each ISUP parameter and the string aliases for their values are the following: </para>
 	<itemizedlist>
 		<listitem>
 			<para>Nature of Connection Indicators</para>
@@ -413,13 +418,13 @@ if ($rs == "183") {
 					<para>Satellite indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no satellite - 0</para>
+							<para><emphasis>no satellite</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>one satellite - 1</para>
+							<para><emphasis>one satellite</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>two satellite - 2</para>
+							<para><emphasis>two satellite</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -427,13 +432,13 @@ if ($rs == "183") {
 					<para>Continuity check indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not required - 0</para>
+							<para><emphasis>not required</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>required - 1</para>
+							<para><emphasis>required</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>performed - 2</para>
+							<para><emphasis>performed</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -441,10 +446,10 @@ if ($rs == "183") {
 					<para>Echo control device indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not included - 0</para>
+							<para><emphasis>not included</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>included - 1</para>
+							<para><emphasis>included</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -457,10 +462,10 @@ if ($rs == "183") {
 					<para>National/international call indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>national - 0</para>
+							<para><emphasis>national</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>international - 1</para>
+							<para><emphasis>international</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -468,16 +473,16 @@ if ($rs == "183") {
 					<para>End-to-end method indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no method - 0</para>
+							<para><emphasis>no method</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>pass-along - 1</para>
+							<para><emphasis>pass-along</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>SCCP - 2</para>
+							<para><emphasis>SCCP</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>pass-along and SCCP - 3</para>
+							<para><emphasis>pass-along and SCCP</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -485,10 +490,10 @@ if ($rs == "183") {
 					<para>Interworking indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no interworking - 0</para>
+							<para><emphasis>no interworking</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>interworking - 1</para>
+							<para><emphasis>interworking</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -496,10 +501,10 @@ if ($rs == "183") {
 					<para>End-to-end information indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no end-to-end - 0</para>
+							<para><emphasis>no end-to-end</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>end-to-end - 1</para>
+							<para><emphasis>end-to-end</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -507,10 +512,10 @@ if ($rs == "183") {
 					<para>ISDN user part indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not all the way - 0</para>
+							<para><emphasis>not all the way</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>all the way - 1</para>
+							<para><emphasis>all the way</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -518,13 +523,13 @@ if ($rs == "183") {
 					<para>ISDN user part preference indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>prefered - 0</para>
+							<para><emphasis>prefered</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>not required - 1</para>
+							<para><emphasis>not required</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>required - 2</para>
+							<para><emphasis>required</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -532,10 +537,10 @@ if ($rs == "183") {
 					<para>ISDN access indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>non-ISDN - 0</para>
+							<para><emphasis>non-ISDN</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>ISDN - 1</para>
+							<para><emphasis>ISDN</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -543,16 +548,16 @@ if ($rs == "183") {
 					<para>SCCP method indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>connectionless - 1</para>
+							<para><emphasis>connectionless</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>connection - 2</para>
+							<para><emphasis>connection</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>connectionless and connection - 3</para>
+							<para><emphasis>connectionless and connection</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -565,13 +570,13 @@ if ($rs == "183") {
 					<para>Closed user group call indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>non-CUG - 0</para>
+							<para><emphasis>non-CUG</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>outgoing allowed - 2</para>
+							<para><emphasis>outgoing allowed</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>outgoing not allowed - 3</para>
+							<para><emphasis>outgoing not allowed</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -579,10 +584,10 @@ if ($rs == "183") {
 					<para>Simple segmentation indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no additional information - 0</para>
+							<para><emphasis>no additional information</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>additional information - 1</para>
+							<para><emphasis>additional information</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -590,10 +595,10 @@ if ($rs == "183") {
 					<para>Connected line identity request indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not requested - 0</para>
+							<para><emphasis>not requested</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>requested - 1</para>
+							<para><emphasis>requested</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -606,10 +611,10 @@ if ($rs == "183") {
 					<para>Odd/even indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>even - 0</para>
+							<para><emphasis>even</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>odd - 1</para>
+							<para><emphasis>odd</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -617,28 +622,28 @@ if ($rs == "183") {
 					<para>Nature of address indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>subscriber - 1</para>
+							<para><emphasis>subscriber</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>unknown - 2</para>
+							<para><emphasis>unknown</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>national - 3</para>
+							<para><emphasis>national</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>international - 4</para>
+							<para><emphasis>international</emphasis> - 4</para>
 						</listitem>
 						<listitem>
-							<para>network-specific - 5</para>
+							<para><emphasis>network-specific</emphasis> - 5</para>
 						</listitem>
 						<listitem>
-							<para>network routing national - 6</para>
+							<para><emphasis>network routing national</emphasis> - 6</para>
 						</listitem>
 						<listitem>
-							<para>network routing network-specific - 7</para>
+							<para><emphasis>network routing network-specific</emphasis> - 7</para>
 						</listitem>
 						<listitem>
-							<para>network routing with CDN - 8</para>
+							<para><emphasis>network routing with CDN</emphasis> - 8</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -646,10 +651,10 @@ if ($rs == "183") {
 					<para>Internal Network Number indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>allowed - 0</para>
+							<para><emphasis>allowed</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>not allowed - 1</para>
+							<para><emphasis>not allowed</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -657,13 +662,13 @@ if ($rs == "183") {
 					<para>Numbering plan indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>ISDN - 1</para>
+							<para><emphasis>ISDN</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>Data - 3</para>
+							<para><emphasis>Data</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>Telex - 4</para>
+							<para><emphasis>Telex</emphasis> - 4</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -679,10 +684,10 @@ if ($rs == "183") {
 					<para>Odd/even indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>even - 0</para>
+							<para><emphasis>even</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>odd - 1</para>
+							<para><emphasis>odd</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -690,16 +695,16 @@ if ($rs == "183") {
 					<para>Nature of address indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>subscriber - 1</para>
+							<para><emphasis>subscriber</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>unknown - 2</para>
+							<para><emphasis>unknown</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>national - 3</para>
+							<para><emphasis>national</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>international - 4</para>
+							<para><emphasis>international</emphasis> - 4</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -707,10 +712,10 @@ if ($rs == "183") {
 					<para>Number Incomplete indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>complete - 0</para>
+							<para><emphasis>complete</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>incomplete - 1</para>
+							<para><emphasis>incomplete</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -718,13 +723,13 @@ if ($rs == "183") {
 					<para>Numbering plan indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>ISDN - 1</para>
+							<para><emphasis>ISDN</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>Data - 3</para>
+							<para><emphasis>Data</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>Telex - 4</para>
+							<para><emphasis>Telex</emphasis> - 4</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -732,16 +737,16 @@ if ($rs == "183") {
 					<para>Address presentation restricted indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>allowed - 0</para>
+							<para><emphasis>allowed</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>restricted - 1</para>
+							<para><emphasis>restricted</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>not available - 2</para>
+							<para><emphasis>not available</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>reserved - 3</para>
+							<para><emphasis>reserved</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -749,10 +754,10 @@ if ($rs == "183") {
 					<para>Screening indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>user - 0</para>
+							<para><emphasis>user</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>network - 1</para>
+							<para><emphasis>network</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -768,10 +773,10 @@ if ($rs == "183") {
 					<para>Charge indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>no charge - 1</para>
+							<para><emphasis>no charge</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -779,13 +784,13 @@ if ($rs == "183") {
 					<para>Called party's status indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>subscriber free - 1</para>
+							<para><emphasis>subscriber free</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>connect - 2</para>
+							<para><emphasis>connect</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -793,13 +798,13 @@ if ($rs == "183") {
 					<para>Called party's category indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>ordinary subscriber - 1</para>
+							<para><emphasis>ordinary subscriber</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>payphone - 2</para>
+							<para><emphasis>payphone</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -807,16 +812,16 @@ if ($rs == "183") {
 					<para>End to End method indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no end-to-end - 0</para>
+							<para><emphasis>no end-to-end</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>pass-along - 1</para>
+							<para><emphasis>pass-along</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>SCCP - 2</para>
+							<para><emphasis>SCCP</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>pass-along and SCCP - 3</para>
+							<para><emphasis>pass-along and SCCP</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -824,10 +829,10 @@ if ($rs == "183") {
 					<para>Interworking indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no interworking - 0</para>
+							<para><emphasis>no interworking</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>interworking - 1</para>
+							<para><emphasis>interworking</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -835,10 +840,10 @@ if ($rs == "183") {
 					<para>End to End information indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no end-to-end - 0</para>
+							<para><emphasis>no end-to-end</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>end-to-end - 1</para>
+							<para><emphasis>end-to-end</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -846,10 +851,10 @@ if ($rs == "183") {
 					<para>ISDN user part indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not all the way - 0</para>
+							<para><emphasis>not all the way</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>all the way - 1</para>
+							<para><emphasis>all the way</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -857,10 +862,10 @@ if ($rs == "183") {
 					<para>Holding indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not requested - 0</para>
+							<para><emphasis>not requested</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>requested - 1</para>
+							<para><emphasis>requested</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -868,10 +873,10 @@ if ($rs == "183") {
 					<para>ISDN access indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>non-ISDN - 0</para>
+							<para><emphasis>non-ISDN</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>ISDN - 1</para>
+							<para><emphasis>ISDN</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -879,10 +884,10 @@ if ($rs == "183") {
 					<para>Echo control device indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>not included - 0</para>
+							<para><emphasis>not included</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>included - 1</para>
+							<para><emphasis>included</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -890,16 +895,16 @@ if ($rs == "183") {
 					<para>SCCP method indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>connectionless - 1</para>
+							<para><emphasis>connectionless</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>connection - 2</para>
+							<para><emphasis>connection</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>connectionless and connection - 3</para>
+							<para><emphasis>connectionless and connection</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -912,10 +917,10 @@ if ($rs == "183") {
 					<para>In-band information indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication- 0</para>
+							<para><emphasis>no indication</emphasis>- 0</para>
 						</listitem>
 						<listitem>
-							<para>available - 2</para>
+							<para><emphasis>available</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -923,10 +928,10 @@ if ($rs == "183") {
 					<para>Call diversion may occur indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>call diversion - 1</para>
+							<para><emphasis>call diversion</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -934,10 +939,10 @@ if ($rs == "183") {
 					<para>Simple segmentation indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no additional information - 0</para>
+							<para><emphasis>no additional information</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>additional information - 1</para>
+							<para><emphasis>additional information</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -945,10 +950,10 @@ if ($rs == "183") {
 					<para>MLPP user indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>MLPP user - 1</para>
+							<para><emphasis>MLPP user</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -961,10 +966,10 @@ if ($rs == "183") {
 					<para>Odd/even indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>even - 0</para>
+							<para><emphasis>even</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>odd - 1</para>
+							<para><emphasis>odd</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -972,16 +977,16 @@ if ($rs == "183") {
 					<para>Nature of address indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>subscriber - 1</para>
+							<para><emphasis>subscriber</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>unknown - 2</para>
+							<para><emphasis>unknown</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>national - 3</para>
+							<para><emphasis>national</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>international - 4</para>
+							<para><emphasis>international</emphasis> - 4</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -989,13 +994,13 @@ if ($rs == "183") {
 					<para>Numbering plan indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>ISDN - 1</para>
+							<para><emphasis>ISDN</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>Data - 3</para>
+							<para><emphasis>Data</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>Telex - 4</para>
+							<para><emphasis>Telex</emphasis> - 4</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1003,13 +1008,13 @@ if ($rs == "183") {
 					<para>Address presentation restricted indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>allowed - 0</para>
+							<para><emphasis>allowed</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>restricted - 1</para>
+							<para><emphasis>restricted</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>not available - 2</para>
+							<para><emphasis>not available</emphasis> - 2</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1017,10 +1022,10 @@ if ($rs == "183") {
 					<para>Screening indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>user - 0</para>
+							<para><emphasis>user</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>network - 1</para>
+							<para><emphasis>network</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1036,28 +1041,28 @@ if ($rs == "183") {
 					<para>Location</para>
 					<itemizedlist>
 						<listitem>
-							<para>user - 0</para>
+							<para><emphasis>user</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>LPN - 1</para>
+							<para><emphasis>LPN</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>LN - 2</para>
+							<para><emphasis>LN</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>TN - 3</para>
+							<para><emphasis>TN</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>RLN - 4</para>
+							<para><emphasis>RLN</emphasis> - 4</para>
 						</listitem>
 						<listitem>
-							<para>RPN - 5</para>
+							<para><emphasis>RPN</emphasis> - 5</para>
 						</listitem>
 						<listitem>
-							<para>INTL - 7</para>
+							<para><emphasis>INTL</emphasis> - 7</para>
 						</listitem>
 						<listitem>
-							<para>BI - 10</para>
+							<para><emphasis>BI</emphasis> - 10</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1065,16 +1070,16 @@ if ($rs == "183") {
 					<para>Coding standard</para>
 					<itemizedlist>
 						<listitem>
-							<para>ITU-T - 0</para>
+							<para><emphasis>ITU-T</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>ISO/IEC - 1</para>
+							<para><emphasis>ISO/IEC</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>national - 2</para>
+							<para><emphasis>national</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>location - 3</para>
+							<para><emphasis>location</emphasis> - 3</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1090,10 +1095,10 @@ if ($rs == "183") {
 					<para>Odd/even indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>even - 0</para>
+							<para><emphasis>even</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>odd - 1</para>
+							<para><emphasis>odd</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1109,22 +1114,22 @@ if ($rs == "183") {
 					<para>Event indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>alerting - 1</para>
+							<para><emphasis>alerting</emphasis> - 1</para>
 						</listitem>
 						<listitem>
-							<para>progress - 2</para>
+							<para><emphasis>progress</emphasis> - 2</para>
 						</listitem>
 						<listitem>
-							<para>in-band or pattern - 3</para>
+							<para><emphasis>in-band or pattern</emphasis> - 3</para>
 						</listitem>
 						<listitem>
-							<para>busy - 4</para>
+							<para><emphasis>busy</emphasis> - 4</para>
 						</listitem>
 						<listitem>
-							<para>no reply - 5</para>
+							<para><emphasis>no reply</emphasis> - 5</para>
 						</listitem>
 						<listitem>
-							<para>unconditional - 6</para>
+							<para><emphasis>unconditional</emphasis> - 6</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1132,10 +1137,10 @@ if ($rs == "183") {
 					<para>Event presentation restricted indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para>no indication - 0</para>
+							<para><emphasis>no indication</emphasis> - 0</para>
 						</listitem>
 						<listitem>
-							<para>restricted - 1</para>
+							<para><emphasis>restricted</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1145,37 +1150,37 @@ if ($rs == "183") {
 			<para>Calling Party's Category</para>
 			<itemizedlist>
 				<listitem>
-					<para>unknown - 0</para>
+					<para><emphasis>unknown</emphasis> - 0</para>
 				</listitem>
 				<listitem>
-					<para>french - 1</para>
+					<para><emphasis>french</emphasis> - 1</para>
 				</listitem>
 				<listitem>
-					<para>english - 2</para>
+					<para><emphasis>english</emphasis> - 2</para>
 				</listitem>
 				<listitem>
-					<para>german - 3</para>
+					<para><emphasis>german</emphasis> - 3</para>
 				</listitem>
 				<listitem>
-					<para>russian - 4</para>
+					<para><emphasis>russian</emphasis> - 4</para>
 				</listitem>
 				<listitem>
-					<para>spanish - 5</para>
+					<para><emphasis>spanish</emphasis> - 5</para>
 				</listitem>
 				<listitem>
-					<para>ordinary - 10</para>
+					<para><emphasis>ordinary</emphasis> - 10</para>
 				</listitem>
 				<listitem>
-					<para>priority - 11</para>
+					<para><emphasis>priority</emphasis> - 11</para>
 				</listitem>
 				<listitem>
-					<para>data - 12</para>
+					<para><emphasis>data</emphasis> - 12</para>
 				</listitem>
 				<listitem>
-					<para>test - 13</para>
+					<para><emphasis>test</emphasis> - 13</para>
 				</listitem>
 				<listitem>
-					<para>payphone - 15</para>
+					<para><emphasis>payphone</emphasis> - 15</para>
 				</listitem>
 			</itemizedlist>
 		</listitem>
@@ -1183,29 +1188,121 @@ if ($rs == "183") {
 			<para>Transmission Medium Requirement</para>
 			<itemizedlist>
 				<listitem>
-					<para>speech - 0</para>
+					<para><emphasis>speech</emphasis> - 0</para>
 				</listitem>
 				<listitem>
-					<para>64 kbit/s unrestricted - 2</para>
+					<para><emphasis>64 kbit/s unrestricted</emphasis> - 2</para>
 				</listitem>
 				<listitem>
-					<para>3.1 kHz audio - 3</para>
+					<para><emphasis>3.1 kHz audio</emphasis> - 3</para>
 				</listitem>
 				<listitem>
-					<para>64 kbit/s preferred - 6</para>
+					<para><emphasis>64 kbit/s preferred</emphasis> - 6</para>
 				</listitem>
 				<listitem>
-					<para>2 x 64 kbit/s - 7</para>
+					<para><emphasis>2 x 64 kbit/s</emphasis> - 7</para>
 				</listitem>
 				<listitem>
-					<para>384 kbit/s - 8</para>
+					<para><emphasis>384 kbit/s</emphasis> - 8</para>
 				</listitem>
 				<listitem>
-					<para>1536 kbit/s - 9</para>
+					<para><emphasis>1536 kbit/s</emphasis> - 9</para>
 				</listitem>
 				<listitem>
-					<para>1920 kbit/s - 10</para>
+					<para><emphasis>1920 kbit/s</emphasis> - 10</para>
 				</listitem>
+			</itemizedlist>
+		</listitem>
+	</itemizedlist>
+</section>
+
+<section>
+	<title>Mandatory ISUP parameters</title>
+	<para>The mandatory parameters(According to ITU-T Rec. Q.763) for each supported ISUP message that requires this are the following:</para>
+	<itemizedlist>
+		<listitem>
+			<para>Initial address</para>
+			<itemizedlist>
+				<listitem><para>Nature of connection indicators</para></listitem>
+				<listitem><para>Forward call indicators</para></listitem>
+				<listitem><para>Calling party's category</para></listitem>
+				<listitem><para>Transmission medium requirement</para></listitem>
+				<listitem><para>Called party number</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Address complete</para>
+			<itemizedlist>
+				<listitem><para>Backward call indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Connect</para>
+			<itemizedlist>
+				<listitem><para>Backward call indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Release</para>
+			<itemizedlist>
+				<listitem><para>Cause indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Call progress</para>
+			<itemizedlist>
+				<listitem><para>Event information</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Facility reject</para>
+			<itemizedlist>
+				<listitem><para>Facility indicator</para></listitem>
+			</itemizedlist>
+			<itemizedlist>
+				<listitem><para>Cause indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Facility accepted</para>
+			<itemizedlist>
+				<listitem><para>Facility indicator</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Facility request</para>
+			<itemizedlist>
+				<listitem><para>Facility indicator</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Confusion</para>
+			<itemizedlist>
+				<listitem><para>Cause indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Suspend</para>
+			<itemizedlist>
+				<listitem><para>Suspend/resume indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Resume</para>
+			<itemizedlist>
+				<listitem><para>Suspend/resume indicators</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Subsequent address</para>
+			<itemizedlist>
+				<listitem><para>Subsequent number</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>User-to-user information</para>
+			<itemizedlist>
+				<listitem><para>User-to-user information</para></listitem>
 			</itemizedlist>
 		</listitem>
 	</itemizedlist>
