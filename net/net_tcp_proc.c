@@ -169,10 +169,12 @@ again:
 				 * already existing events => might call handle_io and
 				 * handle_io might decide to del. the new connection =>
 				 * must be in the list */
+				tcpconn_check_add(con);
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
 				con->timeout = con->lifetime;
 				if (reactor_add_reader( s, F_TCPCONN, RCT_PRIO_NET, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
+					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
 				}
@@ -210,12 +212,14 @@ again:
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					tcpconn_release(con, CONN_ERROR,0);
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
@@ -263,6 +267,7 @@ void tcp_receive_timeout(void)
 			/* fd will be closed in tcpconn_release */
 
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			tcpconn_check_del(con);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->proc_id = -1;
 			con->state=S_CONN_BAD;
@@ -275,6 +280,7 @@ void tcp_receive_timeout(void)
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in tcpconn_release */
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			tcpconn_check_del(con);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 
 			/* connection is going to main */
