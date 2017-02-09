@@ -188,7 +188,7 @@ again:
 				} else if (resp==1) {
 					tcpconn_release(con, ASYNC_WRITE,1);
 				} else {
-					tcpconn_release(con, CONN_RELEASE,1);
+					tcpconn_release(con, CONN_RELEASE_WRITE,1);
 				}
 				ret = 0;
 				/* we always close the socket received for writing */

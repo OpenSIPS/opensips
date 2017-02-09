@@ -1170,6 +1170,15 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
+		case CONN_RELEASE_WRITE:
+			tcp_c->busy--;
+			if (tcpconn->state==S_CONN_BAD){
+				tcpconn_destroy(tcpconn);
+				break;
+			}
+			tcpconn_put(tcpconn);
+			tcpconn->flags&=~F_CONN_REMOVED;
+			break;
 		case ASYNC_WRITE:
 			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){
