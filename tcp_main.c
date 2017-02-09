@@ -1751,6 +1751,15 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,IO_WATCH_READ);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
+		case CONN_RELEASE_WRITE:
+			tcp_c->busy--;
+			if (tcpconn->state==S_CONN_BAD){
+				tcpconn_destroy(tcpconn);
+				break;
+			}
+			tcpconn_put(tcpconn);
+			tcpconn->flags&=~F_CONN_REMOVED;
+			break;
 		case ASYNC_WRITE:
 			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){

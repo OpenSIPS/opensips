@@ -513,7 +513,7 @@ again:
 		if (con->async_chunks_no == 0) {
 			LM_DBG("We have finished writing all our async chunks in %p\n",con);
 			con->oldest_chunk=0;
-			release_tcpconn(con, CONN_RELEASE, tcpmain_sock, 1);
+			release_tcpconn(con, CONN_RELEASE_WRITE, tcpmain_sock, 1);
 			return 0;
 		} else {
 			LM_DBG("We still have %d chunks pending on %p\n",
