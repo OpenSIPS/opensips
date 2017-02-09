@@ -147,7 +147,9 @@ void  qm_info(struct qm_block*, struct mem_info*);
  * On success, returns the currrent number of fragments
  * Internally aborts on failure
  */
+#ifdef DBG_QM_MALLOC
 int qm_mem_check(struct qm_block *qm);
+#endif
 
 
 #ifdef STATISTICS

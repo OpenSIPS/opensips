@@ -716,6 +716,7 @@ void qm_info(struct qm_block* qm, struct mem_info* info)
 	info->total_frags=total_frags;
 }
 
+#ifdef DBG_QM_MALLOC
 int qm_mem_check(struct qm_block *qm)
 {
 	struct qm_frag *f;
@@ -731,6 +732,7 @@ int qm_mem_check(struct qm_block *qm)
 
 	return i;
 }
+#endif
 
 
 #endif
