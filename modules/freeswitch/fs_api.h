@@ -88,10 +88,6 @@ typedef fs_evs* (*add_hb_evs_f) (str *evs_str, str *tag,
 
 typedef int (*del_hb_evs_f) (fs_evs *evs, str *tag);
 
-// XXX remove after dev
-fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f scb, const void *priv);
-int del_hb_evs(fs_evs *evs, str *tag);
-
 struct fs_binds {
 	/*
 	 * Creates & registers a new FS "HEARTBEAT" event socket
@@ -110,7 +106,12 @@ struct fs_binds {
 	del_hb_evs_f del_hb_evs;
 };
 
-int is_fs_url(str *in);
+static inline int is_fs_url(str *in)
+{
+	return (in->len < FS_SOCK_PREFIX_LEN ||
+	        memcmp(in->s, FS_SOCK_PREFIX, FS_SOCK_PREFIX_LEN) != 0)
+	        ? 0 : 1;
+}
 
 typedef int (*bind_fs_t)(struct fs_binds *fsb);
 static inline int load_fs_api(struct fs_binds *fsb)
