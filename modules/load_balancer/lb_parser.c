@@ -117,6 +117,7 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 		LM_ERR("no more pkg memory\n");
 		goto error;
 	}
+	memset(lb_rl+1, 0, n * sizeof(struct lb_res_str) + len);
 
 	/* init the strucuture */
 	lb_rl->n = n;
