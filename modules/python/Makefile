@@ -13,7 +13,15 @@ NAME=python.so
 # the following to point to the correct instance. Module has been tested
 # to work with 2.6 and 2.5. Python 2.4 has been only confirmed to compile,
 # but no testing has been done with that.
-PYTHON?=python
+ifeq (,$(PYTHON))
+ifeq (,$(CROSS_COMPILE))
+# try an autodetection for python2
+PYTHON=$(shell [ $$(python -V 2>&1 | sed 's/.* \([0-9]\)\..*/\1/') -ne 2 ] && which python2)
+endif
+endif
+ifeq (,$(PYTHON))
+PYTHON=python
+endif
 
 PYTHON_VERSION=${shell ${PYTHON} -c "import distutils.sysconfig;print distutils.sysconfig.get_config_var('VERSION')"}
 PYTHON_LIBDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print distutils.sysconfig.get_config_var('LIBDIR')"}
