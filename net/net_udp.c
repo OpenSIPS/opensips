@@ -269,6 +269,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		case F_FD_ASYNC:
 			async_fd_resume( &fm->fd, fm->data);
 			return 0;
+		case F_LAUNCH_ASYNC:
+			async_launch_resume( &fm->fd, fm->data);
+			return 0;
 		default:
 			LM_CRIT("unknown fd type %d in UDP worker\n", fm->type);
 			return -1;

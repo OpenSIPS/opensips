@@ -103,5 +103,15 @@ int register_async_fd(int fd, async_resume_fd *f, void *param);
  */
 int async_fd_resume(int *fd, void *param);
 
+
+
+/******** functions related to async launch *******/
+
+int async_script_launch(struct sip_msg *msg, struct action* a,
+		int report_route);
+
+int async_launch_resume(int *fd, void *param);
+
+
 #endif
 

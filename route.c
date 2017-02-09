@@ -466,6 +466,7 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case ASYNC_T:
+			case LAUNCH_T:
 				if ( (t->elem[0].type==ACTIONS_ST)&&(t->elem[0].u.data) ){
 					if ((ret=fix_actions((struct action*)t->elem[0].u.data))<0)
 						return ret;

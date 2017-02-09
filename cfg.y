@@ -395,6 +395,7 @@ static struct multi_str *tmp_mod;
 %token DISABLE_503_TRANSLATION
 %token SYNC_TOKEN
 %token ASYNC_TOKEN
+%token LAUNCH_TOKEN
 
 
 
@@ -2699,7 +2700,16 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
 						$3, (void*)(long)i_tmp);
 				}
-
+		| LAUNCH_TOKEN LPAREN async_func COMMA route_name RPAREN {
+				i_tmp = get_script_route_idx( $5, rlist, RT_NO, 0);
+				if (i_tmp==-1) yyerror("too many script routes");
+				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
+						$3, (void*)(long)i_tmp);
+				}
+		| LAUNCH_TOKEN LPAREN async_func RPAREN {
+				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
+						$3, (void*)(long)-1);
+				}
 	;
 
 

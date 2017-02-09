@@ -696,8 +696,8 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 {
 	acmd_export_t *acmd;
 
-	for (; a; a = a->next) {
-		if (a->type == ASYNC_T) {
+	for (; a; a=a->next) {
+		if (a->type==ASYNC_T || a->type==LAUNCH_T) {
 			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data;
 
 			LM_DBG("checking %s against %s\n", name, acmd->name);

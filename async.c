@@ -27,12 +27,19 @@
 #include "dprint.h"
 #include "reactor_defs.h"
 #include "async.h"
+#include "route.h"
+#include "action.h"
+#include "sr_module.h"
 
 int async_status = ASYNC_NO_IO;
+
+extern int return_code; /* from action.c, return code */
+
 
 /* start/resume functions used for script async ops */
 async_script_start_function  *async_script_start_f  = NULL;
 async_script_resume_function *async_script_resume_f = NULL;
+
 
 /* async context used for fd async operations */
 typedef struct _async_fd_ctx {
@@ -43,6 +50,19 @@ typedef struct _async_fd_ctx {
 } async_fd_ctx;
 
 
+/* async context used by Launch Async operation */
+typedef struct _async_launch_ctx {
+	/* the resume function to be called when data to read is available */
+	async_resume_module *resume_f;
+	/* parameter registered to the resume function */
+	void *resume_param;
+	/* the ID of the report script route (-1 if none) */
+	int report_route;
+} async_launch_ctx;
+
+
+
+/************* Functions related to ASYNC via script functions ***************/
 
 int register_async_script_handlers(async_script_start_function *f1,
 											async_script_resume_function *f2)
@@ -59,7 +79,9 @@ int register_async_script_handlers(async_script_start_function *f1,
 }
 
 
-int register_async_fd(int fd, async_resume_fd *f, void *param)
+/************* Functions related to internal ASYNC support ***************/
+
+int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 {
 	async_fd_ctx *ctx = NULL;
 
@@ -69,7 +91,7 @@ int register_async_fd(int fd, async_resume_fd *f, void *param)
 	}
 
 	ctx->resume_f = f;
-	ctx->resume_param = param;
+	ctx->resume_param = resume_param;
 
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_FD_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
@@ -134,5 +156,187 @@ done:
 
 	return 0;
 }
+
+
+/************* Functions related to ASYNC Launch support ***************/
+
+#define init_dummy_request( _req ) \
+	do { \
+		memset( &(_req), 0, sizeof(struct sip_msg));\
+		(_req).first_line.type = SIP_REQUEST;\
+		(_req).first_line.u.request.method.s= "DUMMY";\
+		(_req).first_line.u.request.method.len= 5;\
+		(_req).first_line.u.request.uri.s= "sip:user@domain.com";\
+		(_req).first_line.u.request.uri.len= 19;\
+		(_req).rcv.src_ip.af = AF_INET;\
+		(_req).rcv.dst_ip.af = AF_INET;\
+	} while(0)
+
+int async_launch_resume(int *fd, void *param)
+{
+	struct sip_msg req;
+	async_launch_ctx *ctx = (async_launch_ctx *)param;
+
+	LM_DBG("resume for a launch job\n");
+	init_dummy_request( req );
+
+	async_status = ASYNC_DONE; /* assume default status as done */
+
+	/* call the resume function in order to read and handle data */
+	return_code = ctx->resume_f( *fd, &req, ctx->resume_param );
+
+	if (async_status==ASYNC_CONTINUE) {
+		/* do not run the report route, leave the fd into the reactor*/
+		goto restore;
+
+	} else if (async_status==ASYNC_DONE_NO_IO) {
+		/* don't do any change on the fd, since the module handled everything*/
+		goto run_route;
+
+	} else if (async_status==ASYNC_CHANGE_FD) {
+		if (return_code<0) {
+			LM_ERR("ASYNC_CHANGE_FD: given file descriptor must be "
+				"positive!\n");
+			goto restore;
+		} else if (return_code>0 && return_code==*fd) {
+			/*trying to add the same fd; shall continue*/
+			LM_CRIT("You are trying to replace the old fd with the same fd!"
+					"Will act as in ASYNC_CONTINUE!\n");
+			goto restore;
+		}
+
+		/* remove the old fd from the reactor */
+		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+		*fd=return_code;
+
+		/* insert the new fd inside the reactor */
+		if (reactor_add_reader( *fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
+		(void*)ctx)<0 ) {
+			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
+			do {
+				return_code = ctx->resume_f( *fd, &req, ctx->resume_param );
+				if (async_status == ASYNC_CHANGE_FD)
+					*fd=return_code;
+			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
+			goto run_route;
+		} else {
+
+			/* succesfully changed fd */
+			goto restore;
+		}
+	}
+
+	/* remove from reactor, we are done */
+	reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+
+run_route:
+	if (async_status == ASYNC_DONE_CLOSE_FD)
+		close(*fd);
+
+	if (ctx->report_route!=-1) {
+		LM_DBG("runinng report route for a launch job\n");
+		set_route_type( REQUEST_ROUTE );
+		run_top_route( rlist[ctx->report_route].a, &req);
+
+		/* remove all added AVP */
+		reset_avps( );
+	}
+
+	/* no need for the context anymore */
+	shm_free(ctx);
+	LM_DBG("done with a launch job\n");
+
+restore:
+	/* clean whatever extra structures were added by script functions */
+	free_sip_msg(&req);
+
+	return 0;
+}
+
+
+int async_script_launch(struct sip_msg *msg, struct action* a,
+															int report_route)
+{
+	struct sip_msg req;
+	async_launch_ctx *ctx;
+	async_resume_module *ctx_f;
+	void *ctx_p;
+	int fd;
+
+	/* run the function (the action) and get back from it the FD,
+	 * resume function and param */
+	if ( a->type!=AMODULE_T || a->elem[0].type!=ACMD_ST ||
+	a->elem[0].u.data==NULL ) {
+		LM_CRIT("BUG - invalid action for async I/O - it must be"
+			" a MODULE_T ACMD_ST \n");
+		return -1;
+	}
+
+	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
+	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
+			&ctx_f, &ctx_p,
+			(char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
+			(char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
+			(char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
+	/* what to do now ? */
+	if (async_status>=0) {
+		/* async I/O was successfully launched */
+		fd = async_status;
+	} else if (async_status==ASYNC_NO_IO) {
+		/* no IO, so simply continue with the script */
+		return 1;
+	} else if (async_status==ASYNC_SYNC) {
+		/* IO already done in SYNC'ed way */
+		goto report;
+	} else if (async_status==ASYNC_CHANGE_FD) {
+		LM_ERR("Incorrect ASYNC_CHANGE_FD status usage!"
+				"You should use this status only from the"
+				"resume function in case something went wrong"
+				"and you have other alternatives!\n");
+		return -1;
+	} else {
+		/* generic error, go for resume route, report it to script */
+		return -1;
+	}
+
+	LM_DBG("placing launch job into reactor\n");
+	if ( (ctx=shm_malloc(sizeof(async_launch_ctx)))==NULL) {
+		LM_ERR("failed to allocate new ctx, forcing sync mode\n");
+		goto sync;
+	}
+
+	ctx->resume_f = ctx_f;
+	ctx->resume_param = ctx_p;
+	ctx->report_route = report_route;
+
+	/* place the FD + resume function (as param) into reactor */
+	if (reactor_add_reader( fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0){
+		LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
+		goto sync;
+	}
+
+	/* done, return to the script */
+	return 1;
+sync:
+	/* run the resume function */
+	LM_DBG("running launch job in sync mode\n");
+	do {
+		return_code = ctx_f( fd, msg, ctx_p );
+		if (async_status == ASYNC_CHANGE_FD)
+			fd = return_code;
+	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
+	/* the IO completed, so report now */
+report:
+	if (report_route==-1)
+		return 1;
+	/* run the report route inline */
+	init_dummy_request( req );
+	set_route_type( REQUEST_ROUTE );
+	run_top_route( rlist[ctx->report_route].a, &req);
+	/* remove all added AVP */
+	reset_avps( );
+	return 1;
+}
+
 
 
