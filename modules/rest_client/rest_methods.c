@@ -30,6 +30,8 @@
 #include "../../mem/shm_mem.h"
 #include "../../async.h"
 #include "../../lib/list.h"
+#include "../../trace_api.h"
+#include "../../resolve.h"
 
 #include "rest_methods.h"
 #include "rest_cb.h"
@@ -49,6 +51,21 @@ static CURL *sync_handle = NULL;
 /* libcurl's reported running handles */
 static int running_handles;
 
+/* trace parameters for this module */
+#define MAX_HOST_LENGTH 128
+
+extern int rest_proto_id;
+extern trace_proto_t tprot;
+
+static char trace_buf[TRACE_BUF_MAX_SIZE];
+static str trace_str = { trace_buf, 0};
+
+static inline int extract_host(str* url, char** host, unsigned int* port);
+static inline int rest_trace_enabled(void);
+static int trace_rest_message(str* host, str* dest, str* body, str* correlation_id);
+
+
+
 #define clean_header_list \
 	do { \
 		if (header_list) { \
@@ -66,6 +83,96 @@ static int running_handles;
 			goto cleanup; \
 		} \
 	} while (0)
+
+int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userptr)
+{
+	int write_len;
+	char* end;
+	str url;
+	str *host=0, *dest=0;
+
+	/* WARNING: all str s that are params to this function MUST HAVE an
+	 * allocated memory of TRACE_BUF_MAX_SIZE bytes */
+	rest_trace_param_t* tparam = userptr;
+
+	if ( !tparam || !tparam->buf.s) {
+		LM_ERR("null callback param!\n");
+		return CURLSHE_INVALID;
+	}
+
+	if ( type == CURLINFO_HEADER_OUT || type == CURLINFO_HEADER_IN  ) {
+		if ( (size > 4 &&
+			(
+				/* request */
+				( data[0] == 'G' && data[1] == 'E' && data[2] == 'T' ) ||
+				( data[0] == 'P' && data[1] == 'O' && data[2] == 'S' && data[3] == 'T') ||
+				( data[0] == 'P' && data[1] == 'U' && data[2] == 'T' ) ||
+				/* reply */
+				( data[0] == 'H' && data[1] == 'T' && data[2] == 'T' && data[3] == 'P') )
+			))
+		{
+			/* fetch only the first line of the message */
+			end = q_memchr( data, '\r', size);
+			/* if not CRLF search for LF only */
+			if ( !end ) {
+				if ( !(end = q_memchr( data, '\n', size)) ) {
+					LM_ERR("HTTP headers don't have \\n in the end!\n");
+					return CURLE_WRITE_ERROR;
+				}
+			}
+
+			tparam->buf.len = snprintf( tparam->buf.s, TRACE_BUF_MAX_SIZE,
+					"%.*s\n", (int)(end-data), data);
+
+			if ( tparam->buf.len >= TRACE_BUF_MAX_SIZE ) {
+				LM_ERR("trace buffer too small!\n");
+				return CURLE_WRITE_ERROR;
+			}
+
+			/* if it's get trace it immediately; no body */
+			if ( data[0] == 'G' && data[1] == 'E' && data[2] == 'T' ) {
+				goto do_trace;
+			}
+		}
+	} else if ( type == CURLINFO_DATA_IN || type == CURLINFO_DATA_OUT ){
+		if ( size > 0) {
+			/* request data */
+			write_len = snprintf( tparam->buf.s + tparam->buf.len,
+					TRACE_BUF_MAX_SIZE, "%.*s", (int)size, data);
+			if ( write_len >= TRACE_BUF_MAX_SIZE) {
+				/* no error; we got what we needed */
+				tparam->buf.len = TRACE_BUF_MAX_SIZE - 1;
+			} else {
+				tparam->buf.len += write_len;
+			}
+		}
+
+		goto do_trace;
+	}
+
+	return CURLE_OK;
+
+do_trace:
+	if ( curl_easy_getinfo(handle, CURLINFO_EFFECTIVE_URL, &url.s) != CURLE_OK) {
+		LM_ERR("failed to fetch url!\n");
+		return CURLE_OK;
+	}
+	url.len = strlen(url.s);
+
+	if ( type == CURLINFO_DATA_IN)
+		host = &url;
+	else
+		dest = &url;
+
+	if (trace_rest_message(host, dest, &tparam->buf, &tparam->callid) < 0) {
+		/* no need to exit; curl worked ok, tracing failed */
+		LM_ERR("failed to trage rest request!\n");
+	}
+
+	return CURLE_OK;
+}
+
+
 
 static inline char is_new_transfer(int fd)
 {
@@ -249,6 +356,24 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 	if (!ssl_verifyhost)
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	if ( rest_trace_enabled() ) {
+		async_parm->tparam = pkg_malloc(sizeof(rest_async_trace_param)
+				+ TRACE_BUF_MAX_SIZE * sizeof(char));
+		if ( !async_parm->tparam ) {
+			LM_ERR("no more pkg mem!\n");
+			return -1;
+		}
+
+		async_parm->tparam->buf.s = (char *)(async_parm->tparam + 1);
+
+		async_parm->tparam->callid = msg->callid->body;
+
+		w_curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
+		w_curl_easy_setopt(handle, CURLOPT_DEBUGDATA, async_parm->tparam);
+	}
+
+
 
 	multi_list = get_multi();
 	if (!multi_list) {
@@ -454,6 +579,9 @@ out:
 	if (param->ctype_pv && param->ctype.s)
 		pkg_free(param->ctype.s);
 	curl_easy_cleanup(param->handle);
+	if ( param->tparam ) {
+		pkg_free( param->tparam );
+	}
 	pkg_free(param);
 
 	/* default async status is DONE */
@@ -477,6 +605,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	str st = { 0, 0 };
 	str *stp, *bodyp;
 	str body = { NULL, 0 }, tbody;
+
+	rest_trace_param_t tparam;
 
 	/*Init handle for first use*/
 	if (!sync_handle) {
@@ -517,6 +647,15 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	if (!ssl_verifyhost)
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	/* trace rest request */
+	if ( rest_trace_enabled() ) {
+		tparam.callid = msg->callid->body;
+		tparam.buf = trace_str;
+
+		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
+		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
+	}
 
 	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
@@ -591,6 +730,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	str res_body = { NULL, 0 }, tbody;
 	pv_value_t pv_val;
 
+	rest_trace_param_t tparam;
+
 	/*Init handle for first use*/
 	if (!sync_handle) {
 		sync_handle = curl_easy_init();
@@ -628,8 +769,11 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	w_curl_easy_setopt(sync_handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADER, 1L);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
+
+
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &st);
@@ -642,6 +786,15 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	if (!ssl_verifyhost)
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	/* trace rest request */
+	if ( rest_trace_enabled() ) {
+		tparam.callid = msg->callid->body;
+		tparam.buf = trace_str;
+
+		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
+		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
+	}
 
 	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
@@ -715,6 +868,8 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	str res_body = { NULL, 0 }, tbody;
 	pv_value_t pv_val;
 
+	rest_trace_param_t tparam;
+
 	/*Init handle for first use*/
 	if (!sync_handle) {
 		sync_handle = curl_easy_init();
@@ -759,6 +914,17 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	if (!ssl_verifyhost)
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	/* trace rest request */
+	if ( rest_trace_enabled() ) {
+		tparam.callid = msg->callid->body;
+		tparam.buf = trace_str;
+
+		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
+		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
+	}
+
+
 
 	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
@@ -825,7 +991,7 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 	if (hfv->len > MAX_HEADER_FIELD_LEN) {
 		LM_ERR("header field buffer too small\n");
 		return -1;
-	}	
+	}
 
 	/* TODO: header validation */
 
@@ -833,5 +999,186 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 	strncpy(buf, hfv->s, hfv->len);
 	header_list = curl_slist_append(header_list, buf);
 
-	return 1;		
+	return 1;
+}
+
+static inline int rest_trace_enabled(void)
+{
+	return (check_is_traced ? 1 : 0) && check_is_traced(rest_proto_id);
+}
+
+static inline int extract_host(str* url, char** host, unsigned int* port)
+{
+	unsigned int default_port;;
+
+	static const int http_port = 80;
+	static const int https_port = 443;
+
+	static char host_buf[MAX_HOST_LENGTH];
+	static const char port_delim = ':';
+	static const char host_delim = '/';
+
+	static const str http_id_s = str_init("http://");
+	static const str https_id_s = str_init("https://");
+
+	str* url_cpy = url;
+	str port_s;
+
+	char* host_end = NULL;
+	char* port_start = NULL;
+
+
+	if (url == NULL || host == NULL || port == NULL) {
+		LM_ERR("null parameters!\n");
+		return -1;
+	}
+
+	if (url->len > http_id_s.len) {
+		if(!strncmp(url->s, http_id_s.s, http_id_s.len)) {
+			url_cpy->s = url->s + http_id_s.len;
+			url_cpy->len = url->len - http_id_s.len;
+			default_port = http_port;
+		} else if (!strncmp(url->s, https_id_s.s, https_id_s.len)) {
+			url_cpy->s = url->s + https_id_s.len;
+			url_cpy->len = url->len - https_id_s.len;
+			default_port = https_port;
+		}
+	}
+
+	/* now try extracting the host and the port(if exists) */
+	host_end = q_memchr(url_cpy->s, host_delim, url_cpy->len);
+	port_start = q_memchr(url_cpy->s, port_delim, url_cpy->len);
+
+	if (port_start == NULL) { /* job done */
+		/* format: [http[s]://]<host>[/] */
+		if (host_end == NULL)
+			memcpy(host_buf, url_cpy->s, url_cpy->len);
+		else
+			memcpy(host_buf, url_cpy->s, host_end - url_cpy->s);
+
+		host_buf[url_cpy->len] = '\0';
+
+		*port = default_port;
+
+	} else {
+		/* format: [http[s]://]<host>:<port>[/] */
+		/* parse the port; get it's number */
+		if (host_end && port_start > host_end) {
+			/* this does not delimit port; it's after host delimiter */
+			port_start = NULL;
+		}
+
+		if (port_start) {
+			memcpy(host_buf, url_cpy->s, port_start - url_cpy->s);
+			host_buf[port_start-url_cpy->s] = '\0';
+
+			port_s.s = port_start+1;
+			if (host_end)
+				port_s.len = (int)(unsigned long)(host_end - (port_s.s - url_cpy->s));
+			else
+				port_s.len = url_cpy->len - (port_s.s - url_cpy->s);
+
+
+			if (str2int( &port_s, port) < 0) {
+				LM_ERR("invalid port <%.*s>!\n", port_s.len, port_s.s);
+				return -1;
+			}
+		} else {
+			memcpy(host_buf, url_cpy->s, host_end - url_cpy->s);
+			host_buf[host_end-url_cpy->s] = '\0';
+
+			*port = default_port;
+		}
+	}
+
+	*host = host_buf;
+
+	return 0;
+}
+
+/*
+ * FIXME only IPv4
+ */
+static inline unsigned long fix_host(char* host)
+{
+	str host_s = str_init(host);
+
+	struct ip_addr* addr;
+	struct addrinfo *res;
+
+	if ((addr=str2ip(&host_s))==NULL) {
+		if (getaddrinfo(host, NULL, NULL, &res) < 0) {
+			LM_ERR("Invalid host <%s>!\n", host);
+			/* ip 0.0.0.0 will be considered an error */
+			return 0;
+		}
+
+		return ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
+	}
+
+	return addr->u.addrl[0];
+}
+
+static int trace_rest_message(str* host, str* dest, str* body, str* correlation_id)
+{
+	const int proto = IPPROTO_TCP;
+
+	union sockaddr_union to_su, from_su;
+
+	char* host_addr;
+	unsigned int port;
+
+	if ( !rest_trace_enabled() )
+		return 0;
+
+	if ( host ) {
+		if (extract_host(host, &host_addr,&port) < 0){
+			LM_ERR("failed to extract host and port from <%.*s>!\n",
+					host->len, host->s);
+			return -1;
+		}
+
+		from_su.sin.sin_addr.s_addr = fix_host(host_addr);
+		if (from_su.sin.sin_addr.s_addr == 0) {
+			LM_ERR("invalid address <%s>!\n", host_addr);
+			return -1;
+		}
+
+		from_su.sin.sin_port = port;
+	} else {
+		from_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
+		from_su.sin.sin_port = 0;
+	}
+
+	from_su.sin.sin_family = AF_INET;
+
+	/* FIXME no IPv6 */
+	if (dest) {
+		if (extract_host(dest, &host_addr,&port) < 0){
+			LM_ERR("failed to extract host and port from <%.*s>!\n",
+					host->len, host->s);
+			return -1;
+		}
+
+		to_su.sin.sin_addr.s_addr = fix_host(host_addr);
+		if (to_su.sin.sin_addr.s_addr == 0) {
+			LM_ERR("invalid address <%s>!\n", host_addr);
+			return -1;
+		}
+
+		to_su.sin.sin_port = port;
+	} else {
+		to_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
+		to_su.sin.sin_port = 0;
+	}
+
+	to_su.sin.sin_family = AF_INET;
+
+	if ( sip_context_trace(rest_proto_id, &to_su, &from_su,
+			body, proto, correlation_id) < 0 ) {
+		LM_ERR("failed to trace rest message!\n");
+		return -1;
+	}
+
+	return 0;
 }

@@ -34,6 +34,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mod_fix.h"
 #include "../../lib/list.h"
+#include "../../trace_api.h"
 
 #include "rest_methods.h"
 
@@ -51,6 +52,12 @@ char *ssl_capath;
 /* libcurl enables these by default */
 int ssl_verifypeer = 1;
 int ssl_verifyhost = 1;
+
+/* trace parameters for this module */
+#define REST_TRACE_API_MODULE "proto_hep"
+int rest_proto_id;
+trace_proto_t tprot;
+static char* rest_id_s = "rest";
 
 /*
  * Module initialization and cleanup
@@ -86,6 +93,17 @@ static int w_async_rest_put(struct sip_msg *msg, async_resume_module **resume_f,
 					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
 
 static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
+
+/* module dependencies */
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "siptrace", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 }
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL}
+	}
+};
 
 static acmd_export_t acmds[] = {
 	{ "rest_get",  (acmd_function)w_async_rest_get,  2, fixup_rest_get },
@@ -161,7 +179,7 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
 	acmds,    /* Exported async functions */
 	params,   /* Exported parameters */
@@ -270,6 +288,21 @@ static int mod_init(void)
 						 osips_calloc);
 
 	INIT_LIST_HEAD(&multi_pool);
+
+	/* try loading the trace api */
+	if ( register_trace_type ) {
+		rest_proto_id = register_trace_type(rest_id_s);
+		if ( global_trace_api ) {
+			memcpy( &tprot, global_trace_api, sizeof(trace_proto_t));
+		} else {
+			memset( &tprot, 0, sizeof(trace_proto_t));
+			if ( trace_prot_bind( REST_TRACE_API_MODULE, &tprot )) {
+				LM_DBG("Can't bind <%s>!\n", REST_TRACE_API_MODULE);
+			}
+		}
+	} else {
+		memset( &tprot, 0, sizeof(trace_proto_t));
+	}
 
 	LM_INFO("Module initialized!\n");
 

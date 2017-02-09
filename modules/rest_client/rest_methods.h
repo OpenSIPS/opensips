@@ -30,6 +30,8 @@
 #include "../../error.h"
 #include "../../mem/mem.h"
 
+#define TRACE_BUF_MAX_SIZE 1024
+
 extern struct list_head multi_pool;
 
 extern long connection_timeout;
@@ -49,6 +51,18 @@ enum rest_client_method {
 	REST_CLIENT_POST
 };
 
+
+typedef struct _rest_trace_param {
+	str callid;
+	str buf;
+} rest_trace_param_t;
+
+/* for async the buffer must differ from call
+ * to call */
+typedef struct _rest_async_trace_param {
+	char buf[TRACE_BUF_MAX_SIZE];
+} rest_async_trace_param;
+
 struct _oss_curlm {
 	CURLM *multi_handle;
 	struct list_head list;
@@ -61,6 +75,8 @@ typedef struct rest_async_param_ {
 	CURL *handle;
 	str body;
 	str ctype;
+
+	rest_trace_param_t* tparam;
 
 	pv_spec_p body_pv;
 	pv_spec_p ctype_pv;

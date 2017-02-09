@@ -73,6 +73,7 @@ struct hep_message_id hep_ids[] = {
 	{ "sip" , 0x01},
 	{ "xlog", 0x56},
 	{ "mi"  , 0x57},
+	{ "rest", 0x58},
 	{ NULL  , 0   }
 };
 
@@ -1418,7 +1419,7 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 
 	do {
 		if (msg_send(send_sock, hep_dest->transport, to, 0, buf, len, NULL) < 0) {
-			LM_ERR("Cannot send hep message!");
+			LM_ERR("Cannot send hep message!\n");
 			continue;
 		}
 		ret=0;
