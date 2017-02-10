@@ -39,12 +39,9 @@
 		weight value than 0) respond. Default weight is 1.
 	</para>
 	<para>
-		Starting with &osips; 1.11, the set_rtp_proxy_set() function has
-		been removed. The set is now specified for each function. If
-		absend, the default set 0 is used. Also, engage_rtp_proxy(),
-		unforce_rtp_proxy() and start_recording() functions have been deprecated
-		and replaced by rtpproxy_engage(), rtpproxy_unforce() and
-		rtpproxy_start_recording() respectively.
+		Starting with &osips; 2.1, engage_rtp_proxy(), unforce_rtp_proxy()
+		and start_recording() functions have been fully replaced by
+		rtpproxy_engage(), rtpproxy_unforce() and rtpproxy_start_recording().
 	</para>
 	<para>
 		IMPORTANT: if you use multiple sets, make sure you use the same set for
@@ -469,7 +466,6 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>,
 			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
 		</title>
 
@@ -678,7 +674,6 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated</function>,
 		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
@@ -805,7 +800,6 @@ rtpproxy_unforce();
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">start_recording([set_id [, sock_pvar]]) - deprecated</function>,
 		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar]])</function>
 		</title>
 		<para>

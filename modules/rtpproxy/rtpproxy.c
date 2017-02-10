@@ -275,9 +275,6 @@ static int fixup_stats(void ** param, int param_no);
 static int fixup_stream(void ** param, int param_no);
 static int fixup_offer_answer(void ** param, int param_no);
 static int fixup_two_options(void ** param, int param_no);
-static int fixup_unforce_warn(void ** param, int param_no);
-static int fixup_engage_warn(void ** param, int param_no);
-static int fixup_recording_warn(void ** param, int param_no);
 static struct rtpp_set * select_rtpp_set(int id_set);
 
 static int rtpproxy_set_store(modparam_t type, void * val);
@@ -371,39 +368,6 @@ static event_id_t ei_id = EVI_ERROR;
 rw_lock_t *nh_lock=NULL;
 
 static cmd_export_t cmds[] = {
-	{"unforce_rtp_proxy",  (cmd_function)unforce_rtp_proxy_f,       0,
-		fixup_unforce_warn, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"unforce_rtp_proxy",  (cmd_function)unforce_rtp_proxy_f,       1,
-		fixup_unforce_warn, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"unforce_rtp_proxy",  (cmd_function)unforce_rtp_proxy_f,       2,
-		fixup_unforce_warn, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy4_f,      0,
-		fixup_engage_warn, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy4_f,      1,
-		fixup_engage_warn, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy4_f,      2,
-		fixup_engage_warn, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy4_f,      3,
-		fixup_engage_warn, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy4_f,      4,
-		fixup_engage_warn, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"start_recording",       (cmd_function)start_recording_f,      0,
-		fixup_recording_warn, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"start_recording",       (cmd_function)start_recording_f,      1,
-		fixup_recording_warn, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"start_recording",       (cmd_function)start_recording_f,      2,
-		fixup_recording_warn, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_unforce",  (cmd_function)unforce_rtp_proxy_f,       0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -808,31 +772,6 @@ error:
 	return -1;
 }
 
-static void fixup_deprecated_warn(char *oldf, char *newf)
-{
-	LM_WARN("function %s() is now deprecated - use %s() instead\n", oldf, newf);
-}
-
-static int fixup_unforce_warn(void ** param, int param_no)
-{
-	static int warned = 0;
-	if (!warned) {
-		fixup_deprecated_warn("unforce_rtp_proxy", "rtpproxy_unforce");
-		warned = 1;
-	}
-	return param_no > 0 ? fixup_two_options(param, param_no) : 0;
-}
-
-static int fixup_recording_warn(void ** param, int param_no)
-{
-	static int warned = 0;
-	if (!warned) {
-		fixup_deprecated_warn("start_recording", "rtpproxy_start_recording");
-		warned = 1;
-	}
-	return param_no > 0 ? fixup_two_options(param, param_no) : 0;
-}
-
 static int fixup_two_options(void ** param, int param_no)
 {
 	if (param_no == 1)
@@ -958,16 +897,6 @@ static int fixup_stream(void **param, int param_no)
 		return fixup_pvar(param);
 	}
 	return 0;
-}
-
-static int fixup_engage_warn(void ** param, int param_no)
-{
-	static int warned = 0;
-	if (!warned) {
-		fixup_deprecated_warn("engage_rtp_proxy", "rtpproxy_engage");
-		warned = 1;
-	}
-	return param_no > 0 ? fixup_engage(param, param_no) : 0;
 }
 
 static int fixup_engage(void** param, int param_no)

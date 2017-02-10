@@ -46,9 +46,7 @@ Bogdan-Andrei Iancu
 
         1.6. Exported Functions
 
-              1.6.1. engage_rtp_proxy([flags [, ip_address [,
-                      set_id [, sock_pvar]]]]) - deprecated,
-                      rtpproxy_engage([flags [, ip_address [,
+              1.6.1. rtpproxy_engage([flags [, ip_address [,
                       set_id [, sock_pvar]]]])
 
               1.6.2. rtpproxy_offer([flags [, ip_address [, set_id
@@ -57,10 +55,7 @@ Bogdan-Andrei Iancu
               1.6.3. rtpproxy_answer([flags [, ip_address [,
                       set_id [, sock_pvar]]]])
 
-              1.6.4. unforce_rtp_proxy([set_id [, sock_pvar]]) -
-                      deprecated, rtpproxy_unforce([set_id [,
-                      sock_pvar]])
-
+              1.6.4. rtpproxy_unforce([set_id [, sock_pvar]])
               1.6.5. rtpproxy_stream2uac(prompt_name, count [,
                       set_id [, sock_pvar]]),
                       rtpproxy_stream2uas(prompt_name, count [,
@@ -71,9 +66,8 @@ Bogdan-Andrei Iancu
                       rtpproxy_stop_stream2uas([set_id [,
                       sock_pvar]])
 
-              1.6.7. start_recording([set_id [, sock_pvar]]) -
-                      deprecated, rtpproxy_start_recording([set_id
-                      [, sock_pvar]])
+              1.6.7. rtpproxy_start_recording([set_id [,
+                      sock_pvar]])
 
               1.6.8. rtpproxy_stats(up_pvar, down_pvar, sent_pvar,
                       fail_pvar [, set_id [, sock_pvar]])
@@ -144,12 +138,10 @@ Chapter 1. Admin Guide
    rtpproxies (with a different weight value than 0) respond.
    Default weight is 1.
 
-   Starting with OpenSIPS 1.11, the set_rtp_proxy_set() function
-   has been removed. The set is now specified for each function.
-   If absend, the default set 0 is used. Also, engage_rtp_proxy(),
+   Starting with OpenSIPS 2.1, engage_rtp_proxy(),
    unforce_rtp_proxy() and start_recording() functions have been
-   deprecated and replaced by rtpproxy_engage(),
-   rtpproxy_unforce() and rtpproxy_start_recording() respectively.
+   fully replaced by rtpproxy_engage(), rtpproxy_unforce() and
+   rtpproxy_start_recording().
 
    IMPORTANT: if you use multiple sets, make sure you use the same
    set for both rtpproxy_offer()/rtpproxy_answer() and
@@ -403,9 +395,8 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 
 1.6. Exported Functions
 
-1.6.1.  engage_rtp_proxy([flags [, ip_address [, set_id [,
-sock_pvar]]]]) - deprecated, rtpproxy_engage([flags [, ip_address [,
-set_id [, sock_pvar]]]])
+1.6.1.  rtpproxy_engage([flags [, ip_address [, set_id [,
+sock_pvar]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. It uses the dialog module facilities to keep track when
@@ -558,8 +549,7 @@ sock_pvar]]]])
 
    See rtpproxy_offer() function example above for example.
 
-1.6.4.  unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated,
-rtpproxy_unforce([set_id [, sock_pvar]])
+1.6.4.  rtpproxy_unforce([set_id [, sock_pvar]])
 
    Tears down the RTPProxy session for the current call.
 
@@ -643,8 +633,7 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
 
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
-1.6.7.  start_recording([set_id [, sock_pvar]]) - deprecated,
-rtpproxy_start_recording([set_id [, sock_pvar]])
+1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar]])
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
