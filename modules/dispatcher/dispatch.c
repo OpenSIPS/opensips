@@ -307,7 +307,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 	free_proxy(proxy);
 	pkg_free(proxy);
 
-	if (fetch_freeswitch_load && comsock->s && comsock->len > 0) {
+	if (fetch_freeswitch_stats && comsock->s && comsock->len > 0) {
 		dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
 		if (!dp->fs_sock) {
 			LM_ERR("failed to create FreeSWITCH stats socket!\n");

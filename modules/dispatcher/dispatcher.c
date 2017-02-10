@@ -163,7 +163,7 @@ ds_partition_t *partitions = NULL, *default_partition = NULL;
 static str dispatcher_event = str_init("E_DISPATCHER_STATUS");
 event_id_t dispatch_evi_id;
 
-int fetch_freeswitch_load;
+int fetch_freeswitch_stats;
 
 /** module functions */
 static int mod_init(void);
@@ -275,7 +275,7 @@ static param_export_t params[]={
 	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
-	{"fetch_freeswitch_load", INT_PARAM, &fetch_freeswitch_load},
+	{"fetch_freeswitch_stats", INT_PARAM, &fetch_freeswitch_stats},
 	{0,0,0}
 };
 
@@ -309,7 +309,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "ds_ping_interval",      get_deps_ds_ping_interval },
-		{ "fetch_freeswitch_load", get_deps_fetch_fs_load },
+		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
 		{ NULL, NULL },
 	},
 };
@@ -745,7 +745,7 @@ static int mod_init(void)
 	ds_dest_weight_col.len = strlen(ds_dest_weight_col.s);
 	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
 
-	if (fetch_freeswitch_load) {
+	if (fetch_freeswitch_stats) {
 		if (load_fs_api(&fs_api) == -1) {
 			LM_ERR("failed to load the FS API!\n");
 			return -1;
@@ -878,7 +878,7 @@ static int mod_init(void)
 		}
 
 		/* Register the weight-recalculation timer */
-		if (fetch_freeswitch_load &&
+		if (fetch_freeswitch_stats &&
 		    register_timer("ds-update-weights", ds_update_weights, NULL,
 		                   FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
 			LM_ERR("failed to register timer for weight recalc!\n");
