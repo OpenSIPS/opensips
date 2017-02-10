@@ -32,6 +32,8 @@ Bogdan-Andrei Iancu
               1.5.5. probing_from (string)
               1.5.6. probing_reply_codes (string)
               1.5.7. lb_define_blacklist (string)
+              1.5.8. fetch_freeswitch_stats (integer)
+              1.5.9. initial_freeswitch_load (integer)
 
         1.6. Exported Functions
 
@@ -72,14 +74,16 @@ Bogdan-Andrei Iancu
    1.5. Set probing_from parameter
    1.6. Set probing_reply_codes parameter
    1.7. Set the lb_define_blacklist parameter
-   1.8. lb_start usage
-   1.9. lb_next() usage
-   1.10. lb_next() usage
-   1.11. lb_disable_dst() usage
-   1.12. lb_is_destination usage
-   1.13. lb_count_call usage
-   1.14. lb_list usage
-   1.15. lb_status usage
+   1.8. Set the fetch_freeswitch_load parameter
+   1.9. Set the initial_freeswitch_load parameter
+   1.10. lb_start usage
+   1.11. lb_next() usage
+   1.12. lb_next() usage
+   1.13. lb_disable_dst() usage
+   1.14. lb_is_destination usage
+   1.15. lb_count_call usage
+   1.16. lb_list usage
+   1.17. lb_status usage
 
 Chapter 1. Admin Guide
 
@@ -247,6 +251,47 @@ modparam("load_balancer", "lb_define_blacklist", "list= 1,4,3")
 modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 ...
 
+1.5.8. fetch_freeswitch_stats (integer)
+
+   If set, the maximum value of a resource may also consist of
+   FreeSWITCH Event Socket Layer URLs, e.g.
+   "channels=fs://freeswitch.example.com" or
+   "channels=fs://127.0.0.1:8021". The default ESL port is 8021.
+
+   OpenSIPS will establish a connection with the given socket and
+   periodically update the internal maximum value of the given
+   resource using statistics pushed by the FreeSWITCH box.
+
+   The max value of a resource is updated every 20 seconds, as the
+   stats arrive from FreeSWITCH. The update formula is shown below
+   (FreeSWITCH stats are highlighted in bold):
+
+   max_load = (Idle-CPU / 100) * (Max-Sessions - (profile_count -
+   Sessions))
+
+   Default value is “0” (disabled).
+
+   Example 1.8. Set the fetch_freeswitch_load parameter
+...
+modparam("load_balancer", "fetch_freeswitch_stats", 1)
+...
+
+1.5.9. initial_freeswitch_load (integer)
+
+   This parameter is only relevant for some seconds after module
+   startup/reload, when no statistics from newly loaded FreeSWITCH
+   ESL sockets have arrived, yet the routing of calls must remain
+   unaffected. Any FreeSWITCH-enabled resource will inherit this
+   value for the entire interval mentioned above (up to 20
+   seconds!).
+
+   Default value is “1000”.
+
+   Example 1.9. Set the initial_freeswitch_load parameter
+...
+modparam("load_balancer", "initial_freeswitch_load", 1000)
+...
+
 1.6. Exported Functions
 
 1.6.1.  lb_start(grp,resources[,flags])
@@ -302,7 +347,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.8. lb_start usage
+   Example 1.10. lb_start usage
 ...
 if (lb_start("1","trascoding;conference")) {
         # dst URI points to the new destination
@@ -334,7 +379,7 @@ if (lb_start("1","trascoding;conference")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.9. lb_next() usage
+   Example 1.11. lb_next() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         /* check next available LB destination */
@@ -369,7 +414,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.10. lb_next() usage
+   Example 1.12. lb_next() usage
 ...
 if (t_check_status("(5[0-9][0-9])")) {
         /* check next available LB destination */
@@ -405,7 +450,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.11. lb_disable_dst() usage
+   Example 1.13. lb_disable_dst() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         lb_disable_dst();
@@ -440,7 +485,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        "active" (not disabled) destinations. If missing, the
        search will consider any kind of destinations.
 
-   Example 1.12. lb_is_destination usage
+   Example 1.14. lb_is_destination usage
 ...
 if (lb_is_destination("$si","$sp") ) {
         # request from a LB destination
@@ -474,7 +519,7 @@ if (lb_is_destination("$si","$sp") ) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.13. lb_count_call usage
+   Example 1.15. lb_count_call usage
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {
@@ -530,7 +575,7 @@ if (lb_is_destination("$si","$sp") ) {
                 :lb_list:_reply_fifo_file_
                 _empty_line_
 
-   Example 1.14. lb_list usage
+   Example 1.16. lb_list usage
 $ ./opensipsctl fifo lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
@@ -556,7 +601,7 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
                 status (optional)
                 _empty_line_
 
-   Example 1.15. lb_status usage
+   Example 1.17. lb_status usage
 $ ./opensipsctl fifo lb_status 2
 enable:: no
 $ ./opensipsctl fifo lb_status 2 1
@@ -586,31 +631,31 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    3.2.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    3.3.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
