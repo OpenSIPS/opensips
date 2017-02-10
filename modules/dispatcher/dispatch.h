@@ -204,6 +204,7 @@ extern int probing_threshhold; /* number of failed requests,
 extern int ds_probing_mode;
 
 extern int fetch_freeswitch_stats;
+extern int max_freeswitch_weight;
 
 int init_ds_db(ds_partition_t *partition);
 int ds_connect_db(ds_partition_t *partition);

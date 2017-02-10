@@ -312,7 +312,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 		if (!dp->fs_sock) {
 			LM_ERR("failed to create FreeSWITCH stats socket!\n");
 		} else {
-			dp->weight = 100;
+			dp->weight = max_freeswitch_weight;
 			sp->redo_weights = 1;
 		}
 	}
@@ -376,7 +376,7 @@ static inline void re_calculate_active_dsts(ds_set_p sp)
 			lock_start_read(dst->fs_sock->hb_data_lk);
 
 			oldw = dst->weight;
-			dst->weight = round(100 *
+			dst->weight = round(max_freeswitch_weight *
 			(1 - dst->fs_sock->hb_data.sess /
 			     (float)dst->fs_sock->hb_data.max_sess) *
 			(dst->fs_sock->hb_data.id_cpu / (float)100));

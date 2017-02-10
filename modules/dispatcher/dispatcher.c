@@ -164,6 +164,7 @@ static str dispatcher_event = str_init("E_DISPATCHER_STATUS");
 event_id_t dispatch_evi_id;
 
 int fetch_freeswitch_stats;
+int max_freeswitch_weight = 100;
 
 /** module functions */
 static int mod_init(void);
@@ -276,6 +277,7 @@ static param_export_t params[]={
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
 	{"fetch_freeswitch_stats", INT_PARAM, &fetch_freeswitch_stats},
+	{"max_freeswitch_weight", INT_PARAM, &max_freeswitch_weight},
 	{0,0,0}
 };
 
