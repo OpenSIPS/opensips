@@ -834,6 +834,53 @@ rtpproxy_start_recording();
 		</programlisting>
 		</example>
 	</section>
+	<section>
+		<title>
+		<function moreinfo="none">rtpproxy_stats(up_pvar, down_pvar, sent_pvar, fail_pvar [, set_id [, sock_pvar]])</function>
+		</title>
+		<para>
+		This command gathers call RTP statistics from RTP-Proxy.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>up_pvar</emphasis> - the pseudo-variable used to return the
+					packets sent by <emphasis>upstream</emphasis> for this call.
+			</para></listitem>
+					<emphasis>down_pvar</emphasis> - the pseudo-variable used to return the
+					packets sent by <emphasis>downstream</emphasis> for this call.
+			<listitem><para>
+			</para></listitem>
+					<emphasis>sent_pvar</emphasis> - the pseudo-variable used to return the
+					total number of packets sent for this call.
+			<listitem><para>
+			</para></listitem>
+					<emphasis>up_pvar</emphasis> - the pseudo-variable used to return the
+					number of failed packets for this call.
+			<listitem><para>
+			</para></listitem>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>rtpproxy_stats</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpproxy_stats("$var(up)","$var(down)","$var(sent)","$var(fail)");
+xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent) fail=$var(fail)\n");
+...
+		</programlisting>
+		</example>
+	</section>
 	</section>
 
 

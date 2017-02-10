@@ -231,6 +231,8 @@
 #define	ABR_CPROTOVER	"20090810"
 /* Support for rtpproxy commands */
 #define NTF_CPROTOVER	"20081224"
+/* Support for statistics */
+#define STS_CPROTOVER	"20080403"
 
 #define	CPORT		"22222"
 
@@ -264,9 +266,12 @@ static int force_rtp_proxy(struct sip_msg *, char *, char *, char *, char *, int
 static int start_recording_f(struct sip_msg *, char *, char *);
 static int rtpproxy_answer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_offer4_f(struct sip_msg *, char *, char *, char *, char *);
+static int rtpproxy_stats_f(struct sip_msg *, char *, char *, char *, char *,
+		char *, char *);
 
 static int add_rtpproxy_socks(struct rtpp_set * rtpp_list, char * rtpproxy);
 static int fixup_set_id(void ** param);
+static int fixup_stats(void ** param, int param_no);
 static int fixup_stream(void ** param, int param_no);
 static int fixup_offer_answer(void ** param, int param_no);
 static int fixup_two_options(void ** param, int param_no);
@@ -498,6 +503,15 @@ static cmd_export_t cmds[] = {
 	{"rtpproxy_stop_stream2uas",(cmd_function)rtpproxy_stop_stream2uas2_f,2,
 		fixup_two_options, 0,
 		REQUEST_ROUTE | ONREPLY_ROUTE },
+	{"rtpproxy_stats",(cmd_function)rtpproxy_stats_f, 4,
+		fixup_stats, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_stats",(cmd_function)rtpproxy_stats_f, 5,
+		fixup_stats, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_stats",(cmd_function)rtpproxy_stats_f, 6,
+		fixup_stats, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -827,6 +841,17 @@ static int fixup_two_options(void ** param, int param_no)
 		return fixup_pvar(param);
 	LM_ERR("Too many parameters %d\n", param_no);
 	return E_CFG;
+}
+
+static int fixup_stats(void ** param, int param_no)
+{
+	if (param_no < 1 || param_no > 5) {
+		LM_ERR("Too many parameters %d\n", param_no);
+		return E_CFG;
+	}
+	if (param_no == 5)
+		return fixup_set_id(param);
+	return fixup_pvar(param);
 }
 
 static int fixup_offer_answer(void ** param, int param_no)
@@ -2177,6 +2202,12 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 		node->notify_supported = rval;
 	} else {
 		node->notify_supported = 0;
+	}
+	rval = rtpp_checkcap(node, STS_CPROTOVER, sizeof(STS_CPROTOVER) - 1);
+	if (rval != -1) {
+		node->stats_supported = rval;
+	} else {
+		node->stats_supported = 0;
 	}
 	raise_rtpproxy_event(node, 1);
 	return 0;
@@ -4128,5 +4159,147 @@ error:
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( nh_lock );
+	return -1;
+}
+
+
+static char *rtpproxy_stats_pop_int(struct sip_msg *msg, char *p,
+		pv_spec_p spec, const char *varname)
+{
+	pv_value_t val;
+	/* skip spaces */
+	for (; *p != '\0' && *p == ' '; p++);
+	val.rs.s = p;
+	for (; *p >= '0' && *p <= '9'; p++);
+	if (p == val.rs.s || (*p != ' ' && *p != '\n' && *p != '\0')) {
+		LM_ERR("invalid format: cannot find %s packets [%s]\n", varname,
+				val.rs.s);
+		return NULL;
+	}
+	val.rs.len = p - val.rs.s;
+	LM_DBG("%s = %.*s\n", varname, val.rs.len, val.rs.s);
+	if (spec) {
+		val.flags = PV_VAL_STR|PV_TYPE_INT|PV_VAL_INT;
+		if (str2int(&val.rs, (unsigned int *)&val.ri) == 0) {
+			if (pv_set_value(msg, (pv_spec_p)spec, (int)EQ_T, &val) < 0)
+				LM_ERR("cannot store %s packets\n", varname);
+		} else {
+			LM_ERR("invalid %s packets %.*s\n", varname, val.rs.len, val.rs.s);
+		}
+	}
+	return p;
+}
+
+static inline int rtpproxy_stats_f(struct sip_msg *msg, char *pup, char *pdown,
+		char *psent, char *pfail, char *pset, char *pvar)
+{
+	int nitems;
+	str callid = {0, 0};
+	str from_tag = {0, 0};
+	str to_tag = {0, 0};
+	struct rtpp_node *node;
+	struct rtpp_set *set;
+	struct iovec v[1 + 4 + 4] = {{NULL, 0}, {"Q", 1}, {" ", 1}, {NULL, 0},
+		{" ", 1}, {NULL, 0}, {";1 ", 3}, {NULL, 0}, {";1", 2}};
+	char *ret, *p;
+	int error;
+
+	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
+		LM_ERR("can't get Call-Id field\n");
+		return -1;
+	}
+
+	if (get_to_tag(msg, &to_tag) == -1) {
+		LM_ERR("can't get To tag\n");
+		return -1;
+	}
+
+	if (get_from_tag(msg, &from_tag) == -1 || from_tag.len == 0) {
+		LM_ERR("can't get From tag\n");
+		return -1;
+	}
+
+	STR2IOVEC(callid, v[3]);
+	STR2IOVEC(from_tag, v[5]);
+	STR2IOVEC(to_tag, v[7]);
+	nitems = 9;
+	if (msg->first_line.type == SIP_REPLY) {
+		if (to_tag.len == 0)
+			return -1;
+		STR2IOVEC(to_tag, v[5]);
+		STR2IOVEC(from_tag, v[7]);
+	} else {
+		STR2IOVEC(from_tag, v[5]);
+		STR2IOVEC(to_tag, v[7]);
+		if (to_tag.len <= 0)
+			nitems = 6;
+	}
+
+	set = get_rtpp_set(msg, (nh_set_param_t *)pset);
+	if (!set) {
+		LM_ERR("could not find rtpproxy set\n");
+		return 0;
+	}
+
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
+
+	node = select_rtpp_node(msg, callid, set, (pv_spec_p)pvar, 1);
+	if (!node) {
+		LM_ERR("no available proxies\n");
+		goto error;
+	}
+	if (!node->stats_supported) {
+		LM_ERR("RTPProxy does not support statistics query!\n");
+		goto error;
+	}
+
+	ret = send_rtpp_command(node, v, nitems);
+
+	if(nh_lock)
+	{
+		/* we are done reading -> unref the data */
+		lock_stop_read( nh_lock );
+	}
+	error = rtpp_get_error(ret);
+	switch (error) {
+		case 0:
+			/* success! */
+			break;
+		case 8:
+			LM_ERR("RTPProxy cannot find session!\n");
+			return -8;
+		default:
+			LM_ERR("RTPProxy error not handled!\n");
+			return -error;
+	}
+
+	/* all good! parse the command */
+	for (p = ret; *p != '\0' && *p != ' '; p++);
+	if (*p != ' ') {
+		LM_ERR("invalid format for return %s. Cannot find ttl\n", ret);
+		return -2;
+	}
+	LM_DBG("ttl=%.*s\n", (int)(p - ret), ret);
+
+	/* upstream */
+	if (!(p = rtpproxy_stats_pop_int(msg, p+1, (pv_spec_p)pup, "upstream")))
+		return -2;
+	if (!(p = rtpproxy_stats_pop_int(msg, p+1, (pv_spec_p)pdown, "downstream")))
+		return -2;
+	if (!(p = rtpproxy_stats_pop_int(msg, p+1, (pv_spec_p)psent, "sent")))
+		return -2;
+	if (!(p = rtpproxy_stats_pop_int(msg, p+1, (pv_spec_p)pfail, "failed")))
+		return -2;
+	return 1;
+
+error:
+	if(!nh_lock)
+		return -1;
+
+	/* we are done reading -> unref the data */
+	lock_stop_read( nh_lock );
+
 	return -1;
 }

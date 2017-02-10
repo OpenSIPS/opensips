@@ -46,6 +46,7 @@ struct rtpp_node {
 	int			rn_rep_supported;
 	int			rn_ptl_supported;
 	int			abr_supported;
+	int			stats_supported;
 	int			notify_supported;
 	struct rtpp_node	*rn_next;
 };
