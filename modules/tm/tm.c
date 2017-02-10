@@ -85,6 +85,8 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 /* TODO: remove in future versions (deprecated parameters) */
 int __set_fr_timer(modparam_t type, void* val);
@@ -301,18 +303,23 @@ static stat_export_t mod_stats[] = {
  * pseudo-variables exported by TM module
  */
 static pv_export_t mod_items[] = {
-	{ {"T_branch_idx", sizeof("T_branch_idx")-1}, 900, pv_get_tm_branch_idx, 0,
-		 0, 0, 0, 0 },
-	{ {"T_reply_code", sizeof("T_reply_code")-1}, 901, pv_get_tm_reply_code, 0,
-		 0, 0, 0, 0 },
-	{ {"T_ruri",       sizeof("T_ruri")-1},       902, pv_get_tm_ruri,       0,
-		 0, 0, 0, 0 },
-	{ {"bavp",         sizeof("bavp")-1},         903, pv_get_tm_branch_avp,
-		pv_set_tm_branch_avp, pv_parse_avp_name, pv_parse_index, 0, 0 },
-	{ {"T_fr_timeout", sizeof("T_fr_timeout")-1}, 904, pv_get_tm_fr_timeout,
-		pv_set_tm_fr_timeout, 0, 0, 0, 0 },
+	{ {"T_branch_idx", sizeof("T_branch_idx")-1}, 900,
+		pv_get_tm_branch_idx, NULL, NULL, NULL, NULL, 0 },
+	{ {"T_reply_code", sizeof("T_reply_code")-1}, 901,
+		pv_get_tm_reply_code, NULL, NULL, NULL, NULL, 0 },
+	{ {"T_ruri",       sizeof("T_ruri")-1},       902,
+		pv_get_tm_ruri,       NULL, NULL, NULL, NULL, 0 },
+	{ {"bavp",         sizeof("bavp")-1},         903,
+		pv_get_tm_branch_avp, pv_set_tm_branch_avp,
+		pv_parse_avp_name, pv_parse_index, NULL, 0 },
+	{ {"T_fr_timeout", sizeof("T_fr_timeout")-1}, 904,
+		pv_get_tm_fr_timeout, pv_set_tm_fr_timeout,
+		NULL, NULL, NULL, 0 },
 	{ {"T_fr_inv_timeout", sizeof("T_fr_inv_timeout")-1}, 905,
-		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout, 0, 0, 0, 0 },
+		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout,
+		NULL, NULL, NULL, 0 },
+	{ {"T_id",         sizeof("T_id")-1},         906,
+		pv_get_t_id, NULL, NULL, NULL, NULL, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -2024,3 +2031,41 @@ int __set_fr_inv_timer(modparam_t type, void* val)
 
 	return 1;
 }
+
+
+static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+#define INTasHEXA_SIZE (sizeof(int)*2)
+	struct cell *t;
+	char buf[INTasHEXA_SIZE+1+INTasHEXA_SIZE];
+	char *p;
+	int size;
+
+	if (!msg || !res)
+		return -1;
+
+	t = get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		res->flags = PV_VAL_NULL;
+		return 0;
+	}
+
+	p = buf;
+	size = INTasHEXA_SIZE+1+INTasHEXA_SIZE;
+	/* right the label at the end */
+	int2reverse_hex( &p, &size, t->label );
+	*(p++) = '.';
+	size--;
+	/* right the hash */
+	int2reverse_hex( &p, &size, t->hash_index );
+
+	res->flags = PV_VAL_STR;
+	res->rs.s = buf;
+	res->rs.len = p-buf;
+
+	return 0;
+
+}
+
