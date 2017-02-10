@@ -82,7 +82,6 @@ typedef struct _ds_dest
 	str attrs;
 	str description;
 	int flags;
-	unsigned short in_weight; /* initial weight - must not change at runtime */
 	unsigned short weight;    /* dynamic weight - may change at runtime */
 	unsigned short rr_count; /* times it was chosen in a row for weighted round-robin */
 	unsigned short running_weight;
