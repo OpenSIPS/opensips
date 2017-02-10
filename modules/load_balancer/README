@@ -253,7 +253,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 
 1.5.8. fetch_freeswitch_stats (integer)
 
-   If set, the maximum value of a resource may also consist of
+   If enabled, the maximum value of a resource may also consist of
    FreeSWITCH Event Socket Layer URLs, e.g.
    "channels=fs://freeswitch.example.com" or
    "channels=fs://127.0.0.1:8021". The default ESL port is 8021.

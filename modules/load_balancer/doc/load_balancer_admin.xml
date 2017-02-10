@@ -282,7 +282,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 	<section>
 		<title><varname>fetch_freeswitch_stats</varname> (integer)</title>
 		<para>
-		If set, the maximum value of a resource may also consist of
+		If enabled, the maximum value of a resource may also consist of
 		FreeSWITCH Event Socket Layer URLs, e.g. <emphasis>"channels=fs://freeswitch.example.com"</emphasis>
 		or <emphasis>"channels=fs://127.0.0.1:8021"</emphasis>. The default ESL port is 8021.
 		</para>
