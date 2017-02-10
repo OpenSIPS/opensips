@@ -800,7 +800,7 @@ rtpproxy_unforce();
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar]])</function>
+		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar [, flags]]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
@@ -814,6 +814,13 @@ rtpproxy_unforce();
 			<listitem><para>
 			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
 			socket chosen for this call.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>flags(optional)</emphasis> - a list of flags passed to
+					RTPProxy for the recording. Currently only <emphasis>s</emphasis>
+					is supported, and it indicates that RTPProxy should record both
+					audio legs in a single file. Note that this feature is available
+					starting with RTPProxy 2.0.
 			</para></listitem>
 		</itemizedlist>
 		<para>

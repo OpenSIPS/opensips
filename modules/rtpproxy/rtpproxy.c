@@ -263,7 +263,7 @@ static int unforce_rtp_proxy_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy4_f(struct sip_msg *, char *, char *, char *, char *);
 static int fixup_engage(void **param,int param_no);
 static int force_rtp_proxy(struct sip_msg *, char *, char *, char *, char *, int);
-static int start_recording_f(struct sip_msg *, char *, char *);
+static int start_recording_f(struct sip_msg *, char *, char *, char *);
 static int rtpproxy_answer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_offer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_stats_f(struct sip_msg *, char *, char *, char *, char *,
@@ -275,6 +275,7 @@ static int fixup_stats(void ** param, int param_no);
 static int fixup_stream(void ** param, int param_no);
 static int fixup_offer_answer(void ** param, int param_no);
 static int fixup_two_options(void ** param, int param_no);
+static int fixup_recording(void ** param, int param_no);
 static struct rtpp_set * select_rtpp_set(int id_set);
 
 static int rtpproxy_set_store(modparam_t type, void * val);
@@ -396,10 +397,13 @@ static cmd_export_t cmds[] = {
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_start_recording", (cmd_function)start_recording_f,      1,
-		fixup_two_options, 0,
+		fixup_recording, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_start_recording", (cmd_function)start_recording_f,      2,
-		fixup_two_options, 0,
+		fixup_recording, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"rtpproxy_start_recording", (cmd_function)start_recording_f,      3,
+		fixup_recording, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_offer",        (cmd_function)rtpproxy_offer4_f,      0,
 		0, 0,
@@ -791,6 +795,13 @@ static int fixup_stats(void ** param, int param_no)
 	if (param_no == 5)
 		return fixup_set_id(param);
 	return fixup_pvar(param);
+}
+
+static int fixup_recording(void ** param, int param_no)
+{
+	if (param_no == 3)
+		return fixup_spve(param);
+	return fixup_two_options(param, param_no);
 }
 
 static int fixup_offer_answer(void ** param, int param_no)
@@ -4015,7 +4026,7 @@ error:
 
 
 
-static int start_recording_f(struct sip_msg* msg, char *setid, char *var)
+static int start_recording_f(struct sip_msg* msg, char *setid, char *var, char *flags)
 {
 	int nitems;
 	str callid = {0, 0};
@@ -4023,7 +4034,8 @@ static int start_recording_f(struct sip_msg* msg, char *setid, char *var)
 	str to_tag = {0, 0};
 	struct rtpp_node *node;
 	struct rtpp_set *set;
-	struct iovec v[1 + 4 + 3] = {{NULL, 0}, {"R", 1}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}};
+	str val;
+	struct iovec v[1 + 5 + 3] = {{NULL, 0}, {"R", 1}, {"", 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}};
 	                             /* 1 */   /* 2 */   /* 3 */    /* 4 */   /* 5 */    /* 6 */   /* 1 */
 
 	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
@@ -4040,21 +4052,28 @@ static int start_recording_f(struct sip_msg* msg, char *setid, char *var)
 		LM_ERR("can't get From tag\n");
 		return -1;
 	}
+	if (flags) {
+		if (fixup_get_svalue(msg, (gparam_p)flags, &val) < 0) {
+			LM_ERR("cannot get extra flags!\n");
+			return -1;
+		}
+		STR2IOVEC(val, v[2]);
+	}
 
-	STR2IOVEC(callid, v[3]);
-	STR2IOVEC(from_tag, v[5]);
-	STR2IOVEC(to_tag, v[7]);
-	nitems = 8;
+	STR2IOVEC(callid, v[4]);
+	STR2IOVEC(from_tag, v[6]);
+	STR2IOVEC(to_tag, v[8]);
+	nitems = 9;
 	if (msg->first_line.type == SIP_REPLY) {
 		if (to_tag.len == 0)
 			return -1;
-		STR2IOVEC(to_tag, v[5]);
-		STR2IOVEC(from_tag, v[7]);
+		STR2IOVEC(to_tag, v[6]);
+		STR2IOVEC(from_tag, v[8]);
 	} else {
-		STR2IOVEC(from_tag, v[5]);
-		STR2IOVEC(to_tag, v[7]);
+		STR2IOVEC(from_tag, v[6]);
+		STR2IOVEC(to_tag, v[8]);
 		if (to_tag.len <= 0)
-			nitems = 6;
+			nitems = 7;
 	}
 
 	set = get_rtpp_set(msg, (nh_set_param_t *)setid);
@@ -4072,6 +4091,7 @@ static int start_recording_f(struct sip_msg* msg, char *setid, char *var)
 		LM_ERR("no available proxies\n");
 		goto error;
 	}
+	/* check if we support flags */
 
 	send_rtpp_command(node, v, nitems);
 

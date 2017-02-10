@@ -39,6 +39,13 @@
 			<email>bogdan@opensips.org</email>
 		</address>
 		</editor>
+		<editor>
+		<firstname>Razvan</firstname>
+		<surname>Crainea</surname>
+		<address>
+			<email>razvan@opensips.org</email>
+		</address>
+		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2003-2008</year>
@@ -48,12 +55,6 @@
 		<year>2005</year>
 		<holder>&voicesystem;</holder>
 	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	

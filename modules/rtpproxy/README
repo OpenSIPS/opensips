@@ -10,11 +10,11 @@ Maxim Sobolev
 
 Bogdan-Andrei Iancu
 
+Razvan Crainea
+
    Copyright © 2003-2008 Sippy Software, Inc.
 
    Copyright © 2005 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -66,8 +66,8 @@ Bogdan-Andrei Iancu
                       rtpproxy_stop_stream2uas([set_id [,
                       sock_pvar]])
 
-              1.6.7. rtpproxy_start_recording([set_id [,
-                      sock_pvar]])
+              1.6.7. rtpproxy_start_recording([set_id [, sock_pvar
+                      [, flags]]])
 
               1.6.8. rtpproxy_stats(up_pvar, down_pvar, sent_pvar,
                       fail_pvar [, set_id [, sock_pvar]])
@@ -633,7 +633,7 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
 
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
-1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar]])
+1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar [, flags]]])
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
@@ -642,6 +642,11 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
      * set_id(optional) - the set used for this call.
      * sock_pvar(optional) - pvar used to store the RTPProxy
        socket chosen for this call.
+     * flags(optional) - a list of flags passed to RTPProxy for
+       the recording. Currently only s is supported, and it
+       indicates that RTPProxy should record both audio legs in a
+       single file. Note that this feature is available starting
+       with RTPProxy 2.0.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
