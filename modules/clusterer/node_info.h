@@ -112,8 +112,6 @@ int update_db_current(void);
 cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table);
 void free_info(cluster_info_t *cl_list);
 
-inline cluster_info_t *get_cluster_by_id(int cluster_id);
-inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id);
 node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals);
 
 int cl_get_my_id(void);
@@ -121,6 +119,28 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);
 clusterer_node_t *api_get_next_hop(int cluster_id, int node_id);
 void api_free_next_hop(clusterer_node_t *next_hop);
+
+static inline cluster_info_t *get_cluster_by_id(int cluster_id)
+{
+	cluster_info_t *cl = NULL;
+
+	for (cl = *cluster_list; cl; cl = cl->next)
+		if (cl->cluster_id == cluster_id)
+			break;
+
+	return cl;
+}
+
+static inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id)
+{
+	node_info_t *node = NULL;
+
+	for (node = cluster->node_list; node; node = node->next)
+		if (node->node_id == node_id)
+			break;
+
+	return node;
+}
 
 #endif /* CL_NODE_INFO_H */
 

@@ -717,25 +717,3 @@ int cl_get_my_id(void)
 	return current_id;
 }
 
-inline cluster_info_t *get_cluster_by_id(int cluster_id)
-{
-	cluster_info_t *cl = NULL;
-
-	for (cl = *cluster_list; cl; cl = cl->next)
-		if (cl->cluster_id == cluster_id)
-			break;
-
-	return cl;
-}
-
-inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id)
-{
-	node_info_t *node = NULL;
-
-	for (node = cluster->node_list; node; node = node->next)
-		if (node->node_id == node_id)
-			break;
-
-	return node;
-}
-
