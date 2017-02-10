@@ -40,8 +40,8 @@
 /* dialog stuff */
 extern struct dlg_binds lb_dlg_binds;
 
-extern int fetch_freeswitch_load;
-extern int startup_fs_load;
+extern int fetch_freeswitch_stats;
+extern int initial_fs_load;
 extern struct fs_binds fs_api;
 
 
@@ -296,9 +296,9 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 		}
 		/* set the pointer and the max load */
 		dst->rmap[i].resource = res;
-		if (fetch_freeswitch_load && r->fs_url.s) {
+		if (fetch_freeswitch_stats && r->fs_url.s) {
 			fs_url = r->fs_url;
-			dst->rmap[i].max_load = startup_fs_load;
+			dst->rmap[i].max_load = initial_fs_load;
 			dst->rmap[i].fs_enabled = 1;
 		} else {
 			dst->rmap[i].max_load = r->val;
@@ -333,7 +333,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	free_proxy(proxy);
 	pkg_free(proxy);
 
-	if (fetch_freeswitch_load && fs_url.s && fs_url.len > 0) {
+	if (fetch_freeswitch_stats && fs_url.s && fs_url.len > 0) {
 		dst->fs_sock = fs_api.add_hb_evs(&fs_url, &lb_str, NULL, NULL);
 		if (!dst->fs_sock) {
 			LM_ERR("failed to create FreeSWITCH stats socket!\n");

@@ -69,8 +69,8 @@ str lb_probe_from = str_init("sip:prober@localhost");
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
-int fetch_freeswitch_load;
-int startup_fs_load = 100;
+int fetch_freeswitch_stats;
+int initial_fs_load = 1000;
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -164,8 +164,8 @@ static param_export_t mod_params[]={
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
 	{ "lb_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_lb_bl},
-	{ "fetch_freeswitch_load", INT_PARAM, &fetch_freeswitch_load},
-	{ "startup_freeswitch_load", INT_PARAM, &startup_fs_load},
+	{ "fetch_freeswitch_stats", INT_PARAM, &fetch_freeswitch_stats},
+	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load},
 	{ 0,0,0 }
 };
 
@@ -202,7 +202,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "probing_interval",      get_deps_probing_interval },
-		{ "fetch_freeswitch_load", get_deps_fetch_fs_load },
+		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
 		{ NULL, NULL },
 	},
 };
@@ -410,7 +410,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (fetch_freeswitch_load) {
+	if (fetch_freeswitch_stats) {
 		if (load_fs_api(&fs_api) == -1) {
 			LM_ERR("failed to load the FS API!\n");
 			return -1;
@@ -473,7 +473,7 @@ static int mod_init(void)
 		}
 
 		/* Register the max load recalculation timer */
-		if (fetch_freeswitch_load &&
+		if (fetch_freeswitch_stats &&
 		    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
 		                   FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
 			LM_ERR("failed to register timer for max load recalc!\n");
