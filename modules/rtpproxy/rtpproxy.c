@@ -229,6 +229,8 @@
 #define	PTL_CPROTOVER	"20081102"
 /* Support for auto-bridging */
 #define	ABR_CPROTOVER	"20090810"
+/* Support for rtpproxy commands */
+#define NTF_CPROTOVER	"20081224"
 
 #define	CPORT		"22222"
 
@@ -2170,6 +2172,12 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 	} else {
 		node->abr_supported = 0;
 	}
+	rval = rtpp_checkcap(node, NTF_CPROTOVER, sizeof(NTF_CPROTOVER) - 1);
+	if (rval != -1) {
+		node->notify_supported = rval;
+	} else {
+		node->notify_supported = 0;
+	}
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -3852,7 +3860,8 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 				} else {
 					v[3].iov_len = 0;
 				}
-				if(enable_notification && opts.s.s[0] == 'U')
+				if(enable_notification && opts.s.s[0] == 'U' &&
+						args->node->notify_supported)
 					vcnt = 22;
 				else
 				{
