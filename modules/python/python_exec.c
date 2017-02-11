@@ -103,7 +103,7 @@ python_exec2(struct sip_msg *_msg, char *method_name, char *mystr)
     Py_DECREF(pFunc);
     if (PyErr_Occurred()) {
         Py_XDECREF(pResult);
-        python_handle_exception("python_exec2");
+        python_handle_exception("python_exec2", method_name);
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
         return -1;

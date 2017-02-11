@@ -27,7 +27,7 @@
 #include <stdio.h>
 
 void
-python_handle_exception(const char *fname)
+python_handle_exception(const char *fname, const char *farg)
 {
     PyObject *pResult;
     const char *msg;
@@ -35,7 +35,12 @@ python_handle_exception(const char *fname)
     PyObject *line;
     int i;
 
-    LM_ERR("%s: Unhandled exception in the Python code:\n", fname);
+    if (farg == NULL) {
+        LM_ERR("%s: Unhandled exception in the Python code:\n", fname);
+    } else {
+        LM_ERR("%s(\"%s\"): Unhandled exception in the Python code:\n",
+            fname, farg);
+    }
     PyErr_Fetch(&exception, &v, &tb);
     PyErr_Clear();
     if (exception == NULL) {
