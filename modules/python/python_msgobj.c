@@ -269,7 +269,8 @@ msg_call_function(msgobject *self, PyObject *args)
 
     rval = do_action(act, self->msg);
 
-    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data)) {
+    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data) &&
+      (act->elem[2].u.data != arg2)) {
        pkg_free(act->elem[2].u.data);
     }
 
