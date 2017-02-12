@@ -788,12 +788,12 @@ static int fixup_two_options(void ** param, int param_no)
 
 static int fixup_stats(void ** param, int param_no)
 {
-	if (param_no < 1 || param_no > 5) {
+	if (param_no < 1 || param_no > 6) {
 		LM_ERR("Too many parameters %d\n", param_no);
 		return E_CFG;
 	}
-	if (param_no == 5)
-		return fixup_set_id(param);
+	if (param_no > 4)
+		return fixup_two_options(param, param_no + 4);
 	return fixup_pvar(param);
 }
 
