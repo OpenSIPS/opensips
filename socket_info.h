@@ -45,6 +45,11 @@
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,
 							unsigned short children, enum si_flags flags);
+
+int add_interfaces(char* if_name, int family, unsigned short port,
+			unsigned short proto, unsigned short children,
+			struct socket_info** list);
+
 struct socket_info *
 new_sock_info(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,

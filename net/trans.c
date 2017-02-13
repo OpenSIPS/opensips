@@ -96,12 +96,7 @@ int trans_load(void)
 				return -1;
 			}
 			found_proto = 1;
-			/* check if there is any listener for this protocol */
-			if (!protos[pi.id].listeners) {
-				LM_DBG("No listener defined for proto %s\n", pi.name);
-				continue;
-			}
-
+			
 			/* check if already added */
 			if (protos[id].id != PROTO_NONE) {
 				LM_ERR("Protocol already loaded %s\n", pi.name);
@@ -193,48 +188,17 @@ int fix_all_socket_lists(void)
 	int found = 0;
 	static char buf[PROTO_NAME_MAX_SIZE /* currently we shouldn't hardcode that much */];
 	char *p;
-#if 0
-	/* TODO: decide what to do with this */
-	struct utsname myname;
-
-	if ((udp_listen==0)
-			&& (tcp_listen==0)
-			&& (tls_listen==0)
-			&& (sctp_listen==0)
-		){
-		/* get all listening ipv4 interfaces */
-		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
-			/* if ok, try to add the others too */
-			if (!tcp_disable){
-				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, &tcp_listen)!=0)
-					goto error;
-				if (!tls_disable){
-					if (add_interfaces(0, AF_INET, 0, PROTO_TLS,
-								&tls_listen)!=0)
-					goto error;
-				}
-			}
-			if (!sctp_disable){
-				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
-					goto error;
-			}
-		}else{
-			/* if error fall back to get hostname */
-			/* get our address, only the first one */
-			if (uname (&myname) <0){
-				LM_ERR("cannot determine hostname, try -l address\n");
-				goto error;
-			}
-			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0, 0)!=0){
-				LM_ERR("add_listen_iface failed \n");
-				goto error;
-			}
-		}
-	}
-#endif
 
 	for (i = PROTO_FIRST; i < PROTO_LAST; i++) {
 		if (protos[i].id != PROTO_NONE) {
+			if (!protos[i].listeners) {
+				LM_INFO("adding all interfaces as '%s' proto listeners\n", protos[i].name);
+				if (add_interfaces(0, AF_INET, 0, protos[i].id, 0, &protos[i].listeners) != 0) {
+					LM_ERR("failed to add interfaces for '%s' proto\n", protos[i].name);
+					goto error;
+				}
+			}
+
 			if (fix_socket_list(&protos[i].listeners)!=0) {
 				LM_ERR("fix_socket_list for %d failed\n", protos[i].id);
 				goto error;
