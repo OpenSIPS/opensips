@@ -63,7 +63,6 @@
 #define DS_SET_ID_COL		"setid"
 #define DS_DEST_URI_COL		"destination"
 #define DS_DEST_SOCK_COL	"socket"
-#define DS_DEST_COMSOCK_COL	"comm_socket"
 #define DS_DEST_STATE_COL	"state"
 #define DS_DEST_WEIGHT_COL	"weight"
 #define DS_DEST_PRIO_COL	"priority"
@@ -141,7 +140,6 @@ typedef struct {
 str ds_set_id_col     = str_init(DS_SET_ID_COL);
 str ds_dest_uri_col   = str_init(DS_DEST_URI_COL);
 str ds_dest_sock_col  = str_init(DS_DEST_SOCK_COL);
-str ds_dest_comsock_col  = str_init(DS_DEST_COMSOCK_COL);
 str ds_dest_state_col = str_init(DS_DEST_STATE_COL);
 str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
 str ds_dest_prio_col = str_init(DS_DEST_PRIO_COL);
@@ -251,7 +249,6 @@ static param_export_t params[]={
 	{"setid_col",       STR_PARAM, &ds_set_id_col.s},
 	{"destination_col", STR_PARAM, &ds_dest_uri_col.s},
 	{"socket_col",      STR_PARAM, &ds_dest_sock_col.s},
-	{"comm_socket_col",      STR_PARAM, &ds_dest_comsock_col.s},
 	{"state_col",       STR_PARAM, &ds_dest_state_col.s},
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
@@ -742,7 +739,6 @@ static int mod_init(void)
 	ds_set_id_col.len = strlen(ds_set_id_col.s);
 	ds_dest_uri_col.len = strlen(ds_dest_uri_col.s);
 	ds_dest_sock_col.len = strlen(ds_dest_sock_col.s);
-	ds_dest_comsock_col.len = strlen(ds_dest_comsock_col.s);
 	ds_dest_state_col.len = strlen(ds_dest_state_col.s);
 	ds_dest_weight_col.len = strlen(ds_dest_weight_col.s);
 	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);

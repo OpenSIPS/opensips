@@ -54,17 +54,6 @@
     </column>
 
     <column>
-        <name>comm_socket</name>
-        <type>string</type>
-        <size>128</size>
-        <null/>
-        <default><null/></default>
-		<description>Generic communication socket related to the given destination.
-			Typical usages for it include pushing or pulling destination-related data.
-        </description>
-    </column>
-
-    <column>
         <name>state</name>
         <type>int</type>
         <description>The state of the destination (0 enabled, 1 disabled , 2 probing)</description>
@@ -74,8 +63,9 @@
 
     <column id="weight">
         <name>weight</name>
-        <type>int</type>
-        <description>The weight of the destination</description>
+        <type>string</type>
+        <size>64</size>
+        <description>The weight of the destination (integer or socket definition) </description>
         <default>1</default>
         <natural/>
     </column>

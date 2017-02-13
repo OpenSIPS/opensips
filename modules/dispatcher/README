@@ -70,9 +70,8 @@ Carsten Bock
               1.3.27. priority_col (string)
               1.3.28. attrs_col (string)
               1.3.29. socket_col (string)
-              1.3.30. comm_socket_col (string)
-              1.3.31. fetch_freeswitch_stats (integer)
-              1.3.32. max_freeswitch_weight (integer)
+              1.3.30. fetch_freeswitch_stats (integer)
+              1.3.31. max_freeswitch_weight (integer)
 
         1.4. Exported Functions
 
@@ -139,13 +138,12 @@ Carsten Bock
    1.28. Set “priority_col” parameter
    1.29. Set “attrs_col” parameter
    1.30. Set “socket_col” parameter
-   1.31. Set “comm_socket_col” parameter
-   1.32. Set the fetch_freeswitch_load parameter
-   1.33. Set the max_freeswitch_weight parameter
-   1.34. ds_select_dst usage
-   1.35. ds_count usage
-   1.36. ds_is_in_list usage
-   1.37. OpenSIPS config script - sample dispatcher usage
+   1.31. Set the fetch_freeswitch_load parameter
+   1.32. Set the max_freeswitch_weight parameter
+   1.33. ds_select_dst usage
+   1.34. ds_count usage
+   1.35. ds_is_in_list usage
+   1.36. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -651,51 +649,38 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 modparam("dispatcher", "socket_col", "my_sock")
 ...
 
-1.3.30. comm_socket_col (string)
-
-   The column's name in the database storing an optional
-   "communication" socket (as string) with the destination uri.
-
-   Default value is “comm_socket”.
-
-   Example 1.31. Set “comm_socket_col” parameter
-...
-modparam("dispatcher", "comm_socket_col", "fs_esl_socket")
-...
-
-1.3.31. fetch_freeswitch_stats (integer)
+1.3.30. fetch_freeswitch_stats (integer)
 
    If enabled, FreeSWITCH destinations may have dynamic
-   dispatching weights, determined at runtime, using the
-   FreeSWITCH Event Socket Layer. For these destinations, the
-   Event Socket Layer URL must be provisioned into the
-   "comm_socket" column. Some example values:
-   "channels=fs://freeswitch.example.com" or
-   "channels=fs://127.0.0.1:8021". The default ESL port is 8021.
+   dispatching weights, refreshed at runtime, using the FreeSWITCH
+   Event Socket Layer. For these destinations, an Event Socket
+   Layer URL must be provisioned into the "weight" column, instead
+   of an integer string. Some example values:
+   "fs://freeswitch.example.com" or "fs://127.0.0.1:8021". The
+   default ESL port is 8021.
 
    OpenSIPS will establish a connection with the given socket and
-   periodically update the weights of these destinations using
-   statistics pushed by the FreeSWITCH box.
+   periodically calculate/update the weights of these destinations
+   using statistics pushed by the FreeSWITCH box.
 
-   Note that the "weight" column value for ESL-enabled
-   destinations will be ignored. The values for the automatically
-   calculated weights range between 0 - 100. This is useful when
-   grouping normal destinations with FreeSWITCH ones.
+   The value for an automatically calculated weight ranges between
+   0 - 100. This is helpful when grouping normal destinations with
+   FreeSWITCH ones.
 
-   The weights are updated every 20 seconds, as the stats arrive
-   from FreeSWITCH. The update formula is shown below (FreeSWITCH
-   stats are highlighted in bold):
+   The dynamic weights are recalculated every 20 seconds, as the
+   stats arrive from FreeSWITCH. The update formula is shown below
+   (FreeSWITCH stats are highlighted in bold):
 
    weight = 100 * (Idle-CPU / 100) * (1 - Sessions / Max-Sessions)
 
    Default value is 0 (disabled).
 
-   Example 1.32. Set the fetch_freeswitch_load parameter
+   Example 1.31. Set the fetch_freeswitch_load parameter
 ...
 modparam("dispatcher", "fetch_freeswitch_stats", 1)
 ...
 
-1.3.32. max_freeswitch_weight (integer)
+1.3.31. max_freeswitch_weight (integer)
 
    The maximum weight of a FreeSWITCH ESL-enabled destination.
    This value is also used during startup/reload, when no stats
@@ -705,11 +690,11 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
    larger max weight values will more accurately represent the
    current load on the FreeSWITCH boxes! For example, if you set
    this parameter to 1, the box will receive no traffic whenever
-   its CPU usage goes past 50%!
+   either its CPU or session usage goes past 50%!
 
-   Default value is 1000.
+   Default value is 100.
 
-   Example 1.33. Set the max_freeswitch_weight parameter
+   Example 1.32. Set the max_freeswitch_weight parameter
 ...
 modparam("dispatcher", "max_freeswitch_weight", 5)
 ...
@@ -784,7 +769,7 @@ modparam("dispatcher", "max_freeswitch_weight", 5)
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.34. ds_select_dst usage
+   Example 1.33. ds_select_dst usage
 ...
 ds_select_dst("1", "0");
 ...
@@ -892,7 +877,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.35. ds_count usage
+   Example 1.34. ds_count usage
 ...
 if (ds_count("1", "a", "$avp(result)")) {
         ...
@@ -930,7 +915,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.36. ds_is_in_list usage
+   Example 1.35. ds_is_in_list usage
 ...
 if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
@@ -1022,7 +1007,7 @@ _empty_line_
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.37. OpenSIPS config script - sample dispatcher usage
+   Example 1.36. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # sample config file for dispatcher module

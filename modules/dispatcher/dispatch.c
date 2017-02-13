@@ -72,6 +72,15 @@
 
 #define DS_TABLE_VERSION	8
 
+/**
+ * in version 8, the "weight" column is given as a string, since it can contain
+ * both integer (the weight) or URL definitions (dynamically calculated weight)
+ *
+ * OpenSIPS retains backwards-compatibility with the former integer column flavor
+ */
+#define supported_ds_version(_ver) \
+	(DS_TABLE_VERSION == 8 ? (_ver == 8 || _ver == 7) : _ver == DS_TABLE_VERSION)
+
 extern ds_partition_t *partitions;
 
 extern struct socket_info *probing_sock;
@@ -657,7 +666,7 @@ int init_ds_db(ds_partition_t *partition)
 	if (_ds_table_version < 0) {
 		LM_ERR("failed to query table version\n");
 		return -1;
-	} else if (_ds_table_version != DS_TABLE_VERSION) {
+	} else if (!supported_ds_version(_ds_table_version)) {
 		LM_ERR("invalid table version (found %d , required %d)\n"
 			"(use opensipsdbctl reinit)\n",
 			_ds_table_version, DS_TABLE_VERSION );
@@ -784,7 +793,7 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 {
 	ds_data_t *d_data;
-	int i, id, nr_rows, cnt, nr_cols = 9;
+	int i, id, nr_rows, cnt, nr_cols = 8;
 	int state;
 	int weight;
 	int prio;
@@ -798,10 +807,9 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	db_val_t * values;
 	db_row_t * rows;
 
-	db_key_t query_cols[9] = {&ds_set_id_col, &ds_dest_uri_col,
+	db_key_t query_cols[8] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
-			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col,
-			&ds_dest_comsock_col};
+			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col};
 
 	if (!use_state_col)
 		nr_cols--;
@@ -875,11 +883,18 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			sock = NULL;
 		}
 
+		memset(&comsock, 0, sizeof comsock);
+
 		/* weight */
-		if (VAL_NULL(values+3))
+		if (VAL_NULL(values+3)) {
 			weight = 1;
-		else
+		} else if (values[3].type == DB_INT) {
 			weight = VAL_INT(values+3);
+		} else {
+			/* dynamic weight, given as a communication socket string */
+			get_str_from_dbval("WEIGHT", values+3,
+			                   0/*not_null*/, 0/*not_empty*/, comsock, error2);
+		}
 
 		/* attrs */
 		get_str_from_dbval( "ATTRIBUTES", values+4,
@@ -897,10 +912,6 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			state = 0;
 		else
 			state = VAL_INT(values+7);
-
-		/* communication socket */
-		get_str_from_dbval( "COMSOCKET", values+8,
-			0/*not_null*/, 0/*not_empty*/, comsock, error2);
 
 		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);

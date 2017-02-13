@@ -4,9 +4,8 @@ CREATE TABLE dispatcher (
     setid INTEGER DEFAULT 0 NOT NULL,
     destination CHAR(192) DEFAULT '' NOT NULL,
     socket CHAR(128) DEFAULT NULL,
-    comm_socket CHAR(128) DEFAULT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
-    weight INTEGER DEFAULT 1 NOT NULL,
+    weight CHAR(64) DEFAULT 1 NOT NULL,
     priority INTEGER DEFAULT 0 NOT NULL,
     attrs CHAR(128) DEFAULT '' NOT NULL,
     description CHAR(64) DEFAULT '' NOT NULL

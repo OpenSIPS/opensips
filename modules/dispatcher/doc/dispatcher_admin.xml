@@ -786,50 +786,29 @@ modparam("dispatcher", "socket_col", "my_sock")
 	</section>
 
 	<section>
-		<title><varname>comm_socket_col</varname> (string)</title>
-		<para>
-		The column's name in the database storing an optional
-		"communication" socket (as string) with the destination uri.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>comm_socket</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <quote>comm_socket_col</quote> parameter</title>
-<programlisting format="linespecific">
-...
-modparam("dispatcher", "comm_socket_col", "fs_esl_socket")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>fetch_freeswitch_stats</varname> (integer)</title>
 		<para>
 		If enabled, FreeSWITCH destinations may have dynamic dispatching weights,
-		determined at runtime, using the FreeSWITCH Event Socket Layer.
-		For these destinations, the Event Socket Layer URL must be provisioned
-		into the "comm_socket" column. Some example values:
-		<emphasis>"channels=fs://freeswitch.example.com"</emphasis>
-		or <emphasis>"channels=fs://127.0.0.1:8021"</emphasis>.
+		refreshed at runtime, using the FreeSWITCH Event Socket Layer.
+		For these destinations, an Event Socket Layer URL must be provisioned
+		into the "weight" column, instead of an integer string. Some example values:
+		<emphasis>"fs://freeswitch.example.com"</emphasis>
+		or <emphasis>"fs://127.0.0.1:8021"</emphasis>.
 		The default ESL port is 8021.
 	</para>
 		<para>
 		OpenSIPS will establish a connection with the given socket and
-		periodically update the weights of these destinations
+		periodically calculate/update the weights of these destinations
 		using statistics pushed by the FreeSWITCH box.
 		</para>
 	<para>
-		Note that the "weight" column value for ESL-enabled destinations
-		<emphasis> will be ignored</emphasis>. The values for the automatically
-		calculated weights range between <emphasis role='bold'>0 - 100</emphasis>.
-		This is useful when grouping normal destinations with FreeSWITCH ones.
+		The value for an automatically calculated weight ranges between
+		<emphasis role='bold'>0 - 100</emphasis>.
+		This is helpful when grouping normal destinations with
+		FreeSWITCH ones.
 		</para>
 		<para>
-		The weights are updated every 20 seconds, as the stats
+		The dynamic weights are recalculated every 20 seconds, as the stats
 		arrive from FreeSWITCH. The update formula is shown below (FreeSWITCH stats
 		are highlighted in bold):
 	</para>
@@ -862,11 +841,12 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 		NOTE: OpenSIPS internally rounds weights to nearest integer, so larger
 		max weight values will more accurately represent the current load on the
 		FreeSWITCH boxes! For example, if you set this parameter to 1, the box
-		will receive no traffic whenever its CPU usage goes past 50%!
+		will receive no traffic whenever either its CPU or session usage goes
+		past 50%!
 		</para>
 		<para>
 		<emphasis>
-			Default value is <emphasis role='bold'>1000</emphasis>.
+			Default value is <emphasis role='bold'>100</emphasis>.
 		</emphasis>
 		</para>
 		<example>
