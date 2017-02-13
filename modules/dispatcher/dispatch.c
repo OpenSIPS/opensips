@@ -316,13 +316,30 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 	free_proxy(proxy);
 	pkg_free(proxy);
 
-	if (fetch_freeswitch_stats && comsock->s && comsock->len > 0) {
-		dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
-		if (!dp->fs_sock) {
-			LM_ERR("failed to create FreeSWITCH stats socket!\n");
-		} else {
+	if (fetch_freeswitch_stats) {
+		if (comsock->s && comsock->len > 0) {
+			dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+			if (!dp->fs_sock) {
+				LM_ERR("failed to create FreeSWITCH stats socket!\n");
+			} else {
+				dp->weight = max_freeswitch_weight;
+				if (sp->redo_weights == 0) {
+					for (dp_it = sp->dlist; dp_it; dp_it = dp_it->next) {
+						if (dp_it->weight > max_freeswitch_weight) {
+							LM_WARN("(set %d) truncating static weight in "
+						     "uri %.*s to 'max_freeswitch_weight'! (%d->%d)\n",
+							 id, uri.len, uri.s, dp_it->weight, max_freeswitch_weight);
+							dp_it->weight = max_freeswitch_weight;
+						}
+					}
+					sp->redo_weights = 1;
+				}
+			}
+		} else if (sp->redo_weights && dp->weight > max_freeswitch_weight) {
+			LM_WARN("(set %d) truncating static weight in uri %.*s to"
+			           "\"max_freeswitch_weight\"! (%d -> %d)\n", id,
+			           uri.len, uri.s, weight, max_freeswitch_weight);
 			dp->weight = max_freeswitch_weight;
-			sp->redo_weights = 1;
 		}
 	}
 
@@ -799,7 +816,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	int prio;
 	struct socket_info *sock;
 	str uri;
-	str attrs, comsock;
+	str attrs, weight_st;
 	str host;
 	str description;
 	int port, proto;
@@ -883,17 +900,20 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			sock = NULL;
 		}
 
-		memset(&comsock, 0, sizeof comsock);
+		weight = 1;
 
 		/* weight */
-		if (VAL_NULL(values+3)) {
-			weight = 1;
-		} else if (values[3].type == DB_INT) {
+		if (values[3].type == DB_INT) {
 			weight = VAL_INT(values+3);
+			memset(&weight_st, 0, sizeof weight_st);
 		} else {
 			/* dynamic weight, given as a communication socket string */
 			get_str_from_dbval("WEIGHT", values+3,
-			                   0/*not_null*/, 0/*not_empty*/, comsock, error2);
+			                   0/*not_null*/, 0/*not_empty*/, weight_st, error2);
+			if (!is_fs_url(&weight_st)) {
+				str2int(&weight_st, (unsigned int *)&weight);
+				memset(&weight_st, 0, sizeof weight_st);
+			}
 		}
 
 		/* attrs */
@@ -916,7 +936,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);
 
-		if (add_dest2list(id, uri, sock, &comsock, state, weight, prio, attrs, description, d_data)
+		if (add_dest2list(id, uri, sock, &weight_st, state, weight, prio, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);

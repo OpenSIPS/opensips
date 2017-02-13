@@ -838,6 +838,12 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 		available yet.
 		</para>
 		<para>
+		Important: When mixing normal destinations with FreeSWITCH-enabled ones in
+		the same dispatching set, OpenSIPS will truncate any weight values that
+		are larger than <emphasis role='bold'>max_freeswitch_weight</emphasis>
+		to the value of this parameter!
+		</para>
+		<para>
 		NOTE: OpenSIPS internally rounds weights to nearest integer, so larger
 		max weight values will more accurately represent the current load on the
 		FreeSWITCH boxes! For example, if you set this parameter to 1, the box
