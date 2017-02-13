@@ -6,15 +6,9 @@ Edited by
 
 Miklos Tirpak
 
-Edited by
-
 Bogdan-Andrei Iancu
 
-Edited by
-
 Juha Heinanen
-
-Edited by
 
 Irina-Maria Stanescu
 
@@ -404,15 +398,16 @@ modparam("permissions", "proto_col", "transport")
 
 1.3.13. pattern_col (string)
 
-   Name of address table column containing regular expression that
-   is matched against the arguments received by check_address or
-   check_source_address.
+   Name of address table column containinga a pattern (a shell
+   wildcard pattern, like the ones used for file name matching)
+   that is matched against the arguments received by check_address
+   or check_source_address.
 
    Default value is “pattern”.
 
    Example 1.13. Set pattern_col parameter
 ...
-modparam("permissions", "pattern_col", "regexp")
+modparam("permissions", "pattern_col", "wildcard_col")
 ...
 
 1.3.14. info_col (string)
@@ -621,9 +616,9 @@ pattern]])
        field from the cached address table will be stored in case
        of match. This argument is optional.
      * pattern
-       This argument is a string to be matched with the regular
-       expression pattern field from the cached address table.
-       This argument is optional.
+       This argument is a string to be matched against the
+       wildcard pattern field from the address table. This
+       argument is optional.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -632,10 +627,10 @@ pattern]])
 
 // Checks if the tuple IP address/port (given as strings) and source pro
 tocol
-// (given as pvar), belongs to group 4, verifies if pattern string "text
-test"
-// matches the regular expression field in the database table and stores
- the
+// (given as pvar), belongs to group 4, verifies if the string "texttest
+"
+// matches the wildcard pattern field in the database table and stores t
+he
 // context information in $avp(ctx)
 if (check_address("4","192.168.2.135","5700","$proto","$avp(ctx)", "text
 test")) {
@@ -669,10 +664,9 @@ if (check_address("4","$avp(ip)","$avp(port)","$avp(proto)","$avp(ctx)))
 
 // Checks if the tuple IP address/port (given as strings) and source pro
 tocol
-// (given as pvar) is in group 4, verifies if pattern string  "texttest"
- matches
-// the regular expression field in the database table, without storing a
-ny
+// (given as pvar) is in group 4, verifies if string the "texttest" matc
+hes
+// the wildcard pattern field in the database table, without storing any
 // context information
 if (check_address("4","$si","5700","$proto","", "texttest")) {
         t_relay();
