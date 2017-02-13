@@ -36,7 +36,7 @@
 
 #include "lb_parser.h"
 
-extern int fetch_freeswitch_load;
+extern int fetch_freeswitch_stats;
 
 struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
 																	str*name)
@@ -62,6 +62,7 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 	char *end;
 	str name;
 	str val;
+	int i, first_fs_res = -1;
 
 	/* validate and count */
 	n = 0;
@@ -165,10 +166,10 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 			for( ; isspace(val.s[val.len-1]) ; val.len--);
 
 			if (str2int(&val, &lb_rl->resources[n].val) != 0) {
-				if (fetch_freeswitch_load && is_fs_url(&val)) {
-					LM_DBG("setting FS URL!\n");
+				if (fetch_freeswitch_stats && is_fs_url(&val)) {
 					lb_rl->resources[n].fs_url = val;
 					lb_rl->resources[n].val = 0;
+					first_fs_res = n;
 				} else {
 					LM_ERR("invalid value [%.*s]\n",val.len,val.s);
 					goto error1;
@@ -181,6 +182,23 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 		n++;
 		p = end+1;
 	} while(end && *p);
+
+	if (first_fs_res >= 0) {
+		for (i = 0; i < n; i++) {
+			if (i != first_fs_res) {
+				LM_WARN("A FreeSWITCH-enabled resource is already present: "
+				        "'%.*s=%.*s'! Ignoring resource '%.*s'!\n",
+				        lb_rl->resources[first_fs_res].name.len,
+				        lb_rl->resources[first_fs_res].name.s,
+				        lb_rl->resources[first_fs_res].fs_url.len,
+				        lb_rl->resources[first_fs_res].fs_url.s,
+				        lb_rl->resources[i].name.len, lb_rl->resources[i].name.s);
+			}
+		}
+
+		lb_rl->resources[0] = lb_rl->resources[first_fs_res];
+		lb_rl->n = 1;
+	}
 
 	return lb_rl;
 

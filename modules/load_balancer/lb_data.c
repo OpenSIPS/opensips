@@ -278,8 +278,9 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	/* add or update resource list */
 	for( i=0 ; i<lb_rl->n ; i++) {
 		r = lb_rl->resources + i;
-		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d\n",
-			uri, data->dst_no+1, r->name.len, r->name.s, r->val);
+		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d, fs=%.*s\n",
+			uri, data->dst_no+1, r->name.len, r->name.s, r->val,
+		    r->fs_url.len, r->fs_url.s);
 		res = get_resource_by_name( data, &r->name);
 		if (res==NULL) {
 			/* add new resource */
