@@ -8,79 +8,79 @@
 ]>
 
 <table id="address" xmlns:db="http://docbook.org/ns/docbook">
-    <name>address</name>
-    <version>5</version>
-    <type db="mysql">&MYSQL_TABLE_TYPE;</type>
-    <description>
-        <db:para>This table is used by the permissions module. More information is available at: &OPENSIPS_MOD_DOC;permissions.html
-        </db:para>
-    </description>
+	<name>address</name>
+	<version>5</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the permissions module. More information is available at: &OPENSIPS_MOD_DOC;permissions.html
+		</db:para>
+	</description>
 
-    <column id="id">
-        <name>id</name>
-        <type>unsigned int</type>
-        <size>&table_id_len;</size>
-        <autoincrement/>
-        <primary/>
-        <type db="dbtext">int,auto</type>
-        <description>unique ID</description>
-    </column>
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>unique ID</description>
+	</column>
 
-    <column>
-        <name>grp</name>
-        <type>unsigned short</type>
-        <size>5</size>
-        <default>0</default>
-        <description>Group</description>
-        <natural/>
-    </column>
+	<column>
+		<name>grp</name>
+		<type>unsigned short</type>
+		<size>5</size>
+		<default>0</default>
+		<description>The group ID - each address may belong to a group/set</description>
+		<natural/>
+	</column>
 
 	<column id="ip">
-        <name>ip</name>
-        <type>string</type>
-        <size>&ip_add_len;</size>
-        <description>IP address</description>
-        <natural/>
-    </column>
+		<name>ip</name>
+		<type>string</type>
+		<size>&ip_add_len;</size>
+		<description>IP address, IPv4 or IPv6 format</description>
+		<natural/>
+	</column>
 
-    <column>
-        <name>mask</name>
-        <type>char</type>
-        <default>32</default>
-        <description>Network mask</description>
-    </column>
+	<column>
+		<name>mask</name>
+		<type>char</type>
+		<default>32</default>
+		<description>Network mask, a number from 0 to 32</description>
+	</column>
 
-    <column>
-        <name>port</name>
-        <type>unsigned short</type>
-        <size>5</size>
-        <default>0</default>
-        <description>Port</description>
-    </column>
+	<column>
+		<name>port</name>
+		<type>unsigned short</type>
+		<size>5</size>
+		<default>0</default>
+		<description>Port number, 0 value meaning 'any' (wildcard)</description>
+	</column>
 
-    <column>
-        <name>proto</name>
-        <type>string</type>
-        <size>4</size>
-        <default>any</default>
-        <description>Transport protocol is either "any" or equal to transport protocol of request. Possible values that can be stored are "any", "udp", "tcp", "tls", and "sctp".</description>
-    </column>
+	<column>
+		<name>proto</name>
+		<type>string</type>
+		<size>4</size>
+		<default>any</default>
+		<description>Transport protocol is either "any" or equal to transport protocol of request. Possible values that can be stored are "any", "udp", "tcp", "tls", and "sctp".</description>
+	</column>
 
-    <column>
-        <name>pattern</name>
-        <type>string</type>
-        <size>&id_len;</size>
-        <default><null/></default>
-        <null/>
-        <description>Regular expression</description>
-    </column>
-
-    <column>
-        <name>context_info</name>
-        <type>string</type>
-        <size>32</size>
+	<column>
+		<name>pattern</name>
+		<type>string</type>
+		<size>&id_len;</size>
 		<default><null/></default>
-        <null/>
-        <description>Extra context information</description>
-    </column>
+		<null/>
+		<description>A shell wildcard pattern to be used for matching string provided by the check address functions.</description>
+	</column>
+
+	<column>
+		<name>context_info</name>
+		<type>string</type>
+		<size>32</size>
+		<default><null/></default>
+		<null/>
+		<description>Extra context information, not used by OpenSIPS, but simply exposed to the script level via scripting variables</description>
+	</column>
 </table>
