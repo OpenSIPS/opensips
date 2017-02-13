@@ -205,7 +205,7 @@ mod_init(void)
 
     if (PyErr_Occurred()) {
         PyErr_Print();
-        python_handle_exception("mod_init");
+        python_handle_exception("mod_init", NULL);
         Py_XDECREF(handler_obj);
         Py_DECREF(format_exc_obj);
         PyEval_ReleaseLock();
@@ -276,7 +276,9 @@ child_init(int rank)
     Py_DECREF(pArgs);
 
     if (PyErr_Occurred()) {
-        python_handle_exception("child_init");
+        char srank[16];
+        snprintf(srank, sizeof(srank), "%d", rank);
+        python_handle_exception("child_init", srank);
         Py_XDECREF(pResult);
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
