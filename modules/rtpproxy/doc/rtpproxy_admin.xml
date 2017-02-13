@@ -882,6 +882,80 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent) fail=$
 		</programlisting>
 		</example>
 	</section>
+	<section>
+		<title>
+		<function moreinfo="none">rtpproxy_all_stats(stats_avp [, set_id [, sock_pvar]])</function>
+		</title>
+		<para>
+			This command gathers all RTP statistics available from RTP-Proxy.
+			All the returned values stored in an AVP that can be further read by
+			indexing the AVP.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>stats_avp</emphasis> - an AVP where the
+					statistics will be stored. This AVP can be further
+					indexed to get a specific statistic.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<para>
+			Each statistic is stored at a specific index as it follows:
+			<itemizedlist>
+				<listitem><para><emphasis>ttl</emphasis> -
+						<emphasis>$avp(ret)</emphasis> /
+						<emphasis>$(avp(ret)[0])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>pkts_ia</emphasis> -
+						<emphasis>$(avp(ret)[1])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>pkts_io</emphasis> -
+						<emphasis>$(avp(ret)[2])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>relayed</emphasis> -
+						<emphasis>$(avp(ret)[3])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>dropped</emphasis> -
+						<emphasis>$(avp(ret)[4])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>rtpa_set</emphasis> -
+						<emphasis>$(avp(ret)[5])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>rtpa_rcvd</emphasis> -
+						<emphasis>$(avp(ret)[6])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>rtpa_dups</emphasis> -
+						<emphasis>$(avp(ret)[7])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>rtpa_lost</emphasis> -
+						<emphasis>$(avp(ret)[8])</emphasis>
+				</para></listitem>
+				<listitem><para><emphasis>rtpa_perrs</emphasis> -
+						<emphasis>$(avp(ret)[9])</emphasis>
+				</para></listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title><function>rtpproxy_all_stats</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpproxy_all_stats("$avp(stats)");
+xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
+...
+		</programlisting>
+		</example>
+	</section>
 	</section>
 
 
