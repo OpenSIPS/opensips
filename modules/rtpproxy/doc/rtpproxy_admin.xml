@@ -848,17 +848,17 @@ rtpproxy_start_recording();
 					<emphasis>up_pvar</emphasis> - the pseudo-variable used to return the
 					packets sent by <emphasis>upstream</emphasis> for this call.
 			</para></listitem>
+			<listitem><para>
 					<emphasis>down_pvar</emphasis> - the pseudo-variable used to return the
 					packets sent by <emphasis>downstream</emphasis> for this call.
-			<listitem><para>
 			</para></listitem>
+			<listitem><para>
 					<emphasis>sent_pvar</emphasis> - the pseudo-variable used to return the
 					total number of packets sent for this call.
-			<listitem><para>
 			</para></listitem>
+			<listitem><para>
 					<emphasis>up_pvar</emphasis> - the pseudo-variable used to return the
 					number of failed packets for this call.
-			<listitem><para>
 			</para></listitem>
 			<listitem><para>
 			<emphasis>set_id(optional)</emphasis> - the set used for this call.

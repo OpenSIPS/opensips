@@ -661,12 +661,14 @@ set_id [, sock_pvar]])
    This command gathers call RTP statistics from RTP-Proxy.
 
    Meaning of the parameters is as follows:
-   down_pvardownstreamsent_pvarup_pvar
      * up_pvar - the pseudo-variable used to return the packets
        sent by upstream for this call.
-     *
-     *
-     *
+     * down_pvar - the pseudo-variable used to return the packets
+       sent by downstream for this call.
+     * sent_pvar - the pseudo-variable used to return the total
+       number of packets sent for this call.
+     * up_pvar - the pseudo-variable used to return the number of
+       failed packets for this call.
      * set_id(optional) - the set used for this call.
      * sock_pvar(optional) - pvar used to store the RTPProxy
        socket chosen for this call.
