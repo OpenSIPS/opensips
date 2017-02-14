@@ -1218,14 +1218,16 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 	if ( hep_msg->correlation ) {
 		memset( &correlation, 0, sizeof(generic_chunk_t));
 		correlation.chunk.vendor_id = htons(0);
-		correlation.chunk.type_id = htons(200);
+		/* hardcoded but this is the header */
+		correlation.chunk.type_id = htons(101);
 		correlation.chunk.length = sizeof(hep_chunk_t);
 
 		correlation.data = JSON_toString(hep_msg->correlation);
-		correlation.chunk.length += strlen(correlation.data);
+		corr_len += strlen(correlation.data);
 
+		correlation.chunk.length += corr_len;
 		rem += correlation.chunk.length;
-		corr_len = correlation.chunk.length;
+
 		correlation.chunk.length = htons(correlation.chunk.length);
 	}
 
@@ -1270,15 +1272,15 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 	memcpy(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
 	UPDATE_CHECK_REMAINING(rem, *len, pld_len);
 
-
 	/* copy the correlation if exists */
 	if ( hep_msg->correlation ) {
-		memcpy( buf + *len, &correlation, sizeof(hep_chunk_t));
+		memcpy( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
 		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
 
 		/* can't get the correlation length from header since it's in htons form */
 		memcpy(buf + *len, correlation.data, corr_len);
 		UPDATE_CHECK_REMAINING(rem, *len, corr_len);
+
 	}
 
 	for (it=hep_msg->u.hepv3.chunk_list; it; it=it->next) {
