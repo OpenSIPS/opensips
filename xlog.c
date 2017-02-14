@@ -99,10 +99,48 @@ int init_xlog(void)
 	return 0;
 }
 
+
+static inline void add_xlog_data(trace_message message, void* param)
+{
+	char* str_level;
+	xl_trace_t* xtrace_param = param;
+
+	switch (xlog_level) {
+		case L_ALERT:
+			str_level = DP_ALERT_TEXT; break;
+		case L_CRIT:
+			str_level = DP_CRIT_TEXT; break;
+		case L_ERR:
+			str_level = DP_ERR_TEXT; break;
+		case L_WARN:
+			str_level = DP_WARN_TEXT; break;
+		case L_NOTICE:
+			str_level = DP_NOTICE_TEXT; break;
+		case L_INFO:
+			str_level = DP_INFO_TEXT; break;
+		case L_DBG:
+			str_level = DP_DBG_TEXT; break;
+		default:
+			LM_BUG("Unexpected log level [%d]\n", xlog_level);
+			return;
+	}
+
+	tprot.add_trace_payload( message, "level", str_level);
+
+	if ( !xtrace_param )
+		return;
+
+	tprot.add_trace_payload( message, "payload", xtrace_param->buf);
+
+}
+
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 {
 	str x_msg;
-	str level_s;
+	struct modify_trace mod_p;
+
+	unsigned char ch_tmp = 0;
+	xl_trace_t xtrace_param;
 
 	union sockaddr_union to_su, from_su;
 
@@ -117,47 +155,6 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	if (!check_is_traced || check_is_traced(xlog_proto_id) == 0)
 		return 0;
 
-	switch (xlog_level) {
-		case L_ALERT:
-			level_s.s = DP_ALERT_TEXT;
-			level_s.len = sizeof(DP_ALERT_TEXT) - 1;
-
-			break;
-		case L_CRIT:
-			level_s.s = DP_CRIT_TEXT;
-			level_s.len = sizeof(DP_CRIT_TEXT) - 1;
-
-			break;
-		case L_ERR:
-			level_s.s = DP_ERR_TEXT;
-			level_s.len = sizeof(DP_ERR_TEXT) - 1;
-
-			break;
-		case L_WARN:
-			level_s.s = DP_WARN_TEXT;
-			level_s.len = sizeof(DP_WARN_TEXT) - 1;
-
-			break;
-		case L_NOTICE:
-			level_s.s = DP_NOTICE_TEXT;
-			level_s.len = sizeof(DP_NOTICE_TEXT) - 1;
-
-			break;
-		case L_INFO:
-			level_s.s = DP_INFO_TEXT;
-			level_s.len = sizeof(DP_INFO_TEXT) - 1;
-
-			break;
-		case L_DBG:
-			level_s.s = DP_DBG_TEXT;
-			level_s.len = sizeof(DP_DBG_TEXT) - 1;
-
-			break;
-		default:
-			LM_ERR("Unexpected log level [%d]\n", xlog_level);
-			return -1;
-		}
-
 	/*
 	 * Source and destination will be set to localhost(127.0.0.1) port 0
 	 */
@@ -169,32 +166,29 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	to_su.sin.sin_port = 0;
 	to_su.sin.sin_family = AF_INET;
 
-	if (len + level_s.len <  xlog_buf_size) {
-		/* if we ve got the space put level identifier in front */
-		memmove(buf + level_s.len + 1/* we also put a space */, buf, len);
-		memcpy(buf, level_s.s, level_s.len);
-		buf[level_s.len] = ' ';
-
-		x_msg.s = buf;
-		x_msg.len = len + level_s.len + 1;
+	if (len <  xlog_buf_size) {
+		/* no need to reset back here */
+		buf[len] = 0;
 	} else {
-		x_msg.s = buf;
-		x_msg.len = len;
-
-		/* will help us remake the buffer later as it was */
-		level_s.s = 0;
-		level_s.len = 0;
+		ch_tmp = buf[xlog_buf_size - 1];
+		buf[xlog_buf_size - 1] = 0;
 	}
 
+	mod_p.mod_f = add_xlog_data;
+	xtrace_param.msg = msg;
+	xtrace_param.buf = buf;
+	mod_p.param = &xtrace_param;
+
 	if (sip_context_trace(xlog_proto_id, &from_su, &to_su,
-				&x_msg, proto, &msg->callid->body) < 0) {
+				&x_msg, proto, &msg->callid->body, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
 	}
 
-	if (level_s.s && level_s.len) {
-		/* remake the buffer as it was before */
-		memmove(buf, buf + level_s.len + 1, len);
+
+
+	if ( ch_tmp ) {
+		buf[xlog_buf_size - 1] = ch_tmp;
 	}
 
 

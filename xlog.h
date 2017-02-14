@@ -32,6 +32,14 @@ typedef struct _xl_level
 	} v;
 } xl_level_t, *xl_level_p;
 
+typedef struct _xl_trace
+{
+	struct sip_msg* msg;
+	char* buf;
+
+
+} xl_trace_t;
+
 extern int xlog_buf_size;
 extern int xlog_force_color;
 extern int xlog_default_level;
