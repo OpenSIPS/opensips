@@ -34,7 +34,9 @@
 #include "../../mem/shm_mem.h"
 #include "../../evi/evi.h"
 #include "lb_parser.h"
+#include "../../rw_locking.h"
 #include "lb_data.h"
+#include "lb_replication.h"
 #include "lb_db.h"
 
 /* dialog stuff */
@@ -1206,6 +1208,10 @@ void lb_raise_event(struct lb_dst *dst)
 {
 	evi_params_p list = NULL;
 
+	if ((lb_status_replicate_cluster > 0) && dst)
+	{
+		replicate_lb_status(dst);
+	}
 	if (lb_evi_id == EVI_ERROR || !evi_probe_event(lb_evi_id))
 		return;
 

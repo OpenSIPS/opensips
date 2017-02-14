@@ -41,6 +41,7 @@
 #include "dr_bl.h"
 #include "dr_db_def.h"
 #include "dr_partitions.h"
+#include "dr_replication.h"
 #include "dr_api.h"
 #include "dr_api_internal.h"
 
@@ -90,6 +91,8 @@ static int dr_persistent_state = 1;
 static int use_domain = 1;
 int dr_default_grp = -1;
 int dr_force_dns = 1;
+int accept_replicated_gw_status = 0;
+int gw_status_replicate_cluster = 0;
 
 /* internal AVP used to store serial RURIs */
 static str ruri_avp_spec = str_init("$avp(___dr_ruri__)");
@@ -282,6 +285,8 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param);
 
+static void receive_dr_binary_packet(int packet_type, struct receive_info *ri, void *att);
+
 
 /* event */
 static str dr_event = str_init("E_DROUTING_STATUS");
@@ -413,6 +418,8 @@ static param_export_t params[] = {
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
 	{"partition_id_pvar", STR_PARAM, &partition_pvar.s},
+	{"accept_replicated_gw_status",INT_PARAM, &accept_replicated_gw_status },
+	{"replicate_gw_status_to", INT_PARAM, &gw_status_replicate_cluster },
 	{0, 0, 0}
 };
 
@@ -452,6 +459,13 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+	if (cluster_id <= 0)
+		return NULL;
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
@@ -459,6 +473,8 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "probing_interval", get_deps_probing_interval },
+		{ "accept_replicated_gw_status", get_deps_clusterer},
+		{ "replicate_gw_status_to", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -537,6 +553,10 @@ static void dr_raise_event(pgw_t *gw)
 {
 	evi_params_p list = NULL;
 	str *txt;
+	if ((gw_status_replicate_cluster > 0) && gw)
+	{
+		replicate_dr_gw_status_event(gw, gw_status_replicate_cluster);
+	}
 	if (dr_evi_id == EVI_ERROR || !evi_probe_event(dr_evi_id))
 		return;
 
@@ -1668,7 +1688,20 @@ skip:
 		goto error;
 	}
 
+	if( (gw_status_replicate_cluster > 0 || accept_replicated_gw_status > 0)
+		&& load_clusterer_api(&clusterer_api)!=0){
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
 
+	if (accept_replicated_gw_status > 0
+		&& bin_register_cb(repl_dr_module_name.s, receive_dr_binary_packet, NULL) < 0) {
+		LM_ERR("cannot register binary packet callback!\n");
+		return -1;
+	}
+	if(gw_status_replicate_cluster < 0){
+		gw_status_replicate_cluster = 0;
+	}
 
 	return 0;
 
@@ -5005,4 +5038,41 @@ error:
 	free_mi_tree(rpl_tree);
 	return 0;
 
+}
+
+static void receive_dr_binary_packet(int packet_type, struct receive_info *ri, void *att)
+{
+	int server_id;
+	char *ip;
+	unsigned short port;
+
+	LM_DBG("received a binary packet [%d]!\n", packet_type);
+
+	if(get_bin_pkg_version() != BIN_VERSION)
+	{
+		LM_ERR("incompatible bin protocol version\n");
+		return;
+	}
+
+	if (bin_pop_int(&server_id) < 0)
+	{
+		LM_ERR("failed to obtain server id from binary packet\n");
+		return;
+	}
+
+	if (!clusterer_api.check(accept_replicated_gw_status, &ri->src_su, server_id, ri->proto))
+	{
+		get_su_info(&ri->src_su.s, ip, port);
+		LM_WARN("received bin packet from unknown source: %s:%hu\n", ip, port);
+		return;
+	}
+
+	if (packet_type == REPL_GW_STATUS_UPDATE)
+	{
+		replicate_gw_status_update(head_db_start);
+	}
+	else
+	{
+		LM_ERR("invalid drouting binary packet type: %d\n", packet_type);
+	}
 }
