@@ -1,7 +1,7 @@
 /*
- * load balancer module - complex call load balancing
+ * Dedicated process for handling events on multiple FS ESL connections
  *
- * Copyright (C) 2009 Voice Sistem SRL
+ * Copyright (C) 2017 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,41 +21,12 @@
  *
  * History:
  * --------
- *  2009-02-01 initial version (bogdan)
+ *  2017-01-26 initial version (liviu)
  */
 
+#ifndef __FREESWITCH_PROC__
+#define __FREESWITCH_PROC__
 
+void fs_stats_loop(int proc_no);
 
-#ifndef _LB_LB_PARSER_H_
-#define _LB_LB_PARSER_H_
-
-#include "../../str.h"
-
-struct lb_res_str {
-	str name;
-
-	str fs_url;       /* fs_url || val */
-	unsigned int val;
-};
-
-struct lb_res_str_list {
-	int n;
-	struct lb_res_str* resources;
-};
-
-#define	RES_TEXT	(1<<0)
-#define	RES_ELEM	(1<<1)
-
-struct lb_res_parse {
-	char type;
-	void *param;
-};
-
-
-struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
-		str *name);
-
-struct lb_res_str_list *parse_resources_list(char *r_list, int has_val);
-
-#endif
-
+#endif /* __FREESWITCH_PROC__ */

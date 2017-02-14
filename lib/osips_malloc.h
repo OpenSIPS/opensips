@@ -1,7 +1,7 @@
 /*
- * load balancer module - complex call load balancing
+ * OpenSIPS equivalent of the stdlib allocation functions
  *
- * Copyright (C) 2009 Voice Sistem SRL
+ * Copyright (C) 2017 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,44 +18,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2009-02-01 initial version (bogdan)
  */
 
+#ifndef __OSIPS_MALLOC_H__
+#define __OSIPS_MALLOC_H__
 
+void *osips_pkg_malloc(size_t size);
+void osips_pkg_free(void *ptr);
+void *osips_pkg_calloc(size_t nmemb, size_t size);
+void *osips_pkg_realloc(void *ptr, size_t size);
+char *osips_pkg_strdup(const char *s);
 
-#ifndef _LB_LB_PARSER_H_
-#define _LB_LB_PARSER_H_
+void *osips_shm_malloc(size_t size);
+void osips_shm_free(void *ptr);
+void *osips_shm_calloc(size_t nmemb, size_t size);
+void *osips_shm_realloc(void *ptr, size_t size);
+char *osips_shm_strdup(const char *s);
 
-#include "../../str.h"
-
-struct lb_res_str {
-	str name;
-
-	str fs_url;       /* fs_url || val */
-	unsigned int val;
-};
-
-struct lb_res_str_list {
-	int n;
-	struct lb_res_str* resources;
-};
-
-#define	RES_TEXT	(1<<0)
-#define	RES_ELEM	(1<<1)
-
-struct lb_res_parse {
-	char type;
-	void *param;
-};
-
-
-struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
-		str *name);
-
-struct lb_res_str_list *parse_resources_list(char *r_list, int has_val);
-
-#endif
-
+#endif /* __OSIPS_MALLOC_H__ */

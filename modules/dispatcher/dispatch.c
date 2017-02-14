@@ -70,13 +70,24 @@
 #include "ds_fixups.h"
 #include "ds_bl.h"
 
-#define DS_TABLE_VERSION	7
+#define DS_TABLE_VERSION	8
+
+/**
+ * in version 8, the "weight" column is given as a string, since it can contain
+ * both integer (the weight) or URL definitions (dynamically calculated weight)
+ *
+ * OpenSIPS retains backwards-compatibility with the former integer column flavor
+ */
+#define supported_ds_version(_ver) \
+	(DS_TABLE_VERSION == 8 ? (_ver == 8 || _ver == 7) : _ver == DS_TABLE_VERSION)
 
 extern ds_partition_t *partitions;
 
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 extern ds_partition_t *default_partition;
+
+struct fs_binds fs_api;
 
 #define dst_is_active(_dst) \
 	(!((_dst).flags&(DS_INACTIVE_DST|DS_PROBING_DST)))
@@ -108,6 +119,7 @@ static void ds_destroy_data_set( ds_data_t *d)
 	ds_set_p  sp;
 	ds_set_p  sp_curr;
 	ds_dest_p dest;
+	str ds_str = {MI_SSTR("dispatcher")};
 
 	/* free the list of sets */
 	sp = d->sets;
@@ -122,6 +134,8 @@ static void ds_destroy_data_set( ds_data_t *d)
 					shm_free(dest->uri.s);
 				if(dest->param)
 					shm_free(dest->param);
+				if (dest->fs_sock)
+					fs_api.del_hb_evs(dest->fs_sock, &ds_str);
 				dest = dest->next;
 			}while(dest);
 			shm_free(sp_curr->dlist);
@@ -148,7 +162,7 @@ void ds_destroy_data(ds_partition_t *partition)
 }
 
 
-int add_dest2list(int id, str uri, struct socket_info *sock, int state,
+int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int state,
 							int weight, int prio, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
@@ -156,6 +170,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	short new_set = 0;
 	ds_dest_p dp_it, dp_prev;
 	struct sip_uri puri;
+	str ds_str = {MI_SSTR("dispatcher")};
 
 	/* For DNS-Lookups */
 	struct proxy_l *proxy;
@@ -301,6 +316,33 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	free_proxy(proxy);
 	pkg_free(proxy);
 
+	if (fetch_freeswitch_stats) {
+		if (comsock->s && comsock->len > 0) {
+			dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+			if (!dp->fs_sock) {
+				LM_ERR("failed to create FreeSWITCH stats socket!\n");
+			} else {
+				dp->weight = max_freeswitch_weight;
+				if (sp->redo_weights == 0) {
+					for (dp_it = sp->dlist; dp_it; dp_it = dp_it->next) {
+						if (dp_it->weight > max_freeswitch_weight) {
+							LM_WARN("(set %d) truncating static weight in "
+						     "uri %.*s to 'max_freeswitch_weight'! (%d->%d)\n",
+							 id, uri.len, uri.s, dp_it->weight, max_freeswitch_weight);
+							dp_it->weight = max_freeswitch_weight;
+						}
+					}
+					sp->redo_weights = 1;
+				}
+			}
+		} else if (sp->redo_weights && dp->weight > max_freeswitch_weight) {
+			LM_WARN("(set %d) truncating static weight in uri %.*s to"
+			           "\"max_freeswitch_weight\"! (%d -> %d)\n", id,
+			           uri.len, uri.s, weight, max_freeswitch_weight);
+			dp->weight = max_freeswitch_weight;
+		}
+	}
+
 	/*
 	 * search the proper place based on priority
 	 * put them in reverse order, since they will be reindexed
@@ -317,7 +359,6 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		dp_prev->next = dp;
 	}
 	sp->nr++;
-
 
 	if (new_set) {
 		sp->next = d_data->sets;
@@ -351,26 +392,45 @@ err:
 static inline void re_calculate_active_dsts(ds_set_p sp)
 {
 	int j,i;
+	ds_dest_p dst;
+	int oldw;
 
 	/* pre-calculate the running weights for each destination */
 	for( j=0,i=-1,sp->active_nr=sp->nr ; j<sp->nr ; j++ ) {
+		dst = &sp->dlist[j];
+		if (dst->fs_sock && dst->fs_sock->hb_data.is_valid) {
+			lock_start_read(dst->fs_sock->hb_data_lk);
+
+			oldw = dst->weight;
+			dst->weight = round(max_freeswitch_weight *
+			(1 - dst->fs_sock->hb_data.sess /
+			     (float)dst->fs_sock->hb_data.max_sess) *
+			(dst->fs_sock->hb_data.id_cpu / (float)100));
+
+			LM_DBG("weight update for %.*s: %d -> %d (%d %d %.3f)\n",
+			       dst->uri.len, dst->uri.s, oldw, dst->weight,
+				   dst->fs_sock->hb_data.sess, dst->fs_sock->hb_data.max_sess,
+				   dst->fs_sock->hb_data.id_cpu);
+
+			lock_stop_read(dst->fs_sock->hb_data_lk);
+		}
+
 		/* running weight is the current weight plus the running weight of
 		 * the previous element */
-		sp->dlist[j].running_weight = sp->dlist[j].weight
+		dst->running_weight = dst->weight
 			+ ((j==0) ? 0 : sp->dlist[j-1].running_weight);
 		/* now the running weight for the active destinations */
-		if ( dst_is_active(sp->dlist[j]) ) {
-			sp->dlist[j].active_running_weight = sp->dlist[j].weight
+		if ( dst_is_active(*dst)) {
+			dst->active_running_weight = dst->weight
 				+ ((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			i = j; /* last active destination */
 		} else {
-			sp->dlist[j].active_running_weight =
+			dst->active_running_weight =
 				((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			sp->active_nr --;
 		}
 		LM_DBG("destination i=%d, j=%d, weight=%d, sum=%d, active_sum=%d\n",
-			i,j, sp->dlist[j].weight,
-			sp->dlist[j].running_weight,sp->dlist[j].active_running_weight);
+			i,j, dst->weight, dst->running_weight, dst->active_running_weight);
 	}
 }
 
@@ -623,7 +683,7 @@ int init_ds_db(ds_partition_t *partition)
 	if (_ds_table_version < 0) {
 		LM_ERR("failed to query table version\n");
 		return -1;
-	} else if (_ds_table_version != DS_TABLE_VERSION) {
+	} else if (!supported_ds_version(_ds_table_version)) {
 		LM_ERR("invalid table version (found %d , required %d)\n"
 			"(use opensipsdbctl reinit)\n",
 			_ds_table_version, DS_TABLE_VERSION );
@@ -756,7 +816,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	int prio;
 	struct socket_info *sock;
 	str uri;
-	str attrs;
+	str attrs, weight_st;
 	str host;
 	str description;
 	int port, proto;
@@ -840,11 +900,21 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			sock = NULL;
 		}
 
+		weight = 1;
+
 		/* weight */
-		if (VAL_NULL(values+3))
-			weight = 1;
-		else
+		if (values[3].type == DB_INT) {
 			weight = VAL_INT(values+3);
+			memset(&weight_st, 0, sizeof weight_st);
+		} else {
+			/* dynamic weight, given as a communication socket string */
+			get_str_from_dbval("WEIGHT", values+3,
+			                   0/*not_null*/, 0/*not_empty*/, weight_st, error2);
+			if (!is_fs_url(&weight_st)) {
+				str2int(&weight_st, (unsigned int *)&weight);
+				memset(&weight_st, 0, sizeof weight_st);
+			}
+		}
 
 		/* attrs */
 		get_str_from_dbval( "ATTRIBUTES", values+4,
@@ -863,10 +933,10 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		else
 			state = VAL_INT(values+7);
 
-		get_str_from_dbval( "DESCIPTION", values+6,
+		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);
 
-		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, description, d_data)
+		if (add_dest2list(id, uri, sock, &weight_st, state, weight, prio, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
@@ -2339,6 +2409,21 @@ void ds_check_timer(unsigned int ticks, void* param)
 	}
 }
 
+void ds_update_weights(unsigned int ticks, void *param)
+{
+	ds_partition_t *part;
+	ds_set_p sp;
+
+	for (part = partitions; part; part = part->next) {
+		lock_start_write(part->lock);
+		for (sp = (*part->data)->sets; sp; sp = sp->next) {
+			if (sp->redo_weights) {
+				re_calculate_active_dsts(sp);
+			}
+		}
+		lock_stop_write(part->lock);
+	}
+}
 
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 													ds_partition_t *partition)

@@ -1,7 +1,5 @@
 /*
- * load balancer module - complex call load balancing
- *
- * Copyright (C) 2009 Voice Sistem SRL
+ * Copyright (C) 2017 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,41 +19,15 @@
  *
  * History:
  * --------
- *  2009-02-01 initial version (bogdan)
+ *  2017-01-26 initial version (liviu)
  */
 
+#ifndef __LIB_TIMERFD__
+#define __LIB_TIMERFD__
 
-
-#ifndef _LB_LB_PARSER_H_
-#define _LB_LB_PARSER_H_
-
-#include "../../str.h"
-
-struct lb_res_str {
-	str name;
-
-	str fs_url;       /* fs_url || val */
-	unsigned int val;
-};
-
-struct lb_res_str_list {
-	int n;
-	struct lb_res_str* resources;
-};
-
-#define	RES_TEXT	(1<<0)
-#define	RES_ELEM	(1<<1)
-
-struct lb_res_parse {
-	char type;
-	void *param;
-};
-
-
-struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
-		str *name);
-
-struct lb_res_str_list *parse_resources_list(char *r_list, int has_val);
-
+#if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
+	#include <sys/timerfd.h>  /* for timer FD */
+	#define HAVE_TIMER_FD 1
 #endif
 
+#endif /* __LIB_TIMERFD__ */

@@ -40,6 +40,9 @@
 /* dialog stuff */
 extern struct dlg_binds lb_dlg_binds;
 
+extern int fetch_freeswitch_stats;
+extern int initial_fs_load;
+extern struct fs_binds fs_api;
 
 
 struct lb_data* load_lb_data(void)
@@ -226,6 +229,8 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	union sockaddr_union sau;
 	int len;
 	int i;
+	str fs_url = { NULL, 0 };
+	str lb_str = { MI_SSTR("load_balancer") };
 
 	LM_DBG("uri=<%s>, grp=%d, res=<%s>\n",uri, group, resource);
 
@@ -273,8 +278,9 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	/* add or update resource list */
 	for( i=0 ; i<lb_rl->n ; i++) {
 		r = lb_rl->resources + i;
-		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d\n",
-			uri, data->dst_no+1, r->name.len, r->name.s, r->val);
+		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d, fs=%.*s\n",
+			uri, data->dst_no+1, r->name.len, r->name.s, r->val,
+		    r->fs_url.len, r->fs_url.s);
 		res = get_resource_by_name( data, &r->name);
 		if (res==NULL) {
 			/* add new resource */
@@ -291,7 +297,13 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 		}
 		/* set the pointer and the max load */
 		dst->rmap[i].resource = res;
-		dst->rmap[i].max_load = r->val;
+		if (fetch_freeswitch_stats && r->fs_url.s) {
+			fs_url = r->fs_url;
+			dst->rmap[i].max_load = initial_fs_load;
+			dst->rmap[i].fs_enabled = 1;
+		} else {
+			dst->rmap[i].max_load = r->val;
+		}
 	}
 
 	/* Do a SIP wise DNS-Lookup for the domain part */
@@ -322,6 +334,13 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	free_proxy(proxy);
 	pkg_free(proxy);
 
+	if (fetch_freeswitch_stats && fs_url.s && fs_url.len > 0) {
+		dst->fs_sock = fs_api.add_hb_evs(&fs_url, &lb_str, NULL, NULL);
+		if (!dst->fs_sock) {
+			LM_ERR("failed to create FreeSWITCH stats socket!\n");
+		}
+	}
+
 	/* link at the end */
 	if (data->last_dst==NULL) {
 		data->dsts = data->last_dst = dst;
@@ -344,6 +363,7 @@ void free_lb_data(struct lb_data *data)
 {
 	struct lb_resource *lbr1, *lbr2;
 	struct lb_dst *lbd1, *lbd2;
+	str lb_str = { MI_SSTR("load_balancer") };
 
 	if (data==NULL)
 		return;
@@ -365,6 +385,9 @@ void free_lb_data(struct lb_data *data)
 	for( lbd1=data->dsts ; lbd1 ; ) {
 		lbd2 = lbd1;
 		lbd1 = lbd1->next;
+		if (lbd2->fs_sock) {
+			fs_api.del_hb_evs(lbd2->fs_sock, &lb_str);
+		}
 		shm_free(lbd2);
 	}
 

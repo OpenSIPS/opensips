@@ -10,6 +10,6 @@ include ../../Makefile.defs
 auto_gen=
 NAME=dispatcher.so
 
-LIBS=
+LIBS=-lm
 
 include ../../Makefile.modules
