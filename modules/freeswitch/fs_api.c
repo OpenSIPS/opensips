@@ -38,10 +38,16 @@ static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
 static void free_fs_mod_ref(fs_mod_ref *mref);
 static fs_evs *get_fs_evs(str *hostport);
 
-static void parse_fs_url(str *in, str *host_out, unsigned int *port_out)
+/*
+ * Parses and validates FreeSWITCH URLs:
+ *        "fs://[username]:password@host[:port]"
+ */
+static int parse_fs_url(str *in, str *user_out, str *pass_out, str *host_out,
+                        unsigned int *port_out)
 {
 	str st = *in;
-	char *p;
+	str port;
+	char *p, *h;
 
 	if (st.len > FS_SOCK_PREFIX_LEN) {
 		if (memcmp(st.s, FS_SOCK_PREFIX, FS_SOCK_PREFIX_LEN) == 0) {
@@ -51,22 +57,40 @@ static void parse_fs_url(str *in, str *host_out, unsigned int *port_out)
 	}
 
 	p = memchr(st.s, ':', st.len);
-	if (p != NULL) {
-		host_out->s = p + 1;
-		host_out->len = st.len - (p + 1 - st.s);
+	if (!p || !(h = memchr(p, '@', st.len - (p - st.s)))) {
+		LM_ERR("missing password!\n");
+		return -1;
+	}
 
-		if (str2int(host_out, port_out) != 0) {
+	user_out->len = p - st.s;
+	user_out->s = st.s;
+
+	p++;
+	pass_out->len = h - p;
+	pass_out->s = p;
+
+	h++;
+	p = memchr(h, ':', (st.len - (h - st.s)));
+	if (p) {
+		p++;
+		port.s = p;
+		port.len = st.len - (p - st.s);
+
+		if (str2int(&port, port_out) != 0) {
 			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
-			       host_out->len, host_out->s, host_out->len, st.len, st.s);
-			return;
+			       port.len, port.s, port.len, st.len, st.s);
+			return -1;
 		}
 
-		host_out->s = st.s;
-		host_out->len = p - st.s;
+		host_out->s = h;
+		host_out->len = (p - 1) - h;
 	} else {
-		*host_out = st;
+		host_out->s = h;
+		host_out->len = st.len - (h - st.s);
 		*port_out = FS_DEFAULT_EVS_PORT;
 	}
+
+	return 0;
 }
 
 static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
@@ -115,16 +139,23 @@ static fs_mod_ref *get_fs_mod_ref(fs_evs *evs, str *tag)
 static fs_evs *get_fs_evs(str *fs_url)
 {
 	struct list_head *ele;
-	str host;
+	str user, pass, host;
 	unsigned int port;
 	fs_evs *evs;
 
-	parse_fs_url(fs_url, &host, &port);
+	if (parse_fs_url(fs_url, &user, &pass, &host, &port) != 0) {
+		LM_ERR("bad FS URL: '%.*s'! Need: fs://[user]:pass@host[:port]\n",
+		       fs_url->len, fs_url->s);
+		return NULL;
+	}
 
 	list_for_each(ele, fs_boxes) {
 		evs = list_entry(ele, fs_evs, list);
 
-		if (str_strcmp(&host, &evs->host) == 0 && port == evs->port) {
+		if (str_strcmp(&host, &evs->host) == 0 &&
+		    str_strcmp(&user, &evs->user) == 0 &&
+		    str_strcmp(&pass, &evs->pass) == 0 &&
+		    port == evs->port) {
 			return evs;
 		}
 	}
@@ -136,12 +167,16 @@ static fs_evs *get_fs_evs(str *fs_url)
 static fs_evs *mk_fs_evs(str *fs_url)
 {
 	fs_evs *evs;
-	str host;
+	str user, pass, host;
 	unsigned int port;
 
-	parse_fs_url(fs_url, &host, &port);
+	if (parse_fs_url(fs_url, &user, &pass, &host, &port) != 0) {
+		LM_ERR("bad FS URL: '%.*s'! Need: fs://[user]:pass@host[:port]\n",
+		       fs_url->len, fs_url->s);
+		return NULL;
+	}
 
-	evs = shm_malloc(sizeof *evs + host.len + 1);
+	evs = shm_malloc(sizeof *evs + host.len + 1 + user.len + 1 + pass.len + 1);
 	if (!evs) {
 		LM_ERR("out of mem\n");
 		return NULL;
@@ -158,7 +193,17 @@ static fs_evs *mk_fs_evs(str *fs_url)
 
 	LM_DBG("new FS box: host=%.*s, port=%d\n", host.len, host.s, port);
 
-	evs->host.s = (char *)(evs + 1);
+	evs->user.s = (char *)(evs + 1);
+	evs->user.len = user.len;
+	memcpy(evs->user.s, user.s, user.len);
+	evs->user.s[evs->user.len] = '\0';
+
+	evs->pass.s = evs->user.s + evs->user.len + 1;
+	evs->pass.len = pass.len;
+	memcpy(evs->pass.s, pass.s, pass.len);
+	evs->pass.s[evs->pass.len] = '\0';
+
+	evs->host.s = evs->pass.s + evs->pass.len + 1;
 	evs->host.len = host.len;
 	memcpy(evs->host.s, host.s, host.len);
 	evs->host.s[evs->host.len] = '\0';

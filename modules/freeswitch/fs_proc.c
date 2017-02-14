@@ -207,8 +207,8 @@ static int handle_reconnects(int first_run)
 		memset(box->handle, 0, sizeof *box->handle);
 		LM_DBG("reconnecting to FS box '%s:%d'\n", box->host.s, box->port);
 
-		if (esl_connect_timeout(box->handle, box->host.s, box->port, NULL,
-			                    "opensips", 5000U) != ESL_SUCCESS) {
+		if (esl_connect_timeout(box->handle, box->host.s, box->port,
+		                        box->user.s, box->pass.s, 5000U) != ESL_SUCCESS) {
 			LM_ERR("failed to connect to FS box '%.*s:%d'\n",
 			       box->host.len, box->host.s, box->port);
 			ret++;

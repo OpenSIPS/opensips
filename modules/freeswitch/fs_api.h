@@ -68,6 +68,8 @@ struct _fs_ev_hb {
 
 struct _fs_evs {
 	enum fs_evs_types type;
+	str user;
+	str pass;
 	str host; /* host->s is NULL-terminated */
 	esl_port_t port;
 
