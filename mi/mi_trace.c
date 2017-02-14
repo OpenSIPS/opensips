@@ -31,10 +31,8 @@
 #define MI_ID_S "mi"
 #define MI_TRACE_BUF_SIZE (1 << 10)
 
-#define CORR_BUF_SIZE 64
-
 /* CORR - magic for internally generated correltion id */
-#define CORR_MAGIC "\x43\x4F\x52\x52"
+#define MI_CORR_COOKIE "MICORR"
 
 trace_proto_t* mi_trace_api=NULL;
 int mi_message_id;
@@ -177,18 +175,12 @@ struct mi_trace_rpl* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
 
 char* generate_correlation_id(int* len)
 {
-	static char corr_buf[CORR_BUF_SIZE];
+	char *ret;
 
-	if ( !len )
-		return 0;
+	ret = (char *)mi_trace_api->generate_gid(MI_CORR_COOKIE);
+	*len = strlen(ret);
 
-	*len = snprintf(corr_buf, CORR_BUF_SIZE, "%s%d", CORR_MAGIC, rand());
-	if ( *len >= CORR_BUF_SIZE ) {
-		LM_ERR("not enough space in correlation buffer!\n");
-		return 0;
-	}
-
-	return corr_buf;
+	return (char *)ret;
 }
 
 
