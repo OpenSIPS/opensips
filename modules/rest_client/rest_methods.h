@@ -30,6 +30,8 @@
 #include "../../error.h"
 #include "../../mem/mem.h"
 
+/* maximum size for the first line */
+#define FLINE_MAX 512
 #define TRACE_BUF_MAX_SIZE 1024
 
 extern struct list_head multi_pool;
@@ -54,14 +56,11 @@ enum rest_client_method {
 
 typedef struct _rest_trace_param {
 	str callid;
-	str buf;
-} rest_trace_param_t;
+	char first_line[FLINE_MAX];
+	str body;
 
-/* for async the buffer must differ from call
- * to call */
-typedef struct _rest_async_trace_param {
-	char buf[TRACE_BUF_MAX_SIZE];
-} rest_async_trace_param;
+	trace_message message;
+} rest_trace_param_t;
 
 struct _oss_curlm {
 	CURLM *multi_handle;

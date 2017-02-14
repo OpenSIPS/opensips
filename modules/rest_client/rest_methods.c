@@ -57,12 +57,9 @@ static int running_handles;
 extern int rest_proto_id;
 extern trace_proto_t tprot;
 
-static char trace_buf[TRACE_BUF_MAX_SIZE];
-static str trace_str = { trace_buf, 0};
-
 static inline int extract_host(str* url, char** host, unsigned int* port);
 static inline int rest_trace_enabled(void);
-static int trace_rest_message(str* host, str* dest, str* body, str* correlation_id);
+static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam);
 
 
 
@@ -86,7 +83,6 @@ static int trace_rest_message(str* host, str* dest, str* body, str* correlation_
 
 int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userptr)
 {
-	int write_len;
 	char* end;
 	str url;
 	str *host=0, *dest=0;
@@ -95,7 +91,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 	 * allocated memory of TRACE_BUF_MAX_SIZE bytes */
 	rest_trace_param_t* tparam = userptr;
 
-	if ( !tparam || !tparam->buf.s) {
+	if ( !tparam ) {
 		LM_ERR("null callback param!\n");
 		return CURLSHE_INVALID;
 	}
@@ -121,13 +117,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 				}
 			}
 
-			tparam->buf.len = snprintf( tparam->buf.s, TRACE_BUF_MAX_SIZE,
-					"%.*s\n", (int)(end-data), data);
-
-			if ( tparam->buf.len >= TRACE_BUF_MAX_SIZE ) {
-				LM_ERR("trace buffer too small!\n");
-				return CURLE_WRITE_ERROR;
-			}
+			snprintf( tparam->first_line, FLINE_MAX, "%.*s", (int)(end - data), data);
 
 			/* if it's get trace it immediately; no body */
 			if ( data[0] == 'G' && data[1] == 'E' && data[2] == 'T' ) {
@@ -137,14 +127,8 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 	} else if ( type == CURLINFO_DATA_IN || type == CURLINFO_DATA_OUT ){
 		if ( size > 0) {
 			/* request data */
-			write_len = snprintf( tparam->buf.s + tparam->buf.len,
-					TRACE_BUF_MAX_SIZE, "%.*s", (int)size, data);
-			if ( write_len >= TRACE_BUF_MAX_SIZE) {
-				/* no error; we got what we needed */
-				tparam->buf.len = TRACE_BUF_MAX_SIZE - 1;
-			} else {
-				tparam->buf.len += write_len;
-			}
+			tparam->body.s = data;
+			tparam->body.len = size;
 		}
 
 		goto do_trace;
@@ -164,7 +148,7 @@ do_trace:
 	else
 		dest = &url;
 
-	if (trace_rest_message(host, dest, &tparam->buf, &tparam->callid) < 0) {
+	if (trace_rest_message(host, dest, tparam) < 0) {
 		/* no need to exit; curl worked ok, tracing failed */
 		LM_ERR("failed to trage rest request!\n");
 	}
@@ -358,22 +342,19 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
 	if ( rest_trace_enabled() ) {
-		async_parm->tparam = pkg_malloc(sizeof(rest_async_trace_param)
-				+ TRACE_BUF_MAX_SIZE * sizeof(char));
+		async_parm->tparam = pkg_malloc(sizeof(rest_trace_param_t));
 		if ( !async_parm->tparam ) {
 			LM_ERR("no more pkg mem!\n");
 			return -1;
 		}
 
-		async_parm->tparam->buf.s = (char *)(async_parm->tparam + 1);
+		memset( async_parm->tparam, 0, sizeof *async_parm->tparam);
 
 		async_parm->tparam->callid = msg->callid->body;
 
 		w_curl_easy_setopt(handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
 		w_curl_easy_setopt(handle, CURLOPT_DEBUGDATA, async_parm->tparam);
 	}
-
-
 
 	multi_list = get_multi();
 	if (!multi_list) {
@@ -650,8 +631,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	/* trace rest request */
 	if ( rest_trace_enabled() ) {
+		memset( &tparam, 0, sizeof tparam);
 		tparam.callid = msg->callid->body;
-		tparam.buf = trace_str;
 
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
@@ -789,8 +770,9 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	/* trace rest request */
 	if ( rest_trace_enabled() ) {
+		memset( &tparam, 0, sizeof tparam);
+
 		tparam.callid = msg->callid->body;
-		tparam.buf = trace_str;
 
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
@@ -917,8 +899,9 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	/* trace rest request */
 	if ( rest_trace_enabled() ) {
+		memset( &tparam, 0, sizeof tparam);
+
 		tparam.callid = msg->callid->body;
-		tparam.buf = trace_str;
 
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
@@ -1119,7 +1102,28 @@ static inline unsigned long fix_host(char* host)
 	return addr->u.addrl[0];
 }
 
-static int trace_rest_message(str* host, str* dest, str* body, str* correlation_id)
+void append_body_to_msg( trace_message message, void* param)
+{
+	int len;
+
+	static char tmp_buf[TRACE_BUF_MAX_SIZE];
+	rest_trace_param_t* tparam = param;
+
+	if ( !tparam ) {
+		LM_ERR("null input!\n");
+		return;
+	}
+
+	tprot.add_trace_payload (message, "first_line", tparam->first_line);
+
+	len = tparam->body.len > TRACE_BUF_MAX_SIZE-1 ? TRACE_BUF_MAX_SIZE : tparam->body.len;
+	memcpy( tmp_buf, tparam->body.s, len);
+	tmp_buf[len] = 0;
+
+	tprot.add_trace_payload (message, "payload", tmp_buf);
+}
+
+static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
 {
 	const int proto = IPPROTO_TCP;
 
@@ -1127,6 +1131,10 @@ static int trace_rest_message(str* host, str* dest, str* body, str* correlation_
 
 	char* host_addr;
 	unsigned int port;
+
+	struct modify_trace mod_t;
+	/* FIXME get rid of this */
+	static str fake_pld = str_init("fake");
 
 	if ( !rest_trace_enabled() )
 		return 0;
@@ -1174,8 +1182,12 @@ static int trace_rest_message(str* host, str* dest, str* body, str* correlation_
 
 	to_su.sin.sin_family = AF_INET;
 
+	mod_t.mod_f = append_body_to_msg;
+	mod_t.param = tparam;
+
+	/* we give bogus body since it's gonne be changed anyhow  */
 	if ( sip_context_trace(rest_proto_id, &to_su, &from_su,
-			body, proto, correlation_id) < 0 ) {
+			&fake_pld, proto, &tparam->callid, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;
 	}
