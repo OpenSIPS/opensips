@@ -71,11 +71,11 @@ static void mod_destroy(void);
 static int mi_child_init();
 
 /* failover stuff */
-static str group_avp_name_s = str_init("lb_grp");
-static str flags_avp_name_s = str_init("lb_flg");
-static str mask_avp_name_s = str_init("lb_mask");
-static str id_avp_name_s = str_init("lb_id");
-static str res_avp_name_s = str_init("lb_res");
+static str group_avp_name_s = str_init("__lb_grp");
+static str flags_avp_name_s = str_init("__lb_flg");
+static str mask_avp_name_s = str_init("__lb_mask");
+static str id_avp_name_s = str_init("__lb_id");
+static str res_avp_name_s = str_init("__lb_res");
 int group_avp_name;
 int flags_avp_name;
 int mask_avp_name;
