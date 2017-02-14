@@ -171,10 +171,6 @@ Chapter 1. Admin Guide
    Note that RTPProxy version v2.0.0 has integrated this feature
    upstream, therefore this patch is no longer needed.
 
-   Starting with commit 21e5977, the timeout notification sockets
-   are handled a bit different by RTPProxy. This makes later
-   RTPProxy releases incompatible with OpenSIPS.
-
    To enable timeout notification there are several steps that you
    must follow:
 
@@ -390,6 +386,11 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
    Example 1.11. Set rtpp_notify_socket parameter
 ...
 modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
+
+# use an UNIX socket
+modparam("rtpproxy", "rtpp_notify_socket", "unix:/tmp/rtpproxy.unix")
+# or
+modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 ...
 
 

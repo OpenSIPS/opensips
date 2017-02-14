@@ -62,6 +62,8 @@ struct rtpp_node {
 #define	NOTIFY_CPROTOVER		"20081224"
 #define	STATS_CAP				(1<<4)
 #define	STATS_CPROTOVER			"20080403"
+#define	NOTIFY_WILD_CAP			(1<<5)
+#define	NOTIFY_WILD_CPROTOVER	"20150617"
 
 #define RTP_CAP(_c) _c ## _CPROTOVER, sizeof(_c ## _CPROTOVER - 1)
 #define SET_CAP(_n, _c) (_n)->capabilities |= (_c ## _CAP)

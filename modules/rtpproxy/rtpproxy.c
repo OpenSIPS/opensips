@@ -323,6 +323,10 @@ static pid_t mypid;
 static unsigned int myseqn = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
 str rtpp_notify_socket = {0, 0};
+/*
+ * 0 - Unix socket
+ * 1 - TCP socket
+ */
 int rtpp_notify_socket_un = 0;
 
 /* used in rtpproxy_set_store() */
@@ -1279,7 +1283,7 @@ mod_init(void)
 
 	if(rtpp_notify_socket.s) {
 		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
-			rtpp_notify_socket.s += 4;
+				rtpp_notify_socket_un = 0;
 		} else {
 			if (strncmp("unix:", rtpp_notify_socket.s, 5) == 0)
 				rtpp_notify_socket.s += 5;
@@ -2113,6 +2117,8 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 		SET_CAP(node, NOTIFY);
 	if (rtpp_checkcap(node, RTP_CAP(STATS)) > 0)
 		SET_CAP(node, STATS);
+	if (rtpp_checkcap(node, RTP_CAP(NOTIFY_WILD)) > 0)
+		SET_CAP(node, NOTIFY_WILD);
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -3623,14 +3629,6 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 		notify_tag.s = buf;
 		LM_DBG("notify_tag= %s\n", notify_tag.s);
 
-		if (strncmp(rtpp_notify_socket.s, "tcp:", 4) == 0) {
-			rtpp_notify_socket.s += 4;
-			rtpp_notify_socket.len -= 4;
-		} else if (strncmp(rtpp_notify_socket.s, "unix:", 5) == 0) {
-			rtpp_notify_socket.s += 5;
-			rtpp_notify_socket.len -= 5;
-		}
-
 		STR2IOVEC(rtpp_notify_socket, v[19]);
 		STR2IOVEC(notify_tag, v[21]);
 	}
@@ -3796,10 +3794,14 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 					v[3].iov_len = 0;
 				}
 				if(enable_notification && opts.s.s[0] == 'U' &&
-						HAS_CAP(args->node, NOTIFY))
+						HAS_CAP(args->node, NOTIFY)) {
 					vcnt = 22;
-				else
-				{
+					STR2IOVEC(rtpp_notify_socket, v[19]);
+					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
+						v[19].iov_base += 4;
+						v[19].iov_len -= 4;
+					}
+				} else {
 					vcnt = (to_tag.len > 0) ? 18 : 14;
 				}
 

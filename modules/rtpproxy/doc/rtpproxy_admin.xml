@@ -78,13 +78,6 @@
 		longer needed.
 	</para>
 	<para>
-		Starting with commit
-		<ulink url='https://github.com/sippy/rtpproxy/commit/21e59778973c8aa85e26a7ef7a21a02695673656'>
-			21e5977</ulink>, the timeout notification sockets are handled a bit
-		different by RTPProxy. This makes later RTPProxy releases
-		incompatible with &osips;.
-	</para>
-	<para>
 		To enable timeout notification there are several steps that you must follow:
 		<para>
 			Start &osips; timeout detection by setting the <quote>rtpp_notify_socket</quote>
@@ -92,7 +85,7 @@
 			notification will be received from rtpproxies. This socket must be a TCP or 
 			UNIX socket. Also, for all the calls that require notification, the
 			rtpproxy_engage(), rtpproxy_offer() and rtpproxy_answer() functions must
-			be called with the <quote>n</quote> flag.   
+			be called with the <quote>n</quote> flag.
 		</para>
 		<para>
 			Configure RTPProxy to use timeout notification by adding
@@ -453,6 +446,11 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 		<programlisting format="linespecific">
 ...
 modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
+
+# use an UNIX socket
+modparam("rtpproxy", "rtpp_notify_socket", "unix:/tmp/rtpproxy.unix")
+# or
+modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 ...
 
 </programlisting>

@@ -99,6 +99,8 @@ void timeout_listener_process(int rank)
 			LM_ERR("Bad format for socket name. Expected ip:port\n");
 			return;
 		}
+		/* skip here tcp part */
+		rtpp_notify_socket.s += 4;
 		memset(&saddr_in, 0, sizeof(saddr_in));
 		saddr_in.sin_addr.s_addr = inet_addr(rtpp_notify_socket.s);
 		saddr_in.sin_family = AF_INET;
