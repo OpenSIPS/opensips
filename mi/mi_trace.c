@@ -31,7 +31,6 @@
 #define MI_ID_S "mi"
 #define MI_TRACE_BUF_SIZE (1 << 10)
 
-#define MAX_RPL_CHARS (1 << 7)
 #define CORR_BUF_SIZE 64
 
 /* CORR - magic for internally generated correltion id */
@@ -45,7 +44,9 @@ str correlation_value;
 int correlation_id=-1, correlation_vendor=-1;
 
 
+#if 0
 static char trace_buf[MI_TRACE_BUF_SIZE];
+#endif
 
 
 void try_load_trace_api(void)
@@ -67,6 +68,7 @@ void try_load_trace_api(void)
 	mi_message_id = mi_trace_api->get_message_id(MI_ID_S);
 }
 
+#if 0
 #define CHECK_OVERFLOW(_len)								\
 	do {													\
 		if ( _len >= MI_TRACE_BUF_SIZE ) {					\
@@ -76,13 +78,39 @@ void try_load_trace_api(void)
 	} while (0);
 
 char* build_mi_trace_request( str* cmd, struct mi_root* mi_req, str* backend)
+#endif
+struct mi_trace_req* build_mi_trace_request( str* cmd,
+		struct mi_root* mi_req, str* backend)
 {
-	int len, new;
+	int len=0, new=0;
 	struct mi_node* node;
 
 	if ( !cmd || !backend )
 		return 0;
 
+	/* not intereseted if it doesn't fit */
+	snprintf( mi_treq.cmd, MAX_TRACE_FIELD, "%.*s", cmd->len, cmd->s);
+	snprintf( mi_treq.backend, MAX_TRACE_FIELD, "%.*s", backend->len, backend->s);
+
+	if ( mi_req ) {
+		node = mi_req->node.kids;
+		while ( node &&
+			(( new = snprintf( mi_treq.params + len, MAX_TRACE_FIELD - len,
+				"%.*s", node->value.len, node->value.s) )
+				< MAX_TRACE_FIELD - len) )  {
+			if ( new < 0) {
+				LM_ERR("snprintf failed!\n");
+				return 0;
+			}
+			node = node->next;
+			len += new;
+		}
+	} else {
+		memset( mi_treq.params, 0, MAX_TRACE_FIELD);
+	}
+
+	return &mi_treq;
+#if 0
 	len = snprintf( trace_buf, MI_TRACE_BUF_SIZE,
 			"(%.*s) %.*s\n",
 			backend->len, backend->s,
@@ -105,17 +133,20 @@ char* build_mi_trace_request( str* cmd, struct mi_root* mi_req, str* backend)
 		}
 	}
 
-
 	return trace_buf;
+#endif
 }
 
-char* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
+struct mi_trace_rpl* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
 {
+#if 0
 	int len, new;
+#endif
 
 	if ( !reason )
 		return 0;
 
+#if 0
 	len = snprintf( trace_buf, MI_TRACE_BUF_SIZE,
 			"(%d:%.*s)\n",
 			code, reason->len, reason->s);
@@ -132,6 +163,16 @@ char* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
 	}
 
 	return trace_buf;
+#endif
+	snprintf( mi_trpl.code, MAX_TRACE_FIELD, "%d", code);
+	snprintf( mi_trpl.reason, MAX_TRACE_FIELD, "%.*s", reason->len, reason->s);
+	if ( rpl_msg ) {
+		snprintf( mi_trpl.rpl, MAX_TRACE_FIELD, "%.*s", rpl_msg->len, rpl_msg->s);
+	} else {
+		memset( mi_trpl.rpl, 0, MAX_TRACE_FIELD);
+	}
+
+	return &mi_trpl;
 }
 
 char* generate_correlation_id(int* len)
@@ -152,11 +193,12 @@ char* generate_correlation_id(int* len)
 
 
 int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
-		str* body, str* correlation_value, trace_dest trace_dst)
+		struct mi_trace_param* pld_param, str* correlation_value, trace_dest trace_dst)
 {
 	/* FIXME is this the case for all mi impelementations?? */
 	const int proto = IPPROTO_TCP;
 	union sockaddr_union tmp, *to_su, *from_su;
+	static str fake_body = str_init("fake");
 
 	trace_message message;
 
@@ -185,7 +227,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 		to_su = &tmp;
 
 	message = mi_trace_api->create_trace_message(from_su, to_su,
-			proto, body, mi_message_id, trace_dst);
+			proto, &fake_body, mi_message_id, trace_dst);
 	if (message == NULL) {
 		LM_ERR("failed to create trace message!\n");
 		return -1;
@@ -204,6 +246,22 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 					correlation_id, correlation_vendor) < 0 ) {
 			LM_ERR("can't set the correlation id!\n");
 			return -1;
+		}
+	}
+
+	if ( pld_param->type == MI_TRACE_REQ ) {
+		mi_trace_api->add_trace_payload(message, "command", pld_param->d.req->cmd);
+		mi_trace_api->add_trace_payload(message, "backend", pld_param->d.req->backend);
+		if ( pld_param->d.req->params[0] ) {
+			mi_trace_api->add_trace_payload(message,
+					"parameters", pld_param->d.req->params);
+		}
+	} else {
+		mi_trace_api->add_trace_payload(message, "code", pld_param->d.rpl->code);
+		mi_trace_api->add_trace_payload(message, "reason", pld_param->d.rpl->reason);
+		if ( pld_param->d.rpl->rpl[0] ) {
+			mi_trace_api->add_trace_payload(message,
+					"reply", pld_param->d.rpl->rpl);
 		}
 	}
 
