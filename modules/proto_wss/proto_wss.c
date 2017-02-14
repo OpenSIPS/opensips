@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netinet/tcp.h>
+#include <sys/uio.h>
 #include <poll.h>
 
 #include "../../pt.h"

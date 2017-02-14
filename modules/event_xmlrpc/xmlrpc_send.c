@@ -30,6 +30,7 @@
 #include "../../pt.h"
 #include "xmlrpc_send.h"
 #include "event_xmlrpc.h"
+#include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
 
