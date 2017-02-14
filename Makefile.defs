@@ -339,6 +339,8 @@ endif
 lib_dir = $(LIBDIR)/$(MAIN_NAME)
 modules_dir = $(LIBDIR)/$(MAIN_NAME)/modules/
 
+md5sum_cmd = md5sum
+
 ifeq ($(OS), linux)
 	doc_dir = share/doc/$(MAIN_NAME)/
 	man_dir = share/man/
@@ -350,6 +352,7 @@ ifeq ($(OS), freebsd)
 	man_dir = man/
 	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
+	md5sum_cmd = md5
 else
 ifeq ($(OS), openbsd)
 	doc_dir = share/doc/$(MAIN_NAME)/
@@ -494,7 +497,7 @@ endif
 ifneq (,$(MEM_STATS_HDR))
 EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
 MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -name "[Mm]akefile" | \
-			awk -F/ '{print $$(NF - 1)}' | sort | md5sum | awk '{print $$1}')
+			awk -F/ '{print $$(NF - 1)}' | sort | $(md5sum_cmd) | awk '{print $$1}')
 ifneq ($(EXPECTED_MD5),$(MODULES_MD5))
 REGENERATE_MEM_STATS=remove-mem-stats
 endif
