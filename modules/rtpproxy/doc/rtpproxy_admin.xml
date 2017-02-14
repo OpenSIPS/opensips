@@ -891,6 +891,9 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent) fail=$
 			All the returned values stored in an AVP that can be further read by
 			indexing the AVP.
 		</para>
+		<para>
+			This command is only available starting with RTPProxy 2.1 realease.
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem><para>

@@ -693,6 +693,9 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
    RTP-Proxy. All the returned values stored in an AVP that can be
    further read by indexing the AVP.
 
+   This command is only available starting with RTPProxy 2.1
+   realease.
+
    Meaning of the parameters is as follows:
      * stats_avp - an AVP where the statistics will be stored.
        This AVP can be further indexed to get a specific
