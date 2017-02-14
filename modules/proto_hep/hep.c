@@ -45,6 +45,8 @@
 #include "hep.h"
 #include "../compression/compression_api.h"
 
+#include "cJSON/cJSON.h"
+
 #define GENERIC_VENDOR_ID 0x0000
 #define HEP_PROTO_SIP  0x01
 
@@ -1170,6 +1172,16 @@ static char* build_hep12_buf(struct hep_desc* hep_msg, int* len)
 
 }
 
+static inline char* JSON_toString(void* root)
+{
+	return cJSON_Print(root);
+}
+
+static inline void JSON_free(void* root)
+{
+	cJSON_Delete(root);
+}
+
 static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 {
 	#define UPDATE_CHECK_REMAINING(__rem, __len, __curr) \
@@ -1183,17 +1195,44 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		} while (0);
 
 
-	int rem, hdr_len, pld_len;
+	int rem, hdr_len, pld_len, corr_len=0;
 	char* buf;
 
-	generic_chunk_t *it;
+	generic_chunk_t *it, correlation;
 
 	*len = 0;
 
 	rem = hep_msg->u.hepv3.hg.header.length;
 
+	if ( hep_msg->fPayload ) {
+		rem -= hep_msg->u.hepv3.payload_chunk.chunk.length;
+		hep_msg->u.hepv3.payload_chunk.data = JSON_toString(hep_msg->fPayload);
+
+		hep_msg->u.hepv3.payload_chunk.chunk.length =
+			strlen(hep_msg->u.hepv3.payload_chunk.data)
+				+ sizeof(hep_chunk_t);
+
+		rem += hep_msg->u.hepv3.payload_chunk.chunk.length;
+	}
+
+	if ( hep_msg->correlation ) {
+		memset( &correlation, 0, sizeof(generic_chunk_t));
+		correlation.chunk.vendor_id = htons(0);
+		correlation.chunk.type_id = htons(200);
+		correlation.chunk.length = sizeof(hep_chunk_t);
+
+		correlation.data = JSON_toString(hep_msg->correlation);
+		correlation.chunk.length += strlen(correlation.data);
+
+		rem += correlation.chunk.length;
+		corr_len = correlation.chunk.length;
+		correlation.chunk.length = htons(correlation.chunk.length);
+	}
+
+
 	buf = pkg_malloc(rem);
 
+	hep_msg->u.hepv3.hg.header.length = rem;
 	hep_msg->u.hepv3.hg.header.length = htons(hep_msg->u.hepv3.hg.header.length);
 
 	if (buf == NULL) {
@@ -1217,7 +1256,6 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		return NULL;
 	}
 
-
 	pld_len = hep_msg->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
 	/* earlier we didn't do htons on this buffer because we needed the
 	 * length; we'll do it now */
@@ -1233,6 +1271,15 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 	UPDATE_CHECK_REMAINING(rem, *len, pld_len);
 
 
+	/* copy the correlation if exists */
+	if ( hep_msg->correlation ) {
+		memcpy( buf + *len, &correlation, sizeof(hep_chunk_t));
+		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
+
+		/* can't get the correlation length from header since it's in htons form */
+		memcpy(buf + *len, correlation.data, corr_len);
+		UPDATE_CHECK_REMAINING(rem, *len, corr_len);
+	}
 
 	for (it=hep_msg->u.hepv3.chunk_list; it; it=it->next) {
 		hdr_len = it->chunk.length;
@@ -1279,6 +1326,7 @@ trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_u
 	if (from_su == NULL || to_su == NULL || payload == NULL ||
 								payload->s == NULL || payload->len == 0) {
 		LM_ERR("invalid call! bad input params!\n");
+
 		return NULL;
 	}
 
@@ -1369,7 +1417,60 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 	return 0;
 }
 
+int add_hep_correlation(trace_message message, char* corr_name, char* corr_value)
+{
+	cJSON* root;
+	struct hep_desc* hep_msg;
 
+	if ( !message || !corr_name || !corr_value ) {
+		LM_ERR("invalid call! bad input params!\n");
+		return -1;
+	}
+
+	hep_msg = (struct hep_desc*) message;
+	if ( hep_msg->correlation) {
+		root = (cJSON *) hep_msg->correlation;
+	} else {
+		root = cJSON_CreateObject();
+		if ( !root ) {
+			LM_ERR("failed to create correlation object!\n");
+			return -1;
+		}
+
+		hep_msg->correlation = root;
+	}
+
+	cJSON_AddStringToObject( root, corr_name, corr_value);
+
+	return 0;
+}
+
+int add_hep_payload(trace_message message, char* pld_name, char* pld_value)
+{
+	cJSON* root;
+	struct hep_desc* hep_msg;
+
+	if ( !message || !pld_name || !pld_value ) {
+		LM_ERR("invalid call! bad input params!\n");
+		return -1;
+	}
+
+	hep_msg = (struct hep_desc*) message;
+	if ( hep_msg->fPayload) {
+		root = (cJSON *) hep_msg->fPayload;
+	} else {
+		root = cJSON_CreateObject();
+		if ( !root ) {
+			LM_ERR("failed to create correlation object!\n");
+			return -1;
+		}
+		hep_msg->fPayload = root;
+	}
+
+	cJSON_AddStringToObject( root, pld_name, pld_value);
+
+	return 0;
+}
 
 
 int send_hep_message(trace_message message, trace_dest dest, struct socket_info* send_sock)
@@ -1440,10 +1541,20 @@ void free_hep_message(trace_message message)
 	struct hep_desc* hep_msg = message;
 
 	if (hep_msg->version == 3) {
-		/* free custom chunkgs */
+		/* free custom chunks */
 		for (it=hep_msg->u.hepv3.chunk_list; it; foo=it, it=it->next) {
 			if (foo)
 				pkg_free(foo);
+		}
+
+		/* free JSON payload if there */
+		if ( hep_msg->fPayload ) {
+			JSON_free( hep_msg->fPayload );
+		}
+
+		/* free JSON correlation if there */
+		if ( hep_msg->correlation ) {
+			JSON_free( hep_msg->correlation );
 		}
 
 		if (foo)
@@ -1509,6 +1620,8 @@ int hep_bind_trace_api(trace_proto_t* prot)
 
 	prot->create_trace_message = create_hep_message;
 	prot->add_trace_data = add_hep_chunk;
+	prot->add_trace_correlation = add_hep_correlation;
+	prot->add_trace_payload = add_hep_payload;
 	prot->send_message = send_hep_message;
 	prot->get_trace_dest_by_name = get_trace_dest_by_name;
 	prot->free_message = free_hep_message;

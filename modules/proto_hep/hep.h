@@ -233,6 +233,9 @@ struct hep_desc {
 			generic_chunk_t* chunk_list;
 		} hepv3;
 	} u;
+
+	void* correlation;
+	void* fPayload; /* formatted payload */
 };
 
 
