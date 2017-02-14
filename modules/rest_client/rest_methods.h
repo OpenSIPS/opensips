@@ -59,6 +59,8 @@ typedef struct _rest_trace_param {
 	char first_line[FLINE_MAX];
 	str body;
 
+	str correlation;
+
 	trace_message message;
 } rest_trace_param_t;
 

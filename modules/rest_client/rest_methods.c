@@ -36,6 +36,8 @@
 #include "rest_methods.h"
 #include "rest_cb.h"
 
+#define REST_CORRELATION_COOKIE "RESTCORR"
+
 static char print_buff[MAX_CONTENT_TYPE_LEN];
 
 /* additional HTTP headers for the next request */
@@ -115,6 +117,14 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 					LM_ERR("HTTP headers don't have \\n in the end!\n");
 					return CURLE_WRITE_ERROR;
 				}
+			}
+
+			/* generate a new correlation each time we send a message */
+			/* FIXME what if 2 messages are sent before recieving reply?
+			 * Ex: destination has 2 ip's */
+			if ( type == CURLINFO_HEADER_OUT ) {
+				tparam->correlation.s = (char *)tprot.generate_gid(REST_CORRELATION_COOKIE);
+				tparam->correlation.len = strlen(tparam->correlation.s);
 			}
 
 			snprintf( tparam->first_line, FLINE_MAX, "%.*s", (int)(end - data), data);
@@ -1121,6 +1131,14 @@ void append_body_to_msg( trace_message message, void* param)
 	tmp_buf[len] = 0;
 
 	tprot.add_trace_payload (message, "payload", tmp_buf);
+
+	len = (tparam->callid.len > TRACE_BUF_MAX_SIZE - 1) ?
+		TRACE_BUF_MAX_SIZE - 1 : tparam->callid.len;
+
+	memcpy( tmp_buf, tparam->callid.s, len);
+	tmp_buf[len] = 0;
+
+	tprot.add_trace_correlation ( message, "sip", tmp_buf);
 }
 
 static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
@@ -1187,7 +1205,7 @@ static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
 
 	/* we give bogus body since it's gonne be changed anyhow  */
 	if ( sip_context_trace(rest_proto_id, &to_su, &from_su,
-			&fake_pld, proto, &tparam->callid, &mod_t) < 0 ) {
+			&fake_pld, proto, &tparam->correlation, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;
 	}
