@@ -218,22 +218,6 @@
 #define MI_RECHECK_TICKS			"recheck_ticks"
 #define MI_RECHECK_T_LEN			(sizeof(MI_RECHECK_TICKS)-1)
 
-
-
-/* Supported version of the RTP proxy command protocol */
-#define	SUP_CPROTOVER	20040107
-/* Required additional version of the RTP proxy command protocol */
-#define	REQ_CPROTOVER	"20050322"
-/* Additional version necessary for re-packetization support */
-#define	REP_CPROTOVER	"20071116"
-#define	PTL_CPROTOVER	"20081102"
-/* Support for auto-bridging */
-#define	ABR_CPROTOVER	"20090810"
-/* Support for rtpproxy commands */
-#define NTF_CPROTOVER	"20081224"
-/* Support for statistics */
-#define STS_CPROTOVER	"20080403"
-
 #define	CPORT		"22222"
 
 /* param names to be stored in the dialog */
@@ -2119,36 +2103,16 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 	LM_INFO("rtp proxy <%s> found, support for it %senabled\n",
 	    node->rn_url.s, force == 0 ? "re-" : "");
 	/* Check for optional capabilities */
-	rval = rtpp_checkcap(node, REP_CPROTOVER, sizeof(REP_CPROTOVER) - 1);
-	if (rval != -1) {
-		node->rn_rep_supported = rval;
-	} else {
-		node->rn_rep_supported = 0;
-	}
-	rval = rtpp_checkcap(node, PTL_CPROTOVER, sizeof(PTL_CPROTOVER) - 1);
-	if (rval != -1) {
-		node->rn_ptl_supported = rval;
-	} else {
-		node->rn_ptl_supported = 0;
-	}
-	rval = rtpp_checkcap(node, ABR_CPROTOVER, sizeof(ABR_CPROTOVER) - 1);
-	if (rval != -1) {
-		node->abr_supported = rval;
-	} else {
-		node->abr_supported = 0;
-	}
-	rval = rtpp_checkcap(node, NTF_CPROTOVER, sizeof(NTF_CPROTOVER) - 1);
-	if (rval != -1) {
-		node->notify_supported = rval;
-	} else {
-		node->notify_supported = 0;
-	}
-	rval = rtpp_checkcap(node, STS_CPROTOVER, sizeof(STS_CPROTOVER) - 1);
-	if (rval != -1) {
-		node->stats_supported = rval;
-	} else {
-		node->stats_supported = 0;
-	}
+	if (rtpp_checkcap(node, RTP_CAP(REPACK)) > 0)
+		SET_CAP(node, REPACK);
+	if (rtpp_checkcap(node, RTP_CAP(CODECS)) > 0)
+		SET_CAP(node, CODECS);
+	if (rtpp_checkcap(node, RTP_CAP(AUTOBRIDGE)) > 0)
+		SET_CAP(node, AUTOBRIDGE);
+	if (rtpp_checkcap(node, RTP_CAP(NOTIFY)) > 0)
+		SET_CAP(node, NOTIFY);
+	if (rtpp_checkcap(node, RTP_CAP(STATS)) > 0)
+		SET_CAP(node, STATS);
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -3308,7 +3272,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 			}
 
 			/* XXX: here we assume that all nodes in a set should be similar */
-			if (args.node->abr_supported) {
+			if (HAS_CAP(args.node, AUTOBRIDGE)) {
 				if (msg->first_line.type == SIP_REQUEST) {
 					ap = pkg_malloc(sizeof(*ap));
 					if (ap == NULL) {
@@ -3785,7 +3749,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 				}
 				/* if we don't have, we should choose a new node */
 				if (rep_opts.oidx > 0) {
-					if (args->node->rn_rep_supported == 0) {
+					if (!HAS_CAP(args->node, REPACK)) {
 						LM_WARN("re-packetization is requested but is not "
 						    "supported by the selected RTP proxy node\n");
 						v[2].iov_len = 0;
@@ -3794,7 +3758,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 						v[2].iov_len = rep_opts.oidx;
 					}
 				}
-				if (payload_types.len > 0 && args->node->rn_ptl_supported != 0) {
+				if (payload_types.len > 0 && HAS_CAP(args->node, CODECS)) {
 					pt_opts.oidx = 0;
 					if (append_opts(&pt_opts, 'c') == -1) {
 						LM_ERR("out of pkg memory\n");
@@ -3832,7 +3796,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 					v[3].iov_len = 0;
 				}
 				if(enable_notification && opts.s.s[0] == 'U' &&
-						args->node->notify_supported)
+						HAS_CAP(args->node, NOTIFY))
 					vcnt = 22;
 				else
 				{
@@ -4199,7 +4163,7 @@ static inline int rtpproxy_stats_f(struct sip_msg *msg, char *pup, char *pdown,
 		LM_ERR("no available proxies\n");
 		goto error;
 	}
-	if (!node->stats_supported) {
+	if (!HAS_CAP(node, STATS)) {
 		LM_ERR("RTPProxy does not support statistics query!\n");
 		goto error;
 	}
