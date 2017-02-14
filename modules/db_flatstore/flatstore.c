@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"

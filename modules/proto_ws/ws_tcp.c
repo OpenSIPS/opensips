@@ -29,6 +29,7 @@
 #include "../../globals.h"
 #include "../../tsend.h"
 #include "ws_tcp.h"
+#include <sys/uio.h>
 #include <unistd.h>
 
 /**************  READ related functions ***************/
