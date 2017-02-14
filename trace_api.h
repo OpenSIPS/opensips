@@ -73,6 +73,30 @@ typedef int (add_trace_data_f)(trace_message message, void* data, int len,
 		int type, int data_id, int vendor);
 
 /*
+ * add correlation elements other than the basic correlation id
+ * if other correlation elements defined before, the new one will be appended
+ * to the rest
+ * IMPORTANT: this WILL NOT OVERRIDE the already existing correlation id
+ * @param1 message used for tracing data
+ * @param2 key identifying the new correlation element
+ * @param3 the value of the new correlation element
+ * @return 0 for success -1 in case of failure
+ */
+typedef int (add_trace_correlation_f)(trace_message message, char* key, char* value);
+
+/*
+ * add payload elements other than the basic paylod added when creating the message
+ * the payload given as an argument to create_trace_message will be removed
+ * if other payloads added using this function, the new one will be appended to the rest
+ * @param1 message used for tracing data
+ * @param2 key identifying the new correlation element
+ * @param3 the value of the new correlation element
+ * @return 0 for success -1 in case of failure
+ */
+typedef int (add_trace_payload_f)(trace_message message, char* key, char* value);
+
+
+/*
  * send traced message to the desired destination
  * @param1 message to send(function should contain packing functionality and also free it)
  * @param2 destination to which the message is sent
@@ -127,6 +151,8 @@ typedef int (get_data_id_f)(const char* data_name, int* vendor, int* data_id);
 typedef struct _trace_prot {
 	create_trace_message_f*   create_trace_message;
 	add_trace_data_f*         add_trace_data;
+	add_trace_correlation_f*  add_trace_correlation;
+	add_trace_payload_f*      add_trace_payload;
 	trace_send_message_f*     send_message;
 	get_trace_dest_by_name_f* get_trace_dest_by_name;
 	free_trace_message_f*     free_message;
@@ -176,6 +202,17 @@ typedef int(*check_is_traced_f)(int id);
 typedef trace_dest(*get_next_destination_f)(trace_dest last_dest, int id_hash);
 
 
+/*
+ * this callback shall give users the possibility to modify the message
+ * between the time when it was created and the time is being sent
+ */
+typedef void(*modify_trace_message_f)(trace_message message, void* param);
+
+struct modify_trace {
+	modify_trace_message_f mod_f;
+	void* param;
+};
+
 /**
  * generic tracing function in sip context(currently dirrectly related
  * to siptrace module); if custom message needs to be send
@@ -193,7 +230,7 @@ typedef trace_dest(*get_next_destination_f)(trace_dest last_dest, int id_hash);
  */
 typedef int(*sip_context_trace_f)(int id, union sockaddr_union* from_su,
 		union sockaddr_union* to_su, str* payload, int net_proto,
-		str* correlation_id);
+		str* correlation_id, struct modify_trace* mod_p);
 
 
 extern register_trace_type_f register_trace_type;
