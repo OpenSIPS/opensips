@@ -45,7 +45,7 @@
 #include "hep.h"
 #include "../compression/compression_api.h"
 
-#include "cJSON/cJSON.h"
+#include "cJSON.h"
 
 #define GENERIC_VENDOR_ID 0x0000
 #define HEP_PROTO_SIP  0x01
