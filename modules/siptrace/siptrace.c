@@ -2379,9 +2379,12 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
 		unsigned short toport, trace_dest dest)
 {
+	#define SIP_TRACE_MAX 2048
+
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
 	unsigned int proto;
+	static char buf[SIP_TRACE_MAX];
 
 	trace_message trace_msg;
 
@@ -2405,16 +2408,21 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		return -1;
 	}
 
-	/* FIXME add correlation id chunk??? */
+	/* we don't care if not all chars are written */
+	snprintf( buf, SIP_TRACE_MAX, "%.*s", body->len, body->s);
 
+	tprot.add_trace_payload( trace_msg, "payload", buf);
+
+	/* add correlation id chunk??? */
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
 		LM_ERR("failed to forward message to destination!\n");
-		return -1;;
+		return -1;
 	}
 
 	tprot.free_message(trace_msg);
 
 	return 0;
+#undef SIP_TRACE_MAX
 }
 
 /*!
@@ -2605,7 +2613,7 @@ int is_id_traced(int id)
 
 int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		union sockaddr_union* to_su, str* payload,
-		int net_proto, str* correlation_id)
+		int net_proto, str* correlation_id, struct modify_trace* mod_p)
 {
 	int trace_id_hash;
 
@@ -2664,6 +2672,10 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 			LM_ERR("failed to add correlation id to the packet!\n");
 			return -1;
 		}
+
+		/* here the message can be modified */
+		if ( mod_p )
+			mod_p->mod_f( trace_msg, mod_p->param );
 
 		if (tprot.send_message(trace_msg, it->el.hep.hep_id, NULL) < 0) {
 			LM_ERR("failed to send trace message!\n");

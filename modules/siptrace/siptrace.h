@@ -118,7 +118,7 @@ int is_id_traced(int id);
 trace_dest get_next_trace_dest(trace_dest last_dest, int hash);
 int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		union sockaddr_union* to_su, str* payload,
-		int net_proto, str* correlation_id);
+		int net_proto, str* correlation_id, struct modify_trace* mod_p);
 
 #endif
 
