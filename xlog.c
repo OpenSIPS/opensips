@@ -38,6 +38,7 @@
 #include "trace_api.h"
 
 #define XLOG_TRACE_API_MODULE "proto_hep"
+#define XLOG_CORRELATION_MAGIC "XLOGCORR"
 
 
 
@@ -104,6 +105,7 @@ static inline void add_xlog_data(trace_message message, void* param)
 {
 	char* str_level;
 	xl_trace_t* xtrace_param = param;
+	static str callid_buf = { 0, 0};
 
 	switch (xlog_level) {
 		case L_ALERT:
@@ -131,12 +133,24 @@ static inline void add_xlog_data(trace_message message, void* param)
 		return;
 
 	tprot.add_trace_payload( message, "payload", xtrace_param->buf);
+	if ( !callid_buf.s ) {
+		callid_buf.len = xtrace_param->msg->callid->body.len + 1;
+		callid_buf.s = pkg_malloc( callid_buf.len );
+	} else if ( callid_buf.len < xtrace_param->msg->callid->body.len + 1 ) {
+		callid_buf.len = xtrace_param->msg->callid->body.len + 1;
+		callid_buf.s = pkg_realloc( callid_buf.s, callid_buf.len);
+	}
 
+	memcpy( callid_buf.s, xtrace_param->msg->callid->body.s,
+			xtrace_param->msg->callid->body.len );
+	callid_buf.s[ xtrace_param->msg->callid->body.len ] = 0;
+
+	tprot.add_trace_correlation( message, "sip", callid_buf.s );
 }
 
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 {
-	str x_msg;
+	str x_msg=str_init("faked"), correlation;
 	struct modify_trace mod_p;
 
 	unsigned char ch_tmp = 0;
@@ -179,13 +193,14 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	xtrace_param.buf = buf;
 	mod_p.param = &xtrace_param;
 
+	correlation.s = (char *)tprot.generate_gid(XLOG_CORRELATION_MAGIC);
+	correlation.len = strlen(correlation.s);
+
 	if (sip_context_trace(xlog_proto_id, &from_su, &to_su,
-				&x_msg, proto, &msg->callid->body, &mod_p) < 0) {
+				&x_msg, proto, &correlation, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
 	}
-
-
 
 	if ( ch_tmp ) {
 		buf[xlog_buf_size - 1] = ch_tmp;
