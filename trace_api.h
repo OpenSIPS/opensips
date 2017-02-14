@@ -147,6 +147,19 @@ typedef int (get_message_id_f)(char* proto);
  */
 typedef int (get_data_id_f)(const char* data_name, int* vendor, int* data_id);
 
+/**
+ * generates an unique global id, which has an unique value in time and space
+ *
+ * * time - the values of the id must not be the same if the timestamps are not
+ * the same;
+ * * space - the values of the id must not be the same if the context is the
+ * same for both( same process );
+ *
+ * @param1 {optional} cookie to be appended in the beginning of the id
+ * @return char16 unique id
+ */
+typedef unsigned char* (generate_gid_f)(char* cookie);
+
 
 typedef struct _trace_prot {
 	create_trace_message_f*   create_trace_message;
@@ -158,6 +171,7 @@ typedef struct _trace_prot {
 	free_trace_message_f*     free_message;
 	get_message_id_f*         get_message_id;
 	get_data_id_f*            get_data_id;
+	generate_gid_f*           generate_gid;
 } trace_proto_t;
 
 /**

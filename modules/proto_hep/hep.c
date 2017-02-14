@@ -1611,6 +1611,58 @@ int get_hep_chunk_id(const char* name, int* vendor, int* id)
 	return 0;
 }
 
+unsigned char* generate_hep_gid(char* cookie)
+{
+#define COOKIE_MAX 16
+#define GID_MAX 16
+#define B64_MAX 48
+
+	int cookie_len = 0, rand_val;
+	static unsigned char buf[GID_MAX + 1];
+	static unsigned char b64_buf[B64_MAX + 1];
+
+	pid_t pid;
+	struct timeval tv;
+
+
+	memset( b64_buf, 0, B64_MAX + 1);
+	if ( cookie ) {
+		cookie_len = strlen(cookie);
+		if ( cookie_len > COOKIE_MAX ) {
+			LM_ERR("cookie too big %s\n", cookie);
+			return 0;
+		}
+
+		memcpy( b64_buf, cookie, cookie_len );
+	}
+
+	/* 4 bytes with pid */
+	pid = getpid();
+	memcpy( buf, &pid, 4);
+
+	gettimeofday( &tv, 0);
+
+	/* 8 bytes with time */
+	memcpy( buf + 4, &tv.tv_sec, 4);
+	/* 4 bytes with ms time */
+	memcpy( buf + 8, &tv.tv_usec, 4);
+
+	/* 4 bytes rand() */
+	rand_val = rand();
+	memcpy( buf + 12, &rand_val, 4);
+
+
+	buf[GID_MAX] = 0;
+
+	base64encode( b64_buf + cookie_len, buf, 16);
+
+	return b64_buf;
+
+#undef COOKIE_MAX
+#undef GID_MAX
+#undef B64_MAX
+}
+
 int hep_bind_trace_api(trace_proto_t* prot)
 {
 	if (!prot)
@@ -1627,6 +1679,7 @@ int hep_bind_trace_api(trace_proto_t* prot)
 	prot->free_message = free_hep_message;
 	prot->get_message_id = get_hep_message_id;
 	prot->get_data_id = get_hep_chunk_id;
+	prot->generate_gid = generate_hep_gid;
 
 	return 0;
 }

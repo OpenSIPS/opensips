@@ -273,5 +273,6 @@ int parse_hep_id(unsigned int type, void *val);
 int hep_bind_trace_api(trace_proto_t* prot);
 
 typedef int (*get_hep_ctx_id_t)(void);
+unsigned char* generate_hep_gid(char* cookie);
 #endif
 

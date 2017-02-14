@@ -184,7 +184,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-
 	if (payload_compression) {
 		load_compression =
 			(load_compression_f)find_export("load_compression", 1, 0);
