@@ -954,6 +954,27 @@ int fixup_spve(void** param)
 		gp->type = GPARAM_TYPE_STR;
 		pv_elem_free_all(gp->v.pve);
 		gp->v.sval = s;
+	} else if (!gp->v.pve->next && !gp->v.pve->text.len) {
+		/* avoid going through pv_priinf buffer when there is only one spec */
+		/*
+
+		pv_spec_t spec = gp->v.pve->spec;
+		pv_elem_free_all(gp->v.pve);
+		gp->v.pvs = pkg_malloc(sizeof(spec));
+		if (!gp->v.pvs) {
+			LM_ERR("no more memory!\n");
+			return E_OUT_OF_MEM;
+		}
+		*gp->v.pvs = spec;
+
+		 * XXX: the line below is an optimization for the code commented above
+		 *
+		 * use the same memory as the pv_elem_t allocated in pv_parse_format
+		 * we can do this because pv_elem_t already contains a pv_spec_t, so
+		 * the structure will definitely fit a single pv_spec_t - razvanc
+		 */
+		*gp->v.pvs = gp->v.pve->spec;
+		gp->type = GPARAM_TYPE_PVS;
 	} else {
 		gp->type = GPARAM_TYPE_PVE;
 	}
