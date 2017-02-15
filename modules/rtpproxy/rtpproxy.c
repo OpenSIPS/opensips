@@ -252,10 +252,13 @@ static int rtpproxy_answer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_offer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_stats_f(struct sip_msg *, char *, char *, char *, char *,
 		char *, char *);
+static int rtpproxy_all_stats_f(struct sip_msg *, char *, char *, char *);
+static int rtpp_init_extra_stats(void);
 
 static int add_rtpproxy_socks(struct rtpp_set * rtpp_list, char * rtpproxy);
 static int fixup_set_id(void ** param);
 static int fixup_stats(void ** param, int param_no);
+static int fixup_all_stats(void ** param, int param_no);
 static int fixup_stream(void ** param, int param_no);
 static int fixup_offer_answer(void ** param, int param_no);
 static int fixup_two_options(void ** param, int param_no);
@@ -467,6 +470,15 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"rtpproxy_stats",(cmd_function)rtpproxy_stats_f, 6,
 		fixup_stats, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_all_stats",(cmd_function)rtpproxy_all_stats_f, 1,
+		fixup_all_stats, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_all_stats",(cmd_function)rtpproxy_all_stats_f, 2,
+		fixup_all_stats, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_all_stats",(cmd_function)rtpproxy_all_stats_f, 3,
+		fixup_all_stats, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -783,6 +795,36 @@ static int fixup_stats(void ** param, int param_no)
 	if (param_no > 4)
 		return fixup_two_options(param, param_no + 4);
 	return fixup_pvar(param);
+}
+
+static int fixup_all_stats(void ** param, int param_no)
+{
+	str name;
+	pv_spec_t *e;
+	if (param_no < 1 || param_no > 3) {
+		LM_ERR("Too many parameters %d\n", param_no);
+		return E_CFG;
+	}
+	if (param_no == 1) {
+		name.s = (char *)*param;
+		name.len = strlen(name.s);
+		e = pkg_malloc(sizeof *e);
+		if (!e) {
+			LM_ERR("out of mem!\n");
+			return E_OUT_OF_MEM;
+		}
+		if (pv_parse_spec(&name, e) < 0) {
+			LM_ERR("invalid spec %s\n", name.s);
+			return E_SCRIPT;
+		}
+		if (e->type != PVT_AVP) {
+			LM_ERR("invalid pvar type %s - only AVPs are allowed!\n", name.s);
+			return E_SCRIPT;
+		}
+		*param = (void *)e;
+		return 0;
+	}
+	return fixup_two_options(param, param_no + 1);
 }
 
 static int fixup_recording(void ** param, int param_no)
@@ -1326,6 +1368,8 @@ mod_init(void)
 	ei_id = evi_publish_event(event_name);
 	if (ei_id == EVI_ERROR)
 		LM_ERR("cannot register event\n");
+
+	rtpp_init_extra_stats();
 
 	return 0;
 }
@@ -2119,6 +2163,8 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 		SET_CAP(node, STATS);
 	if (rtpp_checkcap(node, RTP_CAP(NOTIFY_WILD)) > 0)
 		SET_CAP(node, NOTIFY_WILD);
+	if (rtpp_checkcap(node, RTP_CAP(STATS_EXTRA)) > 0)
+		SET_CAP(node, STATS_EXTRA);
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -4105,21 +4151,83 @@ static char *rtpproxy_stats_pop_int(struct sip_msg *msg, char *p,
 	return p;
 }
 
-static inline int rtpproxy_stats_f(struct sip_msg *msg, char *pup, char *pdown,
-		char *psent, char *pfail, char *pset, char *pvar)
+#define RTPP_QUERY_ONCE_STATS_NO 5
+static char *rtpp_stats[] = {
+	"ttl",
+	"npkts_ina",
+	"npkts_ino",
+	"nrelayed",
+	"ndropped",
+	"rtpa_nsent",
+	"rtpa_nrcvd",
+	"rtpa_ndups",
+	"rtpa_nlost",
+	"rtpa_perrs"};
+#define RTPP_QUERY_STATS_SIZE (sizeof(rtpp_stats)/sizeof(rtpp_stats[0]))
+
+static int rtpp_stats_no = RTPP_QUERY_STATS_SIZE;
+static int rtpp_stats_chunks_no;
+static struct iovec *rtpp_stats_chunks;
+
+static int rtpp_init_extra_stats(void)
 {
-	int nitems;
-	str callid = {0, 0};
+	char *p;
+	int len, stat, chunk, stopidx;
+	rtpp_stats_chunks_no = RTPP_QUERY_STATS_SIZE / RTPP_QUERY_ONCE_STATS_NO;
+	if (RTPP_QUERY_STATS_SIZE % RTPP_QUERY_ONCE_STATS_NO)
+		rtpp_stats_chunks_no++;
+	rtpp_stats_chunks = pkg_malloc(rtpp_stats_chunks_no * sizeof(*rtpp_stats_chunks));
+	if (!rtpp_stats_chunks) {
+		LM_ERR("cannot allocate rtpproxy stats chunks array\n");
+		return -1;
+	}
+
+	for (chunk = 0; chunk < rtpp_stats_chunks_no; chunk++) {
+		stopidx = (chunk + 1) * RTPP_QUERY_ONCE_STATS_NO;
+		if (stopidx > RTPP_QUERY_STATS_SIZE)
+			stopidx = RTPP_QUERY_STATS_SIZE;
+		len = 0;
+		for (stat = chunk * RTPP_QUERY_ONCE_STATS_NO; stat < stopidx; stat++)
+			len += 1 /* ' ' */ + strlen(rtpp_stats[stat]);
+		rtpp_stats_chunks[chunk].iov_base = pkg_malloc(len);
+		if (!rtpp_stats_chunks) {
+			LM_WARN("cannot allocate %d chunk. Only %d stats out of %ld "
+					"can be used!\n", chunk, chunk * RTPP_QUERY_ONCE_STATS_NO,
+					RTPP_QUERY_STATS_SIZE);
+			goto error;
+		}
+		p = rtpp_stats_chunks[chunk].iov_base;
+		for (stat = chunk * RTPP_QUERY_ONCE_STATS_NO; stat < stopidx; stat++) {
+			*p++ = ' ';
+			len = strlen(rtpp_stats[stat]);
+			memcpy(p, rtpp_stats[stat], len);
+			p += len;
+		}
+		rtpp_stats_chunks[chunk].iov_len = p - (char *)rtpp_stats_chunks[chunk].iov_base;
+		LM_INFO("%d %ld [%.*s]\n", chunk, rtpp_stats_chunks[chunk].iov_len,
+				(int)rtpp_stats_chunks[chunk].iov_len, (char *)rtpp_stats_chunks[chunk].iov_base);
+	}
+	return 0;
+
+error:
+	rtpp_stats_no = rtpp_stats_no;
+	rtpp_stats_chunks_no = chunk;
+	rtpp_stats_no = chunk * RTPP_QUERY_ONCE_STATS_NO;
+	return -1;
+}
+
+static inline int rtpp_build_stats(struct sip_msg *msg, struct iovec **vret,
+		int *nret, str *callid)
+{
+	static struct iovec v[1 + 4 + 4 + 2] = {{NULL, 0}, {"Q", 1}, {" ", 1},
+		{NULL, 0}, {" ", 1}, {NULL, 0}, {";1 ", 3}, {NULL, 0}, {";1", 2},
+		/* reserved for extra stats */
+		{NULL, 0}};
+
 	str from_tag = {0, 0};
 	str to_tag = {0, 0};
-	struct rtpp_node *node;
-	struct rtpp_set *set;
-	struct iovec v[1 + 4 + 4] = {{NULL, 0}, {"Q", 1}, {" ", 1}, {NULL, 0},
-		{" ", 1}, {NULL, 0}, {";1 ", 3}, {NULL, 0}, {";1", 2}};
-	char *ret, *p;
-	int error;
 
-	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
+	if (get_callid(msg, callid) == -1 || callid->len == 0) {
 		LM_ERR("can't get Call-Id field\n");
 		return -1;
 	}
@@ -4134,21 +4242,37 @@ static inline int rtpproxy_stats_f(struct sip_msg *msg, char *pup, char *pdown,
 		return -1;
 	}
 
-	STR2IOVEC(callid, v[3]);
+	STR2IOVEC(*callid, v[3]);
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
-	nitems = 9;
+
 	if (msg->first_line.type == SIP_REPLY) {
-		if (to_tag.len == 0)
-			return -1;
 		STR2IOVEC(to_tag, v[5]);
 		STR2IOVEC(from_tag, v[7]);
 	} else {
 		STR2IOVEC(from_tag, v[5]);
 		STR2IOVEC(to_tag, v[7]);
-		if (to_tag.len <= 0)
-			nitems = 6;
 	}
+
+	*vret = v;
+	*nret = 9;
+
+	return 0;
+}
+
+static inline int rtpproxy_stats_f(struct sip_msg *msg, char *pup, char *pdown,
+		char *psent, char *pfail, char *pset, char *pvar)
+{
+	int nitems;
+	struct rtpp_node *node;
+	struct rtpp_set *set;
+	char *ret, *p;
+	int error;
+	struct iovec *v;
+	str callid = {0, 0};
+
+	if (rtpp_build_stats(msg, &v, &nitems, &callid) < 0)
+		return -1;
 
 	set = get_rtpp_set(msg, (nh_set_param_t *)pset);
 	if (!set) {
@@ -4186,7 +4310,7 @@ static inline int rtpproxy_stats_f(struct sip_msg *msg, char *pup, char *pdown,
 			LM_ERR("RTPProxy cannot find session!\n");
 			return -8;
 		default:
-			LM_ERR("RTPProxy error not handled!\n");
+			LM_ERR("RTPProxy error not handled: %s!\n", ret);
 			return -error;
 	}
 
@@ -4217,4 +4341,102 @@ error:
 	lock_stop_read( nh_lock );
 
 	return -1;
+}
+
+static inline int rtpproxy_all_stats_f(struct sip_msg *msg, char *pavp,
+		char *pset, char *pvar)
+{
+	int nitems;
+	struct usr_avp *avp;
+	struct rtpp_node *node;
+	struct rtpp_set *set;
+	char *result, *p;
+	int error;
+	struct iovec *v;
+	str callid = {0, 0};
+	unsigned short type;
+	int_str val;
+	int avals;
+	int nrstats = 0;
+	str nr;
+	int chunk;
+	int ret = -1;
+
+	if (!pavp) {
+		LM_ERR("no return AVP!\n");
+		return -1;
+	}
+	if (pv_get_avp_name(msg, &((pv_spec_p)pavp)->pvp, &avals, &type) < 0) {
+		LM_ERR("cannot resolve AVP!\n");
+		return -1;
+	}
+	avp = NULL;
+	do {
+		if (avp) destroy_avp(avp);
+		avp = search_first_avp(type, avals, NULL, NULL);
+	}while(avp);
+
+	if (rtpp_build_stats(msg, &v, &nitems, &callid) < 0)
+		return -1;
+
+	set = get_rtpp_set(msg, (nh_set_param_t *)pset);
+	if (!set) {
+		LM_ERR("could not find rtpproxy set\n");
+		return 0;
+	}
+
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
+
+	node = select_rtpp_node(msg, callid, set, (pv_spec_p)pvar, 1);
+	if (!node) {
+		LM_ERR("no available proxies\n");
+		goto error;
+	}
+	if (!HAS_CAP(node, STATS_EXTRA)) {
+		LM_ERR("RTPProxy does not support all statistics query!\n");
+		goto error;
+	}
+
+	ret = -2;
+	for (chunk = 0; chunk < rtpp_stats_chunks_no; chunk++) {
+		v[nitems] = rtpp_stats_chunks[chunk];
+		result = send_rtpp_command(node, v, nitems + 1);
+
+		error = rtpp_get_error(result);
+		if (error) {
+			LM_ERR("RTPProxy error not handled: %s!\n", result);
+			goto error;
+		}
+		nr.s = result;
+		for (p = result; *p != '\0'; p++) {
+			if (*p == ' ' || *p == '\n') {
+				nr.len = p - nr.s;
+				if (str2sint(&nr, &val.n) < 0) {
+					LM_ERR("invalid statistic value: %.*s\n", nr.len, nr.s);
+					goto error;
+				}
+				if (add_avp_last(type, avals, val) < 0) {
+					LM_ERR("cannot populate statistic %d with %d\n", nrstats, val.n);
+					goto error;
+				}
+				nrstats++;
+				nr.s = p + 1;
+			}
+		}
+	}
+
+	if (nrstats != rtpp_stats_no) {
+		LM_ERR("unexpected number of stats %d expected %d\n",
+				nrstats, rtpp_stats_no);
+		goto error;
+	}
+
+	ret = 1;
+error:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
+	}
+	return ret;
 }

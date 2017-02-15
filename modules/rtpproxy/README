@@ -72,6 +72,9 @@ Razvan Crainea
               1.6.8. rtpproxy_stats(up_pvar, down_pvar, sent_pvar,
                       fail_pvar [, set_id [, sock_pvar]])
 
+              1.6.9. rtpproxy_all_stats(stats_avp [, set_id [,
+                      sock_pvar]])
+
         1.7. MI Commands
 
               1.7.1. rtpproxy_enable
@@ -104,9 +107,10 @@ Razvan Crainea
    1.16. rtpproxy_stream2xxx usage
    1.17. rtpproxy_start_recording usage
    1.18. rtpproxy_stats usage
-   1.19. rtpproxy_enable usage
-   1.20. rtpproxy_show usage
-   1.21. rtpproxy_reload usage
+   1.19. rtpproxy_all_stats usage
+   1.20. rtpproxy_enable usage
+   1.21. rtpproxy_show usage
+   1.22. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -684,6 +688,44 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
 ) fail=$var(fail)\n");
 ...
 
+1.6.9.  rtpproxy_all_stats(stats_avp [, set_id [, sock_pvar]])
+
+   This command gathers all RTP statistics available from
+   RTP-Proxy. All the returned values stored in an AVP that can be
+   further read by indexing the AVP.
+
+   This command is only available starting with RTPProxy 2.1
+   realease.
+
+   Meaning of the parameters is as follows:
+     * stats_avp - an AVP where the statistics will be stored.
+       This AVP can be further indexed to get a specific
+       statistic.
+     * set_id(optional) - the set used for this call.
+     * sock_pvar(optional) - pvar used to store the RTPProxy
+       socket chosen for this call.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Each statistic is stored at a specific index as it follows:
+     * ttl - $avp(ret) / $(avp(ret)[0])
+     * pkts_ia - $(avp(ret)[1])
+     * pkts_io - $(avp(ret)[2])
+     * relayed - $(avp(ret)[3])
+     * dropped - $(avp(ret)[4])
+     * rtpa_set - $(avp(ret)[5])
+     * rtpa_rcvd - $(avp(ret)[6])
+     * rtpa_dups - $(avp(ret)[7])
+     * rtpa_lost - $(avp(ret)[8])
+     * rtpa_perrs - $(avp(ret)[9])
+
+   Example 1.19. rtpproxy_all_stats usage
+...
+rtpproxy_all_stats("$avp(stats)");
+xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
+...
+
 1.7. MI Commands
 
 1.7.1. rtpproxy_enable
@@ -705,7 +747,7 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
    diferente sete), all its instances will be enables/disabled IF
    no set ID provided (as second param).
 
-   Example 1.19.  rtpproxy_enable usage
+   Example 1.20.  rtpproxy_enable usage
 ...
 ## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
@@ -720,7 +762,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 
    No parameter.
 
-   Example 1.20.  rtpproxy_show usage
+   Example 1.21.  rtpproxy_show usage
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
@@ -734,7 +776,7 @@ $ opensipsctl fifo rtpproxy_show
 
    No parameter.
 
-   Example 1.21.  rtpproxy_reload usage
+   Example 1.22.  rtpproxy_reload usage
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...
