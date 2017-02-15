@@ -190,6 +190,20 @@ msg_getHeader(msgobject *self, PyObject *args)
     return PyString_FromStringAndSize(hbody->s, hbody->len);
 }
 
+static char *
+pkg_strdup(char *cp)
+{
+	char *rval;
+	int len;
+
+	len = strlen(cp) + 1;
+	rval = pkg_malloc(len);
+	if (rval == NULL)
+		return (NULL);
+	memcpy(rval, cp, len);
+	return (rval);
+}
+
 static PyObject *
 msg_call_function(msgobject *self, PyObject *args)
 {
@@ -201,16 +215,14 @@ msg_call_function(msgobject *self, PyObject *args)
 
     if (self->msg == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
-        Py_INCREF(Py_None);
-        return Py_None;
+        goto e0;
     }
 
     i = PySequence_Size(args);
     if (i < 1 || i > 3) {
         PyErr_SetString(PyExc_RuntimeError, "call_function() should " \
           "have from 1 to 3 arguments");
-        Py_INCREF(Py_None);
-        return Py_None;
+        goto e0;
     }
 
     if(!PyArg_ParseTuple(args, "s|ss:call_function", &fname, &arg1, &arg2))
@@ -219,23 +231,37 @@ msg_call_function(msgobject *self, PyObject *args)
     fexport = find_cmd_export_t(fname, i - 1, 0);
     if (fexport == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "no such function");
-        Py_INCREF(Py_None);
-        return Py_None;
+        goto e0;
     }
 
     elems[0].type = CMD_ST;
     elems[0].u.data = fexport;
     elems[1].type = STRING_ST;
-    elems[1].u.data = arg1;
+    if (arg1 != NULL) {
+        elems[1].u.data = pkg_strdup(arg1);
+        if (elems[1].u.data == NULL) {
+            PyErr_SetString(PyExc_RuntimeError, "pkg_strdup() failed");
+            goto e0;
+        }
+    } else {
+        elems[1].u.data = NULL;
+    }
     elems[2].type = STRING_ST;
-    elems[2].u.data = arg2;
+    if (arg2 != NULL) {
+        elems[2].u.data = pkg_strdup(arg2);
+        if (elems[2].u.data == NULL) {
+            PyErr_SetString(PyExc_RuntimeError, "pkg_strdup() failed");
+            goto e1;
+        }
+    } else {
+        elems[2].u.data = NULL;
+    }
     act = mk_action(MODULE_T, 3, elems, 0, "python");
 
     if (act == NULL) {
         PyErr_SetString(PyExc_RuntimeError,
           "action structure could not be created");
-        Py_INCREF(Py_None);
-        return Py_None;
+        goto e2;
     }
 
     if (fexport->fixup != NULL) {
@@ -243,8 +269,7 @@ msg_call_function(msgobject *self, PyObject *args)
             rval = fexport->fixup(&(act->elem[2].u.data), 2);
             if (rval < 0) {
                 PyErr_SetString(PyExc_RuntimeError, "Error in fixup (2)");
-                Py_INCREF(Py_None);
-                return Py_None;
+                goto e3;
             }
             act->elem[2].type = MODFIXUP_ST;
         }
@@ -252,8 +277,7 @@ msg_call_function(msgobject *self, PyObject *args)
             rval = fexport->fixup(&(act->elem[1].u.data), 1);
             if (rval < 0) {
                 PyErr_SetString(PyExc_RuntimeError, "Error in fixup (1)");
-                Py_INCREF(Py_None);
-                return Py_None;
+                goto e3;
             }
             act->elem[1].type = MODFIXUP_ST;
         }
@@ -261,16 +285,14 @@ msg_call_function(msgobject *self, PyObject *args)
             rval = fexport->fixup(0, 0);
             if (rval < 0) {
                 PyErr_SetString(PyExc_RuntimeError, "Error in fixup (0)");
-                Py_INCREF(Py_None);
-                return Py_None;
+                goto e3;
             }
         }
     }
 
     rval = do_action(act, self->msg);
 
-    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data) &&
-      (act->elem[2].u.data != arg2)) {
+    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data)) {
        pkg_free(act->elem[2].u.data);
     }
 
@@ -281,6 +303,19 @@ msg_call_function(msgobject *self, PyObject *args)
     pkg_free(act);
 
     return PyInt_FromLong(rval);
+e3:
+    pkg_free(act);
+e2:
+    if ((elems[2].type == MODFIXUP_ST) && (elems[2].u.data)) {
+        pkg_free(elems[2].u.data);
+    }
+e1:
+    if ((elems[1].type == MODFIXUP_ST) && (elems[1].u.data)) {
+       pkg_free(elems[1].u.data);
+    }
+e0:
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 PyDoc_STRVAR(copy_doc,
