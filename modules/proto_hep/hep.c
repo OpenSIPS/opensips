@@ -68,6 +68,8 @@ static hid_list_p hid_list=NULL;
 
 extern int hep_capture_id;
 extern int payload_compression;
+extern int homer5_on;
+extern str homer5_delim;
 
 extern compression_api_t compression_api;
 
@@ -1197,38 +1199,86 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 
 	int rem, hdr_len, pld_len, corr_len=0;
 	char* buf;
+	str* h5_buf;
 
-	generic_chunk_t *it, correlation;
+	generic_chunk_t *it, *corr_chunk, correlation;
 
 	*len = 0;
 
 	rem = hep_msg->u.hepv3.hg.header.length;
 
 	if ( hep_msg->fPayload ) {
-		rem -= hep_msg->u.hepv3.payload_chunk.chunk.length;
-		hep_msg->u.hepv3.payload_chunk.data = JSON_toString(hep_msg->fPayload);
+		if ( !homer5_on ) {
+			rem -= hep_msg->u.hepv3.payload_chunk.chunk.length;
+			hep_msg->u.hepv3.payload_chunk.data = JSON_toString(hep_msg->fPayload);
 
-		hep_msg->u.hepv3.payload_chunk.chunk.length =
-			strlen(hep_msg->u.hepv3.payload_chunk.data)
-				+ sizeof(hep_chunk_t);
+			hep_msg->u.hepv3.payload_chunk.chunk.length =
+				strlen(hep_msg->u.hepv3.payload_chunk.data) + sizeof(hep_chunk_t);
 
-		rem += hep_msg->u.hepv3.payload_chunk.chunk.length;
+			rem += hep_msg->u.hepv3.payload_chunk.chunk.length;
+		} else {
+			rem -= hep_msg->u.hepv3.payload_chunk.chunk.length;
+
+			h5_buf = hep_msg->fPayload;
+			hep_msg->u.hepv3.payload_chunk.data = h5_buf->s;
+			hep_msg->u.hepv3.payload_chunk.chunk.length =
+									h5_buf->len + sizeof(hep_chunk_t);
+
+			rem += hep_msg->u.hepv3.payload_chunk.chunk.length;
+		}
 	}
 
 	if ( hep_msg->correlation ) {
-		memset( &correlation, 0, sizeof(generic_chunk_t));
-		correlation.chunk.vendor_id = htons(0);
-		/* hardcoded but this is the header */
-		correlation.chunk.type_id = htons(101);
-		correlation.chunk.length = sizeof(hep_chunk_t);
+		if ( !homer5_on ) {
+			memset( &correlation, 0, sizeof(generic_chunk_t));
+			correlation.chunk.vendor_id = htons(0);
+			/* hardcoded but this is the header */
+			correlation.chunk.type_id = htons(101);
+			correlation.chunk.length = sizeof(hep_chunk_t);
 
-		correlation.data = JSON_toString(hep_msg->correlation);
-		corr_len += strlen(correlation.data);
+			correlation.data = JSON_toString(hep_msg->correlation);
+			corr_len += strlen(correlation.data);
 
-		correlation.chunk.length += corr_len;
-		rem += correlation.chunk.length;
+			correlation.chunk.length += corr_len;
+			rem += correlation.chunk.length;
 
-		correlation.chunk.length = htons(correlation.chunk.length);
+			correlation.chunk.length = htons(correlation.chunk.length);
+		} else {
+			/* search to see whether we already got a correlation header */
+			for ( it=hep_msg->u.hepv3.chunk_list; it; it=it->next ) {
+				if ( it->chunk.type_id == 0x11 ) {
+					break;
+				}
+			}
+
+
+			h5_buf = hep_msg->correlation;
+			if ( it ) {
+				corr_chunk = it;
+				rem -= it->chunk.length;
+			} else {
+				corr_chunk = pkg_malloc( sizeof(hep_chunk_t) );
+				if ( !corr_chunk ) {
+					LM_ERR("no more pkg memory!\n");
+					return 0;
+				}
+
+				memset( corr_chunk, 0, sizeof(hep_chunk_t) );
+				corr_chunk->chunk.type_id = 0x11;
+			}
+
+			corr_chunk->chunk.length = sizeof(hep_chunk_t) + h5_buf->len;
+			corr_chunk->data = h5_buf->s;
+
+
+			/* if chunk not exists add it to custom chunk list */
+			if ( !it ) {
+				corr_chunk->next = hep_msg->u.hepv3.chunk_list;
+				hep_msg->u.hepv3.chunk_list = corr_chunk;
+			}
+
+			rem += corr_chunk->chunk.length;
+		}
 	}
 
 
@@ -1274,13 +1324,15 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 
 	/* copy the correlation if exists */
 	if ( hep_msg->correlation ) {
-		memcpy( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
+		/* if on it will be with the rest of the chunks */
+		if ( !homer5_on ) {
+			memcpy( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
+			UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
 
-		/* can't get the correlation length from header since it's in htons form */
-		memcpy(buf + *len, correlation.data, corr_len);
-		UPDATE_CHECK_REMAINING(rem, *len, corr_len);
-
+			/* can't get the correlation length from header since it's in htons form */
+			memcpy(buf + *len, correlation.data, corr_len);
+			UPDATE_CHECK_REMAINING(rem, *len, corr_len);
+		}
 	}
 
 	for (it=hep_msg->u.hepv3.chunk_list; it; it=it->next) {
@@ -1419,57 +1471,161 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 	return 0;
 }
 
-int add_hep_correlation(trace_message message, char* corr_name, char* corr_value)
+int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 {
 	cJSON* root;
 	struct hep_desc* hep_msg;
+	static str corr_value_buf = {0, 0};
+	str* sip_correlation;
 
-	if ( !message || !corr_name || !corr_value ) {
+	if ( !message || !corr_name || !corr_value || !corr_value->s || !corr_value->len ) {
 		LM_ERR("invalid call! bad input params!\n");
 		return -1;
 	}
 
 	hep_msg = (struct hep_desc*) message;
-	if ( hep_msg->correlation) {
-		root = (cJSON *) hep_msg->correlation;
-	} else {
-		root = cJSON_CreateObject();
-		if ( !root ) {
-			LM_ERR("failed to create correlation object!\n");
-			return -1;
+
+	if ( !homer5_on ) {
+		if ( !corr_value_buf.s ) {
+			corr_value_buf.len = corr_value->len + 1;
+			corr_value_buf.s = pkg_malloc( corr_value_buf.len );
+
+			if ( !corr_value_buf.s ) {
+				LM_ERR("no more pkg mem!\n");
+				return -1;
+			}
+		} else if ( corr_value_buf.len < corr_value->len + 1) {
+			corr_value_buf.len = corr_value->len + 1;
+			corr_value_buf.s = pkg_realloc( corr_value_buf.s, corr_value_buf.len);
+
+			if ( !corr_value_buf.s ) {
+				LM_ERR("no more pkg mem!\n");
+				return -1;
+			}
 		}
 
-		hep_msg->correlation = root;
-	}
+		memcpy( corr_value_buf.s, corr_value->s, corr_value->len);
+		corr_value_buf.s[corr_value->len] = 0;
 
-	cJSON_AddStringToObject( root, corr_name, corr_value);
+		if ( hep_msg->correlation) {
+			root = (cJSON *) hep_msg->correlation;
+		} else {
+			root = cJSON_CreateObject();
+			if ( !root ) {
+				LM_ERR("failed to create correlation object!\n");
+				return -1;
+			}
+
+			hep_msg->correlation = root;
+		}
+
+		cJSON_AddStringToObject( root, corr_name, corr_value_buf.s);
+	} else {
+		if ( !memcmp( corr_name, "sip", sizeof("sip") ) ) {
+			/* we'll save sip correlation id as the actual correlation */
+			sip_correlation = pkg_malloc( sizeof(str) + corr_value->len );
+			if ( !sip_correlation ) {
+				LM_ERR("no more pkg mem!\n");
+				return -1;
+			}
+
+			sip_correlation->s = (char *)( sip_correlation + 1 );
+			sip_correlation->len = corr_value->len;
+
+			memcpy( sip_correlation->s, corr_value->s, corr_value->len);
+			hep_msg->correlation = sip_correlation;
+		}
+	}
 
 	return 0;
 }
 
-int add_hep_payload(trace_message message, char* pld_name, char* pld_value)
+int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 {
 	cJSON* root;
 	struct hep_desc* hep_msg;
 
-	if ( !message || !pld_name || !pld_value ) {
+	str* homer5_buf;
+
+	static str pld_value_buf = { 0, 0};
+
+	if ( !message || !pld_name || !pld_value || !pld_value->s || !pld_value->len ) {
 		LM_ERR("invalid call! bad input params!\n");
 		return -1;
 	}
 
 	hep_msg = (struct hep_desc*) message;
-	if ( hep_msg->fPayload) {
-		root = (cJSON *) hep_msg->fPayload;
-	} else {
-		root = cJSON_CreateObject();
-		if ( !root ) {
-			LM_ERR("failed to create correlation object!\n");
-			return -1;
-		}
-		hep_msg->fPayload = root;
-	}
 
-	cJSON_AddStringToObject( root, pld_name, pld_value);
+	if ( !homer5_on ) {
+		if ( !pld_value_buf.s ) {
+			pld_value_buf.len = pld_value->len + 1;
+			pld_value_buf.s = pkg_malloc( pld_value_buf.len );
+
+			if ( !pld_value_buf.s ) {
+				LM_ERR("no more pkg mem!\n");
+				return -1;
+			}
+		} else if ( pld_value_buf.len < pld_value->len + 1) {
+			pld_value_buf.len = pld_value->len + 1;
+			pld_value_buf.s = pkg_realloc( pld_value_buf.s, pld_value_buf.len);
+
+			if ( !pld_value_buf.s ) {
+				LM_ERR("no more pkg mem!\n");
+				return -1;
+			}
+		}
+
+		memcpy( pld_value_buf.s, pld_value->s, pld_value->len);
+		pld_value_buf.s[pld_value->len] = 0;
+
+		if ( hep_msg->fPayload ) {
+			root = (cJSON *) hep_msg->fPayload;
+		} else {
+			root = cJSON_CreateObject();
+			if ( !root ) {
+				LM_ERR("failed to create correlation object!\n");
+				return -1;
+			}
+			hep_msg->fPayload = root;
+		}
+
+		cJSON_AddStringToObject( root, pld_name, pld_value_buf.s);
+	} else {
+		if ( hep_msg->fPayload ) {
+			homer5_buf = hep_msg->fPayload;
+
+			homer5_buf->s = pkg_realloc( homer5_buf->s,
+					homer5_buf->len + homer5_delim.len + pld_value->len);
+		} else {
+			homer5_buf = pkg_malloc( sizeof(str) );
+			if ( !homer5_buf ) {
+				LM_ERR("no more pkg mem!\n");
+				return 0;
+			}
+
+			homer5_buf->len = 0;
+			homer5_buf->s = pkg_malloc(pld_value->len);
+
+		}
+
+		if ( !homer5_buf->s ) {
+			LM_ERR("no more pkg mem!\n");
+			return 0;
+		}
+
+		if ( hep_msg->fPayload ) {
+			memcpy( homer5_buf->s + homer5_buf->len, homer5_delim.s, homer5_delim.len );
+			homer5_buf->len += homer5_delim.len;
+
+			memcpy( homer5_buf->s + homer5_buf->len, pld_value->s, pld_value->len);
+			homer5_buf->len += pld_value->len;
+		} else {
+			memcpy( homer5_buf->s, pld_value->s, pld_value->len);
+			homer5_buf->len = pld_value->len;
+
+			hep_msg->fPayload = homer5_buf;
+		}
+	}
 
 	return 0;
 }
@@ -1551,12 +1707,21 @@ void free_hep_message(trace_message message)
 
 		/* free JSON payload if there */
 		if ( hep_msg->fPayload ) {
-			JSON_free( hep_msg->fPayload );
+			if ( !homer5_on ) {
+				JSON_free( hep_msg->fPayload );
+			} else {
+				pkg_free( ((str *)hep_msg->fPayload)->s );
+				pkg_free( hep_msg->fPayload );
+			}
 		}
 
 		/* free JSON correlation if there */
 		if ( hep_msg->correlation ) {
-			JSON_free( hep_msg->correlation );
+			if ( !homer5_on ) {
+				JSON_free( hep_msg->correlation );
+			} else {
+				pkg_free( hep_msg->correlation );
+			}
 		}
 
 		if (foo)

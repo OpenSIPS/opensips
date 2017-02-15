@@ -35,15 +35,15 @@ extern str correlation_value;
 #define MAX_TRACE_FIELD (1 << 7)
 
 struct mi_trace_req {
-	char cmd[MAX_TRACE_FIELD];
-	char backend[MAX_TRACE_FIELD];
+	str cmd;
+	str backend;
 	char params[MAX_TRACE_FIELD];
 } mi_treq;
 
 struct mi_trace_rpl {
 	char code[MAX_TRACE_FIELD];
-	char reason[MAX_TRACE_FIELD];
-	char rpl[MAX_TRACE_FIELD];
+	str reason;
+	str rpl;
 } mi_trpl;
 
 enum mi_trace_type { MI_TRACE_REQ, MI_TRACE_RPL};

@@ -103,49 +103,40 @@ int init_xlog(void)
 
 static inline void add_xlog_data(trace_message message, void* param)
 {
-	char* str_level;
+	str str_level;
 	xl_trace_t* xtrace_param = param;
-	static str callid_buf = { 0, 0};
 
 	switch (xlog_level) {
 		case L_ALERT:
-			str_level = DP_ALERT_TEXT; break;
+			str_level.s = DP_ALERT_TEXT; break;
 		case L_CRIT:
-			str_level = DP_CRIT_TEXT; break;
+			str_level.s = DP_CRIT_TEXT; break;
 		case L_ERR:
-			str_level = DP_ERR_TEXT; break;
+			str_level.s = DP_ERR_TEXT; break;
 		case L_WARN:
-			str_level = DP_WARN_TEXT; break;
+			str_level.s = DP_WARN_TEXT; break;
 		case L_NOTICE:
-			str_level = DP_NOTICE_TEXT; break;
+			str_level.s = DP_NOTICE_TEXT; break;
 		case L_INFO:
-			str_level = DP_INFO_TEXT; break;
+			str_level.s = DP_INFO_TEXT; break;
 		case L_DBG:
-			str_level = DP_DBG_TEXT; break;
+			str_level.s = DP_DBG_TEXT; break;
 		default:
 			LM_BUG("Unexpected log level [%d]\n", xlog_level);
 			return;
 	}
 
-	tprot.add_trace_payload( message, "level", str_level);
+	/* remove ':' after each level */
+	str_level.len = strlen(str_level.s) - 1;
+
+	tprot.add_trace_payload( message, "level", &str_level);
 
 	if ( !xtrace_param )
 		return;
 
-	tprot.add_trace_payload( message, "payload", xtrace_param->buf);
-	if ( !callid_buf.s ) {
-		callid_buf.len = xtrace_param->msg->callid->body.len + 1;
-		callid_buf.s = pkg_malloc( callid_buf.len );
-	} else if ( callid_buf.len < xtrace_param->msg->callid->body.len + 1 ) {
-		callid_buf.len = xtrace_param->msg->callid->body.len + 1;
-		callid_buf.s = pkg_realloc( callid_buf.s, callid_buf.len);
-	}
+	tprot.add_trace_payload( message, "payload", &xtrace_param->buf);
 
-	memcpy( callid_buf.s, xtrace_param->msg->callid->body.s,
-			xtrace_param->msg->callid->body.len );
-	callid_buf.s[ xtrace_param->msg->callid->body.len ] = 0;
-
-	tprot.add_trace_correlation( message, "sip", callid_buf.s );
+	tprot.add_trace_correlation( message, "sip", &xtrace_param->msg->callid->body );
 }
 
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
@@ -153,7 +144,6 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	str x_msg=str_init("faked"), correlation;
 	struct modify_trace mod_p;
 
-	unsigned char ch_tmp = 0;
 	xl_trace_t xtrace_param;
 
 	union sockaddr_union to_su, from_su;
@@ -180,17 +170,12 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	to_su.sin.sin_port = 0;
 	to_su.sin.sin_family = AF_INET;
 
-	if (len <  xlog_buf_size) {
-		/* no need to reset back here */
-		buf[len] = 0;
-	} else {
-		ch_tmp = buf[xlog_buf_size - 1];
-		buf[xlog_buf_size - 1] = 0;
-	}
-
 	mod_p.mod_f = add_xlog_data;
 	xtrace_param.msg = msg;
-	xtrace_param.buf = buf;
+
+	xtrace_param.buf.s = buf;
+	xtrace_param.buf.len = len;
+
 	mod_p.param = &xtrace_param;
 
 	correlation.s = (char *)tprot.generate_gid(XLOG_CORRELATION_MAGIC);
@@ -201,11 +186,6 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
 	}
-
-	if ( ch_tmp ) {
-		buf[xlog_buf_size - 1] = ch_tmp;
-	}
-
 
 	return 0;
 }

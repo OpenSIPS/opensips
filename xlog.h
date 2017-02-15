@@ -35,7 +35,7 @@ typedef struct _xl_level
 typedef struct _xl_trace
 {
 	struct sip_msg* msg;
-	char* buf;
+	str buf;
 
 
 } xl_trace_t;

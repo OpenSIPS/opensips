@@ -2379,12 +2379,9 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
 		unsigned short toport, trace_dest dest)
 {
-	#define SIP_TRACE_MAX 2048
-
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
 	unsigned int proto;
-	static char buf[SIP_TRACE_MAX];
 
 	trace_message trace_msg;
 
@@ -2408,10 +2405,7 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		return -1;
 	}
 
-	/* we don't care if not all chars are written */
-	snprintf( buf, SIP_TRACE_MAX, "%.*s", body->len, body->s);
-
-	tprot.add_trace_payload( trace_msg, "payload", buf);
+	tprot.add_trace_payload( trace_msg, "payload", body);
 
 	/* add correlation id chunk??? */
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {

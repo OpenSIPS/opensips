@@ -80,6 +80,9 @@ int hep_ctx_idx=0;
 int hep_capture_id = 1;
 int payload_compression=0;
 
+int homer5_on=0;
+str homer5_delim = {"\n", 0};
+
 compression_api_t compression_api;
 load_compression_f load_compression;
 
@@ -130,6 +133,8 @@ static param_export_t params[] = {
 											&hep_async_local_write_timeout  },
 	{ "compressed_payload",				 INT_PARAM, &payload_compression},
 	{ "hep_id",						 STR_PARAM|USE_FUNC_PARAM, parse_hep_id },
+	{ "homer5_on",						 INT_PARAM, &homer5_on              },
+	{ "homer5_delim",					 STR_PARAM, &homer5_delim.s },
 	{0, 0, 0}
 };
 
@@ -199,6 +204,7 @@ static int mod_init(void)
 	}
 
 	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, 0);
+	homer5_delim.len = strlen(homer5_delim.s);
 
 	return 0;
 }

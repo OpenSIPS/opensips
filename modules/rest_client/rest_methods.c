@@ -99,6 +99,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 	}
 
 	if ( type == CURLINFO_HEADER_OUT || type == CURLINFO_HEADER_IN  ) {
+		memset( &tparam->body, 0, sizeof(str) );
 		if ( (size > 4 &&
 			(
 				/* request */
@@ -109,6 +110,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 				( data[0] == 'H' && data[1] == 'T' && data[2] == 'T' && data[3] == 'P') )
 			))
 		{
+
 			/* fetch only the first line of the message */
 			end = q_memchr( data, '\r', size);
 			/* if not CRLF search for LF only */
@@ -1114,9 +1116,8 @@ static inline unsigned long fix_host(char* host)
 
 void append_body_to_msg( trace_message message, void* param)
 {
-	int len;
+	str fline_s;
 
-	static char tmp_buf[TRACE_BUF_MAX_SIZE];
 	rest_trace_param_t* tparam = param;
 
 	if ( !tparam ) {
@@ -1124,21 +1125,14 @@ void append_body_to_msg( trace_message message, void* param)
 		return;
 	}
 
-	tprot.add_trace_payload (message, "first_line", tparam->first_line);
+	fline_s.s = tparam->first_line;
+	fline_s.len = strlen( fline_s.s );
+	tprot.add_trace_payload (message, "first_line", &fline_s);
 
-	len = tparam->body.len > TRACE_BUF_MAX_SIZE-1 ? TRACE_BUF_MAX_SIZE : tparam->body.len;
-	memcpy( tmp_buf, tparam->body.s, len);
-	tmp_buf[len] = 0;
+	if ( tparam->body.s && tparam->body.len )
+		tprot.add_trace_payload (message, "payload", &tparam->body);
 
-	tprot.add_trace_payload (message, "payload", tmp_buf);
-
-	len = (tparam->callid.len > TRACE_BUF_MAX_SIZE - 1) ?
-		TRACE_BUF_MAX_SIZE - 1 : tparam->callid.len;
-
-	memcpy( tmp_buf, tparam->callid.s, len);
-	tmp_buf[len] = 0;
-
-	tprot.add_trace_correlation ( message, "sip", tmp_buf);
+	tprot.add_trace_correlation ( message, "sip", &tparam->callid);
 }
 
 static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)

@@ -86,9 +86,8 @@ struct mi_trace_req* build_mi_trace_request( str* cmd,
 	if ( !cmd || !backend )
 		return 0;
 
-	/* not intereseted if it doesn't fit */
-	snprintf( mi_treq.cmd, MAX_TRACE_FIELD, "%.*s", cmd->len, cmd->s);
-	snprintf( mi_treq.backend, MAX_TRACE_FIELD, "%.*s", backend->len, backend->s);
+	mi_treq.cmd = *cmd;
+	mi_treq.backend = *backend;
 
 	if ( mi_req ) {
 		node = mi_req->node.kids;
@@ -163,11 +162,13 @@ struct mi_trace_rpl* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
 	return trace_buf;
 #endif
 	snprintf( mi_trpl.code, MAX_TRACE_FIELD, "%d", code);
-	snprintf( mi_trpl.reason, MAX_TRACE_FIELD, "%.*s", reason->len, reason->s);
+	mi_trpl.reason = *reason;
 	if ( rpl_msg ) {
-		snprintf( mi_trpl.rpl, MAX_TRACE_FIELD, "%.*s", rpl_msg->len, rpl_msg->s);
+		mi_trpl.rpl.s = rpl_msg->s;
+		mi_trpl.rpl.len = rpl_msg->len > MAX_TRACE_FIELD ?
+							MAX_TRACE_FIELD : rpl_msg->len;
 	} else {
-		memset( mi_trpl.rpl, 0, MAX_TRACE_FIELD);
+		memset( &mi_trpl.rpl, 0, sizeof(str) );
 	}
 
 	return &mi_trpl;
@@ -191,6 +192,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 	const int proto = IPPROTO_TCP;
 	union sockaddr_union tmp, *to_su, *from_su;
 	static str fake_body = str_init("fake");
+	str tmp_value;
 
 	trace_message message;
 
@@ -242,18 +244,22 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 	}
 
 	if ( pld_param->type == MI_TRACE_REQ ) {
-		mi_trace_api->add_trace_payload(message, "command", pld_param->d.req->cmd);
-		mi_trace_api->add_trace_payload(message, "backend", pld_param->d.req->backend);
+		mi_trace_api->add_trace_payload(message, "command", &pld_param->d.req->cmd);
+		mi_trace_api->add_trace_payload(message, "backend", &pld_param->d.req->backend);
 		if ( pld_param->d.req->params[0] ) {
-			mi_trace_api->add_trace_payload(message,
-					"parameters", pld_param->d.req->params);
+			tmp_value.s = pld_param->d.req->params;
+			tmp_value.len = strlen( tmp_value.s );
+			mi_trace_api->add_trace_payload(message, "parameters", &tmp_value );
 		}
 	} else {
-		mi_trace_api->add_trace_payload(message, "code", pld_param->d.rpl->code);
-		mi_trace_api->add_trace_payload(message, "reason", pld_param->d.rpl->reason);
-		if ( pld_param->d.rpl->rpl[0] ) {
+		tmp_value.s = pld_param->d.rpl->code;
+		tmp_value.len = strlen( tmp_value.s );
+
+		mi_trace_api->add_trace_payload(message, "code", &tmp_value);
+		mi_trace_api->add_trace_payload(message, "reason", &pld_param->d.rpl->reason);
+		if ( pld_param->d.rpl->rpl.s ) {
 			mi_trace_api->add_trace_payload(message,
-					"reply", pld_param->d.rpl->rpl);
+					"reply", &pld_param->d.rpl->rpl);
 		}
 	}
 
