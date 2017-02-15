@@ -57,6 +57,9 @@
 			<para>
 				<emphasis>TM - only if active recovery of failed hosts is required</emphasis>.
 			</para>
+			<para>
+				<emphasis>freeswitch - only if "fetch_freeswitch_stats" is enabled.</emphasis>.
+			</para>
 			</listitem>
 			</itemizedlist>
 		</para>
@@ -792,8 +795,8 @@ modparam("dispatcher", "socket_col", "my_sock")
 		refreshed at runtime, using the FreeSWITCH Event Socket Layer.
 		For these destinations, an Event Socket Layer URL must be provisioned
 		into the "weight" column, instead of an integer string. Some example values:
-		<emphasis>"fs://freeswitch.example.com"</emphasis>
-		or <emphasis>"fs://127.0.0.1:8021"</emphasis>.
+		<emphasis>"fs://:password@freeswitch.example.com"</emphasis>
+		or <emphasis>"fs://user:password@127.0.0.1:8021"</emphasis>.
 		The default ESL port is 8021.
 	</para>
 		<para>
@@ -859,7 +862,7 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 		<title>Set the <varname>max_freeswitch_weight</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dispatcher", "max_freeswitch_weight", 5)
+modparam("dispatcher", "max_freeswitch_weight", 1000)
 ...
 </programlisting>
 		</example>

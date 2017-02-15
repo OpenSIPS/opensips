@@ -151,6 +151,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * Dialog - Dialog module
+       freeswitch - only if "fetch_freeswitch_stats" is enabled..
      * Dialog - TM module (only if probing enabled)
      * database - one of the DB modules
 
@@ -255,8 +256,9 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 
    If enabled, the maximum value of a resource may also consist of
    FreeSWITCH Event Socket Layer URLs, e.g.
-   "channels=fs://freeswitch.example.com" or
-   "channels=fs://127.0.0.1:8021". The default ESL port is 8021.
+   "channels=fs://:password@freeswitch.example.com" or
+   "channels=fs://user:password@127.0.0.1:8021". The default ESL
+   port is 8021.
 
    OpenSIPS will establish a connection with the given socket and
    periodically update the internal maximum value of the given
@@ -289,7 +291,7 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
 
    Example 1.9. Set the initial_freeswitch_load parameter
 ...
-modparam("load_balancer", "initial_freeswitch_load", 1000)
+modparam("load_balancer", "initial_freeswitch_load", 200)
 ...
 
 1.6. Exported Functions

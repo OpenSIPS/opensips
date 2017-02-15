@@ -93,6 +93,9 @@
 			<para>
 				<emphasis>Dialog</emphasis> - Dialog module
 			</para>
+			<para>
+				<emphasis>freeswitch - only if "fetch_freeswitch_stats" is enabled.</emphasis>.
+			</para>
 			</listitem>
 			<listitem>
 			<para>
@@ -283,8 +286,8 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		<title><varname>fetch_freeswitch_stats</varname> (integer)</title>
 		<para>
 		If enabled, the maximum value of a resource may also consist of
-		FreeSWITCH Event Socket Layer URLs, e.g. <emphasis>"channels=fs://freeswitch.example.com"</emphasis>
-		or <emphasis>"channels=fs://127.0.0.1:8021"</emphasis>. The default ESL port is 8021.
+		FreeSWITCH Event Socket Layer URLs, e.g. <emphasis>"channels=fs://:password@freeswitch.example.com"</emphasis>
+		or <emphasis>"channels=fs://user:password@127.0.0.1:8021"</emphasis>. The default ESL port is 8021.
 		</para>
 		<para>
 		OpenSIPS will establish a connection with the given socket and
@@ -331,7 +334,7 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
 		<title>Set the <varname>initial_freeswitch_load</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("load_balancer", "initial_freeswitch_load", 1000)
+modparam("load_balancer", "initial_freeswitch_load", 200)
 ...
 </programlisting>
 		</example>

@@ -192,6 +192,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * TM - only if active recovery of failed hosts is required.
+       freeswitch - only if "fetch_freeswitch_stats" is enabled..
 
 1.2.2. External libraries or applications
 
@@ -656,8 +657,9 @@ modparam("dispatcher", "socket_col", "my_sock")
    Event Socket Layer. For these destinations, an Event Socket
    Layer URL must be provisioned into the "weight" column, instead
    of an integer string. Some example values:
-   "fs://freeswitch.example.com" or "fs://127.0.0.1:8021". The
-   default ESL port is 8021.
+   "fs://:password@freeswitch.example.com" or
+   "fs://user:password@127.0.0.1:8021". The default ESL port is
+   8021.
 
    OpenSIPS will establish a connection with the given socket and
    periodically calculate/update the weights of these destinations
@@ -701,7 +703,7 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 
    Example 1.32. Set the max_freeswitch_weight parameter
 ...
-modparam("dispatcher", "max_freeswitch_weight", 5)
+modparam("dispatcher", "max_freeswitch_weight", 1000)
 ...
 
 1.4. Exported Functions
