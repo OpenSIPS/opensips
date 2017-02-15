@@ -237,7 +237,7 @@ msg_call_function(msgobject *self, PyObject *args)
     elems[0].type = CMD_ST;
     elems[0].u.data = fexport;
     elems[1].type = STRING_ST;
-    if (arg1 != NULL) {
+    if (i > 1 && arg1 != NULL) {
         elems[1].u.data = pkg_strdup(arg1);
         if (elems[1].u.data == NULL) {
             PyErr_SetString(PyExc_RuntimeError, "pkg_strdup() failed");
@@ -247,7 +247,7 @@ msg_call_function(msgobject *self, PyObject *args)
         elems[1].u.data = NULL;
     }
     elems[2].type = STRING_ST;
-    if (arg2 != NULL) {
+    if (i > 2 && arg2 != NULL) {
         elems[2].u.data = pkg_strdup(arg2);
         if (elems[2].u.data == NULL) {
             PyErr_SetString(PyExc_RuntimeError, "pkg_strdup() failed");
