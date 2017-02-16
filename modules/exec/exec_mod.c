@@ -342,12 +342,12 @@ static int exec_fixup(void** param, int param_no)
 			}
 
 			out_var = *param;
-			if (out_var->type != GPARAM_TYPE_PVE) {
-				LM_ERR("output var must be a single variable\n");
+			if (out_var->type != GPARAM_TYPE_PVS) {
+				LM_ERR("output var must be A varible\n");
 				return -1;
 			}
 
-			if (out_var->v.pve->spec.setf == NULL) {
+			if (out_var->v.pvs->setf == NULL) {
 				LM_ERR("output var must be writable\n");
 				return -1;
 			}
@@ -549,8 +549,8 @@ inline static int w_async_exec(struct sip_msg* msg, async_resume_module **resume
 		release_hf_struct(hf);
 	}
 
-	/* better do this alloc now (before starting the async) to avoid 
-	 * the unplesant situation of having the async started and have a 
+	/* better do this alloc now (before starting the async) to avoid
+	 * the unplesant situation of having the async started and have a
 	 * memory failure -> tricky to recover */
 	param = (exec_async_param*)shm_malloc(sizeof(exec_async_param));
 	if(param==NULL) {

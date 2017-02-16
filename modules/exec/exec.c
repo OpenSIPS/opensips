@@ -413,7 +413,7 @@ static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
 	outval.rs.len = buflen;
 
 	if (buflen &&
-		pv_set_value(msg, &outvar->v.pve->spec, 0, &outval) < 0) {
+		pv_set_value(msg, outvar->v.pvs, 0, &outval) < 0) {
 		LM_ERR("cannot set output pv value\n");
 		return -1;
 	}
@@ -628,7 +628,7 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 				outval.rs.s = buf;
 				outval.rs.len = len;
 				LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
-				if (pv_set_value(msg, &p->outvar->v.pve->spec, 0, &outval) < 0) {
+				if (pv_set_value(msg, p->outvar->v.pvs, 0, &outval) < 0) {
 					LM_ERR("failed to set variable :(, continuing \n");
 				}
 			}
@@ -649,7 +649,7 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 			outval.rs.s = s1;
 			outval.rs.len = s2-s1;
 			LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
-			if (pv_set_value(msg, &p->outvar->v.pve->spec, 0, &outval) < 0) {
+			if (pv_set_value(msg, p->outvar->v.pvs, 0, &outval) < 0) {
 				LM_ERR("failed to set variable :(, continuing \n");
 			}
 			s1 = s2+1;
