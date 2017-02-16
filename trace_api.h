@@ -62,14 +62,14 @@ typedef trace_message (create_trace_message_f)(union sockaddr_union* from_su,
 
 
 /*
- * add data to trace_message(chunks, fields etc.)
+ * add chunk to trace_message(chunks, fields etc.)
  * @param1 message used for tracing data
  * @param2 data to be added to the message
  * @param3 length of the data
  * @param4 TRACE_DATA_TYPES defines the type of data to be added
  *
  */
-typedef int (add_trace_data_f)(trace_message message, void* data, int len,
+typedef int (add_chunk_f)(trace_message message, void* data, int len,
 		int type, int data_id, int vendor);
 
 /*
@@ -82,7 +82,7 @@ typedef int (add_trace_data_f)(trace_message message, void* data, int len,
  * @param3 the value of the new correlation element
  * @return 0 for success -1 in case of failure
  */
-typedef int (add_trace_correlation_f)(trace_message message, char* key, str* value);
+typedef int (add_extra_correlation_f)(trace_message message, char* key, str* value);
 
 /*
  * add payload elements other than the basic paylod added when creating the message
@@ -93,7 +93,7 @@ typedef int (add_trace_correlation_f)(trace_message message, char* key, str* val
  * @param3 the value of the new correlation element
  * @return 0 for success -1 in case of failure
  */
-typedef int (add_trace_payload_f)(trace_message message, char* key, str* value);
+typedef int (add_payload_part_f)(trace_message message, char* key, str* value);
 
 
 /*
@@ -119,7 +119,7 @@ typedef trace_dest (get_trace_dest_by_name_f)(str *);
  * @param1 trace message to be freed
  *
  */
-typedef void (free_trace_message_f)(trace_message message);
+typedef void (free_message_f)(trace_message message);
 
 
 /*
@@ -163,12 +163,12 @@ typedef unsigned char* (generate_gid_f)(char* cookie);
 
 typedef struct _trace_prot {
 	create_trace_message_f*   create_trace_message;
-	add_trace_data_f*         add_trace_data;
-	add_trace_correlation_f*  add_trace_correlation;
-	add_trace_payload_f*      add_trace_payload;
+	add_chunk_f*              add_chunk;
+	add_extra_correlation_f*  add_extra_correlation;
+	add_payload_part_f*       add_payload_part;
 	trace_send_message_f*     send_message;
 	get_trace_dest_by_name_f* get_trace_dest_by_name;
-	free_trace_message_f*     free_message;
+	free_message_f*           free_message;
 	get_message_id_f*         get_message_id;
 	get_data_id_f*            get_data_id;
 	generate_gid_f*           generate_gid;
@@ -240,6 +240,10 @@ struct modify_trace {
  * @param {net_proto} the protocol that was used for this message
  * @param {correlation_id} string identifier to link this message to the
  *                         sip message; it can be for example the callid
+ * @param {mod_p} structure containing one function and one parameter
+ *                used to add data to the trace message; the function
+ *                will recieve as an argument the message and the parameter;
+ *                ** see struct modify_trace structure above
  *
  */
 typedef int(*sip_context_trace_f)(int id, union sockaddr_union* from_su,

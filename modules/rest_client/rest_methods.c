@@ -1127,12 +1127,12 @@ void append_body_to_msg( trace_message message, void* param)
 
 	fline_s.s = tparam->first_line;
 	fline_s.len = strlen( fline_s.s );
-	tprot.add_trace_payload (message, "first_line", &fline_s);
+	tprot.add_payload_part (message, "first_line", &fline_s);
 
 	if ( tparam->body.s && tparam->body.len )
-		tprot.add_trace_payload (message, "payload", &tparam->body);
+		tprot.add_payload_part (message, "payload", &tparam->body);
 
-	tprot.add_trace_correlation ( message, "sip", &tparam->callid);
+	tprot.add_extra_correlation ( message, "sip", &tparam->callid);
 }
 
 static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)

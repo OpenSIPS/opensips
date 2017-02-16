@@ -235,7 +235,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 			}
 		}
 
-		if ( mi_trace_api->add_trace_data( message, correlation_value->s,
+		if ( mi_trace_api->add_chunk( message, correlation_value->s,
 				correlation_value->len, TRACE_TYPE_STR,
 					correlation_id, correlation_vendor) < 0 ) {
 			LM_ERR("can't set the correlation id!\n");
@@ -244,21 +244,21 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 	}
 
 	if ( pld_param->type == MI_TRACE_REQ ) {
-		mi_trace_api->add_trace_payload(message, "command", &pld_param->d.req->cmd);
-		mi_trace_api->add_trace_payload(message, "backend", &pld_param->d.req->backend);
+		mi_trace_api->add_payload_part(message, "command", &pld_param->d.req->cmd);
+		mi_trace_api->add_payload_part(message, "backend", &pld_param->d.req->backend);
 		if ( pld_param->d.req->params[0] ) {
 			tmp_value.s = pld_param->d.req->params;
 			tmp_value.len = strlen( tmp_value.s );
-			mi_trace_api->add_trace_payload(message, "parameters", &tmp_value );
+			mi_trace_api->add_payload_part(message, "parameters", &tmp_value );
 		}
 	} else {
 		tmp_value.s = pld_param->d.rpl->code;
 		tmp_value.len = strlen( tmp_value.s );
 
-		mi_trace_api->add_trace_payload(message, "code", &tmp_value);
-		mi_trace_api->add_trace_payload(message, "reason", &pld_param->d.rpl->reason);
+		mi_trace_api->add_payload_part(message, "code", &tmp_value);
+		mi_trace_api->add_payload_part(message, "reason", &pld_param->d.rpl->reason);
 		if ( pld_param->d.rpl->rpl.s ) {
-			mi_trace_api->add_trace_payload(message,
+			mi_trace_api->add_payload_part(message,
 					"reply", &pld_param->d.rpl->rpl);
 		}
 	}

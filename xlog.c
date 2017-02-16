@@ -106,6 +106,8 @@ static inline void add_xlog_data(trace_message message, void* param)
 	str str_level;
 	xl_trace_t* xtrace_param = param;
 
+
+	/* FIXME FIXME */
 	switch (xlog_level) {
 		case L_ALERT:
 			str_level.s = DP_ALERT_TEXT; break;
@@ -120,7 +122,9 @@ static inline void add_xlog_data(trace_message message, void* param)
 		case L_INFO:
 			str_level.s = DP_INFO_TEXT; break;
 		case L_DBG:
-			str_level.s = DP_DBG_TEXT; break;
+			str_level.s = DP_DBG_TEXT;
+			str_level.len = sizeof(DP_DBG_TEXT) - 2;
+			break;
 		default:
 			LM_BUG("Unexpected log level [%d]\n", xlog_level);
 			return;
@@ -129,14 +133,14 @@ static inline void add_xlog_data(trace_message message, void* param)
 	/* remove ':' after each level */
 	str_level.len = strlen(str_level.s) - 1;
 
-	tprot.add_trace_payload( message, "level", &str_level);
+	tprot.add_payload_part( message, "level", &str_level);
 
 	if ( !xtrace_param )
 		return;
 
-	tprot.add_trace_payload( message, "payload", &xtrace_param->buf);
+	tprot.add_payload_part( message, "text", &xtrace_param->buf);
 
-	tprot.add_trace_correlation( message, "sip", &xtrace_param->msg->callid->body );
+	tprot.add_extra_correlation( message, "sip", &xtrace_param->msg->callid->body );
 }
 
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)

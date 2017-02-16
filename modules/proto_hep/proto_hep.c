@@ -81,7 +81,7 @@ int hep_capture_id = 1;
 int payload_compression=0;
 
 int homer5_on=0;
-str homer5_delim = {"\n", 0};
+str homer5_delim = {":", 0};
 
 compression_api_t compression_api;
 load_compression_f load_compression;

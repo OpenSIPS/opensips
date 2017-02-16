@@ -1838,9 +1838,9 @@ int hep_bind_trace_api(trace_proto_t* prot)
 	memset(prot, 0, sizeof(trace_proto_t));
 
 	prot->create_trace_message = create_hep_message;
-	prot->add_trace_data = add_hep_chunk;
-	prot->add_trace_correlation = add_hep_correlation;
-	prot->add_trace_payload = add_hep_payload;
+	prot->add_chunk = add_hep_chunk;
+	prot->add_extra_correlation = add_hep_correlation;
+	prot->add_payload_part = add_hep_payload;
 	prot->send_message = send_hep_message;
 	prot->get_trace_dest_by_name = get_trace_dest_by_name;
 	prot->free_message = free_hep_message;

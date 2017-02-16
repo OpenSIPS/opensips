@@ -2405,7 +2405,7 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		return -1;
 	}
 
-	tprot.add_trace_payload( trace_msg, "payload", body);
+	tprot.add_payload_part( trace_msg, "payload", body);
 
 	/* add correlation id chunk??? */
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
@@ -2660,7 +2660,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		}
 
 		if (correlation_id && corr_id != -1 && corr_vendor != -1 &&
-				tprot.add_trace_data(trace_msg,
+				tprot.add_chunk(trace_msg,
 					correlation_id->s, correlation_id->len,
 				TRACE_TYPE_STR, corr_id, corr_vendor)) {
 			LM_ERR("failed to add correlation id to the packet!\n");
