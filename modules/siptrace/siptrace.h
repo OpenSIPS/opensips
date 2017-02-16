@@ -70,7 +70,7 @@ typedef struct tid_param {
 	enum tid_types type;
 	union {
 		tlist_elem_p lst;
-		pv_elem_p el;
+		pv_spec_p el;
 	} u;
 } tid_param_t, *tid_param_p;
 

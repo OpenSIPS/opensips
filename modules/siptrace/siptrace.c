@@ -1215,9 +1215,13 @@ static int sip_trace_fixup(void **param, int param_no)
 						gp->v.sval.len, gp->v.sval.s);
 				return -1;
 			}
-		} else {
+		} else if (gp->type==GPARAM_TYPE_PVS) {
 			tparam->type = TYPE_PVAR;
-			tparam->u.el = gp->v.pve;
+			tparam->u.el = gp->v.pvs;
+		} else {
+			LM_ERR("Only one variable or trace id name allowed!"
+					" Can't have multiple variables!\n");
+			return -1;
 		}
 
 		pkg_free(gp);
@@ -1347,6 +1351,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 	trace_info_p info=NULL;
 	trace_info_t stack_info;
 
+	pv_value_t value;
+
 	if(msg==NULL)
 	{
 		LM_DBG("no uas request, local transaction\n");
@@ -1362,10 +1368,17 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 	if ((tparam=(tid_param_p)param1)->type == TYPE_LIST) {
 		list=tparam->u.lst;
 	} else {
-		if (pv_printf_s(msg, tparam->u.el, &tid_name) < 0) {
-			LM_ERR("cannot print trace id PV-formatted string\n");
+		if (pv_get_spec_value(msg, ((tid_param_p)param1)->u.el, &value) < 0) {
+			LM_ERR("cannot get trace id value from pvar\n");
 			return -1;
 		}
+
+		if ( !(value.flags && PV_VAL_STR) ) {
+			LM_ERR("Trace id variable does not contain a valid string!\n");
+			return -1;
+		}
+
+		tid_name = value.rs;
 
 		if ((list=get_list_start(&tid_name))==NULL) {
 			LM_ERR("Trace id <%.*s> not defined!\n", tid_name.len, tid_name.s);
