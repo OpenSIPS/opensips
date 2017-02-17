@@ -114,6 +114,7 @@ extern cJSON *cJSON_CreateFalse(void);
 extern cJSON *cJSON_CreateBool(int b);
 extern cJSON *cJSON_CreateNumber(double num);
 extern cJSON *cJSON_CreateString(const char *string);
+extern cJSON *cJSON_CreateStr(const char *string, size_t len);
 /* raw json */
 extern cJSON *cJSON_CreateRaw(const char *raw);
 extern cJSON *cJSON_CreateArray(void);
@@ -166,6 +167,7 @@ extern void cJSON_Minify(char *json);
 #define cJSON_AddBoolToObject(object,name,b) cJSON_AddItemToObject(object, name, cJSON_CreateBool(b))
 #define cJSON_AddNumberToObject(object,name,n) cJSON_AddItemToObject(object, name, cJSON_CreateNumber(n))
 #define cJSON_AddStringToObject(object,name,s) cJSON_AddItemToObject(object, name, cJSON_CreateString(s))
+#define cJSON_AddStrToObject(object,name,s,len) cJSON_AddItemToObject(object, name, cJSON_CreateStr(s,len))
 #define cJSON_AddRawToObject(object,name,s) cJSON_AddItemToObject(object, name, cJSON_CreateRaw(s))
 
 /* When assigning an integer value, it needs to be propagated to valuedouble too. */

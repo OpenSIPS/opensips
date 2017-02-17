@@ -111,6 +111,23 @@ static unsigned char* cJSON_strdup(const unsigned char* str)
     return copy;
 }
 
+static unsigned char* cJSON_strndup(const unsigned char* str, size_t len) {
+    unsigned char *copy = NULL;
+
+    if (str == NULL)
+    {
+        return NULL;
+    }
+
+    if (!(copy = (unsigned char*)cJSON_malloc(len)))
+    {
+        return NULL;
+    }
+    memcpy(copy, str, len);
+
+    return copy;
+}
+
 void cJSON_InitHooks(cJSON_Hooks* hooks)
 {
     if (!hooks)
@@ -2042,6 +2059,23 @@ cJSON *cJSON_CreateString(const char *string)
     {
         item->type = cJSON_String;
         item->valuestring = (char*)cJSON_strdup((const unsigned char*)string);
+        if(!item->valuestring)
+        {
+            cJSON_Delete(item);
+            return NULL;
+        }
+    }
+
+    return item;
+}
+
+cJSON *cJSON_CreateStr(const char *string, size_t len)
+{
+    cJSON *item = cJSON_New_Item();
+    if(item)
+    {
+        item->type = cJSON_String;
+        item->valuestring = (char*)cJSON_strndup((const unsigned char*)string, len);
         if(!item->valuestring)
         {
             cJSON_Delete(item);

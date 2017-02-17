@@ -1495,7 +1495,6 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 {
 	cJSON* root;
 	struct hep_desc* hep_msg;
-	static str corr_value_buf = {0, 0};
 	str* sip_correlation;
 
 	if ( !message || !corr_name || !corr_value || !corr_value->s || !corr_value->len ) {
@@ -1506,27 +1505,6 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 	hep_msg = (struct hep_desc*) message;
 
 	if ( !homer5_on ) {
-		if ( !corr_value_buf.s ) {
-			corr_value_buf.len = corr_value->len + 1;
-			corr_value_buf.s = pkg_malloc( corr_value_buf.len );
-
-			if ( !corr_value_buf.s ) {
-				LM_ERR("no more pkg mem!\n");
-				return -1;
-			}
-		} else if ( corr_value_buf.len < corr_value->len + 1) {
-			corr_value_buf.len = corr_value->len + 1;
-			corr_value_buf.s = pkg_realloc( corr_value_buf.s, corr_value_buf.len);
-
-			if ( !corr_value_buf.s ) {
-				LM_ERR("no more pkg mem!\n");
-				return -1;
-			}
-		}
-
-		memcpy( corr_value_buf.s, corr_value->s, corr_value->len);
-		corr_value_buf.s[corr_value->len] = 0;
-
 		if ( hep_msg->correlation) {
 			root = (cJSON *) hep_msg->correlation;
 		} else {
@@ -1539,7 +1517,7 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 			hep_msg->correlation = root;
 		}
 
-		cJSON_AddStringToObject( root, corr_name, corr_value_buf.s);
+		cJSON_AddStrToObject( root, corr_name, corr_value->s, corr_value->len);
 	} else {
 		if ( !memcmp( corr_name, "sip", sizeof("sip") ) ) {
 			/* we'll save sip correlation id as the actual correlation */
@@ -1567,8 +1545,6 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 
 	str* homer5_buf;
 
-	static str pld_value_buf = { 0, 0};
-
 	if ( !message || !pld_name || !pld_value || !pld_value->s || !pld_value->len ) {
 		LM_ERR("invalid call! bad input params!\n");
 		return -1;
@@ -1577,27 +1553,6 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 	hep_msg = (struct hep_desc*) message;
 
 	if ( !homer5_on ) {
-		if ( !pld_value_buf.s ) {
-			pld_value_buf.len = pld_value->len + 1;
-			pld_value_buf.s = pkg_malloc( pld_value_buf.len );
-
-			if ( !pld_value_buf.s ) {
-				LM_ERR("no more pkg mem!\n");
-				return -1;
-			}
-		} else if ( pld_value_buf.len < pld_value->len + 1) {
-			pld_value_buf.len = pld_value->len + 1;
-			pld_value_buf.s = pkg_realloc( pld_value_buf.s, pld_value_buf.len);
-
-			if ( !pld_value_buf.s ) {
-				LM_ERR("no more pkg mem!\n");
-				return -1;
-			}
-		}
-
-		memcpy( pld_value_buf.s, pld_value->s, pld_value->len);
-		pld_value_buf.s[pld_value->len] = 0;
-
 		if ( hep_msg->fPayload ) {
 			root = (cJSON *) hep_msg->fPayload;
 		} else {
@@ -1609,7 +1564,7 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 			hep_msg->fPayload = root;
 		}
 
-		cJSON_AddStringToObject( root, pld_name, pld_value_buf.s);
+		cJSON_AddStrToObject( root, pld_name, pld_value->s, pld_value->len);
 	} else {
 		if ( hep_msg->fPayload ) {
 			homer5_buf = hep_msg->fPayload;
