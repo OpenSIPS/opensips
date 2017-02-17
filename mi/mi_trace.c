@@ -191,7 +191,6 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 	/* FIXME is this the case for all mi impelementations?? */
 	const int proto = IPPROTO_TCP;
 	union sockaddr_union tmp, *to_su, *from_su;
-	static str fake_body = str_init("fake");
 	str tmp_value;
 
 	trace_message message;
@@ -221,7 +220,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 		to_su = &tmp;
 
 	message = mi_trace_api->create_trace_message(from_su, to_su,
-			proto, &fake_body, mi_message_id, trace_dst);
+			proto, 0, mi_message_id, trace_dst);
 	if (message == NULL) {
 		LM_ERR("failed to create trace message!\n");
 		return -1;

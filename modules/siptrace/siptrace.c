@@ -2407,7 +2407,6 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 
 	tprot.add_payload_part( trace_msg, "payload", body);
 
-	/* add correlation id chunk??? */
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
 		LM_ERR("failed to forward message to destination!\n");
 		return -1;

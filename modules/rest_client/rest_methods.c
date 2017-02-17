@@ -1145,8 +1145,6 @@ static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
 	unsigned int port;
 
 	struct modify_trace mod_t;
-	/* FIXME get rid of this */
-	static str fake_pld = str_init("fake");
 
 	if ( !rest_trace_enabled() )
 		return 0;
@@ -1199,7 +1197,7 @@ static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
 
 	/* we give bogus body since it's gonne be changed anyhow  */
 	if ( sip_context_trace(rest_proto_id, &to_su, &from_su,
-			&fake_pld, proto, &tparam->correlation, &mod_t) < 0 ) {
+			0, proto, &tparam->correlation, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;
 	}

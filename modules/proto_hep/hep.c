@@ -254,6 +254,8 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 	buf += sizeof(hep_ctrl_t);
 	tlen -= sizeof(hep_ctrl_t);
 
+	memset( &h3, 0, sizeof(struct hepv3));
+
 	while (tlen > 0) {
 		/* we don't look at vendor id; we only need to parse the buffer */
 		chunk_id = ((hep_chunk_t*)buf)->type_id;
@@ -850,7 +852,8 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 	hep_msg->u.hepv12.hdr.hp_l = totlen;
 
 
-	totlen += payload->len;
+	if ( payload )
+		totlen += payload->len;
 
 	if(version == 2) {
 		totlen += sizeof(struct hep_timehdr);
@@ -880,7 +883,11 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 			break;
      }
 
-	hep_msg->u.hepv12.payload = *payload;
+	if ( payload ) {
+		hep_msg->u.hepv12.payload = *payload;
+	} else {
+		memset( &hep_msg->u.hepv12.payload, 0, sizeof(str) );
+	}
 
 	return hep_msg;
 }
@@ -1013,29 +1020,34 @@ static trace_message create_hep3_message(union sockaddr_union* from_su, union so
 	hep_msg->u.hepv3.payload_chunk.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 	hep_msg->u.hepv3.payload_chunk.chunk.type_id   = payload_compression ? htons(0x0010) : htons(0x000f);
 
-	/* The payload length shall be transformed to network order later; now we'll still need the length of
-	 * the payload before sending */
-	if (!payload_compression) {
-		hep_msg->u.hepv3.payload_chunk.data = payload->s;
-		hep_msg->u.hepv3.payload_chunk.chunk.length = payload->len + sizeof(hep_chunk_t);
-	} else {
-	/* compress the payload if requested */
-		rc=compression_api.compress((unsigned char*)payload->s, (unsigned long)payload->len,
-				&compressed_payload, &compress_len, compression_api.level);
-		if (compression_api.check_rc(rc)==0) {
-			payload->len = (int)compress_len;
-			/* we don't need the payload pointer in this function */
-			hep_msg->u.hepv3.payload_chunk.data = compressed_payload.s;
-			hep_msg->u.hepv3.payload_chunk.chunk.length = compress_len + sizeof(hep_chunk_t);
-		} else {
-			LM_WARN("payload compression failed! will send the buffer uncompressed\n");
-			hep_msg->u.hepv3.payload_chunk.chunk.type_id = htons(0x000f);
+	if ( payload ) {
+		/* The payload length shall be transformed to network order later; now we'll still need the length of
+		 * the payload before sending */
+		if (!payload_compression) {
 			hep_msg->u.hepv3.payload_chunk.data = payload->s;
 			hep_msg->u.hepv3.payload_chunk.chunk.length = payload->len + sizeof(hep_chunk_t);
+		} else {
+		/* compress the payload if requested */
+			rc=compression_api.compress((unsigned char*)payload->s, (unsigned long)payload->len,
+					&compressed_payload, &compress_len, compression_api.level);
+			if (compression_api.check_rc(rc)==0) {
+				payload->len = (int)compress_len;
+				/* we don't need the payload pointer in this function */
+				hep_msg->u.hepv3.payload_chunk.data = compressed_payload.s;
+				hep_msg->u.hepv3.payload_chunk.chunk.length = compress_len + sizeof(hep_chunk_t);
+			} else {
+				LM_WARN("payload compression failed! will send the buffer uncompressed\n");
+				hep_msg->u.hepv3.payload_chunk.chunk.type_id = htons(0x000f);
+				hep_msg->u.hepv3.payload_chunk.data = payload->s;
+				hep_msg->u.hepv3.payload_chunk.chunk.length = payload->len + sizeof(hep_chunk_t);
+			}
 		}
+	} else {
+		memset( &hep_msg->u.hepv3.payload_chunk, 0, sizeof( hep_msg->u.hepv3.payload_chunk ) );
 	}
 
-	tlen = sizeof(struct hep_generic) + iplen + sizeof(hep_chunk_t) + payload->len;
+	tlen = sizeof(struct hep_generic) + iplen +
+					(payload ? (sizeof(hep_chunk_t) + payload->len) : 0);
 
 	/* FIXME WARNING this is not htons */
 	hep_msg->u.hepv3.hg.header.length = tlen;
@@ -1166,7 +1178,10 @@ static char* build_hep12_buf(struct hep_desc* hep_msg, int* len)
 		p += sizeof(struct hep_timehdr);
 	}
 
-	memcpy(buf+p, hep_msg->u.hepv12.payload.s, hep_msg->u.hepv12.payload.len);
+	if ( hep_msg->u.hepv12.payload.s && hep_msg->u.hepv12.payload.len ) {
+		memcpy(buf+p, hep_msg->u.hepv12.payload.s,
+				hep_msg->u.hepv12.payload.len);
+	}
 
 	*len = buflen;
 
@@ -1208,8 +1223,12 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 	rem = hep_msg->u.hepv3.hg.header.length;
 
 	if ( hep_msg->fPayload ) {
+		/* FIXME no payload compression */
+		hep_msg->u.hepv3.payload_chunk.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
+		hep_msg->u.hepv3.payload_chunk.chunk.type_id   = htons(0x000f);
 		if ( !homer5_on ) {
 			rem -= hep_msg->u.hepv3.payload_chunk.chunk.length;
+
 			hep_msg->u.hepv3.payload_chunk.data = JSON_toString(hep_msg->fPayload);
 
 			hep_msg->u.hepv3.payload_chunk.chunk.length =
@@ -1251,7 +1270,6 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 				}
 			}
 
-
 			h5_buf = hep_msg->correlation;
 			if ( it ) {
 				corr_chunk = it;
@@ -1284,8 +1302,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 
 	buf = pkg_malloc(rem);
 
-	hep_msg->u.hepv3.hg.header.length = rem;
-	hep_msg->u.hepv3.hg.header.length = htons(hep_msg->u.hepv3.hg.header.length);
+	hep_msg->u.hepv3.hg.header.length = htons(rem);
 
 	if (buf == NULL) {
 		LM_ERR("no more pkg mem!\n");
@@ -1308,19 +1325,20 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		return NULL;
 	}
 
-	pld_len = hep_msg->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
-	/* earlier we didn't do htons on this buffer because we needed the
-	 * length; we'll do it now */
-	hep_msg->u.hepv3.payload_chunk.chunk.length =
-				htons(hep_msg->u.hepv3.payload_chunk.chunk.length);
+	if ( hep_msg->u.hepv3.payload_chunk.data
+				&& hep_msg->u.hepv3.payload_chunk.chunk.length ) {
+		pld_len = hep_msg->u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
+		/* earlier we didn't do htons on this buffer because we needed the
+		 * length; we'll do it now */
+		hep_msg->u.hepv3.payload_chunk.chunk.length =
+					htons(hep_msg->u.hepv3.payload_chunk.chunk.length);
 
+		memcpy(buf+*len, &hep_msg->u.hepv3.payload_chunk, sizeof(hep_chunk_t));
+		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
 
-	memcpy(buf+*len, &hep_msg->u.hepv3.payload_chunk, sizeof(hep_chunk_t));
-	UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
-
-
-	memcpy(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
-	UPDATE_CHECK_REMAINING(rem, *len, pld_len);
+		memcpy(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
+		UPDATE_CHECK_REMAINING(rem, *len, pld_len);
+	}
 
 	/* copy the correlation if exists */
 	if ( hep_msg->correlation ) {
@@ -1377,8 +1395,7 @@ trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_u
 {
 	hid_list_p hep_dest = (hid_list_p) dest;
 
-	if (from_su == NULL || to_su == NULL || payload == NULL ||
-								payload->s == NULL || payload->len == 0) {
+	if (from_su == NULL || to_su == NULL ) {
 		LM_ERR("invalid call! bad input params!\n");
 
 		return NULL;
