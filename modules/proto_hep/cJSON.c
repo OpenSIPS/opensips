@@ -119,11 +119,12 @@ static unsigned char* cJSON_strndup(const unsigned char* str, size_t len) {
         return NULL;
     }
 
-    if (!(copy = (unsigned char*)cJSON_malloc(len)))
+    if (!(copy = (unsigned char*)cJSON_malloc(len + 1)))
     {
         return NULL;
     }
     memcpy(copy, str, len);
+	copy[len] = 0;
 
     return copy;
 }
