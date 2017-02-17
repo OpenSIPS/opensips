@@ -91,6 +91,8 @@ static struct tcp_req hep_current_req;
  * so we need to know what is the current version of hep */
 static int hep_current_proto;
 
+union sockaddr_union local_su;
+
 struct hep_send_chunk {
 	char *buf; /* buffer that needs to be sent out */
 	char *pos; /* the position that we should be writing next */
@@ -205,6 +207,10 @@ static int mod_init(void)
 
 	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, 0);
 	homer5_delim.len = strlen(homer5_delim.s);
+
+	local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
+	local_su.sin.sin_port = 0;
+	local_su.sin.sin_family = AF_INET;
 
 	return 0;
 }

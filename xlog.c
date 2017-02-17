@@ -149,8 +149,6 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	xl_trace_t xtrace_param;
 
-	union sockaddr_union to_su, from_su;
-
 	const int proto = IPPROTO_TCP;
 
 	if (msg == NULL || buf == NULL) {
@@ -162,17 +160,6 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	if (!check_is_traced || check_is_traced(xlog_proto_id) == 0)
 		return 0;
 
-	/*
-	 * Source and destination will be set to localhost(127.0.0.1) port 0
-	 */
-	from_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
-	from_su.sin.sin_port = 0;
-	from_su.sin.sin_family = AF_INET;
-
-	to_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
-	to_su.sin.sin_port = 0;
-	to_su.sin.sin_family = AF_INET;
-
 	mod_p.mod_f = add_xlog_data;
 	xtrace_param.msg = msg;
 
@@ -181,7 +168,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	mod_p.param = &xtrace_param;
 
-	if (sip_context_trace(xlog_proto_id, &from_su, &to_su,
+	if (sip_context_trace(xlog_proto_id, 0, 0,
 				0, proto, &msg->callid->body, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;

@@ -1163,12 +1163,9 @@ static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
 		}
 
 		from_su.sin.sin_port = port;
-	} else {
-		from_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
-		from_su.sin.sin_port = 0;
+		from_su.sin.sin_family = AF_INET;
 	}
 
-	from_su.sin.sin_family = AF_INET;
 
 	/* FIXME no IPv6 */
 	if (dest) {
@@ -1185,18 +1182,15 @@ static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
 		}
 
 		to_su.sin.sin_port = port;
-	} else {
-		to_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
-		to_su.sin.sin_port = 0;
+		to_su.sin.sin_family = AF_INET;
 	}
-
-	to_su.sin.sin_family = AF_INET;
 
 	mod_t.mod_f = append_body_to_msg;
 	mod_t.param = tparam;
 
 	/* we give bogus body since it's gonne be changed anyhow  */
-	if ( sip_context_trace(rest_proto_id, &to_su, &from_su,
+	if ( sip_context_trace(rest_proto_id,
+				dest ? &to_su : 0, host ? &from_su : 0,
 			0, proto, &tparam->correlation, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;

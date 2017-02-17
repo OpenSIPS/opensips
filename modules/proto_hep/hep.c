@@ -86,6 +86,9 @@ struct hep_custom_chunk_desc hep_chunks[] = {
 	{ { NULL, 0}                 , 0                     , 0   }
 };
 
+
+
+extern union sockaddr_union local_su;
 /*
  * @in1 buffer = hep + sip
  * @in2 buffer length
@@ -1395,11 +1398,11 @@ trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_u
 {
 	hid_list_p hep_dest = (hid_list_p) dest;
 
-	if (from_su == NULL || to_su == NULL ) {
-		LM_ERR("invalid call! bad input params!\n");
+	if ( !from_su )
+		from_su = &local_su;
 
-		return NULL;
-	}
+	if ( !to_su )
+		to_su = &local_su;
 
 	switch (hep_dest->version) {
 		case 1:

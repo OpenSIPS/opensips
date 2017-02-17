@@ -190,7 +190,6 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 {
 	/* FIXME is this the case for all mi impelementations?? */
 	const int proto = IPPROTO_TCP;
-	union sockaddr_union tmp, *to_su, *from_su;
 	str tmp_value;
 
 	trace_message message;
@@ -201,25 +200,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 		return 0;
 	}
 
-
-	if (src == NULL || dst == NULL) {
-		tmp.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
-		tmp.sin.sin_port = 0;
-		tmp.sin.sin_family = AF_INET;
-	}
-
-	/* FIXME src and/or dst port might be in htons form */
-	if (src)
-		from_su = src;
-	else
-		from_su = &tmp;
-
-	if (dst)
-		to_su = dst;
-	else
-		to_su = &tmp;
-
-	message = mi_trace_api->create_trace_message(from_su, to_su,
+	message = mi_trace_api->create_trace_message(src, dst,
 			proto, 0, mi_message_id, trace_dst);
 	if (message == NULL) {
 		LM_ERR("failed to create trace message!\n");
