@@ -97,6 +97,11 @@ static unsigned short trace_local_port = 0;
 
 tlist_elem_p trace_list=NULL;
 
+static const char* corr_id_s="correlation_id";
+static int corr_vendor = -1;
+static int corr_id=-1;
+
+
 
 /**
  * SIPTRACE FUNCTIONS
@@ -138,7 +143,7 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
 static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, trace_dest dest);
+		unsigned short toport, trace_dest dest, str* correlation);
 
 
 
@@ -954,7 +959,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 					&db_vals[4].val.str_val, &db_vals[5].val.str_val,
 					db_vals[6].val.int_val, &db_vals[7].val.str_val,
 					&db_vals[8].val.str_val, db_vals[9].val.int_val,
-					it->el.hep.hep_id) < 0) {
+					it->el.hep.hep_id, &msg->callid->body) < 0) {
 				LM_ERR("Failed to duplicate with hep to <%.*s:%u>\n",
 						it->el.hep.hep_id->ip.len, it->el.hep.hep_id->ip.s,
 						it->el.hep.hep_id->port_no);
@@ -2377,7 +2382,7 @@ static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 
 static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, trace_dest dest)
+		unsigned short toport, trace_dest dest, str* correlation)
 {
 	union sockaddr_union from_su;
 	union sockaddr_union to_su;
@@ -2406,6 +2411,19 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 	}
 
 	tprot.add_payload_part( trace_msg, "payload", body);
+
+	if (correlation && corr_id == -1 && corr_vendor == -1) {
+		if (tprot.get_data_id(corr_id_s, &corr_vendor, &corr_id) == 0) {
+			LM_DBG("no data id!\n");
+		}
+
+		if (tprot.add_chunk(trace_msg,
+				correlation->s, correlation->len,
+					TRACE_TYPE_STR, corr_id, corr_vendor)) {
+			LM_ERR("failed to add correlation id to the packet!\n");
+			return -1;
+		}
+	}
 
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
 		LM_ERR("failed to forward message to destination!\n");
@@ -2614,10 +2632,6 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 	trace_info_p info = GET_SIPTRACE_CONTEXT;
 
 	trace_message trace_msg;
-
-	static const char* corr_id_s="correlation_id";
-	static int corr_vendor = -1;
-	static int corr_id=-1;
 
 	if (tprot.send_message == NULL) {
 		LM_DBG("trace api not loaded! aborting trace...\n");
