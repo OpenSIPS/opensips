@@ -156,6 +156,8 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 				if ( tparam->req_fline_len >= FLINE_MAX ) {
 					/* \0 in the end */
 					tparam->req_fline_len = FLINE_MAX - 1;
+				} else {
+					tparam->req_fline_len = (int)(end - data);
 				}
 			} else {
 				tparam->rpl_fline_len = snprintf( tparam->rpl_first_line, FLINE_MAX, "%.*s",
@@ -164,6 +166,8 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 				if ( tparam->rpl_fline_len >= FLINE_MAX ) {
 					/* \0 in the end */
 					tparam->rpl_fline_len = FLINE_MAX - 1;
+				} else {
+					tparam->rpl_fline_len = (int)(end - data);
 				}
 			}
 		}
@@ -176,7 +180,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 					/* \0 in the end */
 					tparam->req_len = FLINE_MAX - 1;
 				} else {
-					tparam->req_len = 0;
+					tparam->req_len = size;
 				}
 			} else {
 				tparam->rpl_len = snprintf( tparam->rpl_body, BODY_MAX, "%.*s", (int)size, data);
@@ -184,7 +188,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 					/* \0 in the end */
 					tparam->rpl_len = FLINE_MAX - 1;
 				} else {
-					tparam->rpl_len = 0;
+					tparam->rpl_len = size;
 				}
 
 				goto do_trace;
@@ -196,6 +200,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 	return CURLE_OK;
 
 do_trace:
+
 	if (trace_rest_message( tparam ) < 0) {
 		/* no need to exit; curl worked ok, tracing failed */
 		LM_ERR("failed to trage rest request!\n");
@@ -1048,7 +1053,7 @@ void append_body_to_msg( trace_message message, void* param)
 		return;
 	}
 
-	tprot.add_payload_part( message, "payload", &app->fline );
+	tprot.add_payload_part( message, "first_line", &app->fline );
 	/* SAFE: in trace_rest_request_cb we set body len to 0 if we
 	 * have no body */
 	if ( app->body.len )
