@@ -4858,8 +4858,12 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 
 	/* we can have other pyload than sip only for hepv3 */
 	if (h->version == 3) {
-		db_vals[11].val.str_val.s = h->u.hepv3.payload_chunk.data;
-		db_vals[11].val.str_val.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(h->u.hepv3.payload_chunk.chunk);
+		if ( h->u.hepv3.payload_chunk.chunk.length ) {
+			db_vals[11].val.str_val.s = h->u.hepv3.payload_chunk.data;
+			db_vals[11].val.str_val.len = h->u.hepv3.payload_chunk.chunk.length - sizeof(h->u.hepv3.payload_chunk.chunk);
+		} else {
+			memset( &db_vals[11].val.str_val, 0, sizeof(str) );
+		}
 	} else {
 		db_vals[11].val.str_val.s   = msg->buf;
 		db_vals[11].val.str_val.len = msg->len;
