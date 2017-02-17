@@ -145,7 +145,6 @@ static inline void add_xlog_data(trace_message message, void* param)
 
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 {
-	str correlation;
 	struct modify_trace mod_p;
 
 	xl_trace_t xtrace_param;
@@ -182,11 +181,8 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	mod_p.param = &xtrace_param;
 
-	correlation.s = (char *)tprot.generate_gid(XLOG_CORRELATION_MAGIC);
-	correlation.len = strlen(correlation.s);
-
 	if (sip_context_trace(xlog_proto_id, &from_su, &to_su,
-				0, proto, &correlation, &mod_p) < 0) {
+				0, proto, &msg->callid->body, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
 	}
