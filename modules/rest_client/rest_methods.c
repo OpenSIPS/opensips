@@ -59,9 +59,8 @@ static int running_handles;
 extern int rest_proto_id;
 extern trace_proto_t tprot;
 
-static inline int extract_host(str* url, char** host, unsigned int* port);
 static inline int rest_trace_enabled(void);
-static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam);
+static int trace_rest_message( rest_trace_param_t* tparam );
 
 
 
@@ -85,9 +84,8 @@ static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam);
 
 int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userptr)
 {
-	char* end;
-	str url;
-	str *host=0, *dest=0;
+	int is_req;
+	char *end, *ip;
 
 	/* WARNING: all str s that are params to this function MUST HAVE an
 	 * allocated memory of TRACE_BUF_MAX_SIZE bytes */
@@ -98,8 +96,30 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 		return CURLSHE_INVALID;
 	}
 
+	/* WARNING: there are other types than HEADER and DATA coming here, but
+	 * we consider 0 for all the other cases since we check anyway if it's data
+	 * or header in conditions below; so using is_req outside of these if's is
+	 * DANGEROUS*/
+	is_req = type == CURLINFO_HEADER_OUT || type == CURLINFO_DATA_OUT ? 1 : 0;
+
 	if ( type == CURLINFO_HEADER_OUT || type == CURLINFO_HEADER_IN  ) {
-		memset( &tparam->body, 0, sizeof(str) );
+		if ( type == CURLINFO_HEADER_IN ) {
+			memset( &tparam->rpl_body, 0, BODY_MAX );
+		} else {
+			/* fetch local an remote ips*/
+			memset( &tparam->req_body, 0, BODY_MAX );
+
+			/* curl lib guarantees this ip is null terminated */
+			curl_easy_getinfo( handle, CURLINFO_LOCAL_IP, &ip);
+			strcpy( tparam->local_ip, ip);
+
+			curl_easy_getinfo( handle, CURLINFO_LOCAL_PORT, &tparam->local_port);
+
+			curl_easy_getinfo( handle, CURLINFO_PRIMARY_IP, &ip);
+			strcpy( tparam->remote_ip, ip);
+			curl_easy_getinfo( handle, CURLINFO_PRIMARY_PORT, &tparam->remote_port);
+		}
+
 		if ( (size > 4 &&
 			(
 				/* request */
@@ -129,38 +149,54 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 				tparam->correlation.len = strlen(tparam->correlation.s);
 			}
 
-			snprintf( tparam->first_line, FLINE_MAX, "%.*s", (int)(end - data), data);
+			if ( is_req ) {
+				tparam->req_fline_len = snprintf( tparam->req_first_line, FLINE_MAX, "%.*s",
+												(int)(end - data), data);
 
-			/* if it's get trace it immediately; no body */
-			if ( data[0] == 'G' && data[1] == 'E' && data[2] == 'T' ) {
-				goto do_trace;
+				if ( tparam->req_fline_len >= FLINE_MAX ) {
+					/* \0 in the end */
+					tparam->req_fline_len = FLINE_MAX - 1;
+				}
+			} else {
+				tparam->rpl_fline_len = snprintf( tparam->rpl_first_line, FLINE_MAX, "%.*s",
+												(int)(end - data), data);
+
+				if ( tparam->rpl_fline_len >= FLINE_MAX ) {
+					/* \0 in the end */
+					tparam->rpl_fline_len = FLINE_MAX - 1;
+				}
 			}
 		}
 	} else if ( type == CURLINFO_DATA_IN || type == CURLINFO_DATA_OUT ){
 		if ( size > 0) {
-			/* request data */
-			tparam->body.s = data;
-			tparam->body.len = size;
+			if ( is_req ) {
+				/* request data */
+				tparam->req_len = snprintf( tparam->req_body, BODY_MAX, "%.*s", (int)size, data);
+				if ( tparam->req_len >= FLINE_MAX ) {
+					/* \0 in the end */
+					tparam->req_len = FLINE_MAX - 1;
+				} else {
+					tparam->req_len = 0;
+				}
+			} else {
+				tparam->rpl_len = snprintf( tparam->rpl_body, BODY_MAX, "%.*s", (int)size, data);
+				if ( tparam->rpl_len >= FLINE_MAX ) {
+					/* \0 in the end */
+					tparam->rpl_len = FLINE_MAX - 1;
+				} else {
+					tparam->rpl_len = 0;
+				}
+
+				goto do_trace;
+			}
 		}
 
-		goto do_trace;
 	}
 
 	return CURLE_OK;
 
 do_trace:
-	if ( curl_easy_getinfo(handle, CURLINFO_EFFECTIVE_URL, &url.s) != CURLE_OK) {
-		LM_ERR("failed to fetch url!\n");
-		return CURLE_OK;
-	}
-	url.len = strlen(url.s);
-
-	if ( type == CURLINFO_DATA_IN)
-		host = &url;
-	else
-		dest = &url;
-
-	if (trace_rest_message(host, dest, tparam) < 0) {
+	if (trace_rest_message( tparam ) < 0) {
 		/* no need to exit; curl worked ok, tracing failed */
 		LM_ERR("failed to trage rest request!\n");
 	}
@@ -1002,195 +1038,99 @@ static inline int rest_trace_enabled(void)
 	return (check_is_traced ? 1 : 0) && check_is_traced(rest_proto_id);
 }
 
-static inline int extract_host(str* url, char** host, unsigned int* port)
-{
-	unsigned int default_port;;
-
-	static const int http_port = 80;
-	static const int https_port = 443;
-
-	static char host_buf[MAX_HOST_LENGTH];
-	static const char port_delim = ':';
-	static const char host_delim = '/';
-
-	static const str http_id_s = str_init("http://");
-	static const str https_id_s = str_init("https://");
-
-	str* url_cpy = url;
-	str port_s;
-
-	char* host_end = NULL;
-	char* port_start = NULL;
-
-
-	if (url == NULL || host == NULL || port == NULL) {
-		LM_ERR("null parameters!\n");
-		return -1;
-	}
-
-	if (url->len > http_id_s.len) {
-		if(!strncmp(url->s, http_id_s.s, http_id_s.len)) {
-			url_cpy->s = url->s + http_id_s.len;
-			url_cpy->len = url->len - http_id_s.len;
-			default_port = http_port;
-		} else if (!strncmp(url->s, https_id_s.s, https_id_s.len)) {
-			url_cpy->s = url->s + https_id_s.len;
-			url_cpy->len = url->len - https_id_s.len;
-			default_port = https_port;
-		}
-	}
-
-	/* now try extracting the host and the port(if exists) */
-	host_end = q_memchr(url_cpy->s, host_delim, url_cpy->len);
-	port_start = q_memchr(url_cpy->s, port_delim, url_cpy->len);
-
-	if (port_start == NULL) { /* job done */
-		/* format: [http[s]://]<host>[/] */
-		if (host_end == NULL)
-			memcpy(host_buf, url_cpy->s, url_cpy->len);
-		else
-			memcpy(host_buf, url_cpy->s, host_end - url_cpy->s);
-
-		host_buf[url_cpy->len] = '\0';
-
-		*port = default_port;
-
-	} else {
-		/* format: [http[s]://]<host>:<port>[/] */
-		/* parse the port; get it's number */
-		if (host_end && port_start > host_end) {
-			/* this does not delimit port; it's after host delimiter */
-			port_start = NULL;
-		}
-
-		if (port_start) {
-			memcpy(host_buf, url_cpy->s, port_start - url_cpy->s);
-			host_buf[port_start-url_cpy->s] = '\0';
-
-			port_s.s = port_start+1;
-			if (host_end)
-				port_s.len = (int)(unsigned long)(host_end - (port_s.s - url_cpy->s));
-			else
-				port_s.len = url_cpy->len - (port_s.s - url_cpy->s);
-
-
-			if (str2int( &port_s, port) < 0) {
-				LM_ERR("invalid port <%.*s>!\n", port_s.len, port_s.s);
-				return -1;
-			}
-		} else {
-			memcpy(host_buf, url_cpy->s, host_end - url_cpy->s);
-			host_buf[host_end-url_cpy->s] = '\0';
-
-			*port = default_port;
-		}
-	}
-
-	*host = host_buf;
-
-	return 0;
-}
-
-/*
- * FIXME only IPv4
- */
-static inline unsigned long fix_host(char* host)
-{
-	str host_s = str_init(host);
-
-	struct ip_addr* addr;
-	struct addrinfo *res;
-
-	if ((addr=str2ip(&host_s))==NULL) {
-		if (getaddrinfo(host, NULL, NULL, &res) < 0) {
-			LM_ERR("Invalid host <%s>!\n", host);
-			/* ip 0.0.0.0 will be considered an error */
-			return 0;
-		}
-
-		return ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
-	}
-
-	return addr->u.addrl[0];
-}
-
 void append_body_to_msg( trace_message message, void* param)
 {
-	str fline_s;
 
-	rest_trace_param_t* tparam = param;
+	struct rest_append_param* app = param;
 
-	if ( !tparam ) {
-		LM_ERR("null input!\n");
+	if ( !app ) {
+		LM_ERR("null input param!\n");
 		return;
 	}
 
-	fline_s.s = tparam->first_line;
-	fline_s.len = strlen( fline_s.s );
-	tprot.add_payload_part (message, "first_line", &fline_s);
+	tprot.add_payload_part( message, "payload", &app->fline );
+	/* SAFE: in trace_rest_request_cb we set body len to 0 if we
+	 * have no body */
+	if ( app->body.len )
+		tprot.add_payload_part( message, "payload", &app->body );
 
-	if ( tparam->body.s && tparam->body.len )
-		tprot.add_payload_part (message, "payload", &tparam->body);
-
-	tprot.add_extra_correlation ( message, "sip", &tparam->callid);
+	tprot.add_extra_correlation( message, "sip", &app->callid );
 }
 
-static int trace_rest_message(str* host, str* dest, rest_trace_param_t* tparam)
+static int trace_rest_message( rest_trace_param_t* tparam )
 {
 	const int proto = IPPROTO_TCP;
 
-	union sockaddr_union to_su, from_su;
-
-	char* host_addr;
-	unsigned int port;
+	union sockaddr_union local_su, remote_su;
 
 	struct modify_trace mod_t;
+	struct rest_append_param app;
+
+	struct in_addr addr;
+	struct in6_addr addr6;
 
 	if ( !rest_trace_enabled() )
 		return 0;
 
-	if ( host ) {
-		if (extract_host(host, &host_addr,&port) < 0){
-			LM_ERR("failed to extract host and port from <%.*s>!\n",
-					host->len, host->s);
-			return -1;
-		}
 
-		from_su.sin.sin_addr.s_addr = fix_host(host_addr);
-		if (from_su.sin.sin_addr.s_addr == 0) {
-			LM_ERR("invalid address <%s>!\n", host_addr);
+	/* resolve ip addresses */
+	if ( !inet_pton( AF_INET, tparam->local_ip, &addr) ) {
+		/* check IPV6 */
+		if ( !inet_pton( AF_INET6, tparam->local_ip, &addr6) ){
+			LM_ERR("Invalid local ip from curl <%s>\n", tparam->local_ip);
 			return -1;
+		} else {
+			local_su.sin6.sin6_family = AF_INET6;
+			local_su.sin6.sin6_port = tparam->local_port;
+			local_su.sin6.sin6_addr = addr6;
 		}
-
-		from_su.sin.sin_port = port;
-		from_su.sin.sin_family = AF_INET;
+	} else {
+		local_su.sin.sin_family = AF_INET;
+		local_su.sin.sin_port = tparam->local_port;
+		local_su.sin.sin_addr = addr;
 	}
 
-
-	/* FIXME no IPv6 */
-	if (dest) {
-		if (extract_host(dest, &host_addr,&port) < 0){
-			LM_ERR("failed to extract host and port from <%.*s>!\n",
-					host->len, host->s);
+	if ( !inet_pton( AF_INET, tparam->remote_ip, &addr) ) {
+		/* check IPV6 */
+		if ( !inet_pton( AF_INET6, tparam->remote_ip, &addr6) ){
+			LM_ERR("Invalid remote ip from curl <%s>\n", tparam->remote_ip);
 			return -1;
+		} else {
+			remote_su.sin6.sin6_family = AF_INET6;
+			remote_su.sin6.sin6_port = tparam->remote_port;
+			remote_su.sin6.sin6_addr = addr6;
 		}
-
-		to_su.sin.sin_addr.s_addr = fix_host(host_addr);
-		if (to_su.sin.sin_addr.s_addr == 0) {
-			LM_ERR("invalid address <%s>!\n", host_addr);
-			return -1;
-		}
-
-		to_su.sin.sin_port = port;
-		to_su.sin.sin_family = AF_INET;
+	} else {
+		remote_su.sin.sin_family = AF_INET;
+		remote_su.sin.sin_port = tparam->remote_port;
+		remote_su.sin.sin_addr = addr;
 	}
 
+	app.callid = tparam->callid;
 	mod_t.mod_f = append_body_to_msg;
-	mod_t.param = tparam;
+	mod_t.param = &app;
 
-	/* we give bogus body since it's gonne be changed anyhow  */
+	app.fline.s = tparam->req_first_line;
+	app.fline.len = tparam->req_fline_len;
+
+	app.body.s = tparam->req_body;
+	app.body.len = tparam->req_len;
+
 	if ( sip_context_trace(rest_proto_id,
-				dest ? &to_su : 0, host ? &from_su : 0,
+				&remote_su, &local_su,
+			0, proto, &tparam->correlation, &mod_t) < 0 ) {
+		LM_ERR("failed to trace rest message!\n");
+		return -1;
+	}
+
+	app.fline.s = tparam->rpl_first_line;
+	app.fline.len = tparam->rpl_fline_len;
+
+	app.body.s = tparam->rpl_body;
+	app.body.len = tparam->rpl_len;
+
+	if ( sip_context_trace(rest_proto_id,
+				&local_su, &remote_su,
 			0, proto, &tparam->correlation, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;

@@ -32,6 +32,7 @@
 
 /* maximum size for the first line */
 #define FLINE_MAX 512
+#define BODY_MAX 1024
 #define TRACE_BUF_MAX_SIZE 1024
 
 extern struct list_head multi_pool;
@@ -56,13 +57,34 @@ enum rest_client_method {
 
 typedef struct _rest_trace_param {
 	str callid;
-	char first_line[FLINE_MAX];
-	str body;
+
+	char req_first_line[FLINE_MAX];
+	int  req_fline_len;
+
+	char rpl_first_line[FLINE_MAX];
+	int  rpl_fline_len;
+
+	char req_body[BODY_MAX];
+	int  req_len;
+
+	char rpl_body[BODY_MAX];
+	int  rpl_len;
+
+	long local_port;
+	char local_ip[INET6_ADDRSTRLEN];
+
+	long remote_port;
+	char remote_ip[INET6_ADDRSTRLEN];
 
 	str correlation;
-
-	trace_message message;
 } rest_trace_param_t;
+
+struct rest_append_param {
+	str callid;
+
+	str fline;
+	str body;
+};
 
 struct _oss_curlm {
 	CURLM *multi_handle;
