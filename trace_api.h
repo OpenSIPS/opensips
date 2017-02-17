@@ -171,7 +171,7 @@ typedef struct _trace_prot {
 	free_message_f*           free_message;
 	get_message_id_f*         get_message_id;
 	get_data_id_f*            get_data_id;
-	generate_gid_f*           generate_gid;
+	generate_gid_f*           generate_guid;
 } trace_proto_t;
 
 /**

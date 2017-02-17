@@ -178,7 +178,7 @@ char* generate_correlation_id(int* len)
 {
 	char *ret;
 
-	ret = (char *)mi_trace_api->generate_gid(MI_CORR_COOKIE);
+	ret = (char *)mi_trace_api->generate_guid(MI_CORR_COOKIE);
 	*len = strlen(ret);
 
 	return (char *)ret;

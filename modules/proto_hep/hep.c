@@ -1795,19 +1795,17 @@ int get_hep_chunk_id(const char* name, int* vendor, int* id)
 	return 0;
 }
 
-unsigned char* generate_hep_gid(char* cookie)
+unsigned char* generate_hep_guid(char* cookie)
 {
 #define COOKIE_MAX 16
-#define GID_MAX 16
-#define B64_MAX 48
+#define GUID_MAX 20
+#define B64_MAX 44
 
 	int cookie_len = 0, rand_val;
-	static unsigned char buf[GID_MAX + 1];
+	static unsigned char buf[GUID_MAX];
 	static unsigned char b64_buf[B64_MAX + 1];
 
-	pid_t pid;
-	struct timeval tv;
-
+	utime_t uticks;
 
 	memset( b64_buf, 0, B64_MAX + 1);
 	if ( cookie ) {
@@ -1821,29 +1819,25 @@ unsigned char* generate_hep_gid(char* cookie)
 	}
 
 	/* 4 bytes with pid */
-	pid = getpid();
-	memcpy( buf, &pid, 4);
+	memcpy( buf, &pt[process_no].pid, 4);
 
-	gettimeofday( &tv, 0);
+	/* 4 bytes with startup time */
+	memcpy( buf + 4, &startup_time, 4);
 
-	/* 8 bytes with time */
-	memcpy( buf + 4, &tv.tv_sec, 4);
-	/* 4 bytes with ms time */
-	memcpy( buf + 8, &tv.tv_usec, 4);
+	/* 8 bytes with ujiffies */
+	uticks = get_uticks();
+	memcpy( buf + 8, &uticks, 8);
 
 	/* 4 bytes rand() */
 	rand_val = rand();
-	memcpy( buf + 12, &rand_val, 4);
+	memcpy( buf + 16, &rand_val, 4);
 
-
-	buf[GID_MAX] = 0;
-
-	base64encode( b64_buf + cookie_len, buf, 16);
+	base64encode( b64_buf + cookie_len, buf, 20);
 
 	return b64_buf;
 
 #undef COOKIE_MAX
-#undef GID_MAX
+#undef GUID_MAX
 #undef B64_MAX
 }
 
@@ -1863,7 +1857,7 @@ int hep_bind_trace_api(trace_proto_t* prot)
 	prot->free_message = free_hep_message;
 	prot->get_message_id = get_hep_message_id;
 	prot->get_data_id = get_hep_chunk_id;
-	prot->generate_gid = generate_hep_gid;
+	prot->generate_guid = generate_hep_guid;
 
 	return 0;
 }

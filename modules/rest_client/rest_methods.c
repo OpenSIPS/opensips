@@ -125,7 +125,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			/* FIXME what if 2 messages are sent before recieving reply?
 			 * Ex: destination has 2 ip's */
 			if ( type == CURLINFO_HEADER_OUT ) {
-				tparam->correlation.s = (char *)tprot.generate_gid(REST_CORRELATION_COOKIE);
+				tparam->correlation.s = (char *)tprot.generate_guid(REST_CORRELATION_COOKIE);
 				tparam->correlation.len = strlen(tparam->correlation.s);
 			}
 
