@@ -215,6 +215,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 0);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, body);
@@ -468,6 +469,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 0);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &body);
@@ -582,6 +584,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 0);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
