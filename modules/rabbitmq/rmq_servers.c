@@ -281,8 +281,8 @@ int rmq_server_add(modparam_t type, void * val)
 	str param, s, cid;
 	str suri = {0, 0};
 	char uri_pending = 0;
+	unsigned flags = 0;
 	char *uri;
-	unsigned flags;
 	int retries;
 	int max_frames = RMQ_DEFAULT_FRAMES;
 	int heartbeat = RMQ_DEFAULT_HEARTBEAT;
@@ -440,13 +440,13 @@ no_value:
 			}
 			break;
 		case RMQP_IMM:
-			flags &= RMQF_IMM;
+			flags |= RMQF_IMM;
 			break;
 		case RMQP_MAND:
-			flags &= RMQF_MAND;
+			flags |= RMQF_MAND;
 			break;
 		case RMQP_NOPER:
-			flags &= RMQF_NOPER;
+			flags |= RMQF_NOPER;
 			break;
 		case RMQP_EXCH:
 			exchange = param;
