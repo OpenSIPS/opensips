@@ -254,7 +254,7 @@ int hash_mi_print(struct address_list **table, struct mi_node* rpl,
     for (i = 0; i < PERM_HASH_SIZE; i++) {
 		for (node = table[i]; node; node=node->next) {
 			if (addf_mi_node_child(rpl, 0, "dest", 4,
-				   "\t%4d <%s,%u, %u, %d, %s, %s>",
+				   "%d <%s,%u, %u, %d, %s, %s>",
 				   i,
 				   ip_addr2a(node->ip),
 				   node->grp,
@@ -498,7 +498,7 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
 			continue;
 		}
 		if (addf_mi_node_child(rpl, 0, 0, 0,
-			       "\t%4d <%u, %s, %s, %u>",
+			       "%d <%u, %s, %s, %u>",
 			       i, table[i].grp, ip_buff, mask,
 				   table[i].port) == 0)
 	    	return -1;
