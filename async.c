@@ -332,7 +332,7 @@ report:
 	/* run the report route inline */
 	init_dummy_request( req );
 	set_route_type( REQUEST_ROUTE );
-	run_top_route( rlist[ctx->report_route].a, &req);
+	run_top_route( rlist[report_route].a, &req);
 	/* remove all added AVP */
 	reset_avps( );
 	return 1;
