@@ -109,6 +109,41 @@ modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
 	</section>
 
 	<section>
+		<title><varname>homer5_on</varname> (int) </title>
+		<para>
+			Specify how the data should be encapsulated, as plain text
+		(HOMER5 - anything different than 0) or JSON based (HOMER 6 - 0).
+		</para>
+		<para>
+			Default value 0, HOMER6 format.
+		</para>
+		<example>
+		<title> Set <varname>homer5_on</varname> parameter</title>
+		<programlisting format="linespecific">
+modparam("proto_hep", "homer5_on", 1)
+</programlisting>
+	</example>
+	</section>
+
+	<section>
+		<title><varname>homer5_delim</varname> (str) </title>
+		<para>
+			In case <emphasis role="bold">homer5_on</emphasis> is set
+		(different than 0), with this parameter you will be able to set
+		the delmiter between different payload parts.
+		</para>
+		<para>
+			Default value ":".
+		</para>
+		<example>
+		<title> Set <varname>homer5_on</varname> parameter</title>
+		<programlisting format="linespecific">
+modparam("proto_hep", "homer5_delim", "##")
+</programlisting>
+	</example>
+	</section>
+
+	<section>
 		<title><varname>hep_port</varname> (integer)</title>
 		<para>
 			The default port to be used by all TCP/UDP listeners.
@@ -285,6 +320,7 @@ modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 </programlisting>
 		</example>
 	</section>
+
 	</section>
 
 </chapter>
