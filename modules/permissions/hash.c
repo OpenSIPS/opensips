@@ -481,7 +481,7 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
     count = table[PERM_MAX_SUBNETS].grp;
 
 	if (addf_mi_node_child(rpl, 0, 0, 0,
-				   "%.*s\n",
+				   "%.*s",
 				   pm->name.len, pm->name.s) == 0)
 		return -1;
 
