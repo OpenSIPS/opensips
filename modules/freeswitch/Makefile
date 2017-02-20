@@ -12,4 +12,9 @@ ESLDIR = esl/src
 _SRC=esl.c esl_buffer.c esl_config.c esl_event.c esl_json.c esl_threadmutex.c
 extra_sources=$(patsubst %,$(ESLDIR)/%,$(_SRC))
 
+ ifeq ($(CC_NAME),gcc)
+ DEFS += -Wno-error=misleading-indentation -Wno-misleading-indentation
+ endif
+
+
 include ../../Makefile.modules
