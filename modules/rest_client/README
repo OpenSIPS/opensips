@@ -233,6 +233,11 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct
    MIME Content-Type header for the request will be taken from
    send_ctype_pv (default is "application/x-www-form-urlencoded")
 
+   Note that the send_body_pv parameter can also accept a
+   format-string but it cannot be larger than 1024 bytes. For
+   bigger messages, you must build them in a pseudo-variable and
+   pass it to the function.
+
    The mandatory recv_body_pv pseudo-var will hold the body of the
    HTTP response.
 
@@ -272,6 +277,11 @@ if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)
    body will be copied from the send_body_pv pseudo-variable. The
    MIME Content-Type header for the request will be taken from
    send_ctype_pv (default is "application/x-www-form-urlencoded")
+
+   Similar to the rest_post, the send_body_pv parameter can also
+   accept a format-string but it cannot be larger than 1024 bytes.
+   For bigger messages, you must build them in a pseudo-variable
+   and pass it to the function.
 
    The mandatory recv_body_pv pseudo-var will hold the body of the
    HTTP response.
