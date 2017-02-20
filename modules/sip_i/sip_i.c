@@ -144,7 +144,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 	str param_s = {0, 0}, subfield_s = {0, 0};
 	int i, j;
 	struct isup_parse_fixup *parse_fix;
-	int isup_params_idx, subfield_idx;
+	int isup_params_idx, subfield_idx = -1;
 
 	if (!in || !in->s || !in->len) {
 		LM_ERR("Bad subname for $isup_param\n");
@@ -1105,7 +1105,7 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	char intl_num = 0;
 	char *p;
 	int i = 0;
-	struct opt_param *cgpn;
+	struct opt_param *cgpn = NULL;
 	struct to_body* pai;
 	int apri_val;
 	int new_len = 0;
