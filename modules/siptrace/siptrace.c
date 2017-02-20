@@ -1373,7 +1373,7 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 			return -1;
 		}
 
-		if ( !(value.flags && PV_VAL_STR) ) {
+		if ( !(value.flags & PV_VAL_STR) ) {
 			LM_ERR("Trace id variable does not contain a valid string!\n");
 			return -1;
 		}
