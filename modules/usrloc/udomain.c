@@ -459,7 +459,7 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 
 	/* socket name */
 	p  = (char*)VAL_STRING(vals+11);
-	if (VAL_NULL(vals+10) || p==0 || p[0]==0){
+	if (VAL_NULL(vals+11) || p==0 || p[0]==0){
 		ci.sock = 0;
 	} else {
 		if (parse_phostport( p, strlen(p), &host.s, &host.len,
