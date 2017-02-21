@@ -32,7 +32,7 @@
 
 #include <string.h>
 
-extern mongo_write_concern mwc;
+//extern mongo_write_concern mwc;
 extern str mongo_write_concern_str;
 extern str mongo_write_concern_b;
 extern int mongo_slave_ok;
@@ -43,8 +43,13 @@ char *hex_oid_id = NULL;
 
 mongo_con* mongo_new_connection(struct cachedb_id* id)
 {
+
+	//client = mongoc_client_new ("mongodb://localhost:27017");
+
+
+#if 0
 	mongo_con *con;
-	bson version_cmd,version_out;
+	bson_t version_cmd,version_out;
 	bson_iterator it;
 	const char *version;
 	char *p,*p1;
@@ -215,8 +220,9 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 			con->database,con->collection);
 	bson_destroy(&version_cmd);
 	bson_destroy(&version_out);
+#endif
 
-	return con;
+	return NULL;
 }
 
 cachedb_con *mongo_con_init(str *url)
@@ -236,7 +242,8 @@ void mongo_con_destroy(cachedb_con *con)
 
 int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 {
-	bson new_b,err_b;
+#if 0
+	bson_t new_b,err_b;
 	mongo_cursor *m_cursor;
 	bson_iterator it;
 	const char *rez;
@@ -369,11 +376,14 @@ error:
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo get",attr->s,attr->len,0);
 	return -1;
+#endif
+	return 0;
 }
 
 int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)
 {
-	bson new_b;
+#if 0
+	bson_t new_b;
 	int i;
 	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
@@ -420,11 +430,14 @@ error:
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo set",attr->s,attr->len,0);
 	return -1;
+#endif
+	return 0;
 }
 
 int mongo_con_remove(cachedb_con *connection,str *attr)
 {
-	bson new_b;
+#if 0
+	bson_t new_b;
 	int i;
 	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
@@ -465,16 +478,19 @@ error:
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo remove",attr->s,attr->len,0);
 	return -1;
+#endif
+	return 0;
 }
 
 void dbg_bson_print_raw( const char *data , int depth )
 {
+#if 0
 	bson_iterator i;
 	const char *key;
 	int temp;
 	bson_timestamp_t ts;
 	char oidhex[HEX_OID_SIZE];
-	bson scope;
+	bson_t scope;
 	bson_iterator_from_buffer( &i, data );
 
 	while ( bson_iterator_next( &i ) ) {
@@ -548,20 +564,22 @@ void dbg_bson_print_raw( const char *data , int depth )
 			}
 		LM_INFO( "\n" );
 	}
+#endif
 }
 
-void dbg_print_bson(bson *b)
+void dbg_print_bson(bson_t *b)
 {
-	dbg_bson_print_raw(b->data,0);
+	//dbg_bson_print_raw(b->data,0);
 }
 
-int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
+int mongo_raw_find(cachedb_con *connection,bson_t *raw_query,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
 {
+#if 0
 	bson_iterator i;
 	mongo_cursor *m_cursor;
 	const char *key,*ns=NULL;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	bson op_b,fields_b,err_b;
+	bson_t op_b,fields_b,err_b;
 	int have_query=0,have_fields=0,j,ret;
 
 	if (!reply || expected_kv_no != 1) {
@@ -589,11 +607,11 @@ int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***repl
 			case BSON_OBJECT:
 			case BSON_ARRAY:
 				if (strcmp(key,"query") == 0) {
-					memset(&op_b,0,sizeof(bson));
+					memset(&op_b,0,sizeof(bson_t));
 					bson_init_finished_data(&op_b,(char *)bson_iterator_value(&i));
 					have_query=1;
 				} else if (strcmp(key,"fields") == 0) {
-					memset(&fields_b,0,sizeof(bson));
+					memset(&fields_b,0,sizeof(bson_t));
 					bson_init_finished_data(&fields_b,(char *)bson_iterator_value(&i));
 					have_fields=1;
 				}
@@ -655,14 +673,17 @@ int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***repl
 
 	mongo_cursor_destroy(m_cursor);
 	return ret;
+#endif
+	return 0;
 }
 
-int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
+int mongo_raw_count(cachedb_con *connection,bson_t *raw_query,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
 {
+#if 0
 	bson_iterator i;
 	const char *key,*ns=NULL;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	bson op_b,err_b;
+	bson_t op_b,err_b;
 	int have_query=0,j,result=0,ns_len=0;
 	char db[32],coll[32],*p;
 
@@ -701,7 +722,7 @@ int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***rep
 			case BSON_OBJECT:
 			case BSON_ARRAY:
 				if (strcmp(key,"query") == 0) {
-					memset(&op_b,0,sizeof(bson));
+					memset(&op_b,0,sizeof(bson_t));
 					bson_init_finished_data(&op_b,(char *)bson_iterator_value(&i));
 					have_query=1;
 				}
@@ -774,14 +795,17 @@ int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***rep
 
 	*reply_no = 1;
 	return 0;
+#endif
+	return 0;
 }
 
-int mongo_raw_update(cachedb_con *connection,bson *raw_query)
+int mongo_raw_update(cachedb_con *connection,bson_t *raw_query)
 {
+#if 0
 	bson_iterator i;
 	const char *key,*ns=NULL;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	bson op_b,match_b,err_b;
+	bson_t op_b,match_b,err_b;
 	int have_query=0,have_match=0,j,ret;
 
 	bson_iterator_from_buffer( &i, raw_query->data );
@@ -805,11 +829,11 @@ int mongo_raw_update(cachedb_con *connection,bson *raw_query)
 			case BSON_OBJECT:
 			case BSON_ARRAY:
 				if (strcmp(key,"query") == 0) {
-					memset(&op_b,0,sizeof(bson));
+					memset(&op_b,0,sizeof(bson_t));
 					bson_init_finished_data(&op_b,(char *)bson_iterator_value(&i));
 					have_query=1;
 				} else if (strcmp(key,"match") == 0) {
-					memset(&match_b,0,sizeof(bson));
+					memset(&match_b,0,sizeof(bson_t));
 					bson_init_finished_data(&match_b,(char *)bson_iterator_value(&i));
 					have_match=1;
 				}
@@ -864,14 +888,17 @@ int mongo_raw_update(cachedb_con *connection,bson *raw_query)
 	}
 
 	return 0;
+#endif
+	return 0;
 }
 
-int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
+int mongo_raw_insert(cachedb_con *connection,bson_t *raw_query)
 {
+#if 0
 	bson_iterator i;
 	const char *key,*ns=NULL;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	bson op_b,err_b;
+	bson_t op_b,err_b;
 	int have_query=0,j,ret;
 
 	bson_iterator_from_buffer( &i, raw_query->data );
@@ -895,7 +922,7 @@ int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
 			case BSON_OBJECT:
 			case BSON_ARRAY:
 				if (strcmp(key,"query") == 0) {
-					memset(&op_b,0,sizeof(bson));
+					memset(&op_b,0,sizeof(bson_t));
 					bson_init_finished_data(&op_b,(char *)bson_iterator_value(&i));
 					have_query=1;
 				}
@@ -951,14 +978,17 @@ int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
 	}
 
 	return 0;
+#endif
+	return 0;
 }
 
-int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
+int mongo_raw_remove(cachedb_con *connection,bson_t *raw_query)
 {
+#if 0
 	bson_iterator i;
 	const char *key,*ns=NULL;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	bson op_b,err_b;
+	bson_t op_b,err_b;
 	int have_query=0,j,ret;
 
 	bson_iterator_from_buffer( &i, raw_query->data );
@@ -982,7 +1012,7 @@ int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
 			case BSON_OBJECT:
 			case BSON_ARRAY:
 				if (strcmp(key,"query") == 0) {
-					memset(&op_b,0,sizeof(bson));
+					memset(&op_b,0,sizeof(bson_t));
 					bson_init_finished_data(&op_b,(char *)bson_iterator_value(&i));
 					have_query=1;
 				}
@@ -1037,14 +1067,17 @@ int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
 	}
 
 	return 0;
+#endif
+	return 0;
 }
 
-static char *raw_query_buf=NULL;
-static int raw_query_buf_len=0;
+//static char *raw_query_buf=NULL;
+//static int raw_query_buf_len=0;
 
 int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
 {
-	bson new_b;
+#if 0
+	bson_t new_b;
 	int ret;
 	bson_iterator i;
 	struct timeval start;
@@ -1114,12 +1147,15 @@ error:
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo raw",attr->s,attr->len,0);
 	return -1;
+#endif
+	return 0;
 }
 
-static char counter_q_buf[256];
+//static char counter_q_buf[256];
 int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
 {
-	bson cmd,err_b,out;
+#if 0
+	bson_t cmd,err_b,out;
 	int j,ret;
 	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
@@ -1201,7 +1237,7 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	while( bson_iterator_next(&it)) {
 		curr_key=bson_iterator_key(&it);
 
-		if (memcmp(curr_key,"retval",6) == 0) {
+		if (memcmp(curr_key,"value",5) == 0) {
 			if (bson_iterator_type(&it) != BSON_OBJECT) {
 				LM_ERR("Unexpected value type %d\n",
 					bson_iterator_type(&it));
@@ -1210,7 +1246,7 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 			bson_iterator_subiterator(&it,&it2);
 			while (bson_iterator_next(&it2)) {
 				inner_key=bson_iterator_key(&it2);
-				if (memcmp(inner_key,"cval",4) == 0) {
+				if (memcmp(inner_key,"opensips_counter",16) == 0) {
 					*new_val = bson_iterator_int(&it2) + val;
 					bson_destroy(&out);
 					bson_destroy(&cmd);
@@ -1229,6 +1265,8 @@ err:
 	"cachedb_mongo add",attr->s,attr->len,0);
 	return -1;
 
+#endif
+	return 0;
 }
 
 int mongo_con_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
@@ -1238,7 +1276,8 @@ int mongo_con_sub(cachedb_con *connection,str *attr,int val,int expires,int *new
 
 int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 {
-	bson new_b,err_b;
+#if 0
+	bson_t new_b,err_b;
 	mongo_cursor *m_cursor;
 	bson_iterator it;
 	int i;
@@ -1333,8 +1372,11 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo get_counter",attr->s,attr->len,0);
 	return -2;
+#endif
+	return 0;
 }
 
+#if 0
 #define MONGO_DB_KEY_TRANS(key,val,index,op,query)\
 	do { \
 		if (VAL_NULL(val+index) == 0) { \
@@ -1403,13 +1445,15 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 			} \
 		} \
 	} while (0)
+#endif
 
 int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r)
 {
+#if 0
 	char key_buff[32],namespace_buff[64],*p;
-	bson query;
-	bson fields;
-	bson err_b;
+	bson_t query;
+	bson_t fields;
+	bson_t err_b;
 	int i,j,row_no;
 	mongo *conn = &MONGO_CDB_CON(con);
 	mongo_cursor *m_cursor;
@@ -1659,10 +1703,13 @@ error:
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo sql_select",table->s,table->len,0);
 	return -1;
+#endif
+	return 0;
 }
 
 int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
 {
+#if 0
 	if ((!con) || (!_r)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
@@ -1682,13 +1729,16 @@ int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
 	mongo_cursor_destroy(MONGO_CDB_CURSOR(con));
 	MONGO_CDB_CURSOR(con) = NULL;
 	return 0;
+#endif
+	return 0;
 }
 
 int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n)
 {
+#if 0
 	int i,j,ret;
-	bson query;
-	bson err_b;
+	bson_t query;
+	bson_t err_b;
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
@@ -1762,13 +1812,16 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo sql_insert",table->s,table->len,0);
 	return 0;
+#endif
+	return 0;
 }
 
 int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n)
 {
+#if 0
 	int i,j,ret;
-	bson query;
-	bson err_b;
+	bson_t query;
+	bson_t err_b;
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
@@ -1840,13 +1893,16 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo sql_delete",table->s,table->len,0);
 	return 0;
+#endif
+	return 0;
 }
 
 int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un)
 {
+#if 0
 	int i,j,ret;
-	bson query,op_query;
-	bson err_b;
+	bson_t query,op_query;
+	bson_t err_b;
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
@@ -1924,5 +1980,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 
 	stop_expire_timer(start,mongo_exec_threshold,
 	"cachedb_mongo sql_update",table->s,table->len,0);
+	return 0;
+#endif
 	return 0;
 }

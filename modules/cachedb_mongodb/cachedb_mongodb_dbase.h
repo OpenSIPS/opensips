@@ -31,7 +31,7 @@
 
 #define MONGO_HAVE_STDINT 1
 
-#include <mongo.h>
+#include <mongoc.h>
 #include <bson.h>
 
 #include <json.h>
@@ -52,9 +52,9 @@ typedef struct {
 	char *replset_name;
 
 	/* actual connection to mongo */
-	mongo connection;
+	//mongo connection;
 	/* cursor result for the query */
-	mongo_cursor *cursor;
+	//mongo_cursor *cursor;
 } mongo_con;
 
 #define MONGO_CON(mon_con)			((mon_con)->connection)

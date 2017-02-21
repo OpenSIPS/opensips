@@ -28,10 +28,11 @@
 #include "cachedb_mongodb_json.h"
 #include "cachedb_mongodb_dbase.h"
 
-int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v );
+int json_to_bson_append_element( bson_t *bb , const char *k , struct json_object *v );
 
-int json_to_bson_append_array( bson *bb , struct json_object *a )
+int json_to_bson_append_array( bson_t *bb , struct json_object *a )
 {
+#if 0
 	int i,al_len;
 	char *al;
 	json_object *it;
@@ -57,6 +58,8 @@ int json_to_bson_append_array( bson *bb , struct json_object *a )
     }
 
 	return 0;
+#endif
+	return 0;
 }
 
 # define json_object_object_iterator(obj,key,val) \
@@ -66,8 +69,9 @@ int json_to_bson_append_array( bson *bb , struct json_object *a )
 		val = (struct json_object*)entry->v, entry) : 0); \
 		entry = entry->next)
 
-int json_to_bson_append(bson *bb,struct json_object *o)
+int json_to_bson_append(bson_t *bb,struct json_object *o)
 {
+#if 0
 	json_object_object_iterator( o,key,val ) {
 		if (json_to_bson_append_element(bb,key,val)<0) {
 			LM_ERR("Failed to append new element\n");
@@ -76,10 +80,13 @@ int json_to_bson_append(bson *bb,struct json_object *o)
 	}
 
 	return 0;
+#endif
+	return 0;
 }
 
-int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v )
+int json_to_bson_append_element( bson_t *bb , const char *k , struct json_object *v )
 {
+#if 0
 	if (v==NULL) {
 		bson_append_null(bb,k);
 		return 0;
@@ -121,7 +128,7 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 				return -1;
 			}
 			if (json_to_bson_append(bb,v)<0) {
-				LM_ERR("Failed to append to bson\n");
+				LM_ERR("Failed to append to bson_t\n");
 				return -1;
 			}
 			if (bson_append_finish_object(bb)
@@ -138,12 +145,12 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 			}
 
 			if (json_to_bson_append_array(bb,v) < 0) {
-				LM_ERR("Failed to append array to bson\n");
+				LM_ERR("Failed to append array to bson_t\n");
 				return -1;
 			}
 			if (bson_append_finish_object(bb)
 					!= BSON_OK) {
-				LM_ERR("Failed to finish appending array to bson\n");
+				LM_ERR("Failed to finish appending array to bson_t\n");
 				return -1;
 			}
 			break;
@@ -153,10 +160,13 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 	}
 
 	return 0;
+#endif
+	return 0;
 }
 
-int json_to_bson(char *json,bson *bb)
+int json_to_bson(char *json,bson_t *bb)
 {
+#if 0
 	struct json_object *obj;
 
 	LM_DBG("Trying to convert [%s]\n",json);
@@ -174,7 +184,7 @@ int json_to_bson(char *json,bson *bb)
 
 	bson_init(bb);
 	if (json_to_bson_append(bb,obj) < 0) {
-		LM_ERR("Failed to convert json to bson\n");
+		LM_ERR("Failed to convert json to bson_t\n");
 		bson_finish(bb);
 		bson_destroy(bb);
 		goto error;
@@ -189,10 +199,13 @@ error:
 	if (obj)
 		json_object_put(obj);
 	return -1;
+#endif
+	return 0;
 }
 
-void bson_to_json_generic(struct json_object *obj,bson_iterator *it,int type)
+void bson_to_json_generic(struct json_object *obj,bson_iter_t *it,int type)
 {
+#if 0
 	const char *curr_key;
 	char *s;
 	int len;
@@ -281,8 +294,10 @@ void bson_to_json_generic(struct json_object *obj,bson_iterator *it,int type)
 								bson_iterator_type(it),curr_key);
 			}
 		}
+#endif
 }
 
+#if 0
 int mongo_cursor_to_json(mongo_cursor *m_cursor,
 		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
 {
@@ -369,3 +384,4 @@ error_cleanup:
 	*reply_no=0;
 	return -1;
 }
+#endif

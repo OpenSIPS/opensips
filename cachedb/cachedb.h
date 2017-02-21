@@ -61,6 +61,9 @@ void cachedb_do_close(cachedb_con *con, void (*free_connection)(cachedb_pool_con
 
 typedef cachedb_con* (cachedb_init_f)(str *url);
 typedef void (cachedb_destroy_f)(cachedb_con *con);
+
+/* NOTE: "val->s" must be allocated in PKG memory,
+ * and will be freed by the CacheDB layer! */
 typedef int (cachedb_get_f)(cachedb_con *con,str *attr,str *val);
 typedef int (cachedb_getcounter_f)(cachedb_con *con,str *attr,int *val);
 typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);

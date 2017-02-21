@@ -31,9 +31,9 @@
 #include <bson.h>
 #include <stdint.h>
 
-int json_to_bson(char *json,bson *bb);
-int mongo_cursor_to_json(mongo_cursor *m_cursor,
-		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
+int json_to_bson(char *json,bson_t *bb);
+//int mongo_cursor_to_json(mongo_cursor *m_cursor,
+//		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
 
 #endif /* CACHEDBMONGO_JSON_H */
 

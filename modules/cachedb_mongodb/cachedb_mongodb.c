@@ -51,8 +51,8 @@ struct cachedb_url *mongodb_script_urls = NULL;
 int mongo_op_timeout=3000; /* 3000 milliseconds */
 int mongo_slave_ok=0;      /* not ok to send read requests to secondaries */
 str mongo_write_concern_str = {0,0};
-bson mongo_write_concern_b;
-mongo_write_concern mwc;
+bson_t mongo_write_concern_b;
+//mongo_write_concern mwc;
 int mongo_exec_threshold=0;
 
 int set_connection(unsigned int type, void *val)
@@ -120,9 +120,10 @@ static int mod_init(void)
 
 	cde.cdb_func.capability = 0;
 
+#if 0
 	if (mongo_write_concern_str.s != NULL) {
-		/* TODO - try manually building the getlasterror bson */
-		memset(&mongo_write_concern_b,0,sizeof(bson));
+		/* TODO - try manually building the getlasterror bson_t */
+		memset(&mongo_write_concern_b,0,sizeof(bson_t));
 		if (json_to_bson(mongo_write_concern_str.s,&mongo_write_concern_b) != 0) {
 			LM_ERR("Invalid write concern json\n");
 			return -1;
@@ -131,10 +132,14 @@ static int mod_init(void)
 		mongo_write_concern_init(&mwc);
 		mwc.cmd = &mongo_write_concern_b;
 	}
+#endif
 
+
+#if 0
 	if (mongo_slave_ok == 1) {
 		mongo_slave_ok = MONGO_SLAVE_OK | MONGO_PARTIAL ;
 	}
+#endif
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_redis\n");
@@ -152,6 +157,8 @@ static int child_init(int rank)
 	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
 		return 0;
 	}
+
+	mongoc_init();
 
 	for (it = mongodb_script_urls;it;it=it->next) {
 		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);
