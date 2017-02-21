@@ -93,7 +93,8 @@ struct mi_trace_req* build_mi_trace_request( str* cmd,
 		node = mi_req->node.kids;
 		while ( node &&
 			(( new = snprintf( mi_treq.params + len, MAX_TRACE_FIELD - len,
-				"%.*s", node->value.len, node->value.s) )
+				"%s%.*s", (node == mi_req->node.kids ? "" : ",")
+							,node->value.len, node->value.s) )
 				< MAX_TRACE_FIELD - len) )  {
 			if ( new < 0) {
 				LM_ERR("snprintf failed!\n");
