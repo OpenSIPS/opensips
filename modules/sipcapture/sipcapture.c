@@ -1396,10 +1396,7 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 
 	char addr[INET6_ADDRSTRLEN];
 
-	time_t time;
-
 	str addr_str;
-	str time_str;
 	str payload_str;
 	hep_str.len = 0;
 
@@ -1515,11 +1512,7 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 		if (h3->hg.time_sec.chunk.length == 0)
 			goto chunk_not_set;
 
-		time = h3->hg.time_sec.data;
-		time_str.s = ctime(&time);
-		time_str.len = strlen(time_str.s)-1;
-
-		SET_PVAL_STR(res, time_str);
+		SET_PVAL_INT( res, h3->hg.time_sec.data );
 
 		break;
 	/* timestamp us offset */
