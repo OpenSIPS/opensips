@@ -41,6 +41,7 @@
 #include "../../ut.h"
 #include "../../resolve.h"
 #include "../../mem/mem.h"
+#include "../../trace_api.h"
 #include "httpd_load.h"
 #include "httpd_proc.h"
 
@@ -127,7 +128,7 @@ static int mod_init(void)
 		httpd_server_info.sin.sin_addr.s_addr = _ip->u.addr32[0];
 		httpd_server_info.sin.sin_family = _ip->af;
 	} else {
-		httpd_server_info.sin.sin_addr.s_addr = INADDR_LOOPBACK;
+		httpd_server_info.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
 		httpd_server_info.sin.sin_family = AF_INET;
 	}
 
