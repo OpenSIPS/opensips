@@ -653,6 +653,9 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			} else if (ret < 0) {
 				unlock_udomain(_d, &user);
 				goto error;
+			} else {
+				/* record found */
+				sl = r->aorhash&(_d->size-1);
 			}
 
 			if ((unsigned short)r->aorhash != aorhash) {
