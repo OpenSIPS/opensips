@@ -833,6 +833,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		mf.s = int2str( dialog->mf_value, &mf.len);
 		*len += LOCAL_MAXFWD_PREFIX_LEN + mf.len + CRLF_LEN;
 	} else {
+		mf.len = 0; mf.s = NULL;
 		*len += LOCAL_MAXFWD_HEADER_LEN;
 	}
 	/* Content-Length */
