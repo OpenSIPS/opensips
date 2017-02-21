@@ -3537,7 +3537,7 @@ error:
 
 static int set_hep_generic_fixup(void** param, int param_no)
 {
-	int type;
+	unsigned chunk_id;
 	gparam_p gp;
 
 	switch (param_no) {
@@ -3550,12 +3550,12 @@ static int set_hep_generic_fixup(void** param, int param_no)
 
 			gp = *param;
 			if (gp->type == GPARAM_TYPE_STR) {
-				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+				if ( parse_hep_name( &gp->v.sval, &chunk_id ) < 0 ) {
 					LM_ERR("Invalid chunk value type <%.*s>!\n",
 							gp->v.sval.len, gp->v.sval.s);
 					return -1;
 				}
-				gp->v.ival = type;
+				gp->v.ival = chunk_id;
 				gp->type   = GPARAM_TYPE_INT;
 			}
 
@@ -3573,6 +3573,7 @@ static int set_hep_generic_fixup(void** param, int param_no)
 static int set_hep_fixup(void** param, int param_no)
 {
 	int type;
+	unsigned chunk_id;
 	gparam_p gp;
 
 	switch (param_no) {
@@ -3598,6 +3599,23 @@ static int set_hep_fixup(void** param, int param_no)
 
 		/* chunk id */
 		case 2:
+			if (fixup_sgp(param) < 0) {
+				LM_ERR("fixup for chunk type failed!\n");
+				return -1;
+			}
+
+			gp = *param;
+			if (gp->type == GPARAM_TYPE_STR) {
+				if ( parse_hep_name( &gp->v.sval, &chunk_id ) < 0 ) {
+					LM_ERR("Invalid chunk value type <%.*s>!\n",
+							gp->v.sval.len, gp->v.sval.s);
+					return -1;
+				}
+				gp->v.ival = chunk_id;
+				gp->type   = GPARAM_TYPE_INT;
+			}
+
+			return 0;
 		/* vendor*/
 		case 3:
 			if (fixup_sgp(param) < 0) {
@@ -3627,7 +3645,7 @@ static int set_hep_fixup(void** param, int param_no)
 
 static int get_hep_generic_fixup(void** param, int param_no)
 {
-	int type;
+	unsigned chunk_id;
 	gparam_p gp;
 
 	switch (param_no) {
@@ -3639,12 +3657,12 @@ static int get_hep_generic_fixup(void** param, int param_no)
 
 			gp = *param;
 			if (gp->type == GPARAM_TYPE_STR) {
-				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+				if ( parse_hep_name( &gp->v.sval, &chunk_id ) < 0 ) {
 					LM_ERR("Invalid chunk value type <%.*s>!\n",
 							gp->v.sval.len, gp->v.sval.s);
 					return -1;
 				}
-				gp->v.ival = type;
+				gp->v.ival = chunk_id;
 				gp->type   = GPARAM_TYPE_INT;
 			}
 
@@ -3668,6 +3686,7 @@ static int get_hep_generic_fixup(void** param, int param_no)
 static int get_hep_fixup(void** param, int param_no)
 {
 	int type;
+	unsigned chunk_id;
 	gparam_p gp;
 
 	switch (param_no) {
@@ -3699,12 +3718,12 @@ static int get_hep_fixup(void** param, int param_no)
 
 			gp = *param;
 			if (gp->type == GPARAM_TYPE_STR) {
-				if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+				if ( parse_hep_name( &gp->v.sval, &chunk_id ) < 0 ) {
 					LM_ERR("Invalid chunk value type <%.*s>!\n",
 							gp->v.sval.len, gp->v.sval.s);
 					return -1;
 				}
-				gp->v.ival = type;
+				gp->v.ival = chunk_id;
 				gp->type   = GPARAM_TYPE_INT;
 			}
 
@@ -3725,7 +3744,7 @@ static int get_hep_fixup(void** param, int param_no)
 
 static int del_hep_fixup(void** param, int param_no)
 {
-	int type;
+	unsigned chunk_id;
 	gparam_p gp;
 
 	if (param_no == 1) {
@@ -3736,12 +3755,12 @@ static int del_hep_fixup(void** param, int param_no)
 
 		gp = *param;
 		if (gp->type == GPARAM_TYPE_STR) {
-			if ((type=fix_hex_int(&gp->v.sval)) < 0) {
+			if ( parse_hep_name( &gp->v.sval, &chunk_id ) < 0 ) {
 				LM_ERR("Invalid chunk value type <%.*s>!\n",
 						gp->v.sval.len, gp->v.sval.s);
 				return -1;
 			}
-			gp->v.ival = type;
+			gp->v.ival = chunk_id;
 			gp->type   = GPARAM_TYPE_INT;
 		}
 
