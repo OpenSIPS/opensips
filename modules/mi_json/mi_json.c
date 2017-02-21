@@ -64,6 +64,7 @@ static char err_buf[MI_JSON_ERROR_BUF_MAX_LEN];
 static const char* MI_JSON_COMMAND_ERROR_S = "{\"error\": {\"code\": %u, \"message\": \"%.*s\"}}";
 
 static str backend = str_init("json");
+static union sockaddr_union* sv_socket = NULL;
 
 
 
@@ -279,7 +280,6 @@ static inline struct mi_root* mi_json_wait_async_reply(struct mi_handler *hdl)
 static inline void trace_json( struct mi_cmd* f, union sockaddr_union* cl_socket, char* url,
 		struct mi_root* mi_req, str* error, int code, str* message)
 {
-	static union sockaddr_union* sv_socket = NULL;
 
 	char* command;
 
@@ -297,6 +297,39 @@ static inline void trace_json( struct mi_cmd* f, union sockaddr_union* cl_socket
 
 	mi_trace_request( cl_socket, sv_socket, command,
 								strlen(command), mi_req, &backend, t_dst);
+
+	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
+}
+
+void trace_json_request( struct mi_cmd* f, union sockaddr_union* cl_socket, char* url,
+		struct mi_root* mi_req )
+{
+	char* command;
+	if ( f && !is_mi_cmd_traced( mi_trace_mod_id, f) )
+		return;
+
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
+
+	if ( url )
+		command = url;
+	else
+		command = "";
+
+	mi_trace_request( cl_socket, sv_socket, command,
+								strlen(command), mi_req, &backend, t_dst);
+}
+
+static inline void trace_json_reply( struct mi_cmd* f, union sockaddr_union* cl_socket,
+		str* error, int code, str* message)
+{
+	if ( f && !is_mi_cmd_traced( mi_trace_mod_id, f) )
+		return;
+
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
 
 	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
 }
@@ -329,7 +362,6 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 
 		httpd_api.lookup_arg(connection, "params", *con_cls, &params);
 		if (command.s) {
-
 			f = lookup_mi_cmd(command.s, command.len);
 			if (f == NULL) {
 				LM_ERR("unable to find mi command [%.*s]\n",
@@ -344,7 +376,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 			} else {
 
 				tree = mi_json_run_mi_cmd(f, &command,&params,
-						page, buffer, &async_hdl);
+						page, buffer, &async_hdl, cl_socket);
 				if (tree == MI_ROOT_ASYNC_RPL) {
 					LM_DBG("got an async reply\n");
 					tree = mi_json_wait_async_reply(async_hdl);
@@ -359,7 +391,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 							MI_JSON_INTERNAL_ERROR,
 							MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 
-					trace_json( f, cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
+					trace_json_reply( f, cl_socket, (str *)&MI_HTTP_U_ERROR,
 							MI_JSON_INTERNAL_ERROR, 0);
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
@@ -371,7 +403,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 								MI_JSON_INTERNAL_ERROR,
 								MI_HTTP_U_ERROR.len, MI_HTTP_U_ERROR.s);
 
-						trace_json( f, cl_socket, command.s, 0, (str *)&MI_HTTP_U_ERROR,
+						trace_json_reply( f, cl_socket, (str *)&MI_HTTP_U_ERROR,
 								MI_JSON_INTERNAL_ERROR, 0);
 					} else {
 						if (tree->code >= 400) {
@@ -379,13 +411,10 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 							page->len = snprintf(page->s, MI_JSON_ERROR_BUF_MAX_LEN,
 									MI_JSON_COMMAND_ERROR_S,
 									tree->code, tree->reason.len, tree->reason.s);
-
-							trace_json( f, cl_socket, command.s, 0, &tree->reason,
-									tree->code, 0);
 						}
 
 						/* everything ok here */
-						trace_json( f, cl_socket, command.s, tree, &tree->reason,
+						trace_json_reply( f, cl_socket, &tree->reason,
 								tree->code, page);
 					}
 				}

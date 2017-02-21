@@ -41,8 +41,11 @@ int mi_json_init_async_lock(void);
 void mi_json_destroy_async_lock(void);
 
 struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* command,
-      const str* params, str *page, str *buffer, struct mi_handler **async_hdl);
+      const str* params, str *page, str *buffer, struct mi_handler **async_hdl,
+	  union sockaddr_union* cl_socket);
 int mi_json_build_page(str* page, int max_page_len,
         struct mi_root* tree);
+void trace_json_request( struct mi_cmd* f, union sockaddr_union* cl_socket, char* url,
+		struct mi_root* mi_req );
 
 #endif
