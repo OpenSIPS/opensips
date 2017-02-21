@@ -1122,7 +1122,7 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 	app.body.len = tparam->req_len;
 
 	if ( sip_context_trace(rest_proto_id,
-				&remote_su, &local_su,
+				&local_su, &remote_su,
 			0, proto, &tparam->correlation, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;
@@ -1135,7 +1135,7 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 	app.body.len = tparam->rpl_len;
 
 	if ( sip_context_trace(rest_proto_id,
-				&local_su, &remote_su,
+				&remote_su, &local_su,
 			0, proto, &tparam->correlation, &mod_t) < 0 ) {
 		LM_ERR("failed to trace rest message!\n");
 		return -1;
