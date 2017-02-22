@@ -119,6 +119,14 @@
 		<emphasis role='bold'><xref linkend="replicate_contacts_to"/></emphasis> parameters of the
 		module.
 		</para>
+		<para>
+		<emphasis>Note</emphasis> that for certain scenarios, where NAT or
+		multihomed interfaces are involved, you might need to preserve the
+		same interface among all the &osips; servers within the replication
+		cluster. Otherwise when an instance receives a replicated contact
+		for whom it does not have a listener, it will use a different
+		listener of his.
+		</para>
 		</section>
 	</section>
 
