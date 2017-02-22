@@ -156,144 +156,79 @@ void mongo_con_destroy(cachedb_con *con)
 	cachedb_do_close(con,mongo_free_connection);
 }
 
-int mongo_con_get(cachedb_con *connection,str *attr,str *val)
+int mongo_con_get(cachedb_con *con, str *attr, str *val)
 {
-#if 0
-	bson_t new_b,err_b;
-	mongo_cursor *m_cursor;
-	bson_iterator it;
-	const char *rez;
-	int rez_len,i;
-	mongo *conn = &MONGO_CDB_CON(connection);
-	char hex_oid[HEX_OID_SIZE];
+	bson_t *query;
+	mongoc_cursor_t *cursor;
+	const bson_t *doc;
+	bson_iter_t iter;
+	const bson_value_t *value;
 	struct timeval start;
+	unsigned long ival;
+	char *p;
 
-	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
-	start_expire_timer(start,mongo_exec_threshold);
+	LM_DBG("find %.*s in %s\n", attr->len, attr->s,
+	       MONGO_NAMESPACE(con));
 
-	bson_init(&new_b);
-	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
-		LM_ERR("Failed to append _id \n");
-		bson_destroy(&new_b);
-		goto error;
-	}
-	bson_finish(&new_b);
+	query = bson_new();
+	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
-	for (i=0;i<2;i++) {
-		m_cursor = mongo_find(conn,MONGO_NAMESPACE(connection),
-				&new_b,0,0,0,mongo_slave_ok);
-		if (m_cursor == NULL) {
-			if (mongo_check_connection(conn) == MONGO_ERROR &&
-			mongo_reconnect(conn) == MONGO_OK &&
-			mongo_check_connection(conn) == MONGO_OK) {
-				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
-				continue;
-			}
-			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
-			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
-			if (!bson_size(&err_b))
-				return -1;
+	start_expire_timer(start, mongo_exec_threshold);
+	cursor = mongoc_collection_find_with_opts(
+	                MONGO_COLLECTION(con), query, NULL, NULL);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB find",
+	                  attr->s, attr->len, 0);
 
-			bson_iterator_init(&it,&err_b);
-			while( bson_iterator_next(&it)) {
-				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
-				switch( bson_iterator_type( &it ) ) {
-					case BSON_DOUBLE:
-						LM_DBG("(double) %e\n",bson_iterator_double(&it));
-						break;
-					case BSON_INT:
-						LM_DBG("(int) %d\n",bson_iterator_int(&it));
-						break;
-					case BSON_STRING:
-						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
-						break;
-					case BSON_OID:
-						bson_oid_to_string(bson_iterator_oid(&it),hex_oid);
-						LM_DBG("(oid) \"%s\"\n",hex_oid);
-						break;
-					default:
-						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
-						break;
-
-				}
-
-				bson_destroy(&new_b);
-			}
-			goto error;
-		}
-		break;
-	}
-
-	while( mongo_cursor_next(m_cursor) == MONGO_OK ) {
-		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
-
-		if (bson_find(&it,mongo_cursor_bson(m_cursor),"opensips") == BSON_EOO)
-			continue;
-
-		switch( bson_iterator_type( &it ) ) {
-			case BSON_INT:
-				rez = int2str(bson_iterator_int(&it),&rez_len);
-				if (rez == NULL) {
-					LM_ERR("Failed to convert %d to str\n",
-						bson_iterator_int(&it));
-					mongo_cursor_destroy(m_cursor);
-					goto error;
-				}
-
-				val->s = pkg_malloc(rez_len);
-				if (val->s == NULL) {
-					LM_ERR("No more pkg malloc\n");
-					mongo_cursor_destroy(m_cursor);
-					goto error;
-				}
-				memcpy(val->s,rez,rez_len);
-				val->len = rez_len;
-				mongo_cursor_destroy(m_cursor);
-				stop_expire_timer(start,mongo_exec_threshold,
-				"cachedb_mongo get",attr->s,attr->len,0);
-				return 0;
-
-				break;
-			case BSON_STRING:
-				rez = bson_iterator_string(&it);
-				if (rez == NULL) {
-					LM_ERR("Got null str for mongo\n");
-					mongo_cursor_destroy(m_cursor);
-					goto error;
-				}
-				rez_len=strlen(rez);
-				val->s = pkg_malloc(rez_len);
-
-				if (val->s == NULL) {
-					LM_ERR("No more pkg malloc\n");
-					mongo_cursor_destroy(m_cursor);
-					goto error;
-				}
-				memcpy(val->s,rez,rez_len);
-				val->len = rez_len;
-				mongo_cursor_destroy(m_cursor);
-				stop_expire_timer(start,mongo_exec_threshold,
-				"cachedb_mongo get",attr->s,attr->len,0);
-				return 0;
-
-				break;
-				default:
-					LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
+	while (mongoc_cursor_next(cursor, &doc)) {
+		if (bson_iter_init(&iter, doc)) {
+			if (bson_iter_find(&iter, "opensips")) {
+				value = bson_iter_value(&iter);
+				switch (value->value_type) {
+				case BSON_TYPE_UTF8:
+					val->len = value->value.v_utf8.len;
+					val->s = pkg_malloc(val->len);
+						if (!val->s) {
+							LM_ERR("oom!\n");
+						goto out_err;
+					}
+					memcpy(val->s, value->value.v_utf8.str, val->len);
+					goto out;
+				case BSON_TYPE_INT32:
+					ival = (unsigned long)value->value.v_int32;
 					break;
+				case BSON_TYPE_INT64:
+					ival = (unsigned long)value->value.v_int64;
+					break;
+				default:
+					LM_ERR("unsupported type for key %.*s!\n",
+					       attr->len, attr->s);
+					goto out_err;
+				}
+
+				p = int2str(ival, &val->len);
+				val->s = pkg_malloc(val->len);
+				if (!val->s) {
+					LM_ERR("oom!\n");
+					goto out_err;
+				}
+				memcpy(val->s, p, val->len);
+				goto out;
+			}
 		}
 	}
 
-	LM_DBG("No suitable response found\n");
-	mongo_cursor_destroy(m_cursor);
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo get",attr->s,attr->len,0);
-	return -2;
-error:
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo get",attr->s,attr->len,0);
-	return -1;
-#endif
+	LM_DBG("key not found: %.*s\n", attr->len, attr->s);
+
+out:
+	bson_destroy(query);
+	mongoc_cursor_destroy(cursor);
 	return 0;
+
+out_err:
+	bson_destroy(query);
+	mongoc_cursor_destroy(cursor);
+	memset(val, 0, sizeof *val);
+	return -1;
 }
 
 int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)

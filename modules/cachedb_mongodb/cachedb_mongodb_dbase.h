@@ -39,6 +39,9 @@
 
 extern int mongo_op_timeout;
 
+#define MDB_PK    "_id"
+#define MDB_PKLEN 3
+
 typedef struct {
 	struct cachedb_id *id;
 	unsigned int ref;
