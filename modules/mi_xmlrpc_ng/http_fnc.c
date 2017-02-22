@@ -640,13 +640,8 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	}
 	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
-	if ( !sv_socket ) {
-		sv_socket = httpd_api.get_server_info();
-	}
-
 	if ( *is_traced ) {
-		mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
-				mi_cmd, &backend, t_dst);
+		trace_xml_request( cl_socket, miCmd.s, mi_cmd );
 	}
 
 	*async_hdl = hdl;
@@ -657,8 +652,9 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	return mi_rpl;
 
 xml_error:
-	mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
-				mi_cmd, &backend, t_dst);
+	if ( t_dst ) {
+		trace_xml_request( cl_socket, miCmd.s, mi_cmd );
+	}
 	/* trace all errors */
 	*is_traced= 1;
 

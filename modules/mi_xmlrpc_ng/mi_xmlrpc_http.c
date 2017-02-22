@@ -86,6 +86,9 @@ httpd_api_t httpd_api;
 
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
+static str backend = str_init("xmlrpc");
+
+static union sockaddr_union* sv_socket = NULL;
 
 int mi_trace_mod_id;
 char* mi_trace_bwlist_s;
@@ -335,7 +338,34 @@ static inline void trace_xml( union sockaddr_union* cl_socket, char* url,
 	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
 }
 
+void trace_xml_request( union sockaddr_union* cl_socket, char* url,
+		struct mi_root* mi_req )
+{
+	char* command;
 
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
+
+	if ( url )
+		command = url;
+	else
+		command = "";
+
+	mi_trace_request( cl_socket, sv_socket, command,
+								strlen(command), mi_req, &backend, t_dst);
+}
+
+
+static inline void trace_xml_reply( union sockaddr_union* cl_socket,
+			str* error, int code, str* message)
+{
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
+
+	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
+}
 
 int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
@@ -383,17 +413,16 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 					*page = xml_strerr[ERR_INTERNAL].err_page;
 
 					if ( is_cmd_traced )
-						mi_trace_reply( sv_socket, cl_socket,
-							xml_strerr[ERR_INTERNAL].code,
-							&xml_strerr[ERR_INTERNAL].reason, 0, t_dst);
+						trace_xml_reply( cl_socket, &xml_strerr[ERR_INTERNAL].reason,
+								xml_strerr[ERR_INTERNAL].code, 0);
 				} else {
 					if (tree->code >= 400) {
 						MI_XMLRPC_PRINT_FAULT(page, tree->code, tree->reason);
 					}
 
 					if ( is_cmd_traced) {
-						mi_trace_reply( sv_socket, cl_socket, tree->code,
-							&tree->reason, page, t_dst);
+						trace_xml_reply( cl_socket,
+								&tree->reason, tree->code, page);
 					}
 				}
 			}
@@ -402,8 +431,8 @@ int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 			LM_ERR("unable to build response for empty request\n");
 			*page = xml_strerr[ERR_EMPTY].err_page;
 
-			mi_trace_reply( sv_socket, cl_socket, xml_strerr[ERR_EMPTY].code,
-				&xml_strerr[ERR_EMPTY].reason, page, t_dst);
+			trace_xml_reply( cl_socket, &xml_strerr[ERR_EMPTY].reason,
+						xml_strerr[ERR_EMPTY].code, page);
 		}
 		if (tree) {
 			is_shm?free_shm_mi_tree(tree):free_mi_tree(tree);
