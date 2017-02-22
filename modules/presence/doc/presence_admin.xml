@@ -746,7 +746,7 @@ _empty_line_
 		Name: <emphasis>pres_expose</emphasis>
 	  </para>
 	  <para>Parameters:</para>
-	  <itemizedList>
+	  <itemizedlist>
 		<listitem><para>
 			<emphasis>event</emphasis> - the interesting presence
 			event.
@@ -758,7 +758,7 @@ _empty_line_
 			be exposed. If not specified, all presentities for that
 			event are exposed.
 		</para></listitem>
-	  </itemizedList>
+	  </itemizedlist>
 
 	  <para>
 		MI FIFO Command Format:
