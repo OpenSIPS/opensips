@@ -183,6 +183,7 @@ static int child_init(int rank)
 static void destroy(void)
 {
 	LM_NOTICE("destroy module cachedb_mongodb ...\n");
+
 	cachedb_end_connections(&cache_mod_name);
-	return;
+	mongoc_cleanup();
 }

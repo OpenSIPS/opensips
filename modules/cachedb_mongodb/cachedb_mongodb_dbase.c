@@ -144,6 +144,10 @@ cachedb_con *mongo_con_init(str *url)
 
 void mongo_free_connection(cachedb_pool_con *con)
 {
+	mongo_con *mcon = (mongo_con *)con;
+
+	mongoc_collection_destroy(mcon->collection);
+	mongoc_client_destroy(mcon->client);
 }
 
 void mongo_con_destroy(cachedb_con *con)
