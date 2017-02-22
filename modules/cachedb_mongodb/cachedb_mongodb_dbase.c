@@ -28,6 +28,7 @@
 #include "cachedb_mongodb_json.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
+#include "../../pt.h"
 #include "../../cachedb/cachedb.h"
 
 #include <string.h>
@@ -41,188 +42,99 @@ extern int mongo_exec_threshold;
 #define HEX_OID_SIZE 25
 char *hex_oid_id = NULL;
 
-mongo_con* mongo_new_connection(struct cachedb_id* id)
+/**
+ * Builds a MongoDB connect string URI of the form:
+ *
+ * mongodb://[username:password@]
+ *	   host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+ *
+ * See https://docs.mongodb.com/manual/reference/connection-string
+ */
+static char *build_mongodb_connect_string(struct cachedb_id *id)
 {
+	char *ret, *p;
+	int len;
 
-	//client = mongoc_client_new ("mongodb://localhost:27017");
+	len =
+	      strlen(id->scheme) + 3 +
+	      (id->username ? strlen(id->username) : 0) + 1 +
+	      (id->password ? strlen(id->password) : 0) + 1 +
+	      strlen(id->host) + 1 +
+		  5 + 1 + /* port */
+	      strlen(id->database) + 1 +
+		  1;
 
-
-#if 0
-	mongo_con *con;
-	bson_t version_cmd,version_out;
-	bson_iterator it;
-	const char *version;
-	char *p,*p1;
-	str database, collection,replset_name,host,port;
-	int port_no,last=0;
-	char hostname[64];
-
-	if (id == NULL) {
-		LM_ERR("null cachedb_id\n");
-		return 0;
+	ret = pkg_malloc(len);
+	if (!ret) {
+		LM_ERR("oom\n");
+		return NULL;
 	}
 
-	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
-		/* we are connecting to a replica set */
-		replset_name.s = id->database;
-		p = memchr(id->database,'.',strlen(id->database));
-		if (!p) {
-			LM_ERR("Malformed mongo database\n");
-			return 0;
-		}
+	p = memchr(id->database, '.', strlen(id->database));
 
-		replset_name.len = p-replset_name.s;
-
-		database.s = replset_name.s+replset_name.len+1;
-		p = memchr(replset_name.s+replset_name.len+1,'.',
-					strlen(id->database)-replset_name.len-1);
-		if (!p) {
-			LM_ERR("Malformed mongo database\n");
-			return 0;
-		}
-
-		database.len = p-database.s;
-
-		collection.s = p+1;
-		collection.len = id->database+strlen(id->database) - collection.s;
-
-		con = pkg_malloc(sizeof(mongo_con)+database.len+collection.len+
-											replset_name.len+3);
-		if (con == NULL) {
-			LM_ERR("no more pkg \n");
-			return 0;
-		}
-
-		memset(con,0,sizeof(mongo_con)+database.len+collection.len+replset_name.len+3);
-		con->id = id;
-		con->ref = 1;
-
-		con->database = (char *)(con +1);
-		memcpy(con->database,database.s,database.len);
-		con->collection = con->database + database.len + 1;
-		memcpy(con->collection,collection.s,collection.len);
-		con->replset_name = con->database+database.len+collection.len+2;
-		memcpy(con->replset_name,replset_name.s,replset_name.len);
-
-		LM_INFO("Connecting to [%s.%s.%s]\n",
-				con->replset_name,con->database,con->collection);
-
-		if (mongo_set_op_timeout(&MONGO_CON(con),mongo_op_timeout) != MONGO_OK)
-			LM_WARN("Failed to set timeout of %d millis\n",mongo_op_timeout);
-		else
-			LM_DBG("Set timeout to %d millis\n",mongo_op_timeout);
-
-		mongo_replset_init(&MONGO_CON(con),con->replset_name);
-
-		p = id->host;
-		while (*p) {
-			host.s = p;
-
-			p1 = memchr(host.s,',',strlen(host.s));
-			if (p1 == NULL) {
-				p1 = id->host+strlen(id->host);
-				last=1;
-			}
-
-			host.len = p1 - host.s;
-
-			port.s = memchr(host.s,':',host.len);
-			if (!port.s)
-				port_no = 27017;
-			else {
-				port.s++;
-
-				port.len = host.s + host.len - port.s;
-				host.len = host.len - port.len - 1;
-
-				if (str2int(&port,(unsigned int *)&port_no) != 0) {
-					LM_ERR("Malformed mongo URL\n");
-					return 0;
-				}
-			}
-
-			memcpy(hostname,host.s,host.len);
-			hostname[host.len] = 0;
-
-			mongo_replset_add_seed(&MONGO_CON(con),hostname,port_no);
-
-			if (last)
-				break;
-			else
-				p = ++ p1;
-		}
-
-		if (mongo_replset_connect(&MONGO_CON(con)) != MONGO_OK) {
-			LM_ERR("Failure to connect to mongo - %d\n",MONGO_CON(con).err);
-			return 0;
+	if (id->username && id->password) {
+		if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
+			sprintf(ret, "mongodb://%s:%s@%s/%s", id->username, id->password,
+			        id->host, id->database);
+		} else {
+			sprintf(ret, "mongodb://%s:%s@%s:%d/%s", id->username, id->password,
+			        id->host, id->port, id->database);
 		}
 	} else {
-
-		database.s = id->database;
-		p = memchr(id->database,'.',strlen(id->database));
-		if (!p) {
-			LM_ERR("Malformed mongo database\n");
-			return 0;
-		}
-
-		database.len = p-database.s;
-
-		collection.s = p+1;
-		collection.len = id->database+strlen(id->database) - collection.s;
-
-		con = pkg_malloc(sizeof(mongo_con)+database.len+collection.len+2);
-		if (con == NULL) {
-			LM_ERR("no more pkg \n");
-			return 0;
-		}
-
-		memset(con,0,sizeof(mongo_con)+database.len+collection.len+2);
-		con->id = id;
-		con->ref = 1;
-
-		mongo_init(&MONGO_CON(con));
-
-		con->database = (char *)(con +1);
-		memcpy(con->database,database.s,database.len);
-		con->collection = con->database + database.len + 1;
-		memcpy(con->collection,collection.s,collection.len);
-
-		if (mongo_set_op_timeout(&MONGO_CON(con),mongo_op_timeout) != MONGO_OK)
-			LM_WARN("Failed to set timeout of %d millis\n",mongo_op_timeout);
-		else
-			LM_DBG("Set timeout to %d millis\n",mongo_op_timeout);
-
-		if (mongo_connect(&MONGO_CON(con),id->host,id->port) != MONGO_OK) {
-			LM_ERR("Failure to connect to mongo\n");
-			return 0;
+		if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
+			sprintf(ret, "mongodb://%s/%.*s", id->host,
+			        (int)(p ? p - id->database : strlen(id->database)), id->database);
+		} else {
+			sprintf(ret, "mongodb://%s:%d/%.*s", id->host, id->port,
+			        (int)(p ? p - id->database : strlen(id->database)), id->database);
 		}
 	}
 
-	if (mongo_write_concern_str.s != NULL) {
-		mongo_set_write_concern(&MONGO_CON(con), &mwc);
+	return ret;
+}
+
+char osips_appname[MONGOC_HANDSHAKE_APPNAME_MAX];
+mongo_con* mongo_new_connection(struct cachedb_id* id)
+{
+	char *p, *conn_str;
+	mongo_con *con;
+
+	snprintf(osips_appname, MONGOC_HANDSHAKE_APPNAME_MAX, "opensips-%d", my_pid());
+
+	LM_DBG("MongoDB conn for [%s]: %s:%s %s:%s |%s|:%u\n", osips_appname,
+	       id->scheme, id->group_name, id->username, id->password, id->host, id->port);
+
+	conn_str = build_mongodb_connect_string(id);
+
+	LM_DBG("cstr: %s\n", conn_str);
+
+	con = pkg_malloc(sizeof *con);
+	if (!con) {
+		LM_ERR("oom!\n");
+		return NULL;
+	}
+	memset(con, 0, sizeof *con);
+	con->id = id;
+	con->ref = 1;
+
+	con->client = mongoc_client_new(conn_str);
+	if (!con->client) {
+		LM_ERR("failed to connect to Mongo (%s)\n", conn_str);
+		return NULL;
 	}
 
-	bson_init(&version_cmd);
-	bson_append_int(&version_cmd, "buildinfo", 1 );
-	bson_finish(&version_cmd);
-
-	if( mongo_run_command(&MONGO_CON(con), "admin", &version_cmd,
-	 &version_out ) == MONGO_ERROR ) {
-		LM_ERR("Failed to get version of server\n");
-		return 0;
+	p = memchr(id->database, '.', strlen(id->database));
+	if (!p) {
+		LM_ERR("malformed Mongo database part in %s\n", id->database);
+		return NULL;
 	}
 
-	bson_iterator_init(&it, &version_out);
-	version = bson_iterator_string(&it);
+	*p = '\0';
+	con->collection = mongoc_client_get_collection(con->client, id->database, p+1);
+	*p = '.';
 
-	LM_INFO("Connected at server %s with version %s , "
-			"to db %s.%s\n",id->host,version,
-			con->database,con->collection);
-	bson_destroy(&version_cmd);
-	bson_destroy(&version_out);
-#endif
-
-	return NULL;
+	pkg_free(conn_str);
+	return con;
 }
 
 cachedb_con *mongo_con_init(str *url)

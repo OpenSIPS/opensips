@@ -45,21 +45,22 @@ typedef struct {
 	struct cachedb_pool_con_t *next;
 
 	/* shortcuts for raw queries */
-	char* database;
-	char* collection;
+	//char* database;
+	//char* collection;
 
 	/* only if we connect to a repl set*/
 	char *replset_name;
 
-	/* actual connection to mongo */
-	//mongo connection;
+	mongoc_client_t *client;
+	mongoc_collection_t *collection;
+
 	/* cursor result for the query */
-	//mongo_cursor *cursor;
+	mongoc_cursor_t *cursor;
 } mongo_con;
 
 #define MONGO_CON(mon_con)			((mon_con)->connection)
-#define MONGO_CDB_CON(cdb_con)		(((mongo_con *)((cdb_con)->data))->connection)
-#define MONGO_CDB_CURSOR(cdb_con)	(((mongo_con *)((cdb_con)->data))->cursor)
+#define MONGO_CLIENT(cdb_con)		(((mongo_con *)((cdb_con)->data))->client)
+#define MONGO_CURSOR(cdb_con)		(((mongo_con *)((cdb_con)->data))->cursor)
 #define MONGO_NAMESPACE(cdb_con)	(((mongo_con *)((cdb_con)->data))->id->database)
 #define MONGO_DATABASE(cdb_con)		(((mongo_con *)((cdb_con)->data))->database)
 #define MONGO_COLLECTION(cdb_con)	(((mongo_con *)((cdb_con)->data))->collection)
