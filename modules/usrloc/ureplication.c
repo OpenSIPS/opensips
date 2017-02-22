@@ -301,10 +301,8 @@ static int receive_ucontact_insert(void)
 	}
 
 	ci.sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
-	if (!ci.sock) {
-		LM_ERR("non-local socket <%.*s>\n", sock.len, sock.s);
-		goto error;
-	}
+	if (!ci.sock)
+		LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 
 	bin_pop_int(&ci.cseq);
 	bin_pop_int(&ci.flags);
@@ -402,10 +400,8 @@ static int receive_ucontact_update(void)
 	}
 
 	ci.sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
-	if (!ci.sock) {
-		LM_ERR("non-local socket <%.*s>\n", sock.len, sock.s);
-		goto error;
-	}
+	if (!ci.sock)
+		LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 
 	bin_pop_int(&ci.cseq);
 	bin_pop_int(&ci.flags);
