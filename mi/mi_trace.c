@@ -88,6 +88,7 @@ struct mi_trace_req* build_mi_trace_request( str* cmd,
 
 	mi_treq.cmd = *cmd;
 	mi_treq.backend = *backend;
+	memset( mi_treq.params, 0, MAX_TRACE_FIELD);
 
 	if ( mi_req ) {
 		node = mi_req->node.kids;
@@ -100,11 +101,10 @@ struct mi_trace_req* build_mi_trace_request( str* cmd,
 				LM_ERR("snprintf failed!\n");
 				return 0;
 			}
+
 			node = node->next;
 			len += new;
 		}
-	} else {
-		memset( mi_treq.params, 0, MAX_TRACE_FIELD);
 	}
 
 	return &mi_treq;
@@ -164,12 +164,12 @@ struct mi_trace_rpl* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
 #endif
 	snprintf( mi_trpl.code, MAX_TRACE_FIELD, "%d", code);
 	mi_trpl.reason = *reason;
+	memset( &mi_trpl.rpl, 0, sizeof(str) );
+
 	if ( rpl_msg ) {
 		mi_trpl.rpl.s = rpl_msg->s;
 		mi_trpl.rpl.len = rpl_msg->len > MAX_TRACE_FIELD ?
 							MAX_TRACE_FIELD : rpl_msg->len;
-	} else {
-		memset( &mi_trpl.rpl, 0, sizeof(str) );
 	}
 
 	return &mi_trpl;
@@ -191,7 +191,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 {
 	/* FIXME is this the case for all mi impelementations?? */
 	const int proto = IPPROTO_TCP;
-	str tmp_value;
+	str tmp_value = { 0, 0};
 
 	trace_message message;
 
