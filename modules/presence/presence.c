@@ -96,6 +96,7 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param);
 static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param);
 static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param);
 static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param);
+static struct mi_root* mi_pres_expose(struct mi_root* cmd, void* param);
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array);
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
@@ -130,7 +131,9 @@ int fix_remote_target=1;
 
 /* event id */
 static str presence_publish_event = str_init("E_PRESENCE_PUBLISH");
+static str presence_exposed_event = str_init("E_PRESENCE_EXPOSED");
 event_id_t presence_event_id = EVI_ERROR;
+event_id_t exposed_event_id = EVI_ERROR;
 
 static cmd_export_t cmds[]=
 {
@@ -169,6 +172,7 @@ static param_export_t params[]={
 static mi_export_t mi_cmds[] = {
 	{ "refreshWatchers",   0, mi_refreshWatchers,    0,  0,  0},
 	{ "cleanup",           0, mi_cleanup,            0,  0,  0},
+	{ "pres_expose",       0, mi_pres_expose,        0,  0,  0},
 	{ "pres_phtable_list", 0, mi_list_phtable,       0,  0,  0},
 	{ "subs_phtable_list", 0, mi_list_shtable,       0,  0,  0},
 	{  0,                  0, 0,                     0,  0,  0}
@@ -214,8 +218,8 @@ static int mod_init(void)
 	/* register event E_PRESENCE_NOTIFY */ 
 	if( (presence_event_id=evi_publish_event(presence_publish_event)) == EVI_ERROR )
 		LM_ERR("Cannot register E_PRESENCE_PUBLISH event\n");
-	else
-		LM_NOTICE("E_PRESENCE_PUBLISH event registered\n");
+	if( (exposed_event_id=evi_publish_event(presence_exposed_event)) == EVI_ERROR )
+		LM_ERR("Cannot register E_PRESENCE_EXPOSED event\n");
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
 	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
 	presentity_table.len = strlen(presentity_table.s);
@@ -1400,4 +1404,33 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
     lock_release(&subs_htable[hash_code].lock);
 
     return 0;
+}
+
+static struct mi_root* mi_pres_expose(struct mi_root* cmd, void* param)
+{
+	struct mi_node* node= NULL;
+	str event, *pres_fn;
+	pres_ev_t* ev;
+
+	node = cmd->node.kids;
+	if(node == NULL)
+		return init_mi_tree(404, "No parameters", 13);
+
+	event = node->value;
+	if (event.s == NULL || event.len == 0)
+		return init_mi_tree(404, "Invalid event", 13);
+
+	ev = contains_event(&event, NULL);
+	if (!ev)
+		return init_mi_tree(404, "unknown event", 13);
+
+	if (node->next && node->next->value.s != NULL && node->next->value.len)
+		pres_fn = &node->next->value;
+	else
+		pres_fn = NULL;
+
+	if (pres_expose_evi(ev, pres_fn) < 0)
+		return NULL;
+
+	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }

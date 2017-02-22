@@ -44,4 +44,8 @@ void msg_presentity_clean(unsigned int ticks,void *param);
 
 int handle_publish(struct sip_msg* msg, char* str1 ,char* str2);
 
+extern event_id_t presence_event_id;
+extern event_id_t exposed_event_id;
+void presence_raise_event(event_id_t event, presentity_t* presentity);
+
 #endif
