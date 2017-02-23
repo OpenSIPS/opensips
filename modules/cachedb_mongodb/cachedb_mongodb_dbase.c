@@ -259,52 +259,24 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	return ret;
 }
 
-int mongo_con_remove(cachedb_con *connection,str *attr)
+int mongo_con_remove(cachedb_con *con, str *attr)
 {
-#if 0
-	bson_t new_b;
-	int i;
-	struct timeval start;
-	mongo *conn = &MONGO_CDB_CON(connection);
+	bson_t *doc;
+	bson_error_t error;
+	int ret = 0;
 
-	LM_DBG("Remove operation on namespace %s\n",MONGO_NAMESPACE(connection));
-	start_expire_timer(start,mongo_exec_threshold);
+	doc = bson_new();
+	bson_append_utf8(doc, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
-	bson_init(&new_b);
-	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
-		LM_ERR("Failed to append _id \n");
-		bson_destroy(&new_b);
-		goto error;
+	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
+	                         MONGOC_REMOVE_SINGLE_REMOVE, doc, NULL, &error)) {
+		LM_ERR("failed to remove key '%.*s'\n", attr->len, attr->s);
+		ret = -1;
 	}
 
-	bson_finish(&new_b);
+	bson_destroy(doc);
 
-	for (i=0;i<2;i++) {
-		if (mongo_remove(conn,MONGO_NAMESPACE(connection),
-				&new_b,NULL) != BSON_OK) {
-			if (mongo_check_connection(conn) == MONGO_ERROR &&
-			mongo_reconnect(conn) == MONGO_OK &&
-			mongo_check_connection(conn) == MONGO_OK) {
-				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
-				continue;
-			}
-			LM_ERR("Failed to do insert. Con err = %d\n",
-				conn->err);
-			bson_destroy(&new_b);
-			goto error;
-		}
-	}
-
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo remove",attr->s,attr->len,0);
-	bson_destroy(&new_b);
-	return 0;
-error:
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo remove",attr->s,attr->len,0);
-	return -1;
-#endif
-	return 0;
+	return ret;
 }
 
 void dbg_bson_print_raw( const char *data , int depth )
