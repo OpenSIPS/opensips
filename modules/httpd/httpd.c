@@ -59,7 +59,6 @@ str ip = {NULL, 0};
 str buffer = {NULL, 0};
 int post_buf_size = DEFAULT_POST_BUF_SIZE;
 struct httpd_cb *httpd_cb_list = NULL;
-union sockaddr_union httpd_server_info;
 
 
 static proc_export_t mi_procs[] = {
@@ -115,8 +114,6 @@ static int mod_init(void)
 {
 	struct ip_addr *_ip;
 
-	memset(&httpd_server_info, 0, sizeof(union sockaddr_union));
-	httpd_server_info.sin.sin_port = port;
 
 	if (ip.s) {
 		ip.len = strlen(ip.s);
@@ -124,12 +121,6 @@ static int mod_init(void)
 			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
 			return -1;
 		}
-
-		httpd_server_info.sin.sin_addr.s_addr = _ip->u.addr32[0];
-		httpd_server_info.sin.sin_family = _ip->af;
-	} else {
-		httpd_server_info.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
-		httpd_server_info.sin.sin_family = AF_INET;
 	}
 
 	if (post_buf_size < MIN_POST_BUF_SIZE) {

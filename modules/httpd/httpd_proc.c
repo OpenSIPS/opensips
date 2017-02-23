@@ -54,7 +54,7 @@ extern str ip;
 extern str buffer;
 extern int post_buf_size;
 extern struct httpd_cb *httpd_cb_list;
-extern union sockaddr_union httpd_server_info;
+static union sockaddr_union httpd_server_info;
 
 static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
@@ -411,7 +411,9 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	int cnt_type = HTTPD_STD_CNT_TYPE;
 	int accept_type = HTTPD_STD_CNT_TYPE;
 	int ret_code = MHD_HTTP_OK;
+	int sv_sockfd;
 
+	socklen_t addrlen;
 	union sockaddr_union* cl_socket;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
@@ -433,6 +435,17 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 	cl_socket = *(union sockaddr_union**)MHD_get_connection_info(connection,
 			MHD_CONNECTION_INFO_CLIENT_ADDRESS);
+
+	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;
+
+	getsockname( sv_sockfd, &httpd_server_info.s, &addrlen);
+
+	/* we could do
+	 * httpd_server_info.sin.sin_port = ntohs(httpd_server_info.sin.sin_port);
+	 * but it has no sense since we already know the port since we initialised
+	 * httpd server
+	 */
+	httpd_server_info.sin.sin_port = port;
 
 	if(strncmp(method, "POST", 4)==0) {
 		if(pr == NULL){
