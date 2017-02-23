@@ -473,7 +473,7 @@ void qm_free(struct qm_block* qm, void* p)
 	        qm->name, p, file, func, line);
 #endif
 	if (p==0) {
-		LM_WARN("free(0) called\n");
+		LM_DBG("free(0) called\n");
 		return;
 	}
 #ifdef DBG_MALLOC
