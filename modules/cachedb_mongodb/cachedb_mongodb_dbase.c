@@ -231,58 +231,32 @@ out_err:
 	return -1;
 }
 
-int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)
+int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 {
-#if 0
-	bson_t new_b;
-	int i;
-	struct timeval start;
-	mongo *conn = &MONGO_CDB_CON(connection);
+	bson_t *query, *update;
+	bson_t child;
+	bson_error_t error;
+	int ret = 0;
 
-	LM_DBG("Set operation on namespace %s\n",MONGO_NAMESPACE(connection));
-	start_expire_timer(start,mongo_exec_threshold);
+	query = bson_new();
+	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
-	bson_init(&new_b);
-	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
-		LM_ERR("Failed to append _id \n");
-		bson_destroy(&new_b);
-		goto error;
+	update = bson_new();
+	BSON_APPEND_DOCUMENT_BEGIN(update, "$set", &child);
+	bson_append_utf8(&child, "opensips", 8, val->s, val->len);
+	bson_append_document_end(update, &child);
+
+	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
+	                              query, update, NULL, &error)) {
+		LM_ERR("failed to store %.*s=%.*s\n",
+		       attr->len, attr->s, val->len, val->s);
+		ret = -1;
 	}
 
-	if (bson_append_string_n(&new_b,"opensips",val->s,val->len) != BSON_OK) {
-		LM_ERR("Failed to append _id \n");
-		bson_destroy(&new_b);
-		goto error;
-	}
+	bson_destroy(query);
+	bson_destroy(update);
 
-	bson_finish(&new_b);
-
-	for (i=0;i<2;i++) {
-		if (mongo_insert(conn,MONGO_NAMESPACE(connection),
-				&new_b,NULL) != BSON_OK) {
-			if (mongo_check_connection(conn) == MONGO_ERROR &&
-			mongo_reconnect(conn) == MONGO_OK &&
-			mongo_check_connection(conn) == MONGO_OK) {
-				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
-				continue;
-			}
-			LM_ERR("Failed to do insert. Con err = %d\n",
-				conn->err);
-			bson_destroy(&new_b);
-			goto error;
-		}
-	}
-
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo set",attr->s,attr->len,0);
-	bson_destroy(&new_b);
-	return 0;
-error:
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo set",attr->s,attr->len,0);
-	return -1;
-#endif
-	return 0;
+	return ret;
 }
 
 int mongo_con_remove(cachedb_con *connection,str *attr)
