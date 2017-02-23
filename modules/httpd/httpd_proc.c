@@ -413,7 +413,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	int ret_code = MHD_HTTP_OK;
 	int sv_sockfd;
 
-	socklen_t addrlen;
+	socklen_t addrlen=sizeof(httpd_server_info);
 	union sockaddr_union* cl_socket;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
@@ -433,8 +433,10 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		pr = NULL;
 	}
 
-	cl_socket = *(union sockaddr_union**)MHD_get_connection_info(connection,
-			MHD_CONNECTION_INFO_CLIENT_ADDRESS);
+	/* we're safe here since this returns a struct sockaddr* and
+	 * sockaddr_union contains sockaddr* inside */
+	cl_socket = (union sockaddr_union *)MHD_get_connection_info(connection,
+			MHD_CONNECTION_INFO_CLIENT_ADDRESS)->client_addr;
 
 	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;
 
