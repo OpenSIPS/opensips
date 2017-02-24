@@ -199,8 +199,8 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 				ival = (unsigned long)value->value.v_int64;
 				break;
 			default:
-				LM_ERR("unsupported type for key %.*s!\n",
-				       attr->len, attr->s);
+				LM_ERR("unsupported type %d for key %.*s!\n",
+				       value->value_type, attr->len, attr->s);
 				goto out_err;
 			}
 
