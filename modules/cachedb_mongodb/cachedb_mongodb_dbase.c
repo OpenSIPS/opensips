@@ -946,122 +946,51 @@ error:
 	return 0;
 }
 
-//static char counter_q_buf[256];
-int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
+int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_val)
 {
-#if 0
-	bson_t cmd,err_b,out;
-	int j,ret;
-	struct timeval start;
-	mongo *conn = &MONGO_CDB_CON(connection);
-	bson_iterator it,it2;
-	const char *curr_key,*inner_key;
+	bson_t *cmd;
+	bson_t child, ichild, reply;
+	bson_error_t error;
+	bson_iter_t iter;
+	bson_iter_t sub_iter;
+	int ret = 0;
 
-	start_expire_timer(start,mongo_exec_threshold);
+	cmd = bson_new();
+	bson_append_utf8(cmd, "findAndModify", 13,
+	                 mongoc_collection_get_name(MONGO_COLLECTION(con)), -1);
 
-	bson_init( &cmd );
-	bson_append_string(&cmd,"findAndModify",MONGO_COLLECTION(connection));
+	BSON_APPEND_DOCUMENT_BEGIN(cmd, "query", &child);
+	bson_append_utf8(&child, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+	bson_append_document_end(cmd, &child);
 
-	bson_append_start_object(&cmd,"query");
-	memcpy(counter_q_buf,attr->s,attr->len);
-	counter_q_buf[attr->len]=0;
-	bson_append_string(&cmd,"_id",counter_q_buf);
-	bson_append_finish_object(&cmd);
+	BSON_APPEND_DOCUMENT_BEGIN(cmd, "update", &child);
+	BSON_APPEND_DOCUMENT_BEGIN(&child, "$inc", &ichild);
+	bson_append_int32(&ichild, "opensips_counter", 16, val);
+	bson_append_document_end(&child, &ichild);
+	bson_append_document_end(cmd, &child);
 
-	bson_append_start_object(&cmd,"update");
-	bson_append_start_object(&cmd,"$inc");
-	bson_append_int(&cmd,"opensips_counter",val);
-	bson_append_finish_object(&cmd);
-	bson_append_finish_object(&cmd);
+	bson_append_bool(cmd, "upsert", 6, true);
 
-	bson_append_bool(&cmd,"upsert",1);
-
-	bson_finish(&cmd);
-
-	for (j=0;j<2;j++) {
-		ret = mongo_run_command(conn,MONGO_DATABASE(connection),
-				&cmd,&out);
-		if (ret != MONGO_OK) {
-			if (mongo_check_connection(conn) == MONGO_ERROR &&
-			mongo_reconnect(conn) == MONGO_OK &&
-			mongo_check_connection(conn) == MONGO_OK) {
-				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
-				continue;
-			}
-			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
-			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
-			if (!bson_size(&err_b))
-				return -1;
-
-			bson_iterator_init(&it,&err_b);
-			while( bson_iterator_next(&it)) {
-				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
-				switch( bson_iterator_type( &it ) ) {
-					case BSON_DOUBLE:
-						LM_DBG("(double) %e\n",bson_iterator_double(&it));
-						break;
-					case BSON_INT:
-						LM_DBG("(int) %d\n",bson_iterator_int(&it));
-						break;
-					case BSON_STRING:
-						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
-						break;
-					default:
-						/* TODO - support more types here */
-						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
-						break;
-				}
-			}
-			bson_destroy(&cmd);
-			stop_expire_timer(start,mongo_exec_threshold,
-			"cachedb_mongo add",attr->s,attr->len,0);
-			return -1;
-		}
-		break;
+	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), cmd,
+	                              NULL, &reply, &error)) {
+		LM_ERR("failed to %s: %.*s += %d\n", val > 0 ? "add" : "sub",
+		       attr->len, attr->s, val);
+		ret = -1;
+		goto out;
 	}
 
-	if (!new_val) {
-		bson_destroy(&out);
-		bson_destroy(&cmd);
-		stop_expire_timer(start,mongo_exec_threshold,
-		"cachedb_mongo add",attr->s,attr->len,0);
-		return 0;
-	}
+	if (bson_iter_init_find(&iter, &reply, "value") &&
+	    BSON_ITER_HOLDS_DOCUMENT(&iter)) &&
+	    bson_iter_recurse(&iter, &sub_iter)) {
 
-	bson_iterator_init(&it,&out);
-	while( bson_iterator_next(&it)) {
-		curr_key=bson_iterator_key(&it);
-
-		if (memcmp(curr_key,"value",5) == 0) {
-			if (bson_iterator_type(&it) != BSON_OBJECT) {
-				LM_ERR("Unexpected value type %d\n",
-					bson_iterator_type(&it));
-				goto err;
-			}
-			bson_iterator_subiterator(&it,&it2);
-			while (bson_iterator_next(&it2)) {
-				inner_key=bson_iterator_key(&it2);
-				if (memcmp(inner_key,"opensips_counter",16) == 0) {
-					*new_val = bson_iterator_int(&it2) + val;
-					bson_destroy(&out);
-					bson_destroy(&cmd);
-					stop_expire_timer(start,mongo_exec_threshold,
-					"cachedb_mongo add",attr->s,attr->len,0);
-					return 0;
-				}
-			}
+		if (bson_iter_find(&sub_iter, "opensips_counter")) {
+			*new_val = bson_iter_value(&sub_iter)->value.v_int32;
 		}
 	}
 
-err:
-	bson_destroy(&out);
-	bson_destroy(&cmd);
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo add",attr->s,attr->len,0);
-	return -1;
-
-#endif
-	return 0;
+out:
+	bson_destroy(cmd);
+	return ret;
 }
 
 int mongo_con_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
