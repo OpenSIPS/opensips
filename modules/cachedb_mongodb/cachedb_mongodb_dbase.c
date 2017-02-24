@@ -971,6 +971,8 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 
 	bson_append_bool(cmd, "upsert", 6, true);
 
+	bson_append_bool(cmd, "new", 3, true);
+
 	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), cmd,
 	                              NULL, &reply, &error)) {
 		LM_ERR("failed to %s: %.*s += %d\n", val > 0 ? "add" : "sub",
