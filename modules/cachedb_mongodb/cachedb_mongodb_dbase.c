@@ -180,40 +180,38 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	                  attr->s, attr->len, 0);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
-		if (bson_iter_init(&iter, doc)) {
-			if (bson_iter_find(&iter, "opensips")) {
-				value = bson_iter_value(&iter);
-				switch (value->value_type) {
-				case BSON_TYPE_UTF8:
-					val->len = value->value.v_utf8.len;
-					val->s = pkg_malloc(val->len);
-						if (!val->s) {
-							LM_ERR("oom!\n");
-						goto out_err;
-					}
-					memcpy(val->s, value->value.v_utf8.str, val->len);
-					goto out;
-				case BSON_TYPE_INT32:
-					ival = (unsigned long)value->value.v_int32;
-					break;
-				case BSON_TYPE_INT64:
-					ival = (unsigned long)value->value.v_int64;
-					break;
-				default:
-					LM_ERR("unsupported type for key %.*s!\n",
-					       attr->len, attr->s);
-					goto out_err;
-				}
-
-				p = int2str(ival, &val->len);
+		if (bson_iter_init_find(&iter, doc, "opensips")) {
+			value = bson_iter_value(&iter);
+			switch (value->value_type) {
+			case BSON_TYPE_UTF8:
+				val->len = value->value.v_utf8.len;
 				val->s = pkg_malloc(val->len);
-				if (!val->s) {
-					LM_ERR("oom!\n");
+					if (!val->s) {
+						LM_ERR("oom!\n");
 					goto out_err;
 				}
-				memcpy(val->s, p, val->len);
+				memcpy(val->s, value->value.v_utf8.str, val->len);
 				goto out;
+			case BSON_TYPE_INT32:
+				ival = (unsigned long)value->value.v_int32;
+				break;
+			case BSON_TYPE_INT64:
+				ival = (unsigned long)value->value.v_int64;
+				break;
+			default:
+				LM_ERR("unsupported type for key %.*s!\n",
+				       attr->len, attr->s);
+				goto out_err;
 			}
+
+			p = int2str(ival, &val->len);
+			val->s = pkg_malloc(val->len);
+			if (!val->s) {
+				LM_ERR("oom!\n");
+				goto out_err;
+			}
+			memcpy(val->s, p, val->len);
+			goto out;
 		}
 	}
 
