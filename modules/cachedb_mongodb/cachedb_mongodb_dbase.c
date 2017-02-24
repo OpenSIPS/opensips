@@ -982,7 +982,7 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 	}
 
 	if (bson_iter_init_find(&iter, &reply, "value") &&
-	    BSON_ITER_HOLDS_DOCUMENT(&iter)) &&
+	    BSON_ITER_HOLDS_DOCUMENT(&iter) &&
 	    bson_iter_recurse(&iter, &sub_iter)) {
 
 		if (bson_iter_find(&sub_iter, "opensips_counter")) {
@@ -1000,106 +1000,41 @@ int mongo_con_sub(cachedb_con *connection,str *attr,int val,int expires,int *new
 	return mongo_con_add(connection,attr,-val,expires,new_val);
 }
 
-int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
+int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 {
-#if 0
-	bson_t new_b,err_b;
-	mongo_cursor *m_cursor;
-	bson_iterator it;
-	int i;
-	struct timeval start;
-	mongo *conn = &MONGO_CDB_CON(connection);
-	char hex_oid[HEX_OID_SIZE];
+	bson_t *query;
+	const bson_t *doc;
+	const bson_value_t *value;
+	mongoc_cursor_t *cursor;
+	bson_iter_t iter;
+	int ret = 0;
 
-	LM_DBG("Get counter operation on namespace %s\n",MONGO_NAMESPACE(connection));
-	start_expire_timer(start,mongo_exec_threshold);
+	query = bson_new();
+	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
-	bson_init(&new_b);
-	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
-		LM_ERR("Failed to append _id \n");
-		bson_destroy(&new_b);
-		stop_expire_timer(start,mongo_exec_threshold,
-		"cachedb_mongo get_counter",attr->s,attr->len,0);
-		return -1;
-	}
-	bson_finish(&new_b);
+	cursor = mongoc_collection_find_with_opts(
+	                MONGO_COLLECTION(con), query, NULL, NULL);
 
-	for (i=0;i<2;i++) {
-		m_cursor = mongo_find(conn,MONGO_NAMESPACE(connection),
-				&new_b,0,0,0,mongo_slave_ok);
-		if (m_cursor == NULL) {
-			if (mongo_check_connection(conn) == MONGO_ERROR &&
-			mongo_reconnect(conn) == MONGO_OK &&
-			mongo_check_connection(conn) == MONGO_OK) {
-				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
-				continue;
-			}
-			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
-			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
-			if (!bson_size(&err_b))
-				return -1;
-
-			bson_iterator_init(&it,&err_b);
-			while( bson_iterator_next(&it)) {
-				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));
-				switch( bson_iterator_type( &it ) ) {
-					case BSON_DOUBLE:
-						LM_DBG("(double) %e\n",bson_iterator_double(&it));
-						break;
-					case BSON_INT:
-						LM_DBG("(int) %d\n",bson_iterator_int(&it));
-						break;
-					case BSON_STRING:
-						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
-						break;
-					case BSON_OID:
-						bson_oid_to_string(bson_iterator_oid(&it),hex_oid);
-						LM_DBG("(oid) \"%s\"\n",hex_oid);
-						break;
-					default:
-						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
-						break;
-
-				}
-			}
-			bson_destroy(&new_b);
-			stop_expire_timer(start,mongo_exec_threshold,
-			"cachedb_mongo get_counter",attr->s,attr->len,0);
-			return -1;
-		}
-		break;
-	}
-
-	while( mongo_cursor_next(m_cursor) == MONGO_OK ) {
-		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
-
-		if (bson_find(&it,mongo_cursor_bson(m_cursor),"opensips_counter") == BSON_EOO)
-			continue;
-
-		switch( bson_iterator_type( &it ) ) {
-			case BSON_INT:
-				if (val)
-					*val = bson_iterator_int(&it);
-
-				mongo_cursor_destroy(m_cursor);
-				stop_expire_timer(start,mongo_exec_threshold,
-				"cachedb_mongo get_counter",attr->s,attr->len,0);
-				return 0;
-
+	while (mongoc_cursor_next(cursor, &doc)) {
+		if (bson_iter_init_find(&iter, doc, "opensips_counter")) {
+			value = bson_iter_value(&iter);
+			switch (value->value_type) {
+			case BSON_TYPE_INT32:
+				*val = value->value.v_int32;
 				break;
 			default:
-					LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
-					break;
+				LM_ERR("unsupported type %d for key %.*s!\n", attr->len,
+				       value->value_type, attr->s);
+				ret = -1;
+				goto out;
+			}
 		}
 	}
 
-	LM_DBG("No suitable response found\n");
-	mongo_cursor_destroy(m_cursor);
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo get_counter",attr->s,attr->len,0);
-	return -2;
-#endif
-	return 0;
+out:
+	bson_destroy(query);
+	mongoc_cursor_destroy(cursor);
+	return ret;
 }
 
 #if 0
