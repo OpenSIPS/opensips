@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2015 - OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
