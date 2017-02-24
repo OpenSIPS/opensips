@@ -28,37 +28,34 @@
 #include "cachedb_mongodb_json.h"
 #include "cachedb_mongodb_dbase.h"
 
-int json_to_bson_append_element( bson_t *bb , const char *k , struct json_object *v );
+int json_to_bson_append_element(bson_t *doc, const char *k, struct json_object *v);
 
-int json_to_bson_append_array( bson_t *bb , struct json_object *a )
+int json_to_bson_append_array(bson_t *doc, struct json_object *a)
 {
-#if 0
-	int i,al_len;
+	int i, al_len;
 	char *al;
 	json_object *it;
 
-	for ( i=0; i<json_object_array_length( a ); i++ ) {
-		al = int2str(i,&al_len);
-		if (al == NULL) {
-			LM_ERR("Failed to convert %d to str\n",i);
+	for (i = 0; i < json_object_array_length(a); i++) {
+		al = int2str(i, &al_len);
+		if (!al) {
+			LM_ERR("Failed to convert %d to str\n", i);
 			return -1;
 		}
 
-		al[al_len]=0;
-		it = json_object_array_get_idx(a,i);
-		if (it == NULL) {
+		al[al_len] = '\0';
+		it = json_object_array_get_idx(a, i);
+		if (!it) {
 			LM_ERR("Failed to get JSON idx\n");
 			return -1;
 		}
 
-		if (json_to_bson_append_element(bb,al,it) < 0) {
+		if (json_to_bson_append_element(doc, al, it) < 0) {
 			LM_ERR("Failed to append element to BSON\n");
 			return -1;
 		}
-    }
+	}
 
-	return 0;
-#endif
 	return 0;
 }
 
@@ -69,138 +66,107 @@ int json_to_bson_append_array( bson_t *bb , struct json_object *a )
 		val = (struct json_object*)entry->v, entry) : 0); \
 		entry = entry->next)
 
-int json_to_bson_append(bson_t *bb,struct json_object *o)
+int json_to_bson_append(bson_t *doc, struct json_object *o)
 {
-#if 0
-	json_object_object_iterator( o,key,val ) {
-		if (json_to_bson_append_element(bb,key,val)<0) {
+	json_object_object_iterator(o, key, val) {
+		if (json_to_bson_append_element(doc, key, val) < 0) {
 			LM_ERR("Failed to append new element\n");
 			return -1;
 		}
 	}
 
 	return 0;
-#endif
-	return 0;
 }
 
-int json_to_bson_append_element( bson_t *bb , const char *k , struct json_object *v )
+int json_to_bson_append_element(bson_t *doc, const char *k, struct json_object *v)
 {
-#if 0
-	if (v==NULL) {
-		bson_append_null(bb,k);
+	bson_t child;
+
+	if (!v) {
+		bson_append_null(doc, k, -1);
 		return 0;
 	}
 
 	switch (json_object_get_type(v)) {
 		case json_type_int:
-			if (bson_append_int(bb,k,json_object_get_int(v))
-					 != BSON_OK) {
+			if (!bson_append_int32(doc, k, -1, json_object_get_int(v))) {
 				LM_ERR("Failed to append int\n");
 				return -1;
 			}
 			break;
 		case json_type_boolean:
-			if (bson_append_bool(bb,k,json_object_get_boolean(v))
-					!= BSON_OK) {
+			if (!bson_append_bool(doc, k, -1, json_object_get_boolean(v))) {
 				LM_ERR("Failed to append boolean\n");
 				return -1;
 			}
 			break;
 		case json_type_double:
-			if (bson_append_double(bb,k,json_object_get_double(v))
-					!= BSON_OK) {
+			if (!bson_append_double(doc, k, -1, json_object_get_double(v))) {
 				LM_ERR("Failed to append double\n");
 				return -1;
 			}
 			break;
 		case json_type_string:
-			if (bson_append_string(bb,k,json_object_get_string(v))
-					!= BSON_OK) {
+			if (!bson_append_utf8(doc, k, -1, json_object_get_string(v), -1)) {
 				LM_ERR("Failed to append string\n");
 				return -1;
 			}
 			break;
 		case json_type_object:
-			if (bson_append_start_object( bb,k)
-					!= BSON_OK) {
-				LM_ERR("Failed to append start object\n");
-				return -1;
-			}
-			if (json_to_bson_append(bb,v)<0) {
+			BSON_APPEND_DOCUMENT_BEGIN(doc, k, &child);
+			if (json_to_bson_append(&child, v) < 0) {
 				LM_ERR("Failed to append to bson_t\n");
 				return -1;
 			}
-			if (bson_append_finish_object(bb)
-					!= BSON_OK) {
-				LM_ERR("Failed to finish appending to BSON\n");
-				return -1;
-			}
+			bson_append_document_end(doc, &child);
 			break;
 		case json_type_array:
-			if (bson_append_start_array(bb,k)
-					!= BSON_OK) {
-				LM_ERR("Failed to append start array\n");
-				return -1;
-			}
-
-			if (json_to_bson_append_array(bb,v) < 0) {
+			BSON_APPEND_ARRAY_BEGIN(doc, k, &child);
+			if (json_to_bson_append_array(&child, v) < 0) {
 				LM_ERR("Failed to append array to bson_t\n");
 				return -1;
 			}
-			if (bson_append_finish_object(bb)
-					!= BSON_OK) {
-				LM_ERR("Failed to finish appending array to bson_t\n");
-				return -1;
-			}
+			bson_append_array_end(doc, &child);
 			break;
 		default:
-			LM_ERR("Can't handle type for : %s\n",json_object_to_json_string(v));
+			LM_ERR("Can't handle type for : %s\n", json_object_to_json_string(v));
 			return -1;
 	}
 
 	return 0;
-#endif
-	return 0;
 }
 
-int json_to_bson(char *json,bson_t *bb)
+int json_to_bson(char *json, bson_t *doc)
 {
-#if 0
 	struct json_object *obj;
 
-	LM_DBG("Trying to convert [%s]\n",json);
+	LM_DBG("Trying to convert [%s]\n", json);
 
-	obj=json_tokener_parse(json);
+	obj = json_tokener_parse(json);
 	if (is_error(obj)) {
-		LM_ERR("Failed to parse JSON: %s\n",json);
+		LM_ERR("Failed to parse JSON: %s\n", json);
 		return -2;
 	}
 
-	if (!json_object_is_type(obj,json_type_object)) {
-		LM_ERR("Inconsystent JSON type\n");
+	if (!json_object_is_type(obj, json_type_object)) {
+		LM_ERR("Inconsistent JSON type\n");
 		goto error;
 	}
 
-	bson_init(bb);
-	if (json_to_bson_append(bb,obj) < 0) {
+	bson_init(doc);
+	if (json_to_bson_append(doc, obj) < 0) {
 		LM_ERR("Failed to convert json to bson_t\n");
-		bson_finish(bb);
-		bson_destroy(bb);
+		bson_destroy(doc);
 		goto error;
 	}
 
-	bson_finish(bb);
 	json_object_put(obj);
-
 	return 0;
 
 error:
 	if (obj)
 		json_object_put(obj);
 	return -1;
-#endif
-	return 0;
 }
 
 void bson_to_json_generic(struct json_object *obj,bson_iter_t *it,int type)

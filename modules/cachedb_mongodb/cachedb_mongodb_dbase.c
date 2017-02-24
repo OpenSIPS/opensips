@@ -866,83 +866,75 @@ int mongo_raw_remove(cachedb_con *connection,bson_t *raw_query)
 	return 0;
 }
 
-//static char *raw_query_buf=NULL;
-//static int raw_query_buf_len=0;
+static char *raw_query_buf;
+static int raw_query_buf_len;
 
-int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
+int mongo_con_raw_query(cachedb_con *con, str *attr, cdb_raw_entry ***reply,
+                        int expected_kv_no, int *reply_no)
 {
-#if 0
-	bson_t new_b;
-	int ret;
-	bson_iterator i;
+	bson_t doc;
+	bson_iter_t iter;
 	struct timeval start;
-	const char *op=NULL;
+	const char *op = NULL;
+	const bson_value_t *value;
+	int ret = 0;
 
-	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	LM_DBG("Get operation on namespace %s\n", MONGO_NAMESPACE(con));
 	start_expire_timer(start,mongo_exec_threshold);
 
 	if (attr->len > raw_query_buf_len) {
-		raw_query_buf = pkg_realloc(raw_query_buf,attr->len+1);
+		raw_query_buf = pkg_realloc(raw_query_buf, attr->len + 1);
 		if (!raw_query_buf) {
-			LM_ERR("No more pkg\n");
-			goto error;
+			LM_ERR("oom!\n");
+			return -1;
 		}
 
-		memcpy(raw_query_buf,attr->s,attr->len);
-		raw_query_buf[attr->len]=0;
+		memcpy(raw_query_buf, attr->s, attr->len);
+		raw_query_buf[attr->len] = '\0';
 
 		raw_query_buf_len = attr->len;
 	} else {
-		memcpy(raw_query_buf,attr->s,attr->len);
-		raw_query_buf[attr->len]=0;
+		memcpy(raw_query_buf, attr->s, attr->len);
+		raw_query_buf[attr->len] = '\0';
 	}
 
-	ret = json_to_bson(raw_query_buf,&new_b);
-
+	ret = json_to_bson(raw_query_buf, &doc);
 	if (ret < 0) {
-		LM_ERR("Failed to convert [%.*s] to BSON\n",attr->len,attr->s);
-		goto error;
+		LM_ERR("Failed to convert [%.*s] to BSON\n", attr->len, attr->s);
+		return -1;
 	}
 
-	if (bson_find(&i,&new_b,"op") == BSON_EOO) {
-		LM_ERR("No \"op\" specified \n");
-		bson_destroy(&new_b);
-		goto error;
+	if (!bson_iter_init_find(&iter, &doc, "op")) {
+		LM_ERR("No 'op' specified in raw query [%.*s]\n", attr->len, attr->s);
+		bson_destroy(&doc);
+		return -1;
 	}
 
-	if (bson_iterator_type( &i ) != BSON_STRING) {
-		LM_ERR("The op must be a string \n");
-		bson_destroy(&new_b);
-		goto error;
+	value = bson_iter_value(&iter);
+	if (value->value_type != BSON_TYPE_UTF8) {
+		LM_ERR("string 'op' needed in raw query [%.*s]\n", attr->len, attr->s);
+		bson_destroy(&doc);
+		return -1;
 	}
 
-	op = bson_iterator_string( &i );
+	op = value->value.v_utf8.str;
 
-	if (strcmp(op,"find") == 0) {
-		ret = mongo_raw_find(connection,&new_b,reply,expected_kv_no,reply_no);
-	} else if (strcmp(op,"update") == 0) {
-		ret = mongo_raw_update(connection,&new_b);
-	} else if (strcmp(op,"insert") == 0) {
-		ret = mongo_raw_insert(connection,&new_b);
-	} else if (strcmp(op,"remove") == 0) {
-		ret = mongo_raw_remove(connection,&new_b);
-	} else if (strcmp(op,"count") == 0) {
-		ret = mongo_raw_count(connection,&new_b,reply,expected_kv_no,reply_no);
+	if (strcmp(op, "find") == 0) {
+		ret = mongo_raw_find(con, &doc, reply, expected_kv_no, reply_no);
+	} else if (strcmp(op, "insert") == 0) {
+		ret = mongo_raw_insert(con, &doc);
+	} else if (strcmp(op, "update") == 0) {
+		ret = mongo_raw_update(con, &doc);
+	} else if (strcmp(op, "remove") == 0) {
+		ret = mongo_raw_remove(con, &doc);
+	} else if (strcmp(op, "count") == 0) {
+		ret = mongo_raw_count(con, &doc, reply, expected_kv_no, reply_no);
 	} else {
-		LM_ERR("Unsupported op type [%s] \n",op);
-		bson_destroy(&new_b);
-		goto error;
+		LM_ERR("Unsupported op type [%s] \n", op);
+		bson_destroy(&doc);
+		return -1;
 	}
 
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo raw",attr->s,attr->len,0);
-	bson_destroy(&new_b);
-	return ret;
-error:
-	stop_expire_timer(start,mongo_exec_threshold,
-	"cachedb_mongo raw",attr->s,attr->len,0);
-	return -1;
-#endif
 	return 0;
 }
 
