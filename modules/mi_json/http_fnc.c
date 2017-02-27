@@ -306,7 +306,6 @@ struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
     }
   }
 
-  trace_json_request( f, cl_socket, miCmd->s, mi_cmd);
 
   html_page_data.page.s = buffer->s;
   html_page_data.page.len = 0;
@@ -323,6 +322,8 @@ struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
     *page = html_page_data.page;
   }
   LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
+
+  trace_json_request( f, cl_socket, miCmd->s, mi_cmd);
 
   *async_hdl = hdl;
 
