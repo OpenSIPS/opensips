@@ -4467,6 +4467,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
 		dr_raise_event(gw);
 	}
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
 done:
 	lock_stop_read( current_partition->ref_lock );
