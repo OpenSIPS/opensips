@@ -740,7 +740,7 @@ void httpd_proc(int rank)
 
 #if ( MHD_VERSION < 0x000092800 )
 	memcpy( &httpd_server_info, &saddr_in, sizeof(struct sockaddr_in) );
-	httpd_server_info.sin_port = port;
+	httpd_server_info.sin.sin_port = port;
 #endif
 
 
