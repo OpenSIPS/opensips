@@ -411,9 +411,11 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	int cnt_type = HTTPD_STD_CNT_TYPE;
 	int accept_type = HTTPD_STD_CNT_TYPE;
 	int ret_code = MHD_HTTP_OK;
-	int sv_sockfd;
 
+#if ( MHD_VERSION >= 0x000092800 )
+	int sv_sockfd;
 	socklen_t addrlen=sizeof(httpd_server_info);
+#endif
 	union sockaddr_union* cl_socket;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
@@ -438,8 +440,8 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	cl_socket = (union sockaddr_union *)MHD_get_connection_info(connection,
 			MHD_CONNECTION_INFO_CLIENT_ADDRESS)->client_addr;
 
+#if ( MHD_VERSION >= 0x000092800 )
 	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;
-
 	getsockname( sv_sockfd, &httpd_server_info.s, &addrlen);
 
 	/* we could do
@@ -448,6 +450,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	 * httpd server
 	 */
 	httpd_server_info.sin.sin_port = port;
+#endif
 
 	if(strncmp(method, "POST", 4)==0) {
 		if(pr == NULL){
@@ -733,6 +736,13 @@ void httpd_proc(int rank)
 		saddr_in.sin_addr.s_addr = INADDR_ANY;
 	saddr_in.sin_family = AF_INET;
 	saddr_in.sin_port = htons(port);
+
+
+#if ( MHD_VERSION < 0x000092800 )
+	memcpy( &httpd_server_info, &saddr_in, sizeof(struct sockaddr_in) );
+	httpd_server_info.sin_port = port;
+#endif
+
 
 	LM_DBG("init_child [%d] - [%d] HTTP Server init [%s:%d]\n",
 		rank, getpid(), (ip.s?ip.s:"INADDR_ANY"), port);
