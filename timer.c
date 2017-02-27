@@ -48,7 +48,7 @@
 #include "timer.h"
 #include "dprint.h"
 #include "error.h"
-#include "pt.h"
+#include "ipc.h"
 #include "config.h"
 #include "sr_module.h"
 #include "daemonize.h"
@@ -617,6 +617,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		case F_FD_ASYNC:
 			async_fd_resume( &fm->fd, fm->data);
 			return 0;
+		case F_IPC:
+			ipc_handle_job();
+			return 0;
 		default:
 			LM_CRIT("unknown fd type %d in Timer Extra\n", fm->type);
 			return -1;
@@ -629,6 +632,12 @@ int timer_proc_reactor_init(void)
 	/* create the reactor for timer proc */
 	if ( init_worker_reactor( "Timer_extra", RCT_PRIO_MAX)<0 ) {
 		LM_ERR("failed to init reactor\n");
+		goto error;
+	}
+
+	/* init: start watching for the IPC jobs */
+	if (reactor_add_reader( IPC_FD_READ, F_IPC, RCT_PRIO_ASYNC,NULL)<0){
+		LM_CRIT("failed to add IPC pipe to reactor\n");
 		goto error;
 	}
 

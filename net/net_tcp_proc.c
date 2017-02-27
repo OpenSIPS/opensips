@@ -24,6 +24,7 @@
  */
 
 
+#include "../ipc.h"
 #include "../timer.h"
 #include "../reactor.h"
 #include "../async.h"
@@ -124,6 +125,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			return 0;
 		case F_LAUNCH_ASYNC:
 			async_launch_resume( &fm->fd, fm->data);
+			return 0;
+		case F_IPC:
+			ipc_handle_job();
 			return 0;
 		case F_TCPMAIN:
 again:
@@ -311,6 +315,12 @@ int tcp_worker_proc_reactor_init( int unix_sock)
 	/* start watching for the timer jobs */
 	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, RCT_PRIO_TIMER,NULL)<0){
 		LM_CRIT("failed to add timer pipe_out to reactor\n");
+		goto error;
+	}
+
+	/* init: start watching for the IPC jobs */
+	if (reactor_add_reader( IPC_FD_READ, F_IPC, RCT_PRIO_ASYNC,NULL)<0){
+		LM_CRIT("failed to add IPC pipe to reactor\n");
 		goto error;
 	}
 

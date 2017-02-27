@@ -58,7 +58,7 @@ enum reactor_prios {
 
 enum fd_types { F_NONE=0,
 		/* generic fd types, to be handled by all SIP worker processes */
-		F_TIMER_JOB,  F_FD_ASYNC, F_LAUNCH_ASYNC, F_SCRIPT_ASYNC=16,
+		F_TIMER_JOB,  F_FD_ASYNC, F_LAUNCH_ASYNC, F_IPC, F_SCRIPT_ASYNC=16,
 		/* fd type specifc to UDP oriented processes (SIP workers) */
 		F_UDP_READ,
 		/* fd types specific to TCP oriented processes (SIP workers) */

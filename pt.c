@@ -77,6 +77,7 @@ int init_multi_proc_support(void)
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
 		pt[i].pid = -1;
+		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 	}
 
 	/* set the pid for the starter process */
@@ -125,6 +126,13 @@ pid_t internal_fork(char *proc_desc)
 	if (tcp_pre_connect_proc_to_tcp_main(process_counter)<0){
 		LM_ERR("failed to connect future proc %d to TCP main\n",
 			process_no);
+		return -1;
+	}
+
+	/* create the IPC pipe */
+	if (pipe(pt[process_counter].ipc_pipe)<0) {
+		LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
+			process_counter, errno, strerror(errno));
 		return -1;
 	}
 
