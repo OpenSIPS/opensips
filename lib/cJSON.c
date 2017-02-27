@@ -25,12 +25,17 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
 #include <float.h>
 #include <limits.h>
 #include <ctype.h>
+
+#ifdef HAVE_LIBMATH
+	#include <math.h>
+#endif
+
 #include "cJSON.h"
+#include "../mem/mem.h"
 
 /* Determine the number of bits that an integer has using the preprocessor */
 #if INT_MAX == 32767
@@ -44,6 +49,29 @@
     #define INTEGER_SIZE 0x1000
 #else
     #error "Failed to determine the size of an integer"
+#endif
+
+#ifdef HAVE_LIBMATH
+	#define FABS fabs
+#else
+	double myfabs(double x)
+	{
+		if ( x < 0 ) return (-x);
+		return x;
+	}
+	#define FABS myfabs
+#endif
+
+
+#ifdef HAVE_LIBMATH
+	#define FLOOR floor
+#else
+	double myfloor(double x)
+	{
+		if ( x > 0 ) return (int)x;
+		return (int)(x-0.9999999999999999);
+	}
+	#define FLOOR myfloor
 #endif
 
 /* define our own boolean type */
@@ -88,8 +116,18 @@ static int cJSON_strcasecmp(const unsigned char *s1, const unsigned char *s2)
     return tolower(*s1) - tolower(*s2);
 }
 
-static void *(*cJSON_malloc)(size_t sz) = malloc;
-static void (*cJSON_free)(void *ptr) = free;
+static void* osip_malloc( size_t sz )
+{
+	return pkg_malloc( sz );
+}
+
+static void osip_free( void *ptr )
+{
+	pkg_free( ptr );
+}
+
+static void *(*cJSON_malloc)(size_t sz) = osip_malloc;
+static void (*cJSON_free)(void *ptr) = osip_free;
 
 static unsigned char* cJSON_strdup(const unsigned char* str)
 {
@@ -347,7 +385,7 @@ static unsigned char *print_number(const cJSON *item, printbuffer *p)
         }
     }
     /* value is an int */
-    else if ((fabs(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN))
+    else if ((FABS(((double)item->valueint) - d) <= DBL_EPSILON) && (d <= INT_MAX) && (d >= INT_MIN))
     {
         if (p)
         {
@@ -383,11 +421,11 @@ static unsigned char *print_number(const cJSON *item, printbuffer *p)
             {
                 sprintf((char*)str, "null");
             }
-            else if ((fabs(floor(d) - d) <= DBL_EPSILON) && (fabs(d) < 1.0e60))
+            else if ((FABS(FLOOR(d) - d) <= DBL_EPSILON) && (FABS(d) < 1.0e60))
             {
                 sprintf((char*)str, "%.0f", d);
             }
-            else if ((fabs(d) < 1.0e-6) || (fabs(d) > 1.0e9))
+            else if ((FABS(d) < 1.0e-6) || (FABS(d) > 1.0e9))
             {
                 sprintf((char*)str, "%e", d);
             }
