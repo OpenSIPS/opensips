@@ -48,8 +48,8 @@
 #define WS_HOST_F		(1 << 0)
 #define WS_UPGRADE_F	(1 << 1)
 #define WS_CONN_F		(1 << 2)
-#define WS_ORIGIN_F		(1 << 4)
 #define WS_KEY_F		(1 << 3)
+#define WS_ORIGIN_F		(1 << 4)
 #define WS_VER_F		(1 << 5)
 /* for SIP connections, RFC7118 requires sip protocol */
 #define WS_PROTO_F		(1 << 6)
@@ -664,6 +664,9 @@ static inline int ws_parse_rpl_http_fl(struct tcp_connection *c,
 	end = cr;
 	len = end - p;
 
+	*msg_buf = cr + 2;
+	*msg_len -= len + 2;
+
 	if (len < HTTP_VERSION_LEN) {
 		LM_ERR("invalid first line: version too small <%.*s>\n", len, p);
 		goto error;
@@ -770,7 +773,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	struct sip_msg tmp_msg;
 	struct hdr_field *hf;
 	unsigned version;
-	char flags = 0;
+	unsigned char flags = 0;
 	unsigned ver_min, ver_maj;
 
 	if (ws_parse_req_http_fl(c, &msg, &len, &ver_maj, &ver_min) != 0) {
@@ -914,7 +917,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 
 	}
 
-	if (flags != WS_ALL_REQ_F) {
+	if (flags != (unsigned char)WS_ALL_REQ_F) {
 		/* negate so we can easily compare them */
 		flags = ~flags;
 		if (flags & WS_HOST_F)
@@ -964,7 +967,7 @@ static void ws_compute_key(str *key)
 static int ws_is_valid_key(str *key, str *accept)
 {
 	ws_compute_key(key);
-	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len);
+	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len) == 0;
 }
 
 static int ws_complete_handshake(struct tcp_connection *c)
@@ -1011,7 +1014,7 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 {
 	struct sip_msg tmp_msg;
 	struct hdr_field *hf;
-	char flags = 0;
+	unsigned char flags = 0;
 	unsigned ver_min, ver_maj;
 
 	if (ws_parse_rpl_http_fl(c, &msg, &len, &ver_maj, &ver_min) != 0) {
@@ -1146,21 +1149,15 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 
 	}
 
-	if (flags != WS_ALL_REQ_F) {
+	if (flags != (unsigned char)WS_ALL_RPL_F) {
 		/* negate so we can easily compare them */
 		flags = ~flags;
-		if (flags & WS_HOST_F)
-			LM_ERR("Host header not present!\n");
 		if (flags & WS_UPGRADE_F)
 			LM_ERR("Upgrade header not present!\n");
 		if (flags & WS_CONN_F)
 			LM_ERR("Connection header not present!\n");
-		if (flags & WS_ORIGIN_F)
-			LM_ERR("Origin header not present!\n");
-		if (flags & WS_KEY_F)
-			LM_ERR("Sec-WebSocket-Key header not present!\n");
-		if (flags & WS_VER_F)
-			LM_ERR("Sec-WebSocket-Version header not present!\n");
+		if (flags & WS_ACCEPT_F)
+			LM_ERR("Sec-WebSocket-Protocol header not present!\n");
 		if (flags & WS_PROTO_F)
 			LM_ERR("Sec-WebSocket-Protocol header not present!\n");
 		goto ws_error;
