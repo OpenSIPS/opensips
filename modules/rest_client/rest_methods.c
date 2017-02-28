@@ -53,6 +53,9 @@ static CURL *sync_handle = NULL;
 /* libcurl's reported running handles */
 static int running_handles;
 
+extern int _async_resume_retr_timeout;
+extern int _async_resume_retr_itv;
+
 /* trace parameters for this module */
 #define MAX_HOST_LENGTH 128
 
@@ -428,7 +431,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	/* obtain a read fd in "connection_timeout" seconds at worst */
 	for (timeout = connection_timeout_ms; timeout > 0; timeout -= busy_wait) {
 		mrc = curl_multi_perform(multi_handle, &running_handles);
-		if (mrc != CURLM_OK) {
+		if (mrc != CURLM_OK && mrc != CURLM_CALL_MULTI_PERFORM) {
 			LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
 			goto error;
 		}
@@ -444,7 +447,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		       connection_timeout_ms, connect_poll_interval);
 
 		if (retry_time == -1) {
-			LM_INFO("curl_multi_timeout() returned -1, pausing %ldms...\n",
+			LM_DBG("curl_multi_timeout() returned -1, pausing %ldms...\n",
 			        busy_wait);
 			goto busy_wait;
 		}
@@ -528,19 +531,29 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	long http_rc;
 	fd_set rset, wset, eset;
 	pv_value_t val;
-	int ret = 1;
+	int ret = 1, retr;
 	CURLM *multi_handle;
 
 	multi_handle = param->multi_list->multi_handle;
 
-	mrc = curl_multi_perform(multi_handle, &running);
+	retr = 0;
+	do {
+		mrc = curl_multi_perform(multi_handle, &running);
+		if (mrc != CURLM_CALL_MULTI_PERFORM)
+			break;
+		LM_DBG("retry last perform...\n");
+		usleep(_async_resume_retr_itv);
+		retr += _async_resume_retr_itv;
+	} while (retr < _async_resume_retr_timeout);
+
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
 		return -1;
 	}
-	LM_DBG("running handles: %d\n", running);
 
+	LM_DBG("running handles: %d\n", running);
 	if (running == 1) {
+		LM_DBG("transfer in progress...\n");
 		async_status = ASYNC_CONTINUE;
 		return 1;
 	}
