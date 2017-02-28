@@ -308,19 +308,6 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 
 /*********************************************************************************/
 
-static char *shm_strdup(str *src)
-{
-	char *res;
-
-	if (!src || !src->s)
-		return NULL;
-	if (!(res = (char *) shm_malloc(src->len + 1)))
-		return NULL;
-	strncpy(res, src->s, src->len);
-	res[src->len] = 0;
-	return res;
-}
-
 void xmpp_free_pipe_cmd(struct xmpp_pipe_cmd *cmd)
 {
 	if (cmd->from)
@@ -338,16 +325,25 @@ static int xmpp_send_pipe_cmd(enum xmpp_pipe_cmd_type type, str *from, str *to,
 		str *body, str *id)
 {
 	struct xmpp_pipe_cmd *cmd;
+	str ret;
 
 	/* todo: make shm allocation for one big chunk to include all fields */
 	cmd = (struct xmpp_pipe_cmd *) shm_malloc(sizeof(struct xmpp_pipe_cmd));
 	memset(cmd, 0, sizeof(struct xmpp_pipe_cmd));
 
 	cmd->type = type;
-	cmd->from = shm_strdup(from);
-	cmd->to = shm_strdup(to);
-	cmd->body = shm_strdup(body);
-	cmd->id = shm_strdup(id);
+
+	shm_nt_str_dup(&ret, from);
+	cmd->from = ret.s;
+
+	shm_nt_str_dup(&ret, to);
+	cmd->to = ret.s;
+
+	shm_nt_str_dup(&ret, body);
+	cmd->body = ret.s;
+
+	shm_nt_str_dup(&ret, id);
+	cmd->id = ret.s;
 
 	if(pid == *xmpp_pid) /* if attempting to send from the xmpp extra process */
 	{
