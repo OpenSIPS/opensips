@@ -45,8 +45,14 @@ long connect_poll_interval = 20; /* ms */
 long connection_timeout_ms;
 int max_async_transfers = 100;
 long curl_timeout = 20;
-
 char *ssl_capath;
+
+/*
+ * curl_multi_perform() may indicate a "try again" response even
+ * when resuming transfers with pending data
+ */
+int _async_resume_retr_timeout = 500000; /* us */
+int _async_resume_retr_itv = 100; /* us */
 
 /* libcurl enables these by default */
 int ssl_verifypeer = 1;
