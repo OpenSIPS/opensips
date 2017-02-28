@@ -46,7 +46,7 @@ typedef enum {
 } cdb_raw_type_t;
 
 typedef struct {
-	int type;
+	cdb_raw_type_t type;
 	union {
 		int n;
 		str s;

@@ -55,6 +55,9 @@ bson_t mongo_write_concern_b;
 //mongo_write_concern mwc;
 int mongo_exec_threshold=0;
 
+int compat_mode_30;
+int compat_mode_24;
+
 int set_connection(unsigned int type, void *val)
 {
 	return cachedb_store_url(&mongodb_script_urls,(char *)val);
@@ -66,6 +69,8 @@ static param_export_t params[]={
 	{ "slave_ok",      INT_PARAM, &mongo_slave_ok},
 	{ "write_concern", STR_PARAM, &mongo_write_concern_str },
 	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
+	{ "compat_mode_3.0", INT_PARAM, &compat_mode_30 },
+	{ "compat_mode_2.4", INT_PARAM, &compat_mode_24 },
 	{0,0,0}
 };
 

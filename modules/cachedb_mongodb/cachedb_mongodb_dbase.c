@@ -39,6 +39,9 @@ extern str mongo_write_concern_b;
 extern int mongo_slave_ok;
 extern int mongo_exec_threshold;
 
+extern int compat_mode_30;
+extern int compat_mode_24;
+
 #define HEX_OID_SIZE 25
 char *hex_oid_id = NULL;
 
@@ -604,96 +607,67 @@ int mongo_raw_count(cachedb_con *connection,bson_t *raw_query,cdb_raw_entry ***r
 	return 0;
 }
 
-int mongo_raw_update(cachedb_con *connection,bson_t *raw_query)
+int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 {
-#if 0
-	bson_iterator i;
-	const char *key,*ns=NULL;
-	mongo *conn = &MONGO_CDB_CON(connection);
-	bson_t op_b,match_b,err_b;
-	int have_query=0,have_match=0,j,ret;
+	mongoc_collection_t *col;
+	bson_iter_t iter, uiter, sub_iter;
+	bson_error_t error;
+	bson_t query, update;
+	const bson_value_t *v;
 
-	bson_iterator_from_buffer( &i, raw_query->data );
-
-	while ( bson_iterator_next( &i ) ) {
-		bson_type t = bson_iterator_type( &i );
-		if ( t == 0 )
-			break;
-
-		key = bson_iterator_key( &i );
-		switch ( t ) {
-			case BSON_STRING:
-				if (strcmp(key,"op") == 0) {
-					continue;
-				}
-				else if (strcmp(key,"ns") == 0) {
-					ns = bson_iterator_string(&i);
-					LM_DBG("found ns [%s] \n",ns);
-				}
-				break;
-			case BSON_OBJECT:
-			case BSON_ARRAY:
-				if (strcmp(key,"query") == 0) {
-					memset(&op_b,0,sizeof(bson_t));
-					bson_init_finished_data(&op_b,(char *)bson_iterator_value(&i));
-					have_query=1;
-				} else if (strcmp(key,"match") == 0) {
-					memset(&match_b,0,sizeof(bson_t));
-					bson_init_finished_data(&match_b,(char *)bson_iterator_value(&i));
-					have_match=1;
-				}
-				break;
-			default:
-				LM_DBG("Unusable type %d - ignoring \n",t);
-		}
-	}
-
-	if (have_query == 0) {
-		LM_ERR("Cannot proceed. Don't have the actual update query \n");
+	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
+		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
 		return -1;
 	}
 
-	for (j=0;j<2;j++) {
-		/* TODO - various flags - upsert, multi etc */
-		ret = mongo_update(conn,ns?ns:MONGO_NAMESPACE(connection),
-				have_match?&match_b:0,&op_b,0,0);
-		if (ret == MONGO_ERROR) {
-			if (mongo_check_connection(conn) == MONGO_ERROR &&
-			mongo_reconnect(conn) == MONGO_OK &&
-			mongo_check_connection(conn) == MONGO_OK) {
-				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
-				continue;
-			}
-			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
-			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
-			if (!bson_size(&err_b))
-				return -1;
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   bson_iter_utf8(ns, NULL));
 
-			bson_iterator_init(&i,&err_b);
-			while( bson_iterator_next(&i)) {
-				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
-				switch( bson_iterator_type( &i ) ) {
-					case BSON_DOUBLE:
-						LM_DBG("(double) %e\n",bson_iterator_double(&i));
-						break;
-					case BSON_INT:
-						LM_DBG("(int) %d\n",bson_iterator_int(&i));
-						break;
-					case BSON_STRING:
-						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&i));
-						break;
-					default:
-						LM_DBG("(unknown type %d)\n",bson_iterator_type(&i));
-						break;
-				}
+	/**
+	 * Avoid data corruption as much as possible:
+	 *	 either do all updates, or none if even one of them is broken
+	 */
+	if (bson_iter_init_find(&iter, raw_query, "updates") &&
+		BSON_ITER_HOLDS_ARRAY(&iter) && bson_iter_recurse(&iter, &uiter)) {
+		while (bson_iter_next(&uiter)) {
+			bson_iter_recurse(&uiter, &sub_iter);
+			if (!bson_iter_find(&sub_iter, "q")) {
+				LM_ERR("missing 'q' field in 'updates' subdocument!\n");
+				return -1;
 			}
-			return -1;
+
+			bson_iter_recurse(&uiter, &sub_iter);
+			if (!bson_iter_find(&sub_iter, "u")) {
+				LM_ERR("missing 'u' field in 'updates' subdocument!\n");
+				return -1;
+			}
 		}
-		break;
 	}
 
-	return 0;
-#endif
+	if (bson_iter_init_find(&iter, raw_query, "updates") &&
+		BSON_ITER_HOLDS_ARRAY(&iter) && bson_iter_recurse(&iter, &uiter)) {
+		while (bson_iter_next(&uiter)) {
+			bson_iter_recurse(&uiter, &sub_iter);
+			bson_iter_find(&sub_iter, "q");
+			v = bson_iter_value(&sub_iter);
+			bson_init_static(&query, v->value.v_doc.data, v->value.v_doc.data_len);
+
+			bson_iter_recurse(&uiter, &sub_iter);
+			bson_iter_find(&sub_iter, "u");
+			v = bson_iter_value(&sub_iter);
+			bson_init_static(&update, v->value.v_doc.data, v->value.v_doc.data_len);
+
+			if (!mongoc_collection_update(col, MONGOC_UPDATE_UPSERT,
+			                              &query, &update, NULL, &error)) {
+				LM_ERR("failed to run update. error: %d.%d: %s\n",
+				       error.domain, error.code, error.message);
+				return -1;
+			}
+		}
+	}
+
+	mongoc_collection_destroy(col);
+
 	return 0;
 }
 

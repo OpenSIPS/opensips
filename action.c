@@ -1525,7 +1525,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 
-			cdb_raw_entry **cdb_reply;
+			cdb_raw_entry **cdb_reply = NULL;
 			int val_number=0,i,j;
 			int key_number=0;
 			pvname_list_t *cdb_res,*it;
