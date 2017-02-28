@@ -130,6 +130,13 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 	}
 
 	*p = '\0';
+	con->db = pkg_strdup(id->database);
+	con->col = pkg_strdup(p + 1);
+	if (!con->db || !con->col) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
 	con->collection = mongoc_client_get_collection(con->client, id->database, p+1);
 	*p = '.';
 
@@ -148,6 +155,8 @@ void mongo_free_connection(cachedb_pool_con *con)
 
 	mongoc_collection_destroy(mcon->collection);
 	mongoc_client_destroy(mcon->client);
+	pkg_free(mcon->db);
+	pkg_free(mcon->col);
 }
 
 void mongo_con_destroy(cachedb_con *con)
@@ -367,7 +376,8 @@ void dbg_print_bson(bson_t *b)
 	//dbg_bson_print_raw(b->data,0);
 }
 
-int mongo_raw_find(cachedb_con *connection,bson_t *raw_query,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
+int mongo_raw_find(cachedb_con *con, bson_t *raw_query, cdb_raw_entry ***reply,
+                   int expected_kv_no, int *reply_no)
 {
 #if 0
 	bson_iterator i;
@@ -869,73 +879,161 @@ int mongo_raw_remove(cachedb_con *connection,bson_t *raw_query)
 static char *raw_query_buf;
 static int raw_query_buf_len;
 
-int mongo_con_raw_query(cachedb_con *con, str *attr, cdb_raw_entry ***reply,
+int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
                         int expected_kv_no, int *reply_no)
 {
-	bson_t doc;
+	struct json_object *obj = NULL;
+	bson_t doc, rpl;
 	bson_iter_t iter;
+	bson_error_t error;
 	struct timeval start;
-	const char *op = NULL;
-	const bson_value_t *value;
 	int ret = 0;
+	const char *p;
+	int csz = 0, i, len;
 
 	LM_DBG("Get operation on namespace %s\n", MONGO_NAMESPACE(con));
 	start_expire_timer(start,mongo_exec_threshold);
 
-	if (attr->len > raw_query_buf_len) {
-		raw_query_buf = pkg_realloc(raw_query_buf, attr->len + 1);
+	if (qstr->len > raw_query_buf_len) {
+		raw_query_buf = pkg_realloc(raw_query_buf, qstr->len + 1);
 		if (!raw_query_buf) {
 			LM_ERR("oom!\n");
 			return -1;
 		}
 
-		memcpy(raw_query_buf, attr->s, attr->len);
-		raw_query_buf[attr->len] = '\0';
+		memcpy(raw_query_buf, qstr->s, qstr->len);
+		raw_query_buf[qstr->len] = '\0';
 
-		raw_query_buf_len = attr->len;
+		raw_query_buf_len = qstr->len;
 	} else {
-		memcpy(raw_query_buf, attr->s, attr->len);
-		raw_query_buf[attr->len] = '\0';
+		memcpy(raw_query_buf, qstr->s, qstr->len);
+		raw_query_buf[qstr->len] = '\0';
 	}
 
 	ret = json_to_bson(raw_query_buf, &doc);
 	if (ret < 0) {
-		LM_ERR("Failed to convert [%.*s] to BSON\n", attr->len, attr->s);
-		return -1;
+		LM_ERR("Failed to convert [%.*s] to BSON\n", qstr->len, qstr->s);
+		ret = -1;
+		goto out;
 	}
 
-	if (!bson_iter_init_find(&iter, &doc, "op")) {
-		LM_ERR("No 'op' specified in raw query [%.*s]\n", attr->len, attr->s);
-		bson_destroy(&doc);
-		return -1;
-	}
+	/* treat "find" differently on pre-3.2 MongoDB servers */
+	if ((compat_mode_30 || compat_mode_24) &&
+	    bson_iter_init_find(&iter, &doc, "find")) {
+		if (mongo_raw_find(con, &doc, reply, expected_kv_no, reply_no) != 0)
+			return -1;
 
-	value = bson_iter_value(&iter);
-	if (value->value_type != BSON_TYPE_UTF8) {
-		LM_ERR("string 'op' needed in raw query [%.*s]\n", attr->len, attr->s);
-		bson_destroy(&doc);
-		return -1;
-	}
+		if (*reply_no == 0)
+			return -2;
 
-	op = value->value.v_utf8.str;
-
-	if (strcmp(op, "find") == 0) {
-		ret = mongo_raw_find(con, &doc, reply, expected_kv_no, reply_no);
-	} else if (strcmp(op, "insert") == 0) {
-		ret = mongo_raw_insert(con, &doc);
-	} else if (strcmp(op, "update") == 0) {
-		ret = mongo_raw_update(con, &doc);
-	} else if (strcmp(op, "remove") == 0) {
-		ret = mongo_raw_remove(con, &doc);
-	} else if (strcmp(op, "count") == 0) {
-		ret = mongo_raw_count(con, &doc, reply, expected_kv_no, reply_no);
+		return 0;
 	} else {
-		LM_ERR("Unsupported op type [%s] \n", op);
-		bson_destroy(&doc);
+		if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "insert"))
+			return mongo_raw_insert(con, &doc);
+		else if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "update"))
+			return mongo_raw_update(con, &doc, &iter);
+		else if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "delete"))
+			return mongo_raw_remove(con, &doc);
+	}
+
+	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), &doc,
+	                              NULL, &rpl, &error)) {
+		LM_ERR("raw query:\n'%.*s'\nfailed with: %d.%d: %s\n", qstr->len, qstr->s,
+		       error.domain, error.code, error.message);
+		ret = -1;
+		goto out_err;
+	}
+
+	/* start with a single returned document */
+	*reply = pkg_malloc(1 * sizeof **reply);
+	if (!*reply) {
+		LM_ERR("no more PKG mem\n");
 		return -1;
 	}
 
-	return 0;
+	/* expected_kv_no is always 1 for MongoDB (one document per result) */
+	**reply = pkg_malloc(expected_kv_no * sizeof ***reply);
+	if (!**reply) {
+		LM_ERR("No more pkg mem\n");
+		pkg_free(*reply);
+		return -1;
+	}
+
+	if (bson_iter_init(&iter, &rpl)) {
+		while (bson_iter_next(&iter)) {
+			if (csz > 0) {
+				*reply = pkg_realloc(*reply, (csz + 1) * sizeof **reply);
+				if (!*reply) {
+					LM_ERR("No more pkg\n");
+					ret = -1;
+					goto out_err;
+				}
+				(*reply)[csz] = pkg_malloc(expected_kv_no * sizeof ***reply);
+				if (!(*reply)[csz]) {
+					LM_ERR("No more pkg\n");
+					ret = -1;
+					goto out_err;
+				}
+			}
+
+			obj = json_object_new_object();
+			bson_to_json_generic(obj, &iter, BSON_TYPE_DOCUMENT);
+
+			p = json_object_to_json_string(obj);
+			if (!p) {
+				LM_ERR("failed to translate json to string\n");
+				ret = -1;
+				goto out_err;
+			}
+
+			LM_DBG("got JSON: %s\n", p);
+
+			len = strlen(p);
+			(*reply)[csz][0].val.s.s = pkg_malloc(len);
+			if (!(*reply)[csz][0].val.s.s ) {
+				LM_ERR("No more pkg \n");
+				ret = -1;
+				goto out_err;
+			}
+
+			memcpy((*reply)[csz][0].val.s.s,p,len);
+			(*reply)[csz][0].val.s.len = len;
+			(*reply)[csz][0].type = CDB_STR;
+
+			json_object_put(obj);
+
+			csz++;
+		}
+	} else {
+		LM_ERR("failed to init!!!\n");
+		ret = -1;
+		goto out_err;
+	}
+
+out:
+	*reply_no = csz;
+	if (csz == 0)
+		return -2;
+
+	return 1;
+
+out_err:
+	if (obj)
+		json_object_put(obj);
+
+	if (*reply) {
+		for (i = 0; i < csz; i++) {
+			pkg_free((*reply)[i][0].val.s.s);
+			pkg_free((*reply)[i]);
+		}
+
+		pkg_free(**reply);
+		pkg_free(*reply);
+		*reply = NULL;
+	}
+
+
+	return ret;
 }
 
 int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_val)

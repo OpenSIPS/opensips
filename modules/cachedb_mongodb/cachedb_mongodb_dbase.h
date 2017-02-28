@@ -48,8 +48,8 @@ typedef struct {
 	struct cachedb_pool_con_t *next;
 
 	/* shortcuts for raw queries */
-	//char* database;
-	//char* collection;
+	char *db;
+	char *col;
 
 	/* only if we connect to a repl set*/
 	char *replset_name;
@@ -65,6 +65,8 @@ typedef struct {
 #define MONGO_CLIENT(cdb_con)		(((mongo_con *)((cdb_con)->data))->client)
 #define MONGO_CURSOR(cdb_con)		(((mongo_con *)((cdb_con)->data))->cursor)
 #define MONGO_NAMESPACE(cdb_con)	(((mongo_con *)((cdb_con)->data))->id->database)
+#define MONGO_DB_STR(cdb_con)		(((mongo_con *)((cdb_con)->data))->db)
+#define MONGO_COL_STR(cdb_con)		(((mongo_con *)((cdb_con)->data))->col)
 #define MONGO_DATABASE(cdb_con)		(((mongo_con *)((cdb_con)->data))->database)
 #define MONGO_COLLECTION(cdb_con)	(((mongo_con *)((cdb_con)->data))->collection)
 

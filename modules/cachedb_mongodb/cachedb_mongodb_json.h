@@ -35,5 +35,8 @@ int json_to_bson(char *json,bson_t *bb);
 //int mongo_cursor_to_json(mongo_cursor *m_cursor,
 //		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
 
+void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
+                          bson_type_t type);
+
 #endif /* CACHEDBMONGO_JSON_H */
 

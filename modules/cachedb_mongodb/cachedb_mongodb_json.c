@@ -169,98 +169,100 @@ error:
 	return -1;
 }
 
-void bson_to_json_generic(struct json_object *obj,bson_iter_t *it,int type)
+void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
+                          bson_type_t type)
 {
-#if 0
 	const char *curr_key;
 	char *s;
 	int len;
-	struct json_object *obj2=NULL;
-	bson_iterator it2;
+	struct json_object *obj2 = NULL;
+	bson_iter_t it2;
 
-		while (bson_iterator_next(it)) {
-			curr_key=bson_iterator_key(it);
-
-			switch( bson_iterator_type(it) ) {
-					case BSON_INT:
-						LM_DBG("Found key %s with type int\n",curr_key);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,
-									json_object_new_int(bson_iterator_int(it)));
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,json_object_new_int(bson_iterator_int(it)));
-						break;
-					case BSON_LONG:
-						LM_DBG("Found key %s with type long\n",curr_key);
-						/* no intrinsic support in OpenSIPS for 64bit integers -
- 						 * converting to string */
-						s = int2str(bson_iterator_long(it),&len);
-						s[len]=0;
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,json_object_new_string(s));
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,json_object_new_string(s));
-						break;
-					case BSON_DOUBLE:
-						/* no intrinsic support in OpenSIPS for floating point numbers
- 						 * converting to int */
-						LM_DBG("Found key %s with type double\n",curr_key);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,
-									json_object_new_int((int)bson_iterator_double(it)));
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,json_object_new_int((int)bson_iterator_double(it)));
-						break;
-					case BSON_STRING:
-						LM_DBG("Found key %s with type string\n",curr_key);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,
-									json_object_new_string(bson_iterator_string(it)));
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,json_object_new_string(bson_iterator_string(it)));
-						break;
-					case BSON_BOOL:
-						LM_DBG("Found key %s with type bool\n",curr_key);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,
-									json_object_new_int((int)bson_iterator_bool(it)));
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,json_object_new_int((int)bson_iterator_bool(it)));
-						break;
-					case BSON_DATE:
-						LM_DBG("Found key %s with type date\n",curr_key);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,
-									json_object_new_int((int)(bson_iterator_date(it)/1000)));
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,json_object_new_int((int)(bson_iterator_date(it)/1000)));
-						break;
-					case BSON_ARRAY:
-						LM_DBG("Found key %s with type array\n",curr_key);
-						obj2 = json_object_new_array();
-						bson_iterator_subiterator(it, &it2 );
-						bson_to_json_generic(obj2,&it2,BSON_ARRAY);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,obj2);
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,obj2);
-						break;
-					case BSON_OBJECT:
-						LM_DBG("Found key %s with type object\n",curr_key);
-						obj2 = json_object_new_object();
-						bson_iterator_subiterator(it, &it2 );
-						bson_to_json_generic(obj2,&it2,BSON_OBJECT);
-						if (type == BSON_OBJECT)
-							json_object_object_add(obj,curr_key,obj2);
-						else if (type == BSON_ARRAY)
-							json_object_array_add(obj,obj2);
-						break;
-					default:
-						LM_DBG("Unsupported type %d for key %s - skipping\n",
-								bson_iterator_type(it),curr_key);
-			}
+	while (bson_iter_next(it)) {
+		curr_key = bson_iter_key(it);
+		switch (bson_iter_type(it) ) {
+				case BSON_TYPE_INT32:
+					LM_DBG("Found key %s with type int\n", curr_key);
+					if (type == BSON_TYPE_DOCUMENT) {
+						json_object_object_add(obj,curr_key,
+						           json_object_new_int(bson_iter_int32(it)));
+					} else if (type == BSON_TYPE_ARRAY) {
+						json_object_array_add(obj,
+						     json_object_new_int(bson_iter_int32(it)));
+					}
+					break;
+				case BSON_TYPE_INT64:
+					LM_DBG("Found key %s with type long\n", curr_key);
+					/* no intrinsic support in OpenSIPS for 64bit integers -
+					 * converting to string */
+					s = int2str(bson_iter_int64(it), &len);
+					s[len]=0;
+					if (type == BSON_TYPE_DOCUMENT) {
+						json_object_object_add(obj,curr_key,json_object_new_string(s));
+					} else if (type == BSON_TYPE_ARRAY) {
+						json_object_array_add(obj,json_object_new_string(s));
+					}
+					break;
+				case BSON_TYPE_DOUBLE:
+					/* no intrinsic support in OpenSIPS for floating point numbers
+					 * converting to int */
+					LM_DBG("Found key %s with type double\n",curr_key);
+					if (type == BSON_TYPE_DOCUMENT)
+						json_object_object_add(obj,curr_key,
+								json_object_new_int((int)bson_iter_double(it)));
+					else if (type == BSON_TYPE_ARRAY)
+						json_object_array_add(obj,
+						       json_object_new_int((int)bson_iter_double(it)));
+					break;
+				case BSON_TYPE_UTF8:
+					LM_DBG("Found key %s with type string\n",curr_key);
+					if (type == BSON_TYPE_DOCUMENT)
+						json_object_object_add(obj,curr_key,
+								json_object_new_string(bson_iter_utf8(it, NULL)));
+					else if (type == BSON_TYPE_ARRAY)
+						json_object_array_add(obj,json_object_new_string(bson_iter_utf8(it, NULL)));
+					break;
+				case BSON_TYPE_BOOL:
+					LM_DBG("Found key %s with type bool\n",curr_key);
+					if (type == BSON_TYPE_DOCUMENT)
+						json_object_object_add(obj,curr_key,
+								json_object_new_int((int)bson_iter_bool(it)));
+					else if (type == BSON_TYPE_ARRAY)
+						json_object_array_add(obj,json_object_new_int((int)bson_iter_bool(it)));
+					break;
+				case BSON_TYPE_DATE_TIME:
+					LM_DBG("Found key %s with type date\n",curr_key);
+					if (type == BSON_TYPE_DOCUMENT)
+						json_object_object_add(obj,curr_key,
+								json_object_new_int((int)(bson_iter_date_time(it)/1000)));
+					else if (type == BSON_TYPE_ARRAY)
+						json_object_array_add(obj,json_object_new_int((int)(bson_iter_date_time(it)/1000)));
+					break;
+				case BSON_TYPE_ARRAY:
+					LM_DBG("Found key %s with type array\n",curr_key);
+					obj2 = json_object_new_array();
+					bson_iter_recurse(it, &it2);
+					bson_to_json_generic(obj2,&it2,BSON_TYPE_ARRAY);
+					if (type == BSON_TYPE_DOCUMENT)
+						json_object_object_add(obj,curr_key,obj2);
+					else if (type == BSON_TYPE_ARRAY)
+						json_object_array_add(obj,obj2);
+					break;
+				case BSON_TYPE_DOCUMENT:
+					LM_DBG("Found key %s with type object\n",curr_key);
+					obj2 = json_object_new_object();
+					bson_iter_recurse(it, &it2);
+					bson_to_json_generic(obj2,&it2,BSON_TYPE_DOCUMENT);
+					if (type == BSON_TYPE_DOCUMENT)
+						json_object_object_add(obj,curr_key,obj2);
+					else if (type == BSON_TYPE_ARRAY)
+						json_object_array_add(obj,obj2);
+					break;
+				default:
+					LM_DBG("Unsupported type %d for key %s - skipping\n",
+							bson_iter_type(it),curr_key);
 		}
-#endif
+	}
 }
 
 #if 0
@@ -303,7 +305,7 @@ int mongo_cursor_to_json(mongo_cursor *m_cursor,
 
 		obj = json_object_new_object();
 		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
-		bson_to_json_generic(obj,&it,BSON_OBJECT);
+		bson_to_json_generic(obj,&it,BSON_TYPE_DOCUMENT);
 
 		p = json_object_to_json_string(obj);
 		if (!p) {
