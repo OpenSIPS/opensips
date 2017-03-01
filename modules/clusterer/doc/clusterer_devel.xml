@@ -8,146 +8,90 @@
         
         <section id="get-nodes-id">
 		<title>
-		<function moreinfo="none">get_nodes(cluster_id, proto)</function>
+		<function moreinfo="none">get_nodes(cluster_id)</function>
 		</title>
 		<para>
-                The function will return all a copy of all the needed information
-                from the nodes (machine_id, state, description, sock address)
-                stored in shm, whos state is up(1) and have a certain cluster_id and
-                protocol.
+                This function will return a list of all the reachable nodes(if the direct link is down/probing, a path through intermediary nodes is considered) in the specified cluster.
 		</para>
-		<para>
-		This function is usually used for replication purposes. 
-		</para>
-		<para>
-		This function returns NULL on error.
-		</para>
-                <para>Meaning of the parameters is as follows:</para>
+        <para>The returned nodes structure:</para>
+        <programlisting format="linespecific">
+...
+typedef struct clusterer_node {
+    int node_id;
+    union sockaddr_union addr;
+    str sip_addr;
+    str description;
+    struct clusterer_node *next;
+} clusterer_node_t;
+...
+        </programlisting>
+        <para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
-                    <listitem>
-                        <para><emphasis>int cluster_id</emphasis> - the cluster id
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int proto</emphasis> - the protocol
-                        </para>
-                    </listitem>
-                </itemizedlist>
-                <example>
-		<title><function>get_nodes</function> usage</title>
-		<programlisting format="linespecific">
-...
-get_nodes(cluster_id, proto);
-...
-</programlisting>
-		</example>
+            <listitem>
+                <para><emphasis>int cluster_id</emphasis> - the cluster id
+                </para>
+            </listitem>
+        </itemizedlist>
 	</section>
         
         <section id="free-nodes-id">
 		<title>
-		<function moreinfo="none">free_nodes(nodes)</function>
+		<function moreinfo="none">free_nodes(list)</function>
 		</title>
 		<para>
-                This function will free the allocated data for the copy.
+                This function will free the lits of nodes returned by <emphasis>get_nodes</emphasis>.
 		</para>
                 <para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
-                    <listitem>
-                        <para><emphasis>clusterer_node_t *nodes</emphasis> - the data
-                        returned by the get_nodes function
-                        </para>    
-                    </listitem>
-                </itemizedlist>
-		<example>
-		<title><function>free_nodes</function> usage</title>
-		<programlisting format="linespecific">
-...
-free_nodes(nodes);
-...
-</programlisting>
-		</example>
+            <listitem>
+                <para><emphasis>clusterer_node_t *list</emphasis> - list header
+                </para>
+            </listitem>
+        </itemizedlist>
 	</section>
         
         <section id="set-state-id">
 		<title>
-		<function moreinfo="none">set_state(cluster_id, machine_id, state, proto)</function>
+		<function moreinfo="none">set_state(cluster_id, state)</function>
 		</title>
 		<para>
-                The function sets the state of a machine belonging to a certain cluster,
-                which have the specified protocol.
+                This function sets the state(enabled/disabled) of the current node in the specified cluster.
 		</para>
-		<para>
-		This function is usually used for replication purposes. 
-		</para>
-                <para>Meaning of the parameters is as follows:</para>
+        <para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
-                    <listitem>
-                        <para><emphasis>int cluster_id</emphasis> - cluster_id
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int machine_id</emphasis> - machine_id
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int state</emphasis> - the server state
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int proto</emphasis> - protocol
-                        </para>    
-                    </listitem>
+            <listitem>
+                <para><emphasis>int cluster_id</emphasis> - the cluster id
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>enum cl_node_state state</emphasis> - the new state; possible values:
+                </para>
+                <itemizedlist>
+                    <listitem><para><emphasis>STATE_DISABLED</emphasis></para></listitem>
+                    <listitem><para><emphasis>STATE_ENABLED</emphasis></para></listitem>
                 </itemizedlist>
-		<example>
-		<title><function>set_state</function> usage</title>
-		<programlisting format="linespecific">
-...
-set_state(1,1,2,PROTO_BIN);
-...
-</programlisting>
-		</example>
+            </listitem>
+        </itemizedlist>
 	</section>
 
-        <section id="check">
+        <section id="check-id">
 		<title>
-		<function moreinfo="none">check(cluster_id, sockaddr, server_id, proto)</function>
+		<function moreinfo="none">check_addr(cluster_id, su)</function>
 		</title>
 		<para>
-                This function is used to check if the source of a receiving packet
-                is known. 
+                This function checks if a given address belongs to one of the nodes in the cluster.
 		</para>
-		<para>
-		It returns 1 if the source is known, else it returns 0.
-		</para>
-                <para>Meaning of the parameters is as follows:</para>
+        <para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
-                    <listitem>
-                        <para><emphasis>int cluster_id</emphasis> - cluster id
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>union sockaddr_union* sockaddr</emphasis> - incoming connexion
-                        socket address
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int server_id</emphasis> - incoming connexion
-                        server_id
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int proto</emphasis> - protocol
-                        </para>    
-                    </listitem>
-                </itemizedlist>
-		<example>
-		<title><function>check</function> usage</title>
-		<programlisting format="linespecific">
-...
-check(1, sockaddr, 2, PROTO_BIN)
-...
-</programlisting>
-		</example>
+            <listitem>
+                <para><emphasis>int cluster_id</emphasis> - the cluster id
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>union sockaddr_union* su</emphasis> - socket address
+                </para>
+            </listitem>
+        </itemizedlist>
 	</section>
 
         <section id="get-my-id-id">
@@ -155,100 +99,176 @@ check(1, sockaddr, 2, PROTO_BIN)
 		<function moreinfo="none">get_my_id()</function>
 		</title>
 		<para>
-                This function will return the server id's.
+                This function will return the id of the current node.
 		</para>
-		<example>
-		<title><function>get_my_id</function> usage</title>
-		<programlisting format="linespecific">
-...
-get_my_id()
-...
-</programlisting>
-		</example>
 	</section>
 
          <section id="send-to-id">
 		<title>
-		<function moreinfo="none">send_to(cluster_id, protocol)</function>
+		<function moreinfo="none">send_to(packet, cluster_id, node_id)</function>
 		</title>
 		<para>
-                This function will replicate information to the nodes belonging to 
-                a cluster_id that have a specific protocol.
+            This functon will send the given BIN packet to the specified node in the cluster. If the direct link is down/probing, it will send the packet to an intermediary node if the destination node is reachable through another path in the cluster topology.
 		</para>
-                <para>Meaning of the parameters is as follows:</para>
+        <para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
-                    <listitem>
-                        <para><emphasis>int cluster_id</emphasis> - cluster_id
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int protocol</emphasis> - protocol
-                        </para>    
-                    </listitem>
-                </itemizedlist>
-		<example>
-		<title><function>send_to</function> usage</title>
-		<programlisting format="linespecific">
-...
-send_to(cluster_id, protocol)
-...
-</programlisting>
-		</example>
+            <listitem>
+                <para><emphasis>bin_packet_t packet</emphasis> - the packet to be sent
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int cluster_id</emphasis> - the cluster id
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int node_id</emphasis> - the id of the destination node
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>The function returns one of the following:</para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>CLUSTERER_SEND_SUCCES</emphasis> - successfuly sent packet to destination node or a valid next hop</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTERER_CURR_DISABLED</emphasis> - current node is disabled so sending is impossbile</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTERER_DEST_DOWN</emphasis> - destination node is not reachable through any path according to the discovered topology</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTERER_SEND_ERR</emphasis> - destination node or valid next hop appear to be reachable but send failed</para>
+            </listitem>
+        </itemizedlist>
 	</section>
+
+    <section id="send-all-id">
+        <title>
+        <function moreinfo="none">send_all(packet, cluster_id)</function>
+        </title>
+        <para>
+            Send the given BIN packet to all the nodes in the specified cluster. The function operates similarly to <emphasis>send_to</emphasis>.
+        </para>
+        <para>Meaning of the parameters is as follows:</para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>bin_packet_t packet</emphasis> - the packet to be sent
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int cluster_id</emphasis> - the cluster id
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>The function returns one of the following:</para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>CLUSTERER_SEND_SUCCES</emphasis> - successfuly sent packet to at least one node</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTERER_CURR_DISABLED</emphasis> - current node is disabled so sending is impossbile</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTERER_DEST_DOWN</emphasis> - all nodes in the cluster are unreachable according to the discovered topology</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTERER_SEND_ERR</emphasis> - send failed for all nodes in the cluster</para>
+            </listitem>
+        </itemizedlist>
+    </section>
+
+    <section id="get-next-hop-id">
+        <title>
+        <function moreinfo="none">get_next_hop(cluster_id, node_id)</function>
+        </title>
+        <para>
+                This function returns the next hop from the computed shortest path to the given destination node in the specified cluster. This is the node that is the actual destination for the <emphasis>send_to</emphasis> and <emphasis>send_all</emphasis> functions when the direct link with the intended destination is down. The function returns the same structure as <emphasis>get_nodes</emphasis>.
+        </para>
+        <para>Meaning of the parameters is as follows:</para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>int cluster_id</emphasis> - the cluster id
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int node_id</emphasis> - the node id of the destination for which the next hop is returned.
+                </para>    
+            </listitem>
+        </itemizedlist>
+    </section>
+
+    <section id="free-next-hop-id">
+        <title>
+        <function moreinfo="none">free_next_hop(next_hop)</function>
+        </title>
+        <para>
+                This function will free the next hop returned by <emphasis>get_next_hop</emphasis>.
+        </para>
+                <para>Meaning of the parameters is as follows:</para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>clusterer_node_t *next_hop</emphasis> - next hop to be freed
+                </para>
+            </listitem>
+        </itemizedlist>
+    </section>
         
          <section id="register_module-id">
 		<title>
-		<function moreinfo="none">register_module(module_name, protocol, callback_function, timeout, auth_check, cluster_id)</function>
+		<function moreinfo="none">register_module(mod_name, cb, auth_check, accept_clusters_ids, no_accept_clusters)</function>
 		</title>
 		<para>
-                This function registers a module to a certain protocol. It acts like an
-                intermediary: when a valid packet has arrived, if the auth_check parameter is specified
-                then it is checked for authenticity. After that, the timestamps are updated and the callback
-                function from the registered module is called.
-                The clusterer module checks for every registered module if the duration between
-                the last receiving packet and the current time is greater than the module specified timeout.
-                If it is, the servers are temporary disabled for a period of timestamp * 2. If any packets
-                are received for the temporary disabled servers the registered module is notified. 
+            This function registers an &osips; module in order to receive BIN packets and cluster notifications. A certain module can accept packets from multiple clusters and provides a single callback function that will be called for each received packet. This function will also be called to notify cluster events like nodes becoming reachable/unreachable.
+        </para>
+        <para>Meaning of the parameters is as follows:</para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>char *mod_name</emphasis> - module name
                 </para>
-                <para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-                    <listitem>
-                        <para><emphasis>char *module_name</emphasis> - module name
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int protocol</emphasis> - protocol
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>void (*callback_function)(int, struct receive_info *, int)</emphasis>
-                        - the registered module callback function
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int timeout</emphasis> - timeput
-                        </para>    
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int auth_check</emphasis> - 0 if the authentication
-                        check is disabled, 1 if the authentication check is enabled
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para><emphasis>int cluster_id</emphasis> - cluster_id
-                        </para>
-                    </listitem>
-                </itemizedlist>
-		<example>
-		<title><function>register_module</function> usage</title>
-		<programlisting format="linespecific">
+            </listitem>
+            <listitem>
+                <para><emphasis>clusterer_cb_f cb</emphasis> - callback function
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int auth_check</emphasis> - 0 - no check, 1 - for every BIN packet received check if source IP belongs to one of the nodes in the cluster 
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int* accept_clusters_ids</emphasis> - array of cluster ids from which packets are accepted
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int no_accept_clusters</emphasis> - length of <emphasis>accept_clusters_ids</emphasis> array
+                </para>
+            </listitem>
+        </itemizedlist>
+        <para>The callback function prototype:</para>
+<programlisting>
 ...
-register_module(dialog, PROTO_BIN, cb, timeout, auth_check, cluster_id)
+typedef void (*clusterer_cb_f)(enum clusterer_event ev,bin_packet_t *, int packet_type,
+                struct receive_info *ri, int cluster_id, int src_id, int dest_id);
 ...
 </programlisting>
-		</example>
+        <para>
+            Possble values for the event signaled through <emphasis>ev</emphasis> parameter of the callback funtion:
+        </para>
+        <itemizedlist>
+            <listitem>
+                <para><emphasis>CLUSTER_RECV_MSG</emphasis> - received BIN message</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTER_ROUTE_FAILED</emphasis> - failed to route a received BIN packet destined for another node in the cluster</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTER_NODE_UP</emphasis> - a node became reachable</para>
+            </listitem>
+            <listitem>
+                <para><emphasis>CLUSTER_NODE_DOWN</emphasis> - a node became unreachable</para>
+            </listitem>
+        </itemizedlist>
 	</section>
-        
+
         
 	</section>
 
