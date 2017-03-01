@@ -138,6 +138,7 @@ do{                                                                             
     int i;                                                                      \
     int rc=0, rc2=1;                                                            \
     int max_loop;                                                               \
+	int old_flags;                                                              \
     handle_con_t * handle;                                                      \
     db_func_t * f;                                                              \
     handle_set_t * p = (handle_set_t*)_h->tail;                                 \
@@ -165,9 +166,15 @@ do{                                                                             
                     LM_DBG("flags1 = %i\n", p->con_list[p->curent_con].flags);  \
                                                                                 \
                                                                                 \
-                                                                                \
+                    old_flags = handle->con->flags;                             \
+                    handle->con->flags |= _h->flags;                            \
                     /* call f*/                                                 \
                     rc = f->FUNCTION_WITH_PARAMS;                               \
+                    handle->con->flags = old_flags;                             \
+                    /* in db core OR op is being reset after every db op so we  \
+                     * also have to reset it here */                            \
+                    CON_OR_RESET( _h );                                         \
+                                                                                \
                     if((rc && use_rc)){                                         \
                         LM_DBG("failover call failed\n");                       \
                         /* set local can not use flag*/                         \
@@ -520,6 +527,7 @@ int db_virtual_insert_update(const db_con_t* _h, const db_key_t* _k,
 do {                                                                            \
 	int mode;                                                                   \
     int rc=0;                                                                   \
+	int old_flags;                                                              \
     handle_con_t * handle;                                                      \
     db_func_t * f;                                                              \
     handle_set_t * p = (handle_set_t*)_h->tail;                                \
@@ -549,7 +557,15 @@ do {                                                                            
 				LM_ERR("async not supported for this backend!\n");              \
 				return -1;                                                      \
 			}                                                                   \
+                                                                                \
+			old_flags = handle->con->flags;                                     \
+			handle->con->flags |= _h->flags;                                    \
 			rc=f->FUNC(__VA_ARGS__);                                            \
+                                                                                \
+			handle->con->flags = old_flags;                                     \
+			/* in db core OR op is being reset after every db op so we          \
+			 * also have to reset it here */                                    \
+			CON_OR_RESET( _h );                                                 \
                                                                                 \
 			if (rc<0) {                                                         \
 				/* FIXME quite a complicated case                               \
