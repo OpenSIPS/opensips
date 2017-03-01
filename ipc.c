@@ -90,12 +90,13 @@ int ipc_send_job(int dst_proc, int type, void *payload)
 
 again:
 	// TODO - should we do this non blocking and discard if we block ??
-	n = write( IPC_FD_WRITE, &job, sizeof(job) );
+	n = write( IPC_FD_WRITE(dst_proc), &job, sizeof(job) );
 	if (n<0) {
 		if (errno==EINTR)
 			goto again;
 		LM_ERR("sending job type %d[%s] on %d failed: %s\n",
-			type, ipc_handlers[type].name, IPC_FD_WRITE, strerror(errno));
+			type, ipc_handlers[type].name, IPC_FD_WRITE(dst_proc),
+			strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -110,7 +111,7 @@ void ipc_handle_job(void)
 	/* read one IPC job from the pipe; even if the read is blocking,
 	 * we are here triggered from the reactor, on a READ event, so 
 	 * we shouldn;t ever block */
-	n = read( IPC_FD_READ, &job, sizeof(job) );
+	n = read( IPC_FD_READ_SELF, &job, sizeof(job) );
 	if (n==-1) {
 		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
 			return;

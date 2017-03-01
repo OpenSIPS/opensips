@@ -35,8 +35,9 @@ typedef struct _ipc_job {
 
 
 
-#define IPC_FD_READ   pt[process_no].ipc_pipe[0]
-#define IPC_FD_WRITE  pt[process_no].ipc_pipe[1]
+#define IPC_FD_READ(_proc_no)   pt[_proc_no].ipc_pipe[0]
+#define IPC_FD_WRITE(_proc_no)  pt[_proc_no].ipc_pipe[1]
+#define IPC_FD_READ_SELF        IPC_FD_READ(process_no)
 
 typedef void (ipc_handler_f)(int sender, void *payload);
 
