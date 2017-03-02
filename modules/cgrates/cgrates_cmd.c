@@ -107,8 +107,7 @@ int w_cgr_cmd(struct sip_msg* msg, char* cmd_c)
 	return cgr_handle_cmd(msg, cmsg->msg, cgr_proc_cmd_reply, NULL);
 }
 
-int w_acgr_cmd(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_p, char* cmd_c)
+int w_acgr_cmd(struct sip_msg* msg, async_ctx *actx, char* cmd_c)
 {
 	static struct cgr_msg *cmsg;
 	struct cgr_ctx *ctx;
@@ -131,6 +130,5 @@ int w_acgr_cmd(struct sip_msg* msg, async_resume_module **resume_f,
 		return -1;
 	}
 
-	return cgr_handle_async_cmd(msg, cmsg->msg, cgr_proc_cmd_reply, NULL,
-			resume_f, resume_p);
+	return cgr_handle_async_cmd(msg, cmsg->msg, cgr_proc_cmd_reply, NULL,actx);
 }

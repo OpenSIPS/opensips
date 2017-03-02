@@ -102,8 +102,8 @@ static int w_dbstore_avps(struct sip_msg* msg, char* source,
 		char* param, char* url);
 static int w_dbquery_avps(struct sip_msg* msg, char* query,
 		char* dest, char* url);
-static int w_async_dbquery_avps(struct sip_msg* msg, async_resume_module **rf,
-		void **rparam, char* query, char* dest, char* url);
+static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
+		char* query, char* dest, char* url);
 static int w_delete_avps(struct sip_msg* msg, char* param, char *foo);
 static int w_copy_avps(struct sip_msg* msg, char* param, char *check);
 static int w_pushto_avps(struct sip_msg* msg, char* destination, char *param);
@@ -1396,8 +1396,8 @@ static int w_dbquery_avps(struct sip_msg* msg, char* query,
 		parsed_url, (pvname_list_t*)dest);
 }
 
-static int w_async_dbquery_avps(struct sip_msg* msg, async_resume_module **rf,
-		void **rparam, char* query, char* dest, char* url)
+static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
+		char* query, char* dest, char* url)
 {
 	struct db_url *parsed_url;
 
@@ -1406,7 +1406,7 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_resume_module **rf,
 		return -1;
 	}
 
-	return ops_async_dbquery(msg, rf, rparam, (pv_elem_t *)query,
+	return ops_async_dbquery(msg, ctx, (pv_elem_t *)query,
 			parsed_url, (pvname_list_t *)dest);
 }
 

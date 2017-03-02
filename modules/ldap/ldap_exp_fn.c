@@ -94,8 +94,7 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 
 int ldap_search_impl_async(
 	struct sip_msg* _msg,
-	async_resume_module **resume_f,
-	void **resume_param,
+	async_ctx *ctx,
 	pv_elem_t* _ldap_url)
 {
 	str ldap_url;
@@ -165,8 +164,8 @@ int ldap_search_impl_async(
 	as_params->lds	 = lds;
 	as_params->conn  = conn;
 
-	*resume_param = as_params;
-	*resume_f = resume_ldap_search;/* resume function */
+	ctx->resume_param = as_params;
+	ctx->resume_f = resume_ldap_search;/* resume function */
 	async_status = sockfd;
 
 	return 1;

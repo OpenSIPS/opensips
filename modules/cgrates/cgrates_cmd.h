@@ -36,8 +36,7 @@
 int w_cgr_cmd(struct sip_msg* msg, char* cmd_c);
 
 /* async version of w_cgr_auth */
-int w_acgr_cmd(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_p, char* cmd_c);
+int w_acgr_cmd(struct sip_msg* msg, async_ctx *ctx, char* cmd_c);
 
 #endif /* _CGRATES_CMD_H_ */
 

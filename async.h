@@ -36,8 +36,9 @@
  * NOTE: all values in this enum must be negative
  */
 enum async_ret_code {
-	ASYNC_NO_IO = -7,
+	ASYNC_NO_IO = -8 ,
 	ASYNC_SYNC,
+	ASYNC_NO_FD,
 	ASYNC_CONTINUE,
 	ASYNC_CHANGE_FD,
 	ASYNC_DONE_CLOSE_FD,
@@ -45,7 +46,20 @@ enum async_ret_code {
 	ASYNC_DONE,
 };
 
+
+
+/* async context, basic structure to be reused by the more complex
+ * async implementations */
+typedef struct _async_ctx {
+	/* the resume function to be called when data to read is available */
+	void *resume_f;
+	/* parameter registered to the resume function */
+	void *resume_param;
+} async_ctx;
+
+
 extern int async_status;
+
 
 /******** functions related to script async ops *******/
 

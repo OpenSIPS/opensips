@@ -55,8 +55,7 @@ inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
 inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
 inline static int w_exec(struct sip_msg* msg, char* cmd, char* in,
 		char* out, char* err, char* avp_env);
-inline static int w_async_exec(struct sip_msg* msg,
-		async_resume_module **resume_f, void **resume_param,
+inline static int w_async_exec(struct sip_msg* msg, async_ctx *ctx,
 		char *cmd, char* out, char* in, char* err, char* avp_env );
 
 static int exec_avp_fixup(void** param, int param_no);
@@ -510,8 +509,8 @@ inline static int w_exec(struct sip_msg* msg, char* cmd, char* in,
 }
 
 
-inline static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, char* cmd, char* in, char* out, char* err, char* avp_env)
+inline static int w_async_exec(struct sip_msg* msg, async_ctx *ctx,
+					char* cmd, char* in, char* out, char* err, char* avp_env)
 {
 	str command;
 	str input = {NULL, 0};
@@ -570,20 +569,20 @@ inline static int w_async_exec(struct sip_msg* msg, async_resume_module **resume
 		/* that ^^^^ is save as "out" is a in private mem, but in all
 		 * processes (set before forking) */
 		param->buf = NULL;
-		*resume_param = (void*)param;
-		*resume_f = resume_async_exec;
+		ctx->resume_param = (void*)param;
+		ctx->resume_f = resume_async_exec;
 		async_status = fd;
 	} else if (ret==2) {
 		/* no IO done, but success */
 		shm_free(param);
-		*resume_param = NULL;
-		*resume_f = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		async_status = ASYNC_NO_IO;
 	} else {
 		/* error */
 		shm_free(param);
-		*resume_param = NULL;
-		*resume_f = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		async_status = ASYNC_NO_IO;
 	}
 

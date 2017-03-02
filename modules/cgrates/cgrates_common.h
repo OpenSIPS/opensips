@@ -160,8 +160,7 @@ typedef  int (*cgr_proc_reply_f)(struct cgr_conn *, json_object *,
 int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 		cgr_proc_reply_f f, void *p);
 int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
-		cgr_proc_reply_f f, void *p, async_resume_module **resume_f,
-		void **resume_p);
+		cgr_proc_reply_f f, void *p, async_ctx *ctx);
 int cgrates_async_resume_req(int fd, void *param);
 int cgrc_async_read(struct cgr_conn *c,
 		cgr_proc_reply_f f, void *p);

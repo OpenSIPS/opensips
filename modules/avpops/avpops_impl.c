@@ -851,8 +851,8 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 	return 1;
 }
 
-int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
-		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
+int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
+		pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
 {
 	int printbuf_len;
 	int rc, read_fd;
@@ -885,8 +885,8 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 		rc = db_query_avp(url, msg, &qstr, dest);
 		LM_DBG("sync query \"%.*s\" returned: %d\n", qstr.len, qstr.s, rc);
 
-		*rparam = NULL;
-		*rfunc = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		async_status = ASYNC_NO_IO;
 
 		/* Empty_set / Other_errors / Success */
@@ -896,8 +896,8 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_priv);
 	if (read_fd < 0)
 	{
-		*rparam = NULL;
-		*rfunc = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		return -1;
 	}
 
@@ -909,8 +909,8 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	}
 	memset(param, '\0', sizeof *param);
 
-	*rparam = param;
-	*rfunc = resume_async_dbquery;
+	ctx->resume_param = param;
+	ctx->resume_f = resume_async_dbquery;
 
 	param->output_avps = dest;
 	param->hdl = url->hdl;

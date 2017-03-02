@@ -127,8 +127,8 @@ int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c)
 	return cgr_handle_cmd(msg, jmsg, cgr_proc_auth_reply, NULL);
 }
 
-int w_acgr_auth(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_p, char* acc_c, char *dst_c)
+int w_acgr_auth(struct sip_msg* msg, async_ctx *ctx,
+		char* acc_c, char *dst_c)
 {
 	str *acc;
 	str *dst;
@@ -145,6 +145,5 @@ int w_acgr_auth(struct sip_msg* msg, async_resume_module **resume_f,
 		return -1;
 	}
 
-	return cgr_handle_async_cmd(msg, jmsg, cgr_proc_auth_reply, NULL,
-			resume_f, resume_p);
+	return cgr_handle_async_cmd(msg, jmsg, cgr_proc_auth_reply, NULL, ctx);
 }

@@ -66,8 +66,8 @@ static int ldap_result_check_fixup(void** param, int param_no);
 * exported functions
 */
 
-static int w_ldap_search_async(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, char* ldap_url, char* param);
+static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx,
+		char* ldap_url, char* param);
 static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param);
 static int w_ldap_result1(struct sip_msg* msg, char* src, char* param);
 static int w_ldap_result2(struct sip_msg* msg, char* src, char* subst);
@@ -274,10 +274,10 @@ static void destroy(void)
 * EXPORTED functions
 */
 
-static int w_ldap_search_async(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, char* ldap_url, char* param)
+static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx,
+		char* ldap_url, char* param)
 {
-	return ldap_search_impl_async(msg, resume_f, resume_param, (pv_elem_t*)ldap_url);
+	return ldap_search_impl_async(msg, ctx, (pv_elem_t*)ldap_url);
 }
 
 static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param)

@@ -88,15 +88,14 @@ static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
 				char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
 
-static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
-							void **resume_param, char *gp_url,
-							char *body_pv, char *ctype_pv, char *code_pv);
-static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f,
-					 void **resume_param, char *gp_url, char *gp_body,
-					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
-static int w_async_rest_put(struct sip_msg *msg, async_resume_module **resume_f,
-					 void **resume_param, char *gp_url, char *gp_body,
-					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
+static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, char *gp_url,
+					 char *body_pv, char *ctype_pv, char *code_pv);
+static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
+					 char *gp_url, char *gp_body, char *gp_ctype,
+					 char *body_pv, char *ctype_pv, char *code_pv);
+static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
+					 char *gp_url, char *gp_body, char *gp_ctype,
+					 char *body_pv, char *ctype_pv, char *code_pv);
 
 static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
 
@@ -473,9 +472,8 @@ static void set_output_pv_params(struct sip_msg *msg, str *body_in, pv_spec_p bo
 	}
 }
 
-static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
-							void **resume_param, char *gp_url,
-							char *body_pv, char *ctype_pv, char *code_pv)
+static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx,
+					char *gp_url, char *body_pv, char *ctype_pv, char *code_pv)
 {
 	rest_async_param *param;
 	str url;
@@ -500,8 +498,8 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
-		*resume_param = NULL;
-		*resume_f = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		/* keep default async status of NO_IO */
 		return -1;
 
@@ -521,21 +519,21 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 		return 1;
 	}
 
-	*resume_f = resume_async_http_req;
+	ctx->resume_f = resume_async_http_req;
 
 	param->method = REST_CLIENT_GET;
 	param->body_pv = (pv_spec_p)body_pv;
 	param->ctype_pv = (pv_spec_p)ctype_pv;
 	param->code_pv = (pv_spec_p)code_pv;
-	*resume_param = param;
+	ctx->resume_param = param;
 	/* async started with success */
 	async_status = read_fd;
 
 	return 1;
 }
 
-static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f,
-					 void **resume_param, char *gp_url, char *gp_body,
+static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
+					 char *gp_url, char *gp_body,
 					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
 {
 	rest_async_param *param;
@@ -571,8 +569,8 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
-		*resume_param = NULL;
-		*resume_f = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		/* keep default async status of NO_IO */
 		return -1;
 
@@ -592,22 +590,22 @@ static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f
 		return 1;
 	}
 
-	*resume_f = resume_async_http_req;
+	ctx->resume_f = resume_async_http_req;
 
 	param->method = REST_CLIENT_POST;
 	param->body_pv = (pv_spec_p)body_pv;
 	param->ctype_pv = (pv_spec_p)ctype_pv;
 	param->code_pv = (pv_spec_p)code_pv;
-	*resume_param = param;
+	ctx->resume_param = param;
 	/* async started with success */
 	async_status = read_fd;
 
 	return 1;
 }
 
-static int w_async_rest_put(struct sip_msg *msg, async_resume_module **resume_f,
-                            void **resume_param, char *gp_url, char *gp_body,
-                            char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
+static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
+							char *gp_url, char *gp_body, char *gp_ctype,
+							char *body_pv, char *ctype_pv, char *code_pv)
 {
 	rest_async_param *param;
 	str url, body, ctype = { NULL, 0 };
@@ -628,7 +626,8 @@ static int w_async_rest_put(struct sip_msg *msg, async_resume_module **resume_f,
 		return -1;
 	}
 
-	LM_DBG("async rest put '%.*s' %p %p %p\n", url.len, url.s, body_pv, ctype_pv, code_pv);
+	LM_DBG("async rest put '%.*s' %p %p %p\n",
+		url.len, url.s, body_pv, ctype_pv, code_pv);
 
 	param = pkg_malloc(sizeof *param);
 	if (!param) {
@@ -642,8 +641,8 @@ static int w_async_rest_put(struct sip_msg *msg, async_resume_module **resume_f,
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
-		*resume_param = NULL;
-		*resume_f = NULL;
+		ctx->resume_param = NULL;
+		ctx->resume_f = NULL;
 		/* keep default async status of NO_IO */
 		return -1;
 
@@ -663,13 +662,13 @@ static int w_async_rest_put(struct sip_msg *msg, async_resume_module **resume_f,
 		return 1;
 	}
 
-	*resume_f = resume_async_http_req;
+	ctx->resume_f = resume_async_http_req;
 
 	param->method = REST_CLIENT_PUT;
 	param->body_pv = (pv_spec_p)body_pv;
 	param->ctype_pv = (pv_spec_p)ctype_pv;
 	param->code_pv = (pv_spec_p)code_pv;
-	*resume_param = param;
+	ctx->resume_param = param;
 	/* async started with success */
 	async_status = read_fd;
 
