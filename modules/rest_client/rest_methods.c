@@ -749,10 +749,10 @@ int rest_get_method(struct sip_msg *msg, char *url,
 			LM_ERR("Set content type pv value failed!\n");
 			return -1;
 		}
-
-		if (st.s)
-			pkg_free(st.s);
 	}
+
+	if (st.s)
+		pkg_free(st.s);
 
 	return 1;
 
@@ -890,10 +890,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 			LM_ERR("Set content type pv value failed!\n");
 			return -1;
 		}
-
-		if (st.s)
-			pkg_free(st.s);
 	}
+
+	if (st.s)
+		pkg_free(st.s);
 
 	return 1;
 cleanup:
@@ -1021,10 +1021,10 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 			LM_ERR("Set content type pv value failed!\n");
 			return -1;
 		}
-
-		if (st.s)
-			pkg_free(st.s);
 	}
+
+	if (st.s)
+		pkg_free(st.s);
 
 	return 1;
 
