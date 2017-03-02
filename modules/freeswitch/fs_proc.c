@@ -78,12 +78,15 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	if (box->ref == 0) {
 		lock_stop_read(box_lock);
 		lock_start_write(box_lock);
-		if (destroy_fs_evs(box, idx) != 0) {
-			LM_ERR("failed to destroy FS evs!\n");
+		if (box->ref == 0) {
+			if (destroy_fs_evs(box, idx) != 0) {
+				LM_ERR("failed to destroy FS evs!\n");
+			}
+
+			lock_stop_write(box_lock);
+			return 0;
 		}
 		lock_stop_write(box_lock);
-
-		return 0;
 	}
 
 	switch (fm->type) {
