@@ -652,7 +652,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	pv_value_t pv_val;
 	str st = { 0, 0 };
 	str *stp, *bodyp;
-	str body = { NULL, 0 }, tbody;
+	str body = { NULL, 0 }, tbody, ttype;
 
 	rest_trace_param_t tparam;
 
@@ -743,7 +743,10 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	}
 
 	if (ctype_pv) {
-		pv_val.rs = st;
+		ttype = st;
+		trim(&ttype);
+
+		pv_val.rs = ttype;
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
@@ -776,7 +779,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	CURLcode rc;
 	long http_rc;
 	str st = { 0, 0 };
-	str res_body = { NULL, 0 }, tbody;
+	str res_body = { NULL, 0 }, tbody, ttype;
 	pv_value_t pv_val;
 
 	rest_trace_param_t tparam;
@@ -884,7 +887,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (ctype_pv) {
-		pv_val.rs = st;
+		ttype = st;
+		trim(&ttype);
+
+		pv_val.rs = ttype;
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
@@ -916,7 +922,7 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	CURLcode rc;
 	long http_rc;
 	str st = { 0, 0 };
-	str res_body = { NULL, 0 }, tbody;
+	str res_body = { NULL, 0 }, tbody, ttype;
 	pv_value_t pv_val;
 
 	rest_trace_param_t tparam;
@@ -977,8 +983,6 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
 	}
 
-
-
 	rc = curl_easy_perform(sync_handle);
 	clean_header_list;
 	if (code_pv) {
@@ -1015,7 +1019,10 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (ctype_pv) {
-		pv_val.rs = st;
+		ttype = st;
+		trim(&ttype);
+
+		pv_val.rs = ttype;
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");

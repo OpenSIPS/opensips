@@ -93,8 +93,6 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 
 		st->len = left;
 		memcpy(st->s, ptr, left);
-
-		trim(st);
 	}
 
 	LM_DBG("Received: %.*s\n", len, ptr);
