@@ -1495,7 +1495,7 @@ void receive_clusterer_bin_packets(bin_packet_t *packet, int packet_type, struct
 	LM_DBG("received clusterer message from: %s:%hu\n with source id: %d and cluster id: %d\n",
 		ip, port, source_id, cl_id);
 
-	lock_start_read(cl_list_lock);
+	lock_start_sw_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cl_id);
 	if (!cl) {
@@ -1524,7 +1524,7 @@ end:
 	if (check_call_cbs_event)
 		call_cbs_event(NULL, cl, &check_call_cbs_event, 1);
 
-	lock_stop_read(cl_list_lock);
+	lock_stop_sw_read(cl_list_lock);
 }
 
 static void bin_receive_packets(bin_packet_t *packet, int packet_type, struct receive_info *ri, void *ptr)
