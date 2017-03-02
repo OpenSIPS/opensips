@@ -556,6 +556,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	if (ctype_pv) {
 		pv_val.rs = st;
+		trim(&pv_val.rs);
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
@@ -674,6 +675,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	if (ctype_pv) {
 		pv_val.rs = st;
+		trim(&pv_val.rs);
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
