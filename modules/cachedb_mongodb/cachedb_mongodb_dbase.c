@@ -861,8 +861,102 @@ out_err:
 	return -1;
 }
 
-int mongo_raw_remove(cachedb_con *connection,bson_t *raw_query)
+int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 {
+	mongoc_collection_t *col;
+	mongoc_bulk_operation_t *bulk = NULL;
+	bson_iter_t iter, qiter, sub_iter;
+	bson_error_t error;
+	bson_t doc, reply;
+	const bson_value_t *v;
+	int ret, count = 0;
+	char *str;
+
+	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
+		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
+		return -1;
+	}
+
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   bson_iter_utf8(ns, NULL));
+
+	if (!bson_iter_init_find(&iter, raw_query, "deletes") ||
+	    !BSON_ITER_HOLDS_ARRAY(&iter)) {
+		LM_ERR("missing or non-array 'deletes' field in delete command!\n");
+		return -1;
+	}
+
+	if (bson_iter_recurse(&iter, &sub_iter)) {
+		while (bson_iter_next(&sub_iter)) {
+			count++;
+		}
+	}
+
+	if (count == 0) {
+		LM_DBG("nothing to delete!\n");
+		goto out;
+	}
+
+	bulk = mongoc_collection_create_bulk_operation(col, false, NULL);
+	if (!bulk) {
+		LM_ERR("failed to create bulk op!\n");
+		goto out_err;
+	}
+
+	/**
+	 * Avoid data corruption as much as possible:
+	 *	 either do all deletes, or none if even one of them is broken
+	 */
+	if (bson_iter_init_find(&iter, raw_query, "deletes") &&
+	    bson_iter_recurse(&iter, &qiter)) {
+		while (bson_iter_next(&qiter)) {
+			bson_iter_recurse(&qiter, &sub_iter);
+			if (!bson_iter_find(&sub_iter, "q")) {
+				LM_ERR("missing 'q' field in 'deletes' subdocument!\n");
+				return -1;
+			}
+		}
+	}
+
+	if (bson_iter_init_find(&iter, raw_query, "deletes") &&
+	    bson_iter_recurse(&iter, &qiter)) {
+		while (bson_iter_next(&qiter)) {
+			bson_iter_recurse(&qiter, &sub_iter);
+			bson_iter_find(&sub_iter, "q");
+
+			v = bson_iter_value(&sub_iter);
+			bson_init_static(&doc, v->value.v_doc.data, v->value.v_doc.data_len);
+			mongoc_bulk_operation_remove(bulk, &doc);
+		}
+	}
+
+	ret = mongoc_bulk_operation_execute(bulk, &reply, &error);
+	if (!ret) {
+		LM_ERR("failed bulk insert\nerror: %d.%d: %s\n",
+		       error.domain, error.code, error.message);
+		goto out_err;
+	}
+
+	if (is_printable(L_DBG)) {
+		str = bson_as_json(&reply, NULL);
+		LM_DBG("reply received: %s\n", str);
+		bson_free(str);
+	}
+
+out:
+	if (bulk) {
+		mongoc_bulk_operation_destroy(bulk);
+	}
+	mongoc_collection_destroy(col);
+	return 0;
+
+out_err:
+	if (bulk) {
+		mongoc_bulk_operation_destroy(bulk);
+	}
+	mongoc_collection_destroy(col);
+	return -1;
+
 #if 0
 	bson_iterator i;
 	const char *key,*ns=NULL;
@@ -1007,7 +1101,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		else if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "update"))
 			return mongo_raw_update(con, &doc, &iter);
 		else if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "delete"))
-			return mongo_raw_remove(con, &doc);
+			return mongo_raw_remove(con, &doc, &iter);
 	}
 
 	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), &doc,
