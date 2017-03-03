@@ -155,7 +155,7 @@ static int ws_bad_handshake(struct tcp_connection *c);
 static char ws_key[WS_KEY_LEN];
 static const char base64alphabet[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-#define BASE64ALPHABET_LEN (sizeof base64alphabet)
+#define BASE64ALPHABET_LEN (sizeof(base64alphabet)-1)
 
 
 /* we're using a completely random key - no reason yet for something else */
