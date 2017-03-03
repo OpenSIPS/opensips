@@ -379,9 +379,120 @@ void dbg_print_bson(bson_t *b)
 	//dbg_bson_print_raw(b->data,0);
 }
 
-int mongo_raw_find(cachedb_con *con, bson_t *raw_query, cdb_raw_entry ***reply,
-                   int expected_kv_no, int *reply_no)
+int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
+                   cdb_raw_entry ***reply, int expected_kv_no, int *reply_no)
 {
+	struct json_object *obj = NULL;
+	mongoc_collection_t *col;
+	bson_iter_t iter;
+	bson_t _query, *query = NULL, *opts = NULL, proj;
+	mongoc_cursor_t *cursor;
+	const bson_value_t *v;
+	const bson_t *doc;
+	int i, len, csz = 0, ret = -1;
+	const char *p;
+
+	if (bson_iter_type(ns) != BSON_TYPE_UTF8) {
+		LM_ERR("collection name must be a string (%d)!\n", bson_iter_type(ns));
+		return -1;
+	}
+
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   bson_iter_utf8(ns, NULL));
+
+	if (bson_iter_init_find(&iter, raw_query, "filter") &&
+	    BSON_ITER_HOLDS_DOCUMENT(&iter)) {
+		v = bson_iter_value(&iter);
+		bson_init_static(&_query, v->value.v_doc.data, v->value.v_doc.data_len);
+		query = &_query;
+	} else {
+		query = bson_new();
+	}
+
+	if (bson_iter_init_find(&iter, raw_query, "projection") &&
+	    BSON_ITER_HOLDS_DOCUMENT(&iter)) {
+		opts = bson_new();
+		v = bson_iter_value(&iter);
+		bson_init_static(&proj, v->value.v_doc.data, v->value.v_doc.data_len);
+		bson_append_document(opts, "projection", 10, &proj);
+	}
+
+	cursor = mongoc_collection_find_with_opts(col, query, opts, NULL);
+
+	*reply = NULL;
+	while (mongoc_cursor_next(cursor, &doc)) {
+		*reply = pkg_realloc(*reply, (csz + 1) * sizeof **reply);
+		if (!*reply) {
+			LM_ERR("no more pkg\n");
+			ret = -1;
+			goto out_err;
+		}
+		(*reply)[csz] = pkg_malloc(expected_kv_no * sizeof ***reply);
+		if (!(*reply)[csz]) {
+			LM_ERR("no more pkg\n");
+			ret = -1;
+			goto out_err_free;
+		}
+
+		bson_iter_init(&iter, doc);
+		obj = json_object_new_object();
+		bson_to_json_generic(obj, &iter, BSON_TYPE_DOCUMENT);
+
+		p = json_object_to_json_string(obj);
+		if (!p) {
+			LM_ERR("failed to translate json to string\n");
+			ret = -1;
+			goto out_err_free;
+		}
+
+		LM_DBG("got JSON: %s\n", p);
+
+		len = strlen(p);
+		(*reply)[csz][0].val.s.s = pkg_malloc(len);
+		if (!(*reply)[csz][0].val.s.s ) {
+			LM_ERR("No more pkg \n");
+			ret = -1;
+			goto out_err_free;
+		}
+
+		memcpy((*reply)[csz][0].val.s.s, p, len);
+		(*reply)[csz][0].val.s.len = len;
+		(*reply)[csz][0].type = CDB_STR;
+
+		json_object_put(obj);
+
+		csz++;
+	}
+
+	*reply_no = csz;
+	if (opts)
+		bson_destroy(opts);
+	if (query != &_query)
+		bson_destroy(query);
+	mongoc_cursor_destroy(cursor);
+	mongoc_collection_destroy(col);
+	return 0;
+
+out_err_free:
+	if (*reply) {
+		for (i = 0; i < csz; i++) {
+			pkg_free((*reply)[i][0].val.s.s);
+			pkg_free((*reply)[i]);
+		}
+
+		pkg_free(*reply);
+	}
+out_err:
+	*reply = NULL;
+	*reply_no = 0;
+	if (opts)
+		bson_destroy(opts);
+	if (query != &_query)
+		bson_destroy(query);
+	mongoc_cursor_destroy(cursor);
+	mongoc_collection_destroy(col);
+	return ret;
+
 #if 0
 	bson_iterator i;
 	mongo_cursor *m_cursor;
@@ -894,7 +1005,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	/* treat "find" differently on pre-3.2 MongoDB servers */
 	if ((compat_mode_30 || compat_mode_24) &&
 	    bson_iter_init_find(&iter, &doc, "find")) {
-		if (mongo_raw_find(con, &doc, reply, expected_kv_no, reply_no) != 0)
+		if (mongo_raw_find(con, &doc, &iter, reply, expected_kv_no, reply_no) != 0)
 			return -1;
 
 		if (*reply_no == 0)
@@ -925,7 +1036,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		return -1;
 	}
 
-	/* expected_kv_no is always 1 for MongoDB (one document per result) */
+	/* expected_kv_no is always 1 for MongoDB */
 	**reply = pkg_malloc(expected_kv_no * sizeof ***reply);
 	if (!**reply) {
 		LM_ERR("No more pkg mem\n");
@@ -1001,7 +1112,6 @@ out_err:
 			pkg_free((*reply)[i]);
 		}
 
-		pkg_free(**reply);
 		pkg_free(*reply);
 		*reply = NULL;
 	}
