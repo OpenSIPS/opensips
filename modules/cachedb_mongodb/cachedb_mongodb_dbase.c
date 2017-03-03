@@ -734,37 +734,22 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   bson_iter_utf8(ns, NULL));
 
-	/**
-	 * Avoid data corruption as much as possible:
-	 *	 either do all updates, or none if even one of them is broken
-	 */
 	if (bson_iter_init_find(&iter, raw_query, "updates") &&
 		BSON_ITER_HOLDS_ARRAY(&iter) && bson_iter_recurse(&iter, &uiter)) {
 		while (bson_iter_next(&uiter)) {
 			bson_iter_recurse(&uiter, &sub_iter);
 			if (!bson_iter_find(&sub_iter, "q")) {
-				LM_ERR("missing 'q' field in 'updates' subdocument!\n");
-				return -1;
+				LM_ERR("ignoring 'updates' subdoc due to missing q field!\n");
+				continue;
 			}
-
-			bson_iter_recurse(&uiter, &sub_iter);
-			if (!bson_iter_find(&sub_iter, "u")) {
-				LM_ERR("missing 'u' field in 'updates' subdocument!\n");
-				return -1;
-			}
-		}
-	}
-
-	if (bson_iter_init_find(&iter, raw_query, "updates") &&
-		BSON_ITER_HOLDS_ARRAY(&iter) && bson_iter_recurse(&iter, &uiter)) {
-		while (bson_iter_next(&uiter)) {
-			bson_iter_recurse(&uiter, &sub_iter);
-			bson_iter_find(&sub_iter, "q");
 			v = bson_iter_value(&sub_iter);
 			bson_init_static(&query, v->value.v_doc.data, v->value.v_doc.data_len);
 
 			bson_iter_recurse(&uiter, &sub_iter);
-			bson_iter_find(&sub_iter, "u");
+			if (!bson_iter_find(&sub_iter, "u")) {
+				LM_ERR("ignoring 'updates' subdoc due to missing u field!\n");
+				continue;
+			}
 			v = bson_iter_value(&sub_iter);
 			bson_init_static(&update, v->value.v_doc.data, v->value.v_doc.data_len);
 
@@ -903,26 +888,14 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out_err;
 	}
 
-	/**
-	 * Avoid data corruption as much as possible:
-	 *	 either do all deletes, or none if even one of them is broken
-	 */
 	if (bson_iter_init_find(&iter, raw_query, "deletes") &&
 	    bson_iter_recurse(&iter, &qiter)) {
 		while (bson_iter_next(&qiter)) {
 			bson_iter_recurse(&qiter, &sub_iter);
 			if (!bson_iter_find(&sub_iter, "q")) {
-				LM_ERR("missing 'q' field in 'deletes' subdocument!\n");
-				return -1;
+				LM_ERR("ignoring 'deletes' subdoc due to missing q field!\n");
+				continue;
 			}
-		}
-	}
-
-	if (bson_iter_init_find(&iter, raw_query, "deletes") &&
-	    bson_iter_recurse(&iter, &qiter)) {
-		while (bson_iter_next(&qiter)) {
-			bson_iter_recurse(&qiter, &sub_iter);
-			bson_iter_find(&sub_iter, "q");
 
 			v = bson_iter_value(&sub_iter);
 			bson_init_static(&doc, v->value.v_doc.data, v->value.v_doc.data_len);
