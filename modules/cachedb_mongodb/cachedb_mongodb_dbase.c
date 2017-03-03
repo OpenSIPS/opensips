@@ -760,6 +760,7 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out_err;
 	}
 
+	count = 0;
 	if (bson_iter_init_find(&iter, raw_query, "updates") &&
 	    bson_iter_recurse(&iter, &uiter)) {
 		while (bson_iter_next(&uiter)) {
@@ -779,8 +780,14 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 			v = bson_iter_value(&sub_iter);
 			bson_init_static(&update, v->value.v_doc.data, v->value.v_doc.data_len);
 
+			count++;
 			mongoc_bulk_operation_update(bulk, &query, &update, true);
 		}
+	}
+
+	if (count == 0) {
+		LM_DBG("nothing to update!\n");
+		goto out;
 	}
 
 	ret = mongoc_bulk_operation_execute(bulk, &reply, &error);
@@ -932,6 +939,7 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out_err;
 	}
 
+	count = 0;
 	if (bson_iter_init_find(&iter, raw_query, "deletes") &&
 	    bson_iter_recurse(&iter, &qiter)) {
 		while (bson_iter_next(&qiter)) {
@@ -940,11 +948,17 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 				LM_ERR("ignoring 'deletes' subdoc due to missing q field!\n");
 				continue;
 			}
-
 			v = bson_iter_value(&sub_iter);
 			bson_init_static(&doc, v->value.v_doc.data, v->value.v_doc.data_len);
+
+			count++;
 			mongoc_bulk_operation_remove(bulk, &doc);
 		}
+	}
+
+	if (count == 0) {
+		LM_DBG("nothing to update!\n");
+		goto out;
 	}
 
 	ret = mongoc_bulk_operation_execute(bulk, &reply, &error);
@@ -1112,12 +1126,12 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 			return -2;
 
 		return 0;
-	} else {
-		if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "insert"))
+	} else if (compat_mode_24) {
+		if (bson_iter_init_find(&iter, &doc, "insert"))
 			return mongo_raw_insert(con, &doc, &iter);
-		else if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "update"))
+		else if (bson_iter_init_find(&iter, &doc, "update"))
 			return mongo_raw_update(con, &doc, &iter);
-		else if (compat_mode_24 && bson_iter_init_find(&iter, &doc, "delete"))
+		else if (bson_iter_init_find(&iter, &doc, "delete"))
 			return mongo_raw_remove(con, &doc, &iter);
 	}
 
