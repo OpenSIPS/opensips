@@ -5,7 +5,7 @@
 %endif
 %endif
 
-%global EXCLUDE_MODULES sngtc osp cachedb_cassandra cachedb_couchbase cachedb_mongodb %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis} %{!?_with_oracle:db_oracle}
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis}
 
 Summary:  Open Source SIP Server
 Name:     opensips
@@ -121,6 +121,30 @@ Requires: %{name} = %{version}-%{release}
 B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
 that offers the possibility to build certain services on top of it.
 
+%if 0%{?_with_cachedb_cassandra}
+%package  cachedb_cassandra
+Summary:  Cassandra connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  thrift-cpp-devel
+
+%description  cachedb_cassandra
+Cassandra module is an implementation of a cache system designed to
+work with a cassandra server.
+%endif
+
+%if 0%{?_with_cachedb_couchbase}
+Summary:  opensips cachedb_couchbase implementation.
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  libcouchbase-devel
+
+%description cachedb_couchbase
+This module is an implementation of a cache system designed to work with a Couchbase server.
+It uses the libcouchbase client library to connect to the server instance,
+It uses the Key-Value interface exported from the core.
+%endif
+
 %package  cachedb_memcached
 Summary:  Memcached connector
 Group:    System Environment/Daemons
@@ -130,6 +154,17 @@ BuildRequires:  libmemcached-devel
 %description  cachedb_memcached
 Memcached module is an implementation of a cache system designed to
 work with a memcached server.
+
+%if 0%{?_with_cachedb_mongodb}
+%package  cachedb_mongodb
+Summary:  Mongodb connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  cachedb_mongodb
+Mongodb module is an implementation of a cache system designed to
+work with a mongodb server.
+%endif
 
 %if %{undefined el5}
 %package  cachedb_redis
@@ -219,7 +254,7 @@ Requires: mysql-libs
 The %{name}-db_mysql package contains the MySQL plugin for %{name}, which allows
 a MySQL-Database to be used for persistent storage.
 
-%if 0%{?_with_oracle}
+%if 0%{?_with_db_oracle}
 %package  db_oracle
 Summary:  Oracle Storage Support for the OpenSIPS
 Group:    System Environment/Daemons
@@ -456,6 +491,18 @@ Requires: %{name} = %{version}-%{release}
 %description  mmgeoip
 Mmgeoip is a lightweight wrapper for the MaxMind GeoIP API. It adds
 IP address-to-location lookup capability to OpenSIPS scripts.
+
+%if 0%{?_with_osp}
+%package  osp
+Summary:  OSP Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  OSPToolkit-devel
+
+%description  osp
+The OSP module enables OpenSIPS to support secure, multi-lateral peering using
+the OSP standard defined by ETSI (TS 101 321 V4.1.1).
+%endif
 
 %package  peering
 Summary:  Radius peering
@@ -817,6 +864,16 @@ like SMS confirmation--the gateway can confirm to the SIP user if his
 message really reached its destination as a SMS--or multi-part messages--if
 a SIP messages is too long it will be split and sent as multiple SMS.
 
+%if 0%{?_with_sngtc}
+%package  sngtc
+Summary:  Sangoma media transcoding interface for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  sngtc
+The sngtc package implements interface to Sangoma media transcoding.
+%endif
+
 %if %{undefined disable_snmpstats}
 %package  snmpstats
 Summary:  SNMP management interface for the OpenSIPS
@@ -898,7 +955,7 @@ clients.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
@@ -1223,9 +1280,26 @@ fi
 %doc docdir/README.b2b_sca
 %doc docdir/README.call_center
 
+%if 0%{?_with_cachedb_cassandra}
+%{_libdir}/opensips/modules/cachedb_cassandra.so
+%doc %{_docdir}/opensips/README.cachedb_cassandra
+%endif
+
+%if 0%{?_with_cachedb_couchbase}
+%files cachedb_couchbase
+%{_libdir}/opensips/modules/cachedb_couchbase.so
+%doc %{_docdir}/opensips/README.cachedb_couchbase
+%endif
+
 %files cachedb_memcached
 %{_libdir}/opensips/modules/cachedb_memcached.so
 %doc docdir/README.cachedb_memcached
+
+%if 0%{?_with_cachedb_mongodb}
+%files cachedb_mongodb
+%{_libdir}/opensips/modules/cachedb_mongodb.so
+%doc %{_docdir}/opensips/README.cachedb_mongodb
+%endif
 
 %if %{undefined el5}
 %files cachedb_redis
@@ -1275,7 +1349,7 @@ fi
 %{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.db_mysql
 
-%if 0%{?_with_oracle}
+%if 0%{?_with_db_oracle}
 %files db_oracle
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
@@ -1399,6 +1473,12 @@ fi
 %files mmgeoip
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
+
+%if 0%{?_with_osp}
+%files osp
+%{_libdir}/opensips/modules/osp.so
+%doc %{_docdir}/opensips/README.osp
+%endif
 
 %files peering
 %{_libdir}/opensips/modules/peering.so
@@ -1530,6 +1610,12 @@ fi
 %{_libdir}/opensips/modules/sms.so
 %doc docdir/README.sms
 
+%if 0%{?_with_sngtc}
+%files sngtc
+%{_libdir}/opensips/modules/sngtc.so
+%doc %{_docdir}/opensips/README.sngtc
+%endif
+
 %if %{undefined disable_snmpstats}
 %files snmpstats
 %{_libdir}/opensips/modules/snmpstats.so
@@ -1573,6 +1659,9 @@ fi
 - New pacakges: freeswitch, lua, mid_registrar, sip_i
 - Renamed packages: memcached -> cachedb_memcached, redis -> cachedb_redis,
   unixodbc -> db_unixodbc, xmlrpc -> mi_xmlrpc
+- Added possibility to build unsupported modules (from obsolete .spec):
+  cachedb_cassandra, cachedb_couchbase,
+  cachedb_mongodb, osp, sngtc
 
 * Wed Jan 20 2016 Nick Altmann <nick.altmann@gmail.com> - 2.2.0-1
 - Specification updated for opensips 2.2
