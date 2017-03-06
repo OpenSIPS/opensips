@@ -455,6 +455,7 @@ The LDAP module implements an LDAP search interface for OpenSIPS.
 Summary:  Call LUA scripts from OpenSIPS cfg
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires: lua-devel
 
 %description  lua
 The time needed when writing a new OpenSIPS module unfortunately
