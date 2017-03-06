@@ -1,5 +1,12 @@
 #
-# OpenSIPS variables
+# OpenSIPS startup options
 #
 
+# Amount of shared memory to allocate for the running OpenSIPS server (in Mb)
+S_MEMORY=64
+
+# Amount of pkg memory to allocate for the running OpenSIPS server (in Mb)
+P_MEMORY=4
+
+# Any additional OpenSIPS options
 OPTIONS=""

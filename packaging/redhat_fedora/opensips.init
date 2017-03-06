@@ -29,6 +29,8 @@ configfile="$cfgdir/$prog.cfg"
 m4configfile="$cfgdir/$prog.m4"
 m4archivedir="$cfgdir/archive"
 OPTIONS=""
+S_MEMORY=32
+P_MEMORY=32
 RETVAL=0
 
 [ -f /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
@@ -67,7 +69,7 @@ start() {
 
 	# there is something at end of this output which is needed to
 	# report proper [ OK ] status in Fedora scripts
-	daemon $opensips -u $prog -g $prog -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
+	daemon $opensips -u $prog -g $prog -P $pidfile -f $configfile -m $S_MEMORY -M $P_MEMORY $OPTIONS 2>/dev/null | tail -1
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && touch $lockfile
