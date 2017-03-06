@@ -87,7 +87,8 @@ int db_free_columns(db_res_t* _r)
  */
 db_res_t* db_new_result(void)
 {
-	db_res_t* r = NULL;
+	db_res_t* r;
+
 	r = (db_res_t*)pkg_malloc(sizeof(db_res_t));
 	if (!r) {
 		LM_ERR("no private memory left\n");
@@ -114,7 +115,6 @@ int db_free_result(db_res_t* _r)
 	db_free_rows(_r);
 	LM_DBG("freeing result set at %p\n", _r);
 	pkg_free(_r);
-	_r = NULL;
 	return 0;
 }
 
