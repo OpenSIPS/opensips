@@ -618,10 +618,14 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	if(msg->rcv.bind_address) {
 		if(msg->rcv.bind_address->adv_name_str.len)
 			rcv_address_str=&(msg->rcv.bind_address->adv_name_str);
+		else if (default_global_address.s)
+			rcv_address_str=&default_global_address;
 		else
 			rcv_address_str=&(msg->rcv.bind_address->address_str);
 		if(msg->rcv.bind_address->adv_port_str.len)
 			rcv_port_str=&(msg->rcv.bind_address->adv_port_str);
+		else if (default_global_port.s)
+			rcv_port_str=&default_global_port;
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
@@ -1023,10 +1027,14 @@ void process_lumps(	struct sip_msg* msg,
 	if(msg->rcv.bind_address) {
 		if(msg->rcv.bind_address->adv_name_str.len)
 			rcv_address_str=&(msg->rcv.bind_address->adv_name_str);
+		else if (default_global_address.s)
+			rcv_address_str=&default_global_address;
 		else
 			rcv_address_str=&(msg->rcv.bind_address->address_str);
 		if(msg->rcv.bind_address->adv_port_str.len)
 			rcv_port_str=&(msg->rcv.bind_address->adv_port_str);
+		else if (default_global_port.s)
+			rcv_port_str=&default_global_port;
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
