@@ -2412,16 +2412,18 @@ static int send_trace_proto_duplicate(str *body, str *fromproto, str *fromip,
 
 	tprot.add_payload_part( trace_msg, "payload", body);
 
-	if (correlation && corr_id == -1 && corr_vendor == -1) {
-		if (tprot.get_data_id(corr_id_s, &corr_vendor, &corr_id) == 0) {
-			LM_DBG("no data id!\n");
-		}
-
-		if (tprot.add_chunk(trace_msg,
-				correlation->s, correlation->len,
-					TRACE_TYPE_STR, corr_id, corr_vendor)) {
-			LM_ERR("failed to add correlation id to the packet!\n");
-			return -1;
+	if (correlation) {
+		if ( corr_id == -1 && corr_vendor == -1 ) {
+			if (tprot.get_data_id(corr_id_s, &corr_vendor, &corr_id) == 0) {
+				LM_DBG("no data id!\n");
+			}
+		} else {
+			if (tprot.add_chunk(trace_msg,
+					correlation->s, correlation->len,
+						TRACE_TYPE_STR, corr_id, corr_vendor)) {
+				LM_ERR("failed to add correlation id to the packet!\n");
+				return -1;
+			}
 		}
 	}
 
