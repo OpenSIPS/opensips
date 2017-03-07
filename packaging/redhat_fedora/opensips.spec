@@ -1,11 +1,15 @@
 %if 0%{?rhel}
-# copied from lm_sensors exclusive arch
-%ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
-%global disable_snmpstats snmpstats
-%endif
+    # copied from lm_sensors exclusive arch
+    %ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
+        %global disable_snmpstats snmpstats
+    %endif
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis}
+%if 0%{?rhel} > 6 || 0%{?fedora} > 0
+    %define _with_cachedb_redis 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?disable_snmpstats} %{?el5:db_perlvdb}
 
 Summary:  Open Source SIP Server
 Name:     opensips
@@ -166,7 +170,7 @@ Mongodb module is an implementation of a cache system designed to
 work with a mongodb server.
 %endif
 
-%if %{undefined el5}
+%if 0%{?_with_cachedb_redis}
 %package  cachedb_redis
 Summary:  Redis connector
 Group:    System Environment/Daemons
@@ -1302,7 +1306,7 @@ fi
 %doc %{_docdir}/opensips/README.cachedb_mongodb
 %endif
 
-%if %{undefined el5}
+%if 0%{?_with_cachedb_redis}
 %files cachedb_redis
 %{_libdir}/opensips/modules/cachedb_redis.so
 %doc docdir/README.cachedb_redis
