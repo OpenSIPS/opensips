@@ -46,6 +46,7 @@
 
 struct hslot;   /*!< Hash table slot */
 struct urecord; /*!< Usrloc record */
+struct ucontact;
 
 
 /*! \brief
@@ -177,7 +178,6 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 
 
 
-void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
-		str *aor, int cseq);
+void ul_raise_contact_event(event_id_t _e, struct ucontact *_c);
 
 #endif /* UDOMAIN_H */

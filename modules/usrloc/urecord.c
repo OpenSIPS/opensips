@@ -191,8 +191,7 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 		_r->contacts = c;
 	}
 
-	ul_raise_contact_event(ei_c_ins_id, &c->c, &c->callid, &c->received,
-			c->aor, c->cseq);
+	ul_raise_contact_event(ei_c_ins_id, c);
 	return c;
 }
 
@@ -213,8 +212,7 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 			_c->next->prev = 0;
 		}
 	}
-	ul_raise_contact_event(ei_c_del_id, &_c->c, &_c->callid, &_c->received,
-			_c->aor, _c->cseq);
+	ul_raise_contact_event(ei_c_del_id, _c);
 }
 
 

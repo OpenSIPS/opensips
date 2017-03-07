@@ -334,8 +334,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
 		        _c->next_hop.name.len, _c->next_hop.name.s);
 
-	ul_raise_contact_event(ei_c_update_id, &_c->c, &_c->callid,
-			&_c->received, _c->aor, _c->cseq);
+	ul_raise_contact_event(ei_c_update_id, _c);
 
 	return 0;
 }

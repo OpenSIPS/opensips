@@ -1167,19 +1167,42 @@ modparam("usrloc", "regen_broken_contactid", 1)
 				<emphasis>aor</emphasis> - The AOR of the inserted contact.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>address</emphasis> - The binding address of the inserted contact.
+				<emphasis>uri</emphasis> - The contact URI of the inserted
+				contact.
 			</para></listitem>
 			<listitem><para>
-					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
+				<emphasis>received</emphasis> - IP, port and protocol the 
+				registration message was received from. If these have the 
+				same value as the contact's address (see the address parameter)
+				then the received parameter will be an empty string.
 			</para></listitem>
 			<listitem><para>
-					<emphasis>received</emphasis> - IP, port and protocol the registration
-					message was received from. If these have the same value as the
-					contact's address (see the address parameter) then the received
-					parameter will be an empty string.
+				<emphasis>path</emphasis> - The PATH header value of the
+				registration message.(empty string if not present)
 			</para></listitem>
 			<listitem><para>
-					<emphasis>cseq</emphasis> - The cseq number as an int value.
+				<emphasis>qval</emphasis> - The Q value (priority) of the 
+				contact (as integer value from 0 to 10).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>socket</emphasis> - The SIP socket/listener
+				(as string) used by OpenSIPS to receive the contact
+				registations.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>bflags</emphasis> - The branch flags (bflags) of the
+				contact (in integer value of the bitmask)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>expires</emphasis> - The expires value of the
+				contact (as UNIX timestamp integer).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - The Call-ID header of the
+				registration message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cseq</emphasis> - The cseq number as an int value.
 			</para></listitem>
 		</itemizedlist>
 	</section>
@@ -1193,27 +1216,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			the list then both the E_UL_AOR_DELETE and
 			E_UL_CONTACT_DELETE events will be raised.
 		</para>
-		<para>Parameters:</para>
-		<itemizedlist>
-			<listitem><para>
-				<emphasis>aor</emphasis> - The AOR of the deleted contact.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>address</emphasis> - The binding address of the deleted contact.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>received</emphasis> - IP, port and protocol the registration
-					message was received from. If these have the same value as the
-					contact's address (see the address parameter) then the received
-					parameter will be an empty string.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>cseq</emphasis> - The cseq number as an int value.
-			</para></listitem>
-		</itemizedlist>
+		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
 	</section>
 	<section>
 		<title>
@@ -1223,27 +1226,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			This event is raised when a contact's info is updated by receiving
 			another registration message.
 		</para>
-		<para>Parameters:</para>
-		<itemizedlist>
-			<listitem><para>
-				<emphasis>aor</emphasis> - The AOR of the updated contact.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>address</emphasis> - The binding address of the updated contact.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>received</emphasis> - IP, port and protocol the registration
-					message was received from. If these have the same value as the
-					contact's address (see the address parameter) then the received
-					parameter will be an empty string.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>cseq</emphasis> - The cseq number as an int value.
-			</para></listitem>
-		</itemizedlist>
+		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
 	</section>
 	</section>
 </chapter>

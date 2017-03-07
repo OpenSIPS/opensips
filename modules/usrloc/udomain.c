@@ -140,16 +140,27 @@ static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
 static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
 static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
 static str ei_aor_name = str_init("aor");
-static str ei_c_addr_name = str_init("address");
+static str ei_c_uri_name = str_init("contact");
 static str ei_c_recv_name = str_init("received");
+static str ei_c_path_name = str_init("path");
+static str ei_c_qval_name = str_init("qval");
+static str ei_c_socket_name = str_init("socket");
+static str ei_c_bflags_name = str_init("bflags");
+static str ei_c_expires_name = str_init("expires");
 static str ei_callid_name = str_init("callid");
 static str ei_cseq_name = str_init("cseq");
+static evi_params_p ul_contact_event_params;
 static evi_params_p ul_event_params;
 static evi_param_p ul_aor_param;
-static evi_params_p ul_contact_event_params;
-static evi_param_p ul_c_addr_param, ul_c_callid_param;
 static evi_param_p ul_c_aor_param;
+static evi_param_p ul_c_uri_param;
 static evi_param_p ul_c_recv_param;
+static evi_param_p ul_c_path_param;
+static evi_param_p ul_c_qval_param;
+static evi_param_p ul_c_socket_param;
+static evi_param_p ul_c_bflags_param;
+static evi_param_p ul_c_expires_param;
+static evi_param_p ul_c_callid_param;
 static evi_param_p ul_c_cseq_param;
 
 /*! \brief
@@ -206,27 +217,65 @@ int ul_event_init(void)
 	}
 	memset(ul_contact_event_params, 0, sizeof(evi_params_t));
 
-	ul_c_addr_param = evi_param_create(ul_contact_event_params, &ei_c_addr_name);
-	if (!ul_c_addr_param) {
-		LM_ERR("cannot create contact address parameter\n");
-		return -1;
-	}
-
 	ul_c_aor_param = evi_param_create(ul_contact_event_params, &ei_aor_name);
 	if (!ul_c_aor_param) {
 		LM_ERR("cannot create contact aor parameter\n");
 		return -1;
 	}
 
-	ul_c_callid_param = evi_param_create(ul_contact_event_params, &ei_callid_name);
-	if (!ul_c_callid_param) {
-		LM_ERR("cannot create callid parameter\n");
+	ul_c_uri_param = evi_param_create(ul_contact_event_params,
+		&ei_c_uri_name);
+	if (!ul_c_uri_param) {
+		LM_ERR("cannot create contact address parameter\n");
 		return -1;
 	}
 
-	ul_c_recv_param = evi_param_create(ul_contact_event_params, &ei_c_recv_name);
+	ul_c_recv_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_recv_name);
 	if (!ul_c_recv_param) {
 		LM_ERR("cannot create received parameter\n");
+		return -1;
+	}
+
+	ul_c_path_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_path_name);
+	if (!ul_c_path_param) {
+		LM_ERR("cannot create path parameter\n");
+		return -1;
+	}
+
+	ul_c_qval_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_qval_name);
+	if (!ul_c_qval_param) {
+		LM_ERR("cannot create Qval parameter\n");
+		return -1;
+	}
+
+	ul_c_socket_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_socket_name);
+	if (!ul_c_socket_param) {
+		LM_ERR("cannot create socket parameter\n");
+		return -1;
+	}
+
+	ul_c_bflags_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_bflags_name);
+	if (!ul_c_bflags_param) {
+		LM_ERR("cannot create bflags parameter\n");
+		return -1;
+	}
+
+	ul_c_expires_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_expires_name);
+	if (!ul_c_expires_param) {
+		LM_ERR("cannot create expires parameter\n");
+		return -1;
+	}
+
+	ul_c_callid_param = evi_param_create(ul_contact_event_params,
+		&ei_callid_name);
+	if (!ul_c_callid_param) {
+		LM_ERR("cannot create callid parameter\n");
 		return -1;
 	}
 
@@ -256,34 +305,70 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("cannot raise event\n");
 }
 
-void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
-		str *aor, int cseq)
+
+void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 {
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
 		return;
 	}
-	if (evi_param_set_str(ul_c_addr_param, addr) < 0) {
-		LM_ERR("cannot set contact address parameter\n");
-		return;
-	}
 
-	if (evi_param_set_str(ul_c_aor_param, aor) < 0) {
+	/* the AOR */
+	if (evi_param_set_str(ul_c_aor_param, _c->aor) < 0) {
 		LM_ERR("cannot set contact aor parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_callid_param, callid) < 0) {
-		LM_ERR("cannot set callid parameter\n");
+	/* the contact URI */
+	if (evi_param_set_str(ul_c_uri_param, &_c->c) < 0) {
+		LM_ERR("cannot set contact URI parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_recv_param, recv) < 0) {
+	/* the received URI */
+	if (evi_param_set_str(ul_c_recv_param, &_c->received) < 0) {
 		LM_ERR("cannot set received parameter\n");
 		return;
 	}
 
-	if (evi_param_set_int(ul_c_cseq_param, &cseq) < 0) {
+	/* the PATH URI */
+	if (evi_param_set_str(ul_c_path_param, &_c->path) < 0) {
+		LM_ERR("cannot set path parameter\n");
+		return;
+	}
+
+	/* the Q value */
+	if (evi_param_set_int(ul_c_qval_param, &_c->q) < 0) {
+		LM_ERR("cannot set Qval parameter\n");
+		return;
+	}
+
+	/* the socket */
+	if (evi_param_set_str(ul_c_path_param, &_c->sock->sock_str) < 0) {
+		LM_ERR("cannot set socket parameter\n");
+		return;
+	}
+
+	/* the Branch flags */
+	if (evi_param_set_int(ul_c_bflags_param, &_c->flags) < 0) {
+		LM_ERR("cannot set bflags parameter\n");
+		return;
+	}
+
+	/* the Expires value */
+	if (evi_param_set_int(ul_c_path_param, &_c->expires) < 0) {
+		LM_ERR("cannot set expires parameter\n");
+		return;
+	}
+
+	/* the Call-ID value */
+	if (evi_param_set_str(ul_c_callid_param, &_c->callid) < 0) {
+		LM_ERR("cannot set callid parameter\n");
+		return;
+	}
+
+	/* the CSeq value */
+	if (evi_param_set_int(ul_c_cseq_param, &_c->cseq) < 0) {
 		LM_ERR("cannot set cseq parameter\n");
 		return;
 	}
