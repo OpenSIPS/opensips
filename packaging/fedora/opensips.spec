@@ -5,7 +5,11 @@
 %endif
 %endif
 
-%global EXCLUDE_MODULES sngtc osp cachedb_cassandra cachedb_couchbase cachedb_mongodb %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis} %{!?_with_oracle:db_oracle} lua
+%if 0%{?rhel} > 6 || 0%{?fedora} > 0
+    %define _with_cachedb_redis 1
+%endif
+
+%global EXCLUDE_MODULES sngtc osp cachedb_cassandra cachedb_couchbase cachedb_mongodb %{?disable_snmpstats} %{?el5:db_perlvdb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_oracle:db_oracle} lua
 
 Summary:  Open Source SIP Server
 Name:     opensips
@@ -579,7 +583,7 @@ Requires: %{name} = %{version}-%{release}
 %description  python
 Helps implement your own OpenSIPS extensions in Python
 
-%if %{undefined el5}
+%if 0%{?_with_cachedb_redis}
 %package  redis
 Summary:  Redis connector
 Group:    System Environment/Daemons
@@ -1278,7 +1282,7 @@ fi
 %files python
 %{_libdir}/opensips/modules/python.so
 
-%if %{undefined el5}
+%if 0%{?_with_cachedb_redis}
 %files redis
 %{_libdir}/opensips/modules/cachedb_redis.so
 %doc docdir/README.cachedb_redis
