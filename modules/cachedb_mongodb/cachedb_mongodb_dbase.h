@@ -76,14 +76,24 @@ void mongo_con_destroy(cachedb_con *con);
 int mongo_con_get(cachedb_con *con,str *attr,str *val);
 int mongo_con_set(cachedb_con *con,str *attr,str *val,int expires);
 int mongo_con_remove(cachedb_con *connection,str *attr);
-int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***val,int expected_kv_no,int *reply_no);
+int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
+                        int expected_kv_no, int *reply_no);
 int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val);
 int mongo_con_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val);
 int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val);
-int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r);
+int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
+                         const db_op_t *_op, const db_val_t *_v,
+                         const db_key_t *_c, const int _n, const int _nc,
+                         const db_key_t _o, db_res_t **_r);
 int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r);
-int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n);
-int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n);
-int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un);
+int mongo_db_insert_trans(cachedb_con *con, const str *table,
+                          const db_key_t *_k, const db_val_t *_v, const int _n);
+int mongo_db_delete_trans(cachedb_con *con, const str *table,
+                          const db_key_t *_k, const db_op_t *_o,
+                          const db_val_t *_v, const int _n);
+int mongo_db_update_trans(cachedb_con *con, const str *table,
+                          const db_key_t *_k, const db_op_t *_o,
+                          const db_val_t *_v, const db_key_t *_uk,
+                          const db_val_t *_uv, const int _n, const int _un);
 #endif /* CACHEDBMONGO_DBASE_H */
 

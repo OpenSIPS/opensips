@@ -1561,8 +1561,44 @@ int mongo_db_free_result_trans(cachedb_con *con, db_res_t *_r)
 	return 0;
 }
 
-int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n)
+int mongo_db_insert_trans(cachedb_con *con, const str *table,
+                          const db_key_t *_k, const db_val_t *_v, const int _n)
 {
+	char namespace[MDB_MAX_NS_LEN];
+	bson_t *doc;
+	bson_error_t error;
+	mongoc_collection_t *col;
+
+	doc = bson_new();
+	if (kvo_to_bson(_k, _v, NULL, _n, doc) != 0) {
+		LM_ERR("failed to build bson\n");
+		goto out_err;
+	}
+
+	memcpy(namespace, table->s, table->len);
+	namespace[table->len] = '\0';
+
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   namespace);
+
+	if (!mongoc_collection_insert(col, MONGOC_INSERT_NONE, doc, NULL, &error)) {
+	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
+		       error.domain, error.code, error.message);
+		goto out_err;
+	}
+
+	if (doc) {
+		bson_destroy(doc);
+	}
+	mongoc_collection_destroy(col);
+	return 0;
+
+out_err:
+	if (doc) {
+		bson_destroy(doc);
+	}
+	mongoc_collection_destroy(col);
+	return -1;
 #if 0
 	int i,j,ret;
 	bson_t query;
@@ -1644,8 +1680,45 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 	return 0;
 }
 
-int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n)
+int mongo_db_delete_trans(cachedb_con *con, const str *table,
+                          const db_key_t *_k, const db_op_t *_o,
+                          const db_val_t *_v, const int _n)
 {
+	char namespace[MDB_MAX_NS_LEN];
+	bson_t *doc;
+	bson_error_t error;
+	mongoc_collection_t *col;
+
+	doc = bson_new();
+	if (kvo_to_bson(_k, _v, _o, _n, doc) != 0) {
+		LM_ERR("failed to build bson\n");
+		goto out_err;
+	}
+
+	memcpy(namespace, table->s, table->len);
+	namespace[table->len] = '\0';
+
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   namespace);
+
+	if (!mongoc_collection_remove(col, MONGOC_REMOVE_NONE, doc, NULL, &error)) {
+	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
+		       error.domain, error.code, error.message);
+		goto out_err;
+	}
+
+	if (doc) {
+		bson_destroy(doc);
+	}
+	mongoc_collection_destroy(col);
+	return 0;
+
+out_err:
+	if (doc) {
+		bson_destroy(doc);
+	}
+	mongoc_collection_destroy(col);
+	return -1;
 #if 0
 	int i,j,ret;
 	bson_t query;
@@ -1725,8 +1798,59 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	return 0;
 }
 
-int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un)
+int mongo_db_update_trans(cachedb_con *con, const str *table,
+                          const db_key_t *_k, const db_op_t *_o,
+                          const db_val_t *_v, const db_key_t *_uk,
+                          const db_val_t *_uv, const int _n, const int _un)
 {
+	char namespace[MDB_MAX_NS_LEN];
+	bson_t *query, *update = NULL;
+	bson_error_t error;
+	mongoc_collection_t *col;
+
+	query = bson_new();
+	if (kvo_to_bson(_k, _v, _o, _n, query) != 0) {
+		LM_ERR("failed to build query bson\n");
+		goto out_err;
+	}
+
+	update = bson_new();
+	if (kvo_to_bson(_uk, _uv, NULL, _un, update) != 0) {
+		LM_ERR("failed to build update bson\n");
+		goto out_err;
+	}
+
+	memcpy(namespace, table->s, table->len);
+	namespace[table->len] = '\0';
+
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   namespace);
+
+	if (!mongoc_collection_update(col, MONGOC_REMOVE_NONE, query, update,
+	                              NULL, &error)) {
+	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
+		       error.domain, error.code, error.message);
+		goto out_err;
+	}
+
+	if (query) {
+		bson_destroy(query);
+	}
+	if (update) {
+		bson_destroy(update);
+	}
+	mongoc_collection_destroy(col);
+	return 0;
+
+out_err:
+	if (query) {
+		bson_destroy(query);
+	}
+	if (update) {
+		bson_destroy(update);
+	}
+	mongoc_collection_destroy(col);
+	return -1;
 #if 0
 	int i,j,ret;
 	bson_t query,op_query;
