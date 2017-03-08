@@ -73,11 +73,12 @@ extern str homer5_delim;
 extern compression_api_t compression_api;
 
 struct hep_message_id hep_ids[] = {
-	{ "sip" , 0x01},
-	{ "xlog", 0x56},
-	{ "mi"  , 0x57},
-	{ "rest", 0x58},
-	{ NULL  , 0   }
+	{ "sip" ,  0x01},
+	{ "xlog",  0x56},
+	{ "mi"  ,  0x57},
+	{ "rest",  0x58},
+	{ "trans", 0x59},
+	{ NULL  ,  0   }
 };
 
 struct hep_custom_chunk_desc hep_chunks[] = {

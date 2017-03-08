@@ -36,8 +36,14 @@
 #include "../../net/net_tcp.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
+#include "../../trace_api.h"
+
 #include "tcp_common_defs.h"
 #include "proto_tcp_handler.h"
+
+#define F_TCP_CONN_FIRST_READ ( 1 << 0 )
+#define F_TCP_CONN_FIRST_WRITE ( 1 << 1 )
+
 
 static int mod_init(void);
 static int proto_tcp_init(struct proto_info *pi);
@@ -62,6 +68,34 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
 
+#define TRACE_PROTO "proto_hep"
+
+static str trace_destination_name = {NULL, 0};
+trace_dest t_dst;
+trace_proto_t tprot;
+
+extern int unix_tcp_sock;
+
+int net_trace_proto_id=-1;
+
+#define LM_TRACE_DBG( ID, ... ) \
+	do { \
+		static str dp_dbg_str = { DP_DBG_TEXT, sizeof( DP_DBG_TEXT ) - 2 }; \
+		LM_DBG( __VA_ARGS__ ); \
+		trace_log( ID, &dp_dbg_str, __VA_ARGS__ ); \
+	} while(0);
+
+#define LM_TRACE_ERR( ID, ... ) \
+	do { \
+		static str dp_err_str = { DP_ERR_TEXT, sizeof( DP_ERR_TEXT ) - 2 }; \
+		LM_DBG( __VA_ARGS__ ); \
+		trace_log( ID, &dp_err_str, __VA_ARGS__ ); \
+	} while(0);
+
+
+
+void trace_log( int id, str* level, char* format, ...);
+
 
 /* default port for TCP protocol */
 static int tcp_port = SIP_PORT;
@@ -80,7 +114,7 @@ static int tcp_async_local_connect_timeout = 100;
  * write - if write op exceeds this, it will get passed to TCP main*/
 static int tcp_async_local_write_timeout = 10;
 
-/* maximum number of write chunks that will be queued per TCP connection - 
+/* maximum number of write chunks that will be queued per TCP connection -
   if we exceed this number, we just drop the connection */
 static int tcp_async_max_postponed_chunks = 32;
 
@@ -132,16 +166,27 @@ static param_export_t params[] = {
 											&tcp_async_local_connect_timeout},
 	{ "tcp_async_local_write_timeout",   INT_PARAM,
 											&tcp_async_local_write_timeout  },
+	{ "trace_destination",               STR_PARAM, &trace_destination_name.s},
 	{0, 0, 0}
 };
 
+/* module dependencies */
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 }
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL}
+	}
+};
 
 struct module_exports proto_tcp_exports = {
 	PROTO_PREFIX "tcp",  /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* module parameters */
@@ -188,6 +233,19 @@ static int proto_tcp_init(struct proto_info *pi)
 static int mod_init(void)
 {
 	LM_INFO("initializing TCP-plain protocol\n");
+	if (trace_destination_name.s) {
+		if ( trace_prot_bind( TRACE_PROTO, &tprot) < 0 ) {
+			LM_ERR( "can't bind trace protocol <%s>\n", TRACE_PROTO );
+			return -1;
+		}
+
+		trace_destination_name.len = strlen( trace_destination_name.s );
+
+		if ( net_trace_proto_id == -1 )
+			net_trace_proto_id = tprot.get_message_id( TRANS_TRACE_PROTO_ID );
+
+		t_dst = tprot.get_trace_dest_by_name( &trace_destination_name );
+	}
 
 	return 0;
 }
@@ -218,6 +276,13 @@ static int tcp_conn_init(struct tcp_connection* c)
 	d->oldest_chunk = 0;
 
 	c->proto_data = (void*)d;
+	if ( c->flags & F_CONN_ACCEPTED ) {
+		c->proto_flags = F_TCP_CONN_FIRST_READ;
+	} else {
+		/* it's a connect */
+		c->proto_flags = F_TCP_CONN_FIRST_WRITE;
+	}
+
 	return 0;
 }
 
@@ -226,6 +291,11 @@ static void tcp_conn_clean(struct tcp_connection* c)
 {
 	struct tcp_data *d = (struct tcp_data*)c->proto_data;
 	int r;
+
+///	if ( unix_tcp_sock > 0 )
+///		LM_TRACE_DBG( c->id, "Connection from %s:%d to %s:%d was closed!\n",
+///					ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
+///					ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 	for (r=0;r<d->async_chunks_no;r++) {
 		shm_free(d->async_chunks[r]);
@@ -360,18 +430,18 @@ static int tcpconn_async_connect(struct socket_info* send_sock,
 	/* create the socket */
 	fd=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
 	if (fd==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
+		LM_TRACE_ERR( 0, "socket: (%d) %s\n", errno, strerror(errno));
 		return -1;
 	}
 	if (tcp_init_sock_opt(fd)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
+		LM_TRACE_ERR( 0, "tcp_init_sock_opt failed\n");
 		goto error;
 	}
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
 	su_setport( &my_name, 0);
 	if (bind(fd, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
+		LM_TRACE_ERR( 0, "bind failed (%d) %s\n", errno,strerror(errno));
 		goto error;
 	}
 
@@ -381,7 +451,7 @@ static int tcpconn_async_connect(struct socket_info* send_sock,
 	to = tcp_async_local_connect_timeout*1000;
 
 	if (gettimeofday(&(begin), NULL)) {
-		LM_ERR("Failed to get TCP connect start time\n");
+		LM_TRACE_ERR( 0, "Failed to get TCP connect start time\n");
 		goto error;
 	}
 
@@ -398,7 +468,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info(&server->s, ip, port);
-			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno,strerror(errno));
+			LM_TRACE_ERR( 0, "[server=%s:%d] (%d) %s\n",ip, port, errno,strerror(errno));
 			goto error;
 		}
 	} else goto local_connect;
@@ -431,7 +501,7 @@ again:
 		if (n<0){
 			if (errno==EINTR) continue;
 			get_su_info(&server->s, ip, port);
-			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
+			LM_TRACE_ERR( 0, "poll/select failed:[server=%s:%d] (%d) %s\n",
 				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
@@ -439,7 +509,7 @@ again:
 		if (FD_ISSET(fd, &sel_set))
 #else
 		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
-			LM_ERR("poll error: flags %x\n", pf.revents);
+			LM_TRACE_ERR( 0, "poll error: flags %x\n", pf.revents);
 			poll_err=1;
 		}
 #endif
@@ -449,7 +519,7 @@ again:
 			if ((err==0) && (poll_err==0)) goto local_connect;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
+				LM_TRACE_ERR( 0, "failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
 					ip, port, err, strerror(err));
 				goto error;
 			}
@@ -467,7 +537,7 @@ async_connect:
 	/* attach the write buffer to it */
 	lock_get(&con->write_lock);
 	if (add_write_chunk(con,buf,len,0) < 0) {
-		LM_ERR("Failed to add the initial write chunk\n");
+		LM_TRACE_ERR( con->id, "Failed to add the initial write chunk\n");
 		/* FIXME - seems no more SHM now ...
 		 * continue the async connect process ? */
 	}
@@ -479,7 +549,7 @@ async_connect:
 local_connect:
 	con=tcp_conn_create(fd, server, send_sock, S_CONN_OK);
 	if (con==NULL) {
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
+		LM_TRACE_ERR( con->id, "tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
 	*c = con;
@@ -504,28 +574,28 @@ static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 
 	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
 	if (s==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
+		LM_TRACE_ERR( 0, "socket: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
 	if (tcp_init_sock_opt(s)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
+		LM_TRACE_ERR( 0, "tcp_init_sock_opt failed\n");
 		goto error;
 	}
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
 	su_setport( &my_name, 0);
 	if (bind(s, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
+		LM_TRACE_ERR( 0, "bind failed (%d) %s\n", errno,strerror(errno));
 		goto error;
 	}
 
 	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
-		LM_ERR("tcp_blocking_connect failed\n");
+		LM_TRACE_ERR( 0, "tcp_blocking_connect failed\n");
 		goto error;
 	}
 	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
 	if (con==NULL){
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
+		LM_TRACE_ERR( 0, "tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
 	*fd = s;
@@ -687,9 +757,13 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 			/* connect succeeded, we have a connection */
+			LM_TRACE_DBG( c->id, "Succesfully connected from interface %s:%d to %s:%d!\n",
+				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
+				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
+
 			if (n==0) {
 				/* connect is still in progress, break the sending
-				 * flow now (the actual write will be done when 
+				 * flow now (the actual write will be done when
 				 * connect will be completed */
 				LM_DBG("Successfully started async connection \n");
 				tcp_conn_release(c, 0);
@@ -699,12 +773,18 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			LM_DBG("First connect attempt succeeded in less than %d ms, "
 				"proceed to writing \n",tcp_async_local_connect_timeout);
 			/* our first connect attempt succeeded - go ahead as normal */
-		} else if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
-			LM_ERR("connect failed\n");
-			get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
-			return -1;
+		} else {
+			if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
+				LM_ERR("connect failed\n");
+				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+				return -1;
+			}
+
+			LM_TRACE_DBG( c->id, "Succesfully connected from interface %s:%d to %s:%d!\n",
+				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
+				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 		}
-	
+
 		goto send_it;
 	}
 	get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
@@ -901,6 +981,16 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 	int total_bytes;
 	struct tcp_req* req;
 
+	if ( con->proto_flags & F_TCP_CONN_FIRST_READ ) {
+		con->proto_flags &= !F_TCP_CONN_FIRST_READ;
+		/*  */
+		LM_TRACE_DBG( con->id, "Accepted connection from %s:%d on interface %s:%d!\n",
+			ip_addr2a( &con->rcv.src_ip ), con->rcv.src_port,
+			ip_addr2a( &con->rcv.dst_ip ), con->rcv.dst_port );
+	} else if ( con->proto_flags & F_TCP_CONN_FIRST_WRITE ) {
+		con->proto_flags &= !F_TCP_CONN_FIRST_WRITE;
+	}
+
 	bytes=-1;
 	total_bytes=0;
 
@@ -978,4 +1068,74 @@ error:
 
 
 
+void trace_log( int id, str* level, char* format, ... )
+{
+#define TRACELOG_MAX 128
+	static char buf[ TRACELOG_MAX ];
 
+	static str payload = { buf, 0};
+	static int correlation_id = -1, correlation_vendor = -1;
+
+	const int proto = IPPROTO_TCP;
+
+	trace_message message;
+
+	va_list args;
+
+	str str_id;
+
+	if ( !tprot.create_trace_message || !t_dst ) {
+		return;
+	}
+
+	if ( !level ) {
+		LM_ERR("missing trace input param %p!\n", level);
+		return;
+	}
+
+	if ( net_trace_proto_id < 0 ) {
+		LM_ERR("trace proto id not loaded!\n");
+		return;
+	}
+
+	message = tprot.create_trace_message( 0, 0, proto, 0, net_trace_proto_id, t_dst);
+	if ( message == NULL ) {
+		LM_ERR("failed to create trace message!\n");
+		return;
+	}
+
+	va_start( args, format );
+	vsnprintf( payload.s, TRACELOG_MAX, format, args );
+	va_end( args );
+
+	payload.len = strlen( payload.s );
+
+	tprot.add_payload_part( message, "level", level );
+	tprot.add_payload_part( message, "payload", &payload );
+
+	str_id.s = int2str( id, &str_id.len );
+
+	if ( correlation_vendor == -1 || correlation_id == - 1) {
+		if ( tprot.get_data_id("correlation_id", &correlation_vendor, &correlation_id ) < 0 ) {
+			LM_ERR("can't find correlation id chunk!\n");
+			return;
+		}
+	}
+
+	if ( tprot.add_chunk( message, str_id.s, str_id.len, TRACE_TYPE_STR,
+			correlation_id, correlation_vendor) < 0) {
+		LM_ERR("failed to add correlation id! aborting trace...!\n");
+		return;
+	}
+
+	if ( tprot.send_message( message, t_dst, 0 ) < 0 ) {
+		LM_ERR("failed to send trace message!\n");
+	}
+
+	tprot.free_message( message );
+
+#undef TRACELOG_MAX
+}
+
+#undef LM_TRACE_DBG
+#undef LM_TRACE_ERR

@@ -32,7 +32,6 @@
 
 #include "tcp_common_defs.h"
 
-
 /*! \brief
  * reads all headers (until double crlf), & parses the content-length header
  *
@@ -502,6 +501,8 @@ error:
 	return -1;
 }
 
+#define TRANS_TRACE_PROTO_ID "trans"
+extern int net_trace_proto_id;
 
 #endif
 
