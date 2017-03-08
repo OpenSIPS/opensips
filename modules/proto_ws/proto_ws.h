@@ -26,9 +26,12 @@
 #ifndef _PROTO_WS_H_
 #define _PROTO_WS_H_
 
+#ifndef trace_api_h
+	#include "../../trace_api.h"
+#endif
+
 #define WS_SUPPORTED_VERSION	13		/*!< WebSocket supported version */
 #define WS_DEFAULT_PORT			80		/*!< WebSocket default port */
-
 
 enum ws_conn_state { WS_CON_INIT, WS_CON_HANDSHAKE, WS_CON_HANDSHAKE_DONE,
 	WS_CON_BAD_REQ };
@@ -55,6 +58,8 @@ enum ws_close_code {
  * protocols supported, etc. - razvanc
  */
 struct ws_data {
+	TRACE_PROTO_COMMON;
+
 	/* the state of the connection */
 	enum ws_conn_state state;
 
