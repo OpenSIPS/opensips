@@ -120,12 +120,21 @@ ifeq ($(OS),solaris)
 		ISSMP ?= yes
 	endif
 else
+ifeq ($(OS),freebsd)
+	SMP_STR = $(shell sysctl kern.smp.active | grep 1)
+	ifeq (,$(SMP_STR))
+		ISSMP ?= no
+	else
+		ISSMP ?= yes
+	endif
+else
 	SMP_STR = $(shell uname -v | grep -i "SMP")
 	ifeq (,$(SMP_STR))
 		ISSMP ?= no
 	else
 		ISSMP ?= yes
 	endif
+endif
 endif
 
 #set some vars from the environment (and not make builtins)
@@ -328,12 +337,16 @@ cfg_dir = etc/$(MAIN_NAME)/
 bin_dir = sbin/
 
 ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
+ifeq ($(OS),freebsd)
+	LIBDIR ?= lib
+else
 ifeq ($(ARCH_B),64b)
 	LIBDIR ?= lib64
 else
 	LIBDIR ?= lib
 	# assume 32b - it is not really used further
 	ARCH_B=32b
+endif
 endif
 
 lib_dir = $(LIBDIR)/$(MAIN_NAME)
