@@ -998,7 +998,8 @@ out:
 int kvo_to_bson(const db_key_t *_k, const db_val_t *_v, const db_op_t *_op,
                  int _n, bson_t *doc)
 {
-	int i, rc;
+	int i;
+	bool ok = true;
 	bson_t _child, *child;
 	str key;
 	bson_oid_t _id;
@@ -1033,17 +1034,17 @@ int kvo_to_bson(const db_key_t *_k, const db_val_t *_v, const db_op_t *_op,
 
 			switch (VAL_TYPE(&_v[i])) {
 				case DB_INT:
-					rc = bson_append_int32(doc, key.s, key.len, VAL_INT(&_v[i]));
+					ok = bson_append_int32(doc, key.s, key.len, VAL_INT(&_v[i]));
 					break;
 				case DB_STRING:
 					if (!has_oid && _k[i]->len == 3 &&
 					    strncmp("_id", _k[i]->s, _k[i]->len) == 0) {
 						LM_DBG("we got it [%.*s]\n", _k[i]->len, _k[i]->s);
 						bson_oid_init_from_string(&_id, VAL_STRING(&_v[i]));
-						rc = bson_append_oid(doc, key.s, key.len, &_id);
+						ok = bson_append_oid(doc, key.s, key.len, &_id);
 						has_oid = true;
 					} else {
-						rc = bson_append_utf8(doc, key.s, key.len, VAL_STRING(&_v[i]), -1);
+						ok = bson_append_utf8(doc, key.s, key.len, VAL_STRING(&_v[i]), -1);
 					}
 					break;
 				case DB_STR:
@@ -1054,39 +1055,42 @@ int kvo_to_bson(const db_key_t *_k, const db_val_t *_v, const db_op_t *_op,
 						*p = '\0';
 						bson_oid_init_from_string(&_id, VAL_STR(&_v[i]).s);
 						*p = _old_char;
-						rc = bson_append_oid(doc, key.s, key.len, &_id);
+						ok = bson_append_oid(doc, key.s, key.len, &_id);
 						has_oid = true;
 					} else {
-						rc = bson_append_utf8(doc, key.s, key.len, VAL_STR(&_v[i]).s,
+						ok = bson_append_utf8(doc, key.s, key.len, VAL_STR(&_v[i]).s,
 							VAL_STR(&_v[i]).len);
 					}
 					break;
 				case DB_BLOB:
-					rc = bson_append_utf8(doc, key.s, key.len, VAL_BLOB(&_v[i]).s,
+					ok = bson_append_utf8(doc, key.s, key.len, VAL_BLOB(&_v[i]).s,
 							VAL_BLOB(&_v[i]).len);
 					break;
 				case DB_DOUBLE:
-					rc = bson_append_double(doc, key.s, key.len, VAL_DOUBLE(&_v[i]));
+					ok = bson_append_double(doc, key.s, key.len, VAL_DOUBLE(&_v[i]));
 					break;
 				case DB_BIGINT:
-					rc = bson_append_int64(doc, key.s, key.len, VAL_BIGINT(&_v[i]));
+					ok = bson_append_int64(doc, key.s, key.len, VAL_BIGINT(&_v[i]));
 					break;
 				case DB_DATETIME:
-					rc = bson_append_date_time(doc, key.s, key.len, VAL_TIME(&_v[i]));
+					ok = bson_append_date_time(doc, key.s, key.len, VAL_TIME(&_v[i]));
 					break;
 				case DB_BITMAP:
-					rc = bson_append_int32(doc, key.s, key.len, VAL_BITMAP(&_v[i]));
+					ok = bson_append_int32(doc, key.s, key.len, VAL_BITMAP(&_v[i]));
 					break;
 			}
 
-			if (rc != 0) {
+			if (!ok) {
 				LM_ERR("failed to append bson for key=%.*s, op=%s\n",
 				       _k[i]->len, _k[i]->s, _op ? _op[i] : NULL);
 				return -1;
 			}
 
 			if (_op && strcmp(_op[i], OP_EQ) != 0) {
-				rc = bson_append_document_end(doc, child);
+				if (!bson_append_document_end(doc, child)) {
+					LM_ERR("failed to append doc end!\n");
+					return -1;
+				}
 			}
 		}
 	}
@@ -1108,8 +1112,9 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	db_row_t *current;
 	db_val_t *cur_val;
 	bson_iter_t iter;
-	int r, c, old_rows, rows = 0;
+	int ri, c, old_rows, rows = 0;
 	mongoc_collection_t *col;
+	char *strf, *stro;
 
 	*_r = NULL;
 
@@ -1120,14 +1125,15 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	}
 
 	opts = bson_new();
-	bson_append_document_begin(opts, "sort", 4, &child);
-	bson_append_int32(&child, _o->s, _o->len, 1);
-	bson_append_document_end(opts, &child);
+	if (_o) {
+		bson_append_document_begin(opts, "sort", 4, &child);
+		bson_append_int32(&child, _o->s, _o->len, 1);
+		bson_append_document_end(opts, &child);
+	}
 
 	bson_append_document_begin(opts, "projection", 10, &child);
-	bson_append_int32(&child, _o->s, _o->len, 1);
 	for (c = 0; c < _nc; c++) {
-		bson_append_int32(opts, _c[c]->s, _c[c]->len, 1);
+		bson_append_int32(&child, _c[c]->s, _c[c]->len, 1);
 	}
 	bson_append_document_end(opts, &child);
 
@@ -1136,6 +1142,14 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   namespace);
+
+	if (is_printable(L_DBG)) {
+		strf = bson_as_json(filter, NULL);
+		stro = bson_as_json(opts, NULL);
+		LM_DBG("query doc:\n%s\n%s\n", strf, stro);
+		bson_free(strf);
+		bson_free(stro);
+	}
 
 	cursor = mongoc_collection_find_with_opts(col, filter, opts, NULL);
 
@@ -1165,8 +1179,8 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 		RES_NAMES(*_r)[c]->len = _c[c]->len;
 	}
 
-	for (r = 0; mongoc_cursor_next(cursor, &doc); r++) {
-		if (r + 1 > rows) {
+	for (ri = 0; mongoc_cursor_next(cursor, &doc); ri++) {
+		if (ri + 1 > rows) {
 			old_rows = rows;
 			rows = rows > 0 ? 2 * rows : 1;
 			if (db_realloc_rows(*_r, old_rows, rows) != 0) {
@@ -1182,7 +1196,9 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 			}
 		}
 
-		current = &(RES_ROWS(*_r)[r]);
+		RES_ROW_N(*_r) = ri + 1;
+
+		current = &(RES_ROWS(*_r)[ri]);
 		ROW_N(current) = RES_COL_N(*_r);
 		for (c = 0; c < _nc; c++) {
 			memcpy(key_buff, _c[c]->s, _c[c]->len);
@@ -1232,7 +1248,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						break;
 					case BSON_TYPE_OID:
 						bson_oid_to_string(bson_iter_oid(&iter), hex_oid);
-						p = &hex_oid_id[r * HEX_OID_SIZE];
+						p = &hex_oid_id[ri * HEX_OID_SIZE];
 						memcpy(p, hex_oid, HEX_OID_SIZE);
 						VAL_TYPE(cur_val) = DB_STRING;
 						VAL_STRING(cur_val) = p;
@@ -1568,11 +1584,18 @@ int mongo_db_insert_trans(cachedb_con *con, const str *table,
 	bson_t *doc;
 	bson_error_t error;
 	mongoc_collection_t *col;
+	char *str;
 
 	doc = bson_new();
 	if (kvo_to_bson(_k, _v, NULL, _n, doc) != 0) {
 		LM_ERR("failed to build bson\n");
 		goto out_err;
+	}
+
+	if (is_printable(L_DBG)) {
+		str = bson_as_json(doc, NULL);
+		LM_DBG("insert doc:\n%s\n", str);
+		bson_free(str);
 	}
 
 	memcpy(namespace, table->s, table->len);
@@ -1688,6 +1711,7 @@ int mongo_db_delete_trans(cachedb_con *con, const str *table,
 	bson_t *doc;
 	bson_error_t error;
 	mongoc_collection_t *col;
+	char *str;
 
 	doc = bson_new();
 	if (kvo_to_bson(_k, _v, _o, _n, doc) != 0) {
@@ -1697,6 +1721,12 @@ int mongo_db_delete_trans(cachedb_con *con, const str *table,
 
 	memcpy(namespace, table->s, table->len);
 	namespace[table->len] = '\0';
+
+	if (is_printable(L_DBG)) {
+		str = bson_as_json(doc, NULL);
+		LM_DBG("remove doc:\n%s\n", str);
+		bson_free(str);
+	}
 
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   namespace);
@@ -1804,9 +1834,10 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
                           const db_val_t *_uv, const int _n, const int _un)
 {
 	char namespace[MDB_MAX_NS_LEN];
-	bson_t *query, *update = NULL;
+	bson_t *query, *update = NULL, child;
 	bson_error_t error;
 	mongoc_collection_t *col;
+	char *strq, *stru;
 
 	query = bson_new();
 	if (kvo_to_bson(_k, _v, _o, _n, query) != 0) {
@@ -1815,10 +1846,12 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 	}
 
 	update = bson_new();
-	if (kvo_to_bson(_uk, _uv, NULL, _un, update) != 0) {
+	BSON_APPEND_DOCUMENT_BEGIN(update, "$set", &child);
+	if (kvo_to_bson(_uk, _uv, NULL, _un, &child) != 0) {
 		LM_ERR("failed to build update bson\n");
 		goto out_err;
 	}
+	bson_append_document_end(update, &child);
 
 	memcpy(namespace, table->s, table->len);
 	namespace[table->len] = '\0';
@@ -1826,8 +1859,16 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   namespace);
 
-	if (!mongoc_collection_update(col, MONGOC_REMOVE_NONE, query, update,
-	                              NULL, &error)) {
+	if (is_printable(L_DBG)) {
+		strq = bson_as_json(query, NULL);
+		stru = bson_as_json(update, NULL);
+		LM_DBG("update docs:\n%s\n%s\n", strq, stru);
+		bson_free(strq);
+		bson_free(stru);
+	}
+
+	if (!mongoc_collection_update(col, MONGOC_UPDATE_NONE,
+	                              query, update, NULL, &error)) {
 	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
 		       error.domain, error.code, error.message);
 		goto out_err;
