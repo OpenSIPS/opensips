@@ -22,11 +22,20 @@
  * -------
  *  2016-08-30  first version (Ionut Ionita)
  */
+#ifndef trace_api_h
+#define trace_api_h
+
 #include "ut.h"
 
 /* INADDR_LOOPBACK is internally stored in network byte order;
  * we need little endian so we'll define our own loopback address */
 #define TRACE_INADDR_LOOPBACK	((in_addr_t) 0x0100007f) /* Inet 127.0.0.1.  */
+
+#define TRACE_PROTO_COMMON \
+	trace_proto_t* tprot; \
+	trace_dest dest; \
+	int net_trace_proto_id; \
+	trace_message message;
 
 enum TRACE_DATA_TYPES {
 	TRACE_TYPE_GENERIC=0, /* for data fields/chunks that can have only one type */
@@ -264,4 +273,4 @@ typedef int (*trace_bind_api_f)(trace_proto_t*);
 
 int trace_prot_bind(char* module_name, trace_proto_t* prot);
 
-
+#endif
