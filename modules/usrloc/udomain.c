@@ -356,7 +356,7 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 	}
 
 	/* the Expires value */
-	if (evi_param_set_int(ul_c_path_param, &_c->expires) < 0) {
+	if (evi_param_set_int(ul_c_expires_param, &_c->expires) < 0) {
 		LM_ERR("cannot set expires parameter\n");
 		return;
 	}
