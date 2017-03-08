@@ -127,6 +127,55 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 #define lock_get(lock) pthread_mutex_lock(lock)
 #define lock_release(lock) pthread_mutex_unlock(lock)
 
+#elif defined USE_UMUTEX_MUTEX
+# if !defined(USE_UMUTEX_MUTEX_DECL)
+#  define USE_UMUTEX_MUTEX_DECL 1
+#include <sys/types.h>
+
+#include <errno.h>
+#include <string.h>
+
+#define u_long unsigned long
+#include <sys/umtx.h>
+
+typedef struct umutex gen_lock_t;
+
+#define lock_destroy(lock) /* do nothing */
+
+inline static int
+_umtx_op_err(void *obj, int op, u_long val, void *uaddr, void *uaddr2)
+{
+
+        if (_umtx_op(obj, op, val, uaddr, uaddr2) == -1)
+                return (errno);
+        return (0);
+}
+
+inline static gen_lock_t *
+lock_init(gen_lock_t *lock)
+{
+
+    memset(lock, '\0', sizeof(gen_lock_t));
+    lock->m_flags = USYNC_PROCESS_SHARED;
+
+    return (lock);
+}
+
+inline static int
+lock_get(gen_lock_t *lock)
+{
+
+    return  (_umtx_op_err(lock, UMTX_OP_MUTEX_LOCK, 0, 0, 0));
+}
+
+inline static int
+lock_release(gen_lock_t *lock)
+{
+
+    return (_umtx_op_err(lock, UMTX_OP_MUTEX_UNLOCK, 0, 0, 0));
+}
+
+# endif /* USE_UMUTEX_MUTEX_DECL */
 #elif defined USE_POSIX_SEM
 #include <semaphore.h>
 
@@ -248,7 +297,7 @@ tryagain:
 
 /* lock sets */
 
-#if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM)
+#if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM) || defined(USE_UMUTEX_MUTEX)
 #define GEN_LOCK_T_PREFERED
 
 struct gen_lock_set_t_ {
