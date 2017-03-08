@@ -193,7 +193,7 @@ Requires: mysql-libs
 The %{name}-db_mysql package contains the MySQL plugin for %{name}, which allows
 a MySQL-Database to be used for persistent storage.
 
-%if 0%{?_with_oracle}
+%if 0%{?_with_oracle:1}
 %package  db_oracle
 Summary:  Oracle Storage Support for the OpenSIPS
 Group:    System Environment/Daemons
@@ -658,7 +658,7 @@ Requires: %{name} = %{version}-%{release}
 %description  python
 Helps implement your own OpenSIPS extensions in Python
 
-%if 0%{?_with_cachedb_redis}
+%if 0%{?_with_cachedb_redis:1}
 %package  redis
 Summary:  Redis connector
 Group:    System Environment/Daemons
@@ -1203,7 +1203,7 @@ fi
 %{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.db_mysql
 
-%if 0%{?_with_oracle}
+%if 0%{?_with_oracle:1}
 %files db_oracle
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
@@ -1410,7 +1410,7 @@ fi
 %files python
 %{_libdir}/opensips/modules/python.so
 
-%if 0%{?_with_cachedb_redis}
+%if 0%{?_with_cachedb_redis:1}
 %files redis
 %{_libdir}/opensips/modules/cachedb_redis.so
 %doc docdir/README.cachedb_redis
