@@ -1846,10 +1846,14 @@ void   cJSON_AddItemToObjectCS(cJSON *object, const char *string, cJSON *item)
     {
         cJSON_free(item->string);
     }
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
+#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || (__GNUC__ > 4)
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wcast-qual\"")
     item->string = (char*)string;
-#pragma GCC diagnostic pop
+_Pragma("GCC diagnostic pop")
+#else
+    item->string = (char*)string;
+#endif
     item->type |= cJSON_StringIsConst;
     cJSON_AddItemToArray(object, item);
 }
