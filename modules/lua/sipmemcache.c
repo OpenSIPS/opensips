@@ -30,10 +30,8 @@
 
 #include "sipluafunc.h"
 
-#ifdef LIBMEMCACHED_VERSION_HEX
-# if LIBMEMCACHED_VERSION_HEX < 0x00037000
+#if !defined(LIBMEMCACHED_VERSION_HEX) || LIBMEMCACHED_VERSION_HEX < 0x00037000
 typedef memcached_return_t memcached_return
-# endif
 #endif
 
 struct sipmemcache
