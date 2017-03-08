@@ -806,6 +806,7 @@ _empty_line_
 			</para></listitem>
 		</itemizedlist>
 	</section>
+	<section>
 		<title>
 		<function moreinfo="none">E_PRESENCE_EXPOSED</function>
 		</title>
@@ -816,6 +817,7 @@ _empty_line_
 		<para>Parameters:</para>
 		<para>Same parameters as the
 			<emphasis>E_PRESENCE_PUBLISH</emphasis> event.</para>
+	</section>
 	</section>
 
 <section>

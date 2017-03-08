@@ -64,6 +64,7 @@ Saul Ibarra Corretge
         1.6. Exported Events
 
               1.6.1. E_PRESENCE_PUBLISH
+              1.6.2. E_PRESENCE_EXPOSED
 
         1.7. Installation
 
@@ -595,8 +596,6 @@ _empty_line_
 
 1.6. Exported Events
 
-1.6. Exported Events
-
 1.6.1.  E_PRESENCE_PUBLISH
 
    This event is raised when the presence module receives a
@@ -609,6 +608,8 @@ _empty_line_
      * expires - the expire value of the publish
      * etag - the entity tag
      * body - the body of the PUBLISH request
+
+1.6.2.  E_PRESENCE_EXPOSED
 
    This event is raised for each presentity exposeed by the
    pres_expose.
