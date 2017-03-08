@@ -1,16 +1,16 @@
 %if 0%{?rhel}
-    # copied from lm_sensors exclusive arch
-    %ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
-        %global _without_snmpstats 1
-    %endif
+# copied from lm_sensors exclusive arch
+%ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
+%global _without_snmpstats 1
+%endif
 %endif
 
 %if 0%{?el5:1}
-    %global _without_db_perlvdb 1
+%global _without_db_perlvdb 1
 %endif
 
 %if 0%{?rhel} > 6 || 0%{?fedora} > 0
-    %global _with_cachedb_redis 1
+%global _with_cachedb_redis 1
 %endif
 
 %global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_snmpstats:snmpstats} %{?_without_db_perlvdb:db_perlvdb}
@@ -36,7 +36,7 @@ BuildRequires:  postgresql-devel
 
 Requires: m4
 %if 0%{!?_without_snmpstats:1}
-    BuildRequires:  lm_sensors-devel
+BuildRequires:  lm_sensors-devel
 %endif
 BuildRequires:  net-snmp-devel
 BuildRequires:  unixODBC-devel
