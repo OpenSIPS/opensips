@@ -1469,12 +1469,13 @@ ifeq ($(OS), freebsd)
 		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
 		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM \
 		-DHAVE_NETINET_IN_SYSTM
+	LIBS=  #dlopen is in libc
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
-		LIBS= -pthread  #dlopen is in libc
-	else
-		LIBS=  #dlopen is in libc
+	endif
+	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
+		LIBS+=-lpthread
 	endif
 	# check for ver >= 4.1
 	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)
