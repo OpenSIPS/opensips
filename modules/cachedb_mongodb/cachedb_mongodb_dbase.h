@@ -41,6 +41,7 @@ extern int mongo_op_timeout;
 
 #define MDB_PK    "_id"
 #define MDB_PKLEN 3
+#define MDB_MAX_NS_LEN 120
 
 typedef struct {
 	struct cachedb_id *id;

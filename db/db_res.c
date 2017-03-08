@@ -173,10 +173,38 @@ int db_allocate_rows(db_res_t* _res, const unsigned int rows)
 	return 0;
 }
 
+/*
+ * Allocate storage for rows in existing
+ * result structure.
+ */
+int db_realloc_rows(db_res_t *_res, const unsigned int old_rows,
+                    const unsigned int rows)
+{
+	unsigned int i;
 
+	RES_ROWS(_res) = pkg_realloc(RES_ROWS(_res),
+	          rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)) );
+	if (!RES_ROWS(_res)) {
+		LM_ERR("no memory left\n");
+		return -1;
+	}
 
+	if (old_rows < rows) {
+		memset(&RES_ROWS(_res)[old_rows], 0,
+		       (rows - old_rows) * (sizeof(db_row_t)));
 
+		memset(&RES_ROWS(_res)[rows] + RES_COL_N(_res) * old_rows, 0,
+			(rows - old_rows) * (sizeof(db_val_t) * RES_COL_N(_res)));
+	}
 
+	LM_DBG("allocate %d bytes for result rows and values at %p\n",
+		(int)(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res))),
+		RES_ROWS(_res));
 
+	for( i=0 ; i<rows ; i++ )
+		/* the values of the row i */
+		ROW_VALUES( &(RES_ROWS(_res)[i]) ) =
+			((db_val_t*)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
 
-
+	return 0;
+}

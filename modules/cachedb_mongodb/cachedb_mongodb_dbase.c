@@ -43,7 +43,7 @@ extern int compat_mode_30;
 extern int compat_mode_24;
 
 #define HEX_OID_SIZE 25
-char *hex_oid_id = NULL;
+char *hex_oid_id;
 
 /**
  * Builds a MongoDB connect string URI of the form:
@@ -170,7 +170,7 @@ void mongo_con_destroy(cachedb_con *con)
 
 int mongo_con_get(cachedb_con *con, str *attr, str *val)
 {
-	bson_t *query;
+	bson_t *filter;
 	mongoc_cursor_t *cursor;
 	const bson_t *doc;
 	bson_iter_t iter;
@@ -182,12 +182,12 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	LM_DBG("find %.*s in %s\n", attr->len, attr->s,
 	       MONGO_NAMESPACE(con));
 
-	query = bson_new();
-	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+	filter = bson_new();
+	bson_append_utf8(filter, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find_with_opts(
-	                MONGO_COLLECTION(con), query, NULL, NULL);
+	                MONGO_COLLECTION(con), filter, NULL, NULL);
 	stop_expire_timer(start, mongo_exec_threshold, "MongoDB find",
 	                  attr->s, attr->len, 0);
 
@@ -230,12 +230,12 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	LM_DBG("key not found: %.*s\n", attr->len, attr->s);
 
 out:
-	bson_destroy(query);
+	bson_destroy(filter);
 	mongoc_cursor_destroy(cursor);
 	return 0;
 
 out_err:
-	bson_destroy(query);
+	bson_destroy(filter);
 	mongoc_cursor_destroy(cursor);
 	memset(val, 0, sizeof *val);
 	return -1;
@@ -830,7 +830,6 @@ out_err:
 		*reply = NULL;
 	}
 
-
 	return ret;
 }
 
@@ -996,8 +995,291 @@ out:
 	} while (0)
 #endif
 
-int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r)
+int kvo_to_bson(const db_key_t *_k, const db_val_t *_v, const db_op_t *_op,
+                 int _n, bson_t *doc)
 {
+	int i, rc;
+	bson_t _child, *child;
+	str key;
+	bson_oid_t _id;
+	bool has_oid = false;
+	char *p, _old_char;
+
+	for (i = 0; i < _n; i++) {
+		if (!VAL_NULL(&_v[i])) {
+			if (!_op || strcmp(_op[i], OP_EQ) == 0) {
+				child = doc;
+				key = *_k[i];
+			} else {
+				child = &_child;
+				bson_append_document_begin(doc, _k[i]->s, _k[i]->len, &_child);
+				if (strcmp(_op[i], OP_LT) == 0) {
+					key.s = "$lt";
+					key.len = 3;
+				} else if (strcmp(_op[i], OP_GT) == 0) {
+					key.s = "$gt";
+					key.len = 3;
+				} else if (strcmp(_op[i], OP_LEQ) == 0) {
+					key.s = "$lte";
+					key.len = 4;
+				} else if (strcmp(_op[i], OP_GEQ) == 0) {
+					key.s = "$gte";
+					key.len = 4;
+				} else if (strcmp(_op[i], OP_NEQ) == 0) {
+					key.s = "$ne";
+					key.len = 3;
+				}
+			}
+
+			switch (VAL_TYPE(&_v[i])) {
+				case DB_INT:
+					rc = bson_append_int32(doc, key.s, key.len, VAL_INT(&_v[i]));
+					break;
+				case DB_STRING:
+					if (!has_oid && _k[i]->len == 3 &&
+					    strncmp("_id", _k[i]->s, _k[i]->len) == 0) {
+						LM_DBG("we got it [%.*s]\n", _k[i]->len, _k[i]->s);
+						bson_oid_init_from_string(&_id, VAL_STRING(&_v[i]));
+						rc = bson_append_oid(doc, key.s, key.len, &_id);
+						has_oid = true;
+					} else {
+						rc = bson_append_utf8(doc, key.s, key.len, VAL_STRING(&_v[i]), -1);
+					}
+					break;
+				case DB_STR:
+					if (!has_oid && _k[i]->len == 3 &&
+					    strncmp("_id", _k[i]->s, _k[i]->len) == 0) {
+						p = VAL_STR(&_v[i]).s + VAL_STR(&_v[i]).len;
+						_old_char = *p;
+						*p = '\0';
+						bson_oid_init_from_string(&_id, VAL_STR(&_v[i]).s);
+						*p = _old_char;
+						rc = bson_append_oid(doc, key.s, key.len, &_id);
+						has_oid = true;
+					} else {
+						rc = bson_append_utf8(doc, key.s, key.len, VAL_STR(&_v[i]).s,
+							VAL_STR(&_v[i]).len);
+					}
+					break;
+				case DB_BLOB:
+					rc = bson_append_utf8(doc, key.s, key.len, VAL_BLOB(&_v[i]).s,
+							VAL_BLOB(&_v[i]).len);
+					break;
+				case DB_DOUBLE:
+					rc = bson_append_double(doc, key.s, key.len, VAL_DOUBLE(&_v[i]));
+					break;
+				case DB_BIGINT:
+					rc = bson_append_int64(doc, key.s, key.len, VAL_BIGINT(&_v[i]));
+					break;
+				case DB_DATETIME:
+					rc = bson_append_date_time(doc, key.s, key.len, VAL_TIME(&_v[i]));
+					break;
+				case DB_BITMAP:
+					rc = bson_append_int32(doc, key.s, key.len, VAL_BITMAP(&_v[i]));
+					break;
+			}
+
+			if (rc != 0) {
+				LM_ERR("failed to append bson for key=%.*s, op=%s\n",
+				       _k[i]->len, _k[i]->s, _op ? _op[i] : NULL);
+				return -1;
+			}
+
+			if (_op && strcmp(_op[i], OP_EQ) != 0) {
+				rc = bson_append_document_end(doc, child);
+			}
+		}
+	}
+
+	return 0;
+}
+
+int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
+                         const db_op_t *_op, const db_val_t *_v,
+                         const db_key_t *_c, const int _n, const int _nc,
+                         const db_key_t _o, db_res_t **_r)
+{
+	char key_buff[32], namespace[MDB_MAX_NS_LEN], *p;
+	char hex_oid[HEX_OID_SIZE];
+	static str dummy_string = {"", 0};
+	bson_t *filter, *opts = NULL, child;
+	mongoc_cursor_t *cursor = NULL;
+	const bson_t *doc;
+	db_row_t *current;
+	db_val_t *cur_val;
+	bson_iter_t iter;
+	int r, c, old_rows, rows = 0;
+	mongoc_collection_t *col;
+
+	*_r = NULL;
+
+	filter = bson_new();
+	if (kvo_to_bson(_k, _v, _op, _n, filter) != 0) {
+		LM_ERR("failed to build filter bson\n");
+		goto out_err;
+	}
+
+	opts = bson_new();
+	bson_append_document_begin(opts, "sort", 4, &child);
+	bson_append_int32(&child, _o->s, _o->len, 1);
+	bson_append_document_end(opts, &child);
+
+	bson_append_document_begin(opts, "projection", 10, &child);
+	bson_append_int32(&child, _o->s, _o->len, 1);
+	for (c = 0; c < _nc; c++) {
+		bson_append_int32(opts, _c[c]->s, _c[c]->len, 1);
+	}
+	bson_append_document_end(opts, &child);
+
+	memcpy(namespace, table->s, table->len);
+	namespace[table->len] = '\0';
+
+	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
+	                                   namespace);
+
+	cursor = mongoc_collection_find_with_opts(col, filter, opts, NULL);
+
+	MONGO_CURSOR(con) = cursor;
+
+	*_r = db_new_result();
+	if (!*_r) {
+		LM_ERR("Failed to init new result \n");
+		goto out_err;
+	}
+
+	RES_COL_N(*_r) = _nc;
+
+	/* on first iteration we allocate the result
+	 * we always assume the query returns exactly the number
+	 * of 'columns' as were requested */
+	if (db_allocate_columns(*_r, _nc) != 0) {
+		LM_ERR("failed to allocate columns\n");
+		goto out_err;
+	}
+
+	/* and we initialize the names as if all are there */
+	for (c = 0; c < _nc; c++) {
+		/* since we don't have schema, the types will be allocated
+		 * when we fetch the actual rows */
+		RES_NAMES(*_r)[c]->s = _c[c]->s;
+		RES_NAMES(*_r)[c]->len = _c[c]->len;
+	}
+
+	for (r = 0; mongoc_cursor_next(cursor, &doc); r++) {
+		if (r + 1 > rows) {
+			old_rows = rows;
+			rows = rows > 0 ? 2 * rows : 1;
+			if (db_realloc_rows(*_r, old_rows, rows) != 0) {
+				LM_ERR("failed to realloc rows\n");
+				goto out_err;
+			}
+
+			hex_oid_id = pkg_realloc(hex_oid_id,
+			                         sizeof *hex_oid_id * rows * HEX_OID_SIZE);
+			if (!hex_oid_id) {
+				LM_ERR("oom\n");
+				goto out_err;
+			}
+		}
+
+		current = &(RES_ROWS(*_r)[r]);
+		ROW_N(current) = RES_COL_N(*_r);
+		for (c = 0; c < _nc; c++) {
+			memcpy(key_buff, _c[c]->s, _c[c]->len);
+			key_buff[_c[c]->len] = '\0';
+			cur_val = &ROW_VALUES(current)[c];
+
+			if (!bson_iter_init_find(&iter, doc, key_buff)) {
+				memset(cur_val, 0, sizeof *cur_val);
+				VAL_STRING(cur_val) = dummy_string.s;
+				VAL_STR(cur_val) = dummy_string;
+				VAL_BLOB(cur_val) = dummy_string;
+				/* we treat null values as DB string */
+				VAL_TYPE(cur_val) = DB_STRING;
+				VAL_NULL(cur_val) = 1;
+				LM_DBG("fixed missing col: '%.*s'\n", _c[c]->len, _c[c]->s);
+			} else {
+				switch (bson_iter_type(&iter)) {
+					case BSON_TYPE_INT32:
+						VAL_TYPE(cur_val) = DB_INT;
+						VAL_INT(cur_val) = bson_iter_int32(&iter);
+						LM_DBG("Found int [%.*s]=[%d]\n",
+						       _c[c]->len, _c[c]->s, VAL_INT(cur_val));
+						break;
+					case BSON_TYPE_DOUBLE:
+						VAL_TYPE(cur_val) = DB_DOUBLE;
+						VAL_DOUBLE(cur_val) = bson_iter_double(&iter);
+						LM_DBG("Found double [%.*s]=[%f]\n",
+						       _c[c]->len, _c[c]->s, VAL_DOUBLE(cur_val));
+						break;
+					case BSON_TYPE_UTF8:
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = bson_iter_utf8(&iter, NULL);
+						LM_DBG("Found string [%.*s]=[%s]\n",
+						       _c[c]->len, _c[c]->s, VAL_STRING(cur_val));
+						break;
+					case BSON_TYPE_INT64:
+						VAL_TYPE(cur_val) = DB_BIGINT;
+						VAL_BIGINT(cur_val) = bson_iter_int64(&iter);
+						LM_DBG("Found long [%.*s]=[%lld]\n",
+						       _c[c]->len, _c[c]->s, VAL_BIGINT(cur_val));
+						break;
+					case BSON_TYPE_DATE_TIME:
+						VAL_TYPE(cur_val) = DB_DATETIME;
+						VAL_TIME(cur_val) = bson_iter_date_time(&iter);
+						LM_DBG("Found time [%.*s]=[%d]\n",
+						       _c[c]->len, _c[c]->s, (int)VAL_TIME(cur_val));
+						break;
+					case BSON_TYPE_OID:
+						bson_oid_to_string(bson_iter_oid(&iter), hex_oid);
+						p = &hex_oid_id[r * HEX_OID_SIZE];
+						memcpy(p, hex_oid, HEX_OID_SIZE);
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = p;
+						LM_DBG("Found oid [%.*s]=[%s]\n",
+						       _c[c]->len, _c[c]->s, VAL_STRING(cur_val));
+						break;
+					default:
+						LM_WARN("Unsupported type [%d] for [%.*s] - treating as NULL\n",
+						        bson_iter_type(&iter), _c[c]->len, _c[c]->s);
+						memset(cur_val, 0, sizeof *cur_val);
+						VAL_STRING(cur_val) = dummy_string.s;
+						VAL_STR(cur_val) = dummy_string;
+						VAL_BLOB(cur_val) = dummy_string;
+						/* we treat null values as DB string */
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_NULL(cur_val) = 1;
+						break;
+				}
+			}
+		}
+	}
+
+	bson_destroy(filter);
+	bson_destroy(opts);
+	mongoc_collection_destroy(col);
+	return 0;
+
+out_err:
+	bson_destroy(filter);
+	if (opts) {
+		bson_destroy(opts);
+	}
+	if (cursor) {
+		mongoc_cursor_destroy(cursor);
+	}
+	if (*_r) {
+		db_free_result(*_r);
+		*_r = NULL;
+
+		if (hex_oid_id) {
+			pkg_free(hex_oid_id);
+			hex_oid_id = NULL;
+		}
+	}
+	mongoc_collection_destroy(col);
+	return -1;
+
 #if 0
 	char key_buff[32],namespace_buff[64],*p;
 	bson_t query;
@@ -1253,13 +1535,11 @@ error:
 	"cachedb_mongo sql_select",table->s,table->len,0);
 	return -1;
 #endif
-	return 0;
 }
 
-int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
+int mongo_db_free_result_trans(cachedb_con *con, db_res_t *_r)
 {
-#if 0
-	if ((!con) || (!_r)) {
+	if (!con || !_r) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
@@ -1267,7 +1547,8 @@ int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
 	LM_DBG("freeing mongo query result \n");
 
 	if (hex_oid_id) {
-		pkg_free(hex_oid_id); hex_oid_id = NULL;
+		pkg_free(hex_oid_id);
+		hex_oid_id = NULL;
 	}
 
 	if (db_free_result(_r) < 0) {
@@ -1275,10 +1556,8 @@ int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
 		return -1;
 	}
 
-	mongo_cursor_destroy(MONGO_CDB_CURSOR(con));
-	MONGO_CDB_CURSOR(con) = NULL;
-	return 0;
-#endif
+	mongoc_cursor_destroy(MONGO_CURSOR(con));
+	MONGO_CURSOR(con) = NULL;
 	return 0;
 }
 
