@@ -27,10 +27,10 @@ ifeq ($(CC_NAME),gcc)
 	# this only works in gcc > 4.5
 	GCC_VERSION_LOW = 450
 	GCC_VERSION := $(shell gcc -dumpversion | sed 's/\.//g')
-	$(warning "GCC_VERSION: $(GCC_VERSION)")
+$(warning "GCC_VERSION: $(GCC_VERSION)")
 	GCC_TEST := $(shell test $(GCC_VERSION) -gt $(GCC_VERSION_LOW) && echo ok)
-	$(warning "GCC_TEST debug: test $(GCC_VERSION) -gt $(GCC_VERSION_LOW) && echo ok:)
-	$(warning "GCC_TEST: $(GCC_TEST)")
+$(warning "GCC_TEST debug: test $(GCC_VERSION) -gt $(GCC_VERSION_LOW) && echo ok")
+$(warning "GCC_TEST: $(GCC_TEST)")
 ifeq ($(GCC_TEST),ok)
 DEFS += -Wno-error=cpp
 endif
