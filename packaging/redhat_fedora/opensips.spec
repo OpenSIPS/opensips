@@ -13,7 +13,11 @@
 %global _with_cachedb_redis 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_snmpstats:snmpstats} %{?_without_db_perlvdb:db_perlvdb}
+%if 0%{?fedora} > 23
+%global _without_aaa_radius 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
 Summary:  Open Source SIP Server
 Name:     opensips
@@ -30,14 +34,10 @@ BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  subversion
 BuildRequires:  which
-BuildRequires:  radiusclient-ng-devel
 BuildRequires:  mysql-devel
 BuildRequires:  postgresql-devel
 
 Requires: m4
-%if 0%{!?_without_snmpstats:1}
-BuildRequires:  lm_sensors-devel
-%endif
 BuildRequires:  net-snmp-devel
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
@@ -88,14 +88,17 @@ radius authentication, record routing, an SMS gateway, a jabber gateway, a
 transaction and dialog module, OSP module, statistics support,
 registrar and user location.
 
+%if 0%{!?_without_aaa_radius:1}
 %package  aaa_radius
 Summary:  RADIUS backend for AAA api
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires:  radiusclient-ng-devel
 
 %description  aaa_radius
 This module provides the RADIUS backend for the AAA API - group, auth, uri
 module use the AAA API for performing RADIUS ops.
+%endif
 
 %package  acc
 Summary:  Accounts transactions information to different backends
@@ -891,6 +894,7 @@ Summary:  SNMP management interface for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+BuildRequires:  lm_sensors-devel
 
 %description  snmpstats
 The %{name}-snmpstats package provides an SNMP management interface to
@@ -1085,7 +1089,9 @@ fi
 %attr(755,root,root) %{_initrddir}/opensips
 %endif
 
+%if 0%{!?_without_aaa_radius:1}
 %config(noreplace) %{_sysconfdir}/opensips/dictionary.opensips
+%endif
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
@@ -1269,9 +1275,11 @@ fi
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
 
+%if 0%{!?_without_aaa_radius:1}
 %files aaa_radius
 %{_libdir}/opensips/modules/aaa_radius.so
 %doc docdir/README.aaa_radius
+%endif
 
 %files acc
 %{_libdir}/opensips/modules/acc.so
