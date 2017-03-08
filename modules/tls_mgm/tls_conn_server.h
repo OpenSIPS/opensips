@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   tls_conn.h
  * Author: razvan
  *
@@ -15,7 +15,112 @@
 #include "tls_conn.h"
 #include "tls_config_helper.h"
 #include "../../locking.h"
+#ifndef trace_api_h
+	#include "../../trace_api.h"
+#endif
 
+#define MAX_TRACE_BUF 1024
+
+static char lm_buf[MAX_TRACE_BUF];
+static str lm_msg = { lm_buf, 0};
+
+static str lm_err_state = str_init("ERROR");
+static str lm_info_state = str_init("SUCCESS");
+
+static str trace_connect_op = str_init("CONNECT");
+static str trace_accept_op = str_init("ACCEPT");
+
+#define TLS_TRACE_PRINT_ERRSTACK(OP)												\
+	do {																			\
+		int _code_=0;																\
+		if ( !TRACE_IS_ON( c ) ) {													\
+			break;																	\
+		}																			\
+		while ((_code_ = ERR_get_error())) {										\
+			lm_msg.len = snprintf( lm_msg.s, MAX_TRACE_BUF,							\
+							"%s\n", ERR_error_string(_code_, 0));					\
+		}																			\
+		if ( !_code_) {																\
+			if ( errno ) {															\
+				lm_msg.len = snprintf( lm_msg.s, MAX_TRACE_BUF,						\
+						"TLS error: (ret=%d, err=%d, errno=%d/%s):\n",				\
+					       ret, err, errno, strerror(errno));						\
+			} else {																\
+				lm_msg.len = snprintf( lm_msg.s, MAX_TRACE_BUF,						\
+								"New TLS connection from %s:%d failed to accept\n", \
+									ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);	\
+			}																		\
+		}																			\
+																					\
+		TRACE_TLS( ssl, c, OP, 1,											\
+							LM_TLS_ERR, "%.*s\n", lm_msg.len, lm_msg.s);			\
+	} while(0);
+
+
+
+#define ADD_TRACE_PAYLOAD_PART( CONN, LABEL, ...) \
+	do { \
+		if ( !TRACE_IS_ON( CONN ) ) \
+			break; \
+		lm_msg.len = snprintf( lm_msg.s, MAX_TRACE_BUF, __VA_ARGS__ ); \
+		CONN->tprot->add_payload_part( CONN->message, LABEL, &lm_msg); \
+	} while( 0 );
+
+#define LM_TLS_INFO( MSG, API, ...)                                        \
+	do {                                                                   \
+		if ( MSG && API ) {                                                \
+			lm_msg.len = snprintf( lm_msg.s, MAX_TRACE_BUF, __VA_ARGS__ ); \
+			API->add_payload_part( MSG, "state", &lm_info_state);          \
+			API->add_payload_part( MSG, "message", &lm_msg );              \
+		}                                                                  \
+	} while (0);
+
+#define LM_TLS_ERR( MSG, API, ...)                                         \
+	do {                                                                   \
+		if ( MSG && API ) {                                                \
+			lm_msg.len = snprintf( lm_msg.s, MAX_TRACE_BUF, __VA_ARGS__ ); \
+			API->add_payload_part( MSG, "state", &lm_err_state );          \
+			API->add_payload_part( MSG, "message", &lm_msg );              \
+		}                                                                  \
+	} while (0);
+
+
+#define TRACE_TLS( SSLCTX, CONN, ISCONNECT, ISERR, PRINT_F, ...)  \
+	do {														  \
+		struct tls_data* _data_ = CONN->proto_data;				  \
+																  \
+		if ( !_data_ )											  \
+			break;												  \
+		if ( !_data_->message ) {								  \
+			if ( tls_init_trace_message( CONN ) < 0 ) {  \
+				LM_ERR(" can't init trace_message!\n");			  \
+				break;											  \
+			}													  \
+		}														  \
+		add_certificates( SSLCTX, _data_ );						  \
+		if ( !ISERR )											  \
+			tls_append_master_secret( SSLCTX, _data_ );			  \
+																  \
+		if ( ISCONNECT )										  \
+			_data_->tprot->add_payload_part( _data_->message,	  \
+					"operation", &trace_connect_op );			  \
+		else													  \
+			_data_->tprot->add_payload_part( _data_->message,	  \
+					"operation", &trace_accept_op );			  \
+																  \
+		PRINT_F( _data_->message, _data_->tprot, __VA_ARGS__);	  \
+		CONN->proto_flags |= F_TLS_TRACE_READY;					  \
+	} while(0);
+
+#define TRACE_IS_ON( CONN ) (CONN->proto_data && \
+		((struct tls_data*)CONN->proto_data)->tprot && \
+			((struct tls_data*)CONN->proto_data)->dest)
+
+struct tls_data {
+	TRACE_PROTO_COMMON;
+};
+
+static int tls_init_trace_message( struct tcp_connection* c );
 
 static void tls_dump_cert_info(char* s,	X509* cert)
 {
@@ -28,6 +133,55 @@ static void tls_dump_cert_info(char* s,	X509* cert)
 	LM_INFO("%s subject: %s, issuer: %s\n", s ? s : "", subj, issuer);
 	OPENSSL_free(subj);
 	OPENSSL_free(issuer);
+}
+
+static inline void tls_append_cert_info(X509* cert, char client, trace_message message, trace_proto_t* tprot)
+{
+	str subj, issuer;
+
+	if ( !cert || !message || !tprot )
+		return;
+
+	subj.s   = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+	issuer.s = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+
+	subj.len = strlen( subj.s );
+	issuer.len = strlen( issuer.s );
+
+	if ( client ) {
+		tprot->add_payload_part( message, "client-subject", &subj );
+		tprot->add_payload_part( message, "client-issuer", &issuer );
+	} else {
+		tprot->add_payload_part( message, "server-subject", &subj );
+		tprot->add_payload_part( message, "server-issuer", &issuer );
+	}
+
+	OPENSSL_free( subj.s );
+	OPENSSL_free( issuer.s );
+}
+
+
+
+static inline void tls_append_master_secret( SSL* ctx, struct tls_data* data )
+{
+	static char ssl_print_master_buf[SSL_MAX_MASTER_KEY_LENGTH * 2];
+
+	str master;
+	SSL_SESSION* s;
+
+	s = SSL_get1_session( ctx );
+	if ( !s ) {
+		LM_DBG("no session to get master key from!\n");
+		return;
+	}
+
+	master.s = ssl_print_master_buf;
+	master.len = string2hex( s->master_key, s->master_key_length, ssl_print_master_buf );
+
+	data->tprot->add_payload_part( data->message, "master-key", &master);
+	/* this will not always free the session, probably never will just
+	 * decrease the session refcount */
+	SSL_SESSION_free( s );
 }
 
 
@@ -133,6 +287,18 @@ static void tls_dump_verification_failure(long verification_result)
 	}
 }
 
+static void add_certificates( SSL* ssl, struct tls_data* data)
+{
+	X509* cert;
+
+	cert = SSL_get_peer_certificate( ssl );
+	tls_append_cert_info(cert, 1/* client */, data->message, data->tprot);
+
+
+	cert = SSL_get_certificate( ssl );
+	tls_append_cert_info(cert, 0/* server */, data->message, data->tprot);
+}
+
 /*
  * Wrapper around SSL_accept, returns -1 on error, 0 on success
  */
@@ -163,9 +329,19 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 	}
 #endif
 #endif
+
 	if (ret > 0) {
+		if ( TRACE_IS_ON( c ) ) {
+			TRACE_TLS( ssl, c, 0, 0,
+					LM_TLS_INFO, "New TLS connection from %s:%d accepted using %s %s %d\n",
+						ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
+						SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
+						SSL_get_cipher_bits(ssl, 0) );
+		}
+
 		LM_INFO("New TLS connection from %s:%d accepted\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
 		/* TLS accept done, reset the flag */
 		c->proto_flags &= ~F_TLS_DO_ACCEPT;
 
@@ -201,6 +377,13 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("TLS connection from %s:%d accept failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
+				if ( TRACE_IS_ON( c ) ) {
+					TRACE_TLS( ssl, c, 0, 1,
+							LM_TLS_ERR, "TLS connection from %s:%d accept failed cleanly\n",
+								ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				}
+
 				c->state = S_CONN_BAD;
 				return -1;
 			case SSL_ERROR_WANT_READ:
@@ -215,10 +398,15 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
 				       ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-				if (errno != 0)
+
+				/* FIXME shall we also add this to tracing? */
+				if (errno != 0) {
 					LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n",
 					       ret, err, errno, strerror(errno));
+				}
 				tls_print_errstack();
+
+				TLS_TRACE_PRINT_ERRSTACK(0);
 				return -1;
 		}
 	}
@@ -246,8 +434,17 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 
 	ret = SSL_connect(ssl);
 	if (ret > 0) {
+		if ( TRACE_IS_ON( c ) ) {
+			TRACE_TLS( ssl, c, 1, 0,
+					LM_TLS_INFO, "New TLS connection from %s:%d accepted using %s %s %d\n",
+						ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
+						SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
+						SSL_get_cipher_bits(ssl, 0) );
+		}
+
 		LM_INFO("New TLS connection to %s:%d established\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
 		c->proto_flags &= ~F_TLS_DO_CONNECT;
 		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
@@ -283,6 +480,13 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
+				if ( TRACE_IS_ON( c ) ) {
+					TRACE_TLS( ssl, c, 1, 1,
+							LM_TLS_ERR, "TLS connection from %s:%d accept failed cleanly\n",
+								ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				}
+
 				c->state = S_CONN_BAD;
 				return -1;
 			case SSL_ERROR_WANT_READ:
@@ -296,13 +500,22 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
+
+				if ( TRACE_IS_ON( c ) ) {
+					TRACE_TLS( ssl, c, 1, 1,
+							LM_TLS_ERR, "New TLS connection from %s:%d failed to accept\n",
+								ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+				}
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
 				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
 					err,ret,strerror(errno), errno);
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
+
+				TLS_TRACE_PRINT_ERRSTACK(1);
 				return -1;
 		}
 	}
@@ -519,6 +732,36 @@ error:
 	lock_release(&c->write_lock);
 	return -1;
 }
+
+static int tls_init_trace_message( struct tcp_connection* c )
+{
+	str str_id;
+	struct tls_data* data;
+	static int correlation_id = -1, correlation_vendor = -1;
+
+	data = c->proto_data;
+	data->message = data->tprot->create_trace_message( 0, 0,
+			/* FIXME: is this correct protocol number?? */
+			IPPROTO_IDP, 0, data->net_trace_proto_id, data->dest);
+
+	str_id.s = int2str( c->id, &str_id.len );
+
+	if ( correlation_vendor == -1 || correlation_id == - 1) {
+		if ( data->tprot->get_data_id("correlation_id", &correlation_vendor, &correlation_id ) < 0 ) {
+			LM_ERR("can't find correlation id chunk!\n");
+			return -1;
+		}
+	}
+
+	if ( data->tprot->add_chunk( data->message, str_id.s, str_id.len, TRACE_TYPE_STR,
+			correlation_id, correlation_vendor) < 0) {
+		LM_ERR("failed to add correlation id! aborting trace...!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 
 
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   tls_helper.h
  * Author: cristi
  *
@@ -8,8 +8,9 @@
 #ifndef TLS_HELPER_H
 #define TLS_HELPER_H
 
-#define F_TLS_DO_ACCEPT  (1<<0)
-#define F_TLS_DO_CONNECT (1<<1)
+#define F_TLS_DO_ACCEPT   (1<<0)
+#define F_TLS_DO_CONNECT  (1<<1)
+#define F_TLS_TRACE_READY (1<<2)
 
 #include "tls_config_helper.h"
 #include "../../locking.h"
