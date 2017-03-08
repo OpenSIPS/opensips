@@ -40,7 +40,7 @@
 #include <libmemcached/memcached.h>
 
 #if !defined(LIBMEMCACHED_VERSION_HEX) || LIBMEMCACHED_VERSION_HEX < 0x00037000
-typedef memcached_return_t memcached_return
+typedef memcached_return_t memcached_return;
 #endif
 
 
