@@ -8,10 +8,11 @@ NAME=lua.so
 
 MYSQLCFG=$(shell which mysql_config)
 LIB_LUA = $(shell pkg-config --libs lua5.1 2> /dev/null) $(shell pkg-config --libs lua-5.1 2> /dev/null) $(shell pkg-config --libs lua 2>/dev/null)
+FLAGS_LUA = $(shell pkg-config --cflags lua5.1 2> /dev/null) $(shell pkg-config --cflags lua-5.1 2> /dev/null) $(shell pkg-config --cflags lua 2>/dev/null)
 ifeq (,$(findstring -l,$(LIB_LUA)))
 LIB_LUA = -llua
 endif
-DEFS += $(shell $(MYSQLCFG) --include | sed 's/\(-I.*\)\/mysql/\1/g' ) -I/usr/include/lua5.1/ -I$(LOCALBASE)/include/memcached
+DEFS += $(shell $(MYSQLCFG) --include | sed 's/\(-I.*\)\/mysql/\1/g' ) -I/usr/include/lua5.1/ -I$(LOCALBASE)/include/memcached $(FLAGS_LUA)
 LIBS += $(shell $(MYSQLCFG) --libs) -L/usr/lib/ -L/usr/local/lib/ -lmemcached $(LIB_LUA)
 
 include ../../Makefile.modules
