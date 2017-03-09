@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2011-2017 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -16,11 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *
- * history:
- * ---------
- *  2011-09-xx  created (vlad-paiu)
  */
 
 #include "../../dprint.h"
@@ -264,92 +259,3 @@ void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
 		}
 	}
 }
-
-#if 0
-int mongo_cursor_to_json(mongo_cursor *m_cursor,
-		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
-{
-	struct json_object *obj=NULL;
-	bson_iterator it;
-	const char *p;
-	int current_size=0,len;
-
-	/* start with a single returned document */
-	*reply = pkg_malloc(1 * sizeof(cdb_raw_entry *));
-	if (*reply == NULL) {
-		LM_ERR("No more PKG mem\n");
-		return -1;
-	}
-
-	/* expected_kv_no is always 1 for mongoDB */
-	**reply = pkg_malloc(expected_kv_no * sizeof(cdb_raw_entry));
-	if (**reply == NULL) {
-		LM_ERR("No more pkg mem\n");
-		pkg_free(*reply);
-		return -1;
-	}
-
-	while( mongo_cursor_next(m_cursor) == MONGO_OK ) {
-		if (current_size > 0) {
-			*reply = pkg_realloc(*reply,(current_size + 1) * sizeof(cdb_raw_entry *));
-			if (*reply == NULL) {
-				LM_ERR("No more pkg\n");
-				goto error_cleanup;
-			}
-			(*reply)[current_size] = pkg_malloc(expected_kv_no * sizeof(cdb_raw_entry));
-			if ((*reply)[current_size] == NULL) {
-				LM_ERR("No more pkg\n");
-				goto error_cleanup;
-			}
-		}
-
-		obj = json_object_new_object();
-		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
-		bson_to_json_generic(obj,&it,BSON_TYPE_DOCUMENT);
-
-		p = json_object_to_json_string(obj);
-		if (!p) {
-			LM_ERR("Json failed to be translated to string\n");
-			goto error_cleanup;
-		}
-
-		len = strlen(p);
-
-		(*reply)[current_size][0].val.s.s = pkg_malloc(len);
-		if (! (*reply)[current_size][0].val.s.s ) {
-			LM_ERR("No more pkg \n");
-			goto error_cleanup;
-		}
-
-		memcpy((*reply)[current_size][0].val.s.s,p,len);
-		(*reply)[current_size][0].val.s.len = len;
-		(*reply)[current_size][0].type = CDB_STR;
-
-		json_object_put(obj);
-
-		current_size++;
-	}
-
-	*reply_no = current_size;
-	LM_DBG("Fetched %d results\n",current_size);
-	if (current_size == 0)
-		return -2;
-
-	return 1;
-
-error_cleanup:
-	if (obj)
-		json_object_put(obj);
-
-	for (len = 0;len<current_size;len++) {
-		pkg_free((*reply)[len][0].val.s.s);
-		pkg_free((*reply)[len]);
-	}
-
-	pkg_free(*reply);
-
-	*reply = NULL;
-	*reply_no=0;
-	return -1;
-}
-#endif

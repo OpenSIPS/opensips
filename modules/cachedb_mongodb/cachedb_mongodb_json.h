@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2011-2017 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -16,11 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *
- * history:
- * ---------
- *  2011-09-xx  created (vlad-paiu)
  */
 
 #ifndef CACHEDBMONGO_JSON_H
@@ -32,8 +27,6 @@
 #include <stdint.h>
 
 int json_to_bson(char *json,bson_t *bb);
-//int mongo_cursor_to_json(mongo_cursor *m_cursor,
-//		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
 
 void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
                           bson_type_t type);
