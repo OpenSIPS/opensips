@@ -80,19 +80,17 @@ int net_trace_proto_id=-1;
 
 #define LM_TRACE_DBG( ID, ... ) \
 	do { \
-		static str dp_dbg_str = { DP_DBG_TEXT, sizeof( DP_DBG_TEXT ) - 2 }; \
+		static str success_str = str_init("SUCCESS"); \
 		LM_DBG( __VA_ARGS__ ); \
-		trace_log( ID, &dp_dbg_str, __VA_ARGS__ ); \
+		trace_log( ID, &success_str, __VA_ARGS__ ); \
 	} while(0);
 
 #define LM_TRACE_ERR( ID, ... ) \
 	do { \
-		static str dp_err_str = { DP_ERR_TEXT, sizeof( DP_ERR_TEXT ) - 2 }; \
-		LM_DBG( __VA_ARGS__ ); \
-		trace_log( ID, &dp_err_str, __VA_ARGS__ ); \
+		static str error_str = str_init("ERROR"); \
+		LM_ERR( __VA_ARGS__ ); \
+		trace_log( ID, &error_str, __VA_ARGS__ ); \
 	} while(0);
-
-
 
 void trace_log( int id, str* level, char* format, ...);
 
@@ -292,10 +290,9 @@ static void tcp_conn_clean(struct tcp_connection* c)
 	struct tcp_data *d = (struct tcp_data*)c->proto_data;
 	int r;
 
-///	if ( unix_tcp_sock > 0 )
-///		LM_TRACE_DBG( c->id, "Connection from %s:%d to %s:%d was closed!\n",
-///					ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-///					ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
+///	LM_TRACE_DBG( c->id, "Connection from %s:%d to %s:%d was closed!\n",
+///				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
+///				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 	for (r=0;r<d->async_chunks_no;r++) {
 		shm_free(d->async_chunks[r]);
@@ -1070,7 +1067,7 @@ error:
 
 void trace_log( int id, str* level, char* format, ... )
 {
-#define TRACELOG_MAX 128
+#define TRACELOG_MAX 512
 	static char buf[ TRACELOG_MAX ];
 
 	static str payload = { buf, 0};
@@ -1110,8 +1107,8 @@ void trace_log( int id, str* level, char* format, ... )
 
 	payload.len = strlen( payload.s );
 
-	tprot.add_payload_part( message, "level", level );
-	tprot.add_payload_part( message, "payload", &payload );
+	tprot.add_payload_part( message, "status", level );
+	tprot.add_payload_part( message, "message", &payload );
 
 	str_id.s = int2str( id, &str_id.len );
 
