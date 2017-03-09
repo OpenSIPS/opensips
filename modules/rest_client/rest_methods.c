@@ -112,15 +112,36 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			/* fetch local an remote ips*/
 			memset( &tparam->req_body, 0, BODY_MAX );
 
+#if ( LIBCURL_VERSION_NUM >= 0x072100 )
 			/* curl lib guarantees this ip is null terminated */
 			curl_easy_getinfo( handle, CURLINFO_LOCAL_IP, &ip);
-			strcpy( tparam->local_ip, ip);
 
 			curl_easy_getinfo( handle, CURLINFO_LOCAL_PORT, &tparam->local_port);
+#else
+			/* FIXME look for another way to fetch this info */
+			/* set boggus localhost ip */
+			ip = "127.0.0.1";
+			/* set port to 0 */
+			tparam->local_port = 0;
+#endif
+			strcpy( tparam->local_ip, ip);
 
+#if ( LIBCURL_VERSION_NUM >= 0x072100 )
 			curl_easy_getinfo( handle, CURLINFO_PRIMARY_IP, &ip);
+#else
+			/* FIXME look for another way to fetch this info */
+			/* set boggus localhost ip */
+			ip = "127.0.0.1";
+#endif
 			strcpy( tparam->remote_ip, ip);
+
+#if ( LIBCURL_VERSION_NUM >= 0x071900 )
 			curl_easy_getinfo( handle, CURLINFO_PRIMARY_PORT, &tparam->remote_port);
+#else
+			/* FIXME look for another way to fetch this info */
+			/* set 0 port for incoming */
+			tparam->remote_port = 0;
+#endif
 		}
 
 		if ( (size > 4 &&

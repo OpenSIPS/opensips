@@ -180,8 +180,6 @@ static Bool test_source_address(struct sip_msg *msg);
 static Bool test_private_via(struct sip_msg *msg);
 static Bool test_source_contact(struct sip_msg *msg);
 
-static INLINE char* shm_strdup(char *source);
-
 static int  mod_init(void);
 static int  child_init(int rank);
 static void mod_destroy(void);
@@ -722,22 +720,6 @@ Dialog_Param_add_candidate(Dialog_Param *param, char *candidate)
 
 // Miscellaneous helper functions
 //
-
-static INLINE char*
-shm_strdup(char *source)
-{
-    char *copy;
-
-    if (!source)
-        return NULL;
-
-    copy = (char*)shm_malloc(strlen(source) + 1);
-    if (!copy)
-        return NULL;
-    strcpy(copy, source);
-
-    return copy;
-}
 
 
 static Bool

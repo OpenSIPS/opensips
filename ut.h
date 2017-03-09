@@ -585,6 +585,11 @@ static inline int shm_str_dup(str* dst, const str* src)
  */
 static inline int shm_nt_str_dup(str* dst, const str* src)
 {
+	if (!src || !src->s)
+		return -1;
+
+	memset(dst, 0, sizeof *dst);
+
 	dst->s = shm_malloc(src->len + 1);
 	if (!dst->s) {
 		LM_ERR("no shared memory left\n");
@@ -595,6 +600,22 @@ static inline int shm_nt_str_dup(str* dst, const str* src)
 	dst->len = src->len;
 	dst->s[dst->len] = '\0';
 	return 0;
+}
+
+static inline char *shm_strdup(const char *str)
+{
+	char *rval;
+	int len;
+
+	if (!str)
+		return NULL;
+
+	len = strlen(str) + 1;
+	rval = shm_malloc(len);
+	if (!rval)
+		return NULL;
+	memcpy(rval, str, len);
+	return rval;
 }
 
 /*
@@ -612,6 +633,22 @@ static inline int pkg_str_dup(str* dst, const str* src)
 	memcpy(dst->s, src->s, src->len);
 	dst->len = src->len;
 	return 0;
+}
+
+static inline char *pkg_strdup(const char *str)
+{
+	char *rval;
+	int len;
+
+	if (!str)
+		return NULL;
+
+	len = strlen(str) + 1;
+	rval = pkg_malloc(len);
+	if (!rval)
+		return NULL;
+	memcpy(rval, str, len);
+	return rval;
 }
 
 /*

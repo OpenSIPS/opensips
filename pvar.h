@@ -59,6 +59,16 @@
 #define PV_VAL_PKG			32
 #define PV_VAL_SHM			64
 
+#define fix_val_str_flags(_pvv) \
+	do { \
+		if (_pvv.flags & PV_VAL_STR) { \
+			if (!_pvv.rs.s && _pvv.rs.len == 0) \
+				_pvv.flags |= PV_VAL_NULL; \
+			else if (_pvv.rs.s && _pvv.rs.len == 0) \
+				_pvv.flags |= PV_VAL_EMPTY; \
+		} \
+	} while (0)
+
 #define PV_NAME_INTSTR	0
 #define PV_NAME_PVAR	1
 

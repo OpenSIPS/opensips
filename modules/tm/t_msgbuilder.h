@@ -145,14 +145,19 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	faked_req->msg_flags |= FL_TM_FAKE_REQ;
 
 	/* new_uri can change -- make a private copy */
-	faked_req->new_uri.s=pkg_malloc( uac->uri.len+1 );
-	if (!faked_req->new_uri.s) {
-		LM_ERR("no uri/pkg mem\n");
-		return 0;
+	if (uac) {
+		faked_req->new_uri.s=pkg_malloc( uac->uri.len+1 );
+		if (!faked_req->new_uri.s) {
+			LM_ERR("no uri/pkg mem\n");
+			return 0;
+		}
+		faked_req->new_uri.len = uac->uri.len;
+		memcpy( faked_req->new_uri.s, uac->uri.s, uac->uri.len);
+		faked_req->new_uri.s[faked_req->new_uri.len]=0;
+	} else {
+		faked_req->new_uri.s = NULL;
+		faked_req->new_uri.len = 0;
 	}
-	faked_req->new_uri.len = uac->uri.len;
-	memcpy( faked_req->new_uri.s, uac->uri.s, uac->uri.len);
-	faked_req->new_uri.s[faked_req->new_uri.len]=0;
 	faked_req->parsed_uri_ok = 0;
 
 	/* duplicate the dst_uri, advertised address and port into private mem
@@ -211,7 +216,8 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	/* set as flags the global flags and the branch flags from the
 	 * elected branch */
 	faked_req->flags = uas->request->flags;
-	setb0flags( faked_req, uac->br_flags);
+	if (uac)
+		setb0flags( faked_req, uac->br_flags);
 
 	return 1;
 out3:

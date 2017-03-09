@@ -1,15 +1,23 @@
 %if 0%{?rhel}
-    # copied from lm_sensors exclusive arch
-    %ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
-        %global disable_snmpstats snmpstats
-    %endif
+# copied from lm_sensors exclusive arch
+%ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
+%global _without_snmpstats 1
+%endif
+%endif
+
+%if 0%{?el5:1}
+%global _without_db_perlvdb 1
 %endif
 
 %if 0%{?rhel} > 6 || 0%{?fedora} > 0
-    %define _with_cachedb_redis 1
+%global _with_cachedb_redis 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?disable_snmpstats} %{?el5:db_perlvdb}
+%if 0%{?fedora} > 23
+%global _without_aaa_radius 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
 Summary:  Open Source SIP Server
 Name:     opensips
@@ -26,16 +34,10 @@ BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  subversion
 BuildRequires:  which
-# needed by snmpstats
-BuildRequires:  radiusclient-ng-devel
 BuildRequires:  mysql-devel
 BuildRequires:  postgresql-devel
 
 Requires: m4
-# required by snmpstats module
-%if %{undefined disable_snmpstats}
-BuildRequires:  lm_sensors-devel
-%endif
 BuildRequires:  net-snmp-devel
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
@@ -86,14 +88,17 @@ radius authentication, record routing, an SMS gateway, a jabber gateway, a
 transaction and dialog module, OSP module, statistics support,
 registrar and user location.
 
+%if 0%{!?_without_aaa_radius:1}
 %package  aaa_radius
 Summary:  RADIUS backend for AAA api
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires:  radiusclient-ng-devel
 
 %description  aaa_radius
 This module provides the RADIUS backend for the AAA API - group, auth, uri
 module use the AAA API for performing RADIUS ops.
+%endif
 
 %package  acc
 Summary:  Accounts transactions information to different backends
@@ -125,7 +130,7 @@ Requires: %{name} = %{version}-%{release}
 B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
 that offers the possibility to build certain services on top of it.
 
-%if 0%{?_with_cachedb_cassandra}
+%if 0%{?_with_cachedb_cassandra:1}
 %package  cachedb_cassandra
 Summary:  Cassandra connector
 Group:    System Environment/Daemons
@@ -137,7 +142,7 @@ Cassandra module is an implementation of a cache system designed to
 work with a cassandra server.
 %endif
 
-%if 0%{?_with_cachedb_couchbase}
+%if 0%{?_with_cachedb_couchbase:1}
 Summary:  opensips cachedb_couchbase implementation.
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -159,7 +164,7 @@ BuildRequires:  libmemcached-devel
 Memcached module is an implementation of a cache system designed to
 work with a memcached server.
 
-%if 0%{?_with_cachedb_mongodb}
+%if 0%{?_with_cachedb_mongodb:1}
 %package  cachedb_mongodb
 Summary:  Mongodb connector
 Group:    System Environment/Daemons
@@ -170,7 +175,7 @@ Mongodb module is an implementation of a cache system designed to
 work with a mongodb server.
 %endif
 
-%if 0%{?_with_cachedb_redis}
+%if 0%{?_with_cachedb_redis:1}
 %package  cachedb_redis
 Summary:  Redis connector
 Group:    System Environment/Daemons
@@ -258,7 +263,7 @@ Requires: mysql-libs
 The %{name}-db_mysql package contains the MySQL plugin for %{name}, which allows
 a MySQL-Database to be used for persistent storage.
 
-%if 0%{?_with_db_oracle}
+%if 0%{?_with_db_oracle:1}
 %package  db_oracle
 Summary:  Oracle Storage Support for the OpenSIPS
 Group:    System Environment/Daemons
@@ -270,7 +275,7 @@ The %{name}-db_oracle package contains the Oracle plugin for %{name}, which allo
 a Oracle-Database to be used for persistent storage.
 %endif
 
-%if %{undefined el5}
+%if 0%{!?_without_db_perlvdb:1}
 %package  db_perlvdb
 Summary:  Perl virtual database engine
 Group:    System Environment/Daemons
@@ -459,7 +464,11 @@ The LDAP module implements an LDAP search interface for OpenSIPS.
 Summary:  Call LUA scripts from OpenSIPS cfg
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+%if 0%{?fedora} > 0
+BuildRequires: compat-lua-devel
+%else
 BuildRequires: lua-devel
+%endif
 
 %description  lua
 The time needed when writing a new OpenSIPS module unfortunately
@@ -497,7 +506,7 @@ Requires: %{name} = %{version}-%{release}
 Mmgeoip is a lightweight wrapper for the MaxMind GeoIP API. It adds
 IP address-to-location lookup capability to OpenSIPS scripts.
 
-%if 0%{?_with_osp}
+%if 0%{?_with_osp:1}
 %package  osp
 Summary:  OSP Support for the OpenSIPS
 Group:    System Environment/Daemons
@@ -869,7 +878,7 @@ like SMS confirmation--the gateway can confirm to the SIP user if his
 message really reached its destination as a SMS--or multi-part messages--if
 a SIP messages is too long it will be split and sent as multiple SMS.
 
-%if 0%{?_with_sngtc}
+%if 0%{?_with_sngtc:1}
 %package  sngtc
 Summary:  Sangoma media transcoding interface for the OpenSIPS
 Group:    System Environment/Daemons
@@ -879,12 +888,13 @@ Requires: %{name} = %{version}-%{release}
 The sngtc package implements interface to Sangoma media transcoding.
 %endif
 
-%if %{undefined disable_snmpstats}
+%if 0%{!?_without_snmpstats:1}
 %package  snmpstats
 Summary:  SNMP management interface for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+BuildRequires:  lm_sensors-devel
 
 %description  snmpstats
 The %{name}-snmpstats package provides an SNMP management interface to
@@ -1079,7 +1089,9 @@ fi
 %attr(755,root,root) %{_initrddir}/opensips
 %endif
 
+%if 0%{!?_without_aaa_radius:1}
 %config(noreplace) %{_sysconfdir}/opensips/dictionary.opensips
+%endif
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
@@ -1263,9 +1275,11 @@ fi
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
 
+%if 0%{!?_without_aaa_radius:1}
 %files aaa_radius
 %{_libdir}/opensips/modules/aaa_radius.so
 %doc docdir/README.aaa_radius
+%endif
 
 %files acc
 %{_libdir}/opensips/modules/acc.so
@@ -1285,12 +1299,12 @@ fi
 %doc docdir/README.b2b_sca
 %doc docdir/README.call_center
 
-%if 0%{?_with_cachedb_cassandra}
+%if 0%{?_with_cachedb_cassandra:1}
 %{_libdir}/opensips/modules/cachedb_cassandra.so
 %doc %{_docdir}/opensips/README.cachedb_cassandra
 %endif
 
-%if 0%{?_with_cachedb_couchbase}
+%if 0%{?_with_cachedb_couchbase:1}
 %files cachedb_couchbase
 %{_libdir}/opensips/modules/cachedb_couchbase.so
 %doc %{_docdir}/opensips/README.cachedb_couchbase
@@ -1300,13 +1314,13 @@ fi
 %{_libdir}/opensips/modules/cachedb_memcached.so
 %doc docdir/README.cachedb_memcached
 
-%if 0%{?_with_cachedb_mongodb}
+%if 0%{?_with_cachedb_mongodb:1}
 %files cachedb_mongodb
 %{_libdir}/opensips/modules/cachedb_mongodb.so
 %doc %{_docdir}/opensips/README.cachedb_mongodb
 %endif
 
-%if 0%{?_with_cachedb_redis}
+%if 0%{?_with_cachedb_redis:1}
 %files cachedb_redis
 %{_libdir}/opensips/modules/cachedb_redis.so
 %doc docdir/README.cachedb_redis
@@ -1354,7 +1368,7 @@ fi
 %{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.db_mysql
 
-%if 0%{?_with_db_oracle}
+%if 0%{?_with_db_oracle:1}
 %files db_oracle
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
@@ -1366,7 +1380,7 @@ fi
 %doc docdir/README.db_oracle
 %endif
 
-%if %{undefined el5}
+%if 0%{!?_without_db_perlvdb:1}
 %files db_perlvdb
 %dir %{perl_vendorlib}/OpenSIPS/VDB
 %dir %{perl_vendorlib}/OpenSIPS/VDB/Adapter
@@ -1479,7 +1493,7 @@ fi
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
 
-%if 0%{?_with_osp}
+%if 0%{?_with_osp:1}
 %files osp
 %{_libdir}/opensips/modules/osp.so
 %doc %{_docdir}/opensips/README.osp
@@ -1615,13 +1629,13 @@ fi
 %{_libdir}/opensips/modules/sms.so
 %doc docdir/README.sms
 
-%if 0%{?_with_sngtc}
+%if 0%{?_with_sngtc:1}
 %files sngtc
 %{_libdir}/opensips/modules/sngtc.so
 %doc %{_docdir}/opensips/README.sngtc
 %endif
 
-%if %{undefined disable_snmpstats}
+%if 0%{!?_without_snmpstats:1}
 %files snmpstats
 %{_libdir}/opensips/modules/snmpstats.so
 %doc docdir/README.snmpstats
@@ -1661,7 +1675,8 @@ fi
 %changelog
 * Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
 - Specification updated for opensips 2.3
-- New pacakges: freeswitch, lua, mid_registrar, sip_i
+- New packages: freeswitch, mid_registrar, sip_i
+- Enabled packages: lua
 - Renamed packages: memcached -> cachedb_memcached, redis -> cachedb_redis,
   unixodbc -> db_unixodbc, xmlrpc -> mi_xmlrpc
 - Added possibility to build unsupported modules (from obsolete .spec):

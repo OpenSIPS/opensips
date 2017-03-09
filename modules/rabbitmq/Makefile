@@ -25,8 +25,8 @@ endif
 # make sure travis does not fail this module for older RabbitMQ versions
 ifeq ($(CC_NAME),gcc)
 	# this only works in gcc > 4.5
-	GCC_VERSION_LOW = 450
-	GCC_VERSION := $(shell gcc -dumpversion | sed 's/\.//g')
+	GCC_VERSION_LOW = 45
+	GCC_VERSION := $(shell gcc -dumpversion | sed 's/^\([0-9]\)*\.\([0-9]\)*.*/\1\2/g')
 	GCC_TEST := $(shell test $(GCC_VERSION) -gt $(GCC_VERSION_LOW) && echo ok)
 ifeq ($(GCC_TEST),ok)
 DEFS += -Wno-error=cpp

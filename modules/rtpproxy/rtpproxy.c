@@ -2578,21 +2578,6 @@ struct rtpp_set * get_rtpp_set(struct sip_msg * msg, nh_set_param_t *pset)
 }
 
 
-static char *
-pkg_strdup(char *cp)
-{
-	char *rval;
-	int len;
-
-	len = strlen(cp) + 1;
-	rval = pkg_malloc(len);
-	if (rval == NULL)
-		return (NULL);
-	memcpy(rval, cp, len);
-	return (rval);
-}
-
-
 static int rtpp_get_var_svalue(struct sip_msg *msg, gparam_p gp, str *val, int n)
 {
 	#define MAX_BUF  64

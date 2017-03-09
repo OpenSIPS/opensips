@@ -14,9 +14,9 @@ Bogdan-Andrei Iancu
 
 Ovidiu Sas
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
 
-   Copyright � 2005-2008 Voice Sistem SRL
+   Copyright © 2005-2008 Voice Sistem SRL
    Revision History
    Revision $Revision: 8740 $ $Date$
      __________________________________________________________
@@ -78,13 +78,15 @@ Ovidiu Sas
               1.4.12. t_on_failure(failure_route)
               1.4.13. t_on_reply(reply_route)
               1.4.14. t_on_branch(branch_route)
-              1.4.15. t_add_hdrs("sip_hdrs")
-              1.4.16. t_add_cancel_reason("Reason_hdr")
-              1.4.17. t_replicate(URI,[flags])
-              1.4.18. t_write_req(info,fifo)
+              1.4.15. t_inject_branches(source[,flags])
+              1.4.16. t_wait_for_new_branches()
+              1.4.17. t_add_hdrs("sip_hdrs")
+              1.4.18. t_add_cancel_reason("Reason_hdr")
+              1.4.19. t_replicate(URI,[flags])
+              1.4.20. t_write_req(info,fifo)
                       t_write_unix(info,sock)
 
-              1.4.19. t_flush_flags()
+              1.4.21. t_flush_flags()
 
         1.5. Exported pseudo-variables
 
@@ -159,11 +161,13 @@ Ovidiu Sas
    1.31. t_on_failure usage
    1.32. t_on_reply usage
    1.33. t_on_branch usage
-   1.34. t_add_hdrs usage
-   1.35. t_add_cancel_reason usage
-   1.36. t_replicate usage
-   1.37. t_write_req/unix usage
-   1.38. t_flush_flags usage
+   1.34. t_inject_branches usage
+   1.35. t_wait_for_new_branches usage
+   1.36. t_add_hdrs usage
+   1.37. t_add_cancel_reason usage
+   1.38. t_replicate usage
+   1.39. t_write_req/unix usage
+   1.40. t_flush_flags usage
 
 Chapter 1. Admin Guide
 
@@ -246,7 +250,7 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.14, " t_on_branch(branch_route) " and the
+   Section 1.4.14, “ t_on_branch(branch_route) ” and the
    setbflag(), resetbflag() and isbflagset() script functions.
 
    Also, modules may set branch flags before transaction creation
@@ -490,8 +494,8 @@ modparam("tm", "restart_fr_on_each_reply", 0)
    availabe at:
    http://opensips.org/docs/pseudo-variables-1.1.x.html
 
-   Each element will be appended per line in "name: value" format.
-   Element "$rb (message body)" is the only one which does not
+   Each element will be appended per line in “name: value” format.
+   Element “$rb (message body)” is the only one which does not
    accept name; the body it will be printed all the time at the
    end, disregarding its position in the definition string.
 
@@ -691,14 +695,14 @@ if (!t_relay()) {
 1.4.2.  t_relay(proto:host:port,[flags])
 
    Relay a message statefully to a fixed destination. The
-   destination is specified as "[proto:]host[:port]". If a
-   destination URI "$du" for this message was set before the
+   destination is specified as “[proto:]host[:port]”. If a
+   destination URI “$du” for this message was set before the
    function is called then this value will be used as the
    destination instead of the function parameter.
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for details see the above
-   "t_relay([flags])" function.
+   “t_relay([flags])” function.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -808,7 +812,7 @@ if ( is_method("CANCEL") ) {
 
 1.4.7.  t_check_status(re)
 
-   Returns true if the regualr expression "re" match the reply
+   Returns true if the regualr expression “re” match the reply
    code of the response message as follows:
      * in routing block - the code of the last sent reply.
      * in on_reply block - the code of the current received reply.
@@ -830,7 +834,7 @@ if (t_check_status("(487)|(408)")) {
    Returns true if all or last (depending of the parameter)
    reply(es) were local generated (and not received).
 
-   Parameter may be "all" or "last".
+   Parameter may be “all” or “last”.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
@@ -916,7 +920,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    new branch (good for services such as forward_on_no_reply) or
    send a final reply on your own (good for example for message
    silo, which received a negative reply from upstream and wants
-   to tell upstream "202 I will take care of it").
+   to tell upstream “202 I will take care of it”).
 
    As not all functions are available from failure route, please
    check the documentation for each function to see the
@@ -1059,18 +1063,84 @@ branch_route[1] {
 }
 ...
 
-1.4.15.  t_add_hdrs("sip_hdrs")
+1.4.15.  t_inject_branches(source[,flags])
+
+   The function adds new SIP branches (destinations) to an
+   existing transaction and fires them (sends them out). The
+   transaction may already have ongoing branches (like in ringing
+   state), which will not be affected by the injection of the new
+   branches. Also it is possible for the transaction not to have
+   any ongoing branches at the moment of the injection (still, the
+   transaction must wait for new branches, even if all existing
+   ones are completed - see the t_wait_for_new_branches function
+   for this).
+
+   The main usage scenario for this function (and also what makes
+   it different from t_relay is the ability to add new branches to
+   an ongoing transaction from script routes not related to the
+   transaction ( like timer route, event route, notification
+   route, and other). In such routes, other functions/module used
+   before the injection will point to the transaction to be
+   affected by this injection - see the event_routing module.
+
+   Parameters:
+     * source - where to take the description for the new branches
+       to be injected. It can be
+          + event - the branch will be taken from the event
+            attributes exposed in an event notification route (see
+            event_routing module).
+          + msg - the branches will be taken from the RURI of the
+            SIP message and from the additional branches (created
+            by append_branch() function or similar).
+     * flags - (optional) some additional flags related to the
+       injection process:
+          + cancel - cancel all the ongoing existing branches from
+            the transaction before injecting the new branches.
+
+   Example 1.34. t_inject_branches usage
+...
+route[event_notification] {
+        t_inject_branches("event");
+}
+...
+
+1.4.16.  t_wait_for_new_branches()
+
+   This function instructs the existing SIP transaction to wait
+   for new branches to be injected even after the completion of
+   the existing branches. This waiting will be done until the
+   Final Response INVITE timer (fr_inv_timeout) will hit for the
+   transaction; of course, the waiting will be terminated if the
+   transaction gets a 2xx final reply from one of the branches.
+
+   Normally if you have a transaction with two branches and they
+   get, let's say, a 404 and 486 replies, the branches will be
+   completed and transaction terminated by sending the 404 reply
+   to the caller. Still, if you do t_wait_for_new_branches before
+   relaying the transaction, the transaction will not terminate
+   upon the completion of the branches and not send the 404 to the
+   caller - it will wait for new branches to be injected (see
+   t_inject_branches function) until the fr_inv timer hits.
+
+   Example 1.35. t_wait_for_new_branches usage
+...
+t_newtran();
+t_wait_for_new_branches();
+t_relay();
+...
+
+1.4.17.  t_add_hdrs("sip_hdrs")
 
    Attach a set of headers to the existing transaction - these
    headers will be appended to all requests related to the
    transaction (outgoing branches, local ACKS, CANCELs).
 
-   Example 1.34. t_add_hdrs usage
+   Example 1.36. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
 ...
 
-1.4.16.  t_add_cancel_reason("Reason_hdr")
+1.4.18.  t_add_cancel_reason("Reason_hdr")
 
    This function is used to enforce from the script level a custom
    "Reason" header into a CANCEL request. Normally, the Reason
@@ -1080,14 +1150,14 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
    before relaying the CANCEL request and its input must be a
    fully formated Reason header with name, body and CRLF.
 
-   Example 1.35. t_add_cancel_reason usage
+   Example 1.37. t_add_cancel_reason usage
 ...
 t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhe
 re"\r\n');
 t_relay();
 ...
 
-1.4.17.  t_replicate(URI,[flags])
+1.4.19.  t_replicate(URI,[flags])
 
    Replicates a request to another destination. No information due
    the replicated request (like reply code) will be forwarded to
@@ -1099,28 +1169,28 @@ t_relay();
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for description see the
-   above "t_relay([flags])" function. Note that only 0x4 is
+   above “t_relay([flags])” function. Note that only 0x4 is
    applicable here.
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.36. t_replicate usage
+   Example 1.38. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
 t_replicate("sip:1.2.3.4","0x4");
 ...
 
-1.4.18.  t_write_req(info,fifo) t_write_unix(info,sock)
+1.4.20.  t_write_req(info,fifo) t_write_unix(info,sock)
 
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
-   be control via the "tw_append" parameter.
+   be control via the “tw_append” parameter.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.37. t_write_req/unix usage
+   Example 1.39. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -1130,7 +1200,7 @@ t_write_req("voicemail/append1","/tmp/appx_fifo");
 t_write_unix("logger/append2","/var/run/logger.sock");
 ...
 
-1.4.19.  t_flush_flags()
+1.4.21.  t_flush_flags()
 
    Flush the flags from current request into the already created
    transaction. It make sense only in routing block if the
@@ -1139,7 +1209,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.38. t_flush_flags usage
+   Example 1.40. t_flush_flags usage
 ...
 t_flush_flags();
 ...
@@ -1206,13 +1276,13 @@ t_flush_flags();
    Parameters:
      * method - request method
      * RURI - request SIP URI
-     * NEXT HOP - next hop SIP URI (OBP); use "." if no value.
+     * NEXT HOP - next hop SIP URI (OBP); use “.” if no value.
      * socket - local socket to be used for sending the request;
-       use "." if no value.
+       use “.” if no value.
      * headers - set of additional headers to be added to the
-       request; at least "From" and "To" headers must be specify)
+       request; at least “From” and “To” headers must be specify)
      * body - (optional, may not be present) request body (if
-       present, requires the "Content-Type" and "Content-length"
+       present, requires the “Content-Type” and “Content-length”
        headers)
 
 1.6.2.  t_uac_cancel
@@ -1242,15 +1312,15 @@ t_flush_flags();
        format)
      * to_tag - To tag to be added to TO header
      * new_headers - extra headers to be appended to the reply;
-       use a dot (".") char only if there are no headers;
+       use a dot (“.”) char only if there are no headers;
      * body - (optional, may not be present) reply body (if
-       present, requires the "Content-Type" and "Content-length"
+       present, requires the “Content-Type” and “Content-length”
        headers)
 
 1.7. Exported statistics
 
    Exported statistics are listed in the next sections. All
-   statistics except "inuse_transactions" can be reset.
+   statistics except “inuse_transactions” can be reset.
 
 1.7.1. received_replies
 
@@ -1308,7 +1378,7 @@ Chapter 2. Developer Guide
 
    Meaning of the parameters is as follows:
      * import_structure - Pointer to the import structure - see
-       "struct tm_binds" in modules/tm/tm_load.h
+       “struct tm_binds” in modules/tm/tm_load.h
 
 Chapter 3. Frequently Asked Questions
 
