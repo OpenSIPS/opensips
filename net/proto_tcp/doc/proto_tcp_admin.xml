@@ -173,7 +173,7 @@ modparam("proto_tcp", "tcp_crlf_drop", 1)
 		<para>
 			If the TCP connect and write operations should be done in an
 			asynchronous mode (non-blocking connect and
-			write). If disabled, OpenSIPS will block and wait for TCP 
+			write). If disabled, OpenSIPS will block and wait for TCP
 			operations like connect and write.
 		</para>
 		<para>
@@ -258,6 +258,39 @@ modparam("proto_tcp", "tcp_async_local_write_timeout", 100)
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>trace_destination</varname> (string)</title>
+		<para>
+			Trace destination as defined in the tracing module. Currently
+		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
+		Network events such as connect, accept and connection closed events
+		shall be traced along with errors that could appear in the process.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep</emphasis>).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+
+modparam("proto_tcp", "trace_destination", "hep_dest")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	</section>
 
 </chapter>
