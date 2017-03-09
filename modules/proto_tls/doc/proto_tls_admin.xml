@@ -318,6 +318,39 @@ modparam("proto_tls", "tls_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>trace_destination</varname> (string)</title>
+		<para>
+			Trace destination as defined in the tracing module. Currently
+		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
+		Network events such as connect, accept and connection closed events
+		shall be traced along with errors that could appear in the process.
+		For each connection that is created an event containing information
+		about the client and server certificates, master key and network layer
+		information shall be sent.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep</emphasis>).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+
+modparam("proto_tls", "trace_destination", "hep_dest")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 </chapter>
