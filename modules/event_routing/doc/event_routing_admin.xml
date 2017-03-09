@@ -9,7 +9,7 @@
 	<para>
 	The Event (based) Routing module, or shortly the EBR module, provides a 
 	mechanism that allows different SIP processings (of messages in script) to
-	communicate and syncronize between through OpenSIPS Events 
+	communicate and synchronize between through OpenSIPS Events 
 	(see http://www.opensips.org/Documentation/Interface-Events-2-3).
 	</para>
 	<para>
@@ -17,7 +17,7 @@
 	may subscribe to various OpenSIPS Events  Upon Event raising, the 
 	subscriber will be notified, so it will be able to make use of the data
 	attached to the Event. Note that the Event raising may take place in a
-	completly different SIP processing context, completly unrelated to the
+	completely different SIP processing context, completely unrelated to the
 	subscriber processing.
 	</para>
 	<para>
@@ -28,7 +28,7 @@
 	</para>
 	<para>
 	Depending on how the notification is handled by the subscribing processing,
-	we distinguesh two main scenarios:
+	we distinguish two main scenarios:
 	</para>
 	<itemizedlist>
 		<listitem>
@@ -50,7 +50,7 @@
 		</listitem>
 	</itemizedlist>
 	<para>
-	So, EBR allows your SIP processing to syncronize or the exchance info
+	So, EBR allows your SIP processing to synchronize or the exchange info
 	between, even if these processings are completely unrelated from SIP, time
 	or handling perspective.
 	</para>
@@ -159,7 +159,7 @@
 			<listitem><para>
 			<emphasis>timeout</emphasis> - for how long the subscription is
 			active before expiring (integer in seconds). Note: during its 
-			lifetime, a subcription may be notified several or zero times.
+			lifetime, a subscription may be notified several or zero times.
 			</para></listitem>
 		</itemizedlist>
 		<example>
@@ -231,7 +231,7 @@ route[resume_call] {
 		registered contacts as new branches in the ongoing transaction.
 		</para>
 		<para>
-		Schematics : when we send a call to a user, we subcribe to see any
+		Schematics : when we send a call to a user, we subscribe to see any
 		new contacts being registered by the user. On such a notification,
 		we add the new contact as a new branch to the ongoing transaction
 		(ringing) to user.
@@ -262,10 +262,10 @@ route[route_to_user] {
     # fetch already registered contacts and relay if any
     if (lookup("location"))
         route(relay);
-    # if there are not contact available, so no branches 
-    # created here, the created transaction will still be 
-    # waiting for new branches due to the call
-    # to t_wait_for_new_branches() function
+    # if there were no contacts available (so no branches 
+    # created so far), the created transaction will still be 
+    # waiting for new branches due to the usage of the 
+    # t_wait_for_new_branches() function
 
     exit;
 }
