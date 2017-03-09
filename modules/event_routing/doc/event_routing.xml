@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "event_routing_admin.xml">
+<!ENTITY devel SYSTEM "event_routing_devel.xml">
+<!ENTITY faq SYSTEM "event_routing_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+	<bookinfo>
+	<title>Event (based) Routing Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+		<author>
+		<firstname>Bogdan-Andrei</firstname>
+		<surname>Iancu</surname>
+		<address>
+			<email>bogdan@opensips.org</email>
+		</address>
+		</author>
+		<editor>
+		<firstname>Bogdan-Andrei</firstname>
+		<surname>Iancu</surname>
+		<address>
+			<email>bogdan@opensips.org</email>
+		</address>
+		</editor>
+	</authorgroup>
+	<copyright>
+		<year>2017</year>
+		<holder>OpenSIPS Solutions</holder>
+	</copyright>
+	</bookinfo>
+	<toc></toc>
+	
+	&admin;
+	&devel;
+	&faq;
+	
+</book>

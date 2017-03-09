@@ -1,0 +1,11 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+	
+	<title>&develguide;</title>
+	<section>
+		<para>This modules does not export any internal API.</para>
+	</section>
+
+</chapter>
+
