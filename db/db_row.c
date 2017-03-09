@@ -33,6 +33,19 @@
 #include "../dprint.h"
 #include "../mem/mem.h"
 
+void db_print_rows(db_row_t *_r, int count)
+{
+	int ri, c;
+
+	for (ri = 0; ri < count; ri++) {
+		LM_DBG("%d cols:\n", _r[ri].n);
+		for (c = 0; c < _r[ri].n; c++) {
+			LM_DBG("it\n");
+			db_print_val(&_r[ri].values[c]);
+		}
+	}
+}
+
 /*
  * Release memory used by row
  */

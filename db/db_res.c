@@ -174,28 +174,33 @@ int db_allocate_rows(db_res_t* _res, const unsigned int rows)
 }
 
 /*
- * Allocate storage for rows in existing
- * result structure.
+ * Extend storage for rows in existing result structure.
  */
 int db_realloc_rows(db_res_t *_res, const unsigned int old_rows,
                     const unsigned int rows)
 {
 	unsigned int i;
+	struct db_row *old_buf;
 
-	RES_ROWS(_res) = pkg_realloc(RES_ROWS(_res),
-	          rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)) );
+	old_buf = RES_ROWS(_res);
+
+	RES_ROWS(_res) = pkg_malloc(rows * (sizeof(db_row_t) +
+	                                    sizeof(db_val_t) * RES_COL_N(_res)) );
 	if (!RES_ROWS(_res)) {
+		RES_ROWS(_res) = old_buf;
 		LM_ERR("no memory left\n");
 		return -1;
 	}
 
-	if (old_rows < rows) {
-		memset(&RES_ROWS(_res)[old_rows], 0,
-		       (rows - old_rows) * (sizeof(db_row_t)));
+	memset(RES_ROWS(_res), 0,
+	       rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)));
 
-		memset(&RES_ROWS(_res)[rows] + RES_COL_N(_res) * old_rows, 0,
-			(rows - old_rows) * (sizeof(db_val_t) * RES_COL_N(_res)));
-	}
+	memcpy(RES_ROWS(_res), old_buf, old_rows * sizeof(db_row_t));
+	memcpy(RES_ROWS(_res) + rows,
+	       (char *)old_buf + old_rows * sizeof(db_row_t),
+	       old_rows * (sizeof(db_val_t) * RES_COL_N(_res)));
+
+	pkg_free(old_buf);
 
 	LM_DBG("allocate %d bytes for result rows and values at %p\n",
 		(int)(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res))),

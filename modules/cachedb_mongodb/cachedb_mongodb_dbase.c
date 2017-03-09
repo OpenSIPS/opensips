@@ -1867,7 +1867,7 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 		bson_free(stru);
 	}
 
-	if (!mongoc_collection_update(col, MONGOC_UPDATE_NONE,
+	if (!mongoc_collection_update(col, MONGOC_UPDATE_MULTI_UPDATE,
 	                              query, update, NULL, &error)) {
 	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
 		       error.domain, error.code, error.message);
