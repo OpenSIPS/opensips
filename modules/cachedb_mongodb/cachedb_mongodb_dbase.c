@@ -269,7 +269,7 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
@@ -625,7 +625,7 @@ int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***repl
 				return -1;
 			}
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
@@ -729,7 +729,7 @@ int mongo_raw_count(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***rep
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
@@ -838,7 +838,7 @@ int mongo_raw_update(cachedb_con *connection,bson *raw_query)
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
@@ -923,7 +923,7 @@ int mongo_raw_insert(cachedb_con *connection,bson *raw_query)
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
@@ -1010,7 +1010,7 @@ int mongo_raw_remove(cachedb_con *connection,bson *raw_query)
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
@@ -1160,7 +1160,7 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
@@ -1272,7 +1272,7 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
@@ -1486,7 +1486,7 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
@@ -1730,7 +1730,7 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
@@ -1808,7 +1808,7 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
@@ -1895,7 +1895,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
 			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
 			if (!bson_size(&err_b))
-				continue;
+				return -1;
 
 			bson_iterator_init(&it,&err_b);
 			while( bson_iterator_next(&it)) {
