@@ -21,7 +21,7 @@
 	to act as SIP clients for the &osips; proxy.
 	</para>
 	<para>
-	The current implementation acts both as WebSocket server and client, thus it can 
+	The current implementation acts both as WebSocket server and client, thus it can
 	accept connections from WebSocket clients and can also initiate connections to another
 	WebSocket server. After the connection is established, messages can flow  in
 	both directions.
@@ -159,6 +159,40 @@ modparam("proto_ws", "ws_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>trace_destination</varname> (string)</title>
+		<para>
+			Trace destination as defined in the tracing module. Currently
+		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
+		Network events such as connect, accept and connection closed events
+		shall be traced along with errors that could appear in the process.
+		For each connection that is created an event containing information
+		about http request and reply belonging to  web socket protocol
+		handshake and network layer information shall be sent.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep</emphasis>).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+
+modparam("proto_wss", "trace_destination", "hep_dest")
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 </chapter>
