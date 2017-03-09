@@ -93,6 +93,7 @@ int net_trace_proto_id=-1;
 	} while(0);
 
 void trace_log( int id, str* level, char* format, ...);
+void trace_conn_closed( struct tcp_connection* c, char* reason );
 
 
 /* default port for TCP protocol */
@@ -289,10 +290,6 @@ static void tcp_conn_clean(struct tcp_connection* c)
 {
 	struct tcp_data *d = (struct tcp_data*)c->proto_data;
 	int r;
-
-///	LM_TRACE_DBG( c->id, "Connection from %s:%d to %s:%d was closed!\n",
-///				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-///				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 	for (r=0;r<d->async_chunks_no;r++) {
 		shm_free(d->async_chunks[r]);
@@ -1132,6 +1129,14 @@ void trace_log( int id, str* level, char* format, ... )
 	tprot.free_message( message );
 
 #undef TRACELOG_MAX
+}
+
+void trace_conn_closed( struct tcp_connection* c, char* reason )
+{
+	LM_TRACE_DBG( c->id, "Connection from %s:%d to %s:%d was closed!Reason (%s)\n",
+				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
+				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port,
+				reason);
 }
 
 #undef LM_TRACE_DBG
