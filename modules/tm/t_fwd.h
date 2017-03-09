@@ -29,6 +29,10 @@
 #include "../../proxy.h"
 #include "../../str.h"
 
+#define TM_INJECT_SRC_MSG     (1<<0)
+#define TM_INJECT_SRC_EVENT   (1<<1)
+#define TM_INJECT_FLAG_CANCEL (1<<2)
+
 typedef int (*taddblind_f)( /*struct cell *t */ );
 
 int add_blind_uac( );
@@ -36,7 +40,9 @@ int add_blind_uac( );
 int t_replicate(struct sip_msg *p_msg, str *dst, int flags);
 
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg,
-		struct proxy_l * p);
+		struct proxy_l * p, int reset_bcounter);
+
+int add_phony_uac( struct cell *t);
 
 int t_add_reason(struct sip_msg *msg, char *val);
 
@@ -48,6 +54,8 @@ unsigned int get_on_branch();
 
 typedef int (*tgetbranch_f)(void);
 int get_branch_index(void);
+
+int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags);
 
 #endif
 

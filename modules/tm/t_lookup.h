@@ -35,10 +35,16 @@
 #define T_UNDEFINED  ( (struct cell*) -1 )
 #define T_NULL_CELL       ( (struct cell*) 0 )
 
+struct tm_id {
+	unsigned int hash;
+	unsigned int label;
+};
+
 extern unsigned int     global_msg_id;
 extern int ruri_matching;
 extern int via1_matching;
 extern int auto_100trying;
+extern struct tm_id* remote_T;
 
 void init_t();
 int init_rb( struct retr_buf *rb, struct sip_msg *msg );
@@ -84,6 +90,9 @@ void reset_cancelled_t();
 struct cell *get_e2eack_t();
 void set_e2eack_t(struct cell* t);
 void reset_e2eack_t();
+
+typedef void (*tset_remotet_f)(struct tm_id *id);
+static inline void t_set_remote_t(struct tm_id *id) { remote_T = id; }
 
 
 #define T_GET_TI       "t_get_trans_ident"

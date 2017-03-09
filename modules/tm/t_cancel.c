@@ -35,10 +35,6 @@
 #include "t_lookup.h" /* for t_lookup_callid in fifo_uac_cancel */
 
 
-#define CANCEL_REASON  \
-	"Reason: SIP ;cause=200 ;text=\"Call completed elsewhere\""
-
-
 str _extra_cancel_hdrs = {NULL,0};
 
 
@@ -123,7 +119,7 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 	unsigned int *len )
 {
 	str method = str_init(CANCEL);
-	str reason = str_init(CANCEL_REASON CRLF);
+	str reason = str_init(CANCEL_REASON_200);
 	str *extra = NULL;
 
 	/* add the reason hdr, as per RFC 3326 */

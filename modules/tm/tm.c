@@ -103,6 +103,7 @@ static int fixup_froute(void** param, int param_no);
 static int fixup_rroute(void** param, int param_no);
 static int fixup_broute(void** param, int param_no);
 static int fixup_t_new_request(void** param, int param_no);
+static int fixup_inject(void** param, int param_no);
 
 
 /* init functions */
@@ -111,23 +112,26 @@ static int child_init(int rank);
 
 
 /* exported functions */
-inline static int w_t_newtran(struct sip_msg* p_msg);
-inline static int w_t_reply(struct sip_msg *msg, char* code, char* text);
-inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text);
-inline static int w_t_relay(struct sip_msg *p_msg , char *proxy, char* flags);
-inline static int w_t_replicate(struct sip_msg *p_msg, char *dst,char* );
-inline static int w_t_on_negative(struct sip_msg* msg, char *go_to);
-inline static int w_t_on_reply(struct sip_msg* msg, char *go_to);
-inline static int w_t_on_branch(struct sip_msg* msg, char *go_to);
-inline static int t_check_status(struct sip_msg* msg, char *regexp);
-inline static int t_flush_flags(struct sip_msg* msg);
-inline static int t_local_replied(struct sip_msg* msg, char *type);
-inline static int t_check_trans(struct sip_msg* msg);
-inline static int t_was_cancelled(struct sip_msg* msg);
-inline static int w_t_cancel_branch(struct sip_msg* msg, char *sflags );
-inline static int w_t_add_hdrs(struct sip_msg* msg, char *val );
-int t_cancel_trans(struct cell *t, str *hdrs);
-inline static int w_t_new_request(struct sip_msg* msg, char*, char*, char*, char*, char*, char*);
+static int w_t_newtran(struct sip_msg* p_msg);
+static int w_t_reply(struct sip_msg *msg, char* code, char* text);
+static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text);
+static int w_t_relay(struct sip_msg *p_msg , char *proxy, char* flags);
+static int w_t_replicate(struct sip_msg *p_msg, char *dst,char* );
+static int w_t_on_negative(struct sip_msg* msg, char *go_to);
+static int w_t_on_reply(struct sip_msg* msg, char *go_to);
+static int w_t_on_branch(struct sip_msg* msg, char *go_to);
+static int t_check_status(struct sip_msg* msg, char *regexp);
+static int t_flush_flags(struct sip_msg* msg);
+static int t_local_replied(struct sip_msg* msg, char *type);
+static int t_check_trans(struct sip_msg* msg);
+static int t_was_cancelled(struct sip_msg* msg);
+static int w_t_cancel_branch(struct sip_msg* msg, char *sflags );
+static int w_t_add_hdrs(struct sip_msg* msg, char *val );
+static int t_cancel_trans(struct cell *t, str *hdrs);
+static int w_t_new_request(struct sip_msg* msg, char*, char*, 
+		char*, char*, char*, char*);
+static int w_t_inject_branches(struct sip_msg* msg, char *s_flags);
+static int w_t_wait_for_new_branches(struct sip_msg* msg);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -227,6 +231,12 @@ static cmd_export_t cmds[]={
 	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_add_cancel_reason",(cmd_function)t_add_reason,  1, fixup_spve_null,
+		0, REQUEST_ROUTE},
+	{"t_inject_branches",(cmd_function)w_t_inject_branches,1,fixup_inject,
+		0, REQUEST_ROUTE},
+	{"t_inject_branches",(cmd_function)w_t_inject_branches,2,fixup_inject,
+		0, REQUEST_ROUTE},
+	{"t_wait_for_new_branches",(cmd_function)w_t_wait_for_new_branches,0, 0,
 		0, REQUEST_ROUTE},
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
@@ -619,6 +629,52 @@ static int fixup_t_new_request(void** param, int param_no)
 }
 
 
+static int fixup_inject(void** param, int param_no)
+{
+	char *s;
+	void **param1;
+	unsigned int flags;
+
+	s = (char*)*param;
+	flags = 0;
+
+	if (param_no==1) {
+		/* the source of the new branches */
+		if ( strcasecmp(s,"msg")==0 || strcasecmp(s,"message")==0 ) {
+			flags |= TM_INJECT_SRC_MSG;
+		} else
+		if ( strcasecmp(s,"event")==0 || strcasecmp(s,"events")==0 ) {
+			flags |= TM_INJECT_SRC_EVENT;
+		} else {
+			LM_ERR("unsupported injection source '%s'\n",s);
+			return -1;
+		}
+	} else
+	if (param_no==2) {
+		/* extra flags about the injection process */
+		if ( strcasecmp(s,"cancel")==0 ) {
+			flags |= TM_INJECT_FLAG_CANCEL;
+		} else {
+			LM_ERR("unsupported injection flag '%s'\n",s);
+			return -1;
+		}
+		/* get the address of the previous param (no. 1) */
+		param1 = (void**)((char*)param - sizeof(action_elem_t));
+		/* and push the flags there too */
+		*param1 = (void*)(unsigned long)
+			( ((unsigned long)(void*)*param1) | flags );
+		flags = 0;
+	} else {
+		LM_BUG("unsupported param 3 or higher\n");
+		return -1;
+	}
+
+	pkg_free(*param);
+	*param = (void*)(unsigned long)flags;
+	return 0;
+}
+
+
 
 /***************************** init functions *****************************/
 int load_tm( struct tm_binds *tmb)
@@ -641,6 +697,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_gett = get_t;
 	tmb->t_get_e2eackt = get_e2eack_t;
 	tmb->t_get_picked = t_get_picked_branch;
+	tmb->t_set_remote_t = t_set_remote_t;
 
 	tmb->t_lookup_original_t = t_lookupOriginalT;
 	tmb->unref_cell = t_unref_cell;
@@ -934,7 +991,7 @@ static int t_check_status(struct sip_msg* msg, char *regexp)
 }
 
 
-inline static int t_check_trans(struct sip_msg* msg)
+static int t_check_trans(struct sip_msg* msg)
 {
 	struct cell *trans;
 
@@ -995,7 +1052,7 @@ static int t_flush_flags(struct sip_msg* msg)
 }
 
 
-inline static int t_local_replied(struct sip_msg* msg, char *type)
+static int t_local_replied(struct sip_msg* msg, char *type)
 {
 	struct cell *t;
 	int branch;
@@ -1064,7 +1121,7 @@ static int t_was_cancelled(struct sip_msg* msg)
 }
 
 
-inline static int w_t_reply(struct sip_msg* msg, char* code, char* text)
+static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 {
 	struct cell *t;
 	int r;
@@ -1105,7 +1162,7 @@ inline static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 }
 
 
-inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
+static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
 {
 	str code_s;
 	unsigned int code_i;
@@ -1130,7 +1187,7 @@ inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
 }
 
 
-inline static int w_t_newtran( struct sip_msg* p_msg)
+static int w_t_newtran( struct sip_msg* p_msg)
 {
 	/* t_newtran returns 0 on error (negative value means
 	   'transaction exists' */
@@ -1138,28 +1195,28 @@ inline static int w_t_newtran( struct sip_msg* p_msg)
 }
 
 
-inline static int w_t_on_negative( struct sip_msg* msg, char *go_to)
+static int w_t_on_negative( struct sip_msg* msg, char *go_to)
 {
 	t_on_negative( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_on_reply( struct sip_msg* msg, char *go_to)
+static int w_t_on_reply( struct sip_msg* msg, char *go_to)
 {
 	t_on_reply( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_on_branch( struct sip_msg* msg, char *go_to)
+static int w_t_on_branch( struct sip_msg* msg, char *go_to)
 {
 	t_on_branch( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_replicate(struct sip_msg *p_msg, char *dst, char *flags)
+static int w_t_replicate(struct sip_msg *p_msg, char *dst, char *flags)
 {
 	str dest;
 
@@ -1202,7 +1259,7 @@ static inline int t_relay_inerr2scripterr(void)
 }
 
 
-inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
+static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 {
 	struct proxy_l *p = NULL;
 	struct cell *t;
@@ -1244,7 +1301,18 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 
 		update_cloned_msg_from_msg( t->uas.request, p_msg);
 
-		ret = t_forward_nonack( t, p_msg, p);
+		if (route_type==FAILURE_ROUTE) {
+			/* If called from failure route we need reset the branch counter to
+			 * ignore the previous set of branches (already terminated) */
+			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/);
+		} else {
+			/* if called from request route and the transaction was previously
+			 * created, better lock here to avoid any overlapping with 
+			 * branch injection from other processes */
+			LOCK_REPLIES(t);
+			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/);
+			UNLOCK_REPLIES(t);
+		}
 		if (ret<=0 ) {
 			LM_ERR("t_forward_nonack failed\n");
 			ret = t_relay_inerr2scripterr();
@@ -1262,7 +1330,8 @@ route_err:
 	return 0;
 }
 
-int t_cancel_trans(struct cell *t, str *extra_hdrs)
+
+static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 {
 	branch_bm_t cancel_bitmap = 0;
 
@@ -1286,7 +1355,7 @@ int t_cancel_trans(struct cell *t, str *extra_hdrs)
 }
 
 extern int _tm_branch_index;
-inline static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
+static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
 {
 	branch_bm_t cancel_bitmap = 0;
 	struct cell *t;
@@ -1339,7 +1408,7 @@ inline static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
 }
 
 
-inline static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
+static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
 {
 	struct cell *t;
 	str val;
@@ -1367,7 +1436,7 @@ inline static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
 }
 
 
-inline static int w_t_new_request(struct sip_msg* msg, char *p_method,
+static int w_t_new_request(struct sip_msg* msg, char *p_method,
 			char *p_ruri, char *p_from, char *p_to, char *p_body, char *p_ctx)
 {
 #define CONTENT_TYPE_HDR      "Content-Type: "
@@ -1519,9 +1588,79 @@ inline static int w_t_new_request(struct sip_msg* msg, char *p_method,
 }
 
 
+static int w_t_inject_branches(struct sip_msg* msg, char *s_flags)
+{
+	struct cell *t;
+	int is_local=0;
+	int rc;
+
+	/* first get the transaction */
+	t = get_t();
+	if (t!=T_NULL_CELL && t!=T_UNDEFINED) {
+		/* there is a T in the local processing, use it */
+		is_local = 1;
+	} else {
+		/* no T in this context, look for an remote T ID*/
+		if (remote_T==NULL) {
+			LM_DBG("no transaction (local or remote) to be used\n");
+			return -1;
+		}
+		if (remote_T->hash==0 && remote_T->label==0) {
+			LM_BUG("invalid T ID (bad hexa %d,%d) found in remote_T\n",
+				remote_T->hash, remote_T->label);
+			return -1;
+		}
+		/* get the remote transaction */
+		if (t_lookup_ident( &t, remote_T->hash, remote_T->label)<0) {
+			LM_DBG("transaction %u:%u not found anymore\n",
+				remote_T->hash, remote_T->label);
+			return -1;
+		}
+		/* remember that this trasaction is ref++ by us !! */
+	}
+
+	if (!is_local)
+		LOCK_REPLIES(t);
+
+	/* we the transaction to operate with, do the stuff now */
+	rc = t_inject_branch( t, msg, (int)(long)s_flags);
+
+	if (!is_local) {
+		UNLOCK_REPLIES(t);
+		UNREF(t);
+	}
+
+	return rc;
+}
 
 
-/* pseudo-variable functions */
+static int w_t_wait_for_new_branches(struct sip_msg* msg)
+{
+	struct cell *t;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		return -1;
+	}
+
+	if (msg->REQ_METHOD!=METHOD_INVITE) {
+		LM_ERR("this function is intended to be used for INVITEs ONLY!!\n");
+		return -1;
+	}
+
+	if (add_phony_uac(t)<0) {
+		LM_ERR("failed to add phony UAC\n");
+		return -1;
+	}
+
+	return 1;
+}
+
+
+/******************** pseudo-variable functions *************************/
+
 static int pv_get_tm_branch_idx(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -2054,11 +2193,11 @@ static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 
 	p = buf;
 	size = INTasHEXA_SIZE+1+INTasHEXA_SIZE;
-	/* right the label at the end */
+	/* write the label at the end */
 	int2reverse_hex( &p, &size, t->label );
 	*(p++) = '.';
 	size--;
-	/* right the hash */
+	/* write the hash */
 	int2reverse_hex( &p, &size, t->hash_index );
 
 	res->flags = PV_VAL_STR;
@@ -2068,4 +2207,5 @@ static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 
 }
+
 

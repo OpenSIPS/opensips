@@ -71,6 +71,7 @@ struct tm_binds {
 	tgett_f            t_gett;
 	tgett_f            t_get_e2eackt;
 	tget_picked_f      t_get_picked;
+	tset_remotet_f     t_set_remote_t;
 	tunrefcell_f       unref_cell;
 	tunrefcell_f       ref_cell;
 	tlookuporiginalt_f t_lookup_original_t;

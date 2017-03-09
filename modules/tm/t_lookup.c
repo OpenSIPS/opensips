@@ -148,6 +148,15 @@ static struct cell *cancelled_T;
  */
 static struct cell *e2eack_T;
 
+
+/* a transaction ID in string format "hash.label", in reversed hexa;
+ * This is to be used to point TM to a remote transaction, other
+ * than the one currently processes (or outside the current processing)
+ * Functions pushing a transaction via ext_T must attache a valid str
+ * and keep it until the TM handling is done */
+struct tm_id* remote_T = NULL;
+
+
 static str relay_reason_100 = str_init("Giving a try");
 
 

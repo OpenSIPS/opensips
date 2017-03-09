@@ -152,7 +152,8 @@
 		<para>
 		For example: You want to have failover if there is no provisional 
 		response after 3 seconds, but you want to ring for 60 seconds. 
-		Thus, set the <emphasis>fr_timeout</emphasis> to 3 and <emphasis>fr_inv_timeout</emphasis> to 60.
+		Thus, set the <emphasis>fr_timeout</emphasis> to 3 and 
+		<emphasis>fr_inv_timeout</emphasis> to 60.
 		</para>
 	</section>
 	<section>
@@ -739,7 +740,7 @@ modparam("tm", "auto_100trying", 0)
 
 	<section>
 	<title>Exported Functions</title>
-	<section>
+	<section id="t_relay" xreflabel='t_relay'>
 		<title>
 		<function moreinfo="none">t_relay([flags])</function>
 		</title>
@@ -1422,6 +1423,106 @@ branch_route[1] {
 		append_rpid();
 	}
 }
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="t_inject_branches" xreflabel='t_inject_branches'>
+		<title>
+		<function moreinfo="none">t_inject_branches(source[,flags])</function>
+		</title>
+		<para>
+		The function adds new SIP branches (destinations) to an existing 
+		transaction and fires them (sends them out). The transaction may 
+		already have ongoing branches (like in ringing state), which will not
+		be affected by the injection of the new branches. Also it is possible 
+		for the transaction not to have any ongoing branches at the moment of
+		the injection (still, the transaction must wait for new branches, even
+		if all existing ones are completed - see 
+		the <xref linkend="t_wait_for_new_branches"/> function for this).
+		</para>
+		<para>
+		The main usage scenario for this function (and also what makes it
+		different from <xref linkend="t_relay"/> is the ability to add new
+		branches to an ongoing transaction from script routes not related to 
+		the transaction ( like timer route, event route, notification route,
+		and other). In such routes, other functions/module used before the
+		injection will point to the transaction to be affected by this
+		injection - see the <emphasis>event_routing</emphasis> module.
+		</para>
+		<para>Parameters: </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>source</emphasis> - where to take the description
+				for the new branches to be injected. It can be
+				<itemizedlist>
+					<listitem>
+					<emphasis>event</emphasis> - the branch will be taken from
+					the event attributes exposed in an event notification route
+					(see <emphasis>event_routing</emphasis> module).
+					</listitem>
+					<listitem>
+					<emphasis>msg</emphasis> - the branches will be taken from
+					the RURI of the SIP message and from the additional
+					branches (created by append_branch() function or similar).
+					</listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags</emphasis> - (optional) some additional flags 
+				related to the injection process:
+				<itemizedlist>
+					<listitem>
+					<emphasis>cancel</emphasis> - cancel all the ongoing 
+					existing branches from the transaction before injecting
+					the new branches.
+					</listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
+		<example>
+		<title><function>t_inject_branches</function> usage</title>
+		<programlisting format="linespecific">
+...
+route[event_notification] {
+	t_inject_branches("event");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="t_wait_for_new_branches" xreflabel='t_wait_for_new_branches'>
+		<title>
+		<function moreinfo="none">t_wait_for_new_branches()</function>
+		</title>
+		<para>
+		This function instructs the existing SIP transaction to wait for new
+		branches to be injected even after the completion of the existing 
+		branches. This waiting will be done until the Final Response INVITE 
+		timer (fr_inv_timeout) will hit for the transaction; of course, the
+		waiting will be terminated if the transaction gets a 2xx final reply
+		from one of the branches.
+		</para>
+		<para>
+		Normally if you have a transaction with two branches and 
+		they get, let's say, a 404 and 486 replies, the branches will be
+		completed and transaction terminated by sending the 404 reply to the 
+		caller. Still, if you do <emphasis>t_wait_for_new_branches</emphasis>
+		before relaying the transaction, the transaction will not terminate
+		upon the completion of the branches and not send the 404 to the caller
+		- it will wait for new branches to be injected (see 
+		<xref linkend="t_inject_branches"/> function) until the fr_inv timer
+		hits.
+		</para>
+		<example>
+		<title><function>t_wait_for_new_branches</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_newtran();
+t_wait_for_new_branches();
+t_relay();
 ...
 </programlisting>
 		</example>
