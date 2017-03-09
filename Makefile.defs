@@ -752,7 +752,7 @@ ifeq ($(ARCH), alpha)
 endif
 
 # decide on the locking type
-ifeq (,$(findstring USE_UMUTEX_MUTEX, $(DEFS)))
+ifeq (,$(findstring USE_UMUTEX, $(DEFS)))
 ifeq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
 ifeq (,$(findstring USE_POSIX_SEM, $(DEFS)))
 ifeq (,$(findstring USE_SYSV_SEM, $(DEFS)))
@@ -773,7 +773,7 @@ else
 	found_lock_method=yes
 endif
 else
-        ## USE_UMUTEX_MUTEX was manually forced from .conf
+        ## USE_UMUTEX was manually forced from .conf
         found_lock_method=yes
 endif
 

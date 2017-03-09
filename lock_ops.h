@@ -127,9 +127,9 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 #define lock_get(lock) pthread_mutex_lock(lock)
 #define lock_release(lock) pthread_mutex_unlock(lock)
 
-#elif defined USE_UMUTEX_MUTEX
-# if !defined(USE_UMUTEX_MUTEX_DECL)
-#  define USE_UMUTEX_MUTEX_DECL 1
+#elif defined USE_UMUTEX
+# if !defined(USE_UMUTEX_DECL)
+#  define USE_UMUTEX_DECL 1
 #include <sys/types.h>
 
 #include <errno.h>
@@ -175,7 +175,7 @@ lock_release(gen_lock_t *lock)
     return (_umtx_op_err(lock, UMTX_OP_MUTEX_UNLOCK, 0, 0, 0));
 }
 
-# endif /* USE_UMUTEX_MUTEX_DECL */
+# endif /* USE_UMUTEX_DECL */
 #elif defined USE_POSIX_SEM
 #include <semaphore.h>
 
@@ -297,7 +297,7 @@ tryagain:
 
 /* lock sets */
 
-#if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM) || defined(USE_UMUTEX_MUTEX)
+#if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM) || defined(USE_UMUTEX)
 #define GEN_LOCK_T_PREFERED
 
 struct gen_lock_set_t_ {
