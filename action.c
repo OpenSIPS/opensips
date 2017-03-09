@@ -1304,6 +1304,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			{
 				val.rs = aux;
 				val.flags = PV_VAL_STR;
+				fix_val_str_flags(val);
 
 				spec = (pv_spec_t*)a->elem[2].u.data;
 				if (pv_set_value(msg, spec, 0, &val) < 0) {
@@ -1524,7 +1525,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 
-			cdb_raw_entry **cdb_reply;
+			cdb_raw_entry **cdb_reply = NULL;
 			int val_number=0,i,j;
 			int key_number=0;
 			pvname_list_t *cdb_res,*it;

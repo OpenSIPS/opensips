@@ -35,6 +35,8 @@
 
 #include <time.h>
 #include <stdint.h>
+
+#include "../dprint.h"
 #include "../str.h"
 
 
@@ -86,6 +88,36 @@ typedef struct {
 		unsigned int  bitmap_val; /**< Bitmap data type           */
 	} val;
 } db_val_t;
+
+static inline void db_print_val(db_val_t *v)
+{
+	switch (v->type) {
+		case DB_INT:
+			LM_GEN1(L_DBG, "\t'%d'\n", v->val.int_val);
+			break;
+		case DB_BIGINT:
+			LM_GEN1(L_DBG, "\t'%lld'\n", v->val.bigint_val);
+			break;
+		case DB_DOUBLE:
+			LM_GEN1(L_DBG, "\t'%.3lf'\n", v->val.double_val);
+			break;
+		case DB_STRING:
+			LM_GEN1(L_DBG, "\t'%s'\n", v->val.string_val);
+			break;
+		case DB_STR:
+			LM_GEN1(L_DBG, "\t'%.*s'\n", v->val.str_val.len, v->val.str_val.s);
+			break;
+		case DB_DATETIME:
+			LM_GEN1(L_DBG, "\t'%ld'\n", v->val.time_val);
+			break;
+		case DB_BLOB:
+			LM_GEN1(L_DBG, "\t'%.*s'\n", v->val.blob_val.len, v->val.blob_val.s);
+			break;
+		case DB_BITMAP:
+			LM_GEN1(L_DBG, "\t'%u'\n", v->val.bitmap_val);
+			break;
+	}
+}
 
 
 /**
@@ -161,7 +193,6 @@ typedef struct {
  * Use this macro if you need to access the bitmap value in the db_val_t structure.
  */
 #define VAL_BITMAP(dv) ((dv)->val.bitmap_val)
-
 
 
 #define get_str_from_dbval( _col_name, _val, _not_null, _not_empty, _str, _error_label) \

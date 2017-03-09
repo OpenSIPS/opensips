@@ -50,6 +50,8 @@ typedef struct db_row {
 /** Return the number of colums */
 #define ROW_N(rw)      ((rw)->n)
 
+void db_print_rows(db_row_t *_r, int count);
+
 /**
  * Release memory used by a row. This method only frees values that are inside
  * the row if the free flag of the specific value is set. Otherwise this

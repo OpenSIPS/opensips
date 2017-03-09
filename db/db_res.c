@@ -87,7 +87,8 @@ int db_free_columns(db_res_t* _r)
  */
 db_res_t* db_new_result(void)
 {
-	db_res_t* r = NULL;
+	db_res_t* r;
+
 	r = (db_res_t*)pkg_malloc(sizeof(db_res_t));
 	if (!r) {
 		LM_ERR("no private memory left\n");
@@ -114,7 +115,6 @@ int db_free_result(db_res_t* _r)
 	db_free_rows(_r);
 	LM_DBG("freeing result set at %p\n", _r);
 	pkg_free(_r);
-	_r = NULL;
 	return 0;
 }
 
@@ -173,10 +173,43 @@ int db_allocate_rows(db_res_t* _res, const unsigned int rows)
 	return 0;
 }
 
+/*
+ * Extend storage for rows in existing result structure.
+ */
+int db_realloc_rows(db_res_t *_res, const unsigned int old_rows,
+                    const unsigned int rows)
+{
+	unsigned int i;
+	struct db_row *old_buf;
 
+	old_buf = RES_ROWS(_res);
 
+	RES_ROWS(_res) = pkg_malloc(rows * (sizeof(db_row_t) +
+	                                    sizeof(db_val_t) * RES_COL_N(_res)) );
+	if (!RES_ROWS(_res)) {
+		RES_ROWS(_res) = old_buf;
+		LM_ERR("no memory left\n");
+		return -1;
+	}
 
+	memset(RES_ROWS(_res), 0,
+	       rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)));
 
+	memcpy(RES_ROWS(_res), old_buf, old_rows * sizeof(db_row_t));
+	memcpy(RES_ROWS(_res) + rows,
+	       (char *)old_buf + old_rows * sizeof(db_row_t),
+	       old_rows * (sizeof(db_val_t) * RES_COL_N(_res)));
 
+	pkg_free(old_buf);
 
+	LM_DBG("allocate %d bytes for result rows and values at %p\n",
+		(int)(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res))),
+		RES_ROWS(_res));
 
+	for( i=0 ; i<rows ; i++ )
+		/* the values of the row i */
+		ROW_VALUES( &(RES_ROWS(_res)[i]) ) =
+			((db_val_t*)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
+
+	return 0;
+}
