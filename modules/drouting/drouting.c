@@ -1975,9 +1975,11 @@ no_gws:
 		}
 	}
 
+	if (wl_list) pkg_free(wl_list);
 	if (ruri_buf) pkg_free(ruri_buf);
 	return 1;
 error2:
+	if (wl_list) pkg_free(wl_list);
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
 error1:
