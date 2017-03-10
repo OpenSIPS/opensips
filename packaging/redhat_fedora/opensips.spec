@@ -169,6 +169,8 @@ work with a memcached server.
 Summary:  Mongodb connector
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires: mongo-c-driver-devel
+BuildRequires: cyrus-sasl-devel
 
 %description  cachedb_mongodb
 Mongodb module is an implementation of a cache system designed to
@@ -376,6 +378,16 @@ the OpenSIPS Event Interface, directly from the OpenSIPS script. For a specific 
 a special route (event_route) has to be declared in the script, and should contain
 the code that handles the event. The route is executed by the module when the
 corresponding event is raised by the OpenSIPS Event Interface.
+
+%package  event_routing
+Summary:  Event based SIP routing
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  event_routing
+The Event (based) Routing module, or shortly the EBR module, provides a mechanism
+that allows different SIP processings (of messages in script) to communicate and
+synchronize between through OpenSIPS Events.
 
 %package  event_virtual
 Summary:  Aggregator of event backends (failover & balancing)
@@ -1441,6 +1453,10 @@ fi
 %{_libdir}/opensips/modules/event_route.so
 %doc docdir/README.event_route
 
+%files event_routing
+%{_libdir}/opensips/modules/event_routing.so
+%doc docdir/README.event_routing
+
 %files event_virtual
 %{_libdir}/opensips/modules/event_virtual.so
 %doc docdir/README.event_virtual
@@ -1675,7 +1691,7 @@ fi
 %changelog
 * Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
 - Specification updated for opensips 2.3
-- New packages: freeswitch, mid_registrar, sip_i
+- New packages: event_routing, freeswitch, mid_registrar, sip_i
 - Enabled packages: lua
 - Renamed packages: memcached -> cachedb_memcached, redis -> cachedb_redis,
   unixodbc -> db_unixodbc, xmlrpc -> mi_xmlrpc
