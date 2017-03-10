@@ -96,6 +96,10 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 #endif
 
 #elif defined USE_PTHREAD_MUTEX
+# if defined(__FreeBSD__)
+#  warning Inter-process mutexes are not supported on FreeBSD as if yet :(
+# endif
+
 #include <pthread.h>
 
 typedef pthread_mutex_t gen_lock_t;

@@ -120,12 +120,21 @@ ifeq ($(OS),solaris)
 		ISSMP ?= yes
 	endif
 else
+ifeq ($(OS),freebsd)
+	SMP_STR = $(shell sysctl kern.smp.active | grep 1)
+	ifeq (,$(SMP_STR))
+		ISSMP ?= no
+	else
+		ISSMP ?= yes
+	endif
+else
 	SMP_STR = $(shell uname -v | grep -i "SMP")
 	ifeq (,$(SMP_STR))
 		ISSMP ?= no
 	else
 		ISSMP ?= yes
 	endif
+endif
 endif
 
 #set some vars from the environment (and not make builtins)
@@ -328,12 +337,16 @@ cfg_dir = etc/$(MAIN_NAME)/
 bin_dir = sbin/
 
 ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
+ifeq ($(OS),freebsd)
+	LIBDIR ?= lib
+else
 ifeq ($(ARCH_B),64b)
 	LIBDIR ?= lib64
 else
 	LIBDIR ?= lib
 	# assume 32b - it is not really used further
 	ARCH_B=32b
+endif
 endif
 
 lib_dir = $(LIBDIR)/$(MAIN_NAME)
@@ -1469,12 +1482,13 @@ ifeq ($(OS), freebsd)
 		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
 		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM \
 		-DHAVE_NETINET_IN_SYSTM
+	LIBS=  #dlopen is in libc
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
-		LIBS= -pthread  #dlopen is in libc
-	else
-		LIBS=  #dlopen is in libc
+	endif
+	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
+		LIBS+=-lpthread
 	endif
 	# check for ver >= 4.1
 	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)
