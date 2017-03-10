@@ -765,6 +765,7 @@ ifeq ($(ARCH), alpha)
 endif
 
 # decide on the locking type
+ifeq (,$(findstring USE_UMUTEX, $(DEFS)))
 ifeq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
 ifeq (,$(findstring USE_POSIX_SEM, $(DEFS)))
 ifeq (,$(findstring USE_SYSV_SEM, $(DEFS)))
@@ -783,6 +784,10 @@ endif
 else
 	## USE_PTHREAD_MUTEX was manually forced from .conf
 	found_lock_method=yes
+endif
+else
+        ## USE_UMUTEX was manually forced from .conf
+        found_lock_method=yes
 endif
 
 CFLAGS=$(shell echo "$${CFLAGS}")

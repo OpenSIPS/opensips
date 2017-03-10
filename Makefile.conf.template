@@ -84,6 +84,7 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DUSE_FUTEX #Uses linux futexs with fast architecture specific locking
 #DEFS+= -DUSE_SYSV_SEM #Uses SYSV sems for locking ( slower & limited number of locks
 #DEFS+= -DUSE_PTHREAD_MUTEX #Uses pthread mutexes for locking
+#DEFS+= -DUSE_UMUTEX #Uses FreeBSD-specific low-level mutexes for locking
 #DEFS+= -DUSE_POSIX_SEM #Uses POSIX sems for locking
 #DEFS+= -DBUSY_WAIT #Uses busy waiting on the lock
 #DEFS+= -DDBG_LOCK #Attach debug info to all lock structures
