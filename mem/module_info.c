@@ -200,12 +200,12 @@ int alloc_group_stat(void) {
 			set_indexes(core_index);
 
 		} else {
-			update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(get_lock), sizeof(stat_val) * 4 +
-					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(get_lock), 5, core_index);
+			update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(gen_lock_t), sizeof(stat_val) * 4 +
+					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(gen_lock_t), 5, core_index);
 		}
 	} else {
-		update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(get_lock), sizeof(stat_val) * 4 +
-					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(get_lock), 5, 0);
+		update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(gen_lock_t), sizeof(stat_val) * 4 +
+					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(gen_lock_t), 5, 0);
 	}
 
 
