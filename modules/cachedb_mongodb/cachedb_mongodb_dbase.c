@@ -90,6 +90,10 @@ static char *build_mongodb_connect_string(struct cachedb_id *id)
 	return ret;
 }
 
+#ifndef MONGOC_HANDSHAKE_APPNAME_MAX
+#define MONGOC_HANDSHAKE_APPNAME_MAX 128
+#endif
+
 char osips_appname[MONGOC_HANDSHAKE_APPNAME_MAX];
 mongo_con* mongo_new_connection(struct cachedb_id* id)
 {
@@ -177,6 +181,7 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	       MONGO_NAMESPACE(con));
 
 	filter = bson_new();
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	bson_append_utf8(filter, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
 	start_expire_timer(start, mongo_exec_threshold);
@@ -186,6 +191,20 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	                  attr->s, attr->len, 0);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
+#else
+	bson_t child;
+	BSON_APPEND_DOCUMENT_BEGIN(filter, "$query", &child);
+	bson_append_utf8(&child, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+	bson_append_document_end(filter, &child);
+
+	start_expire_timer(start, mongo_exec_threshold);
+	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
+	                                0, 0, 0, filter, NULL, NULL);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB find",
+	                  attr->s, attr->len, 0);
+
+	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
+#endif
 		if (bson_iter_init_find(&iter, doc, "opensips")) {
 			value = bson_iter_value(&iter);
 			switch (value->value_type) {
@@ -301,30 +320,57 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 		return -1;
 	}
 
+	*reply = NULL;
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   bson_iter_utf8(ns, NULL));
 
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	if (bson_iter_init_find(&iter, raw_query, "filter") &&
 	    BSON_ITER_HOLDS_DOCUMENT(&iter)) {
 		v = bson_iter_value(&iter);
 		bson_init_static(&_query, v->value.v_doc.data, v->value.v_doc.data_len);
-		query = &_query;
 	} else {
-		query = bson_new();
+		bson_init(&_query);
 	}
+	query = &_query;
+#else
+	bson_t *fields = NULL, child;
+
+	query = bson_new();
+	BSON_APPEND_DOCUMENT_BEGIN(query, "$query", &child);
+	if (bson_iter_init_find(&iter, raw_query, "filter") &&
+	    BSON_ITER_HOLDS_DOCUMENT(&iter)) {
+		v = bson_iter_value(&iter);
+		bson_init_static(&child, v->value.v_doc.data, v->value.v_doc.data_len);
+	}
+	bson_append_document_end(query, &child);
+#endif
 
 	if (bson_iter_init_find(&iter, raw_query, "projection") &&
 	    BSON_ITER_HOLDS_DOCUMENT(&iter)) {
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 		opts = bson_new();
+#endif
 		v = bson_iter_value(&iter);
 		bson_init_static(&proj, v->value.v_doc.data, v->value.v_doc.data_len);
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 		bson_append_document(opts, "projection", 10, &proj);
+#else
+		fields = &proj;
+#endif
 	}
 
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	cursor = mongoc_collection_find_with_opts(col, query, opts, NULL);
 
-	*reply = NULL;
 	while (mongoc_cursor_next(cursor, &doc)) {
+#else
+	cursor = mongoc_collection_find(col, MONGOC_QUERY_NONE,
+	                                0, 0, 0, query, fields, NULL);
+
+	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
+#endif
+
 		*reply = pkg_realloc(*reply, (csz + 1) * sizeof **reply);
 		if (!*reply) {
 			LM_ERR("no more pkg\n");
@@ -891,12 +937,27 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	int ret = 0;
 
 	query = bson_new();
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	bson_append_utf8(query, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+#else
+	bson_t child;
+	BSON_APPEND_DOCUMENT_BEGIN(query, "$query", &child);
+	bson_append_utf8(&child, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+	bson_append_document_end(query, &child);
+#endif
 
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	cursor = mongoc_collection_find_with_opts(
 	                MONGO_COLLECTION(con), query, NULL, NULL);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
+#else
+	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
+	                                0, 0, 0, query, NULL, NULL);
+
+	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
+#endif
+
 		if (bson_iter_init_find(&iter, doc, "opensips_counter")) {
 			value = bson_iter_value(&iter);
 			switch (value->value_type) {
@@ -1029,7 +1090,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	char key_buff[32], namespace[MDB_MAX_NS_LEN], *p;
 	char hex_oid[HEX_OID_SIZE];
 	static str dummy_string = {"", 0};
-	bson_t *filter, *opts = NULL, child;
+	bson_t *filter, child;
 	mongoc_cursor_t *cursor = NULL;
 	const bson_t *doc;
 	db_row_t *current;
@@ -1042,11 +1103,24 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	*_r = NULL;
 
 	filter = bson_new();
+
+#if !MONGOC_CHECK_VERSION(1, 5, 0)
+	bson_t *fields = NULL;
+	BSON_APPEND_DOCUMENT_BEGIN(filter, "$query", &child);
+	if (kvo_to_bson(_k, _v, _op, _n, &child) != 0) {
+		LM_ERR("failed to build filter bson\n");
+		goto out_err;
+	}
+	bson_append_document_end(filter, &child);
+#else
+	bson_t *opts = NULL;
 	if (kvo_to_bson(_k, _v, _op, _n, filter) != 0) {
 		LM_ERR("failed to build filter bson\n");
 		goto out_err;
 	}
+#endif
 
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	opts = bson_new();
 	if (_o) {
 		bson_append_document_begin(opts, "sort", 4, &child);
@@ -1059,6 +1133,18 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 		bson_append_int32(&child, _c[c]->s, _c[c]->len, 1);
 	}
 	bson_append_document_end(opts, &child);
+#else
+	if (_o) {
+		BSON_APPEND_DOCUMENT_BEGIN(filter, "$orderby", &child);
+		bson_append_int32(&child, _o->s, _o->len, 1);
+		bson_append_document_end(filter, &child);
+	}
+
+	fields = bson_new();
+	for (c = 0; c < _nc; c++) {
+		bson_append_int32(fields, _c[c]->s, _c[c]->len, 1);
+	}
+#endif
 
 	memcpy(namespace, table->s, table->len);
 	namespace[table->len] = '\0';
@@ -1068,13 +1154,22 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 
 	if (is_printable(L_DBG)) {
 		strf = bson_as_json(filter, NULL);
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 		stro = bson_as_json(opts, NULL);
+#else
+		stro = bson_as_json(fields, NULL);
+#endif
 		LM_DBG("query doc:\n%s\n%s\n", strf, stro);
 		bson_free(strf);
 		bson_free(stro);
 	}
 
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	cursor = mongoc_collection_find_with_opts(col, filter, opts, NULL);
+#else
+	cursor = mongoc_collection_find(col, MONGOC_QUERY_NONE,
+	                                0, 0, 0, filter, fields, NULL);
+#endif
 
 	MONGO_CURSOR(con) = cursor;
 
@@ -1102,7 +1197,12 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 		RES_NAMES(*_r)[c]->len = _c[c]->len;
 	}
 
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	for (ri = 0; mongoc_cursor_next(cursor, &doc); ri++) {
+#else
+	for (ri = 0; mongoc_cursor_more(cursor) &&
+	             mongoc_cursor_next(cursor, &doc); ri++) {
+#endif
 		if (ri + 1 > rows) {
 			old_rows = rows;
 			rows = rows > 0 ? 2 * rows : 1;
@@ -1195,15 +1295,25 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	}
 
 	bson_destroy(filter);
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	bson_destroy(opts);
+#else
+	bson_destroy(fields);
+#endif
 	mongoc_collection_destroy(col);
 	return 0;
 
 out_err:
 	bson_destroy(filter);
+#if MONGOC_CHECK_VERSION(1, 5, 0)
 	if (opts) {
 		bson_destroy(opts);
 	}
+#else
+	if (fields) {
+		bson_destroy(fields);
+	}
+#endif
 	if (cursor) {
 		mongoc_cursor_destroy(cursor);
 	}
