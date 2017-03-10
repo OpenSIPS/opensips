@@ -9,8 +9,12 @@
 %global _without_db_perlvdb 1
 %endif
 
-%if 0%{?rhel} > 6 || 0%{?fedora} > 0
+%if 0%{?rhel} > 6 || 0%{?fedora} > 20
 %global _with_cachedb_redis 1
+%endif
+
+%if 0%{?rhel} > 6 || 0%{?fedora} > 21
+%global _with_cachedb_mongodb 1
 %endif
 
 %if 0%{?fedora} > 23
@@ -1692,7 +1696,7 @@ fi
 * Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
 - Specification updated for opensips 2.3
 - New packages: event_routing, freeswitch, mid_registrar, sip_i
-- Enabled packages: lua
+- Enabled packages: cachedb_mongodb, lua
 - Renamed packages: memcached -> cachedb_memcached, redis -> cachedb_redis,
   unixodbc -> db_unixodbc, xmlrpc -> mi_xmlrpc
 - Added possibility to build unsupported modules (from obsolete .spec):
