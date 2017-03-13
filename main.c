@@ -561,6 +561,10 @@ static void sig_usr(int signo)
 				break;
 			case SIGINT:
 			case SIGTERM:
+					/* if some shutdown already in progress, ignore this one */
+					if (sig_flag==0) sig_flag=signo;
+					else return;
+					/* do the termination */
 					LM_INFO("signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
