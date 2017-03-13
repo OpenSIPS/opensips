@@ -1317,13 +1317,13 @@ fi
 
 %if 0%{?_with_cachedb_cassandra:1}
 %{_libdir}/opensips/modules/cachedb_cassandra.so
-%doc %{_docdir}/opensips/README.cachedb_cassandra
+%doc docdir/README.cachedb_cassandra
 %endif
 
 %if 0%{?_with_cachedb_couchbase:1}
 %files cachedb_couchbase
 %{_libdir}/opensips/modules/cachedb_couchbase.so
-%doc %{_docdir}/opensips/README.cachedb_couchbase
+%doc docdir/README.cachedb_couchbase
 %endif
 
 %files cachedb_memcached
@@ -1333,7 +1333,7 @@ fi
 %if 0%{?_with_cachedb_mongodb:1}
 %files cachedb_mongodb
 %{_libdir}/opensips/modules/cachedb_mongodb.so
-%doc %{_docdir}/opensips/README.cachedb_mongodb
+%doc docdir/README.cachedb_mongodb
 %endif
 
 %if 0%{?_with_cachedb_redis:1}
@@ -1516,7 +1516,7 @@ fi
 %if 0%{?_with_osp:1}
 %files osp
 %{_libdir}/opensips/modules/osp.so
-%doc %{_docdir}/opensips/README.osp
+%doc docdir/README.osp
 %endif
 
 %files peering
@@ -1652,7 +1652,7 @@ fi
 %if 0%{?_with_sngtc:1}
 %files sngtc
 %{_libdir}/opensips/modules/sngtc.so
-%doc %{_docdir}/opensips/README.sngtc
+%doc docdir/README.sngtc
 %endif
 
 %if 0%{!?_without_snmpstats:1}
