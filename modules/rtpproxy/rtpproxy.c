@@ -2165,6 +2165,8 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 		SET_CAP(node, NOTIFY_WILD);
 	if (rtpp_checkcap(node, RTP_CAP(STATS_EXTRA)) > 0)
 		SET_CAP(node, STATS_EXTRA);
+	if (rtpp_checkcap(node, RTP_CAP(TTL_CHANGE)) > 0)
+		SET_CAP(node, TTL_CHANGE);
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -3411,7 +3413,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip, enable_notification;
 	int pf, pf1, force, err, locked = 0;
-	struct options opts, rep_opts, pt_opts, m_opts;
+	struct options opts, rep_opts, pt_opts, m_opts, t_opts;
 	char *cp, *cp1;
 	char  *cpend, *next;
 	char **ap, *argv[10];
@@ -3421,6 +3423,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 		{NULL, 0},	/* command & common options */
 		{NULL, 0},	/* per-media/per-node options 1 */
 		{NULL, 0},	/* per-media/per-node options 2 */
+		{NULL, 0},	/* per-media/per-node options 3 */
 		{" ", 1},	/* separator */
 		{NULL, 0},	/* callid */
 		{" ", 1},	/* separator */
@@ -3451,6 +3454,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
 	memset(&pt_opts, '\0', sizeof(pt_opts));
+	memset(&t_opts, '\0', sizeof(t_opts));
 	/* Leave space for U/L prefix TBD later */
 	if (append_opts(&opts, '?') == -1) {
 		LM_ERR("out of pkg memory\n");
@@ -3524,6 +3528,21 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 			if (append_opts(&opts, 'S') == -1) {
 				LM_ERR("out of pkg memory\n");
 				FORCE_RTP_PROXY_RET (-1);
+			}
+			break;
+
+		case 't':
+		case 'T':
+			if (append_opts(&t_opts, *cp) == -1) {
+				LM_ERR("out of pkg memory\n");
+				FORCE_RTP_PROXY_RET (-1);
+			}
+			/* If there are any digits following T copy them into the command */
+			for (; cp[1] != '\0' && isdigit(cp[1]); cp++) {
+				if (append_opts(&t_opts, cp[1]) == -1) {
+					LM_ERR("out of pkg memory\n");
+					FORCE_RTP_PROXY_RET (-1);
+				}
 			}
 			break;
 
@@ -3633,9 +3652,9 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	medianum = 0;
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
-	STR2IOVEC(args->callid, v[5]);
-	STR2IOVEC(from_tag, v[11]);
-	STR2IOVEC(to_tag, v[15]);
+	STR2IOVEC(args->callid, v[6]);
+	STR2IOVEC(from_tag, v[12]);
+	STR2IOVEC(to_tag, v[16]);
 
 	if (enable_notification &&
 			(rtpp_notify_socket.s == 0 || rtpp_notify_socket.len == 0)) {
@@ -3660,8 +3679,8 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 		notify_tag.s = buf;
 		LM_DBG("notify_tag= %s\n", notify_tag.s);
 
-		STR2IOVEC(rtpp_notify_socket, v[19]);
-		STR2IOVEC(notify_tag, v[21]);
+		STR2IOVEC(rtpp_notify_socket, v[20]);
+		STR2IOVEC(notify_tag, v[22]);
 	}
 
 	m_opts = opts;
@@ -3727,6 +3746,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 			}
 			++medianum;
 
+			/* TODO: check if the port is allowed 0 and if the IP can be 0 */
 			/* If the callee wants to neither send nor receive a stream offered by
 			the caller, the callee sets the port number of that stream to zero in
 			its media description - don't engage rtpproxy for such streams */
@@ -3748,18 +3768,18 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 					goto error;
 				}
 			}
-			STR2IOVEC(newip, v[7]);
-			STR2IOVEC(oldport, v[9]);
+			STR2IOVEC(newip, v[8]);
+			STR2IOVEC(oldport, v[10]);
 			if (1 || media_multi) /* XXX netch: can't choose now*/
 			{
 				snprintf(medianum_buf, sizeof medianum_buf, "%d", medianum);
 				medianum_str.s = medianum_buf;
 				medianum_str.len = strlen(medianum_buf);
-				STR2IOVEC(medianum_str, v[13]);
-				STR2IOVEC(medianum_str, v[17]);
+				STR2IOVEC(medianum_str, v[14]);
+				STR2IOVEC(medianum_str, v[18]);
 			} else {
-				v[12].iov_len = v[13].iov_len = 0;
-				v[16].iov_len = v[17].iov_len = 0;
+				v[13].iov_len = v[14].iov_len = 0;
+				v[17].iov_len = v[18].iov_len = 0;
 			}
 			if (!args->node && nh_lock) {
 				locked = 1;
@@ -3824,16 +3844,22 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 				} else {
 					v[3].iov_len = 0;
 				}
+				if (HAS_CAP(args->node, TTL_CHANGE)) {
+					v[4].iov_base = t_opts.s.s;
+					v[4].iov_len = t_opts.oidx;
+				} else {
+					v[4].iov_len = 0;
+				}
 				if(enable_notification && opts.s.s[0] == 'U' &&
 						HAS_CAP(args->node, NOTIFY)) {
-					vcnt = 22;
-					STR2IOVEC(rtpp_notify_socket, v[19]);
+					vcnt = 23;
+					STR2IOVEC(rtpp_notify_socket, v[20]);
 					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
-						v[19].iov_base += 4;
-						v[19].iov_len -= 4;
+						v[20].iov_base += 4;
+						v[20].iov_len -= 4;
 					}
 				} else {
-					vcnt = (to_tag.len > 0) ? 18 : 14;
+					vcnt = (to_tag.len > 0) ? 19 : 15;
 				}
 
 				v[1].iov_base = m_opts.s.s;

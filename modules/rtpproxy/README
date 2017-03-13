@@ -456,6 +456,12 @@ sock_pvar]]]])
             received, support symmetric RTP must be forced.
           + n - flags that enables the notification timeout for
             the session.
+          + tNN - can be used to specify a RTP ttl for the caller.
+            The NN represents the timeout in seconds for that
+            stream. This can be useful in music on hold scenarios
+            where only one client is sending RTP.
+          + TNN - Similar to the tNN paramaeter, but used for
+            tuning the calllee's ttl for RTP.
           + zNN - requests the RTPproxy to perform
             re-packetization of RTP traffic coming from the UA
             which has sent the current message to increase or

@@ -544,6 +544,16 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 				timeout for the session.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>tNN</emphasis> - can be used to specify a RTP
+				ttl for the caller. The NN represents the timeout in seconds
+				for that stream. This can be useful in music on hold scenarios
+				where only one client is sending RTP.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>TNN</emphasis> - Similar to the <emphasis>tNN</emphasis>
+				paramaeter, but used for tuning the calllee's ttl for RTP.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>zNN</emphasis> - requests the RTPproxy to perform
 				re-packetization of RTP traffic coming from the UA which
 				has sent the current message to increase or decrease payload
