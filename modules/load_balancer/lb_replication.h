@@ -15,12 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- *
- * history:
- * ---------
- *  2017-02-15 created by Jeremy Martinez
+ * Foundation Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef _LB_REPLICATION_H_
@@ -36,9 +31,14 @@
 
 extern str repl_lb_module_name;
 extern struct clusterer_binds clusterer_api;
-extern int lb_status_replicate_cluster;
 
+extern int accept_replicated_status;
+extern int replicated_status_cluster;
+
+/* replicate the LB status via BIN */
 void replicate_lb_status(struct lb_dst *dst);
+
+/* handler for incoming BIN packets */
 int replicate_lb_status_update(struct lb_data *data);
 
 #endif

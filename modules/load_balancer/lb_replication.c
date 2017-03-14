@@ -15,12 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * Foundation Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- *
- * history:
- * ---------
- *  2017-02-15 created by Jeremy Martinez
  */
 
 #include "../../ut.h"
@@ -32,9 +28,13 @@
 str repl_lb_module_name = str_init("load_balancer");
 struct clusterer_binds clusterer_api;
 
+int accept_replicated_status = 1;
+int replicated_status_cluster = 0;
+
+
 void replicate_lb_status(struct lb_dst *dst)
 {
-	if (bin_init(&repl_lb_module_name, REPL_LB_STATUS_UPDATE, BIN_VERSION) != 0) {
+	if (bin_init(&repl_lb_module_name, REPL_LB_STATUS_UPDATE, BIN_VERSION)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -42,12 +42,13 @@ void replicate_lb_status(struct lb_dst *dst)
 	bin_push_int(clusterer_api.get_my_id());
 	bin_push_int(dst->group);
 	bin_push_str(&dst->uri);
-	bin_push_int(dst->flags);
+	bin_push_int(dst->flags&LB_DST_STAT_MASK);
 
-	if (clusterer_api.send_to(lb_status_replicate_cluster, PROTO_BIN) < 0) {
+	if (clusterer_api.send_to(replicated_status_cluster, PROTO_BIN) < 0) {
 		LM_ERR("replicate lb_status send failed\n");
- 	}
+	}
 }
+
 
 int replicate_lb_status_update(struct lb_data *data)
 {
@@ -58,13 +59,15 @@ int replicate_lb_status_update(struct lb_data *data)
 	bin_pop_str(&uri);
 	bin_pop_int(&flags);
 
-	for( dst=data->dsts; dst; dst=dst->next )
-	{
-		if((dst->group == group) && (strncmp(dst->uri.s, uri.s, dst->uri.len) == 0))
-		{
-			if (dst->flags != flags)
-			{
-				dst->flags = flags;
+	for( dst=data->dsts; dst; dst=dst->next ) {
+		if ( (dst->group == group) &&
+		(strncmp(dst->uri.s, uri.s, dst->uri.len) == 0)) {
+			if ((dst->flags&LB_DST_STAT_MASK) != flags) {
+				/* import the status flags */
+				dst->flags = ((~LB_DST_STAT_MASK)&dst->flags)|
+					(LB_DST_STAT_MASK&flags);
+				/* raise event of status change */
+				lb_raise_event(dst);
 				return 0;
 			}
 		}
@@ -72,3 +75,4 @@ int replicate_lb_status_update(struct lb_data *data)
 
 	return -1;
 }
+

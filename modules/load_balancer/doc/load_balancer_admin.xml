@@ -94,12 +94,20 @@
 				<emphasis>Dialog</emphasis> - Dialog module
 			</para>
 			<para>
-				<emphasis>freeswitch - only if "fetch_freeswitch_stats" is enabled.</emphasis>.
+				<emphasis>freeswitch</emphasis>. - only if 
+				"fetch_freeswitch_stats" is enabled.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>Dialog</emphasis> - TM module (only if probing enabled)
+				<emphasis>dialog</emphasis> - TM module (only if probing is
+				enabled)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clustere</emphasis> - only if "replicate_status_to"
+				option is enabled.
 			</para>
 			</listitem>
 			<listitem>
@@ -335,6 +343,64 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
 		<programlisting format="linespecific">
 ...
 modparam("load_balancer", "initial_freeswitch_load", 200)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>replicate_status_to</varname> (integer)</title>
+		<para>
+		A cluster ID for sharing (via BIN replication) the any change in the 
+		status of the destination. Whenever such a status is changes
+		(following an MI command, a probing result, a script command), the
+		module will replicate this status change to all the nodes in this
+		given cluster.
+		</para>
+		<para>
+		For more on how to define and populate a cluster (with OpenSIPS nodes)
+		see the "clusterer" module.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NONE</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_status_to</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# replicate LB status with all OpenSIPS in cluster ID 9
+modparam("load_balancer", "replicate_status_to", 9)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>accept_replicated_status</varname> (integer)</title>
+		<para>
+		This a on/off option, if this OpenSIPS node (as part of a cluster -
+		see the "replicate_status_to" options) accepts replicated info
+		about the change of LB destination's status from other OpenSIPS nodes
+		from the cluster.
+		</para>
+		<para>
+		This option makes sense only if the "replicate_status_to" is enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1 (enabled/on)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_replicated_status</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# replicate LB destinations status with all OpenSIPS in cluster ID 9
+modparam("load_balancer", "replicate_status_to", 9)
+# but do not accept incoming replication (just send, no receive)
+modparam("load_balancer", "accept_replicated_status", 0)
 ...
 </programlisting>
 		</example>

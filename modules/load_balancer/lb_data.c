@@ -1023,7 +1023,7 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int ve
 				dst->flags |= LB_DST_STAT_DSBL_FLAG;
 
 				if( dst->flags != old_flags ) {
-					lb_raise_event(dst);
+					lb_status_changed(dst);
 					if( verbose )
 						LM_INFO("manually disable destination %d <%.*s> "
 							"from script\n",dst->id, dst->uri.len, dst->uri.s);
@@ -1208,10 +1208,6 @@ void lb_raise_event(struct lb_dst *dst)
 {
 	evi_params_p list = NULL;
 
-	if ((lb_status_replicate_cluster > 0) && dst)
-	{
-		replicate_lb_status(dst);
-	}
 	if (lb_evi_id == EVI_ERROR || !evi_probe_event(lb_evi_id))
 		return;
 
@@ -1245,3 +1241,16 @@ void lb_raise_event(struct lb_dst *dst)
 error:
 	evi_free_params(list);
 }
+
+
+void lb_status_changed(struct lb_dst *dst)
+{
+	/* do BIN replication if configured */
+	if (replicated_status_cluster > 0)
+		replicate_lb_status( dst );
+
+	/* raise the event */
+	lb_raise_event(dst);
+}
+
+
