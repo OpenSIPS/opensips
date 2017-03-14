@@ -30,5 +30,15 @@ typedef enum _trans_trace_event { TRANS_TRACE_ACCEPTED,
 	trans_trace_event;
 
 
+int create_trace_message( int id, union sockaddr_union* src, union sockaddr_union* dst,
+	int proto, void* dest);
+
+void add_trace_data( void* message, char* key, str* value);
+
+int send_trace_message( void* message, void* destination);
+
+int create_send_trace_message( int id, union sockaddr_union* src, union sockaddr_union* dst,
+		trans_trace_event event, trans_trace_status status, str* data);
+
 #endif
 
