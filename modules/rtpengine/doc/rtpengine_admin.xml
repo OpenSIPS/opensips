@@ -455,8 +455,17 @@ rtpengine_offer();
 				<emphasis>media-address=...</emphasis> - force a particular media address to
 				be used in the &sdp; body. Address family is detected automatically.
 				</para></listitem>
+				<listitem><para>
+				<emphasis>record-call=yes/no</emphasis> - indicates whether rtpengine should
+				record the call or not. When using this parameter, you may pass further
+				information in the <quote>metadata</quote>.
+				</para></listitem>
 			</itemizedlist>
 		</listitem>
+		<para>
+			When passing an option that &osips; is not aware of, it will be
+			blindly sent to the rtpengine daemon to be processed.
+		</para>
 		<listitem><para>
 		<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the rtpengine
 		socket chosen for this call.
@@ -468,10 +477,6 @@ rtpengine_offer();
 		message body is no longer changed, so you have to manually replace it!.
 		</para></listitem>
 		</itemizedlist>
-		<para>
-			When passing an option that &osips; is not aware of, it will be
-			blindly sent to the rtpengine daemon to be processed.
-		</para>
 		<para>
 		This function can be used from ANY_ROUTE.
 		</para>
@@ -524,6 +529,26 @@ if (rtpengine_offer(, "$var(socket)", "$var(body)")) {
 ...
 </programlisting>
                 </example>
+		<example>
+		<title><function>rtpengine_offer</function> usage with call recording</title>
+		<programlisting format="linespecific">
+...
+$var(rtpengine_flags) = $var(rtpengine_flags) + " record-call=yes";
+
+$json(recording_keys) := "{}";
+$json(recording_keys/callId) = $ci;
+$json(recording_keys/fromUser) = $dlg_val(recording_from_user);
+$json(recording_keys/fromDomain) = $dlg_val(recording_from_domain);
+$json(recording_keys/fromTag) = $dlg_val(recording_from_tag);
+$json(recording_keys/toUser) = $dlg_val(recording_to_user);
+$json(recording_keys/toDomain) = $dlg_val(recording_to_domain);
+
+$var(rtpengine_flags) = $var(rtpengine_flags) + " metadata=" + $(json(recording_keys){s.encode.hexa});
+rtpengine_offer("$var(rtpengine_flags)");
+...
+</programlisting>
+                </example>
+
 	</section>
         <section id="rtpengine.f.rtpengine_answer">
                 <title>

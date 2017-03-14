@@ -1027,6 +1027,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 	char *e;
 	const char *err;
 	str key, val;
+	int delete_delay;
 	bencode_item_t *bitem;
 
 	if (!flags_str)
@@ -1164,9 +1165,21 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					if (*op != OP_OFFER)
 						goto error;
 					*op = OP_ANSWER;
-					continue;
-				}
-				break;
+				} else if (str_eq(&key, "delete-delay")) {
+					err = "missing value";
+					if (!val.s)
+						goto error;
+					err = "invalid value";
+					delete_delay = (int) strtol(val.s, NULL, 10);
+					if (delete_delay == 0) {
+						delete_delay = -1;
+						goto error;
+					} else {
+						BCHECK(bencode_dictionary_add_integer(ng_flags->dict, "delete-delay", delete_delay));
+					}
+				} else
+					break;
+				continue;
 			case 13:
 				if (str_eq(&key, "media-address")) {
 					err = "missing value";
