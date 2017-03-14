@@ -41,6 +41,7 @@
 #include "dr_bl.h"
 #include "dr_db_def.h"
 #include "dr_partitions.h"
+#include "dr_replication.h"
 #include "dr_api.h"
 #include "dr_api_internal.h"
 
@@ -257,10 +258,11 @@ static int fixup_is_gw(void** param, int param_no);
 static int fixup_route2_carrier( void** param, int param_no);
 static int fixup_route2_gw( void** param, int param_no);
 
-static int do_routing(struct sip_msg* msg,dr_part_group_t*, int sort, gparam_t* wl);
+static int do_routing(struct sip_msg* msg,dr_part_group_t*, int sort,
+		gparam_t* wl);
 static int do_routing_0(struct sip_msg* msg);
-static int do_routing_1(struct sip_msg* msg, char * , char* id, char* fl, char* wl,
-		char* rule_att, char* gw_att, char* carr_att);
+static int do_routing_1(struct sip_msg* msg, char * , char* id, char* fl,
+		char* wl, char* rule_att, char* gw_att, char* carr_att);
 static int use_next_gw(struct sip_msg* msg,
 		char* rule_or_part, char* rule_or_gw, char* gw_or_carr, char * carr);
 static int is_from_gw_0(struct sip_msg* msg);
@@ -269,9 +271,10 @@ static int is_from_gw_2(struct sip_msg* msg, char * part, char* str1);
 static int is_from_gw_3(struct sip_msg* msg, char *, char*, char* );
 static int is_from_gw_4(struct sip_msg*, char*, char*, char*, char*);
 static int goes_to_gw_0(struct sip_msg* msg);
-static int goes_to_gw_1(struct sip_msg* msg, char * part,  char* f1, char* f2, char* f3);
-static int dr_is_gw(struct sip_msg* msg, char * part, char* str1, char* str2, char* str3,
-		char* str4);
+static int goes_to_gw_1(struct sip_msg* msg, char * part,  char* f1, char* f2,
+		char* f3);
+static int dr_is_gw(struct sip_msg* msg, char * part, char* str1, char* str2,
+		char* str3, char* str4);
 static int route2_carrier(struct sip_msg* msg, char* cr_str,
 		char* gw_att_pv, char* carr_att_pv);
 static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
@@ -279,8 +282,10 @@ static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
-static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param);
-static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree,
+		void *param);
+static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree,
+		void *param);
 
 
 /* event */
@@ -413,6 +418,8 @@ static param_export_t params[] = {
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
 	{"partition_id_pvar", STR_PARAM, &partition_pvar.s},
+	{"accept_replicated_status",INT_PARAM, &accept_replicated_status },
+	{"replicate_status_to", INT_PARAM, &replicated_status_cluster },
 	{0, 0, 0}
 };
 
@@ -452,6 +459,13 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+	if (cluster_id <= 0)
+		return NULL;
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
@@ -459,6 +473,8 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "probing_interval", get_deps_probing_interval },
+		{ "accept_replicated_status", get_deps_clusterer},
+		{ "replicate_gw_status_to", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -525,6 +541,7 @@ static int dr_disable(struct sip_msg *req, char * param_part_name) {
 	return -1;/* unexpected ending */
 }
 
+static str dr_partition_str = str_init("partition");
 static str dr_gwid_str = str_init("gwid");
 static str dr_address_str = str_init("address");
 static str dr_status_str = str_init("status");
@@ -533,10 +550,12 @@ static str dr_active_str = str_init("active");
 static str dr_disabled_str = str_init("disabled MI");
 static str dr_probing_str = str_init("probing");
 
-static void dr_raise_event(pgw_t *gw)
+
+void dr_raise_event(struct head_db *p, pgw_t *gw)
 {
 	evi_params_p list = NULL;
 	str *txt;
+
 	if (dr_evi_id == EVI_ERROR || !evi_probe_event(dr_evi_id))
 		return;
 
@@ -544,6 +563,11 @@ static void dr_raise_event(pgw_t *gw)
 	if (!list) {
 		LM_ERR("cannot create event params\n");
 		return;
+	}
+
+	if (evi_param_add_str(list, &dr_partition_str, &p->partition) < 0) {
+		LM_ERR("cannot add partition\n");
+		goto error;
 	}
 
 	if (evi_param_add_str(list, &dr_gwid_str, &gw->id) < 0) {
@@ -582,6 +606,17 @@ error:
 }
 
 
+static void dr_gw_status_changed(struct head_db *p, pgw_t *gw)
+{
+	/* do BIN replication if configured */
+	if (replicated_status_cluster > 0)
+		replicate_dr_gw_status_event( p, gw, replicated_status_cluster);
+
+	/* raise the event */
+	dr_raise_event( p, gw);
+}
+
+
 static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partition)
 {
 	struct usr_avp *avp;
@@ -602,7 +637,7 @@ static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partit
 		LM_INFO(" partition : %.*s\n", current_partition->partition.len,
 				current_partition->partition.s);
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
-		dr_raise_event(gw);
+		dr_gw_status_changed( current_partition, gw);
 	}
 
 	lock_stop_read( current_partition->ref_lock );
@@ -648,13 +683,13 @@ static void dr_probing_callback( struct cell *t, int type,
 			goto end;
 		gw->flags &= ~DR_DST_STAT_DSBL_FLAG;
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
-		dr_raise_event(gw);
+		dr_gw_status_changed( current_partition, gw);
 		goto end;
 	}
 
 	if (code>=400 && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
-		dr_raise_event(gw);
+		dr_gw_status_changed( current_partition, gw);
 		goto end;
 	}
 
@@ -1668,7 +1703,25 @@ skip:
 		goto error;
 	}
 
-
+	if (replicated_status_cluster > 0) {
+		/* status replication is enabled */
+		if (load_clusterer_api(&clusterer_api)!=0){
+			LM_DBG("failed to find clusterer API - is clusterer "
+				"module loaded?\n");
+			return -1;
+		}
+		/* do we also accept replication data ? */
+		if (accept_replicated_status > 0) {
+			if (bin_register_cb( repl_dr_module_name.s,
+			receive_dr_binary_packet,NULL)<0) {
+				LM_ERR("cannot register replication callback!\n");
+				return -1;
+			}
+		}
+	} else 
+	if (replicated_status_cluster < 0) {
+		replicated_status_cluster = 0;
+	}
 
 	return 0;
 
@@ -4467,7 +4520,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 	}
 	if (old_flags!=gw->flags) {
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
-		dr_raise_event(gw);
+		dr_gw_status_changed( current_partition, gw);
 	}
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
@@ -4579,8 +4632,11 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	} else {
 		cr->flags |= DR_CR_FLAG_IS_OFF;
 	}
-	if (old_flags!=cr->flags)
+	if (old_flags!=cr->flags) {
 		cr->flags |= DR_CR_FLAG_DIRTY;
+		replicate_dr_carrier_status_event( current_partition, cr,
+			replicated_status_cluster);
+	}
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
@@ -5007,5 +5063,6 @@ error:
 	lock_stop_read(partition->ref_lock);
 	free_mi_tree(rpl_tree);
 	return 0;
-
 }
+
+

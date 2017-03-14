@@ -34,7 +34,9 @@
 #include "../../mem/shm_mem.h"
 #include "../../evi/evi.h"
 #include "lb_parser.h"
+#include "../../rw_locking.h"
 #include "lb_data.h"
+#include "lb_replication.h"
 #include "lb_db.h"
 
 /* dialog stuff */
@@ -1021,7 +1023,7 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int ve
 				dst->flags |= LB_DST_STAT_DSBL_FLAG;
 
 				if( dst->flags != old_flags ) {
-					lb_raise_event(dst);
+					lb_status_changed(dst);
 					if( verbose )
 						LM_INFO("manually disable destination %d <%.*s> "
 							"from script\n",dst->id, dst->uri.len, dst->uri.s);
@@ -1239,3 +1241,16 @@ void lb_raise_event(struct lb_dst *dst)
 error:
 	evi_free_params(list);
 }
+
+
+void lb_status_changed(struct lb_dst *dst)
+{
+	/* do BIN replication if configured */
+	if (replicated_status_cluster > 0)
+		replicate_lb_status( dst );
+
+	/* raise the event */
+	lb_raise_event(dst);
+}
+
+

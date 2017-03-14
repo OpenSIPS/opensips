@@ -396,6 +396,7 @@
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
+
 			<listitem>
 			<para>
 				<emphasis>a database module</emphasis>.
@@ -409,6 +410,14 @@
 				<emphasis>tm module</emphasis>.
 			</para>
 			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>clustere</emphasis> - only if "replicate_status_to"
+				option is enabled.
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
@@ -898,6 +907,64 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 		<programlisting format="linespecific">
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>replicate_status_to</varname> (integer)</title>
+		<para>
+		A cluster ID for sharing (via BIN replication) the gateways/destination
+		and carriers status changes. Whenever such a status is changes
+		(following an MI command, a probing result, a script command), the
+		module will replicate this status change to all the nodes in this
+		given cluster.
+		</para>
+		<para>
+		For more on how to define and populate a cluster (with OpenSIPS nodes)
+		see the "clusterer" module.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NONE</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_status_to</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# replicate gw/carrier status with all OpenSIPS in cluster ID 9
+modparam("drouting", "replicate_status_to", 9)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>accept_replicated_status</varname> (integer)</title>
+		<para>
+		This a on/off option, if this OpenSIPS node (as part of a cluster -
+		see the "replicate_status_to" options) accepts replicated info
+		about the change of gateway/carrier status from other OpenSIPS nodes
+		from the cluster.
+		</para>
+		<para>
+		This option makes sense only if the "replicate_status_to" is enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1 (enabled/on)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_replicated_status</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# replicate gw/carrier status with all OpenSIPS in cluster ID 9
+modparam("drouting", "replicate_status_to", 9)
+# but do not accept incoming replication (just send, no receive)
+modparam("drouting", "accept_replicated_status", 0)
 ...
 </programlisting>
 		</example>
@@ -2155,10 +2222,13 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 		</title>
 		<para>
 			This event is raised when the module changes the state of a gateway,
-			either through MI or probing.
+			either through an MI command, probing or script function.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
+			<listitem><para>
+				<emphasis>partition</emphasis> - the name of the partition.
+			</para></listitem>
 			<listitem><para>
 				<emphasis>gwid</emphasis> - the gateway identifier.
 			</para></listitem>
