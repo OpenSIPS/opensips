@@ -51,6 +51,7 @@
 #include "../timer.h"
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
+#include "net_tcp_report.h"
 #include "net_tcp.h"
 #include "tcp_conn.h"
 #include "trans.h"
@@ -127,6 +128,9 @@ int tcp_no_new_conn = 0;
 
 /* if the TCP net layer is on or off (if no TCP based protos are loaded) */
 static int tcp_disabled = 1;
+
+/* the process ID of TCP MAIN */
+int tcp_main_proc_id = -1;
 
 
 /****************************** helper functions *****************************/
@@ -882,6 +886,8 @@ struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
 	return c;
 }
 
+
+/* sends a new connection from a worker to main */
 int tcp_conn_send(struct tcp_connection *c)
 {
 	long response[2];
@@ -909,6 +915,8 @@ int tcp_conn_send(struct tcp_connection *c)
 
 	return 0;
 error:
+	/* no reporting as closed, as PROTO layer did not reporte it as 
+	 * OPEN yet */
 	_tcpconn_rm(c);
 	tcp_connections_no--;
 	return -1;
@@ -926,6 +934,9 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 		LM_DBG("destroying connection %p, flags %04x\n",
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->s;
+		/* no reporting here - the tcpconn_destroy() function is called
+		 * from the TCP_MAIN reactor when handling connectioned received
+		 * from a worker; and we generate the CLOSE reports from WORKERs */
 		_tcpconn_rm(tcpconn);
 		if (fd >= 0)
 			close(fd);
@@ -944,6 +955,8 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 /* wrapper to the internally used function */
 void tcp_conn_destroy(struct tcp_connection* tcpconn)
 {
+	tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
+				"Closed by Proto layer");
 	return tcpconn_destroy(tcpconn);
 }
 
@@ -1002,6 +1015,8 @@ static inline int handle_new_connect(struct socket_info* si)
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
+				/* no close to report here as the connection was not yet 
+				 * reported as OPEN by the proto layer...this sucks a bit */
 				_tcpconn_rm(tcpconn);
 				close(new_sock/*same as tcpconn->s*/);
 			}else tcpconn->lifetime=0; /* force expire */
@@ -1048,6 +1063,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
 				fd=tcpconn->s;
+				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
+					"No worker for read");
 				_tcpconn_rm(tcpconn);
 				close(fd);
 			}else tcpconn->lifetime=0; /* force expire*/
@@ -1068,6 +1085,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 				tcpconn_ref(tcpconn);
 				reactor_del_all(tcpconn->s, fd_i, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
+				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
+					"Async connect failed");
 				tcpconn_destroy(tcpconn);
 				return 0;
 			}
@@ -1095,6 +1114,8 @@ async_write:
 				tcpconn->refcnt--;
 				if (tcpconn->refcnt==0){
 					fd=tcpconn->s;
+					tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
+						"No worker for write");
 					_tcpconn_rm(tcpconn);
 					close(fd);
 				}else tcpconn->lifetime=0; /* force expire*/
@@ -1458,6 +1479,12 @@ static inline void __tcpconn_lifetime(int force)
 						LM_DBG("timeout for hash=%d - %p"
 								" (%d > %d)\n", h, c, ticks, c->lifetime);
 					fd=c->s;
+					/* report the closing of the connection . Note that 
+					 * there are connectioned that use an foced expire to 0
+					 * as a way to be deleted - we are not interested in */
+					if (c->lifetime>0)
+						tcp_trigger_report(c, TCP_REPORT_CLOSE,
+							"Timeout on no traffic");
 					_tcpconn_rm(c);
 					if ((!force)&&(fd>0)&&(c->refcnt==0)) {
 						if (!(c->flags & F_CONN_REMOVED)){
@@ -1539,6 +1566,8 @@ static void tcp_main_server(void)
 		}
 	}
 
+	tcp_main_proc_id = process_no;
+
 	/* main loop (requires "handle_io()" implementation) */
 	reactor_main_loop( TCP_MAIN_SELECT_TIMEOUT, error,
 			tcpconn_lifetime(last_sec, 0) );
@@ -1615,6 +1644,12 @@ int tcp_init(void)
 			TCP_ALIAS_HASH_SIZE * sizeof(struct tcp_conn_alias*));
 		memset((void*)tcp_parts[i].tcpconn_id_hash, 0,
 			TCP_ID_HASH_SIZE * sizeof(struct tcp_connection*));
+	}
+
+	/* init the TCP reporting engine too */
+	if (init_tcp_reporting()!=0) {
+		LM_ERR("failed to init the reporting engine\n");
+		goto error;
 	}
 
 	return 0;
@@ -1818,6 +1853,15 @@ error:
 int tcp_has_async_write(void)
 {
 	return reactor_has_async();
+}
+
+int get_proc_id_from_tcp_worker(int worker_id)
+{
+	if (worker_id<0 || worker_id>=tcp_children_no) {
+		LM_ERR("invalid request on TCP worker ID %d\n",worker_id);
+		return 0;
+	}
+	return tcp_children[worker_id].proc_no;
 }
 
 

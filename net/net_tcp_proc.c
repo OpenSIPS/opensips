@@ -30,6 +30,7 @@
 #include "../async.h"
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
+#include "net_tcp_report.h"
 #include "trans.h"
 
 
@@ -38,6 +39,15 @@ static struct tcp_connection* tcp_conn_lst=0;
 
 static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
+
+
+#define tcpconn_release_error(_conn, _writer, _reason) \
+	do { \
+		tcp_trigger_report( _conn, TCP_REPORT_CLOSE, _reason);\
+		tcpconn_release( _conn, CONN_ERROR, _writer);\
+	}while(0)
+
+
 
 
 static void tcpconn_release(struct tcp_connection* c, long state,int writer)
@@ -163,7 +173,7 @@ again:
 							" connection received: %p, id %d, fd %d, refcnt %d"
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
-				tcpconn_release(con, CONN_ERROR,0);
+				tcpconn_release_error(con, 0,"Internal duplicate");
 				break; /* try to recover */
 			}
 
@@ -199,7 +209,7 @@ again:
 				if (resp<0) {
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
-					tcpconn_release(con, CONN_ERROR,1);
+					tcpconn_release_error(con, 1,"Write error");
 					break;
 				} else if (resp==1) {
 					tcpconn_release(con, ASYNC_WRITE,1);
@@ -223,13 +233,15 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					tcpconn_release(con, CONN_ERROR,0);
+					tcpconn_release_error(con, 0, "Read error");
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+					tcp_trigger_report( con, TCP_REPORT_CLOSE,
+						"EOF received");
 					tcpconn_release(con, CONN_EOF,0);
 				} else {
 					//tcpconn_release(con, CONN_RELEASE);
@@ -251,7 +263,7 @@ again:
 	return ret;
 con_error:
 	con->state=S_CONN_BAD;
-	tcpconn_release(con, CONN_ERROR,0);
+	tcpconn_release_error(con, 0, "Internal error");
 	return ret;
 error:
 	return -1;
@@ -279,7 +291,7 @@ void tcp_receive_timeout(void)
 			con->proc_id = -1;
 			con->state=S_CONN_BAD;
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			tcpconn_release(con, CONN_ERROR,0);
+			tcpconn_release_error(con, 0, "Unknown reason");
 			continue;
 		}
 		if (con->timeout<=ticks){
@@ -295,7 +307,8 @@ void tcp_receive_timeout(void)
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 
 			if (con->msg_attempts)
-				tcpconn_release(con, CONN_ERROR,0);
+				tcpconn_release_error(con, 0, "Read timeout with"
+					"incomplete SIP message");
 			else
 				tcpconn_release(con, CONN_RELEASE,0);
 		}
@@ -345,3 +358,4 @@ void tcp_worker_proc_loop(void)
 error:
 	destroy_worker_reactor();
 }
+
