@@ -459,8 +459,12 @@ rtpengine_offer();
 		</listitem>
 		</itemizedlist>
 		<para>
+			When passing an option that &osips; is not aware of, it will be
+			blindly sent to the rtpengine daemon to be processed.
+		</para>
+		<para>
 		This function can be used from ANY_ROUTE.
-                </para>
+		</para>
 		<example>
 		<title><function>rtpengine_offer</function> usage</title>
 		<programlisting format="linespecific">
