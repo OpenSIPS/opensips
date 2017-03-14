@@ -117,9 +117,9 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 		job->type = type;
 		job->proto = conn->type;
 		job->extra = extra;
-		/* ...sending it to the first TCP worker for now */
-		if (ipc_send_job( get_proc_id_from_tcp_worker(0) , ipc_type,
-		(void *)job)<0) {
+		/* ...sending it to the last TCP worker for now
+		 * The last TCP worker is the prev,prev to TCP MAIN */
+		if (ipc_send_job( process_no-2 , ipc_type, (void *)job)<0) {
 			LM_ERR("failed to send IPC job, discarding report\n");
 			shm_free(job);
 			return;

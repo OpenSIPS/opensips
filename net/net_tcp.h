@@ -42,9 +42,6 @@ void tcp_destroy(void);
 /* checks if the TCP layer may provide async write support */
 int tcp_has_async_write(void);
 
-/* returns the process ID of a TCP worker process */
-int get_proc_id_from_tcp_worker(int worker_id);
-
 /* creates the communication channel between a generic OpenSIPS process
    and the TCP MAIN process - TO BE called before forking */
 int tcp_pre_connect_proc_to_tcp_main( int proc_no );

@@ -60,7 +60,6 @@
 /* definition of a TCP worker */
 struct tcp_child {
 	pid_t pid;
-	int proc_no;		/*!<  OpenSIPS proc_no, for debugging */
 	int unix_sock;		/*!< unix "read child" sock fd */
 	int busy;
 	int n_reqs;		/*!< number of requests serviced so far */
@@ -363,7 +362,7 @@ static int send2child(struct tcp_connection* tcpconn,int rw)
 		LM_DBG("no free tcp receiver, connection passed to the least "
 		       "busy one (proc #%d, %d con)\n", idx, min_busy);
 	}
-	LM_DBG("to tcp child %d %d(%d), %p rw %d\n", idx,tcp_children[idx].proc_no,
+	LM_DBG("to tcp child %d (%d), %p rw %d\n", idx,
 		tcp_children[idx].pid, tcpconn,rw);
 	response[0]=(long)tcpconn;
 	response[1]=rw;
@@ -1145,8 +1144,8 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 
 	if (tcp_c->unix_sock<=0){
 		/* (we can't have a fd==0, 0 is never closed )*/
-		LM_CRIT("fd %d for %d (pid %d, ser no %d)\n", tcp_c->unix_sock,
-				(int)(tcp_c-&tcp_children[0]), tcp_c->pid, tcp_c->proc_no);
+		LM_CRIT("fd %d for %d (pid %d)\n", tcp_c->unix_sock,
+				(int)(tcp_c-&tcp_children[0]), tcp_c->pid);
 		goto error;
 	}
 	/* read until sizeof(response)
@@ -1155,9 +1154,9 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 	if (bytes<(int)sizeof(response)){
 		if (bytes==0){
 			/* EOF -> bad, child has died */
-			LM_DBG("dead tcp worker %d (pid %d, no %d)"
+			LM_DBG("dead tcp worker %d (pid %d)"
 					" (shutting down?)\n", (int)(tcp_c-&tcp_children[0]),
-					tcp_c->pid, tcp_c->proc_no );
+					tcp_c->pid );
 			/* don't listen on it any more */
 			reactor_del_reader( tcp_c->unix_sock, fd_i, 0/*flags*/);
 			/* eof. so no more io here, it's ok to return error */
@@ -1166,9 +1165,9 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			/* EAGAIN is ok if we try to empty the buffer
 			 * e.g.: SIGIO_RT overflow mode or EPOLL ET */
 			if ((errno!=EAGAIN) && (errno!=EWOULDBLOCK)){
-				LM_CRIT("read from tcp worker %ld (pid %d, no %d) %s [%d]\n",
+				LM_CRIT("read from tcp worker %ld (pid %d) %s [%d]\n",
 						(long)(tcp_c-&tcp_children[0]), tcp_c->pid,
-						tcp_c->proc_no, strerror(errno), errno );
+						strerror(errno), errno );
 			}else{
 				bytes=0;
 			}
@@ -1771,7 +1770,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			/* parent */
 			close(reader_fd[1]);
 			tcp_children[r].pid=pid;
-			tcp_children[r].proc_no=process_no;
 			tcp_children[r].busy=0;
 			tcp_children[r].n_reqs=0;
 			tcp_children[r].unix_sock=reader_fd[0];
@@ -1853,15 +1851,6 @@ error:
 int tcp_has_async_write(void)
 {
 	return reactor_has_async();
-}
-
-int get_proc_id_from_tcp_worker(int worker_id)
-{
-	if (worker_id<0 || worker_id>=tcp_children_no) {
-		LM_ERR("invalid request on TCP worker ID %d\n",worker_id);
-		return 0;
-	}
-	return tcp_children[worker_id].proc_no;
 }
 
 
