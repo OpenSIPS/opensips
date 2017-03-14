@@ -259,7 +259,7 @@ rtpengine_offer();
 	</section>
         <section id="rtpengine.f.rtpengine_offer">
                 <title>
-                <function moreinfo="none">rtpengine_offer([flags])</function>
+                <function moreinfo="none">rtpengine_offer([flags[, sock_pvar[, sdp_pvar]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -271,7 +271,7 @@ rtpengine_offer();
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> - flags to turn on some features.
+			<emphasis>flags(optional)</emphasis> - flags to turn on some features.
 			</para>
 			<para>The <quote>flags</quote> string is a list of space-separated items. Each item
 			is either an individual token, or a token in <quote>key=value</quote> format. The
@@ -457,6 +457,16 @@ rtpengine_offer();
 				</para></listitem>
 			</itemizedlist>
 		</listitem>
+		<listitem><para>
+		<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the rtpengine
+		socket chosen for this call.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>sdp_pvar(optional)</emphasis> - pvar used to store the full SDP
+		received from rtpengine. You can perform any additional changes on this
+		string. <emphasis>Important: </emphasis> when providing this variable, the
+		message body is no longer changed, so you have to manually replace it!.
+		</para></listitem>
 		</itemizedlist>
 		<para>
 			When passing an option that &osips; is not aware of, it will be
@@ -500,10 +510,24 @@ onreply_route[2]
 }
 </programlisting>
                 </example>
+		<example>
+		<title><function>rtpengine_offer</function> usage with body replace</title>
+		<programlisting format="linespecific">
+...
+if (rtpengine_offer(, "$var(socket)", "$var(body)")) {
+    xlog("Used rtpengine $var(socket)\n");
+    # make all the changes on the resulted SDP in $var(body)
+    ...
+    remove_body_part();
+    add_body_part("$var(body)", "application/sdp");
+}
+...
+</programlisting>
+                </example>
 	</section>
         <section id="rtpengine.f.rtpengine_answer">
                 <title>
-                <function moreinfo="none">rtpengine_answer([flags])</function>
+                <function moreinfo="none">rtpengine_answer([flags[, sock_pvar[, sdp_pvar]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -522,13 +546,13 @@ onreply_route[2]
 		<example>
 		 <title><function>rtpengine_answer</function> usage</title>
 		<para>
-		See rtpengine_offer() function example above for example.
+		See rtpengine_offer() function example above for examples.
 		</para>
 		</example>
         </section>
 	<section id="rtpengine.f.rtpengine_delete">
 		<title>
-		<function moreinfo="none">rtpengine_delete([flags])</function>
+		<function moreinfo="none">rtpengine_delete([flags[, sock_pvar]])</function>
 		</title>
 		<para>
 		Tears down the RTPProxy session for the current call.
@@ -552,7 +576,7 @@ rtpengine_delete();
 
     <section id="rtpengine.f.rtpengine_manage">
         <title>
-        <function moreinfo="none">rtpengine_manage([flags])</function>
+        <function moreinfo="none">rtpengine_manage([flags[, sock_pvar[, sdp_pvar]]])</function>
         </title>
 		<para>
 		Manage the RTPProxy session - it combines the functionality of
@@ -619,13 +643,20 @@ rtpengine_manage();
 
 	<section id="rtpengine.f.start_recording">
 		<title>
-		<function moreinfo="none">rtpengine_start_recording()</function>
+		<function moreinfo="none">rtpengine_start_recording([sock_pvar])</function>
 		</title>
 		<para>
 		This function will send a signal to the &rtp; proxy to record
 		the RTP stream on the &rtp; proxy.
 		<emphasis>This function is not supported by Sipwise rtpengine at the moment!</emphasis>
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the rtpengine
+		socket chosen for this call.
+		</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>

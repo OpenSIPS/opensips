@@ -60,11 +60,17 @@ Richard Fuchs
         1.5. Functions
 
               1.5.1. rtpengine_use_set(setid)
-              1.5.2. rtpengine_offer([flags])
-              1.5.3. rtpengine_answer([flags])
-              1.5.4. rtpengine_delete([flags])
-              1.5.5. rtpengine_manage([flags])
-              1.5.6. rtpengine_start_recording()
+              1.5.2. rtpengine_offer([flags[, sock_pvar[,
+                      sdp_pvar]]])
+
+              1.5.3. rtpengine_answer([flags[, sock_pvar[,
+                      sdp_pvar]]])
+
+              1.5.4. rtpengine_delete([flags[, sock_pvar]])
+              1.5.5. rtpengine_manage([flags[, sock_pvar[,
+                      sdp_pvar]]])
+
+              1.5.6. rtpengine_start_recording([sock_pvar])
 
         1.6. Exported Pseudo Variables
 
@@ -88,14 +94,15 @@ Richard Fuchs
    1.6. Set setid_avp parameter
    1.7. rtpengine_use_set usage
    1.8. rtpengine_offer usage
-   1.9. rtpengine_answer usage
-   1.10. rtpengine_delete usage
-   1.11. rtpengine_manage usage
-   1.12. rtpengine_start_recording usage
-   1.13. $rtpstat Usage
-   1.14. rtpengine_enable usage
-   1.15. rtpengine_show usage
-   1.16. teardown usage
+   1.9. rtpengine_offer usage with body replace
+   1.10. rtpengine_answer usage
+   1.11. rtpengine_delete usage
+   1.12. rtpengine_manage usage
+   1.13. rtpengine_start_recording usage
+   1.14. $rtpstat Usage
+   1.15. rtpengine_enable usage
+   1.16. rtpengine_show usage
+   1.17. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -266,7 +273,7 @@ rtpengine_use_set("2");
 rtpengine_offer();
 ...
 
-1.5.2.  rtpengine_offer([flags])
+1.5.2.  rtpengine_offer([flags[, sock_pvar[, sdp_pvar]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on INVITE for the cases the SDPs are in
@@ -274,7 +281,7 @@ rtpengine_offer();
    ACK.
 
    Meaning of the parameters is as follows:
-     * flags - flags to turn on some features.
+     * flags(optional) - flags to turn on some features.
        The "flags" string is a list of space-separated items. Each
        item is either an individual token, or a token in
        "key=value" format. The possible tokens are described
@@ -432,6 +439,13 @@ rtpengine_offer();
           + media-address=... - force a particular media address
             to be used in the SDP body. Address family is detected
             automatically.
+     * sock_pvar(optional) - pvar used to store the rtpengine
+       socket chosen for this call.
+     * sdp_pvar(optional) - pvar used to store the full SDP
+       received from rtpengine. You can perform any additional
+       changes on this string. Important: when providing this
+       variable, the message body is no longer changed, so you
+       have to manually replace it!.
 
    When passing an option that OpenSIPS is not aware of, it will
    be blindly sent to the rtpengine daemon to be processed.
@@ -470,7 +484,18 @@ onreply_route[2]
 ...
 }
 
-1.5.3.  rtpengine_answer([flags])
+   Example 1.9. rtpengine_offer usage with body replace
+...
+if (rtpengine_offer(, "$var(socket)", "$var(body)")) {
+    xlog("Used rtpengine $var(socket)\n");
+    # make all the changes on the resulted SDP in $var(body)
+    ...
+    remove_body_part();
+    add_body_part("$var(body)", "application/sdp");
+}
+...
+
+1.5.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
@@ -482,11 +507,11 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.9. rtpengine_answer usage
+   Example 1.10. rtpengine_answer usage
 
-   See rtpengine_offer() function example above for example.
+   See rtpengine_offer() function example above for examples.
 
-1.5.4.  rtpengine_delete([flags])
+1.5.4.  rtpengine_delete([flags[, sock_pvar]])
 
    Tears down the RTPProxy session for the current call.
 
@@ -496,12 +521,12 @@ onreply_route[2]
 
    This function can be used from ANY_ROUTE.
 
-   Example 1.10. rtpengine_delete usage
+   Example 1.11. rtpengine_delete usage
 ...
 rtpengine_delete();
 ...
 
-1.5.5.  rtpengine_manage([flags])
+1.5.5.  rtpengine_manage([flags[, sock_pvar[, sdp_pvar]]])
 
    Manage the RTPProxy session - it combines the functionality of
    rtpengine_offer(), rtpengine_answer() and rtpengine_delete(),
@@ -527,20 +552,24 @@ rtpengine_delete();
 
    This function can be used from ANY_ROUTE.
 
-   Example 1.11. rtpengine_manage usage
+   Example 1.12. rtpengine_manage usage
 ...
 rtpengine_manage();
 ...
 
-1.5.6.  rtpengine_start_recording()
+1.5.6.  rtpengine_start_recording([sock_pvar])
 
    This function will send a signal to the RTP proxy to record the
    RTP stream on the RTP proxy. This function is not supported by
    Sipwise rtpengine at the moment!
 
+   Meaning of the parameters is as follows:
+     * sock_pvar(optional) - pvar used to store the rtpengine
+       socket chosen for this call.
+
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.12. rtpengine_start_recording usage
+   Example 1.13. rtpengine_start_recording usage
 ...
 rtpengine_start_recording();
 ...
@@ -555,7 +584,7 @@ rtpengine_start_recording();
    retrieved before the session is deleted (before
    rtpengine_delete()).
 
-   Example 1.13. $rtpstat Usage
+   Example 1.14. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -575,7 +604,7 @@ rtpengine_start_recording();
    NOTE: if a RTP proxy is defined multiple times (in the same or
    diferente sete), all of its instances will be enables/disabled.
 
-   Example 1.14.  rtpengine_enable usage
+   Example 1.15.  rtpengine_enable usage
 ...
 $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 ...
@@ -587,7 +616,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.15.  rtpengine_show usage
+   Example 1.16.  rtpengine_show usage
 ...
 $ opensipsctl fifo rtpengine_show
 ...
@@ -602,7 +631,7 @@ $ opensipsctl fifo rtpengine_show
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.16.  teardown usage
+   Example 1.17.  teardown usage
 ...
 $ opensipsctl fifo teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
