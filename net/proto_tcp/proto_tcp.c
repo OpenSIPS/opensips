@@ -34,6 +34,8 @@
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
+#include "../../net/net_tcp_report.h"
+#include "../../net/trans_trace.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../trace_api.h"
@@ -67,6 +69,7 @@ static int tcp_write_async_req(struct tcp_connection* con,int fd);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
+static void tcp_report(int conn_id, int type, void *extra);
 
 #define TRACE_PROTO "proto_hep"
 
@@ -212,6 +215,7 @@ static int proto_tcp_init(struct proto_info *pi)
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)tcp_read_req;
 	pi->net.write			= (proto_net_write_f)tcp_write_async_req;
+	pi->net.report			= tcp_report;
 
 	if (tcp_async && !tcp_has_async_write()) {
 		LM_WARN("TCP network layer does not have support for ASYNC write, "
@@ -343,6 +347,23 @@ again:
 	return bytes_read;
 }
 
+
+static void tcp_report(int conn_id, int type, void *extra)
+{
+	str s;
+
+	if (type==TCP_REPORT_CLOSE) {
+		/* grab reason text */
+		if (extra) {
+			s.s = (char*)extra;
+			s.len = strlen (s.s);
+		}
+		trace_message_atonce( PROTO_TCP, conn_id, NULL/*src*/, NULL/*dst*/,
+			TRANS_TRACE_CLOSED, TRANS_TRACE_SUCCESS, extra?&s:NULL );
+	}
+
+	return;
+}
 
 
 /**************  CONNECT related functions ***************/
