@@ -15,12 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * Foundation Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- *
- * history:
- * ---------
- *  2017-02-15 created by Jeremy Martinez
  */
 
 #ifndef _DROUTING_REPLICATION_H_
@@ -33,11 +29,25 @@
 #define BIN_VERSION 1
 
 #define REPL_GW_STATUS_UPDATE 1
+#define REPL_CR_STATUS_UPDATE 2
+
+extern int accept_replicated_status;
+extern int replicated_status_cluster;
 
 extern str repl_dr_module_name;
 extern struct clusterer_binds clusterer_api;
 
-void replicate_dr_gw_status_event(pgw_t *gw, int cluster_id);
-int replicate_gw_status_update(struct head_db * head_db_ref);
+/* replicate the GW status via BIN */
+void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster);
+
+/* replicate the Carrier status via BIN */
+void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
+																int cluster);
+
+/* handler for incoming BIN packets */
+void receive_dr_binary_packet(int packet_type, struct receive_info *ri,
+	void *att);
+
+
 
 #endif
