@@ -396,6 +396,7 @@
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
+
 			<listitem>
 			<para>
 				<emphasis>a database module</emphasis>.
@@ -409,6 +410,14 @@
 				<emphasis>tm module</emphasis>.
 			</para>
 			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>clustere</emphasis> - only if "replicate_status_to"
+				option is enabled.
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
