@@ -76,7 +76,7 @@ struct tcp_partition {
 };
 
 
-/* array of TCP workers */
+/* array of TCP workers - to be used only by TCP MAIN */
 struct tcp_child *tcp_children=0;
 
 /* unique for each connection, used for
@@ -129,8 +129,8 @@ int tcp_no_new_conn = 0;
 /* if the TCP net layer is on or off (if no TCP based protos are loaded) */
 static int tcp_disabled = 1;
 
-/* the process ID of TCP MAIN */
-int tcp_main_proc_id = -1;
+/* is the process TCP MAIN ? */
+int is_tcp_main = 0;
 
 
 /****************************** helper functions *****************************/
@@ -1566,7 +1566,7 @@ static void tcp_main_server(void)
 		}
 	}
 
-	tcp_main_proc_id = process_no;
+	is_tcp_main = 1;
 
 	/* main loop (requires "handle_io()" implementation) */
 	reactor_main_loop( TCP_MAIN_SELECT_TIMEOUT, error,

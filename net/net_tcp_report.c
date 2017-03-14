@@ -24,8 +24,8 @@
 #include "net_tcp.h"
 #include "net_tcp_report.h"
 
-/* the ID of the TCP MAIN process */
-extern int tcp_main_proc_id;
+/* is the process TCP MAIN ? */
+extern int is_tcp_main;
 
 /* the IPC type for our reporting handler */
 static int ipc_type = -1;
@@ -103,7 +103,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 	}
 
 	/* now, trigger the "report" callback from the PROTO layer */
-	if (tcp_main_proc_id == process_no) {
+	if (is_tcp_main) {
 
 		/* we are in TCP MAIN, use IPC to push the report */
 
