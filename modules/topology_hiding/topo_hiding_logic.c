@@ -1483,7 +1483,8 @@ int topo_callid_post_raw(str *data, struct sip_msg* foo)
 			dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
 				/* reply going to caller -
 				decode was done on the receiving end, let it unchanged */
-			} else {
+			/*Callid may already be encoded from req*/
+			} else if (!dlg_th_needs_decoding(&msg)){
 				/* reply going to callee , need to encode callid */
 				if (dlg_th_encode_callid(&msg) < 0) {
 					LM_ERR("Failed to decode callid for reply\n");
