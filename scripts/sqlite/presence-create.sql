@@ -7,9 +7,9 @@ CREATE TABLE presentity (
     etag CHAR(64) NOT NULL,
     expires INTEGER NOT NULL,
     received_time INTEGER NOT NULL,
-    body BLOB NOT NULL,
-    extra_hdrs BLOB DEFAULT '' NOT NULL,
-    sender CHAR(128) NOT NULL,
+    body BLOB DEFAULT NULL,
+    extra_hdrs BLOB DEFAULT NULL,
+    sender CHAR(128) DEFAULT NULL,
     CONSTRAINT presentity_presentity_idx  UNIQUE (username, domain, event, etag)
 );
 
