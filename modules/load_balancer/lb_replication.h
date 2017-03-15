@@ -39,6 +39,6 @@ extern int replicated_status_cluster;
 void replicate_lb_status(struct lb_dst *dst);
 
 /* handler for incoming BIN packets */
-int replicate_lb_status_update(struct lb_data *data);
+int replicate_lb_status_update(bin_packet_t *packet, struct lb_data *data);
 
 #endif
