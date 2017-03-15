@@ -497,6 +497,23 @@ static struct tcp_connection* _tcpconn_find(int id)
 }
 
 
+/* returns the correlation ID of a TCP connection */
+int tcp_get_correlation_id( int id, unsigned long long *cid)
+{
+	struct tcp_connection* c;
+
+	TCPCONN_LOCK(id);
+	if ( (c=_tcpconn_find(id))!=NULL ) {
+		*cid = c->cid;
+		TCPCONN_UNLOCK(id);
+		return 0;
+	}
+	*cid = 0;
+	TCPCONN_UNLOCK(id);
+	return -1;
+}
+
+
 /*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 									struct tcp_connection** conn, int* conn_fd)
