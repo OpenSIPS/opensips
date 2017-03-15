@@ -88,7 +88,7 @@ Ovidiu Sas
 
               1.4.21. t_flush_flags()
 
-        1.5. Exported pseudo-variables
+        1.5. Exported variables
 
               1.5.1. $T_branch_idx
               1.5.2. $T_reply_code
@@ -96,6 +96,7 @@ Ovidiu Sas
               1.5.4. $T_fr_inv_timeout
               1.5.5. $T_ruri
               1.5.6. $bavp(name)
+              1.5.7. $T_id
 
         1.6. Exported MI Functions
 
@@ -315,11 +316,11 @@ Chapter 1. Admin Guide
 
 1.1.4. Usage Scope
 
-   Transaction functions and pseudo-variables are only designed to
-   be called on SIP request messages where a transaction can be
+   Transaction functions and variables are only designed to be
+   called on SIP request messages where a transaction can be
    created, or in routes that are transaction aware, such as
    branch_route[name], failure_route[name] or onreply_route[name].
-   Using TM functtions or pseudo-variables in a route that is not
+   Using TM functtions or variables in a route that is not
    transaction aware, such as the generic onreply_route,
    error_route or timer_route[name, timer] may lead to undefined
    behavior, and most of the time in bogus or malformed
@@ -488,11 +489,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 
    Syntax of the parameter is:
      * tw_append = append_name':' element (';'element)*
-     * element = ( [name '='] pseudo_variable)
-
-   The full list of supported pseudo-variables in OpenSIPS is
-   availabe at:
-   http://opensips.org/docs/pseudo-variables-1.1.x.html
+     * element = ( [name '='] variable)
 
    Each element will be appended per line in “name: value” format.
    Element “$rb (message body)” is the only one which does not
@@ -724,7 +721,7 @@ t_relay("udp:mydomain.com");
      * code - Reply code number.
      * reason_phrase - Reason string.
 
-   Both parameters accept any kind of pseudo-variables.
+   Both parameters accept any kind of variables.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -745,7 +742,7 @@ t_reply("404", "Use $rU not found");
      * reason_phrase - Reason string.
      * body - Reply body.
 
-   All parameters accept any kind of pseudo-variables.
+   All parameters accept any kind of variables.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -1214,9 +1211,9 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 t_flush_flags();
 ...
 
-1.5. Exported pseudo-variables
+1.5. Exported variables
 
-   Exported pseudo-variables are listed in the next sections.
+   Exported variables are listed in the next sections.
 
 1.5.1. $T_branch_idx
 
@@ -1266,6 +1263,12 @@ t_flush_flags();
    $bavp(name) - a particular type of avp that can have different
    values for each branch. They can only be used in BRANCH, REPLY
    and FAILURE routes. Otherwise NULL value is returned.
+
+1.5.7. $T_id
+
+   $T_id - returns the ID of the current transaction. The ID is an
+   opaque hexa string, unique for each transaction. If there is no
+   current transaction, NULL value is returned.
 
 1.6. Exported MI Functions
 

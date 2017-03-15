@@ -191,13 +191,13 @@
 	<section>
 		<title>Usage Scope</title>
 		<para>
-		Transaction functions and pseudo-variables are only designed to be
+		Transaction functions and variables are only designed to be
 		called on SIP request messages where a transaction can be created, or
 		in routes that are transaction aware, such as
 		<emphasis>branch_route[name]</emphasis>,
 		<emphasis>failure_route[name]</emphasis> or
 		<emphasis>onreply_route[name]</emphasis>. Using TM functtions or
-		pseudo-variables in a route that is not transaction aware, such as
+		variables in a route that is not transaction aware, such as
 		the generic <emphasis>onreply_route</emphasis>,
 		<emphasis>error_route</emphasis> or
 		<emphasis>timer_route[name, timer]</emphasis> may lead to undefined
@@ -485,14 +485,9 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 			tw_append = append_name':' element (';'element)*
 			</emphasis></para></listitem>
 			<listitem><para><emphasis>
-			element = ( [name '='] pseudo_variable)
+			element = ( [name '='] variable)
 			</emphasis></para></listitem>
 		</itemizedlist>
-		</para>
-		<para>
-		The full list of supported pseudo-variables in &osips; is availabe at: 
-		<ulink url="http://opensips.org/docs/pseudo-variables.html-1.1.x">
-		http://opensips.org/docs/pseudo-variables-1.1.x.html</ulink>
 		</para>
 		<para>
 		Each element will be appended per line in 
@@ -890,7 +885,7 @@ t_relay("udp:mydomain.com");
 		</listitem>
 		</itemizedlist>
 		<para>
-		Both parameters accept any kind of pseudo-variables.
+		Both parameters accept any kind of variables.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -932,7 +927,7 @@ t_reply("404", "Use $rU not found");
 		</itemizedlist>
 
 		<para>
-		All parameters accept any kind of pseudo-variables.
+		All parameters accept any kind of variables.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -1661,9 +1656,9 @@ t_flush_flags();
 
 
 	<section>
-		<title>Exported pseudo-variables</title>
+		<title>Exported variables</title>
 		<para>
-		Exported pseudo-variables are listed in the next sections.
+		Exported variables are listed in the next sections.
 		</para>
 		<section>
 		<title>$T_branch_idx</title>
@@ -1732,9 +1727,18 @@ t_flush_flags();
 		<section>
 		<title>$bavp(name)</title>
 			<para>
-				<emphasis>$bavp(name)</emphasis> - a particular type of avp that
-				can have different values for each branch. They can only be used in
-				BRANCH, REPLY and FAILURE routes. Otherwise NULL value is returned.
+			<emphasis>$bavp(name)</emphasis> - a particular type of avp that
+			can have different values for each branch. They can only be used in
+			BRANCH, REPLY and FAILURE routes. Otherwise NULL value is returned.
+			</para>
+		</section>
+		<section>
+		<title>$T_id</title>
+			<para>
+			<emphasis>$T_id</emphasis> - returns the ID of the current 
+			transaction. The ID is an opaque hexa string, unique for each
+			transaction. If there is no current transaction,  NULL value is
+			returned.
 			</para>
 		</section>
 
