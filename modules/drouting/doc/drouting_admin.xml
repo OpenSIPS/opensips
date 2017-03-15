@@ -919,7 +919,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 		and carriers status changes. Whenever such a status is changes
 		(following an MI command, a probing result, a script command), the
 		module will replicate this status change to all the nodes in this
-		given cluster.
+		given cluster. A value of 0 means that sending replication data is disabled.
 		</para>
 		<para>
 		For more on how to define and populate a cluster (with OpenSIPS nodes)
@@ -927,7 +927,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NONE</quote>.
+			Default value is <quote>0</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -944,17 +944,12 @@ modparam("drouting", "replicate_status_to", 9)
 	<section>
 		<title><varname>accept_replicated_status</varname> (integer)</title>
 		<para>
-		This a on/off option, if this OpenSIPS node (as part of a cluster -
-		see the "replicate_status_to" options) accepts replicated info
-		about the change of gateway/carrier status from other OpenSIPS nodes
-		from the cluster.
-		</para>
-		<para>
-		This option makes sense only if the "replicate_status_to" is enabled.
+		A cluster ID for accepting replicated info about the change of gateway/carrier
+		status from other OpenSIPS nodes from that cluster. A value of 0 means that accepting is disabled.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>1 (enabled/on)</quote>.
+			Default value is <quote>0</quote>.
 		</emphasis>
 		</para>
 		<example>

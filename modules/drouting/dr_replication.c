@@ -27,7 +27,7 @@
 
 
 /* module parameter to control the replication */
-int accept_replicated_status = 1;
+int accept_replicated_status = 0;
 int replicated_status_cluster = 0;
 
 str repl_dr_module_name = str_init("drouting");
@@ -41,50 +41,76 @@ extern struct head_db * head_db_start;
 
 void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster)
 {
-	if(bin_init(&repl_dr_module_name, REPL_GW_STATUS_UPDATE, BIN_VERSION)!=0){
+	bin_packet_t packet;
+	int rc;
+
+	if(bin_init(&packet, &repl_dr_module_name, REPL_GW_STATUS_UPDATE, BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
-
 	/* replicate the partition name */
-	bin_push_str(&p->partition);
+	bin_push_str(&packet, &p->partition);
 	/* replicate the ID of the gateway */
-	bin_push_str(&gw->id);
+	bin_push_str(&packet, &gw->id);
 	/* replicate the state-related flags of the gateway */
-	bin_push_int(gw->flags&DR_DST_STAT_MASK);
+	bin_push_int(&packet, gw->flags&DR_DST_STAT_MASK);
 
-	if (clusterer_api.send_to(cluster, PROTO_BIN) < 0) {
-		LM_ERR("replication via cluster failed\n");
+	rc = clusterer_api.send_all(&packet, cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", cluster);
+		break;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			cluster);
+		break;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", cluster);
+		break;
 	}
+
+	bin_free_packet(&packet);
 }
 
 
 void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
 																int cluster)
 {
-	if(bin_init(&repl_dr_module_name, REPL_CR_STATUS_UPDATE, BIN_VERSION)!=0){
+	bin_packet_t packet;
+	int rc;
+
+	if(bin_init(&packet, &repl_dr_module_name, REPL_CR_STATUS_UPDATE, BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
-
 	/* replicate the partition name */
-	bin_push_str(&p->partition);
+	bin_push_str(&packet, &p->partition);
 	/* replicate the ID of the carrier */
-	bin_push_str(&cr->id);
+	bin_push_str(&packet, &cr->id);
 	/* replicate the state-related flags of the gateway */
-	bin_push_int(cr->flags&DR_CR_FLAG_IS_OFF);
+	bin_push_int(&packet, cr->flags&DR_CR_FLAG_IS_OFF);
 
-	if (clusterer_api.send_to(cluster, PROTO_BIN) < 0) {
-		LM_ERR("replication via cluster failed\n");
+	rc = clusterer_api.send_all(&packet, cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", cluster);
+		break;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			cluster);
+		break;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", cluster);
+		break;
 	}
+
+	bin_free_packet(&packet);
 }
 
 
-static int gw_status_update(void)
+static int gw_status_update(bin_packet_t *packet)
 {
 	struct head_db *part;
 	str gw_id;
@@ -92,9 +118,9 @@ static int gw_status_update(void)
 	int flags;
 	pgw_t *gw;
 
-	bin_pop_str(&part_name);
-	bin_pop_str(&gw_id);
-	bin_pop_int(&flags);
+	bin_pop_str(packet, &part_name);
+	bin_pop_str(packet, &gw_id);
+	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
 	if (part==NULL)
@@ -120,7 +146,7 @@ static int gw_status_update(void)
 }
 
 
-static int cr_status_update(void)
+static int cr_status_update(bin_packet_t *packet)
 {
 	struct head_db *part;
 	str cr_id;
@@ -128,9 +154,9 @@ static int cr_status_update(void)
 	int flags;
 	pcr_t *cr;
 
-	bin_pop_str(&part_name);
-	bin_pop_str(&cr_id);
-	bin_pop_int(&flags);
+	bin_pop_str(packet, &part_name);
+	bin_pop_str(packet, &cr_id);
+	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
 	if (part==NULL)
@@ -154,38 +180,33 @@ static int cr_status_update(void)
 }
 
 
-void receive_dr_binary_packet(int packet_type, struct receive_info *ri,
-																void *att)
+void receive_dr_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
+				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
-	int server_id;
-	char *ip;
-	unsigned short port;
-
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
 
-	if(get_bin_pkg_version() != BIN_VERSION) {
+	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
+		return;
+	else if (ev == CLUSTER_ROUTE_FAILED) {
+		LM_INFO("Failed to route replication packet of type %d from node id: %d "
+			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
+		return;
+	}
+
+	if(get_bin_pkg_version(packet) != BIN_VERSION) {
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
 
-	if (bin_pop_int(&server_id) < 0) {
-		LM_ERR("failed to obtain server id from binary packet\n");
-		return;
-	}
-
-	if (!clusterer_api.check(replicated_status_cluster, &ri->src_su,
-	server_id, ri->proto)) {
-		get_su_info(&ri->src_su.s, ip, port);
-		LM_WARN("received bin packet from unknown source: %s:%hu\n", ip, port);
-		return;
-	}
-
-	if (packet_type == REPL_GW_STATUS_UPDATE) {
-		gw_status_update();
-	}else
-	if (packet_type == REPL_CR_STATUS_UPDATE) {
-		cr_status_update();
-	} else {
-		LM_ERR("invalid drouting binary packet type: %d\n", packet_type);
+	switch (packet_type) {
+	case REPL_GW_STATUS_UPDATE:
+		gw_status_update(packet);
+		break;
+	case REPL_CR_STATUS_UPDATE:
+		cr_status_update(packet);
+		break;
+	default:
+		LM_WARN("Invalid drouting binary packet command: %d (from node: %d in cluster: %d)\n",
+			packet_type, src_id, cluster_id);
 	}
 }

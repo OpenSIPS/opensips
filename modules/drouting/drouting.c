@@ -1703,24 +1703,23 @@ skip:
 		goto error;
 	}
 
-	if (replicated_status_cluster > 0) {
-		/* status replication is enabled */
-		if (load_clusterer_api(&clusterer_api)!=0){
-			LM_DBG("failed to find clusterer API - is clusterer "
-				"module loaded?\n");
-			return -1;
-		}
-		/* do we also accept replication data ? */
-		if (accept_replicated_status > 0) {
-			if (bin_register_cb( repl_dr_module_name.s,
-			receive_dr_binary_packet,NULL)<0) {
-				LM_ERR("cannot register replication callback!\n");
-				return -1;
-			}
-		}
-	} else 
 	if (replicated_status_cluster < 0) {
-		replicated_status_cluster = 0;
+		LM_ERR("Invalid replicated_status_cluster, must be 0 or "
+			"a positive cluster id\n");
+		return -1;
+	}
+
+	if( (replicated_status_cluster > 0 || accept_replicated_status > 0)
+		&& load_clusterer_api(&clusterer_api)!=0) {
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
+
+	/* register handler for processing droutimg packets to the clusterer module */
+	if (accept_replicated_status > 0 && clusterer_api.register_module(repl_dr_module_name.s,
+		receive_dr_binary_packet, 1, &accept_replicated_status, 1) < 0) {
+		LM_ERR("cannot register binary packet callback to clusterer module!\n");
+		return -1;
 	}
 
 	return 0;
