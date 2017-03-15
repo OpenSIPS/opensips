@@ -74,17 +74,22 @@
     <column>
         <name>body</name>
         <type>binary</type>
+        <default><null/></default>
+        <null/>
     </column>
 
     <column>
         <name>extra_hdrs</name>
-        <default/>
         <type>binary</type>
+        <default><null/></default>
+        <null/>
     </column>
 
     <column id="sender">
         <name>sender</name>
         <type>string</type>
+        <default><null/></default>
+        <null/>
         <size>&uri_len;</size>
         <description>Sender contact</description>
     </column>
