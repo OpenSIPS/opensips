@@ -11,10 +11,13 @@
 		instances etc.). The <emphasis>clusterer</emphasis> module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It does this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
 	</para>
 	<para>
-		The topology established by the <emphasis>clusterer</emphasis> module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes which must be replied in a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
+		The topology established by the <emphasis>clusterer</emphasis> module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes which must receive a reply within a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
 	</para>
 	<para>
-		To facilitate the ease of adding &osips; instances to the platform, new nodes can be provisioned in the database without needing to reload the information on the other running nodes from the cluster. In other words, a node can learn about another node that it does not have in the database but the new node must always be aware of the existing components of the cluster it is joining in order to advertise itself to.
+		Note that an &osips; instance can belong to multiple clusters, communicating and establishing the topology separately for each one. In order to provision this in the database, each node has an unique ID at global level, which can be referenced by each cluster.
+	</para>
+	<para>
+		While existing nodes can learn about newly added nodes without additional provisioning, the new nodes must be fully aware of the existing components of the cluster they are joining, in order to properly advertise themselves.
 	</para>
 	</section>
 
@@ -142,7 +145,7 @@ modparam("clusterer", "cluster_id_col", "cluster_id")
         <section>
             <title><varname>node_id_col</varname></title>
             <para>
-                The name of the column to store the id of an instance.
+                The name of the column to store the id of an instance. The values must be greater than 0.
             </para>
             <para>
 		<emphasis>
@@ -162,7 +165,7 @@ modparam("clusterer", "node_id_col", "node_id")
         <section>
             <title><varname>url_col</varname></title>
             <para>
-                The name of the column containing the instance url.
+                The name of the column containing the instance url. The values must be greater than 0.
             </para>
             <para>
 		<emphasis>
@@ -469,6 +472,9 @@ Cluster:: 2
 			Lists each cluster's topology from the current node's perspective as an adjacency list. A node appears as a neighbour if the link with that node is up.
 		</para>
 		<para>
+			Note that if a node id appears in multiple clusters, it refers to the same instance that belongs to different clusters, for which it has a different topology.
+		</para>
+		<para>
 		Name: <emphasis>clusterer_list_topology</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
@@ -561,15 +567,15 @@ Cluster:: 2
 				<para><quote>cluster_id</quote> - this column represents the
 					identifier of the cluster. All nodes within a
 					group/cluster should have the same id (in our example,
-					both nodes have ID <emphasis>1</emphasis>)
+					both nodes have ID <emphasis>1</emphasis>). The values must be greater than 0.
 				</para>
 			</listitem>
 			<listitem>
 				<para><quote>node_id</quote> - this represents the
 					identifier of the machine/node, and each instance within a
-					cluster should have a different ID. In our example,
+					cluster should have a different ID. The values must be greater than 0. In our example,
 					<emphasis>Node A</emphasis> will have ID 1, and
-					<emphasis>Node B</emphasis> ID 2
+					<emphasis>Node B</emphasis> ID 2.
 				</para>
 			</listitem>
 			<listitem>
