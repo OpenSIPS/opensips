@@ -942,7 +942,6 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 
 	/* makes sense only if trace protocol loaded */
 	if ( tprot.send_message && !is_id_traced(sip_trace_id)) {
-		LM_DBG("sip messages tracing not enabled!\n");
 		return 1;
 	}
 
@@ -1113,12 +1112,22 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param)
 {
 	struct sip_msg *req;
+	trace_info_t info;
+
 	req = param->req;
 
 	LM_DBG("Tracing incoming cancel due to trace_dialog() \n");
 
+	if (trace_transaction(req, *param->param, 1) < 0) {
+		LM_ERR("trace transaction failed!\n");
+		return;
+	}
+
+	info = *(trace_info_p)(*param->param);
+	info.conn_id = req->rcv.proto_reserved1;
+
 	/* trace current request */
-	sip_trace(req, (trace_info_p)(*param->param));
+	sip_trace(req, &info);
 }
 
 
@@ -1644,7 +1653,6 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info)
 		LM_ERR("cannot parse call-id\n");
 		goto error;
 	}
-
 
 	LM_DBG("sip_trace called \n");
 	db_vals[0].val.blob_val.s = msg->buf;
