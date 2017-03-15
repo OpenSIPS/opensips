@@ -31,6 +31,7 @@
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <string.h>
 
 
 enum {
@@ -61,6 +62,12 @@ typedef struct _xml_path {
 	pv_spec_t attr_var;
 	xml_element_t *elements;
 } xml_path_t;
+
+typedef struct _xml_object_t {
+	str name;
+	xmlDoc *xml_doc;
+	struct _xml_object_t *next;
+} xml_object_t;
 
 
 static int mod_init(void);
@@ -99,9 +106,12 @@ struct module_exports exports= {
 };
 
 
-static int new_parsed_elem(xml_path_t *id, str tag_str, str idx_str)
+xml_object_t *objects;
+
+
+static int new_parsed_elem(xml_path_t *path, str tag_str, str idx_str)
 {
-	xml_element_t *elem = NULL;
+	xml_element_t *elem = NULL, *it;
 
 	elem = pkg_malloc(sizeof *elem);
 	if (!elem) {
@@ -123,7 +133,6 @@ static int new_parsed_elem(xml_path_t *id, str tag_str, str idx_str)
 	} else
 		elem->tag = tag_str;
 
-	elem->idx = -1;
 	if (idx_str.s) {
 		if (*idx_str.s == '$') {
 			if (!pv_parse_spec(&idx_str, &elem->idx_var)) {
@@ -131,15 +140,24 @@ static int new_parsed_elem(xml_path_t *id, str tag_str, str idx_str)
 				return -1;
 			}
 			elem->var_flags |= EL_VAR_IDX;
-		} else
+		} else {
 			if (str2sint(&idx_str, &elem->idx) < 0) {
 				LM_ERR("Invalid index\n");
 				return -1;
 			}
+			if (elem->idx < 0) {
+				LM_ERR("Negative index\n");
+				return -1;
+			}
+		}
 	}
 
-	elem->next = id->elements;
-	id->elements = elem;
+	if (!path->elements)
+		path->elements = elem;
+	else {
+		for (it = path->elements; it->next; it = it->next) ;
+		it->next = elem;
+	}
 
 	return 0;
 }
@@ -153,18 +171,18 @@ enum {
 
 int pv_parse_xml_name(pv_spec_p sp, str *in)
 {
-	xml_path_t *id = NULL;
+	xml_path_t *path = NULL;
 	char *cur, *start;
 	int prev_state = -1;
 	str tag_str = {0,0}, idx_str = {0,0}, attr_str;
 
-	id = pkg_malloc(sizeof *id);
-	if(!id) {
+	path = pkg_malloc(sizeof *path);
+	if(!path) {
 		LM_ERR("No more pkg memory\n");
 		return -1;
 	}
 
-	id->elements = NULL;
+	path->elements = NULL;
 
 	/* first, get this xml object name */
 	start = q_memchr(in->s, '/', in->len);
@@ -172,15 +190,15 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 		LM_ERR("name required for this $xml var\n");
 		return -1;
 	}
-	id->obj_name.s = in->s;
-	id->obj_name.len = start ? start - in->s : in->len;
+	path->obj_name.s = in->s;
+	path->obj_name.len = start ? start - in->s : in->len;
 
-	id->attr.s = NULL;
-	id->attr_is_var = 0;
-	id->access_mode = ACCESS_EL;
+	path->attr.s = NULL;
+	path->attr_is_var = 0;
+	path->access_mode = ACCESS_EL;
 
 	/* get each element in path */
-	start = in->s + id->obj_name.len;
+	start = in->s + path->obj_name.len;
 	for (cur = start; cur < in->s + in->len; cur++) {
 		switch (*cur) {
 		case '/':
@@ -193,10 +211,10 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 				}
 				tag_str.s = start;
 
-				if (new_parsed_elem(id, tag_str, idx_str) < 0)
+				if (new_parsed_elem(path, tag_str, idx_str) < 0)
 					return -1;
 			} else if (prev_state == ST_END_IDX) {
-				if (new_parsed_elem(id, tag_str, idx_str) < 0)
+				if (new_parsed_elem(path, tag_str, idx_str) < 0)
 					return -1;
 			}
 
@@ -251,9 +269,9 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 			}
 
 			if (!memcmp(cur+1, "val", 3)) {
-				id->access_mode = ACCESS_EL_VAL;
+				path->access_mode = ACCESS_EL_VAL;
 			} else if (!memcmp(cur+1, "attr", 4)) {
-				id->access_mode = ACCESS_EL_ATTR;
+				path->access_mode = ACCESS_EL_ATTR;
 
 				attr_str.len = in->len - (cur - in->s + 6); /* 6 = len(".attr/") */
 				if (attr_str.len == 0) {
@@ -262,13 +280,13 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 				}
 				attr_str.s = cur + 6;
 				if (*attr_str.s == '$') {
-					if (!pv_parse_spec(&attr_str, &id->attr_var)) {
+					if (!pv_parse_spec(&attr_str, &path->attr_var)) {
 						LM_ERR("Unable to parse variable in element attribute\n");
 						return -1;
 					}
-					id->attr_is_var = 1;
+					path->attr_is_var = 1;
 				} else
-					id->attr = attr_str;
+					path->attr = attr_str;
 			} else {
 				LM_ERR("Invalid access type, must be: <.attr> or <.val>\n");
 				return -1;
@@ -282,7 +300,7 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 	}
 
 	if (prev_state == ST_END_IDX || prev_state == ST_ACCESS) {
-		if (new_parsed_elem(id, tag_str, idx_str) < 0) {
+		if (new_parsed_elem(path, tag_str, idx_str) < 0) {
 					return -1;
 		}
 	} else if (prev_state == ST_START_NAME) {
@@ -293,37 +311,565 @@ int pv_parse_xml_name(pv_spec_p sp, str *in)
 		}
 		tag_str.s = start;
 
-		if (new_parsed_elem(id, tag_str, idx_str) < 0)
+		if (new_parsed_elem(path, tag_str, idx_str) < 0)
 					return -1;
 	}
 
-	sp->pvp.pvn.u.dname = id;
+	sp->pvp.pvn.u.dname = path;
+	sp->pvp.pvv.s = NULL;
 
 	return 0;
 }
 
-static void dbg_print_path(xml_path_t *id)
+
+static inline xml_object_t *get_xml_obj(xml_path_t *path)
 {
-	xml_element_t *it;
+	xml_object_t *obj;
 
-	LM_DBG("path: obj_name = <%.*s> attr = <%.*s> attr_is_var = <%d> access_mode = <%d>\n",
-		id->obj_name.len, id->obj_name.s, id->attr.len, id->attr.s, id->attr_is_var, id->access_mode);
+	for (obj = objects; obj; obj = obj->next)
+		if (!str_strcmp(&obj->name, &path->obj_name))
+			return obj;
 
-	for (it = id->elements; it; it = it->next) {
-		LM_DBG("element: tag = <%.*s> idx = <%d> var_flags = <%d>\n",
-			it->tag.len, it->tag.s, it->idx, it->var_flags);
-	}
+	return NULL;
 }
 
-int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
+static int path_eval_vars(struct sip_msg* msg, xml_path_t *path)
 {
-	return pv_get_null( msg, pvp, val);
+	pv_value_t val;
+	xml_element_t *el;
+
+	memset(&val, 0, sizeof(pv_value_t));
+
+	for (el = path->elements; el; el = el->next) {
+		if (el->var_flags & EL_VAR_TAG) {
+			if( pv_get_spec_value(msg, &el->tag_var ,&val) < 0) {
+				LM_ERR("Unable to get value from element variable\n");
+				return -1;
+			}
+			if (!(val.flags & PV_VAL_STR)) {
+				LM_ERR("Non string value for element name\n");
+				return -1;
+			}
+			el->tag = val.rs;
+		}
+
+		if (el->var_flags & EL_VAR_IDX) {
+			if( pv_get_spec_value(msg, &el->idx_var ,&val) < 0) {
+				LM_ERR("Unable to get value from index variable\n");
+				return -1;
+			}
+			if (!(val.flags & PV_VAL_INT)) {
+				LM_ERR("Non integer value for index\n");
+				return -1;
+			}
+			el->idx = val.ri;
+		}
+	}
+
+	if (path->attr_is_var) {
+		if( pv_get_spec_value(msg, &path->attr_var ,&val) < 0) {
+			LM_ERR("Unable to get value from attribute variable\n");
+			return -1;
+		}
+		if (!(val.flags & PV_VAL_STR)) {
+			LM_ERR("Non string value for attribute name\n");
+			return -1;
+		}
+		path->attr = val.rs;
+	}
+
+	return 0;
+}
+
+static xmlNode *get_node_by_path(xmlNode *root, xml_element_t *path_el)
+{
+	xmlNode *cur;
+	str n_name;
+	int i;
+
+	cur = root;
+	while (path_el) {
+		i = 0;
+		while (cur) {
+			n_name.s = (char *)cur->name;
+			n_name.len = strlen(n_name.s);
+			if (!str_strcmp(&path_el->tag, &n_name)) {
+				if (i == path_el->idx)
+					break;
+				else
+					i++;
+			}
+
+			cur = xmlNextElementSibling(cur);
+		}
+		if (!cur) {
+			if (i != 0) {
+				LM_NOTICE("Invalid path for xml var - bad index [%d] for element: <%.*s>\n",
+					path_el->idx, path_el->tag.len, path_el->tag.s);
+				return NULL;
+			} else {
+				LM_NOTICE("Invalid path for xml var - no element named: <%.*s> \n",
+					path_el->tag.len, path_el->tag.s);
+				return NULL;
+			}
+		}
+
+		if (!path_el->next)
+			return cur;
+		else {
+			cur = cur->children;
+			path_el = path_el->next;
+		}
+	}
+
+	return NULL;
+}
+
+
+static int get_node_content(xmlNode *node, xmlBufferPtr xml_buf)
+{
+	xmlNode *n_it;
+
+	for (n_it = node->children; n_it; n_it = n_it->next)
+		if (n_it->type == XML_TEXT_NODE && xmlBufferCat(xml_buf, n_it->content) < 0) {
+			LM_ERR("Unable to append string to xml buffer\n");
+			return -1;
+		}
+
+	return 0;
+}
+
+static xmlAttr *get_node_attr(xmlNode *node, str attr_name)
+{
+	xmlAttr *cur_attr;
+	str cur_attr_name;
+
+	for (cur_attr = node->properties; cur_attr; cur_attr = cur_attr->next) {
+		cur_attr_name.s = (char *)cur_attr->name;
+		cur_attr_name.len = strlen(cur_attr_name.s);
+		if (!str_strcmp(&cur_attr_name, &attr_name))
+			return cur_attr;
+	}
+
+	return NULL;
+}
+
+int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
+{
+	xml_path_t *path = NULL;
+	xml_object_t *obj;
+	xmlNode *root = NULL, *node;
+	xmlBufferPtr xml_buf = NULL;
+	xmlAttr *attr;
+
+	path = (xml_path_t *)pvp->pvn.u.dname;
+	if (!path) {
+		LM_BUG("No path for xml var\n");
+		return pv_get_null( msg, pvp, res);
+	}
+
+	/* get the object refered in this xml var */
+	obj = get_xml_obj(path);
+	if (!obj) {
+		LM_DBG("Unknown object <%.*s>\n", path->obj_name.len, path->obj_name.s);
+		return pv_get_null( msg, pvp, res);
+	}
+
+	if (!obj->xml_doc) {
+		LM_DBG("Empty xml object\n");
+		return pv_get_null( msg, pvp, res);
+	}
+
+	if (path_eval_vars(msg, path) < 0)
+		return -1;
+
+	root = xmlDocGetRootElement(obj->xml_doc);
+	if (path->elements) {
+		node = get_node_by_path(root, path->elements);
+		if (!node) {
+			LM_NOTICE("Element not found\n");
+			return pv_get_null( msg, pvp, res);
+		}
+	} else
+		/* in case of dumping entire object, we do this from the root node */
+		node = root;
+
+	switch (path->access_mode) {
+	case ACCESS_EL:
+		xml_buf = xmlBufferCreate();
+		if (!xml_buf) {
+			LM_ERR("Unable to obtain xml buffer\n");
+			return pv_get_null( msg, pvp, res);
+		}
+
+		pvp->pvv.len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
+		if (pvp->pvv.len == -1) {
+			LM_ERR("Unable to dump node to xml buffer\n");
+			return pv_get_null( msg, pvp, res);
+		}
+		pvp->pvv.s = (char *)xmlBufferContent(xml_buf);
+		if (!pvp->pvv.s) {
+			LM_ERR("Unable to obtain xml buffer content\n");
+			return pv_get_null( msg, pvp, res);
+		}
+
+		break;
+	case ACCESS_EL_VAL:
+		xml_buf = xmlBufferCreate();
+		if (!xml_buf) {
+			LM_ERR("Unable to obtain xml buffer\n");
+			return pv_get_null( msg, pvp, res);
+		}
+
+		if (get_node_content(node, xml_buf) < 0) {
+			LM_ERR("Unable to get node text content\n");
+			return pv_get_null( msg, pvp, res);
+		}
+		pvp->pvv.s = (char *)xmlBufferContent(xml_buf);
+		if (!pvp->pvv.s) {
+			LM_ERR("Unable to obtain xml buffer content\n");
+			return pv_get_null( msg, pvp, res);
+		}
+		pvp->pvv.len = xmlBufferLength(xml_buf);
+		break;
+	case ACCESS_EL_ATTR:
+		attr = get_node_attr(node, path->attr);
+		if (!attr) {
+			LM_NOTICE("Attribute: %.*s not found\n", path->attr.len, path->attr.s);
+			return pv_get_null( msg, pvp, res);
+		}
+		pvp->pvv.s = (char *)attr->children->content;
+		pvp->pvv.len = strlen(pvp->pvv.s);
+	}
+
+	res->rs = pvp->pvv;
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
+
+
+static int insert_new_node(xmlDoc *doc, xmlNode *parent, xmlDoc *new_doc, xml_path_t *path, str xml_str)
+{
+	xmlNode *new_root, *lead_ws_node, *trail_ws_node;
+	char lead_ws[64] = {0}, trail_ws[64] = {0};
+	char *c;
+	int lead_ws_len = 0, trail_ws_len = 0;
+
+	/* libxml ignores leading and trailing whitespaces when parsing an XML
+	 * block (if they are not contained IN the root node) so, when adding a
+	 * new node, it would be impossible to insert it with indentation under
+	 * an existing node unless we add the whitespaces manually as nodes in the tree
+	 */
+
+	/* add leading whitespaces node to existing tree */
+	for (c = xml_str.s; c - xml_str.s < xml_str.len &&
+		(*c == ' ' || *c == '\t' || *c == '\n'); c++)
+		lead_ws[lead_ws_len++] = *c;
+
+	if (lead_ws_len) {
+		if ((lead_ws_node = xmlNewText(BAD_CAST lead_ws)) == NULL) {
+			LM_ERR("Unable to create node with leading whitespaces\n");
+			return -1;
+		}
+		if (!xmlAddChild(parent, lead_ws_node)) {
+			LM_ERR("Unable to add node with leading whitespaces\n");
+			return -1;
+		}
+	}
+
+	/* add root of new xml block */
+	new_root = xmlDocGetRootElement(new_doc);
+	xmlSetTreeDoc(new_root, doc);
+	if (!xmlAddChild(parent, new_root)) {
+		LM_ERR("Unable to link new xml block into existing tree\n");
+		return -1;
+	}
+
+	/* add trailing whitespaces node */
+	c = NULL;
+	for (c = xml_str.s + xml_str.len - 1; c > xml_str.s &&
+		(*c == ' ' || *c == '\t' || *c == '\n'); c--) ;
+	trail_ws_len = c ? xml_str.len - (c+1 - xml_str.s) : 0;
+
+	if (trail_ws_len) {
+		memcpy(trail_ws, c+1, trail_ws_len);
+
+		if ((trail_ws_node = xmlNewText(BAD_CAST trail_ws)) == NULL) {
+			LM_ERR("Unable to create node with trailing whitespaces\n");
+			return -1;
+		}
+		if (!xmlAddChild(parent, trail_ws_node)) {
+			LM_ERR("Unable to add node with trailing whitespaces\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int set_node_content(xmlNode *node, str new_content)
+{
+	xmlNode *n_it, *tmp = NULL, *new_txt;
+	int set = 0;
+
+	/* remove all text nodes */
+	if (!new_content.s)
+		set = 1;
+
+	for (n_it = node->children; n_it; n_it = tmp) {
+		tmp = n_it->next;
+
+		if (n_it->type == XML_TEXT_NODE && !xmlIsBlankNode(n_it)) {
+			if (!set) {
+				/* replace existing text node content with given string */
+				xmlNodeSetContentLen(n_it, BAD_CAST new_content.s, new_content.len);
+				set = 1;
+			} else {
+				/* remove any other text node */
+				xmlUnlinkNode(n_it);
+				xmlFreeNode(n_it);
+			}
+		}
+	}
+
+	/* no existing text nodes, create one */
+	if (new_content.s && !set) {
+		if ((new_txt = xmlNewTextLen(BAD_CAST new_content.s, new_content.len)) == NULL) {
+			LM_ERR("Unable to create text node\n");
+			return -1;
+		}
+		if (!xmlAddChild(node, new_txt)) {
+			LM_ERR("Unable to add text node\n");
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 int pv_set_xml(struct sip_msg* msg,  pv_param_t* pvp, int flag, pv_value_t* val)
 {
-	return -1;
+	xml_path_t *path = NULL;
+	xml_object_t *obj;
+	xmlDoc *new_doc = NULL;
+	xmlNode *root, *node = NULL;
+	str empty_str = {0,0};
+	char *attr_name_s, *attr_val_s;
+
+	path = (xml_path_t *)pvp->pvn.u.dname;
+	if (!path) {
+		LM_BUG("No path for xml var\n");
+		return -1;
+	}
+
+	/* get the object refered in this xml var */
+	obj = get_xml_obj(path);
+
+	if (path_eval_vars(msg, path) < 0)
+		return -1;
+
+	if (obj && obj->xml_doc && path->elements) {
+		root = xmlDocGetRootElement(obj->xml_doc);
+		node = get_node_by_path(root, path->elements);
+		if (!node) {
+			LM_NOTICE("Element not found\n");
+			return -1;
+		}
+	}
+
+	if (!val || val->flags & PV_VAL_NULL) {
+		if (!obj) {
+			LM_ERR("Uninitialized xml object: %.*s\n", path->obj_name.len,
+				path->obj_name.s);
+			return -1;
+		}
+
+		switch (path->access_mode) {
+		case ACCESS_EL:
+			if (!path->elements) { /* we only have the object name in path */
+				if (!obj->xml_doc) /* attempted to clear empty xml object */
+					return 0;
+
+				/* clear the entire object */
+				xmlFreeDoc(obj->xml_doc);
+				obj->xml_doc = NULL;
+			} else {
+				/* delete node */
+				if (!node) {
+					LM_NOTICE("Element not found\n");
+					return -1;
+				}
+
+				xmlUnlinkNode(node);
+				xmlFreeNode(node);
+			}
+			break;
+		case ACCESS_EL_VAL:
+			if (!obj->xml_doc) {
+				LM_NOTICE("Empty xml object\n");
+				return -1;
+			}
+			if (!node) {
+				LM_NOTICE("Element not found\n");
+				return -1;
+			}
+
+			if (set_node_content(node, empty_str) < 0) {
+				LM_ERR("Unable to clear text content for element <%s>\n", node->name);
+				return -1;
+			}
+			break;
+		case ACCESS_EL_ATTR:
+			if (!obj->xml_doc) {
+				LM_DBG("Empty xml object\n");
+				return -1;
+			}
+			if (!node) {
+				LM_NOTICE("Element not found\n");
+				return -1;
+			}
+
+			attr_name_s = pkg_malloc(path->attr.len+1);
+			if (!attr_name_s) {
+				LM_ERR("No more pkg mem\n");
+				return -1;
+			}
+			memcpy(attr_name_s, path->attr.s, path->attr.len);
+			attr_name_s[path->attr.len] = 0;
+
+			if (xmlUnsetProp(node, BAD_CAST attr_name_s) < 0) {
+				LM_ERR("Unable to remove attribute: %s\n", attr_name_s);
+				pkg_free(attr_name_s);
+				return -1;
+			}
+			pkg_free(attr_name_s);
+		}
+	} else if (val->flags & PV_VAL_STR) {
+		switch (path->access_mode) {
+		case ACCESS_EL:
+			if (!obj) {
+				if (!path->elements) {
+					/* "instantiate" xml object */
+					obj = pkg_malloc(sizeof *obj);
+					if (!obj) {
+						LM_ERR("No more pkg memory\n");
+						return -1;
+					}
+					obj->xml_doc = NULL;
+					obj->name.len = path->obj_name.len;
+					obj->name.s = path->obj_name.s;
+
+					obj->next = objects;
+					objects = obj;
+				} else {
+					LM_ERR("Unknown object <%.*s>\n", path->obj_name.len, path->obj_name.s);
+					return -1;
+				}
+			}
+
+			if (val->rs.len == 0) {
+				if (!path->elements) {
+					if (obj->xml_doc)
+						/* clear the entire object if not empty */
+						xmlFreeDoc(obj->xml_doc);
+
+					obj->xml_doc = NULL;
+				} else {
+					LM_ERR("Empty string\n");
+					return -1;
+				}
+			} else {
+				/* parse given XML block and build a tree */
+				new_doc = xmlParseMemory(val->rs.s, val->rs.len);
+				if (!new_doc) {
+					LM_ERR("Failed to parse xml block\n");
+					return -1;
+				}
+
+				if (!path->elements) {
+					/* clear the entire object if not empty */
+					if (obj->xml_doc)
+						xmlFreeDoc(obj->xml_doc);
+
+					/* initialize object with given xml block */
+					obj->xml_doc = new_doc;
+				} else {
+					if (insert_new_node(obj->xml_doc, node, new_doc, path, val->rs) < 0) {
+						LM_ERR("Unable to add new element\n");
+						return -1;
+					}
+				}
+			}
+			break;
+		case ACCESS_EL_VAL:
+			if (!obj) {
+				LM_ERR("Uninitialized xml object: %.*s\n", path->obj_name.len,
+					path->obj_name.s);
+				return -1;
+			}
+			if (!obj->xml_doc) {
+				LM_DBG("Empty xml object\n");
+				return -1;
+			}
+			if (!node) {
+				LM_NOTICE("Element not found\n");
+				return -1;
+			}
+
+			if (set_node_content(node, val->rs) < 0) {
+				LM_ERR("Unable to set content for element <%s>\n", node->name);
+				return -1;
+			}
+			break;
+		case ACCESS_EL_ATTR:
+			if (!obj) {
+				LM_ERR("Uninitialized xml object: %.*s\n", path->obj_name.len,
+					path->obj_name.s);
+				return -1;
+			}
+			if (!obj->xml_doc) {
+				LM_DBG("Empty xml object\n");
+				return -1;
+			}
+			if (!node) {
+				LM_NOTICE("Element not found\n");
+				return -1;
+			}
+
+			attr_name_s = pkg_malloc(path->attr.len+1);
+			if (!attr_name_s) {
+				LM_ERR("No more pkg mem\n");
+				return -1;
+			}
+			memcpy(attr_name_s, path->attr.s, path->attr.len);
+			attr_name_s[path->attr.len] = 0;
+
+			attr_val_s = pkg_malloc(val->rs.len+1);
+			if (!attr_val_s) {
+				LM_ERR("No more pkg mem\n");
+				return -1;
+			}
+			memcpy(attr_val_s, val->rs.s, val->rs.len);
+			attr_val_s[val->rs.len] = 0;
+
+			if (!xmlSetProp(node, BAD_CAST attr_name_s, BAD_CAST attr_val_s)) {
+				LM_ERR("Unable to set/reset attribute: %s\n", attr_name_s);
+				pkg_free(attr_name_s);
+				pkg_free(attr_val_s);
+				return -1;
+			}
+			pkg_free(attr_name_s);
+			pkg_free(attr_val_s);
+		}
+	} else {
+		LM_ERR("Non-string value\n");
+		return -1;
+	}
+
+	return 0;
 }
+
 
 static int mod_init(void)
 {
@@ -339,4 +885,3 @@ static void mod_destroy(void)
 {
 	return;
 }
-
