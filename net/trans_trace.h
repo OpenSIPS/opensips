@@ -20,17 +20,20 @@
 
 #ifndef _NET_trans_trace_h
 #define _NET_trans_trace_h
+#include "../ut.h"
+#include "tcp_conn_defs.h"
 
-typedef enum _trans_trace_status { TRANS_TRACE_SUCCESS, TRANS_TRACE_FAILURE }
+typedef enum _trans_trace_status { TRANS_TRACE_SUCCESS=0, TRANS_TRACE_FAILURE }
 	trans_trace_status;
 
-typedef enum _trans_trace_event { TRANS_TRACE_ACCEPTED,
+
+typedef enum _trans_trace_event { TRANS_TRACE_ACCEPTED=0,
 	TRANS_TRACE_CONNECT_START, TRANS_TRACE_CONNECTED,
 	TRANS_TRACE_CLOSED, TRANS_TRACE_STATS}
 	trans_trace_event;
 
 
-int create_trace_message( int id, union sockaddr_union* src,
+void* create_trace_message( int id, union sockaddr_union* src,
 	union sockaddr_union* dst,
 	int proto, void* dest);
 
@@ -38,9 +41,29 @@ void add_trace_data( void* message, char* key, str* value);
 
 int send_trace_message( void* message, void* destination);
 
-int trace_message_atonce( int proto, int id, union sockaddr_union* src,
+int trace_message_atonce( int proto, unsigned long long id, union sockaddr_union* src,
 	union sockaddr_union* dst,
-	trans_trace_event event, trans_trace_status status, str* data);
+	trans_trace_event event, trans_trace_status status, str* data,
+	void* destination);
+int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
+		union sockaddr_union* dst_su);
+
+
+/* forward declaration */
+typedef struct _trace_prot trace_proto_t;
+extern trace_proto_t* net_trace_api;
+extern int net_trace_proto_id;
+
+extern str trans_trace_str_status[];
+extern str trans_trace_str_event[];
+
+/* error reasons */
+extern str AS_CONNECT_INIT;
+extern str CONNECT_OK;
+extern str ASYNC_CONNECT_OK;
+extern str ACCEPT_OK;
+extern str ACCEPT_FAIL;
+extern str CONNECT_FAIL;
 
 #endif
 

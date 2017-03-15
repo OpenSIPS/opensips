@@ -43,9 +43,7 @@
 #include "tcp_common_defs.h"
 #include "proto_tcp_handler.h"
 
-#define F_TCP_CONN_FIRST_READ ( 1 << 0 )
-#define F_TCP_CONN_FIRST_WRITE ( 1 << 1 )
-
+#define F_TCP_CONN_TRACED ( 1 << 0 )
 
 static int mod_init(void);
 static int proto_tcp_init(struct proto_info *pi);
@@ -69,7 +67,7 @@ static int tcp_write_async_req(struct tcp_connection* con,int fd);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
-static void tcp_report(int conn_id, int type, void *extra);
+static void tcp_report(unsigned long long conn_id, int type, void *extra);
 
 #define TRACE_PROTO "proto_hep"
 
@@ -79,15 +77,6 @@ trace_proto_t tprot;
 
 extern int unix_tcp_sock;
 
-int net_trace_proto_id=-1;
-
-#define LM_TRACE_DBG( ID, ... ) \
-	do { \
-		static str success_str = str_init("SUCCESS"); \
-		LM_DBG( __VA_ARGS__ ); \
-		trace_log( ID, &success_str, __VA_ARGS__ ); \
-	} while(0);
-
 #define LM_TRACE_ERR( ID, ... ) \
 	do { \
 		static str error_str = str_init("ERROR"); \
@@ -96,7 +85,6 @@ int net_trace_proto_id=-1;
 	} while(0);
 
 void trace_log( int id, str* level, char* format, ...);
-void trace_conn_closed( struct tcp_connection* c, char* reason );
 
 
 /* default port for TCP protocol */
@@ -237,9 +225,15 @@ static int mod_init(void)
 {
 	LM_INFO("initializing TCP-plain protocol\n");
 	if (trace_destination_name.s) {
-		if ( trace_prot_bind( TRACE_PROTO, &tprot) < 0 ) {
-			LM_ERR( "can't bind trace protocol <%s>\n", TRACE_PROTO );
-			return -1;
+		if ( !net_trace_api ) {
+			if ( trace_prot_bind( TRACE_PROTO, &tprot) < 0 ) {
+				LM_ERR( "can't bind trace protocol <%s>\n", TRACE_PROTO );
+				return -1;
+			}
+
+			net_trace_api = &tprot;
+		} else {
+			tprot = *net_trace_api;
 		}
 
 		trace_destination_name.len = strlen( trace_destination_name.s );
@@ -279,12 +273,6 @@ static int tcp_conn_init(struct tcp_connection* c)
 	d->oldest_chunk = 0;
 
 	c->proto_data = (void*)d;
-	if ( c->flags & F_CONN_ACCEPTED ) {
-		c->proto_flags = F_TCP_CONN_FIRST_READ;
-	} else {
-		/* it's a connect */
-		c->proto_flags = F_TCP_CONN_FIRST_WRITE;
-	}
 
 	return 0;
 }
@@ -348,7 +336,7 @@ again:
 }
 
 
-static void tcp_report(int conn_id, int type, void *extra)
+static void tcp_report(unsigned long long conn_id, int type, void *extra)
 {
 	str s;
 
@@ -358,8 +346,9 @@ static void tcp_report(int conn_id, int type, void *extra)
 			s.s = (char*)extra;
 			s.len = strlen (s.s);
 		}
+
 		trace_message_atonce( PROTO_TCP, conn_id, NULL/*src*/, NULL/*dst*/,
-			TRANS_TRACE_CLOSED, TRANS_TRACE_SUCCESS, extra?&s:NULL );
+			TRANS_TRACE_CLOSED, TRANS_TRACE_SUCCESS, extra?&s:NULL, t_dst );
 	}
 
 	return;
@@ -729,6 +718,8 @@ static int proto_tcp_send(struct socket_info* send_sock,
 	struct timeval get,snd;
 	int fd, n;
 
+	union sockaddr_union src_su, dst_su;
+
 	port=0;
 
 	reset_tcp_vars(tcpthreshold);
@@ -772,9 +763,21 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 			/* connect succeeded, we have a connection */
-			LM_TRACE_DBG( c->id, "Succesfully connected from interface %s:%d to %s:%d!\n",
+			LM_DBG( "Succesfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
+
+
+			/* trace the message */
+			if ( !(c->proto_flags & F_TCP_CONN_TRACED) && t_dst ) {
+				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
+					LM_ERR("can't create su structures for tracing!\n");
+				} else {
+					trace_message_atonce( PROTO_TCP, c->id, &src_su, &dst_su,
+						TRANS_TRACE_CONNECT_START, TRANS_TRACE_SUCCESS,
+						&AS_CONNECT_INIT, t_dst );
+				}
+			}
 
 			if (n==0) {
 				/* connect is still in progress, break the sending
@@ -788,6 +791,13 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			LM_DBG("First connect attempt succeeded in less than %d ms, "
 				"proceed to writing \n",tcp_async_local_connect_timeout);
 			/* our first connect attempt succeeded - go ahead as normal */
+			/* trace the attempt */
+			if ( !(c->flags & F_TCP_CONN_TRACED) && t_dst ) {
+				c->flags |= F_TCP_CONN_TRACED;
+				trace_message_atonce( PROTO_TCP, c->id, 0, 0,
+					TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
+					&ASYNC_CONNECT_OK, t_dst );
+			}
 		} else {
 			if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
 				LM_ERR("connect failed\n");
@@ -795,13 +805,36 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 
-			LM_TRACE_DBG( c->id, "Succesfully connected from interface %s:%d to %s:%d!\n",
+			if ( !(c->flags & F_TCP_CONN_TRACED) && t_dst ) {
+				c->flags |= F_TCP_CONN_TRACED;
+				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
+					LM_ERR("can't create su structures for tracing!\n");
+				} else {
+					trace_message_atonce( PROTO_TCP, c->id, &src_su, &dst_su,
+						TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
+						&CONNECT_OK, t_dst );
+				}
+			}
+
+			LM_DBG( "Succesfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 		}
 
 		goto send_it;
 	}
+
+	if ( !(c->proto_flags & F_TCP_CONN_TRACED) ) {
+		/* most probably it's an async connect */
+		if ( t_dst ) {
+			trace_message_atonce( PROTO_TCP, c->id, 0, 0,
+				TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
+				&CONNECT_OK, t_dst );
+		}
+
+		c->flags |= F_TCP_CONN_TRACED;
+	}
+
 	get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 
 	/* now we have a connection, let's see what we can do with it */
@@ -996,14 +1029,24 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 	int total_bytes;
 	struct tcp_req* req;
 
-	if ( con->proto_flags & F_TCP_CONN_FIRST_READ ) {
-		con->proto_flags &= !F_TCP_CONN_FIRST_READ;
+	union sockaddr_union src_su, dst_su;
+
+	if ( !(con->proto_flags & F_TCP_CONN_TRACED)) {
+		con->proto_flags |= F_TCP_CONN_TRACED;
 		/*  */
-		LM_TRACE_DBG( con->id, "Accepted connection from %s:%d on interface %s:%d!\n",
+		LM_DBG("Accepted connection from %s:%d on interface %s:%d!\n",
 			ip_addr2a( &con->rcv.src_ip ), con->rcv.src_port,
 			ip_addr2a( &con->rcv.dst_ip ), con->rcv.dst_port );
-	} else if ( con->proto_flags & F_TCP_CONN_FIRST_WRITE ) {
-		con->proto_flags &= !F_TCP_CONN_FIRST_WRITE;
+
+		if ( t_dst ) {
+			if ( tcpconn2su( con, &src_su, &dst_su) < 0 ) {
+				LM_ERR("can't create su structures for tracing!\n");
+			} else {
+				trace_message_atonce( PROTO_TCP, con->id, &src_su, &dst_su,
+					TRANS_TRACE_ACCEPTED, TRANS_TRACE_SUCCESS,
+					&ACCEPT_OK, t_dst );
+			}
+		}
 	}
 
 	bytes=-1;
@@ -1152,13 +1195,4 @@ void trace_log( int id, str* level, char* format, ... )
 #undef TRACELOG_MAX
 }
 
-void trace_conn_closed( struct tcp_connection* c, char* reason )
-{
-	LM_TRACE_DBG( c->id, "Connection from %s:%d to %s:%d was closed!Reason (%s)\n",
-				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
-				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port,
-				reason);
-}
-
-#undef LM_TRACE_DBG
 #undef LM_TRACE_ERR

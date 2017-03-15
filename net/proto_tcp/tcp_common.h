@@ -502,7 +502,6 @@ error:
 }
 
 #define TRANS_TRACE_PROTO_ID "trans"
-extern int net_trace_proto_id;
 
 #endif
 
