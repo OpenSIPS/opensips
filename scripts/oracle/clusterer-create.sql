@@ -4,7 +4,7 @@ CREATE TABLE clusterer (
     cluster_id NUMBER(10),
     node_id NUMBER(10),
     url VARCHAR2(64),
-    state NUMBER(1) DEFAULT 1 NOT NULL,
+    state NUMBER(10) DEFAULT 1 NOT NULL,
     ls_seq_no NUMBER(10) DEFAULT 0 NOT NULL,
     top_seq_no NUMBER(10) DEFAULT 0 NOT NULL,
     no_ping_retries NUMBER(10) DEFAULT 3 NOT NULL,

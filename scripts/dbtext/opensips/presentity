@@ -1,1 +1,1 @@
-id(int,auto) username(string) domain(string) event(string) etag(string) expires(int) received_time(int) body(blob) extra_hdrs(blob) sender(string) 
+id(int,auto) username(string) domain(string) event(string) etag(string) expires(int) received_time(int) body(blob,null) extra_hdrs(blob,null) sender(string,null) 
