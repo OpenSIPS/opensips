@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   tls_conn.h
  * Author: razvan
  *
@@ -15,7 +15,20 @@
 #include "tls_conn.h"
 #include "tls_config_helper.h"
 #include "../../locking.h"
+#ifndef trace_api_h
+	#include "../../trace_api.h"
+#endif
+#include "../../net/trans_trace.h"
 
+static inline int trace_tls( struct tcp_connection* conn, SSL* ctx, trans_trace_event event, trans_trace_status status, str* data);
+
+#define TRACE_IS_ON( CONN ) (CONN->proto_data && \
+		((struct tls_data*)CONN->proto_data)->tprot && \
+			((struct tls_data*)CONN->proto_data)->dest)
+
+struct tls_data {
+	TRACE_PROTO_COMMON;
+};
 
 static void tls_dump_cert_info(char* s,	X509* cert)
 {
@@ -28,6 +41,55 @@ static void tls_dump_cert_info(char* s,	X509* cert)
 	LM_INFO("%s subject: %s, issuer: %s\n", s ? s : "", subj, issuer);
 	OPENSSL_free(subj);
 	OPENSSL_free(issuer);
+}
+
+static inline void tls_append_cert_info(X509* cert, char client, trace_message message, trace_proto_t* tprot)
+{
+	str subj, issuer;
+
+	if ( !cert || !message || !tprot )
+		return;
+
+	subj.s   = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+	issuer.s = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+
+	subj.len = strlen( subj.s );
+	issuer.len = strlen( issuer.s );
+
+	if ( client ) {
+		add_trace_data( message, "client-subject", &subj );
+		add_trace_data( message, "client-issuer", &issuer );
+	} else {
+		add_trace_data( message, "server-subject", &subj );
+		add_trace_data( message, "server-issuer", &issuer );
+	}
+
+	OPENSSL_free( subj.s );
+	OPENSSL_free( issuer.s );
+}
+
+
+
+static inline void tls_append_master_secret( SSL* ctx, struct tls_data* data )
+{
+	static char ssl_print_master_buf[SSL_MAX_MASTER_KEY_LENGTH * 2];
+
+	str master;
+	SSL_SESSION* s;
+
+	s = SSL_get1_session( ctx );
+	if ( !s ) {
+		LM_DBG("no session to get master key from!\n");
+		return;
+	}
+
+	master.s = ssl_print_master_buf;
+	master.len = string2hex( s->master_key, s->master_key_length, ssl_print_master_buf );
+
+	data->tprot->add_payload_part( data->message, "master-key", &master);
+	/* this will not always free the session, probably never will just
+	 * decrease the session refcount */
+	SSL_SESSION_free( s );
 }
 
 
@@ -133,6 +195,18 @@ static void tls_dump_verification_failure(long verification_result)
 	}
 }
 
+static void add_certificates( SSL* ssl, struct tls_data* data)
+{
+	X509* cert;
+
+	cert = SSL_get_peer_certificate( ssl );
+	tls_append_cert_info(cert, 1/* client */, data->message, data->tprot);
+
+
+	cert = SSL_get_certificate( ssl );
+	tls_append_cert_info(cert, 0/* server */, data->message, data->tprot);
+}
+
 /*
  * Wrapper around SSL_accept, returns -1 on error, 0 on success
  */
@@ -148,20 +222,27 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 	}
 
 	ssl = (SSL *) c->extra_data;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifndef OPENSSL_NO_KRB5
 	if ( ssl->kssl_ctx==NULL )
 		ssl->kssl_ctx = kssl_ctx_new( );
 #endif
+#endif
 	ret = SSL_accept(ssl);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifndef OPENSSL_NO_KRB5
 	if ( ssl->kssl_ctx ) {
 		kssl_ctx_free( ssl->kssl_ctx );
 		ssl->kssl_ctx = 0;
 	}
 #endif
+#endif
+
 	if (ret > 0) {
 		LM_INFO("New TLS connection from %s:%d accepted\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+		trace_tls( c, ssl, TRANS_TRACE_ACCEPTED, TRANS_TRACE_SUCCESS, &ACCEPT_OK);
+
 		/* TLS accept done, reset the flag */
 		c->proto_flags &= ~F_TLS_DO_ACCEPT;
 
@@ -194,9 +275,16 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
+			if ( err != SSL_ERROR_WANT_READ || err != SSL_ERROR_WANT_WRITE ) {
+				/* report failure */
+				trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
+						TRANS_TRACE_FAILURE, &ACCEPT_FAIL);
+			}
+
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("TLS connection from %s:%d accept failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
 				c->state = S_CONN_BAD;
 				return -1;
 			case SSL_ERROR_WANT_READ:
@@ -211,10 +299,13 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
 				       ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-				if (errno != 0)
+
+				if (errno != 0) {
 					LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n",
 					       ret, err, errno, strerror(errno));
+				}
 				tls_print_errstack();
+
 				return -1;
 		}
 	}
@@ -244,6 +335,9 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 	if (ret > 0) {
 		LM_INFO("New TLS connection to %s:%d established\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+		trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+				TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+
 		c->proto_flags &= ~F_TLS_DO_CONNECT;
 		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
@@ -275,10 +369,17 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
+		if ( err != SSL_ERROR_WANT_READ || err != SSL_ERROR_WANT_WRITE ) {
+			/* report failure */
+			trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+					TRANS_TRACE_FAILURE, &CONNECT_OK);
+		}
+
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
 				c->state = S_CONN_BAD;
 				return -1;
 			case SSL_ERROR_WANT_READ:
@@ -295,10 +396,12 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
 				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
 					err,ret,strerror(errno), errno);
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
+
 				return -1;
 		}
 	}
@@ -514,6 +617,44 @@ poll_loop:
 error:
 	lock_release(&c->write_lock);
 	return -1;
+}
+
+static inline int trace_tls( struct tcp_connection* conn, SSL* ctx,
+		trans_trace_event event, trans_trace_status status, str* message)
+{
+	struct tls_data* data;
+	union sockaddr_union src, dst;
+
+	if ( !conn || !TRACE_IS_ON(conn) || !(data=conn->proto_data) )
+		return 0;
+
+	if ( !data->message ) {
+		if ( tcpconn2su( conn, &src, &dst ) < 0 ) {
+			LM_ERR("can't get network info from connection!\n");
+			return -1;
+		}
+
+		data->message = create_trace_message( conn->cid, &src, &dst,
+				conn->type, data->dest );
+		if ( !data->message ) {
+			LM_ERR("failed to create trace message!\n");
+			return -1;
+		}
+	}
+
+	add_certificates( ctx, data);
+	tls_append_master_secret( ctx, data);
+
+	add_trace_data( data->message, "Event", &trans_trace_str_event[event]);
+	add_trace_data( data->message, "Status", &trans_trace_str_status[status]);
+
+	if ( message && message->s && message->len) {
+		add_trace_data( data->message, "Message", message);
+	}
+
+	conn->proto_flags |= F_TLS_TRACE_READY;
+
+	return 0;
 }
 
 

@@ -140,12 +140,12 @@ void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
 
 
 /*
- * Callback called whenever a dialog is ended.
- * Check the duration against the thresholds (sent through the params)
- * and raise appropriate event
-*/
-
- void dialog_terminate_CB(struct dlg_cell *dlgc, int type,
+ * dialog API callback - called whenever a dialog is ended
+ *
+ * For confirmed dialogs, it checks the duration against the
+ * thresholds (sent through the params) and raises the appropriate event
+ */
+void dialog_terminate_CB(struct dlg_cell *dlgc, int type,
 		struct dlg_cb_params *params)
 {
 	static str call_dur_name = str_init ("call_duration");

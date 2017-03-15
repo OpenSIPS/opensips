@@ -53,6 +53,7 @@
 #include "datagram_fnc.h"
 #include "mi_datagram_parser.h"
 #include "mi_datagram_writer.h"
+#include "../../mi/mi_trace.h"
 
 
 /* AF_LOCAL is not defined on solaris */
@@ -77,7 +78,7 @@ static void datagram_process(int rank);
 
 /* local variables */
 static int mi_socket_domain =  AF_LOCAL;
-static sockaddr_dtgram mi_dtgram_addr;
+sockaddr_dtgram mi_dtgram_addr;
 
 /* socket definition parameter */
 static char *mi_socket = 0;
@@ -94,8 +95,11 @@ static int mi_unix_socket_mode = S_IRUSR| S_IWUSR| S_IRGRP| S_IWGRP;
 /* mi specific parameters */
 static char *mi_reply_indent = DEFAULT_MI_REPLY_IDENT;
 
+static str trace_destination_name = {NULL, 0};
+trace_dest t_dst;
 
-
+int mi_trace_mod_id;
+char* mi_trace_bwlist_s;
 
 
 
@@ -116,6 +120,8 @@ static param_export_t mi_params[] = {
 	{"unix_socket_user",    STR_PARAM,    &mi_unix_socket_uid_s     },
 	{"unix_socket_user",    INT_PARAM,    &mi_unix_socket_uid       },
 	{"reply_indent",        STR_PARAM,    &mi_reply_indent          },
+	{"trace_destination", STR_PARAM, &trace_destination_name.s},
+	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s        },
 	{0,0,0}
 };
 
@@ -247,12 +253,31 @@ static int mi_mod_init(void)
 				return -1;
 			}
 		}
+		/* prevent buffer overflow */
+		n = strlen(mi_socket);
+		if (n > sizeof(mi_dtgram_addr.unix_addr.sun_path)) {
+			LM_ERR("socket name too long: %d - should be less than %d chars\n",
+					n, (int)sizeof(mi_dtgram_addr.unix_addr.sun_path));
+			return -1;
+		}
 
 		/*create the unix socket address*/
 		mi_dtgram_addr.unix_addr.sun_family = AF_LOCAL;
 		memcpy( mi_dtgram_addr.unix_addr.sun_path,
 			mi_socket, strlen(mi_socket));
 	}
+
+	if (trace_destination_name.s) {
+		trace_destination_name.len = strlen( trace_destination_name.s);
+
+		try_load_trace_api();
+		if (mi_trace_api && mi_trace_api->get_trace_dest_by_name) {
+			t_dst = mi_trace_api->get_trace_dest_by_name(&trace_destination_name);
+		}
+
+		mi_trace_mod_id = register_mi_trace_mod();
+	}
+
 
 	return 0;
 }
@@ -307,6 +332,22 @@ static void datagram_process(int rank)
 	mi_reply_indent )!= 0){
 		LM_CRIT("failed to initiate mi_datagram_writer\n");
 		exit(-1);
+	}
+
+	/* if tracing enabled init correlation id */
+	if ( t_dst ) {
+		if ( load_correlation_id() < 0 ) {
+			LM_ERR("can't find correlation id params!\n");
+			exit(-1);
+		}
+
+		if ( mi_trace_api && mi_trace_bwlist_s ) {
+			if ( parse_mi_cmd_bwlist( mi_trace_mod_id,
+						mi_trace_bwlist_s, strlen(mi_trace_bwlist_s) ) < 0 ) {
+				LM_ERR("invalid bwlist <%s>!\n", mi_trace_bwlist_s);
+				exit(-1);
+			}
+		}
 	}
 
 	mi_datagram_server(sockets.rx_sock, sockets.tx_sock);

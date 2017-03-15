@@ -72,7 +72,7 @@ int cr_load_user_carrier(struct sip_msg * _msg, pv_elem_t *_user, pv_elem_t *_do
 
 	/* get carrier id */
 	if ((avp_val.n = load_user_carrier(&user, &domain)) < 0) {
-		LM_ERR("error in load user carrier");
+		LM_ERR("error in load user carrier\n");
 		return -1;
 	}
 	else {
@@ -240,7 +240,7 @@ static int set_next_domain_on_rule(const struct failure_route_tree_item *failure
 
 	assert(failure_tree != NULL);
 
-	LM_DBG("searching for matching routing rules");
+	LM_DBG("searching for matching routing rules\n");
 	for (rr = failure_tree->rule_list; rr != NULL; rr = rr->next) {
 		/*
 		LM_DBG("rr.flags=%d rr.mask=%d flags=%d\n", rr->flags, rr->mask, flags);
@@ -457,9 +457,9 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 	assert(route_tree != NULL);
 	assert(route_tree->flag_list != NULL);
 
-	LM_DBG("searching for matching routing rules");
+	LM_DBG("searching for matching routing rules\n");
 	for (rf = route_tree->flag_list; rf != NULL; rf = rf->next) {
-		/* LM_DBG("actual flags %i, searched flags %i, mask %i and match %i", rf->flags, flags, rf->mask, flags&rf->mask); */
+		/* LM_DBG("actual flags %i, searched flags %i, mask %i and match %i\n", rf->flags, flags, rf->mask, flags&rf->mask); */
 		if ((flags&rf->mask) == rf->flags) break;
 	}
 
@@ -476,7 +476,7 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 	switch (alg) {
 		case alg_prime:
 			if ((prob = prime_hash_func(msg, hash_source, rf->max_targets)) < 0) {
-				LM_ERR("could not hash message with prime algorithm");
+				LM_ERR("could not hash message with prime algorithm\n");
 				return -1;
 			}
 			if ((rr = get_rule_by_hash(rf, prob)) == NULL) {
@@ -490,7 +490,7 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 				return -1;
 			}
 			if ((prob = hash_func(msg, hash_source, rf->dice_max)) < 0) {
-				LM_ERR("could not hash message with CRC32");
+				LM_ERR("could not hash message with CRC32\n");
 				return -1;
 			}
 			/* This auto-magically takes the last rule if anything is broken.
@@ -677,6 +677,8 @@ int cr_do_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
 
 	LM_INFO("uri %.*s was rewritten to %.*s\n", rewrite_user.len, rewrite_user.s, dest.len, dest.s);
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	act.type = SET_URI_T;
 	act.elem[0].type= STR_ST;
 	act.elem[0].u.s = dest;

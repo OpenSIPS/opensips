@@ -57,10 +57,7 @@ struct p_modif
 #define MAX_NO_OF_EXTRA_HDRS 4
 
 
-/* event declaration */
-extern event_id_t        presence_event_id;
-
-static inline void presence_raise_event(presentity_t* presentity)
+void presence_raise_event(event_id_t event, presentity_t* presentity)
 {
         evi_params_p list;
         static str parameter_user_str = { "user", 4 };
@@ -69,12 +66,12 @@ static inline void presence_raise_event(presentity_t* presentity)
         static str parameter_expires_str = { "expires", 7 };
         static str parameter_etag_str = { "etag", 4 };
         static str parameter_body_str = { "body", 4 };
-        if (presence_event_id == EVI_ERROR) {
+        if (event == EVI_ERROR) {
                 LM_ERR("event not registered %d\n", presence_event_id);
                 return;
         }
 
-        if (evi_probe_event(presence_event_id)) {
+        if (evi_probe_event(event)) {
                 if (!(list = evi_get_params()))
                         return;
                 //if (evi_param_add_str(list, &parameter_user_str, &user)) {
@@ -108,7 +105,7 @@ static inline void presence_raise_event(presentity_t* presentity)
                          evi_free_params(list);
                          return;
                 }
-                if (evi_raise_event(presence_event_id, list)) {
+                if (evi_raise_event(event, list)) {
                         LM_ERR("unable to send event %d\n", presence_event_id);
                 }
         } else {
@@ -427,16 +424,21 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		}
 		if(((event_t*)msg->event->parsed)->parsed == EVENT_OTHER)
 		{
+			LM_ERR("unrecognized value [%.*s] in Event header\n",
+				msg->event->body.len, msg->event->body.s);
 			goto unsupported_event;
 		}
-	}
-	else
+	} else {
+		LM_ERR("Missing Event header\n");
 		goto unsupported_event;
+	}
 
 	/* search event in the list */
 	event= search_event((event_t*)msg->event->parsed);
 	if(event== NULL)
 	{
+		LM_ERR("un-registered support for known event [%.*s]\n",
+			msg->event->body.len, msg->event->body.s);
 		goto unsupported_event;
 	}
 
@@ -589,8 +591,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	presentity.sphere = sphere;
 	presentity.body = body;
 
-	/* send event E_PRESENCE_PUBLISH*/
-	presence_raise_event(&presentity);
+	/* send event E_PRESENCE_PUBLISH */
+	presence_raise_event(presence_event_id, &presentity);
 
 	/* querry the database and update or insert */
 	if(update_presentity(msg, &presentity, &sent_reply) <0)

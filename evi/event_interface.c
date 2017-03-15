@@ -135,6 +135,7 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 	return status;
 }
 
+/* XXX: this function should release its parameters before exiting */
 int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params)
 {
 	evi_subs_p subs, prev;
@@ -144,12 +145,12 @@ int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params
 
 	if (id < 0 || id >= events_no) {
 		LM_ERR("invalid event %d\n", id);
-		return -1;
+		goto free;
 	}
 
 	if (events_rec_level == 0) {
 		LM_ERR("Too many nested events %d\n", MAX_REC_LEV);
-		return -1;
+		goto free;
 	}
 	events_rec_level--;
 	if (params)
@@ -214,14 +215,16 @@ next:
 	}
 	lock_release(events[id].lock);
 
+	events_rec_level++;
+	if (params)
+		params->flags = pflags;
+free:
 	/* done sending events - free parameters */
 	if (params) {
 		/* make sure no one is messing with our flags */
-		params->flags = pflags;
 		if (params->flags & EVI_FREE_LIST)
 			evi_free_params(params);
 	}
-	events_rec_level++;
 	return ret;
 
 }

@@ -156,7 +156,13 @@ struct hp_frag {
 	const char* file;
 	const char* func;
 	unsigned long line;
+#endif
+
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	char is_free;
+#endif
+#ifdef SHM_EXTRA_STATS
+	unsigned long statistic_index;
 #endif
 };
 
@@ -270,6 +276,18 @@ void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size,
 						const char* file, const char* func, unsigned int line);
 #else
 void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
+#endif
+
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx);
+unsigned long get_stat_index(void *ptr);
+void set_indexes(int core_index);
+#endif
+
+#ifdef DBG_MALLOC
+	#define _FRAG_FILE(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->file
+	#define _FRAG_FUNC(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->func
+	#define _FRAG_LINE(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->line
 #endif
 
 void hp_status(struct hp_block *);

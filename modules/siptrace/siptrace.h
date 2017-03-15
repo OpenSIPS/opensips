@@ -23,8 +23,20 @@
 #ifndef _SIPTRACE_H
 #define _SIPTRACE_H
 
+#include "../../db/db.h"
+#include "../../db/db_insertq.h"
+#include "../proto_hep/hep.h"
+
 #define NR_KEYS 14
 #define SIPTRACE_TABLE_VERSION 5
+#define HEP_PREFIX_LEN (sizeof("hep:") - 1)
+#define SIP_TRACE_TYPE_STR "sip"
+
+#define GET_SIPTRACE_CONTEXT \
+	context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx)
+
+#define SET_SIPTRACE_CONTEXT(st_ctx) \
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx, st_ctx)
 
 enum trace_flags {TRACE_MESSAGE=(1<<0), TRACE_TRANSACTION=(1<<1),
 			TRACE_SL_TRANSACTION=(1<<2), /* transaction aware in stateless mode */
@@ -42,9 +54,8 @@ typedef struct st_db_struct {
 } st_db_struct_t;
 
 typedef struct st_hep_struct {
-	struct sip_uri uri;
-	char version;
-	int transport;
+	str name;
+	hid_list_t* hep_id;
 } st_hep_struct_t;
 
 
@@ -57,7 +68,7 @@ typedef struct tlist_elem {
 
 	union {
 		st_db_struct_t  *db;
-		st_hep_struct_t *hep;
+		st_hep_struct_t hep;
 		struct sip_uri  uri;
 	} el;
 
@@ -70,62 +81,44 @@ typedef struct tid_param {
 	enum tid_types type;
 	union {
 		tlist_elem_p lst;
-		pv_elem_p el;
+		pv_spec_p el;
 	} u;
 } tid_param_t, *tid_param_p;
 
 
 typedef struct trace_info {
 	str *trace_attrs;
+	int trace_types;
 	tlist_elem_p trace_list;
 } trace_info_t, *trace_info_p;
 
-static int sip_trace_fixup(void **param, int param_no);
-static int sip_trace_w(struct sip_msg*, char*, char*, char*);
-static int sip_trace(struct sip_msg*, trace_info_p);
+/* maximum 32 types to trace; this way we'll
+ * be able to know all types by having set bits into an integer value */
+#define MAX_TRACE_NAMES (sizeof(int) * 8)
+#define MAX_TRACED_PROTOS (sizeof(int) * 8)
+#define TRACE_PROTO "proto_hep"
 
-static int trace_dialog(struct sip_msg*, trace_info_p);
-static int trace_transaction(struct sip_msg* msg, trace_info_p info,
-								char dlg_tran);
-
-
-static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
-static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps);
-static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps);
-static void trace_msg_out(struct sip_msg* req, str  *buffer,
-			struct socket_info* send_sock, int proto, union sockaddr_union *to,
-			trace_info_p info);
-static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param);
-
-/*
- * callback used for statelessly forwarded requests; also catches the ACK in
- * stateful transaction
+/**
+ * structure identifying a protocol that is traced
+ * has the traced proto name and it's id which
+ * helps the TRACE(proto_hep) protocol identifying
+ * the TRACED(mi, xlog, rest...) protocol
  */
-static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *to, struct socket_info *sock, int proto);
-static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *dst, struct socket_info *sock, int proto);
+struct trace_proto {
+	char* proto_name;
+	int   proto_id;
+};
 
-#if 0
-static void trace_slack_in(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *dst, struct socket_info *sock, int proto);
-#endif
+const struct trace_proto* get_traced_protos(void);
+int get_traced_protos_no(void);
 
-static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
+/* implementations for trace_api.h message context tracing functions */
+int register_traced_type(char* name);
+int is_id_traced(int id);
+trace_dest get_next_trace_dest(trace_dest last_dest, int hash);
+int sip_context_trace_impl(int id, union sockaddr_union* from_su,
+		union sockaddr_union* to_su, str* payload,
+		int net_proto, str* correlation_id, struct modify_trace* mod_p);
 
-static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
-static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
-		unsigned short fromport, str *toproto, str *toip,
-		unsigned short toport, st_hep_struct_t* hep);
-
-
-
-static int pipport2su (str *sproto, str *ip, unsigned short port,
-			union sockaddr_union *tmp_su, unsigned int *proto);
-
-static int parse_trace_id(unsigned int type, void *val);
-
-void free_trace_info_pkg(void *param);
-void free_trace_info_shm(void *param);
 #endif
 

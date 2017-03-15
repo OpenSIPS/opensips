@@ -199,7 +199,10 @@ int verify_source(struct sip_msg* _msg, char* s1, char* s2)
     }
 
 	/* Add P-Request-Hash header body */
-	parse_headers(_msg, HDR_EOH_F, 0);
+	if (parse_headers(_msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("cannot pase message!\n");
+		goto err;
+	}
 	hf = get_header_by_static_name( _msg, "P-Request-Hash");
 	if (!hf) {
 		LM_ERR("no P-Request-Hash header field\n");

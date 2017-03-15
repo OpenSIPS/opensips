@@ -148,9 +148,11 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)_remove,      2,  fixup_remove,     0,
+	{"remove",       (cmd_function)w_remove_2,   2,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)_remove,      3,  fixup_remove,     0,
+	{"remove",       (cmd_function)w_remove_3,   3,  fixup_remove,     0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"remove",       (cmd_function)_remove,      4,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
@@ -158,18 +160,22 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       3,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"registered",   (cmd_function)registered,   1,  fixup_is_registered, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   2,  fixup_is_registered, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"registered",   (cmd_function)registered,   3,  fixup_is_registered, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
-	{"is_other_contact",      (cmd_function)is_other_contact_f, 2,
-		fixup_is_aor_registered/*same # of params*/, 0, REQUEST_ROUTE},
+	{"is_registered",      (cmd_function)is_registered, 1,
+		fixup_is_aor_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_registered",      (cmd_function)is_registered, 2,
 		fixup_is_aor_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_contact_registered",      (cmd_function)is_contact_registered, 1,
+		fixup_is_contact_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_contact_registered",      (cmd_function)is_contact_registered, 2,
+		fixup_is_contact_registered, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"is_contact_registered",      (cmd_function)is_contact_registered, 3,
+		fixup_is_contact_registered, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_contact_registered",      (cmd_function)is_contact_registered, 4,
 		fixup_is_contact_registered, 0,
@@ -413,6 +419,8 @@ static int fixup_remove(void** param, int param_no)
 	case 2:
 		return fixup_spve(param);
 	case 3:
+		return fixup_spve(param);
+	case 4:
 		return fixup_spve(param);
 
 	default:

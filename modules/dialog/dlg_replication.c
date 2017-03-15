@@ -84,7 +84,7 @@ static struct socket_info * fetch_socket_info(str *addr)
  */
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 {
-	int next_id, h_entry;
+	int h_entry;
 	unsigned int dir, dst_leg;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
@@ -140,10 +140,9 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	bin_pop_int(packet, &dlg->start_ts);
 	bin_pop_int(packet, &dlg->state);
 
-	next_id = d_table->entries[dlg->h_entry].next_id;
-
-	d_table->entries[dlg->h_entry].next_id =
-		(next_id <= dlg->h_id) ? (dlg->h_id + 1) : next_id;
+	/* next_id follows the max value of all replicated ids */
+	if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
+		d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
 
 	if (bin_pop_str(packet, &sock))
 		goto pre_linking_error;
@@ -182,7 +181,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 	/* link the dialog into the hash */
-	dlg->h_id = d_entry->next_id++;
 	if (!d_entry->first)
 		d_entry->first = d_entry->last = dlg;
 	else {

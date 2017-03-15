@@ -49,6 +49,7 @@
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
 #include "mi.h"
+#include "mi_trace.h"
 
 
 static str    up_since_ctime;
@@ -621,6 +622,8 @@ int init_mi_core(void)
 		LM_ERR("unable to register core MI cmds\n");
 		return -1;
 	}
+
+	try_load_trace_api();
 
 	return 0;
 }

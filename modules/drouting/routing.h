@@ -65,14 +65,6 @@ typedef struct rt_data_ {
 	ptree_t *pt;
 }rt_data_t;
 
-typedef struct _dr_group {
-	/* 0 - use grp ; 1 - use AVP */
-	int type;
-	union {
-		unsigned int grp_id;
-		int avp_name;
-	}u;
-} dr_group_t;
 
 /* init new rt_data structure */
 rt_data_t*

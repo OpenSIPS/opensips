@@ -60,7 +60,7 @@ int init_multi_proc_support(void)
 	/* info packet UDP receivers */
 
 	/* timer processes */
-	proc_no += 2 /* timer keeper + timer trigger */;
+	proc_no += 3 /* timer keeper + timer trigger + dedicated */;
 
 	/* count the processes requested by modules */
 	proc_no += count_module_procs();
@@ -77,6 +77,7 @@ int init_multi_proc_support(void)
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
 		pt[i].pid = -1;
+		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 	}
 
 	/* set the pid for the starter process */
@@ -128,10 +129,18 @@ pid_t internal_fork(char *proc_desc)
 		return -1;
 	}
 
+	/* create the IPC pipe */
+	if (pipe(pt[process_counter].ipc_pipe)<0) {
+		LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
+			process_counter, errno, strerror(errno));
+		return -1;
+	}
+
 	pt[process_counter].pid = 0;
 
 	if ( (pid=fork())<0 ){
-		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
+		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
+				errno, strerror(errno));
 		return -1;
 	}
 
@@ -177,6 +186,9 @@ int count_init_children(int flags)
 	ret += tcp_count_processes();
 
 	/* attendent */
+	ret++;
+
+	/* dedicated timer */
 	ret++;
 
 	/* count number of module procs going to be initialised */

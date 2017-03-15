@@ -22,13 +22,15 @@
  *  2015-10-01 initial version (Ionel Cerghit)
  */
 
+#ifdef SHM_EXTRA_STATS
 #ifndef _MODULE_INFO__
 #define _MODULE_INFO__
 
 #include "../statistics.h"
+#include "../lock_ops.h" 
 
 #define STAT_SUFIX "_mem_stat"
-#define STAT_PREFIX "shmem_group_"
+#define STAT_PREFIX "shmem_"
 #define STAT_PREFIX_LEN 12
 
 extern struct multi_str* mod_names;
@@ -38,9 +40,11 @@ extern volatile struct module_info* memory_mods_stats;
 extern int core_index;
 
 struct module_info{
-	stat_var* fragments;
-	stat_var* memory_used;
-	stat_var* real_used;
+	stat_var fragments;
+	stat_var memory_used;
+	stat_var real_used;
+    stat_var max_real_used;
+    gen_lock_t *lock;
 };
 
 struct multi_str{
@@ -51,4 +55,9 @@ struct multi_str{
 int set_mem_idx(char* mod_name, int  mem_free_idx);
 
 void update_module_stats(long mem_used, long real_used, int frags, int group_idx);
+
+int alloc_group_stat(void);
+
+int init_new_stat(stat_var *);
 #endif
+#endif /* SHM_EXTRA_STATS */

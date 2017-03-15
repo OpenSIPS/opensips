@@ -1,1 +1,1 @@
-ruleid(int,auto) groupid(string) prefix(string) timerec(string) priority(int) routeid(string,null) gwlist(string) attrs(string,null) description(string) 
+ruleid(int,auto) groupid(string) prefix(string) timerec(string,null) priority(int) routeid(string,null) gwlist(string) attrs(string,null) description(string,null) 

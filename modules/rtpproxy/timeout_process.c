@@ -99,6 +99,8 @@ void timeout_listener_process(int rank)
 			LM_ERR("Bad format for socket name. Expected ip:port\n");
 			return;
 		}
+		/* skip here tcp part */
+		rtpp_notify_socket.s += 4;
 		memset(&saddr_in, 0, sizeof(saddr_in));
 		saddr_in.sin_addr.s_addr = inet_addr(rtpp_notify_socket.s);
 		saddr_in.sin_family = AF_INET;
@@ -191,30 +193,29 @@ void timeout_listener_process(int rank)
 
 				/* if not found add a new one */
 				if (!rtpp_lst) {
-					/* leave the lock for a moment */
-					lock_release(rtpp_notify_h->lock);
 					rtpp_lst = (struct rtpp_notify_node*)
 						shm_malloc(sizeof(struct rtpp_notify_node));
 					if (!rtpp_lst) {
 						LM_ERR("no shm more memory\n");
-						return;
-					}
-					rtpp_lst->index = 0;
-					rtpp_lst->mode = 0;
-					rtpp_lst->addr = 0;
+					} else {
+						rtpp_lst->index = 0;
+						rtpp_lst->mode = 0;
+						rtpp_lst->addr = 0;
 
-					/* copy the socket name */
-					len = strlen(s_un->sun_path);
-					rtpp_lst->addr = (char *)shm_malloc(len + 1);
-					if (!rtpp_lst->addr) {
-						LM_ERR("no more shm memory\n");
-						return;
-					}
-					memcpy(rtpp_lst->addr, s_un->sun_path, len + 1);
+						/* copy the socket name */
+						len = strlen(s_un->sun_path);
+						rtpp_lst->addr = (char *)shm_malloc(len + 1);
+						if (!rtpp_lst->addr) {
+							shm_free(rtpp_lst);
+							rtpp_lst = NULL;
+							LM_ERR("no more shm memory\n");
+						} else {
+							memcpy(rtpp_lst->addr, s_un->sun_path, len + 1);
 
-					lock_get(rtpp_notify_h->lock);
-					rtpp_lst->next = rtpp_notify_h->rtpp_list;
-					rtpp_notify_h->rtpp_list = rtpp_lst;
+							rtpp_lst->next = rtpp_notify_h->rtpp_list;
+							rtpp_notify_h->rtpp_list = rtpp_lst;
+						}
+					}
 				}
 			} else {
 				/* search if I can find this connection */
@@ -478,6 +479,11 @@ int compare_rtpp(struct rtpp_node *r_node, struct rtpp_notify_node *n_node)
 	rtpp_server = resolvehost(buffer, 0);
 	if (!rtpp_server || !rtpp_server->h_addr) {
 		LM_ERR("cannot resolve hostname %s\n", r_node->rn_address);
+		return 0;
+	}
+	if (rtpp_server->h_length > BUF_LEN || rtpp_server->h_length < 0) {
+		LM_ERR("length too big for rtpproxy server address: %d\n",
+				rtpp_server->h_length);
 		return 0;
 	}
 

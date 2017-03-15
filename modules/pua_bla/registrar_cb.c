@@ -32,8 +32,9 @@
 #include "pua_bla.h"
 
 
-void bla_cb(ucontact_t* c, int type, void* param)
+void bla_contact_cb(void *binding, int type, void **data)
 {
+	ucontact_t *c = (ucontact_t *)binding;
 	subs_info_t subs;
 	str uri={0, 0};
 	char* at;

@@ -111,7 +111,7 @@ char get_header_code(struct hdr_field *hf)
  * parts.
  *
  * RETURNS: LENGTH of structure on success, <0 if failure
- * if there was failure, you dont need to pkg_free the payload (it is done inside).
+ * if there was failure, you don't need to pkg_free the payload (it is done inside).
  * if there was success, you __NEED_TO_PKG_FREE_THE_PAYLOAD__ from the calling function.
  *
  * The encoded meta-info is composed by 3 sections:
@@ -173,7 +173,7 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
 		goto error;
 	}
 	if(request) {
-		for(h=0;h<32;j=(0x01<<h),h++)
+		for(h=0,j=1;h<32;j=(0x01<<h),h++)
 			if(j & ms->u.request.method_value)
 				break;
 	} else {
@@ -191,7 +191,10 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
    /*then goes the message length (we hope it to be less than 65535 bytes...)*/
    memcpy(&payload[MSG_LEN_IDX],&h,2);
    /*then goes the content start index (starting from SIP MSG START)*/
-   get_body(msg,&body);
+   if (get_body(msg,&body) < 0) {
+      myerror="body parsing failed";
+      goto error;
+   }
    if(0>(diff=(body.s-msg->buf))){
       myerror="body starts before the message (uh ?)";
       goto error;
@@ -246,8 +249,11 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
       if(0>(i=encode_header(msg,hf,(unsigned char*)(payload+j),MAX_ENCODED_MSG+MAX_MESSAGE_LEN-j))){
 	 LM_ERR("encoding header %.*s\n",hf->name.len,hf->name.s);
 	 goto error;
+	 /* XXX: not sure if this should be considered or not, but the code is
+	  * not executed anyway; commenting it for now.
 	 k-=3;
 	 continue;
+	 */
       }
       j+=(unsigned short int)i;
    }
@@ -300,6 +306,8 @@ error:
    return -1;
 }
 
+#if 0
+/* code not used anywhere */
 int print_encoded_msg(int fd,char *code,char *prefix)
 {
    unsigned short int i,j,k,l,m,msglen;
@@ -483,3 +491,4 @@ int print_msg_junit_test(char *code,int fd,char header,char segregationLevel)
    }
    return 1;
 }
+#endif

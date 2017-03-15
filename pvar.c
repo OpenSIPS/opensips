@@ -1415,9 +1415,9 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 	int idxf=-1;
 	int distance=0;
 	char buf[BUFLEN];
-	struct multi_body* multi;
-	struct part* body_part;
-	struct part* neg_index[2];
+	struct sip_msg_body* sbody;
+	struct body_part* body_part;
+	struct body_part* neg_index[2];
 
 	if(msg==NULL)
 		return -1;
@@ -1442,16 +1442,15 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 			return pv_get_strval(msg, param, res, &msg->content_type->body);
 	}
 
-	if ((multi=get_all_bodies(msg)) == 0 || multi->first == 0) {
-		LM_ERR("cannot get multi body\n");
+	if ( parse_sip_body(msg)<0 || (sbody=msg->body)==NULL ) {
+		LM_DBG("no body found\n");
 		return pv_get_null(msg, param, res);
-
 	}
 
 	/* one contenttype request */
 	if (idxf != PV_IDX_ALL) {
 		if (idx< 0) {
-			neg_index[0] = neg_index[1] = multi->first;
+			neg_index[0] = neg_index[1] = &sbody->first;
 			/*distance=last_body_postition-searched_body_position*/
 			distance -= idx+1;
 			while (neg_index[1]->next) {
@@ -1468,10 +1467,10 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 				return pv_get_null(msg, param, res);
 			}
 
-			s.s = convert_mime2string_CT(neg_index[0]->content_type);
+			s.s = convert_mime2string_CT(neg_index[0]->mime);
 			s.len = strlen(s.s);
 		} else {
-			body_part = multi->first;
+			body_part = &sbody->first;
 			distance = idx;
 			while (distance && body_part->next) {
 				distance--;
@@ -1483,7 +1482,7 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 				return pv_get_null(msg, param, res);
 			}
 
-			s.s = convert_mime2string_CT(body_part->content_type);
+			s.s = convert_mime2string_CT(body_part->mime);
 			s.len = strlen(s.s);
 		}
 	} else {
@@ -1493,9 +1492,9 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		s.len = msg->content_type->body.len+1;
 
 		/* copy all the other contenttypes */
-		body_part = multi->first;
+		body_part = &sbody->first;
 		while (body_part) {
-			s.s = convert_mime2string_CT(body_part->content_type);
+			s.s = convert_mime2string_CT(body_part->mime);
 			if (s.len + strlen(s.s) >= BUFLEN) {
 				LM_CRIT("buffer overflow! Too many contenttypes!\n");
 				return pv_get_null(msg, param, res);
@@ -1536,6 +1535,24 @@ static int pv_get_content_length(struct sip_msg *msg, pv_param_t *param,
 			&msg->content_length->body);
 }
 
+int pv_parse_rb_name(pv_spec_p sp, str *in)
+{
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	if (decode_mime_type( in->s, in->s+in->len ,
+	(unsigned int *)&sp->pvp.pvn.u.isname.name.n , NULL) == 0) {
+		LM_ERR("unsupported mime <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;  /* INT/STR for var name type */
+	sp->pvp.pvn.u.isname.type = 0;      /* name is INT */
+
+	return 0;
+}
+
+
 static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -1543,9 +1560,10 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 	int idx=-1;
 	int idxf=-1;
 	int distance=0;
-	struct multi_body* multi;
-	struct part* body_part;
-	struct part* neg_index[2];
+	struct sip_msg_body* sbody;
+	struct body_part* body_part;
+	struct body_part* neg_index[2];
+	unsigned int mime;
 
 	if(msg==NULL)
 		return -1;
@@ -1555,51 +1573,70 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	/* if no index specified or index requests all bodies*/
+	/* any index specified */
 	if (param->pvi.type==0 || idxf==PV_IDX_ALL) {
-		if (get_body( msg, &s)!=0 || s.len==0 )
-		{
-			LM_DBG("no message body\n");
-			return pv_get_null(msg, param, res);
+		if (param->pvn.u.isname.name.n==0) {
+			/* no name/mime -> requests all bodies */
+			if (get_body( msg, &s)!=0 || s.len==0 ) {
+				LM_DBG("no message body\n");
+				return pv_get_null(msg, param, res);
+			}
+			goto end;
+		} else {
+			/* return first part with the requested mime */
+			idx = 0;
 		}
-		goto end;
 	}
 
-	if ((multi=get_all_bodies(msg)) == 0 || multi->first == 0) {
-		LM_ERR("cannot get multi body\n");
+	if ( parse_sip_body(msg)<0 || (sbody=msg->body)==NULL ) {
+		LM_DBG("no body found\n");
 		return pv_get_null(msg, param, res);
 	}
 
+	mime = param->pvn.u.isname.name.n;
+	LM_DBG("--------mime is <%d>, idx=%d\n",mime, idx);
+
+#define first_part_by_mime( _part_start, _part_end, _mime) \
+	do {\
+		_part_end = _part_start;\
+		while( (_part_end) && \
+		!(is_body_part_received(_part_end) && ((_mime)==0 || \
+		(_mime)==(_part_end)->mime )) ) { \
+			_part_end = (_part_end)->next; \
+		} \
+	}while(0)
+
 	if (idx<0) {
-		neg_index[0] = neg_index[1] = multi->first;
+		first_part_by_mime( &sbody->first, neg_index[1], mime );
+		neg_index[0] = neg_index[1];
 		/*distance=last_body_postition-searched_body_position*/
 		distance -= idx+1;
 		while (neg_index[1]->next) {
 			if (distance == 0) {
-				neg_index[0] = neg_index[0]->next;
+				first_part_by_mime( neg_index[0]->next, neg_index[0], mime );
 			} else {
 				distance--;
 			}
-			neg_index[1] = neg_index[1]->next;
+			first_part_by_mime( neg_index[1]->next, neg_index[1], mime );
 		}
 
 		if (distance>0) {
-			LM_ERR("Index too low [%d]\n", idx);
+			LM_DBG("Index too low [%d]\n", idx);
 			return pv_get_null(msg, param, res);
 		}
 
 		s.s = neg_index[0]->body.s;
 		s.len = neg_index[0]->body.len;
 	} else {
-		body_part = multi->first;
+		first_part_by_mime( &sbody->first, body_part, mime );
 		distance = idx;
-		while (distance && body_part->next) {
+		while (distance && body_part ) {
 			distance--;
-			body_part=body_part->next;
+			first_part_by_mime( body_part->next, body_part, mime );
 		}
 
-		if (distance > 0) {
-			LM_ERR("Index too big [%d]\n", idx);
+		if (distance>0 || body_part==NULL) {
+			LM_DBG("Index too big [%d], body_part=%p\n", idx,body_part);
 			return pv_get_null(msg, param, res);
 		}
 
@@ -1989,6 +2026,8 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		LM_ERR("invalid index\n");
 		return -1;
 	}
+	if (idxf==PV_IDX_APPEND)
+		return pv_get_null(msg, param, res);
 
 	if ((avp=search_first_avp(name_type, avp_name, &avp_value, 0))==0)
 		return pv_get_null(msg, param, res);
@@ -2433,6 +2472,14 @@ int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 		if(replace_avp(flags, avp_name, avp_val, idx)< 0)
 		{
 			LM_ERR("Failed to replace avp\n");
+			goto error;
+		}
+	}
+	else if (idxf == PV_IDX_APPEND) /* add AVP at the end */
+	{
+		if (add_avp_last(flags, avp_name, avp_val)<0)
+		{
+			LM_ERR("error - cannot add AVP\n");
 			goto error;
 		}
 	}
@@ -3089,6 +3136,21 @@ int pv_parse_avp_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
+int pv_parse_avp_index(pv_spec_p sp, str *in)
+{
+	#define AVP_APPEND_IDX "append"
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	if ( (in->len==(sizeof(AVP_APPEND_IDX)-1)) &&
+	strncasecmp(in->s,AVP_APPEND_IDX,in->len)==0) {
+		sp->pvp.pvi.type = PV_IDX_APPEND;
+		return 0;
+	}
+	return pv_parse_index(sp,in);
+}
+
 int pv_parse_index(pv_spec_p sp, str *in)
 {
 	char *p;
@@ -3214,7 +3276,7 @@ int pv_set_log_level(struct sip_msg* msg, pv_param_t *param, int op,
 		reset_proc_log_level();
 	} else {
 		if ((val->flags&PV_TYPE_INT)==0) {
-			LM_ERR("input for $log_level found not to be an interger\n");
+			LM_ERR("input for $log_level found not to be an integer\n");
 			return -1;
 		}
 		set_proc_log_level(val->ri);
@@ -3245,6 +3307,44 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
+int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+#define _set_static_string(_s,_ss) {_s.s=_ss;_s.len=sizeof(_ss)-1;}
+	if(res == NULL) {
+		return -1;
+	}
+
+	switch(xlog_level) {
+	case L_ALERT:
+		_set_static_string( res->rs, DP_ALERT_TEXT);
+		break;
+	case L_CRIT:
+		_set_static_string( res->rs, DP_CRIT_TEXT);
+		break;
+	case L_ERR:
+		_set_static_string( res->rs, DP_ERR_TEXT);
+		break;
+	case L_WARN:
+		_set_static_string( res->rs, DP_WARN_TEXT);
+		break;
+	case L_NOTICE:
+		_set_static_string( res->rs, DP_NOTICE_TEXT);
+		break;
+	case L_INFO:
+		_set_static_string( res->rs, DP_INFO_TEXT);
+		break;
+	case L_DBG:
+		_set_static_string( res->rs, DP_DBG_TEXT);
+		break;
+	default:
+		return pv_get_null(msg, param, res);
+	}
+
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
+
 
 
 /**
@@ -3252,7 +3352,7 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
  */
 static pv_export_t _pv_names_table[] = {
 	{{"avp", (sizeof("avp")-1)}, PVT_AVP, pv_get_avp, pv_set_avp,
-		pv_parse_avp_name, pv_parse_index, 0, 0},
+		pv_parse_avp_name, pv_parse_avp_index, 0, 0},
 	{{"hdr", (sizeof("hdr")-1)}, PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
 		pv_parse_index, 0, 0},
 	{{"hdrcnt", (sizeof("hdrcnt")-1)}, PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name, 0, 0, 0},
@@ -3459,6 +3559,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"rb", (sizeof("rb")-1)}, /* */
 		PVT_MSG_BODY, pv_get_msg_body, 0,
 		0, pv_parse_index, 0, 0},
+	{{"rb", (sizeof("rb")-1)}, /* */
+		PVT_MSG_BODY, pv_get_msg_body, 0,
+		pv_parse_rb_name, pv_parse_index, 0, 0},
 	{{"rc", (sizeof("rc")-1)}, /* */
 		PVT_RETURN_CODE, pv_get_return_code, 0,
 		0, 0, 0, 0},
@@ -3576,6 +3679,8 @@ static pv_export_t _pv_names_table[] = {
 	{{"cfg_line", sizeof("cfg_line")-1}, PVT_LINE_NUMBER, pv_get_line_number, 0,
 		0, 0, 0, 0 },
 	{{"cfg_file", sizeof("cfg_file")-1}, PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
+	0, 0, 0, 0 },
+	{{"xlog_level", sizeof("xlog_level")-1}, PVT_XLOG_LEVEL, pv_get_xlog_level, 0,
 	0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
@@ -4120,7 +4225,7 @@ int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags)
 	if(ip->pvi.type == 0)
 		return 0;
 
-	if(ip->pvi.type == PV_IDX_ALL) {
+	if(ip->pvi.type == PV_IDX_ALL || ip->pvi.type == PV_IDX_APPEND) {
 		return 0;
 	}
 

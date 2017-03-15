@@ -47,18 +47,24 @@ static struct sca_hash *sca_table = NULL;
 
 int init_sca_hash(int size)
 {
-	int n;
+	unsigned int n;
 
 	/* check/ajust the size of the hash table */
-	for( n=0 ; n<(8*sizeof(n)) ; n++) {
-		if (size==(1<<n))
-			break;
-		if ( size < (1<<n) ) {
-			LM_WARN("hash size is not a power "
-				"of 2 as it should be -> rounding from %d to %d\n",
-				size, 1<<(n-1));
-			size = 1<<(n-1);
-			break;
+	if (size == 0) {
+		LM_ERR("Invalid hash size!\n");
+		goto error0;
+	}
+	if (size != 1) {
+		for( n=1 ; n<(8*sizeof(n)) - 1 ; n++) {
+			if (size==(1<<n))
+				break;
+			if ( size < (1<<n) ) {
+				LM_WARN("hash size is not a power "
+					"of 2 as it should be -> rounding from %d to %d\n",
+					size, 1<<(n-1));
+				size = 1<<(n-1);
+				break;
+			}
 		}
 	}
 

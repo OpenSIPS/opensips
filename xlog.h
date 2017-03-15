@@ -32,9 +32,18 @@ typedef struct _xl_level
 	} v;
 } xl_level_t, *xl_level_p;
 
+typedef struct _xl_trace
+{
+	struct sip_msg* msg;
+	str buf;
+
+
+} xl_trace_t;
+
 extern int xlog_buf_size;
 extern int xlog_force_color;
 extern int xlog_default_level;
+extern int xlog_level;
 
 int xlog_1(struct sip_msg*, char*, char*);
 int xlog_2(struct sip_msg*, char*, char*);
@@ -43,6 +52,8 @@ int xdbg(struct sip_msg*, char*, char*);
 int pv_parse_color_name(pv_spec_p sp, str *in);
 int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+
+int init_xlog(void);
 
 #endif
 

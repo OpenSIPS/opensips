@@ -317,11 +317,6 @@ int add_from_db(void)
 		imc_dbf.free_result(imc_db, r_res);
 		r_res = NULL;
 	}
-	if(m_res)
-	{
-		imc_dbf.free_result(imc_db, m_res);
-		m_res = NULL;
-	}
 
 	return 0;
 
@@ -776,7 +771,10 @@ static struct mi_root* imc_mi_list_members(struct mi_root* cmd_tree,
 	}
 
 	/* find room */
-	parse_uri(room_name.s,room_name.len, &inv_uri);
+	if (parse_uri(room_name.s,room_name.len, &inv_uri) < 0) {
+		LM_ERR("cannot parse uri!\n");
+		return init_mi_tree( 400, "bad param", 9);
+	}
 	pinv_uri=&inv_uri;
 	room=imc_get_room(&pinv_uri->user, &pinv_uri->host);
 

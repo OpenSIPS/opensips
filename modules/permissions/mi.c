@@ -83,20 +83,32 @@ err:
 struct mi_root* mi_address_dump(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_root* rpl_tree;
-	struct mi_node *node = NULL;
+	struct mi_node *node = NULL, *part_node;
 	struct pm_part_struct *it, *ps;
 
 	if (cmd_tree)
 		node = cmd_tree->node.kids;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree == NULL)
+		return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
+
 	if (node == NULL) {
 		/* dump all partitions */
 		for (it=get_part_structs(); it; it = it->next) {
 			if (it->hash_table == NULL)
 				continue;
 
-			if(hash_mi_print(*it->hash_table, &rpl_tree->node, it)< 0) {
+			part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, "part", 4,
+				it->name.s, it->name.len);
+			if (part_node == NULL) {
+				LM_ERR("failed to add MI node for part %.*s\n",
+				       it->name.len, it->name.s);
+				return NULL;
+			}
+
+			if(hash_mi_print(*it->hash_table, part_node, it)< 0) {
 				LM_ERR("failed to add a node\n");
 				free_mi_tree(rpl_tree);
 				return 0;
@@ -109,6 +121,13 @@ struct mi_root* mi_address_dump(struct mi_root *cmd_tree, void *param)
 			return init_mi_tree(404, MI_SSTR("No such partition"));
 		if (ps->hash_table == NULL)
 			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, "part", 4,
+		                              ps->name.s, ps->name.len);
+		if (part_node == NULL) {
+			LM_ERR("failed to add MI node for part %.*s\n",
+			       ps->name.len, ps->name.s);
+			return NULL;
+		}
 		if(hash_mi_print(*ps->hash_table, &rpl_tree->node, ps)< 0) {
 			LM_ERR("failed to add a node\n");
 			free_mi_tree(rpl_tree);
@@ -180,22 +199,34 @@ struct mi_root* mi_allow_uri(struct mi_root *cmd, void *param)
 struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_root* rpl_tree;
-	struct mi_node *node = NULL;
+	struct mi_node *node = NULL, *part_node;
 	struct pm_part_struct *it, *ps;
 
 	if (cmd_tree)
 		node = cmd_tree->node.kids;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree == NULL)
+		return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
+
 	if (node == NULL) {
 		/* dump all subnets */
 		for (it=get_part_structs(); it; it = it->next) {
 			if (it->subnet_table == NULL)
 				continue;
 
-			if (subnet_table_mi_print(*it->subnet_table, &rpl_tree->node, it) <  0) {
+			part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, "part", 4,
+				it->name.s, it->name.len);
+			if (part_node == NULL) {
+				LM_ERR("failed to add MI node for part %.*s\n",
+				       it->name.len, it->name.s);
+				return NULL;
+			}
+
+			if (subnet_table_mi_print(*it->subnet_table, part_node, it) <  0) {
 				LM_ERR("failed to add a node\n");
-				 free_mi_tree(rpl_tree);
+				free_mi_tree(rpl_tree);
 				return 0;
 			}
 		}
@@ -206,8 +237,22 @@ struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param)
 		if (ps->subnet_table == NULL)
 			return init_mi_tree( 200, MI_SSTR(MI_OK));
 
+		part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, "part", 4,
+			ps->name.s, ps->name.len);
+		if (part_node == NULL) {
+			LM_ERR("failed to add MI node for part %.*s\n",
+			       ps->name.len, ps->name.s);
+			return NULL;
+		}
+
+		if (subnet_table_mi_print(*ps->subnet_table, part_node, ps) <  0) {
+			LM_ERR("failed to add a node\n");
+			free_mi_tree(rpl_tree);
+			return 0;
+		}
+
 		/* dump requested subnet*/
-		if (subnet_table_mi_print(*ps->subnet_table, &rpl_tree->node, ps) <  0) {
+		if (subnet_table_mi_print(*ps->subnet_table, part_node, ps) <  0) {
 			LM_ERR("failed to add a node\n");
 			 free_mi_tree(rpl_tree);
 			return 0;

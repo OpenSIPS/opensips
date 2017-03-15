@@ -53,13 +53,14 @@ struct ldap_result_check_params
 
 struct ldap_async_params {
 	int msgid;
+	str ldap_url;
 	struct ld_session *lds;
+	struct ld_conn *conn;
 };
 
 int ldap_search_impl_async(
 	struct sip_msg* _msg,
-	async_resume_module **resume_f,
-	void **resume_param,
+	async_ctx *ctx,
 	pv_elem_t* _ldap_url);
 
 int ldap_search_impl(

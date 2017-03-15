@@ -404,14 +404,15 @@ hresh")
 
 1.5.1.  show_fraud_stats
 
-   Show the current stats of a given user for a given prefix.
+   Show the current statistics for a user to a given prefix and
+   fraud profile.
 
    Name: show_fraud_stats
 
    Parameters:
      * user
-     * number
      * prefix
+     * fraud_profile
 
 1.5.2.  fraud_reload
 

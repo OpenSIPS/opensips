@@ -83,6 +83,9 @@ struct qm_frag{
 	unsigned long line;
 	unsigned long check;
 #endif
+#ifdef SHM_EXTRA_STATS
+	unsigned long statistic_index;
+#endif
 };
 
 struct qm_frag_end{
@@ -155,6 +158,17 @@ void  qm_info(struct qm_block*, struct mem_info*);
  */
 int qm_mem_check(struct qm_block *qm);
 
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx);
+unsigned long get_stat_index(void *ptr);
+void set_indexes(int core_index);
+#endif
+
+#ifdef DBG_MALLOC
+	#define _FRAG_FILE(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->file
+	#define _FRAG_FUNC(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->func
+	#define _FRAG_LINE(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->line
+#endif
 
 #ifdef STATISTICS
 static inline unsigned long qm_get_size(struct qm_block* qm)

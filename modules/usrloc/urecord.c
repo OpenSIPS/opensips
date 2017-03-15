@@ -45,6 +45,7 @@
 #include "ureplication.h"
 #include "udomain.h"
 #include "dlist.h"
+#include "usrloc.h"
 
 extern int max_contact_delete;
 extern db_key_t *cid_keys;
@@ -63,12 +64,19 @@ extern event_id_t ei_c_del_id;
  */
 int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 {
-	*_r = (urecord_t*)shm_malloc(sizeof(urecord_t));
+	size_t att_data_sz;
+
+	att_data_sz = get_att_aor_data_sz();
+
+	*_r = (urecord_t*)shm_malloc(sizeof(urecord_t) + att_data_sz);
 	if (*_r == 0) {
 		LM_ERR("no more share memory\n");
 		return -1;
 	}
-	memset(*_r, 0, sizeof(urecord_t));
+	memset(*_r, 0, sizeof(urecord_t) + att_data_sz);
+
+	if (att_data_sz > 0)
+		(*_r)->attached_data = (void **)(*_r + 1);
 
 	(*_r)->aor.s = (char*)shm_malloc(_aor->len);
 	if ((*_r)->aor.s == 0) {
@@ -183,8 +191,7 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 		_r->contacts = c;
 	}
 
-	ul_raise_contact_event(ei_c_ins_id, &c->c, &c->callid, &c->received,
-			c->aor, c->cseq);
+	ul_raise_contact_event(ei_c_ins_id, c);
 	return c;
 }
 
@@ -205,8 +212,7 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 			_c->next->prev = 0;
 		}
 	}
-	ul_raise_contact_event(ei_c_del_id, &_c->c, &_c->callid, &_c->received,
-			_c->aor, _c->cseq);
+	ul_raise_contact_event(ei_c_del_id, _c);
 }
 
 
@@ -388,9 +394,9 @@ int timer_urecord(urecord_t* _r,query_list_t **ins_list)
 	 * realtime inserts/updates */
 	case WRITE_THROUGH: return wb_timer(_r,ins_list); /*wt_timer(_r);*/
 	case WRITE_BACK:    return wb_timer(_r,ins_list);
+	default:
+		return 0; /* Makes gcc happy */
 	}
-
-	return 0; /* Makes gcc happy */
 }
 
 
@@ -449,6 +455,8 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		/* now simply free everything */
 		free_urecord(_r);
 	} else if (_r->contacts == 0) {
+		if (exists_ulcb_type(UL_AOR_DELETE))
+			run_ul_callbacks(UL_AOR_DELETE, _r);
 
 		if (!is_replicated && ul_replicate_cluster)
 			replicate_urecord_delete(_r);
@@ -465,6 +473,8 @@ void release_urecord(urecord_t* _r, char is_replicated)
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 										ucontact_t** _c, char is_replicated)
 {
+	int first_contact = _r->contacts == NULL ? 1 : 0;
+
 	/* not used in db only mode */
 	_ci->contact_id =
 		pack_indexes((unsigned short)_r->aorhash,
@@ -480,9 +490,11 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	if (!is_replicated && ul_replicate_cluster && db_mode != DB_ONLY)
 		replicate_ucontact_insert(_r, _contact, _ci);
 
-	if (exists_ulcb_type(UL_CONTACT_INSERT)) {
-		run_ul_callbacks( UL_CONTACT_INSERT, *_c);
-	}
+	if (exists_ulcb_type(UL_CONTACT_INSERT))
+		run_ul_callbacks(UL_CONTACT_INSERT, *_c);
+
+	if (!first_contact && exists_ulcb_type(UL_AOR_UPDATE))
+		run_ul_callbacks(UL_AOR_UPDATE, _r);
 
 	if (db_mode == WRITE_THROUGH) {
 		if (db_insert_ucontact(*_c,0,0) < 0) {
@@ -507,6 +519,11 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
 		run_ul_callbacks( UL_CONTACT_DELETE, _c);
 	}
+
+	if (exists_ulcb_type(UL_AOR_UPDATE))
+		run_ul_callbacks(UL_AOR_UPDATE, _r);
+
+	LM_DBG("deleting contact '%.*s'\n", _c->c.len, _c->c.s);
 
 	if (st_delete_ucontact(_c) > 0) {
 		if (db_mode == WRITE_THROUGH) {

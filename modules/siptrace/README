@@ -145,13 +145,14 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1")
 
 1.3.3. trace_id (str)
 
-   Specify a destination for the trace. This can be a hep uri, sip
-   uri or a database url and a table. All parameters inside
-   trace_id must be separated by ;. The parameters are given in
-   key-value format, the possible keys being uri for HEP and SIP
-   IDs and uri and table for databases. The format is
-   [id_name]key1=value1;key2=value2;. HEP uris must be specified
-   as hep:host:port.
+   Specify a destination for the trace. This can be a hep id
+   defined in proto_hep, sip uri or a database url and a table.
+   All parameters inside trace_id must be separated by ;,
+   excepting the last one. The parameters are given in key-value
+   format, the possible keys being uri for HEP and SIP IDs and uri
+   and table for databases. The format is
+   [id_name]key1=value1;key2=value2;. HEP id's MUST be defined in
+   proto_hep in order to be able to use them here.
 
    One can declare multiple types of tracing under the same trace
    id, being identified by their name. So if you define two
@@ -162,10 +163,7 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1")
    All the old parameter such as db_url, table and duplicate_uri
    will form the trace id with the name "default".
 
-   No default value. If not set the module will be useless. For
-   HEP ids, if transport parameter is not set default will be TCP
-   for version 3 and UDP for 1 and 2. Also if version not set,
-   version 3 will be used by default.
+   No default value. If not set the module will be useless.
 
    Example 1.3. Set trace_id parameter
 ...
@@ -174,26 +172,17 @@ modparam("siptrace", "trace_id",
 "[tid]
 uri=mysql://xxxx:xxxx@10.10.10.10/opensips;
 table=new_sip_trace;")
-/*hep trace id*/
-modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.10:6161;")
+/* hep trace id with the hep id defined in proto_hep; check proto_hep do
+cs
+ * for more information */
+modparam("proto_hep", "hep_id",  "[hid]10.10.10.10")
+modparam("siptrace", "trace_id", "[tid]uri=hep:hid")
 /*sip trace id*/
 modparam("siptrace", "trace_id",
 "[tid]uri=sip:10.10.10.11:5060;")
 /* notice that they all have the same name
  * meaning that calling sip_trace("tid",...)
  * will do sql, sip and hep tracing */
-
-/* hep version 3 with tcp - ALSO DEFAULT ONE */
-modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.12:5061;transport=tcp;version=3")
-/* hep version 3 with udp (version not set-default will be 3)*/
-modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.12:5061;transport=udp")
-/* hep version 1 */
-modparam("siptrace", "trace_id",
-"[tid]uri=hep:10.10.10.12:5061;version=1")
-
 ...
 
 1.4. Exported Functions

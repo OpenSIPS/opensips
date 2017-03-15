@@ -52,8 +52,11 @@
 #define ROUTE_SEPARATOR ", "
 #define ROUTE_SEPARATOR_LEN (sizeof(ROUTE_SEPARATOR) - 1)
 
-#define LOCAL_MAXFWD_HEADER "Max-Forwards: " LOCAL_MAXFWD_VALUE CRLF
-#define LOCAL_MAXFWD_HEADER_LEN (sizeof(LOCAL_MAXFWD_HEADER) - 1)
+#define LOCAL_MAXFWD_PREFIX "Max-Forwards: "
+#define LOCAL_MAXFWD_PREFIX_LEN  (sizeof(LOCAL_MAXFWD_PREFIX) - 1)
+
+#define LOCAL_MAXFWD_HEADER  LOCAL_MAXFWD_PREFIX LOCAL_MAXFWD_VALUE CRLF
+#define LOCAL_MAXFWD_HEADER_LEN  (sizeof(LOCAL_MAXFWD_HEADER) - 1)
 
 /* convenience macros */
 #define  append_string(_d,_s,_len) \
@@ -782,7 +785,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 										int branch, struct cell *t, int* len)
 {
 	char* buf, *w;
-	str content_length, cseq, via;
+	str content_length, cseq, via, mf;
 
 	if (!method || !dialog) {
 		LM_ERR("inalid parameter value\n");
@@ -826,7 +829,13 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	/* Route set */
 	*len += calculate_routeset_length(dialog);
 	/* Max-Forwards */
-	*len += LOCAL_MAXFWD_HEADER_LEN;
+	if (dialog->mf_enforced) {
+		mf.s = int2str( dialog->mf_value, &mf.len);
+		*len += LOCAL_MAXFWD_PREFIX_LEN + mf.len + CRLF_LEN;
+	} else {
+		mf.len = 0; mf.s = NULL;
+		*len += LOCAL_MAXFWD_HEADER_LEN;
+	}
 	/* Content-Length */
 	*len += CONTENT_LENGTH_LEN + content_length.len + CRLF_LEN;
 	/* Signature */
@@ -855,7 +864,13 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	w = print_routeset(w, dialog);                        /* Route set */
 
 	/* Max-Forwards */
-	append_string(w, LOCAL_MAXFWD_HEADER, LOCAL_MAXFWD_HEADER_LEN);
+	if (dialog->mf_enforced) {
+		append_string(w, LOCAL_MAXFWD_PREFIX, LOCAL_MAXFWD_PREFIX_LEN);
+		append_string(w, mf.s, mf.len);
+		append_string(w, CRLF, CRLF_LEN);
+	} else {
+		append_string(w, LOCAL_MAXFWD_HEADER, LOCAL_MAXFWD_HEADER_LEN);
+	}
 
 	/* Content-Length */
 	append_string(w, CONTENT_LENGTH, CONTENT_LENGTH_LEN);

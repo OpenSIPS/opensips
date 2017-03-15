@@ -114,7 +114,7 @@ static int mod_init(void)
 
 	if(server_address.s== NULL)
 	{
-		LM_ERR("compulsory 'server_address' parameter not set!");
+		LM_ERR("compulsory 'server_address' parameter not set!\n");
 		return -1;
 	}
 	server_address.len= strlen(server_address.s);
@@ -199,25 +199,25 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(ul.register_ulcb(UL_CONTACT_INSERT, bla_cb , 0)< 0)
+	if(ul.register_ulcb(UL_CONTACT_INSERT, bla_contact_cb , NULL)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" insert\n");
 		return -1;
 	}
-	if(ul.register_ulcb(UL_CONTACT_EXPIRE, bla_cb, 0)< 0)
+	if(ul.register_ulcb(UL_CONTACT_EXPIRE, bla_contact_cb, NULL)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" insert\n");
 		return -1;
 	}
-	if(ul.register_ulcb(UL_CONTACT_UPDATE, bla_cb, 0)< 0)
+	if(ul.register_ulcb(UL_CONTACT_UPDATE, bla_contact_cb, NULL)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" update\n");
 		return -1;
 	}
-	if(ul.register_ulcb(UL_CONTACT_DELETE, bla_cb, 0)< 0)
+	if(ul.register_ulcb(UL_CONTACT_DELETE, bla_contact_cb, NULL)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" delete\n");

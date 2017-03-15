@@ -254,10 +254,11 @@ static void destroy(void)
 }
 
 
-/*! \brief Convert the file content into regular expresions and store them in pcres */
+/*! \brief Convert the file content into regular expressions and store them in pcres */
 static int load_pcres(int action)
 {
 	int i, j;
+	int len, plen;
 	FILE *f;
 	char line[FILE_MAX_LINE];
 	char **patterns = NULL;
@@ -327,28 +328,37 @@ static int load_pcres(int action)
 			memset(line, '\0', FILE_MAX_LINE);
 			continue;
 		}
+		len = strlen(line);
 
 		/* Check if the patter size is too big (aprox) */
-		if (strlen(patterns[i]) + strlen(line) >= group_max_size - 2) {
+		if (strlen(patterns[i]) + len >= group_max_size - 2) {
 			LM_ERR("pattern max file exceeded\n");
+			fclose(f);
+			goto err;
+		}
+		if (len >= FILE_MAX_LINE - 1) {
+			LM_ERR("cannot add group termination\n");
 			fclose(f);
 			goto err;
 		}
 
 		/* Append ')' at the end of the line */
-		if (line[strlen(line) - 1] == '\n') {
-			line[strlen(line)] = line[strlen(line) - 1];
-			line[strlen(line) - 2] = ')';
+		if (line[len - 1] == '\n') {
+			line[len] = line[len - 1];
+			line[len - 1] = ')';
 		} else {
 			/* This is the last char in the file and it's not \n */
-			line[strlen(line)] = ')';
+			line[len] = ')';
 		}
+		len++;
+		plen = strlen(patterns[i]);
 
 		/* Append '(' at the beginning of the line */
-		memcpy(patterns[i]+strlen(patterns[i]), "(", 1);
+		memcpy(patterns[i]+plen, "(", 1);
+		plen++;
 
 		/* Append the line to the current pattern */
-		memcpy(patterns[i]+strlen(patterns[i]), line, strlen(line));
+		memcpy(patterns[i]+plen, line, len);
 
 		memset(line, '\0', FILE_MAX_LINE);
 	}
@@ -358,9 +368,10 @@ static int load_pcres(int action)
 
 	/* Fix the patterns */
 	for (i=0; i < num_pcres_tmp; i++) {
+		plen = strlen(patterns[i]);
 
 		/* Convert empty groups in unmatcheable regular expression ^$ */
-		if (strlen(patterns[i]) == 1) {
+		if (plen == 1) {
 			patterns[i][0] = '^';
 			patterns[i][1] = '$';
 			patterns[i][2] = '\0';
@@ -368,19 +379,20 @@ static int load_pcres(int action)
 		}
 
 		/* Delete possible '\n' at the end of the pattern */
-		if (patterns[i][strlen(patterns[i])-1] == '\n') {
-			patterns[i][strlen(patterns[i])-1] = '\0';
+		if (patterns[i][plen-1] == '\n') {
+			patterns[i][plen-1] = '\0';
+			plen--;
 		}
 
 		/* Replace '\n' with '|' (except at the end of the pattern) */
-		for (j=0; j < strlen(patterns[i]); j++) {
-			if (patterns[i][j] == '\n' && j != strlen(patterns[i])-1) {
+		for (j=0; j < plen; j++) {
+			if (patterns[i][j] == '\n' && j != plen-1) {
 				patterns[i][j] = '|';
 			}
 		}
 
 		/* Add ')' at the end of the pattern */
-		patterns[i][strlen(patterns[i])] = ')';
+		patterns[i][plen] = ')';
 	}
 
 	/* Log the group patterns */

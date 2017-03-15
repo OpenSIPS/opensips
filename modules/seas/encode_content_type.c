@@ -164,7 +164,7 @@ int print_encoded_mime_type(FILE *fp,char *hdr,int hdrlen,unsigned int* payload,
 	 chsubtype="SUBTYPE_UNKNOWN";
 	 break;
       default:
-	 chsubtype="(didnt know this subtype existed)";
+	 chsubtype="(didn't know this subtype existed)";
    }
 
    fprintf(fp,"%sTYPE:[%s]\n",prefix,chtype);

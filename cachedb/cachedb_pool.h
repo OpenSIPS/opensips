@@ -30,13 +30,19 @@
 #include "cachedb_id.h"
 
 typedef struct cachedb_pool_con_t{
+	/* IMPORTANT: A structure overwriting this one defined
+	 * in a module implementing this interface MUST always
+	 * also overwrite these 3 fields, have them in the
+	 * beginning
+	 * EXMAPLE: modules/cachedb_local/cachedb_local.h lcache_con
+	 * structure definition*/
 	struct cachedb_id *id;
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
 } cachedb_pool_con;
 
 cachedb_pool_con* cachedb_pool_get(struct cachedb_id* id);
-cachedb_pool_con** filter_pool_by_scheme(str *scheme,int *size); 
+cachedb_pool_con** filter_pool_by_scheme(str *scheme,int *size);
 void cachedb_pool_insert(cachedb_pool_con *con);
 int cachedb_pool_remove(cachedb_pool_con *con);
 

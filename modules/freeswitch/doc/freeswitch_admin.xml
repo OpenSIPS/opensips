@@ -1,0 +1,49 @@
+<!-- Module User's Guide -->
+
+<chapter id="sec-admin-guide">
+	<title>&adminguide;</title>
+
+	<section id="sec-overview">
+	<title>Overview</title>
+	<para>
+	The <emphasis>"freeswitch"</emphasis> module is a C driver for the
+	FreeSWITCH Event Socket Layer interface. It can interact with one or more
+	FreeSWITCH servers either by issuing commands to them, or by receiving
+	events from them.
+	</para>
+	<para>
+	This driver can be seen as a centralized FreeSWITCH ESL connection manager.
+	OpenSIPS modules may use its API in order to easily establish, reference
+	and reuse ESL connections.
+	</para>
+	<para>
+	A FreeSWITCH ESL URL is of the form:
+	<emphasis role='bold'>fs://[username]:password@host[:port]</emphasis>.
+	The default ESL port is 8021.
+	</para>
+	</section>
+
+	<section id="sec-external-dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section id="sec-modparam">
+	<title>Exported Parameters</title>
+	</section>
+
+	<section id="sec-modfunc">
+	<title>Exported Functions</title>
+	</section>
+</chapter>
+

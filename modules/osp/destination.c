@@ -411,10 +411,10 @@ static void ospRecordCode(
                 if (!dest->endtime) {
                     dest->endtime = time(NULL);
                 } else {
-                    LM_DBG("180, 181, 182 or 183 end allready recorded\n");
+                    LM_DBG("180, 181, 182 or 183 end already recorded\n");
                 }
             } else {
-                LM_DBG("180, 181, 182 or 183 allready recorded\n");
+                LM_DBG("180, 181, 182 or 183 already recorded\n");
             }
             break;
         case 200:
@@ -431,7 +431,7 @@ static void ospRecordCode(
                     dest->destmedia[0] = '\0';
                 }
             } else {
-                LM_DBG("200 or 202 allready recorded\n");
+                LM_DBG("200 or 202 already recorded\n");
             }
             break;
         case 408:
@@ -439,7 +439,7 @@ static void ospRecordCode(
             if (!dest->endtime) {
                 dest->endtime = time(NULL);
             } else {
-                LM_DBG("408 or 487 end allready recorded\n");
+                LM_DBG("408 or 487 end already recorded\n");
             }
             break;
         default:

@@ -30,6 +30,7 @@
 #include "../../pvar.h"
 #include "../../route_struct.h"
 #include "../../resolve.h"
+#include "../../socket_info.h"
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fnmatch.h>
@@ -151,7 +152,7 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 		}
 
 		/* group not found */
-		if (!node || i == PERM_HASH_SIZE) {
+		if (!node) {
 			LM_DBG("specified group %u does not exist in hash table\n", grp);
 			return -2;
 		}
@@ -248,27 +249,70 @@ int find_group_in_hash_table(struct address_list** table,
 
 int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 		struct pm_part_struct *pm) {
-	int i;
+	int i, len;
     struct address_list *node;
+	struct mi_node *dst;
+	char *p, prbuf[PROTO_NAME_MAX_SIZE];
 
-	if (addf_mi_node_child(rpl, 0, 0, 0,
-				"%.*s\n",
-				pm->name.len, pm->name.s) == 0)
-		return -1;
+    for (i = 0; i < PERM_HASH_SIZE; i++) {
+		for (node = table[i]; node; node=node->next) {
 
-    for (i = 0; i < PERM_HASH_SIZE; i++)
-		for (node = table[i]; node; node=node->next)
-	    	if (addf_mi_node_child(rpl, 0, 0, 0,
-				   "\t%4d <%s,%u, %u, %d, %s, %s>",
-				   i,
-				   ip_addr2a(node->ip),
-				   node->grp,
-				   node->port,
-				   node->proto,
-				   node->pattern?node->pattern:"NULL",
-				   node->info?node->info:"NULL") == 0)
-					return -1;
-    return 0;
+			dst = add_mi_node_child(rpl, 0, MI_SSTR("dest"), NULL, 0);
+			if (!dst) {
+				LM_ERR("oom!\n");
+				return -1;
+			}
+
+			p = int2str(node->grp, &len);
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("grp"), p, len)) {
+				goto out_free;
+			}
+
+			p = ip_addr2a(node->ip);
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("ip"), p, strlen(p))) {
+				goto out_free;
+			}
+
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("mask"), MI_SSTR("32"))) {
+				goto out_free;
+			}
+
+			p = int2str(node->port, &len);
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("port"), p, len)) {
+				goto out_free;
+			}
+
+			if (node->proto == PROTO_NONE) {
+				p = "any";
+				len = 3;
+			} else {
+				p = proto2str(node->proto, prbuf);
+				len = p - prbuf;
+				p = prbuf;
+			}
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("proto"), p, len)) {
+				goto out_free;
+			}
+
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("pattern"),
+			                 node->pattern,
+			                 node->pattern ? strlen(node->pattern) : 0)) {
+				goto out_free;
+			}
+
+			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("context_info"),
+			                 node->info,
+			                 node->info ? strlen(node->info) : 0)) {
+				LM_ERR("oom!\n");
+				goto out_free;
+			}
+		}
+	}
+	return 0;
+
+out_free:
+	free_mi_node(dst);
+	return -1;
 }
 
 void empty_hash(struct address_list** table) {
@@ -479,14 +523,12 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
 		struct pm_part_struct *pm)
 {
     unsigned int count, i;
-	char *ip, *mask;
+	char *p, *ip, *mask, prbuf[PROTO_NAME_MAX_SIZE];
+	int len;
 	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
-    count = table[PERM_MAX_SUBNETS].grp;
+	struct mi_node *net;
 
-	if (addf_mi_node_child(rpl, 0, 0, 0,
-				   "%.*s\n",
-				   pm->name.len, pm->name.s) == 0)
-		return -1;
+    count = table[PERM_MAX_SUBNETS].grp;
 
     for (i = 0; i < count; i++) {
 		ip = ip_addr2a(&table[i].subnet->ip);
@@ -500,13 +542,64 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
 			LM_ERR("cannot print mask address\n");
 			continue;
 		}
-		if (addf_mi_node_child(rpl, 0, 0, 0,
-			       "\t%4d <%u, %s, %s, %u>",
-			       i, table[i].grp, ip_buff, mask,
-				   table[i].port) == 0)
-	    	return -1;
+
+		net = add_mi_node_child(rpl, 0, MI_SSTR("dest"), NULL, 0);
+		if (!net) {
+			LM_ERR("oom!\n");
+			return -1;
+		}
+
+		p = int2str(table[i].grp, &len);
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("grp"), p, len)) {
+			goto out_free;
+		}
+
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("ip"), ip_buff,
+		                 strlen(ip_buff))) {
+			goto out_free;
+		}
+
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("mask"), mask,
+		                 strlen(mask))) {
+			goto out_free;
+		}
+
+		p = int2str(table[i].port, &len);
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("port"), p, len)) {
+			goto out_free;
+		}
+
+		if (table[i].proto == PROTO_NONE) {
+			p = "any";
+			len = 3;
+		} else {
+			p = proto2str(table[i].proto, prbuf);
+			len = p - prbuf;
+			p = prbuf;
+		}
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("proto"), p, len)) {
+			goto out_free;
+		}
+
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("pattern"),
+		                 table[i].pattern,
+		                 table[i].pattern ? strlen(table[i].pattern) : 0)) {
+			goto out_free;
+		}
+
+		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("context_info"),
+		                 table[i].info,
+		                 table[i].info ? strlen(table[i].info) : 0)) {
+			LM_ERR("oom!\n");
+			goto out_free;
+		}
     }
-    return 0;
+
+	return 0;
+
+out_free:
+	free_mi_node(net);
+	return -1;
 }
 
 

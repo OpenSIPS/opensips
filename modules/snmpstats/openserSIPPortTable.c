@@ -193,7 +193,7 @@ void createRowsFromIPList(int *theList, int listSize, int protocol,
 		curIndexOfIP   = (NUM_IP_OCTETS + 1) * curSocketIdx;
 
 		/* Retrieve an existing row, or a new row if one doesn't
-		 * allready exist. */
+		 * already exist. */
 		currentRow = getRow(1, &theList[curIndexOfIP]);
 
 		if (currentRow == NULL) {
@@ -270,6 +270,8 @@ void initialize_table_openserSIPPortTable(void)
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in "
 			 "initialize_table_openserSIPPortTable_handler\n");
+		if (table_info)
+			SNMP_FREE(table_info);
 		return; /** mallocs failed */
 	}
 

@@ -41,6 +41,7 @@
 #include "../../ut.h"
 #include "../../resolve.h"
 #include "../../mem/mem.h"
+#include "../../trace_api.h"
 #include "httpd_load.h"
 #include "httpd_proc.h"
 
@@ -112,6 +113,7 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	struct ip_addr *_ip;
+
 
 	if (ip.s) {
 		ip.len = strlen(ip.s);
@@ -211,6 +213,7 @@ int httpd_bind(httpd_api_t *api)
 
 	api->lookup_arg = httpd_lookup_arg;
 	api->register_httpdcb = httpd_register_httpdcb;
+	api->get_server_info = httpd_get_server_info;
 	return 0;
 }
 
@@ -243,4 +246,5 @@ error:
 	free_mi_tree(rpl_tree);
 	return NULL;
 }
+
 

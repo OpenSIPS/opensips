@@ -1677,6 +1677,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	pv_value_t v;
 	str *result;
 	str sv;
+	char *s, *e, *p;
 
 	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
 		return -1;
@@ -1693,6 +1694,25 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					}
 					sv = v.rs;
 				}
+				/* security check - make sure we don't overflow the buffer */
+				if (sv.len > RE_MAX_SIZE) {
+					LM_ERR("regex too long [%.*s]\n", sv.len, sv.s);
+					return -1;
+				}
+				/* XXX: temporary use the reg_input_buf to un-escape the str */
+				for (s = sv.s, e = sv.s + sv.len, p = reg_input_buf; s < e; s++, p++) {
+					if (*s=='\\') {
+						if (s + 1 >= e)
+							break;
+						if (*(s + 1) == TR_RBRACKET || *(s + 1) == TR_LBRACKET) {
+							s++;
+							sv.len--;
+						}
+					}
+					*p = *s;
+				}
+				sv.s = reg_input_buf;
+
 				LM_DBG("Trying to apply regexp [%.*s] on : [%.*s]\n",
 						sv.len,sv.s,val->rs.len, val->rs.s);
 				if (reg_buf_len != sv.len || memcmp(reg_buf,sv.s,sv.len) != 0) {
@@ -1710,6 +1730,11 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					memcpy(reg_buf,sv.s,sv.len);
 				} else
 					LM_DBG("yay, we can use the pre-compile regexp\n");
+
+				if (val->rs.len >= RE_MAX_SIZE) {
+					LM_ERR("regex value too long [%.*s]\n", val->rs.len, val->rs.s);
+					return -1;
+				}
 
 				memcpy(reg_input_buf,val->rs.s,val->rs.len);
 				reg_input_buf[val->rs.len]=0;
@@ -2379,9 +2404,12 @@ error:
 		_tp->v.data = (void*)_spec; \
 	} else { /* string */ \
 		_ps = _p; \
-		while(is_in_str(_p, _in) && (skip_param_ws || !is_ws(*_p)) \
-				&& *_p!=TR_PARAM_MARKER && *_p!=TR_RBRACKET) \
-				_p++; \
+		while(is_in_str(_p, _in) && (skip_param_ws || !is_ws(*_p))) { \
+			if ((*_p==TR_PARAM_MARKER || *_p==TR_RBRACKET) && \
+					((_p)-1 < (_ps) || *((_p)-1) != '\\'))\
+				break; \
+			_p++; \
+		} \
 		if(*_p=='\0') \
 		{ \
 			LM_ERR("invalid param in transformation: %.*s!!\n", \

@@ -47,7 +47,7 @@ int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
-		str *buffer, str *page);
+		str *buffer, str *page, union sockaddr_union* cl_socket);
 static ssize_t ph_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 static struct mi_root *mi_framework_reload(struct mi_root* cmd, void* param);
 
@@ -238,7 +238,7 @@ int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
-		str *buffer, str *page)
+		str *buffer, str *page, union sockaddr_union* cl_socket)
 {
 	int mod = -1;
 	int cmd = -1;

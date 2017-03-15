@@ -35,10 +35,21 @@
 
 #include "iniparser.h"
 
+struct ld_conn {
+	LDAP* handle;
+	char is_used;
+
+	struct ld_conn* next;
+};
 
 struct ld_session {
 	char                    name[256];
-	LDAP*                   handle;
+	/**
+	 * pool of connections used for async queries
+	 */
+	struct ld_conn          conn_s;  /* synchronous connection */
+	struct ld_conn*         conn_pool; /* async connections pool */
+	unsigned int            pool_size;
 	char*                   host_name;
 	int                     version;
 	int                     server_search_timeout;
@@ -54,6 +65,7 @@ struct ld_session {
 	char*					req_cert;
 	struct ld_session*      next;
 };
+
 
 #define CFG_N_LDAP_HOST "ldap_server_url"
 #define CFG_N_LDAP_VERSION "ldap_version"
@@ -88,7 +100,7 @@ struct ld_session {
 #define CFG_DEF_LDAP_KEYFILE ""
 #define CFG_DEF_LDAP_REQCERT "NEVER"
 
-extern int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d);
+extern int add_ld_session(char* _name,  dictionary* _d);
 extern struct ld_session* get_ld_session(char* _name);
 extern int free_ld_sessions();
 

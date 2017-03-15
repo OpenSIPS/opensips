@@ -32,11 +32,9 @@
 #include "t_msgbuilder.h"
 
 
-typedef struct _async_ctx {
-	/* the resume function to be called when data to read is available */
-	async_resume_module *resume_f;
-	/* parameter registered to the resume function */
-	void *resume_param;
+typedef struct _async_tm_ctx {
+	/* generic async context - MUST BE FIRST */
+	async_ctx  async;
 	/* the script route to be used to continue after the resume function */
 	int resume_route;
 	/* the type of the route where the suspend was done */
@@ -53,7 +51,7 @@ typedef struct _async_ctx {
 	/* e2e ACK */
 	struct cell *e2eack_t;
 
-} async_ctx;
+} async_tm_ctx;
 
 extern int return_code; /* from action.c, return code */
 
@@ -74,7 +72,7 @@ int t_resume_async(int *fd, void *param)
 {
 	static struct sip_msg faked_req;
 	static struct ua_client uac;
-	async_ctx *ctx = (async_ctx *)param;
+	async_tm_ctx *ctx = (async_tm_ctx *)param;
 	struct cell *backup_t;
 	struct cell *backup_cancelled_t;
 	struct cell *backup_e2eack_t;
@@ -83,7 +81,10 @@ int t_resume_async(int *fd, void *param)
 	struct cell *t= ctx->t;
 	int route;
 
-	LM_DBG("resuming on fd %d, transaction %p \n",*fd, t);
+	if (fd)
+		LM_DBG("resuming on fd %d, transaction %p \n",*fd, t);
+	else
+		LM_DBG("resuming without a fd, transaction %p \n", t);
 
 	if (current_processing_ctx) {
 		LM_CRIT("BUG - a context already set!\n");
@@ -122,31 +123,39 @@ int t_resume_async(int *fd, void *param)
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 	/* call the resume function in order to read and handle data */
-	return_code = ctx->resume_f( *fd, &faked_req, ctx->resume_param );
+	return_code = ((async_resume_module*)(ctx->async.resume_f))
+		( (fd ? *fd: -1), &faked_req, ctx->async.resume_param );
 	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the resume route */
 		goto restore;
+	} else if (async_status==ASYNC_DONE_NO_IO) {
+		/* don't do any change on the fd, since the module handled everything */
+		goto route;
 	} else if (async_status==ASYNC_CHANGE_FD) {
 		if (return_code<0) {
 			LM_ERR("ASYNC_CHANGE_FD: given file descriptor shall be positive!\n");
 			goto restore;
-		} else if (return_code > 0 && return_code == *fd) {
+		} else if (return_code > 0 && fd && return_code == *fd) {
 			/*trying to add the same fd; shall continue*/
 			LM_CRIT("You are trying to replace the old fd with the same fd!"
 					"Will act as in ASYNC_CONTINUE!\n");
 			goto restore;
 		}
 
-		/* remove the old fd from the reactor */
-		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
-		*fd=return_code;
+		/* if there was a file descriptor, remove it from the reactor */
+		if (fd) {
+			/* remove the old fd from the reactor */
+			reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+			*fd=return_code;
+		}
 
 		/* insert the new fd inside the reactor */
-		if (reactor_add_reader( *fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
+		if(reactor_add_reader(return_code,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
-				return_code = ctx->resume_f( *fd, &faked_req, ctx->resume_param );
-				if (async_status == ASYNC_CHANGE_FD)
+				return_code = ((async_resume_module*)(ctx->async.resume_f))
+					( return_code, &faked_req, ctx->async.resume_param );
+				if (async_status == ASYNC_CHANGE_FD && fd)
 					*fd=return_code;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 			goto route;
@@ -156,13 +165,15 @@ int t_resume_async(int *fd, void *param)
 		goto restore;
 	}
 
-	/* remove from reactor, we are done */
-	reactor_del_reader( *fd, -1, IO_FD_CLOSING);
-
-	if (async_status == ASYNC_DONE_CLOSE_FD)
-		close(*fd);
+	if (fd) {
+		/* remove from reactor, we are done */
+		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+	}
 
 route:
+	if (async_status == ASYNC_DONE_CLOSE_FD && fd)
+		close(*fd);
+
 	/* run the resume_route (some type as the original one) */
 	swap_route_type(route, ctx->route_type);
 	run_resume_route( ctx->resume_route, &faked_req);
@@ -198,9 +209,7 @@ restore:
 
 int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 {
-	async_ctx *ctx = NULL;
-	async_resume_module *ctx_f;
-	void *ctx_p;
+	async_tm_ctx *ctx = NULL;
 	struct cell *t;
 	int r;
 	int fd;
@@ -236,9 +245,14 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto failure;
 	}
 
+	if ( (ctx=shm_malloc(sizeof(async_tm_ctx)))==NULL) {
+		LM_ERR("failed to allocate new ctx\n");
+		goto failure;
+	}
+
 	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
 	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
-			&ctx_f, &ctx_p,
+			(async_ctx*)ctx,
 			(char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
 			(char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
 			(char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
@@ -253,6 +267,10 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		) {
 			goto sync;
 		}
+	} else if (async_status==ASYNC_NO_FD) {
+		/* async was succesfully launched but without a FD resume
+		 * in this case, we need to push the async ctx back to the
+		 * function, so it can trigger the resume later, by itself */
 	} else if (async_status==ASYNC_NO_IO) {
 		/* no IO, so simply go for resume route */
 		goto resume;
@@ -264,7 +282,8 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 				"You should use this status only from the"
 				"resume function in case something went wrong"
 				"and you have other alternatives!\n");
-		/*FIXME should we go to resume or exit?it's quite an invalid scenario */
+		/* FIXME should we go to resume or exit? as it's quite 
+		   an invalid scenario */
 		goto resume;
 	} else {
 		/* generic error, go for resume route */
@@ -279,13 +298,6 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto sync;
 	}
 
-	if ( (ctx=shm_malloc(sizeof(async_ctx)))==NULL) {
-		LM_ERR("failed to allocate new ctx\n");
-		goto sync;
-	}
-
-	ctx->resume_f = ctx_f;
-	ctx->resume_param = ctx_p;
 	ctx->resume_route = resume_route;
 	ctx->route_type = route_type;
 	ctx->msg_ctx = current_processing_ctx;
@@ -300,33 +312,34 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	reset_cancelled_t();
 	reset_e2eack_t();
 
-	/* place the FD + resume function (as param) into reactor */
-	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
-		LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
-		goto sync;
+	if (async_status!=ASYNC_NO_FD) {
+		LM_DBG("placing async job into reactor\n");
+		/* place the FD + resume function (as param) into reactor */
+		if (reactor_add_reader(fd,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
+			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
+		 	/* as attaching to reactor failed, we have to run in sync mode,
+			 * so we have to restore the environment -- razvanc */
+			current_processing_ctx = ctx->msg_ctx;
+			set_t(t);
+			set_cancelled_t(ctx->cancelled_t);
+			set_e2eack_t(ctx->e2eack_t);
+			goto sync;
+		}
 	}
 
 	/* done, break the script */
 	return 0;
 
 sync:
-	if (ctx) {
-		/*
-		 * the context was moved in reactor, but the reactor could not
-		 * fullfil the request - we have to restore the environment -- razvanc
-		 */
-		current_processing_ctx = ctx->msg_ctx;
-		set_t(t);
-		set_cancelled_t(ctx->cancelled_t);
-		set_e2eack_t(ctx->e2eack_t);
-		shm_free(ctx);
-	}
 	/* run the resume function */
 	do {
-		return_code = ctx_f( fd, msg, ctx_p );
+		return_code = ((async_resume_module*)(ctx->async.resume_f))
+			( fd, msg, ctx->async.resume_param );
 		if (async_status == ASYNC_CHANGE_FD)
 			fd = return_code;
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
+	/* get rid of the context, useless at this point further */
+	shm_free(ctx);
 	/* run the resume route in sync mode */
 	run_resume_route( resume_route, msg);
 
@@ -337,6 +350,8 @@ failure:
 	/* execute here the resume route with failure indication */
 	return_code = -1;
 resume:
+	/* get rid of the context, useless at this point further */
+	if (ctx) shm_free(ctx);
 	/* run the resume route */
 	run_resume_route( resume_route, msg);
 	/* the triggering route is terminated and whole script ended */

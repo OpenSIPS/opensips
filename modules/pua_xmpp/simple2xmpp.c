@@ -62,7 +62,6 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	str from_uri={0, 0};
 	struct hdr_field* hdr= NULL;
 	str body;
-	xmlDocPtr doc= NULL;
 	int is_terminated= 0;
 	str id;
 	ua_pres_t dialog;
@@ -206,7 +205,6 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 			LM_ERR("in function build_xmpp_content\n");
 			goto error;
 		}
-		xmlFreeDoc(doc);
 	}
 	else
 	{
@@ -237,8 +235,6 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	return 1;
 
 error:
-	if(doc)
-		xmlFreeDoc(doc);
 	return 0;
 }
 

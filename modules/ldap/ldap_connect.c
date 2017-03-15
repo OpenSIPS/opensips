@@ -40,6 +40,17 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 
+#define W_SET_OPTION(handle, opt, str, name) \
+	do { \
+		if (ldap_set_option( handle, opt, str) \
+			!= LDAP_OPT_SUCCESS) { \
+			LM_ERR("[%s]: could not set " # opt " [%s]\n" \
+					, name, str); \
+			return -1; \
+		} \
+	} while (0);
+
+
 static inline int ldap_word2upper(char* input)
 {
 	int index=0;
@@ -102,18 +113,8 @@ error:
 }
 
 
-int ldap_connect(char* _ld_name)
+int ldap_connect(char* _ld_name, struct ld_conn* conn)
 {
-	#define W_SET_OPTION(handle, opt, str, name) \
-		do { \
-			if (ldap_set_option( handle, opt, str) \
-				!= LDAP_OPT_SUCCESS) { \
-				LM_ERR("[%s]: could not set " # opt " [%s]\n" \
-						, name, str); \
-				return -1; \
-			} \
-		} while (0);
-
 	int rc;
 	int ldap_proto_version;
 	int req_cert_value;
@@ -121,6 +122,10 @@ int ldap_connect(char* _ld_name)
 	struct ld_session* lds;
 	struct berval ldap_cred;
 	struct berval* ldap_credp;
+
+	struct ld_conn* ldap_conn;
+
+	LDAP* handle = NULL;
 
 	/*
 	struct berval* serv_cred = (struct berval*)pkg_malloc(sizeof(struct berval));
@@ -144,7 +149,7 @@ int ldap_connect(char* _ld_name)
 	 * ldap_initialize
 	 */
 
-	rc = ldap_initialize(&lds->handle, lds->host_name);
+	rc = ldap_initialize(&handle, lds->host_name);
 	if (rc != LDAP_SUCCESS)
 	{
 		LM_ERR(	"[%s]: ldap_initialize (%s) failed: %s\n",
@@ -172,7 +177,7 @@ int ldap_connect(char* _ld_name)
 			lds->version);
 		return -1;
 	}
-	if (ldap_set_option(lds->handle,
+	if (ldap_set_option(handle,
 				LDAP_OPT_PROTOCOL_VERSION,
 				&ldap_proto_version)
 			!= LDAP_OPT_SUCCESS)
@@ -184,7 +189,7 @@ int ldap_connect(char* _ld_name)
 	}
 
 	/* LDAP_OPT_RESTART */
-	if (ldap_set_option(lds->handle,
+	if (ldap_set_option(handle,
 				LDAP_OPT_RESTART,
 				LDAP_OPT_ON)
 			!= LDAP_OPT_SUCCESS) {
@@ -209,7 +214,7 @@ int ldap_connect(char* _ld_name)
 	/* LDAP_OPT_NETWORK_TIMEOUT */
 	if ((lds->network_timeout.tv_sec > 0) || (lds->network_timeout.tv_usec > 0))
 	{
-		if (ldap_set_option(lds->handle,
+		if (ldap_set_option(handle,
 					LDAP_OPT_NETWORK_TIMEOUT,
 					(const void *)&lds->network_timeout)
 				!= LDAP_OPT_SUCCESS)
@@ -233,7 +238,7 @@ int ldap_connect(char* _ld_name)
 		    (CFG_DEF_LDAP_CLIENT_BIND_TIMEOUT % 1000) * 1000;
 	}
 
-	rc = ldap_set_option(lds->handle, LDAP_OPT_TIMEOUT, &lds->client_bind_timeout);
+	rc = ldap_set_option(handle, LDAP_OPT_TIMEOUT, &lds->client_bind_timeout);
 	if(rc != LDAP_SUCCESS){
 	    LM_ERR("[%s]: ldap set option LDAP_OPT_TIMEOUT failed\n", _ld_name);
 	    return -1;
@@ -252,13 +257,13 @@ int ldap_connect(char* _ld_name)
 	/* configure tls */
 	if (*lds->cacertfile && *lds->certfile && *lds->keyfile) {
 
-		W_SET_OPTION(lds->handle, LDAP_OPT_X_TLS_CACERTFILE,
+		W_SET_OPTION(handle, LDAP_OPT_X_TLS_CACERTFILE,
 				lds->cacertfile, _ld_name);
 
-		W_SET_OPTION(lds->handle, LDAP_OPT_X_TLS_CERTFILE,
+		W_SET_OPTION(handle, LDAP_OPT_X_TLS_CERTFILE,
 				lds->certfile, _ld_name);
 
-		W_SET_OPTION(lds->handle, LDAP_OPT_X_TLS_KEYFILE,
+		W_SET_OPTION(handle, LDAP_OPT_X_TLS_KEYFILE,
 				lds->keyfile, _ld_name);
 
 		if (ldap_word2upper(lds->req_cert) != 0)
@@ -267,14 +272,14 @@ int ldap_connect(char* _ld_name)
 		if ((req_cert_value = get_req_cert_param(lds->req_cert)) < 0)
 			return -1;
 
-		if (ldap_set_option( lds->handle, LDAP_OPT_X_TLS_REQUIRE_CERT,
+		if (ldap_set_option( handle, LDAP_OPT_X_TLS_REQUIRE_CERT,
 					&req_cert_value) != LDAP_OPT_SUCCESS) {
 				LM_ERR("[%s]: could not set LDAP_OPT_X_TLS_REQUIRE_CERT [%s]\n"
 						, _ld_name, lds->req_cert);
 				return -1;
 		}
 
-		int ret = ldap_start_tls_s(lds->handle, NULL, NULL);
+		int ret = ldap_start_tls_s(handle, NULL, NULL);
 
 		switch (ret) {
 		case LDAP_SUCCESS:
@@ -283,17 +288,17 @@ int ldap_connect(char* _ld_name)
 			break;
 
 		case LDAP_CONNECT_ERROR:
-			ldap_get_option(lds->handle,
+			ldap_get_option(handle,
 						LDAP_OPT_DIAGNOSTIC_MESSAGE, (void *)&errmsg);
 			LM_ERR("ldap_Start_tls_s(): %s\n", errmsg);
 			ldap_memfree(errmsg);
-			ldap_unbind_ext_s(lds->handle, NULL, NULL);
+			ldap_unbind_ext(handle, NULL, NULL);
 
 			return -1;
 
 		default:
 			LM_ERR("ldap_start_tls_s(): %s\n", ldap_err2string(ret));
-			ldap_unbind_ext_s(lds->handle, NULL,NULL);
+			ldap_unbind_ext(handle, NULL,NULL);
 			return -1;
 		}
 
@@ -307,8 +312,8 @@ int ldap_connect(char* _ld_name)
 	* ldap_sasl_bind (LDAP_SASL_SIMPLE)
 	*/
 
-	rc = ldap_sasl_bind_s(
-		lds->handle,
+	rc = ldap_sasl_bind_s (
+		handle,
 		lds->bind_dn,
 		LDAP_SASL_SIMPLE,
 		ldap_credp,
@@ -328,53 +333,95 @@ int ldap_connect(char* _ld_name)
 		_ld_name,
 		lds->host_name);
 
+	/* it's an already defined connection; just set the new handle */
+	if (conn) {
+		conn->handle = handle;
+	} else {
+		ldap_conn = pkg_malloc(sizeof(struct ld_conn));
+		if (ldap_conn == NULL) {
+			LM_ERR("no more pkg mem!\n");
+			return -1;
+		}
+
+		memset(ldap_conn, 0, sizeof(struct ld_conn));
+		ldap_conn->handle = handle;
+
+		if (lds->conn_pool == NULL) {
+			lds->conn_pool = ldap_conn;
+		} else {
+			ldap_conn->next = lds->conn_pool;
+			lds->conn_pool = ldap_conn;
+		}
+		lds->pool_size++;
+	}
+
+
 	return 0;
 }
 
-int ldap_disconnect(char* _ld_name)
+int ldap_disconnect(char* _ld_name, struct ld_conn* conn)
 {
 	struct ld_session* lds;
+	struct ld_conn *foo=NULL, *it;
 
 	/*
 		* get ld session
 		*/
 
-	if ((lds = get_ld_session(_ld_name)) == NULL)
-	{
-		LM_ERR("ld_session [%s] not found\n", _ld_name);
-		return -1;
-	}
+	/* disconnect all and free */
+	if (!conn) {
+		if ((lds = get_ld_session(_ld_name)) == NULL)
+		{
+			LM_ERR("ld_session [%s] not found\n", _ld_name);
+			return -1;
+		}
 
-	if (lds->handle == NULL) {
-		return 0;
-	}
+		if (lds->conn_pool == NULL) {
+			return 0;
+		}
 
-	ldap_unbind_ext(lds->handle, NULL, NULL);
-	lds->handle = NULL;
+
+		for (it=lds->conn_pool; it; foo=it, it=it->next) {
+			ldap_unbind_ext_s(it->handle, NULL, NULL);
+			if (foo)
+				pkg_free(foo);
+		}
+
+		/* check for last element in list */
+		if (foo)
+			pkg_free(foo);
+
+		lds->conn_pool = NULL;
+	} else {
+		ldap_unbind_ext_s(conn->handle, NULL, NULL);
+		conn->handle = NULL;
+		conn->is_used = 0;
+	}
 
 	return 0;
 }
 
-int ldap_reconnect(char* _ld_name)
+int ldap_reconnect(char* _ld_name, struct ld_conn* conn)
 {
 	int rc;
 
-	if (ldap_disconnect(_ld_name) != 0)
+	if (conn->handle && ldap_disconnect(_ld_name, conn) != 0)
 	{
 		LM_ERR("[%s]: disconnect failed\n", _ld_name);
 		return -1;
 	}
 
-	if ((rc = ldap_connect(_ld_name)) != 0)
+	if ((rc = ldap_connect(_ld_name, conn)) != 0)
 	{
 		LM_ERR("[%s]: reconnect failed\n",
 				_ld_name);
 	}
 	else
 	{
-		LM_ERR("[%s]: LDAP reconnect successful\n",
+		LM_DBG("[%s]: LDAP reconnect successful\n",
 				_ld_name);
 	}
+
 	return rc;
 }
 
@@ -407,3 +454,5 @@ int ldap_get_vendor_version(char** _version)
 	*_version = version;
 	return 0;
 }
+
+#undef W_SET_OPTION

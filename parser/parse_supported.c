@@ -37,7 +37,7 @@
 /*
  * Parse Supported HF body.
  */
-static inline int parse_supported_body(str *body, unsigned int *sup)
+int parse_supported_body(str *body, unsigned int *sup)
 {
 	register char* p;
 	register unsigned int val;

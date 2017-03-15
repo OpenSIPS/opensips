@@ -51,8 +51,10 @@ static int backup_config();
  * @param ap format arguments
  */
 void conf_error(cfg_t *cfg, const char * fmt, va_list ap) {
-	// FIXME this don't seems to work reliable, produces strange error messages
-	LM_GEN1(L_ERR, (char *) fmt, ap);
+	/* FIXME this don't seems to work reliable, produces strange error messages */
+	static char buf[2048];
+	snprintf(buf, 2048, fmt, ap);
+	LM_ERR("%s\n", buf);
 }
 
 
@@ -340,8 +342,10 @@ static int save_route_data_recursor(struct route_tree_item * rt, FILE * outfile)
 }
 
 static int backup_config(void) {
-	FILE * from, * to;
-	char * backup_file, ch;
+	FILE * from = NULL, * to = NULL;
+	char * backup_file;
+	int ch;
+	int ret = -1;
 	LM_INFO("start configuration backup\n");
 	if((backup_file = pkg_malloc(strlen(config_file) + strlen (".bak") + 1)) == NULL){
 		LM_ERR("out of private memory\n");
@@ -384,17 +388,23 @@ static int backup_config(void) {
 
 	if (fclose(from)==EOF) {
 		LM_ERR("Error closing source file.\n");
-		goto errout;
+		goto close_to;
 	}
 
 	if (fclose(to)==EOF) {
 		LM_ERR("Error closing destination file.\n");
-		goto errout;
+		goto exit;
 	}
 	LM_NOTICE("backup written to %s\n", backup_file);
-	pkg_free(backup_file);
-	return 0;
+	ret = 0;
+	goto exit;
 errout:
+	if (from)
+		fclose(from);
+close_to:
+	if (to)
+		fclose(to);
+exit:
 	pkg_free(backup_file);
-	return -1;
+	return ret;
 }

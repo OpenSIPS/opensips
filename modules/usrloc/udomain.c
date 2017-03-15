@@ -46,9 +46,12 @@
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
 #include "ureplication.h"
+#include "ul_callback.h"
+#include "usrloc.h"
 
 
 extern int max_contact_delete;
+extern int cid_regen;
 extern db_key_t *cid_keys;
 extern db_val_t *cid_vals;
 int cid_len=0;
@@ -137,16 +140,27 @@ static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
 static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
 static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
 static str ei_aor_name = str_init("aor");
-static str ei_c_addr_name = str_init("address");
+static str ei_c_uri_name = str_init("uri");
 static str ei_c_recv_name = str_init("received");
+static str ei_c_path_name = str_init("path");
+static str ei_c_qval_name = str_init("qval");
+static str ei_c_socket_name = str_init("socket");
+static str ei_c_bflags_name = str_init("bflags");
+static str ei_c_expires_name = str_init("expires");
 static str ei_callid_name = str_init("callid");
 static str ei_cseq_name = str_init("cseq");
+static evi_params_p ul_contact_event_params;
 static evi_params_p ul_event_params;
 static evi_param_p ul_aor_param;
-static evi_params_p ul_contact_event_params;
-static evi_param_p ul_c_addr_param, ul_c_callid_param;
 static evi_param_p ul_c_aor_param;
+static evi_param_p ul_c_uri_param;
 static evi_param_p ul_c_recv_param;
+static evi_param_p ul_c_path_param;
+static evi_param_p ul_c_qval_param;
+static evi_param_p ul_c_socket_param;
+static evi_param_p ul_c_bflags_param;
+static evi_param_p ul_c_expires_param;
+static evi_param_p ul_c_callid_param;
 static evi_param_p ul_c_cseq_param;
 
 /*! \brief
@@ -203,27 +217,65 @@ int ul_event_init(void)
 	}
 	memset(ul_contact_event_params, 0, sizeof(evi_params_t));
 
-	ul_c_addr_param = evi_param_create(ul_contact_event_params, &ei_c_addr_name);
-	if (!ul_c_addr_param) {
-		LM_ERR("cannot create contact address parameter\n");
-		return -1;
-	}
-
 	ul_c_aor_param = evi_param_create(ul_contact_event_params, &ei_aor_name);
 	if (!ul_c_aor_param) {
 		LM_ERR("cannot create contact aor parameter\n");
 		return -1;
 	}
 
-	ul_c_callid_param = evi_param_create(ul_contact_event_params, &ei_callid_name);
-	if (!ul_c_callid_param) {
-		LM_ERR("cannot create callid parameter\n");
+	ul_c_uri_param = evi_param_create(ul_contact_event_params,
+		&ei_c_uri_name);
+	if (!ul_c_uri_param) {
+		LM_ERR("cannot create contact address parameter\n");
 		return -1;
 	}
 
-	ul_c_recv_param = evi_param_create(ul_contact_event_params, &ei_c_recv_name);
+	ul_c_recv_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_recv_name);
 	if (!ul_c_recv_param) {
 		LM_ERR("cannot create received parameter\n");
+		return -1;
+	}
+
+	ul_c_path_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_path_name);
+	if (!ul_c_path_param) {
+		LM_ERR("cannot create path parameter\n");
+		return -1;
+	}
+
+	ul_c_qval_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_qval_name);
+	if (!ul_c_qval_param) {
+		LM_ERR("cannot create Qval parameter\n");
+		return -1;
+	}
+
+	ul_c_socket_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_socket_name);
+	if (!ul_c_socket_param) {
+		LM_ERR("cannot create socket parameter\n");
+		return -1;
+	}
+
+	ul_c_bflags_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_bflags_name);
+	if (!ul_c_bflags_param) {
+		LM_ERR("cannot create bflags parameter\n");
+		return -1;
+	}
+
+	ul_c_expires_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_expires_name);
+	if (!ul_c_expires_param) {
+		LM_ERR("cannot create expires parameter\n");
+		return -1;
+	}
+
+	ul_c_callid_param = evi_param_create(ul_contact_event_params,
+		&ei_callid_name);
+	if (!ul_c_callid_param) {
+		LM_ERR("cannot create callid parameter\n");
 		return -1;
 	}
 
@@ -253,34 +305,70 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("cannot raise event\n");
 }
 
-void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
-		str *aor, int cseq)
+
+void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 {
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
 		return;
 	}
-	if (evi_param_set_str(ul_c_addr_param, addr) < 0) {
-		LM_ERR("cannot set contact address parameter\n");
-		return;
-	}
 
-	if (evi_param_set_str(ul_c_aor_param, aor) < 0) {
+	/* the AOR */
+	if (evi_param_set_str(ul_c_aor_param, _c->aor) < 0) {
 		LM_ERR("cannot set contact aor parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_callid_param, callid) < 0) {
-		LM_ERR("cannot set callid parameter\n");
+	/* the contact URI */
+	if (evi_param_set_str(ul_c_uri_param, &_c->c) < 0) {
+		LM_ERR("cannot set contact URI parameter\n");
 		return;
 	}
 
-	if (evi_param_set_str(ul_c_recv_param, recv) < 0) {
+	/* the received URI */
+	if (evi_param_set_str(ul_c_recv_param, &_c->received) < 0) {
 		LM_ERR("cannot set received parameter\n");
 		return;
 	}
 
-	if (evi_param_set_int(ul_c_cseq_param, &cseq) < 0) {
+	/* the PATH URI */
+	if (evi_param_set_str(ul_c_path_param, &_c->path) < 0) {
+		LM_ERR("cannot set path parameter\n");
+		return;
+	}
+
+	/* the Q value */
+	if (evi_param_set_int(ul_c_qval_param, &_c->q) < 0) {
+		LM_ERR("cannot set Qval parameter\n");
+		return;
+	}
+
+	/* the socket */
+	if (evi_param_set_str(ul_c_socket_param, &_c->sock->sock_str) < 0) {
+		LM_ERR("cannot set socket parameter\n");
+		return;
+	}
+
+	/* the Branch flags */
+	if (evi_param_set_int(ul_c_bflags_param, &_c->flags) < 0) {
+		LM_ERR("cannot set bflags parameter\n");
+		return;
+	}
+
+	/* the Expires value */
+	if (evi_param_set_int(ul_c_expires_param, &_c->expires) < 0) {
+		LM_ERR("cannot set expires parameter\n");
+		return;
+	}
+
+	/* the Call-ID value */
+	if (evi_param_set_str(ul_c_callid_param, &_c->callid) < 0) {
+		LM_ERR("cannot set callid parameter\n");
+		return;
+	}
+
+	/* the CSeq value */
+	if (evi_param_set_int(ul_c_cseq_param, &_c->cseq) < 0) {
 		LM_ERR("cannot set cseq parameter\n");
 		return;
 	}
@@ -458,7 +546,7 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 
 	/* socket name */
 	p  = (char*)VAL_STRING(vals+11);
-	if (VAL_NULL(vals+10) || p==0 || p[0]==0){
+	if (VAL_NULL(vals+11) || p==0 || p[0]==0){
 		ci.sock = 0;
 	} else {
 		if (parse_phostport( p, strlen(p), &host.s, &host.len,
@@ -525,6 +613,9 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	unsigned short aorhash, clabel;
 	unsigned int   rlabel;
 	UNUSED(n);
+
+	time_t old_expires=0;
+	char suggest_regen=0;
 
 	urecord_t* r;
 	ucontact_t* c;
@@ -639,36 +730,74 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 					goto error;
 				}
 
+				/* set the record label */
 				sl = r->aorhash&(_d->size-1);
-				if (_d->table[sl].next_label <= rlabel)
-					_d->table[sl].next_label = rlabel;
-				else if (_d->table[sl].next_label == 0)
-					_d->table[sl].next_label = rand();
 
-				r->label = CID_NEXT_RLABEL(_d, sl);
-				r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+				if ((unsigned short)r->aorhash == aorhash) {
+					r->label = rlabel;
+				}/* else we'll get in trouble below */
+
 			} else if (ret < 0) {
 				unlock_udomain(_d, &user);
 				goto error;
 			} else {
-				if (r->next_clabel <= clabel)
-					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+				/* record found */
+				sl = r->aorhash&(_d->size-1);
 			}
 
 			if ((unsigned short)r->aorhash != aorhash) {
-				LM_ERR("failed to match aorhashes for user %.*s,"
-						"db aorhash [%u] new aorhash [%u],"
-						"db contactid [%" PRIu64 "]\n",
-						user.len, user.s, aorhash,
-						(unsigned short)(r->aorhash&(_d->size-1)),
-						ci->contact_id);
-				if (ret > 0) {
-					LM_DBG("release bogus urecord\n");
-					release_urecord(r, 0);
+				/* we've got an invalid contact;
+				 * if regeneration not set we throw error else we will try generate
+				 * new indexes for record and contact labels */
+				if ( !cid_regen ) {
+					suggest_regen=1;
+					LM_ERR("failed to match aorhashes for user %.*s,"
+							"db aorhash [%u] new aorhash [%u],"
+							"db contactid [%" PRIu64 "]\n",
+							user.len, user.s, aorhash,
+							(unsigned short)(r->aorhash&(_d->size-1)),
+							ci->contact_id);
+					if (ret > 0) {
+						LM_DBG("release bogus urecord\n");
+						release_urecord(r, 0);
+					}
+					unlock_udomain(_d, &user);
+					continue;
+				} else {
+					/* invalid contact
+					 * regenerate aor label and contact label if they're not */
+					if ( r->label == 0 ) {
+						if (_d->table[sl].next_label == 0)
+							_d->table[sl].next_label = rand();
+
+						r->label = CID_NEXT_RLABEL(_d, sl);
+					} else {
+						if (_d->table[sl].next_label == 0)
+							_d->table[sl].next_label = r->label;
+					}
+
+					if (r->next_clabel == 0)
+						r->next_clabel = rand();
+
+					old_expires = ci->expires;
+
+					/* mark contact with broken contact id as expired for deletion */
+					ci->expires = 1;
 				}
-				unlock_udomain(_d, &user);
-				continue;
+			} else {
+				/* we've got a valid contact */
+				/* update indexes accordingly */
+				sl = r->aorhash&(_d->size-1);
+
+				if (_d->table[sl].next_label < rlabel || _d->table[sl].next_label == 0)
+					_d->table[sl].next_label = rlabel + 1;
+
+				if (r->next_clabel < clabel || r->next_clabel == 0)
+					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
+
+				r->label = rlabel;
 			}
+
 
 			if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
 				LM_ERR("inserting contact failed\n"
@@ -687,7 +816,47 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 
 			/* We have to do this, because insert_ucontact sets state to CS_NEW
 			 * and we have the contact in the database already */
-			c->state = CS_SYNC;
+			/* if contact id regeneration requested then we need to update the
+			 * database so we set the state to CS_DIRTY */
+			if ( !cid_regen )
+				c->state = CS_SYNC;
+			else {
+				/* mark for removal if we've it has an invalid aorhash */
+				if (old_expires)
+					c->state = CS_DIRTY;
+				else
+					c->state = CS_SYNC;
+			}
+
+			/* if we've found a broken contact id and regeneration set
+			 * reinsert the newly created contact that will have a valid contact id */
+			if (cid_regen && old_expires) {
+				/* rebuild the contact id for this contact */
+				ci->contact_id = pack_indexes(r->aorhash, r->label, r->next_clabel);
+				r->next_clabel = CLABEL_INC_AND_TEST(r->next_clabel);
+
+				ci->expires = old_expires;
+
+				if ( (c=mem_insert_ucontact(r, &contact, ci)) == 0) {
+					LM_ERR("inserting contact failed\n"
+							"Found a bad contact with id:[%" PRIu64 "] "
+							"aor:[%.*s] contact:[%.*s] received:[%.*s]!\n"
+							"Will continue but that contact needs to be REMOVED!!\n",
+							ci->contact_id,
+							r->aor.len, r->aor.s,
+							contact.len, contact.s,
+							ci->received.len, ci->received.s);
+					unlock_udomain(_d, &user);
+					free_ucontact(c);
+					continue;
+				}
+
+				/* mark for database insertion */
+				c->state = CS_NEW;
+
+				LM_DBG("regenerated contact id to %"PRIu64"\n", ci->contact_id);
+			}
+
 			unlock_udomain(_d, &user);
 		}
 
@@ -703,6 +872,16 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	} while(RES_ROW_N(res)>0);
 
 	ul_dbf.free_result(_c, res);
+
+	if ( suggest_regen ) {
+		LM_NOTICE("At least 1 contact(s) from the database has invalid contact_id!\n"
+				"Possible causes for this can be:\n"
+				"\t* you are migrating your location table from a version older than 2.2\n"
+				"\t* you have changed 'hash_size' module parameter from "
+				"when current contact_id's were generated;\n"
+				"If you want to regenerate new contact_id's for the broken entries"
+				" enable 'regen_broken_contactid' module parameter.\n");
+	}
 
 	/* for each not populated slot with record label
 	 * populate it*/
@@ -975,10 +1154,13 @@ int mem_timer_udomain(udomain_t* _d)
 				flush=1;
 
 			/* Remove the entire record if it is empty */
-			if (ptr->contacts == 0)
+			if (ptr->contacts == NULL)
 			{
+				if (exists_ulcb_type(UL_AOR_EXPIRE))
+					run_ul_callbacks(UL_AOR_EXPIRE, ptr);
+
 				iterator_delete(&prev);
-				mem_delete_urecord(_d,ptr);
+				mem_delete_urecord(_d, ptr);
 			}
 		}
 
@@ -1096,6 +1278,9 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 	} else {
 		get_static_urecord( _d, _aor, _r);
 	}
+
+	if (exists_ulcb_type(UL_AOR_INSERT))
+		run_ul_callbacks(UL_AOR_INSERT, *_r);
 
 	return 0;
 }

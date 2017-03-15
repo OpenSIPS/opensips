@@ -213,8 +213,9 @@ static int proto_udp_send(struct socket_info* source,
 again:
 	n=sendto(source->socket, buf, len, 0, &to->s, tolen);
 	if (n==-1){
-		LM_ERR("sendto(sock,%p,%d,0,%p,%d): %s(%d)\n", buf,len,to,tolen,
-				strerror(errno),errno);
+		LM_ERR("sendto(sock,%p,%d,0,%p,%d): %s(%d) [%s:%hu]\n", buf,len,to,
+				tolen,strerror(errno),errno,inet_ntoa(to->sin.sin_addr),
+				ntohs(to->sin.sin_port));
 		if (errno==EINTR || errno==EAGAIN) goto again;
 		if (errno==EINVAL) {
 			LM_CRIT("invalid sendtoparameters\n"

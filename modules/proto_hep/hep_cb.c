@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2015 - OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -122,9 +121,8 @@ int bind_proto_hep(proto_hep_api_t *api)
 		return -1;
 	}
 
-	api->pack_hep        = pack_hep;
-	api->register_hep_cb = register_hep_cb;
-	api->get_hep_ctx_id  = get_hep_ctx_id;
+	api->register_hep_cb    = register_hep_cb;
+	api->get_hep_ctx_id     = get_hep_ctx_id;
 
 	return 0;
 }

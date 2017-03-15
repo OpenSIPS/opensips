@@ -2847,7 +2847,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		return ret;
 	} else if(l_arg.len==2 && strncmp(l_arg.s, "on", 2)==0) {
 		/* allocate c_vals array */
-		if(command->c_keys_size && command->c_keys_size){
+		if(command->c_keys_size){
 			c_vals = (db_val_t*)pkg_malloc(command->c_keys_size*sizeof(db_val_t));
 			if(c_vals==NULL){
 				LM_ERR("oom\n");
@@ -2885,7 +2885,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			}
 		}
 	}
-	if(command->q_keys_size && command->q_keys_size && command->type!=DB_CAP_QUERY){
+	if(command->q_keys_size && command->type!=DB_CAP_QUERY){
 		q_vals = (db_val_t*)pkg_malloc(command->q_keys_size*sizeof(db_val_t));
 		if(q_vals==NULL){
 			LM_ERR("oom\n");

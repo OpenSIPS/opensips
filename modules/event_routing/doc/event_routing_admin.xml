@@ -1,0 +1,377 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+	The Event (based) Routing module, or shortly the EBR module, provides a 
+	mechanism that allows different SIP processings (of messages in script) to
+	communicate and synchronize between through OpenSIPS Events 
+	(see http://www.opensips.org/Documentation/Interface-Events-2-3).
+	</para>
+	<para>
+	This mechanism is based on the Subscribe-Notify concept. Any SIP processing
+	may subscribe to various OpenSIPS Events  Upon Event raising, the 
+	subscriber will be notified, so it will be able to make use of the data
+	attached to the Event. Note that the Event raising may take place in a
+	completely different SIP processing context, completely unrelated to the
+	subscriber processing.
+	</para>
+	<para>
+	Also, the Events are generated either internally by OpenSIPS (predefined 
+	Events), either from the script level (custom Events). Please refer to the
+	Event Interface documentation for more on how the Events are generated 
+	(http://www.opensips.org/Documentation/Interface-Events-2-3).
+	</para>
+	<para>
+	Depending on how the notification is handled by the subscribing processing,
+	we distinguish two main scenarios:
+	</para>
+	<itemizedlist>
+		<listitem>
+		<para>
+		The subscriber waits in async. mode for the receiving the notification;
+		the processing of the subscriber will suspend and it will be fully
+		resumed when the notification is received (or a timeout occurs).
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+		The subscriber continues its processing after subscription, without any
+		waiting. Whenever a notification is received, a script route (armed by
+		the subscription) will be executed. Note that this notification route
+		is executed outside any context of the original processing (nothing
+		is inherited in this route). The Event triggering the notification is
+		exposed in the notification route, via AVP variables.
+		</para>
+		</listitem>
+	</itemizedlist>
+	<para>
+	So, EBR allows your SIP processing to synchronize or the exchange info
+	between, even if these processings are completely unrelated from SIP, time
+	or handling perspective.
+	</para>
+	<para>
+	With the help of the EBR support, more advanced routing scenarios are 
+	possible now, scenarios where you need to handle and put together different
+	processing as type and time, like the handling of various calls with the 
+	handling of registrations or with the DTMF extraction. For more, see
+	the <xref linkend="Examples"/> section.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules are required by this module:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>TM</emphasis> - Transaction module
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+
+	<section>
+	<title>Exported Parameters</title>
+		<para>
+		This module does not provide any script parameters.
+		</para>
+	</section>
+
+
+	<section>
+	<title>Exported Functions</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">notify_on_event(event, filter, route, timeout)</function>
+		</title>
+		<para>
+		This function creates a subscription to a given Event. A filter can be
+		used (over the attributes of the Event) in order to filter even more
+		the needed notifications (only Events matching the filter will be
+		notified to this subscriber).
+		</para>
+		<para>
+		Upon Event notification, the given script route (usually called 
+		notification route) will be executed. No variables, SIP message, SIP 
+		transaction/dialog or any other context related to subscriber will be 
+		inherited from subscriber processing into this notification route.
+		</para>
+		<para>
+		The Event attributes will be exposed in the notification route via AVP
+		variables as <emphasis>$avp(attr_name) = attr_value</emphasis>.
+		</para>
+		<para>
+		As an exception, in the notification route, the EBR module will make 
+		available the transaction ID from the subscriber context. Note that 
+		it's not the transaction itself, but its ID. There are some TM 
+		functions (like <emphasis>t_inject_branches</emphasis>) which can 
+		operate on transactions based on their ID. Of course, you need to 
+		have a transaction create in the subscriber processing before calling
+		the  <emphasis>notify_on_event()</emphasis> function.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<para>Parameters: </para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>event</emphasis> -the name of the Event to subscribe for
+			</para></listitem>
+			<listitem><para>
+			<emphasis>filter</emphasis> - a AVP variable holding (as multi
+			value array) all the filters to be applied on the event (before
+			notification). The filter value has the format "key=value"
+			where the "key" must match an attribute name of the Event. The
+			"value" is the desired value for the attribute;  it may be a shell
+			wildcard pattern. Ex: "aor=bob@*"
+			</para></listitem>
+			<listitem><para>
+			<emphasis>route</emphasis> -the name of the script route to be
+			executed upon Event notification
+			</para></listitem>
+			<listitem><para>
+			<emphasis>timeout</emphasis> - for how long the subscription is
+			active before expiring (integer in seconds). Note: during its 
+			lifetime, a subscription may be notified several or zero times.
+			</para></listitem>
+		</itemizedlist>
+		<example>
+		<title><function>notify_on_event()</function> usage</title>
+		<programlisting format="linespecific">
+...
+$avp(filter) = "aor=*@opensips.org"
+notify_on_event("E_UL_AOR_INSERT","$avp(filter)","reg_done","60");
+...
+route[reg_done] {
+	xlog("a new user $avp(aor) registered with opensips.org domain\n");
+}
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">wait_for_event(event,filter,timeout)</function>
+		</title>
+		<para>
+		Similar to the <emphasis>notify_on_event</emphasis>, this function
+		creates an Event subscriber for the given event and filter. But this
+		function will do async waiting (with suspend and resume) for receiving
+		the notification on the desired Event.
+		</para>
+		<para>
+		The meaning of the parameters is the same as for 
+		<emphasis>notify_on_event</emphasis>.
+		</para>
+		<example>
+		<title><function>wait_for_event</function> usage</title>
+		<programlisting format="linespecific">
+...
+# wait for callee to register
+$avp(filter) = "aor="+$rU+"@"+$rd
+async( wait_for_event("E_UL_AOR_INSERT","$avp(filter)", "40"),  resume_call);
+# done
+...
+route[resume_call] {
+	xlog("user $avp(aor) is now registered\n");
+	lookup("location");
+	t_relay();
+}
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section id="Examples" xreflabel='Examples'>
+	<title>Usage Examples</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">Push Notification</function>
+		</title>
+		<para>
+		We use <emphasis>notify_on_event</emphasis> to capture the events on
+		new contact registrations for callee. Once the call is sent to callee,
+		based on the notification (for new contacts) we inject the newly
+		registered contacts as new branches in the ongoing transaction.
+		</para>
+		<para>
+		Schematics : when we send a call to a user, we subscribe to see any
+		new contacts being registered by the user. On such a notification,
+		we add the new contact as a new branch to the ongoing transaction
+		(ringing) to user.
+		</para>
+		<example>
+		<title>Push Notification script</title>
+		<programlisting format="linespecific">
+...
+route[route_to_user] {
+
+    # prepare transaction for branch injection; it is mandatory
+    # to create the transaction before the subscription, otherwise
+    # the EBR module will not pass the transaction ID into the
+    # notification route
+    t_newtran();
+
+    # keep the transaction alive (even if all branches will 
+    # terminate) until the FR INVITE timer hits (we want to wait
+    # for new possible contacts being registered)
+    t_wait_for_new_branches();
+
+    # subscribe to new contact registration event,
+    # but for our callee only
+    $avp(filter) = "aor="+$rU;
+    notify_on_event("E_UL_CONTACT_INSERT","$avp(filter)",
+        "fork_call", "20");
+
+    # fetch already registered contacts and relay if any
+    if (lookup("location"))
+        route(relay);
+    # if there were no contacts available (so no branches 
+    # created so far), the created transaction will still be 
+    # waiting for new branches due to the usage of the 
+    # t_wait_for_new_branches() function
+
+    exit;
+}
+
+route[fork_call]
+{
+    xlog("user $avp(aor) registered the a new "
+        "contact $avp(uri), injecting\n");
+    # take the contact described by the E_UL_CONTACT_INSERT
+    # event and inject it as a new branch into the original
+    # transaction
+    t_inject_branches("event");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">Call pickup</function>
+		</title>
+		<para>
+		The scenario is Alice calling to bob, Bob does not pickup and Charlie
+		is performing call pickup (to get the call from Alice)
+		</para>
+		<para>
+		We use <emphasis>notify_on_event</emphasis> to link the two calls: the
+		one from Alice to Bob  and the one from Charlie to call pickup service.
+		</para>
+		<para>
+		Schematics: when we send a call to a user within a pickup group, we
+		subscribe to see if there is any call to the pickup service (from 
+		another member of the same pickup group). When we have a call to 
+		the pickup service, we raise from script an event - this event will
+		be notified to the first call and we cancel the branches to Bob and
+		inject the registered contacts for the user calling to pickup group
+		(Charlie).
+		</para>
+
+		<example>
+		<title>Call Pickup script</title>
+		<programlisting format="linespecific">
+...
+route[handle_call]
+    if ($rU=="33") {
+        ## this is a call to the pickup service
+        ## (Charlie calling 33)
+
+        # reject incoming call as we will generate an back call
+        # from the original call (Alice to Bob)
+        t_newtran();
+        send_reply("480","Gone");
+
+        # raise the pickup custom event
+        # with pickup group 1 and picker being Charlie (caller)
+        $avp(attr-name) = "group";
+        $avp(attr-val) = "1";
+        $avp(attr-name) = "picker";
+        $avp(attr-val) = $fu;
+        raise_event("E_CALL_PICKUP", $avp(attr-name), $avp(attr-val));
+
+        exit;
+    } else {
+
+        ## this is a call to a subscriber
+        ## (Alice calls Bob)
+
+        # apply user location
+        if (!lookup("location","m")) {
+            send_reply("404", "Not Found");
+            exit;
+        }
+
+        # prepare transaction for branch injection; it is mandatory
+        # to create the transaction before the subscription, otherwise
+        # the EBR module will not pass the transaction ID into the
+        # notification route
+        t_newtran();
+
+        # subscribe to a call pickup event, but for our group only
+        $avp(filter) = "group=1";
+        notify_on_event("E_CALL_PICKUP","$avp(filter)",
+            "handle_pickup", "20");
+
+        t_relay();
+    }
+    exit;
+}
+
+route[handle_pickup]
+{
+    xlog("call picked by $avp(picker), fetching its contacts\n");
+    if (lookup("location","", "$avp(picker)")) {
+        # take the contacts retured by lookup() (for Charlie)
+        # and inject them into the original call, but also cancel
+        # any existing ongoing branch (ringing to Bob)
+        t_inject_branches("msg","cancel");
+    }
+}
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+</chapter>
+

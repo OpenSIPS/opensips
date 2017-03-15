@@ -50,6 +50,7 @@ struct cell;
 struct timer;
 struct retr_buf;
 
+#include "../../lib/container.h"
 #include "../../mem/shm_mem.h"
 #include "lock.h"
 #include "sip_msg.h"
@@ -326,26 +327,28 @@ struct s_table
 };
 
 
-#define list_entry(ptr, type, member) \
+/* XXX: use the container of function in header
+#define tm_list_entry(ptr, type, member) \
 	((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
+*/
 
 #define get_retr_timer_payload(_tl_) \
-	list_entry( _tl_, struct retr_buf, retr_timer)
+	container_of( _tl_, struct retr_buf, retr_timer)
 #define get_fr_timer_payload(_tl_) \
-	list_entry( _tl_, struct retr_buf, fr_timer)
+	container_of( _tl_, struct retr_buf, fr_timer)
 #define get_wait_timer_payload(_tl_) \
-	list_entry( _tl_, struct cell, wait_tl)
+	container_of( _tl_, struct cell, wait_tl)
 #define get_dele_timer_payload(_tl_) \
-	list_entry( _tl_, struct cell, dele_tl)
+	container_of( _tl_, struct cell, dele_tl)
 
 #define get_T_from_reply_rb(_rb_) \
-	list_entry( list_entry( _rb_, (struct ua_server), response),\
+	container_of( container_of( _rb_, (struct ua_server), response),\
 		struct cell, uas)
 #define get_T_from_request_rb(_rb_, _br_) \
-	list_entry( list_entry( (rb_, (struct ua_client), request) - \
+	container_of( container_of( (rb_, (struct ua_client), request) - \
 		(_br_)*sizeof(struct retr_buf), struct cell, uas)
 #define get_T_from_cancel_rb(_rb_, _br_) \
-	list_entry( list_entry( (rb_, (struct ua_client), local_cancel) - \
+	container_of( container_of( (rb_, (struct ua_client), local_cancel) - \
 		(_br_)*sizeof(struct retr_buf), struct cell, uas)
 
 #define is_invite(_t_)           ((_t_)->flags&T_IS_INVITE_FLAG)

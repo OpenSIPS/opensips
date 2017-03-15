@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2008 1&1 Internet AG
+ * Copyright (C) 2016 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -30,10 +31,14 @@
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "../../db/db_cap.h"
+
+#include "../tls_mgm/api.h"
+
 #include "dbase.h"
 #include "db_mysql.h"
 
 #include <mysql/mysql.h>
+
 
 unsigned int db_mysql_timeout_interval = 2;   /* Default is 6 seconds */
 unsigned int db_mysql_exec_query_threshold = 0;   /* Warning in case DB query
@@ -42,8 +47,6 @@ int max_db_retries = 3;
 int max_db_queries = 2;
 
 static int mysql_mod_init(void);
-
-
 
 int db_mysql_bind_api(const str* mod, db_func_t *dbb);
 
@@ -55,6 +58,9 @@ static cmd_export_t cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
+struct tls_mgm_binds tls_api;
+struct tls_domain *tls_dom;
+str tls_client_domain_str;
 
 /*
  * Exported parameters
@@ -64,6 +70,7 @@ static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_mysql_exec_query_threshold},
 	{"max_db_retries", INT_PARAM, &max_db_retries},
 	{"max_db_queries", INT_PARAM, &max_db_queries},
+	{"tls_client_domain", STR_PARAM, &tls_client_domain_str.s},
 	{0, 0, 0}
 };
 
@@ -90,6 +97,10 @@ struct module_exports exports = {
 
 static int mysql_mod_init(void)
 {
+	struct ip_addr *ip;
+	unsigned int port = 0;
+	str domain, id;
+
 	LM_DBG("mysql: MySQL client version is %s\n", mysql_get_client_info());
 	/* also register the event */
 	if (mysql_register_event() < 0) {
@@ -106,7 +117,31 @@ static int mysql_mod_init(void)
 		LM_WARN("Invalid number for max_db_retries\n");
 		max_db_retries = 3;
 	}
-	
+
+	if (tls_client_domain_str.s) {
+		tls_client_domain_str.len = strlen(tls_client_domain_str.s);
+		LM_INFO("using tls_mgm client domain '%.*s' for all MySQL connections\n",
+		        tls_client_domain_str.len, tls_client_domain_str.s);
+
+		if (parse_domain_def(tls_client_domain_str.s, &id, &ip, &port, &domain) < 0) {
+			LM_ERR("failed to parse tls_client_domain '%.*s'\n",
+			       tls_client_domain_str.len, tls_client_domain_str.s);
+			return -1;
+		}
+
+		if (load_tls_mgm_api(&tls_api) != 0) {
+			LM_ERR("failed to load tls_mgm API! Is the \"tls_mgm\" module loaded?\n");
+			return -1;
+		}
+
+		tls_dom = tls_api.find_client_domain(ip, port);
+		if (tls_dom == NULL) {
+			LM_ERR("failed to match tls_client_domain '%.*s'!\n",
+			       tls_client_domain_str.len, tls_client_domain_str.s);
+			return -1;
+		}
+	}
+
 	return 0;
 }
 

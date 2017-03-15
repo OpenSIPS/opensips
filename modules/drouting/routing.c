@@ -111,7 +111,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 				LM_ERR("not enough shm mem to resize\n");
 				goto error;
 			}
-			memset( p+pgwl_size, 0, 2*pgwl_size*sizeof(pgw_list_t));
+			memset( p+pgwl_size, 0, pgwl_size*sizeof(pgw_list_t));
 			memcpy( p, pgwl, pgwl_size*sizeof(pgw_list_t));
 			pkg_free(pgwl);
 			pgwl_size*=2;
@@ -184,7 +184,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 			tmp++;
 		} else if (*tmp!=0) {
 			LM_ERR("bad char %c (%d) [%s]\n",
-					*tmp, (int)(ep-dstlist), dstlist);
+					*tmp, (int)(tmp-dstlist), dstlist);
 			goto error;
 		}
 	}
@@ -282,7 +282,6 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 	/* link it */
 	key.s = id;
 	key.len = strlen(id);
-	LM_INFO("carriers key %.*s\n", key.len, key.s);
 	map_put(rd->carriers_tree, key, cr);
 
 
@@ -610,7 +609,6 @@ done:
 	key.s = id;
 	key.len = strlen(id);
 
-	LM_INFO("pgw tree %p\n", r->pgw_tree);
 	if (map_put(r->pgw_tree, key, pgw)) {
 		LM_ERR("Duplicate gateway!\n");
 		return -1;

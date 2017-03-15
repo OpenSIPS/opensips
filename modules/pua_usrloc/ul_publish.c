@@ -178,19 +178,14 @@ str* build_pidf(ucontact_t* c)
 	return body;
 
 error:
-	if(body)
-	{
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;
 }
 
-void ul_publish(ucontact_t* c, int type, void* param)
+void ul_contact_publish(void *binding, int type, void **data)
 {
+	ucontact_t *c = (ucontact_t *)binding;
 	str* body= NULL;
 	str uri= {NULL, 0};
 	char* at= NULL;

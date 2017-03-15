@@ -292,7 +292,8 @@ size_t receive(void *buffer, size_t size, size_t nmemb, void *userp)
 	temp.s = (char*)buffer;
 	temp.len = size * nmemb;
 
-	append_str(buff,temp);
+	if (append_str(buff,temp))
+		LM_ERR("cannot append buffer!\n");
 
 
 	return temp.len;

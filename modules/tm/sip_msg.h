@@ -62,6 +62,13 @@
 			if ((_msg)->reply_lump) \
 				tm_shm_free_unsafe((_msg)->reply_lump);\
 		}\
+		if ((_msg)->body) { \
+			/* ungly hack to free the body parts which do not support
+			 * unsafe-free */ \
+			tm_shm_unlock(); \
+			free_sip_body((_msg)->body);\
+			tm_shm_lock(); \
+		}\
 		tm_shm_free_unsafe((_msg));\
 	}while(0)
 
@@ -86,6 +93,7 @@
 			if ((_msg)->reply_lump) \
 				shm_free((_msg)->reply_lump);\
 		}\
+		free_sip_body((_msg)->body);\
 		shm_free((_msg));\
 	}while(0)
 

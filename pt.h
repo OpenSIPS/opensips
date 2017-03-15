@@ -36,14 +36,27 @@ struct stat_var_;
 #define MAX_PT_DESC	128
 
 struct process_table {
+	/* the UNIX pid of this process */
 	int pid;
-	int unix_sock; /* unix socket on which tcp main listens */
-	int idx;       /* tcp child index, -1 for other processes */
+	/* name/description of the process (null terminated) */
 	char desc[MAX_PT_DESC];
 
-	int default_log_level; /* used when resetting the log level */
-	int log_level;         /* logging level of this process */
+	/* pipe used by the process to receive designated jobs (used by IPC)
+	 * [1] for writting into by other process,
+	 * [0] to listen on by this process */
+	int ipc_pipe[2];
 
+	/* unix socket on which TCP MAIN listens */
+	int unix_sock;
+	/* tcp child index, -1 for other processes */
+	int idx;
+
+	/* logging level of this process */
+	int log_level;
+	/* used when resetting the log level */
+	int default_log_level;
+
+	/* the load statistic of this process */
 	struct stat_var_ *load;
 };
 

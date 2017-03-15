@@ -38,14 +38,6 @@
  */
 int lookup(struct sip_msg* _m, char* _table, char* _flags, char* _aor);
 
-
-/*! \brief
- * Return true if the AOR in the Request-URI is registered,
- * it is similar to lookup but registered neither rewrites
- * the Request-URI nor appends branches
- */
-int registered(struct sip_msg* _m, char* _t, char* _s, char* _c);
-
 /*! \brief the is_registered() function
  * Return 1 if the AOR is registered, -1 otherwise
  * AOR comes from:

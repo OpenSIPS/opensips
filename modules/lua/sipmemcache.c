@@ -30,6 +30,10 @@
 
 #include "sipluafunc.h"
 
+#if !defined(LIBMEMCACHED_VERSION_HEX) || LIBMEMCACHED_VERSION_HEX < 0x00037000
+typedef memcached_return memcached_return_t;
+#endif
+
 struct sipmemcache
 {
   int finalized;
@@ -60,7 +64,7 @@ static int l_sipmemcache_new(lua_State *L)
 static int l_sipmemcache_server_add(lua_State *L)
 {
   memcached_server_st *servers = NULL;
-  memcached_return rc;
+  memcached_return_t rc;
   struct sipmemcache *o;
   const char *host;
   const char *port;
@@ -99,7 +103,7 @@ static int l_sipmemcache_server_add(lua_State *L)
 }
 
 static int sipmemcache_storage_cmds(lua_State *L,
-		memcached_return (*f)(memcached_st *ptr,
+		memcached_return_t (*f)(memcached_st *ptr,
 			const char *key,
 			size_t key_length,
 			const char *value,
@@ -185,7 +189,7 @@ static int l_sipmemcache_delete(lua_State *L)
   struct sipmemcache *o;
   const char *key;
   size_t keyslen;
-  memcached_return ret;
+  memcached_return_t ret;
 
   o = luaL_checkudata(L, 1, "siplua.memcache");
   key = luaL_checklstring(L, 2, &keyslen);
@@ -279,7 +283,7 @@ int l_sipmemcache_multi_get(lua_State *L)
 {
   struct sipmemcache *o;
   int i, n;
-  memcached_return  rc;
+  memcached_return_t  rc;
   memcached_result_st res;
 
   o = luaL_checkudata(L, 1, "siplua.memcache");

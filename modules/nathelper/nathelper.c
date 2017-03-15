@@ -808,32 +808,27 @@ sdp_1918(struct sip_msg* msg)
 {
 	str body, ip;
 	int pf;
-	struct multi_body * bodies;
-	struct part *p;
+	struct body_part *p;
 	int ret = 0;
 
-	bodies = get_all_bodies(msg);
-
-	if( bodies == NULL)
+	if ( parse_sip_body(msg)<0 || msg->body==NULL )
 	{
 		LM_DBG("Unable to get bodies from message\n");
 		return 0;
 	}
 
-	p = bodies->first;
+	for ( p=&msg->body->first ; p ; p=p->next) {
 
-	while(p)
-	{
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
 
 		body = p->body;
 		trim_r(body);
-		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
-							 || body.len == 0)
-		{
-			p=p->next;
-			continue;
-		}
 
+		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
+							 || body.len == 0)
+			continue;
 
 		if (extract_mediaip(&body, &ip, &pf, "c=") == -1)
 		{
@@ -844,7 +839,6 @@ sdp_1918(struct sip_msg* msg)
 			return 0;
 
 		ret |= (is1918addr(&ip) == 1) ? 1 : 0;
-		p= p->next;
 	}
 
 	return ret;
@@ -1158,33 +1152,30 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 	int level;
 	char *buf;
 	struct lump* anchor;
-	struct multi_body * bodies;
-	struct part * p;
+	struct body_part * p;
 
 	level = (int)(long)str1;
 	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
 		return -1;
 
-	bodies = get_all_bodies(msg);
-
-	if( bodies == NULL)
+	if ( parse_sip_body(msg)<0 || msg->body==NULL )
 	{
 		LM_ERR("Unable to get bodies from message\n");
 		return -1;
 	}
 
-	p = bodies->first;
-
-	while(p)
+	for ( p=&msg->body->first ; p ; p=p->next )
 	{
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
+
 		body = p->body;
 		trim_r(body);
-		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
+		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
 							 || body.len == 0)
-		{
-			p=p->next;
 			continue;
-		}
+
 		if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			msg->msg_flags |= FL_FORCE_ACTIVE;
 			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
@@ -1232,8 +1223,6 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0)==-1)
 				return -1;
 		}
-
-		p= p->next;
 	}
 
 	return 1;
@@ -1305,7 +1294,6 @@ static int send_raw(const char *buf, int buf_len, union sockaddr_union *to,
 static void
 nh_timer(unsigned int ticks, void *timer_idx)
 {
-	static unsigned int iteration = 0;
 	int rval;
 	void *buf = NULL;
 	void *cp;
@@ -1334,8 +1322,8 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 	for ( d=ul.get_next_udomain(NULL); d; d=ul.get_next_udomain(d)) {
 		rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
-			((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-			natping_partitions*natping_interval,
+			((unsigned int)(unsigned long)timer_idx)*natping_interval+
+			(ticks%natping_interval), natping_partitions*natping_interval,
 			REMOVE_ON_TIMEOUT?1:0);
 
 		if (rval<0) {
@@ -1353,8 +1341,8 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			}
 
 			rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
-				((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-				natping_partitions*natping_interval,
+				((unsigned int)(unsigned long)timer_idx)*natping_interval+
+				(ticks%natping_interval), natping_partitions*natping_interval,
 				REMOVE_ON_TIMEOUT?1:0);
 			if (rval != 0) {
 				goto done;
@@ -1441,9 +1429,6 @@ nh_timer(unsigned int ticks, void *timer_idx)
 done:
 	if (buf)
 		pkg_free(buf);
-	iteration++;
-	if (iteration==natping_interval)
-		iteration = 0;
 }
 
 

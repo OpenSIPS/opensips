@@ -352,11 +352,11 @@ migrate_table ${dst_db}.dialplan \
 	${src_db}.dialplan \
 	"?id,?dpid,?pr,?match_op,?match_exp,?match_flags,?subst_exp,?repl_exp,?disabled,?attrs"
 
-## DISPATCHER module (changes here, the flags and state columns)
+## DISPATCHER module
 migrate_table ${dst_db}.dispatcher \
-	"id,setid,destination,weight,attrs,description" \
+	"id,setid,destination,socket,state,weight,priority,attrs,description" \
 	${src_db}.dispatcher \
-	"?id,?setid,?destination,?weight,?attrs,?description"
+	"?id,?setid,?destination,?socket,?state,?weight,?priority,?attrs,?description"
 
 ## DOMAIN module
 migrate_table ${dst_db}.domain \

@@ -50,6 +50,7 @@
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
 #include "../../parser/parser_f.h"
+#include "../../parser/parse_body.h"
 #include "t_funcs.h"
 #include "t_hooks.h"
 #include "t_msgbuilder.h"
@@ -60,6 +61,9 @@
 #include "fix_lumps.h"
 #include "config.h"
 #include "../../msg_callbacks.h"
+#include "../../mod_fix.h"
+
+#define NO_BODY_CLONE_MARKER ((struct sip_msg_body*)-1)
 
 /* route to execute for the branches */
 static int goto_on_branch;
@@ -86,7 +90,7 @@ unsigned int get_on_branch(void)
 
 
 static inline int pre_print_uac_request( struct cell *t, int branch,
-		struct sip_msg *request)
+					struct sip_msg *request, struct sip_msg_body **body_clone)
 {
 	int backup_route_type;
 	struct usr_avp **backup_list;
@@ -168,6 +172,11 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		memcpy( p, request->new_uri.s, request->new_uri.len);
 		request->new_uri.s = p;
 		request->parsed_uri_ok = 0;
+		/* make a clone of the original body, to restore it later */
+		if (clone_sip_msg_body( request, NULL, body_clone, 0)!=0) {
+			LM_ERR("faile to clone the body, branch route changes will be"
+				" preserved\n");
+		}
 		/* make available the avp list from transaction */
 		backup_list = set_avp_list( &t->user_avps );
 		/* run branch route */
@@ -233,7 +242,7 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 
 
 static inline void post_print_uac_request(struct sip_msg *request,
-		str *org_uri, str *org_dst)
+				str *org_uri, str *org_dst, struct sip_msg_body *body_clone)
 {
 	reset_init_lump_flags();
 	/* delete inserted branch lumps */
@@ -253,6 +262,11 @@ static inline void post_print_uac_request(struct sip_msg *request,
 		/* and just to be sure */
 		request->dst_uri.s = 0;
 		request->dst_uri.len = 0;
+	}
+	/* if cloned, restore the original body to the msg */
+	if (body_clone!=NO_BODY_CLONE_MARKER) {
+		free_sip_body(request->body);
+		request->body = body_clone;
 	}
 }
 
@@ -367,6 +381,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
 {
 	unsigned short branch;
+	struct sip_msg_body *body_clone=NO_BODY_CLONE_MARKER;
 	int do_free_proxy;
 	int ret;
 
@@ -391,7 +406,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	request->path_vec=*path;
 	request->ruri_bflags=bflags;
 
-	if ( pre_print_uac_request( t, branch, request)!= 0 ) {
+	if ( pre_print_uac_request( t, branch, request, &body_clone)!= 0 ) {
 		ret = -1;
 		goto error01;
 	}
@@ -426,6 +441,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 		&proxy->host, proxy->addr_idx, proxy->port ? proxy->port:SIP_PORT);
 	t->uac[branch].request.dst.proto = proxy->proto;
 
+	/* do print of the uac request */
 	if ( update_uac_dst( request, &t->uac[branch] )!=0) {
 		ret = ser_error;
 		goto error02;
@@ -448,7 +464,7 @@ error02:
 		pkg_free( proxy );
 	}
 error01:
-	post_print_uac_request( request, uri, next_hop);
+	post_print_uac_request( request, uri, next_hop, body_clone);
 	if (ret < 0) {
 		/* destroy all the bavps added, the path vector and the destination,
 		 * since this branch will never be properly added to
@@ -470,81 +486,87 @@ error:
 }
 
 
-int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel,
-	struct cell *t_invite, int branch )
+int add_phony_uac( struct cell *t)
 {
-	int ret;
-	char *shbuf;
-	unsigned int len;
-	str bk_dst_uri;
-	str bk_path_vec;
-	str bk_adv_address;
-	str bk_adv_port;
+	str dummy_buffer = str_init("DUMMY");
+	unsigned short branch;
+	utime_t timer;
 
-	if (t_cancel->uac[branch].request.buffer.s) {
+	branch=t->nr_of_outgoings;
+	if (branch==MAX_BRANCHES) {
+		LM_ERR("maximum number of branches exceeded\n");
+		return E_CFG;
+	}
+
+	/* check existing buffer -- rewriting should never occur */
+	if (t->uac[branch].request.buffer.s) {
 		LM_CRIT("buffer rewrite attempt\n");
-		ret=ser_error=E_BUG;
-		goto error;
+		ser_error=E_BUG;
+		return E_BUG;
 	}
 
-	cancel_msg->new_uri = t_invite->uac[branch].uri;
-	cancel_msg->parsed_uri_ok=0;
-	bk_dst_uri = cancel_msg->dst_uri;
-	bk_path_vec = cancel_msg->path_vec;
-	bk_adv_address = cancel_msg->set_global_address;
-	bk_adv_port = cancel_msg->set_global_port;
+	/* we attach a dummy buffer just to pass all the "tests" for a 
+	 * valid branch */
+	t->uac[branch].request.buffer.s = (char*)shm_malloc(dummy_buffer.len);
+	if (t->uac[branch].request.buffer.s==NULL) {
+		LM_ERR("failed to alloc dummy buffer for phony branch\n");
+		/* there is nothing to reset on the branch */
+		return E_OUT_OF_MEM;
+	}
+	memcpy( t->uac[branch].request.buffer.s, dummy_buffer.s, dummy_buffer.len);
+	t->uac[branch].request.buffer.len = dummy_buffer.len;
 
-	/* force same path & advertising as for request */
-	cancel_msg->path_vec = t_invite->uac[branch].path_vec;
-	cancel_msg->set_global_address = t_invite->uac[branch].adv_address;
-	cancel_msg->set_global_port = t_invite->uac[branch].adv_port;
+	t->uac[branch].request.my_T = t;
+	t->uac[branch].request.branch = branch;
 
-	if ( pre_print_uac_request( t_cancel, branch, cancel_msg)!= 0 ) {
-		ret = -1;
-		goto error01;
+	/* in invalid proto will prevent adding this retransmission buffer
+	 * to the retransmission timer (there is nothing to retransmit here :P */
+	t->uac[branch].request.dst.proto = PROTO_NONE;
+
+	t->nr_of_outgoings++;
+
+	/* we set here only FR (final response) timer, to be sure this branch
+	 * comes to an end - as timeout value we use exactly the same value the
+	 * transaction has set as FR_INV_TIMEOUT */
+	if (is_timeout_set(t->fr_inv_timeout)) {
+		timer = t->fr_inv_timeout;
+		set_1timer(&t->uac[branch].request.fr_timer, FR_INV_TIMER_LIST,&timer);
+	} else {
+		set_1timer(&t->uac[branch].request.fr_timer, FR_INV_TIMER_LIST, NULL);
 	}
 
-	/* force same uri as in INVITE */
-	if (cancel_msg->new_uri.s!=t_invite->uac[branch].uri.s) {
-		pkg_free(cancel_msg->new_uri.s);
-		cancel_msg->new_uri = t_invite->uac[branch].uri;
-		/* and just to be sure */
-		cancel_msg->parsed_uri_ok = 0;
-	}
+	set_kr(REQ_FWDED);
 
-	/* print */
-	shbuf=print_uac_request( cancel_msg, &len,
-		t_invite->uac[branch].request.dst.send_sock,
-		t_invite->uac[branch].request.dst.proto);
-	if (!shbuf) {
-		LM_ERR("printing e2e cancel failed\n");
-		ret=ser_error=E_OUT_OF_MEM;
-		goto error01;
-	}
-
-	/* install buffer */
-	t_cancel->uac[branch].request.dst=t_invite->uac[branch].request.dst;
-	t_cancel->uac[branch].request.buffer.s=shbuf;
-	t_cancel->uac[branch].request.buffer.len=len;
-	t_cancel->uac[branch].uri.s=t_cancel->uac[branch].request.buffer.s+
-		cancel_msg->first_line.u.request.method.len+1;
-	t_cancel->uac[branch].uri.len=t_invite->uac[branch].uri.len;
-	t_cancel->uac[branch].br_flags = cancel_msg->flags;
-
-	/* success */
-	ret=1;
-
-error01:
-	post_print_uac_request( cancel_msg, &t_invite->uac[branch].uri,
-		&bk_dst_uri);
-	cancel_msg->dst_uri = bk_dst_uri;
-	cancel_msg->path_vec = bk_path_vec;
-	cancel_msg->set_global_address = bk_adv_address;
-	cancel_msg->set_global_port = bk_adv_port;
-error:
-	return ret;
+	return 0;
 }
 
+
+static int _reason_avp_id = 0;
+
+int t_add_reason(struct sip_msg *msg, char *val)
+{
+	str avp_name = str_init("_reason_avp_internal");
+	int_str reason;
+
+	if (fixup_get_svalue(msg, (gparam_p)val, &reason.s)!=0) {
+		LM_ERR("invalid reason value\n");
+		return -1;
+	}
+
+	if (_reason_avp_id==0) {
+		if (parse_avp_spec( &avp_name, &_reason_avp_id) ) {
+			LM_ERR("failed to init the internal AVP\n");
+			return -1;
+		}
+	}
+
+	if (add_avp( AVP_VAL_STR, _reason_avp_id, reason)!=0) {
+		LM_ERR("failed to add the internal reason AVP\n");
+		return -1;
+	}
+
+	return 1;
+}
 
 
 void cancel_invite(struct sip_msg *cancel_msg,
@@ -556,6 +578,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	branch_bm_t cancel_bitmap;
 	str reason;
 	struct hdr_field *hdr;
+	int_str avp_reason;
 
 	cancel_bitmap=0;
 
@@ -566,16 +589,21 @@ void cancel_invite(struct sip_msg *cancel_msg,
 
 	reason.s = NULL;
 	reason.len = 0;
-	/* propagate the REASON flag ? */
-	if ( t_cancel->flags&T_CANCEL_REASON_FLAG ) {
-		/* look for the Reason header */
-		if (parse_headers(cancel_msg, HDR_EOH_F, 0)<0) {
-			LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
-		} else {
-			hdr = get_header_by_static_name(cancel_msg, "Reason");
-			if (hdr!=NULL) {
-				reason.s = hdr->name.s;
-				reason.len = hdr->len;
+
+	if (search_first_avp( AVP_VAL_STR, _reason_avp_id, &avp_reason, NULL)) {
+		reason = avp_reason.s;
+	} else {
+		/* propagate the REASON flag ? */
+		if ( t_cancel->flags&T_CANCEL_REASON_FLAG ) {
+			/* look for the Reason header */
+			if (parse_headers(cancel_msg, HDR_EOH_F, 0)<0) {
+				LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
+				} else {
+				hdr = get_header_by_static_name(cancel_msg, "Reason");
+				if (hdr!=NULL) {
+					reason.s = hdr->name.s;
+					reason.len = hdr->len;
+				}
 			}
 		}
 	}
@@ -620,8 +648,9 @@ void cancel_invite(struct sip_msg *cancel_msg,
  *      -1 - error during forward
  */
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
-	struct proxy_l * proxy)
+									struct proxy_l * proxy, int reset_bcounter)
 {
+	str reply_reason_487 = str_init("Request Terminated");
 	str backup_uri;
 	str backup_dst;
 	int branch_ret, lowest_ret;
@@ -640,7 +669,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* make -Wall happy */
 	current_uri.s=0;
 
-	/* before doing enything, update the t falgs from msg */
+	/* before doing enything, update the t flags from msg */
 	t->uas.request->flags = p_msg->flags;
 
 	if (p_msg->REQ_METHOD==METHOD_CANCEL) {
@@ -653,8 +682,20 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	}
 
 	/* do not forward requests which were already cancelled*/
-	if (was_cancelled(t) || no_new_branches(t)) {
-		LM_ERR("discarding fwd for a cancelled/6xx transaction\n");
+	if (no_new_branches(t)) {
+		LM_INFO("discarding fwd for a 6xx transaction\n");
+		ser_error = E_NO_DESTINATION;
+		return -1;
+	}
+	if (was_cancelled(t)) {
+		/* is this the first attempt of sending a branch out ? */
+		if (t->nr_of_outgoings==0) {
+			/* if no other signalling was performed on the transaction
+			 * and the transaction was already canceled, better
+			 * internally generate the 487 reply here */
+			t_reply( t, p_msg , 487 , &reply_reason_487);
+		}
+		LM_INFO("discarding fwd for a cancelled transaction\n");
 		ser_error = E_NO_DESTINATION;
 		return -1;
 	}
@@ -676,7 +717,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* branches added */
 	added_branches=0;
 	/* branch to begin with */
-	t->first_branch=t->nr_of_outgoings;
+	if (reset_bcounter)
+		t->first_branch=t->nr_of_outgoings;
 
 	/* as first branch, use current uri */
 	current_uri = *GET_RURI(p_msg);
@@ -790,6 +832,190 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 }
 
 
+static int ul_contact_event_to_msg(struct sip_msg *req)
+{
+	static enum ul_attrs { UL_URI, UL_RECEIVED, UL_PATH, UL_QVAL,
+		UL_SOCKET, UL_BFLAGS, UL_MAX } ul_attr;
+	/* keep the names of the AVPs aligned with the contact-related events
+	 * from USRLOC module !!!! */
+	static str ul_names[UL_MAX]= {str_init("uri"),str_init("received"),
+	                              str_init("path"),str_init("qval"),
+	                              str_init("socket"),str_init("bflags")};
+	static int avp_ids[UL_MAX] = { -1, -1, -1, -1, -1, -1};
+	int_str vals[UL_MAX];
+	int proto, port;
+	str host;
+
+	if (avp_ids[0]==-1) {
+		/* init the avp IDs mapping us on the UL event */
+		for( ul_attr=0 ; ul_attr<UL_MAX ; ul_attr++ ){
+			if (parse_avp_spec( &ul_names[ul_attr], &avp_ids[ul_attr])<0) {
+				LM_ERR("failed to init UL AVP %d/%s\n",
+					ul_attr,ul_names[ul_attr].s);
+				avp_ids[0] = -1;
+				return -1;
+			}
+		}
+	}
+
+	/* fetch the AVP values one by one */
+	for( ul_attr=0 ; ul_attr<UL_MAX ; ul_attr++ ) {
+		if (search_first_avp(0, avp_ids[ul_attr], &vals[ul_attr], NULL)==NULL){
+			LM_ERR("cannot find AVP(%d) for event attr %d/%s\n",
+				avp_ids[ul_attr], ul_attr, ul_names[ul_attr].s);
+			return -1;
+		}
+	}
+
+	/* OK, we have the values, lets inject them into the SIP msg */
+	LM_DBG("injecting new branch: uri=<%.*s>, received=<%.*s>,"
+		"path=<%.*s>, qval=%d, socket=<%.*s>, bflags=%X\n",
+		vals[UL_URI].s.len, vals[UL_URI].s.s,
+		vals[UL_RECEIVED].s.len, vals[UL_RECEIVED].s.s,
+		vals[UL_PATH].s.len, vals[UL_PATH].s.s,
+		vals[UL_QVAL].n,
+		vals[UL_SOCKET].s.len, vals[UL_SOCKET].s.s,
+		vals[UL_BFLAGS].n);
+
+	/* contact URI goes as RURI */
+	if (set_ruri( req, &vals[UL_URI].s)<0) {
+		LM_ERR("failed to set new RURI\n");
+		return -1;
+	}
+
+	/* contact RECEIVED goes as DURI */
+	if (vals[UL_RECEIVED].s.len) {
+		if (set_dst_uri( req, &vals[UL_RECEIVED].s)<0) {
+			LM_ERR("failed to set DST URI\n");
+			return -1;
+		}
+	}
+
+	/* contact PATH goes as path */
+	if (vals[UL_PATH].s.len) {
+		if (set_path_vector( req, &vals[UL_PATH].s)<0) {
+			LM_ERR("failed to set PATH\n");
+			return -1;
+		}
+	}
+
+	/* contact Qval goes as RURI Qval */
+	set_ruri_q( req, vals[UL_QVAL].n);
+
+	/* contact BFLAGS goes as RURI bflags */
+	setb0flags( req, vals[UL_BFLAGS].n);
+
+	/* socket info */
+	if (vals[UL_SOCKET].s.len) {
+		if ( parse_phostport( vals[UL_SOCKET].s.s, vals[UL_SOCKET].s.len,
+		&host.s, &host.len, &port, &proto) < 0) {
+			LM_ERR("failed to parse socket from Event attr <%.*s>\n",
+				vals[UL_SOCKET].s.len, vals[UL_SOCKET].s.s);
+		} else {
+			req->force_send_socket = grep_sock_info( &host,
+				(unsigned short)port, (unsigned short)proto);
+		}
+	}
+
+	return 0;
+}
+
+
+static int dst_to_msg(struct sip_msg *s_msg, struct sip_msg *d_msg)
+{
+	/* move RURI */
+	if (set_ruri( d_msg, GET_RURI(s_msg))<0) {
+		LM_ERR("failed to set new RURI\n");
+		return -1;
+	}
+
+	/* move DURI (empty is accepted as reset) */
+	if (set_dst_uri( d_msg, &s_msg->dst_uri)<0) {
+		LM_ERR("failed to set DST URI\n");
+		return -1;
+	}
+
+	/* move PATH  (empty is accepted as reset) */
+	if (set_path_vector( d_msg, & s_msg->path_vec)<0) {
+		LM_ERR("failed to set PATH\n");
+		return -1;
+	}
+
+	/* Qval */
+	set_ruri_q( d_msg, get_ruri_q(s_msg) );
+
+	/* BFLAGS */
+	setb0flags( d_msg, getb0flags(s_msg) );
+
+	/* socket info */
+	d_msg->force_send_socket = s_msg->force_send_socket;
+
+	return 0;
+}
+
+
+int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
+{
+	static struct sip_msg faked_req;
+	branch_bm_t cancel_bm;
+	str reason = str_init(CANCEL_REASON_200);
+	int rc;
+
+	/* does the transaction state still accept new branches ? */
+	if (t->uas.status >= 200) {
+		LM_DBG("cannot add branches to a transaction with %d UAS\n",
+			t->uas.status);
+		return -2;
+	}
+
+	if (!fake_req( &faked_req, t->uas.request, &t->uas, NULL, 0)) {
+		LM_ERR("fake_req failed\n");
+		return -1;
+	}
+
+	/* do we have the branches to be injected ? */
+	if (flags&TM_INJECT_SRC_EVENT) {
+		/* get the branch from Event AVPs, as populated by EVI/EBR */
+		if (ul_contact_event_to_msg( &faked_req )<0) {
+			LM_ERR("failed to grab new branch from Event\n");
+			goto error;
+		}
+	} else {
+		/* use the dset array, but fetch the first branch for script msg 
+		 * into the faked msg (that will be used by inject function) */
+		if (dst_to_msg( msg, &faked_req )<0) {
+			LM_ERR("failed to grab new branch from Event\n");
+			goto error;
+		}
+	}
+
+	/* do we have to cancel the existing branches before injecting new ones? */
+	if (flags&TM_INJECT_FLAG_CANCEL) {
+		which_cancel( t, &cancel_bm );
+	}
+
+	/* generated the new branches, without branch counter reset */
+	rc = t_forward_nonack( t, &faked_req , NULL, 0 );
+
+	/* do we have to cancel the existing branches before injecting new ones? */
+	if (flags&TM_INJECT_FLAG_CANCEL) {
+		set_cancel_extra_hdrs( reason.s, reason.len);
+		cancel_uacs( t, cancel_bm );
+		set_cancel_extra_hdrs( NULL, 0);
+	}
+
+	/* cleanup the faked request */
+	free_faked_req( &faked_req, t);
+
+	return (rc==1)?1:-3;
+
+error:
+	/* cleanup the faked request */
+	free_faked_req( &faked_req, t);
+	return -1;
+}
+
+
 int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 {
 	/* this is a quite horrible hack -- we just take the message
@@ -832,7 +1058,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 
 		t->flags|=T_IS_LOCAL_FLAG;
 
-		return t_forward_nonack( t, p_msg, NULL );
+		return t_forward_nonack( t, p_msg, NULL, 1/*reset*/);
 	}
 }
 

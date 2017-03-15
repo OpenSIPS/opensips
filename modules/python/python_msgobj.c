@@ -169,7 +169,10 @@ msg_getHeader(msgobject *self, PyObject *args)
         return NULL;
     hname.len = strlen(hname.s);
 
-    parse_headers(self->msg, ~0, 0);
+    if (parse_headers(self->msg, ~0, 0) < 0) {
+		LM_ERR("cannot parse message!\n");
+		return NULL;
+	}
     hbody = NULL;
     for (hf = self->msg->headers; hf != NULL; hf = hf->next) {
         if (hname.len == hf->name.len &&
@@ -266,7 +269,8 @@ msg_call_function(msgobject *self, PyObject *args)
 
     rval = do_action(act, self->msg);
 
-    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data)) {
+    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data) &&
+      (act->elem[2].u.data != arg2)) {
        pkg_free(act->elem[2].u.data);
     }
 

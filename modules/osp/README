@@ -51,16 +51,20 @@ Di-Shi Sun
               1.3.20. append_userphone
               1.3.21. networkid_location
               1.3.22. networkid_parameter
-              1.3.23. parameterstring_location
-              1.3.24. parameterstring_value
-              1.3.25. source_device_avp
-              1.3.26. source_networkid_avp
-              1.3.27. custom_info_avp
-              1.3.28. cnam_avp
-              1.3.29. source_media_avp, destination_media_avp
-              1.3.30. request_date_avp
-              1.3.31. sdp_fingerprint_avp
-              1.3.32. identity_signature_avp,
+              1.3.23. switchid_location
+              1.3.24. switchid_parameter
+              1.3.25. parameterstring_location
+              1.3.26. parameterstring_value
+              1.3.27. source_device_avp
+              1.3.28. source_networkid_avp
+              1.3.29. source_switchid_avp
+              1.3.30. custom_info_avp
+              1.3.31. cnam_avp
+              1.3.32. extraheaders_value
+              1.3.33. source_media_avp, destination_media_avp
+              1.3.34. request_date_avp
+              1.3.35. sdp_fingerprint_avp
+              1.3.36. identity_signature_avp,
                       identity_algorithm_avp,
                       identity_information_avp, identity_type_avp,
                       identity_canon_avp
@@ -78,6 +82,7 @@ Di-Shi Sun
               1.4.9. prepareallosproutes()
               1.4.10. checkcallingtranslation()
               1.4.11. reportospusage()
+              1.4.12. processsubscribe()
 
    2. Developer Guide
 
@@ -107,27 +112,32 @@ Di-Shi Sun
    1.20. Append user=phone parameter
    1.21. Append networkid location
    1.22. Networkid parameter name
-   1.23. Append parameter string location
-   1.24. Parameter string value
-   1.25. Setting the source device IP AVP
-   1.26. Setting the source network ID AVP
-   1.27. Setting the custom info AVP
-   1.28. Setting the CNAM AVP
-   1.29. Setting the media address AVPs
-   1.30. Setting the request date AVP
-   1.31. Setting the SDP finger print AVP
-   1.32. Setting the Identity related AVPs
-   1.33. checkospheader usage
-   1.34. validateospheader usage
-   1.35. getlocaladress usage
-   1.36. setrequestdate usage
-   1.37. requestosprouting usage
-   1.38. checkosproute usage
-   1.39. prepareosproute usage
-   1.40. prepareospresponse usage
-   1.41. prepareallosproutes usage
-   1.42. checkcallingtranslation usage
-   1.43. reportospusage usage
+   1.23. Append switchid location
+   1.24. Networkid parameter name
+   1.25. Append parameter string location
+   1.26. Parameter string value
+   1.27. Setting the source device IP AVP
+   1.28. Setting the source network ID AVP
+   1.29. Setting the source switch ID AVP
+   1.30. Setting the custom info AVP
+   1.31. Setting the CNAM AVP
+   1.32. Setting the NOTIFY extra headers
+   1.33. Setting the media address AVPs
+   1.34. Setting the request date AVP
+   1.35. Setting the SDP finger print AVP
+   1.36. Setting the Identity related AVPs
+   1.37. checkospheader usage
+   1.38. validateospheader usage
+   1.39. getlocaladress usage
+   1.40. setrequestdate usage
+   1.41. requestosprouting usage
+   1.42. checkosproute usage
+   1.43. prepareosproute usage
+   1.44. prepareospresponse usage
+   1.45. prepareallosproutes usage
+   1.46. checkcallingtranslation usage
+   1.47. reportospusage usage
+   1.48. processsubscribe usage
 
 Chapter 1. Admin Guide
 
@@ -479,7 +489,32 @@ modparam("osp","networkid_location",2)
    Example 1.22. Networkid parameter name
 modparam("osp","networkid_param","networkid")
 
-1.3.23. parameterstring_location
+1.3.23. switchid_location
+
+   The switchid_location (integer) parameter instructs the OSP
+   module where the destination switch ID should be appended. The
+   default value is 2
+
+   0 - switch ID is not appended.
+
+   1 - switch ID is appended as userinfo parameter.
+
+   2 - switch ID is appended as URI parameter.
+
+   Example 1.23. Append switchid location
+modparam("osp","switchid_location",2)
+
+1.3.24. switchid_parameter
+
+   The switchid_parameter (string) parameter instructs the OSP
+   module to use which parameter name in outbound destination URIs
+   to append destination switch ID. The default value is
+   "switchid"
+
+   Example 1.24. Networkid parameter name
+modparam("osp","switchid_param","switchid")
+
+1.3.25. parameterstring_location
 
    The parameterstring_location (integer) parameter instructs the
    OSP module where the parameter string should be appended. The
@@ -491,19 +526,19 @@ modparam("osp","networkid_param","networkid")
 
    2 - parameter string is appended as URI parameter.
 
-   Example 1.23. Append parameter string location
+   Example 1.25. Append parameter string location
 modparam("osp","parameterstring_location",0)
 
-1.3.24. parameterstring_value
+1.3.26. parameterstring_value
 
    The parameterstring_value (string) parameter instructs the OSP
    module to append the parameter string in outbound URIs. The
    default value is ""
 
-   Example 1.24. Parameter string value
+   Example 1.26. Parameter string value
 modparam("osp","parameterstring_value","")
 
-1.3.25. source_device_avp
+1.3.27. source_device_avp
 
    The source_device_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source device IP
@@ -513,10 +548,10 @@ modparam("osp","parameterstring_value","")
    pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.25. Setting the source device IP AVP
+   Example 1.27. Setting the source device IP AVP
 modparam("osp","source_device_avp","$avp(srcdev)")
 
-1.3.26. source_networkid_avp
+1.3.28. source_networkid_avp
 
    The source_networkid_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source network ID
@@ -526,10 +561,22 @@ modparam("osp","source_device_avp","$avp(srcdev)")
    variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.26. Setting the source network ID AVP
+   Example 1.28. Setting the source network ID AVP
 modparam("osp","source_networkid_avp","$avp(snid)")
 
-1.3.27. custom_info_avp
+1.3.29. source_switchid_avp
+
+   The source_switchid_avp (string) parameter instructs the OSP
+   module to use the defined AVP to pass the source switch ID
+   value. The default value is "$avp(_osp_source_switchid_)". Then
+   the source switch ID can be set by "$avp(_osp_source_switchid_)
+   = pseudo-variables". All pseudo variables are described in
+   http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.29. Setting the source switch ID AVP
+modparam("osp","source_switchid_avp","$avp(swid)")
+
+1.3.30. custom_info_avp
 
    The custom_info_avp (string) parameter instructs the OSP module
    to use the defined AVP to pass the custom information values.
@@ -538,10 +585,10 @@ modparam("osp","source_networkid_avp","$avp(snid)")
    pseudo-variables". All pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.27. Setting the custom info AVP
+   Example 1.30. Setting the custom info AVP
 modparam("osp","custom_info_avp","$avp(cinfo)")
 
-1.3.28. cnam_avp
+1.3.31. cnam_avp
 
    The cnam_avp (string) parameter instructs the OSP module to use
    the defined AVP to pass the CNAM values. The default value is
@@ -549,10 +596,19 @@ modparam("osp","custom_info_avp","$avp(cinfo)")
    "$avp(_osp_cnam_)". All pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.28. Setting the CNAM AVP
+   Example 1.31. Setting the CNAM AVP
 modparam("osp","cnam_avp","$avp(cnam)")
 
-1.3.29. source_media_avp, destination_media_avp
+1.3.32. extraheaders_value
+
+   The extraheaders_value (string) parameter instructs the OSP
+   module to append the defined SIP headers in outbound SIP NOTIFY
+   messages. The default value is empty.
+
+   Example 1.32. Setting the NOTIFY extra headers
+modparam("osp", "extraheaders_value", "Source: N")
+
+1.3.33. source_media_avp, destination_media_avp
 
    These parameters are used to tell the OSP module which AVPs are
    used to store media addresses. The default values are
@@ -560,11 +616,11 @@ modparam("osp","cnam_avp","$avp(cnam)")
    "$avp(_osp_destination_media_address_)". All pseudo variables
    are described in http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.29. Setting the media address AVPs
+   Example 1.33. Setting the media address AVPs
 modparam("osp", "source_media_avp", "$avp(srcmedia)")
 modparam("osp", "destination_media_avp", "$avp(destmedia)")
 
-1.3.30. request_date_avp
+1.3.34. request_date_avp
 
    The request_date_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the SIP request Date
@@ -573,10 +629,10 @@ modparam("osp", "destination_media_avp", "$avp(destmedia)")
    "$avp(_osp_request_date_)". All pseudo variables are described
    in http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.30. Setting the request date AVP
+   Example 1.34. Setting the request date AVP
 modparam("osp","request_date_avp","$avp(reqdate)")
 
-1.3.31. sdp_fingerprint_avp
+1.3.35. sdp_fingerprint_avp
 
    The sdp_fingerprint_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the SDP fing print
@@ -586,10 +642,10 @@ modparam("osp","request_date_avp","$avp(reqdate)")
    pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.31. Setting the SDP finger print AVP
+   Example 1.35. Setting the SDP finger print AVP
 modparam("osp","sdp_fingerprint_avp","$avp(sdpfp)")
 
-1.3.32. identity_signature_avp, identity_algorithm_avp,
+1.3.36. identity_signature_avp, identity_algorithm_avp,
 identity_information_avp, identity_type_avp, identity_canon_avp
 
    These parameters instruct the OSP module to use the defined
@@ -602,7 +658,7 @@ identity_information_avp, identity_type_avp, identity_canon_avp
    pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
-   Example 1.32. Setting the Identity related AVPs
+   Example 1.36. Setting the Identity related AVPs
 modparam("osp","identity_signature_avp","$avp(idsign)")
 modparam("osp","identity_algorithm_avp","$avp(idalg)")
 modparam("osp","identity_information_avp","$avp(idinfo)")
@@ -618,7 +674,7 @@ modparam("osp","identity_canon_avp","$avp(idcanon)")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.33. checkospheader usage
+   Example 1.37. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -637,7 +693,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.34. validateospheader usage
+   Example 1.38. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -653,7 +709,7 @@ if (validateospheader()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.35. getlocaladress usage
+   Example 1.39. getlocaladress usage
 ...
 if (getlocaladdress()) {
   log(1,"Obtain proxy local egress address\n");
@@ -669,7 +725,7 @@ if (getlocaladdress()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.36. setrequestdate usage
+   Example 1.40. setrequestdate usage
 ...
 if (setrequest()) {
   log(1,"Set request date\n");
@@ -698,7 +754,7 @@ if (setrequest()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.37. requestosprouting usage
+   Example 1.41. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -714,7 +770,7 @@ if (requestosprouting()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.38. checkosproute usage
+   Example 1.42. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -737,7 +793,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.39. prepareosproute usage
+   Example 1.43. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -756,7 +812,7 @@ if (prepareosproute()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.40. prepareospresponse usage
+   Example 1.44. prepareospresponse usage
 ...
 if (prepareospresponse()) {
   log(1,"Response is prepared.\n");
@@ -774,7 +830,7 @@ if (prepareospresponse()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.41. prepareallosproutes usage
+   Example 1.45. prepareallosproutes usage
 ...
 if (prepareallosproutes()) {
   log(1,"Routes are prepared, now forking the call\n");
@@ -796,7 +852,7 @@ if (prepareallosproutes()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.42. checkcallingtranslation usage
+   Example 1.46. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -825,7 +881,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.43. reportospusage usage
+   Example 1.47. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");
@@ -837,6 +893,34 @@ if (is_direction("downstream")) {
   if (!reportospusage("1")) {
     log(1,"This BYE message does not include OSP usage information\n");
   }
+}
+...
+
+1.4.12. processsubscribe()
+
+   This function should be called after receiving a SUBSCRIBE for
+   CNAM message and there is a cached CNAM record for this
+   message. This function generates a NOTIFY message including the
+   cached CNAM record, then sends the NOTIFY message to the device
+   sending the SUBSCRIBE message.
+
+   Meaning of the parameter is as follows:
+     * cachedcnamrecord - Cached CNAM record.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.48. processsubscribe usage
+...
+if (method == "SUBSCRIBE") {
+    if (($var(sevent) == "calling-name") && (uri == myself)) {
+        if ($var(cnamrecord) != NULL) {
+            processsubscribe("$(var(cnamrecord){s.b64decode})");
+        } else {
+            t_relay("1.2.3.4", "0x02");
+        }
+    } else {
+        t_relay();
+    }
 }
 ...
 

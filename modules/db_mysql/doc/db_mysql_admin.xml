@@ -21,7 +21,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>No dependencies on other &osips; modules</emphasis>.
+				<emphasis>If a <xref linkend="modparam-tls-client-domain"/> is defined, the <emphasis role='bold'>tls_mgm</emphasis> module will need to be loaded as well</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -127,6 +127,36 @@ modparam("db_mysql", "max_db_queries", 2)
 		<programlisting format="linespecific">
 ...
 modparam("db_mysql", "max_db_retries", 2)
+...
+</programlisting>
+		</example>
+	</section>
+        <section id="modparam-tls-client-domain" xreflabel="tls_client_domain">
+		<title><varname>tls_client_domain</varname> (string)</title>
+		<para>
+		Setting this parameter will enable TLS for all MySQL connections
+		established by the module. Refer to the <emphasis>tls_mgm</emphasis>
+		module for additional info regarding TLS client domains.
+		</para>
+		<para>
+		If using this parameter, you must also ensure that
+		<emphasis>tls_mgm</emphasis> is loaded and properly configured.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>NULL</emphasis> (not set)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>tls_client_domain</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_domain", "1=10.11.12.13:3306")
+modparam("tls_mgm", "certificate", "1:/etc/pki/tls/certs/opensips.pem")
+modparam("tls_mgm", "private_key", "1:/etc/pki/tls/private/opensips.key")
+modparam("tls_mgm", "ca_list",     "1:/etc/pki/tls/certs/ca.pem")
+...
+modparam("db_mysql", "tls_client_domain", "1=10.11.12.13:3306")
 ...
 </programlisting>
 		</example>

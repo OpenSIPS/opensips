@@ -22,12 +22,15 @@
  *  2015-10-01 initial version (Ionel Cerghit)
  */
 
+#ifdef SHM_EXTRA_STATS
+
 #include <dlfcn.h>
 #include <string.h>
 
 #include "module_info.h"
 #include "../dprint.h"
 #include "shm_mem.h"
+#include "common.h"
 
 char buff[60];
 
@@ -38,7 +41,7 @@ void* main_handle = NULL;
 volatile struct module_info* memory_mods_stats = NULL;
 int core_index;
 
-int set_mem_idx(char* mod_name, int  mem_free_idx){
+int set_mem_idx(char* mod_name, int  mem_free_idx) {
 
 	int *var;
 	if(!main_handle){
@@ -59,28 +62,154 @@ int set_mem_idx(char* mod_name, int  mem_free_idx){
 
 	if(!var){
 		LM_CRIT("The module %s was not found, be sure it is the same as the NAME variable from the module's Makefile"
-			    "(without .so) and run 'make generate-mem-stat'\n", mod_name);
+			    "(without .so) and run 'make generate-mem-stats'\n", mod_name);
 		return -1;
 	}
 
 	*var = mem_free_idx;
-	LM_INFO("changed module variable %s = %d\n", buff, *var);
+	LM_DBG("changed module variable %s = %d\n", buff, *var);
 
 	return 0;
 }
 
-inline void update_module_stats(long mem_used, long real_used, int frags, int group_idx){
-	if(mem_free_idx == 1)
-		return;
+int init_new_stat(stat_var* stat) {
+#ifndef DBG_MALLOC
+	#define MALLOC_UNSAFE(_size)  MY_MALLOC_UNSAFE(shm_block, _size)
+#else
+	#define MALLOC_UNSAFE(_size)  MY_MALLOC_UNSAFE(shm_block, _size, __FILE__, __FUNCTION__, __LINE__ )
+#endif
+
+	stat->u.val = MALLOC_UNSAFE(sizeof(stat_val));
+
+	if(!stat->u.val) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+
+#ifdef NO_ATOMIC_OPS
+		*(stat->u.val) = 0;
+#else
+		atomic_set(stat->u.val,0);
+#endif
+
+	return 0;
+
+#undef MALLOC_UNSAFE
+}
+
+inline void update_module_stats(long mem_used, long real_used, int frags, int group_idx) {
+
+	unsigned long local_max, global_max;
 #ifdef SHM_SHOW_DEFAULT_GROUP
-	update_stat(memory_mods_stats[group_idx].fragments, frags);
-	update_stat(memory_mods_stats[group_idx].memory_used, mem_used);
-	update_stat(memory_mods_stats[group_idx].real_used, real_used);
+	if(!memory_mods_stats)
+		return;
 #else
 	if(group_idx == 0)
 		return;
-	update_stat(memory_mods_stats[group_idx - 1].fragments, frags);
-	update_stat(memory_mods_stats[group_idx - 1].memory_used, mem_used);
-	update_stat(memory_mods_stats[group_idx - 1].real_used, real_used);
+	group_idx--;
 #endif
+
+	update_stat(&memory_mods_stats[group_idx].fragments, frags);
+	update_stat(&memory_mods_stats[group_idx].memory_used, mem_used);
+	update_stat(&memory_mods_stats[group_idx].real_used, real_used);
+
+	if (memory_mods_stats[group_idx].lock) {
+		local_max = get_stat_val(&memory_mods_stats[group_idx].real_used);
+		global_max = get_stat_val(&memory_mods_stats[group_idx].max_real_used);
+		if (local_max > global_max) {
+			/* we take the group lock and make the comparation again because
+			   if we not another process might have writen the max_statistic before us
+			   with a bigger maximum and we could upgrade the maximum wrong
+			*/
+			lock_get(memory_mods_stats[group_idx].lock);
+			global_max = get_stat_val(&memory_mods_stats[group_idx].max_real_used);
+			if (local_max > global_max) {
+				reset_stat(&memory_mods_stats[group_idx].max_real_used);
+				update_stat(&memory_mods_stats[group_idx].max_real_used, local_max);
+			}
+			lock_release(memory_mods_stats[group_idx].lock);
+		}
+
+	}
 }
+
+
+int alloc_group_stat(void) {
+	int size_prealoc, groups;
+
+#ifndef SHM_SHOW_DEFAULT_GROUP
+	groups = mem_free_idx - 1;
+#else
+	groups = mem_free_idx;
+
+#endif
+
+	size_prealoc = groups * sizeof(struct module_info);
+
+#ifndef DBG_MALLOC
+	memory_mods_stats = MY_REALLOC_UNSAFE(shm_block, (void*)memory_mods_stats, size_prealoc);
+#else
+	memory_mods_stats = MY_REALLOC_UNSAFE(shm_block, (void*)memory_mods_stats, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
+#endif
+
+	if(!memory_mods_stats){
+		LM_CRIT("could not alloc shared memory");
+		return -1;
+	}
+	//initialize the new created group
+	memset((void*)&memory_mods_stats[groups - 1], 0, sizeof(struct module_info));
+	if (init_new_stat((stat_var *)&memory_mods_stats[groups - 1].fragments) < 0)
+		return -1;
+
+	if (init_new_stat((stat_var *)&memory_mods_stats[groups - 1].memory_used) < 0)
+		return -1;
+
+	if (init_new_stat((stat_var *)&memory_mods_stats[groups - 1].real_used) < 0)
+		return -1;
+
+	if (init_new_stat((stat_var*)&memory_mods_stats[groups - 1].max_real_used) < 0)
+		return -1;
+
+	memory_mods_stats[groups - 1].lock = shm_malloc_unsafe(sizeof (gen_lock_t));
+
+	if (!memory_mods_stats[groups - 1].lock) {
+		LM_ERR("Failed to allocate lock \n");
+		return -1;
+	}
+
+	if (!lock_init(memory_mods_stats[groups - 1].lock)) {
+		LM_ERR("Failed to init lock \n");
+		return -1;
+	}
+
+
+	if (core_index) {
+		if(mem_free_idx - 1 == core_index) {
+			#ifdef HP_MALLOC
+				update_module_stats(shm_block->used, shm_block->real_used, shm_block->total_fragments, core_index);
+			#else
+				update_module_stats(shm_block->used, shm_block->real_used, shm_block->fragments, core_index);
+			#endif
+			
+			#ifdef SHM_SHOW_DEFAULT_GROUP
+				reset_stat(&memory_mods_stats[0].fragments);
+				reset_stat(&memory_mods_stats[0].memory_used);
+				reset_stat(&memory_mods_stats[0].real_used);
+			#endif
+
+			set_indexes(core_index);
+
+		} else {
+			update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(gen_lock_t), sizeof(stat_val) * 4 +
+					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(gen_lock_t), 5, core_index);
+		}
+	} else {
+		update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(gen_lock_t), sizeof(stat_val) * 4 +
+					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(gen_lock_t), 5, 0);
+	}
+
+
+	return 0;
+}
+
+#endif /* SHM_EXTRA_STATS */

@@ -26,6 +26,8 @@
 #ifndef _WS_HANDSHAKE_H_
 #define _WS_HANDSHAKE_H_
 
+#include "../../ip_addr.h"
+
 #define HTTP_SEP			"\r\n"
 #define HTTP_SEP_LEN		(sizeof(HTTP_SEP) - 1)
 #define HTTP_END HTTP_SEP HTTP_SEP
@@ -48,8 +50,8 @@
 #define WS_HOST_F		(1 << 0)
 #define WS_UPGRADE_F	(1 << 1)
 #define WS_CONN_F		(1 << 2)
-#define WS_ORIGIN_F		(1 << 4)
 #define WS_KEY_F		(1 << 3)
+#define WS_ORIGIN_F		(1 << 4)
 #define WS_VER_F		(1 << 5)
 /* for SIP connections, RFC7118 requires sip protocol */
 #define WS_PROTO_F		(1 << 6)
@@ -126,6 +128,11 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len);
 static int ws_complete_handshake(struct tcp_connection *c);
 static int ws_start_handshake(struct tcp_connection *c);
 static int ws_bad_handshake(struct tcp_connection *c);
+static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* req);
+static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status status, str* rpl, str* message);
+
+#define WS_TRACE_MAX 1024
+static char ws_trace_buf[WS_TRACE_MAX];
 
 /* safety checks */
 #ifndef _ws_common_module
@@ -155,7 +162,7 @@ static int ws_bad_handshake(struct tcp_connection *c);
 static char ws_key[WS_KEY_LEN];
 static const char base64alphabet[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-#define BASE64ALPHABET_LEN (sizeof base64alphabet)
+#define BASE64ALPHABET_LEN (sizeof(base64alphabet)-1)
 
 
 /* we're using a completely random key - no reason yet for something else */
@@ -183,6 +190,7 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 	struct timeval begin;
 	unsigned int err_len, poll_err = 0, err;
 	int n;
+	str trace_str;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	fd_set sel_set;
 	fd_set orig_set;
@@ -345,6 +353,16 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 		goto error;
 	}
 
+	if ( ((struct ws_data *) con->proto_data)->dest ) {
+		trace_str.len = msg_len;
+		trace_str.s = msg_buf;
+
+		if ( complete_ws_trace( con, TRANS_TRACE_SUCCESS,
+							&trace_str, &CONNECT_OK) < 0 ) {
+			LM_ERR("failed to complete web socket trace!\n");
+		}
+	}
+
 	init_tcp_req(req, 0);
 	con->msg_attempts = 0;
 
@@ -356,6 +374,15 @@ done:
 	/* connection will be released */
 	return size;
 error:
+	/* ws_start_handshake must be completed so trace_ws was called
+	 * in order to get here so we're safe */
+	if ( ((struct ws_data *) con->proto_data)->dest ) {
+		if ( complete_ws_trace( con, TRANS_TRACE_FAILURE,
+							0, &CONNECT_FAIL) < 0 ) {
+			LM_ERR("failed to trace ws connect failure!\n");
+		}
+	}
+
 	return -1;
 }
 
@@ -366,6 +393,7 @@ static int ws_server_handshake(struct tcp_connection *con)
 	int msg_len;
 	char *msg_buf;
 	struct tcp_req *req;
+	str trace_str;
 
 	if (con->con_req) {
 		if (WS_TYPE(con) != WS_SERVER) {
@@ -469,6 +497,16 @@ static int ws_server_handshake(struct tcp_connection *con)
 			LM_DBG("cannot parse handshake\n");
 			goto error;
 		}
+
+		if ( ((struct ws_data *) con->proto_data)->dest ) {
+			trace_str.len = msg_len;
+			trace_str.s = msg_buf;
+
+			if ( trace_ws( con, TRANS_TRACE_ACCEPTED, &trace_str) < 0 ) {
+				LM_ERR("failed to trace WS request!\n");
+			}
+		}
+
 
 		if (ws_complete_handshake(con) < 0) {
 			LM_DBG("cannot complete handshake\n");
@@ -664,6 +702,9 @@ static inline int ws_parse_rpl_http_fl(struct tcp_connection *c,
 	end = cr;
 	len = end - p;
 
+	*msg_buf = cr + 2;
+	*msg_len -= len + 2;
+
 	if (len < HTTP_VERSION_LEN) {
 		LM_ERR("invalid first line: version too small <%.*s>\n", len, p);
 		goto error;
@@ -770,7 +811,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	struct sip_msg tmp_msg;
 	struct hdr_field *hf;
 	unsigned version;
-	char flags = 0;
+	unsigned char flags = 0;
 	unsigned ver_min, ver_maj;
 
 	if (ws_parse_req_http_fl(c, &msg, &len, &ver_maj, &ver_min) != 0) {
@@ -914,7 +955,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 
 	}
 
-	if (flags != WS_ALL_REQ_F) {
+	if (flags != (unsigned char)WS_ALL_REQ_F) {
 		/* negate so we can easily compare them */
 		flags = ~flags;
 		if (flags & WS_HOST_F)
@@ -964,7 +1005,7 @@ static void ws_compute_key(str *key)
 static int ws_is_valid_key(str *key, str *accept)
 {
 	ws_compute_key(key);
-	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len);
+	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len) == 0;
 }
 
 static int ws_complete_handshake(struct tcp_connection *c)
@@ -977,6 +1018,9 @@ static int ws_complete_handshake(struct tcp_connection *c)
 		{ (void *)HTTP_END, HTTP_END_LEN }/* message end */
 	};
 
+	str trace_str = { ws_trace_buf, 0 };
+	int iov_len = sizeof(iov) / sizeof(struct iovec), i;
+
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
 
@@ -986,6 +1030,23 @@ static int ws_complete_handshake(struct tcp_connection *c)
 	n = _ws_common_writev(c, c->fd, iov, 3, _ws_common_write_tout);
 	stop_expire_timer(get, tcpthreshold,
 			_ws_common_module " handshake", "", 0, 1);
+
+	if ( ((struct ws_data *) c->proto_data)->dest ) {
+		for ( i=0; i < iov_len; i++ ) {
+			/* avoid overflow */
+			if ( trace_str.len + iov[i].iov_len > WS_TRACE_MAX )
+				break;
+
+			memcpy( trace_str.s + trace_str.len,
+					iov[i].iov_base, iov[i].iov_len );
+			trace_str.len += iov[i].iov_len;
+		}
+
+		if ( complete_ws_trace( c, TRANS_TRACE_SUCCESS,
+									&trace_str, &ACCEPT_OK ) < 0 ) {
+			LM_ERR("failed to complete webSocket handshake!\n");
+		}
+	}
 
 	return n;
 }
@@ -998,11 +1059,20 @@ static int ws_bad_handshake(struct tcp_connection *c)
 		{ (void*)WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN },
 	};
 
+	str trace_str = { WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN };
+
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
 	n = _ws_common_writev(c, c->fd, iov, 1, _ws_common_write_tout);
 	stop_expire_timer(get, tcpthreshold,
 			_ws_common_module " handshake", "", 0, 1);
+
+	if ( ((struct ws_data *) c->proto_data)->dest ) {
+		if ( complete_ws_trace( c, TRANS_TRACE_FAILURE,
+							&trace_str, &ACCEPT_FAIL) < 0 ) {
+			LM_ERR("failed to complete web socket trace!\n");
+		}
+	}
 
 	return n;
 }
@@ -1011,7 +1081,7 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 {
 	struct sip_msg tmp_msg;
 	struct hdr_field *hf;
-	char flags = 0;
+	unsigned char flags = 0;
 	unsigned ver_min, ver_maj;
 
 	if (ws_parse_rpl_http_fl(c, &msg, &len, &ver_maj, &ver_min) != 0) {
@@ -1146,21 +1216,15 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 
 	}
 
-	if (flags != WS_ALL_REQ_F) {
+	if (flags != (unsigned char)WS_ALL_RPL_F) {
 		/* negate so we can easily compare them */
 		flags = ~flags;
-		if (flags & WS_HOST_F)
-			LM_ERR("Host header not present!\n");
 		if (flags & WS_UPGRADE_F)
 			LM_ERR("Upgrade header not present!\n");
 		if (flags & WS_CONN_F)
 			LM_ERR("Connection header not present!\n");
-		if (flags & WS_ORIGIN_F)
-			LM_ERR("Origin header not present!\n");
-		if (flags & WS_KEY_F)
-			LM_ERR("Sec-WebSocket-Key header not present!\n");
-		if (flags & WS_VER_F)
-			LM_ERR("Sec-WebSocket-Version header not present!\n");
+		if (flags & WS_ACCEPT_F)
+			LM_ERR("Sec-WebSocket-Protocol header not present!\n");
 		if (flags & WS_PROTO_F)
 			LM_ERR("Sec-WebSocket-Protocol header not present!\n");
 		goto ws_error;
@@ -1181,11 +1245,15 @@ error:
 static int ws_start_handshake(struct tcp_connection *c)
 {
 	int n;
+	int i;
 	struct timeval get;
 	char *ip;
 	char *port;
 	int port_len;
 	static char host_orig_buf[MAX_HOST_LEN];
+
+	str trace_str = { ws_trace_buf, 0 };
+
 	static struct iovec iov[] = {
 		{ (void*)HTTP_GET_METHOD, HTTP_GET_METHOD_LEN },	/* GET method */
 		{ (void*)" ", 1 },
@@ -1204,6 +1272,8 @@ static int ws_start_handshake(struct tcp_connection *c)
 		{ (void*)HTTP_SEP, HTTP_SEP_LEN },
 		{ (void*)HTTP_HANDSHAKE_END, HTTP_HANDSHAKE_END_LEN }, /* constant part */
 	};
+
+	int iov_len = sizeof(iov) / sizeof(struct iovec);
 
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
@@ -1227,6 +1297,21 @@ static int ws_start_handshake(struct tcp_connection *c)
 	n = _ws_common_writev(c, c->fd, iov, 16, _ws_common_write_tout);
 	stop_expire_timer(get, tcpthreshold,
 			_ws_common_module " start handshake", "", 0, 1);
+
+	if ( ((struct ws_data *) c->proto_data)->dest ) {
+		for ( i=0; i < iov_len; i++ ) {
+			/* avoid overflow */
+			if ( trace_str.len + iov[i].iov_len > WS_TRACE_MAX )
+				break;
+
+			memcpy( trace_str.s + trace_str.len,
+					iov[i].iov_base, iov[i].iov_len );
+			trace_str.len += iov[i].iov_len;
+		}
+		if ( trace_ws( c, TRANS_TRACE_CONNECTED, &trace_str ) < 0 ) {
+			LM_ERR("WS trace failed!\n");
+		}
+	}
 
 	return n;
 }
@@ -1532,4 +1617,48 @@ skip:
 	return bytes;
 }
 
+static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* req)
+{
+	struct ws_data* d;
+	union sockaddr_union src, dst;
+
+	if ( !conn || !req || !req->s || !req->len || ! (d = conn->proto_data) )
+		return 0;
+
+	if ( !d->message  ) {
+		if ( tcpconn2su( conn, &src, &dst ) < 0 ) {
+			LM_ERR("can't fetch network info!\n");
+			return -1;
+		}
+
+		if ( (d->message = create_trace_message( conn->cid, &src, &dst,
+						conn->type, d->dest )) == 0 )  {
+			LM_ERR(" can't init trace_message!\n");
+			return -1;
+		}
+	}
+
+	add_trace_data( d->message, "Event", &trans_trace_str_event[event]);
+	add_trace_data( d->message, "Ws-Request", req);
+
+	return 0;
+}
+
+static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status status, str* rpl, str* message)
+{
+	struct ws_data* d;
+
+	if ( !conn || !rpl || !rpl->s || !rpl->len || !(d = conn->proto_data) || !d->message )
+		return 0;
+
+
+	add_trace_data( message, "Status", &trans_trace_str_status[status]);
+	add_trace_data( message, "Ws-Reply", &trans_trace_str_status[status]);
+	if ( message && message->s && message->len )
+		add_trace_data( d->message, "Message", message);
+
+	return 0;
+}
+
+#undef WS_TRACE_MAX
 #endif /* _WS_HANDSHAKE_COMMON_H_ */

@@ -683,7 +683,7 @@ static inline int do_dns_failover(struct cell *t)
 	faked_req.force_send_socket = shmem_msg->force_send_socket;
 
 	/* send it out */
-	if (t_forward_nonack( t, &faked_req, uac->proxy)==1)
+	if (t_forward_nonack( t, &faked_req, uac->proxy, 1/*reset*/)==1)
 		ret = 0;
 
 done:
@@ -1124,8 +1124,8 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	/* *** store and relay message as needed *** */
 	reply_status = t_should_relay_response(t, msg_status, branch,
 		&save_clone, &relay, cancel_bitmap, p_msg );
-	LM_DBG("branch=%d, save=%d, relay=%d\n",
-		branch, save_clone, relay );
+	LM_DBG("T_state=%d, branch=%d, save=%d, relay=%d, cancel_BM=%X\n",
+		reply_status, branch, save_clone, relay, *cancel_bitmap );
 
 	/* store the message if needed */
 	if (save_clone) /* save for later use, typically branch picking */

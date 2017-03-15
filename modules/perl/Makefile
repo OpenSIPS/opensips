@@ -56,7 +56,7 @@ clean:	clean-special
 
 .PHONY: clean-special
 clean-special:
-	-rm -f opensipsxs.c opensipsxs.o opensipsxs.d
+	-$(Q)rm -f opensipsxs.c opensipsxs.o opensipsxs.d
 
 .PHONY: perlpod
 perlpod: doc/perl_pod.sgml

@@ -36,6 +36,7 @@ Irina-Maria Stanescu
               1.2.1. Overview
               1.2.2. Definitions and syntax
               1.2.3. How it works
+              1.2.4. Radius accounting dependencies
 
         1.3. Multi Call-Legs accounting
 
@@ -59,50 +60,45 @@ Irina-Maria Stanescu
               1.6.1. early_media (integer)
               1.6.2. report_cancels (integer)
               1.6.3. detect_direction (integer)
-              1.6.4. multi_leg_info (string)
-              1.6.5. multi_leg_bye_info (string)
+              1.6.4. extra_fields (string)
+              1.6.5. leg_fields (string)
               1.6.6. log_level (integer)
               1.6.7. log_facility (string)
-              1.6.8. log_extra (string)
-              1.6.9. log_extra_bye (string)
-              1.6.10. aaa_url (string)
-              1.6.11. service_type (integer)
-              1.6.12. aaa_extra (string)
-              1.6.13. aaa_extra_bye (string)
-              1.6.14. db_table_acc (string)
-              1.6.15. db_table_missed_calls (string)
-              1.6.16. db_url (string)
-              1.6.17. acc_method_column (string)
-              1.6.18. acc_from_tag_column (string)
-              1.6.19. acc_to_tag_column (string)
-              1.6.20. acc_callid_column (string)
-              1.6.21. acc_sip_code_column (string)
-              1.6.22. acc_sip_reason_column (string)
-              1.6.23. acc_time_column (string)
-              1.6.24. db_extra (string)
-              1.6.25. db_extra_bye (string)
-              1.6.26. diameter_client_host (string)
-              1.6.27. diameter_client_port (int)
-              1.6.28. diameter_extra (string)
-              1.6.29. evi_extra (string)
-              1.6.30. evi_extra_bye (string)
-              1.6.31. acc_created_avp_name (string)
+              1.6.8. aaa_url (string)
+              1.6.9. service_type (integer)
+              1.6.10. db_table_acc (string)
+              1.6.11. db_table_missed_calls (string)
+              1.6.12. db_url (string)
+              1.6.13. acc_method_column (string)
+              1.6.14. acc_from_tag_column (string)
+              1.6.15. acc_to_tag_column (string)
+              1.6.16. acc_callid_column (string)
+              1.6.17. acc_sip_code_column (string)
+              1.6.18. acc_sip_reason_column (string)
+              1.6.19. acc_time_column (string)
+              1.6.20. acc_created_avp_name (string)
 
-        1.7. Exported Functions
+        1.7. Exported Variables
 
-              1.7.1. do_accounting(type, flags, table)
-              1.7.2. drop_accounting([type], [flags])
-              1.7.3. acc_log_request(comment)
-              1.7.4. acc_db_request(comment, table)
-              1.7.5. acc_aaa_request(comment)
-              1.7.6. acc_diam_request(comment)
-              1.7.7. acc_evi_request(comment)
+              1.7.1. $acc_extra(tag_name)
+              1.7.2. $(acc_leg(tag_name)[leg_index])
+              1.7.3. acc_current_leg - read-only
 
-        1.8. Exported Events
+        1.8. Exported Functions
 
-              1.8.1. E_ACC_CDR
-              1.8.2. E_ACC_EVENT
-              1.8.3. E_ACC_MISSED_EVENT
+              1.8.1. do_accounting(type, flags, table)
+              1.8.2. drop_accounting([type], [flags])
+              1.8.3. acc_log_request(comment)
+              1.8.4. acc_db_request(comment, table)
+              1.8.5. acc_aaa_request(comment)
+              1.8.6. acc_evi_request(comment)
+
+        1.9. acc_new_leg()
+        1.10. Exported Events
+
+              1.10.1. E_ACC_CDR
+              1.10.2. E_ACC_EVENT
+              1.10.3. E_ACC_MISSED_EVENT
 
    2. Frequently Asked Questions
 
@@ -111,53 +107,41 @@ Irina-Maria Stanescu
    1.1. early_media example
    1.2. report_cancels example
    1.3. detect_direction example
-   1.4. multi_leg_info example
-   1.5. multi_leg_bye_info example
+   1.4. Setting extra_fields example:
+   1.5. Setting leg_fields example:
    1.6. log_level example
    1.7. log_facility example
-   1.8. log_extra example
-   1.9. log_extra_bye example
-   1.10. Set aaa_url parameter
-   1.11. service_type example
-   1.12. aaa_extra example
-   1.13. aaa_extra_bye example
-   1.14. db_table_acc example
-   1.15. db_table_missed_calls example
-   1.16. db_url example
-   1.17. acc_method_column example
-   1.18. acc_from_tag_column example
-   1.19. acc_to_tag_column example
-   1.20. acc_callid_column example
-   1.21. acc_sip_code_column example
-   1.22. acc_sip_reason_column example
-   1.23. acc_time_column example
-   1.24. db_extra example
-   1.25. db_extra_bye example
-   1.26. diameter_client_host example
-   1.27. diameter_client_host example
-   1.28. diameter_extra example
-   1.29. evi_extra example
-   1.30. evi_extra_bye example
-   1.31. acc_created_avp_name example
-   1.32. do_accounting usage
-   1.33. drop_accounting usage
-   1.34. acc_log_request usage
-   1.35. acc_db_request usage
-   1.36. acc_aaa_request usage
-   1.37. acc_diam_request usage
-   1.38. acc_evi_request usage
+   1.8. Set aaa_url parameter
+   1.9. service_type example
+   1.10. db_table_acc example
+   1.11. db_table_missed_calls example
+   1.12. db_url example
+   1.13. acc_method_column example
+   1.14. acc_from_tag_column example
+   1.15. acc_to_tag_column example
+   1.16. acc_callid_column example
+   1.17. acc_sip_code_column example
+   1.18. acc_sip_reason_column example
+   1.19. acc_time_column example
+   1.20. acc_created_avp_name example
+   1.21. do_accounting usage
+   1.22. drop_accounting usage
+   1.23. acc_log_request usage
+   1.24. acc_db_request usage
+   1.25. acc_aaa_request usage
+   1.26. acc_evi_request usage
+   1.27. acc_new_leg usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
    ACC module is used to account transactions information to
-   different backends like syslog, SQL, AAA and DIAMETER (beta
-   version).
+   different backends like syslog, SQL, AAA.
 
    To account a transaction and to choose which set of backends to
    be used, the script writer just has to use mark the transaction
-   for accouting by using the Section 1.7.1, “ do_accounting(type,
+   for accouting by using the Section 1.8.1, “ do_accounting(type,
    flags, table) ” script function. Note that the function is not
    actually doing the accounting at that very process, it is just
    setting a marker - the actual accouting will be done later when
@@ -189,7 +173,7 @@ Chapter 1. Admin Guide
      * A single INVITE may produce multiple accounting reports --
        that's due to SIP forking feature.
      * Since version 2.2 all flags used for accounting have been
-       replaced by the do_accounting function. No need to worry
+       replaced with do_accounting function. No need to worry
        anymore of whether you have set the flags or not, or be
        confused by various flag names, now you only have to call
        the function and it will do all the work for you.
@@ -203,17 +187,7 @@ Chapter 1. Admin Guide
        PSTN status in case of the gateway).
 
    The SQL, Event Interface and AAA backend support are compiled
-   in the module. For DIAMETER you need to enable it by
-   recompiling the module with properly set defines: uncomment
-   DIAM_ACC line in modules/acc/Makefile. The AAA client needs to
-   be configured properly.
-
-   NOTE: diameter support was developed for DISC (DIameter Server
-   Client project at http://developer.berlios.de/projects/disc/).
-   This project seems to be no longer maintained and DIAMETER
-   specifications were updated in the meantime. Thus, the DIAMETER
-   part in the module is obsolete and needs rework to be usable
-   with opendiameter or other DIAMETER servers.
+   in the module.
 
 1.1.1. General Example
 
@@ -241,33 +215,29 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 1.2.1. Overview
 
    Along the static default information, ACC modules allows
-   dynamical selection of extra information to be logged. This
-   allows you to log any pseudo-variable (AVPs, parts of the
-   request, parts of the reply, etc).
+   dynamical selection of extra information to be logged using
+   acc_extra pseudovariable. This allows you to log any
+   pseudo-variable (AVPs, parts of the request, parts of the
+   reply, etc).
 
 1.2.2. Definitions and syntax
 
-   Selection of extra information is done via xxx_extra parameters
-   by specifying the names of additional information you want to
-   log. This information is defined via pseudo-variables and may
-   include headers, AVPs values or other message or system values.
-   The syntax of the parameter is:
-     * xxx_extra = extra_definition (';'extra_definition)*
-     * extra_definition = log_name '=' pseudo_variable ['/reply']
+   Selection of extra information is done via extra_field
+   parameter by specifying tags and log_names for the additional
+   information. This information is defined via acc_extra
+   pseudovariable, referenced with the define tag. If the tag is
+   not specified, it's value will be considered to be the same as
+   the log_value. Accounting backend(log, db, aaa, evi) is
+   specified at the beginning of the definition, separated by ':'
+   from the rest. The syntax of the parameter is:
+     * backend : tag -> log_name (';'extra_definition)*
+     * backend : tag (';' extra_definition)*
 
-   Each PV (pseudo variable) may be evaluated in the context of
-   the request message (to access info from it) or in the context
-   of the reply message (final reply for the request).
-
-   Using “/reply” marker, the PV will be evaluated in the context
-   of the reply; by default (without the marker), the evaluation
-   is done in the contect of the request. This will allow you to
-   automatically account information (message or network related)
-   from both request and reply in the same time.
-
-   The full list of supported pseudo-variables in OpenSIPS is
-   availabe at:
-   http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar
+   Extra values are consistent during the whole call. Setting a
+   value during the request will result in seeing that value on
+   the reply. Also, as concerning CDR logging, setting a value on
+   the initial INVITIE will result in having that value throughout
+   the dialog.
 
    Via log_name you define how/where the data will be logged. Its
    meaning depends of the accounting support which is used:
@@ -280,18 +250,23 @@ if (uri=~"sip:+40") /* calls to Romania */ {
        packing the data into AAA message. The log_name will be
        translated to AVP number via the dictionary. IMPORTANT: add
        in AAA dictionary the log_name attribute.
-     * DIAMETER accounting - log_name will be the AVP code used
-       for packing the data into DIAMETER message. The AVP code is
-       given directly as integer, since DIAMETER has no dictionary
-       support yet. IMPORTANT: log_name must be a number.
      * Events accounting - log_name will be the name of the
        parameter in the event raised.
 
 1.2.3. How it works
 
-   Some pseudo variables may return more than one value (like
-   headers or AVPs). In this case, the returned values are
-   embedded in a single string in a comma-separated format.
+   Declaring an extra in the format of
+modparam("acc", "extra_fields", "log: a -> test_a")
+
+   will enable you to set the value for test_a field of the log
+   only by setting $acc_etra(a) variable. Else the field shall be
+   log with no value(null).
+
+1.2.4. Radius accounting dependencies
+
+   If radius accounting is used, except from a radius client which
+   is mandatory, dictionary.rfc2866 must be used in order for the
+   module to work properly.
 
 1.3. Multi Call-Legs accounting
 
@@ -310,40 +285,30 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 
 1.3.2. Configuration
 
-   First how it works: The idea is to have a set of AVPs and for
-   each call leg to store a set of values in the AVPs. The meaning
-   of the AVP content is stricly decided by the script writer - it
-   can be the origin and source of the leg, its status or any
-   other related information. If you have a set of 4 AVPS (AVP1,
-   AVP2, AVP3, AVP4), then for the "A call B and B forwards to C"
-   example, you need to set a different set of values for the AVPs
-   for each leg ([A,B] and [B,C]) . The script writer must take
-   care and properly insert all these AVP from the script (in
-   proper order and with the correct type).
+   First how it works: The idea is to have a variable to store a
+   set of values for each leg. The meaning of the variable content
+   is stricly decided by the script writer - it can be the origin
+   and source of the leg, its status or any other related
+   information. By default there is defined only one leg. Script
+   writer has to decide when is the time to create a new leg, by
+   using acc_new_leg() script function. When creating a new leg,
+   all the values for that leg will be set to NULL by default.
 
    When the accounting information for the call will be
-   written/sent, all the call-leg pairs will be added (based on
-   the found AVP sets).
+   written/sent, all the call-leg pairs will be added.
 
    By default, the multiple call-leg support is disabled - it can
-   be enabled just by setting the per-leg set of AVPs via the
-   multi_leg_info and/or multi_leg_bye_info module parameters.
-   Note that the last one only makes sense only for CDRs that are
-   generated automatically by OpenSIPS.
-
-   Important: when both multi-leg accounting is done (for INVITE
-   and BYE), you have to make sure that the AVPs are populated
-   with the same number of legs, otherwise the multi-leg
-   accounting will have an unexpected behavior (values may no
-   longer match the leg number).
+   be enabled just by setting acc_leg variable leg_fields module
+   parameter. Note that the last one only makes sense only for
+   CDRs that are generated automatically by OpenSIPS.
 
 1.3.3. Logged data
 
-   For each call, all the values of the AVP set (which defines a
-   call-leg) will be logged. How the information will be actually
-   logged, depends of the data backend:
+   For each call, all the values from the acc_leg variable will be
+   logged. How the information will be actually logged, depends of
+   the data backend:
      * syslog -- all leg-sets will be added to one record string
-       as AVP1=xxx, AVP2=xxxx ,... sets.
+       as acc_leg(leg1)=xxx, acc_leg(leg2)=xxxx ,... sets.
      * database -- each pair will be separately logged (due DB
        data structure constraints); several records will be
        written, the difference between them being only the fields
@@ -351,16 +316,15 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 
 Note
        You will need to add in your DB (all acc related tables)
-       the colums for call-leg info (a column for each AVP of the
-       set).
+       the colums for call-leg info (a column for each leg value
+       of the set).
      * AAA -- all sets will be added to the same AAA accounting
        message as AAA AVPs - for each call-leg a set of AAA AVPs
-       will be added (corresponding to the per-leg AVP set)
+       will be added (corresponding to the per-leg set)
 
 Note
        You will need to add in your dictionary the AAA AVPs used
-       in call-leg AVP set definition.
-     * Diameter same as for AAA.
+       in call-leg set definition.
      * events -- each pair will appear as a different
        parameter-value pair in the event. Similar to the database
        behavior, multiple events will be raised, and the only
@@ -385,7 +349,7 @@ Note
 1.4.2. Configuration
 
    In order to have CDRs accounting, first you need to set the cdr
-   flag when calling Section 1.7.1, “ do_accounting(type, flags,
+   flag when calling Section 1.8.1, “ do_accounting(type, flags,
    table) ” script function for the initial INVITE of the dialog.
 
 1.4.3. How it works
@@ -456,53 +420,51 @@ modparam("acc", "report_cancels", 1)
    Example 1.3. detect_direction example
 modparam("acc", "detect_direction", 1)
 
-1.6.4. multi_leg_info (string)
+1.6.4. extra_fields (string)
 
-   Defines the AVP set to be used in per-call-leg accounting. See
-   Section 1.3, “Multi Call-Legs accounting” for a detailed
-   description of the Multi Call-Legs accounting.
+   Defines the tag-log_value set to be used in extra fields
+   accounting. See Section 1.2, “Extra accounting” for a detailed
+   description of the Extra accounting.
 
-   If empty, the multi-leg accounting support will be disabled.
-
-   Default value is 0 (disabled).
-
-   Example 1.4. multi_leg_info example
-# for syslog-based accounting, use any text you want to be printed
-modparam("acc", "multi_leg_info",
-    "text1=$avp(src);text2=$avp(dst)")
-# for mysql-based accounting, use the names of the columns
-modparam("acc", "multi_leg_info",
-    "leg_src=$avp(src);leg_dst=$avp(dst)")
-# for AAA-based accounting, use the names of the AAA AVPs
-modparam("acc", "multi_leg_info",
-    "AAA_LEG_SRC=$avp(src);AAA_LEG_DST=$avp(dst)")
-# for DIAMETER-based accounting, use the DIAMETER AVP ID (as integer)
-modparam("acc", "multi_leg_info",
-    "2345=$avp(src);2346=$avp(dst)")
-
-1.6.5. multi_leg_bye_info (string)
-
-   Defines the AVP set to be used in per-call-leg accounting. See
-   Section 1.3, “Multi Call-Legs accounting” for a detailed
-   description of the Multi Call-Legs accounting. This parameter
-   evaluates the AVPs set for BYE requests. It makes sense only
-   when the CDRs are automatically generated, using the dialog
-   support.
-
-   If empty, the multi-leg support for BYE requests is disabled.
+   If empty, extra accounting support will be disabled.
 
    Default value is 0 (disabled).
 
-   Example 1.5. multi_leg_bye_info example
+   Example 1.4. Setting extra_fields example:
 # for syslog-based accounting, use any text you want to be printed
-modparam("acc", "multi_leg_bye_info",
-    "text1=$avp(src);text2=$avp(dst)")
+# if setting $acc_extra(a) you will see "My_a_Field=<value> in logs
+# if setting $acc_extra(b) you will see "b=<value> in logs
+modparam("acc", "extra_fields", "log: a->My_a_Field; b")
 # for mysql-based accounting, use the names of the columns
-modparam("acc", "multi_leg_bye_info",
-    "leg_src=$avp(src);leg_dst=$avp(dst)")
+# $acc_extra(a) = <value>  results in setting col_a with <value> in db
+modparam("acc", "extra_fields", "db: a->col_a; col_b")
 # for AAA-based accounting, use the names of the AAA AVPs
-modparam("acc", "multi_leg_bye_info",
-    "AAA_LEG_SRC=$avp(src);AAA_LEG_SRC=$avp(dst)")
+modparam("acc", "extra_fields","aaa:a->AAA_SRC;b->AAA_DST")
+# evi definition example
+modparam("acc", "extra_fields","a->2345;b->2346")
+
+1.6.5. leg_fields (string)
+
+   Defines the tag-log_value set to be used in multi-leg
+   accounting. See Section 1.3, “Multi Call-Legs accounting” for a
+   detailed description of the Multi Call-Legs accounting.
+
+   If empty, multi-leg accounting support will be disabled.
+
+   Default value is 0 (disabled).
+
+   Example 1.5. Setting leg_fields example:
+# for syslog-based accounting, use any text you want to be printed
+# if setting $(acc_leg(a)[0]) you will see "My_a_Field=<value> in logs
+# if setting $(acc_extra(b)[0]) you will see "b=<value> in logs
+modparam("acc", "leg_fields", "log: a->My_a_Field; b")
+# for mysql-based accounting, use the names of the columns
+# $acc_extra(a) = <value>  results in setting col_a with <value> in db
+modparam("acc", "leg_fields", "db: a->col_a; col_b")
+# for AAA-based accounting, use the names of the AAA AVPs
+modparam("acc", "leg_fields","aaa:a->AAA_LEG_SRC;b->AAA_LEG_DST")
+# evi definition example
+modparam("acc", "leg_fields","a->2345;b->2346")
 
 1.6.6. log_level (integer)
 
@@ -524,29 +486,7 @@ modparam("acc", "log_level", 2)   # Set log_level to 2
    Example 1.7. log_facility example
 modparam("acc", "log_facility", "LOG_DAEMON")
 
-1.6.8. log_extra (string)
-
-   Extra values to be logged.
-
-   Default value is NULL.
-
-   Example 1.8. log_extra example
-modparam("acc", "log_extra",
-        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-
-1.6.9. log_extra_bye (string)
-
-   Extra values to be logged to logfile. Note that this parameter
-   makes sense only when the cdr option is used with
-   do_accounting().
-
-   Default value is NULL.
-
-   Example 1.9. log_extra_bye example
-modparam("acc", "log_extra_bye",
-        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-
-1.6.10. aaa_url (string)
+1.6.8. aaa_url (string)
 
    This is the url representing the AAA protocol used and the
    location of the configuration file of this protocol.
@@ -556,217 +496,122 @@ modparam("acc", "log_extra_bye",
 
    Default value is “NULL”.
 
-   Example 1.10. Set aaa_url parameter
+   Example 1.8. Set aaa_url parameter
 ...
 modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.con
 f")
 ...
 
-1.6.11. service_type (integer)
+1.6.9. service_type (integer)
 
    AAA service type used for accounting.
 
    Default value is not-set.
 
-   Example 1.11. service_type example
+   Example 1.9. service_type example
 # Default value of service type for SIP is 15
 modparam("acc", "service_type", 15)
 
-1.6.12. aaa_extra (string)
-
-   Extra values to be logged via AAA - AAA specific.
-
-   Default value is NULL.
-
-   Example 1.12. aaa_extra example
-modparam("acc", "aaa_extra",
-        "via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
-
-1.6.13. aaa_extra_bye (string)
-
-   Extra values to be logged via AAA when a BYE message is
-   received - AAA specific. Note that this parameter makes sense
-   only when the cdr option is used with do_accounting.
-
-   Default value is NULL.
-
-   Example 1.13. aaa_extra_bye example
-modparam("acc", "aaa_extra_bye",
-        "via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
-
-1.6.14. db_table_acc (string)
+1.6.10. db_table_acc (string)
 
    Table name of accounting successfull calls -- database
    specific.
 
    Default value is “acc”
 
-   Example 1.14. db_table_acc example
+   Example 1.10. db_table_acc example
 modparam("acc", "db_table_acc", "myacc_table")
 
-1.6.15. db_table_missed_calls (string)
+1.6.11. db_table_missed_calls (string)
 
    Table name for accounting missed calls -- database specific.
 
    Default value is “missed_calls”
 
-   Example 1.15. db_table_missed_calls example
+   Example 1.11. db_table_missed_calls example
 modparam("acc", "db_table_missed_calls", "myMC_table")
 
-1.6.16. db_url (string)
+1.6.12. db_url (string)
 
    SQL address -- database specific. If is set to NULL or empty
    string, the SQL support is disabled.
 
    Default value is “NULL” (SQL disabled).
 
-   Example 1.16. db_url example
+   Example 1.12. db_url example
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 
-1.6.17. acc_method_column (string)
+1.6.13. acc_method_column (string)
 
    Column name in accounting table to store the request's method
    name as string.
 
    Default value is “method”.
 
-   Example 1.17. acc_method_column example
+   Example 1.13. acc_method_column example
 modparam("acc", "acc_method_column", "method")
 
-1.6.18. acc_from_tag_column (string)
+1.6.14. acc_from_tag_column (string)
 
    Column name in accounting table to store the From header TAG
    parameter.
 
    Default value is “from_tag”.
 
-   Example 1.18. acc_from_tag_column example
+   Example 1.14. acc_from_tag_column example
 modparam("acc", "acc_from_tag_column", "from_tag")
 
-1.6.19. acc_to_tag_column (string)
+1.6.15. acc_to_tag_column (string)
 
    Column name in accounting table to store the To header TAG
    parameter.
 
    Default value is “to_tag”.
 
-   Example 1.19. acc_to_tag_column example
+   Example 1.15. acc_to_tag_column example
 modparam("acc", "acc_to_tag_column", "to_tag")
 
-1.6.20. acc_callid_column (string)
+1.6.16. acc_callid_column (string)
 
    Column name in accounting table to store the request's Callid
    value.
 
    Default value is “callid”.
 
-   Example 1.20. acc_callid_column example
+   Example 1.16. acc_callid_column example
 modparam("acc", "acc_callid_column", "callid")
 
-1.6.21. acc_sip_code_column (string)
+1.6.17. acc_sip_code_column (string)
 
    Column name in accounting table to store the final reply's
    numeric code value in string format.
 
    Default value is “sip_code”.
 
-   Example 1.21. acc_sip_code_column example
+   Example 1.17. acc_sip_code_column example
 modparam("acc", "acc_sip_code_column", "sip_code")
 
-1.6.22. acc_sip_reason_column (string)
+1.6.18. acc_sip_reason_column (string)
 
    Column name in accounting table to store the final reply's
    reason phrase value.
 
    Default value is “sip_reason”.
 
-   Example 1.22. acc_sip_reason_column example
+   Example 1.18. acc_sip_reason_column example
 modparam("acc", "acc_sip_reason_column", "sip_reason")
 
-1.6.23. acc_time_column (string)
+1.6.19. acc_time_column (string)
 
    Column name in accounting table to store the time stamp of the
    transaction completion in date-time format.
 
    Default value is “time”.
 
-   Example 1.23. acc_time_column example
+   Example 1.19. acc_time_column example
 modparam("acc", "acc_time_column", "time")
 
-1.6.24. db_extra (string)
-
-   Extra values to be logged into database - DB specific.
-
-   Default value is NULL.
-
-   Example 1.24. db_extra example
-modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
-
-1.6.25. db_extra_bye (string)
-
-   Extra values to be logged into database when a BYE message is
-   received - DB specific. Note that this parameter makes sense
-   only when the cdr option is used with do_accounting.
-
-   Default value is NULL.
-
-   Example 1.25. db_extra_bye example
-modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email
-)")
-
-1.6.26. diameter_client_host (string)
-
-   Hostname of the machine where the DIAMETER Client is running --
-   DIAMETER specific.
-
-   Default value is “localhost”.
-
-   Example 1.26. diameter_client_host example
-modparam("acc", "diameter_client_host", "3a_server.net")
-
-1.6.27. diameter_client_port (int)
-
-   Port number where the Diameter Client is listening -- DIAMETER
-   specific.
-
-   Default value is “3000”.
-
-   Example 1.27. diameter_client_host example
-modparam("acc", "diameter_client_port", 3000)
-
-1.6.28. diameter_extra (string)
-
-   Extra values to be logged via DIAMETER - DIAMETER specific.
-
-   Default value is NULL.
-
-   Example 1.28. diameter_extra example
-modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(ema
-il)")
-
-1.6.29. evi_extra (string)
-
-   Extra values to be attached as event's parameters.
-
-   Default value is NULL.
-
-   Example 1.29. evi_extra example
-modparam("acc", "evi_extra",
-        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-
-1.6.30. evi_extra_bye (string)
-
-   Extra values to be attached as event's parameters for BYE
-   messages. Note that this parameter makes sense only when the
-   cdr option is used with do_accounting.
-
-   Default value is NULL.
-
-   Example 1.30. evi_extra_bye example
-modparam("acc", "evi_extra_bye",
-        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-
-1.6.31. acc_created_avp_name (string)
+1.6.20. acc_created_avp_name (string)
 
    The name of the openSips avp that will be used to hold the time
    when the call was created. This time will only be logged on
@@ -774,12 +619,36 @@ modparam("acc", "evi_extra_bye",
 
    Default value is "accX_created".
 
-   Example 1.31. acc_created_avp_name example
+   Example 1.20. acc_created_avp_name example
 modparam("acc", "acc_created_avp_name", "call_created_avp")
 
-1.7. Exported Functions
+1.7. Exported Variables
 
-1.7.1.  do_accounting(type, flags, table)
+1.7.1. $acc_extra(tag_name)
+
+   This variable can addresed with the tag names defined using
+   extra_fields parameter. If do_accounting() isn't called, this
+   variable is visible during the whole processing of one message,
+   enabling calling acc_XXX_request(). If do_accounting() is
+   called, the variable will be visible from the first call of
+   this function until the actual accounting is being made.
+
+1.7.2. $(acc_leg(tag_name)[leg_index])
+
+   This variable can be addressed with the tag names defined using
+   leg_fields parameter and a valid leg index( <=
+   acc_current_leg). This variable can't be used unless
+   do_accounting() function is used. The variable also accepts
+   negative indexes, which start from -1(value for the last leg).
+
+1.7.3. acc_current_leg - read-only
+
+   Variable holding the value for the current leg. Calling
+   acc_new_leg() will increase the value of this variable.
+
+1.8. Exported Functions
+
+1.8.1.  do_accounting(type, flags, table)
 
    do_accounting() replace all the *_flag and, *_missed_flag,
    cdr_flag, failed transaction_flag and the db_table_avp modpara.
@@ -795,13 +664,16 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
           + db - database accounting;
           + aaa - aaa specific accounting;
           + evi - Event Interface accounting;
-          + diam - Diameter accounting;
      * flags - flags for the accouting type you have selected. All
        the types have to be separated by '|'. The following
        parameters can be used:
           + cdr - also set CDR details when doing accounting;
             DIALOG MODULE HAS TO BE LOADED;
-          + missed - log missed calls;
+          + missed - log missed calls; take care that this flag
+            will be deactivated after first missed call; you will
+            have to reactivate it in the failure_route if you want
+            to account all destinations that did not respond to
+            the call;
           + failed - flag which says if the transaction should be
             accounted also in case of failure (status>=300);
      * table - table where to do the accounting; it replaces old
@@ -810,7 +682,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.32. do_accounting usage
+   Example 1.21. do_accounting usage
                 ...
                 if (!has_totag()) {
                         if (is_method("INVITE")) {
@@ -829,7 +701,7 @@ y_acc");
                 }
                 ...
 
-1.7.2.  drop_accounting([type], [flags])
+1.8.2.  drop_accounting([type], [flags])
 
    drop_accounting() resets flags and types of accounting set with
    do_accounting(). If called with no arguments all accounting
@@ -845,7 +717,6 @@ y_acc");
           + db - stop database accounting;
           + aaa - stop aaa specific accounting;
           + evi - stop Event Interface accounting;
-          + diam - stop Diameter accounting;
      * flags - flags to be reset for the accouting type you have
        selected. All the types have to be separated by '|'. The
        following parameters can be used:
@@ -856,7 +727,7 @@ y_acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.33. drop_accounting usage
+   Example 1.22. drop_accounting usage
                 ...
                 acc_log_request("403 Destination not allowed");
                 if (!has_totag()) {
@@ -883,7 +754,7 @@ yslog;
                 }
                 ...
 
-1.7.3.  acc_log_request(comment)
+1.8.3.  acc_log_request(comment)
 
    acc_request reports on a request, for example, it can be used
    to report on missed calls to off-line users who are replied 404
@@ -900,12 +771,12 @@ yslog;
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.34. acc_log_request usage
+   Example 1.23. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
 
-1.7.4.  acc_db_request(comment, table)
+1.8.4.  acc_db_request(comment, table)
 
    Like acc_log_request, acc_db_request reports on a request. The
    report is sent to database at “db_url”, in the table referred
@@ -921,13 +792,13 @@ acc_log_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.35. acc_db_request usage
+   Example 1.24. acc_db_request usage
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)","acc");
 ...
 
-1.7.5.  acc_aaa_request(comment)
+1.8.5.  acc_aaa_request(comment)
 
    Like acc_log_request, acc_aaa_request reports on a request. It
    reports to aaa server as configured in “aaa_url”.
@@ -941,37 +812,18 @@ acc_db_request("$T_reply_code $(<reply>rr)","acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.36. acc_aaa_request usage
+   Example 1.25. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
 
-1.7.6.  acc_diam_request(comment)
-
-   Like acc_log_request, acc_diam_request reports on a request. It
-   reports to the configured Diameter server.
-
-   Meaning of the parameters is as follows:
-     * comment - Comment describing how the request completed -
-       this string has to contain a reply code followed by a reply
-       reason phrase (ex: "404 Nobody home"). Variables are
-       accepted in this string.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE and LOCAL_ROUTE.
-
-   Example 1.37. acc_diam_request usage
-...
-acc_diam_request("403 Destination not allowed");
-...
-
-1.7.7.  acc_evi_request(comment)
+1.8.6.  acc_evi_request(comment)
 
    Like acc_log_request, acc_evi_request reports on a request. The
    report is packed as an event sent through the OpenSIPS Event
    Interface as E_ACC_EVENT if the reply code is a positive one
    (lower than 300), or E_ACC_MISSED_EVENT for negative or no
-   codes. More information on this in Section 1.8, “Exported
+   codes. More information on this in Section 1.10, “Exported
    Events”.
 
    Meaning of the parameters is as follows:
@@ -983,14 +835,28 @@ acc_diam_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.38. acc_evi_request usage
+   Example 1.26. acc_evi_request usage
 ...
 acc_evi_request("403 Destination not allowed");
 ...
 
-1.8. Exported Events
+1.9.  acc_new_leg()
 
-1.8.1.  E_ACC_CDR
+   Creates a new leg only if multi-leg accounting is used. The
+   value of acc_current_leg variable is incremented. All the
+   values of the new leg will be initialised with null.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.27. acc_new_leg usage
+...
+        acc_new_leg();
+...
+
+1.10. Exported Events
+
+1.10.1.  E_ACC_CDR
 
    The event raised when a CDR is generated. Note that this event
    will only be triggered if the auto CDR accounting is used.
@@ -1016,7 +882,7 @@ acc_evi_request("403 Destination not allowed");
      * created - The timestamp when the call was created (the
        initial Invite was received)
 
-1.8.2.  E_ACC_EVENT
+1.10.2.  E_ACC_EVENT
 
    This event is triggered when old-style accounting is used. It
    is generated when the requests (INVITE and BYE) transaction
@@ -1036,7 +902,7 @@ acc_evi_request("403 Destination not allowed");
      * multi_leg_info* - Extra parameters added by the
        multi_leg_info parameter
 
-1.8.3.  E_ACC_MISSED_EVENT
+1.10.3.  E_ACC_MISSED_EVENT
 
    This event is triggered when old-style accounting is used. It
    is generated when the requests (INVITE and BYE) transaction

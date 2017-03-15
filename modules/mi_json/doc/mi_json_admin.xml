@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
@@ -11,7 +11,7 @@
 		requests and generates JSON responses.
 	</para>
 	</section>
-	
+
 	<section>
 	<title>Dependencies</title>
 	<section>
@@ -31,7 +31,7 @@
 		</para>
 	</section>
 	</section>
-	
+
 	<section>
 	<title>Exported Parameters</title>
 	<section>
@@ -52,6 +52,82 @@ modparam("mi_json", "mi_json_root", "opensips_mi_json")
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>trace_destination</varname> (string)</title>
+		<para>
+			Trace destination as defined in the tracing module. Currently
+		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
+		This is where traced mi messages will go.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep</emphasis>).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+
+modparam("mi_json", "trace_destination", "hep_dest")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>trace_bwlist</varname> (string)</title>
+		<para>
+			Filter traced mi commands based on a blacklist or a whitelist.
+		<emphasis role="bold">trace_destination</emphasis> must be defined for
+		this parameter to have any purpose. Whitelists can be defined using
+		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+		actual blacklist by ':'. The mi commands in the list must be separated
+		by ','.
+		</para>
+		<para>
+			Defining a blacklists means all the commands that are not blacklisted
+			will be traced. Defining a whitelist means all the commands that are
+			not whitelisted will not be traced.
+			<emphasis role="bold">WARNING: </emphasis> One can't define both
+			a whitelist and a blacklist. Only one of them is allowed. Defining
+			the parameter a second time will just overwrite the first one.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep)</emphasis>.
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+## blacklist ps and which mi commands
+## all the other commands shall be traced
+modparam("mi_json", "trace_bwlist", "b: ps, which")
+...
+## allow only sip_trace mi command
+## all the other commands will not be traced
+modparam("mi_json", "trace_bwlist", "w: sip_trace")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	</section>
 
 	<section>

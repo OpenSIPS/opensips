@@ -657,27 +657,34 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 			}
 		}
 
-		if (a->type==IF_T || a->type==WHILE_T)
+		/* follow all leads from actions/expressions than may have 
+		 * sub-blocks of instructions */
+		if (a->elem[0].type==ACTIONS_ST)
+			if (is_mod_func_used((struct action*)a->elem[0].u.data,
+			name,param_no)==1)
+				return 1;
+		if (a->elem[0].type==EXPR_ST)
 			if (is_mod_func_in_expr((struct expr*)a->elem[0].u.data,
 			name,param_no)==1)
 				return 1;
 
-		/* follow all leads from actions than may have 
-		 * sub-blocks of instructions */
-		if (a->elem[0].type==ACTIONS_ST)
-				if (is_mod_func_used((struct action*)a->elem[0].u.data,
-				name,param_no)==1)
-					return 1;
-
 		if (a->elem[1].type==ACTIONS_ST)
-				if (is_mod_func_used((struct action*)a->elem[1].u.data,
-				name,param_no)==1)
-					return 1;
+			if (is_mod_func_used((struct action*)a->elem[1].u.data,
+			name,param_no)==1)
+				return 1;
+		if (a->elem[1].type==EXPR_ST)
+			if (is_mod_func_in_expr((struct expr*)a->elem[1].u.data,
+			name,param_no)==1)
+				return 1;
 
 		if (a->elem[2].type==ACTIONS_ST)
-				if (is_mod_func_used((struct action*)a->elem[2].u.data,
-				name,param_no)==1)
-					return 1;
+			if (is_mod_func_used((struct action*)a->elem[2].u.data,
+			name,param_no)==1)
+				return 1;
+		if (a->elem[2].type==EXPR_ST)
+			if (is_mod_func_in_expr((struct expr*)a->elem[2].u.data,
+			name,param_no)==1)
+				return 1;
 
 		a = a->next;
 	}
@@ -689,8 +696,8 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 {
 	acmd_export_t *acmd;
 
-	for (; a; a = a->next) {
-		if (a->type == ASYNC_T) {
+	for (; a; a=a->next) {
+		if (a->type==ASYNC_T || a->type==LAUNCH_T) {
 			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data;
 
 			LM_DBG("checking %s against %s\n", name, acmd->name);

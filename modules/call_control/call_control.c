@@ -612,7 +612,10 @@ make_custom_request(struct sip_msg *msg, CallInfo *call)
     }
 
     for (; al; al = al->next) {
-        pv_get_spec_value(msg, al->pv, &pt);
+        if (pv_get_spec_value(msg, al->pv, &pt) < 0) {
+			LM_ERR("cannot get the spec's value!\n");
+			return NULL;
+		}
         if (pt.flags & PV_VAL_INT) {
             len += snprintf(request + len, sizeof(request),
                     "%.*s = %d ", al->name.len, al->name.s,

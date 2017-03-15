@@ -203,14 +203,14 @@ int m_build_headers(str *buf, str ctype, str contact, time_t date)
 	if(date > 0)
 	{
 		lenDate = timetToSipDateStr(date,strDate,48);
-		strncpy(p, strDate, lenDate);
+		memcpy(p, strDate, lenDate);
 		p += lenDate;
 	}
 	if(ctype.len > 0)
 	{
-		strncpy(p, "Content-Type: ", 14);
+		memcpy(p, "Content-Type: ", 14);
 		p += 14;
-		strncpy(p, ctype.s, ctype.len);
+		memcpy(p, ctype.s, ctype.len);
 		p += ctype.len;
 		strncpy(p, CRLF, CRLF_LEN);
 		p += CRLF_LEN;
@@ -218,11 +218,11 @@ int m_build_headers(str *buf, str ctype, str contact, time_t date)
 	}
 	if(contact.len > 0)
 	{
-		strncpy(p, CONTACT_PREFIX, CONTACT_PREFIX_LEN);
+		memcpy(p, CONTACT_PREFIX, CONTACT_PREFIX_LEN);
 		p += CONTACT_PREFIX_LEN;
-		strncpy(p, contact.s, contact.len);
+		memcpy(p, contact.s, contact.len);
 		p += contact.len;
-		strncpy(p, CONTACT_SUFFIX, CONTACT_SUFFIX_LEN);
+		memcpy(p, CONTACT_SUFFIX, CONTACT_SUFFIX_LEN);
 		p += CONTACT_SUFFIX_LEN;
 	}
 	buf->len = p - buf->s;

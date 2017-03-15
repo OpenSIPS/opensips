@@ -43,6 +43,7 @@
 #include "udomain.h"
 #include "utime.h"
 #include "ul_mod.h"
+#include "usrloc.h"
 
 
 
@@ -111,6 +112,12 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
 		cnode = add_mi_node_child( anode, MI_DUP_VALUE, "Contact", 7,
 			c->c.s, c->c.len);
 		if (cnode==0)
+			return -1;
+
+		/* contact ID */
+		node = addf_mi_node_child( cnode, 0, "ContactID", 9,
+			"%llu", c->contact_id);
+		if (node==0)
 			return -1;
 
 		/* expires */

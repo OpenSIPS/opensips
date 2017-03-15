@@ -104,7 +104,6 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 		db_vals[nr_keys].nul = 0;
 		db_vals[nr_keys].val.str_val.s = puri->host.s;
 		db_vals[nr_keys].val.str_val.len = puri->host.len;
-		nr_keys++;
 
 		if (dstrip_s.s!=NULL && dstrip_s.len>0
 			&& dstrip_s.len<puri->host.len
@@ -113,6 +112,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 			db_vals[nr_keys].val.str_val.s   += dstrip_s.len;
 			db_vals[nr_keys].val.str_val.len -= dstrip_s.len;
 		}
+		nr_keys++;
 	}
 	/* take sd from r-uri */
 	if (parse_sip_msg_uri(_msg) < 0)
@@ -135,7 +135,6 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 		db_vals[nr_keys].nul = 0;
 		db_vals[nr_keys].val.str_val.s = _msg->parsed_uri.host.s;
 		db_vals[nr_keys].val.str_val.len = _msg->parsed_uri.host.len;
-		nr_keys++;
 
 		if (dstrip_s.s!=NULL && dstrip_s.len>0
 			&& dstrip_s.len<_msg->parsed_uri.host.len
@@ -144,6 +143,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 			db_vals[nr_keys].val.str_val.s   += dstrip_s.len;
 			db_vals[nr_keys].val.str_val.len -= dstrip_s.len;
 		}
+		nr_keys++;
 	}
 
 	db_funcs.use_table(db_handle, &table_s);
@@ -156,7 +156,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 		goto err_server;
 	}
 
-	if (RES_ROW_N(db_res)<=0 || RES_ROWS(db_res)[0].values[0].nul != 0)
+	if (!db_res||RES_ROW_N(db_res)<=0||RES_ROWS(db_res)[0].values[0].nul != 0)
 	{
 		LM_DBG("no sip address found for R-URI\n");
 		if (db_res!=NULL && db_funcs.free_result(db_handle, db_res) < 0)

@@ -49,7 +49,7 @@ void free_cloned_sdp_session(sdp_session_cell_t *_session);
  *
  * Note: all cloned structer will be in SHM_MEM.
  */
-sdp_info_t* clone_sdp_info(struct sip_msg* _m);
+sdp_info_t* clone_sdp_info(sdp_info_t* sdp_info);
 /**
  * Free all memory associated with the cloned sdp_info structure.
  *

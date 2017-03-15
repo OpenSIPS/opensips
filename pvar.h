@@ -59,12 +59,23 @@
 #define PV_VAL_PKG			32
 #define PV_VAL_SHM			64
 
+#define fix_val_str_flags(_pvv) \
+	do { \
+		if (_pvv.flags & PV_VAL_STR) { \
+			if (!_pvv.rs.s && _pvv.rs.len == 0) \
+				_pvv.flags |= PV_VAL_NULL; \
+			else if (_pvv.rs.s && _pvv.rs.len == 0) \
+				_pvv.flags |= PV_VAL_EMPTY; \
+		} \
+	} while (0)
+
 #define PV_NAME_INTSTR	0
 #define PV_NAME_PVAR	1
 
-#define PV_IDX_INT	3
-#define PV_IDX_PVAR	1
-#define PV_IDX_ALL	2
+#define PV_IDX_PVAR    1
+#define PV_IDX_ALL     2
+#define PV_IDX_INT     3
+#define PV_IDX_APPEND  4
 
 /*! if PV name is dynamic, integer, or str */
 #define pv_has_dname(pv) ((pv)->pvp.pvn.type==PV_NAME_PVAR)
@@ -109,6 +120,7 @@ enum _pv_type {
 	PVT_AUTH_ALGORITHM,   PVT_AUTH_OPAQUE,       PVT_AUTH_CNONCE,
 	PVT_RU_Q,             PVT_ROUTE_PARAM,       PVT_ROUTE_TYPE,
 	PVT_LINE_NUMBER,      PVT_CFG_FILE_NAME,     PVT_LOG_LEVEL,
+	PVT_XLOG_LEVEL,
 	/* registered by json module */
 	PVT_JSON,
 

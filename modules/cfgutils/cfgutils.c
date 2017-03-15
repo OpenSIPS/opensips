@@ -59,10 +59,8 @@
 #include "env_var.h"
 #include "script_locks.h"
 
-#if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
-	#include <sys/timerfd.h>  /* for timer FD */
-	#define HAVE_TIMER_FD 1
-#else
+#include "../../lib/timerfd.h"
+#ifndef HAVE_TIMER_FD
 #ifdef __OS_linux
 	#warning Your GLIB is too old, disabling async sleep functions!!!
 #endif
@@ -103,12 +101,10 @@ static int check_time_rec(struct sip_msg*, char *);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
-		async_resume_module **resume_f, void **resume_param,
-		char *duration);
+		async_ctx *ctx, char *duration);
 
 static int async_usleep(struct sip_msg* msg,
-		async_resume_module **resume_f, void **resume_param,
-		char *duration);
+		async_ctx *ctx, char *duration);
 #endif
 
 static int fixup_prob( void** param, int param_no);
@@ -267,9 +263,7 @@ static int fixup_prob( void** param, int param_no)
 
 	param_str.s=(char*) *param;
 	param_str.len=strlen(param_str.s);
-	str2int(&param_str, &myint);
-
-	if (myint > 100) {
+	if (str2int(&param_str, &myint) < 0 || myint > 100) {
 		LM_ERR("invalid probability <%d>\n", myint);
 		return E_CFG;
 	}
@@ -555,8 +549,7 @@ int resume_async_sleep(int fd, struct sip_msg *msg, void *param)
 }
 
 
-static int async_sleep(struct sip_msg* msg, async_resume_module **resume_f,
-										void **resume_param, char *time)
+static int async_sleep(struct sip_msg* msg, async_ctx *ctx, char *time)
 {
 	str time_s={NULL,0};
 	unsigned int seconds;
@@ -594,17 +587,16 @@ static int async_sleep(struct sip_msg* msg, async_resume_module **resume_f,
 	}
 
 	/* start the async wait */
-	*resume_param = (void*)(unsigned long)
+	ctx->resume_param = (void*)(unsigned long)
 		(((unsigned long)-1) & (get_uticks()+1000000*seconds));
-	*resume_f = resume_async_sleep;
+	ctx->resume_f = resume_async_sleep;
 	async_status = fd;
 
 	return 1;
 }
 
 
-static int async_usleep(struct sip_msg* msg, async_resume_module **resume_f,
-										void **resume_param, char *time)
+static int async_usleep(struct sip_msg* msg, async_ctx *ctx, char *time)
 {
 	str time_s={NULL,0};
 	unsigned int useconds;
@@ -642,9 +634,9 @@ static int async_usleep(struct sip_msg* msg, async_resume_module **resume_f,
 	}
 
 	/* start the async wait */
-	*resume_param = (void*)(unsigned long)
+	ctx->resume_param = (void*)(unsigned long)
 		(((unsigned long)-1) & (get_uticks()+useconds));
-	*resume_f = resume_async_sleep;
+	ctx->resume_f = resume_async_sleep;
 	async_status = fd;
 
 	return 1;

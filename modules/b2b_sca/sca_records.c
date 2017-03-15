@@ -167,6 +167,7 @@ void get_watchers_from_csv(str *watchers_csv, str_lst_t **watchers, unsigned int
 
 	*watchers = NULL;
 	*watcher_size = 0;
+	*watcher_no = 0;
 	for( tmp=watchers_csv->s; tmp<=end; tmp++) {
 		if (*tmp == ',' || tmp==end) {
 			LM_DBG("watcher->[%.*s]\n", (int)(tmp-start), start);

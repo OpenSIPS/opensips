@@ -6,8 +6,6 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-Edited by
-
 Vladut-Stefan Paiu
 
    Copyright © 2006-2009 Voice Sistem SRL
@@ -92,16 +90,17 @@ Vladut-Stefan Paiu
               1.7.3. validate_dialog()
               1.7.4. fix_route_dialog()
               1.7.5. get_dialog_info(attr,var,key,key_val)
-              1.7.6. set_dlg_profile(profile,[value])
-              1.7.7. unset_dlg_profile(profile,[value])
-              1.7.8. is_in_profile(profile,[value])
-              1.7.9. get_profile_size(profile,[value],size)
-              1.7.10. set_dlg_flag(idx)
-              1.7.11. test_and_set_dlg_flag(idx, value)
-              1.7.12. reset_dlg_flag(idx)
-              1.7.13. is_dlg_flag_set(idx)
-              1.7.14. store_dlg_value(name,val)
-              1.7.15. fetch_dlg_value(name,pvar)
+              1.7.6. get_dialog_vals(names,vals,callid)
+              1.7.7. set_dlg_profile(profile,[value])
+              1.7.8. unset_dlg_profile(profile,[value])
+              1.7.9. is_in_profile(profile,[value])
+              1.7.10. get_profile_size(profile,[value],size)
+              1.7.11. set_dlg_flag(idx)
+              1.7.12. test_and_set_dlg_flag(idx, value)
+              1.7.13. reset_dlg_flag(idx)
+              1.7.14. is_dlg_flag_set(idx)
+              1.7.15. store_dlg_value(name,val)
+              1.7.16. fetch_dlg_value(name,pvar)
 
         1.8. Exported statistics
 
@@ -129,7 +128,6 @@ Vladut-Stefan Paiu
               1.9.8. dlg_db_sync
               1.9.9. dlg_restore_db
               1.9.10. list_all_profiles
-              1.9.11. profile_bin_status
 
         1.10. Exported pseudo-variables
 
@@ -217,16 +215,17 @@ Vladut-Stefan Paiu
    1.57. validate_dialog() usage
    1.58. fix_route_dialog() usage
    1.59. get_dialog_info usage
-   1.60. set_dlg_profile usage
-   1.61. unset_dlg_profile usage
-   1.62. is_in_profile usage
-   1.63. get_profile_size usage
-   1.64. set_dlg_flag usage
-   1.65. test_and_set_dlg_flag usage
-   1.66. reset_dlg_flag usage
-   1.67. is_dlg_flag_set usage
-   1.68. store_dlg_value usage
-   1.69. fetch_dlg_value usage
+   1.60. get_dialog_vals usage
+   1.61. set_dlg_profile usage
+   1.62. unset_dlg_profile usage
+   1.63. is_in_profile usage
+   1.64. get_profile_size usage
+   1.65. set_dlg_flag usage
+   1.66. test_and_set_dlg_flag usage
+   1.67. reset_dlg_flag usage
+   1.68. is_dlg_flag_set usage
+   1.69. store_dlg_value usage
+   1.70. fetch_dlg_value usage
 
 Chapter 1. Admin Guide
 
@@ -1200,7 +1199,43 @@ $dlg_val(caller) = $fu;
 $dlg_val(callee) = $ru;
 ...
 
-1.7.6.  set_dlg_profile(profile,[value])
+1.7.6.  get_dialog_vals(names,vals,callid)
+
+   The function fetches all the dialog variables of another
+   dialog. It first searches through all existing (ongoing)
+   dialogs based on the given SIP CallID. If found, it returns all
+   the dialog variables as two parallel arrays of names and values
+   (using the given variables "names" and "vals"). As these
+   variables have to hold arrays, they must be AVPs.
+
+   NOTE: the function does not require to be called in the context
+   of a dialog - you can use it whenever / whereever for searching
+   for other dialogs.
+
+   Meaning of the parameters is as follows:
+     * names - the name of an AVP variable to hold all the names
+       of the variables from the found dialog.
+     * vals - the name of an AVP variable to hold all the values
+       of the variables from the found dialog.
+     * callid - the callid of a dialog to be searched (and have
+       the variables fetched).
+
+   This function can be used from any type of route.
+
+   Example 1.60. get_dialog_vals usage
+...
+if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
+        xlog("the call $var(callid) has the variables:\n);
+        $var(i) = 0;
+        while ( $(avp(d_names)[$var(i)])!=NULL ) {
+                xlog("var $var(i) is $(avp(d_names)[$var(i)])='$(avp(d_v
+als)[$var(i)])'\n");
+                $var(i) = $var(i) + 1;
+        }
+}
+...
+
+1.7.7.  set_dlg_profile(profile,[value])
 
    Inserts the current dialog into a profile. Note that if the
    profile does not support values, this will be silently
@@ -1219,13 +1254,13 @@ $dlg_val(callee) = $ru;
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.60. set_dlg_profile usage
+   Example 1.61. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
 ...
 
-1.7.7.  unset_dlg_profile(profile,[value])
+1.7.8.  unset_dlg_profile(profile,[value])
 
    Removes the current dialog from a profile.
 
@@ -1241,13 +1276,13 @@ set_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. unset_dlg_profile usage
+   Example 1.62. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
 ...
 
-1.7.8.  is_in_profile(profile,[value])
+1.7.9.  is_in_profile(profile,[value])
 
    Checks if the current dialog belongs to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -1268,7 +1303,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. is_in_profile usage
+   Example 1.63. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1279,7 +1314,7 @@ if (is_in_profile("caller","XX")) {
 }
 ...
 
-1.7.9.  get_profile_size(profile,[value],size)
+1.7.10.  get_profile_size(profile,[value],size)
 
    Returns the number of dialogs belonging to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -1299,16 +1334,18 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. get_profile_size usage
+   Example 1.64. get_profile_size usage
+modparam("dialog", "profiles_no_value", "inboundCalls")
+modparam("dialog", "profiles_with_value", "caller")
 ...
-get_profile_size("inbound_call","$avp(size)");
-xlog("currently there are $avp(size) inbound calls\n");
+get_profile_size("inboundCalls",,"$var(size)");
+xlog("inboundCalls: $var(size)\n");
 ...
-get_profile_size("caller","$fu");
-xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
+get_profile_size("caller", "$fu", "$var(size)");
+xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ...
 
-1.7.10.  set_dlg_flag(idx)
+1.7.11.  set_dlg_flag(idx)
 
    Sets the dialog flag index idx to true. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1322,12 +1359,12 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. set_dlg_flag usage
+   Example 1.65. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
 
-1.7.11.  test_and_set_dlg_flag(idx, value)
+1.7.12.  test_and_set_dlg_flag(idx, value)
 
    Atomically checks if the dialog flag index idx is equal to
    value. If true, changes the value with the opposite one. This
@@ -1343,12 +1380,12 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. test_and_set_dlg_flag usage
+   Example 1.66. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
 
-1.7.12.  reset_dlg_flag(idx)
+1.7.13.  reset_dlg_flag(idx)
 
    Resets the dialog flag index idx to false. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1362,12 +1399,12 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. reset_dlg_flag usage
+   Example 1.67. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
 
-1.7.13.  is_dlg_flag_set(idx)
+1.7.14.  is_dlg_flag_set(idx)
 
    Returns true if the dialog flag index idx is set. The dialog
    flags are dialog persistent and they can be accessed (set and
@@ -1381,14 +1418,14 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. is_dlg_flag_set usage
+   Example 1.68. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
 }
 ...
 
-1.7.14.  store_dlg_value(name,val)
+1.7.15.  store_dlg_value(name,val)
 
    Attaches to the dialog the value val under the name name. The
    values attached to dialogs are dialog persistent and they can
@@ -1406,7 +1443,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. store_dlg_value usage
+   Example 1.69. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1414,7 +1451,7 @@ store_dlg_value("account type","prepaid");
 $dlg_val(account_type) = "prepaid";
 ...
 
-1.7.15.  fetch_dlg_value(name,pvar)
+1.7.16.  fetch_dlg_value(name,pvar)
 
    Fetches from the dialog the value of attribute named name. The
    values attached to dialogs are dialog persistent and they can
@@ -1432,7 +1469,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.69. fetch_dlg_value usage
+   Example 1.70. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
@@ -1521,16 +1558,14 @@ $var(account) = $dlg_val(account_type);
        the offset)
 
    MI FIFO Command Format:
-                :dlg_list:_reply_fifo_file_
-                _empty_line_
-
-                :dlg_list:_reply_fifo_file_
-                abcdrssfrs122444@192.168.1.1
-                AAdfeEFF33
-
-                :dlg_list:_reply_fifo_file_
-                40
-                10
+                ## list all ongoing dialogs
+                opensipsctl fifo dlg_list
+                ## list the dialog by callid and From TAG
+                opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 A
+AdfeEFF33
+                ## list 10 dialogs, starting from the position 40
+                ## (in the list of all ongoing dialogs)
+                opensipsctl fifo dlg_list 40 10
 
 1.9.2. dlg_list_ctx
 
@@ -1545,8 +1580,7 @@ $var(account) = $dlg_val(account_type);
    Parameters: see “dlg_list”
 
    MI FIFO Command Format:
-                :dlg_list_ctx:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo dlg_list_ctx
 
 1.9.3. dlg_end_dlg
 
@@ -1558,21 +1592,22 @@ $var(account) = $dlg_val(account_type);
 
    Name: dlg_end_dlg
 
-   Parameters:
-     * h_entry - hash entry of the dialog in the internal dialog
-       table
-     * h_id - hash id of the dialog on the hash entry
-     * extra_hdrs - (optional) string containg extra headers (full
-       format) to be added to the BYE requests.
+   Parameters are:
+     * dialog_id - this is an identifier of the dialog - it can be
+       either (1) the numerical unique ID of the dialog (as
+       provided by dlg_list), either (2) the SIP Call-ID of the
+       dialog.
+     * extra_hdrs - (optional) string containg the extra headers
+       (full format) to be added to the BYE requests.
 
-   The values for the h_entry and h_id can be get via the dlg_list
-   MI command.
+   The "dialog_id" value can be get via the "dlg_list" MI command.
 
    MI FIFO Command Format:
-                :dlg_end_dlg:_reply_fifo_file_
-                342
-                56
-                _empty_line_
+                # terminate the dialog via the internal Dialog-ID
+                opensipsctl fifo dlg_end_dlg 1391569858236
+                # terminate the dialog via its SIP Call-ID
+                opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGI
+wZjAzNGM1ZDY
 
 1.9.4. profile_get_size
 
@@ -1591,9 +1626,7 @@ $var(account) = $dlg_val(account_type);
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                :profile_get_size:_reply_fifo_file_
-                inbound_calls
-                _empty_line_
+                opensipsctl fifo profile_get_size inbound_calls
 
 1.9.5. profile_list_dlgs
 
@@ -1614,9 +1647,7 @@ $var(account) = $dlg_val(account_type);
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                :profile_list_dlgs:_reply_fifo_file_
-                inbound_calls
-                _empty_line_
+                opensipsctl fifo profile_list_dlgs inbound_calls
 
 1.9.6. profile_get_values
 
@@ -1631,9 +1662,7 @@ $var(account) = $dlg_val(account_type);
      * profile - name of the profile to list the dialog for.
 
    MI FIFO Command Format:
-                :profile_get_values:_reply_fifo_file_
-                inbound_calls
-                _empty_line_
+                opensipsctl fifo profile_get_values inbound_calls
 
 1.9.7. profile_end_dlgs
 
@@ -1650,9 +1679,7 @@ $var(account) = $dlg_val(account_type);
        only the dialogs with the specified value
 
    MI FIFO Command Format:
-                :profile_end_dlgs:_reply_fifo_file_
-                inbound_calls
-                _empty_line_
+                opensipsctl fifo profile_end_dlgs inbound_calls
 
 1.9.8. dlg_db_sync
 
@@ -1666,8 +1693,7 @@ $var(account) = $dlg_val(account_type);
    It takes no parameters
 
    MI FIFO Command Format:
-                :dlg_db_sync:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo dlg_db_sync
 
 1.9.9. dlg_restore_db
 
@@ -1680,8 +1706,7 @@ $var(account) = $dlg_val(account_type);
    It takes no parameters
 
    MI FIFO Command Format:
-                :dlg_restore_db:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo dlg_restore_db
 
 1.9.10. list_all_profiles
 
@@ -1693,21 +1718,7 @@ $var(account) = $dlg_val(account_type);
    Parameters: It takes no parameters
 
    MI FIFO Command Format:
-                :list_all_profiles:_reply_fifo_file_
-                _empty_line_
-
-1.9.11.  profile_bin_status
-
-   Dumps each destination used for profiles replication, as well
-   as the timestamp of the last message received from them.
-
-   Name: profile_bin_status
-
-   Parameters: none
-
-   MI FIFO Command Format:
-                :profile_bin_status:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo list_all_profiles
 
 1.10. Exported pseudo-variables
 
@@ -1870,61 +1881,61 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with “topology_hiding()” function?
+   What happened with “topology_hiding()” function?
 
-       The respective functionality was moved into the topology_hiding
-       module. Function prototype has remained the same.
+   The respective functionality was moved into the topology_hiding
+   module. Function prototype has remained the same.
 
    3.2.
 
-       What happened with “use_tight_match” parameter?
+   What happened with “use_tight_match” parameter?
 
-       The parameter was removed with version 1.3 as the option of
-       tight matching became mandatory and not configurable. Now, the
-       tight matching is done all the time (when using DID matching).
+   The parameter was removed with version 1.3 as the option of
+   tight matching became mandatory and not configurable. Now, the
+   tight matching is done all the time (when using DID matching).
 
    3.3.
 
-       What happened with “bye_on_timeout_flag” parameter?
+   What happened with “bye_on_timeout_flag” parameter?
 
-       The parameter was removed in a dialog module parameter
-       restructuring. To keep the bye on timeout behavior, you need to
-       provide a "B" string parameter to the create_dialog() function.
+   The parameter was removed in a dialog module parameter
+   restructuring. To keep the bye on timeout behavior, you need to
+   provide a "B" string parameter to the create_dialog() function.
 
    3.4.
 
-       What happened with “dlg_flag” parameter?
+   What happened with “dlg_flag” parameter?
 
-       The parameter is considered obsolete. The only way to create a
-       dialog is to call the create_dialog() function
+   The parameter is considered obsolete. The only way to create a
+   dialog is to call the create_dialog() function
 
    3.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    3.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    3.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

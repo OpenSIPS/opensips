@@ -93,7 +93,7 @@ db_con_t* dbt_init(const str* _sqlurl)
 	memset(_res, 0, sizeof(db_con_t) + sizeof(dbt_con_t));
 	_res->tail = (unsigned long)((char*)_res+sizeof(db_con_t));
 
-	LM_INFO("using database at: %.*s\n", _s.len, _s.s);
+	LM_DBG("using database at: %.*s\n", _s.len, _s.s);
 	DBT_CON_CONNECTION(_res) = dbt_cache_get_db(&_s);
 	if (!DBT_CON_CONNECTION(_res))
 	{
@@ -314,12 +314,10 @@ int dbt_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 		goto error;
 	}
 
-	if(_k)
-	{
-		lkey = dbt_get_refs(_tbc, _k, _n);
-		if(!lkey)
-			goto error;
-	}
+	lkey = dbt_get_refs(_tbc, _k, _n);
+	if(!lkey)
+		goto error;
+
 	_drp = dbt_row_new(_tbc->nrcols);
 	if(!_drp)
 	{
@@ -329,7 +327,7 @@ int dbt_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 
 	for(i=0; i<_n; i++)
 	{
-		j = (lkey)?lkey[i]:i;
+		j = lkey[i];
 		if(dbt_is_neq_type(_tbc->colv[j]->type, _v[i].type))
 		{
 			LM_ERR("incompatible types v[%d] - c[%d]!\n", i, j);

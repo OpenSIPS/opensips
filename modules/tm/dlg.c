@@ -138,11 +138,11 @@ int w_calculate_hooks(dlg_t* _d)
 /*
  * Create a new dialog - internal function
  */
-static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _ruri, struct socket_info* sock, dlg_t** _d)
+static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _turi, str* _ruri, struct socket_info* sock, dlg_t** _d)
 {
 	dlg_t* res;
 
-	if (!_cid || !_ltag || !_luri || !_ruri || !_d) {
+	if (!_cid || !_ltag || !_luri || !_turi || !_d) {
 		LM_ERR("Invalid parameter value\n");
 		return -1;
 	}
@@ -163,7 +163,9 @@ static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str*
 	     /* Make a copy of local URI (usually From) */
 	if (shm_str_dup(&res->loc_uri, _luri) < 0) return -5;
 	     /* Make a copy of remote URI (usually To) */
-	if (shm_str_dup(&res->rem_uri, _ruri) < 0) return -6;
+	if (shm_str_dup(&res->rem_uri, _turi) < 0) return -6;
+	     /* Make a copy of remote target (usually R-URI) */
+	if (_ruri && shm_str_dup(&res->rem_target, _ruri) < 0) return -7;
 	     /* Make a copy of local sequence (usually CSeq) */
 	res->loc_seq.value = _lseq;
 	     /* And mark it as set */
@@ -187,24 +189,28 @@ static int _internal_new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str*
 /*
  * Create a new dialog
  */
-int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _ruri, dlg_t** _d)
+int new_dlg_uac(str* _cid, str* _ltag, unsigned int _lseq, str* _luri, str* _turi, str* _ruri, dlg_t** _d)
 {
-	return _internal_new_dlg_uac(_cid,_ltag,_lseq,_luri,_ruri,NULL,_d);
+	return _internal_new_dlg_uac(_cid,_ltag,_lseq,_luri,_turi,_ruri,NULL,_d);
 }
 
 
 /*
  * Create a new dialog (auto mode)
  */
-int new_auto_dlg_uac( str* _luri, str* _ruri, struct socket_info* _sock, dlg_t** _d)
+int new_auto_dlg_uac( str* _luri, str* _turi, str* _ruri, str *callid, struct socket_info* _sock, dlg_t** _d)
 {
-	str callid, fromtag;
+	str fromtag, clid;
 
-	generate_callid(&callid);
-	generate_fromtag(&fromtag, &callid);
+	if (!callid) {
+		generate_callid(&clid);
+		callid = &clid;
+	}
 
-	return _internal_new_dlg_uac(&callid, &fromtag, 13/*cseq*/,_luri,
-		_ruri,_sock,_d);
+	generate_fromtag(&fromtag, callid);
+
+	return _internal_new_dlg_uac(callid, &fromtag, 13/*cseq*/,_luri,
+		_turi, _ruri,_sock,_d);
 }
 
 

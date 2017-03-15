@@ -912,18 +912,19 @@ inline static int is_lang_tag_matching(str *range,str *cpl_tag,str *cpl_subtag)
 			/* do compare */
 			LM_DBG("testing range [%.*s]-[%.*s] against tag [%.*s]-[%.*s]\n",
 				tag.len,tag.s,subtag.len,subtag.s,
-				cpl_tag->len,cpl_tag->s,cpl_subtag->len,cpl_subtag->s);
+				cpl_tag->len,(cpl_tag->s?cpl_tag->s:""),
+				cpl_subtag->len,(cpl_subtag->s?cpl_subtag->s:""));
 			/* language range of "*" is ignored for the purpose of matching*/
 			if ( !(tag.len==1 && *tag.s=='*') ) {
 				/* does the language tag matches ? */
-				if (tag.len==cpl_tag->len && !strncasecmp(tag.s,cpl_tag->s,
-				tag.len)) {
+				if (cpl_tag->len && cpl_tag->s && tag.len==cpl_tag->len &&
+						!strncasecmp(tag.s,cpl_tag->s, tag.len)) {
 					/* if the subtag of the range is void -> matche */
 					if (subtag.len==0)
 						return 1;
 					/* the subtags equals -> matche */
-					if (subtag.len==cpl_subtag->len &&
-					!strncasecmp(subtag.s,cpl_subtag->s,subtag.len) )
+					if (cpl_subtag->len && cpl_subtag->s && subtag.len==cpl_subtag->len &&
+							!strncasecmp(subtag.s,cpl_subtag->s,subtag.len) )
 						return 1;
 				}
 			}

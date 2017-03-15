@@ -209,7 +209,7 @@ int load_route_data(struct rewrite_data * rd) {
 		columns[COL_DOMAIN]->len, columns[COL_DOMAIN]->s, db_table.len, db_table.s,
 		columns[COL_CARRIER]->len, columns[COL_CARRIER]->s, tmp->id);
 		if (ret < 0) {
-			LM_ERR("error in snprintf");
+			LM_ERR("error in snprintf\n");
 			goto errout;
 		}
 		query_str.s = query;
@@ -256,7 +256,7 @@ int load_route_data(struct rewrite_data * rd) {
 	}
 
 	do {
-		LM_DBG("loading, cycle %d", n++);
+		LM_DBG("loading, cycle %d\n", n++);
 			for (i = 0; i < RES_ROW_N(res); ++i) {
 			row = &RES_ROWS(res)[i];
 			tmp_domain.s=(char *)row->values[COL_DOMAIN].val.string_val;

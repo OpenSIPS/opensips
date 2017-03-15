@@ -1,0 +1,1062 @@
+<!-- Module User's Guide -->
+
+<chapter id="sec-admin-guide">
+	<title>&adminguide;</title>
+
+	<section id="sec-overview">
+	<title>Overview</title>
+	<para>
+		The <emphasis>mid_registrar</emphasis> is a mid-component of a SIP platform,
+		designed to work between end users and the platform's main registration component.
+
+		It opens up new possibilities for leveraging existing infrastructure in
+		order to continue to grow (as subscribers and as registration traffic)
+		while keeping an existing low-resources registrar server.
+	</para>
+	<para>
+		Acting as a registration front-end to the main SIP registrar, the mid-registrar is able to:
+		<itemizedlist>
+			<listitem>
+			<para>
+				convert incoming high-rate registration traffic into a low-rate variant,
+				towards the main registrar layer. With proper configuration, it can
+				absorb over 90% of existing registration traffic while
+				preserving the back-end's user location state, effectively reducing
+				resource usage at the respective layer.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				stay synchronized with the main registrar (from a user
+				location perspective), by properly
+				accepting the contact states and expirations it decides.
+			</para>
+			</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section id="sec-working-modes">
+	<title>Working modes</title>
+	<para>
+		The mid_registrar may function in one of several modes:
+	</para>
+
+	<section id="sec-mirror-mode">
+		<title>Contact mirroring (default)</title>
+		<para>
+		In "contact mirroring" mode, the mid-registrar will insert itself
+		in the registration flow between end user and main registrar only as
+		a simple proxy registrar, without any other contact processing. The
+		incoming REGISTER requests will be proxied further to the main
+		registrar; the registered contact will be stored in the mid-registrar
+		only on 2xx replies, according to the information returned by the main registrar.
+		</para>
+		<para>
+		A possible usage of this mode, for example, would be to clone
+		registrations on a SIP front-end that extends the main platform with
+		new services (like adding IM/messaging routing).
+		</para>
+	</section>
+
+	<section id="sec-device-throttling-mode">
+		<title>Contact throttling</title>
+		<para>
+		In "contact throttling" mode, the mid-registrar can significantly
+		reduce the registration rate on the main registrar side (between
+		mid-registrar and main registrar), while coping with a high registration
+		rate on the end-user side (between end-user and mid-registrar). This
+		is useful in scenarios were the end-users are very dynamic and short-lived 
+		(like on mobile devices), but the main registrar cannot cope with large traffic.
+		</para>
+		<para>
+		Traffic conversion is done in a <emphasis>"per-device"</emphasis>
+		manner, according to each unique SIP Contact header field value. It is achieved by
+		increasing the "expires" parameter value of each contact, when relaying
+		registrations to the main registrar.
+		Once such a registration is completed, subsequent registrations for the same
+		SIP Contact header field value will be continuously absorbed by the mid-registrar
+		until, eventually, the lifetime of the remote registration will have decreased
+		enough that a refresh (i.e. simply forwarding the next REGISTER request) is mandatory.
+		</para>
+		<para>
+		A common occurence is for some SIP User Agents to lose their network connection
+		(especially when dealing with mobile devices), hence they do not properly de-register
+		from the mid-registrar. In this case, in order to avoid stale registrations on the
+		main registrar (which contains SIP contacts with greatly extended lifetimes!),
+		the mid-registrar will appropriately generate De-REGISTER requests and remove
+		these contacts from the main registrar's location service as soon as it considers
+		them to have expired.
+		</para>
+		<para>
+		The main practical use for this mode is registration traffic conversion.
+		By minimizing the strain of processing registrations on the main registrar,
+		we allow it to dedicate more system resources to critical areas of the
+		platform, such as advanced SIP calling features and/or media handling.
+		</para>
+	</section>
+
+	<section id="sec-user-throttling-mode">
+		<title>AOR throttling</title>
+		<para>
+		In "AOR throttling" mode, the mid-registrar helps with handling multiple
+		registrations per user/AOR. This is done by aggregating all the end-user
+		registered contacts from a single AOR under a single registration into
+		the main registrar. This can dramatically reduce the incoming rate of
+		registrations (to a single registration per AOR), but also helps in dealing
+		with registrar servers which are not able to implement parallel forking/ringing.
+		</para>
+		<para>
+		Traffic conversion is done in a <emphasis>"per-user"</emphasis>
+		manner, according to each unique SIP AOR. It is achieved by
+		providing a contact with a large "expires" parameter value,
+		when relaying registrations to the main registrar.
+		Once such a registration is completed, subsequent registrations to the same
+		Address-of-record  will be continuously absorbed by the mid-registrar until,
+		eventually, the lifetime of the remote registration will have decreased enough
+		that a refresh (i.e. simply forwarding the next REGISTER request) is mandatory.
+		</para>
+		<para>
+		A common occurence is for some SIP User Agents to lose their network connection
+		(especially when dealing with mobile devices), hence they do not properly de-register
+		from the mid-registrar. In this case, in order to avoid stale registrations on the
+		main registrar (which contains SIP AORs with greatly extended lifetimes!),
+		the mid-registrar will appropriately generate De-REGISTER requests and remove
+		these contacts from the main registrar's location service as soon as it considers
+		them to have expired.
+		</para>
+		<para>
+			Of all three modes, "AOR throttling" potentially offers the best reduction in
+			traffic on the way to the main registrar. By aggregating contacts, it also
+			has the added benefit of reducing the number of contacts that the main registrar
+			must handle.
+		</para>
+		<para>
+			Regarding SIP request mangling in this mode, the module will always
+			replace all Contact header field values with a single Contact header
+			field value when proxying registrations to the main registrar, indicating
+			that the AOR is local to the front-end, and its contacts can be found there.
+		</para>
+		<para>
+		The main practical uses for this mode are registration traffic conversion
+		towards the main registrar, as well as taking over its call forking
+		duties. By minimizing the
+		strain of processing registrations / forking calls on the main registrar,
+		we allow it to dedicate more system resources to critical areas of the
+		platform, such as advanced SIP calling features and/or media handling.
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-insertion-modes">
+	<title>Insertion modes</title>
+	<para>
+		A defining feature of the mid-registrar is that it must be easy to integrate,
+		ideally a "plug-and-play" SIP component. It should not impose any
+		"outbound-proxy" configurations on any of the platform's layers and
+		automatically insert itself on the call flow of successful registrations.
+	</para>
+	<para>
+		The script writer can choose between two
+		SIP insertion mechanisms: either by having the module modify Contact
+		headers when forwarding registrations, or instruct it to make use
+		of a Path header (RFC 3327).
+	</para>
+	<section id="sec-insertion-by-contact">
+		<title>Insertion by Contact (default)</title>
+		<para>
+			This insertion mode will mangle the Contact header field values
+			of all forwarded registration requests, by replacing any
+			original IP and port of a Contact URI with those of one of the
+			mid-registrar's listening interfaces.
+		</para>
+		<para>
+			The mid-registrar will also append a parameter to each Contact URI
+			("rid" by default, can be changed through the
+			<emphasis><xref linkend="modparam-contact-match-param"/></emphasis> module parameter)
+			This URI parameter allows reply contacts to be matched with request
+			ones. This same parameter will also be used when
+			routing calls to the users. In this case, it will be taken from
+			the INVITE's Request-URI.
+		</para>
+	</section>
+	<section id="sec-insertion-by-path">
+		<title>Insertion by Path</title>
+		<para>
+			Instructs the module to append a "Path" header field to each
+			forwarded registration request. By recording itself between each
+			user and the main registrar, the mid-registrar allows subsequent
+			calls to be properly routed to the called party.
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-dependencies">
+	<title>Dependencies</title>
+	<section id="sec-module-dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>usrloc</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>signaling</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section id="sec-external-dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-modparam">
+	<title>Exported Parameters</title>
+
+	<section id="modparam-mode" xreflabel="mode">
+		<title><varname>mode</varname> (integer)</title>
+
+		<para>
+			Working mode of the module.
+			Refer to <xref linkend="sec-working-modes"/> for
+			more details.
+		</para>
+
+		<para>
+			The following is true for <emphasis role='bold'>all</emphasis> working modes:
+			<itemizedlist>
+			<listitem>
+			<para>
+			when a REGISTER is received, the script writer must call
+			<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+			the mid-registrar will insert itself on the call flow of
+			all registrations according to the
+			<emphasis><xref linkend="modparam-insertion-mode"/></emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+			registrations handled by the mid-registrar will transparently
+			result in a user location update if their reply status is 2xx.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+
+		<para>
+			Each working mode behaves differently, as follows:
+		</para>
+
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>0 (Contact mirroring mode)</emphasis>
+			<para>
+			The module will only insert itself on the call flow.
+			Contact expirations are left unchanged.
+			</para>
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>1 (Contact throttling mode)</emphasis>
+			<para>
+			Contact throttling is a first step in lowering registration traffic rates. This
+			is possible through the use of the
+			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module
+			parameter or the corresponding parameter to
+			<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
+			which allow the script writer to prolong the life of the registrations on the way
+			to the main registrar.
+			</para>
+
+			<para>
+			In this mode, the
+			mid-registrar may alter Expires header field values or "expires" Contact
+			header field parameters found in the initial request when forwarding registrations, according to
+			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+			</para>
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>2 (AOR throttling mode)</emphasis>
+		<para>
+		AOR throttling is a step beyond "Contact throttling", as the main registrar
+		is made aware of the network presence of AORs, rather than Contacts. This behaviour
+		is also made possible through the
+		<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module
+		parameter or the corresponding parameter to
+		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
+		which allow the script writer to prolong the life of the registrations on the way
+		to the main registrar.
+		</para>
+		<para>
+		In this mode, the mid-registrar will fully replace the Contact
+		set of all forwarded registrations with a single Contact, advertising
+		that the AOR is available to the main registrar. The expiration value
+		for this Contact is given by 
+		<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>.
+		</para>
+		</para>
+		</listitem>
+		</itemizedlist>
+
+
+		<para>
+			Default value is <emphasis role='bold'>0</emphasis> (contact mirroring mode)
+		</para>
+		<example>
+		<title>Setting the <emphasis>mode</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "mode", 2)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-insertion-mode" xreflabel="insertion_mode">
+		<title><varname>insertion_mode</varname> (integer)</title>
+		<para>
+			SIP insertion mode of the module. Refer to
+			<xref linkend="sec-insertion-modes"/> for more details. Possible
+			values are:
+		</para>
+
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>0 (Insertion by Contact)</emphasis>
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>1 (Insertion by Path)</emphasis>
+		</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		Default value is <emphasis role='bold'>0</emphasis> (route by Contact)
+		</para>
+		<example>
+		<title>Setting the <emphasis>insertion_mode</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "insertion_mode", 1)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-outgoing-expires" xreflabel="outgoing_expires">
+		<title><varname>outgoing_expires</varname> (integer)</title>
+		<para>
+			Only relevant in Contact/AOR throttling modes. Sets the default
+			value for the expiration intervals of outgoing contacts. Values for
+			this parameter which are shorter than the expiration intervals of
+			some contacts present in a REGISTER request being processed will
+			lead to the outgoing expiration intervals of these contacts
+			remaining unchanged.
+		</para>
+
+		<para>
+		Default value is <emphasis role='bold'>600</emphasis> (seconds)
+		</para>
+		<example>
+		<title>Setting the <emphasis>outgoing_expires</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "outgoing_expires", 3600)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-contact-match-param" xreflabel="contact_match_param">
+		<title><varname>contact_match_param</varname> (string)</title>
+		<para>
+			Only relevant in "Contact throttling" mode. Specifies the name of the
+			Contact URI parameter which is used by the module in order to
+			match contacts and route calls.
+		</para>
+
+		<para>
+			Default value is <emphasis role='bold'><quote>rid</quote></emphasis>
+		</para>
+		<example>
+		<title>Setting the <emphasis>contact_match_param</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "contact_match_param", "regid")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-default-q" xreflabel="default_q">
+		<title><varname>default_q</varname> (integer)</title>
+		<para>
+		Sets the default <emphasis>"q"</emphasis> value for new contacts.
+		Because &osips; does not support floating point module parameters,
+		the supplied <emphasis>"q"</emphasis> value must be multiplied by 1000.
+		For example, if you want
+		<emphasis><xref linkend="modparam-default-q"/></emphasis>
+		to be 0.38, set this parameter to 380.
+		</para>
+
+		<para>
+		Default value is <emphasis role='bold'>0</emphasis>
+		</para>
+		<example>
+		<title>Setting the <emphasis>default_q</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "default_q", 380)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-tcp-persistent-flag" xreflabel="tcp_persistent_flag">
+		<title><varname>tcp_persistent_flag</varname> (string)</title>
+		<para>
+		Specifies the message flag to be used to control the
+		module behaviour regarding TCP connections. If the flag is set for a
+		REGISTER via TCP containing a TCP contact, the module, via the
+		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>
+		function, will set the lifetime of the TCP
+		connection to the contact expire value. By doing this, the TCP
+		connection will stay up as long as its contacts are valid.
+		</para>
+
+		<para>
+		Default value is <emphasis role='bold'>-1</emphasis> (not set)
+		</para>
+		<example>
+		<title>Setting the <emphasis>tcp_persistent_flag</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATIONS")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-realm-prefix" xreflabel="realm_prefix">
+		<title><varname>realm_prefix</varname> (string)</title>
+		<para>
+		In multi-domain user location scenarios
+		(<emphasis role='bold'>"use_domain"</emphasis> usrloc module parameter
+		set to <emphasis>"1"</emphasis>),
+		this parameter denotes a prefix to be automatically stripped from the
+		hostname part of <emphasis>To</emphasis> header field URIs when doing
+		a save, or <emphasis>Request-URIs</emphasis> when doing a lookup.
+		</para>
+		<para>
+		It is meant as an alternative to DNS SRV records (not all SIP clients
+		support SRV lookups), a subdomain of
+		 the master domain can be defined for SIP purposes (like
+		 "sip.mydomain.net" pointing to same IP address as the SRV record for
+		 "mydomain.net"). By ignoring the realm_prefix "sip.", at registration,
+		 "sip.mydomain.net" will be translated to "mydomain.net".
+		</para>
+
+		<para>
+		Default value is <emphasis role='bold'>NULL</emphasis> (none)
+		</para>
+		<example>
+		<title>Setting the <emphasis>realm_prefix</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "realm_prefix", "sip.")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-case-sensitive" xreflabel="case_sensitive">
+		<title><varname>case_sensitive</varname> (integer)</title>
+		<para>
+		If set to 1, then <acronym>AOR</acronym> comparison will be case
+		sensitive (as RFC3261 instructs), if set to 0 then
+		<acronym>AOR</acronym> comparison will be case insensitive.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>1</emphasis> (true)
+		</para>
+		<example>
+		<title>Setting the <emphasis>case_sensitive</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "case_sensitive", 0)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-received-avp" xreflabel="received_avp">
+		<title><varname>received_avp</varname> (string)</title>
+		<para>
+		The module will store the value of the AVP configured by this
+		parameter in the <emphasis>received</emphasis> column of the user
+		location table. It will leave the column empty if the AVP is empty.
+		The AVP should contain a SIP URI consisting of the source IP, port,
+		and protocol of the REGISTER message being processed.
+		</para>
+		<note>
+		<para>
+			The value of this parameter should be the same as the value of
+			corresponding parameter of nathelper module.
+		</para>
+		</note>
+		<para>
+		Default value is <emphasis role='bold'>"NULL"</emphasis> (disabled)
+		</para>
+		<example>
+		<title>Setting the <emphasis>received_avp</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "received_avp", "$avp(rcv)")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-received-param" xreflabel="received_param">
+		<title><varname>received_param</varname> (string)</title>
+		<para>
+		The name of the parameter that will be appended to Contacts of
+		200 OK replies if the received URI is set by nathelper module.
+		</para>
+		<note>
+		<para>
+			The value of this parameter should be the same as the value of
+			corresponding parameter of nathelper module.
+		</para>
+		</note>
+		<para>
+		Default value is <emphasis role='bold'>"received"</emphasis>
+		</para>
+		<example>
+		<title>Setting the <emphasis>received_param</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "received_param", "rcv")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-max-contacts" xreflabel="max_contacts">
+		<title><varname>max_contacts</varname> (integer)</title>
+		<para>
+		This parameter can be used to limit the number of contacts per
+		AOR (Address-of-Record) allowed at mid-registrar level. A value of
+		<emphasis role='bold'>0</emphasis> disables the check.
+		</para>
+		<para>
+		This is a global value and will only be used if no other value
+		(for max_contacts) is passed as parameter to
+		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>
+		(i.e. a "max_contacts" function flag will override this parameter)
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>0</emphasis> (disabled)
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_contacts</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "max_contacts", 10)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-retry-after" xreflabel="retry_after">
+		<title><varname>retry_after</varname> (integer)</title>
+		<para>
+		The mid-registrar can generate 5xx replies to registrations in various
+		situations. It could, for example, happen when the
+		<emphasis><xref linkend="modparam-max-contacts"/></emphasis> parameter
+		is set and the processing of REGISTER request would exceed the limit.
+		In this case, OpenSIPS would respond with "503 Service Unavailable".
+		</para>
+		<para>
+		If you want to add the Retry-After header field in 5xx replies, set
+		this parameter to a value greater than zero (0 means: do not add the
+		header field). See section 20.33 of RFC3261 for more details.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>0</emphasis> (disabled)
+		</para>
+		<example>
+		<title>Setting the <emphasis>retry_after</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "retry_after", 30)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-disable-gruu" xreflabel="disable_gruu">
+		<title><varname>disable_gruu</varname> (integer)</title>
+		<para>
+			Globally disable GRUU handling.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>1</emphasis> (GRUUs will not be handled)
+		</para>
+		<example>
+		<title>Setting the <emphasis>gruu_secret</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "disable_gruu", 0)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-gruu-secret" xreflabel="gruu_secret">
+		<title><varname>gruu_secret</varname> (string)</title>
+		<para>
+		The string that will be used in XORing when generating
+		temporary GRUUs.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>"0p3nS1pS"</emphasis>
+		</para>
+		<example>
+		<title>Setting the <emphasis>gruu_secret</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "gruu_secret", "my_secret")
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="sec-modfunc">
+	<title>Exported Functions</title>
+	<section id="modfunc-mid-registrar-save" xreflabel="mid_registrar_save()">
+		<title>
+		<function moreinfo="none">mid_registrar_save(domain[, [flags][, [aor][, [outgoing_expires]]]])</function>
+		</title>
+		<para>
+		Function to be called when handling REGISTER requests. This function
+		decides if a REGISTER should be forwarded to the main registrar and
+		performs all the necessary changes over the registered contacts. The
+		function is also covering the handling of the 2xx REGISTER replies -
+		the contacts confirmed by the main registrar will be automatically
+		saved in the local user location (without any additional scripting).
+		</para>
+		<para>
+			In Contact/AOR throttling modes (more info about working modes in <xref linkend="sec-working-modes"/>),
+			the return value of this function indicates whether the script
+			writer must forward the REGISTER request to the main registrar,
+			or just wrap up any left-over processing and exit script execution, as
+			the current REGISTER request has been answered with 200 OK
+			(absorbed at mid-registrar level).
+		</para>
+		<para>
+			Depending on the current working
+			<emphasis><xref linkend="modparam-mode"/></emphasis> and
+			<emphasis><xref linkend="modparam-insertion-mode"/></emphasis>,
+			the function may additionally perform
+			the following series of transformations when relaying REGISTER requests:
+		</para>
+		<para>
+			<itemizedlist>
+				<listitem>
+					<para> in <emphasis>"Contact throttling"</emphasis> mode </para>
+					<itemizedlist>
+						<listitem>
+							<para>
+								change the value of the <emphasis>Expires</emphasis>
+								header field to the value of
+								<emphasis>outgoing_expires</emphasis>, if given,
+								otherwise the value given by the
+								<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+								module parameter.
+								The same applies to any <emphasis>";expires"</emphasis>
+								Contact URI parameter.
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								replace the "host:port" part of all Contact URIs of the
+								incoming REGISTER request with an OpenSIPS listening interface
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								append a parameter to each
+								<emphasis>Contact</emphasis> URI, which will
+								allow the module to match the reply contacts
+								and also route calls. The name of this URI
+								parameter is configurable via
+								<emphasis><xref linkend="modparam-contact-match-param"/></emphasis>
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								append a "Path" header to the current REGISTER request
+							</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para> in <emphasis>"AOR throttling"</emphasis> mode </para>
+					<itemizedlist>
+						<listitem>
+							<para>
+								change the value of the <emphasis>Expires</emphasis>
+								header field to the value of
+								<emphasis>outgoing_expires</emphasis>, if given,
+								otherwise the value given by the
+								<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+								module parameter.
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								replace all <emphasis>Contact</emphasis> header
+								fields of the request with a single <emphasis>Contact</emphasis> header field,
+								which will contain the following SIP URI: "sip:address-of-record@proxy_ip:proxy_port"
+							</para>
+						</listitem>
+						<listitem>
+							<para>
+								append a "Path" header to the current REGISTER request
+							</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>domain</emphasis> - logical domain within the registrar.
+			If a database is used, then this must be name of the <emphasis>usrloc</emphasis>
+			table which stores the contacts
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>flags</emphasis> (optional) - string of
+			the following flags:
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>'m' (Memory only)</emphasis> - save the
+					contacts only in memory cache without no DB operation;
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'r' (no Reply)</emphasis> - do not
+					generate a SIP reply to the current REGISTER request.
+					</para>
+				</listitem>
+				<!--
+				<listitem>
+					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this
+					flag can be used to limit the number of contacts for this
+					AOR (Address of Record) in the user location database.
+					Value 0 disables the check. This parameter overrides the
+					global "max_contacts" module parameter.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'e(int)' (minimum expires)</emphasis> -  this
+					flag can be used to set minimum register expiration time.
+					Values lower than this minimum will be automatically set
+					to the minimum. Value 0 disables the checking.
+					This parameter overrides the global "min_expires" module parameter.
+					</para>
+				</listitem>
+				!-->
+				<listitem>
+					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
+					The Path header is saved into usrloc, but is never
+					included in the reply.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p1' (Path support - lazy mode)</emphasis>
+					The Path header is saved into usrloc, but is only included
+					in the reply if path support is indicated in the
+					registration request by the <quote>path</quote> option
+					of the <quote>Supported</quote> header.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p2' (Path support - strict mode)</emphasis>
+					The path header is only saved into usrloc, if path support
+					is indicated in the registration request by the
+					<quote>path</quote> option of the <quote>Supported</quote>
+					header. If no path support is indicated, the request is
+					rejected with <quote>420 - Bad Extension</quote> and the
+					header <quote>Unsupported: path</quote> is included in
+					the reply along with the received <quote>Path</quote>
+					header. This mode is the one recommended by RFC-3327.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'v' (path receiVed)</emphasis> if set,
+					the <quote>received</quote> parameter of the first Path
+					URI of a registration is set as received-uri and the NAT
+					branch flag is set for this contact. This is useful if
+					the registrar is placed behind a SIP loadbalancer, which
+					passes the nat'ed UAC address as <quote>received</quote>
+					parameter in it's Path uri.
+					</para>
+				</listitem>
+			</itemizedlist>
+			<para>This parameter is a string composed of a set of flags.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>aor (optional)</emphasis> - variable holding a custom Address-of-Record.
+				If not given, the AOR will be taken from the <emphasis>To</emphasis> header URI
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>outgoing_expires (optional, only relevant
+			in Contact/AOR throttling modes)</emphasis> - custom value
+		for the contact expiration interval of the outgoing REGISTER
+		request, which overrides the default
+			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module parameter.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para><emphasis role='bold'>Return value</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				1 (success) - current REGISTER request must be dispatched by the
+				script writer over to the main registrar
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				2 (success) - current REGISTER request has been absorbed by the
+				mid-registrar; a 200 OK reply has been sent upstream
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				-1 (error) - generic error code; the logs should provide more help
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can only be used from the request route.
+		</para>
+		<example>
+			<title><function moreinfo="none"><emphasis>mid_registrar_save</emphasis></function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("REGISTER")) {
+	mid_registrar_save("location");
+	switch ($retcode) {
+	case 1:
+		xlog("L_INFO", "forwarding REGISTER to main registrar...\n");
+		$ru = "sip:10.0.0.3:5070";
+		if (!t_relay()) {
+			send_reply("500", "Server Internal Error 1");
+		}
+
+		break;
+	case 2:
+		xlog("L_INFO", "REGISTER has been absorbed!\n");
+		break;
+	default:
+		xlog("L_ERR", "mid-registrar error!\n");
+		send_reply("500", "Server Internal Error 2");
+	}
+
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modfunc-mid-registrar-lookup" xreflabel="mid_registrar_lookup()">
+		<title>
+		<function moreinfo="none">mid_registrar_lookup(domain[, [flags][, [aor]]])</function>
+		</title>
+		<para>
+		Function to be called when receiving requests from the main registrar
+		(to be routed to the end-user). It performs the local lookup
+		(in user location) and the necessary RURI processing in order to route
+		the requests further to the end-user registered contacts (note that
+		multiple branches/destinations may result after the lookup).
+		</para>
+		<para>
+		Depending on the current working
+		<emphasis><xref linkend="modparam-mode"/></emphasis>,
+		the function will behave as follows:
+		</para>
+
+		<para>
+		<itemizedlist>
+		<listitem>
+		<para> in <emphasis>"mirror"</emphasis> mode </para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				extract the username (Address-of-Record) from the Request-URI
+				and look up all of its contact bindings stored in the user
+				location. The Request-URI (<emphasis role='bold'>$ru</emphasis>
+				variable) will be overwritten with the highest q-value contact,
+				with additional branches for each contact being optionally
+				created. (depending on the <emphasis>flags</emphasis> parameter)
+			</para>
+		</listitem>
+		</itemizedlist>
+		</listitem>
+		<listitem>
+		<para> in <emphasis>"Contact throttling"</emphasis> mode </para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				extract the <emphasis><xref linkend="modparam-contact-match-param"/></emphasis>
+				from the Request-URI, derive the actual SIP URI of the destination
+				from it and set it as the new Request-URI of the INVITE
+				(<emphasis role='bold'>$ru</emphasis> variable).
+			</para>
+		</listitem>
+		</itemizedlist>
+		</listitem>
+		<listitem>
+		<para> in <emphasis>"AOR throttling"</emphasis> mode </para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				extract the username (Address-of-Record) from the Request-URI
+				and look up all of its contact bindings stored in the user
+				location. The Request-URI (<emphasis role='bold'>$ru</emphasis>
+				variable) will be overwritten with the highest q-value contact,
+				with additional branches for each contact being optionally
+				created. (depending on the <emphasis>flags</emphasis> parameter)
+			</para>
+		</listitem>
+		</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>domain</emphasis> - logical domain within the registrar.
+			If a database is used, then this must be name of the <emphasis>usrloc</emphasis>
+			table which stores the contacts
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags</emphasis>(optional)</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>'b' (no Branches)</emphasis> - this flag controls how
+				this function processes multiple contacts.  If there are
+				multiple contacts for the given username in usrloc and this
+				flag is not set, Request-URI will be overwritten with the
+				highest-q rated contact and the rest will be appended to
+				sip_msg structure and can be later used by tm for forking. If
+				the flag is set, only Request-URI will be overwritten
+				with the highest-q rated contact and the rest will be left
+				unprocessed.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'r' (bRanch lookup)</emphasis> - this flag enables
+				searching through existing branches for aor's and expanding
+				them to contacts. For example, you have got AOR A in your
+				ruri but you also want to forward your calls to AOR B. In order
+				to do this, you must put AOR B in a branch, and if this flag
+				enabled, the function will also expand AOR B to contacts,
+				which will be put back into the branches. The AOR's that were
+				in branches before the function call shall be removed.
+				</para>
+
+				<para>
+				<emphasis role='bold'>WARNING: </emphasis>
+				<emphasis>if you want this flag activated,
+				the 'b' (no Branches) flag must not be set, otherwise
+				the lookup function will be unable to add new branches
+				</emphasis>
+				</para>
+			</listitem>
+
+			<listitem>
+				<para>
+				<emphasis>'m' (Method filtering)</emphasis> - this flag tells
+				if the contact filtering based on supported methods should be
+				performed during lookup.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'u' (User-Agent filtering)</emphasis> - this flag
+				enables regexp filtering by user-agent. It's useful with
+				enabled append_branches parameter. Regexp must follow
+				the 'u' flag and must use format like 'u/regexp/'.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'i' (Case insensitive search)</emphasis> - this flag
+				enables case insensitive filtering for the 'u' flag.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'e' (Use extended regexp)</emphasis> - this flag
+				enables using of extended regexp format for the 'u' flag.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>aor (optional)</emphasis> - variable holding a custom Address-of-Record.
+				If not given, the AOR will be taken from the <emphasis>Request-URI</emphasis>
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para><emphasis role='bold'>Return value</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				1 (success) - branch set successfully built
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				-1 (error) - generic error code; the logs should provide more help
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can only be used from the request route.
+		</para>
+		<example>
+			<title><function moreinfo="none"><emphasis>mid_registrar_lookup</emphasis></function> usage</title>
+		<programlisting format="linespecific">
+...
+	# initial invites from the main registrar - need to look them up!
+	if (is_method("INVITE") and $si == "10.0.0.3" and $sp == 5070) {
+		if (!mid_registrar_lookup("location")) {
+			t_reply("404", "Not Found");
+			exit;
+		}
+
+		if (!t_relay())
+			send_reply("500", "Server Internal Error 3");
+
+	    exit;
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	</section>
+</chapter>
+

@@ -115,6 +115,7 @@ int xj_jcon_connect(xj_jcon jbc)
         return -1;
     }
 
+	memset(&address, 0, sizeof(address));
     // fill the fields of the address
     memcpy(&address.sin_addr, he->h_addr, he->h_length);
     address.sin_family=AF_INET;
@@ -123,6 +124,7 @@ int xj_jcon_connect(xj_jcon jbc)
     // try to connect with Jabber server
     if (connect(sock, (struct sockaddr *)&address, sizeof(address))<0)
     {
+		close(sock);
     	LM_DBG("failed to connect with Jabber server\n");
         return -1;
     }
@@ -191,6 +193,8 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 		goto error;
 
 	n = recv(jbc->sock, msg_buff, 4096, 0);
+	if (n < 0)
+		goto error;
 	msg_buff[n] = 0;
 	if(strncasecmp(msg_buff, JB_START_STREAM, JB_START_STREAM_LEN))
 		goto error;

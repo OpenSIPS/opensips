@@ -50,6 +50,8 @@ extern int _osp_use_np;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
+extern int _osp_swid_location;
+extern char* _osp_swid_param;
 extern int _osp_paramstr_location;
 extern char* _osp_paramstr_value;
 extern int _osp_srcdev_avpid;
@@ -529,46 +531,46 @@ int ospGetPciUser(
 {
     static const char* header = "P-Charge-Info";
     struct to_body body;
-    struct to_body* pci=NULL;
+    struct to_body* pci = NULL;
     struct hdr_field* hf;
     struct sip_uri uri;
     int result = -1;
 
     if ((pciuser != NULL) && (bufsize > 0)) {
         pciuser[0] = '\0';
-        if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-            LM_ERR("failed to parse message\n");
-            return -1;
-        }
-        for (hf = msg->headers; hf; hf = hf->next) {
-            if ((hf->type == HDR_OTHER_T) &&
-                (hf->name.len == strlen(header)) &&
-                (strncasecmp(hf->name.s, header, hf->name.len) == 0))
-            {
-                if (!(pci = hf->parsed)) {
-                    pci = &body;
-                    parse_to(hf->body.s, hf->body.s + hf->body.len + 1, pci);
-                }
-                if (pci->error != PARSE_ERROR) {
-                    if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
-                        ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
-                        ospSkipUserParam(pciuser);
-                        result = 0;
+        if (parse_headers(msg, HDR_EOH_F, 0) == 0) {
+            for (hf = msg->headers; hf; hf = hf->next) {
+                if ((hf->type == HDR_OTHER_T) &&
+                    (hf->name.len == strlen(header)) &&
+                    (strncasecmp(hf->name.s, header, hf->name.len) == 0))
+                {
+                    if (!(pci = hf->parsed)) {
+                        pci = &body;
+                        parse_to(hf->body.s, hf->body.s + hf->body.len + 1, pci);
+                    }
+                    if (pci->error != PARSE_ERROR) {
+                        if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
+                            ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
+                            ospSkipUserParam(pciuser);
+                            result = 0;
+                        } else {
+                            LM_ERR("failed to parse P-Charge-Info uri\n");
+                        }
+                        if (pci == &body) {
+                            free_to_params(pci);
+                        }
                     } else {
-                        LM_ERR("failed to parse P-Charge-Info uri\n");
+                        LM_ERR("bad P-Charge-Info header\n");
                     }
-                    if (pci == &body) {
-                        free_to_params(pci);
-                    }
-                } else {
-                    LM_ERR("bad P-Charge-Info header\n");
+                    break;
                 }
-                break;
             }
-        }
-        if (!hf) {
-            LM_DBG("without P-Charge-Info header\n");
-            result = 1;
+            if (!hf) {
+                LM_DBG("without P-Charge-Info header\n");
+                result = 1;
+            }
+        } else {
+            LM_ERR("failed to parse message\n");
         }
     } else {
         LM_ERR("bad parameters to parse user part from PAI\n");
@@ -624,6 +626,60 @@ int ospGetDiversion(
         }
     } else {
         LM_ERR("bad paraneters to parse number from Diversion\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get all parameters of P-Charging-Vector header
+ * param msg SIP message
+ * param pcvicid ICID value of P-Charging-Vector header
+ * param bufsize Size of ICID value buffer
+ * return 0 success, 1 without P-Charging-Vector, -1 failure
+ */
+int ospGetPcvIcid(
+    struct sip_msg* msg, 
+    char* pcvicid, 
+    int bufsize)
+{
+    static const char* header = "P-Charging-Vector";
+    struct hdr_field* hf;
+    param_hooks_t phooks;
+    param_t* params = NULL;
+    param_t* pit;
+    int result = -1;
+
+    if ((pcvicid != NULL) && (bufsize > 0)) {
+        pcvicid[0] = '\0';
+        if (parse_headers(msg, HDR_EOH_F, 0) == 0) {
+            for (hf = msg->headers; hf; hf = hf->next) {
+                if ((hf->type == HDR_OTHER_T) &&
+                    (hf->name.len == strlen(header)) &&
+                    (strncasecmp(hf->name.s, header, hf->name.len) == 0))
+                {
+                    parse_params(&(hf->body), CLASS_ANY, &phooks, &params);
+                    for (pit = params; pit; pit = pit->next) {
+                        if ((pit->name.len == OSP_ICID_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_ICID_NAME, OSP_ICID_SIZE) == 0) &&
+                            (pcvicid[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, pcvicid, bufsize);
+                            result = 0;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (!hf) {
+                LM_DBG("without P-Charging-Vector header\n");
+                result = 1;
+            }
+        } else {
+            LM_ERR("failed to parse message\n");
+        }
+    } else {
+        LM_ERR("bad parameters to parse PCV\n");
     }
 
     return result;
@@ -1002,6 +1058,7 @@ int ospRebuildDestUri(
     int uriparamsize;
     int userparamsize;
     int dnidsize;
+    int swidsize;
     int paramstrsize;
     int count;
 
@@ -1029,10 +1086,12 @@ int ospRebuildDestUri(
     uriparamsize = _osp_append_userphone ? USERPHONE.len : 0;
     /* destination network ID parameter */
     dnidsize = (_osp_dnid_location && dest->dnid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->dnid) : 0;
+    /* destination switch ID parameter */
+    swidsize = (_osp_swid_location && dest->swid[0]) ? 1 + strlen(_osp_swid_param) + 1 + strlen(dest->swid) : 0;
     /* parameter string */
     paramstrsize = (_osp_paramstr_location && _osp_paramstr_value[0]) ? 1 + strlen(_osp_paramstr_value) : 0;
 
-    LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d)\n",
+    LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' '%s' (%d)\n",
         dest->called,
         calledsize,
         dest->host,
@@ -1048,12 +1107,12 @@ int ospRebuildDestUri(
         dest->opname[OSPC_OPNAME_MNC],
         userparamsize,
         dest->dnid,
+        dest->swid,
         uriparamsize);
 
-    /* "sip:" + called + NP + "@" + host + ";user=phone" + ";_osp_dnid_param=" + dnid + " SIP/2.0" or
-       "sip:" + called + NP + ";_osp_dnid_param=" + dnid + "@" + host + ";user=phone" SIP/2.0" */
+    /* "sip:" + called + NP + "@" + host + ";user=phone" + ";_osp_dnid_param=" + dnid + " + ";_osp_swid_param=" + swid + " SIP/2.0" etc. */
     /* OpenSIPS will add "<>" for the Contact headers of SIP 3xx messages */
-    if (newuri->len < (4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + paramstrsize + 1 + 7 + TRANS.len)) {
+    if (newuri->len < (4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + swidsize + paramstrsize + 1 + 7 + TRANS.len)) {
         LM_ERR("new uri buffer is too small\n");
         newuri->len = 0;
         return -1;
@@ -1111,6 +1170,11 @@ int ospRebuildDestUri(
         buffer += count;
     }
 
+    if ((_osp_swid_location == 1) && (dest->swid[0] != '\0')) {
+        count = sprintf(buffer, ";%s=%s", _osp_swid_param, dest->swid);
+        buffer += count;
+    }
+
     if ((_osp_paramstr_location == 1) && (_osp_paramstr_value[0] != '\0')) {
         count = sprintf(buffer, ";%s", _osp_paramstr_value);
         buffer += count;
@@ -1128,6 +1192,11 @@ int ospRebuildDestUri(
 
     if ((_osp_dnid_location == 2) && (dest->dnid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
+        buffer += count;
+    }
+
+    if ((_osp_swid_location == 2) && (dest->swid[0] != '\0')) {
+        count = sprintf(buffer, ";%s=%s", _osp_swid_param, dest->swid);
         buffer += count;
     }
 

@@ -1,1 +1,1 @@
-id(int,auto) setid(int) destination(string) socket(string,null) state(int) weight(int) priority(int) attrs(string) description(string) 
+id(int,auto) setid(int) destination(string) socket(string,null) state(int) weight(string) priority(int) attrs(string) description(string) 

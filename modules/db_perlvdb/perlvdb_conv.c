@@ -268,7 +268,10 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 
 	colcount = av_len(colarray) + 1;
 	RES_COL_N(*r) = colcount;
-	db_allocate_columns(*r, colcount);
+	if (db_allocate_columns(*r, colcount) < 0) {
+		LM_ERR("cannot allocate memory for columns\n");
+		goto error;
+	}
 
 	 /* reverse direction, as elements are removed by "SvREFCNT_dec" */
 	for (i = colcount-1; i >= 0; i--) {
@@ -328,7 +331,10 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 	(*r)->res_rows = rowcount;
 	(*r)->last_row = rowcount;
 
-	db_allocate_rows(*r, rowcount);
+	if (db_allocate_rows(*r, rowcount) < 0) {
+		LM_ERR("cannot allocate memory for rows\n");
+		goto error;
+	}
         /*	(rows * (sizeof(db_row_t) + sizeof(db_val_t) * RES_COL_N(_res)) */
 	/*	LM_DBG("We got %d rows each row requres %d bytes because the row struct is %d and"
 	       "the values in that row take up %d. That is %d values each size is %d\n",
@@ -379,7 +385,7 @@ int perlresult2dbres(SV *perlres, db_res_t **r) {
 						break;
 					case DB_STRING:
 					case DB_STR:
-				/* We dont support DB_STR for now.
+				/* We don't support DB_STR for now.
 				 * Set DB_STRING instead */
 						cur_val.type = DB_STRING;
 						currentstring = SvPV(aval, len);

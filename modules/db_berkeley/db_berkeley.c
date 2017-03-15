@@ -262,7 +262,7 @@ void bdb_check_reload(db_con_t* _con)
 	struct stat st;
 	database_p db;
 	char n[MAX_ROW_SIZE];
-	char t[MAX_TABLENAME_SIZE];
+	char t[MAX_TABLENAME_SIZE + 1];
 	table_p tp = NULL;
 	tbl_cache_p tbc = NULL;
 
@@ -697,7 +697,7 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 
 	/* verify col types provided */
 	for(i=0; i<_n; i++)
-	{	j = (lkey)?lkey[i]:i;
+	{	j = lkey[i];
 		if(bdb_is_neq_type(_tp->colp[j]->type, _v[i].type))
 		{
 			LM_WARN("incompatible types v[%d] - c[%d]!\n", i, j);
@@ -913,7 +913,7 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 	int ret, klen=MAX_ROW_SIZE;
 	DBT key, data;
 	DB *db;
-	DBC *dbcp;
+	DBC *dbcp = NULL;
 	int *lkey=NULL;
 
 	ret = 0;
@@ -1053,7 +1053,7 @@ int bdb_update(db_con_t* _con, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char qbuf[MAX_ROW_SIZE];
-	char ubuf[MAX_ROW_SIZE];
+	char ubuf[MAX_ROW_SIZE + 1]; /* NULL terminated */
 	char * tmp;
 	DBT key, qdata, udata;
 	DB *db;

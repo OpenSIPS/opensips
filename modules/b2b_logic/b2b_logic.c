@@ -1117,7 +1117,7 @@ error:
 static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 {
 	struct mi_node* node= NULL;
-	str* args[B2B_INIT_MAX_PARAMNO];
+	str* args[MAX_SCENARIO_PARAMS];
 	int i = 0;
 	str scenario_name;
 
@@ -1135,9 +1135,9 @@ static struct mi_root* mi_trigger_scenario(struct mi_root* cmd, void* param)
 	}
 	node = node->next;
 
-	memset(args, 0, B2B_INIT_MAX_PARAMNO* sizeof(str*));
+	memset(args, 0, MAX_SCENARIO_PARAMS* sizeof(str*));
 	/* get the other parameters */
-	while(i < B2B_INIT_MAX_PARAMNO && node)
+	while(i < MAX_SCENARIO_PARAMS && node)
 	{
 		if(node->value.s == NULL || node->value.len== 0)
 			break;
@@ -1305,7 +1305,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 				return init_mi_tree(404, "Bad parameter", 13);
 			}
 			prov_entity = b2bl_create_new_entity(B2B_CLIENT,
-							0, &prov_media, 0, 0, 0, 0);
+							0, &prov_media, 0, 0, 0, 0, 0);
 			if (!prov_entity) {
 				LM_ERR("Failed to create new b2b entity\n");
 				goto free;
@@ -1321,7 +1321,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto free;
 	}
 
-	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0, 0);
+	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0, 0, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create new b2b entity\n");

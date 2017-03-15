@@ -73,6 +73,6 @@ struct tcp_req{
 		(r)->bytes_to_go=0; \
 	}while(0)
 
-
 #endif
+
 

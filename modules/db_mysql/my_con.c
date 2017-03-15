@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2001-2004 iptel.org
  * Copyright (C) 2008 1&1 Internet AG
+ * Copyright (C) 2016 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,10 +24,13 @@
 #include "db_mysql.h"
 #include "dbase.h"
 #include <mysql/mysql_version.h>
+
+#include "../tls_mgm/tls_helper.h"
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 
+extern struct tls_domain *tls_dom;
 
 int db_mysql_connect(struct my_con* ptr)
 {
@@ -36,6 +40,18 @@ int db_mysql_connect(struct my_con* ptr)
 
 	mysql_init(ptr->con);
 	ptr->init = 1;
+
+	if (tls_dom) {
+		LM_DBG("TLS key file: %s\n", tls_dom->pkey_file);
+		LM_DBG("TLS cert file: %s\n", tls_dom->cert_file);
+		LM_DBG("TLS ca file: %s\n", tls_dom->ca_file);
+		LM_DBG("TLS ca dir: %s\n", tls_dom->ca_directory);
+		LM_DBG("TLS ciphers: %s\n", tls_dom->ciphers_list);
+
+		mysql_ssl_set(ptr->con, tls_dom->pkey_file, tls_dom->cert_file,
+		              tls_dom->ca_file, tls_dom->ca_directory,
+		              tls_dom->ciphers_list);
+	}
 
 	/* set connect, read and write timeout, the value counts three times */
 	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, &db_mysql_timeout_interval);

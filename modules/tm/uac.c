@@ -318,7 +318,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			if (req->new_uri.s || req->force_send_socket!=dialog->send_sock ||
 			req->dst_uri.len != dialog->hooks.next_hop->len ||
 			memcmp(req->dst_uri.s,dialog->hooks.next_hop->s,req->dst_uri.len) ||
-			(dst_changed=0)==0 || req->add_rm || req->body_lumps){
+			(dst_changed=0)!=0 || req->add_rm || req->body_lumps){
 
 				new_send_sock = NULL;
 				/* do we also need to change the destination? */
@@ -542,7 +542,7 @@ int req_outside(str* method, str* to, str* from,
 	generate_callid(&callid);
 	generate_fromtag(&fromtag, &callid);
 
-	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, dialog) < 0) {
+	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, NULL, dialog) < 0) {
 		LM_ERR("failed to create new dialog\n");
 		goto err;
 	}
@@ -568,7 +568,7 @@ int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
 	generate_callid(&callid);
 	generate_fromtag(&fromtag, &callid);
 
-	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, &dialog) < 0) {
+	if (new_dlg_uac(&callid, &fromtag, DEFAULT_CSEQ, from, to, NULL, &dialog) < 0) {
 		LM_ERR("failed to create temporary dialog\n");
 		goto err;
 	}

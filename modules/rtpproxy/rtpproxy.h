@@ -43,11 +43,35 @@ struct rtpp_node {
 	int					rn_disabled;	/* found unaccessible? */
 	unsigned			rn_weight;		/* for load balancing */
 	unsigned int		rn_recheck_ticks;
-	int			rn_rep_supported;
-	int			rn_ptl_supported;
-	int			abr_supported;
+	unsigned int		capabilities;
 	struct rtpp_node	*rn_next;
 };
+
+/* Supported version of the RTP proxy command protocol */
+#define	SUP_CPROTOVER	20040107
+/* Required additional version of the RTP proxy command protocol */
+#define	REQ_CPROTOVER	"20050322"
+/* Additional capabilities */
+#define REPACK_CAP				(1<<0)
+#define	REPACK_CPROTOVER		"20071116"
+#define CODECS_CAP				(1<<1)
+#define	CODECS_CPROTOVER		"20081102"
+#define AUTOBRIDGE_CAP			(1<<2)
+#define	AUTOBRIDGE_CPROTOVER	"20090810"
+#define	NOTIFY_CAP				(1<<3)
+#define	NOTIFY_CPROTOVER		"20081224"
+#define	STATS_CAP				(1<<4)
+#define	STATS_CPROTOVER			"20080403"
+#define	NOTIFY_WILD_CAP			(1<<5)
+#define	NOTIFY_WILD_CPROTOVER	"20150617"
+#define	STATS_EXTRA_CAP			(1<<6)
+#define	STATS_EXTRA_CPROTOVER	"20150420"
+#define	TTL_CHANGE_CAP			(1<<7)
+#define	TTL_CHANGE_CPROTOVER	"20170313"
+
+#define RTP_CAP(_c) _c ## _CPROTOVER, sizeof(_c ## _CPROTOVER) - 1
+#define SET_CAP(_n, _c) (_n)->capabilities |= (_c ## _CAP)
+#define HAS_CAP(_n, _c) ((_n)->capabilities & _c ## _CAP)
 
 
 struct rtpp_set{

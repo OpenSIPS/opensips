@@ -45,7 +45,9 @@
 
 #include "../dprint.h"
 #include "../mem/mem.h"
+#include "../mem/shm_mem.h"
 #include "mi.h"
+#include "mi_trace.h"
 
 static struct mi_cmd*  mi_cmds = 0;
 static int mi_cmds_no = 0;
@@ -94,6 +96,7 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 					mis[i].name,mod_name);
 		}
 	}
+
 	return 0;
 }
 
@@ -163,8 +166,23 @@ int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
 	cmds->id = id;
 	cmds->param = param;
 
+	/**
+	 * FIXME we should check if trace_api is loaded not to lose unnecessary space
+	 * but some mi commands might have been already registered before loading the api
+	 * an example is the statistics mi commands
+	 */
+	cmds->trace_mask = shm_malloc(sizeof(volatile unsigned char));
+	if ( !cmds->trace_mask ) {
+		LM_ERR("no more shm mem!\n");
+		return -1;
+	}
+
+	/* by default all commands are traced */
+	*cmds->trace_mask = (~(volatile unsigned char)0);
+
 	return 0;
 }
+
 
 
 struct mi_cmd* lookup_mi_cmd( char *name, int len)

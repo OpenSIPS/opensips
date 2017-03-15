@@ -157,7 +157,8 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	unsigned int i;
 	unsigned int j;
 
-	/* must support 3-char arrays for udp, tcp, tls,
+	/* must support 2-char arrays for ws
+	 * must support 3-char arrays for udp, tcp, tls, wss
 	 * must support 4-char arrays for sctp
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
@@ -187,7 +188,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			break;
 
 		case PROTO2UINT('h', 'e', 'p'):
-			if (len != 7) return -1;
+			if (len != 7 || s[3] != '_') return -1;
 
 			j=PROTO2UINT(s[4], s[5], s[6]);
 			switch (j) {
@@ -413,7 +414,7 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len, int 
 
 
 #define get_sock_info_list(_proto) \
-	((_proto>=PROTO_FIRST && _proto<PROTO_LAST)?&protos[_proto].listeners:0)
+	((_proto>=PROTO_FIRST && _proto<PROTO_LAST)?(&protos[_proto].listeners):0)
 
 
 int probe_max_sock_buff( int sock, int buff_choice, int buff_max,

@@ -35,14 +35,6 @@
 #include "../../str.h"
 #include "../msg_parser.h"
 
-/**
- * Detect the mixed part delimiter.
- *
- * Example: "boundary1"
- * Content-Type: multipart/mixed; boundary="boundary1"
- */
-int get_mixed_part_delimiter(str * body, str * mp_delimiter);
-
 int extract_field(str *body, str *value, str field);
 int extract_rtpmap(str *body, str *rtpmap_payload, str *rtpmap_encoding, str *rtpmap_clockrate, str *rtpmap_parmas);
 int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string );
@@ -67,6 +59,4 @@ char *find_sdp_line_complex(char* p, char* plimit, char * name);
 
 char* get_sdp_hdr_field(char* , char* , struct hdr_field* );
 
-char *find_sdp_line_delimiter(char *p, char *plimit, str delimiter);
-char *find_next_sdp_line_delimiter(char *p, char *plimit, str delimiter, char *defptr);
 #endif

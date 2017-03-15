@@ -17,7 +17,6 @@ CREATE TABLE location (
     socket CHAR(64) DEFAULT NULL,
     methods INTEGER DEFAULT NULL,
     sip_instance CHAR(255) DEFAULT NULL,
-    attr CHAR(255) DEFAULT NULL,
-    CONSTRAINT location_account_contact_idx  UNIQUE (username, domain, contact, callid)
+    attr CHAR(255) DEFAULT NULL
 );
 

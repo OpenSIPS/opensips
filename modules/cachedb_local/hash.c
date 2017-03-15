@@ -37,9 +37,15 @@
 
 void lcache_htable_remove_safe(str attr, lcache_entry_t** it);
 
-int lcache_htable_init(int size)
+int lcache_htable_init(lcache_t** cache_htable_p, int size)
 {
 	int i = 0, j;
+	lcache_t* cache_htable;
+
+	if (cache_htable_p == NULL) {
+		LM_ERR("<null> htable pointer!\n");
+		return -1;
+	}
 
 	cache_htable = (lcache_t*)shm_malloc(size * sizeof(lcache_t));
 	if(cache_htable == NULL)
@@ -58,6 +64,8 @@ int lcache_htable_init(int size)
 		}
 	}
 
+	*cache_htable_p = cache_htable;
+
 	return 0;
 
 error:
@@ -70,15 +78,16 @@ error:
 	return -1;
 }
 
-void lcache_htable_destroy(void)
+void lcache_htable_destroy(lcache_t** cache_htable_p, int size)
 {
 	int i;
 	lcache_entry_t* me1, *me2;
+	lcache_t* cache_htable = *cache_htable_p;
 
 	if(cache_htable == NULL)
 		return;
 
-	for(i = 0; i< cache_htable_size; i++)
+	for(i = 0; i< size; i++)
 	{
 		lock_destroy(&cache_htable[i].lock);
 		me1 = cache_htable[i].entries;
@@ -90,7 +99,7 @@ void lcache_htable_destroy(void)
 		}
 	}
 	shm_free(cache_htable);
-	cache_htable = NULL;
+	*cache_htable_p = NULL;
 }
 
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
@@ -99,6 +108,18 @@ int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
 	int hash_code;
 	int size;
 	struct timeval start;
+
+	lcache_t* cache_htable;
+	lcache_col_t* cache_col;
+
+	cache_col = ((lcache_con*)con->data)->col;
+	if ( !cache_col ) {
+		LM_ERR("url <%.*s> does not have any collection associated with!",
+				con->url.len, con->url.s);
+		return -1;
+	}
+
+	cache_htable = cache_col->col_htable;
 
 	size= sizeof(lcache_entry_t) + attr->len + value->len;
 
@@ -122,7 +143,7 @@ int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
 	if( expires != 0)
 		me->expires = get_ticks() + expires;
 
-	hash_code= core_hash( attr, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -170,9 +191,22 @@ int lcache_htable_remove(cachedb_con *con,str* attr)
 	int hash_code;
 	struct timeval start;
 
+	lcache_t* cache_htable;
+	lcache_col_t* cache_col;
+
+	cache_col = ((lcache_con*)con->data)->col;
+	if ( !cache_col ) {
+		LM_ERR("url <%.*s> does not have any collection associated with!",
+				con->url.len, con->url.s);
+		return -1;
+	}
+
+	cache_htable = cache_col->col_htable;
+
+
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	lcache_htable_remove_safe( *attr, &cache_htable[hash_code].entries);
@@ -195,9 +229,21 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 	str ins_val;
 	struct timeval start;
 
+	lcache_t* cache_htable;
+	lcache_col_t* cache_col;
+
+	cache_col = ((lcache_con*)con->data)->col;
+	if ( !cache_col ) {
+		LM_ERR("url <%.*s> does not have any collection associated with!",
+				con->url.len, con->url.s);
+		return -1;
+	}
+
+	cache_htable = cache_col->col_htable;
+
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code = core_hash(attr,0,cache_htable_size);
+	hash_code = core_hash(attr,0,cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -310,9 +356,22 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 	char* value;
 	struct timeval start;
 
+	lcache_t* cache_htable;
+	lcache_col_t* cache_col;
+
+	cache_col = ((lcache_con*)con->data)->col;
+
+	if ( !cache_col ) {
+		LM_ERR("url <%.*s> does not have any collection associated with!",
+				con->url.len, con->url.s);
+		return -1;
+	}
+
+	cache_htable = cache_col->col_htable;
+
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -372,9 +431,21 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 	int ret;
 	struct timeval start;
 
+	lcache_t* cache_htable;
+	lcache_col_t* cache_col;
+
+	cache_col = ((lcache_con*)con->data)->col;
+	if ( !cache_col ) {
+		LM_ERR("url <%.*s> does not have any collection associated with!",
+				con->url.len, con->url.s);
+		return -1;
+	}
+
+	cache_htable = cache_col->col_htable;
+
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_htable_size);
+	hash_code= core_hash( attr, 0, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;

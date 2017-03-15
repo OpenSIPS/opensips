@@ -59,9 +59,41 @@
 
 /* fd communication commands - internal usage ONLY */
 enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
-		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE };
+		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE, CONN_RELEASE_WRITE };
 /* CONN_RELEASE, EOF, ERROR, DESTROY can be used by "reader" processes
  * CONN_GET_FD, NEW, ERROR only by writers */
+
+#ifdef TCP_DEBUG_CONN
+#define tcpconn_check_add(c) \
+	do { \
+		if ((c)->proc_id > 0) { \
+			LM_CRIT("add: conn=%p already in process %d\n", \
+					(c), (c)->proc_id); \
+			abort(); \
+		} \
+		if ((c)->c_next || ((c)->c_prev)) { \
+			LM_CRIT("add: conn=%p already linked somewhere else " \
+					"prev=%p next=%p\n", (c), (c)->c_prev, (c)->c_next); \
+			abort(); \
+		} \
+	} while(0)
+
+#define tcpconn_check_del(c) \
+	do { \
+		if ((c)->proc_id != process_no) { \
+			if ((c)->proc_id != -1) { \
+				LM_CRIT("del: conn=%p already in process %d\n", \
+						(c), (c)->proc_id); \
+				abort(); \
+			} else { \
+				LM_WARN("del: conn=%p removed before proc was assigned\n", (c)); \
+			} \
+		} \
+	} while(0)
+#else
+#define tcpconn_check_add(c)
+#define tcpconn_check_del(c)
+#endif
 
 
 /*! \brief add a tcpconn to a list
@@ -82,6 +114,7 @@ enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
 		if ((head)==(c)) (head)=(c)->next; \
 		if ((c)->next) (c)->next->prev=(c)->prev; \
 		if ((c)->prev) (c)->prev->next=(c)->next; \
+		(c)->prev = (c)->next = NULL; \
 	}while(0)
 
 #define TCPCONN_GET_PART(_id)  (_id%TCP_PARTITION_SIZE)

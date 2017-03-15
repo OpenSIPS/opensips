@@ -372,6 +372,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 		my_ctx = context_alloc(CONTEXT_GLOBAL);
 		if (my_ctx==NULL) {
 			LM_ERR("failed to alloc new ctx in pkg\n");
+			return; /* otherwise we'll get a crash next instruction */
 		}
 	}
 	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );

@@ -39,6 +39,8 @@
 #define GET_PAY_SIZE( A ) (ntohs(((short*)( A ))[1]) + ntohs(((short*)( A ))[2]))
 char get_header_code(struct hdr_field *f);
 int encode_msg(struct sip_msg *msg,char *payload,int len);
-int print_encoded_msg(int fd,char *code,char *prefix);
-int dump_msg_test(char *code,int fd,char header,char segregationLevel);
 extern unsigned int theSignal;
+/* Code not used!
+int dump_msg_test(char *code,int fd,char header,char segregationLevel);
+int print_encoded_msg(int fd,char *code,char *prefix);
+*/

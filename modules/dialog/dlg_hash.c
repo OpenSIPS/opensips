@@ -656,7 +656,7 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg)==1) {
 			if (dlg->state==DLG_STATE_DELETED)
 				/* even if matched, skip the deleted dialogs as they may be
-				   a previous unsuccessfull attempt of established call
+				   a previous unsuccessful attempt of established call
 				   with the same callid and fromtag - like in auth/challenge
 				   case -bogdan */
 				continue;
@@ -703,6 +703,35 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val)
 		dlg_unlock( d_table, d_entry);
 	}
 
+	return NULL;
+}
+
+
+struct dlg_cell* get_dlg_by_callid( str *callid)
+{
+	struct dlg_cell *dlg;
+	struct dlg_entry *d_entry;
+	unsigned int h_entry;
+
+	h_entry = dlg_hash(callid);
+	d_entry = &(d_table->entries[h_entry]);
+
+	dlg_lock( d_table, d_entry);
+
+	LM_DBG("input ci=<%.*s>(%d)\n", callid->len,callid->s, callid->len);
+
+	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
+		if ( dlg->state>DLG_STATE_CONFIRMED )
+			continue;
+		if ( dlg->callid.len==callid->len &&
+		strncmp( dlg->callid.s, callid->s, callid->len)==0 ) {
+			ref_dlg_unsafe( dlg, 1);
+			dlg_unlock( d_table, d_entry);
+			return dlg;
+		}
+	}
+
+	dlg_unlock( d_table, d_entry);
 	return NULL;
 }
 
@@ -1004,6 +1033,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 			switch (dlg->state) {
 				case DLG_STATE_EARLY:
 				case DLG_STATE_CONFIRMED_NA:
+				case DLG_STATE_CONFIRMED:
 					break;
 				default:
 					log_next_state_dlg(event, dlg);
@@ -1070,8 +1100,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	if (node==0)
 		goto error;
 
-	attr = addf_mi_attr( node, 0, "hash", 4, "%u:%u",
-			dlg->h_entry, dlg->h_id );
+	attr = addf_mi_attr( node, 0, "ID", 2, "%llu",
+			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id );
 	if (attr==0)
 		goto error;
 

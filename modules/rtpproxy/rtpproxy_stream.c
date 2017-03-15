@@ -103,7 +103,7 @@ rtpproxy_stream(struct sip_msg* msg, str *pname, int count, char *setid, char *v
         goto end;
     }
 
-    if (node->rn_ptl_supported == 0) {
+    if (!HAS_CAP(node, CODECS)) {
         LM_ERR("required functionality is not "
           "supported by the version of the RTPproxy running on the selected "
           "node.  Please upgrade the RTPproxy and try again.\n");
@@ -204,7 +204,7 @@ rtpproxy_stop_stream(struct sip_msg* msg, char *setid, char *var, int stream2uac
         LM_ERR("no available proxies\n");
         goto end;
     }
-    if (node->rn_ptl_supported == 0) {
+    if (!HAS_CAP(node, CODECS)) {
         LM_ERR("required functionality is not "
           "supported by the version of the RTPproxy running on the selected "
           "node.  Please upgrade the RTPproxy and try again.\n");

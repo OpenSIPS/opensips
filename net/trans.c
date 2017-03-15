@@ -72,43 +72,49 @@ int trans_load(void)
 		found_proto = 0;
 		/* we have a transport module here - check for protocols */
 		for (cmd = mod->exports->cmds; cmd && cmd->name; cmd++) {
-			if (strcmp("proto_init", cmd->name)==0) {
-				abind = (api_proto_init)cmd->function;
-				memset(&pi, 0, sizeof(pi));
-				if (abind(&pi) < 0) {
-					LM_ERR("cannot load protocol's functions for %s\n",
-							cmd->name);
-					return -1;
-				}
-				/* double check if it is a known/valid proto */
-				if (pi.id < PROTO_FIRST || pi.id >= PROTO_OTHER) {
-					LM_ERR("Unknown protocol id %d; check sip_protos structure!\n", pi.id);
-					return -1;
-				}
-				/* double check the name of the proto */
-				if (parse_proto((unsigned char *)pi.name, strlen(pi.name), &id) < 0) {
-					LM_ERR("Cannot parse protocol %s\n", pi.name);
-					return -1;
-				}
-				if (id != pi.id) {
-					LM_ERR("Protocol ID mismatch %d != %d\n", id, pi.id);
-					return -1;
-				}
-				/* check if already added */
-				if (protos[id].id != PROTO_NONE) {
-					LM_ERR("Protocol already loaded %s\n", pi.name);
-					return -1;
-				}
-				/* all good now */
-				found_all++;
-				found_proto = 1;
-				/* copy necessary info */
-				protos[pi.id].id = pi.id;
-				protos[pi.id].name = pi.name;
-				protos[pi.id].default_port = pi.default_port;
-				protos[pi.id].tran = pi.tran;
-				protos[pi.id].net = pi.net;
+			if (strcmp("proto_init", cmd->name)!=0)
+				continue;
+			abind = (api_proto_init)cmd->function;
+			memset(&pi, 0, sizeof(pi));
+			if (abind(&pi) < 0) {
+				LM_ERR("cannot load protocol's functions for %s\n",
+						cmd->name);
+				return -1;
 			}
+			/* double check if it is a known/valid proto */
+			if (pi.id < PROTO_FIRST || pi.id >= PROTO_OTHER) {
+				LM_ERR("Unknown protocol id %d; check sip_protos structure!\n", pi.id);
+				return -1;
+			}
+			/* double check the name of the proto */
+			if (parse_proto((unsigned char *)pi.name, strlen(pi.name), &id) < 0) {
+				LM_ERR("Cannot parse protocol %s\n", pi.name);
+				return -1;
+			}
+			if (id != pi.id) {
+				LM_ERR("Protocol ID mismatch %d != %d\n", id, pi.id);
+				return -1;
+			}
+			found_proto = 1;
+			/* check if there is any listener for this protocol */
+			if (!protos[pi.id].listeners) {
+				LM_DBG("No listener defined for proto %s\n", pi.name);
+				continue;
+			}
+
+			/* check if already added */
+			if (protos[id].id != PROTO_NONE) {
+				LM_ERR("Protocol already loaded %s\n", pi.name);
+				return -1;
+			}
+			/* all good now */
+			found_all++;
+			/* copy necessary info */
+			protos[pi.id].id = pi.id;
+			protos[pi.id].name = pi.name;
+			protos[pi.id].default_port = pi.default_port;
+			protos[pi.id].tran = pi.tran;
+			protos[pi.id].net = pi.net;
 		}
 		if (found_proto)
 			continue;

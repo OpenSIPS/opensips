@@ -39,6 +39,7 @@
 #define timer_h
 
 typedef unsigned long long utime_t;
+typedef long long stime_t;
 
 typedef void (timer_function)(unsigned int ticks, void* param);
 typedef void (utimer_function)(utime_t uticks, void* param);
@@ -105,6 +106,8 @@ unsigned int get_ticks(void);
 utime_t get_uticks(void);
 
 int start_timer_processes(void);
+
+int start_timer_extra_processes(int *chd_rank);
 
 int register_route_timers(void);
 

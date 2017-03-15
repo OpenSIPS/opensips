@@ -48,7 +48,7 @@ typedef struct lcache
 }lcache_t;
 
 
-int lcache_htable_init(int size);
+int lcache_htable_init(lcache_t** cache_htable_p, int size);
 void lcache_htable_destroy();
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value,int expires);
 int lcache_htable_remove(cachedb_con *con,str* attr);

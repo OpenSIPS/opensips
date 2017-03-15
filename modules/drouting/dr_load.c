@@ -540,44 +540,55 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			int_vals[INT_VALS_RULE_ID_DRR_COL] = VAL_INT (ROW_VALUES(row));
 			/* GROUP column */
 			check_val( group_drr_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-			str_vals[STR_VALS_GROUP_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+			str_vals[STR_VALS_GROUP_DRR_COL] =
+				(char*)VAL_STRING(ROW_VALUES(row)+1);
 			/* PREFIX column - it may be null or empty */
 			check_val( prefix_drr_col, ROW_VALUES(row)+2, DB_STRING, 0, 0);
 			if ((ROW_VALUES(row)+2)->nul || VAL_STRING(ROW_VALUES(row)+2)==0){
 				tmp.s = NULL;
 				tmp.len = 0;
 			} else {
-				str_vals[STR_VALS_PREFIX_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+2);
+				str_vals[STR_VALS_PREFIX_DRR_COL] =
+					(char*)VAL_STRING(ROW_VALUES(row)+2);
 				tmp.s = str_vals[STR_VALS_PREFIX_DRR_COL];
 				tmp.len = strlen(str_vals[STR_VALS_PREFIX_DRR_COL]);
 			}
 			/* TIME column */
 			check_val( time_drr_col, ROW_VALUES(row)+3, DB_STRING, 0, 0);
-			str_vals[STR_VALS_TIME_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 			/* PRIORITY column */
 			check_val( priority_drr_col, ROW_VALUES(row)+4, DB_INT, 1, 0);
-			int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT   (ROW_VALUES(row)+4);
+			int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT(ROW_VALUES(row)+4);
 			/* ROUTE_ID column */
 			check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
-			str_vals[STR_VALS_ROUTEID_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 			/* DSTLIST column */
 			check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 1, 1);
-			str_vals[STR_VALS_DSTLIST_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+6);
+			str_vals[STR_VALS_DSTLIST_DRR_COL] =
+				(char*)VAL_STRING(ROW_VALUES(row)+6);
 			/* ATTRS column */
 			check_val( attrs_drr_col, ROW_VALUES(row)+7, DB_STRING, 0, 0);
-			str_vals[STR_VALS_ATTRS_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+7);
+			str_vals[STR_VALS_ATTRS_DRR_COL] =
+				(char*)VAL_STRING(ROW_VALUES(row)+7);
 			/* parse the time definition */
-			if (str_vals[STR_VALS_TIME_DRR_COL] == NULL || *(str_vals[STR_VALS_TIME_DRR_COL]) == 0)
+			if ( VAL_NULL(ROW_VALUES(row)+3) ||
+			((str_vals[STR_VALS_TIME_DRR_COL]=
+				(char*)VAL_STRING(ROW_VALUES(row)+3))==NULL ) ||
+			*(str_vals[STR_VALS_TIME_DRR_COL]) == 0)
 				time_rec = NULL;
-			else if ((time_rec=parse_time_def(str_vals[STR_VALS_TIME_DRR_COL]))==0) {
+			else if ((time_rec=
+			parse_time_def(str_vals[STR_VALS_TIME_DRR_COL]))==0) {
 				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
-						str_vals[STR_VALS_TIME_DRR_COL], int_vals[INT_VALS_RULE_ID_DRR_COL]);
+					str_vals[STR_VALS_TIME_DRR_COL],
+					int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				continue;
 			}
 			/* lookup for the script route ID */
-			if (str_vals[STR_VALS_ROUTEID_DRR_COL] && str_vals[STR_VALS_ROUTEID_DRR_COL][0]) {
+			if ( !VAL_NULL(ROW_VALUES(row)+5) &&
+			((str_vals[STR_VALS_ROUTEID_DRR_COL]=
+				(char*)VAL_STRING(ROW_VALUES(row)+5))!=NULL ) &&
+			str_vals[STR_VALS_ROUTEID_DRR_COL][0] ) {
 				int_vals[INT_VALS_SCRIPT_ROUTE_ID] =
-					get_script_route_ID_by_name( str_vals[STR_VALS_ROUTEID_DRR_COL], rlist, RT_NO);
+					get_script_route_ID_by_name
+					( str_vals[STR_VALS_ROUTEID_DRR_COL], rlist, RT_NO);
 				if (int_vals[INT_VALS_SCRIPT_ROUTE_ID]==-1) {
 					LM_WARN("route <%s> does not exist\n",
 							str_vals[STR_VALS_ROUTEID_DRR_COL]);

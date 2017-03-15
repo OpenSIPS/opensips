@@ -85,6 +85,9 @@ stat_var *stg_onhold_calls = 0;
 /* a default of 30 secs wrapup time for agents */
 unsigned int wrapup_time = 30;
 
+/* the name of the URI param to report the queue position */
+str queue_pos_param = {NULL,0};
+
 
 
 static cmd_export_t cmds[]={
@@ -101,12 +104,13 @@ static param_export_t mod_params[]={
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
 	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
+	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
 	{ 0,0,0 }
 };
 
 
 static mi_export_t mi_cmds[] = {
-	{ "cc_reload",      "", mi_cc_reload,     MI_NO_INPUT_FLAG, 0, mi_child_init},
+	{ "cc_reload",      "", mi_cc_reload,    MI_NO_INPUT_FLAG,0,mi_child_init},
 	{ "cc_agent_login", "", mi_agent_login,                  0, 0, 0},
 	{ "cc_list_queue",  "", mi_cc_list_queue, MI_NO_INPUT_FLAG, 0, 0},
 	{ "cc_list_flows",  "", mi_cc_list_flows, MI_NO_INPUT_FLAG, 0, 0},
@@ -118,14 +122,14 @@ static mi_export_t mi_cmds[] = {
 
 
 static stat_export_t mod_stats[] = {
-	{"ccg_incalls",               0,              &stg_incalls                     },
-	{"ccg_awt",                   STAT_IS_FUNC,   (stat_var**)stg_awt              },
-	{"ccg_load",                  STAT_IS_FUNC,   (stat_var**)stg_load             },
-	{"ccg_distributed_incalls",   0,              &stg_dist_incalls                },
-	{"ccg_answered_incalls" ,     0,              &stg_answ_incalls                },
-	{"ccg_abandonned_incalls" ,   0,              &stg_aban_incalls                },
-	{"ccg_onhold_calls",          STAT_NO_RESET,  &stg_onhold_calls                },
-	{"ccg_free_agents",           STAT_IS_FUNC,   (stat_var**)stg_free_agents      },
+	{"ccg_incalls",             0,             &stg_incalls                  },
+	{"ccg_awt",                 STAT_IS_FUNC,  (stat_var**)stg_awt           },
+	{"ccg_load",                STAT_IS_FUNC,  (stat_var**)stg_load          },
+	{"ccg_distributed_incalls", 0,             &stg_dist_incalls             },
+	{"ccg_answered_incalls" ,   0,             &stg_answ_incalls             },
+	{"ccg_abandonned_incalls" , 0,             &stg_aban_incalls             },
+	{"ccg_onhold_calls",        STAT_NO_RESET, &stg_onhold_calls             },
+	{"ccg_free_agents",         STAT_IS_FUNC,  (stat_var**)stg_free_agents   },
 	{0,0,0}
 };
 
@@ -240,6 +244,8 @@ static int mod_init(void)
 	init_db_url( db_url , 0 /*cannot be null*/);
 	init_db_url( acc_db_url , 0 /*cannot be null*/);
 	b2b_scenario.len = strlen(b2b_scenario.s);
+	if (queue_pos_param.s)
+		queue_pos_param.len = strlen(queue_pos_param.s);
 
 	/* Load B2BUA API */
 	if (load_b2b_logic_api( &b2b_api) != 0) {
@@ -485,7 +491,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	int cnt;
 	b2bl_dlg_stat_t* stat = params->stat;
 
-	LM_DBG(" call (%p) has BYE for %d, \n", call, event);
+	LM_DBG(" call (%p) has event %d, \n", call, event);
 
 	lock_set_get( data->call_locks, call->lock_idx );
 	cs = call->state;
@@ -533,7 +539,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		}
 	}
 	
-	if (event==B2B_BYE_CB && params->entity==1) {
+	if (event==B2B_BYE_CB && params->entity==0) {
 		LM_DBG("BYE from the customer\n");
 		/* external caller terminated the call */
 		call->state = CC_CALL_ENDED;
@@ -559,12 +565,12 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		return 2;
 	}
 	/* if reInvite to the customer failed - end the call */
-	if(event == B2B_REJECT_CB && params->entity==1) {
+	if(event == B2B_REJECT_CB && params->entity==0) {
 		lock_set_release( data->call_locks, call->lock_idx );
 		return 1;
 	}
 
-	if(event == B2B_REJECT_CB && params->entity>1) {
+	if(event == B2B_REJECT_CB && params->entity>0) {
 		if(call->state == CC_CALL_TOAGENT) {
 			handle_agent_reject(call, 1, stat->setup_time);
 			lock_set_release( data->call_locks, call->lock_idx );
@@ -574,6 +580,14 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		return 1;
 	}
 
+	/* we are not interested in B2B_RE_INVITE_CB and B2B_CONFIRMED_CB
+	 * events, just in the BYEs from media/agent side */
+	if (event!=B2B_BYE_CB) {
+		lock_set_release( data->call_locks, call->lock_idx );
+		return 0;
+	}
+
+	/* right-side leg of call sent BYE */
 	if (stat->call_time==0 && call->state == CC_CALL_TOAGENT) {
 		LM_INFO("*** AGENT answered and closed immediately %.*s\n",
 			call->agent->location.len, call->agent->location.s);
@@ -581,8 +595,8 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		lock_set_release( data->call_locks, call->lock_idx );
 		return 0;
 	}
-	
-	/* right-side leg of call sent BYE -> get next state */
+
+	/* get next state */
 	lock_get( data->lock );
 
 	if (cc_call_state_machine( data, call, &leg )!=0) {
@@ -738,7 +752,7 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 
 	/* get the flow name */
 	if (fixup_get_svalue(msg, (gparam_p)flow_var, &val)!=0) {
-		LM_ERR("failed to avaluate the flow name variable\n");
+		LM_ERR("failed to evaluate the flow name variable\n");
 		return -1;
 	}
 

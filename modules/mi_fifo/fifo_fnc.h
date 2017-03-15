@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include "../../mi/mi_trace.h"
 
 
 /* how patient is opensips with FIFO clients not awaiting a reply?
@@ -38,6 +39,7 @@
 #define FIFO_REPLY_RETRIES  4
 #define FIFO_REPLY_WAIT     80000
 
+extern trace_dest t_dst;
 
 
 FILE* mi_init_fifo_server(char *fifo_name, int mode, int uid, int gid,
@@ -65,7 +67,6 @@ retry:
 	}
 	return 0;
 }
-
 
 #endif /* _FIFO_FNC_H */
 

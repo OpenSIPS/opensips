@@ -88,6 +88,7 @@ void createRow(int index, char *stringToRegister) {
 	copiedString = pkg_malloc((stringLength + 1) * sizeof(char));
 
 	if (copiedString == NULL) {
+		SNMP_FREE(theRow);
 		LM_ERR("failed to create a row for openserSIPMethodSupportedTable\n");
 		return;
 	}
@@ -200,6 +201,8 @@ void initialize_table_openserSIPMethodSupportedTable(void)
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in initialize_table_openser"
 				"SIPMethodSupportedTable_handler\n");
+		if (table_info)
+			SNMP_FREE(table_info);
 		return;
 	}
 

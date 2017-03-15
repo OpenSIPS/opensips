@@ -213,6 +213,7 @@ GET_TIMESTAMP	"get_timestamp"
 SCRIPT_TRACE    "script_trace"
 SYNC_TOKEN      "sync"
 ASYNC_TOKEN     "async"
+LAUNCH_TOKEN    "launch"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -534,6 +535,8 @@ IMPORTFILE      "import_file"
 									return SYNC_TOKEN;}
 <INITIAL>{ASYNC_TOKEN}		{ count(); yylval.strval=yytext;
 									return ASYNC_TOKEN;}
+<INITIAL>{LAUNCH_TOKEN}		{ count(); yylval.strval=yytext;
+									return LAUNCH_TOKEN;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }

@@ -24,11 +24,13 @@
  */
 
 
+#include "../ipc.h"
 #include "../timer.h"
 #include "../reactor.h"
 #include "../async.h"
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
+#include "net_tcp_report.h"
 #include "trans.h"
 
 
@@ -37,6 +39,15 @@ static struct tcp_connection* tcp_conn_lst=0;
 
 static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
+
+
+#define tcpconn_release_error(_conn, _writer, _reason) \
+	do { \
+		tcp_trigger_report( _conn, TCP_REPORT_CLOSE, _reason);\
+		tcpconn_release( _conn, CONN_ERROR, _writer);\
+	}while(0)
+
+
 
 
 static void tcpconn_release(struct tcp_connection* c, long state,int writer)
@@ -64,7 +75,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 
 	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response,
 	sizeof(response))<=0)
-		LM_ERR("send_all failed\n");
+		LM_ERR("send_all failed state=%ld con=%p\n", state, c);
 }
 
 
@@ -117,7 +128,16 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
-			async_resume_f( &fm->fd, fm->data);
+			async_script_resume_f( &fm->fd, fm->data);
+			return 0;
+		case F_FD_ASYNC:
+			async_fd_resume( &fm->fd, fm->data);
+			return 0;
+		case F_LAUNCH_ASYNC:
+			async_launch_resume( &fm->fd, fm->data);
+			return 0;
+		case F_IPC:
+			ipc_handle_job();
 			return 0;
 		case F_TCPMAIN:
 again:
@@ -153,7 +173,7 @@ again:
 							" connection received: %p, id %d, fd %d, refcnt %d"
 							" state %d (n=%d)\n", con, con->id, con->fd,
 							con->refcnt, con->state, n);
-				tcpconn_release(con, CONN_ERROR,0);
+				tcpconn_release_error(con, 0,"Internal duplicate");
 				break; /* try to recover */
 			}
 
@@ -166,10 +186,12 @@ again:
 				 * already existing events => might call handle_io and
 				 * handle_io might decide to del. the new connection =>
 				 * must be in the list */
+				tcpconn_check_add(con);
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
 				con->timeout = con->lifetime;
 				if (reactor_add_reader( s, F_TCPCONN, RCT_PRIO_NET, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
+					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
 				}
@@ -187,12 +209,12 @@ again:
 				if (resp<0) {
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
-					tcpconn_release(con, CONN_ERROR,1);
+					tcpconn_release_error(con, 1,"Write error");
 					break;
 				} else if (resp==1) {
 					tcpconn_release(con, ASYNC_WRITE,1);
 				} else {
-					tcpconn_release(con, CONN_RELEASE,1);
+					tcpconn_release(con, CONN_RELEASE_WRITE,1);
 				}
 				ret = 0;
 				/* we always close the socket received for writing */
@@ -207,15 +229,19 @@ again:
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					tcpconn_release(con, CONN_ERROR,0);
+					tcpconn_release_error(con, 0, "Read error");
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
+					tcpconn_check_del(con);
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+					tcp_trigger_report( con, TCP_REPORT_CLOSE,
+						"EOF received");
 					tcpconn_release(con, CONN_EOF,0);
 				} else {
 					//tcpconn_release(con, CONN_RELEASE);
@@ -237,7 +263,7 @@ again:
 	return ret;
 con_error:
 	con->state=S_CONN_BAD;
-	tcpconn_release(con, CONN_ERROR,0);
+	tcpconn_release_error(con, 0, "Internal error");
 	return ret;
 error:
 	return -1;
@@ -246,7 +272,7 @@ error:
 
 
 /*! \brief  releases expired connections and cleans up bad ones (state<0) */
-static inline void tcp_receive_timeout(void)
+void tcp_receive_timeout(void)
 {
 	struct tcp_connection* con;
 	struct tcp_connection* next;
@@ -260,11 +286,12 @@ static inline void tcp_receive_timeout(void)
 			/* fd will be closed in tcpconn_release */
 
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			tcpconn_check_del(con);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->proc_id = -1;
 			con->state=S_CONN_BAD;
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			tcpconn_release(con, CONN_ERROR,0);
+			tcpconn_release_error(con, 0, "Unknown reason");
 			continue;
 		}
 		if (con->timeout<=ticks){
@@ -272,6 +299,7 @@ static inline void tcp_receive_timeout(void)
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in tcpconn_release */
 			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			tcpconn_check_del(con);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 
 			/* connection is going to main */
@@ -279,7 +307,8 @@ static inline void tcp_receive_timeout(void)
 			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 
 			if (con->msg_attempts)
-				tcpconn_release(con, CONN_ERROR,0);
+				tcpconn_release_error(con, 0, "Read timeout with"
+					"incomplete SIP message");
 			else
 				tcpconn_release(con, CONN_RELEASE,0);
 		}
@@ -288,7 +317,7 @@ static inline void tcp_receive_timeout(void)
 
 
 
-void tcp_worker_proc( int unix_sock)
+int tcp_worker_proc_reactor_init( int unix_sock)
 {
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
@@ -302,19 +331,31 @@ void tcp_worker_proc( int unix_sock)
 		goto error;
 	}
 
+	/* init: start watching for the IPC jobs */
+	if (reactor_add_reader( IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC,NULL)<0){
+		LM_CRIT("failed to add IPC pipe to reactor\n");
+		goto error;
+	}
+
 	/* add the unix socket */
 	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, RCT_PRIO_PROC, NULL)<0) {
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
 
-	/* main loop */
-	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
-
+	return 0;
 error:
 	destroy_worker_reactor();
-	LM_CRIT("exiting...");
-	exit(-1);
+	return -1;
 }
 
+void tcp_worker_proc_loop(void)
+{
+	/* main loop */
+	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error, tcp_receive_timeout());
+	LM_CRIT("exiting...");
+	exit(-1);
+error:
+	destroy_worker_reactor();
+}
 

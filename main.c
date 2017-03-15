@@ -119,6 +119,7 @@
 #include "script_cb.h"
 #include "dset.h"
 #include "blacklists.h"
+#include "xlog.h"
 
 #include "pt.h"
 #include "ut.h"
@@ -332,7 +333,8 @@ void cleanup(int show_status)
 #endif
 	cleanup_log_level();
 
-	if (pt) shm_free(pt);
+	if (mem_lock && pt)
+		shm_free(pt);
 	pt=0;
 	if (show_status){
 			LM_GEN1(memdump, "Memory status (shm):\n");
@@ -354,7 +356,7 @@ void cleanup(int show_status)
  * it's not in interactive mode and we don't want this. The non-daemonized
  * case can occur when an error is encountered before daemonize is called
  * (e.g. when parsing the config file) or when opensips is started in
- * "dont-fork" mode.
+ * "don't-fork" mode.
  * \param signum signal for killing the children
  */
 static void kill_all_children(int signum)
@@ -559,6 +561,10 @@ static void sig_usr(int signo)
 				break;
 			case SIGINT:
 			case SIGTERM:
+					/* if some shutdown already in progress, ignore this one */
+					if (sig_flag==0) sig_flag=signo;
+					else return;
+					/* do the termination */
 					LM_INFO("signal %d received\n", signo);
 					/* print memory stats for non-main too */
 					#ifdef PKG_MALLOC
@@ -669,13 +675,25 @@ static int main_loop(void)
 
 	/* fork all processes required by UDP network layer */
 	if (udp_start_processes( &chd_rank, startup_done)<0) {
-		LM_CRIT("cannot start TCP processes\n");
+		LM_CRIT("cannot start UDP processes\n");
 		goto error;
 	}
 
 	/* fork all processes required by TCP network layer */
 	if (tcp_start_processes( &chd_rank, startup_done)<0) {
 		LM_CRIT("cannot start TCP processes\n");
+		goto error;
+	}
+
+	/* fork for the extra timer processes */
+	if (start_timer_extra_processes( &chd_rank )!=0) {
+		LM_CRIT("cannot start timer extra process(es)\n");
+		goto error;
+	}
+
+	/* fork the TCP listening process */
+	if (tcp_start_listener()<0) {
+		LM_CRIT("cannot start TCP listener process\n");
 		goto error;
 	}
 
@@ -1189,6 +1207,12 @@ try_again:
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
+		goto error;
+	}
+
+	/* init xlog */
+	if (init_xlog() < 0) {
+		LM_ERR("error while initializing xlog!\n");
 		goto error;
 	}
 

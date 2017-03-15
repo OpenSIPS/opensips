@@ -169,13 +169,6 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 	return dest;
 
 error:
-	if(dest)
-	{
-		if(mem_type == PKG_MEM_TYPE)
-			pkg_free(dest);
-		else
-			shm_free(dest);
-	}
 	return NULL;
 }
 

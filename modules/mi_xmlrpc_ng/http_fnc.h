@@ -98,9 +98,18 @@ int mi_xmlrpc_http_init_async_lock(void);
 void mi_xmlrpc_http_destroy_async_lock(void);
 
 struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
-			str *page, str *buffer, struct mi_handler **async_hdl);
+			str *page, str *buffer, struct mi_handler **async_hdl,
+			union sockaddr_union* cl_socket, int* is_cmd_traced);
 int mi_xmlrpc_http_build_page(str* page, int max_page_len,
 				struct mi_root* tree);
 
+enum xml_err_enum { ERR_EMPTY=0, ERR_BAD_REQ=1, ERR_NOT_AVAIL=2, ERR_UNEXPECTED,
+	ERR_MISS_METCALL, ERR_MISS_METNAME, ERR_MISS_VALUE, ERR_MISS_STRING,
+	ERR_EMPTY_STRING, ERR_INTERNAL, ERR_CMD_FAILED, ERR_MAX };
+
+static int xml_errcode;
+
+void trace_xml_request( union sockaddr_union* cl_socket, char* url,
+		struct mi_root* mi_req );
 #endif
 

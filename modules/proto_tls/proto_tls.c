@@ -54,6 +54,7 @@
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
+#include "../../net/net_tcp_report.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../timer.h"
@@ -66,6 +67,8 @@
 #include "../tls_mgm/api.h"
 #include "../tls_mgm/tls_conn_ops.h"
 #include "../tls_mgm/tls_conn_server.h"
+
+#include "../../net/trans_trace.h"
 
 /*
  * Open questions:
@@ -87,7 +90,6 @@
  * - we need to protect ctx by a lock -- it is in shared memory
  *   and may be accessed simultaneously
  */
-
 struct tls_mgm_binds tls_mgm_api;
 
 static int tls_port_no = SIPS_PORT;
@@ -106,6 +108,7 @@ static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
+static void tls_report(unsigned long long conn_id, int type, void *extra);
 
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
@@ -124,7 +127,11 @@ static struct tcp_req tls_current_req;
 #define _tcp_common_current_req  tls_current_req
 #include "../../net/proto_tcp/tcp_common.h"
 
+#define TLS_TRACE_PROTO "proto_hep"
 
+static str trace_destination_name = {NULL, 0};
+trace_dest t_dst;
+trace_proto_t tprot;
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
 static int proto_tls_conn_init(struct tcp_connection* c);
@@ -140,12 +147,14 @@ static param_export_t params[] = {
 	{ "tls_crlf_pingpong",     INT_PARAM,         &tls_crlf_pingpong         },
 	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
 	{ "tls_max_msg_chunks",    INT_PARAM,         &tls_max_msg_chunks        },
+	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{0, 0, 0}
 };
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "tls_mgm"  , DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -183,6 +192,25 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (trace_destination_name.s) {
+		if ( !net_trace_api ) {
+			if ( trace_prot_bind( TLS_TRACE_PROTO, &tprot) < 0 ) {
+				LM_ERR( "can't bind trace protocol <%s>\n", TLS_TRACE_PROTO );
+				return -1;
+			}
+			net_trace_api = &tprot;
+		} else {
+			tprot = *net_trace_api;
+		}
+
+		trace_destination_name.len = strlen( trace_destination_name.s );
+
+		if ( net_trace_proto_id == -1 )
+			net_trace_proto_id = tprot.get_message_id( TRANS_TRACE_PROTO_ID );
+
+		t_dst = tprot.get_trace_dest_by_name( &trace_destination_name );
+	}
+
 	return 0;
 }
 
@@ -215,6 +243,7 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->net.read			= (proto_net_read_f)tls_read_req;
 	pi->net.conn_init		= proto_tls_conn_init;
 	pi->net.conn_clean		= tls_conn_clean;
+	pi->net.report			= tls_report;
 
 	return 0;
 }
@@ -244,9 +273,47 @@ error:
 
 static int proto_tls_conn_init(struct tcp_connection* c)
 {
+	struct tls_data* data;
+
+	if ( t_dst && tprot.create_trace_message ) {
+		/* this message shall be used in first send function */
+		data = shm_malloc( sizeof(struct tls_data) );
+		if ( !data ) {
+			LM_ERR("no more pkg mem!\n");
+			goto out;
+		}
+		memset( data, 0, sizeof(struct tls_data) );
+
+		data->tprot = &tprot;
+		data->dest  = t_dst;
+		data->net_trace_proto_id = net_trace_proto_id;
+
+		c->proto_data = data;
+	} else {
+		c->proto_data = 0;
+	}
+
+out:
 	return tls_conn_init(c, &tls_mgm_api);
 }
 
+static void tls_report(unsigned long long conn_id, int type, void *extra)
+{
+	str s;
+
+	if (type==TCP_REPORT_CLOSE) {
+		/* grab reason text */
+		if (extra) {
+			s.s = (char*)extra;
+			s.len = strlen (s.s);
+		}
+
+		trace_message_atonce( PROTO_TLS, conn_id, NULL/*src*/, NULL/*dst*/,
+			TRANS_TRACE_CLOSED, TRANS_TRACE_SUCCESS, extra?&s:NULL, t_dst );
+	}
+
+	return;
+}
 
 static struct tcp_connection* tls_sync_connect(struct socket_info* send_sock,
 		union sockaddr_union* server, int *fd)
@@ -300,6 +367,8 @@ static int proto_tls_send(struct socket_info* send_sock,
 	int port;
 	int fd, n;
 
+	struct tls_data* data;
+
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
@@ -341,6 +410,20 @@ static int proto_tls_send(struct socket_info* send_sock,
 	}
 
 send_it:
+	if ( c->proto_flags & F_TLS_TRACE_READY ) {
+		data = c->proto_data;
+		/* send the message if set from tls_mgm */
+		if ( data->message ) {
+			send_trace_message( data->message, t_dst);
+		}
+
+		/* don't allow future traces for this connection */
+		data->tprot = 0;
+		data->dest  = 0;
+
+		c->proto_flags &= ~( F_TLS_TRACE_READY );
+	}
+
 	LM_DBG("sending via fd %d...\n",fd);
 
 	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
@@ -366,12 +449,13 @@ send_it:
 	return n;
 }
 
-
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 {
 	int bytes;
 	int total_bytes;
 	struct tcp_req* req;
+
+	struct tls_data* data;
 
 	bytes=-1;
 	total_bytes=0;
@@ -389,6 +473,22 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 		LM_ERR("failed to do pre-tls reading\n");
 		goto error;
 	}
+
+	if ( con->proto_flags & F_TLS_TRACE_READY ) {
+		data = con->proto_data;
+		/* send the message if set from tls_mgm */
+		if ( data->message ) {
+			tprot.send_message( data->message, t_dst, 0);
+			tprot.free_message( data->message );
+		}
+
+		/* don't allow future traces for this connection */
+		data->tprot = 0;
+		data->dest  = 0;
+
+		con->proto_flags &= ~( F_TLS_TRACE_READY );
+	}
+
 	if(con->state!=S_CONN_OK)
 		goto done; /* not enough data */
 
@@ -454,4 +554,3 @@ error:
 	/* connection will be released as ERROR */
 	return -1;
 }
-

@@ -152,6 +152,8 @@ static void *add234_internal(tree234 *t, void *e, int index) {
     void *orig_e = e;
     int c, lcount, rcount;
 
+	if (!t)
+		return NULL;
     LOG123(("adding node %p to tree %p\n", e, t));
     if (t->root == NULL) {
 	t->root = mknew(node234);

@@ -357,7 +357,7 @@ database_p bdblib_get_db(str *_s)
 {
 	int rc;
 	database_p _db_p=NULL;
-	char name[512];
+	char name[512 + 1 /* null terminated */];
 
 	if(!_s || !_s->s || _s->len<=0 || _s->len > 512)
 		return NULL;
@@ -715,7 +715,7 @@ int bdblib_create_journal(table_p _tp)
 {
 	char *s;
 	char fn[1024];
-	char d[64];
+	char d[128];
 	FILE *fp = NULL;
 	struct tm *t;
 	int bl;
@@ -1141,7 +1141,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 			  the schema. the app does not know the order
 			  of the columns in our schema!
 			 */
-			k = (_lres) ? _lres[j] : j;
+			k = _lres[j];
 
 			/*
 			 * k index will remap back to our schema order; like i
@@ -1152,7 +1152,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 				 KEY was provided; append to buffer;
 				 _k[j] contains a key, but its a key that
 				 corresponds to column k of our schema.
-				 now we know its a match, and we dont need
+				 now we know its a match, and we don't need
 				 index k for anything else
 				*/
 #ifdef BDB_EXTRA_DEBUG

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Project
+ * Copyright (C) 2015 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -28,6 +28,7 @@
 #include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 
 #include "event_flatstore.h"
 #include "../../mem/mem.h"

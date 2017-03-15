@@ -242,7 +242,7 @@ static inline void reset_all_statements(const db_con_t* conn)
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 
-	LM_INFO("reseting all statements on connection: (%p) %p\n",
+	LM_INFO("resetting all statements on connection: (%p) %p\n",
 		conn,(void*)conn->tail);
 	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
 		for (ctx = pq_ptr->stmts ; ctx ; ctx=ctx->next ) {
@@ -648,7 +648,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			return -1;
 		}
 
-		/* if add succesfull but not yet insertion time
+		/* if add successful but not yet insertion time
 		   return success and wait for number of query rows
 		   to pile up
 		*/

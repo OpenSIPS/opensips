@@ -545,9 +545,8 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	memcpy( new_msg , org_msg , sizeof(struct sip_msg));
 
 	/* avoid copying pointer to un-clonned structures */
-	new_msg->sdp = 0;
-	new_msg->multi = 0;
-	new_msg->msg_cb = 0;
+	new_msg->body = NULL;
+	new_msg->msg_cb = NULL;
 
 	new_msg->msg_flags |= FL_SHM_CLONE;
 	p += ROUND4(sizeof(struct sip_msg));
@@ -1054,6 +1053,13 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		CLONE_LUMP_LIST( p, &(new_msg->body_lumps), org_msg->body_lumps);
 		p = (char*)new_msg->reply_lump;
 		CLONE_RPL_LUMP_LIST( p, &(new_msg->reply_lump), org_msg->reply_lump);
+		/* clone the body parts also */
+		if ( clone_sip_msg_body( org_msg, new_msg, &new_msg->body, 1)!=0 ) {
+			LM_ERR("failed to clone the body parts\n");
+			free_cloned_msg(new_msg);
+			return 0;
+		}
+
 		break;
 
 	case 2: /* updatable, but no cloning now */
@@ -1077,6 +1083,8 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		new_msg->add_rm = 0;
 		new_msg->body_lumps = 0;
 		new_msg->reply_lump = 0;
+		/* set msg body parts */
+		new_msg->body = NULL;
 		break;
 	}
 
@@ -1135,6 +1143,7 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	char *p;
 	struct lump *add_rm_aux=NULL,*body_lumps_aux=NULL;
 	struct lump_rpl *reply_lump_aux=NULL;
+	struct sip_msg_body *body_bk=NULL;
 
 	if ( (c_msg->msg_flags & (FL_SHM_UPDATABLE|FL_SHM_CLONE))==0 ) {
 		LM_CRIT("BUG trying to update a msg not in SHM or not "
@@ -1231,11 +1240,21 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	c_msg->ruri_q = msg->ruri_q;
 	c_msg->ruri_bflags = msg->ruri_bflags;
 
+	/* body - re-clone it */
+	body_bk = c_msg->body;
+	if ( clone_sip_msg_body( msg, c_msg, &c_msg->body, 1)!=0 ) {
+		LM_ERR("failed to re-clone the body parts, keeping old one\n");
+		/* if err, c_msg->body remains un-touched */
+	} else {
+		free_sip_body( body_bk );
+	}
+
 	if (!(msg->msg_flags & FL_TM_FAKE_REQ)) {
-		/* if not a fake request, we should free old values right now, otherwise we leak
-		if it's a fake request, then we can't free old info now - we might still need
-		it ( eg. to build a reply from the faked req ) - let the freeing happen
-		when destryong the fake req */
+		/* if not a fake request, we should free old values right now,
+		 * otherwise we leak if it's a fake request, then we can't free 
+		 * old info now - we might still need it ( eg. to build a reply 
+		 * from the faked req ) - let the freeing happen when destryong
+		 * the fake req */
 		tm_shm_lock();
 		if (add_rm_aux) tm_shm_free_unsafe(add_rm_aux);
 		if (body_lumps_aux) tm_shm_free_unsafe(body_lumps_aux);

@@ -177,6 +177,10 @@ struct hostent* resolvehost(char* name, int no_ip_test);
 
 struct hostent* rev_resolvehost(struct ip_addr *ip);
 
+/*! \brief Generic "ip[:port]" string parsing + resolving */
+int resolve_hostport(str *in, unsigned short default_port,
+                     union sockaddr_union *dst);
+
 /*! \brief free the DNS resolver state machine */
 void free_dns_res( struct proxy_l *p );
 
@@ -282,6 +286,7 @@ static inline struct ip_addr* str2ip6(str* st)
 	unsigned char* limit;
 	unsigned char* s;
 
+	if (st == NULL || st->s == NULL) goto error_char;
 	/* init */
 	if ((st->len) && (st->s[0]=='[')){
 		/* skip over [ ] */

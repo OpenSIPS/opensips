@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include "ld_session.h"
+#include "ldap_connect.h"
 #include "../../mem/mem.h"
 #include "../../sr_module.h"
 
@@ -37,7 +38,7 @@
 static struct ld_session* ld_sessions = NULL;
 static char ini_key_name[512];
 
-int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
+int add_ld_session(char* _name,  dictionary* _d)
 {
 	struct ld_session* current = ld_sessions;
 	struct ld_session* new_lds = NULL;
@@ -56,7 +57,7 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 	/* name */
 	strncpy(new_lds->name, _name, 255);
 	/* handle */
-	new_lds->handle = _ldh;
+	new_lds->conn_pool = NULL;
 
 	/* host_name */
 	host_name = iniparser_getstring(
@@ -243,9 +244,13 @@ int free_ld_sessions(void)
 	{
 		tmp = current->next;
 
-		if (current->handle != NULL)
+		if (current->conn_s.handle) {
+			ldap_disconnect(current->name, &current->conn_s);
+		}
+
+		if (current->conn_pool != NULL)
 		{
-			ldap_unbind_ext(current->handle, NULL, NULL);
+			ldap_disconnect(current->name, NULL);
 		}
 		if (current->host_name != NULL)
 		{

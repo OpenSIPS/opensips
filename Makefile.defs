@@ -48,6 +48,7 @@
 #  2007-11-29  Add support for GNU/kFreeBSD. Substitute / for _ in $(OS).
 #  2009-01-15  Detection of CPU Type in Solaris to apply specific optimization
 #	       flags (saguti)
+#  2016-12-07  Add support for arm7 - not tested! (razvanc)
 
 # check if already included/exported
 
@@ -87,9 +88,10 @@ else
 	GETARCH=uname -m
 endif
 
-HOST_ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4u/sparc64/  \
-			-e s/armv4l/arm/ -e "s/Power Macintosh/ppc/" \
-			-e s/sun4v/sparc64/ -e "s/cobalt/mips2/" \
+HOST_ARCH := $(shell $(GETARCH) |sed -e s/i.86/i386/ -e s/sun4[uv]/sparc64/  \
+			-e s/sparcv9/sparc64/ -e s/armv[3-5].*/arm/ \
+			-e s/armv6.*/arm6/ -e s/armv7.*/arm7/ \
+			-e "s/Power Macintosh/ppc/" -e "s/cobalt/mips2/" \
 			-e s/amd64/x86_64/ )
 
 # fix sparc -> sparc64
@@ -118,12 +120,21 @@ ifeq ($(OS),solaris)
 		ISSMP ?= yes
 	endif
 else
+ifeq ($(OS),freebsd)
+	SMP_STR = $(shell sysctl kern.smp.active | grep 1)
+	ifeq (,$(SMP_STR))
+		ISSMP ?= no
+	else
+		ISSMP ?= yes
+	endif
+else
 	SMP_STR = $(shell uname -v | grep -i "SMP")
 	ifeq (,$(SMP_STR))
 		ISSMP ?= no
 	else
 		ISSMP ?= yes
 	endif
+endif
 endif
 
 #set some vars from the environment (and not make builtins)
@@ -215,6 +226,7 @@ sparc64_macros= __sparcv9 __sparc_v9__
 
 arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
+arm7_macros= __ARM_ARCH_7__
 
 ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
 ppc64_macros= __ppc64__ _ARCH_PPC64
@@ -222,6 +234,7 @@ ppc64_macros= __ppc64__ _ARCH_PPC64
 mips_macros= __mips__ __mips _MIPS_ARCH_MIPS1
 mips2_macros= _MIPS_ISA_MIPS2 _MIPS_ISA_MIPS3 _MIPS_ISA_MIPS4 \
 			_MIPS_ARCH_MIPS2 _MIPS_ARCH_MIPS3 _MIPS_ARCH_MIPS4
+mips32_macros= _MIPS_ISA_MIPS32 _MIPS_ARCH_MIPS32R2 _MIPS_ARCH_MIPS32
 mips64_macros= _MIPS_ISA_MIPS64 _MIPS_ARCH_MIPS64
 
 alpha_macros= __alpha__ __alpha _M_ALPHA_
@@ -247,6 +260,8 @@ else ifneq ($(strip $(filter $(arm_macros), $(predef_macros))),)
 
 ifneq ($(strip $(filter $(arm6_macros), $(predef_macros))),)
 CC_ARCH=arm6
+else ifneq ($(strip $(filter $(arm7_macros), $(predef_macros))),)
+CC_ARCH=arm7
 else # arm6_macros
 CC_ARCH=arm
 endif # arm6_macros
@@ -259,6 +274,8 @@ else ifneq ($(strip $(filter $(mips_macros), $(predef_macros))),)
 
 ifneq ($(strip $(filter $(mips64_macros), $(predef_macros))),)
 CC_ARCH=mips64
+else ifneq ($(strip $(filter $(mips32_macros), $(predef_macros))),)
+CC_ARCH=mips32
 else ifneq ($(strip $(filter $(mips2_macros), $(predef_macros))),)
 CC_ARCH=mips2
 else # mips2_macros
@@ -320,6 +337,9 @@ cfg_dir = etc/$(MAIN_NAME)/
 bin_dir = sbin/
 
 ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
+ifeq ($(OS),freebsd)
+	LIBDIR ?= lib
+else
 ifeq ($(ARCH_B),64b)
 	LIBDIR ?= lib64
 else
@@ -327,9 +347,12 @@ else
 	# assume 32b - it is not really used further
 	ARCH_B=32b
 endif
+endif
 
 lib_dir = $(LIBDIR)/$(MAIN_NAME)
 modules_dir = $(LIBDIR)/$(MAIN_NAME)/modules/
+
+md5sum_cmd = md5sum
 
 ifeq ($(OS), linux)
 	doc_dir = share/doc/$(MAIN_NAME)/
@@ -342,6 +365,7 @@ ifeq ($(OS), freebsd)
 	man_dir = man/
 	data_dir = share/$(MAIN_NAME)/
 	LOCALBASE ?= $(SYSBASE)/local
+	md5sum_cmd = md5
 else
 ifeq ($(OS), openbsd)
 	doc_dir = share/doc/$(MAIN_NAME)/
@@ -483,6 +507,14 @@ else
   THISREVISION = unknown
 endif
 
+ifneq (,$(MEM_STATS_HDR))
+EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
+MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -name "[Mm]akefile" | \
+			awk -F/ '{print $$(NF - 1)}' | sort | $(md5sum_cmd) | awk '{print $$1}')
+ifneq ($(EXPECTED_MD5),$(MODULES_MD5))
+REGENERATE_MEM_STATS=remove-mem-stats
+endif
+endif
 
 ifeq ($(DBXML2HTML),)
 DBXML2HTML = $(shell which xsltproc)
@@ -605,21 +637,6 @@ ifneq ($(VERSIONTYPE),)
 	DEFS+= -DVERSIONTYPE='"$(VERSIONTYPE)"' -DTHISREVISION='"$(THISREVISION)"'
 endif
 
-ifneq ($(RADIUSCLIENT), RADCLI)
-ifneq ($(RADIUSCLIENT), FREERADIUS)
-ifeq ($(RADIUSCLIENT), RADIUSCLIENT)
-	DEFS+= -DRADIUSCLIENT
-	RADIUS_LIB= -lradiusclient-ng
-endif
-else
-	DEFS+= -DFREERADIUS
-	RADIUS_LIB= -lfreeradius-client
-endif
-else
-	DEFS+= -DRADCLI
-	RADIUS_LIB= -lradcli
-endif
-
 ifneq ($(SQLITE_BIND),)
 	DEFS+= -DSQLITE_BIND
 endif
@@ -709,10 +726,13 @@ ifeq ($(ARCH), arm)
 	use_fast_lock=yes
 endif
 
-# use need some asm code for locking before enabling this
-#ifeq ($(ARCH), arm6)
-#	use_fast_lock=yes
-#endif
+ifeq ($(ARCH), arm6)
+	use_fast_lock=yes
+endif
+
+ifeq ($(ARCH), arm7)
+	use_fast_lock=yes
+endif
 
 ifeq ($(ARCH), ppc)
 	use_fast_lock=yes
@@ -732,11 +752,20 @@ ifeq ($(ARCH), mips2)
 	use_fast_lock=yes
 endif
 
+ifeq ($(ARCH), mips32)
+        use_fast_lock=yes
+endif
+
+ifeq ($(ARCH), mips64)
+        use_fast_lock=yes
+endif
+
 ifeq ($(ARCH), alpha)
 	use_fast_lock=yes
 endif
 
 # decide on the locking type
+ifeq (,$(findstring USE_UMUTEX, $(DEFS)))
 ifeq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
 ifeq (,$(findstring USE_POSIX_SEM, $(DEFS)))
 ifeq (,$(findstring USE_SYSV_SEM, $(DEFS)))
@@ -755,6 +784,10 @@ endif
 else
 	## USE_PTHREAD_MUTEX was manually forced from .conf
 	found_lock_method=yes
+endif
+else
+        ## USE_UMUTEX was manually forced from .conf
+        found_lock_method=yes
 endif
 
 CFLAGS=$(shell echo "$${CFLAGS}")
@@ -1076,8 +1109,7 @@ ifeq		($(CC_NAME), gcc)
 					-Wall -marm
 			#if gcc 4.x+
 ifeq			($(CC_CLASS), 4.x)
-					CFLAGS+=-mcpu=strongarm1100 -minline-all-stringops \
-							-ftree-vectorize
+					CFLAGS+=-mcpu=strongarm1100 -ftree-vectorize
 else
 			#if gcc 3.0+
 ifeq			($(CC_CLASS), 3.x)
@@ -1369,6 +1401,9 @@ ifeq ($(OS), linux)
 		DEFS+= -DUSE_POSIX_SEM  # try posix sems
 		found_lock_method=yes
 	endif
+	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
+		LIBS += -pthread
+	endif
 	# check for >= 2.5.44
 	ifeq ($(shell [ $(OSREL_N) -ge 2005044 ] && echo has_epoll), has_epoll)
 		ifeq ($(NO_EPOLL),)
@@ -1452,12 +1487,13 @@ ifeq ($(OS), freebsd)
 		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
 		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM \
 		-DHAVE_NETINET_IN_SYSTM
+	LIBS=  #dlopen is in libc
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
-		LIBS= -pthread  #dlopen is in libc
-	else
-		LIBS=  #dlopen is in libc
+	endif
+	ifneq (,$(findstring USE_PTHREAD_MUTEX, $(DEFS)))
+		LIBS+=-lpthread
 	endif
 	# check for ver >= 4.1
 	ifeq ($(shell [ $(OSREL_N) -gt 4001 ] && echo has_kqueue), has_kqueue)

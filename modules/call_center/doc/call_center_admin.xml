@@ -250,7 +250,29 @@ modparam("call_center", "wrapup_time", 45)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>queue_pos_param</varname> (string)</title>
+		<para>
+		The name of an SIP URI parameter to be used to report the position
+		in the waiting queue when sending the call to media server for
+		onwait/queue playback. The position 0 means it is the next call
+		to be delivered to an agent.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>empty(none)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>queue_pos_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "queue_pos_param", "cc_pos")
+...
+</programlisting>
+		</example>
 	</section>
+
+</section>
 
 
 	<section>

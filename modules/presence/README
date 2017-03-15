@@ -6,15 +6,11 @@ Edited by
 
 Ovidiu Sas
 
-Edited by
-
 Anca-Maria Vamanu
-
-Edited by
 
 Saul Ibarra Corretge
 
-   Copyright © 2006 Voice Sistem SRL
+   Copyright � 2006 Voice Sistem SRL
    Revision History
    Revision $Revision: 9371 $ $Date$
      __________________________________________________________
@@ -63,10 +59,12 @@ Saul Ibarra Corretge
               1.5.2. cleanup
               1.5.3. pres_phtable_list
               1.5.4. subs_phtable_list
+              1.5.5. pres_expose
 
         1.6. Exported Events
 
               1.6.1. E_PRESENCE_PUBLISH
+              1.6.2. E_PRESENCE_EXPOSED
 
         1.7. Installation
 
@@ -169,7 +167,7 @@ Chapter 1. Admin Guide
    Otherwise, it is used as a 'library', for its exported
    functions.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.1. Set db_url parameter
 ...
@@ -181,7 +179,7 @@ modparam("presence", "db_url",
 
    The name of the db table where Publish information are stored.
 
-   Default value is “presentity”.
+   Default value is "presentity".
 
    Example 1.2. Set presentity_table parameter
 ...
@@ -193,7 +191,7 @@ modparam("presence", "presentity_table", "presentity")
    The name of the db table where active subscription information
    are stored.
 
-   Default value is “active_watchers”.
+   Default value is "active_watchers".
 
    Example 1.3. Set active_watchers_table parameter
 ...
@@ -204,7 +202,7 @@ modparam("presence", "active_watchers_table", "active_watchers")
 
    The name of the db table where subscription states are stored.
 
-   Default value is “watchers”.
+   Default value is "watchers".
 
    Example 1.4. Set watchers_table parameter
 ...
@@ -215,7 +213,7 @@ modparam("presence", "watchers_table", "watchers")
 
    The period at which to clean the expired subscription dialogs.
 
-   Default value is “100”. A zero or negative value disables this
+   Default value is "100". A zero or negative value disables this
    activity.
 
    Example 1.5. Set clean_period parameter
@@ -228,7 +226,7 @@ modparam("presence", "clean_period", 100)
    The period at which to synchronize cached subscriber info with
    the database.
 
-   Default value is “100”. A zero or negative value disables
+   Default value is "100". A zero or negative value disables
    synchronization.
 
    Example 1.6. Set db_update_period parameter
@@ -240,7 +238,7 @@ modparam("presence", "db_update_period", 100)
 
    The extra time to store a subscription/publication.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.7. Set expires_offset parameter
 ...
@@ -252,7 +250,7 @@ modparam("presence", "expires_offset", 10)
    The the maximum admissible expires value for SUBSCRIBE
    messages.
 
-   Default value is “3600”.
+   Default value is "3600".
 
    Example 1.8. Set max_expires_subscribe parameter
 ...
@@ -263,7 +261,7 @@ modparam("presence", "max_expires_subscribe", 3600)
 
    The the maximum admissible expires value for PUBLISH messages.
 
-   Default value is “3600”.
+   Default value is "3600".
 
    Example 1.9. Set max_expires_publish parameter
 ...
@@ -300,7 +298,7 @@ modparam("presence", "fallback2db", 1)
    parameter will be used as the power of 2 when computing table
    size.
 
-   Default value is “9 (512)”.
+   Default value is "9 (512)".
 
    Example 1.12. Set subs_htable_size parameter
 ...
@@ -313,7 +311,7 @@ modparam("presence", "subs_htable_size", 11)
    parameter will be used as the power of 2 when computing table
    size.
 
-   Default value is “9 (512)”.
+   Default value is "9 (512)".
 
    Example 1.13. Set pres_htable_size parameter
 ...
@@ -329,7 +327,7 @@ modparam("presence", "pres_htable_size", 11)
    should be avoided if this feature is not supported by the
    clients.
 
-   Default value is “0 ”.
+   Default value is "0 ".
 
    Example 1.14. Set enable_sphere_check parameter
 ...
@@ -344,7 +342,7 @@ modparam("presence", "enable_sphere_check", 1)
    user did not register sice the subscription and was not
    informed about it).
 
-   Default value is “3” days. Maximum accepted value is 30 days.
+   Default value is "3" days. Maximum accepted value is 30 days.
 
    Example 1.15. Set waiting_subs_daysno parameter
 ...
@@ -361,7 +359,7 @@ modparam("presence", "waiting_subs_daysno", 2)
    the dialoginfo modules, presence_dialoginfo, pua_dialoginfo,
    dialog and pua.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.16. Set mix_dialog_presence parameter
 ...
@@ -381,7 +379,7 @@ modparam("presence", "mix_dialog_presence", 1)
    pseudovariable to the desired URI before calling the function
    handle_subscribe.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.17. Set bla_presentity_spec parameter
 ...
@@ -401,7 +399,7 @@ modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
    this parameter was introduced to disable this behaviour when
    needed.
 
-   Default value is “1”.
+   Default value is "1".
 
    Example 1.18. Set bla_fix_remote_target parameter
 ...
@@ -415,7 +413,7 @@ modparam("presence", "bla_fix_remote_target", 0)
    status 'closed' and use it when sending Notify, instead of
    notifying with no body.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.19. Set notify_offline_body parameter
 ...
@@ -428,7 +426,7 @@ modparam("presence", "notify_offline_body", 1)
    (destroyed) when receiving a SIP timeout (408) for a sent
    NOTIFY requests.
 
-   Default value is “1” (enabled).
+   Default value is "1" (enabled).
 
    Example 1.20. Set end_sub_on_timeout parameter
 ...
@@ -577,6 +575,25 @@ _empty_line_
 :subs_phtable_list:fifo_reply
 _empty_line_
 
+1.5.5.  pres_expose
+
+   Exposes in the script, by rasing an E_PRESENCE_EXPOSED event,
+   all the presentities of a specific event that match a specified
+   filter.
+
+   Name: pres_expose
+
+   Parameters:
+     * event - the interesting presence event.
+     * filter(optional) - a regular expression (REGEXP) used for
+       filtering the presentities for that event. Only the
+       presentities that match will be exposed. If not specified,
+       all presentities for that event are exposed.
+
+   MI FIFO Command Format:
+:subs_phtable_list:fifo_reply
+_empty_line_
+
 1.6. Exported Events
 
 1.6.1.  E_PRESENCE_PUBLISH
@@ -591,6 +608,15 @@ _empty_line_
      * expires - the expire value of the publish
      * etag - the entity tag
      * body - the body of the PUBLISH request
+
+1.6.2.  E_PRESENCE_EXPOSED
+
+   This event is raised for each presentity exposeed by the
+   pres_expose.
+
+   Parameters:
+
+   Same parameters as the E_PRESENCE_PUBLISH event.
 
 1.7. Installation
 

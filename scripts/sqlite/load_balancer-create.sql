@@ -5,7 +5,7 @@ CREATE TABLE load_balancer (
     dst_uri CHAR(128) NOT NULL,
     resources CHAR(255) NOT NULL,
     probe_mode INTEGER DEFAULT 0 NOT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL
+    description CHAR(128) DEFAULT NULL
 );
 
 CREATE INDEX load_balancer_dsturi_idx  ON load_balancer (dst_uri);

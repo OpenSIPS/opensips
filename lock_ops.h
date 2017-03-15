@@ -96,6 +96,10 @@ inline static gen_lock_t* lock_init(gen_lock_t* lock)
 #endif
 
 #elif defined USE_PTHREAD_MUTEX
+# if defined(__FreeBSD__)
+#  warning Inter-process mutexes are not supported on FreeBSD as if yet :(
+# endif
+
 #include <pthread.h>
 
 typedef pthread_mutex_t gen_lock_t;
@@ -104,14 +108,78 @@ typedef pthread_mutex_t gen_lock_t;
 
 inline static gen_lock_t* lock_init(gen_lock_t* lock)
 {
-	if (pthread_mutex_init(lock, 0)==0) return lock;
-	else return 0;
+	pthread_mutexattr_t attr;
+
+	if (pthread_mutexattr_init(&attr) != 0)
+		return 0;
+
+	if (pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED) != 0) {
+		pthread_mutexattr_destroy(&attr);
+		return 0;
+	}
+
+	if (pthread_mutex_init(lock, &attr) != 0) {
+		pthread_mutexattr_destroy(&attr);
+		return 0;
+	}
+
+	pthread_mutexattr_destroy(&attr);
+	return lock;
 }
 
 
 #define lock_get(lock) pthread_mutex_lock(lock)
 #define lock_release(lock) pthread_mutex_unlock(lock)
 
+#elif defined USE_UMUTEX
+# if !defined(USE_UMUTEX_DECL)
+#  define USE_UMUTEX_DECL 1
+#include <sys/types.h>
+
+#include <errno.h>
+#include <string.h>
+
+#define u_long unsigned long
+#include <sys/umtx.h>
+
+typedef struct umutex gen_lock_t;
+
+#define lock_destroy(lock) /* do nothing */
+
+inline static int
+_umtx_op_err(void *obj, int op, u_long val, void *uaddr, void *uaddr2)
+{
+
+        if (_umtx_op(obj, op, val, uaddr, uaddr2) == -1)
+                return (errno);
+        return (0);
+}
+
+inline static gen_lock_t *
+lock_init(gen_lock_t *lock)
+{
+
+    memset(lock, '\0', sizeof(gen_lock_t));
+    lock->m_flags = USYNC_PROCESS_SHARED;
+
+    return (lock);
+}
+
+inline static int
+lock_get(gen_lock_t *lock)
+{
+
+    return  (_umtx_op_err(lock, UMTX_OP_MUTEX_LOCK, 0, 0, 0));
+}
+
+inline static int
+lock_release(gen_lock_t *lock)
+{
+
+    return (_umtx_op_err(lock, UMTX_OP_MUTEX_UNLOCK, 0, 0, 0));
+}
+
+# endif /* USE_UMUTEX_DECL */
 #elif defined USE_POSIX_SEM
 #include <semaphore.h>
 
@@ -233,7 +301,7 @@ tryagain:
 
 /* lock sets */
 
-#if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM)
+#if defined(FAST_LOCK) || defined(USE_PTHREAD_MUTEX) || defined(USE_POSIX_SEM) || defined(USE_UMUTEX)
 #define GEN_LOCK_T_PREFERED
 
 struct gen_lock_set_t_ {

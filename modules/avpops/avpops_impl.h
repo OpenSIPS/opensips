@@ -139,8 +139,8 @@ int ops_dbstore_avps(struct sip_msg* msg, struct fis_param *sp,
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 					struct db_url *url, pvname_list_t* dest);
 
-int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rf,
-		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest);
+int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
+		pv_elem_t *query, struct db_url *url, pvname_list_t *dest);
 
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 

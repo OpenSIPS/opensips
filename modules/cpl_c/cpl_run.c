@@ -90,6 +90,11 @@ static str cpl_302_reason = str_init("Moved temporarily");
 		check_overflow_by_ptr( (_p_)+BASIC_ATTR_SIZE, _intr_, _error_);\
 		_code_ = ntohs( *((unsigned short*)(_p_)) );\
 		_n_ =  ntohs( *((unsigned short*)((_p_)+2)) );\
+		/* make sure it remains positive! */\
+		if (((short)(_n_)) < 0) {\
+			LM_ERR("negative attribute length %d\n", _n_);\
+			goto _error_; \
+		} \
 		(_p_) += 4;\
 	}while(0)
 

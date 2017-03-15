@@ -1,15 +1,31 @@
 %if 0%{?rhel}
 # copied from lm_sensors exclusive arch
 %ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
-%global disable_snmpstats snmpstats
+%global _without_snmpstats 1
 %endif
 %endif
 
-%global EXCLUDE_MODULES sngtc osp cachedb_cassandra cachedb_couchbase cachedb_mongodb %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis} %{!?_with_oracle:db_oracle} lua
+%if 0%{?el5:1}
+%global _without_db_perlvdb 1
+%endif
+
+%if 0%{?rhel} > 6 || 0%{?fedora} > 20
+%global _with_cachedb_redis 1
+%endif
+
+%if 0%{?rhel} > 6 || 0%{?fedora} > 21
+%global _with_cachedb_mongodb 1
+%endif
+
+%if 0%{?fedora} > 23
+%global _without_aaa_radius 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  2.2.0
+Version:  2.3.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -22,16 +38,10 @@ BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  subversion
 BuildRequires:  which
-# needed by snmpstats
-BuildRequires:  radiusclient-ng-devel
 BuildRequires:  mysql-devel
 BuildRequires:  postgresql-devel
 
 Requires: m4
-# required by snmpstats module
-%if %{undefined disable_snmpstats}
-BuildRequires:  lm_sensors-devel
-%endif
 BuildRequires:  net-snmp-devel
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
@@ -82,14 +92,17 @@ radius authentication, record routing, an SMS gateway, a jabber gateway, a
 transaction and dialog module, OSP module, statistics support,
 registrar and user location.
 
+%if 0%{!?_without_aaa_radius:1}
 %package  aaa_radius
 Summary:  RADIUS backend for AAA api
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires:  radiusclient-ng-devel
 
 %description  aaa_radius
 This module provides the RADIUS backend for the AAA API - group, auth, uri
 module use the AAA API for performing RADIUS ops.
+%endif
 
 %package  acc
 Summary:  Accounts transactions information to different backends
@@ -120,6 +133,65 @@ Requires: %{name} = %{version}-%{release}
 %description  b2bua
 B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
 that offers the possibility to build certain services on top of it.
+
+%if 0%{?_with_cachedb_cassandra:1}
+%package  cachedb_cassandra
+Summary:  Cassandra connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  thrift-cpp-devel
+
+%description  cachedb_cassandra
+Cassandra module is an implementation of a cache system designed to
+work with a cassandra server.
+%endif
+
+%if 0%{?_with_cachedb_couchbase:1}
+Summary:  opensips cachedb_couchbase implementation.
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  libcouchbase-devel
+
+%description cachedb_couchbase
+This module is an implementation of a cache system designed to work with a Couchbase server.
+It uses the libcouchbase client library to connect to the server instance,
+It uses the Key-Value interface exported from the core.
+%endif
+
+%package  cachedb_memcached
+Summary:  Memcached connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  libmemcached-devel
+
+%description  cachedb_memcached
+Memcached module is an implementation of a cache system designed to
+work with a memcached server.
+
+%if 0%{?_with_cachedb_mongodb:1}
+%package  cachedb_mongodb
+Summary:  Mongodb connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: mongo-c-driver-devel
+BuildRequires: cyrus-sasl-devel
+
+%description  cachedb_mongodb
+Mongodb module is an implementation of a cache system designed to
+work with a mongodb server.
+%endif
+
+%if 0%{?_with_cachedb_redis:1}
+%package  cachedb_redis
+Summary:  Redis connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  hiredis-devel
+
+%description  cachedb_redis
+This module is an implementation of a cache system designed to work
+with a Redis server.
+%endif
 
 %package  carrierroute
 Summary:  Routing extension suitable for carriers
@@ -156,10 +228,18 @@ Summary:  Call Processing Language interpreter
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description	cpl_c
+%description  cpl_c
 This module implements a CPL (Call Processing Language) interpreter.
 Support for uploading/downloading/removing scripts via SIP REGISTER method
 is present.
+
+%package  cgrates
+Summary:  CGRateS connector
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  cgrates
+This module implements a connector to the CGRateS billing/rating engine.
 
 %package  db_berkeley
 Summary:  Berkeley DB backend support
@@ -189,7 +269,7 @@ Requires: mysql-libs
 The %{name}-db_mysql package contains the MySQL plugin for %{name}, which allows
 a MySQL-Database to be used for persistent storage.
 
-%if 0%{?_with_oracle}
+%if 0%{?_with_db_oracle:1}
 %package  db_oracle
 Summary:  Oracle Storage Support for the OpenSIPS
 Group:    System Environment/Daemons
@@ -201,7 +281,7 @@ The %{name}-db_oracle package contains the Oracle plugin for %{name}, which allo
 a Oracle-Database to be used for persistent storage.
 %endif
 
-%if %{undefined el5}
+%if 0%{!?_without_db_perlvdb:1}
 %package  db_perlvdb
 Summary:  Perl virtual database engine
 Group:    System Environment/Daemons
@@ -236,6 +316,15 @@ BuildRequires: sqlite-devel
 %description  db_sqlite
 This is a module which provides SQLite support for OpenSIPS. It implements
 the DB API defined in OpenSIPS.
+
+%package  db_unixodbc
+Summary:  OpenSIPS unixODBC Storage support
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  db_unixodbc
+The %{name}-unixodbc package contains the unixODBC plugin for %{name}, which
+allows a unixODBC to be used for persistent storage
 
 %package  emergency
 Summary:  Emergency module
@@ -275,7 +364,7 @@ along with their parameters in regular text files.
 Summary:  Event RabbitMQ module
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-BuildRequires:	librabbitmq-devel
+BuildRequires: librabbitmq-devel
 
 %description  event_rabbitmq
 This module provides the implementation of a RabbitMQ client for the Event Interface.
@@ -293,6 +382,16 @@ the OpenSIPS Event Interface, directly from the OpenSIPS script. For a specific 
 a special route (event_route) has to be declared in the script, and should contain
 the code that handles the event. The route is executed by the module when the
 corresponding event is raised by the OpenSIPS Event Interface.
+
+%package  event_routing
+Summary:  Event based SIP routing
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  event_routing
+The Event (based) Routing module, or shortly the EBR module, provides a mechanism
+that allows different SIP processings (of messages in script) to communicate and
+synchronize between through OpenSIPS Events.
 
 %package  event_virtual
 Summary:  Aggregator of event backends (failover & balancing)
@@ -323,6 +422,16 @@ Requires: %{name} = %{version}-%{release}
 This module provides a way to prevent some basic fraud attacks. Alerts are provided
 through return codes and events.
 
+%package  freeswitch
+Summary:  FreeSWITCH ESL connection manager
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  freeswitch
+The "freeswitch" module is a C driver for the FreeSWITCH Event Socket Layer interface.
+It can interact with one or more FreeSWITCH servers either by issuing commands to them,
+or by receiving events from them.
+
 %package  h350
 Summary:  H350 implementation
 Group:    System Environment/Daemons
@@ -337,7 +446,7 @@ commObjects.
 Summary:  HTTP transport layer implementation
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-BuildRequires:	libmicrohttpd-devel
+BuildRequires: libmicrohttpd-devel
 
 %description  httpd
 This module provides an HTTP transport layer for OpenSIPS.
@@ -367,15 +476,42 @@ Requires: %{name} = %{version}-%{release}
 %description  ldap
 The LDAP module implements an LDAP search interface for OpenSIPS.
 
-%package  memcached
-Summary:  Memcached connector
+%package  lua
+Summary:  Call LUA scripts from OpenSIPS cfg
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-BuildRequires:  libmemcached-devel
+%if 0%{?fedora} > 0
+BuildRequires: compat-lua-devel
+%else
+BuildRequires: lua-devel
+%endif
 
-%description  memcached
-Memcached module is an implementation of a cache system designed to
-work with a memcached server.
+%description  lua
+The time needed when writing a new OpenSIPS module unfortunately
+is quite high, while the options provided by the configuration file
+are limited to the features implemented in the modules.
+
+%package  mid_registrar
+Summary:  SIP registration front-end with traffic throttling
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  mid_registrar
+The mid_registrar is a mid-component of a SIP platform, designed to
+work between end users and the platform's main registration component.
+It opens up new possibilities for leveraging existing infrastructure
+in order to continue to grow (as subscribers and as registration traffic)
+while keeping an existing low-resources registrar server.
+
+%package  mi_xmlrpc
+Summary:  A xmlrpc server
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-httpd
+
+%description  mi_xmlrpc
+This module implements a xmlrpc server that handles xmlrpc requests and generates
+xmlrpc responses. When a xmlrpc message is received a default method is executed.
 
 %package  mmgeoip
 Summary:  Wrapper for the MaxMind GeoIP API
@@ -385,6 +521,18 @@ Requires: %{name} = %{version}-%{release}
 %description  mmgeoip
 Mmgeoip is a lightweight wrapper for the MaxMind GeoIP API. It adds
 IP address-to-location lookup capability to OpenSIPS scripts.
+
+%if 0%{?_with_osp:1}
+%package  osp
+Summary:  OSP Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires:  OSPToolkit-devel
+
+%description  osp
+The OSP module enables OpenSIPS to support secure, multi-lateral peering using
+the OSP standard defined by ETSI (TS 101 321 V4.1.1).
+%endif
 
 %package  peering
 Summary:  Radius peering
@@ -654,17 +802,14 @@ Requires: %{name} = %{version}-%{release}
 %description  python
 Helps implement your own OpenSIPS extensions in Python
 
-%if %{undefined el5}
-%package  redis
-Summary:  Redis connector
+%package  rabbitmq
+Summary:  RabbitMQ module
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-BuildRequires:  hiredis-devel
+BuildRequires: librabbitmq-devel
 
-%description  redis
-This module is an implementation of a cache system designed to work
-with a Redis server.
-%endif
+%description  rabbitmq
+This module provides the implementation of a RabbitMQ publisher.
 
 %package  regex
 Summary:  RegExp via PCRE library
@@ -725,6 +870,17 @@ Server then executes some call-control logic code, and tells OpenSIPS to take
 some actions, ie. forward the message downstream, or respond to the message
 with a SIP repy, etc
 
+%package  sip_i
+Summary:  ISUP manipulation module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  sip_i
+This module offers the possibility of processing ISDN User Part(ISUP) messages
+encapsulated in SIP. The available operations are: reading and modifying parameters
+from an ISUP message, removing or adding new optional parameters, adding an ISUP part
+to a SIP message body. This is done explicitly via script pseudovariables and functions.
+
 %package  sms
 Summary:  Gateway between SIP and GSM networks via sms
 Group:    System Environment/Daemons
@@ -738,12 +894,23 @@ like SMS confirmation--the gateway can confirm to the SIP user if his
 message really reached its destination as a SMS--or multi-part messages--if
 a SIP messages is too long it will be split and sent as multiple SMS.
 
-%if %{undefined disable_snmpstats}
+%if 0%{?_with_sngtc:1}
+%package  sngtc
+Summary:  Sangoma media transcoding interface for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  sngtc
+The sngtc package implements interface to Sangoma media transcoding.
+%endif
+
+%if 0%{!?_without_snmpstats:1}
 %package  snmpstats
 Summary:  SNMP management interface for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+BuildRequires:  lm_sensors-devel
 
 %description  snmpstats
 The %{name}-snmpstats package provides an SNMP management interface to
@@ -784,14 +951,6 @@ Requires: %{name} = %{version}-%{release}
 This is a module which provides topology hiding capabilities. The module can
 work on top of the dialog module, or as a standalone module ( thus alowing
 topology hiding for all types of requests )
-%package  unixodbc
-Summary:  OpenSIPS unixODBC Storage support
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  unixodbc
-The %{name}-unixodbc package contains the unixODBC plugin for %{name}, which
-allows a unixODBC to be used for persistent storage
 
 %package  xcap
 Summary:  XCAP API provider
@@ -813,15 +972,6 @@ It fetches XCAP elements, either documents or part of them, by sending HTTP
 GET requests. It also offers support for conditional queries. It uses libcurl
 library as a client-side HTTP transfer library.
 
-%package  xmlrpc
-Summary:  A xmlrpc server
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  xmlrpc
-This module implements a xmlrpc server that handles xmlrpc requests and generates
-xmlrpc responses. When a xmlrpc message is received a default method is executed.
-
 %package  xmpp
 Summary:  Gateway between OpenSIPS and a jabber server
 Group:    System Environment/Daemons
@@ -836,7 +986,7 @@ clients.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
@@ -906,8 +1056,8 @@ useradd -r -g %{name} -d %{_localstatedir}/run/%{name} -s /sbin/nologin \
 %post
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 if [ $1 -eq 1 ] ; then
-	# Initial installation
-	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+    # Initial installation
+    /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
 %else
 /sbin/chkconfig --add %{name}
@@ -916,14 +1066,14 @@ fi
 %preun
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 if [ $1 -eq 0 ] ; then
-	# Package removal, not upgrade
-	/bin/systemctl --no-reload disable %{name}.service > /dev/null 2>&1 || :
-	/bin/systemctl stop %{name}.service > /dev/null 2>&1 || :
+    # Package removal, not upgrade
+    /bin/systemctl --no-reload disable %{name}.service > /dev/null 2>&1 || :
+    /bin/systemctl stop %{name}.service > /dev/null 2>&1 || :
 fi
 %else
 if [ $1 = 0 ]; then
-	/sbin/service %{name} stop > /dev/null 2>&1
-	/sbin/chkconfig --del %{name}
+    /sbin/service %{name} stop > /dev/null 2>&1
+    /sbin/chkconfig --del %{name}
 fi
 %endif
 
@@ -955,7 +1105,9 @@ fi
 %attr(755,root,root) %{_initrddir}/opensips
 %endif
 
+%if 0%{!?_without_aaa_radius:1}
 %config(noreplace) %{_sysconfdir}/opensips/dictionary.opensips
+%endif
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
@@ -1016,13 +1168,13 @@ fi
 %{_libdir}/opensips/modules/cfgutils.so
 %{_libdir}/opensips/modules/db_cachedb.so
 %{_libdir}/opensips/modules/db_flatstore.so
-%{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/db_text.so
-%{_libdir}/opensips/modules/dns_cache.so
+%{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/dialog.so
 %{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
+%{_libdir}/opensips/modules/dns_cache.so
 %{_libdir}/opensips/modules/domain.so
 %{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/drouting.so
@@ -1042,9 +1194,8 @@ fi
 %{_libdir}/opensips/modules/mi_http.so
 %{_libdir}/opensips/modules/mi_json.so
 %{_libdir}/opensips/modules/msilo.so
-%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/nat_traversal.so
-%{_libdir}/opensips/modules/rtpproxy.so
+%{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/permissions.so
@@ -1053,6 +1204,7 @@ fi
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/script_helper.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/sipcapture.so
@@ -1139,9 +1291,11 @@ fi
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
 
+%if 0%{!?_without_aaa_radius:1}
 %files aaa_radius
 %{_libdir}/opensips/modules/aaa_radius.so
 %doc docdir/README.aaa_radius
+%endif
 
 %files acc
 %{_libdir}/opensips/modules/acc.so
@@ -1161,6 +1315,33 @@ fi
 %doc docdir/README.b2b_sca
 %doc docdir/README.call_center
 
+%if 0%{?_with_cachedb_cassandra:1}
+%{_libdir}/opensips/modules/cachedb_cassandra.so
+%doc docdir/README.cachedb_cassandra
+%endif
+
+%if 0%{?_with_cachedb_couchbase:1}
+%files cachedb_couchbase
+%{_libdir}/opensips/modules/cachedb_couchbase.so
+%doc docdir/README.cachedb_couchbase
+%endif
+
+%files cachedb_memcached
+%{_libdir}/opensips/modules/cachedb_memcached.so
+%doc docdir/README.cachedb_memcached
+
+%if 0%{?_with_cachedb_mongodb:1}
+%files cachedb_mongodb
+%{_libdir}/opensips/modules/cachedb_mongodb.so
+%doc docdir/README.cachedb_mongodb
+%endif
+
+%if 0%{?_with_cachedb_redis:1}
+%files cachedb_redis
+%{_libdir}/opensips/modules/cachedb_redis.so
+%doc docdir/README.cachedb_redis
+%endif
+
 %files carrierroute
 %{_libdir}/opensips/modules/carrierroute.so
 %doc docdir/README.carrierroute
@@ -1176,6 +1357,10 @@ fi
 %files cpl_c
 %{_libdir}/opensips/modules/cpl_c.so
 %doc docdir/README.cpl_c
+
+%files cgrates
+%{_libdir}/opensips/modules/cgrates.so
+%doc docdir/README.cgrates
 
 %files db_berkeley
 %{_sbindir}/bdb_recover
@@ -1199,7 +1384,7 @@ fi
 %{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.db_mysql
 
-%if 0%{?_with_oracle}
+%if 0%{?_with_db_oracle:1}
 %files db_oracle
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
@@ -1211,7 +1396,7 @@ fi
 %doc docdir/README.db_oracle
 %endif
 
-%if %{undefined el5}
+%if 0%{!?_without_db_perlvdb:1}
 %files db_perlvdb
 %dir %{perl_vendorlib}/OpenSIPS/VDB
 %dir %{perl_vendorlib}/OpenSIPS/VDB/Adapter
@@ -1248,6 +1433,10 @@ fi
 %dir %{_datadir}/opensips/sqlite
 %{_datadir}/opensips/sqlite/*.sql
 
+%files db_unixodbc
+%{_libdir}/opensips/modules/db_unixodbc.so
+%doc docdir/README.db_unixodbc
+
 %files emergency
 %{_libdir}/opensips/modules/emergency.so
 %doc docdir/README.emergency
@@ -1268,6 +1457,10 @@ fi
 %{_libdir}/opensips/modules/event_route.so
 %doc docdir/README.event_route
 
+%files event_routing
+%{_libdir}/opensips/modules/event_routing.so
+%doc docdir/README.event_routing
+
 %files event_virtual
 %{_libdir}/opensips/modules/event_virtual.so
 %doc docdir/README.event_virtual
@@ -1279,6 +1472,10 @@ fi
 %files fraud_detection
 %{_libdir}/opensips/modules/fraud_detection.so
 %doc docdir/README.fraud_detection
+
+%files freeswitch
+%{_libdir}/opensips/modules/freeswitch.so
+%doc docdir/README.freeswitch
 
 %files h350
 %{_libdir}/opensips/modules/h350.so
@@ -1300,13 +1497,27 @@ fi
 %{_libdir}/opensips/modules/ldap.so
 %doc docdir/README.ldap
 
-%files memcached
-%{_libdir}/opensips/modules/cachedb_memcached.so
-%doc docdir/README.cachedb_memcached
+%files lua
+%{_libdir}/opensips/modules/lua.so
+%doc docdir/README.lua
+
+%files mid_registrar
+%{_libdir}/opensips/modules/mid_registrar.so
+%doc docdir/README.mid_registrar
+
+%files mi_xmlrpc
+%{_libdir}/opensips/modules/mi_xmlrpc_ng.so
+%doc docdir/README.mi_xmlrpc_ng
 
 %files mmgeoip
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
+
+%if 0%{?_with_osp:1}
+%files osp
+%{_libdir}/opensips/modules/osp.so
+%doc docdir/README.osp
+%endif
 
 %files peering
 %{_libdir}/opensips/modules/peering.so
@@ -1406,11 +1617,9 @@ fi
 %files python
 %{_libdir}/opensips/modules/python.so
 
-%if %{undefined el5}
-%files redis
-%{_libdir}/opensips/modules/cachedb_redis.so
-%doc docdir/README.cachedb_redis
-%endif
+%files rabbitmq
+%{_libdir}/opensips/modules/rabbitmq.so
+%doc docdir/README.rabbitmq
 
 %files regex
 %{_libdir}/opensips/modules/regex.so
@@ -1432,11 +1641,21 @@ fi
 %{_libdir}/opensips/modules/seas.so
 %doc docdir/README.seas
 
+%files sip_i
+%{_libdir}/opensips/modules/sip_i.so
+%doc docdir/README.sip_i
+
 %files sms
 %{_libdir}/opensips/modules/sms.so
 %doc docdir/README.sms
 
-%if %{undefined disable_snmpstats}
+%if 0%{?_with_sngtc:1}
+%files sngtc
+%{_libdir}/opensips/modules/sngtc.so
+%doc docdir/README.sngtc
+%endif
+
+%if 0%{!?_without_snmpstats:1}
 %files snmpstats
 %{_libdir}/opensips/modules/snmpstats.so
 %doc docdir/README.snmpstats
@@ -1461,10 +1680,6 @@ fi
 %{_libdir}/opensips/modules/topology_hiding.so
 %doc docdir/README.topology_hiding
 
-%files unixodbc
-%{_libdir}/opensips/modules/db_unixodbc.so
-%doc docdir/README.db_unixodbc
-
 %files xcap
 %{_libdir}/opensips/modules/xcap.so
 %doc docdir/README.xcap
@@ -1473,15 +1688,21 @@ fi
 %{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
 
-%files xmlrpc
-%{_libdir}/opensips/modules/mi_xmlrpc_ng.so
-%doc docdir/README.mi_xmlrpc_ng
-
 %files xmpp
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
 %changelog
+* Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
+- Specification updated for opensips 2.3
+- New packages: event_routing, freeswitch, mid_registrar, sip_i
+- Enabled packages: cachedb_mongodb, lua
+- Renamed packages: memcached -> cachedb_memcached, redis -> cachedb_redis,
+  unixodbc -> db_unixodbc, xmlrpc -> mi_xmlrpc
+- Added possibility to build unsupported modules (from obsolete .spec):
+  cachedb_cassandra, cachedb_couchbase,
+  cachedb_mongodb, osp, sngtc
+
 * Wed Jan 20 2016 Nick Altmann <nick.altmann@gmail.com> - 2.2.0-1
 - Specification updated for opensips 2.2
 - New packages: db_sqlite, clusterer, event_flatstore,

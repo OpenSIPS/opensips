@@ -372,13 +372,11 @@ int cc_db_restore_calls( struct cc_data *data)
 		/* CALLER_DN_COL */
 		check_val( ROW_VALUES(row)+7, DB_STRING, 1, 0, "caller_dn");
 		dn.s = (char*)VAL_STRING(ROW_VALUES(row)+7);
-		if(dn.s)
-			dn.len = strlen(dn.s);
+		dn.len = (dn.s ? strlen(dn.s) : 0);
 		/* CALLER_UN_COL */
 		check_val( ROW_VALUES(row)+8, DB_STRING, 1, 0, "caller_un");
 		un.s = (char*)VAL_STRING(ROW_VALUES(row)+8);
-		if(un.s)
-			un.len = strlen(un.s);
+		un.len = (un.s ? strlen(un.s) : 0);
 
 		call = new_cc_call(data, flow, &dn, &un);
 		if (call==NULL) {

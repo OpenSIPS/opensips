@@ -34,6 +34,7 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_authenticate.h"
+#include "../../parser/sdp/sdp.h"
 #include "../../locking.h"
 #include "../../script_cb.h"
 #include "../uac_auth/uac_auth.h"
@@ -109,7 +110,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 		/*check if the dialog information correspond */
 		if(table == server_htable)
 		{
-			if(!from_tag)
+			if(!from_tag || !callid)
 				return NULL;
 			dlg_from_tag= dlg->tag[CALLER_LEG];
 			/* check from tag and callid */
@@ -130,7 +131,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 				dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s, dlg->state);
 			*/
 			/* it is an UAC dialog (callid is the key)*/
-			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
+			if(to_tag && dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
 			{
 
@@ -1287,7 +1288,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		if(tm_tran)
 		{
 			if(parse_method(tm_tran->method.s,
-					tm_tran->method.s + tm_tran->method.len, &method_value)< 0)
+					tm_tran->method.s + tm_tran->method.len, &method_value) == 0)
 			{
 				LM_ERR("Wrong method stored in tm transaction [%.*s]\n",
 					tm_tran->method.len, tm_tran->method.s);
@@ -1338,7 +1339,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 				dlg->state= B2B_TERMINATED;
 			UPDATE_DBFLAG(dlg);
 		}
-		LM_DBG("Reseted transaction- send final reply [%p], uas_tran=0\n", dlg);
+		LM_DBG("Reset transaction- send final reply [%p], uas_tran=0\n", dlg);
 		if(sip_method == METHOD_UPDATE)
 			dlg->update_tran = NULL;
 		else
@@ -1724,7 +1725,8 @@ int b2b_send_request(b2b_req_data_t* req_data)
 			return -1;
 	}
 
-	if(b2breq_complete_ehdr(req_data->extra_headers, &ehdr, req_data->body,
+	if(b2breq_complete_ehdr(req_data->extra_headers, req_data->client_headers,
+			&ehdr, req_data->body,
 			((et==B2B_SERVER)?&dlg->contact[CALLEE_LEG]:&dlg->contact[CALLER_LEG]))< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
@@ -2142,7 +2144,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		return;
 	}
 
-	if(parse_method(t->method.s, t->method.s + t->method.len, &method_id) < 0)
+	if(parse_method(t->method.s, t->method.s + t->method.len, &method_id) == 0)
 	{
 		LM_ERR("Failed to parse method [%.*s\n]\n", t->method.len, t->method.s);
 		return;
@@ -2263,8 +2265,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			"transaction [%p]\n", dlg, dlg->uac_tran, t);
 		if(dlg_based_search)
 			dlg = b2b_search_htable_next_dlg( previous_dlg, htable, hash_index,
-				local_index, &from_tag,
-				(method_id==METHOD_CANCEL)?NULL:&to_tag, &callid);
+				local_index, &from_tag, &to_tag, &callid);
 		else
 			dlg = b2b_search_htable_next( previous_dlg, htable, hash_index,
 				local_index);
@@ -2832,14 +2833,15 @@ static inline int is_CT_present(struct hdr_field* headers)
 	return 0;
 }
 
-int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
-		str* local_contact)
+int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
+		str* ehdr_out, str* body, str* local_contact)
 {
 	str ehdr= {NULL,0};
 	static char buf[BUF_LEN];
 	static struct sip_msg foo_msg;
 
-	if((extra_headers?extra_headers->len:0) + 14 + local_contact->len > BUF_LEN)
+	if(((extra_headers?extra_headers->len:0) + 14 + local_contact->len +
+		(client_headers?client_headers->len:0))> BUF_LEN)
 	{
 		LM_ERR("Buffer too small\n");
 		return -1;
@@ -2853,8 +2855,11 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 	}
 	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
 		local_contact->len, local_contact->s);
-
-
+	if (client_headers && client_headers->len && client_headers->s)
+	{
+		memcpy(ehdr.s + ehdr.len, client_headers->s, client_headers->len);
+		ehdr.len += client_headers->len;
+	}
 
 	/* if not present and body present add content type */
 	if(body) {
@@ -2892,7 +2897,6 @@ int b2b_apply_lumps(struct sip_msg* msg)
 {
 	str obuf;
 	struct sip_msg tmp;
-	str body;
 
 	/* faked reply */
 	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
@@ -2956,11 +2960,8 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	if (parse_msg(msg->buf, msg->len, msg) != 0)
 		LM_ERR("parse_msg failed\n");
 
-	/* if has body, check for SDP */
-	if (get_body(msg,&body) != 0 || body.len == 0)
-		return 1;
-
-	if (parse_sdp(msg) < 0) {
+	/* check for SDP */
+	if (!parse_sdp(msg)) {
 		LM_DBG("failed to parse SDP message\n");
 		return -1;
 	}

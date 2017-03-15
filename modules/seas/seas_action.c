@@ -731,7 +731,10 @@ int ac_reply(as_p the_as,char *action,int len)
    if(is_invite(c) && my_msg->first_line.u.reply.statuscode>=200 && my_msg->first_line.u.reply.statuscode<300)
       c->flags |= T_IS_LOCAL_FLAG;
    /*WARNING casting unsigned int to int*/
-   get_body(my_msg, &body);
+   if (get_body(my_msg, &body) < 0) {
+	   LM_ERR("error getting message's body!\n");
+	   goto error;
+   }
 
    LM_DBG("Trying to construct a SipReply with: ReasonPhrase:[%.*s] body:[%.*s] headers:[%.*s] totag:[%.*s]\n",\
 	 my_msg->first_line.u.reply.reason.len,my_msg->first_line.u.reply.reason.s,\
@@ -996,7 +999,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
       cseq--;
    }
    if(seas_f.tmb.new_dlg_uac(&(my_msg->callid->body),&(fb->tag_value),cseq,\
-	    &(fb->uri),&(tb->uri),&my_dlg) < 0) {
+	    &(fb->uri),&(tb->uri),NULL,&my_dlg) < 0) {
       as_action_fail_resp(uac_id,SE_UAC,"Error creating new dialog",0);
       LM_ERR("Error while creating new dialog\n");
       goto error;
@@ -1037,7 +1040,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
       body.s[body.len]=0;
       LM_DBG("Trying to construct a Sip Request with: body:%d[%.*s] headers:%d[%.*s]\n",\
 	    body.len,body.len,body.s,headers.len,headers.len,headers.s);
-      /*t_reply_with_body un-ref-counts the transaction, so dont use it anymore*/
+      /*t_reply_with_body un-ref-counts the transaction, so don't use it anymore*/
    }
    /*Now... create the UAC !!
     * it would be great to know the hash_index and the label that have been assigned

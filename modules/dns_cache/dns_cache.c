@@ -459,14 +459,14 @@ static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_
 	}
 
 	if (do_encoding) {
-		if (*len)
+		if (len)
 			*len = base64_len;
 
 		/* encode and return beggining of encoding */
 		base64encode(p,rdata_buf,buf_len);
 		return (char *)p;
 	} else {
-		if (*len)
+		if (len)
 			*len = needed_len;
 		return (char *)rdata_buf;
 	}
@@ -831,6 +831,8 @@ int put_dnscache_value(char *name,int r_type,void *record,int rdata_len,
 		LM_ERR("failed to create key\n");
 		return -1;
 	}
+	value.len = 0;
+	value.s = 0;
 
 	if (failure) {
 		/* just set value as failure marker, and push to back-end

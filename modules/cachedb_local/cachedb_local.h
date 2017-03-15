@@ -31,7 +31,9 @@
 #include "../../cachedb/cachedb_cap.h"
 #include "hash.h"
 
-extern lcache_t* cache_htable;
+#define HASH_SIZE_DEFAULT 9 /* power of two */
+#define DEFAULT_COLLECTION_NAME "default"
+
 extern int cache_htable_size;
 extern int local_exec_threshold;
 
@@ -39,6 +41,30 @@ typedef struct {
 	struct cachedb_id *id;
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
+
+	/* local cache hash structure */
+	struct lcache_col* col;
 } lcache_con;
+
+typedef struct lcache_col {
+	str col_name;
+
+	lcache_t* col_htable;
+	int size;
+
+	/* we need to know somehow if this collection is used or not;
+	 * if not used we'll need to throw an error */
+	int is_used;
+
+	struct lcache_col* next;
+} lcache_col_t;
+
+typedef struct url_lst {
+	str url;
+	struct url_lst* next;
+} url_lst_t;
+
+extern lcache_col_t* lcache_collection;
+extern url_lst_t* url_list;
 
 #endif

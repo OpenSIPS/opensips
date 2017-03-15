@@ -138,6 +138,8 @@ int disable_503_translation = 0;
 #define append_str_trans(_dest,_src,_len,_msg) \
 	append_str( (_dest), (_src), (_len) );
 
+#define OSS_BOUNDARY "OSS-unique-boundary-42"
+
 extern char version[];
 extern int version_len;
 
@@ -438,7 +440,7 @@ static inline int lump_check_opt(	struct lump *l,
 /*! \brief computes the "unpacked" len of a lump list,
    code moved from build_req_from_req */
 int lumps_len(struct sip_msg* msg, struct lump* lumps,
-											struct socket_info* send_sock)
+								struct socket_info* send_sock, int max_offset)
 {
 	unsigned int s_offset, new_len;
 	unsigned int last_del;
@@ -616,15 +618,19 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	if(msg->rcv.bind_address) {
 		if(msg->rcv.bind_address->adv_name_str.len)
 			rcv_address_str=&(msg->rcv.bind_address->adv_name_str);
+		else if (default_global_address.s)
+			rcv_address_str=&default_global_address;
 		else
 			rcv_address_str=&(msg->rcv.bind_address->address_str);
 		if(msg->rcv.bind_address->adv_port_str.len)
 			rcv_port_str=&(msg->rcv.bind_address->adv_port_str);
+		else if (default_global_port.s)
+			rcv_port_str=&default_global_port;
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 
-	for (t = lumps; t; t = t->next) {
+	for (t = lumps; t && t->u.offset<(unsigned int)max_offset ; t = t->next) {
 		/* is this lump still valid? (it must not be anchored in a deleted area */
 		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
@@ -741,7 +747,8 @@ void process_lumps(	struct sip_msg* msg,
 					char* new_buf,
 					unsigned int* new_buf_offs,
 					unsigned int* orig_offs,
-					struct socket_info* send_sock)
+					struct socket_info* send_sock,
+					int max_offset)
 {
 	struct lump *t, *r;
 	char* orig;
@@ -1020,10 +1027,14 @@ void process_lumps(	struct sip_msg* msg,
 	if(msg->rcv.bind_address) {
 		if(msg->rcv.bind_address->adv_name_str.len)
 			rcv_address_str=&(msg->rcv.bind_address->adv_name_str);
+		else if (default_global_address.s)
+			rcv_address_str=&default_global_address;
 		else
 			rcv_address_str=&(msg->rcv.bind_address->address_str);
 		if(msg->rcv.bind_address->adv_port_str.len)
 			rcv_port_str=&(msg->rcv.bind_address->adv_port_str);
+		else if (default_global_port.s)
+			rcv_port_str=&default_global_port;
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
@@ -1033,7 +1044,7 @@ void process_lumps(	struct sip_msg* msg,
 	s_offset=*orig_offs;
 	last_del=0;
 
-	for (t = lumps; t; t = t->next) {
+	for (t = lumps; t && t->u.offset<(unsigned int)max_offset ; t = t->next) {
 		/* skip this lump if the "offset" is still in a "deleted" area */
 		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
@@ -1223,6 +1234,600 @@ skip_after:
 
 	*new_buf_offs = offset;
 	*orig_offs = s_offset;
+}
+
+
+/* Prepares a body to be re-assembled. This consists of the following ops:
+ *   - run the functions to build the parts (if the case)
+ *   - add SIP header lumps to change CT header 
+ *   - estimating the new len of the body (after applying all the changes)
+ * IMPORTANT: keep this function in sync with the reassemble_body_parts()
+ *    to be 100% that estimating and building the body leads to the same
+ *    result (as len).
+ */
+static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
+												struct socket_info* send_sock)
+{
+	struct body_part *part;
+	struct lump* lump;
+	struct lump* ct;
+	unsigned int size;
+	unsigned int len = 0;
+	unsigned int orig_offs;
+	char *hdr;
+
+	/* set the offset (in the original buffer) at the beginning of the body */
+	orig_offs = msg->body->part_count ? msg->body->body.s-msg->buf : msg->len ;
+
+	if (msg->body->updated_part_count==0) {
+
+		/* no body to be placed in the new msg !
+		 * simply skip the entire body */
+		LM_DBG("no part to be added\n");
+
+		/* Remove Content-Type hdr if present */
+		if (msg->content_type && msg->content_type->name.s
+		&& msg->content_type->name.len
+		&& del_lump(msg, msg->content_type->name.s- msg->buf,
+		msg->content_type->len, HDR_CONTENTTYPE_T)==0) {
+			LM_ERR("failed to add lump to delete content type header\n");
+		}
+
+	} else if (msg->body->updated_part_count==1) {
+
+		/* there is only one part to be added, so iterate
+		 * and find it */
+		LM_DBG("only one part to be added\n");
+
+		for( part=&msg->body->first ; part ; part=part->next)
+			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED)==0 ) break;
+
+		if (part==NULL) {
+			LM_BUG("updated count is 1, but no non-deleted part found :-/\n");
+			return len /* 0 */;
+		}
+
+		LM_DBG("handing part with flags %x, mime %.*s, dump function %p\n",
+			part->flags, part->mime_s.len, part->mime_s.s, part->dump_f);
+
+		if (part->dump_f) {
+			/* trigger the the dump function link the resulting buffer
+			 * as 'dump' (and to be used and freed when the body buffer
+			 * is actually built) */
+			if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
+				LM_ERR("failed to build part, inserting empty\n");
+				part->dump.s = "";
+				part->dump.len = 0;
+			} else
+				len += part->dump.len;
+		} else {
+			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
+				/* simpy copy the body of the part */
+				len += part->body.len;
+			} else {
+				/* this is one part that was received (so potentially
+				 * modified during runtime) -> apply all body lumps
+				 * inside this part */
+				orig_offs = part->body.s - msg->buf;
+				lump = msg->body_lumps;
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+					lump=lump->next;
+				if (lump) {
+					LM_DBG("lumps found in the part, applying...\n");
+					len += lumps_len( msg, lump, send_sock, 
+						part->body.s+part->body.len-msg->buf);
+				}
+				/* and copy whatever is left, all the way to the end of part */
+				len += (part->body.s+part->body.len-msg->buf)-orig_offs;
+			}
+		}
+
+		/* if the part was the only one received -> nothing to do */
+		if ( !((part->flags & SIP_BODY_PART_FLAG_NEW)==0
+		&& msg->body->part_count==1) ) {
+			/* replace the Content-Type hdr */
+			if (msg->content_type)
+				ct = del_lump(msg, msg->content_type->name.s-msg->buf,
+					msg->content_type->len, HDR_CONTENTTYPE_T);
+			else
+				ct = anchor_lump(msg, msg->unparsed - msg->buf,
+					HDR_CONTENTTYPE_T);
+			if (ct==NULL) {
+				LM_ERR("failed to remove old CT / create anchor\n");
+			} else {
+				hdr = (char*)pkg_malloc( 14 + part->mime_s.len +CRLF_LEN );
+				if (hdr==NULL) {
+					LM_ERR("failed to allocate new ct hdr\n");
+				} else {
+					memcpy( hdr, "Content-Type: ", 14);
+					memcpy( hdr+14, part->mime_s.s, part->mime_s.len);
+					memcpy( hdr+14+part->mime_s.len, CRLF, CRLF_LEN);
+					if (insert_new_lump_before(ct, hdr,
+					14+part->mime_s.len+CRLF_LEN, HDR_CONTENTTYPE_T) == NULL) {
+						LM_ERR("failed to create insert lump\n");
+						pkg_free(hdr);
+					}
+				}
+			}
+		}
+
+	} else if (msg->body->part_count<2) {
+
+		/* transition from 0/1 to multiple parts,
+		 * so we need to add boundries */
+
+		LM_DBG("transition from 0/1 parts to multi part body\n");
+		lump = msg->body_lumps;
+
+		for( part=&msg->body->first ; part ; part=part->next) {
+
+			LM_DBG("handing part with flags %x, mime %.*s, dump function %p\n",
+				part->flags, part->mime_s.len, part->mime_s.s, part->dump_f);
+
+			/* skip deleted parts */
+			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
+				if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
+					/* reposition at the end of the skipped body */
+					orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+				continue;
+			}
+
+			/* separator and CT header */
+			len += 2 /* "--" */ + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN +
+			 14/* "Content-Type: " */ + part->mime_s.len +
+			 CRLF_LEN + CRLF_LEN ;
+
+			/* part with dump function ? */
+			if (part->dump_f) {
+				if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
+					LM_ERR("failed to build part, inserting empty\n");
+					part->dump.s = "";
+					part->dump.len = 0;
+				} else
+					len += part->dump.len;
+				len += CRLF_LEN;
+			} else
+			/* new part with body attached */
+			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
+				/* simpy copy the body of the part */
+				len += part->body.len;
+				len += CRLF_LEN;
+			} else
+			/* old part with lumps */
+			{
+				/* first find the first lump inside our body part */
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+					lump=lump->next;
+				if (lump) {
+					LM_DBG("lumps found in the part, applying...\n");
+					/* apply the lumps */
+					len += lumps_len( msg, lump, send_sock,
+						part->body.s+part->body.len-msg->buf);
+				}
+				/* and copy whatever is left, all the way to the end of part */
+				size = (part->body.s+part->body.len-msg->buf)-orig_offs;
+				len += size + CRLF_LEN;
+			}
+
+			/* reposition at the end of the processed body */
+			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
+				orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+
+		} /* end for(over the parts) */
+
+		/* the final separator */
+		len += 2 /* "--" */ + sizeof(OSS_BOUNDARY)-1 + 2 /* "--" */ + CRLF_LEN;
+
+		/* replace the Content-Type hdr */
+		if (msg->content_type)
+			ct = del_lump(msg, msg->content_type->name.s-msg->buf,
+				msg->content_type->len, HDR_CONTENTTYPE_T);
+		else
+			ct = anchor_lump(msg, msg->unparsed - msg->buf,
+				HDR_CONTENTTYPE_T);
+		if (ct==NULL) {
+			LM_ERR("failed to remove old CT / create anchor\n");
+		} else {
+			/* "Content-Type: multipart/mixed;boundary=OSS_BOUNDARY CRLF" */
+			hdr = (char*)pkg_malloc( 39 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN );
+			if (hdr==NULL) {
+				LM_ERR("failed to allocate new ct hdr\n");
+			} else {
+				memcpy( hdr,
+				"Content-Type: multipart/mixed;boundary=" OSS_BOUNDARY CRLF,
+				39 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN);
+				if (insert_new_lump_before(ct, hdr,
+				39 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN,
+				HDR_CONTENTTYPE_T) == NULL) {
+					LM_ERR("failed to create insert lump\n");
+					pkg_free(hdr);
+				}
+			}
+		}
+
+	} else {
+
+		/* multi to multi parts - iterate the list, handle insert new parts,
+		 * remove old ones, and modify the kept ones (if the case) */
+
+		LM_DBG("multi to multi part body reconstruction\n");
+		lump = msg->body_lumps;
+
+		for( part=&msg->body->first ; part ; part=part->next) {
+			/* skip deleted parts */
+			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
+				if ( (part->flags & SIP_BODY_PART_FLAG_NEW) == 0 )
+					/* reposition at the end of the skipped body */
+					orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+				continue;
+			}
+
+			LM_DBG("handing part with flags %x, mime %.*s, dump function %p\n",
+				part->flags, part->mime_s.len, part->mime_s.s, part->dump_f);
+
+			/* new part ? */
+			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
+				/* separator and CT header */
+				len += 2 /* "--" */ + msg->body->boundary.len +
+					CRLF_LEN + 14 /* "Content-Type: " */ + part->mime_s.len +
+					CRLF_LEN + CRLF_LEN ;
+				/* simpy copy the body of the part */
+				if (part->dump_f) {
+					if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
+						LM_ERR("failed to build part, inserting empty\n");
+						part->dump.s = "";
+						part->dump.len = 0;
+					} else
+						len += part->dump.len;
+				} else
+					len += part->body.len;
+				len += CRLF_LEN;
+			} else
+			/* old part with dump function */
+			if (part->dump_f) {
+				/* copy separator and headers from original message */
+				len += (part->body.s - msg->buf) - orig_offs;
+				/* put in the new body */
+				if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
+					LM_ERR("failed to build part, inserting empty\n");
+					part->dump.s = "";
+					part->dump.len = 0;
+				} else
+					len += part->dump.len;
+				len += CRLF_LEN;
+				/* skip the old body */
+			} else
+			/* old part with lumps -> apply changes */
+			{
+				/* first find the first lump inside our body part
+				 * NOTE: we do not need to explicitly copy the separtor and
+				 * the headers as they will be automatically got by the 
+				 * first lup or by the final copy */
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+					lump=lump->next;
+				if (lump) {
+					LM_DBG("lumps found in the part, applying...\n");
+					/* apply the lumps */
+					len += lumps_len( msg, lump, send_sock,
+							part->body.s+part->body.len-msg->buf);
+				}
+				/* and copy whatever is left, all the way to the end of part */
+				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-orig_offs;
+				len += size;
+			}
+
+			/* reposition at the end of the processed body */
+			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
+				orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+		} /* end for(over the parts) */
+
+		/* the final separator */
+		size = msg->len - orig_offs;
+		len += size;
+
+		/* Content-Type hdr does not require changes in this case */
+	}
+
+	LM_DBG("resulting body len is %d\n",len);
+	return len;
+}
+
+
+void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
+						unsigned int* new_offs, unsigned int* orig_offs,
+						struct socket_info* send_sock)
+{
+	struct body_part *part;
+	struct lump* lump;
+	unsigned int size;
+	unsigned int offset;
+
+	if (msg->body->updated_part_count==0) {
+
+		/* no body to be placed in the new msg !
+		 * simply skip the entire body */
+		LM_DBG("no part to be added\n");
+
+	} else if (msg->body->updated_part_count==1) {
+
+		/* there is only one part to be added, so iterate
+		 * and find it */
+		LM_DBG("only one part to be added\n");
+
+		for( part=&msg->body->first ; part ; part=part->next)
+			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED)==0 ) break;
+
+		if (part==NULL) {
+			LM_BUG("updated count is 1, but no non-deleted part found :-/\n");
+			return;
+		}
+
+		LM_DBG("handing part with flags %x, mime %.*s, dump function %p\n",
+			part->flags, part->mime_s.len, part->mime_s.s, part->dump_f);
+
+		if (part->dump_f) {
+			/* the dump function was triggered when the length was computed
+			 * and the resulting buffer was linked as 'dump' (and we need
+			 * to free it now) */
+			memcpy(new_buf+*new_offs, part->dump.s, part->dump.len );
+			*new_offs += part->dump.len;
+			pkg_free(part->dump.s);
+			part->dump.s = NULL;
+			part->dump.len = 0;
+		} else {
+			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
+				/* simply copy the body of the part */
+				memcpy(new_buf+*new_offs, part->body.s, part->body.len );
+				*new_offs += part->body.len;
+			} else {
+				/* this is one part that was received (so potentially
+				 * modified during runtime) -> apply all body lumps
+				 * inside this part */
+				*orig_offs = part->body.s - msg->buf;
+				lump = msg->body_lumps;
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+					lump=lump->next;
+				if (lump) {
+					LM_DBG("lumps found in the part, applying...\n");
+					/* apply the lumps */
+					process_lumps( msg, lump, new_buf, new_offs, orig_offs,
+						send_sock, part->body.s+part->body.len-msg->buf);
+				}
+				/* and copy whatever is left, all the way to the end of part */
+				size = (part->body.s+part->body.len-msg->buf)-*orig_offs;
+				memcpy(new_buf+*new_offs, msg->buf+*orig_offs, size);
+				*new_offs += size;
+			}
+		}
+
+	} else if (msg->body->part_count<2) {
+
+		/* transition from 0/1 to multiple parts,
+		 * so we need to add boundries */
+
+		LM_DBG("transition from 0/1 parts to multi part body\n");
+		offset = *new_offs;
+		lump = msg->body_lumps;
+
+		for( part=&msg->body->first ; part ; part=part->next) {
+
+			LM_DBG("handing part with flags %x, mime %.*s, dump function %p\n",
+				part->flags, part->mime_s.len, part->mime_s.s, part->dump_f);
+
+			/* skip deleted parts */
+			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
+				if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
+					/* reposition at the end of the skipped body */
+					*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+				continue;
+			}
+
+			/* separator and CT header */
+			memcpy(new_buf+offset, "--" OSS_BOUNDARY CRLF "Content-Type: ",
+				2 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN + 14);
+			offset += 2 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN + 14;
+			memcpy(new_buf+offset, part->mime_s.s , part->mime_s.len);
+			offset += part->mime_s.len;
+			memcpy(new_buf+offset, CRLF CRLF , CRLF_LEN+CRLF_LEN);
+			offset += CRLF_LEN + CRLF_LEN ;
+
+			/* part with dump function ? */
+			if (part->dump_f) {
+				memcpy(new_buf+offset, part->dump.s, part->dump.len );
+				offset += part->dump.len;
+				pkg_free(part->dump.s);
+				part->dump.s = NULL;
+				part->dump.len = 0;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+			} else
+			/* new part with body attached */
+			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
+				/* simpy copy the body of the part */
+				memcpy(new_buf+offset, part->body.s, part->body.len );
+				offset += part->body.len;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+			} else
+			/* old part with lumps */
+			{
+				/* first find the first lump inside our body part */
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+					lump=lump->next;
+				if (lump) {
+					LM_DBG("lumps found in the part, applying...\n");
+					/* apply the lumps */
+					process_lumps( msg, lump, new_buf, &offset, orig_offs,
+						send_sock, part->body.s+part->body.len-msg->buf);
+				}
+				/* and copy whatever is left, all the way to the end of part */
+				size = (part->body.s+part->body.len-msg->buf)-*orig_offs;
+				memcpy(new_buf+offset, msg->buf+*orig_offs, size);
+				offset += size;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+			}
+
+			/* reposition at the end of the processed body */
+			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
+				*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN ;
+
+		} /* end for(over the parts) */
+
+		/* the final separator */
+		memcpy(new_buf+offset, "--" OSS_BOUNDARY "--" CRLF,
+			2 + sizeof(OSS_BOUNDARY)-1 + 2 + CRLF_LEN);
+		offset += 2 + sizeof(OSS_BOUNDARY)-1 + 2 + CRLF_LEN;
+
+		/*done here !!*/
+		*new_offs = offset;
+
+	} else {
+
+		/* multi to multi parts - iterate the list, handle insert new parts,
+		 * remove old ones, and modify the kept ones (if the case) */
+		LM_DBG("multi to multi part body reconstruction\n");
+
+		offset = *new_offs;
+		lump = msg->body_lumps;
+		for( part=&msg->body->first ; part ; part=part->next) {
+			/* skip deleted parts */
+			if ( (part->flags & SIP_BODY_PART_FLAG_DELETED) ) {
+				if ( (part->flags & SIP_BODY_PART_FLAG_NEW) == 0 )
+					/* reposition at the end of the skipped body */
+					*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+				continue;
+			}
+
+			LM_DBG("handing part with flags %x, mime %.*s, dump function %p\n",
+				part->flags, part->mime_s.len, part->mime_s.s, part->dump_f);
+
+			/* new part ? */
+			if ( part->flags & SIP_BODY_PART_FLAG_NEW ) {
+				/* separator and CT header */
+				memcpy(new_buf+offset, "--" , 2);
+				offset += 2;
+				memcpy(new_buf+offset, msg->body->boundary.s , msg->body->boundary.len);
+				offset += msg->body->boundary.len;
+				memcpy(new_buf+offset, CRLF "Content-Type: " , CRLF_LEN+14);
+				offset += CRLF_LEN + 14 ;
+				memcpy(new_buf+offset, part->mime_s.s , part->mime_s.len);
+				offset += part->mime_s.len;
+				memcpy(new_buf+offset, CRLF CRLF , CRLF_LEN+CRLF_LEN);
+				offset += CRLF_LEN + CRLF_LEN ;
+				/* simpy copy the body of the part */
+				if (part->dump_f) {
+					memcpy(new_buf+offset, part->dump.s, part->dump.len );
+					offset += part->dump.len;
+					part->dump.s = NULL;
+					part->dump.len = 0;
+				} else {
+					memcpy(new_buf+offset, part->body.s, part->body.len );
+					offset += part->body.len;
+				}
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+			} else
+			/* old part with dump function */
+			if (part->dump_f) {
+				/* copy separator and headers from original message */
+				size = (part->body.s - msg->buf) - *orig_offs;
+				memcpy( new_buf+offset,  msg->buf+*orig_offs, size);
+				offset += size;
+				/* put in the new body */
+				memcpy(new_buf+offset, part->dump.s, part->dump.len );
+				offset += part->dump.len;
+				pkg_free(part->dump.s);
+				part->dump.s = NULL;
+				part->dump.len = 0;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+			} else
+			/* old part with lumps -> apply changes */
+			{
+				/* first find the first lump inside our body part
+				 * NOTE: we do not need to explicitly copy the separtor and
+				 * the headers as they will be automatically got by the 
+				 * first lup or by the final copy */
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
+					lump=lump->next;
+				if (lump) {
+					LM_DBG("lumps found in the part, applying...\n");
+					/* apply the lumps */
+					process_lumps( msg, lump, new_buf, &offset, orig_offs,
+						send_sock, part->body.s+part->body.len-msg->buf);
+				}
+				/* and copy whatever is left, all the way to the end of part,
+				 * including the next CRLF */
+				size = (part->body.s+part->body.len-msg->buf+CRLF_LEN)-*orig_offs;
+				memcpy(new_buf+offset, msg->buf+*orig_offs, size);
+				offset += size;
+			}
+
+			/* reposition at the end of the processed body */
+			if ((part->flags & SIP_BODY_PART_FLAG_NEW) == 0)
+				*orig_offs = part->body.s+part->body.len-msg->buf+CRLF_LEN;
+
+		} /* end for(over the parts) */
+
+		/* the final separator */
+		size = msg->len - *orig_offs;
+		memcpy(new_buf+offset, msg->buf+*orig_offs , size);
+		*new_offs = offset + size;
+		*orig_offs += size;
+
+	}
+	return;
+}
+
+
+/* Calculated the body difference in lenght after applying
+ *   all the changes (over the sip body) !
+ * This is a wrapper to hide the differences between 
+ *   lump-based changes and body_part-based changes.
+ */
+static inline int calculate_body_diff(struct sip_msg *msg,
+													struct socket_info *sock )
+{
+	if (msg->body==NULL) {
+		return lumps_len(msg, msg->body_lumps, sock, -1);
+	} else {
+		return ((int)prep_reassemble_body_parts( msg, sock) - msg->body->body.len);
+	}
+}
+
+
+/* Writes down the new SIP message buffer (SIP headers and body) after
+ *   after applying all the changes (over SIP hdrs and SIP body) !
+ * This is a wrapper to hide the differences between 
+ *   lump-based changes and body_part-based changes.
+ */
+static inline void apply_msg_changes(struct sip_msg *msg,
+							char *new_buf, unsigned int *new_offs,
+							unsigned int *orig_offs, struct socket_info *sock)
+{
+	unsigned int size;
+
+	/* apply changes over the SIP headers */
+	process_lumps(msg, msg->add_rm, new_buf, new_offs, orig_offs, sock, -1);
+	if (msg->body==NULL) {
+		/* no parsed body, no advanced ops done, just dummy lumps over body */
+		process_lumps(msg, msg->body_lumps, new_buf, new_offs,
+			orig_offs, sock, -1);
+		/* copy the rest of the message */
+		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, msg->len-*orig_offs);
+		*new_offs += msg->len-*orig_offs;
+	} else {
+		/* copy whatever is left in the original buffer (up to the body) */
+		size = (msg->body->part_count) ?
+			  ((msg->body->body.s - msg->buf) - *orig_offs) /* msg had body */
+			: (msg->len - *orig_offs);                      /* no body */
+		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, size );
+		*new_offs += size;
+		*orig_offs += size;
+		/* rebuild the body, part by part, in a content wise manner */
+		reassemble_body_parts(msg, new_buf, new_offs, orig_offs, sock);
+	}
 }
 
 
@@ -1436,7 +2041,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	/* Calculate message body difference and adjust
 	 * Content-Length
 	 */
-	body_delta = lumps_len(msg, msg->body_lumps, send_sock);
+	body_delta = calculate_body_diff( msg, send_sock);
 	if (adjust_clen(msg, body_delta, proto) < 0) {
 		LM_ERR("failed to adjust Content-Length\n");
 		goto error;
@@ -1571,7 +2176,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 build_msg:
 	/* compute new msg len and fix overlapping zones*/
-	new_len=len+body_delta+lumps_len(msg, msg->add_rm, send_sock);
+	new_len=len+body_delta+lumps_len(msg, msg->add_rm, send_sock,-1);
 #ifdef XL_DEBUG
 	LM_DBG("new_len(%d)=len(%d)+lumps_len\n", new_len, len);
 #endif
@@ -1602,12 +2207,14 @@ build_msg:
 		offset+=uri_len;
 		s_offset+=msg->first_line.u.request.uri.len; /* skip original uri */
 	}
-	new_buf[new_len]=0;
-	/* copy msg adding/removing lumps */
-	process_lumps(msg, msg->add_rm, new_buf, &offset, &s_offset, send_sock);
-	process_lumps(msg, msg->body_lumps, new_buf, &offset, &s_offset,send_sock);
-	/* copy the rest of the message */
-	memcpy(new_buf+offset, buf+s_offset, len-s_offset);
+
+	/* apply changes over SIP hdrs and body */
+	apply_msg_changes( msg, new_buf, &offset, &s_offset, send_sock);
+	if (offset!=new_len) {
+		LM_BUG("len mistmatch : calculated %d, written %d\n", new_len, offset);
+		abort();
+	}
+
 	new_buf[new_len]=0;
 
 	*returned_len=new_len;
@@ -1644,7 +2251,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	/* Calculate message body difference and adjust
 	 * Content-Length
 	 */
-	body_delta = lumps_len(msg, msg->body_lumps, 0);
+	body_delta = calculate_body_diff( msg, sock);
 	if (adjust_clen(msg, body_delta, (msg->via2? msg->via2->proto:PROTO_UDP))
 			< 0) {
 		LM_ERR("failed to adjust Content-Length\n");
@@ -1669,7 +2276,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		}
 	}
 
-	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock);
+	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock, -1);
 
 	LM_DBG(" old size: %d, new size: %d\n", len, new_len);
 	new_buf=(char*)pkg_malloc(new_len+1); /* +1 is for debugging
@@ -1678,15 +2285,17 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		LM_ERR("out of pkg mem\n");
 		goto error;
 	}
-	new_buf[new_len]=0; /* debug: print the message */
 	offset=s_offset=0;
 
-	process_lumps(msg, msg->add_rm, new_buf, &offset, &s_offset, sock);
-	process_lumps(msg, msg->body_lumps, new_buf, &offset, &s_offset, sock);
-	/* copy the rest of the message */
-	memcpy(new_buf+offset,
-		buf+s_offset,
-		len-s_offset);
+	/* apply changes over SIP hdrs and body */
+	apply_msg_changes( msg, new_buf, &offset, &s_offset, sock);
+	if (offset!=new_len) {
+		LM_BUG("len mistmatch : calculated %d, written %d\n", new_len, offset);
+		abort();
+	}
+
+	new_buf[new_len]=0; /* debug: print the message */
+
 	/* as it is a relaied reply, if 503, make it 500 (just reply code) */
 	if ( !disable_503_translation && msg->first_line.u.reply.statuscode==503 )
 		new_buf[(int)(msg->first_line.u.reply.status.s-msg->buf)+2] = '0';
@@ -1705,12 +2314,14 @@ error:
 char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 		struct sip_msg* msg, unsigned int *returned_len, struct bookmark *bmark)
 {
-	char              *buf, *p, *received_buf, *rport_buf, *warning_buf, *content_len_buf, *after_body, *totags;
-	unsigned int      len, foo, received_len, rport_len, warning_len, content_len_len;
-	struct hdr_field  *hdr;
-	struct lump_rpl   *lump, *body;
-	int               i;
-	str  to_tag;
+	char *buf, *p, *received_buf, *rport_buf, *warning_buf;
+	char *content_len_buf, *after_body, *totags;
+	unsigned int len, foo, received_len, rport_len;
+	unsigned int warning_len, content_len_len;
+	struct hdr_field *hdr;
+	struct lump_rpl *lump, *body;
+	int i;
+	str to_tag;
 
 	body = 0;
 	buf=0;

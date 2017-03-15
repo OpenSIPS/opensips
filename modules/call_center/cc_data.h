@@ -227,7 +227,7 @@ void clean_cc_old_data(struct cc_data *data);
 
 void clean_cc_unref_data(struct cc_data *data);
 
-void cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top);
+int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top);
 
 struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
 		struct cc_agent *agent);

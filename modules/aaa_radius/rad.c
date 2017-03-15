@@ -348,7 +348,8 @@ int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 				map->value = val_result->value;
 				return 0;
 			}
-			return 1;
+			/* not found */
+			return -1;
 		case AAA_DICT_FIND_ATTR:
 			attr_result = rc_dict_findattr(rh, map->name);
 			if (attr_result) {
@@ -356,14 +357,18 @@ int rad_find(aaa_conn* rh, aaa_map *map, int flag) {
 				map->type = attr_result->type;
 				return 0;
 			}
-			return 1;
+
+			/* not found */
+			return -1;
 		case AAA_DICT_FIND_VEND:
 			vend_result = rc_dict_findvend(rh, map->name);
 			if (vend_result) {
 				map->value = vend_result->vendorpec;
 				return 0;
 			}
-			return 1;
+
+			/* not found */
+			return -1;
 	}
 
 	LM_ERR("failure\n");

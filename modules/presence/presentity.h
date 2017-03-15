@@ -75,5 +75,7 @@ typedef int (*pres_contains_presence_t)(str* pres_uri);
 int get_dialog_state(str body, int *dialog_state);
 str* xml_dialog_gen_presence(str* pres_uri, int dlg_state);
 
+int pres_expose_evi(pres_ev_t *ev, str *filter);
+
 #endif
 

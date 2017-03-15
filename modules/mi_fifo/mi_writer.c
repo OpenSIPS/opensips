@@ -139,10 +139,18 @@ static inline int mi_write_node(str *buf, struct mi_node *node, int level)
 static int recur_write_tree(FILE *stream, struct mi_node *tree, str *buf,
 																	int level)
 {
+	str rpl_msg, reason=str_init("OK");
+
 	for( ; tree ; tree=tree->next ) {
 		if (!(tree->flags & MI_WRITTEN)) {
 			if (mi_write_node( buf, tree, level)!=0) {
 				/* buffer is full -> write it and reset buffer */
+				if ( t_dst ) {
+					rpl_msg.s = mi_write_buffer;
+					rpl_msg.len = buf->s - mi_write_buffer;
+					mi_trace_reply( 0, 0, 200, &reason, &rpl_msg, t_dst);
+				}
+
 				if (mi_fifo_reply( stream,"%.*s", buf->s-mi_write_buffer,
 				mi_write_buffer)!=0)
 					return -1;
@@ -164,10 +172,11 @@ static int recur_write_tree(FILE *stream, struct mi_node *tree, str *buf,
 
 
 
-int mi_write_tree(FILE *stream, struct mi_root *tree)
+int mi_write_tree(FILE *stream, struct mi_root *tree, int cmd_is_traced)
 {
 	str buf;
 	str code;
+	str rpl_msg;
 
 	buf.s = mi_write_buffer;
 	buf.len = mi_write_buffer_len;
@@ -200,6 +209,12 @@ int mi_write_tree(FILE *stream, struct mi_root *tree)
 	*(buf.s++)='\n';
 	buf.len--;
 
+	if ( cmd_is_traced && t_dst ) {
+		rpl_msg.s = mi_write_buffer;
+		rpl_msg.len = buf.s - mi_write_buffer;
+		mi_trace_reply( 0, 0, tree->code, &tree->reason, &rpl_msg, t_dst);
+	}
+
 	if (mi_fifo_reply(stream,"%.*s",buf.s-mi_write_buffer,mi_write_buffer)!=0)
 		return -1;
 
@@ -214,11 +229,19 @@ static int recur_flush_tree(FILE *stream, struct mi_node *tree, str *buf,
 	struct mi_node *kid, *tmp;
 	int ret;
 
+	str rpl_msg, reason=str_init("OK");
+
 	for(kid = tree->kids ; kid ; ){
 		/* write the current kid */
 		if (!(kid->flags & MI_WRITTEN)){
 			if (mi_write_node( buf, kid, level)!=0) {
 				/* buffer is full -> write it and reset buffer */
+				if ( t_dst ) {
+					rpl_msg.s = mi_write_buffer;
+					rpl_msg.len = buf->s - mi_write_buffer;
+					mi_trace_reply( 0, 0, 200, &reason, &rpl_msg, t_dst);
+				}
+
 				if (mi_fifo_reply( stream,"%.*s", buf->s-mi_write_buffer,
 					mi_write_buffer)!=0)
 					return -1;
@@ -267,6 +290,7 @@ int mi_flush_tree(FILE *stream, struct mi_root *tree)
 {
 	str buf;
 	str code;
+	str rpl_msg;
 
 	buf.s = mi_write_buffer;
 	buf.len = mi_write_buffer_len;
@@ -302,6 +326,12 @@ int mi_flush_tree(FILE *stream, struct mi_root *tree)
 	}
 	*(buf.s++)='\n';
 	buf.len--;
+
+	if ( t_dst ) {
+		rpl_msg.s = mi_write_buffer;
+		rpl_msg.len = buf.s - mi_write_buffer;
+		mi_trace_reply( 0, 0, tree->code, &tree->reason, &rpl_msg, t_dst);
+	}
 
 	if (mi_fifo_reply(stream,"%.*s",buf.s-mi_write_buffer,mi_write_buffer)!=0)
 		return -1;

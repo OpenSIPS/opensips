@@ -689,13 +689,13 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow, str *dn,
 	p = (char*)(call+1);
 
 	/*copy DisplayName and UserName */
-	if (dn) {
+	if (dn && dn->s) {
 		call->caller_dn.s = p;
 		call->caller_dn.len = dn->len;
 		memcpy( p, dn->s, dn->len );
 		p += dn->len;
 	}
-	if (un) {
+	if (un && un->s) {
 		call->caller_un.s = p;
 		call->caller_un.len = un->len;
 		memcpy( p, un->s, un->len );
@@ -915,7 +915,7 @@ void print_queue(struct cc_data *data)
 }
 
 
-void cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
+int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 {
 	struct cc_call *call_it;
 	int n = 0;
@@ -971,6 +971,8 @@ void cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 
 	if (call->queue_start==0)
 		call->queue_start = get_ticks();
+
+	return data->queue.calls_no-1-n;
 }
 
 

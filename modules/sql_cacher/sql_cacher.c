@@ -638,7 +638,7 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		return NULL;
 	}
-	/* setting and geting a test key in cachedb */
+	/* setting and getting a test key in cachedb */
 	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val, 0) < 0) {
 		LM_ERR("Failed to set test key in cachedb: %.*s\n",
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
@@ -845,7 +845,7 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_
 	}
 
 	if (RES_ROW_N(*sql_res) == 0) {
-		LM_WARN("key %.*s not found in SQL db\n", key.len, key.s);
+		LM_DBG("key %.*s not found in SQL db\n", key.len, key.s);
 		null_val.len = 0;
 		null_val.s = NULL;
 		if (db_hdls->cdbf.set(db_hdls->cdbcon, &src_key, &null_val, c_entry->expire) < 0) {
@@ -1617,7 +1617,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 
 	if (!pv_name->c_entry->on_demand) {
 		if (rc == -2) {
-			LM_WARN("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+			LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 			lock_stop_read(pv_name->c_entry->ref_lock);
 			return pv_get_null(msg, param, res);
 		} else {
@@ -1631,11 +1631,11 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			if (rc2 == -1)
 				return pv_get_null(msg, param, res);
 			if (rc2 == -2) {
-				LM_WARN("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+				LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 				return pv_get_null(msg, param, res);
 			}
 			if (rc2 == 1) {
-				LM_WARN("NULL value in SQL db\n");
+				LM_DBG("NULL value in SQL db\n");
 				return pv_get_null(msg, param, res);
 			}
 		}
@@ -1645,12 +1645,12 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			if (rc2 == -1 || rc2 == -2)
 				return pv_get_null(msg, param, res);
 			if (rc2 == 1) {
-				LM_WARN("NULL value in SQL db\n");
+				LM_DBG("NULL value in SQL db\n");
 				return pv_get_null(msg, param, res);
 			}
 		} else {
 			if (!cdb_res.len || !cdb_res.s) {
-				LM_WARN("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+				LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 				return pv_get_null(msg, param, res);
 			}
 
@@ -1661,7 +1661,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			if (rc2 == -1)
 				return pv_get_null(msg, param, res);
 			if (rc2 == 1) {
-				LM_WARN("NULL value in SQL db\n");
+				LM_DBG("NULL value in SQL db\n");
 				return pv_get_null(msg, param, res);
 			}
 		}

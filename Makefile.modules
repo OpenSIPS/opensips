@@ -33,6 +33,22 @@ ALLDEP+=../../Makefile ../../Makefile.defs
 
 endif
 
+ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
+MEM_STATS_HDR = ../../mem/mem_stats.h
+ALLDEP += $(MEM_STATS_HDR)
+ifeq ($(OS), freebsd)
+	md5sum_cmd = md5
+else
+	md5sum_cmd = md5sum
+endif
+EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
+MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -name "[Mm]akefile" | \
+			awk -F/ '{print $$(NF - 1)}' | sort | $(md5sum_cmd) | awk '{print $$1}')
+ifneq ($(EXPECTED_MD5),$(MODULES_MD5))
+REGENERATE_MEM_STATS=remove-mem-stats
+endif
+endif
+
 include ../../Makefile.sources
 
 ifeq (,$(filter $(MOD_NAME), $(static_modules)))

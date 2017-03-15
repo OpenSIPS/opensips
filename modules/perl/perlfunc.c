@@ -108,7 +108,7 @@ int perl_parse_params(struct sip_msg *msg, char *fnc, char *prm,
 	}
 
 	if (prm && pprm && pv_printf_s(msg, (pv_elem_p)prm, pprm)!=0) {
-		LM_ERR("invalid function paramters given!\n");
+		LM_ERR("invalid function parameters given!\n");
 		return -1;
 	}
 

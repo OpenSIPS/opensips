@@ -70,13 +70,24 @@
 #include "ds_fixups.h"
 #include "ds_bl.h"
 
-#define DS_TABLE_VERSION	7
+#define DS_TABLE_VERSION	8
+
+/**
+ * in version 8, the "weight" column is given as a string, since it can contain
+ * both integer (the weight) or URL definitions (dynamically calculated weight)
+ *
+ * OpenSIPS retains backwards-compatibility with the former integer column flavor
+ */
+#define supported_ds_version(_ver) \
+	(DS_TABLE_VERSION == 8 ? (_ver == 8 || _ver == 7) : _ver == DS_TABLE_VERSION)
 
 extern ds_partition_t *partitions;
 
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 extern ds_partition_t *default_partition;
+
+struct fs_binds fs_api;
 
 #define dst_is_active(_dst) \
 	(!((_dst).flags&(DS_INACTIVE_DST|DS_PROBING_DST)))
@@ -108,6 +119,7 @@ static void ds_destroy_data_set( ds_data_t *d)
 	ds_set_p  sp;
 	ds_set_p  sp_curr;
 	ds_dest_p dest;
+	str ds_str = {MI_SSTR("dispatcher")};
 
 	/* free the list of sets */
 	sp = d->sets;
@@ -122,6 +134,8 @@ static void ds_destroy_data_set( ds_data_t *d)
 					shm_free(dest->uri.s);
 				if(dest->param)
 					shm_free(dest->param);
+				if (dest->fs_sock)
+					fs_api.del_hb_evs(dest->fs_sock, &ds_str);
 				dest = dest->next;
 			}while(dest);
 			shm_free(sp_curr->dlist);
@@ -148,7 +162,7 @@ void ds_destroy_data(ds_partition_t *partition)
 }
 
 
-int add_dest2list(int id, str uri, struct socket_info *sock, int state,
+int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int state,
 							int weight, int prio, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
@@ -156,6 +170,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	short new_set = 0;
 	ds_dest_p dp_it, dp_prev;
 	struct sip_uri puri;
+	str ds_str = {MI_SSTR("dispatcher")};
 
 	/* For DNS-Lookups */
 	struct proxy_l *proxy;
@@ -301,6 +316,33 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	free_proxy(proxy);
 	pkg_free(proxy);
 
+	if (fetch_freeswitch_stats) {
+		if (comsock->s && comsock->len > 0) {
+			dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+			if (!dp->fs_sock) {
+				LM_ERR("failed to create FreeSWITCH stats socket!\n");
+			} else {
+				dp->weight = max_freeswitch_weight;
+				if (sp->redo_weights == 0) {
+					for (dp_it = sp->dlist; dp_it; dp_it = dp_it->next) {
+						if (dp_it->weight > max_freeswitch_weight) {
+							LM_WARN("(set %d) truncating static weight in "
+						     "uri %.*s to 'max_freeswitch_weight'! (%d->%d)\n",
+							 id, uri.len, uri.s, dp_it->weight, max_freeswitch_weight);
+							dp_it->weight = max_freeswitch_weight;
+						}
+					}
+					sp->redo_weights = 1;
+				}
+			}
+		} else if (sp->redo_weights && dp->weight > max_freeswitch_weight) {
+			LM_WARN("(set %d) truncating static weight in uri %.*s to"
+			           "\"max_freeswitch_weight\"! (%d -> %d)\n", id,
+			           uri.len, uri.s, weight, max_freeswitch_weight);
+			dp->weight = max_freeswitch_weight;
+		}
+	}
+
 	/*
 	 * search the proper place based on priority
 	 * put them in reverse order, since they will be reindexed
@@ -317,7 +359,6 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		dp_prev->next = dp;
 	}
 	sp->nr++;
-
 
 	if (new_set) {
 		sp->next = d_data->sets;
@@ -351,26 +392,45 @@ err:
 static inline void re_calculate_active_dsts(ds_set_p sp)
 {
 	int j,i;
+	ds_dest_p dst;
+	int oldw;
 
 	/* pre-calculate the running weights for each destination */
 	for( j=0,i=-1,sp->active_nr=sp->nr ; j<sp->nr ; j++ ) {
+		dst = &sp->dlist[j];
+		if (dst->fs_sock && dst->fs_sock->hb_data.is_valid) {
+			lock_start_read(dst->fs_sock->hb_data_lk);
+
+			oldw = dst->weight;
+			dst->weight = round(max_freeswitch_weight *
+			(1 - dst->fs_sock->hb_data.sess /
+			     (float)dst->fs_sock->hb_data.max_sess) *
+			(dst->fs_sock->hb_data.id_cpu / (float)100));
+
+			LM_DBG("weight update for %.*s: %d -> %d (%d %d %.3f)\n",
+			       dst->uri.len, dst->uri.s, oldw, dst->weight,
+				   dst->fs_sock->hb_data.sess, dst->fs_sock->hb_data.max_sess,
+				   dst->fs_sock->hb_data.id_cpu);
+
+			lock_stop_read(dst->fs_sock->hb_data_lk);
+		}
+
 		/* running weight is the current weight plus the running weight of
 		 * the previous element */
-		sp->dlist[j].running_weight = sp->dlist[j].weight
+		dst->running_weight = dst->weight
 			+ ((j==0) ? 0 : sp->dlist[j-1].running_weight);
 		/* now the running weight for the active destinations */
-		if ( dst_is_active(sp->dlist[j]) ) {
-			sp->dlist[j].active_running_weight = sp->dlist[j].weight
+		if ( dst_is_active(*dst)) {
+			dst->active_running_weight = dst->weight
 				+ ((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			i = j; /* last active destination */
 		} else {
-			sp->dlist[j].active_running_weight =
+			dst->active_running_weight =
 				((i==-1) ? 0 : sp->dlist[i].active_running_weight);
 			sp->active_nr --;
 		}
 		LM_DBG("destination i=%d, j=%d, weight=%d, sum=%d, active_sum=%d\n",
-			i,j, sp->dlist[j].weight,
-			sp->dlist[j].running_weight,sp->dlist[j].active_running_weight);
+			i,j, dst->weight, dst->running_weight, dst->active_running_weight);
 	}
 }
 
@@ -623,7 +683,7 @@ int init_ds_db(ds_partition_t *partition)
 	if (_ds_table_version < 0) {
 		LM_ERR("failed to query table version\n");
 		return -1;
-	} else if (_ds_table_version != DS_TABLE_VERSION) {
+	} else if (!supported_ds_version(_ds_table_version)) {
 		LM_ERR("invalid table version (found %d , required %d)\n"
 			"(use opensipsdbctl reinit)\n",
 			_ds_table_version, DS_TABLE_VERSION );
@@ -638,6 +698,7 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 {
 	ds_set_p new_set, old_set;
 	ds_dest_p new_ds, old_ds;
+	int changed;
 
 	/* search the new sets through the old sets */
 	for ( new_set=new_data->sets ; new_set ; new_set=new_set->next ) {
@@ -650,6 +711,7 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 			continue;
 		}
 		LM_DBG("set id %d found in old sets\n",new_set->id);
+		changed = 0;
 
 		/* sets are matching, try to match the destinations, one by one */
 		for ( new_ds=new_set->dlist ; new_ds ; new_ds=new_ds->next ) {
@@ -658,7 +720,10 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 				strncasecmp(new_ds->uri.s, old_ds->uri.s, old_ds->uri.len)==0 ) {
 					LM_DBG("DST <%.*s> found in old set, copying state\n",
 						new_ds->uri.len,new_ds->uri.s);
-					new_ds->flags = old_ds->flags;
+					if (new_ds->flags != old_ds->flags) {
+						new_ds->flags = old_ds->flags;
+						changed = 1;
+					}
 					break;
 				}
 			}
@@ -666,6 +731,8 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 				LM_DBG("DST <%.*s> not found in old set\n",
 					new_ds->uri.len,new_ds->uri.s);
 		}
+		if (changed)
+			re_calculate_active_dsts(new_set);
 	}
 }
 
@@ -749,7 +816,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	int prio;
 	struct socket_info *sock;
 	str uri;
-	str attrs;
+	str attrs, weight_st;
 	str host;
 	str description;
 	int port, proto;
@@ -833,11 +900,21 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			sock = NULL;
 		}
 
+		weight = 1;
+
 		/* weight */
-		if (VAL_NULL(values+3))
-			weight = 1;
-		else
+		if (values[3].type == DB_INT) {
 			weight = VAL_INT(values+3);
+			memset(&weight_st, 0, sizeof weight_st);
+		} else {
+			/* dynamic weight, given as a communication socket string */
+			get_str_from_dbval("WEIGHT", values+3,
+			                   0/*not_null*/, 0/*not_empty*/, weight_st, error2);
+			if (!is_fs_url(&weight_st)) {
+				str2int(&weight_st, (unsigned int *)&weight);
+				memset(&weight_st, 0, sizeof weight_st);
+			}
+		}
 
 		/* attrs */
 		get_str_from_dbval( "ATTRIBUTES", values+4,
@@ -856,10 +933,10 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		else
 			state = VAL_INT(values+7);
 
-		get_str_from_dbval( "DESCIPTION", values+6,
+		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);
 
-		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, description, d_data)
+		if (add_dest2list(id, uri, sock, &weight_st, state, weight, prio, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
@@ -1300,6 +1377,8 @@ int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock,
 	uri_type utype;
 	int typelen;
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	switch(mode)
 	{
 		case 1:
@@ -1356,7 +1435,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	int_str avp_val;
 
-	avp_val.s.len = 1 + snprintf( buf, PTR_STR_SIZE, "%p", ds->sock );
+	avp_val.s.len = snprintf( buf, PTR_STR_SIZE, "%p", ds->sock );
 	avp_val.s.s = buf;
 	if(add_avp(AVP_VAL_STR| partition->sock_avp_type,
 				partition->sock_avp_name, avp_val)!=0) {
@@ -1568,6 +1647,11 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 				for( ds_id=0 ; ds_id<set_size ; ds_id++ )
 					if (ds_rand<idx->dlist[ds_id].running_weight)
 						break;
+				if (ds_id==set_size) {
+					LM_CRIT("BUG - no node found with weight %d in set %d\n",
+						ds_rand,idx->id);
+					goto error;
+				}
 			} else {
 				/* get a candidate simply based on hash */
 				ds_id = ds_hash % set_size;
@@ -1599,12 +1683,22 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 							if ( dst_is_active(idx->dlist[i]) &&
 							(ds_rand<idx->dlist[i].active_running_weight) )
 								break;
+						if (i==set_size) {
+							LM_CRIT("BUG - no active node found with "
+								"weight %d in set %d\n",ds_rand,idx->id);
+							goto error;
+						}
 					} else {
 						j = ds_hash % cnt;
 						/* translate this index to the full set of dsts */
 						for ( i=0 ; i<set_size ; i++ ) {
 							if ( dst_is_active(idx->dlist[i]) ) j--;
 							if (j<0) break;
+						}
+						if (i==set_size) {
+							LM_CRIT("BUG - no active node found with "
+								"in set %d\n",idx->id);
+							goto error;
 						}
 					}
 				}
@@ -1659,13 +1753,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 		LM_ERR("cannot set selected_dst uri\n");
 		goto error;
 	}
-	if (selected->sock) {
-		selected_dst->socket.len = 1 +
-		snprintf( selected_dst->socket.s, PTR_STR_SIZE, "%p", selected->sock );
-	}
-	else {
-		selected_dst->socket.len = 0;
-	}
+	selected_dst->socket = selected->sock;
 
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n",
 		ds_select_ctl->alg, ds_select_ctl->set, ds_id,
@@ -2269,10 +2357,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 			for(j=0; j<list->nr; j++)
 			{
 				/* If list is probed by this proxy and the Flag of
-                                 * the entry has "Probing" set, send a probe:
-                                 */
+				 * the entry has "Probing" set, send a probe: */
 				if ( (!ds_probing_list || in_int_list(ds_probing_list, list->id)==0) &&
-                                ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
+				((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
 				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
 				))
 				{
@@ -2282,13 +2369,18 @@ void ds_check_timer(unsigned int ticks, void* param)
 					/* Execute the Dialog using the "request"-Method of the
 					 * TM-Module.*/
 					if (tmb.new_auto_dlg_uac(&ds_ping_from,
-					&list->dlist[j].uri,
+					&list->dlist[j].uri, NULL, NULL,
 					list->dlist[j].sock?list->dlist[j].sock:probing_sock,
 					&dlg) != 0 ) {
 						LM_ERR("failed to create new TM dlg\n");
 						continue;
 					}
 					dlg->state = DLG_CONFIRMED;
+
+					if (ds_ping_maxfwd>=0) {
+						dlg->mf_enforced = 1;
+						dlg->mf_value = (unsigned short)ds_ping_maxfwd;
+					}
 
 					ds_options_callback_param_t *cb_param =
 								shm_malloc(sizeof(*cb_param));
@@ -2317,6 +2409,21 @@ void ds_check_timer(unsigned int ticks, void* param)
 	}
 }
 
+void ds_update_weights(unsigned int ticks, void *param)
+{
+	ds_partition_t *part;
+	ds_set_p sp;
+
+	for (part = partitions; part; part = part->next) {
+		lock_start_write(part->lock);
+		for (sp = (*part->data)->sets; sp; sp = sp->next) {
+			if (sp->redo_weights) {
+				re_calculate_active_dsts(sp);
+			}
+		}
+		lock_stop_write(part->lock);
+	}
+}
 
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 													ds_partition_t *partition)

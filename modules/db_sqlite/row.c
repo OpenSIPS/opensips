@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (C) 2015 OpenSIPS Foundation
+ * Copyright (C) 2015 - OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -40,7 +40,7 @@
  */
 int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 {
-	int col;
+	int col,len;
 	db_val_t* _v;
 	const char* db_value;
 
@@ -62,6 +62,7 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 		if (sqlite3_column_type(CON_SQLITE_PS(_h), col) == SQLITE_NULL) {
 			VAL_NULL(_v) = 1;
+			VAL_TYPE(_v) = RES_TYPES(_res)[col];
 			continue;
 		}
 
@@ -114,33 +115,15 @@ int db_sqlite_convert_row(const db_con_t* _h, db_res_t* _res, db_row_t* _r)
 
 				break;
 			case DB_STRING:
-				VAL_STR(_v).len = sqlite3_column_bytes(CON_SQLITE_PS(_h), col);
+				len = sqlite3_column_bytes(CON_SQLITE_PS(_h), col);
 				db_value = (char *)sqlite3_column_text(CON_SQLITE_PS(_h), col);
 
-				VAL_STR(_v).s = pkg_malloc(VAL_STR(_v).len+1);
-				if (VAL_STR(_v).s == NULL) {
+				if ((VAL_STRING(_v) = pkg_malloc(len+1)) == NULL) {
 					LM_ERR("no more pkg mem!\n");
 					return -1;
 				}
+				memcpy((char*)VAL_STRING(_v), db_value, len+1);
 
-				memcpy(VAL_STR(_v).s, db_value, VAL_STR(_v).len);
-
-				VAL_STR(_v).s[VAL_STR(_v).len]='\0';
-
-				/* WARNING: we set the type to DB_STRING based on str definition
-				 * { char*
-				 *   int
-				 * }
-				 *
-				 * this way we know that if someone will access VAL_STRING(...)
-				 * of this value will get the char* value from the str structure
-				 * if someone will call VAL_STR(...) there will still be no
-				 * problem since we set the len
-				 *
-				 * invalid memory access shouldn't be the problem since it's an
-				 * union so we definetely will have the space for a str allocated
-				 *
-				 */
 				VAL_TYPE(_v) = DB_STRING;
 				VAL_FREE(_v) = 1;
 

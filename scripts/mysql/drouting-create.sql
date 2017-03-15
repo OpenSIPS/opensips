@@ -10,7 +10,7 @@ CREATE TABLE dr_gateways (
     probe_mode INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     state INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     socket CHAR(128) DEFAULT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL,
+    description CHAR(128) DEFAULT NULL,
     CONSTRAINT dr_gw_idx UNIQUE (gwid)
 ) ENGINE=InnoDB;
 
@@ -19,12 +19,12 @@ CREATE TABLE dr_rules (
     ruleid INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     groupid CHAR(255) NOT NULL,
     prefix CHAR(64) NOT NULL,
-    timerec CHAR(255) NOT NULL,
+    timerec CHAR(255) DEFAULT NULL,
     priority INT(11) DEFAULT 0 NOT NULL,
     routeid CHAR(255) DEFAULT NULL,
     gwlist CHAR(255) NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL
+    description CHAR(128) DEFAULT NULL
 ) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
@@ -34,8 +34,8 @@ CREATE TABLE dr_carriers (
     gwlist CHAR(255) NOT NULL,
     flags INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     state INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    attrs CHAR(255) DEFAULT '',
-    description CHAR(128) DEFAULT '' NOT NULL,
+    attrs CHAR(255) DEFAULT NULL,
+    description CHAR(128) DEFAULT NULL,
     CONSTRAINT dr_carrier_idx UNIQUE (carrierid)
 ) ENGINE=InnoDB;
 
@@ -43,9 +43,9 @@ INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) NOT NULL,
-    domain CHAR(128) DEFAULT '' NOT NULL,
+    domain CHAR(128) DEFAULT NULL,
     groupid INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL
+    description CHAR(128) DEFAULT NULL
 ) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('dr_partitions','1');

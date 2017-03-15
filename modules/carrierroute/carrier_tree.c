@@ -99,9 +99,6 @@ int prepare_route_tree(void) {
 		LM_ERR("could not load routing data\n");
 		return -1;
 	}
-	if (new_data == NULL) {
-		return -1;
-	}
 
 	if (rule_fixup(new_data) < 0) {
 		LM_ERR("could not fixup rules\n");

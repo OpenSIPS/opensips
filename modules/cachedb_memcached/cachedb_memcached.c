@@ -39,6 +39,11 @@
 #include "cachedb_memcached.h"
 #include <libmemcached/memcached.h>
 
+#if !defined(LIBMEMCACHED_VERSION_HEX) || LIBMEMCACHED_VERSION_HEX < 0x00037000
+typedef memcached_return memcached_return_t;
+#endif
+
+
 static str cache_mod_name = str_init("memcached");
 
 struct cachedb_url *memcached_script_urls = NULL;
@@ -97,7 +102,7 @@ struct module_exports exports= {
 
 int wrap_memcached_insert(cachedb_con *con,str* attr, str* value,int expires)
 {
-	memcached_return  rc;
+	memcached_return_t  rc;
 	memcached_con *connection;
 	struct timeval start;
 
@@ -121,7 +126,7 @@ int wrap_memcached_insert(cachedb_con *con,str* attr, str* value,int expires)
 
 int wrap_memcached_remove(cachedb_con *connection,str* attr)
 {
-	memcached_return  rc;
+	memcached_return_t  rc;
 	memcached_con *con;
 	struct timeval start;
 
@@ -144,7 +149,7 @@ int wrap_memcached_remove(cachedb_con *connection,str* attr)
 
 int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 {
-	memcached_return  rc;
+	memcached_return_t  rc;
 	char * ret;
 	size_t ret_len;
 	uint32_t fl;
@@ -203,7 +208,7 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 		int expires,int *new_val)
 {
-	memcached_return  rc;
+	memcached_return_t  rc;
 	memcached_con *con;
 	uint64_t res;
 	str ins_val;
@@ -249,7 +254,7 @@ int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 		int expires,int *new_val)
 {
-	memcached_return  rc;
+	memcached_return_t  rc;
 	memcached_con *con;
 	uint64_t res;
 	str ins_val;
@@ -294,7 +299,7 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 
 int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
 {
-	memcached_return  rc;
+	memcached_return_t  rc;
 	char * ret;
 	size_t ret_len;
 	uint32_t fl;
@@ -352,7 +357,7 @@ memcached_con* memcached_new_connection(struct cachedb_id *id)
 {
 	memcached_con *con;
 	memcached_server_st *server_list;
-	memcached_return  rc;
+	memcached_return_t  rc;
 
 	char *srv_list;
 	int ret;

@@ -1,0 +1,732 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		<ulink url='http://www.cgrates.org/'><emphasis>CGRateS</emphasis></ulink>
+		is an open-source rating engine used for carrier-grade, multi-tenant,
+		real-time billing. It is able to do both postpaid and prepaid rating
+		for multiple concurrent sessions with different balance units (eg: Monetary,
+		SMS, Internet Traffic). CGRateS can also export accurate CDRs in various
+		formats.
+	</para>
+
+	<para>
+		This module can be used to communicate with the CGRates engine in order to do
+		call authorization and accounting for billing purposes. The &osips; module does
+		not do any billing by itself, but provides an interface to communicate with the
+		CGRateS engine using efficient <ulink url='http://json-rpc.org/'>JSON-RPC</ulink>
+		APIs in both synchronous and asynchronous ways. For each command the user can
+		provide a set of parameters that will be forwarded to the CGRateS engine, using
+		the <emphasis>$cgr()</emphasis> variable. You can find usage examples in the
+		following sections.
+	</para>
+
+	<para>
+		The module can be used to implement the following features:
+	</para>
+	</section>
+
+	<section>
+	<title>Authorization</title>
+	<para>
+		The authorization is used to check if an account is allowed to start a new call
+		and it has enough credit to call to that destination. This is done using the
+		<emphasis>cgrates_auth()</emphasis> command, which returns the number of seconds
+		a call is allowed to run in the <emphasis>$cgrret</emphasis> pseudo-variable.
+	</para>
+	<para>
+		Usage example:
+		<programlisting format="linespecific">
+		...
+		if (cgrates_auth("$fU", "$rU"))
+			xlog("Call is allowed to run $cgrret seconds\n");
+		}
+		...
+		</programlisting>
+	</para>
+	</section>
+
+	<section id="accounting">
+	<title>Accounting</title>
+	<para>
+		The accounting mode is used to start and stop a CGRateS session. This can be
+		used for both prepaid and postpaid billing. The <emphasis>cgrates_acc()</emphasis>
+		function starts the CGRateS session when the call is answered (the 200 OK message
+		is received) and ends it when the call is ended (a BYE message is received). This
+		is done automatically using the <emphasis>dialog</emphasis> module.
+	</para>
+	<para>
+		Note that it is important to first authorize the call (using the
+		<emphasis>cgrates_auth()</emphasis> command) before starting accounting. If you do
+		not do this and the user is not authorized to call, the dialog will be immediately
+		closed, resulting in a 0-duration call. If the call is allowed to go on, the
+		dialog lifetime will be set to the duration indicated by the CGRateS engine.
+		Therefore, the dialog will be automatically ended if the call would have been longer.
+	</para>
+	<para>
+		After the call is ended (by a BYE message), the CGRateS session is also ended.
+		At this point, you can generate a CDR. To do this, you have to set the
+		<emphasis>cdr</emphasis> flag to the <emphasis>cgrates_acc()</emphasis> command.
+		CDRs can also be generated for missed calls by using the <emphasis>missed</emphasis>
+		flag.
+	</para>
+	<para>
+		Usage example:
+		<programlisting format="linespecific">
+		...
+		if (!cgrates_auth("$fU", "$rU")) {
+			sl_send_reply("403", "Forbidden");
+			exit;
+		}
+		xlog("Call is allowed to run $cgrret seconds\n");
+		# do accounting for this call
+		cgrate_acc("cdr", "$fU", "$rU");
+		...
+		</programlisting>
+	</para>
+	<para>
+		Note that when using the <emphasis>cdr</emphasis> flag, CDRs are exported by
+		the CGRateS engine in various formats, not by &osips;. Check the CGRateS
+		documentation for more information.
+	</para>
+	</section>
+
+	<section>
+	<title>Other Commands</title>
+	<para>
+		You can use the <emphasis>cgrates_cmd()</emphasis> to send arbitrary
+		commands to the CGRateS engine, and use the <emphasis>$cgrret</emphasis>
+		pseudo-variable to retrieve the response.
+	</para>
+	<para>
+		The following example simulates the <emphasis>cgrates_auth()</emphasis> CGRateS call:
+		<programlisting format="linespecific">
+		...
+		$cgr(Tenant) = $fd;
+		$cgr(Account) = $fU;
+		$cgr(OriginID) = $ci;
+		$cgr(SetupTime) = "" + $Ts;
+		$cgr(RequestType) = "*prepaid";
+		$cgr(Destination) = $rU;
+		cgrate_cmd("SMGenericV1.MaxUsage");
+		xlog("Call is allowed to run $cgrret seconds\n");
+		...
+		</programlisting>
+	</para>
+	</section>
+
+	<section>
+	<title>CGRateS Failover</title>
+	<para>
+		Multiple CGRateS engines can be provisioned to use in a failover manner: in
+		case one engine is down, the next one is used. Currently there is no load
+		balancing logic between the servers, but this is a feature one of the CGRateS
+		component does starting with newer versions.
+	</para>
+	<para>
+		Each CGRateS engine has assigned up to 
+		<emphasis>max_async_connections</emphasis> connections, plus one
+		used for synchronous commands. If a connection fails (due to network
+		issues, or server issues), it is marked as closed and a new one is
+		tried. If all connections to that engine are down, then the entire
+		engine is marked as disabled, and a new engine is queried. After an
+		engine is down for more than <emphasis>retry_timeout</emphasis>
+		seconds, &osips; tries to connect once again to that server. If it
+		succeeds, that server is enabled. Otherwise, the other engines are
+		used, until none is available and the command fails.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>dialog</emphasis> -- in case CGRateS
+				accounting is used.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libjson</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>cgrates_engine</varname> (string)</title>
+		<para>
+			This parameter is used to specify a CGRateS engine connection.
+			The format is <emphasis>IP[:port]</emphasis>. The port is optional,
+			and if missing, <emphasis>2014</emphasis> is used.
+		</para>
+		<para>
+			This parameter can have multiple values, for each server
+			used for failover. At least one server should be provisioned.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>None</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cgrates_engine</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cgrates", "cgrates_engine", "127.0.0.1")
+modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>bind_ip</varname> (string)</title>
+		<para>
+			IP used to bind the socket that communicates with the
+			CGRateS engines. This is useful to set when the engine
+			is runing in a local, secure LAN, and you want to use
+			that network to communicate with your servers.
+			The parameter is optional.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>not set - any IP is used</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bind_ip</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cgrates", "bind_ip", "10.0.0.100")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>max_async_connections</varname> (integer)</title>
+		<para>
+			The maximum number of simultaneous asynchronous connections
+			to a CGRateS engine.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>10</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_async_connections</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cgrates", "max_async_connections", 20)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>retry_timeout</varname> (integer)</title>
+		<para>
+			The number of seconds after which a disabled connection/engine
+			is retried.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>60</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>retry_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cgrates", "retry_timeout", 120)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section id="cgrates_acc">
+		<title>
+			<function moreinfo="none">cgrates_acc([flags[, account[, destination]]])</function>
+		</title>
+		<para>
+			<function moreinfo="none">cgrates_acc()</function> starts an accounting
+			session on the CGRateS engine for the current dialog. It also ends the
+			session when the dialog is ended. This function requires a dialog, so in
+			case create_dialog() was not previously used, it will internally call
+			that function.
+		</para>
+
+		<para>
+			Note that the <function moreinfo="none">cgrates_acc()</function> function
+			does not send any message to the CGRateS engine when it is called, but only
+			when the call is answered and the CGRateS session should be started (a 200
+			OK message is received).
+		</para>
+
+		<para>
+			The <function moreinfo="none">cgrates_acc()</function> function should
+			only be called on initial INVITEs. For more infirmation check
+			<xref linkend="accounting"/>.
+		</para>
+
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>flags</emphasis> - indicates whether &osips; should generate
+				a CDR at the end of the call. This parameter is optional, and if missing,
+				no CDR is generated - the session is only passed through CGRateS. The
+				following values can be used, separated by '|': </para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>cdr</emphasis> - also generate a CDR;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>missed</emphasis> - generate a CDR even for missed
+						calls; this flag only makes sense if the <emphasis>cdr</emphasis>
+						flag is used;</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>account</emphasis> - the account that will be charged
+				in CGrateS. This parameter is optional, and if not specified,
+				the user in the From header is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>destination</emphasis> - the dialled number. Optional
+				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS accouting
+				was successfuly setup for the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. the dialog cannot be created, or the server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the SIP message is invalid: either
+				it has missing headers, or it is not an initial INVITE.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+
+		<example>
+				<title>cgrates_acc() usage</title>
+				<programlisting format="linespecific">
+		...
+		if (!has_totag()) {
+			...
+			if (cgrates_auth("$fU", "$rU"))
+				cgrates_acc("cdr|missed", "$fU", "$rU");
+			...
+		}
+		...
+		</programlisting>
+		</example>
+
+	</section>
+	<section id="cgrates_auth">
+		<title>
+			<function moreinfo="none">cgrates_auth([account[, destination]])</function>
+		</title>
+		<para>
+			<function moreinfo="none">cgrates_auth()</function> does call authorization
+			through using the CGRateS engine.
+		</para>
+
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>account</emphasis> - the account that will be checked
+				in CGrateS. This parameter is optional, and if not specified,
+				the user in the From header is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>destination</emphasis> - the dialled number. Optional
+				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-4</emphasis> - the SIP message is invalid: either
+				it has missing headers, or it is not an initial INVITE.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-5</emphasis> - CGRateS returned an invalid message.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+
+		<example>
+				<title>cgrates_auth() usage</title>
+				<programlisting format="linespecific">
+		...
+		if (!has_totag()) {
+			...
+			if (!cgrates_auth("$fU", "$rU")) {
+				sl_send_reply("403", "Forbidden");
+				exit;
+			}
+			...
+		}
+		...
+		</programlisting>
+		</example>
+
+	</section>
+	<section id="cgrates_cmd">
+		<title>
+			<function moreinfo="none">cgrates_cmd(command)</function>
+		</title>
+		<para>
+			<function moreinfo="none">cgrates_cmd()</function> can send
+			arbitrary commands to the CGRateS engine.
+		</para>
+
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - the command sent to the
+				CGRateS engine. This is a mandatory parameter.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+
+		<example>
+				<title>cgrates_cmd() usage</title>
+				<programlisting format="linespecific">
+		...
+		# cgrate_auth("$fU", "$rU"); simulation
+		$cgr(Tenant) = $fd;
+		$cgr(Account) = $fU;
+		$cgr(OriginID) = $ci;
+		$cgr(SetupTime) = "" + $Ts;
+		$cgr(RequestType) = "*prepaid";
+		$cgr(Destination) = $rU;
+		cgrate_cmd("SMGenericV1.MaxUsage");
+		xlog("Call is allowed to run $cgrret seconds\n");
+		...
+		</programlisting>
+		</example>
+
+	</section>
+	</section>
+
+	<section>
+	<title>Exported pseudo-variables</title>
+
+		<section>
+			<title><varname>$cgr(name)</varname></title>
+			<para>
+				Pseudo-variable used to set different parameters for the
+				CGRateS command. Each name-value pair will be encoded as
+				a <emphasis>string - value</emphasis> attribute in the
+				JSON message sent to CGRateS.
+			</para>
+			<para>
+				The name-values pairs are stored in the transaction (if
+				tm module is loaded). Therefore the values are accessible
+				in the reply.
+			</para>
+			<para>
+				When the <emphasis>cgrates_acc()</emphasis> function is
+				called, all the name-value pairs are moved in the dialog.
+				Therefore the values will be accessible along the dialog's
+				lifetime.
+			</para>
+		<example>
+				<title>$cgr(name) usage</title>
+				<programlisting format="linespecific">
+		...
+		if (!has_totag()) {
+			...
+			$cgr(Tenant) = $fd; # set the From domain as a tenant
+			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
+			if (!cgrates_auth("$fU", "$rU")) {
+				sl_send_reply("403", "Forbidden");
+				exit;
+			}
+		}
+		...
+		</programlisting>
+		</example>
+		</section>
+		<section>
+			<title><varname>$cgrret</varname></title>
+			<para>
+				Returns the reply message of a CGRateS command in script.
+			</para>
+		<example>
+				<title>$cgrret usage</title>
+				<programlisting format="linespecific">
+		...
+		cgrates_auth("$fU", "$rU");
+		xlog("Call is allowed to run $cgrret seconds\n");
+		...
+		</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">cgrates_auth([account[, destination]])</function>
+		</title>
+		<para>
+			Does the CGRateS authorization call in an asynchronous way. Script
+			execution is suspended until the CGRateS engine sends the reply back.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>account</emphasis> - the account that will be checked
+				in CGRateS. This parameter is optional, and if not specified,
+				the user in the From header is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>destination</emphasis> - the dialled number. Optional
+				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-4</emphasis> - the SIP message is invalid: either
+				it has missing headers, or it is not an initial INVITE.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-5</emphasis> - CGRateS returned an invalid message.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<example>
+		<title><function moreinfo="none">async cgrates_auth</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	async(cgrates_auth("$fU", "$rU"), auth_reply);
+}
+
+route [auth_reply]
+{
+	if ($rc &lt; 0) {
+		xlog("Call not authorized: code=$cgrret!\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+	...
+}
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">cgrates_cmd(command)</function>
+		</title>
+		<para>
+			Can run an arbitrary CGRateS command in an asynchronous way. The
+			execution is suspended until the CGRateS engine sends the reply back.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - the command sent to the
+				CGRateS engine. This is a mandatory parameter.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			The function can return the following values:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - successful call - the CGRateS account
+				is allowed to make the call.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-1</emphasis> - &osips; returned an internal error
+				(i.e. server is out of memory).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - the CGRateS engine returned error.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - No suitable CGRateS server found.
+				message type (not an initial INVITE).
+			</para>
+		</listitem>
+		</itemizedlist>
+		<example>
+		<title><function moreinfo="none">async cgrates_cmd</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	$cgr(Tenant) = $fd;
+	$cgr(Account) = $fU;
+	$cgr(OriginID) = $ci;
+	$cgr(SetupTime) = "" + $Ts;
+	$cgr(RequestType) = "*prepaid";
+	$cgr(Destination) = $rU;
+	async(cgrates_cmd("SMGenericV1.MaxUsage"), auth_reply);
+}
+
+route [auth_reply]
+{
+	if ($rc &lt; 0) {
+		xlog("Call not authorized: code=$cgrret!\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+	...
+}
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>
+

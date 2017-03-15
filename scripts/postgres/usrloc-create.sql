@@ -17,8 +17,7 @@ CREATE TABLE location (
     socket VARCHAR(64) DEFAULT NULL,
     methods INTEGER DEFAULT NULL,
     sip_instance VARCHAR(255) DEFAULT NULL,
-    attr VARCHAR(255) DEFAULT NULL,
-    CONSTRAINT location_account_contact_idx UNIQUE (username, domain, contact, callid)
+    attr VARCHAR(255) DEFAULT NULL
 );
 
 ALTER SEQUENCE location_contact_id_seq MAXVALUE 2147483647 CYCLE;

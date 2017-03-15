@@ -8,11 +8,7 @@ Edited by
 
 Jan Janak
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Ovidiu Sas
 
@@ -68,6 +64,7 @@ Ovidiu Sas
               1.3.27. skip_replicated_db_ops (int)
               1.3.28. max_contact_delete (int)
               1.3.29. hash_size (integer)
+              1.3.30. regen_broken_contactid (integer)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -161,6 +158,7 @@ Ovidiu Sas
    1.27. Setting the skip_replicated_db_ops parameter
    1.28. Setting the max_contact_delete parameter
    1.29. Set hash_size parameter
+   1.30. Set regen_broken_contactid parameter
 
 Chapter 1. Admin Guide
 
@@ -229,6 +227,13 @@ Chapter 1. Admin Guide
    packets is trivial and can be done by using the
    accept_replicated_contacts and replicate_contacts_to parameters
    of the module.
+
+   Note that for certain scenarios, where NAT or multihomed
+   interfaces are involved, you might need to preserve the same
+   interface among all the OpenSIPS servers within the replication
+   cluster. Otherwise when an instance receives a replicated
+   contact for whom it does not have a listener, it will use a
+   different listener of his.
 
 1.2. Dependencies
 
@@ -661,6 +666,23 @@ modparam("usrloc", "max_contact_delete", 10)
 modparam("usrloc", "hash_size", 10)
 ...
 
+1.3.30. regen_broken_contactid (integer)
+
+   Since version 2.2, contact_id concept was introduced. Since
+   this parameter validates a contact each time OpenSIPS is
+   started, there are times when the value of this parameter
+   should be regenerated. That is when location table is being
+   migrated from a version older than 2.2 or when hash_size module
+   parameter is changed. Enabling this parameter will regenerate
+   broken contact id's based on current configurations.
+
+   Default value is “0(not enabled)”
+
+   Example 1.30. Set regen_broken_contactid parameter
+...
+modparam("usrloc", "regen_broken_contactid", 1)
+...
+
 1.4. Exported Functions
 
    There are no exported functions that could be used in scripts.
@@ -795,12 +817,22 @@ modparam("usrloc", "hash_size", 10)
 
    Parameters:
      * aor - The AOR of the inserted contact.
-     * address - The binding address of the inserted contact.
-     * callid - The Call-ID header of the registration message.
+     * uri - The contact URI of the inserted contact.
      * received - IP, port and protocol the registration message
        was received from. If these have the same value as the
        contact's address (see the address parameter) then the
        received parameter will be an empty string.
+     * path - The PATH header value of the registration
+       message.(empty string if not present)
+     * qval - The Q value (priority) of the contact (as integer
+       value from 0 to 10).
+     * socket - The SIP socket/listener (as string) used by
+       OpenSIPS to receive the contact registations.
+     * bflags - The branch flags (bflags) of the contact (in
+       integer value of the bitmask)
+     * expires - The expires value of the contact (as UNIX
+       timestamp integer).
+     * callid - The Call-ID header of the registration message.
      * cseq - The cseq number as an int value.
 
 1.7.4.  E_UL_CONTACT_DELETE
@@ -810,30 +842,14 @@ modparam("usrloc", "hash_size", 10)
    then both the E_UL_AOR_DELETE and E_UL_CONTACT_DELETE events
    will be raised.
 
-   Parameters:
-     * aor - The AOR of the deleted contact.
-     * address - The binding address of the deleted contact.
-     * callid - The Call-ID header of the registration message.
-     * received - IP, port and protocol the registration message
-       was received from. If these have the same value as the
-       contact's address (see the address parameter) then the
-       received parameter will be an empty string.
-     * cseq - The cseq number as an int value.
+   Parameters: same as E_UL_CONTACT_INSERT event
 
 1.7.5.  E_UL_CONTACT_UPDATE
 
    This event is raised when a contact's info is updated by
    receiving another registration message.
 
-   Parameters:
-     * aor - The AOR of the updated contact.
-     * address - The binding address of the updated contact.
-     * callid - The Call-ID header of the registration message.
-     * received - IP, port and protocol the registration message
-       was received from. If these have the same value as the
-       contact's address (see the address parameter) then the
-       received parameter will be an empty string.
-     * cseq - The cseq number as an int value.
+   Parameters: same as E_UL_CONTACT_INSERT event
 
 Chapter 2. Developer Guide
 

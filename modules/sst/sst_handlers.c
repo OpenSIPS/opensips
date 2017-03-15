@@ -131,6 +131,7 @@ typedef struct sst_msg_info_st {
 static void sst_dialog_confirmed_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params);
 #endif /* USE_CONFIRM_CALLBACK */
+static void sst_free_info(void* param);
 static void sst_dialog_terminate_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params);
 static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
@@ -140,6 +141,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 static int send_response(struct sip_msg *request, int code, str *reason,
 		char *header, int header_len);
 static int append_header(struct sip_msg *msg, const char *header);
+static int add_timer_ext(struct sip_msg *msg);
 static int remove_minse_header(struct sip_msg *msg);
 static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo);
 static int send_reject(struct sip_msg *msg, unsigned int min_se);
@@ -276,6 +278,11 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 	}
 
 	info = (sst_info_t *)shm_malloc(sizeof(sst_info_t));
+	if (info == NULL) {
+		LM_ERR("No more shared memory!\n");
+		return;
+	}
+
 	memset(info, 0, sizeof(sst_info_t));
 	info->requester = (minfo.se?SST_UAC:SST_UNDF);
 	info->supported = (minfo.supported?SST_UAC:SST_UNDF);
@@ -380,6 +387,8 @@ void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 		return;
 	}
 
+	memset(info, 0, sizeof(sst_info_t));
+
 	str raw_info = {(char*)info, sizeof(sst_info_t)};
 	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0){
 		LM_ERR ("No sst_info found!\n");
@@ -402,6 +411,29 @@ static void sst_dialog_confirmed_CB(struct dlg_cell *did, int type,
 	DLOGMSG(msg);
 }
 #endif /* USE_CONFIRM_CALLBACK */
+
+/*
+ * free function for dialog callbacks
+ */
+static void sst_free_info(void* param)
+{
+	sst_info_t* info = (sst_info_t *) param;
+
+	if (info == NULL) {
+		LM_ERR("null sst info!\n");
+		return;
+	}
+
+	/*
+	 * FIXME refcnt is 0 that means no dialog termination callback
+	 * was called what shall we do here? For the moment we free
+	 * the memory but this might crash if the free function is called
+	 * multiple times
+	 *
+	 */
+	if (info->refcnt == 0 || (--info->refcnt) == 0)
+		shm_free(info);
+}
 
 /**
  * This callback is called when ever a dialog is terminated. The cause
@@ -430,14 +462,9 @@ static void sst_dialog_terminate_CB(struct dlg_cell* did, int type,
 			LM_DBG("Terminating DID %p session\n", did);
 			break;
 	}
-	/*
-	 * Free the param sst_info_t memory
-	 */
-	if (*(params->param)) {
-		LM_DBG("freeing the sst_info_t from dialog %p\n", did);
-		shm_free(*(params->param));
-		*(params->param) = NULL;
-	}
+
+	((sst_info_t *)(*params->param))->refcnt++;
+
 	return;
 }
 
@@ -640,6 +667,9 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					LM_ERR("failed to append Session-Expires header\n");
 					return;
 				}
+				if (add_timer_ext(msg))
+					LM_ERR("failed to append timer extension to Required\n");
+
 				/* Set the dialog timeout HERE */
 				set_dialog_lifetime(did, info->interval);
 			}
@@ -812,6 +842,71 @@ static int send_response(struct sip_msg *request, int code, str *reason,
 }
 
 /**
+ * Adds the timer extension to the Require header, if it does
+ * not exist. Adds a new Require header if it does not exist.
+ *
+ * @param msg The message to add the extension to
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+static int add_timer_ext(struct sip_msg *msg)
+{
+	struct hdr_field *require_hdr, *hdr;
+	struct lump* anchor = NULL;
+	char *s = NULL;
+	int len = 0;
+	unsigned int reqmask;
+
+	LM_DBG("Appending timer extension\n");
+
+	if (parse_headers(msg, HDR_EOH_F, 0) == -1) {
+		LM_ERR("failed to parse headers in message.\n");
+		return(1);
+	}
+
+	require_hdr = get_header_by_static_name(msg, "Require");
+	if (!require_hdr) {
+		LM_DBG("Require header does not exist - adding a new one\n");
+		return append_header(msg, "Require: timer\r\n");
+	}
+
+	/* search through all the headers, if there is any timer in there */
+	for (hdr = require_hdr; hdr; hdr = hdr->sibling) {
+		/* XXX: it is ineficient to parse it every time
+		 * but this is the only place it is used, and it
+		 * is only called once.
+		 * Calling Supported's parse function, the format
+		 * is similar to Require's one */
+		parse_supported_body(&(hdr->body), &reqmask);
+		if (reqmask & F_SUPPORTED_TIMER) {
+			LM_DBG("timer already in Require\n");
+			return (0);
+		}
+	}
+	LM_DBG("appending timer to the end of first Require header\n");
+
+	/* timer not found - adding at the end of Require */
+	if ((anchor = anchor_lump(msg, require_hdr->body.s +
+				require_hdr->body.len - msg->buf, 0)) == 0) {
+		LM_ERR("failed to get anchor to append header\n");
+		return(1);
+	}
+	len = strlen(", timer");
+	if ((s = (char *)pkg_malloc(len)) == 0) {
+		LM_ERR("No more pkg memory. (size requested = %d)\n", len);
+		return(1);
+	}
+	memcpy(s, ", timer", len);
+	if (insert_new_lump_before(anchor, s, len, 0) == 0) {
+		LM_ERR("failed to insert lump\n");
+		pkg_free(s);
+		return(1);
+	}
+	LM_DBG("Done appending extension successfully.\n");
+	return(0);
+}
+
+/**
  * Given some header text, append it to the passed in message.
  *
  * @param msg The message to append the header text to.
@@ -928,7 +1023,7 @@ static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo)
 	/*
 	 * The parse_supported() will return 0 if found and parsed OK, -1
 	 * if not found or an error parsing the one it did find! So assume
-	 * it is not found if unsuccessfull.
+	 * it is not found if unsuccessful.
 	 */
 	if (msg->supported && parse_supported(msg) == 0 &&
 	(get_supported(msg) & F_SUPPORTED_TIMER))
@@ -1002,7 +1097,7 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info)
 			"DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED\n");
 	if (dlg_binds->register_dlgcb(did,
 			DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED,
-			sst_dialog_terminate_CB, (void *)info, NULL) != 0)
+			sst_dialog_terminate_CB, (void *)info, sst_free_info) != 0)
 		LM_ERR("could not add the DLGCB_TERMINATED callback\n");
 
 	LM_DBG("Adding callback DLGCB_REQ_WITHIN\n");

@@ -84,7 +84,8 @@ static int create_codec_lumps(struct sip_msg * msg)
 
 	/* get the number of streams */
 	lumps_len = 0;
-	cur_session = msg->sdp->sessions;
+	//FIXME
+	cur_session = NULL;//msg->sdp->sessions;
 
 	while(cur_session)
 	{
@@ -106,7 +107,8 @@ static int create_codec_lumps(struct sip_msg * msg)
 	LM_DBG("creating %d streams\n",lumps_len);
 
 	count = 0;
-	cur_session = msg->sdp->sessions;
+	//FIXME
+	cur_session = NULL;//msg->sdp->sessions;
 
 	while(cur_session)
 	{
@@ -141,7 +143,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 
 			if( text.s == NULL )
 			{
-				LM_ERR("Error alocating lump buffer\n");
+				LM_ERR("Error allocating lump buffer\n");
 				return -1;
 			}
 
@@ -319,7 +321,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 	if (msg==NULL || msg==FAKED_REPLY)
 		return -1;
 
-	if(parse_sdp(msg))
+	if(!parse_sdp(msg))
 	{
 		LM_DBG("Message has no SDP\n");
 		return -1;
@@ -330,7 +332,8 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 		return -1;
 	}
 
-	cur_session = msg->sdp->sessions;
+	//FIXME
+	cur_session = NULL;//msg->sdp->sessions;
 	rez = -1;
 
 	while(cur_session)
@@ -955,7 +958,7 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 	if (msg==NULL || msg==FAKED_REPLY)
 		return -1;
 
-	if(parse_sdp(msg))
+	if(!parse_sdp(msg))
 	{
 		LM_DBG("Message has no SDP\n");
 		return -1;
@@ -963,7 +966,9 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 
 	/* search for the stream */
 	match = 0;
-	for(session=msg->sdp->sessions; session && !match ;session=session->next){
+	//FIXME
+	//for(session=msg->sdp->sessions; session && !match ;session=session->next){
+	for(session=NULL; session && !match ;session=session->next){
 		prev_stream = NULL;
 		for( stream=session->streams ; stream ;
 		prev_stream=stream,stream=stream->next){

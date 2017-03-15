@@ -732,6 +732,42 @@ _empty_line_
 	  </programlisting>
 	</section>
 
+	<section>
+	  <title>
+		<function moreinfo="none">pres_expose</function>
+	  </title>
+	  <para>
+		  Exposes in the script, by rasing an
+		  <emphasis>E_PRESENCE_EXPOSED</emphasis> event, all the
+		  presentities of a specific event that match a specified
+		  filter.
+	  </para>
+	  <para>
+		Name: <emphasis>pres_expose</emphasis>
+	  </para>
+	  <para>Parameters:</para>
+	  <itemizedlist>
+		<listitem><para>
+			<emphasis>event</emphasis> - the interesting presence
+			event.
+		</para></listitem>
+		<listitem><para>
+			<emphasis>filter</emphasis>(optional) - a regular
+			expression (REGEXP) used for filtering the presentities
+			for that event. Only the presentities that match will
+			be exposed. If not specified, all presentities for that
+			event are exposed.
+		</para></listitem>
+	  </itemizedlist>
+
+	  <para>
+		MI FIFO Command Format:
+	  </para>
+	  <programlisting  format="linespecific">
+:subs_phtable_list:fifo_reply
+_empty_line_
+	  </programlisting>
+	</section>
 </section>
 
 
@@ -769,6 +805,18 @@ _empty_line_
 					PUBLISH request
 			</para></listitem>
 		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_PRESENCE_EXPOSED</function>
+		</title>
+		<para>
+			This event is raised for each presentity exposeed
+			by the <emphasis>pres_expose</emphasis>.
+		</para>
+		<para>Parameters:</para>
+		<para>Same parameters as the
+			<emphasis>E_PRESENCE_PUBLISH</emphasis> event.</para>
 	</section>
 	</section>
 

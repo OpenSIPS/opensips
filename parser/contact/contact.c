@@ -305,25 +305,26 @@ void free_contacts(contact_t** _c)
 /*
  * Print list of contacts, just for debugging
  */
-void print_contacts(FILE* _o, contact_t* _c)
+void log_contacts(contact_t* _c)
 {
 	contact_t* ptr;
 
 	ptr = _c;
 
 	while(ptr) {
-		fprintf(_o, "---Contact---\n");
-		fprintf(_o, "name    : '%.*s'\n", ptr->name.len, ptr->name.s);
-		fprintf(_o, "URI     : '%.*s'\n", ptr->uri.len, ptr->uri.s);
-		fprintf(_o, "q       : %p\n", ptr->q);
-		fprintf(_o, "expires : %p\n", ptr->expires);
-		fprintf(_o, "received: %p\n", ptr->received);
-		fprintf(_o, "method  : %p\n", ptr->methods);
-		fprintf(_o, "len     : %d\n", ptr->len);
+		LM_DBG("---Contact---\n");
+		LM_DBG("name    : '%.*s'\n", ptr->name.len, ptr->name.s);
+		LM_DBG("URI     : '%.*s'\n", ptr->uri.len, ptr->uri.s);
+		LM_DBG("instance: %p\n", ptr->instance);
+		LM_DBG("q       : %p\n", ptr->q);
+		LM_DBG("expires : %p\n", ptr->expires);
+		LM_DBG("received: %p\n", ptr->received);
+		LM_DBG("method  : %p\n", ptr->methods);
+		LM_DBG("len     : %d\n", ptr->len);
 		if (ptr->params) {
-			print_params(_o, ptr->params);
+			print_params(ptr->params);
 		}
-		fprintf(_o, "---/Contact---\n");
+		LM_DBG("---/Contact---\n");
 		ptr = ptr->next;
 	}
 }

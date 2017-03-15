@@ -33,6 +33,7 @@
 #include "../../mem/shm_mem.h"
 #include "../parser_f.h"
 #include "../parse_content.h"
+#include "../parse_body.h"
 #include "sdp.h"
 #include "sdp_helpr_funcs.h"
 
@@ -45,21 +46,20 @@
 /**
  * Creates and initialize a new sdp_info structure
  */
-static inline int new_sdp(struct sip_msg* _m)
+static inline sdp_info_t* new_sdp(void)
 {
 	sdp_info_t* sdp;
 
 	sdp = (sdp_info_t*)pkg_malloc(sizeof(sdp_info_t));
 	if (sdp == NULL) {
 		LM_ERR("No memory left\n");
-		return -1;
+		return NULL;
 	}
 	memset( sdp, 0, sizeof(sdp_info_t));
 
-	_m->sdp = sdp;
-
-	return 0;
+	return sdp;
 }
+
 
 /**
  * Alocate a new session cell.
@@ -236,19 +236,7 @@ void set_sdp_payload_fmtp(sdp_payload_attr_t *payload_attr, str *fmtp_string )
 /*
  * Getters ....
  */
-int get_sdp_session_num(struct sip_msg* _m)
-{
-	if (_m->sdp == NULL) return 0;
-	return _m->sdp->sessions_num;
-}
-
-int get_sdp_stream_num(struct sip_msg* _m)
-{
-	if (_m->sdp == NULL) return 0;
-	return _m->sdp->streams_num;
-}
-
-sdp_session_cell_t* get_sdp_session_sdp(struct sdp_info* sdp, int session_num)
+sdp_session_cell_t* get_sdp_session(sdp_info_t* sdp, int session_num)
 {
 	sdp_session_cell_t *session;
 
@@ -261,14 +249,8 @@ sdp_session_cell_t* get_sdp_session_sdp(struct sdp_info* sdp, int session_num)
 	return NULL;
 }
 
-sdp_session_cell_t* get_sdp_session(struct sip_msg* _m, int session_num)
-{
-	if (_m->sdp == NULL) return NULL;
-	return get_sdp_session_sdp(_m->sdp, session_num);
-}
-
-
-sdp_stream_cell_t* get_sdp_stream_sdp(struct sdp_info* sdp, int session_num, int stream_num)
+sdp_stream_cell_t* get_sdp_stream(sdp_info_t* sdp, int session_num,
+																int stream_num)
 {
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
@@ -292,14 +274,6 @@ sdp_stream_cell_t* get_sdp_stream_sdp(struct sdp_info* sdp, int session_num, int
 
 	return NULL;
 }
-
-sdp_stream_cell_t* get_sdp_stream(struct sip_msg* _m, int session_num, int stream_num)
-{
-	if (_m->sdp == NULL) return NULL;
-	return get_sdp_stream_sdp(_m->sdp, session_num, stream_num);
-
-}
-
 
 sdp_payload_attr_t* get_sdp_payload4payload(sdp_stream_cell_t *stream, str *rtp_payload)
 {
@@ -455,6 +429,8 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 				LM_ERR("can't find media IP in the message\n");
 				return -1;
 			}
+			/* take the family from the more specific line */
+			pf = session->pf;
 		}
 
 		/* Extract the port on sdp_port */
@@ -572,189 +548,58 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 	return 0;
 }
 
-static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
-{
-	int res, no_eoh_found, start_parsing;
-	char *bodylimit, *rest;
-	char *d1p, *d2p;
-	char *ret, *end;
-	unsigned int mime;
-	str sdp_body, cnt_disp;
-	int session_num;
-	struct hdr_field hf;
-
-	bodylimit = mixed_body->s + mixed_body->len;
-	d1p = find_sdp_line_delimiter(mixed_body->s, bodylimit, delimiter);
-	if (d1p == NULL) {
-		LM_ERR("empty multipart content\n");
-		return -1;
-	}
-	d2p = d1p;
-	session_num = 0;
-	for(;;) {
-		/* Per-application iteration */
-		d1p = d2p;
-		if (d1p == NULL || d1p >= bodylimit)
-			break; /* No applications left */
-		d2p = find_next_sdp_line_delimiter(d1p, bodylimit, delimiter, bodylimit);
-		/* d2p is text limit for application parsing */
-		memset(&hf,0, sizeof(struct hdr_field));
-		rest = eat_line(d1p + delimiter.len + 2, d2p - d1p - delimiter.len - 2);
-		if ( rest > d2p ) {
-			LM_ERR("Unparsable <%.*s>\n", (int)(d2p-d1p), d1p);
-			return -1;
-		}
-		no_eoh_found = 1;
-		start_parsing = 0;
-		/*LM_DBG("we need to parse this: <%.*s>\n", d2p-rest, rest); */
-		while( rest<d2p && no_eoh_found ) {
-			rest = get_sdp_hdr_field(rest, d2p, &hf);
-			switch (hf.type){
-			case HDR_EOH_T:
-				no_eoh_found = 0;
-				break;
-			case HDR_CONTENTTYPE_T:
-				end = hf.body.s + hf.body.len;
-				ret = decode_mime_type(hf.body.s, end , &mime, NULL);
-				if (ret==0)
-					return -1;
-				if (ret!=end) {
-					LM_ERR("the header CONTENT_TYPE contains "
-						"more then one mime type :-(!\n");
-					return -1;
-				}
-				if ((mime&0x00ff)==SUBTYPE_ALL || (mime>>16)==TYPE_ALL) {
-					LM_ERR("invalid mime with wildcard '*' in Content-Type hdr!\n");
-					return -1;
-				}
-			    	//LM_DBG("HDR_CONTENTTYPE_T: %d:%d %p-> <%.*s:%.*s>\n",mime&0x00ff,mime>>16,
-				//			hf.name.s,hf.name.len,hf.name.s,hf.body.len,hf.body.s);
-				if (((((unsigned int)mime)>>16) == TYPE_APPLICATION) && ((mime&0x00ff) == SUBTYPE_SDP)) {
-			    		/*LM_DBG("start_parsing: %d:%d\n",mime&0x00ff,mime>>16); */
-					start_parsing = 1;
-				}
-				break;
-			case HDR_CONTENTDISPOSITION_T:
-				cnt_disp.s = hf.body.s;
-				cnt_disp.len = hf.body.len;
-				break;
-			case HDR_ERROR_T:
-				return -1;
-				break;
-			default:
-				LM_DBG("unknown header: <%.*s:%.*s>\n",hf.name.len,hf.name.s,hf.body.len,hf.body.s);
-			}
-		} /* end of while */
-		/* and now we need to parse the content */
-		if (start_parsing) {
-			sdp_body.s = rest;
-			sdp_body.len = d2p-rest;
-			/* LM_DBG("we need to check session %d: <%.*s>\n", session_num, sdp_body.len, sdp_body.s); */
-			res = parse_sdp_session(&sdp_body, session_num, &cnt_disp, _sdp);
-			if (res != 0) {
-				/* _sdp is freed by the calling function */
-				return -1;
-			}
-			session_num++;
-		}
-	}
-	return 0;
-}
 
 /**
- * Parse SDP.
+ * Parse all SDP parts from the SIP body.
  *
- * returns 0 on success.
- * non zero on error.
+ * returns the first found SDP on success
+ * returns NULL if no SDP found or if error
  */
-int parse_sdp(struct sip_msg* _m)
+sdp_info_t* parse_sdp(struct sip_msg* _m)
 {
-	int res;
-	str body, mp_delimiter;
-	int mime;
+	struct body_part *part;
+	sdp_info_t *sdp, *ret;
 
-	if (_m->sdp) {
-		return 0;  /* Already parsed */
-	}
-
-	if (get_body(_m, &body)!=0 || body.len==0) {
+	if ( parse_sip_body(_m)<0 || _m->body==NULL) {
 		LM_DBG("message body has length zero\n");
-		return 1;
+		return NULL;
 	}
 
-	mime = parse_content_type_hdr(_m);
-	if (mime <= 0) {
-		return -1;
-	}
-	switch (((unsigned int)mime)>>16) {
-	case TYPE_APPLICATION:
-		/* LM_DBG("TYPE_APPLICATION: %d\n",((unsigned int)mime)>>16); */
-		switch (mime&0x00ff) {
-		case SUBTYPE_SDP:
-			/* LM_DBG("SUBTYPE_SDP: %d\n",mime&0x00ff); */
-			if (new_sdp(_m) < 0) {
-				LM_ERR("Can't create sdp\n");
-				return -1;
-			}
-			res = parse_sdp_session(&body, 0, NULL, _m->sdp);
-			if (res != 0) {
-				LM_DBG("free_sdp\n");
-				free_sdp((sdp_info_t**)(void*)&(_m->sdp));
-			}
-			return res;
-			break;
-		default:
-			LM_DBG("TYPE_APPLICATION: unknown %d\n",mime&0x00ff);
-			return -1;
-		}
-		break;
-	case TYPE_MULTIPART:
-		/* LM_DBG("TYPE_MULTIPART: %d\n",((unsigned int)mime)>>16); */
-		switch (mime&0x00ff) {
-		case SUBTYPE_MIXED:
-			/* LM_DBG("SUBTYPE_MIXED: %d <%.*s>\n",mime&0x00ff,_m->content_type->body.len,_m->content_type->body.s); */
-			if(get_mixed_part_delimiter(&(_m->content_type->body),&mp_delimiter) > 0) {
-				/*LM_DBG("got delimiter: <%.*s>\n",mp_delimiter.len,mp_delimiter.s); */
-				if (new_sdp(_m) < 0) {
-					LM_ERR("Can't create sdp\n");
-					return -1;
-				}
-				res = parse_mixed_content(&body, mp_delimiter, _m->sdp);
-				if (res != 0) {
-					LM_DBG("free_sdp\n");
-					free_sdp((sdp_info_t**)(void*)&(_m->sdp));
-				}
-				return res;
+	ret = NULL;
+
+	/* iterate all body parts and look for the SDP mime */
+	for( part=&_m->body->first ; part ; part=part->next) {
+
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(part))
+			continue;
+
+		if ( part->mime != ((TYPE_APPLICATION<<16)+SUBTYPE_SDP) )
+			continue;
+
+		if ( (sdp=new_sdp())==NULL ) {
+			LM_ERR("Can't create new sdp, skipping\n");
+		} else {
+			if (parse_sdp_session(&part->body, 0, NULL, sdp)<0) {
+				LM_ERR("failed to parse SDP for body part, skipping\n");
+				free_sdp( sdp );
 			} else {
-				return -1;
+				part->parsed = (void*)sdp;
+				part->free_parsed_f = (free_parsed_part_function)free_sdp;
+				/* remember the first found SDP */
+				if (!ret) ret = sdp;
 			}
-			break;
-		default:
-			LM_DBG("TYPE_MULTIPART: unknown %d\n",mime&0x00ff);
-			return -1;
 		}
-		break;
-	default:
-		LM_DBG("%d\n",((unsigned int)mime)>>16);
-		return -1;
 	}
 
-	LM_CRIT("We should not see this!\n");
-	return res;
+	return ret;
 }
 
 
 /**
  * Free all memory.
  */
-void free_sdp(sdp_info_t** sdp)
-{
-	__free_sdp(*sdp);
-	pkg_free(*sdp);
-	*sdp = NULL;
-}
-
-void __free_sdp(sdp_info_t* sdp)
+void free_sdp(sdp_info_t* sdp)
 {
 	sdp_session_cell_t *session, *l_session;
 	sdp_stream_cell_t *stream, *l_stream;
@@ -785,6 +630,7 @@ void __free_sdp(sdp_info_t* sdp)
 		}
 		pkg_free(l_session);
 	}
+	pkg_free(sdp);
 }
 
 void print_sdp_stream(sdp_stream_cell_t *stream, int level)
@@ -1196,9 +1042,9 @@ error:
 	return NULL;
 }
 
-sdp_info_t * clone_sdp_info(struct sip_msg* _m)
+sdp_info_t * clone_sdp_info(sdp_info_t *sdp_info)
 {
-	sdp_info_t *clone_sdp_info, *sdp_info=_m->sdp;
+	sdp_info_t *clone_sdp_info;
 	sdp_session_cell_t *clone_session, *prev_clone_session, *session;
 	int i, len;
 

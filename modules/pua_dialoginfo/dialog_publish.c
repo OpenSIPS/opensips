@@ -277,12 +277,6 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 	return body;
 
 error:
-	if(body)
-	{
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;

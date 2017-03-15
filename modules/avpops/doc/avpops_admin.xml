@@ -805,55 +805,6 @@ avp_copy("$avp(old)","$avp(new)/gd");
 		</section>
 		<section>
 			<title>
-				<function moreinfo="none">avp_printf(dest, format)
-				</function>
-			</title>
-			<para>
-			NOTE: since &osips; 1.3.0 the function has been moved to core
-			and it is an alias to pv_printf().
-			</para>
-			<para>
-			Prints the formatted string 'format' in the AVP 'dest'. The
-			'format' parameter can include any pseudo-variable defined in
-			&osips;. The list with all pseudo-variables in &osips; can
-			be found at:
-			<ulink url="http://opensips.org/dokuwiki/">
-			http://opensips.org/dokuwiki/</ulink>.
-			</para>
-			<para>Meaning of the parameters is as follows:</para>
-			<itemizedlist>
-			<listitem>
-				<para><emphasis>dest</emphasis> - in which AVP should be
-				stored the result.
-				Parameter syntax is:
-				</para>
-				<itemizedlist>
-					<listitem><para><emphasis>
-					name = ( avp_name | avp_alias )
-					</emphasis></para></listitem>
-				</itemizedlist>
-			</listitem>
-			<listitem>
-				<para><emphasis>format</emphasis> - the formatted string
-				to be printed in 'dest' AVP.
-				</para>
-			</listitem>
-			</itemizedlist>
-			<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-			</para>
-			<example>
-				<title><function>avp_printf</function> usage</title>
-				<programlisting format="linespecific">
-...
-avp_printf("$avp(20)", "This is a $rm request with call-id $hdr(call-id)");
-...
-				</programlisting>
-			</example>
-		</section>
-		<section>
-			<title>
 				<function moreinfo="none">avp_subst(avps, subst)</function>
 			</title>
 			<para>

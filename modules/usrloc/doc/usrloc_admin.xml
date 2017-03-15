@@ -119,6 +119,14 @@
 		<emphasis role='bold'><xref linkend="replicate_contacts_to"/></emphasis> parameters of the
 		module.
 		</para>
+		<para>
+		<emphasis>Note</emphasis> that for certain scenarios, where NAT or
+		multihomed interfaces are involved, you might need to preserve the
+		same interface among all the &osips; servers within the replication
+		cluster. Otherwise when an instance receives a replicated contact
+		for whom it does not have a listener, it will use a different
+		listener of his.
+		</para>
 		</section>
 	</section>
 
@@ -137,7 +145,7 @@
 			<listitem>
 			<para>
 				<emphasis>clusterer, if <xref linkend="replicate_contacts_to"/>
-				parameters is turned on (contact replication via clusterer 
+				parameters is turned on (contact replication via clusterer
 				module)</emphasis>.
 			</para>
 			</listitem>
@@ -862,6 +870,34 @@ modparam("usrloc", "hash_size", 10)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>regen_broken_contactid</varname> (integer)</title>
+		<para>
+			Since version 2.2, <emphasis role='bold'>contact_id</emphasis> concept
+		was introduced. Since this parameter validates a contact each time &osips;
+		is started, there are times when the value of this parameter should be
+		regenerated. That is when <emphasis role='bold'>location</emphasis> table
+		is being migrated from a version older than 2.2 or when
+		<emphasis role='bold'>hash_size</emphasis> module parameter is changed.
+		Enabling this parameter will regenerate broken contact id's based on
+		current configurations.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>0(not enabled)</quote>
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>regen_broken_contactid</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "regen_broken_contactid", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
@@ -1131,19 +1167,42 @@ modparam("usrloc", "hash_size", 10)
 				<emphasis>aor</emphasis> - The AOR of the inserted contact.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>address</emphasis> - The binding address of the inserted contact.
+				<emphasis>uri</emphasis> - The contact URI of the inserted
+				contact.
 			</para></listitem>
 			<listitem><para>
-					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
+				<emphasis>received</emphasis> - IP, port and protocol the 
+				registration message was received from. If these have the 
+				same value as the contact's address (see the address parameter)
+				then the received parameter will be an empty string.
 			</para></listitem>
 			<listitem><para>
-					<emphasis>received</emphasis> - IP, port and protocol the registration
-					message was received from. If these have the same value as the
-					contact's address (see the address parameter) then the received
-					parameter will be an empty string.
+				<emphasis>path</emphasis> - The PATH header value of the
+				registration message.(empty string if not present)
 			</para></listitem>
 			<listitem><para>
-					<emphasis>cseq</emphasis> - The cseq number as an int value.
+				<emphasis>qval</emphasis> - The Q value (priority) of the 
+				contact (as integer value from 0 to 10).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>socket</emphasis> - The SIP socket/listener
+				(as string) used by OpenSIPS to receive the contact
+				registations.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>bflags</emphasis> - The branch flags (bflags) of the
+				contact (in integer value of the bitmask)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>expires</emphasis> - The expires value of the
+				contact (as UNIX timestamp integer).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - The Call-ID header of the
+				registration message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cseq</emphasis> - The cseq number as an int value.
 			</para></listitem>
 		</itemizedlist>
 	</section>
@@ -1157,27 +1216,7 @@ modparam("usrloc", "hash_size", 10)
 			the list then both the E_UL_AOR_DELETE and
 			E_UL_CONTACT_DELETE events will be raised.
 		</para>
-		<para>Parameters:</para>
-		<itemizedlist>
-			<listitem><para>
-				<emphasis>aor</emphasis> - The AOR of the deleted contact.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>address</emphasis> - The binding address of the deleted contact.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>received</emphasis> - IP, port and protocol the registration
-					message was received from. If these have the same value as the
-					contact's address (see the address parameter) then the received
-					parameter will be an empty string.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>cseq</emphasis> - The cseq number as an int value.
-			</para></listitem>
-		</itemizedlist>
+		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
 	</section>
 	<section>
 		<title>
@@ -1187,27 +1226,7 @@ modparam("usrloc", "hash_size", 10)
 			This event is raised when a contact's info is updated by receiving
 			another registration message.
 		</para>
-		<para>Parameters:</para>
-		<itemizedlist>
-			<listitem><para>
-				<emphasis>aor</emphasis> - The AOR of the updated contact.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>address</emphasis> - The binding address of the updated contact.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>received</emphasis> - IP, port and protocol the registration
-					message was received from. If these have the same value as the
-					contact's address (see the address parameter) then the received
-					parameter will be an empty string.
-			</para></listitem>
-			<listitem><para>
-					<emphasis>cseq</emphasis> - The cseq number as an int value.
-			</para></listitem>
-		</itemizedlist>
+		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
 	</section>
 	</section>
 </chapter>

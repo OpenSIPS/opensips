@@ -459,6 +459,7 @@ int sca_logic_notify(b2bl_cb_params_t *params, unsigned int b2b_event)
 {
 	int on_hold = 0;
 	int sdp_session_num = 0, sdp_stream_num;
+	sdp_info_t *sdp;
 	sdp_session_cell_t* sdp_session;
 	sdp_stream_cell_t* sdp_stream;
 	struct sip_msg *msg = params->msg;
@@ -577,12 +578,13 @@ handle_appearance:
 			lock_release(&b2b_sca_htable[hash_index].lock);
 			return B2B_DROP_MSG_CB_RET;
 		}
-		if (0 == parse_sdp(msg)) {
-			sdp_session = get_sdp_session(msg, sdp_session_num);
+		if ( msg && (sdp=parse_sdp(msg)) != NULL ) {
+			sdp_session = get_sdp_session(sdp, sdp_session_num);
 			if(!sdp_session) break;
 			sdp_stream_num = 0;
 			for(;;) {
-				sdp_stream = get_sdp_stream(msg, sdp_session_num, sdp_stream_num);
+				sdp_stream = get_sdp_stream(sdp, sdp_session_num,
+					sdp_stream_num);
 				if(!sdp_stream) break;
 				if(sdp_stream->media.len==AUDIO_STR_LEN &&
 					strncmp(sdp_stream->media.s,AUDIO_STR,AUDIO_STR_LEN)==0 &&

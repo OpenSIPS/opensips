@@ -35,10 +35,17 @@
 #include "ucontact.h"
 #include "ul_callback.h"
 
+enum usrloc_modes {
+	NO_DB         = 0,
+	WRITE_THROUGH = 1,
+	WRITE_BACK    = 2,
+	DB_ONLY       = 3,
+};
+
 typedef struct usrloc_api {
-	int           use_domain;
-	int           db_mode;
-	unsigned int  nat_flag;
+	int               use_domain;
+	enum usrloc_modes db_mode;
+	unsigned int      nat_flag;
 
 	register_udomain_t     register_udomain;
 	get_all_ucontacts_t    get_all_ucontacts;
@@ -68,5 +75,20 @@ typedef struct usrloc_api {
 
 typedef int (*bind_usrloc_t)(usrloc_api_t* api);
 
+static inline int load_ul_api(usrloc_api_t *ul)
+{
+	bind_usrloc_t bind_usrloc;
+
+	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
+	if (!bind_usrloc) {
+		LM_ERR("can't bind usrloc\n");
+		return -1;
+	}
+
+	if (bind_usrloc(ul) < 0)
+		return -1;
+
+	return 0;
+}
 
 #endif /* USRLOC_H */

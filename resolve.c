@@ -1751,14 +1751,18 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	struct rdata *head;
 	struct rdata *rd;
 	struct hostent* he;
+	unsigned short local_proto=PROTO_NONE;
 
 	if (dn)
 		*dn = 0;
 
+	if (proto==NULL)
+		proto = &local_proto;
+
 	/* check if it's an ip address */
 	if ( ((ip=str2ip(name))!=0) || ((ip=str2ip6(name))!=0) ){
 		/* we are lucky, this is an ip address */
-		if (proto && *proto==PROTO_NONE)
+		if (*proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		if (port && *port==0)
 			*port = protos[*proto].default_port;
@@ -1770,13 +1774,13 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		/* have port -> no NAPTR, no SRV lookup, just A record lookup */
 		LM_DBG("has port -> do A record lookup!\n");
 		/* set default PROTO if not set */
-		if (proto && *proto==PROTO_NONE)
+		if (*proto==PROTO_NONE)
 			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_a;
 	}
 
 	/* no port... what about proto? */
-	if ( proto && (*proto)!=PROTO_NONE ) {
+	if ( (*proto)!=PROTO_NONE ) {
 		/* have proto, but no port -> do SRV lookup */
 		LM_DBG("no port, has proto -> do SRV lookup!\n");
 		if (is_sips && (*proto)!=PROTO_TLS) {
@@ -1787,8 +1791,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	}
 
 	if ( dns_try_naptr==0 ) {
-		if (proto)
-			*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+		*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 		goto do_srv;
 	}
 	LM_DBG("no port, no proto -> do NAPTR lookup!\n");
@@ -2085,3 +2088,40 @@ struct dns_node *dns_res_copy(struct dns_node *s)
 	return d;
 }
 
+int resolve_hostport(str *in, unsigned short default_port,
+                     union sockaddr_union *dst)
+{
+	struct proxy_l* proxy;
+	char *p;
+	unsigned int port;
+	str st;
+
+	p = memchr(in->s, ':', in->len);
+	if (p != NULL) {
+		st.s = p+1;
+		st.len = in->len - (p + 1 - in->s);
+
+		if (str2int(&st, &port) != 0) {
+			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
+			       st.len, st.s, st.len, in->len, in->s);
+			return -1;
+		}
+		st.s = in->s;
+		st.len = p - in->s;
+	} else {
+		st = *in;
+		port = default_port;
+	}
+
+	proxy = mk_proxy(&st, port, PROTO_NONE, 0);
+	if (proxy == NULL) {
+		LM_ERR("could not resolve hostname '%.*s'\n", in->len, in->s);
+		return -1;
+	}
+
+	hostent2su(dst, &proxy->host, proxy->addr_idx, proxy->port);
+
+	free_proxy(proxy);
+	pkg_free(proxy);
+	return 0;
+}

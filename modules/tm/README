@@ -10,11 +10,7 @@ Edited by
 
 Jiri Kuthan
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Ovidiu Sas
 
@@ -34,6 +30,7 @@ Ovidiu Sas
               1.1.1. Per-Branch flags
               1.1.2. Timeout-Based Failover
               1.1.3. DNS Failover
+              1.1.4. Usage Scope
 
         1.2. Dependencies
 
@@ -81,14 +78,17 @@ Ovidiu Sas
               1.4.12. t_on_failure(failure_route)
               1.4.13. t_on_reply(reply_route)
               1.4.14. t_on_branch(branch_route)
-              1.4.15. t_add_hdrs("sip_hdrs")
-              1.4.16. t_replicate(URI,[flags])
-              1.4.17. t_write_req(info,fifo)
+              1.4.15. t_inject_branches(source[,flags])
+              1.4.16. t_wait_for_new_branches()
+              1.4.17. t_add_hdrs("sip_hdrs")
+              1.4.18. t_add_cancel_reason("Reason_hdr")
+              1.4.19. t_replicate(URI,[flags])
+              1.4.20. t_write_req(info,fifo)
                       t_write_unix(info,sock)
 
-              1.4.18. t_flush_flags()
+              1.4.21. t_flush_flags()
 
-        1.5. Exported pseudo-variables
+        1.5. Exported variables
 
               1.5.1. $T_branch_idx
               1.5.2. $T_reply_code
@@ -96,6 +96,7 @@ Ovidiu Sas
               1.5.4. $T_fr_inv_timeout
               1.5.5. $T_ruri
               1.5.6. $bavp(name)
+              1.5.7. $T_id
 
         1.6. Exported MI Functions
 
@@ -161,10 +162,13 @@ Ovidiu Sas
    1.31. t_on_failure usage
    1.32. t_on_reply usage
    1.33. t_on_branch usage
-   1.34. t_add_hdrs usage
-   1.35. t_replicate usage
-   1.36. t_write_req/unix usage
-   1.37. t_flush_flags usage
+   1.34. t_inject_branches usage
+   1.35. t_wait_for_new_branches usage
+   1.36. t_add_hdrs usage
+   1.37. t_add_cancel_reason usage
+   1.38. t_replicate usage
+   1.39. t_write_req/unix usage
+   1.40. t_flush_flags usage
 
 Chapter 1. Admin Guide
 
@@ -309,6 +313,19 @@ Chapter 1. Admin Guide
    failover is globally disabled (see the core parameter
    disable_dns_failover) or when the relay flag (per transaction)
    is set (see the t_relay() function).
+
+1.1.4. Usage Scope
+
+   Transaction functions and variables are only designed to be
+   called on SIP request messages where a transaction can be
+   created, or in routes that are transaction aware, such as
+   branch_route[name], failure_route[name] or onreply_route[name].
+   Using TM functtions or variables in a route that is not
+   transaction aware, such as the generic onreply_route,
+   error_route or timer_route[name, timer] may lead to undefined
+   behavior, and most of the time in bogus or malformed
+   signalling. Therefore it is strongly recommended to avoid using
+   them in non-tm context aware routes.
 
 1.2. Dependencies
 
@@ -472,11 +489,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 
    Syntax of the parameter is:
      * tw_append = append_name':' element (';'element)*
-     * element = ( [name '='] pseudo_variable)
-
-   The full list of supported pseudo-variables in OpenSIPS is
-   availabe at:
-   http://opensips.org/docs/pseudo-variables-1.1.x.html
+     * element = ( [name '='] variable)
 
    Each element will be appended per line in “name: value” format.
    Element “$rb (message body)” is the only one which does not
@@ -708,7 +721,7 @@ t_relay("udp:mydomain.com");
      * code - Reply code number.
      * reason_phrase - Reason string.
 
-   Both parameters accept any kind of pseudo-variables.
+   Both parameters accept any kind of variables.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -729,7 +742,7 @@ t_reply("404", "Use $rU not found");
      * reason_phrase - Reason string.
      * body - Reply body.
 
-   All parameters accept any kind of pseudo-variables.
+   All parameters accept any kind of variables.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -1047,18 +1060,101 @@ branch_route[1] {
 }
 ...
 
-1.4.15.  t_add_hdrs("sip_hdrs")
+1.4.15.  t_inject_branches(source[,flags])
+
+   The function adds new SIP branches (destinations) to an
+   existing transaction and fires them (sends them out). The
+   transaction may already have ongoing branches (like in ringing
+   state), which will not be affected by the injection of the new
+   branches. Also it is possible for the transaction not to have
+   any ongoing branches at the moment of the injection (still, the
+   transaction must wait for new branches, even if all existing
+   ones are completed - see the t_wait_for_new_branches function
+   for this).
+
+   The main usage scenario for this function (and also what makes
+   it different from t_relay is the ability to add new branches to
+   an ongoing transaction from script routes not related to the
+   transaction ( like timer route, event route, notification
+   route, and other). In such routes, other functions/module used
+   before the injection will point to the transaction to be
+   affected by this injection - see the event_routing module.
+
+   Parameters:
+     * source - where to take the description for the new branches
+       to be injected. It can be
+          + event - the branch will be taken from the event
+            attributes exposed in an event notification route (see
+            event_routing module).
+          + msg - the branches will be taken from the RURI of the
+            SIP message and from the additional branches (created
+            by append_branch() function or similar).
+     * flags - (optional) some additional flags related to the
+       injection process:
+          + cancel - cancel all the ongoing existing branches from
+            the transaction before injecting the new branches.
+
+   Example 1.34. t_inject_branches usage
+...
+route[event_notification] {
+        t_inject_branches("event");
+}
+...
+
+1.4.16.  t_wait_for_new_branches()
+
+   This function instructs the existing SIP transaction to wait
+   for new branches to be injected even after the completion of
+   the existing branches. This waiting will be done until the
+   Final Response INVITE timer (fr_inv_timeout) will hit for the
+   transaction; of course, the waiting will be terminated if the
+   transaction gets a 2xx final reply from one of the branches.
+
+   Normally if you have a transaction with two branches and they
+   get, let's say, a 404 and 486 replies, the branches will be
+   completed and transaction terminated by sending the 404 reply
+   to the caller. Still, if you do t_wait_for_new_branches before
+   relaying the transaction, the transaction will not terminate
+   upon the completion of the branches and not send the 404 to the
+   caller - it will wait for new branches to be injected (see
+   t_inject_branches function) until the fr_inv timer hits.
+
+   Example 1.35. t_wait_for_new_branches usage
+...
+t_newtran();
+t_wait_for_new_branches();
+t_relay();
+...
+
+1.4.17.  t_add_hdrs("sip_hdrs")
 
    Attach a set of headers to the existing transaction - these
    headers will be appended to all requests related to the
    transaction (outgoing branches, local ACKS, CANCELs).
 
-   Example 1.34. t_add_hdrs usage
+   Example 1.36. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
 ...
 
-1.4.16.  t_replicate(URI,[flags])
+1.4.18.  t_add_cancel_reason("Reason_hdr")
+
+   This function is used to enforce from the script level a custom
+   "Reason" header into a CANCEL request. Normally, the Reason
+   header is inherited form the received CANCEL (note that CANCEL
+   propagates in a hop-by-hop manner - it is re-generated at each
+   hop), but this function can overwrite it. It must be called
+   before relaying the CANCEL request and its input must be a
+   fully formated Reason header with name, body and CRLF.
+
+   Example 1.37. t_add_cancel_reason usage
+...
+t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhe
+re"\r\n');
+t_relay();
+...
+
+1.4.19.  t_replicate(URI,[flags])
 
    Replicates a request to another destination. No information due
    the replicated request (like reply code) will be forwarded to
@@ -1075,14 +1171,14 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.35. t_replicate usage
+   Example 1.38. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
 t_replicate("sip:1.2.3.4","0x4");
 ...
 
-1.4.17.  t_write_req(info,fifo) t_write_unix(info,sock)
+1.4.20.  t_write_req(info,fifo) t_write_unix(info,sock)
 
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
@@ -1091,7 +1187,7 @@ t_replicate("sip:1.2.3.4","0x4");
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.36. t_write_req/unix usage
+   Example 1.39. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -1101,7 +1197,7 @@ t_write_req("voicemail/append1","/tmp/appx_fifo");
 t_write_unix("logger/append2","/var/run/logger.sock");
 ...
 
-1.4.18.  t_flush_flags()
+1.4.21.  t_flush_flags()
 
    Flush the flags from current request into the already created
    transaction. It make sense only in routing block if the
@@ -1110,14 +1206,14 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.37. t_flush_flags usage
+   Example 1.40. t_flush_flags usage
 ...
 t_flush_flags();
 ...
 
-1.5. Exported pseudo-variables
+1.5. Exported variables
 
-   Exported pseudo-variables are listed in the next sections.
+   Exported variables are listed in the next sections.
 
 1.5.1. $T_branch_idx
 
@@ -1167,6 +1263,12 @@ t_flush_flags();
    $bavp(name) - a particular type of avp that can have different
    values for each branch. They can only be used in BRANCH, REPLY
    and FAILURE routes. Otherwise NULL value is returned.
+
+1.5.7. $T_id
+
+   $T_id - returns the ID of the current transaction. The ID is an
+   opaque hexa string, unique for each transaction. If there is no
+   current transaction, NULL value is returned.
 
 1.6. Exported MI Functions
 

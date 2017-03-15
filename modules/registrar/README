@@ -53,16 +53,14 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. remove(domain, AOR[, target])
+              1.4.2. remove(domain, AOR[, [contact], ip])
               1.4.3. lookup(domain [, flags [, aor]])
-              1.4.4. registered(domain [,AOR[, callid]])
-              1.4.5. is_other_contact(domain , IPs)
-              1.4.6. is_registered(domain ,[AOR])
-              1.4.7. is_contact_registered(domain
+              1.4.4. is_registered(domain ,[AOR])
+              1.4.5. is_contact_registered(domain
                       ,[AOR],[contact],[callid])
 
-              1.4.8. is_ip_registered(domain ,[AOR],IPvar)
-              1.4.9. add_sock_hdr(hdr_name)
+              1.4.6. is_ip_registered(domain ,[AOR],IPvar)
+              1.4.7. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
 
@@ -95,12 +93,10 @@ Bogdan-Andrei Iancu
    1.17. save usage
    1.18. remove usage
    1.19. lookup usage
-   1.20. registered usage
-   1.21. is_other_contact usage
-   1.22. is_registered usage
-   1.23. is_registered usage
-   1.24. is_registered usage
-   1.25. add_sock_hdr usage
+   1.20. is_registered usage
+   1.21. is_contact_registered usage
+   1.22. is_ip_registered usage
+   1.23. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -389,7 +385,7 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
    (in memory, db or both) at every registrar 'save'. When a
-   registrar 'lookup' or 'registered' function is called, the
+   registrar 'lookup' or 'is_registered' function is called, the
    attr_avp is populated with the value saved at [re]registration.
 
    When doing call forking, the avp will hold multiple values. The
@@ -532,20 +528,33 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  remove(domain, AOR[, target])
+1.4.2.  remove(domain, AOR[, [contact], ip])
 
    Explicitly remove contacts behind a given address-of-record.
 
    Meaning of the parameters is as follows:
      * domain - Logical domain within registrar. If database is
        used then this must be name of the table which stores the
-       contacts.
-     * AOR - address-of-record to be searched (SIP URI)
-     * target (optional) - may be specified in two ways:
-          + single delete - Specific contact to be deleted (SIP
-            URI)
-          + multi delete - IP/hostname of the AOR's contacts which
-            will be deleted
+       contacts;
+     * AOR - address-of-record to be searched (SIP URI);
+     * contact (optional) - sip uri for the contact to be removed;
+     * ip (optional) - source IP/hostname of the endpoint that
+       registered this contact; it matches the PATH header if the
+       registration had one, the ip from where the registration
+       request came from if the request came from behind nat(if
+       nathelper module used) or the actual ip of the contact;
+
+   IMPORTANT: Contact parameter can be used without defining the
+   ip parameter, that is the function can have 3 arguments. On the
+   other side, if only the ip parameter is desired to be used,
+   without the contact, the third parameter has to be set to NULL(
+   see more in the examples).
+
+   IMPORTANT#2: If both contact and ip are defined, only the
+   contact that will match both the contact and the IP will be
+   removed, that is a logical AND between the two. If none
+   defined, all the contacts from the specfied AOR shall be
+   removed.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -554,12 +563,20 @@ save("location","mr", "$avp(aor)");
 # remove all contacts belonging to the "bob" AOR
 remove("location", "sip:bob@atlanta.com");
 ...
-# remove only bob's home phone
+# remove only bob's home phone contact
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 ...
 # remove all bob's phones which are behind "50.60.50.60"
+# note that "contact" parameter has to be specified with NULL value even
+ though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com",, "$var(next_hop)");
+...
+# remove bob's phone with the contact "sip:bob@46.50.64.78" that is behi
+nd "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
+50.60");
 ...
 
 1.4.3.  lookup(domain [, flags [, aor]])
@@ -646,7 +663,7 @@ switch ($retcode) {
 };
 ...
 
-1.4.4.  registered(domain [,AOR[, callid]])
+1.4.4.  is_registered(domain ,[AOR])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -657,64 +674,6 @@ switch ($retcode) {
 
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
-     * AOR (optional)- AOR to lookup for; if missing, the RURI is
-       used as AOR; This must be a variable.
-     * callid (optional)- callid to check if a contact if
-       registered with this callid (this may help you to make
-       distinction between newly registered contact (callid not
-       registered so far) and re-registration (callid already
-       registered).
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
-
-   WARNING: THIS FUNCTION IS DEPRECATED! USE
-   is_contact_registered() INSTEAD.
-
-   Example 1.20. registered usage
-...
-if (registered("location")) {
-        sl_send_reply("100", "Trying");
-        ...
-};
-if (registered("location","$fu")) {
-        xlog("caller is registered\n");
-}
-...
-
-1.4.5.  is_other_contact(domain , IPs)
-
-   This function returns true if there are any other contacts
-   registered, different from the ones from the IPs avp.
-
-   Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for contacts
-       lookup.
-     * IPs - an AVP containing the IP's that will be compared with
-       the contacts from usrloc.
-
-   This function can be used from REQUEST_ROUTE.
-
-   WARNING: THIS FUNCTION IS DEPRECATED! USE is_ip_registered()
-   INSTEAD.
-
-   Example 1.21. is_other_contact usage
-...
-
-if (is_other_contact("location", "$avp(ips)")) {
-        sl_send_reply("403", "Forbidden");
-        ...
-};
-...
-
-1.4.6.  is_registered(domain ,[AOR])
-
-   The function returns true if an AOR is registered, false
-   otherwise. The function does not modify the message being
-   process.
-
-   Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for the lookup.
      * AOR (optional)- AOR to lookup for; if missing, the source
        if the AOR is the "To" header for REGISTER request, "From"
        header for any other sip request.
@@ -722,7 +681,7 @@ if (is_other_contact("location", "$avp(ips)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.22. is_registered usage
+   Example 1.20. is_registered usage
 ...
 /**/
 if (is_method("REGISTER")) {
@@ -738,7 +697,7 @@ if (is_registered("location","$fu")) {
 }
 ...
 
-1.4.7.  is_contact_registered(domain ,[AOR],[contact],[callid])
+1.4.5.  is_contact_registered(domain ,[AOR],[contact],[callid])
 
    The function returns true if a contact and/or a callid from a
    certain AOR is registered, false otherwise. The function does
@@ -763,7 +722,7 @@ if (is_registered("location","$fu")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.23. is_registered usage
+   Example 1.21. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -780,12 +739,12 @@ if(is_method("INVITE")) {
 }
 ...
 
-1.4.8.  is_ip_registered(domain ,[AOR],IPvar)
+1.4.6.  is_ip_registered(domain ,[AOR],IPvar)
 
    The function returns true if at least a contact has an IP from
-   the IPavp in it's received parameter,otherwise returns false.
+   the IPavp in it's received parameter, otherwise returns false.
    The function does not modify the message being process. This
-   function replaces the "is_other_contact" function.
+   function replaces the old "is_other_contact" function.
 
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
@@ -798,7 +757,7 @@ if(is_method("INVITE")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.24. is_registered usage
+   Example 1.22. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
@@ -809,7 +768,7 @@ if (is_method("REGISTER")) {
 };
 ...
 
-1.4.9.  add_sock_hdr(hdr_name)
+1.4.7.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
@@ -822,7 +781,7 @@ if (is_method("REGISTER")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.25. add_sock_hdr usage
+   Example 1.23. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...

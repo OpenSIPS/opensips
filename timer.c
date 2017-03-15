@@ -33,6 +33,10 @@
  * \brief Timer handling
  */
 
+/* keep this first as it needs to include some glib h file with
+ * special defines enabled (mainly sys/types.h) */
+#include "reactor.h"
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/select.h>
@@ -44,7 +48,7 @@
 #include "timer.h"
 #include "dprint.h"
 #include "error.h"
-#include "pt.h"
+#include "ipc.h"
 #include "config.h"
 #include "sr_module.h"
 #include "daemonize.h"
@@ -183,7 +187,7 @@ int register_utimer(char *label, utimer_function f, void* param,
 	struct os_timer* t;
 
 	flags = flags | TIMER_FLAG_IS_UTIMER; /* just to be sure */
-	t = new_os_timer( label, 1, (timer_function*)f, param, interval);
+	t = new_os_timer( label, flags, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the utimer list*/
@@ -485,7 +489,7 @@ static void run_timer_process_jif(void)
 	struct timeval o_tv;
 	struct timeval tv;
 	struct timeval sync_ts, last_ts;
-	utime_t interval, drift;
+	stime_t interval, drift;
 	utime_t last_ticks, last_sync = 0;
 
 	o_tv.tv_sec = 0;
@@ -598,6 +602,90 @@ int start_timer_processes(void)
 	return 0;
 error:
 	return -1;
+}
+
+
+inline static int handle_io(struct fd_map* fm, int idx,int event_type)
+{
+	switch(fm->type){
+		case F_TIMER_JOB:
+			handle_timer_job();
+			return 0;
+		case F_SCRIPT_ASYNC:
+			async_script_resume_f( &fm->fd, fm->data);
+			return 0;
+		case F_FD_ASYNC:
+			async_fd_resume( &fm->fd, fm->data);
+			return 0;
+		case F_IPC:
+			ipc_handle_job();
+			return 0;
+		default:
+			LM_CRIT("unknown fd type %d in Timer Extra\n", fm->type);
+			return -1;
+	}
+	return -1;
+}
+
+int timer_proc_reactor_init(void)
+{
+	/* create the reactor for timer proc */
+	if ( init_worker_reactor( "Timer_extra", RCT_PRIO_MAX)<0 ) {
+		LM_ERR("failed to init reactor\n");
+		goto error;
+	}
+
+	/* init: start watching for the IPC jobs */
+	if (reactor_add_reader( IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC,NULL)<0){
+		LM_CRIT("failed to add IPC pipe to reactor\n");
+		goto error;
+	}
+
+	/* init: start watching for the timer jobs */
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB,
+			RCT_PRIO_TIMER,NULL)<0){
+		LM_CRIT("failed to add timer pipe_out to reactor\n");
+		goto error;
+	}
+	return 0;
+
+error:
+	destroy_worker_reactor();
+	return -1;
+}
+
+int start_timer_extra_processes(int *chd_rank)
+{
+	pid_t pid;
+
+	(*chd_rank)++;
+	if ( (pid=internal_fork( "Timer handler"))<0 ) {
+		LM_CRIT("cannot fork Timer handler process\n");
+		return -1;
+	} else if (pid==0) {
+		/* new Timer process */
+		/* set a more detailed description */
+			set_proc_attrs("Timer handler");
+			if (timer_proc_reactor_init() < 0 ||
+					init_child(*chd_rank) < 0) {
+				report_failure_status();
+				goto error;
+			}
+
+			report_conditional_status( 1, 0);
+
+			/* launch the reactor */
+			reactor_main_loop( 1/*timeout in sec*/, error , );
+			destroy_worker_reactor();
+
+			exit(-1);
+	}
+	/*parent*/
+	return 0;
+
+/* only from child process */
+error:
+	exit(-1);
 }
 
 

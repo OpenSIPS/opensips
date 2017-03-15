@@ -41,7 +41,6 @@ const char *LOCATION_TAG_BEGIN = "<location-key>";
 const char *LOCATION_TAG_END = "</location-key>";
 const char *NEW_LINE = "\n";
 
-const char *CONTENT_TYPE_PIDF = "Content-Type: application/pidf+xml";
 const char *PRESENCE_START = "<presence";
 const char *PRESENCE_END = "/presence>";
 
@@ -52,6 +51,9 @@ const char *EVENT_TYPE = "dialog";
 const char *CALLID_PARAM = "call-id=";
 const char *FROMTAG_PARAM = ";from-tag=";
 
+
+#define MIME_PIDF                "application/pidf+xml"
+#define MIME_PIDF_LEN            (sizeof(MIME_PIDF)-1)
 #define PAI_SUFFIX               ";user=phone;CBN="
 #define PAI_SUFFIX_LEN           (sizeof(PAI_SUFFIX)-1)
 #define PAI_SUFFIX_II            ";user=phone>\n"
@@ -881,8 +883,7 @@ end:
  */
 int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
 
-	struct part* mbody_part;
-	struct multi_body *mbody;
+	struct body_part* mbody_part;
 	char *body_start, *body_end;
 	char *body_aux;
 	int size_body = 0;
@@ -890,19 +891,24 @@ int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
 	UNUSED(cont);
 
 	LM_DBG(" --- FIND PIDF BODY \n \n");
-	mbody = get_all_bodies(msg);
-	if (mbody == NULL) {
+	if ( parse_sip_body(msg)<0 || msg->body==NULL) {
 		LM_ERR("Failed to get bodies\n");
 		return -1;
 	}
 
 
-	mbody_part = mbody->first;
+	mbody_part = &msg->body->first;
 	while (mbody_part != NULL) {
+
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(mbody_part))
+			continue;
+
 		LM_DBG(" --- PIDF BODY %.*s", mbody_part->body.len, mbody_part->body.s);
 		LM_DBG(" --- PIDF BODY COUNT %d", ++cont);
 
-		if (strstr(mbody_part->body.s, CONTENT_TYPE_PIDF) != NULL) {
+		if ( mbody_part->mime_s.len==MIME_PIDF_LEN &&
+		memcmp(mbody_part->mime_s.s, MIME_PIDF, mbody_part->mime_s.len)==0 ) {
 			body_start = strstr(mbody_part->body.s, PRESENCE_START);
 			body_end = strstr(mbody_part->body.s, PRESENCE_END);
 			size_body = body_end - body_start + 11;

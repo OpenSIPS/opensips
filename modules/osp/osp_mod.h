@@ -57,13 +57,17 @@
 #define OSP_DEF_USERPHONE               0
 #define OSP_DEF_DNIDLOC                 2
 #define OSP_DEF_DNIDPARAM               "networkid"
+#define OSP_DEF_SWIDLOC                 2
+#define OSP_DEF_SWIDPARAM               "switchid"
 #define OSP_DEF_PARAMSTRLOC             0
 #define OSP_DEF_PARAMSTRVAL             ""
 #define OSP_DEF_SRCIPAVP                "$avp(_osp_source_device_)"
 #define OSP_DEF_SNIDAVP                 "$avp(_osp_source_networkid_)"
+#define OSP_DEF_SWIDAVP                 "$avp(_osp_source_switchid_)"
 #define OSP_DEF_CINFONUM                 8
 #define OSP_DEF_CINFOAVP                "$avp(_osp_custom_info_)"
 #define OSP_DEF_CNAMAVP                 "$avp(_osp_cnam_)"
+#define OSP_DEF_EXTHEADERVAL            ""
 #define OSP_DEF_SRCMEDIAAVP             "$avp(_osp_source_media_address_)"
 #define OSP_DEF_DESTMEDIAAVP            "$avp(_osp_destination_media_address_)"
 #define OSP_DEF_REQDATEAVP              "$avp(_osp_request_date_)"

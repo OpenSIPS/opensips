@@ -183,9 +183,6 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 			for (++p; *p == ' ' && p < e; p++);
 			if ( p < e && *p == 's') {
 				if (cdb_url.len && cdb_url.s) {
-					if (type==REPL_PROTOBIN)
-						goto repl_error;
-
 					type= REPL_CACHEDB;
 				} else {
 					LM_WARN("profile %.*s configured to be stored in CacheDB, "
@@ -194,9 +191,6 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 				}
 			} else if ( p < e && *p == 'b') {
 				if (profile_replicate_cluster) {
-					if (type==REPL_CACHEDB)
-						goto repl_error;
-
 					type = REPL_PROTOBIN;
 				} else {
 					LM_WARN("profile %.*s configured to be replicated over BIN, "
@@ -232,10 +226,6 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 	}while( (p=d)!=NULL );
 
 	return 0;
-
-repl_error:
-	LM_ERR("Can't use both bin replication and cachedb!\n");
-	return -1;
 }
 
 #define DLG_COPY(_d, _s) \
@@ -624,39 +614,40 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 			if (!cdbc) {
 				LM_WARN("CacheDB not initialized - some information might"
 						" not be deleted from the cachedb engine\n");
-				return;
+				goto skip_and_continue;
 			}
 
 			/* prepare buffers */
 			if( l->profile->has_value) {
 
 				if (dlg_fill_value(&l->profile->name, &l->value) < 0)
-					return;
+					goto skip_and_continue;
 				if (dlg_fill_size(&l->profile->name) < 0)
-					return;
+					goto skip_and_continue;
 				/* not really interested in the new val */
 				if (cdbf.sub(cdbc, &dlg_prof_val_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove profile from CacheDB\n");
-					return;
+					goto skip_and_continue;
 				}
 				/* fill size into name */
 				if (cdbf.sub(cdbc, &dlg_prof_size_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove size profile from CacheDB\n");
-					return;
+					goto skip_and_continue;
 				}
 			} else {
 				if (dlg_fill_name(&l->profile->name) < 0)
-					return;
+					goto skip_and_continue;
 				if (cdbf.sub(cdbc, &dlg_prof_noval_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove profile from CacheDB\n");
-					return;
+					goto skip_and_continue;
 				}
 			}
 		}
 
+skip_and_continue:
 		/* free memory */
 		shm_free(l);
 	}
@@ -1402,7 +1393,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 					delete_entry = delete_entry->next;
 					pkg_free(deleted);
 				}
-				LM_CRIT("eror while terminating dlg\n");
+				LM_CRIT("error while terminating dlg\n");
 				return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
 			}
 

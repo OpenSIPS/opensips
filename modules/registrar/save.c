@@ -59,9 +59,10 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../usrloc/usrloc.h"
+#include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/sip_msg.h"
 #include "common.h"
 #include "sip_msg.h"
-#include "rerrno.h"
 #include "reply.h"
 #include "reg_mod.h"
 #include "regtime.h"
@@ -794,7 +795,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	if (sctx.max_contacts == -1)
 		sctx.max_contacts = max_contacts;
 
-	if (parse_message(_m) < 0) {
+	if (parse_reg_headers(_m) < 0) {
 		goto error;
 	}
 
@@ -908,9 +909,9 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 		return -1;
 	}
 
-	if (parse_message(_m) < 0) return -1;
+	if (parse_reg_headers(_m) < 0) return -1;
 	if (check_contacts(_m, &st) > 0) return -1;
-	if (parse_message(msg) < 0) return -1;
+	if (parse_reg_headers(msg) < 0) return -1;
 	if (check_contacts(msg, &st) > 0) return -1;
 
 	/* msg - request
@@ -1038,6 +1039,16 @@ done:
 	return ret;
 }
 
+int w_remove_2(struct sip_msg *msg, char *udomain, char *aor_gp)
+{
+	return _remove( msg, udomain, aor_gp, NULL, NULL);
+}
+
+int w_remove_3(struct sip_msg *msg, char *udomain, char *aor_gp, char *domain_gp)
+{
+	return _remove( msg, udomain, aor_gp, domain_gp, NULL);
+}
+
 /**
  * _remove - Delete an entire AOR entry or just one or more of its Contacts
  * Parameter format: _remove(domain, AOR[, Contact URI or plain hostname])
@@ -1048,15 +1059,15 @@ done:
  *
  * @return:      1 on success, negative on failure
  */
-int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
+int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *domain_gp, char *ip_gp)
 {
 	struct sip_uri puri;
 	struct hostent delete_he, *he;
 	urecord_t *record;
 	ucontact_t *contact, *it;
-	str uri, aor_user, delete_user = { NULL, 0 };
+	str domain={ NULL, 0 }, ip={ NULL, 0 }, uri, aor_user, delete_user = { NULL, 0 };
 	int err, count = 0;
-	int delete_by_hostname = 0;
+	int delete_contact = 0;
 	unsigned short delete_port;
 
 	memset(&delete_he, 0, sizeof delete_he);
@@ -1080,7 +1091,7 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 	}
 
 	/* if no contact uri param is given, delete the whole urecord entry */
-	if (!contact_gp) {
+	if (!domain_gp && !ip_gp) {
 		if (ul.delete_urecord((udomain_t *)udomain, &aor_user, record, 0) != 0) {
 			LM_ERR("failed to delete urecord for aor '%.*s'\n",
 			        aor_user.len, aor_user.s);
@@ -1092,27 +1103,61 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 		goto out_unlock;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)contact_gp, &uri) != 0) {
-		LM_ERR("failed to retrieve value of contact pv\n");
-		err = E_UNSPEC;
-		goto out_unlock;
+	if (domain_gp) {
+		if (fixup_get_svalue(msg, (gparam_p)domain_gp, &domain) != 0) {
+			LM_ERR("failed to retrieve value of contact pv\n");
+			err = E_UNSPEC;
+			goto out_unlock;
+		}
 	}
 
-	/* minimum two-letters for the domain name */
-	if (uri.len < 5) {
-		LM_ERR("Invalid domain given: '%.*s'\n", uri.len, uri.s);
-		err = E_INVALID_PARAMS;
-		goto out_unlock;
+	if (ip_gp) {
+		if (fixup_get_svalue(msg, (gparam_p)ip_gp, &ip) != 0) {
+			LM_ERR("failed to retrieve value of contact pv\n");
+			err = E_UNSPEC;
+			goto out_unlock;
+		}
 	}
 
-	/* a domain/IP address was given instead of a SIP contact URI */
-	if (uri.s[0] != 's' || uri.s[1] != 'i' ||
-	    uri.s[2] != 'p' || (uri.s[3] != ':' &&
-	                        (uri.s[3] != 's' || uri.s[4] != ':'))) {
+	if (domain.s) {
+		/* minimum two-letters for the domain name */
+		if (domain.len < 5 || domain.s[0] != 's' || domain.s[1] != 'i' ||
+			domain.s[2] != 'p' || (domain.s[3] != ':' &&
+								(domain.s[3] != 's' || domain.s[4] != ':'))) {
+			LM_ERR("Invalid domain given: '%.*s'\n", domain.len, domain.s);
+			err = E_INVALID_PARAMS;
+			goto out_unlock;
+		} else {
+			LM_DBG("parsing uri: %.*s\n", uri.len, uri.s);
 
-		delete_by_hostname = 1;
+			if (parse_uri(domain.s, domain.len, &puri) != 0) {
+				LM_ERR("failed to parse contact uri: '%.*s'\n",
+						domain.len, domain.s);
+				err = E_BAD_URI;
+				 goto out_unlock;
+			}
 
-		he = sip_resolvehost(&uri, &delete_port, NULL, 0, NULL);
+			delete_user = puri.user;
+
+			he = sip_resolvehost(&puri.host, &delete_port, &puri.proto, 0, NULL);
+			if (!he) {
+				LM_ERR("cannot resolve given uri: '%.*s'\n", uri.len, uri.s);
+				err = E_UNSPEC;
+				goto out_unlock;
+			}
+
+			if (puri.port_no > 0)
+				delete_port  = puri.port_no;
+
+			LM_DBG("Delete by contact: [ User %.*s | Host %s | Port %d ]\n",
+					delete_user.len, delete_user.s,
+					inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])),
+					delete_port);
+		}
+	}
+
+	if (ip.s) {
+		he = sip_resolvehost(&ip, &delete_port, NULL, 0, NULL);
 		if (!he) {
 			LM_ERR("cannot resolve given host: '%.*s'\n", uri.len, uri.s);
 			err = E_UNSPEC;
@@ -1121,38 +1166,12 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 
 		LM_DBG("Delete by host: '%s'\n",
 		        inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])));
-	} else {
-		LM_DBG("parsing uri: %.*s\n", uri.len, uri.s);
 
-		if (parse_uri(uri.s, uri.len, &puri) != 0) {
-			LM_ERR("failed to parse contact uri: '%.*s'\n",
-			        uri.len, uri.s);
-			err = E_BAD_URI;
+		if (hostent_cpy(&delete_he, he) != 0) {
+			LM_ERR("no more pkg mem\n");
+			err = E_OUT_OF_MEM;
 			goto out_unlock;
 		}
-
-		delete_user = puri.user;
-
-		he = sip_resolvehost(&puri.host, &delete_port, &puri.proto, 0, NULL);
-		if (!he) {
-			LM_ERR("cannot resolve given uri: '%.*s'\n", uri.len, uri.s);
-			err = E_UNSPEC;
-			goto out_unlock;
-		}
-
-		if (puri.port_no > 0)
-			delete_port  = puri.port_no;
-
-		LM_DBG("Delete by contact: [ User %.*s | Host %s | Port %d ]\n",
-		        delete_user.len, delete_user.s,
-		        inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])),
-				delete_port);
-	}
-
-	if (hostent_cpy(&delete_he, he) != 0) {
-		LM_ERR("no more pkg mem\n");
-		err = E_OUT_OF_MEM;
-		goto out_unlock;
 	}
 
 	for (it = record->contacts; it; ) {
@@ -1184,23 +1203,33 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 		        inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])),
 				puri.port_no);
 
-		if (delete_by_hostname) {
+		delete_contact = 0;
+
+		if (ip.s) {
 			if (!memcmp(delete_he.h_addr_list[0],
 			            he->h_addr_list[0], he->h_length))
 			{
-				ul.delete_ucontact(record, contact, 0);
-				count--;
+				delete_contact = 1;
 			}
-		} else {
+		}
+
+		if (domain.s) {
 			if (delete_user.len == puri.user.len &&
 			    delete_port == puri.port_no &&
 			    !memcmp(delete_he.h_addr_list[0],
 			            he->h_addr_list[0], he->h_length)
 				&& !memcmp(delete_user.s, puri.user.s, puri.user.len))
 			{
-				ul.delete_ucontact(record, contact, 0);
-				count--;
+				delete_contact = 1;
+			} else {
+				/* might be 1 from above(ip search) */
+				delete_contact = 0;
 			}
+		}
+
+		if (delete_contact) {
+			ul.delete_ucontact(record, contact, 0);
+			count--;
 		}
 	}
 
@@ -1222,8 +1251,3 @@ out_unlock:
 	return err;
 }
 
-int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
-{
-	LM_WARN("Deprecated! Use is_ip_registered() instead!\n");
-	return is_ip_registered(msg, _d, NULL, _s);
-}

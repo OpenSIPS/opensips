@@ -233,7 +233,8 @@ static inline struct mi_handler* mi_json_build_async_handler(void)
 }
 
 struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
-	const str* params, str *page, str *buffer, struct mi_handler **async_hdl)
+	const str* params, str *page, str *buffer, struct mi_handler **async_hdl,
+	union sockaddr_union* cl_socket)
 {
   struct mi_node *node;
   struct mi_root *mi_cmd = NULL;
@@ -305,6 +306,7 @@ struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
     }
   }
 
+
   html_page_data.page.s = buffer->s;
   html_page_data.page.len = 0;
   html_page_data.buffer.s = buffer->s;
@@ -321,12 +323,16 @@ struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
   }
   LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
+  trace_json_request( f, cl_socket, miCmd->s, mi_cmd);
+
   *async_hdl = hdl;
 
   if (mi_cmd) free_mi_tree(mi_cmd);
   return mi_rpl;
 
 error:
+  trace_json_request( f, cl_socket, miCmd->s, mi_cmd);
+
   if (mi_cmd) free_mi_tree(mi_cmd);
   if (hdl) shm_free(hdl);
   *async_hdl  = NULL;
@@ -562,7 +568,7 @@ static void mi_json_recur_write_node(struct page_buf* pb, struct mi_node *node,
         MI_JSON_ESC_COPY(pb, attr->name);
         MI_JSON_COPY(pb, MI_JSON_SQUOT);
         MI_JSON_COPY(pb, MI_JSON_COLON);
-  
+
         /* attribute value */
         if (attr->value.s!=NULL) {
           MI_JSON_COPY(pb, MI_JSON_SQUOT);
@@ -599,7 +605,7 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
   struct mi_node* t;
   if (!tree)
     return pb->status;
-    
+
 
   if (flags & MI_IS_ARRAY) {
     LM_DBG("Treat as an array\n");

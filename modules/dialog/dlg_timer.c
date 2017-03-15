@@ -39,6 +39,9 @@ struct dlg_reinvite_ping_timer *reinvite_ping_timer=0;
 str options_str=str_init("OPTIONS");
 str invite_str=str_init("INVITE");
 
+extern int reinvite_ping_interval;
+extern int options_ping_interval;
+
 /* for the dlg timer, there are 3 possible states :
  * prev=next=0 -> dialog not in timer list
  * prev=0 -> dialog expired
@@ -276,6 +279,47 @@ int insert_dlg_timer(struct dlg_tl *tl, int interval)
 	return 0;
 }
 
+void unsafe_insert_ping_timer(struct dlg_ping_list *node,int new_timeout)
+{
+	struct dlg_ping_list *it;
+
+	node->timeout = get_ticks() + new_timeout;
+
+	if (ping_timer->first == 0) {
+		ping_timer->first = node;
+		ping_timer->last = node;
+	} else {
+		/* quick optimisation, always check if our timeout is bigger than last
+		if not, lookup our position, might be useful in the future if we want
+		to set different ping intervals per dialog */
+		if (node->timeout >= ping_timer->last->timeout) {
+			node->prev = ping_timer->last;
+			ping_timer->last->next = node;
+			ping_timer->last = node;
+		} else {
+			for (it=ping_timer->first;it;it=it->next) {
+				if (it->timeout >= node->timeout)
+					break;
+			}
+
+			/* we need to insert ourselves before the found node */
+			if (it == NULL) {
+				/* we're going to be the last node 
+				should never get here due to the above optimisation ... paranoia */
+				node->prev = ping_timer->last;
+				ping_timer->last->next = node;
+				ping_timer->last = node;
+			} else {
+				it->prev->next=node;
+				node->prev = it->prev;
+				node->next = it;
+				it->prev = node;
+			}
+
+		}
+	}
+}
+
 int insert_ping_timer(struct dlg_cell* dlg)
 {
 	struct dlg_ping_list *node;
@@ -292,24 +336,56 @@ int insert_ping_timer(struct dlg_cell* dlg)
 
 	lock_get( ping_timer->lock );
 
+	unsafe_insert_ping_timer(node,options_ping_interval);
 	dlg->pl = node;
 
-	if (ping_timer->first == 0)
-		ping_timer->first = node;
-	else {
-		node->next = ping_timer->first;
-		ping_timer->first->prev = node;
-		ping_timer->first = node;
-	}
-
-	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
-	dlg->legs[callee_idx(dlg)].reply_received = 1;
-
+	dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_SUCCESS;
+	dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_SUCCESS;
 
 	lock_release( ping_timer->lock);
 	LM_DBG("Inserted dlg [%p] in ping timer list\n",dlg);
 
 	return 0;
+}
+
+void unsafe_insert_reinvite_ping_timer(struct dlg_ping_list *node,int new_timeout)
+{
+	struct dlg_ping_list *it;
+
+	node->timeout = get_ticks() + new_timeout;
+
+	if (reinvite_ping_timer->first == 0) {
+		reinvite_ping_timer->first = node;
+		reinvite_ping_timer->last = node;
+	} else {
+		/* quick optimisation, always check if our timeout is bigger than last
+		if not, lookup our position, might be useful in the future if we want
+		to set different ping intervals per dialog */
+		if (node->timeout >= reinvite_ping_timer->last->timeout) {
+			node->prev = reinvite_ping_timer->last;
+			reinvite_ping_timer->last->next = node;
+			reinvite_ping_timer->last = node;
+		} else {
+			for (it=reinvite_ping_timer->first;it;it=it->next) {
+				if (it->timeout >= node->timeout)
+					break;
+			}
+
+			/* we need to insert ourselves before the found node */
+			if (it == NULL) {
+				/* we're going to be the last node 
+				should never get here due to the above optimisation ... paranoia */
+				node->prev = reinvite_ping_timer->last;
+				reinvite_ping_timer->last->next = node;
+				reinvite_ping_timer->last = node;
+			} else {
+				it->prev->next=node;
+				node->prev = it->prev;
+				node->next = it;
+				it->prev = node;
+			}
+		}
+	}
 }
 
 int insert_reinvite_ping_timer(struct dlg_cell* dlg)
@@ -328,18 +404,11 @@ int insert_reinvite_ping_timer(struct dlg_cell* dlg)
 
 	lock_get( reinvite_ping_timer->lock );
 
+	unsafe_insert_reinvite_ping_timer(node,reinvite_ping_interval);
 	dlg->reinvite_pl = node;
 
-	if (reinvite_ping_timer->first == 0)
-		reinvite_ping_timer->first = node;
-	else {
-		node->next = reinvite_ping_timer->first;
-		reinvite_ping_timer->first->prev = node;
-		reinvite_ping_timer->first = node;
-	}
-
-	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = 1;
-	dlg->legs[callee_idx(dlg)].reinvite_confirmed = 1;
+	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_SUCCESS;
+	dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_SUCCESS;
 
 	lock_release( reinvite_ping_timer->lock);
 	LM_DBG("Inserted dlg [%p] in reinvite ping timer list\n",dlg);
@@ -411,11 +480,18 @@ static inline void detach_ping_node_unsafe(struct dlg_ping_list *it,int reinvite
 			ping_timer->first = it->next;
 	} else if (it->prev) {
 		it->prev->next = 0;
-	} else {
 		if (reinvite)
-			reinvite_ping_timer->first = 0;
+			reinvite_ping_timer->last = it->prev;
 		else
+			ping_timer->last = it->prev;
+	} else {
+		if (reinvite) {
+			reinvite_ping_timer->first = 0;
+			reinvite_ping_timer->last = 0;
+		} else {
 			ping_timer->first = 0;
+			ping_timer->last = 0;
+		}
 	}
 
 	it->next = it->prev = 0;
@@ -541,6 +617,9 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 		lock_get(ping_timer->lock);
 
 	for (it=reinvite?reinvite_ping_timer->first:ping_timer->first;it;it=next) {
+		/* FIXME - optimisation needed here : only iterate on the nodes that we need to
+		eg. where pinging is in progress */
+
 		current = it->dlg;
 		next = it->next;
 		detached = 0;
@@ -566,8 +645,8 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 
 		if (reinvite?(current->flags & DLG_FLAG_REINVITE_PING_CALLER):
 		(current->flags & DLG_FLAG_PING_CALLER)) {
-			if (reinvite?(current->legs[DLG_CALLER_LEG].reinvite_confirmed == 0):
-			(current->legs[DLG_CALLER_LEG].reply_received == 0)) {
+			if (reinvite?(current->legs[DLG_CALLER_LEG].reinvite_confirmed == DLG_PING_FAIL):
+			(current->legs[DLG_CALLER_LEG].reply_received == DLG_PING_FAIL)) {
 				detach_ping_node_unsafe(it,reinvite);
 				detached=1;
 
@@ -588,8 +667,8 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 		if (detached == 0) {
 			if (reinvite?(current->flags & DLG_FLAG_REINVITE_PING_CALLEE):
 			(current->flags & DLG_FLAG_PING_CALLEE)) {
-				if (reinvite?(current->legs[callee_idx(current)].reinvite_confirmed == 0):
-				current->legs[callee_idx(current)].reply_received == 0) {
+				if (reinvite?(current->legs[callee_idx(current)].reinvite_confirmed == DLG_PING_FAIL):
+				current->legs[callee_idx(current)].reply_received == DLG_PING_FAIL) {
 					detach_ping_node_unsafe(it,reinvite);
 					if (reinvite)
 						it->dlg->reinvite_pl = 0;
@@ -646,6 +725,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 		 */
 		LM_INFO("terminating dialog ( due to timeout ) "
 					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_FAIL;
 		return;
 	}
 
@@ -656,10 +736,11 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
 
+		dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_FAIL;
 		return;
 	}
 
-	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
+	dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_SUCCESS;
 }
 
 void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
@@ -686,11 +767,12 @@ void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occured, nothing else to do now
+		/* timeout occurred, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
 		LM_INFO("terminating dialog ( due to timeout ) "
 					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_FAIL;
 		return;
 	}
 
@@ -701,10 +783,11 @@ void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
 
+		dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_FAIL;
 		return;
 	}
 
-	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = 1;
+	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_SUCCESS;
 }
 
 /* Duplicate code for the sake of quickly knowing where the reply came from,
@@ -738,6 +821,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 		 */
 		LM_INFO("terminating dialog ( due to timeout ) "
 					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_FAIL;
 		return;
 	}
 
@@ -747,10 +831,11 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 		 * terminate the dialog */
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_FAIL;
 		return;
 	}
 
-	dlg->legs[callee_idx(dlg)].reply_received = 1;
+	dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_SUCCESS;
 }
 
 /* Duplicate code for the sake of quickly knowing where the reply came from,
@@ -779,11 +864,12 @@ void reinvite_reply_from_callee(struct cell* t, int type, struct tmcb_params* ps
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occured, nothing else to do now
+		/* timeout occurred, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
 		LM_INFO("terminating dialog ( due to timeout ) "
 					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_FAIL;
 		return;
 	}
 
@@ -793,10 +879,11 @@ void reinvite_reply_from_callee(struct cell* t, int type, struct tmcb_params* ps
 		 * terminate the dialog */
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_FAIL;
 		return;
 	}
 
-	dlg->legs[callee_idx(dlg)].reinvite_confirmed = 1;
+	dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_SUCCESS;
 }
 
 void unref_dlg_cb(void *dlg)
@@ -806,8 +893,9 @@ void unref_dlg_cb(void *dlg)
 
 void dlg_options_routine(unsigned int ticks , void * attr)
 {
-	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr;
+	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr,*next;
 	struct dlg_cell *dlg;
+	int current_ticks;
 
 	get_timeout_dlgs(&expired,&to_be_deleted,0);
 
@@ -842,15 +930,23 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 
 	tcp_no_new_conn = 1;
 
-	/* ping_timer->first now contains all active dialogs */
+	current_ticks = get_ticks();
+	/* ping_timer->first now contains all active dialogs
+	ping all dialogs with a lower timeout than now */
+	lock_get(ping_timer->lock);
 	it = ping_timer->first;
 	while (it) {
+		/* iterated across all the nodes that need pinging now */
+		if (it->timeout > current_ticks)
+			break;
+
 		dlg = it->dlg;
+		next=it->next;
 
 		/* do not ping ended dialogs - we might have missed them earlier or
 		 * might have terminated in the mean time - we'll clean them up on
 		 * our next iteration */
-		if (dlg->state != DLG_STATE_DELETED) {
+		if (dlg->state != DLG_STATE_DELETED && it->timeout <= current_ticks) {
 			if (dlg->flags & DLG_FLAG_PING_CALLER) {
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,callee_idx(dlg),
@@ -870,10 +966,15 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 					unref_dlg(dlg,1);
 				}
 			}
+
+			/* we've pinged, now update the timeout & move the entry further down the list */
+			detach_ping_node_unsafe(it,0);
+			unsafe_insert_ping_timer(it,options_ping_interval);
 		}
-		it = it->next;
+		it = next;
 	}
 
+	lock_release(ping_timer->lock);
 	tcp_no_new_conn = 0;
 }
 
@@ -888,10 +989,11 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 
 void dlg_reinvite_routine(unsigned int ticks , void * attr)
 {
-	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr;
+	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr,*next;
 	struct dlg_cell *dlg;
 	str extra_headers;
 	char *p;
+	int current_ticks;
 
 	get_timeout_dlgs(&expired,&to_be_deleted,1);
 
@@ -926,15 +1028,23 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 	tcp_no_new_conn = 1;
 
-	/* reinvite_ping_timer->first now contains all active dialogs */
+	current_ticks = get_ticks();
+	/* reinvite_ping_timer->first now contains all active dialogs
+	ping all dialogs with a lower timeout than now */
+	lock_get(reinvite_ping_timer->lock);
 	it = reinvite_ping_timer->first;
 	while (it) {
+		/* iterated across all the nodes that need pinging now */
+		if (it->timeout > current_ticks)
+			break;
+
 		dlg = it->dlg;
+		next=it->next;
 
 		/* do not ping ended dialogs - we might have missed them earlier or
 		 * might have terminated in the mean time - we'll clean them up on
 		 * our next iteration */
-		if (dlg->state != DLG_STATE_DELETED) {
+		if (dlg->state != DLG_STATE_DELETED && it->timeout <= current_ticks) {
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER) {
 				if (dlg->legs[callee_idx(dlg)].th_sent_contact.len)
 					extra_headers.len = 
@@ -1026,9 +1136,15 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 				pkg_free(extra_headers.s);
 			}
+
+			/* we've pinged, now update the timeout & move the entry further down the list */
+			detach_ping_node_unsafe(it,1);
+			unsafe_insert_reinvite_ping_timer(it,reinvite_ping_interval);
 		}
 		it = it->next;
+		it = next;
 	}
 
+	lock_release(reinvite_ping_timer->lock);
 	tcp_no_new_conn = 0;
 }

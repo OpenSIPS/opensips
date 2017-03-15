@@ -477,7 +477,7 @@ static inline int get_resource_list(str *username, str *domain, str *filename, s
 	path.s = path_buf;
 	path.len = 0;
 	if (selector->s) {
-            while (checked < selector->len && path.len <= MAX_PATH_LEN)
+            while (checked < selector->len && path.len  + 7 + 1/* \0 */ <= MAX_PATH_LEN)
             {
                     if (selector->s[checked] == '/')
                     {
@@ -553,12 +553,8 @@ static inline int get_resource_list(str *username, str *domain, str *filename, s
         return 0;
 
 error:
-        if (doc != NULL)
-        {
-                if (doc->s != NULL)
-                        pkg_free(doc->s);
-                pkg_free(doc);
-        }
+		pkg_free(doc->s);
+		pkg_free(doc);
         if (etag != NULL)
         {
                 if (etag->s != NULL)
@@ -1100,7 +1096,7 @@ int pres_get_rules_doc(str* user, str* domain, str** rules_doc)
 
 static int http_get_xcap_doc(str* user, str* domain, int type, str** doc)
 {
-	str body;
+	str body = {0, 0};
 	str *doc_tmp;
 	xcap_doc_sel_t doc_sel;
 	xcap_serv_t* xs;

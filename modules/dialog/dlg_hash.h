@@ -117,6 +117,7 @@ struct dlg_leg {
 #define TOPOH_ONGOING     (1 << 1)
 #define TOPOH_KEEP_USER   (1 << 2)
 #define TOPOH_HIDE_CALLID (1 << 3)
+#define TOPOH_DID_IN_USER (1 << 4)
 
 struct dlg_cell
 {
@@ -329,6 +330,8 @@ struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
 		unsigned int *dir, unsigned int *dst_leg);
 
 struct dlg_cell* get_dlg_by_val(str *attr, str *val);
+
+struct dlg_cell* get_dlg_by_callid( str *callid);
 
 void link_dlg(struct dlg_cell *dlg, int n);
 

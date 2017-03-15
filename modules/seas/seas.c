@@ -458,7 +458,7 @@ char * create_as_event_t(struct cell *t,struct sip_msg *msg,char processor_id,in
       LM_DBG("new CANCEL\n");
       originalT=seas_f.tmb.t_lookup_original_t(msg);
       if(!originalT || originalT==T_UNDEFINED){
-	 /** we dont even pass the unknown CANCEL to JAIN*/
+	 /** we don't even pass the unknown CANCEL to JAIN*/
 	 LM_WARN("CANCEL does not match any existing transaction!!\n");
 	 goto error;
       }else{

@@ -40,6 +40,8 @@
 #include "ldap_connect.h"
 #include "ldap_escape.h"
 
+extern int max_async_connections;
+
 static LDAP* last_ldap_handle = NULL;
 static LDAPMessage* last_ldap_result = NULL;
 
@@ -61,9 +63,8 @@ int lds_search_async(
 	char* _filter,
 	char** _attrs,
 	struct timeval* _search_timeout,
-	int* _ld_result_count,
-	int* _ld_error,
-	int* _msgidp);
+	int* _msgidp,
+	struct ld_conn** conn);
 
 
 int load_ldap(ldap_api_t *api)
@@ -86,16 +87,67 @@ int load_ldap(ldap_api_t *api)
 	return 1;
 }
 
+
+struct ld_conn* get_ldap_connection(struct ld_session* lds)
+{
+	struct ld_conn* it;
+
+
+	for (it=lds->conn_pool; it; it=it->next) {
+		if (it->handle == NULL) {
+
+			if (ldap_reconnect(lds->name, it)) {
+				LM_ERR("ldap failed to reconnect!\n");
+				return NULL;
+			}
+
+			it->is_used = 1;
+			return it;
+		}
+
+		if (it->is_used == 0) {
+			it->is_used = 1;
+			return it;
+		}
+	}
+
+	/* if we're out of connections create a new one
+	 * only if we are allowed to; if limit reached return NULL  */
+	if (max_async_connections <= lds->pool_size) {
+		LM_DBG("async connection pool size limit reached!\n");
+		return NULL;
+	}
+
+	if (ldap_connect(lds->name, NULL) < 0) {
+			LM_ERR("failed to create new ldap connection!\n");
+			return NULL;
+	}
+
+	/* newly created connection will be first in list */
+	lds->conn_pool->is_used = 1;
+
+	return lds->conn_pool;
+}
+
+void release_ldap_connection(struct ld_conn* conn)
+{
+	conn->is_used = 0;
+}
+
+
 int get_ldap_handle(char* _lds_name, LDAP** _ldap_handle)
 {
 	int rc;
 	struct ld_session* lds;
 
 	rc = get_connected_ldap_session(_lds_name, &lds);
+
+	*_ldap_handle = NULL;
 	if (rc == 0)
 	{
-		*_ldap_handle = lds->handle;
+		*_ldap_handle = lds->conn_s.handle;
 	}
+
 	return rc;
 }
 
@@ -110,40 +162,31 @@ int get_connected_ldap_session(char* _lds_name, struct ld_session** _lds)
 		return -1;
 	}
 
-	/* try to reconnect if ldap session handle is NULL */
-	if ((*_lds)->handle == NULL)
-	{
-		if (ldap_reconnect(_lds_name) == 0)
-		{
-			if ((*_lds = get_ld_session(_lds_name)) == NULL)
-			{
-				LM_ERR("[%s]: ldap_session not found\n", _lds_name);
-				return -1;
-			}
-		}
-		else
-		{
-			if (last_ldap_result != NULL)
-			{
+	return 0;
+}
+
+/**
+ * reconnect if a session is disconnected
+ */
+static inline int check_reconnect(char* _lds_name, struct ld_conn* conn)
+{
+	if ( conn == NULL ) {
+		LM_ERR("no session to reconect!\n");
+		return -1;
+	}
+
+	if (conn->handle == NULL) {
+		if ( ldap_reconnect(_lds_name, conn) != 0) {
+			if ( last_ldap_result != NULL ) {
 				ldap_msgfree(last_ldap_result);
 				last_ldap_result = NULL;
 			}
-			ldap_disconnect(_lds_name);
-			LM_ERR("[%s]: reconnect failed\n", _lds_name);
+
+			ldap_disconnect( _lds_name, conn);
+			LM_ERR("[%s]: reconnect failed for synchronous connection!\n", _lds_name);
 			return -1;
 		}
 	}
-
-	/* free old last_ldap_result */
-	/*
-	 * this is done now in lds_search
-	 *
-
-	if (last_ldap_result != NULL) {
-		ldap_msgfree(last_ldap_result);
-		last_ldap_result = NULL;
-	}
-	*/
 
 	return 0;
 }
@@ -155,12 +198,12 @@ void get_last_ldap_result(LDAP** _last_ldap_handle, LDAPMessage** _last_ldap_res
 }
 
 int ldap_params_search_async(
-	int* _ld_result_count,
 	int* _msgidp,
 	char* _lds_name,
 	char* _dn,
 	int _scope,
 	char** _attrs,
+	struct ld_conn** conn,
 	char* _filter,
 	...)
 {
@@ -206,44 +249,38 @@ int ldap_params_search_async(
 	/*
 	* ldap search
 	*/
-	if (lds_search_async(_lds_name,
+	if ((rc=lds_search_async(_lds_name,
 			_dn,
 			_scope,
 			filter_str,
 			_attrs,
 			NULL,
-			_ld_result_count,
-			&rc,
-			_msgidp)
-		!= 0)
+			_msgidp,
+			conn)
+		) != 0)
 	{
 		/* try again if LDAP API ERROR */
 		if (LDAP_API_ERROR(rc) &&
-				(lds_search(_lds_name,
+			lds_search_async(_lds_name,
 						_dn,
 						_scope,
 						filter_str,
 						_attrs,
 						NULL,
-						_ld_result_count,
-						&rc) != 0))
-		{
-			LM_ERR(	"[%s]: LDAP search (dn [%s], scope [%d],"
-				" filter [%s]) failed: %s\n",
-				_lds_name,
-				_dn,
-				_scope,
-				filter_str,
-				ldap_err2string(rc));
-			return -1;
+						_msgidp,
+						conn) != 0) {
+				LM_ERR("[%s]: LDAP search (dn [%s], scope [%d],"
+					" filter [%s]) failed: %s\n",
+					_lds_name,
+					_dn,
+					_scope,
+					filter_str,
+					ldap_err2string(rc));
+				return -1;
 		}
 	}
 
-	LM_DBG(	"[%s]: [%d] LDAP entries found\n",
-		_lds_name,
-		*_ld_result_count);
-
-	return 0;
+	return rc;
 }
 
 
@@ -341,9 +378,10 @@ int ldap_params_search(
 
 int ldap_url_search_async(
 	char* _ldap_url,
-	int* _ld_result_count,
 	int* _msgidp,
-	struct ld_session **ldsp)
+	struct ld_session **ldsp,
+	struct ld_conn** conn,
+	int* ld_result_count)
 {
 	LDAPURLDesc *ludp;
 	int rc;
@@ -370,16 +408,25 @@ int ldap_url_search_async(
 		ludp->lud_scope,
 		ZSW(ludp->lud_filter));
 
-	rc = ldap_params_search_async(_ld_result_count,
-		_msgidp,
+	rc = ldap_params_search_async(_msgidp,
 		ludp->lud_host,
 		ludp->lud_dn,
 		ludp->lud_scope,
 		ludp->lud_attrs,
+		conn,
 		ludp->lud_filter);
-	if (rc == 0 && *_msgidp >= 0) {
+	if ((rc == 0 && *_msgidp >= 0) || rc == 1) {
 		if (get_connected_ldap_session(ludp->lud_host, ldsp)) {
 			LM_ERR("[%s]: couldn't get ldap session\n", ludp->lud_host);
+			return -1;
+		}
+	}
+
+	/* sync mode; get the number of results */
+	if (rc == 1) {
+		*ld_result_count = ldap_count_entries((*ldsp)->conn_s.handle, last_ldap_result);
+		if (*ld_result_count < 0) {
+			LM_ERR("[%s]: ldap_count_entries for sync call failed\n", (*ldsp)->name);
 			return -1;
 		}
 	}
@@ -474,6 +521,7 @@ int ldap_get_attr_vals(str *_attr_name, struct berval ***_vals)
 		LM_ERR("last_ldap_result == NULL\n");
 		return -1;
 	}
+
 	if (last_ldap_handle == NULL)
 	{
 		LM_ERR("last_ldap_handle == NULL\n");
@@ -546,42 +594,72 @@ int ldap_str2scope(char* scope_str)
  * c) other type of failure - @return < 0
  */
 int lds_resume(
-	struct ld_session *lds,
-	int msgidp,
+	struct ldap_async_params* asp,
 	int *ld_result_count)
 {
 
-	int rc;
+	int rc, rc_new;
 	struct timeval zerotime;
 
 	zerotime.tv_sec = zerotime.tv_usec = 0L;
 
-	rc = ldap_result(lds->handle, msgidp, LDAP_MSG_ALL,
+	rc = ldap_result(asp->conn->handle, asp->msgid, LDAP_MSG_ALL,
 			&zerotime, &last_ldap_result);
 
 	switch (rc) {
-		case -1:
-			LM_ERR("[%s]: ldap result failed\n", lds->name);
-			return -1;
 		case 0:
 			/* receive did not succeed; reactor needed */
+			LM_DBG("Timeout exceeded! Async operation not complete!\n");
 			return 0;
 		default:
+			if (LDAP_API_ERROR(rc)) {
+				ldap_disconnect( asp->lds->name, asp->conn);
+
+				/**
+				 * FIXME FIXME we should continue asynchronously here
+				 */
+				/* this time try synchronously */
+				/* execute the query again; we might have a failover server */
+				if ((rc_new = ldap_url_search( asp->ldap_url.s, ld_result_count)) < 0) {
+					/* LDAP search error; abort */
+					rc = -2;
+					goto error;
+				}
+
+				if ( *ld_result_count < 1) {
+					LM_DBG("no LDAP entry found!\n");
+				}
+
+				return 1;
+			}
+
 			/* receive successfull */
+			LM_DBG("Successfully received response from ldap server!\n");
+			/* FIXME we release the connection now; calling another async
+			 * operation before calling ldap_result will break this mechanism,
+			 * since the connection is released and the handle is being kept
+			 * in last_ldap_handle global parameter
+			 *
+			 */
+			release_ldap_connection(asp->conn);
 			break;
 	}
 
-	last_ldap_handle = lds->handle;
-	*ld_result_count = ldap_count_entries(lds->handle, last_ldap_result);
+	last_ldap_handle = asp->conn->handle;
+	*ld_result_count = ldap_count_entries(asp->conn->handle, last_ldap_result);
 
 	if (*ld_result_count < 0)
 	{
-		LM_DBG("[%s]: ldap_count_entries failed\n", lds->name);
+		LM_DBG("[%s]: ldap_count_entries failed\n", asp->lds->name);
 		return -1;
 	}
 
 	return 1;
+error:
+	release_ldap_connection(asp->conn);
+	return rc;
 }
+
 
 int lds_search_async(
 	char* _lds_name,
@@ -590,12 +668,11 @@ int lds_search_async(
 	char* _filter,
 	char** _attrs,
 	struct timeval* _search_timeout,
-	int* _ld_result_count,
-	int* _ld_error,
-	int* _msgidp)
+	int* _msgidp,
+	struct ld_conn** conn)
 {
+	int ld_error, rc;
 	struct ld_session* lds;
-	struct timeval zerotime;
 
 #ifdef LDAP_PERF
 	struct timeval before_search = { 0, 0 }, after_search = { 0, 0 };
@@ -610,14 +687,10 @@ int lds_search_async(
 		return -1;
 	}
 
-	/*
-	 * free last_ldap_result
-	 */
-        if (last_ldap_result != NULL) {
-                ldap_msgfree(last_ldap_result);
-                last_ldap_result = NULL;
-        }
 
+	if ((*conn=get_ldap_connection(lds)) == NULL) {
+		LM_DBG("No more connections available! will do synchronous query\n");
+	}
 
 	LM_DBG(	"[%s]: performing LDAP search: dn [%s],"
 		" scope [%d], filter [%s], client_timeout [%d] usecs\n",
@@ -635,18 +708,50 @@ int lds_search_async(
 	/*
 	 * perform ldap search
 	 */
-	*_ld_error = ldap_search_ext(
-		lds->handle,
-		_dn,
-		_scope,
-		_filter,
-		_attrs,
-		0,
-		NULL,
-		NULL,
-		&lds->client_search_timeout,
-		0,
-		_msgidp);
+
+	if (*conn) {
+		if ( check_reconnect( _lds_name, *conn) < 0 ) {
+			LM_ERR("Reconnect failed!\n");
+			return -1;
+		}
+
+		ld_error = ldap_search_ext(
+			(*conn)->handle,
+			_dn,
+			_scope,
+			_filter,
+			_attrs,
+			0,
+			NULL,
+			NULL,
+			&lds->client_search_timeout,
+			0,
+			_msgidp);
+
+		rc = 0;
+	} else {
+		/* falling back to sync */
+		if ( check_reconnect( _lds_name, &lds->conn_s) < 0 ) {
+			LM_ERR("Reconnect failed!\n");
+			return -1;
+		}
+
+		ld_error = ldap_search_ext_s(
+			lds->conn_s.handle,
+			_dn,
+			_scope,
+			_filter,
+			_attrs,
+			0,
+			NULL,
+			NULL,
+			&lds->client_search_timeout,
+			0,
+			&last_ldap_result);
+
+		/* signal that the operation is sync to upper layers */
+		rc = 1;
+	}
 
 #ifdef LDAP_PERF
 	gettimeofday(&after_search, NULL);
@@ -657,54 +762,25 @@ int lds_search_async(
 		- (before_search.tv_sec * 1000000 + before_search.tv_usec)));
 #endif
 
-
-
-	if (*_ld_error != LDAP_SUCCESS)
+	if (ld_error != LDAP_SUCCESS)
 	{
-		if (last_ldap_result != NULL)
+		if (LDAP_API_ERROR(ld_error))
 		{
-			ldap_msgfree(last_ldap_result);
-			last_ldap_result = NULL;
+			ldap_disconnect(_lds_name, *conn);
 		}
 
-		if (LDAP_API_ERROR(*_ld_error))
-		{
-			ldap_disconnect(_lds_name);
-		}
+		LM_ERR(	"[%s]: LDAP search (dn [%s], scope [%d],"
+				" filter [%s]) failed: %s\n",
+				_lds_name,
+				_dn,
+				_scope,
+				_filter,
+				ldap_err2string(ld_error));
 
-		LM_DBG( "[%s]: ldap_search_ext_st failed: %s\n",
-			_lds_name,
-			ldap_err2string(*_ld_error));
 		return -1;
 	}
 
-	zerotime.tv_sec = zerotime.tv_usec = 0L;
-
-	*_ld_error = ldap_result(lds->handle, *_msgidp, LDAP_MSG_ALL,
-			&zerotime, &last_ldap_result);
-
-	switch (*_ld_error) {
-	case -1:
-		LM_ERR("[%s]: ldap result failed\n", _lds_name);
-		return -1;
-	case 0:
-		/* receive did not succeed; reactor needed */
-		return 0;
-	default:
-		/* receive successfull */
-		*_msgidp = -1;
-		break;
-	}
-
-	last_ldap_handle = lds->handle;
-	*_ld_result_count = ldap_count_entries(lds->handle, last_ldap_result);
-	if (*_ld_result_count < 0)
-	{
-		LM_DBG("[%s]: ldap_count_entries failed\n", _lds_name);
-		return -1;
-	}
-
-	return 0;
+	return rc;
 }
 
 
@@ -722,6 +798,7 @@ int lds_search(
 	int* _ld_error)
 {
 	struct ld_session* lds;
+	struct ld_conn* conn;
 #ifdef LDAP_PERF
 	struct timeval before_search = { 0, 0 }, after_search = { 0, 0 };
 #endif
@@ -735,13 +812,19 @@ int lds_search(
 		return -1;
 	}
 
+	conn = &lds->conn_s;
 	/*
 	 * free last_ldap_result
 	 */
-        if (last_ldap_result != NULL) {
-                ldap_msgfree(last_ldap_result);
-                last_ldap_result = NULL;
-        }
+	if ( check_reconnect( _lds_name, conn) < 0 ) {
+		LM_ERR("Reconnect failed!\n");
+		return -1;
+	}
+
+	if (last_ldap_result != NULL) {
+		ldap_msgfree(last_ldap_result);
+		last_ldap_result = NULL;
+	}
 
 
 	LM_DBG(	"[%s]: performing LDAP search: dn [%s],"
@@ -761,7 +844,7 @@ int lds_search(
 	 * perform ldap search
 	 */
 	*_ld_error = ldap_search_ext_s(
-		lds->handle,
+		conn->handle,
 		_dn,
 		_scope,
 		_filter,
@@ -792,7 +875,7 @@ int lds_search(
 
 		if (LDAP_API_ERROR(*_ld_error))
 		{
-			ldap_disconnect(_lds_name);
+			ldap_disconnect(_lds_name, conn);
 		}
 
 		LM_DBG( "[%s]: ldap_search_ext_st failed: %s\n",
@@ -801,8 +884,8 @@ int lds_search(
 		return -1;
 	}
 
-	last_ldap_handle = lds->handle;
-	*_ld_result_count = ldap_count_entries(lds->handle, last_ldap_result);
+	last_ldap_handle = conn->handle;
+	*_ld_result_count = ldap_count_entries(conn->handle, last_ldap_result);
 	if (*_ld_result_count < 0)
 	{
 		LM_DBG("[%s]: ldap_count_entries failed\n", _lds_name);

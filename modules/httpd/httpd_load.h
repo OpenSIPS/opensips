@@ -68,7 +68,7 @@ typedef int (httpd_acces_handler_cb) (void *cls, void *connection, const char *u
 				const char *method, const char *version,
 				const char *upload_data, size_t *upload_data_size,
 				void **con_cls,
-				str *buffer, str *page);
+				str *buffer, str *page, union sockaddr_union* cl_socket);
 
 /**
  * Callback used by httpd in order to obtain content.  The
@@ -133,9 +133,13 @@ typedef int (*register_httpdcb_f)(const char *mod, str *root_path,
 			httpd_flush_data_cb f2,
 			httpd_init_proc_cb f3);
 
+union sockaddr_union* httpd_get_server_info(void);
+typedef union sockaddr_union*(*get_server_info_f)(void);
+
 typedef struct httpd_api {
 	lookup_arg_f		lookup_arg;
 	register_httpdcb_f	register_httpdcb;
+	get_server_info_f	get_server_info;
 }httpd_api_t;
 
 

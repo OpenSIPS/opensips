@@ -518,8 +518,9 @@ modparam("permissions", "proto_col", "transport")
 	<section>
 		<title><varname>pattern_col</varname> (string)</title>
 		<para>
-		Name of address table column containing regular
-		expression that is matched against the arguments received by
+		Name of address table column containinga a pattern (a shell wildcard
+		pattern, like the ones used for file name matching) that is matched 
+		against the arguments received by
 		<function moreinfo="none">check_address</function>
 		or <function moreinfo="none">check_source_address</function>.
 		</para>
@@ -532,7 +533,7 @@ modparam("permissions", "proto_col", "transport")
 		<title>Set <varname>pattern_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("permissions", "pattern_col", "regexp")
+modparam("permissions", "pattern_col", "wildcard_col")
 ...
 </programlisting>
 		</example>
@@ -879,8 +880,8 @@ if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(uri)
 		<listitem>
 			pattern
 		<para>
-			This argument is a string to be matched with the regular expression
-			pattern field from the cached address table.
+			This argument is a string to be matched against the wildcard
+			pattern field from the address table.
 			This argument is optional.
 		</para>
 		</listitem>
@@ -896,8 +897,8 @@ if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(uri)
 ...
 
 // Checks if the tuple IP address/port (given as strings) and source protocol
-// (given as pvar), belongs to group 4, verifies if pattern string "texttest"
-// matches the regular expression field in the database table and stores the
+// (given as pvar), belongs to group 4, verifies if the string "texttest"
+// matches the wildcard pattern field in the database table and stores the
 // context information in $avp(ctx)
 if (check_address("4","192.168.2.135","5700","$proto","$avp(ctx)", "texttest")) {
 	t_relay();
@@ -931,8 +932,8 @@ if (check_address("$avp(partition):4","$avp(ip)","$avp(port)","$avp(proto)","$av
 ...
 
 // Checks if the tuple IP address/port (given as strings) and source protocol
-// (given as pvar) is in group 4, verifies if pattern string  "texttest" matches
-// the regular expression field in the database table, without storing any
+// (given as pvar) is in group 4, verifies if string the "texttest" matches
+// the wildcard pattern field in the database table, without storing any
 // context information
 if (check_address("4","$si","5700","$proto","", "texttest")) {
 	t_relay();

@@ -1,0 +1,561 @@
+SIP-I Module
+
+Robert-Vladut Patrascu
+
+   <vladp@opensips.org>
+
+   Copyright © 2016 OpenSIPS Project
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Parameters
+
+              1.3.1. param_subfield_separator (str)
+              1.3.2. isup_mime_str (str)
+
+        1.4. Exported Functions
+
+              1.4.1. add_isup_part([isup_msg_type])
+
+        1.5. Exported PseudoVariables
+
+              1.5.1.
+                      $(isup_param(param_name{sep}subfield_name)[byt
+                      e_index])
+
+              1.5.2. $isup_param_str(param_name{sep}subfield_name)
+
+              1.5.3. $isup_msg_type
+
+        1.6. ISUP parameter subfields and string aliases
+        1.7. Mandatory ISUP parameters
+
+   List of Examples
+
+   1.1. Set param_subfield_separator parameter
+   1.2. Set isup_mime_str parameter
+   1.3. add_isup_part usage
+   1.4. isup_param usage
+   1.5. isup_param_str usage
+   1.6. isup_msg_type usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module offers the possibility of processing ISDN User
+   Part(ISUP) messages encapsulated in SIP. The available
+   operations are: reading and modifying parameters from an ISUP
+   message, removing or adding new optional parameters, adding an
+   ISUP part to a SIP message body. This is done explicitly via
+   script pseudovariables and functions.
+
+   The supported ISUP message types are only the ones that can be
+   included in a SIP message according to the SIP-I(SIP with
+   encapsulated ISUP) protocol defined by ITU-T.
+
+   The format and specification of the ISUP messages and
+   parameters follow the recomandations from ITU-T Rec. Q.763.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * None.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Parameters
+
+1.3.1. param_subfield_separator (str)
+
+   The character to be used as separator in the subname of the
+   $isup_param and $isup_param_str pseudovariables between the
+   ISUP parameter name and subfield name.
+
+   Default value is "|".
+
+   Example 1.1. Set param_subfield_separator parameter
+...
+modparam("sip_i", "param_subfield_separator", ":")
+...
+
+1.3.2. isup_mime_str (str)
+
+   The string to be used for the Content-Type header field of the
+   ISUP MIME body when creating a new ISUP part.
+
+   Default value is "application/ISUP;version=itu-t92+".
+
+   Example 1.2. Set isup_mime_str parameter
+...
+modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;versi
+on=itu-t")
+...
+
+
+1.4. Exported Functions
+
+1.4.1.  add_isup_part([isup_msg_type])
+
+   Adds a new ISUP part to the SIP message body.
+
+   With the exception of some ISUP message types(IAM, REL, ACM,
+   CPG, ANM, CON), the newly added part contains a blank ISUP
+   message(i.e. all mandatory parameters zeroed and no optional
+   ones) and all the required parameters should be set through
+   $isup_param. For the previously mentioned message types, the
+   mandatory parameters and some optional ones are automaticaly
+   set to default values according to basic SIP-ISUP interworking
+   rules from ITU-T Rec. Q.1912.5. This only provides a general
+   and simplified mapping from SIP headers and message type
+   (request method, reply code etc.) to ISUP parameters and you
+   should not base your SIP-ISUP interworking only on this.
+
+   Meaning of the parameters is as follows:
+     * isup_msg_type (string) - name of the ISUP message to be
+       added, exactly as it appears in ITU-T Rec. Q.763 or an
+       abbreviation(eg. IAM for "Initial address").
+
+   If isup_msg_type is not explicitly provided, it is
+   automatically deduced from the SIP message as follows:
+     * INVITE - IAM
+     * BYE - REL
+     * 180, 183 - REL
+     * 4xx, 5xx - REL
+     * 200 OK INVITE - ANM
+     * 200 OK BYE - RLC
+
+   The abbreviations that can be given as isup_msg_type for each
+   ISUP message type are the following:
+     * Initial address - IAM
+     * Address complete - ACM
+     * Answer - ANM
+     * Connect - CON
+     * Connect - CON
+     * Release - REL
+     * Release complete - RLC
+     * Facility reject - FRJ
+     * Facility accepted - FAA
+     * Facility request - FAR
+     * Confusion - CFN
+     * Suspend - SUS
+     * Resume - RES
+     * Subsequent address - SAM
+     * Forward transfer - FOT
+     * User-to-user information - USR
+     * Network resource management - NRM
+     * Facility - FAC
+     * Identification request - IRQ
+     * Identification response - IRS
+     * Loop prevention - LPR
+     * Application transport - APT
+     * Pre-release information - PRI
+
+   This function can be used from
+   REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,LOCAL_ROUTE.
+
+   Example 1.3. add_isup_part usage
+...
+if ($rs == "183") {
+        # Encapsulate a CPG
+        add_isup_part("Call progress");
+        # set desired parameters
+        ...
+}
+...
+
+1.5. Exported PseudoVariables
+
+1.5.1.  $(isup_param(param_name{sep}subfield_name)[byte_index])
+
+   The ISUP parameter named param_name of a received or newly
+   added ISUP message can be accessed through this read-write
+   variable. For optional parameters, writing to a param_name that
+   does not exist in this ISUP message will insert it. Assigning
+   null to this variable will remove the optional parameter from
+   the message or zeroize the parameter in case of a mandatory
+   one.
+
+   The format of the subname for $isup_param is the following:
+     * param_name - name of the ISUP parameter as it appears in
+       ITU-T Rec. Q.763
+     * sep - separator, whitespaces allowed before/after
+     * subfield_name - name of the subfield of the ISUP parameter
+       as it appears in ITU-T Rec. Q.763
+
+   The ISUP parameter can be addressed in different ways:
+     * entire parameter - by providing as subname for the
+       varaiable only the ISUP parameter name, allowing access to
+       the contents of the entire parameter as: a hex
+       string(similar to a hex "dump") for read/write, a string
+       alias for writing, or an integer value for read/write; when
+       assigning a hex string, the hex value must be preceded by
+       "0x"; when reading, if string aliases are supported for
+       this parameter, an associated integer value will be
+       returned, otherwise a hex string is returned
+     * at subfield level - by providing as subname for the
+       varaiable the ISUP parameter name and the subfield name,
+       allowing access to the specific subfield as an integer
+       value or string value(eg. telephone number for parameters
+       such as Called Party Number) for read/write or as a string
+       alias for writing
+     * at byte level - by providing as subname for the variable
+       the ISUP parameter name and an index, allowing access to
+       the byte with the specified index as an integer value
+
+   Addressing at entire parameter level as a hex string and at
+   byte level are supported for all the ISUP parameters defined in
+   the ITU-T Rec. Q.763. Addressing at subfield level is supported
+   only for some ISUP parameters and not all of the subfields of a
+   parameter defined in the ITU Recommandation are supported.
+
+   String aliases are not available for all parameters or
+   parameter subfields. Also, not all the possible values of a
+   parameter or parameter subfield have a string alias defined.
+
+   For more information on supported subfields and aliases check
+   Section 1.6, “ISUP parameter subfields and string aliases”.
+
+   Example 1.4. isup_param usage
+...
+        $isup_param(Called Party Number | Nature of address indicator) =
+ 3;
+        ...
+        # use a string alias
+        $isup_param(Called Party Number | Numbering plan indicator) = "I
+SDN";
+        ...
+        $isup_param(Called Party Number | Address signal) = "99991234";
+        $isup_param(Nature of connection indicators) = "0x01"
+        $isup_param(Calling party's category) = 10;
+        ...
+        # use a string alias
+        $isup_param(Transmission Medium Requirement) = "speech";
+        ...
+        # access at byte level
+        $(isup_param(Forward Call Indicators)[0]) = 96;
+        $(isup_param(Forward Call Indicators)[1]) = 1;
+...
+
+1.5.2.  $isup_param_str(param_name{sep}subfield_name)
+
+   The ISUP parameter named param_name of a received or newly
+   added ISUP message can also be accessed through this read-only
+   variable. This variable is similar in usage with $isup_param
+   except it will return the string alias for the value when
+   possible.
+
+   The format of the subname for $isup_param_str is the following:
+     * param_name - name of the ISUP parameter as it appears in
+       ITU-T Rec. Q.763
+     * sep - separator, whitespaces allowed before/after
+     * subfield_name - name of the subfield of the ISUP parameter
+       as it appears in ITU-T Rec. Q.763
+
+   Example 1.5. isup_param_str usage
+...
+        # may print: "NOA is: national"
+        xlog("NOA is: $isup_param_str(Called Party Number|Nature of addr
+ess indicator)");
+        # may print: "CpN is: 99991234"
+        xlog("CpN is: $isup_param_str(Called Party Number|Address signal
+)");
+        # may print: "nature of conn: 0x01"
+        xlog("nature of conn: $isup_param_str(Nature of connection indic
+ators)");
+        # may print: "Cg cat is: ordinary"
+        xlog("$isup_param_str(Calling party's category)");
+...
+
+1.5.3.  $isup_msg_type
+
+   Read-only variable, returns the ISUP message type as string.
+
+   Example 1.6. isup_msg_type usage
+...
+        # may print: "ISUP msg is: Initial address"
+        xlog("ISUP msg is: $isup_msg_type");
+...
+
+1.6. ISUP parameter subfields and string aliases
+
+   The supported subfields for each ISUP parameter and the string
+   aliases for their values are the following:
+     * Nature of Connection Indicators
+          + Satellite indicator
+               o no satellite - 0
+               o one satellite - 1
+               o two satellite - 2
+          + Continuity check indicator
+               o not required - 0
+               o required - 1
+               o performed - 2
+          + Echo control device indicator
+               o not included - 0
+               o included - 1
+     * Forward Call Indicators
+          + National/international call indicator
+               o national - 0
+               o international - 1
+          + End-to-end method indicator
+               o no method - 0
+               o pass-along - 1
+               o SCCP - 2
+               o pass-along and SCCP - 3
+          + Interworking indicator
+               o no interworking - 0
+               o interworking - 1
+          + End-to-end information indicator
+               o no end-to-end - 0
+               o end-to-end - 1
+          + ISDN user part indicator
+               o not all the way - 0
+               o all the way - 1
+          + ISDN user part preference indicator
+               o prefered - 0
+               o not required - 1
+               o required - 2
+          + ISDN access indicator
+               o non-ISDN - 0
+               o ISDN - 1
+          + SCCP method indicator
+               o no indication - 0
+               o connectionless - 1
+               o connection - 2
+               o connectionless and connection - 3
+     * Optional forward call indicators
+          + Closed user group call indicator
+               o non-CUG - 0
+               o outgoing allowed - 2
+               o outgoing not allowed - 3
+          + Simple segmentation indicator
+               o no additional information - 0
+               o additional information - 1
+          + Connected line identity request indicator
+               o not requested - 0
+               o requested - 1
+     * Called Party Number
+          + Odd/even indicator
+               o even - 0
+               o odd - 1
+          + Nature of address indicator
+               o subscriber - 1
+               o unknown - 2
+               o national - 3
+               o international - 4
+               o network-specific - 5
+               o network routing national - 6
+               o network routing network-specific - 7
+               o network routing with CDN - 8
+          + Internal Network Number indicator
+               o allowed - 0
+               o not allowed - 1
+          + Numbering plan indicator
+               o ISDN - 1
+               o Data - 3
+               o Telex - 4
+          + Address signal
+     * Calling Party Number
+          + Odd/even indicator
+               o even - 0
+               o odd - 1
+          + Nature of address indicator
+               o subscriber - 1
+               o unknown - 2
+               o national - 3
+               o international - 4
+          + Number Incomplete indicator
+               o complete - 0
+               o incomplete - 1
+          + Numbering plan indicator
+               o ISDN - 1
+               o Data - 3
+               o Telex - 4
+          + Address presentation restricted indicator
+               o allowed - 0
+               o restricted - 1
+               o not available - 2
+               o reserved - 3
+          + Screening indicator
+               o user - 0
+               o network - 1
+          + Address signal
+     * Backward Call Indicators
+          + Charge indicator
+               o no indication - 0
+               o no charge - 1
+          + Called party's status indicator
+               o no indication - 0
+               o subscriber free - 1
+               o connect - 2
+          + Called party's category indicator
+               o no indication - 0
+               o ordinary subscriber - 1
+               o payphone - 2
+          + End to End method indicator
+               o no end-to-end - 0
+               o pass-along - 1
+               o SCCP - 2
+               o pass-along and SCCP - 3
+          + Interworking indicator
+               o no interworking - 0
+               o interworking - 1
+          + End to End information indicator
+               o no end-to-end - 0
+               o end-to-end - 1
+          + ISDN user part indicator
+               o not all the way - 0
+               o all the way - 1
+          + Holding indicator
+               o not requested - 0
+               o requested - 1
+          + ISDN access indicator
+               o non-ISDN - 0
+               o ISDN - 1
+          + Echo control device indicator
+               o not included - 0
+               o included - 1
+          + SCCP method indicator
+               o no indication - 0
+               o connectionless - 1
+               o connection - 2
+               o connectionless and connection - 3
+     * Optional Backward Call Indicators
+          + In-band information indicator
+               o no indication- 0
+               o available - 2
+          + Call diversion may occur indicator
+               o no indication - 0
+               o call diversion - 1
+          + Simple segmentation indicator
+               o no additional information - 0
+               o additional information - 1
+          + MLPP user indicator
+               o no indication - 0
+               o MLPP user - 1
+     * Connected Number
+          + Odd/even indicator
+               o even - 0
+               o odd - 1
+          + Nature of address indicator
+               o subscriber - 1
+               o unknown - 2
+               o national - 3
+               o international - 4
+          + Numbering plan indicator
+               o ISDN - 1
+               o Data - 3
+               o Telex - 4
+          + Address presentation restricted indicator
+               o allowed - 0
+               o restricted - 1
+               o not available - 2
+          + Screening indicator
+               o user - 0
+               o network - 1
+          + Address signal
+     * Cause Indicators
+          + Location
+               o user - 0
+               o LPN - 1
+               o LN - 2
+               o TN - 3
+               o RLN - 4
+               o RPN - 5
+               o INTL - 7
+               o BI - 10
+          + Coding standard
+               o ITU-T - 0
+               o ISO/IEC - 1
+               o national - 2
+               o location - 3
+          + Cause value
+     * Subsequent Number
+          + Odd/even indicator
+               o even - 0
+               o odd - 1
+          + Address signal
+     * Event Information
+          + Event indicator
+               o alerting - 1
+               o progress - 2
+               o in-band or pattern - 3
+               o busy - 4
+               o no reply - 5
+               o unconditional - 6
+          + Event presentation restricted indicator
+               o no indication - 0
+               o restricted - 1
+     * Calling Party's Category
+          + unknown - 0
+          + french - 1
+          + english - 2
+          + german - 3
+          + russian - 4
+          + spanish - 5
+          + ordinary - 10
+          + priority - 11
+          + data - 12
+          + test - 13
+          + payphone - 15
+     * Transmission Medium Requirement
+          + speech - 0
+          + 64 kbit/s unrestricted - 2
+          + 3.1 kHz audio - 3
+          + 64 kbit/s preferred - 6
+          + 2 x 64 kbit/s - 7
+          + 384 kbit/s - 8
+          + 1536 kbit/s - 9
+          + 1920 kbit/s - 10
+
+1.7. Mandatory ISUP parameters
+
+   The mandatory parameters(According to ITU-T Rec. Q.763) for
+   each supported ISUP message that requires this are the
+   following:
+     * Initial address
+          + Nature of connection indicators
+          + Forward call indicators
+          + Calling party's category
+          + Transmission medium requirement
+          + Called party number
+     * Address complete
+          + Backward call indicators
+     * Connect
+          + Backward call indicators
+     * Release
+          + Cause indicators
+     * Call progress
+          + Event information
+     * Facility reject
+          + Facility indicator
+          + Cause indicators
+     * Facility accepted
+          + Facility indicator
+     * Facility request
+          + Facility indicator
+     * Confusion
+          + Cause indicators
+     * Suspend
+          + Suspend/resume indicators
+     * Resume
+          + Suspend/resume indicators
+     * Subsequent address
+          + Subsequent number
+     * User-to-user information
+          + User-to-user information

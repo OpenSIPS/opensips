@@ -50,7 +50,6 @@
 
 static char esc_buf[ESC_BUF_SIZE];
 
-
 /*
 * exported functions
 */
@@ -61,11 +60,12 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 
 	as_params = (struct ldap_async_params*) param;
 
-	rc = lds_resume( as_params->lds, as_params->msgid, &ld_result_count);
+	rc = lds_resume( as_params, &ld_result_count);
 
 	switch (rc) {
 	case -1:
 		/* error */
+		pkg_free(as_params);
 		return -1;
 	case  0:
 		/* put back in reactor */
@@ -78,7 +78,6 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 
 		break;
 	default:
-		/* invalid rc */
 		LM_BUG("invalid return code\n");
 		return -1;
 	}
@@ -86,7 +85,7 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 	if (ld_result_count < 1)
 	{
 		/* no LDAP entry found */
-		LM_INFO("no LDAP entry found\n");
+		LM_DBG("no LDAP entry found\n");
 		return -1;
 	}
 
@@ -95,17 +94,17 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 
 int ldap_search_impl_async(
 	struct sip_msg* _msg,
-	async_resume_module **resume_f,
-	void **resume_param,
+	async_ctx *ctx,
 	pv_elem_t* _ldap_url)
 {
 	str ldap_url;
-	int ld_result_count = 0;
 	int msgid;
 	int sockfd;
+	int rc=-1;
+	int ld_result_count;
 	struct ldap_async_params *as_params;
 	struct ld_session *lds;
-	Sockbuf *sb;
+	struct ld_conn* conn;
 
 	/*
 	* do variable substitution for _ldap_url (pv_printf_s)
@@ -126,54 +125,54 @@ int ldap_search_impl_async(
 	/*
 	* perform LDAP search
 	*/
-	if (ldap_url_search_async(ldap_url.s, &ld_result_count,
-											&msgid, &lds) != 0)
+	if ((rc=ldap_url_search_async(ldap_url.s, &msgid, &lds, &conn, &ld_result_count)) < 0)
 	{
 		/* LDAP search error */
-		return -2;
+		rc = -2;
+		goto error;
 	}
 
-	if (msgid >= 0) {
-		if (lds == NULL) {
-			LM_ERR("invalid session handle\n");
-			return -1;
-		}
-
-		if (ldap_get_option(lds->handle, LDAP_OPT_SOCKBUF, &sb) != LDAP_SUCCESS) {
-			LM_ERR("failed to retrieve ldap sockbuf\n");
-			return -1;
-		}
-
-		if (ber_sockbuf_ctrl(sb, LBER_SB_OPT_GET_FD, &sockfd) != 1) {
-			LM_ERR("[%s]: couldn't get ldap session socket\n", lds->name);
-			return -1;
-		}
-
-		as_params = pkg_malloc(sizeof(struct ldap_async_params));
-		if (as_params == NULL) {
-			LM_ERR("no more pkg mem\n");
-		}
-
-		as_params->msgid = msgid;
-		as_params->lds	 = lds;
-
-		*resume_param = as_params;
-		*resume_f = resume_ldap_search;/* resume function */
-		async_status = sockfd;
-
-		return 1;
-	} else {
-		*resume_param = *resume_f = NULL;
+	/* operation was completed in sync mode */
+	if (rc == 1) {
 		async_status = ASYNC_NO_IO;
+		if (ld_result_count == 0) {
+			/* no LDAP entry found */
+			LM_DBG("no LDAP entry found\n");
+			return -1;
+		}
+		return ld_result_count;
 	}
 
-	if (ld_result_count < 1)
-	{
-		/* no LDAP entry found */
-		LM_INFO("no LDAP entry found\n");
-		return -1;
+	if (lds == NULL) {
+		LM_ERR("invalid session handle\n");
+		goto error;
 	}
-	return ld_result_count;
+
+	if (ldap_get_option(conn->handle, LDAP_OPT_DESC, &sockfd) != LDAP_SUCCESS) {
+		LM_ERR("failed to get ldap sockbuf\n");
+		goto error;
+	}
+
+	as_params = pkg_malloc(sizeof(struct ldap_async_params));
+	if (as_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
+
+	as_params->msgid = msgid;
+	as_params->ldap_url = ldap_url;
+	as_params->lds	 = lds;
+	as_params->conn  = conn;
+
+	ctx->resume_param = as_params;
+	ctx->resume_f = resume_ldap_search;/* resume function */
+	async_status = sockfd;
+
+	return 1;
+
+error:
+	release_ldap_connection(conn);
+	return rc;
 }
 
 
@@ -211,7 +210,7 @@ int ldap_search_impl(
 	if (ld_result_count < 1)
 	{
 		/* no LDAP entry found */
-		LM_INFO("no LDAP entry found\n");
+		LM_DBG("no LDAP entry found\n");
 		return -1;
 	}
 	return ld_result_count;

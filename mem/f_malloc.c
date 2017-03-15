@@ -141,6 +141,19 @@ inline static unsigned long big_hash_idx(unsigned long s)
 #define END_CHECK_PATTERN2 0xabcdefed
 #endif
 
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx) {
+	struct fm_frag *f;
+	f = (struct fm_frag *)((char*)ptr - sizeof(struct fm_frag));
+	f->statistic_index = idx;
+}
+
+unsigned long get_stat_index(void *ptr) {
+	struct fm_frag *f;
+	f = (struct fm_frag *)((char*)ptr - sizeof(struct fm_frag));
+	return f->statistic_index;
+}
+#endif
 
 
 static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
@@ -164,7 +177,7 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 	if( *f )
 		(*f)->prev = &(frag->u.nxt_free);
 
-#ifdef DBG_MALLOC
+#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark fragment as "free" */
 	frag->is_free = 1;
 #endif
@@ -384,7 +397,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 				#endif
 
 				if( frag->size >size ) {
-					#ifdef DBG_MALLOC
+					#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 					/* mark it as "busy" */
 					frag->is_free = 0;
 					#endif
@@ -414,7 +427,7 @@ found:
 
 	fm_remove_free(qm,frag);
 
-	#ifdef DBG_MALLOC
+	#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	/* mark it as "busy" */
 	frag->is_free = 0;
 	#endif
@@ -632,6 +645,16 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 }
 
 
+#ifdef SHM_EXTRA_STATS
+void set_indexes(int core_index) {
+
+	struct fm_frag* f;
+	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag; f=FRAG_NEXT(f))
+		if (!f->is_free)
+			f->statistic_index = core_index;
+}
+
+#endif
 
 void fm_status(struct fm_block* qm)
 {

@@ -269,8 +269,6 @@ error:
                         pkg_free(etag->s);
                 pkg_free(etag);
         }
-	if(xml_doc)
-		xmlFreeDoc(xml_doc);
         return -1;
 }
 
@@ -432,7 +430,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	struct to_body *pto, *pfrom = NULL;
 	subs_t subs;
 	pres_ev_t* event= NULL;
-	str* contact= NULL;
 	xmlDocPtr doc= NULL;
 	xmlNodePtr service_node= NULL;
 	unsigned int hash_code= 0;
@@ -524,7 +521,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		goto error;
 	}
 
-	if(parse_from_uri(msg)<0)
+	if(parse_from_uri(msg)==0)
 	{
 		LM_ERR("failed to parse From header\n");
 		goto error;
@@ -672,13 +669,6 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		goto error_free;
 	}
 
-	if(contact)
-	{
-		if(contact->s)
-			pkg_free(contact->s);
-		pkg_free(contact);
-	}
-
 	pkg_free(subs.pres_uri.s);
 	if(subs.record_route.s)
 		pkg_free(subs.record_route.s);
@@ -700,12 +690,6 @@ error:
 
 
 error_free:
-	if(contact)
-	{
-		if(contact->s)
-			pkg_free(contact->s);
-		pkg_free(contact);
-	}
 	if(subs.pres_uri.s)
 		pkg_free(subs.pres_uri.s);
 
@@ -853,7 +837,6 @@ int send_resource_subs(char* uri, void* param)
 
 int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 {
-	char* uri= NULL;
 	subs_info_t s;
 	str wuri= {0, 0};
 	str did_str= {0, 0};
@@ -944,8 +927,6 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 error:
 	if(wuri.s)
 		pkg_free(wuri.s);
-	if(uri)
-		xmlFree(uri);
 	if(did_str.s)
 		pkg_free(did_str.s);
 	return -1;

@@ -357,7 +357,7 @@ static str xmlrpc_print_s = { 0, 0 };
 static str xmlrpc_print(evi_reply_sock *sock)
 {
 	str aux;
-	struct xmlrpc_sock_param *params = sock->params;
+	struct xmlrpc_sock_param *params;
 
 	xmlrpc_print_s.len = 0;
 
@@ -365,6 +365,7 @@ static str xmlrpc_print(evi_reply_sock *sock)
 		LM_DBG("Nothing to print");
 		goto end;
 	}
+	params = sock->params;
 
 	if (sock->flags & EVI_ADDRESS)
 		DO_PRINT(sock->address.s, sock->address.len);

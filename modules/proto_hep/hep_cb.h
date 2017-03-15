@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2015 - OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -46,9 +45,8 @@ typedef int (*register_hep_cb_t)(hep_cb_t cb);
  */
 
 typedef struct proto_hep_api {
-	register_hep_cb_t register_hep_cb;
-	pack_hep_t		  pack_hep;
-	get_hep_ctx_id_t  get_hep_ctx_id;
+	register_hep_cb_t	 register_hep_cb;
+	get_hep_ctx_id_t	 get_hep_ctx_id;
 } proto_hep_api_t;
 
 

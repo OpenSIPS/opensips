@@ -233,7 +233,7 @@ void print_rr(FILE* _o, rr_t* _r)
 		print_nameaddr(_o, &ptr->nameaddr);
 		fprintf(_o, "r2 : %p\n", ptr->r2);
 		if (ptr->params) {
-			print_params(_o, ptr->params);
+			print_params(ptr->params);
 		}
 		fprintf(_o, "len: %d\n", ptr->len);
 		fprintf(_o, "---/RR---\n");

@@ -52,6 +52,8 @@ typedef struct contact {
 
 /*
  * Parse contacts in a Contact HF
+ *
+ * WARNING: "_s" will be mangled, make a copy beforehand!
  */
 int parse_contacts(str* _s, contact_t** _c);
 
@@ -64,9 +66,9 @@ void free_contacts(contact_t** _c);
 
 
 /*
- * Print list of contacts, just for debugging
+ * Debug print a list of contacts, just for debugging
  */
-void print_contacts(FILE* _o, contact_t* _c);
+void log_contacts(contact_t* _c);
 
 
 #endif /* CONTACT_H */

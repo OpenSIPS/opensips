@@ -120,4 +120,7 @@ int db_allocate_columns(db_res_t* _r, const unsigned int cols);
 
 int db_allocate_rows(db_res_t* _res, const unsigned int rows);
 
+int db_realloc_rows(db_res_t *_res, const unsigned int old_rows,
+                    const unsigned int rows);
+
 #endif /* DB_RES_H */

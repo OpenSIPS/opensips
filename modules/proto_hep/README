@@ -19,14 +19,17 @@ Ionut-Razvan Ionita
 
         1.3. Exported Parameters
 
-              1.3.1. hep_port (integer)
-              1.3.2. hep_send_timeout (integer)
-              1.3.3. hep_max_msg_chunks (integer)
-              1.3.4. hep_async (integer)
-              1.3.5. hep_async_max_postponed_chunks (integer)
-              1.3.6. hep_capture_id (integer)
-              1.3.7. hep_async_local_connect_timeout (integer)
-              1.3.8. hep_async_local_write_timeout (integer)
+              1.3.1. hep_id (str)
+              1.3.2. homer5_on (int)
+              1.3.3. homer5_delim (str)
+              1.3.4. hep_port (integer)
+              1.3.5. hep_send_timeout (integer)
+              1.3.6. hep_max_msg_chunks (integer)
+              1.3.7. hep_async (integer)
+              1.3.8. hep_async_max_postponed_chunks (integer)
+              1.3.9. hep_capture_id (integer)
+              1.3.10. hep_async_local_connect_timeout (integer)
+              1.3.11. hep_async_local_write_timeout (integer)
 
    2. Developer Guide
 
@@ -40,14 +43,17 @@ Ionut-Razvan Ionita
 
    List of Examples
 
-   1.1. Set hep_port parameter
-   1.2. Set hep_send_timeout parameter
-   1.3. Set hep_max_msg_chunks parameter
-   1.4. Set hep_async parameter
-   1.5. Set hep_async_max_postponed_chunks parameter
-   1.6. Set hep_capture_id parameter
-   1.7. Set hep_async_local_connect_timeout parameter
-   1.8. Set hep_async_local_write_timeout parameter
+   1.1. Set hep_id parameter
+   1.2. Set homer5_on parameter
+   1.3. Set homer5_on parameter
+   1.4. Set hep_port parameter
+   1.5. Set hep_send_timeout parameter
+   1.6. Set hep_max_msg_chunks parameter
+   1.7. Set hep_async parameter
+   1.8. Set hep_async_max_postponed_chunks parameter
+   1.9. Set hep_capture_id parameter
+   1.10. Set hep_async_local_connect_timeout parameter
+   1.11. Set hep_async_local_write_timeout parameter
 
 Chapter 1. Admin Guide
 
@@ -90,18 +96,70 @@ P
 
 1.3. Exported Parameters
 
-1.3.1. hep_port (integer)
+1.3.1. hep_id (str)
+
+   Specify a destination for HEP packets and the version of HEP
+   protocol used. All parameters inside hep_id must be separated
+   by ;. The parameters are given in key-value format, the
+   possible keys being uri, transport and version, except
+   destiantion's URI which doesn't have a key and is in host:port
+   . transport key can be TCP or UDP. TCP works only for HEP
+   version 3. Version is the hep protocol version and can be 1, 2
+   or 3.
+
+   HEPv1 and HEPv2 can use only UDP. HEPv3 can use both TCP and
+   UDP having the default set to TCP. If no hep version defined,
+   the default is version 3 with TCP.
+
+   NO default value. If hep_id the module can't be used for HEP
+   tracing.
+
+   Example 1.1.  Set hep_id parameter
+...
+/* define a destination to localhost on port 8001 using hepV3 on tcp */
+modparam("proto_hep", "hep_id",
+"[hep_dst] 127.0.0.1:8001; transport=tcp; version=3")
+/* define a destination to 1.2.3.4 on port 5000 using hepV2; no transpor
+t(default UDP) */
+modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000; version=2")
+/* define only the destination uri; version will be 3(default) and trans
+port TCP(default) */
+modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
+
+1.3.2. homer5_on (int)
+
+   Specify how the data should be encapsulated, as plain text
+   (HOMER5 - anything different than 0) or JSON based (HOMER 6 -
+   0).
+
+   Default value 0, HOMER6 format.
+
+   Example 1.2.  Set homer5_on parameter
+modparam("proto_hep", "homer5_on", 1)
+
+1.3.3. homer5_delim (str)
+
+   In case homer5_on is set (different than 0), with this
+   parameter you will be able to set the delmiter between
+   different payload parts.
+
+   Default value ":".
+
+   Example 1.3.  Set homer5_on parameter
+modparam("proto_hep", "homer5_delim", "##")
+
+1.3.4. hep_port (integer)
 
    The default port to be used by all TCP/UDP listeners.
 
    Default value is 5656.
 
-   Example 1.1. Set hep_port parameter
+   Example 1.4. Set hep_port parameter
 ...
 modparam("proto_hep", "hep_port", 6666)
 ...
 
-1.3.2. hep_send_timeout (integer)
+1.3.5. hep_send_timeout (integer)
 
    Time in milliseconds after a TCP connection will be closed if
    it is not available for blocking writing in this interval (and
@@ -109,12 +167,12 @@ modparam("proto_hep", "hep_port", 6666)
 
    Default value is 100 ms.
 
-   Example 1.2. Set hep_send_timeout parameter
+   Example 1.5. Set hep_send_timeout parameter
 ...
 modparam("proto_hep", "hep_send_timeout", 200)
 ...
 
-1.3.3. hep_max_msg_chunks (integer)
+1.3.6. hep_max_msg_chunks (integer)
 
    The maximum number of chunks in which a HEP message is expected
    to arrive via TCP. If a received packet is more fragmented than
@@ -125,12 +183,12 @@ modparam("proto_hep", "hep_send_timeout", 200)
 
    Default value is 32.
 
-   Example 1.3. Set hep_max_msg_chunks parameter
+   Example 1.6. Set hep_max_msg_chunks parameter
 ...
 modparam("proto_hep", "hep_max_msg_chunks", 8)
 ...
 
-1.3.4. hep_async (integer)
+1.3.7. hep_async (integer)
 
    Specifies whether the TCP connect and write operations should
    be done in an asynchronous mode (non-blocking connect and
@@ -139,12 +197,12 @@ modparam("proto_hep", "hep_max_msg_chunks", 8)
 
    Default value is 1 (enabled).
 
-   Example 1.4. Set hep_async parameter
+   Example 1.7. Set hep_async parameter
 ...
-modparam("proto_bin", "hep_async", 0)
+modparam("proto_hep", "hep_async", 0)
 ...
 
-1.3.5. hep_async_max_postponed_chunks (integer)
+1.3.8. hep_async_max_postponed_chunks (integer)
 
    If hep_async is enabled, this specifies the maximum number of
    HEP messages that can be stashed for later/async writing. If
@@ -153,24 +211,24 @@ modparam("proto_bin", "hep_async", 0)
 
    Default value is 32.
 
-   Example 1.5. Set hep_async_max_postponed_chunks parameter
+   Example 1.8. Set hep_async_max_postponed_chunks parameter
 ...
 modparam("proto_hep", "hep_async_max_postponed_chunks", 16)
 ...
 
-1.3.6. hep_capture_id (integer)
+1.3.9. hep_capture_id (integer)
 
    The parameter indicate the capture agent ID for HEPv2/v3
    protocol. Limitation: 16-bit integer.
 
    Default value is "1".
 
-   Example 1.6. Set hep_capture_id parameter
+   Example 1.9. Set hep_capture_id parameter
 ...
 modparam("proto_hep", "hep_capture_id", 234)
 ...
 
-1.3.7. hep_async_local_connect_timeout (integer)
+1.3.10. hep_async_local_connect_timeout (integer)
 
    If hep_async is enabled, this specifies the number of
    milliseconds that a connect will be tried in blocking mode
@@ -180,12 +238,12 @@ modparam("proto_hep", "hep_capture_id", 234)
 
    Default value is 100 ms.
 
-   Example 1.7. Set hep_async_local_connect_timeout parameter
+   Example 1.10. Set hep_async_local_connect_timeout parameter
 ...
 modparam("proto_hep", "hep_async_local_connect_timeout", 200)
 ...
 
-1.3.8. hep_async_local_write_timeout (integer)
+1.3.11. hep_async_local_write_timeout (integer)
 
    If hep_async is enabled, this specifies the number of
    milliseconds that a write op will be tried in blocking mode
@@ -195,7 +253,7 @@ modparam("proto_hep", "hep_async_local_connect_timeout", 200)
 
    Default value is 10 ms.
 
-   Example 1.8. Set hep_async_local_write_timeout parameter
+   Example 1.11. Set hep_async_local_write_timeout parameter
 ...
 modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 ...

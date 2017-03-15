@@ -9,7 +9,7 @@
 
 <table id="dispatcher" xmlns:db="http://docbook.org/ns/docbook">
     <name>dispatcher</name>
-    <version>7</version>
+    <version>8</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the dispatcher module. It contains the sets of destinations used for load balancing and dispatching. More information about the dispatcher module can be found at: &OPENSIPS_MOD_DOC;dispatcher.html
@@ -63,8 +63,9 @@
 
     <column id="weight">
         <name>weight</name>
-        <type>int</type>
-        <description>The weight of the destination</description>
+        <type>string</type>
+        <size>64</size>
+        <description>The weight of the destination (integer or socket definition) </description>
         <default>1</default>
         <natural/>
     </column>

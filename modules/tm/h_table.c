@@ -126,6 +126,8 @@ void free_cell( struct cell* dead_cell )
 
 	empty_tmcb_list(&dead_cell->tmcb_hl);
 
+	context_destroy(CONTEXT_TRAN, context_of(dead_cell));
+
 	release_cell_lock( dead_cell );
 
 	tm_shm_lock();

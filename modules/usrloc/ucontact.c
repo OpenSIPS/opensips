@@ -49,6 +49,8 @@
 #include "ureplication.h"
 #include "udomain.h"
 #include "dlist.h"
+#include "utime.h"
+#include "usrloc.h"
 
 extern event_id_t ei_c_update_id;
 
@@ -97,15 +99,20 @@ ucontact_t*
 new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
 	struct sip_uri tmp_uri;
-
+	size_t att_data_sz;
 	ucontact_t *c;
 
-	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
+	att_data_sz = get_att_ct_data_sz();
+
+	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t) + att_data_sz);
 	if (!c) {
 		LM_ERR("no more shm memory\n");
 		return NULL;
 	}
-	memset(c, 0, sizeof(ucontact_t));
+	memset(c, 0, sizeof(ucontact_t) + att_data_sz);
+
+	if (att_data_sz > 0)
+		c->attached_data = (void **)(c + 1);
 
 	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
 		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
@@ -136,9 +143,13 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
 
+	get_act_time();
+
 	c->domain = _dom;
 	c->aor = _aor;
 	c->expires = _ci->expires;
+	c->expires_in = _ci->expires - act_time;
+	c->expires_out = _ci->expires_out;
 	c->q = _ci->q;
 	c->sock = _ci->sock;
 	c->cseq = _ci->cseq;
@@ -306,8 +317,12 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		_c->attr.len = 0;
 	}
 
+	get_act_time();
+
 	_c->sock = _ci->sock;
 	_c->expires = _ci->expires;
+	_c->expires_in = _ci->expires - act_time;
+	_c->expires_out = _ci->expires_out;
 	_c->q = _ci->q;
 	_c->cseq = _ci->cseq;
 	_c->methods = _ci->methods;
@@ -319,8 +334,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
 		        _c->next_hop.name.len, _c->next_hop.name.s);
 
-	ul_raise_contact_event(ei_c_update_id, &_c->c, &_c->callid,
-			&_c->received, _c->aor, _c->cseq);
+	ul_raise_contact_event(ei_c_update_id, _c);
 
 	return 0;
 }

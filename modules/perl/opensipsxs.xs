@@ -256,6 +256,8 @@ int moduleFunc(struct sip_msg *m, char *func,
 		return -1;
 	}
 
+	/* initialize all the act fields */
+	memset(&act, 0, sizeof(act));
 	elems[0].type = CMD_ST;
 	elems[0].u.data = exp_func_struct;
 	elems[1].type = STRING_ST;
@@ -341,6 +343,7 @@ static inline int rewrite_ruri(struct sip_msg* _m, char* _s)
 {
 	struct action act;
 
+	memset(&act, 0, sizeof(act));
 	act.type = SET_URI_T;
 	act.elem[0].type = STR_ST;
 	act.elem[0].u.s.s = _s;
@@ -697,7 +700,8 @@ getFullHeader(self)
 			LM_ERR("getFullHeader: Invalid message type.\n");
 			ST(0)  = &PL_sv_undef;
 		} else {
-			parse_headers(msg, ~0, 0);
+			if (parse_headers(msg, ~0, 0) < 0)
+				LM_ERR("cannot parse headers\n");
 			if (getType(msg) == SIP_REQUEST) {
 				firsttoken = (msg->first_line).u.request.method.s;
 			} else { /* SIP_REPLY */
@@ -739,8 +743,12 @@ getBody(self)
 		ST(0) = &PL_sv_undef;
 	} else {
 		body.s = NULL;
-		get_body(msg,&body);
-		ST(0) = sv_2mortal(newSVpv(body.s, 0));
+		if (get_body(msg,&body) < 0) {
+			LM_ERR("Message has no body\n");
+			ST(0) = &PL_sv_undef;
+		} else {
+			ST(0) = sv_2mortal(newSVpv(body.s, 0));
+		}
 	}
 
 
@@ -792,7 +800,8 @@ getHeader(self, name)
 	if (!msg) {
 		LM_ERR("Invalid message reference\n");
 	} else {
-		parse_headers(msg, ~0, 0);
+		if (parse_headers(msg, ~0, 0) < 0)
+			LM_ERR("cannot parse headers!\n");
 		for (hf = msg->headers; hf; hf = hf->next) {
 			if (namelen == hf->name.len) {
 				if (strncmp(name, hf->name.s, namelen) == 0) {
@@ -829,7 +838,8 @@ getHeaderNames(self)
 	if (!msg) {
 		LM_ERR("Invalid message reference\n");
 	} else {
-		parse_headers(msg, ~0, 0);
+		if (parse_headers(msg, ~0, 0) < 0)
+			LM_ERR("cannot parse headers!\n");
 		for (hf = msg->headers; hf; hf = hf->next) {
 			found = 1;
 			XPUSHs(sv_2mortal(newSVpv(hf->name.s, hf->name.len)));
@@ -974,11 +984,16 @@ moduleFunction (self, func, string1 = NULL, string2 = NULL)
 	LM_DBG("Calling exported func '%s', Param1 is '%s',"
 		" Param2 is '%s'\n", func, string1, string2);
 
-	ret = moduleFunc(msg, func, string1, string2, &retval);
-	if (ret < 0) {
-		LM_ERR("calling module function '%s' failed."
-			" Missing loadmodule?\n", func);
+	if (!msg) {
+		LM_ERR("invalid message received!\n");
 		retval = -1;
+	} else {
+		ret = moduleFunc(msg, func, string1, string2, &retval);
+		if (ret < 0) {
+			LM_ERR("calling module function '%s' failed."
+				" Missing loadmodule?\n", func);
+			retval = -1;
+		}
 	}
 	RETVAL = retval;
   OUTPUT:
@@ -1302,15 +1317,17 @@ getParsedRURI(self)
 		LM_ERR("Invalid message reference\n");
 		ST(0) = NULL;
 	} else {
-		parse_sip_msg_uri(msg);
-		parse_headers(msg, ~0, 0);
+		if (parse_sip_msg_uri(msg) < 0 || parse_headers(msg, ~0, 0) < 0) {
+			LM_ERR("cannot parse message uri!\n");
+			ST(0) = &PL_sv_undef;
+		} else {
+			uri = &(msg->parsed_uri);
+			ret = sv_newmortal();
+			sv_setref_pv(ret, "OpenSIPS::URI", (void *)uri);
+			SvREADONLY_on(SvRV(ret));
 
-		uri = &(msg->parsed_uri);
-		ret = sv_newmortal();
-		sv_setref_pv(ret, "OpenSIPS::URI", (void *)uri);
-		SvREADONLY_on(SvRV(ret));
-
-		ST(0) = ret;
+			ST(0) = ret;
+		}
 	}
 	
 

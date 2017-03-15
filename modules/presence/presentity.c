@@ -73,7 +73,7 @@ int generate_ETag(int publ_count, str* etag)
 			prefix, (int)startup_time, pid, counter, publ_count);
 	if( etag->len <0 )
 	{
-		LM_ERR("unsuccessfull sprintf\n ");
+		LM_ERR("unsuccessful sprintf\n ");
 		return -1;
 	}
 	if(etag->len > ETAG_LEN)
@@ -1038,6 +1038,145 @@ int pres_htable_restore(void)
 
 error:
 	if(result)
+		pa_dbf.free_result(pa_db, result);
+	return -1;
+}
+
+int pres_expose_evi(pres_ev_t *ev, str *filter)
+{
+	int user_col, domain_col, expires_col, body_col, etag_col;
+	int no_rows = 0, nr_rows, i;
+	int n_result_cols= 0;
+	presentity_t presentity;
+	db_key_t result_cols[5];
+	db_key_t query_cols[3];
+	db_val_t query_vals[3];
+	db_op_t query_ops[3];
+	db_res_t* result = NULL;
+	db_row_t *rows = NULL;
+	db_val_t *row_vals;
+	int nr_vals = 0;
+
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n",
+				presentity_table.len, presentity_table.s);
+		goto error;
+	}
+
+	query_cols[nr_vals] = &str_expires_col;
+	query_ops[nr_vals] = OP_GT;
+	query_vals[nr_vals].nul = 0;
+	query_vals[nr_vals].type = DB_INT;
+	query_vals[nr_vals].val.int_val = (int)time(NULL);
+	nr_vals++;
+	query_cols[nr_vals] = &str_event_col;
+	query_ops[nr_vals] = OP_EQ;
+	query_vals[nr_vals].nul = 0;
+	query_vals[nr_vals].type = DB_STR;
+	query_vals[nr_vals].val.str_val = ev->name;
+	nr_vals++;
+
+	if (filter) {
+		query_cols[nr_vals] = &str_username_col;
+		query_ops[nr_vals] = " REGEXP ";
+		query_vals[nr_vals].nul = 0;
+		query_vals[nr_vals].type = DB_STR;
+		query_vals[nr_vals].val.str_val = *filter;
+		nr_vals++;
+	}
+
+	result_cols[user_col = n_result_cols++]= &str_username_col;
+	result_cols[domain_col = n_result_cols++]= &str_domain_col;
+	result_cols[expires_col = n_result_cols++]= &str_expires_col;
+	result_cols[etag_col = n_result_cols++]= &str_etag_col;
+	result_cols[body_col = n_result_cols++]= &str_body_col;
+
+	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) {
+		if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals, result_cols,
+				nr_vals, n_result_cols, 0, 0) < 0) {
+			LM_ERR("cannot query table!\n");
+			goto error;
+		}
+		no_rows = estimate_available_rows(64+64+4+64+512 /* body estimation */,
+				n_result_cols);
+		if (no_rows==0) no_rows = 10;
+		if(pa_dbf.fetch_result(pa_db, &result, no_rows)<0) {
+			LM_ERR("Error fetching rows\n");
+			goto error;
+		}
+	} else {
+		if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals, result_cols,
+				nr_vals, n_result_cols, 0, &result) < 0) {
+			LM_ERR("cannot query table!\n");
+			goto error;
+		}
+	}
+
+	LM_DBG("%d records found in %.*s%s%.*s\n",
+			RES_ROW_N(result), presentity_table.len, presentity_table.s,
+			(filter ? " with filter ": ""), (filter ? filter->len: 0),
+			(filter ? filter->s : ""));
+
+	nr_rows = RES_ROW_N(result);
+
+	do {
+		LM_DBG("loading information from database for %i records\n", nr_rows);
+
+		rows = RES_ROWS(result);
+
+		/* for every row */
+		for(i = 0; i < nr_rows; i++)
+		{
+			row_vals = ROW_VALUES(rows + i);
+
+			if (VAL_NULL(row_vals + user_col) || VAL_NULL(row_vals + domain_col))
+			{
+				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
+					str_username_col.len, str_username_col.s,
+					str_domain_col.len, str_domain_col.s);
+				continue;
+			}
+
+			/* not sure if this is needed */
+			if(row_vals[expires_col].val.int_val< (int)time(NULL))
+				continue;
+
+			memset(&presentity, 0, sizeof(presentity_t));
+			presentity.domain.s = (char*)row_vals[domain_col].val.string_val;
+			presentity.domain.len = strlen(presentity.domain.s);
+			presentity.user.s = (char*)row_vals[user_col].val.string_val;
+			presentity.user.len = strlen(presentity.user.s);
+			presentity.etag.s = (char*)row_vals[etag_col].val.string_val;
+			presentity.etag.len = strlen(presentity.etag.s);
+			presentity.event = ev;
+			presentity.expires = row_vals[expires_col].val.int_val;
+			presentity.body.s = (char*)row_vals[body_col].val.string_val;
+			presentity.body.len = strlen(presentity.body.s);
+
+			/* send event E_PRESENCE_EXPOSED */
+			presence_raise_event(exposed_event_id, &presentity);
+		}
+
+		/* any more data to be fetched ?*/
+		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH))
+		{
+			if (pa_dbf.fetch_result(pa_db, &result, no_rows) < 0)
+			{
+				LM_ERR("fetching more rows failed\n");
+				goto error;
+			}
+			nr_rows = RES_ROW_N(result);
+		} else
+			nr_rows = 0;
+
+	} while(nr_rows > 0);
+
+	pa_dbf.free_result(pa_db, result);
+
+	return 0;
+
+error:
+	if (result)
 		pa_dbf.free_result(pa_db, result);
 	return -1;
 }

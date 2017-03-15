@@ -700,7 +700,7 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
 
 
     global->set_list[nindex1].db_list[nindex2].flags = flags;
-    /* dont worry about race conditions */
+    /* don't worry about race conditions */
 
     return init_mi_tree( 200, MI_SSTR(MI_OK));
 }

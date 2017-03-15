@@ -171,14 +171,4 @@
         <default><null/></default>
         <description>Optional information specific to each registration</description>
     </column>
-
-    <index>
-        <name>account_contact_idx</name>
-        <colref linkend="username"/>
-        <colref linkend="domain"/>
-        <colref linkend="contact"/>
-        <colref linkend="callid"/>
-        <unique/>
-    </index>
-
 </table>

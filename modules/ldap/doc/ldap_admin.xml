@@ -495,6 +495,28 @@ modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
 		  </programlisting>
         </example>
       </section>
+
+	  <section>
+		  <title>max_async_connections (int)</title>
+
+		  <para>Number of maximum asynchronous connections that will be started
+			  with the ldap server for executing asynchronous ldap_search calls.
+			  The number of connections is per process, so if there are 8
+			  worker processes with 20 max_async_connections, there will be a
+			  maximum of 160 connections to the ldap server.
+		  </para>
+
+		 <para>Default value: <varname>20</varname></para>
+
+		<example>
+          <title><varname>max_async_connections</varname> parameter usage</title>
+
+          <programlisting format="linespecific">
+modparam("ldap", "max_async_connections", 50)
+		  </programlisting>
+        </example>
+
+	  </section>
     </section>
 
     <section>

@@ -107,6 +107,9 @@
 #include "identity.h"
 
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define EVP_MD_CTX_free EVP_MD_CTX_cleanup
+#endif
 
 /* parameters */
 
@@ -831,7 +834,11 @@ static int addIdentity(char * dateHF, struct sip_msg * msg)
 {
 	#define IDENTITY_HDR_S  "Identity: \""
 	#define IDENTITY_HDR_L  (sizeof(IDENTITY_HDR_S)-1)
-	EVP_MD_CTX ctx;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	EVP_MD_CTX *pctx;
+#else
+	EVP_MD_CTX ctx, *pctx = &ctx;
+#endif
 	unsigned int siglen = 0;
 	int b64len = 0;
 	unsigned char * sig = NULL;
@@ -843,27 +850,30 @@ static int addIdentity(char * dateHF, struct sip_msg * msg)
 		LM_ERR("error making digest string\n");
 		return 0;
 	}
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	pctx = EVP_MD_CTX_new();
+#endif
 
-	EVP_SignInit(&ctx, EVP_sha1());
+	EVP_SignInit(pctx, EVP_sha1());
 
-	EVP_SignUpdate(&ctx, digestString, strlen(digestString));
+	EVP_SignUpdate(pctx, digestString, strlen(digestString));
 
 	sig = pkg_malloc(EVP_PKEY_size(privKey_evp));
 	if(!sig)
 	{
-		EVP_MD_CTX_cleanup(&ctx);
+		EVP_MD_CTX_free(pctx);
 		LM_ERR("failed allocating memory\n");
 		return 0;
 	}
 
-	if(!EVP_SignFinal(&ctx, sig, &siglen, privKey_evp))
+	if(!EVP_SignFinal(pctx, sig, &siglen, privKey_evp))
 	{
-		EVP_MD_CTX_cleanup(&ctx);
+		EVP_MD_CTX_free(pctx);
 		pkg_free(sig);
 		LM_ERR("error calculating signature\n");
 		return 0;
 	}
-	EVP_MD_CTX_cleanup(&ctx);
+	EVP_MD_CTX_free(pctx);
 
 	/* ###Base64-encoding### */
 	/* annotation: The next few lines are based on example 7-11 of [VIE-02] */
@@ -1138,6 +1148,10 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 	const unsigned char * data;
 	STACK_OF(CONF_VALUE) * val;
 	CONF_VALUE * nval;
+	int len;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	ASN1_OCTET_STRING *adata;
+#endif
 
 	if(!cert || !msg)
 	{
@@ -1190,15 +1204,22 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 				LM_ERR("X509V3_EXT_get failed\n");
 				return 0;
 			}
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+			adata = X509_EXTENSION_get_data(cext);
+			data = ASN1_STRING_get0_data(adata);
+			len = ASN1_STRING_length(adata);
+#else
 			data = cext->value->data;
+			len = cext->value->length;
+#endif
 			if(meth->it)
 			{
 				ext_str = ASN1_item_d2i(NULL, &data,
-					cext->value->length, ASN1_ITEM_ptr(meth->it));
+					len, ASN1_ITEM_ptr(meth->it));
 			}
 			else
 			{
-				 ext_str = meth->d2i(NULL, &data, cext->value->length);
+				 ext_str = meth->d2i(NULL, &data, len);
 			}
 
 			val = meth->i2v(meth, ext_str, NULL);
@@ -1251,7 +1272,11 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	int siglen = -1;
 	unsigned char * sigbuf = NULL;
 	int b64len = 0;
-	EVP_MD_CTX ctx;
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	EVP_MD_CTX *pctx;
+#else
+	EVP_MD_CTX ctx, *pctx = &ctx;
+#endif
 	int result = 0;
 	char *p;
 	unsigned long err;
@@ -1295,22 +1320,25 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	p=strstr(identityHF , "=");
 	siglen-=strspn(p , "=");
 
-	EVP_VerifyInit(&ctx, EVP_sha1());
-	EVP_VerifyUpdate(&ctx, digestString, strlen(digestString));
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	pctx = EVP_MD_CTX_new();
+#endif
+	EVP_VerifyInit(pctx, EVP_sha1());
+	EVP_VerifyUpdate(pctx, digestString, strlen(digestString));
 
 	pubkey = X509_get_pubkey(cert);
 	if(!pubkey)
 	{
-		EVP_MD_CTX_cleanup(&ctx);
+		EVP_MD_CTX_free(pctx);
 		pkg_free(sigbuf);
 		LM_ERR("error reading pubkey from cert\n");
 		return 0;
 	}
 
-	result = EVP_VerifyFinal(&ctx, sigbuf, siglen, pubkey);
+	result = EVP_VerifyFinal(pctx, sigbuf, siglen, pubkey);
 
 	EVP_PKEY_free(pubkey);
-	EVP_MD_CTX_cleanup(&ctx);
+	EVP_MD_CTX_free(pctx);
 	pkg_free(sigbuf);
 
 	switch(result)
@@ -1715,8 +1743,9 @@ static int verify_callback(int ok, X509_STORE_CTX * stor)
 {
 	if (!ok)
 	{
+		int err = X509_STORE_CTX_get_error(stor);
 		LM_INFO("certificate validation failed: %s\n",
-			X509_verify_cert_error_string(stor->error));
+			X509_verify_cert_error_string(err));
 	}
 
 	return ok;

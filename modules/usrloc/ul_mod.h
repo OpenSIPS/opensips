@@ -41,11 +41,6 @@
  */
 
 
-#define NO_DB         0
-#define WRITE_THROUGH 1
-#define WRITE_BACK    2
-#define DB_ONLY       3
-
 #define UL_TABLE_VERSION 1011
 
 extern str contactid_col;
@@ -69,7 +64,7 @@ extern str sip_instance_col;
 
 extern str db_url;
 extern int timer_interval;
-extern int db_mode;
+extern enum usrloc_modes db_mode;
 extern int use_domain;
 extern int desc_time_order;
 extern int cseq_delay;

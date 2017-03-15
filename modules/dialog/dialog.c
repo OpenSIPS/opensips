@@ -57,6 +57,7 @@
 #include "../rr/api.h"
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
+#include "../../lib/container.h"
 
 #include "dlg_hash.h"
 #include "dlg_timer.h"
@@ -80,13 +81,13 @@ str rr_param = {"did",3};
 static int dlg_hash_size = 4096;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
-static int options_ping_interval = 30;      /* seconds */
-static int reinvite_ping_interval = 300;    /* seconds */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
 int dlg_bulk_del_no = 1; /* delete one by one */
 int seq_match_mode = SEQ_MATCH_STRICT_ID;
+int options_ping_interval = 30;      /* seconds */
+int reinvite_ping_interval = 300;    /* seconds */
 str dlg_extra_hdrs = {NULL,0};
 
 /* statistic variables */
@@ -150,7 +151,9 @@ static int fixup_dlg_fval(void** param, int param_no);
 static int w_store_dlg_value(struct sip_msg*, char*, char*);
 static int w_fetch_dlg_value(struct sip_msg*, char*, char*);
 static int fixup_get_info(void** param, int param_no);
+static int fixup_get_vals(void** param, int param_no);
 static int w_get_dlg_info(struct sip_msg*, char*, char*, char*, char*);
+static int w_get_dlg_vals(struct sip_msg*, char*, char*, char*);
 static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
 
 /* item/pseudo-variables functions */
@@ -216,6 +219,9 @@ static cmd_export_t cmds[]={
 	{"get_dialog_info",(cmd_function)w_get_dlg_info,      4,fixup_get_info,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
+	{"get_dialog_vals",(cmd_function)w_get_dlg_vals,      3,fixup_get_vals,
+			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
+			BRANCH_ROUTE | LOCAL_ROUTE | EVENT_ROUTE | TIMER_ROUTE },
 	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
 			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
@@ -459,7 +465,7 @@ static int fixup_get_profile2(void** param, int param_no)
 			return E_SCRIPT;
 		}
 
-		p = list_entry(param, action_elem_t, u.data);
+		p = container_of(param, action_elem_t, u.data);
 		p++;
 		p->u.data = *param;
 
@@ -603,6 +609,31 @@ static int fixup_get_info(void** param, int param_no)
 
 	return 0;
 }
+
+static int fixup_get_vals(void** param, int param_no)
+{
+	pv_spec_t *sp;
+	int ret;
+
+	if (param_no==1 || param_no==2) {
+		/* variables to be populated with the name:value of the 
+		 * found dialog ; we accept only AVPs are they are the
+		 * only one able to hold arrays */
+		ret = fixup_pvar(param);
+		if (ret<0) return ret;
+		sp = (pv_spec_t*)(*param);
+		if (sp->type!=PVT_AVP) {
+			LM_ERR("return must be an AVP!\n");
+			return E_SCRIPT;
+		}
+	} else if (param_no==3) {
+		/* the callid of the dialog to be looked up */
+		return fixup_sgp(param);
+	}
+
+	return 0;
+}
+
 
 static int create_dialog_wrapper(struct sip_msg *req,int flags)
 {
@@ -904,13 +935,13 @@ static int mod_init(void)
 	}
 
 	if ( register_timer( "dlg-options-pinger", dlg_options_routine, NULL,
-	options_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+	1 /* check every second if we need to ping */, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}
 
 	if ( register_timer( "dlg-reinvite-pinger", dlg_reinvite_routine, NULL,
-	reinvite_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+	1 /* check every second if we need to ping */, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}
@@ -1086,6 +1117,8 @@ static int w_match_dialog(struct sip_msg *msg)
 	int backup,i;
 	void *match_param = NULL;
 	struct sip_uri *r_uri;
+	str s;
+	char *p;
 
 
 	/* dialog already found ? */
@@ -1121,7 +1154,29 @@ static int w_match_dialog(struct sip_msg *msg)
 					r_uri->u_val[i].len,r_uri->u_val[i].s);
 				/* pass the param value to the matching funcs */
 				match_param = (void *)(&r_uri->u_val[i]);
+				break;
 			}
+		if (match_param==NULL) {
+			/* looking for ".did.hash.label" in the USERNAME */
+			s = r_uri->user;
+			while( (p=q_memchr(s.s,DLG_SEPARATOR,s.len))!=NULL ) {
+				if ( s.s+s.len-p-1 > rr_param.len+2 ) {
+					if (strncmp( p+1, rr_param.s, rr_param.len)==0 &&
+					p[rr_param.len+1]==DLG_SEPARATOR ) {
+						p += rr_param.len+2;
+						s.len = s.s+s.len-p;
+						s.s = p;
+						match_param = (void*)(&s);
+						break;
+					}
+				}
+				if (p+1<s.s+s.len) {
+					s.len = s.s+s.len-p+1;
+					s.s = p+1;
+				} else
+					break;
+			}
+		}
 	}
 
 sipwise:
@@ -1486,6 +1541,59 @@ static int w_get_dlg_info(struct sip_msg *msg, char *attr, char *attr_val,
 	unref_dlg(dlg, 1);
 
 	return n;
+}
+
+
+static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
+																char *callid)
+{
+	struct dlg_cell *dlg;
+	struct dlg_val *dv;
+	pv_value_t val;
+	str callid_s;
+
+	if (fixup_get_svalue(msg, (gparam_p)callid, &callid_s)!=0 ||
+	callid_s.len == 0 || callid_s.s == NULL) {
+		LM_WARN("cannot get string for dialog callid\n");
+		return -1;
+	}
+
+	dlg = get_dlg_by_callid( &callid_s );
+
+	if (dlg==NULL) {
+		/* nothing found */
+		LM_DBG("no dialog found\n");
+		return -1;
+	}
+
+	/* dlg found - NOTE you have a ref! */
+	LM_DBG("dialog found, fetching all variable\n");
+
+	/* iterate the list with all the dlg variables */
+	for( dv=dlg->vals ; dv ; dv=dv->next) {
+
+		/* add name to AVP */
+		val.flags = PV_VAL_STR;
+		val.rs = dv->name;
+		if ( !pv_set_value( msg, (pv_spec_p)v_name, 0, &val) ) {
+			LM_ERR("failed to add new name in dlg val list, ignoring\n");
+		} else {
+			/* add value to AVP */
+			val.flags = PV_VAL_STR;
+			val.rs = dv->val;
+			if ( !pv_set_value( msg, (pv_spec_p)v_val, 0, &val) ) {
+				LM_ERR("failed to add new value in dlg val list, ignoring\n");
+				/* better exit here, as we will desync the lists */
+				unref_dlg(dlg, 1);
+				return -1;
+			}
+		}
+
+	}
+
+	unref_dlg(dlg, 1);
+
+	return 1;
 }
 
 

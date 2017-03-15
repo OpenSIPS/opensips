@@ -244,6 +244,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	int i;
 	struct dlg_cell *dlg = NULL;
 	pv_value_t val;
+	int ret;
 
 	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
@@ -348,21 +349,27 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	if (dlg) {
 		val.rs = body->uri;
 		val.flags = AVP_VAL_STR;
-		pv_set_value(msg,(to?&to_bavp_spec:&from_bavp_spec),EQ_T,&val);
+		ret = pv_set_value(msg,(to?&to_bavp_spec:&from_bavp_spec),EQ_T,&val);
 		/* if function call was in branch route - store in bavp */
-		if (!(msg->msg_flags&uac_flag) && val.rs.len && val.rs.s){
-			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
-					move_bavp_callback,0,0)!=1) {
-				LM_ERR("failed to install TM callback\n");
-				goto error;
+		if (ret < 0) {
+			if (ret == -2) {
+				/* the call wasn't in branch route - store in dlg */
+				if (dlg_api.store_dlg_value(dlg, rr_param, &body->uri) < 0) {
+					LM_ERR("cannot store value\n");
+					goto error;
+				}
+				LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
+			} else {
+				LM_ERR("cannot store branch avp to restore at 200 OK!\n");
 			}
 		} else {
-			/* if the call wasn't in branch route - store in dlg */
-			if (dlg_api.store_dlg_value(dlg, rr_param, &body->uri) < 0) {
-				LM_ERR("cannot store value\n");
-				goto error;
+			if (!(msg->msg_flags&uac_flag)){
+				if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
+						move_bavp_callback,0,0)!=1) {
+					LM_ERR("failed to install TM callback\n");
+					goto error;
+				}
 			}
-			LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
 		}
 		if (dlg_api.store_dlg_value(dlg,
 					to ? &rr_to_param_new : &rr_from_param_new, uri) < 0) {
@@ -524,7 +531,10 @@ int restore_uri( struct sip_msg *msg, int to, int check_from)
 
 	/* get new uri */
 	if ( new_uri.len<old_uri.len ) {
-		parse_headers(msg,HDR_CALLID_F,0);
+		if (parse_headers(msg,HDR_CALLID_F,0) < 0) {
+			LM_ERR("cannot find callid!\n");
+			goto failed;
+		}
 		if (msg->callid)
 			LM_ERR("new URI shorter than old URI (callid=%.*s)\n",
 				msg->callid->body.len,msg->callid->body.s);
@@ -727,7 +737,7 @@ void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 
 
 static inline int restore_uri_reply(struct sip_msg *rpl,
-						struct hdr_field *rpl_hdr, struct hdr_field *req_hdr)
+						struct to_body *rpl_hdr, struct to_body *req_hdr)
 {
 	struct lump* l;
 	struct to_body *body;
@@ -736,7 +746,7 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	char *p;
 
 	/* duplicate the new hdr value */
-	body = (struct to_body*)req_hdr->parsed;
+	body = req_hdr;
 	for( p = body->uri.s+body->uri.len, len=0; isspace(p[len]) ; len++ );
 	len =  p - body->body.s + ((p[len]=='>') ? (len+1) : 0) ;
 	new_val.s = pkg_malloc( len );
@@ -747,7 +757,7 @@ static inline int restore_uri_reply(struct sip_msg *rpl,
 	memcpy( new_val.s, body->body.s, len);
 	new_val.len = len;
 
-	body = (struct to_body*)rpl_hdr->parsed;
+	body = rpl_hdr;
 	for( p = body->uri.s+body->uri.len, len=0; isspace(p[len]) ; len++ );
 	len =  p - body->body.s + ((p[len]=='>') ? (len+1) : 0) ;
 	LM_DBG("removing <%.*s>\n", len,body->body.s);
@@ -841,6 +851,7 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 {
 	struct sip_msg *req;
 	struct sip_msg *rpl;
+	struct to_body local_body;
 
 	if ( !t || !t->uas.request || !p->rpl )
 		return;
@@ -856,8 +867,24 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 			LM_ERR("failed to find/parse FROM hdr\n");
 			return;
 		}
-		if (restore_uri_reply( rpl, rpl->from, req->from)) {
-			LM_ERR("failed to restore FROM\n");
+		if (req->from->parsed) {
+			/* FROM body is already parsed */
+			if (restore_uri_reply( rpl, (struct to_body*)rpl->from->parsed,
+			(struct to_body*)req->from->parsed))
+				LM_ERR("failed to restore FROM\n");
+		} else {
+			/* FROM body has to be locally parsed and freed */
+			memset( &local_body, 0, sizeof(struct to_body));
+			parse_to( req->from->body.s,
+				req->from->body.s+req->from->body.len+1, &local_body);
+			if (local_body.error == PARSE_ERROR) {
+				LM_ERR("failed to parse FROM hdr from TM'ed request\n");
+			} else {
+				if (restore_uri_reply( rpl, (struct to_body*)rpl->from->parsed,
+				&local_body))
+					LM_ERR("failed to restore FROM\n");
+				free_to_params( &local_body );
+			}
 		}
 	}
 
@@ -867,9 +894,10 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 			LM_ERR("failed to parse TO hdr\n");
 			return;
 		}
-		if (restore_uri_reply( rpl, rpl->to, req->to)) {
+		/* TO body should be allways parsed  */
+		if (restore_uri_reply( rpl, (struct to_body*)rpl->to->parsed,
+		(struct to_body*)req->to->parsed) )
 			LM_ERR("failed to restore FROM\n");
-		}
 	}
 }
 

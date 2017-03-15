@@ -71,6 +71,7 @@ struct supported_body {
  * Parse all Supported headers.
  */
 int parse_supported( struct sip_msg *msg);
+int parse_supported_body(str *body, unsigned int *sup);
 
 
 static inline void free_supported(struct supported_body **sb)

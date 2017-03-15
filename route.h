@@ -78,6 +78,9 @@ extern struct script_event_route event_rlist[EVENT_RT_NO];	/*!< Events route tab
 #define STARTUP_ROUTE 64  /*!< Startup route block */
 #define TIMER_ROUTE  128  /*!< Timer route block */
 #define EVENT_ROUTE  256  /*!< Event route block */
+#define ALL_ROUTES \
+	(REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE| \
+	 ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE)
 
 extern int route_type;
 

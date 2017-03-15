@@ -54,15 +54,11 @@
 #include "../../aaa/aaa.h"
 #include "../dialog/dlg_load.h"
 
-#ifdef DIAM_ACC
-#include "diam_dict.h"
-#include "diam_tcp.h"
-#endif
-
 #include "acc.h"
 #include "acc_mod.h"
 #include "acc_extra.h"
 #include "acc_logic.h"
+#include "acc_vars.h"
 
 struct dlg_binds dlg_api;
 struct tm_binds tmb;
@@ -74,6 +70,12 @@ static int child_init(int rank);
 
 
 /* ----- General purpose variables ----------- */
+/* array of extra parameter tags */
+int    extra_tgs_len=0;
+tag_t* extra_tags=0;
+/* array of leg parameter tags */
+int    leg_tgs_len=0;
+tag_t* leg_tags=0;
 
 /* what would you like to report on */
 /* should early media replies (183) be logged ? default==no */
@@ -82,12 +84,6 @@ int early_media = 0;
 int report_cancels = 0;
 /* detect and correct direction in the sequential requests */
 int detect_direction = 0;
-/* should failed replies (>=3xx) be logged ? default==no */
-/* multi call-leg support */
-static char* leg_info_str = 0;
-static char* leg_bye_info_str = 0;
-struct acc_extra *leg_info = 0;
-struct acc_extra *leg_bye_info = 0;
 
 
 /* ----- SYSLOG acc variables ----------- */
@@ -97,10 +93,8 @@ int acc_log_level = L_NOTICE;
 int acc_log_facility = LOG_DAEMON;
 static char * log_facility_str = 0;
 /* log extra variables */
-static char *log_extra_str = 0;
-struct acc_extra *log_extra = 0;
-static char *log_extra_bye_str = 0;
-struct acc_extra *log_extra_bye = 0;
+struct acc_extra *log_extra_tags = 0;
+struct acc_extra *log_leg_tags = 0;
 
 
 /* ----- AAA PROTOCOL acc variables ----------- */
@@ -111,30 +105,14 @@ aaa_conn *conn;
 
 
 /*  aaa extra variables */
-static char *aaa_extra_str = 0;
-struct acc_extra *aaa_extra = 0;
-static char *aaa_extra_bye_str = 0;
-struct acc_extra *aaa_extra_bye = 0;
-
-/* ----- DIAMETER acc variables ----------- */
-
-#ifdef DIAM_ACC
-/* diameter extra variables */
-static char *dia_extra_str = 0;
-struct acc_extra *dia_extra = 0;
-/* buffer used to read from TCP connection*/
-rd_buf_t *rb;
-char* diameter_client_host="localhost";
-int diameter_client_port=3000;
-#endif
-
+struct acc_extra *aaa_extra_tags = 0;
+struct acc_extra *aaa_leg_tags = 0;
 
 /* ----- SQL acc variables ----------- */
 /* db extra variables */
-static char *db_extra_str = 0;
-struct acc_extra *db_extra = 0;
-static char *db_extra_bye_str = 0;
-struct acc_extra *db_extra_bye = 0;
+struct acc_extra *db_extra_tags = 0;
+struct acc_extra *db_leg_tags = 0;
+
 /* Database url */
 static str db_url = {NULL, 0};
 /* name of database tables */
@@ -158,10 +136,8 @@ str acc_created_col    = str_init("created");
 
 /* ----- Event Interface acc variables ----------- */
 /* event extra variables */
-static char *evi_extra_str = 0;
-struct acc_extra *evi_extra = 0;
-static char *evi_extra_bye_str = 0;
-struct acc_extra *evi_extra_bye = 0;
+struct acc_extra *evi_extra_tags = 0;
+struct acc_extra *evi_leg_tags = 0;
 
 /* db avp variables */
 str acc_created_avp_name = str_init("accX_created");
@@ -176,6 +152,21 @@ static int acc_fixup(void** param, int param_no);
 static int free_acc_fixup(void** param, int param_no);
 
 
+/**
+ * pseudo-variables exported by acc module
+ */
+static pv_export_t mod_items[] = {
+	{ {"acc_extra", sizeof("acc_extra") - 1}, 2001, pv_get_acc_extra,
+		pv_set_acc_extra, pv_parse_acc_extra_name,
+		0 /* parse index(won't use here) */, 0, 0},
+	{ {"acc_leg", sizeof("acc_leg") - 1}, 2002, pv_get_acc_leg,
+		pv_set_acc_leg, pv_parse_acc_leg_name,
+		pv_parse_acc_leg_index, 0, 0},
+	{ {"acc_current_leg", sizeof("acc_current_leg") - 1}, 2003,
+		pv_get_acc_current_leg, 0, 0, 0, 0, 0},
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
 static cmd_export_t cmds[] = {
 	{"acc_log_request", (cmd_function)w_acc_log_request, 1,
 		acc_fixup, free_acc_fixup,
@@ -186,11 +177,6 @@ static cmd_export_t cmds[] = {
 	{"acc_aaa_request", (cmd_function)w_acc_aaa_request, 1,
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-#ifdef DIAM_ACC
-	{"acc_diam_request",(cmd_function)w_acc_diam_request,1,
-		acc_fixup, free_acc_fixup,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-#endif
 	{"acc_evi_request", (cmd_function)w_acc_evi_request, 1,
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -224,6 +210,9 @@ static cmd_export_t cmds[] = {
 		do_acc_fixup, NULL,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
+	{"acc_new_leg", (cmd_function)w_new_leg, 0, 0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -232,32 +221,19 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"early_media",             INT_PARAM, &early_media               },
 	{"report_cancels",          INT_PARAM, &report_cancels            },
-	{"multi_leg_info",          STR_PARAM, &leg_info_str              },
-	{"multi_leg_bye_info",      STR_PARAM, &leg_bye_info_str          },
 	{"detect_direction",        INT_PARAM, &detect_direction          },
 	/* syslog specific */
 	{"log_level",            INT_PARAM, &acc_log_level        },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
-	{"log_extra",            STR_PARAM, &log_extra_str        },
-	{"log_extra_bye",        STR_PARAM, &log_extra_bye_str    },
 	/* aaa specific */
 	{"aaa_url",   		     STR_PARAM, &aaa_proto_url        },
 	{"service_type",         INT_PARAM, &service_type         },
-	{"aaa_extra",            STR_PARAM, &aaa_extra_str        },
-	{"aaa_extra_bye",        STR_PARAM, &aaa_extra_bye_str    },
 	/* event interface specific */
-	{"evi_extra",            STR_PARAM, &evi_extra_str        },
-	{"evi_extra_bye",        STR_PARAM, &evi_extra_bye_str    },
 
-	/* DIAMETER specific */
-#ifdef DIAM_ACC
-	{"diameter_client_host", STR_PARAM, &diameter_client_host   },
-	{"diameter_client_port", INT_PARAM, &diameter_client_port   },
-	{"diameter_extra",       STR_PARAM, &dia_extra_str          },
-#endif
+	{"extra_fields",		 STR_PARAM|USE_FUNC_PARAM, parse_acc_extra},
+	{"leg_fields",			 STR_PARAM|USE_FUNC_PARAM, parse_acc_leg},
+
 	/* db-specific */
-	{"db_extra",             STR_PARAM, &db_extra_str         },
-	{"db_extra_bye",         STR_PARAM, &db_extra_bye_str     },
 	{"db_url",               STR_PARAM, &db_url.s             },
 	{"db_table_acc",         STR_PARAM, &db_table_acc.s       },
 	{"db_table_missed_calls",STR_PARAM, &db_table_mc.s        },
@@ -315,7 +291,7 @@ struct module_exports exports= {
 	params,     /* exported params */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
-	0,          /* exported pseudo-variables */
+	mod_items,  /* exported pseudo-variables */
 	0,          /* extra processes */
 	mod_init,   /* initialization module */
 	0,          /* response function */
@@ -430,65 +406,20 @@ static int mod_init( void )
 	/* init the extra engine */
 	init_acc_extra();
 
-	/* configure multi-leg accounting */
-	if (leg_info_str && (leg_info=parse_acc_leg(leg_info_str))==0 ) {
-		LM_ERR("failed to parse multi_leg_info param\n");
-		return -1;
-	}
-	if (leg_bye_info_str && (leg_bye_info=parse_acc_leg(leg_bye_info_str))==0 ) {
-		LM_ERR("failed to parse multi_leg_bye_info param\n");
-		return -1;
-	}
-
 	/* ----------- SYSLOG INIT SECTION ----------- */
-
-	/* parse the extra string, if any */
-	if (log_extra_str && (log_extra=parse_acc_extra(log_extra_str, 1))==0 ) {
-		LM_ERR("failed to parse log_extra param\n");
-		return -1;
-	}
-	if (log_extra_bye_str &&
-			(log_extra_bye=parse_acc_extra(log_extra_bye_str, 0))==0 ) {
-		LM_ERR("failed to parse log_extra_bye param\n");
-		return -1;
-	}
-
 	acc_log_init();
 
-	/* ------------ SQL INIT SECTION ----------- */
-
+	/* ----------- DATABASE INIT SECTION ----------- */
 	if (db_url.s) {
-		/* parse the extra string, if any */
-		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str, 1))==0 ) {
-			LM_ERR("failed to parse db_extra param\n");
-			return -1;
-		}
-		if (db_extra_bye_str &&
-				(db_extra_bye=parse_acc_extra(db_extra_bye_str, 0))==0 ) {
-			LM_ERR("failed to parse db_extra_bye param\n");
-			return -1;
-		}
-
 		if (acc_db_init(&db_url)<0){
 			LM_ERR("failed! bad db url / missing db module ?\n");
 			return -1;
 		}
 	}
 
+
 	/* ------------ AAA PROTOCOL INIT SECTION ----------- */
-
 	if (aaa_proto_url && aaa_proto_url[0]) {
-		/* parse the extra string, if any */
-		if (aaa_extra_str && (aaa_extra = parse_acc_extra(aaa_extra_str, 1))==0) {
-			LM_ERR("failed to parse aaa_extra param\n");
-			return -1;
-		}
-		if (aaa_extra_bye_str &&
-				(aaa_extra_bye = parse_acc_extra(aaa_extra_bye_str, 0))==0) {
-			LM_ERR("failed to parse aaa_extra_bye param\n");
-			return -1;
-		}
-
 		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
 			LM_ERR("failed to init radius\n");
 			return -1;
@@ -497,40 +428,14 @@ static int mod_init( void )
 		aaa_proto_url = NULL;
 	}
 
-	/* ------------ DIAMETER INIT SECTION ----------- */
-
-#ifdef DIAM_ACC
-	/* parse the extra string, if any */
-	if (dia_extra_str && (dia_extra=parse_acc_extra(dia_extra_str))==0 ) {
-		LM_ERR("failed to parse dia_extra param\n");
-		return -1;
-	}
-
-	if (acc_diam_init()!=0) {
-		LM_ERR("failed to init diameter engine\n");
-		return -1;
-	}
-
-#endif
 
 	/* ----------- EVENT INTERFACE INIT SECTION ----------- */
-
-	if (evi_extra_str && (evi_extra = parse_acc_extra(evi_extra_str, 1))==0) {
-		LM_ERR("failed to parse evi_extra param\n");
-		return -1;
-	}
-	if (evi_extra_bye_str &&
-			(evi_extra_bye = parse_acc_extra(evi_extra_bye_str, 0))==0) {
-		LM_ERR("failed to parse evi_extra_bye param\n");
-		return -1;
-	}
-
 	if (init_acc_evi() < 0) {
 		LM_ERR("cannot init acc events\n");
 		return -1;
 	}
 
-	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
+	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, free_processing_acc_ctx);
 	acc_tm_flags_ctx_idx = tmb.t_ctx_register_ptr(NULL);
 
 	return 0;
@@ -544,56 +449,30 @@ static int child_init(int rank)
 		return -1;
 	}
 
-	/* DIAMETER */
-#ifdef DIAM_ACC
-	/* open TCP connection */
-	LM_DBG("initializing TCP connection\n");
-
-	sockfd = init_mytcp(diameter_client_host, diameter_client_port);
-	if(sockfd==-1)
-	{
-		LM_ERR("TCP connection not established\n");
-		return -1;
-	}
-
-	LM_DBG("a TCP connection was established on sockfd=%d\n", sockfd);
-
-	/* every child with its buffer */
-	rb = (rd_buf_t*)pkg_malloc(sizeof(rd_buf_t));
-	if(!rb)
-	{
-		LM_DBG("no more pkg memory\n");
-		return -1;
-	}
-	rb->buf = 0;
-
-#endif
-
 	return 0;
 }
 
 
 static void destroy(void)
 {
-	if (log_extra)
-		destroy_extras( log_extra);
-	if (log_extra_bye)
-		destroy_extras( log_extra_bye);
+	if (log_extra_tags)
+		destroy_extras( log_extra_tags);
+	if (log_leg_tags)
+		destroy_extras( log_leg_tags);
 	acc_db_close();
-	if (db_extra)
-		destroy_extras( db_extra);
-	if (db_extra_bye)
-		destroy_extras( db_extra_bye);
+	if (db_extra_tags)
+		destroy_extras( db_extra_tags);
+	if (db_leg_tags)
+		destroy_extras( db_leg_tags);
 
-	if (aaa_extra)
-		destroy_extras( aaa_extra);
-	if (aaa_extra_bye)
-		destroy_extras( aaa_extra_bye);
+	if (aaa_extra_tags)
+		destroy_extras( aaa_extra_tags);
+	if (aaa_leg_tags)
+		destroy_extras( aaa_leg_tags);
 
-#ifdef DIAM_ACC
-	close_tcp_connection(sockfd);
-	if (dia_extra)
-		destroy_extras( dia_extra);
-#endif
+	if (evi_extra_tags)
+		destroy_extras( evi_extra_tags);
+	if (evi_leg_tags)
+		destroy_extras( evi_leg_tags);
 }
 

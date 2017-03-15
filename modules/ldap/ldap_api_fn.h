@@ -36,6 +36,7 @@
 #include "../../str.h"
 #include "../../sr_module.h"
 #include "ld_session.h"
+#include "ldap_exp_fn.h"
 
 #define LDAP_MAX_FILTER_LEN 1024
 
@@ -43,17 +44,16 @@
 * LDAP API functions
 */
 int lds_resume(
-	struct ld_session *lds,
-	int msgidp,
+	struct ldap_async_params* asp,
 	int *ld_result_count);
 
 int ldap_params_search_async(
-	int* _ld_result_count,
 	int* _msgidp,
 	char* _lds_name,
 	char* _dn,
 	int _scope,
 	char** _attrs,
+	struct ld_conn** conn,
 	char* _filter,
 	...);
 
@@ -69,9 +69,10 @@ int ldap_params_search(
 
 int ldap_url_search_async(
 	char* _ldap_url,
-	int* _ld_result_count,
 	int* _msgidp,
-	struct ld_session **ldsp);
+	struct ld_session **ldsp,
+	struct ld_conn** conn,
+	int* ld_result_count);
 
 int ldap_url_search(
 	char* _ldap_url,
@@ -90,4 +91,5 @@ int get_ldap_handle(char* _lds_name, LDAP** _ldap_handle);
 void get_last_ldap_result(LDAP** _last_ldap_handle,
 		LDAPMessage** _last_ldap_result);
 
+void release_ldap_connection(struct ld_conn* conn);
 #endif /* LDAP_API_FN_H */

@@ -1078,7 +1078,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 	path.s = path_buf;
 	path.len = 0;
 	if (selector->s) {
-            while (checked < selector->len && path.len <= MAX_PATH_LEN)
+            while (checked < selector->len && path.len + 8 <= MAX_PATH_LEN)
             {
                     if (selector->s[checked] == '/')
                     {

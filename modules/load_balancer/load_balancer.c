@@ -35,13 +35,14 @@
 #include "../../usr_avp.h"
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
+#include "../freeswitch/fs_api.h"
 
 #include "lb_parser.h"
 #include "lb_db.h"
 #include "lb_data.h"
+#include "lb_replication.h"
 #include "lb_prober.h"
 #include "lb_bl.h"
-
 
 
 /* db stuff */
@@ -60,10 +61,15 @@ static unsigned int lb_prob_interval = 30;
 static unsigned int lb_prob_verbose = 0;
 static str lb_probe_replies = {NULL,0};
 struct tm_binds lb_tmb;
+struct fs_binds fs_api;
+
 str lb_probe_method = str_init("OPTIONS");
 str lb_probe_from = str_init("sip:prober@localhost");
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
+
+int fetch_freeswitch_stats;
+int initial_fs_load = 1000;
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -71,11 +77,11 @@ static void mod_destroy(void);
 static int mi_child_init();
 
 /* failover stuff */
-static str group_avp_name_s = str_init("lb_grp");
-static str flags_avp_name_s = str_init("lb_flg");
-static str mask_avp_name_s = str_init("lb_mask");
-static str id_avp_name_s = str_init("lb_id");
-static str res_avp_name_s = str_init("lb_res");
+static str group_avp_name_s = str_init("__lb_grp");
+static str flags_avp_name_s = str_init("__lb_flg");
+static str mask_avp_name_s = str_init("__lb_mask");
+static str id_avp_name_s = str_init("__lb_id");
+static str res_avp_name_s = str_init("__lb_res");
 int group_avp_name;
 int flags_avp_name;
 int mask_avp_name;
@@ -109,7 +115,10 @@ static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 
 static void lb_prob_handler(unsigned int ticks, void* param);
 
+static void lb_update_max_loads(unsigned int ticks, void *param);
 
+static void receive_lb_binary_packet(int packet_type, struct receive_info *ri,
+																	void *att);
 
 
 static cmd_export_t cmds[]={
@@ -156,6 +165,10 @@ static param_export_t mod_params[]={
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
 	{ "lb_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_lb_bl},
+	{ "accept_replicated_status",INT_PARAM, &accept_replicated_status },
+	{ "replicate_status_to",     INT_PARAM, &replicated_status_cluster },
+	{ "fetch_freeswitch_stats",  INT_PARAM, &fetch_freeswitch_stats},
+	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load},
 	{ 0,0,0 }
 };
 
@@ -168,12 +181,28 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+	if (cluster_id <= 0)
+		return NULL;
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
 static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;
 
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "freeswitch", DEP_ABORT);
 }
 
 static dep_export_t deps = {
@@ -184,6 +213,9 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "probing_interval", get_deps_probing_interval },
+		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
+		{ "accept_replicated_status", get_deps_clusterer},
+		{ "replicate_status_to", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -347,6 +379,32 @@ static int fixup_cnt_call(void** param, int param_no)
 	return -1;
 }
 
+static void lb_inherit_state(struct lb_data *old_data,struct lb_data *new_data)
+{
+	struct lb_dst *old_dst;
+	struct lb_dst *new_dst;
+
+	for ( new_dst=new_data->dsts ; new_dst ; new_dst=new_dst->next ) {
+		for ( old_dst=old_data->dsts ; old_dst ; old_dst=old_dst->next ) {
+			if (new_dst->id==old_dst->id &&
+			new_dst->group==old_dst->group &&
+			new_dst->uri.len==old_dst->uri.len &&
+			strncasecmp(new_dst->uri.s, old_dst->uri.s, old_dst->uri.len)==0) {
+				LM_DBG("DST %d/<%.*s> found in old set, copying state\n",
+					new_dst->group, new_dst->uri.len,new_dst->uri.s);
+				/* first reset the existing flags (only the flags related 
+				 * to state!!!) */
+				new_dst->flags &=
+					~(LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
+				/* copy the flags from the old node */
+				new_dst->flags |= (old_dst->flags &
+					(LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG));
+				break;
+			}
+		}
+	}
+}
+
 
 static inline int lb_reload_data( void )
 {
@@ -368,8 +426,12 @@ static inline int lb_reload_data( void )
 	lock_stop_write( ref_lock );
 
 	/* destroy old data */
-	if (old_data)
+	if (old_data) {
+		/* copy the state of the destinations from the old set
+		 * (for the matching ids) */
+		lb_inherit_state( old_data, new_data);
 		free_lb_data( old_data );
+	}
 
 	/* generate new blacklist from the routing info */
 	populate_lb_bls((*curr_data)->dsts);
@@ -389,6 +451,13 @@ static int mod_init(void)
 	if (load_dlg_api(&lb_dlg_binds) != 0) {
 		LM_ERR("Can't load dialog hooks\n");
 		return -1;
+	}
+
+	if (fetch_freeswitch_stats) {
+		if (load_fs_api(&fs_api) == -1) {
+			LM_ERR("failed to load the FS API!\n");
+			return -1;
+		}
 	}
 
 	/* data pointer in shm */
@@ -446,6 +515,14 @@ static int mod_init(void)
 			return -1;
 		}
 
+		/* Register the max load recalculation timer */
+		if (fetch_freeswitch_stats &&
+		    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
+		                   FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+			LM_ERR("failed to register timer for max load recalc!\n");
+			return -1;
+		}
+
 		if (lb_probe_replies.s) {
 			lb_probe_replies.len = strlen(lb_probe_replies.s);
 			if(parse_reply_codes( &lb_probe_replies, &probing_reply_codes,
@@ -484,6 +561,25 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (replicated_status_cluster > 0) {
+		/* status replication is enabled */
+		if (load_clusterer_api(&clusterer_api)!=0){
+			LM_DBG("failed to find clusterer API - is clusterer "
+				"module loaded?\n");
+			return -1;
+		}
+		/* do we also accept replication data ? */
+		if (accept_replicated_status > 0) {
+			if (bin_register_cb( repl_lb_module_name.s,
+			receive_lb_binary_packet, NULL) < 0) {
+				LM_ERR("cannot register replication callback!\n");
+				return -1;
+			}
+		}
+	} else
+	if(replicated_status_cluster < 0){
+		replicated_status_cluster = 0;
+	}
 	return 0;
 }
 
@@ -761,15 +857,10 @@ static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 
 	/* get the port */
 	if (port) {
-		if (pv_get_spec_value( req, (pv_spec_t*)port, &val)!=0) {
+		if (fixup_get_ivalue( req, (gparam_p)port, &port_no)!=0) {
 			LM_ERR("failed to get PORT value from PV\n");
 			return -1;
 		}
-		if ( (val.flags&PV_VAL_INT)==0 ) {
-			LM_ERR("PORT PV val is not integer\n");
-			return -1;
-		}
-		port_no = val.ri;
 	} else {
 		port_no = 0;
 	}
@@ -861,7 +952,7 @@ void set_dst_state_from_rplcode( int id, int code)
 		old_flags = dst->flags;
 		dst->flags &= ~LB_DST_STAT_DSBL_FLAG;
 		if (dst->flags != old_flags) {
-			lb_raise_event(dst);
+			lb_status_changed(dst);
 			if (lb_prob_verbose)
 				LM_INFO("re-enable destination %d <%.*s> after %d reply "
 					"on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
@@ -874,7 +965,7 @@ void set_dst_state_from_rplcode( int id, int code)
 		old_flags = dst->flags;
 		dst->flags |= LB_DST_STAT_DSBL_FLAG;
 		if (dst->flags != old_flags) {
-			lb_raise_event(dst);
+			lb_status_changed(dst);
 			if (lb_prob_verbose)
 				LM_INFO("disable destination %d <%.*s> after %d reply "
 					"on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
@@ -896,6 +987,52 @@ static void lb_prob_handler(unsigned int ticks, void* param)
 	lock_stop_read( ref_lock );
 }
 
+static void lb_update_max_loads(unsigned int ticks, void *param)
+{
+	struct lb_dst *dst;
+	int ri, old, psz;
+
+	LM_DBG("updating max loads...\n");
+
+	lock_start_write(ref_lock);
+	for (dst = (*curr_data)->dsts; dst; dst = dst->next) {
+		if (!dst->fs_sock)
+			continue;
+
+		lock_start_read(dst->fs_sock->hb_data_lk);
+		for (ri = 0; ri < dst->rmap_no; ri++) {
+			if (dst->rmap[ri].fs_enabled) {
+				psz = lb_dlg_binds.get_profile_size(
+				            dst->rmap[ri].resource->profile, &dst->profile_id);
+				old = dst->rmap[ri].max_load;
+
+				/*
+				 * The normal case. OpenSIPS sees, at _most_, the same number
+				 * of sessions as FreeSWITCH does. Any differences must be
+				 * subtracted from the remote "max sessions" value
+				 */
+				if (psz < dst->fs_sock->hb_data.max_sess) {
+					dst->rmap[ri].max_load =
+					(dst->fs_sock->hb_data.id_cpu / (float)100) *
+						(dst->fs_sock->hb_data.max_sess -
+						 (dst->fs_sock->hb_data.sess - psz));
+				} else {
+					dst->rmap[ri].max_load =
+					(dst->fs_sock->hb_data.id_cpu / (float)100) *
+						dst->fs_sock->hb_data.max_sess;
+				}
+				LM_DBG("load update on FS (%p) %s:%d: "
+				       "%d -> %d (%d %d %.3f), prof=%d\n",
+				       dst->fs_sock, dst->fs_sock->host.s, dst->fs_sock->port,
+				       old, dst->rmap[ri].max_load, dst->fs_sock->hb_data.sess,
+				       dst->fs_sock->hb_data.max_sess,
+				       dst->fs_sock->hb_data.id_cpu, psz);
+			}
+		}
+		lock_stop_read(dst->fs_sock->hb_data_lk);
+	}
+	lock_stop_write(ref_lock);
+}
 
 /******************** MI commands ***********************/
 
@@ -1047,7 +1184,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
 				}
 				if (old_flags != dst->flags) {
-					lb_raise_event(dst);
+					lb_status_changed(dst);
 					if( lb_prob_verbose )
 						LM_INFO("manually %s destination %d <%.*s>\n",
 							(stat ? "enable" : "disable"),
@@ -1153,4 +1290,41 @@ error:
 	lock_stop_read( ref_lock );
 	free_mi_tree(rpl_tree);
 	return 0;
+}
+
+
+static void receive_lb_binary_packet(int packet_type, struct receive_info *ri,
+																	void *att)
+{
+	int server_id;
+	char *ip;
+	unsigned short port;
+
+	LM_DBG("received a binary packet [%d]!\n", packet_type);
+
+	if(get_bin_pkg_version() != BIN_VERSION) {
+		LM_ERR("incompatible bin protocol version\n");
+		return;
+	}
+
+	if (bin_pop_int(&server_id) < 0) {
+		LM_ERR("failed to obtain server id from binary packet\n");
+		return;
+	}
+
+	if (!clusterer_api.check(replicated_status_cluster, &ri->src_su,
+	server_id, ri->proto)) {
+			get_su_info(&ri->src_su.s, ip, port);
+			LM_WARN("received bin packet from unknown source: %s:%hu\n",
+				ip, port);
+			return;
+	}
+
+	if (packet_type == REPL_LB_STATUS_UPDATE) {
+		lock_start_read(ref_lock);
+		replicate_lb_status_update(*curr_data);
+		lock_stop_read(ref_lock);
+	} else {
+		LM_ERR("invalid load_balancer binary packet type: %d\n", packet_type);
+	}
 }

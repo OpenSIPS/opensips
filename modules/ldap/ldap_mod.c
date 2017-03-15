@@ -45,7 +45,7 @@
 #include "ldap_api_fn.h"
 #include "iniparser.h"
 
-
+int max_async_connections=30;
 
 /*
 * Module management function prototypes
@@ -66,8 +66,8 @@ static int ldap_result_check_fixup(void** param, int param_no);
 * exported functions
 */
 
-static int w_ldap_search_async(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, char* ldap_url, char* param);
+static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx,
+		char* ldap_url, char* param);
 static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param);
 static int w_ldap_result1(struct sip_msg* msg, char* src, char* param);
 static int w_ldap_result2(struct sip_msg* msg, char* src, char* subst);
@@ -133,7 +133,8 @@ static cmd_export_t cmds[] = {
 */
 static param_export_t params[] = {
 
-	{"config_file",          STR_PARAM, &ldap_config.s},
+	{"config_file",                    STR_PARAM, &ldap_config.s},
+	{"max_async_connections",          INT_PARAM, &max_async_connections},
 	{0, 0, 0}
 };
 
@@ -178,19 +179,18 @@ static int child_init(int rank)
 	for (i = 0; i < ld_count; i++)
 	{
 		ld_name = iniparser_getsecname(config_vals, i);
-		if (add_ld_session(ld_name,
-					NULL,
-					config_vals)
+		if (add_ld_session(ld_name, config_vals)
 				!= 0)
 		{
 			LM_ERR("[%s]: add_ld_session failed\n", ld_name);
 			return -1;
 		}
 
-		if (ldap_connect(ld_name) != 0)
+		/* won't check for null in get_ld_session since it's barely been initialized */
+		if (ldap_connect(ld_name, &get_ld_session(ld_name)->conn_s) != 0)
 		{
 			LM_ERR("[%s]: failed to connect to LDAP host(s)\n", ld_name);
-			ldap_disconnect(ld_name);
+			ldap_disconnect(ld_name, NULL);
 			return -1;
 		}
 
@@ -255,7 +255,6 @@ static int mod_init(void)
 		LM_ERR("ldap_get_vendor_version failed\n");
 		return -2;
 	}
-	LM_INFO("%s\n", ldap_version);
 
 	return 0;
 }
@@ -275,10 +274,10 @@ static void destroy(void)
 * EXPORTED functions
 */
 
-static int w_ldap_search_async(struct sip_msg* msg, async_resume_module **resume_f,
-		void **resume_param, char* ldap_url, char* param)
+static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx,
+		char* ldap_url, char* param)
 {
-	return ldap_search_impl_async(msg, resume_f, resume_param, (pv_elem_t*)ldap_url);
+	return ldap_search_impl_async(msg, ctx, (pv_elem_t*)ldap_url);
 }
 
 static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param)

@@ -256,7 +256,7 @@ static int mod_init(void)
 		}
 
 		hash_table = (struct domain_list ***)shm_malloc
-			(sizeof(struct domain_list *));
+			(sizeof(struct domain_list **));
 		*hash_table = hash_table_1;
 
 		if (reload_domain_table() == -1) {

@@ -59,12 +59,22 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
 	"db_postgres",
 	MOD_TYPE_SQLDB,  /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /*  module functions */
 	0,               /*  module async functions */
 	params,          /*  module parameters */

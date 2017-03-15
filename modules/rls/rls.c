@@ -600,7 +600,7 @@ void rlsubs_table_update(unsigned int ticks,void *param)
 		LM_ERR("sql use table failed\n");
 		return;
 	}
-	pres_update_db_subs(rls_db, rls_dbf, rls_table, hash_size,
+	pres_update_db_subs(rls_db, &rls_dbf, rls_table, hash_size,
 			no_lock, handle_expired_record);
 
 }

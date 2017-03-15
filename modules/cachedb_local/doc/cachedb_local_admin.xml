@@ -1,14 +1,17 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a local cache system designed as
 		a hash table. It uses the Key-Value interface exported by OpenSIPS core.
+		Starting with version 2.3, the module can have multiple hash tables,
+		called collections. Each url for cachedb_local module points to one
+		collection. One collection can be shared between multiple urls.
 	</para>
 	<para>
 	</para>
@@ -22,7 +25,7 @@
 		None.
 		</para>
 	</section>
-	
+
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
@@ -38,47 +41,77 @@
 			</itemizedlist>
 	</section>
 	</section>
-	
+
 	<section>
 		<title>Exported Parameters</title>
+
 		<section>
-		<title><varname>cache_table_size</varname> (int)</title>
+		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
-			The size of the hash table. 
-			This parameter will be used as the power of 2 when computing table size.
+			URL parameter used to define cachedb_local collections. One collection
+		can belong to multiple URLs, but one URL can have only one collection.
+		Redefining an URL with the same schema and group name will result in overwriting
+		that URL. Each collection used in URL definition must be defined using
+		<emphasis>cachedb_collection</emphasis> parameter. The collection shall be defined
+		as a normal database, at the end of the URL as in the examples. In the script the
+		collection shall be identified using the schema and, if exists, the group name.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>9 (512)</quote>.
+			<emphasis><quote>If no URL defined, the url with no group name and collection "default"
+					will be used.</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>cache_table_size</varname> parameter</title>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_local", "cache_table_size", 10)
+### for this example, if no collection is defined, the default collection named
+### "default" shall be used
+modparam("cachedb_local", "cachedb_url", "local://")
+### this URL will use the collection named collection1; it will overwrite the
+### previous url definition which was using the "default" collection
+modparam("cachedb_local", "cachedb_url", "local:///collection1")
+### this URL will use collection2; it will be referenced from the script
+### with "local:group2"
+modparam("cachedb_local", "cachedb_url", "local:group2///collection2")
+
+## how to use the URLs from the script
+## as defined above, this call will use collection1
+cache_store("local", ...)
+## as defined above, this call will use collection2
+cache_store("local:group2", ...)
 ...
 	</programlisting>
 		</example>
 	</section>
+
 		<section>
-		<title><varname>exec_threshold</varname> (int)</title>
+		<title><varname>cache_collections</varname> (string)</title>
 		<para>
-			The maximum number of microseconds that a local cache query can last.
-			Anything above the threshold will trigger a warning message to the log
+			Using this parameter collections(hash tables) and their sizes can be defined. Each
+			collection definition must be separated one from another using ';'. Default size
+			for a hash is 512. The size must be separated from the name of the collection using
+			'='. Every collection that is defined in this parameter <emphasis>SHOULD</emphasis> be
+			used in at least one URL, else you'll receive a WARNING.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>0 ( unlimited - no warnings )</quote>.
+			<emphasis><quote>If no collection is defined, the collection with name "default" will be
+				created.</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>exec_threshold</varname> parameter</title>
+		<title>Set <varname>cache_collections</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_local", "exec_threshold", 100000)
+## creating collection1 with default size (512) and collection2 with custom size
+## 2^5 (32); we also changed the size of the default collection, which would have been
+## created anyway from 2^9 - 512 (default value) to 2^4 - 16
+modparam("cachedb_local", "cache_collections", "collection1; collection2=5; default=4")
 ...
 	</programlisting>
 		</example>
 	</section>
+
 	<section>
 		<title><varname>cache_clean_period</varname> (int)</title>
 		<para>
@@ -104,10 +137,13 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 
 		<section>
 			<title>
-			<function moreinfo="none">cache_remove_chunk(glob)</function>
+			<function moreinfo="none">cache_remove_chunk([collection,] glob)</function>
 			</title>
 			<para>
-			Remove all keys from local cache that match the <emphasis>glob</emphasis> pattern
+				Remove all keys from local cache that match the <emphasis>glob</emphasis> pattern
+			corresponding to a certain <emphasis>collection</emphasis> or the 'default' collection
+			if none defined. Keep in mind that collection name is different than group name,
+			which identifies the engine in cachedb operations.
 			</para>
 			<para>
 			This function can be used from all routes
@@ -117,12 +153,13 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 			<programlisting format="linespecific">
 	...
 	cache_remove_chunk("myinfo_*");
+	cache_remove_chunk("collection1", "myinfo_*");
 	...
 	</programlisting>
 			</example>
 		</section>
 
-	</section>	
+	</section>
 
 	<section>
 	<title>Exported MI Functions</title>
@@ -136,7 +173,11 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 		<para>Parameters :</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>glob</emphasis> - keys that match glob will be removed 
+				<emphasis>collection(optional)</emphasis> - collection from which the keys shall
+					be removed; if no collection set, the default collection will be used;
+			</para></listitem>
+			<listitem><para>
+				<emphasis>glob</emphasis> - keys that match glob will be removed
 			</para></listitem>
 		</itemizedlist>
 
@@ -145,6 +186,7 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 		</para>
 		<programlisting  format="linespecific">
 		:cache_remove_chunk:_reply_fifo_file_
+		collection*
 		keyprefix*
 		_empty_line_
 		</programlisting>

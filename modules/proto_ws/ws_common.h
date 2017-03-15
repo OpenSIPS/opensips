@@ -178,7 +178,6 @@ static inline void ws_print_masked(char *buf, int len)
 			p += sprintf(p, "\n");
 		}
 	}
-	LM_INFO("Print buffer\n%s", print_buf);
 }
 
 static inline void ws_mask(char *buf, int len, unsigned int mask)
@@ -556,8 +555,11 @@ again:
 		if (size)
 			goto again;
 		/* cleanup the existing request */
-		if (req != &_ws_common_current_req)
+		if (req != &_ws_common_current_req) {
+			/* make sure we cleanup the request in the connection */
+			con->con_req = NULL;
 			pkg_free(req);
+		}
 
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */

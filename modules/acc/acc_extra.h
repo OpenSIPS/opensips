@@ -35,14 +35,31 @@
 #include "../../str.h"
 #include "../../pvar.h"
 #include "../../parser/msg_parser.h"
+#include "../../sr_module.h"
+#include "acc_logic.h"
 
-struct acc_extra
-{
-	str        name;           /* name (log comment/ column name) */
-	pv_spec_t  spec;           /* value's spec */
-	unsigned int     use_rpl;  /* if this value should be taken from reply */
+#define ACC_INT_VALUE (1 << 0)
+#define ACC_STR_VALUE (1 << 1)
+
+
+struct acc_extra {
+	int tag_idx;
+
+	str name; /* log value(column/avp etc. name) */
+
 	struct acc_extra *next;    /* next extra value */
 };
+
+/*
+ * this protects multiple processes from accessing
+ * acc_leg/acc_extra values
+ */
+#define accX_lock(__S__) lock_get(__S__)
+#define accX_unlock(__S__) lock_release(__S__)
+
+/* the factor with which will realloc the tags array */
+#define TAGS_FACTOR 5
+typedef str tag_t;
 
 
 #define MAX_ACC_EXTRA 64
@@ -52,17 +69,18 @@ struct acc_extra
 
 void init_acc_extra();
 
-struct acc_extra *parse_acc_extra(char *extra, int allow_reply);
+int parse_acc_extra(modparam_t type, void* val);
 
-struct acc_extra *parse_acc_leg(char *extra);
+int build_acc_extra_array(tag_t* tags, int tags_len, extra_value_t** array_p);
+int  build_acc_extra_array_pkg(tag_t* tags, int tags_len, extra_value_t** array_p);
+
+int expand_legs(acc_ctx_t* ctx);
+
+int parse_acc_leg(modparam_t type, void* val);
 
 void destroy_extras( struct acc_extra *extra);
 
-int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
-		struct sip_msg *rpl,str *val_arr, int idx);
-
-int legs2strar( struct acc_extra *legs, struct sip_msg *rq,
-		str *val_arr, int start);
+int extra2strar( extra_value_t* values, str *val_arr, int idx);
 
 int extra2int( struct acc_extra *extra, int *attrs );
 

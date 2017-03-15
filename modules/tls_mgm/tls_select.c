@@ -302,7 +302,7 @@ int tlsops_check_cert(struct sip_msg *msg, pv_param_t *param,
 	if (!c) return -1;
 
 	ssl = get_ssl(c);
-	if (!ssl) goto err;
+	if (!ssl) goto error;
 
 	if ((cert = SSL_get_peer_certificate(ssl)) && SSL_get_verify_result(ssl) == err) {
 		res->rs.s = succ.s;
@@ -319,8 +319,8 @@ int tlsops_check_cert(struct sip_msg *msg, pv_param_t *param,
 	tcp_conn_release(c,0);
 
 	return 0;
-err:
-	if (cert) X509_free(cert);
+error:
+	/* if (cert) X509_free(cert); */
 	if (c) tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
 }

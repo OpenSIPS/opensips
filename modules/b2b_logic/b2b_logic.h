@@ -31,7 +31,7 @@
 #include "../../str.h"
 #include "../b2b_entities/b2b_entities.h"
 
-#define B2B_INIT_MAX_PARAMNO     5
+#define MAX_SCENARIO_PARAMS     10
 #define B2B_BRIDGING_STATE      -1
 #define B2B_CANCEL_STATE        -2
 #define B2B_NOTDEF_STATE        -3

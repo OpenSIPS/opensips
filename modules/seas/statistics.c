@@ -252,6 +252,7 @@ int start_stats_server(char *stats_socket)
       LM_ERR("setsockopt (%s)\n",strerror(errno));
       goto error;
    }
+   memset(&su, 0, sizeof(su));
    su.sin_family = he->h_addrtype;
    su.sin_port=htons(stats_port);
    memcpy(&su.sin_addr,he->h_addr_list[0],4);
@@ -314,40 +315,38 @@ void serve_stats(int fd)
    signal(SIGCHLD,sig_handler);
 
    while(1){
-      su_len = sizeof(union sockaddr_union);
-      sock=-1;
-      sock=accept(fd, &su.s, &su_len);
-      if(sock==-1){
-	 if(errno==EINTR){
-	    continue;
-	 }else{
-	    LM_ERR("failed to accept connection: %s\n", strerror(errno));
-	    return ;
-	 }
-      }
-      while(0!=(i=read(sock,&f,1))){
-	 if(i==-1){
-	    if(errno==EINTR){
-	       continue;
-	    }else{
-	       LM_ERR("unknown error reading from socket\n");
-	       close(sock);
-	       /** and continue accept()'ing*/
-	       break;
-	    }
-	 }
-	 retrn=print_stats_info(f,sock);
-	 if(retrn==-1){
-	    /**simple error happened, dont worry*/
-	       LM_ERR("printing statisticss \n");
-	       continue;
-	 }else if(retrn==-2){
-	    /**let's go to the outer loop, and receive more Statistics clients*/
-	    LM_ERR("statistics client left\n");
-	    close(sock);
-	    break;
-	 }
-      }
+	   su_len = sizeof(union sockaddr_union);
+	   sock=accept(fd, &su.s, &su_len);
+	   if(sock < 0){
+		   if(errno==EINTR){
+			   continue;
+		   }else{
+			   LM_ERR("failed to accept connection: %s\n", strerror(errno));
+			   return ;
+		   }
+	   }
+	   while(0!=(i=read(sock,&f,1))){
+		   if(i<0){
+			   if(errno==EINTR){
+				   continue;
+			   }else{
+				   LM_ERR("unknown error reading from socket\n");
+				   /** and continue accept()'ing*/
+				   break;
+			   }
+		   }
+		   retrn=print_stats_info(f,sock);
+		   if(retrn==-1){
+			   /**simple error happened, don't worry*/
+			   LM_ERR("printing statisticss \n");
+			   continue;
+		   }else if(retrn==-2){
+			   /**let's go to the outer loop, and receive more Statistics clients*/
+			   LM_ERR("statistics client left\n");
+			   break;
+		   }
+	   }
+	   close(sock);
    }
 }
 
@@ -367,7 +366,7 @@ int print_stats_info(int f,int sock)
    if(0>(k=snprintf(buf,STATS_BUF_SIZE, "Timings:      0-1   1-2   2-3   3-4   4-5   5-6   6-7   7-8   8-9   9-10  10-11 11-12 12-13 13-14 14+\n"))){
       goto error;
    }else{
-      if(k>STATS_BUF_SIZE){
+      if(k>=STATS_BUF_SIZE){
 	 j=STATS_BUF_SIZE;
 	 goto send;
       }
@@ -380,7 +379,7 @@ int print_stats_info(int f,int sock)
 	       seas_stats_table->dispatch[10],seas_stats_table->dispatch[11],seas_stats_table->dispatch[12],seas_stats_table->dispatch[13],seas_stats_table->dispatch[14]))){
       goto error;
    }else{
-      if(k>(STATS_BUF_SIZE-j)){
+      if(k>=(STATS_BUF_SIZE-j)){
 	 j=STATS_BUF_SIZE;
 	 goto send;
       }
@@ -392,7 +391,7 @@ int print_stats_info(int f,int sock)
 	       seas_stats_table->event[10],seas_stats_table->event[11],seas_stats_table->event[12],seas_stats_table->event[13],seas_stats_table->event[14]))){
       goto error;
    }else{
-      if(k>STATS_BUF_SIZE-j){
+      if(k>=STATS_BUF_SIZE-j){
 	 j=STATS_BUF_SIZE;
 	 goto send;
       }
@@ -402,7 +401,7 @@ int print_stats_info(int f,int sock)
 	       seas_stats_table->started_transactions,seas_stats_table->finished_transactions,seas_stats_table->received_replies,seas_stats_table->received))){
       goto error;
    }else{
-      if(k>STATS_BUF_SIZE-j){
+      if(k>=STATS_BUF_SIZE-j){
 	 j=STATS_BUF_SIZE;
 	 goto send;
       }

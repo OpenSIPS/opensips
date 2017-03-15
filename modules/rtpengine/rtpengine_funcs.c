@@ -161,144 +161,34 @@ other:
  */
 int extract_body(struct sip_msg *msg, str *body )
 {
-	char c;
-	int ret;
-	str mpdel;
-	char *rest, *p1, *p2;
-	struct hdr_field hf;
-	unsigned int mime;
+	struct body_part * p;
 
-	if (get_body(msg,body)!=0 || body->len==0) {
-		LM_ERR("failed to get the message body\n");
-		goto error;
-	}
-
-	/*
-	 * Better use the content-len value - no need of any explicit
-	 * parcing as get_body() parsed all headers and Conten-Length
-	 * body header is automaticaly parsed when found.
-	 */
-	if (msg->content_length==0) {
-		LM_ERR("failed to get the content length in message\n");
-		goto error;
-	}
-
-	body->len = get_content_length(msg);
-	if (body->len==0) {
-		LM_ERR("message body has length zero\n");
-		goto error;
-	}
-
-	if (body->len + body->s > msg->buf + msg->len) {
-		LM_ERR("content-length exceeds packet-length by %d\n",
-				(int)((body->len + body->s) - (msg->buf + msg->len)));
-		goto error;
-	}
-
-	/* no need for parse_headers(msg, EOH), get_body will
-	 * parse everything */
-	/*is the content type correct?*/
-	if((ret = check_content_type(msg))==-1)
+	if ( parse_sip_body(msg)<0 || msg->body==NULL )
 	{
-		LM_ERR("content type mismatching\n");
-		goto error;
-	}
-
-	if(ret!=2)
-		goto done;
-
-	/* multipart body */
-	if(get_mixed_part_delimiter(&msg->content_type->body,&mpdel) < 0) {
-		goto error;
-	}
-	p1 = find_sdp_line_delimiter(body->s, body->s+body->len, mpdel);
-	if (p1 == NULL) {
-		LM_ERR("empty multipart content\n");
+		LM_DBG("No body found\n");
 		return -1;
 	}
-	p2=p1;
-	c = 0;
-	for(;;)
+
+	for ( p=&msg->body->first ; p ; p=p->next )
 	{
-		p1 = p2;
-		if (p1 == NULL || p1 >= body->s+body->len)
-			break; /* No parts left */
-		p2 = find_next_sdp_line_delimiter(p1, body->s+body->len,
-				mpdel, body->s+body->len);
-		/* p2 is text limit for application parsing */
-		rest = eat_line(p1 + mpdel.len + 2, p2 - p1 - mpdel.len - 2);
-		if ( rest > p2 ) {
-			LM_ERR("Unparsable <%.*s>\n", (int)(p1-p1), p1);
-			return -1;
-		}
-		while( rest<p2 ) {
-			memset(&hf,0, sizeof(struct hdr_field));
-			rest = get_sdp_hdr_field(rest, p2, &hf);
-			if(hf.type==HDR_EOH_T)
-				break;
-			if(hf.type==HDR_ERROR_T)
-				return -1;
-			if(hf.type==HDR_CONTENTTYPE_T) {
-				if(decode_mime_type(hf.body.s, hf.body.s + hf.body.len,
-						&mime, NULL)==NULL)
-					return -1;
-				if (((((unsigned int)mime)>>16) == TYPE_APPLICATION)
-						&& ((mime&0x00ff) == SUBTYPE_SDP)) {
-					c = 1;
-				}
-			}
-		} /* end of while */
-		if(c==1)
-		{
-			if (rest < p2 && *rest == '\r') rest++;
-			if (rest < p2 && *rest == '\n') rest++;
-			if (rest < p2 && p2[-1] == '\n') p2--;
-			if (rest < p2 && p2[-1] == '\r') p2--;
-			body->s = rest;
-			body->len = p2-rest;
-			goto done;
-		}
+		/* skip body parts which were deleted or newly added */
+		if (!is_body_part_received(p))
+			continue;
+
+		*body = p->body;
+		if( p->mime != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
+							 || body->len == 0)
+			continue;
+
+		/* found and return an SDP part */
+		return 1;
 	}
 
-error:
+	body->s = NULL;
+	body->len = 0;
 	return -1;
-
-done:
-	/*LM_DBG("DEBUG:extract_body:=|%.*s|\n",body->len,body->s);*/
-	return 1;
 }
 
-/*
- * ser_memmem() returns the location of the first occurrence of data
- * pattern b2 of size len2 in memory block b1 of size len1 or
- * NULL if none is found. Obtained from NetBSD.
- */
-void *
-ser_memmem(const void *b1, const void *b2, size_t len1, size_t len2)
-{
-        /* Initialize search pointer */
-        char *sp = (char *) b1;
-
-        /* Initialize pattern pointer */
-        char *pp = (char *) b2;
-
-        /* Initialize end of search address space pointer */
-        char *eos = sp + len1 - len2;
-
-        /* Sanity check */
-        if(!(b1 && b2 && len1 && len2))
-                return NULL;
-
-        while (sp <= eos) {
-                if (*sp == *pp)
-                        if (memcmp(sp, pp, len2) == 0)
-                                return sp;
-
-                sp++;
-        }
-
-        return NULL;
-}
 
 /*
  * Some helper functions taken verbatim from tm module.

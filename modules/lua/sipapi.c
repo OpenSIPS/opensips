@@ -241,8 +241,6 @@ static int l_siplua_getContact(lua_State *L)
 	  for (_c = ((contact_body_t *)_p->parsed)->contacts; _c; _c = _c->next)
 	    {
 /* 	  siplua_log(L_DBG, "l_siplua_getContact _c/%p", _c); */
-	      if (!_c)
-		break;
 	      lua_pushinteger(L, n++);
 	      lua_newtable(L);
 	      lua_pushstring(L, "name");

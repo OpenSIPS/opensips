@@ -40,7 +40,8 @@
 		<name>domain</name>
 		<type>string</type>
 		<size>128</size>
-		<default></default>
+		<null/>
+		<default><null/></default>
 		<description>Domain part of user</description>
 	</column>
 
@@ -58,7 +59,8 @@
 		<name>description</name>
 		<type>string</type>
 		<size>128</size>
-		<default></default>
+		<null/>
+		<default><null/></default>
 		<description>Text description of the group/user</description>
 	</column>
 

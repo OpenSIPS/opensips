@@ -1,1 +1,1 @@
-id(int,auto) username(string) domain(string) groupid(int) description(string) 
+id(int,auto) username(string) domain(string,null) groupid(int) description(string,null) 

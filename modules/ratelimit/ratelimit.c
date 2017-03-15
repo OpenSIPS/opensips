@@ -397,16 +397,21 @@ static int mod_init(void)
 		return -1;
 	}
 
-
-	/* if db_url is not used */
-	for( n=0 ; n < 8 * sizeof(unsigned int) ; n++) {
-		if (rl_hash_size==(1<<n))
-			break;
-		if (rl_hash_size<(1<<n)) {
-			LM_WARN("hash_size is not a power "
-					"of 2 as it should be -> rounding from %d to %d\n",
-					rl_hash_size, 1<<(n-1));
-			rl_hash_size = 1<<(n-1);
+	if (rl_hash_size <= 0) {
+		LM_ERR("Hash size must be a positive integer, power of 2!\n");
+		return -1;
+	}
+	if (rl_hash_size != 1) {
+		for( n=1 ; n < (8 * sizeof(unsigned int)) ; n++) {
+			if (rl_hash_size==(1<<n))
+				break;
+			if (rl_hash_size<(1<<n)) {
+				LM_WARN("hash_size is not a power "
+						"of 2 as it should be -> rounding from %d to %d\n",
+						rl_hash_size, 1<<(n-1));
+				rl_hash_size = 1<<(n-1);
+				break;
+			}
 		}
 	}
 

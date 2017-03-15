@@ -31,6 +31,7 @@ Daniel-Constantin Mierla
               1.3.2. timeout_interval (integer)
               1.3.3. max_db_queries (integer)
               1.3.4. max_db_retries (integer)
+              1.3.5. tls_client_domain (string)
 
         1.4. Exported Functions
         1.5. Installation
@@ -44,6 +45,7 @@ Daniel-Constantin Mierla
    1.2. Set timeout_interval parameter
    1.3. Set max_db_queries parameter
    1.4. Set max_db_retries parameter
+   1.5. Set the tls_client_domain parameter
 
 Chapter 1. Admin Guide
 
@@ -57,7 +59,8 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSIPS modules.
+     * If a tls_client_domain is defined, the tls_mgm module will
+       need to be loaded as well.
 
 1.2.2. External Libraries or Applications
 
@@ -121,6 +124,28 @@ modparam("db_mysql", "max_db_queries", 2)
    Example 1.4. Set max_db_retries parameter
 ...
 modparam("db_mysql", "max_db_retries", 2)
+...
+
+1.3.5. tls_client_domain (string)
+
+   Setting this parameter will enable TLS for all MySQL
+   connections established by the module. Refer to the tls_mgm
+   module for additional info regarding TLS client domains.
+
+   If using this parameter, you must also ensure that tls_mgm is
+   loaded and properly configured.
+
+   Default value is NULL (not set)
+
+   Example 1.5. Set the tls_client_domain parameter
+...
+modparam("tls_mgm", "client_domain", "1=10.11.12.13:3306")
+modparam("tls_mgm", "certificate", "1:/etc/pki/tls/certs/opensips.pem")
+modparam("tls_mgm", "private_key", "1:/etc/pki/tls/private/opensips.key"
+)
+modparam("tls_mgm", "ca_list",     "1:/etc/pki/tls/certs/ca.pem")
+...
+modparam("db_mysql", "tls_client_domain", "1=10.11.12.13:3306")
 ...
 
 1.4. Exported Functions

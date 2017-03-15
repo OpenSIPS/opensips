@@ -41,6 +41,7 @@ typedef struct b2bl_entity_id
 	str to_uri;
 	str from_uri;
 	str from_dname;
+	str hdrs;
 	b2b_dlginfo_t* dlginfo;
 	int disconnected;
 	int state;
@@ -63,7 +64,6 @@ typedef struct b2bl_entity_id
 
 #define MAX_B2BL_ENT		3
 #define MAX_BRIDGE_ENT		3
-#define MAX_SCENARIO_PARAMS	5
 
 typedef struct b2bl_tuple
 {
@@ -142,7 +142,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 void destroy_b2bl_htable(void);
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
-		str* to_uri,str* from_uri,str* from_dname,str* ssid,struct sip_msg* msg);
+		str* to_uri,str* from_uri,str* from_dname,str* ssid,str* hdrs,struct sip_msg* msg);
 
 void unchain_ent(b2bl_entity_id_t *ent, b2bl_entity_id_t **head);
 void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head);

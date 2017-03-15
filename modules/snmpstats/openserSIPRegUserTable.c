@@ -321,6 +321,8 @@ void initialize_table_openserSIPRegUserTable(void)
 	if (!my_handler || !table_info) {
 		snmp_log(LOG_ERR, "malloc failed in initialize_table_openser"
 				"SIPRegUserTable_handler\n");
+		if (table_info)
+			SNMP_FREE(table_info);
 		return; /** mallocs failed */
 	}
 

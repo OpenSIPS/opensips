@@ -157,8 +157,12 @@ inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 again:
 		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
 		if (n==-1){
-			if (errno==EINTR) goto again; /* signal, ignore it */
-			else{
+			if (errno == EINTR) {
+				goto again; /* signal, ignore it */
+			} else if (h->fd_no == 0) {
+				sleep(t);
+				return 0;
+			} else {
 				LM_ERR("[%s] epoll_wait(%d, %p, %d, %d): %s [%d]\n",
 					h->name,h->epfd, h->ep_array, h->fd_no, t*1000,
 					strerror(errno), errno);

@@ -67,6 +67,9 @@
 #define PREV_FRAG_END(f) \
 	((struct qm_frag_end*)((char*)(f)-sizeof(struct qm_frag_end)))
 
+#define FRAG(f) \
+	((struct qm_frag*)((char*)(f)-sizeof(struct qm_frag)))
+
 
 #define ROUNDTO_MASK	(~((unsigned long)ROUNDTO-1))
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
@@ -168,8 +171,18 @@ static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
 unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
-	return (((struct qm_frag*) ((char*)p-sizeof(struct qm_frag)))->size);
+	return FRAG(p)->size;
 }
+
+#ifdef SHM_EXTRA_STATS
+void set_stat_index (void *ptr, unsigned long idx) {
+	FRAG(ptr)->statistic_index = idx;
+}
+
+unsigned long get_stat_index(void *ptr) {
+	return FRAG(ptr)->statistic_index;
+}
+#endif
 
 static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
 {
@@ -460,7 +473,7 @@ void qm_free(struct qm_block* qm, void* p)
 	        qm->name, p, file, func, line);
 #endif
 	if (p==0) {
-		LM_WARN("free(0) called\n");
+		LM_DBG("free(0) called\n");
 		return;
 	}
 #ifdef DBG_MALLOC
@@ -469,7 +482,7 @@ void qm_free(struct qm_block* qm, void* p)
 		abort();
 	}
 #endif
-	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
+	f=FRAG(p);
 #ifdef DBG_MALLOC
 	qm_debug_frag(qm, f);
 	if (f->u.is_free){
@@ -572,7 +585,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 #else
 		return qm_malloc(qm, size);
 #endif
-	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
+	f=FRAG(p);
 #ifdef DBG_MALLOC
 	qm_debug_frag(qm, f);
 	LM_GEN1( memlog, "realloc'ing frag %p alloc'ed from %s: %s(%ld)\n",
@@ -656,8 +669,16 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 	return p;
 }
 
+#ifdef SHM_EXTRA_STATS
+void set_indexes(int core_index) {
 
+	struct qm_frag* f;
+	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag_end; f=FRAG_NEXT(f))
+		if (!f->u.is_free)
+			f->statistic_index = core_index;
 
+}
+#endif
 
 void qm_status(struct qm_block* qm)
 {

@@ -33,6 +33,7 @@
  */
 
 #include <osp/osp.h>
+#include "../../mod_fix.h"
 #include "../../sr_module.h"
 #include "../rr/api.h"
 #include "../auth/api.h"
@@ -41,9 +42,11 @@
 #include "orig_transaction.h"
 #include "term_transaction.h"
 #include "usage.h"
+#include "signaling.h"
 #include "tm.h"
 #include "provider.h"
 #include "sipheader.h"
+#include "cnam.h"
 
 extern int _osp_work_mode;
 extern int _osp_service_type;
@@ -72,6 +75,8 @@ extern int _osp_use_np;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
+extern int _osp_swid_location;
+extern char* _osp_swid_param;
 extern int _osp_paramstr_location;
 extern char* _osp_paramstr_value;
 extern char _osp_PRIVATE_KEY[];
@@ -83,12 +88,16 @@ extern unsigned short _osp_srcdev_avptype;
 extern char* _osp_snid_avp;
 extern int _osp_snid_avpid;
 extern unsigned short _osp_snid_avptype;
+extern char* _osp_swid_avp;
+extern int _osp_swid_avpid;
+extern unsigned short _osp_swid_avptype;
 extern char* _osp_cinfo_avp;
 extern int _osp_cinfo_avpid;
 extern unsigned short _osp_cinfo_avptype;
 extern char* _osp_cnam_avp;
 extern int _osp_cnam_avpid;
 extern unsigned short _osp_cnam_avptype;
+extern char* _osp_extraheaders_value;
 extern char* _osp_srcmedia_avp;
 extern int _osp_srcmedia_avpid;
 extern unsigned short _osp_srcmedia_avptype;
@@ -129,17 +138,18 @@ static int ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 static cmd_export_t cmds[]={
-    { "checkospheader",           (cmd_function)ospCheckHeader,           0, 0, 0, REQUEST_ROUTE },
-    { "validateospheader",        (cmd_function)ospValidateHeader,        0, 0, 0, REQUEST_ROUTE },
-    { "getlocaladdress",          (cmd_function)ospGetLocalAddress,       0, 0, 0, ONREPLY_ROUTE },
-    { "setrequestdate",           (cmd_function)ospSetRequestDate,        0, 0, 0, REQUEST_ROUTE },
-    { "requestosprouting",        (cmd_function)ospRequestRouting,        0, 0, 0, REQUEST_ROUTE },
-    { "checkosproute",            (cmd_function)ospCheckRoute,            0, 0, 0, REQUEST_ROUTE },
-    { "prepareosproute",          (cmd_function)ospPrepareRoute,          0, 0, 0, BRANCH_ROUTE },
-    { "prepareospresponse",       (cmd_function)ospPrepareResponse,       0, 0, 0, REQUEST_ROUTE },
-    { "prepareallosproutes",      (cmd_function)ospPrepareAllRoutes,      0, 0, 0, REQUEST_ROUTE },
-    { "checkcallingtranslation",  (cmd_function)ospCheckCalling,          0, 0, 0, BRANCH_ROUTE },
-    { "reportospusage",           (cmd_function)ospReportUsage,           1, 0, 0, REQUEST_ROUTE },
+    { "checkospheader",           (cmd_function)ospCheckHeader,           0, 0,               0, REQUEST_ROUTE },
+    { "validateospheader",        (cmd_function)ospValidateHeader,        0, 0,               0, REQUEST_ROUTE },
+    { "getlocaladdress",          (cmd_function)ospGetLocalAddress,       0, 0,               0, ONREPLY_ROUTE },
+    { "setrequestdate",           (cmd_function)ospSetRequestDate,        0, 0,               0, REQUEST_ROUTE },
+    { "requestosprouting",        (cmd_function)ospRequestRouting,        0, 0,               0, REQUEST_ROUTE },
+    { "checkosproute",            (cmd_function)ospCheckRoute,            0, 0,               0, REQUEST_ROUTE },
+    { "prepareosproute",          (cmd_function)ospPrepareRoute,          0, 0,               0, BRANCH_ROUTE },
+    { "prepareospresponse",       (cmd_function)ospPrepareResponse,       0, 0,               0, REQUEST_ROUTE },
+    { "prepareallosproutes",      (cmd_function)ospPrepareAllRoutes,      0, 0,               0, REQUEST_ROUTE },
+    { "checkcallingtranslation",  (cmd_function)ospCheckCalling,          0, 0,               0, BRANCH_ROUTE },
+    { "reportospusage",           (cmd_function)ospReportUsage,           1, fixup_spve_null, 0, REQUEST_ROUTE },
+    { "processsubscribe",         (cmd_function)ospProcessSubscribe,      1, fixup_spve_null, 0, REQUEST_ROUTE },
     { 0, 0, 0, 0, 0, 0 }
 };
 
@@ -198,12 +208,16 @@ static param_export_t params[]={
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
     { "networkid_location",               INT_PARAM, &_osp_dnid_location},
     { "networkid_parameter",              STR_PARAM, &_osp_dnid_param },
+    { "switchid_location",                INT_PARAM, &_osp_swid_location},
+    { "switchid_parameter",               STR_PARAM, &_osp_swid_param },
     { "parameterstring_location",         INT_PARAM, &_osp_paramstr_location},
     { "parameterstring_value",            STR_PARAM, &_osp_paramstr_value },
     { "source_device_avp",                STR_PARAM, &_osp_srcdev_avp },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
+    { "source_switchid_avp",              STR_PARAM, &_osp_swid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
     { "cnam_avp",                         STR_PARAM, &_osp_cnam_avp },
+    { "extraheaders_value",               STR_PARAM, &_osp_extraheaders_value },
     { "source_media_avp",                 STR_PARAM, &_osp_srcmedia_avp },
     { "destination_media_avp",            STR_PARAM, &_osp_destmedia_avp },
     { "request_date_avp",                 STR_PARAM, &_osp_reqdate_avp },
@@ -217,15 +231,16 @@ static param_export_t params[]={
 };
 
 static dep_export_t deps = {
-	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "rr",   DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "tm",   DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
-		{ MOD_TYPE_NULL, NULL, 0 },
-	},
-	{ /* modparam dependencies */
-		{ NULL, NULL },
-	},
+    { /* OpenSIPS module dependencies */
+        { MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
+        { MOD_TYPE_DEFAULT, "rr",   DEP_ABORT },
+        { MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+        { MOD_TYPE_DEFAULT, "tm",   DEP_ABORT },
+        { MOD_TYPE_NULL, NULL, 0 },
+    },
+    { /* modparam dependencies */
+        { NULL, NULL },
+    },
 };
 
 struct module_exports exports = {
@@ -277,6 +292,10 @@ static int ospInitMod(void)
         LM_WARN("failed to load the AUTH API. Check if you load the auth module.\n");
         LM_WARN("rpid_avp & rpid_avp_type is required for calling number translation\n");
         memset(&osp_auth, 0, sizeof(osp_auth));
+    }
+
+    if (ospInitSig() != 0) {
+        return -1;
     }
 
     if (ospInitTm() != 0) {
@@ -438,6 +457,15 @@ static int ospVerifyParameters(void)
         _osp_dnid_param = OSP_DEF_DNIDPARAM;
     }
 
+    if ((_osp_swid_location < 0) || (_osp_swid_location > 2)) {
+        _osp_swid_location = OSP_DEF_SWIDLOC;
+        LM_WARN("switchid_location is out of range, reset to %d\n", OSP_DEF_SWIDLOC);
+    }
+
+    if (!(_osp_swid_param && *_osp_swid_param)) {
+        _osp_swid_param = OSP_DEF_SWIDPARAM;
+    }
+
     if ((_osp_paramstr_location < 0) || (_osp_paramstr_location > 2)) {
         _osp_paramstr_location = OSP_DEF_PARAMSTRLOC;
         LM_WARN("parameterstring_location is out of range, reset to %d\n", OSP_DEF_PARAMSTRLOC);
@@ -451,9 +479,15 @@ static int ospVerifyParameters(void)
 
     ospCheckAVP(_osp_snid_avp, &_osp_snid_avpid, &_osp_snid_avptype);
 
+    ospCheckAVP(_osp_swid_avp, &_osp_swid_avpid, &_osp_swid_avptype);
+
     ospCheckAVP(_osp_cinfo_avp, &_osp_cinfo_avpid, &_osp_cinfo_avptype);
 
     ospCheckAVP(_osp_cnam_avp, &_osp_cnam_avpid, &_osp_cnam_avptype);
+
+    if (!(_osp_extraheaders_value && *_osp_extraheaders_value)) {
+        _osp_extraheaders_value = OSP_DEF_EXTHEADERVAL;
+    }
 
     ospCheckAVP(_osp_srcmedia_avp, &_osp_srcmedia_avpid, &_osp_srcmedia_avptype);
     ospCheckAVP(_osp_destmedia_avp, &_osp_destmedia_avpid, &_osp_destmedia_avptype);
@@ -507,6 +541,8 @@ static void ospDumpParameters(void)
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
     LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
     LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
+    LM_INFO("    switchid_location '%d' ", _osp_swid_location);
+    LM_INFO("    switchid_parameter '%s' ", _osp_swid_param);
     LM_INFO("    parameterstring_location '%d' ", _osp_paramstr_location);
     LM_INFO("    parameterstring_value '%s' ", _osp_paramstr_value);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
@@ -514,8 +550,10 @@ static void ospDumpParameters(void)
     LM_INFO("    support_nonsip_protocol '%d'\n", _osp_non_sip);
     LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpid);
     LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpid);
+    LM_INFO("    source switch ID AVP ID '%d'\n", _osp_swid_avpid);
     LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpid);
     LM_INFO("    cnam AVP ID '%d'\n", _osp_cnam_avpid);
+    LM_INFO("    extraheaders_value '%s' ", _osp_extraheaders_value);
     LM_INFO("    meida AVP ID '%d/%d'\n", _osp_srcmedia_avpid, _osp_destmedia_avpid);
     LM_INFO("    request date AVP ID '%d'\n", _osp_reqdate_avpid);
     LM_INFO("    sdp fingerprint AVP ID '%d'\n", _osp_sdpfp_avpid);

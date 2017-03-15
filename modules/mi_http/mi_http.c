@@ -33,6 +33,7 @@
 #include "../../mem/shm_mem.h"
 #include "../httpd/httpd_load.h"
 #include "http_fnc.h"
+#include "../../mi/mi_trace.h"
 
 /* module functions */
 static int mod_init();
@@ -41,13 +42,20 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
-		str *buffer, str *page);
+		str *buffer, str *page, union sockaddr_union* cl_socket);
 static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
 str http_root = str_init("mi");
 int http_method = 0;
 
 httpd_api_t httpd_api;
+
+static str trace_destination_name = {NULL, 0};
+trace_dest t_dst;
+extern http_mi_cmd_t* http_mi_cmds;
+
+int mi_trace_mod_id;
+char* mi_trace_bwlist_s;
 
 
 static const str MI_HTTP_U_ERROR = str_init("<html><body>"
@@ -57,11 +65,17 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unexpected method (only GET is accepted)!</body></html>");
 
+static str MI_HTTP_U_ERROR_REASON = str_init("Internal server error!");
+static str MI_HTTP_U_URL_REASON = str_init("Unable to parse URL!");
+static str MI_HTTP_U_METHOD_REASON = str_init("Unexpected method! Only GET is accepted!");
+
 
 /* module parameters */
 static param_export_t mi_params[] = {
 	{"mi_http_root",   STR_PARAM, &http_root.s},
 	{"mi_http_method", INT_PARAM, &http_method},
+	{"trace_destination", STR_PARAM, &trace_destination_name.s},
+	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{0,0,0}
 };
 
@@ -106,6 +120,22 @@ void proc_init(void)
 	if (mi_http_init_async_lock() != 0)
 		exit(-1);
 
+	/* if tracing enabled init correlation id */
+	if ( t_dst ) {
+		if ( load_correlation_id() < 0 ) {
+			LM_ERR("can't find correlation id params!\n");
+			exit(-1);
+		}
+
+		if ( mi_trace_api && mi_trace_bwlist_s ) {
+			if ( parse_mi_cmd_bwlist( mi_trace_mod_id,
+						mi_trace_bwlist_s, strlen(mi_trace_bwlist_s) ) < 0 ) {
+				LM_ERR("invalid bwlist <%s>!\n", mi_trace_bwlist_s);
+				exit(-1);
+			}
+		}
+	}
+
 	return;
 }
 
@@ -127,6 +157,17 @@ static int mod_init(void)
 				&mi_http_answer_to_connection,
 				&mi_http_flush_data,
 				&proc_init);
+
+	if (trace_destination_name.s) {
+		trace_destination_name.len = strlen( trace_destination_name.s);
+
+		try_load_trace_api();
+		if (mi_trace_api && mi_trace_api->get_trace_dest_by_name) {
+			t_dst = mi_trace_api->get_trace_dest_by_name(&trace_destination_name);
+		}
+
+		mi_trace_mod_id = register_mi_trace_mod();
+	}
 
 	return 0;
 }
@@ -247,12 +288,33 @@ static inline struct mi_root* mi_http_wait_async_reply(struct mi_handler *hdl)
 	return mi_rpl;
 }
 
+static inline void trace_http( union sockaddr_union* cl_socket, char* url,
+		struct mi_root* mi_req, str* error, int code, str* message)
+{
+
+	char* command;
+
+	if ( !sv_socket ) {
+		sv_socket = httpd_api.get_server_info();
+	}
+
+	if ( url )
+		command = url;
+	else
+		command = "";
+
+	mi_trace_request( cl_socket, sv_socket, command,
+									strlen(command), mi_req, &backend, t_dst);
+
+	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
+}
+
 
 int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
-		str *buffer, str *page)
+		str *buffer, str *page, union sockaddr_union* cl_socket)
 {
 	int mod = -1;
 	int cmd = -1;
@@ -260,7 +322,9 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 	int ret_code = MI_HTTP_OK;
-	int is_shm = 0;
+	int is_shm = 0, is_cmd_traced=0;
+
+	static const str ok_trace_reason = str_init("OK");
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -272,7 +336,7 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 			if (mod>=0 && cmd>=0 && arg.s) {
 				LM_DBG("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
 				tree = mi_http_run_mi_cmd(mod, cmd, &arg,
-							page, buffer, &async_hdl);
+							page, buffer, &async_hdl, cl_socket, &is_cmd_traced);
 				if (tree == MI_ROOT_ASYNC_RPL) {
 					LM_DBG("got an async reply\n");
 					tree = mi_http_wait_async_reply(async_hdl);
@@ -284,17 +348,32 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 					LM_ERR("no reply\n");
 					*page = MI_HTTP_U_ERROR;
 					ret_code = MI_HTTP_INTERNAL_ERROR;
+
+					if ( is_cmd_traced )
+						trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
+							0, &MI_HTTP_U_ERROR_REASON, MI_HTTP_INTERNAL_ERROR, 0);
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
 						page->s, page->len);
+
 					if(0!=mi_http_build_page(page,buffer->len,mod,cmd,tree)){
 						LM_ERR("unable to build response"
 							"for cmd [%d] w/ args [%.*s]\n",
 							cmd, arg.len, arg.s);
 						*page = MI_HTTP_U_ERROR;
 						ret_code = MI_HTTP_INTERNAL_ERROR;
+
+						/* already traced the request; trace the reply only */
+						if ( is_cmd_traced )
+							mi_trace_reply( sv_socket, cl_socket,
+								MI_HTTP_INTERNAL_ERROR, &MI_HTTP_U_ERROR_REASON,
+								0, t_dst);
 					} else {
 						ret_code = tree->code;
+
+						if ( is_cmd_traced )
+							mi_trace_reply( sv_socket, cl_socket,
+								tree->code, &tree->reason, page, t_dst);
 					}
 				}
 			} else {
@@ -304,6 +383,14 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 					LM_ERR("unable to build response\n");
 					*page = MI_HTTP_U_ERROR;
 					ret_code = MI_HTTP_INTERNAL_ERROR;
+
+					trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s, 0,
+							&MI_HTTP_U_ERROR_REASON, MI_HTTP_INTERNAL_ERROR, 0);
+				}
+				/* trace only mi commands */
+				if (mod > 0 && cmd > 0) {
+					trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s, 0,
+							(str *)&ok_trace_reason, MI_HTTP_OK, page);
 				}
 			}
 			if (tree) {
@@ -314,11 +401,17 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 			LM_ERR("unable to parse URL [%s]\n", url);
 			*page = MI_HTTP_U_URL;
 			ret_code = MI_HTTP_NOT_ACCEPTABLE;
+
+			trace_http( cl_socket, (char *)url, 0, &MI_HTTP_U_URL_REASON,
+										MI_HTTP_NOT_ACCEPTABLE, 0);
 		}
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = MI_HTTP_U_METHOD;
 		ret_code = MI_HTTP_INTERNAL_ERROR;
+
+		trace_http( cl_socket, (char *)url, 0, &MI_HTTP_U_METHOD_REASON,
+									MI_HTTP_INTERNAL_ERROR, 0);
 	}
 
 	return ret_code;

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright (C) 2015 OpenSIPS Foundation
+ * Copyright (C) 2015 - OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -224,7 +224,12 @@ int db_sqlite_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 	int rows, i;
 	sqlite3_stmt* stmt;
 
-	if (!_h || !_r || nrows < 0) {
+	if (!_r) {
+		LM_ERR("null result!\n");
+		return -1;
+	}
+
+	if (!_h || nrows < 0) {
 		LM_ERR("Invalid parameter value\n");
 		db_sqlite_free_result_internal(_h,*_r);
 		return -1;

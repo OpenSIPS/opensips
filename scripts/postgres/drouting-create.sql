@@ -10,7 +10,7 @@ CREATE TABLE dr_gateways (
     probe_mode INTEGER DEFAULT 0 NOT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
     socket VARCHAR(128) DEFAULT NULL,
-    description VARCHAR(128) DEFAULT '' NOT NULL,
+    description VARCHAR(128) DEFAULT NULL,
     CONSTRAINT dr_gateways_dr_gw_idx UNIQUE (gwid)
 );
 
@@ -20,12 +20,12 @@ CREATE TABLE dr_rules (
     ruleid SERIAL PRIMARY KEY NOT NULL,
     groupid VARCHAR(255) NOT NULL,
     prefix VARCHAR(64) NOT NULL,
-    timerec VARCHAR(255) NOT NULL,
+    timerec VARCHAR(255) DEFAULT NULL,
     priority INTEGER DEFAULT 0 NOT NULL,
     routeid VARCHAR(255) DEFAULT NULL,
     gwlist VARCHAR(255) NOT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
-    description VARCHAR(128) DEFAULT '' NOT NULL
+    description VARCHAR(128) DEFAULT NULL
 );
 
 ALTER SEQUENCE dr_rules_ruleid_seq MAXVALUE 2147483647 CYCLE;
@@ -36,8 +36,8 @@ CREATE TABLE dr_carriers (
     gwlist VARCHAR(255) NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
-    attrs VARCHAR(255) DEFAULT '',
-    description VARCHAR(128) DEFAULT '' NOT NULL,
+    attrs VARCHAR(255) DEFAULT NULL,
+    description VARCHAR(128) DEFAULT NULL,
     CONSTRAINT dr_carriers_dr_carrier_idx UNIQUE (carrierid)
 );
 
@@ -46,9 +46,9 @@ INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) NOT NULL,
-    domain VARCHAR(128) DEFAULT '' NOT NULL,
+    domain VARCHAR(128) DEFAULT NULL,
     groupid INTEGER DEFAULT 0 NOT NULL,
-    description VARCHAR(128) DEFAULT '' NOT NULL
+    description VARCHAR(128) DEFAULT NULL
 );
 
 ALTER SEQUENCE dr_groups_id_seq MAXVALUE 2147483647 CYCLE;

@@ -10,7 +10,7 @@ CREATE TABLE dr_gateways (
     probe_mode INTEGER DEFAULT 0 NOT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
     socket CHAR(128) DEFAULT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL,
+    description CHAR(128) DEFAULT NULL,
     CONSTRAINT dr_gateways_dr_gw_idx  UNIQUE (gwid)
 );
 
@@ -19,12 +19,12 @@ CREATE TABLE dr_rules (
     ruleid INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     groupid CHAR(255) NOT NULL,
     prefix CHAR(64) NOT NULL,
-    timerec CHAR(255) NOT NULL,
+    timerec CHAR(255) DEFAULT NULL,
     priority INTEGER DEFAULT 0 NOT NULL,
     routeid CHAR(255) DEFAULT NULL,
     gwlist CHAR(255) NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL
+    description CHAR(128) DEFAULT NULL
 );
 
 INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
@@ -34,8 +34,8 @@ CREATE TABLE dr_carriers (
     gwlist CHAR(255) NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
-    attrs CHAR(255) DEFAULT '',
-    description CHAR(128) DEFAULT '' NOT NULL,
+    attrs CHAR(255) DEFAULT NULL,
+    description CHAR(128) DEFAULT NULL,
     CONSTRAINT dr_carriers_dr_carrier_idx  UNIQUE (carrierid)
 );
 
@@ -43,9 +43,9 @@ INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     username CHAR(64) NOT NULL,
-    domain CHAR(128) DEFAULT '' NOT NULL,
+    domain CHAR(128) DEFAULT NULL,
     groupid INTEGER DEFAULT 0 NOT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL
+    description CHAR(128) DEFAULT NULL
 );
 
 INSERT INTO version (table_name, table_version) values ('dr_partitions','1');

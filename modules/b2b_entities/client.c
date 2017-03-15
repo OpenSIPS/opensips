@@ -143,7 +143,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	dlg->b2b_cback = b2b_cback;
 	dlg->add_dlginfo = add_dlginfo;
-	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method)< 0)
+	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method) == 0)
 	{
 		LM_ERR("wrong method %.*s\n", ci->method.len, ci->method.s);
 		shm_free(dlg);
@@ -173,8 +173,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		goto error;
 	}
 
-	if(b2breq_complete_ehdr(ci->extra_headers, &ehdr, ci->body,
-				&ci->local_contact)< 0)
+	if(b2breq_complete_ehdr(ci->extra_headers, ci->client_headers,
+			&ehdr, ci->body, &ci->local_contact)< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;

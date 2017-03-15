@@ -41,40 +41,6 @@ struct save_ctx {
 	unsigned int max_expires;
 };
 
-
-/*! \brief
- * Parse the whole message and bodies of all header fields
- * that will be needed by registrar
- */
-int parse_message(struct sip_msg* _m);
-
-
-/*! \brief
- * Check if the originating REGISTER message was formed correctly
- * The whole message must be parsed before calling the function
- * _s indicates whether the contact was star
- */
-int check_contacts(struct sip_msg* _m, int* _s);
-
-
-/*! \brief
- * Set to NULL the pointer to the first contact in message
- */
-void reset_first_contact(void);
-
-
-/*! \brief
- * Get the first contact in message
- */
-contact_t* get_first_contact(struct sip_msg* _m);
-
-
-/*! \brief
- * Get next contact in message
- */
-contact_t* get_next_contact(contact_t* _c);
-
-
 /*! \brief
  * Calculate absolute expires value per contact as follows:
  * 1) If the contact has expires value, use the value. If it
@@ -93,6 +59,5 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save
  * 2) If the parameter doesn't exist, use default value
  */
 int calc_contact_q(param_t* _q, qvalue_t* _r);
-
 
 #endif /* SIP_MSG_H */

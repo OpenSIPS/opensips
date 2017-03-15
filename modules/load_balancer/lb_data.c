@@ -34,12 +34,17 @@
 #include "../../mem/shm_mem.h"
 #include "../../evi/evi.h"
 #include "lb_parser.h"
+#include "../../rw_locking.h"
 #include "lb_data.h"
+#include "lb_replication.h"
 #include "lb_db.h"
 
 /* dialog stuff */
 extern struct dlg_binds lb_dlg_binds;
 
+extern int fetch_freeswitch_stats;
+extern int initial_fs_load;
+extern struct fs_binds fs_api;
 
 
 struct lb_data* load_lb_data(void)
@@ -226,6 +231,8 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	union sockaddr_union sau;
 	int len;
 	int i;
+	str fs_url = { NULL, 0 };
+	str lb_str = { MI_SSTR("load_balancer") };
 
 	LM_DBG("uri=<%s>, grp=%d, res=<%s>\n",uri, group, resource);
 
@@ -273,8 +280,9 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	/* add or update resource list */
 	for( i=0 ; i<lb_rl->n ; i++) {
 		r = lb_rl->resources + i;
-		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d\n",
-			uri, data->dst_no+1, r->name.len, r->name.s, r->val);
+		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d, fs=%.*s\n",
+			uri, data->dst_no+1, r->name.len, r->name.s, r->val,
+		    r->fs_url.len, r->fs_url.s);
 		res = get_resource_by_name( data, &r->name);
 		if (res==NULL) {
 			/* add new resource */
@@ -291,7 +299,13 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 		}
 		/* set the pointer and the max load */
 		dst->rmap[i].resource = res;
-		dst->rmap[i].max_load = r->val;
+		if (fetch_freeswitch_stats && r->fs_url.s) {
+			fs_url = r->fs_url;
+			dst->rmap[i].max_load = initial_fs_load;
+			dst->rmap[i].fs_enabled = 1;
+		} else {
+			dst->rmap[i].max_load = r->val;
+		}
 	}
 
 	/* Do a SIP wise DNS-Lookup for the domain part */
@@ -322,6 +336,13 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	free_proxy(proxy);
 	pkg_free(proxy);
 
+	if (fetch_freeswitch_stats && fs_url.s && fs_url.len > 0) {
+		dst->fs_sock = fs_api.add_hb_evs(&fs_url, &lb_str, NULL, NULL);
+		if (!dst->fs_sock) {
+			LM_ERR("failed to create FreeSWITCH stats socket!\n");
+		}
+	}
+
 	/* link at the end */
 	if (data->last_dst==NULL) {
 		data->dsts = data->last_dst = dst;
@@ -344,6 +365,7 @@ void free_lb_data(struct lb_data *data)
 {
 	struct lb_resource *lbr1, *lbr2;
 	struct lb_dst *lbd1, *lbd2;
+	str lb_str = { MI_SSTR("load_balancer") };
 
 	if (data==NULL)
 		return;
@@ -365,6 +387,9 @@ void free_lb_data(struct lb_data *data)
 	for( lbd1=data->dsts ; lbd1 ; ) {
 		lbd2 = lbd1;
 		lbd1 = lbd1->next;
+		if (lbd2->fs_sock) {
+			fs_api.del_hb_evs(lbd2->fs_sock, &lb_str);
+		}
 		shm_free(lbd2);
 	}
 
@@ -410,6 +435,13 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 }
 
 
+/* Performce the LB logic. It may return:
+ *   0 - success
+ *  -1 - generic error
+ *  -2 - no capacity (destinations may exist)
+ *  -3 - no destination at all
+ *  -4 - bad resources
+ */
 int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 						unsigned int flags, struct lb_data *data, int reuse)
 {
@@ -452,7 +484,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	struct lb_dst *it_d;
 	struct lb_resource *it_r;
 	int load, it_l;
-	int i, j, cond;
+	int i, j, cond, cnt_aval_dst;
 
 
 	/* init control vars state */
@@ -489,7 +521,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 		if( i != res_new_n ) {
 			LM_ERR("initial call of LB - unknown resource found in "
 				"input string\n");
-			return -1;
+			return -4;
 		}
 
 		/* set 'res_new' as current iteration buffer */
@@ -716,11 +748,13 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	cond = 0; /* use it here as a 'first iteration' flag */
 	load = it_l = 0;
 	dsts_size_cur = 0;
+	cnt_aval_dst = 0;
 	for( it_d=data->dsts,i=0,j=0 ; it_d ; it_d=it_d->next ) {
 		if( it_d->group == group ) {
 			if( (dst_bitmap_cur[i] & (1 << j)) &&
 			((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
 				/* valid destination (group & resources & status) */
+				cnt_aval_dst++;
 				if( get_dst_load(res_cur, res_cur_n, it_d, flags, &it_l) ) {
 					/* only valid load here */
 					if( (it_l > 0) || (flags & LB_FLAGS_NEGATIVE) ) {
@@ -870,10 +904,10 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	/* outcome: set dst uri */
 	if( (dst != NULL) && (set_dst_uri(req, &dst->uri) != 0) ) {
 		LM_ERR("failed to set duri\n");
-		return -2;
+		return -1;
 	}
 
-	return dst ? 0 : -2;
+	return dst ? 0 : (cnt_aval_dst? -2 /*no capacity*/ : -3 /* no dests*/ );
 }
 
 
@@ -989,7 +1023,7 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int ve
 				dst->flags |= LB_DST_STAT_DSBL_FLAG;
 
 				if( dst->flags != old_flags ) {
-					lb_raise_event(dst);
+					lb_status_changed(dst);
 					if( verbose )
 						LM_INFO("manually disable destination %d <%.*s> "
 							"from script\n",dst->id, dst->uri.len, dst->uri.s);
@@ -1207,3 +1241,16 @@ void lb_raise_event(struct lb_dst *dst)
 error:
 	evi_free_params(list);
 }
+
+
+void lb_status_changed(struct lb_dst *dst)
+{
+	/* do BIN replication if configured */
+	if (replicated_status_cluster > 0)
+		replicate_lb_status( dst );
+
+	/* raise the event */
+	lb_raise_event(dst);
+}
+
+

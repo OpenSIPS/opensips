@@ -9,8 +9,7 @@
 	<para>
 		ACC module is used to account transactions information to different
 		backends like syslog, <abbrev>SQL</abbrev>,
-		<acronym>AAA</acronym> and <acronym>DIAMETER</acronym>
-		(beta version).
+		<acronym>AAA</acronym>.
 	</para>
 	<para>
 		To account a transaction and to choose which set of backends to be
@@ -71,7 +70,7 @@
 		<listitem>
 			<para>
 			Since version 2.2 all flags used for accounting have been replaced
-			by the do_accounting function. No need to worry anymore of whether
+			with do_accounting function. No need to worry anymore of whether
 			you have set the flags or not, or be confused by various flag names,
 			now you only have to call the function and it will do all the work
 			for you.
@@ -97,18 +96,8 @@
 	</para>
 	<para>
 		The SQL, Event Interface and AAA backend support are compiled in the
-		module. For DIAMETER
-		you need to enable it by recompiling the module with properly
-		set defines: uncomment DIAM_ACC line in modules/acc/Makefile.
-		The AAA client needs to be configured properly.
+		module.
         </para>
-	<para>
-	NOTE: diameter support was developed for DISC (DIameter Server Client
-	project at http://developer.berlios.de/projects/disc/). This project
-	seems to be no longer maintained and DIAMETER specifications were updated
-	in the meantime. Thus, the DIAMETER part in the module is obsolete and
-	needs rework to be usable with opendiameter or other DIAMETER servers.
-	</para>
 	<section>
 		<title>General Example</title>
 		<programlisting format="linespecific">
@@ -139,45 +128,36 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			<title>Overview</title>
 			<para>
 			Along the static default information, ACC modules
-			allows dynamical selection of extra information to be logged.
-			This allows you to log any pseudo-variable (AVPs, parts of
-			the request, parts of the reply, etc).
+			allows dynamical selection of extra information to be logged using
+			acc_extra pseudovariable. This allows you to log any
+			pseudo-variable (AVPs, parts of the request, parts of the reply, etc).
 			</para>
 		</section>
 		<section>
 			<title>Definitions and syntax</title>
 			<para>
 			Selection of extra information is done via
-			<emphasis>xxx_extra</emphasis> parameters by specifying the names
-			of additional information you want to log. This information is
-			defined via pseudo-variables and may include headers, AVPs values
-			or other message or system values. The syntax of the parameter is:
+			<emphasis>extra_field</emphasis> parameter by specifying tags
+			and log_names for the additional information. This information is
+			defined via acc_extra pseudovariable, referenced with the define
+			tag. If the tag is not specified, it's value will be considered
+			to be the same as the log_value. Accounting backend(log, db, aaa, evi)
+			is specified at the beginning of the definition, separated by ':' from
+			the rest. The syntax of the parameter is:
 			</para>
 			<itemizedlist>
 				<listitem><para><emphasis>
-				xxx_extra = extra_definition (';'extra_definition)*
+				backend : tag -> log_name (';'extra_definition)*
 				</emphasis></para></listitem>
 				<listitem><para><emphasis>
-				extra_definition = log_name '=' pseudo_variable ['/reply']
+				backend : tag (';' extra_definition)*
 				</emphasis></para></listitem>
 			</itemizedlist>
 			<para>
-			Each PV (pseudo variable) may be evaluated in the context of the
-			request message (to access info from it) or in the context of
-			the reply message (final reply for the request).
-			</para>
-			<para>
-			Using <quote>/reply</quote> marker, the PV will be evaluated in
-			the context of the reply; by default (without the marker), the
-			evaluation is done in the contect of the request. This will allow
-			you to automatically account information (message or network
-			related) from both request and reply in the same time.
-			</para>
-			<para>
-			The full list of supported pseudo-variables in &osips; is
-			availabe at:
-			<ulink url="http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar">
-			http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar</ulink>
+				Extra values are consistent during the whole call. Setting a value
+			during the request will result in seeing that value on the reply. Also,
+			as concerning CDR logging, setting a value on the initial INVITIE will
+			result in having that value throughout the dialog.
 			</para>
 			<para>
 			Via <emphasis>log_name</emphasis> you define how/where the
@@ -200,13 +180,6 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				via the dictionary. <emphasis>IMPORTANT</emphasis>: add in
 				AAA dictionary the <emphasis>log_name</emphasis> attribute.
 				</para></listitem>
-				<listitem><para><emphasis>DIAMETER accounting</emphasis> -
-				log_name will be the AVP code used for packing the data
-				into DIAMETER message. The AVP code is given directly as
-				integer, since DIAMETER has no dictionary support yet.
-				<emphasis>IMPORTANT</emphasis>:	<emphasis>log_name</emphasis>
-				must be a number.
-				</para></listitem>
 				<listitem><para><emphasis>Events accounting</emphasis> -
 				log_name will be the name of the parameter in the event raised.
 				</para></listitem>
@@ -216,10 +189,21 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 		<section>
 			<title>How it works</title>
 			<para>
-			Some pseudo variables may return more than one value (like
-			headers or AVPs). In this case, the returned values are
-			embedded in a single string in a comma-separated format.
+				Declaring an extra in the format of
+<programlisting>
+modparam("acc", "extra_fields", "log: a -> test_a")
+</programlisting>
+				will enable you to set the value for <emphasis>test_a</emphasis> field
+				of the log only by setting <emphasis>$acc_etra(a)</emphasis> variable.
+				Else the field shall be log with no value(null).
 			</para>
+		</section>
+		<section>
+			<title>Radius accounting dependencies</title>
+			<para>
+				If radius accounting is used, except from a radius client library which is mandatory,
+				<emphasis role='bold'>dictionary.rfc2866</emphasis> must be included for the module
+				to work properly.</para>
 		</section>
 	</section>
 
@@ -243,48 +227,38 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 		<section>
 			<title>Configuration</title>
 			<para>
-			First how it works: The idea is to have a set of AVPs and for each
-			call leg to store a set of values in the AVPs. The meaning of
-			the AVP content is stricly decided by the script writer - it can
+				First how it works: The idea is to have a variable to store
+			a set of values for each leg. The meaning of
+			the variable content is stricly decided by the script writer - it can
 			be the origin and source of the leg, its status or any other
-			related information. If you have a set of 4 AVPS (AVP1, AVP2, AVP3,
-			AVP4), then for the "A call B and B forwards to C" example,
-			you need to set a different set of values for the AVPs
-			for each leg ([A,B] and [B,C]) .
-			The script writer must take care and properly insert all
-			these AVP from the script (in proper order and with the correct type).
+			related information. By default there is defined only one leg. Script
+			writer has to decide when is the time to create a new leg, by using
+			<emphasis>acc_new_leg()</emphasis> script function. When creating a new
+			leg, all the values for that leg will be set to NULL by default.
 			</para>
 			<para>
 			When the accounting information for the call will be written/sent,
-			all the call-leg pairs will be added (based on the found AVP sets).
+			all the call-leg pairs will be added.
 			</para>
 			<para>
 			By default, the multiple call-leg support is disabled - it can be
-			enabled just by setting the per-leg set of AVPs via the
-			<varname>multi_leg_info</varname> and/or
-			<varname>multi_leg_bye_info</varname> module parameters. Note that
+			enabled just by setting <emphasis>acc_leg</emphasis> variable
+			<varname>leg_fields</varname> module parameter. Note that
 			the last one only makes sense only for CDRs that are generated
 			automatically by &osips;.
 			</para>
-			<para>
-				<emphasis>Important:</emphasis> when both multi-leg accounting
-				is done (for INVITE and BYE), you have to make sure that the AVPs
-				are populated with the same number of legs, otherwise the multi-leg
-				accounting will have an unexpected behavior (values may no longer
-				match the leg number).
-			</para>
-		</section>
+			</section>
 		<section>
 			<title>Logged data</title>
 			<para>
-			For each call, all the values of the AVP set (which defines a
-			call-leg) will be logged. How the information will be actually
+				For each call, all the values from the <emphasis>acc_leg</emphasis>
+				variable will be logged. How the information will be actually
 			logged, depends of the data backend:
 			</para>
 			<itemizedlist>
 				<listitem>
 				<para><emphasis>syslog</emphasis> -- all leg-sets will be added
-				to one record string as AVP1=xxx, AVP2=xxxx ,... sets.
+				to one record string as acc_leg(leg1)=xxx, acc_leg(leg2)=xxxx ,... sets.
 				</para>
 				</listitem>
 				<listitem>
@@ -294,7 +268,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				only the fields corresponding to the call-leg info.
 				</para>
 				<note><para>You will need to add in your DB (all acc related
-				tables) the colums for call-leg info (a column for each AVP
+				tables) the colums for call-leg info (a column for each leg value
 				of the set).
 				</para></note>
 				</listitem>
@@ -302,15 +276,11 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				<para><emphasis>AAA</emphasis> -- all sets will be added
 				to the same AAA accounting message as AAA AVPs - for each
 				call-leg a set of AAA AVPs will be added (corresponding
-				to the per-leg AVP set)
+				to the per-leg set)
 				</para>
 				<note><para>You will need to add in your dictionary the
-				AAA AVPs used in call-leg AVP set definition.
+				AAA AVPs used in call-leg set definition.
 				</para></note>
-				</listitem>
-				<listitem>
-				<para><emphasis>Diameter</emphasis> same as for AAA.
-				</para>
 				</listitem>
 				<listitem>
 				<para><emphasis>events</emphasis> -- each pair will appear as a
@@ -471,67 +441,69 @@ modparam("acc", "detect_direction", 1)
 </programlisting>
 		</example>
 	</section>
+
 	<section>
-		<title><varname>multi_leg_info</varname> (string)</title>
+		<title><varname>extra_fields</varname> (string)</title>
 		<para>
-		Defines the AVP set to be used in per-call-leg accounting.
+		Defines the tag-log_value set to be used in extra fields accounting.
+		See <xref linkend="ACC-extra-id"/> for a
+		detailed description of the Extra accounting.
+		</para>
+		<para>
+		If empty, extra accounting support will be disabled.
+		</para>
+		<para>
+		Default value is 0 (disabled).
+		</para>
+		<example>
+		<title>Setting <emphasis>extra_fields</emphasis> example:</title>
+		<programlisting format="linespecific">
+# for syslog-based accounting, use any text you want to be printed
+# if setting $acc_extra(a) you will see "My_a_Field=&lt;value&gt; in logs
+# if setting $acc_extra(b) you will see "b=&lt;value&gt; in logs
+modparam("acc", "extra_fields", "log: a->My_a_Field; b")
+# for mysql-based accounting, use the names of the columns
+# $acc_extra(a) = &lt;value&gt;  results in setting col_a with &lt;value&gt; in db
+modparam("acc", "extra_fields", "db: a->col_a; col_b")
+# for AAA-based accounting, use the names of the AAA AVPs
+modparam("acc", "extra_fields","aaa:a->AAA_SRC;b->AAA_DST")
+# evi definition example
+modparam("acc", "extra_fields","a->2345;b->2346")
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>leg_fields</varname> (string)</title>
+		<para>
+		Defines the tag-log_value set to be used in multi-leg accounting.
 		See <xref linkend="multi-call-legs"/> for a
 		detailed description of the Multi Call-Legs accounting.
 		</para>
 		<para>
-		If empty, the multi-leg accounting support will be disabled.
+		If empty, multi-leg accounting support will be disabled.
 		</para>
 		<para>
 		Default value is 0 (disabled).
 		</para>
 		<example>
-		<title>multi_leg_info example</title>
+		<title>Setting <emphasis>leg_fields</emphasis> example:</title>
 		<programlisting format="linespecific">
 # for syslog-based accounting, use any text you want to be printed
-modparam("acc", "multi_leg_info",
-    "text1=$avp(src);text2=$avp(dst)")
+# if setting $(acc_leg(a)[0]) you will see "My_a_Field=&lt;value&gt; in logs
+# if setting $(acc_extra(b)[0]) you will see "b=&lt;value&gt; in logs
+modparam("acc", "leg_fields", "log: a->My_a_Field; b")
 # for mysql-based accounting, use the names of the columns
-modparam("acc", "multi_leg_info",
-    "leg_src=$avp(src);leg_dst=$avp(dst)")
+# $acc_extra(a) = &lt;value&gt;  results in setting col_a with &lt;value&gt; in db
+modparam("acc", "leg_fields", "db: a->col_a; col_b")
 # for AAA-based accounting, use the names of the AAA AVPs
-modparam("acc", "multi_leg_info",
-    "AAA_LEG_SRC=$avp(src);AAA_LEG_DST=$avp(dst)")
-# for DIAMETER-based accounting, use the DIAMETER AVP ID (as integer)
-modparam("acc", "multi_leg_info",
-    "2345=$avp(src);2346=$avp(dst)")
+modparam("acc", "leg_fields","aaa:a->AAA_LEG_SRC;b->AAA_LEG_DST")
+# evi definition example
+modparam("acc", "leg_fields","a->2345;b->2346")
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title><varname>multi_leg_bye_info</varname> (string)</title>
-		<para>
-		Defines the AVP set to be used in per-call-leg accounting.
-		See <xref linkend="multi-call-legs"/> for a
-		detailed description of the Multi Call-Legs accounting. This parameter
-		evaluates the AVPs set for BYE requests. It makes sense only when the
-		CDRs are automatically generated, using the dialog support.
-		</para>
-		<para>
-		If empty, the multi-leg support for BYE requests is disabled.
-		</para>
-		<para>
-		Default value is 0 (disabled).
-		</para>
-		<example>
-		<title>multi_leg_bye_info example</title>
-		<programlisting format="linespecific">
-# for syslog-based accounting, use any text you want to be printed
-modparam("acc", "multi_leg_bye_info",
-    "text1=$avp(src);text2=$avp(dst)")
-# for mysql-based accounting, use the names of the columns
-modparam("acc", "multi_leg_bye_info",
-    "leg_src=$avp(src);leg_dst=$avp(dst)")
-# for AAA-based accounting, use the names of the AAA AVPs
-modparam("acc", "multi_leg_bye_info",
-    "AAA_LEG_SRC=$avp(src);AAA_LEG_SRC=$avp(dst)")
-</programlisting>
-		</example>
-	</section>
+
 
 	<section>
 		<title><varname>log_level</varname> (integer)</title>
@@ -565,41 +537,6 @@ modparam("acc", "log_facility", "LOG_DAEMON")
 </programlisting>
 		</example>
 	</section>
-
-	<section>
-		<title><varname>log_extra</varname> (string)</title>
-		<para>
-		Extra values to be logged.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>log_extra example</title>
-		<programlisting format="linespecific">
-modparam("acc", "log_extra",
-	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>log_extra_bye</varname> (string)</title>
-		<para>
-		Extra values to be logged to logfile. Note that this parameter makes
-		sense only when the cdr option is used with do_accounting().
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>log_extra_bye example</title>
-		<programlisting format="linespecific">
-modparam("acc", "log_extra_bye",
-	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-</programlisting>
-		</example>
-	</section>
-
 
 	<!-- AAA specific ACC parameters -->
 
@@ -638,40 +575,6 @@ modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		<programlisting format="linespecific">
 # Default value of service type for SIP is 15
 modparam("acc", "service_type", 15)
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>aaa_extra</varname> (string)</title>
-		<para>
-		Extra values to be logged via AAA - AAA specific.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>aaa_extra example</title>
-		<programlisting format="linespecific">
-modparam("acc", "aaa_extra",
-	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>aaa_extra_bye</varname> (string)</title>
-		<para>
-		Extra values to be logged via AAA when a BYE message is received -
-		AAA specific. Note that this parameter makes sense only when the
-		cdr option is used with do_accounting.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>aaa_extra_bye example</title>
-		<programlisting format="linespecific">
-modparam("acc", "aaa_extra_bye",
-	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 </programlisting>
 		</example>
 	</section>
@@ -831,121 +734,6 @@ modparam("acc", "acc_time_column", "time")
 </programlisting>
 		</example>
 	</section>
-	<section>
-		<title><varname>db_extra</varname> (string)</title>
-		<para>
-		Extra values to be logged into database - DB specific.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>db_extra example</title>
-		<programlisting format="linespecific">
-modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>db_extra_bye</varname> (string)</title>
-		<para>
-		Extra values to be logged into database when a BYE message is received
-		- DB specific. Note that this parameter makes sense only when the
-		cdr option is used with do_accounting.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>db_extra_bye example</title>
-		<programlisting format="linespecific">
-modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email)")
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>diameter_client_host</varname> (string)</title>
-		<para>
-		Hostname of the machine where the DIAMETER Client is
-		running -- DIAMETER specific.
-		</para>
-		<para>
-		Default value is <quote>localhost</quote>.
-		</para>
-		<example>
-		<title>diameter_client_host example</title>
-		<programlisting format="linespecific">
-modparam("acc", "diameter_client_host", "3a_server.net")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>diameter_client_port</varname> (int)</title>
-		<para>
-		Port number where the Diameter Client is
-		listening -- DIAMETER specific.
-		</para>
-		<para>
-		Default value is <quote>3000</quote>.
-		</para>
-		<example>
-		<title>diameter_client_host example</title>
-		<programlisting format="linespecific">
-modparam("acc", "diameter_client_port", 3000)
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>diameter_extra</varname> (string)</title>
-		<para>
-		Extra values to be logged via DIAMETER - DIAMETER specific.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>diameter_extra example</title>
-		<programlisting format="linespecific">
-modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>evi_extra</varname> (string)</title>
-		<para>
-		Extra values to be attached as event's parameters.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>evi_extra example</title>
-		<programlisting format="linespecific">
-modparam("acc", "evi_extra",
-	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>evi_extra_bye</varname> (string)</title>
-		<para>
-			Extra values to be attached as event's parameters for BYE messages.
-			Note that this parameter makes sense only when the cdr option is
-			used with do_accounting.
-		</para>
-		<para>
-		Default value is NULL.
-		</para>
-		<example>
-		<title>evi_extra_bye example</title>
-		<programlisting format="linespecific">
-modparam("acc", "evi_extra_bye",
-	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
-</programlisting>
-		</example>
-	</section>
 
 	<section>
 		<title><varname>acc_created_avp_name</varname> (string)</title>
@@ -964,6 +752,42 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 </programlisting>
 		</example>
 	</section>
+	</section>
+
+	<section>
+	<title>Exported Variables</title>
+	<section>
+		<title>$acc_extra(tag_name)</title>
+		<para> This variable can addresed with the tag names defined
+			using <emphasis>extra_fields</emphasis> parameter. If
+			<emphasis>do_accounting()</emphasis> isn't called, this
+			variable is visible during the whole processing of one message,
+			enabling calling <emphasis>acc_XXX_request()</emphasis>.
+			If <emphasis>do_accounting()</emphasis> is called, the variable
+			will be visible from the first call of this function until the
+			actual accounting is being made.
+		</para>
+	</section>
+
+	<section>
+		<title>$(acc_leg(tag_name)[leg_index])</title>
+		<para> This variable can be addressed with the tag names defined
+			using <emphasis>leg_fields</emphasis> parameter and  a valid
+			leg index( &lt;= <emphasis>acc_current_leg</emphasis>).
+			This variable can't be used unless <emphasis>do_accounting()
+			</emphasis> function is used. The variable also accepts negative
+			indexes, which start from -1(value for the last leg).
+		</para>
+	</section>
+
+	<section>
+		<title>acc_current_leg - read-only</title>
+		<para> Variable holding the value for the current leg. Calling
+			<emphasis>acc_new_leg()</emphasis> will increase the value
+			of this variable.
+		</para>
+	</section>
+
 	</section>
 
 	<section>
@@ -999,9 +823,6 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 				<listitem>
 					<para><emphasis>evi</emphasis> - Event Interface accounting;</para>
 				</listitem>
-				<listitem>
-					<para><emphasis>diam</emphasis> - Diameter accounting;</para>
-				</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
@@ -1014,7 +835,11 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 						accounting; DIALOG MODULE HAS TO BE LOADED;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>missed</emphasis> - log missed calls;</para>
+					<para><emphasis>missed</emphasis> - log missed calls; take care
+						that this flag will be deactivated after first missed call;
+						you will have to reactivate it in the
+						<emphasis>failure_route</emphasis> if you want to account
+						all destinations that did not respond to the call;</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>failed</emphasis> -  flag which says if the
@@ -1086,9 +911,6 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 				</listitem>
 				<listitem>
 					<para><emphasis>evi</emphasis> - stop Event Interface accounting;</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>diam</emphasis> - stop Diameter accounting;</para>
 				</listitem>
 			</itemizedlist>
 		</listitem>
@@ -1253,38 +1075,6 @@ acc_aaa_request("403 Destination not allowed");
 	</section>
 	<section>
 		<title>
-			<function moreinfo="none">acc_diam_request(comment)</function>
-		</title>
-		<para>
-		Like <function moreinfo="none">acc_log_request</function>,
-		<function moreinfo="none">acc_diam_request</function> reports on
-		a request. It reports to the configured Diameter server.
-		</para>
-		<para>
-		Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>comment</emphasis> - Comment describing how the
-			request completed - this string has to contain a reply code
-			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
-			are accepted in this string.</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE and LOCAL_ROUTE.
-		</para>
-		<example>
-		<title>acc_diam_request usage</title>
-		<programlisting format="linespecific">
-...
-acc_diam_request("403 Destination not allowed");
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title>
 			<function moreinfo="none">acc_evi_request(comment)</function>
 		</title>
 		<para>
@@ -1321,6 +1111,30 @@ acc_evi_request("403 Destination not allowed");
 		</example>
 	</section>
 	</section>
+
+	<section>
+		<title>
+			<function moreinfo="none">acc_new_leg()</function>
+		</title>
+		<para>
+			Creates a new leg only if multi-leg accounting is used. The value of
+			<emphasis>acc_current_leg</emphasis> variable is incremented. All the
+			values of the new leg will be initialised with null.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title>acc_new_leg usage</title>
+		<programlisting format="linespecific">
+...
+	acc_new_leg();
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	<section id="ACC-events-id">
 	<title>Exported Events</title>

@@ -82,7 +82,6 @@ typedef struct pgw_ {
 	unsigned short ports[DR_MAX_IPS];
 	unsigned short protos[DR_MAX_IPS];
 	unsigned short ips_no;
-	struct pgw_ *next;
 	int flags;
 }pgw_t;
 
