@@ -113,7 +113,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 			LM_ERR("failed to allocated SHM mem, discarding report\n");
 			return;
 		}
-		job->tcp_id = conn->id;
+		job->tcp_id = conn->cid;
 		job->type = type;
 		job->proto = conn->type;
 		job->extra = extra;
@@ -131,7 +131,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 		/* do the reporting inline */
 
 		/* run the report callback  */
-		protos[conn->type].net.report( conn->id, type, extra);
+		protos[conn->type].net.report( conn->cid, type, extra);
 
 	}
 

@@ -53,7 +53,7 @@ static void add_proto( trace_message message, int proto);
 int net_trace_proto_id=-1;
 trace_proto_t* net_trace_api=0;
 
-trace_message create_trace_message( int id, union sockaddr_union* src,
+trace_message create_trace_message( unsigned long long id, union sockaddr_union* src,
 						union sockaddr_union* dst, int proto, void* dest)
 {
 	int net_proto;
@@ -85,7 +85,6 @@ trace_message create_trace_message( int id, union sockaddr_union* src,
 	}
 
 	message = net_trace_api->create_trace_message( src, dst,
-			/* FIXME: is this correct protocol number?? */
 			net_proto, 0, net_trace_proto_id, dest);
 
 	str_id.s = int2str( id, &str_id.len );

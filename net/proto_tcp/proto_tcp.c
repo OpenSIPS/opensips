@@ -77,16 +77,6 @@ trace_proto_t tprot;
 
 extern int unix_tcp_sock;
 
-#define LM_TRACE_ERR( ID, ... ) \
-	do { \
-		static str error_str = str_init("ERROR"); \
-		LM_ERR( __VA_ARGS__ ); \
-		trace_log( ID, &error_str, __VA_ARGS__ ); \
-	} while(0);
-
-void trace_log( int id, str* level, char* format, ...);
-
-
 /* default port for TCP protocol */
 static int tcp_port = SIP_PORT;
 
@@ -434,18 +424,18 @@ static int tcpconn_async_connect(struct socket_info* send_sock,
 	/* create the socket */
 	fd=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
 	if (fd==-1){
-		LM_TRACE_ERR( 0, "socket: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
 		return -1;
 	}
 	if (tcp_init_sock_opt(fd)<0){
-		LM_TRACE_ERR( 0, "tcp_init_sock_opt failed\n");
+		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
 	su_setport( &my_name, 0);
 	if (bind(fd, &my_name.s, my_name_len )!=0) {
-		LM_TRACE_ERR( 0, "bind failed (%d) %s\n", errno,strerror(errno));
+		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
 		goto error;
 	}
 
@@ -455,7 +445,7 @@ static int tcpconn_async_connect(struct socket_info* send_sock,
 	to = tcp_async_local_connect_timeout*1000;
 
 	if (gettimeofday(&(begin), NULL)) {
-		LM_TRACE_ERR( 0, "Failed to get TCP connect start time\n");
+		LM_ERR("Failed to get TCP connect start time\n");
 		goto error;
 	}
 
@@ -472,7 +462,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info(&server->s, ip, port);
-			LM_TRACE_ERR( 0, "[server=%s:%d] (%d) %s\n",ip, port, errno,strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno,strerror(errno));
 			goto error;
 		}
 	} else goto local_connect;
@@ -505,7 +495,7 @@ again:
 		if (n<0){
 			if (errno==EINTR) continue;
 			get_su_info(&server->s, ip, port);
-			LM_TRACE_ERR( 0, "poll/select failed:[server=%s:%d] (%d) %s\n",
+			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
 				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
@@ -513,7 +503,7 @@ again:
 		if (FD_ISSET(fd, &sel_set))
 #else
 		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
-			LM_TRACE_ERR( 0, "poll error: flags %x\n", pf.revents);
+			LM_ERR("poll error: flags %x\n", pf.revents);
 			poll_err=1;
 		}
 #endif
@@ -523,7 +513,7 @@ again:
 			if ((err==0) && (poll_err==0)) goto local_connect;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);
-				LM_TRACE_ERR( 0, "failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
+				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
 					ip, port, err, strerror(err));
 				goto error;
 			}
@@ -541,7 +531,7 @@ async_connect:
 	/* attach the write buffer to it */
 	lock_get(&con->write_lock);
 	if (add_write_chunk(con,buf,len,0) < 0) {
-		LM_TRACE_ERR( con->id, "Failed to add the initial write chunk\n");
+		LM_ERR("Failed to add the initial write chunk\n");
 		/* FIXME - seems no more SHM now ...
 		 * continue the async connect process ? */
 	}
@@ -553,7 +543,7 @@ async_connect:
 local_connect:
 	con=tcp_conn_create(fd, server, send_sock, S_CONN_OK);
 	if (con==NULL) {
-		LM_TRACE_ERR( con->id, "tcp_conn_create failed, closing the socket\n");
+		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
 	*c = con;
@@ -578,28 +568,28 @@ static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 
 	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
 	if (s==-1){
-		LM_TRACE_ERR( 0, "socket: (%d) %s\n", errno, strerror(errno));
+		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
 	if (tcp_init_sock_opt(s)<0){
-		LM_TRACE_ERR( 0, "tcp_init_sock_opt failed\n");
+		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
 	su_setport( &my_name, 0);
 	if (bind(s, &my_name.s, my_name_len )!=0) {
-		LM_TRACE_ERR( 0, "bind failed (%d) %s\n", errno,strerror(errno));
+		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
 		goto error;
 	}
 
 	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
-		LM_TRACE_ERR( 0, "tcp_blocking_connect failed\n");
+		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
 	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
 	if (con==NULL){
-		LM_TRACE_ERR( 0, "tcp_conn_create failed, closing the socket\n");
+		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
 	}
 	*fd = s;
@@ -768,18 +758,19 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 
-			/* trace the message */
-			if ( !(c->proto_flags & F_TCP_CONN_TRACED) && t_dst ) {
-				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
-					LM_ERR("can't create su structures for tracing!\n");
-				} else {
-					trace_message_atonce( PROTO_TCP, c->id, &src_su, &dst_su,
-						TRANS_TRACE_CONNECT_START, TRANS_TRACE_SUCCESS,
-						&AS_CONNECT_INIT, t_dst );
-				}
-			}
 
 			if (n==0) {
+				/* trace the message */
+				if ( !(c->proto_flags & F_TCP_CONN_TRACED) && t_dst ) {
+					if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
+						LM_ERR("can't create su structures for tracing!\n");
+					} else {
+						trace_message_atonce( PROTO_TCP, c->cid, &src_su, &dst_su,
+							TRANS_TRACE_CONNECT_START, TRANS_TRACE_SUCCESS,
+							&AS_CONNECT_INIT, t_dst );
+					}
+				}
+
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when
 				 * connect will be completed */
@@ -792,11 +783,15 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				"proceed to writing \n",tcp_async_local_connect_timeout);
 			/* our first connect attempt succeeded - go ahead as normal */
 			/* trace the attempt */
-			if ( !(c->flags & F_TCP_CONN_TRACED) && t_dst ) {
-				c->flags |= F_TCP_CONN_TRACED;
-				trace_message_atonce( PROTO_TCP, c->id, 0, 0,
-					TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
-					&ASYNC_CONNECT_OK, t_dst );
+			if ( !(c->proto_flags & F_TCP_CONN_TRACED) && t_dst ) {
+				c->proto_flags |= F_TCP_CONN_TRACED;
+				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
+					LM_ERR("can't create su structures for tracing!\n");
+				} else {
+					trace_message_atonce( PROTO_TCP, c->cid, &src_su, &dst_su,
+						TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
+						&ASYNC_CONNECT_OK, t_dst );
+				}
 			}
 		} else {
 			if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
@@ -805,12 +800,12 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 
-			if ( !(c->flags & F_TCP_CONN_TRACED) && t_dst ) {
-				c->flags |= F_TCP_CONN_TRACED;
+			if ( !(c->proto_flags & F_TCP_CONN_TRACED) && t_dst ) {
+				c->proto_flags |= F_TCP_CONN_TRACED;
 				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 					LM_ERR("can't create su structures for tracing!\n");
 				} else {
-					trace_message_atonce( PROTO_TCP, c->id, &src_su, &dst_su,
+					trace_message_atonce( PROTO_TCP, c->cid, &src_su, &dst_su,
 						TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
 						&CONNECT_OK, t_dst );
 				}
@@ -827,12 +822,12 @@ static int proto_tcp_send(struct socket_info* send_sock,
 	if ( !(c->proto_flags & F_TCP_CONN_TRACED) ) {
 		/* most probably it's an async connect */
 		if ( t_dst ) {
-			trace_message_atonce( PROTO_TCP, c->id, 0, 0,
+			trace_message_atonce( PROTO_TCP, c->cid, 0, 0,
 				TRANS_TRACE_CONNECTED, TRANS_TRACE_SUCCESS,
 				&CONNECT_OK, t_dst );
 		}
 
-		c->flags |= F_TCP_CONN_TRACED;
+		c->proto_flags |= F_TCP_CONN_TRACED;
 	}
 
 	get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
@@ -1033,7 +1028,7 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 
 	if ( !(con->proto_flags & F_TCP_CONN_TRACED)) {
 		con->proto_flags |= F_TCP_CONN_TRACED;
-		/*  */
+
 		LM_DBG("Accepted connection from %s:%d on interface %s:%d!\n",
 			ip_addr2a( &con->rcv.src_ip ), con->rcv.src_port,
 			ip_addr2a( &con->rcv.dst_ip ), con->rcv.dst_port );
@@ -1042,7 +1037,7 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 			if ( tcpconn2su( con, &src_su, &dst_su) < 0 ) {
 				LM_ERR("can't create su structures for tracing!\n");
 			} else {
-				trace_message_atonce( PROTO_TCP, con->id, &src_su, &dst_su,
+				trace_message_atonce( PROTO_TCP, con->cid, &src_su, &dst_su,
 					TRANS_TRACE_ACCEPTED, TRANS_TRACE_SUCCESS,
 					&ACCEPT_OK, t_dst );
 			}
@@ -1123,76 +1118,3 @@ error:
 	/* connection will be released as ERROR */
 	return -1;
 }
-
-
-
-void trace_log( int id, str* level, char* format, ... )
-{
-#define TRACELOG_MAX 512
-	static char buf[ TRACELOG_MAX ];
-
-	static str payload = { buf, 0};
-	static int correlation_id = -1, correlation_vendor = -1;
-
-	const int proto = IPPROTO_TCP;
-
-	trace_message message;
-
-	va_list args;
-
-	str str_id;
-
-	if ( !tprot.create_trace_message || !t_dst ) {
-		return;
-	}
-
-	if ( !level ) {
-		LM_ERR("missing trace input param %p!\n", level);
-		return;
-	}
-
-	if ( net_trace_proto_id < 0 ) {
-		LM_ERR("trace proto id not loaded!\n");
-		return;
-	}
-
-	message = tprot.create_trace_message( 0, 0, proto, 0, net_trace_proto_id, t_dst);
-	if ( message == NULL ) {
-		LM_ERR("failed to create trace message!\n");
-		return;
-	}
-
-	va_start( args, format );
-	vsnprintf( payload.s, TRACELOG_MAX, format, args );
-	va_end( args );
-
-	payload.len = strlen( payload.s );
-
-	tprot.add_payload_part( message, "status", level );
-	tprot.add_payload_part( message, "message", &payload );
-
-	str_id.s = int2str( id, &str_id.len );
-
-	if ( correlation_vendor == -1 || correlation_id == - 1) {
-		if ( tprot.get_data_id("correlation_id", &correlation_vendor, &correlation_id ) < 0 ) {
-			LM_ERR("can't find correlation id chunk!\n");
-			return;
-		}
-	}
-
-	if ( tprot.add_chunk( message, str_id.s, str_id.len, TRACE_TYPE_STR,
-			correlation_id, correlation_vendor) < 0) {
-		LM_ERR("failed to add correlation id! aborting trace...!\n");
-		return;
-	}
-
-	if ( tprot.send_message( message, t_dst, 0 ) < 0 ) {
-		LM_ERR("failed to send trace message!\n");
-	}
-
-	tprot.free_message( message );
-
-#undef TRACELOG_MAX
-}
-
-#undef LM_TRACE_ERR

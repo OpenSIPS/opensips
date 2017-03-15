@@ -634,7 +634,7 @@ static inline int trace_tls( struct tcp_connection* conn, SSL* ctx,
 			return -1;
 		}
 
-		data->message = create_trace_message( conn->id, &src, &dst,
+		data->message = create_trace_message( conn->cid, &src, &dst,
 				conn->type, data->dest );
 		if ( !data->message ) {
 			LM_ERR("failed to create trace message!\n");

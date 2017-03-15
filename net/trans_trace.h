@@ -33,7 +33,7 @@ typedef enum _trans_trace_event { TRANS_TRACE_ACCEPTED=0,
 	trans_trace_event;
 
 
-void* create_trace_message( int id, union sockaddr_union* src,
+void* create_trace_message( unsigned long long id, union sockaddr_union* src,
 	union sockaddr_union* dst,
 	int proto, void* dest);
 

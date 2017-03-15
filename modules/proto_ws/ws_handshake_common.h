@@ -1622,7 +1622,7 @@ static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* 
 			return -1;
 		}
 
-		if ( (d->message = create_trace_message( conn->id, &src, &dst,
+		if ( (d->message = create_trace_message( conn->cid, &src, &dst,
 						conn->type, d->dest )) == 0 )  {
 			LM_ERR(" can't init trace_message!\n");
 			return -1;
