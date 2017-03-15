@@ -374,6 +374,15 @@ done:
 	/* connection will be released */
 	return size;
 error:
+	/* ws_start_handshake must be completed so trace_ws was called
+	 * in order to get here so we're safe */
+	if ( ((struct ws_data *) con->proto_data)->dest ) {
+		if ( complete_ws_trace( con, TRANS_TRACE_FAILURE,
+							0, &CONNECT_FAIL) < 0 ) {
+			LM_ERR("failed to trace ws connect failure!\n");
+		}
+	}
+
 	return -1;
 }
 
