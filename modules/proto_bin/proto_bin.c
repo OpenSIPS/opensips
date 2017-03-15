@@ -545,6 +545,8 @@ static int proto_bin_send(struct socket_info* send_sock,
 			}
 			/* connect succeeded, we have a connection */
 			if (n==0) {
+				/* mark the ID of the used connection (tracing purposes) */
+				last_outgoing_tcp_id = c->id;
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when 
 				 * connect will be completed */
@@ -581,6 +583,9 @@ static int proto_bin_send(struct socket_info* send_sock,
 				return -1;
 			}
 
+			/* mark the ID of the used connection (tracing purposes) */
+			last_outgoing_tcp_id = c->id;
+
 			/* we succesfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
@@ -614,6 +619,9 @@ send_it:
 	either we just connected, or main sent us the FD */
 	if (c->proc_id != process_no)
 		close(fd);
+
+	/* mark the ID of the used connection (tracing purposes) */
+	last_outgoing_tcp_id = c->id;
 
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;

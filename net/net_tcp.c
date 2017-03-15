@@ -131,6 +131,10 @@ static int tcp_disabled = 1;
 /* is the process TCP MAIN ? */
 int is_tcp_main = 0;
 
+/* the ID of the TCP conn used for the last send operation in the
+ * current process - attention, this is a really ugly HACK here */
+int last_outgoing_tcp_id = 0;
+
 
 /****************************** helper functions *****************************/
 extern void handle_sigs(void);

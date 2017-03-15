@@ -445,6 +445,9 @@ send_it:
 	if (c->proc_id != process_no)
 		close(fd);
 
+	/* mark the ID of the used connection (tracing purposes) */
+	last_outgoing_tcp_id = c->id;
+
 	tcp_conn_release(c, 0);
 	return n;
 }
