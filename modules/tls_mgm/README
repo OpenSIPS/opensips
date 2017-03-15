@@ -12,27 +12,15 @@ Edited by
 
 Klaus Darilion
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Cesc Santasusana
 
-Edited by
-
 Klaus Darilion
-
-Edited by
 
 Christian Lahme
 
-Edited by
-
 Ionut-Razvan Ionita
-
-Edited by
 
 Marius Cristian Eseanu
 
@@ -67,16 +55,16 @@ Marius Cristian Eseanu
         1.7. OpenSIPS Exported parameters
 
               1.7.1. listen=interface
-              1.7.2. tls_method [(string):](string)
-              1.7.3. certificate [(string):](string)
-              1.7.4. private_key [(string):](string)
-              1.7.5. ca_list [(string):]((string)
-              1.7.6. ca_dir [(string):](string)
-              1.7.7. ciphers_list [(string):](string)
-              1.7.8. dh_params [(string):](string)
-              1.7.9. ec_curve[(string):](string)
-              1.7.10. verify_cert [(string):](string) and
-                      require_cert[(string):](string)
+              1.7.2. tls_method ([domain]string)
+              1.7.3. certificate ([domain](string)
+              1.7.4. private_key ([domain](string)
+              1.7.5. ca_list ([domain](string)
+              1.7.6. ca_dir ([domain](string)
+              1.7.7. ciphers_list ([domain](string)
+              1.7.8. dh_params ([domain](string)
+              1.7.9. ec_curve ([domain](string)
+              1.7.10. verify_cert ([domain](string) and
+                      require_cert ([domain](string)
 
               1.7.11. tls_handshake_timeout (integer) and
                       tls_send_timeout (integer)
@@ -102,7 +90,7 @@ Marius Cristian Eseanu
               1.7.30. ec_curve_col (string)
               1.7.31. server_domain, client_domain (string)
 
-        1.8. Pseudo-Variables
+        1.8. Variables
 
               1.8.1. $tls_version
               1.8.2. $tls_description
@@ -298,10 +286,10 @@ if (is_peer_verified()) {
 listen = tls:1.2.3.4:5061
 ...
 
-1.7.2. tls_method [(string):](string)
+1.7.2. tls_method ([domain]string)
 
-   Sets the TLS protocol. The first parameter, if set, represents
-   the id of the domain. TLS method which can be:
+   Sets the TLS protocol. The domain, if set, represents the id of
+   the TLS domain. TLS method which can be:
      * TLSv1_2 - means OpenSIPS will accept only TLSv1.2
        connections (rfc3261 conformant).
      * TLSv1 - means OpenSIPS will accept only TLSv1 connections
@@ -334,15 +322,15 @@ Warning
    Example 1.3. Set tls_method variable
 ...
 modparam("tls_mgm", "tls_method", "TLSv1")
-modparam("tls_mgm", "tls_method", "dom:TLSv1")
+modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 ...
 
-1.7.3. certificate [(string):](string)
+1.7.3. certificate ([domain](string)
 
    Public certificate file for OpenSIPS. It will be used as
    server-side certificate for incoming TLS connections, and as a
-   client-side certificate for outgoing TLS connections. The first
-   parameter, if set, represents the id of the domain.
+   client-side certificate for outgoing TLS connections. The
+   domain, if set, represents the id of the TLS domain.
 
    Default value is "CFG_DIR/cert.pem".
 
@@ -350,59 +338,59 @@ modparam("tls_mgm", "tls_method", "dom:TLSv1")
 ...
 modparam("tls_mgm", "certificate", "/mycerts/certs/opensips_server_cert.
 pem")
-modparam("tls_mgm", "certificate", "dom:/mycerts/certs/opensips_server_c
-ert.pem")
+modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_
+cert.pem")
 ...
 
-1.7.4. private_key [(string):](string)
+1.7.4. private_key ([domain](string)
 
    Private key of the above certificate. I must be kept in a safe
-   place with tight permissions! The first parameter, if set,
-   represents the id of the domain.
+   place with tight permissions! The domain, if set, represents
+   the id of the TLS omain.
 
    Default value is "CFG_DIR/cert.pem".
 
    Example 1.5. Set private_key variable
 ...
 modparam("tls_mgm", "private_key", "/mycerts/private/prik.pem")
-modparam("tls_mgm", "private_key", "dom:/mycerts/private/prik.pem")
+modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 ...
 
-1.7.5. ca_list [(string):]((string)
+1.7.5. ca_list ([domain](string)
 
    List of trusted CAs. The file contains the certificates
    accepted, one after the other. It MUST be a file, not a folder.
-   The first parameter, if set, represents the id of the domain.
+   The domain, if set, represents the id of the TLS domain.
 
    Default value is "".
 
    Example 1.6. Set ca_list variable
 ...
 modparam("tls_mgm", "ca_list", "/mycerts/certs/ca_list.pem")
-modparam("tls_mgm", "ca_list", "dom:/mycerts/certs/ca_list.pem")
+modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 ...
 
-1.7.6. ca_dir [(string):](string)
+1.7.6. ca_dir ([domain](string)
 
    Directory storing trusted CAs. The path contains the
    certificates accepted, each as hash which is linked to
-   certificate file. The first parameter, if set, represents the
-   id of the domain.
+   certificate file. The domain, if set, represents the id of the
+   TLS domain.
 
    Default value is "".
 
    Example 1.7. Set ca_dir variable
 ...
 modparam("tls_mgm", "ca_dir", "/mycerts/certs")
-modparam("tls_mgm", "ca_dir", "dom:/mycerts/certs")
+modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 ...
 
-1.7.7. ciphers_list [(string):](string)
+1.7.7. ciphers_list ([domain](string)
 
    You can specify the list of algorithms for authentication and
-   encryption that you allow. The first parameter, if set,
-   represents the id of the domain. To obtain a list of ciphers
-   and then choose, use the openssl application:
+   encryption that you allow. The domain, if set, represents the
+   id of the TLS domain. To obtain a list of ciphers and then
+   choose, use the openssl application:
      * openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'
 
 Warning
@@ -415,29 +403,29 @@ Warning
    Example 1.8. Set ciphers_list variable
 ...
 modparam("tls_mgm", "ciphers_list", "NULL")
-modparam("tls_mgm", "ciphers_list", "dom:NULL")
+modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 ...
 
-1.7.8. dh_params [(string):](string)
+1.7.8. dh_params ([domain](string)
 
    You can specify a file which contains Diffie-Hellman parameters
    as a PEM-file. This is needed if you would like to specify
-   ciphers including Diffie-Hellman mode. The first parameter, if
-   set, represents the id of the domain.
+   ciphers including Diffie-Hellman mode. The domain, if set,
+   represents the id of the TLS domain.
 
    It defaults to not set a dh param file.
 
    Example 1.9. Set dh_params variable
 ...
 modparam("tls_mgm", "dh_params", "/etc/pki/CA/dh1024.pem")
-modparam("tls_mgm", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
+modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 ...
 
-1.7.9. ec_curve[(string):](string)
+1.7.9. ec_curve ([domain](string)
 
    You can specify an elliptic curve which should be used for
-   ciphers which demand an elliptic curve. The first parameter, if
-   set, represents the id of the domain.
+   ciphers which demand an elliptic curve. The domain, if set,
+   represents the id of the TLS domain.
 
    It's usable only if TLS v1.1/1.2 support was compiled. A list
    of curves which can be used you can get by
@@ -445,8 +433,8 @@ modparam("tls_mgm", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
 
    It defaults to not set a elliptic curve.
 
-1.7.10. verify_cert [(string):](string) and
-require_cert[(string):](string)
+1.7.10. verify_cert ([domain](string) and require_cert
+([domain](string)
 
    Technically, verify_cert activates SSL_VERIFY_PEER in the
    ssl_context. 'require_cert' does the same with
@@ -468,9 +456,9 @@ require_cert[(string):](string)
 ...
 # turn on the strictest and strongest authentication possible
 modparam("tls_mgm", "require_cert", "1")
-modparam("tls_mgm", "require_cert", "1:1")
+modparam("tls_mgm", "require_cert", "[dom]1")
 modparam("tls_mgm", "verify_cert", "0")
-modparam("tls_mgm", "verify_cert", "1:1")
+modparam("tls_mgm", "verify_cert", "[dom]1")
 ...
 
 1.7.11. tls_handshake_timeout (integer) and tls_send_timeout
@@ -502,7 +490,7 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 modparam("tls_mgm", "tls_client_domain_avp", "400")
 ...
 
-1.7.13.  db_mode (integer)
+1.7.13. db_mode (integer)
 
    When db_mode is enabled (1), this module cannot accept new
    domains configuration from the script.
@@ -512,7 +500,7 @@ modparam("tls_mgm", "tls_client_domain_avp", "400")
    Example 1.13. Usage of db_mode block
 modparam("tls_mgm", "db_mode", 1)
 
-1.7.14.  db_url (string)
+1.7.14. db_url (string)
 
    The database url. It cannot be NULL.
 
@@ -737,76 +725,79 @@ modparam("proto_tls", "tls_client_domain_avp", "400")
 ...
 
 # 'atlanta' server domain
-modparam("tls_mgm", "server_domain", "1=IP_2:port2")
+modparam("tls_mgm", "server_domain", "dom1=IP_2:port2")
 
-modparam("tls_mgm", "certificate", "1:/certs/atlanta.com/cert.pem")
-modparam("tls_mgm", "private_key", "1:/certs/atlanta.com/privkey.pem")
-modparam("tls_mgm", "ca_list", "1:/certs/wellknownCAs")
-modparam("tls_mgm", "tls_method", "1:tlsv1")
-modparam("tls_mgm", "verify_cert", "1:1")
-modparam("tls_mgm", "require_cert", "1:1")
+modparam("tls_mgm", "certificate", "[dom1]/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom1]/certs/atlanta.com/privkey.pem
+")
+modparam("tls_mgm", "ca_list", "[dom1]/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "[dom1]tlsv1")
+modparam("tls_mgm", "verify_cert", "[dom1]1")
+modparam("tls_mgm", "require_cert", "[dom1]1")
 
 #'biloxy' server domain
 
-modparam("tls_mgm", "server_domain", "2=IP_3:port3")
+modparam("tls_mgm", "server_domain", "dom2=IP_3:port3")
 
-modparam("tls_mgm", "certificate", "2:/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "2:/certs/biloxy.com/privkey.pem")
-modparam("tls_mgm", "ca_list", "2:/certs/wellknownCAs")
-modparam("tls_mgm", "tls_method", "2:tlsv1")
-modparam("tls_mgm", "verify_cert", "2:1")
-modparam("tls_mgm", "require_cert", "2:1")
+modparam("tls_mgm", "certificate", "[dom2]/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom2]/certs/biloxy.com/privkey.pem"
+)
+modparam("tls_mgm", "ca_list", "[dom2]/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "[dom2]tlsv1")
+modparam("tls_mgm", "verify_cert", "[dom2]1")
+modparam("tls_mgm", "require_cert", "[dom2]1")
 
 # 'atlanta' client domain
-modparam("tls_mgm", "client_domain", "3=IP_2:port2")
+modparam("tls_mgm", "client_domain", "dom3=IP_2:port2")
 
-modparam("tls_mgm", "certificate", "3:/certs/atlanta.com/cert.pem")
-modparam("tls_mgm", "private_key", "3:/certs/atlanta.com/privkey.pem")
-modparam("tls_mgm", "ca_list", "3:/certs/wellknownCAs")
-modparam("tls_mgm", "tls_method", "3:tlsv1")
-modparam("tls_mgm", "verify_cert", "3:1")
-modparam("tls_mgm", "require_cert", "3:1")
+modparam("tls_mgm", "certificate", "[dom3]/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom3]/certs/atlanta.com/privkey.pem
+")
+modparam("tls_mgm", "ca_list", "[dom3]/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "[dom3]tlsv1")
+modparam("tls_mgm", "verify_cert", "[dom3]1")
+modparam("tls_mgm", "require_cert", "[dom3]1")
 
 #'biloxy' client domain
-modparam("tls_mgm", "client_domain", "4=IP_3:port3")
+modparam("tls_mgm", "client_domain", "dom4=IP_3:port3")
 
-modparam("tls_mgm", "certificate", "4:/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "4:/certs/biloxy.com/privkey.pem")
-modparam("tls_mgm", "ca_list", "4:/certs/wellknownCAs")
-modparam("tls_mgm", "tls_method", "4:tlsv1")
-modparam("tls_mgm", "verify_cert", "4:1")
-modparam("tls_mgm", "require_cert", "4:1")
-
-
+modparam("tls_mgm", "certificate", "[dom4]/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom4]/certs/biloxy.com/privkey.pem"
+)
+modparam("tls_mgm", "ca_list", "[dom4]/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "[dom4]tlsv1")
+modparam("tls_mgm", "verify_cert", "[dom4]1")
+modparam("tls_mgm", "require_cert", "[dom4]1")
 
 
 # socket based TLS server domains (for TLS based downstream from GW prov
 ider)
-modparam("tls_mgm", "client_domain", "5=IP_5:port5")
+modparam("tls_mgm", "client_domain", "dom5=IP_5:port5")
 
-modparam("tls_mgm", "certificate", "5:/certs/atlanta.com/cert.pem")
-modparam("tls_mgm", "private_key", "5:/certs/atlanta.com/privkey.pem")
-modparam("tls_mgm", "ca_list", "5:/certs/wellknownCAs")
-modparam("tls_mgm", "tls_method", "5:tlsv1")
-modparam("tls_mgm", "verify_cert", "5:0")
+modparam("tls_mgm", "certificate", "[dom5]/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom5]/certs/atlanta.com/privkey.pem
+")
+modparam("tls_mgm", "ca_list", "[dom5]/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "[dom5]tlsv1")
+modparam("tls_mgm", "verify_cert", "[dom5]0")
 
 # socket based TLS client domains (for TLS based upstream to GW provider
 )
 # GW IP: 1.2.3.4, GW port: 6677
-modparam("tls_mgm", "client_domain", "6=1.2.3.4:6677")
+modparam("tls_mgm", "client_domain", "dom6=1.2.3.4:6677")
 
-modparam("tls_mgm", "certificate", "6:/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "6:/certs/biloxy.com/privkey.pem")
-modparam("tls_mgm", "ca_list", "6:/certs/wellknownCAs")
-modparam("tls_mgm", "tls_method", "6:tlsv1")
-modparam("tls_mgm", "verify_cert", "6:0")
+modparam("tls_mgm", "certificate", "[dom6]/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom6]/certs/biloxy.com/privkey.pem"
+)
+modparam("tls_mgm", "ca_list", "[dom6]/certs/wellknownCAs")
+modparam("tls_mgm", "tls_method", "[dom6]tlsv1")
+modparam("tls_mgm", "verify_cert", "[dom6]0")
 
 ...
 route{
 ...
     # calls to other SIP domains
     # set the proper SSL context (certificate) for local hosted domains
-    avp_write("$fd","$avp(fd)");
     t_relay(); # uses NAPTR and SRV lookups
     exit;
 ...
@@ -815,13 +806,13 @@ route{
     exit;
 ...
 
-1.8. Pseudo-Variables
+1.8. Variables
 
-   This module exports the follong pseudo-variables:
+   This module exports the follong variables:
 
-   Some pseudo variables are available for both, the peer'S
-   certificate and the local certificate. Further, some parameters
-   can be read from the “Subject” field or the “Issuer” field.
+   Some variables are available for both, the peer'S certificate
+   and the local certificate. Further, some parameters can be read
+   from the “Subject” field or the “Issuer” field.
 
 1.8.1. $tls_version
 
@@ -962,16 +953,17 @@ route{
   check_via=no
   dns=no
   rev_dns=no
-  listen=_your_serv_IP_
-  port=5060
+  listen=udp:your_serv_IP:5060
+  listen=tls:your_serv_IP:5061
   children=4
-  fifo="/tmp/opensips_fifo"
 
   # ------------------ module loading ----------------------------------
 
+  loadmodule "proto_tls.so"
+  loadmodule "proto_udp.so"
+
   #TLS specific settings
   loadmodule "tls_mgm.so"
-  loadmodule "proto_tls.so"
 
   modparam("tls_mgm", "certificate", "/path/opensipsX_cert.pem")
   modparam("tls_mgm", "private_key", "/path/privkey.pem")
@@ -983,17 +975,19 @@ route{
   alias=_DNS_ALIAS_
 
 
-  loadmodule "modules/sl/sl.so"
-  loadmodule "modules/rr/rr.so"
-  loadmodule "modules/maxfwd/maxfwd.so"
-  loadmodule "modules/mysql/mysql.so"
-  loadmodule "modules/usrloc/usrloc.so"
-  loadmodule "modules/registrar/registrar.so"
-  loadmodule "modules/tm/tm.so"
-  loadmodule "modules/auth/auth.so"
-  loadmodule "modules/auth_db/auth_db.so"
-  loadmodule "modules/textops/textops.so"
-  loadmodule "modules/uri_db/uri_db.so"
+  loadmodule "sl.so"
+  loadmodule "rr.so"
+  loadmodule "maxfwd.so"
+  loadmodule "mysql.so"
+  loadmodule "usrloc.so"
+  loadmodule "registrar.so"
+  loadmodule "tm.so"
+  loadmodule "auth.so"
+  loadmodule "auth_db.so"
+  loadmodule "textops.so"
+  loadmodule "sipmsgops.so"
+  loadmodule "signaling.so"
+  loadmodule "uri_db.so"
 
   # ----------------- setting module-specific parameters ---------------
 
@@ -1014,103 +1008,101 @@ route{
 
   # initial sanity checks
   if (!mf_process_maxfwd_header("10")) {
-      sl_send_reply("483","Too Many Hops");
-      break;
+      send_reply("483","Too Many Hops");
+      exit;
   };
 
   # if somene claims to belong to our domain in From,
   # challenge him (skip REGISTERs -- we will chalenge them later)
   if (from_uri==myself) {
       setflag(1);
-      if ( (method=="INVITE" || method=="SUBSCRIBE" || method=="MESSAGE"
-)
-      &&  !(src_ip==myself) ) {
+      if ( is_method("INVITE|SUBSCRIBE|MESSAGE")
+      && !(src_ip==myself) ) {
           if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
               proxy_challenge("domA.net","0"/*no-qop*/);
-              break;
+              exit;
           };
           if (!db_check_from()) {
-              log("LOG: From Cheating attempt in INVITE\n");
-              sl_send_reply("403",
+              xlog("FROM hdr Cheating attempt in INVITE\n");
+              send_reply("403",
                   "That is ugly -- use From=id next time (OB)");
-              break;
+              exit;
           };
       }; # non-REGISTER from other domain
-  } else if ( method=="INVITE" && uri!=myself ) {
-      sl_send_reply("403", "No relaying");
-      break;
+  } else if ( is_method("INVITE") && uri!=myself ) {
+      send_reply("403", "No relaying");
+      exit;
   };
 
   /* ********   do record-route and loose-route ******* */
-  if (!(method=="REGISTER"))
+  if (!is_method("REGISTER"))
       record_route();
 
   if (loose_route()) {
       append_hf("P-hint: rr-enforced\r\n");
-      route(1);
-      break;
+      t_relay();
+      exit;
   };
 
   /* ******* check for requests targeted out of our domain ******* */
   if ( uri!=myself ) {
       append_hf("P-hint: OUTBOUND\r\n");
-      if (uri=~".*@domB.net") {
-          t_relay_to_tls("domB.net","5061");
-      } else if (uri=~".*@domC.net") {
-          t_relay_to_tls("domC.net","5061");
+      if ($rd=="domB.net") {
+          t_relay("tls:domB.net:5061");
+      } else if ($rd=="domC.net") {
+          t_relay("tls:domC.net:5061");
       } else {
-          route(1);
+          t_relay();
       };
-      break;
+      exit;
   };
 
   /* ******* divert to other domain according to prefixes ******* */
-  if (method!="REGISTER") {
-      if ( uri=~"sip:201") {
+  if (!is_method("REGISTER")) {
+      if ( $ru=~"sip:201") {
           strip(3);
-          sethost("domB.net");
-          t_relay_to_tls("domB.net","5061");
-          break;
+          $rd = "domB.net";
+          t_relay("tls:domB.net:5061");
+          exit;
       } else if ( uri=~"sip:202" ) {
           strip(3);
-          sethost("domC.net");
-          t_relay_to_tls("domC.net","5061");
-          break;
+          $rd = "domC.net";
+          t_relay("tls:domC.net:5061");
+          exit;
       };
   };
 
   /* ************ requests for our domain ********** */
-  if (method=="REGISTER") {
+  if (is_method("REGISTER")) {
       if (!www_authorize( "domA.net", "subscriber" )) {
           # challenge if none or invalid credentials
           www_challenge( "domA.net" /* realm */,
               "0" /* no qop -- some phones can't deal with it */);
-          break;
+          exit;
       };
       if (!db_check_to()) {
-          log("LOG: To Cheating attempt\n");
-          sl_send_reply("403", "That is ugly -- use To=id in REGISTERs")
-;
-          break;
+          xlog("TO hdr Cheating attempt\n");
+          send_reply("403", "That is ugly -- use To=id in REGISTERs");
+          exit;
       };
       # it is an authenticated request, update Contact database now
       if (!save("location")) {
           sl_reply_error();
       };
-      break;
+      exit;
   };
 
   # native SIP destinations are handled using USRLOC DB
   if (!lookup("location")) {
       # handle user which was not found
-      sl_send_reply("404", "Not Found");
-      break;
+      send_reply("404", "Not Found");
+      exit;
   };
 
   # remove all present Alert-info headers
   remove_hf("Alert-Info");
 
-  if (method=="INVITE" && (proto==tls || isflagset(1))) {
+  if (is_method("INVITE") && ($rP=="TLS" || isflagset(1))) {
       append_hf("Alert-info: 1\r\n");                     # cisco 7960
       append_hf("Alert-info: Bellcore-dr4\r\n");          # cisco ATA
       append_hf("Alert-info: http://foo.bar/x.wav\r\n");  # snom

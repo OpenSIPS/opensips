@@ -161,25 +161,41 @@ static void split_param_val(char *in, str *id, str *val)
 {
 	char *p = (char*)in;
 
-	/* format is '[ID=]value' */
+	/* format is '[ID]value' or 'value' */
+
+	/* trim spaces at the beginning */
+	while ( *p && isspace(*p) ) p++;
 
 	/* first try to get the ID */
 	id->s = p;
-	if ( (p=strchr( p, ':'))==NULL ) {
-		/* just value */
-		val->s = id->s;
-		val->len = strlen(id->s);
-		id->s = NULL;
-		id->len = 0;
-		return;
-	}
-	/* ID found */
-	id->len = p-id->s;
+	if (*p!='[')
+		goto just_value;
+
+	/* try consume an alphanumerical ID */
 	p++;
+	while ( *p && isalnum(*p) ) p++;
+	if (*p==0)
+		goto just_value;
+
+	while ( *p && isspace(*p) ) p++;
+	if (*p==0 || *p!=']')
+		goto just_value;
+
+	/* ID found */
+	id->s++; /* skip '[' */
+	id->len = p-id->s;
+	p++; /* skip ']' */
 
 	/* what is left should be the value */
 	val->s = p;
 	val->len = in + strlen(in) - p;
+	return;
+
+just_value:
+	val->s = id->s;
+	val->len = strlen(id->s);
+	id->s = NULL;
+	id->len = 0;
 	return;
 }
 
