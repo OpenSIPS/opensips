@@ -822,6 +822,10 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	LM_DBG("on port %d, proto %d\n", c->rcv.src_port, si->proto);
 	c->id=(*connection_id)++;
+	c->cid = (unsigned long long)c->id
+				| ( (unsigned long long)(startup_time&0xFFFFFF) << 32 )
+					| ( (unsigned long long)(rand()&0xFF) << 56 );
+
 	c->rcv.proto_reserved1=0; /* this will be filled before receive_message*/
 	c->rcv.proto_reserved2=0;
 	c->state=state;
@@ -914,7 +918,7 @@ int tcp_conn_send(struct tcp_connection *c)
 
 	return 0;
 error:
-	/* no reporting as closed, as PROTO layer did not reporte it as 
+	/* no reporting as closed, as PROTO layer did not reporte it as
 	 * OPEN yet */
 	_tcpconn_rm(c);
 	tcp_connections_no--;
@@ -1014,7 +1018,7 @@ static inline int handle_new_connect(struct socket_info* si)
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
-				/* no close to report here as the connection was not yet 
+				/* no close to report here as the connection was not yet
 				 * reported as OPEN by the proto layer...this sucks a bit */
 				_tcpconn_rm(tcpconn);
 				close(new_sock/*same as tcpconn->s*/);
@@ -1478,7 +1482,7 @@ static inline void __tcpconn_lifetime(int force)
 						LM_DBG("timeout for hash=%d - %p"
 								" (%d > %d)\n", h, c, ticks, c->lifetime);
 					fd=c->s;
-					/* report the closing of the connection . Note that 
+					/* report the closing of the connection . Note that
 					 * there are connectioned that use an foced expire to 0
 					 * as a way to be deleted - we are not interested in */
 					if (c->lifetime>0)
@@ -1609,7 +1613,7 @@ int tcp_init(void)
 		LM_CRIT("could not alloc globals in shm memory\n");
 		goto error;
 	}
-	*connection_id=1;
+	*connection_id=rand();
 	memset( &tcp_parts, 0, TCP_PARTITION_SIZE*sizeof(struct tcp_partition));
 	/* init partitions */
 	for( i=0 ; i<TCP_PARTITION_SIZE ; i++ ) {

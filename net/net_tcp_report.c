@@ -32,7 +32,7 @@ static int ipc_type = -1;
 
 typedef struct _tcp_report_job {
 	/* TCP connection ID */
-	int tcp_id;
+	unsigned long long tcp_id;
 	/* reporting type */
 	int type;
 	/* the protocol ID */
@@ -64,13 +64,13 @@ int init_tcp_reporting(void) {
 
 
 /* Pushes a TCP event as a repot to the PROTO layer. Depending on the type of
- * of the reported event, the function will construct and push forward a 
+ * of the reported event, the function will construct and push forward a
  * per-type string holding the description of the reported event - the TCP
  * connection itself does not propgate further to the proto layer.
  * As the TCP MAIN process has a special status when comes to what it is able
  * to do (handling, communication,etc) and to avoid any problems within the
  * PROTO layer (when handling the report), the function will take care NOT to
- * run the "report" handler in the TCP MAIN - it will push the execution to 
+ * run the "report" handler in the TCP MAIN - it will push the execution to
  * a TCP WORKER process via IPC.
  * Parameters:
  *   - conn - the tcp connection; be carefull what you do with it as there is
@@ -94,7 +94,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 	 * Basically aggregate info from "conn" and "extra" to generate a more
 	 * complex "extra" to be passed further */
 	if (type == TCP_REPORT_CLOSE) {
-		/* the extra is the "reason" string for having the TCP connection 
+		/* the extra is the "reason" string for having the TCP connection
 		 * closed; it is a static string, so no handling/conversion is
 		 * needed for it */
 	} else {
