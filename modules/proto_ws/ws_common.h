@@ -178,7 +178,6 @@ static inline void ws_print_masked(char *buf, int len)
 			p += sprintf(p, "\n");
 		}
 	}
-	LM_INFO("Print buffer\n%s", print_buf);
 }
 
 static inline void ws_mask(char *buf, int len, unsigned int mask)

@@ -26,6 +26,8 @@
 #ifndef _WS_HANDSHAKE_H_
 #define _WS_HANDSHAKE_H_
 
+#include "../../ip_addr.h"
+
 #define HTTP_SEP			"\r\n"
 #define HTTP_SEP_LEN		(sizeof(HTTP_SEP) - 1)
 #define HTTP_END HTTP_SEP HTTP_SEP
@@ -126,10 +128,8 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len);
 static int ws_complete_handshake(struct tcp_connection *c);
 static int ws_start_handshake(struct tcp_connection *c);
 static int ws_bad_handshake(struct tcp_connection *c);
-static int ws_init_trace_message( struct tcp_connection* c );
-
-static str accept_op = str_init("ACCEPT");
-static str connect_op = str_init("connect");
+static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* req);
+static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status status, str* rpl, str* message);
 
 #define WS_TRACE_MAX 1024
 static char ws_trace_buf[WS_TRACE_MAX];
@@ -190,7 +190,6 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 	struct timeval begin;
 	unsigned int err_len, poll_err = 0, err;
 	int n;
-	struct ws_data* d;
 	str trace_str;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	fd_set sel_set;
@@ -355,15 +354,12 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 	}
 
 	if ( ((struct ws_data *) con->proto_data)->dest ) {
-		d = con->proto_data;
+		trace_str.len = msg_len;
+		trace_str.s = msg_buf;
 
-		/* bug; should have been created from above(ws_start_handshake) */
-		if ( !d->message ) {
-			LM_BUG("no trace message! should have been already created!\n");
-		} else {
-			trace_str.len = msg_len;
-			trace_str.s = msg_buf;
-			d->tprot->add_payload_part( d->message, "reply", &trace_str );
+		if ( complete_ws_trace( con, TRANS_TRACE_SUCCESS,
+							&trace_str, &CONNECT_OK) < 0 ) {
+			LM_ERR("failed to complete web socket trace!\n");
 		}
 	}
 
@@ -388,7 +384,6 @@ static int ws_server_handshake(struct tcp_connection *con)
 	int msg_len;
 	char *msg_buf;
 	struct tcp_req *req;
-	struct ws_data* d;
 	str trace_str;
 
 	if (con->con_req) {
@@ -495,19 +490,14 @@ static int ws_server_handshake(struct tcp_connection *con)
 		}
 
 		if ( ((struct ws_data *) con->proto_data)->dest ) {
-			d = con->proto_data;
-
-			if ( !d->message ) {
-				if ( ws_init_trace_message( con ) ) {
-					LM_ERR(" can't init trace message!\n");
-					goto done;
-				}
-			}
-
 			trace_str.len = msg_len;
 			trace_str.s = msg_buf;
-			d->tprot->add_payload_part( d->message, "request", &trace_str );
+
+			if ( trace_ws( con, TRANS_TRACE_ACCEPTED, &trace_str) < 0 ) {
+				LM_ERR("failed to trace WS request!\n");
+			}
 		}
+
 
 		if (ws_complete_handshake(con) < 0) {
 			LM_DBG("cannot complete handshake\n");
@@ -1021,7 +1011,6 @@ static int ws_complete_handshake(struct tcp_connection *c)
 
 	str trace_str = { ws_trace_buf, 0 };
 	int iov_len = sizeof(iov) / sizeof(struct iovec), i;
-	struct ws_data* d;
 
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
@@ -1034,14 +1023,6 @@ static int ws_complete_handshake(struct tcp_connection *c)
 			_ws_common_module " handshake", "", 0, 1);
 
 	if ( ((struct ws_data *) c->proto_data)->dest ) {
-		d = c->proto_data;
-
-		/* bug; should have been created from above(ws_start_handshake) */
-		if ( !d->message ) {
-			LM_BUG("trace message not created!\n");
-			goto end;
-		}
-
 		for ( i=0; i < iov_len; i++ ) {
 			/* avoid overflow */
 			if ( trace_str.len + iov[i].iov_len > WS_TRACE_MAX )
@@ -1052,12 +1033,12 @@ static int ws_complete_handshake(struct tcp_connection *c)
 			trace_str.len += iov[i].iov_len;
 		}
 
-		/* write the result */
-		d->tprot->add_payload_part( d->message, "operation", &accept_op );
-		d->tprot->add_payload_part( d->message, "reply", &trace_str );
+		if ( complete_ws_trace( c, TRANS_TRACE_SUCCESS,
+									&trace_str, &ACCEPT_OK ) < 0 ) {
+			LM_ERR("failed to complete webSocket handshake!\n");
+		}
 	}
 
-end:
 	return n;
 }
 
@@ -1068,7 +1049,6 @@ static int ws_bad_handshake(struct tcp_connection *c)
 	static struct iovec iov[] = {
 		{ (void*)WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN },
 	};
-	struct ws_data* d;
 
 	str trace_str = { WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN };
 
@@ -1079,20 +1059,12 @@ static int ws_bad_handshake(struct tcp_connection *c)
 			_ws_common_module " handshake", "", 0, 1);
 
 	if ( ((struct ws_data *) c->proto_data)->dest ) {
-		d = c->proto_data;
-
-		/* bug; should have been created from above(ws_start_handshake) */
-		if ( !d->message ) {
-			LM_BUG("trace message not created!\n");
-			goto end;
+		if ( complete_ws_trace( c, TRANS_TRACE_FAILURE,
+							&trace_str, &ACCEPT_FAIL) < 0 ) {
+			LM_ERR("failed to complete web socket trace!\n");
 		}
-
-		/* write the result */
-		d->tprot->add_payload_part( d->message, "operation", &accept_op );
-		d->tprot->add_payload_part( d->message, "reply", &trace_str );
 	}
 
-end:
 	return n;
 }
 
@@ -1271,8 +1243,6 @@ static int ws_start_handshake(struct tcp_connection *c)
 	int port_len;
 	static char host_orig_buf[MAX_HOST_LEN];
 
-	struct ws_data* d;
-
 	str trace_str = { ws_trace_buf, 0 };
 
 	static struct iovec iov[] = {
@@ -1320,14 +1290,6 @@ static int ws_start_handshake(struct tcp_connection *c)
 			_ws_common_module " start handshake", "", 0, 1);
 
 	if ( ((struct ws_data *) c->proto_data)->dest ) {
-		d = c->proto_data;
-		if ( !d->message  ) {
-			if ( ws_init_trace_message( c ) ) {
-				LM_ERR(" can't init trace_message!\n");
-				goto end;
-			}
-		}
-
 		for ( i=0; i < iov_len; i++ ) {
 			/* avoid overflow */
 			if ( trace_str.len + iov[i].iov_len > WS_TRACE_MAX )
@@ -1337,13 +1299,11 @@ static int ws_start_handshake(struct tcp_connection *c)
 					iov[i].iov_base, iov[i].iov_len );
 			trace_str.len += iov[i].iov_len;
 		}
-
-		/* write the result */
-		d->tprot->add_payload_part( d->message, "operation", &connect_op );
-		d->tprot->add_payload_part( d->message, "request", &trace_str );
+		if ( trace_ws( c, TRANS_TRACE_CONNECTED, &trace_str ) < 0 ) {
+			LM_ERR("WS trace failed!\n");
+		}
 	}
 
-end:
 	return n;
 }
 
@@ -1648,36 +1608,48 @@ skip:
 	return bytes;
 }
 
-static int ws_init_trace_message( struct tcp_connection* c )
+static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* req)
 {
-	str str_id;
-	struct ws_data* data;
-	static int correlation_id = -1, correlation_vendor = -1;
+	struct ws_data* d;
+	union sockaddr_union src, dst;
 
-	data = c->proto_data;
-	data->message = data->tprot->create_trace_message( 0, 0,
-			/* FIXME: is this correct protocol number?? */
-			IPPROTO_ESP, 0, data->net_trace_proto_id, data->dest);
+	if ( !conn || !req || !req->s || !req->len || ! (d = conn->proto_data) )
+		return 0;
 
-	str_id.s = int2str( c->id, &str_id.len );
+	if ( !d->message  ) {
+		if ( tcpconn2su( conn, &src, &dst ) < 0 ) {
+			LM_ERR("can't fetch network info!\n");
+			return -1;
+		}
 
-	if ( correlation_vendor == -1 || correlation_id == - 1) {
-		if ( data->tprot->get_data_id("correlation_id", &correlation_vendor, &correlation_id ) < 0 ) {
-			LM_ERR("can't find correlation id chunk!\n");
+		if ( (d->message = create_trace_message( conn->id, &src, &dst,
+						conn->type, d->dest )) == 0 )  {
+			LM_ERR(" can't init trace_message!\n");
 			return -1;
 		}
 	}
 
-	if ( data->tprot->add_chunk( data->message, str_id.s, str_id.len, TRACE_TYPE_STR,
-			correlation_id, correlation_vendor) < 0) {
-		LM_ERR("failed to add correlation id! aborting trace...!\n");
-		return -1;
-	}
+	add_trace_data( d->message, "Event", &trans_trace_str_event[event]);
+	add_trace_data( d->message, "Ws-Request", req);
 
 	return 0;
 }
 
+static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status status, str* rpl, str* message)
+{
+	struct ws_data* d;
 
+	if ( !conn || !rpl || !rpl->s || !rpl->len || !(d = conn->proto_data) || !d->message )
+		return 0;
+
+
+	add_trace_data( message, "Status", &trans_trace_str_status[status]);
+	add_trace_data( message, "Ws-Reply", &trans_trace_str_status[status]);
+	if ( message && message->s && message->len )
+		add_trace_data( d->message, "Message", message);
+
+	return 0;
+}
 
 #undef WS_TRACE_MAX
 #endif /* _WS_HANDSHAKE_COMMON_H_ */
