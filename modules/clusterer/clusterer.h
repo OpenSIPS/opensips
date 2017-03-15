@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 OpenSIPS Project
+ * Copyright (C) 2015-2017 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -15,117 +15,105 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
  * history:
  * ---------
- *  2015-07-07  created  by Marius Cristian Eseanu
+ *	2015-07-07 created (Marius Cristian Eseanu)
+ *  2016-07-xx rework (rvlad-patrascu)
  */
 
 #ifndef CLUSTERER_H
-#define	CLUSTERER_H
+#define CLUSTERER_H
 
-#include "../../str.h"
 #include "api.h"
 
-#define INT_VALS_CLUSTER_ID_COL     0
-#define INT_VALS_MACHINE_ID_COL     1
-#define INT_VALS_STATE_COL          2
-#define STR_VALS_DESCRIPTION_COL    0
-#define STR_VALS_URL_COL            1
-#define INT_VALS_CLUSTERER_ID_COL   3
-#define INT_VALS_FAILED_ATTEMPTS_COL    4
-#define INT_VALS_NO_TRIES_COL           5
-#define INT_VALS_DURATION_COL           6
+#define BIN_VERSION 1
+#define DEFAULT_PING_INTERVAL 4
+#define DEFAULT_NODE_TIMEOUT 60
+#define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
+#define UPDATE_MAX_PATH_LEN 25
+#define SMALL_MSG 300
 
-extern str clusterer_db_url;
-extern str db_table;
-extern str cluster_id_col;
-extern str machine_id_col;
-extern int server_id;
-extern int persistent_state;
-extern str id_col;
-extern str last_attempt_col;
-extern str duration_col;
-extern str failed_attempts_col;
-extern str no_tries_col;
+/* node flags */
+#define NODE_STATE_ENABLED	(1<<0)
+#define CALL_CBS_DOWN		(1<<1)
+#define CALL_CBS_UP			(1<<2)
+#define DB_UPDATED			(1<<3)
+#define DB_PROVISIONED		(1<<4)
 
-/* define proper state for the machine */
+typedef enum {
+	CLUSTERER_PING,
+	CLUSTERER_PONG,
+	CLUSTERER_LS_UPDATE,
+	CLUSTERER_FULL_TOP_UPDATE,
+	CLUSTERER_UNKNOWN_ID,
+	CLUSTERER_JOIN_REQUEST,
+	CLUSTERER_JOIN_ACCEPT,
+	CLUSTERER_JOIN_CONFIRM,
+	CLUSTERER_TOP_DESCRIPTION
+} clusterer_msg_type;
 
-typedef struct table_entry_ table_entry_t;
-typedef struct table_entry_info_ table_entry_info_t;
-typedef struct table_entry_value_ table_entry_value_t;
+typedef enum {
+	LS_UP,
+	LS_DOWN,
+	/* probing states */
+	LS_RETRY_SEND_FAIL,
+	LS_RESTART_PINGING,
+	LS_RESTARTED,
+	LS_RETRYING,
+	/* link not established */
+	LS_NO_LINK
+} clusterer_link_state;
 
-struct module_list{
+typedef enum {
+	JOIN_INIT,
+	JOIN_REQ_SENT,
+	JOIN_CONFIRM_SENT,
+	JOIN_SUCCESS
+} clusterer_join_state;
+
+struct mod_registration {
    str mod_name;
-   int proto;
-   void (*cb)(int, struct receive_info *, int);
-   int timeout;
-   int duration;
+   clusterer_cb_f cb;
    int auth_check;
-   int accept_cluster_id;
-   table_entry_value_t *values;
-   struct module_list *next;
+   int accept_clusters_ids[MAX_MOD_REG_CLUSTERS];
+   int no_accept_clusters;
+   struct mod_registration *next;
 };
 
-struct module_timestamp{
-    enum cl_machine_state state;
-    uint64_t timestamp;
-    struct module_list *up;
-    struct module_timestamp *next;
+struct node_info;
+
+/* used for adjacency list */
+struct neighbour {
+	struct node_info *node;
+	struct neighbour *next;
 };
 
-struct table_entry_value_{
-    /* machine id */
-    int machine_id;
-    /* cluster id */
-    int id;
-    /* state */
-    int state;
-    /* dirty bit */
-    int dirty_bit;
-    /* description string */
-    str description;
-    /* path */
-    str path;
-    /* timestamp */
-    uint64_t last_attempt;
-    /* duration */
-    int duration;
-    /* previous number of tries */
-    int prev_no_tries;
-    /* no of tries */
-    int no_tries;
-    /* failed attempts */
-    int failed_attempts;
-    /* sock address */   
-    union sockaddr_union addr;
-    /* module list */
-    struct module_timestamp *in_timestamps;
-    /* linker in list */
-    table_entry_value_t *next;
+/* entry in queue used for shortest path searching */
+struct node_search_info {
+	struct node_info *node;
+	struct node_search_info *parent;
+	struct node_search_info *next;      /* linker in queue */
 };
 
-struct table_entry_info_{
-    /* protocol */
-    int proto;
-    /* data */
-    table_entry_value_t *value;
-    /* linker in the list */
-    table_entry_info_t *next;
-};
+extern struct mod_registration *clusterer_reg_modules;
+extern enum sip_protos clusterer_proto;
 
+inline void heartbeats_timer(void);
 
-/* data list */
-struct table_entry_ {
-    /* clusterer_id */
-    int cluster_id;
-    /* entry info */
-    table_entry_info_t *info;
-    /* linker in list */
-    table_entry_t *next;
-};
+void receive_clusterer_bin_packets(bin_packet_t *packet, int packet_type, struct receive_info *ri,
+									void *att);
 
-#endif	/* CLUSTERER_H */
+int get_next_hop(struct node_info *dest);
+
+int cl_set_state(int cluster_id, enum cl_node_state state);
+int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
+enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
+enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
+int cl_register_module(char *mod_name,  clusterer_cb_f cb, int auth_check,
+								int *accept_clusters_ids, int no_accept_clusters);
+
+#endif  /* CLUSTERER_H */
 

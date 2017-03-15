@@ -650,84 +650,48 @@ error:
 	return -1;
 }
 
-static int bin_status_aux(struct mi_node *root, clusterer_node_t *nodes, int type, int cluster_id)
+int rl_bin_status(struct mi_node *root, int cluster_id, char *type, int type_len)
 {
-	clusterer_node_t *d;
+	clusterer_node_t *cl_nodes = NULL, *it;
 	struct mi_node *node = NULL;
 	struct mi_attr* attr;
-	str cluster_id_s;
-	str machine_id_s;
-	str state;
+	str val;
 
-	for (d = nodes; d; d = d->next) {
-		cluster_id_s.s = int2str(cluster_id, &cluster_id_s.len);
-		node = add_mi_node_child(root, MI_DUP_VALUE, "Cluster ID", 10,
-			cluster_id_s.s, cluster_id_s.len);
-		if (node == NULL) goto error;
+	cl_nodes = clusterer_api.get_nodes(cluster_id);
+	for (it = cl_nodes; it; it = it->next) {
+		val.s = int2str(it->node_id, &val.len);
+		node = add_mi_node_child(root, MI_DUP_VALUE, MI_SSTR("Node"),
+			val.s, val.len);
+		if (!node)
+			goto error;
 
-		machine_id_s.s = int2str(d->machine_id, &machine_id_s.len);
-		attr = add_mi_attr(node, MI_DUP_VALUE, "Machine ID", 10,
-			machine_id_s.s, machine_id_s.len);
-		if (attr == NULL) goto error;
+		val.s = int2str(cluster_id, &val.len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("Cluster_ID"),
+				val.s, val.len);
+		if (!attr)
+			goto error;
 
-		state.s = int2str(d->state, &state.len);
-		attr = add_mi_attr(node, MI_DUP_VALUE, "STATE", 5,
-			state.s, state.len);
-		if (attr == NULL) goto error;
-
-		if (d->description.s)
-			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
-			d->description.s, d->description.len);
+		if (it->description.s)
+			attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("Description"),
+					it->description.s, it->description.len);
 		else
-			attr = add_mi_attr(node, MI_DUP_VALUE, "DESCRIPTION", 11,
-			"none", 4);
-		if (attr == NULL) goto error;
+			attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("Description"),
+					"none", 4);
+		if (!attr)
+			goto error;
 
-		if (type)
-			attr = add_mi_attr(node, MI_DUP_VALUE, "TYPE", 4,
-			"server", 6);
-		else
-			attr = add_mi_attr(node, MI_DUP_VALUE, "TYPE", 4,
-			"client", 6);
-		if (attr == NULL) goto error;
+		attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("Type"), type, type_len);
+		if (!attr)
+			goto error;
 	}
+
+	if (cl_nodes)
+		clusterer_api.free_nodes(cl_nodes);	
 
 	return 0;
+
 error:
-	return -1;
-}
-
-int rl_bin_status(struct mi_root *rpl_tree)
-{
-	clusterer_node_t *nodes;
-	struct mi_node *root = NULL;
-
-	if (rpl_tree == NULL)
-		return -1;
-
-	root = &rpl_tree->node;
-	if (rl_repl_cluster) {
-		nodes = clusterer_api.get_nodes(rl_repl_cluster, PROTO_BIN);
-		if (nodes == NULL)
-			return -1;
-		if (bin_status_aux(root, nodes, 1, rl_repl_cluster) < 0)
-			goto error;
-		clusterer_api.free_nodes(nodes);
-	}
-
-	if (accept_repl_pipes) {
-		nodes = clusterer_api.get_nodes(accept_repl_pipes, PROTO_BIN);
-		if (nodes == NULL)
-			return -1;
-		if (bin_status_aux(root, nodes, 0, accept_repl_pipes) < 0)
-			goto error;
-		clusterer_api.free_nodes(nodes);
-	}
-
-
-	return 0;
-error:
-	clusterer_api.free_nodes(nodes);
+	clusterer_api.free_nodes(cl_nodes);
 	return -1;
 }
 
@@ -826,55 +790,49 @@ error:
 
 
 
-void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
+void rl_rcv_bin(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
+					struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
 	rl_algo_t algo;
 	int limit;
 	int counter;
 	str name;
-	char *ip;
-	unsigned short port;
 	rl_pipe_t **pipe;
 	unsigned int hash_idx;
 	time_t now;
 	rl_repl_counter_t *destination;
 
-	if (packet_type == SERVER_TEMP_DISABLED) {
- 		get_su_info(&ri->src_su.s, ip, port);
-		LM_WARN("server: %s:%hu temporary disabled\n", ip, port);
- 		return;
- 	}
-
-	if (packet_type == SERVER_TIMEOUT) {
-		LM_INFO("server with clustererer id %d timeout\n", server_id);
+	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
+		return;
+	else if (ev == CLUSTER_ROUTE_FAILED) {
+		LM_INFO("failed to route replication packet of type %d from node %d to node"
+			" %d in cluster: %d\n", packet_type, src_id, dest_id, cluster_id);
 		return;
 	}
 
-	if(get_bin_pkg_version() != BIN_VERSION){
-		LM_ERR("incompatible bin protocol version\n");
+	if (packet_type != RL_PIPE_COUNTER) {
+		LM_WARN("Invalid binary packet command: %d (from node: %d in cluster: %d)\n",
+			packet_type, src_id, cluster_id);
 		return;
 	}
-
-	if (packet_type != RL_PIPE_COUNTER)
-		return;
 
 	now = time(0);
 
 	for (;;) {
-		if (bin_pop_str(&name) == 1)
+		if (bin_pop_str(packet, &name) == 1)
 			break; /* pop'ed all pipes */
 
-		if (bin_pop_int(&algo) < 0) {
+		if (bin_pop_int(packet, &algo) < 0) {
 			LM_ERR("cannot pop pipe's algorithm\n");
 			return;
 		}
 
-		if (bin_pop_int(&limit) < 0) {
+		if (bin_pop_int(packet, &limit) < 0) {
 			LM_ERR("cannot pop pipe's limit\n");
 			return;
 		}
 
-		if (bin_pop_int(&counter) < 0) {
+		if (bin_pop_int(packet, &counter) < 0) {
 			LM_ERR("cannot pop pipe's counter\n");
 			return;
 		}
@@ -918,7 +876,7 @@ void rl_rcv_bin(int packet_type, struct receive_info *ri, int server_id)
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
-		destination = find_destination(*pipe, server_id);
+		destination = find_destination(*pipe, src_id);
 		destination->counter = counter;
 		destination->update = now;
 		RL_RELEASE_LOCK(hash_idx);
@@ -990,20 +948,37 @@ int rl_repl_init(void)
 	}
 
 	if (accept_repl_pipes &&
-		clusterer_api.register_module("ratelimit", PROTO_BIN, rl_rcv_bin,
-		accept_repl_pipes_timeout, repl_pipes_auth_check, accept_repl_pipes) < 0) {
-		LM_ERR("Cannot register binary packet callback!\n");
+		clusterer_api.register_module("ratelimit", rl_rcv_bin,
+		repl_pipes_auth_check, &accept_repl_pipes, 1) < 0) {
+		LM_ERR("Cannot register clusterer callback!\n");
 		return -1;
 	}
 
 	return 0;
 }
 
-static inline void rl_replicate(void)
+static inline void rl_replicate(bin_packet_t *packet)
 {
-	if (clusterer_api.send_to(rl_repl_cluster, PROTO_BIN) < 0) {
-		LM_INFO("ratelimit replicate failed\n");
- 	}
+	int rc;
+
+	rc = clusterer_api.send_all(packet, rl_repl_cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", rl_repl_cluster);
+		goto error;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			rl_repl_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", rl_repl_cluster);
+		goto error;
+	}
+
+	return;
+
+error:
+	LM_ERR("Failed to replicate ratelimit pipes\n");
 }
 
 void rl_timer_repl(utime_t ticks, void *param)
@@ -1015,13 +990,12 @@ void rl_timer_repl(utime_t ticks, void *param)
 	str *key;
 	int nr = 0;
 	int ret;
-	int replicated = 0;
+	bin_packet_t packet;
 
-	if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
+	if (bin_init(&packet, &module_name, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}
-	bin_push_int(clusterer_api.get_my_id());
 
 	/* iterate through each map */
 	for (i = 0; i < rl_htable.size; i++) {
@@ -1047,29 +1021,24 @@ void rl_timer_repl(utime_t ticks, void *param)
 				goto next_pipe;
 			}
 
-			if (bin_push_str(key) < 0)
+			if (bin_push_str(&packet, key) < 0)
 				goto error;
 
-			if (bin_push_int((*pipe)->algo) < 0)
+			if (bin_push_int(&packet, (*pipe)->algo) < 0)
 				goto error;
 
-			if (bin_push_int((*pipe)->limit) < 0)
+			if (bin_push_int(&packet, (*pipe)->limit) < 0)
 				goto error;
 
-			if ((ret = bin_push_int((*pipe)->my_last_counter)) < 0)
+			if ((ret = bin_push_int(&packet, (*pipe)->my_last_counter)) < 0)
 				goto error;
 			nr++;
 
 			if (ret > rl_buffer_th) {
-				/* always replicate the pipe to "simulate" pinging */
-				rl_replicate();
-				replicated = 1;
-				if (bin_init(&module_name, RL_PIPE_COUNTER, BIN_VERSION) < 0) {
-					LM_ERR("cannot initiate bin buffer\n");
-					RL_RELEASE_LOCK(i);
-					return;
-				}
-				bin_push_int(clusterer_api.get_my_id());
+				/* send the buffer */
+				if (nr)
+					rl_replicate(&packet);
+				bin_reset_back_pointer(&packet);
 				nr = 0;
 			}
 
@@ -1081,14 +1050,16 @@ next_map:
 		RL_RELEASE_LOCK(i);
 	}
 	/* if there is anything else to send, do it now */
-	if (!replicated)
-		rl_replicate();
+	if (nr)
+		rl_replicate(&packet);
+	bin_free_packet(&packet);
 	return;
 error:
 	LM_ERR("cannot add pipe info in buffer\n");
 	RL_RELEASE_LOCK(i);
 	if (nr)
-		rl_replicate();
+		rl_replicate(&packet);
+	bin_free_packet(&packet);
 }
 
 int rl_get_all_counters(rl_pipe_t *pipe)

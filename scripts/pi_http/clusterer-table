@@ -4,12 +4,13 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>cluster_id</field><type>DB_INT</type></column>
-		<column><field>machine_id</field><type>DB_INT</type></column>
+		<column><field>node_id</field><type>DB_INT</type></column>
 		<column><field>url</field><type>DB_STR</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
-		<column><field>last_attempt</field><type>DB_BIGINT</type></column>
-		<column><field>failed_attempts</field><type>DB_INT</type></column>
-		<column><field>no_tries</field><type>DB_INT</type></column>
-		<column><field>duration</field><type>DB_INT</type></column>
+		<column><field>ls_seq_no</field><type>DB_INT</type></column>
+		<column><field>top_seq_no</field><type>DB_INT</type></column>
+		<column><field>no_ping_retries</field><type>DB_INT</type></column>
+		<column><field>priority</field><type>DB_INT</type></column>
+		<column><field>sip_addr</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>

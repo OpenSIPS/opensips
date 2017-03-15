@@ -143,7 +143,7 @@ extern unsigned int rl_repl_timer_expire;
 int rl_repl_init(void);
 int rl_get_all_counters(rl_pipe_t *pipe);
 int rl_add_repl_dst(modparam_t type, void *val);
-int rl_bin_status(struct mi_root *);
+int rl_bin_status(struct mi_node *root, int cluster_id, char *type, int type_len);
 
 #define RL_PIPE_COUNTER		0
 #define RL_EXPIRE_TIMER		10

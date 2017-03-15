@@ -4,7 +4,11 @@ Marius Cristian Eseanu
 
    OpenSIPS Solutions
 
-   Copyright © 2015 www.opensips-solutions.com
+Edited by
+
+Robert-Vladut Patrascu
+
+   Copyright © 2015 - 2017 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -21,25 +25,29 @@ Marius Cristian Eseanu
 
               1.3.1. db_url
               1.3.2. db_table
-              1.3.3. server_id
-              1.3.4. persistent_mode
-              1.3.5. cluster_id_col
-              1.3.6. machine_id_col
-              1.3.7. clusterer_id_col
-              1.3.8. state_col
-              1.3.9. url_col
-              1.3.10. description_col
-              1.3.11. failed_attempts_col
-              1.3.12. last_attempt_col
-              1.3.13. duration_col
-              1.3.14. no_tries_col
+              1.3.3. id_col
+              1.3.4. cluster_id_col
+              1.3.5. node_id_col
+              1.3.6. url_col
+              1.3.7. state_col
+              1.3.8. ls_seq_no_col
+              1.3.9. top_seq_no_col
+              1.3.10. no_ping_retries_col
+              1.3.11. priority_col
+              1.3.12. sip_addr_col
+              1.3.13. description_col
+              1.3.14. current_id
+              1.3.15. ping_interval
+              1.3.16. ping_timeout
+              1.3.17. node_timeout
 
         1.4. Exported Functions
         1.5. Exported MI Functions
 
               1.5.1. clusterer_reload
               1.5.2. clusterer_list
-              1.5.3. clusterer_set_status
+              1.5.3. clusterer_list_topology
+              1.5.4. clusterer_set_status
 
         1.6. Usage Example
 
@@ -47,87 +55,85 @@ Marius Cristian Eseanu
 
         2.1. Available Functions
 
-              2.1.1. get_nodes(cluster_id, proto)
-              2.1.2. free_nodes(nodes)
-              2.1.3. set_state(cluster_id, machine_id, state,
-                      proto)
-
-              2.1.4. check(cluster_id, sockaddr, server_id, proto)
-
+              2.1.1. get_nodes(cluster_id)
+              2.1.2. free_nodes(list)
+              2.1.3. set_state(cluster_id, state)
+              2.1.4. check_addr(cluster_id, su)
               2.1.5. get_my_id()
-              2.1.6. send_to(cluster_id, protocol)
-              2.1.7. register_module(module_name, protocol,
-                      callback_function, timeout, auth_check,
-                      cluster_id)
+              2.1.6. send_to(packet, cluster_id, node_id)
+              2.1.7. send_all(packet, cluster_id)
+              2.1.8. get_next_hop(cluster_id, node_id)
+              2.1.9. free_next_hop(next_hop)
+              2.1.10. register_module(mod_name, cb, auth_check,
+                      accept_clusters_ids, no_accept_clusters)
 
    List of Examples
 
    1.1. Set db_url parameter
    1.2. Set db_table parameter
-   1.3. Set server_id parameter
-   1.4. Set persistent_mode parameter
-   1.5. Set cluster_id_col parameter
-   1.6. Set machine_id_col parameter
-   1.7. Set clusterer_id_col parameter
-   1.8. Set state_col parameter
-   1.9. Set url_col parameter
-   1.10. Set description_col parameter
-   1.11. Set failed_attempts_col parameter
-   1.12. Set last_attempt_col parameter
-   1.13. Set duration_col parameter
-   1.14. Set no_tries_col parameter
-   1.15. Example database content - clusterer table
-   1.16. Node A configuration
-   1.17. Node B configuration
-   2.1. get_nodes usage
-   2.2. free_nodes usage
-   2.3. set_state usage
-   2.4. check usage
-   2.5. get_my_id usage
-   2.6. send_to usage
-   2.7. register_module usage
+   1.3. Set id_col parameter
+   1.4. Set cluster_id_col parameter
+   1.5. Set node_id_col parameter
+   1.6. Set url_col parameter
+   1.7. Set state_col parameter
+   1.8. Set ls_seq_no_col parameter
+   1.9. Set top_seq_no_col parameter
+   1.10. Set no_ping_retries_col parameter
+   1.11. Set priority_col parameter
+   1.12. Set sip_addr_col parameter
+   1.13. Set description_col parameter
+   1.14. Set current_id parameter
+   1.15. Set ping_interval parameter
+   1.16. Set ping_timeout parameter
+   1.17. Set node_timeout parameter
+   1.18. clusterer_list usage
+   1.19. clusterer_list_topology usage
+   1.20. Example database content - clusterer table
+   1.21. Node A configuration
+   1.22. Node B configuration
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
    The clusterer module is used to organize multiple OpenSIPS
-   instances into groups that can communicate with each other in
-   order to replicate, share information or perform distributed
-   tasks. The module itself only stores information about the
-   nodes in a group/cluster and provides an interface to check or
-   tune their state and parameters. The distributed logic is
-   performed by different modules that use this interface (i.e.
-   the dialog module can replicate profiles, the ratelimit module
-   can share pipes across multiple instances, etc). Provisioning
-   the nodes within a cluster is done over the database but, for
-   efficiency, the node-related information is cached into
-   OpenSIPS memory. This information can be checked or updated by
-   sending commands over the MI interface.
+   instances into groups(clusters) in which the nodes can
+   communicate with each other in order to replicate, share
+   information or perform distributed tasks. The distributed logic
+   is performed by different modules that use the clusterer
+   interface (i.e. the dialog module can replicate
+   dialogs/profiles, the ratelimit module can share pipes across
+   multiple instances etc.). The clusterer module itself only
+   provides an interface to send/receive BIN packets and get
+   notifications about node availability. It does this by
+   internally learning the cluster topology and state of the
+   nodes. Provisioning the nodes within a cluster is done over the
+   database. The node-related information can be checked and
+   triggered to be reloaded by sending commands over the MI
+   interface.
 
-   The clusterer module can also detect node availability, by
-   using certain parameters provisioned in the database. When a
-   destination is not reachable, it is put in a probing state - it
-   is periodically pinged until a maximum number of failed
-   attempts is reached, when it is marked as temporarily disabled.
-   It stays in this state for a period (equal to the duration
-   parameter), and then the number of retries reset to 0 and the
-   node is considered up again.
+   The topology established by the clusterer module is an overlay
+   of nodes where the "links" represent communication availability
+   at BIN interface level. For this purpose, a probing mechanism
+   is used, consisting of regular pings to all nodes which must
+   receive a reply within a given interval. All nodes in the
+   cluster exchange information about the state of their links
+   with other nodes and compute a "routing table" which gives a
+   next hop for each destination. The metric for the shortest path
+   is the number of hops. When there is no direct link to a
+   destination, the BIN packet sent by a module is transparently
+   routed through the cluster.
 
-   Modules (like dialog or ratelimit can use nodes within the
-   cluster to replicate information. They also register a specific
-   timeout to invalidate data from specific nodes, in case no
-   updates have been within an interval. The clusterer notifies
-   the module if the timeout is reached and puts the node in a
-   temporary disabled state. If a packet has arrived for a
-   temporary disabled server, the packet is dropped and a
-   temporary disabled notification is sent to the registered
-   module. After the disabled period (2 * timeout) has passed, the
-   server is up again.
+   Note that an OpenSIPS instance can belong to multiple clusters,
+   communicating and establishing the topology separately for each
+   one. In order to provision this in the database, each node has
+   an unique ID at global level, which can be referenced by each
+   cluster.
 
-   By default, the state information of the nodes is not
-   persistent. To make them persistent via a database, one must
-   set the persistent_mode parameter.
+   While existing nodes can learn about newly added nodes without
+   additional provisioning, the new nodes must be fully aware of
+   the existing components of the cluster they are joining, in
+   order to properly advertise themselves.
 
 1.2. Dependencies
 
@@ -135,6 +141,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * a database module.
+     * proto_bin module.
 
 1.2.2. External Libraries or Applications
 
@@ -167,150 +174,185 @@ modparam("clusterer", "db_url",
 modparam("clusterer", "db_table", "clusterer")
 ...
 
-1.3.3. server_id
+1.3.3. id_col
 
-   It specifies the server_id the current instance has. this field
-   should correspond with one of the machine_id fields in the
-   database.
+   The name of the column storing an id for the table rows.
 
-   Default value is 0.
+   Default value is “id”.
 
-   Example 1.3. Set server_id parameter
+   Example 1.3. Set id_col parameter
 ...
-modparam("clusterer", "server_id", 2)
+modparam("clusterer", "id_col", "id")
 ...
 
-1.3.4. persistent_mode
+1.3.4. cluster_id_col
 
-   If persistent mode is enabled, a timer synchronizes the
-   information used by the clusterer module and the information
-   stored in the database.
-
-   Default value is 0 (disabled).
-
-   Example 1.4. Set persistent_mode parameter
-...
-modparam("clusterer", "persistent_mode", 1)
-...
-
-1.3.5. cluster_id_col
-
-   The name of the column in the db_table where the cluster_id is
-   stored.
+   The name of the column to store the id of a cluster.
 
    Default value is “cluster_id”.
 
-   Example 1.5. Set cluster_id_col parameter
+   Example 1.4. Set cluster_id_col parameter
 ...
 modparam("clusterer", "cluster_id_col", "cluster_id")
 ...
 
-1.3.6. machine_id_col
+1.3.5. node_id_col
 
-   The name of the column in the db_table where the machine_id is
-   stored.
+   The name of the column to store the id of an instance. The
+   values must be greater than 0.
 
-   Default value is “machine_id”.
+   Default value is “node_id”.
 
-   Example 1.6. Set machine_id_col parameter
+   Example 1.5. Set node_id_col parameter
 ...
-modparam("clusterer", "machine_id_col", "machine_id")
-...
-
-1.3.7. clusterer_id_col
-
-   The name of the column in the db_table where the machine_id is
-   stored.
-
-   Default value is “id”.
-
-   Example 1.7. Set clusterer_id_col parameter
-...
-modparam("clusterer", "clusterer_id_col", "clusterer_id")
+modparam("clusterer", "node_id_col", "node_id")
 ...
 
-1.3.8. state_col
+1.3.6. url_col
 
-   The name of the column in the db_table where the state is
-   stored.
-
-   Default value is “state”.
-
-   Example 1.8. Set state_col parameter
-...
-modparam("clusterer", "state_col", "state")
-...
-
-1.3.9. url_col
-
-   The name of the column in the db_table where the url is stored.
+   The name of the column containing the instance url. The values
+   must be greater than 0.
 
    Default value is “url”.
 
-   Example 1.9. Set url_col parameter
+   Example 1.6. Set url_col parameter
 ...
 modparam("clusterer", "url_col", "url")
 ...
 
-1.3.10. description_col
+1.3.7. state_col
 
-   The name of the column in the db_table where the machine's
-   description is stored.
+   The name of the column storing the state of the
+   node(enabled/disabled).
+
+   Default value is “state”.
+
+   Example 1.7. Set state_col parameter
+...
+modparam("clusterer", "state_col", "state")
+...
+
+1.3.8. ls_seq_no_col
+
+   The name of the column storing the sequence number of the last
+   link state update message sent by the node.
+
+   Default value is “ls_seq_no”.
+
+   Example 1.8. Set ls_seq_no_col parameter
+...
+modparam("clusterer", "ls_seq_no_col", "ls_seq_no")
+...
+
+1.3.9. top_seq_no_col
+
+   The name of the column storing the sequence number of the last
+   topology update message sent by the node.
+
+   Default value is “top_seq_no”.
+
+   Example 1.9. Set top_seq_no_col parameter
+...
+modparam("clusterer", "top_seq_no_col", "top_seq_no")
+...
+
+1.3.10. no_ping_retries_col
+
+   The name of the column containing the maximum number of ping
+   retries before the link with the neighbour node is considered
+   down.
+
+   Default value is “no_ping_retries”.
+
+   Example 1.10. Set no_ping_retries_col parameter
+...
+modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
+...
+
+1.3.11. priority_col
+
+   The name of the column storing the node priority to be chosen
+   as next hop in case of same length(number of hops) paths when
+   rerouting messages.
+
+   Default value is “priority”.
+
+   Example 1.11. Set priority_col parameter
+...
+modparam("clusterer", "priority_col", "priority")
+...
+
+1.3.12. sip_addr_col
+
+   The name of the column containing a SIP address for the node.
+
+   Default value is “sip_addr”.
+
+   Example 1.12. Set sip_addr_col parameter
+...
+modparam("clusterer", "sip_addr_col", "sip_addr")
+...
+
+1.3.13. description_col
+
+   The name of the column containing a node description.
 
    Default value is “description”.
 
-   Example 1.10. Set description_col parameter
+   Example 1.13. Set description_col parameter
 ...
 modparam("clusterer", "description_col", "description")
 ...
 
-1.3.11. failed_attempts_col
+1.3.14. current_id
 
-   The name of the column in the db_table where the maximum
-   allowed number of failed attempts is stored.
+   The id of the current instance. This parameter must be equal
+   with one of the node_id fields in the database.
 
-   Default value is “failed_attempts”.
+   No default value. This parameter must be explicitly set to a
+   value greater than zero.
 
-   Example 1.11. Set failed_attempts_col parameter
+   Example 1.14. Set current_id parameter
 ...
-modparam("clusterer", "failed_attempts_col", "failed_attempts")
-...
-
-1.3.12. last_attempt_col
-
-   The name of the column in the db_table where the UNIX time of
-   last last failed attempt is stored.
-
-   Default value is “last_attempt”.
-
-   Example 1.12. Set last_attempt_col parameter
-...
-modparam("clusterer", "last_attempt_col", "last_attempt")
+modparam("clusterer", "current_id", 1)
 ...
 
-1.3.13. duration_col
+1.3.15. ping_interval
 
-   The name of the column in the db_table where the duration of a
-   machine belonging to a certain cluster temporary disabled state
-   is stored.
+   The interval in seconds between regular pings sent to a
+   neighbour node.
 
-   Default value is “duration”.
+   Default value is “4”
 
-   Example 1.13. Set duration_col parameter
+   Example 1.15. Set ping_interval parameter
 ...
-modparam("clusterer", "duration_col", "duration")
+modparam("clusterer", "ping_interval", 1)
 ...
 
-1.3.14. no_tries_col
+1.3.16. ping_timeout
 
-   The name of the column in the db_table where the number of
-   failed connecting tries is stored.
+   The time in milliseconds to wait for a reply to a previously
+   sent ping before retrying or considering the link with the
+   neighbour node down. This is also the interval between
+   successive retries if the send fails.
 
-   Default value is “no_tries”.
+   Default value is “1000”
 
-   Example 1.14. Set no_tries_col parameter
+   Example 1.16. Set ping_timeout parameter
 ...
-modparam("clusterer", "no_tries_col", "no_tries")
+modparam("clusterer", "ping_timeout", 500)
+...
+
+1.3.17. node_timeout
+
+   The time in seconds to wait before pinging is restarted for a
+   failed node.
+
+   Default value is “60”
+
+   Example 1.17. Set node_timeout parameter
+...
+modparam("clusterer", "node_timeout", 10)
 ...
 
 1.4. Exported Functions
@@ -321,9 +363,9 @@ modparam("clusterer", "no_tries_col", "no_tries")
 
 1.5.1.  clusterer_reload
 
-   Reloads data from the clusterer database. If the persistent
-   mode is disabled the changes made to the locally stored data
-   are lost.
+   Reloads data from the clusterer database. The currently
+   established topology will be lost and the node will rediscover
+   the new topology.
 
    Name: clusterer_reload
 
@@ -335,7 +377,8 @@ modparam("clusterer", "no_tries_col", "no_tries")
 
 1.5.2.  clusterer_list
 
-   Lists in a table format all the data stored in OpenSIPS cache.
+   Lists information(node id, URL, link state with that node etc.)
+   about the other nodes in each cluster.
 
    Name: clusterer_list
 
@@ -345,26 +388,66 @@ modparam("clusterer", "no_tries_col", "no_tries")
                 :clusterer_list
                 _empty_line_
 
-1.5.3.  clusterer_set_status
+   Example 1.18. clusterer_list usage
+$ ./opensipsctl fifo clusterer_list
+Cluster:: 1
+        Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
+     Next_hop=4 Description=none
+        Node:: 3 DB_ID=3 URL=bin:127.0.0.3:7773 Enabled=1 Link_state=Dow
+n    Next_hop=4 Description=none
+        Node:: 2 DB_ID=2 URL=bin:127.0.0.2:7772 Enabled=1 Link_state=Pro
+be   Next_hop=4 Description=none
+Cluster:: 2
+        Node:: 5 DB_ID=5 URL=bin:127.0.0.4:7775 Enabled=1 Link_state=Up
+     Next_hop=5 Description=none
 
-   Sets the status(UP, DOWN) of a machine belonging to a certain
-   cluster.
+1.5.3.  clusterer_list_topology
+
+   Lists each cluster's topology from the current node's
+   perspective as an adjacency list. A node appears as a neighbour
+   if the link with that node is up.
+
+   Note that if a node id appears in multiple clusters, it refers
+   to the same instance that belongs to different clusters, for
+   which it has a different topology.
+
+   Name: clusterer_list_topology
+
+   Parameters:none
+
+   MI FIFO Command Format:
+                :clusterer_list_topology
+                _empty_line_
+
+   Example 1.19. clusterer_list_topology usage
+$ ./opensipsctl fifo clusterer_list_topology
+Cluster:: 1
+        Node:: 1 Neighbours=4
+        Node:: 4 Neighbours=1 2 3
+        Node:: 3 Neighbours=2 4
+        Node:: 2 Neighbours=3 4
+Cluster:: 2
+        Node:: 1 Neighbours=5
+        Node:: 5 Neighbours=1
+
+1.5.4.  clusterer_set_status
+
+   Sets the status(Enabled/Disabled) of the current node in a
+   specified cluster. A disabled node does not send any messages
+   and ignores received ones thus appearing as a failed node in
+   the topology.
 
    Name: clusterer_set_status
 
    Parameters:
      * cluster_id - indicates the id of the cluster.
-     * machine_id - indicates the id of the machine.
-     * status - indicates the new status( 0 - permanent down, 1 -
-       up).
-     * protocol - indicates the protocol.
+     * status - indicates the new status(0 - Disabled, 1 -
+       Enabled).
 
    MI FIFO Command Format:
                 :clusterer_set_status:
                 1
-                2
                 0
-                bin
                 _empty_line_
 
 1.6. Usage Example
@@ -383,43 +466,51 @@ modparam("clusterer", "no_tries_col", "no_tries")
    pipes. Therefore, we have to provision them in the clusterer
    table.
 
-   Example 1.15. Example database content - clusterer table
-+----+------------+------------+----------------------+-------+---------
------+-----------------+----------+----------+-------------+
-| id | cluster_id | machine_id | url                  | state | last_att
-empt | failed_attempts | no_tries | duration | description |
-+----+------------+------------+----------------------+-------+---------
------+-----------------+----------+----------+-------------+
-|  1 |          1 |          1 | bin:192.168.0.5:5566 |     1 |
-   0 |               0 |        0 |       30 | Node A      |
-|  2 |          1 |          2 | bin:192.168.0.6:5566 |     1 |
-   0 |               0 |        0 |       30 | Node B      |
-+----+------------+------------+----------------------+-------+---------
------+-----------------+----------+----------+-------------+
+   Example 1.20. Example database content - clusterer table
++----+------------+---------+----------------------+-------+-----------+
+------------+-----------------+----------+------------------------+
+| id | cluster_id | node_id | url                  | state | ls_seq_no |
+ top_seq_no | no_ping_retries | priority | sip_addr | description |
++----+------------+---------+----------------------+-------+-----------+
+------------+-----------------+----------+------------------------+
+|  1 |          1 |       1 | bin:192.168.0.5:5566 |     1 |         0 |
+          0 |               3 |       50 | NULL     | Node A      |
+|  2 |          1 |       2 | bin:192.168.0.6:5566 |     1 |         0 |
+          0 |               3 |       50 | NULL     | Node B      |
++----+------------+---------+----------------------+-------+-----------+
+------------+-----------------+----------+------------------------+
 
      * “cluster_id” - this column represents the identifier of the
        cluster. All nodes within a group/cluster should have the
-       same id (in our example, both nodes have ID 1)
-     * “machine_id” - this represents the identifier of the
+       same id (in our example, both nodes have ID 1). The values
+       must be greater than 0.
+     * “node_id” - this represents the identifier of the
        machine/node, and each instance within a cluster should
-       have a different ID. In our example, Node A will have ID 1,
-       and Node B ID 2
+       have a different ID. The values must be greater than 0. In
+       our example, Node A will have ID 1, and Node B ID 2.
      * “url” - this indicates the URL where the instance will
        receive the replication information. In our example, each
        node will receive the date over the bin protocol
-     * “state” - this is the state of the machine: 1 means on, 0
-       means off, and 2 means it is in probing. Note that if you
-       want the node to be active right away, you have to set it
-       in state 1
-     * “last_attempt”, “failed_attempts” and “no_tries” - are
-       fields used for the probing mechanisms, and should be set
-       to 0 by default. They are automatically updated by the
-       clusterer module if the persistent_mode parameter is set to
-       1
-     * “duration” - is used to specify the period a node stays in
-       the temporary disabled state. In our example, if the node
-       does not respond, it is disabled for 30 seconds before
-       retrying to send data again
+     * “state” - this is the state of the machine: 1 means
+       Enabled, 0 means Disabled; if we had a third machine that
+       we didn't want to use for the moment, we would have set the
+       state to 0
+     * “ls_seq_no” and “top_seq_no” are fields used for the
+       probing and topology discovery mechanisms, and should be
+       set to 0 by default; they are automatically updated by the
+       clusterer module and you shouldn't change them even if a
+       node fails or you disable it
+     * “no_ping_retries” - is used to specify the maximum number
+       of ping retries before the link with a node is considered
+       down
+     * “priority” - is used to specify the node priority to be
+       chosen as next hop in case of same length(number of hops)
+       paths when rerouting messages; it is not relevant for this
+       two-node topology example
+     * “sip_addr” - is a SIP address for the node with currently
+       no application in replication scenarios; reserved for
+       further development of other modules which might use the
+       clusterer module for communication
      * “description” - is an opaque value used to identify the
        node
 
@@ -427,7 +518,7 @@ empt | failed_attempts | no_tries | duration | description |
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.16. Node A configuration
+   Example 1.21. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -435,21 +526,18 @@ loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
-modparam("clusterer", "server_id", 1) # machine_id for Node A
+modparam("clusterer", "current_id", 1) # node_id for Node A
 
 loadmodule "ratelimit.so"
 # replicate pipes to cluster id 1
 modparam("ratelimit", "replicate_pipes_to", 1)
 # accept replicated data from nodes within cluster 1
 modparam("ratelimit", "accept_pipes_from", 1)
-# if a node does not reply in a 5 seconds interval,
-#the information from that node is invalidated
-modparam("ratelimit", "accept_pipes_timeout", 5)
 ...
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.17. Node B configuration
+   Example 1.22. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 
@@ -458,19 +546,16 @@ loadmodule "proto_bin.so"
 loadmodule "clusterer.so"
 # ideally, use the same database for both nodes
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
-modparam("clusterer", "server_id", 2) # machine_id for Node B
+modparam("clusterer", "current_id", 2) # node_id for Node B
 
 loadmodule "ratelimit.so"
 # replicate pipes to cluster id 1
 modparam("ratelimit", "replicate_pipes_to", 1)
 # accept replicated data from nodes within cluster 1
 modparam("ratelimit", "accept_pipes_from", 1)
-# if a node does not reply in a 5 seconds interval,
-# the information from that node is invalidated
-modparam("ratelimit", "accept_pipes_timeout", 5)
 ...
 
-   Note that the server_id parameter for Node B is 2. Starting the
+   Note that the node_id parameter for Node B is 2. Starting the
    two OpenSIPS instances with the above configurations provides
    your platform the ability to used shared ratelimit pipes in a
    very efficient and scalable way.
@@ -479,125 +564,153 @@ Chapter 2. Developer Guide
 
 2.1. Available Functions
 
-2.1.1.  get_nodes(cluster_id, proto)
+2.1.1.  get_nodes(cluster_id)
 
-   The function will return all a copy of all the needed
-   information from the nodes (machine_id, state, description,
-   sock address) stored in shm, whos state is up(1) and have a
-   certain cluster_id and protocol.
+   This function will return a list of all the reachable nodes(if
+   the direct link is down/probing, a path through intermediary
+   nodes is considered) in the specified cluster.
 
-   This function is usually used for replication purposes.
-
-   This function returns NULL on error.
+   The returned nodes structure:
+...
+typedef struct clusterer_node {
+    int node_id;
+    union sockaddr_union addr;
+    str sip_addr;
+    str description;
+    struct clusterer_node *next;
+} clusterer_node_t;
+...
 
    Meaning of the parameters is as follows:
      * int cluster_id - the cluster id
-     * int proto - the protocol
 
-   Example 2.1. get_nodes usage
-...
-get_nodes(cluster_id, proto);
-...
+2.1.2.  free_nodes(list)
 
-2.1.2.  free_nodes(nodes)
-
-   This function will free the allocated data for the copy.
+   This function will free the lits of nodes returned by
+   get_nodes.
 
    Meaning of the parameters is as follows:
-     * clusterer_node_t *nodes - the data returned by the
-       get_nodes function
+     * clusterer_node_t *list - list header
 
-   Example 2.2. free_nodes usage
-...
-free_nodes(nodes);
-...
+2.1.3.  set_state(cluster_id, state)
 
-2.1.3.  set_state(cluster_id, machine_id, state, proto)
-
-   The function sets the state of a machine belonging to a certain
-   cluster, which have the specified protocol.
-
-   This function is usually used for replication purposes.
+   This function sets the state(enabled/disabled) of the current
+   node in the specified cluster.
 
    Meaning of the parameters is as follows:
-     * int cluster_id - cluster_id
-     * int machine_id - machine_id
-     * int state - the server state
-     * int proto - protocol
+     * int cluster_id - the cluster id
+     * enum cl_node_state state - the new state; possible values:
+          + STATE_DISABLED
+          + STATE_ENABLED
 
-   Example 2.3. set_state usage
-...
-set_state(1,1,2,PROTO_BIN);
-...
+2.1.4.  check_addr(cluster_id, su)
 
-2.1.4.  check(cluster_id, sockaddr, server_id, proto)
-
-   This function is used to check if the source of a receiving
-   packet is known.
-
-   It returns 1 if the source is known, else it returns 0.
+   This function checks if a given address belongs to one of the
+   nodes in the cluster.
 
    Meaning of the parameters is as follows:
-     * int cluster_id - cluster id
-     * union sockaddr_union* sockaddr - incoming connexion socket
-       address
-     * int server_id - incoming connexion server_id
-     * int proto - protocol
-
-   Example 2.4. check usage
-...
-check(1, sockaddr, 2, PROTO_BIN)
-...
+     * int cluster_id - the cluster id
+     * union sockaddr_union* su - socket address
 
 2.1.5.  get_my_id()
 
-   This function will return the server id's.
+   This function will return the id of the current node.
 
-   Example 2.5. get_my_id usage
-...
-get_my_id()
-...
+2.1.6.  send_to(packet, cluster_id, node_id)
 
-2.1.6.  send_to(cluster_id, protocol)
-
-   This function will replicate information to the nodes belonging
-   to a cluster_id that have a specific protocol.
+   This functon will send the given BIN packet to the specified
+   node in the cluster. If the direct link is down/probing, it
+   will send the packet to an intermediary node if the destination
+   node is reachable through another path in the cluster topology.
 
    Meaning of the parameters is as follows:
-     * int cluster_id - cluster_id
-     * int protocol - protocol
+     * bin_packet_t packet - the packet to be sent
+     * int cluster_id - the cluster id
+     * int node_id - the id of the destination node
 
-   Example 2.6. send_to usage
-...
-send_to(cluster_id, protocol)
-...
+   The function returns one of the following:
+     * CLUSTERER_SEND_SUCCES - successfuly sent packet to
+       destination node or a valid next hop
+     * CLUSTERER_CURR_DISABLED - current node is disabled so
+       sending is impossbile
+     * CLUSTERER_DEST_DOWN - destination node is not reachable
+       through any path according to the discovered topology
+     * CLUSTERER_SEND_ERR - destination node or valid next hop
+       appear to be reachable but send failed
 
-2.1.7.  register_module(module_name, protocol, callback_function,
-timeout, auth_check, cluster_id)
+2.1.7.  send_all(packet, cluster_id)
 
-   This function registers a module to a certain protocol. It acts
-   like an intermediary: when a valid packet has arrived, if the
-   auth_check parameter is specified then it is checked for
-   authenticity. After that, the timestamps are updated and the
-   callback function from the registered module is called. The
-   clusterer module checks for every registered module if the
-   duration between the last receiving packet and the current time
-   is greater than the module specified timeout. If it is, the
-   servers are temporary disabled for a period of timestamp * 2.
-   If any packets are received for the temporary disabled servers
-   the registered module is notified.
+   Send the given BIN packet to all the nodes in the specified
+   cluster. The function operates similarly to send_to.
 
    Meaning of the parameters is as follows:
-     * char *module_name - module name
-     * int protocol - protocol
-     * void (*callback_function)(int, struct receive_info *, int)
-       - the registered module callback function
-     * int timeout - timeput
-     * int auth_check - 0 if the authentication check is disabled,
-       1 if the authentication check is enabled
-     * int cluster_id - cluster_id
+     * bin_packet_t packet - the packet to be sent
+     * int cluster_id - the cluster id
 
-   Example 2.7. register_module usage
+   The function returns one of the following:
+     * CLUSTERER_SEND_SUCCES - successfuly sent packet to at least
+       one node
+     * CLUSTERER_CURR_DISABLED - current node is disabled so
+       sending is impossbile
+     * CLUSTERER_DEST_DOWN - all nodes in the cluster are
+       unreachable according to the discovered topology
+     * CLUSTERER_SEND_ERR - send failed for all nodes in the
+       cluster
+
+2.1.8.  get_next_hop(cluster_id, node_id)
+
+   This function returns the next hop from the computed shortest
+   path to the given destination node in the specified cluster.
+   This is the node that is the actual destination for the send_to
+   and send_all functions when the direct link with the intended
+   destination is down. The function returns the same structure as
+   get_nodes.
+
+   Meaning of the parameters is as follows:
+     * int cluster_id - the cluster id
+     * int node_id - the node id of the destination for which the
+       next hop is returned.
+
+2.1.9.  free_next_hop(next_hop)
+
+   This function will free the next hop returned by get_next_hop.
+
+   Meaning of the parameters is as follows:
+     * clusterer_node_t *next_hop - next hop to be freed
+
+2.1.10.  register_module(mod_name, cb, auth_check,
+accept_clusters_ids, no_accept_clusters)
+
+   This function registers an OpenSIPS module in order to receive
+   BIN packets and cluster notifications. A certain module can
+   accept packets from multiple clusters and provides a single
+   callback function that will be called for each received packet.
+   This function will also be called to notify cluster events like
+   nodes becoming reachable/unreachable.
+
+   Meaning of the parameters is as follows:
+     * char *mod_name - module name
+     * clusterer_cb_f cb - callback function
+     * int auth_check - 0 - no check, 1 - for every BIN packet
+       received check if source IP belongs to one of the nodes in
+       the cluster
+     * int* accept_clusters_ids - array of cluster ids from which
+       packets are accepted
+     * int no_accept_clusters - length of accept_clusters_ids
+       array
+
+   The callback function prototype:
 ...
-register_module(dialog, PROTO_BIN, cb, timeout, auth_check, cluster_id)
+typedef void (*clusterer_cb_f)(enum clusterer_event ev,bin_packet_t *, i
+nt packet_type,
+                struct receive_info *ri, int cluster_id, int src_id, int
+ dest_id);
 ...
+
+   Possble values for the event signaled through ev parameter of
+   the callback funtion:
+     * CLUSTER_RECV_MSG - received BIN message
+     * CLUSTER_ROUTE_FAILED - failed to route a received BIN
+       packet destined for another node in the cluster
+     * CLUSTER_NODE_UP - a node became reachable
+     * CLUSTER_NODE_DOWN - a node became unreachable

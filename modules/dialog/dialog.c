@@ -118,13 +118,12 @@ static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 /* cachedb stuff */
 str cdb_url = {0,0};
 
-/* dialog replication using the bpi interface */
+/* dialog replication using clusterer */
 int accept_replicated_dlg=0;
 int dialog_replicate_cluster = 0;
 int profile_replicate_cluster = 0;
 int accept_repl_profiles=0;
-int accept_replicated_profile_timeout = 10;
-int repl_prof_auth_check = 0;
+int replication_auth_check = 0;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -270,22 +269,21 @@ static param_export_t mod_params[]={
 	{ "db_flush_vals_profiles",INT_PARAM, &db_flush_vp              },
 	{ "timer_bulk_del_no",     INT_PARAM, &dlg_bulk_del_no          },
 	/* distributed profiles stuff */
-	{ "cachedb_url",           STR_PARAM, &cdb_url.s                },
+	{ "cachedb_url",           	 STR_PARAM, &cdb_url.s              },
 	{ "profile_value_prefix",    STR_PARAM, &cdb_val_prefix.s       },
 	{ "profile_no_value_prefix", STR_PARAM, &cdb_noval_prefix.s     },
 	{ "profile_size_prefix",     STR_PARAM, &cdb_size_prefix.s      },
 	{ "profile_timeout",         INT_PARAM, &profile_timeout        },
-	/* dialog replication through UDP binary packets */
+	/* dialog replication through clusterer using TCP binary packets */
 	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
-	{ "replicate_dialogs_to",     INT_PARAM, &dialog_replicate_cluster       },
+	{ "replicate_dialogs_to",     INT_PARAM, &dialog_replicate_cluster},
 	{ "accept_replicated_profiles",INT_PARAM, &accept_repl_profiles },
 	{ "replicate_profiles_timer", INT_PARAM, &repl_prof_utimer      },
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
-	{ "replicate_profiles_to", INT_PARAM,	&profile_replicate_cluster            },
-	{ "accept_replicated_profile_timeout", INT_PARAM, &accept_replicated_profile_timeout},
-	{ "auth_check", INT_PARAM, &repl_prof_auth_check},
+	{ "replicate_profiles_to", INT_PARAM,	&profile_replicate_cluster},
+	{ "replication_auth_check", INT_PARAM, &replication_auth_check},
 	{ 0,0,0 }
 };
 
@@ -735,6 +733,8 @@ static void ctx_dlg_idx_destroy(void *v)
 static int mod_init(void)
 {
 	unsigned int n;
+	int accept_clusters_ids[MAX_MOD_REG_CLUSTERS];
+	int no_accept_clusters = 0;
 
 	LM_INFO("Dialog module - initializing\n");
 
@@ -876,45 +876,58 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if( accept_replicated_dlg < 0 )
-		accept_replicated_dlg = 0;
-	
-	if( accept_repl_profiles < 0 )
-		accept_repl_profiles = 0;
-	
-	if (accept_replicated_dlg &&
-		bin_register_cb("dialog", receive_dlg_binary_packet, NULL) < 0) {
-		LM_ERR("Cannot register binary packet callback!\n");
+	/* check params and register to clusterer for dialogs and profiles replication */
+	if (accept_replicated_dlg < 0) {
+		LM_ERR("Invalid value for accept_replicated_dlg, must be 0 or "
+			"a positive cluster id\n");
 		return -1;
 	}
-	
-	
-	if ( (dialog_replicate_cluster > 0 || profile_replicate_cluster>0 ||
-		accept_replicated_dlg || accept_repl_profiles ) 
-		&& load_clusterer_api(&clusterer_api) != 0 ){
-		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+	if (accept_repl_profiles < 0) {
+		LM_ERR("Invalid value for accept_repl_profiles, must be 0 or "
+			"a positive cluster id\n");
 		return -1;
 	}
-	
-	if (repl_prof_auth_check < 0)
-		repl_prof_auth_check = 0;
-	
-	if (accept_replicated_profile_timeout <= 0)
-		accept_replicated_profile_timeout = 10;
-	
-	if(accept_repl_profiles && clusterer_api.register_module("dialog", PROTO_BIN, receive_prof_binary_packet,
-			accept_replicated_profile_timeout, repl_prof_auth_check, accept_repl_profiles) < 0){
-		LM_ERR("Cannot register binary packet callback!\n");
+	if (dialog_replicate_cluster < 0) {
+		LM_ERR("Invalid dialog_replicate_cluster, must be 0 or "
+			"a positive cluster id\n");
 		return -1;
 	}
-	
-	
-	if( dialog_replicate_cluster < 0 )
-		dialog_replicate_cluster = 0;
-	
-	if( profile_replicate_cluster < 0 )
-		profile_replicate_cluster = 0;
-	
+	if (profile_replicate_cluster < 0) {
+		LM_ERR("Invalid profile_replicate_cluster, must be 0 or "
+			"a positive cluster id\n");
+		return -1;
+	}
+
+	if ((dialog_replicate_cluster || profile_replicate_cluster ||
+		accept_replicated_dlg || accept_repl_profiles) &&
+		(load_clusterer_api(&clusterer_api) < 0)) {
+		LM_DBG("failed to load clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
+
+	if (accept_replicated_dlg) {
+		no_accept_clusters++;
+		accept_clusters_ids[0] = accept_replicated_dlg;
+	}
+	if (accept_repl_profiles) {
+		no_accept_clusters++;
+		accept_clusters_ids[1] = accept_repl_profiles;
+	}
+
+	if (no_accept_clusters && accept_replicated_dlg == accept_repl_profiles)
+		no_accept_clusters = 1;
+
+	if (replication_auth_check < 0) {
+		LM_ERR("Invalid value for replication_auth_check, must be 0 or 1\n");
+		return -1;	
+	}
+
+	if (no_accept_clusters && clusterer_api.register_module("dialog", receive_repl_packets,
+		replication_auth_check, accept_clusters_ids, no_accept_clusters) < 0) {
+		LM_ERR("Cannot register clusterer callback!\n");
+		return -1;
+	}
+
 	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,
 	TIMER_FLAG_DELAY_ON_DELAY)<0 ) {
 		LM_ERR("failed to register timer\n");

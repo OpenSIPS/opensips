@@ -27,9 +27,16 @@
 		</otheraddr>
 		</address>
 		</author>
+		<editor>
+		<firstname>Robert-Vladut</firstname>
+		<surname>Patrascu</surname>
+		<address>
+			<email>vladp@opensips.org</email>
+		</address>
+		</editor>
 	</authorgroup>
 	<copyright>
-		<year>2015</year>
+		<year>2015 - 2017</year>
 		<holder>&osipssol;</holder>
 	</copyright>
 	</bookinfo>

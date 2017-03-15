@@ -30,6 +30,7 @@
 typedef struct rw_lock_t {
 	gen_lock_t *lock;
 	int w_flag;
+	int sw_flag;
 	int r_count;
 } rw_lock_t;
 
@@ -110,6 +111,50 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 	do { \
 		lock_get((_lock)->lock); \
 		(_lock)->r_count--; \
+		lock_release((_lock)->lock); \
+	} while (0)
+
+#define lock_start_sw_read(_lock) \
+	do { \
+		__label__ again; \
+		again: \
+			lock_get((_lock)->lock); \
+			if ((_lock)->w_flag || (_lock)->sw_flag) { \
+				lock_release((_lock)->lock); \
+				usleep(LOCK_WAIT); \
+				goto again; \
+			} \
+			(_lock)->r_count++; \
+			(_lock)->sw_flag = 1; \
+			lock_release((_lock)->lock); \
+	} while (0)
+
+#define lock_stop_sw_read(_lock) \
+	do { \
+		lock_get((_lock)->lock); \
+		(_lock)->r_count--; \
+		lock_release((_lock)->lock); \
+		(_lock)->sw_flag = 0; \
+	} while (0)
+
+/* switch to writing access with lock previously acquired for switchable reading
+ * note: switching back to reading is required before releasing the lock
+ */
+#define lock_switch_write(_lock, __old) \
+	do { \
+		lock_get((_lock)->lock); \
+		__old = (_lock)->w_flag; \
+		(_lock)->w_flag = 1; \
+		lock_release((_lock)->lock); \
+		while ((_lock)->r_count > 1) \
+			usleep(LOCK_WAIT); \
+	} while (0)
+
+/* switch back to reading access if previously switched to writing */
+#define lock_switch_read(_lock, __old) \
+	do { \
+		lock_get((_lock)->lock); \
+		(_lock)->w_flag = __old; \
 		lock_release((_lock)->lock); \
 	} while (0)
 

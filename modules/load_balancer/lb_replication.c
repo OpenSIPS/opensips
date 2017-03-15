@@ -28,36 +28,51 @@
 str repl_lb_module_name = str_init("load_balancer");
 struct clusterer_binds clusterer_api;
 
-int accept_replicated_status = 1;
+int accept_replicated_status = 0;
 int replicated_status_cluster = 0;
 
 
 void replicate_lb_status(struct lb_dst *dst)
 {
-	if (bin_init(&repl_lb_module_name, REPL_LB_STATUS_UPDATE, BIN_VERSION)!=0){
+	bin_packet_t packet;
+	int rc;
+
+	if (bin_init(&packet, &repl_lb_module_name, REPL_LB_STATUS_UPDATE, BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
-	bin_push_int(dst->group);
-	bin_push_str(&dst->uri);
-	bin_push_int(dst->flags&LB_DST_STAT_MASK);
+	bin_push_int(&packet, clusterer_api.get_my_id());
+	bin_push_int(&packet, dst->group);
+	bin_push_str(&packet, &dst->uri);
+	bin_push_int(&packet, dst->flags&LB_DST_STAT_MASK);
 
-	if (clusterer_api.send_to(replicated_status_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate lb_status send failed\n");
+	rc = clusterer_api.send_all(&packet, replicated_status_cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", replicated_status_cluster);
+		break;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			replicated_status_cluster);
+		break;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", replicated_status_cluster);
+		break;
 	}
+
+	bin_free_packet(&packet);
 }
 
 
-int replicate_lb_status_update(struct lb_data *data)
+int replicate_lb_status_update(bin_packet_t *packet, struct lb_data *data)
 {
 	struct lb_dst *dst;
 	unsigned int group, flags;
 	str uri;
-	bin_pop_int(&group);
-	bin_pop_str(&uri);
-	bin_pop_int(&flags);
+	bin_pop_int(packet, &group);
+	bin_pop_str(packet, &uri);
+	bin_pop_int(packet, &flags);
 
 	for( dst=data->dsts; dst; dst=dst->next ) {
 		if ( (dst->group == group) &&

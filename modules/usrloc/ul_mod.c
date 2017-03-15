@@ -138,6 +138,7 @@ unsigned int init_flag = 0;
 /* usrloc data replication using the bin interface */
 int accept_replicated_udata = 0;
 int ul_replicate_cluster = 0;
+int ul_repl_auth_check = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -183,9 +184,10 @@ static param_export_t params[] = {
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
 	{"nat_bflag",          INT_PARAM, &nat_bflag         },
-    /* data replication through UDP binary packets */
+    /* data replication through clusterer using TCP binary packets */
 	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
 	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
+	{ "repl_auth_check",		INT_PARAM, &ul_repl_auth_check	   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
@@ -388,7 +390,11 @@ static int mod_init(void)
 		return -1;
 	}
 
-
+	if (ul_replicate_cluster < 0) {
+		LM_ERR("Invalid ul_replicate_cluster, must be 0 or "
+			"a positive cluster id\n");
+		return -1;
+	}
 
 	if( (ul_replicate_cluster > 0 || accept_replicated_udata > 0)
 		&& load_clusterer_api(&clusterer_api)!=0){
@@ -396,16 +402,16 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* register handler for processing usrloc packets from the bin interface */
-	if (accept_replicated_udata > 0 &&
-			bin_register_cb(repl_module_name.s, receive_binary_packet, NULL) < 0) {
-		LM_ERR("cannot register binary packet callback!\n");
-		return -1;
+	if (ul_repl_auth_check < 0) {
+		LM_ERR("Invalid value for ul_repl_auth_check, must be 0 or 1\n");
+		return -1;	
 	}
 
-
-	if(ul_replicate_cluster < 0){
-		ul_replicate_cluster = 0;
+	/* register handler for processing usrloc packets to the clusterer module */
+	if (accept_replicated_udata > 0 && clusterer_api.register_module(repl_module_name.s,
+		receive_binary_packet, ul_repl_auth_check, &accept_replicated_udata, 1) < 0) {
+		LM_ERR("cannot register binary packet callback to clusterer module!\n");
+		return -1;
 	}
 
 	init_flag = 1;

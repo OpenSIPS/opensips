@@ -38,142 +38,221 @@ struct clusterer_binds clusterer_api;
 
 void replicate_urecord_insert(urecord_t *r)
 {
-	if (bin_init(&repl_module_name, REPL_URECORD_INSERT, BIN_VERSION) != 0) {
+	int rc;
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &repl_module_name, REPL_URECORD_INSERT, BIN_VERSION, 1024) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
+	bin_push_str(&packet, r->domain);
+	bin_push_str(&packet, &r->aor);
 
-	bin_push_str(r->domain);
-	bin_push_str(&r->aor);
-
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate urecord insert failed\n");
+	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
+
+ 	bin_free_packet(&packet);
+ 	return;
+
+error:
+	LM_ERR("replicate urecord insert failed\n");
+	bin_free_packet(&packet);
 }
 
 void replicate_urecord_delete(urecord_t *r)
 {
+	int rc;
+	bin_packet_t packet;
 
-	if (bin_init(&repl_module_name, REPL_URECORD_DELETE, BIN_VERSION) != 0) {
+	if (bin_init(&packet, &repl_module_name, REPL_URECORD_DELETE, BIN_VERSION, 1024) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
-	bin_push_str(r->domain);
-	bin_push_str(&r->aor);
+	bin_push_str(&packet, r->domain);
+	bin_push_str(&packet, &r->aor);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate urecord delete failed\n");
- 	}	
+	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	}
+ 	bin_free_packet(&packet);
+ 	return;
+
+error:
+	LM_ERR("replicate urecord delete failed\n");	
+	bin_free_packet(&packet);
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
 	str st;
+	int rc;
+	bin_packet_t packet;
 
-	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION) != 0) {
+	if (bin_init(&packet, &repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
-	bin_push_int(clusterer_api.get_my_id());
 
-	bin_push_str(r->domain);
-	bin_push_str(&r->aor);
-	bin_push_str(contact);
-	bin_push_str(ci->callid);
-	bin_push_str(ci->user_agent);
-	bin_push_str(ci->path);
-	bin_push_str(ci->attr);
-	bin_push_str(&ci->received);
-	bin_push_str(&ci->instance);
+	bin_push_str(&packet, r->domain);
+	bin_push_str(&packet, &r->aor);
+	bin_push_str(&packet, contact);
+	bin_push_str(&packet, ci->callid);
+	bin_push_str(&packet, ci->user_agent);
+	bin_push_str(&packet, ci->path);
+	bin_push_str(&packet, ci->attr);
+	bin_push_str(&packet, &ci->received);
+	bin_push_str(&packet, &ci->instance);
 
 	st.s = (char *) &ci->expires;
 	st.len = sizeof ci->expires;
-	bin_push_str(&st);
+	bin_push_str(&packet, &st);
 
 	st.s = (char *) &ci->q;
 	st.len = sizeof ci->q;
-	bin_push_str(&st);
+	bin_push_str(&packet, &st);
 
-	bin_push_str(&ci->sock->sock_str);
-	bin_push_int(ci->cseq);
-	bin_push_int(ci->flags);
-	bin_push_int(ci->cflags);
-	bin_push_int(ci->methods);
+	bin_push_str(&packet, &ci->sock->sock_str);
+	bin_push_int(&packet, ci->cseq);
+	bin_push_int(&packet, ci->flags);
+	bin_push_int(&packet, ci->cflags);
+	bin_push_int(&packet, ci->methods);
 
 	st.s   = (char *)&ci->last_modified;
 	st.len = sizeof ci->last_modified;
-	bin_push_str(&st);
+	bin_push_str(&packet, &st);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact insert failed\n");
+	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
-
+ 
+ 	bin_free_packet(&packet);
+ 	return;
+error:
+	LM_ERR("replicate ucontact insert failed\n");
 }
 
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 {
 	str st;
+	int rc;
+	bin_packet_t packet;
 
-	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION) != 0) {
+	if (bin_init(&packet, &repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_int(clusterer_api.get_my_id());
-	bin_push_str(r->domain);
-	bin_push_str(&r->aor);
-	bin_push_str(contact);
-	bin_push_str(ci->callid);
-	bin_push_str(ci->user_agent);
-	bin_push_str(ci->path);
-	bin_push_str(ci->attr);
-	bin_push_str(&ci->received);
-	bin_push_str(&ci->instance);
+	bin_push_str(&packet, r->domain);
+	bin_push_str(&packet, &r->aor);
+	bin_push_str(&packet, contact);
+	bin_push_str(&packet, ci->callid);
+	bin_push_str(&packet, ci->user_agent);
+	bin_push_str(&packet, ci->path);
+	bin_push_str(&packet, ci->attr);
+	bin_push_str(&packet, &ci->received);
+	bin_push_str(&packet, &ci->instance);
 
 	st.s = (char *) &ci->expires;
 	st.len = sizeof ci->expires;
-	bin_push_str(&st);
+	bin_push_str(&packet, &st);
 
 	st.s = (char *) &ci->q;
 	st.len = sizeof ci->q;
-	bin_push_str(&st);
+	bin_push_str(&packet, &st);
 
-	bin_push_str(&ci->sock->sock_str);
-	bin_push_int(ci->cseq);
-	bin_push_int(ci->flags);
-	bin_push_int(ci->cflags);
-	bin_push_int(ci->methods);
+	bin_push_str(&packet, &ci->sock->sock_str);
+	bin_push_int(&packet, ci->cseq);
+	bin_push_int(&packet, ci->flags);
+	bin_push_int(&packet, ci->cflags);
+	bin_push_int(&packet, ci->methods);
 
 	st.s   = (char *)&ci->last_modified;
 	st.len = sizeof ci->last_modified;
-	bin_push_str(&st);
+	bin_push_str(&packet, &st);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact delete failed\n");
+	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
+
+error:
+	LM_ERR("replicate ucontact delete failed\n");
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 {
-	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION) != 0) {
+	int rc;
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
-	
-	bin_push_int(clusterer_api.get_my_id());
-	bin_push_str(r->domain);
-	bin_push_str(&r->aor);
-	bin_push_str(&c->c);
-	bin_push_str(&c->callid);
-	bin_push_int(c->cseq);
 
-	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact delete failed\n");
+	bin_push_str(&packet, r->domain);
+	bin_push_str(&packet, &r->aor);
+	bin_push_str(&packet, &c->c);
+	bin_push_str(&packet, &c->callid);
+	bin_push_int(&packet, c->cseq);
+
+	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
+ 	switch (rc) {
+ 	case CLUSTERER_CURR_DISABLED:
+ 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_DEST_DOWN:
+ 		LM_INFO("All destinations in cluster: %d are down or probing\n",
+ 			ul_replicate_cluster);
+ 		goto error;
+ 	case CLUSTERER_SEND_ERR:
+ 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+ 		goto error;
  	}
+
+error:
+	LM_ERR("replicate ucontact delete failed\n");
 }
 
 /* packet receiving */
@@ -181,14 +260,14 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 /**
  * Note: prevents the creation of any duplicate AoR
  */
-static int receive_urecord_insert(void)
+static int receive_urecord_insert(bin_packet_t *packet)
 {
 	str d, aor;
 	urecord_t *r;
 	udomain_t *domain;
 
-	bin_pop_str(&d);
-	bin_pop_str(&aor);
+	bin_pop_str(packet, &d);
+	bin_pop_str(packet, &aor);
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -216,13 +295,13 @@ out_err:
 	return -1;
 }
 
-static int receive_urecord_delete(void)
+static int receive_urecord_delete(bin_packet_t *packet)
 {
 	str d, aor;
 	udomain_t *domain;
 
-	bin_pop_str(&d);
-	bin_pop_str(&aor);
+	bin_pop_str(packet, &d);
+	bin_pop_str(packet, &aor);
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -246,7 +325,7 @@ out_err:
 	return -1;
 }
 
-static int receive_ucontact_insert(void)
+static int receive_ucontact_insert(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
@@ -256,38 +335,38 @@ static int receive_ucontact_insert(void)
 	ucontact_t *contact;
 	int port, proto;
 
-	bin_pop_str(&d);
-	bin_pop_str(&aor);
+	bin_pop_str(packet, &d);
+	bin_pop_str(packet, &aor);
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
 		goto error;
 	}
 
-	bin_pop_str(&contact_str);
+	bin_pop_str(packet, &contact_str);
 
-	bin_pop_str(&callid);
+	bin_pop_str(packet, &callid);
 	ci.callid = &callid;
 
-	bin_pop_str(&user_agent);
+	bin_pop_str(packet, &user_agent);
 	ci.user_agent = &user_agent;
 
-	bin_pop_str(&path);
+	bin_pop_str(packet, &path);
 	ci.path = &path;
 
-	bin_pop_str(&attr);
+	bin_pop_str(packet, &attr);
 	ci.attr = &attr;
 
-	bin_pop_str(&ci.received);
-	bin_pop_str(&ci.instance);
+	bin_pop_str(packet, &ci.received);
+	bin_pop_str(packet, &ci.instance);
 
-	bin_pop_str(&st);
+	bin_pop_str(packet, &st);
 	memcpy(&ci.expires, st.s, sizeof ci.expires);
 
-	bin_pop_str(&st);
+	bin_pop_str(packet, &st);
 	memcpy(&ci.q, st.s, sizeof ci.q);
 
-	bin_pop_str(&sock);
+	bin_pop_str(packet, &sock);
 
 	if (!sock.s || sock.s[0] == 0) {
 		LM_ERR("bad received socket: '%.*s'\n", sock.len, sock.s);
@@ -304,12 +383,12 @@ static int receive_ucontact_insert(void)
 	if (!ci.sock)
 		LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 
-	bin_pop_int(&ci.cseq);
-	bin_pop_int(&ci.flags);
-	bin_pop_int(&ci.cflags);
-	bin_pop_int(&ci.methods);
+	bin_pop_int(packet, &ci.cseq);
+	bin_pop_int(packet, &ci.flags);
+	bin_pop_int(packet, &ci.cflags);
+	bin_pop_int(packet, &ci.methods);
 
-	bin_pop_str(&st);
+	bin_pop_str(packet, &st);
 	memcpy(&ci.last_modified, st.s, sizeof ci.last_modified);
 
 	if (skip_replicated_db_ops)
@@ -344,7 +423,7 @@ error:
 	return -1;
 }
 
-static int receive_ucontact_update(void)
+static int receive_ucontact_update(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
@@ -355,38 +434,38 @@ static int receive_ucontact_update(void)
 	int port, proto;
 	int rc;
 
-	bin_pop_str(&d);
-	bin_pop_str(&aor);
+	bin_pop_str(packet, &d);
+	bin_pop_str(packet, &aor);
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
 		goto error;
 	}
 
-	bin_pop_str(&contact_str);
+	bin_pop_str(packet, &contact_str);
 
-	bin_pop_str(&callid);
+	bin_pop_str(packet, &callid);
 	ci.callid = &callid;
 
-	bin_pop_str(&user_agent);
+	bin_pop_str(packet, &user_agent);
 	ci.user_agent = &user_agent;
 
-	bin_pop_str(&path);
+	bin_pop_str(packet, &path);
 	ci.path = &path;
 
-	bin_pop_str(&attr);
+	bin_pop_str(packet, &attr);
 	ci.attr = &attr;
 
-	bin_pop_str(&ci.received);
-	bin_pop_str(&ci.instance);
+	bin_pop_str(packet, &ci.received);
+	bin_pop_str(packet, &ci.instance);
 
-	bin_pop_str(&st);
+	bin_pop_str(packet, &st);
 	memcpy(&ci.expires, st.s, sizeof ci.expires);
 
-	bin_pop_str(&st);
+	bin_pop_str(packet, &st);
 	memcpy(&ci.q, st.s, sizeof ci.q);
 
-	bin_pop_str(&sock);
+	bin_pop_str(packet, &sock);
 
 	if (!sock.s || sock.s[0] == 0) {
 		LM_ERR("bad received socket: '%.*s'\n", sock.len, sock.s);
@@ -403,12 +482,12 @@ static int receive_ucontact_update(void)
 	if (!ci.sock)
 		LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 
-	bin_pop_int(&ci.cseq);
-	bin_pop_int(&ci.flags);
-	bin_pop_int(&ci.cflags);
-	bin_pop_int(&ci.methods);
+	bin_pop_int(packet, &ci.cseq);
+	bin_pop_int(packet, &ci.flags);
+	bin_pop_int(packet, &ci.cflags);
+	bin_pop_int(packet, &ci.methods);
 
-	bin_pop_str(&st);
+	bin_pop_str(packet, &st);
 	memcpy(&ci.last_modified, st.s, sizeof ci.last_modified);
 
 	if (skip_replicated_db_ops)
@@ -466,7 +545,7 @@ error:
 	return -1;
 }
 
-static int receive_ucontact_delete(void)
+static int receive_ucontact_delete(bin_packet_t *packet)
 {
 	udomain_t *domain;
 	urecord_t *record;
@@ -474,11 +553,11 @@ static int receive_ucontact_delete(void)
 	str d, aor, contact_str, callid;
 	int cseq, rc;
 
-	bin_pop_str(&d);
-	bin_pop_str(&aor);
-	bin_pop_str(&contact_str);
-	bin_pop_str(&callid);
-	bin_pop_int(&cseq);
+	bin_pop_str(packet, &d);
+	bin_pop_str(packet,&aor);
+	bin_pop_str(packet,&contact_str);
+	bin_pop_str(packet,&callid);
+	bin_pop_int(packet,&cseq);
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -526,50 +605,40 @@ error:
 	return -1;
 }
 
-void receive_binary_packet(int packet_type, struct receive_info *ri, void *att)
+void receive_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
+				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
 	int rc;
-	int server_id;
-	char *ip;
-	unsigned short port;
+
+	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
+		return;
+	else if (ev == CLUSTER_ROUTE_FAILED) {
+		LM_INFO("Failed to route replication packet of type %d from node id: %d "
+			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
+		return;
+	}
 
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
 
-	if(get_bin_pkg_version() != BIN_VERSION){
-		LM_ERR("incompatible bin protocol version\n");
-		return;
-	}
-	
-	rc = bin_pop_int(&server_id);
-	if (rc < 0)
-		return;
-	
-	if (!clusterer_api.check(accept_replicated_udata, &ri->src_su, server_id, ri->proto)) {
-			get_su_info(&ri->src_su.s, ip, port);
-			LM_WARN("received bin packet from unknown source: %s:%hu\n",
-				ip, port);
-			return;
-	}
-
 	switch (packet_type) {
 	case REPL_URECORD_INSERT:
-		rc = receive_urecord_insert();
+		rc = receive_urecord_insert(packet);
 		break;
 
 	case REPL_URECORD_DELETE:
-		rc = receive_urecord_delete();
+		rc = receive_urecord_delete(packet);
 		break;
 
 	case REPL_UCONTACT_INSERT:
-		rc = receive_ucontact_insert();
+		rc = receive_ucontact_insert(packet);
 		break;
 
 	case REPL_UCONTACT_UPDATE:
-		rc = receive_ucontact_update();
+		rc = receive_ucontact_update(packet);
 		break;
 
 	case REPL_UCONTACT_DELETE:
-		rc = receive_ucontact_delete();
+		rc = receive_ucontact_delete(packet);
 		break;
 
 	default:

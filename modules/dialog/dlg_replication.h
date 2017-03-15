@@ -48,13 +48,12 @@ void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
 void replicate_dialog_deleted(struct dlg_cell *dlg);
 
-int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe);
-int dlg_replicated_update(void);
-int dlg_replicated_delete(void);
+int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag, str *ttag, int safe);
+int dlg_replicated_update(bin_packet_t *packet);
+int dlg_replicated_delete(bin_packet_t *packet);
 
-void receive_dlg_binary_packet(int packet_type, struct receive_info *ri,void *att);
-
-void receive_prof_binary_packet(int packet_type, struct receive_info *ri, int server_id);
+void receive_repl_packets(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
+				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 

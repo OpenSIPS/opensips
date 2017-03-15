@@ -9,7 +9,7 @@
 
 <table id="clusterer" xmlns:db="http://docbook.org/ns/docbook">
     <name>clusterer</name>
-    <version>1</version>
+    <version>2</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used for defining clusters of OpenSIPS instances.
@@ -19,7 +19,7 @@
     <column id="id">
         <name>id</name>
         <type>int</type>
-        <size>&table_id_len;</size>
+        <size>10</size>
         <autoincrement/>
         <primary/>
         <type db="dbtext">int,auto</type>
@@ -29,15 +29,15 @@
     <column id="cluster_id">
         <name>cluster_id</name>
         <type>int</type>
-        <size>&table_id_len;</size>
+        <size>10</size>
         <description>unique identifier for a cluster</description>
     </column>
 
-    <column id="machine_id">
-        <name>machine_id</name>
+    <column id="node_id">
+        <name>node_id</name>
         <type>int</type>
-        <size>&table_id_len;</size>
-        <description>unique identifier for a machine (a node in a cluster)</description>
+        <size>10</size>
+        <description>unique identifier for a node</description>
     </column>
 
     <column id="url">
@@ -52,40 +52,47 @@
         <type>int</type>
         <size>1</size>
         <default>1</default>
-        <description>state of the  machine 0 - down/ 1 - up / 2 - temporary disable</description>
+        <description>state of the  machine 0 - Enabled, 1 - Disabled</description>
     </column>
 
-    <column id="last_attempt">
-        <name>last_attempt</name>
-        <type>unsigned long</type>
-        <size>64</size>
-        <type db="dbtext">long</type>
-        <default>0</default>
-        <description>last time(UNIX timestamp) when a failed attempt has occurred</description>
-    </column>
-
-    <column id="failed_attempts">
-        <name>failed_attempts</name>
+    <column id="ls_seq_no">
+        <name>ls_seq_no</name>
         <type>int</type>
-        <size>&table_id_len;</size>
+        <size>10</size>
+        <default>0</default>
+        <description>sequence number of the last link state update message sent</description>
+    </column>
+
+    <column id="top_seq_no">
+        <name>top_seq_no</name>
+        <type>int</type>
+        <size>10</size>
+        <default>0</default>
+        <description>sequence number of the last topology update message sent</description>
+    </column>
+
+    <column id="no_ping_retries">
+        <name>no_ping_retries</name>
+        <type>int</type>
+        <size>10</size>
         <default>3</default>
-        <description>maximum number of failed attempts</description>
+        <description>maximum number of ping retries before the link with a node is considered down</description>
     </column>
 
-    <column id="no_tries">
-        <name>no_tries</name>
+    <column id="priority">
+        <name>priority</name>
         <type>int</type>
-        <size>&table_id_len;</size>
-        <default>0</default>
-        <description>number of failed tries before auto-disabling</description>
+        <size>10</size>
+        <default>50</default>
+        <description>priority to be chosen as next hop in case of same length(number of hops) paths</description>
     </column>
 
-    <column id="duration">
-        <name>duration</name>
-        <type>int</type>
-        <size>&table_id_len;</size>
-        <default>30</default>
-        <description>tempory disabled state duration(seconds)</description>
+    <column id="sip_addr">
+        <name>sip_addr</name>
+        <type>string</type>
+        <size>64</size>
+        <null/>
+        <description>SIP address, currently not used by the module</description>
     </column>
 
     <column id="description">
@@ -99,7 +106,7 @@
     <index>
         <name>clusterer_idx</name>
         <colref linkend="cluster_id"/>
-        <colref linkend="machine_id"/>
+        <colref linkend="node_id"/>
         <unique/>
     </index>
     

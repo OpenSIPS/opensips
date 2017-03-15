@@ -117,8 +117,8 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 static void lb_update_max_loads(unsigned int ticks, void *param);
 
-static void receive_lb_binary_packet(int packet_type, struct receive_info *ri,
-																	void *att);
+void receive_lb_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
+				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
 
 
 static cmd_export_t cmds[]={
@@ -561,25 +561,25 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (replicated_status_cluster > 0) {
-		/* status replication is enabled */
-		if (load_clusterer_api(&clusterer_api)!=0){
-			LM_DBG("failed to find clusterer API - is clusterer "
-				"module loaded?\n");
-			return -1;
-		}
-		/* do we also accept replication data ? */
-		if (accept_replicated_status > 0) {
-			if (bin_register_cb( repl_lb_module_name.s,
-			receive_lb_binary_packet, NULL) < 0) {
-				LM_ERR("cannot register replication callback!\n");
-				return -1;
-			}
-		}
-	} else
-	if(replicated_status_cluster < 0){
-		replicated_status_cluster = 0;
+	if (replicated_status_cluster < 0) {
+		LM_ERR("Invalid replicated_status_cluster, must be 0 or "
+			"a positive cluster id\n");
+		return -1;
 	}
+
+	if( (replicated_status_cluster > 0 || accept_replicated_status > 0)
+		&& load_clusterer_api(&clusterer_api)!=0) {
+		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
+
+	/* register handler for processing load_balancer replication packets to the clusterer module */
+	if (accept_replicated_status > 0 && clusterer_api.register_module(repl_lb_module_name.s,
+		receive_lb_binary_packet, 1, &accept_replicated_status, 1) < 0) {
+		LM_ERR("cannot register binary packet callback to clusterer module!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1293,36 +1293,27 @@ error:
 }
 
 
-static void receive_lb_binary_packet(int packet_type, struct receive_info *ri,
-																	void *att)
+void receive_lb_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
+				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
-	int server_id;
-	char *ip;
-	unsigned short port;
-
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
 
-	if(get_bin_pkg_version() != BIN_VERSION) {
+	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
+		return;
+	else if (ev == CLUSTER_ROUTE_FAILED) {
+		LM_INFO("Failed to route replication packet of type %d from node id: %d "
+			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
+		return;
+	}
+
+	if(get_bin_pkg_version(packet) != BIN_VERSION) {
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
 
-	if (bin_pop_int(&server_id) < 0) {
-		LM_ERR("failed to obtain server id from binary packet\n");
-		return;
-	}
-
-	if (!clusterer_api.check(replicated_status_cluster, &ri->src_su,
-	server_id, ri->proto)) {
-			get_su_info(&ri->src_su.s, ip, port);
-			LM_WARN("received bin packet from unknown source: %s:%hu\n",
-				ip, port);
-			return;
-	}
-
 	if (packet_type == REPL_LB_STATUS_UPDATE) {
 		lock_start_read(ref_lock);
-		replicate_lb_status_update(*curr_data);
+		replicate_lb_status_update(packet, *curr_data);
 		lock_stop_read(ref_lock);
 	} else {
 		LM_ERR("invalid load_balancer binary packet type: %d\n", packet_type);

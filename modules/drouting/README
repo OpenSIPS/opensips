@@ -8,6 +8,8 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
 Anca-Maria Vamanu
 
    Copyright © 2005-2008 Voice Sistem SRL
@@ -742,12 +744,13 @@ modparam("drouting", "probing_reply_codes", "501, 403")
    gateways/destination and carriers status changes. Whenever such
    a status is changes (following an MI command, a probing result,
    a script command), the module will replicate this status change
-   to all the nodes in this given cluster.
+   to all the nodes in this given cluster. A value of 0 means that
+   sending replication data is disabled.
 
    For more on how to define and populate a cluster (with OpenSIPS
    nodes) see the "clusterer" module.
 
-   Default value is “NONE”.
+   Default value is “0”.
 
    Example 1.23. Set replicate_status_to parameter
 ...
@@ -757,15 +760,11 @@ modparam("drouting", "replicate_status_to", 9)
 
 1.3.24. accept_replicated_status (integer)
 
-   This a on/off option, if this OpenSIPS node (as part of a
-   cluster - see the "replicate_status_to" options) accepts
-   replicated info about the change of gateway/carrier status from
-   other OpenSIPS nodes from the cluster.
+   A cluster ID for accepting replicated info about the change of
+   gateway/carrier status from other OpenSIPS nodes from that
+   cluster. A value of 0 means that accepting is disabled.
 
-   This option makes sense only if the "replicate_status_to" is
-   enabled.
-
-   Default value is “1 (enabled/on)”.
+   Default value is “0”.
 
    Example 1.24. Set accept_replicated_status parameter
 ...

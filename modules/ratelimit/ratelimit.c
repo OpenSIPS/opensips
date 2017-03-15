@@ -65,7 +65,6 @@ int rl_timer_interval = RL_TIMER_INTERVAL;
 
 int accept_repl_pipes = 0;
 int rl_repl_cluster = 0;
-int accept_repl_pipes_timeout = 10;
 int repl_pipes_auth_check = 0;
 struct clusterer_binds clusterer_api;
 
@@ -142,7 +141,6 @@ static param_export_t params[] = {
 	{ "repl_timer_expire",		INT_PARAM,	&rl_repl_timer_expire		},
 	{ "accept_pipes_from",		INT_PARAM,	&accept_repl_pipes		},
 	{ "replicate_pipes_to",		INT_PARAM,	&rl_repl_cluster		},
-	{ "accept_pipes_timeout",	INT_PARAM,	&accept_repl_pipes_timeout	},
 	{ "repl_pipes_auth_check",	INT_PARAM,	&repl_pipes_auth_check		},
 	{ "window_size",            INT_PARAM,  &rl_window_size},
 	{ "slot_period",            INT_PARAM,  &rl_slot_period},
@@ -336,17 +334,20 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (rl_repl_cluster < 0)
-		rl_repl_cluster = 0;
+	if (rl_repl_cluster < 0) {
+		LM_ERR("Invalid rl_repl_cluster, must be 0 or a positive cluster id\n");
+		return -1;
+	}
 
-	if (accept_repl_pipes < 0)
-		accept_repl_pipes = 0;
+	if (accept_repl_pipes < 0) {
+		LM_ERR("Invalid value for accept_repl_pipes, must be 0 or a positive cluster id\n");
+		return -1;
+	}
 
-	if (accept_repl_pipes_timeout <= 0)
-		accept_repl_pipes_timeout = 10;
-
-	if (repl_pipes_auth_check < 0)
-		repl_pipes_auth_check = 0;
+	if (repl_pipes_auth_check < 0) {
+		LM_ERR("Invalid value for repl_pipes_auth_check, must be 0 or 1\n");
+		return -1;
+	}
 
 	if ( (rl_repl_cluster || accept_repl_pipes) && load_clusterer_api(&clusterer_api) != 0 ){
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
@@ -759,7 +760,14 @@ struct mi_root* mi_bin_status(struct mi_root* cmd_tree, void* param)
 	rpl = &rpl_tree->node;
 	rpl->flags |= MI_IS_ARRAY;
 
-	if (rl_bin_status(rpl_tree) < 0) {
+	if (rl_repl_cluster &&
+		rl_bin_status(&rpl_tree->node, rl_repl_cluster, "repl_pipes_dest", 15)<0) {
+		LM_ERR("cannot print status\n");
+		goto free;
+	}
+
+	if (accept_repl_pipes &&
+		rl_bin_status(&rpl_tree->node, accept_repl_pipes, "repl_pipes_source", 17)<0) {
 		LM_ERR("cannot print status\n");
 		goto free;
 	}
