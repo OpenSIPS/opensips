@@ -114,26 +114,27 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		ctx = existing_context;
 	}
 
-	/* the raw processing callbacks can change the buffer,
-	further use in_buff.s and at the end try to free in_buff.s
-	if changed by callbacks */
-	if (run_pre_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff,NULL)<0) {
-		LM_ERR("error in running pre raw callbacks, dropping\n");
-		goto error;
-	}
-	/* update the length for further processing */
-	len = in_buff.len;
-
 	msg=pkg_malloc(sizeof(struct sip_msg));
 	if (msg==0) {
 		LM_ERR("no pkg mem left for sip_msg\n");
 		goto error;
 	}
+	memset(msg,0, sizeof(struct sip_msg)); /* init everything to 0 */
+
+	/* the raw processing callbacks can change the buffer,
+	further use in_buff.s and at the end try to free in_buff.s
+	if changed by callbacks */
+	if (run_pre_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff,msg)<0) {
+		LM_ERR("error in running pre raw callbacks, dropping\n");
+		goto parse_error;
+	}
+	/* update the length for further processing */
+	len = in_buff.len;
+
 	msg_no++;
 	/* number of vias parsed -- good for diagnostic info in replies */
 	via_cnt=0;
 
-	memset(msg,0, sizeof(struct sip_msg)); /* init everything to 0 */
 	/* fill in msg */
 	msg->buf=in_buff.s;
 	msg->len=len;

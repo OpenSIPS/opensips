@@ -284,6 +284,9 @@ struct sip_msg {
 	int parsed_orig_ruri_ok;
 	struct sip_uri parsed_orig_ruri;
 
+	/* Original call-id received */
+	struct hdr_field* orig_callid;
+
 	/* modifications */
 	struct lump* add_rm;       /* used for all the forwarded requests/replies */
 	struct lump* body_lumps;     /* Lumps that update Content-Length */
