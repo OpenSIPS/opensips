@@ -2,7 +2,7 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS team in alphabetical order as of 31 March 2016:
+Current OpenSIPS team in alphabetical order as of 16 March 2017:
 
 Core Team:
 
@@ -10,92 +10,86 @@ Bogdan Andrei Iancu
 Ionut-Razvan Ionita
 Liviu Chircu
 Razvan Crainea
-Vladut-Stefan Paiu
 
 
-Module Maintainers:
+Developers:
 
 Alexandr Dubovikov
 Anca Vamanu
 Arnaud Chong
 Dan Pascu
 Di-Shi Sun
+Dynamic Packet
+Evandro Villaron
 Iñaki Baz Castillo
-Ionel Cerghit
 Marc Leurent
 Ovidiu Sas
-Saúl Ibarra Corretgé
-Dynamic Packet
 Robert Vladut Patrascu
 Robison Tesini
-Evandro Villaron
+Saúl Ibarra Corretgé
+Vladut-Stefan Paiu
 
-
-============== Release 2.2.0 =================
-Alan Erringer
+============== Release 2.3.0 =================
+Agalya Ramachandran
+Alessio Garzi
+Andrey Vorobiev
 Antonis Psaras
+Aqs Younas
 Aron Podrigal
-Colin Martin
-DMOsipov (GitHub)
-Damien Sanders
+Bernard Buitenhuis
+Chris Maciejewski
 Dan Bogos
-David Sanders
-Di-Shi Sun
-Don Steul
-Dragomir Haralambiev
-Dusan Klinec
+Daniel Fussia
+Daniel Knezevic
+Dawid Mielnik
+Deniz Beskök
 Eric Tamme
-Eric Werkhoven
-Eseanu Marius Cristian
-Evandro Villaron
 Federico Edorna
-Giuseppe Cardone
 Grygoriy Dobrovolskyy
+Guillaume Lacroix
 Hamid Elaosta
-Hieu Ta
-James Criscuolo
+Igor Pavlov
+Ionel Cerghit
 Jarrod Baumann
 Jeff Pyle
-Jock McKechnie
+Jeff Wilkie
+Jim DeVito
+John Nash
+John Quick
+John Steel
 Jonathan Hunter
-Jordan Williams
-Joseph Frazier
-Julian Santer
 Julián Moreno Patiño
+Kirill Galinurov
+Le Roy Christophe
 Maksym Sobolyev
-Matthew Williams
-Mickael Marrache
-Mikko Lehto
-Minh Phan
-Mohammad Qandeel
-Muhammad Shahzad Shafi
-Nabeel Shikder
+Michele Pinassi
 Nathaniel L. Keeling III
 Nick Altmann
-Oliver Severin Mulelid-Tynes
+Octavian Cerna
+Ovidiu Sas
+Pete Baines
 Pete Kelly
-Peter Baines
+Petr Pisar
+Qasim Khan
+Rahul Gupta
+Ray Elliott
+Richard Robson
 Rik Broers
-Rob Gagnon
-Robison Gonçalves Tesini
-Robison Tesini
-Rudy Pedraza
 Ryan Bullock
-Santhosh Kumar
-Sasmita Panda
-Satish Patel
-Sebastian Sastre
-Sergey Khripchenko
+Sammy
+Schneur Rosenberg
+Sebastien Couture
 Stas Kobzar
-Steve Frécinaux
-Søren Andersen
+Tito Cumpen
 Trevor Francis
+Varghese Paul
 Walter Doekes
-AVFedorov (GitHub)
+Aaron An (Tinet-AaronAn on GitHub)
 arovetto (GitHub)
-cepehutu (gitHub)
-ferrored (GitHub)
-gergelypeli (GitHub)
-mishehu (GitHub)
-narunask (GitHub)
-telephone-man (GitHub)
+boris_t (GitHub)
+davesidwell (GitHub)
+Freenex (GitHub)
+kretor Andrew (GitHub)
+digitaldude (IRC)
+holysip (IRC)
+neo_land1 (IRC)
