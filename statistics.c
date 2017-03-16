@@ -202,7 +202,7 @@ int register_tcp_load_stat(stat_var **s)
 
 /************* Functions for handling MODULEs(groups) of stats ***************/
 
-static inline module_stats* get_stat_module( str *module)
+module_stats* get_stat_module( str *module)
 {
 	int i;
 
@@ -218,9 +218,6 @@ static inline module_stats* get_stat_module( str *module)
 	return 0;
 }
 
-#define add_stat_module(module) \
-	__add_stat_module(module, 0)
-
 static inline module_stats* __add_stat_module( char *module, int unsafe)
 {
 	module_stats *amods;
@@ -228,7 +225,7 @@ static inline module_stats* __add_stat_module( char *module, int unsafe)
 	int len;
 
 	if ( (module==0) || ((len = strlen(module))==0 ) )
-		return 0;
+		return NULL;
 
 	amods = unsafe ?
 		(module_stats*)shm_realloc_unsafe( collector->amodules,
@@ -239,7 +236,7 @@ static inline module_stats* __add_stat_module( char *module, int unsafe)
 
 	if (amods==0) {
 		LM_ERR("no more shm memory\n");
-		return 0;
+		return NULL;
 	}
 
 	collector->amodules = amods;
@@ -248,11 +245,22 @@ static inline module_stats* __add_stat_module( char *module, int unsafe)
 	mods = &amods[collector->mod_no-1];
 	memset( mods, 0, sizeof(module_stats) );
 
-	mods->name.s = module;
+	mods->name.s = unsafe ? shm_malloc_unsafe(len) : shm_malloc(len);
+	if (!mods->name.s) {
+	    LM_ERR("oom\n");
+	    return NULL;
+	}
+	memcpy(mods->name.s, module, len);
 	mods->name.len = len;
+
 	mods->idx = collector->mod_no-1;
 
 	return mods;
+}
+
+module_stats *add_stat_module(char *module)
+{
+	return __add_stat_module(module, 0);
 }
 
 
@@ -350,7 +358,7 @@ void destroy_stats_collector(void)
 {
 	stat_var *stat;
 	stat_var *tmp_stat;
-	int i;
+	int i, idx;
 
 #ifdef NO_ATOMIC_OPS
 	/* destroy big lock */
@@ -383,6 +391,10 @@ void destroy_stats_collector(void)
 				if (!(tmp_stat->flags&STAT_NO_ALLOC))
 					shm_free(tmp_stat);
 			}
+		}
+
+		for (idx = 0; idx < collector->mod_no; idx++) {
+			shm_free(collector->amodules[idx].name.s);
 		}
 
 		/* destroy sts_module array */
@@ -583,27 +595,40 @@ error:
 }
 
 
-int register_dynamic_stat( str *name, stat_var **pvar)
+int __register_dynamic_stat(str *group, str *name, stat_var **pvar)
 {
 	char *p;
 	int ret;
+	str nullgrp = {NULL, 0};
 
-	/*FIXME - what we do here is reallt stupid - convert from str to
+	if (!group)
+		group = &nullgrp;
+
+	/*FIXME - what we do here can be avoided - convert from str to
 	 * char and next function does the other way around - from char to
 	 * str - this is temporary, before fixing the register_stat2 function
 	 * prototype to accept str rather than char */
-	if ( (p=pkg_malloc( name->len + 1))==NULL ) {
+	if ( (p=pkg_malloc(group->len + 1 + name->len + 1))==NULL ) {
 		LM_ERR("no more pkg mem (%d)\n",name->len + 1);
 		return -1;
 	}
-	memcpy( p, name->s, name->len);
-	p[name->len] = 0;
+	memcpy(p, group->s, group->len);
+	p[group->len] = '\0';
 
-	ret = register_stat( DYNAMIC_MODULE_NAME, p, pvar, 0/*flags*/);
+	memcpy(p + group->len + 1, name->s, name->len);
+	p[group->len + 1 + name->len] = '\0';
+
+	ret = register_stat(!*p ? DYNAMIC_MODULE_NAME : p, p + group->len + 1,
+	                    pvar, 0/*flags*/);
 
 	pkg_free(p);
 
 	return ret;
+}
+
+int register_dynamic_stat( str *name, stat_var **pvar)
+{
+	return __register_dynamic_stat (NULL, name, pvar);
 }
 
 int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
@@ -626,8 +651,7 @@ int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
 }
 
 
-
-stat_var* get_stat( str *name )
+stat_var* __get_stat( str *name, int mod_idx )
 {
 	stat_var *stat;
 	int hash;
@@ -641,14 +665,16 @@ stat_var* get_stat( str *name )
 	/* and look for it , first in the hash for static stats */
 	for( stat=collector->hstats[hash] ; stat ; stat=stat->hnext ) {
 		if ( (stat->name.len==name->len) &&
-		(strncasecmp( stat->name.s, name->s, name->len)==0) )
+		(strncasecmp( stat->name.s, name->s, name->len)==0) &&
+		(mod_idx > 0 && stat->mod_idx == mod_idx))
 			return stat;
 	}
 	/* and then in the hash for dynamic stats */
 	lock_start_read((rw_lock_t *)collector->rwl);
 	for( stat=collector->dy_hstats[hash] ; stat ; stat=stat->hnext ) {
 		if ( (stat->name.len==name->len) &&
-		(strncasecmp( stat->name.s, name->s, name->len)==0) ) {
+		(strncasecmp( stat->name.s, name->s, name->len)==0) &&
+		(mod_idx > 0 && stat->mod_idx == mod_idx)) {
 			lock_stop_read((rw_lock_t *)collector->rwl);
 			return stat;
 		}
@@ -656,6 +682,11 @@ stat_var* get_stat( str *name )
 	lock_stop_read((rw_lock_t *)collector->rwl);
 
 	return 0;
+}
+
+stat_var* get_stat( str *name )
+{
+	return __get_stat(name, -1);
 }
 
 int mi_stat_name(str *mod, str *stat, str *out)

@@ -59,7 +59,7 @@ typedef unsigned long (*stat_function)(void *);
 struct module_stats_;
 
 typedef struct stat_var_{
-	unsigned int mod_idx;
+	unsigned int mod_idx; /* backreference */
 	str name;
 	unsigned short flags;
 	void * context;
@@ -116,6 +116,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 		unsigned  short flags, void* context, int unsafe);
 
 int register_dynamic_stat( str *name, stat_var **pvar);
+int __register_dynamic_stat( str *group, str *name, stat_var **pvar);
 
 #define register_module_stats(mod, stats) \
 	__register_module_stats(mod, stats, 0)
@@ -124,7 +125,16 @@ int __register_module_stats(char *module, stat_export_t *stats, int unsafe);
 
 int clone_pv_stat_name(str *name, str *clone);
 
+/* returns the first matching statistic (regardless of module index) */
 stat_var* get_stat( str *name );
+/*
+ * same as above, but only at stat module level
+ * mod_idx == -1 makes __get_stat() behave like get_stat()
+ */
+stat_var* __get_stat( str *name, int mod_idx );
+
+module_stats *add_stat_module(char *module);
+module_stats *get_stat_module( str *module);
 
 unsigned int get_stat_val( stat_var *var );
 
@@ -152,7 +162,11 @@ extern gen_lock_t *stat_lock;
 	#define __register_module_stats(_mod,_stats, unsafe) 0
 	#define register_stat( _mod, _name, _pvar, _flags) 0
 	#define register_dynamic_stat( _name, _pvar) 0
+	#define __register_dynamic_stat( _group, _name, _pvar) 0
 	#define get_stat( _name )  0
+	#define __get_stat( _name, _idx)  0
+	#define add_stat_module(_module) 0
+	#define get_stat_module(_module) 0
 	#define get_stat_val( _var ) 0
 	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
 	#define register_udp_load_stat( _a, _b, _c) 0
