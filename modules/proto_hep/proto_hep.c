@@ -116,6 +116,8 @@ static cmd_export_t cmds[] = {
 	{"proto_init",            (cmd_function)proto_hep_init_tcp,        0, 0, 0, 0},
 	{"load_hep",			  (cmd_function)bind_proto_hep,        1, 0, 0, 0},
 	{"trace_bind_api",        (cmd_function)hep_bind_trace_api,    1, 0, 0, 0},
+	{"correlate", (cmd_function)correlate_w, 5, correlate_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 };
 

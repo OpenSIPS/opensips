@@ -40,6 +40,7 @@
 //#include "../../trace_api.h"
 #include "../../proxy.h"
 #include "../../forward.h"
+#include "../../mod_fix.h"
 
 #include "hep.h"
 #include "../compression/compression_api.h"
@@ -48,6 +49,8 @@
 
 #define GENERIC_VENDOR_ID 0x0000
 #define HEP_PROTO_SIP  0x01
+
+static int control_id = -1;
 
 struct hep_message_id {
 	char* proto;
@@ -78,6 +81,7 @@ struct hep_message_id hep_ids[] = {
 	{ "mi"  ,  0x57},
 	{ "rest",  0x58},
 	{ "trans", 0x59},
+	{ "control", 0x60},
 	{ NULL  ,  0   }
 };
 
@@ -1819,4 +1823,114 @@ int hep_bind_trace_api(trace_proto_t* prot)
 
 	return 0;
 }
+
+/***************************************************************
+ ********************* HEP CORRELATE script function ***********
+ ***************************************************************/
+int correlate_fixup(void** param, int param_no)
+{
+	gparam_p gp;
+
+	if ( param_no < 1 || param_no > 5 ) {
+		LM_ERR("bad param number %d\n", param_no);
+		return -1;
+	}
+
+	fixup_spve( param );
+	gp = *param;
+
+	if ( param_no == 2 || param_no == 4 ) {
+		if ( gp->type != GPARAM_TYPE_STR ) {
+			LM_ERR("only strings allowed for param %d\n", param_no);
+			return -1;
+		}
+
+		*param = gp->v.sval.s;
+
+		return 0;
+	}
+
+	if ( gp->type != GPARAM_TYPE_PVS && gp->type != GPARAM_TYPE_STR ) {
+		LM_ERR("only strings or single variables allowed to this function!");
+		return -1;
+	}
+
+	return 0;
+}
+
+int correlate_w(struct sip_msg* msg, char* hep_id,
+		char* type1, char* correlation1,
+		char* type2, char* correlation2)
+{
+	str corr_s1, corr_s2;
+	hid_list_p h;
+
+	str value;
+	trace_message message;
+
+	if ( !msg ) {
+		LM_ERR("null sip msg!\n");
+		return -1;
+	}
+
+	if ( !hep_id || !type1 || !type2 || !correlation1 || !correlation2 ) {
+		LM_ERR("all parameters are mandatory for correlate function!\n");
+		return -1;
+	}
+
+	if ( fixup_get_svalue( msg, (gparam_p)hep_id, &value) < 0 ) {
+		LM_ERR("failed to fetch hep destination name!\n");
+		return -1;
+	}
+	h = get_hep_id_by_name( &value );
+	if ( h == NULL ) {
+		LM_ERR("no hep id with name <%.*s>\n", value.len, value.s );
+	}
+
+	if ( h->version < 3 ) {
+		LM_ERR("only version 3 or higher of HEP supports correlation!\n");
+		return -1;
+	}
+
+
+	if ( fixup_get_svalue( msg, (gparam_p)correlation1, &corr_s1 ) < 0 ) {
+		LM_ERR("failed to fetch hep destination name!\n");
+		return -1;
+	}
+
+	if ( fixup_get_svalue( msg, (gparam_p)correlation2, &corr_s2 ) < 0 ) {
+		LM_ERR("failed to fetch hep destination name!\n");
+		return -1;
+	}
+
+	if ( control_id < 0 ) {
+		control_id = get_hep_message_id( "control" );
+	}
+
+	message = create_hep_message( 0, 0, IPPROTO_TCP, 0, control_id, h );
+	if ( !message ) {
+		LM_ERR("failed to create hep message!\n");
+		return -1;
+	}
+
+	if ( strcmp( type1, type2 ) ) {
+		LM_ERR("Type1 <%s> must be different from type2!\n", type1);
+		return -1;
+	}
+
+	add_hep_correlation( message, type1, &corr_s1 );
+	add_hep_correlation( message, type2, &corr_s2 );
+
+	if ( send_hep_message( message, h, 0) < 0 ) {
+		LM_ERR(" failed to send hep message to destination!\n");
+		return -1;
+	}
+
+	free_hep_message( message );
+
+	return 1;
+}
+
+/***************************************************************/
+
 
