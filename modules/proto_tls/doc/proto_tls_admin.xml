@@ -318,7 +318,7 @@ modparam("proto_tls", "tls_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="trace-destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -351,6 +351,109 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
+	<section id="trace-on">
+		<title><varname>trace_on</varname> (int)</title>
+		<para>
+			This controls whether tracing for tls is on or not. You still need to define
+			<xref linkend="trace-destination"/>in order to work, but this value will be
+			controlled using mi function <xref linkend="tls-trace"/>.
+		</para>
+		<emphasis>
+			Default value is 1(tracing active).
+		</emphasis>
+		<example>
+		<title>Set <varname>trace_on</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tls", "trace_on", 0)
+...
+</programlisting>
+		</example>
 	</section>
 
+	<section>
+		<title><varname>trace_filter_route</varname> (string)</title>
+		<para>
+			Define the name of a route in which you can filter which connections will
+			be trace and which connections won't be. In this route you will have
+			information regarding source and destination ips and ports for the current
+			connection. To disable tracing for a specific connection the last call in
+			this route must be <emphasis role="bold">drop</emphasis>, any other exit
+			mode resulting in tracing the current connection ( of course you still
+			have to define a <xref linkend="trace-destination"/> and trace must be
+			on at the time this connection is opened.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="trace-on"/> is
+			set to 0 or tracing is deactived via the mi command <xref linkend="tls-trace"/>
+			this route won't be called.
+		</para>
+		<emphasis>
+			Default value is none(no route is set).
+		</emphasis>
+		<example>
+		<title>Set <varname>trace_filter_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tls", "trace_filter_route", "tls_filter")
+...
+/* all tls connections will go through this route if tracing is activated
+ * and a trace destination is defined */
+route[tls_filter] {
+	...
+	/* all connections opened from ip 1.1.1.1 will be traced, all the other connections
+	 * won't be */
+	if ( $si == "1.1.1.1" )
+		exit;
+	else
+		drop;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported MI Functions</title>
+
+		<section id="tls-trace">
+			<title>
+			<function moreinfo="none">tls_trace</function>
+			</title>
+
+			<para>
+			</para>
+
+			<para>
+			Name: <emphasis>tls_trace</emphasis>
+			</para>
+
+			<para>Parameters: </para>
+			<itemizedlist>
+				<listitem>
+					<para>trace_mode(optional): set tls tracing on and off. This parameter
+						can be missing and the command will show the current tracing
+						status for this module( on or off );
+						Possible values:
+						<itemizedlist>
+							<listitem><para> on </para></listitem>
+							<listitem><para> off </para></listitem>
+						</itemizedlist>
+					</para>
+				</listitem>
+			</itemizedlist>
+
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting  format="linespecific">
+			:tls_trace:_reply_fifo_file_
+			trace_mode
+			_empty_line_
+			</programlisting>
+		</section>
+	</section>
 </chapter>
