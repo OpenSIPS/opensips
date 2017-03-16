@@ -1652,8 +1652,8 @@ static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status st
 		return 0;
 
 
-	add_trace_data( message, "Status", &trans_trace_str_status[status]);
-	add_trace_data( message, "Ws-Reply", &trans_trace_str_status[status]);
+	add_trace_data( d->message, "Status", &trans_trace_str_status[status]);
+	add_trace_data( d->message, "Ws-Reply", rpl);
 	if ( message && message->s && message->len )
 		add_trace_data( d->message, "Message", message);
 
