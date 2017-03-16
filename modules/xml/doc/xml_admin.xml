@@ -1,0 +1,181 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	<title>&adminguide;</title>
+	
+	<section>
+		<title>Overview</title>
+
+		<para> This module exposes a script variable that provides basic parsing and manipulation of XML documents or blocks of XML data. The variable provides ways to access entire XML elements, their text content or their attributes. You can modify the content and attributes as well as adding or removing nodes in the XML tree.
+		</para>
+		<para>
+		The processing does not take into account any DTDs or schemas in terms of validation.
+		</para>
+	</section>
+
+	<section>
+		<title>Dependencies</title>
+
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			This module does not depend on other modules.
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<itemizedlist>
+				<listitem>
+					<para> <emphasis>libxml2</emphasis> Most Linux and BSD distributions include libxml but the library can also be downloaded from: xmlsoft.org</para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+	
+	<section>
+	<title>Exported Parameters</title>
+		<para>
+		The module does not export any parameters.
+		</para>
+	</section>
+
+	<section>
+		<title>Exported Variables</title>
+		<para>
+			This module exports the <emphasis>$xml(path)</emphasis> variable.
+		</para>
+
+		<section>
+		<title>Variable lifetime </title>
+		<para>
+			The xml variables will be available to the
+			process that created them from the moment they were
+			initialized. They will not reset per message or per
+			transaction. If you want to use them on a per message
+			basis you should initialize them each time.
+		</para>
+		</section>
+
+		<section>
+			<title>Accessing the $xml(path) variable </title>
+
+			<para>
+				Accessing elements and attributes is based on the tree representation of the XML document thus a complete path from the root node is required. The in-memory equivalent of an XML document is an "XML object" which must be initilized with a well-formed block of XML data before use. In consequence, the path must start with the object name, followed by any number of nodes leading to the desired element.
+			</para>
+			<para>
+				The grammar that describes the path is:
+			</para>
+			<para>
+				path = name | name(identifier)+(acces)?
+			</para>
+			<para>
+				identifier = element(index)?
+			</para>
+			<para>
+				element = /string | /$var
+			</para>
+			<para>
+				index = [integer] | [$var]
+			</para>
+			<para>
+				access = .val | .attr/string | .attr/$var
+			</para>
+
+			<para>
+				In order to select between nodes with identical names on a certain level in the tree, an index can be provided, starting from 0.
+			</para>
+			<para>
+				The sequence of nodes in the path can be followed by <emphasis>.val</emphasis> in order to access the last node's text content or by <emphasis>.attr/attr_name</emphasis> in order to access it's attribute named <emphasis>attr_name</emphasis>. Otherwise the entire element (start-tag, end-tag, children elements and content) is accessed.
+			</para>
+			<para>
+				Assiging NULL to the variable removes the entire element or it's text content or attribute acording to the access mode.
+			</para>
+			<para>
+				If you want to insert an element, you must assign a string value (containg a well-formed block of XML data that has a root node) to the parent node. Note that assigning a value directly to a node does not replace it with that value.
+			</para>
+			<para>
+				IMPORTANT: In XML all characters in the content of the document are significant including blanks and formatting line breaks. An element and it's content will be returned WITH all the whitespaces and newlines and when adding a new node under an existing one, if you want to insert it with indentation, you must include the needed characters in the assigned string. 
+			</para>
+			<para>
+				Other script variables can be used as element names, attribute names and indexes in the path. Variables that will be used as indexes must contain integer values. Variables that will be used as element or attribute names should contain string values.
+			</para>
+
+			<example>
+				<title>Creating a document</title>
+				<programlisting format="linespecific">
+...
+$xml(my_doc) = "&lt;doc&gt;&lt;/doc&gt;";        # init object
+
+$xml(my_doc/doc) = "&lt;list&gt;&lt;/list&gt;";  # add a "list" node
+
+$xml(my_doc/doc/list) = "&lt;item&gt;some_value&lt;/item&gt;";    # add an "item" node to the list
+
+$xml(my_doc/doc/list) = "&lt;item&gt;another_value&lt;/item&gt;"; # add another item to the list
+
+$xml(my_doc/doc/list/item[1].val) = "new_val";        # set text content of previous item
+
+$xml(my_doc/doc/list.attr/sort) = "asc";              # add attribute "sort" to list node
+
+$xml(my_doc/doc/list.attr/sort) = NULL;               # remove previous attribute
+
+$xml(my_doc/doc/list/item[1]) = NULL;                 # remove second item
+
+$xml(my_doc/doc/list.val) = "end";                    # add text content to list which now has
+                                                      # mixed content
+
+$xml(my_doc/doc/list.val) = NULL;                     # remove the text content
+
+xlog("$xml(my_doc/doc/list)\n");                      # display the entire list
+
+xlog("$xml(my_doc)\n");                               # display the entire document
+
+$xml(my_doc) = NULL;                                  # clear the entire document
+...
+				</programlisting>
+			</example>
+
+			<example>
+				<title>Inserting nodes with indentation</title>
+				<programlisting format="linespecific">
+...
+$xml(my_doc) = "&lt;doc&gt;\n&lt;/doc&gt;";
+$xml(my_doc/doc) = "\t&lt;list&gt;&lt;/list&gt;\n";
+$xml(my_doc/doc/list) = "\n\t\t&lt;item&gt;&lt;/item&gt;\n\t";
+
+# this creates the following document:
+# &lt;doc&gt;
+#	&lt;list&gt;
+#		&lt;item&gt;&lt;/item&gt;
+#	&lt;/list&gt;
+# &lt;/doc>
+#
+# without the explicit formating characters the document would be:
+# &lt;doc&gt;&lt;list&gt;&lt;item&gt;&lt;/item&gt;&lt;/list&gt;&lt;/doc&gt;
+...
+				</programlisting>
+			</example>
+
+			<example>
+				<title>Using script variables in path</title>
+				<programlisting format="linespecific">
+...
+# accessing the attribute of second item in list
+$var(my_list) = "\t&lt;list&gt;&lt;/list&gt;\n";
+$var(my_idx) = 1;
+$var(my_attr) = "sort";
+xlog("$xml(my_doc/doc/$var(my_list)/item[$var(my_idx)].attr/$var(my_attr))\n");
+...
+				</programlisting>
+			</example>
+
+		</section>
+
+	</section>
+
+	<section>
+		<title>Exported Functions</title>
+		<para>The module does not export any script functions.</para>
+	</section>
+
+</chapter>
+

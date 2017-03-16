@@ -123,6 +123,8 @@ enum _pv_type {
 	PVT_XLOG_LEVEL,
 	/* registered by json module */
 	PVT_JSON,
+	/* registered by xml module */
+	PVT_XML,
 
 	PVT_EXTRA /* keep it last */
 };
