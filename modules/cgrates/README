@@ -30,21 +30,25 @@ Razvan Crainea
 
         1.8. Exported Functions
 
-              1.8.1. cgrates_acc([flags[, account[,
-                      destination]]])
+              1.8.1. cgrates_acc([flags[, account[, destination[,
+                      session]]]])
 
-              1.8.2. cgrates_auth([account[, destination]])
-              1.8.3. cgrates_cmd(command)
+              1.8.2. cgrates_auth([account[, destination[,
+                      session]]])
+
+              1.8.3. cgrates_cmd(command[, session])
 
         1.9. Exported pseudo-variables
 
-              1.9.1. $cgr(name)
+              1.9.1. $cgr(name) / $(cgr(name)[session])
               1.9.2. $cgrret
 
         1.10. Exported Asynchronous Functions
 
-              1.10.1. cgrates_auth([account[, destination]])
-              1.10.2. cgrates_cmd(command)
+              1.10.1. cgrates_auth([account[, destination[,
+                      session]]])
+
+              1.10.2. cgrates_cmd(command[, session])
 
    List of Examples
 
@@ -55,10 +59,11 @@ Razvan Crainea
    1.5. cgrates_acc() usage
    1.6. cgrates_auth() usage
    1.7. cgrates_cmd() usage
-   1.8. $cgr(name) usage
-   1.9. $cgrret usage
-   1.10. async cgrates_auth usage
-   1.11. async cgrates_cmd usage
+   1.8. $cgr(name) simple usage
+   1.9. $cgr(name) multiple sessions usage
+   1.10. $cgrret usage
+   1.11. async cgrates_auth usage
+   1.12. async cgrates_cmd usage
 
 Chapter 1. Admin Guide
 
@@ -80,6 +85,14 @@ Chapter 1. Admin Guide
    can provide a set of parameters that will be forwarded to the
    CGRateS engine, using the $cgr() variable. You can find usage
    examples in the following sections.
+
+   The module also has support for multiple parallel billing
+   sessions to CGRateS. This can be useful in scenarios that
+   involve complex billing logic, such as double billing (both
+   customer and carrier billing), or multi-leg calls
+   (serial/parallel forking). Each billing session is independent
+   and has a specific tag that can be use throughout the call
+   lifetime.
 
    The module can be used to implement the following features:
 
@@ -248,7 +261,7 @@ modparam("cgrates", "retry_timeout", 120)
 
 1.8. Exported Functions
 
-1.8.1.  cgrates_acc([flags[, account[, destination]]])
+1.8.1.  cgrates_acc([flags[, account[, destination[, session]]]])
 
    cgrates_acc() starts an accounting session on the CGRateS
    engine for the current dialog. It also ends the session when
@@ -260,6 +273,11 @@ modparam("cgrates", "retry_timeout", 120)
    to the CGRateS engine when it is called, but only when the call
    is answered and the CGRateS session should be started (a 200 OK
    message is received).
+
+   When called in REQUEST_ROUTE or FAILURE_ROUTE, accounting for
+   this session is done for all the branches created. When called
+   in BRANCH_ROUTE or ONREPLY_ROUTE, acccounting is done only if
+   that branch is successfull (terminates with a 2xx reply code).
 
    The cgrates_acc() function should only be called on initial
    INVITEs. For more infirmation check Section 1.3, "Accounting".
@@ -278,6 +296,10 @@ modparam("cgrates", "retry_timeout", 120)
        the From header is used.
      * destination - the dialled number. Optional parameter, if
        not present the request URI user is used.
+     * session - the tag of the session that will be started if
+       the branch/call completes with success. This parameter
+       indicates what set of data from the $cgr() variable should
+       be considered. If missing, the default set is used.
 
    The function can return the following values:
      * 1 - successful call - the CGRateS accouting was successfuly
@@ -300,7 +322,7 @@ modparam("cgrates", "retry_timeout", 120)
                 }
                 ...
 
-1.8.2.  cgrates_auth([account[, destination]])
+1.8.2.  cgrates_auth([account[, destination[, session]]])
 
    cgrates_auth() does call authorization through using the
    CGRateS engine.
@@ -311,6 +333,10 @@ modparam("cgrates", "retry_timeout", 120)
        the From header is used.
      * destination - the dialled number. Optional parameter, if
        not present the request URI user is used.
+     * session - the tag of the session that will be started if
+       the branch/call completes with success. This parameter
+       indicates what set of data from the $cgr() variable should
+       be considered. If missing, the default set is used.
 
    The function can return the following values:
      * 1 - successful call - the CGRateS account is allowed to
@@ -339,7 +365,7 @@ modparam("cgrates", "retry_timeout", 120)
                 }
                 ...
 
-1.8.3.  cgrates_cmd(command)
+1.8.3.  cgrates_cmd(command[, session])
 
    cgrates_cmd() can send arbitrary commands to the CGRateS
    engine.
@@ -347,6 +373,10 @@ modparam("cgrates", "retry_timeout", 120)
    Meaning of the parameters is as follows:
      * command - the command sent to the CGRateS engine. This is a
        mandatory parameter.
+     * session - the tag of the session that will be started if
+       the branch/call completes with success. This parameter
+       indicates what set of data from the $cgr() variable should
+       be considered. If missing, the default set is used.
 
    The function can return the following values:
      * 1 - successful call - the CGRateS account is allowed to
@@ -375,7 +405,7 @@ modparam("cgrates", "retry_timeout", 120)
 
 1.9. Exported pseudo-variables
 
-1.9.1. $cgr(name)
+1.9.1. $cgr(name) / $(cgr(name)[session])
 
    Pseudo-variable used to set different parameters for the
    CGRateS command. Each name-value pair will be encoded as a
@@ -389,7 +419,13 @@ modparam("cgrates", "retry_timeout", 120)
    pairs are moved in the dialog. Therefore the values will be
    accessible along the dialog's lifetime.
 
-   Example 1.8. $cgr(name) usage
+   This variable consists of serveral sets of name-value pairs.
+   Each set corresponds to a session. The variable can be indexed
+   by a session tag. The sets are completely indepdendent from one
+   another. if the session tag does not exist, the default (no
+   name) one is used.
+
+   Example 1.8. $cgr(name) simple usage
                 ...
                 if (!has_totag()) {
                         ...
@@ -404,11 +440,40 @@ ounting
                 }
                 ...
 
+   Example 1.9. $cgr(name) multiple sessions usage
+                ...
+                if (!has_totag()) {
+                        ...
+                        # first session - authorize the user
+                        $cgr(Tenant) = $fd; # set the From domain as a t
+enant
+                        $cgr(RequestType) = "*prepaid"; # do prepaid acc
+ounting
+                        if (!cgrates_auth("$fU", "$rU")) {
+                                sl_send_reply("403", "Forbidden");
+                                exit;
+                        }
+
+                        # second session - authorize the carrier
+                        $(cgr(Tenant)[carrier]) = $td;
+                        $(cgr(RequestType)[carrier]) = "*postpaid";
+                        if (!cgrates_auth("$tU", "$fU", "carrier")) {
+                                # use a different carrier
+                                return;
+                        }
+
+                        # if everything is successfull, start accounting
+ on both
+                        cgrates_acc("cdr", "$fU", "rU");
+                        cgrates_acc("cdr", "$tU", "$fU", "carrier");
+                }
+                ...
+
 1.9.2. $cgrret
 
    Returns the reply message of a CGRateS command in script.
 
-   Example 1.9. $cgrret usage
+   Example 1.10. $cgrret usage
                 ...
                 cgrates_auth("$fU", "$rU");
                 xlog("Call is allowed to run $cgrret seconds\n");
@@ -416,7 +481,7 @@ ounting
 
 1.10. Exported Asynchronous Functions
 
-1.10.1.  cgrates_auth([account[, destination]])
+1.10.1.  cgrates_auth([account[, destination[, session]]])
 
    Does the CGRateS authorization call in an asynchronous way.
    Script execution is suspended until the CGRateS engine sends
@@ -428,6 +493,10 @@ ounting
        the From header is used.
      * destination - the dialled number. Optional parameter, if
        not present the request URI user is used.
+     * session - the tag of the session that will be started if
+       the branch/call completes with success. This parameter
+       indicates what set of data from the $cgr() variable should
+       be considered. If missing, the default set is used.
 
    The function can return the following values:
      * 1 - successful call - the CGRateS account is allowed to
@@ -441,7 +510,7 @@ ounting
        headers, or it is not an initial INVITE.
      * -5 - CGRateS returned an invalid message.
 
-   Example 1.10. async cgrates_auth usage
+   Example 1.11. async cgrates_auth usage
 route {
         ...
         async(cgrates_auth("$fU", "$rU"), auth_reply);
@@ -457,7 +526,7 @@ route [auth_reply]
         ...
 }
 
-1.10.2.  cgrates_cmd(command)
+1.10.2.  cgrates_cmd(command[, session])
 
    Can run an arbitrary CGRateS command in an asynchronous way.
    The execution is suspended until the CGRateS engine sends the
@@ -466,6 +535,10 @@ route [auth_reply]
    Meaning of the parameters is as follows:
      * command - the command sent to the CGRateS engine. This is a
        mandatory parameter.
+     * session - the tag of the session that will be started if
+       the branch/call completes with success. This parameter
+       indicates what set of data from the $cgr() variable should
+       be considered. If missing, the default set is used.
 
    The function can return the following values:
      * 1 - successful call - the CGRateS account is allowed to
@@ -476,7 +549,7 @@ route [auth_reply]
      * -3 - No suitable CGRateS server found. message type (not an
        initial INVITE).
 
-   Example 1.11. async cgrates_cmd usage
+   Example 1.12. async cgrates_cmd usage
 route {
         ...
         $cgr(Tenant) = $fd;

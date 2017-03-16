@@ -27,6 +27,15 @@
 	</para>
 
 	<para>
+		The module also has support for multiple parallel billing sessions to CGRateS.
+		This can be useful in scenarios that involve complex billing logic, such as
+		double billing (both customer and carrier billing), or multi-leg calls
+		(serial/parallel forking). Each billing session is independent and
+		has a specific <emphasis>tag</emphasis> that can be use throughout the call
+		lifetime.
+	</para>
+
+	<para>
 		The module can be used to implement the following features:
 	</para>
 	</section>
@@ -271,7 +280,7 @@ modparam("cgrates", "retry_timeout", 120)
 	<title>Exported Functions</title>
 	<section id="cgrates_acc">
 		<title>
-			<function moreinfo="none">cgrates_acc([flags[, account[, destination]]])</function>
+			<function moreinfo="none">cgrates_acc([flags[, account[, destination[, session]]]])</function>
 		</title>
 		<para>
 			<function moreinfo="none">cgrates_acc()</function> starts an accounting
@@ -286,6 +295,14 @@ modparam("cgrates", "retry_timeout", 120)
 			does not send any message to the CGRateS engine when it is called, but only
 			when the call is answered and the CGRateS session should be started (a 200
 			OK message is received).
+		</para>
+
+		<para>
+			When called in <emphasis>REQUEST_ROUTE</emphasis> or
+			<emphasis>FAILURE_ROUTE</emphasis>, accounting for this session is done
+			for all the branches created. When called in <emphasis>BRANCH_ROUTE</emphasis>
+			or <emphasis>ONREPLY_ROUTE</emphasis>, acccounting is done only if that
+			branch is successfull (terminates with a 2xx reply code).
 		</para>
 
 		<para>
@@ -323,6 +340,13 @@ modparam("cgrates", "retry_timeout", 120)
 		<listitem>
 			<para><emphasis>destination</emphasis> - the dialled number. Optional
 				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>session</emphasis> - the tag of the session that
+				will be started if the branch/call completes with success. This parameter
+				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
+				should be considered. If missing, the default set is used.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -370,7 +394,7 @@ modparam("cgrates", "retry_timeout", 120)
 	</section>
 	<section id="cgrates_auth">
 		<title>
-			<function moreinfo="none">cgrates_auth([account[, destination]])</function>
+			<function moreinfo="none">cgrates_auth([account[, destination[, session]]])</function>
 		</title>
 		<para>
 			<function moreinfo="none">cgrates_auth()</function> does call authorization
@@ -390,6 +414,13 @@ modparam("cgrates", "retry_timeout", 120)
 		<listitem>
 			<para><emphasis>destination</emphasis> - the dialled number. Optional
 				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>session</emphasis> - the tag of the session that
+				will be started if the branch/call completes with success. This parameter
+				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
+				should be considered. If missing, the default set is used.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -452,7 +483,7 @@ modparam("cgrates", "retry_timeout", 120)
 	</section>
 	<section id="cgrates_cmd">
 		<title>
-			<function moreinfo="none">cgrates_cmd(command)</function>
+			<function moreinfo="none">cgrates_cmd(command[, session])</function>
 		</title>
 		<para>
 			<function moreinfo="none">cgrates_cmd()</function> can send
@@ -466,6 +497,13 @@ modparam("cgrates", "retry_timeout", 120)
 		<listitem>
 			<para><emphasis>command</emphasis> - the command sent to the
 				CGRateS engine. This is a mandatory parameter.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>session</emphasis> - the tag of the session that
+				will be started if the branch/call completes with success. This parameter
+				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
+				should be considered. If missing, the default set is used.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -524,7 +562,7 @@ modparam("cgrates", "retry_timeout", 120)
 	<title>Exported pseudo-variables</title>
 
 		<section>
-			<title><varname>$cgr(name)</varname></title>
+			<title><varname>$cgr(name) / $(cgr(name)[session])</varname></title>
 			<para>
 				Pseudo-variable used to set different parameters for the
 				CGRateS command. Each name-value pair will be encoded as
@@ -542,8 +580,16 @@ modparam("cgrates", "retry_timeout", 120)
 				Therefore the values will be accessible along the dialog's
 				lifetime.
 			</para>
+			<para>
+				This variable consists of serveral sets of name-value pairs.
+				Each set corresponds to a session. The variable can be
+				indexed by a <emphasis>session tag</emphasis>. The sets
+				are completely indepdendent from one another. if the
+				<emphasis>session tag</emphasis> does not exist, the default
+				(no name) one is used.
+			</para>
 		<example>
-				<title>$cgr(name) usage</title>
+				<title>$cgr(name) simple usage</title>
 				<programlisting format="linespecific">
 		...
 		if (!has_totag()) {
@@ -554,6 +600,35 @@ modparam("cgrates", "retry_timeout", 120)
 				sl_send_reply("403", "Forbidden");
 				exit;
 			}
+		}
+		...
+		</programlisting>
+		</example>
+		<example>
+				<title>$cgr(name) multiple sessions usage</title>
+				<programlisting format="linespecific">
+		...
+		if (!has_totag()) {
+			...
+			# first session - authorize the user
+			$cgr(Tenant) = $fd; # set the From domain as a tenant
+			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
+			if (!cgrates_auth("$fU", "$rU")) {
+				sl_send_reply("403", "Forbidden");
+				exit;
+			}
+
+			# second session - authorize the carrier
+			$(cgr(Tenant)[carrier]) = $td;
+			$(cgr(RequestType)[carrier]) = "*postpaid";
+			if (!cgrates_auth("$tU", "$fU", "carrier")) {
+				# use a different carrier
+				return;
+			}
+
+			# if everything is successfull, start accounting on both
+			cgrates_acc("cdr", "$fU", "rU");
+			cgrates_acc("cdr", "$tU", "$fU", "carrier");
 		}
 		...
 		</programlisting>
@@ -581,7 +656,7 @@ modparam("cgrates", "retry_timeout", 120)
 	<title>Exported Asynchronous Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">cgrates_auth([account[, destination]])</function>
+		<function moreinfo="none">cgrates_auth([account[, destination[, session]]])</function>
 		</title>
 		<para>
 			Does the CGRateS authorization call in an asynchronous way. Script
@@ -600,6 +675,13 @@ modparam("cgrates", "retry_timeout", 120)
 		<listitem>
 			<para><emphasis>destination</emphasis> - the dialled number. Optional
 				parameter, if not present the request URI user is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>session</emphasis> - the tag of the session that
+				will be started if the branch/call completes with success. This parameter
+				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
+				should be considered. If missing, the default set is used.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -659,7 +741,7 @@ route [auth_reply]
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">cgrates_cmd(command)</function>
+		<function moreinfo="none">cgrates_cmd(command[, session])</function>
 		</title>
 		<para>
 			Can run an arbitrary CGRateS command in an asynchronous way. The
@@ -672,6 +754,13 @@ route [auth_reply]
 		<listitem>
 			<para><emphasis>command</emphasis> - the command sent to the
 				CGRateS engine. This is a mandatory parameter.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>session</emphasis> - the tag of the session that
+				will be started if the branch/call completes with success. This parameter
+				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
+				should be considered. If missing, the default set is used.
 			</para>
 		</listitem>
 		</itemizedlist>
