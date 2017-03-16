@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(str) address(str) type(int) method(str) verify_cert(int) require_cert(int) certificate(str) private_key(str) crl_check_all(int) crl_dir(str) ca_list(str) ca_dir(str) cipher_list(str) dh_params(str) ec_curve(str)
+id(int) domain(str) address(str) type(int) method(str) verify_cert(int) require_cert(int) certificate(str) private_key(str) crl_check_all(int) crl_dir(str) ca_list(str) ca_dir(str) cipher_list(str) dh_params(str) ec_curve(str)
 METADATA_KEY
 
 METADATA_READONLY
@@ -7,4 +7,4 @@ METADATA_READONLY
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL
+NIL|NIL|NIL|1|'SSLv23'|0|0|NIL|NIL|0|NULL|NULL|NULL|NULL|NULL|NULL

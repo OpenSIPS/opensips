@@ -1,19 +1,20 @@
-INSERT INTO version (table_name, table_version) values ('tls_mgm','1');
+INSERT INTO version (table_name, table_version) values ('tls_mgm','2');
 CREATE TABLE tls_mgm (
-    id CHAR(64) PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    domain CHAR(64) NOT NULL,
     address CHAR(64) NOT NULL,
-    type INTEGER NOT NULL,
-    method CHAR(16),
-    verify_cert INTEGER,
-    require_cert INTEGER,
-    certificate CHAR(255),
-    private_key CHAR(255),
-    crl_check_all INTEGER,
-    crl_dir CHAR(255),
-    ca_list CHAR(255),
-    ca_dir CHAR(255),
-    cipher_list CHAR(255),
-    dh_params CHAR(255),
-    ec_curve CHAR(255)
+    type INTEGER DEFAULT 1 NOT NULL,
+    method CHAR(16) DEFAULT 'SSLv23',
+    verify_cert INTEGER DEFAULT 0,
+    require_cert INTEGER DEFAULT 0,
+    certificate BLOB,
+    private_key BLOB,
+    crl_check_all INTEGER DEFAULT 0,
+    crl_dir CHAR(255) DEFAULT NULL,
+    ca_list BLOB DEFAULT NULL,
+    ca_dir CHAR(255) DEFAULT NULL,
+    cipher_list CHAR(255) DEFAULT NULL,
+    dh_params BLOB DEFAULT NULL,
+    ec_curve CHAR(255) DEFAULT NULL
 );
 

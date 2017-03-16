@@ -877,20 +877,21 @@
 	<db_table id="tls_mgm">
 		<table_name>tls_mgm</table_name>
 		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_STR</type></column>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
 		<column><field>address</field><type>DB_STR</type></column>
 		<column><field>type</field><type>DB_INT</type></column>
 		<column><field>method</field><type>DB_STR</type></column>
 		<column><field>verify_cert</field><type>DB_INT</type></column>
 		<column><field>require_cert</field><type>DB_INT</type></column>
-		<column><field>certificate</field><type>DB_STR</type></column>
-		<column><field>private_key</field><type>DB_STR</type></column>
+		<column><field>certificate</field><type>DB_BLOB</type></column>
+		<column><field>private_key</field><type>DB_BLOB</type></column>
 		<column><field>crl_check_all</field><type>DB_INT</type></column>
 		<column><field>crl_dir</field><type>DB_STR</type></column>
-		<column><field>ca_list</field><type>DB_STR</type></column>
+		<column><field>ca_list</field><type>DB_BLOB</type></column>
 		<column><field>ca_dir</field><type>DB_STR</type></column>
 		<column><field>cipher_list</field><type>DB_STR</type></column>
-		<column><field>dh_params</field><type>DB_STR</type></column>
+		<column><field>dh_params</field><type>DB_BLOB</type></column>
 		<column><field>ec_curve</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of uri table-->
@@ -4252,6 +4253,7 @@
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>domain</field></col>
 				<col><field>address</field></col>
 				<col><field>type</field></col>
 				<col><field>method</field></col>
@@ -4272,7 +4274,7 @@
 			<db_table_id>tls_mgm</db_table_id>
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>domain</field></col>
 				<col><field>address</field></col>
 				<col><field>type</field></col>
 				<col><field>method</field></col>
@@ -4296,6 +4298,7 @@
 				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
+				<col><field>domain</field></col>
 				<col><field>address</field></col>
 				<col><field>type</field></col>
 				<col><field>method</field></col>

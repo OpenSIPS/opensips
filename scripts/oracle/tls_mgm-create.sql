@@ -1,20 +1,21 @@
-INSERT INTO version (table_name, table_version) values ('tls_mgm','1');
+INSERT INTO version (table_name, table_version) values ('tls_mgm','2');
 CREATE TABLE tls_mgm (
-    id VARCHAR2(64) PRIMARY KEY,
+    id NUMBER(10) PRIMARY KEY,
+    domain VARCHAR2(64),
     address VARCHAR2(64),
-    type NUMBER(10),
-    method VARCHAR2(16),
-    verify_cert NUMBER(10),
-    require_cert NUMBER(10),
-    certificate VARCHAR2(255),
-    private_key VARCHAR2(255),
-    crl_check_all NUMBER(10),
-    crl_dir VARCHAR2(255),
-    ca_list VARCHAR2(255),
-    ca_dir VARCHAR2(255),
-    cipher_list VARCHAR2(255),
-    dh_params VARCHAR2(255),
-    ec_curve VARCHAR2(255)
+    type NUMBER(10) DEFAULT 1 NOT NULL,
+    method VARCHAR2(16) DEFAULT 'SSLv23',
+    verify_cert NUMBER(10) DEFAULT 0,
+    require_cert NUMBER(10) DEFAULT 0,
+    certificate BLOB,
+    private_key BLOB,
+    crl_check_all NUMBER(10) DEFAULT 0,
+    crl_dir VARCHAR2(255) DEFAULT NULL,
+    ca_list BLOB DEFAULT NULL,
+    ca_dir VARCHAR2(255) DEFAULT NULL,
+    cipher_list VARCHAR2(255) DEFAULT NULL,
+    dh_params BLOB DEFAULT NULL,
+    ec_curve VARCHAR2(255) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER tls_mgm_tr
