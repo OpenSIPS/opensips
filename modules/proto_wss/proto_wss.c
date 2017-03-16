@@ -90,6 +90,12 @@ static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;
 
+/* module  tracing parameters */
+static int trace_is_on_tmp=1, *trace_is_on;
+static char* trace_filter_route;
+static int trace_filter_route_id = -1;
+/**/
+
 static int mod_init(void);
 static int proto_wss_init(struct proto_info *pi);
 static int proto_wss_init_listener(struct socket_info *si);
@@ -100,6 +106,7 @@ static int wss_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
+static struct mi_root* wss_trace_mi(struct mi_root* cmd, void* param );
 
 
 static int wss_port = WSS_DEFAULT_PORT;
@@ -118,6 +125,8 @@ static param_export_t params[] = {
 	{ "wss_resource",       STR_PARAM, &wss_resource       },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
+	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
+	{ "trace_filter_route",				 STR_PARAM, &trace_filter_route     },
 	{0, 0, 0}
 };
 
@@ -131,6 +140,11 @@ static dep_export_t deps = {
 	},
 };
 
+static mi_export_t mi_cmds[] = {
+	{ "wss_trace", 0, wss_trace_mi,   0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
+};
+
 struct module_exports exports = {
 	PROTO_PREFIX "wss",  /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -141,7 +155,7 @@ struct module_exports exports = {
 	0,          /* exported async functions */
 	params,     /* module parameters */
 	0,          /* exported statistics */
-	0,          /* exported MI functions */
+	mi_cmds,    /* exported MI functions */
 	0,          /* exported pseudo-variables */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
@@ -224,6 +238,8 @@ static int wss_conn_init(struct tcp_connection* c)
 		d->tprot = &tprot;
 		d->dest = t_dst;
 		d->net_trace_proto_id = net_trace_proto_id;
+		d->trace_is_on = trace_is_on;
+		d->trace_route_id = trace_filter_route_id;
 	}
 
 
@@ -280,6 +296,8 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 	str s;
 
 	if (type==TCP_REPORT_CLOSE) {
+		if ( !*trace_is_on || (conn_flags & F_CONN_TRACE_DROPPED) )
+			return;
 		/* grab reason text */
 		if (extra) {
 			s.s = (char*)extra;
@@ -581,4 +599,47 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 
 end:
 	return ret;
+}
+
+static struct mi_root* wss_trace_mi(struct mi_root* cmd_tree, void* param )
+{
+	struct mi_node* node;
+
+	struct mi_node *rpl;
+	struct mi_root *rpl_tree ;
+
+	node = cmd_tree->node.kids;
+	if(node == NULL) {
+		/* display status on or off */
+		rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+		if (rpl_tree == 0)
+			return 0;
+		rpl = &rpl_tree->node;
+
+		if ( *trace_is_on ) {
+			node = add_mi_node_child(rpl,0,MI_SSTR("WSS tracing"),MI_SSTR("on"));
+		} else {
+			node = add_mi_node_child(rpl,0,MI_SSTR("WSS tracing"),MI_SSTR("off"));
+		}
+
+		return rpl_tree ;
+	} else if ( node && !node->next ) {
+		if ( (node->value.s[0] | 0x20) == 'o' &&
+				(node->value.s[1] | 0x20) == 'n' ) {
+			*trace_is_on = 1;
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		} else
+		if ( (node->value.s[0] | 0x20) == 'o' &&
+				(node->value.s[1] | 0x20) == 'f' &&
+				(node->value.s[2] | 0x20) == 'f' ) {
+			*trace_is_on = 0;
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		} else {
+			return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
+		}
+	} else {
+		return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
+	}
+
+	return NULL;
 }
