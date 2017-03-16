@@ -143,6 +143,14 @@ modparam("db_mysql", "max_db_retries", 2)
 		<emphasis>tls_mgm</emphasis> is loaded and properly configured.
 		</para>
 		<para>
+		Note that if you want to use this feature, the certificate must be
+		provisioned in the configuration file, <emphasis>NOT</emphasis> in
+		the database. In case you are loading TLS certificates from the
+		database, you must at least define the default domain in the
+		configuration script, where is currently the only place you can
+		define it.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <emphasis role='bold'>NULL</emphasis> (not set)
 		</emphasis>

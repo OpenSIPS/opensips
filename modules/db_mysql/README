@@ -10,7 +10,7 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright © 2006 Voice Sistem SRL
+   Copyright � 2006 Voice Sistem SRL
    Revision History
    Revision $Revision: 5901 $ $Date$
      __________________________________________________________
@@ -91,8 +91,8 @@ modparam("db_mysql", "exec_query_threshold", 60000)
    retries are done from the driver before it gives up.
 
    The read timeout parameter is ignored on driver versions prior
-   to “5.1.12”, “5.0.25” and “4.1.22”. The write timeout parameter
-   is ignored on version prior to “5.1.12” and “5.0.25”, the “4.1”
+   to "5.1.12", "5.0.25" and "4.1.22". The write timeout parameter
+   is ignored on version prior to "5.1.12" and "5.0.25", the "4.1"
    release don't support it at all.
 
    Default value is 2 (6 sec).
@@ -134,6 +134,12 @@ modparam("db_mysql", "max_db_retries", 2)
 
    If using this parameter, you must also ensure that tls_mgm is
    loaded and properly configured.
+
+   Note that if you want to use this feature, the certificate must
+   be provisioned in the configuration file, NOT in the database.
+   In case you are loading TLS certificates from the database, you
+   must at least define the default domain in the configuration
+   script, where is currently the only place you can define it.
 
    Default value is NULL (not set)
 

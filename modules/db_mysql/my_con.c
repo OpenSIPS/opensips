@@ -42,14 +42,14 @@ int db_mysql_connect(struct my_con* ptr)
 	ptr->init = 1;
 
 	if (tls_dom) {
-		LM_DBG("TLS key file: %s\n", tls_dom->pkey_file);
-		LM_DBG("TLS cert file: %s\n", tls_dom->cert_file);
-		LM_DBG("TLS ca file: %s\n", tls_dom->ca_file);
+		LM_DBG("TLS key file: %.*s\n", tls_dom->pkey.len, tls_dom->pkey.s);
+		LM_DBG("TLS cert file: %.*s\n", tls_dom->cert.len, tls_dom->cert.s);
+		LM_DBG("TLS ca file: %.*s\n", tls_dom->ca.len, tls_dom->ca.s);
 		LM_DBG("TLS ca dir: %s\n", tls_dom->ca_directory);
 		LM_DBG("TLS ciphers: %s\n", tls_dom->ciphers_list);
 
-		mysql_ssl_set(ptr->con, tls_dom->pkey_file, tls_dom->cert_file,
-		              tls_dom->ca_file, tls_dom->ca_directory,
+		mysql_ssl_set(ptr->con, tls_dom->pkey.s, tls_dom->cert.s,
+		              tls_dom->ca.s, tls_dom->ca_directory,
 		              tls_dom->ciphers_list);
 	}
 
