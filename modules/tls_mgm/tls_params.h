@@ -43,7 +43,7 @@
 #include "../../sr_module.h"
 #include "tls_domain.h"
 
-#define STR_VALS_ID_COL             0
+#define STR_VALS_DOMAIN_COL         0
 #define STR_VALS_ADDRESS_COL        1
 #define STR_VALS_METHOD_COL         2
 #define STR_VALS_CRL_DIR_COL        3

@@ -9,7 +9,7 @@
 
 <table id="tls_mgm" xmlns:db="http://docbook.org/ns/docbook">
     <name>tls_mgm</name>
-    <version>1</version>
+    <version>2</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used for defining domains.
@@ -18,10 +18,19 @@
 
     <column id="id">
         <name>id</name>
+        <type>unsigned int</type>
+        <size>&table_id_len;</size>
+        <autoincrement/>
+        <primary/>
+        <type db="dbtext">int,auto</type>
+        <description>Unique ID</description>
+    </column>
+
+    <column id="domain">
+        <name>domain</name>
         <type>string</type>
         <size>&id_len;</size>
-        <primary/>
-        <description>unique ID</description>
+        <description>TLS domain name</description>
     </column>
 
     <column id="address">
@@ -35,6 +44,7 @@
         <name>type</name>
         <type>int</type>
         <size>1</size>
+        <default>1</default>
         <type db="dbtext">int</type>
         <description>specifies the type of a domain : client domain(0) or server domain (1)</description>
     </column>
@@ -43,6 +53,7 @@
         <name>method</name>
         <type>string</type>
         <size>&method_len;</size>
+        <default>SSLv23</default>
         <null/>
         <description>SSL method used by a certain domain</description>
     </column>
@@ -51,6 +62,7 @@
         <name>verify_cert</name>
         <type>int</type>
         <size>1</size>
+        <default>0</default>
         <type db="dbtext">int</type>
         <null/>
         <description>verify certificate: 0 - no, 1 - yes</description>
@@ -60,6 +72,7 @@
         <name>require_cert</name>
         <type>int</type>
         <size>1</size>
+        <default>0</default>
         <type db="dbtext">int</type>
         <null/>
         <description>require certificate: 0 - no, 1 - yes</description>
@@ -67,18 +80,14 @@
 
     <column id="certificate">
         <name>certificate</name>
-        <type>string</type>
-        <size>255</size>
-        <type db="dbtext">string</type>
+        <type>binary</type>
         <null/>
         <description>certificate associated with a certain domain</description>
     </column>
 
     <column id="private_key">
         <name>private_key</name>
-        <type>string</type>
-        <size>255</size>
-        <type db="dbtext">int</type>
+        <type>binary</type>
         <null/>
         <description>private_key</description>
     </column>
@@ -87,6 +96,7 @@
         <name>crl_check_all</name>
         <type>int</type>
         <size>1</size>
+        <default>0</default>
         <type db="dbtext">int</type>
         <null/>
         <description>check all crl: 0 -no, 1 - yes</description>
@@ -96,14 +106,15 @@
         <name>crl_dir</name>
         <type>string</type>
         <size>255</size>
+        <default><null/></default>
         <null/>
         <description>crl directory</description>
     </column>
 
     <column id="ca_list">
         <name>ca_list</name>
-        <type>string</type>
-        <size>255</size>
+        <type>binary</type>
+        <default><null/></default>
         <null/>
         <description>CA list</description>
     </column>
@@ -112,6 +123,7 @@
         <name>ca_dir</name>
         <type>string</type>
         <size>255</size>
+        <default><null/></default>
         <null/>
         <description>ca directory</description>
     </column>
@@ -120,14 +132,15 @@
         <name>cipher_list</name>
         <type>string</type>
         <size>255</size>
+        <default><null/></default>
         <null/>
         <description>the list of algorithms used for authentication and encryption allowed</description>
     </column>
 
     <column id="dh_params">
         <name>dh_params</name>
-        <type>string</type>
-        <size>255</size>
+        <type>binary</type>
+        <default><null/></default>
         <null/>
         <description>specifies the Diffie-Hellmann parameters</description>
     </column>
@@ -136,6 +149,7 @@
         <name>ec_curve</name>
         <type>string</type>
         <size>255</size>
+        <default><null/></default>
         <null/>
         <description>specifies an elliptic curve which should be used for
         ciphers which demand an elliptic curve</description>

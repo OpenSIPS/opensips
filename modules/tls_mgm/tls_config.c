@@ -65,7 +65,7 @@ int             tls_send_timeout      = 100;
 /* per default, the TLS domains do not have a name */
 int             tls_client_domain_avp = -1;
 	
-str    id_col = str_init("id");
+str    domain_col = str_init("domain");
 str    type_col = str_init("type");
 str    address_col = str_init("address");
 str    method_col = str_init("method");

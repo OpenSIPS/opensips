@@ -15,38 +15,20 @@
 	</section>
 
 	<section>
-		<title>History</title>
-		<para>
-		The TLS support was originally developed by Peter Griffiths and posted
-		as a patch on SER development mailing list. Thanks to Cesc
-		Santasusana, several problems were fixed and some improvements were
-		added.
-		</para>
-		<para>
-		The TLS support was simultaneously added in both projects. In SER,
-		the support was committed in a separate <quote>experimental</quote>
-		CVS tree, as patch to the main CVS tree. In OpenSIPS, the support was
-		integrated directly into the CVS tree, as a built-in component, and is
-		part of stable OpenSIPS since release >=1.0.0.
-		</para>
-		<para>
-			Starting from OpenSIPS 2.2, the certificates managemnet has been
-			decoupled from the TLS communication in two different modules:
-			<emphasis>dh_params</emphasis> which handles the TLS communication
-			and <emphasis>tls_mgm</emphasis> which handles TLS handshake
-			(certificates and parameters).
-		</para>
-	</section>
-
-	<section>
 		<title>Usage</title>
 		<para>
 			This module is used to provision TLS certificates and parameters
-			for all the modules that use TLS transport (currently only
-			<emphasis>proto_tls</emphasis>). The module supports multiple
+			for all the modules that use TLS transport (like
+			<emphasis>proto_tls</emphasis> or <emphasis>proto_wss</emphasis>).
+			The module supports multiple
 			virtual domains that can be assigned to different listeners
 			(servers) or new connections (clients). Each TLS module that uses
 			this management module should assign itself to one or more domains.
+		</para>
+		<para>
+			The module allows the definition of the TLS domains both via 
+			module parameters (script level) and via an SQL table (see the
+			<emphasis>db_mode</emphasis> switch in the module).
 		</para>
 		<para>
 		A script example which details this module's usage can be found in
@@ -473,7 +455,7 @@ modparam("tls_mgm", "tls_client_domain_avp", "400")
 			<title><varname>db_mode</varname> (integer)</title>
 			<para>
 			When db_mode is enabled (1), this module cannot accept new domains
-			configuration from the script.
+			configuration from the script, besides the default domain.
 			</para>
 			<para>Default value is 0. (not enabled)</para>
 			<example>
@@ -518,17 +500,17 @@ modparam("tls_mgm", "db_table", "tls_mgm")
 
                 <section>
                     <title>
-                        <varname>id_col</varname> (string)
+                        <varname>domain_col</varname> (string)
                     </title>
                     <para>
-                        Sets the id column name.
+                        Sets the name.for the TLS domain column.
                     </para>
-                    <para>Default value is "id".</para>
+                    <para>Default value is "domain".</para>
                     <example>
-				<title>Usage of <varname>id_col</varname> block
+				<title>Usage of <varname>domain_col</varname> block
 					</title>
 				<programlisting format="linespecific">
-modparam("tls_mgm", "id_col", "id")
+modparam("tls_mgm", "domain_col", "tls_domain")
                                 </programlisting>
                     </example>
                 </section>

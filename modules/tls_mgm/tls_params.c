@@ -104,68 +104,72 @@ int tlsp_add_cli_domain(modparam_t type, void *val)
 	return 1;
 }
 
-int tlsp_db_add_domain(char **str_vals, int *int_vals, str* blob_vals, struct tls_domain **serv_dom, struct tls_domain **cli_dom){
+int tlsp_db_add_domain(char **str_vals, int *int_vals, str* blob_vals, 
+					struct tls_domain **serv_dom, struct tls_domain **cli_dom)
+{
 	struct ip_addr *ip;
 	unsigned int port;
 	str domain;
 	str id;
 
-	id.s = str_vals[STR_VALS_ID_COL];
+	id.s = str_vals[STR_VALS_DOMAIN_COL];
 	id.len = strlen(id.s);
 
-	if (parse_domain_address( str_vals[STR_VALS_ADDRESS_COL], &ip, &port, &domain)<0 )
+	if (parse_domain_address( str_vals[STR_VALS_ADDRESS_COL], &ip, &port,
+	&domain)<0 )
 		return -1;
 
-	
 	/* add domain */
 	if (int_vals[INT_VALS_TYPE_COL] == CLIENT_DOMAIN) {
-		
+
 		if (ip == NULL) {
 			if (tls_new_client_domain_name(&id, &domain, cli_dom) < 0) {
-				LM_ERR("failed to add new client domain name [%.*s]\n", domain.len, domain.s);
+				LM_ERR("failed to add new client domain name [%.*s]\n",
+					domain.len, domain.s);
 				return -1;
 			}
 		} else {
-
 			if (tls_new_client_domain(&id, ip, port, cli_dom) < 0) {
-				LM_ERR("failed to add new client domain [%.*s]\n", domain.len, domain.s);
+				LM_ERR("failed to add new client domain [%.*s]\n",
+					domain.len, domain.s);
 				return -1;
 			}
-
 		}
 		if (set_all_domain_attr(cli_dom, str_vals, int_vals, blob_vals) < 0){
-			LM_ERR("failed to set domain [%.*s] attr\n",  domain.len, domain.s);
+			LM_ERR("failed to set domain [%.*s] attr\n", domain.len, domain.s);
 			return -1;
 		}
 
 	} else if (int_vals[INT_VALS_TYPE_COL] == SERVER_DOMAIN) {
-		if (ip) {
 
+		if (ip) {
 			if (tls_new_server_domain(&id, ip, port, serv_dom) < 0) {
-				LM_ERR("failed to add new server domain [%.*s]\n", domain.len, domain.s);
+				LM_ERR("failed to add new server domain [%.*s]\n",
+					domain.len, domain.s);
 				return -1;
 			}
 		} else {
-			LM_ERR("server domains do not support 'domain name' in definition\n");
+			LM_ERR("server domains do not support 'domain name' in "
+				"definition\n");
 			return -1;
 		}
 		if (set_all_domain_attr(serv_dom, str_vals, int_vals,blob_vals) < 0){
-			LM_ERR("failed to set domain [%.*s] attr\n", domain.len, domain.s );
+			LM_ERR("failed to set domain [%.*s] attr\n",
+				domain.len, domain.s );
 			return -1;
 		}
-	} else { /* default domain setting */
-		if (set_all_default_domain_attr(&tls_default_server_domain, str_vals, int_vals,blob_vals) < 0){
-			LM_ERR("failed to set default server domain attr\n");
-			return -1;
-		}
-		if (set_all_default_domain_attr(&tls_default_client_domain, str_vals, int_vals,blob_vals) < 0){
-			LM_ERR("failed to set default client domain attr\n");
-			return -1;
-		}
+
+	} else {
+
+		LM_ERR("unknown TLS domain type [%d] in DB\n", 
+			int_vals[INT_VALS_TYPE_COL]);
+		return -1;
 	}
 
 	return 1;
 }
+
+
 static void split_param_val(char *in, str *id, str *val)
 {
 	char *p = (char*)in;
@@ -227,29 +231,6 @@ just_value:
 		} \
 	} while(0)
 
-#define set_domain_str_attr( _id, _field, _val, _len_field, _len) \
-	do { \
-		struct tls_domain *_d; \
-		if ((_id).s) { \
-			/* specific TLS domain */ \
-			if ( (_d=tls_find_domain_by_id(&(_id)))==NULL ) { \
-				LM_ERR("TLS domain [%.*s] not defined in [%s]\n", \
-					(_id).len, (_id).s, (char*)in); \
-				return -1; \
-			} \
-			_d->_field = _val; \
-			_d->_len_field = _len; \
-		} else { \
-			/* set default domains */ \
-			tls_default_server_domain._field = _val; \
-			tls_default_client_domain._field = _val; \
-			tls_default_server_domain._len_field = _len; \
-			tls_default_client_domain._len_field = _len; \
-		} \
-	} while(0)
-
-
-
 int tlsp_set_method(modparam_t type, void *in)
 {
 	str id;
@@ -258,7 +239,7 @@ int tlsp_set_method(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 
 	if ( strcasecmp( val.s, "SSLV23")==0 || strcasecmp( val.s, "TLSany")==0 )
@@ -285,7 +266,7 @@ int tlsp_set_verify(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 	
 	if (str2int( &val, &verify)!=0) {
@@ -306,7 +287,7 @@ int tlsp_set_require(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 	
 	if (str2int( &val, &req)!=0) {
@@ -320,36 +301,36 @@ int tlsp_set_require(modparam_t type, void *in)
 
 int tlsp_set_crl_check(modparam_t type, void *in)
 {
-       str id;
-       str val;
-       unsigned int check;
+	str id;
+	str val;
+	unsigned int check;
 
-       split_param_val( (char*)in, &id, &val);
+	split_param_val( (char*)in, &id, &val);
 
-       if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
-       
-       if (str2int( &val, &check)!=0) {
-               LM_ERR("option is not a number [%s]\n",val.s);
-               return -1;
-       }
 
-       set_domain_attr( id, crl_check_all, check);
-       return 1;
+	if (str2int( &val, &check)!=0) {
+		LM_ERR("option is not a number [%s]\n",val.s);
+		return -1;
+	}
+
+	set_domain_attr( id, crl_check_all, check);
+	return 1;
 }
 
 int tlsp_set_crldir(modparam_t type, void *in)
 {
-       str id;
-       str val;
+	str id;
+	str val;
 
-       split_param_val( (char*)in, &id, &val);
+	split_param_val( (char*)in, &id, &val);
 
-       if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
-       
-       set_domain_attr( id, crl_directory, val.s);
-       return 1;
+
+	set_domain_attr( id, crl_directory, val.s);
+	return 1;
 }
 
 int tlsp_set_certificate(modparam_t type, void *in)
@@ -359,10 +340,10 @@ int tlsp_set_certificate(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 	
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 	
-	set_domain_str_attr( id, cert.s, val.s, cert.len, val.len);
+	set_domain_attr( id, cert, val);
 	return 1;
 }
 
@@ -374,10 +355,10 @@ int tlsp_set_pk(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 
-	set_domain_str_attr( id, pkey.s, val.s, pkey.len, val.len);
+	set_domain_attr( id, pkey, val);
 	return 1;
 }
 
@@ -389,10 +370,10 @@ int tlsp_set_calist(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 
-	set_domain_str_attr( id, ca.s, val.s, ca.len, val.len);
+	set_domain_attr( id, ca, val);
 	return 1;
 }
 
@@ -404,7 +385,7 @@ int tlsp_set_cadir(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 
 	set_domain_attr( id, ca_directory, val.s);
@@ -419,7 +400,7 @@ int tlsp_set_cplist(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 	
 	set_domain_attr( id, ciphers_list, val.s);
@@ -434,10 +415,10 @@ int tlsp_set_dhparams(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 	
-	set_domain_str_attr( id, dh_param.s, val.s, dh_param.len, val.len);
+	set_domain_attr( id, dh_param, val);
 	return 1;
 }
 
@@ -449,7 +430,7 @@ int tlsp_set_eccurve(modparam_t type, void *in)
 
 	split_param_val( (char*)in, &id, &val);
 
-	if (tls_db_enabled)
+	if (tls_db_enabled && id.s)
 		return -1;
 	
 	set_domain_attr( id, tls_ec_curve, val.s);
