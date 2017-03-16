@@ -306,12 +306,12 @@ case $1 in
 			exit 1
 		fi
 
-		minfo	"MySQL DB migration tool for OpenSIPS 2.2.x databases\n\
+		minfo	"MySQL DB migration tool for OpenSIPS 2.3.x databases\n\
 ----------------------------------------------------------------------"
 		mwarn "\
 We recommend using this tool ONLY in order to upgrade an existing\n\
-OpenSIPS 2.2.x MySQL database to 2.3 schema. Behaviour when automatically\n\
-migrating earlier DB versions (1.8, 1.9, 1.10, 1.11, 2.1) to 2.3 is undefined"
+OpenSIPS 2.3.x MySQL database to 2.4 schema. Behaviour when automatically\n\
+migrating earlier DB versions (1.8 .. 2.2) to 2.4 is undefined"
 		read -p"Do you wish to continue? (y/N) " ANS
 
 		[ "$ANS" != "y" -a "$ANS" != "Y" ] && exit 1
