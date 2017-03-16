@@ -1619,10 +1619,27 @@ skip:
 
 static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* req)
 {
+#define WS_TRACE_IS_ON( CONN ) (CONN->proto_data && \
+		((struct ws_data*)CONN->proto_data)->tprot && \
+			((struct ws_data*)CONN->proto_data)->dest && \
+			*((struct ws_data*)CONN->proto_data)->trace_is_on)
+
+
 	struct ws_data* d;
 	union sockaddr_union src, dst;
 
-	if ( !conn || !req || !req->s || !req->len || ! (d = conn->proto_data) )
+	if ( !conn || !req || !req->s || !req->len ||
+			!WS_TRACE_IS_ON(conn) || ! (d = conn->proto_data) )
+		return 0;
+
+	if ( d->trace_route_id != -1 ) {
+		check_trace_route( d->trace_route_id, conn );
+		/* avoid doing this multiple times */
+		d->trace_route_id = -1;
+	}
+
+	/* check if tracing is deactivated from the route for this connection */
+	if ( conn->flags & F_CONN_TRACE_DROPPED )
 		return 0;
 
 	if ( !d->message  ) {
@@ -1642,6 +1659,7 @@ static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* 
 	add_trace_data( d->message, "Ws-Request", req);
 
 	return 0;
+#undef WS_TRACE_IS_ON
 }
 
 static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status status, str* rpl, str* message)
@@ -1651,6 +1669,12 @@ static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status st
 	if ( !conn || !rpl || !rpl->s || !rpl->len || !(d = conn->proto_data) || !d->message )
 		return 0;
 
+	if ( !(*d->trace_is_on) || conn->flags & F_CONN_TRACE_DROPPED )
+		return 0;
+
+	/* most probably tracing was activated after the request was processed */
+	if ( !d->message )
+		return 0;
 
 	add_trace_data( d->message, "Status", &trans_trace_str_status[status]);
 	add_trace_data( d->message, "Ws-Reply", rpl);
