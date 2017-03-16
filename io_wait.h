@@ -91,6 +91,10 @@
 #include "pt.h" /* mypid() */
 #include "error.h"
 
+#ifdef __OS_linux
+#include <features.h>     /* for GLIBC version testing */
+#endif
+
 #ifndef FD_TYPE_DEFINED
 typedef int fd_type;
 #define FD_TYPE_DEFINED
@@ -430,6 +434,10 @@ inline static int io_watch_add(	io_wait_h* h,
 				ep_event.events|=EPOLLOUT;
 			if (!already) {
 again1:
+#if (defined __OS_linux) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 24)
+				if (e->flags & IO_WATCH_READ)
+					ep_event.events|=EPOLLEXCLUSIVE;
+#endif
 				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
 				if (n==-1){
 					if (errno==EAGAIN) goto again1;
@@ -458,6 +466,10 @@ again11:
 				ep_event.events|=EPOLLOUT;
 again2:
 			if (!already) {
+#if (defined __OS_linux) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 24)
+				if (e->flags & IO_WATCH_READ)
+					ep_event.events|=EPOLLEXCLUSIVE;
+#endif
 				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
 				if (n==-1){
 					if (errno==EAGAIN) goto again2;
