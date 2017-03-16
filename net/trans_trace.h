@@ -47,6 +47,7 @@ int trace_message_atonce( int proto, unsigned long long id, union sockaddr_union
 	void* destination);
 int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 		union sockaddr_union* dst_su);
+int check_trace_route( int route_id, struct tcp_connection* conn);
 
 
 /* forward declaration */
