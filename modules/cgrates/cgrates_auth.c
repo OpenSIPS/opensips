@@ -53,9 +53,9 @@ static int cgr_proc_auth_reply(struct cgr_conn *c, json_object *jobj,
 	return ((val.n == 0) ? -2: 1);
 }
 
-static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
+static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst, str *tag)
 {
-	struct cgr_ctx *ctx;
+	struct cgr_session *s;
 	struct cgr_msg *cmsg = NULL;
 	static str cmd = str_init("SMGenericV1.MaxUsage");
 	str stime;
@@ -65,10 +65,10 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 		LM_ERR("Cannot get callid of the message!\n");
 		return NULL;
 	}
-	ctx = cgr_try_get_ctx();
+	s = cgr_get_sess(cgr_try_get_ctx(), tag);
 	stime.s = int2str(time(NULL), &stime.len);
 
-	cmsg = cgr_get_generic_msg(&cmd, ctx ? ctx->kv_store : NULL);
+	cmsg = cgr_get_generic_msg(&cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -76,7 +76,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst)
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (((ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID")) || !ctx) &&
+	if (((s && !cgr_get_const_kv(s, "OriginID")) || !s) &&
 			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
 		LM_ERR("cannot push OriginID!\n");
 		goto error;
@@ -107,18 +107,20 @@ error:
 }
 
 
-int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c)
+int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c, char *tag_c)
 {
 	str *acc;
 	str *dst;
+	str *tag;
 	json_object *jmsg = NULL;
 
 	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
 		return -4;
 	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
 		return -4;
+	tag = cgr_get_tag(msg, tag_c);
 
-	jmsg = cgr_get_auth_msg(msg, acc, dst);
+	jmsg = cgr_get_auth_msg(msg, acc, dst, tag);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
 		return -1;
@@ -128,18 +130,20 @@ int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c)
 }
 
 int w_acgr_auth(struct sip_msg* msg, async_ctx *ctx,
-		char* acc_c, char *dst_c)
+		char* acc_c, char *dst_c, char *tag_c)
 {
 	str *acc;
 	str *dst;
+	str *tag;
 	json_object *jmsg = NULL;
 
 	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
 		return -4;
 	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
 		return -4;
+	tag = cgr_get_tag(msg, tag_c);
 
-	jmsg = cgr_get_auth_msg(msg, acc, dst);
+	jmsg = cgr_get_auth_msg(msg, acc, dst, tag);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
 		return -1;

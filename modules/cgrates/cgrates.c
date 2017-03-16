@@ -24,7 +24,6 @@
  * drop accounting for all branches
  * drop accounting for a specific branch
  * add multi-leg values
- * raw commands
  */
 
 #include "../../dprint.h"
@@ -45,7 +44,7 @@ int cgre_retry_tout = CGR_DEFAULT_RETRY_TIMEOUT;
 int cgrc_max_conns = CGR_DEFAULT_MAX_CONNS;
 str cgre_bind_ip;
 
-static int fixup_cgrates(void ** param, int param_no);
+static int fixup_cgrates_auth(void ** param, int param_no);
 static int fixup_cgrates_acc(void ** param, int param_no);
 static int mod_init(void);
 static void mod_destroy(void);
@@ -61,6 +60,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 static int pv_parse_cgr(pv_spec_p sp, str *in);
+static int pv_parse_idx_cgr(pv_spec_p sp, str *in);
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 
@@ -75,20 +75,26 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_acc", (cmd_function)w_cgr_acc, 3, fixup_cgrates_acc, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"cgrates_auth", (cmd_function)w_cgr_auth, 0, fixup_cgrates, 0,
+	{"cgrates_acc", (cmd_function)w_cgr_acc, 4, fixup_cgrates_acc, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"cgrates_auth", (cmd_function)w_cgr_auth, 1, fixup_cgrates, 0,
+	{"cgrates_auth", (cmd_function)w_cgr_auth, 0, fixup_cgrates_auth, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"cgrates_auth", (cmd_function)w_cgr_auth, 2, fixup_cgrates, 0,
+	{"cgrates_auth", (cmd_function)w_cgr_auth, 1, fixup_cgrates_auth, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_auth", (cmd_function)w_cgr_auth, 2, fixup_cgrates_auth, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_auth", (cmd_function)w_cgr_auth, 3, fixup_cgrates_auth, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 1, fixup_spve_null, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 2, fixup_spve_spve, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
 static pv_export_t pvars[] = {
 	{ str_init("cgr"), 2003, pv_get_cgr, pv_set_cgr,
-		pv_parse_cgr, 0, 0, 0},
+		pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
 	{ str_init("cgrret"), 2004, pv_get_cgr_reply,
 		0, 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
@@ -96,9 +102,11 @@ static pv_export_t pvars[] = {
 
 
 static acmd_export_t acmds[] = {
-	{"cgrates_auth",  (acmd_function)w_acgr_auth, 0, fixup_cgrates},
-	{"cgrates_auth",  (acmd_function)w_acgr_auth, 1, fixup_cgrates},
-	{"cgrates_auth",  (acmd_function)w_acgr_auth, 2, fixup_cgrates},
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 0, fixup_cgrates_auth},
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 1, fixup_cgrates_auth},
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 2, fixup_cgrates_auth},
+	{"cgrates_auth",  (acmd_function)w_acgr_auth, 3, fixup_cgrates_auth},
+	{"cgrates_cmd",   (acmd_function)w_acgr_cmd,  1, fixup_spve_null},
 	{"cgrates_cmd",   (acmd_function)w_acgr_cmd,  1, fixup_spve_null},
 	{0, 0, 0, 0, }
 };
@@ -146,9 +154,9 @@ struct module_exports exports = {
 
 
 
-static int fixup_cgrates(void ** param, int param_no)
+static int fixup_cgrates_auth(void ** param, int param_no)
 {
-	if (param_no == 1 || param_no == 2)
+	if (param_no < 4)
 		return fixup_spve(param);
 	LM_CRIT("Unknown parameter number %d\n", param_no);
 	return E_UNSPEC;
@@ -205,7 +213,7 @@ static int fixup_cgrates_acc(void ** param, int param_no)
 		*param = (unsigned long *)(unsigned long)flags;
 		return 0;
 	}
-	if (param_no == 2 || param_no == 3)
+	if (param_no >= 2 && param_no <= 4)
 		return fixup_spve(param);
 	LM_CRIT("Unknown parameter number %d\n", param_no);
 	return E_UNSPEC;
@@ -236,8 +244,6 @@ static int mod_init(void)
 			return -2;
 		}
 	}
-
-	/* TODO: register also for loaded dialogs */
 
 	if (cgre_bind_ip.s)
 		cgre_bind_ip.len = strlen(cgre_bind_ip.s);
@@ -337,10 +343,35 @@ static int cgrates_set_engine(modparam_t type, void * val)
 	return 0;
 }
 
+static inline str *pv_get_idx_value(struct sip_msg *msg, pv_param_t *param)
+{
+	static pv_value_t idx_val;
+
+	if (param->pvi.u.dval) {
+		if (param->pvi.type == PV_NAME_PVAR) {
+			if (pv_get_spec_value(msg, (pv_spec_p)param->pvi.u.dval, &idx_val) != 0) {
+				LM_WARN("cannot get the tag of the cgr variable! "
+						"using default\n");
+				return NULL;
+			}
+			if (idx_val.flags & PV_VAL_NULL ||
+				!(idx_val.flags & PV_VAL_STR)) {
+				LM_WARN("invalid tag for variable! using default\n");
+				return NULL;
+			}
+			return &idx_val.rs;
+		} else {
+			return (str *)param->pvi.u.dval;
+		}
+	}
+	return NULL;
+}
+
 static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
 	pv_value_t name_val;
+	struct cgr_session *s;
 	struct cgr_ctx *ctx;
 	struct cgr_kv *kv;
 	int dup;
@@ -374,8 +405,14 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 	if (!(ctx = cgr_get_ctx()))
 		return -2;
 
+	s = cgr_get_sess_new(ctx, pv_get_idx_value(msg, param));
+	if (!s) {
+		LM_ERR("cannot get a new dict!\n");
+		return -2;
+	}
+
 	/* check if there already is a kv with that name */
-	kv = cgr_get_kv(ctx->kv_store, name_val.rs);
+	kv = cgr_get_kv(s, name_val.rs);
 	if (kv) {
 		/* replace the old value */
 		cgr_free_kv_val(kv);
@@ -390,7 +427,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("cannot allocate new key-value\n");
 			return -1;
 		}
-		list_add(&kv->list, ctx->kv_store);
+		list_add(&kv->list, &s->kvs);
 	}
 	if (val->flags & PV_VAL_NULL) {
 		kv->flags |= CGR_KVF_TYPE_NULL;
@@ -407,7 +444,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		kv->value.s.len = val->rs.len;
 		kv->flags |= CGR_KVF_TYPE_STR;
 	}
-	LM_DBG("add cgr kv: %d %s\n", kv->key.len, kv->key.s);
+	LM_DBG("add cgr kv: %d %s in %p\n", kv->key.len, kv->key.s, s);
 
 	return 0;
 free_kv:
@@ -421,6 +458,7 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 	pv_value_t name_val;
 	struct cgr_ctx *ctx;
 	struct cgr_kv *kv;
+	struct cgr_session *s;
 
 	if (!param || !val) {
 		LM_ERR("invalid parameter or value to set\n");
@@ -428,6 +466,10 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	if (!(ctx = CGR_GET_CTX()))
+		return pv_get_null(msg, param, val);
+
+	s = cgr_get_sess(ctx, pv_get_idx_value(msg, param));
+	if (!s)
 		return pv_get_null(msg, param, val);
 
 	/* first get the name of the field */
@@ -446,7 +488,7 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	/* check if there already is a kv with that name */
-	if (!(kv = cgr_get_kv(ctx->kv_store, name_val.rs)) || \
+	if (!(kv = cgr_get_kv(s, name_val.rs)) || \
 			kv->flags & CGR_KVF_TYPE_NULL)
 		return pv_get_null(msg, param, val);
 
@@ -522,6 +564,44 @@ static int pv_parse_cgr(pv_spec_p sp, str *in)
 		sp->pvp.pvn.u.isname.name.s.s = s;
 		sp->pvp.pvn.u.isname.name.s.len = in->len;
 		sp->pvp.pvn.type = PV_NAME_INTSTR;
+	}
+	return 0;
+}
+
+static int pv_parse_idx_cgr(pv_spec_p sp, str *in)
+{
+	str *s;
+	pv_spec_t *pv;
+	if (!in || !in->s || in->len < 1) {
+		LM_ERR("invalid CGR var name!\n");
+		return -1;
+	}
+	if (in->s[0] == PV_MARKER) {
+		pv = pkg_malloc(sizeof(pv_spec_t));
+		if (!pv) {
+			LM_ERR("Out of mem!\n");
+			return -1;
+		}
+		if (!pv_parse_spec(in, pv)) {
+			LM_ERR("cannot parse PVAR [%.*s]\n",
+					in->len, in->s);
+			return -1;
+		}
+		sp->pvp.pvi.u.dval = sp;
+		sp->pvp.pvi.type = PV_NAME_PVAR;
+	} else {
+		/* we need to add the null terminator */
+		s = pkg_malloc(sizeof(str) + in->len);
+		if (!s) {
+			LM_ERR("Out of mem!\n");
+			return -1;
+		}
+		s->s = (char *)s + sizeof(str);
+		memcpy(s->s, in->s, in->len);
+		s->len = in->len;
+
+		sp->pvp.pvi.u.dval = s;
+		sp->pvp.pvi.type = PV_NAME_INTSTR;
 	}
 	return 0;
 }

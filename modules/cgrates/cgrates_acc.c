@@ -24,6 +24,8 @@
 #include "cgrates_acc.h"
 
 #define CGR_REF_DBG(_c, _s) LM_DBG("%s ref=%d ctx=%p\n", _s, _c->ref_no, _c)
+#define CGR_SESS_ON(_s) ((_s) && (_s)->branch_mask)
+#define CGR_SESS_ON_BRANCH(_s, _b) ((_s) && (_s)->branch_mask & (1 << (_b)))
 
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
@@ -73,8 +75,8 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 			return NULL;
 		}
 		if ((ctx->acc = cgr_new_acc_ctx(dlg)) != NULL) {
-			/* point to the same kv_store */
-			ctx->acc->kv_store = ctx->kv_store;
+			/* point to the same sessions */
+			ctx->acc->sessions = ctx->sessions;
 			cgr_ref_acc_ctx(ctx->acc, 1, "general ctx");
 		}
 	} else {
@@ -88,8 +90,9 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 	struct cgr_acc_ctx *acc_ctx;
 	str ctxstr;
 	struct cgr_kv *kv;
-	struct list_head *l;
-	struct list_head *t;
+	struct list_head *l, *sl;
+	struct list_head *t, *st;
+	struct cgr_session *s, *sa;
 	struct dlg_cell *dlg;
 	struct cgr_ctx *ctx = CGR_GET_CTX();
 
@@ -113,17 +116,36 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 	/* if there is a context, move everything from static ctx to the shared
 	 * one, but keep the newever values in the store */
 	if (ctx) {
-		list_for_each_safe(l, t, acc_ctx->kv_store) {
-			kv = list_entry(l, struct cgr_kv, list);
-			if (cgr_get_kv(ctx->kv_store, kv->key))
-				cgr_free_kv(kv);
-			else {
-				list_del(&kv->list);
-				list_add(&kv->list, ctx->kv_store);
+		list_for_each_safe(sl, st, acc_ctx->sessions) {
+			sa = list_entry(sl, struct cgr_session, list);
+			s = cgr_get_sess(ctx, (sa->tag.len ? &sa->tag : NULL));
+			/* if there is a matching session. move everything from
+			 * the one in accounting to the one in local ctx */
+			if (s) {
+				list_for_each_safe(l, t, &sa->kvs) {
+					kv = list_entry(l, struct cgr_kv, list);
+					if (cgr_get_kv(s, kv->key))
+						cgr_free_kv(kv);
+					else {
+						list_del(&kv->list);
+						list_add(&kv->list, &s->kvs);
+					}
+				}
+				if (s->sess_info) {
+					LM_WARN("found session info in a local context - discarding it!\n");
+					shm_free(s->sess_info);
+				}
+				s->sess_info = sa->sess_info;
+				sa->sess_info = 0;
+				cgr_free_sess(sa);
+			} else {
+				/* move the dict in the local ctx */
+				list_del(&s->list);
+				list_add(&s->list, ctx->sessions);
 			}
 		}
-		shm_free(acc_ctx->kv_store);
-		acc_ctx->kv_store = ctx->kv_store;
+		shm_free(acc_ctx->sessions);
+		acc_ctx->sessions = ctx->sessions;
 	}
 
 	return acc_ctx;
@@ -137,16 +159,12 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	str ctxstr;
 
 	LM_DBG("release acc ctx=%p\n", ctx);
-	if (ctx->acc.s)
-		shm_free(ctx->acc.s);
-	if (ctx->dst.s)
-		shm_free(ctx->dst.s);
 	/* remove all elements */
-	if (ctx->kv_store) {
-		list_for_each_safe(l, t, ctx->kv_store)
-			cgr_free_kv(list_entry(l, struct cgr_kv, list));
-		shm_free(ctx->kv_store);
-		ctx->kv_store = 0;
+	if (ctx->sessions) {
+		list_for_each_safe(l, t, ctx->sessions)
+			cgr_free_sess(list_entry(l, struct cgr_session, list));
+		shm_free(ctx->sessions);
+		ctx->sessions = 0;
 	}
 	shm_free(ctx);
 	ctx = 0;
@@ -195,10 +213,16 @@ static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 		return -1;
 	if (val.n == -1)
 		return 1;
-	dlg->lifetime = val.n;
-	dlg->lifetime_dirty = 1;
+	/* update only if the timeout is smaller than the existing one */
+	if (dlg->lifetime > val.n) {
+		dlg->lifetime = val.n;
+		dlg->lifetime_dirty = 1;
+		LM_DBG("setting dialog timeout to %d\n", val.n);
+	} else {
+		LM_DBG("dialog timeout %d lower or equal than %d\n",
+				dlg->lifetime, val.n);
+	}
 
-	LM_DBG("setting dialog timeout to %d\n", val.n);
 	return 1;
 }
 
@@ -260,22 +284,41 @@ static inline int cgr_help_set_str(str **dst, str src)
 	return 0;
 }
 
-
-static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
-		struct dlg_cell *dlg, struct cgr_acc_ctx *ctx)
+static inline str *cgr_get_sess_callid(struct sip_msg *msg,
+		struct cgr_session *s, str *msg_cid)
 {
-	struct cgr_msg *cmsg;
-	str stime;
-	static str cmd = str_init("SMGenericV1.InitiateSession");
+	static str callid;
+	char *tmp;
+	int len;
 
-	if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
-			(msg->callid==NULL)) ) {
-		LM_ERR("Cannot get callid of the message!\n");
+	/* if the default tag, simply return the initial callid */
+	if (!s->tag.len)
+		return msg_cid;
+
+	len = msg_cid->len + 1 /* separator */ + s->tag.len;
+	tmp = pkg_realloc(callid.s, len);
+	if (!tmp) {
+		LM_ERR("cannot realloc callid buffer with len=%d\n", len);
 		return NULL;
 	}
-	time(&ctx->answer_time);
+	callid.s = tmp;
+	callid.len = len;
+	memcpy(callid.s, msg_cid->s, msg_cid->len);
+	callid.s[msg_cid->len] = '|';
+	memcpy(callid.s + msg_cid->len + 1, s->tag.s, s->tag.len);
+	return &callid;
+}
 
-	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
+static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
+		struct dlg_cell *dlg, struct cgr_acc_ctx *ctx, struct cgr_session *s)
+{
+	struct cgr_msg *cmsg;
+	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->sess_info;
+	static str cmd = str_init("SMGenericV1.InitiateSession");
+	str stime;
+	str *callid;
+
+	cmsg = cgr_get_generic_msg(&cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -283,32 +326,40 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
-			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
-		LM_ERR("cannot push OriginID!\n");
-		goto error;
+	if (ctx && !cgr_get_const_kv(s, "OriginID")) {
+		if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
+				(msg->callid==NULL)) ) {
+			LM_ERR("Cannot get callid of the message!\n");
+			goto error;
+		} else {
+			callid = cgr_get_sess_callid(msg, s, &msg->callid->body);
+			if (!callid || cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+				LM_ERR("cannot push OriginID!\n");
+				goto error;
+			}
+		}
 	}
 
-	if (ctx && !cgr_get_const_kv(ctx->kv_store, "DialogID") &&
+	if (ctx && !cgr_get_const_kv(s, "DialogID") &&
 			cgr_msg_push_int(cmsg, "DialogID", dlg->h_id) < 0) {
 		LM_ERR("cannot push DialogID!\n");
 		goto error;
 	}
 
-	if (ctx && !cgr_get_const_kv(ctx->kv_store, "DialogEntry") &&
+	if (ctx && !cgr_get_const_kv(s, "DialogEntry") &&
 			cgr_msg_push_int(cmsg, "DialogEntry", dlg->h_entry) < 0) {
 		LM_ERR("cannot push DialogEntry!\n");
 		goto error;
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", &ctx->acc) < 0) {
+	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
 
 	/* SetupTime */
-	stime.s = int2str(ctx->setup_time, &stime.len);
+	stime.s = int2str(si->start_time, &stime.len);
 	if (cgr_msg_push_str(cmsg, "SetupTime", &stime) < 0) {
 		LM_ERR("cannot push SetupTime info!\n");
 		goto error;
@@ -322,7 +373,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	}
 
 	/* Destination */
-	if (cgr_msg_push_str(cmsg, "Destination", &ctx->dst) < 0) {
+	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
 		LM_ERR("cannot push Destination info!\n");
 		goto error;
 	}
@@ -334,14 +385,16 @@ error:
 }
 
 static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
-		struct cgr_acc_ctx *ctx, str *callid)
+		struct cgr_acc_ctx *ctx, struct cgr_session *s)
 {
+	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->sess_info;
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
-	str tmp;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	time_t now = time(NULL);
 	static str cmd = str_init("SMGenericV1.TerminateSession");
+	str *callid;
+	str tmp;
 
 	ctx->duration = now - ctx->answer_time;
 
@@ -351,7 +404,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
+	cmsg = cgr_get_generic_msg(&cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
@@ -359,21 +412,23 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(ctx->kv_store, "OriginID") &&
-			cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
-		LM_ERR("cannot push OriginID!\n");
-		goto error;
+	if (ctx && !cgr_get_const_kv(s, "OriginID")) {
+		callid = cgr_get_sess_callid(msg, s, &dlg->callid);
+		if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+			LM_ERR("cannot push OriginID!\n");
+			goto error;
+		}
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", &ctx->acc) < 0) {
+	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
 
 	/* SetupTime */
-	if (ctx->answer_time != ctx->setup_time) {
-		tmp.s = int2str(ctx->setup_time, &tmp.len);
+	if (ctx->answer_time != si->start_time) {
+		tmp.s = int2str(si->start_time, &tmp.len);
 		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
 			LM_ERR("cannot push SetupTime info!\n");
 			goto error;
@@ -405,33 +460,26 @@ error:
 }
 
 static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
-		struct cgr_acc_ctx *ctx, str *callid)
+		struct cgr_acc_ctx *ctx, struct cgr_session *s, str *callid)
 {
-	struct dlg_cell *dlg;
-	struct cgr_msg *cmsg = NULL;
 	str tmp;
+	struct cgr_msg *cmsg = NULL;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	static str cmd = str_init("SMGenericV1.ProcessCDR");
+	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->sess_info;
 
-	/* OriginID */
-	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
-		LM_ERR("cannot retrieve dialog!\n");
-		return NULL;
-	}
-
-	cmsg = cgr_get_generic_msg(&cmd, ctx->kv_store);
+	cmsg = cgr_get_generic_msg(&cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
 	}
 
-	/* TODO: shall we add an index or smth? */
 	if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
 		LM_ERR("cannot add OriginID node\n");
 		goto error;
 	}
 
-	if (cgr_msg_push_str(cmsg, "Account", &ctx->acc) < 0) {
+	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
 		LM_ERR("cannot add Account node\n");
 		goto error;
 	}
@@ -454,8 +502,8 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		}
 	}
 
-	if (ctx->setup_time && ctx->setup_time != ctx->answer_time) {
-		tmp.s = int2str(ctx->setup_time, &tmp.len);
+	if (si->start_time && si->start_time != ctx->answer_time) {
+		tmp.s = int2str(si->start_time, &tmp.len);
 		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
 			LM_ERR("cannot add SetupTime node\n");
 			goto error;
@@ -469,11 +517,12 @@ error:
 	return NULL;
 }
 
-static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
+static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx,
+		struct cgr_session *s, str *callid)
 {
 	json_object *jmsg;
 
-	jmsg = cgr_get_cdr_acc_msg(msg, ctx, callid);
+	jmsg = cgr_get_cdr_acc_msg(msg, ctx, s, callid);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
 		return;
@@ -485,6 +534,8 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx, str *callid)
 static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
+#if 0
+TODO: SERIALIZE!
 	struct cgr_acc_ctx *ctx;
 	struct list_head *l;
 	struct cgr_kv *kv;
@@ -497,8 +548,8 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 	buf.len = sizeof(ctx->flags) + sizeof(unsigned) + ctx->acc.len +
 		sizeof(unsigned) + ctx->dst.len + sizeof(ctx->setup_time) +
 		sizeof(ctx->answer_time);
-	if (ctx->kv_store) {
-		list_for_each(l, ctx->kv_store) {
+	if (ctx->kv_dicts) {
+		list_for_each(l, ctx->kv_dicts) {
 			kv = list_entry(l, struct cgr_kv, list);
 			buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
 			if (kv->flags & CGR_KVF_TYPE_INT)
@@ -538,8 +589,8 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 	p += sizeof(ctx->answer_time);
 
 	/* kv */
-	if (ctx->kv_store) {
-		list_for_each(l, ctx->kv_store) {
+	if (ctx->kv_dicts) {
+		list_for_each(l, ctx->kv_dicts) {
 			kv = list_entry(l, struct cgr_kv, list);
 
 			/* kv->key */
@@ -573,20 +624,35 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &buf) < 0)
 		LM_ERR("cannot store the serialized context value!\n");
 	pkg_free(buf.s);
+#endif
 }
 
-int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
+int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
+		char *tag_c)
 {
 	str *acc;
 	str *dst;
+	struct cgr_acc_sess *si;
 	struct cgr_acc_ctx *ctx;
+	struct cgr_session *s;
 	struct dlg_cell *dlg;
-	int unref = 1;
+	branch_bm_t branch_mask = 0;
 
 	if (msg->REQ_METHOD != METHOD_INVITE) {
 		LM_DBG("accounting not called on INVITE\n");
 		return -3;
 	}
+	/* find out where we are to see if it makes sense to engage anything */
+	if (route_type == REQUEST_ROUTE || route_type == FAILURE_ROUTE) {
+		branch_mask = (unsigned)-1;
+		LM_DBG("engaging accounting for all branches!\n");
+	} else if (route_type == BRANCH_ROUTE || route_type == ONREPLY_ROUTE) {
+		branch_mask = 1 << cgr_tmb.get_branch_index();
+		LM_DBG("engaging accounting for branch %d!\n", cgr_tmb.get_branch_index());
+	} else {
+		LM_ERR("cannot engage accounting in route type %d\n", route_type);
+		return -3;
+    }
 
 	if (!cgr_dlgb.get_dlg) {
 		LM_ERR("cannot do cgrates accounting without dialog support!\n");
@@ -610,47 +676,67 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c)
 		LM_ERR("cannot create acc context\n");
 		return -1;
 	}
-
-	ctx->flags = (unsigned long)flag_c;
-	time(&ctx->setup_time);
-
-	/* store accounting and destination values */
-	if (shm_str_dup(&ctx->acc, acc) < 0 || shm_str_dup(&ctx->dst, dst) < 0) {
-		LM_ERR("out of shm mem!\n");
-		goto internal_error;
+	s = cgr_get_sess_new(cgr_get_ctx(), cgr_get_tag(msg, tag_c));
+	if (!s) {
+		LM_ERR("cannot create a new session!\n");
+		return -1;
 	}
-
-	/* TODO: check if it was already engaged! */
-	if (cgr_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
-			cgr_tmcb_func, ctx, cgr_tmcb_func_free)<=0) {
-		LM_ERR("cannot register tm callbacks\n");
-		goto internal_error;
+	if (!s->sess_info) {
+		si = shm_malloc(sizeof(struct cgr_acc_sess) + acc->len + dst->len);
+		if (!si) {
+			LM_ERR("cannot create new session information!\n");
+			return -1;
+		}
+		memset(si, 0, sizeof(struct cgr_acc_sess)); /* no need to clean the rest */
+		si->acc.s = (char *)si + sizeof(struct cgr_acc_sess);
+		si->dst.s = si->acc.s + acc->len;
+		si->flags = (unsigned long)flag_c;
+		time(&si->start_time);
+		si->acc.len = acc->len;
+		memcpy(si->acc.s, acc->s, acc->len);
+		si->dst.len = dst->len;
+		memcpy(si->dst.s, dst->s, dst->len);
+		s->sess_info = si;
+	} else {
+		LM_DBG("session already engaged! nothing updated...\n");
+		si = (struct cgr_acc_sess *)s->sess_info;
 	}
-	unref--;
-	cgr_ref_acc_ctx(ctx, 1, "tm");
-
-	if (cgr_tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED,
-			cgr_tmcb_func, ctx, NULL)<=0) {
-		LM_ERR("cannot register tm callbacks\n");
-		goto internal_error;
+	if (si->branch_mask & branch_mask) {
+		LM_DBG("session already engaged on this branch\n");
+		/* nothing more to do - no ref, no nothing */
+		return 1;
 	}
+	si->branch_mask |= branch_mask;
+	LM_DBG("session info tag=%.*s acc=%.*s dst=%.*s mask=%X\n",
+			s->tag.len, s->tag.s, si->acc.len, si->acc.s,
+			si->dst.len, si->dst.s, si->branch_mask);
 
-	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
-			cgr_dlg_callback, ctx, 0)){
-		LM_ERR("cannot register callback for database accounting\n");
-		goto internal_error;
-	}
+	if (!ctx->engaged) {
+		time(&ctx->start_time);
 
-	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DB_WRITE_VP,
-				cgr_dlg_onshutdown, ctx, NULL) != 0) {
-		LM_ERR("cannot register callback for program shutdown!\n");
-		goto internal_error;
+		if (cgr_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
+				cgr_tmcb_func, ctx, cgr_tmcb_func_free)<=0) {
+			LM_ERR("cannot register tm callbacks\n");
+			cgr_ref_acc_ctx(ctx, -1, "acc");
+			return -1;
+		}
+		cgr_ref_acc_ctx(ctx, 1, "tm");
+
+		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
+				cgr_dlg_callback, ctx, 0)){
+			LM_ERR("cannot register callback for database accounting\n");
+			return -1;
+		}
+
+		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DB_WRITE_VP,
+					cgr_dlg_onshutdown, ctx, NULL) != 0) {
+			LM_ERR("cannot register callback for program shutdown!\n");
+			return -1;
+		}
+		ctx->engaged = 1;
 	}
 
 	return 1;
-internal_error:
-	cgr_ref_acc_ctx(ctx, unref, "acc");
-	return -1;
 }
 
 static void cgr_tmcb_func_free(void *param)
@@ -661,44 +747,80 @@ static void cgr_tmcb_func_free(void *param)
 static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct cgr_acc_ctx *ctx;
-	json_object *jmsg;
+	struct cgr_acc_sess *si;
+	struct cgr_session *s;
 	struct dlg_cell *dlg;
+	struct list_head *l;
+	json_object *jmsg;
 	str terminate_str;
+	int branch;
+	str callid;
 
-	LM_DBG("Called callback for transaction %p type %d reply_code=%d\n",
-			t, type, ps->code);
+	/* send commands only for engaged branches */
+	branch = cgr_tmb.get_branch_index();
+
+	LM_DBG("Called callback for transaction %p type %d reply_code=%d branch=%d\n",
+			t, type, ps->code, branch);
 
 	if (!is_invite(t) || has_totag(ps->req))
 		return;
 
 	ctx = (struct cgr_acc_ctx *)*ps->param;
-	if (type & (TMCB_ON_FAILURE|TMCB_TRANS_CANCELLED)) {
-		if (ctx->flags & CGRF_DO_MISSED && ctx->flags & CGRF_DO_CDR)
-			cgr_cdr(ps->req, ctx, &t->callid);
-		goto unref;
-	} else if ((type & TMCB_RESPONSE_OUT) && (ps->code < 200 || ps->code >= 300)) {
+	if (ps->code < 200)
 		return;
+	callid = t->callid;
+	while (callid.len && (callid.s[callid.len - 1] == '\r' ||
+			callid.s[callid.len - 1] == '\n'))
+		callid.len--;
+
+	if (ps->code >= 300) {
+		/* we need to generate CDRs for all the branches that had engaged
+		 * on this branch */
+		list_for_each(l, ctx->sessions) {
+			s = list_entry(l, struct cgr_session, list);
+			si = (struct cgr_acc_sess *)s->sess_info;
+			if (CGR_SESS_ON_BRANCH(si, branch)) {
+				if ((si->flags & CGRF_DO_MISSED) && (si->flags & CGRF_DO_CDR))
+					cgr_cdr(ps->req, ctx, s, &callid);
+				si->branch_mask = 0;
+			}
+		}
+		goto unref;
 	}
 
 	/* we start a session only for successful calls */
-
 	dlg = cgr_dlgb.get_dlg();
 	if (!dlg) {
 		LM_ERR("cannot find dialog!\n");
 		goto unref;
 	}
-	jmsg = cgr_get_start_acc_msg(ps->req, dlg, ctx);
-	if (!jmsg) {
-		LM_ERR("cannot build the json to send to cgrates\n");
-		goto error;
+	time(&ctx->answer_time);
+	list_for_each(l, ctx->sessions) {
+		s = list_entry(l, struct cgr_session, list);
+		si = (struct cgr_acc_sess *)s->sess_info;
+		if (!CGR_SESS_ON_BRANCH(si, branch)) {
+			/* if they were ever engaged, we need to check if we have to
+			 * raise a CDR */
+			if (CGR_SESS_ON(si) && (si->flags & CGRF_DO_MISSED) &&
+					(si->flags & CGRF_DO_CDR))
+					cgr_cdr(ps->req, ctx, s, &callid);
+			continue;
+		}
+		jmsg = cgr_get_start_acc_msg(ps->req, dlg, ctx, s);
+		if (!jmsg) {
+			LM_ERR("cannot build the json to send to cgrates\n");
+			goto error;
+		}
+
+		if (cgr_handle_cmd(ps->req, jmsg, cgr_proc_start_acc_reply, dlg) < 0)
+			goto error;
+		si->started = 1;
 	}
 
-	if (cgr_handle_cmd(ps->req, jmsg, cgr_proc_start_acc_reply, dlg) < 0)
-		goto error;
-
-	/* should have reffed engaged and unref tm, so we simply return :D */
+	/* should have reffed engaged and unref tm, so we simply exit :D */
 	return;
 error:
+	/* TODO: should we close all the started sessions now? */
 	terminate_str.s = "CGRateS Accounting Denied";
 	terminate_str.len = strlen(terminate_str.s);
 	if (cgr_dlgb.terminate_dlg(dlg->h_entry, dlg->h_id, &terminate_str) >= 0)
@@ -710,8 +832,11 @@ unref:
 
 static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 {
-	struct dlg_cell *dlg;
 	struct cgr_acc_ctx *ctx;
+	struct cgr_acc_sess *si;
+	struct cgr_session *s;
+	struct dlg_cell *dlg;
+	struct list_head *l;
 
 	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
 		LM_ERR("cannot retrieve dialog!\n");
@@ -719,7 +844,13 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 	}
 	ctx = *ps->param;
 
-	cgr_cdr(ps->req, ctx, &dlg->callid);
+	list_for_each(l, ctx->sessions) {
+		s = list_entry(l, struct cgr_session, list);
+		si = (struct cgr_acc_sess *)s->sess_info;
+		if (!si || !si->started)
+			continue;
+		cgr_cdr(ps->req, ctx, s, &dlg->callid);
+	}
 	cgr_ref_acc_ctx(ctx, -1, "engaged");
 }
 
@@ -737,6 +868,8 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params)
 {
+#if 0
+TODO: serialize
 	struct cgr_acc_ctx *ctx;
 	str buf;
 	str kvs;
@@ -778,12 +911,12 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 
 	if (p < end) {
 		/* we also have some values stored in the context */
-		ctx->kv_store = shm_malloc(sizeof(*ctx->kv_store));
-		if (!ctx->kv_store) {
+		ctx->kv_dicts = shm_malloc(sizeof(*ctx->kv_dicts));
+		if (!ctx->kv_dicts) {
 			LM_ERR("cannot allocate key-value store for ctx=%p\n", ctx);
 			goto internal_error;
 		}
-		INIT_LIST_HEAD(ctx->kv_store);
+		INIT_LIST_HEAD(ctx->kv_dicts);
 		while (p < end) {
 			LM_DBG("p=%p end=%p\n", p, end);
 			CGR_CTX_COPY(&kvs.len, sizeof(unsigned), "key.len");
@@ -813,7 +946,7 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 				}
 				CGR_CTX_COPY(kv->value.s.s, kv->value.s.len, "key.value.str.s");
 				/* all good - link the new value */
-				list_add(&kv->list, ctx->kv_store);
+				list_add(&kv->list, NULL/*TODO*/);
 			}
 		}
 	}
@@ -831,6 +964,7 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 	return;
 internal_error:
 	cgr_free_acc_ctx(ctx);
+#endif
 }
 #undef CGR_CTX_COPY
 
@@ -838,8 +972,12 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	struct cgr_acc_ctx *ctx;
-	struct cell* t;
+	struct cgr_acc_sess *si;
+	struct cgr_session *s;
+	struct list_head *l;
 	json_object *jmsg;
+	struct cell* t;
+	int registered = 0;
 	
 	if (!_params) {
 		LM_ERR("no parameter specified to dlg callback!\n");
@@ -847,36 +985,45 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	}
 	ctx = *_params->param;
 
-	jmsg = cgr_get_stop_acc_msg(_params->msg, ctx, &dlg->callid);
-	if (!jmsg) {
-		LM_ERR("cannot build the json to send to cgrates\n");
-		return;
-	}
+	/* stop every session started */
+	list_for_each(l, ctx->sessions) {
+		s = list_entry(l, struct cgr_session, list);
+		si = (struct cgr_acc_sess *)s->sess_info;
+		if (!si || !si->started)
+			continue;
+		jmsg = cgr_get_stop_acc_msg(_params->msg, ctx, s);
+		if (!jmsg) {
+			LM_ERR("cannot build the json to send to cgrates\n");
+			continue;
+		}
 
-	if (cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx) < 0)
-		goto unref_ctx;
+		if (cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx) < 0)
+			continue;
 
-	if (ctx->flags & CGRF_DO_CDR) {
-		/* if it's not a local transaction we do the accounting on the tm callbacks */
-		if (((t = cgr_tmb.t_gett()) == T_UNDEFINED) || !t ||
-				(t != NULL && !cgr_tmb.t_is_local(_params->msg))) {
-			/* normal dialogs will have to do accounting when the response for
-			 * the bye will come because users should be able to populate extra
-			 * vars and leg vars */
-			if (cgr_tmb.register_tmcb(_params->msg, NULL,
-							TMCB_RESPONSE_OUT, cgr_cdr_cb, ctx, 0) < 0) {
-				LM_ERR("failed to register cdr callback!\n");
-				goto unref_ctx;
+		if (si->flags & CGRF_DO_CDR) {
+			/* if it's not a local transaction we do the accounting on the tm callbacks */
+			if (((t = cgr_tmb.t_gett()) == T_UNDEFINED) || !t ||
+					(t != NULL && !cgr_tmb.t_is_local(_params->msg))) {
+				/* normal dialogs will have to do accounting when the response for
+				 * the bye will come because users should be able to populate extra
+				 * vars and leg vars */
+				if (!registered) {
+					if (cgr_tmb.register_tmcb(_params->msg, NULL,
+								TMCB_RESPONSE_OUT, cgr_cdr_cb, ctx, 0) < 0)
+						LM_ERR("failed to register cdr callback!\n");
+					registered = 1;
+				}
+			} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
+				/* for local transactions we generate CDRs here, since all the messages
+				 * have been processed */
+				cgr_cdr(_params->msg, ctx, s, &dlg->callid);
+				/* mark session as not started to prevent duplicate cdrs */
+				si->started = 0;
 			}
-			return;
-		} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
-			/* for local transactions we generate CDRs here, since all the messages
-			 * have been processed */
-			cgr_cdr(_params->msg, ctx, &dlg->callid);
 		}
 	}
-unref_ctx:
-	cgr_ref_acc_ctx(ctx, -1, "dialog");
+	if (!registered)
+		cgr_ref_acc_ctx(ctx, -1, "dialog");
 }
 
 int cgr_acc_terminate(json_object *param, json_object **ret)

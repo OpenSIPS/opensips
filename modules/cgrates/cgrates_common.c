@@ -34,14 +34,14 @@
 #include "cgrates_engine.h"
 
 /* key-value manipulation */
-struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name)
+struct cgr_kv *cgr_get_kv(struct cgr_session *s, str name)
 {
 	struct list_head *l;
 	struct cgr_kv *kv;
 
-	if (!ctx)
+	if (!s)
 		return NULL;
-	list_for_each(l, ctx) {
+	list_for_each(l, &s->kvs) {
 		kv = list_entry(l, struct cgr_kv, list);
 		if (kv->key.len == name.len && !memcmp(kv->key.s, name.s, name.len))
 			return kv;
@@ -49,12 +49,12 @@ struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name)
 	return NULL;
 }
 
-struct cgr_kv *cgr_get_const_kv(struct list_head *ctx, const char *name)
+struct cgr_kv *cgr_get_const_kv(struct cgr_session *s, const char *name)
 {
 	str sname;
 	sname.s = (char *)name;
 	sname.len = strlen(name);
-	return cgr_get_kv(ctx, sname);
+	return cgr_get_kv(s, sname);
 }
 
 struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup)
@@ -157,7 +157,7 @@ int cgrates_set_reply(int type, int_str *value)
 		} \
 	} while (0)
 
-struct cgr_msg *cgr_get_generic_msg(str *method, struct list_head *list)
+struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 {
 	static struct cgr_msg cmsg;
 	struct cgr_kv *kv;
@@ -177,8 +177,8 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct list_head *list)
 	JSON_CHECK(cmsg.params = json_object_new_object(), "params object");
 	json_object_array_add(jarr, cmsg.params);
 
-	if (list) {
-		list_for_each(l, list) {
+	if (s) {
+		list_for_each(l, &s->kvs) {
 			kv = list_entry(l, struct cgr_kv, list);
 			if (kv->flags & CGR_KVF_TYPE_NULL) {
 				jtmp = NULL;
@@ -265,15 +265,15 @@ struct cgr_ctx *cgr_get_ctx(void)
 	memset(ctx, 0, sizeof *ctx);
 	ctx->acc = cgr_tryget_acc_ctx();
 	if (!ctx->acc) {
-		ctx->kv_store = shm_malloc(sizeof *ctx->kv_store);
-		if (!ctx->kv_store) {
+		ctx->sessions = shm_malloc(sizeof *ctx->sessions);
+		if (!ctx->sessions) {
 			LM_ERR("out of shm memory\n");
 			shm_free(ctx);
 			return NULL;
 		}
-		INIT_LIST_HEAD(ctx->kv_store);
+		INIT_LIST_HEAD(ctx->sessions);
 	} else {
-		ctx->kv_store = ctx->acc->kv_store;
+		ctx->sessions = ctx->acc->sessions;
 		cgr_ref_acc_ctx(ctx->acc, 1, "general ctx");
 	}
 	
@@ -283,6 +283,48 @@ struct cgr_ctx *cgr_get_ctx(void)
 		CGR_PUT_CTX(ctx);
 	LM_DBG("new ctx=%p\n", ctx);
 	return ctx;
+}
+
+struct cgr_session *cgr_get_sess(struct cgr_ctx *ctx, str *tag)
+{
+	struct list_head *l;
+	struct cgr_session *s;
+	if (!ctx || !ctx->sessions)
+		return NULL;
+	/* if no tag given, return the entry with no tag */
+	list_for_each(l, ctx->sessions) {
+		s = list_entry(l, struct cgr_session, list);
+		if ((!tag && !s->tag.len) || (tag && s->tag.len == tag->len &&
+				memcmp(tag->s, s->tag.s, tag->len) == 0))
+			return s;
+	}
+	return NULL;
+}
+
+struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *tag)
+{
+	struct cgr_session *s;
+	if (!ctx)
+		return NULL;
+	if ((s = cgr_get_sess(ctx, tag)) != NULL)
+		return s;
+	s = shm_malloc(sizeof(*s) + (tag ? tag->len : 0));
+	if (!s) {
+		LM_ERR("out of shm memory!\n");
+		return NULL;
+	}
+	if (tag) {
+		s->tag.s = (char *)s + sizeof(*s);
+		s->tag.len = tag->len;
+		memcpy(s->tag.s, tag->s, tag->len);
+	} else {
+		s->tag.s = 0;
+		s->tag.len = 0;
+	}
+	s->sess_info = 0;
+	INIT_LIST_HEAD(&s->kvs);
+	list_add(&s->list, ctx->sessions);
+	return s;
 }
 
 #define CGR_RESET_REPLY_CTX() \
@@ -697,6 +739,19 @@ int cgrates_process(json_object *jobj,
 	return 0;
 }
 
+void cgr_free_sess(struct cgr_session *s)
+{
+	struct list_head *l;
+	struct list_head *t;
+
+	if (s->sess_info)
+		shm_free(s->sess_info);
+	list_for_each_safe(l, t, &s->kvs)
+		cgr_free_kv(list_entry(l, struct cgr_kv, list));
+	list_del(&s->list);
+	shm_free(s);
+}
+
 void cgr_free_ctx(void *param)
 {
 	struct list_head *l;
@@ -709,9 +764,9 @@ void cgr_free_ctx(void *param)
 
 	/* if somebody is doing accounting, let them free the list */
 	if (!ctx->acc) {
-		list_for_each_safe(l, t, ctx->kv_store)
-			cgr_free_kv(list_entry(l, struct cgr_kv, list));
-		shm_free(ctx->kv_store);
+		list_for_each_safe(l, t, ctx->sessions)
+			cgr_free_sess(list_entry(l, struct cgr_session, list));
+		shm_free(ctx->sessions);
 	} else
 		cgr_ref_acc_ctx(ctx->acc, -1, "general ctx");
 	shm_free(ctx);
@@ -793,5 +848,14 @@ str *cgr_get_dst(struct sip_msg *msg, char *dst_p)
 	return &msg->parsed_uri.user;
 error:
 	LM_ERR("failed fo fetch destination\n");
+	return NULL;
+}
+
+str *cgr_get_tag(struct sip_msg *msg, char *tag_p)
+{
+	static str tag;
+
+	if (tag_p && fixup_get_svalue(msg, (gparam_p)tag_p, &tag) >= 0)
+		return &tag;
 	return NULL;
 }

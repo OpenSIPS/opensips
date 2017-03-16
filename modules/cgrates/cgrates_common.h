@@ -58,6 +58,13 @@ struct cgr_kv {
 	struct list_head list;
 };
 
+struct cgr_session {
+	str tag;
+	void *sess_info;
+	struct list_head kvs;
+	struct list_head list;
+};
+
 struct cgr_acc_ctx;
 
 struct cgr_ctx {
@@ -68,7 +75,7 @@ struct cgr_ctx {
 	struct cgr_acc_ctx *acc;
 
 	/* variables */
-	struct list_head *kv_store;
+	struct list_head *sessions;
 };
 
 struct cgr_local_ctx {
@@ -98,7 +105,7 @@ struct cgr_msg {
 
 /* message builder */
 int cgrates_set_reply(int type, int_str *value);
-struct cgr_msg *cgr_get_generic_msg(str *method, struct list_head *list);
+struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *sess);
 int cgr_msg_push_str(struct cgr_msg *cmsg, const char *key, str *value);
 int cgr_msg_push_int(struct cgr_msg *cmsg, const char *key, unsigned int value);
 
@@ -108,15 +115,11 @@ struct cgr_kv *cgr_new_const_kv(const char *key);
 struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup);
 void cgr_free_kv(struct cgr_kv *kv);
 void cgr_free_kv_val(struct cgr_kv *kv);
-struct cgr_kv *cgr_get_kv(struct list_head *ctx, str name);;
-struct cgr_kv *cgr_get_const_kv(struct list_head *ctx, const char *name);
-
-int cgr_push_kv_str(struct list_head *list, const char *key,
-		str *value);
-int cgr_push_kv_int(struct list_head *list, const char *key,
-		int value);
-int cgr_dup_kvlist_shm(struct list_head *from, struct list_head *to);
-
+void cgr_free_sess(struct cgr_session *sess);
+struct cgr_kv *cgr_get_kv(struct cgr_session *sess, str name);;
+struct cgr_kv *cgr_get_const_kv(struct cgr_session *sess, const char *name);
+struct cgr_session *cgr_get_sess(struct cgr_ctx *ctx, str *name);
+struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *name);
 
 /* context manipulation */
 extern int cgr_ctx_idx;
@@ -168,6 +171,7 @@ int cgrates_process(json_object *jobj,
 		struct cgr_conn *c, cgr_proc_reply_f proc_reply, void *p);
 
 /* parameters manipulation */
+str *cgr_get_tag(struct sip_msg *msg, char *tag_p);
 str *cgr_get_acc(struct sip_msg *msg, char *acc_p);
 str *cgr_get_dst(struct sip_msg *msg, char *acc_p);
 

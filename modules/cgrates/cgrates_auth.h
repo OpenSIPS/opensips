@@ -35,11 +35,11 @@
  *  - -4: invalid message
  *  - -5: invalid CGRateS message
  */
-int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c);
+int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c, char *tag_c);
 
 /* async version of w_cgr_auth */
 int w_acgr_auth(struct sip_msg* msg, async_ctx *ctx,
-		char* acc_c, char *dst_c);
+		char* acc_c, char *dst_c, char *tag_c);
 
 #endif /* _CGRATES_AUTH_H_ */
 
