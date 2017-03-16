@@ -276,7 +276,7 @@ static void do_action_trans_5(node_info_t *node, int *link_state_to_set,
 	bin_free_packet(&packet);
 }
 
-inline void heartbeats_timer(void)
+void heartbeats_timer(void)
 {
 	struct timeval now;
 	utime_t last_ping_int, ping_reply_int;

@@ -101,7 +101,7 @@ struct node_search_info {
 extern struct mod_registration *clusterer_reg_modules;
 extern enum sip_protos clusterer_proto;
 
-inline void heartbeats_timer(void);
+void heartbeats_timer(void);
 
 void receive_clusterer_bin_packets(bin_packet_t *packet, int packet_type, struct receive_info *ri,
 									void *att);
