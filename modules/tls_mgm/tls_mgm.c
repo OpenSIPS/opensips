@@ -29,12 +29,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  *
- * History:
- * -------
- *  2015-02-12  first version (bogdan)
  */
 
 #include <openssl/ui.h>
@@ -136,7 +133,7 @@ static param_export_t params[] = {
 	{ "db_mode",		INT_PARAM,  &tls_db_enabled	},
 	{ "db_url",		STR_PARAM,  &tls_db_url.s	},
 	{ "db_table",		STR_PARAM,  &tls_db_table.s	},
-	{ "id_col",		STR_PARAM,  &id_col.s		},
+	{ "domain_col",		STR_PARAM,  &domain_col.s		},
 	{ "address_col",	STR_PARAM,  &address_col.s	},
 	{ "tls_method_col",	STR_PARAM,  &method_col.s	},
 	{ "verify_cert_col",	STR_PARAM,  &verify_cert_col.s	},
@@ -368,7 +365,6 @@ struct module_exports exports = {
 static int
 set_dh_params(SSL_CTX * ctx, char *filename)
 {
-	LM_DBG("Entered\n");
 	BIO *bio = BIO_new_file(filename, "r");
 	if (!bio) {
 		LM_ERR("unable to open dh params file '%s'\n", filename);
@@ -394,7 +390,6 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 
 static int set_dh_params_db(SSL_CTX * ctx, str *blob)
 {
-	LM_DBG("Entered\n");
 	BIO *bio;
 	DH *dh;
 
@@ -455,7 +450,7 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	struct tls_domain **serv_dom, struct tls_domain **cli_dom)
 {
 	int int_vals[4];
-	char *str_vals[8];
+	char *str_vals[7];
 	str blob_vals[4];
 	int i, n;
 	int no_rows = 5;
@@ -470,7 +465,7 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 	res = 0;
 
-	columns[0] = &id_col;
+	columns[0] = &domain_col;
 	columns[1] = &address_col;
 	columns[2] = &type_col;
 	columns[3] = &method_col;
@@ -503,7 +498,7 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			goto error;
 		}
 		no_rows = estimate_available_rows(4 + 45 + 4 + 45 + 4 + 4 + 45 +
-			45 + 4 + 45 + 45 + 45 + 3 * 4096, db_cols);
+			45 + 4 + 45 + 45 + 4 * 4096, db_cols);
 		if (no_rows == 0) no_rows = 5;
 		if (dr_dbf->fetch_result(db_hdl, &res, no_rows) < 0) {
 			LM_ERR("Error fetching rows\n");
@@ -524,8 +519,8 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 		for (i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 
-			check_val(id_col, ROW_VALUES(row), DB_STRING, 1, 1);
-			str_vals[STR_VALS_ID_COL] = (char *) VAL_STRING(ROW_VALUES(row));
+			check_val(domain_col, ROW_VALUES(row), DB_STRING, 1, 1);
+			str_vals[STR_VALS_DOMAIN_COL] = (char *) VAL_STRING(ROW_VALUES(row));
 
 			check_val(address_col, ROW_VALUES(row) + 1, DB_STRING, 1, 1);
 			str_vals[STR_VALS_ADDRESS_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 1);
@@ -569,7 +564,13 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			check_val(eccurve_col, ROW_VALUES(row) + 14, DB_STRING, 0, 0);
 			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 14);
 
-			tlsp_db_add_domain(str_vals, int_vals, blob_vals, serv_dom, cli_dom);
+			if (tlsp_db_add_domain(str_vals, int_vals, blob_vals, 
+			serv_dom, cli_dom)<0) {
+				LM_ERR("failed to add TLS domain %s/%s, skipping \n",
+					str_vals[STR_VALS_DOMAIN_COL],
+					str_vals[STR_VALS_ADDRESS_COL]);
+			}
+
 			n++;
 		}
 
@@ -692,21 +693,21 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
  */
 static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
-	int use_default = 0;
+	int from_file = 0;
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 	/*
 	 * set dh params
 	 */
 	if (!d->dh_param.s) {
-		use_default = 1;
+		from_file = 1;
 		LM_DBG("no DH params file for tls[%s:%d] defined, "
 				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 				tls_tmp_dh_file);
 		d->dh_param.s = tls_tmp_dh_file;
 		d->dh_param.len = len(tls_tmp_dh_file);
 	}
-	if (!tls_db_enabled || use_default) {
+	if (!tls_db_enabled || from_file) {
 		if (d->dh_param.s && set_dh_params(d->ctx, d->dh_param.s) < 0)
 			return -1;
 	} else {
@@ -722,9 +723,11 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	}
 #else
 	if (d->tmp_dh_file  || tls_tmp_dh_file)
-		LM_WARN("DH params file discarded as not supported by your openSSL version\n");
+		LM_WARN("DH params file discarded as not supported by your "
+			"openSSL version\n");
 	if (d->tls_ec_curve)
-		LM_WARN("EC params file discarded as not supported by your openSSL version\n");
+		LM_WARN("EC params file discarded as not supported by your "
+			"openSSL version\n");
 #endif
 
 	if( d->ciphers_list != 0 ) {
@@ -843,7 +846,6 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
  */
 static int load_certificate(SSL_CTX * ctx, char *filename)
 {
-	LM_DBG("entered\n");
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
 		LM_ERR("unable to load certificate file '%s'\n",
 				filename);
@@ -858,7 +860,6 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 */
 static int load_certificate_db(SSL_CTX * ctx, str *blob)
 {
-	LM_DBG("entered\n");
 	X509 *cert = NULL;
 	BIO *cbio;
 
@@ -980,7 +981,6 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
  */
 static int load_ca(SSL_CTX * ctx, char *filename)
 {
-	LM_DBG("Entered\n");
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
 		LM_ERR("unable to load ca '%s'\n", filename);
 		return -1;
@@ -995,8 +995,6 @@ static int load_ca_db(SSL_CTX * ctx, str *blob)
 	X509_STORE *store;
 	X509 *cert;
 	BIO *cbio;
-
-	LM_DBG("Entered\n");
 
 	cbio = BIO_new_mem_buf((void*)blob->s,blob->len);
 
@@ -1036,7 +1034,6 @@ static int load_ca_db(SSL_CTX * ctx, str *blob)
  */
 static int load_ca_dir(SSL_CTX * ctx, char *directory)
 {
-	LM_DBG("Entered\n");
 	if (!SSL_CTX_load_verify_locations(ctx, 0 , directory)) {
 		LM_ERR("unable to load ca directory '%s'\n", directory);
 		return -1;
@@ -1076,7 +1073,6 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 {
 #define NUM_RETRIES 3
 	int idx, ret_pwd;
-	LM_DBG("entered\n");
 
 	SSL_CTX_set_default_passwd_cb(ctx, passwd_cb);
 	SSL_CTX_set_default_passwd_cb_userdata(ctx, filename);
@@ -1115,7 +1111,6 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 	int idx;
 	BIO *kbio;
 	EVP_PKEY *key;
-	LM_DBG("entered\n");
 
 	kbio = BIO_new_mem_buf((void*)blob->s, blob->len);
 
@@ -1159,7 +1154,7 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 static int init_tls_domains(struct tls_domain *d)
 {
 	struct tls_domain *dom;
-	int use_default = 0;
+	int from_file = 0;
 
 	dom = d;
 	while (d) {
@@ -1196,21 +1191,21 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load certificate
 		 */
 		if (!d->cert.s) {
-			use_default = 1;
+			from_file = 1;
 			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
 					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
 			d->cert.s = tls_cert_file;
 			d->cert.len = len(tls_cert_file);
 		}
 
-		if (!tls_db_enabled || use_default) {
+		if (!tls_db_enabled || from_file) {
 			if (load_certificate(d->ctx, d->cert.s) < 0)
 				return -1;
 		} else
 			if (load_certificate_db(d->ctx, &d->cert) < 0)
 				return -1;
 
-		use_default = 0;
+		from_file = 0;
 
 		/**
 		 * load crl from directory
@@ -1226,7 +1221,7 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load ca
 		 */
 		if (!d->ca.s) {
-			use_default = 1;
+			from_file = 1;
 			LM_NOTICE("no CA list for tls[%s:%d] defined, "
 					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 					tls_ca_file);
@@ -1234,14 +1229,14 @@ static int init_tls_domains(struct tls_domain *d)
 			d->ca.len = len(tls_ca_file);
 		}
 
-		if (!tls_db_enabled || use_default) {
+		if (!tls_db_enabled || from_file) {
 			if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
 				return -1;
 		} else {
 			if (load_ca_db(d->ctx, &d->ca) < 0)
 				return -1;
 		}
-		use_default = 0;
+		from_file = 0;
 		/*
 		 * load ca from directory
 		 */
@@ -1269,16 +1264,16 @@ static int init_tls_domains(struct tls_domain *d)
 					"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
 			d->pkey.s = tls_pkey_file;
 			d->pkey.len = len(tls_pkey_file);
-			use_default = 1;
+			from_file = 1;
 		}
-		if (!tls_db_enabled || use_default) {
+		if (!tls_db_enabled || from_file) {
 			if (load_private_key(d->ctx, d->pkey.s) < 0)
 				return -1;
 		} else {
 			if (load_private_key_db(d->ctx, &d->pkey) < 0)
 				return -1;
 		}
-		use_default = 0;
+		from_file = 0;
 		d = d->next;
 	}
 
@@ -1368,7 +1363,6 @@ static int tls_init_multithread(void)
 static void
 init_ssl_methods(void)
 {
-	LM_DBG("entered\n");
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLS_client_method();
@@ -1474,7 +1468,7 @@ static int mod_init(void){
 			return -1;
 		}
 
-		id_col.len = strlen(id_col.s);
+		domain_col.len = strlen(domain_col.s);
 		address_col.len = strlen(address_col.s);
 		type_col.len = strlen(type_col.s);
 		method_col.len = strlen(method_col.s);
@@ -1501,7 +1495,8 @@ static int mod_init(void){
 		}
 
 		if (dr_dbf.use_table(db_hdl, &tls_db_table) < 0) {
-			LM_ERR("cannot select table \"%.*s\"\n", tls_db_table.len, tls_db_table.s);
+			LM_ERR("cannot select table \"%.*s\"\n",
+				tls_db_table.len, tls_db_table.s);
 			return -1;
 		}
 	}
@@ -1580,8 +1575,8 @@ static int mod_init(void){
 	tls_default_server_domain.type = TLS_DOMAIN_DEF|TLS_DOMAIN_SRV;
 	tls_default_server_domain.addr.af = AF_INET;
 
-	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table, &tls_server_domains,
-			&tls_client_domains)){
+	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table,
+			&tls_server_domains, &tls_client_domains)){
 		return -1;
 	}
 
@@ -1618,7 +1613,6 @@ static int mod_init(void){
 static void mod_destroy(void)
 {
 	struct tls_domain *d;
-	LM_DBG("entered\n");
 
 	if (dom_lock) {
 		lock_destroy_rw(dom_lock);
@@ -1640,15 +1634,6 @@ static void mod_destroy(void)
 		lock_destroy(d->lock);
 		lock_dealloc(d->lock);
 		d = d->next;
-	}
-
-	if(tls_db_enabled) {
-		if(tls_default_server_domain.id.s){
-			shm_free(tls_default_server_domain.id.s);
-		}
-		if(tls_default_client_domain.id.s){
-			shm_free(tls_default_client_domain.id.s);
-		}
 	}
 
 	if (tls_default_server_domain.ctx) {
