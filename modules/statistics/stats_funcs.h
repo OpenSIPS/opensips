@@ -28,9 +28,12 @@
 #ifndef _STATISTICS_STATS_FUNCS_
 #define _STATISTICS_STATS_FUNCS_
 
+#define STAT_GROUP_DELIM ':'
+
 int reg_statistic( char* name);
 
 int register_all_mod_stats();
 
+void parse_groupname(const str *in, str *out_grp, str *out_name);
 
 #endif

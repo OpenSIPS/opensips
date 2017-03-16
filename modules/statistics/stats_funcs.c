@@ -114,7 +114,25 @@ int register_all_mod_stats(void)
 	return 0;
 }
 
+void parse_groupname(const str *in, str *out_grp, str *out_name)
+{
+	char *p;
 
+	for (p = in->s + in->len - 1; *p != STAT_GROUP_DELIM && p > in->s; p--) {}
+	if (p == in->s) {
+		out_grp->s = NULL;
+		out_grp->len = 0;
+		*out_name = *in;
+	} else {
+		out_grp->s = in->s;
+		out_grp->len = p - in->s;
+		out_name->s = p + 1;
+		out_name->len = in->len - (out_name->s - in->s);
+	}
+
+	LM_DBG("group: '%.*s', name: '%.*s'\n", out_grp->len, out_grp->s,
+	       out_name->len, out_name->s);
+}
 
 
 
