@@ -92,7 +92,7 @@ modparam("rest_client", "connect_poll_interval", 2)
 		<title><varname>max_async_transfers</varname> (integer)</title>
 		<para>
 		Maximum number of asynchronous HTTP transfers <emphasis>a single</emphasis>
-		OpenSIPS worker is allowed to run simultanously. As long as this threshold
+		OpenSIPS worker is allowed to run simultaneously. As long as this threshold
 		is reached for a worker, all new async transfers it attempts to perform
 		will be done in a blocking manner, with appropriate logging warnings.
 		</para>

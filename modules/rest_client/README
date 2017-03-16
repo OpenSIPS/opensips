@@ -129,7 +129,7 @@ modparam("rest_client", "connect_poll_interval", 2)
 1.3.3. max_async_transfers (integer)
 
    Maximum number of asynchronous HTTP transfers a single OpenSIPS
-   worker is allowed to run simultanously. As long as this
+   worker is allowed to run simultaneously. As long as this
    threshold is reached for a worker, all new async transfers it
    attempts to perform will be done in a blocking manner, with
    appropriate logging warnings.

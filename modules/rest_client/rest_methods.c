@@ -273,7 +273,7 @@ static inline char del_transfer(int fd)
 
 /**
  * We cannot use the "parallel transfers" feature of libcurl's multi interface
- * because that would consume read events from some its file descriptors that
+ * because that would consume read events from some of its file descriptors that
  * we also manually add to the OpenSIPS reactor. This may lead to dangling
  * descriptors in the reactor, as well as some OpenSIPS async routes which
  * are not triggered.
@@ -282,7 +282,7 @@ static inline char del_transfer(int fd)
  * multi handles each doing a single transfer, rather than using 1 multi handle
  * doing multiple transfers.
  *
- * The size of the multi pool may grow indefinitely.
+ * The maximum size of the multi pool is limited to "max_async_transfers"
  */
 struct list_head multi_pool;
 static int multi_pool_sz;
