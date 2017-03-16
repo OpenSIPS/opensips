@@ -33,7 +33,9 @@
 #define SIP_TRACE_TYPE_STR "sip"
 
 #define GET_SIPTRACE_CONTEXT \
-	context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx)
+	( current_processing_ctx ? \
+	  context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx) : \
+	  0 )
 
 #define SET_SIPTRACE_CONTEXT(st_ctx) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx, st_ctx)
