@@ -98,6 +98,8 @@ static void* shm_mempool=(void*)-1;
  */
 unsigned long long *mem_hash_usage;
 
+#include "../mem/mem.h"
+#include "../locking.h"
 #ifdef STATISTICS
 
 #include "../evi/evi_core.h"
@@ -470,7 +472,7 @@ void init_shm_statistics(void)
 	struct multi_str *mod_name;
 	int i, len;
 	char *full_name = NULL;
-	stat_var *p;
+	stat_var *p __attribute__((unused));
 
 	if(mem_free_idx != 1){
 
