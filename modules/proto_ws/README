@@ -25,6 +25,12 @@ Razvan Crainea
               1.3.2. ws_send_timeout (integer)
               1.3.3. ws_max_msg_chunks (integer)
               1.3.4. trace_destination (string)
+              1.3.5. trace_on (int)
+              1.3.6. trace_filter_route (string)
+
+        1.4. Exported MI Functions
+
+              1.4.1. ws_trace
 
    2. Frequently Asked Questions
 
@@ -34,6 +40,8 @@ Razvan Crainea
    1.2. Set ws_send_timeout parameter
    1.3. Set ws_max_msg_chunks parameter
    1.4. Set trace_destination parameter
+   1.5. Set trace_on parameter
+   1.6. Set trace_filter_route parameter
 
 Chapter 1. Admin Guide
 
@@ -155,8 +163,75 @@ modparam("proto_ws", "ws_max_msg_chunks", 8)
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
 =tcp;version=3")
 
-modparam("proto_wss", "trace_destination", "hep_dest")
+modparam("proto_ws", "trace_destination", "hep_dest")
 ...
+
+1.3.5. trace_on (int)
+
+   This controls whether tracing for ws is on or not. You still
+   need to define Section 1.3.4, “trace_destination (string)”in
+   order to work, but this value will be controlled using mi
+   function Section 1.4.1, “ ws_trace ”.
+   Default value is 1(tracing active).
+
+   Example 1.5. Set trace_on parameter
+...
+modparam("proto_ws", "trace_on", 0)
+...
+
+1.3.6. trace_filter_route (string)
+
+   Define the name of a route in which you can filter which
+   connections will be trace and which connections won't be. In
+   this route you will have information regarding source and
+   destination ips and ports for the current connection. To
+   disable tracing for a specific connection the last call in this
+   route must be drop, any other exit mode resulting in tracing
+   the current connection ( of course you still have to define a
+   Section 1.3.4, “trace_destination (string)” and trace must be
+   on at the time this connection is opened.
+
+   WARNING: IF Section 1.3.5, “trace_on (int)” is set to 0 or
+   tracing is deactived via the mi command Section 1.4.1, “
+   ws_trace ” this route won't be called.
+   Default value is none(no route is set).
+
+   Example 1.6. Set trace_filter_route parameter
+...
+modparam("proto_ws", "trace_filter_route", "ws_filter")
+...
+/* all ws connections will go through this route if tracing is activated
+ * and a trace destination is defined */
+route[ws_filter] {
+        ...
+        /* all connections opened from ip 1.1.1.1 will be traced, all th
+e other connections
+         * won't be */
+        if ( $si == "1.1.1.1" )
+                exit;
+        else
+                drop;
+}
+...
+
+1.4. Exported MI Functions
+
+1.4.1.  ws_trace
+
+   Name: ws_trace
+
+   Parameters:
+     * trace_mode(optional): set ws tracing on and off. This
+       parameter can be missing and the command will show the
+       current tracing status for this module( on or off );
+       Possible values:
+          + on
+          + off
+
+   MI FIFO Command Format:
+                        :ws_trace:_reply_fifo_file_
+                        trace_mode
+                        _empty_line_
 
 Chapter 2. Frequently Asked Questions
 
