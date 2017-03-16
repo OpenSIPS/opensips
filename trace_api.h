@@ -32,6 +32,8 @@
 #define TRACE_INADDR_LOOPBACK	((in_addr_t) 0x0100007f) /* Inet 127.0.0.1.  */
 
 #define TRACE_PROTO_COMMON \
+	int trace_route_id; \
+	int* trace_is_on; \
 	trace_proto_t* tprot; \
 	trace_dest dest; \
 	int net_trace_proto_id; \
