@@ -50,8 +50,8 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 
 
 /* forward declaration */
-typedef struct _trace_prot trace_proto_t;
-extern trace_proto_t* net_trace_api;
+struct _trace_prot;
+extern struct _trace_prot* net_trace_api;
 extern int net_trace_proto_id;
 
 extern str trans_trace_str_status[];
