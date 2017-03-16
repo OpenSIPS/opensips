@@ -866,6 +866,14 @@ Files: modules/proto_ws/proto_ws.h
 Copyright: 2015, OpenSIPS Project
 License: GPL-2+
 
+Files: modules/proto_wss/*
+Copyright: 2016, - OpenSIPS Foundation / 2001-2003, FhG Fokus
+License: GPL-2+
+
+Files: modules/proto_wss/proto_wss.h
+Copyright: 2016, OpenSIPS Project
+License: GPL-2+
+
 Files: modules/pua/*
 Copyright: 2006-2009, Voice Sistem S.R.L
 License: GPL-2+

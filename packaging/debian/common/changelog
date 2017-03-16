@@ -11,6 +11,7 @@ opensips (2.3.0-1) unstable; urgency=medium
     + Rename opensips-rabbitmq-module to opensips-rabbitmq-modules.
   * debian/copyright:
     + Add copyright info for xml module files.
+    + Add copyright info for wss module files.
     + Add copyright info for cgrates module files.
     + Add copyright info for rabbitmq module files.
 
