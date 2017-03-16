@@ -1178,6 +1178,10 @@ Files: modules/xcap_client/*
 Copyright: 2006-2009, Voice Sistem S.R.L
 License: GPL-2+
 
+Files: modules/xml/*
+Copyright: 2017, OpenSIPS Solutions
+License: GPL-2+
+
 Files: modules/xmpp/*
 Copyright: 2006-2009, Voice Sistem S.R.L
 License: GPL-2+

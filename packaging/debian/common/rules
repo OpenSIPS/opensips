@@ -36,7 +36,7 @@ ALL_MODPKG_LIST := \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
 	PROTO_SCTP PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
-	CGRATES
+	CGRATES XML
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -49,25 +49,25 @@ endif
 # FOO_MODULES is the directory name within modules/ that belongs to the package
 # FOO_MOD_PATH is same as FOO_MODULES, but with 'modules/' prepended
 
-MYSQL_PKGNAME = opensips-mysql-module 
+MYSQL_PKGNAME = opensips-mysql-module
 MYSQL_MODULES = db_mysql
 MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
 POSTGRES_PKGNAME = opensips-postgres-module
 POSTGRES_MODULES = db_postgres
 POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
-UNIXODBC_PKGNAME = opensips-unixodbc-module 
+UNIXODBC_PKGNAME = opensips-unixodbc-module
 UNIXODBC_MODULES=db_unixodbc
 UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
-JABBER_PKGNAME = opensips-jabber-module 
+JABBER_PKGNAME = opensips-jabber-module
 JABBER_MODULES = jabber
 JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
-CPL_PKGNAME = opensips-cpl-module 
+CPL_PKGNAME = opensips-cpl-module
 CPL_MODULES = cpl_c
 CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
 RADIUS_PKGNAME = opensips-radius-modules
 RADIUS_MODULES = aaa_radius peering
 RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
-PRESENCE_PKGNAME = opensips-presence-modules 
+PRESENCE_PKGNAME = opensips-presence-modules
 PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client
 PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
 XMLRPC_PKGNAME = opensips-xmlrpc-module
@@ -82,25 +82,25 @@ SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
 XMPP_PKGNAME = opensips-xmpp-module
 XMPP_MODULES = xmpp
 XMPP_MOD_PATH=$(addprefix modules/, $(XMPP_MODULES))
-CROUTE_PKGNAME = opensips-carrierroute-module 
+CROUTE_PKGNAME = opensips-carrierroute-module
 CROUTE_MODULES = carrierroute
 CROUTE_MOD_PATH=$(addprefix modules/, $(CROUTE_MODULES))
 BERKELEY_PKGNAME = opensips-berkeley-module
 BERKELEY_MODULES = db_berkeley
 BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
-LDAP_PKGNAME = opensips-ldap-modules 
+LDAP_PKGNAME = opensips-ldap-modules
 LDAP_MODULES = ldap h350
 LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
-GEOIP_PKGNAME = opensips-geoip-module 
+GEOIP_PKGNAME = opensips-geoip-module
 GEOIP_MODULES = mmgeoip
 GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
 REGEX_PKGNAME = opensips-regex-module
 REGEX_MODULES = regex
 REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
-IDENTITY_PKGNAME = opensips-identity-module 
+IDENTITY_PKGNAME = opensips-identity-module
 IDENTITY_MODULES = identity
 IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
-B2BUA_PKGNAME = opensips-b2bua-module 
+B2BUA_PKGNAME = opensips-b2bua-module
 B2BUA_MODULES = b2b_entities b2b_logic
 B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
 DBHTTP_PKGNAME = opensips-dbhttp-module
@@ -154,6 +154,9 @@ REST_CLIENT_MOD_PATH=$(addprefix modules/, $(REST_CLIENT_MODULES))
 CGRATES_PKGNAME = opensips-cgrates-module
 CGRATES_MODULES = cgrates
 CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
+XML_PKGNAME = opensips-xml-module
+XML_MODULES = xml
+XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
 
 
 # Need this per-package variables available in environment so accessible

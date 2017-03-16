@@ -410,6 +410,20 @@ Description: Support for JSON handling in OpenSIPS script
  provides ways to access (from script) objects and arrays to add,replace or
  delete values from the script.
 
+Package: opensips-xml-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Support for XML documents handling in OpenSIPS script
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package introduces a new type of variable that provides both
+ serialization and de-serialization from a XML document. The script variable
+ provides ways to access (from script) objects and arrays to add, replace or
+ delete values from the script.
+
 Package: opensips-console
 Architecture: any
 Multi-Arch: foreign
