@@ -36,6 +36,10 @@
 		<year>2006</year>
 		<holder>&voicesystem;</holder>
 	</copyright>
+	<copyright>
+		<year>2007-2017</year>
+		<holder>&osipsproj;</holder>
+	</copyright>
 	<revhistory>
 		<revision>
 		<revnumber>$Revision: 8740 $</revnumber>

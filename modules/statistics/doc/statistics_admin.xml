@@ -17,6 +17,30 @@
 		implementation of any kind of statistic scenario.
 	</para>
 	</section>
+
+	<section>
+	<title>Statistic Groups</title>
+	<para>
+		Starting with OpenSIPS 2.3, statistics may be grouped by prefixing
+		their names with the name of the desired group, along with a colon
+		separator (e.g. <emphasis role='bold'>$stat(method:invite)</emphasis> or
+<emphasis role='bold'>update_stat("packets:$var(ptype)", "+1")</emphasis>).
+		In order for this to work, the groups must be defined prior to OpenSIPS startup
+		using the <emphasis role='bold'><xref linkend="modparam-stat-groups"/></emphasis>
+		module parameter.
+	</para>
+	<para>
+		The module allows easy iteration over the statistics of a group using
+		the <emphasis role='bold'><xref linkend="modfunc-stat-iter-init"/></emphasis>
+		and <emphasis role='bold'><xref linkend="modfunc-stat-iter-next"/></emphasis>
+		functions.
+	</para>
+	<para>
+		By default, all statistics belong to the
+		<emphasis role='bold'>"dynamic"</emphasis> group.
+	</para>
+	</section>
+
 	<section>
 	<title>Dependencies</title>
 	<section>
@@ -71,13 +95,28 @@ modparam("statistics", "variable", "active_calls/no_reset")
 </programlisting>
 		</example>
 	</section>
+	<section id="modparam-stat-groups" xreflabel="stat_groups">
+		<title><varname>stat_groups</varname> (string)</title>
+		<para>
+		A comma-separated values string, specifying the statistic groups that
+		may be used throughout the OpenSIPS script. Groups cannot contain leading or
+		trailing whitespace characters.
+		</para>
+		<example>
+		<title>setting the stat_groups parameter</title>
+		<programlisting format="linespecific">
+modparam("statistics", "stat_groups", "method, packet, response")
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">update_stat(variable,value)</function>
+		<function moreinfo="none">update_stat(variable, value)</function>
 		</title>
 		<para>
 		Updates the value of the statistic variable with the new value.
@@ -143,6 +182,80 @@ update_stat("$var(reg_counter)");
 </programlisting>
 		</example>
 	</section>
+	<section id="modfunc-stat-iter-init" xreflabel="stat_iter_init()">
+		<title>
+		<function moreinfo="none">stat_iter_init(group, iter)</function>
+		</title>
+		<para>
+		Re-initializes "iter" in order to begin iterating through all
+		statistics belonging to the given "group".
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>group</emphasis> - string
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>iter</emphasis> - string (internally matched
+				to a corresponding iterator)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
+		FAILURE_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>stat_iter_init</function> usage</title>
+		<programlisting format="linespecific">
+...
+stat_iter_init("packet", "iter");
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="modfunc-stat-iter-next" xreflabel="stat_iter_next()">
+		<title>
+		<function moreinfo="none">stat_iter_next(name, val, iter)</function>
+		</title>
+		<para>
+		Attempts to fetch the current statistic to which "iter" points.
+		If successful, the relevant data will be written to "name" and "val",
+		while also advancing "iter". Returns negative when reaching the end of iteration.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>name</emphasis> - script variable
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>val</emphasis> - script variable
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>iter</emphasis> - string (internally matched
+				to a corresponding iterator)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
+		FAILURE_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>stat_iter_next</function> usage</title>
+		<programlisting format="linespecific">
+...
+stat_iter_init("packet", "iter");
+while (stat_iter_next("$var(k)", "$var(v)", "iter")) {
+	...
+}
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
@@ -151,15 +264,23 @@ update_stat("$var(reg_counter)");
 		<section>
 			<title><varname>$stat</varname></title>
 			<para>
-			Allows to get and reset core and modules exported statistics.
-			The pseudo-variable receives as parameter the name of the
-			statistic that it want to get or reset.
+			Allows "get" or "reset" operations on the given statistics.
+			</para>
+			<para>
+			The name of a statistic may be optionally prefixed with a searching
+			group, along with a colon separator.
+			</para>
+			<para>
+			If a searching group is not provided, the statistic is first
+			searched for in the core groups. If not found, search continues with
+			the "dynamic" group which, by default, holds all non-explicitly
+			grouped statistics which are not exported by the OpenSIPS core.
 			</para>
 			<example>
 			<title><varname>$stat</varname> usage</title>
 			<programlisting format="linespecific">
 ...
-xlog("SHM used size = $stat(used_size) \n");
+xlog("SHM used size = $stat(used_size), no_invites = $stat(method:invite)\n");
 ...
 $stat(err_requests) = 0;
 ...
