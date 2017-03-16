@@ -972,6 +972,15 @@ It fetches XCAP elements, either documents or part of them, by sending HTTP
 GET requests. It also offers support for conditional queries. It uses libcurl
 library as a client-side HTTP transfer library.
 
+%package  xml
+Summary:  Manipulate XML documents in OpenSIPS script
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  xml
+This module exposes a script variable that provides basic parsing and
+manipulation of XML documents or blocks of XML data.
+
 %package  xmpp
 Summary:  Gateway between OpenSIPS and a jabber server
 Group:    System Environment/Daemons
@@ -1688,6 +1697,10 @@ fi
 %{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
 
+%files xml
+%{_libdir}/opensips/modules/xml.so
+%doc docdir/README.xml
+
 %files xmpp
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
@@ -1695,7 +1708,7 @@ fi
 %changelog
 * Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
 - Specification updated for opensips 2.3
-- New packages: event_routing, freeswitch, mid_registrar, sip_i
+- New packages: event_routing, freeswitch, mid_registrar, sip_i, xml
 - Enabled packages: cachedb_mongodb, lua
 - Renamed packages: memcached -> cachedb_memcached, redis -> cachedb_redis,
   unixodbc -> db_unixodbc, xmlrpc -> mi_xmlrpc
