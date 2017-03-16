@@ -31,6 +31,12 @@ Razvan Crainea
               1.3.8. tcp_async_local_connect_timeout (integer)
               1.3.9. tcp_async_local_write_timeout (integer)
               1.3.10. trace_destination (string)
+              1.3.11. trace_on (int)
+              1.3.12. trace_filter_route (string)
+
+        1.4. Exported MI Functions
+
+              1.4.1. tcp_trace
 
    2. Frequently Asked Questions
 
@@ -46,6 +52,8 @@ Razvan Crainea
    1.8. Set tcp_async_local_connect_timeout parameter
    1.9. Set tcp_async_local_write_timeout parameter
    1.10. Set trace_destination parameter
+   1.11. Set trace_on parameter
+   1.12. Set trace_filter_route parameter
 
 Chapter 1. Admin Guide
 
@@ -223,6 +231,74 @@ modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
 
 modparam("proto_tcp", "trace_destination", "hep_dest")
 ...
+
+1.3.11. trace_on (int)
+
+   This controls whether tracing for tcp is on or not. You still
+   need to define Section 1.3.10, “trace_destination (string)”in
+   order to work, but this value will be controlled using mi
+   function Section 1.4.1, “ tcp_trace ”.
+   Default value is 1(tracing active).
+
+   Example 1.11. Set trace_on parameter
+...
+modparam("proto_tcp", "trace_on", 0)
+...
+
+1.3.12. trace_filter_route (string)
+
+   Define the name of a route in which you can filter which
+   connections will be trace and which connections won't be. In
+   this route you will have information regarding source and
+   destination ips and ports for the current connection. To
+   disable tracing for a specific connection the last call in this
+   route must be drop, any other exit mode resulting in tracing
+   the current connection ( of course you still have to define a
+   Section 1.3.10, “trace_destination (string)” and trace must be
+   on at the time this connection is opened.
+
+   WARNING: IF Section 1.3.11, “trace_on (int)” is set to 0 or
+   tracing is deactived via the mi command Section 1.4.1, “
+   tcp_trace ” this route won't be called.
+   Default value is none(no route is set).
+
+   Example 1.12. Set trace_filter_route parameter
+...
+modparam("proto_tcp", "trace_filter_route", "tcp_filter")
+...
+/* all tcp connections will go through this route if tracing is activate
+d
+ * and a trace destination is defined */
+route[tcp_filter] {
+        ...
+        /* all connections opened from ip 1.1.1.1 will be traced, all th
+e other connections
+         * won't be */
+        if ( $si == "1.1.1.1" )
+                exit;
+        else
+                drop;
+}
+...
+
+1.4. Exported MI Functions
+
+1.4.1.  tcp_trace
+
+   Name: tcp_trace
+
+   Parameters:
+     * trace_mode(optional): set tcp tracing on and off. This
+       parameter can be missing and the command will show the
+       current tracing status for this module( on or off );
+       Possible values:
+          + on
+          + off
+
+   MI FIFO Command Format:
+                        :tcp_trace:_reply_fifo_file_
+                        trace_mode
+                        _empty_line_
 
 Chapter 2. Frequently Asked Questions
 
