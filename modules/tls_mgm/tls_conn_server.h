@@ -24,7 +24,8 @@ static inline int trace_tls( struct tcp_connection* conn, SSL* ctx, trans_trace_
 
 #define TRACE_IS_ON( CONN ) (CONN->proto_data && \
 		((struct tls_data*)CONN->proto_data)->tprot && \
-			((struct tls_data*)CONN->proto_data)->dest)
+			((struct tls_data*)CONN->proto_data)->dest && \
+			*((struct tls_data*)CONN->proto_data)->trace_is_on)
 
 struct tls_data {
 	TRACE_PROTO_COMMON;
@@ -626,6 +627,16 @@ static inline int trace_tls( struct tcp_connection* conn, SSL* ctx,
 	union sockaddr_union src, dst;
 
 	if ( !conn || !TRACE_IS_ON(conn) || !(data=conn->proto_data) )
+		return 0;
+
+	if ( data->trace_route_id != -1 ) {
+		check_trace_route( data->trace_route_id, conn );
+		/* avoid doing this multiple times */
+		data->trace_route_id = -1;
+	}
+
+	/* check if tracing is deactivated from the route for this connection */
+	if ( conn->flags & F_CONN_TRACE_DROPPED )
 		return 0;
 
 	if ( !data->message ) {

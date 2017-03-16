@@ -110,6 +110,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
+static struct mi_root* tls_trace_mi(struct mi_root* cmd, void* param );
 
 
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
@@ -135,6 +136,12 @@ static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;
 
+/* module  tracing parameters */
+static int trace_is_on_tmp=1, *trace_is_on;
+static char* trace_filter_route;
+static int trace_filter_route_id = -1;
+/**/
+
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
 static int proto_tls_conn_init(struct tcp_connection* c);
 
@@ -150,6 +157,8 @@ static param_export_t params[] = {
 	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
 	{ "tls_max_msg_chunks",    INT_PARAM,         &tls_max_msg_chunks        },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
+	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
+	{ "trace_filter_route",				 STR_PARAM, &trace_filter_route     },
 	{0, 0, 0}
 };
 
@@ -164,6 +173,11 @@ static dep_export_t deps = {
 	},
 };
 
+static mi_export_t mi_cmds[] = {
+	{ "tls_trace", 0, tls_trace_mi,   0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
+};
+
 struct module_exports exports = {
 	PROTO_PREFIX "tls",  /* module name*/
 	MOD_TYPE_DEFAULT,    /* class of this module */
@@ -174,8 +188,8 @@ struct module_exports exports = {
 	0,          /* exported async functions */
 	params,     /* module parameters */
 	0,          /* exported statistics */
-	0,          /* exported MI functions */
-	NULL,          /* exported pseudo-variables */
+	mi_cmds,    /* exported MI functions */
+	NULL,       /* exported pseudo-variables */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -211,6 +225,18 @@ static int mod_init(void)
 			net_trace_proto_id = tprot.get_message_id( TRANS_TRACE_PROTO_ID );
 
 		t_dst = tprot.get_trace_dest_by_name( &trace_destination_name );
+	}
+
+	/* fix route name */
+	if ( !(trace_is_on = shm_malloc(sizeof(int))) ) {
+		LM_ERR("no more shared memory!\n");
+		return -1;
+	}
+
+	*trace_is_on = trace_is_on_tmp;
+	if ( trace_filter_route ) {
+		trace_filter_route_id =
+			get_script_route_ID_by_name( trace_filter_route, rlist, RT_NO);
 	}
 
 	return 0;
@@ -286,9 +312,13 @@ static int proto_tls_conn_init(struct tcp_connection* c)
 		}
 		memset( data, 0, sizeof(struct tls_data) );
 
-		data->tprot = &tprot;
-		data->dest  = t_dst;
-		data->net_trace_proto_id = net_trace_proto_id;
+		if ( t_dst && tprot.create_trace_message) {
+			data->tprot = &tprot;
+			data->dest  = t_dst;
+			data->net_trace_proto_id = net_trace_proto_id;
+			data->trace_is_on = trace_is_on;
+			data->trace_route_id = trace_filter_route_id;
+		}
 
 		c->proto_data = data;
 	} else {
@@ -305,6 +335,9 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 	str s;
 
 	if (type==TCP_REPORT_CLOSE) {
+		if ( !*trace_is_on || (conn_flags & F_CONN_TRACE_DROPPED) )
+			return;
+
 		/* grab reason text */
 		if (extra) {
 			s.s = (char*)extra;
@@ -559,4 +592,47 @@ done:
 error:
 	/* connection will be released as ERROR */
 	return -1;
+}
+
+static struct mi_root* tls_trace_mi(struct mi_root* cmd_tree, void* param )
+{
+	struct mi_node* node;
+
+	struct mi_node *rpl;
+	struct mi_root *rpl_tree ;
+
+	node = cmd_tree->node.kids;
+	if(node == NULL) {
+		/* display status on or off */
+		rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+		if (rpl_tree == 0)
+			return 0;
+		rpl = &rpl_tree->node;
+
+		if ( *trace_is_on ) {
+			node = add_mi_node_child(rpl,0,MI_SSTR("TLS tracing"),MI_SSTR("on"));
+		} else {
+			node = add_mi_node_child(rpl,0,MI_SSTR("TLS tracing"),MI_SSTR("off"));
+		}
+
+		return rpl_tree ;
+	} else if ( node && !node->next ) {
+		if ( (node->value.s[0] | 0x20) == 'o' &&
+				(node->value.s[1] | 0x20) == 'n' ) {
+			*trace_is_on = 1;
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		} else
+		if ( (node->value.s[0] | 0x20) == 'o' &&
+				(node->value.s[1] | 0x20) == 'f' &&
+				(node->value.s[2] | 0x20) == 'f' ) {
+			*trace_is_on = 0;
+			return init_mi_tree( 200, MI_SSTR(MI_OK));
+		} else {
+			return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
+		}
+	} else {
+		return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
+	}
+
+	return NULL;
 }
