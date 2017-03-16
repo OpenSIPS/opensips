@@ -438,6 +438,12 @@ migrate_table ${dst_db}.uri \
 	 ${src_db}.uri \
 	 "?id,?username,?domain,?uri_user,?last_modified"
 
+## CLUSTERER module
+migrate_table ${dst_db}.clusterer \
+	"id,cluster_id,node_id,url,description" \
+	${src_db}.clusterer \
+	"?id,?cluster_id,?machine_id,?url,?description"
+
 
 if [ "$HAS_EXTRA" = "yes" ] ; then
 
