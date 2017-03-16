@@ -534,23 +534,6 @@ modparam("tls_mgm", "address_col", "addr")
 
                 <section>
                     <title>
-                        <varname>address_col</varname> (string)
-                    </title>
-                    <para>
-                        Sets the address column name.
-                    </para>
-                    <para>Default value is "address".</para>
-                    <example>
-				<title>Usage of <varname>address_col</varname> block
-					</title>
-				<programlisting format="linespecific">
-modparam("tls_mgm", "address_col", "addr")
-                                </programlisting>
-                    </example>
-                </section>
-
-                <section>
-                    <title>
                         <varname>tls_method_col</varname> (string)
                     </title>
                     <para>

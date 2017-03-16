@@ -74,20 +74,19 @@ Marius Cristian Eseanu
               1.6.15. db_table (string)
               1.6.16. domain_col (string)
               1.6.17. address_col (string)
-              1.6.18. address_col (string)
-              1.6.19. tls_method_col (string)
-              1.6.20. verify_cert_col (string)
-              1.6.21. require_cert_col (string)
-              1.6.22. certificate_col (string)
-              1.6.23. private_key_col (string)
-              1.6.24. crl_check_all_col (string)
-              1.6.25. crl_dir_col (string)
-              1.6.26. ca_list_col (string)
-              1.6.27. ca_dir_col (string)
-              1.6.28. cipher_list_col (string)
-              1.6.29. dh_params_col (string)
-              1.6.30. ec_curve_col (string)
-              1.6.31. server_domain, client_domain (string)
+              1.6.18. tls_method_col (string)
+              1.6.19. verify_cert_col (string)
+              1.6.20. require_cert_col (string)
+              1.6.21. certificate_col (string)
+              1.6.22. private_key_col (string)
+              1.6.23. crl_check_all_col (string)
+              1.6.24. crl_dir_col (string)
+              1.6.25. ca_list_col (string)
+              1.6.26. ca_dir_col (string)
+              1.6.27. cipher_list_col (string)
+              1.6.28. dh_params_col (string)
+              1.6.29. ec_curve_col (string)
+              1.6.30. server_domain, client_domain (string)
 
         1.7. Variables
 
@@ -169,23 +168,22 @@ Marius Cristian Eseanu
    1.15. Usage of db_table block
    1.16. Usage of domain_col block
    1.17. Usage of address_col block
-   1.18. Usage of address_col block
-   1.19. Usage of tls_method_col block
-   1.20. Usage of vertify_cert_col block
-   1.21. Usage of require_cert_col block
-   1.22. Usage of certificate_col block
-   1.23. Usage of private_key_col block
-   1.24. Usage of crl_check_all block
-   1.25. Usage of crl_dir_col block
-   1.26. Usage of ca_list_col block
-   1.27. Usage of ca_dir_col block
-   1.28. Usage of cipher_list_col block
-   1.29. Usage of dh_params_col block
-   1.30. Usage of ec_curve_col block
-   1.31. Usage of tls_client_domain and tls_server_domain block
-   1.32. Example of $tls_[peer|my]_[subject|issuer]
-   1.33. Script with TLS support
-   1.34. Example of TLS logging
+   1.18. Usage of tls_method_col block
+   1.19. Usage of vertify_cert_col block
+   1.20. Usage of require_cert_col block
+   1.21. Usage of certificate_col block
+   1.22. Usage of private_key_col block
+   1.23. Usage of crl_check_all block
+   1.24. Usage of crl_dir_col block
+   1.25. Usage of ca_list_col block
+   1.26. Usage of ca_dir_col block
+   1.27. Usage of cipher_list_col block
+   1.28. Usage of dh_params_col block
+   1.29. Usage of ec_curve_col block
+   1.30. Usage of tls_client_domain and tls_server_domain block
+   1.31. Example of $tls_[peer|my]_[subject|issuer]
+   1.32. Script with TLS support
+   1.33. Example of TLS logging
 
 Chapter 1. Admin Guide
 
@@ -517,124 +515,115 @@ modparam("tls_mgm", "domain_col", "tls_domain")
    Example 1.17. Usage of address_col block
 modparam("tls_mgm", "address_col", "addr")
 
-1.6.18.  address_col (string)
-
-   Sets the address column name.
-
-   Default value is "address".
-
-   Example 1.18. Usage of address_col block
-modparam("tls_mgm", "address_col", "addr")
-
-1.6.19.  tls_method_col (string)
+1.6.18.  tls_method_col (string)
 
    Sets the method column name.
 
    Default value is "method".
 
-   Example 1.19. Usage of tls_method_col block
+   Example 1.18. Usage of tls_method_col block
 modparam("tls_mgm", "tls_method_col", "method")
 
-1.6.20.  verify_cert_col (string)
+1.6.19.  verify_cert_col (string)
 
    Sets the verrify certificate column name.
 
    Default value is "verify_cert".
 
-   Example 1.20. Usage of vertify_cert_col block
+   Example 1.19. Usage of vertify_cert_col block
 modparam("tls_mgm", "verify_cert_col", "verify_cert")
 
-1.6.21.  require_cert_col (string)
+1.6.20.  require_cert_col (string)
 
    Sets the require certificate column name.
 
    Default value is "require_cert".
 
-   Example 1.21. Usage of require_cert_col block
+   Example 1.20. Usage of require_cert_col block
 modparam("tls_mgm", "require_cert_col", "req")
 
-1.6.22.  certificate_col (string)
+1.6.21.  certificate_col (string)
 
    Sets the certificate column name.
 
    Default value is "certificate".
 
-   Example 1.22. Usage of certificate_col block
+   Example 1.21. Usage of certificate_col block
 modparam("tls_mgm", "certificate_col", "certificate")
 
-1.6.23.  private_key_col (string)
+1.6.22.  private_key_col (string)
 
    Sets the private key column name.
 
    Default value is "private_key".
 
-   Example 1.23. Usage of private_key_col block
+   Example 1.22. Usage of private_key_col block
 modparam("tls_mgm", "private_key_col", "pk")
 
-1.6.24.  crl_check_all_col (string)
+1.6.23.  crl_check_all_col (string)
 
    Sets the crl_check_all column name.
 
    Default value is "crl_check_all".
 
-   Example 1.24. Usage of crl_check_all block
+   Example 1.23. Usage of crl_check_all block
 modparam("tls_mgm", "crl_check_all_col", "crl_check")
 
-1.6.25.  crl_dir_col (string)
+1.6.24.  crl_dir_col (string)
 
    Sets the crl directory column name.
 
    Default value is "crl_dir".
 
-   Example 1.25. Usage of crl_dir_col block
+   Example 1.24. Usage of crl_dir_col block
 modparam("tls_mgm", "crl_dir_col", "crl_dir")
 
-1.6.26.  ca_list_col (string)
+1.6.25.  ca_list_col (string)
 
    Sets the CA list column name.
 
    Default value is "ca_list".
 
-   Example 1.26. Usage of ca_list_col block
+   Example 1.25. Usage of ca_list_col block
 modparam("tls_mgm", "ca_list_col", "ca_list")
 
-1.6.27.  ca_dir_col (string)
+1.6.26.  ca_dir_col (string)
 
    Sets the CA directory column name.
 
    Default value is "ca_dir".
 
-   Example 1.27. Usage of ca_dir_col block
+   Example 1.26. Usage of ca_dir_col block
 modparam("tls_mgm", "ca_dir_col", "ca_dir")
 
-1.6.28.  cipher_list_col (string)
+1.6.27.  cipher_list_col (string)
 
    Sets the cipher list column name.
 
    Default value is "cipher_list".
 
-   Example 1.28. Usage of cipher_list_col block
+   Example 1.27. Usage of cipher_list_col block
 modparam("tls_mgm", "cipher_list_col", "cipher_list")
 
-1.6.29.  dh_params_col (string)
+1.6.28.  dh_params_col (string)
 
    Sets the Diffie-Hellmann parameters column name.
 
    Default value is "dh_params".
 
-   Example 1.29. Usage of dh_params_col block
+   Example 1.28. Usage of dh_params_col block
 modparam("tls_mgm", "dh_params_col", "dh_parms")
 
-1.6.30.  ec_curve_col (string)
+1.6.29.  ec_curve_col (string)
 
    Sets the ec_curve column name.
 
    Default value is "ec_curve".
 
-   Example 1.30. Usage of ec_curve_col block
+   Example 1.29. Usage of ec_curve_col block
 modparam("tls_mgm", "ec_curve_col", "ec_curve")
 
-1.6.31. server_domain, client_domain (string)
+1.6.30. server_domain, client_domain (string)
 
    If you only run one domain, the main one is enough. If you are
    running several TLS servers (that is, you have more than one
@@ -697,7 +686,7 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 
    It's usable only if TLS support was compiled.
 
-   Example 1.31. Usage of tls_client_domain and tls_server_domain
+   Example 1.30. Usage of tls_client_domain and tls_server_domain
    block
 ...
 listen=tls:IP_2:port2
@@ -833,7 +822,7 @@ route{
    $tls_[peer|my]_[subject|issuer] - ASCII dump of the fields in
    the issuer/subject section of the certificate. String type.
 
-   Example 1.32. Example of $tls_[peer|my]_[subject|issuer]
+   Example 1.31. Example of $tls_[peer|my]_[subject|issuer]
 /C=AT/ST=Vienna/L=Vienna/O=enum.at/CN=enum.at
 
 1.7.8. $tls_[peer|my]_[subject|issuer]_cn
@@ -928,7 +917,7 @@ route{
    for more details).
      * fork = yes
 
-   Example 1.33. Script with TLS support
+   Example 1.32. Script with TLS support
   # ----------- global configuration parameters ------------------------
   log_level=3
   log_stderror=no
@@ -1105,7 +1094,7 @@ route{
    statements into your OpenSIPS.cfg. This will dump all available
    TLS pseudo variables.
 
-   Example 1.34. Example of TLS logging
+   Example 1.33. Example of TLS logging
 xlog("L_INFO","================= start TLS pseudo variables ============
 ===\n");
 xlog("L_INFO","$$tls_version                   = '$tls_version'\n");
