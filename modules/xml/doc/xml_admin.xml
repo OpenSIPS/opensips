@@ -160,7 +160,7 @@ $xml(my_doc/doc/list) = "\n\t\t&lt;item&gt;&lt;/item&gt;\n\t";
 				<programlisting format="linespecific">
 ...
 # accessing the attribute of second item in list
-$var(my_list) = "\t&lt;list&gt;&lt;/list&gt;\n";
+$var(my_list) = "list";
 $var(my_idx) = 1;
 $var(my_attr) = "sort";
 xlog("$xml(my_doc/doc/$var(my_list)/item[$var(my_idx)].attr/$var(my_attr))\n");
