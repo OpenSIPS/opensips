@@ -6,10 +6,10 @@
 	<section>
 		<title>Overview</title>
 
-		<para> This module exposes a script variable that provides basic parsing and manipulation of XML documents or blocks of XML data. The processing does not take into account any DTDs or schemas in terms of validation.
+		<para> This module exposes a script variable that provides basic parsing and manipulation of XML documents or blocks of XML data. The variable provides ways to access entire XML elements, their text content or their attributes. You can modify the content and attributes as well as adding or removing nodes in the XML tree.
 		</para>
 		<para>
-		The variable provides ways to access entire XML elements or their text content or attributes.
+		The processing does not take into account any DTDs or schemas in terms of validation.
 		</para>
 	</section>
 
@@ -156,10 +156,14 @@ $xml(my_doc/doc/list) = "\n\t\t&lt;item&gt;&lt;/item&gt;\n\t";
 			</example>
 
 			<example>
-				<title>A more complex example with variables in path</title>
+				<title>Using script variables in path</title>
 				<programlisting format="linespecific">
 ...
-$xml(obj_1/root/$var(my_list)/$var(my_item)[$var(my_idx)]/$var(my_sublist).attr/$var(my_attr)) = "attr_val";
+# accessing the attribute of second item in list
+$var(my_list) = "\t&lt;list&gt;&lt;/list&gt;\n";
+$var(my_idx) = 1;
+$var(my_attr) = "sort";
+xlog("$xml(my_doc/doc/$var(my_list)/item[$var(my_idx)].attr/$var(my_attr))\n");
 ...
 				</programlisting>
 			</example>
