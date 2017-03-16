@@ -87,7 +87,9 @@ static int proto_ws_send(struct socket_info* send_sock,
 static int ws_read_req(struct tcp_connection* con, int* bytes_read);
 static int ws_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
-static void ws_report(unsigned long long conn_id, int type, void *extra);
+static void ws_report(int type, unsigned long long conn_id, int conn_flags,
+		void *extra);
+
 
 static int ws_port = WS_DEFAULT_PORT;
 
@@ -247,7 +249,8 @@ static int proto_ws_init_listener(struct socket_info *si)
 	return tcp_init_listener(si);
 }
 
-static void ws_report(unsigned long long conn_id, int type, void *extra)
+static void ws_report(int type, unsigned long long conn_id, int conn_flags,
+																void *extra)
 {
 	str s;
 

@@ -32,7 +32,9 @@ static int ipc_type = -1;
 
 typedef struct _tcp_report_job {
 	/* TCP connection ID */
-	unsigned long long tcp_id;
+	unsigned long long conn_id;
+	/* TCP connection flags */
+	unsigned long long conn_flags;
 	/* reporting type */
 	int type;
 	/* the protocol ID */
@@ -47,7 +49,8 @@ static void tcp_report_ipc_handler(int sender, void *payload)
 	tcp_report_job *job = (tcp_report_job*)payload;
 
 	/* run the report callback  */
-	protos[job->proto].net.report( job->tcp_id, job->type, job->extra);
+	protos[job->proto].net.report( job->type, job->conn_id, job->conn_flags,
+		job->extra);
 }
 
 
@@ -113,8 +116,9 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 			LM_ERR("failed to allocated SHM mem, discarding report\n");
 			return;
 		}
-		job->tcp_id = conn->cid;
 		job->type = type;
+		job->conn_id = conn->cid;
+		job->conn_flags = conn->flags;
 		job->proto = conn->type;
 		job->extra = extra;
 		/* ...sending it to the last TCP worker for now
@@ -131,7 +135,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 		/* do the reporting inline */
 
 		/* run the report callback  */
-		protos[conn->type].net.report( conn->cid, type, extra);
+		protos[conn->type].net.report( type, conn->cid, conn->flags, extra);
 
 	}
 

@@ -67,7 +67,8 @@ static int tcp_write_async_req(struct tcp_connection* con,int fd);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
-static void tcp_report(unsigned long long conn_id, int type, void *extra);
+static void tcp_report(int type, unsigned long long conn_id, int conn_flags,
+		void *extra);
 
 #define TRACE_PROTO "proto_hep"
 
@@ -326,7 +327,8 @@ again:
 }
 
 
-static void tcp_report(unsigned long long conn_id, int type, void *extra)
+static void tcp_report(int type, unsigned long long conn_id, int conn_flags,
+																void *extra)
 {
 	str s;
 

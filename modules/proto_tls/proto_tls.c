@@ -108,7 +108,9 @@ static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
-static void tls_report(unsigned long long conn_id, int type, void *extra);
+static void tls_report(int type, unsigned long long conn_id, int conn_flags,
+		void *extra);
+
 
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
@@ -297,7 +299,8 @@ out:
 	return tls_conn_init(c, &tls_mgm_api);
 }
 
-static void tls_report(unsigned long long conn_id, int type, void *extra)
+static void tls_report(int type, unsigned long long conn_id, int conn_flags,
+																void *extra)
 {
 	str s;
 
