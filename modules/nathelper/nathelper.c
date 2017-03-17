@@ -1456,7 +1456,6 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 
 	port.s = int2str(m->rcv.src_port, &port.len);
 
-	/* TODO: make this dynamic based on protos */
 	switch(m->rcv.proto) {
 	case PROTO_NONE:
 	case PROTO_UDP:
@@ -1464,30 +1463,15 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 		proto.len = 0;
 		break;
 
-	case PROTO_TCP:
-		proto.s = "TCP";
-		proto.len = 3;
-		break;
-
-	case PROTO_TLS:
-		proto.s = "TLS";
-		proto.len = 3;
-		break;
-
-	case PROTO_SCTP:
-		proto.s = "SCTP";
-		proto.len = 4;
-		break;
-
-	case PROTO_WS:
-	case PROTO_WSS:
-		proto.s = "WS";
-		proto.len = 2;
-		break;
-
 	default:
-		LM_ERR("unknown transport protocol\n");
-		return -1;
+		if (m->rcv.proto >= PROTO_FIRST && m->rcv.proto < PROTO_LAST &&
+				protos[m->rcv.proto].id ) {
+			proto.s = protos[m->rcv.proto].name;
+			proto.len = strlen(proto.s);
+		} else {
+			LM_BUG("unknown transport protocol %d\n", m->rcv.proto);
+			return -1;
+		}
 	}
 
 	len = 4 + ip.len + 2*(m->rcv.src_ip.af==AF_INET6)+ 1 + port.len;
