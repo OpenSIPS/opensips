@@ -1491,9 +1491,13 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 		break;
 
 	case PROTO_WS:
-	case PROTO_WSS:
 		proto.s = "WS";
 		proto.len = 2;
+		break;
+
+	case PROTO_WSS:
+		proto.s = "WSS";
+		proto.len = 3;
 		break;
 
 	default:
