@@ -1105,6 +1105,11 @@ static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *pa
 
 	LM_DBG("Tracing incoming cancel due to trace_dialog() \n");
 
+	if (trace_transaction(req, *param->param, 1) < 0) {
+		LM_ERR("trace transaction failed!\n");
+		return;
+	}
+
 	/* trace current request */
 	sip_trace(req, (trace_info_p)(*param->param));
 }
