@@ -43,7 +43,6 @@ struct cgr_acc_sess {
 	/* should we guard anything here? */
 
 	branch_bm_t branch_mask;
-	unsigned started;
 	unsigned flags;
 	str acc;
 	str dst;
@@ -73,6 +72,7 @@ int cgr_acc_terminate(json_object *param, json_object **ret);
 
 #define CGRF_DO_CDR		(1<<0)
 #define CGRF_DO_MISSED	(1<<1)
+#define CGRF_ENGAGED	(1<<2)
 
 #endif /* _CGRATES_ACC_H_ */
 

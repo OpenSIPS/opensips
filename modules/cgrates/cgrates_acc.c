@@ -131,12 +131,12 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 						list_add(&kv->list, &s->kvs);
 					}
 				}
-				if (s->sess_info) {
+				if (s->acc_info) {
 					LM_WARN("found session info in a local context - discarding it!\n");
-					shm_free(s->sess_info);
+					shm_free(s->acc_info);
 				}
-				s->sess_info = sa->sess_info;
-				sa->sess_info = 0;
+				s->acc_info = sa->acc_info;
+				sa->acc_info = 0;
 				cgr_free_sess(sa);
 			} else {
 				/* move the dict in the local ctx */
@@ -313,7 +313,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 		struct dlg_cell *dlg, struct cgr_acc_ctx *ctx, struct cgr_session *s)
 {
 	struct cgr_msg *cmsg;
-	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->sess_info;
+	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
 	static str cmd = str_init("SMGenericV1.InitiateSession");
 	str stime;
 	str *callid;
@@ -387,7 +387,7 @@ error:
 static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		struct cgr_acc_ctx *ctx, struct cgr_session *s)
 {
-	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->sess_info;
+	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
@@ -466,7 +466,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	struct cgr_msg *cmsg = NULL;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	static str cmd = str_init("SMGenericV1.ProcessCDR");
-	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->sess_info;
+	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
 
 	cmsg = cgr_get_generic_msg(&cmd, s);
 	if (!cmsg) {
@@ -534,28 +534,58 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx,
 static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
-#if 0
-TODO: SERIALIZE!
+	int *sessions_kvs = NULL, *tmp;
 	struct cgr_acc_ctx *ctx;
+	struct cgr_session *s;
+	struct list_head *ls;
 	struct list_head *l;
 	struct cgr_kv *kv;
+	int sessions_no = 0, i;
 	str buf;
 	char *p;
 
 	ctx = *_params->param;
 	LM_DBG("storing in dialog acc ctx=%p\n", ctx);
 
-	buf.len = sizeof(ctx->flags) + sizeof(unsigned) + ctx->acc.len +
-		sizeof(unsigned) + ctx->dst.len + sizeof(ctx->setup_time) +
-		sizeof(ctx->answer_time);
-	if (ctx->kv_dicts) {
-		list_for_each(l, ctx->kv_dicts) {
-			kv = list_entry(l, struct cgr_kv, list);
-			buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
-			if (kv->flags & CGR_KVF_TYPE_INT)
-				buf.len += sizeof(int);
-			else if (kv->flags & CGR_KVF_TYPE_STR)
-				buf.len += sizeof(unsigned) + kv->value.s.len;
+	buf.len = sizeof(ctx->start_time) + sizeof(ctx->answer_time) + sizeof(sessions_no);
+	if (ctx->sessions) {
+		list_for_each(l, ctx->sessions) {
+			sessions_no++;
+			s = list_entry(l, struct cgr_session, list);
+			tmp = pkg_realloc(sessions_kvs, (sessions_no) * sizeof(int));
+			if (!tmp) {
+				if (sessions_kvs)
+					pkg_free(sessions_kvs);
+				return;
+			}
+			sessions_kvs = tmp;
+			sessions_kvs[sessions_no-1] = 0;
+
+			/* if it was not yet engaged, skip it */
+			if (!s->acc_info) {
+				buf.len += sizeof(time_t); /* store 0 for start_time */
+				continue;
+			}
+
+			/* we have it engaged - store the tag and the info */
+			buf.len += sizeof(time_t) /* start_time */ +
+				sizeof(unsigned) + s->tag.len /* tag */ +
+				sizeof(unsigned) + s->acc_info->acc.len /* acc */ +
+				sizeof(unsigned) + s->acc_info->dst.len /* dst */ +
+				sizeof(branch_bm_t) /* branch_mask */ +
+				sizeof(unsigned) /* flags */ +
+				sizeof(unsigned) /* number of keys */;
+
+			/* count the keys now */
+			list_for_each(ls, &s->kvs) {
+				sessions_kvs[sessions_no-1]++;
+				kv = list_entry(ls, struct cgr_kv, list);
+				buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
+				if (kv->flags & CGR_KVF_TYPE_INT)
+					buf.len += sizeof(int);
+				else if (kv->flags & CGR_KVF_TYPE_STR)
+					buf.len += sizeof(unsigned) + kv->value.s.len;
+			}
 		}
 	}
 	buf.s = pkg_malloc(buf.len);
@@ -564,54 +594,88 @@ TODO: SERIALIZE!
 		return;
 	}
 	p = buf.s;
-	/* flags */
-	memcpy(p, &ctx->flags, sizeof(ctx->flags));
-	p += sizeof(ctx->flags);
-
-	/* acc */
-	memcpy(p, &ctx->acc.len, sizeof(unsigned));
-	p += sizeof(unsigned);
-	memcpy(p, ctx->acc.s, ctx->acc.len);
-	p += ctx->acc.len;
-
-	/* dst */
-	memcpy(p, &ctx->dst.len, sizeof(unsigned));
-	p += sizeof(unsigned);
-	memcpy(p, ctx->dst.s, ctx->dst.len);
-	p += ctx->dst.len;
-
-	/* setup time */
-	memcpy(p, &ctx->setup_time, sizeof(ctx->setup_time));
-	p += sizeof(ctx->setup_time);
+	/* start_time */
+	memcpy(p, &ctx->start_time, sizeof(ctx->start_time));
+	p += sizeof(ctx->start_time);
 
 	/* answer_time */
 	memcpy(p, &ctx->answer_time, sizeof(ctx->answer_time));
 	p += sizeof(ctx->answer_time);
 
+	/* sessions_no */
+	memcpy(p, &sessions_no, sizeof(sessions_no));
+	p += sizeof(sessions_no);
+
 	/* kv */
-	if (ctx->kv_dicts) {
-		list_for_each(l, ctx->kv_dicts) {
-			kv = list_entry(l, struct cgr_kv, list);
+	if (ctx->sessions) {
+		i = -1;
+		list_for_each(l, ctx->sessions) {
+			i++;
+			s = list_entry(l, struct cgr_session, list);
+			if (!s->acc_info) {
+				memset(p, 0, sizeof(time_t));
+				p += sizeof(time_t);
+				continue;
+			}
+			/* start_time */
+			memcpy(p, &s->acc_info->start_time, sizeof(time_t));
+			p += sizeof(time_t);
 
-			/* kv->key */
-			memcpy(p, &kv->key.len, sizeof(unsigned));
+			/* tag */
+			memcpy(p, &s->tag.len, sizeof(unsigned));
 			p += sizeof(unsigned);
-			memcpy(p, kv->key.s, kv->key.len);
-			p += kv->key.len;
+			memcpy(p, s->tag.s, s->tag.len);
+			p += s->tag.len;
 
-			/* kv->flags */
-			*(unsigned char *)p = kv->flags;
-			p += sizeof(unsigned char);
+			/* acc */
+			memcpy(p, &s->acc_info->acc.len, sizeof(unsigned));
+			p += sizeof(unsigned);
+			memcpy(p, s->acc_info->acc.s, s->acc_info->acc.len);
+			p += s->acc_info->acc.len;
 
-			/* kv->value */
-			if (kv->flags & CGR_KVF_TYPE_INT) {
-				memcpy(p, &kv->value.n, sizeof(int));
-				p += sizeof(int);
-			} else if (kv->flags & CGR_KVF_TYPE_STR) {
-				memcpy(p, &kv->value.s.len, sizeof(unsigned));
+			/* dst */
+			memcpy(p, &s->acc_info->dst.len, sizeof(unsigned));
+			p += sizeof(unsigned);
+			memcpy(p, s->acc_info->dst.s, s->acc_info->dst.len);
+			p += s->acc_info->dst.len;
+
+			/* branch_mask */
+			memcpy(p, &s->acc_info->branch_mask, sizeof(branch_bm_t));
+			p += sizeof(branch_bm_t);
+
+			/* flags */
+			memcpy(p, &s->acc_info->flags, sizeof(unsigned));
+			p += sizeof(unsigned);
+
+			/* number of keys */
+			memcpy(p, &sessions_kvs[i], sizeof(unsigned));
+			p += sizeof(unsigned);
+
+			list_for_each(ls, &s->kvs) {
+				/* if does not have acc_info, it does not have start_time */
+				kv = list_entry(ls, struct cgr_kv, list);
+
+				/* kv->key */
+				memcpy(p, &kv->key.len, sizeof(unsigned));
 				p += sizeof(unsigned);
-				memcpy(p, kv->value.s.s, kv->value.s.len);
-				p += kv->value.s.len;
+				memcpy(p, kv->key.s, kv->key.len);
+				p += kv->key.len;
+				LM_DBG("storing key %d [%.*s]\n", kv->key.len,kv->key.len,kv->key.s);
+
+				/* kv->flags */
+				memcpy(p, &kv->flags, sizeof(unsigned char));
+				p += sizeof(unsigned char);
+
+				/* kv->value */
+				if (kv->flags & CGR_KVF_TYPE_INT) {
+					memcpy(p, &kv->value.n, sizeof(int));
+					p += sizeof(int);
+				} else if (kv->flags & CGR_KVF_TYPE_STR) {
+					memcpy(p, &kv->value.s.len, sizeof(unsigned));
+					p += sizeof(unsigned);
+					memcpy(p, kv->value.s.s, kv->value.s.len);
+					p += kv->value.s.len;
+				}
 			}
 		}
 	}
@@ -623,8 +687,10 @@ TODO: SERIALIZE!
 
 	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &buf) < 0)
 		LM_ERR("cannot store the serialized context value!\n");
+
 	pkg_free(buf.s);
-#endif
+	if (sessions_no)
+		pkg_free(sessions_kvs);
 }
 
 int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
@@ -681,7 +747,7 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
 		LM_ERR("cannot create a new session!\n");
 		return -1;
 	}
-	if (!s->sess_info) {
+	if (!s->acc_info) {
 		si = shm_malloc(sizeof(struct cgr_acc_sess) + acc->len + dst->len);
 		if (!si) {
 			LM_ERR("cannot create new session information!\n");
@@ -696,10 +762,10 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
 		memcpy(si->acc.s, acc->s, acc->len);
 		si->dst.len = dst->len;
 		memcpy(si->dst.s, dst->s, dst->len);
-		s->sess_info = si;
+		s->acc_info = si;
 	} else {
 		LM_DBG("session already engaged! nothing updated...\n");
-		si = (struct cgr_acc_sess *)s->sess_info;
+		si = s->acc_info;
 	}
 	if (si->branch_mask & branch_mask) {
 		LM_DBG("session already engaged on this branch\n");
@@ -778,7 +844,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 		 * on this branch */
 		list_for_each(l, ctx->sessions) {
 			s = list_entry(l, struct cgr_session, list);
-			si = (struct cgr_acc_sess *)s->sess_info;
+			si = s->acc_info;
 			if (CGR_SESS_ON_BRANCH(si, branch)) {
 				if ((si->flags & CGRF_DO_MISSED) && (si->flags & CGRF_DO_CDR))
 					cgr_cdr(ps->req, ctx, s, &callid);
@@ -797,7 +863,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 	time(&ctx->answer_time);
 	list_for_each(l, ctx->sessions) {
 		s = list_entry(l, struct cgr_session, list);
-		si = (struct cgr_acc_sess *)s->sess_info;
+		si = s->acc_info;
 		if (!CGR_SESS_ON_BRANCH(si, branch)) {
 			/* if they were ever engaged, we need to check if we have to
 			 * raise a CDR */
@@ -814,7 +880,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 
 		if (cgr_handle_cmd(ps->req, jmsg, cgr_proc_start_acc_reply, dlg) < 0)
 			goto error;
-		si->started = 1;
+		si->flags |= CGRF_ENGAGED;
 	}
 
 	/* should have reffed engaged and unref tm, so we simply exit :D */
@@ -846,8 +912,8 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 
 	list_for_each(l, ctx->sessions) {
 		s = list_entry(l, struct cgr_session, list);
-		si = (struct cgr_acc_sess *)s->sess_info;
-		if (!si || !si->started)
+		si = s->acc_info;
+		if (!si || !(si->flags & CGRF_ENGAGED))
 			continue;
 		cgr_cdr(ps->req, ctx, s, &dlg->callid);
 	}
@@ -863,18 +929,20 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 			LM_ERR("invalid ctx stored buffer: no more length for %s\n", _e); \
 			goto internal_error; \
 		} \
+		LM_DBG("loaded: %s\n", _e); \
 	} while (0)
 
 void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params)
 {
-#if 0
-TODO: serialize
 	struct cgr_acc_ctx *ctx;
-	str buf;
-	str kvs;
+	struct cgr_session *s;
+	str kvs, tmp1, tmp2;
 	struct cgr_kv *kv;
 	char *p, *end;
+	int sessions_no, kvs_no;
+	time_t start_time;
+	str buf;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch message flags\n");
@@ -889,36 +957,82 @@ TODO: serialize
 	ctx = cgr_new_acc_ctx(dlg);
 	if (!ctx)
 		return;
+	ctx->sessions = shm_malloc(sizeof *ctx->sessions);
+	if (!ctx->sessions) {
+		LM_ERR("out of shm memory for sessiosn\n");
+		goto internal_error;
+	}
+	INIT_LIST_HEAD(ctx->sessions);
 	LM_DBG("loading from dialog acc ctx=%p\n", ctx);
 
 	p = buf.s;
 	end = buf.s + buf.len;
-	CGR_CTX_COPY(&ctx->flags, sizeof(ctx->flags), "flags");
-	CGR_CTX_COPY(&ctx->acc.len, sizeof(unsigned), "acc.len");
-	if (!(ctx->acc.s = shm_malloc(ctx->acc.len))) {
-		LM_ERR("cannot allocate account in ctx=%p len=%d!\n", ctx, ctx->acc.len);
-		goto internal_error;
-	}
-	CGR_CTX_COPY(ctx->acc.s, ctx->acc.len, "acc.s");
-	CGR_CTX_COPY(&ctx->dst.len, sizeof(unsigned), "dst.len");
-	if (!(ctx->dst.s = shm_malloc(ctx->dst.len))) {
-		LM_ERR("cannot allocate dest in ctx=%p len=%d!\n", ctx, ctx->dst.len);
-		goto internal_error;
-	}
-	CGR_CTX_COPY(ctx->dst.s, ctx->dst.len, "dst.s");
-	CGR_CTX_COPY(&ctx->setup_time, sizeof(ctx->setup_time), "setup time");
-	CGR_CTX_COPY(&ctx->answer_time, sizeof(ctx->answer_time), "answer time");
+	CGR_CTX_COPY(&ctx->start_time, sizeof(ctx->start_time), "start_time");
+	CGR_CTX_COPY(&ctx->answer_time, sizeof(ctx->answer_time), "answer_time");
+	CGR_CTX_COPY(&sessions_no, sizeof(sessions_no), "sessions_no");
 
-	if (p < end) {
-		/* we also have some values stored in the context */
-		ctx->kv_dicts = shm_malloc(sizeof(*ctx->kv_dicts));
-		if (!ctx->kv_dicts) {
-			LM_ERR("cannot allocate key-value store for ctx=%p\n", ctx);
+	if (!sessions_no)
+		goto store;
+
+	while (sessions_no > 0) {
+		sessions_no--;
+
+		CGR_CTX_COPY(&start_time, sizeof(time_t), "start_time");
+		if (!start_time)
+			continue;
+
+		CGR_CTX_COPY(&tmp1.len, sizeof(unsigned), "tag.len");
+		if (!(tmp1.s = pkg_malloc(tmp1.len))) {
+			LM_ERR("cannot allocate account in ctx=%p len=%d!\n", ctx, tmp1.len);
 			goto internal_error;
 		}
-		INIT_LIST_HEAD(ctx->kv_dicts);
-		while (p < end) {
-			LM_DBG("p=%p end=%p\n", p, end);
+		CGR_CTX_COPY(tmp1.s, tmp1.len, "tag.s");
+
+		s = cgr_new_sess(&tmp1);
+		pkg_free(tmp1.s);
+		if (!s) {
+			LM_ERR("cannot allocate new session for tag %.*s\n", tmp1.len, tmp1.s);
+			goto internal_error;
+		}
+		list_add(&s->list, ctx->sessions);
+
+		CGR_CTX_COPY(&tmp1.len, sizeof(unsigned), "acc.len");
+		if (!(tmp1.s = pkg_malloc(tmp1.len))) {
+			LM_ERR("cannot allocate account in ctx=%p len=%d!\n", ctx, tmp1.len);
+			goto internal_error;
+		}
+		CGR_CTX_COPY(tmp1.s, tmp1.len, "acc.s");
+
+		CGR_CTX_COPY(&tmp2.len, sizeof(unsigned), "dst.len");
+		if (!(tmp2.s = pkg_malloc(tmp2.len))) {
+			LM_ERR("cannot allocate account in ctx=%p len=%d!\n", ctx, tmp2.len);
+			pkg_free(tmp1.s);
+			goto internal_error;
+		}
+		CGR_CTX_COPY(tmp2.s, tmp2.len, "dst.s");
+		/* allocate the info */
+		s->acc_info = shm_malloc(sizeof(struct cgr_acc_sess) + tmp1.len + tmp2.len);
+		if (!s->acc_info) {
+			LM_ERR("cannot create new session information!\n");
+			pkg_free(tmp1.s);
+			pkg_free(tmp2.s);
+			goto internal_error;
+		}
+		memset(s->acc_info, 0, sizeof(struct cgr_acc_sess)); /* no need to clean the rest */
+		s->acc_info->acc.s = (char *)s->acc_info + sizeof(struct cgr_acc_sess);
+		s->acc_info->dst.s = s->acc_info->acc.s + tmp1.len;
+		memcpy(s->acc_info->acc.s, tmp1.s, tmp1.len);
+		memcpy(s->acc_info->dst.s, tmp2.s, tmp2.len);
+		pkg_free(tmp1.s);
+		pkg_free(tmp2.s);
+		s->acc_info->start_time = start_time;
+
+		CGR_CTX_COPY(&s->acc_info->branch_mask, sizeof(branch_bm_t), "branch_mask");
+		CGR_CTX_COPY(&s->acc_info->flags, sizeof(unsigned), "flags");
+		CGR_CTX_COPY(&kvs_no, sizeof(unsigned), "kvs no");
+		while (kvs_no > 0) {
+			kvs_no--;
+			//LM_DBG("p=%p end=%p\n", p, end);
 			CGR_CTX_COPY(&kvs.len, sizeof(unsigned), "key.len");
 			/* do the key manually because it's not worth doing a copy */
 			if (p + kvs.len <= end) {
@@ -928,6 +1042,7 @@ TODO: serialize
 				LM_ERR("invalid ctx stored buffer: no more length for key.str\n");
 				goto internal_error;
 			}
+			LM_DBG("adding key %d [%.*s]\n", kvs.len, kvs.len, kvs.s);
 			kv = cgr_new_kv(kvs);
 			if (!kv) {
 				LM_ERR("cannot allocate a new kv\n");
@@ -945,16 +1060,17 @@ TODO: serialize
 					goto internal_error;
 				}
 				CGR_CTX_COPY(kv->value.s.s, kv->value.s.len, "key.value.str.s");
-				/* all good - link the new value */
-				list_add(&kv->list, NULL/*TODO*/);
 			}
+			/* all good - link the new value */
+			list_add(&kv->list, &s->kvs);
 		}
 	}
-
+store:
 	if (p != end)
 		LM_BUG("inconsistent state in cdr restore p=%p end=%p\n", p, end);
 
-	cgr_ref_acc_ctx(ctx, 1, "dialog");
+	/* no need to ref dialog, since it is already reffed by the init */
+	/* cgr_ref_acc_ctx(ctx, 1, "dialog"); */
 	if (cgr_dlgb.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
 			cgr_dlg_callback, ctx, 0)){
 		LM_ERR("cannot register callback for database accounting\n");
@@ -964,7 +1080,6 @@ TODO: serialize
 	return;
 internal_error:
 	cgr_free_acc_ctx(ctx);
-#endif
 }
 #undef CGR_CTX_COPY
 
@@ -978,7 +1093,7 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	json_object *jmsg;
 	struct cell* t;
 	int registered = 0;
-	
+
 	if (!_params) {
 		LM_ERR("no parameter specified to dlg callback!\n");
 		return;
@@ -988,8 +1103,8 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 	/* stop every session started */
 	list_for_each(l, ctx->sessions) {
 		s = list_entry(l, struct cgr_session, list);
-		si = (struct cgr_acc_sess *)s->sess_info;
-		if (!si || !si->started)
+		si = s->acc_info;
+		if (!si || !(si->flags & CGRF_ENGAGED))
 			continue;
 		jmsg = cgr_get_stop_acc_msg(_params->msg, ctx, s);
 		if (!jmsg) {
@@ -1018,7 +1133,7 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 				 * have been processed */
 				cgr_cdr(_params->msg, ctx, s, &dlg->callid);
 				/* mark session as not started to prevent duplicate cdrs */
-				si->started = 0;
+				si->flags &= ~CGRF_ENGAGED;
 			}
 		}
 	}
