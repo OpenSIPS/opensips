@@ -58,14 +58,15 @@ struct cgr_kv {
 	struct list_head list;
 };
 
+struct cgr_acc_ctx;
+struct cgr_acc_sess;
+
 struct cgr_session {
 	str tag;
-	void *sess_info;
 	struct list_head kvs;
 	struct list_head list;
+	struct cgr_acc_sess *acc_info;
 };
-
-struct cgr_acc_ctx;
 
 struct cgr_ctx {
 
@@ -119,6 +120,7 @@ void cgr_free_sess(struct cgr_session *sess);
 struct cgr_kv *cgr_get_kv(struct cgr_session *sess, str name);;
 struct cgr_kv *cgr_get_const_kv(struct cgr_session *sess, const char *name);
 struct cgr_session *cgr_get_sess(struct cgr_ctx *ctx, str *name);
+struct cgr_session *cgr_new_sess(str *tag);
 struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *name);
 
 /* context manipulation */

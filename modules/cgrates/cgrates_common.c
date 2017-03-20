@@ -300,6 +300,27 @@ struct cgr_session *cgr_get_sess(struct cgr_ctx *ctx, str *tag)
 	}
 	return NULL;
 }
+struct cgr_session *cgr_new_sess(str *tag)
+{
+	struct cgr_session *s;
+	/* allocate from scratch, since we don't have anything else */
+	s = shm_malloc(sizeof(*s) + (tag ? tag->len : 0));
+	if (!s) {
+		LM_ERR("out of shm memory!\n");
+		return NULL;
+	}
+	if (tag && tag->len) {
+		s->tag.s = (char *)s + sizeof(*s);
+		s->tag.len = tag->len;
+		memcpy(s->tag.s, tag->s, tag->len);
+	} else {
+		s->tag.s = 0;
+		s->tag.len = 0;
+	}
+	s->acc_info = 0;
+	INIT_LIST_HEAD(&s->kvs);
+	return s;
+}
 
 struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *tag)
 {
@@ -308,22 +329,9 @@ struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *tag)
 		return NULL;
 	if ((s = cgr_get_sess(ctx, tag)) != NULL)
 		return s;
-	s = shm_malloc(sizeof(*s) + (tag ? tag->len : 0));
-	if (!s) {
-		LM_ERR("out of shm memory!\n");
-		return NULL;
-	}
-	if (tag) {
-		s->tag.s = (char *)s + sizeof(*s);
-		s->tag.len = tag->len;
-		memcpy(s->tag.s, tag->s, tag->len);
-	} else {
-		s->tag.s = 0;
-		s->tag.len = 0;
-	}
-	s->sess_info = 0;
-	INIT_LIST_HEAD(&s->kvs);
-	list_add(&s->list, ctx->sessions);
+	s = cgr_new_sess(tag);
+	if (s)
+		list_add(&s->list, ctx->sessions);
 	return s;
 }
 
@@ -739,13 +747,14 @@ int cgrates_process(json_object *jobj,
 	return 0;
 }
 
+
 void cgr_free_sess(struct cgr_session *s)
 {
 	struct list_head *l;
 	struct list_head *t;
 
-	if (s->sess_info)
-		shm_free(s->sess_info);
+	if (s->acc_info)
+		shm_free(s->acc_info);
 	list_for_each_safe(l, t, &s->kvs)
 		cgr_free_kv(list_entry(l, struct cgr_kv, list));
 	list_del(&s->list);
