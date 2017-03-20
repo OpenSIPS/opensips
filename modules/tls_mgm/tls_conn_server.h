@@ -275,13 +275,13 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
-		switch (err) {
-			if ( err != SSL_ERROR_WANT_READ || err != SSL_ERROR_WANT_WRITE ) {
-				/* report failure */
-				trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
-						TRANS_TRACE_FAILURE, &ACCEPT_FAIL);
-			}
+		if ( err != SSL_ERROR_WANT_READ || err != SSL_ERROR_WANT_WRITE ) {
+			/* report failure */
+			trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
+					TRANS_TRACE_FAILURE, &ACCEPT_FAIL);
+		}
 
+		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("TLS connection from %s:%d accept failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
