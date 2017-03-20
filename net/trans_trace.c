@@ -190,13 +190,14 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 		return -1;
 	}
 
-	if ( init_su( src_su, &c->rcv.src_ip, c->rcv.src_port) < 0 ) {
+	/* set the port in ntohs form because init_su will apply htons on it */
+	if ( init_su( src_su, &c->rcv.src_ip, ntohs(c->rcv.src_port)) < 0 ) {
 		LM_ERR("failed to create source su!\n");
 		return -1;
 	}
 
-
-	if ( init_su( dst_su, &c->rcv.dst_ip, c->rcv.dst_port) < 0 ) {
+	/* set the port in ntohs form because init_su will apply htons on it */
+	if ( init_su( dst_su, &c->rcv.dst_ip, ntohs(c->rcv.dst_port)) < 0 ) {
 		LM_ERR("failed to create destination su!\n");
 		return -1;
 	}
