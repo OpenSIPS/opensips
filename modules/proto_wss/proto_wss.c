@@ -215,6 +215,19 @@ static int mod_init(void)
 		t_dst = tprot.get_trace_dest_by_name( &trace_destination_name );
 	}
 
+	/* fix route name */
+	if ( !(trace_is_on = shm_malloc(sizeof(int))) ) {
+		LM_ERR("no more shared memory!\n");
+		return -1;
+	}
+
+	*trace_is_on = trace_is_on_tmp;
+	if ( trace_filter_route ) {
+		trace_filter_route_id =
+			get_script_route_ID_by_name( trace_filter_route, rlist, RT_NO);
+	}
+
+
 
 	return 0;
 }
