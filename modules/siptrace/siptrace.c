@@ -1124,7 +1124,11 @@ static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *pa
 	}
 
 	info = *(trace_info_p)(*param->param);
-	info.conn_id = req->rcv.proto_reserved1;
+	if ( req->rcv.proto != PROTO_UDP ) {
+		info.conn_id = req->rcv.proto_reserved1;
+	} else {
+		info.conn_id = 0;
+	}
 
 	/* trace current request */
 	sip_trace(req, &info);
@@ -1601,7 +1605,12 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 
 	/* we're safe; nobody will be in conflict with this conn id since evrybody else
 	 * will have a local copy of this structure */
-	info->conn_id = msg->rcv.proto_reserved1;
+	if ( msg->rcv.proto != PROTO_UDP ) {
+		info->conn_id = msg->rcv.proto_reserved1;
+	} else {
+		info->conn_id = 0;
+	}
+
 	if (sip_trace(msg, info) < 0) {
 		LM_ERR("sip trace failed!\n");
 		return -1;
@@ -1731,7 +1740,12 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	dest = ps->extra2;
 
 	if (dest) {
-		info.conn_id = last_outgoing_tcp_id;
+		if ( dest->proto != PROTO_UDP ) {
+			info.conn_id = last_outgoing_tcp_id;
+		} else {
+			info.conn_id = 0;
+		}
+
 		trace_msg_out( ps->req, (str*)ps->extra1,
 			dest->send_sock,
 			dest->proto,
@@ -1986,7 +2000,11 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	/* we do this little trick in order to have the info on the stack, not
 	 * shared to avoid conflicts on conn_id field */
 	info = *(trace_info_p)(*ps->param);
-	info.conn_id = msg->rcv.proto_reserved1;
+	if ( msg->rcv.proto != PROTO_UDP ) {
+		info.conn_id = msg->rcv.proto_reserved1;
+	} else {
+		info.conn_id = 0;
+	}
 
 	LM_DBG("trace onreply in \n");
 
@@ -2155,8 +2173,13 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	if ( dst == NULL ) {
 		info.conn_id = 0;
 	} else {
-		info.conn_id = dst->proto_reserved1;
+		if ( dst->proto != PROTO_UDP ) {
+			info.conn_id = dst->proto_reserved1;
+		} else {
+			info.conn_id = 0;
+		}
 	}
+
 	if (trace_local_ip.s && trace_local_ip.len > 0){
 		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
 	}
@@ -2462,10 +2485,13 @@ static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_
 
 	tprot.add_payload_part( trace_msg, "payload", body);
 
-	tcp_get_correlation_id( info->conn_id, &trans_correlation_id);
+	if ( info->conn_id != 0 ) {
+		tcp_get_correlation_id( info->conn_id, &trans_correlation_id);
 
-	conn_id_s.s =  int2str( trans_correlation_id, &conn_id_s.len);
-	tprot.add_extra_correlation( trace_msg, "trans", &conn_id_s);
+
+		conn_id_s.s =  int2str( trans_correlation_id, &conn_id_s.len);
+		tprot.add_extra_correlation( trace_msg, "trans", &conn_id_s);
+	}
 
 	if (correlation) {
 		if ( corr_id == -1 && corr_vendor == -1 ) {
