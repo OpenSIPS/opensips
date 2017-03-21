@@ -537,8 +537,19 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	/* we need to fix the SSL connection before doing anything */
 	if (tls_fix_read_conn(con) < 0) {
 		LM_ERR("cannot fix read connection\n");
+		if ( (d=con->proto_data) && d->dest && d->tprot ) {
+			if ( d->message ) {
+				send_trace_message( d->message, t_dst);
+
+				/* don't allow future traces for this connection */
+				d->tprot = 0;
+				d->dest  = 0;
+			}
+		}
 		goto error;
 	}
+
+	d=con->proto_data;
 
 	if (WS_STATE(con) != WS_CON_HANDSHAKE_DONE) {
 		size = ws_server_handshake(con);
@@ -546,12 +557,17 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 			LM_ERR("cannot complete WebSocket handshake\n");
 			goto error;
 		}
-		d = con->proto_data;
 
-		if ( d && d->dest && d->tprot ) {
+		d = con->proto_data;
+		/* there is a corner case when the TLS handhskae is traced
+		 * but the connection is closed with
+		 * EOF before reaching this code if the certificate is not
+		 * validated by the client */
+		if ( (WS_STATE(con) == WS_CON_HANDSHAKE_DONE ||
+					con->state == S_CONN_EOF ) &&
+								d && d->dest && d->tprot ) {
 			if ( d->message ) {
-				tprot.send_message( d->message, t_dst, 0);
-				tprot.free_message( d->message );
+				send_trace_message( d->message, t_dst);
 			}
 
 			/* don't allow future traces for this connection */
