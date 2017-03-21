@@ -9,6 +9,11 @@
 ### SQLITE specific variables and functions
 #
 
+# path to the db_sqlite database
+if [ -z "$DB_PATH" ]; then
+	DB_PATH="/usr/local/etc/opensips/sqlite"
+fi
+
 ##### ----------------------------------------------- #####
 ### load SQL base
 #
