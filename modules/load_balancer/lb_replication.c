@@ -42,7 +42,6 @@ void replicate_lb_status(struct lb_dst *dst)
 		return;
 	}
 
-	bin_push_int(&packet, clusterer_api.get_my_id());
 	bin_push_int(&packet, dst->group);
 	bin_push_str(&packet, &dst->uri);
 	bin_push_int(&packet, dst->flags&LB_DST_STAT_MASK);
