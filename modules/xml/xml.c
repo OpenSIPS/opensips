@@ -454,6 +454,8 @@ static xmlAttr *get_node_attr(xmlNode *node, str attr_name)
 	return NULL;
 }
 
+static str res_buf;
+
 int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 {
 	xml_path_t *path = NULL;
@@ -461,6 +463,8 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 	xmlNode *root = NULL, *node;
 	xmlBufferPtr xml_buf = NULL;
 	xmlAttr *attr;
+	char *xml_buf_s;
+	int xml_buf_len;
 
 	path = (xml_path_t *)pvp->pvn.u.dname;
 	if (!path) {
@@ -502,16 +506,31 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 			return pv_get_null( msg, pvp, res);
 		}
 
-		pvp->pvv.len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
-		if (pvp->pvv.len == -1) {
+		xml_buf_len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
+		if (xml_buf_len == -1) {
 			LM_ERR("Unable to dump node to xml buffer\n");
-			return pv_get_null( msg, pvp, res);
+			goto err_free_xml_buf;
 		}
-		pvp->pvv.s = (char *)xmlBufferContent(xml_buf);
-		if (!pvp->pvv.s) {
+		if (res_buf.len < xml_buf_len) {
+			res_buf.s = pkg_realloc(res_buf.s, xml_buf_len);
+			if (!res_buf.s) {
+				LM_ERR("No more pkg mem\n");
+				goto err_free_xml_buf;
+			}
+		}
+
+		xml_buf_s = (char *)xmlBufferContent(xml_buf);
+		if (!xml_buf_s) {
 			LM_ERR("Unable to obtain xml buffer content\n");
-			return pv_get_null( msg, pvp, res);
+			goto err_free_xml_buf;
 		}
+		memcpy(res_buf.s, xml_buf_s, xml_buf_len);
+		res_buf.len = xml_buf_len;
+
+		xmlBufferFree(xml_buf);
+
+		res->rs.s = res_buf.s;
+		res->rs.len = res_buf.len;
 
 		break;
 	case ACCESS_EL_VAL:
@@ -523,14 +542,31 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 
 		if (get_node_content(node, xml_buf) < 0) {
 			LM_ERR("Unable to get node text content\n");
-			return pv_get_null( msg, pvp, res);
+			goto err_free_xml_buf;
 		}
-		pvp->pvv.s = (char *)xmlBufferContent(xml_buf);
-		if (!pvp->pvv.s) {
+
+		xml_buf_len = xmlBufferLength(xml_buf);
+		if (res_buf.len < xml_buf_len) {
+			res_buf.s = pkg_realloc(res_buf.s, xml_buf_len);
+			if (!res_buf.s) {
+				LM_ERR("No more pkg mem\n");
+				goto err_free_xml_buf;
+			}
+		}
+
+		xml_buf_s = (char *)xmlBufferContent(xml_buf);
+		if (!xml_buf_s) {
 			LM_ERR("Unable to obtain xml buffer content\n");
-			return pv_get_null( msg, pvp, res);
+			goto err_free_xml_buf;
 		}
-		pvp->pvv.len = xmlBufferLength(xml_buf);
+		memcpy(res_buf.s, xml_buf_s, xml_buf_len);
+		res_buf.len = xml_buf_len;
+
+		xmlBufferFree(xml_buf);
+
+		res->rs.s = res_buf.s;
+		res->rs.len = res_buf.len;
+
 		break;
 	case ACCESS_EL_ATTR:
 		attr = get_node_attr(node, path->attr);
@@ -538,14 +574,17 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 			LM_NOTICE("Attribute: %.*s not found\n", path->attr.len, path->attr.s);
 			return pv_get_null( msg, pvp, res);
 		}
-		pvp->pvv.s = (char *)attr->children->content;
-		pvp->pvv.len = strlen(pvp->pvv.s);
+		res->rs.s = (char *)attr->children->content;
+		res->rs.len = strlen(res->rs.s);
 	}
 
-	res->rs = pvp->pvv;
 	res->flags = PV_VAL_STR;
 
 	return 0;
+
+err_free_xml_buf:
+	xmlBufferFree(xml_buf);
+	return pv_get_null( msg, pvp, res);
 }
 
 
