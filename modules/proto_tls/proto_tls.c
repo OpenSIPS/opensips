@@ -490,6 +490,7 @@ send_it:
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 {
+	int ret;
 	int bytes;
 	int total_bytes;
 	struct tcp_req* req;
@@ -508,10 +509,8 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 		req=&tls_current_req;
 	}
 
-	if (tls_fix_read_conn(con)!=0) {
-		LM_ERR("failed to do pre-tls reading\n");
-		goto error;
-	}
+	/* do this trick in order to trace whether if it's an error or not */
+	ret=tls_fix_read_conn(con);
 
 	if ( con->proto_flags & F_TLS_TRACE_READY ) {
 		data = con->proto_data;
@@ -526,6 +525,11 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 		data->dest  = 0;
 
 		con->proto_flags &= ~( F_TLS_TRACE_READY );
+	}
+
+	if ( ret != 0 ) {
+		LM_ERR("failed to do pre-tls reading\n");
+		goto error;
 	}
 
 	if(con->state!=S_CONN_OK)
