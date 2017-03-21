@@ -275,7 +275,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
-		if ( err != SSL_ERROR_WANT_READ || err != SSL_ERROR_WANT_WRITE ) {
+		if ( err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE ) {
 			/* report failure */
 			trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
 					TRANS_TRACE_FAILURE, &ACCEPT_FAIL);
@@ -370,7 +370,7 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
-		if ( err != SSL_ERROR_WANT_READ || err != SSL_ERROR_WANT_WRITE ) {
+		if ( err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE ) {
 			/* report failure */
 			trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
 					TRANS_TRACE_FAILURE, &CONNECT_OK);
