@@ -34,7 +34,7 @@ str repl_dr_module_name = str_init("drouting");
 struct clusterer_binds clusterer_api;
 
 /* implemented in drouting.c */
-void dr_raise_event(pgw_t *gw);
+void dr_raise_event(struct head_db *p, pgw_t *gw);
 
 extern struct head_db * head_db_start;
 
@@ -135,7 +135,7 @@ static int gw_status_update(bin_packet_t *packet)
 		/* set the DIRTY flag to force flushing to DB */
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
 		/* raise event for the status change */
-		dr_raise_event(gw);
+		dr_raise_event(part, gw);
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
