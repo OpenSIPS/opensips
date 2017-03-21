@@ -612,28 +612,28 @@ int check_ip_address(struct ip_addr* ip, str *name,
 
 	/* maybe we are lucky and name it's an ip */
 	s=ip_addr2a(ip);
-	if (s){
-		LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
-		len=strlen(s);
-
-		/* check if name->s is an ipv6 address or an ipv6 address ref. */
-		if ((ip->af==AF_INET6) &&
-				(	((len==name->len)&&(strncasecmp(name->s, s, name->len)==0))
-					||
-					((len==(name->len-2))&&(name->s[0]=='[')&&
-						(name->s[name->len-1]==']')&&
-						(strncasecmp(name->s+1, s, len)==0))
-				)
-		   )
-			return 0;
-		else
-
-			if (strncmp(name->s, s, name->len)==0)
-				return 0;
-	}else{
+	if (s==NULL) {
 		LM_CRIT("could not convert ip address\n");
 		return -1;
 	}
+
+	LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
+	len=strlen(s);
+
+	/* force first a full matching (v4 and v6) */
+	if ( (len==name->len) && (strncasecmp(name->s, s, name->len)==0) )
+		return 0;
+
+	/* check if name->s is an ipv6 address ref. */
+	if (ip->af==AF_INET6 &&
+		(	((len==name->len)&&(strncasecmp(name->s, s, name->len)==0))
+				||
+			((len==(name->len-2))&&(name->s[0]=='[')&&
+				(name->s[name->len-1]==']')&&
+				(strncasecmp(name->s+1, s, len)==0))
+		)
+	)
+		return 0;
 
 	if (port==0) port=SIP_PORT;
 	if (resolver&DO_DNS){
