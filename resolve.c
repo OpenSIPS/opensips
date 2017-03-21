@@ -626,12 +626,9 @@ int check_ip_address(struct ip_addr* ip, str *name,
 
 	/* check if name->s is an ipv6 address ref. */
 	if (ip->af==AF_INET6 &&
-		(	((len==name->len)&&(strncasecmp(name->s, s, name->len)==0))
-				||
-			((len==(name->len-2))&&(name->s[0]=='[')&&
-				(name->s[name->len-1]==']')&&
-				(strncasecmp(name->s+1, s, len)==0))
-		)
+		((len==(name->len-2))&&(name->s[0]=='[')&&
+			(name->s[name->len-1]==']')&&
+			(strncasecmp(name->s+1, s, len)==0))
 	)
 		return 0;
 
