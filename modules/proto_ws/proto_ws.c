@@ -512,11 +512,9 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 		}
 
 		d = con->proto_data;
-
 		if ( d && d->dest && d->tprot ) {
 			if ( d->message ) {
-				tprot.send_message( d->message, t_dst, 0);
-				tprot.free_message( d->message );
+				send_trace_message( d->message, t_dst);
 			}
 
 			/* don't allow future traces for this connection */
