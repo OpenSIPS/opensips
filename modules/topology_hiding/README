@@ -10,7 +10,7 @@ Vlad Paiu
 
    <vladpaiu@opensips.org>
 
-   Copyright © 2015 OpenSIPs Foundation
+   Copyright � 2015 OpenSIPs Foundation
    Revision History
    Revision $Revision: 1 $ $Date$
      __________________________________________________________
@@ -74,7 +74,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * TM - Transaction Module.
-     * Dialog Module, if “force_dialog” module parameter is
+     * Dialog Module, if "force_dialog" module parameter is
        enabled, or a dialog is created from the configuration
        script.
 
@@ -91,7 +91,7 @@ Chapter 1. Admin Guide
    The string password that will be used for encoding/decoding the
    callid in case of topology_hiding with callid mangling.
 
-   Default value is “"OpenSIPS"”
+   Default value is ""OpenSIPS""
 
    Example 1.1. Set th_callid_passwd parameter
 ...
@@ -105,7 +105,7 @@ modparam("topology_hiding", "th_callid_passwd", "my_topo_hiding_secret")
    this value in case your SIP path contains multiple OpenSIPS
    boxes with topology hiding.
 
-   Default value is “"DLGCH_"”
+   Default value is ""DLGCH_""
 
    Example 1.2. Set th_callid_prefix parameter
 ...
@@ -119,7 +119,7 @@ modparam("topology_hiding", "th_callid_prefix", "MYCALLIDPREFIX_")
    be used when end-to-end functionality uses such Contact URI
    parameters.
 
-   Default value is “empty” - do not pass any parameters
+   Default value is "empty" - do not pass any parameters
 
    Example 1.3. Set th_passed_contact_uri_params parameter
 ...
@@ -134,7 +134,7 @@ myparam;custom_param")
    To be used when end-to-end functionality uses such Contact
    header parameters.
 
-   Default value is “empty” - do not pass any parameters
+   Default value is "empty" - do not pass any parameters
 
    Example 1.4. Set th_passed_contact_params parameter
 ...
@@ -148,7 +148,7 @@ ram;custom_param")
    not already created ). This will only work for INVITE based
    dialogs, and the dialog module must be loaded.
 
-   Default value is “0”
+   Default value is "0"
 
    Example 1.5. Set force_dialog parameter
 ...
@@ -163,7 +163,7 @@ modparam("topology_hiding", "force_dialog", 1)
    Contact URI param. The parameter configures the string password
    that will be used for encoding/decoding that specific param .
 
-   Default value is “"ToPoCtPaSS"”
+   Default value is ""ToPoCtPaSS""
 
    Example 1.6. Set th_callid_passwd parameter
 ...
@@ -179,7 +179,7 @@ modparam("topology_hiding", "th_contact_encode_passwd", "my_topoh_passwd
    Contact URI param. The parameter configures the respective
    parameter name.
 
-   Default value is “"thinfo"”
+   Default value is ""thinfo""
 
    Example 1.7. Set th_callid_passwd parameter
 ...
@@ -230,6 +230,10 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
        variables related to the callid will represent the callid
        value for the caller side. If the callid for the callee
        side is needed, refer to the $TH_callee_callid pvar.
+       Note: Changing the callid of the call using the "C" flag is
+       only available when doing topology_hiding with dialog
+       support. Using this flag without dialog support will not
+       change the callid at all!.
 
    Example 1.8. topology_hiding usage
 ...

@@ -920,6 +920,11 @@ static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags
 	else
 		used_cb = th_no_dlg_onreply;
 
+	if (extra_flags & TOPOH_HIDE_CALLID)
+		LM_WARN("Cannot hide callid when dialog support is not engaged!\n");
+	if (extra_flags & TOPOH_DID_IN_USER)
+		LM_WARN("Cannot store DID in user when dialog support is not engaged!\n");
+
 	if (tm_api.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
 	used_cb,NULL, NULL)<0 ) {
 		LM_ERR("failed to register TMCB\n");
