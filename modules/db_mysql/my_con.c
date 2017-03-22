@@ -38,9 +38,9 @@ int db_mysql_connect(struct my_con* ptr)
 	ptr->init = 1;
 
 	/* set connect, read and write timeout, the value counts three times */
-	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, &db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, &db_mysql_timeout_interval);
-	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, &db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_CONNECT_TIMEOUT, (void *)&db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, (void *)&db_mysql_timeout_interval);
+	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, (void *)&db_mysql_timeout_interval);
 
 	if (ptr->id->port) {
 		LM_DBG("opening connection: mysql://xxxx:xxxx@%s:%d/%s\n",
