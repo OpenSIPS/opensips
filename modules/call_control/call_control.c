@@ -617,11 +617,11 @@ make_custom_request(struct sip_msg *msg, CallInfo *call)
 			return NULL;
 		}
         if (pt.flags & PV_VAL_INT) {
-            len += snprintf(request + len, sizeof(request),
+            len += snprintf(request + len, sizeof(request) - len - 1,
                     "%.*s = %d ", al->name.len, al->name.s,
                     pt.ri);
         } else if (pt.flags & PV_VAL_STR) {
-            len += snprintf(request + len, sizeof(request),
+            len += snprintf(request + len, sizeof(request) - len - 1,
                     "%.*s = %.*s ", al->name.len, al->name.s,
                     pt.rs.len, pt.rs.s);
         }
