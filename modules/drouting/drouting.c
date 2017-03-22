@@ -4801,7 +4801,7 @@ static int get_config_from_db(void) {
 	db_row_t *rows_db_config = NULL;
 	int j;
 	int i;
-	str ans_col;
+	str ans_col = {NULL, 0};
 
 
 	init_db_url(db_partitions_url, 0);
