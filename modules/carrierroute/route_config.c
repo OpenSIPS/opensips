@@ -368,7 +368,6 @@ static int backup_config(void) {
 	/* open destination file */
 	if ((to = fopen(backup_file, "wb"))==NULL) {
 		LM_ERR("Cannot open destination file.\n");
-		fclose(from);
 		goto errout;
 	}
 
