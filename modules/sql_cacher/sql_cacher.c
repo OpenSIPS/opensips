@@ -474,7 +474,7 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls, db_
 	char *int_key_buf = NULL;
 	str str_val;
 	db_type_t val_type;
-	str str_key;
+	str str_key = {NULL, 0};
 	str cdb_val;
 	str cdb_key;
 
