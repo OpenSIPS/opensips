@@ -836,7 +836,7 @@ static int dlg_replicated_profiles(bin_packet_t *packet, struct receive_info *ri
 
 	/* optimize profile search */
 	struct dlg_profile_table *old_profile = NULL;
-	str old_name;
+	str old_name = {NULL,0};
 
 	now = time(0);
 	//*repl_prof_dests[index].last_msg = now;

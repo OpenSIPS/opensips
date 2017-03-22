@@ -1456,7 +1456,8 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_cell* dlg = NULL;
-	unsigned int idx,cnt;
+	unsigned int idx = 0;
+	unsigned int cnt = 0;
 
 	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
 	if (rpl_tree)
@@ -1494,7 +1495,8 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_cell* dlg = NULL;
-	unsigned int idx,cnt;
+	unsigned int idx = 0;
+	unsigned int cnt = 0;
 
 	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
 	if (rpl_tree)
