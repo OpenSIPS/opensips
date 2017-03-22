@@ -112,7 +112,7 @@ int xj_jcon_connect(xj_jcon jbc)
     if(he == NULL)
     {
     	LM_DBG("failed to get info about Jabber server address\n");
-        return -1;
+		goto error;
     }
 
 	memset(&address, 0, sizeof(address));
@@ -124,13 +124,15 @@ int xj_jcon_connect(xj_jcon jbc)
     // try to connect with Jabber server
     if (connect(sock, (struct sockaddr *)&address, sizeof(address))<0)
     {
-		close(sock);
     	LM_DBG("failed to connect with Jabber server\n");
-        return -1;
+        goto error;
     }
     jbc->sock = sock;
 
     return 0;
+error:
+	close(sock);
+	return -1;
 }
 
 /**
