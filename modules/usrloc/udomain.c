@@ -792,7 +792,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				if (_d->table[sl].next_label < rlabel || _d->table[sl].next_label == 0)
 					_d->table[sl].next_label = rlabel + 1;
 
-				if (r->next_clabel < clabel || r->next_clabel == 0)
+				if (r->next_clabel <= clabel || r->next_clabel == 0)
 					r->next_clabel = CLABEL_INC_AND_TEST(clabel);
 
 				r->label = rlabel;
