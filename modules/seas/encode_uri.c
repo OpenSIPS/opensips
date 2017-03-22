@@ -326,6 +326,7 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
    uriidx=payload[0];
    if(uriidx>hdrlen){
       fprintf(fp,"bad index for start of uri: hdrlen=%d uri_index=%d\n",hdrlen,uriidx);
+	  fclose(fp);
       return -1;
    }
 
