@@ -233,6 +233,18 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 				* can be in mixed case, it will also match
 				* ipv6 addresses if we are lucky*/
 				goto found;
+			/* if no advertised is specified on the interface, we should check
+			 * if it is the global address */
+			if (!si->adv_name_str.len && default_global_address.s &&
+				h_len == default_global_address.len &&
+				(strncasecmp(hname, default_global_address.s,
+					default_global_address.len)==0) /*slower*/)
+				/* this might match sockets that are not supposed to
+				 * match, when using multiple listeners for the same
+				 * protocol; but in that case the default_global_address
+				 * concept is broken, since there is no way to choose
+				 * the right socket */
+				goto found;
 			/* check if host == ip address */
 			/* ipv6 case is uglier, host can be [3ffe::1] */
 			ip6=str2ip6(host);
