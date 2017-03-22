@@ -557,9 +557,9 @@ int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
 {
 	int exp;
 
-	str aor, callid;
-	/* make gcc happy */
-	str curi = { 0, 0};
+	str aor;
+	str callid = {NULL, 0};
+	str curi = {NULL, 0};
 	pv_value_t val;
 
 	udomain_t* ud = (udomain_t*)_d;
