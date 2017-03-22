@@ -241,6 +241,11 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
 					<para>
 					When using the "C" flag, the callid will be automatically encoded / decoded, transparent for the script writer - inside OpenSIPS (script,MI functions, etc ) all the variables related to the callid will represent the callid value for the caller side. If the callid for the callee side is needed, refer to the $TH_callee_callid pvar.
 					</para>
+					<para>
+						<emphasis>Note:</emphasis> Changing the callid of the call using the "C" flag is only
+						available when doing topology_hiding with <emphasis>dialog support</emphasis>. Using this
+						flag without dialog support will not change the callid at all!.
+					</para>
 				</listitem>
 			</itemizedlist>
 		</para>
