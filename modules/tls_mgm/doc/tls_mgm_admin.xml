@@ -363,7 +363,7 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			It's usable only if TLS v1.1/1.2 support was compiled.
 			A list of curves which can be used you can get by
 			<programlisting format="linespecific">
-				openssl ecparam -list_curve
+				openssl ecparam -list_curves
 			</programlisting>
 			</para>
 			<para><emphasis>
