@@ -219,7 +219,7 @@ fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 
 	if (!evs_str->s || evs_str->len == 0 || !tag) {
 		LM_ERR("bad params: '%.*s', %.*s\n", evs_str->len, evs_str->s,
-		       tag->len, tag->s);
+		       (tag ? tag->len:0), (tag ? tag->s: ""));
 		return NULL;
 	}
 
