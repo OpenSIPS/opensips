@@ -648,6 +648,10 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 	lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
+	if (!cl) {
+		LM_DBG("cluster node id %d not found!\n", cluster_id);
+		goto end;
+	}
 	for (node = cl->node_list; node; node = node->next) {
 		if (get_next_hop(node) > 0)
 			if (add_clusterer_node(&ret_nodes, node) < 0) {
@@ -659,6 +663,7 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 			}
 	}
 
+end:
 	lock_stop_read(cl_list_lock);
 
 	return ret_nodes;
