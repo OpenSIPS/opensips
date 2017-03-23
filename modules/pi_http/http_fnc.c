@@ -2518,7 +2518,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			flags = table->cols[i].validation;
 			LM_DBG("[%.*s] has flags [%u]\n", key->len, key->s, flags);
 			if(flags&PH_FLAG_P_HOST_PORT){
-				flags&= ~ PH_FLAG_P_HOST_PORT;
+				//flags&= ~ PH_FLAG_P_HOST_PORT;
 				if (parse_phostport(arg->s, arg->len,
 						&host.s, &host.len,
 						&port, &proto)!=0){
@@ -2535,7 +2535,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
 			if(flags&PH_FLAG_P_IPV4_PORT){
-				flags&= ~ PH_FLAG_P_IPV4_PORT;
+				//flags&= ~ PH_FLAG_P_IPV4_PORT;
 				if (parse_phostport(arg->s, arg->len,
 						&host.s, &host.len,
 						&port, &proto)!=0){
@@ -2561,7 +2561,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
 			if(flags&PH_FLAG_IPV4){
-				flags&= ~ PH_FLAG_IPV4;
+				//flags&= ~ PH_FLAG_IPV4;
 				if (str2ip(arg)==NULL) {
 					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 						"Invalid IPv4 for %.*s [%.*s].",
@@ -2572,7 +2572,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
 			if(flags&PH_FLAG_URI){
-				flags&= ~ PH_FLAG_URI;
+				//flags&= ~ PH_FLAG_URI;
 				if (parse_uri(arg->s, arg->len, &uri)<0){
 					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 						"Invalid SIP URI for %.*s [%.*s].",
@@ -2583,7 +2583,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
 			if(flags&PH_FLAG_URI_IPV4HOST){
-				flags&= ~ PH_FLAG_URI_IPV4HOST;
+				//flags&= ~ PH_FLAG_URI_IPV4HOST;
 				if (parse_uri(arg->s, arg->len, &uri)<0){
 					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 						"Invalid SIP URI for %.*s [%.*s].",
