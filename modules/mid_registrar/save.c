@@ -1368,6 +1368,10 @@ static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
 
 	/* TODO: add proper handling for multiple Contacts!!! */
 	req_ct = get_first_contact(req);
+	if (!req_ct) {
+		LM_ERR("cannot find contact in request!\n");
+		return -1;
+	}
 	if (parse_uri(req_ct->uri.s, req_ct->uri.len, &newuri) < 0) {
 		LM_ERR("failed to parse contact <%.*s>\n",
 				req_ct->uri.len, req_ct->uri.s);
