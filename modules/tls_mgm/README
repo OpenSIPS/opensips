@@ -409,7 +409,7 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 
    It's usable only if TLS v1.1/1.2 support was compiled. A list
    of curves which can be used you can get by
-                                openssl ecparam -list_curve
+                                openssl ecparam -list_curves
 
    It defaults to not set a elliptic curve.
 
