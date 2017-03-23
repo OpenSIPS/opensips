@@ -1788,8 +1788,10 @@ rtpengine_delete_f(struct sip_msg* msg, gparam_p str1, pv_spec_t *spvar)
 		return -1;
 
 	flags.s = NULL;
-	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
+		LM_WARN("cannot fetch the flags!\n");
+		return -1;
+	}
 
 	return rtpengine_delete(msg, flags.s, spvar);
 }
@@ -1887,8 +1889,10 @@ rtpengine_manage_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar, pv_spec
 	    return -1;
 
 	flags.s = NULL;
-	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
+		LM_WARN("cannot fetch the flags!\n");
+		return -1;
+	}
 
 	return rtpengine_manage(msg, flags.s, spvar, bpvar);
 }
@@ -1902,8 +1906,10 @@ rtpengine_offer_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar, pv_spec_
 	    return -1;
 
 	flags.s = NULL;
-	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
+		LM_WARN("cannot fetch the flags!\n");
+		return -1;
+	}
 	return rtpengine_offer_answer(msg, flags.s, spvar, bpvar, OP_OFFER);
 }
 
@@ -1920,8 +1926,10 @@ rtpengine_answer_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar, pv_spec
 			return -1;
 
 	flags.s = NULL;
-	if (str1)
-		fixup_get_svalue(msg, str1, &flags);
+	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
+		LM_WARN("cannot fetch the flags!\n");
+		return -1;
+	}
 	return rtpengine_offer_answer(msg, flags.s, spvar, bpvar, OP_ANSWER);
 }
 
