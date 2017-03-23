@@ -96,6 +96,7 @@ typedef struct rest_async_param_ {
 	enum rest_client_method method;
 	OSS_CURLM *multi_list;
 	CURL *handle;
+	struct curl_slist *header_list;
 	str body;
 	str ctype;
 

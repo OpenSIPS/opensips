@@ -423,6 +423,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		async_parm->tparam = pkg_malloc(sizeof(rest_trace_param_t));
 		if ( !async_parm->tparam ) {
 			LM_ERR("no more pkg mem!\n");
+			clean_header_list;
 			return -1;
 		}
 
@@ -525,9 +526,10 @@ busy_wait:
 	goto error;
 
 success:
-	clean_header_list;
+	async_parm->header_list = header_list;
 	async_parm->handle = handle;
 	async_parm->multi_list = multi_list;
+	header_list = NULL;
 	return fd;
 
 error:
@@ -603,6 +605,8 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		async_status = ASYNC_CONTINUE;
 		return 1;
 	}
+
+	curl_slist_free_all(param->header_list);
 
 	if (del_transfer(fd) != 0) {
 		LM_BUG("failed to delete fd %d", fd);
