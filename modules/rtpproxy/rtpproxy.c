@@ -4221,7 +4221,6 @@ static int rtpp_init_extra_stats(void)
 	return 0;
 
 error:
-	rtpp_stats_no = rtpp_stats_no;
 	rtpp_stats_chunks_no = chunk;
 	rtpp_stats_no = chunk * RTPP_QUERY_ONCE_STATS_NO;
 	return -1;
