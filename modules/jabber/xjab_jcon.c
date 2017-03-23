@@ -252,9 +252,11 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 		goto error;
 
 	x = xode_from_strx(msg_buff, n, &err, &i);
+	/*
 	p0 = msg_buff;
 	if(err)
 		p0 += i;
+	*/
 
 	if(strncasecmp(xode_get_name(x), "iq", 2))
 		goto errorx;
@@ -324,9 +326,11 @@ int xj_jcon_user_auth(xj_jcon jbc, char *username, char *passwd,
 		goto error;
 
 	x = xode_from_strx(msg_buff, n, &err, &i);
+	/*
 	p0 = msg_buff;
 	if(err)
 		p0 += i;
+	*/
 
 	if(strncasecmp(xode_get_name(x), "iq", 2) ||
 			strncasecmp(xode_get_attrib(x, "type"), "result", 6))

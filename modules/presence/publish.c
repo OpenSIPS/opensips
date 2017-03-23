@@ -275,7 +275,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		pres->etag.s= (char*)pres+ size;
 		memcpy(pres->etag.s, etag.s, etag.len);
 		pres->etag.len= etag.len;
-		size+= etag.len;
+		//size+= etag.len;
 
 		pres->event= contains_event(&event, &ev);
 		if(pres->event== NULL)

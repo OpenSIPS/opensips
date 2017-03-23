@@ -574,7 +574,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 					for(tmp=found.s ; tmp< lmp->u.value + lmp->len ; tmp++ )
 						*tmp  = *(tmp+found.len);
 
-					cur -= found.len;
+					//cur -= found.len;
 					lmp->len -= found.len;
 				}
 
