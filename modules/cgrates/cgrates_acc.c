@@ -398,6 +398,11 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	str *callid;
 	str tmp;
 
+	if (!ctx) {
+		LM_BUG("ended up in stop accounting with no context!\n");
+		return NULL;
+	}
+
 	ctx->duration = now - ctx->answer_time;
 
 	/* OriginID */
