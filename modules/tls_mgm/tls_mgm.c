@@ -723,10 +723,10 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	}
 #else
 	if (d->tmp_dh_file  || tls_tmp_dh_file)
-		LM_WARN("DH params file discarded as not supported by your "
+		LM_INFO("DH params file discarded as not supported by your "
 			"openSSL version\n");
 	if (d->tls_ec_curve)
-		LM_WARN("EC params file discarded as not supported by your "
+		LM_INFO("EC params file discarded as not supported by your "
 			"openSSL version\n");
 #endif
 
@@ -787,15 +787,15 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 		if( d->verify_cert ) {
 			verify_mode = SSL_VERIFY_PEER;
 			if( d->require_client_cert ) {
-				LM_WARN("client verification activated. Client "
+				LM_INFO("client verification activated. Client "
 						"certificates are mandatory.\n");
 				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			} else
-				LM_WARN("client verification activated. Client "
+				LM_INFO("client verification activated. Client "
 						"certificates are NOT mandatory.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
-			LM_WARN("client verification NOT activated. Weaker security.\n");
+			LM_INFO("client verification NOT activated. Weaker security.\n");
 		}
 	} else {
 		/* Client mode:
@@ -820,10 +820,10 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 
 		if( d->verify_cert ) {
 			verify_mode = SSL_VERIFY_PEER;
-			LM_WARN("server verification activated.\n");
+			LM_INFO("server verification activated.\n");
 		} else {
 			verify_mode = SSL_VERIFY_NONE;
-			LM_WARN("server verification NOT activated. Weaker security.\n");
+			LM_INFO("server verification NOT activated. Weaker security.\n");
 		}
 	}
 
@@ -1526,7 +1526,7 @@ static int mod_init(void){
 #if !defined(OPENSSL_NO_COMP)
 	STACK_OF(SSL_COMP)* comp_methods;
 	/* disabling compression */
-	LM_WARN("disabling compression due ZLIB problems\n");
+	LM_INFO("disabling compression due ZLIB problems\n");
 	comp_methods = SSL_COMP_get_compression_methods();
 	if (comp_methods==0) {
 		LM_INFO("openssl compression already disabled\n");
@@ -1691,7 +1691,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 
 	ssl_verify = SSL_get_verify_result(ssl);
 	if ( ssl_verify != X509_V_OK ) {
-		LM_WARN("verification of presented certificate failed... return -1\n");
+		LM_INFO("verification of presented certificate failed... return -1\n");
 		goto error;
 	}
 
@@ -1700,7 +1700,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	 */
 	x509_cert = SSL_get_peer_certificate(ssl);
 	if ( x509_cert == NULL ) {
-		LM_WARN("tlsops:is_peer_verified: WARNING: peer did not presented "
+		LM_INFO("peer did not presented "
 				"a certificate. Thus it could not be verified... return -1\n");
 		goto error;
 	}
@@ -1709,8 +1709,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 
 	tcp_conn_release(c, 0);
 
-	LM_DBG("tlsops:is_peer_verified: peer is successfully verified"
-			"...done\n");
+	LM_DBG("peer is successfully verified... done\n");
 	return 1;
 error:
 	tcp_conn_release(c, 0);
