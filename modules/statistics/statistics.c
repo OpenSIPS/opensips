@@ -625,9 +625,14 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 static int w_stat_iter_init(struct sip_msg *msg, char *group, char *ppstat)
 {
 	module_stats *ms;
+	str *grp = (str *)group;
 	stat_var **stat = (stat_var **)ppstat;
 
 	ms = get_stat_module((str *)group);
+	if (!ms) {
+		LM_ERR("unknown group %.*s\n", grp->len, grp->s);
+		return -1;
+	}
 	*stat = ms->head;
 
 	return 1;
