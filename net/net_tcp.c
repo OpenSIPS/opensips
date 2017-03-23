@@ -1506,7 +1506,9 @@ static inline void __tcpconn_lifetime(int force)
 					/* report the closing of the connection . Note that
 					 * there are connectioned that use an foced expire to 0
 					 * as a way to be deleted - we are not interested in */
-					if (c->lifetime>0)
+					/* Also, do not trigger reporting when shutdown (force=1)
+					 * is done */
+					if (c->lifetime>0 && !force)
 						tcp_trigger_report(c, TCP_REPORT_CLOSE,
 							"Timeout on no traffic");
 					_tcpconn_rm(c);
