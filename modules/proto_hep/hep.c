@@ -1885,6 +1885,7 @@ int correlate_w(struct sip_msg* msg, char* hep_id,
 	h = get_hep_id_by_name( &value );
 	if ( h == NULL ) {
 		LM_ERR("no hep id with name <%.*s>\n", value.len, value.s );
+		return -1;
 	}
 
 	if ( h->version < 3 ) {
