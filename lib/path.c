@@ -94,7 +94,7 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 		r2 = 0;
 	}
 	l2 = insert_new_lump_before(l2, suffix, suffix_len, 0);
-	if (!l) goto out3;
+	if (!l2) goto out3;
 	if (recv) {
 		/* TODO: agranig: optimize this one! */
 		src_ip = ip_addr2a(&_m->rcv.src_ip);
