@@ -211,7 +211,7 @@ int rmq_reconnect(struct rmq_server *srv)
 	switch (srv->state) {
 	case RMQS_OFF:
 		srv->conn = amqp_new_connection();
-		if (!srv) {
+		if (!srv->conn) {
 			LM_ERR("cannot create amqp connection!\n");
 			return -1;
 		}
