@@ -135,7 +135,7 @@ static int fixup_rmq(void **param, int param_no)
 			LM_ERR("out of mem!\n");
 			return E_OUT_OF_MEM;
 		}
-		if (pv_parse_spec(&name, e) < 0) {
+		if (pv_parse_spec(&name, e) == 0) {
 			LM_ERR("invalid spec %s\n", name.s);
 			return E_SCRIPT;
 		}
