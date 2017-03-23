@@ -543,6 +543,11 @@ void init_shm_statistics(void)
 
 void shm_mem_destroy(void)
 {
+#ifdef SHM_EXTRA_STATS
+	int i, core_group;
+	int offset;
+#endif
+
 #ifndef SHM_MMAP
 	struct shmid_ds shm_info;
 #endif
@@ -551,23 +556,8 @@ void shm_mem_destroy(void)
 	update_mem_pattern_file();
 #endif
 
-	if (mem_lock){
-		LM_DBG("destroying the shared memory lock\n");
-		lock_destroy(mem_lock); /* we don't need to dealloc it*/
-#ifdef STATISTICS
-		if (event_shm_threshold) {
-			if (event_shm_last)
-				shm_free(event_shm_last);
-			if (event_shm_pending)
-				shm_free(event_shm_pending);
-		}
-#endif
-	}
-
 #ifdef SHM_EXTRA_STATS
-	int i, core_group;
-	int offset;
-	if (memory_mods_stats) {
+	if (memory_mods_stats && mem_lock) {
 		core_group = -1;
 		offset = 0;
 		#ifndef SHM_SHOW_DEFAULT_GROUP
@@ -604,6 +594,21 @@ void shm_mem_destroy(void)
 		shm_free((void*)memory_mods_stats);
 	}
 #endif
+
+
+	if (mem_lock){
+		LM_DBG("destroying the shared memory lock\n");
+		lock_destroy(mem_lock); /* we don't need to dealloc it*/
+#ifdef STATISTICS
+		if (event_shm_threshold) {
+			if (event_shm_last)
+				shm_free(event_shm_last);
+			if (event_shm_pending)
+				shm_free(event_shm_pending);
+		}
+#endif
+		mem_lock = NULL;
+	}
 
 	if (shm_mempool && (shm_mempool!=(void*)-1)) {
 #ifdef SHM_MMAP
