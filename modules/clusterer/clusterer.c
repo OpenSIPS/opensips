@@ -312,23 +312,25 @@ void heartbeats_timer(void)
 				/* restart pinging sequence */
 				action_trans = 0;
 			else if (node->link_state == LS_RETRY_SEND_FAIL &&
-				last_ping_int >= ping_timeout*1000)
+				last_ping_int >= (utime_t)ping_timeout*1000)
 				/* failed to send previous ping, retry */
 				action_trans = 1;
 			else if ((node->link_state == LS_UP || node->link_state == LS_RESTARTED) &&
-				(ping_reply_int >= ping_timeout*1000 || ping_reply_int <= 0) &&
-				last_ping_int >= ping_timeout*1000)
+				(ping_reply_int >= (utime_t)ping_timeout*1000 || ping_reply_int <= 0) &&
+				last_ping_int >= (utime_t)ping_timeout*1000)
 				/* send first ping retry */
 				action_trans = 2;
 			else if (node->link_state == LS_RETRYING &&
-				(ping_reply_int >= ping_timeout*1000 || ping_reply_int <= 0) &&
-				last_ping_int >= ping_timeout*1000)
+				(ping_reply_int >= (utime_t)ping_timeout*1000 || ping_reply_int <= 0) &&
+				last_ping_int >= (utime_t)ping_timeout*1000)
 				/* previous ping retry not replied, continue to retry */
 				action_trans = 3;
-			else if (node->link_state == LS_DOWN && last_ping_int >= node_timeout*1000000)
+			else if (node->link_state == LS_DOWN &&
+				last_ping_int >= (utime_t)node_timeout*1000000)
 				/* ping a failed node after node_timeout since last ping */
 				action_trans = 4;
-			else if (node->link_state == LS_UP && last_ping_int >= ping_interval*1000000)
+			else if (node->link_state == LS_UP &&
+				last_ping_int >= (utime_t)ping_interval*1000000)
 				/* send regular ping */
 				action_trans = 5;
 
