@@ -114,7 +114,7 @@ int bin_push_str(bin_packet_t *packet, const str *info)
 	}
 
 	if (packet->buffer.len  > packet->size - LEN_FIELD_SIZE - (info ? info->len : 0)) {
-		if (!bin_realloc(packet, info->len))
+		if (!bin_realloc(packet, (info ? info->len : 0)))
 			return -1;
 	}
 
