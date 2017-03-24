@@ -1020,6 +1020,9 @@ try_again:
 		goto error00;
 	}
 
+	/* shm statistics, module stat groups, memory warming */
+	init_shm_post_yyparse();
+
 	if (config_check>1 && check_rls()!=0) {
 		LM_ERR("bad function call in config file\n");
 		return ret;
@@ -1073,9 +1076,6 @@ try_again:
 	}
 
 	time(&startup_time);
-
-	/* Init statistics */
-	init_shm_statistics();
 
 	/*init UDP networking layer*/
 	if (udp_init()<0){

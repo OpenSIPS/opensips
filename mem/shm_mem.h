@@ -137,10 +137,11 @@ extern gen_lock_t* mem_lock;
 int shm_mem_init(); /* calls shm_getmem & shm_mem_init_mallocs */
 
 /*
- * should be called after the statistics engine is initialized
- * updates the atomic shm statistics with proper values
+ * must be called after the statistics engine is initialized
+ *	- updates the atomic shm statistics with proper values
+ *	- performs memory warming with HP_MALLOC
  */
-void init_shm_statistics(void);
+void init_shm_post_yyparse(void);
 
 int shm_getmem();   /* allocates the memory (mmap or sysv shmap) */
 int shm_mem_init_mallocs(void* mempool, unsigned long size); /* initialize

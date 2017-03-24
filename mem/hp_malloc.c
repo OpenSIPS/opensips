@@ -51,14 +51,14 @@ extern unsigned long *mem_hash_usage;
  * adaptive image of OpenSIPS's memory usage during runtime
  * used to fragment the shared memory pool at daemon startup
  */
-char *mem_warming_pattern_file;
+char *mem_warming_pattern_file = MEM_WARMING_DEFAULT_PATTERN_FILE;
 int mem_warming_enabled;
 
 /*
  * percentage of shared memory which will be fragmented at startup
  * common values are between [0, 75]
  */
-int mem_warming_percentage = -1;
+int mem_warming_percentage = MEM_WARMING_DEFAULT_PERCENTAGE;
 
 #if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
 stat_var *shm_used;
@@ -460,6 +460,7 @@ write_error:
 
 /**
  * on-demand memory fragmentation, based on an input pattern file
+ *    (pre-populates the hash with free fragments)
  */
 int hp_mem_warming(struct hp_block *hpb)
 {
@@ -754,18 +755,6 @@ struct hp_block *hp_shm_malloc_init(char *address, unsigned long size,
 	} else {
 		hpb->real_used += FRAG_OVERHEAD;
 		hpb->total_fragments++;
-	}
-
-	/* if memory warming is on, pre-populate the hash with free fragments */
-	if (mem_warming_enabled) {
-		if (!mem_warming_pattern_file)
-			mem_warming_pattern_file = MEM_WARMING_DEFAULT_PATTERN_FILE;
-
-		if (mem_warming_percentage == -1)
-			mem_warming_percentage = MEM_WARMING_DEFAULT_PERCENTAGE;
-
-		if (hp_mem_warming(hpb) != 0)
-			LM_INFO("skipped memory warming\n");
 	}
 
 #ifdef DBG_MALLOC
