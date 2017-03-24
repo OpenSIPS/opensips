@@ -1280,36 +1280,42 @@ error:
 static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 											unsigned int leg, int update_field)
 {
+	int ret;
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
 	!req->cseq->parsed) {
 		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
 		return -1;
 	}
 
-	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number),update_field);
+	dlg_lock_dlg(dlg);
+	ret = dlg_update_cseq(dlg, leg, &((get_cseq(req))->number),update_field);
+	dlg_unlock_dlg(dlg);
+	return ret;
 }
 
 /* move r_cseq to prev_cseq in leg */
 static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
 {
+	int ret = -1;
 	str* r_cseq,*prev_cseq;
 
 	r_cseq = &dlg->legs[leg_no].r_cseq;
 	prev_cseq = &dlg->legs[leg_no].prev_cseq;
 
+	dlg_lock_dlg(dlg);
 	if ( prev_cseq->s ) {
 		if (prev_cseq->len < r_cseq->len) {
 			prev_cseq->s = (char*)shm_realloc(prev_cseq->s,r_cseq->len);
 			if (prev_cseq->s==NULL) {
 				LM_ERR("no more shm mem for realloc (%d)\n",r_cseq->len);
-				return -1;
+				goto end;
 			}
 		}
 	} else {
 		prev_cseq->s = (char*)shm_malloc(r_cseq->len);
 		if (prev_cseq->s==NULL) {
 			LM_ERR("no more shm mem for malloc (%d)\n",r_cseq->len);
-			return -1;
+			goto end;
 		}
 	}
 
@@ -1317,7 +1323,10 @@ static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
 	prev_cseq->len = r_cseq->len;
 
 	LM_DBG("prev_cseq = %.*s for leg %d\n",prev_cseq->len,prev_cseq->s,leg_no);
-	return 0;
+	ret = 0;
+end:
+	dlg_unlock_dlg(dlg);
+	return ret;
 }
 
 static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
