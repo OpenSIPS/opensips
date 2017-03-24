@@ -56,7 +56,7 @@
 #define ISUP_PRI	0x42	/*!< Pre-release information */
 
 
-#define NO_ISUP_PARAMS 108
+#define NO_ISUP_PARAMS 109
 
 /* ISUP Parameters ITU-T Q.763 */
 #define ISUP_PARM_CALL_REF						0x01
@@ -174,11 +174,23 @@
 #define ISUP_PARM_CHARGE_NUMBER					0xeb
 #define ISUP_PARM_SELECTION_INFO				0xee
 
+#define ISUP_PARM_INVAL 0
+
+#define PARM_CALLED_PARTY_NUM_IDX 3
+#define PARM_NATURE_OF_CONNECTION_IND_IDX 5
+#define PARM_FORWARD_CALL_IND_IDX 6
+#define PARM_CALLING_PARTY_NUM_IDX 9
+#define PARM_BACKWARD_CALL_IND_IDX 16
+#define PARM_CAUSE_IDX 17
+#define PARM_INVAL_IDX 108
+
+
 #define MAX_NO_FIXED_PARAMS 4
 #define MAX_NO_VAR_PARAMS 2
 #define PARAM_MAX_LEN 128
 #define PV_RES_BUF_MAXLEN 256
 #define MAX_PREDEF_VALS 15
+
 
 typedef void (*isup_param_parse_f)(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res);

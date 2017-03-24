@@ -1049,6 +1049,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_LOCAL_SERVICE_PROVIDER_IDENTIFICATION, str_init("Local Service Provider ID"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_ORIG_LINE_INFO, str_init("Originating line information"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_CHARGE_NUMBER, str_init("Charge Number"), NULL, NULL, NULL, NULL, 0},
-	{ISUP_PARM_SELECTION_INFO, str_init("Selection Information"), NULL, NULL, NULL, NULL, 0}
+	{ISUP_PARM_SELECTION_INFO, str_init("Selection Information"), NULL, NULL, NULL, NULL, 0},
+	{ISUP_PARM_INVAL, {0,0}, NULL, NULL, NULL, NULL, 0}
 };
 

@@ -119,14 +119,15 @@ static int child_init(int rank)
 	return 0;
 }
 
-static inline int get_param_idx_by_code(int param_code)
+static inline unsigned int get_param_idx_by_code(int param_code)
 {
 	int i;
 
 	for (i = 0; i < NO_ISUP_PARAMS; i++)
 		if (param_code == isup_params[i].param_code)
 			return i;
-	return -1;
+
+	return PARM_INVAL_IDX;
 }
 
 static inline int get_msg_idx_by_type(int msg_type)
@@ -399,11 +400,6 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 		parse_struct->mand_fix_params[i].param_code = isup_messages[msg_idx].mand_param_list[i];
 
 		isup_param_idx = get_param_idx_by_code(isup_messages[msg_idx].mand_param_list[i]);
-		if (isup_param_idx < 0) {
-			LM_ERR("BUG - isup param not found in the isup params list\n");
-			return NULL;
-
-		}
 
 		parse_struct->mand_fix_params[i].len = isup_params[isup_param_idx].len;
 		parse_struct->total_len += isup_params[isup_param_idx].len;
@@ -1098,7 +1094,6 @@ static inline void link_new_opt_param(struct isup_parsed_struct *isup_struct,
 
 static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
 {
-	int param_idx;
 	pv_value_t val;
 	str *ruri;
 	char number[16]; /* E.164 number - max 15 digits */
@@ -1114,19 +1109,16 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	val.flags = PV_VAL_INT;
 
 	/* set Nature of Connection Indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_NATURE_OF_CONNECTION_IND);
 	val.ri = 1;
-	isup_params[param_idx].write_func(param_idx, 0, isup_struct->mand_fix_params[0].val,
-		&new_len, &val);
-
+	isup_params[PARM_NATURE_OF_CONNECTION_IND_IDX].write_func(PARM_NATURE_OF_CONNECTION_IND_IDX,
+										0, isup_struct->mand_fix_params[0].val, &new_len, &val);
 	/* set Forward Call Indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_FORWARD_CALL_IND);
 	val.ri = 1;
-	isup_params[param_idx].write_func(param_idx, 2, isup_struct->mand_fix_params[1].val,
-		&new_len, &val);
+	isup_params[PARM_FORWARD_CALL_IND_IDX].write_func(PARM_FORWARD_CALL_IND_IDX,
+							2, isup_struct->mand_fix_params[1].val, &new_len, &val);
 	val.ri = 1;
-	isup_params[param_idx].write_func(param_idx, 5, isup_struct->mand_fix_params[1].val,
-		&new_len, &val);
+	isup_params[PARM_FORWARD_CALL_IND_IDX].write_func(PARM_FORWARD_CALL_IND_IDX,
+							5, isup_struct->mand_fix_params[1].val, &new_len, &val);
 
 	/* set Calling Party's Category */
 	isup_struct->mand_fix_params[2].val[0] = 10; /* ordinary calling subscriber */
@@ -1135,15 +1127,14 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	isup_struct->mand_fix_params[3].val[0] = 3; /* 3.1 kHz audio */
 
 	/* set Called Party Number */
-	param_idx = get_param_idx_by_code(ISUP_PARM_CALLED_PARTY_NUM);
 	new_len = 0;
 
 	val.ri = 1;	/* routing to internal network number not allowed */
-	isup_params[param_idx].write_func(param_idx, 2, isup_struct->mand_var_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_CALLED_PARTY_NUM_IDX].write_func(PARM_CALLED_PARTY_NUM_IDX,
+							2, isup_struct->mand_var_params[0].val, &new_len, &val);
 	val.ri = 1;	/* ISDN numbering plan */
-	isup_params[param_idx].write_func(param_idx, 3, isup_struct->mand_var_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_CALLED_PARTY_NUM_IDX].write_func(PARM_CALLED_PARTY_NUM_IDX,
+							3, isup_struct->mand_var_params[0].val, &new_len, &val);
 
 	/* check RURI */
 	ruri = GET_RURI(sip_msg);
@@ -1179,15 +1170,15 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	}
 
 	val.ri = intl_num ? 4 : 3; /* international or national number */
-	isup_params[param_idx].write_func(param_idx, 1, isup_struct->mand_var_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_CALLED_PARTY_NUM_IDX].write_func(PARM_CALLED_PARTY_NUM_IDX,
+							1, isup_struct->mand_var_params[0].val, &new_len, &val);
 
 	/* Address signal */
 	val.flags = PV_VAL_STR;
 	val.rs.s = number;
 	val.rs.len = i;
-	isup_params[param_idx].write_func(param_idx, 4, isup_struct->mand_var_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_CALLED_PARTY_NUM_IDX].write_func(PARM_CALLED_PARTY_NUM_IDX,
+							4, isup_struct->mand_var_params[0].val, &new_len, &val);
 	LM_DBG("Called party number set to: %.*s\n", i, number);
 
 	isup_struct->mand_var_params[0].len = new_len;
@@ -1200,7 +1191,6 @@ cpn_err:
 	LM_INFO("Unable to map Called Party Number from SIP by default\n");
 set_cgpn:
 	/* set Calling Party Number */
-	param_idx = get_param_idx_by_code(ISUP_PARM_CALLING_PARTY_NUM);
 	new_len = 0;
 
 	/* if P-Asserted-Identity absent, don't set CgPN */
@@ -1238,11 +1228,13 @@ set_cgpn:
 
 	/* Numbering plan indicator */
 	val.ri = 1; /* ISDN (Telephony) numbering plan */
-	isup_params[param_idx].write_func(param_idx, 3, cgpn->param.val, &new_len, &val);
+	isup_params[PARM_CALLING_PARTY_NUM_IDX].write_func(PARM_CALLING_PARTY_NUM_IDX,
+												3, cgpn->param.val, &new_len, &val);
 
 	/* Screening Indicator */
 	val.ri = 3; /* network provided */
-	isup_params[param_idx].write_func(param_idx, 5, cgpn->param.val, &new_len, &val);
+	isup_params[PARM_CALLING_PARTY_NUM_IDX].write_func(PARM_CALLING_PARTY_NUM_IDX,
+												5, cgpn->param.val, &new_len, &val);
 
 	/* Nature of Address Indicator */
 	if (memcmp(pai->parsed_uri.user.s, country_code.s, country_code.len))
@@ -1250,7 +1242,8 @@ set_cgpn:
 	else
 		intl_num = 0;
 	val.ri = intl_num ? 4 : 3; /* international or national number */
-	isup_params[param_idx].write_func(param_idx, 1, cgpn->param.val, &new_len, &val);
+	isup_params[PARM_CALLING_PARTY_NUM_IDX].write_func(PARM_CALLING_PARTY_NUM_IDX,
+												1, cgpn->param.val, &new_len, &val);
 
 	/* Address Presentation Restricted Indicator */
 	apri_val = 0; /* presentation allowed */
@@ -1266,7 +1259,8 @@ set_cgpn:
 			apri_val = 1;
 	}
 	val.ri = apri_val;
-	isup_params[param_idx].write_func(param_idx, 4, cgpn->param.val, &new_len, &val);
+	isup_params[PARM_CALLING_PARTY_NUM_IDX].write_func(PARM_CALLING_PARTY_NUM_IDX,
+												4, cgpn->param.val, &new_len, &val);
 
 	/* Address signal */
 	i = 0;
@@ -1284,7 +1278,8 @@ set_cgpn:
 	val.flags = PV_VAL_STR;
 	val.rs.s = intl_num ? number : number + country_code.len - 1;
 	val.rs.len = intl_num ? i : i - country_code.len + 1;
-	isup_params[param_idx].write_func(param_idx, 6, cgpn->param.val, &new_len, &val);
+	isup_params[PARM_CALLING_PARTY_NUM_IDX].write_func(PARM_CALLING_PARTY_NUM_IDX,
+												6, cgpn->param.val, &new_len, &val);
 	LM_DBG("Calling party number set to: %.*s\n", val.rs.len, val.rs.s);
 
 	link_new_opt_param(isup_struct, cgpn, new_len);
@@ -1337,19 +1332,17 @@ static unsigned int get_cause_from_reason(struct sip_msg *sip_msg) {
 
 static int init_rel_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
 {
-	int param_idx;
 	pv_value_t val;
 	int new_len = 0;
 
 	val.flags = PV_VAL_INT;
 
 	/* set Cause indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_CAUSE);
 
 	/* Location */
 	val.ri = 10; /* network beyond interworking point */
-	isup_params[param_idx].write_func(param_idx, 0, isup_struct->mand_var_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_CAUSE_IDX].write_func(PARM_CAUSE_IDX, 0,
+			isup_struct->mand_var_params[0].val, &new_len, &val);
 
 	if (sip_msg->first_line.type == SIP_REQUEST) {
 		if (sip_msg->REQ_METHOD == METHOD_BYE) {
@@ -1399,8 +1392,8 @@ static int init_rel_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	} else
 		goto error;
 
-	isup_params[param_idx].write_func(param_idx, 2, isup_struct->mand_var_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_CAUSE_IDX].write_func(PARM_CAUSE_IDX, 2,
+			isup_struct->mand_var_params[0].val, &new_len, &val);
 
 	LM_DBG("Cause value from Cause Indicators set to: %d\n", val.ri);
 
@@ -1416,29 +1409,27 @@ error:
 
 static int init_acm_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
 {
-	int param_idx;
 	pv_value_t val;
 	int new_len = 0;
 
 	val.flags = PV_VAL_INT;
 
 	/* set Backward call indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
+
 	/* Called Party's Status Indicator */
 	val.ri = 1; /* subscriber free */
-	isup_params[param_idx].write_func(param_idx, 1, isup_struct->mand_fix_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_BACKWARD_CALL_IND_IDX].write_func(PARM_BACKWARD_CALL_IND_IDX,
+							1, isup_struct->mand_fix_params[0].val, &new_len, &val);
 	/* Interworking Indicator */
 	val.ri = 1; /* interworking encountered */
-	isup_params[param_idx].write_func(param_idx, 4, isup_struct->mand_fix_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_BACKWARD_CALL_IND_IDX].write_func(PARM_BACKWARD_CALL_IND_IDX,
+							4, isup_struct->mand_fix_params[0].val, &new_len, &val);
 
 	return 0;
 }
 
 static int init_cpg_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
 {
-	int param_idx;
 	pv_value_t val;
 	int new_len = 0;
 	struct opt_param *b_ind;
@@ -1453,7 +1444,6 @@ static int init_cpg_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	}
 
 	/* set Backward call indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
 
 	/* add the new optional parameter to isup struct */
 	if ((b_ind = alloc_opt_param(ISUP_PARM_BACKWARD_CALL_IND)) == NULL)
@@ -1463,10 +1453,12 @@ static int init_cpg_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 
 	/* Called Party's Status Indicator */
 	val.ri = 1; /* subscriber free */
-	isup_params[param_idx].write_func(param_idx, 1, b_ind->param.val, &new_len, &val);
+	isup_params[PARM_BACKWARD_CALL_IND_IDX].write_func(PARM_BACKWARD_CALL_IND_IDX,
+												1, b_ind->param.val, &new_len, &val);
 	/* Interworking Indicator */
 	val.ri = 1; /* interworking encountered */
-	isup_params[param_idx].write_func(param_idx, 4, b_ind->param.val, &new_len, &val);
+	isup_params[PARM_BACKWARD_CALL_IND_IDX].write_func(PARM_BACKWARD_CALL_IND_IDX,
+												4, b_ind->param.val, &new_len, &val);
 
 	link_new_opt_param(isup_struct, b_ind, new_len);
 
@@ -1475,30 +1467,27 @@ static int init_cpg_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 
 static int init_con_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
 {
-	int param_idx;
 	pv_value_t val;
 	int new_len = 0;
 
 	val.flags = PV_VAL_INT;
 
 	/* set Backward call indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
+
 	val.ri = 1; /* interworking encountered */
-	isup_params[param_idx].write_func(param_idx, 4, isup_struct->mand_fix_params[0].val,
-		&new_len, &val);
+	isup_params[PARM_BACKWARD_CALL_IND_IDX].write_func(PARM_BACKWARD_CALL_IND_IDX,
+							4, isup_struct->mand_fix_params[0].val, &new_len, &val);
 
 	return 0;
 }
 
 static int init_anm_default(struct sip_msg *sip_msg, struct isup_parsed_struct *isup_struct)
 {
-	int param_idx;
 	pv_value_t val;
 	int new_len = 0;
 	struct opt_param *b_ind;
 
 	/* set Backward call indicators */
-	param_idx = get_param_idx_by_code(ISUP_PARM_BACKWARD_CALL_IND);
 
 	/* add the new optional parameter to isup struct */
 	if ((b_ind = alloc_opt_param(ISUP_PARM_BACKWARD_CALL_IND)) == NULL)
@@ -1508,7 +1497,8 @@ static int init_anm_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 
 	/* Interworking Indicator */
 	val.ri = 1; /* interworking encountered */
-	isup_params[param_idx].write_func(param_idx, 4, b_ind->param.val, &new_len, &val);
+	isup_params[PARM_BACKWARD_CALL_IND_IDX].write_func(PARM_BACKWARD_CALL_IND_IDX,
+												4, b_ind->param.val, &new_len, &val);
 
 	link_new_opt_param(isup_struct, b_ind, new_len);
 
