@@ -26,6 +26,35 @@ static void tls_print_errstack(void)
 	}
 }
 
+static int tls_get_errstack( char* result, int size )
+{
+	int len = 0, new, code;
+
+	if ( !result || !size )
+		return 0;
+
+
+	while ((code = ERR_get_error())) {
+		/* in case we overflow the buffer we still need to report the error
+		 * to syslog */
+		if ( len < size ) {
+			new = snprintf( result + len, size - len,
+						"%s\n", ERR_error_string( code, 0) );
+			LM_ERR("TLS errstack: %s\n", result + len);
+		} else {
+			LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
+		}
+
+		if ( new < size ) {
+			len += new;
+		} else {
+			len = size;
+		}
+	}
+
+	return len;
+}
+
 /*
  * Update ssl structure with new fd
  */

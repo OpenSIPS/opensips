@@ -20,6 +20,9 @@
 #endif
 #include "../../net/trans_trace.h"
 
+#define TLS_ERR_MAX 256
+static char tls_err_buf[TLS_ERR_MAX];
+
 static inline int trace_tls( struct tcp_connection* conn, SSL* ctx, trans_trace_event event, trans_trace_status status, str* data);
 
 #define TRACE_IS_ON( CONN ) (CONN->proto_data && \
@@ -217,6 +220,8 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 	SSL *ssl;
 	X509* cert;
 
+	str tls_err_s;
+
 	if ( (c->proto_flags&F_TLS_DO_ACCEPT)==0 ) {
 		LM_BUG("invalid connection state (bug in TLS code)\n");
 		return -1;
@@ -275,16 +280,13 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
-		if ( err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE ) {
-			/* report failure */
-			trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
-					TRANS_TRACE_FAILURE, &ACCEPT_FAIL);
-		}
-
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("TLS connection from %s:%d accept failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
+				trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
+						TRANS_TRACE_FAILURE, &ACCEPT_FAIL);
 
 				c->state = S_CONN_BAD;
 				return -1;
@@ -305,7 +307,25 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 					LM_ERR("TLS error: (ret=%d, err=%d, errno=%d/%s):\n",
 					       ret, err, errno, strerror(errno));
 				}
-				tls_print_errstack();
+
+				if ( TRACE_IS_ON( c ) ) {
+					if ( ( tls_err_s.len =
+							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
+						if ( errno ) {
+							tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
+									"TLS error: (ret=%d, err=%d, errno=%d/%s)",
+										ret, err, errno, strerror(errno));
+						} else {
+							tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
+									"New TLS connection failed to accept" );
+						}
+					}
+					tls_err_s.s = tls_err_buf;
+					trace_tls( c, ssl, TRANS_TRACE_ACCEPTED,
+							TRANS_TRACE_FAILURE, &tls_err_s);
+				} else {
+					tls_print_errstack();
+				}
 
 				return -1;
 		}
@@ -324,6 +344,8 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 	int ret, err;
 	SSL *ssl;
 	X509* cert;
+
+	str tls_err_s;
 
 	if ( (c->proto_flags&F_TLS_DO_CONNECT)==0 ) {
 		LM_BUG("invalid connection state (bug in TLS code)\n");
@@ -370,16 +392,13 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
-		if ( err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE ) {
-			/* report failure */
-			trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
-					TRANS_TRACE_FAILURE, &CONNECT_OK);
-		}
-
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
+				trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+						TRANS_TRACE_FAILURE, &CONNECT_FAIL);
 
 				c->state = S_CONN_BAD;
 				return -1;
@@ -401,7 +420,19 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
 					err,ret,strerror(errno), errno);
 				c->state = S_CONN_BAD;
-				tls_print_errstack();
+
+				if ( TRACE_IS_ON( c ) ) {
+					if ( ( tls_err_s.len =
+							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
+						tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
+								"New TLS connection failed to connect" );
+					}
+					tls_err_s.s = tls_err_buf;
+					trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+							TRANS_TRACE_FAILURE, &tls_err_s);
+				} else {
+					tls_print_errstack();
+				}
 
 				return -1;
 		}
