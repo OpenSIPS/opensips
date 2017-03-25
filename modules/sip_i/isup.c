@@ -397,9 +397,13 @@ static inline int get_predef_val(int param_idx, int subfield_idx, str val_alias)
 do { \
 	if (val == NULL || val->flags & PV_VAL_NULL) \
 		new_val = 0; \
-	else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) \
+	else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) { \
+		if (val->ri > 255) { \
+			LM_ERR("Value to big, should fit one byte\n"); \
+			return -1; \
+		} \
 		new_val = val->ri; \
-	else if (val->flags & PV_VAL_STR) { \
+	} else if (val->flags & PV_VAL_STR) { \
 		if ((new_val = get_predef_val(param_idx, subfield_idx, val->rs)) < 0) \
 			return -1; \
 	} else { \
@@ -419,6 +423,10 @@ do { \
 			LM_ERR("String value required\n"); \
 			return -1; \
 		} else { \
+			if (val->ri > 255) { \
+				LM_ERR("Value to big, should fit one byte\n"); \
+				return -1; \
+			} \
 			new_val = val->ri; \
 		} \
 	} else if (val->flags & PV_VAL_STR) { \
@@ -455,7 +463,7 @@ void nature_of_conn_ind_parsef(int subfield_idx, unsigned char *param_val, int l
 int nature_of_conn_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 									pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int idx[] =   {0,0,0};
 	int mask[] =  {0x3,0xc,0x10};
 	int shift[] = {0,2,4};
@@ -493,7 +501,7 @@ void forward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len
 int forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val,
 								int *len, pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int idx[] =   {0,0,0,0,0,0,1,1};
 	int mask[] =  {0x1,0x6,0x8,0x10,0x20,0xc0,0x1,0x6};
 	int shift[] = {0,1,3,4,5,6,0,1};
@@ -534,7 +542,7 @@ void opt_forward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int
 int opt_forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 									pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int idx[] =   {0,0,0};
 	int mask[] =  {0x3,0x4,0x80};
 	int shift[] = {0,2,7};
@@ -582,7 +590,7 @@ void called_party_num_parsef(int subfield_idx, unsigned char *param_val, int len
 int called_party_num_writef(int param_idx, int subfield_idx, unsigned char *param_val,
 								int *len, pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int num_len, oddeven;
 	str num;
 	int idx[] =   {0,0,1,1};
@@ -640,7 +648,7 @@ void calling_party_num_parsef(int subfield_idx, unsigned char *param_val, int le
 int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int num_len, oddeven;
 	str num;
 	int idx[] =   {0,0,1,1,1,1};
@@ -688,7 +696,7 @@ void backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int le
 int backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int idx[] =   {0,0,0,0,1,1,1,1,1,1,1};
 	int mask[] =  {0x3,0xc,0x30,0xc0,0x1,0x2,0x4,0x8,0x10,0x20,0x180};
 	int shift[] = {0,2,4,6,0,1,2,3,4,5,7};
@@ -726,7 +734,7 @@ void opt_backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, in
 int opt_backward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int idx[] =   {0,0,0,0};
 	int mask[] =  {1,2,4,8};
 	int shift[] = {0,1,2,3};
@@ -774,7 +782,7 @@ void connected_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 int connected_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int num_len, oddeven;
 	str num;
 	int idx[] =   {0,0,1,1,1};
@@ -826,7 +834,7 @@ void cause_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 int cause_ind_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 
 	PARAM_CHECK_INT_VAL();
 
@@ -874,7 +882,7 @@ void subsequent_num_parsef(int subfield_idx, unsigned char *param_val, int len,
 int subsequent_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 	int num_len, oddeven;
 	str num;
 
@@ -920,7 +928,7 @@ void event_info_parsef(int subfield_idx, unsigned char *param_val, int len,
 int event_info_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
 								pv_value_t *val)
 {
-	unsigned char new_val;
+	int new_val;
 
 	PARAM_CHECK_INT_VAL();
 
