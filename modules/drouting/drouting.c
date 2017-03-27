@@ -5009,7 +5009,7 @@ static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param
 				LM_ERR("failed to add mi_node\n");
 				goto error;
 			}
-			if(add_mi_attr(ans, 0, MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
+			if(add_mi_attr(ans, MI_DUP_VALUE, MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
 						ch_time, strlen(ch_time)) == NULL) {
 				LM_ERR("failed to add mi_attr\n");
 				goto error;
