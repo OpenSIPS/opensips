@@ -1407,10 +1407,9 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 }
 
 #define RE_MAX_SIZE 1024
-static char reg_input_buf[RE_MAX_SIZE];
+static char *reg_input_buf = NULL;
 static struct subst_expr *subst_re = NULL;
-static char reg_buf[RE_MAX_SIZE];
-static int reg_buf_len = -1;
+static str buf_re = { 0, 0 };
 int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
@@ -1418,6 +1417,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	pv_value_t v;
 	str *result;
 	str sv;
+	char *buf;
 
 	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
 		return -1;
@@ -1436,7 +1436,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				LM_DBG("Trying to apply regexp [%.*s] on : [%.*s]\n",
 						sv.len,sv.s,val->rs.len, val->rs.s);
-				if (reg_buf_len != sv.len || memcmp(reg_buf,sv.s,sv.len) != 0) {
+				if (!buf_re.s || buf_re.len != sv.len || memcmp(buf_re.s, sv.s, sv.len) != 0) {
 					LM_DBG("we must compile the regexp\n");
 					if (subst_re != NULL) {
 						LM_DBG("freeing prev regexp\n");
@@ -1447,11 +1447,30 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						LM_ERR("Can't compile regexp\n");
 						return -1;
 					}
-					reg_buf_len = sv.len;
-					memcpy(reg_buf,sv.s,sv.len);
+					/* we need to store the buffer */
+					buf = pkg_realloc(buf_re.s, sv.len);
+					if (!buf) {
+						LM_ERR("not enough memory to store buffer %d [%.*s]\n",
+								sv.len, sv.len, sv.s);
+						if (buf_re.s)
+							pkg_free(buf_re.s);
+						buf_re.s = NULL;
+					} else {
+						memcpy(buf, sv.s, sv.len);
+						buf_re.s = buf;
+						buf_re.len = sv.len;
+					}
 				} else
 					LM_DBG("yay, we can use the pre-compile regexp\n");
 
+				/* temporary use the regex input buffer to check the subst */
+				buf = pkg_realloc(reg_input_buf, val->rs.len + 1);
+				if (!buf) {
+					LM_ERR("not enough memory for input buffer %d [%.*s]\n",
+							val->rs.len + 1, val->rs.len, val->rs.s);
+					return -1;
+				}
+				reg_input_buf = buf;
 				memcpy(reg_input_buf,val->rs.s,val->rs.len);
 				reg_input_buf[val->rs.len]=0;
 
@@ -1465,13 +1484,12 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						return -1;
 					}
 				}
-
-				memcpy(reg_input_buf,result->s,result->len);
-				reg_input_buf[result->len]=0;
+				/* release the input buffer */
+				pkg_free(reg_input_buf);
+				reg_input_buf = result->s;
 				val->flags = PV_VAL_STR;
-				val->rs.s = reg_input_buf;
+				val->rs.s = result->s;
 				val->rs.len = result->len;
-				pkg_free(result->s);
 				pkg_free(result);
 				return 0;
 		default:
