@@ -1177,19 +1177,21 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers)
 		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
 		if (!rld_vers_key.s) {
 			LM_ERR("No more pkg memory\n");
-			return -1;
+			goto error;
 		}
 		memcpy(rld_vers_key.s, pv_name->id.s, pv_name->id.len);
 		memcpy(rld_vers_key.s + pv_name->id.len, "_sql_cacher_reload_vers", 23);
 
-		if(pv_name->db_hdls->cdbf.get_counter(pv_name->db_hdls->cdbcon,
-									&rld_vers_key, entry_rld_vers) < 0)
-			return -1;
+		rc = pv_name->db_hdls->cdbf.get_counter(pv_name->db_hdls->cdbcon,
+									&rld_vers_key, entry_rld_vers) < 0;
 		pkg_free(rld_vers_key.s);
+		if (rc < 0)
+			goto error;
 	} else
 		*entry_rld_vers = 0;
 
 	rc = pv_name->db_hdls->cdbf.get(pv_name->db_hdls->cdbcon, &cdb_key, cdb_res);
+error:
 	pkg_free(cdb_key.s);
 	return rc;
 }
