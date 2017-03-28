@@ -1572,7 +1572,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	int rc, rc2, int_res = 0, l = 0;
 	char *ch = NULL;
 	long long one = 1;
-	str str_res = {NULL, 0}, cdb_res;
+	str str_res = {NULL, 0}, cdb_res = {NULL, 0};
 	int entry_rld_vers;
 
 	if (!param || param->pvn.type != PV_NAME_PVAR ||
@@ -1697,11 +1697,13 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	}
 
-	pkg_free(cdb_res.s);
+	if (cdb_res.s)
+		pkg_free(cdb_res.s);
 	return 0;
 
 out_free_null:
-	pkg_free(cdb_res.s);
+	if (cdb_res.s)
+		pkg_free(cdb_res.s);
 	return pv_get_null(msg, param, res);
 }
 
