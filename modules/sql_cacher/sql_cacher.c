@@ -1618,6 +1618,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	rc = cdb_fetch(pv_name, &cdb_res, &entry_rld_vers);
 	if (rc == -1) {
 		LM_ERR("Error fetching from cachedb\n");
+		if (!pv_name->c_entry->on_demand)
+			lock_stop_read(pv_name->c_entry->ref_lock);
 		return pv_get_null(msg, param, res);
 	}
 
