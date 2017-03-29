@@ -120,7 +120,6 @@ modparam("dispatcher", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("dispatcher", "ds_ping_method", "OPTIONS")
 modparam("dispatcher", "ds_probing_mode", 0)
-modparam("dispatcher", "flags", 2)
 ifelse(DISABLE_PROBING,`yes',`
 modparam("dispatcher", "ds_ping_interval", 0)
 ', `
