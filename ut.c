@@ -204,7 +204,16 @@ BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD, 62, BAD,BAD,BAD, 63,
 BAD,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14,
 15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25,BAD, BAD,BAD,BAD,BAD,
 BAD, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40,
-41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51,BAD, BAD,BAD,BAD,BAD
+41, 42, 43, 44,  45, 46, 47, 48,  49, 50, 51,BAD, BAD,BAD,BAD,BAD,
+
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD
 };
 #define DECODE64(c)  (isascii(c) ? base64val[c] : BAD)
 
@@ -251,7 +260,7 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 	{
 		do
 		{
-			c1 = base64val[in[i++] & 0xFF];
+			c1 = base64val[in[i++]];
 		} while (i<len && c1 == BAD);
 
 		if (c1 == BAD)
@@ -259,7 +268,7 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 
 		do
 		{
-			c2 = base64val[in[i++] & 0xFF];
+			c2 = base64val[in[i++]];
 		} while (i<len && c2 == BAD);
 
 		if (c2 == BAD)
@@ -269,7 +278,7 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 
 		do
 		{
-			c3 = in[i++] & 0xFF;
+			c3 = in[i++];
 			if (c3 == 61)
 				return out_len;
 
@@ -283,7 +292,7 @@ int base64decode(unsigned char *out,unsigned char *in,int len)
 
 		do
 		{
-			c4 = in[i++] & 0xFF;
+			c4 = in[i++];
 			if (c4 == 61)
 				return out_len;
 			c4 = base64val[c4];
