@@ -57,7 +57,7 @@ static int bin_port = 5555;
 static int bin_send_timeout = 100;
 static struct tcp_req bin_current_req;
 static int bin_max_msg_chunks = 32;
-static int bin_async = 0;
+static int bin_async = 1;
 static int bin_async_max_postponed_chunks = 32;
 static int bin_async_local_connect_timeout = 100;
 static int bin_async_local_write_timeout = 10;
