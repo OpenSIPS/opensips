@@ -37,7 +37,6 @@
 /*!< list of tcp connections handled by this process */
 static struct tcp_connection* tcp_conn_lst=0;
 
-static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
 
 
@@ -73,7 +72,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	response[0]=(long)c;
 	response[1]=state;
 
-	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response,
+	if (send_all(unix_tcp_sock, response,
 	sizeof(response))<=0)
 		LM_ERR("send_all failed state=%ld con=%p\n", state, c);
 }
@@ -320,7 +319,6 @@ void tcp_receive_timeout(void)
 int tcp_worker_proc_reactor_init( int unix_sock)
 {
 	/* init reactor for TCP worker */
-	tcpmain_sock=unix_sock; /* init com. socket */
 	if ( init_worker_reactor( "TCP_worker", RCT_PRIO_MAX)<0 ) {
 		goto error;
 	}
@@ -338,7 +336,7 @@ int tcp_worker_proc_reactor_init( int unix_sock)
 	}
 
 	/* add the unix socket */
-	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, RCT_PRIO_PROC, NULL)<0) {
+	if (reactor_add_reader( unix_sock, F_TCPMAIN, RCT_PRIO_PROC, NULL)<0) {
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
