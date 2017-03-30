@@ -62,7 +62,7 @@ size_t openserSIPPortTable_oid_len = OID_LENGTH(openserSIPPortTable_oid);
  * Note: This function returns a newly allocated block of memory.  Make sure to
  * deallocate the memory when you no longer need it.
  */
-oid *createIndex(int ipType, int *ipAddress, int *sizeOfOID)
+oid *createIndex(int ipType, unsigned int *ipAddress, int *sizeOfOID)
 {
 	oid *currentOIDIndex;
 	int i;
@@ -102,7 +102,7 @@ oid *createIndex(int ipType, int *ipAddress, int *sizeOfOID)
  *
  * Note: NULL will be returned on an error
  */
-openserSIPPortTable_context *getRow(int ipType, int *ipAddress)
+openserSIPPortTable_context *getRow(int ipType, unsigned int *ipAddress)
 {
 	int lengthOfOID;
 	oid *currentOIDIndex = createIndex(ipType, ipAddress, &lengthOfOID);
@@ -163,7 +163,7 @@ openserSIPPortTable_context *getRow(int ipType, int *ipAddress)
  * to an integer so that if the function is called again with another
  * 'protocol', we can continue from the last index.
  */
-void createRowsFromIPList(int *theList, int listSize, int protocol,
+void createRowsFromIPList(unsigned int *theList, int listSize, int protocol,
 		int *snmpIndex) {
 
 	openserSIPPortTable_context *currentRow;
@@ -222,9 +222,9 @@ void init_openserSIPPortTable(void)
 
 	initialize_table_openserSIPPortTable();
 
-	int *UDPList = NULL;
-	int *TCPList = NULL;
-	int *TLSList = NULL;
+	unsigned int *UDPList = NULL;
+	unsigned int *TCPList = NULL;
+	unsigned int *TLSList = NULL;
 
 	int numUDPSockets;
 	int numTCPSockets;
