@@ -243,6 +243,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto sync;
 	}
 
+	if (route_type!=REQUEST_ROUTE) {
+		LM_DBG("async detected in non-request route, switching to sync\n");
+		goto sync;
+	}
+
 	if ( (ctx=shm_malloc(sizeof(async_ctx)))==NULL) {
 		LM_ERR("failed to allocate new ctx\n");
 		goto sync;
