@@ -1046,15 +1046,26 @@ int parse_reply_codes( str *options_reply_codes_str,
 void base64encode(unsigned char *out, unsigned char *in, int inlen);
 int base64decode(unsigned char *out,unsigned char *in,int len);
 
+/*
+ * "word64" is a combination between:
+ *   - RFC 3261-compatible "word" token characters
+ *   - modulo-64 encoding of base64
+ */
+void word64encode(unsigned char *out, unsigned char *in, int inlen);
+int word64decode(unsigned char *out, unsigned char *in, int len);
+
 static inline int calc_base64_encode_len(int len)
 {
 	return (len/3 + (len%3?1:0))*4;
 }
+#define calc_word64_encode_len calc_base64_encode_len
 
 static inline int calc_max_base64_decode_len(int len)
 {
 	return len*3/4;
 }
+
+#define calc_max_word64_decode_len calc_max_base64_decode_len
 
 
 #endif
