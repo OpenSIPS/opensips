@@ -41,7 +41,7 @@ int encrypt_str(str *in, str *out)
 		return 0;
 	}
 
-	out->len = calc_base64_encode_len(in->len);
+	out->len = calc_word64_encode_len(in->len);
 	out->s = pkg_malloc(out->len);
 	if (!out->s) {
 		LM_ERR("no more pkg memory\n");
@@ -50,20 +50,20 @@ int encrypt_str(str *in, str *out)
 
 	memset(out->s, 0, out->len);
 
-	base64encode((unsigned char *)out->s, (unsigned char *)in->s, in->len);
+	word64encode((unsigned char *)out->s, (unsigned char *)in->s, in->len);
 	return 0;
 }
 
 int decrypt_str(str *in, str *out)
 {
-	out->len = calc_max_base64_decode_len(in->len);
+	out->len = calc_max_word64_decode_len(in->len);
 	out->s = pkg_malloc(out->len);
 	if (!out->s) {
 		LM_ERR("no more pkg memory\n");
 		return -1;
 	}
 
-	out->len = base64decode((unsigned char *)out->s,
+	out->len = word64decode((unsigned char *)out->s,
 	             (unsigned char *)in->s, in->len);
 	return 0;
 }
