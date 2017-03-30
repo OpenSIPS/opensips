@@ -298,6 +298,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto sync;
 	}
 
+	if (route_type!=REQUEST_ROUTE) {
+		LM_DBG("async detected in non-request route, switching to sync\n");
+		goto sync;
+	}
+
 	ctx->resume_route = resume_route;
 	ctx->route_type = route_type;
 	ctx->msg_ctx = current_processing_ctx;
