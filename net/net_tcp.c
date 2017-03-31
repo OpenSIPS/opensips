@@ -1078,7 +1078,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->s);
 		if (reactor_del_reader(tcpconn->s, fd_i, 0)==-1)
 			return -1;
-		tcpconn->flags|=F_CONN_REMOVED;
+		tcpconn->flags|=F_CONN_REMOVED_READ;
 		tcpconn_ref(tcpconn); /* refcnt ++ */
 		if (send2child(tcpconn,IO_WATCH_READ)<0){
 			LM_ERR("no children available\n");
@@ -1129,7 +1129,7 @@ async_write:
 			/* no more write events for now */
 			if (reactor_del_writer( tcpconn->s, fd_i, 0)==-1)
 				return -1;
-			tcpconn->flags|=F_CONN_REMOVED;
+			tcpconn->flags|=F_CONN_REMOVED_WRITE;
 			tcpconn_ref(tcpconn); /* refcnt ++ */
 			if (send2child(tcpconn,IO_WATCH_WRITE)<0){
 				LM_ERR("no children available\n");
@@ -1230,7 +1230,7 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED;
+			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
 		case CONN_RELEASE_WRITE:
 			tcp_c->busy--;
@@ -1239,7 +1239,6 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 				break;
 			}
 			tcpconn_put(tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		case ASYNC_WRITE:
 			tcp_c->busy--;
@@ -1250,7 +1249,7 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED;
+			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		case CONN_ERROR:
 		case CONN_DESTROY:
@@ -1350,7 +1349,10 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 	}
 	switch(cmd){
 		case CONN_ERROR:
-			if (!(tcpconn->flags & F_CONN_REMOVED) && (tcpconn->s!=-1)){
+			/* remove from reactor only if the fd exists, and it wasn't
+			 * removed before */
+			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
+					(tcpconn->s!=-1)){
 				reactor_del_all( tcpconn->s, -1, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 			}
@@ -1377,7 +1379,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			/* add tcpconn to the list*/
 			tcpconn_add(tcpconn);
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED;
+			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
 		case ASYNC_CONNECT:
 			/* connection is not yet linked to hash = not yet
@@ -1395,7 +1397,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			 * while we have stuff to write - otherwise we're going to get
 			 * useless events */
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED;
+			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		case ASYNC_WRITE:
 			if (tcpconn->state==S_CONN_BAD){
@@ -1404,10 +1406,11 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			}
 			/* must be after the de-ref*/
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED;
+			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		default:
-			LM_CRIT("unknown cmd %d\n", cmd);
+			LM_CRIT("unknown cmd %d from child %d (pid %d)\n", cmd,
+				(int)(p-&pt[0]), p->pid);
 	}
 end:
 	return ret;
@@ -1511,14 +1514,16 @@ static inline void __tcpconn_lifetime(int force)
 					if (c->lifetime>0 && !force)
 						tcp_trigger_report(c, TCP_REPORT_CLOSE,
 							"Timeout on no traffic");
-					_tcpconn_rm(c);
 					if ((!force)&&(fd>0)&&(c->refcnt==0)) {
-						if (!(c->flags & F_CONN_REMOVED)){
+						/* if any of read or write are set, we need to remove
+						 * the fd from the reactor */
+						if ((c->flags & F_CONN_REMOVED) != F_CONN_REMOVED){
 							reactor_del_all( fd, -1, IO_FD_CLOSING);
 							c->flags|=F_CONN_REMOVED;
 						}
 						close(fd);
 					}
+					_tcpconn_rm(c);
 					tcp_connections_no--;
 				}
 				c=next;
