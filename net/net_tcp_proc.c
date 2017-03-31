@@ -73,7 +73,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	response[0]=(long)c;
 	response[1]=state;
 
-	if (send_all((state==ASYNC_WRITE)?unix_tcp_sock:tcpmain_sock, response,
+	if (send_all((tcpmain_sock==-1)?unix_tcp_sock:tcpmain_sock, response,
 	sizeof(response))<=0)
 		LM_ERR("send_all failed state=%ld con=%p\n", state, c);
 }
