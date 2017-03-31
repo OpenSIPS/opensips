@@ -135,9 +135,12 @@ int pv_get_acc_extra(struct sip_msg *msg, pv_param_t *param,
  */
 int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 {
+	static pv_value_t pvt_null = {
+		.flags = PV_VAL_NULL
+	};
+
 	if (pvt == NULL) {
-		LM_ERR("bad value!\n");
-		return -1;
+		pvt = &pvt_null;
 	}
 
 	if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_STR) {
@@ -194,7 +197,7 @@ int pv_set_acc_extra(struct sip_msg *msg, pv_param_t *param, int op,
 
 	acc_ctx_t* ctx=try_fetch_ctx();
 
-	if (param == NULL || val == NULL) {
+	if (param == NULL) {
 		LM_ERR("bad params!\n");
 		return -1;
 	}
