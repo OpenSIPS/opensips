@@ -2213,6 +2213,8 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		parse_save_flags(&flags_str, &sctx);
 	}
 
+	parse_reg_headers(msg);
+
 	if (!to_uri_gp) {
 		to_uri = get_to(msg)->uri;
 	} else if (fixup_get_svalue(msg, (gparam_p)to_uri_gp, &to_uri)) {
@@ -2232,8 +2234,6 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		ul_api.unlock_udomain(ud, &sctx.aor);
 		return -1;
 	}
-
-	parse_reg_headers(msg);
 
 	if (check_contacts(msg, &st) > 0) {
 		goto out_error;
