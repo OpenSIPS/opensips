@@ -294,7 +294,7 @@ error:
     } while (0)
 
 /* loads info from the db */
-cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
+int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list)
 {
 	int int_vals[NO_DB_INT_VALS];
 	char *str_vals[NO_DB_STR_VALS];
@@ -303,12 +303,13 @@ cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	db_key_t columns[NO_DB_COLS];	/* the columns from the db table */
 	db_res_t *res = NULL;
 	db_row_t *row;
-	cluster_info_t *cl_list = NULL;
 	static db_key_t clusterer_node_id_key = &node_id_col;
 	static db_val_t clusterer_node_id_value = {
 		.type = DB_INT,
 		.nul = 0,
 	};
+
+	*cl_list = NULL;
 
 	columns[0] = &id_col;
 	columns[1] = &cluster_id_col;
@@ -350,7 +351,7 @@ cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 
 	if (RES_ROW_N(res) == 0) {
 		LM_WARN("No nodes found in cluster\n");
-		return NULL;
+		return 1;
 	}
 
 	clusterer_cluster_id_key = pkg_realloc(clusterer_cluster_id_key,
@@ -435,7 +436,7 @@ cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 10);
 
 		/* add info to backing list */
-		if (add_node_info(&cl_list, int_vals, str_vals) == 0) {
+		if (add_node_info(cl_list, int_vals, str_vals) == 0) {
 			LM_ERR("Unable to add node info to backing list\n");
 			goto error;
 		}
@@ -446,13 +447,14 @@ cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 
 	dr_dbf->free_result(db_hdl, res);
 
-	return cl_list;
+	return 0;
 error:
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
-	if (cl_list)
-		free_info(cl_list);
-	return NULL;
+	if (*cl_list)
+		free_info(*cl_list);
+	*cl_list = NULL;
+	return -1;
 }
 
 int update_db_current(void)
@@ -649,7 +651,7 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
-		LM_DBG("cluster node id %d not found!\n", cluster_id);
+		LM_DBG("cluster id: %d not found!\n", cluster_id);
 		goto end;
 	}
 	for (node = cl->node_list; node; node = node->next) {
