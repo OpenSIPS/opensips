@@ -109,7 +109,7 @@ extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
 int update_db_current(void);
-cluster_info_t* load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table);
+int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
 node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals);

@@ -285,8 +285,7 @@ static int child_init(int rank)
 
 	/* child 1 loads the clusterer DB info */
 	if (rank == 1) {
-		*cluster_list = load_db_info(&dr_dbf, db_hdl, &db_table);
-		if (*cluster_list == NULL) {
+		if (load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
 			LM_ERR("Failed to load info from DB\n");
 			return -1;
 		}
@@ -300,8 +299,7 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 	cluster_info_t *new_info;
 	cluster_info_t *old_info;
 
-	new_info = load_db_info(&dr_dbf, db_hdl, &db_table);
-	if (!new_info) {
+	if (load_db_info(&dr_dbf, db_hdl, &db_table, &new_info) < 0) {
 		LM_ERR("Failed to load info from DB\n");
 		return init_mi_tree(500, "Failed to reload", 16);
 	}
