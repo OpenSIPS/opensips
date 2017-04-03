@@ -964,9 +964,15 @@ static inline int hep_handle_req(struct tcp_req *req,
 		}
 
 		/* skip receive msg if we were told so from at least one callback */
-		if (ret != HEP_SCRIPT_SKIP &&
-				receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0)
+		if ( ret != HEP_SCRIPT_SKIP ) {
+			if ( receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0 ) {
 				LM_ERR("receive_msg failed \n");
+			}
+		} else {
+			if ( ctx ) {
+				context_free( ctx );
+			}
+		}
 
 		if (hep_ctx)
 			free_hep_context(hep_ctx);
@@ -1310,6 +1316,10 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	if (ret != HEP_SCRIPT_SKIP) {
 		/* receive_msg must free buf too!*/
 		receive_msg( msg.s, msg.len, &ri, ctx);
+	} else {
+		if ( ctx ) {
+			context_free( ctx );
+		}
 	}
 
 	free_hep_context(hep_ctx);
