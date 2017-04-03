@@ -2369,12 +2369,15 @@ int hep_msg_received(void)
 			return -1;
 		}
 
+		/* avoid freeing buffer read from HEP structure */
+		msg.buf = 0;
+		free_sip_msg( &msg );
+
 		/* don't go through the main route */
 		return HEP_SCRIPT_SKIP;
 	} else if (hep_route_id > HEP_SIP_ROUTE) {
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
-
 
 		/* run given hep route */
 		run_top_route(rlist[hep_route_id].a, &dummy_req);
