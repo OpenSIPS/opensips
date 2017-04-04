@@ -473,7 +473,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 	}
 	if (type==TMCB_RESPONSE_OUT) {
-		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_replicate_cluster)
+		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_replicate_cluster &&
+				param->code >= 200 && param->code < 300)
 			replicate_dialog_created(dlg);
 		return;
 	}
