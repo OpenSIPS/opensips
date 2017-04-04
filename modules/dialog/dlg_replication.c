@@ -93,8 +93,6 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
 
-	if_update_stat(dlg_enable_stats, processed_dlgs, 1);
-
 	LM_DBG("Received replicated dialog!\n");
 	if (!cell) {
 		bin_pop_str(&callid);
@@ -135,6 +133,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 		to_tag = *ttag;
 		dlg = cell;
 	}
+	if_update_stat(dlg_enable_stats, processed_dlgs, 1);
 
 	bin_pop_int(&dlg->h_id);
 	bin_pop_int(&dlg->start_ts);
@@ -464,6 +463,21 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 	bin_push_int(clusterer_api.get_my_id());
 
+	dlg_lock_dlg(dlg);
+	if (dlg->state != DLG_STATE_CONFIRMED_NA && dlg->state != DLG_STATE_CONFIRMED) {
+		/* we don't need to replicate when in deleted state */
+		LM_WARN("not replicating dlg create message due to bad state %d (%.*s)\n",
+			dlg->state, dlg->callid.len, dlg->callid.s);
+		goto no_send;
+	}
+
+	if (dlg->replicated) {
+		/* already created - must be a retransmission */
+		LM_DBG("not replicating retransmission for %p (%.*s)\n",
+			dlg, dlg->callid.len, dlg->callid.s);
+		goto no_send;
+	}
+
 	callee_leg = callee_idx(dlg);
 
 	bin_push_str(&dlg->callid);
@@ -494,9 +508,7 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 	/* XXX: on shutdown only? */
 	vars = write_dialog_vars(dlg->vals);
-	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
-	dlg_unlock_dlg(dlg);
 
 	bin_push_str(vars);
 	bin_push_str(profiles);
@@ -506,6 +518,8 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	bin_push_int((unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
+	dlg->replicated = 1;
+	dlg_unlock_dlg(dlg);
 
 	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0)
  		goto error;
@@ -515,6 +529,11 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 error:
 	LM_ERR("Failed to replicate created dialog\n");
+	return;
+
+no_send:
+	dlg_unlock_dlg(dlg);
+	return;
 }
 
 /**
@@ -529,10 +548,20 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 	if (bin_init(&module_name, REPLICATION_DLG_UPDATED, BIN_VERSION) != 0)
 		goto error;
+	bin_push_int(clusterer_api.get_my_id());
+
+	dlg_lock_dlg(dlg);
+	if (dlg->state == DLG_STATE_DELETED) {
+		/* we no longer need to update anything */
+		LM_WARN("not replicating dlg update message due to bad state %d (%.*s)\n",
+			dlg->state, dlg->callid.len, dlg->callid.s);
+		dlg_unlock_dlg(dlg);
+		return;
+	}
+
 
 	callee_leg = callee_idx(dlg);
 
-	bin_push_int(clusterer_api.get_my_id());
 	bin_push_str(&dlg->callid);
 	bin_push_str(&dlg->legs[DLG_CALLER_LEG].tag);
 	bin_push_str(&dlg->legs[callee_leg].tag);
@@ -561,9 +590,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 	/* XXX: on shutdown only? */
 	vars = write_dialog_vars(dlg->vals);
-	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
-	dlg_unlock_dlg(dlg);
 
 	bin_push_str(vars);
 	bin_push_str(profiles);
@@ -573,6 +600,8 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	bin_push_int((unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(dlg->legs[callee_leg].last_gen_cseq);
+	dlg->replicated = 1;
+	dlg_unlock_dlg(dlg);
 
 	if (clusterer_api.send_to(dialog_replicate_cluster, PROTO_BIN) < 0) {
 		LM_ERR("replicate dialog updated failed\n");
@@ -606,6 +635,7 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 		goto error;
  	}
 
+	if_update_stat(dlg_enable_stats, delete_sent, 1);
 	return;
 error:
 	LM_ERR("Failed to replicate deleted dialog\n");
