@@ -43,6 +43,8 @@
 #include "../../sr_module.h"
 #include "tls_domain.h"
 
+#define NO_STR_VALS 7
+
 #define STR_VALS_DOMAIN_COL         0
 #define STR_VALS_ADDRESS_COL        1
 #define STR_VALS_METHOD_COL         2
@@ -51,15 +53,22 @@
 #define STR_VALS_CPLIST_COL         5
 #define STR_VALS_ECCURVE_COL        6
 
-#define INT_VALS_TYPE_COL           0
-#define INT_VALS_VERIFY_CERT_COL    1
-#define INT_VALS_REQUIRE_CERT_COL   2
-#define INT_VALS_CRL_CHECK_COL      3
+#define NO_INT_VALS 5
+
+#define INT_VALS_ID_COL             0
+#define INT_VALS_TYPE_COL           1
+#define INT_VALS_VERIFY_CERT_COL    2
+#define INT_VALS_REQUIRE_CERT_COL   3
+#define INT_VALS_CRL_CHECK_COL      4
+
+#define NO_BLOB_VALS 4
 
 #define BLOB_VALS_CERTIFICATE_COL    0
 #define BLOB_VALS_PK_COL             1
 #define BLOB_VALS_CALIST_COL         2
 #define BLOB_VALS_DHPARAMS_COL       3
+
+#define NO_DB_COLS 16
 
 #define CLIENT_DOMAIN       0
 #define SERVER_DOMAIN       1

@@ -443,7 +443,7 @@ struct tls_domain *tls_new_domain( str *id, int type)
 {
 	struct tls_domain *d;
 
-	LM_DBG("adding new domain [%.*s] type %d\n", id->len, id->s, type);
+	LM_DBG("adding new domain id: [%.*s] type %d\n", id->len, id->s, type);
 
 	d = shm_malloc(sizeof(struct tls_domain) + id->len);
 	if (d == NULL) {

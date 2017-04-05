@@ -104,6 +104,37 @@ int tlsp_add_cli_domain(modparam_t type, void *val)
 	return 1;
 }
 
+static int parse_address(char *val, struct ip_addr **ip, unsigned int *port)
+{
+	char *p = val;
+	str s;
+
+	/* get IP */
+	s.s = p;
+	if ((p = strchr(p, ':')) == NULL)
+		goto parse_err;
+	s.len = p - s.s;
+	p++;
+	if ((*ip = str2ip(&s)) == NULL) {
+		LM_ERR("[%.*s] is not an ip\n", s.len, s.s);
+		goto parse_err;
+	}
+
+	/* what is left should be a port */
+	s.s = p;
+	s.len = val + strlen(val) - p;
+	if (str2int(&s, port) < 0) {
+		LM_ERR("[%.*s] is not a port\n", s.len, s.s);
+		goto parse_err;
+	}
+
+	return 0;
+
+parse_err:
+	LM_ERR("invalid address [%s]\n", val);
+	return -1;
+}
+
 int tlsp_db_add_domain(char **str_vals, int *int_vals, str* blob_vals, 
 					struct tls_domain **serv_dom, struct tls_domain **cli_dom)
 {
@@ -112,55 +143,67 @@ int tlsp_db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
 	str domain;
 	str id;
 
-	id.s = str_vals[STR_VALS_DOMAIN_COL];
-	id.len = strlen(id.s);
-
-	if (parse_domain_address( str_vals[STR_VALS_ADDRESS_COL], &ip, &port,
-	&domain)<0 )
-		return -1;
+	id.s = int2str(int_vals[INT_VALS_ID_COL], &id.len);
 
 	/* add domain */
 	if (int_vals[INT_VALS_TYPE_COL] == CLIENT_DOMAIN) {
+		domain.s = str_vals[STR_VALS_DOMAIN_COL];
+		domain.len = domain.s ? strlen(domain.s) : 0;
 
-		if (ip == NULL) {
+		if (domain.len) {
+			/* client domain defined by domain name */
 			if (tls_new_client_domain_name(&id, &domain, cli_dom) < 0) {
 				LM_ERR("failed to add new client domain name [%.*s]\n",
 					domain.len, domain.s);
 				return -1;
 			}
 		} else {
+			/* client domain defined by address */
+			if (str_vals[STR_VALS_ADDRESS_COL] == NULL) {
+				LM_ERR("No domain name or address for client domain id: %d\n",
+					int_vals[INT_VALS_ID_COL]);
+				return -1;
+			}
+
+			if (parse_address(str_vals[STR_VALS_ADDRESS_COL], &ip, &port) < 0)
+				return -1;
+
 			if (tls_new_client_domain(&id, ip, port, cli_dom) < 0) {
-				LM_ERR("failed to add new client domain [%.*s]\n",
-					domain.len, domain.s);
+				LM_ERR("failed to add new client domain [%s]\n",
+					str_vals[STR_VALS_ADDRESS_COL]);
 				return -1;
 			}
 		}
-		if (set_all_domain_attr(cli_dom, str_vals, int_vals, blob_vals) < 0){
-			LM_ERR("failed to set domain [%.*s] attr\n", domain.len, domain.s);
+
+		if (set_all_domain_attr(cli_dom, str_vals, int_vals, blob_vals) < 0) {
+			if (domain.len)
+				LM_ERR("failed to set domain [%.*s] attr\n", domain.len, domain.s);
+			else
+				LM_ERR("failed to set domain [%s] attr\n", str_vals[STR_VALS_ADDRESS_COL]);
 			return -1;
 		}
-
 	} else if (int_vals[INT_VALS_TYPE_COL] == SERVER_DOMAIN) {
-
-		if (ip) {
-			if (tls_new_server_domain(&id, ip, port, serv_dom) < 0) {
-				LM_ERR("failed to add new server domain [%.*s]\n",
-					domain.len, domain.s);
-				return -1;
-			}
-		} else {
-			LM_ERR("server domains do not support 'domain name' in "
-				"definition\n");
+		if (str_vals[STR_VALS_ADDRESS_COL] == NULL) {
+			LM_ERR("Server domain id [%d] should have an address\n",
+				int_vals[INT_VALS_ID_COL]);
 			return -1;
 		}
+
+		if (parse_address(str_vals[STR_VALS_ADDRESS_COL], &ip, &port) < 0)
+			return -1;
+
+		if (tls_new_server_domain(&id, ip, port, serv_dom) < 0) {
+			LM_ERR("failed to add new server domain [%s]\n",
+				str_vals[STR_VALS_ADDRESS_COL]);
+			return -1;
+		}
+
 		if (set_all_domain_attr(serv_dom, str_vals, int_vals,blob_vals) < 0){
-			LM_ERR("failed to set domain [%.*s] attr\n",
-				domain.len, domain.s );
+			LM_ERR("failed to set domain [%s] attr\n",
+				str_vals[STR_VALS_ADDRESS_COL]);
 			return -1;
 		}
-
 	} else {
-
 		LM_ERR("unknown TLS domain type [%d] in DB\n", 
 			int_vals[INT_VALS_TYPE_COL]);
 		return -1;
