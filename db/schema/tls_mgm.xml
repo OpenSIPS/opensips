@@ -9,7 +9,7 @@
 
 <table id="tls_mgm" xmlns:db="http://docbook.org/ns/docbook">
     <name>tls_mgm</name>
-    <version>2</version>
+    <version>3</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used for defining domains.
@@ -30,14 +30,18 @@
         <name>domain</name>
         <type>string</type>
         <size>&id_len;</size>
-        <description>TLS domain name</description>
+        <default><null/></default>
+        <null/>
+        <description>TLS domain name, used only for client domains</description>
     </column>
 
     <column id="address">
         <name>address</name>
         <type>string</type>
         <size>&domain_len;</size>
-        <description>network location, like: "ip:port" or "name"</description>
+        <default><null/></default>
+        <null/>
+        <description>network location, like: "ip:port", required for server domains</description>
     </column>
 
     <column id="type">

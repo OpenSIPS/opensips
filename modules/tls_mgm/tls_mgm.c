@@ -449,15 +449,15 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
 int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	struct tls_domain **serv_dom, struct tls_domain **cli_dom)
 {
-	int int_vals[4];
-	char *str_vals[7];
-	str blob_vals[4];
+	int int_vals[NO_INT_VALS];
+	char *str_vals[NO_STR_VALS];
+	str blob_vals[NO_BLOB_VALS];
 	int i, n;
 	int no_rows = 5;
-	int db_cols = 15;
+	int db_cols = NO_DB_COLS;
 
 	/* the columns from the db table */
-	db_key_t columns[15];
+	db_key_t columns[NO_DB_COLS];
 	/* result from a db query */
 	db_res_t* res;
 	/* a row from the db table */
@@ -465,21 +465,22 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 	res = 0;
 
-	columns[0] = &domain_col;
-	columns[1] = &address_col;
-	columns[2] = &type_col;
-	columns[3] = &method_col;
-	columns[4] = &verify_cert_col;
-	columns[5] = &require_cert_col;
-	columns[6] = &certificate_col;
-	columns[7] = &pk_col;
-	columns[8] = &crl_check_col;
-	columns[9] = &crl_dir_col;
-	columns[10] = &calist_col;
-	columns[11] = &cadir_col;
-	columns[12] = &cplist_col;
-	columns[13] = &dhparams_col;
-	columns[14] = &eccurve_col;
+	columns[0] = &id_col;
+	columns[1] = &domain_col;
+	columns[2] = &address_col;
+	columns[3] = &type_col;
+	columns[4] = &method_col;
+	columns[5] = &verify_cert_col;
+	columns[6] = &require_cert_col;
+	columns[7] = &certificate_col;
+	columns[8] = &pk_col;
+	columns[9] = &crl_check_col;
+	columns[10] = &crl_dir_col;
+	columns[11] = &calist_col;
+	columns[12] = &cadir_col;
+	columns[13] = &cplist_col;
+	columns[14] = &dhparams_col;
+	columns[15] = &eccurve_col;
 
 	/* checking if the table version is up to date*/
 	if (db_check_table_version(dr_dbf, db_hdl, db_table, 2/*version*/) != 0)
@@ -519,56 +520,70 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 		for (i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 
-			check_val(domain_col, ROW_VALUES(row), DB_STRING, 1, 1);
-			str_vals[STR_VALS_DOMAIN_COL] = (char *) VAL_STRING(ROW_VALUES(row));
+			check_val(id_col, ROW_VALUES(row), DB_INT, 1, 0);
+			int_vals[INT_VALS_ID_COL] = VAL_INT(ROW_VALUES(row));
 
-			check_val(address_col, ROW_VALUES(row) + 1, DB_STRING, 1, 1);
-			str_vals[STR_VALS_ADDRESS_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 1);
+			check_val(domain_col, ROW_VALUES(row) + 1, DB_STRING, 0, 0);
+			if (VAL_NULL(ROW_VALUES(row) + 1))
+				str_vals[STR_VALS_DOMAIN_COL] = 0;
+			else
+				str_vals[STR_VALS_DOMAIN_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 1);
 
-			check_val(type_col, ROW_VALUES(row) + 2, DB_INT, 1, 0);
-			int_vals[INT_VALS_TYPE_COL] = VAL_INT(ROW_VALUES(row) + 2);
+			check_val(address_col, ROW_VALUES(row) + 2, DB_STRING, 0, 0);
+			if (VAL_NULL(ROW_VALUES(row) + 2))
+				str_vals[STR_VALS_ADDRESS_COL] = 0;
+			else
+				str_vals[STR_VALS_ADDRESS_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 2);
 
-			check_val(method_col, ROW_VALUES(row) + 3, DB_STRING, 0, 0);
-			str_vals[STR_VALS_METHOD_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 3);
+			check_val(type_col, ROW_VALUES(row) + 3, DB_INT, 1, 0);
+			int_vals[INT_VALS_TYPE_COL] = VAL_INT(ROW_VALUES(row) + 3);
 
-			check_val(verify_cert_col, ROW_VALUES(row) + 4, DB_INT, 0, 0);
-			int_vals[INT_VALS_VERIFY_CERT_COL] = VAL_INT(ROW_VALUES(row) + 4);
+			check_val(method_col, ROW_VALUES(row) + 4, DB_STRING, 0, 0);
+			str_vals[STR_VALS_METHOD_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 4);
 
-			check_val(require_cert_col, ROW_VALUES(row) + 5, DB_INT, 0, 0);
-			int_vals[INT_VALS_REQUIRE_CERT_COL] = VAL_INT(ROW_VALUES(row) + 5);
+			check_val(verify_cert_col, ROW_VALUES(row) + 5, DB_INT, 0, 0);
+			int_vals[INT_VALS_VERIFY_CERT_COL] = VAL_INT(ROW_VALUES(row) + 5);
 
-			check_val(certificate_col, ROW_VALUES(row) + 6, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_CERTIFICATE_COL] = VAL_BLOB(ROW_VALUES(row) + 6);
+			check_val(require_cert_col, ROW_VALUES(row) + 6, DB_INT, 0, 0);
+			int_vals[INT_VALS_REQUIRE_CERT_COL] = VAL_INT(ROW_VALUES(row) + 6);
 
-			check_val(pk_col, ROW_VALUES(row) + 7, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_PK_COL] = VAL_BLOB(ROW_VALUES(row) + 7);
+			check_val(certificate_col, ROW_VALUES(row) + 7, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_CERTIFICATE_COL] = VAL_BLOB(ROW_VALUES(row) + 7);
 
-			check_val(crl_check_col, ROW_VALUES(row) + 8, DB_INT, 0, 0);
-			int_vals[INT_VALS_CRL_CHECK_COL] = VAL_INT(ROW_VALUES(row) + 8);
+			check_val(pk_col, ROW_VALUES(row) + 8, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_PK_COL] = VAL_BLOB(ROW_VALUES(row) + 8);
 
-			check_val(crl_dir_col, ROW_VALUES(row) + 9, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CRL_DIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 9);
+			check_val(crl_check_col, ROW_VALUES(row) + 9, DB_INT, 0, 0);
+			int_vals[INT_VALS_CRL_CHECK_COL] = VAL_INT(ROW_VALUES(row) + 9);
 
-			check_val(calist_col, ROW_VALUES(row) + 10, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_CALIST_COL] = VAL_BLOB(ROW_VALUES(row) + 10);
+			check_val(crl_dir_col, ROW_VALUES(row) + 10, DB_STRING, 0, 0);
+			str_vals[STR_VALS_CRL_DIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 10);
 
-			check_val(cadir_col, ROW_VALUES(row) + 11, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CADIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 11);
+			check_val(calist_col, ROW_VALUES(row) + 11, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_CALIST_COL] = VAL_BLOB(ROW_VALUES(row) + 11);
 
-			check_val(cplist_col, ROW_VALUES(row) + 12, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CPLIST_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 12);
+			check_val(cadir_col, ROW_VALUES(row) + 12, DB_STRING, 0, 0);
+			str_vals[STR_VALS_CADIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 12);
 
-			check_val(dhparams_col, ROW_VALUES(row) + 13, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_DHPARAMS_COL] = VAL_BLOB(ROW_VALUES(row) + 13);
+			check_val(cplist_col, ROW_VALUES(row) + 13, DB_STRING, 0, 0);
+			str_vals[STR_VALS_CPLIST_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 13);
 
-			check_val(eccurve_col, ROW_VALUES(row) + 14, DB_STRING, 0, 0);
-			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 14);
+			check_val(dhparams_col, ROW_VALUES(row) + 14, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_DHPARAMS_COL] = VAL_BLOB(ROW_VALUES(row) + 14);
 
-			if (tlsp_db_add_domain(str_vals, int_vals, blob_vals, 
-			serv_dom, cli_dom)<0) {
-				LM_ERR("failed to add TLS domain %s/%s, skipping \n",
-					str_vals[STR_VALS_DOMAIN_COL],
-					str_vals[STR_VALS_ADDRESS_COL]);
+			check_val(eccurve_col, ROW_VALUES(row) + 15, DB_STRING, 0, 0);
+			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 15);
+
+			if (tlsp_db_add_domain(str_vals, int_vals, blob_vals,  serv_dom, cli_dom)<0) {
+				if (str_vals[STR_VALS_DOMAIN_COL])
+					LM_ERR("failed to add TLS domain '%s' id: %d, skipping... \n",
+						str_vals[STR_VALS_DOMAIN_COL], int_vals[INT_VALS_ID_COL]);
+				else if (str_vals[STR_VALS_ADDRESS_COL])
+					LM_ERR("failed to add TLS domain [%s] id: %d, skipping... \n",
+						str_vals[STR_VALS_ADDRESS_COL], int_vals[INT_VALS_ID_COL]);
+				else
+					LM_ERR("failed to add TLS domain id: %d, skipping... \n",
+						int_vals[INT_VALS_ID_COL]);
 			}
 
 			n++;
@@ -701,9 +716,12 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	 */
 	if (!d->dh_param.s) {
 		from_file = 1;
-		LM_DBG("no DH params file for tls[%s:%d] defined, "
-				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-				tls_tmp_dh_file);
+		if (d->name.len)
+			LM_DBG("no DH params file for tls domain '%.*s' defined, using default '%s'\n",
+					d->name.len, ZSW(d->name.s), tls_tmp_dh_file);
+		else
+			LM_DBG("no DH params file for tls[%s:%d] defined, using default '%s'\n",
+					ip_addr2a(&d->addr), d->port, tls_tmp_dh_file);
 		d->dh_param.s = tls_tmp_dh_file;
 		d->dh_param.len = len(tls_tmp_dh_file);
 	}
@@ -1170,8 +1188,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 * set method
 		 */
 		if (d->method == TLS_METHOD_UNSPEC) {
-			LM_DBG("no method for tls[%s:%d], using default\n",
-					ip_addr2a(&d->addr), d->port);
+			if (d->name.len)
+				LM_DBG("no method for tls domain '%.*s', using default\n",
+						d->name.len, ZSW(d->name.s));
+			else
+				LM_DBG("no method for tls[%s:%d], using default\n",
+						ip_addr2a(&d->addr), d->port);
 			d->method = tls_default_method;
 		}
 
@@ -1180,8 +1202,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 */
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
-			LM_ERR("cannot create ssl context for "
-					"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
+			if (d->name.len)
+				LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
+					d->name.len, ZSW(d->name.s));
+			else
+				LM_ERR("cannot create ssl context for tls[%s:%d]\n",
+						ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
 		if (init_ssl_ctx_behavior( d ) < 0)
@@ -1192,8 +1218,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 */
 		if (!d->cert.s) {
 			from_file = 1;
-			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
-					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
+			if (d->name.len)
+				LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
+						d->name.len, ZSW(d->name.s), tls_cert_file);
+			else
+				LM_NOTICE("no certificate for tls[%s:%d] defined, using default '%s'\n",
+						ip_addr2a(&d->addr), d->port,	tls_cert_file);
 			d->cert.s = tls_cert_file;
 			d->cert.len = len(tls_cert_file);
 		}
@@ -1222,9 +1252,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 */
 		if (!d->ca.s) {
 			from_file = 1;
-			LM_NOTICE("no CA list for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_ca_file);
+			if (d->name.len)
+				LM_NOTICE("no CA list for tls domain '%.*s' defined, using default '%s'\n",
+						d->name.len, ZSW(d->name.s), tls_ca_file);
+			else
+				LM_NOTICE("no CA list for tls[%s:%d] defined, using default '%s'\n",
+						ip_addr2a(&d->addr), d->port, tls_ca_file);
 			d->ca.s = tls_ca_file;
 			d->ca.len = len(tls_ca_file);
 		}
@@ -1241,10 +1274,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load ca from directory
 		 */
 		if (!d->ca_directory) {
-
-			LM_NOTICE("no CA dir for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_ca_dir);
+			if (d->name.len)
+				LM_NOTICE("no CA dir for tls '%.*s' defined, using default '%s'\n",
+						d->name.len, ZSW(d->name.s), tls_ca_dir);
+			else
+				LM_NOTICE("no CA dir for tls[%s:%d] defined, using default '%s'\n",
+						ip_addr2a(&d->addr), d->port, tls_ca_dir);
 			d->ca_directory = tls_ca_dir;
 		}
 
@@ -1260,8 +1295,12 @@ static int init_tls_domains(struct tls_domain *d)
 	d = dom;
 	while (d) {
 		if (!d->pkey.s) {
-			LM_NOTICE("no private key for tls[%s:%d] defined, using default"
-					"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
+			if (d->name.len)
+				LM_NOTICE("no private key for tls domain '%.*s' defined, using default '%s'\n",
+						d->name.len, ZSW(d->name.s), tls_pkey_file);
+			else
+				LM_NOTICE("no private key for tls[%s:%d] defined, using default '%s'\n",
+						ip_addr2a(&d->addr), d->port, tls_pkey_file);
 			d->pkey.s = tls_pkey_file;
 			d->pkey.len = len(tls_pkey_file);
 			from_file = 1;
@@ -1468,6 +1507,7 @@ static int mod_init(void){
 			return -1;
 		}
 
+		id_col.len = strlen(id_col.s);
 		domain_col.len = strlen(domain_col.s);
 		address_col.len = strlen(address_col.s);
 		type_col.len = strlen(type_col.s);

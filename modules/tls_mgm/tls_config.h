@@ -53,6 +53,7 @@ extern char    *tls_ciphers_list;
 
 extern str     tls_db_url; 
 extern str     tls_db_table;
+extern str     id_col;
 extern str     domain_col;
 extern str     type_col;
 extern str     address_col;
