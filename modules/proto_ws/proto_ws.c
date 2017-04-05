@@ -70,6 +70,8 @@ static str ws_resource = str_init("/");
 #include "ws_handshake_common.h"
 #include "ws_common.h"
 
+extern int is_tcp_main;
+
 static int mod_init(void);
 static int proto_ws_init(struct proto_info *pi);
 static int proto_ws_init_listener(struct socket_info *si);
@@ -171,7 +173,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 	if (!d)
 		return;
 
-	if (c->state == S_CONN_OK) {
+	if (c->state == S_CONN_OK && !is_tcp_main) {
 		switch (d->code) {
 		case WS_ERR_NOSEND:
 			break;
