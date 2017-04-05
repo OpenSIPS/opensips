@@ -93,7 +93,7 @@ trace_proto_t tprot;
 extern int is_tcp_main;
 
 /* module  tracing parameters */
-static int trace_is_on_tmp=1, *trace_is_on;
+static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
 static int trace_filter_route_id = -1;
 /**/
@@ -311,7 +311,7 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 	str s;
 
 	if (type==TCP_REPORT_CLOSE) {
-		if ( !*trace_is_on || (conn_flags & F_CONN_TRACE_DROPPED) )
+		if ( !*trace_is_on || !t_dst || (conn_flags & F_CONN_TRACE_DROPPED) )
 			return;
 		/* grab reason text */
 		if (extra) {
