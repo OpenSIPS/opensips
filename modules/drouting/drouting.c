@@ -2339,7 +2339,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
 		}
 
 		LM_DBG("new RURI set to <%.*s> via socket <%.*s>\n",
-				val.s.len,val.s.s,
+				ruri.len, ruri.s,
 				sock?sock->name.len:4, sock?sock->name.s:"none");
 
 		/* get value for next gw ID from avp */
@@ -2870,7 +2870,7 @@ search_again:
 		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
-					"by %d\n", rlist[rt_info->route_idx].name, ret);
+					"by %d\n", rlist[rt_info->route_idx].name, fret);
 			goto error2;
 		}
 	}
