@@ -1265,7 +1265,7 @@ static int use_next_gw(struct sip_msg* msg,
 		}
 
 		LM_DBG("new RURI set to <%.*s> via socket <%.*s>\n",
-			val.s.len,val.s.s,
+			ruri.len,ruri.s,
 			sock?sock->name.len:4, sock?sock->name.s:"none");
 
 		/* get value for next gw ID from avp */
