@@ -1233,7 +1233,10 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
 			t->flags|=T_CANCEL_REASON_FLAG;
 
-		update_cloned_msg_from_msg( t->uas.request, p_msg);
+		/* update the transaction only if in REQUEST route; for other types
+		   of routes we do not want to inherit the local changes */
+		if (route_type==REQUEST_ROUTE)
+			update_cloned_msg_from_msg( t->uas.request, p_msg);
 
 		ret = t_forward_nonack( t, p_msg, p);
 		if (ret<=0 ) {
