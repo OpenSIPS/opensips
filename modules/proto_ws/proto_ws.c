@@ -79,6 +79,8 @@ static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;
 
+extern int is_tcp_main;
+
 /* module  tracing parameters */
 static int trace_is_on_tmp=1, *trace_is_on;
 static char* trace_filter_route;
@@ -252,7 +254,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 	if (!d)
 		return;
 
-	if (c->state == S_CONN_OK) {
+	if (c->state == S_CONN_OK && !is_tcp_main) {
 		switch (d->code) {
 		case WS_ERR_NOSEND:
 			break;
