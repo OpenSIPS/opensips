@@ -1529,7 +1529,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	str ruri;
 	str next_carrier_attrs = {NULL, 0};
 	str next_gw_attrs = {NULL, 0};
-	int ret;
+	int ret, fret;
 	char tmp;
 	char *ruri_buf;
 
@@ -1698,12 +1698,11 @@ search_again:
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
-		ret = run_top_route( rlist[rt_info->route_idx].a, msg );
-		if (ret&ACT_FL_DROP) {
+		fret = run_top_route( rlist[rt_info->route_idx].a, msg );
+		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
-				"by %d\n", rlist[rt_info->route_idx].name, ret);
-			ret = -1;
+				"by %d\n", rlist[rt_info->route_idx].name, fret);
 			goto error2;
 		}
 	}
