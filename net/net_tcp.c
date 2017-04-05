@@ -128,6 +128,8 @@ int tcp_no_new_conn = 0;
 /* if the TCP net layer is on or off (if no TCP based protos are loaded) */
 static int tcp_disabled = 1;
 
+/* is the process TCP MAIN ? */
+int is_tcp_main = 0;
 
 /****************************** helper functions *****************************/
 extern void handle_sigs(void);
@@ -1543,6 +1545,8 @@ static void tcp_main_server(void)
 			}
 		}
 	}
+
+	is_tcp_main = 1;
 
 	/* main loop (requires "handle_io()" implementation) */
 	reactor_main_loop( TCP_MAIN_SELECT_TIMEOUT, error,
