@@ -2866,12 +2866,11 @@ search_again:
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
-		ret = run_top_route( rlist[rt_info->route_idx].a, msg );
-		if (ret&ACT_FL_DROP) {
+		fret = run_top_route( rlist[rt_info->route_idx].a, msg );
+		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
 					"by %d\n", rlist[rt_info->route_idx].name, ret);
-			ret = -1;
 			goto error2;
 		}
 	}
