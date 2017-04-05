@@ -311,11 +311,11 @@ modparam("proto_tls", "trace_destination", "hep_dest")
    need to define Section 1.5.6, “trace_destination (string)”in
    order to work, but this value will be controlled using mi
    function Section 1.6.1, “ tls_trace ”.
-   Default value is 1(tracing active).
+   Default value is 0(tracing inactive).
 
    Example 1.7. Set trace_on parameter
 ...
-modparam("proto_tls", "trace_on", 0)
+modparam("proto_tls", "trace_on", 1)
 ...
 
 1.5.8. trace_filter_route (string)

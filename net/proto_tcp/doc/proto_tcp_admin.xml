@@ -297,13 +297,13 @@ modparam("proto_tcp", "trace_destination", "hep_dest")
 			controlled using mi function <xref linkend="tcp-trace"/>.
 		</para>
 		<emphasis>
-			Default value is 1(tracing active).
+			Default value is 0(tracing inactive).
 		</emphasis>
 		<example>
 		<title>Set <varname>trace_on</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tcp", "trace_on", 0)
+modparam("proto_tcp", "trace_on", 1)
 ...
 </programlisting>
 		</example>
