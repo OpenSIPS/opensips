@@ -362,7 +362,8 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 
 	/* check the EBR subscription on this event and apply the filters */
 	sub_prev = NULL;
-	for ( sub=ev->subs ; sub ; sub_prev=sub,sub=sub_next?sub_next:sub->next ) {
+	for ( sub=ev->subs ; sub ; sub_prev=sub,
+								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
 
 		/* discard expired NOTIFY subscriptions */
 		if (sub->flags&EBR_SUBS_TYPE_NOTY && sub->expire<my_time) {
