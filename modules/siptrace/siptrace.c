@@ -1738,6 +1738,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	 * shared to avoid conflicts on conn_id field */
 	info = *(trace_info_p)(*ps->param);
 	dest = ps->extra2;
+	SET_SIPTRACE_CONTEXT(*ps->param);
 
 	if (dest) {
 		if ( dest->proto != PROTO_UDP ) {
