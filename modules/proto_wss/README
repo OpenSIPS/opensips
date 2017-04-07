@@ -215,6 +215,15 @@ modparam("proto_wss", "trace_on", 1)
    Section 1.3.6, “trace_destination (string)” and trace must be
    on at the time this connection is opened.
 
+   IMPORTANT Filtering on ip addresses and ports can be made using
+   $si and $sp for matching either the entity that is connecting
+   to OpenSIPS or the entity to which OpenSIPS is connecting. The
+   name might be misleading ( $si meaning the source ip if you
+   read the docs) but in reality it is simply the socket other
+   than the OpenSIPS socket. In order to match OpenSIPS interface
+   (either the one that accepted the connection or the one that
+   initiated a connection) $Ri (ip) and $Rp (port) can be used.
+
    WARNING: IF Section 1.3.7, “trace_on (int)” is set to 0 or
    tracing is deactived via the mi command Section 1.4.1, “
    wss_trace ” this route won't be called.
@@ -229,10 +238,11 @@ d
  * and a trace destination is defined */
 route[wss_filter] {
         ...
-        /* all connections opened from ip 1.1.1.1 will be traced, all th
-e other connections
-         * won't be */
-        if ( $si == "1.1.1.1" )
+        /* all connections opened from/by ip 1.1.1.1:8000 will be traced
+           on interface 1.1.1.10:5060(opensips listener)
+           all the other connections won't be */
+         if ( $si == "1.1.1.1" && $sp == 8000 &&
+                $Ri == "1.1.1.10"  && $Rp == 5060)
                 exit;
         else
                 drop;

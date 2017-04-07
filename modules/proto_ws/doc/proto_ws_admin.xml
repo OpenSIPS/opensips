@@ -224,6 +224,20 @@ modparam("proto_ws", "trace_on", 1)
 			have to define a <xref linkend="trace-destination"/> and trace must be
 			on at the time this connection is opened.
 		</para>
+
+		<para>
+			<emphasis role="bold">IMPORTANT</emphasis>
+			Filtering on ip addresses and ports can be made using <emphasis role="bold">
+			$si</emphasis> and <emphasis role="bold">$sp</emphasis> for matching
+			either the entity that is connecting to &osips; or the entity to which
+			&osips; is connecting. The name might be misleading (<emphasis role="bold">
+				$si</emphasis> meaning the source ip if you read the docs) but in reality
+			it is simply the socket other than the &osips; socket. In order to match
+			&osips; interface (either the one that accepted the connection or the one
+			that initiated a connection) <emphasis role="bold">$Ri</emphasis> (ip) and
+			<emphasis role="bold">$Rp</emphasis> (port) can be used.
+		</para>
+
 		<para>
 			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="trace-on"/> is
 			set to 0 or tracing is deactived via the mi command <xref linkend="ws-trace"/>
@@ -242,9 +256,11 @@ modparam("proto_ws", "trace_filter_route", "ws_filter")
  * and a trace destination is defined */
 route[ws_filter] {
 	...
-	/* all connections opened from ip 1.1.1.1 will be traced, all the other connections
-	 * won't be */
-	if ( $si == "1.1.1.1" )
+	/* all connections opened from/by ip 1.1.1.1:8000 will be traced
+	   on interface 1.1.1.10:5060(opensips listener)
+	   all the other connections won't be */
+	 if ( $si == "1.1.1.1" &amp;&amp; $sp == 8000 &amp;&amp;
+		$Ri == "1.1.1.10"  &amp;&amp; $Rp == 5060)
 		exit;
 	else
 		drop;
