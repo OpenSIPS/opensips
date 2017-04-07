@@ -1262,6 +1262,7 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 		tm_shm_unlock();
 	}
 
+	c_msg->msg_flags |= FL_SHM_UPDATED;
 	return 0;
 }
 
