@@ -65,7 +65,12 @@ typedef int (*api_proto_init)(struct proto_info *pi);
 extern struct proto_info protos[];
 
 #define is_tcp_based_proto(_p) \
-	(protos[_p].net.flags&PROTO_NET_USE_TCP)
+	((_p==PROTO_WS)||(protos[_p].net.flags&PROTO_NET_USE_TCP))
+/* XXX: this ^ is an ugly hack to detect that WebSocket connections
+ * are TCP based, even though the module is not loaded. We need this
+ * in scenarios where a WSS client sends transport=ws in the URI's
+ * params according to RFC 7118 - razvanc
+ */
 
 #define is_udp_based_proto(_p) \
 	(protos[_p].net.flags&PROTO_NET_USE_UDP)
