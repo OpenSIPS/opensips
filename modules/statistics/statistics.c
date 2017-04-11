@@ -566,6 +566,9 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 												int create, stat_var **stat)
 {
 	pv_value_t pv_val;
+	str group, sname;
+	module_stats *ms;
+	int grp_idx __attribute__((unused)) = -1;
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
@@ -583,8 +586,21 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 			/* name is string */
 			pv_val.rs = name->u.isname.name.s;
 		}
+		parse_groupname(&pv_val.rs, &group, &sname);
+		if (group.s && group.len > 0) {
+			ms = get_stat_module(&group);
+			if (!ms) {
+				LM_ERR("stat group '%.*s' must be explicitly defined "
+				"using the 'stat_groups' module parameter!\n",
+				group.len, group.s);
+				return E_CFG;
+			}
+			grp_idx = ms->idx;
+
+		}
+
 		/* lookup for the statistic */
-		*stat = get_stat( &pv_val.rs );
+		*stat = __get_stat( &sname, grp_idx );
 		LM_DBG("stat name %p (%.*s) after lookup is %p\n",
 			name, pv_val.rs.len, pv_val.rs.s, *stat);
 		if (*stat==NULL) {
