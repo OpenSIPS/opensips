@@ -818,8 +818,7 @@ void *hp_pkg_malloc(struct hp_block *hpb, unsigned long size)
 #else
 	LM_ERR(oom_nostats_errorf, hpb->name, hpb->name[0] == 'p' ? "M" : "m");
 #endif
-	LM_INFO("Safely shutting down OpenSIPS (aborting) ...\n");
-	abort();
+	return NULL;
 
 found:
 	hp_frag_detach(hpb, frag);
@@ -913,7 +912,7 @@ void *hp_shm_malloc_unsafe(struct hp_block *hpb, unsigned long size)
 #else
 	LM_ERR(oom_nostats_errorf, hpb->name, hpb->name[0] == 'p' ? "M" : "m");
 #endif
-	abort();
+	return NULL;
 
 found:
 	hp_frag_detach(hpb, frag);
@@ -1026,7 +1025,7 @@ void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 #else
 	LM_ERR(oom_nostats_errorf, hpb->name, hpb->name[0] == 'p' ? "M" : "m");
 #endif
-	abort();
+	return NULL;
 
 found:
 	hp_frag_detach(hpb, frag);
