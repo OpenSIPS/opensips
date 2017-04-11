@@ -202,13 +202,34 @@ static void mod_destroy(void)
 	}
 }
 
+static int resolve_stat(str *in, str *out_name, int *out_grp_idx)
+{
+	str group;
+	module_stats *ms;
+
+	parse_groupname(in, &group, out_name);
+	if (group.s) {
+		ms = get_stat_module(&group);
+		if (!ms) {
+			LM_ERR("stat group '%.*s' must be explicitly defined "
+			       "using the 'stat_groups' module parameter!\n",
+			       group.len, group.s);
+			return -1;
+		}
+		*out_grp_idx = ms->idx;
+	} else {
+		*out_grp_idx = -1;
+	}
+
+	return 0;
+}
+
 static int fixup_stat(void** param, int param_no)
 {
 	struct stat_param *sp;
 	pv_elem_t *format;
-	str s, group, name;
-	module_stats *ms;
-	int grp_idx __attribute__((unused)) = -1;
+	str s, sname;
+	int grp_idx __attribute__((unused));
 
 	s.s = (char*)*param;
 	s.len = strlen(s.s);
@@ -229,20 +250,11 @@ static int fixup_stat(void** param, int param_no)
 		/* is it only one token ? */
 		if (format->next==NULL && (format->text.len==0 || format->spec.type==PVT_NONE)) {
 			if (format->text.s && format->text.len) {
-				parse_groupname(&format->text, &group, &name);
-				if (group.s) {
-					ms = get_stat_module(&group);
-					if (!ms) {
-						LM_ERR("stat group '%.*s' must be explicitly defined "
-						       "using the 'stat_groups' module parameter!\n",
-						       group.len, group.s);
-						return E_CFG;
-					}
-					grp_idx = ms->idx;
+				if (resolve_stat(&format->text, &sname, &grp_idx) != 0) {
+					return E_CFG;
 				}
-
 				/* text token */
-				sp->u.stat = __get_stat(&format->text, grp_idx);
+				sp->u.stat = __get_stat(&sname, grp_idx);
 				if (sp->u.stat) {
 					/* statistic found */
 					sp->type = STAT_PARAM_TYPE_STAT;
@@ -566,9 +578,8 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 												int create, stat_var **stat)
 {
 	pv_value_t pv_val;
-	str group, sname;
-	module_stats *ms;
-	int grp_idx __attribute__((unused)) = -1;
+	str sname;
+	int grp_idx __attribute__((unused));
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
@@ -586,21 +597,13 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 			/* name is string */
 			pv_val.rs = name->u.isname.name.s;
 		}
-		parse_groupname(&pv_val.rs, &group, &sname);
-		if (group.s && group.len > 0) {
-			ms = get_stat_module(&group);
-			if (!ms) {
-				LM_ERR("stat group '%.*s' must be explicitly defined "
-				"using the 'stat_groups' module parameter!\n",
-				group.len, group.s);
-				return E_CFG;
-			}
-			grp_idx = ms->idx;
 
+		if (resolve_stat(&pv_val.rs, &sname, &grp_idx) != 0) {
+			return E_CFG;
 		}
 
 		/* lookup for the statistic */
-		*stat = __get_stat( &sname, grp_idx );
+		*stat = __get_stat(&sname, grp_idx);
 		LM_DBG("stat name %p (%.*s) after lookup is %p\n",
 			name, pv_val.rs.len, pv_val.rs.s, *stat);
 		if (*stat==NULL) {
