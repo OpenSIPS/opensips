@@ -55,7 +55,8 @@ enum tls_domain_type {
 	TLS_DOMAIN_DEF = (1 << 0), /* Default domain */
 	TLS_DOMAIN_SRV = (1 << 1), /* Server domain */
 	TLS_DOMAIN_CLI = (1 << 2), /* Client domain */
-	TLS_DOMAIN_NAME= (1 << 3)  /* Name based TLS domain */
+	TLS_DOMAIN_NAME= (1 << 3), /* Name based TLS domain */
+	TLS_DOMAIN_DB  = (1 << 4)  /* DB defined domain */
 };
 
 /*
@@ -63,11 +64,10 @@ enum tls_domain_type {
  */
 
 
-extern struct tls_domain *tls_server_domains;
-extern struct tls_domain *tls_client_domains;
+extern struct tls_domain **tls_server_domains;
+extern struct tls_domain **tls_client_domains;
 extern struct tls_domain tls_default_server_domain;
 extern struct tls_domain tls_default_client_domain;
-extern int tls_db_enabled;
 
 extern rw_lock_t *dom_lock;
 
@@ -125,7 +125,7 @@ void  tls_free_domains(void);
 
 void tls_release_domain(struct tls_domain* dom);
 
-void tls_release_all_domains(struct tls_domain* dom);
+struct tls_domain *tls_release_db_domains(struct tls_domain* dom);
 
 int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,  str* blob_vals);
 
