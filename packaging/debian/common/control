@@ -28,6 +28,7 @@ Build-Depends: bison,
                librabbitmq-dev,
                libsctp-dev,
                libsnmp-dev,
+               libssl-dev,
                libxml2-dev,
                libxmlrpc-core-c3-dev,
                pkg-config,
@@ -515,7 +516,7 @@ Description: Emerrgency call module for OpenSIPS
 Package: opensips-tlsmgm-module
 Architecture: any
 Multi-Arch: same
-Depends: libssl-dev,
+Depends: libssl1.0.0,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -529,7 +530,7 @@ Description: TLS management module for OpenSIPS
 Package: opensips-tls-module
 Architecture: any
 Multi-Arch: same
-Depends: libssl-dev,
+Depends: libssl1.0.0,
          opensips (= ${binary:Version}),
          opensips-tlsmgm-module (= ${binary:Version}),
          ${misc:Depends},
@@ -544,7 +545,7 @@ Description: TLS transport module for OpenSIPS
 Package: opensips-wss-module
 Architecture: any
 Multi-Arch: same
-Depends: libssl-dev,
+Depends: libssl1.0.0,
          opensips (= ${binary:Version}),
          opensips-tlsmgm-module (= ${binary:Version}),
          ${misc:Depends},
@@ -559,7 +560,7 @@ Description: WebSocket Secure (WSS) transport module for OpenSIPS
 Package: opensips-sctp-module
 Architecture: any
 Multi-Arch: same
-Depends: libsctp-dev,
+Depends: libsctp1,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -573,7 +574,7 @@ Description: SCTP transport module for OpenSIPS
 Package: opensips-restclient-module
 Architecture: any
 Multi-Arch: same
-Depends: libcurl4-gnutls-dev,
+Depends: libcurl3-gnutls,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
