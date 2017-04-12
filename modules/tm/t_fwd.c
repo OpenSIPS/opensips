@@ -708,8 +708,12 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	p_msg->force_send_socket = bk_sock;
 	p_msg->path_vec = bk_path;
 	setb0flags(bk_br_flags);
-	/* update on_branch, if modified */
-	t->on_branch = get_on_branch();
+
+	/* update on_branch, _only_ if modified, otherwise it overwrites
+	 * whatever it is already in the transaction */
+	if (get_on_branch())
+		t->on_branch = get_on_branch();
+
 	/* update flags, if changed in branch route */
 	t->uas.request->flags = p_msg->flags;
 
