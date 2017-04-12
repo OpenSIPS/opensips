@@ -106,6 +106,8 @@ typedef int (*terminate_dlg_f)(unsigned int h_entry, unsigned int h_id,str *reas
 
 void unreference_dialog(void *dialog);
 
+void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps);
+
 static inline int parse_dlg_rr_param(char *p, char *end,
 													int *h_entry, int *h_id)
 {
