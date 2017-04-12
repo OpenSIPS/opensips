@@ -38,34 +38,27 @@
 #include "tls_params.h"
 #include <stdlib.h>
 
-struct tls_domain *tls_server_domains;
-struct tls_domain *tls_client_domains;
+struct tls_domain **tls_server_domains;
+struct tls_domain **tls_client_domains;
 struct tls_domain tls_default_server_domain;
 struct tls_domain tls_default_client_domain;
 
 rw_lock_t *dom_lock;
 
-struct tls_domain *tls_find_domain_by_id( str *id)
+struct tls_domain *tls_find_domain_by_id(str *id)
 {
 	struct tls_domain *d;
-	if (tls_db_enabled)
-		lock_start_read(dom_lock);
-	for (d=tls_server_domains ; d ; d=d->next ) {
-		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0) {
-			if (tls_db_enabled)
-				lock_stop_read(dom_lock);
-			return d;
-		}
-	}
-	for (d=tls_client_domains ; d ; d=d->next ) {
-		if (id->len==d->id.len && memcmp(id->s,d->id.s,id->len)==0) {
-			if (tls_db_enabled)
-				lock_stop_read(dom_lock);
-			return d;
-		}
-	}
-	if (tls_db_enabled)
-		lock_stop_read(dom_lock);
+
+	if (tls_server_domains)
+		for (d = *tls_server_domains; d; d = d->next)
+			if (id->len == d->id.len && memcmp(id->s, d->id.s, id->len) == 0)
+				return d;
+
+	if (tls_client_domains)
+		for (d = *tls_client_domains; d; d = d->next)
+			if (id->len == d->id.len && memcmp(id->s, d->id.s, id->len) == 0)
+				return d;
+
 	return NULL;
 }
 
@@ -83,22 +76,34 @@ void tls_release_domain_aux(struct tls_domain *dom)
 	}
 }
 
-void tls_release_all_domains(struct tls_domain *dom)
+/* frees the DB domains and returns the first script domain */
+struct tls_domain *tls_release_db_domains(struct tls_domain *dom)
 {
-	while (dom) {
-		tls_release_domain_aux(dom);
+	struct tls_domain *tmp;
+
+	while (dom && dom->type & TLS_DOMAIN_DB) {
+		tmp = dom;
 		dom = dom->next;
+		tls_release_domain_aux(tmp);
 	}
+
+	/* return the first script domain which should be after the DB domains in the list */
+	return dom;
 }
 
 void tls_release_domain(struct tls_domain* dom)
 {
-	if (!dom || !tls_db_enabled || dom == &tls_default_server_domain ||
+	if (!dom || !(dom->type & TLS_DOMAIN_DB) || dom == &tls_default_server_domain ||
 		dom == &tls_default_client_domain)
 		return;
-	lock_start_write(dom_lock);
+
+	if (dom_lock)
+		lock_start_write(dom_lock);
+
 	tls_release_domain_aux(dom);
-	lock_stop_write(dom_lock);
+
+	if (dom_lock)
+		lock_stop_write(dom_lock);
 }
 
 int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals, str* blob_vals)
@@ -236,26 +241,33 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 struct tls_domain *
 tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 {
-	if (tls_db_enabled)
+	struct tls_domain *p;
+
+	if (dom_lock)
 		lock_start_read(dom_lock);
-	struct tls_domain *p = tls_server_domains;
+
+	p = *tls_server_domains;
 	while (p) {
 		if ((p->port == port) && ip_addr_cmp(&p->addr, ip)) {
 			LM_DBG("virtual TLS server domain found\n");
-			if (tls_db_enabled) {
+			if (p->type & TLS_DOMAIN_DB) {
 				lock_get(p->lock);
 				p->refs++;
 				lock_release(p->lock);
-				lock_stop_read(dom_lock);
+				if (dom_lock)
+					lock_stop_read(dom_lock);
 			}
 			return p;
 		}
 		p = p->next;
 	}
-	if (tls_db_enabled)
+
+	if (dom_lock)
 		lock_stop_read(dom_lock);
+
 	LM_DBG("virtual TLS server domain not found, "
 		"Using default TLS server domain settings\n");
+
 	return &tls_default_server_domain;
 }
 
@@ -266,7 +278,7 @@ tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 struct tls_domain *
 tls_find_client_domain_addr(struct ip_addr *ip, unsigned short port)
 {
-	struct tls_domain *p = tls_client_domains;
+	struct tls_domain *p = *tls_client_domains;
 	while (p) {
 		if ((p->name.len == 0) && (p->port == port) && ip_addr_cmp(&p->addr, ip)) {
 			LM_DBG("virtual TLS client domain found\n");
@@ -286,7 +298,7 @@ tls_find_client_domain_addr(struct ip_addr *ip, unsigned short port)
 struct tls_domain *
 tls_find_client_domain_name(str name)
 {
-	struct tls_domain *p = tls_client_domains;
+	struct tls_domain *p = *tls_client_domains;
 	while (p) {
 		if ((p->name.len == name.len) && !strncasecmp(p->name.s, name.s, name.len)) {
 			LM_DBG("virtual TLS client domain found\n");
@@ -302,21 +314,22 @@ tls_find_client_domain_name(str name)
  * find client domain
  * return 0 if virtual domain not found
  */
-struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
-				   unsigned short port){
+struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short port)
+{
 	struct tls_domain *dom;
 	struct usr_avp *avp;
 	int_str val;
 
 	avp = NULL;
 
-	if (tls_client_domain_avp > 0) {
+	if (tls_client_domain_avp > 0)
 		avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
-	} else {
+	else
 		LM_DBG("name based TLS client domains are disabled\n");
-	}
-	if (tls_db_enabled)
+
+	if (dom_lock)
 		lock_start_read(dom_lock);
+
 	if (!avp) {
 		LM_DBG("no TLS client domain AVP set, looking "
 			"for socket based TLS client domain\n");
@@ -343,16 +356,15 @@ struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
 		}
 	}
 
-	if (tls_db_enabled) {
-
-		if (dom && dom != &tls_default_client_domain) {
-			lock_get(dom->lock);
-			dom->refs++;
-			lock_release(dom->lock);
-		}
-
-		lock_stop_read(dom_lock);
+	if (dom && dom != &tls_default_client_domain && dom->type & TLS_DOMAIN_DB) {
+		lock_get(dom->lock);
+		dom->refs++;
+		lock_release(dom->lock);
 	}
+
+	if (dom_lock)
+		lock_stop_read(dom_lock);
+
 	return dom;
 }
 
@@ -378,6 +390,7 @@ int tls_new_server_domain( str *id, struct ip_addr *ip, unsigned short port,
 	/* add this new domain to the linked list */
 	d->next = *dom;
 	*dom = d;
+
 	return 0;
 }
 
@@ -389,7 +402,7 @@ int tls_new_client_domain(str *id, struct ip_addr *ip, unsigned short port,
 {
 	struct tls_domain *d;
 
-	d = tls_new_domain( id, TLS_DOMAIN_CLI);
+	d = tls_new_domain(id, TLS_DOMAIN_CLI);
 	if (d == NULL) {
 		LM_ERR("pkg memory allocation failure\n");
 		return -1;
@@ -403,6 +416,7 @@ int tls_new_client_domain(str *id, struct ip_addr *ip, unsigned short port,
 	/* add this new domain to the linked list */
 	d->next = *dom;
 	*dom = d;
+
 	return 0;
 }
 
@@ -450,7 +464,7 @@ struct tls_domain *tls_new_domain( str *id, int type)
 		LM_ERR("pkg memory allocation failure\n");
 		return 0;
 	}
-	
+
 	memset( d, 0, sizeof(struct tls_domain));
 	
 	d->lock = lock_alloc();
@@ -460,7 +474,7 @@ struct tls_domain *tls_new_domain( str *id, int type)
 		shm_free(d);
 		return 0;
 	}
-	
+
 	if (lock_init(d->lock) == NULL) {
 		LM_ERR("Failed to init lock \n");
 		shm_free(d);
@@ -493,16 +507,14 @@ void
 tls_free_domains(void)
 {
 	struct tls_domain *p;
-	while (tls_server_domains) {
-		p = tls_server_domains;
-		tls_server_domains = tls_server_domains->next;
+	while (*tls_server_domains) {
+		p = *tls_server_domains;
+		*tls_server_domains = (*tls_server_domains)->next;
 		shm_free(p);
 	}
-	while (tls_client_domains) {
-		p = tls_client_domains;
-		tls_client_domains = tls_client_domains->next;
-		/* ToDo: If socket based client domains will be implemented, the name may
-		   be empty (must be set to NULL manually). Thus no need to free it */
+	while (*tls_client_domains) {
+		p = *tls_client_domains;
+		*tls_client_domains = (*tls_client_domains)->next;
 		if (p->name.s) {
 			shm_free(p->name.s);
 		}
