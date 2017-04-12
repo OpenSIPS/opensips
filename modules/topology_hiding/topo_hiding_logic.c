@@ -320,7 +320,7 @@ static struct lump* delete_existing_contact(struct sip_msg *msg)
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
 			}
-			if(lump == msg->add_rm && prev_crt)
+			if(lump == msg->add_rm)
 				msg->add_rm = lump->next;
 			else
 				prev_crt->next = lump->next;
