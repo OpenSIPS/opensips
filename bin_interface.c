@@ -28,7 +28,7 @@
 #include "pt.h"
 #include "net/net_udp.h"
 
-static int bin_realloc(bin_packet_t *packet, int size);
+static int bin_extend(bin_packet_t *packet, int size);
 
 struct socket_info *bin;
 
@@ -41,9 +41,7 @@ short get_bin_pkg_version(bin_packet_t *packet)
 }
 
 void set_len(bin_packet_t *packet) {
-	unsigned int *px;
-	px = (unsigned int *) (packet->buffer.s + BIN_PACKET_MARKER_SIZE);
-	*px = packet->buffer.len;
+	*(unsigned int *)(packet->buffer.s + BIN_PACKET_MARKER_SIZE) = packet->buffer.len;
 }
 
 /**
@@ -56,12 +54,14 @@ void set_len(bin_packet_t *packet) {
  * +-------------------+-----------------------------------------------------------------+
  *
  * @param: { LEN, MOD_NAME } + CMD + VERSION
- * @lentgh: initial size of the packet, if left 0, the defalut BUF_SIZE is used
+ * @length: initial packet size. specify 0 to use the default size (MAX_BUF_LEN)
  */
-int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, int length)
+int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type,
+             short version, int length)
 {
 	if (length != 0 && length < MIN_BIN_PACKET_SIZE + mod_name->len) {
-		LM_ERR("Length parameter has to be greater than:%lu\n", MIN_BIN_PACKET_SIZE + mod_name->len);
+		LM_ERR("Length parameter has to be greater than: %lu\n",
+		       MIN_BIN_PACKET_SIZE + mod_name->len);
 		return -1;
 	}
 
@@ -77,10 +77,10 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, i
 	packet->size = length;
 
 	/* binary packet header: marker + pkg_len */
-	memcpy(packet->buffer.s + packet->buffer.len, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE);
+	memcpy(packet->buffer.s + packet->buffer.len,
+	       BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE);
 	packet->buffer.len += BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE;
 
-	
 	/* bin version */
 	memcpy(packet->buffer.s + packet->buffer.len, &version, sizeof(version));
 	packet->buffer.len += VERSION_FIELD_SIZE;
@@ -93,8 +93,8 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, i
 
 	memcpy(packet->buffer.s + packet->buffer.len, &cmd_type, sizeof(cmd_type));
 	packet->buffer.len += sizeof(cmd_type);
-	set_len(packet);
 
+	set_len(packet);
 	return 0;
 }
 
@@ -109,12 +109,12 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, i
 int bin_push_str(bin_packet_t *packet, const str *info)
 {
 	if (!packet->buffer.s || !packet->size) {
-		LM_ERR("bin structure not initialize, call bin_init befere altering buffer\n");
+		LM_ERR("not initialized yet, call bin_init before altering buffer\n");
 		return -1;
 	}
 
-	if (packet->buffer.len  > packet->size - LEN_FIELD_SIZE - (info ? info->len : 0)) {
-		if (!bin_realloc(packet, (info ? info->len : 0)))
+	if (packet->buffer.len + LEN_FIELD_SIZE + (info ? info->len : 0) > packet->size) {
+		if (!bin_extend(packet, (info ? info->len : 0)))
 			return -1;
 	}
 
@@ -130,8 +130,8 @@ int bin_push_str(bin_packet_t *packet, const str *info)
 	packet->buffer.len += LEN_FIELD_SIZE;
 	memcpy(packet->buffer.s + packet->buffer.len, info->s, info->len);
 	packet->buffer.len += info->len;
-	set_len(packet);
 
+	set_len(packet);
 	return packet->buffer.len;
 }
 
@@ -144,41 +144,41 @@ int bin_push_str(bin_packet_t *packet, const str *info)
  */
 int bin_push_int(bin_packet_t *packet, int info)
 {
-	if (!packet->buffer.s  || !packet->size) {
-		LM_ERR("bin structure not initialize, call bin_init befere altering buffer\n");
+	if (!packet->buffer.s || !packet->size) {
+		LM_ERR("not initialized yet, call bin_init before altering buffer\n");
 		return -1;
 	}
 
-	if (packet->buffer.len  > packet->size - sizeof(int)) {
-		if (!bin_realloc(packet,  sizeof(int)))
+	if (packet->buffer.len + sizeof info > packet->size) {
+		if (!bin_extend(packet, sizeof info))
 			return -1;
 	}
 
-
-	memcpy(packet->buffer.s + packet->buffer.len, &info, sizeof(info));
-	packet->buffer.len += sizeof(info);
+	memcpy(packet->buffer.s + packet->buffer.len, &info, sizeof info);
+	packet->buffer.len += sizeof info;
 
 	set_len(packet);
-	
 	return packet->buffer.len;
 }
 
 /*
- * removes @count intergers from the end of the packet
+ * removes @count integers from the end of the packet
  *
  * @return:
  *		0: success
  *		< 0: error, no more integers in buffer
  */
-int bin_remove_int_buffer_end(bin_packet_t *packet, int count) {
-	if (!packet->buffer.s  || !packet->size || (int)(packet->buffer.len - count * sizeof(int)) < 0){
+int bin_remove_int_buffer_end(bin_packet_t *packet, int count)
+{
+	if (!packet->buffer.s || !packet->size ||
+	    (int)(packet->buffer.len - count * sizeof(int)) < 0){
 		LM_ERR("binary packet underflow\n");
 		return -1;
 	}
 
 	packet->buffer.len -= count * sizeof(int);
-	set_len(packet);
 
+	set_len(packet);
 	return 0;
 }
 
@@ -191,14 +191,17 @@ int bin_remove_int_buffer_end(bin_packet_t *packet, int count) {
  */
 int bin_skip_int_packet_end(bin_packet_t *packet, int count)
 {
-	if (!packet->buffer.s  || !packet->size || (packet->buffer.len + count * sizeof(int)) > packet->size)
+	if (!packet->buffer.s || !packet->size ||
+	    (packet->buffer.len + count * sizeof(int)) > packet->size) {
 		return -1;
+	}
 
 	packet->buffer.len += count * sizeof(int);
-	set_len(packet);
 
+	set_len(packet);
 	return 0;
 }
+
 /*
  * skips @count integers from the current position in the received binary packet
  *
@@ -208,7 +211,7 @@ int bin_skip_int_packet_end(bin_packet_t *packet, int count)
  */
 int bin_skip_int(bin_packet_t *packet, int count)
 {
-	if (packet->front_pointer - packet->buffer.s + count * sizeof(int) > packet->buffer.len){
+	if (packet->front_pointer - packet->buffer.s + count * sizeof(int) > packet->buffer.len) {
 		packet->front_pointer = packet->buffer.s + packet->buffer.len;
 		LM_ERR("Buffer limit reached\n");
 		return -1;
@@ -246,7 +249,7 @@ int bin_skip_str(bin_packet_t *packet, int count)
 	return 0;
 
 error:
-	LM_ERR("Receive binary packet buffer overflow");
+	LM_ERR("Receive binary packet buffer overflow\n");
 	return -1;
 }
 
@@ -290,7 +293,7 @@ int bin_pop_str(bin_packet_t *packet, str *info)
 	return 0;
 
 error:
-	LM_ERR("Receive binary packet buffer overflow");
+	LM_ERR("Receive binary packet buffer overflow\n");
 	return -1;
 }
 
@@ -348,7 +351,8 @@ int bin_pop_back_int(bin_packet_t *packet, void *info)
  *
  * @return:   0 on success
  */
-int bin_register_cb(char *mod_name, void (*cb)(bin_packet_t *, int, struct receive_info *, void * atr), void *att)
+int bin_register_cb(char *mod_name, void (*cb)(bin_packet_t *, int,
+                    struct receive_info *, void * atr), void *att)
 {
 	struct packet_cb_list *new_mod;
 
@@ -417,23 +421,23 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	bin_free_packet(&packet);
 }
 
-static int bin_realloc(bin_packet_t *packet, int size) {
+static int bin_extend(bin_packet_t *packet, int size)
+{
 	int required;
 
-	if (size < 0 || packet->buffer.len > MAX_BUF_LEN - size){
+	if (size < 0 || packet->buffer.len + size > MAX_BUF_LEN) {
 		LM_ERR("cannot make the buffer bigger\n");
 		return -1;
 	}
 
 	required = packet->buffer.len + size;
 
-	if (required > MAX_BUF_LEN - required)
+	if (2 * required > MAX_BUF_LEN)
 		packet->size = MAX_BUF_LEN;
 	else
 		packet->size = 2 * required;
 
 	packet->buffer.s = pkg_realloc(packet->buffer.s, packet->size);
-
 	if (!packet->buffer.s) {
 		LM_ERR("pkg realloc failed\n");
 		return -1;
@@ -442,7 +446,8 @@ static int bin_realloc(bin_packet_t *packet, int size) {
 	return 0;
 }
 
-void bin_free_packet(bin_packet_t *packet) {
+void bin_free_packet(bin_packet_t *packet)
+{
 	if (packet->buffer.s) {
 		pkg_free(packet->buffer.s);
 		packet->buffer.s = NULL;

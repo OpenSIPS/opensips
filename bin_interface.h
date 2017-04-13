@@ -36,9 +36,11 @@
 #define VERSION_FIELD_SIZE     2
 #define LEN_FIELD_SIZE         (sizeof(unsigned short))
 #define CMD_FIELD_SIZE         sizeof(int)
-#define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE + VERSION_FIELD_SIZE)
+#define HEADER_SIZE \
+			(BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE + VERSION_FIELD_SIZE)
 #define MIN_BIN_PACKET_SIZE \
-	(HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + 2) /* e.g. >tm<.so */
+			(HEADER_SIZE + LEN_FIELD_SIZE + 2 + CMD_FIELD_SIZE)
+                                         /* ^ e.g. "tm" */
 
 #define is_valid_bin_packet(_p) \
 	(memcmp(_p, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE) == 0)
@@ -76,7 +78,8 @@ void call_callbacks(char* buffer, struct receive_info *rcv);
  * registers a callback function to be triggered on a received
  * binary packet marked with the @mod_name module name
  */
-int bin_register_cb(char *mod_name, void (*)(bin_packet_t *, int, struct receive_info *, void * atr), void *att);
+int bin_register_cb(char *mod_name, void (*cb)(bin_packet_t *, int,
+                    struct receive_info *, void * atr), void *att);
 
 
 /**
@@ -109,7 +112,7 @@ int bin_push_str(bin_packet_t *packet, const str *info);
 int bin_push_int(bin_packet_t *packet, int info);
 
 /*
- * removes an interger from the end of the packet
+ * removes an integer from the end of the packet
  *
  * @return:
  *		0: success
@@ -190,7 +193,8 @@ int bin_skip_str(bin_packet_t *packet, int count);
 void bin_free_packet(bin_packet_t *packet);
 
 /*
- * resets the packet, equvalent to calling bin_free_packet and than reinitializing the packet
+ * resets the packet, equivalent to calling bin_free_packet,
+ * then reinitializing the packet
  */
 int bin_reset_back_pointer(bin_packet_t *packet);
 /*
