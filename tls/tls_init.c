@@ -755,7 +755,7 @@ init_tls(void)
 	)!=0 ) {
 		LM_ERR("compiled agaist an openssl with %s"
 			"kerberos, but run with one with %skerberos\n",
-			(i==1)?"":"no ",(i!=1)?"no ":"");
+			(i!=1)?"":"no ",(i!=1)?"no ":"");
 		return -1;
 	}
 
