@@ -1315,7 +1315,7 @@ static int mod_init(void){
 		 )!=0 ) {
 		LM_ERR("compiled agaist an openssl with %s"
 				"kerberos, but run with one with %skerberos\n",
-				(n==1)?"":"no ",(n!=1)?"no ":"");
+				(n!=1)?"":"no ",(n!=1)?"no ":"");
 		return -1;
 	}
 
