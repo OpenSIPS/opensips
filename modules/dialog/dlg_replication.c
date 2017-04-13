@@ -86,7 +86,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 {
 	int h_entry;
 	unsigned int dir, dst_leg;
-	str callid, from_uri, to_uri, from_tag, to_tag;
+	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
