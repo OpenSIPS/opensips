@@ -537,3 +537,23 @@ err:
 
 
 
+int should_update_sip_body(struct sip_msg *msg)
+{
+	struct body_part *part;
+
+	/* body changed using lumps */
+	if (msg->body_lumps)
+		return 1;
+
+	for(part = &msg->body->first; part; part = part->next) {
+		/* body removed or added */
+		if (part->flags & (SIP_BODY_PART_FLAG_NEW|SIP_BODY_PART_FLAG_DELETED))
+			return 1;
+
+		/* binary body */
+		if (part->dump_f)
+			return 1;
+	}
+	/* no changes on the body - should not be updated */
+	return 0;
+}

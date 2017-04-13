@@ -127,6 +127,8 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body);
 
 int delete_body_part(struct sip_msg *msg, struct body_part *part);
 
+int should_update_sip_body(struct sip_msg *msg);
+
 int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 	struct sip_msg_body **p_dst, int shared);
 
