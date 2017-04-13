@@ -500,31 +500,45 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 
 	switch (path->access_mode) {
 	case ACCESS_EL:
-		xml_buf = xmlBufferCreate();
-		if (!xml_buf) {
-			LM_ERR("Unable to obtain xml buffer\n");
-			return pv_get_null( msg, pvp, res);
-		}
+		if (!path->elements) {
+			xmlDocDumpMemory(obj->xml_doc, (xmlChar **)&xml_buf_s, &xml_buf_len);
+			/* libxml seems to place an unnecessary newline at the end of the doc dump */
+			if (xml_buf_s[xml_buf_len-1] == '\n')
+				xml_buf_len--;
+		} else {
+			xml_buf = xmlBufferCreate();
+			if (!xml_buf) {
+				LM_ERR("Unable to obtain xml buffer\n");
+				return pv_get_null( msg, pvp, res);
+			}
 
-		xml_buf_len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
-		if (xml_buf_len == -1) {
-			LM_ERR("Unable to dump node to xml buffer\n");
-			goto err_free_xml_buf;
+			xml_buf_len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
+			if (xml_buf_len == -1) {
+				LM_ERR("Unable to dump node to xml buffer\n");
+				goto err_free_xml_buf;
+			}
+
+			xml_buf_s = (char *)xmlBufferContent(xml_buf);
+			if (!xml_buf_s) {
+				LM_ERR("Unable to obtain xml buffer content\n");
+				goto err_free_xml_buf;
+			}
 		}
 
 		if (pkg_str_resize(&res_buf, xml_buf_len) != 0) {
 			LM_ERR("No more pkg mem\n");
-			goto err_free_xml_buf;
+			if (xml_buf)
+				xmlBufferFree(xml_buf);
+			else
+				xmlFree(xml_buf_s);
 		}
 
-		xml_buf_s = (char *)xmlBufferContent(xml_buf);
-		if (!xml_buf_s) {
-			LM_ERR("Unable to obtain xml buffer content\n");
-			goto err_free_xml_buf;
-		}
 		memcpy(res_buf.s, xml_buf_s, xml_buf_len);
 
-		xmlBufferFree(xml_buf);
+		if (xml_buf)
+			xmlBufferFree(xml_buf);
+		else
+			xmlFree(xml_buf_s);
 
 		res->rs.s = res_buf.s;
 		res->rs.len = xml_buf_len;
