@@ -404,11 +404,11 @@ static xmlNode *get_node_by_path(xmlNode *root, xml_element_t *path_el)
 		}
 		if (!cur) {
 			if (i != 0) {
-				LM_NOTICE("Invalid path for xml var - bad index [%d] for element: <%.*s>\n",
+				LM_DBG("Invalid path for xml var - bad index [%d] for element: <%.*s>\n",
 					path_el->idx, path_el->tag.len, path_el->tag.s);
 				return NULL;
 			} else {
-				LM_NOTICE("Invalid path for xml var - no element named: <%.*s> \n",
+				LM_DBG("Invalid path for xml var - no element named: <%.*s> \n",
 					path_el->tag.len, path_el->tag.s);
 				return NULL;
 			}
@@ -491,7 +491,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 	if (path->elements) {
 		node = get_node_by_path(root, path->elements);
 		if (!node) {
-			LM_NOTICE("Element not found\n");
+			LM_DBG("Element not found\n");
 			return pv_get_null( msg, pvp, res);
 		}
 	} else
@@ -564,7 +564,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 	case ACCESS_EL_ATTR:
 		attr = get_node_attr(node, path->attr);
 		if (!attr) {
-			LM_NOTICE("Attribute: %.*s not found\n", path->attr.len, path->attr.s);
+			LM_DBG("Attribute: %.*s not found\n", path->attr.len, path->attr.s);
 			return pv_get_null( msg, pvp, res);
 		}
 		res->rs.s = (char *)attr->children->content;
