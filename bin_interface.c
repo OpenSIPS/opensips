@@ -121,6 +121,8 @@ int bin_push_str(bin_packet_t *packet, const str *info)
 	if (!info || info->len == 0 || !info->s) {
 		memset(packet->buffer.s + packet->buffer.len, 0, LEN_FIELD_SIZE);
 		packet->buffer.len += LEN_FIELD_SIZE;
+
+		set_len(packet);
 		return packet->buffer.len;
 	}
 
@@ -233,9 +235,9 @@ int bin_skip_str(bin_packet_t *packet, int count)
 
 		len = 0;
 		memcpy(&len, packet->front_pointer, LEN_FIELD_SIZE);
-		packet->buffer.len += LEN_FIELD_SIZE;
+		packet->front_pointer += LEN_FIELD_SIZE;
 
-		if (packet->front_pointer - packet->buffer.s + LEN_FIELD_SIZE > packet->buffer.len)
+		if (packet->front_pointer - packet->buffer.s + len > packet->buffer.len)
 			goto error;
 
 		packet->front_pointer += len;
@@ -265,7 +267,8 @@ int bin_pop_str(bin_packet_t *packet, str *info)
 	if (packet->front_pointer - packet->buffer.s == packet->buffer.len)
 		return 1;
 
-	if (packet->front_pointer - packet->buffer.s > packet->buffer.len)
+	if (packet->front_pointer - packet->buffer.s > packet->buffer.len ||
+	    packet->front_pointer - packet->buffer.s + LEN_FIELD_SIZE > packet->buffer.len)
 		goto error;
 
 	info->len = 0;
@@ -305,8 +308,8 @@ int bin_pop_int(bin_packet_t *packet, void *info)
 	if (packet->front_pointer - packet->buffer.s == packet->buffer.len)
 		return 1;
 
-	if (packet->front_pointer - packet->buffer.s > packet->buffer.len + sizeof(int)) {
-		LM_ERR("Receive binary packet buffer overflow");
+	if (packet->front_pointer - packet->buffer.s + sizeof(int) > packet->buffer.len) {
+		LM_ERR("Receive binary packet buffer overflow\n");
 		return -1;
 	}
 
@@ -325,9 +328,12 @@ int bin_pop_int(bin_packet_t *packet, void *info)
  *		1 (success): nothing returned, all data has been consumed!
  *		< 0: error
  */
-int bin_pop_back_int(bin_packet_t *packet, void *info) {
-	if (packet->buffer.len < sizeof(int) + HEADER_SIZE)
+int bin_pop_back_int(bin_packet_t *packet, void *info)
+{
+	if (packet->buffer.len < MIN_BIN_PACKET_SIZE + sizeof(int)) {
+		LM_ERR("attempt to pop data on an empty packet!\n");
 		return -1;
+	}
 
 	memcpy(info, packet->buffer.s + packet->buffer.len - sizeof(int), sizeof(int));
 	packet->buffer.len -= sizeof(int);
@@ -379,6 +385,11 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	pkg_len = *(unsigned int*)(buffer + BIN_PACKET_MARKER_SIZE);
 	//add extra size so a realloc wont trigger after small altering of the packet 
 	packet.buffer.s = pkg_malloc(pkg_len + 50);
+	if (!packet.buffer.s) {
+		LM_ERR("oom\n");
+		return;
+	}
+
 	packet.buffer.len = pkg_len;
 	packet.size = pkg_len + 50;
 	memcpy(packet.buffer.s, buffer, pkg_len);
