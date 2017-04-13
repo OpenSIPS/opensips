@@ -541,6 +541,9 @@ int should_update_sip_body(struct sip_msg *msg)
 {
 	struct body_part *part;
 
+	if (!msg->body)
+		return 0;
+
 	/* body changed using lumps */
 	if (msg->body_lumps)
 		return 1;
