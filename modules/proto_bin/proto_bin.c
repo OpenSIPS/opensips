@@ -283,7 +283,7 @@ poll_loop:
 			LM_ERR("Failed to add write chunk to connection \n");
 			return -1;
 		} else {
-			/* we have succesfully added async write chunk
+			/* we have successfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
 			return 0;
@@ -586,7 +586,7 @@ static int proto_bin_send(struct socket_info* send_sock,
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
 
-			/* we succesfully added our write chunk - success */
+			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
@@ -633,7 +633,7 @@ static int bin_handle_req(struct tcp_req *req,
 	long size;
 
 	if (req->complete){
-		/* update the timeout - we succesfully read the request */
+		/* update the timeout - we successfully read the request */
 		tcp_conn_set_lifetime( con, tcp_con_lifetime);
 		con->timeout = con->lifetime;
 

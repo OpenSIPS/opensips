@@ -737,7 +737,7 @@ rtpengine_start_recording();
 			</para>
 			<para>
 			NOTE: if a &rtp; proxy is defined multiple times (in the same or
-			diferente sete), all of its instances will be enables/disabled.
+			different set), all of its instances will be enables/disabled.
 			</para>
 			<example>
 			<title>

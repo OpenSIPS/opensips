@@ -1555,7 +1555,7 @@ after_unlock5:
 				dlg->legs[callee_idx(dlg)].tag.len,
 				ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 		} else {
-			/* dialog sucessfully removed from timer -> unref */
+			/* dialog successfully removed from timer -> unref */
 			unref++;
 		}
 

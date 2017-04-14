@@ -750,7 +750,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    new enabled/disabled state.
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
-   diferente sete), all its instances will be enables/disabled IF
+   different set), all its instances will be enables/disabled IF
    no set ID provided (as second param).
 
    Example 1.20.  rtpproxy_enable usage

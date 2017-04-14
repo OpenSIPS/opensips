@@ -634,7 +634,7 @@ modparam("dialplan", "attrs_col", "column_name")
 	<listitem>
 		<para>
 		<emphasis>partition</emphasis> - Specifies the partition where the search will
-		take place. This parameter can be ommited. If the paramater is omitted the default
+		take place. This parameter can be ommited. If the parameter is omitted the default
 		partition will be used if exists.
 		The <emphasis>partition</emphasis> parameter can have the following types:
 		</para>

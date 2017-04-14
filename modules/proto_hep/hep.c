@@ -687,7 +687,7 @@ int parse_hep_id(unsigned int type, void *val)
 		return -1;
 	}
 
-	LM_DBG("Uri succesfully parsed! Building uri structure!\n");
+	LM_DBG("Uri successfully parsed! Building uri structure!\n");
 
 	el=shm_malloc(sizeof(hid_list_t));
 	if (el == NULL) {
@@ -1484,7 +1484,7 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 
 	memcpy(hep_chunk->data, data, len);
 
-	LM_DBG("Hep chunk with (id=%d; vendor=%d) succesfully built!\n", data_id, vendor);
+	LM_DBG("Hep chunk with (id=%d; vendor=%d) successfully built!\n", data_id, vendor);
 
 	if (hep_msg->u.hepv3.chunk_list) {
 		hep_chunk->next = hep_msg->u.hepv3.chunk_list;

@@ -785,7 +785,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 			/* connect succeeded, we have a connection */
-			LM_DBG( "Succesfully connected from interface %s:%d to %s:%d!\n",
+			LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
@@ -849,7 +849,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				}
 			}
 
-			LM_DBG( "Succesfully connected from interface %s:%d to %s:%d!\n",
+			LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 		}

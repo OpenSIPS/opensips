@@ -587,7 +587,7 @@ static int parse_collections(unsigned int type, void* val)
 
 	while ((rc=get_next_collection(&collection_list, &coll, &coll_size)) != 0) {
 		if ( rc < 0 ) {
-			LM_ERR("error occured!\n");
+			LM_ERR("error occurred!\n");
 			return -1;
 		}
 

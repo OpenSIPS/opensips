@@ -796,7 +796,7 @@ static struct mi_root* mi_teardown_call(struct mi_root* cmd_tree,
 		if (dlg_end_dlg==NULL) {
 			LM_ERR("cannot find 'dlg_end_dlg' MI command - "
 				"is dialog module loaded ??\n");
-			return init_mi_tree( 503, MI_SSTR("Comand not available") );
+			return init_mi_tree( 503, MI_SSTR("Command not available") );
 		}
 	}
 

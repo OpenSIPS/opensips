@@ -390,7 +390,7 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	if (!c)
 		return -3;
 
-	/* message succesfully sent - now fetch the reply */
+	/* message successfully sent - now fetch the reply */
 	do {
 		ret = cgrc_async_read(c, f, p);
 	} while(async_status == ASYNC_CONTINUE);
@@ -467,7 +467,7 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 			continue;
 		}
 		cp->c = c;
-		/* message succesfully sent - now fetch the reply */
+		/* message successfully sent - now fetch the reply */
 		if (CGRC_IS_DEFAULT(c)) {
 			/* reset the error */
 			CGR_RESET_REPLY_CTX();
@@ -851,7 +851,7 @@ str *cgr_get_dst(struct sip_msg *msg, char *dst_p)
 			return &dst;
 	}
 	if(msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg)<0) {
-		LM_ERR("cannot parse Requst URI!\n");
+		LM_ERR("cannot parse Request URI!\n");
 		return NULL;
 	}
 	return &msg->parsed_uri.user;

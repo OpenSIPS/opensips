@@ -207,7 +207,7 @@ static int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
 		memcpy(f_curr->val.s, k_val.s, k_val.len);
 		f_curr->val.s[f_curr->val.len] = 0;
 
-		LM_DBG("coverted key <%.*s>(%p) + val <%.*s>(%p) at %p \n",
+		LM_DBG("converted key <%.*s>(%p) + val <%.*s>(%p) at %p \n",
 			f_curr->key.len, f_curr->key.s, f_curr->key.s,
 			f_curr->val.len, f_curr->val.s, f_curr->val.s,
 			f_curr);
@@ -474,14 +474,14 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				 *   - the process which performed the subscription
 				 * Let's give it to ourselves for the moment */
 				if (ipc_send_job( process_no, ebr_ipc_type , (void*)job)<0) {
-					LM_ERR("faild to send job via IPC, skipping...\n");
+					LM_ERR("failed to send job via IPC, skipping...\n");
 					shm_free(job);
 				}
 			} else {
 				/* sent the event notification via IPC to resume on the
 				 * subscribing process */
 				if (ipc_send_job( sub->proc_no, ebr_ipc_type , (void*)job)<0) {
-					LM_ERR("faild to send job via IPC, skipping...\n");
+					LM_ERR("failed to send job via IPC, skipping...\n");
 					shm_free(job);
 				}
 				/* remove the subscription, as it can be triggered only 
