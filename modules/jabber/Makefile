@@ -13,8 +13,12 @@ NAME=jabber.so
 DEFS+=-DXJ_EXTRA_DEBUG
 # -DHAVE_IHTTP
 
+ifeq ($(CROSS_COMPILE),)
+LIBS=-lexpat
+else
 # expat.h location
 DEFS+=-I$(LOCALBASE)/include
 LIBS=-L$(LOCALBASE)/lib -lexpat
+endif
 
 include ../../Makefile.modules

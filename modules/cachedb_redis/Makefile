@@ -9,7 +9,11 @@ include ../../Makefile.defs
 auto_gen=
 NAME=cachedb_redis.so
 
+ifeq ($(CROSS_COMPILE),)
+LIBS=-lhiredis
+else
 DEFS+=-I$(LOCALBASE)/include
 LIBS=-L$(LOCALBASE)/lib -lhiredis
+endif
 
 include ../../Makefile.modules
