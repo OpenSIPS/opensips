@@ -1,4 +1,4 @@
-opensips (2.3.0-1) unstable; urgency=medium
+opensips (2.4.0-1) unstable; urgency=medium
 
   * New upstream release.
   * debian/rules:
@@ -15,6 +15,6 @@ opensips (2.3.0-1) unstable; urgency=medium
     + Add copyright info for cgrates module files.
     + Add copyright info for rabbitmq module files.
 
- -- Răzvan Crainea <razvan@opensips.org>  Thu, 12 Jan 2017 16:20:44 +0200
+ -- Răzvan Crainea <razvan@opensips.org>  Fri, 14 Apr 2017 12:20:44 +0200
 
 
