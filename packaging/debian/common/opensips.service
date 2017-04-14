@@ -1,5 +1,6 @@
 [Unit]
 Description=OpenSIPS SIP Server
+Documentation=man:opensips
 After=network.target mysqld.service postgresql.service rtpproxy.service
 
 [Service]

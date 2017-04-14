@@ -99,10 +99,10 @@ Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
   2006 Julien Blache <jblache@debian.org>
   2009 Bjoern Boschman <bjoern@boschman.de>
   2009 Bogdan Iancu <bogan@voice-system.ro>
-  2014-2015 Julián Moreno Patiño <julian@debian.org>
+  2014-2017 Julián Moreno Patiño <julian@debian.org>
   2011 Daniel Echeverry <epsilon77@gmail.com>
   2011 Alejandro Rios P. <alerios@debian.org>
-  2015 Răzvan Crainea <razvan@opensips.org>
+  2015-2017 Răzvan Crainea <razvan@opensips.org>
 License: GPL-2+
 
 Files: doc/dbschema/xsl/pi_framework_mod.xsl
@@ -314,6 +314,10 @@ License: GPL-2+
 Files: modules/cfgutils/shvar.c
   modules/cfgutils/shvar.h
 Copyright: 2007, Elena-Ramona Modroiu
+License: GPL-2+
+
+Files: modules/clusterer/*
+Copyright: 2011-2016, OpenSIPS Project
 License: GPL-2+
 
 Files: modules/compression/*
@@ -534,6 +538,10 @@ Files: modules/event_datagram/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
+Files: modules/event_flatstore/*
+Copyright: 2011-2016, OpenSIPS Project
+License: GPL-2+
+
 Files: modules/event_rabbitmq/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
@@ -545,6 +553,10 @@ License: GPL-2+
 Files: modules/event_route/event_route.c
   modules/event_route/event_route.h
 Copyright: 2011-2015, OpenSIPS Solutions
+License: GPL-2+
+
+Files: modules/event_virtual/*
+Copyright: 2011-2016, OpenSIPS Project
 License: GPL-2+
 
 Files: modules/event_xmlrpc/*
@@ -710,14 +722,6 @@ Files: modules/path/*
 Copyright: 2006 Inode GmbH
 License: GPL-2+
 
-Files: modules/pdt/*
-Copyright: 2005, Voice Sistem SRL (Voice-System.RO)
-License: GPL-2+
-
-Files: modules/pdt/pdt.c
-Copyright: 2001-2007, FhG Fokus
-License: GPL-2+
-
 Files: modules/peering/*
 Copyright: 2001-2008, Juha Heinanen
 License: GPL-2+
@@ -836,6 +840,16 @@ License: GPL-2+
 
 Files: modules/presence_xml/*
 Copyright: 2006-2009, Voice Sistem S.R.L
+License: GPL-2+
+
+Files: modules/proto_bin/*
+Copyright: 2015, OpenSIPS Foundation
+  2001-2003, FhG Fokus
+License: GPL-2+
+
+Files: modules/proto_hep/*
+Copyright: 2015, OpenSIPS Foundation
+  2001-2003, FhG Fokus
 License: GPL-2+
 
 Files: modules/proto_sctp/*
@@ -1026,9 +1040,11 @@ Copyright: 2004, 2006, Voice Sistem
 License: GPL-2+
 
 Files: modules/sl/sl_api.h
-  modules/sl/sl_cb.c
-  modules/sl/sl_cb.h
 Copyright: 2004-2009, Voice Sistem SRL
+License: GPL-2+
+
+Files: sl_cb.c sl_cb.h
+Copyright: 2016, OpenSIPS Solutions
 License: GPL-2+
 
 Files: modules/sms/*
@@ -1056,6 +1072,14 @@ Files: modules/speeddial/*
 Copyright: 2004-2009, Voice Sistem SRL
 License: GPL-2+
 
+Files: modules/sql_cacher/*
+Copyright: 2015, OpenSIPS Foundation
+License: GPL-2+
+
+Files: modules/db_sqlite/*
+Copyright: 2015, OpenSIPS Foundation
+License: GPL-2+
+
 Files: modules/sst/*
 Copyright: 2006-2008, SOMA Networks, Inc
 License: GPL-2+
@@ -1072,6 +1096,17 @@ Files: modules/stun/*
 Copyright: 2009, Voice Sistem SRL
   2009, Razvan
 License: GPL-2+
+
+Files: modules/tls_mgm/*
+Copyright: 2005 Voice Sistem SRL
+  2005 Cesc Santasusana
+  2006 enum.at
+  2013 Secusmart GmbH
+  2014, 2015, OpenSIPS Foundation
+  2001-2003, FhG Fokus
+  2004, 2005, Free Software Foundation, Inc
+  2005, 2006, iptelorg GmbH
+License: GPL-2+ with OpenSSL exception
 
 Files: modules/tm/async.c
   modules/tm/async.h
@@ -1342,9 +1377,10 @@ Files: parser/parse_min_expires.c
 Copyright: 2011, VoIP Embedded, Inc. <http:www.voipembedded.com/>
 License: GPL-2+
 
-Files: parser/parse_multipart.c
-  parser/parse_multipart.h
+Files: parser/parse_body.c
+  parser/parse_body.h
 Copyright: 2004-2009, Voice Sistem SRL
+  2016, OpenSIPS Solutions
 License: GPL-2+
 
 Files: parser/parse_replaces.c

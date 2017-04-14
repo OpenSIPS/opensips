@@ -1,1 +1,2 @@
-opensips: python-script-but-no-python-dep usr/lib/x86_64-linux-gnu/opensips/opensipsctl/dbtextdb/dbtextdb.py
+# it is not a typo, but a valid string generated inside the binary
+opensips binary: spelling-error-in-binary usr/lib/x86_64-linux-gnu/opensips/modules/sms.so lengH length

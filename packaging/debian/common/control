@@ -1,47 +1,47 @@
 Source: opensips
 Section: net
 Priority: optional
-Maintainer: Razvan Crainea <razvan@opensips.org>
+Maintainer: Răzvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
                debhelper (>= 9),
+               default-libmysqlclient-dev,
                dh-systemd (>= 1.5),
-               dh-python,
                dpkg-dev (>= 1.16.1.1),
                flex,
                libconfuse-dev,
                libcurl4-gnutls-dev,
                libdb-dev (>= 4.6.19),
                libexpat1-dev,
-               libfreeradius-client-dev,
                libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
                libjson-c-dev,
                libldap2-dev,
-               liblua5.1-dev,
+               liblua5.1-0-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
-               libmysqlclient-dev,
                libncurses5-dev,
                libpcre3-dev,
                libperl-dev,
                libpq-dev,
                librabbitmq-dev,
-               libsctp-dev,
+               libradcli-dev,
+               libsctp-dev [linux-any],
                libsnmp-dev,
+               libsqlite3-dev,
+               libssl-dev,
                libxml2-dev,
-               libxmlrpc-core-c3-dev,
                pkg-config,
                python,
                unixodbc-dev,
                xsltproc,
                zlib1g-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 Homepage: http://www.opensips.org/
 
 Package: opensips
 Architecture: any
 Multi-Arch: foreign
-Depends: adduser, ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
+Depends: adduser, python, ${misc:Depends}, ${shlibs:Depends}
 Suggests: opensips-b2bua-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
@@ -69,8 +69,9 @@ Suggests: opensips-b2bua-module,
           opensips-redis-module,
           opensips-regex-module,
           opensips-restclient-module,
-          opensips-sctp-module,
+          opensips-sctp-module [linux-any],
           opensips-snmpstats-module,
+          opensips-sqlite-module,
           opensips-tls-module,
           opensips-wss-module,
           opensips-tlsmgm-module,
@@ -112,7 +113,7 @@ Description: very fast and configurable SIP server [debug symbols]
 Package: opensips-mysql-module
 Architecture: any
 Multi-Arch: same
-Depends: virtual-mysql-client,
+Depends: default-mysql-client | virtual-mysql-client,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -136,6 +137,17 @@ Description: PostgreSQL database connectivity module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the PostgreSQL database driver for OpenSIPS.
+
+Package: opensips-sqlite-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: SQLite database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SQLite database driver for OpenSIPS.
 
 Package: opensips-jabber-module
 Architecture: any
@@ -427,12 +439,7 @@ Description: Support for XML documents handling in OpenSIPS script
 Package: opensips-console
 Architecture: any
 Multi-Arch: foreign
-Depends: libberkeleydb-perl,
-         libfrontier-rpc-perl,
-         libnet-ip-perl,
-         libterm-readline-perl-perl,
-         opensips (= ${binary:Version}),
-         ${misc:Depends}
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${perl:Depends}
 Suggests: opensips-berkeley-module,
           opensips-mysql-module,
           opensips-postgres-module,
@@ -478,12 +485,12 @@ Package: opensips-lua-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: LUA extensions for OpenSIPS
+Description: Lua extensions for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides an interface for OpenSIPS to utilize LUA extensions.
+ This package provides an interface for OpenSIPS to utilize Lua extensions.
 
 Package: opensips-http-modules
 Architecture: any
@@ -531,10 +538,7 @@ Description: Emerrgency call module for OpenSIPS
 Package: opensips-tlsmgm-module
 Architecture: any
 Multi-Arch: same
-Depends: libssl-dev,
-         opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: TLS management module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -545,8 +549,7 @@ Description: TLS management module for OpenSIPS
 Package: opensips-tls-module
 Architecture: any
 Multi-Arch: same
-Depends: libssl-dev,
-         opensips (= ${binary:Version}),
+Depends: opensips (= ${binary:Version}),
          opensips-tlsmgm-module (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -560,8 +563,7 @@ Description: TLS transport module for OpenSIPS
 Package: opensips-wss-module
 Architecture: any
 Multi-Arch: same
-Depends: libssl-dev,
-         opensips (= ${binary:Version}),
+Depends: opensips (= ${binary:Version}),
          opensips-tlsmgm-module (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -573,10 +575,9 @@ Description: WebSocket Secure (WSS) transport module for OpenSIPS
  This package provides the WebSocket Secure (WSS) support for OpenSIPS.
 
 Package: opensips-sctp-module
-Architecture: any
+Architecture: linux-any
 Multi-Arch: same
-Depends: libsctp-dev,
-         opensips (= ${binary:Version}),
+Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: SCTP transport module for OpenSIPS
@@ -589,10 +590,7 @@ Description: SCTP transport module for OpenSIPS
 Package: opensips-restclient-module
 Architecture: any
 Multi-Arch: same
-Depends: libcurl4-gnutls-dev,
-         opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: REST client module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
