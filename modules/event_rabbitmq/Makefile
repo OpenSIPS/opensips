@@ -11,16 +11,15 @@ RABBITMQ_BUILDER = $(shell \
 	if pkg-config --exists librabbitmq; then \
 		echo 'pkg-config librabbitmq'; \
 	fi)
-endif
 
-ifeq ($(RABBITMQ_BUILDER),)
-	DEFS+=-I$(LOCALBASE)/include
-	LIBS=-L$(LOCALBASE)/lib -lrabbitmq
-else
+ifneq ($(RABBITMQ_BUILDER),)
 	DEFS += $(shell $(RABBITMQ_BUILDER) --cflags)
 	LIBS += $(shell $(RABBITMQ_BUILDER) --libs)
 endif
-
+else
+	DEFS+=-I$(LOCALBASE)/include
+	LIBS=-L$(LOCALBASE)/lib -lrabbitmq
+endif
 
 include ../../Makefile.modules
 

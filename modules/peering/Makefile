@@ -7,7 +7,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=peering.so
-DEFS+= -DWITH_RADIUS_SUPPORT -I$(LOCALBASE)/include
-LIBS=
+DEFS+= -DWITH_RADIUS_SUPPORT
 
 include ../../Makefile.modules
