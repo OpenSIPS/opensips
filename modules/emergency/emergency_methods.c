@@ -410,7 +410,7 @@ void routing_timer(unsigned int ticks, void *attr) {
 
 
 /*
- * - verifying the expiration for packet loss ( timing values are diferent for ACK and BYE)
+ * - verifying the expiration for packet loss ( timing values are different for ACK and BYE)
  * - if there is an expiration the module sends a POST informing the VPC to exclude the number
  *   the key ESQK is retreived from the list calls_eme
  */

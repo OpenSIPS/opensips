@@ -268,7 +268,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 			goto sync;
 		}
 	} else if (async_status==ASYNC_NO_FD) {
-		/* async was succesfully launched but without a FD resume
+		/* async was successfully launched but without a FD resume
 		 * in this case, we need to push the async ctx back to the
 		 * function, so it can trigger the resume later, by itself */
 	} else if (async_status==ASYNC_NO_IO) {

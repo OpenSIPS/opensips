@@ -141,7 +141,7 @@ modparam("mi_json", "trace_bwlist", "w: sip_trace")
 
    This is an example showing the JSON format for the
    “get_statistics net: uri:” MI command. Notice how the
-   paramaters are comma-separated then URI-encoded.
+   parameters are comma-separated then URI-encoded.
 
    Example 1.4. JSON request
 

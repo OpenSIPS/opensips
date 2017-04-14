@@ -755,14 +755,14 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
             to send the message.
        You can also specify these flags using PVs. The flags are
        being kept per partition.
-       The second paramater, max_results represents that only a
+       The second parameter, max_results represents that only a
        maximum of max_results will be put into the specified avp
        for failover. This allows having many destinations but
        limit the useless traffic in case of a number that is bound
-       to fail everywhere. Since version 2.1, the last paramater
+       to fail everywhere. Since version 2.1, the last parameter
        cand be represented by a list of flags and max_results,
        separated by comma. You can specify either only the flags,
-       either only the max_results paramater, but if you want to
+       either only the max_results parameter, but if you want to
        specify them together you have to use the 'M' character
        like this: flags M max_results.
 

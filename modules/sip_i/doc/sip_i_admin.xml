@@ -523,7 +523,7 @@ if ($rs == "183") {
 					<para>ISDN user part preference indicator</para>
 					<itemizedlist>
 						<listitem>
-							<para><emphasis>prefered</emphasis> - 0</para>
+							<para><emphasis>preferred</emphasis> - 0</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>not required</emphasis> - 1</para>

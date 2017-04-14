@@ -138,7 +138,7 @@ modparam("mc", "mc_level", "3")
        where to put the result of the compression. The flags
        parameter can have the following types:
           + string - the flags parameter is statically assigned
-          + pvar - the flags paramater is the value of an existing
+          + pvar - the flags parameter is the value of an existing
             pseudo-variable (as string value)
        The flags parameter can have the following values:
           + “b” - specifies that the body of the message shall be

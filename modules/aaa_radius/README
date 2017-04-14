@@ -222,7 +222,7 @@ modparam("aaa_radius", "fetch_all_values", 1)
 
    The function return TRUE (retcode 1) if authentication was
    successful, FALSE (retcode -1) if an error (any kind of error)
-   occured during authentication processes or FALSE (retcode -2)
+   occurred during authentication processes or FALSE (retcode -2)
    if authentication was rejected or denied by RADIUS server.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -288,7 +288,7 @@ radius_send_acct("set1");
 
    The function return TRUE (retcode 1) if authentication was
    successful, FALSE (retcode -1) if an error (any kind of error)
-   occured during authentication processes or FALSE (retcode -2)
+   occurred during authentication processes or FALSE (retcode -2)
    if authentication was rejected or denied by RADIUS server.
 
    Example 1.7. radius_send_auth usage

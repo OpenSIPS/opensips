@@ -156,7 +156,7 @@ modparam("mc", "mc_level", "3")
 			</listitem>
 
 			<listitem>
-			<para><emphasis>pvar</emphasis> - the flags paramater is the value of an
+			<para><emphasis>pvar</emphasis> - the flags parameter is the value of an
 			existing pseudo-variable (as string value)
 			</para>
 			</listitem>

@@ -165,7 +165,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 		subfield_s.len = in->len - param_s.len - 1;
 
 		if (!subfield_s.len) {
-			LM_ERR("Bad subfield for ISUP paramater: %.*s\n", param_s.len, param_s.s);
+			LM_ERR("Bad subfield for ISUP parameter: %.*s\n", param_s.len, param_s.s);
 			return -1;
 		}
 

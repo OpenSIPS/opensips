@@ -102,7 +102,7 @@ static struct isup_subfield forward_call_ind_subf[] = {
 	{str_init("ISDN user part indicator"), {2,
 		{str_init("not all the way"), str_init("all the way")}, {0,1}}},
 	{str_init("ISDN user part preference indicator"), {3,
-		{str_init("prefered"), str_init("not required"), str_init("required")}, {0,1,2}}},
+		{str_init("preferred"), str_init("not required"), str_init("required")}, {0,1,2}}},
 	{str_init("ISDN access indicator"), {2,
 		{str_init("non-ISDN"), str_init("ISDN")}, {0,1}}},
 	{str_init("SCCP method indicator"), {4,

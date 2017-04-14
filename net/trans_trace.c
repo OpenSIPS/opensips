@@ -42,8 +42,8 @@ static struct sip_msg dummy_req;
 
 /* error reasons */
 str AS_CONNECT_INIT = str_init("Async connect in progress...");
-str CONNECT_OK = str_init("Succesfully connected...");
-str ASYNC_CONNECT_OK = str_init("Succesfully connected asynchronously...");
+str CONNECT_OK = str_init("Successfully connected...");
+str ASYNC_CONNECT_OK = str_init("Successfully connected asynchronously...");
 str ACCEPT_OK = str_init("Connection accepted...");
 str ACCEPT_FAIL = str_init("Failed to accept connection...");
 str CONNECT_FAIL = str_init("Failed to connect...");

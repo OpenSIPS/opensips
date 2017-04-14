@@ -352,7 +352,7 @@ migrating earlier DB versions (1.8, 1.9, 1.10, 1.11, 2.1) to 2.3 is undefined"
 				fi
 			fi
 			sql_query $DBNAME ".backup $2"
-			minfo "Copy succesfully completed"
+			minfo "Copy successfully completed"
 			exit $?
 		fi
 		shift

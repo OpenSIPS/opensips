@@ -132,7 +132,7 @@ int async_fd_resume(int *fd, void *param)
 			goto done;
 		} else {
 
-			/* succesfully changed fd */
+			/* successfully changed fd */
 			return 0;
 		}
 	}
@@ -213,7 +213,7 @@ int async_launch_resume(int *fd, void *param)
 			goto run_route;
 		} else {
 
-			/* succesfully changed fd */
+			/* successfully changed fd */
 			goto restore;
 		}
 	}
@@ -279,7 +279,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		/* async I/O was successfully launched */
 		fd = async_status;
 	} else if (async_status==ASYNC_NO_FD) {
-		/* async was succesfully launched but without a FD resume
+		/* async was successfully launched but without a FD resume
 		 * in this case, we need to push the async ctx back to the
 		 * function, so it can trigger the resume later, by itself */
 	} else if (async_status==ASYNC_NO_IO) {

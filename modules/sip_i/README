@@ -327,7 +327,7 @@ ators)");
                o not all the way - 0
                o all the way - 1
           + ISDN user part preference indicator
-               o prefered - 0
+               o preferred - 0
                o not required - 1
                o required - 2
           + ISDN access indicator

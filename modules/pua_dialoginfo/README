@@ -162,7 +162,7 @@ Chapter 1. Admin Guide
    sure if it should use the URI in the identity element or the
    URI in the target parameter) which contains a Replaces header
    which contains the call-id and the tags. This was tested
-   sucessfully with Linksys SPA962 phones and with SNOM 320
+   successfully with Linksys SPA962 phones and with SNOM 320
    Firmware 7.3.7 (you have to set the function key to
    "Extension").
 

@@ -218,7 +218,7 @@ static int handle_reconnects(int first_run)
 			continue;
 		}
 
-		LM_DBG("sucessfully connected to FS!\n");
+		LM_DBG("successfully connected to FS!\n");
 
 		if (!box->handle->connected) {
 			LM_BUG("FS connect");
@@ -235,7 +235,7 @@ static int handle_reconnects(int first_run)
 		}
 
 		LM_DBG("answer: %s\n", box->handle->last_sr_reply);
-		LM_DBG("sucessfully enabled HEARTBEAT events!\n");
+		LM_DBG("successfully enabled HEARTBEAT events!\n");
 
 		if (reactor_add_reader(box->handle->sock, F_FS_STATS,
 		                       RCT_PRIO_TIMER, box) < 0) {

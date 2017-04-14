@@ -794,7 +794,7 @@ static int mod_init(void)
 			LM_ERR("hep id not found!\n");
 			return -1;
 		}
-		LM_DBG("hep id {%.*s} loaded succesfully!\n",
+		LM_DBG("hep id {%.*s} loaded successfully!\n",
 					it->el.hep.name.len, it->el.hep.name.s);
 	}
 

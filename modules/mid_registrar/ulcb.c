@@ -164,7 +164,7 @@ void mid_reg_ct_event(void *binding, int type, void **data)
 		*data = get_ct();
 
 	if (type & UL_CONTACT_UPDATE) {
-		LM_DBG("settting e_out to %d\n", get_ct()->expires_out);
+		LM_DBG("setting e_out to %d\n", get_ct()->expires_out);
 		mri->expires_out = get_ct()->expires_out;
 	}
 

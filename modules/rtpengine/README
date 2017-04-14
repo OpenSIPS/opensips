@@ -624,7 +624,7 @@ rtpengine_start_recording();
    The second parameter value must be a number in decimal.
 
    NOTE: if a RTP proxy is defined multiple times (in the same or
-   diferente sete), all of its instances will be enables/disabled.
+   different set), all of its instances will be enables/disabled.
 
    Example 1.16.  rtpengine_enable usage
 ...
@@ -685,7 +685,7 @@ Chapter 2. Frequently Asked Questions
 rtpengine_offer("force trust-address symmetric replace-origin replace-se
 ssion-connection ICE=force RTP/SAVPF");
 
-   Finally, if you were using the second paramater (explicit media
+   Finally, if you were using the second parameter (explicit media
    address) to any of these functions, this has been replaced by
    the "media-address=..." option within the first string of
    flags.
