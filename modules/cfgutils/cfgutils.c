@@ -59,7 +59,7 @@
 #include "env_var.h"
 #include "script_locks.h"
 
-#if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
+#if (defined __OS_linux) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 8)
 	#include <sys/timerfd.h>  /* for timer FD */
 	#define HAVE_TIMER_FD 1
 #else
