@@ -37,7 +37,7 @@ ALL_MODPKG_LIST := \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
 	PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
-	SQLITE CGRATES XML
+	SQLITE CGRATES XML MONGODB
 # add SCTP only on linux systems
 ifeq ($(DEB_HOST_ARCH_OS),linux)
 	ALL_MODPKG_LIST += PROTO_SCTP
@@ -165,6 +165,9 @@ CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
 XML_PKGNAME = opensips-xml-module
 XML_MODULES = xml
 XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
+MONGODB_PKGNAME = opensips-mongodb-module
+MONGODB_MODULES = cachedb_mongodb
+MONGODB_MOD_PATH=$(addprefix modules/, $(MONGODB_MODULES))
 
 
 # Need this per-package variables available in environment so accessible

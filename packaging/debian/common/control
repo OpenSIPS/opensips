@@ -19,6 +19,7 @@ Build-Depends: bison,
                liblua5.1-0-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
+               libmongoc-dev,
                libncurses5-dev,
                libpcre3-dev,
                libperl-dev,
@@ -61,6 +62,7 @@ Suggests: opensips-b2bua-module,
           opensips-lua-module,
           opensips-memcached-module,
           opensips-mysql-module,
+          opensips-mongodb-module,
           opensips-perl-modules,
           opensips-postgres-module,
           opensips-presence-modules,
@@ -608,3 +610,15 @@ Description: CGRateS connector for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides a connnector to the CGRateS rating/billing engine.
+
+Package: opensips-mongodb-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Interface module to interact with a MongoDB server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module is an implementation of a cache system designed to work with
+ MongoDB servers.
