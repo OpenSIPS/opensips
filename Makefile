@@ -49,7 +49,7 @@ tls_overwrite_certs?=
 
 
 makefile_defs=0
-DEFS?=
+DEFS:= $(DEFS_EXTRA_OPTS)
 DEBUG_PARSER?=
 
 # json libs check
