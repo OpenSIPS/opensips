@@ -1,6 +1,8 @@
 opensips (2.4.0-1) unstable; urgency=medium
 
   * New upstream release.
+  * Renamed parser/parse_multipart.* to parser/parse_body.*.
+  * Add Documentation tag to systemd service file.
   * debian/rules:
     + Add packaging for the xml module.
     + Add packaging for the cgrates module.
@@ -9,11 +11,13 @@ opensips (2.4.0-1) unstable; urgency=medium
     + Add new opensips-xml-module.
     + Add new opensips-cgrates-module.
     + Rename opensips-rabbitmq-module to opensips-rabbitmq-modules.
+    + Change LUA capitalization to Lua.
   * debian/copyright:
     + Add copyright info for xml module files.
     + Add copyright info for wss module files.
     + Add copyright info for cgrates module files.
     + Add copyright info for rabbitmq module files.
+    + Add copyright info for parser/parse_body.* files.
 
  -- Răzvan Crainea <razvan@opensips.org>  Fri, 14 Apr 2017 12:20:44 +0200
 

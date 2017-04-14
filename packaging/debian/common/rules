@@ -13,6 +13,7 @@
 #	upstreamcflags -- don't set cflags, let upstream package Makefile do it
 
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
@@ -35,8 +36,12 @@ ALL_MODPKG_LIST := \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
-	PROTO_SCTP PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
-	CGRATES XML
+	PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
+	SQLITE CGRATES XML
+# add SCTP only on linux systems
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+	ALL_MODPKG_LIST += PROTO_SCTP
+endif
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -58,6 +63,9 @@ POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
 UNIXODBC_PKGNAME = opensips-unixodbc-module
 UNIXODBC_MODULES=db_unixodbc
 UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
+SQLITE_PKGNAME = opensips-sqlite-module
+SQLITE_MODULES = db_sqlite
+SQLITE_MOD_PATH=$(addprefix modules/, $(SQLITE_MODULES))
 JABBER_PKGNAME = opensips-jabber-module
 JABBER_MODULES = jabber
 JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
@@ -173,9 +181,6 @@ BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 ## Everything we don't specifically exclude here will get built into the primary package
 NONCORE_MODULES = $(ALL_MODULES) osp
 
-# https://wiki.debian.org/ReproducibleBuilds/
-CC_EXTRA_OPTS += -DVERSION_NODATE
-
 ifeq (cc, $(CC))
 	CC = gcc
 endif
@@ -192,24 +197,35 @@ else
 endif
 endif
 
-# inherit variables from dpkg-builder
-BUILD_CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
-BUILD_CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
-CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
-LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
+# disable thumb mode for armhf architecture
+ifeq (armhf, $(DEB_HOST_ARCH))
+	CFLAGS += -marm
+endif
 
 # https://wiki.debian.org/ReproducibleBuilds/
 CFLAGS += -DVERSION_NODATE
 
+# add hardening flags
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
+
+# inherit variables from dpkg-builder
+CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
+CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
+LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
+
 # force multiach lib path and SMP support all the time
 VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
 
-# Debian Jessie doesn't package radius-ng, so use freeradius instead
-VARS += FREERADIUS=yes
+# Only radcli is supported now
+VARS += RADIUSCLIENT=RADCLI
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
+
+# Enable verbose compile logs
+VARS += NICER=0
 
 # support parallel compiling
 NJOBS =
@@ -308,5 +324,5 @@ get-orig-source:
 
 # generic rule
 %:
-	dh $@ --with python2
+	dh $@ --with systemd
 
