@@ -1,0 +1,331 @@
+#!/usr/bin/make -f
+# 2010/08/24: Allow building of individual modules (kennard)
+# 2015/08/14: Change URL to github sources
+
+# To control which packages get built, set BUILD_MODPKG_LIST to list
+# of packages to build (see ALL_MODPKG_LIST for candiate names).  Set to
+# 'NONE' to not build any module packages (the primary package is always
+# built). By default all delcared packages (debian/control) will be built.
+
+
+# Supported DEB_BUILD_OPTIONS:
+#	noopt,nostrip,debug -- standard
+#	upstreamcflags -- don't set cflags, let upstream package Makefile do it
+
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+DEBVERSION:=$(shell head -n 1 debian/changelog \
+                    | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
+UPVERSION:=$(shell echo $(DEBVERSION) | sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
+
+FILENAME := opensips_$(UPVERSION).orig.tar.gz
+URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
+
+# Uncomment this to turn on verbose mode.
+# export DH_VERBOSE=1
+
+# List of all debian module packages we will build
+# Used to index the make variable below, which has details about each package
+#
+# LUA has been removed due to libmemcache dependency.
+#     See https://github.com/OpenSIPS/opensips/issues/580
+ALL_MODPKG_LIST := \
+	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
+	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
+	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
+	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
+	PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
+	SQLITE CGRATES XML MONGODB
+# add SCTP only on linux systems
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+	ALL_MODPKG_LIST += PROTO_SCTP
+endif
+
+ifeq ($(BUILD_MODPKG_LIST),NONE)
+override BUILD_MODPKG_LIST :=
+else
+ifeq ($(BUILD_MODPKG_LIST),)
+override BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
+endif
+endif
+
+# FOO_MODULES is the directory name within modules/ that belongs to the package
+# FOO_MOD_PATH is same as FOO_MODULES, but with 'modules/' prepended
+
+MYSQL_PKGNAME = opensips-mysql-module
+MYSQL_MODULES = db_mysql
+MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
+POSTGRES_PKGNAME = opensips-postgres-module
+POSTGRES_MODULES = db_postgres
+POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
+UNIXODBC_PKGNAME = opensips-unixodbc-module
+UNIXODBC_MODULES=db_unixodbc
+UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
+SQLITE_PKGNAME = opensips-sqlite-module
+SQLITE_MODULES = db_sqlite
+SQLITE_MOD_PATH=$(addprefix modules/, $(SQLITE_MODULES))
+JABBER_PKGNAME = opensips-jabber-module
+JABBER_MODULES = jabber
+JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
+CPL_PKGNAME = opensips-cpl-module
+CPL_MODULES = cpl_c
+CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
+RADIUS_PKGNAME = opensips-radius-modules
+RADIUS_MODULES = aaa_radius peering
+RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
+PRESENCE_PKGNAME = opensips-presence-modules
+PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client
+PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
+XMLRPC_PKGNAME = opensips-xmlrpc-module
+XMLRPC_MODULES = mi_xmlrpc_ng
+XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
+PERL_PKGNAME = opensips-perl-modules
+PERL_MODULES = perl db_perlvdb
+PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
+SNMPSTATS_PKGNAME = opensips-snmpstats-module
+SNMPSTATS_MODULES = snmpstats
+SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
+XMPP_PKGNAME = opensips-xmpp-module
+XMPP_MODULES = xmpp
+XMPP_MOD_PATH=$(addprefix modules/, $(XMPP_MODULES))
+CROUTE_PKGNAME = opensips-carrierroute-module
+CROUTE_MODULES = carrierroute
+CROUTE_MOD_PATH=$(addprefix modules/, $(CROUTE_MODULES))
+BERKELEY_PKGNAME = opensips-berkeley-module
+BERKELEY_MODULES = db_berkeley
+BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
+LDAP_PKGNAME = opensips-ldap-modules
+LDAP_MODULES = ldap h350
+LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
+GEOIP_PKGNAME = opensips-geoip-module
+GEOIP_MODULES = mmgeoip
+GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
+REGEX_PKGNAME = opensips-regex-module
+REGEX_MODULES = regex
+REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
+IDENTITY_PKGNAME = opensips-identity-module
+IDENTITY_MODULES = identity
+IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
+B2BUA_PKGNAME = opensips-b2bua-module
+B2BUA_MODULES = b2b_entities b2b_logic
+B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
+DBHTTP_PKGNAME = opensips-dbhttp-module
+DBHTTP_MODULES = db_http
+DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
+DIALPLAN_PKGNAME = opensips-dialplan-module
+DIALPLAN_MODULES = dialplan
+DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
+MEMCACHED_PKGNAME = opensips-memcached-module
+MEMCACHED_MODULES = cachedb_memcached
+MEMCACHED_MOD_PATH=$(addprefix modules/, $(MEMCACHED_MODULES))
+REDIS_PKGNAME = opensips-redis-module
+REDIS_MODULES = cachedb_redis
+REDIS_MOD_PATH=$(addprefix modules/, $(REDIS_MODULES))
+CASSANDRA_PKGNAME = opensips-cassandra-module
+CASSANDRA_MODULES = cachedb_cassandra
+CASSANDRA_MOD_PATH=$(addprefix modules/, $(CASSANDRA_MODULES))
+RABBITMQ_PKGNAME = opensips-rabbitmq-modules
+RABBITMQ_MODULES = event_rabbitmq rabbitmq
+RABBITMQ_MOD_PATH=$(addprefix modules/, $(RABBITMQ_MODULES))
+LUA_PKGNAME = opensips-lua-module
+LUA_MODULES = lua
+LUA_MOD_PATH=$(addprefix modules/, $(LUA_MODULES))
+HTTP_PKGNAME = opensips-http-modules
+HTTP_MODULES = httpd mi_http pi_http mi_json
+HTTP_MOD_PATH=$(addprefix modules/, $(HTTP_MODULES))
+JSON_PKGNAME = opensips-json-module
+JSON_MODULES = json
+JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
+COMPRESSION_PKGNAME = opensips-compression-module
+COMPRESSION_MODULES = compression
+COMPRESSION_MOD_PATH=$(addprefix modules/, $(COMPRESSION_MODULES))
+EMERGENCY_PKGNAME = opensips-emergency-module
+EMERGENCY_MODULES = emergency
+EMERGENCY_MOD_PATH=$(addprefix modules/, $(EMERGENCY_MODULES))
+PROTO_SCTP_PKGNAME = opensips-sctp-module
+PROTO_SCTP_MODULES = proto_sctp
+PROTO_SCTP_MOD_PATH=$(addprefix modules/, $(PROTO_SCTP_MODULES))
+PROTO_TLS_PKGNAME = opensips-tls-module
+PROTO_TLS_MODULES = proto_tls
+PROTO_TLS_MOD_PATH=$(addprefix modules/, $(PROTO_TLS_MODULES))
+PROTO_WSS_PKGNAME = opensips-wss-module
+PROTO_WSS_MODULES = proto_wss
+PROTO_WSS_MOD_PATH=$(addprefix modules/, $(PROTO_WSS_MODULES))
+TLS_MGM_PKGNAME = opensips-tlsmgm-module
+TLS_MGM_MODULES = tls_mgm
+TLS_MGM_MOD_PATH=$(addprefix modules/, $(TLS_MGM_MODULES))
+REST_CLIENT_PKGNAME = opensips-restclient-module
+REST_CLIENT_MODULES = rest_client
+REST_CLIENT_MOD_PATH=$(addprefix modules/, $(REST_CLIENT_MODULES))
+CGRATES_PKGNAME = opensips-cgrates-module
+CGRATES_MODULES = cgrates
+CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
+XML_PKGNAME = opensips-xml-module
+XML_MODULES = xml
+XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
+MONGODB_PKGNAME = opensips-mongodb-module
+MONGODB_MODULES = cachedb_mongodb
+MONGODB_MOD_PATH=$(addprefix modules/, $(MONGODB_MODULES))
+
+
+# Need this per-package variables available in environment so accessible
+# to shell. Since have underscore in them, need to explicitly export
+export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
+
+# not needed anymore
+#ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME)) \
+#	opensips-console
+ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
+BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
+
+## modules not in the "main" package or unstable modules that we never want to build
+## Everything we don't specifically exclude here will get built into the primary package
+NONCORE_MODULES = $(ALL_MODULES) osp
+
+ifeq (cc, $(CC))
+	CC = gcc
+endif
+
+ifneq (,$(findstring upstreamcflags,$(DEB_BUILD_OPTIONS)))
+CFLAGS=
+else
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+        CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+endif
+
+# disable thumb mode for armhf architecture
+ifeq (armhf, $(DEB_HOST_ARCH))
+	CFLAGS += -marm
+endif
+
+# https://wiki.debian.org/ReproducibleBuilds/
+CFLAGS += -DVERSION_NODATE
+
+# add hardening flags
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
+
+# inherit variables from dpkg-builder
+CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
+CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
+LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
+
+# force multiach lib path and SMP support all the time
+VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
+
+# Only radcli is supported now
+VARS += RADIUSCLIENT=RADCLI
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+# Enable verbose compile logs
+VARS += NICER=0
+
+# support parallel compiling
+NJOBS =
+FASTER =
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	NJOBS = -j $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	FASTER = 1
+endif
+
+override_dh_auto_build:
+	# Add here commands to compile the package.
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) app \
+	  modules skip_modules="$(NONCORE_MODULES)" cfg_target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg_target=/etc/opensips/
+	# generate the utils db_berkeley
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
+
+	touch build-stamp
+
+override_dh_auto_clean:
+	dh_auto_clean -- $(VARS) include_modules="$(ALL_MODULES)" proper
+	rm -f cfg.tab.h
+	rm -f Makefile.conf
+	rm -f utils/opensipsunix/opensipsunix.o utils/opensipsunix/opensipsunix
+	rm -f utils/db_berkeley/bdb_recover.o utils/db_berkeley/bdb_recover
+
+show-env:
+	env
+
+show-mod-info:
+	set -e;\
+	for mod in $(ALL_MODPKG_LIST) ; do\
+	    eval mod_pkgname=\$$$${mod}_PKGNAME;\
+	    eval mod_modules=\$$$${mod}_MODULES;\
+	    eval mod_paths=\$$$${mod}_MOD_PATH;\
+	    echo "MODULE $${mod} AS $${mod_pkgname} FROM $${mod_modules} PATHS $${mod_paths}";\
+	done
+	@echo "ALL_MOD_PATHS: $(ALL_MODULE_PATHS)"
+
+override_dh_auto_install:
+	# Add here commands to install the package into debian/opensips
+	# opensips base package
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install \
+		install-modules-all skip_modules="$(NONCORE_MODULES)" \
+		basedir=$(CURDIR)/debian/opensips \
+		prefix=/usr \
+		cfg_prefix=$(CURDIR)/debian/opensips \
+		cfg_target=/etc/opensips/ \
+		doc_dir=share/doc/opensips \
+		skip-install-doc=yes # skip INSTALL.gz on debian systems
+
+	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
+	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/usr/sbin/opensipsctl
+
+	set -e;\
+	for pkg in $(BUILD_MODPKG_LIST) ; do\
+	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
+	    eval pkg_modules=\$$$${pkg}_MODULES;\
+	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
+	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-all \
+		modules="$${pkg_paths}"  \
+		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
+		prefix=/usr \
+		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname} \
+		cfg_target=/etc/opensips/ \
+		doc_dir=share/doc/$${pkg_pkgname} \
+		;\
+	done
+
+	# move console binary from opensips to opensips-console
+	mkdir -p $(CURDIR)/debian/opensips-console/usr/sbin
+	mv $(CURDIR)/debian/opensips/usr/sbin/osipsconsole \
+		 $(CURDIR)/debian/opensips-console/usr/sbin/
+	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
+	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/usr/
+	mv $(CURDIR)/debian/opensips-berkeley-module/usr/sbin \
+		$(CURDIR)/debian/opensips-berkeley-bin/usr/
+
+override_dh_strip:
+	dh_strip --dbg-package=opensips-dbg
+
+override_dh_auto_test:
+	#Disable tests, too old and they are obsolete
+
+print-version:
+	@@echo "Debian version:          $(DEBVERSION)"
+	@@echo "Upstream version:        $(UPVERSION)"
+	@@echo "Upstream URL:            $(URL)"
+
+get-orig-source:
+	@@dh_testdir
+	@@echo Downloading $(FILENAME) from $(URL) ...
+	@@wget -N -nv -T10 -t3 -O ../$(FILENAME) $(URL)
+
+# generic rule
+%:
+	dh $@ --with systemd
+
