@@ -47,12 +47,14 @@ enum tls_method {
 
 extern int      tls_log;
 extern int      tls_method;
+extern int      crl_check_all;
 
 extern int      tls_verify_client_cert;
 extern int      tls_verify_server_cert;
 extern int      tls_require_client_cert;
 extern char    *tls_cert_file;
 extern char    *tls_pkey_file;
+extern char    *tls_crl_directory;
 extern char    *tls_ca_file;
 extern char    *tls_ca_dir;
 extern char    *tls_tmp_dh_file;
