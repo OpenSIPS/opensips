@@ -516,6 +516,9 @@ void print_action(struct action* t)
 		case FORCE_SEND_SOCKET_T:
 				LM_DBG("force_send_socket");
 				break;
+		case FORCE_SEND_ADDRESS_T:
+				LM_DBG("force_send_address");
+				break;
 		case RETURN_T:
 				LM_DBG("return(");
 				break;

@@ -191,6 +191,7 @@ IN              "in"
 SET_ADV_ADDRESS	"set_advertised_address"
 SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
+FORCE_SEND_ADDRESS	"force_send_address"
 SERIALIZE_BRANCHES	"serialize_branches"
 NEXT_BRANCHES	"next_branches"
 USE_BLACKLIST	"use_blacklist"
@@ -523,6 +524,8 @@ IMPORTFILE      "import_file"
 										return SET_ADV_PORT; }
 <INITIAL>{FORCE_SEND_SOCKET}	{	count(); yylval.strval=yytext;
 									return FORCE_SEND_SOCKET; }
+<INITIAL>{FORCE_SEND_ADDRESS}	{	count(); yylval.strval=yytext;
+									return FORCE_SEND_ADDRESS; }
 <INITIAL>{SERIALIZE_BRANCHES}	{	count(); yylval.strval=yytext;
 									return SERIALIZE_BRANCHES; }
 <INITIAL>{NEXT_BRANCHES}	{	count(); yylval.strval=yytext;

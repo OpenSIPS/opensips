@@ -265,6 +265,7 @@ extern char *finame;
 %token SET_ADV_ADDRESS
 %token SET_ADV_PORT
 %token FORCE_SEND_SOCKET
+%token FORCE_SEND_ADDRESS
 %token SERIALIZE_BRANCHES
 %token NEXT_BRANCHES
 %token USE_BLACKLIST
@@ -2917,6 +2918,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								" [proto:]host[:port] expected");
 								}
 		| FORCE_SEND_SOCKET error {$$=0; yyerror("missing '(' or ')' ?"); }
+		| FORCE_SEND_ADDRESS LPAREN listen_id RPAREN {
+								mk_action2( $$, FORCE_SEND_ADDRESS_T, STR_ST,
+											0, $3, 0);
+								}
+		| FORCE_SEND_ADDRESS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
+														"string expected"); }
+		| FORCE_SEND_ADDRESS error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| SERIALIZE_BRANCHES LPAREN NUMBER RPAREN {
 								mk_action2( $$, SERIALIZE_BRANCHES_T,
 									NUMBER_ST, 0, (void*)(long)$3, 0);

@@ -494,6 +494,22 @@ static int fix_actions(struct action* a)
 				t->elem[0].u.data=si;
 				t->elem[0].type=SOCKETINFO_ST;
 				break;
+			case FORCE_SEND_ADDRESS_T:
+				s.s = (char *)t->elem[0].u.data;
+				if (s.s == NULL) {
+					LM_ERR("null param in force_send_address\n");
+					ret = E_BUG;
+					goto error;
+				}
+				s.len = strlen(s.s);
+				if (pv_parse_format(&s, &model) || model == NULL) {
+					LM_ERR("wrong format for [%.*s] address param!\n",
+					       t->elem[1].u.s.len, t->elem[1].u.s.s);
+					ret = E_BUG;
+					goto error;
+				}
+				t->elem[0].u.data = (void *)model;
+				break;
 			case SET_DEBUG_T:
 				if (t->elem[0].type==NOSUBTYPE)
 					break;
