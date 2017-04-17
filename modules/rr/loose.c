@@ -409,9 +409,11 @@ static inline int handle_sr(struct sip_msg* _m, struct hdr_field* _hdr, rr_t* _r
 	int rem_len;
 
 	/* Next hop is strict router, save R-URI here */
-	if (save_ruri(_m) < 0) {
-		LM_ERR("failed to save Request-URI\n");
-		return -1;
+	if (_r->next) {
+		if (save_ruri(_m) < 0) {
+			LM_ERR("failed to save Request-URI\n");
+			return -1;
+		}
 	}
 
 	/* Put the first Route in Request-URI */
