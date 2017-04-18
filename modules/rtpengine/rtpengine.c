@@ -1107,7 +1107,11 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				continue;
 
 			case 8:
-				if (str_eq(&key, "RTP/AVPF"))
+				if (str_eq(&key, "internal"))
+					bencode_list_add_string(ng_flags->direction, "internal");
+				else if (str_eq(&key, "external"))
+					bencode_list_add_string(ng_flags->direction, "external");
+				else if (str_eq(&key, "RTP/AVPF"))
 					ng_flags->transport = 0x102;
 				else if (str_eq(&key, "RTP/SAVP"))
 					ng_flags->transport = 0x101;
