@@ -1,17 +1,18 @@
 Source: opensips
 Section: net
 Priority: optional
-Maintainer: Răzvan Crainea <razvan@opensips.org>
+Maintainer: Razvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
                debhelper (>= 9),
-               default-libmysqlclient-dev,
                dh-systemd (>= 1.5),
+               dh-python,
                dpkg-dev (>= 1.16.1.1),
                flex,
                libconfuse-dev,
                libcurl4-gnutls-dev,
                libdb-dev (>= 4.6.19),
                libexpat1-dev,
+               libfreeradius-client-dev,
                libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
                libjson-c-dev,
@@ -19,17 +20,16 @@ Build-Depends: bison,
                liblua5.1-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
+               libmysqlclient-dev,
                libncurses5-dev,
                libpcre3-dev,
                libperl-dev,
                libpq-dev,
                librabbitmq-dev,
-               libradcli-dev,
-               libsctp-dev [linux-any],
+               libsctp-dev,
                libsnmp-dev,
-               libsqlite3-dev,
-               libssl-dev,
                libxml2-dev,
+               libxmlrpc-core-c3-dev,
                pkg-config,
                python,
                unixodbc-dev,
@@ -68,9 +68,8 @@ Suggests: opensips-b2bua-module,
           opensips-redis-module,
           opensips-regex-module,
           opensips-restclient-module,
-          opensips-sctp-module [linux-any],
+          opensips-sctp-module,
           opensips-snmpstats-module,
-          opensips-sqlite-module,
           opensips-tls-module,
           opensips-wss-module,
           opensips-tlsmgm-module,
@@ -112,7 +111,7 @@ Description: very fast and configurable SIP server [debug symbols]
 Package: opensips-mysql-module
 Architecture: any
 Multi-Arch: same
-Depends: default-mysql-client,
+Depends: mysql-client,
          opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -136,17 +135,6 @@ Description: PostgreSQL database connectivity module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the PostgreSQL database driver for OpenSIPS.
-
-Package: opensips-sqlite-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SQLite database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SQLite database driver for OpenSIPS.
 
 Package: opensips-jabber-module
 Architecture: any
@@ -521,7 +509,7 @@ Description: Emerrgency call module for OpenSIPS
  per second even on low-budget hardware.
  .
  The emergency module provides emergency call treatment for OpenSIPS, following
- the architecture i2 specification of the American entity NENA. (National
+ the architecture i2 specification of the american entity NENA. (National
  Emergency Number Association).
 
 Package: opensips-tlsmgm-module

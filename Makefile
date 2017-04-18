@@ -433,7 +433,8 @@ deb-orig-tar: tar
 deb-%:
 	rm -rf debian
 	# dpkg-source cannot use links for debian source
-	cp -r packaging/debian/$(@:deb-%=%) debian
+	cp -r packaging/debian/common debian
+	[ "$@" = "deb-common" ] || cp -r packaging/debian/$(@:deb-%=%)/* debian
 	dpkg-buildpackage \
 		-I.git -I.gitignore \
 		-I*.swp -I*~ \
