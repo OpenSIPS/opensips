@@ -48,6 +48,10 @@
 #include "../../rw_locking.h"
 
 
+#define TLS_DEF_CLI_DOM_ID "default_client_domain"
+#define TLS_DEF_SRV_DOM_ID "default_server_domain"
+
+
 /*
  * TLS configuration domain type
  */
@@ -66,8 +70,8 @@ enum tls_domain_type {
 
 extern struct tls_domain **tls_server_domains;
 extern struct tls_domain **tls_client_domains;
-extern struct tls_domain tls_default_server_domain;
-extern struct tls_domain tls_default_client_domain;
+extern struct tls_domain **tls_default_server_domain;
+extern struct tls_domain **tls_default_client_domain;
 
 extern rw_lock_t *dom_lock;
 
@@ -100,12 +104,14 @@ struct tls_domain *tls_find_client_domain_name(str name);
 /*
  * create a new server domain (identified by socket)
  */
-int tls_new_server_domain(str *id, struct ip_addr *ip, unsigned short port, struct tls_domain **dom);
+int tls_new_server_domain(str *id, struct ip_addr *ip, unsigned short port,
+							struct tls_domain **dom);
 
 /*
  * create a new client domain (identified by socket)
  */
-int tls_new_client_domain(str *id, struct ip_addr *ip, unsigned short port, struct tls_domain **dom);
+int tls_new_client_domain(str *id, struct ip_addr *ip, unsigned short port,
+							struct tls_domain **dom);
 
 /*
  * create a new client domain (identified by string)
@@ -125,8 +131,15 @@ void  tls_free_domains(void);
 
 void tls_release_domain(struct tls_domain* dom);
 
+void tls_release_domain_aux(struct tls_domain *dom);
+
 struct tls_domain *tls_release_db_domains(struct tls_domain* dom);
 
-int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,  str* blob_vals);
+int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
+							str* blob_vals);
+
+int aloc_default_doms_ptr(void);
+
+int tls_new_default_domain(int type, struct tls_domain **dom);
 
 #endif

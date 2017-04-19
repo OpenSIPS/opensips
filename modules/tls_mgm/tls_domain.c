@@ -40,8 +40,8 @@
 
 struct tls_domain **tls_server_domains;
 struct tls_domain **tls_client_domains;
-struct tls_domain tls_default_server_domain;
-struct tls_domain tls_default_client_domain;
+struct tls_domain **tls_default_server_domain;
+struct tls_domain **tls_default_client_domain;
 
 rw_lock_t *dom_lock;
 
@@ -93,8 +93,7 @@ struct tls_domain *tls_release_db_domains(struct tls_domain *dom)
 
 void tls_release_domain(struct tls_domain* dom)
 {
-	if (!dom || !(dom->type & TLS_DOMAIN_DB) || dom == &tls_default_server_domain ||
-		dom == &tls_default_client_domain)
+	if (!dom || (!(dom->type & TLS_DOMAIN_DB) && !(dom->type & TLS_DOMAIN_DEF)))
 		return;
 
 	if (dom_lock)
@@ -106,7 +105,8 @@ void tls_release_domain(struct tls_domain* dom)
 		lock_stop_write(dom_lock);
 }
 
-int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals, str* blob_vals)
+int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
+							str* blob_vals)
 {
 	size_t len;
 	char *p;
@@ -115,9 +115,10 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	size_t cplist_len = strlen(str_vals[STR_VALS_CPLIST_COL]);
 	size_t crl_dir_len = strlen(str_vals[STR_VALS_CRL_DIR_COL]);
 	size_t eccurve_len = strlen(str_vals[STR_VALS_ECCURVE_COL]);
+	char id_buf[255];
+	int id_len;
 
-
-	len = sizeof(struct tls_domain) +d->id.len;
+	len = sizeof(struct tls_domain) + d->id.len;
 
 	if (cadir_len)
 		len += cadir_len + 1;
@@ -142,6 +143,9 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 
 	if(blob_vals[BLOB_VALS_DHPARAMS_COL].len && blob_vals[BLOB_VALS_DHPARAMS_COL].s)
 		len += blob_vals[BLOB_VALS_DHPARAMS_COL].len;
+
+	memcpy(id_buf, d->id.s, d->id.len);
+	id_len = d->id.len;
 
 	d = shm_realloc(d, len);
 	if (d == NULL) {
@@ -174,9 +178,13 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 
 	p = (char *) (d + 1);
 
+	d->id.s = p;
+	d->id.len = id_len;
+	memcpy(p, id_buf, id_len);
+
 	p = p + d->id.len;
 
-	memset(p, 0, len - (sizeof(struct tls_domain) +d->id.len));
+	memset(p, 0, len - (sizeof(struct tls_domain) + d->id.len));
 
 	if (cadir_len) {
 		d->ca_directory = p;
@@ -234,6 +242,7 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	return 0;
 }
 
+
 /*
  * find server domain with given ip and port
  * return default domain if virtual domain not found
@@ -262,13 +271,17 @@ tls_find_server_domain(struct ip_addr *ip, unsigned short port)
 		p = p->next;
 	}
 
+	lock_get((*tls_default_server_domain)->lock);
+	(*tls_default_server_domain)->refs++;
+	lock_release((*tls_default_server_domain)->lock);
+
 	if (dom_lock)
 		lock_stop_read(dom_lock);
 
 	LM_DBG("virtual TLS server domain not found, "
 		"Using default TLS server domain settings\n");
 
-	return &tls_default_server_domain;
+	return *tls_default_server_domain;
 }
 
 /*
@@ -288,7 +301,7 @@ tls_find_client_domain_addr(struct ip_addr *ip, unsigned short port)
 	}
 	LM_DBG("virtual TLS client domain not found, "
 		"Using default TLS client domain settings\n");
-	return &tls_default_client_domain;
+	return *tls_default_client_domain;
 }
 
 /*
@@ -356,7 +369,7 @@ struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short por
 		}
 	}
 
-	if (dom && dom != &tls_default_client_domain && dom->type & TLS_DOMAIN_DB) {
+	if (dom && (dom->type & TLS_DOMAIN_DB || dom->type & TLS_DOMAIN_DEF)) {
 		lock_get(dom->lock);
 		dom->refs++;
 		lock_release(dom->lock);
@@ -371,7 +384,7 @@ struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short por
 /*
  * create a new server domain (identified by a socket)
  */
-int tls_new_server_domain( str *id, struct ip_addr *ip, unsigned short port,
+int tls_new_server_domain(str *id, struct ip_addr *ip, unsigned short port,
 								struct tls_domain **dom)
 {
 	struct tls_domain *d;
@@ -449,6 +462,55 @@ int tls_new_client_domain_name( str *id, str *domain, struct tls_domain **dom)
 	return 0;
 }
 
+int aloc_default_doms_ptr(void)
+{
+	if (!tls_default_server_domain) {
+		tls_default_server_domain = shm_malloc(sizeof *tls_default_server_domain);
+		if (!tls_default_server_domain) {
+			LM_ERR("No more shm mem\n");
+			return -1;
+		}
+		*tls_default_server_domain = NULL;
+	}
+
+	if (!tls_default_client_domain) {
+		tls_default_client_domain = shm_malloc(sizeof *tls_default_client_domain);
+		if (!tls_default_client_domain) {
+			LM_ERR("No more shm mem\n");
+			return -1;
+		}
+		*tls_default_client_domain = NULL;
+	}
+
+	return 0;
+}
+
+int tls_new_default_domain(int type, struct tls_domain **dom)
+{
+	struct tls_domain *d;
+	str id_cli = str_init(TLS_DEF_CLI_DOM_ID);
+	str id_srv = str_init(TLS_DEF_SRV_DOM_ID);
+	str *id = NULL;
+
+	if (type == TLS_DOMAIN_SRV)
+		id = &id_srv;
+	else if (type == TLS_DOMAIN_CLI)
+		id = &id_cli;
+
+	d = tls_new_domain(id, type | TLS_DOMAIN_DEF);
+	if (!d) {
+		LM_ERR("pkg memory allocation failure\n");
+		return -1;
+	}
+
+	d->refs = 1;
+	d->addr.af = AF_INET;
+
+	*dom = d;
+
+	return 0;
+}
+
 /*
  * allocate memory and set default values for
  * TLS domain structure
@@ -465,8 +527,8 @@ struct tls_domain *tls_new_domain( str *id, int type)
 		return 0;
 	}
 
-	memset( d, 0, sizeof(struct tls_domain));
-	
+	memset(d, 0, sizeof(struct tls_domain));
+
 	d->lock = lock_alloc();
 	
 	if (!d->lock){
@@ -483,7 +545,7 @@ struct tls_domain *tls_new_domain( str *id, int type)
 
 	d->id.s = (char*)(d+1);
 	d->id.len = id->len;
-	memcpy( d->id.s, id->s, id->len);
+	memcpy(d->id.s, id->s, id->len);
 
 	d->type = type;
 	d->crl_check_all = crl_check_all;

@@ -103,7 +103,8 @@ int tlsp_set_dhparams(modparam_t type, void *val);
 int tlsp_set_eccurve(modparam_t type, void *val);
 
 int tlsp_db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
-    struct tls_domain **serv_dom, struct tls_domain **cli_dom);
+    struct tls_domain **serv_dom, struct tls_domain **cli_dom,
+    struct tls_domain **def_serv_dom, struct tls_domain **def_cli_dom);
 
 #endif
 
