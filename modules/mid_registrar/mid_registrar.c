@@ -250,7 +250,7 @@ static int registrar_fixup(void** param, int param_no)
 		/* AoR */
 		return fixup_sgp(param);
 	case 4:
-		/* outbound registration interval */
+		/* outgoing registration interval */
 		return fixup_igp(param);
 	}
 
