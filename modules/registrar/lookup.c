@@ -188,7 +188,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		return -3;
 	}
 
-	get_act_time();
+	update_act_time();
 
 	ul.lock_udomain((udomain_t*)_t, &aor);
 	res = ul.get_urecord((udomain_t*)_t, &aor, &r);
@@ -215,7 +215,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	/* look first for an un-expired and suported contact */
 search_valid_contact:
 	while ( (ptr) &&
-	!(VALID_CONTACT(ptr,act_time) && (ret=-2) && allowed_method(_m,ptr,flags)))
+	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(_m,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
 		/* nothing found */
@@ -261,7 +261,7 @@ search_valid_contact:
 
 		it = ptr->next;
 		while ( it ) {
-			if (VALID_CONTACT(it,act_time)) {
+			if (VALID_CONTACT(it,get_act_time())) {
 				if (it->instance.len-2 == sip_instance.len && sip_instance.s &&
 						memcmp(it->instance.s+1,sip_instance.s,sip_instance.len) == 0)
 					if (it->last_modified > ptr->last_modified) {
@@ -341,7 +341,7 @@ search_valid_contact:
 
 	do {
 		for( ; ptr ; ptr = ptr->next ) {
-			if (VALID_CONTACT(ptr, act_time) && allowed_method(_m,ptr,flags)) {
+			if (VALID_CONTACT(ptr, get_act_time()) && allowed_method(_m,ptr,flags)) {
 				path_dst.len = 0;
 				if(ptr->path.s && ptr->path.len
 				&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
@@ -520,13 +520,13 @@ int is_registered(struct sip_msg* _m, char *_d, char* _a)
 	}
 
 	CHECK_DOMAIN(ud);
-	get_act_time();
+	update_act_time();
 
 	LM_DBG("checking aor <%.*s>\n",aor.len,aor.s);
 	ul.lock_udomain(ud, &aor);
 	if (ul.get_urecord(ud, &aor, &r) == 0) {
 		for ( c=r->contacts; c && (ret==NOT_FOUND); c=c->next ) {
-			if (VALID_CONTACT(c,act_time)) {
+			if (VALID_CONTACT(c,get_act_time())) {
 				/* populate the 'attributes' avp */
 				if (attr_avp_name != -1) {
 					istr.s = c->attr;

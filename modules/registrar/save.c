@@ -309,7 +309,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	}
 
 	if ( tcp_check && e_max>0 ) {
-		e_max -= act_time;
+		e_max -= get_act_time();
 		trans_set_dst_attr( &_m->rcv, DST_FCNTL_SET_LIFETIME,
 			(void*)(long)(e_max + 10) );
 	}
@@ -364,7 +364,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	if (_sctx->max_contacts) {
 		c = _r->contacts;
 		while(c) {
-			if (VALID_CONTACT(c, act_time)) num++;
+			if (VALID_CONTACT(c, get_act_time())) num++;
 			c = c->next;
 		}
 	}
@@ -402,7 +402,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					   so remove the oldest valid one to prevent this */
 					for( c_it=_r->contacts,c_last=NULL ; c_it ;
 					c_it=c_it->next )
-						if (VALID_CONTACT(c_it, act_time))
+						if (VALID_CONTACT(c_it, get_act_time()))
 							c_last=c_it;
 					if (c_last==NULL) {
 						LM_CRIT("BUG - overflow detected but no valid "
@@ -454,7 +454,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				/* do update */
 				/* if the contact to be updated is not valid, it will be after
 				 * update, so need to compensate the total number of contact */
-				if ( !VALID_CONTACT(c,act_time) )
+				if ( !VALID_CONTACT(c,get_act_time()) )
 					num++;
 				while ( _sctx->max_contacts && num>_sctx->max_contacts ) {
 					if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
@@ -463,7 +463,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 						   (but not the one to be updated !) */
 						for( c_it=_r->contacts,c_last=NULL ; c_it ;
 						c_it=c_it->next )
-							if (VALID_CONTACT(c_it, act_time) && c_it!=c)
+							if (VALID_CONTACT(c_it, get_act_time()) && c_it!=c)
 								c_last=c_it;
 						if (c_last==NULL) {
 							LM_CRIT("BUG - overflow detected but no "
@@ -513,7 +513,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	}
 
 	if ( tcp_check && e_max>-1 ) {
-		if (e_max) e_max -= act_time;
+		if (e_max) e_max -= get_act_time();
 		trans_set_dst_attr( &_m->rcv, DST_FCNTL_SET_LIFETIME,
 			(void*)(long)(e_max + 10) );
 	}
@@ -662,7 +662,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 		c = get_first_contact(_m);
 	}
 
-	get_act_time();
+	update_act_time();
 
 	if (_s) {
 		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {

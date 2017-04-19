@@ -104,7 +104,7 @@ static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
 {
 	int time_len,temp_gr_len;
 
-	int2str((unsigned long)act_time,&time_len);
+	int2str((unsigned long)get_act_time(),&time_len);
 	temp_gr_len = time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
 	temp_gr_len = (temp_gr_len/3 + (temp_gr_len%3?1:0))*4; /* base64 encoding */
 	return temp_gr_len;
@@ -123,7 +123,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 
 	len = 0;
 	while(c) {
-		if (VALID_CONTACT(c, act_time)) {
+		if (VALID_CONTACT(c, get_act_time())) {
 			if (len) len += CONTACT_SEP_LEN;
 			len += 2 /* < > */ + c->c.len;
 			qlen = len_q(c->q);
@@ -186,7 +186,7 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 {
 	int time_len,i;
 	char *p;
-	char *time_str = int2str((unsigned long)act_time,&time_len);
+	char *time_str = int2str((unsigned long)get_act_time(),&time_len);
 	str *magic;
 
 	*len = time_len + aor->len + instance->len + callid->len + 3 - 2; /* +3 blank spaces, -2 discarded chars of instance in memcpy below */
@@ -255,7 +255,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 
 	fl = 0;
 	while(c) {
-		if (VALID_CONTACT(c, act_time)) {
+		if (VALID_CONTACT(c, get_act_time())) {
 			if (fl) {
 				memcpy(p, CONTACT_SEP, CONTACT_SEP_LEN);
 				p += CONTACT_SEP_LEN;
@@ -278,7 +278,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 
 			memcpy(p, EXPIRES_PARAM, EXPIRES_PARAM_LEN);
 			p += EXPIRES_PARAM_LEN;
-			cp = int2str((int)(c->expires - act_time), &len);
+			cp = int2str((int)(c->expires - get_act_time()), &len);
 			memcpy(p, cp, len);
 			p += len;
 
