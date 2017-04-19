@@ -98,7 +98,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c,
 			}
 		}
 
-		ci.last_modified = act_time;
+		ci.last_modified = get_act_time();
 
 		/* set flags */
 		ci.flags  = _f;

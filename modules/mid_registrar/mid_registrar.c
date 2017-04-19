@@ -45,6 +45,8 @@
 
 #include "../../lib/reg/rerrno.h"
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/regtime.h"
+
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/msg_parser.h"

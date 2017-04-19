@@ -33,10 +33,12 @@
 #include "../../parser/parse_expires.h"
 #include "../../ut.h"
 #include "../../qvalue.h"
+
 #include "../../lib/reg/rerrno.h"
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/regtime.h"
+
 #include "reg_mod.h"                     /* Module parameters */
-#include "regtime.h"                     /* act_time */
 #include "sip_msg.h"
 
 
@@ -54,11 +56,11 @@ static inline int get_expires_hf(struct sip_msg* _m)
 		p = (exp_body_t*)_m->expires->parsed;
 		if (p->valid) {
 			if (p->val != 0) {
-				return p->val + act_time;
+				return p->val + get_act_time();
 			} else return 0;
-		} else return act_time + default_expires;
+		} else return get_act_time() + default_expires;
 	} else {
-		return act_time + default_expires;
+		return get_act_time() + default_expires;
 	}
 }
 
@@ -92,15 +94,15 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save
 			*_e = default_expires;
 		}
 		/* Convert to absolute value */
-		if (*_e != 0) *_e += act_time;
+		if (*_e != 0) *_e += get_act_time();
 	}
 
-	if ((*_e != 0) && ((*_e - act_time) < min_exp)) {
-		*_e = min_exp + act_time;
+	if ((*_e != 0) && ((*_e - get_act_time()) < min_exp)) {
+		*_e = min_exp + get_act_time();
 	}
 
-	if ((*_e != 0) && max_exp && ((*_e - act_time) > max_exp)) {
-		*_e = max_exp + act_time;
+	if ((*_e != 0) && max_exp && ((*_e - get_act_time()) > max_exp)) {
+		*_e = max_exp + get_act_time();
 	}
 }
 

@@ -32,6 +32,8 @@
 #include "../../ut.h"
 #include "../../data_lump.h"
 
+#include "../../lib/reg/regtime.h"
+
 #include "mid_registrar.h"
 #include "lookup.h"
 #include "encode.h"

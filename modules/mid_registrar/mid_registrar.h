@@ -140,9 +140,6 @@ void mri_free(struct mid_reg_info *mri);
 void set_ct(struct mid_reg_info *ct);
 struct mid_reg_info *get_ct(void);
 
-time_t get_act_time(void);
-void update_act_time(void);
-
 int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id);
 
 int get_expires_hf(struct sip_msg* _m);
