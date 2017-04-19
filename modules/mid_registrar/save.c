@@ -73,7 +73,10 @@ static struct {
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
 
-/* with the optionally added outbound timeout extension */
+/* with the optionally added outgoing timeout extension
+ *
+ * @_e: output param (UNIX timestamp) - expiration time on the main registrar
+ */
 void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
 {
 	if (!_ep || !_ep->body.len) {
@@ -84,7 +87,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 		}
 	}
 
-	/* extend outbound timeout, thus "throttling" heavy incoming traffic */
+	/* extend outgoing timeout, thus "throttling" heavy incoming traffic */
 	if (*_e > 0 && *_e < outgoing_expires)
 		*_e = outgoing_expires;
 
@@ -100,7 +103,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 		*_e = max_expires + get_act_time();
 	}
 
-	LM_DBG("outbound expires: %d\n", *_e);
+	LM_DBG("outgoing expires: %d\n", *_e);
 }
 
 static int trim_to_single_contact(struct sip_msg *msg, str *aor)
@@ -319,6 +322,9 @@ static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
 	return 0;
 }
 
+/*
+ * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
+ */
 void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
 {
 	if (!_ep || !_ep->body.len) {
