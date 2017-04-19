@@ -20,18 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
-/*!
- * \file
- * \brief SIP registrar module - Helper functions for Path support
- * \ingroup registrar
- */
-
 
 #include "../../data_lump.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
+
 #include "path.h"
-#include "reg_mod.h"
+#include "config.h"
 
 /*! \brief
  * Combines all Path HF bodies into one string.
@@ -111,4 +106,5 @@ error:
 	if(route) free_rr(&route);
 	return -1;
 }
+
 

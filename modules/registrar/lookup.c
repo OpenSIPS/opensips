@@ -40,9 +40,13 @@
 #include "../../parser/parse_rr.h"
 #include "../usrloc/usrloc.h"
 #include "../../parser/parse_from.h"
+
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/config.h"
+#include "../../lib/reg/ci.h"
+
 #include "common.h"
-#include "regtime.h"
 #include "reg_mod.h"
 #include "lookup.h"
 #include "sip_msg.h"

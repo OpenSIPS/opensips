@@ -1,7 +1,7 @@
 /*
- * SIP message related functions
+ * Helper functions for Path support.
  *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,39 +18,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
  */
 /*!
  * \file
- * \brief SIP registrar module - SIP message related functions
+ * \brief SIP registrar module - helper functions for Path support
  * \ingroup registrar
  */
 
+#ifndef __LIB_REG_PATH_H
+#define __LIB_REG_PATH_H
 
-#ifndef SIP_MSG_H
-#define SIP_MSG_H
-
-#include "../../qvalue.h"
 #include "../../parser/msg_parser.h"
-#include "../../parser/contact/parse_contact.h"
-
-struct save_ctx {
-	unsigned int flags;
-	str aor;
-	unsigned int max_contacts;
-	unsigned int min_expires;
-	unsigned int max_expires;
-};
 
 /*! \brief
- * Calculate absolute expires value per contact as follows:
- * 1) If the contact has expires value, use the value. If it
- *    is not zero, add actual time to it
- * 2) If the contact has no expires parameter, use expires
- *    header field in the same way
- * 3) If the message contained no expires header field, use
- *    the default value
+ * Extracts all Path header bodies into one string and
+ * checks if first hop is a loose router. It also extracts
+ * the received-param of the first hop if path_use_received is 1.
  */
-void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx);
+int build_path_vector(struct sip_msg *_m, str *path, str *received,
+			unsigned int flags);
 
-
-#endif /* SIP_MSG_H */
+#endif /* __LIB_REG_PATH_H */

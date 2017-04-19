@@ -35,7 +35,6 @@
 #include "save.h"
 #include "gruu.h"
 
-#include "../../lib/reg/rerrno.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/contact/contact.h"
@@ -49,8 +48,14 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+
 #include "../../lib/path.h"
+#include "../../lib/reg/ci.h"
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/path.h"
+
 #include "../../trim.h"
 
 #include "../usrloc/usrloc.h"
@@ -400,241 +405,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	}
 
 	LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
-	       ruri->len, ruri->s, mri->expires_out);
-}
-
-/*! \brief
- * Combines all Path HF bodies into one string.
- */
-int build_path_vector(struct sip_msg *_m, str *path, str *received,
-														unsigned int flags)
-{
-	static char buf[MAX_PATH_SIZE];
-	char *p;
-	struct hdr_field *hdr;
-	struct sip_uri puri;
-
-	rr_t *route = 0;
-
-	path->len = 0;
-	path->s = 0;
-	received->s = 0;
-	received->len = 0;
-
-	if(parse_headers(_m, HDR_EOH_F, 0) < 0) {
-		LM_ERR("failed to parse the message\n");
-		goto error;
-	}
-
-	for( hdr=_m->path,p=buf ; hdr ; hdr=hdr->sibling) {
-		/* check for max. Path length */
-		if( p-buf+hdr->body.len+1 >= MAX_PATH_SIZE) {
-			LM_ERR("Overall Path body exceeds max. length of %d\n",
-					MAX_PATH_SIZE);
-			goto error;
-		}
-		if(p!=buf)
-			*(p++) = ',';
-		memcpy( p, hdr->body.s, hdr->body.len);
-		p +=  hdr->body.len;
-	}
-
-	if (p!=buf) {
-		/* check if next hop is a loose router */
-		if (parse_rr_body( buf, p-buf, &route) < 0) {
-			LM_ERR("failed to parse Path body, no head found\n");
-			goto error;
-		}
-		if (parse_uri(route->nameaddr.uri.s,route->nameaddr.uri.len,&puri)<0){
-			LM_ERR("failed to parse the first Path URI\n");
-			goto error;
-		}
-		if (!puri.lr.s) {
-			LM_ERR("first Path URI is not a loose-router, not supported\n");
-			goto error;
-		}
-		if ( flags&REG_SAVE_PATH_RECEIVED_FLAG ) {
-			param_hooks_t hooks;
-			param_t *params;
-
-			if (parse_params(&(puri.params),CLASS_CONTACT,&hooks,&params)!=0){
-				LM_ERR("failed to parse parameters of first hop\n");
-				goto error;
-			}
-			if (hooks.contact.received)
-				*received = hooks.contact.received->body;
-			free_params(params);
-		}
-		free_rr(&route);
-	}
-
-	path->s = buf;
-	path->len = p-buf;
-	return 0;
-error:
-	if(route) free_rr(&route);
-	return -1;
-}
-
-/*! \brief
- * Fills the common part (for all contacts) of the info structure
- */
-static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
-    unsigned int _e, unsigned int _e_out, unsigned int _f, unsigned int _flags)
-{
-	static ucontact_info_t ci;
-	static str no_ua = str_init("n/a");
-	static str callid;
-	static str path_received = {0,0};
-	static str path;
-	static str received = {0,0};
-	static int received_found;
-	static unsigned int allowed, allow_parsed;
-	static struct sip_msg *m = 0;
-	static int_str attr_avp_value;
-	static struct usr_avp *avp_attr;
-	int_str val;
-
-	if (_m!=0) {
-		memset( &ci, 0, sizeof(ucontact_info_t));
-
-		/* Get callid of the message */
-		callid = _m->callid->body;
-		trim_trailing(&callid);
-		if (callid.len > CALLID_MAX_SIZE) {
-			rerrno = R_CALLID_LEN;
-			LM_ERR("callid too long\n");
-			goto error;
-		}
-		ci.callid = &callid;
-
-		/* Get CSeq number of the message */
-		if (str2int(&get_cseq(_m)->number, (unsigned int*)&ci.cseq) < 0) {
-			rerrno = R_INV_CSEQ;
-			LM_ERR("failed to convert cseq number\n");
-			goto error;
-		}
-
-		ci.sock = _m->rcv.bind_address;
-
-		/* additional info from message */
-		if (parse_headers(_m, HDR_USERAGENT_F, 0) != -1 && _m->user_agent &&
-		_m->user_agent->body.len>0 && _m->user_agent->body.len<UA_MAX_SIZE) {
-			ci.user_agent = &_m->user_agent->body;
-		} else {
-			ci.user_agent = &no_ua;
-		}
-
-		/* extract Path headers */
-		if ( _flags&REG_SAVE_PATH_FLAG ) {
-			if (build_path_vector(_m, &path, &path_received, _flags) < 0) {
-				rerrno = R_PARSE_PATH;
-				goto error;
-			}
-			if (path.len && path.s) {
-				ci.path = &path;
-				/* save in msg too for reply */
-				if (set_path_vector(_m, &path) < 0) {
-					rerrno = R_PARSE_PATH;
-					goto error;
-				}
-			}
-		}
-
-		ci.last_modified = get_act_time();
-
-		/* set flags */
-		ci.flags  = _f;
-		ci.cflags =  getb0flags(_m);
-
-		/* get received */
-		if (path_received.len && path_received.s) {
-			ci.cflags |= ul_api.nat_flag;
-			ci.received = path_received;
-		}
-
-		allow_parsed = 0; /* not parsed yet */
-		received_found = 0; /* not found yet */
-		m = _m; /* remember the message */
-	}
-
-	if(_c!=0) {
-		/* Calculate q value of the contact */
-		if (calc_contact_q(_c->q, &ci.q) < 0) {
-			rerrno = R_INV_Q;
-			LM_ERR("failed to calculate q\n");
-			goto error;
-		}
-
-		/* set expire time */
-		ci.expires = _e + get_act_time();
-		ci.expires_out = _e_out;
-
-		/* Get methods of contact */
-		if (_c->methods) {
-			if (parse_methods(&(_c->methods->body), &ci.methods) < 0) {
-				rerrno = R_PARSE;
-				LM_ERR("failed to parse contact methods\n");
-				goto error;
-			}
-		} else {
-			/* check on Allow hdr */
-			if (allow_parsed == 0) {
-				if (m && parse_allow( m ) != -1) {
-					allowed = get_allow_methods(m);
-				} else {
-					allowed = ALL_METHODS;
-				}
-				allow_parsed = 1;
-			}
-			ci.methods = allowed;
-		}
-
-		if (_c->instance) {
-			ci.instance = _c->instance->body;
-		}
-
-		/* get received */
-		if (ci.received.len==0) {
-			if (_c->received) {
-				ci.received = _c->received->body;
-			} else {
-				if (received_found==0) {
-					memset(&val, 0, sizeof(int_str));
-					if (rcv_avp_name>=0
-								&& search_first_avp(rcv_avp_type, rcv_avp_name, &val, 0)
-								&& val.s.len > 0) {
-						if (val.s.len>RECEIVED_MAX_SIZE) {
-							rerrno = R_CONTACT_LEN;
-							LM_ERR("received too long\n");
-							goto error;
-						}
-						received = val.s;
-					} else {
-						received.s = 0;
-						received.len = 0;
-					}
-					received_found = 1;
-				}
-				ci.received = received;
-			}
-		}
-
-		/* additional information (script pvar) */
-		if (attr_avp_name != -1) {
-			avp_attr = search_first_avp(attr_avp_type, attr_avp_name,
-										&attr_avp_value, NULL);
-			if (avp_attr) {
-				ci.attr = &attr_avp_value.s;
-
-				LM_DBG("Attributes: %.*s\n", ci.attr->len, ci.attr->s);
-			}
-		}
-	}
-
-	return &ci;
-error:
-	return 0;
+	       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
 }
 
 int replace_response_expires(struct sip_msg *msg, contact_t *ct, int expires)
@@ -1057,11 +828,13 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
-		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
+		ci = pack_ci(req, __c, e + get_act_time(), cflags, mri->flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
+		ci->expires_out = e_out;
+		ci->cflags |= ul_api.nat_flag;
 
 		if ((r->contacts==0 ||
 		ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c)!=0) && e > 0) {
@@ -1266,11 +1039,13 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
-		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
+		ci = pack_ci(req, __c, e + get_act_time(), cflags, mri->flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
+		ci->expires_out = e_out;
+		ci->cflags |= ul_api.nat_flag;
 
 		if ((r->contacts == NULL ||
 		    ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c) != 0) && e > 0) {
@@ -1935,10 +1710,11 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, 0, cflags))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, 0, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
+	ci->cflags |= ul_api.nat_flag;
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
@@ -1968,12 +1744,14 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 				return 1;
 			} else {
 				/* pack the contact specific info */
-				ci = pack_ci(msg, ct, e, c->expires_out, 0, cflags);
+				ci = pack_ci(msg, ct, e + get_act_time(), 0, cflags);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
 					return -1;
 				}
+				ci->expires_out = c->expires_out;
+				ci->cflags |= ul_api.nat_flag;
 
 				if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 					rerrno = R_UL_UPD_C;
@@ -2054,10 +1832,11 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, 0, 0, cflags))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, 0, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
+	ci->cflags |= ul_api.nat_flag;
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
@@ -2090,12 +1869,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e, c->expires_out, 0, cflags);
+			ci = pack_ci(req, ct, e + get_act_time(), 0, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
 				return -1;
 			}
+			ci->expires_out = c->expires_out;
+			ci->cflags |= ul_api.nat_flag;
 
 			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
@@ -2112,12 +1893,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e, e_out, 0, cflags);
+			ci = pack_ci(req, ct, e + get_act_time(), 0, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
 				return -1;
 			}
+			ci->expires_out = e_out;
+			ci->cflags |= ul_api.nat_flag;
 
 			if (ul_api.insert_ucontact(urec, &ct->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;

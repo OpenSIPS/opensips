@@ -59,14 +59,18 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../usrloc/usrloc.h"
+
 #include "../../lib/reg/rerrno.h"
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/ci.h"
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/config.h"
+#include "../../lib/reg/path.h"
+
 #include "common.h"
 #include "sip_msg.h"
 #include "reply.h"
 #include "reg_mod.h"
-#include "regtime.h"
-#include "path.h"
 #include "save.h"
 #include "lookup.h"
 
@@ -114,48 +118,6 @@ static inline int star(udomain_t* _d, struct save_ctx *_sctx,
 }
 
 
-/*! \brief
- */
-static struct socket_info *get_sock_hdr(struct sip_msg *msg)
-{
-	struct socket_info *sock;
-	struct hdr_field *hf;
-	str socks;
-	str hosts;
-	int port;
-	int proto;
-
-	if (parse_headers( msg, HDR_EOH_F, 0) == -1) {
-		LM_ERR("failed to parse message\n");
-		return 0;
-	}
-
-	hf = get_header_by_name( msg, sock_hdr_name.s, sock_hdr_name.len);
-	if (hf==0)
-		return 0;
-
-	trim_len( socks.len, socks.s, hf->body );
-	if (socks.len==0)
-		return 0;
-
-	if (parse_phostport( socks.s, socks.len, &hosts.s, &hosts.len,
-	&port, &proto)!=0) {
-		LM_ERR("bad socket <%.*s> in \n",
-			socks.len, socks.s);
-		return 0;
-	}
-	set_sip_defaults( port, proto);
-	sock = grep_sock_info(&hosts,(unsigned short)port,(unsigned short)proto);
-	if (sock==0) {
-		LM_ERR("non-local socket <%.*s>\n",	socks.len, socks.s);
-		return 0;
-	}
-
-	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port,sock );
-
-	return sock;
-}
-
 
 
 /*! \brief
@@ -185,172 +147,50 @@ static inline int no_contacts(udomain_t* _d, str* _a,struct sip_msg *_m)
 	return 0;
 }
 
-
-
 /*! \brief
- * Fills the common part (for all contacts) of the info structure
  */
-static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
-						unsigned int _e, unsigned int _f, unsigned int _flags)
+static int set_sock_hdr(struct sip_msg *msg, ucontact_info_t *ci,
+                        unsigned int reg_flags)
 {
-	static ucontact_info_t ci;
-	static str no_ua = str_init("n/a");
-	static str callid;
-	static str path_received = {0,0};
-	static str path;
-	static str received = {0,0};
-	static int received_found;
-	static unsigned int allowed, allow_parsed;
-	static struct sip_msg *m = 0;
-	static int_str attr_avp_value;
-	static struct usr_avp *avp_attr;
-	int_str val;
+	struct socket_info *sock;
+	struct hdr_field *hf;
+	str socks;
+	str hosts;
+	int port;
+	int proto;
 
-	if (_m!=0) {
-		memset( &ci, 0, sizeof(ucontact_info_t));
+	if (!msg || !(reg_flags & REG_SAVE_SOCKET_FLAG))
+		return 1;
 
-		/* Get callid of the message */
-		callid = _m->callid->body;
-		trim_trailing(&callid);
-		if (callid.len > CALLID_MAX_SIZE) {
-			rerrno = R_CALLID_LEN;
-			LM_ERR("callid too long\n");
-			goto error;
-		}
-		ci.callid = &callid;
-
-		/* Get CSeq number of the message */
-		if (str2int(&get_cseq(_m)->number, (unsigned int*)&ci.cseq) < 0) {
-			rerrno = R_INV_CSEQ;
-			LM_ERR("failed to convert cseq number\n");
-			goto error;
-		}
-
-		/* set received socket */
-		if ( _flags&REG_SAVE_SOCKET_FLAG) {
-			ci.sock = get_sock_hdr(_m);
-			if (ci.sock==0)
-				ci.sock = _m->rcv.bind_address;
-		} else {
-			ci.sock = _m->rcv.bind_address;
-		}
-
-		/* additional info from message */
-		if (parse_headers(_m, HDR_USERAGENT_F, 0) != -1 && _m->user_agent &&
-		_m->user_agent->body.len>0 && _m->user_agent->body.len<UA_MAX_SIZE) {
-			ci.user_agent = &_m->user_agent->body;
-		} else {
-			ci.user_agent = &no_ua;
-		}
-
-		/* extract Path headers */
-		if ( _flags&REG_SAVE_PATH_FLAG ) {
-			if (build_path_vector(_m, &path, &path_received, _flags) < 0) {
-				rerrno = R_PARSE_PATH;
-				goto error;
-			}
-			if (path.len && path.s) {
-				ci.path = &path;
-				/* save in msg too for reply */
-				if (set_path_vector(_m, &path) < 0) {
-					rerrno = R_PARSE_PATH;
-					goto error;
-				}
-			}
-		}
-
-		ci.last_modified = act_time;
-
-		/* set flags */
-		ci.flags  = _f;
-		ci.cflags =  getb0flags(_m);
-
-		/* get received */
-		if (path_received.len && path_received.s) {
-			ci.cflags |= ul.nat_flag;
-			ci.received = path_received;
-		}
-
-		allow_parsed = 0; /* not parsed yet */
-		received_found = 0; /* not found yet */
-		m = _m; /* remember the message */
+	if (parse_headers( msg, HDR_EOH_F, 0) == -1) {
+		LM_ERR("failed to parse message\n");
+		return 1;
 	}
 
-	if(_c!=0) {
-		/* Calculate q value of the contact */
-		if (calc_contact_q(_c->q, &ci.q) < 0) {
-			rerrno = R_INV_Q;
-			LM_ERR("failed to calculate q\n");
-			goto error;
-		}
+	hf = get_header_by_name( msg, sock_hdr_name.s, sock_hdr_name.len);
+	if (hf==0)
+		return 1;
 
-		/* set expire time */
-		ci.expires = _e;
+	trim_len( socks.len, socks.s, hf->body );
+	if (socks.len==0)
+		return 1;
 
-		/* Get methods of contact */
-		if (_c->methods) {
-			if (parse_methods(&(_c->methods->body), &ci.methods) < 0) {
-				rerrno = R_PARSE;
-				LM_ERR("failed to parse contact methods\n");
-				goto error;
-			}
-		} else {
-			/* check on Allow hdr */
-			if (allow_parsed == 0) {
-				if (m && parse_allow( m ) != -1) {
-					allowed = get_allow_methods(m);
-				} else {
-					allowed = ALL_METHODS;
-				}
-				allow_parsed = 1;
-			}
-			ci.methods = allowed;
-		}
-
-		if (_c->instance) {
-			ci.instance = _c->instance->body;
-		}
-
-		/* get received */
-		if (ci.received.len==0) {
-			if (_c->received) {
-				ci.received = _c->received->body;
-			} else {
-				if (received_found==0) {
-					memset(&val, 0, sizeof(int_str));
-					if (rcv_avp_name>=0
-								&& search_first_avp(rcv_avp_type, rcv_avp_name, &val, 0)
-								&& val.s.len > 0) {
-						if (val.s.len>RECEIVED_MAX_SIZE) {
-							rerrno = R_CONTACT_LEN;
-							LM_ERR("received too long\n");
-							goto error;
-						}
-						received = val.s;
-					} else {
-						received.s = 0;
-						received.len = 0;
-					}
-					received_found = 1;
-				}
-				ci.received = received;
-			}
-		}
-
-		/* additional information (script pvar) */
-		if (attr_avp_name != -1) {
-			avp_attr = search_first_avp(attr_avp_type, attr_avp_name,
-										&attr_avp_value, NULL);
-			if (avp_attr) {
-				ci.attr = &attr_avp_value.s;
-
-				LM_DBG("Attributes: %.*s\n", ci.attr->len, ci.attr->s);
-			}
-		}
+	if (parse_phostport( socks.s, socks.len, &hosts.s, &hosts.len,
+	&port, &proto)!=0) {
+		LM_ERR("bad socket <%.*s> in \n",
+			socks.len, socks.s);
+		return 1;
+	}
+	set_sip_defaults( port, proto);
+	sock = grep_sock_info(&hosts,(unsigned short)port,(unsigned short)proto);
+	if (sock==0) {
+		LM_ERR("non-local socket <%.*s>\n",	socks.len, socks.s);
+		return 1;
 	}
 
-	return &ci;
-error:
+	LM_DBG("%d:<%.*s>:%d -> p=%p\n", proto,socks.len,socks.s,port,sock );
+
+	ci->sock = sock;
 	return 0;
 }
 
@@ -426,6 +266,9 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
+
+		ci->cflags |= ul.nat_flag;
+		set_sock_hdr(_m, ci, _sctx->flags);
 
 		if ( r->contacts==0 ||
 		ul.get_ucontact(r, &_c->uri, ci->callid, ci->cseq+1, &c)!=0 ) {
@@ -512,6 +355,9 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
+
+	ci->cflags |= ul.nat_flag;
+	set_sock_hdr(_m, ci, _sctx->flags);
 
 	/* count how many contacts we have right now */
 	num = 0;

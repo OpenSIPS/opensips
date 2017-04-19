@@ -101,9 +101,6 @@ struct save_ctx {
 extern str realm_prefix;
 extern int case_sensitive;
 
-extern int rerr_codes[];
-extern str error_info[];
-
 extern struct usrloc_api ul_api;
 extern struct tm_binds tm_api;
 extern struct sig_binds sig_api;
@@ -133,11 +130,6 @@ extern str rcv_param;
 
 extern str gruu_secret;
 
-extern int rcv_avp_name;
-extern unsigned short rcv_avp_type;
-extern int attr_avp_name;
-extern unsigned short attr_avp_type;
-
 extern int tcp_persistent_flag;
 
 extern int ucontact_data_idx;
@@ -152,8 +144,6 @@ time_t get_act_time(void);
 void update_act_time(void);
 
 int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id);
-
-int calc_contact_q(param_t* _q, qvalue_t* _r);
 
 int get_expires_hf(struct sip_msg* _m);
 

@@ -1,7 +1,7 @@
 /*
- * Helper functions for Path support.
+ * Registrar time related functions
  *
- * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,25 +18,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- */
-/*!
- * \file
- * \brief SIP registrar module - helper functions for Path support
- * \ingroup registrar
  */
 
-#ifndef REG_PATH_H
-#define REG_PATH_H
+#include "regtime.h"
 
-#include "../../parser/msg_parser.h"
+static time_t act_time;
 
 /*! \brief
- * Extracts all Path header bodies into one string and
- * checks if first hop is a loose router. It also extracts
- * the received-param of the first hop if path_use_received is 1.
+ * Get actual time and store
+ * value in act_time
  */
-int build_path_vector(struct sip_msg *_m, str *path, str *received,
-			unsigned int flags);
+void update_act_time(void)
+{
+	act_time = time(0);
+}
 
-#endif /* REG_PATH_H */
+time_t get_act_time(void)
+{
+	return act_time;
+}

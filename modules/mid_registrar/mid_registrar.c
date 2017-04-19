@@ -385,38 +385,6 @@ inline struct mid_reg_info *get_ct(void)
 	return __info;
 }
 
-static time_t act_time;
-/*! \brief
- * Get actual time and store
- * value in act_time
- */
-void update_act_time(void)
-{
-	act_time = time(0);
-}
-
-time_t get_act_time(void)
-{
-	return act_time;
-}
-
-int calc_contact_q(param_t* _q, qvalue_t* _r)
-{
-	int rc;
-
-	if (!_q || (_q->body.len == 0)) {
-		*_r = default_q;
-	} else {
-		rc = str2q(_r, _q->body.s, _q->body.len);
-		if (rc < 0) {
-			rerrno = R_INV_Q; /* Invalid q parameter */
-			LM_ERR("invalid qvalue (%.*s): %s\n",
-					_q->body.len, _q->body.s, qverr2str(rc));
-			return -1;
-		}
-	}
-	return 0;
-}
 
 void mri_free(struct mid_reg_info *mri)
 {
