@@ -1,7 +1,7 @@
 /*
- * Registrar time related functions
+ * Contact info packing functions
  *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2016-2017 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,30 +17,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*!
- * \file
- * \brief SIP registrar module - time related functions
- * \ingroup registrar
- */
+#ifndef __LIB_REG_CI__
+#define __LIB_REG_CI__
 
+#include "../../parser/contact/parse_contact.h"
+#include "../../modules/usrloc/ucontact.h"
 
-#ifndef REGTIME_H
-#define REGTIME_H
+extern int rcv_avp_name;
+extern unsigned short rcv_avp_type;
+extern int attr_avp_name;
+extern unsigned short attr_avp_type;
+extern int mct_avp_name;
+extern unsigned short mct_avp_type;
 
-#include <time.h>
+ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c,
+                        unsigned int _e, unsigned int _f, unsigned int _flags);
 
-
-extern time_t act_time;
-
-
-/*! \brief
- * Get actual time and store
- * value in act_time
- */
-void get_act_time(void);
-
-
-#endif /* REGTIME_H */
+#endif /* __LIB_REG_CI__ */

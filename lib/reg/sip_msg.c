@@ -221,3 +221,26 @@ void reset_first_contact2(void)
 {
 	return __reset_first_contact(&act_contact_2);
 }
+
+/*! \brief
+ * Calculate contact q value as follows:
+ * 1) If q parameter exists, use it
+ * 2) If the parameter doesn't exist, use the default value
+ */
+int calc_contact_q(param_t* _q, qvalue_t* _r)
+{
+	int rc;
+
+	if (!_q || (_q->body.len == 0)) {
+		*_r = default_q;
+	} else {
+		rc = str2q(_r, _q->body.s, _q->body.len);
+		if (rc < 0) {
+			rerrno = R_INV_Q; /* Invalid q parameter */
+			LM_ERR("invalid qvalue (%.*s): %s\n",
+					_q->body.len, _q->body.s, qverr2str(rc));
+			return -1;
+		}
+	}
+	return 0;
+}
