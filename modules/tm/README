@@ -786,8 +786,11 @@ t_relay(); # send the call further
        request is not a retransmission.
      * CANCEL request - true if the cancelled INVITE transaction
        exists.
-     * ACK request - true if the ACK is a local end-to-end ACK
-       corresponding to an previous INVITE transaction.
+     * ACK request - true if the ACK is a hop-by-hop ACK (to a
+       negative reply) corresponding to an previous INVITE
+       transaction. IMPORTANT: end-to-end ACKs (to 2xx replies)
+       are not detected by this function as end-to-end ACKs form a
+       different transaction.
 
    Note: To detect retransmissions using this function you have to
    make sure that the initial request has already created a

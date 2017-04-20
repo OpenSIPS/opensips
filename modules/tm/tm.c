@@ -1030,7 +1030,7 @@ static int t_check_trans(struct sip_msg* msg)
 				return 0;
 			case -2:
 				/* e2e ACK found */
-				return 1;
+				return -1;
 			default:
 				/* notfound */
 				return -1;
