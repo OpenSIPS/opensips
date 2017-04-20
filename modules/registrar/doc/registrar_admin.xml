@@ -1045,9 +1045,10 @@ if(is_method("INVITE")) {
 		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
 		</title>
 		<para>
-		The function returns true if at least a contact has an IP from the
-		IPavp in it's received parameter, otherwise returns false. The
-		function does not modify the message being process. This function
+			The function returns true if there is at least one contact that has
+			been registered from the IP in the IPvar variable. The IP is matched
+			against the received host, if it exists, or the contact host otherwise.
+			This function does not modify the message being process. This function
 		replaces the old "is_other_contact" function.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -1067,8 +1068,10 @@ if(is_method("INVITE")) {
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>IPvar</emphasis> the pvar containing the IPs you want
-				to check the received parameter of the contacts in the AOR against.
+				<emphasis>IPvar</emphasis> the pvar containing the IP matched against
+				the contact host or the received host (see above). If the
+				<emphasis>IPvar</emphasis> is an AVP containing multiple values/IPs,
+				then all the values are checked.
 			</para>
 		</listitem>
 
