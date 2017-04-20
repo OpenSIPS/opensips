@@ -813,10 +813,11 @@ void *hp_pkg_malloc(struct hp_block *hpb, unsigned long size)
 
 	/* out of memory... we have to shut down */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used,
+	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
 			hpb->name[0] == 'p' ? "M" : "m");
 #else
-	LM_ERR(oom_nostats_errorf, hpb->name, hpb->name[0] == 'p' ? "M" : "m");
+	LM_ERR(oom_nostats_errorf, hpb->name, size,
+	       hpb->name[0] == 'p' ? "M" : "m");
 #endif
 	return NULL;
 
@@ -907,10 +908,11 @@ void *hp_shm_malloc_unsafe(struct hp_block *hpb, unsigned long size)
 
 	/* out of memory... we have to shut down */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used,
+	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
 			hpb->name[0] == 'p' ? "M" : "m");
 #else
-	LM_ERR(oom_nostats_errorf, hpb->name, hpb->name[0] == 'p' ? "M" : "m");
+	LM_ERR(oom_nostats_errorf, hpb->name, size,
+	       hpb->name[0] == 'p' ? "M" : "m");
 #endif
 	return NULL;
 
@@ -1020,10 +1022,11 @@ void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 
 	/* out of memory... we have to shut down */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used,
+	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
 			hpb->name[0] == 'p' ? "M" : "m");
 #else
-	LM_ERR(oom_nostats_errorf, hpb->name, hpb->name[0] == 'p' ? "M" : "m");
+	LM_ERR(oom_nostats_errorf, hpb->name, size,
+	       hpb->name[0] == 'p' ? "M" : "m");
 #endif
 	return NULL;
 
