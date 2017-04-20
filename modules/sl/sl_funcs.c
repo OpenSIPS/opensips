@@ -150,7 +150,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 	int ret;
 
 	if ( msg->REQ_METHOD==METHOD_ACK)
-		return 0;
+		return 1;
 
 	update_sock_struct_from_ip( &to, msg );
 
