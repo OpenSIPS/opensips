@@ -1575,13 +1575,13 @@ static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
 		/* add name to AVP */
 		val.flags = PV_VAL_STR;
 		val.rs = dv->name;
-		if ( !pv_set_value( msg, (pv_spec_p)v_name, 0, &val) ) {
+		if ( pv_set_value( msg, (pv_spec_p)v_name, 0, &val)<0 ) {
 			LM_ERR("failed to add new name in dlg val list, ignoring\n");
 		} else {
 			/* add value to AVP */
 			val.flags = PV_VAL_STR;
 			val.rs = dv->val;
-			if ( !pv_set_value( msg, (pv_spec_p)v_val, 0, &val) ) {
+			if ( pv_set_value( msg, (pv_spec_p)v_val, 0, &val)<0 ) {
 				LM_ERR("failed to add new value in dlg val list, ignoring\n");
 				/* better exit here, as we will desync the lists */
 				unref_dlg(dlg, 1);
