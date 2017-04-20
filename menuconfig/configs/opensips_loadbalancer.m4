@@ -167,45 +167,36 @@ route{
 	}
 
 	if (has_totag()) {
+
+		# handle hop-by-hop ACK (no routing required)
+		if ( is_method("ACK") && t_check_trans() )
+			t_relay();
+
 		# sequential request withing a dialog should
 		# take the path determined by record-routing
-		if (loose_route()) {
-			ifelse(USE_DISPATCHER,`no',`
-			# validate the sequential request against dialog
-			if ( $DLG_status!=NULL && !validate_dialog() ) {
-				xlog("In-Dialog $rm from $si (callid=$ci) is not valid according to dialog\n");
-				## exit;
-			}
-			',`')
-			if (is_method("BYE")) {
-				# do accounting even if the transaction fails
-				ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
-				', `do_accounting("log","failed");')
-			} else if (is_method("INVITE")) {
-				# even if in most of the cases is useless, do RR for
-				# re-INVITEs alos, as some buggy clients do change route set
-				# during the dialog.
-				record_route();
-			}
-
-			# route it out to whatever destination was set by loose_route()
-			# in $du (destination URI).
-			route(RELAY);
-		} else {
-			if ( is_method("ACK") ) {
-				if ( t_check_trans() ) {
-					# non loose-route, but stateful ACK; must be an ACK after 
-					# a 487 or e.g. 404 from upstream server
-					t_relay();
-					exit;
-				} else {
-					# ACK without matching transaction ->
-					# ignore and discard
-					exit;
-				}
-			}
+		if ( !loose_route() ) {
+			# we do record-routing for all our traffic, so we should not
+			# receive any sequential requests without Route hdr.
 			sl_send_reply("404","Not here");
+			exit;
 		}
+		ifelse(USE_DISPATCHER,`no',`
+		# validate the sequential request against dialog
+		if ( $DLG_status!=NULL && !validate_dialog() ) {
+			xlog("In-Dialog $rm from $si (callid=$ci) is not valid according to dialog\n");
+			## exit;
+		}
+		',`')dnl
+
+		if (is_method("BYE")) {
+			# do accounting even if the transaction fails
+			ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
+			', `do_accounting("log","failed");')
+		}
+
+		# route it out to whatever destination was set by loose_route()
+		# in $du (destination URI).
+		route(RELAY);
 		exit;
 	}
 
