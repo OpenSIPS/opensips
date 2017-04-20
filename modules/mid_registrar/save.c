@@ -404,8 +404,8 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
-	LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
-	       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
+	//LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
+	//       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
 }
 
 int replace_response_expires(struct sip_msg *msg, contact_t *ct, int expires)
