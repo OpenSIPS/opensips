@@ -675,8 +675,9 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 {
 	str aor;
 	str host, pv_host={NULL, 0};
+	struct sip_uri tmp_uri;
+	str uri;
 
-	int start;
 	char is_avp=1;
 
 	udomain_t* ud = (udomain_t*)_d;
@@ -721,16 +722,18 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 	}
 
 	for (c=r->contacts; c; c=c->next) {
-		if (!c->received.len || !c->received.s || c->received.len < 4)
-			continue;
-
-		/* 'sip:' or 'sips:' ?; is this sane? FIXME if problems */
-		start    = c->received.s[3]==':'?4:5;
-		host.s   = c->received.s   + start;
-		host.len = c->received.len - start;
+		if (c->received.len && c->received.s)
+			uri = c->received;
+		else
+			uri = c->c;
+		if (parse_uri(uri.s, uri.len, &tmp_uri) < 0) {
+			LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
+				  uri.len, uri.s);
+		}
+		host = tmp_uri.host;
 
 		if (!is_avp) {
-			if (pv_host.len <= host.len
+			if (pv_host.len == host.len
 				&& !memcmp(host.s, pv_host.s, pv_host.len))
 				goto out_unlock_found;
 
@@ -746,7 +749,7 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 				continue;
 			}
 
-			if (pv_host.len <= host.len
+			if (pv_host.len == host.len
 					&& !memcmp(host.s, pv_host.s, pv_host.len))
 				goto out_unlock_found;
 		}
