@@ -403,7 +403,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
 	if (size>(qm->size-qm->real_used)) {
-		LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used,
+		LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used, size,
 				qm->name[0] == 'p' ? "M" : "m");
 		pkg_threshold_check();
 		return 0;
@@ -448,7 +448,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 		return (char*)f+sizeof(struct qm_frag);
 	}
 
-	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used,
+	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used, size,
 			qm->name[0] == 'p' ? "M" : "m");
 	pkg_threshold_check();
 	return 0;

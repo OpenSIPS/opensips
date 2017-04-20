@@ -369,12 +369,12 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 	/* not found, bad! */
 
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used,
+	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used, size,
 			qm->name[0] == 'p' ? "M" : "m");
-	LM_INFO("attempting defragmentation... (need %lu bytes)\n", size);
+	LM_INFO("attempting defragmentation...\n");
 #else
-	LM_ERR(oom_nostats_errorf, qm->name, qm->name[0] == 'p' ? "M" : "m");
-	LM_INFO("attempting defragmentation... (need %lu bytes)\n", size);
+	LM_ERR(oom_nostats_errorf, qm->name, size, qm->name[0] == 'p' ? "M" : "m");
+	LM_INFO("attempting defragmentation...\n");
 #endif
 
 	for( frag = qm->first_frag; (char*)frag < (char*)qm->last_frag;  )
