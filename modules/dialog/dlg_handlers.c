@@ -1163,6 +1163,39 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	pkg_free(msg);
 }
 
+static void dlg_update_contact(struct cell* t, int type, struct tmcb_params *ps)
+{
+	struct sip_msg *msg;
+	struct dlg_cell *dlg;
+	str contact;
+	char *tmp;
+
+	dlg = (struct dlg_cell *)(*ps->param);
+	msg = ps->req;
+
+	if (!dlg || !msg) {
+		LM_ERR("no request found (%p) or no dialog(%p) provided!\n", msg, dlg);
+		return;
+	}
+
+	if (!msg->contact || !msg->contact->parsed ||
+			!((contact_body_t *)msg->contact->parsed)->contacts)
+		return; /* contact not updated */
+	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+	if (dlg->legs[DLG_CALLER_LEG].contact.s)
+		tmp = shm_realloc(dlg->legs[DLG_CALLER_LEG].contact.s, contact.len);
+	else
+		tmp = shm_malloc(contact.len);
+	if (!tmp) {
+		LM_ERR("not enough memory for new contact!\n");
+		return;
+	}
+	dlg->legs[DLG_CALLER_LEG].contact.s = tmp;
+	dlg->legs[DLG_CALLER_LEG].contact.len = contact.len;
+	memcpy(dlg->legs[DLG_CALLER_LEG].contact.s, contact.s, contact.len);
+	LM_DBG("Updated dialog %p contact to <%.*s>\n", dlg, contact.len, contact.s);
+}
+
 int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 {
 	struct dlg_cell *dlg;
@@ -1264,6 +1297,12 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 			LM_ERR("can't register trace_onreq_out\n");
 			return -1;
 		}
+	}
+
+	if(d_tmb.register_tmcb(req, 0, TMCB_REQUEST_FWDED, dlg_update_contact,
+			(void *)dlg, 0) <=0) {
+		LM_ERR("can't register dlg_update_contact\n");
+		return -1;
 	}
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
