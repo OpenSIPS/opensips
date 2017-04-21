@@ -311,10 +311,9 @@ static struct lump* delete_existing_contact(struct sip_msg *msg)
 			crt->op = LUMP_NOP;
 
 			if (crt->after)
-				insert_cond_lump_after(crt->after, COND_FALSE, 0);
+				insert_cond_lump_after(crt, COND_FALSE, 0);
 			if (crt->before)
-				insert_cond_lump_before(crt->after, COND_FALSE, 0);
-			continue;
+				insert_cond_lump_before(crt, COND_FALSE, 0);
 		}
 	}
 
