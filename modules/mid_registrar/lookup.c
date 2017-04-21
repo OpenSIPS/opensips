@@ -231,6 +231,8 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			return -1;
 		}
 
+		LM_DBG("dec URI: %.*s\n", dec_tok.len, dec_tok.s);
+
 		if (parse_uri(dec_tok.s, dec_tok.len, &dec_uri) < 0) {
 			LM_ERR("failed to parse dec URI <%.*s>\n", dec_tok.len, dec_tok.s);
 			return -1;
@@ -258,6 +260,8 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			LM_ERR("failed to print URI\n");
 			return -1;
 		}
+
+		LM_DBG("printed URI: %.*s\n", pst.len, pst.s);
 
 		pkg_free(dec_tok.s);
 
