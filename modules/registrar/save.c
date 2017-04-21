@@ -262,12 +262,12 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* pack the contact_info */
-		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, _sctx->flags))==0 ) {
+		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags,
+			             ul.nat_flag, _sctx->flags))==0 ) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
 
-		ci->cflags |= ul.nat_flag;
 		set_sock_hdr(_m, ci, _sctx->flags);
 
 		if ( r->contacts==0 ||
@@ -351,12 +351,11 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci( _m, 0, 0, cflags, _sctx->flags))==0 ) {
+	if ( (ci=pack_ci( _m, 0, 0, cflags, ul.nat_flag, _sctx->flags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
 
-	ci->cflags |= ul.nat_flag;
 	set_sock_hdr(_m, ci, _sctx->flags);
 
 	/* count how many contacts we have right now */
@@ -425,7 +424,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			}
 
 			/* pack the contact_info */
-			if ( (ci=pack_ci( 0, _c, e, 0, _sctx->flags))==0 ) {
+			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -486,7 +485,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 
 				/* pack the contact specific info */
-				if ( (ci=pack_ci( 0, _c, e, 0, _sctx->flags))==0 ) {
+				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}

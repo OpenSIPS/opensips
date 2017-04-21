@@ -33,7 +33,7 @@ extern unsigned short attr_avp_type;
 extern int mct_avp_name;
 extern unsigned short mct_avp_type;
 
-ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c,
-                        unsigned int _e, unsigned int _f, unsigned int _flags);
+ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
+             unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags);
 
 #endif /* __LIB_REG_CI__ */
