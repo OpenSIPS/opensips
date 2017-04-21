@@ -1161,7 +1161,7 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers)
 {
 	str cdb_key;
 	str rld_vers_key;
-	int rc;
+	int rc = -1;
 
 	cdb_key.len = pv_name->id.len + pv_name->key.len;
 	cdb_key.s = pkg_malloc(cdb_key.len);
