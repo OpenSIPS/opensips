@@ -223,10 +223,6 @@ int print_uri(struct sip_uri *uri, str *out_buf)
 		if (uri->p.s) { \
 			append_char(';'); \
 			append_str_chunk(p); \
-			if (uri->VAL(p).s) { \
-				append_char('='); \
-				append_str_chunk(VAL(p)); \
-			} \
 		} \
 	} while (0)
 
