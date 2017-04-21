@@ -173,7 +173,6 @@ error0:
 	return -1;
 }
 
-
 static inline void free_dlg_dlg(struct dlg_cell *dlg)
 {
 	struct dlg_val *dv;
@@ -194,7 +193,9 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 			if (dlg->legs[i].prev_cseq.s)
 				shm_free(dlg->legs[i].prev_cseq.s);
 			if (dlg->legs[i].contact.s)
-				shm_free(dlg->legs[i].contact.s); /* + route_set */
+				shm_free(dlg->legs[i].contact.s);
+			if (dlg->legs[i].route_set.s)
+				shm_free(dlg->legs[i].route_set.s);
 			if (dlg->legs[i].th_sent_contact.s)
 				shm_free(dlg->legs[i].th_sent_contact.s);
 			if (dlg->legs[i].from_uri.s)
@@ -324,6 +325,7 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 	return dlg;
 }
 
+
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
@@ -349,12 +351,14 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 	leg = &dlg->legs[ dlg->legs_no[DLG_LEGS_USED] ];
 
 	leg->tag.s = (char*)shm_malloc(tag->len);
-	leg->r_cseq.s = (char*)shm_malloc( cseq->len );
-	if ( leg->tag.s==NULL || leg->r_cseq.s==NULL) {
-		LM_ERR("no more shm mem\n");
-		if (leg->tag.s) shm_free(leg->tag.s);
-		if (leg->r_cseq.s) shm_free(leg->r_cseq.s);
+	if ( leg->tag.s==NULL) {
+		LM_ERR("no more shm mem for tag\n");
 		return -1;
+	}
+	leg->r_cseq.s = (char*)shm_malloc( cseq->len );
+	if (leg->r_cseq.s==NULL) {
+		LM_ERR("no more shm mem for cseq\n");
+		goto error1;
 	}
 
 	if (dlg->legs_no[DLG_LEGS_USED] == 0) {
@@ -362,35 +366,32 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		leg->inv_cseq.s = (char *)shm_malloc( cseq->len);
 		if (leg->inv_cseq.s == NULL) {
 			LM_ERR("no more shm mem\n");
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			return -1;
+			goto error2;
 		}
 	}
 
 	if (contact->len) {
 		/* contact */
-		leg->contact.s = shm_malloc(rr->len + contact->len);
+		leg->contact.s = shm_malloc(contact->len);
 		if (leg->contact.s==NULL) {
 			LM_ERR("no more shm mem\n");
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			return -1;
+			goto error2;
 		}
 		leg->contact.len = contact->len;
 		memcpy( leg->contact.s, contact->s, contact->len);
 		/* rr */
 		if (rr->len) {
-			leg->route_set.s = leg->contact.s + contact->len;
+			leg->route_set.s = shm_malloc(rr->len);
+			if (leg->route_set.s==NULL) {
+				LM_ERR("no more shm mem for rr set\n");
+				goto error_all;
+			}
 			leg->route_set.len = rr->len;
-			memcpy( leg->route_set.s, rr->s, rr->len);
+			memcpy(leg->route_set.s, rr->s, rr->len);
 
 			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
 				LM_ERR("failed parsing route set\n");
-				shm_free(leg->tag.s);
-				shm_free(leg->r_cseq.s);
-				shm_free(leg->contact.s);
-				return -1;
+				goto error_all;
 			}
 			rrp = head;
 			leg->nr_uris = 0;
@@ -407,11 +408,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		leg->from_uri.s = shm_malloc(mangled_from->len);
 		if (!leg->from_uri.s) {
 			LM_ERR("no more shm\n");
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			if (leg->contact.s)
-				shm_free(leg->contact.s);
-			return -1;
+			goto error_all;
 		}
 
 		leg->from_uri.len = mangled_from->len;
@@ -422,13 +419,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		leg->to_uri.s = shm_malloc(mangled_to->len);
 		if (!leg->to_uri.s) {
 			LM_ERR("no more shm\n");
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			if (leg->contact.s)
-				shm_free(leg->contact.s);
-			if (leg->from_uri.s)
-				shm_free(leg->from_uri.s);
-			return -1;
+			goto error_all;
 		}
 
 		leg->to_uri.len = mangled_to->len;
@@ -439,13 +430,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		leg->sdp.s = shm_malloc(sdp->len);
 		if (!leg->sdp.s) {
 			LM_ERR("no more shm\n");
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			if (leg->contact.s)
-				shm_free(leg->contact.s);
-			if (leg->from_uri.s)
-				shm_free(leg->from_uri.s);
-			return -1;
+			goto error_all;
 		}
 
 		leg->sdp.len = sdp->len;
@@ -488,6 +473,28 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		leg->r_cseq.len,leg->r_cseq.s );
 
 	return 0;
+error_all:
+	if (leg->to_uri.s) {
+		shm_free(leg->to_uri.s);
+		leg->to_uri.s = NULL;
+	}
+	if (leg->from_uri.s) {
+		shm_free(leg->from_uri.s);
+		leg->from_uri.s = NULL;
+	}
+	if (leg->route_set.s) {
+		shm_free(leg->route_set.s);
+		leg->route_set.s = NULL;
+	}
+	if (leg->contact.s) {
+		shm_free(leg->contact.s);
+		leg->contact.s = NULL;
+	}
+error2:
+	shm_free(leg->r_cseq.s);
+error1:
+	shm_free(leg->tag.s);
+	return -1;
 }
 
 
@@ -550,7 +557,7 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 	if (dlg->legs[leg].contact.s)
 		shm_free(dlg->legs[leg].contact.s);
 
-	dlg->legs[leg].contact.s = shm_malloc(rr->len + contact->len);
+	dlg->legs[leg].contact.s = shm_malloc(contact->len);
 	if (dlg->legs[leg].contact.s==NULL) {
 		LM_ERR("no more shm mem\n");
 		return -1;
@@ -559,7 +566,15 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 	memcpy( dlg->legs[leg].contact.s, contact->s, contact->len);
 	/* rr */
 	if (rr->len) {
-		dlg->legs[leg].route_set.s = dlg->legs[leg].contact.s + contact->len;
+		if (dlg->legs[leg].route_set.s)
+			shm_free(dlg->legs[leg].route_set.s);
+		dlg->legs[leg].route_set.s = shm_malloc(rr->len);
+		if (!dlg->legs[leg].route_set.s) {
+			LM_ERR("failed to alloc route set!\n");
+			/* leave the contact there, otherwise we will get no contact at
+			 * all, or worse, we will use free'd memory */
+			return -1;
+		}
 		dlg->legs[leg].route_set.len = rr->len;
 		memcpy( dlg->legs[leg].route_set.s, rr->s, rr->len);
 
@@ -567,7 +582,8 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 		if (parse_rr_body(dlg->legs[leg].route_set.s,
 					dlg->legs[leg].route_set.len,&head) != 0) {
 			LM_ERR("failed parsing route set\n");
-			shm_free(dlg->legs[leg].contact.s);
+			shm_free(dlg->legs[leg].route_set.s);
+			dlg->legs[leg].route_set.s = NULL;
 			return -1;
 		}
 		rrp = head;
