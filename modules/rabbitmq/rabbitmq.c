@@ -207,5 +207,5 @@ static int rmq_publish(struct sip_msg *msg, char *sid, char *rkey, char *body,
 	return rmq_send(srv, &srkey, &sbody,
 			(ctype ? &sctype : NULL),
 			(hnames ? &aname : NULL),
-			(hvals ? &avals : NULL));
+			(hvals ? &avals : NULL)) == 0 ? 1: -1;
 }
