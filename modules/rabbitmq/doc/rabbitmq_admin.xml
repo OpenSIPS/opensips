@@ -96,7 +96,6 @@
 			<para>
 				<emphasis>exchange</emphasis> - exchange used to send AMQP
 				messages to. Optional parameter, default is <emphasis>""</emphasis>.
-				131072) - the maximum size of an AMQP frame.
 			</para>
 			</listitem>
 			<listitem>
