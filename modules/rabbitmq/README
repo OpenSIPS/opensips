@@ -85,8 +85,7 @@ Chapter 1. Admin Guide
        down. Optional parameter, default is disabled (do not
        retry).
      * exchange - exchange used to send AMQP messages to. Optional
-       parameter, default is "". 131072) - the maximum size of an
-       AMQP frame.
+       parameter, default is "".
      * heartbeat - interval in seconds used to send heartbeat
        messages. Optional parameter, default is disabled.
      * immediate - indicate to the broker that the message MUST be
