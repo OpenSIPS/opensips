@@ -687,16 +687,20 @@ static int match_contact(struct sip_uri *ct, struct sip_msg *msg, contact_t **ou
 	for (c = get_first_contact2(msg); c; c = get_next_contact2(c)) {
 		LM_DBG("it='%.*s'\n", c->uri.len, c->uri.s);
 
-		if (get_match_token(&c->uri, &match_tok, &uri, &i) != 0) {
-			LM_ERR("failed to get match token\n");
-			return -1;
-		}
+		if (insertion_mode == INSERT_BY_PATH) {
+			dec_uri = c->uri;
+		} else {
+			if (get_match_token(&c->uri, &match_tok, &uri, &i) != 0) {
+				LM_ERR("failed to get match token\n");
+				return -1;
+			}
 
-		if (decrypt_str(&match_tok, &dec_uri)) {
-			LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
-			       matching_param.len, matching_param.s,
-			       match_tok.len, match_tok.s);
-			return -1;
+			if (decrypt_str(&match_tok, &dec_uri)) {
+				LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
+				       matching_param.len, matching_param.s,
+				       match_tok.len, match_tok.s);
+				return -1;
+			}
 		}
 
 		if (parse_uri(dec_uri.s, dec_uri.len, &match_uri) < 0) {
