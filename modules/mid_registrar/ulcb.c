@@ -44,9 +44,6 @@ static str extra_hdrs={extra_hdrs_buf, 512};
 static int build_unregister_hdrs(struct mid_reg_info *mri)
 {
 	char *p;
-	contact_t *ct;
-	param_t *param;
-	str bak;
 
 	p = extra_hdrs.s;
 	memcpy(p, contact_hdr.s, contact_hdr.len);
@@ -54,53 +51,18 @@ static int build_unregister_hdrs(struct mid_reg_info *mri)
 
 	LM_DBG("building contact from uri '%.*s'\n", mri->ct_uri.len, mri->ct_uri.s);
 
-	if (mri->ct_body.s) {
-		bak = mri->ct_body;
+	*p++ = '<';
+	memcpy(p, mri->ct_uri.s, mri->ct_uri.len);
+	p += mri->ct_uri.len;
+	*p++ = '>';
 
-		if (parse_contacts(&bak, &ct) != 0) {
-			LM_ERR("failed to parse contact body '%.*s'\n",
-			       mri->ct_body.len, mri->ct_body.s);
-			return -1;
-		}
+	*p++ = ';';
+	memcpy(p, expires_param.s, expires_param.len);
+	p += expires_param.len;
+	*p++ = '=';
 
-		if (ct->name.len > 0)
-			p += sprintf(p, "\"%.*s\" ", ct->name.len, ct->name.s);
-
-		p += sprintf(p, "<%.*s>", ct->uri.len, ct->uri.s);
-
-		if (ct->expires) {
-			ct->expires->body.s = "0";
-			ct->expires->body.len = 1;
-		}
-
-		for (param = ct->params; param; param = param->next) {
-			*p++ = ';';
-			memcpy(p, param->name.s, param->name.len);
-			p += param->name.len;
-			if (param->body.len > 0) {
-				*p++ = '=';
-				memcpy(p, param->body.s, param->body.len);
-				p += param->body.len;
-			}
-		}
-
-		p += sprintf(p, "%s\r\n", ct->expires ? "" : ";expires=0");
-
-		free_contacts(&ct);
-	} else {
-		*p++ = '<';
-		memcpy(p, mri->ct_uri.s, mri->ct_uri.len);
-		p += mri->ct_uri.len;
-		*p++ = '>';
-
-		*p++ = ';';
-		memcpy(p, expires_param.s, expires_param.len);
-		p += expires_param.len;
-		*p++ = '=';
-
-		*p++ = '0';
-		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
-	}
+	*p++ = '0';
+	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
 
 	extra_hdrs.len = (int)(p - extra_hdrs.s);
 	LM_DBG("extra hdrs: '%.*s'\n", extra_hdrs.len, extra_hdrs.s);
@@ -119,7 +81,7 @@ static int unregister_contact(struct mid_reg_info *mri)
 	int ret;
 
 	/* create a mystical dialog in preparation for our De-REGISTER */
-	if (tm_api.new_auto_dlg_uac(&mri->from, &mri->to, &mri->next_hop,
+	if (tm_api.new_auto_dlg_uac(&mri->from, &mri->to, &mri->main_reg_uri,
 	    &mri->callid, NULL, &dlg)) {
 		LM_ERR("failed to create new TM dlg\n");
 		return -1;

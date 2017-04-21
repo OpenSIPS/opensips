@@ -354,7 +354,6 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 {
 	struct sip_msg *req = params->req;
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
-	str *ruri = GET_RURI(req), *next_hop = GET_NEXT_HOP(req);
 	contact_t *c;
 	int e, expiry_tick, new_expires;
 	int skip_exp_header = 0;
@@ -385,8 +384,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
-	shm_str_dup(&mri->ruri, ruri);
-	shm_str_dup(&mri->next_hop, next_hop);
+	shm_str_dup(&mri->main_reg_uri, GET_NEXT_HOP(req));
 
 	if (insertion_mode == INSERT_BY_PATH) {
 		if (prepend_path(req, &mri->aor, 0, 0))
@@ -404,8 +402,8 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
-	//LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
-	//       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
+	LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
+	       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
 }
 
 int replace_response_expires(struct sip_msg *msg, contact_t *ct, int expires)
@@ -448,7 +446,7 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 		return NULL;
 	memset(ret, 0, sizeof *ret);
 
-	ret->flags = mri->flags;
+	ret->reg_flags = mri->reg_flags;
 
 	if (mri->aor.s)
 		shm_str_dup(&ret->aor, &mri->aor);
@@ -465,11 +463,8 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 	if (mri->ct_uri.s)
 		shm_str_dup(&ret->ct_uri, &mri->ct_uri);
 
-	if (mri->ruri.s)
-		shm_str_dup(&ret->ruri, &mri->ruri);
-
-	if (mri->next_hop.s)
-		shm_str_dup(&ret->next_hop, &mri->next_hop);
+	if (mri->main_reg_uri.s)
+		shm_str_dup(&ret->main_reg_uri, &mri->main_reg_uri);
 
 	return ret;
 }
@@ -750,7 +745,7 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	struct sip_uri uri;
 	str ct_uri;
 
-	cflags = (mri->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (mri->reg_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
 	}
@@ -793,7 +788,7 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 
 		/*
 		 * if (mri->max_contacts && (num >= mri->max_contacts)) {
-		 * 	if (mri->flags&REG_SAVE_FORCE_REG_FLAG) {
+		 * 	if (mri->reg_flags&REG_SAVE_FORCE_REG_FLAG) {
 		 * 		// we are overflowing the number of maximum contacts,
 		 * 		 //  so remove the first (oldest) one to prevent this
 		 * 		if (r==NULL || r->contacts==NULL) {
@@ -829,7 +824,7 @@ update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
 		ci = pack_ci(req, __c, e + get_act_time(), cflags,
-		             ul_api.nat_flag, mri->flags);
+		             ul_api.nat_flag, mri->reg_flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
@@ -920,10 +915,11 @@ error:
 	return -1;
 }
 
+/* only relevant in MID_REG_THROTTLE_AOR mode */
 static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
                          struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
-	struct mid_reg_info *cti;
+	struct mid_reg_info *ri, *cti;
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
 	contact_t *_c, *__c, *__cn;
@@ -937,7 +933,7 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	char *buf;
 	int len;
 
-	cflags = (mri->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (mri->reg_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
 	}
@@ -957,14 +953,14 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		if (_c == NULL)
 			return 0;
 
-		cti = mri_dup(mri);
-		ct.len = _c->len;
-		ct.s = _c->name.s;
-		shm_str_dup(&cti->ct_body, &ct);
-		cti->expires_out = e_out;
-		cti->last_register_out_ts = mri->last_register_out_ts;
+		ri = mri_dup(mri);
+		ct.len = _c->uri.len;
+		ct.s = _c->uri.s;
+		shm_str_dup(&ri->ct_uri, &ct);
+		ri->expires_out = e_out;
+		ri->last_register_out_ts = mri->last_register_out_ts;
 
-		set_ct(cti);
+		set_ct(ri);
 
 		if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
 			rerrno = R_UL_NEW_R;
@@ -1040,7 +1036,7 @@ update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
 		ci = pack_ci(req, __c, e + get_act_time(), cflags,
-		             ul_api.nat_flag, mri->flags);
+		             ul_api.nat_flag, mri->reg_flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
@@ -1258,7 +1254,7 @@ static inline int star(udomain_t* _d, struct mid_reg_info *mri,
 	if (!ul_api.get_urecord(_d, &mri->aor, &r)) {
 		c = r->contacts;
 		while(c) {
-			if (mri->flags&REG_SAVE_MEMORY_FLAG) {
+			if (mri->reg_flags&REG_SAVE_MEMORY_FLAG) {
 				c->flags |= FL_MEM;
 			} else {
 				c->flags &= ~FL_MEM;
@@ -1374,7 +1370,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	mri->expires_out = sctx->expires_out;
 	mri->dom = ud;
 	mri->last_register_out_ts = get_act_time();
-	mri->flags = sctx->flags;
+	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
 
 	if (aor)
