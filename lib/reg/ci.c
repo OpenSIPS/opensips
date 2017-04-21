@@ -36,8 +36,8 @@
 /*! \brief
  * Fills the common part (for all contacts) of the info structure
  */
-ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c,
-                        unsigned int _e, unsigned int _f, unsigned int _flags)
+ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
+             unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags)
 {
 	static ucontact_info_t ci;
 	static str no_ua = str_init("n/a");
@@ -83,8 +83,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* extract Path headers */
-		if ( _flags&REG_SAVE_PATH_FLAG ) {
-			if (build_path_vector(_m, &path, &path_received, _flags) < 0) {
+		if (_reg_flags & REG_SAVE_PATH_FLAG) {
+			if (build_path_vector(_m, &path, &path_received, _reg_flags) < 0) {
 				rerrno = R_PARSE_PATH;
 				goto error;
 			}
@@ -106,6 +106,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c,
 
 		/* get received */
 		if (path_received.len && path_received.s) {
+			ci.cflags |= _nat_flag;
 			ci.received = path_received;
 		}
 

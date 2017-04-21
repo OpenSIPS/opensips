@@ -828,13 +828,13 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
-		ci = pack_ci(req, __c, e + get_act_time(), cflags, mri->flags);
+		ci = pack_ci(req, __c, e + get_act_time(), cflags,
+		             ul_api.nat_flag, mri->flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
 		ci->expires_out = e_out;
-		ci->cflags |= ul_api.nat_flag;
 
 		if ((r->contacts==0 ||
 		ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c)!=0) && e > 0) {
@@ -1039,13 +1039,13 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
-		ci = pack_ci(req, __c, e + get_act_time(), cflags, mri->flags);
+		ci = pack_ci(req, __c, e + get_act_time(), cflags,
+		             ul_api.nat_flag, mri->flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
 		ci->expires_out = e_out;
-		ci->cflags |= ul_api.nat_flag;
 
 		if ((r->contacts == NULL ||
 		    ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c) != 0) && e > 0) {
@@ -1710,11 +1710,10 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, cflags))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, 0, ul_api.nat_flag, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
-	ci->cflags |= ul_api.nat_flag;
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
@@ -1744,14 +1743,14 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 				return 1;
 			} else {
 				/* pack the contact specific info */
-				ci = pack_ci(msg, ct, e + get_act_time(), 0, cflags);
+				ci = pack_ci(msg, ct, e + get_act_time(), 0,
+				             ul_api.nat_flag, cflags);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
 					return -1;
 				}
 				ci->expires_out = c->expires_out;
-				ci->cflags |= ul_api.nat_flag;
 
 				if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 					rerrno = R_UL_UPD_C;
@@ -1832,11 +1831,10 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, 0, cflags))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, 0, ul_api.nat_flag, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
-	ci->cflags |= ul_api.nat_flag;
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
@@ -1869,14 +1867,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e + get_act_time(), 0, cflags);
+			ci = pack_ci(req, ct, e + get_act_time(), 0,
+			             ul_api.nat_flag, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
 				return -1;
 			}
 			ci->expires_out = c->expires_out;
-			ci->cflags |= ul_api.nat_flag;
 
 			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
@@ -1893,14 +1891,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e + get_act_time(), 0, cflags);
+			ci = pack_ci(req, ct, e + get_act_time(), 0,
+			             ul_api.nat_flag, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
 				return -1;
 			}
 			ci->expires_out = e_out;
-			ci->cflags |= ul_api.nat_flag;
 
 			if (ul_api.insert_ucontact(urec, &ct->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
