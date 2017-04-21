@@ -293,45 +293,29 @@ static struct lump* delete_existing_contact(struct sip_msg *msg)
 {
 	int offset;
 	int len;
-	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
+	struct lump* lump, *crt;
 
 	offset = msg->contact->body.s - msg->buf;
 	len = msg->contact->body.len;
 
-	for (crt = msg->add_rm;crt;) {
+	for (crt = msg->add_rm; crt; crt = crt->next) {
 		if (crt->type == HDR_CONTACT_T && crt->op == LUMP_DEL &&
 				crt->u.offset >= offset && crt->u.offset <= offset + len) {
-			lump = crt;
-			crt = crt->next;
-			a=lump->before;
-			while(a) {
-				foo=a; a=a->before;
-				if (!(foo->flags&LUMPFLAG_SHMEM))
-					free_lump(foo);
-				if (!(foo->flags&LUMPFLAG_SHMEM))
-					pkg_free(foo);
-			}
+			/*
+			 * we do not delete the lump because there might be pointers (such
+			 * as contact->uri from the fix_nated_contact() function pointing
+			 * to the lump's buffer; instead we simply replace the lump with a
+			 * conditional false one
+			 */
+			/* mark DEL lump as NOP and add COND_FALSE for before and after */
+			crt->op = LUMP_NOP;
 
-			a=lump->after;
-			while(a) {
-				foo=a; a=a->after;
-				if (!(foo->flags&LUMPFLAG_SHMEM))
-					free_lump(foo);
-				if (!(foo->flags&LUMPFLAG_SHMEM))
-					pkg_free(foo);
-			}
-			if(lump == msg->add_rm)
-				msg->add_rm = lump->next;
-			else
-				prev_crt->next = lump->next;
-			if (!(lump->flags&LUMPFLAG_SHMEM))
-				free_lump(lump);
-			if (!(lump->flags&LUMPFLAG_SHMEM))
-				pkg_free(lump);
+			if (crt->after)
+				insert_cond_lump_after(crt->after, COND_FALSE, 0);
+			if (crt->before)
+				insert_cond_lump_before(crt->after, COND_FALSE, 0);
 			continue;
 		}
-		prev_crt = crt;
-		crt= crt->next;
 	}
 
 	if ((lump = del_lump(msg, msg->contact->body.s - msg->buf, msg->contact->body.len,HDR_CONTACT_T)) == 0) {
@@ -1732,7 +1716,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags)
 
 	if (!(lump = delete_existing_contact(msg))) {
 		LM_ERR("Failed to delete existing contact \n");
-		goto error;	
+		goto error;
 	}
 
 	prefix_len = 5; /* <sip: */
