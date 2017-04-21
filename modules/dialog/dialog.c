@@ -1171,7 +1171,7 @@ static int w_match_dialog(struct sip_msg *msg)
 					}
 				}
 				if (p+1<s.s+s.len) {
-					s.len = s.s+s.len-p+1;
+					s.len = s.s+s.len-p-1;
 					s.s = p+1;
 				} else
 					break;
