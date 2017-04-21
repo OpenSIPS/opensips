@@ -61,29 +61,28 @@ enum mid_reg_matching_mode {
 	MATCH_BY_USER,
 };
 
+/* fields marked with [NEW] must be persisted into usrloc */
 struct mid_reg_info {
-	/* De-registrations will be sent to this SIP URI */
-	str ruri;
-	str next_hop;
+	str main_reg_uri; /* [NEW] De-REGISTER next hop */
 
-	str ct_uri;
-	str ct_body; /* if present, overrides ct_uri */
+	str ct_uri;  /* [NEW] De-REGISTER Contact hf value */
 
-	int max_contacts;
-	int flags;
-	int star;
+	str to;     /* [NEW] De-REGISTER */
+	str from;   /* [NEW] De-REGISTER */
+	str callid; /* De-REGISTER */
 
-	int expires;
-	int expires_out;
+	int reg_flags; /* temporary holder until response arrives */
+	int star;      /* temporary holder until response arrives */
 
-	unsigned int last_register_out_ts;
+	int expires;     /* expires value (not a unix TS!) */
 
-	udomain_t *dom;
-	str aor;
+	int expires_out; /* [NEW] outgoing expires value (not a unix TS!) */
+	                 /* used to absorb/relay new REGISTERs */
 
-	str to;
-	str from;
-	str callid;
+	unsigned int last_register_out_ts; /* [NEW] used to absorb/relay new REGISTERs */
+
+	udomain_t *dom; /* used during 200 OK ul_api operations */
+	str aor;        /* used during both "reg out" and "resp in" */
 };
 
 struct save_ctx {

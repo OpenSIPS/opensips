@@ -394,7 +394,8 @@ void mri_free(struct mid_reg_info *mri)
 	LM_DBG("from: '%.*s' %p\n", mri->from.len, mri->from.s, mri->from.s);
 	LM_DBG("to: '%.*s' %p\n", mri->to.len, mri->to.s, mri->to.s);
 	LM_DBG("callid: '%.*s' %p\n", mri->callid.len, mri->callid.s, mri->callid.s);
-	LM_DBG("ruri: '%.*s' %p\n", mri->ruri.len, mri->ruri.s, mri->ruri.s);
+	LM_DBG("main reg: '%.*s' %p\n", mri->main_reg_uri.len, mri->main_reg_uri.s,
+	       mri->main_reg_uri.s);
 	LM_DBG("ct_uri: '%.*s' %p\n", mri->ct_uri.len, mri->ct_uri.s, mri->ct_uri.s);
 
 	if (mri->aor.s)
@@ -409,17 +410,11 @@ void mri_free(struct mid_reg_info *mri)
 	if (mri->callid.s)
 		shm_free(mri->callid.s);
 
-	if (mri->ruri.s)
-		shm_free(mri->ruri.s);
-
-	if (mri->next_hop.s)
-		shm_free(mri->next_hop.s);
+	if (mri->main_reg_uri.s)
+		shm_free(mri->main_reg_uri.s);
 
 	if (mri->ct_uri.s)
 		shm_free(mri->ct_uri.s);
-
-	if (mri->ct_body.s)
-		shm_free(mri->ct_body.s);
 
 #ifdef EXTRA_DEBUG
 	memset(mri, 0, sizeof *mri);
