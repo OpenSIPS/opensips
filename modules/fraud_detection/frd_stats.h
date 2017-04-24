@@ -39,6 +39,8 @@ typedef struct {
 	unsigned int cpm;
 	unsigned int total_calls;
 	unsigned int concurrent_calls;
+
+	str last_called_prefix;
 	unsigned int seq_calls;
 
 	unsigned int last_matched_rule;

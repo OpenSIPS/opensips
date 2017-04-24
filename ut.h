@@ -618,6 +618,25 @@ static inline char *shm_strdup(const char *str)
 	return rval;
 }
 
+/* Extend the given buffer only if needed */
+static inline int shm_str_resize(str *in, int size)
+{
+	char *p;
+
+	if (in->len < size) {
+		p = shm_realloc(in->s, size);
+		if (!p) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		in->s = p;
+		in->len = size;
+	}
+
+	return 0;
+}
+
 /*
  * Make a copy of a str structure using pkg_malloc
  */
