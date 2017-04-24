@@ -86,8 +86,11 @@ int register_async_script_handlers(async_script_start_function *f1,
 											async_script_resume_function *f2);
 
 /* async related functions to be used by the
- * functions exported by modules */
-typedef int (async_resume_module)
+ * functions exported by modules
+ *
+ * NOTE: This function may be triggered even without any pending data!
+ */
+typedef enum async_ret_code (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);
 
 
@@ -111,7 +114,7 @@ typedef int (async_resume_fd)
  */
 int register_async_fd(int fd, async_resume_fd *f, void *param);
 
-/* Reseum function for the registered async fd. This is internally called
+/* Resume function for the registered async fd. This is internally called
  * by the reactor via the handle_io() routine
    Function only for internal usage.
  */
