@@ -270,7 +270,6 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	str user, number;
 	unsigned int pid;
 	frd_dlg_param *param;
-	static str last_called_prefix;
 	extern unsigned int frd_data_rev;
 
 	if (*dr_head == NULL) {
@@ -339,17 +338,18 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	/* Update the stats */
 
 	lock_get(frd_seq_calls_lock);
-	if (last_called_prefix.len == matched_len &&
-			memcmp(last_called_prefix.s, number.s, matched_len) == 0) {
+	if (se->stats.last_called_prefix.len == matched_len &&
+			memcmp(se->stats.last_called_prefix.s, number.s, matched_len) == 0) {
 
 		/* We have called the same number last time */
 		++se->stats.seq_calls;
 	}
 	else {
-		last_called_prefix.s = shm_realloc(last_called_prefix.s,
-				matched_len * sizeof(char));
-		last_called_prefix.len = matched_len;
-		memcpy(last_called_prefix.s, number.s, matched_len);
+		if (shm_str_resize(&se->stats.last_called_prefix, matched_len) != 0) {
+			LM_ERR("oom\n");
+			return rc_error;
+		}
+		memcpy(se->stats.last_called_prefix.s, number.s, matched_len);
 		se->stats.seq_calls = 1;
 	}
 	lock_release(frd_seq_calls_lock);
