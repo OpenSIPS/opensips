@@ -153,6 +153,7 @@ int t_resume_async(int *fd, void *param)
 		if(reactor_add_reader(return_code,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
+				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
 					( return_code, &faked_req, ctx->async.resume_param );
 				if (async_status == ASYNC_CHANGE_FD && fd)
@@ -338,6 +339,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 sync:
 	/* run the resume function */
 	do {
+		async_status = ASYNC_DONE;
 		return_code = ((async_resume_module*)(ctx->async.resume_f))
 			( fd, msg, ctx->async.resume_param );
 		if (async_status == ASYNC_CHANGE_FD)
