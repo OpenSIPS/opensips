@@ -1183,7 +1183,7 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers)
 		memcpy(rld_vers_key.s + pv_name->id.len, "_sql_cacher_reload_vers", 23);
 
 		rc = pv_name->db_hdls->cdbf.get_counter(pv_name->db_hdls->cdbcon,
-									&rld_vers_key, entry_rld_vers) < 0;
+									&rld_vers_key, entry_rld_vers);
 		pkg_free(rld_vers_key.s);
 		if (rc < 0)
 			goto error;
