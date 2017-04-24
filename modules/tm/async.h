@@ -34,6 +34,11 @@
  */
 int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route);
 
+/**
+ * Async I/O resume callback.
+ *
+ * NOTE: It may be triggered even without any pending data!
+ */
 int t_resume_async(int *fd, void *param);
 
 
