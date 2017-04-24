@@ -145,6 +145,7 @@ int t_resume_async(int *fd, void *param)
 		if (reactor_add_reader( *fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
+				async_status = ASYNC_DONE;
 				return_code = ctx->resume_f( *fd, &faked_req, ctx->resume_param );
 				if (async_status == ASYNC_CHANGE_FD)
 					*fd=return_code;
@@ -328,6 +329,7 @@ sync:
 	}
 	/* run the resume function */
 	do {
+		async_status = ASYNC_DONE;
 		return_code = ctx_f( fd, msg, ctx_p );
 		if (async_status == ASYNC_CHANGE_FD)
 			fd = return_code;
