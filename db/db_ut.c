@@ -188,7 +188,8 @@ inline int db_str2time(const char* _s, time_t* _v)
 	/* Convert database time representation to time_t structure
 	   It is necessary to zero tm structure first */
 	memset(&time, '\0', sizeof(struct tm));
-	if (strptime(_s, "%Y-%m-%d %H:%M:%S", &time) == NULL) {
+	if (strptime(_s, "%Y-%m-%d %H:%M:%S", &time) == NULL &&
+			strptime(_s, "%Y-%m-%d", &time) == NULL) {
 		LM_ERR("Error during time conversion\n");
 		return -1;
 	}
