@@ -42,7 +42,10 @@ static int tls_get_errstack( char* result, int size )
 						"%s\n", ERR_error_string( code, 0) );
 			LM_ERR("TLS errstack: %s\n", result + len);
 		} else {
+			/* even though there s no place in the buffer we still have
+			 * to print the errors */
 			LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
+			continue;
 		}
 
 		if ( new < size ) {
