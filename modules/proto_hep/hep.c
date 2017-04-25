@@ -1402,11 +1402,15 @@ trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_u
 {
 	hid_list_p hep_dest = (hid_list_p) dest;
 
-	if ( !from_su )
+	if ( !from_su ) {
+		local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
 		from_su = &local_su;
+	}
 
-	if ( !to_su )
+	if ( !to_su ) {
+		local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK2;
 		to_su = &local_su;
+	}
 
 	switch (hep_dest->version) {
 		case 1:
