@@ -244,6 +244,9 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 {
 	amqp_connection_close_t *mconn;
 	amqp_channel_close_t *mchan;
+#ifndef AMQP_VERSION_v04
+	char *errorstr;
+#endif
 
 	switch (x.reply_type) {
 		case AMQP_RESPONSE_NORMAL:
@@ -254,7 +257,13 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 			break;
 
 		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
-			LM_ERR("%s: %s\n", context,  "(end-of-stream)");
+#ifndef AMQP_VERSION_v04
+			errorstr = amqp_error_string(x.library_error);
+			LM_ERR("%s: %s\n", context, errorstr);
+			free(errorstr);
+#else
+			LM_ERR("%s: %s\n", context, amqp_error_string2(x.library_error));
+#endif
 			break;
 
 		case AMQP_RESPONSE_SERVER_EXCEPTION:
