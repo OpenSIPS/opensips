@@ -80,7 +80,7 @@ struct hep_message_id hep_ids[] = {
 	{ "xlog",  0x56},
 	{ "mi"  ,  0x57},
 	{ "rest",  0x58},
-	{ "trans", 0x59},
+	{ "net", 0x59},
 	{ "control", 0x60},
 	{ NULL  ,  0   }
 };
