@@ -216,10 +216,11 @@ stat_var *registered_endpoints = 0;
 stat_var *subscribed_endpoints = 0;
 stat_var *dialog_endpoints = 0;
 
-static NetInfo rfc1918nets[] = {
-    {"10.0.0.0",    0x0a000000UL, 0xff000000UL},
-    {"172.16.0.0",  0xac100000UL, 0xfff00000UL},
-    {"192.168.0.0", 0xc0a80000UL, 0xffff0000UL},
+static NetInfo private_networks[] = {
+    {"10.0.0.0",    0x0a000000UL, 0xff000000UL},  // RFC 1918  10.0.0.0/8
+    {"172.16.0.0",  0xac100000UL, 0xfff00000UL},  // RFC 1918  172.16.0.0/12
+    {"192.168.0.0", 0xc0a80000UL, 0xffff0000UL},  // RFC 1918  192.168.0.0/16
+    {"100.64.0.0",  0x64400000UL, 0xffc00000UL},  // RFC 6598  100.64.0.0/10
     {NULL,          0UL,          0UL}
 };
 
@@ -749,11 +750,11 @@ get_contact_uri(struct sip_msg* msg, struct sip_uri *uri, contact_t **_c)
 }
 
 
-#define is_private_address(x) (rfc1918address(x)==1 ? 1 : 0)
+#define is_private_address(x) (private_address(x)==1 ? 1 : 0)
 
-// Test if IP in `address' belongs to a RFC1918 network
+// Test if IP in `address' belongs to a private network
 static INLINE int
-rfc1918address(str *address)
+private_address(str *address)
 {
     struct ip_addr *ip;
     uint32_t netaddr;
@@ -765,8 +766,8 @@ rfc1918address(str *address)
 
     netaddr = ntohl(ip->u.addr32[0]);
 
-    for (i=0; rfc1918nets[i].name!=NULL; i++) {
-        if ((netaddr & rfc1918nets[i].mask)==rfc1918nets[i].address) {
+    for (i=0; private_networks[i].name!=NULL; i++) {
+        if ((netaddr & private_networks[i].mask)==private_networks[i].address) {
             return 1;
         }
     }
@@ -790,7 +791,7 @@ test_source_address(struct sip_msg *msg)
 }
 
 
-// Test if Contact field contains a private IP address as defined in RFC1918
+// Test if Contact field contains a private IP address
 static Bool
 test_private_contact(struct sip_msg *msg)
 {
@@ -804,7 +805,7 @@ test_private_contact(struct sip_msg *msg)
 }
 
 
-// Test if top Via field contains a private IP address as defined in RFC1918
+// Test if top Via field contains a private IP address
 static Bool
 test_private_via(struct sip_msg *msg)
 {
