@@ -1259,7 +1259,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 			memset( &correlation, 0, sizeof(generic_chunk_t));
 			correlation.chunk.vendor_id = htons(0);
 			/* hardcoded but this is the header */
-			correlation.chunk.type_id = htons(101);
+			correlation.chunk.type_id = htons(HEP_EXTRA_CORRELATION);
 			correlation.chunk.length = sizeof(hep_chunk_t);
 
 			correlation.data = JSON_toString(hep_msg->correlation);

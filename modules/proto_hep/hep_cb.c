@@ -42,6 +42,7 @@
 #include "hep_cb.h"
 
 extern int hep_ctx_idx;
+extern int homer5_on;
 
 struct hep_cb_list {
 	hep_cb_t cb;
@@ -114,6 +115,10 @@ void free_hep_cbs(void)
 
 }
 
+static inline int get_homer_version(void) {
+	return homer5_on ? HOMER5 : HOMER6;
+}
+
 int bind_proto_hep(proto_hep_api_t *api)
 {
 	if (!api) {
@@ -123,6 +128,7 @@ int bind_proto_hep(proto_hep_api_t *api)
 
 	api->register_hep_cb    = register_hep_cb;
 	api->get_hep_ctx_id     = get_hep_ctx_id;
+	api->get_homer_version  = get_homer_version;
 
 	return 0;
 }
