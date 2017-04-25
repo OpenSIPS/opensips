@@ -247,7 +247,7 @@ int rmq_reconnect(struct rmq_server *srv)
 	case RMQS_INIT:
 		if (rmq_error("Logging in", amqp_login(
 				srv->conn,
-				srv->uri.vhost,
+				(srv->uri.vhost ? srv->uri.vhost: "/"),
 				0,
 				srv->max_frames,
 				srv->heartbeat,
