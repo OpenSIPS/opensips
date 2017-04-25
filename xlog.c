@@ -133,7 +133,7 @@ static inline void add_xlog_data(trace_message message, void* param)
 	/* remove ':' after each level */
 	str_level.len = strlen(str_level.s) - 1;
 
-	tprot.add_payload_part( message, "level", &str_level);
+	tprot.add_payload_part( message, "Event", &str_level);
 
 	if ( !xtrace_param )
 		return;
