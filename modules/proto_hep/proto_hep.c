@@ -79,7 +79,7 @@ int hep_ctx_idx=0;
 int hep_capture_id = 1;
 int payload_compression=0;
 
-int homer5_on=0;
+int homer5_on=1;
 str homer5_delim = {":", 0};
 
 compression_api_t compression_api;
