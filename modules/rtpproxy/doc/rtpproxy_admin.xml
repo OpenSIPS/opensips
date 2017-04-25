@@ -307,6 +307,29 @@ modparam("rtpproxy", "rtpproxy_retr", 2)
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>default_set</varname> (integer)</title>
+		<para>
+			The parameter indicates the default RTPProxy set to be used when
+			provisioning an engine in the config file without an explicit set,
+			or when calling one of the <emphasis>rtpproxy_*()</emphasis>
+			functions without an explicit set.
+		</para>
+		<para>
+		<emphasis>
+			Default value is set <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>default_set</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "default_set", 1)
+...
+</programlisting>
+		</example>
+	</section>
 	<section>
 		<title><varname>nortpproxy_str</varname> (string)</title>
 		<para>
