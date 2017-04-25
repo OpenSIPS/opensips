@@ -37,12 +37,13 @@ Razvan Crainea
               1.5.4. rtpproxy_autobridge (integer)
               1.5.5. rtpproxy_tout (integer)
               1.5.6. rtpproxy_retr (integer)
-              1.5.7. nortpproxy_str (string)
-              1.5.8. db_url (string)
-              1.5.9. db_table (string)
-              1.5.10. rtpp_socket_col (string)
-              1.5.11. set_id_col (string)
-              1.5.12. rtpp_notify_socket (string)
+              1.5.7. default_set (integer)
+              1.5.8. nortpproxy_str (string)
+              1.5.9. db_url (string)
+              1.5.10. db_table (string)
+              1.5.11. rtpp_socket_col (string)
+              1.5.12. set_id_col (string)
+              1.5.13. rtpp_notify_socket (string)
 
         1.6. Exported Functions
 
@@ -94,23 +95,24 @@ Razvan Crainea
    1.3. Set rtpproxy_timeout parameter to 200ms
    1.4. Enable auto-bridging feature
    1.5. Set rtpproxy_retr parameter
-   1.6. Set nortpproxy_str parameter
-   1.7. Set db_url parameter
-   1.8. Set db_table parameter
-   1.9. Set rtpp_socket_col parameter
-   1.10. Set set_id parameter
-   1.11. Set rtpp_notify_socket parameter
-   1.12. rtpproxy_engage usage
-   1.13. rtpproxy_offer usage
-   1.14. rtpproxy_answer usage
-   1.15. rtpproxy_unforce usage
-   1.16. rtpproxy_stream2xxx usage
-   1.17. rtpproxy_start_recording usage
-   1.18. rtpproxy_stats usage
-   1.19. rtpproxy_all_stats usage
-   1.20. rtpproxy_enable usage
-   1.21. rtpproxy_show usage
-   1.22. rtpproxy_reload usage
+   1.6. Set default_set parameter
+   1.7. Set nortpproxy_str parameter
+   1.8. Set db_url parameter
+   1.9. Set db_table parameter
+   1.10. Set rtpp_socket_col parameter
+   1.11. Set set_id parameter
+   1.12. Set rtpp_notify_socket parameter
+   1.13. rtpproxy_engage usage
+   1.14. rtpproxy_offer usage
+   1.15. rtpproxy_answer usage
+   1.16. rtpproxy_unforce usage
+   1.17. rtpproxy_stream2xxx usage
+   1.18. rtpproxy_start_recording usage
+   1.19. rtpproxy_stats usage
+   1.20. rtpproxy_all_stats usage
+   1.21. rtpproxy_enable usage
+   1.22. rtpproxy_show usage
+   1.23. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -306,7 +308,21 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
 modparam("rtpproxy", "rtpproxy_retr", 2)
 ...
 
-1.5.7. nortpproxy_str (string)
+1.5.7. default_set (integer)
+
+   The parameter indicates the default RTPProxy set to be used
+   when provisioning an engine in the config file without an
+   explicit set, or when calling one of the rtpproxy_*() functions
+   without an explicit set.
+
+   Default value is set "0".
+
+   Example 1.6. Set default_set parameter
+...
+modparam("rtpproxy", "default_set", 1)
+...
+
+1.5.8. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by rtpproxy to mark
    the packet SDP informations have already been mangled.
@@ -320,12 +336,12 @@ Note
 
    Default value is "a=nortpproxy:yes\r\n".
 
-   Example 1.6. Set nortpproxy_str parameter
+   Example 1.7. Set nortpproxy_str parameter
 ...
 modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.5.8. db_url (string)
+1.5.9. db_url (string)
 
    The database url. This parameter should be set if you want to
    use a database table from where to load or reload definitions
@@ -337,57 +353,57 @@ modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 
    Default value is "NULL".
 
-   Example 1.7. Set db_url parameter
+   Example 1.8. Set db_url parameter
 ...
 modparam("rtpproxy", "db_url",
                 "mysql://opensips:opensipsrw@192.168.2.132/opensips")
 ...
 
 
-1.5.9. db_table (string)
+1.5.10. db_table (string)
 
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
 
    Default value is "rtpproxy_sockets".
 
-   Example 1.8. Set db_table parameter
+   Example 1.9. Set db_table parameter
 ...
 modparam("rtpproxy", "db_table", "nh_sockets")
 ...
 
 
-1.5.10. rtpp_socket_col (string)
+1.5.11. rtpp_socket_col (string)
 
    The name rtpp socket column in the database table.
 
    Default value is "rtpproxy_sock".
 
-   Example 1.9. Set rtpp_socket_col parameter
+   Example 1.10. Set rtpp_socket_col parameter
 ...
 modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket")
 ...
 
 
-1.5.11. set_id_col (string)
+1.5.12. set_id_col (string)
 
    The name set id column in the database table.
 
    Default value is "set_id".
 
-   Example 1.10. Set set_id parameter
+   Example 1.11. Set set_id parameter
 ...
 modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 ...
 
 
-1.5.12. rtpp_notify_socket (string)
+1.5.13. rtpp_notify_socket (string)
 
    The socket used by OpenSIPS to receive timeout notifications.
 
    Default value is "NULL".
 
-   Example 1.11. Set rtpp_notify_socket parameter
+   Example 1.12. Set rtpp_notify_socket parameter
 ...
 modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 
@@ -484,7 +500,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.12. rtpproxy_engage usage
+   Example 1.13. rtpproxy_engage usage
 ...
 if (is_method("INVITE") && has_totag()) {
         if ($var(setid) != 0) {
@@ -511,7 +527,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.13. rtpproxy_offer usage
+   Example 1.14. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -556,7 +572,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. rtpproxy_answer usage
+   Example 1.15. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
@@ -572,7 +588,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. rtpproxy_unforce usage
+   Example 1.16. rtpproxy_unforce usage
 ...
 rtpproxy_unforce();
 ...
@@ -616,7 +632,7 @@ sock_pvar]])
      * sock_pvar(optional) - pvar used to store the RTPProxy
        socket chosen for this call.
 
-   Example 1.16. rtpproxy_stream2xxx usage
+   Example 1.17. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -661,7 +677,7 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.17. rtpproxy_start_recording usage
+   Example 1.18. rtpproxy_start_recording usage
 ...
 rtpproxy_start_recording();
 ...
@@ -687,7 +703,7 @@ set_id [, sock_pvar]])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.18. rtpproxy_stats usage
+   Example 1.19. rtpproxy_stats usage
 ...
 rtpproxy_stats("$var(up)","$var(down)","$var(sent)","$var(fail)");
 xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
@@ -726,7 +742,7 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
      * rtpa_lost - $(avp(ret)[8])
      * rtpa_perrs - $(avp(ret)[9])
 
-   Example 1.19. rtpproxy_all_stats usage
+   Example 1.20. rtpproxy_all_stats usage
 ...
 rtpproxy_all_stats("$avp(stats)");
 xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
@@ -753,7 +769,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    different set), all its instances will be enables/disabled IF
    no set ID provided (as second param).
 
-   Example 1.20.  rtpproxy_enable usage
+   Example 1.21.  rtpproxy_enable usage
 ...
 ## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
@@ -768,7 +784,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 
    No parameter.
 
-   Example 1.21.  rtpproxy_show usage
+   Example 1.22.  rtpproxy_show usage
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
@@ -782,7 +798,7 @@ $ opensipsctl fifo rtpproxy_show
 
    No parameter.
 
-   Example 1.22.  rtpproxy_reload usage
+   Example 1.23.  rtpproxy_reload usage
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...

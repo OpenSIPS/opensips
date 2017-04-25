@@ -339,6 +339,7 @@ static int rtpp_set_count = 0;
 /* RTP proxy balancing list */
 struct rtpp_set_head ** rtpp_set_list =0;
 struct rtpp_set ** default_rtpp_set=0;
+static int default_rtpp_set_no = DEFAULT_RTPP_SET_ID;
 
 /* array with the sockets used by rtpporxy (per process)*/
 static int *rtpp_socks = 0;
@@ -492,6 +493,7 @@ static param_export_t params[] = {
 	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout           },
 	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout        },
 	{"rtpproxy_autobridge",   INT_PARAM, &rtpproxy_autobridge     },
+	{"default_set",           INT_PARAM, &default_rtpp_set_no     },
 	{"db_url",                STR_PARAM, &db_url.s                },
 	{"db_table",              STR_PARAM, &table.s                 },
 	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s         },
@@ -709,7 +711,7 @@ static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id)
 			rtp_proxies+=2;
 		}else{
 			rtp_proxies = p;
-			my_current_id = DEFAULT_RTPP_SET_ID;
+			my_current_id = default_rtpp_set_no;
 		}
 	}
 	else{
@@ -729,7 +731,8 @@ static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id)
 	rtpp_list = (*rtpp_set_list) ? (*rtpp_set_list)->rset_first : 0;
 	while( rtpp_list != 0 && rtpp_list->id_set!=my_current_id)
 		rtpp_list = rtpp_list->rset_next;
-	LM_DBG("List %sfound (%p) for id %d", rtpp_list ? "" : "not ", rtpp_list, my_current_id);
+	LM_DBG("List %sfound (%p) for id %d\n", rtpp_list ? "" : "not ",
+			rtpp_list, my_current_id);
 
 	if(rtpp_list==NULL){	/*if a new id_set : add a new set of rtpp*/
 		rtpp_list = shm_malloc(sizeof(struct rtpp_set));
@@ -1079,7 +1082,10 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* para
 		goto error;
 
 	/* update pointer to default_rtpp_set*/
-	*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
+	*default_rtpp_set = select_rtpp_set(default_rtpp_set_no);
+	if (*default_rtpp_set == NULL)
+		LM_WARN("there is no rtpproxy engine in the default set %d\n",
+				default_rtpp_set_no);
 
 	/* release the readers */
 	lock_stop_write( nh_lock );
@@ -1290,8 +1296,14 @@ mod_init(void)
 	*default_rtpp_set = NULL;
 
 	/* any rtpproxy configured? */
-	if(*rtpp_set_list)
-		*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
+	if(*rtpp_set_list) {
+		*default_rtpp_set = select_rtpp_set(default_rtpp_set_no);
+		if (*default_rtpp_set == NULL)
+			LM_WARN("there is no rtpproxy engine in the default set %d!"
+					"if you are not specifying sets in your rtpproxy_*()"
+					"commands, rtpproxy will not be used!\n",
+					default_rtpp_set_no);
+	}
 
 	/* configure rtpproxy timeout */
 	if(rtpproxy_timeout && sscanf(rtpproxy_timeout, "%f", &timeout)) {
@@ -2331,15 +2343,13 @@ static struct rtpp_set * select_rtpp_set(int id_set){
 	/*is it a valid set_id?*/
 	LM_DBG("Looking for set_id %d\n", id_set);
 
-	if(!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first){
-		LM_ERR("no rtp_proxy configured\n");
+	if(!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first)
 		return 0;
-	}
 
 	for(rtpp_list=(*rtpp_set_list)->rset_first; rtpp_list!=0 &&
 		rtpp_list->id_set!=id_set; rtpp_list=rtpp_list->rset_next);
 	if(!rtpp_list){
-		LM_ERR(" script error-invalid id_set to be selected\n");
+		LM_DBG("no engine in set %d\n", id_set);
 	}
 
 	return rtpp_list;
@@ -2564,7 +2574,7 @@ struct rtpp_set * get_rtpp_set(struct sip_msg * msg, nh_set_param_t *pset)
 		}
 		LM_DBG("Variable proxy set %d specified.\n", int_val);
 
-		return select_rtpp_set(int_val);
+		set = select_rtpp_set(int_val);
 	} else {
 		int_val = pset->v.int_set;
 		LM_DBG("Checking proxy set %d\n", int_val);
@@ -2575,8 +2585,10 @@ struct rtpp_set * get_rtpp_set(struct sip_msg * msg, nh_set_param_t *pset)
 			pset->v.fixed_set = set;
 			pset->t = NH_VAL_SET_FIXED;
 		}
-		return set;
 	}
+	if (!set)
+		LM_ERR("cannot find any available rtpproxy engine in set %d\n", int_val);
+	return set;
 }
 
 
@@ -2686,7 +2698,7 @@ static void engage_close_callback(struct dlg_cell *dlg, int type,
 
 	if (dlg_api.fetch_dlg_value(dlg, &param3_name, &value, 0) < 0) {
 		LM_DBG("third param not found\n");
-		param.v.int_set = DEFAULT_RTPP_SET_ID;
+		param.v.int_set = default_rtpp_set_no;
 	} else {
 		param.v.int_set = *(int *)(value.s);
 	}
@@ -2775,7 +2787,7 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 				goto error;
 			}
 		} else {
-			val3.ri = DEFAULT_RTPP_SET_ID;
+			val3.ri = default_rtpp_set_no;
 		}
 		if (setid)
 			*setid = val3.ri;
@@ -2803,7 +2815,7 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 			rval2->s = val2.rs.s;
 		}
 		if (!set_found)
-			val3.ri = DEFAULT_RTPP_SET_ID;
+			val3.ri = default_rtpp_set_no;
 		if (setid)
 			*setid = val3.ri;
 		return 1;
@@ -2813,7 +2825,7 @@ not_moved:
 	LM_DBG("nothing moved - message type %d\n", !msg ? -1 : msg->first_line.type);
 	if (rval1) rval1->len = 0;
 	if (rval2) rval2->len = 0;
-	if (setid) *setid = DEFAULT_RTPP_SET_ID;
+	if (setid) *setid = default_rtpp_set_no;
 	return 0;
 error:
 	return -1;
@@ -2928,7 +2940,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 
 		if (dlg_api.fetch_dlg_value(dlg, &param3_name, &value, 0) < 0) {
 			LM_DBG("third param not found\n");
-			setid = DEFAULT_RTPP_SET_ID;
+			setid = default_rtpp_set_no;
 		} else {
 			setid = *(int *)(value.s);
 		}
