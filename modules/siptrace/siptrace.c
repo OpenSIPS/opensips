@@ -2491,7 +2491,7 @@ static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_
 
 
 		conn_id_s.s =  int2str( trans_correlation_id, &conn_id_s.len);
-		tprot.add_extra_correlation( trace_msg, "trans", &conn_id_s);
+		tprot.add_extra_correlation( trace_msg, "net", &conn_id_s);
 	}
 
 	if (correlation) {
