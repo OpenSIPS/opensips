@@ -86,6 +86,8 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 							char* buf, int len, struct sip_msg* msg)
 {
 	str out_buff;
+	unsigned short port;
+	char *ip;
 
 	if (proto<=PROTO_NONE || proto>=PROTO_OTHER) {
 		LM_BUG("bogus proto %s/%d received!\n",proto2a(proto),proto);
@@ -119,7 +121,9 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	len = out_buff.len;
 
 	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to,id)<0){
-		LM_ERR("send() for proto %s/%d failed\n",proto2a(proto),proto);
+		get_su_info(to, ip, port);
+		LM_ERR("send() to %s:%hu for proto %s/%d failed\n",
+				ip, port, proto2a(proto),proto);
 		goto error;
 	}
 
