@@ -99,7 +99,7 @@ static int mysql_mod_init(void)
 {
 	struct ip_addr *ip;
 	unsigned int port = 0;
-	str domain, id;
+	str domain;
 
 	LM_DBG("mysql: MySQL client version is %s\n", mysql_get_client_info());
 	/* also register the event */
@@ -123,7 +123,7 @@ static int mysql_mod_init(void)
 		LM_INFO("using tls_mgm client domain '%.*s' for all MySQL connections\n",
 		        tls_client_domain_str.len, tls_client_domain_str.s);
 
-		if (parse_domain_def(tls_client_domain_str.s, &id, &ip, &port, &domain) < 0) {
+		if (parse_domain_def(tls_client_domain_str.s, &domain, &ip, &port) < 0) {
 			LM_ERR("failed to parse tls_client_domain '%.*s'\n",
 			       tls_client_domain_str.len, tls_client_domain_str.s);
 			return -1;

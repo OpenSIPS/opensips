@@ -1,7 +1,7 @@
 INSERT INTO version (table_name, table_version) values ('tls_mgm','3');
 CREATE TABLE tls_mgm (
     id NUMBER(10) PRIMARY KEY,
-    domain VARCHAR2(64) DEFAULT NULL,
+    domain VARCHAR2(64),
     address VARCHAR2(64) DEFAULT NULL,
     type NUMBER(10) DEFAULT 1 NOT NULL,
     method VARCHAR2(16) DEFAULT 'SSLv23',
@@ -15,7 +15,8 @@ CREATE TABLE tls_mgm (
     ca_dir VARCHAR2(255) DEFAULT NULL,
     cipher_list VARCHAR2(255) DEFAULT NULL,
     dh_params BLOB DEFAULT NULL,
-    ec_curve VARCHAR2(255) DEFAULT NULL
+    ec_curve VARCHAR2(255) DEFAULT NULL,
+    CONSTRAINT tls_mgm_domain_type_idx  UNIQUE (domain, type)
 );
 
 CREATE OR REPLACE TRIGGER tls_mgm_tr
