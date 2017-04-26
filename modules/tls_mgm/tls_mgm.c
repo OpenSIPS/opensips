@@ -481,7 +481,7 @@ int load_info(struct tls_domain **serv_dom, struct tls_domain **cli_dom,
 	columns[15] = &eccurve_col;
 
 	/* checking if the table version is up to date*/
-	if (db_check_table_version(&dr_dbf, db_hdl, &tls_db_table, 3/*version*/) != 0)
+	if (db_check_table_version(&dr_dbf, db_hdl, &tls_db_table, 2/*version*/) != 0)
 		goto error;
 
 	/* table to use*/

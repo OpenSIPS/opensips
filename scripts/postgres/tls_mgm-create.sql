@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('tls_mgm','3');
+INSERT INTO version (table_name, table_version) values ('tls_mgm','2');
 CREATE TABLE tls_mgm (
     id SERIAL PRIMARY KEY NOT NULL,
     domain VARCHAR(64) NOT NULL,
