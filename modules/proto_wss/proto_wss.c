@@ -85,7 +85,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #include "../proto_ws/ws_common.h"
 
 #define WS_TRACE_PROTO "proto_hep"
-#define WS_TRANS_TRACE_PROTO_ID "trans"
+#define WS_TRANS_TRACE_PROTO_ID "net"
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;

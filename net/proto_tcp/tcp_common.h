@@ -501,7 +501,7 @@ error:
 	return -1;
 }
 
-#define TRANS_TRACE_PROTO_ID "trans"
+#define TRANS_TRACE_PROTO_ID "net"
 
 #endif
 

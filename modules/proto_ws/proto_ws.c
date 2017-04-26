@@ -74,7 +74,7 @@ static str ws_resource = str_init("/");
 #include "ws_common.h"
 
 #define WS_TRACE_PROTO "proto_hep"
-#define WS_TRANS_TRACE_PROTO_ID "trans"
+#define WS_TRANS_TRACE_PROTO_ID "net"
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;
