@@ -501,6 +501,14 @@ if (is_method("REGISTER"))
 			</para>
 		</listitem>
 		</itemizedlist>
+		<para><emphasis role="bold">VERY IMPORTANT:</emphasis> Since version 2.3 report_capture function
+			behaviour will change depending on
+			<ulink url="http://www.opensips.org/html/docs/modules/2.3.x/proto_hep#idp154080">homer5_on</ulink>
+			parameter from
+			<ulink url="http://www.opensips.org/html/docs/modules/2.3.x/proto_hep">proto_hep</ulink>. Check
+			<ulink url="https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql">sql</ulink>
+			folder from the module to check the fields of the tables for each version.
+		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
 		</para>
