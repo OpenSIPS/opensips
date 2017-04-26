@@ -491,6 +491,11 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		goto error;
 	}
 
+	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
+		LM_ERR("cannot add Destination node\n");
+		goto error;
+	}
+
 	tmp.s = int2bstr(ctx->duration, int2str_buf, &tmp.len);
 	/* add an s at the end */
 	tmp.s[tmp.len] = 's';
