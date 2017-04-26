@@ -405,6 +405,11 @@ if (is_method("REGISTER"))
      * proto_type (int) - protocol type number as defined in hep
        protocol specification.
 
+   VERY IMPORTANT: Since version 2.3 report_capture function
+   behaviour will change depending on homer5_on parameter from
+   proto_hep. Check sql folder from the module to check the fields
+   of the tables for each version.
+
    This function can be used from
    REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
    UTE.

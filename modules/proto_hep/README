@@ -136,12 +136,13 @@ modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
 
    Specify how the data should be encapsulated, as plain text
    (HOMER5 - anything different than 0) or JSON based (HOMER 6 -
-   0).
+   0). As concerns capturing, this affects report_capture function
+   behaviour from sipcapture module.
 
-   Default value 0, HOMER6 format.
+   Default value 1, HOMER5 format.
 
    Example 1.2.  Set homer5_on parameter
-modparam("proto_hep", "homer5_on", 1)
+modparam("proto_hep", "homer5_on", 0)
 
 1.3.3. homer5_delim (str)
 
