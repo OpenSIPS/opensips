@@ -672,9 +672,9 @@ int cgrates_process(json_object *jobj,
 	int l = 0;
 	int is_reply = 0;
 	enum json_type type;
+	char *rpc = (char *)json_object_to_json_string(jobj);
 
-	LM_DBG("Processing JSON-RPC: %s\n",
-			(char *)json_object_to_json_string(jobj));
+	LM_DBG("Processing JSON-RPC: %s\n", rpc);
 
 	/* check to see if it is a reply */
 	if (json_object_object_get_ex(jobj, "result", &jresult) && jresult) {
@@ -690,13 +690,13 @@ int cgrates_process(json_object *jobj,
 			switch (type) {
 			case json_type_null:
 				if (!jresult) {
-					LM_ERR("Invalid RPC: both \"error\" and \"result\" are null\n");
+					LM_ERR("Invalid RPC: both \"error\" and \"result\" are null: %s\n", rpc);
 					return -3;
 				}
 				break;
 			case json_type_string:
 				if (!jresult) {
-					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null\n");
+					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null: %s\n", rpc);
 					return -3;
 				}
 				return proc_reply(c, NULL, p, (char *)json_object_get_string(tmp));
@@ -711,12 +711,12 @@ int cgrates_process(json_object *jobj,
 		LM_DBG("treating JSON-RPC as a request\n");
 		if (json_object_object_get_ex(jobj, "method", &tmp) && tmp) {
 			if (json_object_get_type(tmp) != json_type_string) {
-				LM_ERR("Invalid RPC: \"method\" not string\n");
+				LM_ERR("Invalid RPC: \"method\" not string: %s\n", rpc);
 				return -3;
 			}
 			method = (char *)json_object_get_string(tmp);
 		} else {
-			LM_ERR("Invalid RPC: \"method\" not present in request\n");
+			LM_ERR("Invalid RPC: \"method\" not present in request: %s\n", rpc);
 			return -3;
 		}
 		if (json_object_object_get_ex(jobj, "params", &tmp) && tmp) {
@@ -726,17 +726,17 @@ int cgrates_process(json_object *jobj,
 				break;
 			case json_type_array:
 				if ((l = json_object_array_length(tmp)) != 1) {
-					LM_ERR("too many elements in JSON array: %d\n", l);
+					LM_ERR("too many elements in JSON array: %d: %s\n", l, rpc);
 					return -3;
 				}
 				jresult = json_object_array_get_idx(tmp, 0);
 				break;
 			default:
-				LM_ERR("Invalid RPC: \"params\" is not array\n");
+				LM_ERR("Invalid RPC: \"params\" is not array: %s\n", rpc);
 				return -3;
 			}
 		} else {
-			LM_ERR("Invalid RPC: \"params\" not present in request\n");
+			LM_ERR("Invalid RPC: \"params\" not present in request: %s\n", rpc);
 			return -3;
 		}
 
