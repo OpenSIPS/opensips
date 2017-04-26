@@ -144,7 +144,7 @@ Chapter 1. Admin Guide
                 }
                 xlog("Call is allowed to run $cgrret seconds\n");
                 # do accounting for this call
-                cgrate_acc("cdr", "$fU", "$rU");
+                cgrates_acc("cdr", "$fU", "$rU");
                 ...
 
    Note that when using the cdr flag, CDRs are exported by the
@@ -166,7 +166,7 @@ Chapter 1. Admin Guide
                 $cgr(SetupTime) = "" + $Ts;
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
-                cgrate_cmd("SMGenericV1.GetMaxUsage");
+                cgrates_cmd("SMGenericV1.GetMaxUsage");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
 
@@ -392,14 +392,14 @@ modparam("cgrates", "retry_timeout", 120)
 
    Example 1.7. cgrates_cmd() usage
                 ...
-                # cgrate_auth("$fU", "$rU"); simulation
+                # cgrates_auth("$fU", "$rU"); simulation
                 $cgr(Tenant) = $fd;
                 $cgr(Account) = $fU;
                 $cgr(OriginID) = $ci;
                 $cgr(SetupTime) = "" + $Ts;
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
-                cgrate_cmd("SMGenericV1.GetMaxUsage");
+                cgrates_cmd("SMGenericV1.GetMaxUsage");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
 

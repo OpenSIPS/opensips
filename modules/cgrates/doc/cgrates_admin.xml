@@ -94,7 +94,7 @@
 		}
 		xlog("Call is allowed to run $cgrret seconds\n");
 		# do accounting for this call
-		cgrate_acc("cdr", "$fU", "$rU");
+		cgrates_acc("cdr", "$fU", "$rU");
 		...
 		</programlisting>
 	</para>
@@ -122,7 +122,7 @@
 		$cgr(SetupTime) = "" + $Ts;
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
-		cgrate_cmd("SMGenericV1.GetMaxUsage");
+		cgrates_cmd("SMGenericV1.GetMaxUsage");
 		xlog("Call is allowed to run $cgrret seconds\n");
 		...
 		</programlisting>
@@ -542,14 +542,14 @@ modparam("cgrates", "retry_timeout", 120)
 				<title>cgrates_cmd() usage</title>
 				<programlisting format="linespecific">
 		...
-		# cgrate_auth("$fU", "$rU"); simulation
+		# cgrates_auth("$fU", "$rU"); simulation
 		$cgr(Tenant) = $fd;
 		$cgr(Account) = $fU;
 		$cgr(OriginID) = $ci;
 		$cgr(SetupTime) = "" + $Ts;
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
-		cgrate_cmd("SMGenericV1.GetMaxUsage");
+		cgrates_cmd("SMGenericV1.GetMaxUsage");
 		xlog("Call is allowed to run $cgrret seconds\n");
 		...
 		</programlisting>
