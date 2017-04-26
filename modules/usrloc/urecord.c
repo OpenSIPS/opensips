@@ -384,10 +384,10 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 	return ins_done;
 }
 
-static inline int db_only_wb_timer(urecord_t* _r) {
-
-	if (db_mode != DB_ONLY)
-		return 0;
+/**
+ * \not a timer function but it wraps up over wb_timer function
+ */
+static inline int db_only_timer(urecord_t* _r) {
 
 	if (!_r) {
 		LM_ERR("no urecord!\n");
@@ -477,7 +477,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 {
 	if (db_mode==DB_ONLY) {
 		/* force flushing to DB*/
-		if (db_only_wb_timer(_r) < 0)
+		if (db_only_timer(_r) < 0)
 			LM_ERR("failed to sync with db\n");
 		/* now simply free everything */
 		free_urecord(_r);
@@ -563,7 +563,7 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 
 		if (db_mode == DB_ONLY) {
 			/* force flushing to DB*/
-			if (db_only_wb_timer(_r) < 0)
+			if (db_only_timer(_r) < 0)
 				LM_ERR("failed to sync with db\n");
 		}
 	}
