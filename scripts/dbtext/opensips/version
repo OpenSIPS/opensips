@@ -49,7 +49,7 @@ silo:6
 sip_trace:5
 speed_dial:3
 subscriber:7
-tls_mgm:2
+tls_mgm:3
 uri:2
 userblacklist:2
 usr_preferences:3

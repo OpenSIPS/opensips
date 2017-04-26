@@ -43,37 +43,6 @@
 #include "../../sr_module.h"
 #include "tls_domain.h"
 
-#define NO_STR_VALS 7
-
-#define STR_VALS_DOMAIN_COL         0
-#define STR_VALS_ADDRESS_COL        1
-#define STR_VALS_METHOD_COL         2
-#define STR_VALS_CRL_DIR_COL        3
-#define STR_VALS_CADIR_COL          4
-#define STR_VALS_CPLIST_COL         5
-#define STR_VALS_ECCURVE_COL        6
-
-#define NO_INT_VALS 5
-
-#define INT_VALS_ID_COL             0
-#define INT_VALS_TYPE_COL           1
-#define INT_VALS_VERIFY_CERT_COL    2
-#define INT_VALS_REQUIRE_CERT_COL   3
-#define INT_VALS_CRL_CHECK_COL      4
-
-#define NO_BLOB_VALS 4
-
-#define BLOB_VALS_CERTIFICATE_COL    0
-#define BLOB_VALS_PK_COL             1
-#define BLOB_VALS_CALIST_COL         2
-#define BLOB_VALS_DHPARAMS_COL       3
-
-#define NO_DB_COLS 16
-
-#define CLIENT_DOMAIN       0
-#define SERVER_DOMAIN       1
-#define DEFAULT_DOMAIN      2
-
 int tlsp_add_srv_domain(modparam_t type, void *val);
 
 int tlsp_add_cli_domain(modparam_t type, void *val);
@@ -101,10 +70,6 @@ int tlsp_set_cplist(modparam_t type, void *val);
 int tlsp_set_dhparams(modparam_t type, void *val);
 
 int tlsp_set_eccurve(modparam_t type, void *val);
-
-int tlsp_db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
-    struct tls_domain **serv_dom, struct tls_domain **cli_dom,
-    struct tls_domain **def_serv_dom, struct tls_domain **def_cli_dom);
 
 #endif
 

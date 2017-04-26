@@ -23,16 +23,14 @@
         <autoincrement/>
         <primary/>
         <type db="dbtext">int,auto</type>
-        <description>Unique ID</description>
+        <description>Unique DB ID</description>
     </column>
 
     <column id="domain">
         <name>domain</name>
         <type>string</type>
         <size>&id_len;</size>
-        <default><null/></default>
-        <null/>
-        <description>TLS domain name, used only for client domains</description>
+        <description>TLS domain name, uniquely identifies a client or server domain</description>
     </column>
 
     <column id="address">
@@ -41,7 +39,7 @@
         <size>&domain_len;</size>
         <default><null/></default>
         <null/>
-        <description>network location, like: "ip:port", required for server domains</description>
+        <description>network address in "ip:port" format, required for server domains but can be NULL for client domains</description>
     </column>
 
     <column id="type">
@@ -50,7 +48,7 @@
         <size>1</size>
         <default>1</default>
         <type db="dbtext">int</type>
-        <description>specifies the type of a domain : client domain(0) or server domain (1)</description>
+        <description>type of the domain : client domain(1), server domain (2) or both (0); 0 can be used only for default domains when the same specification is desired for both client and server</description>
     </column>
 
     <column id="method">
@@ -158,5 +156,12 @@
         <description>specifies an elliptic curve which should be used for
         ciphers which demand an elliptic curve</description>
     </column>
+
+    <index>
+        <name>domain_type_idx</name>
+        <colref linkend="domain"/>
+        <colref linkend="type"/>
+        <unique/>
+    </index>
 
 </table>
