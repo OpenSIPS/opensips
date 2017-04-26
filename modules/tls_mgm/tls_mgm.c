@@ -632,9 +632,12 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	 * set dh params
 	 */
 	if (!d->tmp_dh_file) {
-		LM_DBG("no DH params file for tls[%s:%d] defined, "
-				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-				tls_tmp_dh_file);
+		if (d->name.len)
+			LM_DBG("no DH params file for tls '%.*s' defined, "
+				"using default '%s'\n", d->name.len, d->name.s, tls_tmp_dh_file);
+		else
+			LM_DBG("no DH params file for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_tmp_dh_file);
 		d->tmp_dh_file = tls_tmp_dh_file;
 	}
 	if (d->tmp_dh_file && set_dh_params(d->ctx, d->tmp_dh_file) < 0)
@@ -988,8 +991,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 * set method
 		 */
 		if (d->method == TLS_METHOD_UNSPEC) {
-			LM_DBG("no method for tls[%s:%d], using default\n",
-					ip_addr2a(&d->addr), d->port);
+			if (d->name.len)
+				LM_DBG("no method for tls '%.*s', using default\n",
+						d->name.len, d->name.s);
+			else
+				LM_DBG("no method for tls[%s:%d], using default\n",
+						ip_addr2a(&d->addr), d->port);
 			d->method = tls_default_method;
 		}
 
@@ -998,8 +1005,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 */
 		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
 		if (d->ctx == NULL) {
-			LM_ERR("cannot create ssl context for "
-					"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
+			if (d->name.len)
+				LM_ERR("cannot create ssl context for tls '%.*s'\n",
+						d->name.len, d->name.s);
+			else
+				LM_ERR("cannot create ssl context for "
+						"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
 			return -1;
 		}
 		if (init_ssl_ctx_behavior( d ) < 0)
@@ -1009,8 +1020,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load certificate
 		 */
 		if (!d->cert_file) {
-			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
-					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
+			if (d->name.len)
+				LM_NOTICE("no certificate for tls '%.*s' defined, using default '%s'\n",
+						d->name.len, d->name.s, tls_cert_file);
+			else
+				LM_NOTICE("no certificate for tls[%s:%d] defined, using default "
+						"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
 			d->cert_file = tls_cert_file;
 		}
 
@@ -1031,9 +1046,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load ca
 		 */
 		if (!d->ca_file) {
-			LM_NOTICE("no CA list for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_ca_file);
+			if (d->name.len)
+				LM_NOTICE("no CA list for tls '%.*s' defined, using default '%s'\n",
+						d->name.len, d->name.s, tls_ca_file);
+			else
+				LM_NOTICE("no CA list for tls[%s:%d] defined, "
+					"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_ca_file);
 			d->ca_file = tls_ca_file;
 		}
 		if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
@@ -1043,10 +1061,12 @@ static int init_tls_domains(struct tls_domain *d)
 		 * load ca from directory
 		 */
 		if (!d->ca_directory) {
-
-			LM_NOTICE("no CA dir for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_ca_dir);
+			if (d->name.len)
+				LM_NOTICE("no CA dir for tls '%.*s' defined, "
+					"using default '%s'\n", d->name.len, d->name.s, tls_ca_dir);
+			else
+				LM_NOTICE("no CA dir for tls[%s:%d] defined, "
+					"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_ca_dir);
 			d->ca_directory = tls_ca_dir;
 		}
 
@@ -1062,8 +1082,12 @@ static int init_tls_domains(struct tls_domain *d)
 	d = dom;
 	while (d) {
 		if (!d->pkey_file) {
-			LM_NOTICE("no private key for tls[%s:%d] defined, using default"
-					"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
+			if (d->name.len)
+				LM_NOTICE("no private key for tls '%.*s' defined, using default"
+						"'%s'\n", d->name.len, d->name.s, tls_pkey_file);
+			else
+				LM_NOTICE("no private key for tls[%s:%d] defined, using default"
+						"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
 			d->pkey_file = tls_pkey_file;
 		}
 		if (load_private_key(d->ctx, d->pkey_file) < 0)
