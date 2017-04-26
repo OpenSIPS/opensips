@@ -166,7 +166,7 @@ Chapter 1. Admin Guide
                 $cgr(SetupTime) = "" + $Ts;
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
-                cgrate_cmd("SMGenericV1.MaxUsage");
+                cgrate_cmd("SMGenericV1.GetMaxUsage");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
 
@@ -399,7 +399,7 @@ modparam("cgrates", "retry_timeout", 120)
                 $cgr(SetupTime) = "" + $Ts;
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
-                cgrate_cmd("SMGenericV1.MaxUsage");
+                cgrate_cmd("SMGenericV1.GetMaxUsage");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
 
@@ -558,7 +558,7 @@ route {
         $cgr(SetupTime) = "" + $Ts;
         $cgr(RequestType) = "*prepaid";
         $cgr(Destination) = $rU;
-        async(cgrates_cmd("SMGenericV1.MaxUsage"), auth_reply);
+        async(cgrates_cmd("SMGenericV1.GetMaxUsage"), auth_reply);
 }
 
 route [auth_reply]
