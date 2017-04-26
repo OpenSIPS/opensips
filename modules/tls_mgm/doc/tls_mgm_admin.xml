@@ -27,12 +27,90 @@
 		</para>
 		<para>
 			The module allows the definition of the TLS domains both via 
-			module parameters (script level) and via an SQL table (see the
-			<emphasis>db_mode</emphasis> switch in the module).
+			module parameters (script level) and via an SQL table.
 		</para>
 		<para>
 		A script example which details this module's usage can be found in
 		<xref linkend="tls-example"/>.
+		</para>
+	</section>
+
+	<section>
+		<title>TLS domains</title>
+		<para>
+		The wording 'TLS domain' means that this TLS connection will have different
+		parameters than another TLS connection (from another TLS domain). Thus, TLS
+		domains are not directly related to different SIP domains, although they
+		are often used in common. Depending on the direction of the TLS handshake, a
+		TLS domain is called 'client domain' (=outgouing TLS connection) or 'server domain'
+		(= incoming TLS connection).
+		</para>
+		<para>
+		If you only run one domain, a default domain is enough. If you
+		are running several TLS servers (that is, you have more than
+		one listen=tls:ip:port entry in the config file), you can
+		specify some parameters for each of them separately (not all
+		the above).
+		</para>
+		<para>
+		For example, TLS domains can be used in virtual hosting scenarios with TLS.
+		&osips; offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
+		both domains will be hosted a single SIP proxy, the SIP proxy needs 2 certificates: One
+		for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
+		has to present the respective certificate during the TLS handshake. As the SIP proxy
+		does not have a received SIP message yet (this is done after the TLS handshake), the SIP
+		proxy can not retrieve the target domain (which will be usually retrieved from the domain in
+		the request URI). Thus, distinction for these domains must be done by using multiple sockets.
+		The socket on which the TLS connection is received, identifies the respective domain. Thus
+		the SIP proxy is able to present the proper certificate.
+		</para>
+		<para>
+		For outgoing TLS connections, the SIP proxy usually has to provide a client certificate. In
+		this scenario, socket based distinction is not preferable as there is no dedicated outgoing socket.
+		Thus, the certificate selection (selection of the proper TLS client domain) can be name based.
+		If the SIP proxy establishes a new outgoing TLS connection, it checks
+		for the TLS client domain AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
+		in &osips;.cfg), &osips; searches for a TLS client domain with the same name as the AVP value and uses the associated certificates.
+		</para>
+		<para>
+		TLS client domains can also be matched by socket. If no TLS client domain AVP is found, &osips; searches for a TLS client domain based on the destination socket of the underlying outgoing TCP connection that must match with the defined address for a client domain.
+		</para>
+		<para>
+		Note: If there is already an existing TLS connection to the remote target, it will be reused
+		wether the TLS client domain AVP matches or not.
+		</para>
+		<para>
+		NOTE: Make sure to also configure &osips; to listen on the specified
+		IP:port.
+		</para>
+		<para>
+		NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set
+		per TLS domain. If a parameter is not explicit set, the default value will be used.
+		</para>
+		<para>
+		It's usable only if TLS support was compiled.
+		</para>
+	</section>
+
+	<section>
+		<title>Defining TLS domains</title>
+		<para>
+			TLS domains can be defined in two ways:
+			<itemizedlist>
+				<listitem><para>by setting the <emphasis>server_domain</emphasis> or <emphasis>client_domain</emphasis> module parameters</para>
+				</listitem>
+				<listitem><para>by provisioning in DB</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>For the domains defined in the DB, the certificate, private key, list of trusted CAs and Diffie-Hellman parameters are provisioned as BLOB values whether for script defined domains you must provide path to files.</para>
+		<para>
+			When a TLS domain can't be chosen for an outgoing or incoming TLS connection the default client or server domain is used. A default domain is automatically created (with standard settings) but you can also set the certificate, private key etc. in the same way as for other domains (through the module parameters or by DB).
+		</para>
+		<para>
+			The default domains from the DB (provisioned with the domain name <emphasis>default</emphasis>) overwrite the standard default domain even if you have set ceratain parameters (certificate, ca_list etc.). When defining default domains in the DB you can specificy a default client or server domain separately or a single specification to be used for both scenarios.
+		</para>
+		<para>
+			You can define domains both in the DB and script at the same time (even default domains).
 		</para>
 	</section>
 
@@ -114,7 +192,7 @@ if (is_peer_verified()) {
 		<function moreinfo="none">tls_reload</function>
                 </title>
                 <para>
-                Reloads information from the database.
+                Reloads the TLS domains information from the database. The previous DB defined domains are discarded but the script defined domains are preserved. If no new default client or server domains is loaded and previously the default was DB defined, the standard default domain is reinstated.
                 </para>
             </section>
         </section>
@@ -147,7 +225,7 @@ listen = tls:1.2.3.4:5061
 			<title><varname>tls_method</varname> ([domain]string)</title>
 			<para>
 				Sets the TLS protocol. The domain, if set, represents
-				the id of the TLS domain. TLS method which can be:
+				the name of the TLS domain. TLS method which can be:
 			</para>
 			<itemizedlist>
 				<listitem>
@@ -215,7 +293,7 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 			Public certificate file for &osips;. It will be used as
 			server-side certificate for incoming TLS connections, and as
 			a client-side certificate for outgoing TLS connections. The domain,
-			if set, represents the id of the TLS domain.
+			if set, represents the name of the TLS domain.
 			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/cert.pem".
@@ -237,7 +315,7 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 			<para>
 			Private key of the above certificate. I must be kept in a
 			safe place with tight permissions! The domain, if set,
-			represents the id of the TLS omain.
+			represents the name of the TLS omain.
 			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/cert.pem".
@@ -259,7 +337,7 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 			<para>
 			List of trusted CAs. The file contains the certificates
 			accepted, one after the other. It MUST be a file, not
-			a folder. The domain, if set, represents the id
+			a folder. The domain, if set, represents the name
 			of the TLS domain.
 			</para>
 			<para><emphasis>
@@ -282,7 +360,7 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 			Directory storing trusted CAs. The path contains the
 			certificates accepted, each as hash which is linked to
 			certificate file. The domain, if set, represents
-			the id of the TLS domain.
+			the name of the TLS domain.
 			</para>
 			<para><emphasis>
 				Default value is "".
@@ -303,7 +381,7 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 			<para>
 			You can specify the list of algorithms for authentication
 			and encryption that you allow. The domain, if set,
-			represents the id of the TLS domain. To obtain a list of ciphers
+			represents the name of the TLS domain. To obtain a list of ciphers
 			and then choose, use the openssl application:
 			</para>
 			<itemizedlist>
@@ -335,7 +413,7 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 			You can specify a file which contains Diffie-Hellman
 			parameters as a PEM-file. This is needed if you would like
 			to specify ciphers including Diffie-Hellman mode. The 
-			domain, if set, represents the id of the TLS domain.
+			domain, if set, represents the name of the TLS domain.
 			</para>
 			<para><emphasis>
 				It defaults to not set a dh param file.
@@ -357,7 +435,7 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			<para>
 			You can specify an elliptic curve which should be used for
 			ciphers which demand an elliptic curve. The domain,
-			if set, represents the id of the TLS domain.
+			if set, represents the name of the TLS domain.
 			</para>
 			<para>
 			It's usable only if TLS v1.1/1.2 support was compiled.
@@ -448,21 +526,6 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 ...
 modparam("tls_mgm", "tls_client_domain_avp", "400")
 ...
-				</programlisting>
-			</example>
-		</section>
-		<section>
-			<title><varname>db_mode</varname> (integer)</title>
-			<para>
-			When db_mode is enabled (1), this module cannot accept new domains
-			configuration from the script, besides the default domain.
-			</para>
-			<para>Default value is 0. (not enabled)</para>
-			<example>
-				<title>Usage of <varname>db_mode</varname> block
-					</title>
-				<programlisting format="linespecific">
-modparam("tls_mgm", "db_mode", 1)
 				</programlisting>
 			</example>
 		</section>
@@ -742,62 +805,10 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 		<section>
 			<title><varname>server_domain, client_domain</varname> (string)</title>
 			<para>
-			If you only run one domain, the main one is enough. If you
-			are running several TLS servers (that is, you have more than
-			one listen=tls:ip:port entry in the config file), you can
-			specify some parameters for each of them separately (not all
-			the above).
+				You can define virtual TLS domains through these parameters.
 			</para>
 			<para>
-			The wording 'TLS domain' means that this TLS connection will have different
-			parameters than another TLS connection (from another TLS domain). Thus, TLS
-			domains must are not directly related to different SIP domains, although they
-			are often used in common. Depending on the direction of the TLS handshake, a
-			TLS domain is called 'client domain' (=outgouing TLS connection) or 'server domain'
-			(= incoming TLS connection).
-			</para>
-			<para>
-			For example, TLS domains can be used in virtual hosting scenarios with TLS.
-			&osips; offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
-			both domains will be hosted a single SIP proxy, the SIP proxy needs 2 certificates: One
-			for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
-			has to present the respective certificate during the TLS handshake. As the SIP proxy
-			does not have received a SIP message yet (this is done after the TLS handshake), the SIP
-			proxy can not retrieve the target domain (which will be usually retrieved from the domain in
-			the request URI). Thus, distinction for these domains must be done by using multiple sockets.
-			The socket on which the TLS connection is received, identifies the respective domain. Thus
-			the SIP proxy is able to present the proper certificate.
-			</para>
-			<para>
-			For outgoing TLS connections, the SIP proxy usually has to provide a client certificate. In
-			this scenario, socket based distinction is not possible as there is no dedicated outgoing socket.
-			Thus, the certificate selection (selection of the proper TLS client domain) will be name based.
-			For this purpose, TLS client domains can be associated with a name (e.g. the domain can be
-			used as name). If the SIP proxy establishes a new outgoing TLS connection, it checks
-			for the TLS client domain AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
-			in &osips;.cfg), &osips; searches for a TLS client domain with the same name and uses
-			the certificates defined in the respective tls_client_domain section.
-			</para>
-			<para>
-			TLS client domains can also be socket based. If name based domains are disabled or no
-			name based AVP is found, &osips; searches for socket based TLS client domains. In this case
-			the mapping between to the TLS client domain is done based on the destination socket of the
-			underlying outgoing TCP connection.
-			</para>
-			<para>
-			Note: If there is already an existing TLS connection to the remote target, it will be reused
-			wether the TLS client domain AVP matches or not.
-			</para>
-			<para>
-			NOTE: Make sure to also configure &osips; to listen on the specified
-			IP:port.
-			</para>
-			<para>
-			NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set
-			per TLS domain. If a parameter is not explicit set, the default value will be used.
-			</para>
-			<para>
-			It's usable only if TLS support was compiled.
+				The syntax for defining a domain is "domain=IP:port" where the 'domain' is the domain name and the address part is optional for client domains.
 			</para>
 			<example>
 				<title>Usage of <varname>tls_client_domain</varname> and
@@ -834,7 +845,7 @@ modparam("tls_mgm", "verify_cert", "[dom2]1")
 modparam("tls_mgm", "require_cert", "[dom2]1")
 
 # 'atlanta' client domain
-modparam("tls_mgm", "client_domain", "dom3=IP_2:port2")
+modparam("tls_mgm", "client_domain", "dom3")
 
 modparam("tls_mgm", "certificate", "[dom3]/certs/atlanta.com/cert.pem")
 modparam("tls_mgm", "private_key", "[dom3]/certs/atlanta.com/privkey.pem")
@@ -844,7 +855,7 @@ modparam("tls_mgm", "verify_cert", "[dom3]1")
 modparam("tls_mgm", "require_cert", "[dom3]1")
 
 #'biloxy' client domain
-modparam("tls_mgm", "client_domain", "dom4=IP_3:port3")
+modparam("tls_mgm", "client_domain", "dom4")
 
 modparam("tls_mgm", "certificate", "[dom4]/certs/biloxy.com/cert.pem")
 modparam("tls_mgm", "private_key", "[dom4]/certs/biloxy.com/privkey.pem")
@@ -875,6 +886,10 @@ modparam("tls_mgm", "verify_cert", "[dom6]0")
 
 ...
 route{
+...
+    # for biloxy or atlanta domains we set the TLS client domain AVP
+    # to the domain in the request
+    $avp(400) = $rd;
 ...
     # calls to other SIP domains
     # set the proper SSL context (certificate) for local hosted domains
