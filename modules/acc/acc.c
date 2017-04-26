@@ -542,7 +542,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	static db_ps_t my_ps = NULL;
 	static db_ps_t my_ps2 = NULL;
 	int m;
-	int n;
+	int n = 0;
 	int i, j;
 	unsigned int _created=0;
 	unsigned int  _setup_time=0;
