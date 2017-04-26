@@ -666,6 +666,7 @@ int cgrates_process(json_object *jobj,
 		struct cgr_conn *c, cgr_proc_reply_f proc_reply, void *p)
 {
 	json_object *jresult = NULL;
+	json_object *jerror = NULL;
 	char *method = NULL;
 	json_object *id = NULL;
 	json_object *tmp = NULL;
@@ -681,12 +682,16 @@ int cgrates_process(json_object *jobj,
 		is_reply = 1;
 		if (json_object_get_type(jresult) == json_type_null)
 			jresult = NULL;
+	} else if (json_object_object_get_ex(jobj, "error", &tmp) && tmp) {
+		is_reply = 1;
+		if (json_object_get_type(jresult) == json_type_null)
+			jerror = NULL;
 	}
 
 	if (is_reply) {
 		LM_DBG("treating JSON-RPC as a reply\n");
-		if (json_object_object_get_ex(jobj, "error", &tmp) && tmp) {
-			type = json_object_get_type(tmp);
+		if (jerror) {
+			type = json_object_get_type(jerror);
 			switch (type) {
 			case json_type_null:
 				if (!jresult) {
@@ -699,7 +704,7 @@ int cgrates_process(json_object *jobj,
 					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null: %s\n", rpc);
 					return -3;
 				}
-				return proc_reply(c, NULL, p, (char *)json_object_get_string(tmp));
+				return proc_reply(c, NULL, p, (char *)json_object_get_string(jerror));
 			default:
 				LM_DBG("Invalid RPC: Unknown type %d for the \"error\" key\n", type);
 				return -3;
