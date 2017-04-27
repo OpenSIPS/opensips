@@ -823,11 +823,11 @@ static void hep_parse_headers(struct tcp_req *req){
 	length = ntohs(ctrl->length);
 	req->content_len = (unsigned short)length;
 
-	if(req->pos - req->parsed == req->content_len){
+	if(req->pos - req->buf == req->content_len){
 		LM_DBG("received a COMPLETE message\n");
 		req->complete = 1;
 		req->parsed = req->buf + req->content_len;
-	} else if(req->pos - req->parsed > req->content_len){
+	} else if(req->pos - req->buf > req->content_len){
 		LM_DBG("received MORE than a message\n");
 		req->complete = 1;
 		req->parsed = req->buf + req->content_len;
@@ -836,7 +836,7 @@ static void hep_parse_headers(struct tcp_req *req){
 		/* FIXME should we update parsed? we didn't receive the
 		 * full message; we wait for the full mesage and only
 		 * after that we update parsed */
-		//req->parsed = req->pos;
+		req->parsed = req->pos;
 	}
 }
 
@@ -900,7 +900,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 		/* prepare for next request */
 		size=req->pos-req->parsed;
 
-		msg_buf = req->start;
+		msg_buf = req->buf;
 		msg_len = req->parsed-req->start;
 		local_rcv = con->rcv;
 
@@ -985,13 +985,10 @@ static inline int hep_handle_req(struct tcp_req *req,
 
 		if (size) {
 			memmove(req->buf, req->parsed, size);
-			req->pos = req->buf + size;
-			/* anything that was parsed was already processed */
-			req->parsed = req->buf;
-		}
+			init_tcp_req( req, size);
 
-		/* if we still have some unparsed bytes, try to  parse them too*/
-		if (size) return 1;
+			return 1;
+		}
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts==0)
