@@ -349,19 +349,11 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save
 	LM_DBG("expires: %d\n", *_e);
 }
 
-
-void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
+void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri)
 {
-	struct sip_msg *req = params->req;
-	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	contact_t *c;
 	int e, expiry_tick, new_expires;
 	int skip_exp_header = 0;
-	//str ct_uri;
-
-	parse_reg_headers(req);
-	if (req->expires)
-		LM_DBG("msg expires: '%.*s'\n", req->expires->body.len, req->expires->body.s);
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, NULL);
@@ -383,6 +375,21 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 			       c->uri.len, c->uri.s);
 		}
 	}
+}
+
+
+void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
+{
+	struct sip_msg *req = params->req;
+	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+
+	parse_reg_headers(req);
+	if (req->expires)
+		LM_DBG("msg expires: '%.*s'\n", req->expires->body.len, req->expires->body.s);
+
+	if (reg_mode != MID_REG_MIRROR) {
+		overwrite_contact_expirations(req, mri);
+	}
 
 	shm_str_dup(&mri->main_reg_uri, GET_NEXT_HOP(req));
 
@@ -391,7 +398,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 			LM_ERR("failed to append Path header for aor '%.*s'!\n",
 			       mri->aor.len, mri->aor.s);
 	} else {
-		if (reg_mode == MID_REG_THROTTLE_CT) {
+		if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
 			LM_DBG("fixing Contact URI ...\n");
 			if (overwrite_all_contact_hostports(req))
 				LM_ERR("failed to overwrite Contact URI\n");
@@ -735,7 +742,7 @@ static int match_contact(struct sip_uri *ct, struct sip_msg *msg, contact_t **ou
  * in order to determine each new ";expires" value, since responses MUST
  * contain all bindings, not just the ones from the request!
  */
-static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
+static inline int save_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 			struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
 	struct mid_reg_info *cti;
@@ -920,7 +927,7 @@ error:
 }
 
 /* only relevant in MID_REG_THROTTLE_AOR mode */
-static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
+static inline int save_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
                          struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
 	struct mid_reg_info *ri, *cti;
@@ -1136,7 +1143,7 @@ error:
  * Fixes the required 200 OK reply Contact header field domain
  * so it matches the one from the INVITE
  */
-static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
+static int restore_reply_contacts(struct sip_msg *req, struct sip_msg *rpl)
 {
 	contact_t *c, *req_ct;
 	struct sip_uri newuri, uri, match_uri;
@@ -1316,12 +1323,10 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		goto out;
 	}
 
-	if (reg_mode != MID_REG_MIRROR && insertion_mode == INSERT_BY_CONTACT) {
-		LM_DBG("fixing contact domain ... \n");
-		if (reg_mode == MID_REG_THROTTLE_CT) {
-			if (fix_rpl_contact_by_ct(req, rpl)) {
-				LM_ERR("failed to overwrite Contact header field domain\n");
-			}
+	if (insertion_mode == INSERT_BY_CONTACT) {
+		LM_DBG("restoring contact URIs ... \n");
+		if (restore_reply_contacts(req, rpl)) {
+			LM_ERR("failed to overwrite Contact header field domain\n");
 		}
 	}
 
@@ -1331,12 +1336,12 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("rec=%p\n", rec);
 
 	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
-		if (insert_rpl_contacts(req, rpl, mri, &mri->aor, rec)) {
+		if (save_rpl_contacts(req, rpl, mri, &mri->aor, rec)) {
 			LM_ERR("failed to process rpl contacts for AoR '%.*s'\n",
 			       mri->aor.len, mri->aor.s);
 		}
 	} else if (reg_mode == MID_REG_THROTTLE_AOR) {
-		if (insert_req_contacts(req, rpl, mri, &mri->aor, rec)) {
+		if (save_req_contacts(req, rpl, mri, &mri->aor, rec)) {
 			LM_ERR("failed to process req contacts for AoR '%.*s'\n",
 			       mri->aor.len, mri->aor.s);
 		}
@@ -1393,13 +1398,11 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	shm_str_dup(&mri->callid, &msg->callid->body);
 
-	if (reg_mode != MID_REG_MIRROR) {
-		LM_DBG("registering ptr %p on TMCB_REQUEST_FWDED ...\n", mri);
-		if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
-		    mid_reg_req_fwded, mri, NULL) <= 0) {
-			LM_ERR("cannot register additional callbacks\n");
-			return -1;
-		}
+	LM_DBG("registering ptr %p on TMCB_REQUEST_FWDED ...\n", mri);
+	if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
+	    mid_reg_req_fwded, mri, NULL) <= 0) {
+		LM_ERR("cannot register additional callbacks\n");
+		return -1;
 	}
 
 	LM_DBG("registering callback on TMCB_RESPONSE_FWDED, mri=%p ...\n", mri);
