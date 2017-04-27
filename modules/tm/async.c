@@ -213,7 +213,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	async_tm_ctx *ctx = NULL;
 	struct cell *t;
 	int r;
-	int fd;
+	int fd = 0;
 
 	/* create transaction and save everything into transaction */
 	t=get_t();
