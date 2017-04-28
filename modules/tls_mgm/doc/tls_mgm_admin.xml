@@ -104,13 +104,30 @@
 		</para>
 		<para>For the domains defined in the DB, the certificate, private key, list of trusted CAs and Diffie-Hellman parameters are provisioned as BLOB values whether for script defined domains you must provide path to files.</para>
 		<para>
-			When a TLS domain can't be chosen for an outgoing or incoming TLS connection the default client or server domain is used. A default domain is automatically created (with standard settings) but you can also set the certificate, private key etc. in the same way as for other domains (through the module parameters or by DB).
+			When a TLS domain can't be chosen for an outgoing or incoming TLS connection the default client or server domain is used. A default domain is automatically created (with default settings) but you can also set the certificate, private key etc. in the same way as for other domains (through the module parameters or by DB).
 		</para>
 		<para>
-			The default domains from the DB (provisioned with the domain name <emphasis>default</emphasis>) overwrite the standard default domain even if you have set ceratain parameters (certificate, ca_list etc.). When defining default domains in the DB you can specificy a default client or server domain separately or a single specification to be used for both scenarios.
+			The default domains from the DB (provisioned with the domain name <emphasis>default</emphasis>) overwrite the standard default domains even if you have set ceratain parameters (certificate, ca_list etc.) for the default domain through the script. When defining default domains in the DB you can specificy a default client or server domain separately or a single specification to be used for both scenarios.
 		</para>
 		<para>
 			You can define domains both in the DB and script at the same time (even default domains).
+		</para>
+		<para>
+			For any TLS domain (defined through script or DB, default or virtual) if not specified otherwise, the default settings are:
+			<itemizedlist>
+				<listitem><para>method - <emphasis>SSLv23</emphasis></para></listitem>
+				<listitem><para>verify_cert - <emphasis>1</emphasis></para></listitem>
+				<listitem><para>require_cert - <emphasis>1</emphasis></para></listitem>
+				<listitem><para>certificate - <emphasis>CFG_DIR/tls/cert.pem</emphasis></para></listitem>
+				<listitem><para>private_key - <emphasis>CFG_DIR/tls/ckey.pem</emphasis></para></listitem>
+				<listitem><para>crl_check_all - <emphasis>0</emphasis></para></listitem>
+				<listitem><para>crl_dir - none</para></listitem>
+				<listitem><para>ca_list - none</para></listitem>
+				<listitem><para>ca_dir - <emphasis>/etc/pki/CA/</emphasis></para></listitem>
+				<listitem><para>cipher_list -  the OpenSSL default ciphers</para></listitem>
+				<listitem><para>dh_params -  none</para></listitem>
+				<listitem><para>ec_curve -  none</para></listitem>
+			</itemizedlist>
 		</para>
 	</section>
 
@@ -296,7 +313,7 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 			if set, represents the name of the TLS domain.
 			</para>
 			<para><emphasis>
-				Default value is "CFG_DIR/cert.pem".
+				Default value is "CFG_DIR/tls/cert.pem".
 			</emphasis></para>
 			<example>
 				<title>Set <varname>certificate</varname> variable
@@ -318,7 +335,7 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 			represents the name of the TLS omain.
 			</para>
 			<para><emphasis>
-				Default value is "CFG_DIR/cert.pem".
+				Default value is "CFG_DIR/tls/ckey.pem".
 			</emphasis></para>
 			<example>
 				<title>Set <varname>private_key</varname> variable
@@ -363,7 +380,7 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 			the name of the TLS domain.
 			</para>
 			<para><emphasis>
-				Default value is "".
+				Default value is "/etc/pki/CA/".
 			</emphasis></para>
 			<example>
 				<title>Set <varname>ca_dir</varname> variable</title>
@@ -510,9 +527,9 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 		<section>
 			<title><varname>client_domain_avp</varname> (integer)</title>
 			<para>
-			This sets the interger AVP used for name based TLS server 
-			domains (please see tls_client_domain for more details). Setting 
-			the value to 0 disables name based TLS client domains.
+			This sets the AVP used for name based TLS client
+			domain matching (please see <xref linkend="domains-param"/> for more details). Setting 
+			the value to 0 disables name based TLS client domain matching.
 			</para>
 			<para>
 			It's usable only if TLS support was compiled.
@@ -524,7 +541,7 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 				<title>Set <varname>tls_client_domain_avp</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "tls_client_domain_avp", "400")
+modparam("tls_mgm", "tls_client_domain_avp", "tls_cli_dom")
 ...
 				</programlisting>
 			</example>
@@ -802,7 +819,7 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
                     </example>
                 </section>
 
-		<section>
+		<section id="domains-param">
 			<title><varname>server_domain, client_domain</varname> (string)</title>
 			<para>
 				You can define virtual TLS domains through these parameters.
@@ -820,7 +837,7 @@ listen=tls:IP_2:port2
 listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "tls_client_domain_avp", "400")
+modparam("proto_tls", "tls_client_domain_avp", "tls_cli_dom")
 ...
 
 # 'atlanta' server domain
@@ -888,8 +905,10 @@ modparam("tls_mgm", "verify_cert", "[dom6]0")
 route{
 ...
     # for biloxy or atlanta domains we set the TLS client domain AVP
-    # to the domain in the request
-    $avp(400) = $rd;
+    if ($rd == "atlanta.com")
+        $avp(tls_cli_dom) = "dom3";
+    else if ($rd == "biloxy.com")
+        $avp(tls_cli_dom) = "dom4";
 ...
     # calls to other SIP domains
     # set the proper SSL context (certificate) for local hosted domains
