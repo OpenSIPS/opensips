@@ -64,7 +64,7 @@
         <name>verify_cert</name>
         <type>int</type>
         <size>1</size>
-        <default>0</default>
+        <default>1</default>
         <type db="dbtext">int</type>
         <null/>
         <description>verify certificate: 0 - no, 1 - yes</description>
@@ -74,7 +74,7 @@
         <name>require_cert</name>
         <type>int</type>
         <size>1</size>
-        <default>0</default>
+        <default>1</default>
         <type db="dbtext">int</type>
         <null/>
         <description>require certificate: 0 - no, 1 - yes</description>
