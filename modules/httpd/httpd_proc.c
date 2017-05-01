@@ -45,7 +45,7 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
-#include "../../sliblist.h"
+#include "../../lib/sliblist.h"
 #include "httpd_load.h"
 
 
