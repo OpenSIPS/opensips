@@ -414,9 +414,11 @@ init_ssl_methods(void)
 	ssl_methods[TLS_USE_SSLv2 - 1] = (SSL_METHOD*)SSLv2_method();
 #endif
 
+#ifndef OPENSSL_NO_SSL3
 	ssl_methods[TLS_USE_SSLv3_cli - 1] = (SSL_METHOD*)SSLv3_client_method();
 	ssl_methods[TLS_USE_SSLv3_srv - 1] = (SSL_METHOD*)SSLv3_server_method();
 	ssl_methods[TLS_USE_SSLv3 - 1] = (SSL_METHOD*)SSLv3_method();
+#endif
 
 	ssl_methods[TLS_USE_TLSv1_cli - 1] = (SSL_METHOD*)TLSv1_client_method();
 	ssl_methods[TLS_USE_TLSv1_srv - 1] = (SSL_METHOD*)TLSv1_server_method();
