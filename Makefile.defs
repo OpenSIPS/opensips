@@ -734,13 +734,6 @@ ifneq ($(VERSIONTYPE),)
 	DEFS+= -DVERSIONTYPE='"$(VERSIONTYPE)"' -DTHISREVISION='"$(THISREVISION)"'
 endif
 
-ifneq ($(FREERADIUS),)
-	DEFS+= -DUSE_FREERADIUS
-	RADIUS_LIB= -lfreeradius-client
-else
-	RADIUS_LIB= -lradiusclient-ng
-endif
-
 ifneq ($(TLS),)
 	DEFS+= -DUSE_TLS
 endif

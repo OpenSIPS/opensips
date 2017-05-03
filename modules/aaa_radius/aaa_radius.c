@@ -33,10 +33,16 @@
  * to get information from the RADIUS reply.
  */
 
-#ifndef USE_FREERADIUS
-	#include <radiusclient-ng.h>
-#else
+#ifdef FREERADIUS
 	#include <freeradius-client.h>
+#else
+	#ifdef RADCLI
+		#include <radcli/radcli.h>
+	#else
+		#ifdef RADIUSCLIENT
+			#include <radiusclient-ng.h>
+		#endif
+	#endif
 #endif
 
 #include "../../sr_module.h"
