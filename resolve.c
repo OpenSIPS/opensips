@@ -67,6 +67,7 @@ struct dns_val {
 #define local_free   pkg_free
 
 int dns_try_ipv6=0; /*!< default off */
+int dns_try_naptr=1; /*!< default on */
 /* declared in globals.h */
 int dns_retr_time=-1;
 int dns_retr_no=-1;
@@ -1823,6 +1824,10 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		goto do_srv;
 	}
 
+        if (dns_try_naptr== 0) {
+	        *proto = (is_sips)?PROTO_TLS:PROTO_UDP;
+                goto do_srv;
+        }
 	LM_DBG("no port, no proto -> do NAPTR lookup!\n");
 	/* no proto, no port -> do NAPTR lookup */
 	if (name->len >= MAX_DNS_NAME) {
