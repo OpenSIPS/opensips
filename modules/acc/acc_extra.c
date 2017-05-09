@@ -265,6 +265,12 @@ static int parse_extra_token(str* token, str* tag, str* value)
 		return -1;
 	}
 
+	/* remove tabs, newlines etc */
+	while ( token->s[0] == '\n' || token->s[0] == '\t' || token->s[0] == ' ') {
+		token->s++;
+		token->len--;
+	}
+
 	/* value will not point exactly where the value is
 	 * will point where the - character from the '->' delimiter will be */
 	if ((value->s = str_strstr(token, &tag_delim)) == NULL) {
@@ -457,11 +463,6 @@ int expand_legs(acc_ctx_t* ctx)
 	return build_acc_extra_array(leg_tags,
 					leg_tgs_len, &ctx->leg_values[ctx->legs_no++]);
 }
-
-
-
-
-
 
 void destroy_extras( struct acc_extra *extra)
 {
