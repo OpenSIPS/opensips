@@ -1517,7 +1517,9 @@ static struct mi_root* tls_reload(struct mi_root* root, void *param)
 
 static int mod_init(void) {
 	str s;
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	int n;
+#endif
 	struct tls_domain *tls_client_domains_tmp = NULL;
 	struct tls_domain *tls_server_domains_tmp = NULL;
 	struct tls_domain *dom;
