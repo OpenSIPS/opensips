@@ -305,9 +305,10 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("cannot raise event\n");
 }
 
-
 void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 {
+	static str str_empty = {"", 0};
+
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
 		return;
@@ -344,7 +345,8 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 	}
 
 	/* the socket */
-	if (evi_param_set_str(ul_c_socket_param, &_c->sock->sock_str) < 0) {
+	if (evi_param_set_str(ul_c_socket_param,
+			(_c->sock ? &_c->sock->sock_str : &str_empty)) < 0) {
 		LM_ERR("cannot set socket parameter\n");
 		return;
 	}
