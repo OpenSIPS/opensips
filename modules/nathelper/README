@@ -8,8 +8,6 @@ Edited by
 
 Maxim Sobolev
 
-Edited by
-
 Bogdan-Andrei Iancu
 
    Copyright © 2003-2008 Sippy Software, Inc.
@@ -55,7 +53,10 @@ Bogdan-Andrei Iancu
               1.5.3. add_rcv_param([flag]),
               1.5.4. fix_nated_register()
               1.5.5. nat_uac_test(flags)
-              1.5.6. MI Commands
+
+        1.6. MI Commands
+
+              1.6.1. nh_enable_ping
 
    2. Frequently Asked Questions
 
@@ -225,8 +226,11 @@ modparam("nathelper", "received_avp", "$avp(received)")
 
 1.4.6. force_socket (string)
 
-   Socket to be forced when sending pings. It makes sense only for
-   UDP communication. If no one specified, the OS will choose.
+   Sending socket to be used for pinging contacts without local
+   socket information (the local socket information may be lost
+   during a restart or contact replication). If no one specified,
+   OpenSIPS will choose the first listening interface matching the
+   destination protocol and AF family.
 
    Default value is “NULL”.
 
@@ -486,9 +490,9 @@ fix_nated_register();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-1.5.6. MI Commands
+1.6. MI Commands
 
-1.5.6.1. nh_enable_ping
+1.6.1. nh_enable_ping
 
    Enables natping if parameter value greater than 0. Disables
    natping if parameter value is 0. With no parameter, it returns
@@ -513,31 +517,31 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.2.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.3.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
