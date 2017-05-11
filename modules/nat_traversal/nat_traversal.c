@@ -2074,7 +2074,10 @@ pv_get_source_uri(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
     if (msg==NULL || res==NULL)
         return -1;
 
-    snprintf(uri, 64, "sip:%s:%d", ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
+    if (msg->rcv.src_ip.af == AF_INET6)
+        snprintf(uri, 64, "sip:[%s]:%d", ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
+    else
+        snprintf(uri, 64, "sip:%s:%d", ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
 
     switch (msg->rcv.proto) {
     case PROTO_TCP:
