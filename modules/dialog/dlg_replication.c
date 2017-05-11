@@ -691,7 +691,7 @@ error:
 void receive_repl_packets(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
 				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
-	int rc;
+	int rc = 0;
 
 	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
 		return;
@@ -703,19 +703,26 @@ void receive_repl_packets(enum clusterer_event ev, bin_packet_t *packet, int pac
 
 	switch (packet_type) {
 	case REPLICATION_DLG_CREATED:
-		rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
-		if_update_stat(dlg_enable_stats, create_recv, 1);
+		if (accept_replicated_dlg) {
+			rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
+			if_update_stat(dlg_enable_stats, create_recv, 1);
+		}
 		break;
 	case REPLICATION_DLG_UPDATED:
-		rc = dlg_replicated_update(packet);
-		if_update_stat(dlg_enable_stats, update_recv, 1);
+		if (accept_replicated_dlg) {
+			rc = dlg_replicated_update(packet);
+			if_update_stat(dlg_enable_stats, update_recv, 1);
+		}
 		break;
 	case REPLICATION_DLG_DELETED:
-		rc = dlg_replicated_delete(packet);
-		if_update_stat(dlg_enable_stats, delete_recv, 1);
+		if (accept_replicated_dlg) {
+			rc = dlg_replicated_delete(packet);
+			if_update_stat(dlg_enable_stats, delete_recv, 1);
+		}
 		break;
 	case REPLICATION_DLG_PROFILE:
-		rc = dlg_replicated_profiles(packet, ri, src_id);
+		if (accept_repl_profiles)
+			rc = dlg_replicated_profiles(packet, ri, src_id);
 		break;
 	default:
 		rc = -1;
