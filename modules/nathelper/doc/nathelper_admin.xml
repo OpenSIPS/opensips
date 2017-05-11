@@ -234,8 +234,11 @@ modparam("nathelper", "received_avp", "$avp(received)")
 	<section>
 		<title><varname>force_socket</varname> (string)</title>
 		<para>
-		Socket to be forced when sending pings. It makes sense only
-		for UDP communication. If no one specified, the OS will choose.
+		Sending socket to be used for pinging contacts without local socket
+		information (the local socket information may be lost during a restart 
+		or contact replication). If no one specified, OpenSIPS will choose the
+		first listening interface matching the destination protocol and
+		AF family.
 		</para>
 		<para>
 		<emphasis>
@@ -664,10 +667,10 @@ fix_nated_register();
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 	</section>
-
+	</section>
 
 	<section>
-		<title><acronym>MI</acronym> Commands</title>
+	<title><acronym>MI</acronym> Commands</title>
 		<section>
 			<title><function moreinfo="none">nh_enable_ping</function></title>
 			<para>
@@ -696,7 +699,6 @@ $
 			</example>
 		</section>
 
-	</section>
 	</section>
 
 </chapter>
