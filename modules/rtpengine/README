@@ -318,21 +318,21 @@ rtpengine_offer();
             SDP when corresponding session already exists in the
             RTP proxy. By default is on when the session is to be
             completed.
-          + internal, external - these flags specify the direction
-            of the SIP message. These flags only make sense when
-            the RTP proxy is running in bridge mode. "internal"
-            corresponds to the proxy's first interface, "external"
-            corresponds to the RTP proxy's second interface. You
-            always have to specify two flags to define the
-            incoming network and the outgoing network. For
-            example, "internal external" should be used for SIP
-            message received from the local interface and sent out
-            on the external interface, and "external internal"
-            vice versa. Other options are "internal internal" and
-            "external external". So, for example if a SIP requests
-            is processed with "internal external" flags, the
-            corresponding response must be processed with
-            "internal external" flags.
+          + in-iface=..., out-iface=... - these flags specify the
+            direction the SIP message. These flags only make sense
+            when the RTP proxy is running in bridge mode.
+            "in-iface" should indicate the proxy's inbound
+            interface, and "out-iface" corresponds to the RTP
+            proxy's outbound interface. You always have to specify
+            two flags to define the incoming network and the
+            outgoing network. For example, "in-iface=internal
+            out-iface=external" should be used for SIP message
+            received from the local interface and sent out on the
+            external interface.
+          + internal, external - these the old flags used to
+            specify the direction of call. They are now obsolate,
+            being replaced by the "in-iface=internal
+            out-iface=external" configuration.
           + auto-bridge - this flag an alternative to the
             "internal" and "external" flags in order to do
             automatic bridging between IPv4 on the "internal

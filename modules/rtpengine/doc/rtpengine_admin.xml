@@ -310,20 +310,20 @@ rtpengine_offer();
 				completed.
 				</para></listitem>
 				<listitem><para>
-				<emphasis>internal, external</emphasis> - these flags specify the direction of
+				<emphasis>in-iface=..., out-iface=...</emphasis> - these flags specify the direction
 				the SIP message. These flags only make sense when the &rtp; proxy is running
-				in bridge mode. <quote>internal</quote> corresponds to the proxy's first
-				interface, <quote>external</quote> corresponds to the &rtp; proxy's
-				second interface. You always have to specify two flags to define
-				the incoming network and the outgoing network. For example, <quote>internal
-				external</quote> should be
+				in bridge mode. <quote>in-iface</quote> should indicate the proxy's inbound
+				interface, and <quote>out-iface</quote> corresponds to the &rtp; proxy's
+				outbound interface. You always have to specify two flags to define
+				the incoming network and the outgoing network. For example,
+				<quote>in-iface=internal out-iface=external</quote> should be
 				used for SIP message received from the local interface and sent out on the
-				external interface, and <quote>external internal</quote> vice versa. Other
-				options are <quote>internal internal</quote> and <quote>external
-				external</quote>.
-				So, for example if a SIP requests is processed with <quote>internal
-				external</quote> flags, the corresponding
-				response must be processed with <quote>internal external</quote> flags.
+				external interface.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>internal, external</emphasis> - these the old flags used to
+				specify the direction of call. They are now obsolate, being replaced by the
+				<quote>in-iface=internal out-iface=external</quote> configuration.
 				</para></listitem>
 				<listitem><para>
 				<emphasis>auto-bridge</emphasis> - this flag an alternative to the
