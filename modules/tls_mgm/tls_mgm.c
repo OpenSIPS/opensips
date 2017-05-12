@@ -1612,12 +1612,13 @@ static int mod_init(void) {
 	 * this has to be called before any function calling CRYPTO_malloc,
 	 * CRYPTO_malloc will set allow_customize in openssl to 0
 	 */
+
+	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
 	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
 		LM_ERR("unable to set the memory allocation functions\n");
 		LM_ERR("NOTE: check if you are using openssl 1.0.1e-fips, (or other "
 			"FIPS version of openssl, as this is known to be broken; if so, "
 			"you need to upgrade or downgrade to a different openssl version!\n");
-		LM_ERR("current version: %s\n", SSLeay_version(SSLEAY_VERSION));
 		return -1;
 	}
 
@@ -1639,8 +1640,12 @@ static int mod_init(void) {
 	}
 #endif
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	SSL_library_init();
 	SSL_load_error_strings();
+#else
+	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
+#endif
 	init_ssl_methods();
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
