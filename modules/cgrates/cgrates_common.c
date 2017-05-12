@@ -682,9 +682,10 @@ int cgrates_process(json_object *jobj,
 		is_reply = 1;
 		if (json_object_get_type(jresult) == json_type_null)
 			jresult = NULL;
-	} else if (json_object_object_get_ex(jobj, "error", &tmp) && tmp) {
+	}
+	if (json_object_object_get_ex(jobj, "error", &jerror) && jerror) {
 		is_reply = 1;
-		if (json_object_get_type(jresult) == json_type_null)
+		if (json_object_get_type(jerror) == json_type_null)
 			jerror = NULL;
 	}
 
@@ -700,7 +701,7 @@ int cgrates_process(json_object *jobj,
 				}
 				break;
 			case json_type_string:
-				if (!jresult) {
+				if (jresult) {
 					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null: %s\n", rpc);
 					return -3;
 				}
