@@ -415,6 +415,11 @@ static int mod_init( void )
 			LM_ERR("failed! bad db url / missing db module ?\n");
 			return -1;
 		}
+	} else {
+		if (db_extra_tags || db_leg_tags) {
+			LM_ERR("leg and/or extra fields defined but no DB url!\n");
+			return -1;
+		}
 	}
 
 
@@ -425,6 +430,10 @@ static int mod_init( void )
 			return -1;
 		}
 	} else {
+		if (aaa_extra_tags || aaa_leg_tags) {
+			LM_ERR("leg and/or extra fields defined but no AAA url!\n");
+			return -1;
+		}
 		aaa_proto_url = NULL;
 	}
 
