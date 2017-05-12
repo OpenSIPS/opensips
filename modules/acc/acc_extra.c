@@ -277,6 +277,13 @@ static int parse_extra_token(str* token, str* tag, str* value)
 		/* if not found then the value is the same as the token */
 		str_trim_spaces_lr(*token);
 
+		/**
+		 * FIXME null terminate the string
+		 * quite insane to do this but it should be safe because after the token
+		 * it's either a delimiter for another token or a '\0' that
+		 * terminates the string
+		 */
+		token->s[token->len] = 0;
 		*value = *tag = *token;
 	} else {
 		tag->s = token->s;
@@ -288,6 +295,20 @@ static int parse_extra_token(str* token, str* tag, str* value)
 
 		str_trim_spaces_lr(*tag);
 		str_trim_spaces_lr(*value);
+
+		/**
+		 * FIXME null terminate the string
+		 * safe because after the tag it's the tag-value delimiter
+		 */
+		tag->s[tag->len] = 0;
+
+		/**
+		 * FIXME null terminate the string
+		 * quite insane to do this but it should be safe because after the token
+		 * it's either a delimiter for another token or a '\0' that
+		 * terminates the string
+		 */
+		value->s[value->len] = 0;
 	}
 
 	return 0;
@@ -360,6 +381,7 @@ static int parse_acc_list_generic(void* val, str2bkend str2bk,
 			LM_ERR("failed to parse token!\n");
 			return -1;
 		}
+
 
 		if (add_extra(&tag, &value, bkend_list, tag_arr, tags_len) < 0) {
 			LM_ERR("failed to add extra!\n");
