@@ -998,7 +998,14 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	accX_lock(&ctx->lock);
 
 	/* call-legs attributes also get inserted */
-	for (extra=aaa_extra_tags, i=ACC_CORE_LEN+1; extra; extra=extra->next, ++i) {
+	/**
+	 * there are RA_STATIC_MAX values in that enum
+	 * and there are three more values defined in rd_attrs:
+	 * Sip-From-Tag, Sip-ToTag, Acct-Session-Id
+	 * so the total number of values we willhave to jump over is
+	 * RA_STATIC_MAX+3
+	 */
+	for (extra=aaa_extra_tags, i=RA_STATIC_MAX+3; extra; extra=extra->next, ++i) {
 		ADD_AAA_AVPAIR( i, ctx->extra_values[extra->tag_idx].value.s ,
 							ctx->extra_values[extra->tag_idx].value.len );
 	}
