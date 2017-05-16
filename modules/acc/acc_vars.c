@@ -135,25 +135,14 @@ int pv_get_acc_extra(struct sip_msg *msg, pv_param_t *param,
  */
 int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 {
-	static pv_value_t pvt_null = {
-		.flags = PV_VAL_NULL
-	};
-
-	if (pvt == NULL) {
-		pvt = &pvt_null;
-	}
-
-	if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_STR) {
-		if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_INT) {
-			/* transform the int value into a string */
-			pvt->rs.s = int2str(pvt->ri, &pvt->rs.len);
-			pvt->flags |= PV_VAL_STR;
-		} else { /* it's PV_VAL_STR; check whether it is an integer value */
-			if (str2sint(&pvt->rs, &pvt->ri) == 0) {
-				pvt->flags |= PV_TYPE_INT|PV_VAL_INT;
-			}
+	if (pvt == NULL || pvt->flags&PV_VAL_NULL) {
+		if (extra->shm_buf_len) {
+			shm_free(extra->value.s);
+			extra->shm_buf_len = 0;
 		}
-
+		extra->value.s = NULL;
+		extra->value.len = 0;
+	} else if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_STR) {
 		if (extra->shm_buf_len == 0) {
 			extra->value.s = shm_malloc(pvt->rs.len);
 			extra->shm_buf_len = extra->value.len = pvt->rs.len;
@@ -168,13 +157,6 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 			goto memerr;
 
 		memcpy(extra->value.s, pvt->rs.s, pvt->rs.len);
-	}  else if (pvt->flags&PV_VAL_NULL) {
-		if (extra->shm_buf_len) {
-			shm_free(extra->value.s);
-			extra->shm_buf_len = 0;
-		}
-		extra->value.s = NULL;
-		extra->value.len = 0;
 	} else {
 		LM_ERR("invalid pvt value!\n");
 		return -1;
