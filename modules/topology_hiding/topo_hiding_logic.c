@@ -465,15 +465,19 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		/* add '.' */
 		*(p++) = DLG_SEPARATOR;
 		/* add hash entry as hexa */
-		n = RR_DLG_PARAM_SIZE - (p-prefix);
-		if (int2reverse_hex( &p, &n, dlg->h_entry)==-1)
+		n = (prefix_len-1)/*len without @*/ - (p-prefix);
+		if (int2reverse_hex( &p, &n, dlg->h_entry)==-1) {
+			LM_ERR("int2reverse_hex on entry failed with buf size %d\n",n);
 			return -1;
+		}
 		/* add '.' */
 		*(p++) = DLG_SEPARATOR;
 		/* add hash entry as hexa */
-		n = RR_DLG_PARAM_SIZE - (p-prefix);
-		if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
+		n = (prefix_len-1)/*len without @*/ - (p-prefix);
+		if (int2reverse_hex( &p, &n, dlg->h_id)==-1) {
+			LM_ERR("int2reverse_hex on id failed with buf size %d\n",n);
 			return -1;
+		}
 	}
 	if (p!=prefix+5)
 		*(p++) = '@';
