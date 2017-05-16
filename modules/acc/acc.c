@@ -1015,7 +1015,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		for (i=0; i<ctx->legs_no; i++) {
 			for (extra=aaa_leg_tags,j=0; extra; extra=extra->next, j++) {
 				ADD_AAA_AVPAIR( offset+j,
-					LEG_VALUE(j, extra, ctx).s, LEG_VALUE(j, extra, ctx).len);
+					LEG_VALUE(i, extra, ctx).s, LEG_VALUE(i, extra, ctx).len);
 			}
 		}
 	}
