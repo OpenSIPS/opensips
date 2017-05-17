@@ -188,7 +188,8 @@ void timeout_listener_process(int rank)
 				/* check if the socket is already opened */
 				lock_get(rtpp_notify_h->lock);
 				for (rtpp_lst = rtpp_notify_h->rtpp_list; rtpp_lst; rtpp_lst = rtpp_lst->next)
-					if ( rtpp_lst->mode == 0 && !strcmp(rtpp_lst->addr, s_un->sun_path))
+					if ( rtpp_lst->mode == 0 && rtpp_lst->index == 0 &&
+							!strcmp(rtpp_lst->addr, s_un->sun_path))
 						break;
 
 				/* if not found add a new one */
@@ -223,14 +224,14 @@ void timeout_listener_process(int rank)
 					s_in = (struct sockaddr_in*)&rtpp_info;
 					lock_get(rtpp_notify_h->lock);
 					for (rtpp_lst = rtpp_notify_h->rtpp_list; rtpp_lst; rtpp_lst = rtpp_lst->next)
-						if (rtpp_lst->mode == 1 &&
+						if (rtpp_lst->mode == 1 && rtpp_lst->index == 0 &&
 							memcmp(rtpp_lst->addr, &s_in->sin_addr.s_addr, 4) == 0)
 							break;
 				} else if (rtpp_info.sa_family == AF_INET6) {
 					s_in6 = (struct sockaddr_in6*)&rtpp_info;
 					lock_get(rtpp_notify_h->lock);
 					for (rtpp_lst = rtpp_notify_h->rtpp_list; rtpp_lst; rtpp_lst = rtpp_lst->next)
-						if (rtpp_lst->mode == 6 &&
+						if (rtpp_lst->mode == 6 && rtpp_lst->index == 0 &&
 							memcmp(rtpp_lst->addr, s_in6->sin6_addr.s6_addr, 16) == 0)
 							break;
 				} else {
@@ -240,7 +241,14 @@ void timeout_listener_process(int rank)
 
 			if (!rtpp_lst) {
 				lock_release(rtpp_notify_h->lock);
-				LM_DBG("unknown rtpproxy -- ignoring\n");
+				if (rtpp_info.sa_family == AF_UNIX)
+					p = ((struct sockaddr_un*)&rtpp_info)->sun_path;
+				else {
+					struct ip_addr ip;
+					sockaddr2ip_addr(&ip, &rtpp_info);
+					p = ip_addr2a(&ip); \
+				}
+				LM_DBG("unknown rtpproxy  %s -- ignoring\n", p);
 				shutdown(connect_fd, SHUT_RDWR);
 				close(connect_fd);
 			} else {
@@ -258,7 +266,7 @@ void timeout_listener_process(int rank)
 					}
 				}
 
-				LM_DBG("rtpproxy accepted\n");
+				LM_DBG("new rtpproxy accepted on index %d\n", rtpp_lst->index);
 				pfds[rtpp_lst->index].fd = connect_fd;
 				pfds[rtpp_lst->index].events = POLLIN;
 				rtpp_lst->fd = connect_fd;
@@ -283,7 +291,6 @@ void timeout_listener_process(int rank)
 			}
 
 			if (!len) {
-				LM_DBG("closing rtpproxy\n");
 				lock_get(rtpp_notify_h->lock);
 				for (rtpp_lst=rtpp_notify_h->rtpp_list;
 						rtpp_lst;rtpp_lst=rtpp_lst->next)
@@ -294,6 +301,7 @@ void timeout_listener_process(int rank)
 					lock_release(rtpp_notify_h->lock);
 					continue;
 				}
+				LM_DBG("closing rtpproxy on index %d\n", rtpp_lst->index);
 				rtpp_lst->index = 0;
 				lock_release(rtpp_notify_h->lock);
 				nfds--;
