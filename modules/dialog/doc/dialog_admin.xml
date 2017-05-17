@@ -2610,6 +2610,16 @@ $var(account) = $dlg_val(account_type);
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
+					<emphasis>hash_entry</emphasis> - the entry in the dialog table.
+					This is used, along with the <emphasis>hash_id</emphasis>,
+					to uniquely identify the dialog.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>hash_id</emphasis> - the id in the dialog table.
+					This is used, along with the <emphasis>hash_entry</emphasis>,
+					to uniquely identify the dialog.
+			</para></listitem>
+			<listitem><para>
 				<emphasis>ostate</emphasis> - the old state of the dialog.
 			</para></listitem>
 			<listitem><para>
