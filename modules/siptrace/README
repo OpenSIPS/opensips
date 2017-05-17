@@ -36,15 +36,15 @@ Daniel-Constantin Mierla
               1.3.7. duplicate_uri (str)
               1.3.8. trace_local_ip (str)
               1.3.9. table (str)
+              1.3.10. trace_to_database (integer)
+              1.3.11. duplicate_with_hep (integer)
+              1.3.12. hep_version (integer)
+              1.3.13. hep_capture_id (integer)
 
         1.4. Exported Functions
 
               1.4.1. sip_trace()
               1.4.2. trace_dialog()
-              1.4.3. trace_to_database (integer)
-              1.4.4. duplicate_with_hep (integer)
-              1.4.5. hep_version (integer)
-              1.4.6. hep_capture_id (integer)
 
         1.5. Exported MI Functions
 
@@ -65,31 +65,36 @@ Daniel-Constantin Mierla
    1.7. Set duplicate_uri parameter
    1.8. Set trace_local_ip parameter
    1.9. Set sip_trace parameter
-   1.10. sip_trace() usage
-   1.11. trace_dialog() usage
-   1.12. Set trace_to_databaseparameter
-   1.13. Set duplicate_with_hep parameter
-   1.14. Set hep_version parameter
-   1.15. Set hep_capture_id parameter
+   1.10. Set trace_to_databaseparameter
+   1.11. Set duplicate_with_hep parameter
+   1.12. Set hep_version parameter
+   1.13. Set hep_capture_id parameter
+   1.14. sip_trace() usage
+   1.15. trace_dialog() usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   Offer a possibility to store incoming/outgoing SIP messages in
-   database.
+   Offer a possibility to capture and store incoming/outgoing SIP
+   messages to an SQL database or to an external capturing node
+   (via HEP) (see http://www.sipcapture.org)
 
-   There are two ways of storing information.
-     * by calling explicitely the sip_trace() method in OpenSIPS
-       configuration file. In this case the original message is
-       processed.
+   There are two ways of triggering the tracing:
      * by setting the flag equal with the value of 'trace_flag'
-       (e.g., setflag(TRACE_FLAG)) parameter of the module. In
-       this case, the\ message sent forward is processed. The
-       logging mechanism is based on TM/SL callbacks, so only
-       messages processed with TM/SL are logged.
+       (e.g., setflag(TRACE_FLAG)) parameter of the module.
+     * by setting an 'traced_user_avp' AVP (see below details)
 
-   The tracing can be turned on/off using fifo commad.
+   Whatever triggering mode is used, there are three possible
+   tracing scopes :
+     * per SIP message - use sip_trace() function outside the
+       context/scope of a transaction (is stateless mode)
+     * per SIP transaction - use sip_trace() function inside the
+       context/scope of a transaction (the transaction exists for
+       that SIP requests)
+     * per SIP dialog - use trace_dialog() function
+
+   The tracing can be turned on/off using fifo command.
 
    opensipsctl fifo sip_trace on
 
@@ -228,17 +233,75 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
 modparam("siptrace", "table", "strace")
 ...
 
+1.3.10. trace_to_database (integer)
+
+   Parameter to enable/disable inserts to the Database from this
+   OpenSIPS.
+
+   In case we only want to send the SIP-Messages to the
+   duplicate_uri and not store the information to the local
+   database we can set this to "0".
+
+   Default value is "1".
+
+   Example 1.10. Set trace_to_databaseparameter
+...
+modparam("siptrace", "trace_to_database", 0)
+...
+
+1.3.11. duplicate_with_hep (integer)
+
+   Parameter to enable/disable homer encapsulate mode
+   (on(1)/off(0))
+
+   Default value is "0".
+
+   Example 1.11. Set duplicate_with_hep parameter
+...
+modparam("siptrace", "duplicate_with_hep", 1)
+...
+
+1.3.12. hep_version (integer)
+
+   The parameter indicate the version of HEP protocol. Can be 1 or
+   2. In HEPv2 the timestamp and capture agent ID will be included
+   to HEP header.
+
+   Default value is "1".
+
+   Example 1.12. Set hep_version parameter
+...
+modparam("siptrace", "hep_version", 2)
+...
+
+1.3.13. hep_capture_id (integer)
+
+   The parameter indicate the capture agent ID for HEPv2 protocol.
+   Limitation: 16-bit integer.
+
+   Default value is "1".
+
+   Example 1.13. Set hep_capture_id parameter
+...
+modparam("siptrace", "hep_capture_id", 234)
+...
+
 1.4. Exported Functions
 
 1.4.1.  sip_trace()
 
-   Store current processed SIP message in database. It is stored
-   in the form prior applying chages made to it.
+   Starts tracing for the currently processed SIP message. One of
+   the tracing triggers must be set (the trace flags or traced
+   user AVP).
+
+   Depending of the SIP transaction contect (if stateless or
+   statefull) the function will perform either per SIP message
+   tracing, either per SIP transaction tracing.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE.
 
-   Example 1.10. sip_trace() usage
+   Example 1.14. sip_trace() usage
 ...
 sip_trace();
 ...
@@ -250,68 +313,15 @@ sip_trace();
    (that starts the dialog) and it will automatically take care of
    tracing evertyhing related to that dialog.
 
-   When using this function, you do not have to explicity set any
-   tracing flag or to explicitly call anothe trace function.
+   One of the tracing triggers must be set (the trace flags or
+   traced user AVP).
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.11. trace_dialog() usage
+   Example 1.15. trace_dialog() usage
 ...
 if(is_method("INVITE") && !has_totag())
         trace_dialog();
-...
-
-1.4.3. trace_to_database (integer)
-
-   Parameter to enable/disable inserts to the Database from this
-   OpenSIPS.
-
-   In case we only want to send the SIP-Messages to the
-   duplicate_uri and not store the information to the local
-   database we can set this to "0".
-
-   Default value is "1".
-
-   Example 1.12. Set trace_to_databaseparameter
-...
-modparam("siptrace", "trace_to_database", 0)
-...
-
-1.4.4. duplicate_with_hep (integer)
-
-   Parameter to enable/disable homer encapsulate mode
-   (on(1)/off(0))
-
-   Default value is "0".
-
-   Example 1.13. Set duplicate_with_hep parameter
-...
-modparam("siptrace", "duplicate_with_hep", 1)
-...
-
-1.4.5. hep_version (integer)
-
-   The parameter indicate the version of HEP protocol. Can be 1 or
-   2. In HEPv2 the timestamp and capture agent ID will be included
-   to HEP header.
-
-   Default value is "1".
-
-   Example 1.14. Set hep_version parameter
-...
-modparam("siptrace", "hep_version", 2)
-...
-
-1.4.6. hep_capture_id (integer)
-
-   The parameter indicate the capture agent ID for HEPv2 protocol.
-   Limitation: 16-bit integer.
-
-   Default value is "1".
-
-   Example 1.15. Set hep_capture_id parameter
-...
-modparam("siptrace", "hep_capture_id", 234)
 ...
 
 1.5. Exported MI Functions
