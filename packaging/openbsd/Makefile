@@ -8,9 +8,9 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 2.2.3
+PORTVERSION= 2.2.4
 CATEGORIES= net
-MASTER_SITES= http://opensips.org/pub/opensips/2.2.3/src/
+MASTER_SITES= http://opensips.org/pub/opensips/2.2.4/src/
 
 MAINTAINER= bogdan@opensips.org
 
