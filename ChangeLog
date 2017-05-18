@@ -1,3 +1,285 @@
+=========================== Release 1.11.11 ==============================
+
+2017-05-18  Razvan Crainea  <razvan at opensips dot org>
+	* [8a70acd56] :
+
+	Bump version to 1.11.11
+
+
+2017-05-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b7cb23a6b] :
+
+	Fix documentation on tracing triggers.
+	Closes #932
+
+
+2017-05-17  Razvan Crainea  <razvan at opensips dot org>
+	* [d77bda6b1] :
+
+	rtpproxy: allow multiple servers on same machine
+	Before this fix, rtpproxy was accepting a single connection from a
+	specific IP. This prevented multiple rtpproxy servers on the same
+	machine (or behind the same NAT) to send timeout notifications
+	simultaneously.
+	Using this fix each rtpproxy provisioned can have on connection to
+	opensips.
+	This commit also adds some extra debugging.
+
+	Reported and debugged by Flavio Goncalves.
+	Fix #865
+	(cherry picked from commit 070e7d4710983abf76a3d16bdc67371c6c4941ce)
+
+
+2017-05-11  Razvan Crainea  <razvan at opensips dot org>
+	* [74c9bcec0] :
+
+	fix $source_uri pvar when using IPv6
+	This fix encloses the IPv6 address in square brackets in the resulted
+	URI
+
+	Reported by Ankur Gupta on mailing list
+	(cherry picked from commit 9798924ba8b24d3829e9ef536ef8f1542056d34d)
+
+
+2017-05-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [47e602ecd] :
+
+	Fix doc formating and improve some description
+	(cherry picked from commit aa2f0f5f2bd304e3f4923aca358bdacc70065e15)
+
+
+2017-05-03  Dan Pascu  <dan at ag-projects dot com>
+	* [d3782be1f] :
+
+	Backported support for compiling against libradcli
+
+
+2017-05-03  Dan Pascu  <dan at ag-projects dot com>
+	* [cc8435e60] :
+
+	Fixed compilation when SSLv3 is not available
+
+
+2017-04-25  Dan Pascu  <dan at ag-projects dot com>
+	* [7fb9ef1fc] :
+
+	Added support for RFC6598 private address range
+	(cherry picked from commit b604bd9a977f7237a0eab7abe15616b7a1a6364b)
+
+
+2017-04-24  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [65c5b34ea] :
+
+	[db datetime parsing] parse only date if date-time format parsing fails
+	(cherry picked from commit 334c67a9fb93fefe724292bd883f30ba722b2aa3)
+
+
+2017-04-21  Liviu Chircu  <liviu at opensips dot org>
+	* [9f0e7ee97] :
+
+	opensipsctl: Fix PostgreSQL login
+	Closes #1089
+	(cherry picked from commit 00906dec7df55d9feb117af53e059943a229993b)
+
+	Conflicts:
+		scripts/opensipsctl.pgsql
+
+
+2017-04-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f4576ba76] :
+
+	Fixed t_check_trans() not to report end-2-end ACKs
+	end-2-end ACKs are sequential requests (in dialog) forming a separate transaction than the INVITE; In terms of ACK matching, the t_check_trans() reports only hop-by-hop ACKs (to negative replies) which are part of the INVITE transaction.
+	(cherry picked from commit dee4d12f8e99adbb6e46476eaeaf2b80130cb5a9)
+
+
+2017-04-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4cef80fb4] :
+
+	Fixed bogus returned code for sl_send_reply()
+	If called for an ACK request, the sl_send_reply() func returns 0, terminated the script execution; Changed to return success (1).
+	(cherry picked from commit 527017104058deb253ba5be6b32239483f834839)
+
+
+2017-04-18  Razvan Crainea  <razvan at opensips dot org>
+	* [d60f70f70] :
+
+	add support for gcc 6.x compilers
+
+
+2017-04-13  Razvan Crainea  <razvan at opensips dot org>
+	* [d8bf1acdd] :
+
+	tls_mgm: fix kerberos error log
+	(cherry picked from commit b4ce514b0a22fb3d301126723cd455aa33e516dd)
+
+
+2017-04-12  Razvan Crainea  <razvan at opensips dot org>
+	* [6843ee099] :
+
+	tm: update branch route only if it was specified in branch route
+	(cherry picked from commit 77b37f5316623e0e55da4b798e6e0549100ff2f2)
+
+
+2017-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f0992d5ef] :
+
+	Fixed mixing of return code.
+	Do not re-use the "ret" return code variable when comes to testing the running of the script route (per rule) - it may stay stay to 0 and stop the whole script execution.
+	(cherry picked from commit 981209748cd07b876a29e0fb0e5b991ac39a99a7)
+
+
+2017-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [da68b9b5f] :
+
+	Fix printing the RURI value in debug log
+
+
+2017-04-05  Liviu Chircu  <liviu at opensips dot org>
+	* [7d8abcd62] :
+
+	opensipsctl: Supress random "path not found" errors
+	In case a binary is not found (e.g. gdb), opensipsctl will properly
+	report this by default when its related command is called.
+	(cherry picked from commit 5717839d265bd97d040634bb371ed1e7fecf33c5)
+
+
+2017-03-30  Razvan Crainea  <razvan at opensips dot org>
+	* [0354cd6d9] :
+
+	snmpstats: fix int to unsigned int warnings
+	(cherry picked from commit 5e61f3b910d78d2e9087801214545965febb4d6a)
+
+
+2017-03-30  Liviu Chircu  <liviu at opensips dot org>
+	* [40b6ce531] :
+
+	core "net:" statistics: Fix an integer signedness bug
+	Due to runaway usage of bitwise shifting, the byte matching code would fail to
+	work for interfaces having low order bytes with greater values than 128
+	(e.g. udp:31.32.33.147:5060). Consequently, all "net:" statistics for them
+	would show up as zeroes.
+
+	Thanks to Bogdan and Răzvan for discovering and troubleshooting
+	(cherry picked from commit 009691c6c7672927f68cfb8a0340166167a04107)
+
+
+2017-03-27  Razvan Crainea  <razvan at opensips dot org>
+	* [05ea491a3] :
+
+	fix transformations for input larger than 1024 bytes
+	(cherry picked from commit 8e9eb3efb2734714d5303e92cf03fccaee3b88e9)
+	(cherry picked from commit 99beee231032dd7fdb6e358d60c7937069d179a8)
+
+
+2017-03-27  Razvan Crainea  <razvan at opensips dot org>
+	* [43bc0da98] :
+
+	mod_fix: optimize formats when only a pvar is used
+	This currently breaks this modules which are mistakenly using gparam:
+	exec, siptrace
+	(cherry picked from commit daafbc82da7ff6bfe54b1ffe6958a49c853d1bd2)
+
+
+2017-03-24  Razvan Crainea  <razvan at opensips dot org>
+	* [e6ff63d1c] :
+
+	dialog: update cseq under lock
+	Close #1008
+	(cherry picked from commit 596fb1f3d4b227185556a992dbd9945fed206f5e)
+
+
+2017-03-22  Răzvan Crainea  <razvan at opensips dot org>
+	* [4ef05e2c1] :
+
+	consider global advertised address when choosing a listener
+	When searching for 2nd RR (the inbound one) also look into the globally
+	declared advertised address
+	(cherry picked from commit 9491782ab150be5d61b592e16d64121ecaab2420)
+
+
+2017-03-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e78066e72] :
+
+	removed dead code
+	Reported by Liviu Chircu
+	(cherry picked from commit aec22a3f12f93e12ff2dadf49e3d0acf7fac6779)
+
+
+2017-03-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3ed61b96e] :
+
+	Fix str comparison in IP matching
+	Closes #1077
+	(cherry picked from commit ec8842e673bcd1c64be586a4d6f2323f4b778aa1)
+
+
+2017-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [0fd074830] :
+
+	drouting: fix gw whitelist pkg mem leak
+	Thanks go to John Nash for reporting this
+	(cherry picked from commit db49bb5bb516601ff213db7096d3abc281d07df4)
+
+
+2017-03-09  Liviu Chircu  <liviu at opensips dot org>
+	* [bf113b02d] :
+
+	cachedb_mongodb: Improve reconnect handling
+	Avoid exiting the retry loop with a NULL cursor after several failed
+	reconnects
+	(cherry picked from commit f4dd4027ea71ce0dd0a3ff53af4bf7befda3d3ee)
+
+
+2017-03-08  Nick Altmann  <nick.altmann at gmail dot com>
+	* [16c57bdcd] :
+
+	RPM spec: disable aaa_radius for fedora > 23 because radiusclient-ng-devel is not available
+
+
+2017-03-08  Nick Altmann  <nick.altmann at gmail dot com>
+	* [1795e3285] :
+
+	RPM spec: exclude build cachedb_redis for el6 because hiredis_devel package was removed from epel
+
+
+2017-02-24  Andrey Vorobiev  <andrey.o.vorobiev at gmail dot com>
+	* [39d29802e] :
+
+	Set 'CURLOPT_FAILONERROR' option to '0' in rest_client module
+	This is done in order to archive following goals:
+	- suppress error log messages like 'curl_easy_perform: ...' when HTTP
+	  server returns response with status code larger or equal to 400.
+	- make 'rest_xxx' functions to have the same behaviour with different
+	  Curl distributions. Now for different Curls these functions may
+	  return different exit codes for the same HTTP response.
+
+	There is an option in Curl named 'CURLOPT_FAILONERROR'. If it's set to
+	'1' then if returned HTTP code is equal to or larger than 400 the HTTP
+	request is considered as failed and 'curl_easy_perform' returns non
+	'CURLE_OK' code. In vanilla (upstream) Curl this option is set to '0'
+	(do not fail) but some patched Curl versions set this option to '1'
+	(at least this is true for Debian Wheezy). As result we have a
+	different behaviour for different Curl derivatives. So it seems to be
+	better to enforce setting this option to '0' in order to have the same
+	behaviour for different Curls.
+	(cherry picked from commit 7bb059fa9cbfe6222d7eb7ebad4a2d51c4a25a8b)
+
+	Conflicts:
+		modules/rest_client/rest_methods.c
+
+
+2017-02-23  Razvan Crainea  <razvan at opensips dot org>
+	* [7b0189be5] :
+
+	update ChangeLog for 1.11.10
+
+
+2017-02-23  Razvan Crainea  <razvan at opensips dot org>
+	* [95419e130] :
+
+	bump version to 1.11.10
+
 =========================== Release 1.11.10 ==============================
 
 2017-02-23  Razvan Crainea  <razvan at opensips dot org>
