@@ -1,6 +1,6 @@
 %define name    opensips
 %define ver     2.2
-%define rel     2
+%define rel     3
 %define _sharedir %{_prefix}/share
 
 Summary:      OpenSIPS, very fast and flexible SIP Server
