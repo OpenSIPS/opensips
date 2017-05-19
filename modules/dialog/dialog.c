@@ -1098,9 +1098,21 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	if ( (dlg=get_current_dialog())!=NULL  )
 	{
 		/*Clear current flags before setting new ones*/
-		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | 
+		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE |
 		DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER | DLG_FLAG_REINVITE_PING_CALLEE);
 		dlg->flags |= flags;
+
+		if ( ((dlg->flags & DLG_FLAG_ISINIT_REINVITE_PING) == 0) &&
+		(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) ) {
+			if(d_tmb.register_tmcb( 0, t, TMCB_RESPONSE_OUT,
+			dlg_onreply_out, (void *)dlg, 0) <= 0) {
+				LM_ERR("can't register trace_onreply_out\n");
+			} else {
+				dlg->flags |= DLG_FLAG_ISINIT_REINVITE_PING;
+			}
+		}
+
 		return 1;
 	}
 

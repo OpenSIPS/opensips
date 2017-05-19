@@ -914,13 +914,16 @@ static void tmcb_unreference_dialog(struct cell* t, int type,
 	unref_dlg_destroy_safe((struct dlg_cell*)*param->param, 1);
 }
 
-static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
+void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct sip_msg *msg,*rpl;
 	struct dlg_cell *dlg;
 	str buffer,contact,sdp;
 
 	dlg = (struct dlg_cell *)(*ps->param);
+
+	if ( ((dlg->flags & DLG_FLAG_REINVITE_PING_CALLER) == 0) &&
+	((dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) == 0) ) return;
 
 	rpl = ps->rpl;
 	if(rpl==NULL || rpl==FAKED_REPLY) {
@@ -1088,11 +1091,14 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		/* dialog is fully initialized */
 		dlg->flags |= DLG_FLAG_ISINIT;
 
-		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+		if ( ((dlg->flags & DLG_FLAG_ISINIT_REINVITE_PING) == 0) &&
+		(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) ) {
 			if(d_tmb.register_tmcb( 0, t, TMCB_RESPONSE_OUT,
-			dlg_onreply_out, (void *)dlg, 0) <=0) {
+			dlg_onreply_out, (void *)dlg, 0) <= 0) {
 				LM_ERR("can't register trace_onreply_out\n");
+			} else {
+				dlg->flags |= DLG_FLAG_ISINIT_REINVITE_PING;
 			}
 		}
 	}
