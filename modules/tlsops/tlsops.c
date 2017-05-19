@@ -43,7 +43,9 @@
 #include "../../tcp_server.h"  /* tcpconn_get() */
 #include "../../sr_module.h"
 #include "../../pvar.h"
-
+#include "../../tls/tls_init.h"
+#include "../../parser/parse_from.h"
+#include "../../parser/digest/digest.h"
 
 
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
@@ -51,9 +53,37 @@ int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
 /* definition of exported functions */
 static int is_peer_verified(struct sip_msg*, char*, char*);
 
+/*
+ * Check if To header field contains the same username
+ * as digest credentials
+ */
+int tls_check_to(struct sip_msg* _msg, char* _str1, char* _str2);
+
+/*
+ * Check if From header field contains the same username
+ * as digest credentials
+ */
+int tls_check_from(struct sip_msg* _msg, char* _str1, char* _str2);
+
+/* MI function to refresh all TLS CRL & CA configuration */
+static struct mi_root* mi_refresh_crl_ca(struct mi_root* cmd, void* param);
+
 /* definition of internal functions */
 static int mod_init(void);
 static void mod_destroy(void);
+
+/* Return codes reference */
+#define OK 		 	 1		/* success */
+#define ERR_INTERNAL		-1		/* Internal Error */
+#define ERR_CREDENTIALS 	-2		/* No credentials error */
+#define ERR_DBUSE  		-3		/* Data Base Use error */
+#define ERR_USERNOTFOUND  	-4		/* No found username error */
+#define ERR_DBEMTPYRES		-5		/* Emtpy Query Result */
+
+#define ERR_DBACCESS	   	-7     		/* Data Base Access Error */
+#define ERR_DBQUERY	  	-8		/* Data Base Query Error */
+#define ERR_SPOOFEDUSER   	-9		/* Spoofed User Error */
+#define ERR_NOMATCH	    	-10		/* No match Error */
 
 /*
  * Module parameter variables
@@ -65,6 +95,10 @@ static void mod_destroy(void);
 static cmd_export_t cmds[]={
 	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
 			REQUEST_ROUTE},
+	{"tls_check_to", (cmd_function)tls_check_to, 0, 0, 0,
+			REQUEST_ROUTE},
+	{"tls_check_from", (cmd_function)tls_check_from, 0, 0, 0,
+			REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -73,6 +107,14 @@ static cmd_export_t cmds[]={
  */
 static param_export_t params[] = {
 	{0,0,0}
+};
+
+/*
+ * MI Commands
+ */
+static mi_export_t mi_cmds[] = {
+		{ "refresh_crl_ca",    0, mi_refresh_crl_ca,     0,  0,  0},
+		{  0,                  0, 0,                     0,  0,  0}
 };
 
 /*
@@ -181,6 +223,12 @@ static pv_export_t mod_items[] = {
 	{{"tls_peer_subject_unit", sizeof("tls_peer_subject_unit")-1},
 		850, tlsops_comp, 0,
 		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT | COMP_OU },
+	{{"tls_my_subject_serial", sizeof("tls_my_subject_serial")-1},
+			850, tlsops_comp, 0,
+			0, 0, pv_init_iname, CERT_LOCAL | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
+	{{"tls_peer_subject_serial", sizeof("tls_peer_subject_serial")-1},
+			850, tlsops_comp, 0,
+			0, 0, pv_init_iname, CERT_PEER | CERT_SUBJECT | COMP_SUBJECT_SERIAL },
 	{{"tls_peer_issuer_unit", sizeof("tls_peer_issuer_unit")-1},
 		850, tlsops_comp, 0,
 		0, 0, pv_init_iname, CERT_PEER  | CERT_ISSUER  | COMP_OU },
@@ -249,7 +297,7 @@ struct module_exports exports = {
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */
 	0,           /* exported statistics */
-	0,           /* exported MI functions */
+	mi_cmds,     /* exported MI functions */
 	mod_items,   /* exported pseudo-variables */
 	0,           /* extra processes */
 	mod_init,    /* module initialization function */
@@ -333,4 +381,112 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	LM_DBG("tlsops:is_peer_verified: peer is successfuly verified"
 		"...done\n");
 	return 1;
+}
+
+/*
+ *  mi cmd: refresh_crl_ca
+ *
+ */
+
+static struct mi_root* mi_refresh_crl_ca(struct mi_root* cmd, void* param)
+{
+	LM_INFO("mi_refresh_crl_ca:start\n");
+	reload_tls_domains_crl_ca_all();
+
+	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+}
+
+/*
+ * Check if a header field contains the same username
+ * as TLS CN
+ */
+static inline int check_username(struct sip_msg* _m, struct sip_uri *_uri) {
+#define CN_BUFF_SIZE 256
+	str cn = {0,0};
+	str usr = {0,0};
+	char cn_buff[CN_BUFF_SIZE];
+	char usr_buff[CN_BUFF_SIZE];
+
+	if (_uri == NULL) {
+		LM_ERR("Bad parameter\n");
+		return ERR_INTERNAL;
+	}
+
+	/* Parse To/From URI */
+	/* Make sure that the URI contains username */
+	if (_uri->user.len == 0 || _uri->host.len == 0) {
+		LM_ERR("Username not found in URI\n");
+		return ERR_USERNOTFOUND;
+	}
+
+	/* make CN like identifier */
+	if ((_uri->user.len + _uri->host.len + 4) >= CN_BUFF_SIZE){
+		LM_ERR("Username buffer too short\n");
+		return ERR_INTERNAL;
+	}
+
+	snprintf(usr_buff, CN_BUFF_SIZE, "%.*s@%.*s",
+			 _uri->user.len, _uri->user.s,
+			 _uri->host.len, _uri->host.s);
+	usr.s = usr_buff;
+	usr.len = _uri->user.len + _uri->host.len + 1;
+
+	/* Get CN from the peer certificate */
+	if (tlsops_get_peer_cn(_m, &cn, cn_buff, CN_BUFF_SIZE) != 0) {
+		LM_ERR("Could not extract CN\n");
+		return ERR_INTERNAL;
+	}
+
+	/* Check URI match to the CN match */
+	if (usr.len == cn.len) {
+		if (!strncasecmp(usr.s, cn.s,
+						 usr.len)) {
+			LM_DBG("Digest username and URI username match\n");
+			return OK;
+		} else {
+			LM_INFO("Spoofed user '%.*s' should be '%.*s' as in CN\n",
+					usr.len, usr.s,
+					cn.len, cn.s);
+			return ERR_SPOOFEDUSER;
+		}
+	}
+
+	LM_INFO("Digest username and URI username do NOT match, '%.*s' should be '%.*s' as in CN\n",
+			usr.len, usr.s,
+			cn.len, cn.s);
+	return ERR_NOMATCH;
+}
+
+/*
+ * Check username part in To header field
+ */
+int tls_check_to(struct sip_msg* _m, char* _s1, char* _s2)
+{
+	if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
+		LM_ERR("Error while parsing To header field\n");
+		return ERR_INTERNAL;
+	}
+	if(parse_to_uri(_m)==NULL) {
+		LM_ERR("Error while parsing To header URI\n");
+		return ERR_INTERNAL;
+	}
+
+	return check_username(_m, &get_to(_m)->parsed_uri);
+}
+
+/*
+ * Check username part in From header field
+ */
+int tls_check_from(struct sip_msg* _m, char* _s1, char* _s2)
+{
+	if (parse_from_header(_m) < 0) {
+		LM_ERR("Error while parsing From header field\n");
+		return ERR_INTERNAL;
+	}
+	if(parse_from_uri(_m)==NULL) {
+		LM_ERR("Error while parsing From header URI\n");
+		return ERR_INTERNAL;
+	}
+
+	return check_username(_m, &get_from(_m)->parsed_uri);
 }

@@ -404,6 +404,55 @@ int tlsops_sn(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+int tlsops_get_peer_cn(struct sip_msg *msg, str *res, char * buff, size_t buff_size)
+{
+	X509* cert;
+	struct tcp_connection* c;
+	X509_NAME* name;
+	X509_NAME_ENTRY* e;
+	ASN1_STRING* asn1;
+	int index, my = 0;
+	str text;
+
+	res->s = 0;
+	res->len = 0;
+	text.s = 0;
+	if (get_cert(&cert, &c, msg, my) < 0) {
+		return -1;
+	}
+
+	name = X509_get_subject_name(cert);
+	if (!name) {
+		LM_ERR("cannot extract subject or issuer name from peer"
+					   " certificate\n");
+		goto err;
+	}
+
+	index = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
+	e = X509_NAME_get_entry(name, index);
+	asn1 = X509_NAME_ENTRY_get_data(e);
+	text.len = ASN1_STRING_to_UTF8((unsigned char**)(void*)&text.s, asn1);
+	if (text.len < 0 || text.len >= buff_size) {
+		LM_ERR("failed to convert ASN1 string\n");
+		goto err;
+	}
+	memcpy(buff, text.s, text.len >= buff_size ? buff_size : (size_t)text.len);
+	res->s = buff;
+	res->len = text.len;
+
+	OPENSSL_free(text.s);
+
+	if (!my) X509_free(cert);
+	tcpconn_put(c);
+	return 0;
+
+err:
+	if (text.s) OPENSSL_free(text.s);
+	if (!my) X509_free(cert);
+	tcpconn_put(c);
+	return -2;
+}
+
 int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -451,6 +500,7 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 		case COMP_C:  nid = NID_countryName;            break;
 		case COMP_ST: nid = NID_stateOrProvinceName;    break;
 		case COMP_L:  nid = NID_localityName;           break;
+		case COMP_SUBJECT_SERIAL: nid = NID_serialNumber;break;
 		default:      nid = NID_undef;
 	}
 
@@ -478,6 +528,7 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 			case COMP_C:  elem = "CountryName";             break;
 			case COMP_ST: elem = "StateOrProvinceName";     break;
 			case COMP_L:  elem = "LocalityName";            break;
+			case COMP_SUBJECT_SERIAL:  elem = "SubjectSerialNumber";break;
 			default:      elem = "Unknown";                 break;
 			}
 			LM_DBG("element %s not found in "
