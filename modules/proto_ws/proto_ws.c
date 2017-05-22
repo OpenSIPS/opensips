@@ -440,6 +440,7 @@ static int proto_ws_send(struct socket_info* send_sock,
 		if ( d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 			}
 
 			/* don't allow future traces for this cnection */
@@ -517,6 +518,7 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 		if ( d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 			}
 
 			/* don't allow future traces for this connection */
