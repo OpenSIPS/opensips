@@ -1369,6 +1369,15 @@ int topo_callid_pre_raw(str *data, struct sip_msg* foo)
 		if (get_to(&msg)->tag_value.len>0) {
 			/* sequential request, check if callid needs to be unmasked */
 			if (dlg_th_needs_decoding(&msg)) {
+				/* Keep a copy of the original callid incase we need it in reply */
+				foo->orig_callid = pkg_malloc(sizeof(struct hdr_field));
+				if (foo->orig_callid==0) {
+					LM_ERR("out of pkg memory\n");
+					goto error;
+				}
+
+				memcpy(foo->orig_callid, msg.callid, sizeof(struct hdr_field));
+
 				if (dlg_th_decode_callid(&msg) < 0) {
 					LM_ERR("Failed to decode callid for sequential request\n");
 					goto error;
@@ -1466,7 +1475,8 @@ int topo_callid_post_raw(str *data, struct sip_msg* foo)
 			dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
 				/* reply going to caller -
 				decode was done on the receiving end, let it unchanged */
-			} else {
+			/*Callid may already be encoded from req*/
+			} else if (!dlg_th_needs_decoding(&msg)){
 				/* reply going to callee , need to encode callid */
 				if (dlg_th_encode_callid(&msg) < 0) {
 					LM_ERR("Failed to decode callid for reply\n");

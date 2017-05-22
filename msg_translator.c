@@ -2386,8 +2386,14 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 				/* RR only for 1xx and 2xx replies */
 				if (code<180 || code>=300)
 					break;
-			case HDR_FROM_T:
 			case HDR_CALLID_T:
+				if (msg->orig_callid != NULL) {
+					len += msg->orig_callid->len;
+				} else {
+					len += hdr->len;
+				}
+				break;
+			case HDR_FROM_T:
 			case HDR_CSEQ_T:
 				/* we keep the original termination for these headers*/
 				len += hdr->len;
@@ -2530,10 +2536,16 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 					bmark->to_tag_val.len = 0;
 				}
 			case HDR_FROM_T:
-			case HDR_CALLID_T:
 			case HDR_CSEQ_T:
 					append_str(p, hdr->name.s, hdr->len);
 					break;
+			case HDR_CALLID_T:
+				if (msg->orig_callid != NULL) {
+					append_str(p, msg->orig_callid->name.s, msg->orig_callid->len);
+				} else {
+					append_str(p, hdr->name.s, hdr->len);
+				}
+				break;
 			default:
 				/* do nothing, we are interested only in the above headers */
 				;
