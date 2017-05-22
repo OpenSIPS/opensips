@@ -124,8 +124,10 @@ int send_trace_message( void* message, void* destination)
 {
 	if ( net_trace_api->send_message( message, destination, 0) < 0 ) {
 		LM_ERR("failed to trace message!\n");
+		net_trace_api->free_message( message );
 		return -1;
 	}
+
 	net_trace_api->free_message( message );
 
 	return 0;
