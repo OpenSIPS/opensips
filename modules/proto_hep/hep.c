@@ -1681,11 +1681,16 @@ void free_hep_message(trace_message message)
 	generic_chunk_t *foo=NULL, *it;
 	struct hep_desc* hep_msg = message;
 
+	if (hep_msg==NULL)
+		return;
+
 	if (hep_msg->version == 3) {
 		/* free custom chunks */
-		for (it=hep_msg->u.hepv3.chunk_list; it; foo=it, it=it->next) {
-			if (foo)
-				pkg_free(foo);
+		it = hep_msg->u.hepv3.chunk_list;
+		while( it ) {
+			foo = it;
+			it = it->next;
+			pkg_free(foo);
 		}
 
 		/* free JSON payload if there */
@@ -1693,7 +1698,8 @@ void free_hep_message(trace_message message)
 			if ( !homer5_on ) {
 				JSON_free( hep_msg->fPayload );
 			} else {
-				pkg_free( ((str *)hep_msg->fPayload)->s );
+				if ( ((str *)hep_msg->fPayload)->s )
+					pkg_free( ((str *)hep_msg->fPayload)->s );
 				pkg_free( hep_msg->fPayload );
 			}
 		}
@@ -1706,9 +1712,6 @@ void free_hep_message(trace_message message)
 				pkg_free( hep_msg->correlation );
 			}
 		}
-
-		if (foo)
-			pkg_free(foo);
 	}
 
 	pkg_free(hep_msg);
