@@ -1,0 +1,192 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<section id="sec-lists">
+		<title>Black-White Lists</title>
+		<para>
+		The module is designed to filter packets based on black and white lists.
+		For users specify black or white, or both the list of IP networks.
+		Black is access, which is prohibited. White - allowed.
+		If we have white addresses, then black unneeded.
+		If user is not present - pass packet.
+		</para>
+		<para>
+		In DB table lists stored in records:
+		username - ip+mask(net) - black/white flag
+		1 - black, 0 - white.
+		Table readed in memory on start and can be refreshed by MI <function moreinfo="none">bw_reload</function>.
+		</para>
+		<para>
+		Function <function moreinfo="none">blackwhite</function> do search
+		message parameters in memory structure.
+		The time of execution on core2duo 3GHz - 12 microseconds.
+		Practically not depend on number of entries.
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>database</emphasis> - one of the DB modules
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		This is URL of the database to be used.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("blackwhite", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+		Name of database table containing black and white lists.
+		</para>
+		<para>
+		<emphasis>
+		Default value is <quote>blackwhite</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("blackwhite", "db_table", "blackwhite")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">blackwhite()</function>
+		</title>
+		<para>
+		Algorithm:
+		1. Find From username. If not found - return -3.
+		2. Find source IP of message in black list of user.
+		If found - return 1;
+		3. If white list empty - return -2.
+		4. Find source IP of message in white list of user.
+		If found - return -2.
+		5. Return 1.
+		</para>
+		<para>
+		Return values:
+		</para>
+		<para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			1 - block message
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			-1 - error
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			-2 - pass
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			-3 - username not found
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>blackwhite</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (blackwhite()) {
+	sl_send_reply("403","Forbidden");
+	exit;
+};
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+	
+	<section>
+	<title>Exported MI Functions</title>
+	
+	<section>
+		<title>
+		<function moreinfo="none">bw_reload</function>
+		</title>
+		<para>
+		Causes blackwhite module to re-read the contents of
+		the database table into memory.
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">bw_dump</function>
+		</title>
+		<para>
+		Causes blackwhite module to dump contents of memory.
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+	</section>
+	</section>
+
+</chapter>
+

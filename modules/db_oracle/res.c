@@ -209,10 +209,10 @@ set_int:
 		case SQLT_AFC:		/* Ansi fixed char */
 		case SQLT_AVC:		/* Ansi Var char */
 //		case SQLT_RID:		/* rowid */
-			LM_DBG("use DB_STR result type\n");
-			RES_TYPES(_r)[i] = DB_STR;
+			LM_DBG("use DB_STRING result type\n");
+			RES_TYPES(_r)[i] = DB_STRING;
 dyn_str:
-			dtype = SQLT_CHR;
+			dtype = SQLT_STR;
 			len = 0; /* DATA_SIZE is ub2 */
 			status = OCIAttrGet(param, OCI_DTYPE_PARAM,
 				(dvoid**)(dvoid*)&len, NULL, OCI_ATTR_DATA_SIZE,
@@ -293,7 +293,7 @@ static int convert_row(db_res_t* _res, db_row_t* _r, dmap_t* _d)
 			break;
 
 		case DB_BIGINT:
-			VAL_BIGINT(v) = *_d->pv[i].i;
+			VAL_BIGINT(v) = *((long long*)_d->pv[i].i);
 			break;
 
 		case DB_BITMAP:
@@ -369,7 +369,7 @@ static int get_rows(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 	// timelimited operation
 	status = begin_timelimit(con, 0);
 	if (status != OCI_SUCCESS) goto ora_err;
-	do status = OCIStmtFetch2(_c, con->errhp, 1, OCI_FETCH_NEXT, 0,
+	do status = OCIStmtFetch2(_c, con->errhp, 1, OCI_FETCH_LAST, 0,
 		OCI_DEFAULT);
 	while (wait_timelimit(con, status));
 	if (done_timelimit(con, status)) goto stop_load;
@@ -388,6 +388,13 @@ static int get_rows(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 	if (!rcnt) {
 		LM_ERR("lastpos==0\n");
 		goto stop_load;
+	}
+
+	if (rcnt > 5) {
+		ub4 prefetch = rcnt/5;
+		status = OCIAttrSet(_c, OCI_HTYPE_STMT, &prefetch, 0,
+			OCI_ATTR_PREFETCH_ROWS, con->errhp);
+		if (status != OCI_SUCCESS) goto ora_err;
 	}
 
 	RES_ROW_N(_r) = rcnt;
