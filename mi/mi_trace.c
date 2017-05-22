@@ -211,7 +211,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 		if ( correlation_id < 0 || correlation_vendor < 0 ) {
 			if ( load_correlation_id() < 0 ) {
 				LM_ERR("can't load correlation id!\n");
-				return -1;
+				goto error;
 			}
 		}
 
@@ -219,7 +219,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 				correlation_value->len, TRACE_TYPE_STR,
 					correlation_id, correlation_vendor) < 0 ) {
 			LM_ERR("can't set the correlation id!\n");
-			return -1;
+			goto error;
 		}
 	}
 
@@ -245,12 +245,15 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 
 	if (mi_trace_api->send_message(message, trace_dst, 0) < 0) {
 		LM_ERR("failed to send trace message!\n");
-		return -1;
+		goto error;
 	}
 
 	mi_trace_api->free_message(message);
 
 	return 0;
+error:
+	mi_trace_api->free_message(message);
+	return -1;
 }
 
 int load_correlation_id(void)
