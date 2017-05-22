@@ -451,6 +451,7 @@ send_it:
 		/* send the message if set from tls_mgm */
 		if ( data->message ) {
 			send_trace_message( data->message, t_dst);
+			data->message = NULL;
 		}
 
 		/* don't allow future traces for this connection */

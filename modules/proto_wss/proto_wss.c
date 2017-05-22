@@ -489,6 +489,7 @@ send_it:
 	if ( d && d->dest && d->tprot ) {
 		if ( d->message ) {
 			send_trace_message( d->message, t_dst);
+			d->message = NULL;
 		}
 
 		/* don't allow future traces for this cnection */
@@ -542,6 +543,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 
 				/* don't allow future traces for this connection */
 				d->tprot = 0;
@@ -570,6 +572,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 								d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 			}
 
 			/* don't allow future traces for this connection */
