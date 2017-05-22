@@ -2484,14 +2484,19 @@ static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_
 		return -1;
 	}
 
-	tprot.add_payload_part( trace_msg, "payload", body);
+	if (tprot.add_payload_part( trace_msg, "payload", body)<0) {
+		LM_ERR("failed to add payload to trace message\n");
+		goto error;
+	}
 
 	if ( info->conn_id != 0 ) {
 		tcp_get_correlation_id( info->conn_id, &trans_correlation_id);
 
-
 		conn_id_s.s =  int2str( trans_correlation_id, &conn_id_s.len);
-		tprot.add_extra_correlation( trace_msg, "net", &conn_id_s);
+		if (tprot.add_extra_correlation( trace_msg, "net", &conn_id_s)<0) {
+			LM_ERR("failed to add 'net' correlation to trace message\n");
+			goto error;
+		}
 	}
 
 	if (correlation) {
@@ -2505,18 +2510,21 @@ static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_
 				correlation->s, correlation->len,
 					TRACE_TYPE_STR, corr_id, corr_vendor)) {
 			LM_ERR("failed to add correlation id to the packet!\n");
-			return -1;
+			goto error;
 		}
 	}
 
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
 		LM_ERR("failed to forward message to destination!\n");
-		return -1;
+		goto error;
 	}
 
 	tprot.free_message(trace_msg);
 
 	return 0;
+error:
+	tprot.free_message(trace_msg);
+	return -1;
 #undef SIP_TRACE_MAX
 }
 
