@@ -1583,7 +1583,7 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 			homer5_buf = pkg_malloc( sizeof(str) );
 			if ( !homer5_buf ) {
 				LM_ERR("no more pkg mem!\n");
-				return 0;
+				return -1;
 			}
 
 			homer5_buf->len = 0;
@@ -1593,7 +1593,9 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 
 		if ( !homer5_buf->s ) {
 			LM_ERR("no more pkg mem!\n");
-			return 0;
+			if (hep_msg->fPayload==NULL)
+				pkg_free(homer5_buf);
+			return -1;
 		}
 
 		if ( hep_msg->fPayload ) {
