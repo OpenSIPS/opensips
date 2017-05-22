@@ -2769,7 +2769,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 					correlation_id->s, correlation_id->len,
 				TRACE_TYPE_STR, corr_id, corr_vendor)) {
 			LM_ERR("failed to add correlation id to the packet!\n");
-			return -1;
+			goto error;
 		}
 
 		/* here the message can be modified */
@@ -2778,13 +2778,16 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 
 		if (tprot.send_message(trace_msg, it->el.hep.hep_id, NULL) < 0) {
 			LM_ERR("failed to send trace message!\n");
-			return -1;
+			goto error;
 		}
 
 		tprot.free_message(trace_msg);
 	}
 
 	return 0;
+error:
+	tprot.free_message(trace_msg);
+	return -1;
 }
 
 const struct trace_proto* get_traced_protos(void)
