@@ -629,7 +629,8 @@ static inline int amqp_check_status(struct rmq_server *srv, int r, int* retry)
 
 		/* This is happening on rabbitmq server restart */
 		case AMQP_STATUS_SOCKET_ERROR:
-			LM_WARN("[%.*s] socket error\n", srv->cid.len, srv->cid.s);
+			LM_WARN("[%.*s] socket error: %s(%d)\n",
+					srv->cid.len, srv->cid.s, strerror(errno), errno);
 			break;
 
 		default:
