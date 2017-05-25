@@ -190,7 +190,7 @@ modparam("sql_cacher", "columns_delimiter", ",")
 
    Example 1.5. sql_fetch_nr_rows parameter usage
 
-modparam("sql_cacher", "sql_fetch_nr_rows", "1000")
+modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
 
 
 1.3.6. full_caching_expire (integer)
@@ -203,7 +203,7 @@ modparam("sql_cacher", "sql_fetch_nr_rows", "1000")
 
    Example 1.6. full_caching_expire parameter usage
 
-modparam("sql_cacher", "full_caching_expire", "3600")
+modparam("sql_cacher", "full_caching_expire", 3600)
 
 
 1.3.7. reload_interval (integer)
@@ -215,7 +215,7 @@ modparam("sql_cacher", "full_caching_expire", "3600")
 
    Example 1.7. reload_interval parameter usage
 
-modparam("sql_cacher", "reload_interval", "5")
+modparam("sql_cacher", "reload_interval", 5)
 
 
 1.4. Exported Functions
