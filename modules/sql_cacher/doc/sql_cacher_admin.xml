@@ -207,7 +207,7 @@ modparam("sql_cacher", "columns_delimiter", ",")
 		<title><varname>sql_fetch_nr_rows</varname> parameter usage</title>
 		<programlisting format="linespecific">
    
-modparam("sql_cacher", "sql_fetch_nr_rows", "1000")
+modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
    
 </programlisting>
 	    </example>
@@ -227,7 +227,7 @@ modparam("sql_cacher", "sql_fetch_nr_rows", "1000")
 		<title><varname>full_caching_expire</varname> parameter usage</title>
 		<programlisting format="linespecific">
    
-modparam("sql_cacher", "full_caching_expire", "3600")
+modparam("sql_cacher", "full_caching_expire", 3600)
    
 </programlisting>
 	    </example>
@@ -246,7 +246,7 @@ modparam("sql_cacher", "full_caching_expire", "3600")
 		<title><varname>reload_interval</varname> parameter usage</title>
 		<programlisting format="linespecific">
    
-modparam("sql_cacher", "reload_interval", "5")
+modparam("sql_cacher", "reload_interval", 5)
    
 </programlisting>
 	    </example>
