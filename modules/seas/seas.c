@@ -126,6 +126,7 @@ struct module_exports exports=
    0,
    0,
    0,
+   0,           /* exported transformations */
    0,           /* extra processes */
    seas_init,   /* module initialization function */
    (response_function) 0,

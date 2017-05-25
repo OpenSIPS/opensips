@@ -323,6 +323,7 @@ void cleanup(int show_status)
 	destroy_stats_collector();
 	destroy_script_cb();
 	pv_free_extra_list();
+	tr_free_extra_list();
 	destroy_argv_list();
 	destroy_black_lists();
 #ifdef PKG_MALLOC

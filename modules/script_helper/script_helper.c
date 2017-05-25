@@ -99,6 +99,7 @@ struct module_exports exports =
 	NULL,
 	NULL,
 	NULL,
+	NULL,			  /* exported transformations */
 	NULL,
 	mod_init,
 	NULL,

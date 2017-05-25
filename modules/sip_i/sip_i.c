@@ -32,6 +32,7 @@
 #include "../../parser/parse_pai.h"
 #include "../../parser/parse_privacy.h"
 #include "../../parser/parse_uri.h"
+#include "../../transformations.h"
 #include "isup.h"
 #include "sip_i.h"
 
@@ -50,6 +51,7 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 
 /* script functions */
 static int add_isup_part_cmd(struct sip_msg *msg, char *param);
+
 
 static pv_export_t mod_items[] = {
 	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
@@ -92,6 +94,7 @@ struct module_exports exports= {
 	0,       			/* exported statistics */
 	0,         			/* exported MI functions */
 	mod_items,       	/* exported pseudo-variables */
+	0,					/* exported transformations */
 	0,               	/* extra processes */
 	mod_init,        	/* module initialization function */
 	0,               	/* reply processing function */

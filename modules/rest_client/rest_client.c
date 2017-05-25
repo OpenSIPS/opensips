@@ -191,6 +191,7 @@ struct module_exports exports = {
 	NULL,     /* exported statistics */
 	NULL,     /* exported MI functions */
 	NULL,     /* exported pseudo-variables */
+	NULL,	  /* exported transformations */
 	NULL,     /* extra processes */
 	mod_init, /* module initialization function */
 	NULL,     /* response function*/

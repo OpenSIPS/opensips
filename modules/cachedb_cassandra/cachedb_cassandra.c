@@ -84,6 +84,7 @@ struct module_exports exports= {
 	0,
 	0,
 	0,
+	0,				 /* exported transformations */
 	0,
 	mod_init,
 	(response_function) 0,
