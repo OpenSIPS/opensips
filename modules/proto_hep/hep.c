@@ -1512,6 +1512,11 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 
 	hep_msg = (struct hep_desc*) message;
 
+	if (hep_msg->version < 3) {
+		LM_DBG("Won't add data to HEP proto lower than 3!\n");
+		return 0;
+	}
+
 	if ( !homer5_on ) {
 		if ( hep_msg->correlation) {
 			root = (cJSON *) hep_msg->correlation;
@@ -1559,6 +1564,11 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 	}
 
 	hep_msg = (struct hep_desc*) message;
+
+	if (hep_msg->version < 3) {
+		LM_DBG("Won't add data to HEP proto lower than 3!\n");
+		return 0;
+	}
 
 	if ( !homer5_on ) {
 		if ( hep_msg->fPayload ) {
