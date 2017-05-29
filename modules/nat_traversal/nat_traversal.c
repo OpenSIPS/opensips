@@ -290,7 +290,7 @@ struct module_exports exports = {
     NULL,            // exported statistics (initialized early in mod_init)
     NULL,            // exported MI functions
     pvars,           // exported pseudo-variables
-    NULL             // exported transformations
+    NULL,            // exported transformations
     NULL,            // extra processes
     mod_init,        // module init function (before fork. kids will inherit)
     reply_filter,    // reply processing function
