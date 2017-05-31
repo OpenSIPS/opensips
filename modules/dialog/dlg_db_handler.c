@@ -989,7 +989,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+14, cell->legs[callee_leg].r_cseq);
 		SET_INT_VALUE(values+15,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
 		SET_INT_VALUE(values+16,cell->legs[callee_leg].last_gen_cseq);
-		SET_INT_VALUE(values+17, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
+		SET_INT_VALUE(values+17, cell->flags &
+				~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 		set_final_update_cols(values+18, cell, 0);
 		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].route_set);
 		SET_STR_VALUE(values+23, cell->legs[callee_leg].route_set);
@@ -1033,7 +1034,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+14, cell->legs[callee_leg].r_cseq);
 		SET_INT_VALUE(values+15,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
 		SET_INT_VALUE(values+16,cell->legs[callee_leg].last_gen_cseq);
-		SET_INT_VALUE(values+17, cell->flags);
+		SET_INT_VALUE(values+17, cell->flags &
+				~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 		set_final_update_cols(values+18, cell, 1);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
@@ -1384,7 +1386,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				set_final_update_cols(values+21, cell,
 					(on_shutdown) || (cell->flags&DLG_FLAG_CHANGED)  );
-				SET_INT_VALUE(values+25, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
+				SET_INT_VALUE(values+25, cell->flags &
+					~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
