@@ -36,8 +36,13 @@ Robert-Vladut Patrascu
 
               1.5.3. $isup_msg_type
 
-        1.6. ISUP parameter subfields and string aliases
-        1.7. Mandatory ISUP parameters
+        1.6. Exported script transformations
+
+              1.6.1. {isup.param,param_name,[subfield_name]}
+              1.6.2. {isup.param.str,param_name,[subfield_name]}
+
+        1.7. ISUP parameter subfields and string aliases
+        1.8. Mandatory ISUP parameters
 
    List of Examples
 
@@ -47,6 +52,8 @@ Robert-Vladut Patrascu
    1.4. isup_param usage
    1.5. isup_param_str usage
    1.6. isup_msg_type usage
+   1.7. isup.param usage
+   1.8. isup.param.str usage
 
 Chapter 1. Admin Guide
 
@@ -229,7 +236,7 @@ if ($rs == "183") {
    parameter or parameter subfield have a string alias defined.
 
    For more information on supported subfields and aliases check
-   Section 1.6, “ISUP parameter subfields and string aliases”.
+   Section 1.7, “ISUP parameter subfields and string aliases”.
 
    Example 1.4. isup_param usage
 ...
@@ -292,7 +299,89 @@ ators)");
         xlog("ISUP msg is: $isup_msg_type");
 ...
 
-1.6. ISUP parameter subfields and string aliases
+1.6. Exported script transformations
+
+   The module also provides a way for accessing the value of ISUP
+   parameters and their subfields from an ISUP message contained
+   in a arbitrary script variable as opposed to directly from the
+   processed SIP (with encapsulated ISUP) message. This is done by
+   aplying a transformation to a script variable containing the
+   ISUP message body. The value of the original variable is not
+   altered and a corresponding integer or string value
+   (representing an ISUP parameter or subfield as the exact value
+   or string alias) is returned.
+
+1.6.1.  {isup.param,param_name,[subfield_name]}
+
+   The result of this transformation is similar to a read access
+   of the $isup_param pseudovariable with the exception that byte
+   level access is not provided.
+
+   The parameters for the transformation are:
+     * param_name - name of the ISUP parameter as it appears in
+       ITU-T Rec. Q.763
+     * subfield_name - optional, name of the subfield of the ISUP
+       parameter as it appears in ITU-T Rec. Q.763
+
+   Example 1.7. isup.param usage
+...
+        # for this example, we take the ISUP body from the received SIP-
+I message
+        $var(isup_body) = $(rb[1]);
+
+        # may print: "NOA is: 3"
+        xlog("NOA is: $(var(isup_body){isup.param, Called Party Number,
+Nature of address indicator})\n");
+
+        # may print: "CpN is: 99991234"
+        xlog("CpN is: $(var(isup_body){isup.param, Called Party Number,
+Address signal})\n");
+
+        # may print: "Cg cat is: 10"
+        xlog("Cg cat is: $(var(isup_body){isup.param, Calling party's ca
+tegory})\n");
+
+        # may print: "nature of conn: 0x01"
+        xlog("nature of conn: $(var(isup_body){isup.param, Nature of con
+nection indicators})\n");
+...
+
+1.6.2.  {isup.param.str,param_name,[subfield_name]}
+
+   The result of this transformation is similar to a read access
+   of the $isup_param_str pseudovariable with the exception that
+   byte level access is not provided.
+
+   The parameters for the transformation are:
+     * param_name - name of the ISUP parameter as it appears in
+       ITU-T Rec. Q.763
+     * subfield_name - optional, name of the subfield of the ISUP
+       parameter as it appears in ITU-T Rec. Q.763
+
+   Example 1.8. isup.param.str usage
+...
+        # for this example, we take the ISUP body from the received SIP-
+I message
+        $var(isup_body) = $(rb[1]);
+
+        # may print: "NOA is: national"
+        xlog("NOA is: $(var(isup_body){isup.param.str, Called Party Numb
+er, Nature of address indicator})\n");
+
+        # may print: "CpN is: 99991234"
+        xlog("CpN is: $(var(isup_body){isup.param.str, Called Party Numb
+er, Address signal})\n");
+
+        # may print: "Cg cat is: ordinary"
+        xlog("Cg cat is: $(var(isup_body){isup.param.str, Calling party'
+s category})\n");
+
+        # may print: "nature of conn: 0x01"
+        xlog("nature of conn: $(var(isup_body){isup.param.str, Nature of
+ connection indicators})\n");
+...
+
+1.7. ISUP parameter subfields and string aliases
 
    The supported subfields for each ISUP parameter and the string
    aliases for their values are the following:
@@ -523,7 +612,7 @@ ators)");
           + 1536 kbit/s - 9
           + 1920 kbit/s - 10
 
-1.7. Mandatory ISUP parameters
+1.8. Mandatory ISUP parameters
 
    The mandatory parameters(According to ITU-T Rec. Q.763) for
    each supported ISUP message that requires this are the

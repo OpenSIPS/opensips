@@ -28,6 +28,7 @@
 #include "../../mem/mem.h"
 #include "../../pvar.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../parser/parse_body.h"
 #include "../../parser/parse_pai.h"
 #include "../../parser/parse_privacy.h"
@@ -52,6 +53,15 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 /* script functions */
 static int add_isup_part_cmd(struct sip_msg *msg, char *param);
 
+/* script transformations */
+int tr_isup_parse(str* in, trans_t *t);
+int tr_isup_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+static trans_export_t trans[] = {
+	{str_init("isup"), tr_isup_parse, tr_isup_eval},
+	{{0,0},0,0}
+};
 
 static pv_export_t mod_items[] = {
 	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
@@ -94,7 +104,7 @@ struct module_exports exports= {
 	0,       			/* exported statistics */
 	0,         			/* exported MI functions */
 	mod_items,       	/* exported pseudo-variables */
-	0,					/* exported transformations */
+	trans,					/* exported transformations */
 	0,               	/* extra processes */
 	mod_init,        	/* module initialization function */
 	0,               	/* reply processing function */
@@ -183,7 +193,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 
 	/* search provided param in isup params list */
 	for (i = 0; i < NO_ISUP_PARAMS; i++) {
-		if (!str_strcasecmp(&param_s, &isup_params[i].name)) {
+		if (str_strcasecmp(&param_s, &isup_params[i].name) == 0) {
 			isup_params_idx = i;
 
 			/* if we parsed a subfield, search in the known subfields for this param */
@@ -196,7 +206,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 				}
 
 				for (j = 0; isup_params[i].subfield_list[j].name.s; j++) {
-					if (!str_strcasecmp(&subfield_s, &isup_params[i].subfield_list[j].name)) {
+					if (str_strcasecmp(&subfield_s, &isup_params[i].subfield_list[j].name) == 0) {
 						subfield_idx = j;
 						break;
 					}
@@ -287,7 +297,7 @@ void free_isup_parsed(void *parsed, pb_free free_f)
 }
 
 void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
-					struct sip_msg *src_msg, struct sip_msg *dst_msg, pb_malloc malloc_f)
+			struct sip_msg *src_msg, struct sip_msg *dst_msg, pb_malloc malloc_f)
 {
 	struct isup_parsed_struct *new_ps, *old_ps;
 	struct opt_param *optp_it, *optp_new = NULL, *optp_prev = NULL;
@@ -355,29 +365,15 @@ static struct body_part *get_isup_part(struct sip_msg *msg)
 	return NULL;
 }
 
-static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
+static struct isup_parsed_struct *parse_isup(str isup_buffer)
 {
-	struct isup_parsed_struct *parse_struct;
-	struct body_part *p;
+	struct isup_parsed_struct *parse_struct = NULL;
 	int remain_len;
 	int offset = 0;
 	int i;
 	int msg_idx = -1, isup_param_idx = -1;
 	char *param_pointer;
-	struct opt_param *new;
-
-	p = get_isup_part(msg);
-	if (!p) {
-		LM_INFO("No ISUP body for this message\n");
-		return NULL;
-	}
-
-	if (p->body.len == 0) {
-		LM_WARN("empty ISUP body\n");
-		return NULL;
-	}
-
-	remain_len = p->body.len;
+	struct opt_param *new = NULL;
 
 	parse_struct = pkg_malloc(sizeof(struct isup_parsed_struct));
 	if (!parse_struct) {
@@ -385,45 +381,54 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 		return NULL;
 	}
 
+	remain_len = isup_buffer.len;
+
 	parse_struct->total_len = 0;
 
 	/* parse message type */
-	parse_struct->message_type = *(unsigned char*)p->body.s;
+	parse_struct->message_type = *(unsigned char*)isup_buffer.s;
 	offset++;
 	remain_len--;
 
 	msg_idx = get_msg_idx_by_type(parse_struct->message_type);
 	if (msg_idx < 0) {
 		LM_ERR("Unknown ISUP message type\n");
-		return NULL;
+		goto error;
 	}
 
 	/* parse mandatory fixed parms */
 	for (i = 0; i < isup_messages[msg_idx].mand_fixed_params; i++) {
-		parse_struct->mand_fix_params[i].param_code = isup_messages[msg_idx].mand_param_list[i];
+		parse_struct->mand_fix_params[i].param_code =
+							isup_messages[msg_idx].mand_param_list[i];
 
 		isup_param_idx = get_param_idx_by_code(isup_messages[msg_idx].mand_param_list[i]);
 
 		parse_struct->mand_fix_params[i].len = isup_params[isup_param_idx].len;
 		parse_struct->total_len += isup_params[isup_param_idx].len;
-		memcpy(parse_struct->mand_fix_params[i].val, p->body.s + offset,
+
+		memcpy(parse_struct->mand_fix_params[i].val, isup_buffer.s + offset,
 				isup_params[isup_param_idx].len);
 
 		remain_len -= isup_params[isup_param_idx].len;
 		offset += isup_params[isup_param_idx].len;
 	}
 
-	param_pointer = p->body.s + offset;
+	param_pointer = isup_buffer.s + offset;
 
 	/* parse mandatory variable params */
-	for (i = 0; i < isup_messages[msg_idx].mand_var_params && remain_len > 0 && *param_pointer; i++) {
+	for (i = 0; i < isup_messages[msg_idx].mand_var_params && remain_len > 0 &&
+															*param_pointer; i++) {
 		parse_struct->mand_var_params[i].param_code =
-			isup_messages[msg_idx].mand_param_list[isup_messages[msg_idx].mand_fixed_params + i];
+			isup_messages[msg_idx].mand_param_list[
+									isup_messages[msg_idx].mand_fixed_params + i];
 
 		parse_struct->mand_var_params[i].len =
 			*(unsigned char*)(param_pointer + *(unsigned char*)param_pointer);
+
 		parse_struct->total_len += parse_struct->mand_var_params[i].len;
-		memcpy(parse_struct->mand_var_params[i].val, param_pointer + *(unsigned char*)param_pointer + 1,
+
+		memcpy(parse_struct->mand_var_params[i].val,
+			param_pointer + *(unsigned char*)param_pointer + 1,
 			parse_struct->mand_var_params[i].len);
 
 		/* 1 byte for pointer + 1 byte for length indicator + param len */
@@ -440,17 +445,25 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 		offset += *(unsigned char*)param_pointer;
 		remain_len-- ;	/* optional parameter pointer */
 
-		for (i = 0; remain_len > 0 && *(p->body.s + offset); i++) {
+		for (i = 0; remain_len > 0 && *(isup_buffer.s + offset); i++) {
 			new = pkg_malloc(sizeof *new);
+			if (!new) {
+				LM_ERR("No more pkg memory\n");
+				goto error;
+			}
 			new->next = parse_struct->opt_params_list;
 			parse_struct->opt_params_list = new;
 
-			parse_struct->opt_params_list->param.param_code = *(unsigned char *)(p->body.s + offset);
+			parse_struct->opt_params_list->param.param_code =
+									*(unsigned char *)(isup_buffer.s + offset);
 
-			parse_struct->opt_params_list->param.len = *(unsigned char *)(p->body.s + offset + 1);
+			parse_struct->opt_params_list->param.len =
+								*(unsigned char *)(isup_buffer.s + offset + 1);
+
 			parse_struct->total_len += parse_struct->opt_params_list->param.len;
-			memcpy(parse_struct->opt_params_list->param.val, p->body.s + offset + 2,
-					parse_struct->opt_params_list->param.len);
+
+			memcpy(parse_struct->opt_params_list->param.val,
+				isup_buffer.s + offset + 2, parse_struct->opt_params_list->param.len);
 
 			parse_struct->no_opt_params++;
 
@@ -458,6 +471,34 @@ static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
 			offset += 2 + parse_struct->opt_params_list->param.len;
 		}
 	}
+
+	return parse_struct;
+
+error:
+	if (parse_struct)
+		pkg_free(parse_struct);
+	return NULL;
+}
+
+static struct isup_parsed_struct *parse_isup_body(struct sip_msg *msg)
+{
+	struct isup_parsed_struct *parse_struct;
+	struct body_part *p;
+
+	p = get_isup_part(msg);
+	if (!p) {
+		LM_INFO("No ISUP body for this message\n");
+		return NULL;
+	}
+
+	if (p->body.len == 0) {
+		LM_WARN("empty ISUP body\n");
+		return NULL;
+	}
+
+	parse_struct = parse_isup(p->body);
+	if (!parse_struct)
+		return NULL;
 
 	p->parsed = (void*)parse_struct;
 	p->free_parsed_f = (free_parsed_part_function)free_isup_parsed;
@@ -566,13 +607,51 @@ static int read_hex_param(char *hex_str, unsigned char *param_val, int param_len
 	return 0;
 }
 
-int get_isup_param(struct sip_msg *msg, pv_param_t *param, int *pv_idx, struct isup_parse_fixup **fix,
-					struct param_parsed_struct **p, struct isup_parsed_struct **parse_struct,
-					struct body_part **isup_part, int *param_type)
+struct param_parsed_struct *get_isup_param(struct isup_parsed_struct *parse_struct,
+											int isup_params_idx, int *param_type)
 {
+	struct param_parsed_struct *p = NULL;
 	struct opt_param *opt_p;
 	int i, msg_idx;
 
+	msg_idx = get_msg_idx_by_type(parse_struct->message_type);
+	if (msg_idx < 0) {
+		LM_ERR("BUG - Unknown ISUP message type: %d\n", parse_struct->message_type);
+		return NULL;
+	}
+
+	/* find required parameter in the parse struct */
+	for (i = 0; i < isup_messages[msg_idx].mand_fixed_params; i++)
+		if (isup_params[isup_params_idx].param_code ==
+			parse_struct->mand_fix_params[i].param_code) {
+			p = parse_struct->mand_fix_params + i;
+			*param_type = 0;
+			break;
+		}
+	if (!p)
+		for (i = 0; i < isup_messages[msg_idx].mand_var_params; i++)
+			if (isup_params[isup_params_idx].param_code ==
+				parse_struct->mand_var_params[i].param_code) {
+				p = parse_struct->mand_var_params + i;
+				*param_type = 1;
+				break;
+			}
+	if (!p)
+		for (opt_p = parse_struct->opt_params_list; opt_p; opt_p = opt_p->next)
+			if (isup_params[isup_params_idx].param_code == opt_p->param.param_code) {
+				p = &opt_p->param;
+				*param_type = 2;
+				break;
+			}
+
+	return p;
+}
+
+int get_isup_param_msg(struct sip_msg *msg, pv_param_t *param, int *pv_idx,
+	struct isup_parse_fixup **fix, struct param_parsed_struct **p,
+	struct isup_parsed_struct **parse_struct, struct body_part **isup_part,
+	int *param_type)
+{
 	if (!param)
 		return -1;
 
@@ -613,69 +692,29 @@ int get_isup_param(struct sip_msg *msg, pv_param_t *param, int *pv_idx, struct i
 		}
 	}
 
-	msg_idx = get_msg_idx_by_type((*parse_struct)->message_type);
-	if (msg_idx < 0) {
-		LM_ERR("BUG - Unknown ISUP message type: %d\n", (*parse_struct)->message_type);
-		return -1;
-	}
-
-	/* find required parameter in the parse struct */
-	for (i = 0; i < isup_messages[msg_idx].mand_fixed_params; i++)
-		if (isup_params[(*fix)->isup_params_idx].param_code ==
-			(*parse_struct)->mand_fix_params[i].param_code) {
-			*p = (*parse_struct)->mand_fix_params + i;
-			*param_type = 0;
-			break;
-		}
-	if (!*p)
-		for (i = 0; i < isup_messages[msg_idx].mand_var_params; i++)
-			if (isup_params[(*fix)->isup_params_idx].param_code ==
-				(*parse_struct)->mand_var_params[i].param_code) {
-				*p = (*parse_struct)->mand_var_params + i;
-				*param_type = 1;
-				break;
-			}
-	if (!*p)
-		for (opt_p = (*parse_struct)->opt_params_list; opt_p; opt_p = opt_p->next)
-			if (isup_params[(*fix)->isup_params_idx].param_code == opt_p->param.param_code) {
-				*p = &opt_p->param;
-				*param_type = 2;
-				break;
-			}
+	*p = get_isup_param(*parse_struct, (*fix)->isup_params_idx, param_type);
 
 	return 0;
 }
 
-int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+static char pv_tr_res_buf[PV_RES_BUF_MAXLEN];
+static str pv_tr_str_res = {pv_tr_res_buf, 0};
+
+int get_param_pval(int isup_params_idx, int subfield_idx, int byte_idx,
+					struct param_parsed_struct *p, pv_value_t *res)
 {
-	struct isup_parse_fixup *fix = NULL;
-	struct isup_parsed_struct *isup_struct;
-	struct param_parsed_struct *p = NULL;
-	struct body_part *isup_part;
-	int pv_idx = -1;
-	char *ch;
-	int l;
 	int int_res = -1;
-	int param_type;
-	static char buf[PV_RES_BUF_MAXLEN];
-	str str_res = {buf, 0};
+	int l;
+	char *ch;
 
-	if (get_isup_param(msg, param, &pv_idx, &fix, &p, &isup_struct, &isup_part, &param_type) < 0)
-		return pv_get_null(msg, param, res);
-
-	if (!p) {
-		LM_INFO("parameter: %.*s not found in this ISUP message\n",
-			isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
-		return pv_get_null(msg, param, res);
-	}
-
-	if (isup_params[fix->isup_params_idx].parse_func && fix->subfield_idx >= 0) {
-		if (pv_idx >= 0)
+	if (isup_params[isup_params_idx].parse_func && subfield_idx >= 0) {
+		if (byte_idx >= 0)
 			LM_INFO("Ignoring index for ISUP param: %.*s, known subfield provided\n",
-				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+				isup_params[isup_params_idx].name.len,
+				isup_params[isup_params_idx].name.s);
 
-		isup_params[fix->isup_params_idx].parse_func(fix->subfield_idx, p->val, p->len,
-														&int_res, &str_res);
+		isup_params[isup_params_idx].parse_func(subfield_idx, p->val, p->len,
+														&int_res, &pv_tr_str_res);
 
 		/* int or str val according to parse function for this subfield */
 		if (int_res != -1) {
@@ -685,20 +724,20 @@ int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			res->ri = int_res;
 			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 		} else {
-			res->rs.len = str_res.len;
-			res->rs.s = str_res.s;
+			res->rs.len = pv_tr_str_res.len;
+			res->rs.s = pv_tr_str_res.s;
 			res->flags = PV_VAL_STR;
 		}
 
 		return 0;
-	} else if (!isup_params[fix->isup_params_idx].parse_func && fix->subfield_idx >= 0) {
+	} else if (!isup_params[isup_params_idx].parse_func && subfield_idx >= 0) {
 		LM_ERR("BUG - Subfield known but no specific parse function\n");
-		return pv_get_null(msg, param, res);
+		return -1;
 	}
 
-	if (pv_idx < 0) {
+	if (byte_idx < 0) {
 		/* if we have predefined values for a param that is a single field */
-		if (isup_params[fix->isup_params_idx].single_fld_pvals) {
+		if (isup_params[isup_params_idx].single_fld_pvals) {
 			/* print param value as integer */
 			ch = int2str(p->val[0], &l);
 			res->rs.s = ch;
@@ -706,75 +745,59 @@ int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			res->ri = p->val[0];
 			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 		} else {	/* else print param as hex representation */
-			buf[0] = '0';
-			buf[1] = 'x';
-			string2hex(p->val, p->len, buf + 2);
+			pv_tr_res_buf[0] = '0';
+			pv_tr_res_buf[1] = 'x';
+			string2hex(p->val, p->len, pv_tr_res_buf + 2);
 			res->flags = PV_VAL_STR;
 			res->rs.len = 2 * p->len + 2;
-			res->rs.s = buf;
+			res->rs.s = pv_tr_res_buf;
 		}
 	} else {	/* we have an index, return corresponding byte from param */
-		if (pv_idx > p->len - 1) {
-			LM_ERR("Index: %d out of bounds, parameter length is: %d\n", pv_idx, p->len);
-			return pv_get_null(msg, param, res);
+		if (byte_idx > p->len - 1) {
+			LM_ERR("Index: %d out of bounds, parameter length is: %d\n", byte_idx, p->len);
+			return -1;
 		}
-		ch = int2str(p->val[pv_idx], &l);
+		ch = int2str(p->val[byte_idx], &l);
 		res->rs.s = ch;
 		res->rs.len = l;
-		res->ri = p->val[pv_idx];
+		res->ri = p->val[byte_idx];
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	}
 
 	return 0;
 }
 
-int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+int get_param_pval_str(int isup_params_idx, int subfield_idx,
+						struct param_parsed_struct *p, pv_value_t *res)
 {
-	struct isup_parse_fixup *fix = NULL;
-	struct isup_parsed_struct *isup_struct;
-	struct param_parsed_struct *p = NULL;
-	struct body_part *isup_part;
-	int pv_idx = -1;
-	char *ch;
-	int l;
 	int int_res = -1;
+	int l;
+	char *ch;
 	int i;
-	int param_type;
-	static char buf[PV_RES_BUF_MAXLEN];
-	str str_res = {buf, 0};
-
-	if (get_isup_param(msg, param, &pv_idx, &fix, &p, &isup_struct, &isup_part, &param_type) < 0)
-		return pv_get_null(msg, param, res);
-
-	if (!p) {
-		LM_INFO("parameter: %.*s not found in this ISUP message\n",
-			isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
-		return pv_get_null(msg, param, res);
-	}
 
 	res->flags = PV_VAL_STR;
 
-	if (isup_params[fix->isup_params_idx].parse_func && fix->subfield_idx >= 0) {
-		isup_params[fix->isup_params_idx].parse_func(fix->subfield_idx, p->val, p->len,
-											&int_res, &str_res);
+	if (isup_params[isup_params_idx].parse_func && subfield_idx >= 0) {
+		isup_params[isup_params_idx].parse_func(subfield_idx, p->val, p->len,
+											&int_res, &pv_tr_str_res);
 		if (int_res != -1) {
 			/* search for the string alias for this value */
-			for (i = 0; i < isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].predef_vals.no_vals; i++)
-				if (isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].predef_vals.vals[i] == int_res) {
-					res->rs.len = isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].predef_vals.aliases[i].len;
-					res->rs.s = isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].predef_vals.aliases[i].s;
+			for (i = 0; i < isup_params[isup_params_idx].subfield_list[subfield_idx].predef_vals.no_vals; i++)
+				if (isup_params[isup_params_idx].subfield_list[subfield_idx].predef_vals.vals[i] == int_res) {
+					res->rs.len = isup_params[isup_params_idx].subfield_list[subfield_idx].predef_vals.aliases[i].len;
+					res->rs.s = isup_params[isup_params_idx].subfield_list[subfield_idx].predef_vals.aliases[i].s;
 					return 0;
 				}
 
 			/* alias not found or aliases not supported at all, print the integer value anyway */
-			if (isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].predef_vals.no_vals == 0)
+			if (isup_params[isup_params_idx].subfield_list[subfield_idx].predef_vals.no_vals == 0)
 				LM_DBG("No string aliases supported for subfield <%.*s>\n",
-					isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].name.len,
-					isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].name.s);
-			if (i == isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].predef_vals.no_vals)
+					isup_params[isup_params_idx].subfield_list[subfield_idx].name.len,
+					isup_params[isup_params_idx].subfield_list[subfield_idx].name.s);
+			if (i == isup_params[isup_params_idx].subfield_list[subfield_idx].predef_vals.no_vals)
 				LM_DBG("No string alias for value: %d of subfield <%.*s>\n", int_res,
-					isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].name.len,
-					isup_params[fix->isup_params_idx].subfield_list[fix->subfield_idx].name.s);
+					isup_params[isup_params_idx].subfield_list[subfield_idx].name.len,
+					isup_params[isup_params_idx].subfield_list[subfield_idx].name.s);
 
 			ch = int2str(int_res, &l);
 			res->rs.s = ch;
@@ -785,29 +808,29 @@ int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *param, pv_value_t *re
 			return 0;
 
 		} else { /* already a string */
-			res->rs.len = str_res.len;
-			res->rs.s = str_res.s;
+			res->rs.len = pv_tr_str_res.len;
+			res->rs.s = pv_tr_str_res.s;
 			return 0;
 		}
-	} else if (!isup_params[fix->isup_params_idx].parse_func && fix->subfield_idx >= 0) {
+	} else if (!isup_params[isup_params_idx].parse_func && subfield_idx >= 0) {
 		LM_ERR("BUG - Subfield known but no specific parse function\n");
-		return pv_get_null(msg, param, res);
+		return -1;
 	}
 	/* no subfield if we reach this point */
 
 	/* if we have aliases for a param that is a single field */
-	if (isup_params[fix->isup_params_idx].single_fld_pvals) {
+	if (isup_params[isup_params_idx].single_fld_pvals) {
 		/* search for the string alias of the param value */
-		for (i = 0; i < isup_params[fix->isup_params_idx].single_fld_pvals->no_vals; i++)
-			if (isup_params[fix->isup_params_idx].single_fld_pvals->vals[i] == p->val[0]) {
-				res->rs.len = isup_params[fix->isup_params_idx].single_fld_pvals->aliases[i].len;
-				res->rs.s = isup_params[fix->isup_params_idx].single_fld_pvals->aliases[i].s;
+		for (i = 0; i < isup_params[isup_params_idx].single_fld_pvals->no_vals; i++)
+			if (isup_params[isup_params_idx].single_fld_pvals->vals[i] == p->val[0]) {
+				res->rs.len = isup_params[isup_params_idx].single_fld_pvals->aliases[i].len;
+				res->rs.s = isup_params[isup_params_idx].single_fld_pvals->aliases[i].s;
 				return 0;
 			}
 
 		/* alias not found, print the integer value anyway */
 		LM_DBG("No string alias for value: %d of parameter <%.*s>\n", p->val[0],
-			isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+			isup_params[isup_params_idx].name.len, isup_params[isup_params_idx].name.s);
 
 		ch = int2str(p->val[0], &l);
 		res->rs.s = ch;
@@ -819,12 +842,64 @@ int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *param, pv_value_t *re
 	}
 
 	/* no aliases, print whole param as hex */
-	buf[0] = '0';
-	buf[1] = 'x';
-	string2hex(p->val, p->len, buf + 2);
+	pv_tr_res_buf[0] = '0';
+	pv_tr_res_buf[1] = 'x';
+	string2hex(p->val, p->len, pv_tr_res_buf + 2);
 	res->flags = PV_VAL_STR;
 	res->rs.len = 2 * p->len + 2;
-	res->rs.s = buf;
+	res->rs.s = pv_tr_res_buf;
+
+	return 0;
+}
+
+int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct isup_parse_fixup *fix = NULL;
+	struct isup_parsed_struct *isup_struct;
+	struct param_parsed_struct *p = NULL;
+	struct body_part *isup_part;
+	int pv_idx = -1;
+	int param_type;
+
+	if (get_isup_param_msg(msg, param, &pv_idx, &fix, &p, &isup_struct,
+			&isup_part, &param_type) < 0)
+		return pv_get_null(msg, param, res);
+
+	if (!p) {
+		LM_INFO("parameter: %.*s not found in this ISUP message\n",
+			isup_params[fix->isup_params_idx].name.len,
+			isup_params[fix->isup_params_idx].name.s);
+		return pv_get_null(msg, param, res);
+	}
+
+	if (get_param_pval(fix->isup_params_idx, fix->subfield_idx, pv_idx, p, res) < 0)
+		return pv_get_null(msg, param, res);
+
+	return 0;
+}
+
+int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *pv_param, pv_value_t *res)
+{
+	struct isup_parse_fixup *fix = NULL;
+	struct isup_parsed_struct *isup_struct;
+	struct param_parsed_struct *p = NULL;
+	struct body_part *isup_part;
+	int pv_idx = -1;
+	int param_type;
+
+	if (get_isup_param_msg(msg, pv_param, &pv_idx, &fix, &p, &isup_struct,
+			&isup_part, &param_type) < 0)
+		return pv_get_null(msg, pv_param, res);
+
+	if (!p) {
+		LM_INFO("parameter: %.*s not found in this ISUP message\n",
+			isup_params[fix->isup_params_idx].name.len,
+			isup_params[fix->isup_params_idx].name.s);
+		return pv_get_null(msg, pv_param, res);
+	}
+
+	if (get_param_pval_str(fix->isup_params_idx, fix->subfield_idx, p, res) < 0)
+		return pv_get_null(msg, pv_param, res);
 
 	return 0;
 }
@@ -843,7 +918,8 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 	int i;
 	int new_val;
 
-	if (get_isup_param(msg, param, &pv_idx, &fix, &p, &isup_struct, &isup_part, &param_type) < 0)
+	if (get_isup_param_msg(msg, param, &pv_idx, &fix, &p, &isup_struct,
+			&isup_part, &param_type) < 0)
 		return -1;
 
 	if (!p) {	/* param not found in parsed struct so it should be a new optional param */
@@ -860,17 +936,19 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 	if (isup_params[fix->isup_params_idx].write_func && fix->subfield_idx >= 0) {
 		if (pv_idx >= 0)
 			LM_INFO("Ignoring index for ISUP param: %.*s, known subfield provided\n",
-				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+				isup_params[fix->isup_params_idx].name.len,
+				isup_params[fix->isup_params_idx].name.s);
 
 		new_len = p->len;
 		rc = isup_params[fix->isup_params_idx].write_func(fix->isup_params_idx,
-												fix->subfield_idx, p->val, &new_len, val);
+										fix->subfield_idx, p->val, &new_len, val);
 		if (new_len != p->len)
 			isup_struct->total_len += new_len - p->len;
 		p->len = new_len;
 		if (rc < 0) {
 			LM_WARN("Unable to write $isup_param(%.*s)\n",
-				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+				isup_params[fix->isup_params_idx].name.len,
+				isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		}
 
@@ -923,17 +1001,20 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 				return 0;
 			} else {
 				LM_WARN("Hex string value required for $isup_param(%.*s)\n",
-					isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+					isup_params[fix->isup_params_idx].name.len,
+					isup_params[fix->isup_params_idx].name.s);
 
 				return -1;
 			}
 		} else if (val->flags & PV_VAL_STR) {
 			if (val->rs.s[0] == '0' && val->rs.s[1] == 'x') {
 				/* read whole param from hex str */
-				if (param_type == 0 && (val->rs.len-2)/2 != isup_params[fix->isup_params_idx].len) {
+				if (param_type == 0 &&
+					(val->rs.len-2)/2 != isup_params[fix->isup_params_idx].len) {
 					LM_WARN("Incorrect length: %d for $isup_param(%.*s), it must be exactly: %d\n",
 						(val->rs.len-2)/2, isup_params[fix->isup_params_idx].name.len,
-						isup_params[fix->isup_params_idx].name.s, isup_params[fix->isup_params_idx].len);
+						isup_params[fix->isup_params_idx].name.s,
+						isup_params[fix->isup_params_idx].len);
 						return -1;
 				}
 
@@ -946,7 +1027,8 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 
 				if (read_hex_param(val->rs.s, p->val, p->len) < 0) {
 					LM_WARN("Invalid hex value for $isup_param(%.*s)\n",
-						isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+						isup_params[fix->isup_params_idx].name.len,
+						isup_params[fix->isup_params_idx].name.s);
 					return -1;
 				}
 
@@ -956,14 +1038,16 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			} else if (isup_params[fix->isup_params_idx].single_fld_pvals) {
 				/* if we have aliases for a param that is a single field */
 				if (p->len > 1) {
-					LM_ERR("Bad length for ISUP param <%.*s>\n", isup_params[fix->isup_params_idx].name.len,
+					LM_ERR("Bad length for ISUP param <%.*s>\n",
+						isup_params[fix->isup_params_idx].name.len,
 						isup_params[fix->isup_params_idx].name.s);
 					return -1;
 				}
 				/* search for the value for this alias */
 				new_val = -1;
 				for (i = 0; i < isup_params[fix->isup_params_idx].single_fld_pvals->no_vals; i++)
-					if (!memcmp(isup_params[fix->isup_params_idx].single_fld_pvals->aliases[i].s, val->rs.s, val->rs.len)) {
+					if (!memcmp(isup_params[fix->isup_params_idx].single_fld_pvals->aliases[i].s,
+								val->rs.s, val->rs.len)) {
 						new_val = isup_params[fix->isup_params_idx].single_fld_pvals->vals[i];
 						break;
 					}
@@ -986,11 +1070,13 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 				}
 			} else {
 				LM_WARN("Hex string value required for $isup_param(%.*s)\n",
-					isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+					isup_params[fix->isup_params_idx].name.len,
+					isup_params[fix->isup_params_idx].name.s);
 				return -1;
 			}
 		} else {
-			LM_ERR("Invalid value for $isup_param(%.*s)\n", isup_params[fix->isup_params_idx].name.len,
+			LM_ERR("Invalid value for $isup_param(%.*s)\n",
+				isup_params[fix->isup_params_idx].name.len,
 				isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		}
@@ -998,7 +1084,8 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 	} else {	/* we have an index, set the corresponding byte */
 
 		if (param_type == 0 && pv_idx > p->len - 1) { /* fixed length exceeded */
-			LM_ERR("Index [%d] out of bounds, fixed parameter length is: %d\n", pv_idx, p->len);
+			LM_ERR("Index [%d] out of bounds, fixed parameter length is: %d\n",
+				pv_idx, p->len);
 			return -1;
 		}
 
@@ -1029,11 +1116,13 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 
 			return 0;
 		} else if (val->flags & PV_VAL_STR) {
-			LM_WARN("Integer value required for byte [%d] of $isup_param(%.*s)\n", pv_idx,
-				isup_params[fix->isup_params_idx].name.len, isup_params[fix->isup_params_idx].name.s);
+			LM_WARN("Integer value required for byte [%d] of $isup_param(%.*s)\n",
+				pv_idx, isup_params[fix->isup_params_idx].name.len,
+				isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		} else {
-			LM_ERR("Invalid value for $isup_param(%.*s)\n", isup_params[fix->isup_params_idx].name.len,
+			LM_ERR("Invalid value for $isup_param(%.*s)\n",
+				isup_params[fix->isup_params_idx].name.len,
 				isup_params[fix->isup_params_idx].name.s);
 			return -1;
 		}
@@ -1569,7 +1658,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 					break;
 				}
 			} else {
-				if (!str_strcasecmp(&isup_messages[i].name, &param_msg_type)) {
+				if (str_strcasecmp(&isup_messages[i].name, &param_msg_type) == 0) {
 					isup_msg_idx = get_msg_idx_by_type(isup_messages[i].message_type);
 					break;
 				}
@@ -1656,4 +1745,164 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 	isup_part->clone_parsed_f = (clone_parsed_part_function)clone_isup_parsed;
 
 	return 1;
+}
+
+
+int tr_isup_parse(str* in, trans_t *t)
+{
+	char *p, *pp;
+	str name;
+	tr_param_t *tp = NULL;
+	int i, j;
+
+	if(in == NULL || in->s == NULL || t == NULL)
+		return -1;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while (*p && *p != TR_PARAM_MARKER && *p != TR_RBRACKET) p++;
+	if (*p == '\0') {
+		LM_ERR("invalid transformation: %.*s\n", in->len, in->s);
+		return -1;
+	}
+	if (*p == TR_RBRACKET) {
+		LM_ERR("ISUP parameter name required in transformation\n");
+		return -1;
+	}
+
+	name.len = p - name.s;
+
+	p++;
+	trim_ws(p);
+	pp = p;
+
+	/* find next token */
+	while (*p && *p != TR_PARAM_MARKER && *p != TR_RBRACKET) p++;
+	if (*p == '\0') {
+		LM_ERR("invalid transformation: %.*s\n", in->len, in->s);
+		return -1;
+	}
+
+	/* ISUP parameter name */
+	tp = pkg_malloc(sizeof *tp);
+	if (!tp) {
+		LM_ERR("no more private memory!\n");
+		return -1;
+	}
+	tp->v.s.s = pp;
+	tp->v.s.len = p - pp;
+	tp->next = NULL;
+
+	t->params = tp;
+
+	if (*p == TR_PARAM_MARKER) {
+		p++;
+		trim_ws(p);
+		pp = p;
+		while (*p && *p != TR_RBRACKET) p++;
+		if (*p == '\0') {
+			LM_ERR("invalid transformation: %.*s\n", in->len, in->s);
+			return -1;
+		}
+
+		/* subfield name */
+		tp = NULL;
+		tp = pkg_malloc(sizeof *tp);
+		if (!tp) {
+			LM_ERR("no more private memory!\n");
+			return -1;
+		}
+		tp->v.s.s = pp;
+		tp->v.s.len = p - pp;
+		tp->next = NULL;
+
+		t->params->next = tp;
+	}
+
+	/* search provided ISUP param in the isup_params array */
+	for (i = 0; i < NO_ISUP_PARAMS; i++)
+		if (str_strcasecmp(&t->params->v.s, &isup_params[i].name) == 0) {
+			/* pass the index in the isup_params array to the transformation
+			 * eval func instead of the actual isup param name */
+			t->params->v.n = i;
+
+			/* if subfield specified, search in the known subfields for this param */
+			if (t->params->next && t->params->next->v.s.len) {
+				if (!isup_params[i].subfield_list) {
+					LM_ERR("No subfields supported for ISUP parameter <%.*s>\n",
+						isup_params[i].name.len, isup_params[i].name.s);
+					return -1;
+				}
+
+				for (j = 0; isup_params[i].subfield_list[j].name.s; j++)
+					if (str_strcasecmp(&t->params->next->v.s,
+							&isup_params[i].subfield_list[j].name) == 0) {
+						/* same as for isup param name */
+						t->params->next->v.n = j;
+						break;
+					}
+
+				if (!isup_params[i].subfield_list[j].name.s) {
+					LM_ERR("Unknown subfield <%.*s> for ISUP parameter <%.*s>\n",
+						t->params->next->v.s.len, t->params->next->v.s.s,
+						isup_params[i].name.len, isup_params[i].name.s);
+					return -1;
+				}
+			}
+
+			break;
+		}
+
+	if (i == NO_ISUP_PARAMS) {
+		LM_ERR("Unknown ISUP parameter: %.*s\n", t->params->v.s.len, t->params->v.s.s);
+		return -1;
+	}
+
+	if (name.len == 5 && !memcmp(name.s, "param", 5))
+		t->subtype = TR_ISUP_PARAM;
+	else if (name.len == 9 && !memcmp(name.s, "param.str", 9))
+		t->subtype = TR_ISUP_PARAM_STR;
+	else {
+		LM_ERR("Unknown isup transformation: <%.*s>\n", name.len, name.s);
+		return -1;
+	}
+
+	return 0;
+}
+
+int tr_isup_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	struct param_parsed_struct *p = NULL;
+	struct isup_parsed_struct *parse_struct = NULL;
+	int param_type;
+
+	parse_struct = parse_isup(val->rs);
+	if (!parse_struct) {
+		LM_WARN("Unable to parse ISUP message\n");
+		return -1;
+	}
+
+	p = get_isup_param(parse_struct, tp->v.n, &param_type);
+
+	if (!p) {
+		LM_INFO("parameter: <%.*s> not found in this ISUP message\n",
+			isup_params[tp->v.n].name.len, isup_params[tp->v.n].name.s);
+		return -1;
+	}
+
+	if (subtype == TR_ISUP_PARAM) {
+		if (get_param_pval(tp->v.n, tp->next ? tp->next->v.n : -1, -1, p, val) < 0)
+			return -1;
+	} else if (subtype == TR_ISUP_PARAM_STR) {
+		if (get_param_pval_str(tp->v.n, tp->next ? tp->next->v.n : -1, p, val) < 0)
+			return -1;
+	} else {
+		LM_BUG("Unknown transformation subtype [%d]\n", subtype);
+		return -1;
+	}
+
+	return 0;
 }

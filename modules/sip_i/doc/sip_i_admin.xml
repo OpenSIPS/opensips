@@ -407,6 +407,97 @@ if ($rs == "183") {
 
 </section>
 
+<section>
+	<title>Exported script transformations</title>
+	<para>
+		The module also provides a way for accessing the value of ISUP parameters and their subfields from an ISUP message contained in a arbitrary script variable as opposed to directly from the processed SIP (with encapsulated ISUP) message. This is done by aplying a transformation to a script variable containing the ISUP message body. The value of the original variable is not altered and a corresponding integer or string value (representing an ISUP parameter or subfield as the exact value or string alias) is returned.
+	</para>
+
+	<section>
+		<title>
+			<varname>{isup.param,param_name,[subfield_name]}</varname>
+		</title>
+		<para>
+			The result of this transformation is similar to a read access of the <varname>$isup_param</varname> pseudovariable with the exception that byte level access is not provided.
+		</para>
+
+		<para>The parameters for the transformation are:</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>subfield_name</emphasis> - optional, name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+			</listitem>
+		</itemizedlist>
+
+		<example>
+		<title><varname>isup.param</varname> usage</title>
+		<programlisting format="linespecific">
+...
+	# for this example, we take the ISUP body from the received SIP-I message
+	$var(isup_body) = $(rb[1]);
+
+	# may print: "NOA is: 3"  
+	xlog("NOA is: $(var(isup_body){isup.param, Called Party Number, Nature of address indicator})\n");
+
+	# may print: "CpN is: 99991234"  
+	xlog("CpN is: $(var(isup_body){isup.param, Called Party Number, Address signal})\n");
+
+	# may print: "Cg cat is: 10"
+	xlog("Cg cat is: $(var(isup_body){isup.param, Calling party's category})\n");
+
+	# may print: "nature of conn: 0x01"
+	xlog("nature of conn: $(var(isup_body){isup.param, Nature of connection indicators})\n");
+...
+		</programlisting>
+		</example>
+
+	</section>
+
+	<section>
+		<title>
+			<varname>{isup.param.str,param_name,[subfield_name]}</varname>
+		</title>
+		<para>
+			The result of this transformation is similar to a read access of the <varname>$isup_param_str</varname> pseudovariable with the exception that byte level access is not provided.
+		</para>
+
+		<para>The parameters for the transformation are:</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>param_name</emphasis> - name of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>subfield_name</emphasis> - optional, name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763</para>
+			</listitem>
+		</itemizedlist>
+
+		<example>
+		<title><varname>isup.param.str</varname> usage</title>
+		<programlisting format="linespecific">
+...
+	# for this example, we take the ISUP body from the received SIP-I message
+	$var(isup_body) = $(rb[1]);
+
+	# may print: "NOA is: national"  
+	xlog("NOA is: $(var(isup_body){isup.param.str, Called Party Number, Nature of address indicator})\n");
+
+	# may print: "CpN is: 99991234"  
+	xlog("CpN is: $(var(isup_body){isup.param.str, Called Party Number, Address signal})\n");
+
+	# may print: "Cg cat is: ordinary"
+	xlog("Cg cat is: $(var(isup_body){isup.param.str, Calling party's category})\n");
+
+	# may print: "nature of conn: 0x01"
+	xlog("nature of conn: $(var(isup_body){isup.param.str, Nature of connection indicators})\n");
+...
+		</programlisting>
+		</example>
+
+	</section>
+</section>
+
 <section id="subfields_aliases">
 	<title>ISUP parameter subfields and string aliases</title>
 	<para>The supported subfields for each ISUP parameter and the string aliases for their values are the following: </para>
