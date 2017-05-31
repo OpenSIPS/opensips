@@ -2341,7 +2341,7 @@ error:
 	{
 		t0 = t;
 		t = t->next;
-		destroy_transformation(t0);
+		free_tr_param(t0->params);
 		pkg_free(t0);
 	}
 	return NULL;
@@ -3366,22 +3366,6 @@ error:
 	return -1;
 }
 
-void destroy_transformation(trans_t *t)
-{
-	tr_param_t *tp;
-	tr_param_t *tp0;
-	if(t==NULL) return;
-
-	tp = t->params;
-	while(tp)
-	{
-		tp0 = tp;
-		tp = tp->next;
-		free_tr_param(tp0);
-	}
-	memset(t, 0, sizeof(trans_t));
-}
-
 void free_transformation(trans_t *t)
 {
 	trans_t *t0;
@@ -3390,7 +3374,7 @@ void free_transformation(trans_t *t)
 	{
 		t0 = t;
 		t = t->next;
-		destroy_transformation(t0);
+		free_tr_param(t0->params);
 		pkg_free(t0);
 	}
 }
