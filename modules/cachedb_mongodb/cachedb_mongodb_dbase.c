@@ -187,7 +187,7 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find_with_opts(
 	                MONGO_COLLECTION(con), filter, NULL, NULL);
-	stop_expire_timer(start, mongo_exec_threshold, "MongoDB find",
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB get",
 	                  attr->s, attr->len, 0);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
@@ -200,7 +200,7 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
 	                                0, 0, 0, filter, NULL, NULL);
-	stop_expire_timer(start, mongo_exec_threshold, "MongoDB find",
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB get",
 	                  attr->s, attr->len, 0);
 
 	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
@@ -259,6 +259,7 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	bson_t *query, *update;
 	bson_t child;
 	bson_error_t error;
+	struct timeval start;
 	int ret = 0;
 
 	query = bson_new();
@@ -269,12 +270,15 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	bson_append_utf8(&child, "opensips", 8, val->s, val->len);
 	bson_append_document_end(update, &child);
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
 	                              query, update, NULL, &error)) {
 		LM_ERR("failed to store %.*s=%.*s\n",
 		       attr->len, attr->s, val->len, val->s);
 		ret = -1;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB set",
+	                  attr->s, attr->len, 0);
 
 	bson_destroy(query);
 	bson_destroy(update);
@@ -286,16 +290,20 @@ int mongo_con_remove(cachedb_con *con, str *attr)
 {
 	bson_t *doc;
 	bson_error_t error;
+	struct timeval start;
 	int ret = 0;
 
 	doc = bson_new();
 	bson_append_utf8(doc, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
 	                         MONGOC_REMOVE_SINGLE_REMOVE, doc, NULL, &error)) {
 		LM_ERR("failed to remove key '%.*s'\n", attr->len, attr->s);
 		ret = -1;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB remove",
+	                  attr->s, attr->len, 0);
 
 	bson_destroy(doc);
 
@@ -310,6 +318,7 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	bson_iter_t iter;
 	bson_t _query, *query = NULL, *opts = NULL, proj;
 	mongoc_cursor_t *cursor;
+	struct timeval start;
 	const bson_value_t *v;
 	const bson_t *doc;
 	int i, len, csz = 0, ret = -1;
@@ -361,12 +370,18 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	}
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
+	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find_with_opts(col, query, opts, NULL);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw find",
+	                  NULL, 0, 0);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
 #else
+	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find(col, MONGOC_QUERY_NONE,
 	                                0, 0, 0, query, fields, NULL);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw find",
+	                  NULL, 0, 0);
 
 	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
 #endif
@@ -451,6 +466,7 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	bson_iter_t iter, uiter, sub_iter;
 	bson_error_t error;
 	bson_t query, update, reply;
+	struct timeval start;
 	const bson_value_t *v;
 	int ret, count = 0;
 	char *str;
@@ -516,12 +532,17 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out;
 	}
 
+	start_expire_timer(start, mongo_exec_threshold);
 	ret = mongoc_bulk_operation_execute(bulk, &reply, &error);
 	if (!ret) {
 		LM_ERR("failed bulk update\nerror: %d.%d: %s\n",
 		       error.domain, error.code, error.message);
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw update",
+		                  NULL, 0, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw update",
+	                  NULL, 0, 0);
 
 	if (is_printable(L_DBG)) {
 		str = bson_as_json(&reply, NULL);
@@ -551,6 +572,7 @@ int mongo_raw_insert(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	bson_iter_t iter, sub_iter;
 	bson_error_t error;
 	bson_t doc, reply;
+	struct timeval start;
 	const bson_value_t *v;
 	int ret, count = 0;
 	char *str;
@@ -595,12 +617,17 @@ int mongo_raw_insert(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		}
 	}
 
+	start_expire_timer(start, mongo_exec_threshold);
 	ret = mongoc_bulk_operation_execute(bulk, &reply, &error);
 	if (!ret) {
 		LM_ERR("failed bulk insert\nerror: %d.%d: %s\n",
 		       error.domain, error.code, error.message);
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw insert",
+		                  NULL, 0, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw insert",
+	                  NULL, 0, 0);
 
 	if (is_printable(L_DBG)) {
 		str = bson_as_json(&reply, NULL);
@@ -630,6 +657,7 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 	bson_iter_t iter, qiter, sub_iter;
 	bson_error_t error;
 	bson_t doc, reply;
+	struct timeval start;
 	const bson_value_t *v;
 	int ret, count = 0;
 	char *str;
@@ -687,12 +715,17 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out;
 	}
 
+	start_expire_timer(start, mongo_exec_threshold);
 	ret = mongoc_bulk_operation_execute(bulk, &reply, &error);
 	if (!ret) {
 		LM_ERR("failed bulk insert\nerror: %d.%d: %s\n",
 		       error.domain, error.code, error.message);
+		stop_expire_timer(start, mongo_exec_threshold, "mongodb raw remove",
+		                  NULL, 0, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw remove",
+	                  NULL, 0, 0);
 
 	if (is_printable(L_DBG)) {
 		str = bson_as_json(&reply, NULL);
@@ -775,13 +808,18 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 			return mongo_raw_remove(con, &doc, &iter);
 	}
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), &doc,
 	                              NULL, &rpl, &error)) {
 		LM_ERR("raw query:\n'%.*s'\nfailed with: %d.%d: %s\n", qstr->len, qstr->s,
 		       error.domain, error.code, error.message);
 		ret = -1;
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw query",
+		                  qstr->s, qstr->len, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw query",
+	                  qstr->s, qstr->len, 0);
 
 	/* start with a single returned document */
 	*reply = pkg_malloc(1 * sizeof **reply);
@@ -880,6 +918,7 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 	bson_error_t error;
 	bson_iter_t iter;
 	bson_iter_t sub_iter;
+	struct timeval start;
 	int ret = 0;
 
 	cmd = bson_new();
@@ -900,13 +939,18 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 
 	bson_append_bool(cmd, "new", 3, true);
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), cmd,
 	                              NULL, &reply, &error)) {
 		LM_ERR("failed to %s: %.*s += %d\n", val > 0 ? "add" : "sub",
 		       attr->len, attr->s, val);
 		ret = -1;
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB counter add",
+		                  NULL, 0, 0);
 		goto out;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB counter add",
+	                  NULL, 0, 0);
 
 	if (bson_iter_init_find(&iter, &reply, "value") &&
 	    BSON_ITER_HOLDS_DOCUMENT(&iter) &&
@@ -934,6 +978,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	const bson_value_t *value;
 	mongoc_cursor_t *cursor;
 	bson_iter_t iter;
+	struct timeval start;
 	int ret = 0;
 
 	query = bson_new();
@@ -947,13 +992,19 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 #endif
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
+	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find_with_opts(
 	                MONGO_COLLECTION(con), query, NULL, NULL);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB counter get",
+	                  NULL, 0, 0);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
 #else
+	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
 	                                0, 0, 0, query, NULL, NULL);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB counter get",
+	                  NULL, 0, 0);
 
 	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
 #endif
@@ -1096,6 +1147,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	db_row_t *current;
 	db_val_t *cur_val;
 	bson_iter_t iter;
+	struct timeval start;
 	int ri, c, old_rows, rows = 0;
 	mongoc_collection_t *col;
 	char *strf, *stro;
@@ -1164,12 +1216,15 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 		bson_free(stro);
 	}
 
+	start_expire_timer(start, mongo_exec_threshold);
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 	cursor = mongoc_collection_find_with_opts(col, filter, opts, NULL);
 #else
 	cursor = mongoc_collection_find(col, MONGOC_QUERY_NONE,
 	                                0, 0, 0, filter, fields, NULL);
 #endif
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query trans",
+	                  NULL, 0, 0);
 
 	MONGO_CURSOR(con) = cursor;
 
@@ -1361,6 +1416,7 @@ int mongo_db_insert_trans(cachedb_con *con, const str *table,
 	bson_t *doc;
 	bson_error_t error;
 	mongoc_collection_t *col;
+	struct timeval start;
 	char *str;
 
 	doc = bson_new();
@@ -1381,11 +1437,16 @@ int mongo_db_insert_trans(cachedb_con *con, const str *table,
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   namespace);
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_insert(col, MONGOC_INSERT_NONE, doc, NULL, &error)) {
 	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
 		       error.domain, error.code, error.message);
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB insert trans",
+		                  NULL, 0, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB insert trans",
+	                  NULL, 0, 0);
 
 	if (doc) {
 		bson_destroy(doc);
@@ -1409,6 +1470,7 @@ int mongo_db_delete_trans(cachedb_con *con, const str *table,
 	bson_t *doc;
 	bson_error_t error;
 	mongoc_collection_t *col;
+	struct timeval start;
 	char *str;
 
 	doc = bson_new();
@@ -1429,11 +1491,16 @@ int mongo_db_delete_trans(cachedb_con *con, const str *table,
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   namespace);
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(col, MONGOC_REMOVE_NONE, doc, NULL, &error)) {
 	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
 		       error.domain, error.code, error.message);
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB remove trans",
+		                  NULL, 0, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB remove trans",
+	                  NULL, 0, 0);
 
 	if (doc) {
 		bson_destroy(doc);
@@ -1458,6 +1525,7 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 	bson_t *query, *update = NULL, child;
 	bson_error_t error;
 	mongoc_collection_t *col;
+	struct timeval start;
 	char *strq, *stru;
 
 	query = bson_new();
@@ -1488,12 +1556,17 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
 		bson_free(stru);
 	}
 
+	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_update(col, MONGOC_UPDATE_MULTI_UPDATE,
 	                              query, update, NULL, &error)) {
 	    LM_ERR("insert failed with:\nerror %d.%d: %s\n",
 		       error.domain, error.code, error.message);
+		stop_expire_timer(start, mongo_exec_threshold, "MongoDB update trans",
+		                  NULL, 0, 0);
 		goto out_err;
 	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB update trans",
+	                  NULL, 0, 0);
 
 	if (query) {
 		bson_destroy(query);

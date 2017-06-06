@@ -43,11 +43,6 @@ static void destroy(void);
 static str cache_mod_name = str_init("mongodb");
 struct cachedb_url *mongodb_script_urls = NULL;
 
-int mongo_op_timeout=3000; /* 3000 milliseconds */
-int mongo_slave_ok=0;      /* not ok to send read requests to secondaries */
-str mongo_write_concern_str = {0,0};
-bson_t mongo_write_concern_b;
-//mongo_write_concern mwc;
 int mongo_exec_threshold=0;
 
 int compat_mode_30;
@@ -60,9 +55,6 @@ int set_connection(unsigned int type, void *val)
 
 static param_export_t params[]={
 	{ "cachedb_url",   STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
-	{ "op_timeout",    INT_PARAM, &mongo_op_timeout},
-	{ "slave_ok",      INT_PARAM, &mongo_slave_ok},
-	{ "write_concern", STR_PARAM, &mongo_write_concern_str },
 	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
 	{ "compat_mode_3.0", INT_PARAM, &compat_mode_30 },
 	{ "compat_mode_2.4", INT_PARAM, &compat_mode_24 },
@@ -120,27 +112,6 @@ static int mod_init(void)
 	cde.cdb_func.db_update_trans = mongo_db_update_trans;
 
 	cde.cdb_func.capability = 0;
-
-#if 0
-	if (mongo_write_concern_str.s != NULL) {
-		/* TODO - try manually building the getlasterror bson_t */
-		memset(&mongo_write_concern_b,0,sizeof(bson_t));
-		if (json_to_bson(mongo_write_concern_str.s,&mongo_write_concern_b) != 0) {
-			LM_ERR("Invalid write concern json\n");
-			return -1;
-		}
-
-		mongo_write_concern_init(&mwc);
-		mwc.cmd = &mongo_write_concern_b;
-	}
-#endif
-
-
-#if 0
-	if (mongo_slave_ok == 1) {
-		mongo_slave_ok = MONGO_SLAVE_OK | MONGO_PARTIAL ;
-	}
-#endif
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_redis\n");
