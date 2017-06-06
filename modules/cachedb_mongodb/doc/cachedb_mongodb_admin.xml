@@ -9,12 +9,17 @@
 	<para>
 		This module is an implementation of a cache system designed to work with
 		MongoDB servers.
-		It uses the Key-Value interface exported from the core.
+		It implements the Key-Value interface exposed by the OpenSIPS core.
+	</para>
+	<para>
+		The underlying client library is compatible with any of the following
+		MongoDB server versions: 2.4, 2.6, 3.0, 3.2 and 3.4, as stated in 
+		<ulink url="https://docs.mongodb.com/ecosystem/drivers/driver-compatibility-reference/">
+			the MongoDB documentation</ulink>.
 	</para>
 	<para>
 	</para>
 	</section>
-
 
 	<section>
 	<title>Advantages</title>
@@ -102,129 +107,81 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before running
-		&osips; with this module loaded:
+		The following packages must be installed before running &osips; with this module loaded:
 		</para>
-			<itemizedlist>
-			<listitem>
-			<para>
-				<emphasis>libjson</emphasis>
-			</para>
-			
-			<para>
-				The libjson library can be downloaded from: http://oss.metaparadigm.com/json-c/ 
-			</para>
-			
-			</listitem>
+		<para>
+		<example>
+			<title>Runtime requirements for "cachedb_mongodb"</title>
+				<programlisting format="linespecific">
+# Debian / Ubuntu
+sudo apt-get install libjson-c2 libmongoc-1.0
 
-			<listitem>
-			<para>
-				<emphasis>mongo-c-driver</emphasis>
-			</para>
-			
-			<para>
-				The mongo C driver can be downloaded from MongoDB's GitHub repository. Make sure to get the 0.6 version:
-				<para>
-				<emphasis>"git clone https://github.com/mongodb/mongo-c-driver.git -b v0.6"</emphasis>
-			</para>
-			</para>
-			
-			</listitem>
+# Red Hat / CentOS
+sudo yum install json-c mongo-c-driver
+				</programlisting>
+			</example>
+		</para>
 
-			</itemizedlist>
+		<para>
+		The following packages are required in order to compile this module:
+		</para>
+		<para>
+		<example>
+			<title>Compilation requirements for "cachedb_mongodb"</title>
+				<programlisting format="linespecific">
+# Debian / Ubuntu
+sudo apt-get install libjson-c-dev libmongoc-dev libbson-dev
+
+# Red Hat / CentOS
+sudo yum install json-c-devel mongo-c-driver-devel
+				</programlisting>
+			</example>
+		</para>
+
 	</section>
 	</section>
-	
+
 	<section>
 		<title>Exported Parameters</title>
 		<section>
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
-			The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
+			The URLs of the server groups that OpenSIPS will connect to in order
+			to allow the cache_store(), cache_fetch(), etc. functions to be used
+			from the OpenSIPS script. It can be set more than one time.
 			The prefix part of the URL will be the identifier that will be used
 			from the script.
-
-			If multiple addr:port pairs are passed, the connection is treated 
-			as going to a replica set.
 		</para>
-		
+
+		<para>
+			The URL syntax is identical to the one used by MongoDB, including
+			connect string options. For more info,
+			please refer to <ulink url="https://docs.mongodb.com/manual/reference/connection-string/">
+				the official MongoDB connect string documentation</ulink>.
+		</para>
+
 		<example>
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("cachedb_mongodb", "cachedb_url","mongodb:instance1://localhost:27017/db.collection")
-modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2.3.4.5:27017,3.4.5.6:27017/replicaSetName.db.collection")
+modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2.3.4.5:27017,3.4.5.6:27017/db.collection?replicaSet=test")
 ...
 	</programlisting>
 		</example>
-		
+
 		<example>
 		<title>Use MongoDB servers </title>
 		<programlisting format="linespecific">
 ...
-cache_store("mongodb:group1","key","$ru value");
-cache_fetch("mongodb:replicaset1","key",$avp(10));
-cache_remove("mongodb:cluster1","key");
+cache_store("mongodb:group1", "key", "$ru value");
+cache_fetch("mongodb:replicaset1", "key", $avp(10));
+cache_remove("mongodb:cluster1", "key");
 ...
 	</programlisting>
 		</example>
-	</section>
-	
-		<section>
-		<title><varname>op_timeout</varname> (int)</title>
-		<para>
-			The timeout in ms that will be triggered in case a MongoDB op takes too long.
-			Default value is 3000 ( 3 seconds )
-		</para>
-		
-		<example>
-		<title>Set <varname>op_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("cachedb_mongodb", "op_timeout",5000)
-...
-	</programlisting>
-		</example>
-		
 	</section>
 
-		<section>
-		<title><varname>slave_ok</varname> (int)</title>
-		<para>
-			If set to 1, read operations are allowed to go to secondary MongoDB servers
-			Default value is 0 ( read and write requests will go to primary nodes = full consistency )
-		</para>
-		
-		<example>
-		<title>Set <varname>slave_ok</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("cachedb_mongodb", "slave_ok",1);
-...
-	</programlisting>
-		</example>
-		
-	</section>
-
-		<section>
-		<title><varname>write_concern</varname> (string)</title>
-		<para>
-			The JSON containing the Mongo write concern that should affect all write
-			operations. More info can be found at http://docs.mongodb.org/manual/core/write-operations/
-		</para>
-		
-		<example>
-		<title>Set <varname>write_concern</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("cachedb_mongodb","write_concern","{ \"getLastError\": 1, "j" : "true" }")
-...
-	</programlisting>
-		</example>
-		
-	</section>
 		<section>
 		<title><varname>exec_threshold</varname> (int)</title>
 		<para>
@@ -245,6 +202,58 @@ modparam("cachedb_mongodb", "exec_threshold", 100000)
 		</example>
 	</section>
 
+		<section>
+		<title><varname>compat_mode_2.4</varname> (int)</title>
+		<para>
+			Switch the module into compatibility mode for MongoDB 2.4 servers.
+			Specifically, this allows "insert/update/delete" raw queries to not fail,
+			since they were introduced in MongoDB 2.6. The module will interpret
+			the raw query JSON, convert it to its corresponding command and run it.
+		</para>
+		<para>
+			Caveat: only the minimally required raw query options are
+			supported in this mode.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>compat_mode_2.4</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_mongodb", "compat_mode_2.4", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
+		<section>
+		<title><varname>compat_mode_3.0</varname> (int)</title>
+		<para>
+			Switch the module into compatibility mode for MongoDB 2.6/3.0 servers.
+			Specifically, this allows "find" raw queries to not fail,
+			since they were introduced in MongoDB 3.2. The module will interpret
+			the "find" raw query JSON, convert it to its corresponding command and run it.
+		</para>
+		<para>
+			Caveat: only the minimally required options for "find" raw queries are
+			supported in this mode.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>compat_mode_3.0</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_mongodb", "compat_mode_3.0", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
 </section>
 
 	<section>
@@ -257,88 +266,56 @@ modparam("cachedb_mongodb", "exec_threshold", 100000)
 	<section>
 	<title>Raw Query Syntax</title>
 		<para>
-			The cachedb_mongodb module allows to run RAW queries, thus taking full advantage of the capabilities of the back-end.
-
-			The query syntax is a JSON-based one, very similar to the one that one runs commands in the mongo cli. The query results are also returned as JSON documents, that one can further process in the OpenSIPS script by using the JSON module.
+			The cachedb_mongodb module supports raw queries, thus taking
+			full advantage of the capabilities of the back-end, including
+			query-specific options such as read/write preference, timeouts,
+			filtering options, etc.
+		</para>
+		<para>
+			The query syntax is identical to the mongo cli. Documentation for it
+			can be found on the
+			<ulink url="https://docs.mongodb.com/manual/reference/command/nav-crud/">
+				MongoDB website</ulink>. Query results
+			are returned as JSON documents, that one can further process
+			in the OpenSIPS script by using the JSON module.
 		</para>
 
 		<para>
-			The syntax looks like the following :
+			Some example raw queries:
 			<example>
-			<title>Mongo Raw Query Syntax</title>
+			<title>MongoDB Raw Insert</title>
 			<programlisting format="linespecific">
 ...
-cache_raw_query("mongodb","{ \"op\" : \"desiredOP\", \"ns\" : \"db.collection\", \"query\": {\"_id\" : $rU} }","$avp(mongo_result)");
+cache_raw_query("mongodb:cluster", "{ \
+    \"insert\": \"ip_blacklist\", \
+    \"documents\": [{ \
+        \"username\": \"$fU\", \
+        \"ip\": \"$si\", \
+        \"attempts\": 1 \
+     }]}",
+ "$avp(out)");
+xlog("INSERT RAW QUERY returned $rc, output: '$avp(out)'\n");
 ...
 			</programlisting>
 			</example>
-		</para>
 
-		<para>
-			The \"op\" JSON entry specifies the actual operation ( find,update,remove, etc ) that you want to run on the Mongo server and the \"ns\" entry specifies the namespace where you want to run that query. The \"ns\" entry can be missing, and the query will be run on the db.collection that was passed at Connection time in the cachedb_url.
-		</para>
-
-		<para>
-			The \"query\" entry is the JSON document that specifies the raw query that you want to run.
-			The last parameter is an optional AVP parameter, where the JSON documents will be returned ( a find query can return multiple JSON documents, which are correctly populated in the output AVP ). If the query does not return a result, you can ommit the last parameter.
-		</para>
-
-		<para>
-		The currently suported operations that you can pass in the \"op\" JSON entry are
-		<itemizedlist>
-			<listitem>
-				<emphasis>find - the find operation takes an optional \"fields\" JSON document, specifying the desired fields that should be returned from the mongoDB server.
-				</emphasis>
-			</listitem>
-
-			<listitem>
-				<emphasis>update - the update operations takes an optional \"match\" JSON document, specifying that only the mongoDB documents that match this JSON will be updated ( similar to the 'where' SQL clause ) . If no \"match\" is provided, all documents will be updated.</emphasis>
-			</listitem>
-
-			<listitem>
-				<emphasis>insert</emphasis>
-			</listitem>
-
-			<listitem>
-				<emphasis>remove</emphasis>
-			</listitem>
-
-			<listitem>
-				<emphasis>count</emphasis>
-			</listitem>
-
-		</itemizedlist>
-		</para>
-
-		<para>
-			Here are a couple examples of running some mongoDB queries :
 			<example>
-			<title>Mongo Raw Query Examples</title>
+			<title>MongoDB Raw Update</title>
 			<programlisting format="linespecific">
 ...
-/* find documents where my_key has the value 345, and return just the entry1 and entry2 values from the matching documents */
-cache_raw_query("mongodb","{ \"op\" : \"find\", \"ns\" : \"my_db.my_col\", \"query\": {\"my_key\" : 345},\"fields\": { \"entry1\" : 1, \"entry2\" : 1 } }","$avp(mongo_result)");
-
-$var(it) = 0;
-while ($(avp(mongo_result)[$var(it)]) != NULL) {
-	$json(json_res) := $(avp(mongo_result)[$var(it)]);
-	xlog("Fetched a new mongo result=$json(json_res). entry1=$json(json_res/entry1) \n");
-	$var(it) = $var(it) + 1;
-	$json(json_res) = NULL;
-}
-
-...
-/* insert the {_id: 993, vlad: "opensips",counter: 9000 } document */
-cache_raw_query("mongodb","{ \"op\" : \"insert\", \"ns\" : \"some_db.coll\", \"query\": {\"_id\" : 993, \"vlad\" : \"opensips\", \"counter\": 9000} }");
-...
-/* remove all the documents where "mykey" has the "badvalue" */
-cache_raw_query("mongodb","{ \"op\" : \"remove\", \"ns\" : \"db.coll\", \"query\": {\"mykey\" : "badvalue"} }");
-...
-/* set expired to have the value of 1 in the documents where the counter has the 345 value */
-cache_raw_query("mongodb","{ \"op\" : \"update\", \"query\": { \"expired\" : 1}, \"match\" : { \"counter\" : 345 } }");
-...
-cache_raw_query("mongodb","{ \"op\" : \"count\",\"query\": { \"username\" : $rU} }","$avp(mongo_count_result)");
-xlog("We have $avp(mongo_count_result) documents where username = $rU \n");
+cache_raw_query("mongodb:cluster", "{ \
+    \"update\": \"ip_blacklist\", \
+    \"updates\": [{ \
+        \"q\": { \
+            \"username\": \"$fU\", \
+            \"ip\": \"$si\" \
+         }, \
+        \"u\": { \
+            \"$$inc\": {\"attempts\": 1} \
+         } \
+      }]}",
+ "$avp(out)");
+xlog("UPDATE RAW QUERY returned $rc, output: '$avp(out)'\n");
 ...
 			</programlisting>
 			</example>
