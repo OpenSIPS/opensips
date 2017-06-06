@@ -104,6 +104,9 @@ struct cgr_msg {
 	json_object *params;
 };
 
+/* init common variables */
+int cgr_init_common(void);
+
 /* message builder */
 int cgrates_set_reply(int type, int_str *value);
 struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *sess);

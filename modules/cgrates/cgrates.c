@@ -274,8 +274,7 @@ static int child_init(int rank)
 				cgrc_start_listen(c);
 		}
 	}
-
-	return 0;
+	return cgr_init_common();
 }
 
 
