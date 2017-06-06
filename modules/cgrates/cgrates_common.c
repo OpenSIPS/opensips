@@ -20,6 +20,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "../../dprint.h"
 #include "../../str.h"
 #include "../../async.h"
@@ -149,6 +150,35 @@ int cgrates_set_reply(int type, int_str *value)
 	return 0;
 }
 
+static char cgr_id_buffer[5 /* pid */ + 1 /* '-' */ + INT2STR_MAX_LEN];
+static int cgr_id_len = 0;
+static unsigned long cgr_id_index = 0;
+
+int cgr_init_common(void)
+{
+	/* add the pid */
+	char *p = int2str(my_pid(), &cgr_id_len);
+	memcpy(cgr_id_buffer, p, cgr_id_len);
+
+	/* add the dash */
+	cgr_id_buffer[cgr_id_len++] = '-';
+
+	/* init the index */
+	cgr_id_index = (unsigned long)rand();
+
+	return 0;
+}
+
+
+static inline char *cgr_unique_id(void)
+{
+	int len;
+	char *p = int2str(cgr_id_index++, &len);
+	memcpy(cgr_id_buffer + cgr_id_len, p, len);
+	cgr_id_buffer[cgr_id_len + len] = '\0';
+	return cgr_id_buffer;
+}
+
 #define JSON_CHECK(_c, _s) \
 	do { \
 		if (!(_c)) { \
@@ -170,6 +200,9 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	JSON_CHECK(cmsg.msg, "new json object");
 	JSON_CHECK(jtmp = json_object_new_string_len(method->s, method->len), "method");
 	json_object_object_add(cmsg.msg,"method", jtmp);
+
+	JSON_CHECK(jtmp = json_object_new_string(cgr_unique_id()), "id");
+	json_object_object_add(cmsg.msg, "id", jtmp);
 
 	JSON_CHECK(jarr = json_object_new_array(), "params array");
 	json_object_object_add(cmsg.msg,"params", jarr);
