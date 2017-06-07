@@ -209,9 +209,8 @@
 	<section>
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
-		The initial length of a timer interval in seconds. All amounts of
-		messages have to be divided by this timer to get a messages per second
-		value.
+			The timer interval in seconds when the Network and Feedback algorithms
+			run their queries, and the other algorithms reset their counters.
 		</para>
 		<para>
 		IMPORTANT: A too small value may lead to performance penalties due to
