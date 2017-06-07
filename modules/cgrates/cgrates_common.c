@@ -150,23 +150,23 @@ int cgrates_set_reply(int type, int_str *value)
 	return 0;
 }
 
-static long cgr_id_index = 0;
+static int cgr_id_index = 0;
 
 int cgr_init_common(void)
 {
 	/*
 	 * the format is 'rand | my_pid'
-	 * rand is (long) - (unsigned short) long
+	 * rand is (int) - (unsigned short) long
 	 * my_pid is (short) long
 	 */
-	cgr_id_index = (long)my_pid & USHRT_MAX;
-	cgr_id_index |= (long)rand() << sizeof(unsigned short);
+	cgr_id_index = my_pid() & USHRT_MAX;
+	cgr_id_index |= rand() << sizeof(unsigned short);
 
 	return 0;
 }
 
 
-static inline long cgr_unique_id(void)
+static inline int cgr_unique_id(void)
 {
 	cgr_id_index += (1 << sizeof(unsigned short));
 	/* make sure we always return something positive */
@@ -195,7 +195,7 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	JSON_CHECK(jtmp = json_object_new_string_len(method->s, method->len), "method");
 	json_object_object_add(cmsg.msg,"method", jtmp);
 
-	JSON_CHECK(jtmp = json_object_new_int64(cgr_unique_id()), "id");
+	JSON_CHECK(jtmp = json_object_new_int(cgr_unique_id()), "id");
 	json_object_object_add(cmsg.msg, "id", jtmp);
 
 	JSON_CHECK(jarr = json_object_new_array(), "params array");
