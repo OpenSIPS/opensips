@@ -50,21 +50,21 @@ void replicate_urecord_insert(urecord_t *r)
 	bin_push_str(&packet, &r->aor);
 
 	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
- 	switch (rc) {
- 	case CLUSTERER_CURR_DISABLED:
- 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_DEST_DOWN:
- 		LM_INFO("All destinations in cluster: %d are down or probing\n",
- 			ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_SEND_ERR:
- 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	}
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	}
 
- 	bin_free_packet(&packet);
- 	return;
+	bin_free_packet(&packet);
+	return;
 
 error:
 	LM_ERR("replicate urecord insert failed\n");
@@ -85,23 +85,24 @@ void replicate_urecord_delete(urecord_t *r)
 	bin_push_str(&packet, &r->aor);
 
 	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
- 	switch (rc) {
- 	case CLUSTERER_CURR_DISABLED:
- 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_DEST_DOWN:
- 		LM_INFO("All destinations in cluster: %d are down or probing\n",
- 			ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_SEND_ERR:
- 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	}
- 	bin_free_packet(&packet);
- 	return;
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	}
+
+	bin_free_packet(&packet);
+	return;
 
 error:
-	LM_ERR("replicate urecord delete failed\n");	
+	LM_ERR("replicate urecord delete failed\n");
 	bin_free_packet(&packet);
 }
 
@@ -145,23 +146,25 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&packet, &st);
 
 	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
- 	switch (rc) {
- 	case CLUSTERER_CURR_DISABLED:
- 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_DEST_DOWN:
- 		LM_INFO("All destinations in cluster: %d are down or probing\n",
- 			ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_SEND_ERR:
- 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	}
- 
- 	bin_free_packet(&packet);
- 	return;
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	}
+
+	bin_free_packet(&packet);
+	return;
+
 error:
 	LM_ERR("replicate ucontact insert failed\n");
+	bin_free_packet(&packet);
 }
 
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
@@ -204,21 +207,25 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&packet, &st);
 
 	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
- 	switch (rc) {
- 	case CLUSTERER_CURR_DISABLED:
- 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_DEST_DOWN:
- 		LM_INFO("All destinations in cluster: %d are down or probing\n",
- 			ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_SEND_ERR:
- 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	}
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	}
+
+	bin_free_packet(&packet);
+	return;
 
 error:
-	LM_ERR("replicate ucontact delete failed\n");
+	LM_ERR("replicate ucontact update failed\n");
+	bin_free_packet(&packet);
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
@@ -238,21 +245,25 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	bin_push_int(&packet, c->cseq);
 
 	rc = clusterer_api.send_all(&packet, ul_replicate_cluster);
- 	switch (rc) {
- 	case CLUSTERER_CURR_DISABLED:
- 		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_DEST_DOWN:
- 		LM_INFO("All destinations in cluster: %d are down or probing\n",
- 			ul_replicate_cluster);
- 		goto error;
- 	case CLUSTERER_SEND_ERR:
- 		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
- 		goto error;
- 	}
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All destinations in cluster: %d are down or probing\n",
+			ul_replicate_cluster);
+		goto error;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", ul_replicate_cluster);
+		goto error;
+	}
+
+	bin_free_packet(&packet);
+	return;
 
 error:
 	LM_ERR("replicate ucontact delete failed\n");
+	bin_free_packet(&packet);
 }
 
 /* packet receiving */
