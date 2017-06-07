@@ -12,23 +12,17 @@ Edited by
 
 Ovidiu Sas
 
-Edited by
-
 Bogdan Vasile Harjoc
-
-Edited by
 
 Hendrik Scholz
 
-Edited by
-
 Razvan Crainea
 
-   Copyright Â© 2006 Freenet Cityline GmbH
+   Copyright © 2006 Freenet Cityline GmbH
 
-   Copyright Â© 2008 VoIP Embedded Inc.
+   Copyright © 2008 VoIP Embedded Inc.
 
-   Copyright Â© 2011 OpenSIPS Foundation
+   Copyright © 2011 OpenSIPS Foundation
    Revision History
    Revision $Revision: 5901 $ $Date$
      __________________________________________________________
@@ -229,9 +223,9 @@ Chapter 1. Admin Guide
 
 1.6.1. timer_interval (integer)
 
-   The initial length of a timer interval in seconds. All amounts
-   of messages have to be divided by this timer to get a messages
-   per second value.
+   The timer interval in seconds when the Network and Feedback
+   algorithms run their queries, and the other algorithms reset
+   their counters.
 
    IMPORTANT: A too small value may lead to performance penalties
    due to timer process overloading.
