@@ -388,6 +388,8 @@ static inline int db_only_timer(urecord_t* _r) {
 		return -1;
 	}
 
+	get_act_time();
+
 	if (wb_timer(_r, 0) < 0) {
 		LM_ERR("failed to sync with db\n");
 		return -1;
