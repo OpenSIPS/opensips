@@ -701,47 +701,82 @@ assign_stm: DEBUG EQUAL snumber
 			#ifdef HP_MALLOC
 			shm_hash_split_percentage=$3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support "
-				"for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
 			#endif
 			}
-		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error { yyerror("number expected"); }
+		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+				}
 		| SHM_SECONDARY_HASH_SIZE EQUAL NUMBER {
 			#ifdef HP_MALLOC
 			shm_secondary_hash_size=$3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support"
-				" for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with support"
+				" for HP_MALLOC\n");
 			#endif
 			}
-		| SHM_SECONDARY_HASH_SIZE EQUAL error { yyerror("number expected"); }
+		| SHM_SECONDARY_HASH_SIZE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEM_WARMING_ENABLED EQUAL NUMBER {
 			#ifdef HP_MALLOC
 			mem_warming_enabled = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support"
-				" for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with support"
+				" for HP_MALLOC\n");
 			#endif
 			}
-		| MEM_WARMING_ENABLED EQUAL error { yyerror("number expected"); }
+		| MEM_WARMING_ENABLED EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEM_WARMING_PATTERN_FILE EQUAL STRING {
 			#ifdef HP_MALLOC
 			mem_warming_pattern_file = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with "
-				"support for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with "
+				"support for HP_MALLOC\n");
 			#endif
 			}
-		| MEM_WARMING_PATTERN_FILE EQUAL error { yyerror("string expected"); }
+		| MEM_WARMING_PATTERN_FILE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("string expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEM_WARMING_PERCENTAGE EQUAL NUMBER {
 			#ifdef HP_MALLOC
 			mem_warming_percentage = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with "
-				"support for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with "
+				"support for HP_MALLOC\n");
 			#endif
 			}
-		| MEM_WARMING_PERCENTAGE EQUAL error { yyerror("number expected"); }
+		| MEM_WARMING_PERCENTAGE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEMLOG EQUAL snumber { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL snumber { memdump=$3; }
