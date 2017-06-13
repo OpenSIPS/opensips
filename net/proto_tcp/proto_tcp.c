@@ -1046,8 +1046,7 @@ again:
 		} else if (errno == ECONNRESET) {
 			c->state=S_CONN_EOF;
 			LM_DBG("CONN RESET on %p, FD %d\n", c, fd);
-		}
-		else{
+		} else {
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
 			return -1;
