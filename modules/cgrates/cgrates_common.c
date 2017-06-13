@@ -544,6 +544,10 @@ try_again:
 	if (bytes_read < 0) {
 		if (errno == EINTR || errno == EAGAIN)
 			goto try_again;
+		else if (errno == ECONNRESET) {
+			LM_INFO("CGRateS engine reset the connection\n");
+			goto disable;
+		}
 		LM_ERR("read() failed with %d(%s)\n from %.*s:%d\n", errno,
 				strerror(errno), e->host.len, e->host.s, e->port);
 		/* close the connection, since we don't know now to parse what's
