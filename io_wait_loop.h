@@ -151,8 +151,9 @@ again:
 #ifdef HAVE_EPOLL
 inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 {
-	int ret, n, r;
+	int ret, n, r, i;
 	struct fd_map *e;
+	struct epoll_event ep_event;
 
 again:
 		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
@@ -220,6 +221,30 @@ again:
 		/* now do the actual running of IO handlers */
 		for(r=h->fd_no-1; (r>=0) && n ; r--) {
 			e = get_fd_map(h, h->fd_array[r].fd);
+			/* test the sanity of the fd_map */
+			if (e->flags & (IO_WATCH_PRV_TRIG_READ|IO_WATCH_PRV_TRIG_WRITE)) {
+				/* the fd correlated to this fd_map was triggered by the
+				 * reactor, so let's check if the fd_map payload is still
+				 * valid */
+				if (e->fd==-1 || e->type==F_NONE) {
+					/* this is bogus!! */
+					LM_CRIT("[%s] FD %d with map (%d,%d,%p) is out of sync,"
+						" removing it from reactor\n",
+						h->name, h->fd_array[r].fd, e->fd, e->type, e->data);
+					/* remove from epoll */
+					epoll_ctl(h->epfd, EPOLL_CTL_DEL, h->fd_array[r].fd,
+						&ep_event);
+					close(h->fd_array[r].fd);
+					/* remove from fd_array */
+					memmove(&h->fd_array[r], &h->fd_array[r+1],
+						(h->fd_no-(r+1))*sizeof(*(h->fd_array)));
+					for( i=0 ; i<h->max_prio && h->prio_idx[i]<=r ; i++ );
+					for( ; i<h->max_prio ; i++ ) h->prio_idx[i]-- ;
+					h->fd_no--;
+					/* no handler triggering for this FD */
+					continue;
+				}
+			}
 			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
 				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
 				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
