@@ -1041,7 +1041,12 @@ again:
 	if(bytes_read==-1){
 		if (errno == EWOULDBLOCK || errno == EAGAIN){
 			return 0; /* nothing has been read */
-		}else if (errno == EINTR) goto again;
+		} else if (errno == EINTR) {
+			goto again;
+		} else if (errno == ECONNRESET) {
+			c->state=S_CONN_EOF;
+			LM_DBG("CONN RESET on %p, FD %d\n", c, fd);
+		}
 		else{
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
