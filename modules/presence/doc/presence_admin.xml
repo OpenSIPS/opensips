@@ -716,18 +716,27 @@ _empty_line_
 		<function moreinfo="none">subs_phtable_list</function>
 	  </title>
 	  <para>
-		Lists all the subscription records.
+		Lists all the subscription records, or the subscriptions for which the "To" and "From" URIs match the given parameters.
 	  </para>
 	  <para>
 		Name: <emphasis>subs_phtable_list</emphasis>
 	  </para>
-	  <para>Parameters:<emphasis>none.</emphasis></para>
-
+	  <para>Parameters</para>
+	  <itemizedlist>
+		<listitem><para>
+			<emphasis>from</emphasis>(optional) - wildcard for "From" URI
+		</para></listitem>
+		<listitem><para>
+			<emphasis>to</emphasis>(optional) - wildcard for "To" URI
+		</para></listitem>
+	  </itemizedlist>
 	  <para>
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
 :subs_phtable_list:fifo_reply
+sip:222@domain2.com
+sip:user_1@example.com
 _empty_line_
 	  </programlisting>
 	</section>
@@ -764,7 +773,7 @@ _empty_line_
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-:subs_phtable_list:fifo_reply
+:pres_expose:fifo_reply
 _empty_line_
 	  </programlisting>
 	</section>

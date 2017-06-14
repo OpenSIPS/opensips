@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include <fnmatch.h>
 
 #include "../../sr_module.h"
 #include "../../db/db.h"
@@ -57,6 +58,7 @@
 #include "bind_presence.h"
 #include "notify.h"
 #include "../../evi/evi_modules.h"
+#include "utils_func.h"
 
 
 #define S_TABLE_VERSION  4
@@ -723,6 +725,7 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	int date_buf_len;
 	char *p;
 	int len;
+	rr_t *rr_head = NULL;
 
 	node = add_mi_node_child(rpl, 0, "pres_uri", 8, s->pres_uri.s, s->pres_uri.len);
 	if (node==NULL) goto error;
@@ -764,6 +767,18 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	attr = add_mi_attr(node1, MI_DUP_VALUE, "from_tag", 8, s->from_tag.s, s->from_tag.len);
 	if (attr==NULL) goto error;
 
+	node1 = add_mi_node_child(node, 0, "contact", 7, s->contact.s, s->contact.len);
+	if (node1==NULL) goto error;
+
+	if (s->record_route.s && s->record_route.len &&
+		parse_rr_body(s->record_route.s, s->record_route.len, &rr_head) < 0)
+		goto error;
+	if (rr_head) {
+		node1 = add_mi_node_child(node, 0, "next_hop", 8, rr_head->nameaddr.uri.s,
+								rr_head->nameaddr.uri.len);
+		if (node1==NULL) goto error;
+	}
+
 	node1 = add_mi_node_child(node, 0, "callid", 6, s->callid.s, s->callid.len);
 	if (node1==NULL) goto error;
 	p= int2str((unsigned long)s->local_cseq, &len);
@@ -780,26 +795,77 @@ error:
 }
 
 
+static inline int from_to_match_subs(subs_t *s, str *match_from, str *match_to,
+									char *from_w, char *to_w)
+{
+	if (match_from->s)
+		pkg_free(match_from->s);
+	if (match_to->s)
+		pkg_free(match_to->s);
+
+	if (uandd_to_uri(s->from_user, s->from_domain, match_from) < 0)
+		return -1;
+	if (uandd_to_uri(s->to_user, s->to_domain, match_to) < 0)
+		return -1;
+
+	if (fnmatch(from_w, match_from->s, 0) || fnmatch(to_w, match_to->s, 0))
+		return 1;
+
+	return 0;
+}
+
+
 static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 {
 	struct mi_root *rpl_tree;
-	struct mi_node* rpl;
+	struct mi_node *rpl, *node;
 	subs_t *s;
 	unsigned int i,j;
+	char from_w[256], to_w[256];
+	str match_from = {0,0}, match_to = {0,0};
+	int filter = 0;
+	int rc;
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL) return NULL;
+	if (rpl_tree == NULL)
+		return NULL;
 	rpl = &rpl_tree->node;
 	rpl->flags |= MI_IS_ARRAY;
 
-	for(i=0,j=0; i< shtable_size; i++)
-	{
+	/* from wildcard */
+	node = cmd->node.kids;
+	if (node && node->value.len && node->value.s) {
+		memcpy(from_w, node->value.s, node->value.len);
+		from_w[node->value.len] = 0;
+		filter = 1;
+	}
+
+	/* to wildcard */
+	if (node)
+		node = node->next;
+	if (filter && (!node || !node->value.len || !node->value.s)) {
+		LM_ERR("no <To> uri wildcard param in MI command\n");
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+	}
+	if (filter) {
+		memcpy(to_w, node->value.s, node->value.len);
+		to_w[node->value.len] = 0;
+	}
+
+	for (i = 0, j = 0; i < shtable_size; i++) {
 		lock_get(&subs_htable[i].lock);
-		s = subs_htable[i].entries->next;
-		while(s)
-		{
-			if(mi_print_shtable_record(rpl, s)<0) goto error;
-			s= s->next;
+		for (s = subs_htable[i].entries->next; s; s = s->next) {
+			if (filter) {
+				/* print subscribtion if "from" and "to" match with given wildcard */
+				rc = from_to_match_subs(s, &match_from, &match_to, from_w, to_w);
+				if (rc < 0)
+					goto error;
+				else if (rc == 1)
+					continue;
+			}
+
+			if (mi_print_shtable_record(rpl, s) < 0)
+				goto error;
 			j++;
 		}
 		lock_release(&subs_htable[i].lock);
@@ -807,8 +873,19 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 		if ((j % 50) == 0)
 			flush_mi_tree(rpl_tree);
 	}
+
+	if (match_from.s)
+		pkg_free(match_from.s);
+	if (match_to.s)
+		pkg_free(match_to.s);
+
 	return rpl_tree;
+
 error:
+	if (match_from.s)
+		pkg_free(match_from.s);
+	if (match_to.s)
+		pkg_free(match_to.s);
 	lock_release(&subs_htable[i].lock);
 	LM_ERR("Unable to create reply\n");
 	free_mi_tree(rpl_tree);
