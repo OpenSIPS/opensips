@@ -234,8 +234,6 @@ static int dr_disable(struct sip_msg *req, char * current_partition);
 static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partition);
 static int to_partition(struct sip_msg*, dr_partition_t *,
 		struct head_db **);
-static inline int init_part_grp(dr_part_group_t **, struct head_db *,
-		dr_group_t*);
 
 
 /* reader-writers lock for reloading the data */
@@ -1988,27 +1986,22 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 }
 
 
-static inline int init_part_grp(dr_part_group_t ** part_w_no_grp,
-		struct head_db * current_partition, dr_group_t * drg) {
-	dr_partition_t * part;
-	*part_w_no_grp = pkg_malloc(sizeof(dr_part_group_t));
-	if(*part_w_no_grp == NULL) {
-		LM_ERR("No more pkg memory.\n");
-		return -1;
-	}
+static inline void pack_part_grp(dr_part_group_t ** part_w_no_grp,
+						struct head_db * current_partition, dr_group_t * drg)
+{
+	static dr_part_group_t  part_grp;
+	static dr_partition_t   part;
 
-	part = pkg_malloc(sizeof(dr_partition_t));
-	if(part == NULL) {
-		LM_ERR("No more pkg memory.\n");
-		return -1;
-	}
-	memset(part, 0, sizeof(dr_partition_t));
-	part->type = DR_PTR_PART;
-	part->v.part = current_partition;
+	memset( &part_grp, 0, sizeof(dr_part_group_t));
+	memset( &part, 0, sizeof(dr_partition_t));
 
-	(*part_w_no_grp)->group = drg;
-	(*part_w_no_grp)->dr_part = part;
-	return 0;
+	part.type = DR_PTR_PART;
+	part.v.part = current_partition;
+
+	part_grp.group = drg;
+	part_grp.dr_part = &part;
+
+	*part_w_no_grp = &part_grp;
 }
 
 static int do_routing_0(struct sip_msg* msg)
@@ -2020,8 +2013,7 @@ static int do_routing_0(struct sip_msg* msg)
 			LM_ERR("Error while loading configuration\n");
 			return -1;
 		}
-		if(init_part_grp(&part_w_no_grp, head_db_start, 0) < 0)
-			return -1;
+		pack_part_grp(&part_w_no_grp, head_db_start, 0);
 		return do_routing(msg, part_w_no_grp, (int)0, NULL);
 	} else {
 		LM_ERR("Partition name is mandatory");
@@ -2348,7 +2340,7 @@ rule_fallback:
 		return -1;
 	}
 
-	init_part_grp(&part_grp, current_partition, &grp);
+	pack_part_grp(&part_grp, current_partition, &grp);
 	if (do_routing( msg, part_grp, flags, wl_list.type?&wl_list:NULL)==1) {
 		return 1;
 	}
