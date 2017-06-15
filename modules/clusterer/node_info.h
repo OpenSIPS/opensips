@@ -112,7 +112,8 @@ int update_db_current(void);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
-node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals);
+int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
+					char **str_vals);
 
 int cl_get_my_id(void);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);
