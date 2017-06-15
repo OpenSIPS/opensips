@@ -90,7 +90,7 @@ error01:
 		ret=-1;
 	}
 
-	pclose(pipe);
+	fclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -100,25 +100,6 @@ error01:
 		ret=-1;
 	}
 	return ret;
-}
-
-int exec_write_input(FILE** stream, str* input)
-{
-	if (fwrite(input->s, 1, input->len, *stream) != input->len) {
-		LM_ERR("failed to write to pipe\n");
-		ser_error=E_EXEC;
-		return -1;
-	}
-
-	if (ferror(*stream)) {
-		LM_ERR("writing pipe: %s\n", strerror(errno));
-		ser_error=E_EXEC;
-		return -1;
-	}
-
-	pclose(*stream);
-
-	return 0;
 }
 
 
@@ -213,7 +194,7 @@ error02:
 		ret=-1;
 	}
 
-	pclose(pipe);
+	fclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -317,7 +298,7 @@ error:
 		ret=-1;
 	}
 
-	pclose(pipe);
+	fclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -458,7 +439,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 			goto error;
 		}
 
-		pclose(pin);
+		fclose(pin);
 	}
 
 	schedule_to_kill(pid);
@@ -493,9 +474,9 @@ error:
 	}
 
 	if (outvar)
-		pclose(pout);
+		fclose(pout);
 	if (errvar)
-		pclose(perr);
+		fclose(perr);
 
 	return ret;
 }
@@ -535,7 +516,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 		if (ferror(pin)) {
 			LM_ERR("failure detected (%s), continuing..\n",strerror(errno));
 		}
-		pclose(pin);
+		fclose(pin);
 	}
 
 	/* set time to kill on the new process */
@@ -562,7 +543,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 		goto error2;
 	}
 
-	pclose(pout);
+	fclose(pout);
 
 	/* async started with success */
 	return 1;
@@ -572,7 +553,7 @@ error2:
 error:
 	/* async failed */
 	if (outvar)
-		pclose(pout);
+		fclose(pout);
 	return -1;
 }
 

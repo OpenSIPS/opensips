@@ -165,13 +165,13 @@ pid_t __popen3(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
 
 	if (ret==0) {
 		/* write pipe */
-		CLOSE_AND_REDIRECT(strm_w, w_fds, 1, 0 ,0);
+		CLOSE_AND_REDIRECT(strm_w, w_fds, 1, 0, STDIN_FILENO);
 
 		/* read pipe  */
-		CLOSE_AND_REDIRECT(strm_r, r_fds, 0, 1, 1);
+		CLOSE_AND_REDIRECT(strm_r, r_fds, 0, 1, STDOUT_FILENO);
 
 		/* error pipe */
-		CLOSE_AND_REDIRECT(strm_e, e_fds, 0, 1, 2);
+		CLOSE_AND_REDIRECT(strm_e, e_fds, 0, 1, STDERR_FILENO);
 
 		execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
 
