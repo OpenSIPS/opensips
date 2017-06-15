@@ -666,7 +666,7 @@ stat_var* __get_stat( str *name, int mod_idx )
 	for( stat=collector->hstats[hash] ; stat ; stat=stat->hnext ) {
 		if ( (stat->name.len==name->len) &&
 		(strncasecmp( stat->name.s, name->s, name->len)==0) &&
-		(mod_idx > 0 && stat->mod_idx == mod_idx))
+		(mod_idx < 0 || stat->mod_idx == mod_idx))
 			return stat;
 	}
 	/* and then in the hash for dynamic stats */
@@ -674,7 +674,7 @@ stat_var* __get_stat( str *name, int mod_idx )
 	for( stat=collector->dy_hstats[hash] ; stat ; stat=stat->hnext ) {
 		if ( (stat->name.len==name->len) &&
 		(strncasecmp( stat->name.s, name->s, name->len)==0) &&
-		(mod_idx > 0 && stat->mod_idx == mod_idx)) {
+		(mod_idx < 0 || stat->mod_idx == mod_idx)) {
 			lock_stop_read((rw_lock_t *)collector->rwl);
 			return stat;
 		}
