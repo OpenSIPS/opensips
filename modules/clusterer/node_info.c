@@ -89,6 +89,7 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
+		memset(cluster, 0, sizeof *cluster);
 
 		cluster->modules = NULL;
 
@@ -109,11 +110,7 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 				}
 
 		cluster->cluster_id = cluster_id;
-		cluster->node_list = NULL;
-		cluster->no_nodes = 0;
-		cluster->current_node = NULL;
 		cluster->join_state = JOIN_INIT;
-		cluster->top_version = 0;
 		cluster->next = *cl_list;
 		if ((cluster->lock = lock_alloc()) == NULL) {
 			LM_CRIT("Failed to allocate lock\n");
@@ -132,6 +129,7 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
+	memset(new_info, 0, sizeof *new_info);
 
 	new_info->flags = DB_UPDATED | DB_PROVISIONED;
 
@@ -222,15 +220,11 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 	new_info->priority = int_vals[INT_VALS_PRIORITY_COL];
 
 	new_info->no_ping_retries = int_vals[INT_VALS_NO_PING_RETRIES_COL];
-	new_info->curr_no_retries = 0;
 
 	new_info->cluster = cluster;
 
-	new_info->neighbour_list = NULL;
-	new_info->sp_top_version = 0;
 	new_info->ls_seq_no = int_vals[INT_VALS_LS_SEQ_COL];
 	new_info->top_seq_no = int_vals[INT_VALS_TOP_SEQ_COL];
-	new_info->next_hop = NULL;
 	new_info->sp_info = shm_malloc(sizeof(struct node_search_info));
 	if (!new_info->sp_info) {
 		LM_ERR("no more shm memory\n");
