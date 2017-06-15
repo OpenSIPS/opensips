@@ -63,7 +63,8 @@ rw_lock_t *cl_list_lock;
 
 cluster_info_t **cluster_list;
 
-node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_vals)
+int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
+					char **str_vals)
 {
 	char *host;
 	int hlen, port;
@@ -71,7 +72,6 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 	struct hostent *he;
 	int cluster_id;
 	cluster_info_t *cluster = NULL;
-	node_info_t *new_info = NULL;
 	struct timeval t;
 	str st;
 	struct mod_registration *mod;
@@ -124,72 +124,73 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 		*cl_list = cluster;
 	}
 
-	new_info = shm_malloc(sizeof *new_info);
-	if (!new_info) {
+	*new_info = NULL;
+	*new_info = shm_malloc(sizeof **new_info);
+	if (!*new_info) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
-	memset(new_info, 0, sizeof *new_info);
+	memset(*new_info, 0, sizeof **new_info);
 
-	new_info->flags = DB_UPDATED | DB_PROVISIONED;
+	(*new_info)->flags = DB_UPDATED | DB_PROVISIONED;
 
-	new_info->id = int_vals[INT_VALS_ID_COL];
-	new_info->node_id = int_vals[INT_VALS_NODE_ID_COL];
+	(*new_info)->id = int_vals[INT_VALS_ID_COL];
+	(*new_info)->node_id = int_vals[INT_VALS_NODE_ID_COL];
 	if (int_vals[INT_VALS_STATE_COL])
-		new_info->flags |= NODE_STATE_ENABLED;
+		(*new_info)->flags |= NODE_STATE_ENABLED;
 	else
-		new_info->flags &= ~NODE_STATE_ENABLED;
+		(*new_info)->flags &= ~NODE_STATE_ENABLED;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id)
-		new_info->link_state = LS_RESTART_PINGING;
+		(*new_info)->link_state = LS_RESTART_PINGING;
 	else
-		new_info->link_state = LS_UP;
+		(*new_info)->link_state = LS_UP;
 
 	if (strlen(str_vals[STR_VALS_DESCRIPTION_COL]) != 0) {
-		new_info->description.len = strlen(str_vals[STR_VALS_DESCRIPTION_COL]);
-		new_info->description.s = shm_malloc(new_info->description.len * sizeof(char));
-		if (new_info->description.s == NULL) {
+		(*new_info)->description.len = strlen(str_vals[STR_VALS_DESCRIPTION_COL]);
+		(*new_info)->description.s = shm_malloc((*new_info)->description.len * sizeof(char));
+		if ((*new_info)->description.s == NULL) {
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
-		memcpy(new_info->description.s, str_vals[STR_VALS_DESCRIPTION_COL],
-			new_info->description.len);
+		memcpy((*new_info)->description.s, str_vals[STR_VALS_DESCRIPTION_COL],
+			(*new_info)->description.len);
 	} else {
-		new_info->description.s = NULL;
-		new_info->description.len = 0;
+		(*new_info)->description.s = NULL;
+		(*new_info)->description.len = 0;
 	}
 
 	if (strlen(str_vals[STR_VALS_SIP_ADDR_COL]) != 0) {
-		new_info->sip_addr.len = strlen(str_vals[STR_VALS_SIP_ADDR_COL]);
-		new_info->sip_addr.s = shm_malloc(new_info->sip_addr.len * sizeof(char));
-		if (new_info->sip_addr.s == NULL) {
+		(*new_info)->sip_addr.len = strlen(str_vals[STR_VALS_SIP_ADDR_COL]);
+		(*new_info)->sip_addr.s = shm_malloc((*new_info)->sip_addr.len * sizeof(char));
+		if ((*new_info)->sip_addr.s == NULL) {
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
-		memcpy(new_info->sip_addr.s, str_vals[STR_VALS_SIP_ADDR_COL],
-			new_info->sip_addr.len);
+		memcpy((*new_info)->sip_addr.s, str_vals[STR_VALS_SIP_ADDR_COL],
+			(*new_info)->sip_addr.len);
 	} else {
-		new_info->sip_addr.s = NULL;
-		new_info->sip_addr.len = 0;
+		(*new_info)->sip_addr.s = NULL;
+		(*new_info)->sip_addr.len = 0;
 	}
 
 	if (str_vals[STR_VALS_URL_COL] == NULL) {
 		LM_ERR("no url specified in DB\n");
-		goto error;
+		return 1;
 	}
-	new_info->url.len = strlen(str_vals[STR_VALS_URL_COL]);
-	new_info->url.s = shm_malloc(strlen(str_vals[STR_VALS_URL_COL]) * sizeof(char));
-	if (!new_info->url.s) {
+	(*new_info)->url.len = strlen(str_vals[STR_VALS_URL_COL]);
+	(*new_info)->url.s = shm_malloc(strlen(str_vals[STR_VALS_URL_COL]) * sizeof(char));
+	if (!(*new_info)->url.s) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
-	memcpy(new_info->url.s, str_vals[STR_VALS_URL_COL], new_info->url.len);
+	memcpy((*new_info)->url.s, str_vals[STR_VALS_URL_COL], (*new_info)->url.len);
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
-		if (parse_phostport(new_info->url.s, new_info->url.len, &host, &hlen,
+		if (parse_phostport((*new_info)->url.s, (*new_info)->url.len, &host, &hlen,
 			&port, &proto) < 0) {
 			LM_ERR("Bad URL!\n");
-			goto error;
+			return 1;
 		}
 
 		if (proto == PROTO_NONE)
@@ -197,7 +198,7 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 		if (proto != clusterer_proto) {
 			LM_ERR("Clusterer currently supports only BIN protocol, but node: %d "
 				"has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
-			goto error;
+			return 1;
 		}
 
 		st.s = host;
@@ -206,84 +207,84 @@ node_info_t *add_node_info(cluster_info_t **cl_list, int *int_vals, char **str_v
 			(unsigned short *)&proto, 0, 0);
 		if (!he) {
 			LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
-			goto error;
+			return 1;
 		}
 
-		hostent2su(&new_info->addr, he, 0, port);
+		hostent2su(&((*new_info)->addr), he, 0, port);
 
 		t.tv_sec = 0;
 		t.tv_usec = 0;
-		new_info->last_ping = t;
-		new_info->last_pong = t;
+		(*new_info)->last_ping = t;
+		(*new_info)->last_pong = t;
 	}
 
-	new_info->priority = int_vals[INT_VALS_PRIORITY_COL];
+	(*new_info)->priority = int_vals[INT_VALS_PRIORITY_COL];
 
-	new_info->no_ping_retries = int_vals[INT_VALS_NO_PING_RETRIES_COL];
+	(*new_info)->no_ping_retries = int_vals[INT_VALS_NO_PING_RETRIES_COL];
 
-	new_info->cluster = cluster;
+	(*new_info)->cluster = cluster;
 
-	new_info->ls_seq_no = int_vals[INT_VALS_LS_SEQ_COL];
-	new_info->top_seq_no = int_vals[INT_VALS_TOP_SEQ_COL];
-	new_info->sp_info = shm_malloc(sizeof(struct node_search_info));
-	if (!new_info->sp_info) {
+	(*new_info)->ls_seq_no = int_vals[INT_VALS_LS_SEQ_COL];
+	(*new_info)->top_seq_no = int_vals[INT_VALS_TOP_SEQ_COL];
+	(*new_info)->sp_info = shm_malloc(sizeof(struct node_search_info));
+	if (!(*new_info)->sp_info) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
-	new_info->sp_info->node = new_info;
+	(*new_info)->sp_info->node = *new_info;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
-		new_info->next = cluster->node_list;
-		cluster->node_list = new_info;
+		(*new_info)->next = cluster->node_list;
+		cluster->node_list = *new_info;
 		cluster->no_nodes++;
 	} else {
-		new_info->next = NULL;
-		cluster->current_node = new_info;
+		(*new_info)->next = NULL;
+		cluster->current_node = *new_info;
 	}
 
-	if ((new_info->lock = lock_alloc()) == NULL) {
+	if (((*new_info)->lock = lock_alloc()) == NULL) {
 		LM_CRIT("Failed to allocate lock\n");
 		goto error;
 	}
-	if (!lock_init(new_info->lock)) {
-		lock_dealloc(new_info->lock);
+	if (!lock_init((*new_info)->lock)) {
+		lock_dealloc((*new_info)->lock);
 		LM_CRIT("Failed to init lock\n");
 		goto error;
 	}
 
-	return new_info;
+	return 0;
 error:
-	if (new_info) {
-		if (new_info->sip_addr.s)
-			shm_free(new_info->sip_addr.s);
+	if (*new_info) {
+		if ((*new_info)->sip_addr.s)
+			shm_free((*new_info)->sip_addr.s);
 
-		if (new_info->description.s)
-			shm_free(new_info->description.s);
+		if ((*new_info)->description.s)
+			shm_free((*new_info)->description.s);
 
-		if (new_info->url.s)
-			shm_free(new_info->url.s);
+		if ((*new_info)->url.s)
+			shm_free((*new_info)->url.s);
 
-		if (new_info->sp_info)
-			shm_free(new_info->sp_info);
+		if ((*new_info)->sp_info)
+			shm_free((*new_info)->sp_info);
 
-		shm_free(new_info);
+		shm_free(*new_info);
 	}
-	return NULL;
+	return -1;
 }
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
     do { \
         if ((_val)->type!=_type) { \
             LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
-            goto error; \
+            return 2; \
         } \
         if (_not_null && (_val)->nul) { \
             LM_ERR("column %.*s is null\n", _col.len, _col.s); \
-            goto error; \
+            return 2; \
         } \
         if (_is_empty_str && !VAL_STRING(_val)) { \
             LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
-            goto error; \
+            return 2; \
         } \
     } while (0)
 
@@ -294,6 +295,8 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 	char *str_vals[NO_DB_STR_VALS];
 	int no_clusters;
 	int i;
+	int rc;
+	node_info_t *new_info = NULL;
 	db_key_t columns[NO_DB_COLS];	/* the columns from the db table */
 	db_res_t *res = NULL;
 	db_row_t *row;
@@ -430,9 +433,12 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 10);
 
 		/* add info to backing list */
-		if (add_node_info(cl_list, int_vals, str_vals) == 0) {
+		if ((rc = add_node_info(&new_info, cl_list, int_vals, str_vals)) != 0) {
 			LM_ERR("Unable to add node info to backing list\n");
-			goto error;
+			if (rc < 0)
+				return -1;
+			else
+				return 2;
 		}
 	}
 

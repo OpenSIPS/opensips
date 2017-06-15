@@ -281,12 +281,14 @@ static int child_init(int rank)
 	/* init DB connection */
 	if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
 		LM_ERR("cannot initialize database connection\n");
-		return 0;
+		return -1;
 	}
 
 	/* child 1 loads the clusterer DB info */
-	if (rank == 1 && load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0)
+	if (rank == 1 && load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
 		LM_ERR("Failed to load info from DB\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -296,12 +298,7 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 	cluster_info_t *new_info;
 	cluster_info_t *old_info;
 
-	if (!db_hdl) {
-		LM_ERR("No DB connection\n");
-		return init_mi_tree(500, "Failed to reload", 16);
-	}
-
-	if (load_db_info(&dr_dbf, db_hdl, &db_table, &new_info) < 0) {
+	if (load_db_info(&dr_dbf, db_hdl, &db_table, &new_info) != 0) {
 		LM_ERR("Failed to load info from DB\n");
 		return init_mi_tree(500, "Failed to reload", 16);
 	}
