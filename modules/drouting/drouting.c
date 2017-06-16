@@ -2397,12 +2397,6 @@ rule_fallback:
 		wl_list.v.sval.s[--wl_list.v.sval.len] = 0;
 	}
 
-	part_grp = pkg_malloc(sizeof(dr_part_group_t));
-	if(part_grp == NULL) {
-		LM_ERR("No more pkg memory!\n");
-		return -1;
-	}
-
 	pack_part_grp(&part_grp, current_partition, &grp);
 	if (do_routing( msg, part_grp, flags, wl_list.type?&wl_list:NULL)==1) {
 		return 1;
