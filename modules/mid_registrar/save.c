@@ -1032,8 +1032,9 @@ static inline int save_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		              __c->len, __c->name.s);
 
 		if (__c->expires == NULL)
-			len += sprintf(buf + len, ";expires=%d\r\n%s", e,
-			               __cn == NULL ? "\r\n" : "");
+			len += sprintf(buf + len, ";expires=%d\r\n", e);
+		if (__cn == NULL)
+			len += sprintf(buf + len, "\r\n");
 
 		anchor = anchor_lump(rpl, rpl->unparsed - rpl->buf, 0);
 		if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == NULL) {
