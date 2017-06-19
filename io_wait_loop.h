@@ -178,7 +178,7 @@ again:
 #endif
 			/* do some sanity check over the triggered fd */
 			e = ((struct fd_map*)h->ep_array[r].data.ptr);
-			if (e->type==0 || e->fd<0 || e->data==NULL || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
+			if (e->type==0 || e->fd<0 || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
 				LM_BUG("[%s] unset/bogus map triggered for %d by epoll "
 					"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
 					h->ep_array[r].events,
