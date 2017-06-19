@@ -281,7 +281,7 @@ again:
 			if (_e->type==0 || _e->fd<=0 || \
 			(_e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {\
 				LM_BUG("fd_array idx %d (fd=%d) points to bogus map "\
-					"(fd=%d,type=%d,flags=%d,data=%p)\n",k,h->fd_array[k].fd,\
+					"(fd=%d,type=%d,flags=%x,data=%p)\n",k,h->fd_array[k].fd,\
 					_e->fd, _e->type, _e->flags, _e->data);\
 					check_error = 1;\
 			}\
@@ -295,7 +295,7 @@ again:
 				/* fd not in used, everything should be on zero */ \
 				if (_e->fd>0 || _e->data!=NULL || _e->flags!=0 ) {\
 					LM_BUG("unused fd_map fd=%d has bogus data "\
-					"(fd=%d,flags=%d,data=%p)\n",k,\
+					"(fd=%d,flags=%x,data=%p)\n",k,\
 					_e->fd, _e->flags, _e->data);\
 					check_error = 1;\
 				}\
@@ -304,18 +304,18 @@ again:
 				if (_e->fd<=0 || \
 				(_e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {\
 				LM_BUG("used fd map fd=%d has bogus data "\
-					"(fd=%d,type=%d,flags=%d,data=%p)\n",k,\
+					"(fd=%d,type=%d,flags=%x,data=%p)\n",k,\
 					_e->fd, _e->type, _e->flags, _e->data);\
 					check_error = 1;\
 				}\
 				/* the map is valid */ \
 				if ((_e->flags&IO_WATCH_PRV_CHECKED)==0) {\
 					LM_BUG("used fd map fd=%d is not present in fd_array "\
-						"(fd=%d,type=%d,flags=%d,data=%p)\n",k,\
+						"(fd=%d,type=%d,flags=%x,data=%p)\n",k,\
 						_e->fd, _e->type, _e->flags, _e->data);\
 						check_error = 1;\
 				}\
-				_e->flags |= ~IO_WATCH_PRV_CHECKED;\
+				_e->flags &= ~IO_WATCH_PRV_CHECKED;\
 				_t++;\
 			}\
 		}\
@@ -602,7 +602,7 @@ check_io_again:
 	check_io_data();
 	if (check_error) {
 		LM_CRIT("[%s] check failed after succesfull fd add "
-			"(fd=%d,type=%d,data=%p,flags=%d) already=%d\n",h->name,
+			"(fd=%d,type=%d,data=%p,flags=%x) already=%d\n",h->name,
 			fd, type, data, flags, already);
 	}
 	return 0;
@@ -612,7 +612,7 @@ error0:
 	check_io_data();
 	if (check_error) {
 		LM_CRIT("[%s] check failed after failed fd add "
-			"(fd=%d,type=%d,data=%p,flags=%d) already=%d\n",h->name,
+			"(fd=%d,type=%d,data=%p,flags=%x) already=%d\n",h->name,
 			fd, type, data, flags, already);
 	}
 	return -1;
