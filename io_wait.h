@@ -278,7 +278,7 @@ again:
 		/* iterate the fd_array and check if fd_hash is properly set for each */ \
 		for(k=0;k<h->fd_no;k++) {\
 			_e = get_fd_map(h, h->fd_array[k].fd); \
-			if (_e->type==0 || _e->fd<0 || _e->data==NULL || \
+			if (_e->type==0 || _e->fd<0 || \
 			(_e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {\
 				LM_BUG("fd_array idx %d (fd=%d) points to bogus map "\
 					"(fd=%d,type=%d,flags=%d,data=%p)\n",k,h->fd_array[k].fd,\
@@ -301,7 +301,7 @@ again:
 				}\
 			} else {\
 				/* fd in used, check if in checked */ \
-				if (_e->fd<0 || _e->data==NULL || \
+				if (_e->fd<0 || \
 				(_e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {\
 				LM_BUG("used fd map fd=%d has bogus data "\
 					"(fd=%d,type=%d,flags=%d,data=%p)\n",k,\
