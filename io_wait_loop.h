@@ -180,7 +180,7 @@ again:
 			e = ((struct fd_map*)h->ep_array[r].data.ptr);
 			if (e->type==0 || e->fd<=0 || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
 				LM_BUG("[%s] unset/bogus map triggered for %d by epoll "
-					"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
+					"(fd=%d,type=%d,flags=%x,data=%p)\n",h->name,
 					h->ep_array[r].events,
 					e->fd, e->type, e->flags, e->data);
 			}
@@ -189,7 +189,7 @@ again:
 			if (h->ep_array[r].events & EPOLLIN) {
 				if ((e->flags&IO_WATCH_READ)==0) {
 					LM_BUG("[%s] EPOLLIN triggered(%d) for non-read fd_map "
-						"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
+						"(fd=%d,type=%d,flags=%x,data=%p)\n",h->name,
 						h->ep_array[r].events,
 						e->fd, e->type, e->flags, e->data);
 				}
@@ -205,7 +205,7 @@ again:
 			} else if (h->ep_array[r].events & EPOLLOUT){
 				if ((e->flags&IO_WATCH_WRITE)==0) {
 					LM_BUG("[%s] EPOLLOUT triggered(%d) for non-read fd_map "
-						"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
+						"(fd=%d,type=%d,flags=%x,data=%p)\n",h->name,
 						h->ep_array[r].events,
 						e->fd, e->type, e->flags, e->data);
 				}
