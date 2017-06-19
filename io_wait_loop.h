@@ -176,9 +176,23 @@ again:
 				h->name, ((struct fd_map*)h->ep_array[r].data.ptr)->fd,
 				h->ep_array[r].events, ((struct fd_map*)h->ep_array[r].data.ptr)->flags);
 #endif
+			/* do some sanity check over the triggered fd */
+			e = ((struct fd_map*)h->ep_array[r].data.ptr);
+			if (e->type==0 || e->fd<0 || e->data==NULL || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
+				LM_BUG("[%s] unset/bogus map triggered for %d by epoll "
+					"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
+					h->ep_array[r].events,
+					e->fd, e->type, e->flags, e->data);
+			}
 
 			/* anything containing EPOLLIN (like HUP or ERR) goes as a READ */
 			if (h->ep_array[r].events & EPOLLIN) {
+				if ((e->flags&IO_WATCH_READ)==0) {
+					LM_BUG("[%s] EPOLLIN triggered(%d) for non-read fd_map "
+						"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
+						h->ep_array[r].events,
+						e->fd, e->type, e->flags, e->data);
+				}
 				if (h->ep_array[r].events&EPOLLHUP) {
 					LM_DBG("[%s] EPOLLHUP on IN ->"
 						"connection closed by the remote peer!\n",h->name);
@@ -189,6 +203,12 @@ again:
 
 			/* anything containing EPOLLOUT (like HUP or ERR) goes as a WRITE*/
 			} else if (h->ep_array[r].events & EPOLLOUT){
+				if ((e->flags&IO_WATCH_WRITE)==0) {
+					LM_BUG("[%s] EPOLLOUT triggered(%d) for non-read fd_map "
+						"(fd=%d,type=%d,flags=%d,data=%p)\n",h->name,
+						h->ep_array[r].events,
+						e->fd, e->type, e->flags, e->data);
+				}
 				if (h->ep_array[r].events&EPOLLHUP) {
 					LM_DBG("[%s] EPOLLHUP on OUT ->"
 						"connection closed by the remote peer!\n",h->name);

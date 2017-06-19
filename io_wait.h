@@ -182,6 +182,7 @@ typedef struct io_wait_handler io_wait_h;
 			(pfm)->type=0 /*F_NONE */; \
 			(pfm)->fd=-1; \
 			(pfm)->flags = 0; \
+			(pfm)->data = NULL; \
 			erase = 1; \
 		} else { \
 			(pfm)->flags &= ~sock_flags; \
@@ -253,6 +254,7 @@ again:
 #define IO_WATCH_WRITE           (1<<1)
 #define IO_WATCH_ERROR           (1<<2)
 /* reserved, do not attempt to use */
+#define IO_WATCH_PRV_CHECKED     (1<<29)
 #define IO_WATCH_PRV_TRIG_READ   (1<<30)
 #define IO_WATCH_PRV_TRIG_WRITE  (1<<31)
 
@@ -266,6 +268,64 @@ again:
 		for(k=0;k<h->max_prio;k++) LM_GEN1(L_DBG," %d",h->prio_idx[k]);\
 		LM_GEN1(L_DBG,"\n"); \
 	}while(0)
+
+
+#define check_io_data() \
+	do { \
+		struct fd_map* _e;\
+		int _t,k;\
+		check_error = 0;\
+		/* iterate the fd_array and check if fd_hash is properly set for each */ \
+		for(k=0;k<h->fd_no;k++) {\
+			_e = get_fd_map(h, h->fd_array[k].fd); \
+			if (_e->type==0 || _e->fd<0 || _e->data==NULL || \
+			(_e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {\
+				LM_BUG("fd_array idx %d (fd=%d) points to bogus map "\
+					"(fd=%d,type=%d,flags=%d,data=%p)\n",k,h->fd_array[k].fd,\
+					_e->fd, _e->type, _e->flags, _e->data);\
+					check_error = 1;\
+			}\
+			_e->flags |= IO_WATCH_PRV_CHECKED;\
+		}\
+		/* iterate the fd_map and see if all records are checked */ \
+		_t = 0; \
+		for(k=0;k<h->max_fd_no;k++) {\
+			_e = get_fd_map(h, k); \
+			if (_e->type==0) { \
+				/* fd not in used, everything should be on zero */ \
+				if (_e->fd>=0 || _e->data!=NULL || _e->flags!=0 ) {\
+					LM_BUG("unused fd_map fd=%d has bogus data "\
+					"(fd=%d,flags=%d,data=%p)\n",k,\
+					_e->fd, _e->flags, _e->data);\
+					check_error = 1;\
+				}\
+			} else {\
+				/* fd in used, check if in checked */ \
+				if (_e->fd<0 || _e->data==NULL || \
+				(_e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {\
+				LM_BUG("used fd map fd=%d has bogus data "\
+					"(fd=%d,type=%d,flags=%d,data=%p)\n",k,\
+					_e->fd, _e->type, _e->flags, _e->data);\
+					check_error = 1;\
+				}\
+				/* the map is valid */ \
+				if ((_e->flags&IO_WATCH_PRV_CHECKED)==0) {\
+					LM_BUG("used fd map fd=%d is not present in fd_array "\
+						"(fd=%d,type=%d,flags=%d,data=%p)\n",k,\
+						_e->fd, _e->type, _e->flags, _e->data);\
+						check_error = 1;\
+				}\
+				_e->flags |= ~IO_WATCH_PRV_CHECKED;\
+				_t++;\
+			}\
+		}\
+		if (_t!=h->fd_no) { \
+			LM_BUG("fd_map versus fd_array size mismatch: %d versus %d\n",\
+				_t, h->fd_no);\
+			check_error = 1;\
+		}\
+	} while(0)
+
 
 /*! \brief generic io_watch_add function
  * \return 0 on success, -1 on error
@@ -327,6 +387,7 @@ inline static int io_watch_add(	io_wait_h* h,
 #endif
 	int ctl_flags;
 	int n;  //FIXME
+	int check_error;
 #if 0 //defined(HAVE_SIGIO_RT) || defined (HAVE_EPOLL) FIXME
 	int n;
 	int idx;
@@ -341,18 +402,18 @@ inline static int io_watch_add(	io_wait_h* h,
 
 	if (fd==-1){
 		LM_CRIT("fd is -1!\n");
-		goto error;
+		goto error0;
 	}
 	/* check if not too big */
 	if (h->fd_no >= h->max_fd_no || fd >= h->max_fd_no) {
 		LM_CRIT("[%s] maximum fd number exceeded: %d, %d/%d\n",
 			h->name, fd, h->fd_no, h->max_fd_no);
-		goto error;
+		goto error0;
 	}
 	if (prio > h->max_prio) {
 		LM_BUG("[%s] priority %d requested (max is %d)\n",
 			h->name, prio, h->max_prio);
-		goto error;
+		goto error0;
 	}
 #if defined (HAVE_EPOLL)
 	LM_DBG("[%s] io_watch_add op (%d on %d) (%p, %d, %d, %p,%d), fd_no=%d/%d\n",
@@ -370,7 +431,7 @@ inline static int io_watch_add(	io_wait_h* h,
 			LM_BUG("[%s] BUG trying to overwrite entry %d"
 					" in the hash(%d, %d, %p,%d) with (%d, %d, %p,%d)\n",
 					h->name,fd, e->fd, e->type, e->data,e->flags, fd, type, data,flags);
-			goto error;
+			goto error0;
 		}
 		LM_DBG("[%s] Socket %d is already being listened on for flags %d\n",
 			   h->name,fd,flags);
@@ -379,7 +440,7 @@ inline static int io_watch_add(	io_wait_h* h,
 
 	if ((e=hash_fd_map(h, fd, type, data,flags,&already))==0){
 		LM_ERR("[%s] failed to hash the fd %d\n",h->name, fd);
-		goto error;
+		goto error0;
 	}
 	switch(h->poll_method){ /* faster then pointer to functions */
 		case POLL_POLL:
@@ -538,9 +599,22 @@ check_io_again:
 	}
 #endif
 	//fd_array_print;
+	check_io_data();
+	if (check_error) {
+		LM_CRIT("[%s] check failed after succesfull fd add "
+			"(fd=%d,type=%d,data=%p,flags=%d) already=%d\n",h->name,
+			fd, type, data, flags, already);
+	}
 	return 0;
 error:
 	if (e) unhash_fd_map(e,0,flags,already);
+error0:
+	check_io_data();
+	if (check_error) {
+		LM_CRIT("[%s] check failed after failed fd add "
+			"(fd=%d,type=%d,data=%p,flags=%d) already=%d\n",h->name,
+			fd, type, data, flags, already);
+	}
 	return -1;
 #undef fd_array_setup
 #undef set_fd_flags
@@ -602,6 +676,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 	int fd_flags;
 #endif
 	int erase = 0;
+	int check_error;
 	int i;
 
 	if ((fd<0) || (fd>=h->max_fd_no)){
@@ -743,6 +818,16 @@ again_devpoll:
 	fix_fd_array;
 	//fd_array_print;
 
+	check_io_data();
+	if (check_error) {
+		LM_CRIT("[%s] check failed after succesfull fd del "
+			"(fd=%d,flags=%d, sflags=%d) over map "
+			"(fd=%d,type=%d,data=%p,flags=%d) erase=%d\n",h->name,
+			fd, flags, sock_flags,
+			e->fd, e->type, e->data, e->flags,
+			erase);
+	}
+
 	return 0;
 error:
 	/*
@@ -750,7 +835,18 @@ error:
 	 * "fd_hash" and "fd_array" must remain consistent
 	 */
 	fix_fd_array;
+
+	check_io_data();
+	if (check_error) {
+		LM_CRIT("[%s] check failed after failed fd del "
+			"(fd=%d,flags=%d, sflags=%d) over map "
+			"(fd=%d,type=%d,data=%p,flags=%d) erase=%d\n",h->name,
+			fd, flags, sock_flags,
+			e->fd, e->type, e->data, e->flags,
+			erase);
+	}
 error0:
+
 	return -1;
 #undef fix_fd_array
 }
