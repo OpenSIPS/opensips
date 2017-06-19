@@ -52,15 +52,15 @@
 	do { \
 		if ((_val)->type!=_type) { \
 			LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
-			goto error; \
+			return 1; \
 		} \
 		if (_not_null && (_val)->nul) { \
 			LM_ERR("column %.*s is null\n", _col.len, _col.s); \
-			goto error; \
+			return 1; \
 		} \
 		if (_is_empty_str && !VAL_STRING(_val)) { \
 			LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
-			goto error; \
+			return 1; \
 		} \
 	} while (0)
 
@@ -121,7 +121,7 @@ static int child_init(int rank);
 static void destroy(void);
 
 /* loads info from the db */
-table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table);
+int load_info(table_entry_t **new_info, db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table);
 
 /* deallocate memory */
 void free_data(table_entry_t *data);
@@ -334,9 +334,8 @@ static int child_init(int rank)
 		return -1;
 	}
 
-	/* child 1 load the routing info */
-	if ((rank == 1) && reload_data() != 0) {
-		LM_CRIT("failed to load routing data\n");
+	if (rank == 1 && (reload_data() < 0)) {
+		LM_CRIT("failed to load clusterer data\n");
 		return -1;
 	}
 
@@ -500,12 +499,12 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 
 	if (url == NULL) {
 		LM_ERR("no path specified\n");
-		goto error;
+		return 1;
 	}
 
 	if (parse_phostport(url, strlen(url), &host, &hlen, &port, &proto) < 0) {
 		LM_ERR("Bad replication destination IP!\n");
-		goto error;
+		return 1;
 	}
 
 	if (proto == PROTO_NONE)
@@ -588,7 +587,7 @@ int add_info(table_entry_t **data, int *int_vals, unsigned long last_attempt, ch
 		(unsigned short *) &proto, 0, 0);
 	if (!he) {
 		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
-		goto error;
+		return 1;
 	}
 
 	hostent2su(&value->addr, he, 0, port);
@@ -650,7 +649,7 @@ error:
 }
 
 /* loads data from the db */
-table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
+int load_info(table_entry_t **new_info, db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 {
 	int int_vals[7];
 	char *str_vals[2];
@@ -673,11 +672,9 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	db_res_t* res;
 	/* a row from the db table */
 	db_row_t* row;
-	/* the processed result */
-	table_entry_t *data;
 
 	res = 0;
-	data = 0;
+	*new_info = NULL;
 
 	columns[0] = &cluster_id_col;
 	columns[1] = &machine_id_col;
@@ -820,7 +817,7 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 
 
 			/* store data */
-			if (add_info(&data, int_vals, last_attempt, str_vals) < 0) {
+			if (add_info(new_info, int_vals, last_attempt, str_vals) < 0) {
 				LM_DBG("error while adding info to shm\n");
 				goto error;
 			}
@@ -853,14 +850,14 @@ table_entry_t* load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table)
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
 
-	return data;
+	return 0;
 error:
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
-	if (data)
-		free_data(data);
-	data = NULL;
-	return 0;
+	if (*new_info)
+		free_data(*new_info);
+	*new_info = NULL;
+	return -1;
 }
 
 /* deallocates data */
@@ -908,7 +905,7 @@ void free_data(table_entry_t *data)
 static int reload_data(void)
 {
 	struct module_list* modules;
-	table_entry_t *new_data;
+	table_entry_t *new_data = NULL;
 	table_entry_t *old_data;
 	table_entry_t *new_head;
 	table_entry_t *old_head;
@@ -916,13 +913,17 @@ static int reload_data(void)
 	table_entry_info_t *old_info;
 	table_entry_value_t *new_value;
 	table_entry_value_t *old_value;
+	int rc;
 
 	struct module_timestamp *aux;
 
-	new_data = load_info(&dr_dbf, db_hdl, &db_table);
-	if (!new_data) {
-		LM_CRIT("failed to load routing info\n");
+	rc = load_info(&new_data, &dr_dbf, db_hdl, &db_table);
+
+	if (rc < 0)
 		return -1;
+	else if (rc > 0) {
+		LM_ERR("failed to load clusterer info\n");
+		return 1;
 	}
 
 	lock_start_write(ref_lock);
@@ -1011,7 +1012,7 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 		update_db_handler(0, NULL);
 
 	if (reload_data() < 0) {
-		LM_CRIT("failed to load routing data\n");
+		LM_CRIT("failed to load clusterer data\n");
 		return init_mi_tree(500, "Failed to reload", 16);
 	}
 
