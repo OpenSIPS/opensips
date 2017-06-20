@@ -307,6 +307,11 @@ static int mod_init(void)
 		}
 	}
 
+	/*
+	 * Import use_domain parameter from usrloc
+	 */
+	reg_use_domain = ul_api.use_domain;
+
 	if (rcv_avp_param && *rcv_avp_param) {
 		s.s = rcv_avp_param; s.len = strlen(s.s);
 		if (pv_parse_spec(&s, &avp_spec)==0
