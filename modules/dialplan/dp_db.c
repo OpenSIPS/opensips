@@ -173,7 +173,7 @@ int init_data(void)
 
 	start = dp_hlist;
 	if (!start) {
-		LM_ERROR("no partition defined, not even the default one!\n");
+		LM_ERR("no partition defined, not even the default one!\n");
 		return -1;
 	}
 
