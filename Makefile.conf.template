@@ -89,6 +89,7 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DUSE_POSIX_SEM #Uses POSIX sems for locking
 #DEFS+= -DBUSY_WAIT #Uses busy waiting on the lock
 #DEFS+= -DDBG_LOCK #Attach debug info to all lock structures
+#DEFS+= -DDBG_STRUCT_HIST #Include support for struct history logging
 #DEFS+= -DNOSMP #Do not use SMP sompliant locking. Faster but won't work on SMP machines
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC

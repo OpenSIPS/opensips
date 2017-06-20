@@ -4,7 +4,7 @@
 
 
 #
-# expects: NAME, auto_gen, extra_sources defined
+# expects: auto_gen, dbg_objs, defined
 #
 # defines: sources, objs, extra_objs, depends
 #
@@ -16,8 +16,7 @@ sources=$(filter-out $(auto_gen) $(exclude_files), $(wildcard *.c) $(extra_sourc
 		$(wildcard parser/sdp/*.c) \
 		$(wildcard parser/contact/*.c) $(wildcard db/*.c) \
 		$(wildcard mi/*.c) $(wildcard evi/*.c) $(wildcard cachedb/*.c) \
-		$(wildcard net/*.c) $(wildcard net/proto*/*.c)) $(auto_gen)
-
+		$(wildcard net/*.c) $(wildcard net/proto*/*.c) $(dbg_objs)) $(auto_gen)
 objs=$(sources:.c=.o)
 extra_objs=
 depends=$(sources:.c=.d)
