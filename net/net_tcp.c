@@ -1404,6 +1404,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				tcpconn->lifetime=0;
 				break;
 			}
+			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
