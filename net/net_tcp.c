@@ -38,7 +38,6 @@
 #include <errno.h>
 #include <string.h>
 
-
 #include "../mem/mem.h"
 #include "../mem/shm_mem.h"
 #include "../globals.h"
@@ -49,6 +48,7 @@
 #include "../daemonize.h"
 #include "../reactor.h"
 #include "../timer.h"
+
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
 #include "net_tcp_report.h"
@@ -56,6 +56,7 @@
 #include "tcp_conn.h"
 #include "trans.h"
 
+struct struct_hist_list *con_hist;
 
 /* definition of a TCP worker */
 struct tcp_child {
@@ -574,6 +575,7 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 found:
 	c->refcnt++;
 	TCPCONN_UNLOCK(part);
+	sh_log(c->hist, TCP_REF, "tcp_conn_get, (%d)", c->refcnt);
 
 	LM_DBG("con found in state %d\n",c->state);
 
@@ -632,6 +634,7 @@ found:
 	return 1;
 error:
 	tcpconn_put(c);
+	sh_log(c->hist, TCP_UNREF, "tcp_conn_get, (%d)", c->refcnt);
 	*conn = NULL;
 	*conn_fd = -1;
 	return -1;
@@ -710,6 +713,10 @@ static void _tcpconn_rm(struct tcp_connection* c)
 
 	if (protos[c->type].net.conn_clean)
 		protos[c->type].net.conn_clean(c);
+
+	sh_log(c->hist, TCP_DESTROY, "type=%d", c->type);
+	sh_unref(c->hist, con_hist);
+	c->hist = NULL;
 
 	shm_free(c);
 }
@@ -856,6 +863,7 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	/* start with the default conn lifetime */
 	c->lifetime = get_ticks()+tcp_con_lifetime;
 	c->flags|=F_CONN_REMOVED|flags;
+	c->hist = sh_push(c, con_hist);
 
 	if (protos[si->proto].net.conn_init &&
 	protos[si->proto].net.conn_init(c)<0) {
@@ -906,6 +914,7 @@ struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
 	}
 	c->refcnt++; /* safe to do it w/o locking, it's not yet
 					available to the rest of the world */
+	sh_log(c->hist, TCP_REF, "connect, (%d)", c->refcnt);
 
 	return c;
 }
@@ -981,6 +990,7 @@ void tcp_conn_destroy(struct tcp_connection* tcpconn)
 {
 	tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
 				"Closed by Proto layer");
+	sh_log(tcpconn->hist, TCP_UNREF, "tcp_conn_destroy, (%d)", tcpconn->refcnt);
 	return tcpconn_destroy(tcpconn);
 }
 
@@ -1029,13 +1039,16 @@ static inline int handle_new_connect(struct socket_info* si)
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
+		sh_log(tcpconn->hist, TCP_REF, "accept, (%d)", tcpconn->refcnt);
 		tcpconn_add(tcpconn);
 		LM_DBG("new connection: %p %d flags: %04x\n",
 				tcpconn, tcpconn->s, tcpconn->flags);
 		/* pass it to a child */
+		sh_log(tcpconn->hist, TCP_SEND2CHILD, "accept");
 		if(send2child(tcpconn,IO_WATCH_READ)<0){
 			LM_ERR("no children available\n");
 			id = tcpconn->id;
+			sh_log(tcpconn->hist, TCP_UNREF, "accept, (%d)", tcpconn->refcnt);
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
@@ -1080,11 +1093,14 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			return -1;
 		tcpconn->flags|=F_CONN_REMOVED_READ;
 		tcpconn_ref(tcpconn); /* refcnt ++ */
+		sh_log(tcpconn->hist, TCP_REF, "tcpconn read, (%d)", tcpconn->refcnt);
+		sh_log(tcpconn->hist, TCP_SEND2CHILD, "read");
 		if (send2child(tcpconn,IO_WATCH_READ)<0){
 			LM_ERR("no children available\n");
 			id = tcpconn->id;
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
+			sh_log(tcpconn->hist, TCP_UNREF, "tcpconn read, (%d)", tcpconn->refcnt);
 			if (tcpconn->refcnt==0){
 				fd=tcpconn->s;
 				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
@@ -1107,11 +1123,13 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 					err != 0) {
 				LM_DBG("Failed connection attempt\n");
 				tcpconn_ref(tcpconn);
+				sh_log(tcpconn->hist, TCP_REF, "tcpconn connect, (%d)", tcpconn->refcnt);
 				reactor_del_all(tcpconn->s, fd_i, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
 					"Async connect failed");
 				tcpconn_destroy(tcpconn);
+				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn connect, (%d)", tcpconn->refcnt);
 				return 0;
 			}
 
@@ -1131,11 +1149,14 @@ async_write:
 				return -1;
 			tcpconn->flags|=F_CONN_REMOVED_WRITE;
 			tcpconn_ref(tcpconn); /* refcnt ++ */
+			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)", tcpconn->refcnt);
+			sh_log(tcpconn->hist, TCP_SEND2CHILD, "write");
 			if (send2child(tcpconn,IO_WATCH_WRITE)<0){
 				LM_ERR("no children available\n");
 				id = tcpconn->id;
 				TCPCONN_LOCK(id);
 				tcpconn->refcnt--;
+				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn write, (%d)", tcpconn->refcnt);
 				if (tcpconn->refcnt==0){
 					fd=tcpconn->s;
 					tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
@@ -1224,9 +1245,11 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 		case CONN_RELEASE:
 			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){
+				sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release bad, (%d)", tcpconn->refcnt);
 				tcpconn_destroy(tcpconn);
 				break;
 			}
+			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
@@ -1235,17 +1258,21 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 		case CONN_RELEASE_WRITE:
 			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){
+				sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release write bad, (%d)", tcpconn->refcnt);
 				tcpconn_destroy(tcpconn);
 				break;
 			}
+			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release write, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			break;
 		case ASYNC_WRITE:
 			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){
+				sh_log(tcpconn->hist, TCP_UNREF, "tcpworker async write bad, (%d)", tcpconn->refcnt);
 				tcpconn_destroy(tcpconn);
 				break;
 			}
+			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker async write, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
@@ -1260,6 +1287,7 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			 if (tcpconn->s!=-1)
 				io_watch_del(&io_h, tcpconn->s, -1, IO_FD_CLOSING);
 			*/
+			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker destroy, (%d)", tcpconn->refcnt);
 			tcpconn_destroy(tcpconn); /* closes also the fd */
 			break;
 		default:
@@ -1356,6 +1384,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 				reactor_del_all( tcpconn->s, -1, IO_FD_CLOSING);
 				tcpconn->flags|=F_CONN_REMOVED;
 			}
+			sh_log(tcpconn->hist, TCP_UNREF, "worker error, (%d)", tcpconn->refcnt);
 			tcpconn_destroy(tcpconn); /* will close also the fd */
 			break;
 		case CONN_GET_FD:
@@ -1627,6 +1656,14 @@ int tcp_init(void)
 
 	if (tcp_disabled)
 		return 0;
+
+#ifdef DBG_TCPCON
+	con_hist = shl_init(10000);
+	if (!con_hist) {
+		LM_ERR("oom con hist\n");
+		goto error;
+	}
+#endif
 
 	/* init tcp children array */
 	tcp_children = (struct tcp_child*)pkg_malloc

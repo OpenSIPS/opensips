@@ -39,7 +39,6 @@
 #include "../locking.h"
 #include "../ip_addr.h"
 
-
 /* keepalive */
 #ifndef NO_TCP_KEEPALIVE
     #define HAVE_SO_KEEPALIVE
@@ -131,6 +130,7 @@ struct tcp_connection{
 	unsigned short flags;
 	/*!< protocol related & reserved flags */
 	unsigned short proto_flags;
+	struct struct_hist *hist;
 	/* protocol specific data attached to this connection */
 	void *proto_data;
 };

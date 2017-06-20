@@ -816,6 +816,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				 * flow now (the actual write will be done when
 				 * connect will be completed */
 				LM_DBG("Successfully started async connection \n");
+				sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
 				tcp_conn_release(c, 0);
 				return len;
 			}
@@ -891,6 +892,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				LM_ERR("Failed to add another write chunk to %p\n",c);
 				/* we failed due to internal errors - put the
 				 * connection back */
+				sh_log(c->hist, TCP_SEND2MAIN, "send 2, (%d)", c->refcnt);
 				tcp_conn_release(c, 0);
 				return -1;
 			}
@@ -899,10 +901,12 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			last_outgoing_tcp_id = c->id;
 
 			/* we successfully added our write chunk - success */
+			sh_log(c->hist, TCP_SEND2MAIN, "send 3, (%d)", c->refcnt);
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
 			/* return error, nothing to do about it */
+			sh_log(c->hist, TCP_SEND2MAIN, "send 4, (%d)", c->refcnt);
 			tcp_conn_release(c, 0);
 			return -1;
 		}
@@ -928,6 +932,8 @@ send_it:
 		c->state=S_CONN_BAD;
 		if (c->proc_id != process_no)
 			close(fd);
+
+		sh_log(c->hist, TCP_SEND2MAIN, "send 5, (%d)", c->refcnt);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
@@ -940,6 +946,7 @@ send_it:
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
 
+	sh_log(c->hist, TCP_SEND2MAIN, "send 6, (%d, async: %d)", c->refcnt, n < len);
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;
 }
