@@ -189,6 +189,8 @@ again:
 				 * must be in the list */
 				tcpconn_check_add(con);
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
+				/* pending event on a connection -> prevent premature expiry */
+				tcp_conn_set_lifetime(con, tcp_con_lifetime);
 				con->timeout = con->lifetime;
 				if (reactor_add_reader( s, F_TCPCONN, RCT_PRIO_NET, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
