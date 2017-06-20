@@ -94,6 +94,7 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 	}
 	if (pending_data) {
 		tcpconn_release(c, ASYNC_WRITE,1);
+		return;
 	}
 	tcpconn_put(c);
 	return;
