@@ -2239,38 +2239,23 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 {
 	#define TID_INFO(_tid_el, _node, _rpl)                                          \
 		do {                                                                        \
-			char uri[256];                                                          \
 			_node=add_mi_node_child(_rpl, 0, _tid_el->name.s,                       \
 					_tid_el->name.len, 0, 0);                                       \
-			if (_tid_el->type==TYPE_HEP)                                            \
-				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("HEP"));         \
-			else if (_tid_el->type==TYPE_SIP)                                       \
-				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("SIP"));         \
-			else if (_tid_el->type==TYPE_DB)                                        \
-				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));    \
-                                                                                    \
-			if (_tid_el->type==TYPE_HEP) {                                          \
-				memcpy(uri, _tid_el->el.hep.hep_id->ip.s, _tid_el->el.hep.hep_id->ip.len);      \
-				uri[_tid_el->el.hep.hep_id->ip.len] = ':';                                \
-				memcpy(uri+_tid_el->el.hep.hep_id->ip.len + 1,                                 \
-						_tid_el->el.hep.hep_id->port.s, _tid_el->el.hep.hep_id->port.len);      \
-                                                                                    \
-				add_mi_attr(_node, 0, MI_SSTR("uri"), uri,                      \
-						_tid_el->el.hep.hep_id->ip.len + 1 + _tid_el->el.hep.hep_id->port.len);    \
-			} else if (_tid_el->type==TYPE_SIP) {                 \
-				memcpy(uri, _tid_el->el.uri.host.s, _tid_el->el.uri.host.len);      \
-				uri[_tid_el->el.uri.host.len] = ':';                                \
-				memcpy(uri+_tid_el->el.uri.host.len+1,                              \
-						_tid_el->el.uri.port.s, _tid_el->el.uri.port.len);          \
-                                                                                    \
-				add_mi_attr(_node, 0, MI_SSTR("uri"), uri,                      \
-						_tid_el->el.uri.host.len + 1 + _tid_el->el.uri.port.len);   \
-			} else {                                                                \
-				/* TYPE_DB */                                                       \
-				add_mi_attr(_node, 0, MI_SSTR("uri"), _tid_el->el.db->url.s,    \
-						_tid_el->el.db->url.len);                                   \
+			if (_tid_el->type==TYPE_HEP) {                                            \
+				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("HEP")); \
+				addf_mi_attr(_node, 0,  MI_SSTR("uri"), "%.*s:%.*s", \
+					_tid_el->el.hep.hep_id->ip.len, _tid_el->el.hep.hep_id->ip.s, \
+					_tid_el->el.hep.hep_id->port.len, _tid_el->el.hep.hep_id->port.s); \
+			} else if (_tid_el->type==TYPE_SIP) {                                   \
+				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("SIP"));             \
+				addf_mi_attr(_node, 0,  MI_SSTR("uri"), "%.*s:%.*s", \
+					_tid_el->el.uri.host.len, _tid_el->el.uri.host.s, \
+					_tid_el->el.uri.port.len, _tid_el->el.uri.port.s); \
+			} else if (_tid_el->type==TYPE_DB) {                                    \
+				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));        \
+				add_mi_attr(_node, MI_DUP_VALUE,  MI_SSTR("uri"), \
+					_tid_el->el.db->url.s, _tid_el->el.db->url.len); \
 			}                                                                       \
-                                                                                    \
 			if (*_tid_el->traceable)                                                \
 				add_mi_attr(_node, 0, MI_SSTR("state"), MI_SSTR("on"));         \
 			else                                                                    \
