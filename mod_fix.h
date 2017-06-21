@@ -109,6 +109,7 @@ int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
 			int *i_val, str *s_val, unsigned int *flags);
 regex_t* fixup_get_regex(struct sip_msg* msg, gparam_p gp,int *do_free);
 int fixup_spve(void** param);
+int fixup_free_spve(void **param);
 
 int fixup_pvar(void **param);
 int fixup_str(void **param);

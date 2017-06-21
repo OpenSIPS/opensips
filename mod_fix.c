@@ -1140,3 +1140,20 @@ int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
 	return 0;
 }
 
+int fixup_free_spve(void **param)
+{
+	gparam_p gp = (gparam_p)(*param);
+
+	switch (gp->type) {
+	case GPARAM_TYPE_PVE:
+		pv_elem_free_all(gp->v.pve);
+		break;
+	case GPARAM_TYPE_PVS:
+		pv_spec_free(gp->v.pvs);
+		break;
+	}
+	pkg_free(gp);
+	*param = NULL;
+
+	return 0;
+}
