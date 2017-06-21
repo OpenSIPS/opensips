@@ -4622,8 +4622,9 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	}
 	if (old_flags!=cr->flags) {
 		cr->flags |= DR_CR_FLAG_DIRTY;
-		replicate_dr_carrier_status_event( current_partition, cr,
-			replicated_status_cluster);
+		if (replicated_status_cluster > 0)
+			replicate_dr_carrier_status_event( current_partition, cr,
+				replicated_status_cluster);
 	}
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
