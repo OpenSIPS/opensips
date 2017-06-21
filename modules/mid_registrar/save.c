@@ -153,13 +153,20 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		return -1;
 	}
 
-	len1 = sprintf(buf, "<sip:%.*s@%s:%s>",
-	               aor->len, aor->s, adv_sock->address_str.s, adv_sock->port_no_str.s);
+	/* if use_domain is enabled then don't append proxy ip:port */
+	if (reg_use_domain == 0)
+		len1 = sprintf(buf, "<sip:%.*s@%s:%s>",
+		               aor->len, aor->s, adv_sock->address_str.s, adv_sock->port_no_str.s);
+	else
+		len1 = sprintf(buf, "<sip:%.*s>",
+		               aor->len, aor->s);
 
 	if (len1 >= len) {
 		LM_BUG("buffer overflow");
 		abort();
 	}
+
+	LM_DBG("inserting new Contact '%.*s'\n", len1, buf);
 
 	if (insert_new_lump_after(anchor, buf, len1, HDR_CONTACT_T) == 0) {
 		pkg_free(buf);
