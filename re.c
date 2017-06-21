@@ -289,7 +289,6 @@ found_re:
 	c=*re_end; /* regcomp expects null terminated strings -- save */
 	*re_end=0;
 	if (regcomp(regex, re, cflags)!=0){
-		pkg_free(regex);
 		*re_end=c; /* restore */
 		LM_ERR("bad regular expression %.*s in %.*s\n",
 				(int)(re_end-re), re, subst->len, subst->s);
