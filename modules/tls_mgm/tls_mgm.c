@@ -42,15 +42,15 @@
 	do{\
 		if ((_val)->type!=_type) { \
 			LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
-			goto error;\
+			continue; \
 		} \
 		if (_not_null && (_val)->nul) { \
 			LM_ERR("column %.*s is null\n", _col.len, _col.s); \
-			goto error;\
+			continue; \
 		} \
 		if (_is_empty_str && VAL_STRING(_val)==0) { \
 			LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
-			goto error;\
+			continue; \
 		} \
 		if ((_val)->type == DB_INT && (_val)->nul) { \
 			(_val)->val.int_val = -1;\
@@ -502,7 +502,7 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 14);
 
 			tlsp_db_add_domain(str_vals, int_vals, serv_dom, cli_dom);
-			
+
 			n++;
 		}
 
@@ -970,116 +970,149 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 }
 
 
+static int init_tls_dom(struct tls_domain *d)
+{
+	if (d->name.len) {
+		LM_INFO("Processing TLS domain '%.*s'\n",
+				d->name.len, ZSW(d->name.s));
+	} else {
+		LM_INFO("Processing TLS domain [%s:%d]\n",
+				ip_addr2a(&d->addr), d->port);
+	}
+
+	/*
+	 * set method
+	 */
+	if (d->method == TLS_METHOD_UNSPEC) {
+		if (d->name.len)
+			LM_DBG("no method for tls '%.*s', using default\n",
+					d->name.len, d->name.s);
+		else
+			LM_DBG("no method for tls[%s:%d], using default\n",
+					ip_addr2a(&d->addr), d->port);
+		d->method = tls_default_method;
+	}
+
+	/*
+	 * create context
+	 */
+	d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+	if (d->ctx == NULL) {
+		if (d->name.len)
+			LM_ERR("cannot create ssl context for tls '%.*s'\n",
+					d->name.len, d->name.s);
+		else
+			LM_ERR("cannot create ssl context for "
+					"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
+		return -1;
+	}
+	if (init_ssl_ctx_behavior( d ) < 0)
+		return -1;
+
+	/*
+	 * load certificate
+	 */
+	if (!d->cert_file) {
+		if (d->name.len)
+			LM_NOTICE("no certificate for tls '%.*s' defined, using default '%s'\n",
+					d->name.len, d->name.s, tls_cert_file);
+		else
+			LM_NOTICE("no certificate for tls[%s:%d] defined, using default "
+					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
+		d->cert_file = tls_cert_file;
+	}
+
+	if (load_certificate(d->ctx, d->cert_file) < 0)
+		return -1;
+
+	/**
+	 * load crl from directory
+	 */
+	if (!d->crl_directory) {
+		LM_NOTICE("no crl for tls, using none\n");
+	} else {
+		if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
+			return -1;
+	}
+
+	/*
+	 * load ca
+	 */
+	if (!d->ca_file) {
+		if (d->name.len)
+			LM_NOTICE("no CA list for tls '%.*s' defined, using default '%s'\n",
+					d->name.len, d->name.s, tls_ca_file);
+		else
+			LM_NOTICE("no CA list for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_ca_file);
+		d->ca_file = tls_ca_file;
+	}
+	if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
+		return -1;
+
+	/*
+	 * load ca from directory
+	 */
+	if (!d->ca_directory) {
+		if (d->name.len)
+			LM_NOTICE("no CA dir for tls '%.*s' defined, "
+				"using default '%s'\n", d->name.len, d->name.s, tls_ca_dir);
+		else
+			LM_NOTICE("no CA dir for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_ca_dir);
+		d->ca_directory = tls_ca_dir;
+	}
+
+	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
+		return -1;
+
+	return 0;
+}
+
 /*
  * initialize tls virtual domains
  */
-static int init_tls_domains(struct tls_domain *d)
+static int init_tls_domains(struct tls_domain **dom, int skip)
 {
-	struct tls_domain *dom;
+	struct tls_domain *d, *tmp, *prev = NULL;
+	int rc;
 
-	dom = d;
+	d = *dom;
 	while (d) {
-		if (d->name.len) {
-			LM_INFO("Processing TLS domain '%.*s'\n",
-					d->name.len, ZSW(d->name.s));
+		rc = init_tls_dom(d);
+
+		if (skip) {
+			if (rc < 0) {
+				if (d == *dom)
+					*dom = d->next;
+
+				if (prev)
+					prev->next = d->next;
+
+				tmp = d;
+				d = d->next;
+				if (tmp->ctx)
+					SSL_CTX_free(tmp->ctx);
+				lock_destroy(tmp->lock);
+				lock_dealloc(tmp->lock);
+				shm_free(tmp);
+			} else {
+				prev = d;
+				d = d->next;
+			}
 		} else {
-			LM_INFO("Processing TLS domain [%s:%d]\n",
-					ip_addr2a(&d->addr), d->port);
-		}
-
-		/*
-		 * set method
-		 */
-		if (d->method == TLS_METHOD_UNSPEC) {
-			if (d->name.len)
-				LM_DBG("no method for tls '%.*s', using default\n",
-						d->name.len, d->name.s);
-			else
-				LM_DBG("no method for tls[%s:%d], using default\n",
-						ip_addr2a(&d->addr), d->port);
-			d->method = tls_default_method;
-		}
-
-		/*
-		 * create context
-		 */
-		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
-		if (d->ctx == NULL) {
-			if (d->name.len)
-				LM_ERR("cannot create ssl context for tls '%.*s'\n",
-						d->name.len, d->name.s);
-			else
-				LM_ERR("cannot create ssl context for "
-						"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
-			return -1;
-		}
-		if (init_ssl_ctx_behavior( d ) < 0)
-			return -1;
-		
-		/*
-		 * load certificate
-		 */
-		if (!d->cert_file) {
-			if (d->name.len)
-				LM_NOTICE("no certificate for tls '%.*s' defined, using default '%s'\n",
-						d->name.len, d->name.s, tls_cert_file);
-			else
-				LM_NOTICE("no certificate for tls[%s:%d] defined, using default "
-						"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
-			d->cert_file = tls_cert_file;
-		}
-
-		if (load_certificate(d->ctx, d->cert_file) < 0)
-			return -1;
-
-		/**
-		 * load crl from directory
-		 */
-		if (!d->crl_directory) {
-			LM_NOTICE("no crl for tls, using none\n");
-		} else {
-			if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
+			if (rc < 0)
 				return -1;
-		}
-
-		/*
-		 * load ca
-		 */
-		if (!d->ca_file) {
-			if (d->name.len)
-				LM_NOTICE("no CA list for tls '%.*s' defined, using default '%s'\n",
-						d->name.len, d->name.s, tls_ca_file);
 			else
-				LM_NOTICE("no CA list for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_ca_file);
-			d->ca_file = tls_ca_file;
+				d = d->next;
 		}
-		if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
-			return -1;
-
-		/*
-		 * load ca from directory
-		 */
-		if (!d->ca_directory) {
-			if (d->name.len)
-				LM_NOTICE("no CA dir for tls '%.*s' defined, "
-					"using default '%s'\n", d->name.len, d->name.s, tls_ca_dir);
-			else
-				LM_NOTICE("no CA dir for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port, tls_ca_dir);
-			d->ca_directory = tls_ca_dir;
-		}
-
-		if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
-			return -1;
-
-		d = d->next;
 	}
 
 	/*
 	 * load all private keys as the last step (may prompt for password)
 	 */
-	d = dom;
+	d = *dom;
+	prev = NULL;
 	while (d) {
 		if (!d->pkey_file) {
 			if (d->name.len)
@@ -1090,9 +1123,33 @@ static int init_tls_domains(struct tls_domain *d)
 						"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
 			d->pkey_file = tls_pkey_file;
 		}
-		if (load_private_key(d->ctx, d->pkey_file) < 0)
-			return -1;
-		d = d->next;
+		rc = load_private_key(d->ctx, d->pkey_file);
+
+		if (skip) {
+			if (rc < 0) {
+				if (d == *dom)
+					*dom = d->next;
+
+				if (prev)
+					prev->next = d->next;
+
+				tmp = d;
+				d = d->next;
+				if (tmp->ctx)
+					SSL_CTX_free(tmp->ctx);
+				lock_destroy(tmp->lock);
+				lock_dealloc(tmp->lock);
+				shm_free(tmp);
+			} else {
+				prev = d;
+				d = d->next;
+			}
+		} else {
+			if (rc < 0)
+				return -1;
+			else
+				d = d->next;
+		}
 	}
 
 	return 0;
@@ -1177,7 +1234,6 @@ init_ssl_methods(void)
 /* reloads data from the db */
 static int reload_data(void)
 {
-	int n;
 	struct tls_domain *tls_client_domains_tmp;
 	struct tls_domain *tls_server_domains_tmp;
 
@@ -1190,14 +1246,11 @@ static int reload_data(void)
 	/*
 	 * now initialize tls virtual domains
 	 */
-	if ((n = init_tls_domains(tls_server_domains_tmp))) {
-		return n;
-	}
-	if ((n = init_tls_domains(tls_client_domains_tmp))) {
-		return n;
-	}
-
 	lock_start_write(dom_lock);
+
+	init_tls_domains(&tls_server_domains_tmp, 1);
+
+	init_tls_domains(&tls_client_domains_tmp, 1);
 
 	tls_release_all_domains(tls_client_domains);
 	tls_release_all_domains(tls_server_domains);
@@ -1205,6 +1258,7 @@ static int reload_data(void)
 	tls_server_domains = tls_server_domains_tmp;
 
 	lock_stop_write(dom_lock);
+
 	return 0;
 }
 
@@ -1226,6 +1280,8 @@ static struct mi_root* tls_reload(struct mi_root* root, void *param)
 static int mod_init(void){
 	str s;
 	int n;
+	struct tls_domain *def_cli = &tls_default_client_domain;
+	struct tls_domain *def_srv = &tls_default_server_domain;
 
 	LM_INFO("initializing TLS protocol\n");
 
@@ -1355,39 +1411,36 @@ static int mod_init(void){
 	/*
 	 * now initialize tls default domains
 	 */
-	if ( (n=init_tls_domains(&tls_default_server_domain)) ) {
+	if ( (n=init_tls_domains(&def_srv, 0)) ) {
 		return n;
 	}
 
-	if ( (n=init_tls_domains(&tls_default_client_domain)) ) {
+	if ( (n=init_tls_domains(&def_cli, 0)) ) {
 		return n;
 	}
 	/*
 	 * now initialize tls virtual domains
 	 */
-	
+
 	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table, &tls_server_domains,
 			&tls_client_domains)){
 		return -1;
 	}
 
-	if ( (n=init_tls_domains(tls_server_domains)) ) {
-		return n;
-	}
+	if (tls_db_enabled)
+		init_tls_domains(&tls_server_domains, 1);
+	else if (init_tls_domains(&tls_server_domains, 0) < 0)
+		return -1;
 
-	if ( (n=init_tls_domains(tls_client_domains)) ) {
-		return n;
-	}
-	/*
-	 * we are all set
-	 */
+	if (tls_db_enabled)
+		init_tls_domains(&tls_client_domains, 1);
+	else if (init_tls_domains(&tls_client_domains, 0) < 0)
+		return -1;
+
 	return 0;
-
 }
 
-/*
- * called from main.c when opensips exits (main process)
- */
+
 static void mod_destroy(void)
 {
 	struct tls_domain *d;
