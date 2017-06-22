@@ -468,7 +468,7 @@ int tls_new_default_domain(int type, struct tls_domain **dom)
 
 	d = tls_new_domain(&default_name, type);
 	if (!d) {
-		LM_ERR("pkg memory allocation failure\n");
+		LM_ERR("Failed to allocate domain\n");
 		return -1;
 	}
 
@@ -492,22 +492,21 @@ struct tls_domain *tls_new_domain(str *name, int type)
 
 	d = shm_malloc(sizeof(struct tls_domain) + name->len);
 	if (d == NULL) {
-		LM_ERR("pkg memory allocation failure\n");
+		LM_ERR("No more shm memory\n");
 		return 0;
 	}
 
 	memset(d, 0, sizeof(struct tls_domain));
 
 	d->lock = lock_alloc();
-	
 	if (!d->lock){
-		LM_ERR("failed to allocate lock \n");
+		LM_ERR("Failed to allocate lock\n");
 		shm_free(d);
 		return 0;
 	}
 
 	if (lock_init(d->lock) == NULL) {
-		LM_ERR("Failed to init lock \n");
+		LM_ERR("Failed to init lock\n");
 		shm_free(d);
 		return 0;
 	}
