@@ -154,6 +154,7 @@ inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 	int ret, n, r, i;
 	struct fd_map *e;
 	struct epoll_event ep_event;
+	int fd;
 
 again:
 		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
@@ -179,10 +180,16 @@ again:
 			/* do some sanity check over the triggered fd */
 			e = ((struct fd_map*)h->ep_array[r].data.ptr);
 			if (e->type==0 || e->fd<=0 || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
-				LM_BUG("[%s] unset/bogus map triggered for %d by epoll "
-					"(fd=%d,type=%d,flags=%x,data=%p)\n",h->name,
-					h->ep_array[r].events,
+				fd = e - h->fd_hash;
+				LM_BUG("[%s] unset/bogus map (idx=%d) triggered for %d by epoll "
+					"(fd=%d,type=%d,flags=%x,data=%p) -> removing from epoll\n", h->name,
+					fd, h->ep_array[r].events,
 					e->fd, e->type, e->flags, e->data);
+				/* as the triggering fd has no corresponding in fd_map, better
+				 remove it from poll, to avoid un-managed reporting on this fd */
+				epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event);
+				close(fd);
+				continue;
 			}
 
 			/* anything containing EPOLLIN (like HUP or ERR) goes as a READ */
@@ -248,7 +255,7 @@ again:
 				 * valid */
 				if (e->fd==-1 || e->type==F_NONE) {
 					/* this is bogus!! */
-					LM_CRIT("[%s] FD %d with map (%d,%d,%p) is out of sync,"
+					LM_BUG("[%s] FD %d with map (%d,%d,%p) is out of sync,"
 						" removing it from reactor\n",
 						h->name, h->fd_array[r].fd, e->fd, e->type, e->data);
 					/* remove from epoll */
