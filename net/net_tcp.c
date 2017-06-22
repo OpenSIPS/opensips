@@ -1229,8 +1229,8 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 		}
 	}
 
-	LM_DBG("reader response= %lx, %ld from %d \n",
-		response[0], response[1], (int)(tcp_c-&tcp_children[0]));
+	LM_DBG("response= %lx, %ld from tcp worker %d (%d)\n",
+		response[0], response[1], tcp_c->pid, (int)(tcp_c-&tcp_children[0]));
 
 	cmd=response[1];
 	tcpconn=(struct tcp_connection*)response[0];
@@ -1291,8 +1291,8 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			tcpconn_destroy(tcpconn); /* closes also the fd */
 			break;
 		default:
-			LM_CRIT("unknown cmd %d from tcp reader %d\n",
-				cmd, (int)(tcp_c-&tcp_children[0]));
+			LM_CRIT("unknown cmd %d from tcp worker %d (%d)\n",
+				cmd, tcp_c->pid, (int)(tcp_c-&tcp_children[0]));
 	}
 end:
 	return bytes;
