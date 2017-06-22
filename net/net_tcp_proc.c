@@ -70,7 +70,8 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	}
 
 	/* release req & signal the parent */
-	c->proc_id = -1;
+	if (!writer)
+		c->proc_id = -1;
 
 	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
 	response[0]=(long)c;
