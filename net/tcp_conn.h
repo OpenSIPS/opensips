@@ -117,6 +117,19 @@ enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
 		(c)->prev = (c)->next = NULL; \
 	}while(0)
 
+/*! \brief look up a tcpconn in a list */
+static inline int tcpconn_list_find(struct tcp_connection *con,
+                                    struct tcp_connection *list)
+{
+	for (; list; list = list->c_next) {
+		if (con == list) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 #define TCPCONN_GET_PART(_id)  (_id%TCP_PARTITION_SIZE)
 #define TCP_PART(_id)  (tcp_parts[TCPCONN_GET_PART(_id)])
 
