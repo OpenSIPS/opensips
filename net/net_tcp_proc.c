@@ -172,17 +172,17 @@ again:
 				/* FIXME? */
 				return -1;
 			}
-			if (con==tcp_conn_lst){
-				LM_CRIT("duplicate"
-							" connection received: %p, id %d, fd %d, refcnt %d"
-							" state %d (n=%d)\n", con, con->id, con->fd,
-							con->refcnt, con->state, n);
-				tcpconn_release_error(con, 0,"Internal duplicate");
-				break; /* try to recover */
-			}
 
 			LM_DBG("We have received conn %p with rw %d on fd %d\n",con,rw,s);
 			if (rw & IO_WATCH_READ) {
+				if (tcpconn_list_find(con, tcp_conn_lst)) {
+					LM_CRIT("duplicate connection received: %p, id %d, fd %d, "
+					        "refcnt %d state %d (n=%d)\n", con, con->id,
+					        con->fd, con->refcnt, con->state, n);
+					tcpconn_release_error(con, 0, "Internal duplicate");
+					break; /* try to recover */
+				}
+
 				/* 0 attempts so far for this SIP MSG */
 				con->msg_attempts = 0;
 
