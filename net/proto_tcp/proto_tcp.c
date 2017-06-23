@@ -643,7 +643,11 @@ error:
 
 /**************  WRITE related functions ***************/
 
-/* called under the TCP connection write lock, timeout is in milliseconds */
+/**
+ * called under the TCP connection write lock, timeout is in milliseconds
+ *
+ * @return: -1 or bytes written (if 0 < ret < len: the last bytes are chunked)
+ */
 static int async_tsend_stream(struct tcp_connection *c,
 		int fd, char* buf, unsigned int len, int timeout)
 {
@@ -682,7 +686,7 @@ again:
 	} else {
 		/* successful write from the first try */
 		LM_DBG("Async successful write from first try on %p\n",c);
-		return len;
+		return written;
 	}
 
 poll_loop:
@@ -703,7 +707,7 @@ poll_loop:
 			/* we have successfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
-			return 0;
+			return written;
 		}
 	}
 
@@ -925,7 +929,7 @@ send_it:
 
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");

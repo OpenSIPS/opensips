@@ -777,7 +777,7 @@ send_it:
 
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");
