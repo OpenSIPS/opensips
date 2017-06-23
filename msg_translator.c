@@ -112,7 +112,6 @@
 #include <stdlib.h>
 
 #include "msg_translator.h"
-#include "globals.h"
 #include "error.h"
 #include "mem/mem.h"
 #include "dprint.h"
@@ -2659,21 +2658,13 @@ char* via_builder( unsigned int *len,
 	/* use pre-set address in via or the outbound socket one */
 	if (hp && hp->host && hp->host->len)
 		address_str=hp->host;
-	else if(send_sock->adv_name_str.len)
-		address_str=&(send_sock->adv_name_str);
-	else if (default_global_address.s)
-		address_str=&default_global_address;
 	else
-		address_str=&(send_sock->address_str);
+		address_str=get_adv_host(send_sock);
 
 	if (hp && hp->port && hp->port->len)
 		port_str=hp->port;
-	else if(send_sock->adv_port_str.len)
-		port_str=&(send_sock->adv_port_str);
-	else if (default_global_port.s)
-		port_str=&default_global_port;
 	else
-		port_str=&(send_sock->port_no_str);
+		port_str=get_adv_port(send_sock);
 
 	max_len=local_via_len+address_str->len /* space in MY_VIA */
 		+2 /* just in case it is a v6 address ... [ ] */
@@ -2738,7 +2729,8 @@ char* via_builder( unsigned int *len,
 	return line_buf;
 }
 
-static char uri_buff[1024];
+#define MAX_URI_LEN		1024
+static char uri_buff[MAX_URI_LEN];
 char *construct_uri(str *protocol,str *username,str *domain,str *port,
 		str *params,int *len)
 {
@@ -2792,5 +2784,44 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 
 	uri_buff[pos] = 0;
 	*len = pos;
+	return uri_buff;
+}
+
+/* uses uri_buff above, since contact is still an uri */
+char *contact_builder(struct socket_info* send_sock, int *ct_len)
+{
+	char *p;
+	int proto_len = 0;
+	str* address_str = get_adv_host(send_sock);
+	str* port_str = get_adv_port(send_sock);
+
+	/* sip: */
+	p = uri_buff;
+	memcpy(p, "sip:", 4);
+	p += 4;
+
+	/* host */
+	memcpy(p, address_str->s, address_str->len);
+	p += address_str->len;
+
+	/* :port */
+	*p++ = ':';
+	memcpy(p, port_str->s, port_str->len);
+	p += port_str->len;
+
+	/* transport if needed */
+	if (send_sock->proto != PROTO_UDP) {
+		memcpy(p, ";transport=", 11);
+		p += 11;
+		proto_len = strlen(protos[send_sock->proto].name);
+		memcpy(p, protos[send_sock->proto].name, proto_len);
+		p += proto_len;
+	}
+
+	*p = '\0';
+
+	if (ct_len)
+		*ct_len = p - uri_buff;
+
 	return uri_buff;
 }
