@@ -46,6 +46,7 @@
 #define MSG_TRANS_SHM_FLAG    (1<<0)
 #define MSG_TRANS_NOVIA_FLAG  (1<<1)
 
+#define OSS_BOUNDARY "OSS-unique-boundary-42"
 
 //#define MAX_CONTENT_LEN_BUF INT2STR_MAX_LEN /* see ut.h/int2str() */
 

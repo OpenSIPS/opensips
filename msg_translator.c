@@ -137,8 +137,6 @@ int disable_503_translation = 0;
 #define append_str_trans(_dest,_src,_len,_msg) \
 	append_str( (_dest), (_src), (_len) );
 
-#define OSS_BOUNDARY "OSS-unique-boundary-42"
-
 extern char version[];
 extern int version_len;
 
