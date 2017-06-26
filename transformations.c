@@ -148,20 +148,19 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val)
 	trans_t *it;
 	int ret = 0;
 
-	if(tr==NULL || val==NULL){
-
+	if (tr==NULL || val==NULL) {
 		LM_DBG("null pointer\n");
 		return -1;
 	}
 
 	it = tr;
-	while(it)
-	{
+	while (it) {
 		ret = (*it->trf)(msg, it->params, it->subtype, val);
 		if(ret!=0)
 			return ret;
 		it = it->next;
 	}
+
 	return 0;
 }
 
@@ -248,8 +247,11 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	str st;
 	pv_value_t v;
 
-	if(val==NULL || val->flags&PV_VAL_NULL)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
 
 	switch(subtype)
 	{
@@ -302,7 +304,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE/2-1)
-				return -1;
+				goto error;
 			j = 0;
 			for(i=0; i<val->rs.len; i++)
 			{
@@ -319,7 +321,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE*2-1)
-				return -1;
+				goto error;
 			for(i=0; i<val->rs.len/2; i++)
 			{
 				if(val->rs.s[2*i]>='0'&&val->rs.s[2*i]<='9')
@@ -328,7 +330,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					_tr_buffer[i] = (val->rs.s[2*i]-'a'+10) << 4;
 				else if(val->rs.s[2*i]>='A'&&val->rs.s[2*i]<='F')
 					_tr_buffer[i] = (val->rs.s[2*i]-'A'+10) << 4;
-				else return -1;
+				else goto error;
 
 				if(val->rs.s[2*i+1]>='0'&&val->rs.s[2*i+1]<='9')
 					_tr_buffer[i] += val->rs.s[2*i+1]-'0';
@@ -336,7 +338,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					_tr_buffer[i] += val->rs.s[2*i+1]-'a'+10;
 				else if(val->rs.s[2*i+1]>='A'&&val->rs.s[2*i+1]<='F')
 					_tr_buffer[i] += val->rs.s[2*i+1]-'A'+10;
-				else return -1;
+				else goto error;
 			}
 			_tr_buffer[i] = '\0';
 			memset(val, 0, sizeof(pv_value_t));
@@ -349,7 +351,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				break; /* already converted */
 			s = NULL;
 			if (hexstr2int(val->rs.s, val->rs.len, (unsigned int *)&i) < 0)
-				return -1;
+				goto error;
 			val->rs.s = int2str(i, &val->rs.len);
 			val->ri = i;
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
@@ -358,11 +360,11 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_INT))
 			{
 				if(str2sint(&val->rs, &val->ri)!=0)
-					return -1;
+					goto error;
 			}
 			val->rs.len = snprintf(_tr_buffer, TR_BUFFER_SIZE, "%x", val->ri);
 			if (val->rs.len < 0 || val->rs.len > TR_BUFFER_SIZE)
-				return -1;
+				goto error;
 			val->ri = 0;
 			val->rs.s = _tr_buffer;
 			val->flags = PV_VAL_STR;
@@ -371,7 +373,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE/2-1)
-				return -1;
+				goto error;
 			i = escape_common(_tr_buffer, val->rs.s, val->rs.len);
 			_tr_buffer[i] = '\0';
 			memset(val, 0, sizeof(pv_value_t));
@@ -383,7 +385,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE-1)
-				return -1;
+				goto error;
 			i = unescape_common(_tr_buffer, val->rs.s, val->rs.len);
 			_tr_buffer[i] = '\0';
 			memset(val, 0, sizeof(pv_value_t));
@@ -395,11 +397,11 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE/2-1)
-				return -1;
+				goto error;
 			st.s = _tr_buffer;
 			st.len = TR_BUFFER_SIZE;
 			if (escape_user(&val->rs, &st))
-				return -1;
+				goto error;
 			memset(val, 0, sizeof(pv_value_t));
 			val->flags = PV_VAL_STR;
 			val->rs = st;
@@ -408,11 +410,11 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE-1)
-				return -1;
+				goto error;
 			st.s = _tr_buffer;
 			st.len = TR_BUFFER_SIZE;
 			if (unescape_user(&val->rs, &st))
-				return -1;
+				goto error;
 			memset(val, 0, sizeof(pv_value_t));
 			val->flags = PV_VAL_STR;
 			val->rs = st;
@@ -421,11 +423,11 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE/2-1)
-				return -1;
+				goto error;
 			st.s = _tr_buffer;
 			st.len = TR_BUFFER_SIZE;
 			if (escape_param(&val->rs, &st) < 0)
-				return -1;
+				goto error;
 			memset(val, 0, sizeof(pv_value_t));
 			val->flags = PV_VAL_STR;
 			val->rs = st;
@@ -434,11 +436,11 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 			if(val->rs.len>TR_BUFFER_SIZE-1)
-				return -1;
+				goto error;
 			st.s = _tr_buffer;
 			st.len = TR_BUFFER_SIZE;
 			if (unescape_param(&val->rs, &st) < 0)
-				return -1;
+				goto error;
 			memset(val, 0, sizeof(pv_value_t));
 			val->flags = PV_VAL_STR;
 			val->rs = st;
@@ -447,7 +449,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(tp==NULL || tp->next==NULL)
 			{
 				LM_ERR("substr invalid parameters\n");
-				return -1;
+				goto error;
 			}
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -459,7 +461,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("substr cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				i = v.ri;
 			}
@@ -471,7 +473,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("substr cannot get p2\n");
-					return -1;
+					goto error;
 				}
 				j = v.ri;
 			}
@@ -479,7 +481,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(j<0)
 			{
 				LM_ERR("substr negative offset\n");
-				return -1;
+				goto error;
 			}
 			val->flags = PV_VAL_STR;
 			val->ri = 0;
@@ -488,7 +490,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if(i>=val->rs.len)
 				{
 					LM_ERR("substr out of range\n");
-					return -1;
+					goto error;
 				}
 				if(i+j>=val->rs.len) j=0;
 				if(j==0)
@@ -505,7 +507,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(i>val->rs.len)
 			{
 				LM_ERR("substr out of range\n");
-				return -1;
+				goto error;
 			}
 			if(i<j) j=0;
 			if(j==0)
@@ -522,7 +524,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(tp==NULL || tp->next==NULL)
 			{
 				LM_ERR("select invalid parameters\n");
-				return -1;
+				goto error;
 			}
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -534,7 +536,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("select cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				i = v.ri;
 			}
@@ -562,8 +564,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					val->rs.s = p+1;
 					val->rs.len = s-p;
 				} else {
-					val->rs.s = "";
-					val->rs.len = 0;
+					val->flags = PV_VAL_NULL;
 				}
 			} else {
 				s = val->rs.s;
@@ -584,8 +585,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					val->rs.s = s;
 					val->rs.len = p-s;
 				} else {
-					val->rs.s = "";
-					val->rs.len = 0;
+					val->flags = PV_VAL_NULL;
 				}
 			}
 			break;
@@ -598,7 +598,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				break;
 			}
 			if(val->rs.len>TR_BUFFER_SIZE-1)
-				return -1;
+				goto error;
 			st.s = _tr_buffer;
 			st.len = val->rs.len;
 			for (i=0; i<st.len; i++)
@@ -617,7 +617,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				break;
 			}
 			if(val->rs.len>TR_BUFFER_SIZE-1)
-				return -1;
+				goto error;
 			st.s = _tr_buffer;
 			st.len = val->rs.len;
 			for (i=0; i<st.len; i++)
@@ -645,7 +645,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
                                                 || (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
 					LM_ERR("index/rindex cannot get p1\n");
-					return -1;
+					goto error;
 				}
 
 				st = v.rs;
@@ -661,7 +661,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 							|| (!(v.flags&PV_VAL_INT)))
 					{
 						LM_ERR("index/rindex cannot get p2\n");
-						return -1;
+						goto error;
 					}
 					i = v.ri;
 				}
@@ -691,12 +691,10 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			/* Index */
 			if (subtype == TR_S_INDEX) {
 				/* If start index is beyond end of string or
-				   Needle is bigger than haystack return -1 */
+				   Needle is bigger than haystack return NULL */
 				if ( i >= val->rs.len || st.len > (val->rs.len - i)) {
 					memset(val, 0, sizeof(pv_value_t));
-					val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
-					val->ri = -1;
-					val->rs.s = int2str(val->ri, &val->rs.len);
+					val->flags = PV_VAL_NULL;
 					break;
 				}
 
@@ -723,9 +721,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				/* Needle bigger than haystack */
 				if ( st.len > val->rs.len ) {
 					memset(val, 0, sizeof(pv_value_t));
-					val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
-					val->ri = -1;
-					val->rs.s = int2str(val->ri, &val->rs.len);
+					val->flags = PV_VAL_NULL;
 					break;
 				}
 
@@ -761,9 +757,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 			/* Not found */
 			memset(val, 0, sizeof(pv_value_t));
-			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
-			val->ri = -1;
-			val->rs.s = int2str(val->ri, &val->rs.len);
+			val->flags = PV_VAL_NULL;
 			break;
 		case TR_S_FILL_LEFT:
 		case TR_S_FILL_RIGHT:
@@ -797,7 +791,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(tp==NULL || tp->next!=NULL)
 			{
 				LM_ERR("width invalid parameters\n");
-				return -1;
+				goto error;
 			}
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -809,13 +803,13 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("substr cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				i = v.ri;
 			}
 			if (i <= 0) {
 				LM_ERR("width invalid (must be >= 1)\n");
-				return -1;
+				goto error;
 			}
 			if (i <= val->rs.len) {
 				/* since the requested width is less than
@@ -826,7 +820,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 			if(i>TR_BUFFER_SIZE-1)
 				/* width cant be greater than buffer */
-				return -1;
+				goto error;
 
 			j = i - val->rs.len; /* calc extra length */
 			p = _tr_buffer;
@@ -849,7 +843,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			if(val->rs.len>TR_BUFFER_SIZE-1) {
 				LM_ERR("b64encode value larger than buffer\n");
-				return -1;
+				goto error;
 			}
 			st.s = _tr_buffer;
 			st.len = calc_base64_encode_len(val->rs.len);
@@ -890,7 +884,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			if(val->rs.len>TR_BUFFER_SIZE-1) {
 				LM_ERR("xor value larger than buffer\n");
-				return -1;
+				goto error;
 			}
 			/* secret to use */
 			if(tp->type==TR_PARAM_STRING)
@@ -944,9 +938,13 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
-			return -1;
+			goto error;
 	}
+
 	return 0;
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 static str _tr_empty = { "", 0 };
@@ -962,8 +960,14 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	param_hooks_t phooks;
 	param_t *pit=NULL;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if((!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+		goto error;
 
 	if(_tr_uri.len==0 || _tr_uri.len!=val->rs.len ||
 			strncmp(_tr_uri.s, val->rs.s, val->rs.len)!=0)
@@ -982,7 +986,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				memset(&_tr_uri, 0, sizeof(str));
 				memset(&_tr_parsed_uri, 0, sizeof(struct sip_uri));
-				return -1;
+				goto error;
 			}
 		}
 		_tr_uri.len = val->rs.len;
@@ -1008,7 +1012,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			pkg_free(_tr_uri.s);
 			memset(&_tr_uri, 0, sizeof(str));
 			memset(&_tr_parsed_uri, 0, sizeof(struct sip_uri));
-			return -1;
+			goto error;
 		}
 	}
 	memset(val, 0, sizeof(pv_value_t));
@@ -1018,32 +1022,35 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	{
 		case TR_URI_USER:
 			val->rs = (_tr_parsed_uri.user.s)?_tr_parsed_uri.user:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_HOST:
 			val->rs = (_tr_parsed_uri.host.s)?_tr_parsed_uri.host:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_PASSWD:
 			val->rs = (_tr_parsed_uri.passwd.s)?_tr_parsed_uri.passwd:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_PORT:
 			val->flags |= PV_TYPE_INT|PV_VAL_INT;
 			val->rs = (_tr_parsed_uri.port.s)?_tr_parsed_uri.port:_tr_empty;
 			val->ri = _tr_parsed_uri.port_no;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_PARAMS:
 			val->rs = (_tr_parsed_uri.params.s)?_tr_parsed_uri.params:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_PARAM:
 			if(tp==NULL)
 			{
 				LM_ERR("param invalid parameters\n");
-				return -1;
+				goto error;
 			}
 			if(_tr_parsed_uri.params.len<=0)
 			{
-				val->rs = _tr_empty;
-				val->flags = PV_VAL_STR;
-				val->ri = 0;
+				val->flags = PV_VAL_NULL;
 				break;
 			}
 
@@ -1051,7 +1058,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			{
 				sv = _tr_parsed_uri.params;
 				if (parse_params(&sv, CLASS_ANY, &phooks, &_tr_uri_params)<0)
-					return -1;
+					goto error;
 			}
 			if(tp->type==TR_PARAM_STRING)
 			{
@@ -1061,7 +1068,7 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
 					LM_ERR("param cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				sv = v.rs;
 			}
@@ -1074,39 +1081,47 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					goto done;
 				}
 			}
-			val->rs = _tr_empty;
+			val->flags = PV_VAL_NULL;
 			break;
 		case TR_URI_HEADERS:
 			val->rs = (_tr_parsed_uri.headers.s)?_tr_parsed_uri.headers:
 						_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_TRANSPORT:
 			val->rs = (_tr_parsed_uri.transport_val.s)?
 				_tr_parsed_uri.transport_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_TTL:
 			val->rs = (_tr_parsed_uri.ttl_val.s)?
 				_tr_parsed_uri.ttl_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_UPARAM:
 			val->rs = (_tr_parsed_uri.user_param_val.s)?
 				_tr_parsed_uri.user_param_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_MADDR:
 			val->rs = (_tr_parsed_uri.maddr_val.s)?
 				_tr_parsed_uri.maddr_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_METHOD:
 			val->rs = (_tr_parsed_uri.method_val.s)?
 				_tr_parsed_uri.method_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_LR:
 			val->rs = (_tr_parsed_uri.lr_val.s)?
 				_tr_parsed_uri.lr_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_R2:
 			val->rs = (_tr_parsed_uri.r2_val.s)?
 				_tr_parsed_uri.r2_val:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_URI_SCHEMA:
 			val->rs.s = _tr_uri.s;
@@ -1117,10 +1132,13 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
-			return -1;
+			goto error;
 	}
 done:
 	return 0;
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 
@@ -1138,9 +1156,17 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	str sv;
 	struct via_param *pit;
 
-	// WATCHOUT: need at least 2 chars so \r\n check wont segfault
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=2)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	// WATCHOUT: need at least 2 chars so \r\n check wont segfault
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=2) {
+		val->flags = PV_VAL_NULL;
+		return -1;
+	}
 
 	if(_tr_via_buf_len==0 || _tr_via.len!=val->rs.len ||
 			strncmp(_tr_via.s, val->rs.s, val->rs.len)!=0
@@ -1188,38 +1214,44 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	{
 		case TR_VIA_NAME:
 			val->rs = (_tr_parsed_via->name.s)?_tr_parsed_via->name:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_VERSION:
 			val->rs = (_tr_parsed_via->version.s)?_tr_parsed_via->version:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_TRANSPORT:
 			val->rs = (_tr_parsed_via->transport.s)?_tr_parsed_via->transport:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_HOST:
 			val->rs = (_tr_parsed_via->host.s)?_tr_parsed_via->host:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_PORT:
 			val->flags |= PV_TYPE_INT|PV_VAL_INT;
 			val->rs = (_tr_parsed_via->port_str.s)?_tr_parsed_via->port_str:_tr_empty;
 			val->ri = _tr_parsed_via->port;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_PARAMS:
 			val->rs = (_tr_parsed_via->params.s)?_tr_parsed_via->params:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_COMMENT:
 			val->rs = (_tr_parsed_via->comment.s)?_tr_parsed_via->comment:_tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_PARAM:	// param by name
 			if(tp==NULL)
 			{
 				LM_ERR("param invalid parameters\n");
+				val->flags = PV_VAL_NULL;
 				return -1;
 			}
 			if(_tr_parsed_via->params.len<=0)
 			{
-				val->rs = _tr_empty;
-				val->flags = PV_VAL_STR;
-				val->ri = 0;
+				val->flags = PV_VAL_NULL;
 				break;
 			}
 
@@ -1231,6 +1263,7 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
 					LM_ERR("param cannot get p1\n");
+					val->flags = PV_VAL_NULL;
 					return -1;
 				}
 				sv = v.rs;
@@ -1244,22 +1277,27 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					goto done;
 				}
 			}
-			val->rs = _tr_empty;
+			val->flags = PV_VAL_NULL;
 			break;
 		case TR_VIA_BRANCH:
 			val->rs = (_tr_parsed_via->branch&&_tr_parsed_via->branch->value.s)?_tr_parsed_via->branch->value: _tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_RECEIVED:
 			val->rs = (_tr_parsed_via->received&&_tr_parsed_via->received->value.s)?_tr_parsed_via->received->value: _tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_VIA_RPORT:
 			val->rs = (_tr_parsed_via->rport&&_tr_parsed_via->rport->value.s)?_tr_parsed_via->rport->value: _tr_empty;
+			val->flags |=  (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
+			val->flags = PV_VAL_NULL;
 			return -1;
 	}
+
 done:
 	return 0;
 
@@ -1272,6 +1310,7 @@ error:
 	    	free_via_list(_tr_parsed_via);
 		_tr_parsed_via = 0;
 	}
+	val->flags = PV_VAL_NULL;
 	return -1;
 }
 
@@ -1413,10 +1452,14 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	int n,i,list_size=0;
 	pv_value_t v;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
-	{
+	if (!val)
 		return -1;
-	}
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if (!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+		goto error;
 
 	if(_tr_csv_str.len==0 || _tr_csv_str.len!=val->rs.len ||
 			strncmp(_tr_csv_str.s, val->rs.s, val->rs.len)!=0)
@@ -1434,7 +1477,7 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 					free_csv_list(_tr_csv_list);
 					_tr_csv_list = 0;
 				}
-				return -1;
+				goto error;
 			}
 		}
 		_tr_csv_str.len = val->rs.len;
@@ -1451,11 +1494,11 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		/* parse csv */
 		sv = _tr_csv_str;
 		if (parse_csv(&sv,&_tr_csv_list)<0)
-			return -1;
+			goto error;
 	}
 
 	if (_tr_csv_list == NULL)
-		return -1;
+		goto error;
 
 	switch(subtype)
 	{
@@ -1471,7 +1514,7 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			if(tp==NULL)
 			{
 				LM_ERR("csv invalid parameters\n");
-				return -1;
+				goto error;
 			}
 			if(tp->type==TR_PARAM_NUMBER)
 			{
@@ -1481,7 +1524,7 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("cannot get parameter\n");
-					return -1;
+					goto error;
 				}
 				n = v.ri;
 			}
@@ -1494,7 +1537,7 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				if (n<0)
 				{
 					LM_ERR("Too large negative index\n");
-					return -1;
+					goto error;
 				}
 			}
 
@@ -1505,7 +1548,7 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				if (!cit)
 				{
 					LM_ERR("Index out of bounds\n");
-					return -1;
+					goto error;
 				}
 			}
 
@@ -1515,10 +1558,14 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
-			return -1;
+			goto error;
 	}
 
 	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 static str _tr_sdp_str = {0,0};
@@ -1533,11 +1580,17 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	int entryNo,i;
 	pv_value_t v;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	if (!val)
 		return -1;
 
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+		goto error;
+
 	if (!tp || !tp->next)
-		return -1;
+		goto error;
 
 	if(_tr_sdp_str.len==0 || _tr_sdp_str.len!=val->rs.len ||
 			strncmp(_tr_sdp_str.s, val->rs.s, val->rs.len)!=0)
@@ -1550,7 +1603,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			{
 				LM_ERR("no more private memory\n");
 				memset(&_tr_sdp_str, 0, sizeof(str));
-				return -1;
+				goto error;
 			}
 		}
 
@@ -1573,14 +1626,14 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("cannot get parameter\n");
-					return -1;
+					goto error;
 				}
 				entryNo = v.ri;
 			}
 			if (entryNo < 0)
 			{
 				LM_ERR("negative index provided for sdp.lineat\n");
-				return -1;
+				goto error;
 			}
 
 			answer = find_sdp_line(_tr_sdp_str.s, bodylimit, searchLine);
@@ -1594,10 +1647,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				answer = find_next_sdp_line(answer,bodylimit,searchLine,bodylimit);
 				if (!answer || answer == bodylimit)
 				{
-					val->flags = PV_VAL_STR;
-					val->rs.s = "";
-					val->rs.len = 0;
-
+					val->flags = PV_VAL_NULL;
 					LM_DBG("No such line [%c] nr %d in SDP body. Max fields = %d\n",
 							searchLine,entryNo,i);
 					return 0;
@@ -1609,7 +1659,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			if (answerEnd == NULL)
 			{
 				LM_ERR("malformed SDP body\n");
-				return -1;
+				goto error;
 			}
 
 			val->flags = PV_VAL_STR;
@@ -1619,10 +1669,14 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
-			return -1;
+			goto error;
 	}
 
 	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
@@ -1635,8 +1689,16 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	struct hostent *server;
 	struct ip_addr ip;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0) {
+		val->flags = PV_VAL_NULL;
+		return -1;
+	}
 
 	switch (subtype)
 	{
@@ -1654,6 +1716,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			else
 			{
 				LM_ERR("Invalid ip address provided for ip.family. Binary format expected !\n");
+				val->flags = PV_VAL_NULL;
 				return -1;
 			}
 
@@ -1667,6 +1730,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			else
 			{
 				LM_ERR("Invalid ip address provided for ip.ntop. Binary format expected !\n");
+				val->flags = PV_VAL_NULL;
 				return -1;
 			}
 
@@ -1697,6 +1761,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				if (!binary_ip)
 				{
 					LM_ERR("pton transformation applied to invalid IP\n");
+					val->flags = PV_VAL_NULL;
 					return -1;
 				}
 			}
@@ -1709,8 +1774,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			server = resolvehost(val->rs.s,0);
 			if (!server || !server->h_addr)
 			{
-				val->rs.s = "";
-				val->rs.len = 0;
+				val->flags = PV_VAL_NULL;
 				return 0;
 			}
 
@@ -1729,8 +1793,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			else
 			{
 				LM_ERR("Unexpected IP address type \n");
-				val->rs.s = "";
-				val->rs.len = 0;
+				val->flags = PV_VAL_NULL;
 				return 0;
 			}
 
@@ -1741,6 +1804,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
+			val->flags = PV_VAL_NULL;
 			return -1;
 	}
 
@@ -1761,8 +1825,14 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	char *s, *e, *p;
 	char *buf;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+		goto error;
 
 	switch (subtype) {
 		case TR_RE_SUBST:
@@ -1772,7 +1842,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
 							|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0) {
 						LM_ERR("cannot get value from spec\n");
-						return -1;
+						goto error;
 					}
 					sv = v.rs;
 				}
@@ -1781,7 +1851,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if (!buf) {
 					LM_ERR("not enough memory for regex buffer %d [%.*s]\n",
 							sv.len, sv.len, sv.s);
-					return -1;
+					goto error;
 				}
 				reg_input_buf = buf;
 				/* copy un-escaped str to buf */
@@ -1809,7 +1879,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					subst_re=subst_parser(&sv);
 					if (subst_re==0) {
 						LM_ERR("Can't compile regexp\n");
-						return -1;
+						goto error;
 					}
 					/* swap buffers */
 					reg_input_buf = buf_re.s;
@@ -1820,14 +1890,14 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 				if (val->rs.len >= RE_MAX_SIZE) {
 					LM_ERR("regex value too long [%.*s]\n", val->rs.len, val->rs.s);
-					return -1;
+					goto error;
 				}
 
 				buf = pkg_realloc(reg_input_buf, val->rs.len + 1);
 				if (!buf) {
 					LM_ERR("not enough memory for input buffer %d [%.*s]\n",
 							val->rs.len + 1, val->rs.len, val->rs.s);
-					return -1;
+					goto error;
 				}
 				reg_input_buf = buf;
 				memcpy(reg_input_buf,val->rs.s,val->rs.len);
@@ -1840,7 +1910,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						break;
 					} else if (match_no < 0) {
 						LM_ERR("subst failed\n");
-						return -1;
+						goto error;
 					}
 				}
 				/* release the input buffer */
@@ -1853,9 +1923,13 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				return 0;
 		default:
 			LM_ERR("Unexpected subtype for RE : %d\n",subtype);
-			return -1;
+			goto error;
 	}
 	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 static str _tr_params_str = {0, 0};
@@ -1870,8 +1944,14 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	param_hooks_t phooks;
 	param_t *pit=NULL;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+		goto error;
 
 	if(_tr_params_str.len==0 || _tr_params_str.len!=val->rs.len ||
 			strncmp(_tr_params_str.s, val->rs.s, val->rs.len)!=0)
@@ -1890,7 +1970,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					free_params(_tr_params_list);
 					_tr_params_list = 0;
 				}
-				return -1;
+				goto error;
 			}
 		}
 		_tr_params_str.len = val->rs.len;
@@ -1907,12 +1987,12 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		/* parse params */
 		sv = _tr_params_str;
 		if (parse_params(&sv, CLASS_ANY, &phooks, &_tr_params_list)<0)
-			return -1;
+			goto error;
 
 	}
 
 	if(_tr_params_list==NULL)
-		return -1;
+		goto error;
 
 	memset(val, 0, sizeof(pv_value_t));
 	val->flags = PV_VAL_STR;
@@ -1923,7 +2003,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(tp==NULL)
 			{
 				LM_ERR("value invalid parameters\n");
-				return -1;
+				goto error;
 			}
 
 			if(tp->type==TR_PARAM_STRING)
@@ -1934,7 +2014,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
 					LM_ERR("value cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				sv = v.rs;
 			}
@@ -1948,14 +2028,14 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					goto done;
 				}
 			}
-			val->rs = _tr_empty;
+			val->flags = PV_VAL_NULL;
 			break;
 
 		case TR_PL_VALUEAT:
 			if(tp==NULL)
 			{
 				LM_ERR("name invalid parameters\n");
-				return -1;
+				goto error;
 			}
 
 			if(tp->type==TR_PARAM_NUMBER)
@@ -1966,7 +2046,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("name cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				n = v.ri;
 			}
@@ -2004,14 +2084,14 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					}
 				}
 			}
-			val->rs = _tr_empty;
+			val->flags = PV_VAL_NULL;
 			break;
 
 		case TR_PL_NAME:
 			if(tp==NULL)
 			{
 				LM_ERR("name invalid parameters\n");
-				return -1;
+				goto error;
 			}
 
 			if(tp->type==TR_PARAM_NUMBER)
@@ -2022,7 +2102,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_INT)))
 				{
 					LM_ERR("name cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				n = v.ri;
 			}
@@ -2060,7 +2140,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					}
 				}
 			}
-			val->rs = _tr_empty;
+			val->flags = PV_VAL_NULL;
 			break;
 
 		case TR_PL_COUNT:
@@ -2077,7 +2157,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(tp==NULL)
 			{
 				LM_ERR("value invalid parameters\n");
-				return -1;
+				goto error;
 			}
 
 			if(tp->type==TR_PARAM_STRING)
@@ -2088,7 +2168,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
 					LM_ERR("value cannot get p1\n");
-					return -1;
+					goto error;
 				}
 				sv = v.rs;
 			}
@@ -2110,10 +2190,14 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
-			return -1;
+			goto error;
 	}
+
 done:
 	return 0;
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 static str nameaddr_str = {0, 0};
@@ -2124,8 +2208,14 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 {
 	struct to_param* topar;
 
-	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+	if (!val)
 		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+		goto error;
 
 	LM_DBG("String to transform %.*s\n", val->rs.len, val->rs.s);
 
@@ -2142,7 +2232,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			{
 				LM_ERR("no more private memory\n");
 				memset(&nameaddr_str, 0, sizeof(str));
-				return -1;
+				goto error;
 			}
 		}
 		nameaddr_str.len = val->rs.len + CRLF_LEN;
@@ -2164,7 +2254,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			/* keep the buffer, but flush the content to force the realloc
 			   next time */
 			nameaddr_str.s[0] = 0;
-			return -1;
+			goto error;
 		}
 		parse_to(nameaddr_str.s, nameaddr_str.s + nameaddr_str.len,
 			nameaddr_to_body);
@@ -2173,7 +2263,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if (nameaddr_to_body->error == PARSE_ERROR)
 	{
 		LM_ERR("Wrong syntax. It must have the To header format\n");
-		return -1;
+		goto error;
 	}
 
 	memset(val, 0, sizeof(pv_value_t));
@@ -2183,6 +2273,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	{
 		case TR_NA_URI:
 			val->rs =(nameaddr_to_body->uri.s)?nameaddr_to_body->uri:_tr_empty;
+			val->flags |= (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_NA_LEN:
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
@@ -2192,12 +2283,13 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		case TR_NA_NAME:
 			val->rs = (nameaddr_to_body->display.s)?
 				nameaddr_to_body->display:_tr_empty;
+			val->flags |= (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_NA_PARAM:
 			if(tp->type != TR_PARAM_STRING)
 			{
 				LM_ERR("Wrong type for parameter, it must string\n");
-				return -1;
+				goto error;
 			}
 			topar = nameaddr_to_body->param_lst;
 			/* search the parameter */
@@ -2209,12 +2301,13 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				topar = topar->next;
 			}
 			val->rs = (topar)?topar->value:_tr_empty;
+			val->flags |= (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_NA_PARAMS:
 			topar = nameaddr_to_body->param_lst;
 			if (!topar) {
 				LM_DBG("no params\n");
-				val->rs = _tr_empty;
+				val->flags = PV_VAL_NULL;
 			}
 			else {
 				LM_DBG("We have params\n");
@@ -2236,11 +2329,15 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 		default:
 			LM_ERR("unknown subtype %d\n", subtype);
-			return -1;
+			goto error;
 	}
-	return 0;
-}
 
+	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
+}
 
 
 #define is_in_str(p, in) (p<in->s+in->len && *p)

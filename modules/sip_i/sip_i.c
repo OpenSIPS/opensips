@@ -1879,10 +1879,19 @@ int tr_isup_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	struct isup_parsed_struct *parse_struct = NULL;
 	int param_type;
 
+	if (!val)
+		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if((!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+		goto error;
+
 	parse_struct = parse_isup(val->rs);
 	if (!parse_struct) {
 		LM_WARN("Unable to parse ISUP message\n");
-		return -1;
+		goto error;
 	}
 
 	p = get_isup_param(parse_struct, tp->v.n, &param_type);
@@ -1890,19 +1899,23 @@ int tr_isup_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if (!p) {
 		LM_INFO("parameter: <%.*s> not found in this ISUP message\n",
 			isup_params[tp->v.n].name.len, isup_params[tp->v.n].name.s);
-		return -1;
+		goto error;
 	}
 
 	if (subtype == TR_ISUP_PARAM) {
 		if (get_param_pval(tp->v.n, tp->next ? tp->next->v.n : -1, -1, p, val) < 0)
-			return -1;
+			goto error;
 	} else if (subtype == TR_ISUP_PARAM_STR) {
 		if (get_param_pval_str(tp->v.n, tp->next ? tp->next->v.n : -1, p, val) < 0)
-			return -1;
+			goto error;
 	} else {
 		LM_BUG("Unknown transformation subtype [%d]\n", subtype);
-		return -1;
+		goto error;
 	}
 
 	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1; 
 }
