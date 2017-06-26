@@ -122,6 +122,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (load_rtpproxy_api(&srec_rtp) != 0) {
+		LM_ERR("rtpproxy module not loaded! Cannot use siprec module\n");
+		return -1;
+	}
+
 	return 0;
 }
 

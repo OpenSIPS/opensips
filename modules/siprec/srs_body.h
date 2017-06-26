@@ -29,6 +29,7 @@
 #include "../../str.h"
 #include "../../lib/list.h"
 #include "../../parser/msg_parser.h"
+#include "../rtpproxy/rtpproxy_load.h"
 
 struct src_sess;
 

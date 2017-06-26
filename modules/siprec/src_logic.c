@@ -27,6 +27,7 @@
 #include "srs_body.h"
 
 struct b2b_api srec_b2b;
+struct rtpproxy_binds srec_rtp;
 
 static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
