@@ -247,7 +247,7 @@ static int unforce_rtp_proxy_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy4_f(struct sip_msg *, char *, char *, char *, char *);
 static int fixup_engage(void **param,int param_no);
 static int force_rtp_proxy(struct sip_msg *, char *, char *, char *, char *, int);
-static int start_recording_f(struct sip_msg *, char *, char *, char *);
+static int start_recording_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_answer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_offer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_stats_f(struct sip_msg *, char *, char *, char *, char *,
@@ -395,6 +395,9 @@ static cmd_export_t cmds[] = {
 		fixup_recording, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_start_recording", (cmd_function)start_recording_f,      3,
+		fixup_recording, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"rtpproxy_start_recording", (cmd_function)start_recording_f,      4,
 		fixup_recording, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_offer",        (cmd_function)rtpproxy_offer4_f,      0,
@@ -833,7 +836,7 @@ static int fixup_all_stats(void ** param, int param_no)
 
 static int fixup_recording(void ** param, int param_no)
 {
-	if (param_no == 3)
+	if (param_no >= 3)
 		return fixup_spve(param);
 	return fixup_two_options(param, param_no);
 }
@@ -2180,6 +2183,8 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 		SET_CAP(node, STATS_EXTRA);
 	if (rtpp_checkcap(node, RTP_CAP(TTL_CHANGE)) > 0)
 		SET_CAP(node, TTL_CHANGE);
+	if (rtpp_checkcap(node, RTP_CAP(RECORD)) > 0)
+		SET_CAP(node, RECORD);
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -4062,7 +4067,7 @@ error:
 
 
 
-static int start_recording_f(struct sip_msg* msg, char *setid, char *var, char *flags)
+static int start_recording_f(struct sip_msg* msg, char *setid, char *var, char *flags, char *name)
 {
 	int nitems;
 	str callid = {0, 0};
@@ -4071,8 +4076,36 @@ static int start_recording_f(struct sip_msg* msg, char *setid, char *var, char *
 	struct rtpp_node *node;
 	struct rtpp_set *set;
 	str val;
-	struct iovec v[1 + 5 + 3] = {{NULL, 0}, {"R", 1}, {"", 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}};
-	                             /* 1 */   /* 2 */   /* 3 */    /* 4 */   /* 5 */    /* 6 */   /* 1 */
+	char cmd;
+	struct iovec v[1 + 5 + 2 + 3 + 2] = {
+		{NULL, 0},	/* [0] reserved (cookie) */
+		{&cmd, 1},	/* [1] command R or C */
+		{"", 0},	/* [2] flags, if they exist */
+		{" ", 1},	/* [3] separator */
+		{NULL, 0},	/* [4] callid */
+		{" ", 1},	/* [5] separator */
+		{" ", 0},	/* [6] recording name, if specified */
+		{" ", 1},	/* [7] separator */
+		{NULL, 0},	/* [8] from_tag */
+		{";1", 2},	/* [9] medianum */
+		{" ", 1},	/* [10] separator */
+		{NULL, 0},	/* [11] to_tag */
+		{";1", 2}	/* [12] medianum */
+	};
+
+	if (name) {
+		/* if name is specified, we need to change the command */
+		cmd = 'C';
+		if (fixup_get_svalue(msg, (gparam_p)name, &val) < 0) {
+			LM_ERR("cannot get extra flags!\n");
+			return -1;
+		}
+		STR2IOVEC(val, v[6]);
+	} else {
+		cmd = 'R';
+		v[7].iov_len = 0; /* remove the separator */
+		v[9].iov_len = v[12].iov_len = 0; /* remove the medianums */
+	}
 
 	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
@@ -4097,19 +4130,19 @@ static int start_recording_f(struct sip_msg* msg, char *setid, char *var, char *
 	}
 
 	STR2IOVEC(callid, v[4]);
-	STR2IOVEC(from_tag, v[6]);
-	STR2IOVEC(to_tag, v[8]);
-	nitems = 9;
+	STR2IOVEC(from_tag, v[8]);
+	STR2IOVEC(to_tag, v[12]);
+	nitems = 13;
 	if (msg->first_line.type == SIP_REPLY) {
 		if (to_tag.len == 0)
 			return -1;
-		STR2IOVEC(to_tag, v[6]);
-		STR2IOVEC(from_tag, v[8]);
-	} else {
-		STR2IOVEC(from_tag, v[6]);
 		STR2IOVEC(to_tag, v[8]);
+		STR2IOVEC(from_tag, v[12]);
+	} else {
+		STR2IOVEC(from_tag, v[8]);
+		STR2IOVEC(to_tag, v[12]);
 		if (to_tag.len <= 0)
-			nitems = 7;
+			nitems = 10;
 	}
 
 	set = get_rtpp_set(msg, (nh_set_param_t *)setid);
@@ -4127,7 +4160,11 @@ static int start_recording_f(struct sip_msg* msg, char *setid, char *var, char *
 		LM_ERR("no available proxies\n");
 		goto error;
 	}
-	/* check if we support flags */
+	/* check if we support recording */
+	if (!HAS_CAP(node, RECORD)) {
+		LM_ERR("RTPProxy does not support recording!\n");
+		goto error;
+	}
 
 	send_rtpp_command(node, v, nitems);
 

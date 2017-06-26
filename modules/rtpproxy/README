@@ -68,7 +68,7 @@ Razvan Crainea
                       sock_pvar]])
 
               1.6.7. rtpproxy_start_recording([set_id [, sock_pvar
-                      [, flags]]])
+                      [, flags [, destination]]]])
 
               1.6.8. rtpproxy_stats(up_pvar, down_pvar, sent_pvar,
                       fail_pvar [, set_id [, sock_pvar]])
@@ -660,7 +660,8 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
 
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
-1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar [, flags]]])
+1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar [, flags [,
+destination]]]])
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
@@ -674,6 +675,11 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
        indicates that RTPProxy should record both audio legs in a
        single file. Note that this feature is available starting
        with RTPProxy 2.0.
+     * destination(optional) - the destination of the recording.
+       If it has the udp:IP:port format, RTPProxy sends the RTP
+       stream to that IP:port remote destination. Otherwise,
+       destination represents the name of the file in the
+       recording directory.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 

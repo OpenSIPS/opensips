@@ -831,7 +831,7 @@ rtpproxy_unforce();
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar [, flags]]])</function>
+		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar [, flags [, destination]]]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
@@ -852,6 +852,13 @@ rtpproxy_unforce();
 					is supported, and it indicates that RTPProxy should record both
 					audio legs in a single file. Note that this feature is available
 					starting with RTPProxy 2.0.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>destination(optional)</emphasis> - the destination of
+					the recording. If it has the  <emphasis>udp:IP:port</emphasis>
+					format, RTPProxy sends the RTP stream to that <emphasis>IP:port</emphasis>
+					remote destination. Otherwise, destination represents the name
+					of the file in the recording directory.
 			</para></listitem>
 		</itemizedlist>
 		<para>
