@@ -1158,119 +1158,139 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 }
 
 
+static int init_tls_dom(struct tls_domain *d)
+{
+	int from_file = 0;
+
+	LM_INFO("Processing TLS domain '%.*s'\n",
+			d->name.len, ZSW(d->name.s));
+
+	/*
+	 * set method
+	 */
+	if (d->method == TLS_METHOD_UNSPEC) {
+		LM_DBG("no method for tls domain '%.*s', using default\n",
+				d->name.len, ZSW(d->name.s));
+		d->method = tls_default_method;
+	}
+
+	/*
+	 * create context
+	 */
+	d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+	if (d->ctx == NULL) {
+		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
+			d->name.len, ZSW(d->name.s));
+		return -1;
+	}
+
+	if (init_ssl_ctx_behavior(d) < 0)
+		return -1;
+
+	/*
+	 * load certificate
+	 */
+	if (!d->cert.s) {
+		from_file = 1;
+		LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_cert_file);
+		d->cert.s = tls_cert_file;
+		d->cert.len = len(tls_cert_file);
+	}
+
+	if (!(d->type & TLS_DOMAIN_DB) || from_file) {
+		if (load_certificate(d->ctx, d->cert.s) < 0)
+			return -1;
+	} else
+		if (load_certificate_db(d->ctx, &d->cert) < 0)
+			return -1;
+
+	from_file = 0;
+
+	/**
+	 * load crl from directory
+	 */
+	if (!d->crl_directory) {
+		LM_NOTICE("no crl for tls, using none\n");
+	} else {
+		if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
+			return -1;
+	}
+
+	/*
+	 * load ca
+	 */
+	if (!d->ca.s) {
+		from_file = 1;
+		LM_NOTICE("no CA list for tls domain '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_ca_file);
+		d->ca.s = tls_ca_file;
+		d->ca.len = len(tls_ca_file);
+	}
+
+	if (!(d->type & TLS_DOMAIN_DB) || from_file) {
+		if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
+			return -1;
+	} else {
+		if (load_ca_db(d->ctx, &d->ca) < 0)
+			return -1;
+	}
+
+	/*
+	 * load ca from directory
+	 */
+	if (!d->ca_directory) {
+		LM_NOTICE("no CA dir for tls '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_ca_dir);
+		d->ca_directory = tls_ca_dir;
+	}
+
+	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
+		return -1;
+
+	return 0;
+}
+
 /*
  * initialize tls virtual domains
  */
-static void init_tls_domains(struct tls_domain **dom)
+static int init_tls_domains(struct tls_domain **dom)
 {
 	struct tls_domain *d, *tmp, *prev = NULL;
 	int from_file = 0;
+	int rc;
+	int db = 0;
 
 	d = *dom;
 	while (d) {
-		LM_INFO("Processing TLS domain '%.*s'\n",
-				d->name.len, ZSW(d->name.s));
-
-		/*
-		 * set method
-		 */
-		if (d->method == TLS_METHOD_UNSPEC) {
-			LM_DBG("no method for tls domain '%.*s', using default\n",
+		if (init_tls_dom(d) < 0) {
+			db = d->type & TLS_DOMAIN_DB;
+			if (!db)
+				LM_ERR("Failed to init TLS domain '%.*s'\n", d->name.len, ZSW(d->name.s));
+			else
+				LM_WARN("Failed to init TLS domain '%.*s', skipping...\n",
 					d->name.len, ZSW(d->name.s));
-			d->method = tls_default_method;
-		}
 
-		/*
-		 * create context
-		 */
-		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
-		if (d->ctx == NULL) {
-			LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
-				d->name.len, ZSW(d->name.s));
-			goto err_cont;
-		}
+			if (d == *dom)
+				*dom = d->next;
 
-		if (init_ssl_ctx_behavior(d) < 0)
-			goto err_cont;
+			if (prev)
+				prev->next = d->next;
 
-		/*
-		 * load certificate
-		 */
-		if (!d->cert.s) {
-			from_file = 1;
-			LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
-					d->name.len, ZSW(d->name.s), tls_cert_file);
-			d->cert.s = tls_cert_file;
-			d->cert.len = len(tls_cert_file);
-		}
+			tmp = d;
+			d = d->next;
+			if (tmp->ctx)
+				SSL_CTX_free(tmp->ctx);
+			lock_destroy(tmp->lock);
+			lock_dealloc(tmp->lock);
+			shm_free(tmp);
 
-		if (!(d->type & TLS_DOMAIN_DB) || from_file) {
-			if (load_certificate(d->ctx, d->cert.s) < 0)
-				goto err_cont;
-		} else
-			if (load_certificate_db(d->ctx, &d->cert) < 0)
-				goto err_cont;
-
-		from_file = 0;
-
-		/**
-		 * load crl from directory
-		 */
-		if (!d->crl_directory) {
-			LM_NOTICE("no crl for tls, using none\n");
+			if (!db)
+				return -1;
 		} else {
-			if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
-				goto err_cont;
+			prev = d;
+			d = d->next;
 		}
-
-		/*
-		 * load ca
-		 */
-		if (!d->ca.s) {
-			from_file = 1;
-			LM_NOTICE("no CA list for tls domain '%.*s' defined, using default '%s'\n",
-					d->name.len, ZSW(d->name.s), tls_ca_file);
-			d->ca.s = tls_ca_file;
-			d->ca.len = len(tls_ca_file);
-		}
-
-		if (!(d->type & TLS_DOMAIN_DB) || from_file) {
-			if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
-				goto err_cont;
-		} else {
-			if (load_ca_db(d->ctx, &d->ca) < 0)
-				goto err_cont;
-		}
-		from_file = 0;
-		/*
-		 * load ca from directory
-		 */
-		if (!d->ca_directory) {
-			LM_NOTICE("no CA dir for tls '%.*s' defined, using default '%s'\n",
-					d->name.len, ZSW(d->name.s), tls_ca_dir);
-			d->ca_directory = tls_ca_dir;
-		}
-
-		if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
-			goto err_cont;
-
-		prev = d;
-		d = d->next;
-		continue;
-err_cont:
-		tmp = d;
-		if (d == *dom)
-			*dom = d->next;
-		d = d->next;
-		if (prev)
-			prev->next = d;
-
-		if (tmp->ctx)
-			SSL_CTX_free(tmp->ctx);
-		lock_destroy(tmp->lock);
-		lock_dealloc(tmp->lock);
-		shm_free(tmp);
-		from_file = 0;
 	}
 
 	/*
@@ -1287,33 +1307,42 @@ err_cont:
 			from_file = 1;
 		}
 
-		if (!(d->type & TLS_DOMAIN_DB) || from_file) {
-			if (load_private_key(d->ctx, d->pkey.s) < 0)
-				goto err_cont_2;
+		if (!(d->type & TLS_DOMAIN_DB) || from_file)
+			rc = load_private_key(d->ctx, d->pkey.s);
+		else
+			rc = load_private_key_db(d->ctx, &d->pkey);
+
+		if (rc < 0) {
+			db = d->type & TLS_DOMAIN_DB;
+			if (!db)
+				LM_ERR("Failed to init TLS domain '%.*s'\n", d->name.len, ZSW(d->name.s));
+			else
+				LM_WARN("Failed to init TLS domain '%.*s', skipping...\n",
+					d->name.len, ZSW(d->name.s));
+
+			if (d == *dom)
+				*dom = d->next;
+
+			if (prev)
+				prev->next = d->next;
+
+			tmp = d;
+			d = d->next;
+			if (tmp->ctx)
+				SSL_CTX_free(tmp->ctx);
+			lock_destroy(tmp->lock);
+			lock_dealloc(tmp->lock);
+			shm_free(tmp);
+
+			if (!db)
+				return -1;
 		} else {
-			if (load_private_key_db(d->ctx, &d->pkey) < 0)
-				goto err_cont_2;
+			prev = d;
+			d = d->next;
 		}
-
-		from_file = 0;
-		prev = d;
-		d = d->next;
-		continue;
-err_cont_2:
-		tmp = d;
-		if (d == *dom)
-			*dom = d->next;
-		d = d->next;
-		if (prev)
-			prev->next = d;
-
-		if (tmp->ctx)
-			SSL_CTX_free(tmp->ctx);
-		lock_destroy(tmp->lock);
-		lock_dealloc(tmp->lock);
-		shm_free(tmp);
-		from_file = 0;
 	}
+
+	return 0;
 }
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
@@ -1778,8 +1807,10 @@ static int mod_init(void) {
 	}
 
 	/* initialize tls virtual domains */
-	init_tls_domains(tls_server_domains);
-	init_tls_domains(tls_client_domains);
+	if (init_tls_domains(tls_server_domains) < 0)
+		return -1;
+	if (init_tls_domains(tls_client_domains) < 0)
+		return -1;
 
 	return 0;
 }
