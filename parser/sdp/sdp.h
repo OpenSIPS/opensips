@@ -46,6 +46,8 @@ typedef struct sdp_payload_attr {
 
 typedef struct sdp_stream_cell {
 	struct sdp_stream_cell *next;
+	/**< body of the entire stream */
+	str body;
 	/* c=<network type> <address type> <connection address> */
 	/**< connection address family: AF_INET/AF_INET6 */
 	int pf;
@@ -93,6 +95,8 @@ typedef struct sdp_stream_cell {
 
 typedef struct sdp_session_cell {
 	struct sdp_session_cell *next;
+	/**< body of the entire session */
+	str body;
 	/**< session index inside sdp */
 	int session_num;
 	/**< the Content-Disposition header (for Content-Type:multipart/mixed) */

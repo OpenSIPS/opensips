@@ -64,7 +64,7 @@ static inline sdp_info_t* new_sdp(void)
 /**
  * Alocate a new session cell.
  */
-static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_num, str* cnt_disp)
+static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_num, str* cnt_disp, str body)
 {
 	sdp_session_cell_t *session;
 	int len;
@@ -83,6 +83,8 @@ static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_
 		session->cnt_disp.len = cnt_disp->len;
 	}
 
+	session->body = body;
+
 	/* Insert the new session */
 	session->next = _sdp->sessions;
 	_sdp->sessions = session;
@@ -95,7 +97,7 @@ static inline sdp_session_cell_t *add_sdp_session(sdp_info_t* _sdp, int session_
  * Allocate a new stream cell.
  */
 static inline sdp_stream_cell_t *add_sdp_stream(sdp_session_cell_t* _session, int stream_num,
-		str* media, str* port, str* transport, str* payloads, int is_rtp, int pf, str* sdp_ip)
+		str* media, str* port, str* transport, str* payloads, int is_rtp, int pf, str* sdp_ip, str body)
 {
 	sdp_stream_cell_t *stream;
 	int len;
@@ -124,6 +126,8 @@ static inline sdp_stream_cell_t *add_sdp_stream(sdp_session_cell_t* _session, in
 	stream->pf = pf;
 	stream->ip_addr.s = sdp_ip->s;
 	stream->ip_addr.len = sdp_ip->len;
+
+	stream->body = body;
 
 	/* Insert the new stream */
 	stream->next = _session->streams;
@@ -370,7 +374,7 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 		return -1;
 	}
 	/* Allocate a session cell */
-	session = add_sdp_session(_sdp, session_num, cnt_disp);
+	session = add_sdp_session(_sdp, session_num, cnt_disp, body);
 	if (session == NULL) return -1;
 
 	/* Get origin IP */
@@ -442,7 +446,7 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 		}
 
 		/* Allocate a stream cell */
-		stream = add_sdp_stream(session, stream_num, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload, is_rtp, pf, &sdp_ip);
+		stream = add_sdp_stream(session, stream_num, &sdp_media, &sdp_port, &sdp_transport, &sdp_payload, is_rtp, pf, &sdp_ip, tmpstr1);
 		if (stream == 0) return -1;
 
 		/* increment total number of streams */
