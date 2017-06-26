@@ -177,6 +177,7 @@
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
 #include "rtpproxy.h"
+#include "rtpproxy_load.h"
 #include "nhelpr_funcs.h"
 #include "rtpproxy_stream.h"
 #include "rtpproxy_callbacks.h"
@@ -484,6 +485,7 @@ static cmd_export_t cmds[] = {
 	{"rtpproxy_all_stats",(cmd_function)rtpproxy_all_stats_f, 3,
 		fixup_all_stats, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"load_rtpproxy", (cmd_function)load_rtpproxy, 0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -4507,4 +4509,9 @@ error:
 		lock_stop_read( nh_lock );
 	}
 	return ret;
+}
+
+int load_rtpproxy(struct rtpproxy_binds *rtpb)
+{
+	return 1;
 }
