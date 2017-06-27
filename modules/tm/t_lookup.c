@@ -1059,6 +1059,8 @@ int t_newtran( struct sip_msg* p_msg, int full_uas )
 		} else {
 			t_retransmit_reply(T);
 		}
+		/* hide the transaction from the upper layer */
+		t_unref( p_msg );
 		/* things are done -- return from script */
 		return 0;
 	}
