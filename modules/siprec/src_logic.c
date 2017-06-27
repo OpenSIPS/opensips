@@ -27,7 +27,6 @@
 #include "srs_body.h"
 
 struct b2b_api srec_b2b;
-struct rtpproxy_binds srec_rtp;
 
 static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
@@ -88,13 +87,18 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		goto no_recording;
 	}
 
+	LM_DBG("received b2b reply with code %d\n", msg->REPLY_STATUS);
+
 	/* check if the reply was successfully */
 	if (msg->REPLY_STATUS != 200) {
 		ret = 0;
 		goto no_recording;
 	}
 
-	/* TODO: parse to get SDP and ask rtpproxy to stream to it */
+	if (srs_handle_media(msg, ss) < 0) {
+		LM_ERR("cannot handle SRS media!\n");
+		goto no_recording;
+	}
 
 	if (srec_dlg.register_dlgcb(ss->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
 			srec_dlg_end, ss, 0)){
@@ -154,12 +158,12 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	ci.local_contact.s = contact_builder(send_sock, &ci.local_contact.len);
 
-	if (srs_add_sdp_streams(msg, &sess->sdp) < 0) {
+	if (srs_add_sdp_streams(msg, &sess->sdp, 1) < 0) {
 		LM_ERR("cannot add body!\n");
 		return -2;
 	}
 	/* TODO: hack - delete me - add twice to see how it behaves */
-	srs_add_sdp_streams(msg, &sess->sdp);
+	srs_add_sdp_streams(msg, &sess->sdp, 0);
 
 	if (srs_get_body(sess, &sess->sdp, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");

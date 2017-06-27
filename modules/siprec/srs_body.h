@@ -31,10 +31,14 @@
 #include "../../parser/msg_parser.h"
 #include "../rtpproxy/rtpproxy_load.h"
 
+extern struct rtpproxy_binds srec_rtp;
+
 struct src_sess;
 
 struct srs_sdp_stream {
 	int label;
+	int caller;
+	int medianum;
 	str body;
 	struct list_head list;
 };
@@ -51,7 +55,9 @@ void srs_free_stream(struct srs_sdp_stream *stream);
 void srs_free_body(struct srs_sdp *body);
 
 int srs_get_body(struct src_sess *sess, struct srs_sdp *sdp, str *body);
-int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp);
+int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller);
+
+int srs_handle_media(struct sip_msg *msg, struct src_sess *sess);
 
 
 #endif /* _SIPREC_BODY_H_ */

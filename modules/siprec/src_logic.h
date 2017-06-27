@@ -32,6 +32,5 @@
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess);
 
 extern struct b2b_api srec_b2b;
-extern struct rtpproxy_binds srec_rtp;
 
 #endif /* _SIPREC_LOGIC_H_ */
