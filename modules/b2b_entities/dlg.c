@@ -675,7 +675,6 @@ search_dialog:
 			if(ret== 0)
 			{
 				LM_DBG("It is a retransmission, drop\n");
-				tmb.unref_cell(tmb.t_gett());
 			}
 			else
 				LM_DBG("Error when creating tm transaction\n");
@@ -837,7 +836,6 @@ logic_notify:
 			if(ret== 0)
 			{
 				LM_DBG("It is a retransmission, drop\n");
-				tmb.unref_cell(tmb.t_gett());
 			}
 			else
 				LM_DBG("Error when creating tm transaction\n");
