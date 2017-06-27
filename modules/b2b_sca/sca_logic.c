@@ -667,7 +667,6 @@ int sca_init_request(struct sip_msg* msg, str* p1, str* p2)
 	if(ret < 1) {
 		if(ret == 0) {
 			LM_DBG("It is a retransmission, drop\n");
-			tmb.unref_cell(tmb.t_gett());
 		} else {
 			LM_ERR("Error when creating tm transaction\n");
 		}
@@ -858,7 +857,6 @@ int sca_bridge_request(struct sip_msg* msg, str* p1, str* p2)
 	if(ret < 1) {
 		if(ret == 0) {
 			LM_DBG("It is a retransmission, drop\n");
-			tmb.unref_cell(tmb.t_gett());
 		} else {
 			LM_ERR("Error when creating tm transaction\n");
 		}
