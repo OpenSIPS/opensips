@@ -216,6 +216,11 @@ static int srec_engage(struct sip_msg *msg, char *_set, char *_media)
 		return -3;
 	}
 
+	/*
+	 * TODO: check where it was called: request or reply: depending on that we
+	 * can use different logics for caller/callee;
+	 * for now we presume it's always on initial requests, not on replies
+	 */
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
 	if (!dlg) {
@@ -232,11 +237,21 @@ static int srec_engage(struct sip_msg *msg, char *_set, char *_media)
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}
+	ret = -2;
 
-	/* TODO: engage on successfull calls */
-	ret = src_start_recording(msg, ss);
-	if (ret < 0)
-		LM_ERR("cannot start recording!\n");
+	if (srs_add_sdp_streams(msg, &ss->sdp, 1) < 0) {
+		LM_ERR("cannot add body!\n");
+		goto session_cleanup;
+	}
+
+	/* TODO: cleanup after msg */
+	if (srec_tm.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, tm_start_recording,
+			ss, 0) <= 0) {
+		LM_ERR("cannot register tm callbacks\n");
+		goto session_cleanup;
+	}
+	ret = 1;
+session_cleanup:
 	return ret;
 }
 

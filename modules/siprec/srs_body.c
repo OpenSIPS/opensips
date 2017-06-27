@@ -247,7 +247,7 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller)
 
 			stream->body.s = (char *)stream + (sizeof *stream);
 			stream->caller = caller;
-			stream->caller = ++medianum;
+			stream->medianum = ++medianum;
 
 			/* m line */
 			memcpy(stream->body.s, media_buf.s, media_buf.len);

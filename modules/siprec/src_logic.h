@@ -30,6 +30,7 @@
 #include "../b2b_entities/b2b_entities.h"
 
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess);
+void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps);
 
 extern struct b2b_api srec_b2b;
 

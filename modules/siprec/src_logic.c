@@ -158,12 +158,10 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	ci.local_contact.s = contact_builder(send_sock, &ci.local_contact.len);
 
-	if (srs_add_sdp_streams(msg, &sess->sdp, 1) < 0) {
+	if (srs_add_sdp_streams(msg, &sess->sdp, 0) < 0) {
 		LM_ERR("cannot add body!\n");
 		return -2;
 	}
-	/* TODO: hack - delete me - add twice to see how it behaves */
-	srs_add_sdp_streams(msg, &sess->sdp, 0);
 
 	if (srs_get_body(sess, &sess->sdp, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
@@ -192,4 +190,17 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	/* release generated body */
 	pkg_free(body.s);
 	return 1;
+}
+
+void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
+{
+	struct src_sess *ss;
+
+	if (!is_invite(t) || ps->code < 200 || ps->code >= 300)
+		return;
+
+	ss = (struct src_sess *)*ps->param;
+	/* engage only on successfull calls */
+	if (src_start_recording(ps->rpl, ss) < 0)
+		LM_ERR("cannot start recording!\n");
 }
