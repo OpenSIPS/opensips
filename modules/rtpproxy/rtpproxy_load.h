@@ -28,7 +28,7 @@
 #include "../../sr_module.h"
 
 typedef int (*start_recording_f)(str *callid, str *from_tag,
-		str *to_tag, int *set, str *flags, str *destination);
+		str *to_tag, int *set, str *flags, str *destination, int medianum);
 
 struct rtpproxy_binds {
 	start_recording_f start_recording;

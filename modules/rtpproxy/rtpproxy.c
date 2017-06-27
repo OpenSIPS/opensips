@@ -167,6 +167,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/parser_f.h"
 #include "../../parser/sdp/sdp_helpr_funcs.h"
+#include "../../parser/sdp/sdp.h"
 #include "../../db/db.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/msg_parser.h"
@@ -248,7 +249,7 @@ static int unforce_rtp_proxy_f(struct sip_msg *, char *, char *);
 static int engage_rtp_proxy4_f(struct sip_msg *, char *, char *, char *, char *);
 static int fixup_engage(void **param,int param_no);
 static int force_rtp_proxy(struct sip_msg *, char *, char *, char *, char *, int);
-static int rtpproxy_recording(struct sip_msg *, char *, char *, char *, char *);
+static int rtpproxy_recording(struct sip_msg *, char *, char *, char *, char *, char*);
 static int rtpproxy_answer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_offer4_f(struct sip_msg *, char *, char *, char *, char *);
 static int rtpproxy_stats_f(struct sip_msg *, char *, char *, char *, char *,
@@ -399,6 +400,9 @@ static cmd_export_t cmds[] = {
 		fixup_recording, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_start_recording", (cmd_function)rtpproxy_recording,      4,
+		fixup_recording, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"rtpproxy_start_recording", (cmd_function)rtpproxy_recording,      5,
 		fixup_recording, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"rtpproxy_offer",        (cmd_function)rtpproxy_offer4_f,      0,
@@ -838,8 +842,10 @@ static int fixup_all_stats(void ** param, int param_no)
 
 static int fixup_recording(void ** param, int param_no)
 {
-	if (param_no >= 3)
+	if (param_no == 3 || param_no == 4)
 		return fixup_spve(param);
+	if (param_no == 5)
+		return fixup_igp(param);
 	return fixup_two_options(param, param_no);
 }
 
@@ -4397,35 +4403,64 @@ error:
 
 static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 		str *from_tag, str *to_tag, struct rtpp_set *set,
-		pv_spec_p var, str *flags, str *destination)
+		pv_spec_p var, str *flags, str *destination, int medianum)
 {
 	int nitems;
 	struct rtpp_node *node;
 	char cmd;
-	struct iovec v[1 + 5 + 2 + 3 + 2] = {
+	int media_start, media_stop;
+	sdp_info_t *msg_sdp;
+	sdp_session_cell_t *msg_session;
+
+	struct iovec v[] = {
 		{NULL, 0},	/* [0] reserved (cookie) */
 		{&cmd, 1},	/* [1] command R or C */
-		{"", 0},	/* [2] flags, if they exist */
+		{NULL, 0},	/* [2] flags, if they exist */
 		{" ", 1},	/* [3] separator */
 		{NULL, 0},	/* [4] callid */
 		{" ", 1},	/* [5] separator */
 		{" ", 0},	/* [6] recording destination, if specified */
 		{" ", 1},	/* [7] separator */
 		{NULL, 0},	/* [8] from_tag */
-		{";1", 2},	/* [9] medianum */
-		{" ", 1},	/* [10] separator */
-		{NULL, 0},	/* [11] to_tag */
-		{";1", 2}	/* [12] medianum */
+		{";", 1},	/* [9] medianum separator */
+		{NULL, 0},	/* [10] medianum */
+		{" ", 1},	/* [11] separator */
+		{NULL, 0},	/* [12] to_tag */
+		{";", 1},	/* [13] medianum separator */
+		{NULL, 0},	/* [14] medianum */
 	};
 
 	if (destination) {
 		/* if name is specified, we need to change the command */
 		cmd = 'C';
 		STR2IOVEC(*destination, v[6]);
+		nitems = 15;
+		if (medianum > 0)
+			media_start = media_stop = medianum;
+		else if (!msg)
+			media_start = media_stop = 1;
+		else {
+			/*
+			 * we need to parse the message, if it exists, and count the
+			 * number of sessions it has
+			 */
+			media_start = 1;
+			media_stop = 0;
+			msg_sdp = parse_sdp(msg);
+			if (msg_sdp) {
+				for (msg_session = msg_sdp->sessions; msg_session;
+						msg_session = msg_session->next)
+					media_stop += msg_session->streams_num;
+			} else {
+				LM_WARN("cannot parse message SDP! only record first stream\n");
+				media_stop = 1;
+			}
+		}
 	} else {
 		cmd = 'R';
 		v[7].iov_len = 0; /* remove the separator */
-		v[9].iov_len = v[12].iov_len = 0; /* remove the medianums */
+		v[9].iov_len = v[10].iov_len = 0; /* remove medianum for caller */
+		nitems = 13;
 	}
 
 	if (flags)
@@ -4434,10 +4469,13 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 	STR2IOVEC(*callid, v[4]);
 	STR2IOVEC(*from_tag, v[8]);
 	STR2IOVEC(*to_tag, v[12]);
-	nitems = 13;
 
-	if (!to_tag || to_tag->len <= 0)
-			nitems = 10;
+	if (!to_tag || to_tag->len <= 0) {
+		if (cmd == 'C')
+			nitems = 11;
+		else
+			nitems = 9;
+	}
 
 	if (nh_lock)
 		lock_start_read( nh_lock );
@@ -4453,7 +4491,15 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 		goto error;
 	}
 
-	send_rtpp_command(node, v, nitems);
+	if (cmd == 'R')
+		send_rtpp_command(node, v, nitems);
+	else
+		while (media_start <= media_stop) {
+			v[10].iov_base = int2str(media_start, (int *)&v[10].iov_len);
+			v[14] = v[10];
+			send_rtpp_command(node, v, nitems);
+			media_start++;
+		}
 
 	if(nh_lock)
 	{
@@ -4472,7 +4518,7 @@ error:
 }
 
 static int rtpproxy_api_recording(str *callid, str *from_tag,
-		str *to_tag, int *iset, str *flags, str *destination)
+		str *to_tag, int *iset, str *flags, str *destination, int medianum)
 {
 	struct rtpp_set *set;
 	int int_val = (iset ? *iset : default_rtpp_set_no);
@@ -4484,10 +4530,11 @@ static int rtpproxy_api_recording(str *callid, str *from_tag,
 	}
 
 	return w_rtpproxy_recording(NULL, callid, from_tag,
-			to_tag, set, NULL, flags, destination);
+			to_tag, set, NULL, flags, destination, medianum);
 }
 
-static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var, char *flags, char *destination)
+static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var,
+		char *flags, char *destination, char *stream_no)
 {
 	struct rtpp_set *set;
 	str dst_val, flags_val;
@@ -4495,6 +4542,7 @@ static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var, char 
 	str from_tag = {0, 0};
 	str to_tag = {0, 0};
 	str aux;
+	int medianum;
 
 	if (destination) {
 		if (fixup_get_svalue(msg, (gparam_p)destination, &dst_val) < 0) {
@@ -4509,6 +4557,14 @@ static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var, char 
 			return -1;
 		}
 	}
+
+	if (stream_no) {
+		if (fixup_get_ivalue(msg, (gparam_p)stream_no, &medianum) < 0) {
+			LM_ERR("can't get stream number!\n");
+			return -1;
+		}
+	} else
+		medianum = -1; /* all streams */
 
 	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
@@ -4542,7 +4598,8 @@ static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var, char 
 	return w_rtpproxy_recording(msg, &callid, &from_tag, &to_tag, set,
 			(pv_spec_p)var,
 			(flags ? &flags_val : NULL),
-			(destination ? &dst_val : NULL));
+			(destination ? &dst_val : NULL),
+			medianum);
 }
 
 

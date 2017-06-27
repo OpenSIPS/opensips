@@ -831,7 +831,7 @@ rtpproxy_unforce();
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar [, flags [, destination]]]])</function>
+		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar [, flags [, destination [, mediastream]]]]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
@@ -860,6 +860,12 @@ rtpproxy_unforce();
 					remote destination. Otherwise, destination represents the name
 					of the file in the recording directory.
 			</para></listitem>
+			<listitem><para>
+					<emphasis>mediastream(optional)</emphasis> - this parameter is only used
+					if the <emphasis>destination</emphasis> is specified, and represents
+					the index of media stream to record/copy, starting from 1. If this parameter
+					is missing, &osips; instructs RTPProxy to copy all the streams.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -869,6 +875,12 @@ rtpproxy_unforce();
 		<programlisting format="linespecific">
 ...
 rtpproxy_start_recording();
+
+# copy RTP stream to a different listener
+rtpproxy_start_recording(,,,"udp:127.0.0.1:60000");
+
+# copy only first RTP stream (audio stream)
+rtpproxy_start_recording(,,,"udp:127.0.0.1:60000", "1");
 ...
 		</programlisting>
 		</example>

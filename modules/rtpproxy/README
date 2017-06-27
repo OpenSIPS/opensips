@@ -72,7 +72,7 @@ Razvan Crainea
                       sock_pvar]])
 
               1.6.7. rtpproxy_start_recording([set_id [, sock_pvar
-                      [, flags [, destination]]]])
+                      [, flags [, destination [, mediastream]]]]])
 
               1.6.8. rtpproxy_stats(up_pvar, down_pvar, sent_pvar,
                       fail_pvar [, set_id [, sock_pvar]])
@@ -665,7 +665,7 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
 1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar [, flags [,
-destination]]]])
+destination [, mediastream]]]]])
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
@@ -684,12 +684,23 @@ destination]]]])
        stream to that IP:port remote destination. Otherwise,
        destination represents the name of the file in the
        recording directory.
+     * mediastream(optional) - this parameter is only used if the
+       destination is specified, and represents the index of media
+       stream to record/copy, starting from 1. If this parameter
+       is missing, OpenSIPS instructs RTPProxy to copy all the
+       streams.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
    Example 1.18. rtpproxy_start_recording usage
 ...
 rtpproxy_start_recording();
+
+# copy RTP stream to a different listener
+rtpproxy_start_recording(,,,"udp:127.0.0.1:60000");
+
+# copy only first RTP stream (audio stream)
+rtpproxy_start_recording(,,,"udp:127.0.0.1:60000", "1");
 ...
 
 1.6.8.  rtpproxy_stats(up_pvar, down_pvar, sent_pvar, fail_pvar [,
