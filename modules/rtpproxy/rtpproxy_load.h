@@ -27,10 +27,14 @@
 
 #include "../../sr_module.h"
 
+typedef int (*start_recording_f)(str *callid, str *from_tag,
+		str *to_tag, int *set, str *flags, str *destination);
+
 struct rtpproxy_binds {
+	start_recording_f start_recording;
 };
 
-typedef int(*load_rtpproxy_f)(struct rtpproxy_binds *rtpb);
+typedef int (*load_rtpproxy_f)(struct rtpproxy_binds *rtpb);
 int load_rtpproxy(struct rtpproxy_binds *rtpb);
 
 static inline int load_rtpproxy_api(struct rtpproxy_binds *rtpb)
