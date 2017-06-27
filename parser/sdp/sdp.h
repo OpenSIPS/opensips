@@ -33,6 +33,12 @@
 
 #include "../msg_parser.h"
 
+typedef struct sdp_attr {
+	struct sdp_attr *next;
+	str attribute;
+	str value;
+} sdp_attr_t;
+
 typedef struct sdp_payload_attr {
 	struct sdp_payload_attr *next;
 	/**< payload index inside stream */
@@ -91,6 +97,7 @@ typedef struct sdp_stream_cell {
 	/**< fast access pointers to payloads */
 	struct sdp_payload_attr **p_payload_attr;
 	struct sdp_payload_attr *payload_attr;
+	struct sdp_attr *attr;
 } sdp_stream_cell_t;
 
 typedef struct sdp_session_cell {
@@ -121,6 +128,7 @@ typedef struct sdp_session_cell {
 	/**< number of streams inside a session */
 	int streams_num;
 	struct sdp_stream_cell*  streams;
+	struct sdp_attr *attr;
 } sdp_session_cell_t;
 
 /**

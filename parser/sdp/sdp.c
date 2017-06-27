@@ -29,6 +29,7 @@
 
 
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../parser_f.h"
@@ -322,6 +323,45 @@ sdp_payload_attr_t* get_sdp_payload4index(sdp_stream_cell_t *stream, int index)
 	return stream->p_payload_attr[index];
 }
 
+/**
+ * Add SDP attribute.
+ */
+static inline int add_sdp_attr(str line, sdp_attr_t **list)
+{
+	char *p;
+	static sdp_attr_t *last;
+	sdp_attr_t *a = pkg_malloc(sizeof *a);
+	if (!a) {
+		LM_ERR("No memory left!\n");
+		return -1;
+	}
+	memset(a, 0, sizeof *a);
+
+	/* check for value separator : */
+	p = q_memchr(line.s + 2, ':', line.len - 2);
+	if (p) {
+		a->attribute.s = line.s + 2;
+		a->attribute.len = p - a->attribute.s;
+		/* skip the separator */
+		a->value.s = p + 1;
+		a->value.len = line.len - (a->value.s - line.s);
+		trim(&a->value);
+	} else {
+		a->attribute.s = line.s + 2;
+		a->attribute.len = line.len - 2;
+	}
+	trim(&a->attribute);
+
+	/* link it to the list */
+	if (*list)
+		last->next = a;
+	else
+		*list = a;
+	/* we remember the last object added */
+	last = a;
+
+	return 0;
+}
 
 /**
  * SDP parser method.
@@ -406,6 +446,22 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 		tmpstr1.s = b1p;
 		tmpstr1.len = m1p - b1p;
 		extract_bwidth(&tmpstr1, &session->bw_type, &session->bw_width);
+	}
+
+	/* from b1p or o1p down to m1p we have session a= attributes */
+	a1p = find_sdp_line((b1p?b1p:o1p), m1p, 'a');
+	a2p = a1p;
+	for (;;) {
+		a1p = a2p;
+		if (a1p == NULL || a1p >= m1p)
+			break;
+		a2p = find_next_sdp_line(a1p + 1, m1p, 'a', m1p);
+
+		tmpstr1.s = a1p;
+		tmpstr1.len = a2p - a1p;
+
+		if (add_sdp_attr(tmpstr1, &session->attr) < 0)
+			return -1;
 	}
 
 	/* Have session. Iterate media descriptions in session */
@@ -532,7 +588,12 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 			/*	LM_DBG("else: `%.*s'\n", tmpstr1.len, tmpstr1.s); */
 			}
 
+			tmpstr1.s = a2p;
 			a2p = find_next_sdp_line(a1p-1, m2p, 'a', m2p);
+			tmpstr1.len = a2p - tmpstr1.s;
+
+			if (add_sdp_attr(tmpstr1, &stream->attr) < 0)
+				return -1;
 		}
 		/* Let's detect if the media is on hold by checking
 		 * the good old "0.0.0.0" connection address */
@@ -614,6 +675,7 @@ void free_sdp(sdp_info_t* sdp)
 	sdp_session_cell_t *session, *l_session;
 	sdp_stream_cell_t *stream, *l_stream;
 	sdp_payload_attr_t *payload, *l_payload;
+	sdp_attr_t *attr, *l_attr;
 
 	LM_DBG("sdp = %p\n", sdp);
 	if (sdp == NULL) return;
@@ -623,6 +685,12 @@ void free_sdp(sdp_info_t* sdp)
 	while (session) {
 		l_session = session;
 		session = session->next;
+		attr = l_session->attr;
+		while (attr) {
+			l_attr = attr;
+			attr = attr->next;
+			pkg_free(l_attr);
+		}
 		stream = l_session->streams;
 		while (stream) {
 			l_stream = stream;
@@ -632,6 +700,12 @@ void free_sdp(sdp_info_t* sdp)
 				l_payload = payload;
 				payload = payload->next;
 				pkg_free(l_payload);
+			}
+			attr = l_stream->attr;
+			while (attr) {
+				l_attr = attr;
+				attr = attr->next;
+				pkg_free(l_attr);
 			}
 			if (l_stream->p_payload_attr) {
 				pkg_free(l_stream->p_payload_attr);
