@@ -4524,8 +4524,8 @@ static int rtpproxy_api_recording(str *callid, str *from_tag,
 	int int_val = (iset ? *iset : default_rtpp_set_no);
 
 	set = select_rtpp_set(int_val);
-	if (!iset) {
-		LM_ERR("no set found for groupt %d\n", int_val);
+	if (!set) {
+		LM_ERR("no set found for group %d\n", int_val);
 		return -1;
 	}
 
