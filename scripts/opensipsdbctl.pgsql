@@ -161,6 +161,10 @@ for TABLE in $STANDARD_TABLES; do
 		then
 			mdbg "creating table 2: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
+		elif [ $TABLE = "dialog" ] 
+		then
+			mdbg "creating table 2: $TABLE"
+			# dialog has no PK
 		elif [ $TABLE = "location" ] 
 		then
 			mdbg "creating table 2: $TABLE"
