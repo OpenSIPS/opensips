@@ -1089,7 +1089,7 @@ assign_stm: DEBUG EQUAL snumber
 		| TOS EQUAL error { yyerror("number expected"); }
 		| MPATH EQUAL STRING { mpath=$3; strcpy(mpath_buf, $3);
 								mpath_len=strlen($3);
-								if(mpath_buf[mpath_len-1]!='/') {
+								if(mpath_len==0 || mpath_buf[mpath_len-1]!='/') {
 									mpath_buf[mpath_len]='/';
 									mpath_len++;
 									mpath_buf[mpath_len]='\0';
