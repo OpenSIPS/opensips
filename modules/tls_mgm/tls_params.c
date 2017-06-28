@@ -88,7 +88,7 @@ int tlsp_add_srv_domain(modparam_t type, void *val)
 int tlsp_add_cli_domain(modparam_t type, void *val)
 {
 	struct ip_addr *ip = NULL;
-	unsigned int port;
+	unsigned int port = 0;
 	str name;
 
 	if (parse_domain_def((char*)val, &name, &ip, &port) < 0)
