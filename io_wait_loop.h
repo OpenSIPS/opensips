@@ -181,13 +181,16 @@ again:
 			e = ((struct fd_map*)h->ep_array[r].data.ptr);
 			if (e->type==0 || e->fd<=0 || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
 				fd = e - h->fd_hash;
-				LM_BUG("[%s] unset/bogus map (idx=%d) triggered for %d by epoll "
+				LM_ERR("[%s] unset/bogus map (idx=%d) triggered for %d by epoll "
 					"(fd=%d,type=%d,flags=%x,data=%p) -> removing from epoll\n", h->name,
 					fd, h->ep_array[r].events,
 					e->fd, e->type, e->flags, e->data);
 				/* as the triggering fd has no corresponding in fd_map, better
 				 remove it from poll, to avoid un-managed reporting on this fd */
-				epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event);
+				if (epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event)<0) {
+					LM_ERR("failed to remove from epoll %s(%d)\n",
+						strerror(errno), errno);
+				}
 				close(fd);
 				continue;
 			}
