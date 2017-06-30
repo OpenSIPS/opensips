@@ -953,12 +953,16 @@ int main(int argc, char** argv)
 	/* fill missing arguments with the default values*/
 	if (cfg_file==0) cfg_file=CFG_FILE;
 
-	/* load config file or die */
-	cfg_stream=fopen (cfg_file, "r");
-	if (cfg_stream==0){
-		LM_ERR("loading config file(%s): %s\n", cfg_file,
-				strerror(errno));
-		goto error00;
+	if (strlen(cfg_file) == 1 && cfg_file[0] == '-') {
+		cfg_stream = stdin;
+	} else {
+		/* load config file or die */
+		cfg_stream=fopen (cfg_file, "r");
+		if (cfg_stream==0){
+			LM_ERR("loading config file(%s): %s\n", cfg_file,
+					strerror(errno));
+			goto error00;
+		}
 	}
 
 	/* seed the prng, try to use /dev/urandom if possible */
