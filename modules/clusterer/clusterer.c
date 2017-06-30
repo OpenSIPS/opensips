@@ -1452,6 +1452,11 @@ static int send_to(int cluster_id, int proto)
 	unsigned long ctime = time(0);
 	int ok = -1;
 
+	if (!ref_lock) {
+		LM_DBG("clusterer not initialized or destroyed - message not sent!\n");
+		return 0;
+	}
+
 	if (proto == PROTO_BIN)
 		bin_get_buffer(&send_buffer);
 
