@@ -37,39 +37,29 @@ struct rtpproxy_binds srec_rtp;
 /* TODO handle port */
 static int port = 10000;
 
-int srs_init_sdp_body(struct srs_sdp *body)
-{
-	memset(body, 0, sizeof *body);
-	INIT_LIST_HEAD(&body->streams);
-	
-	body->ts = time(NULL);
 
-	return 0;
-}
-
-struct srs_sdp_stream *srs_get_stream(struct srs_sdp *body, int label)
+static struct srs_sdp_stream *srs_get_stream(struct src_sess *ss, int label, int *part)
 {
+	int p;
 	struct list_head *it;
 	struct srs_sdp_stream *stream;
 
-	list_for_each(it, &body->streams) {
-		stream = list_entry(it, struct srs_sdp_stream, list);
-		if (stream->label == label)
-			return stream;
-	}
+	for (p = 0; p < ss->participants_no; p++)
+		list_for_each(it, &ss->participants[p].streams) {
+			stream = list_entry(it, struct srs_sdp_stream, list);
+			if (stream->label == label) {
+				if (part)
+					*part = p;
+				return stream;
+			}
+		}
 	return NULL;
 }
 
 void srs_free_stream(struct srs_sdp_stream *stream)
 {
+	list_del(&stream->list);
 	shm_free(stream);
-}
-
-void srs_free_body(struct srs_sdp *body)
-{
-	struct list_head *it, *tmp;
-	list_for_each_safe(it, tmp, &body->streams)
-		srs_free_stream(list_entry(it, struct srs_sdp_stream, list));
 }
 
 /*
@@ -99,7 +89,8 @@ static char srs_get_sdp_line(char *start, char *end, str *line)
 		return 0;
 }
 
-int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller)
+int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
+		struct src_part *part)
 {
 	char sdp_type;
 	char *tmps;
@@ -232,7 +223,7 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller)
 			}
 			/* compute the extra length of the stream */
 			tmp_len = 12/* a=inactive\r\n or a=sendonly\r\n */;
-			tmps = int2str(sdp->stream_no + 1, &label_len);
+			tmps = int2str(sess->streams_no + 1, &label_len);
 			tmp_len += 8 /* a=label: */ + label_len + 2 /* \r\n */;
 
 			/* create a new stream to dump all data into */
@@ -246,7 +237,6 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller)
 			memset(stream, 0, sizeof *stream);
 
 			stream->body.s = (char *)stream + (sizeof *stream);
-			stream->caller = caller;
 			stream->medianum = ++medianum;
 
 			/* m line */
@@ -274,9 +264,12 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller)
 				memcpy(stream->body.s + stream->body.len, "sendonly\r\n", 10);
 			stream->body.len += 10;
 
+			/* initialize uuid */
+			siprec_build_uuid(stream->uuid);
+
 			/* all good, add it into the sdp */
-			stream->label = ++sdp->stream_no;
-			list_add_tail(&stream->list, &sdp->streams);
+			stream->label = ++sess->streams_no;
+			list_add_tail(&stream->list, &part->streams);
 			streams_no++;
 		}
 		pkg_free(allocated_buf);
@@ -301,132 +294,197 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct srs_sdp *sdp, int caller)
 #define OSS_CD_SREC_HDR "Content-Disposition: recording-session" CRLF
 #define OSS_CD_SREC_HDR_LEN (sizeof(OSS_CD_SREC_HDR) - 1)
 
+struct srec_buffer {
+	int length;
+	str *buffer;
+};
+
+#define SIPREC_BUF_INC 512
+#define SIPREC_ENSURE_SIZE(_size, _b) \
+	do { \
+		if ((_b)->length - (_b)->buffer->len < _size) { \
+			do \
+				(_b)->length += SIPREC_BUF_INC; \
+			while ((_b)->length - (_b)->buffer->len < _size); \
+			(_b)->buffer->s = pkg_realloc((_b)->buffer->s, (_b)->length); \
+			if (!(_b)->buffer->s) { \
+				LM_ERR("not enough pkg memory to build body!\n"); \
+				return -1; \
+			} \
+		}\
+	} while(0)
+#define SIPREC_COPY_STR(_s, _b) \
+	do { \
+		SIPREC_ENSURE_SIZE(_s.len, _b); \
+		memcpy((_b)->buffer->s + (_b)->buffer->len, _s.s, _s.len); \
+		(_b)->buffer->len += _s.len; \
+	} while(0)
+#define SIPREC_COPY(_ct, _b) \
+	do { \
+		str tmp = str_init(_ct); \
+		SIPREC_COPY_STR(tmp, _b); \
+	} while(0)
+#define SIPREC_COPY_INT(_i, _b); \
+	do { \
+		str tmp; \
+		tmp.s = int2str(_i, &tmp.len); \
+		SIPREC_COPY_STR(tmp, _b); \
+	} while(0)
+#define SIPREC_COPY_CHAR(_c, _b); \
+	do { \
+		SIPREC_ENSURE_SIZE(1, _b); \
+		(_b)->buffer->s[(_b)->buffer->len++] = (_c); \
+	} while(0)
+
+static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
+{
+	int p;
+	struct srs_sdp_stream *stream;
+	struct list_head *it;
+	/*
+	 * SDP body format we use:
+	 *
+	 * v=0
+	 * o=- <timestamp> <version> IN IP4 <mediaip>
+	 * s=-
+	 * <streams*>
+	 */
+	str header1 = str_init("v=0" CRLF "o=- ");
+	str header2 = str_init(" IN IP4 ");
+	str header3 = str_init(CRLF "s=-" CRLF);
+
+	SIPREC_COPY_STR(header1, buf);
+	SIPREC_COPY_INT(sess->ts, buf);
+	SIPREC_COPY_CHAR(' ', buf);
+	SIPREC_COPY_INT(sess->version, buf);
+	SIPREC_COPY_STR(header2, buf);
+	SIPREC_COPY_STR(sess->media_ip, buf);
+	SIPREC_COPY_STR(header3, buf);
+	for (p = 0; p < sess->participants_no; p++) {
+		list_for_each(it, &sess->participants[p].streams) {
+			stream = list_entry(it, struct srs_sdp_stream, list);
+			SIPREC_COPY_STR(stream->body, buf);
+		}
+	}
+	return 1;
+}
+
+#define SIPREC_COPY_OPEN_TAG(_t, _b) \
+		SIPREC_COPY("<" _t ">", _b);
+#define SIPREC_COPY_CLOSE_TAG(_t, _b) \
+		SIPREC_COPY("</" _t ">", _b);
+#define SIPREC_COPY_UUID(_u, _b) \
+	do { \
+		str tmp; \
+		tmp.s = (char *)_u; \
+		tmp.len = SIPREC_UUID_LEN; \
+		SIPREC_COPY_STR(tmp, buf); \
+	} while(0)
+
+static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
+{
+	int p;
+	struct list_head *it;
+	struct srs_sdp_stream *stream;
+	str xml_header = str_init("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+		"<recording xmlns='urn:ietf:params:xml:ns:recording:1'>\r\n\t");
+
+	/* add headers */
+	SIPREC_COPY_STR(xml_header, buf);
+	SIPREC_COPY_OPEN_TAG("datamode", buf);
+	SIPREC_COPY("complete", buf);
+	SIPREC_COPY_CLOSE_TAG("datamode", buf);
+	SIPREC_COPY("\r\n\t<session session_id=\"", buf);
+	SIPREC_COPY_UUID(sess->uuid, buf);
+	SIPREC_COPY("\"/>\r\n", buf);
+	for (p = 0; p < sess->participants_no; p++) {
+		if (!sess->participants[p].aor.s)
+			continue;
+		SIPREC_COPY("\t<participant participant_id=\"", buf);
+		SIPREC_COPY_UUID(sess->participants[p].uuid, buf);
+		SIPREC_COPY("\">\r\n\t\t<nameID aor=\"", buf);
+		SIPREC_COPY_STR(sess->participants[p].aor, buf);
+		SIPREC_COPY("\"/>\r\n\t</participant>\r\n", buf);
+	}
+
+	for (p = 0; p < sess->participants_no; p++) {
+		if (!sess->participants[p].aor.s)
+			continue;
+		list_for_each(it, &sess->participants[p].streams) {
+			stream = list_entry(it, struct srs_sdp_stream, list);
+			SIPREC_COPY("\t<stream stream_id=\"", buf);
+			SIPREC_COPY_UUID(stream->uuid, buf);
+			SIPREC_COPY("\" session_id=\"", buf);
+			SIPREC_COPY_UUID(sess->uuid, buf);
+			SIPREC_COPY("\">\r\n\t\t<label>", buf);
+			SIPREC_COPY_INT(stream->label, buf);
+			SIPREC_COPY("</label>\r\n\t</stream>\r\n", buf);
+		}
+	}
+
+	SIPREC_COPY_CLOSE_TAG("recording", buf);
+
+	return 1;
+}
+
 /*
  * You need to free the body->s after using it!
  */
-int srs_get_body(struct src_sess *sess, struct srs_sdp *sdp, str *body)
+int srs_build_body(struct src_sess *sess, str *body, int type)
 {
-	struct srs_sdp_stream *stream;
-	struct list_head *it;
-	int multipart;
-	str id = str_init(""), version = str_init("");
-	void *siprec = (void *)0x1 /* TODO: replace with real siprec */;
+	struct srec_buffer buf;
+	str boundary = str_init(CRLF "--" OSS_BOUNDARY CRLF);
+	str boundary_end = str_init(CRLF "--" OSS_BOUNDARY "--" CRLF);
+	str content_type = str_init("Content-Type: application/");
+	str sdp_content_type = str_init("sdp" CRLF);
+	str siprec_content_type = str_init("rs-metadata+xml" CRLF);
+	str siprec_content_disposition =
+		str_init("Content-Disposition: recording-session" CRLF);
+	str tmp;
+
+	body->s = 0;
+	body->len = 0;
+	buf.buffer = body;
+	buf.length = 0;
 
 	/* body may be a multipart consisting on a SDP and a SIPREC XML */
-	int body_len = 0;
 
-	multipart = sdp && siprec;
-	if (multipart) {
-		/* multipart overhead */
-		body_len += OSS_BOUNDARY_HDR_LEN * 2 + OSS_BOUNDARY_HDR_END_LEN;
-		body_len -= CRLF_LEN /* XXX: we do not add the first CRLF */;
-		/* SDP */
-		body_len += OSS_CT_SDP_HDR_LEN + CRLF_LEN;
-		/* SIPREC */
-		body_len += OSS_CT_SREC_HDR_LEN + OSS_CD_SREC_HDR_LEN +  CRLF_LEN;
-	}
-
-	if (sdp) {
-		/*
-		 * SDP body format we use:
-		 *
-		 * v=0
-		 * o=- <timestamp> <version> IN IP4 <mediaip>
-		 * s=-
-		 */
-		id.s = int2str(sdp->ts, &id.len);
-		version.s = int2str(sdp->version, &version.len);
-		body_len += id.len + version.len + sess->media_ip.len +
-			19 + 3 * CRLF_LEN /* 3 lines */;
-
-		list_for_each(it, &sdp->streams) {
-			stream = list_entry(it, struct srs_sdp_stream, list);
-			body_len += stream->body.len;
-		}
-	}
-
-	if (siprec) {
-		/* TODO: add body size for siprec */
-	}
-
-	body->s = pkg_malloc(body_len);
-	if (!body->s) {
-		LM_ERR("no more memory for message body %d\n", body_len);
-		return -1;
-	}
-	body->len = 0;
-
-	if (multipart) {
+	if (type & SRS_BOTH) {
 		/* first boundary */
 		/* we do not add the first CRLF, because the message generator already
 		 * adds it */
-		memcpy(body->s + body->len, OSS_BOUNDARY_HDR + CRLF_LEN, OSS_BOUNDARY_HDR_LEN - CRLF_LEN);
-		body->len += OSS_BOUNDARY_HDR_LEN - CRLF_LEN;
+		tmp.s = boundary.s + 2;
+		tmp.len = boundary.len - 2;
+		SIPREC_COPY_STR(tmp, &buf);
 
 		/* Content-Type of SDP */
-		memcpy(body->s + body->len, OSS_CT_SDP_HDR, OSS_CT_SDP_HDR_LEN);
-		body->len += OSS_CT_SDP_HDR_LEN;
-		memcpy(body->s + body->len, CRLF, CRLF_LEN);
-		body->len += CRLF_LEN;
+		SIPREC_COPY_STR(content_type, &buf);
+		SIPREC_COPY_STR(sdp_content_type, &buf);
+		SIPREC_COPY(CRLF, &buf);
 	}
 
-	if (sdp) {
-		/* SDP body */
-		memcpy(body->s + body->len, "v=0" CRLF "o=- ", 7 + CRLF_LEN);
-		body->len += 7 + CRLF_LEN;
-		memcpy(body->s + body->len, id.s, id.len);
-		body->len += id.len;
-		body->s[body->len++] = ' ';
-		memcpy(body->s + body->len, version.s, version.len);
-		body->len += version.len;
-		memcpy(body->s + body->len, " IN IP4 ", 8);
-		body->len += 8;
-		memcpy(body->s + body->len, sess->media_ip.s, sess->media_ip.len);
-		body->len += sess->media_ip.len;
-		memcpy(body->s + body->len, CRLF "s=-" CRLF , 3 + 2 * CRLF_LEN);
-		body->len += 3 + 2 * CRLF_LEN;
+	if (type & SRS_SDP && srs_build_sdp(sess, &buf) < 0)
+		return -1;
 
-		list_for_each(it, &sdp->streams) {
-			stream = list_entry(it, struct srs_sdp_stream, list);
-			memcpy(body->s + body->len, stream->body.s, stream->body.len);
-			body->len += stream->body.len;
-		}
-	}
-
-	if (multipart) {
+	if (type & SRS_BOTH) {
 		/* add second bondary */
-		memcpy(body->s + body->len, OSS_BOUNDARY_HDR, OSS_BOUNDARY_HDR_LEN);
-		body->len += OSS_BOUNDARY_HDR_LEN;
+		SIPREC_COPY_STR(boundary, &buf);
 
 		/* Content-Type of SIPREC */
-		memcpy(body->s + body->len, OSS_CT_SREC_HDR, OSS_CT_SREC_HDR_LEN);
-		body->len += OSS_CT_SREC_HDR_LEN;
-
-		/* Content-Disposition for SIPREC */
-		memcpy(body->s + body->len, OSS_CD_SREC_HDR, OSS_CD_SREC_HDR_LEN);
-		body->len += OSS_CD_SREC_HDR_LEN;
-
-		memcpy(body->s + body->len, CRLF, CRLF_LEN);
-		body->len += CRLF_LEN;
+		SIPREC_COPY_STR(content_type, &buf);
+		SIPREC_COPY_STR(siprec_content_type, &buf);
+		SIPREC_COPY_STR(siprec_content_disposition, &buf);
+		SIPREC_COPY(CRLF, &buf);
 	}
 	
-	if (siprec) {
-		/* TODO: add siprec body */
-	}
+	if (type & SRS_XML && srs_build_xml(sess, &buf) < 0)
+		return -1;
 
-	if (multipart) {
+	if (type & SRS_BOTH) {
 		/* add final boundary */
-		memcpy(body->s + body->len, OSS_BOUNDARY_HDR_END, OSS_BOUNDARY_HDR_END_LEN);
-		body->len += OSS_BOUNDARY_HDR_END_LEN;
+		SIPREC_COPY_STR(boundary_end, &buf);
 	}
 
-	/* double check length */
-	if (body->len != body_len) {
-		LM_BUG("mismatch in body build computed=%d generated=%d [%.*s]\n",
-				body_len, body->len, body->len, body->s);
-		pkg_free(body->s);
-		return -2;
-	}
 	return 0;
 }
 
@@ -434,8 +492,9 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 {
 	int len;
 	int label;
+	int part = 0;
 	int streams_no = -1;
-	struct srs_sdp_stream *stream;
+	struct srs_sdp_stream *stream = NULL;
 	sdp_info_t *msg_sdp;
 	sdp_attr_t *attr;
 	sdp_stream_cell_t *msg_stream;
@@ -463,7 +522,7 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 								attr->value.len, attr->value.s);
 						continue;
 					}
-					stream = srs_get_stream(&sess->sdp, label);
+					stream = srs_get_stream(sess, label, &part);
 					if (!stream) {
 						LM_ERR("unknown media stream label: %d\n", label);
 						label = -2;
@@ -509,12 +568,12 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 					msg_stream->port.len);
 			destination.len += msg_stream->port.len;
 
-			if (stream->caller) {
-				from_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
-				to_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
-			} else {
+			if (part) {
 				from_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
 				to_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
+			} else {
+				from_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
+				to_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
 			}
 
 			if (srec_rtp.start_recording(&sess->dlg->callid, from_tag, to_tag,
@@ -530,3 +589,5 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 
 	return streams_no;
 }
+
+

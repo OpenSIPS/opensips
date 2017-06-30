@@ -23,39 +23,20 @@
  *  2017-06-20  created (razvanc)
  */
 
-#ifndef _SIPREC_BODY_H_
-#define _SIPREC_BODY_H_
+#ifndef _SIPREC_UUID_H_
+#define _SIPREC_UUID_H_
 
-#include "../../ut.h"
-#include "../../str.h"
-#include "../../lib/list.h"
-#include "../../parser/msg_parser.h"
-#include "../rtpproxy/rtpproxy_load.h"
-#include "siprec_uuid.h"
+#include <uuid/uuid.h>
 
-extern struct rtpproxy_binds srec_rtp;
+#define SIPREC_UUID_LEN calc_base64_encode_len(sizeof(uuid_t))
+typedef unsigned char siprec_uuid[SIPREC_UUID_LEN];
 
-struct src_sess;
-struct src_part;
+static inline void siprec_build_uuid(siprec_uuid uuid)
+{
+	uuid_t tmp_uuid;
+	uuid_generate(tmp_uuid);
+	base64encode(uuid, tmp_uuid, sizeof(tmp_uuid));
+}
 
-#define SRS_SDP (1 << 0)
-#define SRS_XML (1 << 1)
-#define SRS_BOTH (SRS_SDP|SRS_XML)
 
-struct srs_sdp_stream {
-	int label;
-	int medianum;
-	str body;
-	siprec_uuid uuid;
-	struct list_head list;
-};
-
-void srs_free_stream(struct srs_sdp_stream *stream);
-
-int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
-		struct src_part *part);
-int srs_build_body(struct src_sess *sess, str *body, int type);
-
-int srs_handle_media(struct sip_msg *msg, struct src_sess *sess);
-
-#endif /* _SIPREC_BODY_H_ */
+#endif /* _SIPREC_UUID_H_ */

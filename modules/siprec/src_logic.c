@@ -158,12 +158,12 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	ci.local_contact.s = contact_builder(send_sock, &ci.local_contact.len);
 
-	if (srs_add_sdp_streams(msg, &sess->sdp, 0) < 0) {
+	if (srs_add_sdp_streams(msg, sess, &sess->participants[1]) < 0) {
 		LM_ERR("cannot add body!\n");
 		return -2;
 	}
 
-	if (srs_get_body(sess, &sess->sdp, &body) < 0) {
+	if (srs_build_body(sess, &body, SRS_BOTH) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		return -2;
 	}

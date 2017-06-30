@@ -216,6 +216,15 @@ static int srec_engage(struct sip_msg *msg, char *_set, char *_media)
 		return -3;
 	}
 
+	if (parse_from_header(msg) < 0) {
+		LM_ERR("cannot parse from header!\n");
+		return -2;
+	}
+
+	if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
+		LM_ERR("inexisting or invalid to header!\n");
+		return -2;
+	}
 	/*
 	 * TODO: check where it was called: request or reply: depending on that we
 	 * can use different logics for caller/callee;
@@ -232,15 +241,23 @@ static int srec_engage(struct sip_msg *msg, char *_set, char *_media)
 	}
 
 	/* check if the current dialog has a siprec session ongoing */
-	ss = src_get_session(dlg);
-	if (!ss && !(ss = src_create_session(dlg, sset, media))) {
+	if (!(ss = src_create_session(dlg, sset, media))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}
 	ret = -2;
 
-	if (srs_add_sdp_streams(msg, &ss->sdp, 1) < 0) {
-		LM_ERR("cannot add body!\n");
+	if (src_add_participant(ss, &get_from(msg)->uri) < 0) {
+		LM_ERR("cannot add caller participant!\n");
+		goto session_cleanup;
+	}
+	if (srs_add_sdp_streams(msg, ss, &ss->participants[0]) < 0) {
+		LM_ERR("cannot add SDP for caller!\n");
+		return -1;
+	}
+
+	if (src_add_participant(ss, &get_to(msg)->uri) < 0) {
+		LM_ERR("cannot add callee pariticipant!\n");
 		goto session_cleanup;
 	}
 

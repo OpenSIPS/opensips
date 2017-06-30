@@ -24,6 +24,7 @@
  */
 
 #include "src_sess.h"
+#include "srs_body.h"
 
 struct tm_binds srec_tm;
 struct dlg_binds srec_dlg;
@@ -45,7 +46,6 @@ struct src_sess *src_get_session(struct dlg_cell *dlg)
 struct src_sess *src_create_session(struct dlg_cell *dlg,
 		struct srs_set *set, str media)
 {
-	str val;
 	struct src_sess *ss = shm_malloc(sizeof *ss + media.len);
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
@@ -56,24 +56,69 @@ struct src_sess *src_create_session(struct dlg_cell *dlg,
 
 	memcpy(ss->media_ip.s, media.s, media.len);
 	ss->media_ip.len = media.len;
-
-	if (srs_init_sdp_body(&ss->sdp) < 0) {
-		LM_ERR("cannot initialize SDP body!\n");
-		shm_free(ss);
-		return NULL;
-	}
+	siprec_build_uuid(ss->uuid);
+	ss->participants_no = 0;
+	ss->ts = time(NULL);
 
 	//lock_init(&ss->lock);
 	ss->set = set;
 	ss->dlg = dlg; /* TODO: ref the dialog */
 
+	/* don't need this right now
 	val.len = sizeof *ss;
 	val.s = (char *)ss;
 	if (srec_dlg.store_dlg_value(dlg, &srec_dlg_name, &val) < 0) {
 		LM_ERR("cannot store siprec ctx in dialog!\n");
 		return NULL;
 	}
+	*/
 
 	return ss;
 }
 
+void src_free_participant(struct src_part *part)
+{
+	struct srs_sdp_stream *stream;
+	struct list_head *it, *tmp;
+
+	list_for_each_safe(it, tmp, &part->streams) {
+		stream = list_entry(it, struct srs_sdp_stream, list);
+		srs_free_stream(stream);
+	}
+	if (part->aor.s)
+		shm_free(part->aor.s);
+}
+
+void src_free_session(struct src_sess *sess)
+{
+	int p;
+
+	for (p = 0; p < sess->participants_no; p++)
+		src_free_participant(&sess->participants[p]);
+	shm_free(sess);
+}
+
+int src_add_participant(struct src_sess *sess, str *aor)
+{
+	struct src_part *part;
+	if (sess->participants_no >= SRC_MAX_PARTICIPANTS) {
+		LM_ERR("no more space for new participants (have %d)!\n",
+				sess->participants_no);
+		return -1;
+	}
+	part = &sess->participants[sess->participants_no];
+	INIT_LIST_HEAD(&part->streams);
+	siprec_build_uuid(part->uuid);
+
+	part->aor.s = shm_malloc(aor->len);
+	if (!part->aor.s) {
+		LM_ERR("out of shared memory!\n");
+		return -1;
+	}
+
+	part->aor.len = aor->len;
+	memcpy(part->aor.s, aor->s, aor->len);
+	sess->participants_no++;
+
+	return 1;
+}
