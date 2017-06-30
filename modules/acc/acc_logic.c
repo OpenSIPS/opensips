@@ -164,7 +164,7 @@ static int is_cdr_enabled=0;
 	do { \
 		if (was_dlg_cb_used(mask)) { \
 			if (!(mask&0xFF00000000000000)) { \
-				LM_BUG("More substitutions than additions in acc mask!\n"); \
+				LM_BUG("More subtractions than additions in acc mask!\n"); \
 				return; \
 			} \
 			mask = mask - (0x100000000000000); \
