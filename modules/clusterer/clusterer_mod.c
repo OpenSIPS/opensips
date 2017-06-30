@@ -573,8 +573,10 @@ static void destroy(void)
 	}
 
 	/* destroy lock */
-	if (cl_list_lock)
+	if (cl_list_lock) {
 		lock_destroy_rw(cl_list_lock);
+		cl_list_lock = NULL;
+	}
 }
 
 int load_clusterer(struct clusterer_binds *binds)

@@ -677,6 +677,10 @@ enum clusterer_send_ret cl_send_to(bin_packet_t *packet, int cluster_id, int nod
 	cluster_info_t *cl;
 	int check_call_cbs_event = 0;
 
+	if (!cl_list_lock) {
+		LM_ERR("cluster shutdown - cannot send new messages!\n");
+		return CLUSTERER_CURR_DISABLED;
+	}
 	lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
@@ -732,6 +736,10 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 	cluster_info_t *cl;
 	int check_call_cbs_event = 0;
 
+	if (!cl_list_lock) {
+		LM_ERR("cluster shutdown - cannot send new messages!\n");
+		return CLUSTERER_CURR_DISABLED;
+	}
 	lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
