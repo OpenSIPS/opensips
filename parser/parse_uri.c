@@ -1341,31 +1341,6 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			goto error_bug;
 	}
 	switch(uri->type){
-		case SIP_URI_T:
-			if ((uri->user_param_val.len == 5) &&
-				(strncasecmp(uri->user_param_val.s, "phone", 5) == 0)) {
-				uri->type = TEL_URI_T;
-				/* move params from user into uri->params */
-				p=q_memchr(uri->user.s, ';', uri->user.len);
-				if (p){
-					uri->params.s=p+1;
-					uri->params.len=uri->user.s+uri->user.len-uri->params.s;
-					uri->user.len=p-uri->user.s;
-				}
-			}
-			break;
-		case SIPS_URI_T:
-			if ((uri->user_param_val.len == 5) &&
-				(strncasecmp(uri->user_param_val.s, "phone", 5) == 0)) {
-				uri->type = TELS_URI_T;
-				p=q_memchr(uri->user.s, ';', uri->user.len);
-				if (p){
-					uri->params.s=p+1;
-					uri->params.len=uri->user.s+uri->user.len-uri->params.s;
-					uri->user.len=p-uri->user.s;
-				}
-			}
-			break;
 		case TEL_URI_T:
 		case TELS_URI_T:
 			/* fix tel uris, move the number in uri and empty the host */
@@ -1373,8 +1348,10 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->host.s="";
 			uri->host.len=0;
 			break;
+		case SIP_URI_T:
+		case SIPS_URI_T:
 		case URN_SERVICE_URI_T:
-			/* leave the actual service name in the URI domain part */
+			/* nothing to do for these URIs */
 			break;
 		case ERROR_URI_T:
 			LM_ERR("unexpected error (BUG?)\n");
