@@ -378,7 +378,7 @@ inline static int io_watch_add(	io_wait_h* h,
 
 
 	struct fd_map* e;
-	int already;
+	int already=-1;
 #ifdef HAVE_EPOLL
 	struct epoll_event ep_event;
 #endif
