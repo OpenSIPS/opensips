@@ -135,7 +135,8 @@ static void flush_sh(struct struct_hist *sh)
 				sh->actions[i].log);
 	}
 
-	sh->flush_offset += FLUSH_LIMIT;
+	sh->flush_offset += sh->len;
+	sh->len = 0;
 }
 
 static void sh_unref_unsafe(struct struct_hist *sh, struct struct_hist_list *list)
@@ -176,7 +177,6 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 		LM_INFO("TCP conn %p flush, %d actions follow\n", sh->obj, sh->len);
 		LM_INFO("=====================================\n");
 		flush_sh(sh);
-		sh->len = 0;
 	} else if (sh->len == sh->max_len) {
 		new = shm_realloc(sh->actions, sh->max_len * 2 * sizeof *sh->actions);
 		if (!new) {
