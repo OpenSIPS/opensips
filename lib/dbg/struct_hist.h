@@ -95,6 +95,8 @@ struct struct_hist {
 #define flushable(sh) (sh->len == FLUSH_LIMIT)
 
 struct struct_hist_list {
+	char *obj_name;
+
 	struct list_head objects;
 	int len;
 	int win_sz;
@@ -114,7 +116,7 @@ struct struct_hist_list {
  * WARNING: a history window_size = 0 (infinite) is essentially a memory leak,
  * use with caution!
  */
-struct struct_hist_list *shl_init(int window_size);
+struct struct_hist_list *shl_init(char *obj_name, int window_size);
 void shl_destroy(struct struct_hist_list *shl);
 
 struct struct_hist *sh_push(void *obj, struct struct_hist_list *list);

@@ -30,7 +30,7 @@
 static void sh_unref_unsafe(struct struct_hist *sh, struct struct_hist_list *list);
 static void sh_free(struct struct_hist *sh);
 
-struct struct_hist_list *shl_init(int window_size)
+struct struct_hist_list *shl_init(char *obj_name, int window_size)
 {
 	struct struct_hist_list *shl;
 
@@ -44,6 +44,7 @@ struct struct_hist_list *shl_init(int window_size)
 	INIT_LIST_HEAD(&shl->objects);
 	lock_init(&shl->wlock);
 	shl->win_sz = window_size;
+	shl->obj_name = obj_name;
 
 	return shl;
 }
@@ -153,7 +154,8 @@ static void sh_unref_unsafe(struct struct_hist *sh, struct struct_hist_list *lis
 	else {
 		lock_get(&sh->wlock);
 
-		LM_INFO("TCP conn %p ended, %d actions follow\n", sh->obj, sh->len);
+		LM_INFO("%s %p ended, %d actions follow\n", list->obj_name, sh->obj,
+		        sh->len);
 		LM_INFO("=====================================\n");
 		flush_sh(sh);
 
