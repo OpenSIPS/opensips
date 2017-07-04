@@ -173,6 +173,7 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 	if (!sh)
 		return -1;
 
+	va_start(ap, fmt);
 	lock_get(&sh->wlock);
 
 	if (flushable(sh)) {
@@ -182,6 +183,7 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 	} else if (sh->len == sh->max_len) {
 		new = shm_realloc(sh->actions, sh->max_len * 2 * sizeof *sh->actions);
 		if (!new) {
+			lock_release(&sh->wlock);
 			LM_ERR("oom\n");
 			return -1;
 		}
@@ -193,7 +195,6 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 
 	act = &sh->actions[sh->len];
 	sh->len++;
-	lock_release(&sh->wlock);
 
 	act->verb = verb;
 	act->t = get_uticks();
@@ -203,16 +204,19 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 	} else {
 		act->log = shm_malloc(MAX_SHLOG_SIZE);
 		if (!act->log) {
+			lock_release(&sh->wlock);
 			LM_ERR("oom\n");
 			return -1;
 		}
 	}
 
-	va_start(ap, fmt);
 	n = vsnprintf(act->log, MAX_SHLOG_SIZE, fmt, ap);
+	lock_release(&sh->wlock);
+
 	if (n < 0 || n >= MAX_SHLOG_SIZE) {
 		LM_ERR("formatting failed with n=%d, %s\n", n, strerror(errno));
 	}
+
 	va_end(ap);
 
 	return 0;
