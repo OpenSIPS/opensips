@@ -46,7 +46,14 @@
 #include "pua_callback.h"
 #include "event_list.h"
 
-int send_publish_int(ua_pres_t* presentity, publ_info_t* publ,
+/**
+ * !! IMPORTANT !!
+ *
+ * - MUST be called with lock grabbed on "hash_index"
+ * - This lock is _guaranteed_ to be released upon return
+ * - DO NOT rely on "presentity" anymore after calling this function
+ */
+int send_publish_int(ua_pres_t *presentity, publ_info_t* publ,
 		pua_event_t* ev, int hash_index);
 
 str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
@@ -347,27 +354,32 @@ done:
 		presentity->cb_param = NULL;
 	}
 	presentity->waiting_reply = 0;
-	while(presentity->pending_publ)
+
+	/* attempt to send out a single queued PUBLISH */
+	while (presentity->pending_publ)
 	{
 		publ_t* pending_publ = presentity->pending_publ;
 		publ_info_t* publ = construct_pending_publ(presentity);
+
+		/* if unable to construct the info, simply drop this PUBLISH */
 		if(publ == NULL)
 		{
 			LM_ERR("Failed to create publish record\n");
-			lock_release(&HashT->p_records[hash_index].lock);
 			presentity->pending_publ = pending_publ->next;
 			shm_free(pending_publ);
 			continue;
 		}
-		LM_DBG("Found pending publish\n");
-		presentity->pending_publ  = 0;
+
 		presentity->waiting_reply = 1;
+		presentity->pending_publ  = pending_publ->next;
+
 		send_publish_int(presentity, publ, get_event(presentity->event),
 				presentity->hash_index);
-		pkg_free(publ);
-		presentity->pending_publ = pending_publ->next;
+
 		shm_free(pending_publ);
-		break;
+		pkg_free(publ);
+
+		return;
 	}
 
 	lock_release(&HashT->p_records[hash_index].lock);
