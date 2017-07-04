@@ -487,7 +487,7 @@ send_it:
 	/* only here we will have all tracing data TLS + WS */
 	d = c->proto_data;
 
-	if ( d && d->dest && d->tprot ) {
+	if ( (c->flags&F_CONN_ACCEPTED)==0 && d && d->dest && d->tprot ) {
 		if ( d->message ) {
 			send_trace_message( d->message, t_dst);
 			d->message = NULL;
@@ -568,9 +568,9 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 		 * but the connection is closed with
 		 * EOF before reaching this code if the certificate is not
 		 * validated by the client */
-		if ( (WS_STATE(con) == WS_CON_HANDSHAKE_DONE ||
-					con->state == S_CONN_EOF ) &&
-								d && d->dest && d->tprot ) {
+		if ( con->flags&F_CONN_ACCEPTED
+		&& (WS_STATE(con)==WS_CON_HANDSHAKE_DONE || con->state==S_CONN_EOF)
+		&& d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
 				d->message = NULL;

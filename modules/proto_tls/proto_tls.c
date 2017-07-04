@@ -447,7 +447,11 @@ static int proto_tls_send(struct socket_info* send_sock,
 	}
 
 send_it:
-	if ( c->proto_flags & F_TLS_TRACE_READY ) {
+	/* if there is pending tracing data on a connection startet by us
+	 * (connected) -> flush it
+	 * As this is a write op, we look only for connected conns, not to conflict
+	 * with accepted conns (flushed on read op) */
+	if ( (c->flags&F_CONN_ACCEPTED)==0 && c->proto_flags & F_TLS_TRACE_READY ) {
 		data = c->proto_data;
 		/* send the message if set from tls_mgm */
 		if ( data->message ) {
@@ -514,12 +518,15 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	/* do this trick in order to trace whether if it's an error or not */
 	ret=tls_fix_read_conn(con);
 
-	if ( con->proto_flags & F_TLS_TRACE_READY ) {
+	/* if there is pending tracing data on an accepted connection, flush it
+	 * As this is a read op, we look only for accepted conns, not to conflict
+	 * with connected conns (flushed on write op) */
+	if ( con->flags&F_CONN_ACCEPTED && con->proto_flags & F_TLS_TRACE_READY ) {
 		data = con->proto_data;
 		/* send the message if set from tls_mgm */
 		if ( data->message ) {
-			tprot.send_message( data->message, t_dst, 0);
-			tprot.free_message( data->message );
+			send_trace_message( data->message, t_dst);
+			data->message = NULL;
 		}
 
 		/* don't allow future traces for this connection */
