@@ -27,6 +27,21 @@
 #include "../../locking.h"
 #include "../../pt.h"
 
+static inline const char *verb2str(enum struct_hist_verb verb)
+{
+	#define __SH_VERB_TO_STRING(STRING) #STRING,
+	static const char *sh_verb_strs[] = {
+		"SH_VERB_ZERO",
+		SH_ALL_VERBS(__SH_VERB_TO_STRING)
+		"SH_VERB_LAST",
+	};
+
+	if (verb <= SH_VERB_ZERO || verb >= SH_VERB_LAST)
+		return "!FOOBAR!";
+
+	return sh_verb_strs[verb];
+}
+
 static void sh_unref_unsafe(struct struct_hist *sh, struct struct_hist_list *list);
 static void sh_free(struct struct_hist *sh);
 

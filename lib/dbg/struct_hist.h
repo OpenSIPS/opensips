@@ -51,23 +51,19 @@
  * To be freely extended by any piece of OpenSIPS code which makes use of
  * struct history logging
  */
+#define SH_ALL_VERBS(VERB_FUN) \
+	VERB_FUN(TCP_SEND2CHILD) \
+	VERB_FUN(TCP_SEND2MAIN) \
+	VERB_FUN(TCP_REF) \
+	VERB_FUN(TCP_UNREF) \
+	VERB_FUN(TCP_DESTROY) \
+
+#define __SH_VERB_TO_ENUM(ENUM) ENUM,
 enum struct_hist_verb {
-	ZER0,
-
-	TCP_SEND2CHILD,
-	TCP_SEND2MAIN,
-
-	TCP_REF,
-	TCP_UNREF,
-	TCP_DESTROY,
+	SH_VERB_ZERO,
+	SH_ALL_VERBS(__SH_VERB_TO_ENUM)
+	SH_VERB_LAST
 };
-
-#define verb2str(v) ( \
-		v == TCP_SEND2CHILD ? "TCP_SEND2CHILD": \
-		v == TCP_SEND2MAIN ? "TCP_SEND2MAIN": \
-		v == TCP_REF ? "TCP_REF": \
-		v == TCP_UNREF ? "TCP_UNREF": \
-		v == TCP_DESTROY ? "TCP_DESTROY" : "!!FOOBAR!!")
 
 struct struct_hist_action {
 	enum struct_hist_verb verb;
