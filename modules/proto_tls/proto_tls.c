@@ -144,6 +144,7 @@ static int trace_filter_route_id = -1;
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
 static int proto_tls_conn_init(struct tcp_connection* c);
+static void proto_tls_conn_clean(struct tcp_connection* c);
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tls_init, 0, 0, 0, 0},
@@ -271,7 +272,7 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)tls_read_req;
 	pi->net.conn_init		= proto_tls_conn_init;
-	pi->net.conn_clean		= tls_conn_clean;
+	pi->net.conn_clean		= proto_tls_conn_clean;
 	pi->net.report			= tls_report;
 
 	return 0;
@@ -329,6 +330,20 @@ static int proto_tls_conn_init(struct tcp_connection* c)
 out:
 	return tls_conn_init(c, &tls_mgm_api);
 }
+
+
+static void proto_tls_conn_clean(struct tcp_connection* c)
+{
+	struct tls_data *data = (struct tls_data*)c->proto_data;
+
+	if (data) {
+		shm_free(data);
+		c->proto_data = NULL;
+	}
+
+	tls_conn_clean(c);
+}
+
 
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 																void *extra)
