@@ -25,7 +25,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  2.3.0
+Version:  2.3.1
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1706,7 +1706,7 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
-* Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
+* Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.1-1
 - Specification updated for opensips 2.3
 - New packages: event_routing, freeswitch, mid_registrar, sip_i, xml
 - Enabled packages: cachedb_mongodb, lua
