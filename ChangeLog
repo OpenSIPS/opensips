@@ -1,3 +1,370 @@
+=========================== Release 2.2.5 ==============================
+
+2017-07-05  Razvan Crainea  <razvan at opensips dot org>
+	* [caf4cb779] :
+
+	Bump version to 2.2.5
+
+
+2017-07-05  Razvan Crainea  <razvan at opensips dot org>
+	* [3a164717e] :
+
+	acc: specify that *extra_bye should be populated before matching dialog
+
+
+2017-07-05  Liviu Chircu  <liviu at opensips dot org>
+	* [d41274279] :
+
+	dialog: Update FAQ regarding issue #938
+	"The 2.2 dialog does not support simultaneous use of dialog and profile
+	replication"
+
+
+2017-07-05  Liviu Chircu  <liviu at opensips dot org>
+	* [72a8a4259] :
+
+	exec: Fix incorrect pclose() calls on standard I/O streams
+	Many thanks to Walter Doekes for detailing this issue
+
+	(also including some minor code improvements)
+	(cherry picked from commit 96ba9ed03d2223f09b6fd25061d229c2c7ee5eb4)
+
+
+2017-07-05  Razvan Crainea  <razvan at opensips dot org>
+	* [54a575276] :
+
+	acc: release memory allocated for loaded dialogs
+
+
+2017-07-04  Liviu Chircu  <liviu at opensips dot org>
+	* [8e65aa71b] :
+
+	pua: Fix several locking & memory access bugs
+	Several issues with publ_cback_func():
+	    * 1 x extra lock release upon breaking "send publish" loop
+	    * N x extra lock releases inside the loop, per each failed publish
+	    * invalid memory access on "presentity" ptr after send_publish_int()
+	(cherry picked from commit 9957ff2d9acc4a2686495b5e2ea43cdc3bb7e3ed)
+
+
+2017-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9cf756c73] :
+
+	Destroy the TCP conn even if the WS link has missing data.
+	Perform full conn destroy (in the TCP network layer) even if the WS link doesn't have (very unlikely) the proto-specific data attached.
+	(cherry picked from commit e08d54e6bc1a2550cd3ec6c7aec12f6a69b6377a)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [91c14ce67] :
+
+	Remove bogus auto conversion from SIP uri to TEL uri
+	For ancient reasons, a SIP URI with user=phone was automatically converted to a TEL URI. Such conversion, automatically done, is dangerous - there is nothing in the RFC3261 stating something like this. Even more, the conversion is not complete - besides moving the username parameters to URI parameters, the domain is not stripped and the TEL not added.
+	(cherry picked from commit 05ece794083f8328cbd5259cdb7b3aead8d9f943)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [eaafc9b77] :
+
+	cfg parser: Fix underflow with an empty mpath
+	(cherry picked from commit 9e07f3f3650607c3e0298182aa3bb08d377e8837)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [8c35fc4e2] :
+
+	Revert "Set proper UPDATED flag upon cloning."
+	This reverts commit 7723cd3f6d08d95c3a1d56801e2f234f8e521c23.
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [09a7533ed] :
+
+	TCP engine: Fix the TCP worker duplicate connection check
+	(cherry picked from commit 8845fd7950ec90fad7498b323745c86cac4070f6)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [ad06f0ffd] :
+
+	TCP engine: Fix misleading logs
+	(cherry picked from commit a7249f03d7a16221e21b8f57eb73540f0b8c4888)
+
+
+2017-07-03  Razvan Crainea  <razvan at opensips dot org>
+	* [2ae866fab] :
+
+	net/tcp: do not reset conn proc_no as a writer
+	when releasing a conn as a writer, do not reset the process owner of the
+	conn, otherwise a reader will have to re-take it back.
+	(cherry picked from commit d5fca4482ab1746351157ee0353474a24b084f60)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [9ede5894a] :
+
+	TCP engine: Fix a race condition related to con lifetime management
+	Connections which received a read event concurrently with their
+	expiration time could trigger an indefinitely long, CPU wasteful, rapid
+	succession of back-forth passing of the connection object between TCP Main
+	and a TCP worker process.
+
+	The fix involves adding a TCP connection lifetime update in the TCP worker
+	just after receiving the connection object from TCP Main (this is correct
+	- there is some pending data, the connection is non-idle), before the
+	expiration check is done.
+
+	Thanks to Bogdan for helping with troubleshooting
+	(cherry picked from commit 99181710c3f52b4ca97186623af0a7760191a276)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [7d30b9c23] :
+
+	TCP engine: Fix ref counting bug in async writes
+	TCP writes done by TCP workers were subject to an extra
+	dereferencing operation, potentially leading to memory corruption
+	due to SHM overwriting on freed tcp_connection structs.
+
+	This patch eliminates the extra dereferening operation, while also
+	taking care not to break the code for non-TCP worker writers, which
+	will now have their passed connections dereferenced by TCP main.
+	(cherry picked from commit 04e2d6e5f46b98c481b2e810ea0aa73c7be36b40)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [36db1302d] :
+
+	Set some default value for "already", to avoid bogus printing.
+	Reported by Ovidiu Sas
+	(cherry picked from commit e1497271f02966736de834c35bf5943d0fd9ef0b)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [24ea7e8db] :
+
+	Downgrade severity and extra loging on epoll self healing
+	(cherry picked from commit b60780c502ae3b7b9f54f2047da04cb95d915e5b)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d2c8ad75b] :
+
+	Triggered fds with no fd_map are reported and removed from epoll
+	If epoll triggers on a fd that has a cleared (removed) fd_map, remove it from epoll.
+	(cherry picked from commit ade9c93d807abb97ababa0033589b46f70c040da)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [24de2216d] :
+
+	Flag reset fixed; print flags as hexa
+	(cherry picked from commit 34d98d82dc7cff162782b57af8e8f04e6719109c)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0121d8907] :
+
+	Fix for prev+1 commit - fd=0 should be consider unset (as -1)
+	(cherry picked from commit 0dfbad3861e6fb066db3a4aea4e78f17ab0b27f5)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8dd3d5a95] :
+
+	Fix prev commit - data may be null for valid fd maps (like timer jobs)
+	(cherry picked from commit b90094c46bb8dadc3f6f13be6c394c6b7208190e)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [172a15fe4] :
+
+	Added extra code for sanity checks over reactor data
+	(cherry picked from commit ab26d05599074e8ef4a5ba7f68e60c739be7cbfc)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b276dca39] :
+
+	Added auto-healing for reactor.
+	If the epoll() fires a fd with a removed fd_map, better do not trigger the handler and remove the fd from epoll and fd_array
+	(cherry picked from commit 4929bcee6b69a809052d25f141a1849cd272a749)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7723cd3f6] :
+
+	Set proper UPDATED flag upon cloning.
+	IF the cloning is full (with the updatable part too), set the UPDATED flag too
+	(cherry picked from commit 0f9e65fef33d2846eaf0d3f17a469c321796cee5)
+
+
+2017-06-30  Razvan Crainea  <razvan at opensips dot org>
+	* [c49243600] :
+
+	clusterer: prevent crash when calling send_to after destroy
+
+
+2017-06-30  Razvan Crainea  <razvan at opensips dot org>
+	* [4ab78a7e6] :
+
+	acc: fix substitutions typo
+	(cherry picked from commit 8025792838edec6437f984556460efc206883c36)
+
+
+2017-06-29  Liviu Chircu  <liviu at opensips dot org>
+	* [f2d0e2084] :
+
+	exec: Improve docs for "time_to_kill"
+	Reported by Tito Cumpen
+	(cherry picked from commit 5c407c64cb8d68fbdbefb8779be9810a4760d66e)
+
+
+2017-06-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3893f836c] :
+
+	Related to prev fix - dialog table has no PK
+	(cherry picked from commit 805c0e2f3d4921e939edb142170278e7286934ee)
+
+
+2017-06-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ed4a53126] :
+
+	Fix granting permissions on the PK of location table.
+	As the PK column has a custom name "contact_id", it needs special handling when granting permissions upon PSQL DB creation.
+	(cherry picked from commit 0f36c9d0f7c31f30eaac6b16c11c71704022245b)
+
+
+2017-06-23  Liviu Chircu  <liviu at opensips dot org>
+	* [6bd0cf8c9] :
+
+	Fix a bug in is_ws()
+	Reported by Răzvan
+	(cherry picked from commit 951f7e10d1d79276f075bc9fd3cc16245b4a07d5)
+
+
+2017-06-22  rvlad-patrascu  <vladp at opensips dot org>
+	* [9179e95d9] :
+
+	tls_mgm: start even if there are invalid TLS domain definitions in DB
+
+
+2017-06-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0bef0f469] :
+
+	Fixed MI printing of tid (trace ID) URLs.
+	Discard on-stack buffer and use formated printing for IP + port.
+	Use MI_DUP_VALUE flag for adding the DB URL
+	(cherry picked from commit 7249c95f94c63e195e4e680b8bd6e73efa1421fd)
+
+
+2017-06-21  Liviu Chircu  <liviu at opensips dot org>
+	* [c980b440c] :
+
+	regex transformation: Fix a double free bug
+	Supplying a bad regular expression to {re.subst} would lead to
+	a double pkg_free().
+
+	Credits to Nick Altmann for reporting / helping with troubleshooting
+	(cherry picked from commit 00d44e8bb17b7391fa0c7a18137d880ba0dff4ee)
+
+
+2017-06-19  rvlad-patrascu  <vladp at opensips dot org>
+	* [12f5fa199] :
+
+	clusterer: start even if unable to load provisioning info from DB(invalid data)
+
+
+2017-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [911478b10] :
+
+	Fix leak in use_next_gw()
+	The leak occurs only when doing fallback between rules.
+
+
+2017-06-15  Liviu Chircu  <liviu at opensips dot org>
+	* [5d77718da] :
+
+	Allow negative values for "memdump" and "memlog"
+	They should behave just as "log_level" does.
+	(cherry picked from commit eb5c3d4ba5ef5c3ff9f17c093ad76c1067cc87ac)
+
+
+2017-06-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3c0df80d3] :
+
+	Fix memory leak in do_routing()
+
+
+2017-06-13  Liviu Chircu  <liviu at opensips dot org>
+	* [d9d5ffe04] :
+
+	Do not exit startup sequences with unusable HP_MALLOC params
+	(cherry picked from commit df29102e9d6c06ef73f112898dd5feac171985cf)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fa28637cf] :
+
+	Intercept ECONNRESET and  silently handle it as EOF
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ca4294336] :
+
+	Intercept ECONNRESET and silently handle it as EOF
+	(cherry picked from commit 27a36a940fba6b40b44951fe75d35082c27cb00e)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [985bb087a] :
+
+	Just code identation.
+	(cherry picked from commit 69e3576d884234271cbb9142d471dbcfbb95a34d)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f0a578147] :
+
+	Do not log EINTR and EAGAIN as errors during UDP write.
+	(cherry picked from commit cf8caeb8ed35f221b06621f6123d8d4dbb878753)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0ca314423] :
+
+	Intercept ECONNRESET and  silently handle it as EOF
+	(cherry picked from commit a90723d896dfdddf2e7f7b52fac7d7348ec740c0)
+
+
+2017-06-09  Liviu Chircu  <liviu at opensips dot org>
+	* [af07e2387] :
+
+	usrloc: Fix contact deletion bug with db_mode = 3 (DB_ONLY)
+	Fixes #1136
+
+
+2017-06-07  Razvan Crainea  <razvan at opensips dot org>
+	* [4727e88bd] :
+
+	ratelimit: clarify limits scope for timer_interval
+	Reported by Max Mühlbronner on mailing list
+	(cherry picked from commit 52b7ece216b55d5729340beaec50a90715fc51f7)
+
+
+2017-05-31  Razvan Crainea  <razvan at opensips dot org>
+	* [d62973b95] :
+
+	dialog: don't flush in db unnecessary flag values
+	(cherry picked from commit 9d0436eef00e65b1e0d660517228bdf9d5c9207c)
+
+
+2017-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [281aef555] :
+
+	Fixed examples in docs
+	(cherry picked from commit ae1c1f32bd71a21c638c0903bcbaeab53d07ec78)
+
 =========================== Release 2.2.4 ==============================
 
 2017-05-18  Razvan Crainea  <razvan at opensips dot org>
