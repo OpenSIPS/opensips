@@ -589,7 +589,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback, flags, 0)){
+				DLGCB_EXPIRED, acc_dlg_callback, flags, dlg_free_acc_mask)){
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
