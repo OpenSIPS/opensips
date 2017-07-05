@@ -517,6 +517,10 @@ modparam("acc", "multi_leg_info",
 		detailed description of the Multi Call-Legs accounting. This parameter
 		evaluates the AVPs set for BYE requests. It makes sense only when the
 		CDRs are automatically generated, using the dialog support.
+		<emphasis>Note:</emphasis> since the CDR is generated when the BYE
+		message matches the dialog, these variables need to be populated
+		before calling <emphasis>loose_route()</emphasis> or
+		<emphasis>match_dialog()</emphasis>.
 		</para>
 		<para>
 		If empty, the multi-leg support for BYE requests is disabled.
@@ -594,6 +598,10 @@ modparam("acc", "log_extra",
 		<para>
 		Extra values to be logged to logfile. Note that this parameter makes
 		sense only when the cdr option is used with do_accounting().
+		<emphasis>Note:</emphasis> since the CDR is generated when the BYE
+		message matches the dialog, these variables need to be populated
+		before calling <emphasis>loose_route()</emphasis> or
+		<emphasis>match_dialog()</emphasis>.
 		</para>
 		<para>
 		Default value is NULL.
@@ -670,6 +678,10 @@ modparam("acc", "aaa_extra",
 		Extra values to be logged via AAA when a BYE message is received -
 		AAA specific. Note that this parameter makes sense only when the
 		cdr option is used with do_accounting.
+		<emphasis>Note:</emphasis> since the CDR is generated when the BYE
+		message matches the dialog, these variables need to be populated
+		before calling <emphasis>loose_route()</emphasis> or
+		<emphasis>match_dialog()</emphasis>.
 		</para>
 		<para>
 		Default value is NULL.
@@ -858,7 +870,10 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 		<para>
 		Extra values to be logged into database when a BYE message is received
 		- DB specific. Note that this parameter makes sense only when the
-		cdr option is used with do_accounting.
+		cdr option is used with do_accounting. <emphasis>Note:</emphasis> since
+		the CDR is generated when the BYE message matches the dialog, these
+		variables need to be populated before calling
+		<emphasis>loose_route()</emphasis> or <emphasis>match_dialog()</emphasis>.
 		</para>
 		<para>
 		Default value is NULL.
@@ -940,7 +955,10 @@ modparam("acc", "evi_extra",
 		<para>
 			Extra values to be attached as event's parameters for BYE messages.
 			Note that this parameter makes sense only when the cdr option is
-			used with do_accounting.
+			used with do_accounting. <emphasis>Note:</emphasis> since
+			the CDR is generated when the BYE message matches the dialog, these
+			variables need to be populated before calling
+			<emphasis>loose_route()</emphasis> or <emphasis>match_dialog()</emphasis>.
 		</para>
 		<para>
 		Default value is NULL.
