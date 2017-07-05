@@ -6,6 +6,37 @@
 	<qandaset defaultlabel="number">
 	<qandaentry>
 		<question>
+			<para>Can I define both the
+				<emphasis role='bold'>replicate_dialogs_to</emphasis> and
+				<emphasis role='bold'>replicate_profiles_to</emphasis>
+				module parameters?
+			</para>
+		</question>
+		<answer>
+		<para>
+			<emphasis role='bold'>No!</emphasis> This is a known design issue of
+			the OpenSIPS 2.2 clusterer module. If you really need this feature
+			(see below), then you should upgrade to a 2.3+ OpenSIPS, where this
+			is taken care of.
+		</para>
+		</answer>
+	</qandaentry>
+	<qandaentry>
+		<question>
+			<para>Does dialog replication also update the profile values for the
+				receiving servers?
+			</para>
+		</question>
+		<answer>
+		<para>
+			<emphasis role='bold'>Yes!</emphasis> In other words: <emphasis>
+			"when replicating to the same cluster, dialog replication is
+			inclusive of profile replication"</emphasis>.
+		</para>
+		</answer>
+	</qandaentry>
+	<qandaentry>
+		<question>
 		<para>What happened with <quote>topology_hiding()</quote> 
 		function?</para>
 		</question>
