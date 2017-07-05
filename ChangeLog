@@ -1,3 +1,761 @@
+=========================== Release 2.3.1 ==============================
+
+2017-07-05  Razvan Crainea  <razvan at opensips dot org>
+	* [98454777c] :
+
+	Bump version to 2.3.1
+
+2017-07-05  Razvan Crainea  <razvan at opensips dot org>
+	* [92cf23ddd] :
+
+	Bump version to 2.3.1
+
+
+2017-07-05  Liviu Chircu  <liviu at opensips dot org>
+	* [bb2228bf6] :
+
+	exec: Fix incorrect pclose() calls on standard I/O streams
+	Many thanks to Walter Doekes for detailing this issue
+
+	(also including some minor code improvements)
+	(cherry picked from commit 96ba9ed03d2223f09b6fd25061d229c2c7ee5eb4)
+
+
+2017-07-04  Liviu Chircu  <liviu at opensips dot org>
+	* [e32975f50] :
+
+	pua: Fix several locking & memory access bugs
+	Several issues with publ_cback_func():
+	    * 1 x extra lock release upon breaking "send publish" loop
+	    * N x extra lock releases inside the loop, per each failed publish
+	    * invalid memory access on "presentity" ptr after send_publish_int()
+	(cherry picked from commit 9957ff2d9acc4a2686495b5e2ea43cdc3bb7e3ed)
+
+
+2017-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4ba179df5] :
+
+	Destroy the TCP conn even if the WS link has missing data.
+	Perform full conn destroy (in the TCP network layer) even if the WS link doesn't have (very unlikely) the proto-specific data attached.
+	(cherry picked from commit e08d54e6bc1a2550cd3ec6c7aec12f6a69b6377a)
+
+
+2017-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f8cf5aca9] :
+
+	Fixed memory leak on proto TLS tracing.
+	Free the tracing data (if any) when the TLS connection is destroyed
+	(cherry picked from commit e2f872598145bad7913215b48b929b05dff78311)
+
+
+2017-07-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f2666cbc3] :
+
+	Fix tracing race condition on SSL based connects
+	When performing a connects (required by a write op) for a SSL enabled connection, the returning handshake make lead to a concurent read on the same connection.
+	And the read op will try to dump the traced data aquired by the write (connect) op -> different processes, different memory chuncks
+	To avoid such probles, the "connect" tracing will be flushed on write (a connect is always trigger by a write need) and the "accept" tracing will be flushed only on read (an accept is always followed by a read).
+	(cherry picked from commit 059545765e34dc8016c278a3e4800a33929bd117)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3fd772cf2] :
+
+	Remove bogus auto conversion from SIP uri to TEL uri
+	For ancient reasons, a SIP URI with user=phone was automatically converted to a TEL URI. Such conversion, automatically done, is dangerous - there is nothing in the RFC3261 stating something like this. Even more, the conversion is not complete - besides moving the username parameters to URI parameters, the domain is not stripped and the TEL not added.
+	(cherry picked from commit 05ece794083f8328cbd5259cdb7b3aead8d9f943)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [e56f49d7a] :
+
+	cfg parser: Fix underflow with an empty mpath
+	(cherry picked from commit 9e07f3f3650607c3e0298182aa3bb08d377e8837)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [4f06fd6e5] :
+
+	TCP engine: Fix the TCP worker duplicate connection check
+	(cherry picked from commit 8845fd7950ec90fad7498b323745c86cac4070f6)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [6a5fd0e64] :
+
+	TCP engine: Fix misleading logs
+	(cherry picked from commit a7249f03d7a16221e21b8f57eb73540f0b8c4888)
+
+
+2017-07-03  Razvan Crainea  <razvan at opensips dot org>
+	* [b33c84392] :
+
+	net/tcp: do not reset conn proc_no as a writer
+	when releasing a conn as a writer, do not reset the process owner of the
+	conn, otherwise a reader will have to re-take it back.
+	(cherry picked from commit d5fca4482ab1746351157ee0353474a24b084f60)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [0fd713369] :
+
+	TCP engine: Fix a race condition related to con lifetime management
+	Connections which received a read event concurrently with their
+	expiration time could trigger an indefinitely long, CPU wasteful, rapid
+	succession of back-forth passing of the connection object between TCP Main
+	and a TCP worker process.
+
+	The fix involves adding a TCP connection lifetime update in the TCP worker
+	just after receiving the connection object from TCP Main (this is correct
+	- there is some pending data, the connection is non-idle), before the
+	expiration check is done.
+
+	Thanks to Bogdan for helping with troubleshooting
+	(cherry picked from commit 99181710c3f52b4ca97186623af0a7760191a276)
+
+
+2017-07-03  Liviu Chircu  <liviu at opensips dot org>
+	* [1bf414226] :
+
+	TCP engine: Fix ref counting bug in async writes
+	TCP writes done by TCP workers were subject to an extra
+	dereferencing operation, potentially leading to memory corruption
+	due to SHM overwriting on freed tcp_connection structs.
+
+	This patch eliminates the extra dereferening operation, while also
+	taking care not to break the code for non-TCP worker writers, which
+	will now have their passed connections dereferenced by TCP main.
+	(cherry picked from commit 04e2d6e5f46b98c481b2e810ea0aa73c7be36b40)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e1497271f] :
+
+	Set some default value for "already", to avoid bogus printing.
+	Reported by Ovidiu Sas
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e38e6daa1] :
+
+	Downgrade severity and extra loging on epoll self healing
+	(cherry picked from commit b60780c502ae3b7b9f54f2047da04cb95d915e5b)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d4f99f786] :
+
+	Triggered fds with no fd_map are reported and removed from epoll
+	If epoll triggers on a fd that has a cleared (removed) fd_map, remove it from epoll.
+	(cherry picked from commit ade9c93d807abb97ababa0033589b46f70c040da)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [84a53b8bd] :
+
+	Flag reset fixed; print flags as hexa
+	(cherry picked from commit 34d98d82dc7cff162782b57af8e8f04e6719109c)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2035f4049] :
+
+	Fix for prev+1 commit - fd=0 should be consider unset (as -1)
+	(cherry picked from commit 0dfbad3861e6fb066db3a4aea4e78f17ab0b27f5)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e05db1806] :
+
+	Fix prev commit - data may be null for valid fd maps (like timer jobs)
+	(cherry picked from commit b90094c46bb8dadc3f6f13be6c394c6b7208190e)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [382f567cf] :
+
+	Added extra code for sanity checks over reactor data
+	(cherry picked from commit ab26d05599074e8ef4a5ba7f68e60c739be7cbfc)
+
+
+2017-07-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b06f4fb4e] :
+
+	Set proper UPDATED flag upon cloning.
+	IF the cloning is full (with the updatable part too), set the UPDATED flag too
+	(cherry picked from commit 0f9e65fef33d2846eaf0d3f17a469c321796cee5)
+
+
+2017-06-30  Razvan Crainea  <razvan at opensips dot org>
+	* [5928e4606] :
+
+	clusterer: prevent crash when calling send_to after destroy
+
+
+2017-06-30  Razvan Crainea  <razvan at opensips dot org>
+	* [a5ce7722c] :
+
+	acc: fix substitutions typo
+	(cherry picked from commit 8025792838edec6437f984556460efc206883c36)
+
+
+2017-06-29  Liviu Chircu  <liviu at opensips dot org>
+	* [9abaec121] :
+
+	exec: Improve docs for "time_to_kill"
+	Reported by Tito Cumpen
+	(cherry picked from commit 5c407c64cb8d68fbdbefb8779be9810a4760d66e)
+
+
+2017-06-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [ceaccd46f] :
+
+	tls_mgm: fix warning: ‘port’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+	(cherry picked from commit 5cb01c85f3a8e2fed6004291b80f08c2b4617f4c)
+
+
+2017-06-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fe0ebcb45] :
+
+	Related to prev fix - dialog table has no PK
+	(cherry picked from commit 805c0e2f3d4921e939edb142170278e7286934ee)
+
+
+2017-06-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d8573c0a1] :
+
+	Fix granting permissions on the PK of location table.
+	As the PK column has a custom name "contact_id", it needs special handling when granting permissions upon PSQL DB creation.
+	(cherry picked from commit 0f36c9d0f7c31f30eaac6b16c11c71704022245b)
+
+
+2017-06-26  rvlad-patrascu  <vladp at opensips dot org>
+	* [05e6a0abf] :
+
+	tls_mgm: fix skipping invalid TLS domain definitions in the script
+	(cherry picked from commit 71ca5691c63ba48199326676aaf7cc7234f350d4)
+
+
+2017-06-23  Liviu Chircu  <liviu at opensips dot org>
+	* [0ba2702a2] :
+
+	Fix a bug in is_ws()
+	Reported by Răzvan
+	(cherry picked from commit 951f7e10d1d79276f075bc9fd3cc16245b4a07d5)
+
+
+2017-06-22  rvlad-patrascu  <vladp at opensips dot org>
+	* [7a861fa0f] :
+
+	tls_mgm: properly start up even if there are invalid TLS domain definitions in DB
+	(cherry picked from commit ad8fbaf99bcac4e82d71f96d957432d9d689e78d)
+
+
+2017-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [4dfaab9ca] :
+
+	Merge pull request #1147 from attermann/2.3
+	Mid-registrar skipping appending of proxy ip:port to AOR usrloc use_domain is enabled
+
+
+2017-06-21  Chad Attermann  <chad at broadmind dot com>
+	* [4fb1581a4] :
+
+	Skipping proxy ip:port append when use_domain enabled In aor-throttling mode, when usrloc use_domain is enabled the aor already includes the domain so there is no need to append the proxy ip:port to the aor in the Contact header that is relayed to the main registrar.
+
+
+2017-06-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [38f25f8c8] :
+
+	Do not replicate if not configured so
+	Test if replication was set before trying to replicate the change of carrier status
+	(cherry picked from commit 34a25b7337abaa8f6c7751ba00060f6b31acf220)
+
+
+2017-06-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f394ee511] :
+
+	Fixed MI printing of tid (trace ID) URLs.
+	Discard on-stack buffer and use formated printing for IP + port.
+	Use MI_DUP_VALUE flag for adding the DB URL
+	(cherry picked from commit 7249c95f94c63e195e4e680b8bd6e73efa1421fd)
+
+
+2017-06-21  Liviu Chircu  <liviu at opensips dot org>
+	* [a839da1da] :
+
+	regex transformation: Fix a double free bug
+	Supplying a bad regular expression to {re.subst} would lead to
+	a double pkg_free().
+
+	Credits to Nick Altmann for reporting / helping with troubleshooting
+	(cherry picked from commit 00d44e8bb17b7391fa0c7a18137d880ba0dff4ee)
+
+
+2017-06-21  Liviu Chircu  <liviu at opensips dot org>
+	* [a2a9b79c1] :
+
+	Merge pull request #1146 from attermann/2.3
+	Parameter "use_domain" not imported from usrloc in mid-registrar module
+
+
+2017-06-21  Chad Attermann  <chad at broadmind dot com>
+	* [a182a9445] :
+
+	Parameter "use_domain" not imported from usrloc Variable reg_use_domain is initialized to 0, but not imported from usrloc module as eluded in docs. Added import of "use_domain" parameter from usrloc module to initialize reg_use_domain (taken from registrar module).
+
+
+2017-06-20  Razvan Crainea  <razvan at opensips dot org>
+	* [59947fbfa] :
+
+	debian: add libbson-dev dependency
+	Reported by Nick Altman
+	(cherry picked from commit 6e796ff56262358a77a50c93a28573d904404cef)
+
+
+2017-06-19  rvlad-patrascu  <vladp at opensips dot org>
+	* [eb2b3e52c] :
+
+	clusterer: start only if DB info is invalid, shutdown for other errors when loading from DB
+	(cherry picked from commit 030bed9a88f17c8a63c2ec7dc7a136e747d7cdd7)
+
+
+2017-06-19  rvlad-patrascu  <vladp at opensips dot org>
+	* [c04670164] :
+
+	clusterer: start even if unable to load provisioning info from DB
+	(cherry picked from commit edf519b9373cef2bae5a1b74a47114fe6cf9a25f)
+
+
+2017-06-19  rvlad-patrascu  <vladp at opensips dot org>
+	* [0e5c526b8] :
+
+	clusterer: properly init node info structures(memset to 0)
+	(cherry picked from commit 24ad5dbaece07ee594e51ec46189ad23753d892c)
+
+
+2017-06-17  Liviu Chircu  <liviu at opensips dot org>
+	* [33d43262d] :
+
+	Merge pull request #1142 from attermann/2.3
+	mid_registrar: Required CRLF missing in 200 OK response
+
+
+2017-06-17  Chad Attermann  <chad at broadmind dot com>
+	* [78eaed807] :
+
+	Required CRLF missing in 200 OK response Addition of CRLF was mistakenly placed inside of check for Contact expires paramtere. Moved outside so that CRLF is always appended after last Contact header.
+
+
+2017-06-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2a7489bf9] :
+
+	Fix leak in use_next_gw()
+	The leak occurs only when doing fallback between rules.
+	(cherry picked from commit 911478b102576eb73e8c08989a0f6beb109821d9)
+
+
+2017-06-15  Liviu Chircu  <liviu at opensips dot org>
+	* [1d9b6cd6b] :
+
+	core statistics: Fix a bad logical condition
+	(regression from e90ac3e937de8)
+	(cherry picked from commit f7a7fabcc9e31333cf4ffc4cbd962fc4894b7f56)
+
+
+2017-06-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [df9c76f21] :
+
+	Fix memory leak in do_routing()
+	(cherry picked from commit 3c0df80d3b5ec8dfb5e54e78cd84153266fbf0f7)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9dbce2b13] :
+
+	Added auto-healing for reactor.
+	If the epoll() fires a fd with a removed fd_map, better do not trigger the handler and remove the fd from epoll and fd_array
+	(cherry picked from commit 4929bcee6b69a809052d25f141a1849cd272a749)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f238b1634] :
+
+	Intercept ECONNRESET and silently handle it as EOF
+	(cherry picked from commit 0a3bfed03d2d1166b1b4bbdf47de7c64fad5a5ea)
+
+
+2017-06-13  Liviu Chircu  <liviu at opensips dot org>
+	* [dcbfbf657] :
+
+	Do not exit startup sequences with unusable HP_MALLOC params
+	(cherry picked from commit df29102e9d6c06ef73f112898dd5feac171985cf)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e79a62c0e] :
+
+	Fix missing braken (introduced with previous commit)
+	(cherry picked from commit 4e7a14bd7f8948bbfa5cf0057fcfc48d7c80d2ba)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8b7d2e2dd] :
+
+	Intercept ECONNRESET and silently handle it as EOF
+	(cherry picked from commit 27a36a940fba6b40b44951fe75d35082c27cb00e)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3320576d7] :
+
+	Just code identation.
+	(cherry picked from commit 69e3576d884234271cbb9142d471dbcfbb95a34d)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1c86c9d82] :
+
+	Do not log EINTR and EAGAIN as errors during UDP write.
+	(cherry picked from commit cf8caeb8ed35f221b06621f6123d8d4dbb878753)
+
+
+2017-06-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c0d67c697] :
+
+	Intercept ECONNRESET and  silently handle it as EOF
+	(cherry picked from commit a90723d896dfdddf2e7f7b52fac7d7348ec740c0)
+
+
+2017-06-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5ecf882c6] :
+
+	Add proper listing for XML module.
+	Not being listed with full description make the menuconfig to ignore it.
+
+
+2017-06-07  Razvan Crainea  <razvan at opensips dot org>
+	* [8bd0e52e3] :
+
+	ratelimit: clarify limits scope for timer_interval
+	Reported by Max Mühlbronner on mailing list
+	(cherry picked from commit 52b7ece216b55d5729340beaec50a90715fc51f7)
+
+
+2017-06-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [db039aa57] :
+
+	Fixed mem leaks and bogus err logs during contact replication.
+	Reported by sekil on IRC.
+	(cherry picked from commit 0f9ccb576db97af2fcc01cf4a783045ac259dc3e)
+
+
+2017-06-06  Liviu Chircu  <liviu at opensips dot org>
+	* [d62a73a4d] :
+
+	cachedb_mongodb: Update documentation
+	(cherry picked from commit 99ebafdd7aa99ba23ee0248dfe0522c4fd2b2080)
+
+
+2017-06-06  Liviu Chircu  <liviu at opensips dot org>
+	* [f51ad4659] :
+
+	cachedb_mongodb: Remove unused module parameters
+	(cherry picked from commit 53d62036f8a92ed4305fd3c43c8a2a120a74f0cb)
+
+
+2017-06-06  Liviu Chircu  <liviu at opensips dot org>
+	* [9b26f05e4] :
+
+	cachedb_mongodb: Fix pkg-config errors with missing libraries
+	(cherry picked from commit a09dada8642a6792d3da5e741a35283ca032a92b)
+
+
+2017-05-31  Razvan Crainea  <razvan at opensips dot org>
+	* [cd9196373] :
+
+	dialog: don't flush in db unnecessary flag values
+	(cherry picked from commit 9d0436eef00e65b1e0d660517228bdf9d5c9207c)
+
+
+2017-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [818947dec] :
+
+	Fixed examples in docs
+	(cherry picked from commit ae1c1f32bd71a21c638c0903bcbaeab53d07ec78)
+
+
+2017-05-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9b757befb] :
+
+	Fix memory leak for HEPv12.
+	Do not add formated payload or extra correlation IDs in HEP version 1 or 2 packets as they are not used and it generate a mem leak.
+	(cherry picked from commit 619183358cfe28c70a4be36478e4f800a979c7ef)
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [eb0e47129] :
+
+	Proper HEP free upon failures
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1fea1d71f] :
+
+	Proper HEP free upon failures in sip_context_trace_impl()
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2b93469b1] :
+
+	Better reset the freed pointers.
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9bba5954c] :
+
+	Free the HEP message in case of send failure too
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [84c33d184] :
+
+	Proper free of HEP message if building fails
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [83c286573] :
+
+	Proper OOM handling and reporting in add_hep_payload()
+
+
+2017-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8e8988183] :
+
+	Make free_hep_message() safe to partially allocated HEP messages.
+
+
+2017-05-17  Razvan Crainea  <razvan at opensips dot org>
+	* [4fc4f6d86] :
+
+	dialog: update documentation for triggered event
+	Updated documentation for the event triggered when the state is changed
+	(cherry picked from commit 494e048cddf70db858401745a530e219eeb2908e)
+
+
+2017-05-17  Razvan Crainea  <razvan at opensips dot org>
+	* [c64e66aef] :
+
+	rtpproxy: allow multiple servers on same machine
+	Before this fix, rtpproxy was accepting a single connection from a
+	specific IP. This prevented multiple rtpproxy servers on the same
+	machine (or behind the same NAT) to send timeout notifications
+	simultaneously.
+	Using this fix each rtpproxy provisioned can have on connection to
+	opensips.
+	This commit also adds some extra debugging.
+
+	Reported and debugged by Flavio Goncalves.
+	Fix #865
+	(cherry picked from commit 070e7d4710983abf76a3d16bdc67371c6c4941ce)
+
+
+2017-05-16  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [7c5947c3e] :
+
+	[acc extra] fix leg index when doing CDRs
+	(cherry picked from commit 8ebf592156f5a915f2bdd3241163705921f71b29)
+
+
+2017-05-16  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [540c726c0] :
+
+	[acc] fix adding extra when doing CDRs
+	(cherry picked from commit 789b9b0632dab63d42be8deff8501b70001c7074)
+
+
+2017-05-16  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [352fb5280] :
+
+	[acc extra] fix overwriting right-operand value when setting acc extra/leg
+	(cherry picked from commit 4f7f44ae8b38b345a7a29a177873912d6857569d)
+
+
+2017-05-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [43764b66a] :
+
+	Fix free space calculation.
+	Improper computing of the available buffer space lead to false errors in writing down the dialog HASH and ID (only when using the D flag - dialog ID in contact username)
+
+
+2017-05-12  Razvan Crainea  <razvan at opensips dot org>
+	* [d22f7636b] :
+
+	cgrates: fix error detection for different libjson version
+	This is a rework on interpreting the error reports in the cgrates
+	replies.
+
+	Reported by DigiDaz
+	Fixes #1122
+	(cherry picked from commit 4bb3f1ffaf132f46f6641be9ba6142fbf5f2ee94)
+
+
+2017-05-12  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [ca046d566] :
+
+	[acc] don't start if extra values defined but no aaa/db url defined
+	(cherry picked from commit d86047abd2659562c0e0c4c6fb70e7b6367953ea)
+
+
+2017-05-12  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [42c682034] :
+
+	[acc] null terminate leg/extra values when storing them
+	* problems appeared when the name of the AVP was given to radius
+	backend which expected null terminated strings
+	(cherry picked from commit 3a4fd0b81122adf3e0926ab7705e423e87f80e40)
+
+
+2017-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [af3667dbd] :
+
+	Proper fix for PostgreSQL login
+	Submitted by @volga629
+	(cherry picked from commit abd1e655f9816b44590d0f73dd309b30650b0b5e)
+
+
+2017-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [7f8d65e14] :
+
+	str2ip(): Do not reject IPs with leading '0' byte
+	This is useful in some code areas (e.g. allowing 0.0.0.0/0 "catch-all"
+	networks in the permissions module)
+	(cherry picked from commit c75a7ddcd190997e84e6aa1d54da37993135dc1d)
+
+
+2017-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [bed86ea7e] :
+
+	dialog: Fix possible crash when disabling "accept_replicated_profiles"
+	Avoid processing received replicated profiles when "accept_replicated_profiles"
+	is disabled. In this case, the profile handling code will be optimized and will
+	break if attempting to run replicated profiles through it.
+	(cherry picked from commit 69b14b0aef63e49236663390c4293374d406b12d)
+
+
+2017-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [1f36f9535] :
+
+	dialog: Fix possible crash in "profile_get_values" MI command
+	(cherry picked from commit 2d474f003bc5f8a3e00c303fb0bf91bc31b2eb1a)
+
+
+2017-05-11  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [058120932] :
+
+	[acc] allow multiple rows extra/leg fields definition
+	(cherry picked from commit 777bf95b3811895200f46b02126689bee55b23e2)
+
+
+2017-05-11  Razvan Crainea  <razvan at opensips dot org>
+	* [65ba630d2] :
+
+	fix $source_uri pvar when using IPv6
+	This fix encloses the IPv6 address in square brackets in the resulted
+	URI
+
+	Reported by Ankur Gupta on mailing list
+	(cherry picked from commit 9798924ba8b24d3829e9ef536ef8f1542056d34d)
+
+
+2017-05-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [97cbdf6e4] :
+
+	Fix doc formating and improve some description
+	(cherry picked from commit aa2f0f5f2bd304e3f4923aca358bdacc70065e15)
+
+
+2017-05-10  Razvan Crainea  <razvan at opensips dot org>
+	* [09e259f59] :
+
+	usrloc: fix event trigger when no socket is used
+	Without this fix, opensips crashes when trying to add a contact from MI
+	or when loading a user from DB without a socket or with an unknown
+	socket.
+
+	Reported by Cindy Leung on mailing list
+	(cherry picked from commit a8294457a9bfefbdbb6786e8a40e0acab16560f7)
+
+
+2017-05-10  Razvan Crainea  <razvan at opensips dot org>
+	* [02d312d45] :
+
+	tls_mgm: fix uninitialized variable
+	(cherry picked from commit b6d7a9e2748be7482de4ab6af333b54bdec9c233)
+
+
+2017-04-28  rvlad-patrascu  <vladp at opensips dot org>
+	* [c5928a643] :
+
+	tls_mgm: db_schema: same default values for verify_cert and require_cert when taken from DB as from script
+	(cherry picked from commit 24d48c51812e46b04590ef7ac7ed70e881930af0)
+
+
+2017-04-28  rvlad-patrascu  <vladp at opensips dot org>
+	* [a57add88c] :
+
+	tls_mgm: some doc fixes and improvements
+	* fix client domain AVP usage example
+	* document default TLS settings for any domain when not set
+	* fix some default values for module parameters
+	(cherry picked from commit cc50c0912e1596d2d7fd0e127e62963e15e18798)
+
+
+2017-04-28  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [6ba33b589] :
+
+	[aaa_radius] fix Makefile if pkg-config doesn't find the lib
+	(cherry picked from commit c4471299f6dc9b2315453191a6f3c72cfad6f89c)
+
+
+2017-04-27  Razvan Crainea  <razvan at opensips dot org>
+	* [e8b609071] :
+
+	tm: fix uninitialized variable to make travis happy
+	(cherry picked from commit b9fba7c1e228a31f765d573dec903a32140e45e5)
+
+
+2017-04-27  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [8ced9b8af] :
+
+	[proto_hep] fix handling tcp requests coming in multiple chunks
+		This commit fixes 2 bugs:
+		1) fixes not reading second part of a single TCP request
+	because of bad parsed pointer update;
+		2) fixes major bug that was causing packets to be processed
+	infinite times by hep callback when one message + some part of a
+	second message came in a chunk and in the second chunk it was the
+	second part of the second message; the tcp request structure was
+	not updated(complete was not set to 0 after first message was
+	processed) causing the second message to be processed an infinte amount
+	of times into the database;
+
+
+2017-04-27  Razvan Crainea  <razvan at opensips dot org>
+	* [f5c5d903f] :
+
+	acc: fix uninitialized variable
+	(cherry picked from commit 6c4b62dfe5b90f56c347e4a67d40895beeeab963)
+
+
+2017-04-27  Liviu Chircu  <liviu at opensips dot org>
+	* [9268a7eb6] :
+
+	mid_registrar: Fix insertion issues in mirror mode
+	Reported by @volga629
+	Fixes #1094
+	(cherry picked from commit 01c9ae2f350394bb28e59f34863ef7868ab0d748)
+
 =========================== Release 2.3.0 ==============================
 
 2017-04-26  Razvan Crainea  <razvan at opensips dot org>
