@@ -260,7 +260,16 @@ int del_hb_evs(fs_evs *evs, str *tag)
 {
 	fs_mod_ref *mref;
 
-	lock_start_write(box_lock);
+	/**
+	 * This prevents a series of deadlocks on shutdown, since the FS connection
+	 * manager process is often terminated (SIGTERM) on a typical OpenSIPS
+	 * restart along with any locks it has acquired.
+	 *
+	 * If the "main" process gets here, then he's the only one left anyway
+	 */
+	if (!is_main)
+		lock_start_write(box_lock);
+
 	mref = get_fs_mod_ref(evs, tag);
 	if (!mref) {
 		LM_ERR("mod ref %.*s does not exist in evs %s:%d\n", tag->len, tag->s,
@@ -273,11 +282,21 @@ int del_hb_evs(fs_evs *evs, str *tag)
 
 	evs->ref--;
 
-	lock_stop_write(box_lock);
+	/**
+	 * We cannot immediately free the event socket, as the fd might be polled
+	 * by the FreeSWITCH worker process. The ref == 0 check is done there
+	 */
+
+	if (!is_main)
+		lock_stop_write(box_lock);
+
 	return 0;
 
 out_err:
-	lock_stop_write(box_lock);
+
+	if (!is_main)
+		lock_stop_write(box_lock);
+
 	return -1;
 }
 
