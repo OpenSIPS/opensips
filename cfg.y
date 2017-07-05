@@ -287,7 +287,7 @@ static struct multi_str *tmp_mod;
 %token DSTPORT
 %token PROTO
 %token AF
-%token MYSELF
+%token IS_MYSELF
 %token MSGLEN
 %token NULLV
 %token CACHE_STORE
@@ -1520,17 +1520,12 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 		| script_var intop snumber {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
 			}
-		| script_var equalop MYSELF	{
-				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, MYSELF_ST, 0);
-			}
 		| script_var equalop NULLV	{
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, NULLV_ST, 0);
 			}
 		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
 				 				}
-		| uri_type equalop MYSELF	{ $$=mk_elem($2, $1, 0, MYSELF_ST, 0);
-								}
-		| uri_type strop error { $$=0; yyerror("string or MYSELF expected"); }
+		| uri_type strop error { $$=0; yyerror("string expected"); }
 		| uri_type error	{ $$=0; yyerror("invalid operator,"
 									" == , != or =~ expected");
 					}
@@ -1572,8 +1567,6 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 												$3);
 									}
 								}
-		| SRCIP equalop MYSELF  { $$=mk_elem($2, SRCIP_O, 0, MYSELF_ST, 0);
-								}
 		| SRCIP strop error { $$=0; yyerror( "ip address or hostname"
 						 "expected" ); }
 		| SRCIP error  { $$=0;
@@ -1592,23 +1585,10 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 												$3);
 									}
 								}
-		| DSTIP equalop MYSELF  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
-								}
 		| DSTIP strop error { $$=0; yyerror( "ip address or hostname"
 						 			"expected" ); }
 		| DSTIP error { $$=0;
 						yyerror("invalid operator, ==, != or =~ expected");}
-		| MYSELF equalop uri_type	{ $$=mk_elem($2, $3, 0, MYSELF_ST, 0);
-								}
-		| MYSELF equalop SRCIP  { $$=mk_elem($2, SRCIP_O, 0, MYSELF_ST, 0);
-								}
-		| MYSELF equalop DSTIP  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
-								}
-		| MYSELF equalop error {	$$=0;
-									yyerror(" URI, SRCIP or DSTIP expected"); }
-		| MYSELF error	{ $$=0;
-							yyerror ("invalid operator, == or != expected");
-						}
 	;
 
 ipnet:	ip SLASH ip	{ $$=mk_net($1, $3); }
@@ -2744,6 +2724,15 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LAUNCH_TOKEN LPAREN async_func RPAREN {
 				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
 						$3, (void*)(long)-1);
+				}
+		| IS_MYSELF LPAREN STRING RPAREN {
+				mk_action2($$, IS_MYSELF_T, STR_ST, 0, $3, 0);
+				}
+		| IS_MYSELF LPAREN STRING COMMA NUMBER RPAREN {
+				mk_action2($$, IS_MYSELF_T, STR_ST, NUMBER_ST, $3, (void *)(long)$5);
+				}
+		| IS_MYSELF LPAREN STRING COMMA script_var RPAREN {
+				mk_action2($$, IS_MYSELF_T, STR_ST, SCRIPTVAR_ST, $3, $5);
 				}
 	;
 

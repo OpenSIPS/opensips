@@ -2052,6 +2052,55 @@ next_avp:
 			}
 
 			break;
+		case IS_MYSELF_T:
+			script_trace("core", "is_myself", msg, a->file, a->line);
+
+			if ((a->elem[0].type != STR_ST)) {
+				LM_ALERT("BUG in is_myself() - first argument not of"
+						" type string [%d]\n", a->elem[0].type );
+				ret = E_BUG;
+				break;
+			}
+
+			/* parse the host argument */
+			name_s.s = NULL; name_s.len = 0;
+			pve = (pv_elem_t *)a->elem[0].u.data;
+			if (pv_printf_s(msg, pve, &name_s) || name_s.len == 0 || !name_s.s ) {
+				LM_WARN("cannot get string for value\n");
+				ret = E_UNSPEC;
+				break;
+			}
+
+			/* get the port */
+			if (a->elem[1].type == SCRIPTVAR_ST) {
+				spec = (pv_spec_t*)a->elem[1].u.data;
+				memset(&val, 0, sizeof(pv_value_t));
+				if (pv_get_spec_value(msg, spec, &val) < 0) {
+					LM_DBG("Failed to get scriptvar value while executing is_myself\n");
+					ret = E_UNSPEC;
+					break;
+				}
+				if (val.flags & PV_VAL_INT)
+					port = val.ri;
+				else if (val.flags & PV_VAL_STR) {
+					if (str2int(&val.rs, (unsigned int*)&port) < 0) {
+						LM_WARN("Wrong value for is_myself 'port', not an integer [%.*s]\n",
+								val.rs.len, val.rs.s);
+						port = 0;
+					}
+				} else {
+					LM_ERR("Wrong value for is_myself 'port'\n");
+					ret = E_BUG;
+					break;
+				}
+
+			} else if (a->elem[1].type == NUMBER_ST) {
+				port = (int)a->elem[1].u.number;
+			} else	/* port not specified, ignore port number */
+				port = 0;
+
+			ret = check_self(&name_s, port, 0) ? 1 : -1;
+			break;
 		default:
 			LM_ALERT("BUG - unknown type %d\n", a->type);
 			goto error;

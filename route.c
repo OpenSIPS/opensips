@@ -869,6 +869,21 @@ static int fix_actions(struct action* a)
 					ret=E_BUG;
 					goto error;
 				}
+				break;
+			case IS_MYSELF_T:
+				s.s = (char*)t->elem[0].u.data;
+				s.len = strlen(s.s);
+				if(s.len == 0) {
+					LM_ERR("param 1 is empty string!\n");
+					return E_CFG;
+				}
+
+				if(pv_parse_format(&s ,&model) || model == NULL) {
+						LM_ERR("wrong format [%s] for value param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+				}
+				t->elem[0].u.data = (void*)model;
 
 		}
 	}
@@ -1072,7 +1087,6 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 	struct hostent* he;
 	char ** h;
 	int ret;
-	str tmp;
 
 	ret=-1;
 	switch(opd->type){
@@ -1138,11 +1152,6 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 				default:
 					goto error_op;
 			}
-			break;
-		case MYSELF_ST: /* check if it's one of our addresses*/
-			tmp.s=ip_addr2a(ip);
-			tmp.len=strlen(tmp.s);
-			ret=check_self_op(op, &tmp, 0);
 			break;
 		default:
 			LM_CRIT("invalid type for src_ip or dst_ip (%d)\n", opd->type);
@@ -1361,8 +1370,6 @@ static inline const char *expr_type_2_string(int expr_type)
 			return "FUNCTION";
 		case MODFIXUP_ST:
 			return "MOD_FIXUP";
-		case MYSELF_ST:
-			return "MYSELF";
 		case STR_ST:
 			return "STR";
 		case SOCKID_ST:
@@ -1521,8 +1528,6 @@ error:
  */
 static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
-
-	struct sip_uri uri;
 	int ret;
 /*	int retl;
 	int retr; */
@@ -1546,45 +1551,19 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 						&e->right);
 				break;
 		case URI_O:
-				if(msg->new_uri.s){
-					if (e->right.type==MYSELF_ST){
-						if (parse_sip_msg_uri(msg)<0) ret=-1;
-						else	ret=check_self_op(e->op, &msg->parsed_uri.host,
-									msg->parsed_uri.port_no?
-									msg->parsed_uri.port_no:SIP_PORT);
-					}else{
-						ret=comp_strval(msg, e->op, &msg->new_uri, &e->right);
-					}
-				}else{
-					if (e->right.type==MYSELF_ST){
-						if (parse_sip_msg_uri(msg)<0) ret=-1;
-						else	ret=check_self_op(e->op, &msg->parsed_uri.host,
-									msg->parsed_uri.port_no?
-									msg->parsed_uri.port_no:SIP_PORT);
-					}else{
-						ret=comp_strval(msg, e->op,
-								&msg->first_line.u.request.uri,
-								&e->right);
-					}
-				}
+				if (msg->new_uri.s)
+					ret = comp_strval(msg, e->op, &msg->new_uri, &e->right);
+				else
+					ret = comp_strval(msg, e->op, &msg->first_line.u.request.uri,
+										&e->right);
 				break;
 		case FROM_URI_O:
 				if (parse_from_header(msg)<0){
 					LM_ERR("bad or missing From: header\n");
 					goto error;
 				}
-				if (e->right.type==MYSELF_ST){
-					if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len,
-									&uri) < 0){
-						LM_ERR("bad uri in From:\n");
-						goto error;
-					}
-					ret=check_self_op(e->op, &uri.host,
-										uri.port_no?uri.port_no:SIP_PORT);
-				}else{
-					ret=comp_strval(msg, e->op, &get_from(msg)->uri,
-							&e->right);
-				}
+				ret = comp_strval(msg, e->op, &get_from(msg)->uri,
+									&e->right);
 				break;
 		case TO_URI_O:
 				if ((msg->to==0) && ((parse_headers(msg, HDR_TO_F, 0)==-1) ||
@@ -1592,19 +1571,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					LM_ERR("bad or missing To: header\n");
 					goto error;
 				}
-				/* to content is parsed automatically */
-				if (e->right.type==MYSELF_ST){
-					if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len,
-									&uri) < 0){
-						LM_ERR("bad uri in To:\n");
-						goto error;
-					}
-					ret=check_self_op(e->op, &uri.host,
-										uri.port_no?uri.port_no:SIP_PORT);
-				}else{
-					ret=comp_strval(msg, e->op, &get_to(msg)->uri,
-										&e->right);
-				}
+				ret = comp_strval(msg, e->op, &get_to(msg)->uri, &e->right);
+
 				break;
 		case SRCIP_O:
 				ret=comp_ip(msg, e->op, &msg->rcv.src_ip, &e->right);

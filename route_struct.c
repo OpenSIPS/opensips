@@ -277,9 +277,6 @@ void print_expr(struct expr* exp)
 			case NUMBER_ST:
 					LM_GEN1(L_DBG, "%d",exp->right.v.n);
 					break;
-			case MYSELF_ST:
-					LM_GEN1(L_DBG, "_myself_");
-					break;
 			case SCRIPTVAR_ST:
 					LM_GEN1(L_DBG, "scriptvar[%d]", exp->right.v.spec->type);
 					break;

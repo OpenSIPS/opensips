@@ -214,6 +214,7 @@ SCRIPT_TRACE    "script_trace"
 SYNC_TOKEN      "sync"
 ASYNC_TOKEN     "async"
 LAUNCH_TOKEN    "launch"
+IS_MYSELF		"is_myself"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -237,7 +238,6 @@ DSTIP	dst_ip
 DSTPORT	dst_port
 PROTO	proto
 AF		af
-MYSELF	myself
 MSGLEN			"msg:len"
 
 /* operators */
@@ -537,6 +537,9 @@ IMPORTFILE      "import_file"
 									return ASYNC_TOKEN;}
 <INITIAL>{LAUNCH_TOKEN}		{ count(); yylval.strval=yytext;
 									return LAUNCH_TOKEN;}
+<INITIAL>{IS_MYSELF}		{ count(); yylval.strval=yytext;
+									return IS_MYSELF;}
+
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
@@ -549,7 +552,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{DSTPORT}	{ count(); yylval.strval=yytext; return DSTPORT; }
 <INITIAL>{PROTO}	{ count(); yylval.strval=yytext; return PROTO; }
 <INITIAL>{AF}	{ count(); yylval.strval=yytext; return AF; }
-<INITIAL>{MYSELF}	{ count(); yylval.strval=yytext; return MYSELF; }
 
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
