@@ -100,6 +100,8 @@ struct struct_hist *sh_push(void *obj, struct struct_hist_list *list)
 	memset(sh->actions, 0, ACTIONS_SIZE * sizeof *sh->actions);
 
 	sh->obj = obj;
+	sh->obj_name = list->obj_name;
+	sh->created = get_uticks();
 	sh->ref = 2; /* one for "list", one for "return sh;" */
 	sh->max_len = ACTIONS_SIZE;
 	lock_init(&sh->wlock);
@@ -144,11 +146,14 @@ static void flush_sh(struct struct_hist *sh)
 	int i;
 
 	for (i = 0; i < sh->len; i++) {
-		LM_INFO("    %5d. | %-15s | %-12lld | %-5d | %s |\n", i + 1 + sh->flush_offset,
+		LM_INFO("%5d. %p-%lld | %-15s | %-12lld | %-5d | %s |\n",
+		        i + 1 + sh->flush_offset,
+				sh->obj,
+				sh->created,
 		        verb2str(sh->actions[i].verb),
-				sh->actions[i].t,
-				sh->actions[i].pid,
-				sh->actions[i].log);
+		        sh->actions[i].t,
+		        sh->actions[i].pid,
+		        sh->actions[i].log);
 	}
 
 	sh->flush_offset += sh->len;
@@ -158,25 +163,21 @@ static void flush_sh(struct struct_hist *sh)
 static void sh_unref_unsafe(struct struct_hist *sh, struct struct_hist_list *list)
 {
 	sh->ref--;
-	if (sh->ref == 0) {
-		if (!list_empty(&sh->list)) {
-			list_del(&sh->list);
-		}
-		sh_free(sh);
-	}
+	if (sh->ref != 0)
+		return;
 #ifdef FULL_LOGGING
+	lock_get(&sh->wlock);
 
-	else {
-		lock_get(&sh->wlock);
+	LM_INFO("%s %p free, %d actions follow\n", sh->obj_name, sh->obj, sh->len);
+	LM_INFO("=====================================\n");
+	flush_sh(sh);
 
-		LM_INFO("%s %p ended, %d actions follow\n", list->obj_name, sh->obj,
-		        sh->len);
-		LM_INFO("=====================================\n");
-		flush_sh(sh);
-
-		lock_release(&sh->wlock);
-	}
+	lock_release(&sh->wlock);
 #endif
+	if (!list_empty(&sh->list)) {
+		list_del(&sh->list);
+	}
+	sh_free(sh);
 }
 
 int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
@@ -192,7 +193,7 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 	lock_get(&sh->wlock);
 
 	if (flushable(sh)) {
-		LM_INFO("TCP conn %p flush, %d actions follow\n", sh->obj, sh->len);
+		LM_INFO("%s %p flush, %d actions follow\n", sh->obj_name, sh->obj, sh->len);
 		LM_INFO("=====================================\n");
 		flush_sh(sh);
 	} else if (sh->len == sh->max_len) {

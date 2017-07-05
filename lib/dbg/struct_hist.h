@@ -75,6 +75,9 @@ struct struct_hist_action {
 #define ACTIONS_SIZE 5
 struct struct_hist {
 	void *obj;
+	char *obj_name;
+	utime_t created;
+
 	int ref;
 
 	struct struct_hist_action *actions;
