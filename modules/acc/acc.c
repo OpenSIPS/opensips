@@ -264,18 +264,17 @@ void acc_log_init(void)
 	SET_LOG_ATTR(n,CREATED);
 }
 
-int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg,
+														struct timeval *end)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
 	char *p;
 	int nr_vals, i, j, ret, res = -1, n;
 	time_t created;
-	struct timeval start_time,end;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s;
 	short nr_legs;
-
-	gettimeofday(&end,NULL);
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 
@@ -368,8 +367,8 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		"%.*screated=%lu;call_start_time=%lu;duration=%lu;ms_duration=%lu;setuptime=%lu%s",
 		acc_env.text.len, acc_env.text.s,(unsigned long)created,
 		(unsigned long)start_time.tv_sec,
-		(unsigned long)(end.tv_sec-start_time.tv_sec),
-		(unsigned long)((end.tv_sec-start_time.tv_sec)*1000+(end.tv_usec-start_time.tv_usec)%1000),
+		(unsigned long)(end->tv_sec-start_time.tv_sec),
+		(unsigned long)((end->tv_sec-start_time.tv_sec)*1000+(end->tv_usec-start_time.tv_usec)%1000),
 		(unsigned long)(start_time.tv_sec - created), log_msg);
 
 	res = 1;
@@ -668,12 +667,13 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	return 1;
 }
 
-int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg,
+														struct timeval *end)
 {
 	int total, nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
 	int remaining_bye_vals = 0;
 	time_t created;
-	struct timeval start_time,end;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s, table;
 	short nr_legs;
 	static db_ps_t my_ps = NULL;
@@ -685,7 +685,6 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	}
 
 	core_s.s = extra_s.s = leg_s.s = 0;
-	gettimeofday(&end,NULL);
 
 	ret = prebuild_core_arr(dlg, &core_s, &start_time);
 	if (ret < 0) {
@@ -729,9 +728,9 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	VAL_TIME(db_vals_cdrs+ACC_CORE_LEN) = start_time.tv_sec;
 	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+1) = start_time.tv_sec - created;
 	VAL_TIME(db_vals_cdrs+ret+nr_vals+nr_bye_vals+2) = created;
-	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+3) = end.tv_sec - start_time.tv_sec;
+	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+3) = end->tv_sec - start_time.tv_sec;
 	VAL_INT(db_vals_cdrs+ret+nr_vals+nr_bye_vals+4) =
-		(end.tv_sec-start_time.tv_sec)*1000+(end.tv_usec-start_time.tv_usec)%1000;
+		(end->tv_sec-start_time.tv_sec)*1000+(end->tv_usec-start_time.tv_usec)%1000;
 
 	total = ret + 5;
 	acc_dbf.use_table(db_handle, &table);
@@ -982,18 +981,18 @@ error:
 	return -1;
 }
 
-int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg,
+														struct timeval *end)
 {
 	int nr_vals, i, j, ret, res = -1;
 	time_t created;
-	struct timeval start_time,end;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s;
 	short nr_legs;
 	aaa_message *send = NULL;
 	int offset, av_type;
 	aaa_map *r_stat;
 
-	gettimeofday(&end,NULL);
 	core_s.s = extra_s.s = leg_s.s = 0;
 
 	ret = prebuild_core_arr(dlg, &core_s, &start_time);
@@ -1053,9 +1052,9 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	offset = ret + 2;
 
 	/* add duration and setup values */
-	av_type = (uint32_t)(end.tv_sec - start_time.tv_sec);
+	av_type = (uint32_t)(end->tv_sec - start_time.tv_sec);
 	ADD_AAA_AVPAIR( offset + nr_vals, &av_type, -1);
-	av_type = (uint32_t)((end.tv_sec-start_time.tv_sec)*1000+(end.tv_usec-start_time.tv_usec)%1000);
+	av_type = (uint32_t)((end->tv_sec-start_time.tv_sec)*1000+(end->tv_usec-start_time.tv_usec)%1000);
 	ADD_AAA_AVPAIR( offset + nr_vals + 1, &av_type, -1);
 	av_type = (uint32_t)(start_time.tv_sec - created);
 	ADD_AAA_AVPAIR( offset + nr_vals + 2, &av_type, -1);
@@ -1529,12 +1528,13 @@ end:
 	return ret;
 }
 
-int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg,
+														struct timeval *end)
 {
 	int nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
 	int aux_time;
 	time_t created;
-	struct timeval start_time,end;
+	struct timeval start_time;
 	str core_s, leg_s, extra_s;
 	short nr_legs;
 
@@ -1547,7 +1547,6 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	if (!evi_probe_event(acc_cdr_event))
 		return 1;
 
-	gettimeofday(&end,NULL);
 	core_s.s = extra_s.s = leg_s.s = 0;
 
 	ret = prebuild_core_arr(dlg, &core_s, &start_time);
@@ -1597,12 +1596,13 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		LM_ERR("cannot set start_time parameter\n");
 		goto end;
 	}
-	aux_time = end.tv_sec - start_time.tv_sec;
+	aux_time = end->tv_sec - start_time.tv_sec;
 	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+1], &aux_time) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
-	aux_time = (end.tv_sec-start_time.tv_sec)*1000+(end.tv_usec-start_time.tv_usec)%1000;
+	aux_time = (end->tv_sec-start_time.tv_sec)*1000
+		+ (end->tv_usec-start_time.tv_usec)%1000;
 	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+2], &aux_time) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;

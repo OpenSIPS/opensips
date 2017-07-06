@@ -739,6 +739,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	unsigned long long flags;
+	struct timeval end;
 
 	if (!_params) {
 		LM_ERR("not enough info\n");
@@ -764,9 +765,11 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	 */
 	set_dlg_cb_used(*((unsigned long long*)*_params->param));
 
+	gettimeofday(&end,NULL);
+
 	if (is_evi_acc_on(flags)) {
 		env_set_event(acc_cdr_event);
-		if (acc_evi_cdrs(dlg, _params->msg) < 0) {
+		if (acc_evi_cdrs(dlg, _params->msg, &end) < 0) {
 			LM_ERR("cannot send accounting events\n");
 			return;
 		}
@@ -774,7 +777,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 
 	if (is_log_acc_on(flags)) {
 		env_set_text( ACC_ENDED, ACC_ENDED_LEN);
-		if (acc_log_cdrs(dlg, _params->msg) < 0) {
+		if (acc_log_cdrs(dlg, _params->msg, &end) < 0) {
 			LM_ERR("Cannot log values\n");
 			return;
 		}
@@ -782,13 +785,13 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 
 	if (is_db_acc_on(flags)) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
-		if (acc_db_cdrs(dlg, _params->msg) < 0) {
+		if (acc_db_cdrs(dlg, _params->msg, &end) < 0) {
 			LM_ERR("Cannot insert into database\n");
 			return;
 		}
 	}
 
-	if (is_aaa_acc_on(flags) && acc_aaa_cdrs(dlg, _params->msg) < 0) {
+	if (is_aaa_acc_on(flags) && acc_aaa_cdrs(dlg, _params->msg, &end) < 0) {
 		LM_ERR("Cannot create radius accounting\n");
 		return;
 	}
