@@ -152,15 +152,6 @@ void print_expr(struct expr* exp)
 			case METHOD_O:
 				LM_GEN1(L_DBG, "method");
 				break;
-			case URI_O:
-				LM_GEN1(L_DBG, "uri");
-				break;
-			case FROM_URI_O:
-				LM_GEN1(L_DBG, "from_uri");
-				break;
-			case TO_URI_O:
-				LM_GEN1(L_DBG, "to_uri");
-				break;
 			case SRCIP_O:
 				LM_GEN1(L_DBG, "srcip");
 				break;

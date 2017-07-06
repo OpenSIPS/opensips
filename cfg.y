@@ -278,9 +278,6 @@ static struct multi_str *tmp_mod;
 %token RESETBFLAG
 %token ISBFLAGSET
 %token METHOD
-%token URI
-%token FROM_URI
-%token TO_URI
 %token SRCIP
 %token SRCPORT
 %token DSTIP
@@ -469,7 +466,6 @@ static struct multi_str *tmp_mod;
 %type <sockid> phostport
 %type <intval> proto port any_proto
 %type <strval> host_sep
-%type <intval> uri_type
 %type <intval> equalop compop matchop strop intop
 %type <intval> assignop
 %type <intval> snumber
@@ -1455,10 +1451,6 @@ strop:	equalop	{$$=$1; }
 		| matchop	{$$=$1; }
 	;
 
-uri_type:	URI			{$$=URI_O;}
-		|	FROM_URI	{$$=FROM_URI_O;}
-		|	TO_URI		{$$=TO_URI_O;}
-		;
 
 script_var:	SCRIPTVAR	{
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
@@ -1488,8 +1480,6 @@ exp_elem: exp_cond		{$$=$1; }
 		| script_var    {
 				$$=mk_elem(NO_OP, SCRIPTVAR_O,0,SCRIPTVAR_ST,(void*)$1);
 			}
-		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
-				 			}
 		| DSTIP equalop ipnet	{ $$=mk_elem($2, DSTIP_O, 0, NET_ST, $3);
 								}
 		| DSTIP strop host	{ $$=mk_elem($2, DSTIP_O, 0, STR_ST, $3);
@@ -1523,12 +1513,6 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 		| script_var equalop NULLV	{
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, NULLV_ST, 0);
 			}
-		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
-				 				}
-		| uri_type strop error { $$=0; yyerror("string expected"); }
-		| uri_type error	{ $$=0; yyerror("invalid operator,"
-									" == , != or =~ expected");
-					}
 		| SRCPORT intop NUMBER	{ $$=mk_elem($2, SRCPORT_O, 0, NUMBER_ST,
 												(void *) $3 ); }
 		| SRCPORT intop error { $$=0; yyerror("number expected"); }

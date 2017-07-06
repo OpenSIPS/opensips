@@ -67,9 +67,6 @@
 #include "resolve.h"
 #include "socket_info.h"
 #include "blacklists.h"
-#include "parser/parse_uri.h"
-#include "parser/parse_from.h"
-#include "parser/parse_to.h"
 #include "mem/mem.h"
 #include "xlog.h"
 #include "evi/evi_modules.h"
@@ -1549,30 +1546,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 		case METHOD_O:
 				ret=comp_strval(msg, e->op, &msg->first_line.u.request.method,
 						&e->right);
-				break;
-		case URI_O:
-				if (msg->new_uri.s)
-					ret = comp_strval(msg, e->op, &msg->new_uri, &e->right);
-				else
-					ret = comp_strval(msg, e->op, &msg->first_line.u.request.uri,
-										&e->right);
-				break;
-		case FROM_URI_O:
-				if (parse_from_header(msg)<0){
-					LM_ERR("bad or missing From: header\n");
-					goto error;
-				}
-				ret = comp_strval(msg, e->op, &get_from(msg)->uri,
-									&e->right);
-				break;
-		case TO_URI_O:
-				if ((msg->to==0) && ((parse_headers(msg, HDR_TO_F, 0)==-1) ||
-							(msg->to==0))){
-					LM_ERR("bad or missing To: header\n");
-					goto error;
-				}
-				ret = comp_strval(msg, e->op, &get_to(msg)->uri, &e->right);
-
 				break;
 		case SRCIP_O:
 				ret=comp_ip(msg, e->op, &msg->rcv.src_ip, &e->right);

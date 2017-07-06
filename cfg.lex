@@ -229,9 +229,6 @@ METHOD	method
    as either uri or status; it only would makes sense to
    call it "uri" from route{} and status from onreply_route{}
 */
-URI		"uri"|"status"
-FROM_URI	"from_uri"
-TO_URI		"to_uri"
 SRCIP	src_ip
 SRCPORT	src_port
 DSTIP	dst_ip
@@ -543,9 +540,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
-<INITIAL>{URI}	{ count(); yylval.strval=yytext; return URI; }
-<INITIAL>{FROM_URI}	{ count(); yylval.strval=yytext; return FROM_URI; }
-<INITIAL>{TO_URI}	{ count(); yylval.strval=yytext; return TO_URI; }
 <INITIAL>{SRCIP}	{ count(); yylval.strval=yytext; return SRCIP; }
 <INITIAL>{SRCPORT}	{ count(); yylval.strval=yytext; return SRCPORT; }
 <INITIAL>{DSTIP}	{ count(); yylval.strval=yytext; return DSTIP; }
