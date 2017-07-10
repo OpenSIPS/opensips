@@ -2712,11 +2712,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| IS_MYSELF LPAREN STRING RPAREN {
 				mk_action2($$, IS_MYSELF_T, STR_ST, 0, $3, 0);
 				}
-		| IS_MYSELF LPAREN STRING COMMA NUMBER RPAREN {
-				mk_action2($$, IS_MYSELF_T, STR_ST, NUMBER_ST, $3, (void *)(long)$5);
-				}
-		| IS_MYSELF LPAREN STRING COMMA script_var RPAREN {
-				mk_action2($$, IS_MYSELF_T, STR_ST, SCRIPTVAR_ST, $3, $5);
+		| IS_MYSELF LPAREN STRING COMMA STRING RPAREN {
+				mk_action2($$, IS_MYSELF_T, STR_ST, STR_ST, $3, $5);
 				}
 	;
 

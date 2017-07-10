@@ -2055,9 +2055,9 @@ next_avp:
 		case IS_MYSELF_T:
 			script_trace("core", "is_myself", msg, a->file, a->line);
 
-			if ((a->elem[0].type != STR_ST)) {
+			if ((a->elem[0].type != SCRIPTVAR_ELEM_ST)) {
 				LM_ALERT("BUG in is_myself() - first argument not of"
-						" type string [%d]\n", a->elem[0].type );
+						" type [%d]\n", a->elem[0].type );
 				ret = E_BUG;
 				break;
 			}

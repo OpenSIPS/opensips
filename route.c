@@ -254,6 +254,7 @@ static int fix_actions(struct action* a)
 	str s;
 	pv_elem_t *model=NULL;
 	pv_elem_t *models[5];
+	pv_spec_p sp = NULL;
 	xl_level_p xlp;
 	event_id_t ev_id;
 
@@ -881,7 +882,37 @@ static int fix_actions(struct action* a)
 						goto error;
 				}
 				t->elem[0].u.data = (void*)model;
+				t->elem[0].type = SCRIPTVAR_ELEM_ST;
 
+				s.s = (char *)t->elem[1].u.data;
+				if (s.s == NULL)
+					break;
+
+				s.len = strlen(s.s);
+				if(s.len == 0) {
+					LM_ERR("param 2 is empty string!\n");
+					return E_CFG;
+				}
+				if (s.s[0] == PV_MARKER) {
+					sp = pkg_malloc(sizeof *sp);
+					if (!sp) {
+						LM_ERR("No more pkg memory\n");
+						return E_BUG;
+					}
+					if (pv_parse_spec(&s, sp) == NULL) {
+						LM_ERR("Unable to parse port paremeter var\n");
+						return E_BUG;
+					}
+					t->elem[1].u.data = (void*)sp;
+					t->elem[1].type = SCRIPTVAR_ST;
+				} else {
+					if (str2int(&s, (unsigned int *)&port) < 0) {
+						LM_ERR("port parameter should be a number\n");
+						return E_CFG;
+					}
+					t->elem[1].u.number = port;
+					t->elem[1].type = NUMBER_ST;
+				}
 		}
 	}
 	return 0;
