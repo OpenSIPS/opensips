@@ -127,7 +127,7 @@ static void sh_free(struct struct_hist *sh)
 {
 	int i;
 
-	for (i = 0; i < sh->len; i++)
+	for (i = 0; i < sh->max_len && sh->actions[i].log; i++)
 		shm_free(sh->actions[i].log);
 
 	shm_free(sh->actions);
