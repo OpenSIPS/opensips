@@ -45,7 +45,7 @@
  *    remain available inside the global history list for a while
  */
 
-#define FULL_LOGGING
+#define ENABLE_SH_LOGGING
 
 /**
  * To be freely extended by any piece of OpenSIPS code which makes use of

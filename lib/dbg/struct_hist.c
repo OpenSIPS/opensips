@@ -143,6 +143,7 @@ void sh_unref(struct struct_hist *sh, struct struct_hist_list *list)
 
 static void flush_sh(struct struct_hist *sh)
 {
+#ifdef ENABLE_SH_LOGGING
 	int i;
 
 	for (i = 0; i < sh->len; i++) {
@@ -155,7 +156,7 @@ static void flush_sh(struct struct_hist *sh)
 		        sh->actions[i].pid,
 		        sh->actions[i].log);
 	}
-
+#endif
 	sh->flush_offset += sh->len;
 	sh->len = 0;
 }
@@ -165,7 +166,7 @@ static void sh_unref_unsafe(struct struct_hist *sh, struct struct_hist_list *lis
 	sh->ref--;
 	if (sh->ref != 0)
 		return;
-#ifdef FULL_LOGGING
+#ifdef ENABLE_SH_LOGGING
 	lock_get(&sh->wlock);
 
 	LM_INFO("%s %p free, %d actions follow\n", sh->obj_name, sh->obj, sh->len);
@@ -193,8 +194,10 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 	lock_get(&sh->wlock);
 
 	if (flushable(sh)) {
+#ifdef ENABLE_SH_LOGGING
 		LM_INFO("%s %p flush, %d actions follow\n", sh->obj_name, sh->obj, sh->len);
 		LM_INFO("=====================================\n");
+#endif
 		flush_sh(sh);
 	} else if (sh->len == sh->max_len) {
 		new = shm_realloc(sh->actions, sh->max_len * 2 * sizeof *sh->actions);
