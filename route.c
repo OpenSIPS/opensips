@@ -1108,88 +1108,28 @@ inline static int check_self_op(int op, str* s, unsigned short p)
 }
 
 
-/*! \brief eval_elem helping function, returns an op param */
-inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
-		operand_t *opd)
+/*! \brief comp_scriptvar helping function */
+inline static int comp_ip(int op, str *ip_str, struct net *ipnet)
 {
-	struct hostent* he;
-	char ** h;
-	int ret;
+	struct ip_addr *ip_tmp = NULL;
 
-	ret=-1;
-	switch(opd->type){
-		case NET_ST:
-			switch(op){
-				case EQUAL_OP:
-					ret=(matchnet(ip, (struct net*)opd->v.data)==1);
-					break;
-				case DIFF_OP:
-					ret=(matchnet(ip, (struct net*)opd->v.data)!=1);
-					break;
-				default:
-					goto error_op;
-			}
-			break;
-		case STR_ST:
-		case RE_ST:
-			switch(op){
-				case EQUAL_OP:
-				case MATCH_OP:
-					/* 1: compare with ip2str*/
-					ret=comp_str(ip_addr2a(ip), opd->v.data, op, opd->type);
-					if (ret==1) break;
-					/* 2: resolve (name) & compare w/ all the ips */
-					if (opd->type==STR_ST){
-						he=resolvehost((char*)opd->v.data,0);
-						if (he==0){
-							LM_DBG("could not resolve %s\n",(char*)opd->v.data);
-						}else if (he->h_addrtype==(int)ip->af){
-							for(h=he->h_addr_list;(ret!=1)&& (*h); h++){
-								ret=(memcmp(ip->u.addr, *h, ip->len)==0);
-							}
-							if (ret==1) break;
-						}
-					}
-					/* 3: (slow) rev dns the address
-					* and compare with all the aliases
-					* !!??!! review: remove this? */
-					if(received_dns & DO_REV_DNS)
-					{
-						he=rev_resolvehost(ip);
-						if (he==0){
-							print_ip("could not rev_resolve ip address: ",
-								 ip, "\n");
-							ret=0;
-						}else{
-							/*  compare with primary host name */
-							ret=comp_str(he->h_name, opd->v.data, op,
-									opd->type);
-							/* compare with all the aliases */
-							for(h=he->h_aliases; (ret!=1) && (*h); h++){
-								ret=comp_str(*h, opd->v.data, op, opd->type);
-							}
-						}
-					} else {
-						return 0;
-					}
-					break;
-				case DIFF_OP:
-					ret=comp_ip(msg, MATCH_OP, ip, opd);
-					if (ret>=0) ret=!ret;
-					break;
-				default:
-					goto error_op;
-			}
-			break;
-		default:
-			LM_CRIT("invalid type for src_ip or dst_ip (%d)\n", opd->type);
-			ret=-1;
+	ip_tmp = str2ip(ip_str);
+	if (!ip_tmp) {
+		ip_tmp = str2ip6(ip_str);
+		if (!ip_tmp) {
+			LM_DBG("Var value is not an IP\n");
+			return -1;
+		}
 	}
-	return ret;
-error_op:
-	LM_CRIT("invalid operator %d\n", op);
-	return -1;
 
+	if (op == EQUAL_OP) {
+		return (matchnet(ip_tmp, ipnet) == 1);
+	} else if (op == DIFF_OP) {
+		return (matchnet(ip_tmp, ipnet) != 1);
+	} else {
+		LM_CRIT("invalid operator %d\n", op);
+		return -1;
+	}
 }
 
 /*! \brief compare str to str */
@@ -1442,10 +1382,12 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	pv_value_t lvalue;
 	pv_value_t rvalue;
 	int type;
+	struct net *rnet;
 
 	lstr.s = 0; lstr.len = 0;
 	rstr.s = 0; rstr.len = 0;
 	ln = 0; rn =0;
+
 	if(pv_get_spec_value(msg, left->v.spec, &lvalue)!=0)
 	{
 		LM_ERR("cannot get left var value\n");
@@ -1508,7 +1450,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		if(lvalue.flags&PV_VAL_NULL)
 			return (op==DIFF_OP || op==NOTMATCH_OP || op==NOTMATCHD_OP)?1:0;
 
-		if(right->type == NUMBER_ST) {
+		if (right->type == NET_ST) {
+			if(!(lvalue.flags&PV_VAL_STR))
+				goto error_op;
+			/* comparing IP */
+			type = 3;
+			rnet =  (struct net*)right->v.data;
+		} else if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
 				goto error_op;
 			/* comparing int */
@@ -1538,6 +1486,9 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	} else if(type==2) {
 		LM_DBG("int %d : %d / %d\n", op, ln, rn);
 		return comp_n2n(op, ln, rn);
+	} else if (type==3) {
+		LM_DBG("ip %d : %.*s\n", op, lstr.len, ZSW(lstr.s));
+		return comp_ip(op, &lstr, rnet);
 	}
 	/* default is error */
 
@@ -1577,12 +1528,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 		case METHOD_O:
 				ret=comp_strval(msg, e->op, &msg->first_line.u.request.method,
 						&e->right);
-				break;
-		case SRCIP_O:
-				ret=comp_ip(msg, e->op, &msg->rcv.src_ip, &e->right);
-				break;
-		case DSTIP_O:
-				ret=comp_ip(msg, e->op, &msg->rcv.dst_ip, &e->right);
 				break;
 		case NUMBER_O:
 				ret=!(!e->right.v.n); /* !! to transform it in {0,1} */
@@ -1792,16 +1737,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					pv_value_destroy(&rval);
 					return 0;
 				}
-				break;
-		case SRCPORT_O:
-				ret=comp_no(msg->rcv.src_port,
-					e->right.v.data, /* e.g., 5060 */
-					e->op, /* e.g. == */
-					e->right.type /* 5060 is number */);
-				break;
-		case DSTPORT_O:
-				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op,
-							e->right.type);
 				break;
 		case PROTO_O:
 				ret=comp_no(msg->rcv.proto, e->right.v.data, e->op,

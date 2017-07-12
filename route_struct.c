@@ -152,18 +152,6 @@ void print_expr(struct expr* exp)
 			case METHOD_O:
 				LM_GEN1(L_DBG, "method");
 				break;
-			case SRCIP_O:
-				LM_GEN1(L_DBG, "srcip");
-				break;
-			case SRCPORT_O:
-				LM_GEN1(L_DBG, "srcport");
-				break;
-			case DSTIP_O:
-				LM_GEN1(L_DBG, "dstip");
-				break;
-			case DSTPORT_O:
-				LM_GEN1(L_DBG, "dstport");
-				break;
 			case SCRIPTVAR_O:
 				LM_GEN1(L_DBG, "scriptvar[%d]",
 					(exp->left.v.spec)?exp->left.v.spec->type:0);

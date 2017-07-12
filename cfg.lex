@@ -225,14 +225,6 @@ MAX_LEN			"max_len"
 
 /* condition keywords */
 METHOD	method
-/* hack -- the second element in first line is referable
-   as either uri or status; it only would makes sense to
-   call it "uri" from route{} and status from onreply_route{}
-*/
-SRCIP	src_ip
-SRCPORT	src_port
-DSTIP	dst_ip
-DSTPORT	dst_port
 PROTO	proto
 AF		af
 MSGLEN			"msg:len"
@@ -376,6 +368,7 @@ HEXNUMBER	0x{HEX}+
 OCTNUMBER	0[0-7]+
 HEX4		{HEX}{1,4}
 IPV6ADDR	({HEX4}":"){7}{HEX4}|({HEX4}":"){1,7}(":"{HEX4}){1,7}|":"(":"{HEX4}){1,7}|({HEX4}":"){1,7}":"|"::"
+IPV4ADDR	{NUMBER}\.{NUMBER}\.{NUMBER}\.{NUMBER}
 QUOTES		\"
 TICK		\'
 SLASH		"/"
@@ -540,13 +533,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
-<INITIAL>{SRCIP}	{ count(); yylval.strval=yytext; return SRCIP; }
-<INITIAL>{SRCPORT}	{ count(); yylval.strval=yytext; return SRCPORT; }
-<INITIAL>{DSTIP}	{ count(); yylval.strval=yytext; return DSTIP; }
-<INITIAL>{DSTPORT}	{ count(); yylval.strval=yytext; return DSTPORT; }
 <INITIAL>{PROTO}	{ count(); yylval.strval=yytext; return PROTO; }
 <INITIAL>{AF}	{ count(); yylval.strval=yytext; return AF; }
-
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
@@ -688,9 +676,12 @@ IMPORTFILE      "import_file"
 <INITIAL>{BOREQ}	{ count(); return BOREQ; }
 <INITIAL>{BXOREQ}	{ count(); return BXOREQ; }
 
-
-
 <INITIAL>{IPV6ADDR}		{ count(); yylval.strval=yytext; return IPV6ADDR; }
+<INITIAL>{IPV4ADDR}		{ count(); yylval.strval=yytext; return IPV4ADDR; }
+
+<INITIAL>{IPV4ADDR}{SLASH}{NUMBER}|{IPV4ADDR}{SLASH}{IPV4ADDR}|{IPV6ADDR}{SLASH}{NUMBER}|{IPV6ADDR}{SLASH}{IPV6ADDR} {
+				count(); yylval.strval=yytext; return IPNET; }
+
 <INITIAL>{NUMBER}		{ count(); yylval.intval=atoi(yytext);return NUMBER; }
 <INITIAL>{HEXNUMBER}	{ count(); yylval.intval=(int)strtol(yytext, 0, 16);
 							return NUMBER; }
