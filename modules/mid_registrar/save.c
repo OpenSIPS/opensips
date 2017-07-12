@@ -863,7 +863,7 @@ update_usrloc:
 
 				cti->expires = e;
 				cti->expires_out = e_out;
-				cti->last_register_out_ts = mri->last_register_out_ts;
+				cti->last_reg_ts = mri->last_reg_ts;
 				set_ct(cti);
 			}
 
@@ -976,7 +976,7 @@ static inline int save_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		ct.s = _c->uri.s;
 		shm_str_dup(&ri->ct_uri, &ct);
 		ri->expires_out = e_out;
-		ri->last_register_out_ts = mri->last_register_out_ts;
+		ri->last_reg_ts = mri->last_reg_ts;
 
 		set_ct(ri);
 
@@ -989,7 +989,7 @@ static inline int save_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		set_ct(NULL);
 	} else {
 		if (_c == NULL)
-			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_register_out_ts = 0;
+			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_reg_ts = 0;
 	}
 
 	if (_c != NULL) {
@@ -1076,7 +1076,7 @@ update_usrloc:
 
 				cti->expires = e;
 				cti->expires_out = e_out;
-				cti->last_register_out_ts = mri->last_register_out_ts;
+				cti->last_reg_ts = mri->last_reg_ts;
 				set_ct(cti);
 			}
 
@@ -1315,7 +1315,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("reply -------------- \n%s\n", rpl->buf);
 
 	if (code < 200 || code >= 300)
-		return;
+		goto out_free;
 
 	update_act_time();
 
@@ -1328,7 +1328,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 			       mri->aor.len, mri->aor.s);
 		}
 
-		goto out;
+		goto out_free;
 	}
 
 	if (insertion_mode == INSERT_BY_CONTACT) {
@@ -1360,7 +1360,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("got ptr back: %p\n", mri);
 	LM_DBG("RESPONSE FORWARDED TO caller!\n");
 
-out:
+out_free:
 	mri_free(mri);
 }
 
@@ -1386,7 +1386,6 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	mri->expires = 0;
 	mri->expires_out = sctx->expires_out;
 	mri->dom = ud;
-	mri->last_register_out_ts = get_act_time();
 	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
 
@@ -1746,9 +1745,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 			mri = c->attached_data[ucontact_data_idx];
 
-			if (get_act_time() - mri->last_register_out_ts >=
-			    mri->expires_out - e) {
-				mri->last_register_out_ts = get_act_time();
+			if (get_act_time() - mri->last_reg_ts >= mri->expires_out - e) {
 				LM_DBG("FWD 2\n");
 				/* FIXME: should update "last_reg_out_ts" for all cts? */
 				return 1;
@@ -1925,9 +1922,9 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	max_diff = calc_max_ct_diff(urec);
 
 	LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
-	       max_diff, rinfo->last_register_out_ts + max_diff, get_act_time());
-	if (max_diff >= 0 && rinfo->last_register_out_ts + max_diff <= get_act_time()) {
-		rinfo->last_register_out_ts = get_act_time();
+	       max_diff, rinfo->last_reg_ts + max_diff, get_act_time());
+	if (max_diff >= 0 && rinfo->last_reg_ts + max_diff <= get_act_time()) {
+		rinfo->last_reg_ts = get_act_time();
 		return 1;
 	}
 

@@ -79,7 +79,8 @@ struct mid_reg_info {
 	int expires_out; /* [NEW] outgoing expires value (not a unix TS!) */
 	                 /* used to absorb/relay new REGISTERs */
 
-	unsigned int last_register_out_ts; /* [NEW] used to absorb/relay new REGISTERs */
+	unsigned int last_reg_ts; /* [NEW] used to absorb/relay new REGISTERs
+	                                   marks the last successful reg */
 
 	udomain_t *dom; /* used during 200 OK ul_api operations */
 	str aor;        /* used during both "reg out" and "resp in" */

@@ -35,6 +35,7 @@
 #include "../tm/tm_load.h"
 #include "../tm/dlg.h"
 #include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/regtime.h"
 
 #include "mid_registrar.h"
 
@@ -110,12 +111,13 @@ static int unregister_contact(struct mid_reg_info *mri)
 void mid_reg_ct_event(void *binding, int type, void **data)
 {
 	ucontact_t *c = (ucontact_t *)binding;
-	struct mid_reg_info *mri;
+	struct mid_reg_info *mri, *update;
 
 	if (data == NULL)
 		return;
 
 	mri = *(struct mid_reg_info **)data;
+	update = get_ct();
 
 	LM_DBG("Contact callback (%d): contact='%.*s' | "
 	       "param=(%p -> %p) | data[%d]=(%p)\n", type, c->c.len, c->c.s, data,
@@ -126,14 +128,19 @@ void mid_reg_ct_event(void *binding, int type, void **data)
 		*data = get_ct();
 
 	if (type & UL_CONTACT_UPDATE) {
-		LM_DBG("setting e_out to %d\n", get_ct()->expires_out);
-		mri->expires_out = get_ct()->expires_out;
+		if (update) {
+			LM_DBG("setting e_out to %d\n", update->expires_out);
+			mri->expires_out = update->expires_out;
+			mri->last_reg_ts = get_act_time();
+		}
 	}
 
 	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
-		if (reg_mode == MID_REG_THROTTLE_CT)
-			if (unregister_contact(mri) != 0)
+		if (reg_mode == MID_REG_THROTTLE_CT) {
+			if (unregister_contact(mri) != 0) {
 				LM_ERR("failed to unregister contact\n");
+			}
+		}
 		mri_free(mri);
 	}
 }
