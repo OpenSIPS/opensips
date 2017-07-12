@@ -352,7 +352,7 @@ static int mod_init(void)
 		}
 
 		if (ul_api.register_ulcb(
-			UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
+			UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
 			mid_reg_ct_event, &ucontact_data_idx) < 0) {
 			LM_ERR("cannot register usrloc contact callback\n");
 			return -1;
@@ -382,12 +382,12 @@ static int mod_init(void)
 	return 0;
 }
 
-inline void set_ct(struct mid_reg_info *ct)
+void set_ct(struct mid_reg_info *ct)
 {
 	__info = ct;
 }
 
-inline struct mid_reg_info *get_ct(void)
+struct mid_reg_info *get_ct(void)
 {
 	return __info;
 }
