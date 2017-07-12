@@ -773,7 +773,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* if dialog module loaded and INVITE and success reply */
 		if (store_core_leg_values(dlg, req) < 0) {
 			LM_ERR("cannot store core and leg values\n");
-			return;
+			goto restore;
 		}
 
 		ctx_s.s = (char*)&ctx;
@@ -782,7 +782,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* store context pointer into dialog */
 		if (dlg_api.store_dlg_value(dlg, &acc_ctx_str, &ctx_s) < 0) {
 			LM_ERR("cannot store context pointer into dlg val!\n");
-			return;
+			goto restore;
 		}
 
 		/* report that flags shall be freed only by dialog module
@@ -795,14 +795,14 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		if (dlg_api.register_dlgcb(dlg, DLGCB_DB_WRITE_VP,
 					acc_dlg_onshutdown, ctx, NULL) != 0) {
 			LM_ERR("cannot register callback for program shutdown!\n");
-			return;
+			goto restore;
 		}
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
 								acc_dlg_callback, ctx, dlg_free_acc_ctx) != 0) {
 			LM_ERR("cannot register callback for database accounting\n");
-			return;
+			goto restore;
 		}
 	} else {
 		/* do old accounting */
@@ -825,6 +825,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		}
 	}
 
+restore:
 	if (new_uri_bk.len>=0) {
 		req->new_uri = new_uri_bk;
 		req->dst_uri = dst_uri_bk;
