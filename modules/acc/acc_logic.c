@@ -653,27 +653,27 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* if dialog module loaded and INVITE and success reply */
 		if (store_core_leg_values(dlg, req) < 0) {
 			LM_ERR("cannot store core and leg values\n");
-			return;
+			goto restore;
 		}
 
 		if(is_log_acc_on(*flags) && store_log_extra_values(dlg,req,reply)<0){
 			LM_ERR("cannot store string values\n");
-			return;
+			goto restore;
 		}
 
 		if(is_aaa_acc_on(*flags) && store_aaa_extra_values(dlg, req, reply)<0){
 			LM_ERR("cannot store aaa extra values\n");
-			return;
+			goto restore;
 		}
 
 		if (is_db_acc_on(*flags) && store_db_extra_values(dlg,req,reply)<0) {
 			LM_ERR("cannot store database extra values\n");
-			return;
+			goto restore;
 		}
 
 		if (is_evi_acc_on(*flags) && store_evi_extra_values(dlg,req,reply)<0) {
 			LM_ERR("cannot store database extra values\n");
-			return;
+			goto restore;
 		}
 
 		flags_s.s = (char*)flags;
@@ -682,13 +682,13 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* store flags into dlg */
 		if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
 			LM_ERR("cannot store flag value into dialog\n");
-			return;
+			goto restore;
 		}
 
 		/* store flags into dlg */
 		if ( dlg_api.store_dlg_value(dlg, &table_str, &table.s) < 0) {
 			LM_ERR("cannot store the table name into dialog\n");
-			return;
+			goto restore;
 		}
 
 		/* report that flags shall be freed only by dialog module
@@ -699,7 +699,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
 				DLGCB_EXPIRED, acc_dlg_callback,flags, dlg_free_acc_mask) != 0) {
 			LM_ERR("cannot register callback for database accounting\n");
-			return;
+			goto restore;
 		}
 	} else {
 		/* do old accounting */
@@ -728,6 +728,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		acc_diam_request( req, reply );
 #endif
 
+restore:
 	if (new_uri_bk.len>=0) {
 		req->new_uri = new_uri_bk;
 		req->dst_uri = dst_uri_bk;
