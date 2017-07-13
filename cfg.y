@@ -1495,10 +1495,6 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 								yyerror("protocol expected (udp, tcp or tls)");
 							}
 		| PROTO error { $$=0; yyerror("equal/!= operator expected"); }
-		| AF intop NUMBER	{ $$=mk_elem($2, AF_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| AF intop error { $$=0; yyerror("number expected"); }
-		| AF error { $$=0; yyerror("equal/!= operator expected"); }
 		| MSGLEN intop NUMBER	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
 												(void *) $3 ); }
 		| MSGLEN intop MAX_LEN	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,

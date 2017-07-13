@@ -226,7 +226,6 @@ MAX_LEN			"max_len"
 /* condition keywords */
 METHOD	method
 PROTO	proto
-AF		af
 MSGLEN			"msg:len"
 
 /* operators */
@@ -534,7 +533,6 @@ IMPORTFILE      "import_file"
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
 <INITIAL>{PROTO}	{ count(); yylval.strval=yytext; return PROTO; }
-<INITIAL>{AF}	{ count(); yylval.strval=yytext; return AF; }
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
@@ -690,10 +688,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{YES}			{ count(); yylval.intval=1; return NUMBER; }
 <INITIAL>{NO}			{ count(); yylval.intval=0; return NUMBER; }
 <INITIAL>{NULLV}		{ count(); yylval.intval=0; return NULLV; }
-<INITIAL>{INET}			{ count(); yylval.intval=AF_INET; return NUMBER; }
-<INITIAL>{INET6}		{ count();
-						  yylval.intval=AF_INET6;
-						  return NUMBER; }
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }

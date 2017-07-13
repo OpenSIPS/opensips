@@ -120,7 +120,7 @@ enum _pv_type {
 	PVT_AUTH_ALGORITHM,   PVT_AUTH_OPAQUE,       PVT_AUTH_CNONCE,
 	PVT_RU_Q,             PVT_ROUTE_PARAM,       PVT_ROUTE_TYPE,
 	PVT_LINE_NUMBER,      PVT_CFG_FILE_NAME,     PVT_LOG_LEVEL,
-	PVT_XLOG_LEVEL,
+	PVT_XLOG_LEVEL, PVT_AF,
 	/* registered by json module */
 	PVT_JSON,
 	/* registered by xml module */

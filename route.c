@@ -1742,10 +1742,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				ret=comp_no(msg->rcv.proto, e->right.v.data, e->op,
 						e->right.type);
 				break;
-		case AF_O:
-				ret=comp_no(msg->rcv.src_ip.af, e->right.v.data, e->op,
-						e->right.type);
-				break;
 		case RETCODE_O:
 				ret=comp_no(return_code, e->right.v.data, e->op,
 						e->right.type);
