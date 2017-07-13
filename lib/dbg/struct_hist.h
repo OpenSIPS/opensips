@@ -113,17 +113,50 @@ struct struct_hist_list {
 #define sh_unref(...)
 #define sh_log(...) ({0;})
 #else
+
 /**
- * WARNING: a history window_size = 0 (infinite) is essentially a memory leak,
+ * Initializes a global holder for the histories of all logically linked
+ * structs that one intends to troubleshoot
+ *
+ * @obj_name: A name for the structs which will be troubleshooted
+ * @window_size: (gliding window) - the max number of retained histories
+ *
+ * WARNING: a "window_size" of 0 (infinite) is essentially a memory leak,
  * use with caution!
  */
 struct struct_hist_list *shl_init(char *obj_name, int window_size);
+
+/**
+ * Frees up the global history holder, along with all of its content
+ */
 void shl_destroy(struct struct_hist_list *shl);
 
+/**
+ * Create a new history tracker, usually for each newly allocated struct.
+ *
+ * @obj: The corresponding struct address. This value will be embedded into
+ *       the history object, to allow look-ups inside gdb
+ * @list: global holder where this history will be pushed
+ */
 struct struct_hist *sh_push(void *obj, struct struct_hist_list *list);
+
+/**
+ * Unreference a history struct. Depending on whether it is still in the
+ * gliding window or not, it may also get freed immediately.
+ *
+ * @sh: a struct history tracker
+ * @list: the global holder of histories
+ */
 void sh_unref(struct struct_hist *sh, struct struct_hist_list *list);
 
-#define MAX_SHLOG_SIZE 50 /* anything above will get truncated */
+/**
+ * Record a log line to the history of a struct. The max length of a line is
+ * MAX_SHLOG_SIZE - any expanded lines longer than this will get truncated.
+ *
+ * @sh: a struct history tracker
+ * @verb: the type of the log line recorded (taken from SH_ALL_VERBS)
+ * @fmt: C format string
+ */
 int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...);
 #endif
 
