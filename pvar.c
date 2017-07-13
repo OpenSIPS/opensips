@@ -2408,6 +2408,25 @@ static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 	return 0;
 }
 
+static int pv_get_af(struct sip_msg *msg,  pv_param_t *param,
+		pv_value_t *res)
+{
+	if(msg==NULL)
+		return -1;
+
+	res->flags = PV_VAL_STR;
+	if (msg->rcv.src_ip.af == AF_INET) {
+		res->rs.s = "INET";
+		res->rs.len = 4;
+	} else if (msg->rcv.src_ip.af == AF_INET6) {
+		res->rs.s = "INET6";
+		res->rs.len = 5;
+	} else
+		return pv_get_null(msg, param, res);
+
+	return 0;
+}
+
 /********* end PV get functions *********/
 
 /********* start PV set functions *********/
@@ -3403,6 +3422,8 @@ static pv_export_t _pv_names_table[] = {
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
+	{{"af", (sizeof("af") -1)},
+		PVT_AF, pv_get_af, 0, 0, 0, 0, 0},	/* */
 	{{"bf", (sizeof("bf")-1)}, /* */
 		PVT_BFLAGS, pv_get_bflags, 0,
 		0, 0, 0, 0},
