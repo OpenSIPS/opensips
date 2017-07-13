@@ -149,9 +149,6 @@ void print_expr(struct expr* exp)
 	}
 	if (exp->type==ELEM_T){
 		switch(exp->left.type){
-			case METHOD_O:
-				LM_GEN1(L_DBG, "method");
-				break;
 			case SCRIPTVAR_O:
 				LM_GEN1(L_DBG, "scriptvar[%d]",
 					(exp->left.v.spec)?exp->left.v.spec->type:0);

@@ -220,14 +220,6 @@ IS_MYSELF		"is_myself"
 URIHOST			"uri:host"
 URIPORT			"uri:port"
 
-MAX_LEN			"max_len"
-
-
-/* condition keywords */
-METHOD	method
-PROTO	proto
-MSGLEN			"msg:len"
-
 /* operators */
 EQUAL	=
 EQUAL_T	==
@@ -418,7 +410,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{SETBFLAG}	{ count(); yylval.strval=yytext; return SETBFLAG; }
 <INITIAL>{RESETBFLAG}	{ count(); yylval.strval=yytext; return RESETBFLAG; }
 <INITIAL>{ISBFLAGSET}	{ count(); yylval.strval=yytext; return ISBFLAGSET; }
-<INITIAL>{MSGLEN}	{ count(); yylval.strval=yytext; return MSGLEN; }
 <INITIAL>{ROUTE}	{ count(); yylval.strval=yytext; return ROUTE; }
 <INITIAL>{ROUTE_ONREPLY}	{ count(); yylval.strval=yytext;
 								return ROUTE_ONREPLY; }
@@ -528,11 +519,6 @@ IMPORTFILE      "import_file"
 									return LAUNCH_TOKEN;}
 <INITIAL>{IS_MYSELF}		{ count(); yylval.strval=yytext;
 									return IS_MYSELF;}
-
-<INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
-
-<INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
-<INITIAL>{PROTO}	{ count(); yylval.strval=yytext; return PROTO; }
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }

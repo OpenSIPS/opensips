@@ -271,7 +271,6 @@ static struct multi_str *tmp_mod;
 %token NEXT_BRANCHES
 %token USE_BLACKLIST
 %token UNUSE_BLACKLIST
-%token MAX_LEN
 %token SETFLAG
 %token RESETFLAG
 %token ISFLAGSET
@@ -1463,15 +1462,7 @@ exp_elem: exp_cond		{$$=$1; }
 			}
 	;
 
-exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
-									}
-		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STR_ST, $3);
-				 			}
-		| METHOD strop error { $$=0; yyerror("string expected"); }
-		| METHOD error	{ $$=0; yyerror("invalid operator,"
-										"== , !=, or =~ expected");
-						}
-		| script_var strop script_var {
+exp_cond: script_var strop script_var {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,SCRIPTVAR_ST,(void*)$3);
 			}
 		| script_var strop STRING {
@@ -1489,18 +1480,6 @@ exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
 		| script_var equalop ipnet {
 				$$=mk_elem($2, SCRIPTVAR_O, (void*)$1, NET_ST, $3);
 			}
-		| PROTO intop proto	{ $$=mk_elem($2, PROTO_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| PROTO intop error { $$=0;
-								yyerror("protocol expected (udp, tcp or tls)");
-							}
-		| PROTO error { $$=0; yyerror("equal/!= operator expected"); }
-		| MSGLEN intop NUMBER	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| MSGLEN intop MAX_LEN	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
-												(void *) BUF_SIZE); }
-		| MSGLEN intop error { $$=0; yyerror("number expected"); }
-		| MSGLEN error { $$=0; yyerror("equal/!= operator expected"); }
 	;
 
 

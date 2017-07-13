@@ -1525,10 +1525,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 	if(val) memset(val, 0, sizeof(pv_value_t));
 
 	switch(e->left.type){
-		case METHOD_O:
-				ret=comp_strval(msg, e->op, &msg->first_line.u.request.method,
-						&e->right);
-				break;
 		case NUMBER_O:
 				ret=!(!e->right.v.n); /* !! to transform it in {0,1} */
 				break;
@@ -1737,18 +1733,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					pv_value_destroy(&rval);
 					return 0;
 				}
-				break;
-		case PROTO_O:
-				ret=comp_no(msg->rcv.proto, e->right.v.data, e->op,
-						e->right.type);
-				break;
-		case RETCODE_O:
-				ret=comp_no(return_code, e->right.v.data, e->op,
-						e->right.type);
-				break;
-		case MSGLEN_O:
-				ret=comp_no(msg->len, e->right.v.data, e->op,
-						e->right.type);
 				break;
 		case STRINGV_O:
 				if(val) {
