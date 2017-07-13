@@ -125,11 +125,6 @@ struct struct_hist *sh_push(void *obj, struct struct_hist_list *list)
 
 static void sh_free(struct struct_hist *sh)
 {
-	int i;
-
-	for (i = 0; i < sh->max_len && sh->actions[i].log; i++)
-		shm_free(sh->actions[i].log);
-
 	shm_free(sh->actions);
 	shm_free(sh);
 }
@@ -218,22 +213,12 @@ int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...)
 	act->verb = verb;
 	act->t = get_uticks();
 	act->pid = my_pid();
-	if (act->log) {
-		memset(act->log, 0, MAX_SHLOG_SIZE);
-	} else {
-		act->log = shm_malloc(MAX_SHLOG_SIZE);
-		if (!act->log) {
-			lock_release(&sh->wlock);
-			LM_ERR("oom\n");
-			return -1;
-		}
-	}
 
 	n = vsnprintf(act->log, MAX_SHLOG_SIZE, fmt, ap);
 	lock_release(&sh->wlock);
 
 	if (n < 0 || n >= MAX_SHLOG_SIZE) {
-		LM_ERR("formatting failed with n=%d, %s\n", n, strerror(errno));
+		LM_INFO("formatting failed with n=%d, %s\n", n, strerror(errno));
 	}
 
 	va_end(ap);

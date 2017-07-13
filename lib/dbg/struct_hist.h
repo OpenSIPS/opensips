@@ -47,6 +47,8 @@
 
 #define ENABLE_SH_LOGGING
 
+#define MAX_SHLOG_SIZE 50 /* longer log lines will get truncated */
+
 /**
  * To be freely extended by any piece of OpenSIPS code which makes use of
  * struct history logging
@@ -69,7 +71,7 @@ struct struct_hist_action {
 	enum struct_hist_verb verb;
 	utime_t t;
 	int pid;
-	char *log;
+	char log[MAX_SHLOG_SIZE];
 };
 
 #define ACTIONS_SIZE 5
