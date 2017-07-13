@@ -58,7 +58,7 @@ struct src_sess {
 	struct src_part participants[SRC_MAX_PARTICIPANTS];
 
 	/* internal */
-	str *b2b_key;
+	str b2b_key;
 	struct dlg_cell *dlg;
 	//gen_lock_t lock;
 };

@@ -95,6 +95,7 @@ void src_free_session(struct src_sess *sess)
 
 	for (p = 0; p < sess->participants_no; p++)
 		src_free_participant(&sess->participants[p]);
+	shm_free(sess->b2b_key.s);
 	shm_free(sess);
 }
 

@@ -43,12 +43,12 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
-	req.b2b_key = ss->b2b_key;
+	req.b2b_key = &ss->b2b_key;
 	req.method = &bye;
 	req.no_cb = 1; /* do not call callback */
 
 	if (srec_b2b.send_request(&req) < 0)
-		LM_ERR("Cannot end recording session for key %.*s\n", 
+		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 	/* TODO: remove! */
 }
@@ -77,12 +77,12 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 	/* reply received - sending ACK */
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
-	req.b2b_key = ss->b2b_key;
+	req.b2b_key = &ss->b2b_key;
 	req.method = &ack;
 	req.no_cb = 1; /* do not call callback */
 
 	if (srec_b2b.send_request(&req) < 0) {
-		LM_ERR("Cannot end recording session for key %.*s\n", 
+		LM_ERR("Cannot ack recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
 		goto no_recording;
 	}
@@ -184,8 +184,13 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 
 	/* store the key in the param */
-	/* TODO: make sure the session/key is not destroyed before this */
-	sess->b2b_key = client;
+	sess->b2b_key.s = shm_malloc(client->len);
+	if (!sess->b2b_key.s) {
+		LM_ERR("out of shm memory!\n");
+		return -1;
+	}
+	memcpy(sess->b2b_key.s, client->s, client->len);
+	sess->b2b_key.len = client->len;
 
 	/* release generated body */
 	pkg_free(body.s);
