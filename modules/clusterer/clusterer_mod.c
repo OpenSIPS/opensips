@@ -548,11 +548,11 @@ static void destroy(void)
 {
 	struct mod_registration *tmp;
 
-	/* update DB */
-	update_db_current();
-
-	/* close DB connection */
 	if (db_hdl) {
+		/* update DB */
+		update_db_current();
+
+		/* close DB connection */
 		dr_dbf.close(db_hdl);
 		db_hdl = NULL;
 	}
