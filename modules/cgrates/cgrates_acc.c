@@ -478,6 +478,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	static str cmd = str_init("SMGenericV1.ProcessCDR");
 	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
+	struct dlg_cell *dlg = cgr_dlgb.get_dlg();
 
 	cmsg = cgr_get_generic_msg(&cmd, s);
 	if (!cmsg) {
@@ -524,6 +525,11 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 			LM_ERR("cannot add SetupTime node\n");
 			goto error;
 		}
+	}
+
+	if (dlg && cgr_msg_push_str(cmsg, "DisconnectCause", &dlg->terminate_reason) < 0) {
+		LM_ERR("cannot add DisconnectCause node\n");
+		goto error;
 	}
 
 	return cmsg->msg;
