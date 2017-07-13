@@ -4286,7 +4286,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char * part, char* _type, char* fla
 				GET_NEXT_HOP(msg));
 	} else {
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, _type, (!part ? -1 : (int)(long)part),
+		return _is_dr_uri_gw(msg, NULL, flags_pv, (!_type ? -1 : (int)(long)_type),
 				GET_NEXT_HOP(msg));
 	}
 }
@@ -4325,7 +4325,7 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
 			return -1;
 		}
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, type_s ,!src_pv ? -1:(int)(long)src_pv
+		return _is_dr_uri_gw(msg, NULL, flags_pv ,!type_s ? -1:(int)(long)type_s
 				,&src.rs);
 	}
 }
