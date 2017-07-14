@@ -1785,7 +1785,7 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 
 	info = GET_SIPTRACE_CONTEXT;
 	if (info == NULL) {
-		LM_BUG("null trace info!something is wrong here \n");
+		LM_DBG("no sip_trace() done so far\n");
 		return;
 	}
 
