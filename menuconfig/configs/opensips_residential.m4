@@ -282,10 +282,10 @@ ifelse(USE_NAT,`yes',`
 
 	t_check_trans();
 
-	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| (src_ip==11.22.33.44 && src_port=5060 /* CUSTOMIZE ME */)')',`') ) ) {
+	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| ($si==11.22.33.44 && $sp=5060 /* CUSTOMIZE ME */)')',`') ) ) {
 		ifelse(USE_MULTIDOMAIN,`yes',`
 		if (is_from_local())',`
-		if (from_uri==myself)
+		if (is_myslef("fd"))
 		')
 		{
 			ifelse(USE_AUTH,`yes',`
@@ -308,7 +308,7 @@ ifelse(USE_NAT,`yes',`
 			# if caller is not local, then called number must be local
 			ifelse(USE_MULTIDOMAIN,`yes',`
 			if (!is_uri_host_local())',`
-			if (!uri==myself)') {
+			if (!is_myself("$rd"))') {
 				send_reply("403","Rely forbidden");
 				exit;
 			}
@@ -344,7 +344,7 @@ ifelse(USE_NAT,`yes',`
 
 	ifelse(USE_MULTIDOMAIN,`yes',`
 	if (!is_uri_host_local())',`
-	if (!uri==myself)') {
+	if (!if_myself("$rd"))') {
 		append_hf("P-hint: outbound\r\n"); 
 		ifelse(ENABLE_TLS,`yes',`
 		# if you have some interdomain connections via TLS
@@ -383,7 +383,7 @@ ifelse(USE_NAT,`yes',`
 			exit;
 		}',`')
 
-		if ( ifelse(ENABLE_TCP,`yes',`proto==TCP ||',`') ifelse(ENABLE_TLS,`yes',`proto==TLS ||',`') 0 ) setflag(TCP_PERSISTENT);
+		if ( ifelse(ENABLE_TCP,`yes',`$proto=="tcp" ||',`') ifelse(ENABLE_TLS,`yes',`$proto=="tls" ||',`') 0 ) setflag(TCP_PERSISTENT);
 
 		ifelse(USE_NAT,`yes',`if (isflagset(NAT)) {
 			setbflag(SIP_PING_FLAG);
