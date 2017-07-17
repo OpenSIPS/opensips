@@ -515,7 +515,7 @@ modparam("pua_dialoginfo", "osips_ps", 0)
 		<programlisting format="linespecific">
 ...
 	if(is_method("INVITE"))
-		if(uri =~ "opensips.org")
+		if($ru =~ "opensips.org")
 			dialoginfo_set();
 ...
 		</programlisting>

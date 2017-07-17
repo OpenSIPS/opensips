@@ -1216,10 +1216,10 @@ route{
 
   # if somene claims to belong to our domain in From,
   # challenge him (skip REGISTERs -- we will chalenge them later)
-  if (from_uri==myself) {
+  if (is_myself("$fd")) {
       setflag(1);
       if ( is_method("INVITE|SUBSCRIBE|MESSAGE")
-      &amp;&amp; !(src_ip==myself) ) {
+      &amp;&amp; !(is_myself("$si")) ) {
           if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
               proxy_challenge("domA.net","0"/*no-qop*/);
               exit;
@@ -1231,7 +1231,7 @@ route{
               exit;
           };
       }; # non-REGISTER from other domain
-  } else if ( is_method("INVITE") &amp;&amp; uri!=myself ) {
+  } else if ( is_method("INVITE") &amp;&amp; !is_myself("$rd") ) {
       send_reply("403", "No relaying");
       exit;
   };
@@ -1247,7 +1247,7 @@ route{
   };
 
   /* ******* check for requests targeted out of our domain ******* */
-  if ( uri!=myself ) {
+  if ( !is_myself("$rd") ) {
       append_hf("P-hint: OUTBOUND\r\n");
       if ($rd=="domB.net") {
           t_relay("tls:domB.net:5061");
@@ -1266,7 +1266,7 @@ route{
           $rd = "domB.net";
           t_relay("tls:domB.net:5061");
           exit;
-      } else if ( uri=~"sip:202" ) {
+      } else if ( $ru=~"sip:202" ) {
           strip(3);
           $rd = "domC.net";
           t_relay("tls:domC.net:5061");

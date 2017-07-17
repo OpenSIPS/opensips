@@ -703,7 +703,7 @@ if (allow_routing("rules.allow", "rules.deny")) {
 		<title><function>allow_register(basename)</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
 	if (allow_register("register")) {
 		save("location");
 		exit;
@@ -752,7 +752,7 @@ if (method=="REGISTER") {
 		<title><function>allow_register(allow_file, deny_file)</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
 	if (allow_register("register.allow", "register.deny")) {
 		save("location");
 		exit;

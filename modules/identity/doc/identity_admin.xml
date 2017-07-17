@@ -217,14 +217,14 @@ modparam("identity", "useCrls", 1)
 		<programlisting format="linespecific">
 ...
 # CANCEL and ACK cannot be challenged
-if ((method=="CANCEL") || (method=="ACK"))
+if (($rm=="CANCEL") || ($rm"ACK"))
 {
     route(1); # forward
     exit;
 }
 
 # some clients (e.g. Kphone) do not answer, when a BYE is challenged
-if (method=="BYE")
+if ($rm=="BYE")
 {
     route(1); # forward
     exit;
@@ -233,7 +233,7 @@ if (method=="BYE")
 ### Authentication Service ###
 
 # check whether I am authoritative
-if(!from_uri=~".*@mysipdomain.de")
+if(!$fu=~".*@mysipdomain.de")
 {
     route(1); # forward
     exit;
@@ -326,13 +326,13 @@ route(1); #forward with ($retcode=1) or without ($retcode!=1) Identity header
 		<programlisting format="linespecific">
 ...
 # we have to define the same exceptions as we did for the authentication service
-if ((method=="CANCEL") || (method=="ACK")) 
+if (($rm=="CANCEL") || ($rm"ACK")) 
 { 
     route(1); # forward
     exit;
 }
     
-if (method=="BYE")
+if ($rm=="BYE")
 {
     route(1); # forward
     exit;

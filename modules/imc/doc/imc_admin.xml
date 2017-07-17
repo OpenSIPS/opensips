@@ -204,7 +204,7 @@ modparam("imc", "outbound_proxy", "sip:opensips.org;transport=tcp")
 # the rooms will be named chat-xyz to avoid overlapping
 # with usernames
 if(is_method("MESSAGE)
-        &amp;&amp; (uri=~ "sip:chat-[0-9]+@" || (uri=~ "sip:chat-manager@")
+        &amp;&amp; ($ru=~ "sip:chat-[0-9]+@" || ($ru=~ "sip:chat-manager@")
     imc_manager();
 ...
 </programlisting>

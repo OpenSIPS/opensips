@@ -1413,11 +1413,11 @@ route {
 } 
 
 branch_route[1] {
-	if (uri=~"bad_uri") {
+	if ($ru=~"bad_uri") {
 		xlog("dropping branch $ru \n");
 		drop;
 	}
-	if (uri=~"GW_uri") {
+	if ($ru=~"GW_uri") {
 		append_rpid();
 	}
 }

@@ -206,7 +206,7 @@ modparam("perl", "modpath", "/usr/local/lib/opensips/perl/")
 			<title><function>perl_exec_simple()</function> usage</title>
 			<programlisting format="linespecific">
 ...
-if (method=="INVITE") {
+if ($rm=="INVITE") {
 	perl_exec_simple("dosomething", "on invite messages");
 };
 ...

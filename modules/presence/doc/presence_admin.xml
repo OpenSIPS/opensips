@@ -574,7 +574,7 @@ modparam("presence", "end_sub_on_timeout", 0)
 		the string parameter "1".
 		<programlisting format="linespecific">
    Ex: 
-	if(uri =~ "kphone@opensips.org")
+	if($ru =~ "kphone@opensips.org")
 		handle_subscribe("1");
 		</programlisting>
 		</para>
@@ -605,7 +605,7 @@ modparam("presence", "end_sub_on_timeout", 0)
 		<title><function>handle_subscribe</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(method=="SUBSCRIBE")
+if($rm=="SUBSCRIBE")
     handle_subscribe();
 ...
 </programlisting>

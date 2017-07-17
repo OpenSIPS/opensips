@@ -532,7 +532,7 @@ cpl_run_script("incoming","force_stateful");
 				<title><function>cpl_process_register</function> usage</title>
 				<programlisting format="linespecific">
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
     cpl_process_register();
 }
 ...
@@ -562,7 +562,7 @@ if (method=="REGISTER") {
 					</title>
 				<programlisting format="linespecific">
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
     cpl_process_register();
     # continue with usrloc part
     save("location");

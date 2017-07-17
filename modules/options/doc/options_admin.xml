@@ -185,8 +185,8 @@ modparam("options", "support", "100rel")
 		<title><function>options_reply</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (uri==myself) {
-	if ((method==OPTIONS) &amp;&amp; (! uri=~"sip:.*[@]+.*")) {
+if (is_myself("$rd")) {
+	if ((method==OPTIONS) &amp;&amp; (! $ru=~"sip:.*[@]+.*")) {
 		options_reply();
 	}
 }

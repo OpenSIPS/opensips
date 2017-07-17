@@ -168,7 +168,7 @@ modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
 		<title><function>bla_set_flag</function> usage</title>
 	<programlisting format="linespecific">
 ...
-if(is_method("REGISTER") &amp;&amp; to_uri=~"bla_aor@opensips.org") 
+if(is_method("REGISTER") &amp;&amp; $tu=~"bla_aor@opensips.org") 
 	bla_set_flag();		
 ...
 </programlisting>
@@ -191,7 +191,7 @@ if(is_method("REGISTER") &amp;&amp; to_uri=~"bla_aor@opensips.org")
 		<title><function>bla_handle_notify</function> usage</title>
 	<programlisting format="linespecific">
 ...
-if(is_method("NOTIFY") &amp;&amp; to_uri=~"bla_aor@opensips.org") 
+if(is_method("NOTIFY") &amp;&amp; $tu=~"bla_aor@opensips.org") 
 {
 		if( bla_handle_notify() ) 
 			t_reply("200", "OK");

@@ -130,7 +130,7 @@ modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
 		<title><function>pua_set_publish</function> usage</title>
 	<programlisting format="linespecific">
 ...
-if(is_method("REGISTER") &amp;&amp; from_uri=~"john@opensips.org") 
+if(is_method("REGISTER") &amp;&amp; $fu=~"john@opensips.org") 
 	pua_set_publish();
 ...
 </programlisting>
