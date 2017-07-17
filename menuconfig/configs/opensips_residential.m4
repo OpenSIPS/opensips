@@ -285,7 +285,7 @@ ifelse(USE_NAT,`yes',`
 	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| ($si==11.22.33.44 && $sp=5060 /* CUSTOMIZE ME */)')',`') ) ) {
 		ifelse(USE_MULTIDOMAIN,`yes',`
 		if (is_from_local())',`
-		if (is_myslef("fd"))
+		if (is_myself("$fd"))
 		')
 		{
 			ifelse(USE_AUTH,`yes',`
@@ -344,7 +344,7 @@ ifelse(USE_NAT,`yes',`
 
 	ifelse(USE_MULTIDOMAIN,`yes',`
 	if (!is_uri_host_local())',`
-	if (!if_myself("$rd"))') {
+	if (!is_myself("$rd"))') {
 		append_hf("P-hint: outbound\r\n"); 
 		ifelse(ENABLE_TLS,`yes',`
 		# if you have some interdomain connections via TLS
@@ -381,13 +381,21 @@ ifelse(USE_NAT,`yes',`
 		{
 			sl_send_reply("403","Forbidden auth ID");
 			exit;
-		}',`')
-
-		if ( ifelse(ENABLE_TCP,`yes',`$proto=="tcp" ||',`') ifelse(ENABLE_TLS,`yes',`$proto=="tls" ||',`') 0 ) setflag(TCP_PERSISTENT);
-
+		}',`')dnl
+ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
+		if ($proto == "tcp" || $proto == "tls")
+			setflag(TCP_PERSISTENT);
+', `
+		if ($proto == "tcp")
+			setflag(TCP_PERSISTENT);
+'), ifelse(ENABLE_TLS, `yes', `
+		if ($proto == "tls")
+			setflag(TCP_PERSISTENT);
+',
+`'))dnl
 		ifelse(USE_NAT,`yes',`if (isflagset(NAT)) {
 			setbflag(SIP_PING_FLAG);
-		}',`')
+		}',`')dnl
 
 		if (!save("location"))
 			sl_reply_error();
