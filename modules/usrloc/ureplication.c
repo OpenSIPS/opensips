@@ -135,7 +135,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->q;
 	bin_push_str(&packet, &st);
 
-	bin_push_str(&packet, &ci->sock->sock_str);
+	bin_push_str(&packet, ci->sock?&ci->sock->sock_str:NULL);
 	bin_push_int(&packet, ci->cseq);
 	bin_push_int(&packet, ci->flags);
 	bin_push_int(&packet, ci->cflags);
@@ -196,7 +196,7 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->q;
 	bin_push_str(&packet, &st);
 
-	bin_push_str(&packet, &ci->sock->sock_str);
+	bin_push_str(&packet, ci->sock?&ci->sock->sock_str:NULL);
 	bin_push_int(&packet, ci->cseq);
 	bin_push_int(&packet, ci->flags);
 	bin_push_int(&packet, ci->cflags);
@@ -379,20 +379,20 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 	bin_pop_str(packet, &sock);
 
-	if (!sock.s || sock.s[0] == 0) {
-		LM_ERR("bad received socket: '%.*s'\n", sock.len, sock.s);
-		goto error;
-	}
+	if (sock.s && sock.s[0]) {
+		if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
+			&port, &proto) != 0) {
+			LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
+			goto error;
+		}
 
-	if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
-		&port, &proto) != 0) {
-		LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
-		goto error;
+		ci.sock = grep_sock_info(&host, (unsigned short) port,
+			(unsigned short) proto);
+		if (!ci.sock)
+			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
+	} else {
+		ci.sock =  NULL;
 	}
-
-	ci.sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
-	if (!ci.sock)
-		LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 
 	bin_pop_int(packet, &ci.cseq);
 	bin_pop_int(packet, &ci.flags);
@@ -478,20 +478,20 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	bin_pop_str(packet, &sock);
 
-	if (!sock.s || sock.s[0] == 0) {
-		LM_ERR("bad received socket: '%.*s'\n", sock.len, sock.s);
-		goto error;
-	}
+	if (sock.s && sock.s[0]) {
+		if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
+			&port, &proto) != 0) {
+			LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
+			goto error;
+		}
 
-	if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
-		&port, &proto) != 0) {
-		LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
-		goto error;
+		ci.sock = grep_sock_info(&host, (unsigned short) port,
+			(unsigned short) proto);
+		if (!ci.sock)
+			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
+	} else {
+		ci.sock = NULL;
 	}
-
-	ci.sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
-	if (!ci.sock)
-		LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 
 	bin_pop_int(packet, &ci.cseq);
 	bin_pop_int(packet, &ci.flags);
