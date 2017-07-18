@@ -36,7 +36,8 @@ static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
-static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid);
+static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
+		char *_rtp, char *_grp);
 static int fixup_srec_engage(void **param, int param_no);
 static int free_fixup_srec_engage(void **param, int param_no);
 static struct mi_root* mi_example(struct mi_root* cmd_tree, void* param);
@@ -56,7 +57,17 @@ static dep_export_t deps = {
 
 /* exported commands */
 static cmd_export_t cmds[] = {
+	{"siprec_engage",(cmd_function)srec_engage, 1, fixup_srec_engage,
+		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
 	{"siprec_engage",(cmd_function)srec_engage, 2, fixup_srec_engage,
+		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
+	{"siprec_engage",(cmd_function)srec_engage, 3, fixup_srec_engage,
+		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
+	{"siprec_engage",(cmd_function)srec_engage, 4, fixup_srec_engage,
+		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
+	{"siprec_engage",(cmd_function)srec_engage, 5, fixup_srec_engage,
+		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
+	{"siprec_engage",(cmd_function)srec_engage, 6, fixup_srec_engage,
 		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
 	{0, 0, 0, 0, 0, 0}
 };
@@ -150,7 +161,7 @@ static void mod_destroy(void)
  */
 static int fixup_srec_engage(void **param, int param_no)
 {
-	if (param_no > 0 && param_no < 3)
+	if (param_no > 0 && param_no < 7)
 		return fixup_spve(param);
 	LM_ERR("Unsupported parameter %d\n", param_no);
 	return E_CFG;
@@ -167,12 +178,14 @@ static int free_fixup_srec_engage(void **param, int param_no)
 /*
  * function that simply prints the parameters passed
  */
-static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid)
+static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
+		char *_rtp, char *_grp)
 {
 	int ret;
-	str srs, rtp;
+	str srs, rtp, group, tmp_str, *aor, *display;
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
+	struct to_body tmp_body;
 
 	if (!_srs) {
 		LM_ERR("No siprec SRS uri specified!\n");
@@ -187,16 +200,11 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid)
 		LM_ERR("cannot fetch set!\n");
 		return -1;
 	}
-
-	if (parse_from_header(msg) < 0) {
-		LM_ERR("cannot parse from header!\n");
-		return -2;
+	if (_grp && fixup_get_svalue(msg, (gparam_p)_grp, &group) < 0) {
+		LM_ERR("cannot fetch group for this session!\n");
+		return -1;
 	}
 
-	if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
-		LM_ERR("inexisting or invalid to header!\n");
-		return -2;
-	}
 	/*
 	 * TODO: check where it was called: request or reply: depending on that we
 	 * can use different logics for caller/callee;
@@ -213,29 +221,68 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid)
 	}
 
 	/* check if the current dialog has a siprec session ongoing */
-	if (!_sid) {
-		if (!(ss = src_create_session(&srs, (_rtp ? &rtp : NULL)))) {
-			LM_ERR("cannot create siprec session!\n");
-			return -2;
-		}
-		/* TODO: link the dlg here, but do we need to ref it ? */
-		ss->dlg = dlg;
-	} else  {
-		/* TODO: lookup session */
-		ss = NULL;
+	if (!(ss = src_create_session(&srs, (_rtp ? &rtp : NULL),
+				(_grp ? &group : NULL)))) {
+		LM_ERR("cannot create siprec session!\n");
+		return -2;
 	}
+
+	/* TODO: link the dlg here, but do we need to ref it ? */
+	ss->dlg = dlg;
+
 	ret = -2;
 
-	if (src_add_participant(ss, &get_from(msg)->uri) < 0) {
+	/* caller info */
+	if (_cA) {
+		if (fixup_get_svalue(msg, (gparam_p)_cA, &tmp_str) < 0) {
+			LM_ERR("cannot fetch caller information!\n");
+			goto session_cleanup;
+		}
+		if (parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body) < 0) {
+			LM_ERR("invalid caller information: [%.*s]!\n", tmp_str.len, tmp_str.s);
+			goto session_cleanup;
+		}
+		aor = &tmp_body.uri;
+		display = (tmp_body.display.s ? &tmp_body.display : NULL);
+	} else {
+		if (parse_from_header(msg) < 0) {
+			LM_ERR("cannot parse from header!\n");
+			goto session_cleanup;
+		}
+		aor = &get_from(msg)->uri;
+		display = (get_from(msg)->display.s ? &get_from(msg)->display : NULL);
+	}
+
+	if (src_add_participant(ss, aor, display) < 0) {
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
 	if (srs_add_sdp_streams(msg, ss, &ss->participants[0]) < 0) {
 		LM_ERR("cannot add SDP for caller!\n");
-		return -1;
+		goto session_cleanup;
+	}
+	/* caller info */
+	if (_cB) {
+		if (fixup_get_svalue(msg, (gparam_p)_cB, &tmp_str) < 0) {
+			LM_ERR("cannot fetch callee information!\n");
+			goto session_cleanup;
+		}
+		if (parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body) < 0) {
+			LM_ERR("invalid callee information: [%.*s]!\n", tmp_str.len, tmp_str.s);
+			goto session_cleanup;
+		}
+		aor = &tmp_body.uri;
+		display = (tmp_body.display.s ? &tmp_body.display : NULL);
+	} else {
+		if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
+			LM_ERR("inexisting or invalid to header!\n");
+			goto session_cleanup;
+		}
+		aor = &get_to(msg)->uri;
+		display = (get_to(msg)->display.s ? &get_to(msg)->display : NULL);
 	}
 
-	if (src_add_participant(ss, &get_to(msg)->uri) < 0) {
+	if (src_add_participant(ss, aor, display) < 0) {
 		LM_ERR("cannot add callee pariticipant!\n");
 		goto session_cleanup;
 	}
@@ -246,8 +293,10 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid)
 		LM_ERR("cannot register tm callbacks\n");
 		goto session_cleanup;
 	}
-	ret = 1;
+	return 1;
+
 session_cleanup:
+	/* TODO: session destroy! */
 	return ret;
 }
 

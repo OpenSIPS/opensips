@@ -146,7 +146,6 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	ci.to_uri = ci.req_uri;
 	ci.from_uri = ci.to_uri;
 	ci.extra_headers = &extra_headers;
-	LM_INFO("XXX: started seesion with uri %.*s\n", ci.to_uri.len, ci.to_uri.s);
 
 	if (!send_sock) {
 		send_sock = uri2sock(msg, &ci.req_uri, &tmp, PROTO_NONE);

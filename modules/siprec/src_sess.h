@@ -36,6 +36,7 @@
 
 struct src_part {
 	str aor;
+	str name;
 	siprec_uuid uuid;
 	struct list_head streams;
 };
@@ -48,6 +49,7 @@ struct src_sess {
 	int streams_no;
 	str rtpproxy;
 	str srs_uri;
+	str group;
 
 	/* siprec */
 	siprec_uuid uuid;
@@ -63,8 +65,8 @@ struct src_sess {
 };
 
 struct src_sess *src_get_session(struct dlg_cell *dlg);
-struct src_sess *src_create_session(str *srs, str *rtp);
-int src_add_participant(struct src_sess *sess, str *aor);
+struct src_sess *src_create_session(str *srs, str *rtp, str *group);
+int src_add_participant(struct src_sess *sess, str *aor, str *name);
 
 extern struct tm_binds srec_tm;
 extern struct dlg_binds srec_dlg;

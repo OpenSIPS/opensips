@@ -43,9 +43,10 @@ struct src_sess *src_get_session(struct dlg_cell *dlg)
 	return (struct src_sess *)val.s;
 }
 
-struct src_sess *src_create_session(str *srs, str *rtp)
+struct src_sess *src_create_session(str *srs, str *rtp, str *grp)
 {
-	struct src_sess *ss = shm_malloc(sizeof *ss + (rtp ? rtp->len : 0));
+	struct src_sess *ss = shm_malloc(sizeof *ss +
+			(rtp ? rtp->len : 0) + (grp ? grp->len : 0));
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
@@ -62,6 +63,12 @@ struct src_sess *src_create_session(str *srs, str *rtp)
 		ss->rtpproxy.s = (char *)(ss + 1);
 		memcpy(ss->rtpproxy.s, rtp->s, rtp->len);
 		ss->rtpproxy.len = rtp->len;
+	}
+
+	if (grp) {
+		ss->group.s = (char *)(ss + 1) + ss->rtpproxy.len;
+		memcpy(ss->group.s, grp->s, grp->len);
+		ss->group.len = grp->len;
 	}
 	siprec_build_uuid(ss->uuid);
 	ss->participants_no = 0;
@@ -108,7 +115,7 @@ void src_free_session(struct src_sess *sess)
 	shm_free(sess);
 }
 
-int src_add_participant(struct src_sess *sess, str *aor)
+int src_add_participant(struct src_sess *sess, str *aor, str *name)
 {
 	struct src_part *part;
 	if (sess->participants_no >= SRC_MAX_PARTICIPANTS) {
@@ -120,7 +127,7 @@ int src_add_participant(struct src_sess *sess, str *aor)
 	INIT_LIST_HEAD(&part->streams);
 	siprec_build_uuid(part->uuid);
 
-	part->aor.s = shm_malloc(aor->len);
+	part->aor.s = shm_malloc(aor->len + (name ? name->len: 0));
 	if (!part->aor.s) {
 		LM_ERR("out of shared memory!\n");
 		return -1;
@@ -128,6 +135,11 @@ int src_add_participant(struct src_sess *sess, str *aor)
 
 	part->aor.len = aor->len;
 	memcpy(part->aor.s, aor->s, aor->len);
+	if (name) {
+		part->name.len = name->len;
+		part->name.s = part->aor.s + part->aor.len;
+		memcpy(part->name.s, name->s, name->len);
+	}
 	sess->participants_no++;
 
 	return 1;
