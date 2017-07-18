@@ -350,16 +350,13 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 	 * <streams*>
 	 */
 	str header1 = str_init("v=0" CRLF "o=- ");
-	str header2 = str_init(" IN IP4 ");
-	str header3 = str_init(CRLF "s=-" CRLF);
+	str header2 = str_init(" IN IP4 0.0.0.0" CRLF "s=-" CRLF);
 
 	SIPREC_COPY_STR(header1, buf);
 	SIPREC_COPY_INT(sess->ts, buf);
 	SIPREC_COPY_CHAR(' ', buf);
 	SIPREC_COPY_INT(sess->version, buf);
 	SIPREC_COPY_STR(header2, buf);
-	SIPREC_COPY_STR(sess->media_ip, buf);
-	SIPREC_COPY_STR(header3, buf);
 	for (p = 0; p < sess->participants_no; p++) {
 		list_for_each(it, &sess->participants[p].streams) {
 			stream = list_entry(it, struct srs_sdp_stream, list);
@@ -577,7 +574,8 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 			}
 
 			if (srec_rtp.start_recording(&sess->dlg->callid, from_tag, to_tag,
-					NULL/* TODO: set */, NULL, &destination, stream->medianum) < 0) {
+					(sess->rtpproxy.s ? &sess->rtpproxy: NULL),
+					NULL, &destination, stream->medianum) < 0) {
 				LM_ERR("cannot start recording for stream %p (label=%d)\n",
 						stream, stream->label);
 			} else
@@ -591,3 +589,8 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 }
 
 
+int srs_get_default_name(struct to_body *body)
+{
+	/* uri */
+	return -1;
+}

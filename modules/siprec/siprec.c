@@ -36,7 +36,7 @@ static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
-static int srec_engage(struct sip_msg *msg, char *_set, char *_media);
+static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid);
 static int fixup_srec_engage(void **param, int param_no);
 static int free_fixup_srec_engage(void **param, int param_no);
 static struct mi_root* mi_example(struct mi_root* cmd_tree, void* param);
@@ -164,56 +164,28 @@ static int free_fixup_srec_engage(void **param, int param_no)
 	return E_CFG;
 }
 
-static struct srs_set *srs_get_set(str name)
-{
-	struct srs_set *srs;
-	static struct srs_set default_srs = {
-		.name = {"default", 7},
-	};
-	srs = &default_srs;
-
-	INIT_LIST_HEAD(&srs->nodes);
-	static struct srs_node default_node = {
-		.uri = { "sip:10.0.0.137:5080", 19 }
-	};
-
-	list_add(&default_node.list, &srs->nodes);
-	return srs;
-}
-
 /*
  * function that simply prints the parameters passed
  */
-static int srec_engage(struct sip_msg *msg, char *_set, char *_media)
+static int srec_engage(struct sip_msg *msg, char *_srs, char *_rtp, char *_sid)
 {
 	int ret;
-	str set, media;
+	str srs, rtp;
 	struct src_sess *ss;
-	struct srs_set *sset;
 	struct dlg_cell *dlg;
 
-	if (!_set) {
-		LM_ERR("No siprec set specified!\n");
+	if (!_srs) {
+		LM_ERR("No siprec SRS uri specified!\n");
 		return -1;
 	}
-	if (!_media) {
-		LM_ERR("No media ip specified!\n");
-		return -1;
-	}
-	if (fixup_get_svalue(msg, (gparam_p)_media, &media) < 0) {
-		LM_ERR("cannot fetch media IP!\n");
+	if (_rtp && fixup_get_svalue(msg, (gparam_p)_rtp, &rtp) < 0) {
+		LM_ERR("cannot fetch media rtpproxy server!\n");
 		return -1;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)_set, &set) < 0) {
+	if (fixup_get_svalue(msg, (gparam_p)_srs, &srs) < 0) {
 		LM_ERR("cannot fetch set!\n");
 		return -1;
-	}
-
-	sset = srs_get_set(set);
-	if (!sset) {
-		LM_ERR("Unknown siprec set %.*s\n", set.len, set.s);
-		return -3;
 	}
 
 	if (parse_from_header(msg) < 0) {
@@ -241,9 +213,16 @@ static int srec_engage(struct sip_msg *msg, char *_set, char *_media)
 	}
 
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_create_session(dlg, sset, media))) {
-		LM_ERR("cannot create siprec session!\n");
-		return -2;
+	if (!_sid) {
+		if (!(ss = src_create_session(&srs, (_rtp ? &rtp : NULL)))) {
+			LM_ERR("cannot create siprec session!\n");
+			return -2;
+		}
+		/* TODO: link the dlg here, but do we need to ref it ? */
+		ss->dlg = dlg;
+	} else  {
+		/* TODO: lookup session */
+		ss = NULL;
 	}
 	ret = -2;
 

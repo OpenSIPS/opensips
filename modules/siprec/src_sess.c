@@ -43,26 +43,35 @@ struct src_sess *src_get_session(struct dlg_cell *dlg)
 	return (struct src_sess *)val.s;
 }
 
-struct src_sess *src_create_session(struct dlg_cell *dlg,
-		struct srs_set *set, str media)
+struct src_sess *src_create_session(str *srs, str *rtp)
 {
-	struct src_sess *ss = shm_malloc(sizeof *ss + media.len);
+	struct src_sess *ss = shm_malloc(sizeof *ss + (rtp ? rtp->len : 0));
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
 	}
 	memset(ss, 0, sizeof *ss);
-	ss->media_ip.s = (char *)(ss + 1);
-
-	memcpy(ss->media_ip.s, media.s, media.len);
-	ss->media_ip.len = media.len;
+	/* uri might be changed, so we store it separately */
+	ss->srs_uri.s = shm_malloc(srs->len);
+	if (!ss->srs_uri.s) {
+		LM_ERR("not enough memory for siprec uri!\n");
+		shm_free(ss);
+		return NULL;
+	}
+	if (rtp) {
+		ss->rtpproxy.s = (char *)(ss + 1);
+		memcpy(ss->rtpproxy.s, rtp->s, rtp->len);
+		ss->rtpproxy.len = rtp->len;
+	}
 	siprec_build_uuid(ss->uuid);
 	ss->participants_no = 0;
 	ss->ts = time(NULL);
 
+	memcpy(ss->srs_uri.s, srs->s, srs->len);
+	ss->srs_uri.len = srs->len;
+
 	//lock_init(&ss->lock);
-	ss->set = set;
-	ss->dlg = dlg; /* TODO: ref the dialog */
+	//ss->dlg = dlg; /* TODO: ref the dialog */
 
 	/* don't need this right now
 	val.len = sizeof *ss;

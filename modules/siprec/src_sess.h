@@ -26,7 +26,6 @@
 #ifndef _SIPREC_SESS_H_
 #define _SIPREC_SESS_H_
 
-#include "srs_node.h"
 #include "srs_body.h"
 #include "../dialog/dlg_load.h"
 #include "../tm//tm_load.h"
@@ -47,8 +46,8 @@ struct src_sess {
 	time_t ts;
 	int version;
 	int streams_no;
-	str media_ip;
-	struct srs_set *set;
+	str rtpproxy;
+	str srs_uri;
 
 	/* siprec */
 	siprec_uuid uuid;
@@ -64,8 +63,7 @@ struct src_sess {
 };
 
 struct src_sess *src_get_session(struct dlg_cell *dlg);
-struct src_sess *src_create_session(struct dlg_cell *dlg,
-		struct srs_set *set, str media);
+struct src_sess *src_create_session(str *srs, str *rtp);
 int src_add_participant(struct src_sess *sess, str *aor);
 
 extern struct tm_binds srec_tm;

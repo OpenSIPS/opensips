@@ -58,4 +58,7 @@ int srs_build_body(struct src_sess *sess, str *body, int type);
 
 int srs_handle_media(struct sip_msg *msg, struct src_sess *sess);
 
+int srs_build_default_name(struct to_body *body);
+
+
 #endif /* _SIPREC_BODY_H_ */

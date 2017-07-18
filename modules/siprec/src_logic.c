@@ -141,7 +141,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	ci.method.s = INVITE;
 	ci.method.len = INVITE_LEN;
 	/* TODO: do a round robin or smth here */
-	ci.req_uri = list_entry(sess->set->nodes.next, struct srs_node, list)->uri;
+	ci.req_uri = sess->srs_uri;
 	/* TODO: fix uris */
 	ci.to_uri = ci.req_uri;
 	ci.from_uri = ci.to_uri;
@@ -177,10 +177,8 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		LM_ERR("cannot start recording with %.*s!\n",
 				ci.req_uri.len, ci.req_uri.s);
 		pkg_free(body.s);
-		/* TODO: try next server in the set */
+		/* TODO: failover! */
 		return -1;
-		/* try next server in the set */
-		return src_start_recording(msg, sess);
 	}
 
 	/* store the key in the param */
