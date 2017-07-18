@@ -2487,6 +2487,23 @@ done:
 	return node;
 }
 
+struct rtpp_node *get_rtpp_node(str *node)
+{
+	struct rtpp_node *rnode;
+	struct rtpp_set *set;
+
+	/* if chosen a specific node, use it! */
+	for (set = (*rtpp_set_list)->rset_first; set; set = set->rset_next)
+		for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
+			if (node->len == rnode->rn_url.len &&
+					!memcmp(node->s, rnode->rn_url.s, node->len)) {
+				if (rnode->rn_disabled)
+					rnode->rn_disabled = rtpp_test(rnode, rnode->rn_disabled, 0);
+				return (rnode->rn_disabled ? NULL : rnode);
+			}
+	return NULL;
+}
+
 static int
 unforce_rtp_proxy_f(struct sip_msg* msg, char* pset, char *var)
 {
@@ -3350,7 +3367,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 					ap = pkg_malloc(sizeof(*ap));
 					if (ap == NULL) {
 						LM_ERR("can't allocate memory\n");
-						return (-1);
+						goto error_with_lock;
 					}
 					memcpy(ap, &args, sizeof(*ap));
 					if (str1 != NULL) {
@@ -3358,7 +3375,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 						if (ap->arg1 == NULL) {
 							pkg_free(ap);
 							LM_ERR("can't allocate memory\n");
-							return (-1);
+							goto error_with_lock;
 						}
 					}
 					if (str2 != NULL) {
@@ -3368,7 +3385,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid,
 								pkg_free(ap->arg1);
 							pkg_free(ap);
 							LM_ERR("can't allocate memory\n");
-							return (-1);
+							goto error_with_lock;
 						}
 					}
 					/* we don't remember the node, since it might not be
@@ -4402,11 +4419,10 @@ error:
 }
 
 static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
-		str *from_tag, str *to_tag, struct rtpp_set *set,
+		str *from_tag, str *to_tag, struct rtpp_node *node,
 		pv_spec_p var, str *flags, str *destination, int medianum)
 {
 	int nitems;
-	struct rtpp_node *node;
 	char cmd;
 	int media_start, media_stop;
 	sdp_info_t *msg_sdp;
@@ -4429,6 +4445,12 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 		{";", 1},	/* [13] medianum separator */
 		{NULL, 0},	/* [14] medianum */
 	};
+
+	/* check if we support recording */
+	if (!HAS_CAP(node, RECORD)) {
+		LM_ERR("RTPProxy does not support recording!\n");
+		goto error;
+	}
 
 	if (destination) {
 		/* if name is specified, we need to change the command */
@@ -4477,20 +4499,6 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 			nitems = 9;
 	}
 
-	if (nh_lock)
-		lock_start_read( nh_lock );
-
-	node = select_rtpp_node(msg, *callid, set, (pv_spec_p)var, 1);
-	if (!node) {
-		LM_ERR("no available proxies\n");
-		goto error;
-	}
-	/* check if we support recording */
-	if (!HAS_CAP(node, RECORD)) {
-		LM_ERR("RTPProxy does not support recording!\n");
-		goto error;
-	}
-
 	if (cmd == 'R')
 		send_rtpp_command(node, v, nitems);
 	else
@@ -4501,36 +4509,41 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 			media_start++;
 		}
 
-	if(nh_lock)
-	{
-		/* we are done reading -> unref the data */
-		lock_stop_read( nh_lock );
-	}
 	return 1;
 
 error:
-	if(!nh_lock)
-		return -1;
-
-	/* we are done reading -> unref the data */
-	lock_stop_read( nh_lock );
 	return -1;
 }
 
 static int rtpproxy_api_recording(str *callid, str *from_tag,
-		str *to_tag, int *iset, str *flags, str *destination, int medianum)
+		str *to_tag, str *node, str *flags, str *destination, int medianum)
 {
-	struct rtpp_set *set;
-	int int_val = (iset ? *iset : default_rtpp_set_no);
+	struct rtpp_node *rnode;
+	int ret = -1;
 
-	set = select_rtpp_set(int_val);
-	if (!set) {
-		LM_ERR("no set found for group %d\n", int_val);
-		return -1;
+	if (nh_lock) {
+		lock_start_read( nh_lock );
 	}
 
-	return w_rtpproxy_recording(NULL, callid, from_tag,
-			to_tag, set, NULL, flags, destination, medianum);
+	if (node)
+		rnode = get_rtpp_node(node);
+	else
+		/* regular selection from the default rtpp set */
+		rnode = select_rtpp_node(NULL, *callid, *default_rtpp_set, NULL, 1);
+
+	if (!rnode) {
+		LM_ERR("no available proxies\n");
+		goto exit;
+	}
+
+	ret = w_rtpproxy_recording(NULL, callid, from_tag,
+			to_tag, rnode, NULL, flags, destination, medianum);
+
+exit:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
+	}
+	return ret;
 }
 
 static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var,
@@ -4542,7 +4555,8 @@ static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var,
 	str from_tag = {0, 0};
 	str to_tag = {0, 0};
 	str aux;
-	int medianum;
+	int medianum, ret;
+	struct rtpp_node *node;
 
 	if (destination) {
 		if (fixup_get_svalue(msg, (gparam_p)destination, &dst_val) < 0) {
@@ -4589,17 +4603,30 @@ static int rtpproxy_recording(struct sip_msg* msg, char *setid, char *var,
 		from_tag = aux;
 	}
 
+	if (nh_lock)
+		lock_start_read( nh_lock );
+
 	set = get_rtpp_set(msg, (nh_set_param_t *)setid);
 	if (!set) {
 		LM_ERR("could not find rtpproxy set\n");
-		return 0;
+		return -1;
 	}
 
-	return w_rtpproxy_recording(msg, &callid, &from_tag, &to_tag, set,
+	node = select_rtpp_node(msg, callid, set, (pv_spec_p)var, 1);
+	if (!node) {
+		LM_ERR("no available proxies\n");
+		return -1;
+	}
+
+	ret = w_rtpproxy_recording(msg, &callid, &from_tag, &to_tag, node,
 			(pv_spec_p)var,
 			(flags ? &flags_val : NULL),
 			(destination ? &dst_val : NULL),
 			medianum);
+
+	if (nh_lock)
+		lock_stop_read( nh_lock );
+	return ret;
 }
 
 
