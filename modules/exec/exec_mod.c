@@ -315,6 +315,7 @@ static int exec_avp_fixup(void** param, int param_no)
 static int exec_fixup(void** param, int param_no)
 {
 	gparam_p out_var;
+	pv_spec_p env_avp;
 	pv_elem_t* model;
 	str s;
 
@@ -354,18 +355,14 @@ static int exec_fixup(void** param, int param_no)
 
 			return 0;
 		case 5: /* environment avp */
-			if (fixup_spve(param)) {
-				LM_ERR("cannot fix output var\n");
+			if (fixup_pvar(param)) {
+				LM_ERR("cannot fix env avp\n");
 				return -1;
 			}
-			out_var = *param;
-			if (out_var->type != GPARAM_TYPE_PVE) {
-				LM_ERR("env var must be a single variable\n");
-				return -1;
-			}
+			env_avp = *param;
 
-			if (out_var->v.pve->spec.type != PVT_AVP) {
-				LM_ERR("env var must be avp typed\n");
+			if (env_avp->type != PVT_AVP) {
+				LM_ERR("environment var must be an AVP (%d)\n", env_avp->type);
 				return -1;
 			}
 
@@ -489,7 +486,7 @@ inline static int w_exec(struct sip_msg* msg, char* cmd, char* in,
 	}
 
 	if (avp_env != NULL) {
-		if ((hf=get_avp_values_list(msg, &((gparam_p)avp_env)->v.pve->spec.pvp)) == 0)
+		if ((hf=get_avp_values_list(msg, &((pv_spec_p)avp_env)->pvp)) == 0)
 			return -1;
 		backup_env=replace_env(hf);
 		if (!backup_env) {
@@ -537,7 +534,7 @@ inline static int w_async_exec(struct sip_msg* msg, async_ctx *ctx,
 	}
 
 	if (avp_env != NULL) {
-		if ((hf=get_avp_values_list(msg, &((gparam_p)avp_env)->v.pve->spec.pvp)) == 0)
+		if ((hf=get_avp_values_list(msg, &((pv_spec_p)avp_env)->pvp)) == 0)
 			return -1;
 		backup_env=replace_env(hf);
 		if (!backup_env) {
