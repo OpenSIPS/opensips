@@ -437,7 +437,7 @@ bin:
 
 .PHONY: deb-orig-tar
 deb-orig-tar: tar
-	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE).orig.tar.gz
+	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE:-dev=).orig.tar.gz
 
 .PHONY: deb-%
 deb-%:
