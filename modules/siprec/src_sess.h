@@ -33,6 +33,13 @@
 
 #define SRC_MAX_PARTICIPANTS 2
 
+#ifdef SIPREC_DEBUG_REF
+#define SIPREC_DEBUG(_s, _msg) \
+	LM_DBG("session=%p ref=%p %s (%s:%d)\n", (_s), (_s)->ref, \
+			_msg, __func__, __LINE__)
+#else
+#define SIPREC_DEBUG(_s, _msg)
+#endif
 
 struct src_part {
 	str aor;
@@ -53,22 +60,66 @@ struct src_sess {
 
 	/* siprec */
 	siprec_uuid uuid;
-	/* XXX: for now we only have two participants, but we can expand more in
-	 * the future */
+	/* XXX: for now we only have two participants,
+	 * but we can expand more in the future */
 	int participants_no;
 	struct src_part participants[SRC_MAX_PARTICIPANTS];
 
 	/* internal */
+	int ref;
+	int started;
 	str b2b_key;
+	gen_lock_t lock;
 	struct dlg_cell *dlg;
-	//gen_lock_t lock;
 };
 
-struct src_sess *src_get_session(struct dlg_cell *dlg);
+void src_unref_session(void *p);
 struct src_sess *src_create_session(str *srs, str *rtp, str *group);
+void src_free_session(struct src_sess *sess);
 int src_add_participant(struct src_sess *sess, str *aor, str *name);
 
 extern struct tm_binds srec_tm;
 extern struct dlg_binds srec_dlg;
+
+#define SIPREC_LOCK(_s) lock_get(&(_s)->lock)
+#define SIPREC_UNLOCK(_s) lock_release(&(_s)->lock)
+
+#define SIPREC_REF_UNSAFE(_s) \
+	do { \
+		SIPREC_DEBUG(_s, "ref"); \
+		(_s)->ref++; \
+	} while(0)
+
+#define SIPREC_REF(_s) \
+	do { \
+		SIPREC_LOCK(_s); \
+		SIPREC_REF_UNSAFE(_s); \
+		SIPREC_UNLOCK(_s); \
+	} while(0)
+
+#define SIPREC_UNREF_COUNT_UNSAFE(_s, _c) \
+	do { \
+		SIPREC_DEBUG(_s, "unref"); \
+		(_s)->ref -= (_c); \
+		if ((_s)->ref == 0) { \
+			LM_DBG("destroying session=%p\n", _s); \
+			SIPREC_UNLOCK(_s); \
+			src_free_session(_s); \
+		} else { \
+			if ((_s)->ref < 0) \
+				LM_BUG("invalid ref for session=%p ref=%d (%s:%d)\n", \
+						(_s), (_s)->ref, __func__, __LINE__); \
+		} \
+	} while(0)
+
+#define SIPREC_UNREF_COUNT(_s, _c) \
+	do { \
+		SIPREC_LOCK(_s); \
+		SIPREC_UNREF_COUNT_UNSAFE(_s, _c); \
+		SIPREC_UNLOCK(_s); \
+	} while(0)
+
+#define SIPREC_UNREF_UNSAFE(_s) SIPREC_UNREF_COUNT_UNSAFE(_s, 1)
+#define SIPREC_UNREF(_s) SIPREC_UNREF_COUNT(_s, 1)
 
 #endif /* _SIPREC_SESS_H_ */

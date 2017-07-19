@@ -50,7 +50,7 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 	if (srec_b2b.send_request(&req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
-	/* TODO: remove! */
+	SIPREC_UNREF(ss);
 }
 
 
@@ -60,7 +60,9 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 	struct src_sess *ss;
 	int ret = -1;
 	str ack = str_init(ACK);
+	str bye = str_init(BYE);
 
+	/* for now we only receive replies from SRS */
 	if (type != B2B_REPLY)
 		return -1;
 
@@ -74,6 +76,19 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		return -1;
 	}
 
+	LM_DBG("received b2b reply with code %d\n", msg->REPLY_STATUS);
+
+	ret = 0;
+	/* check if the reply was successfully */
+	if (msg->REPLY_STATUS < 200) {
+		/* wait for a final reply */
+		return 0;
+	} else if (msg->REPLY_STATUS > 300) {
+		LM_DBG("recording is not available!\n");
+		goto no_recording;
+	}
+
+
 	/* reply received - sending ACK */
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
@@ -86,23 +101,18 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 				req.b2b_key->len, req.b2b_key->s);
 		goto no_recording;
 	}
-
-	LM_DBG("received b2b reply with code %d\n", msg->REPLY_STATUS);
-
-	/* check if the reply was successfully */
-	if (msg->REPLY_STATUS != 200) {
-		ret = 0;
-		goto no_recording;
-	}
+	ret = -1;
 
 	if (srs_handle_media(msg, ss) < 0) {
 		LM_ERR("cannot handle SRS media!\n");
 		goto no_recording;
 	}
 
+	SIPREC_REF(ss);
 	if (srec_dlg.register_dlgcb(ss->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
-			srec_dlg_end, ss, 0)){
+			srec_dlg_end, ss, src_unref_session)){
 		LM_ERR("cannot register callback for database accounting\n");
+		SIPREC_UNREF(ss);
 		goto no_recording;
 	}
 
@@ -110,9 +120,17 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 	return 0;
 no_recording:
 	if (ret != 0) {
-		/* TODO: send BYE to the SRS */
+		memset(&req, 0, sizeof(req));
+		req.et = B2B_CLIENT;
+		req.b2b_key = &ss->b2b_key;
+		req.method = &bye;
+		req.no_cb = 1; /* do not call callback */
+
+		if (srec_b2b.send_request(&req) < 0)
+			LM_ERR("Cannot send bye for recording session with key %.*s\n",
+					req.b2b_key->len, req.b2b_key->s);
 	}
-	/* TODO: cleanup */
+	SIPREC_UNREF(ss);
 	return ret;
 }
 
@@ -140,7 +158,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	memset(&ci, 0, sizeof ci);
 	ci.method.s = INVITE;
 	ci.method.len = INVITE_LEN;
-	/* TODO: do a round robin or smth here */
+	/* try the first srs_uri */
 	ci.req_uri = sess->srs_uri;
 	/* TODO: fix uris */
 	ci.to_uri = ci.req_uri;
@@ -168,30 +186,34 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	ci.body = &body;
 
-	/* hack to pass a parameter :( */
+	/* XXX: hack to pass a parameter :( */
 	param.s = (char *)&sess;
 	param.len = sizeof(void *);
+	SIPREC_REF_UNSAFE(sess);
 	client = srec_b2b.client_new(&ci, srec_b2b_notify, NULL, (str *)&param);
 	if (!client) {
 		LM_ERR("cannot start recording with %.*s!\n",
 				ci.req_uri.len, ci.req_uri.s);
 		pkg_free(body.s);
-		/* TODO: failover! */
-		return -1;
+		goto unref;
 	}
+	/* release generated body */
+	pkg_free(body.s);
 
 	/* store the key in the param */
 	sess->b2b_key.s = shm_malloc(client->len);
 	if (!sess->b2b_key.s) {
 		LM_ERR("out of shm memory!\n");
-		return -1;
+		goto unref;
 	}
 	memcpy(sess->b2b_key.s, client->s, client->len);
 	sess->b2b_key.len = client->len;
+	sess->started = 1;
 
-	/* release generated body */
-	pkg_free(body.s);
 	return 1;
+unref:
+	SIPREC_UNREF_UNSAFE(sess);
+	return -1;
 }
 
 void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
@@ -203,6 +225,11 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 
 	ss = (struct src_sess *)*ps->param;
 	/* engage only on successfull calls */
-	if (src_start_recording(ps->rpl, ss) < 0)
+	SIPREC_LOCK(ss);
+	/* if session has been started, do not start it again */
+	if (ss->started)
+		LM_WARN("Session %p (%s) already started!\n", ss, ss->uuid);
+	else if (src_start_recording(ps->rpl, ss) < 0)
 		LM_ERR("cannot start recording!\n");
+	SIPREC_UNLOCK(ss);
 }

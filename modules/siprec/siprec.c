@@ -227,7 +227,9 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		return -2;
 	}
 
-	/* TODO: link the dlg here, but do we need to ref it ? */
+	/* we ref the dialog to make sure it does not dissapear until we receive
+	 * the reply from the SRS */
+	srec_dlg.ref_dlg(dlg, 1);
 	ss->dlg = dlg;
 
 	ret = -2;
@@ -287,16 +289,17 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		goto session_cleanup;
 	}
 
-	/* TODO: cleanup after msg */
+	SIPREC_REF_UNSAFE(ss);
 	if (srec_tm.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, tm_start_recording,
-			ss, 0) <= 0) {
+			ss, src_unref_session) <= 0) {
 		LM_ERR("cannot register tm callbacks\n");
+		SIPREC_UNREF_UNSAFE(ss);
 		goto session_cleanup;
 	}
 	return 1;
 
 session_cleanup:
-	/* TODO: session destroy! */
+	src_free_session(ss);
 	return ret;
 }
 

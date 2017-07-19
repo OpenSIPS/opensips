@@ -30,19 +30,6 @@ struct tm_binds srec_tm;
 struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
-struct src_sess *src_get_session(struct dlg_cell *dlg)
-{
-	str val;
-	if (srec_dlg.fetch_dlg_value(dlg, &srec_dlg_name, &val, 0) < 0)
-		return NULL;
-	if (val.len != sizeof(struct src_sess *)) {
-		LM_BUG("invalid value in dlg ctx: %d (!= %ld)\n",
-				val.len, sizeof(struct src_sess *));
-		return NULL;
-	}
-	return (struct src_sess *)val.s;
-}
-
 struct src_sess *src_create_session(str *srs, str *rtp, str *grp)
 {
 	struct src_sess *ss = shm_malloc(sizeof *ss +
@@ -77,17 +64,8 @@ struct src_sess *src_create_session(str *srs, str *rtp, str *grp)
 	memcpy(ss->srs_uri.s, srs->s, srs->len);
 	ss->srs_uri.len = srs->len;
 
-	//lock_init(&ss->lock);
-	//ss->dlg = dlg; /* TODO: ref the dialog */
-
-	/* don't need this right now
-	val.len = sizeof *ss;
-	val.s = (char *)ss;
-	if (srec_dlg.store_dlg_value(dlg, &srec_dlg_name, &val) < 0) {
-		LM_ERR("cannot store siprec ctx in dialog!\n");
-		return NULL;
-	}
-	*/
+	lock_init(&ss->lock);
+	ss->ref = 0;
 
 	return ss;
 }
@@ -105,13 +83,30 @@ void src_free_participant(struct src_part *part)
 		shm_free(part->aor.s);
 }
 
+void src_unref_session(void *p)
+{
+	SIPREC_UNREF((struct src_sess *)p);
+}
+
 void src_free_session(struct src_sess *sess)
 {
 	int p;
 
+	/* extra check here! */
+	if (sess->ref != 0) {
+		LM_BUG("freeing session=%p with ref=%d\n", sess, sess->ref);
+		return;
+	}
+	/* unref the dialog */
+	srec_dlg.unref_dlg(sess->dlg, 1);
+
 	for (p = 0; p < sess->participants_no; p++)
 		src_free_participant(&sess->participants[p]);
-	shm_free(sess->b2b_key.s);
+	if (sess->b2b_key.s)
+		shm_free(sess->b2b_key.s);
+	if (sess->srs_uri.s)
+		shm_free(sess->srs_uri.s);
+	lock_destroy(&sess->lock);
 	shm_free(sess);
 }
 

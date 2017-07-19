@@ -103,6 +103,7 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
 	char *start, *end;
 	int streams_no = 0;
 	int medianum = 0;
+	int label;
 
 	struct srs_sdp_stream *stream = NULL;
 
@@ -137,7 +138,7 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
 			/* globals are just until they reach m= line */
 			if (sdp_type == 'm')
 				break;
-			/* TODO: we need separate buffers for each type, because they need
+			/* XXX: we need separate buffers for each type, because they need
 			 * to be all in order when we put them in the session */
 			else if (sdp_type == 'b' ||sdp_type == 'z' || sdp_type == 'k' || sdp_type == 'a') {
 				memcpy(tmp_buf.s + tmp_buf.len, line.s, line.len);
@@ -223,7 +224,8 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
 			}
 			/* compute the extra length of the stream */
 			tmp_len = 12/* a=inactive\r\n or a=sendonly\r\n */;
-			tmps = int2str(sess->streams_no + 1, &label_len);
+			label = ++sess->streams_no;
+			tmps = int2str(label, &label_len);
 			tmp_len += 8 /* a=label: */ + label_len + 2 /* \r\n */;
 
 			/* create a new stream to dump all data into */
@@ -232,6 +234,8 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
 			if (!stream) {
 				LM_ERR("cannot alloc new stream!\n");
 				pkg_free(allocated_buf);
+				/* revert label changes */
+				--sess->streams_no;
 				return -1;
 			}
 			memset(stream, 0, sizeof *stream);
@@ -268,7 +272,7 @@ int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
 			siprec_build_uuid(stream->uuid);
 
 			/* all good, add it into the sdp */
-			stream->label = ++sess->streams_no;
+			stream->label = label;
 			list_add_tail(&stream->list, &part->streams);
 			streams_no++;
 		}
