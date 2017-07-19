@@ -100,6 +100,10 @@ int init_new_stat(stat_var* stat) {
 inline void update_module_stats(long mem_used, long real_used, int frags, int group_idx) {
 
 	unsigned long local_max, global_max;
+
+	if (mem_skip_stats)
+		return;
+
 #ifdef SHM_SHOW_DEFAULT_GROUP
 	if(!memory_mods_stats)
 		return;

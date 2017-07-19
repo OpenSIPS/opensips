@@ -161,6 +161,11 @@ extern long *event_shm_last;
 // determines if there is a pending event
 extern int *event_shm_pending;
 
+/* indicates the statistics updates should not be done */
+#ifdef SHM_EXTRA_STATS
+extern int mem_skip_stats;
+#endif
+
 // events are used only if SHM and STATISTICS are used
 void shm_event_raise(long used, long size, long perc);
 

@@ -109,6 +109,9 @@ unsigned long long *mem_hash_usage;
 long event_shm_threshold = 0;
 long *event_shm_last = 0;
 int *event_shm_pending = 0;
+#ifdef SHM_EXTRA_STATS
+int mem_skip_stats = 0;
+#endif
 
 static str shm_usage_str = { "usage", 5 };
 static str shm_threshold_str = { "threshold", 9 };
@@ -575,6 +578,7 @@ void shm_mem_destroy(void)
 			#endif
 		}
 
+		mem_skip_stats = 1;
 
 		for (i = 0; i < mem_free_idx + offset; i++)
 			if (i != core_group) {
