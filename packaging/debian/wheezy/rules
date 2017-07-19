@@ -17,15 +17,30 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
                     | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
-UPVERSION:=$(shell echo $(DEBVERSION) | sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
+UPVERSION:=$(shell echo $(DEBVERSION) \
+					| sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
 
 FILENAME := opensips_$(UPVERSION).orig.tar.gz
 URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
 
-# NOTICE: If installing to "/usr/local", uncomment "override_dh_usrlocal:" before building!
-#    (according to Debian policies, this is a user-only directory,
-#       so .deb packages should not install files into it)
-INSTALL_PREFIX := /usr
+#
+# INSTALL_PREFIX - can be defined at build time to force a specific install
+#                  path for both binaries and config files
+#
+# We automatically disable "dh_usrlocal" if the user intends the package to
+# install files under "/usr/local" (this should be a user-only directory!)
+ifneq ($(INSTALL_PREFIX),)
+OVERRIDE_DH_USRLOCAL := $(shell echo $(INSTALL_PREFIX) | \
+                          grep -c "^/\+usr/local\>")
+
+ifneq ($(OVERRIDE_DH_USRLOCAL),0)
+override_dh_usrlocal:
+endif
+
+BIN_PREFIX ?= $(INSTALL_PREFIX)
+else
+BIN_PREFIX ?= /usr
+endif
 
 # Uncomment this to turn on verbose mode.
 # export DH_VERBOSE=1
@@ -227,9 +242,11 @@ endif
 override_dh_auto_build:
 	# Add here commands to compile the package.
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) app \
-	  modules skip_modules="$(NONCORE_MODULES)" cfg_target=/etc/opensips/
+	  modules skip_modules="$(NONCORE_MODULES)" cfg_prefix=$(INSTALL_PREFIX) \
+	  cfg_target=$(INSTALL_PREFIX)/etc/opensips/
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
-	  modules modules="$(BUILD_MODULE_PATHS)" cfg_target=/etc/opensips/
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg_prefix=$(INSTALL_PREFIX) \
+	  cfg_target=$(INSTALL_PREFIX)/etc/opensips/
 	# generate the utils db_berkeley
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) utils include_modules="db_berkeley"
 
@@ -261,14 +278,21 @@ override_dh_auto_install:
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install \
 		install-modules-all skip_modules="$(NONCORE_MODULES)" \
 		basedir=$(CURDIR)/debian/opensips \
-		prefix=$(INSTALL_PREFIX) \
-		cfg_prefix=$(CURDIR)/debian/opensips \
+		prefix=$(BIN_PREFIX) \
+		cfg_prefix=$(CURDIR)/debian/opensips/$(INSTALL_PREFIX) \
 		cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
 		doc_dir=share/doc/opensips \
 		skip-install-doc=yes # skip INSTALL.gz on debian systems
 
-	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
-	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/$(INSTALL_PREFIX)/sbin/opensipsctl
+	find $(CURDIR)/debian/opensips/$(INSTALL_PREFIX)/etc/opensips -type f -exec chmod -x {} \;
+	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/$(BIN_PREFIX)/sbin/opensipsctl
+
+ifneq ($(INSTALL_PREFIX),)
+	sed -i -e "s#PATH_EXTRA#:$(BIN_PREFIX)/sbin:$(BIN_PREFIX)/bin#g" \
+		   $(CURDIR)/debian/opensips.init
+else
+	sed -i -e "s#PATH_EXTRA##g" $(CURDIR)/debian/opensips.init
+endif
 
 	set -e;\
 	for pkg in $(BUILD_MODPKG_LIST) ; do\
@@ -279,29 +303,27 @@ override_dh_auto_install:
 	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) install-modules-all \
 		modules="$${pkg_paths}"  \
 		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
-		prefix=$(INSTALL_PREFIX) \
-		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname} \
+		prefix=$(BIN_PREFIX) \
+		cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \
 		cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
 		doc_dir=share/doc/$${pkg_pkgname} \
 		;\
 	done
 
 	# move console binary from opensips to opensips-console
-	mkdir -p $(CURDIR)/debian/opensips-console/$(INSTALL_PREFIX)/sbin
-	mv $(CURDIR)/debian/opensips/$(INSTALL_PREFIX)/sbin/osipsconsole \
-		 $(CURDIR)/debian/opensips-console/$(INSTALL_PREFIX)/sbin/
+	mkdir -p $(CURDIR)/debian/opensips-console/$(BIN_PREFIX)/sbin
+	mv $(CURDIR)/debian/opensips/$(BIN_PREFIX)/sbin/osipsconsole \
+		 $(CURDIR)/debian/opensips-console/$(BIN_PREFIX)/sbin/
 	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
-	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(INSTALL_PREFIX)/
-	mv $(CURDIR)/debian/opensips-berkeley-module/$(INSTALL_PREFIX)/sbin \
-		$(CURDIR)/debian/opensips-berkeley-bin/$(INSTALL_PREFIX)/
+	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
+	mv $(CURDIR)/debian/opensips-berkeley-module/$(BIN_PREFIX)/sbin \
+		$(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg
 
 override_dh_auto_test:
 	#Disable tests, too old and they are obsolete
-
-#override_dh_usrlocal:
 
 print-version:
 	@@echo "Debian version:          $(DEBVERSION)"
