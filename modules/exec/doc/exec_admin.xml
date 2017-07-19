@@ -191,14 +191,19 @@ modparam("exec", "time_to_kill", 20)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>envavp</emphasis> - Avp where to store the values for the
+			<para><emphasis>envavp</emphasis> - AVP which holds the values for the
 			environment variables to be passed for the command. The names of the environment
-			variables will be "OSIPS_EXEC_#" where # will start from 0. For example if you
-			store 2 values into an avp ("a" and "b") OSIPS_EXEC_0 will contain the first value
-			and OSIPS_EXEC_1 the second value.
+			variables will be "OSIPS_EXEC_#", where "#" starts from 0. For example, if we
+			push two values (e.g. "b" and "a") into an AVP variable, which acts like a stack,
+			OSIPS_EXEC_0 will hold "a", while OSIPS_EXEC_1 will hold "b".
 			</para>
 		</listitem>
 		</itemizedlist>
+		<para>
+		NOTE: If expecting a multi-line formatted output, you should use $avp
+		variables for the "stdout" and "stderr" parameters, to avoid only
+		receiving the last lines of each stream.
+		</para>
 		<para>
 		WARNING: any OpenSIPS pseudo-vars which may contain special bourne shell (sh/bash)
 		characters should be placed inside quotes, e.g.
