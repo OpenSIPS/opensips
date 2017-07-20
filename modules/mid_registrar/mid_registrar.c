@@ -439,7 +439,7 @@ int get_expires_hf(struct sip_msg* _m)
 
 	if (_m->expires) {
 		p = (exp_body_t*)_m->expires->parsed;
-		if (p->valid) {
+		if (p != NULL && p->valid) {
 			if (p->val != 0) {
 				return p->val;
 			} else return 0;

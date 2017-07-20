@@ -1985,7 +1985,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
                           char *to_uri_gp, char *expires_gp)
 {
 	udomain_t *ud = (udomain_t *)dom;
-	urecord_t *rec;
+	urecord_t *rec = NULL;
 	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	struct save_ctx sctx;
 	int rc = -1, st;
@@ -2068,7 +2068,8 @@ quick_reply:
 	/* forwarding not needed! This REGISTER will be absorbed */
 
 	/* prepare the Contact header field for a quick 200 OK response */
-	build_contact(rec->contacts, msg);
+	if (rec != NULL && rec->contacts != NULL)
+		build_contact(rec->contacts, msg);
 
 	/* no contacts need updating on the far end registrar */
 	ul_api.unlock_udomain(ud, &sctx.aor);
