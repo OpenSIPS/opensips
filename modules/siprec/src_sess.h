@@ -32,10 +32,13 @@
 #include "../../ut.h"
 
 #define SRC_MAX_PARTICIPANTS 2
+/* Uncomment this to enable SIPREC debugging
+#define SIPREC_DEBUG_REF
+ */
 
 #ifdef SIPREC_DEBUG_REF
 #define SIPREC_DEBUG(_s, _msg) \
-	LM_DBG("session=%p ref=%p %s (%s:%d)\n", (_s), (_s)->ref, \
+	LM_DBG("session=%p ref=%d %s (%s:%d)\n", (_s), (_s)->ref, \
 			_msg, __func__, __LINE__)
 #else
 #define SIPREC_DEBUG(_s, _msg)

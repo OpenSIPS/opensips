@@ -50,7 +50,6 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 	if (srec_b2b.send_request(&req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
-	SIPREC_UNREF(ss);
 }
 
 
@@ -108,7 +107,9 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		goto no_recording;
 	}
 
-	SIPREC_REF(ss);
+	/* no need to ref the dialog, since we rely on it from now on */
+	srec_dlg.unref_dlg(ss->dlg, 1);
+	/* also, the b2b ref moves on the dialog */
 	if (srec_dlg.register_dlgcb(ss->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
 			srec_dlg_end, ss, src_unref_session)){
 		LM_ERR("cannot register callback for database accounting\n");

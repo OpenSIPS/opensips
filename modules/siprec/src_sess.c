@@ -97,8 +97,6 @@ void src_free_session(struct src_sess *sess)
 		LM_BUG("freeing session=%p with ref=%d\n", sess, sess->ref);
 		return;
 	}
-	/* unref the dialog */
-	srec_dlg.unref_dlg(sess->dlg, 1);
 
 	for (p = 0; p < sess->participants_no; p++)
 		src_free_participant(&sess->participants[p]);
