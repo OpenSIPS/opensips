@@ -304,7 +304,7 @@ static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
 
 	/* TODO FIXME we're now assuming the request has an "Expires: " header */
 	if (c->expires == NULL || c->expires->body.len == 0) {
-		if (*skip_exp_header == 0) {
+		if (*skip_exp_header == 0 && msg->expires != NULL && msg->expires->body.len > 0) {
 			LM_DBG("....... Exp hdr: '%.*s'\n",
 			       msg->expires->body.len, msg->expires->body.s);
 			lump = del_lump(msg, msg->expires->body.s - msg->buf,

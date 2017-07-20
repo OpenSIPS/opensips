@@ -97,6 +97,7 @@ int check_contacts(struct sip_msg* _m, int* _s)
 	*_s = 0;
 	/* Message without contacts is OK */
 	if (_m->contact == 0) return 0;
+	if (_m->contact->parsed == 0) return 0;
 
 	if (((contact_body_t*)_m->contact->parsed)->star == 1) {
 		/* The first Contact HF is star */
@@ -157,6 +158,7 @@ static struct hdr_field* act_contact_2;
 static contact_t* __get_first_contact(struct sip_msg* _m, struct hdr_field **act_contact)
 {
 	if (_m->contact == 0) return 0;
+	if (_m->contact->parsed == 0) return 0;
 
 	*act_contact = _m->contact;
 	return (((contact_body_t*)_m->contact->parsed)->contacts);
