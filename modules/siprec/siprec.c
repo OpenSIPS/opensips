@@ -269,7 +269,8 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 			LM_ERR("cannot fetch callee information!\n");
 			goto session_cleanup;
 		}
-		if (parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body) < 0) {
+		if (!parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body) ||
+				tmp_body.error == PARSE_ERROR) {
 			LM_ERR("invalid callee information: [%.*s]!\n", tmp_str.len, tmp_str.s);
 			goto session_cleanup;
 		}
