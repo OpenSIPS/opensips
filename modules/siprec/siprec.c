@@ -46,7 +46,10 @@ static stat_var *example_stat = 0;
 /* modules dependencies */
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "rtpproxy", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
