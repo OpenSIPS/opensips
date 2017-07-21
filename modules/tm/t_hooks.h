@@ -49,7 +49,9 @@ struct cell;
 #define TMCB_TRANS_CANCELLED    (1<<11)
 #define TMCB_TRANS_DELETED      (1<<12)
 #define TMCB_PRE_SEND_BUFFER	(1<<13)
-#define TMCB_MAX                ((1<<14)-1)
+#define TMCB_MSG_MATCHED_IN     (1<<14)
+#define TMCB_MSG_SENT_OUT       (1<<15)
+#define TMCB_MAX                ((1<<16)-1)
 
 /*
  *  Caution: most of the callbacks work with shmem-ized messages
@@ -138,6 +140,15 @@ struct cell;
  * TMCB_LOCAL_COMPLETED -- final reply for localy initiated
  *  transaction arrived. Message may be FAKED_REPLY.
  *
+ * TMCB_MSG_MATCHED_IN -- triggered whenever there is an
+ *  incoming SIP message matching the transaction. It may be
+ *  a requests (in retransmission, in ACK, in CANCEL) or a
+ *  reply (received reply).
+ *
+ * TMCB_MSG_SENT_OUT -- triggered whenever there the transaction
+ *  is about to send out a SIP message (related to the transaction).
+ *  It may be a request (out request, out CANCEL, out ACK) or a
+ *  reply (relaied reply, locally generated reply).
  *
  * IMPORTANT NOTES:
  *
