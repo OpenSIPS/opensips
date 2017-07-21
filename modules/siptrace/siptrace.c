@@ -118,8 +118,8 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 
 
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
-static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps);
-static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_msg_out(struct sip_msg* req, str  *buffer,
 			struct socket_info* send_sock, int proto, union sockaddr_union *to,
 			trace_info_p info);
@@ -1027,30 +1027,17 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 	/* context for the request message */
 	SET_SIPTRACE_CONTEXT(info);
 
-	if(tmb.register_tmcb( msg, 0, TMCB_REQUEST_BUILT, trace_onreq_out, info, 0) <=0)
-	{
-		LM_ERR("can't register trace_onreq_out\n");
-		return -1;
-	}
-
 	/* allows catching statelessly forwarded ACK in stateful transactions
 	 * and stateless replies */
 	msg->msg_flags |= FL_USE_SIPTRACE;
 
-	/* doesn't make sense to register the reply callbacks for ACK or PRACK */
-	if (msg->REQ_METHOD & (METHOD_ACK | METHOD_PRACK))
-		return 0;
-
-	if(tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN, trace_onreply_in, info, 0) <=0)
-	{
-		LM_ERR("can't register trace_onreply_in\n");
+	if(tmb.register_tmcb( msg, 0, TMCB_MSG_MATCHED_IN, trace_tm_in, info, 0) <=0) {
+		LM_ERR("can't register TM MATCH IN callback\n");
 		return -1;
 	}
 
-	if(tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT, trace_onreply_out,
-									info, dlg_tran?0:free_trace_info_shm) <=0)
-	{
-		LM_ERR("can't register trace_onreply_out\n");
+	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT, trace_tm_out, info, 0) <=0) {
+		LM_ERR("can't register TM SEND OUT callback\n");
 		return -1;
 	}
 
@@ -1739,7 +1726,9 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	 * shared to avoid conflicts on conn_id field */
 	info = *(trace_info_p)(*ps->param);
 	dest = ps->extra2;
-	SET_SIPTRACE_CONTEXT(*ps->param);
+
+	if (current_processing_ctx)
+		SET_SIPTRACE_CONTEXT(*ps->param);
 
 	if (dest) {
 		if ( dest->proto != PROTO_UDP ) {
@@ -1909,10 +1898,13 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	db_vals[1].val.str_val.s = msg->callid->body.s;
 	db_vals[1].val.str_val.len = msg->callid->body.len;
 
-	if(sbuf!=NULL && sbuf->len > 7 && !strncasecmp(sbuf->s, "CANCEL ", 7))
-	{
+	if(sbuf!=NULL && sbuf->len > 7 && !strncasecmp(sbuf->s, "CANCEL ", 7)){
 		db_vals[2].val.str_val.s = "CANCEL";
 		db_vals[2].val.str_val.len = 6;
+	} else
+	if(sbuf!=NULL && sbuf->len > 4 && !strncasecmp(sbuf->s, "ACK ", 4)){
+		db_vals[2].val.str_val.s = "ACK";
+		db_vals[2].val.str_val.len = 3;
 	} else {
 		db_vals[2].val.str_val= REQ_LINE(msg).method;
 	}
@@ -1968,16 +1960,14 @@ error:
 	return;
 }
 
+
 static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 {
-
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	struct sip_msg* msg;
-	struct sip_msg* req;
 	char statusbuf[INT2STR_MAX_LEN];
 	int len;
-
 	trace_info_t info;
 
 	if(t==NULL || t->uas.request==0 || ps==NULL)
@@ -1989,15 +1979,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	/* context for replies */
 	SET_SIPTRACE_CONTEXT((trace_info_p)(*ps->param));
 
-	req = ps->req;
 	msg = ps->rpl;
-
-	if(msg==NULL || req==NULL)
-	{
-		LM_DBG("no reply\n");
-		return;
-	}
-
 
 	/* we do this little trick in order to have the info on the stack, not
 	 * shared to avoid conflicts on conn_id field */
@@ -2016,7 +1998,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		goto error;
 	}
 
-	if(parse_headers(msg, HDR_CALLID_F, 0)!=0)
+	if(parse_headers(msg, HDR_CALLID_F|HDR_CSEQ_F, 0)!=0)
 	{
 		LM_ERR("cannot parse call-id\n");
 		return;
@@ -2037,11 +2019,9 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		goto error;
 	}
 
-	db_vals[1].val.str_val.s = msg->callid->body.s;
-	db_vals[1].val.str_val.len = msg->callid->body.len;
+	db_vals[1].val.str_val = msg->callid->body;
 
-	db_vals[2].val.str_val.s = t->method.s;
-	db_vals[2].val.str_val.len = t->method.len;
+	db_vals[2].val.str_val= get_cseq(msg)->method;
 
 	char * str_code = int2str(ps->code, &len);
 	statusbuf[INT2STR_MAX_LEN-1]=0;
@@ -2079,6 +2059,20 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 error:
 	return;
 }
+
+
+static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps)
+{
+	LM_DBG("TM in triggered req=%p, rpl=%p\n",ps->req,ps->rpl);
+	if (ps->req) {
+		/* an incoming request: a retransmission or hop-by-hop ACK */
+		sip_trace( ps->req,  (trace_info_p)(*ps->param) );
+	} else if (ps->rpl) {
+		/* an incoming reply for us or for a CANCEL */
+		trace_onreply_in( t, type, ps);
+	}
+}
+
 
 static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 {
@@ -2227,6 +2221,19 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	return;
 error:
 	return;
+}
+
+
+static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps)
+{
+	LM_DBG("TM out triggered req=%p, rpl=%p\n",ps->req,ps->rpl);
+	if (ps->req) {
+		/* an outgoing request: request itself, local CANCEL or local ACK */
+		trace_onreq_out( t, type, ps);
+	} else if (ps->rpl) {
+		/* an outpoing reply (local or relaied) */
+		trace_onreply_out( t, type, ps);
+	}
 }
 
 

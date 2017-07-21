@@ -551,6 +551,8 @@ found:
 	set_kr(REQ_EXIST);
 	UNLOCK_HASH( p_msg->hash_index );
 	LM_DBG("transaction found (T=%p)\n",T);
+	if (has_tran_tmcbs( T, TMCB_MSG_MATCHED_IN) )
+		run_trans_callbacks( TMCB_MSG_MATCHED_IN, T, p_msg, 0,0);
 	return 1;
 }
 
@@ -841,6 +843,10 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 			run_trans_callbacks( TMCB_RESPONSE_IN, T, T->uas.request, p_msg,
 				p_msg->REPLY_STATUS);
 		}
+		if (has_tran_tmcbs( T, TMCB_MSG_MATCHED_IN) )
+			run_trans_callbacks( TMCB_MSG_MATCHED_IN, T, 0,
+				p_msg, p_msg->REPLY_STATUS);
+
 		return 1;
 	} /* for cycle */
 

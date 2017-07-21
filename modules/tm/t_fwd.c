@@ -821,11 +821,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			set_kr(REQ_FWDED);
 
 			/* successfully sent out -> run callbacks */
-			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
+			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT) ) {
 				set_extra_tmcb_params( &t->uac[i].request.buffer,
 					&t->uac[i].request.dst);
-				run_trans_callbacks( TMCB_REQUEST_BUILT, t, p_msg,0,
-					-p_msg->REQ_METHOD);
+				run_trans_callbacks( TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT, t,
+					p_msg, 0, 0);
 			}
 
 		}

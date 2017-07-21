@@ -293,6 +293,12 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 				fake_reply(r_buf->my_T, r_buf->branch, 503 );
 				return;
 			}*/
+			if ( has_tran_tmcbs( r_buf->my_T, TMCB_MSG_SENT_OUT) ) {
+				set_extra_tmcb_params( &r_buf->buffer, &r_buf->dst);
+				run_trans_callbacks( TMCB_MSG_SENT_OUT, r_buf->my_T,
+					r_buf->my_T->uas.request, 0, 0);
+			}
+
 			set_t(T_UNDEFINED);
 	} else {
 			LM_DBG("retransmission_handler : reply resending "
