@@ -86,7 +86,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		LM_DBG("recording is not available!\n");
 		goto no_recording;
 	}
-
+	ret = -1;
 
 	/* reply received - sending ACK */
 	memset(&req, 0, sizeof(req));
@@ -100,15 +100,18 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 				req.b2b_key->len, req.b2b_key->s);
 		goto no_recording;
 	}
-	ret = -1;
+
+	if (ss->dlg->state > DLG_STATE_DELETED) {
+		LM_ERR("dialog already in deleted state!\n");
+		goto no_recording;
+	}
+
 
 	if (srs_handle_media(msg, ss) < 0) {
 		LM_ERR("cannot handle SRS media!\n");
 		goto no_recording;
 	}
 
-	/* no need to ref the dialog, since we rely on it from now on */
-	srec_dlg.unref_dlg(ss->dlg, 1);
 	/* also, the b2b ref moves on the dialog */
 	if (srec_dlg.register_dlgcb(ss->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
 			srec_dlg_end, ss, src_unref_session)){
@@ -116,6 +119,8 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		SIPREC_UNREF(ss);
 		goto no_recording;
 	}
+	/* no need to keep ref on the dialog, since we rely on it from now on */
+	srec_dlg.unref_dlg(ss->dlg, 1);
 
 	/* wait for dialog termination */
 	return 0;
@@ -131,6 +136,9 @@ no_recording:
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
+
+	/* we finishd everything with the dialog, let it be! */
+	srec_dlg.unref_dlg(ss->dlg, 1);
 	SIPREC_UNREF(ss);
 	return ret;
 }
