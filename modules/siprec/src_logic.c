@@ -148,7 +148,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	str *client;
 	str param, body;
-	struct socket_info *send_sock = NULL /* TODO: take from sess */;
+	struct socket_info *send_sock = sess->socket;
 	union sockaddr_union tmp;
 	client_info_t ci;
 	static str extra_headers = str_init(

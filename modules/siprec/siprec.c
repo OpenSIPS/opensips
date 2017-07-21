@@ -220,9 +220,12 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		dlg = srec_dlg.get_dlg();
 	}
 
+	/* XXX: if there is a forced send socket in the message, use it
+	 * this is the only way to provide a different socket for SRS, but
+	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
 	if (!(ss = src_create_session(&srs, (_rtp ? &rtp : NULL),
-				(_grp ? &group : NULL)))) {
+				(_grp ? &group : NULL), msg->force_send_socket))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}

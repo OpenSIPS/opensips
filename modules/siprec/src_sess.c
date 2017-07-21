@@ -30,7 +30,8 @@ struct tm_binds srec_tm;
 struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
-struct src_sess *src_create_session(str *srs, str *rtp, str *grp)
+struct src_sess *src_create_session(str *srs, str *rtp, str *grp,
+		struct socket_info *si)
 {
 	struct src_sess *ss = shm_malloc(sizeof *ss +
 			(rtp ? rtp->len : 0) + (grp ? grp->len : 0));
@@ -46,6 +47,7 @@ struct src_sess *src_create_session(str *srs, str *rtp, str *grp)
 		shm_free(ss);
 		return NULL;
 	}
+	ss->socket = si;
 	if (rtp) {
 		ss->rtpproxy.s = (char *)(ss + 1);
 		memcpy(ss->rtpproxy.s, rtp->s, rtp->len);
