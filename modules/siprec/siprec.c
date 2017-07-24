@@ -70,8 +70,6 @@ static cmd_export_t cmds[] = {
 		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
 	{"siprec_engage",(cmd_function)srec_engage, 5, fixup_srec_engage,
 		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
-	{"siprec_engage",(cmd_function)srec_engage, 6, fixup_srec_engage,
-		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -213,11 +211,6 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		return -1;
 	}
 
-	/*
-	 * TODO: check where it was called: request or reply: depending on that we
-	 * can use different logics for caller/callee;
-	 * for now we presume it's always on initial requests, not on replies
-	 */
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
 	if (!dlg) {
