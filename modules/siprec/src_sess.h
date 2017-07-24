@@ -31,6 +31,7 @@
 #include "../tm//tm_load.h"
 #include "../../ut.h"
 
+#define SIPREC_SESSION_VERSION 0
 #define SRC_MAX_PARTICIPANTS 2
 /* Uncomment this to enable SIPREC debugging
 #define SIPREC_DEBUG_REF
@@ -43,6 +44,8 @@
 #else
 #define SIPREC_DEBUG(_s, _msg)
 #endif
+
+struct srec_dlg;
 
 struct src_part {
 	str aor;
@@ -74,16 +77,22 @@ struct src_sess {
 	/* internal */
 	int ref;
 	int started;
-	str b2b_key;
 	gen_lock_t lock;
 	struct dlg_cell *dlg;
+
+	/* b2b */
+	str b2b_key;
+	str b2b_fromtag;
+	str b2b_totag;
+	str b2b_callid;
 };
 
 void src_unref_session(void *p);
-struct src_sess *src_create_session(str *srs, str *rtp, str *group,
+struct src_sess *src_new_session(str *srs, str *rtp, str *group,
 		struct socket_info *si);
 void src_free_session(struct src_sess *sess);
-int src_add_participant(struct src_sess *sess, str *aor, str *name);
+int src_add_participant(struct src_sess *sess, str *aor, str *name,
+		siprec_uuid *uuid);
 
 extern struct tm_binds srec_tm;
 extern struct dlg_binds srec_dlg;
@@ -128,5 +137,10 @@ extern struct dlg_binds srec_dlg;
 
 #define SIPREC_UNREF_UNSAFE(_s) SIPREC_UNREF_COUNT_UNSAFE(_s, 1)
 #define SIPREC_UNREF(_s) SIPREC_UNREF_COUNT(_s, 1)
+
+void srec_loaded_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *params);
+void srec_shutdown_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *params);
 
 #endif /* _SIPREC_SESS_H_ */

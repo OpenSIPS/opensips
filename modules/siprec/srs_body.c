@@ -89,7 +89,31 @@ static char srs_get_sdp_line(char *start, char *end, str *line)
 		return 0;
 }
 
-int srs_add_sdp_streams(struct sip_msg *msg, struct src_sess *sess,
+int srs_add_raw_sdp_stream(int label, int medianum, str *body,
+		siprec_uuid *uuid, struct src_sess *sess, struct src_part *part)
+{
+	struct srs_sdp_stream *stream = NULL;
+
+	stream = shm_malloc(sizeof *stream + body->len);
+	if (!stream) {
+		LM_ERR("cannot allocate memory for new stream!\n");
+		return -1;
+	}
+	memset(stream, 0, sizeof *stream);
+	stream->body.s = (char *)stream + (sizeof *stream);
+	stream->label = label;
+	stream->medianum = medianum;
+	memcpy(stream->body.s, body->s, body->len);
+	stream->body.len = body->len;
+
+	memcpy(stream->uuid, uuid, sizeof *uuid);
+	list_add_tail(&stream->list, &part->streams);
+	sess->streams_no++;
+
+	return 0;
+}
+
+int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 		struct src_part *part)
 {
 	char sdp_type;

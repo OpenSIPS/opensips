@@ -28,6 +28,7 @@
 
 struct b2b_api srec_b2b;
 
+
 static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	struct src_sess *ss;
@@ -52,6 +53,22 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 				req.b2b_key->len, req.b2b_key->s);
 }
 
+int srec_terminate_callback(struct src_sess *sess)
+{
+	/* also, the b2b ref moves on the dialog */
+	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
+			srec_dlg_end, sess, src_unref_session)){
+		LM_ERR("cannot register callback for database accounting\n");
+		return -1;
+	}
+
+	/* also, the b2b ref moves on the dialog */
+	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_DB_WRITE_VP,
+			srec_shutdown_callback, sess, NULL))
+		LM_WARN("cannot register callback for shutdown! Will not be able "
+				"to end siprec session in case of a restart!\n");
+	return 0;
+}
 
 static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 {
@@ -106,23 +123,21 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		goto no_recording;
 	}
 
-
 	if (srs_handle_media(msg, ss) < 0) {
 		LM_ERR("cannot handle SRS media!\n");
 		goto no_recording;
 	}
 
-	/* also, the b2b ref moves on the dialog */
-	if (srec_dlg.register_dlgcb(ss->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
-			srec_dlg_end, ss, src_unref_session)){
-		LM_ERR("cannot register callback for database accounting\n");
+	if (srec_terminate_callback(ss) < 0) {
+		LM_ERR("cannot register callback for terminating session\n");
 		SIPREC_UNREF(ss);
 		goto no_recording;
 	}
+
 	/* no need to keep ref on the dialog, since we rely on it from now on */
 	srec_dlg.unref_dlg(ss->dlg, 1);
+	/* also, the b2b ref moves on the dialog - so we avoid a ref-unref */
 
-	/* wait for dialog termination */
 	return 0;
 no_recording:
 	if (ret != 0) {
@@ -143,12 +158,57 @@ no_recording:
 	return ret;
 }
 
-/* TODO: delete
-static int srec_b2b_add_info(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
+
+int srec_restore_callback(struct src_sess *sess)
 {
+	if (srec_b2b.restore_logic_info(B2B_CLIENT, &sess->b2b_key,
+			srec_b2b_notify) < 0) {
+		LM_ERR("cannot register notify callback for [%.*s]!\n",
+				sess->b2b_key.len, sess->b2b_key.s);
+		return -1;
+	}
 	return 0;
 }
-*/
+
+static int srec_b2b_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
+{
+	char *tmp;
+	struct src_sess *ss;
+
+	ss = *(struct src_sess **)key->s;
+	if (!ss) {
+		LM_ERR("cannot find session in key parameter [%.*s]!\n",
+				entity_key->len, entity_key->s);
+		return -1;
+	}
+	tmp = shm_malloc(info->fromtag.len);
+	if (!tmp) {
+		LM_ERR("cannot allocate dialog info fromtag!\n");
+		return -1;
+	}
+	ss->b2b_fromtag.s = tmp;
+	ss->b2b_fromtag.len = info->fromtag.len;
+	memcpy(ss->b2b_fromtag.s, info->fromtag.s, ss->b2b_fromtag.len);
+
+	tmp = shm_malloc(info->totag.len);
+	if (!tmp) {
+		LM_ERR("cannot allocate dialog info totag!\n");
+		return -1;
+	}
+	ss->b2b_totag.s = tmp;
+	ss->b2b_totag.len = info->totag.len;
+	memcpy(ss->b2b_totag.s, info->totag.s, ss->b2b_totag.len);
+
+	tmp = shm_malloc(info->callid.len);
+	if (!tmp) {
+		LM_ERR("cannot allocate dialog info callid!\n");
+		return -1;
+	}
+	ss->b2b_callid.s = tmp;
+	ss->b2b_callid.len = info->callid.len;
+	memcpy(ss->b2b_callid.s, info->callid.s, ss->b2b_callid.len);
+	return 0;
+}
 
 
 /* starts the recording to the srs */
@@ -184,7 +244,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	ci.local_contact.s = contact_builder(send_sock, &ci.local_contact.len);
 
-	if (srs_add_sdp_streams(msg, sess, &sess->participants[1]) < 0) {
+	if (srs_add_sdp_stream(msg, sess, &sess->participants[1]) < 0) {
 		LM_ERR("cannot add body!\n");
 		return -2;
 	}
@@ -199,7 +259,8 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	param.s = (char *)&sess;
 	param.len = sizeof(void *);
 	SIPREC_REF_UNSAFE(sess);
-	client = srec_b2b.client_new(&ci, srec_b2b_notify, NULL, (str *)&param);
+	client = srec_b2b.client_new(&ci, srec_b2b_notify, srec_b2b_confirm,
+			(str *)&param);
 	if (!client) {
 		LM_ERR("cannot start recording with %.*s!\n",
 				ci.req_uri.len, ci.req_uri.s);
@@ -242,3 +303,22 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 		LM_ERR("cannot start recording!\n");
 	SIPREC_UNLOCK(ss);
 }
+
+void srec_logic_destroy(struct src_sess *sess)
+{
+	b2b_dlginfo_t info;
+	if (!sess->b2b_key.s)
+		return;
+	info.fromtag = sess->b2b_fromtag;
+	info.totag = sess->b2b_totag;
+	info.callid = sess->b2b_callid;
+	srec_b2b.entity_delete(B2B_CLIENT, &sess->b2b_key, &info, 1);
+	if (sess->b2b_fromtag.s);
+		shm_free(sess->b2b_fromtag.s);
+	if (sess->b2b_totag.s);
+		shm_free(sess->b2b_totag.s);
+	if (sess->b2b_callid.s);
+		shm_free(sess->b2b_callid.s);
+	shm_free(sess->b2b_key.s);
+}
+

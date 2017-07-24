@@ -31,6 +31,9 @@
 
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess);
 void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps);
+int srec_terminate_callback(struct src_sess *sess);
+int srec_restore_callback(struct src_sess *sess);
+void srec_logic_destroy(struct src_sess *sess);
 
 extern struct b2b_api srec_b2b;
 

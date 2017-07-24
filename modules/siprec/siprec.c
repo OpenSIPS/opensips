@@ -141,6 +141,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (srec_dlg.register_dlgcb(NULL, DLGCB_LOADED, srec_loaded_callback,
+			NULL, NULL) < 0)
+		LM_WARN("cannot register callback for loaded dialogs - will not be "
+				"able to terminate siprec sessions after a restart!\n");
+
 	return 0;
 }
 
@@ -227,7 +232,7 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 	 * this is the only way to provide a different socket for SRS, but
 	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_create_session(&srs, (_rtp ? &rtp : NULL),
+	if (!(ss = src_new_session(&srs, (_rtp ? &rtp : NULL),
 				(_grp ? &group : NULL), msg->force_send_socket))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
@@ -261,11 +266,11 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		display = (get_from(msg)->display.s ? &get_from(msg)->display : NULL);
 	}
 
-	if (src_add_participant(ss, aor, display) < 0) {
+	if (src_add_participant(ss, aor, display, NULL) < 0) {
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
-	if (srs_add_sdp_streams(msg, ss, &ss->participants[0]) < 0) {
+	if (srs_add_sdp_stream(msg, ss, &ss->participants[0]) < 0) {
 		LM_ERR("cannot add SDP for caller!\n");
 		goto session_cleanup;
 	}
@@ -291,7 +296,7 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		display = (get_to(msg)->display.s ? &get_to(msg)->display : NULL);
 	}
 
-	if (src_add_participant(ss, aor, display) < 0) {
+	if (src_add_participant(ss, aor, display, NULL) < 0) {
 		LM_ERR("cannot add callee pariticipant!\n");
 		goto session_cleanup;
 	}
