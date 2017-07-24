@@ -1530,19 +1530,22 @@ void free_tm_dlg(dlg_t* td)
 int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 		str* b2b_key, str* method, str* ehdr, str* body, unsigned int no_cb)
 {
-	str* b2b_key_shm;
+	str* b2b_key_shm = NULL;
 	dlg_t* td = NULL;
 	transaction_cb* tm_cback;
 	build_dlg_f build_dlg;
 	int method_value = dlg->last_method;
 	int result;
 
-	b2b_key_shm= b2b_key_copy_shm(b2b_key);
-	if(b2b_key_shm== NULL)
-	{
-		LM_ERR("no more shared memory\n");
-		return -1;
+	if (!no_cb) {
+		b2b_key_shm= b2b_key_copy_shm(b2b_key);
+		if(b2b_key_shm== NULL)
+		{
+			LM_ERR("no more shared memory\n");
+			return -1;
+		}
 	}
+
 	if(et == B2B_SERVER)
 	{
 		build_dlg = b2b_server_build_dlg;
@@ -1560,7 +1563,8 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	{
 		LM_ERR("Failed to build tm dialog structure, was asked to send [%.*s]"
 				" request\n", method->len, method->s);
-		shm_free(b2b_key_shm);
+		if (b2b_key_shm)
+			shm_free(b2b_key_shm);
 		return -1;
 	}
 
