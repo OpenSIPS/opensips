@@ -67,6 +67,11 @@ struct packet_cb_list {
 */
 short get_bin_pkg_version(bin_packet_t *packet);
 
+/*
+ * returns the module that generated the message
+ */
+void bin_get_module(bin_packet_t *packet, str *module);
+
 /**
 	calls all the registered functions
 
@@ -91,6 +96,15 @@ int bin_register_cb(char *mod_name, void (*cb)(bin_packet_t *, int,
  * @return: 0 on success
  */
 int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, int length);
+
+/**
+ * function called to build a binary packet with a known buffer
+ *
+ * @packet: the packet that will be populated
+ * @buffer: the buffer that will be attached to the packet
+ * @length: the length of the buffer attached
+ */
+void bin_init_buffer(bin_packet_t *packet, char *buffer, int length);
 
 /*
  * adds a new string value to the packet being currently built

@@ -98,6 +98,30 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type,
 	return 0;
 }
 
+void bin_get_module(bin_packet_t *packet, str *module)
+{
+	module->len = *(unsigned short *)(packet->buffer.s + HEADER_SIZE);
+	module->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
+}
+
+/*
+ * initializes a packet with a buffer received
+ * this is useful when you only have a pre-built buffer
+ */
+void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
+{
+	str mod_name;
+
+	packet->buffer.len = length;
+	packet->buffer.s = buffer;
+	packet->size = length;
+
+	bin_get_module(packet, &mod_name);
+
+	packet->front_pointer = mod_name.s + mod_name.len + CMD_FIELD_SIZE;
+	LM_INFO("init buffer length %d\n", length);
+}
+
 /*
  * copies the given string at the end position in the packet
  * allows null strings (NULL content or NULL param)
@@ -398,8 +422,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	packet.size = pkg_len + 50;
 	memcpy(packet.buffer.s, buffer, pkg_len);
 
-	mod_name.len = *(unsigned short*)(buffer + HEADER_SIZE);
-	mod_name.s = packet.buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
+	bin_get_module(&packet, &mod_name);
 
 	packet.front_pointer = mod_name.s + mod_name.len + CMD_FIELD_SIZE;
 	packet_type = *(int *)(mod_name.s + mod_name.len);
