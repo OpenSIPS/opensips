@@ -197,12 +197,13 @@ loadmodule "proto_udp.so"
 
 ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
-modparam("proto_tls","verify_cert", "1")
-modparam("proto_tls","require_cert", "0")
-modparam("proto_tls","tls_method", "TLSv1")
-modparam("proto_tls","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
-modparam("proto_tls","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
-modparam("proto_tls","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
+loadmodule "tls_mgm.so"
+modparam("tls_mgm","verify_cert", "1")
+modparam("tls_mgm","require_cert", "0")
+modparam("tls_mgm","tls_method", "TLSv1")
+modparam("tls_mgm","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
+modparam("tls_mgm","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
+modparam("tls_mgm","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
 
 ' , `')
 
