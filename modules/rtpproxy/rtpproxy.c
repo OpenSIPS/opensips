@@ -2242,6 +2242,8 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 	cp = buf;
 
 	if (node->rn_umode == 0) {
+		int s_errno;
+
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_LOCAL;
 		strncpy(addr.sun_path, node->rn_address,
@@ -2272,9 +2274,11 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		do {
 			len = read(fd, buf, sizeof(buf) - 1);
 		} while (len == -1 && errno == EINTR);
+		s_errno = (len < 0) ? errno : 0;
 		close(fd);
 		if (len <= 0) {
-			LM_ERR("can't read reply from a RTP proxy\n");
+			LM_ERR("can't read reply from a RTP proxy, e = %d\n",
+                            s_errno);
 			goto badproxy;
 		}
 	} else {
@@ -2302,11 +2306,15 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 			}
 			while ((poll(fds, 1, rtpproxy_tout) == 1) &&
 			    (fds[0].revents & POLLIN) != 0) {
+				int s_errno;
+
 				do {
 					len = recv(rtpp_socks[node->idx], buf, sizeof(buf)-1, 0);
 				} while (len == -1 && errno == EINTR);
+				s_errno = (len < 0) ? errno : 0;
 				if (len <= 0) {
-					LM_ERR("can't read reply from a RTP proxy\n");
+					LM_ERR("can't read reply from a RTP proxy, e = %d\n",
+					    s_errno);
 					goto badproxy;
 				}
 				if (len >= (v[0].iov_len - 1) &&
