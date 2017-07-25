@@ -472,7 +472,7 @@ modparam("ratelimit", "accept_pipes_timeout", 1)
 		<title>Set <varname>repl_pipes_auth_check</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "repl_pipes_auth_check", 1)
+modparam("ratelimit", "repl_pipes_auth_check", 1)
 ...
 </programlisting>
 		</example>
@@ -492,7 +492,7 @@ modparam("dialog", "repl_pipes_auth_check", 1)
 		<title>Set <varname>window_size</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "window_size", 5)
+modparam("ratelimit", "window_size", 5)
 ...
 </programlisting>
 		</example>
@@ -514,9 +514,9 @@ modparam("dialog", "window_size", 5)
 		<title>Set <varname>slot_period</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "window_size", 5)
+modparam("ratelimit", "window_size", 5)
 #we will have 50 slots of 100 microseconds
-modparam("dialog", "slot_period", 100)
+modparam("ratelimit", "slot_period", 100)
 ...
 </programlisting>
 		</example>

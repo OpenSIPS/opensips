@@ -425,7 +425,7 @@ modparam("ratelimit", "accept_pipes_timeout", 1)
 
    Example 1.13. Set repl_pipes_auth_check parameter
 ...
-modparam("dialog", "repl_pipes_auth_check", 1)
+modparam("ratelimit", "repl_pipes_auth_check", 1)
 ...
 
 1.6.14. window_size (int)
@@ -436,7 +436,7 @@ modparam("dialog", "repl_pipes_auth_check", 1)
 
    Example 1.14. Set window_size parameter
 ...
-modparam("dialog", "window_size", 5)
+modparam("ratelimit", "window_size", 5)
 ...
 
 1.6.15. slot_period (int)
@@ -449,9 +449,9 @@ modparam("dialog", "window_size", 5)
 
    Example 1.15. Set slot_period parameter
 ...
-modparam("dialog", "window_size", 5)
+modparam("ratelimit", "window_size", 5)
 #we will have 50 slots of 100 microseconds
-modparam("dialog", "slot_period", 100)
+modparam("ratelimit", "slot_period", 100)
 ...
 
 1.7. Exported Functions
