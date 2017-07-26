@@ -270,6 +270,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (ul_api.db_mode != NO_DB) {
+		LM_ERR("the 2.3 mid_registrar only works with usrloc 'db_mode = 0'!\n");
+		return -1;
+	}
+
 	if (load_tm_api(&tm_api) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
