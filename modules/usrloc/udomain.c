@@ -352,7 +352,7 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 	}
 
 	/* the Branch flags */
-	if (evi_param_set_int(ul_c_bflags_param, &_c->flags) < 0) {
+	if (evi_param_set_int(ul_c_bflags_param, &_c->cflags) < 0) {
 		LM_ERR("cannot set bflags parameter\n");
 		return;
 	}
