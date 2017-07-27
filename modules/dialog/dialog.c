@@ -1047,7 +1047,7 @@ static int child_init(int rank)
 static void mod_destroy(void)
 {
 	if (dlg_db_mode != DB_MODE_NONE) {
-		dialog_update_db(0, 0);
+		dialog_update_db(0, 0/*do not do locking*/);
 		destroy_dlg_db();
 	}
 	/* no DB interaction from now on */

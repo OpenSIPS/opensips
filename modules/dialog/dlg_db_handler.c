@@ -189,7 +189,8 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 	}
 
 	if (dlg_db_mode == DB_MODE_DELAYED) {
-		if (register_timer("dlg-dbupdate",dialog_update_db, 0,
+		if (register_timer("dlg-dbupdate",dialog_update_db,
+		(void*)(unsigned long)1 /*do locking*/,
 		db_update_period, TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
 			LM_ERR("failed to register update db\n");
 			return -1;
@@ -1268,7 +1269,7 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 
 
 
-void dialog_update_db(unsigned int ticks, void * param)
+void dialog_update_db(unsigned int ticks, void *do_lock)
 {
 	static db_ps_t my_ps_update = NULL;
 	static db_ps_t my_ps_insert = NULL;
@@ -1318,7 +1319,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 		/* lock the whole entry */
 		entry = &((d_table->entries)[index]);
-		dlg_lock( d_table, entry);
+		if (do_lock)
+			dlg_lock( d_table, entry);
 
 		for(cell = entry->first; cell != NULL;){
 			callee_leg = callee_idx(cell);
@@ -1469,7 +1471,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 			}
 			cell = cell->next;
 		}
-		dlg_unlock( d_table, entry);
+		if (do_lock)
+			dlg_unlock( d_table, entry);
 
 	}
 
