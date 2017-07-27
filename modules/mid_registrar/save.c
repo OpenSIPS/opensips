@@ -146,7 +146,8 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		}
 	}
 
-	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 + 2;
+	/*   <   sip:            @                                 :ddddd  >  \0 */
+	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 + 1;
 	buf = pkg_malloc(len);
 	if (buf == NULL) {
 		LM_ERR("out of pkg memory\n");
@@ -400,6 +401,12 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	shm_str_dup(&mri->main_reg_uri, GET_NEXT_HOP(req));
 
+	if (reg_mode == MID_REG_THROTTLE_AOR) {
+		LM_DBG("trimming all Contact URIs into one...\n");
+		if (trim_to_single_contact(req, &mri->aor))
+			LM_ERR("failed to overwrite Contact URI\n");
+	}
+
 	if (insertion_mode == INSERT_BY_PATH) {
 		if (prepend_path(req, &mri->aor, 0, 0))
 			LM_ERR("failed to append Path header for aor '%.*s'!\n",
@@ -408,10 +415,6 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
 			LM_DBG("fixing Contact URI ...\n");
 			if (overwrite_all_contact_hostports(req))
-				LM_ERR("failed to overwrite Contact URI\n");
-		} else if (reg_mode == MID_REG_THROTTLE_AOR) {
-			LM_DBG("fixing Contact URI + username ...\n");
-			if (trim_to_single_contact(req, &mri->aor))
 				LM_ERR("failed to overwrite Contact URI\n");
 		}
 	}
@@ -934,7 +937,7 @@ error:
 }
 
 /* only relevant in MID_REG_THROTTLE_AOR mode */
-static inline int save_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
+static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
                          struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
 	struct mid_reg_info *ri, *cti;
@@ -956,7 +959,7 @@ static inline int save_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		tcp_check = 1;
 	}
 
-	LM_DBG("running\n");
+	LM_DBG("saving + restoring all contact URIs ... \n");
 
 	/* in MID_REG_THROTTLE_AOR mode, any reply will only contain 1 contact */
 	_c = get_first_contact(rpl);
@@ -1331,7 +1334,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		goto out_free;
 	}
 
-	if (insertion_mode == INSERT_BY_CONTACT) {
+	if (reg_mode != MID_REG_THROTTLE_AOR && insertion_mode == INSERT_BY_CONTACT) {
 		LM_DBG("restoring contact URIs ... \n");
 		if (restore_reply_contacts(req, rpl)) {
 			LM_ERR("failed to overwrite Contact header field domain\n");
@@ -1349,7 +1352,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 			       mri->aor.len, mri->aor.s);
 		}
 	} else if (reg_mode == MID_REG_THROTTLE_AOR) {
-		if (save_req_contacts(req, rpl, mri, &mri->aor, rec)) {
+		if (save_restore_req_contacts(req, rpl, mri, &mri->aor, rec)) {
 			LM_ERR("failed to process req contacts for AoR '%.*s'\n",
 			       mri->aor.len, mri->aor.s);
 		}
