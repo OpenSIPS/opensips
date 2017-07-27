@@ -296,38 +296,47 @@ static int overwrite_all_contact_hostports(struct sip_msg *msg)
 	return 0;
 }
 
+static int replace_expires_hf(struct sip_msg *msg, int new_expiry)
+{
+	struct lump *lump;
+	char *p;
+	int len;
+
+	if (msg->expires && msg->expires->body.len > 0) {
+		LM_DBG("....... Exp hdr: '%.*s'\n",
+		       msg->expires->body.len, msg->expires->body.s);
+
+		lump = del_lump(msg, msg->expires->body.s - msg->buf,
+		                msg->expires->body.len, HDR_EXPIRES_T);
+		if (!lump) {
+			LM_ERR("fail del_lump on 'Expires:' hf value!\n");
+			return -1;
+		}
+
+		p = pkg_malloc(10);
+		if (!p)
+			return -1;
+
+		len = sprintf(p, "%d", new_expiry);
+
+		if (!insert_new_lump_after(lump, p, len, HDR_OTHER_T)) {
+			LM_ERR("fail to insert_new_lump over 'Expires' hf value!\n");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	return 1;
+}
+
 static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
                             int *skip_exp_header)
 {
-	struct lump *lump;
-	int len;
-	char *p;
-
 	/* TODO FIXME we're now assuming the request has an "Expires: " header */
 	if (c->expires == NULL || c->expires->body.len == 0) {
-		if (*skip_exp_header == 0 && msg->expires != NULL && msg->expires->body.len > 0) {
-			LM_DBG("....... Exp hdr: '%.*s'\n",
-			       msg->expires->body.len, msg->expires->body.s);
-			lump = del_lump(msg, msg->expires->body.s - msg->buf,
-			                msg->expires->body.len, HDR_EXPIRES_T);
-			if (lump == NULL) {
-				LM_ERR("fail del_lump on 'Expires:' hf value!\n");
-				return -1;
-			}
-
-			p = pkg_malloc(10);
-			if (!p)
-				return -1;
-
-			len = sprintf(p, "%d", new_expires);
-
-			if (!insert_new_lump_after(lump, p, len, HDR_OTHER_T)) {
-				LM_ERR("fail to insert_new_lump over 'Expires' hf value!\n");
-				return -1;
-			}
-
+		if (*skip_exp_header == 0 && replace_expires_hf(msg, new_expires) == 0)
 			*skip_exp_header = 1;
-		}
 	} else {
 		/* TODO ";expires" overwriting!!! */
 	}
@@ -1837,7 +1846,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	rinfo = urec->attached_data[ucontact_data_idx];
 	e_out = rinfo->expires_out;
 
-	LM_DBG("processing contacts...\n");
+	LM_DBG("AoR info: e=%d, e_out=%d, lrts=%d...\n",
+	       rinfo->expires, rinfo->expires_out, rinfo->last_reg_ts);
 
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
