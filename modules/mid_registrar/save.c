@@ -304,7 +304,7 @@ static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
 
 	/* TODO FIXME we're now assuming the request has an "Expires: " header */
 	if (c->expires == NULL || c->expires->body.len == 0) {
-		if (*skip_exp_header == 0) {
+		if (*skip_exp_header == 0 && msg->expires != NULL && msg->expires->body.len > 0) {
 			LM_DBG("....... Exp hdr: '%.*s'\n",
 			       msg->expires->body.len, msg->expires->body.s);
 			lump = del_lump(msg, msg->expires->body.s - msg->buf,
@@ -1981,7 +1981,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
                           char *to_uri_gp, char *expires_gp)
 {
 	udomain_t *ud = (udomain_t *)dom;
-	urecord_t *rec;
+	urecord_t *rec = NULL;
 	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	struct save_ctx sctx;
 	int rc = -1, st;
@@ -2064,7 +2064,8 @@ quick_reply:
 	/* forwarding not needed! This REGISTER will be absorbed */
 
 	/* prepare the Contact header field for a quick 200 OK response */
-	build_contact(rec->contacts, msg);
+	if (rec != NULL && rec->contacts != NULL)
+		build_contact(rec->contacts, msg);
 
 	/* no contacts need updating on the far end registrar */
 	ul_api.unlock_udomain(ud, &sctx.aor);
