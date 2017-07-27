@@ -30,6 +30,7 @@
 
 int db_mysql_connect(struct my_con* ptr)
 {
+	my_bool reconnect = 0;
 	/* if connection already in use, close it first*/
 	if (ptr->init)
 		mysql_close(ptr->con);
@@ -65,7 +66,11 @@ int db_mysql_connect(struct my_con* ptr)
 		return -1;
 	}
 	/* force no auto reconnection */
+#if MYSQL_VERSION_ID >= 50013
+	mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
+#else
 	ptr->con->reconnect = 0;
+#endif
 
 	LM_DBG("connection type is %s\n", mysql_get_host_info(ptr->con));
 	LM_DBG("protocol version is %d\n", mysql_get_proto_info(ptr->con));
