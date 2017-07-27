@@ -1468,9 +1468,6 @@ exp_cond: script_var strop script_var {
 		| script_var strop STRING {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STR_ST,$3);
 			}
-		| script_var strop ID {
-				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STR_ST,$3);
-			}
 		| script_var intop snumber {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
 			}
@@ -1531,7 +1528,6 @@ assignop:
 assignexp :
 	snumber { $$ = mk_elem(VALUE_OP, NUMBERV_O, (void*)$1, 0, 0); }
 	| STRING { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
-	| ID { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
 	| script_var { $$ = mk_elem(VALUE_OP, SCRIPTVAR_O, $1, 0, 0); }
 	| exp_cond { $$= $1; }
 	| cmd { $$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }

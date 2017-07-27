@@ -344,8 +344,6 @@ MODPARAM        modparam
 /* values */
 YES			"yes"|"true"|"on"|"enable"
 NO			"no"|"false"|"off"|"disable"
-INET		"inet"|"INET"
-INET6		"inet6"|"INET6"
 NULLV			"null"|"NULL"
 
 LETTER		[a-zA-Z]
