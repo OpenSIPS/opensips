@@ -386,7 +386,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 		mri->expires = e;
 		mri->expires_out = new_expires;
 
-		if (new_expires > 0 &&
+		if (e != new_expires &&
 		    replace_expires(c, req, new_expires, &skip_exp_header) != 0) {
 			LM_ERR("failed to replace expires for ct '%.*s'\n",
 			       c->uri.len, c->uri.s);
@@ -1002,6 +1002,8 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 	} else {
 		if (_c == NULL)
 			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_reg_ts = 0;
+		else
+			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_reg_ts = get_act_time();
 	}
 
 	if (_c != NULL) {
@@ -1031,6 +1033,11 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 				LM_ERR("200 OK from main registrar is missing Contact '%.*s'\n",
 				       __c->uri.len, __c->uri.s);
 			goto update_usrloc;
+		}
+
+		/* the main registrar might enforce shorter lifetimes */
+		if (e_out < e) {
+			e = e_out;
 		}
 
 		LM_DBG("expires: %d - %d\n", e, e_out);
@@ -1937,7 +1944,6 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
 	       max_diff, rinfo->last_reg_ts + max_diff, get_act_time());
 	if (max_diff >= 0 && rinfo->last_reg_ts + max_diff <= get_act_time()) {
-		rinfo->last_reg_ts = get_act_time();
 		return 1;
 	}
 
