@@ -42,6 +42,15 @@ Robert-Vladut Patrascu
               1.3.17. node_timeout
 
         1.4. Exported Functions
+
+              1.4.1. cluster_send_req(cluster_id, dst_id, msg[,
+                      tag])
+
+              1.4.2. cluster_send_rpl(cluster_id, dst_id, msg,
+                      tag)
+
+              1.4.3. cluster_broadcast_req(cluster_id, msg[, tag])
+
         1.5. Exported MI Functions
 
               1.5.1. clusterer_reload
@@ -49,7 +58,12 @@ Robert-Vladut Patrascu
               1.5.3. clusterer_list_topology
               1.5.4. clusterer_set_status
 
-        1.6. Usage Example
+        1.6. Exported Events
+
+              1.6.1. E_CLUSTERER_REQ_RECEIVED
+              1.6.2. E_CLUSTERER_RPL_RECEIVED
+
+        1.7. Usage Example
 
    2. Developer Guide
 
@@ -86,11 +100,14 @@ Robert-Vladut Patrascu
    1.15. Set ping_interval parameter
    1.16. Set ping_timeout parameter
    1.17. Set node_timeout parameter
-   1.18. clusterer_list usage
-   1.19. clusterer_list_topology usage
-   1.20. Example database content - clusterer table
-   1.21. Node A configuration
-   1.22. Node B configuration
+   1.18. cluster_send_req() usage
+   1.19. cluster_send_rpl() usage
+   1.20. cluster_broadcast_req() usage
+   1.21. clusterer_list usage
+   1.22. clusterer_list_topology usage
+   1.23. Example database content - clusterer table
+   1.24. Node A configuration
+   1.25. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -100,15 +117,15 @@ Chapter 1. Admin Guide
    instances into groups(clusters) in which the nodes can
    communicate with each other in order to replicate, share
    information or perform distributed tasks. The distributed logic
-   is performed by different modules that use the clusterer
+   is performed either by different modules that use the clusterer
    interface (i.e. the dialog module can replicate
    dialogs/profiles, the ratelimit module can share pipes across
-   multiple instances etc.). The clusterer module itself only
-   provides an interface to send/receive BIN packets and get
-   notifications about node availability. It does this by
-   internally learning the cluster topology and state of the
-   nodes. Provisioning the nodes within a cluster is done over the
-   database. The node-related information can be checked and
+   multiple instances etc.) or at the script level. The clusterer
+   module itself only provides an interface to send/receive BIN
+   packets and get notifications about node availability. It does
+   this by internally learning the cluster topology and state of
+   the nodes. Provisioning the nodes within a cluster is done over
+   the database. The node-related information can be checked and
    triggered to be reloaded by sending commands over the MI
    interface.
 
@@ -357,7 +374,118 @@ modparam("clusterer", "node_timeout", 10)
 
 1.4. Exported Functions
 
-   none
+1.4.1.  cluster_send_req(cluster_id, dst_id, msg[, tag])
+
+   This function is used to send a generic, request-like message,
+   containing custom data, to a specific node in a cluster,
+   directly from the script. The message is not a "request" per se
+   but according to the logic on the receiving side, that node can
+   send back a reply. In order to correlate a received reply with
+   the request sent out, the function returns, through the tag
+   parameter, a randomly generated communication tag, which is
+   sent along in the the original message, that can be checked
+   against the tag received in a reply.
+
+   Meaning of the parameters is as follows:
+     * cluster_id - the cluster ID of the destination node;
+     * dst_id - the ID of the destiantion node;
+     * msg - actual message payload;
+     * tag - randomly generated communication tag. This is an
+       optional output parameter and must be a variable if
+       provided.
+
+   The function can return the following values:
+     * 1 - successfuly sent message to destination node or a valid
+       next hop
+     * -1 - current node is disabled so sending is impossbile
+     * -2 - destination node is not reachable through any path
+       according to the discovered topology
+     * -3 - destination node or valid next hop appear to be
+       reachable but send failed or other OpenSIPS internal error
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+
+   Example 1.18. cluster_send_req() usage
+...
+# send a request
+cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
+# wait for reply
+$avp(filter) = "tag=" + $var(req_tag);
+async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", "$avp(filter"), "5"), r
+pl_resume);
+# done
+...
+route[rpl_resume] {
+  xlog("Received reply: $avp(msg)\n");
+}
+...
+
+1.4.2.  cluster_send_rpl(cluster_id, dst_id, msg, tag)
+
+   This function is used to send a generic, reply-like message,
+   containing custom data, to a specific node in a cluster,
+   directly from the script. The message is marked as a "reply" so
+   this function should ony be used for replying to a previously
+   request-like message received. In order for the other node,
+   which initially sent a request, to be able to correlate it with
+   this reply, a communication tag, received along with the
+   request, should be passed to the function.
+
+   Meaning of the parameters is as follows:
+     * cluster_id - the cluster ID of the destination node;
+     * dst_id - the ID of the destiantion node;
+     * msg - actual message payload;
+     * tag - communication tag. This is an input parameter and
+       must be a variable.
+
+   The function can return the following values:
+     * 1 - successfuly sent message to destination node or a valid
+       next hop
+     * -1 - current node is disabled so sending is impossbile
+     * -2 - destination node is not reachable through any path
+       according to the discovered topology
+     * -3 - destination node or valid next hop appear to be
+       reachable but send failed or other OpenSIPS internal error
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+
+   Example 1.19. cluster_send_rpl() usage
+...
+event_route[E_CLUSTERER_REQ_RECEIVED] {
+  fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_ta
+g)");
+  ...
+  cluster_send_rpl("$avp(cl_id)", "$avp(src_id)", "$var(my_reply)", "$av
+p(rcv_tag)");
+}
+...
+
+1.4.3.  cluster_broadcast_req(cluster_id, msg[, tag])
+
+   This function has a similar behaviour to the cluster_send_req()
+   function with the exception that the message is sent to all the
+   nodes in the specified cluster.
+
+   The function can return the following values:
+     * 1 - successfuly sent message to at least one node;
+     * -1 - current node is disabled so sending is impossbile;
+     * -2 - all nodes in the cluster are unreachable according to
+       the discovered topology;
+     * -3 - send failed for all nodes in the cluster or other
+       OpenSIPS internal error.
+
+   The meaning of the parameters is the same as for
+   cluster_send_req().
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+
+   Example 1.20. cluster_broadcast_req() usage
+...
+cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
+...
 
 1.5. Exported MI Functions
 
@@ -388,7 +516,7 @@ modparam("clusterer", "node_timeout", 10)
                 :clusterer_list
                 _empty_line_
 
-   Example 1.18. clusterer_list usage
+   Example 1.21. clusterer_list usage
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
         Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
@@ -419,7 +547,7 @@ Cluster:: 2
                 :clusterer_list_topology
                 _empty_line_
 
-   Example 1.19. clusterer_list_topology usage
+   Example 1.22. clusterer_list_topology usage
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
         Node:: 1 Neighbours=4
@@ -450,7 +578,39 @@ Cluster:: 2
                 0
                 _empty_line_
 
-1.6. Usage Example
+1.6. Exported Events
+
+1.6.1.  E_CLUSTERER_REQ_RECEIVED
+
+   This event is raised when a generic, request-like, clusterer
+   message is received. This type of message is sent directly from
+   the script and not by an OpenSIPS module.
+
+   Parameters:
+     * cluster_id - The cluster ID of the source node.
+     * src_id - The ID of the source node.
+     * msg - The actual message payload.
+     * tag - The communication tag of this message, generated by
+       the source node. This could be used to send a reply
+       corresponding to the received message by providing the tag
+       to the cluster_send_rpl() function.
+
+1.6.2.  E_CLUSTERER_RPL_RECEIVED
+
+   This event is raised when a generic, reply-like, clusterer
+   message is received. This type of message is sent directly from
+   the script and not by an OpenSIPS module.
+
+   Parameters:
+     * cluster_id - The cluster ID of the source node.
+     * src_id - The ID of the source node.
+     * msg - The actual message payload.
+     * tag - The communication tag of this message. This could be
+       used to match the received reply with a request sent with
+       the cluster_send_req() or cluster_broadcast_req()
+       functions.
+
+1.7. Usage Example
 
    This section provides an usage example for replicating
    ratelimit pipes between two OpenSIPS instances. It uses the
@@ -466,7 +626,7 @@ Cluster:: 2
    pipes. Therefore, we have to provision them in the clusterer
    table.
 
-   Example 1.20. Example database content - clusterer table
+   Example 1.23. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+-----------+
 ------------+-----------------+----------+------------------------+
 | id | cluster_id | node_id | url                  | state | ls_seq_no |
@@ -518,7 +678,7 @@ Cluster:: 2
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.21. Node A configuration
+   Example 1.24. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -537,7 +697,7 @@ modparam("ratelimit", "accept_pipes_from", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.22. Node B configuration
+   Example 1.25. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 

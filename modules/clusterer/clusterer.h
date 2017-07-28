@@ -36,6 +36,9 @@
 #define UPDATE_MAX_PATH_LEN 25
 #define SMALL_MSG 300
 
+#define TAG_RAND_LEN 24
+#define TAG_FIX_MAXLEN 6	/* "XX-YY-" */
+
 /* node flags */
 #define NODE_STATE_ENABLED	(1<<0)
 #define CALL_CBS_DOWN		(1<<1)
@@ -52,7 +55,8 @@ typedef enum {
 	CLUSTERER_JOIN_REQUEST,
 	CLUSTERER_JOIN_ACCEPT,
 	CLUSTERER_JOIN_CONFIRM,
-	CLUSTERER_TOP_DESCRIPTION
+	CLUSTERER_TOP_DESCRIPTION,
+	CLUSTERER_GENERIC_MSG
 } clusterer_msg_type;
 
 typedef enum {
@@ -103,10 +107,17 @@ extern enum sip_protos clusterer_proto;
 
 void heartbeats_timer(void);
 
-void receive_clusterer_bin_packets(bin_packet_t *packet, int packet_type, struct receive_info *ri,
-									void *att);
+void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
+									struct receive_info *ri, void *att);
 
 int get_next_hop(struct node_info *dest);
+
+enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
+										str *exchg_tag, int req_like);
+enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);
+
+int gen_rcv_evs_init(void);
+void gen_rcv_evs_destroy(void);
 
 int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
@@ -116,4 +127,3 @@ int cl_register_module(char *mod_name,  clusterer_cb_f cb, int auth_check,
 								int *accept_clusters_ids, int no_accept_clusters);
 
 #endif  /* CLUSTERER_H */
-

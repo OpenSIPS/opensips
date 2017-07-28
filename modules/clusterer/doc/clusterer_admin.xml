@@ -7,8 +7,8 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		The <emphasis>clusterer</emphasis> module is used to organize multiple &osips; instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed by different modules that use the <emphasis>clusterer</emphasis> interface (i.e. the <emphasis>dialog</emphasis> module can replicate dialogs/profiles, the <emphasis>ratelimit</emphasis> module can share pipes across multiple 
-		instances etc.). The <emphasis>clusterer</emphasis> module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It does this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
+		The <emphasis>clusterer</emphasis> module is used to organize multiple &osips; instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the <emphasis>clusterer</emphasis> interface (i.e. the <emphasis>dialog</emphasis> module can replicate dialogs/profiles, the <emphasis>ratelimit</emphasis> module can share pipes across multiple 
+		instances etc.) or at the script level. The <emphasis>clusterer</emphasis> module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It does this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
 	</para>
 	<para>
 		The topology established by the <emphasis>clusterer</emphasis> module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes which must receive a reply within a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
@@ -406,8 +406,166 @@ modparam("clusterer", "node_timeout", 10)
         </section>
 
         <section>
-	<title>Exported Functions</title>
-	<para>none</para>
+		<title>Exported Functions</title>
+			<section>
+				<title>
+				<function moreinfo="none">cluster_send_req(cluster_id, dst_id, msg[, tag])</function>
+				</title>
+				<para>
+					This function is used to send a generic, request-like message, containing custom data, to a specific node in a cluster, directly from the script. The message is not a "request" per se but according to the logic on the receiving side, that node can send back a reply. In order to correlate a received reply with the request sent out, the function returns, through the <emphasis>tag</emphasis> parameter, a randomly generated communication tag, which is sent along in the the original message, that can be checked against the tag received in a reply.
+				</para>
+				<para>
+					Meaning of the parameters is as follows:
+				<itemizedlist>
+					<listitem>
+						<para><emphasis>cluster_id</emphasis> - the cluster ID of the destination node;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>dst_id</emphasis> - the ID of the destiantion node;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>msg</emphasis> - actual message payload;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>tag</emphasis> - randomly generated communication tag. This is an optional output parameter and must be a variable if provided.</para>
+					</listitem>
+				</itemizedlist>
+				</para>
+				<para>
+					The function can return the following values:
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>1</emphasis> - successfuly sent message to destination node or a valid next hop</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-1</emphasis> - current node is disabled so sending is impossbile</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-2</emphasis> - destination node is not reachable through any path according to the discovered topology</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-3</emphasis> - destination node or valid next hop appear to be reachable but send failed or other &osips; internal error</para>
+						</listitem>
+					</itemizedlist>
+				</para>
+				<para>
+					This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+				</para>
+
+				<example>
+						<title>cluster_send_req() usage</title>
+						<programlisting format="linespecific">
+...
+# send a request
+cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
+# wait for reply
+$avp(filter) = "tag=" + $var(req_tag);
+async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", "$avp(filter"), "5"), rpl_resume);
+# done
+...
+route[rpl_resume] {
+  xlog("Received reply: $avp(msg)\n");
+}
+...
+				</programlisting>
+				</example>
+			</section>
+			<section>
+				<title>
+				<function moreinfo="none">cluster_send_rpl(cluster_id, dst_id, msg, tag)</function>
+				</title>
+				<para>
+					This function is used to send a generic, reply-like message, containing custom data, to a specific node in a cluster, directly from the script. The message is marked as a "reply" so this function should ony be used for replying to a previously request-like message received. In order for the other node, which initially sent a request, to be able to correlate it with this reply, a communication tag, received along with the request, should be passed to the function.
+				</para>
+				<para>
+					Meaning of the parameters is as follows:
+				<itemizedlist>
+					<listitem>
+						<para><emphasis>cluster_id</emphasis> - the cluster ID of the destination node;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>dst_id</emphasis> - the ID of the destiantion node;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>msg</emphasis> - actual message payload;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>tag</emphasis> - communication tag. This is an input parameter and must be a variable.</para>
+					</listitem>
+				</itemizedlist>
+				</para>
+				<para>
+					The function can return the following values:
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>1</emphasis> - successfuly sent message to destination node or a valid next hop</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-1</emphasis> - current node is disabled so sending is impossbile</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-2</emphasis> - destination node is not reachable through any path according to the discovered topology</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-3</emphasis> - destination node or valid next hop appear to be reachable but send failed or other &osips; internal error</para>
+						</listitem>
+					</itemizedlist>
+				</para>
+				<para>
+					This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+				</para>
+				<example>
+						<title>cluster_send_rpl() usage</title>
+						<programlisting format="linespecific">
+...
+event_route[E_CLUSTERER_REQ_RECEIVED] {
+  fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_tag)");
+  ...
+  cluster_send_rpl("$avp(cl_id)", "$avp(src_id)", "$var(my_reply)", "$avp(rcv_tag)");
+}
+...
+				</programlisting>
+				</example>
+			</section>
+			<section>
+				<title>
+				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg[, tag])</function>
+				</title>
+				<para>
+					This function has a similar behaviour to the <function moreinfo="none">cluster_send_req()</function> function with the exception that the message is sent to all the nodes in the specified cluster.
+				</para>
+				<para>
+					The function can return the following values:
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>1</emphasis> - successfuly sent message to at least one node;</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-1</emphasis> - current node is disabled so sending is impossbile;</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-2</emphasis> - all nodes in the cluster are unreachable according to the discovered topology;</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>-3</emphasis> - send failed for all nodes in the cluster or other &osips; internal error.</para>
+						</listitem>
+					</itemizedlist>
+				</para>
+				<para>
+					The meaning of the parameters is the same as for <function moreinfo="none">cluster_send_req()</function>.
+				</para>
+				<para>
+					This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+				</para>
+				<example>
+						<title>cluster_broadcast_req() usage</title>
+						<programlisting format="linespecific">
+...
+cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
+...
+				</programlisting>
+				</example>
+			</section>
         </section>
 
         <section>
@@ -532,6 +690,57 @@ Cluster:: 2
 	</section>
 
         </section>
+
+<section>
+<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_CLUSTERER_REQ_RECEIVED</function>
+		</title>
+		<para>
+			This event is raised when a generic, request-like, clusterer message is received. This type of message is sent directly from the script and not by an &osips; module.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>cluster_id</emphasis> - The cluster ID of the source node.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>src_id</emphasis> - The ID of the source node.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>msg</emphasis> - The actual message payload.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>tag</emphasis> - The communication tag of this message, generated by the source node. This could be used to send a reply corresponding to the received message by providing the tag to the <function moreinfo="none">cluster_send_rpl()</function> function.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">E_CLUSTERER_RPL_RECEIVED</function>
+		</title>
+		<para>
+			This event is raised when a generic, reply-like, clusterer message is received. This type of message is sent directly from the script and not by an &osips; module.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>cluster_id</emphasis> - The cluster ID of the source node.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>src_id</emphasis> - The ID of the source node.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>msg</emphasis> - The actual message payload.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>tag</emphasis> - The communication tag of this message. This could be used to match the received reply with a request sent with the <function moreinfo="none">cluster_send_req()</function> or <function moreinfo="none">cluster_broadcast_req()</function> functions.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+</section>
 
 <section>
 	<title>Usage Example</title>
