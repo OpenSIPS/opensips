@@ -45,8 +45,6 @@
  *              for adding has_body() function (bogdan)
  *  2009-07-23  added methods for sdp codec manipulation(andreidragus)
  *  2012-02-21  add change_reply_status (idea from kamailio/textopsx) (rpedraza)
- *  2017-07-31  add remove_body, hf_value_exists, include_hf_value, exclude_hf_value
- *              (idea from kamailio/textopsx) (fsantulli)
  *
  */
 
@@ -84,7 +82,7 @@
 #include "../../mod_fix.h"
 #include "../../trim.h"
 
-#include "codecs.h"
+#include"codecs.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,12 +108,6 @@ static str header_body = {0, 0};
 #define AUDIO_STR "audio"
 #define AUDIO_STR_LEN 5
 
-typedef enum {
-	hvHasValue,
-	hvInclude,
-	hvExclude
-} hvAction_t;
-
 static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
 static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* foo);
 static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
@@ -129,7 +121,6 @@ static int append_time_f(struct sip_msg* msg, char* , char *);
 static int is_method_f(struct sip_msg* msg, char* , char *);
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 );
 static int is_privacy_f(struct sip_msg *msg, char *privacy, char *str2 );
-static int remove_body_f(struct sip_msg *msg, char *str1, char *str2);
 static int remove_body_part_f(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_part_f(struct sip_msg *msg, char *str1, char *str2 );
 static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 );
@@ -148,20 +139,6 @@ static int fixup_sip_validate(void** param, int param_no);
 
 static int change_reply_status_f(struct sip_msg*, char*, char *);
 static int change_reply_status_fixup(void** param, int param_no);
-
-#define is_space(_p) ((_p) == '\t' || (_p) == '\n' || (_p) == '\r' || (_p) == ' ')
-static int find_next_value(char** start, char* end, str* val, str* lump_val);
-static void adjust_lump_val_for_delete(struct hdr_field* hf, str* lump_val);
-static int delete_value_lump(struct sip_msg* msg, struct hdr_field* hf, str *val);
-static int insert_header_lump(struct sip_msg* msg, char* msg_position, int lump_before, str* hname, str *val);
-static int insert_value_lump(struct sip_msg* msg, struct hdr_field* hf, char* msg_position, int lump_before, str *val);
-
-static int hf_value_incexc_f(struct sip_msg* msg, char* str1, char* str2, hvAction_t oper);
-static int hf_value_exists_f(struct sip_msg* msg, char* str1, char* str2);
-static int include_hf_value_f(struct sip_msg* msg, char* str1, char* str2);
-static int exclude_hf_value_f(struct sip_msg* msg, char* str1, char* str2);
-static int incexc_hf_value_fixup(void** param, int param_no);
-static int free_incexc_hf_value_fixup(void** param, int param_no);
 
 static int mod_init(void);
 
@@ -214,9 +191,6 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_privacy",       (cmd_function)is_privacy_f,      1,
 		fixup_privacy, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"remove_body",	     (cmd_function)remove_body_f,     0,
-		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"remove_body_part", (cmd_function)remove_body_part_f,0,
 		0, 0,
@@ -288,15 +262,6 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"stream_delete",	(cmd_function)stream_delete,             1,
 		fixup_regexp_dynamic_null,0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"hf_value_exists",	(cmd_function)hf_value_exists_f,	2,
-		incexc_hf_value_fixup, free_incexc_hf_value_fixup,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"include_hf_value",	(cmd_function)include_hf_value_f,	2,
-		incexc_hf_value_fixup, free_incexc_hf_value_fixup,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"exclude_hf_value",	(cmd_function)exclude_hf_value_f,	2,
-		incexc_hf_value_fixup, free_incexc_hf_value_fixup,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -1115,31 +1080,6 @@ static int is_privacy_f(struct sip_msg *msg, char *_privacy, char *str2 )
 
 	return get_privacy_values(msg) & ((unsigned int)(long)_privacy) ? 1 : -1;
 
-}
-
-
-static int remove_body_f(struct sip_msg *msg, char *type, char *revert )
-{
-	str body = {0, 0};
-
-	if(get_body(msg,&body)!= 0 || body.len==0) {
-		LM_DBG("no body found\n");
-		return -1;
-	}
-	body.len = msg->buf + msg->len - body.s;
-	if(body.len <= 0) {
-		LM_DBG("empty body in the message\n");
-		return 1;
-	}
-	if(del_lump(msg, body.s - msg->buf, body.len, 0) == 0) {
-		LM_ERR("cannot remove body\n");
-		return -1;
-	}
-	if(msg->body) {
-		pkg_free(msg->body);
-		msg->body=NULL;
-	}
-	return 1;
 }
 
 
@@ -2050,224 +1990,3 @@ static int change_reply_status_f(struct sip_msg* msg, char* str1, char* str2)
 	return 1;
 }
 
-static int find_next_value(char** start, char* end, str* val, str* lump_val)
-{
-	int quoted = 0;
-	lump_val->s = *start;
-	while (*start < end && is_space(**start) ) (*start)++;
-	val->s = *start;
-	while ( *start < end && (**start != ',' || quoted) ) {
-		if (**start == '\"' && (!quoted || (*start)[-1]!='\\') )
-			quoted = ~quoted;
-		(*start)++;
-	}
-	val->len = *start - val->s;
-	while (val->len > 0 && is_space(val->s[val->len-1])) val->len--;
-
-	while (*start < end && **start != ',') (*start)++;
-	if (*start < end) {
-		(*start)++;
-	}
-	lump_val->len = *start - lump_val->s;
-	return (*start < end);
-}
-
-static void adjust_lump_val_for_delete(struct hdr_field* hf, str* lump_val)
-{
-	if ( lump_val->s+lump_val->len == hf->body.s+hf->body.len ) {
-		if (lump_val->s > hf->body.s) {
-			lump_val->s--;
-			lump_val->len++;
-		}
-	}
-}
-
-static int delete_value_lump(struct sip_msg* msg, struct hdr_field* hf, str *val)
-{
-	struct lump* l;
-	if (hf && val->s == hf->body.s && val->len == hf->body.len)
-		l=del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
-	else
-		l=del_lump(msg, val->s-msg->buf, val->len, 0);
-	if (l==0) {
-		LM_ERR("delete_value_lump: not enough memory\n");
-		return -1;
-	}
-	return 1;
-}
-
-static int insert_header_lump(struct sip_msg* msg, char* msg_position, int lump_before, str* hname, str *val) {
-	struct lump* anchor;
-	char *s;
-	int len;
-
-	anchor = anchor_lump(msg, msg_position - msg->buf, 0);
-	if (anchor == 0) {
-		LM_ERR("insert_header_lump(): Can't get anchor\n");
-		return -1;
-	}
-
-	len=hname->len+2+val->len+2;
-
-	s = (char*)pkg_malloc(len);
-	if (!s) {
-		LM_ERR("insert_header_lump(): not enough memory\n");
-		return -1;
-	}
-
-	memcpy(s, hname->s, hname->len);
-	s[hname->len] = ':';
-	s[hname->len+1] = ' ';
-	memcpy(s+hname->len+2, val->s, val->len);
-	s[hname->len+2+val->len] = '\r';
-	s[hname->len+2+val->len+1] = '\n';
-
-	if ( (lump_before?insert_new_lump_before(anchor, s, len, 0):insert_new_lump_after(anchor, s, len, 0)) == 0) {
-		LM_ERR("insert_header_lump(): Can't insert lump\n");
-		pkg_free(s);
-		return -1;
-	}
-	return 1;
-}
-
-static int insert_value_lump(struct sip_msg* msg, struct hdr_field* hf, char* msg_position, int lump_before, str *val) {
-	struct lump* anchor;
-	char *s;
-	int len;
-
-	anchor = anchor_lump(msg, msg_position - msg->buf, 0);
-	if (anchor == 0) {
-		LM_ERR("insert_value_lump(): Can't get anchor\n");
-		return -1;
-	}
-
-	len=val->len+1;
-
-	s = (char*)pkg_malloc(len);
-	if (!s) {
-		LM_ERR("insert_value_lump(): not enough memory\n");
-		return -1;
-	}
-
-	if (!hf) {
-		memcpy(s, val->s, val->len);
-		len--;
-	}
-	else if (msg_position == hf->body.s+hf->body.len) {
-		s[0] = ',';
-		memcpy(s+1, val->s, val->len);
-	}
-	else {
-		memcpy(s, val->s, val->len);
-		s[val->len] = ',';
-	}
-	if ( (lump_before?insert_new_lump_before(anchor, s, len, 0):insert_new_lump_after(anchor, s, len, 0)) == 0) {
-		LM_ERR("insert_value_lump(): Can't insert lump\n");
-		pkg_free(s);
-		return -1;
-	}
-	return 1;
-}
-
-static int hf_value_incexc_f(struct sip_msg* msg, char* str_hf, char* value, hvAction_t oper)
-{
-	struct hdr_field *hf, *lump_hf = NULL;
-	pv_value_t pval;
-	str ev, hval1, hval2;
-	char *p = NULL;
-	int res = 0;
-
-	ev.s = value;
-	ev.len = strlen(value);
-
-	memset(&pval, '\0', sizeof pval);
-
-	if (((gparam_p)str_hf)->type == GPARAM_TYPE_INT) {
-                pval.flags = PV_VAL_INT;
-                pval.ri = ((gparam_p)str_hf)->v.ival;
-        } else if (get_pvs_header_value(msg, (gparam_p)str_hf, &pval) != 0) {
-		LM_DBG("failed to get header value\n");
-		return -1;
-	}
-
-	/* we need to be sure we have seen all HFs */
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_DBG("cannot parse message!\n");
-		return -1;
-	}
-
-	for (hf=msg->headers; hf; hf=hf->next) {
-		if( ((pval.flags & PV_VAL_INT) && (pval.ri == hf->type)) || (hf->type == HDR_OTHER_T && hf->name.len == pval.rs.len && strncasecmp(hf->name.s, pval.rs.s, hf->name.len) == 0) ) {
-			/* Header Found - Checking IT */
-			hval2.len = 0;
-			p = hf->body.s;
-			do {
-				res = find_next_value(&p, hf->body.s+hf->body.len, &hval1, &hval2);
-				if (hval1.len && ev.len == hval1.len && strncasecmp(ev.s, hval1.s, ev.len) == 0) {
-					switch(oper) {
-						case hvInclude:
-						case hvHasValue:
-							return 1;
-						case hvExclude:
-							adjust_lump_val_for_delete(hf, &hval2);
-							delete_value_lump(msg, hf, &hval2);
-						default:
-							break;
-					}
-				}
-			} while (res);
-			switch (oper) {
-				case hvInclude:
-					if (!lump_hf) {
-						lump_hf = hf;
-					}
-					break;
-				default:
-					break;
-			}
-		}
-	}
-	switch (oper) {
-		case hvHasValue:
-			return -1;
-		case hvInclude:
-			if (lump_hf)
-				return insert_value_lump(msg, lump_hf, lump_hf->body.s+lump_hf->body.len, 1, &ev);
-			else
-				return insert_header_lump(msg, msg->unparsed, 1, &pval.rs, &ev);
-		default:
-			return 1;
-	}
-}
-
-static int hf_value_exists_f(struct sip_msg* msg, char* str1, char* str2) {
-	return hf_value_incexc_f(msg, str1, str2, hvHasValue);
-}
-
-static int include_hf_value_f(struct sip_msg* msg, char* str1, char* str2) {
-	return hf_value_incexc_f(msg, str1, str2, hvInclude);
-}
-
-static int exclude_hf_value_f(struct sip_msg* msg, char* str1, char* str2) {
-	return hf_value_incexc_f(msg, str1, str2, hvExclude);
-}
-
-static int incexc_hf_value_fixup(void** param, int param_no)
-{
-        if(param_no==1) {
-                return hname_fixup(param, param_no);
-        } else if(param_no==2) {
-                return 0;
-        }
-
-	LM_ERR("wrong number of parameters\n");
-        return E_UNSPEC;
-}
-
-static int free_incexc_hf_value_fixup(void** param, int param_no)
-{
-	if(param_no==1) {
-		return free_hname_fixup(param, param_no);
-	}
-	return 0;
-}
