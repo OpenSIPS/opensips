@@ -246,6 +246,10 @@ static inline char* dp_time(void)
 							case L_DBG: \
 								syslog(LOG_DEBUG|_facility, __VA_ARGS__); \
 								break; \
+							default: \
+								if (_lev > L_DBG) \
+									syslog(LOG_DEBUG|_facility, __VA_ARGS__); \
+								break; \
 						} \
 					} \
 				} \
@@ -370,6 +374,10 @@ static inline char* dp_time(void)
 								break; \
 							case L_DBG: \
 								syslog(LOG_DEBUG|_facility, fmt, ##args); \
+								break; \
+							default: \
+								if (_lev > L_DBG) \
+									syslog(LOG_DEBUG|_facility, fmt, ##args); \
 								break; \
 						} \
 					} \
