@@ -399,6 +399,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 {
 	struct sip_msg *req = params->req;
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+	str user = {NULL, 0};
 
 	parse_reg_headers(req);
 	if (req->expires)
@@ -417,7 +418,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	}
 
 	if (insertion_mode == INSERT_BY_PATH) {
-		if (prepend_path(req, &mri->aor, 0, 0))
+		if (prepend_path(req, &user, 0, 0))
 			LM_ERR("failed to append Path header for aor '%.*s'!\n",
 			       mri->aor.len, mri->aor.s);
 	} else {
