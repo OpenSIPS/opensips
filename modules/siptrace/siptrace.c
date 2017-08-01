@@ -2066,7 +2066,6 @@ static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps)
 	LM_DBG("TM in triggered req=%p, rpl=%p\n",ps->req,ps->rpl);
 	if (ps->req) {
 		/* an incoming request: a retransmission or hop-by-hop ACK */
-		SET_SIPTRACE_CONTEXT(*ps->param);
 		sip_trace( ps->req,  (trace_info_p)(*ps->param) );
 	} else if (ps->rpl) {
 		/* an incoming reply for us or for a CANCEL */
