@@ -144,6 +144,8 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
 static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_info_p info);
 
+static int api_is_id_traced(int id);
+static int is_id_traced(int id, trace_info_p info);
 
 
 static int pipport2su (str *sproto, str *ip, unsigned short port,
@@ -833,7 +835,7 @@ static int mod_init(void)
 			register_trace_type = &register_traced_type;
 
 		if (check_is_traced == NULL)
-			check_is_traced = &is_id_traced;
+			check_is_traced = &api_is_id_traced;
 
 		if (get_next_destination == NULL)
 			get_next_destination = get_next_trace_dest;
@@ -942,7 +944,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 	}
 
 	/* makes sense only if trace protocol loaded */
-	if ( tprot.send_message && !is_id_traced(sip_trace_id)) {
+	if ( tprot.send_message && !is_id_traced(sip_trace_id, info)) {
 		return 1;
 	}
 
@@ -2599,29 +2601,6 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 static struct trace_proto traced_protos[MAX_TRACED_PROTOS];
 static int traced_protos_no=0;
 
-int get_trace_types(void)
-{
-	trace_info_p info;
-
-	if (sl_ctx_idx < 0)
-		return -1;
-
-	info = GET_SIPTRACE_CONTEXT;
-	if (info==NULL)
-		return -1;
-
-	return info->trace_types;
-}
-
-int get_trace_dest_hash(void)
-{
-	trace_info_p info = GET_SIPTRACE_CONTEXT;
-	if (info==NULL || info->trace_list == NULL)
-		return 0;
-
-	return info->trace_list->hash;
-}
-
 trace_dest get_next_trace_dest(trace_dest last_dest, int hash)
 {
 	int found_last=0;
@@ -2678,18 +2657,19 @@ int register_traced_type(char* name)
 	return id;
 }
 
-int is_id_traced(int id)
+
+static int is_id_traced(int id, trace_info_p info)
 {
 	int pos;
-	int trace_types = get_trace_types();
+	int trace_types;
+
+	if (info==NULL || (trace_types=info->trace_types)==-1)
+		return -1;
 
 	if (!(*trace_on_flag)) {
 		LM_DBG("trace is off!\n");
 		return 0;
 	}
-
-	if (trace_types == -1)
-		return 0;
 
 	/* find the corresponding position for this id */
 	for (pos=0; pos < traced_protos_no; pos++)
@@ -2702,10 +2682,20 @@ int is_id_traced(int id)
 	}
 
 	if ((1<<pos) & trace_types)
-		return get_trace_dest_hash();
+		return 1;
 
 	return 0;
 }
+
+
+static int api_is_id_traced(int id)
+{
+	if (sl_ctx_idx < 0)
+		return -1;
+
+	return is_id_traced( id, GET_SIPTRACE_CONTEXT);
+}
+
 
 int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		union sockaddr_union* to_su, str* payload,
@@ -2728,7 +2718,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		return 0;
 	}
 
-	if ((trace_id_hash=is_id_traced(id)) == 0) {
+	if ((trace_id_hash=is_id_traced(id, info)) == 0) {
 		LM_DBG("id %d not traced! aborting...\n", id);
 		return 0;
 	}
