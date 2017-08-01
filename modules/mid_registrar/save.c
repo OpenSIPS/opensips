@@ -1869,9 +1869,9 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
 		calc_contact_expires(req, ct->expires, &e, NULL);
 		if (e > e_out) {
-			LM_ERR("cannot reduce contact expiration from %d sec to %d sec!\n",
+			LM_DBG("reducing contact expiration from %d sec to %d sec!\n",
 			       e, e_out);
-			return -1;
+			e = e_out;
 		}
 
 		ret = ul_api.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq, &c);
