@@ -1212,7 +1212,7 @@ int cgr_acc_terminate(json_object *param, json_object **ret)
 	}
 	if (terminate_str.s != terminate_str_pre.s)
 		pkg_free(terminate_str.s);
-	*ret = json_object_new_int(0);
+	*ret = json_object_new_string("OK");
 	return 0;
 error:
 	LM_ERR("cannot handle terminate: %s\n", err);
