@@ -143,7 +143,9 @@ struct cell;
  * TMCB_MSG_MATCHED_IN -- triggered whenever there is an
  *  incoming SIP message matching the transaction. It may be
  *  a requests (in retransmission, in ACK, in CANCEL) or a
- *  reply (received reply).
+ *  reply (received reply). The SIP msg passed to the callbacks
+ *  is pkg real sip msg (reply or request) which can be 
+ *  safely parsed by the callbacks.
  *
  * TMCB_MSG_SENT_OUT -- triggered whenever there the transaction
  *  is about to send out a SIP message (related to the transaction).

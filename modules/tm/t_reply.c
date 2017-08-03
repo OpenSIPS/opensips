@@ -310,13 +310,15 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 		goto error;
 	}
 
-	if ( has_tran_tmcbs( trans, TMCB_MSG_SENT_OUT) ) {
-		set_extra_tmcb_params( &ack_buf, &trans->uac[branch].request.dst);
-		run_trans_callbacks( TMCB_MSG_SENT_OUT,
-			trans, trans->uas.request, 0, 0);
+	if(SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len)==0){
+		/* successfully sent out */
+		if ( has_tran_tmcbs( trans, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &ack_buf, &trans->uac[branch].request.dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT,
+				trans, trans->uas.request, 0, 0);
+		}
 	}
 
-	SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len);
 	shm_free(ack_buf.s);
 
 	return 0;
@@ -420,20 +422,23 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 	if (!trans->uas.response.dst.send_sock) {
 		LM_CRIT("send_sock is NULL\n");
 	}
-	SEND_PR_BUFFER( rb, buf, len );
-	LM_DBG("reply sent out. buf=%p: %.9s..., "
-		"shmem=%p: %.9s\n", buf, buf, rb->buffer.s, rb->buffer.s );
 
-	if (has_tran_tmcbs(trans, TMCB_MSG_SENT_OUT) ) {
-		cb_s.s = buf;
-		cb_s.len = len;
-		set_extra_tmcb_params( &cb_s, &rb->dst);
-		run_trans_callbacks( TMCB_MSG_SENT_OUT, trans,
+	if ( SEND_PR_BUFFER( rb, buf, len )==0 ) {
+		LM_DBG("reply sent out. buf=%p: %.9s..., "
+			"shmem=%p: %.9s\n", buf, buf, rb->buffer.s, rb->buffer.s );
+
+		if (has_tran_tmcbs(trans, TMCB_MSG_SENT_OUT) ) {
+			cb_s.s = buf;
+			cb_s.len = len;
+			set_extra_tmcb_params( &cb_s, &rb->dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, trans,
 				NULL, FAKED_REPLY, code);
+		}
+		stats_trans_rpl( code, 1 /*local*/ );
 	}
 
 	/* run the POST send callbacks */
-	if (code>=200&&!is_local(trans)&&has_tran_tmcbs(trans,TMCB_RESPONSE_OUT)) {
+	if (code>=200&&!is_local(trans)&&has_tran_tmcbs(trans,TMCB_RESPONSE_OUT)){
 		cb_s.s = buf;
 		cb_s.len = len;
 		set_extra_tmcb_params( &cb_s, &rb->dst);
@@ -445,9 +450,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 				trans->uas.request, FAKED_REPLY, code);
 	}
 
-
 	pkg_free( buf ) ;
-	stats_trans_rpl( code, 1 /*local*/ );
 	LM_DBG("finished\n");
 	return 1;
 
@@ -1014,15 +1017,19 @@ int t_retransmit_reply( struct cell *t )
 	}
 	memcpy( b, t->uas.response.buffer.s, len );
 	UNLOCK_REPLIES( t );
-	SEND_PR_BUFFER( & t->uas.response, b, len );
-	LM_DBG("buf=%p: %.9s..., shmem=%p: %.9s\n",b, b, t->uas.response.buffer.s,
-			t->uas.response.buffer.s );
-	if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-		cb_s.s = b;
-		cb_s.len = len;
-		set_extra_tmcb_params( &cb_s, &t->uas.response.dst);
-		run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
-				NULL, FAKED_REPLY, t->uas.status);
+
+	/* send the buffer out */
+	if (SEND_PR_BUFFER( & t->uas.response, b, len )==0) {
+		/* success */
+		LM_DBG("buf=%p: %.9s..., shmem=%p: %.9s\n",b, b,
+			t->uas.response.buffer.s, t->uas.response.buffer.s );
+		if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
+			cb_s.s = b;
+			cb_s.len = len;
+			set_extra_tmcb_params( &cb_s, &t->uas.response.dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
+					NULL, FAKED_REPLY, t->uas.status);
+		}
 	}
 	return 1;
 
@@ -1265,16 +1272,19 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			run_trans_callbacks_locked(TMCB_RESPONSE_PRE_OUT,t,t->uas.request,
 				relayed_msg, relayed_code);
 		}
-		SEND_PR_BUFFER( uas_rb, buf, res_len );
-		LM_DBG("sent buf=%p: %.9s..., shmem=%p: %.9s\n",
-			buf, buf, uas_rb->buffer.s, uas_rb->buffer.s );
+		/* send it out*/
+		if (SEND_PR_BUFFER( uas_rb, buf, res_len)==0) {
+			/* success */
+			LM_DBG("sent buf=%p: %.9s..., shmem=%p: %.9s\n",
+				buf, buf, uas_rb->buffer.s, uas_rb->buffer.s );
 
-		if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-			cb_s.s = buf;
-			cb_s.len = res_len;
-			set_extra_tmcb_params( &cb_s, &uas_rb->dst);
-			run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
+			if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
+				cb_s.s = buf;
+				cb_s.len = res_len;
+				set_extra_tmcb_params( &cb_s, &uas_rb->dst);
+				run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
 					NULL, relayed_msg, relayed_code);
+			}
 		}
 
 		/* run the POST sending out callback */
