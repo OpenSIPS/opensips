@@ -468,6 +468,6 @@ modparam("pua_dialoginfo", "osips_ps", 0)
    Example 1.12. dialoginfo_set usage
 ...
         if(is_method("INVITE"))
-                if(uri =~ "opensips.org")
+                if($ru =~ "opensips.org")
                         dialoginfo_set();
 ...

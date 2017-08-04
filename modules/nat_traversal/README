@@ -552,8 +552,8 @@ if (client_nat_test("3")) {
 
    Example 1.8. Using the nat_keepalive function
 ...
-if ((method=="REGISTER" || method=="SUBSCRIBE" ||
-    (method=="INVITE" && !has_totag())) && client_nat_test("3"))
+if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
+    ($rm=="INVITE" && !has_totag())) && client_nat_test("3"))
 {
     nat_keepalive();
 }
@@ -623,7 +623,7 @@ if ((method=="REGISTER" || method=="SUBSCRIBE" ||
 ...
 # This code runs on P1 which has received an INVITE from P2 to forward
 # it to the user agent behind NAT (because P1 has the NAT open with it).
-if (method=="INVITE" && $hdr(X-Scope)=="nat-relay") {
+if ($rm=="INVITE" && $hdr(X-Scope)=="nat-relay") {
     $du = $hdr(X-NAT-URI);
     $fs = $keepalive.socket($du);
     t_relay();
@@ -660,9 +660,9 @@ modparam("registrar", "tcp_persistent_flag", 10)
 ...
 # This code runs on the registrar, assuming it has received the
 # REGISTER request directly from the user agent.
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
     if (client_nat_test("3")) {
-        if (proto==UDP) {
+        if ($proto==UDP) {
             nat_keepalive();
         } else {
             # Keep TCP/TLS connections open until the registration
@@ -693,7 +693,7 @@ if (method=="REGISTER") {
 ...
 # This code runs on P1 which received the REGISTER request and has to
 # forward it to the registrar P2.
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
     if (client_nat_test("3")) {
         force_rport();
         nat_keepalive();

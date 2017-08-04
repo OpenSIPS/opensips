@@ -361,7 +361,7 @@ route{
         sl_send_reply("483","Too Many Hops");
         exit;
     };
-    if (msg:len >=  max_len ) {
+    if ($ml >=  65535 ) {
         sl_send_reply("513", "Message too big");
         exit;
     };
@@ -370,7 +370,7 @@ route{
     # subsequent messages will go through our proxy; that's
     # particularly good if upstream and downstream entities
     # use different transport protocol
-    if (!method=="REGISTER") record_route();
+    if (!$rm=="REGISTER") record_route();
 
     # subsequent messages withing a dialog should take the
     # path determined by record-routing
@@ -381,7 +381,7 @@ route{
         exit;
     };
 
-    if (!uri==myself) {
+    if (!is_myself("$rd")) {
         # mark routing logic in request
         append_hf("P-hint: outbound\r\n");
         route(1);
@@ -391,8 +391,8 @@ route{
     # if the request is for other domain use UsrLoc
     # (in case, it does not work, use the following command
     # with proper names and addresses in it)
-    if (uri==myself) {
-        if (method=="REGISTER") {
+    if (is_myself("$rd")) {
+        if ($rm=="REGISTER") {
             # digest authentication
             if (!www_authorize("", "subscriber")) {
                 www_challenge("", "0");
@@ -404,7 +404,7 @@ route{
         };
 
         lookup("aliases");
-        if (!uri==myself) {
+        if (!is_myself("$rd")) {
             append_hf("P-hint: outbound alias\r\n");
             route(1);
             exit;

@@ -680,23 +680,23 @@ route{
                sl_send_reply("483","Too Many Hops");
                exit;
        };
-       if (msg:len >=  2048 ) {
+       if ($ml >=  2048 ) {
                sl_send_reply("513", "Message too big");
                exit;
        };
-       if (!method=="REGISTER")
+       if (!$rm=="REGISTER")
                record_route();
        if (loose_route()) {
                append_hf("P-hint: rr-enforced\r\n");
                route(1);
        };
-       if (uri==myself) {
-               if (method=="REGISTER") {
+       if (is_myself("$rd")) {
+               if ($rm=="REGISTER") {
                        save("location");
                        exit;
                };
                lookup("aliases");
-               if (!uri==myself) {
+               if (!is_myself("$rd")) {
                        append_hf("P-hint: outbound alias\r\n");
                        route(1);
                };

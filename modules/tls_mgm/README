@@ -582,9 +582,10 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 
 1.8.12. client_domain_avp (integer)
 
-   This sets the interger AVP used for name based TLS server
-   domains (please see tls_client_domain for more details).
-   Setting the value to 0 disables name based TLS client domains.
+   This sets the AVP used for name based TLS client domain
+   matching (please see Section 1.8.29, “server_domain,
+   client_domain (string)” for more details). Setting the value to
+   0 disables name based TLS client domain matching.
 
    It's usable only if TLS support was compiled.
 
@@ -592,7 +593,7 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 
    Example 1.12. Set tls_client_domain_avp variable
 ...
-modparam("tls_mgm", "tls_client_domain_avp", "400")
+modparam("tls_mgm", "tls_client_domain_avp", "tls_cli_dom")
 ...
 
 1.8.13. db_url (string)
@@ -1051,10 +1052,10 @@ route{
 
   # if somene claims to belong to our domain in From,
   # challenge him (skip REGISTERs -- we will chalenge them later)
-  if (from_uri==myself) {
+  if (is_myself("$fd")) {
       setflag(1);
       if ( is_method("INVITE|SUBSCRIBE|MESSAGE")
-      && !(src_ip==myself) ) {
+      && !(is_myself("$si")) ) {
           if  (!(proxy_authorize( "domA.net", "subscriber" ))) {
               proxy_challenge("domA.net","0"/*no-qop*/);
               exit;
@@ -1066,7 +1067,7 @@ route{
               exit;
           };
       }; # non-REGISTER from other domain
-  } else if ( is_method("INVITE") && uri!=myself ) {
+  } else if ( is_method("INVITE") && !is_myself("$rd") ) {
       send_reply("403", "No relaying");
       exit;
   };
@@ -1082,7 +1083,7 @@ route{
   };
 
   /* ******* check for requests targeted out of our domain ******* */
-  if ( uri!=myself ) {
+  if ( !is_myself("$rd") ) {
       append_hf("P-hint: OUTBOUND\r\n");
       if ($rd=="domB.net") {
           t_relay("tls:domB.net:5061");
@@ -1101,7 +1102,7 @@ route{
           $rd = "domB.net";
           t_relay("tls:domB.net:5061");
           exit;
-      } else if ( uri=~"sip:202" ) {
+      } else if ( $ru=~"sip:202" ) {
           strip(3);
           $rd = "domC.net";
           t_relay("tls:domC.net:5061");

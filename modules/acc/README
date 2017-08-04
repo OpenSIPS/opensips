@@ -193,7 +193,7 @@ Chapter 1. Admin Guide
 
 loadmodule "modules/acc/acc.so"
 
-if (uri=~"sip:+40") /* calls to Romania */ {
+if ($ru=~"sip:+40") /* calls to Romania */ {
     if (!proxy_authorize("sip_domain.net" /* realm */,
     "subscriber" /* table name */))  {
         proxy_challenge("sip_domain.net" /* realm */, "0" /* no qop */ )
@@ -264,9 +264,9 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 
 1.2.4. Radius accounting dependencies
 
-   If radius accounting is used, except from a radius client which
-   is mandatory, dictionary.rfc2866 must be used in order for the
-   module to work properly.
+   If radius accounting is used, except from a radius client
+   library which is mandatory, dictionary.rfc2866 must be included
+   for the module to work properly.
 
 1.3. Multi Call-Legs accounting
 

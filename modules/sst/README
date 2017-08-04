@@ -239,7 +239,7 @@ modparam("sst", "sst_flag", "SST_FLAG")
 ...
 route {
   ...
-  if (method=="INVITE") {
+  if ($rm=="INVITE") {
     setflag(SST_FLAG); # Set the sst flag
     create_dialog(); # and then create the dialog
   }
@@ -272,7 +272,7 @@ modparam("sst", "min_se", 2400) # Must be >= 90
 ...
 
 route {
-  if (method=="INVITE") {
+  if ($rm=="INVITE") {
         if (sstCheckMin("1")) {
                 xlog("L_ERR", "422 Session Timer Too Small reply sent.\n
 ");
@@ -287,7 +287,7 @@ route {
 ... or ...
 
 route {
-  if (method=="INVITE") {
+  if ($rm=="INVITE") {
         if (sstCheckMin("0")) {
                 xlog("L_ERR", "Session Timer Too Small, dropping request
 \n");

@@ -138,7 +138,7 @@ modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
 
    Example 1.6. bla_set_flag usage
 ...
-if(is_method("REGISTER") && to_uri=~"bla_aor@opensips.org")
+if(is_method("REGISTER") && $tu=~"bla_aor@opensips.org")
         bla_set_flag();
 ...
 
@@ -151,7 +151,7 @@ if(is_method("REGISTER") && to_uri=~"bla_aor@opensips.org")
 
    Example 1.7. bla_handle_notify usage
 ...
-if(is_method("NOTIFY") && to_uri=~"bla_aor@opensips.org")
+if(is_method("NOTIFY") && $tu=~"bla_aor@opensips.org")
 {
                 if( bla_handle_notify() )
                         t_reply("200", "OK");

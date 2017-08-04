@@ -306,7 +306,7 @@ For rls only:
 
    Example 1.13. rls_handle_notify usage
 ...
-if(method=="NOTIFY")
+if($rm=="NOTIFY")
     rls_handle_notify();
 ...
 

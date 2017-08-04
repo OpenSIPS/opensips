@@ -1,10 +1,10 @@
 CGRateS Module
 
-Razvan Crainea
+Răzvan Crainea
 
    OpenSIPS Project
 
-   Copyright � 2017 Razvan Crainea
+   Copyright © 2017 Răzvan Crainea
      __________________________________________________________
 
    Table of Contents
@@ -213,7 +213,7 @@ Chapter 1. Admin Guide
    This parameter can have multiple values, for each server used
    for failover. At least one server should be provisioned.
 
-   Default value is "None".
+   Default value is “None”.
 
    Example 1.1. Set cgrates_engine parameter
 ...
@@ -228,7 +228,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
    local, secure LAN, and you want to use that network to
    communicate with your servers. The parameter is optional.
 
-   Default value is "not set - any IP is used".
+   Default value is “not set - any IP is used”.
 
    Example 1.2. Set bind_ip parameter
 ...
@@ -240,7 +240,7 @@ modparam("cgrates", "bind_ip", "10.0.0.100")
    The maximum number of simultaneous asynchronous connections to
    a CGRateS engine.
 
-   Default value is "10".
+   Default value is “10”.
 
    Example 1.3. Set max_async_connections parameter
 ...
@@ -252,7 +252,7 @@ modparam("cgrates", "max_async_connections", 20)
    The number of seconds after which a disabled connection/engine
    is retried.
 
-   Default value is "60".
+   Default value is “60”.
 
    Example 1.4. Set retry_timeout parameter
 ...
@@ -280,7 +280,7 @@ modparam("cgrates", "retry_timeout", 120)
    that branch is successfull (terminates with a 2xx reply code).
 
    The cgrates_acc() function should only be called on initial
-   INVITEs. For more infirmation check Section 1.3, "Accounting".
+   INVITEs. For more infirmation check Section 1.3, “Accounting”.
 
    Meaning of the parameters is as follows:
      * flags - indicates whether OpenSIPS should generate a CDR at

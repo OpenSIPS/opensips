@@ -496,7 +496,7 @@ modparam("presence", "end_sub_on_timeout", 0)
    (with Subscription-Status:active) by calling handle_subscribe()
    function with the string parameter "1".
    Ex:
-        if(uri =~ "kphone@opensips.org")
+        if($ru =~ "kphone@opensips.org")
                 handle_subscribe("1");
 
    This function can be used from REQUEST_ROUTE.
@@ -509,7 +509,7 @@ modparam("presence", "end_sub_on_timeout", 0)
 
    Example 1.22. handle_subscribe usage
 ...
-if(method=="SUBSCRIBE")
+if($rm=="SUBSCRIBE")
     handle_subscribe();
 ...
 
@@ -600,7 +600,7 @@ _empty_line_
        all presentities for that event are exposed.
 
    MI FIFO Command Format:
-:subs_phtable_list:fifo_reply
+:pres_expose:fifo_reply
 _empty_line_
 
 1.6. Exported Events

@@ -272,6 +272,6 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Does OpenSIPS support fragmented Secure WebSocket messages?
+       Does OpenSIPS support fragmented Secure WebSocket messages?
 
-   No, the WebSocket fragmentation mechanism is not supported.
+       No, the WebSocket fragmentation mechanism is not supported.

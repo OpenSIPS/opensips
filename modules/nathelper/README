@@ -8,6 +8,8 @@ Edited by
 
 Maxim Sobolev
 
+Edited by
+
 Bogdan-Andrei Iancu
 
    Copyright © 2003-2008 Sippy Software, Inc.
@@ -517,31 +519,31 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    2.2.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    2.3.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.

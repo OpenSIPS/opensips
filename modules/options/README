@@ -155,8 +155,8 @@ modparam("options", "support", "100rel")
 
    Example 1.5. options_reply usage
 ...
-if (uri==myself) {
-        if ((method==OPTIONS) && (! uri=~"sip:.*[@]+.*")) {
+if (is_myself("$rd")) {
+        if ((method==OPTIONS) && (! $ru=~"sip:.*[@]+.*")) {
                 options_reply();
         }
 }

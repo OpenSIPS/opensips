@@ -10,7 +10,7 @@ Ramona-Elena Modroiu
 
    <ramona@rosdev.ro>
 
-   Copyright � 2004-2008 Voice Sistem SRL
+   Copyright © 2004-2008 Voice Sistem SRL
    Revision History
    Revision $Revision: 5901 $ $Date$
      __________________________________________________________
@@ -184,7 +184,7 @@ modparam("avpops","use_domain",1)
 
    Name of column containing the uuid (unique user id).
 
-   Default value is "uuid".
+   Default value is “uuid”.
 
    Example 1.5. Set uuid_column parameter
 ...
@@ -195,7 +195,7 @@ modparam("avpops","uuid_column","uuid")
 
    Name of column containing the username.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.6. Set username_column parameter
 ...
@@ -206,7 +206,7 @@ modparam("avpops","username_column","username")
 
    Name of column containing the domain name.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.7. Set domain_column parameter
 ...
@@ -217,7 +217,7 @@ modparam("avpops","domain_column","domain")
 
    Name of column containing the attribute name (AVP name).
 
-   Default value is "attribute".
+   Default value is “attribute”.
 
    Example 1.8. Set attribute_column parameter
 ...
@@ -228,7 +228,7 @@ modparam("avpops","attribute_column","attribute")
 
    Name of column containing the AVP value.
 
-   Default value is "value".
+   Default value is “value”.
 
    Example 1.9. Set value_column parameter
 ...
@@ -239,7 +239,7 @@ modparam("avpops","value_column","value")
 
    Name of column containing the AVP type.
 
-   Default value is "type".
+   Default value is “type”.
 
    Example 1.10. Set type_column parameter
 ...
@@ -261,7 +261,7 @@ modparam("avpops","type_column","type")
           + 'value_type='('integer'|'string')
           + 'table='string
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.11. Set db_scheme parameter
 ...
@@ -273,7 +273,7 @@ modparam("avpops","db_scheme",
 
    Allocated size for AVP variables.
 
-   Default value is "1024".
+   Default value is “1024”.
 
    Example 1.12. Set buf_size parameter
 ...
@@ -312,7 +312,7 @@ modparam("avpops", "buf_size", 1024)
             and 's'), the rest have the meaning descriped in 'AVP
             naming format' chapter.
      * db_id - reference to a defined DB URL (a numerical id) -
-       see the "db_url" module parameter.
+       see the “db_url” module parameter.
      * prefix - static string which will precede the names of the
        AVPs populated by this function.
 
@@ -392,14 +392,14 @@ avp_db_delete("$ru","$avp(1)","3");
        query returned an empty result set, and -1 for all other
        types of errors
      * dest - a list with AVP names where to store the result. The
-       format is "$avp(name1);$avp(name2);...". If this parameter
-       is ommited, the result is stored in "$avp(1);$avp(2);...".
+       format is “$avp(name1);$avp(name2);...”. If this parameter
+       is ommited, the result is stored in “$avp(1);$avp(2);...”.
        If the result gives many rows, then multiple AVPs with
        corresponding name will be added. The value type of the AVP
        (string or integer) will be derived from the type of the
        columns.
      * db_id - reference to a defined DB URL (a numerical id) -
-       see the "db_url" module parameter. It can be either a
+       see the “db_url” module parameter. It can be either a
        constant, or a string/int variable.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -676,14 +676,14 @@ avp_insert("avp(20)", "$hdr(From)", 2);
        query returned an empty result set, and -1 for all other
        types of errors
      * dest - a list with AVP names where to store the result. The
-       format is "$avp(name1);$avp(name2);...". If this parameter
-       is ommited, the result is stored in "$avp(1);$avp(2);...".
+       format is “$avp(name1);$avp(name2);...”. If this parameter
+       is ommited, the result is stored in “$avp(1);$avp(2);...”.
        If the result gives many rows, then multiple AVPs with
        corresponding name will be added. The value type of the AVP
        (string or integer) will be derived from the type of the
        columns.
      * db_id - reference to a defined DB URL (a numerical id) -
-       see the "db_url" module parameter.
+       see the “db_url” module parameter.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
