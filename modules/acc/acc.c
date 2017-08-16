@@ -606,7 +606,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+((ctx&&cdr_flag)?2:0)) < 0 )
 				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+((ctx&&cdr_flag)?2:0)) < 0) {
-				LM_ERR("failed to insert into database\n");
+				LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 				return -1;
 			}
 		} else {
@@ -617,7 +617,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 				if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n+((ctx&&cdr_flag)?2:0)) < 0 )
 					CON_RESET_INSLIST(db_handle);
 				if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n+((ctx&&cdr_flag)?2:0)) < 0) {
-					LM_ERR("failed to insert into database\n");
+					LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 					accX_unlock(&ctx->lock);
 					return -1;
 				}
@@ -628,7 +628,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m) < 0 )
 				CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
-			LM_ERR("failed to insert into database\n");
+			LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 			return -1;
 		}
 	}
