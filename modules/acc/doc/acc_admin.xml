@@ -7,21 +7,21 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		ACC module is used to account transactions information to different
-		backends like syslog, <abbrev>SQL</abbrev>,
+		The ACC module is used to account transaction information to different
+		backends such as syslog, <abbrev>SQL</abbrev>,
 		<acronym>AAA</acronym>.
 	</para>
 	<para>
 		To account a transaction and to choose which set of backends to be
-		used, the script writer just has to use mark the transaction for
-		accouting by using the <xref linkend="do_accounting"/> script function.
+		used, the script writer only has to mark the transaction for
+		accounting by using the <xref linkend="do_accounting"/> script function.
 		Note that the function is not actually doing the accounting at that
-		very process, it is just setting a marker - the actual accouting
+		very time, it is just setting a marker - the actual accounting
 		will be done later when the transaction or dialog will be
 		completed.
 		</para>
 		<para>
-		Even so, the module allows the script writter to force accounting on the
+		Even so, the module allows the script writer to force accounting on the
 		spot in special cases via some other script functions.
 	</para>
 	<para>
@@ -52,10 +52,10 @@
 			<para>Reason phrase from final reply</para>
 		</listitem>
 		<listitem>
-			<para>Time stamp when transaction was completed</para>
+			<para>Timestamp when transaction was completed</para>
 		</listitem>
 		</itemizedlist>
-		If a value is not present in request, the empty string is accounted
+		If a value is not present in the request, the empty string is accounted
 		instead.
 	</para>
 	<para>
@@ -64,13 +64,13 @@
 		<listitem>
 			<para>
 			A single INVITE may produce multiple accounting reports -- that's
-			due to SIP forking feature.
+			most likely due to the SIP forking feature.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			Since version 2.2 all flags used for accounting have been replaced
-			with do_accounting function. No need to worry anymore of whether
+			Since version 2.2, all flags used for accounting have been replaced
+			with the do_accounting() function. No need to worry anymore whether
 			you have set the flags or not, or be confused by various flag names,
 			now you only have to call the function and it will do all the work
 			for you.
@@ -80,12 +80,12 @@
 			<para>
 			&osips; now supports session/dialog accounting. It can
 			automatically correlate INVITEs with BYEs for generating proper CDRs,
-			for example for purpose of billing.
+			for example for billing purposes.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			If a UA fails in middle of conversation, a proxy will never
+			If a UA fails in the middle of a conversation, a proxy will never
 			find out about it. In general, a better practice is to account from an
 			end-device (such as PSTN gateway), which best knows about call
 			status (including media status and PSTN status in case of the
@@ -127,9 +127,9 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 		<section>
 			<title>Overview</title>
 			<para>
-			Along the static default information, ACC modules
-			allows dynamical selection of extra information to be logged using
-			acc_extra pseudovariable. This allows you to log any
+			Along the static default information, the ACC module
+			allows dynamic selection of extra information to be logged using
+			the acc_extra pseudovariable. This allows you to log any
 			pseudo-variable (AVPs, parts of the request, parts of the reply, etc).
 			</para>
 		</section>
@@ -140,23 +140,23 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 			<emphasis>extra_field</emphasis> parameter by specifying tags
 			and log_names for the additional information. This information is
 			defined via acc_extra pseudovariable, referenced with the define
-			tag. If the tag is not specified, it's value will be considered
+			tag. If the tag is not specified, its value will be considered
 			to be the same as the log_value. Accounting backend(log, db, aaa, evi)
 			is specified at the beginning of the definition, separated by ':' from
 			the rest. The syntax of the parameter is:
 			</para>
 			<itemizedlist>
 				<listitem><para><emphasis>
-				backend : tag -> log_name (';'extra_definition)*
+				backend : tag -> log_name (';'tag -> log_name)*
 				</emphasis></para></listitem>
 				<listitem><para><emphasis>
-				backend : tag (';' extra_definition)*
+				backend : tag (';' tag)*
 				</emphasis></para></listitem>
 			</itemizedlist>
 			<para>
-				Extra values are consistent during the whole call. Setting a value
-			during the request will result in seeing that value on the reply. Also,
-			as concerning CDR logging, setting a value on the initial INVITIE will
+				Extra values are consistent during the whole call. Setting a
+			value during a request, will cause it to remain visible during all replies. Also,
+			concerning CDR logging, setting a value on the initial INVITIE will
 			result in having that value throughout the dialog.
 			</para>
 			<para>
@@ -195,7 +195,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 </programlisting>
 				will enable you to set the value for <emphasis>test_a</emphasis> field
 				of the log only by setting <emphasis>$acc_etra(a)</emphasis> variable.
-				Else the field shall be log with no value(null).
+				Otherwise, the field shall be logged with no value(null).
 			</para>
 		</section>
 		<section>
@@ -797,10 +797,10 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 			<function moreinfo="none">do_accounting(type, flags, table)</function>
 		</title>
 		<para>
-			<function moreinfo="none">do_accounting()</function> replace all the
+			<function moreinfo="none">do_accounting()</function> replaces all the
 			*_flag and, *_missed_flag, cdr_flag, failed transaction_flag and the
-			db_table_avp modpara. Just call do_accounting(), select where you want
-			to do accounting and how and the function will do all the job for you.
+			db_table_avp modparams. Just call do_accounting(), select where and how you want
+			the accounting to take place, and the function will do all the work for you.
 		</para>
 
 		<para>
@@ -808,7 +808,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>type</emphasis> - the type of accounting you want to do.
-			All the types have to be separated by '|'. The following parameters can
+			All types have to be separated by '|'. The following parameters can
 			be used: </para>
 			<itemizedlist>
 				<listitem>
@@ -826,24 +826,28 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> - flags for the accouting type you have
+			<para><emphasis>flags</emphasis> - flags for the accounting type you have
 			selected. All the types have to be separated by '|'. The following
 			parameters can be used: </para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>cdr</emphasis> - also set CDR details when doing
-						accounting; DIALOG MODULE HAS TO BE LOADED;</para>
+					<para><emphasis>cdr</emphasis> - enables dialog-level accounting.
+						OpenSIPS will internally detect dialog termination (generation/receipt
+						of a BYE request), and store the CDR as soon as the BYE request
+						is replied to. By enabling the "cdr" flag, the following additional
+						fields will be populated: duration, ms_duration, setuptime, created.
+						 (requires dialog module support)</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>missed</emphasis> - log missed calls; take care
-						that this flag will be deactivated after first missed call;
+						that this flag will be deactivated after the first missed call;
 						you will have to reactivate it in the
 						<emphasis>failure_route</emphasis> if you want to account
-						all destinations that did not respond to the call;</para>
+						each destination that did not respond to the call;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>failed</emphasis> -  flag which says if the
-						transaction should be accounted also in case
+					<para><emphasis>failed</emphasis> -  flag which indicates if the
+						transaction should also be accounted in case
 						of failure (status>=300);</para>
 				</listitem>
 			</itemizedlist>

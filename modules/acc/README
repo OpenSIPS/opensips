@@ -10,8 +10,6 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-Edited by
-
 Irina-Maria Stanescu
 
    Copyright © 2002-2003, 2003 FhG FOKUS
@@ -136,18 +134,18 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   ACC module is used to account transactions information to
-   different backends like syslog, SQL, AAA.
+   The ACC module is used to account transaction information to
+   different backends such as syslog, SQL, AAA.
 
    To account a transaction and to choose which set of backends to
-   be used, the script writer just has to use mark the transaction
-   for accouting by using the Section 1.8.1, “ do_accounting(type,
+   be used, the script writer only has to mark the transaction for
+   accounting by using the Section 1.8.1, “ do_accounting(type,
    flags, table) ” script function. Note that the function is not
-   actually doing the accounting at that very process, it is just
-   setting a marker - the actual accouting will be done later when
-   the transaction or dialog will be completed.
+   actually doing the accounting at that very time, it is just
+   setting a marker - the actual accounting will be done later
+   when the transaction or dialog will be completed.
 
-   Even so, the module allows the script writter to force
+   Even so, the module allows the script writer to force
    accounting on the spot in special cases via some other script
    functions.
 
@@ -164,25 +162,25 @@ Chapter 1. Admin Guide
      * Call-Id
      * 3-digit Status code from final reply
      * Reason phrase from final reply
-     * Time stamp when transaction was completed
+     * Timestamp when transaction was completed
 
-   If a value is not present in request, the empty string is
+   If a value is not present in the request, the empty string is
    accounted instead.
 
    Note that:
      * A single INVITE may produce multiple accounting reports --
-       that's due to SIP forking feature.
-     * Since version 2.2 all flags used for accounting have been
-       replaced with do_accounting function. No need to worry
-       anymore of whether you have set the flags or not, or be
+       that's most likely due to the SIP forking feature.
+     * Since version 2.2, all flags used for accounting have been
+       replaced with the do_accounting() function. No need to
+       worry anymore whether you have set the flags or not, or be
        confused by various flag names, now you only have to call
        the function and it will do all the work for you.
      * OpenSIPS now supports session/dialog accounting. It can
        automatically correlate INVITEs with BYEs for generating
-       proper CDRs, for example for purpose of billing.
-     * If a UA fails in middle of conversation, a proxy will never
-       find out about it. In general, a better practice is to
-       account from an end-device (such as PSTN gateway), which
+       proper CDRs, for example for billing purposes.
+     * If a UA fails in the middle of a conversation, a proxy will
+       never find out about it. In general, a better practice is
+       to account from an end-device (such as PSTN gateway), which
        best knows about call status (including media status and
        PSTN status in case of the gateway).
 
@@ -214,8 +212,8 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 
 1.2.1. Overview
 
-   Along the static default information, ACC modules allows
-   dynamical selection of extra information to be logged using
+   Along the static default information, the ACC module allows
+   dynamic selection of extra information to be logged using the
    acc_extra pseudovariable. This allows you to log any
    pseudo-variable (AVPs, parts of the request, parts of the
    reply, etc).
@@ -226,16 +224,16 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
    parameter by specifying tags and log_names for the additional
    information. This information is defined via acc_extra
    pseudovariable, referenced with the define tag. If the tag is
-   not specified, it's value will be considered to be the same as
+   not specified, its value will be considered to be the same as
    the log_value. Accounting backend(log, db, aaa, evi) is
    specified at the beginning of the definition, separated by ':'
    from the rest. The syntax of the parameter is:
-     * backend : tag -> log_name (';'extra_definition)*
-     * backend : tag (';' extra_definition)*
+     * backend : tag -> log_name (';'tag -> log_name)*
+     * backend : tag (';' tag)*
 
    Extra values are consistent during the whole call. Setting a
-   value during the request will result in seeing that value on
-   the reply. Also, as concerning CDR logging, setting a value on
+   value during a request, will cause it to remain visible during
+   all replies. Also, concerning CDR logging, setting a value on
    the initial INVITIE will result in having that value throughout
    the dialog.
 
@@ -259,8 +257,8 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 modparam("acc", "extra_fields", "log: a -> test_a")
 
    will enable you to set the value for test_a field of the log
-   only by setting $acc_etra(a) variable. Else the field shall be
-   log with no value(null).
+   only by setting $acc_etra(a) variable. Otherwise, the field
+   shall be logged with no value(null).
 
 1.2.4. Radius accounting dependencies
 
@@ -650,32 +648,38 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 1.8.1.  do_accounting(type, flags, table)
 
-   do_accounting() replace all the *_flag and, *_missed_flag,
-   cdr_flag, failed transaction_flag and the db_table_avp modpara.
-   Just call do_accounting(), select where you want to do
-   accounting and how and the function will do all the job for
-   you.
+   do_accounting() replaces all the *_flag and, *_missed_flag,
+   cdr_flag, failed transaction_flag and the db_table_avp
+   modparams. Just call do_accounting(), select where and how you
+   want the accounting to take place, and the function will do all
+   the work for you.
 
    Meaning of the parameters is as follows:
-     * type - the type of accounting you want to do. All the types
+     * type - the type of accounting you want to do. All types
        have to be separated by '|'. The following parameters can
        be used:
           + log - syslog accounting;
           + db - database accounting;
           + aaa - aaa specific accounting;
           + evi - Event Interface accounting;
-     * flags - flags for the accouting type you have selected. All
-       the types have to be separated by '|'. The following
+     * flags - flags for the accounting type you have selected.
+       All the types have to be separated by '|'. The following
        parameters can be used:
-          + cdr - also set CDR details when doing accounting;
-            DIALOG MODULE HAS TO BE LOADED;
+          + cdr - enables dialog-level accounting. OpenSIPS will
+            internally detect dialog termination
+            (generation/receipt of a BYE request), and store the
+            CDR as soon as the BYE request is replied to. By
+            enabling the "cdr" flag, the following additional
+            fields will be populated: duration, ms_duration,
+            setuptime, created. (requires dialog module support)
           + missed - log missed calls; take care that this flag
-            will be deactivated after first missed call; you will
-            have to reactivate it in the failure_route if you want
-            to account all destinations that did not respond to
-            the call;
-          + failed - flag which says if the transaction should be
-            accounted also in case of failure (status>=300);
+            will be deactivated after the first missed call; you
+            will have to reactivate it in the failure_route if you
+            want to account each destination that did not respond
+            to the call;
+          + failed - flag which indicates if the transaction
+            should also be accounted in case of failure
+            (status>=300);
      * table - table where to do the accounting; it replaces old
        table_avp parameter;
 
@@ -928,68 +932,68 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with old report_ack parameter
+   What happened with old report_ack parameter
 
-       The parameter is considered obsolete. It was removed as acc
-       module is doing SIP transaction based accouting and according
-       to SIP RFC, end2end ACKs are a different transaction (still
-       part of the same dialog). ACKs can be individually accouted as
-       any other sequential (in-dialog) request.
-       $
+   The parameter is considered obsolete. It was removed as acc
+   module is doing SIP transaction based accouting and according
+   to SIP RFC, end2end ACKs are a different transaction (still
+   part of the same dialog). ACKs can be individually accouted as
+   any other sequential (in-dialog) request.
+   $
 
    2.2.
 
-       What happened with old log_fmt parameter
+   What happened with old log_fmt parameter
 
-       The parameter became obsolete with the restructure of the data
-       logged by ACC module (refer to the Overview chapter). For
-       similar behaviour you can use the extra accouting (see the
-       corresponding chapter).
+   The parameter became obsolete with the restructure of the data
+   logged by ACC module (refer to the Overview chapter). For
+   similar behaviour you can use the extra accouting (see the
+   corresponding chapter).
 
    2.3.
 
-       What happened with old multi_leg_enabled parameter
+   What happened with old multi_leg_enabled parameter
 
-       The parameter became obsolete by the addition of the new
-       multi_leg_info parameter. The multi-leg accouting is
-       automatically enabled when multi_leg_info is defined.
+   The parameter became obsolete by the addition of the new
+   multi_leg_info parameter. The multi-leg accouting is
+   automatically enabled when multi_leg_info is defined.
 
    2.4.
 
-       What happened with old src_leg_avp_id and dst_leg_avp_id
-       parameters
+   What happened with old src_leg_avp_id and dst_leg_avp_id
+   parameters
 
-       The parameter was replaced by the more generic new parameter
-       multi_leg_info. This allows logging (per-leg) of more
-       information than just dst and src.
+   The parameter was replaced by the more generic new parameter
+   multi_leg_info. This allows logging (per-leg) of more
+   information than just dst and src.
 
    2.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
