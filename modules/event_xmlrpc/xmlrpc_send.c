@@ -374,11 +374,6 @@ int xmlrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 	char *b, *p;
 	evi_param_p param;
 
-	if (params && (params->flags & XMLRPC_FLAG)) {
-		LM_DBG("buffer already built\n");
-		return 0;
-	}
-
 	b_len = XMLRPC_DEFAULT_BUFFER_SIZE;
 	b = xmlrpc_body_buf;
 
@@ -473,8 +468,6 @@ int xmlrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 		LM_ERR("cannot build send msg\n");
 		return -1;
 	}
-	if (params)
-		params->flags |= XMLRPC_FLAG;
 
 	return 0;
 }
