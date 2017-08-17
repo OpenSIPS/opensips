@@ -74,6 +74,8 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param);
 static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param);
 static struct mi_root* clusterer_list(struct mi_root *root, void *param);
 static struct mi_root* clusterer_list_topology(struct mi_root *cmd_tree, void *param);
+static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param);
+static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param);
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param);
 static void heartbeats_utimer_handler(utime_t ticks, void *param);
@@ -143,6 +145,10 @@ static mi_export_t mi_cmds[] = {
 	clusterer_list, 0, 0, 0},
 	{ "clusterer_list_topology", "lists the topology as known by the current node",
 	clusterer_list_topology, 0, 0, 0},
+	{ "cluster_send_mi", "sends an MI command to be run on a specific node in a cluster",
+	cluster_send_mi, MI_ASYNC_RPL_FLAG, 0, 0},
+	{ "cluster_broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster",
+	cluster_bcast_mi, MI_ASYNC_RPL_FLAG, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -556,6 +562,195 @@ error:
 	lock_stop_read(cl_list_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
 	return NULL;
+}
+
+static struct mi_root *run_mi_cmd_local(struct mi_cmd *f, str *cmd_params, int nr_params,
+									struct mi_handler *async_hdl)
+{
+	struct mi_root *cmd_root = NULL, *cmd_rpl;
+	int i;
+
+	if (f->flags & MI_NO_INPUT_FLAG && nr_params)
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM_S));
+
+	if (!(f->flags & MI_NO_INPUT_FLAG)) {
+		cmd_root = init_mi_tree(0,0,0);
+		if (!cmd_root) {
+			LM_ERR("the MI tree for the command to be run cannot be initialized!\n");
+			return init_mi_tree(400, MI_SSTR(MI_INTERNAL_ERR));
+		}
+		cmd_root->async_hdl = async_hdl;
+	}
+
+	for (i = 0; i < nr_params; i++)
+		if (!add_mi_node_child(&cmd_root->node, 0, 0, 0,
+			cmd_params[i].s, cmd_params[i].len)) {
+			LM_ERR("cannot add child node to the tree of the MI command to be run\n");
+			free_mi_tree(cmd_root);
+			return init_mi_tree(400, MI_SSTR(MI_INTERNAL_ERR));
+		}
+
+	if ((cmd_rpl = run_mi_cmd(f, cmd_root, 0, 0)) == NULL) {
+		if (cmd_root)
+			free_mi_tree(cmd_root);
+		return init_mi_tree(400, MI_SSTR("MI command to be run failed"));
+	}
+
+	if (cmd_root)
+		free_mi_tree(cmd_root);
+
+	return cmd_rpl;
+}
+
+struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params)
+{
+	struct mi_cmd *f;
+	struct mi_root *cmd_root = NULL, *cmd_rpl;
+	int i;
+
+	f = lookup_mi_cmd(cmd_name->s, cmd_name->len);
+	if (!f) {
+		LM_ERR("MI command to be run not found\n");
+		return NULL;
+	}
+
+	if (f->flags & MI_NO_INPUT_FLAG && nr_params) {
+		LM_ERR("MI command should not have parameters\n");
+		return NULL;
+	}
+
+	if (!(f->flags & MI_NO_INPUT_FLAG)) {
+		cmd_root = init_mi_tree(0,0,0);
+		if (!cmd_root) {
+			LM_ERR("the MI tree for the command to be run cannot be initialized!\n");
+			return NULL;
+		}
+	}
+
+	for (i = 0; i < nr_params; i++)
+		if (!add_mi_node_child(&cmd_root->node, 0, 0, 0,
+			cmd_params[i].s, cmd_params[i].len)) {
+			free_mi_tree(cmd_root);
+			LM_ERR("cannot add child node to the tree of the MI command to be run\n");
+			return NULL;
+		}
+
+	if ((cmd_rpl = run_mi_cmd(f, cmd_root, 0, 0)) == NULL) {
+		if (cmd_root)
+			free_mi_tree(cmd_root);
+		return NULL;
+	}
+
+	if (cmd_root)
+		free_mi_tree(cmd_root);
+
+	return cmd_rpl;
+}
+
+static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param)
+{
+	struct mi_node *node, *cmd_params_n;
+	unsigned int cluster_id, node_id;
+	int rc;
+	str cl_cmd_name;
+	str cl_cmd_params[MI_CMD_MAX_NR_PARAMS];
+	int no_params = 0;
+
+	node = cmd->node.kids;
+
+	if (node == NULL || node->next == NULL || node->next->next == NULL)
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+
+	rc = str2int(&node->value, &cluster_id);
+	if (rc < 0 || cluster_id < 1)
+		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
+
+	rc = str2int(&node->next->value, &node_id);
+	if (rc < 0 || node_id < 1)
+		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
+	if (node_id == current_id)
+		return init_mi_tree(400, MI_SSTR("Local node specified as destination"));
+
+	cl_cmd_name = node->next->next->value;
+
+	cmd_params_n = node->next->next->next;
+	for (; cmd_params_n; cmd_params_n = cmd_params_n->next, no_params++)
+		cl_cmd_params[no_params] = cmd_params_n->value;
+
+	/* send MI cmd in cluster */
+	rc = send_mi_cmd(cluster_id, node_id, cl_cmd_name, cl_cmd_params, no_params);
+	switch (rc) {
+		case CLUSTERER_SEND_SUCCES:
+			LM_DBG("MI command <%.*s> sent\n", cl_cmd_name.len, cl_cmd_name.s);
+			break;
+		case CLUSTERER_CURR_DISABLED:
+			LM_INFO("Current node disabled, MI command <%.*s> not sent\n",
+				cl_cmd_name.len, cl_cmd_name.s);
+			break;
+		case CLUSTERER_DEST_DOWN:
+			LM_ERR("Destination down, MI command <%.*s> not sent\n",
+				cl_cmd_name.len, cl_cmd_name.s);
+			break;
+		case CLUSTERER_SEND_ERR:
+			LM_ERR("Error sending MI command <%.*s>+\n",
+				cl_cmd_name.len, cl_cmd_name.s);
+			break;
+	}
+
+	return init_mi_tree(200, MI_SSTR(MI_OK));
+}
+
+static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
+{
+	struct mi_node *node, *cmd_params_n;
+	struct mi_cmd *f;
+	unsigned int cluster_id;
+	int rc;
+	str cl_cmd_name;
+	str cl_cmd_params[MI_CMD_MAX_NR_PARAMS];
+	int no_params = 0;
+
+	node = cmd->node.kids;
+
+	if (node == NULL || node->next == NULL || node->next->next == NULL)
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+
+	rc = str2int(&node->value, &cluster_id);
+	if (rc < 0 || cluster_id < 1)
+		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
+
+	cl_cmd_name = node->next->value;
+
+	f = lookup_mi_cmd(cl_cmd_name.s, cl_cmd_name.len);
+	if (!f)
+		return init_mi_tree(400, MI_SSTR("MI command to be run not found"));
+
+	cmd_params_n = node->next->next;
+	for (; cmd_params_n; cmd_params_n = cmd_params_n->next, no_params++)
+		cl_cmd_params[no_params] = cmd_params_n->value;
+
+	/* send MI cmd in cluster */
+	rc = send_mi_cmd(cluster_id, 0, cl_cmd_name, cl_cmd_params, no_params);
+	switch (rc) {
+		case CLUSTERER_SEND_SUCCES:
+			LM_DBG("MI command <%.*s> sent\n", cl_cmd_name.len, cl_cmd_name.s);
+			break;
+		case CLUSTERER_CURR_DISABLED:
+			LM_INFO("Current node disabled, MI command <%.*s> not sent\n",
+				cl_cmd_name.len, cl_cmd_name.s);
+			break;
+		case CLUSTERER_DEST_DOWN:
+			LM_ERR("All nodes down, MI command <%.*s> not sent\n",
+				cl_cmd_name.len, cl_cmd_name.s);
+			break;
+		case CLUSTERER_SEND_ERR:
+			LM_ERR("Error sending MI command <%.*s>+\n",
+				cl_cmd_name.len, cl_cmd_name.s);
+			break;
+	}
+
+	/* run MI cmd locally */
+	return run_mi_cmd_local(f, cl_cmd_params, no_params, cmd->async_hdl);
 }
 
 static void db_update_timer(unsigned int ticks, void *param)

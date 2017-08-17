@@ -689,6 +689,77 @@ Cluster:: 2
 		</programlisting>
 	</section>
 
+		<section>
+		<title>
+		<function moreinfo="none">cluster_send_mi</function>
+		</title>
+		<para>
+        Dispatches a given MI command to be run on a specific node in the cluster.
+        </para>
+		<para>
+		Name: <emphasis>cluster_send_mi</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>cluster_id</emphasis> - id of the cluster.
+			</para></listitem>
+            <listitem><para>
+			<emphasis>destination</emphasis> - id of the destination node
+			</para></listitem>
+			<listitem><para>
+			<emphasis>cmd_name</emphasis> - name of the MI command to be run
+			</para></listitem>
+			<listitem><para>
+			the parameters of the MI command to be run - optional or required, depending on the command
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:cluster_mi:
+		1
+		3
+		lb_reload
+		_empty_line_
+		</programlisting>
+		</section>
+
+		<section>
+		<title>
+		<function moreinfo="none">cluster_broadcast_mi</function>
+		</title>
+		<para>
+        Dispatches a given MI command to be run on all the nodes in a cluster. The command is also executed locally.
+        </para>
+		<para>
+		Name: <emphasis>cluster_broadcast_mi</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>cluster_id</emphasis> - id of the cluster.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>cmd_name</emphasis> - name of the MI command to be run
+			</para></listitem>
+			<listitem><para>
+			the parameters of the MI command to be run - optional or required, depending on the command
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:cluster_mi:
+		1
+		dr_reload_status
+		partition_5
+		_empty_line_
+		</programlisting>
+		</section>
+
         </section>
 
 <section>

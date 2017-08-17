@@ -33,6 +33,7 @@
 #include "../../bin_interface.h"
 #include "../../timer.h"
 #include "../../forward.h"
+#include "../../mi/tree.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -604,8 +605,6 @@ static int get_next_hop_2(node_info_t *dest)
 	return nhop_id;
 }
 
-#undef unlock_all_nodes
-
 /* @return:
  *  	> 0: next hop id
  * 		0  : no other path(node is down)
@@ -793,7 +792,7 @@ enum clusterer_send_ret clusterer_bcast_msg(bin_packet_t *packet, int cluster_id
 		return CLUSTERER_SEND_ERR;
 }
 
-static int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id)
+static inline int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id)
 {
 	if (bin_push_int(packet, cluster_id) < 0)
 		return -1;
@@ -876,6 +875,37 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 	}
 
 	return clusterer_bcast_msg(&packet, cluster_id);
+}
+
+enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
+										str *cmd_params, int no_params)
+{
+	static str module_name = str_init("clusterer");
+	bin_packet_t packet;
+	int i;
+
+	if (bin_init(&packet, &module_name, CLUSTERER_MI_CMD, BIN_VERSION, 0) < 0) {
+		LM_ERR("Failed to init bin send buffer\n");
+		return CLUSTERER_SEND_ERR;
+	}
+
+	if (bin_push_str(&packet, &cmd_name) < 0)
+		return CLUSTERER_SEND_ERR;
+	if (bin_push_int(&packet, no_params) < 0)
+		return CLUSTERER_SEND_ERR;
+	for (i = 0; i < no_params; i++)
+		if (bin_push_str(&packet, &cmd_params[i]) < 0)
+			return CLUSTERER_SEND_ERR;
+
+	if (msg_add_trailer(&packet, cluster_id, dst_id ? dst_id : -1) < 0) {
+		LM_ERR("Failed to add trailer to module's message\n");
+		return CLUSTERER_SEND_ERR;
+	}
+
+	if (dst_id)
+		return clusterer_send_msg(&packet, cluster_id, dst_id);
+	else
+		return clusterer_bcast_msg(&packet, cluster_id);
 }
 
 static inline int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
@@ -1250,7 +1280,7 @@ static int send_top_description(cluster_info_t *cluster, node_info_t *dest_node)
 	return 0;
 }
 
-static void handle_cl_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
+static void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
 					int packet_type, union sockaddr_union *src_su, int src_node_id)
 {
 	static str module_name = str_init("clusterer");
@@ -1369,7 +1399,7 @@ static void handle_cl_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
 	}
 }
 
-static void handle_cl_msg(bin_packet_t *received, cluster_info_t *cl, int packet_type,
+static void handle_internal_msg(bin_packet_t *received, cluster_info_t *cl, int packet_type,
 		node_info_t *src_node, struct timeval timestamp, int *check_call_cbs_event)
 {
 	node_info_t *ls_neigh;
@@ -1589,12 +1619,77 @@ static void handle_cl_msg(bin_packet_t *received, cluster_info_t *cl, int packet
 
 static void handle_cl_gen_msg(bin_packet_t *packet)
 {
+	int req_like;
+	str rcv_msg, rcv_tag;
+	int cluster_id, source_id;
+
+	LM_DBG("Received generic clusterer message\n");
+
+	bin_pop_int(packet, &req_like);
+	bin_pop_str(packet, &rcv_tag);
+	bin_pop_str(packet, &rcv_msg);
+
+	if (evi_param_set_int(ei_clid_p, &cluster_id) < 0) {
+		LM_ERR("cannot set cluster id event parameter\n");
+		return;
+	}
+	if (evi_param_set_int(ei_srcid_p, &source_id) < 0) {
+		LM_ERR("cannot set source id event parameter\n");
+		return;
+	}
+	if (evi_param_set_str(ei_msg_p, &rcv_msg) < 0) {
+		LM_ERR("cannot set message event parameter\n");
+		return;
+	}
+	if (evi_param_set_str(ei_tag_p, &rcv_tag) < 0) {
+		LM_ERR("cannot set tag event parameter\n");
+		return;
+	}
+
+	/* raise event interface event for generic msg */
+	if (req_like) {
+		if (evi_raise_event(ei_req_rcv_id, ei_event_params) < 0) {
+			LM_ERR("cannot raise event\n");
+			return;
+		}
+	} else {
+		if (evi_raise_event(ei_rpl_rcv_id, ei_event_params) < 0) {
+			LM_ERR("cannot raise event\n");
+			return;
+		}
+	}
+}
+
+static void handle_cl_mi_msg(bin_packet_t *packet)
+{
+	str cmd_params[MI_CMD_MAX_NR_PARAMS];
+	str cmd_name;
+	int i, no_params;
+	struct mi_root *cmd_rpl;
+
+	bin_pop_str(packet, &cmd_name);
+	LM_DBG("Received MI command <%.*s>\n", cmd_name.len, cmd_name.s);
+
+	bin_pop_int(packet, &no_params);
+	for (i = 0; i < no_params; i++)
+		bin_pop_str(packet, &cmd_params[i]);
+
+	cmd_rpl = run_rcv_mi_cmd(&cmd_name, cmd_params, no_params);
+	if (!cmd_rpl) {
+		LM_ERR("MI command <%.*s> failed\n", cmd_name.len, cmd_name.s);
+		return;
+	}
+
+	LM_INFO("MI command <%.*s> returned with: code <%d>, reason <%.*s>\n",
+		cmd_name.len, cmd_name.s, cmd_rpl->code, cmd_rpl->reason.len, cmd_rpl->reason.s);
+}
+
+static void handle_other_cl_msg(bin_packet_t *packet, int packet_type)
+{
 	int source_id, dest_id, cluster_id;
 	cluster_info_t *cl;
 	node_info_t *node;
 	int check_call_cbs_event = 0;
-	int req_like;
-	str rcv_msg, rcv_tag;
 
 	bin_pop_back_int(packet, &dest_id);
 	bin_pop_back_int(packet, &source_id);
@@ -1631,7 +1726,8 @@ static void handle_cl_gen_msg(bin_packet_t *packet)
 	} else
 		lock_release(node->lock);
 
-	if (dest_id != current_id) {	/* route the message */
+	if (dest_id != current_id) {
+		/* route the message */
 		bin_push_int(packet, cluster_id);
 		bin_push_int(packet, source_id);
 		bin_push_int(packet, dest_id);
@@ -1657,40 +1753,11 @@ static void handle_cl_gen_msg(bin_packet_t *packet)
 
 			goto exit;
 		}
-	} else {	/* raise event */
-		LM_DBG("Received generic clusterer message from node: %d\n", source_id);
-		bin_pop_int(packet, &req_like);
-		bin_pop_str(packet, &rcv_tag);
-		bin_pop_str(packet, &rcv_msg);
-
-		if (evi_param_set_int(ei_clid_p, &cluster_id) < 0) {
-			LM_ERR("cannot set cluster id event parameter\n");
-			goto exit;
-		}
-		if (evi_param_set_int(ei_srcid_p, &source_id) < 0) {
-			LM_ERR("cannot set source id event parameter\n");
-			goto exit;
-		}
-		if (evi_param_set_str(ei_msg_p, &rcv_msg) < 0) {
-			LM_ERR("cannot set message event parameter\n");
-			goto exit;
-		}
-		if (evi_param_set_str(ei_tag_p, &rcv_tag) < 0) {
-			LM_ERR("cannot set tag event parameter\n");
-			goto exit;
-		}
-
-		if (req_like) {
-			if (evi_raise_event(ei_req_rcv_id, ei_event_params) < 0) {
-				LM_ERR("cannot raise event\n");
-				goto exit;
-			}
-		} else {
-			if (evi_raise_event(ei_rpl_rcv_id, ei_event_params) < 0) {
-				LM_ERR("cannot raise event\n");
-				goto exit;
-			}
-		}
+	} else {
+		if (packet_type == CLUSTERER_GENERIC_MSG)
+			handle_cl_gen_msg(packet);
+		else if (packet_type == CLUSTERER_MI_CMD)
+			handle_cl_mi_msg(packet);
 	}
 
 exit:
@@ -1713,8 +1780,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	get_su_info(&ri->src_su.s, ip, port);
 	LM_DBG("received clusterer message from: %s:%hu\n", ip, port);
 
-	if (packet_type == CLUSTERER_GENERIC_MSG) {
-		handle_cl_gen_msg(packet);
+	if (packet_type == CLUSTERER_GENERIC_MSG || packet_type == CLUSTERER_MI_CMD) {
+		handle_other_cl_msg(packet, packet_type);
 		return;
 	}
 
@@ -1741,9 +1808,9 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 
 	if (!node) {
 		LM_INFO("Received message from unknown source node, id: %d\n", source_id);
-		handle_cl_msg_unknown(packet, cl, packet_type, &ri->src_su, source_id);
+		handle_internal_msg_unknown(packet, cl, packet_type, &ri->src_su, source_id);
 	} else {
-		handle_cl_msg(packet, cl, packet_type, node, now,	&check_call_cbs_event);
+		handle_internal_msg(packet, cl, packet_type, node, now,	&check_call_cbs_event);
 		if (check_call_cbs_event)
 			call_cbs_event(NULL, cl, &check_call_cbs_event, 1);
 	}
@@ -1819,6 +1886,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		lock_release(node->lock);
 
 	if (dest_id != current_id) {
+		/* route the message */
 		bin_push_int(packet, cluster_id);
 		bin_push_int(packet, source_id);
 		bin_push_int(packet, dest_id);
@@ -1849,6 +1917,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			return;
 		}
 	} else {
+		/* pass message to module*/
 		lock_stop_read(cl_list_lock);
 		module->cb(CLUSTER_RECV_MSG, packet, packet_type, ri, cluster_id, source_id, dest_id);
 		return;
