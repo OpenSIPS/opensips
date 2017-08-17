@@ -59,6 +59,7 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 
+#include "../../sr_module.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../forward.h"
