@@ -143,8 +143,6 @@ static int child_init(int rank)
 		return 0;
 	}
 
-	mongoc_init();
-
 	for (it = mongodb_script_urls;it;it=it->next) {
 		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);
 		con = mongo_con_init(&it->url);
