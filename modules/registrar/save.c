@@ -991,6 +991,12 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *domain_gp, c
 				goto out_unlock;
 			}
 
+			if (hostent_cpy(&delete_he, he) != 0) {
+				LM_ERR("no more pkg mem\n");
+				err = E_OUT_OF_MEM;
+				goto out_unlock;
+			}
+
 			if (puri.port_no > 0)
 				delete_port  = puri.port_no;
 
