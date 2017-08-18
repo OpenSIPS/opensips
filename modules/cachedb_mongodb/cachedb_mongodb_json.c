@@ -168,7 +168,7 @@ void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
                           bson_type_t type)
 {
 	const char *curr_key;
-	char *s;
+	char *s, oid[25];
 	int len;
 	struct json_object *obj2 = NULL;
 	bson_iter_t it2;
@@ -253,8 +253,19 @@ void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
 					else if (type == BSON_TYPE_ARRAY)
 						json_object_array_add(obj,obj2);
 					break;
+				case BSON_TYPE_OID:
+					memset(oid, 0, sizeof oid);
+					bson_oid_to_string(bson_iter_oid(it), oid);
+					json_object_object_add(obj,curr_key,
+							json_object_new_string(oid));
+					LM_DBG(" Found type %d for key %s \n",
+							bson_iter_type(it),curr_key);
+					break;
+				case BSON_TYPE_NULL:
+						json_object_object_add(obj,curr_key,NULL);
+					break;
 				default:
-					LM_DBG("Unsupported type %d for key %s - skipping\n",
+					LM_WARN("Unsupported type %d for key %s - skipping\n",
 							bson_iter_type(it),curr_key);
 		}
 	}
