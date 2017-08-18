@@ -61,6 +61,17 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+
+		/* tls_mgm must init TLS first, since it also sets custom alloc func */
+		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
@@ -68,7 +79,7 @@ struct module_exports exports= {
 	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	0,						/* exported functions */
 	0,						/* exported async functions */
 	params,						/* exported parameters */
@@ -90,6 +101,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	cachedb_engine cde;
+
+	mongoc_init();
 
 	LM_NOTICE("initializing module cachedb_mongodb ...\n");
 	memset(&cde,0,sizeof(cachedb_engine));
@@ -114,7 +127,7 @@ static int mod_init(void)
 	cde.cdb_func.capability = 0;
 
 	if (register_cachedb(&cde) < 0) {
-		LM_ERR("failed to initialize cachedb_redis\n");
+		LM_ERR("failed to initialize cachedb_mongodb\n");
 		return -1;
 	}
 
