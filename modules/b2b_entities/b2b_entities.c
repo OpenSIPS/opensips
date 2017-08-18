@@ -52,6 +52,9 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
 int b2b_entities_bind(b2b_api_t* api);
+int f_strip_100rel(struct sip_msg*);
+int f_require_100rel(struct sip_msg*);
+int set_provisional_responses(struct sip_msg*, b2b_presp_t pr_type);
 static struct mi_root* mi_b2be_list(struct mi_root* cmd, void* param);
 
 /** Global variables */
@@ -82,8 +85,12 @@ uac_auth_api_t uac_auth_api;
 /** Exported functions */
 static cmd_export_t cmds[]=
 {
-	{"load_b2b",  (cmd_function)b2b_entities_bind, 1,  0,  0,  0},
-	{ 0,               0,                          0,  0,  0,  0}
+	{"load_b2b",     (cmd_function)b2b_entities_bind,  1,  0,  0,  0},
+	{"strip_100rel", (cmd_function)f_strip_100rel,     0,  0,  0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"require_100rel", (cmd_function)f_require_100rel, 0,  0,  0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{ 0,               0,                              0,  0,  0,  0}
 };
 
 /** Exported parameters */
@@ -707,3 +714,69 @@ error:
 	return NULL;
 }
 
+int f_strip_100rel(struct sip_msg* msg) {
+	return set_provisional_responses(msg, B2B_100REL_STRIP);
+}
+
+int f_require_100rel(struct sip_msg* msg) {
+	return set_provisional_responses(msg, B2B_100REL_REQUIRE);
+}
+
+int set_provisional_responses(struct sip_msg* msg, b2b_presp_t pr_type)
+{
+	b2b_dlg_t* dlg = 0;
+	unsigned int hash_index, local_index;
+	str b2b_key = { 0, 0 };
+	str to_tag = { 0, 0 };
+	b2b_table table = 0;
+
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse message.\n");
+		return -1;
+	}
+
+	if (msg->to==NULL || msg->to->parsed == NULL ||
+	((struct to_body *)msg->to->parsed)->error != PARSE_OK)
+	{
+		LM_ERR("To header could not be parsed.\n");
+		return -1;
+	}
+
+	if( msg->callid==NULL || msg->callid->body.s==NULL) {
+		LM_ERR("Callid header not found.\n");
+		return -1;
+        }
+
+	to_tag = get_to(msg)->tag_value;
+	if(to_tag.s == NULL || to_tag.len == 0)
+	{
+		b2b_key = msg->callid->body;
+		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0) {
+			table = client_htable;
+		}
+	} else {
+		b2b_key = to_tag;
+		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0) {
+			table = server_htable;
+		}
+	}
+
+	if(!table) {
+		LM_DBG("Not an inside dialog request- not interested.\n");
+		return -1;
+	}
+
+	lock_get(&table[hash_index].lock);
+	dlg = b2b_search_htable(table, hash_index, local_index);
+	if(!dlg) {
+		LM_DBG("Could not set provisional responses type. No dialog found.\n");
+		lock_release(&table[hash_index].lock);
+		return -1;
+	}
+
+	dlg->prov_resp |= pr_type;
+	LM_DBG("Provisional Reponses set to %d on dlg [%p].\n", pr_type, dlg);
+	lock_release(&table[hash_index].lock);
+
+	return 1;
+}

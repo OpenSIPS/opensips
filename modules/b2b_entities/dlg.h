@@ -75,14 +75,28 @@ typedef enum b2b_state {
 	B2B_LAST_STATE  /* Just to know the number of states */
 } b2b_state_t;
 
+typedef enum b2b_leg_prov_resp {
+	B2B_LEG_100REL_MISSING = 0,
+	B2B_LEG_100REL_PRESENT = 1
+} b2b_lpresp_t;
+
 typedef struct b2b_dlg_leg {
 	int id;
 	str tag;
 	unsigned int cseq;
+	unsigned int rseq;
+	b2b_lpresp_t prov_resp;
 	str route_set;
 	str contact;
 	struct b2b_dlg_leg* next;
-}dlg_leg_t;
+} dlg_leg_t;
+
+typedef enum b2b_prov_resp {
+	B2B_100REL_AS_IS = 0,
+	B2B_100REL_STRIP = 1,
+	B2B_100REL_REQUIRE = 2,
+	B2B_100REL_EARLY = 4
+} b2b_presp_t;
 
 
 #define NO_UPDATEDB_FLAG    0
@@ -104,6 +118,7 @@ typedef struct b2b_dlg
 	str                  tag[2];
 	unsigned int         cseq[2];
 	unsigned int         last_invite_cseq;
+	unsigned int         rseq[2];
 	str                  route_set[2];
 	str                  contact[2];
 	enum request_method  last_method;
@@ -121,6 +136,7 @@ typedef struct b2b_dlg
 	struct socket_info*  send_sock;
 	unsigned int         last_reply_code;
 	int                  db_flag;
+	b2b_presp_t          prov_resp;
 }b2b_dlg_t;
 
 typedef struct client_info
@@ -201,6 +217,7 @@ void destroy_b2b_htables();
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		b2b_dlg_t* init_dlg, str* param);
 
+int b2b_prescript_provisional_responses(struct sip_msg *msg);
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 
 typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
@@ -223,6 +240,9 @@ typedef dlg_t* (*build_dlg_f)(b2b_dlg_t* dlg);
 str* b2b_key_copy_shm(str* b2b_key);
 
 void shm_free_param(void* param);
+
+b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
+                unsigned int hash_index);
 
 void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	 b2b_dlginfo_t* dlginfo, int db_del);

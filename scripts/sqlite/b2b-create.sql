@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('b2b_entities','1');
+INSERT INTO version (table_name, table_version) values ('b2b_entities','2');
 CREATE TABLE b2b_entities (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     type INTEGER NOT NULL,
@@ -13,6 +13,9 @@ CREATE TABLE b2b_entities (
     callid CHAR(64) NOT NULL,
     cseq0 INTEGER NOT NULL,
     cseq1 INTEGER,
+    rseq0 INTEGER,
+    rseq1 INTEGER,
+    presp INTEGER,
     contact0 CHAR(128) NOT NULL,
     contact1 CHAR(128),
     route0 TEXT,
@@ -23,6 +26,7 @@ CREATE TABLE b2b_entities (
     lrc INTEGER,
     lic INTEGER,
     leg_cseq INTEGER,
+    leg_presp INTEGER,
     leg_route TEXT,
     leg_tag CHAR(64),
     leg_contact CHAR(128),

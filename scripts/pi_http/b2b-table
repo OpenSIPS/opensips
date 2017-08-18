@@ -15,6 +15,9 @@
 		<column><field>callid</field><type>DB_STR</type></column>
 		<column><field>cseq0</field><type>DB_INT</type></column>
 		<column><field>cseq1</field><type>DB_INT</type></column>
+		<column><field>rseq0</field><type>DB_INT</type></column>
+		<column><field>rseq1</field><type>DB_INT</type></column>
+		<column><field>presp</field><type>DB_INT</type></column>
 		<column><field>contact0</field><type>DB_STR</type></column>
 		<column><field>contact1</field><type>DB_STR</type></column>
 		<column><field>route0</field><type>DB_BLOB</type></column>
@@ -25,6 +28,7 @@
 		<column><field>lrc</field><type>DB_INT</type></column>
 		<column><field>lic</field><type>DB_INT</type></column>
 		<column><field>leg_cseq</field><type>DB_INT</type></column>
+		<column><field>leg_presp</field><type>DB_INT</type></column>
 		<column><field>leg_route</field><type>DB_BLOB</type></column>
 		<column><field>leg_tag</field><type>DB_STR</type></column>
 		<column><field>leg_contact</field><type>DB_STR</type></column>

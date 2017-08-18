@@ -43,6 +43,9 @@ Ovidiu Sas
 
         1.4. Exported Functions
 
+              1.4.1. strip_100rel
+              1.4.2. require_100rel
+
    2. Developer Guide
 
         2.1. b2b_load_api(b2b_api_t* api)
@@ -66,6 +69,8 @@ Ovidiu Sas
    1.8. Set db_mode parameter
    1.9. Set db_table parameter
    1.10. Set replication_mode parameter
+   1.11. Strip provisional responses to callee dialog
+   1.12. Require provisional responses on callee dialog
    2.1. b2b_api_t structure
 
 Chapter 1. Admin Guide
@@ -242,8 +247,32 @@ modparam("b2b_entities", "replication_mode", 1)
 
 1.4. Exported Functions
 
-   The module does not export functions to be used in
-   configuration script.
+1.4.1.  strip_100rel
+
+   In top hiding mode when call leg requires provisional responses
+   the other end does not receives request and responses to 100rel
+   are handled locally by b2bua.
+
+   Example 1.11. Strip provisional responses to callee dialog
+...
+   if ($ci=~"^B2B") {
+       strip_100rel();
+   }
+...
+
+1.4.2.  require_100rel
+
+   In top hiding mode when a call leg does not support nor require
+   provisional responses, b2bua appends require 100rel header and
+   generates rseq locally. The caller leg is not affected and
+   the callee leg provisional responses are handled by b2bua.
+
+   Example 1.12. Require provisional responses on callee dialog
+...
+   if ($ci=~"^B2B") {
+       require_100rel();
+   }
+...
 
 Chapter 2. Developer Guide
 

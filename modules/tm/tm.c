@@ -88,6 +88,8 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
+int __set_timeout_responsecode(modparam_t type, void* val);
+
 /* TODO: remove in future versions (deprecated parameters) */
 int __set_fr_timer(modparam_t type, void* val);
 int __set_fr_inv_timer(modparam_t type, void* val);
@@ -109,7 +111,6 @@ static int fixup_inject(void** param, int param_no);
 /* init functions */
 static int mod_init(void);
 static int child_init(int rank);
-
 
 /* exported functions */
 static int w_t_newtran(struct sip_msg* p_msg);
@@ -289,6 +290,8 @@ static param_export_t params[]={
 		&timer_partitions },
 	{ "auto_100trying",           INT_PARAM,
 		&auto_100trying },
+	{ "timeout_responsecode", INT_PARAM|USE_FUNC_PARAM,
+		__set_timeout_responsecode},
 	{0,0,0}
 };
 
@@ -2180,6 +2183,27 @@ int __set_fr_inv_timer(modparam_t type, void* val)
 	return 1;
 }
 
+extern int timer_rc_timeout;
+int __set_timeout_responsecode(modparam_t type, void* val)
+{
+	int rc = (int)(long)(int *)val;
+
+	switch(rc) {
+	case 1:
+		timer_rc_timeout = 480;
+		break;
+	case 2:
+		timer_rc_timeout = 487;
+		break;
+	default:
+		timer_rc_timeout = 408;
+		break;
+	}
+
+	LM_INFO("timeout response code (%d) is %d\n", rc, timer_rc_timeout);
+
+	return 1;
+}
 
 static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 															pv_value_t *res)

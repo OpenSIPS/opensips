@@ -320,6 +320,7 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 
 
 
+int timer_rc_timeout = 408;
 inline static void final_response_handler( struct timer_link *fr_tl )
 {
 #define CANCEL_REASON_SIP_480  \
@@ -394,8 +395,8 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	}
 	/* lock reply processing to determine how to proceed reliably */
 	LOCK_REPLIES( t );
-	LM_DBG("Cancel sent out, sending 408 (%p)\n", t);
-	fake_reply(t, r_buf->branch, 408 );
+	LM_DBG("Cancel sent out, sending %d (%p)\n", timer_rc_timeout, t);
+	fake_reply(t, r_buf->branch, timer_rc_timeout );
 
 	/* flush the context */
 	if (current_processing_ctx==NULL)

@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/contact/parse_contact.h"
@@ -403,6 +404,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 
 	new_dlg->cseq[0]          = dlg->cseq[0];
 	new_dlg->cseq[1]          = dlg->cseq[1];
+	new_dlg->rseq[0]          = dlg->rseq[0];
+	new_dlg->rseq[1]          = dlg->rseq[1];
 	new_dlg->id               = dlg->id;
 	new_dlg->state            = dlg->state;
 	new_dlg->b2b_cback        = dlg->b2b_cback;
@@ -410,6 +413,7 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	new_dlg->last_invite_cseq = dlg->last_invite_cseq;
 	new_dlg->db_flag          = dlg->db_flag;
 	new_dlg->send_sock        = dlg->send_sock;
+	new_dlg->prov_resp        = dlg->prov_resp;
 
 	return new_dlg;
 }
@@ -485,6 +489,61 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 		dlg = dlg->next;
 	}
 	return dlg;
+}
+
+int b2b_prescript_provisional_responses(struct sip_msg *msg)
+{
+	b2b_dlg_t* dlg = NULL;
+	struct hdr_field *hdr;
+	str b2b_key = { 0, 0 };
+	unsigned int hash_index, local_index;
+
+	if( msg->first_line.u.request.method_value != METHOD_INVITE) {
+		return 1;
+	}
+
+	if( msg->callid==NULL || msg->callid->body.s==NULL) {
+		LM_ERR("no callid header found\n");
+		return -1;
+	}
+
+	b2b_key = msg->callid->body;
+	if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
+	{
+		dlg = b2b_search_htable(client_htable, hash_index, local_index);
+		if(dlg == NULL) {
+			LM_DBG("b2b dlg not found\n");
+			lock_release(&client_htable[hash_index].lock);
+			return -1;
+		}
+		LM_DBG("Found DLG at [%p]\n", dlg);
+		// check for 100rel
+		hdr = get_header_by_static_name(msg, "Require");
+		while(hdr)
+		{
+			LM_DBG("Found Require header in INVITE\n");
+			if ( (hdr->body.len == 6 &&
+				strncmp(hdr->body.s, "100rel", 6)==0) ||
+			(hdr->body.len == 8 &&
+				strncmp(hdr->body.s, "100rel\r\n", 8)==0) )
+			{
+				LM_DBG("Found 100rel value in INVITE's Require header\n");
+				break;
+			}
+			hdr = hdr->sibling;
+		}
+		if(!hdr) {
+			LM_DBG("No Require Header Found in INVITE\n");
+			lock_release(&client_htable[hash_index].lock);
+			return -1;
+		}
+
+		LM_DBG("CALLER LEG EXISTS --> 100REL\n");
+		dlg->prov_resp |= B2B_100REL_EARLY;
+	}
+
+	lock_release(&client_htable[hash_index].lock);
+	return 1;
 }
 
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
@@ -707,6 +766,9 @@ search_dialog:
 	to_tag = get_to(msg)->tag_value;
 	if(to_tag.s == NULL || to_tag.len == 0)
 	{
+		if(b2b_prescript_provisional_responses(msg) < 0) {
+			LM_DBG("Error while looking at provisional responses status\n");
+		}
 		LM_DBG("Not an inside dialog request- not interested.\n");
 		return SCB_RUN_ALL;
 	}
@@ -2086,6 +2148,12 @@ error:
 }
 
 
+#define CANCEL_REASON_SIP_480  \
+	"Reason: SIP;cause=480;text=\"NO_ANSWER\"" CRLF
+
+#define CANCEL_REASON_SIP_487  \
+	"Reason: SIP;cause=487;text=\"NO_ANSWER\"" CRLF
+
 void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 {
 	struct sip_msg * msg;
@@ -2101,13 +2169,14 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	str to_tag, callid, from_tag;
 	str extra_headers = {NULL, 0};
 	str body = {NULL, 0};
+	str reason = {NULL, 0};
 	struct hdr_field* hdr;
 	unsigned int method_id = 0;
 	struct cseq_body cb;
 	struct hdr_field cseq;
 	enum b2b_entity_type etype=(htable==server_htable?B2B_SERVER:B2B_CLIENT);
 	int dlg_based_search = 0;
-	struct hdr_field callid_hdr, from_hdr, to_hdr;
+	struct hdr_field callid_hdr, from_hdr, to_hdr, extra_hdr;
 	struct to_body to_hdr_parsed, from_hdr_parsed;
 	int dlg_state = 0;
 	struct uac_credential* crd;
@@ -2451,8 +2520,47 @@ dummy_reply:
 			dummy_msg.first_line.u.reply.status.s =
 				int2bstr( statuscode, status_buf,
 				&dummy_msg.first_line.u.reply.status.len);
-			dummy_msg.first_line.u.reply.reason.s = "Timeout";
-			dummy_msg.first_line.u.reply.reason.len = 7;
+			memset(&extra_hdr, 0, sizeof(struct hdr_field));
+			switch(statuscode) {
+				case 480:
+					dummy_msg.first_line.u.reply.reason.s = "Temporarily Unavailable";
+					dummy_msg.first_line.u.reply.reason.len = 23;
+
+					reason.s = CANCEL_REASON_SIP_480;
+					reason.len = strlen(CANCEL_REASON_SIP_480);
+
+					extra_hdr.type = HDR_OTHER_F;
+					extra_hdr.name.s = reason.s;
+					extra_hdr.name.len = 6;
+					extra_hdr.body.s = reason.s+8;
+					extra_hdr.body.len = reason.len-8;
+					extra_hdr.len = reason.len;
+					extra_hdr.parsed = NULL;
+					extra_hdr.next = extra_hdr.sibling = NULL;
+					break;
+				case 487:
+					dummy_msg.first_line.u.reply.reason.s = "Request Terminated";
+					dummy_msg.first_line.u.reply.reason.len = 18;
+
+					reason.s = CANCEL_REASON_SIP_487;
+					reason.len = strlen(CANCEL_REASON_SIP_487);
+
+					extra_hdr.type = HDR_OTHER_F;
+					extra_hdr.name.s = reason.s;
+					extra_hdr.name.len = 6;
+					extra_hdr.body.s = reason.s+8;
+					extra_hdr.body.len = reason.len-8;
+					extra_hdr.len = reason.len;
+					extra_hdr.parsed = NULL;
+					extra_hdr.next = extra_hdr.sibling = NULL;
+					break;
+				case 408:
+				default:
+					dummy_msg.first_line.u.reply.reason.s = "Request Timeout";
+					dummy_msg.first_line.u.reply.reason.len = 15;
+					extra_hdr.len = 0;
+					break;
+			}
 			memset(&cb, 0, sizeof(struct cseq_body));
 			memset(&cseq, 0, sizeof(struct hdr_field));
 			cb.method = t->method;
@@ -2503,11 +2611,18 @@ dummy_reply:
 			dummy_msg.cseq = &cseq;
 
 			/* simulate some "body" and "headers" - we fake
-			   the body with the "from" buffer */
-			dummy_msg.buf = t->from.s;
-			dummy_msg.len = t->from.len;
-			dummy_msg.eoh = dummy_msg.unparsed = t->from.s+t->from.len;
-			dummy_msg.headers = dummy_msg.last_header = &from_hdr;
+			   the body with the "from" buffer if no extra headers are present */
+			if(extra_hdr.len) {
+				dummy_msg.buf = reason.s;
+				dummy_msg.len = reason.len;
+				dummy_msg.eoh = dummy_msg.unparsed = reason.s+reason.len;
+				dummy_msg.headers = dummy_msg.last_header = &extra_hdr;
+			} else {
+				dummy_msg.buf = t->from.s;
+				dummy_msg.len = t->from.len;
+				dummy_msg.eoh = dummy_msg.unparsed = t->from.s+t->from.len;
+				dummy_msg.headers = dummy_msg.last_header = &from_hdr;
+			}
 
 			msg = &dummy_msg;
 		}
@@ -2572,6 +2687,7 @@ dummy_reply:
 				LM_ERR("Failed to create b2b dialog structure\n");
 				goto error;
 			}
+
 			LM_DBG("Created new dialog structure %p\n", new_dlg);
 			new_dlg->id = dlg->id;
 			new_dlg->state = dlg->state;
@@ -2582,6 +2698,7 @@ dummy_reply:
 			new_dlg->prev = dlg->prev;
 			new_dlg->add_dlginfo = dlg->add_dlginfo;
 			new_dlg->last_method = dlg->last_method;
+			new_dlg->prov_resp = dlg->prov_resp;
 
 //			dlg = b2b_search_htable(htable, hash_index, local_index);
 			if(dlg->prev)
@@ -2620,6 +2737,7 @@ dummy_reply:
 					}
 					UPDATE_DBFLAG(dlg);
 				}
+
 				/* PRACK handling */
 				/* if the provisional reply contains a
 				 * Require: 100rel header -> send PRACK */
@@ -2644,7 +2762,7 @@ dummy_reply:
 					char buf[128];
 					str rseq, cseq;
 
-					hdr = get_header_by_static_name( msg, "RSeq");
+					hdr = get_header_by_static_name(msg, "RSeq");
 					if(!hdr)
 					{
 						LM_ERR("RSeq header not found\n");
@@ -2654,6 +2772,12 @@ dummy_reply:
 					cseq = msg->cseq->body;
 					trim_trailing(&rseq);
 					trim_trailing(&cseq);
+					if(str2int(&rseq, &leg->rseq) < 0)
+					{
+						LM_DBG("Could not extract RSeq [%.*s]\n", rseq.len, rseq.s);
+						goto error;
+					}
+					leg->prov_resp |= B2B_LEG_100REL_PRESENT;
 					sprintf(buf, "RAck: %.*s %.*s\r\n",
 							rseq.len, rseq.s, cseq.len, cseq.s);
 					extra_headers.s = buf;
@@ -2665,6 +2789,86 @@ dummy_reply:
 					{
 						LM_ERR("Failed to send PRACK\n");
 					}
+					dlg->rseq[CALLER_LEG] = dlg->rseq[CALLEE_LEG] = leg->rseq;
+					UPDATE_DBFLAG(dlg);
+				}
+				if(	(leg->prov_resp != B2B_LEG_100REL_PRESENT &&
+						(dlg->prov_resp & B2B_100REL_REQUIRE)) ||
+					(dlg->prov_resp & B2B_100REL_EARLY) )
+				{
+					if(	(dlg->rseq[CALLER_LEG] == 0) &&
+						(dlg->rseq[CALLEE_LEG] == 0) )
+					{
+						// Generate RSeq
+						srand((unsigned) time(NULL));
+						int r;
+						const unsigned int
+							range = 16383,
+							buckets = RAND_MAX/range,
+							limit = buckets*range;
+						do { r = rand(); } while (r >= limit);
+						dlg->rseq[CALLEE_LEG] = 1 + (r/buckets);
+					} else {
+						// Increment RSeq
+						dlg->rseq[CALLEE_LEG]++;
+					}
+					LM_DBG("Adding self generated Require and RSeq (%d) headers\n", dlg->rseq[CALLEE_LEG]);
+					/* Append Headers
+					 * Here must check if headers should be first removed or require is
+					 * already present with other values. */
+					if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+						LM_ERR("cannot parse message!\n");
+						goto error;
+					}
+					struct lump* anchor;
+					anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+					if(anchor == 0) {
+						LM_ERR("can't get anchor\n");
+						goto error;
+					}
+					char buf[128];
+					sprintf(buf, "Require: 100rel\r\nRSeq: %d\r\n", dlg->rseq[CALLEE_LEG]);
+					int len = strlen(buf);
+					char *s = (char*)pkg_malloc(len);
+					memcpy((void*)s, (void *)&buf, len);
+					if (insert_new_lump_before(anchor, s, len, 0) == 0) {
+						LM_ERR("can't insert lump\n");
+						pkg_free(s);
+						goto error;
+					}
+					UPDATE_DBFLAG(dlg);
+				} else if(	(leg->prov_resp == B2B_LEG_100REL_PRESENT &&
+						(dlg->prov_resp & B2B_100REL_STRIP)) &&
+						!(dlg->prov_resp & B2B_100REL_EARLY) )
+				{
+					struct lump* l;
+					struct hdr_field *hf;
+					int has_rm_mark;
+
+					LM_DBG("Removing Require and RSeq headers\n");
+					for (hf=msg->headers; hf; hf=hf->next) {
+						if (	(strncasecmp(hf->name.s, "Require", hf->name.len) != 0 &&
+							strncasecmp(hf->body.s, "100rel", hf->body.len) != 0) ||
+							strncasecmp(hf->name.s, "RSeq", hf->name.len) != 0)
+						{
+							has_rm_mark = 0;
+							// Check if header is already been removed
+							for (l=msg->add_rm;l;l=l->next) {
+								if(l->op == LUMP_DEL && l->type == hf->type && l->u.offset == hf->name.s-msg->buf  && l->len == hdr->len) {
+									has_rm_mark = 1;
+								}
+							}
+							if(!has_rm_mark) {
+								l=del_lump(msg, hf->name.s-msg->buf, hf->len, hf->type);
+								if (l==0) {
+									LM_ERR("out of memory\n");
+									goto error;
+								}
+							}
+						}
+					}
+					dlg->rseq[CALLEE_LEG] = 0;
+					UPDATE_DBFLAG(dlg);
 				}
 				goto done;
 			}

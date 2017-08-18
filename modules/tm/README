@@ -58,6 +58,7 @@ Ovidiu Sas
               1.3.17. minor_branch_flag (string/integer)
               1.3.18. timer_partitions (integer)
               1.3.19. auto_100trying (integer)
+              1.3.20. timeout_responsecode (integer)
 
         1.4. Exported Functions
 
@@ -169,6 +170,7 @@ Ovidiu Sas
    1.38. t_replicate usage
    1.39. t_write_req/unix usage
    1.40. t_flush_flags usage
+   1.41. timeout_responsecode usage
 
 Chapter 1. Admin Guide
 
@@ -635,6 +637,24 @@ modparam("tm", "timer_partitions", 2)
 ...
 # Disable automatic 100 Trying
 modparam("tm", "auto_100trying", 0)
+...
+
+1.3.20. timeout_responsecode (integer)
+
+   This parameters controls the response code sent out by TM
+   when fr_timeout timeout expires.
+
+   Default value is 0 (408 Response Timeout).
+
+   Allowed values are:
+   0 - 408 Request Timeout;
+   1 - 480 Temporarily Unavailable;
+   2 - 487 Request Terminated;
+
+   Example 1.41. Set timeout_responsecode parameter
+...
+# Set Timeout Responsecode to 487
+modparam("tm", "timeout_responsecode", 2)
 ...
 
 1.4. Exported Functions
