@@ -40,7 +40,7 @@ int add_blind_uac( );
 int t_replicate(struct sip_msg *p_msg, str *dst, int flags);
 
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg,
-		struct proxy_l * p, int reset_bcounter);
+		struct proxy_l * p, int reset_bcounter, int locked);
 
 int add_phony_uac( struct cell *t);
 

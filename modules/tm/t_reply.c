@@ -699,7 +699,7 @@ static inline int do_dns_failover(struct cell *t)
 	faked_req.force_send_socket = shmem_msg->force_send_socket;
 
 	/* send it out */
-	if (t_forward_nonack( t, &faked_req, uac->proxy, 1/*reset*/)==1)
+	if (t_forward_nonack( t, &faked_req, uac->proxy,1/*reset*/,1/*locked*/)==1)
 		ret = 0;
 
 done:
