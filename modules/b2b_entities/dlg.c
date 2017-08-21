@@ -2836,6 +2836,7 @@ dummy_reply:
 						pkg_free(s);
 						goto error;
 					}
+					if (reply_routeid == 0) b2b_apply_lumps(msg);
 					UPDATE_DBFLAG(dlg);
 				} else if(	(leg->prov_resp == B2B_LEG_100REL_PRESENT &&
 						(dlg->prov_resp & B2B_100REL_STRIP)) &&

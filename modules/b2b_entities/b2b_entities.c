@@ -45,7 +45,7 @@
 #include "server.h"
 #include "dlg.h"
 
-#define TABLE_VERSION 1
+#define TABLE_VERSION 2
 
 /** Functions declarations */
 static int mod_init(void);
@@ -775,7 +775,7 @@ int set_provisional_responses(struct sip_msg* msg, b2b_presp_t pr_type)
 	}
 
 	dlg->prov_resp |= pr_type;
-	LM_DBG("Provisional Reponses set to %d on dlg [%p].\n", pr_type, dlg);
+	LM_DBG("Provisional Reponses set to %d on dlg [%p].\n", dlg->prov_resp, dlg);
 	lock_release(&table[hash_index].lock);
 
 	return 1;
