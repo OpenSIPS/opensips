@@ -445,7 +445,7 @@ struct sip_msg dummy_req;
 
 
 
-#define VALUES_STR "(%d,%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
+#define VALUES_STR "(%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
 					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s','%.*s'," \
@@ -2565,8 +2565,11 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 		return -1;
 	}
 
-    db_vals[0].type = DB_INT;
-    db_vals[0].val.int_val = 0;
+	/* To stay compatible with both Postgres and MySQL, we omit auto-increment
+	 * columns, rather than setting them to zero
+	db_vals[0].type = DB_INT;
+	db_vals[0].val.int_val = 0;
+	*/
 
 	db_vals[1].type = DB_DATETIME;
 	db_vals[1].val.time_val = (sco->tmstamp/1000000);
@@ -2693,23 +2696,21 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	db_vals[40].val.blob_val = sco->msg;
 
 	/* no field can be null */
-	for (i=0;i<NR_KEYS;i++)
-	         db_vals[i].nul = 0;
+	for (i = 1; i < NR_KEYS; i++)
+		db_vals[i].nul = 0;
 
 	ret=1;
 
-
 	/* each query has it's own parameters for the prepared statements */
-	if (con_set_inslist(&db_funcs,db_con,&sc_ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&sc_ins_list,db_keys+1,NR_KEYS-1) < 0)
 	               CON_RESET_INSLIST(db_con);
 	CON_PS_REFERENCE(db_con) = &sc_ps;
 
-
-	if (!actx && db_sync_store(db_vals, db_keys, NR_KEYS) != 1) {
+	if (!actx && db_sync_store(db_vals+1, db_keys+1, NR_KEYS-1) != 1) {
 		LM_ERR("failed to insert into database\n");
 		return -1;
 	} else if (actx) {
-		ret = db_async_store(db_vals, db_keys, NR_KEYS, append_sc_values,
+		ret = db_async_store(db_vals+1, db_keys+1, NR_KEYS-1, append_sc_values,
 				actx, t_el);
 	}
 
@@ -2748,7 +2749,7 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 	int len;
 
 	len = snprintf(buf, max_len, VALUES_STR,
-			VAL_INT(db_vals+0), VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
+			VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
 			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
 			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
 			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
