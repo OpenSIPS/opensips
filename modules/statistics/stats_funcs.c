@@ -116,10 +116,11 @@ int register_all_mod_stats(void)
 
 void parse_groupname(const str *in, str *out_grp, str *out_name)
 {
-	char *p;
+	char *p, *lim = in->s + in->len;
 
-	for (p = in->s + in->len - 1; *p != STAT_GROUP_DELIM && p > in->s; p--) {}
-	if (p == in->s) {
+	for (p = in->s; *p != STAT_GROUP_DELIM && p < lim; p++) {}
+
+	if (p >= lim) {
 		out_grp->s = NULL;
 		out_grp->len = 0;
 		*out_name = *in;
