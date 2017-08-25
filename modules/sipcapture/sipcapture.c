@@ -790,6 +790,8 @@ static int mod_init(void) {
 			}
 		}
 
+		set_rtcp_keys();
+
 		/* db_url is mandatory if sip_capture is used */
 		if (((is_script_func_used("sip_capture", -1) ||
 				is_script_async_func_used("sip_capture", -1)) ||
@@ -808,7 +810,6 @@ static int mod_init(void) {
 			init_db_url(db_url, 1);
 		}
 	}
-
 
 
 	/* init db keys */
@@ -853,8 +854,6 @@ static int mod_init(void) {
 	db_keys[38] = &to_domain_column;
 	db_keys[39] = &ruri_domain_column;
 	db_keys[40] = &msg_column;
-
-	set_rtcp_keys();
 
 
 #ifdef STATISTICS
