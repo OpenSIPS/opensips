@@ -204,6 +204,9 @@ struct _sipcapture_object {
 	long long tmstamp;
 	str node;
 	str msg;
+	str custom_field1;
+	str custom_field2;
+	str custom_field3;
 #ifdef STATISTICS
 	stat_var *stat;
 #endif
@@ -217,7 +220,7 @@ struct _sipcapture_object {
  * WARNING: if you add/remove keys take care to update
  * VALUES_STR
  */
-#define NR_KEYS 41
+#define NR_KEYS 44
 
 /* allocate more for HOMERv6 */
 #define RTCP_NR_KEYS 17
@@ -234,13 +237,14 @@ static int mod_init(void);
 static int child_init(int rank);
 static void raw_socket_process(int rank);
 static void destroy(void);
-static int sip_capture(struct sip_msg *msg, char *s1, char *s2);
-static int async_sip_capture(struct sip_msg* msg, async_ctx *actx,
-		char* s1, char* s2);
+static int sip_capture(struct sip_msg *msg, char *s1,
+                       char *s2, char *s3, char *s4);
+static int async_sip_capture(struct sip_msg* msg, async_ctx *actx, char *s1,
+                             char *s2, char *s3, char *s4);
 static int sip_capture_fixup(void** param, int param_no);
 static int sip_capture_async_fixup(void** param, int param_no);
 static int w_sip_capture(struct sip_msg *msg, char *table_name,
-		async_ctx *actx);
+		async_ctx *actx, str *cf1, str *cf2, str *cf3);
 
 
 static void set_rtcp_keys(void);
@@ -372,6 +376,9 @@ static str from_domain_column = str_init("from_domain");
 static str to_domain_column = str_init("to_domain");
 static str ruri_domain_column = str_init("ruri_domain");
 static str msg_column 		= str_init("msg");
+static str custom_field1	= str_init("custom_field1");
+static str custom_field2	= str_init("custom_field2");
+static str custom_field3	= str_init("custom_field3");
 static str capture_node 	= str_init("homer01");
 
 
@@ -449,7 +456,7 @@ struct sip_msg dummy_req;
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
 					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s','%.*s'," \
-					"'%.*s', '%.*s', '%.*s')"
+					"'%.*s', '%.*s', '%.*s', '%.*s', '%.*s', '%.*s')"
 
 #define RTCP_VALUES_STR "(%ld, %lld, '%.*s', '%.*s', %d, '%.*s', %d," \
 						"%d, %d, %d, '%.*s', '%.*s')"
@@ -520,6 +527,12 @@ static cmd_export_t cmds[] = {
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"sip_capture", (cmd_function)sip_capture, 1, sip_capture_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 2, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 3, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 4, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_set", (cmd_function)w_set_hep_generic, 2, set_hep_generic_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_set", (cmd_function)w_set_hep, 4, set_hep_fixup, 0,
@@ -549,6 +562,9 @@ static acmd_export_t acmds[] = {
 
 	{"sip_capture",    (acmd_function)async_sip_capture, 0, 0},
 	{"sip_capture",    (acmd_function)async_sip_capture, 1, sip_capture_async_fixup},
+	{"sip_capture",    (acmd_function)async_sip_capture, 2, sip_capture_async_fixup},
+	{"sip_capture",    (acmd_function)async_sip_capture, 3, sip_capture_async_fixup},
+	{"sip_capture",    (acmd_function)async_sip_capture, 4, sip_capture_async_fixup},
 	{"report_capture", (acmd_function)w_report_capture_async_1, 1, rc_async_fixup_1},
 	{"report_capture", (acmd_function)w_report_capture_async_2, 2, rc_async_fixup},
 	{"report_capture", (acmd_function)w_report_capture_async_3, 3, rc_async_fixup},
@@ -854,6 +870,9 @@ static int mod_init(void) {
 	db_keys[38] = &to_domain_column;
 	db_keys[39] = &ruri_domain_column;
 	db_keys[40] = &msg_column;
+	db_keys[41] = &custom_field1;
+	db_keys[42] = &custom_field2;
+	db_keys[43] = &custom_field3;
 
 
 #ifdef STATISTICS
@@ -2395,7 +2414,7 @@ int hep_msg_received(void)
 	#endif
 
 		/* we basically move the sip_capture() call from the scripts here */
-		if (w_sip_capture(&msg, NULL, NULL) < 0) {
+		if (w_sip_capture(&msg, NULL, NULL, NULL, NULL, NULL) < 0) {
 			LM_ERR("failed to store the message!\n");
 			return -1;
 		}
@@ -2517,24 +2536,32 @@ shm_err:
 
 static int sip_capture_fixup(void** param, int param_no)
 {
-	if (param_no != 1) {
+	switch (param_no) {
+	case 1:
+		return fixup_tz_table(param, &tz_list);
+	case 2:
+	case 3:
+	case 4:
+		return fixup_sgp(param);
+	default:
 		LM_ERR("Invalid param number!\n");
 		return -1;
 	}
-
-	return fixup_tz_table(param, &tz_list);
 }
 
 static int sip_capture_async_fixup(void** param, int param_no)
 {
-
-	if (param_no != 1) {
+	switch (param_no) {
+	case 1:
+		return fixup_async_tz_table(param, &tz_list);
+	case 2:
+	case 3:
+	case 4:
+		return fixup_sgp(param);
+	default:
 		LM_ERR("Invalid param number!\n");
 		return -1;
 	}
-
-
-	return fixup_async_tz_table(param, &tz_list);
 }
 
 
@@ -2694,6 +2721,15 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	db_vals[40].type = DB_BLOB;
 	db_vals[40].val.blob_val = sco->msg;
 
+	db_vals[41].type = DB_STR;
+	db_vals[41].val.str_val = sco->custom_field1;
+
+	db_vals[42].type = DB_STR;
+	db_vals[42].val.str_val = sco->custom_field2;
+
+	db_vals[43].type = DB_STR;
+	db_vals[43].val.str_val = sco->custom_field3;
+
 	/* no field can be null */
 	for (i = 1; i < NR_KEYS; i++)
 		db_vals[i].nul = 0;
@@ -2784,7 +2820,10 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 			VAL_STR(db_vals+37).len, VAL_STR(db_vals+37).s,
 			VAL_STR(db_vals+38).len, VAL_STR(db_vals+38).s,
 			VAL_STR(db_vals+39).len, VAL_STR(db_vals+39).s,
-			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s
+			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s,
+			VAL_STR(db_vals+41).len, VAL_STR(db_vals+41).s,
+			VAL_STR(db_vals+42).len, VAL_STR(db_vals+42).s,
+			VAL_STR(db_vals+43).len, VAL_STR(db_vals+43).s
 				);
 
 	return len;
@@ -3004,20 +3043,91 @@ static inline struct tz_table_list* search_table(tz_table_t* el, struct tz_table
 
 
 
-static int sip_capture(struct sip_msg *msg, char* s1, char* s2)
+static int sip_capture(struct sip_msg *msg, char* s1,
+                       char* s2, char* s3, char* s4)
 {
-	return w_sip_capture(msg, s1, NULL);
+	str st1, st2, st3, *cf1, *cf2, *cf3;
+
+	if (!s2) {
+		cf1 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s2, &st1) < 0) {
+			LM_ERR("bad value for 'custom_field1'\n");
+			return -1;
+		}
+
+		cf1 = &st1;
+	}
+
+	if (!s3) {
+		cf2 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s3, &st2) < 0) {
+			LM_ERR("bad value for 'custom_field2'\n");
+			return -1;
+		}
+
+		cf2 = &st2;
+	}
+
+	if (!s4) {
+		cf3 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s4, &st3) < 0) {
+			LM_ERR("bad value for 'custom_field3'\n");
+			return -1;
+		}
+
+		cf3 = &st3;
+	}
+
+	return w_sip_capture(msg, s1, NULL, cf1, cf2, cf3);
 }
 
-static int async_sip_capture(struct sip_msg* msg, async_ctx *actx,
-		char* s1, char* s2)
+static int async_sip_capture(struct sip_msg* msg, async_ctx *actx, char *s1,
+                             char* s2, char* s3, char* s4)
 {
-	return w_sip_capture(msg, s1, actx);
+	str st1, st2, st3, *cf1, *cf2, *cf3;
+
+	if (!s2) {
+		cf1 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s2, &st1) < 0) {
+			LM_ERR("bad value for 'custom_field1'\n");
+			return -1;
+		}
+
+		cf1 = &st1;
+	}
+
+	if (!s3) {
+		cf2 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s3, &st2) < 0) {
+			LM_ERR("bad value for 'custom_field2'\n");
+			return -1;
+		}
+
+		cf2 = &st2;
+	}
+
+	if (!s4) {
+		cf3 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s4, &st3) < 0) {
+			LM_ERR("bad value for 'custom_field3'\n");
+			return -1;
+		}
+
+		cf3 = &st3;
+	}
+
+	return w_sip_capture(msg, s1, actx, cf1, cf2, cf3);
 }
 
 
 static int w_sip_capture(struct sip_msg *msg, char *table_name,
-															async_ctx *actx)
+                         async_ctx *actx, str *cf1, str *cf2, str *cf3)
 {
 	struct _sipcapture_object sco;
 	struct sip_uri from, to, pai, contact;
@@ -3476,6 +3586,15 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 	}
 	//EMPTY_STR(sco.msg);
 
+	if (cf1)
+		sco.custom_field1 = *cf1;
+
+	if (cf2)
+		sco.custom_field2 = *cf2;
+
+	if (cf3)
+		sco.custom_field3 = *cf3;
+
 #ifdef STATISTICS
 	if(msg->first_line.type==SIP_REPLY) {
 		sco.stat = sipcapture_rpl;
@@ -3483,6 +3602,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 		sco.stat = sipcapture_req;
 	}
 #endif
+
 	LM_DBG("DONE\n");
 	return sip_capture_store(&sco, actx, t_it);
 }

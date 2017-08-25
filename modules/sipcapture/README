@@ -45,7 +45,9 @@ Alexandr Dubovikov
 
         1.4. Exported Functions
 
-              1.4.1. sip_capture([table_name])
+              1.4.1. sip_capture([table_name][, [custom_field1][,
+                      [custom_field2][, [custom_field3]]]])
+
               1.4.2.
                       report_capture([table_name],correlation_id[,pr
                       oto_type])
@@ -367,7 +369,8 @@ route[my_hep_route] {
 
 1.4. Exported Functions
 
-1.4.1.  sip_capture([table_name])
+1.4.1.  sip_capture([table_name][, [custom_field1][,
+[custom_field2][, [custom_field3]]]])
 
    Save the message into the database.
 
@@ -376,6 +379,12 @@ route[my_hep_route] {
        packet; it can have a strftime-like formatted suffix in
        order to change it's name based on time; if not set,
        modparam defined table will be used;
+       custom_field1 (string or pvar) - custom data to store
+       inside the "custom_field1" column
+       custom_field2 (string or pvar) - custom data to store
+       inside the "custom_field2" column
+       custom_field3 (string or pvar) - custom data to store
+       inside the "custom_field3" column
 
    This function can be used from
    REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_RO
@@ -388,6 +397,7 @@ if (is_method("REGISTER"))
         ...
         /* table name will change every day */
         sip_capture("homer_%m_%d");
+        sip_capture("homer_%m_%d", , "$hdr(P-Asserted-Identity)");
 ...
 
 1.4.2.  report_capture([table_name],correlation_id[,proto_type])
