@@ -401,6 +401,9 @@ struct mid_reg_info *get_ct(void)
 
 void mri_free(struct mid_reg_info *mri)
 {
+	if (!mri)
+		return;
+
 	LM_DBG("aor: '%.*s' %p\n", mri->aor.len, mri->aor.s, mri->aor.s);
 	LM_DBG("from: '%.*s' %p\n", mri->from.len, mri->from.s, mri->from.s);
 	LM_DBG("to: '%.*s' %p\n", mri->to.len, mri->to.s, mri->to.s);
