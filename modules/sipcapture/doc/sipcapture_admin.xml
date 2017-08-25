@@ -443,7 +443,7 @@ route[my_hep_route] {
 
 		<section>
 		<title>
-			<function moreinfo="none">sip_capture([table_name])</function>
+			<function moreinfo="none">sip_capture([table_name][, [custom_field1][, [custom_field2][, [custom_field3]]]])</function>
 		</title>
 		<para>
 			Save the message into the database.
@@ -454,6 +454,15 @@ route[my_hep_route] {
 			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
 				the packet; it can have a strftime-like formatted suffix in order to change it's name
 				based on time; if not set, modparam defined table will be used;
+			</para>
+			<para><emphasis>custom_field1 (string or pvar)</emphasis> - custom data to store inside the
+				"custom_field1" column
+			</para>
+			<para><emphasis>custom_field2 (string or pvar)</emphasis> - custom data to store inside the
+				"custom_field2" column
+			</para>
+			<para><emphasis>custom_field3 (string or pvar)</emphasis> - custom data to store inside the
+				"custom_field3" column
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -469,6 +478,7 @@ if (is_method("REGISTER"))
 	...
 	/* table name will change every day */
 	sip_capture("homer_%m_%d");
+	sip_capture("homer_%m_%d", , "$hdr(P-Asserted-Identity)");
 ...
 	</programlisting>
 	</example>
