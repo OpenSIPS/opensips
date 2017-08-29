@@ -862,6 +862,11 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	 * if opensips shuts down before dialog terminated then the refcount
 	 * won't be enabled
 	 */
+	if (was_dlg_cb_used(ctx->flags)) {
+		LM_INFO("CDR callback already registered [%p|%llu] - do not run it again!\n",
+				*_params->param, ACC_MASK_GET_REF(ctx->flags));
+		return;
+	}
 	set_dlg_cb_used(ctx->flags);
 
 	/* this time will be used to set */
