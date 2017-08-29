@@ -577,6 +577,12 @@ sdp_info_t* parse_sdp(struct sip_msg* _m)
 		if ( part->mime != ((TYPE_APPLICATION<<16)+SUBTYPE_SDP) )
 			continue;
 
+		if (part->parsed) {
+			if (!ret)
+				ret = part->parsed;
+			continue;
+		}
+
 		if ( (sdp=new_sdp())==NULL ) {
 			LM_ERR("Can't create new sdp, skipping\n");
 		} else {
