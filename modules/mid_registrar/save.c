@@ -78,6 +78,28 @@ static struct {
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
 
+/*
+ * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
+ */
+void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
+{
+	if (!_ep || !_ep->body.len) {
+		*_e = get_expires_hf(_m);
+	} else {
+		if (str2int(&_ep->body, (unsigned int*)_e) < 0) {
+			*_e = default_expires;
+		}
+	}
+
+	if ((*_e != 0) && ((*_e) < min_expires))
+		*_e = min_expires;
+
+	if ((*_e != 0) && max_expires && ((*_e) > max_expires))
+		*_e = max_expires;
+
+	LM_DBG("expires: %d\n", *_e);
+}
+
 /* with the optionally added outgoing timeout extension
  *
  * @_e: output param (UNIX timestamp) - expiration time on the main registrar
@@ -117,7 +139,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 	struct socket_info *adv_sock;
 	struct lump *anchor = NULL;
 	char *buf;
-	int len, len1;
+	int e, is_dereg = 1, len, len1;
 	struct hdr_field *ct;
 
 	adv_sock = *get_sock_info_list(PROTO_UDP);
@@ -132,6 +154,10 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 
 	for (c = ((contact_body_t *)ct->parsed)->contacts; c;
 	     c = get_next_contact(c)) {
+		calc_contact_expires(msg, c->expires, &e, NULL);
+		if (e != 0)
+			is_dereg = 0;
+
 		LM_DBG("deleting Contact '%.*s'\n", c->len, c->name.s);
 		anchor = del_lump(msg, c->name.s - msg->buf, c->len, HDR_CONTACT_T);
 		if (!anchor)
@@ -146,8 +172,11 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		}
 	}
 
-	/*   <   sip:            @                                 :ddddd  >  \0 */
-	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 + 1;
+	/*   <   sip:            @                                 :ddddd  > */
+	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 +
+	      + 9 + 10 + 1;
+	        /* ;expires=<integer> \0 */
+
 	buf = pkg_malloc(len);
 	if (buf == NULL) {
 		LM_ERR("out of pkg memory\n");
@@ -156,11 +185,15 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 
 	/* if use_domain is enabled then don't append proxy ip:port */
 	if (reg_use_domain == 0)
-		len1 = sprintf(buf, "<sip:%.*s@%s:%s>",
-		               aor->len, aor->s, adv_sock->address_str.s, adv_sock->port_no_str.s);
+		len1 = sprintf(buf, "<sip:%.*s@%s:%s>", aor->len, aor->s,
+		               adv_sock->address_str.s, adv_sock->port_no_str.s);
 	else
-		len1 = sprintf(buf, "<sip:%.*s>",
-		               aor->len, aor->s);
+		len1 = sprintf(buf, "<sip:%.*s>", aor->len, aor->s);
+
+	if (!msg->expires || msg->expires->body.len == 0) {
+		len1 += sprintf(buf + len1, ";expires=%d",
+		                is_dereg ? 0 : outgoing_expires);
+	}
 
 	if (len1 >= len) {
 		LM_BUG("buffer overflow");
@@ -342,28 +375,6 @@ static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
 	}
 
 	return 0;
-}
-
-/*
- * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
- */
-void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
-{
-	if (!_ep || !_ep->body.len) {
-		*_e = get_expires_hf(_m);
-	} else {
-		if (str2int(&_ep->body, (unsigned int*)_e) < 0) {
-			*_e = default_expires;
-		}
-	}
-
-	if ((*_e != 0) && ((*_e) < min_expires))
-		*_e = min_expires;
-
-	if ((*_e != 0) && max_expires && ((*_e) > max_expires))
-		*_e = max_expires;
-
-	LM_DBG("expires: %d\n", *_e);
 }
 
 void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri)
