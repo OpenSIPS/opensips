@@ -915,7 +915,7 @@ update_usrloc:
 			LM_DBG("UPDATING .....\n");
 			if (reg_mode != MID_REG_MIRROR) {
 				cti = c->attached_data[ucontact_data_idx];
-				cti ->expires_out = e_out;
+				cti->expires_out = e_out;
 				set_ct(cti);
 			}
 
