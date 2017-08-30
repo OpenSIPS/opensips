@@ -890,6 +890,9 @@ update_usrloc:
 
 		} else if (c != NULL) {
 			if (e == 0) {
+				cti = (struct mid_reg_info *)c->attached_data[ucontact_data_idx];
+				cti->skip_dereg = 1;
+
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
@@ -1001,9 +1004,11 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 
 		set_ct(NULL);
 	} else {
-		if (_c == NULL)
-			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_reg_ts = 0;
-		else
+		if (_c == NULL) {
+			ri = (struct mid_reg_info *)r->attached_data[urecord_data_idx];
+			ri->last_reg_ts = 0;
+			ri->skip_dereg = 1;
+		} else
 			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_reg_ts = get_act_time();
 	}
 
@@ -1841,7 +1846,7 @@ static int calc_max_ct_diff(urecord_t *urec)
 static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
                                    unsigned int flags)
 {
-	int e, ret, cflags, max_diff = -1;
+	int e, ret, ctno = 0, cflags, max_diff = -1;
 	struct mid_reg_info *cinfo, *rinfo;
 	ucontact_info_t *ci;
 	ucontact_t *c;
@@ -1865,6 +1870,9 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 		return -1;
 	}
 
+	for (c = urec->contacts; c; c = c->next)
+		ctno++;
+
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
 		calc_contact_expires(req, ct->expires, &e, NULL);
@@ -1881,6 +1889,12 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			return -1;
 		} else if (ret == 0) { /* found */
 			if (e == 0) {
+				/* immediately forward De-REGISTERs for the last contact */
+				if (ctno == 1) {
+					LM_DBG("quickly forward last contact de-register\n");
+					return 1;
+				}
+
 				if (ul_api.delete_ucontact(urec, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					return -1;

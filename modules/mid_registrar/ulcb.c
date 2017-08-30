@@ -138,7 +138,7 @@ void mid_reg_ct_event(void *binding, int type, void **data)
 			}
 		} else if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
 			if (reg_mode == MID_REG_THROTTLE_CT) {
-				if (unregister_contact(mri) != 0) {
+				if (!mri->skip_dereg && unregister_contact(mri) != 0) {
 					LM_ERR("failed to unregister contact\n");
 				}
 			}
@@ -167,7 +167,7 @@ void mid_reg_aor_event(void *binding, int type, void **data)
 		if (!mri)
 			return;
 
-		if (unregister_contact(mri) != 0)
+		if (!mri->skip_dereg && unregister_contact(mri) != 0)
 			LM_ERR("failed to unregister contact\n");
 
 		mri_free(mri);
