@@ -82,6 +82,8 @@ struct mid_reg_info {
 	unsigned int last_reg_ts; /* [NEW] used to absorb/relay new REGISTERs
 	                                   marks the last successful reg */
 
+	int skip_dereg;
+
 	udomain_t *dom; /* used during 200 OK ul_api operations */
 	str aor;        /* used during both "reg out" and "resp in" */
 };
