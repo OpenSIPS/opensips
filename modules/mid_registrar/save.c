@@ -2015,6 +2015,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		return -1;
 	}
 
+	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
