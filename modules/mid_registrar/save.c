@@ -1345,6 +1345,11 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	struct sip_msg *req = params->req;
 	int code;
 
+	if (!mri) {
+		LM_DBG("SIP reply retransmission -> exit\n");
+		return;
+	}
+
 	code = rpl->first_line.u.reply.statuscode;
 	LM_DBG("pushing reply back to caller: %d\n", code);
 	LM_DBG("request -------------- \n%s\nxxx: \n", req->buf);
@@ -1398,6 +1403,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 
 out_free:
 	mri_free(mri);
+	*params->param = NULL; /* do not run this callback multiple times! */
 }
 
 /* !! retcodes: 1 or -1 !! */
