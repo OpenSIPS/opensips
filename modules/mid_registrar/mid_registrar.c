@@ -36,6 +36,7 @@
 #include "../../timer.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
+#include "../../rw_locking.h"
 
 #include "mid_registrar.h"
 #include "save.h"
@@ -64,6 +65,10 @@ str expires_param = str_init("expires");
 struct usrloc_api ul_api;
 struct tm_binds tm_api;
 struct sig_binds sig_api;
+
+/* specifically used to mutually exclude concurrent calls of the
+ * TMCB_RESPONSE_IN callback, upon SIP 200 OK retransmissions */
+rw_lock_t *tm_retrans_lk;
 
 int default_expires = 3600; /*!< Default expires value in seconds */
 int min_expires     = 10;   /*!< Minimum expires the phones are allowed to use
@@ -382,6 +387,12 @@ static int mod_init(void)
 	if (register_script_cb(mid_reg_post_script,
 	                       POST_SCRIPT_CB|REQ_TYPE_CB, NULL) < 0) {
 		LM_ERR("failed to register post script cb\n");
+		return -1;
+	}
+
+	tm_retrans_lk = lock_init_rw();
+	if (!tm_retrans_lk) {
+		LM_ERR("oom\n");
 		return -1;
 	}
 
