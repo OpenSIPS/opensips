@@ -914,8 +914,9 @@ update_usrloc:
 
 			LM_DBG("UPDATING .....\n");
 			if (reg_mode != MID_REG_MIRROR) {
-				mri->expires_out = e_out;
-				set_ct(mri);
+				cti = c->attached_data[ucontact_data_idx];
+				cti->expires_out = e_out;
+				set_ct(cti);
 			}
 
 			if (ul_api.update_ucontact( r, c, ci, 0) < 0) {
@@ -1137,9 +1138,10 @@ update_usrloc:
 
 			LM_DBG("UPDATING .....\n");
 			if (reg_mode != MID_REG_MIRROR) {
-				mri->expires = e;
-				mri->expires_out = e_out;
-				set_ct(mri);
+				cti = c->attached_data[ucontact_data_idx];
+				cti->expires = e;
+				cti->expires_out = e_out;
+				set_ct(cti);
 			}
 
 			if (ul_api.update_ucontact( r, c, ci, 0) < 0) {
@@ -1334,6 +1336,12 @@ static inline int star(udomain_t* _d, struct mid_reg_info *mri,
 }
 
 
+void mid_reg_trans_deleted(struct cell *t, int type, struct tmcb_params *params)
+{
+	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+	mri_free(mri);
+}
+
 void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 {
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
@@ -1394,7 +1402,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("RESPONSE FORWARDED TO caller!\n");
 
 out_free:
-	mri_free(mri);
+	LM_DBG("not yet freeing mri: %p\n", mri);
 }
 
 /* !! retcodes: 1 or -1 !! */
@@ -1427,6 +1435,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	if (parse_from_header(msg) != 0) {
 		LM_ERR("failed to parse From hf\n");
+		mri_free(mri);
 		return -1;
 	}
 
@@ -1437,6 +1446,14 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	shm_str_dup(&mri->to, &to->uri);
 
 	shm_str_dup(&mri->callid, &msg->callid->body);
+
+	LM_DBG("registering callback on TMCB_TRANS_DELETED, mri=%p ...\n", mri);
+	if (tm_api.register_tmcb(msg, NULL, TMCB_TRANS_DELETED,
+	    mid_reg_trans_deleted, mri, NULL) <= 0) {
+		LM_ERR("cannot register additional callbacks\n");
+		mri_free(mri);
+		return -1;
+	}
 
 	LM_DBG("registering ptr %p on TMCB_REQUEST_FWDED ...\n", mri);
 	if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
