@@ -38,7 +38,7 @@
 #define FS_SOCK_PREFIX_LEN    (sizeof(FS_SOCK_PREFIX) - 1)
 
 #define FS_DEFAULT_EVS_PORT 8021
-#define FS_HEARTBEAT_ITV      20
+#define FS_HEARTBEAT_ITV       1 /* assumed value, for best performance */
 
 enum fs_evs_types {
 	FS_GW_STATS,
