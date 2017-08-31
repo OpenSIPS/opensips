@@ -11,22 +11,24 @@ NAME=dialplan.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-PCRE_BUILDER = $(shell \
-	if which pcre-config >/dev/null 2>/dev/null; then \
-		echo 'pcre-config'; \
-	elif pkg-config --exists libcre; then \
-		echo 'pkg-config libpcre'; \
-	fi)
-endif
+	PCRE_BUILDER = $(shell \
+		if which pcre-config >/dev/null 2>/dev/null; then \
+			echo 'pcre-config'; \
+		elif pkg-config --exists libcre; then \
+			echo 'pkg-config libpcre'; \
+		fi)
 
-ifeq ($(PCRE_BUILDER),)
-	DEFS += -I$(SYSBASE)/include \
-			-I$(LOCALBASE)/include
-	LIBS += -L$(SYSBASE)/lib \
-			-L$(LOCALBASE)/lib -lpcre
+	ifeq ($(PCRE_BUILDER),)
+		DEFS += -I$(SYSBASE)/include \
+				-I$(LOCALBASE)/include
+		LIBS += -L$(SYSBASE)/lib \
+				-L$(LOCALBASE)/lib -lpcre
+	else
+		DEFS += $(shell $(PCRE_BUILDER) --cflags)
+		LIBS += $(shell $(PCRE_BUILDER) --libs)
+	endif
 else
-	DEFS += $(shell $(PCRE_BUILDER) --cflags)
-	LIBS += $(shell $(PCRE_BUILDER) --libs)
+	LIBS += -lpcre
 endif
 
 include ../../Makefile.modules
