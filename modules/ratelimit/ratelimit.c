@@ -555,8 +555,8 @@ static inline int hist_check(rl_pipe_t *pipe)
 			pipe->rwin.start_index = first_good_index;
 
 			/* count current call; it will be the last element in the window */
-			pipe->rwin.window[(pipe->rwin.start_index)
-					+ (pipe->rwin.window_size-1) % pipe->rwin.window_size]++;
+			pipe->rwin.window[((pipe->rwin.start_index)
+					+ (pipe->rwin.window_size-1)) % pipe->rwin.window_size]++;
 
 		} else { /* now_total - start_total < rl_win_ms  */
 			/* no need to modify the window, the value is inside it;
