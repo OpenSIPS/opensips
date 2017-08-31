@@ -1340,19 +1340,21 @@ static inline int star(udomain_t* _d, struct mid_reg_info *mri,
 
 void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 {
-	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+	struct mid_reg_info *mri;
 	urecord_t *rec = NULL;
 	struct sip_msg *rpl = params->rpl;
 	struct sip_msg *req = params->req;
 	int code;
 
-	lock_start_read(tm_retrans_lk);
+	lock_start_write(tm_retrans_lk);
+	mri = *(struct mid_reg_info **)(params->param);
 	if (!mri) {
 		LM_DBG("SIP reply retransmission -> exit\n");
-		lock_stop_read(tm_retrans_lk);
+		lock_stop_write(tm_retrans_lk);
 		return;
 	}
-	lock_stop_read(tm_retrans_lk);
+	*params->param = NULL; /* do not run this callback multiple times! */
+	lock_stop_write(tm_retrans_lk);
 
 	code = rpl->first_line.u.reply.statuscode;
 	LM_DBG("pushing reply back to caller: %d\n", code);
@@ -1407,9 +1409,6 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 
 out_free:
 	mri_free(mri);
-	lock_start_write(tm_retrans_lk);
-	*params->param = NULL; /* do not run this callback multiple times! */
-	lock_stop_write(tm_retrans_lk);
 }
 
 /* !! retcodes: 1 or -1 !! */
