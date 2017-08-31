@@ -423,17 +423,10 @@ void mri_free(struct mid_reg_info *mri)
 	       mri->main_reg_uri.s);
 	LM_DBG("ct_uri: '%.*s' %p\n", mri->ct_uri.len, mri->ct_uri.s, mri->ct_uri.s);
 
-	if (mri->aor.s)
-		shm_free(mri->aor.s);
-
-	if (mri->from.s)
-		shm_free(mri->from.s);
-
-	if (mri->to.s)
-		shm_free(mri->to.s);
-
-	if (mri->callid.s)
-		shm_free(mri->callid.s);
+	shm_free(mri->aor.s);
+	shm_free(mri->from.s);
+	shm_free(mri->to.s);
+	shm_free(mri->callid.s);
 
 	if (mri->main_reg_uri.s)
 		shm_free(mri->main_reg_uri.s);

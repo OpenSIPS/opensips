@@ -1442,6 +1442,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	if (parse_from_header(msg) != 0) {
 		LM_ERR("failed to parse From hf\n");
+		mri_free(mri);
 		return -1;
 	}
 
@@ -1457,6 +1458,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
 	    mid_reg_req_fwded, mri, NULL) <= 0) {
 		LM_ERR("cannot register additional callbacks\n");
+		mri_free(mri);
 		return -1;
 	}
 
