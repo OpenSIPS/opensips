@@ -100,6 +100,8 @@ struct save_ctx {
 	unsigned int max_expires;
 };
 
+extern rw_lock_t *tm_retrans_lk;
+
 extern str realm_prefix;
 extern int case_sensitive;
 
