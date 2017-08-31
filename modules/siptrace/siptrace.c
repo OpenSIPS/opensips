@@ -744,7 +744,7 @@ static void init_db_cols(void)
 		} while(0);
 
 
-	COL_INIT(msg, 0, BLOB);
+	COL_INIT(msg, 0, STR);
 	COL_INIT(callid, 1, STR);
 	COL_INIT(method, 2, STR);
 	COL_INIT(status, 3, STR);
@@ -952,8 +952,8 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 
 			break;
 		case TYPE_SIP:
-			if (trace_send_duplicate(db_vals[0].val.blob_val.s,
-					db_vals[0].val.blob_val.len, &it->el.uri) < 0) {
+			if (trace_send_duplicate(db_vals[0].val.str_val.s,
+					db_vals[0].val.str_val.len, &it->el.uri) < 0) {
 				LM_ERR("Faield to duplicate with sip to <%.*s:%.*s>\n",
 						it->el.uri.host.len, it->el.uri.host.s,
 						it->el.uri.port.len, it->el.uri.port.s);
@@ -1557,8 +1557,8 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info)
 
 
 	LM_DBG("sip_trace called \n");
-	db_vals[0].val.blob_val.s = msg->buf;
-	db_vals[0].val.blob_val.len = msg->len;
+	db_vals[0].val.str_val.s = msg->buf;
+	db_vals[0].val.str_val.len = msg->len;
 
 	db_vals[1].val.str_val.s = msg->callid->body.s;
 	db_vals[1].val.str_val.len = msg->callid->body.len;
@@ -1679,8 +1679,8 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 		return;
 	}
 
-	db_vals[0].val.blob_val.s   = (buffer)?buffer->s:"";
-	db_vals[0].val.blob_val.len = (buffer)?buffer->len:0;
+	db_vals[0].val.str_val.s   = (buffer)?buffer->s:"";
+	db_vals[0].val.str_val.len = (buffer)?buffer->len:0;
 
 	/* check Call-ID header */
 	if(req->callid==NULL || req->callid->body.s==NULL)
@@ -1770,11 +1770,11 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	if(sbuf!=NULL && sbuf->len>0)
 	{
-		db_vals[0].val.blob_val.s   = sbuf->s;
-		db_vals[0].val.blob_val.len = sbuf->len;
+		db_vals[0].val.str_val.s   = sbuf->s;
+		db_vals[0].val.str_val.len = sbuf->len;
 	} else {
-		db_vals[0].val.blob_val.s   = "No request buffer";
-		db_vals[0].val.blob_val.len = sizeof("No request buffer")-1;
+		db_vals[0].val.str_val.s   = "No request buffer";
+		db_vals[0].val.str_val.len = sizeof("No request buffer")-1;
 	}
 
 	/* check Call-ID header */
@@ -1886,11 +1886,11 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	if(msg->len>0) {
-		db_vals[0].val.blob_val.s   = msg->buf;
-		db_vals[0].val.blob_val.len = msg->len;
+		db_vals[0].val.str_val.s   = msg->buf;
+		db_vals[0].val.str_val.len = msg->len;
 	} else {
-		db_vals[0].val.blob_val.s   = "No reply buffer";
-		db_vals[0].val.blob_val.len = sizeof("No reply buffer")-1;
+		db_vals[0].val.str_val.s   = "No reply buffer";
+		db_vals[0].val.str_val.len = sizeof("No reply buffer")-1;
 	}
 
 	/* check Call-ID header */
@@ -1987,28 +1987,28 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	if(faked==0)
 	{
 		if(sbuf!=0 && sbuf->len>0) {
-			db_vals[0].val.blob_val.s   = sbuf->s;
-			db_vals[0].val.blob_val.len = sbuf->len;
+			db_vals[0].val.str_val.s   = sbuf->s;
+			db_vals[0].val.str_val.len = sbuf->len;
 		} else if(t->uas.response.buffer.s!=NULL) {
-			db_vals[0].val.blob_val.s   = t->uas.response.buffer.s;
-			db_vals[0].val.blob_val.len = t->uas.response.buffer.len;
+			db_vals[0].val.str_val.s   = t->uas.response.buffer.s;
+			db_vals[0].val.str_val.len = t->uas.response.buffer.len;
 		} else if(msg->len>0) {
-			db_vals[0].val.blob_val.s   = msg->buf;
-			db_vals[0].val.blob_val.len = msg->len;
+			db_vals[0].val.str_val.s   = msg->buf;
+			db_vals[0].val.str_val.len = msg->len;
 		} else {
-			db_vals[0].val.blob_val.s   = "No reply buffer";
-			db_vals[0].val.blob_val.len = sizeof("No reply buffer")-1;
+			db_vals[0].val.str_val.s   = "No reply buffer";
+			db_vals[0].val.str_val.len = sizeof("No reply buffer")-1;
 		}
 	} else {
 		if(sbuf!=0 && sbuf->len>0) {
-			db_vals[0].val.blob_val.s   = sbuf->s;
-			db_vals[0].val.blob_val.len = sbuf->len;
+			db_vals[0].val.str_val.s   = sbuf->s;
+			db_vals[0].val.str_val.len = sbuf->len;
 		} else if(t->uas.response.buffer.s==NULL) {
-			db_vals[0].val.blob_val.s = "No reply buffer";
-			db_vals[0].val.blob_val.len = sizeof("No reply buffer")-1;
+			db_vals[0].val.str_val.s = "No reply buffer";
+			db_vals[0].val.str_val.len = sizeof("No reply buffer")-1;
 		} else {
-			db_vals[0].val.blob_val.s = t->uas.response.buffer.s;
-			db_vals[0].val.blob_val.len = t->uas.response.buffer.len;
+			db_vals[0].val.str_val.s = t->uas.response.buffer.s;
+			db_vals[0].val.str_val.len = t->uas.response.buffer.len;
 		}
 	}
 
