@@ -45,8 +45,7 @@
 #define NODE_STATE_ENABLED	(1<<0)
 #define CALL_CBS_DOWN		(1<<1)
 #define CALL_CBS_UP			(1<<2)
-#define DB_UPDATED			(1<<3)
-#define DB_PROVISIONED		(1<<4)
+#define DB_PROVISIONED		(1<<3)
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,

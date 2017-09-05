@@ -13,7 +13,7 @@ cc_agents:1
 cc_cdrs:1
 cc_flows:1
 closeddial:1
-clusterer:2
+clusterer:3
 cpl:2
 dbaliases:2
 dialog:10

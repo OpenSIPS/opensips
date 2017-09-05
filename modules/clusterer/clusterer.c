@@ -450,13 +450,10 @@ int cl_set_state(int cluster_id, enum cl_node_state state)
 
 	lock_get(cluster->current_node->lock);
 
-	if (state == STATE_DISABLED && cluster->current_node->flags & NODE_STATE_ENABLED) {
+	if (state == STATE_DISABLED && cluster->current_node->flags & NODE_STATE_ENABLED)
 		new_link_states = LS_DOWN;
-		cluster->current_node->flags &= ~DB_UPDATED;
-	} else if (state == STATE_ENABLED && !(cluster->current_node->flags & NODE_STATE_ENABLED)) {
+	else if (state == STATE_ENABLED && !(cluster->current_node->flags & NODE_STATE_ENABLED))
 		new_link_states = LS_RESTART_PINGING;
-		cluster->current_node->flags &= ~DB_UPDATED;
-	}
 
 	if (state == STATE_DISABLED)
 		cluster->current_node->flags &= ~NODE_STATE_ENABLED;
@@ -479,6 +476,9 @@ int cl_set_state(int cluster_id, enum cl_node_state state)
 
 	LM_INFO("Set state: %s for current node in cluster: %d\n",
 			state ? "enabled" : "disabled", cluster_id);
+
+	if (update_db_state(state) < 0)
+		LM_ERR("Failed to update state in clusterer DB for cluster: %d\n", cluster->cluster_id);
 
 	return 0;
 }
@@ -1037,6 +1037,18 @@ static int flood_message(bin_packet_t *packet, cluster_info_t *cluster,
 	return 0;
 }
 
+static inline int validate_update(int seq_no, int msg_seq_no, int timestamp,
+									int msg_timestamp)
+{
+	if (msg_seq_no == 0) {
+		if (seq_no == 0 && msg_timestamp <= timestamp)
+			return -1;
+	} else if (msg_seq_no <= seq_no)
+		return -1;
+
+	return 0;
+}
+
 static void receive_full_top_update(bin_packet_t *packet, cluster_info_t *cluster,
 								node_info_t *source, int *check_call_cbs_event)
 {
@@ -1049,16 +1061,21 @@ static void receive_full_top_update(bin_packet_t *packet, cluster_info_t *cluste
 	int present_nodes[MAX_NO_NODES];
 	int no_present_nodes = 0;
 	int present;
+	int timestamp;
+
+	bin_pop_int(packet, &seq_no);
+	bin_pop_int(packet, &timestamp);
 
 	lock_get(source->lock);
 
-	bin_pop_int(packet, &seq_no);
-	if (seq_no <= source->top_seq_no) {
+	if (validate_update(source->top_seq_no, seq_no,
+		source->top_timestamp, timestamp) < 0) {
 		lock_release(source->lock);
 		return;
-	}
-	else
+	} else {
 		source->top_seq_no = seq_no;
+		source->top_timestamp = timestamp;
+	}
 
 	lock_release(source->lock);
 
@@ -1080,8 +1097,10 @@ static void receive_full_top_update(bin_packet_t *packet, cluster_info_t *cluste
 			lock_get(top_node->lock);
 
 		bin_pop_int(packet, &seq_no);
+		bin_pop_int(packet, &timestamp);
 		if (!skip && i > 0)
-			if (seq_no <= top_node->ls_seq_no)
+			if (validate_update(top_node->ls_seq_no, seq_no,
+				top_node->ls_timestamp, timestamp) < 0)
 				skip = 1;
 		bin_pop_int(packet, &no_neigh);
 		if (skip) {
@@ -1092,6 +1111,7 @@ static void receive_full_top_update(bin_packet_t *packet, cluster_info_t *cluste
 		}
 
 		top_node->ls_seq_no = seq_no;
+		top_node->ls_timestamp = timestamp;
 
 		lock_release(top_node->lock);
 
@@ -1355,8 +1375,6 @@ static void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *
 
 		bin_pop_int(received, &int_vals[INT_VALS_PRIORITY_COL]);
 		bin_pop_int(received, &int_vals[INT_VALS_NO_PING_RETRIES_COL]);
-		bin_pop_int(received, &int_vals[INT_VALS_LS_SEQ_COL]);
-		bin_pop_int(received, &int_vals[INT_VALS_TOP_SEQ_COL]);
 		bin_pop_int(received, &is_orig_src);
 
 		int_vals[INT_VALS_ID_COL] = 0;	/* no valid DB id since it isn't loaded from DB */
@@ -1400,12 +1418,12 @@ static void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *
 }
 
 static void handle_internal_msg(bin_packet_t *received, cluster_info_t *cl, int packet_type,
-		node_info_t *src_node, struct timeval timestamp, int *check_call_cbs_event)
+		node_info_t *src_node, struct timeval rcv_time, int *check_call_cbs_event)
 {
 	node_info_t *ls_neigh;
 	static str module_name = str_init("clusterer");
 	str bin_buffer;
-	int seq_no, neigh_id, new_ls;
+	int seq_no, timestamp, neigh_id, new_ls;
 	int send_rc;
 	int set_ls_restart = 0;
 	bin_packet_t packet;
@@ -1416,7 +1434,7 @@ static void handle_internal_msg(bin_packet_t *received, cluster_info_t *cl, int 
 
 		lock_get(src_node->lock);
 
-		src_node->last_pong = timestamp;
+		src_node->last_pong = rcv_time;
 
 		/* if the node was retried and a reply was expected, it should be UP again */
 		if (src_node->link_state == LS_RESTARTED || src_node->link_state == LS_RETRYING) {
@@ -1472,12 +1490,17 @@ static void handle_internal_msg(bin_packet_t *received, cluster_info_t *cl, int 
 		lock_get(src_node->lock);
 
 		bin_pop_int(received, &seq_no);
-		if (seq_no <= src_node->ls_seq_no) {
+		bin_pop_int(received, &timestamp);
+
+		if (validate_update(src_node->ls_seq_no, seq_no, src_node->ls_timestamp,
+			timestamp) < 0) {
 			lock_release(src_node->lock);
 			return;
 		}
-		else
+		else {
 			src_node->ls_seq_no = seq_no;
+			src_node->ls_timestamp = timestamp;
+		}
 
 		bin_pop_int(received, &neigh_id);
 		bin_pop_int(received, &new_ls);
@@ -1583,8 +1606,6 @@ static void handle_internal_msg(bin_packet_t *received, cluster_info_t *cl, int 
 		bin_push_str(&packet, &cl->current_node->sip_addr);
 		bin_push_int(&packet, cl->current_node->priority);
 		bin_push_int(&packet, cl->current_node->no_ping_retries);
-		bin_push_int(&packet, cl->current_node->ls_seq_no);
-		bin_push_int(&packet, cl->current_node->top_seq_no);
 
 		bin_push_int(&packet, 1);	/* original source of this join confirm message */
 
@@ -1976,9 +1997,9 @@ static int add_neighbour(node_info_t *to_n, node_info_t *new_n)
 }
 
 /* topology update packets(CLUSTERER_TOP_UPDATE and CLUSTERER_LS_UPDATE) format:
- * +---------------------------------------------------------------------------------+
- * | cluster | src_node | seq_no | update_content | path_len | node_1 | node_2 | ... |
- * +---------------------------------------------------------------------------------+
+ * +---------------------------------------------------------------------------------------------+
+ * | cluster | src_node | seq_no | timestamp | update_content | path_len | node_1 | node_2 | ... |
+ * +---------------------------------------------------------------------------------------------+
  */
 
 static int send_top_update(cluster_info_t *cluster, node_info_t *dest_node)
@@ -1989,6 +2010,9 @@ static int send_top_update(cluster_info_t *cluster, node_info_t *dest_node)
 	node_info_t *it;
 	int no_neigh;
 	bin_packet_t packet;
+	int timestamp;
+
+	timestamp = time(NULL);
 
 	lock_get(cluster->current_node->lock);
 
@@ -1999,18 +2023,19 @@ static int send_top_update(cluster_info_t *cluster, node_info_t *dest_node)
 	bin_push_int(&packet, cluster->cluster_id);
 	bin_push_int(&packet, current_id);
 	bin_push_int(&packet, ++cluster->current_node->top_seq_no);
-	cluster->current_node->flags &= ~DB_UPDATED;
+	bin_push_int(&packet, timestamp);
 
 	/* CLUSTERER_TOP_UPDATE message update content:
-     * +-----------------------------------------------------------------------------------+
-	 * | no_nodes | node_1 | ls_seq_no | no_neigh | neigh_1 | neigh_2 | ... | node_2 | ... |
-	 * +-----------------------------------------------------------------------------------+
+     * +--------------------------------------------------------------------------------------------------+
+	 * | no_nodes | node_1 | ls_seq_no | ls_timestamp | no_neigh | neigh_1 | neigh_2 | ... | node_2 | ... |
+	 * +--------------------------------------------------------------------------------------------------+
      */
     bin_push_int(&packet, cluster->no_nodes);
 
 	/* the first adjacency list in the message is for the current node */
 	bin_push_int(&packet, current_id);
 	bin_push_int(&packet, cluster->current_node->ls_seq_no);
+	bin_push_int(&packet, cluster->current_node->ls_timestamp);
 	bin_push_int(&packet, 0); /* no neighbours for now */
 	for (neigh = cluster->current_node->neighbour_list, no_neigh = 0; neigh;
 		neigh = neigh->next, no_neigh++)
@@ -2032,6 +2057,7 @@ static int send_top_update(cluster_info_t *cluster, node_info_t *dest_node)
 
 		bin_push_int(&packet, it->node_id);
 		bin_push_int(&packet, it->ls_seq_no);
+		bin_push_int(&packet, it->ls_timestamp);
 		bin_push_int(&packet, 0);
 		for (neigh = it->neighbour_list, no_neigh = 0; neigh;
 			neigh = neigh->next, no_neigh++)
@@ -2074,6 +2100,9 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 	node_info_t* destinations[MAX_NO_NODES];
 	int no_dests = 0, i;
 	bin_packet_t packet;
+	int timestamp;
+
+	timestamp = time(NULL);
 
 	lock_get(node->cluster->current_node->lock);
 
@@ -2092,7 +2121,7 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 			bin_push_int(&packet, node->cluster->cluster_id);
 			bin_push_int(&packet, current_id);
 			bin_push_int(&packet, ++node->cluster->current_node->ls_seq_no);
-			node->cluster->current_node->flags &= ~DB_UPDATED;
+			bin_push_int(&packet, timestamp);
 			/* The link state update message's update content consists of a neighbour
 			 * and it's new link state */
 			bin_push_int(&packet, node->node_id);

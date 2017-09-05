@@ -1,1 +1,1 @@
-id(int,auto) cluster_id(int) node_id(int) url(string) state(int) ls_seq_no(int) top_seq_no(int) no_ping_retries(int) priority(int) sip_addr(string,null) description(string,null) 
+id(int,auto) cluster_id(int) node_id(int) url(string) state(int) no_ping_retries(int) priority(int) sip_addr(string,null) description(string,null) 

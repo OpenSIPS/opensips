@@ -30,11 +30,13 @@
 #include "api.h"
 #include "clusterer.h"
 
-#define NO_DB_INT_VALS 8
+#define NO_DB_INT_VALS 6
 #define NO_DB_STR_VALS 3
 #define NO_DB_COLS (NO_DB_INT_VALS + NO_DB_STR_VALS)
-#define DEFAULT_DB_UPDATE_INTERVAL 10
-#define CLUSTERER_TABLE_VERSION 2
+
+#define CLUSTERER_TABLE_VERSION 3
+/* also compatible with this version as the current version only removed columns */
+#define BACKWARDS_COMPAT_TABLE_VER 2
 
 #define MAX_NO_NODES 64
 #define MAX_NO_CLUSTERS 16
@@ -45,8 +47,6 @@ enum db_int_vals_idx {
 	INT_VALS_CLUSTER_ID_COL,
 	INT_VALS_NODE_ID_COL,
 	INT_VALS_STATE_COL,
-	INT_VALS_LS_SEQ_COL,
-	INT_VALS_TOP_SEQ_COL,
 	INT_VALS_NO_PING_RETRIES_COL,
 	INT_VALS_PRIORITY_COL
 };
@@ -82,6 +82,8 @@ struct node_info {
 	int sp_top_version;                 /* last topology version for which shortest path was computed */
 	int ls_seq_no;                      /* sequence number of the last link state update */
 	int top_seq_no;                     /* sequence number of the last topology update message */
+	int ls_timestamp;
+	int top_timestamp;
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct node_search_info *sp_info;   /* shortest path info */
 	int flags;
@@ -108,7 +110,7 @@ extern int current_id;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
-int update_db_current(void);
+int update_db_state(int state);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 

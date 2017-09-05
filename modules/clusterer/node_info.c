@@ -132,7 +132,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	}
 	memset(*new_info, 0, sizeof **new_info);
 
-	(*new_info)->flags = DB_UPDATED | DB_PROVISIONED;
+	(*new_info)->flags = 0;
 
 	(*new_info)->id = int_vals[INT_VALS_ID_COL];
 	(*new_info)->node_id = int_vals[INT_VALS_NODE_ID_COL];
@@ -224,8 +224,11 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 
 	(*new_info)->cluster = cluster;
 
-	(*new_info)->ls_seq_no = int_vals[INT_VALS_LS_SEQ_COL];
-	(*new_info)->top_seq_no = int_vals[INT_VALS_TOP_SEQ_COL];
+	(*new_info)->ls_seq_no = -1;
+	(*new_info)->top_seq_no = -1;
+	(*new_info)->ls_timestamp = 0;
+	(*new_info)->top_timestamp = 0;
+
 	(*new_info)->sp_info = shm_malloc(sizeof(struct node_search_info));
 	if (!(*new_info)->sp_info) {
 		LM_ERR("no more shm memory\n");
@@ -313,16 +316,15 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 	columns[2] = &node_id_col;
 	columns[3] = &url_col;
 	columns[4] = &state_col;
-	columns[5] = &ls_seq_no_col;
-	columns[6] = &top_seq_no_col;
-	columns[7] = &no_ping_retries_col;
-	columns[8] = &priority_col;
-	columns[9] = &sip_addr_col;
-	columns[10] = &description_col;
+	columns[5] = &no_ping_retries_col;
+	columns[6] = &priority_col;
+	columns[7] = &sip_addr_col;
+	columns[8] = &description_col;
 
 	CON_OR_RESET(db_hdl);
 
-	if (db_check_table_version(dr_dbf, db_hdl, db_table, CLUSTERER_TABLE_VERSION) != 0)
+	if (db_check_table_version(dr_dbf, db_hdl, db_table, CLUSTERER_TABLE_VERSION) != 0 &&
+		db_check_table_version(dr_dbf, db_hdl, db_table, BACKWARDS_COMPAT_TABLE_VER) != 0)
 		goto error;
 
 	if (dr_dbf->use_table(db_hdl, db_table) < 0) {
@@ -414,23 +416,17 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 		check_val(state_col, ROW_VALUES(row) + 4, DB_INT, 1, 0);
 		int_vals[INT_VALS_STATE_COL] = VAL_INT(ROW_VALUES(row) + 4);
 
-		check_val(ls_seq_no_col, ROW_VALUES(row) + 5, DB_INT, 1, 0);
-		int_vals[INT_VALS_LS_SEQ_COL] = VAL_INT(ROW_VALUES(row) + 5);
+		check_val(no_ping_retries_col, ROW_VALUES(row) + 5, DB_INT, 1, 0);
+		int_vals[INT_VALS_NO_PING_RETRIES_COL] = VAL_INT(ROW_VALUES(row) + 5);
 
-		check_val(top_seq_no_col, ROW_VALUES(row) + 6, DB_INT, 1, 0);
-		int_vals[INT_VALS_TOP_SEQ_COL] = VAL_INT(ROW_VALUES(row) + 6);
+		check_val(priority_col, ROW_VALUES(row) + 6, DB_INT, 1, 0);
+		int_vals[INT_VALS_PRIORITY_COL] = VAL_INT(ROW_VALUES(row) + 6);
 
-		check_val(no_ping_retries_col, ROW_VALUES(row) + 7, DB_INT, 1, 0);
-		int_vals[INT_VALS_NO_PING_RETRIES_COL] = VAL_INT(ROW_VALUES(row) + 7);
+		check_val(sip_addr_col, ROW_VALUES(row) + 7, DB_STRING, 0, 0);
+		str_vals[STR_VALS_SIP_ADDR_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 7);
 
-		check_val(priority_col, ROW_VALUES(row) + 8, DB_INT, 1, 0);
-		int_vals[INT_VALS_PRIORITY_COL] = VAL_INT(ROW_VALUES(row) + 8);
-
-		check_val(sip_addr_col, ROW_VALUES(row) + 9, DB_STRING, 0, 0);
-		str_vals[STR_VALS_SIP_ADDR_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 9);
-
-		check_val(description_col, ROW_VALUES(row) + 10, DB_STRING, 0, 0);
-		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 10);
+		check_val(description_col, ROW_VALUES(row) + 8, DB_STRING, 0, 0);
+		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 8);
 
 		/* add info to backing list */
 		if ((rc = add_node_info(&new_info, cl_list, int_vals, str_vals)) != 0) {
@@ -457,71 +453,32 @@ error:
 	return -1;
 }
 
-int update_db_current(void)
-{
-	cluster_info_t *cluster;
+int update_db_state(int state) {
 	db_key_t node_id_key = &id_col;
 	db_val_t node_id_val;
-	db_key_t update_keys[3];
-	db_val_t update_vals[3];
-	int ret = 0;
+	db_key_t update_key;
+	db_val_t update_val;
 
 	VAL_TYPE(&node_id_val) = DB_INT;
 	VAL_NULL(&node_id_val) = 0;
 	VAL_INT(&node_id_val) = current_id;
-
-	update_keys[0] = &ls_seq_no_col;
-	update_keys[1] = &top_seq_no_col;
-	update_keys[2] = &state_col;
+	update_key = &state_col;
 
 	CON_OR_RESET(db_hdl);
-
 	if (dr_dbf.use_table(db_hdl, &db_table) < 0) {
 		LM_ERR("cannot select table: \"%.*s\"\n", db_table.len, db_table.s);
 		return -1;
 	}
 
-	lock_start_read(cl_list_lock);
+	VAL_TYPE(&update_val) = DB_INT;
+	VAL_NULL(&update_val) = 0;
+	VAL_INT(&update_val) = state;
 
-	for (cluster = *cluster_list; cluster; cluster = cluster->next) {
-		lock_get(cluster->current_node->lock);
+	if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
+		&update_val, 1, 1) < 0)
+		return -1;
 
-		if ((cluster->current_node->flags & (DB_PROVISIONED | DB_UPDATED)) ==
-			(DB_PROVISIONED | DB_UPDATED)) {
-			lock_release(cluster->current_node->lock);
-			continue;
-		}
-
-		VAL_TYPE(&update_vals[0]) = DB_INT;
-		VAL_NULL(&update_vals[0]) = 0;
-		VAL_INT(&update_vals[0]) = cluster->current_node->ls_seq_no;
-		VAL_TYPE(&update_vals[1]) = DB_INT;
-		VAL_NULL(&update_vals[1]) = 0;
-		VAL_INT(&update_vals[1]) = cluster->current_node->top_seq_no;
-		VAL_TYPE(&update_vals[2]) = DB_INT;
-		VAL_NULL(&update_vals[2]) = 0;
-		if (cluster->current_node->flags & NODE_STATE_ENABLED)
-			VAL_INT(&update_vals[2]) = STATE_ENABLED;
-		else
-			VAL_INT(&update_vals[2]) = STATE_DISABLED;
-
-		lock_release(cluster->current_node->lock);
-
-		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, update_keys,
-			update_vals, 1, 3) < 0) {
-			LM_ERR("Failed to update clusterer DB for cluster: %d\n", cluster->cluster_id);
-			ret = -1;
-		} else {
-			lock_get(cluster->current_node->lock);
-			cluster->current_node->flags |= DB_UPDATED;
-			lock_release(cluster->current_node->lock);
-			LM_DBG("Updated clusterer DB for cluster: %d\n", cluster->cluster_id);
-		}
-	}
-
-	lock_stop_read(cl_list_lock);
-
-	return ret;
+	return 0;
 }
 
 void free_info(cluster_info_t *cl_list)

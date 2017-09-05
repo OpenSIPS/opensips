@@ -9,7 +9,7 @@
 
 <table id="clusterer" xmlns:db="http://docbook.org/ns/docbook">
     <name>clusterer</name>
-    <version>2</version>
+    <version>3</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used for defining clusters of OpenSIPS instances.
@@ -53,22 +53,6 @@
         <size>1</size>
         <default>1</default>
         <description>state of the  machine 0 - Enabled, 1 - Disabled</description>
-    </column>
-
-    <column id="ls_seq_no">
-        <name>ls_seq_no</name>
-        <type>int</type>
-        <size>10</size>
-        <default>0</default>
-        <description>sequence number of the last link state update message sent</description>
-    </column>
-
-    <column id="top_seq_no">
-        <name>top_seq_no</name>
-        <type>int</type>
-        <size>10</size>
-        <default>0</default>
-        <description>sequence number of the last topology update message sent</description>
     </column>
 
     <column id="no_ping_retries">

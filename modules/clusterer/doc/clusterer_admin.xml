@@ -203,46 +203,6 @@ modparam("clusterer", "state_col", "state")
         </section>
 
         <section>
-            <title><varname>ls_seq_no_col</varname></title>
-            <para>
-                The name of the column storing the sequence number of the last link state update message sent by the node.
-            </para>
-            <para>
-		<emphasis>
-			Default value is <quote>ls_seq_no</quote>.
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>ls_seq_no_col</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "ls_seq_no_col", "ls_seq_no")
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section>
-            <title><varname>top_seq_no_col</varname></title>
-            <para>
-                The name of the column storing the sequence number of the last topology update message sent by the node.
-            </para>
-            <para>
-		<emphasis>
-			Default value is <quote>top_seq_no</quote>.
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>top_seq_no_col</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "top_seq_no_col", "top_seq_no")
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section>
             <title><varname>no_ping_retries_col</varname></title>
             <para>
                 The name of the column containing the maximum number of ping retries before the link with the neighbour node is considered down.

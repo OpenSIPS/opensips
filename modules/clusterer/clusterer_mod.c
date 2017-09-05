@@ -41,7 +41,6 @@
 #include "node_info.h"
 #include "clusterer.h"
 
-static int db_update_interval = DEFAULT_DB_UPDATE_INTERVAL;
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
 int ping_timeout = DEFAULT_PING_TIMEOUT;
@@ -54,8 +53,6 @@ str cluster_id_col = str_init("cluster_id");
 str node_id_col = str_init("node_id");
 str url_col = str_init("url");
 str state_col = str_init("state");
-str ls_seq_no_col = str_init("ls_seq_no");
-str top_seq_no_col = str_init("top_seq_no");
 str no_ping_retries_col = str_init("no_ping_retries");
 str priority_col = str_init("priority");
 str sip_addr_col = str_init("sip_addr");
@@ -79,7 +76,6 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param);
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param);
 static void heartbeats_utimer_handler(utime_t ticks, void *param);
-static void db_update_timer(unsigned int ticks, void *param);
 
 int cmd_broadcast_req(struct sip_msg *msg, char *param_cluster, char *param_msg,
 									char *param_tag);
@@ -124,8 +120,6 @@ static param_export_t params[] = {
 	{"node_id_col",			STR_PARAM,	&node_id_col.s		},
 	{"url_col",				STR_PARAM,	&url_col.s			},
 	{"state_col",			STR_PARAM,	&state_col.s		},
-	{"ls_seq_no_col",		STR_PARAM,	&ls_seq_no_col.s	},
-	{"top_seq_no_col",		STR_PARAM,	&top_seq_no_col.s	},
 	{"no_ping_retries_col",	STR_PARAM,	&no_ping_retries_col.s	},
 	{"priority_col",		STR_PARAM,  &priority_col		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
@@ -210,8 +204,6 @@ static int mod_init(void)
 	id_col.len = strlen(id_col.s);
 	url_col.len = strlen(url_col.s);
 	state_col.len = strlen(state_col.s);
-	ls_seq_no_col.len = strlen(ls_seq_no_col.s);
-	top_seq_no_col.len = strlen(top_seq_no_col.s);
 	no_ping_retries_col.len = strlen(no_ping_retries_col.s);
 	priority_col.len = strlen(priority_col.s);
 	sip_addr_col.len = strlen(sip_addr_col.s);
@@ -276,12 +268,6 @@ static int mod_init(void)
 			LM_CRIT("Unable to register clusterer heartbeats timer\n");
 			goto error;
 		}
-	}
-
-	if (register_timer("clstr-db-update", db_update_timer, NULL, db_update_interval,
-		TIMER_FLAG_DELAY_ON_DELAY) < 0) {
-		LM_CRIT("Unable to register clusterer db update timer\n");
-		goto error;
 	}
 
 	if (bin_register_cb("clusterer", bin_rcv_cl_packets, NULL) < 0) {
@@ -753,11 +739,6 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
 	return run_mi_cmd_local(f, cl_cmd_params, no_params, cmd->async_hdl);
 }
 
-static void db_update_timer(unsigned int ticks, void *param)
-{
-	update_db_current();
-}
-
 static void heartbeats_timer_handler(unsigned int ticks, void *param)
 {
 	heartbeats_timer();
@@ -962,9 +943,6 @@ static void destroy(void)
 	struct mod_registration *tmp;
 
 	if (db_hdl) {
-		/* update DB */
-		update_db_current();
-
 		/* close DB connection */
 		dr_dbf.close(db_hdl);
 		db_hdl = NULL;

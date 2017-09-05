@@ -30,16 +30,14 @@ Robert-Vladut Patrascu
               1.3.5. node_id_col
               1.3.6. url_col
               1.3.7. state_col
-              1.3.8. ls_seq_no_col
-              1.3.9. top_seq_no_col
-              1.3.10. no_ping_retries_col
-              1.3.11. priority_col
-              1.3.12. sip_addr_col
-              1.3.13. description_col
-              1.3.14. current_id
-              1.3.15. ping_interval
-              1.3.16. ping_timeout
-              1.3.17. node_timeout
+              1.3.8. no_ping_retries_col
+              1.3.9. priority_col
+              1.3.10. sip_addr_col
+              1.3.11. description_col
+              1.3.12. current_id
+              1.3.13. ping_interval
+              1.3.14. ping_timeout
+              1.3.15. node_timeout
 
         1.4. Exported Functions
 
@@ -92,24 +90,22 @@ Robert-Vladut Patrascu
    1.5. Set node_id_col parameter
    1.6. Set url_col parameter
    1.7. Set state_col parameter
-   1.8. Set ls_seq_no_col parameter
-   1.9. Set top_seq_no_col parameter
-   1.10. Set no_ping_retries_col parameter
-   1.11. Set priority_col parameter
-   1.12. Set sip_addr_col parameter
-   1.13. Set description_col parameter
-   1.14. Set current_id parameter
-   1.15. Set ping_interval parameter
-   1.16. Set ping_timeout parameter
-   1.17. Set node_timeout parameter
-   1.18. cluster_send_req() usage
-   1.19. cluster_send_rpl() usage
-   1.20. cluster_broadcast_req() usage
-   1.21. clusterer_list usage
-   1.22. clusterer_list_topology usage
-   1.23. Example database content - clusterer table
-   1.24. Node A configuration
-   1.25. Node B configuration
+   1.8. Set no_ping_retries_col parameter
+   1.9. Set priority_col parameter
+   1.10. Set sip_addr_col parameter
+   1.11. Set description_col parameter
+   1.12. Set current_id parameter
+   1.13. Set ping_interval parameter
+   1.14. Set ping_timeout parameter
+   1.15. Set node_timeout parameter
+   1.16. cluster_send_req() usage
+   1.17. cluster_send_rpl() usage
+   1.18. cluster_broadcast_req() usage
+   1.19. clusterer_list usage
+   1.20. clusterer_list_topology usage
+   1.21. Example database content - clusterer table
+   1.22. Node A configuration
+   1.23. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -251,31 +247,7 @@ modparam("clusterer", "url_col", "url")
 modparam("clusterer", "state_col", "state")
 ...
 
-1.3.8. ls_seq_no_col
-
-   The name of the column storing the sequence number of the last
-   link state update message sent by the node.
-
-   Default value is “ls_seq_no”.
-
-   Example 1.8. Set ls_seq_no_col parameter
-...
-modparam("clusterer", "ls_seq_no_col", "ls_seq_no")
-...
-
-1.3.9. top_seq_no_col
-
-   The name of the column storing the sequence number of the last
-   topology update message sent by the node.
-
-   Default value is “top_seq_no”.
-
-   Example 1.9. Set top_seq_no_col parameter
-...
-modparam("clusterer", "top_seq_no_col", "top_seq_no")
-...
-
-1.3.10. no_ping_retries_col
+1.3.8. no_ping_retries_col
 
    The name of the column containing the maximum number of ping
    retries before the link with the neighbour node is considered
@@ -283,12 +255,12 @@ modparam("clusterer", "top_seq_no_col", "top_seq_no")
 
    Default value is “no_ping_retries”.
 
-   Example 1.10. Set no_ping_retries_col parameter
+   Example 1.8. Set no_ping_retries_col parameter
 ...
 modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 ...
 
-1.3.11. priority_col
+1.3.9. priority_col
 
    The name of the column storing the node priority to be chosen
    as next hop in case of same length(number of hops) paths when
@@ -296,34 +268,34 @@ modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 
    Default value is “priority”.
 
-   Example 1.11. Set priority_col parameter
+   Example 1.9. Set priority_col parameter
 ...
 modparam("clusterer", "priority_col", "priority")
 ...
 
-1.3.12. sip_addr_col
+1.3.10. sip_addr_col
 
    The name of the column containing a SIP address for the node.
 
    Default value is “sip_addr”.
 
-   Example 1.12. Set sip_addr_col parameter
+   Example 1.10. Set sip_addr_col parameter
 ...
 modparam("clusterer", "sip_addr_col", "sip_addr")
 ...
 
-1.3.13. description_col
+1.3.11. description_col
 
    The name of the column containing a node description.
 
    Default value is “description”.
 
-   Example 1.13. Set description_col parameter
+   Example 1.11. Set description_col parameter
 ...
 modparam("clusterer", "description_col", "description")
 ...
 
-1.3.14. current_id
+1.3.12. current_id
 
    The id of the current instance. This parameter must be equal
    with one of the node_id fields in the database.
@@ -331,24 +303,24 @@ modparam("clusterer", "description_col", "description")
    No default value. This parameter must be explicitly set to a
    value greater than zero.
 
-   Example 1.14. Set current_id parameter
+   Example 1.12. Set current_id parameter
 ...
 modparam("clusterer", "current_id", 1)
 ...
 
-1.3.15. ping_interval
+1.3.13. ping_interval
 
    The interval in seconds between regular pings sent to a
    neighbour node.
 
    Default value is “4”
 
-   Example 1.15. Set ping_interval parameter
+   Example 1.13. Set ping_interval parameter
 ...
 modparam("clusterer", "ping_interval", 1)
 ...
 
-1.3.16. ping_timeout
+1.3.14. ping_timeout
 
    The time in milliseconds to wait for a reply to a previously
    sent ping before retrying or considering the link with the
@@ -357,19 +329,19 @@ modparam("clusterer", "ping_interval", 1)
 
    Default value is “1000”
 
-   Example 1.16. Set ping_timeout parameter
+   Example 1.14. Set ping_timeout parameter
 ...
 modparam("clusterer", "ping_timeout", 500)
 ...
 
-1.3.17. node_timeout
+1.3.15. node_timeout
 
    The time in seconds to wait before pinging is restarted for a
    failed node.
 
    Default value is “60”
 
-   Example 1.17. Set node_timeout parameter
+   Example 1.15. Set node_timeout parameter
 ...
 modparam("clusterer", "node_timeout", 10)
 ...
@@ -408,7 +380,7 @@ modparam("clusterer", "node_timeout", 10)
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.18. cluster_send_req() usage
+   Example 1.16. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
@@ -453,7 +425,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.19. cluster_send_rpl() usage
+   Example 1.17. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_ta
@@ -484,7 +456,7 @@ p(rcv_tag)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.20. cluster_broadcast_req() usage
+   Example 1.18. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 ...
@@ -518,7 +490,7 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
                 :clusterer_list
                 _empty_line_
 
-   Example 1.21. clusterer_list usage
+   Example 1.19. clusterer_list usage
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
         Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
@@ -549,7 +521,7 @@ Cluster:: 2
                 :clusterer_list_topology
                 _empty_line_
 
-   Example 1.22. clusterer_list_topology usage
+   Example 1.20. clusterer_list_topology usage
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
         Node:: 1 Neighbours=4
@@ -669,7 +641,7 @@ Cluster:: 2
    pipes. Therefore, we have to provision them in the clusterer
    table.
 
-   Example 1.23. Example database content - clusterer table
+   Example 1.21. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+-----------+
 ------------+-----------------+----------+------------------------+
 | id | cluster_id | node_id | url                  | state | ls_seq_no |
@@ -721,7 +693,7 @@ Cluster:: 2
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.24. Node A configuration
+   Example 1.22. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -740,7 +712,7 @@ modparam("ratelimit", "accept_pipes_from", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.25. Node B configuration
+   Example 1.23. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 
