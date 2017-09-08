@@ -247,6 +247,7 @@ int write_to_db(str *username, str *domain, str *xml, str *bin)
 error:
 	if (res)
 		cpl_dbf.free_result( db_hdl, res);
+	return -1;
 }
 
 
