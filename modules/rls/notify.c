@@ -72,6 +72,9 @@ void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps);
 int rls_get_resource_list(str *filename, str *selector, str *username, str *domain,
 		          xmlNodePtr *rl_node, xmlDocPtr *xmldoc);
 
+db_res_t * build_db_result(xmlNodePtr list_node, int col_num);
+
+void extractSipUsername(char * uri, char * username);
 
 int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl_uri,
 		unsigned int hash_code)
@@ -111,6 +114,7 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 		goto error;
 	}
 
+    /*
 	if(rls_dbf.query(rls_db, query_cols, 0, query_vals, result_cols,
 					1, n_result_cols, &str_resource_uri_col, &result )< 0)
 	{
@@ -119,6 +123,10 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 	}
 	if(result== NULL)
 		goto error;
+	*/
+
+	// build result instead of query in DB since initial query result is guaranteed to be empty
+    result = build_db_result(service_node, n_result_cols);
 
 	rlmi_body= constr_rlmi_doc(result, rl_uri, version, service_node, &cid_array, subs->from_user, subs->from_domain);
 	if(rlmi_body== NULL)
@@ -1183,3 +1191,119 @@ error:
 	return -1;
 }
 
+db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
+{
+	xmlNodePtr node, subnode;
+	int i;
+	str uri;
+	str *normalized_uri;
+	db_res_t * result = db_new_result();
+	result->n = 0;
+
+	LM_DBG("start\n");
+
+	// pass 1 : find how many entries in service_node
+	int count = 0;
+	for(node= list_node->children; node; node= node->next)
+	{
+		if(xmlStrcasecmp(node->name,(unsigned char*)"list")== 0) {
+		    for (subnode= node->children; subnode; subnode= subnode->next) {
+		        if(xmlStrcasecmp(subnode->name,(unsigned char*)"entry")== 0)
+		            count ++;
+		    }
+		    break;
+		}
+	}
+
+    // pass 2 : build result
+    if (count <= 0)
+        return result;
+
+    db_allocate_columns(result, n_result_cols);
+    db_allocate_rows(result, count);
+    result->n = count;
+    i = 0;
+	for(node= list_node->children; node; node= node->next)
+	{
+	    if(xmlStrcasecmp(node->name,(unsigned char*)"list")== 0) {
+	        for (subnode= node->children; subnode; subnode= subnode->next) {
+                if(xmlStrcasecmp(subnode->name,(unsigned char*)"entry")== 0)
+		        {
+			        uri.s = XMLNodeGetAttrContentByName(subnode, "uri");
+			        if(uri.s == NULL)
+			        {
+				        LM_ERR("when extracting entry uri attribute\n");
+				        return result;
+			        }
+                    uri.len = strlen(uri.s);
+			        LM_DBG("uri= %.*s\n", uri.len, uri.s);
+
+			        normalized_uri = normalizeSipUri(&uri);
+			        if (normalized_uri->s == NULL || normalized_uri->len == 0)
+                    {
+				        LM_ERR("failed to normalize entry URI\n");
+				        xmlFree(uri.s);
+				        return result;
+                    }
+			        xmlFree(uri.s);
+
+                    result->rows[i].n = n_result_cols;
+                    result->rows[i].values = (db_val_t*) pkg_malloc(n_result_cols * sizeof(db_val_t));
+
+                    result->rows[i].values[resource_uri_col].type = DB_STRING;
+                    result->rows[i].values[resource_uri_col].nul = 0;
+                    result->rows[i].values[resource_uri_col].free = 0;
+                    result->rows[i].values[resource_uri_col].val.string_val = (char *) pkg_malloc(normalized_uri->len+1);
+                    strcpy((char *) result->rows[i].values[resource_uri_col].val.string_val, normalized_uri->s);
+
+                    result->rows[i].values[ctype_col].type = DB_STRING;
+                    result->rows[i].values[ctype_col].nul = 0;
+                    result->rows[i].values[ctype_col].free = 0;
+                    result->rows[i].values[ctype_col].val.string_val = (char *) pkg_malloc(30);
+                    strcpy((char *) result->rows[i].values[ctype_col].val.string_val, "application/dialog-info+xml");
+
+                    char username[512];
+                    extractSipUsername(normalized_uri->s, username);
+                    char buf[1024];
+                    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\" direction=\"receiver\"><state>terminated</state><remote><local><identity display=\"%s\">sip:@vm.example.net</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username);
+                    result->rows[i].values[pres_state_col].type = DB_STRING;
+                    result->rows[i].values[pres_state_col].nul = 0;
+                    result->rows[i].values[pres_state_col].free = 0;
+                    result->rows[i].values[pres_state_col].val.string_val = (char *) pkg_malloc(strlen(buf)+1);
+                    strcpy((char *) result->rows[i].values[pres_state_col].val.string_val, buf);
+
+                    result->rows[i].values[auth_state_col].type = DB_INT;
+                    result->rows[i].values[auth_state_col].nul = 0;
+                    result->rows[i].values[auth_state_col].free = 0;
+                    result->rows[i].values[auth_state_col].val.int_val = 2;
+
+                    i++;
+                }
+            }
+            break;
+		}
+	}
+	LM_DBG("node count = %d, result->n=%d", count, result->n);
+	return result;
+
+}
+
+void extractSipUsername(char * uri, char * username)
+{
+    char * savedPtr;
+    char buf[512];
+    strncpy(buf, uri, 511);
+    strncpy(username, buf, 511);
+    char * t = strtok_r(buf, ":@", &savedPtr);
+    if (t) {
+        if (strcmp(t, "sip") == 0) {
+            t = strtok_r(NULL, ":@", &savedPtr);
+            if (t) {
+                strncpy(username, t, 511);
+            }
+        }
+        else {
+            strncpy(username, t, 511);
+        }
+    }
+}
