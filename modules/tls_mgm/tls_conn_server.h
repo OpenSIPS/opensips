@@ -418,8 +418,6 @@ static int tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 		goto error;
 	}
 
-	lock_get(&c->write_lock);
-
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
 
@@ -470,7 +468,6 @@ again:
 		/*
 		* successful full write
 		*/
-		lock_release(&c->write_lock);
 		return written;
 	}
 
@@ -512,7 +509,6 @@ poll_loop:
 	}
 
 error:
-	lock_release(&c->write_lock);
 	return -1;
 }
 

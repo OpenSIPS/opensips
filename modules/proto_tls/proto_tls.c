@@ -110,7 +110,12 @@ static int proto_tls_send(struct socket_info* send_sock,
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
 {
-	return tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	int ret;
+
+	lock_get(&c->write_lock);
+	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	lock_release(&c->write_lock);
+	return ret;
 }
 
 /* buffer to be used for reading all TCP SIP messages
@@ -343,7 +348,9 @@ static int proto_tls_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
+	lock_get(&c->write_lock);
 	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	lock_release(&c->write_lock);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
