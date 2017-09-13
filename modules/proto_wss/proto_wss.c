@@ -460,7 +460,6 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		}
 		ret += n;
 	}
-	lock_release(&c->write_lock);
 #else
 	n = 0;
 	for (i = 0; i < iovcnt; i++)
@@ -477,10 +476,9 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 	}
 	lock_get(&c->write_lock);
 	n = tls_blocking_write(c, fd, buf, n, &tls_mgm_api);
-	lock_release(&c->write_lock);
-
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:
+	lock_release(&c->write_lock);
 	return ret;
 }
