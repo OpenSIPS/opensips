@@ -76,6 +76,7 @@ char* get_auth_string(int flag);
 int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 		str* multipart_body, subs_t* subs, unsigned int hash_code);
 int rls_send_notify(subs_t* subs,str* body, str* start_cid, str* boundary_string);
+void extractSipUsername(char * uri, char * username);
 
 extern char* global_instance_id;
 
