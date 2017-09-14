@@ -126,7 +126,7 @@ case $DBENGINE in
 			USED_DBENGINE="sqlite"
 			DBNAME=$DB_PATH
 		else
-			merr "could not load the script in $MYLIBDIR/opensipsdbctl.db_berkeley for database engine $DBENGINE"
+			merr "could not load the script in $MYLIBDIR/opensipsdbctl.sqlite for database engine $DBENGINE"
 		fi
 		;;
 
