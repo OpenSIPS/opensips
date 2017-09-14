@@ -339,6 +339,10 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 
 		if(cmp_code== 0)
 		{
+            char username[512];
+            extractSipUsername(uri, username);
+            name_node = xmlNewChild(resource_node, NULL, BAD_CAST "name", BAD_CAST username);
+
 			instance_node= xmlNewChild(resource_node, NULL,
 					BAD_CAST "instance", NULL);
 			if(instance_node== NULL)
