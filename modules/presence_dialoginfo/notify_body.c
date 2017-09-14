@@ -432,11 +432,33 @@ error:
 	return NULL;
 }
 
+/* uri = sip:username@host */
+void extractSipUsername(char * uri, char * username)
+{
+    char * savedPtr;
+    char buf[512];
+    strncpy(buf, uri, 511);
+    strncpy(username, buf, 511);
+    char * t = strtok_r(buf, ":@", &savedPtr);
+    if (t) {
+        if (strcmp(t, "sip") == 0) {
+            t = strtok_r(NULL, ":@", &savedPtr);
+            if (t) {
+                strncpy(username, t, 511);
+            }
+        }
+        else {
+            strncpy(username, t, 511);
+        }
+    }
+}
+
 static str* _build_empty_dialoginfo(const char* pres_uri_char, str* extra_hdrs)
 {
 	str* nbody= 0;
 	xmlDocPtr doc = NULL;
 	xmlNodePtr node;
+    xmlNodePtr dialog_node= NULL, remote_node= NULL, local_node=NULL, identity_node=NULL;
 
 	nbody= (str*) pkg_malloc(sizeof(str));
 	if(nbody== NULL)
@@ -465,6 +487,38 @@ static str* _build_empty_dialoginfo(const char* pres_uri_char, str* extra_hdrs)
 	xmlNewProp(node, BAD_CAST "state",   BAD_CAST "full");
 
 	xmlNewProp(node, BAD_CAST "entity", BAD_CAST pres_uri_char);
+
+	dialog_node= xmlNewChild(node, NULL, BAD_CAST "dialog", NULL);
+    if(dialog_node== NULL)
+    {
+        LM_ERR("while adding dialog child\n");
+        goto error;
+    }
+	xmlNewProp(dialog_node, BAD_CAST "id", BAD_CAST "zxcnm3");
+	xmlNewProp(dialog_node, BAD_CAST "direction", BAD_CAST "receiver");
+    xmlNewChild(dialog_node, NULL, BAD_CAST "state", BAD_CAST "terminated");
+    remote_node = xmlNewChild(dialog_node, NULL, BAD_CAST "remote", NULL);
+    if(remote_node== NULL)
+    {
+        LM_ERR("while adding remote child\n");
+        goto error;
+    }
+    local_node = xmlNewChild(remote_node, NULL, BAD_CAST "local", NULL);
+    if(local_node== NULL)
+    {
+        LM_ERR("while adding local child\n");
+        goto error;
+    }
+
+    identity_node = xmlNewChild(local_node, NULL, BAD_CAST "identity", BAD_CAST pres_uri_char);
+    if(identity_node== NULL)
+    {
+        LM_ERR("while adding identity child\n");
+        goto error;
+    }
+    char username[512];
+    extractSipUsername((char *) pres_uri_char, username);
+	xmlNewProp(identity_node, BAD_CAST "display", BAD_CAST username);
 
 	xmlDocDumpMemory(doc,(xmlChar**)(void*)&nbody->s,
 		&nbody->len);
@@ -503,3 +557,4 @@ str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
 
 	return ret;
 }
+
