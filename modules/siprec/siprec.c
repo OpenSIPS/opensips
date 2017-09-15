@@ -40,8 +40,6 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		char *_rtp, char *_grp);
 static int fixup_srec_engage(void **param, int param_no);
 static int free_fixup_srec_engage(void **param, int param_no);
-static struct mi_root* mi_example(struct mi_root* cmd_tree, void* param);
-static stat_var *example_stat = 0;
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -73,22 +71,9 @@ static cmd_export_t cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
-/* exported statistics */
-static stat_export_t stats[] = {
-	{"example", STAT_NO_RESET, &example_stat},
-	{0,0,0}
-};
-
 /* exported parameters */
 static param_export_t params[] = {
 	{0, 0, 0}
-};
-
-/* exported MI commands */
-static mi_export_t mi_cmds[] = {
-	{ "example", "dummy MI function used as an example",
-		mi_example, 0, 0, 0},
-	{ 0, 0, 0, 0, 0, 0}
 };
 
 /* module exports */
@@ -101,8 +86,8 @@ struct module_exports exports = {
 	cmds,							/* exported functions */
 	0,								/* exported async functions */
 	params,							/* exported parameters */
-	stats,							/* exported statistics */
-	mi_cmds,						/* exported MI functions */
+	0,								/* exported statistics */
+	0,								/* exported MI functions */
 	0,								/* exported pseudo-variables */
 	0,								/* extra processes */
 	0,								/* extra transformations */
@@ -307,20 +292,3 @@ session_cleanup:
 	src_free_session(ss);
 	return ret;
 }
-
-/*
- * example of an MI function
- */
-static struct mi_root* mi_example(struct mi_root* cmd_tree, void* param)
-{
-	struct mi_node *node = cmd_tree->node.kids;
-	int i;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-	for (i = 1; node; node = node->next, i++)
-		LM_DBG("MI parameter no. %d is %.*s\n", i,
-				node->value.len, node->value.s);
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-}
-
-
