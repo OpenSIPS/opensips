@@ -315,7 +315,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	SIPREC_REF(sess);
 	sess->dlg = dlg;
 
-	if (srec_terminate_callback(sess) < 0) {
+	if (srec_register_callbacks(sess) < 0) {
 		LM_ERR("cannot register callback for terminating session\n");
 		SIPREC_UNREF(sess);
 		goto error;

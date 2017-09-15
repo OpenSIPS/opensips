@@ -54,6 +54,9 @@ struct src_part {
 	struct list_head streams;
 };
 
+#define SIPREC_STARTED	(1<<0)
+#define SIPREC_DLG_CBS	(1<<1)
+
 struct src_sess {
 
 	/* media */
@@ -76,7 +79,7 @@ struct src_sess {
 
 	/* internal */
 	int ref;
-	int started;
+	unsigned flags;
 	gen_lock_t lock;
 	struct dlg_cell *dlg;
 

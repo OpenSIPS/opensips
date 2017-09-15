@@ -44,6 +44,7 @@ struct src_part;
 
 struct srs_sdp_stream {
 	int label;
+	int port;
 	int medianum;
 	str body;
 	siprec_uuid uuid;
@@ -52,8 +53,8 @@ struct srs_sdp_stream {
 
 void srs_free_stream(struct srs_sdp_stream *stream);
 
-int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
-		struct src_part *part);
+int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
+		struct src_part *part, int update);
 int srs_add_raw_sdp_stream(int label, int medianum, str *body,
 		siprec_uuid *uuid, struct src_sess *sess, struct src_part *part);
 int srs_build_body(struct src_sess *sess, str *body, int type);

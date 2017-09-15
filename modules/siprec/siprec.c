@@ -263,7 +263,7 @@ static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
-	if (srs_add_sdp_stream(msg, ss, &ss->participants[0]) < 0) {
+	if (srs_fill_sdp_stream(msg, ss, &ss->participants[0], 0) < 0) {
 		LM_ERR("cannot add SDP for caller!\n");
 		goto session_cleanup;
 	}

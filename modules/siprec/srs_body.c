@@ -59,7 +59,21 @@ static struct srs_sdp_stream *srs_get_stream(struct src_sess *ss, int label, int
 void srs_free_stream(struct srs_sdp_stream *stream)
 {
 	list_del(&stream->list);
+	if (stream->body.s)
+		shm_free(stream->body.s);
 	shm_free(stream);
+}
+
+static struct srs_sdp_stream *srs_get_part_stream(struct src_part *part, int medianum)
+{
+	struct list_head *it;
+	struct srs_sdp_stream *stream;
+	list_for_each(it, &part->streams) {
+		stream = list_entry(it, struct srs_sdp_stream, list);
+		if (stream->medianum == medianum)
+			return stream;
+	}
+	return NULL;
 }
 
 /*
@@ -94,13 +108,18 @@ int srs_add_raw_sdp_stream(int label, int medianum, str *body,
 {
 	struct srs_sdp_stream *stream = NULL;
 
-	stream = shm_malloc(sizeof *stream + body->len);
+	stream = shm_malloc(sizeof *stream);
 	if (!stream) {
 		LM_ERR("cannot allocate memory for new stream!\n");
 		return -1;
 	}
 	memset(stream, 0, sizeof *stream);
-	stream->body.s = (char *)stream + (sizeof *stream);
+	stream->body.s = shm_malloc(body->len);
+	if (!stream->body.s) {
+		LM_ERR("cannot add body for the loaded stream!\n");
+		shm_free(stream);
+		return -1;
+	}
 	stream->label = label;
 	stream->medianum = medianum;
 	memcpy(stream->body.s, body->s, body->len);
@@ -113,8 +132,8 @@ int srs_add_raw_sdp_stream(int label, int medianum, str *body,
 	return 0;
 }
 
-int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
-		struct src_part *part)
+int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
+		struct src_part *part, int update)
 {
 	char sdp_type;
 	char *tmps;
@@ -128,6 +147,7 @@ int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 	int streams_no = 0;
 	int medianum = 0;
 	int label;
+	int stream_port;
 
 	struct srs_sdp_stream *stream = NULL;
 
@@ -189,6 +209,18 @@ int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 			end = start + msg_stream->body.len;
 
 			media_inactive = msg_stream->is_on_hold ? 1: 0;
+			medianum++;
+
+			if (update) {
+				stream = srs_get_part_stream(part, medianum);
+				if (!stream) {
+					LM_ERR("cannot find stream for medianum = %d\n", medianum);
+					goto stream_error;
+				}
+				stream_port = stream->port;
+			} else {
+				stream_port = port++;
+			}
 
 			while ((sdp_type = srs_get_sdp_line(start, end, &line)) != 0) {
 				switch (sdp_type) {
@@ -205,7 +237,7 @@ int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 					media_buf.len += msg_stream->port.s - line.s;
 
 					/* port */
-					tmps = int2str(port++, &tmp_len);
+					tmps = int2str(stream_port, &tmp_len);
 					memcpy(media_buf.s + media_buf.len, tmps, tmp_len);
 					media_buf.len += tmp_len;
 					media_buf.s[media_buf.len++] = ' ';
@@ -229,8 +261,10 @@ int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 					else if (line.len > 2 /* a= */ + 8 + 1/* \r */ &&
 							(line.s[10] == '\r' || line.s[10] == '\n')) {
 						if (memcmp(line.s + 2, "sendrecv", 8) == 0 ||
-								memcmp(line.s + 2, "sendonly", 8) == 0)
+								memcmp(line.s + 2, "sendonly", 8) == 0) {
+							media_inactive = 0;
 							break;
+						}
 						if (memcmp(line.s + 2, "recvonly", 8) == 0 ||
 								memcmp(line.s + 2, "inactive", 8) == 0) {
 							media_inactive = 1;
@@ -246,26 +280,45 @@ int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 				}
 				start += line.len;
 			}
+
+			if (update) {
+				/* get the stream from the participant */
+				if (stream->body.s) {
+					shm_free(stream->body.s);
+					stream->body.s = NULL;
+				}
+				label = stream->label;
+			} else {
+
+				stream = shm_malloc(sizeof *stream);
+				if (!stream) {
+					LM_ERR("cannot alloc new stream!\n");
+					goto stream_error;
+				}
+				memset(stream, 0, sizeof *stream);
+
+				stream->medianum = medianum;
+
+				/* initialize uuid */
+				siprec_build_uuid(stream->uuid);
+				stream->port = stream_port;
+
+				label = sess->streams_no + 1;
+				/* all good, add it into the sdp */
+				stream->label = label;
+			}
 			/* compute the extra length of the stream */
 			tmp_len = 12/* a=inactive\r\n or a=sendonly\r\n */;
-			label = ++sess->streams_no;
 			tmps = int2str(label, &label_len);
 			tmp_len += 8 /* a=label: */ + label_len + 2 /* \r\n */;
 
 			/* create a new stream to dump all data into */
-			stream = shm_malloc(sizeof *stream +
-					globals_buf.len + media_buf.len + tmp_buf.len + tmp_len);
-			if (!stream) {
-				LM_ERR("cannot alloc new stream!\n");
-				pkg_free(allocated_buf);
-				/* revert label changes */
-				--sess->streams_no;
-				return -1;
+			stream->body.s = shm_malloc(globals_buf.len +
+					media_buf.len + tmp_buf.len + tmp_len);
+			if (!stream->body.s) {
+				LM_ERR("cannot alloc new body for stream!\n");
+				goto stream_error;
 			}
-			memset(stream, 0, sizeof *stream);
-
-			stream->body.s = (char *)stream + (sizeof *stream);
-			stream->medianum = ++medianum;
 
 			/* m line */
 			memcpy(stream->body.s, media_buf.s, media_buf.len);
@@ -292,17 +345,19 @@ int srs_add_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 				memcpy(stream->body.s + stream->body.len, "sendonly\r\n", 10);
 			stream->body.len += 10;
 
-			/* initialize uuid */
-			siprec_build_uuid(stream->uuid);
+			if (!update) {
+				list_add_tail(&stream->list, &part->streams);
+				sess->streams_no++;
+			}
 
-			/* all good, add it into the sdp */
-			stream->label = label;
-			list_add_tail(&stream->list, &part->streams);
 			streams_no++;
 		}
 		pkg_free(allocated_buf);
 	}
 	return streams_no;
+stream_error:
+	pkg_free(allocated_buf);
+	return -1;
 }
 
 #define OSS_BOUNDARY_HDR CRLF "--" OSS_BOUNDARY CRLF
