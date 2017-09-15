@@ -73,6 +73,8 @@ static cmd_export_t cmds[] = {
 
 /* exported parameters */
 static param_export_t params[] = {
+	{"media_port_min",   INT_PARAM, &siprec_port_min },
+	{"media_port_max",   INT_PARAM, &siprec_port_max },
 	{0, 0, 0}
 };
 
@@ -103,6 +105,11 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_DBG("initializing siprec module ...\n");
+
+	if (srs_init() < 0) {
+		LM_ERR("cannot initialize srs structures!\n");
+		return -1;
+	}
 
 	if (load_dlg_api(&srec_dlg) != 0) {
 		LM_ERR("dialog module not loaded! Cannot use siprec module\n");

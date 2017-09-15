@@ -34,9 +34,56 @@
 
 struct rtpproxy_binds srec_rtp;
 
-/* TODO handle port */
-static int port = 10000;
+int siprec_port_min = 35000;
+int siprec_port_max = 65000;
+int *siprec_port;
+gen_lock_t *siprec_port_lock;
 
+int srs_init(void)
+{
+	int tmp;
+	if (siprec_port_min < 0 || siprec_port_min > 65535) {
+		LM_ERR("invalid minimum port value %d\n", siprec_port_min);
+		return -1;
+	}
+	if (siprec_port_max < 0 || siprec_port_max > 65535) {
+		LM_ERR("invalid maximum port value %d\n", siprec_port_max);
+		return -1;
+	}
+	if (siprec_port_max < siprec_port_min) {
+		LM_NOTICE("port_max < port_min - swaping their values!");
+		tmp = siprec_port_min;
+		siprec_port_min = siprec_port_max;
+		siprec_port_max = tmp;
+	}
+
+	siprec_port = shm_malloc(sizeof *siprec_port);
+	if (!siprec_port) {
+		LM_ERR("cannot alloc siprec port!\n");
+		return -1;
+	}
+	*siprec_port = siprec_port_min;
+
+	siprec_port_lock = lock_alloc();
+	if (!siprec_port_lock) {
+		LM_ERR("cannot alloc siprec port lock!\n");
+		shm_free(siprec_port);
+		return -1;
+	}
+	lock_init(siprec_port_lock);
+	return 0;
+}
+
+static int srs_new_port(void)
+{
+	int port;
+	lock_get(siprec_port_lock);
+	if ((*siprec_port)++ >= siprec_port_max)
+		*siprec_port = siprec_port_min;
+	port = *siprec_port;
+	lock_release(siprec_port_lock);
+	return port;
+}
 
 static struct srs_sdp_stream *srs_get_stream(struct src_sess *ss, int label, int *part)
 {
@@ -219,7 +266,7 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 				}
 				stream_port = stream->port;
 			} else {
-				stream_port = port++;
+				stream_port = srs_new_port();
 			}
 
 			while ((sdp_type = srs_get_sdp_line(start, end, &line)) != 0) {

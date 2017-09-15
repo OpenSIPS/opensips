@@ -429,11 +429,11 @@ void srec_logic_destroy(struct src_sess *sess)
 	info.totag = sess->b2b_totag;
 	info.callid = sess->b2b_callid;
 	srec_b2b.entity_delete(B2B_CLIENT, &sess->b2b_key, &info, 1);
-	if (sess->b2b_fromtag.s);
+	if (sess->b2b_fromtag.s)
 		shm_free(sess->b2b_fromtag.s);
-	if (sess->b2b_totag.s);
+	if (sess->b2b_totag.s)
 		shm_free(sess->b2b_totag.s);
-	if (sess->b2b_callid.s);
+	if (sess->b2b_callid.s)
 		shm_free(sess->b2b_callid.s);
 	shm_free(sess->b2b_key.s);
 }
