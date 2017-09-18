@@ -74,8 +74,6 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 
 db_res_t * build_db_result(xmlNodePtr list_node, int col_num);
 
-void extractSipUsername(char * uri, char * username);
-
 int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl_uri,
 		unsigned int hash_code)
 {
@@ -339,6 +337,10 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 
 		if(cmp_code== 0)
 		{
+            char username[512];
+            extractSipUsername(uri, username);
+            xmlNewChild(resource_node, NULL, BAD_CAST "name", BAD_CAST username);
+
 			instance_node= xmlNewChild(resource_node, NULL,
 					BAD_CAST "instance", NULL);
 			if(instance_node== NULL)

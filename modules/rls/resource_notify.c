@@ -689,6 +689,10 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 		while(1)
 		{
+            char username[512];
+            extractSipUsername(resource_uri, username);
+            xmlNewChild(resource_node, NULL, BAD_CAST "name", BAD_CAST username);
+
 			cid.s = NULL;
 			cid.len = 0;
 			instance_node= xmlNewChild(resource_node, NULL, BAD_CAST "instance", NULL);
