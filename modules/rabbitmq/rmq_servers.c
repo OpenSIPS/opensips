@@ -87,7 +87,7 @@ static inline int rmq_parse(char *url, rmq_uri *uri)
 }
 #endif
 
-static LIST_HEAD(rmq_servers);
+static OSIPS_LIST_HEAD(rmq_servers);
 
 enum rmq_func_param_type { RMQT_SERVER, RMQT_PVAR };
 struct rmq_func_param {
