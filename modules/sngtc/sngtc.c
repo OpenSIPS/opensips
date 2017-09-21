@@ -172,6 +172,7 @@ struct module_exports exports= {
 	0,
 	0,
 	0,
+	0,				/* exported transformations */
 	procs,
 	mod_init,
 	(response_function) 0,

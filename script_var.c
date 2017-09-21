@@ -117,7 +117,7 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 			}
 			var->v.flags = VAR_VAL_STR;
 		}
-		strncpy(var->v.value.s.s, value->s.s, value->s.len);
+		memcpy(var->v.value.s.s, value->s.s, value->s.len);
 		var->v.value.s.len = value->s.len;
 		var->v.value.s.s[value->s.len] = '\0';
 	} else {

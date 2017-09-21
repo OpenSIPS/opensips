@@ -230,6 +230,10 @@ static int cgr_proc_stop_acc_reply(struct cgr_conn *c, json_object *jobj,
 		void *p, char *error)
 {
 	if (error) {
+		/* suppress SESSION_NOT_FOUND error for terminate, because most likely
+		 * it comes for a postpaid account */
+		if (strcmp(error, "SESSION_NOT_FOUND") == 0)
+			return 1;
 		LM_ERR("got CDR error: %s\n", error);
 		return -1;
 	}
@@ -488,6 +492,11 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 
 	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
 		LM_ERR("cannot add Account node\n");
+		goto error;
+	}
+
+	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
+		LM_ERR("cannot add Destination node\n");
 		goto error;
 	}
 
@@ -1119,8 +1128,9 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 			continue;
 		}
 
-		if (cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx) < 0)
-			continue;
+		/* CDRs should be generated regardless the Terminate status -
+		 * therefore we should not exit if any errors occur */
+		cgr_handle_cmd(_params->msg, jmsg, cgr_proc_stop_acc_reply, ctx);
 
 		if (si->flags & CGRF_DO_CDR) {
 			/* if it's not a local transaction we do the accounting on the tm callbacks */
@@ -1207,7 +1217,7 @@ int cgr_acc_terminate(json_object *param, json_object **ret)
 	}
 	if (terminate_str.s != terminate_str_pre.s)
 		pkg_free(terminate_str.s);
-	*ret = json_object_new_int(0);
+	*ret = json_object_new_string("OK");
 	return 0;
 error:
 	LM_ERR("cannot handle terminate: %s\n", err);

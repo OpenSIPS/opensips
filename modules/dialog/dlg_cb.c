@@ -127,6 +127,12 @@ int register_dlgcb(struct dlg_cell *dlg, int types, dialog_cb f,
 			return -1;
 		}
 	}
+	/* XXX: do not register callbacks in DELETED state */
+	if (dlg && dlg->state == DLG_STATE_DELETED) {
+		LM_WARN("Cannot register callbacks in DELETED state (type %x)!\n", types);
+		return -1;
+	}
+
 	cb = (struct dlg_callback*)shm_malloc(sizeof(struct dlg_callback));
 	if (cb==0) {
 		LM_ERR("no more shm mem\n");

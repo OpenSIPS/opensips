@@ -89,6 +89,7 @@ struct module_exports exports = {
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
 	0,               /* exported pseudo-variables */
+	0,				 /* exported transformations */
 	0,               /* extra processes */
 	http_mod_init,   /* module initialization function */
 	0,               /* response function*/

@@ -318,7 +318,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			if (req->new_uri.s || req->force_send_socket!=dialog->send_sock ||
 			req->dst_uri.len != dialog->hooks.next_hop->len ||
 			memcmp(req->dst_uri.s,dialog->hooks.next_hop->s,req->dst_uri.len) ||
-			(dst_changed=0)!=0 || req->add_rm || req->body_lumps){
+			(dst_changed=0)!=0 || req->add_rm || should_update_sip_body(req)){
 
 				new_send_sock = NULL;
 				/* do we also need to change the destination? */

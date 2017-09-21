@@ -16,6 +16,10 @@ NAME=db_berkeley.so
 SCRIPTS_DIR?=../../scripts/
 UTILS_DIR?=../../utils/
 
+
+ifeq ($(CROSS_COMPILE),)
+DB_LIB?=ldb
+else
 DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/BerkeleyDB.4.6/include \
 	-I$(SYSBASE)/include -I$(LOCALBASE)/include/db46 
 
@@ -25,9 +29,10 @@ ifeq ($(IS_BSD), yes)
 else
 	DB_LIB=ldb
 endif
+LIBS=-L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib
+endif
 
-LIBS=-L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib \
-		-$(DB_LIB)
+LIBS+=-$(DB_LIB)
 
 include ../../Makefile.modules
 

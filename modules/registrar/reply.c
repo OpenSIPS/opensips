@@ -39,9 +39,12 @@
 #include "../../parser/parse_supported.h"
 #include "../../data_lump_rpl.h"
 #include "../usrloc/usrloc.h"
+
 #include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/config.h"
+
 #include "reg_mod.h"
-#include "regtime.h"
 #include "reply.h"
 
 
@@ -101,7 +104,7 @@ static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
 {
 	int time_len,temp_gr_len;
 
-	int2str((unsigned long)act_time,&time_len);
+	int2str((unsigned long)get_act_time(),&time_len);
 	temp_gr_len = time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
 	temp_gr_len = (temp_gr_len/3 + (temp_gr_len%3?1:0))*4; /* base64 encoding */
 	return temp_gr_len;
@@ -120,7 +123,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 
 	len = 0;
 	while(c) {
-		if (VALID_CONTACT(c, act_time)) {
+		if (VALID_CONTACT(c, get_act_time())) {
 			if (len) len += CONTACT_SEP_LEN;
 			len += 2 /* < > */ + c->c.len;
 			qlen = len_q(c->q);
@@ -183,7 +186,7 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 {
 	int time_len,i;
 	char *p;
-	char *time_str = int2str((unsigned long)act_time,&time_len);
+	char *time_str = int2str((unsigned long)get_act_time(),&time_len);
 	str *magic;
 
 	*len = time_len + aor->len + instance->len + callid->len + 3 - 2; /* +3 blank spaces, -2 discarded chars of instance in memcpy below */
@@ -252,7 +255,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 
 	fl = 0;
 	while(c) {
-		if (VALID_CONTACT(c, act_time)) {
+		if (VALID_CONTACT(c, get_act_time())) {
 			if (fl) {
 				memcpy(p, CONTACT_SEP, CONTACT_SEP_LEN);
 				p += CONTACT_SEP_LEN;
@@ -275,7 +278,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 
 			memcpy(p, EXPIRES_PARAM, EXPIRES_PARAM_LEN);
 			p += EXPIRES_PARAM_LEN;
-			cp = int2str((int)(c->expires - act_time), &len);
+			cp = int2str((int)(c->expires - get_act_time()), &len);
 			memcpy(p, cp, len);
 			p += len;
 
@@ -397,75 +400,6 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 #define EI_R_PARSE_PATH  "Path parse error"                         /* R_PARSE_PATH */
 #define EI_R_PATH_UNSUP  "No support for found Path indicated"      /* R_PATH_UNSUP */
 
-str error_info[] = {
-	{EI_R_FINE,       sizeof(EI_R_FINE) - 1},
-	{EI_R_UL_DEL_R,   sizeof(EI_R_UL_DEL_R) - 1},
-	{EI_R_UL_GET_R,   sizeof(EI_R_UL_GET_R) - 1},
-	{EI_R_UL_NEW_R,   sizeof(EI_R_UL_NEW_R) - 1},
-	{EI_R_INV_CSEQ,   sizeof(EI_R_INV_CSEQ) - 1},
-	{EI_R_UL_INS_C,   sizeof(EI_R_UL_INS_C) - 1},
-	{EI_R_UL_INS_R,   sizeof(EI_R_UL_INS_R) - 1},
-	{EI_R_UL_DEL_C,   sizeof(EI_R_UL_DEL_C) - 1},
-	{EI_R_UL_UPD_C,   sizeof(EI_R_UL_UPD_C) - 1},
-	{EI_R_TO_USER,    sizeof(EI_R_TO_USER) - 1},
-	{EI_R_AOR_LEN,    sizeof(EI_R_AOR_LEN) - 1},
-	{EI_R_AOR_PARSE,  sizeof(EI_R_AOR_PARSE) - 1},
-	{EI_R_INV_EXP,    sizeof(EI_R_INV_EXP) - 1},
-	{EI_R_INV_Q,      sizeof(EI_R_INV_Q) - 1},
-	{EI_R_PARSE,      sizeof(EI_R_PARSE) - 1},
-	{EI_R_TO_MISS,    sizeof(EI_R_TO_MISS) - 1},
-	{EI_R_CID_MISS,   sizeof(EI_R_CID_MISS) - 1},
-	{EI_R_CS_MISS,    sizeof(EI_R_CS_MISS) - 1},
-	{EI_R_PARSE_EXP,  sizeof(EI_R_PARSE_EXP) - 1},
-	{EI_R_PARSE_CONT, sizeof(EI_R_PARSE_CONT) - 1},
-	{EI_R_STAR_EXP,   sizeof(EI_R_STAR_EXP) - 1},
-	{EI_R_STAR_CONT,  sizeof(EI_R_STAR_CONT) - 1},
-	{EI_R_OOO,        sizeof(EI_R_OOO) - 1},
-	{EI_R_RETRANS,    sizeof(EI_R_RETRANS) - 1},
-	{EI_R_UNESCAPE,   sizeof(EI_R_UNESCAPE) - 1},
-	{EI_R_TOO_MANY,   sizeof(EI_R_TOO_MANY) - 1},
-	{EI_R_CONTACT_LEN,sizeof(EI_R_CONTACT_LEN) - 1},
-	{EI_R_CALLID_LEN, sizeof(EI_R_CALLID_LEN) - 1},
-	{EI_R_PARSE_PATH, sizeof(EI_R_PARSE_PATH) - 1},
-	{EI_R_PATH_UNSUP, sizeof(EI_R_PATH_UNSUP) - 1}
-
-};
-
-int codes[] = {
-	200, /* R_FINE */
-	500, /* R_UL_DEL_R */
-	500, /* R_UL_GET */
-	500, /* R_UL_NEW_R */
-	400, /* R_INV_CSEQ */
-	500, /* R_UL_INS_C */
-	500, /* R_UL_INS_R */
-	500, /* R_UL_DEL_C */
-	500, /* R_UL_UPD_C */
-	400, /* R_TO_USER */
-	500, /* R_AOR_LEN */
-	400, /* R_AOR_PARSE */
-	400, /* R_INV_EXP */
-	400, /* R_INV_Q */
-	400, /* R_PARSE */
-	400, /* R_TO_MISS */
-	400, /* R_CID_MISS */
-	400, /* R_CS_MISS */
-	400, /* R_PARSE_EXP */
-	400, /* R_PARSE_CONT */
-	400, /* R_STAR_EXP */
-	400, /* R_STAR_CONT */
-	200, /* R_OOO */
-	200, /* R_RETRANS */
-	400, /* R_UNESCAPE */
-	503, /* R_TOO_MANY */
-	400, /* R_CONTACT_LEN */
-	400, /* R_CALLID_LEN */
-	400, /* R_PARSE_PATH */
-	420  /* R_PATH_UNSUP */
-
-};
-
-
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
 
@@ -565,7 +499,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 		}
 	}
 
-	code = codes[rerrno];
+	code = rerr_codes[rerrno];
 	switch(code) {
 	case 200: msg.s = MSG_200; msg.len = sizeof(MSG_200)-1; break;
 	case 400: msg.s = MSG_400; msg.len = sizeof(MSG_400)-1;break;

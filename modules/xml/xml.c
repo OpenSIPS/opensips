@@ -98,6 +98,7 @@ struct module_exports exports= {
 	0,       		 /* exported statistics */
 	0,         		 /* exported MI functions */
 	mod_items,       /* exported pseudo-variables */
+	0,				 /* exported transformations */
 	0,               /* extra processes */
 	mod_init,        /* module initialization function */
 	0,               /* reply processing function */
@@ -404,11 +405,11 @@ static xmlNode *get_node_by_path(xmlNode *root, xml_element_t *path_el)
 		}
 		if (!cur) {
 			if (i != 0) {
-				LM_NOTICE("Invalid path for xml var - bad index [%d] for element: <%.*s>\n",
+				LM_DBG("Invalid path for xml var - bad index [%d] for element: <%.*s>\n",
 					path_el->idx, path_el->tag.len, path_el->tag.s);
 				return NULL;
 			} else {
-				LM_NOTICE("Invalid path for xml var - no element named: <%.*s> \n",
+				LM_DBG("Invalid path for xml var - no element named: <%.*s> \n",
 					path_el->tag.len, path_el->tag.s);
 				return NULL;
 			}
@@ -491,7 +492,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 	if (path->elements) {
 		node = get_node_by_path(root, path->elements);
 		if (!node) {
-			LM_NOTICE("Element not found\n");
+			LM_DBG("Element not found\n");
 			return pv_get_null( msg, pvp, res);
 		}
 	} else
@@ -500,31 +501,45 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 
 	switch (path->access_mode) {
 	case ACCESS_EL:
-		xml_buf = xmlBufferCreate();
-		if (!xml_buf) {
-			LM_ERR("Unable to obtain xml buffer\n");
-			return pv_get_null( msg, pvp, res);
-		}
+		if (!path->elements) {
+			xmlDocDumpMemory(obj->xml_doc, (xmlChar **)&xml_buf_s, &xml_buf_len);
+			/* libxml seems to place an unnecessary newline at the end of the doc dump */
+			if (xml_buf_s[xml_buf_len-1] == '\n')
+				xml_buf_len--;
+		} else {
+			xml_buf = xmlBufferCreate();
+			if (!xml_buf) {
+				LM_ERR("Unable to obtain xml buffer\n");
+				return pv_get_null( msg, pvp, res);
+			}
 
-		xml_buf_len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
-		if (xml_buf_len == -1) {
-			LM_ERR("Unable to dump node to xml buffer\n");
-			goto err_free_xml_buf;
+			xml_buf_len = xmlNodeDump(xml_buf, obj->xml_doc, node, 0, 0);
+			if (xml_buf_len == -1) {
+				LM_ERR("Unable to dump node to xml buffer\n");
+				goto err_free_xml_buf;
+			}
+
+			xml_buf_s = (char *)xmlBufferContent(xml_buf);
+			if (!xml_buf_s) {
+				LM_ERR("Unable to obtain xml buffer content\n");
+				goto err_free_xml_buf;
+			}
 		}
 
 		if (pkg_str_resize(&res_buf, xml_buf_len) != 0) {
 			LM_ERR("No more pkg mem\n");
-			goto err_free_xml_buf;
+			if (xml_buf)
+				xmlBufferFree(xml_buf);
+			else
+				xmlFree(xml_buf_s);
 		}
 
-		xml_buf_s = (char *)xmlBufferContent(xml_buf);
-		if (!xml_buf_s) {
-			LM_ERR("Unable to obtain xml buffer content\n");
-			goto err_free_xml_buf;
-		}
 		memcpy(res_buf.s, xml_buf_s, xml_buf_len);
 
-		xmlBufferFree(xml_buf);
+		if (xml_buf)
+			xmlBufferFree(xml_buf);
+		else
+			xmlFree(xml_buf_s);
 
 		res->rs.s = res_buf.s;
 		res->rs.len = xml_buf_len;
@@ -564,7 +579,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 	case ACCESS_EL_ATTR:
 		attr = get_node_attr(node, path->attr);
 		if (!attr) {
-			LM_NOTICE("Attribute: %.*s not found\n", path->attr.len, path->attr.s);
+			LM_DBG("Attribute: %.*s not found\n", path->attr.len, path->attr.s);
 			return pv_get_null( msg, pvp, res);
 		}
 		res->rs.s = (char *)attr->children->content;

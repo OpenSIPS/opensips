@@ -172,7 +172,7 @@ modparam("pike", "remove_latency", 130)
 modparam("pike", "check_route", "pike")
 ...
 route[pike]{
-    if (src_ip==111.222.111.222)  /*trusted, do not check it*/
+    if ($si==111.222.111.222)  /*trusted, do not check it*/
         drop;
     /* all other IPs are checked*/
 }

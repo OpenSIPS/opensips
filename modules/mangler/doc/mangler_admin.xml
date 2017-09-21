@@ -189,7 +189,7 @@ sdp_mangle_port("-12000");
 		<title><function>encode_contact</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (src_ip == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38"); 
+if ($si == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38"); 
 ...
 </programlisting>
 		</example>
@@ -217,7 +217,7 @@ if (src_ip == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38");
 		<title><function>decode_contact</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (uri =~ "^enc*") { decode_contact(); }
+if ($ru =~ "^enc*") { decode_contact(); }
 ...
 </programlisting>
 		</example>
@@ -244,7 +244,7 @@ if (uri =~ "^enc*") { decode_contact(); }
 		<title><function>decode_contact_header</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (uri =~ "^enc*") { decode_contact_header(); }
+if ($ru =~ "^enc*") { decode_contact_header(); }
 ...
 </programlisting>
 		</example>

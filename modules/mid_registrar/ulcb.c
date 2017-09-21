@@ -35,6 +35,7 @@
 #include "../tm/tm_load.h"
 #include "../tm/dlg.h"
 #include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/regtime.h"
 
 #include "mid_registrar.h"
 
@@ -44,9 +45,6 @@ static str extra_hdrs={extra_hdrs_buf, 512};
 static int build_unregister_hdrs(struct mid_reg_info *mri)
 {
 	char *p;
-	contact_t *ct;
-	param_t *param;
-	str bak;
 
 	p = extra_hdrs.s;
 	memcpy(p, contact_hdr.s, contact_hdr.len);
@@ -54,53 +52,18 @@ static int build_unregister_hdrs(struct mid_reg_info *mri)
 
 	LM_DBG("building contact from uri '%.*s'\n", mri->ct_uri.len, mri->ct_uri.s);
 
-	if (mri->ct_body.s) {
-		bak = mri->ct_body;
+	*p++ = '<';
+	memcpy(p, mri->ct_uri.s, mri->ct_uri.len);
+	p += mri->ct_uri.len;
+	*p++ = '>';
 
-		if (parse_contacts(&bak, &ct) != 0) {
-			LM_ERR("failed to parse contact body '%.*s'\n",
-			       mri->ct_body.len, mri->ct_body.s);
-			return -1;
-		}
+	*p++ = ';';
+	memcpy(p, expires_param.s, expires_param.len);
+	p += expires_param.len;
+	*p++ = '=';
 
-		if (ct->name.len > 0)
-			p += sprintf(p, "\"%.*s\" ", ct->name.len, ct->name.s);
-
-		p += sprintf(p, "<%.*s>", ct->uri.len, ct->uri.s);
-
-		if (ct->expires) {
-			ct->expires->body.s = "0";
-			ct->expires->body.len = 1;
-		}
-
-		for (param = ct->params; param; param = param->next) {
-			*p++ = ';';
-			memcpy(p, param->name.s, param->name.len);
-			p += param->name.len;
-			if (param->body.len > 0) {
-				*p++ = '=';
-				memcpy(p, param->body.s, param->body.len);
-				p += param->body.len;
-			}
-		}
-
-		p += sprintf(p, "%s\r\n", ct->expires ? "" : ";expires=0");
-
-		free_contacts(&ct);
-	} else {
-		*p++ = '<';
-		memcpy(p, mri->ct_uri.s, mri->ct_uri.len);
-		p += mri->ct_uri.len;
-		*p++ = '>';
-
-		*p++ = ';';
-		memcpy(p, expires_param.s, expires_param.len);
-		p += expires_param.len;
-		*p++ = '=';
-
-		*p++ = '0';
-		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
-	}
+	*p++ = '0';
+	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
 
 	extra_hdrs.len = (int)(p - extra_hdrs.s);
 	LM_DBG("extra hdrs: '%.*s'\n", extra_hdrs.len, extra_hdrs.s);
@@ -119,7 +82,7 @@ static int unregister_contact(struct mid_reg_info *mri)
 	int ret;
 
 	/* create a mystical dialog in preparation for our De-REGISTER */
-	if (tm_api.new_auto_dlg_uac(&mri->from, &mri->to, &mri->next_hop,
+	if (tm_api.new_auto_dlg_uac(&mri->from, &mri->to, &mri->main_reg_uri,
 	    &mri->callid, NULL, &dlg)) {
 		LM_ERR("failed to create new TM dlg\n");
 		return -1;
@@ -148,50 +111,65 @@ static int unregister_contact(struct mid_reg_info *mri)
 void mid_reg_ct_event(void *binding, int type, void **data)
 {
 	ucontact_t *c = (ucontact_t *)binding;
-	struct mid_reg_info *mri;
+	struct mid_reg_info *mri, *update;
 
-	if (data == NULL)
+	if (!data)
 		return;
 
-	mri = *(struct mid_reg_info **)data;
+	update = get_ct();
 
 	LM_DBG("Contact callback (%d): contact='%.*s' | "
 	       "param=(%p -> %p) | data[%d]=(%p)\n", type, c->c.len, c->c.s, data,
 	       data ? *data : NULL, ucontact_data_idx,
 	       c->attached_data[ucontact_data_idx]);
 
-	if (type & UL_CONTACT_INSERT)
+	if (type & UL_CONTACT_INSERT) {
 		*data = get_ct();
+	} else {
+		mri = *(struct mid_reg_info **)data;
+		if (!mri)
+			return;
 
-	if (type & UL_CONTACT_UPDATE) {
-		LM_DBG("settting e_out to %d\n", get_ct()->expires_out);
-		mri->expires_out = get_ct()->expires_out;
-	}
-
-	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
-		if (reg_mode == MID_REG_THROTTLE_CT)
-			if (unregister_contact(mri) != 0)
-				LM_ERR("failed to unregister contact\n");
-		mri_free(mri);
+		if (type & UL_CONTACT_UPDATE) {
+			if (update) {
+				LM_DBG("setting e_out to %d\n", update->expires_out);
+				mri->expires_out = update->expires_out;
+				mri->last_reg_ts = get_act_time();
+			}
+		} else if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
+			if (reg_mode == MID_REG_THROTTLE_CT) {
+				if (!mri->skip_dereg && unregister_contact(mri) != 0) {
+					LM_ERR("failed to unregister contact\n");
+				}
+			}
+			mri_free(mri);
+		}
 	}
 }
 
 void mid_reg_aor_event(void *binding, int type, void **data)
 {
 	urecord_t *r = (urecord_t *)binding;
-	struct mid_reg_info *mri = *(struct mid_reg_info **)data;
+	struct mid_reg_info *mri;
+
+	if (!data)
+		return;
 
 	LM_DBG("AOR callback (%d): contact='%.*s' | "
 	       "param=(%p -> %p) | data[%d]=(%p)\n", type,
 	       r->aor.len, r->aor.s, data, data ? *data : NULL,
 	       urecord_data_idx, r->attached_data[urecord_data_idx]);
 
-	if (type & UL_AOR_INSERT)
+	if (type & UL_AOR_INSERT) {
 		*data = get_ct();
+	} else if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
+		mri = *(struct mid_reg_info **)data;
+		if (!mri)
+			return;
 
-	if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
-		if (unregister_contact(mri) != 0)
+		if (!mri->skip_dereg && unregister_contact(mri) != 0)
 			LM_ERR("failed to unregister contact\n");
+
 		mri_free(mri);
 	}
 }

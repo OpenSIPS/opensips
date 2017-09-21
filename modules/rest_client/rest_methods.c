@@ -616,7 +616,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	mrc = curl_multi_remove_handle(multi_handle, param->handle);
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
-		/* default async status is DONE */
+		/* default async status is ASYNC_DONE */
 		return -1;
 	}
 	put_multi(param->multi_list);
@@ -657,7 +657,7 @@ out:
 	}
 	pkg_free(param);
 
-	/* default async status is DONE */
+	/* default async status is ASYNC_DONE */
 	return ret;
 }
 

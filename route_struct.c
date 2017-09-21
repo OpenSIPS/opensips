@@ -149,30 +149,6 @@ void print_expr(struct expr* exp)
 	}
 	if (exp->type==ELEM_T){
 		switch(exp->left.type){
-			case METHOD_O:
-				LM_GEN1(L_DBG, "method");
-				break;
-			case URI_O:
-				LM_GEN1(L_DBG, "uri");
-				break;
-			case FROM_URI_O:
-				LM_GEN1(L_DBG, "from_uri");
-				break;
-			case TO_URI_O:
-				LM_GEN1(L_DBG, "to_uri");
-				break;
-			case SRCIP_O:
-				LM_GEN1(L_DBG, "srcip");
-				break;
-			case SRCPORT_O:
-				LM_GEN1(L_DBG, "srcport");
-				break;
-			case DSTIP_O:
-				LM_GEN1(L_DBG, "dstip");
-				break;
-			case DSTPORT_O:
-				LM_GEN1(L_DBG, "dstport");
-				break;
 			case SCRIPTVAR_O:
 				LM_GEN1(L_DBG, "scriptvar[%d]",
 					(exp->left.v.spec)?exp->left.v.spec->type:0);
@@ -276,9 +252,6 @@ void print_expr(struct expr* exp)
 					break;
 			case NUMBER_ST:
 					LM_GEN1(L_DBG, "%d",exp->right.v.n);
-					break;
-			case MYSELF_ST:
-					LM_GEN1(L_DBG, "_myself_");
 					break;
 			case SCRIPTVAR_ST:
 					LM_GEN1(L_DBG, "scriptvar[%d]", exp->right.v.spec->type);

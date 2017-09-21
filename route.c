@@ -67,9 +67,6 @@
 #include "resolve.h"
 #include "socket_info.h"
 #include "blacklists.h"
-#include "parser/parse_uri.h"
-#include "parser/parse_from.h"
-#include "parser/parse_to.h"
 #include "mem/mem.h"
 #include "xlog.h"
 #include "evi/evi_modules.h"
@@ -257,6 +254,7 @@ static int fix_actions(struct action* a)
 	str s;
 	pv_elem_t *model=NULL;
 	pv_elem_t *models[5];
+	pv_spec_p sp = NULL;
 	xl_level_p xlp;
 	event_id_t ev_id;
 
@@ -869,7 +867,52 @@ static int fix_actions(struct action* a)
 					ret=E_BUG;
 					goto error;
 				}
+				break;
+			case IS_MYSELF_T:
+				s.s = (char*)t->elem[0].u.data;
+				s.len = strlen(s.s);
+				if(s.len == 0) {
+					LM_ERR("param 1 is empty string!\n");
+					return E_CFG;
+				}
 
+				if(pv_parse_format(&s ,&model) || model == NULL) {
+						LM_ERR("wrong format [%s] for value param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+				}
+				t->elem[0].u.data = (void*)model;
+				t->elem[0].type = SCRIPTVAR_ELEM_ST;
+
+				s.s = (char *)t->elem[1].u.data;
+				if (s.s == NULL)
+					break;
+
+				s.len = strlen(s.s);
+				if(s.len == 0) {
+					LM_ERR("param 2 is empty string!\n");
+					return E_CFG;
+				}
+				if (s.s[0] == PV_MARKER) {
+					sp = pkg_malloc(sizeof *sp);
+					if (!sp) {
+						LM_ERR("No more pkg memory\n");
+						return E_BUG;
+					}
+					if (pv_parse_spec(&s, sp) == NULL) {
+						LM_ERR("Unable to parse port paremeter var\n");
+						return E_BUG;
+					}
+					t->elem[1].u.data = (void*)sp;
+					t->elem[1].type = SCRIPTVAR_ST;
+				} else {
+					if (str2int(&s, (unsigned int *)&port) < 0) {
+						LM_ERR("port parameter should be a number\n");
+						return E_CFG;
+					}
+					t->elem[1].u.number = port;
+					t->elem[1].type = NUMBER_ST;
+				}
 		}
 	}
 	return 0;
@@ -1065,94 +1108,28 @@ inline static int check_self_op(int op, str* s, unsigned short p)
 }
 
 
-/*! \brief eval_elem helping function, returns an op param */
-inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
-		operand_t *opd)
+/*! \brief comp_scriptvar helping function */
+inline static int comp_ip(int op, str *ip_str, struct net *ipnet)
 {
-	struct hostent* he;
-	char ** h;
-	int ret;
-	str tmp;
+	struct ip_addr *ip_tmp = NULL;
 
-	ret=-1;
-	switch(opd->type){
-		case NET_ST:
-			switch(op){
-				case EQUAL_OP:
-					ret=(matchnet(ip, (struct net*)opd->v.data)==1);
-					break;
-				case DIFF_OP:
-					ret=(matchnet(ip, (struct net*)opd->v.data)!=1);
-					break;
-				default:
-					goto error_op;
-			}
-			break;
-		case STR_ST:
-		case RE_ST:
-			switch(op){
-				case EQUAL_OP:
-				case MATCH_OP:
-					/* 1: compare with ip2str*/
-					ret=comp_str(ip_addr2a(ip), opd->v.data, op, opd->type);
-					if (ret==1) break;
-					/* 2: resolve (name) & compare w/ all the ips */
-					if (opd->type==STR_ST){
-						he=resolvehost((char*)opd->v.data,0);
-						if (he==0){
-							LM_DBG("could not resolve %s\n",(char*)opd->v.data);
-						}else if (he->h_addrtype==(int)ip->af){
-							for(h=he->h_addr_list;(ret!=1)&& (*h); h++){
-								ret=(memcmp(ip->u.addr, *h, ip->len)==0);
-							}
-							if (ret==1) break;
-						}
-					}
-					/* 3: (slow) rev dns the address
-					* and compare with all the aliases
-					* !!??!! review: remove this? */
-					if(received_dns & DO_REV_DNS)
-					{
-						he=rev_resolvehost(ip);
-						if (he==0){
-							print_ip("could not rev_resolve ip address: ",
-								 ip, "\n");
-							ret=0;
-						}else{
-							/*  compare with primary host name */
-							ret=comp_str(he->h_name, opd->v.data, op,
-									opd->type);
-							/* compare with all the aliases */
-							for(h=he->h_aliases; (ret!=1) && (*h); h++){
-								ret=comp_str(*h, opd->v.data, op, opd->type);
-							}
-						}
-					} else {
-						return 0;
-					}
-					break;
-				case DIFF_OP:
-					ret=comp_ip(msg, MATCH_OP, ip, opd);
-					if (ret>=0) ret=!ret;
-					break;
-				default:
-					goto error_op;
-			}
-			break;
-		case MYSELF_ST: /* check if it's one of our addresses*/
-			tmp.s=ip_addr2a(ip);
-			tmp.len=strlen(tmp.s);
-			ret=check_self_op(op, &tmp, 0);
-			break;
-		default:
-			LM_CRIT("invalid type for src_ip or dst_ip (%d)\n", opd->type);
-			ret=-1;
+	ip_tmp = str2ip(ip_str);
+	if (!ip_tmp) {
+		ip_tmp = str2ip6(ip_str);
+		if (!ip_tmp) {
+			LM_DBG("Var value is not an IP\n");
+			return -1;
+		}
 	}
-	return ret;
-error_op:
-	LM_CRIT("invalid operator %d\n", op);
-	return -1;
 
+	if (op == EQUAL_OP) {
+		return (matchnet(ip_tmp, ipnet) == 1);
+	} else if (op == DIFF_OP) {
+		return (matchnet(ip_tmp, ipnet) != 1);
+	} else {
+		LM_CRIT("invalid operator %d\n", op);
+		return -1;
+	}
 }
 
 /*! \brief compare str to str */
@@ -1361,8 +1338,6 @@ static inline const char *expr_type_2_string(int expr_type)
 			return "FUNCTION";
 		case MODFIXUP_ST:
 			return "MOD_FIXUP";
-		case MYSELF_ST:
-			return "MYSELF";
 		case STR_ST:
 			return "STR";
 		case SOCKID_ST:
@@ -1407,10 +1382,12 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	pv_value_t lvalue;
 	pv_value_t rvalue;
 	int type;
+	struct net *rnet;
 
 	lstr.s = 0; lstr.len = 0;
 	rstr.s = 0; rstr.len = 0;
 	ln = 0; rn =0;
+
 	if(pv_get_spec_value(msg, left->v.spec, &lvalue)!=0)
 	{
 		LM_ERR("cannot get left var value\n");
@@ -1473,7 +1450,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		if(lvalue.flags&PV_VAL_NULL)
 			return (op==DIFF_OP || op==NOTMATCH_OP || op==NOTMATCHD_OP)?1:0;
 
-		if(right->type == NUMBER_ST) {
+		if (right->type == NET_ST) {
+			if(!(lvalue.flags&PV_VAL_STR))
+				goto error_op;
+			/* comparing IP */
+			type = 3;
+			rnet =  (struct net*)right->v.data;
+		} else if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
 				goto error_op;
 			/* comparing int */
@@ -1503,6 +1486,9 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	} else if(type==2) {
 		LM_DBG("int %d : %d / %d\n", op, ln, rn);
 		return comp_n2n(op, ln, rn);
+	} else if (type==3) {
+		LM_DBG("ip %d : %.*s\n", op, lstr.len, ZSW(lstr.s));
+		return comp_ip(op, &lstr, rnet);
 	}
 	/* default is error */
 
@@ -1521,8 +1507,6 @@ error:
  */
 static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
-
-	struct sip_uri uri;
 	int ret;
 /*	int retl;
 	int retr; */
@@ -1541,77 +1525,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 	if(val) memset(val, 0, sizeof(pv_value_t));
 
 	switch(e->left.type){
-		case METHOD_O:
-				ret=comp_strval(msg, e->op, &msg->first_line.u.request.method,
-						&e->right);
-				break;
-		case URI_O:
-				if(msg->new_uri.s){
-					if (e->right.type==MYSELF_ST){
-						if (parse_sip_msg_uri(msg)<0) ret=-1;
-						else	ret=check_self_op(e->op, &msg->parsed_uri.host,
-									msg->parsed_uri.port_no?
-									msg->parsed_uri.port_no:SIP_PORT);
-					}else{
-						ret=comp_strval(msg, e->op, &msg->new_uri, &e->right);
-					}
-				}else{
-					if (e->right.type==MYSELF_ST){
-						if (parse_sip_msg_uri(msg)<0) ret=-1;
-						else	ret=check_self_op(e->op, &msg->parsed_uri.host,
-									msg->parsed_uri.port_no?
-									msg->parsed_uri.port_no:SIP_PORT);
-					}else{
-						ret=comp_strval(msg, e->op,
-								&msg->first_line.u.request.uri,
-								&e->right);
-					}
-				}
-				break;
-		case FROM_URI_O:
-				if (parse_from_header(msg)<0){
-					LM_ERR("bad or missing From: header\n");
-					goto error;
-				}
-				if (e->right.type==MYSELF_ST){
-					if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len,
-									&uri) < 0){
-						LM_ERR("bad uri in From:\n");
-						goto error;
-					}
-					ret=check_self_op(e->op, &uri.host,
-										uri.port_no?uri.port_no:SIP_PORT);
-				}else{
-					ret=comp_strval(msg, e->op, &get_from(msg)->uri,
-							&e->right);
-				}
-				break;
-		case TO_URI_O:
-				if ((msg->to==0) && ((parse_headers(msg, HDR_TO_F, 0)==-1) ||
-							(msg->to==0))){
-					LM_ERR("bad or missing To: header\n");
-					goto error;
-				}
-				/* to content is parsed automatically */
-				if (e->right.type==MYSELF_ST){
-					if (parse_uri(get_to(msg)->uri.s, get_to(msg)->uri.len,
-									&uri) < 0){
-						LM_ERR("bad uri in To:\n");
-						goto error;
-					}
-					ret=check_self_op(e->op, &uri.host,
-										uri.port_no?uri.port_no:SIP_PORT);
-				}else{
-					ret=comp_strval(msg, e->op, &get_to(msg)->uri,
-										&e->right);
-				}
-				break;
-		case SRCIP_O:
-				ret=comp_ip(msg, e->op, &msg->rcv.src_ip, &e->right);
-				break;
-		case DSTIP_O:
-				ret=comp_ip(msg, e->op, &msg->rcv.dst_ip, &e->right);
-				break;
 		case NUMBER_O:
 				ret=!(!e->right.v.n); /* !! to transform it in {0,1} */
 				break;
@@ -1820,32 +1733,6 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					pv_value_destroy(&rval);
 					return 0;
 				}
-				break;
-		case SRCPORT_O:
-				ret=comp_no(msg->rcv.src_port,
-					e->right.v.data, /* e.g., 5060 */
-					e->op, /* e.g. == */
-					e->right.type /* 5060 is number */);
-				break;
-		case DSTPORT_O:
-				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op,
-							e->right.type);
-				break;
-		case PROTO_O:
-				ret=comp_no(msg->rcv.proto, e->right.v.data, e->op,
-						e->right.type);
-				break;
-		case AF_O:
-				ret=comp_no(msg->rcv.src_ip.af, e->right.v.data, e->op,
-						e->right.type);
-				break;
-		case RETCODE_O:
-				ret=comp_no(return_code, e->right.v.data, e->op,
-						e->right.type);
-				break;
-		case MSGLEN_O:
-				ret=comp_no(msg->len, e->right.v.data, e->op,
-						e->right.type);
 				break;
 		case STRINGV_O:
 				if(val) {

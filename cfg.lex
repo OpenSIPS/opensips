@@ -214,31 +214,11 @@ SCRIPT_TRACE    "script_trace"
 SYNC_TOKEN      "sync"
 ASYNC_TOKEN     "async"
 LAUNCH_TOKEN    "launch"
+IS_MYSELF		"is_myself"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
 URIPORT			"uri:port"
-
-MAX_LEN			"max_len"
-
-
-/* condition keywords */
-METHOD	method
-/* hack -- the second element in first line is referable
-   as either uri or status; it only would makes sense to
-   call it "uri" from route{} and status from onreply_route{}
-*/
-URI		"uri"|"status"
-FROM_URI	"from_uri"
-TO_URI		"to_uri"
-SRCIP	src_ip
-SRCPORT	src_port
-DSTIP	dst_ip
-DSTPORT	dst_port
-PROTO	proto
-AF		af
-MYSELF	myself
-MSGLEN			"msg:len"
 
 /* operators */
 EQUAL	=
@@ -364,8 +344,6 @@ MODPARAM        modparam
 /* values */
 YES			"yes"|"true"|"on"|"enable"
 NO			"no"|"false"|"off"|"disable"
-INET		"inet"|"INET"
-INET6		"inet6"|"INET6"
 NULLV			"null"|"NULL"
 
 LETTER		[a-zA-Z]
@@ -379,6 +357,7 @@ HEXNUMBER	0x{HEX}+
 OCTNUMBER	0[0-7]+
 HEX4		{HEX}{1,4}
 IPV6ADDR	({HEX4}":"){7}{HEX4}|({HEX4}":"){1,7}(":"{HEX4}){1,7}|":"(":"{HEX4}){1,7}|({HEX4}":"){1,7}":"|"::"
+IPV4ADDR	{NUMBER}\.{NUMBER}\.{NUMBER}\.{NUMBER}
 QUOTES		\"
 TICK		\'
 SLASH		"/"
@@ -429,7 +408,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{SETBFLAG}	{ count(); yylval.strval=yytext; return SETBFLAG; }
 <INITIAL>{RESETBFLAG}	{ count(); yylval.strval=yytext; return RESETBFLAG; }
 <INITIAL>{ISBFLAGSET}	{ count(); yylval.strval=yytext; return ISBFLAGSET; }
-<INITIAL>{MSGLEN}	{ count(); yylval.strval=yytext; return MSGLEN; }
 <INITIAL>{ROUTE}	{ count(); yylval.strval=yytext; return ROUTE; }
 <INITIAL>{ROUTE_ONREPLY}	{ count(); yylval.strval=yytext;
 								return ROUTE_ONREPLY; }
@@ -537,20 +515,8 @@ IMPORTFILE      "import_file"
 									return ASYNC_TOKEN;}
 <INITIAL>{LAUNCH_TOKEN}		{ count(); yylval.strval=yytext;
 									return LAUNCH_TOKEN;}
-<INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
-
-<INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
-<INITIAL>{URI}	{ count(); yylval.strval=yytext; return URI; }
-<INITIAL>{FROM_URI}	{ count(); yylval.strval=yytext; return FROM_URI; }
-<INITIAL>{TO_URI}	{ count(); yylval.strval=yytext; return TO_URI; }
-<INITIAL>{SRCIP}	{ count(); yylval.strval=yytext; return SRCIP; }
-<INITIAL>{SRCPORT}	{ count(); yylval.strval=yytext; return SRCPORT; }
-<INITIAL>{DSTIP}	{ count(); yylval.strval=yytext; return DSTIP; }
-<INITIAL>{DSTPORT}	{ count(); yylval.strval=yytext; return DSTPORT; }
-<INITIAL>{PROTO}	{ count(); yylval.strval=yytext; return PROTO; }
-<INITIAL>{AF}	{ count(); yylval.strval=yytext; return AF; }
-<INITIAL>{MYSELF}	{ count(); yylval.strval=yytext; return MYSELF; }
-
+<INITIAL>{IS_MYSELF}		{ count(); yylval.strval=yytext;
+									return IS_MYSELF;}
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
@@ -692,9 +658,12 @@ IMPORTFILE      "import_file"
 <INITIAL>{BOREQ}	{ count(); return BOREQ; }
 <INITIAL>{BXOREQ}	{ count(); return BXOREQ; }
 
-
-
 <INITIAL>{IPV6ADDR}		{ count(); yylval.strval=yytext; return IPV6ADDR; }
+<INITIAL>{IPV4ADDR}		{ count(); yylval.strval=yytext; return IPV4ADDR; }
+
+<INITIAL>{IPV4ADDR}{SLASH}{NUMBER}|{IPV4ADDR}{SLASH}{IPV4ADDR}|{IPV6ADDR}{SLASH}{NUMBER}|{IPV6ADDR}{SLASH}{IPV6ADDR} {
+				count(); yylval.strval=yytext; return IPNET; }
+
 <INITIAL>{NUMBER}		{ count(); yylval.intval=atoi(yytext);return NUMBER; }
 <INITIAL>{HEXNUMBER}	{ count(); yylval.intval=(int)strtol(yytext, 0, 16);
 							return NUMBER; }
@@ -703,10 +672,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{YES}			{ count(); yylval.intval=1; return NUMBER; }
 <INITIAL>{NO}			{ count(); yylval.intval=0; return NUMBER; }
 <INITIAL>{NULLV}		{ count(); yylval.intval=0; return NULLV; }
-<INITIAL>{INET}			{ count(); yylval.intval=AF_INET; return NUMBER; }
-<INITIAL>{INET6}		{ count();
-						  yylval.intval=AF_INET6;
-						  return NUMBER; }
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }

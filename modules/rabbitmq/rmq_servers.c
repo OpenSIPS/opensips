@@ -100,6 +100,9 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 {
 	amqp_connection_close_t *mconn;
 	amqp_channel_close_t *mchan;
+#ifndef AMQP_VERSION_v04
+	char *errorstr;
+#endif
 
 	switch (x.reply_type) {
 		case AMQP_RESPONSE_NORMAL:
@@ -110,7 +113,13 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 			break;
 
 		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
-			LM_ERR("%s: (end-of-stream)\n", context);
+#ifndef AMQP_VERSION_v04
+			errorstr = amqp_error_string(x.library_error);
+			LM_ERR("%s: %s\n", context, errorstr);
+			free(errorstr);
+#else
+			LM_ERR("%s: %s\n", context, amqp_error_string2(x.library_error));
+#endif
 			break;
 
 		case AMQP_RESPONSE_SERVER_EXCEPTION:
@@ -238,7 +247,7 @@ int rmq_reconnect(struct rmq_server *srv)
 	case RMQS_INIT:
 		if (rmq_error("Logging in", amqp_login(
 				srv->conn,
-				srv->uri.vhost,
+				(srv->uri.vhost ? srv->uri.vhost: "/"),
 				0,
 				srv->max_frames,
 				srv->heartbeat,
@@ -620,7 +629,8 @@ static inline int amqp_check_status(struct rmq_server *srv, int r, int* retry)
 
 		/* This is happening on rabbitmq server restart */
 		case AMQP_STATUS_SOCKET_ERROR:
-			LM_WARN("[%.*s] socket error\n", srv->cid.len, srv->cid.s);
+			LM_WARN("[%.*s] socket error: %s(%d)\n",
+					srv->cid.len, srv->cid.s, strerror(errno), errno);
 			break;
 
 		default:

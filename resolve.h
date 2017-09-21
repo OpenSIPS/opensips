@@ -214,8 +214,8 @@ static inline struct ip_addr* str2ip(str* st)
 	i=j=0;
 	limit=(unsigned char*)(st->s + st->len);
 
-	/* first char must be different then '0' */
-	if ((*s > '9' ) || (*s < '1')) goto error_char;
+	/* first char must be different than '0' */
+	if ((*s > '9' ) || (*s < '0')) goto error_char;
 	ip.u.addr[i]=ip.u.addr[i]*10+*s-'0';
 	s++;
 	j++;

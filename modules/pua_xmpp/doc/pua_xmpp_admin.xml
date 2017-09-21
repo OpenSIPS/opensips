@@ -112,7 +112,7 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 		<title><function>Notify2Xmpp</function> usage</title>
 		<programlisting format="linespecific">
 ...
-	if( is_method("NOTIFY") &amp;&amp; uri=~"sip:.+@sip-xmpp.siphub.ro")
+	if( is_method("NOTIFY") &amp;&amp; $ru=~"sip:.+@sip-xmpp.siphub.ro")
 	{
 		if(Notify2Xmpp())
 			t_reply("200", "OK");
@@ -149,7 +149,7 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 	if( is_method("SUBSCRIBE"))
 	{
 		handle_subscribe();
-		if(uri=~"sip:.+@sip-xmpp.siphub.ro" &amp;&amp; $hdr(Event)== "presence")
+		if($ru=~"sip:.+@sip-xmpp.siphub.ro" &amp;&amp; $hdr(Event)== "presence")
 		{
 			pua_xmpp_req_winfo("$ruri", "$hdr(Expires)");
 		}

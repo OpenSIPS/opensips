@@ -164,8 +164,11 @@ for TABLE in $STANDARD_TABLES; do
 		elif [ $TABLE = "dialog" ] 
 		then
 			mdbg "creating table 2: $TABLE"
-			# the dialog table doesn't have an auto increment key
-			#sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_dlg_id_seq TO $DBRWUSER;"
+			# dialog has no PK
+		elif [ $TABLE = "location" ] 
+		then
+			mdbg "creating table 2: $TABLE"
+			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_contact_id_seq TO $DBRWUSER;"
 		else
 			mdbg "creating table 3: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"

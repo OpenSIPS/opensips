@@ -111,6 +111,7 @@ struct module_exports exports= {
 	0,                /* exported statistics */
 	0,                /* exported MI functions */
 	pvars,            /* exported pseudo-variables */
+	0,				  /* exported transformations */
 	0,                /* extra processes */
 	mod_init,         /* module initialization function */
 	(response_function) 0,

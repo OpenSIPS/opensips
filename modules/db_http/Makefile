@@ -10,6 +10,7 @@ include ../../Makefile.defs
 auto_gen=
 NAME=db_http.so
 
+ifeq ($(CROSS_COMPILE),)
 HAS_BUILDER = $(shell if which curl-config >/dev/null 2>/dev/null;then echo YES; fi)
 
 ifeq ($(HAS_BUILDER),YES)
@@ -17,10 +18,12 @@ ifeq ($(HAS_BUILDER),YES)
 	DEFS += $(shell curl-config --cflags)
 	LIBS = $(shell curl-config --libs)
 else
+	LIBS = -lcurl
+endif
+else
 	# use standard know paths
 	DEFS +=-I$(LOCALBASE)/include
 	LIBS =-L$(LOCALBASE)/lib -lcurl
 endif 
-
 
 include ../../Makefile.modules

@@ -155,8 +155,7 @@ sdp_mangle_port("-12000");
 
    Example 1.4. encode_contact usage
 ...
-if (src_ip == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38");
-
+if ($si == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38");
 ...
 
 1.4.4.  decode_contact()
@@ -175,7 +174,7 @@ if (src_ip == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38");
 
    Example 1.5. decode_contact usage
 ...
-if (uri =~ "^enc*") { decode_contact(); }
+if ($ru =~ "^enc*") { decode_contact(); }
 ...
 
 1.4.5.  decode_contact_header()
@@ -194,5 +193,5 @@ if (uri =~ "^enc*") { decode_contact(); }
 
    Example 1.6. decode_contact_header usage
 ...
-if (uri =~ "^enc*") { decode_contact_header(); }
+if ($ru =~ "^enc*") { decode_contact_header(); }
 ...

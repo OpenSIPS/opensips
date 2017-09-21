@@ -292,8 +292,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 {
 	str method = str_init(ACK);
 	str to;
-	char *ack_p;
-	unsigned int  ack_len;
+	str ack_buf;
 
 	if(parse_headers(rpl,is_local(trans)?HDR_EOH_F:(HDR_TO_F|HDR_FROM_F),0)==-1
 	|| !rpl->to || !rpl->from ) {
@@ -303,16 +302,24 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	to.s=rpl->to->name.s;
 	to.len=rpl->to->len;
 
-	ack_p = is_local(trans)?
-		build_dlg_ack(rpl, trans, branch, &to, &ack_len):
-		build_local( trans, branch, &method, NULL, rpl, &ack_len );
-	if (ack_p==0) {
+	ack_buf.s = is_local(trans)?
+		build_dlg_ack(rpl, trans, branch, &to, (unsigned int*)&ack_buf.len):
+		build_local( trans, branch, &method, NULL, rpl, (unsigned int*)&ack_buf.len );
+	if (ack_buf.s==0) {
 		LM_ERR("failed to build ACK\n");
 		goto error;
 	}
 
-	SEND_PR_BUFFER(&trans->uac[branch].request, ack_p, ack_len);
-	shm_free(ack_p);
+	if(SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len)==0){
+		/* successfully sent out */
+		if ( has_tran_tmcbs( trans, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &ack_buf, &trans->uac[branch].request.dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT,
+				trans, trans->uas.request, 0, 0);
+		}
+	}
+
+	shm_free(ack_buf.s);
 
 	return 0;
 error:
@@ -415,12 +422,23 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 	if (!trans->uas.response.dst.send_sock) {
 		LM_CRIT("send_sock is NULL\n");
 	}
-	SEND_PR_BUFFER( rb, buf, len );
-	LM_DBG("reply sent out. buf=%p: %.9s..., "
-		"shmem=%p: %.9s\n", buf, buf, rb->buffer.s, rb->buffer.s );
+
+	if ( SEND_PR_BUFFER( rb, buf, len )==0 ) {
+		LM_DBG("reply sent out. buf=%p: %.9s..., "
+			"shmem=%p: %.9s\n", buf, buf, rb->buffer.s, rb->buffer.s );
+
+		if (has_tran_tmcbs(trans, TMCB_MSG_SENT_OUT) ) {
+			cb_s.s = buf;
+			cb_s.len = len;
+			set_extra_tmcb_params( &cb_s, &rb->dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, trans,
+				NULL, FAKED_REPLY, code);
+		}
+		stats_trans_rpl( code, 1 /*local*/ );
+	}
 
 	/* run the POST send callbacks */
-	if (code>=200&&!is_local(trans)&&has_tran_tmcbs(trans,TMCB_RESPONSE_OUT)) {
+	if (code>=200&&!is_local(trans)&&has_tran_tmcbs(trans,TMCB_RESPONSE_OUT)){
 		cb_s.s = buf;
 		cb_s.len = len;
 		set_extra_tmcb_params( &cb_s, &rb->dst);
@@ -432,9 +450,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 				trans->uas.request, FAKED_REPLY, code);
 	}
 
-
 	pkg_free( buf ) ;
-	stats_trans_rpl( code, 1 /*local*/ );
 	LM_DBG("finished\n");
 	return 1;
 
@@ -683,7 +699,7 @@ static inline int do_dns_failover(struct cell *t)
 	faked_req.force_send_socket = shmem_msg->force_send_socket;
 
 	/* send it out */
-	if (t_forward_nonack( t, &faked_req, uac->proxy, 1/*reset*/)==1)
+	if (t_forward_nonack( t, &faked_req, uac->proxy,1/*reset*/,1/*locked*/)==1)
 		ret = 0;
 
 done:
@@ -976,6 +992,7 @@ int t_retransmit_reply( struct cell *t )
 {
 	static char b[BUF_SIZE];
 	int len;
+	str cb_s;
 
 	/* we need to lock the transaction as messages from
 	   upstream may change it continuously */
@@ -1000,9 +1017,20 @@ int t_retransmit_reply( struct cell *t )
 	}
 	memcpy( b, t->uas.response.buffer.s, len );
 	UNLOCK_REPLIES( t );
-	SEND_PR_BUFFER( & t->uas.response, b, len );
-	LM_DBG("buf=%p: %.9s..., shmem=%p: %.9s\n",b, b, t->uas.response.buffer.s,
-			t->uas.response.buffer.s );
+
+	/* send the buffer out */
+	if (SEND_PR_BUFFER( & t->uas.response, b, len )==0) {
+		/* success */
+		LM_DBG("buf=%p: %.9s..., shmem=%p: %.9s\n",b, b,
+			t->uas.response.buffer.s, t->uas.response.buffer.s );
+		if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
+			cb_s.s = b;
+			cb_s.len = len;
+			set_extra_tmcb_params( &cb_s, &t->uas.response.dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
+					NULL, FAKED_REPLY, t->uas.status);
+		}
+	}
 	return 1;
 
 error:
@@ -1244,9 +1272,21 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			run_trans_callbacks_locked(TMCB_RESPONSE_PRE_OUT,t,t->uas.request,
 				relayed_msg, relayed_code);
 		}
-		SEND_PR_BUFFER( uas_rb, buf, res_len );
-		LM_DBG("sent buf=%p: %.9s..., shmem=%p: %.9s\n",
-			buf, buf, uas_rb->buffer.s, uas_rb->buffer.s );
+		/* send it out*/
+		if (SEND_PR_BUFFER( uas_rb, buf, res_len)==0) {
+			/* success */
+			LM_DBG("sent buf=%p: %.9s..., shmem=%p: %.9s\n",
+				buf, buf, uas_rb->buffer.s, uas_rb->buffer.s );
+
+			if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
+				cb_s.s = buf;
+				cb_s.len = res_len;
+				set_extra_tmcb_params( &cb_s, &uas_rb->dst);
+				run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
+					NULL, relayed_msg, relayed_code);
+			}
+		}
+
 		/* run the POST sending out callback */
 		if (!totag_retr && has_tran_tmcbs(t, TMCB_RESPONSE_OUT) ) {
 			cb_s.s = buf;

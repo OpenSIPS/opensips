@@ -80,7 +80,7 @@ trace_dest t_dst;
 trace_proto_t tprot;
 
 /* module  tracing parameters */
-static int trace_is_on_tmp=1, *trace_is_on;
+static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
 static int trace_filter_route_id = -1;
 /**/
@@ -190,6 +190,7 @@ struct module_exports proto_tcp_exports = {
 	0,          /* exported statistics */
 	mi_cmds,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -337,8 +338,12 @@ again:
 	if(bytes_read==-1){
 		if (errno == EWOULDBLOCK || errno == EAGAIN){
 			return 0; /* nothing has been read */
-		}else if (errno == EINTR) goto again;
-		else{
+		} else if (errno == EINTR) {
+			goto again;
+		} else if (errno == ECONNRESET) {
+			c->state=S_CONN_EOF;
+			LM_DBG("CONN RESET on %p, FD %d\n", c, fd);
+		} else {
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
 			return -1;
@@ -638,7 +643,11 @@ error:
 
 /**************  WRITE related functions ***************/
 
-/* called under the TCP connection write lock, timeout is in milliseconds */
+/**
+ * called under the TCP connection write lock, timeout is in milliseconds
+ *
+ * @return: -1 or bytes written (if 0 < ret < len: the last bytes are chunked)
+ */
 static int async_tsend_stream(struct tcp_connection *c,
 		int fd, char* buf, unsigned int len, int timeout)
 {
@@ -677,7 +686,7 @@ again:
 	} else {
 		/* successful write from the first try */
 		LM_DBG("Async successful write from first try on %p\n",c);
-		return len;
+		return written;
 	}
 
 poll_loop:
@@ -698,7 +707,7 @@ poll_loop:
 			/* we have successfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
-			return 0;
+			return written;
 		}
 	}
 
@@ -785,7 +794,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				return -1;
 			}
 			/* connect succeeded, we have a connection */
-			LM_DBG( "Succesfully connected from interface %s:%d to %s:%d!\n",
+			LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
@@ -811,6 +820,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				 * flow now (the actual write will be done when
 				 * connect will be completed */
 				LM_DBG("Successfully started async connection \n");
+				sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
 				tcp_conn_release(c, 0);
 				return len;
 			}
@@ -849,7 +859,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				}
 			}
 
-			LM_DBG( "Succesfully connected from interface %s:%d to %s:%d!\n",
+			LM_DBG( "Successfully connected from interface %s:%d to %s:%d!\n",
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 		}
@@ -886,6 +896,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				LM_ERR("Failed to add another write chunk to %p\n",c);
 				/* we failed due to internal errors - put the
 				 * connection back */
+				sh_log(c->hist, TCP_SEND2MAIN, "send 2, (%d)", c->refcnt);
 				tcp_conn_release(c, 0);
 				return -1;
 			}
@@ -894,10 +905,12 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			last_outgoing_tcp_id = c->id;
 
 			/* we successfully added our write chunk - success */
+			sh_log(c->hist, TCP_SEND2MAIN, "send 3, (%d)", c->refcnt);
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
 			/* return error, nothing to do about it */
+			sh_log(c->hist, TCP_SEND2MAIN, "send 4, (%d)", c->refcnt);
 			tcp_conn_release(c, 0);
 			return -1;
 		}
@@ -916,13 +929,15 @@ send_it:
 
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
 		if (c->proc_id != process_no)
 			close(fd);
+
+		sh_log(c->hist, TCP_SEND2MAIN, "send 5, (%d)", c->refcnt);
 		tcp_conn_release(c, 0);
 		return -1;
 	}
@@ -935,6 +950,7 @@ send_it:
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
 
+	sh_log(c->hist, TCP_SEND2MAIN, "send 6, (%d, async: %d)", c->refcnt, n < len);
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;
 }
@@ -1040,8 +1056,12 @@ again:
 	if(bytes_read==-1){
 		if (errno == EWOULDBLOCK || errno == EAGAIN){
 			return 0; /* nothing has been read */
-		}else if (errno == EINTR) goto again;
-		else{
+		} else if (errno == EINTR) {
+			goto again;
+		} else if (errno == ECONNRESET) {
+			c->state=S_CONN_EOF;
+			LM_DBG("CONN RESET on %p, FD %d\n", c, fd);
+		} else {
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
 			return -1;

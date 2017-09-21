@@ -599,7 +599,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 #ifdef EXTRA_DEBUG
 	/* dump parsed data */
 	if (msg->via1){
-		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
+		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>\n",
 			msg->via1->name.len,
 			ZSW(msg->via1->name.s),
 			msg->via1->version.len,
@@ -611,15 +611,15 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 			msg->via1->port_str.len,
 			ZSW(msg->via1->port_str.s),
 			msg->via1->port);
-		if (msg->via1->params.s)  LM_DBG(";<%.*s>",
+		if (msg->via1->params.s)  LM_DBG(";<%.*s>\n",
 				msg->via1->params.len, ZSW(msg->via1->params.s));
 		if (msg->via1->comment.s)
-				LM_DBG(" <%.*s>",
+				LM_DBG(" <%.*s>\n",
 					msg->via1->comment.len, ZSW(msg->via1->comment.s));
 		LM_DBG ("\n");
 	}
 	if (msg->via2){
-		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
+		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>\n",
 			msg->via2->name.len,
 			ZSW(msg->via2->name.s),
 			msg->via2->version.len,
@@ -631,9 +631,9 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 			msg->via2->port_str.len,
 			ZSW(msg->via2->port_str.s),
 			msg->via2->port);
-		if (msg->via2->params.s)  LM_DBG(";<%.*s>",
+		if (msg->via2->params.s)  LM_DBG(";<%.*s>\n",
 				msg->via2->params.len, ZSW(msg->via2->params.s));
-		if (msg->via2->comment.s) LM_DBG(" <%.*s>",
+		if (msg->via2->comment.s) LM_DBG(" <%.*s>\n",
 				msg->via2->comment.len, ZSW(msg->via2->comment.s));
 		LM_DBG ("\n");
 	}

@@ -403,6 +403,7 @@ struct module_exports exports= {
 	mod_stats,       /* exported statistics */
 	mi_cmds,         /* exported MI functions */
 	mod_items,       /* exported pseudo-variables */
+	0,			 	 /* exported transformations */
 	0,               /* extra processes */
 	mod_init,        /* module initialization function */
 	0,               /* reply processing function */
@@ -1046,7 +1047,7 @@ static int child_init(int rank)
 static void mod_destroy(void)
 {
 	if (dlg_db_mode != DB_MODE_NONE) {
-		dialog_update_db(0, 0);
+		dialog_update_db(0, 0/*do not do locking*/);
 		destroy_dlg_db();
 	}
 	/* no DB interaction from now on */
@@ -1171,7 +1172,7 @@ static int w_match_dialog(struct sip_msg *msg)
 					}
 				}
 				if (p+1<s.s+s.len) {
-					s.len = s.s+s.len-p+1;
+					s.len = s.s+s.len-p-1;
 					s.s = p+1;
 				} else
 					break;
@@ -1575,13 +1576,13 @@ static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
 		/* add name to AVP */
 		val.flags = PV_VAL_STR;
 		val.rs = dv->name;
-		if ( !pv_set_value( msg, (pv_spec_p)v_name, 0, &val) ) {
+		if ( pv_set_value( msg, (pv_spec_p)v_name, 0, &val)<0 ) {
 			LM_ERR("failed to add new name in dlg val list, ignoring\n");
 		} else {
 			/* add value to AVP */
 			val.flags = PV_VAL_STR;
 			val.rs = dv->val;
-			if ( !pv_set_value( msg, (pv_spec_p)v_val, 0, &val) ) {
+			if ( pv_set_value( msg, (pv_spec_p)v_val, 0, &val)<0 ) {
 				LM_ERR("failed to add new value in dlg val list, ignoring\n");
 				/* better exit here, as we will desync the lists */
 				unref_dlg(dlg, 1);

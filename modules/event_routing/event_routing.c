@@ -108,6 +108,8 @@ struct module_exports exports= {
 	NULL,
 	/* exported pseudo-variables */
 	NULL,
+	/* exported transformations */
+	NULL,
 	/* extra processes */
 	NULL,
 	/* module initialization function */

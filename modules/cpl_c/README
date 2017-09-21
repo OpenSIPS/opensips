@@ -399,7 +399,7 @@ cpl_run_script("incoming","force_stateful");
 
    Example 1.17. cpl_process_register usage
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
     cpl_process_register();
 }
 ...
@@ -417,7 +417,7 @@ if (method=="REGISTER") {
 
    Example 1.18. cpl_process_register_norpl usage
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
     cpl_process_register();
     # continue with usrloc part
     save("location");

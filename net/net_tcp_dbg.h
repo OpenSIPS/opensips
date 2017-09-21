@@ -1,7 +1,5 @@
 /*
- * Helper functions for Path support.
- *
- * Copyright (C) 2006 Andreas Granig <agranig@linguin.org>
+ * Copyright (C) 2017 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,25 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- */
-/*!
- * \file
- * \brief SIP registrar module - helper functions for Path support
- * \ingroup registrar
  */
 
-#ifndef REG_PATH_H
-#define REG_PATH_H
+#ifndef __NET_TCP_DBG__
+#define __NET_TCP_DBG__
 
-#include "../../parser/msg_parser.h"
+#if !defined(DBG_TCPCON) && defined(DBG_STRUCT_HIST)
+#undef DBG_STRUCT_HIST
+#include "../lib/dbg/struct_hist.h"
+#define DBG_STRUCT_HIST
+#else
+#include "../lib/dbg/struct_hist.h"
+#endif
 
-/*! \brief
- * Extracts all Path header bodies into one string and
- * checks if first hop is a loose router. It also extracts
- * the received-param of the first hop if path_use_received is 1.
- */
-int build_path_vector(struct sip_msg *_m, str *path, str *received,
-			unsigned int flags);
-
-#endif /* REG_PATH_H */
+#endif /* __NET_TCP_DBG__ */

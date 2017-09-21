@@ -242,7 +242,7 @@ modparam("aaa_radius", "fetch_all_values", 1)
 		<para>
 			The function return TRUE (retcode 1) if authentication was
 			successful, FALSE (retcode -1) if an error (any kind of error)
-			occured during authentication processes or FALSE (retcode -2) if
+			occurred during authentication processes or FALSE (retcode -2) if
 			authentication was rejected or denied by RADIUS server.
 		</para>
 		<para>
@@ -335,7 +335,7 @@ radius_send_acct("set1");
 		<para>
 			The function return TRUE (retcode 1) if authentication was
 			successful, FALSE (retcode -1) if an error (any kind of error)
-			occured during authentication processes or FALSE (retcode -2) if
+			occurred during authentication processes or FALSE (retcode -2) if
 			authentication was rejected or denied by RADIUS server.
 		</para>
 		<example>

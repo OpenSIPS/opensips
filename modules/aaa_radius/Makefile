@@ -49,6 +49,12 @@ endif
 ifneq ($(BUILDER),)
 	DEFS+= $(shell $(BULDER) --cflags)
 	LIBS+= $(shell $(BULDER) --libs)
+else
+ifeq ($(CROSS_COMPILE),)
+	## we didn't find the packet with pkg-config
+	## last chance try it without knowing lib path
+	LIBS+= $(RADIUS_LIB)
+endif
 endif
 
 

@@ -912,7 +912,7 @@ if (is_direction("downstream")) {
    Example 1.48. processsubscribe usage
 ...
 if (method == "SUBSCRIBE") {
-    if (($var(sevent) == "calling-name") && (uri == myself)) {
+    if (($var(sevent) == "calling-name") && (is_myself("$rd"))) {
         if ($var(cnamrecord) != NULL) {
             processsubscribe("$(var(cnamrecord){s.b64decode})");
         } else {

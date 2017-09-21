@@ -172,11 +172,11 @@ modparam("proto_ws", "trace_destination", "hep_dest")
    need to define Section 1.3.4, “trace_destination (string)”in
    order to work, but this value will be controlled using mi
    function Section 1.4.1, “ ws_trace ”.
-   Default value is 1(tracing active).
+   Default value is 0(tracing inactive).
 
    Example 1.5. Set trace_on parameter
 ...
-modparam("proto_ws", "trace_on", 0)
+modparam("proto_ws", "trace_on", 1)
 ...
 
 1.3.6. trace_filter_route (string)
@@ -191,6 +191,15 @@ modparam("proto_ws", "trace_on", 0)
    Section 1.3.4, “trace_destination (string)” and trace must be
    on at the time this connection is opened.
 
+   IMPORTANT Filtering on ip addresses and ports can be made using
+   $si and $sp for matching either the entity that is connecting
+   to OpenSIPS or the entity to which OpenSIPS is connecting. The
+   name might be misleading ( $si meaning the source ip if you
+   read the docs) but in reality it is simply the socket other
+   than the OpenSIPS socket. In order to match OpenSIPS interface
+   (either the one that accepted the connection or the one that
+   initiated a connection) $Ri (ip) and $Rp (port) can be used.
+
    WARNING: IF Section 1.3.5, “trace_on (int)” is set to 0 or
    tracing is deactived via the mi command Section 1.4.1, “
    ws_trace ” this route won't be called.
@@ -204,10 +213,11 @@ modparam("proto_ws", "trace_filter_route", "ws_filter")
  * and a trace destination is defined */
 route[ws_filter] {
         ...
-        /* all connections opened from ip 1.1.1.1 will be traced, all th
-e other connections
-         * won't be */
-        if ( $si == "1.1.1.1" )
+        /* all connections opened from/by ip 1.1.1.1:8000 will be traced
+           on interface 1.1.1.10:5060(opensips listener)
+           all the other connections won't be */
+         if ( $si == "1.1.1.1" && $sp == 8000 &&
+                $Ri == "1.1.1.10"  && $Rp == 5060)
                 exit;
         else
                 drop;
@@ -237,13 +247,13 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Can OpenSIPS act as a WebSocket client?
+       Can OpenSIPS act as a WebSocket client?
 
-   Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
-   client.
+       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+       client.
 
    2.2.
 
-   Does OpenSIPS support WebSocket message fragmentation?
+       Does OpenSIPS support WebSocket message fragmentation?
 
-   No, WebSocket fragmentation mechanism is not supported.
+       No, WebSocket fragmentation mechanism is not supported.

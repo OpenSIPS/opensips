@@ -1,7 +1,7 @@
 " Vim syntax file
-" Language:	OpenSIPS 2.x script
+" Language:	OpenSIPS 2.4 script
 " Maintainer:	Liviu Chircu <liviu@opensips.org>
-" Last Change:	2015 May 30
+" Last Change:	2017 Jul 30
 
 " Quit when a (custom) syntax file was already loaded
 "if exists("b:current_syntax")
@@ -16,12 +16,10 @@ syn keyword	osStatement	return break exit drop
 syn keyword	osLabel		case default esac
 syn keyword	osConditional	if else switch and or not
 syn keyword	osRepeat		while for in
-syn keyword osAction loadmodule modparam async
+syn keyword osAction loadmodule modparam async launch
 
-syn keyword specialOperand myself yes no true false enable disable on off
-syn keyword specialOperand af uri status from_uri to_uri NULL null
-syn keyword specialOperand src_ip src_port dst_ip dst_port proto method max_len
-syn keyword specialOperand UDP TCP TLS SCTP WS INET inet INET6 inet6
+syn keyword specialOperand yes no true false enable disable on off NULL null
+syn keyword specialOperand UDP TCP TLS SCTP WS WSS HEP_TCP HEP_UDP INET inet INET6 inet6
 
 syn keyword osGlobalParam log_level memdump memlog log_stderror log_facility log_name
 syn keyword osGlobalParam debug_mode children auto_aliases listen mpath tcp_children

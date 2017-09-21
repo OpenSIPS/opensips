@@ -86,14 +86,12 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 {
 	int h_entry;
 	unsigned int dir, dst_leg;
-	str callid, from_uri, to_uri, from_tag, to_tag;
+	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
 	struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
-
-	if_update_stat(dlg_enable_stats, processed_dlgs, 1);
 
 	LM_DBG("Received replicated dialog!\n");
 	if (!cell) {
@@ -135,6 +133,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		to_tag = *ttag;
 		dlg = cell;
 	}
+	if_update_stat(dlg_enable_stats, processed_dlgs, 1);
 
 	bin_pop_int(packet, &dlg->h_id);
 	bin_pop_int(packet, &dlg->start_ts);
@@ -436,7 +435,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 			dlg->legs[callee_idx(dlg)].tag.len,
 			ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 	} else {
-		/* dialog sucessfully removed from timer -> unref */
+		/* dialog successfully removed from timer -> unref */
 		unref++;
 	}
 
@@ -461,8 +460,23 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	int rc;
 	bin_packet_t packet;
 
+	dlg_lock_dlg(dlg);
+	if (dlg->state != DLG_STATE_CONFIRMED_NA && dlg->state != DLG_STATE_CONFIRMED) {
+		/* we don't need to replicate when in deleted state */
+		LM_WARN("not replicating dlg create message due to bad state %d (%.*s)\n",
+			dlg->state, dlg->callid.len, dlg->callid.s);
+		goto no_send;
+	}
+
+	if (dlg->replicated) {
+		/* already created - must be a retransmission */
+		LM_DBG("not replicating retransmission for %p (%.*s)\n",
+			dlg, dlg->callid.len, dlg->callid.s);
+		goto no_send;
+	}
+
 	if (bin_init(&packet, &module_name, REPLICATION_DLG_CREATED, BIN_VERSION, 0) != 0)
-		goto error;
+		goto init_error;
 
 	callee_leg = callee_idx(dlg);
 
@@ -494,9 +508,7 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 	/* XXX: on shutdown only? */
 	vars = write_dialog_vars(dlg->vals);
-	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
-	dlg_unlock_dlg(dlg);
 
 	bin_push_str(&packet, vars);
 	bin_push_str(&packet, profiles);
@@ -506,6 +518,8 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	bin_push_int(&packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(&packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(&packet, dlg->legs[callee_leg].last_gen_cseq);
+	dlg->replicated = 1;
+	dlg_unlock_dlg(dlg);
 
 	rc = clusterer_api.send_all(&packet, dialog_replicate_cluster);
 	switch (rc) {
@@ -528,6 +542,13 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 error:
 	bin_free_packet(&packet);
 	LM_ERR("Failed to replicate created dialog\n");
+	return;
+
+init_error:
+	LM_ERR("Failed to replicate created dialog\n");
+no_send:
+	dlg_unlock_dlg(dlg);
+	return;
 }
 
 /**
@@ -542,8 +563,17 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	int rc;
 	bin_packet_t packet;
 
+
+	dlg_lock_dlg(dlg);
+	if (dlg->state == DLG_STATE_DELETED) {
+		/* we no longer need to update anything */
+		LM_WARN("not replicating dlg update message due to bad state %d (%.*s)\n",
+			dlg->state, dlg->callid.len, dlg->callid.s);
+		goto end;
+	}
+
 	if (bin_init(&packet, &module_name, REPLICATION_DLG_UPDATED, BIN_VERSION, 0) != 0)
-		goto error;
+		goto init_error;
 
 	callee_leg = callee_idx(dlg);
 
@@ -575,9 +605,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 	/* XXX: on shutdown only? */
 	vars = write_dialog_vars(dlg->vals);
-	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
-	dlg_unlock_dlg(dlg);
 
 	bin_push_str(&packet, vars);
 	bin_push_str(&packet, profiles);
@@ -587,6 +615,8 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	bin_push_int(&packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(&packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(&packet, dlg->legs[callee_leg].last_gen_cseq);
+	dlg->replicated = 1;
+	dlg_unlock_dlg(dlg);
 
 	rc = clusterer_api.send_all(&packet, dialog_replicate_cluster);
 	switch (rc) {
@@ -607,8 +637,15 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	return;
 
 error:
-	bin_free_packet(&packet);
 	LM_ERR("Failed to replicate updated dialog\n");
+	bin_free_packet(&packet);
+	return;
+
+init_error:
+	LM_ERR("Failed to replicate updated dialog\n");
+end:
+	dlg_unlock_dlg(dlg);
+	return;
 }
 
 /**
@@ -632,17 +669,21 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", dialog_replicate_cluster);
-		goto error;
+		goto error_free;
 	case CLUSTERER_DEST_DOWN:
 		LM_ERR("All destinations in cluster: %d are down or probing\n",
 			dialog_replicate_cluster);
-		goto error;
+		goto error_free;
 	case CLUSTERER_SEND_ERR:
 		LM_ERR("Error sending in cluster: %d\n", dialog_replicate_cluster);
-		goto error;
+		goto error_free;
 	}
 
+	if_update_stat(dlg_enable_stats, delete_sent, 1);
+	bin_free_packet(&packet);
 	return;
+error_free:
+	bin_free_packet(&packet);
 error:
 	LM_ERR("Failed to replicate deleted dialog\n");
 }
@@ -650,7 +691,7 @@ error:
 void receive_repl_packets(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
 				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
 {
-	int rc;
+	int rc = 0;
 
 	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
 		return;
@@ -662,19 +703,26 @@ void receive_repl_packets(enum clusterer_event ev, bin_packet_t *packet, int pac
 
 	switch (packet_type) {
 	case REPLICATION_DLG_CREATED:
-		rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
-		if_update_stat(dlg_enable_stats, create_recv, 1);
+		if (accept_replicated_dlg) {
+			rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
+			if_update_stat(dlg_enable_stats, create_recv, 1);
+		}
 		break;
 	case REPLICATION_DLG_UPDATED:
-		rc = dlg_replicated_update(packet);
-		if_update_stat(dlg_enable_stats, update_recv, 1);
+		if (accept_replicated_dlg) {
+			rc = dlg_replicated_update(packet);
+			if_update_stat(dlg_enable_stats, update_recv, 1);
+		}
 		break;
 	case REPLICATION_DLG_DELETED:
-		rc = dlg_replicated_delete(packet);
-		if_update_stat(dlg_enable_stats, delete_recv, 1);
+		if (accept_replicated_dlg) {
+			rc = dlg_replicated_delete(packet);
+			if_update_stat(dlg_enable_stats, delete_recv, 1);
+		}
 		break;
 	case REPLICATION_DLG_PROFILE:
-		rc = dlg_replicated_profiles(packet, ri, src_id);
+		if (accept_repl_profiles)
+			rc = dlg_replicated_profiles(packet, ri, src_id);
 		break;
 	default:
 		rc = -1;

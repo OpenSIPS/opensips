@@ -695,7 +695,7 @@ if (is_direction("downstream")) {
         <programlisting format="linespecific">
 ...
 if (method == "SUBSCRIBE") {
-    if (($var(sevent) == "calling-name") &amp;&amp; (uri == myself)) {
+    if (($var(sevent) == "calling-name") &amp;&amp; (is_myself("$rd"))) {
         if ($var(cnamrecord) != NULL) {
             processsubscribe("$(var(cnamrecord){s.b64decode})");
         } else {

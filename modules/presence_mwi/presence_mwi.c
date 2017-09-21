@@ -56,7 +56,7 @@ static cmd_export_t cmds[] =
     {0,	0, 0, 0, 0, 0}
 };
 
-/* module exported paramaters */
+/* module exported parameters */
 static param_export_t params[] = {
     {0, 0, 0}
 };
@@ -84,6 +84,7 @@ struct module_exports exports= {
     0,				/* exported statistics */
     0,				/* exported MI functions */
     0,				/* exported pseudo-variables */
+    0,              /* exported transformations */
 	0,				/* extra processes */
     mod_init,				/* module initialization function */
     (response_function) 0,	/* response handling function */

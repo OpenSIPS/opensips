@@ -36,9 +36,6 @@
 #define TR_CLASS_MARKER		'.'
 #define TR_PARAM_MARKER		','
 
-enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST, TR_NAMEADDR, TR_CSV,
-	TR_SDP,TR_IP, TR_VIA, TR_RE
-};
 enum _tr_s_subtype {
 	TR_S_NONE=0, TR_S_LEN, TR_S_INT, TR_S_MD5, TR_S_SUBSTR,
 	TR_S_SELECT, TR_S_ENCODEHEXA, TR_S_DECODEHEXA, TR_S_HEX2DEC, TR_S_DEC2HEX,
@@ -84,31 +81,78 @@ typedef struct tr_param_ {
 	struct tr_param_ *next;
 } tr_param_t, *tr_param_p;
 
-typedef int (*tr_func_t) (struct sip_msg *, tr_param_t*, int, pv_value_t*);
+typedef int (*tr_eval_f) (struct sip_msg *, tr_param_t*, int, pv_value_t*);
 
 typedef struct trans_ {
 	str name;
-	int type;
 	int subtype;
-	tr_func_t trf;
+	tr_eval_f trf;
 	tr_param_t *params;
 	struct trans_ *next;
 } trans_t, *trans_p;
 
+typedef int (*tr_parse_f)(str *in, trans_t *t);
+
+typedef struct trans_export_ {
+	str name;
+	tr_parse_f parse_func;
+	tr_eval_f eval_func;
+} trans_export_t;
+
+typedef struct trans_extra_ {
+	trans_export_t tre;
+	struct trans_extra_ *next;
+} trans_extra_t;
+
+int register_trans_mod(char *mod_name, trans_export_t *tr_exports);
+void tr_free_extra_list(void);
+
 int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val);
 char* parse_transformation(str *in, trans_t **tr);
-char* tr_parse_string(str* in, trans_t *t);
-char* tr_parse_uri(str* in, trans_t *t);
-char* tr_parse_via(str* in, trans_t *t);
-char* tr_parse_paramlist(str* in, trans_t *t);
-char* tr_parse_nameaddr(str* in, trans_t *t);
-char* tr_parse_csv(str *in,trans_t *t);
-char* tr_parse_sdp(str *in,trans_t *t);
-char* tr_parse_ip(str *in,trans_t *t);
-char* tr_parse_re(str *in,trans_t *t);
 void destroy_transformation(trans_t *t);
 void free_transformation(trans_t *t);
 void free_tr_param(tr_param_t *tp);
+
+/* transformation parameter parsing helper functions */
+char *tr_parse_nparam(char *p, str *in, tr_param_t **tp);
+char *tr_parse_sparam(char *p, str *in, tr_param_t **tp, int skip_param_ws);
+
+/* core transformations */
+int tr_parse_string(str* in, trans_t *t);
+int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_uri(str* in, trans_t *t);
+int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_via(str* in, trans_t *t);
+int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_paramlist(str* in, trans_t *t);
+int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_nameaddr(str* in, trans_t *t);
+int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_csv(str *in,trans_t *t);
+int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_sdp(str *in,trans_t *t);
+int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_ip(str *in,trans_t *t);
+int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_re(str *in,trans_t *t);
+int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
 
 #endif
 

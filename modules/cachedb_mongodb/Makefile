@@ -20,11 +20,23 @@ ifeq ($(JSON_BUILDER),)
 	DEFS += -I$(LOCALBASE)/include -I$(SYSBASE)/include
 	LIBS += -L$(LOCALBASE)/lib -ljson
 else
-	DEFS += $(shell $(JSON_BUILDER) --cflags) $(shell pkg-config --cflags libmongoc-1.0)
-	LIBS += $(shell $(JSON_BUILDER) --libs) $(shell pkg-config --libs libmongoc-1.0)
+	DEFS += $(shell $(JSON_BUILDER) --cflags)
+	LIBS += $(shell $(JSON_BUILDER) --libs)
 endif
 
-#DEFS += -I$(LOCALBASE)/include
-#LIBS += -L$(LOCALBASE)/lib
+ifeq ($(CROSS_COMPILE),)
+MONGOC_BUILDER = $(shell \
+	if pkg-config --exists libmongoc-1.0; then \
+		echo 'pkg-config libmongoc-1.0'; \
+	fi)
+endif
+
+ifeq ($(MONGOC_BUILDER),)
+	DEFS += -I$(SYSBASE)/include/libmongoc-1.0 -I$(SYSBASE)/include/libbson-1.0
+	LIBS += -L$(LOCALBASE)/lib -lssl -lcrypto -lrt -lmongoc-1.0 -lbson-1.0
+else
+	DEFS += $(shell $(MONGOC_BUILDER) --cflags)
+	LIBS += $(shell $(MONGOC_BUILDER) --libs)
+endif
 
 include ../../Makefile.modules

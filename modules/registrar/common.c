@@ -36,7 +36,11 @@
 #include "../../dprint.h"
 #include "../../ut.h"      /* q_memchr */
 #include "../../parser/parse_uri.h"
+
 #include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/ci.h"
+#include "../../lib/reg/config.h"
+
 #include "reg_mod.h"
 #include "common.h"
 

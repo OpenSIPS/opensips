@@ -79,7 +79,7 @@ int hep_ctx_idx=0;
 int hep_capture_id = 1;
 int payload_compression=0;
 
-int homer5_on=0;
+int homer5_on=1;
 str homer5_delim = {":", 0};
 
 compression_api_t compression_api;
@@ -177,6 +177,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -427,7 +428,7 @@ poll_loop:
 			LM_ERR("Failed to add write chunk to connection \n");
 			return -1;
 		} else {
-			/* we have succesfully added async write chunk
+			/* we have successfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
 			return 0;
@@ -758,7 +759,7 @@ static int hep_tcp_send (struct socket_info* send_sock,
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
 
-			/* we succesfully added our write chunk - success */
+			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
@@ -776,7 +777,7 @@ send_it:
 
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");
@@ -823,11 +824,11 @@ static void hep_parse_headers(struct tcp_req *req){
 	length = ntohs(ctrl->length);
 	req->content_len = (unsigned short)length;
 
-	if(req->pos - req->parsed == req->content_len){
+	if(req->pos - req->buf == req->content_len){
 		LM_DBG("received a COMPLETE message\n");
 		req->complete = 1;
 		req->parsed = req->buf + req->content_len;
-	} else if(req->pos - req->parsed > req->content_len){
+	} else if(req->pos - req->buf > req->content_len){
 		LM_DBG("received MORE than a message\n");
 		req->complete = 1;
 		req->parsed = req->buf + req->content_len;
@@ -836,7 +837,7 @@ static void hep_parse_headers(struct tcp_req *req){
 		/* FIXME should we update parsed? we didn't receive the
 		 * full message; we wait for the full mesage and only
 		 * after that we update parsed */
-		//req->parsed = req->pos;
+		req->parsed = req->pos;
 	}
 }
 
@@ -858,8 +859,12 @@ again:
 	if(bytes_read==-1){
 		if (errno == EWOULDBLOCK || errno == EAGAIN){
 			return 0; /* nothing has been read */
-		}else if (errno == EINTR) goto again;
-		else{
+		} else if (errno == EINTR) {
+			goto again;
+		} else if (errno == ECONNRESET) {
+			c->state=S_CONN_EOF;
+			LM_DBG("EOF on %p, FD %d\n", c, fd);
+		} else {
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
 			return -1;
@@ -900,7 +905,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 		/* prepare for next request */
 		size=req->pos-req->parsed;
 
-		msg_buf = req->start;
+		msg_buf = req->buf;
 		msg_len = req->parsed-req->start;
 		local_rcv = con->rcv;
 
@@ -964,9 +969,15 @@ static inline int hep_handle_req(struct tcp_req *req,
 		}
 
 		/* skip receive msg if we were told so from at least one callback */
-		if (ret != HEP_SCRIPT_SKIP &&
-				receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0)
+		if ( ret != HEP_SCRIPT_SKIP ) {
+			if ( receive_msg(msg_buf, msg_len, &local_rcv, ctx) <0 ) {
 				LM_ERR("receive_msg failed \n");
+			}
+		} else {
+			if ( ctx ) {
+				context_free( ctx );
+			}
+		}
 
 		if (hep_ctx)
 			free_hep_context(hep_ctx);
@@ -979,13 +990,10 @@ static inline int hep_handle_req(struct tcp_req *req,
 
 		if (size) {
 			memmove(req->buf, req->parsed, size);
-			req->pos = req->buf + size;
-			/* anything that was parsed was already processed */
-			req->parsed = req->buf;
-		}
+			init_tcp_req( req, size);
 
-		/* if we still have some unparsed bytes, try to  parse them too*/
-		if (size) return 1;
+			return 1;
+		}
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts==0)
@@ -1310,6 +1318,10 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	if (ret != HEP_SCRIPT_SKIP) {
 		/* receive_msg must free buf too!*/
 		receive_msg( msg.s, msg.len, &ri, ctx);
+	} else {
+		if ( ctx ) {
+			context_free( ctx );
+		}
 	}
 
 	free_hep_context(hep_ctx);

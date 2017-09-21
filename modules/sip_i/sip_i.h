@@ -32,6 +32,10 @@
 
 #define DEFAULT_COUNTRY_CODE "+1"
 
+enum tr_isup_subtype {
+	TR_ISUP_PARAM, TR_ISUP_PARAM_STR
+};
+
 struct isup_parse_fixup {
 	int isup_params_idx;
 	int subfield_idx;

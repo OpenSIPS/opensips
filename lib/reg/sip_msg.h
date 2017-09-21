@@ -49,6 +49,15 @@ int parse_reg_headers(struct sip_msg* _m);
 int check_contacts(struct sip_msg* _m, int* _s);
 
 /*! \brief
+ * Calculate contact q value as follows:
+ * 1) If q parameter exist, use it
+ * 2) If the parameter doesn't exist, use default value
+ */
+extern qvalue_t default_q;
+int calc_contact_q(param_t* _q, qvalue_t* _r);
+
+
+/*! \brief
  * Iterators through all Contact hf values of a SIP request
  *
  * Note: each pair of functions has a global state, so two pairs are

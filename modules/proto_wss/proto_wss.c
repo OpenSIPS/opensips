@@ -85,13 +85,15 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #include "../proto_ws/ws_common.h"
 
 #define WS_TRACE_PROTO "proto_hep"
-#define WS_TRANS_TRACE_PROTO_ID "trans"
+#define WS_TRANS_TRACE_PROTO_ID "net"
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;
 
+extern int is_tcp_main;
+
 /* module  tracing parameters */
-static int trace_is_on_tmp=1, *trace_is_on;
+static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
 static int trace_filter_route_id = -1;
 /**/
@@ -157,6 +159,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	mi_cmds,    /* exported MI functions */
 	0,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -275,23 +278,26 @@ static int wss_conn_init(struct tcp_connection* c)
 static void ws_conn_clean(struct tcp_connection* c)
 {
 	struct ws_data *d = (struct ws_data*)c->proto_data;
-	if (!d)
-		return;
 
-	if (c->state == S_CONN_OK) {
-		switch (d->code) {
-		case WS_ERR_NOSEND:
-			break;
-		case WS_ERR_NONE:
-			WS_CODE(c) = WS_ERR_NORMAL;
-		default:
-			ws_close(c);
-			break;
+	if (d) {
+
+		if (c->state == S_CONN_OK && !is_tcp_main) {
+			switch (d->code) {
+			case WS_ERR_NOSEND:
+				break;
+			case WS_ERR_NONE:
+				WS_CODE(c) = WS_ERR_NORMAL;
+			default:
+				ws_close(c);
+				break;
+			}
 		}
+
+		shm_free(d);
+		c->proto_data = NULL;
+
 	}
 
-	shm_free(d);
-	c->proto_data = NULL;
 	tls_conn_clean(c);
 }
 
@@ -309,7 +315,7 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 	str s;
 
 	if (type==TCP_REPORT_CLOSE) {
-		if ( !*trace_is_on || (conn_flags & F_CONN_TRACE_DROPPED) )
+		if ( !*trace_is_on || !t_dst || (conn_flags & F_CONN_TRACE_DROPPED) )
 			return;
 		/* grab reason text */
 		if (extra) {
@@ -484,9 +490,10 @@ send_it:
 	/* only here we will have all tracing data TLS + WS */
 	d = c->proto_data;
 
-	if ( d && d->dest && d->tprot ) {
+	if ( (c->flags&F_CONN_ACCEPTED)==0 && d && d->dest && d->tprot ) {
 		if ( d->message ) {
 			send_trace_message( d->message, t_dst);
+			d->message = NULL;
 		}
 
 		/* don't allow future traces for this cnection */
@@ -540,6 +547,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 
 				/* don't allow future traces for this connection */
 				d->tprot = 0;
@@ -563,11 +571,12 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 		 * but the connection is closed with
 		 * EOF before reaching this code if the certificate is not
 		 * validated by the client */
-		if ( (WS_STATE(con) == WS_CON_HANDSHAKE_DONE ||
-					con->state == S_CONN_EOF ) &&
-								d && d->dest && d->tprot ) {
+		if ( con->flags&F_CONN_ACCEPTED
+		&& (WS_STATE(con)==WS_CON_HANDSHAKE_DONE || con->state==S_CONN_EOF)
+		&& d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 			}
 
 			/* don't allow future traces for this connection */
@@ -600,6 +609,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #endif
 
 #ifndef TLS_DONT_WRITE_FRAGMENTS
+	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
 		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len, &tls_mgm_api);
 		if (n < 0) {
@@ -622,11 +632,12 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		memcpy(buf + n, iov[i].iov_base, iov[i].iov_len);
 		n += iov[i].iov_len;
 	}
+	lock_get(&c->write_lock);
 	n = tls_blocking_write(c, fd, buf, n, &tls_mgm_api);
-
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:
+	lock_release(&c->write_lock);
 	return ret;
 }
 

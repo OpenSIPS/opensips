@@ -778,7 +778,7 @@ error:
  *       Therefore it is CRUCIAL that you free ipList when you are done with
  *       its contents, to avoid a nasty memory leak.
  */
-int get_socket_list_from_proto(int **ipList, int protocol) {
+int get_socket_list_from_proto(unsigned int **ipList, int protocol) {
 
 	struct socket_info  *si;
 	struct socket_info** list;
@@ -865,17 +865,17 @@ int get_socket_list_from_proto(int **ipList, int protocol) {
  * get_socket_list_from_proto() in this file.
  *
  */
-static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
+static int parse_proc_net_line(char *line, unsigned int *ipAddress, int *rx_queue)
 {
 	int i;
 
-	int ipOctetExtractionMask = 0xFF;
+	unsigned int ipOctetExtractionMask = 0xFF;
 
 	char *currColonLocation;
 	char *nextNonNumericalChar;
 	char *currentLocationInLine = line;
 
-	int parsedInteger[4];
+	unsigned int parsedInteger[4];
 
 	/* Example line from /proc/net/tcp or /proc/net/udp:
 	 *
@@ -948,7 +948,7 @@ static int parse_proc_net_line(char *line, int *ipAddress, int *rx_queue)
  * get_socket_list_from_proto() in this file.
  *
  * */
-static int match_ip_and_port(int *ipOne, int *ipArray, int sizeOf_ipArray)
+static int match_ip_and_port(unsigned int *ipOne, unsigned int *ipArray, int sizeOf_ipArray)
 {
 	int curIPAddrIdx;
 	int curOctetIdx;
@@ -996,13 +996,13 @@ static int match_ip_and_port(int *ipOne, int *ipArray, int sizeOf_ipArray)
  *       interface.  On other systems, zero will always be returned.
  */
 static int get_used_waiting_queue(
-		int forTCP, int *interfaceList, int listSize)
+		int forTCP, unsigned int *interfaceList, int listSize)
 {
 	FILE *fp;
 	char *fileToOpen;
 
 	char lineBuffer[MAX_PROC_BUFFER];
-	int  ipAddress[NUM_IP_OCTETS+1];
+	unsigned int  ipAddress[NUM_IP_OCTETS+1];
 	int  rx_queue;
 	int  waitingQueueSize = 0;
 
@@ -1058,9 +1058,9 @@ static int get_used_waiting_queue(
  */
 int get_total_bytes_waiting(int only_proto)
 {
-	static int *UDPList  = NULL;
-	static int *TCPList  = NULL;
-	static int *TLSList  = NULL;
+	static unsigned int *UDPList  = NULL;
+	static unsigned int *TCPList  = NULL;
+	static unsigned int *TLSList  = NULL;
 
 	static int numUDPSockets  = -1;
 	static int numTCPSockets  = -1;

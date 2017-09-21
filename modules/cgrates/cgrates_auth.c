@@ -57,7 +57,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst, st
 {
 	struct cgr_session *s;
 	struct cgr_msg *cmsg = NULL;
-	static str cmd = str_init("SMGenericV1.MaxUsage");
+	static str cmd = str_init("SMGenericV1.GetMaxUsage");
 	str stime;
 
 	if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||

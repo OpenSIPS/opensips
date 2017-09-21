@@ -45,6 +45,7 @@
 #include "script_cb.h"
 #include "sl_cb.h"
 #include "net/trans.h"
+#include "socket_info.h"
 
 struct socket_info* get_send_socket(struct sip_msg* msg,
 									union sockaddr_union* su, int proto);
@@ -85,13 +86,16 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 							char* buf, int len, struct sip_msg* msg)
 {
 	str out_buff;
+	unsigned short port;
+	char *ip;
 
 	if (proto<=PROTO_NONE || proto>=PROTO_OTHER) {
-		LM_BUG("bogus proto %d received!\n",proto);
+		LM_BUG("bogus proto %s/%d received!\n",proto2a(proto),proto);
 		return -1;
 	}
 	if (protos[proto].id==PROTO_NONE) {
-		LM_BUG("using proto %d which is not init!\n",proto);
+		LM_ERR("trying to using proto %s/%d which is not initialized!\n",
+			proto2a(proto),proto);
 		return -1;
 	}
 
@@ -102,7 +106,8 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	if (send_sock==0)
 		send_sock=get_send_socket(0, to, proto);
 	if (send_sock==0){
-		LM_ERR("no sending socket found for proto %d\n", proto);
+		LM_ERR("no sending socket found for proto %s/%d\n",
+			proto2a(proto), proto);
 		goto error;
 	}
 
@@ -115,8 +120,10 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	/* update the length for further processing */
 	len = out_buff.len;
 
-	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to, id)<0){
-		LM_ERR("send() for proto %d failed\n",proto);
+	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to,id)<0){
+		get_su_info(to, ip, port);
+		LM_ERR("send() to %s:%hu for proto %s/%d failed\n",
+				ip, port, proto2a(proto),proto);
 		goto error;
 	}
 

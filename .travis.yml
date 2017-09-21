@@ -34,3 +34,10 @@ addons:
             - libjson0-dev
 script: CC_EXTRA_OPTS=-Werror FASTER=1 NICER=0 make \
     exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb" all
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#opensips"
+    on_success: change
+    on_failure: always
+    skip_join: true

@@ -328,6 +328,7 @@ struct module_exports exports = {
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
 	mod_pvs,     /* exported pseudo-variables */
+	0,			 /* exported transformations */
 	0,           /* extra processes */
 	mod_init,
 	0,           /* reply processing */
@@ -796,7 +797,7 @@ static struct mi_root* mi_teardown_call(struct mi_root* cmd_tree,
 		if (dlg_end_dlg==NULL) {
 			LM_ERR("cannot find 'dlg_end_dlg' MI command - "
 				"is dialog module loaded ??\n");
-			return init_mi_tree( 503, MI_SSTR("Comand not available") );
+			return init_mi_tree( 503, MI_SSTR("Command not available") );
 		}
 	}
 
@@ -1029,9 +1030,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 	str key, val;
 	int delete_delay;
 	bencode_item_t *bitem;
+	str iniface, outiface;
 
 	if (!flags_str)
 		return 0;
+
+	iniface.len = outiface.len = 0;
 
 	while (1) {
 		while (*flags_str == ' ')
@@ -1107,10 +1111,16 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				continue;
 
 			case 8:
-				if (str_eq(&key, "RTP/AVPF"))
+				if (str_eq(&key, "internal"))
+					iniface = key;
+				else if (str_eq(&key, "external"))
+					outiface = key;
+				else if (str_eq(&key, "RTP/AVPF"))
 					ng_flags->transport = 0x102;
 				else if (str_eq(&key, "RTP/SAVP"))
 					ng_flags->transport = 0x101;
+				else if (str_eq(&key, "in-iface"))
+					iniface = val;
 				else
 					break;
 				continue;
@@ -1118,6 +1128,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 			case 9:
 				if (str_eq(&key, "RTP/SAVPF"))
 					ng_flags->transport = 0x103;
+				else if (str_eq(&key, "out-iface"))
+					outiface = val;
 				else
 					break;
 				continue;
@@ -1256,6 +1268,27 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 			}
 			BCHECK(bencode_dictionary_add_len(ng_flags->dict, key.s, key.len, bitem));
 		}
+	}
+
+	if (iniface.len != 0 && outiface.len != 0) {
+		bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &iniface);
+		if (!bitem) {
+			err = "no more memory";
+			goto error;
+		}
+		BCHECK(bencode_list_add(ng_flags->direction, bitem));
+		bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &outiface);
+		if (!bitem) {
+			err = "no more memory";
+			goto error;
+		}
+		BCHECK(bencode_list_add(ng_flags->direction, bitem));
+	} else if (iniface.len) {
+		LM_ERR("in-iface value without out-iface\n");
+		return -1;
+	} else if (outiface.len) {
+		LM_ERR("out-iface value without in-iface\n");
+		return -1;
 	}
 
 	return 0;

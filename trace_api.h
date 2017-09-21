@@ -29,7 +29,8 @@
 
 /* INADDR_LOOPBACK is internally stored in network byte order;
  * we need little endian so we'll define our own loopback address */
-#define TRACE_INADDR_LOOPBACK	((in_addr_t) 0x0100007f) /* Inet 127.0.0.1.  */
+#define TRACE_INADDR_LOOPBACK	((in_addr_t) 0x0100007f) /* Inet 127.0.0.1  */
+#define TRACE_INADDR_LOOPBACK2 ((in_addr_t) 0x0200007f) /* Inet 127.0.0.2  */
 
 #define TRACE_PROTO_COMMON \
 	int trace_route_id; \

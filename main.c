@@ -197,7 +197,7 @@ int config_check = 0;
 /* check if reply first via host==us */
 int check_via =  0;
 /* debugging level for memory stats */
-int memlog = L_DBG + 10;
+int memlog = L_DBG + 11;
 int memdump = L_DBG + 10;
 /* debugging in case msg processing takes. too long disabled by default */
 int execmsgthreshold = 0;
@@ -323,6 +323,7 @@ void cleanup(int show_status)
 	destroy_stats_collector();
 	destroy_script_cb();
 	pv_free_extra_list();
+	tr_free_extra_list();
 	destroy_argv_list();
 	destroy_black_lists();
 #ifdef PKG_MALLOC
@@ -952,12 +953,16 @@ int main(int argc, char** argv)
 	/* fill missing arguments with the default values*/
 	if (cfg_file==0) cfg_file=CFG_FILE;
 
-	/* load config file or die */
-	cfg_stream=fopen (cfg_file, "r");
-	if (cfg_stream==0){
-		LM_ERR("loading config file(%s): %s\n", cfg_file,
-				strerror(errno));
-		goto error00;
+	if (strlen(cfg_file) == 1 && cfg_file[0] == '-') {
+		cfg_stream = stdin;
+	} else {
+		/* load config file or die */
+		cfg_stream=fopen (cfg_file, "r");
+		if (cfg_stream==0){
+			LM_ERR("loading config file(%s): %s\n", cfg_file,
+					strerror(errno));
+			goto error00;
+		}
 	}
 
 	/* seed the prng, try to use /dev/urandom if possible */
@@ -1020,6 +1025,9 @@ try_again:
 		goto error00;
 	}
 
+	/* shm statistics, module stat groups, memory warming */
+	init_shm_post_yyparse();
+
 	if (config_check>1 && check_rls()!=0) {
 		LM_ERR("bad function call in config file\n");
 		return ret;
@@ -1073,9 +1081,6 @@ try_again:
 	}
 
 	time(&startup_time);
-
-	/* Init statistics */
-	init_shm_statistics();
 
 	/*init UDP networking layer*/
 	if (udp_init()<0){

@@ -25,7 +25,7 @@
 #include "str.h"
 
 /* whitespace */
-#define is_ws(c) ((c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\t')
+#define is_ws(c) ((c) == ' ' || (c) == '\r' || (c) == '\n' || (c) == '\t')
 
 /*
  * trim leading ws

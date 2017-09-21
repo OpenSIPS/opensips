@@ -78,15 +78,15 @@
 	do{\
 		if ((_val)->type!=_type) { \
 			LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
-			goto error;\
+			continue;\
 		} \
 		if (_not_null && (_val)->nul) { \
 			LM_ERR("column %.*s is null\n", _col.len, _col.s); \
-			goto error;\
+			continue;\
 		} \
 		if (_is_empty_str && VAL_STRING(_val)==0) { \
 			LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
-			goto error;\
+			continue;\
 		} \
 		if ((_val)->type == DB_INT && (_val)->nul) { \
 			(_val)->val.int_val = -1;\
@@ -109,8 +109,6 @@ static db_con_t *db_hdl = 0;
 /* DB functions */
 static db_func_t dr_dbf;
 
-int tls_db_enabled = 0;
-
 /* definition of exported functions */
 static int is_peer_verified(struct sip_msg*, char*, char*);
 
@@ -130,7 +128,6 @@ static param_export_t params[] = {
 	{ "ciphers_list",  STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_cplist     },
 	{ "dh_params",     STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_dhparams   },
 	{ "ec_curve",      STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_set_eccurve    },
-	{ "db_mode",		INT_PARAM,  &tls_db_enabled	},
 	{ "db_url",		STR_PARAM,  &tls_db_url.s	},
 	{ "db_table",		STR_PARAM,  &tls_db_table.s	},
 	{ "domain_col",		STR_PARAM,  &domain_col.s		},
@@ -350,6 +347,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	mi_cmds,          /* exported MI functions */
 	mod_items,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -446,18 +444,19 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
 #endif
 
 /* loads data from the db */
-int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
-	struct tls_domain **serv_dom, struct tls_domain **cli_dom)
+int load_info(struct tls_domain **serv_dom, struct tls_domain **cli_dom,
+				struct tls_domain **def_serv_dom, struct tls_domain **def_cli_dom,
+				struct tls_domain *script_srv_doms, struct tls_domain *script_cli_doms)
 {
-	int int_vals[4];
-	char *str_vals[7];
-	str blob_vals[4];
+	int int_vals[NO_INT_VALS];
+	char *str_vals[NO_STR_VALS];
+	str blob_vals[NO_BLOB_VALS];
 	int i, n;
 	int no_rows = 5;
-	int db_cols = 15;
+	int db_cols = NO_DB_COLS;
 
 	/* the columns from the db table */
-	db_key_t columns[15];
+	db_key_t columns[NO_DB_COLS];
 	/* result from a db query */
 	db_res_t* res;
 	/* a row from the db table */
@@ -465,117 +464,129 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 	res = 0;
 
-	columns[0] = &domain_col;
-	columns[1] = &address_col;
-	columns[2] = &type_col;
-	columns[3] = &method_col;
-	columns[4] = &verify_cert_col;
-	columns[5] = &require_cert_col;
-	columns[6] = &certificate_col;
-	columns[7] = &pk_col;
-	columns[8] = &crl_check_col;
-	columns[9] = &crl_dir_col;
-	columns[10] = &calist_col;
-	columns[11] = &cadir_col;
-	columns[12] = &cplist_col;
-	columns[13] = &dhparams_col;
-	columns[14] = &eccurve_col;
+	columns[0] = &id_col;
+	columns[1] = &domain_col;
+	columns[2] = &address_col;
+	columns[3] = &type_col;
+	columns[4] = &method_col;
+	columns[5] = &verify_cert_col;
+	columns[6] = &require_cert_col;
+	columns[7] = &certificate_col;
+	columns[8] = &pk_col;
+	columns[9] = &crl_check_col;
+	columns[10] = &crl_dir_col;
+	columns[11] = &calist_col;
+	columns[12] = &cadir_col;
+	columns[13] = &cplist_col;
+	columns[14] = &dhparams_col;
+	columns[15] = &eccurve_col;
 
 	/* checking if the table version is up to date*/
-	if (db_check_table_version(dr_dbf, db_hdl, db_table, 2/*version*/) != 0)
+	if (db_check_table_version(&dr_dbf, db_hdl, &tls_db_table, 2/*version*/) != 0)
 		goto error;
 
 	/* table to use*/
-	if (dr_dbf->use_table(db_hdl, db_table) < 0) {
-		LM_ERR("cannot select table \"%.*s\"\n", db_table->len, db_table->s);
+	if (dr_dbf.use_table(db_hdl, &tls_db_table) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n", tls_db_table.len, tls_db_table.s);
 		goto error;
 	}
 
-	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
+	if (DB_CAPABILITY(dr_dbf, DB_CAP_FETCH)) {
 
-		if (dr_dbf->query(db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0) < 0) {
+		if (dr_dbf.query(db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0) < 0) {
 			LM_ERR("DB query failed - retrieve valid connections \n");
 			goto error;
 		}
 		no_rows = estimate_available_rows(4 + 45 + 4 + 45 + 4 + 4 + 45 +
 			45 + 4 + 45 + 45 + 4 * 4096, db_cols);
 		if (no_rows == 0) no_rows = 5;
-		if (dr_dbf->fetch_result(db_hdl, &res, no_rows) < 0) {
+		if (dr_dbf.fetch_result(db_hdl, &res, no_rows) < 0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
 	} else {
-		if (dr_dbf->query(db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
+		if (dr_dbf.query(db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
 			LM_ERR("DB query failed - retrieve valid connections\n");
 			goto error;
 		}
 	}
 
 	LM_DBG("%d rows found in %.*s\n",
-		RES_ROW_N(res), db_table->len, db_table->s);
+		RES_ROW_N(res), tls_db_table.len, tls_db_table.s);
 
 	n = 0;
 	do {
 		for (i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
-
-			check_val(domain_col, ROW_VALUES(row), DB_STRING, 1, 1);
-			str_vals[STR_VALS_DOMAIN_COL] = (char *) VAL_STRING(ROW_VALUES(row));
-
-			check_val(address_col, ROW_VALUES(row) + 1, DB_STRING, 1, 1);
-			str_vals[STR_VALS_ADDRESS_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 1);
-
-			check_val(type_col, ROW_VALUES(row) + 2, DB_INT, 1, 0);
-			int_vals[INT_VALS_TYPE_COL] = VAL_INT(ROW_VALUES(row) + 2);
-
-			check_val(method_col, ROW_VALUES(row) + 3, DB_STRING, 0, 0);
-			str_vals[STR_VALS_METHOD_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 3);
-
-			check_val(verify_cert_col, ROW_VALUES(row) + 4, DB_INT, 0, 0);
-			int_vals[INT_VALS_VERIFY_CERT_COL] = VAL_INT(ROW_VALUES(row) + 4);
-
-			check_val(require_cert_col, ROW_VALUES(row) + 5, DB_INT, 0, 0);
-			int_vals[INT_VALS_REQUIRE_CERT_COL] = VAL_INT(ROW_VALUES(row) + 5);
-
-			check_val(certificate_col, ROW_VALUES(row) + 6, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_CERTIFICATE_COL] = VAL_BLOB(ROW_VALUES(row) + 6);
-
-			check_val(pk_col, ROW_VALUES(row) + 7, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_PK_COL] = VAL_BLOB(ROW_VALUES(row) + 7);
-
-			check_val(crl_check_col, ROW_VALUES(row) + 8, DB_INT, 0, 0);
-			int_vals[INT_VALS_CRL_CHECK_COL] = VAL_INT(ROW_VALUES(row) + 8);
-
-			check_val(crl_dir_col, ROW_VALUES(row) + 9, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CRL_DIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 9);
-
-			check_val(calist_col, ROW_VALUES(row) + 10, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_CALIST_COL] = VAL_BLOB(ROW_VALUES(row) + 10);
-
-			check_val(cadir_col, ROW_VALUES(row) + 11, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CADIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 11);
-
-			check_val(cplist_col, ROW_VALUES(row) + 12, DB_STRING, 0, 0);
-			str_vals[STR_VALS_CPLIST_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 12);
-
-			check_val(dhparams_col, ROW_VALUES(row) + 13, DB_BLOB, 0, 0);
-			blob_vals[BLOB_VALS_DHPARAMS_COL] = VAL_BLOB(ROW_VALUES(row) + 13);
-
-			check_val(eccurve_col, ROW_VALUES(row) + 14, DB_STRING, 0, 0);
-			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 14);
-
-			if (tlsp_db_add_domain(str_vals, int_vals, blob_vals, 
-			serv_dom, cli_dom)<0) {
-				LM_ERR("failed to add TLS domain %s/%s, skipping \n",
-					str_vals[STR_VALS_DOMAIN_COL],
-					str_vals[STR_VALS_ADDRESS_COL]);
-			}
-
 			n++;
+
+			check_val(id_col, ROW_VALUES(row), DB_INT, 1, 0);
+			int_vals[INT_VALS_ID_COL] = VAL_INT(ROW_VALUES(row));
+
+			check_val(domain_col, ROW_VALUES(row) + 1, DB_STRING, 0, 0);
+			if (VAL_NULL(ROW_VALUES(row) + 1))
+				str_vals[STR_VALS_DOMAIN_COL] = 0;
+			else
+				str_vals[STR_VALS_DOMAIN_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 1);
+
+			check_val(address_col, ROW_VALUES(row) + 2, DB_STRING, 0, 0);
+			if (VAL_NULL(ROW_VALUES(row) + 2))
+				str_vals[STR_VALS_ADDRESS_COL] = 0;
+			else
+				str_vals[STR_VALS_ADDRESS_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 2);
+
+			check_val(type_col, ROW_VALUES(row) + 3, DB_INT, 1, 0);
+			int_vals[INT_VALS_TYPE_COL] = VAL_INT(ROW_VALUES(row) + 3);
+
+			check_val(method_col, ROW_VALUES(row) + 4, DB_STRING, 0, 0);
+			str_vals[STR_VALS_METHOD_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 4);
+
+			check_val(verify_cert_col, ROW_VALUES(row) + 5, DB_INT, 0, 0);
+			int_vals[INT_VALS_VERIFY_CERT_COL] = VAL_INT(ROW_VALUES(row) + 5);
+
+			check_val(require_cert_col, ROW_VALUES(row) + 6, DB_INT, 0, 0);
+			int_vals[INT_VALS_REQUIRE_CERT_COL] = VAL_INT(ROW_VALUES(row) + 6);
+
+			check_val(certificate_col, ROW_VALUES(row) + 7, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_CERTIFICATE_COL] = VAL_BLOB(ROW_VALUES(row) + 7);
+
+			check_val(pk_col, ROW_VALUES(row) + 8, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_PK_COL] = VAL_BLOB(ROW_VALUES(row) + 8);
+
+			check_val(crl_check_col, ROW_VALUES(row) + 9, DB_INT, 0, 0);
+			int_vals[INT_VALS_CRL_CHECK_COL] = VAL_INT(ROW_VALUES(row) + 9);
+
+			check_val(crl_dir_col, ROW_VALUES(row) + 10, DB_STRING, 0, 0);
+			str_vals[STR_VALS_CRL_DIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 10);
+
+			check_val(calist_col, ROW_VALUES(row) + 11, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_CALIST_COL] = VAL_BLOB(ROW_VALUES(row) + 11);
+
+			check_val(cadir_col, ROW_VALUES(row) + 12, DB_STRING, 0, 0);
+			str_vals[STR_VALS_CADIR_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 12);
+
+			check_val(cplist_col, ROW_VALUES(row) + 13, DB_STRING, 0, 0);
+			str_vals[STR_VALS_CPLIST_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 13);
+
+			check_val(dhparams_col, ROW_VALUES(row) + 14, DB_BLOB, 0, 0);
+			blob_vals[BLOB_VALS_DHPARAMS_COL] = VAL_BLOB(ROW_VALUES(row) + 14);
+
+			check_val(eccurve_col, ROW_VALUES(row) + 15, DB_STRING, 0, 0);
+			str_vals[STR_VALS_ECCURVE_COL] = (char *) VAL_STRING(ROW_VALUES(row) + 15);
+
+			if (db_add_domain(str_vals, int_vals, blob_vals, serv_dom, cli_dom,
+							def_serv_dom, def_cli_dom, script_srv_doms, script_cli_doms) < 0) {
+				if (str_vals[STR_VALS_DOMAIN_COL])
+					LM_ERR("failed to add TLS domain '%s' id: %d, skipping... \n",
+						str_vals[STR_VALS_DOMAIN_COL], int_vals[INT_VALS_ID_COL]);
+				else
+					LM_ERR("failed to add TLS domain id: %d, skipping... \n",
+						int_vals[INT_VALS_ID_COL]);
+			}
 		}
 
-		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-			if (dr_dbf->fetch_result(db_hdl, &res, no_rows) < 0) {
+		if (DB_CAPABILITY(dr_dbf, DB_CAP_FETCH)) {
+			if (dr_dbf.fetch_result(db_hdl, &res, no_rows) < 0) {
 				LM_ERR("fetching rows\n");
 				goto error;
 			}
@@ -586,14 +597,14 @@ int load_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	} while (RES_ROW_N(res) > 0);
 
 	LM_DBG("%d records found in %.*s\n",
-		n, db_table->len, db_table->s);
+		n, tls_db_table.len, tls_db_table.s);
 
-	dr_dbf->free_result(db_hdl, res);
+	dr_dbf.free_result(db_hdl, res);
 	res = 0;
 
 	return 0;
 error:
-	LM_ERR("database");
+	LM_ERR("Unable to load domains info from DB\n");
 	return -1;
 }
 
@@ -691,7 +702,7 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
  * Setup default SSL_CTX (and SSL * ) behavior:
  *     verification, cipherlist, acceptable versions, ...
  */
-static int init_ssl_ctx_behavior( struct tls_domain *d ) {
+static int init_ssl_ctx_behavior(struct tls_domain *d) {
 	int verify_mode;
 	int from_file = 0;
 
@@ -701,13 +712,12 @@ static int init_ssl_ctx_behavior( struct tls_domain *d ) {
 	 */
 	if (!d->dh_param.s) {
 		from_file = 1;
-		LM_DBG("no DH params file for tls[%s:%d] defined, "
-				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-				tls_tmp_dh_file);
+		LM_DBG("no DH params file for tls domain '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_tmp_dh_file);
 		d->dh_param.s = tls_tmp_dh_file;
 		d->dh_param.len = len(tls_tmp_dh_file);
 	}
-	if (!tls_db_enabled || from_file) {
+	if (!(d->type & TLS_DOMAIN_DB) || from_file) {
 		if (d->dh_param.s && set_dh_params(d->ctx, d->dh_param.s) < 0)
 			return -1;
 	} else {
@@ -1148,133 +1158,188 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 }
 
 
+static int init_tls_dom(struct tls_domain *d)
+{
+	int from_file = 0;
+
+	LM_INFO("Processing TLS domain '%.*s'\n",
+			d->name.len, ZSW(d->name.s));
+
+	/*
+	 * set method
+	 */
+	if (d->method == TLS_METHOD_UNSPEC) {
+		LM_DBG("no method for tls domain '%.*s', using default\n",
+				d->name.len, ZSW(d->name.s));
+		d->method = tls_default_method;
+	}
+
+	/*
+	 * create context
+	 */
+	d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+	if (d->ctx == NULL) {
+		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
+			d->name.len, ZSW(d->name.s));
+		return -1;
+	}
+
+	if (init_ssl_ctx_behavior(d) < 0)
+		return -1;
+
+	/*
+	 * load certificate
+	 */
+	if (!d->cert.s) {
+		from_file = 1;
+		LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_cert_file);
+		d->cert.s = tls_cert_file;
+		d->cert.len = len(tls_cert_file);
+	}
+
+	if (!(d->type & TLS_DOMAIN_DB) || from_file) {
+		if (load_certificate(d->ctx, d->cert.s) < 0)
+			return -1;
+	} else
+		if (load_certificate_db(d->ctx, &d->cert) < 0)
+			return -1;
+
+	from_file = 0;
+
+	/**
+	 * load crl from directory
+	 */
+	if (!d->crl_directory) {
+		LM_NOTICE("no crl for tls, using none\n");
+	} else {
+		if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
+			return -1;
+	}
+
+	/*
+	 * load ca
+	 */
+	if (!d->ca.s) {
+		from_file = 1;
+		LM_NOTICE("no CA list for tls domain '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_ca_file);
+		d->ca.s = tls_ca_file;
+		d->ca.len = len(tls_ca_file);
+	}
+
+	if (!(d->type & TLS_DOMAIN_DB) || from_file) {
+		if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
+			return -1;
+	} else {
+		if (load_ca_db(d->ctx, &d->ca) < 0)
+			return -1;
+	}
+
+	/*
+	 * load ca from directory
+	 */
+	if (!d->ca_directory) {
+		LM_NOTICE("no CA dir for tls '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_ca_dir);
+		d->ca_directory = tls_ca_dir;
+	}
+
+	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
+		return -1;
+
+	return 0;
+}
+
 /*
  * initialize tls virtual domains
  */
-static int init_tls_domains(struct tls_domain *d)
+static int init_tls_domains(struct tls_domain **dom)
 {
-	struct tls_domain *dom;
+	struct tls_domain *d, *tmp, *prev = NULL;
 	int from_file = 0;
+	int rc;
+	int db = 0;
 
-	dom = d;
+	d = *dom;
 	while (d) {
-		if (d->name.len) {
-			LM_INFO("Processing TLS domain '%.*s'\n",
+		if (init_tls_dom(d) < 0) {
+			db = d->type & TLS_DOMAIN_DB;
+			if (!db)
+				LM_ERR("Failed to init TLS domain '%.*s'\n", d->name.len, ZSW(d->name.s));
+			else
+				LM_WARN("Failed to init TLS domain '%.*s', skipping...\n",
 					d->name.len, ZSW(d->name.s));
-		} else {
-			LM_INFO("Processing TLS domain [%s:%d]\n",
-					ip_addr2a(&d->addr), d->port);
-		}
 
-		/*
-		 * set method
-		 */
-		if (d->method == TLS_METHOD_UNSPEC) {
-			LM_DBG("no method for tls[%s:%d], using default\n",
-					ip_addr2a(&d->addr), d->port);
-			d->method = tls_default_method;
-		}
+			if (d == *dom)
+				*dom = d->next;
 
-		/*
-		 * create context
-		 */
-		d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
-		if (d->ctx == NULL) {
-			LM_ERR("cannot create ssl context for "
-					"tls[%s:%d]\n", ip_addr2a(&d->addr), d->port);
-			return -1;
-		}
-		if (init_ssl_ctx_behavior( d ) < 0)
-			return -1;
+			if (prev)
+				prev->next = d->next;
 
-		/*
-		 * load certificate
-		 */
-		if (!d->cert.s) {
-			from_file = 1;
-			LM_NOTICE("no certificate for tls[%s:%d] defined, using default"
-					"'%s'\n", ip_addr2a(&d->addr), d->port,	tls_cert_file);
-			d->cert.s = tls_cert_file;
-			d->cert.len = len(tls_cert_file);
-		}
+			tmp = d;
+			d = d->next;
+			if (tmp->ctx)
+				SSL_CTX_free(tmp->ctx);
+			lock_destroy(tmp->lock);
+			lock_dealloc(tmp->lock);
+			shm_free(tmp);
 
-		if (!tls_db_enabled || from_file) {
-			if (load_certificate(d->ctx, d->cert.s) < 0)
-				return -1;
-		} else
-			if (load_certificate_db(d->ctx, &d->cert) < 0)
-				return -1;
-
-		from_file = 0;
-
-		/**
-		 * load crl from directory
-		 */
-		if (!d->crl_directory) {
-			LM_NOTICE("no crl for tls, using none\n");
-		} else {
-			if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
-				return -1;
-		}
-
-		/*
-		 * load ca
-		 */
-		if (!d->ca.s) {
-			from_file = 1;
-			LM_NOTICE("no CA list for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_ca_file);
-			d->ca.s = tls_ca_file;
-			d->ca.len = len(tls_ca_file);
-		}
-
-		if (!tls_db_enabled || from_file) {
-			if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
+			if (!db)
 				return -1;
 		} else {
-			if (load_ca_db(d->ctx, &d->ca) < 0)
-				return -1;
+			prev = d;
+			d = d->next;
 		}
-		from_file = 0;
-		/*
-		 * load ca from directory
-		 */
-		if (!d->ca_directory) {
-
-			LM_NOTICE("no CA dir for tls[%s:%d] defined, "
-					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
-					tls_ca_dir);
-			d->ca_directory = tls_ca_dir;
-		}
-
-		if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
-			return -1;
-
-		d = d->next;
 	}
 
 	/*
 	 * load all private keys as the last step (may prompt for password)
 	 */
-	d = dom;
+	d = *dom;
+	prev = NULL;
 	while (d) {
 		if (!d->pkey.s) {
-			LM_NOTICE("no private key for tls[%s:%d] defined, using default"
-					"'%s'\n", ip_addr2a(&d->addr), d->port, tls_pkey_file);
+			LM_NOTICE("no private key for tls domain '%.*s' defined, using default '%s'\n",
+					d->name.len, ZSW(d->name.s), tls_pkey_file);
 			d->pkey.s = tls_pkey_file;
 			d->pkey.len = len(tls_pkey_file);
 			from_file = 1;
 		}
-		if (!tls_db_enabled || from_file) {
-			if (load_private_key(d->ctx, d->pkey.s) < 0)
+
+		if (!(d->type & TLS_DOMAIN_DB) || from_file)
+			rc = load_private_key(d->ctx, d->pkey.s);
+		else
+			rc = load_private_key_db(d->ctx, &d->pkey);
+
+		if (rc < 0) {
+			db = d->type & TLS_DOMAIN_DB;
+			if (!db)
+				LM_ERR("Failed to init TLS domain '%.*s'\n", d->name.len, ZSW(d->name.s));
+			else
+				LM_WARN("Failed to init TLS domain '%.*s', skipping...\n",
+					d->name.len, ZSW(d->name.s));
+
+			if (d == *dom)
+				*dom = d->next;
+
+			if (prev)
+				prev->next = d->next;
+
+			tmp = d;
+			d = d->next;
+			if (tmp->ctx)
+				SSL_CTX_free(tmp->ctx);
+			lock_destroy(tmp->lock);
+			lock_dealloc(tmp->lock);
+			shm_free(tmp);
+
+			if (!db)
 				return -1;
 		} else {
-			if (load_private_key_db(d->ctx, &d->pkey) < 0)
-				return -1;
+			prev = d;
+			d = d->next;
 		}
-		from_file = 0;
-		d = d->next;
 	}
 
 	return 0;
@@ -1394,34 +1459,105 @@ init_ssl_methods(void)
 /* reloads data from the db */
 static int reload_data(void)
 {
-	int n;
-	struct tls_domain *tls_client_domains_tmp;
-	struct tls_domain *tls_server_domains_tmp;
+	struct tls_domain *tls_client_domains_tmp = NULL;
+	struct tls_domain *tls_server_domains_tmp = NULL;
+	struct tls_domain *script_cli_doms, *script_srv_doms, *dom;
+	struct tls_domain *def_srv_dom_tmp = NULL, *def_cli_dom_tmp = NULL;
+	int db_defined = 0;
 
-	tls_client_domains_tmp = NULL;
-	tls_server_domains_tmp = NULL;
+	script_srv_doms = find_first_script_dom(*tls_server_domains);
+	script_cli_doms = find_first_script_dom(*tls_client_domains);
 
-	load_info(&dr_dbf, db_hdl, &tls_db_table, &tls_server_domains_tmp,
-		&tls_client_domains_tmp);
+	/* load new domains from db */
+	if (load_info(&tls_server_domains_tmp, &tls_client_domains_tmp,
+		&def_srv_dom_tmp, &def_cli_dom_tmp, script_srv_doms, script_cli_doms) < 0)
+		return -1;
 
 	/*
-	 * now initialize tls virtual domains
+	 * initialize new domains
 	 */
-	if ((n = init_tls_domains(tls_server_domains_tmp))) {
-		return n;
-	}
-	if ((n = init_tls_domains(tls_client_domains_tmp))) {
-		return n;
-	}
+	init_tls_domains(&tls_server_domains_tmp);
+	init_tls_domains(&tls_client_domains_tmp);
+
+	init_tls_domains(&def_srv_dom_tmp);
+	init_tls_domains(&def_cli_dom_tmp);
 
 	lock_start_write(dom_lock);
 
-	tls_release_all_domains(tls_client_domains);
-	tls_release_all_domains(tls_server_domains);
-	tls_client_domains = tls_client_domains_tmp;
-	tls_server_domains = tls_server_domains_tmp;
+	if ((*tls_default_server_domain)->type & TLS_DOMAIN_DB)
+		db_defined = 1;
+
+	if (def_srv_dom_tmp) {	/* new, valid default domain from DB */
+		/* if previous default domain was DB defined, we must release it */
+		if (db_defined)
+			tls_release_domain_aux(*tls_default_server_domain);
+
+		*tls_default_server_domain = def_srv_dom_tmp;
+	} else if (db_defined) {
+		if (tls_def_srv_dom_orig && tls_def_srv_dom_orig->ctx == NULL)
+			init_tls_domains(&tls_def_srv_dom_orig);
+
+		if (tls_def_srv_dom_orig) {
+			tls_release_domain_aux(*tls_default_server_domain);
+			*tls_default_server_domain = tls_def_srv_dom_orig;
+		} /* else - keep the old DB default domain */
+	} /* else - keep the old non-DB default domain */
+
+	db_defined = 0;
+
+	/* same for default client domain */
+	if ((*tls_default_client_domain)->type & TLS_DOMAIN_DB)
+		db_defined = 1;
+
+	if (def_cli_dom_tmp) {
+		if (db_defined)
+			tls_release_domain_aux(*tls_default_client_domain);
+
+		*tls_default_client_domain = def_cli_dom_tmp;
+	}
+	else if (db_defined) {
+		if (tls_def_cli_dom_orig && tls_def_cli_dom_orig->ctx == NULL)
+			init_tls_domains(&tls_def_cli_dom_orig);
+
+		if (tls_def_cli_dom_orig) {
+			tls_release_domain_aux(*tls_default_client_domain);
+			*tls_default_client_domain = tls_def_cli_dom_orig;
+		}
+	}
+
+	tls_release_db_domains(*tls_server_domains);
+
+	/* link the new DB domains with the existing script domains */
+	if (script_srv_doms) {
+		for (dom = tls_server_domains_tmp; dom; dom = dom->next)
+			if (!dom->next)
+				break;
+		if (dom)
+			dom->next = script_srv_doms;
+	}
+
+	if (tls_server_domains_tmp)
+		*tls_server_domains = tls_server_domains_tmp;
+	else
+		*tls_server_domains = script_srv_doms;
+
+	tls_release_db_domains(*tls_client_domains);
+
+	if (script_cli_doms) {
+		for (dom = tls_client_domains_tmp; dom; dom = dom->next)
+			if (!dom->next)
+				break;
+		if (dom)
+			dom->next = script_cli_doms;
+	}
+
+	if (tls_client_domains_tmp)
+		*tls_client_domains = tls_client_domains_tmp;
+	else
+		*tls_client_domains = script_cli_doms;
 
 	lock_stop_write(dom_lock);
+
 	return 0;
 }
 
@@ -1429,29 +1565,32 @@ static int reload_data(void)
 static struct mi_root* tls_reload(struct mi_root* root, void *param)
 {
 	LM_INFO("reload data MI command received!\n");
-	if (!tls_db_enabled)
-		return init_mi_tree(500,"DB mode not enabled", 19);
+
+	if (!tls_db_url.s)
+		return init_mi_tree(500, "DB url not set", 14);
 
 	if (reload_data() < 0) {
-		LM_CRIT("failed to load routing data\n");
+		LM_ERR("failed to load tls data\n");
 		return init_mi_tree(500, "Failed to reload", 16);
 	}
 
 	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
 
-static int mod_init(void){
+
+static int mod_init(void) {
 	str s;
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	int n;
+#endif
+	struct tls_domain *tls_client_domains_tmp = NULL;
+	struct tls_domain *tls_server_domains_tmp = NULL;
+	struct tls_domain *dom;
+	struct tls_domain *def_srv_tmp = NULL, *def_cli_tmp = NULL;
 
-	LM_INFO("initializing TLS protocol\n");
+	LM_INFO("initializing TLS management\n");
 
-
-	if (tls_db_enabled != 0 && tls_db_enabled != 1) {
-		tls_db_enabled = 1;
-	}
-
-	if (tls_db_enabled) {
+	if (tls_db_url.s) {
 
 		/* create & init lock */
 		if ((dom_lock = lock_init_rw()) == NULL) {
@@ -1464,10 +1603,11 @@ static int mod_init(void){
 		tls_db_table.len = strlen(tls_db_table.s);
 
 		if (tls_db_table.len == 0) {
-			LM_ERR("db url not specified\n");
+			LM_ERR("db table not specified\n");
 			return -1;
 		}
 
+		id_col.len = strlen(id_col.s);
 		domain_col.len = strlen(domain_col.s);
 		address_col.len = strlen(address_col.s);
 		type_col.len = strlen(type_col.s);
@@ -1501,6 +1641,27 @@ static int mod_init(void){
 		}
 	}
 
+	if (tls_server_domains == NULL) {
+		tls_server_domains = shm_malloc(sizeof *tls_server_domains);
+		if (!tls_server_domains) {
+			LM_ERR("No more shm mem\n");
+			return -1;
+		}
+		*tls_server_domains = NULL;
+	}
+
+	if (tls_client_domains == NULL) {
+		tls_client_domains = shm_malloc(sizeof *tls_client_domains);
+		if (!tls_client_domains) {
+			LM_ERR("No more shm mem\n");
+			return -1;
+		}
+		*tls_client_domains = NULL;
+	}
+
+	if (aloc_default_doms_ptr() < 0)
+		return -1;
+
 	if (tls_domain_avp) {
 		s.s = tls_domain_avp;
 		s.len = strlen(s.s);
@@ -1514,12 +1675,13 @@ static int mod_init(void){
 	 * this has to be called before any function calling CRYPTO_malloc,
 	 * CRYPTO_malloc will set allow_customize in openssl to 0
 	 */
+
+	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
 	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
 		LM_ERR("unable to set the memory allocation functions\n");
 		LM_ERR("NOTE: check if you are using openssl 1.0.1e-fips, (or other "
 			"FIPS version of openssl, as this is known to be broken; if so, "
 			"you need to upgrade or downgrade to a different openssl version!\n");
-		LM_ERR("current version: %s\n", SSLeay_version(SSLEAY_VERSION));
 		return -1;
 	}
 
@@ -1541,8 +1703,12 @@ static int mod_init(void){
 	}
 #endif
 
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	SSL_library_init();
 	SSL_load_error_strings();
+#else
+	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
+#endif
 	init_ssl_methods();
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
@@ -1561,65 +1727,103 @@ static int mod_init(void){
 		 )!=0 ) {
 		LM_ERR("compiled agaist an openssl with %s"
 				"kerberos, but run with one with %skerberos\n",
-				(n==1)?"":"no ",(n!=1)?"no ":"");
+				(n!=1)?"":"no ",(n!=1)?"no ":"");
 		return -1;
 	}
 #endif
 
-	/*
-	 * finish setting up the tls default domains
-	 */
-	tls_default_client_domain.type = TLS_DOMAIN_DEF|TLS_DOMAIN_CLI ;
-	tls_default_client_domain.addr.af = AF_INET;
+	if (tls_db_url.s) {
+		if (load_info(&tls_server_domains_tmp, &tls_client_domains_tmp,
+				&def_srv_tmp, &def_cli_tmp, *tls_server_domains, *tls_client_domains))
+			return -1;
 
-	tls_default_server_domain.type = TLS_DOMAIN_DEF|TLS_DOMAIN_SRV;
-	tls_default_server_domain.addr.af = AF_INET;
+		/* link the DB domains with the existing script domains */
 
-	if (tls_db_enabled && load_info(&dr_dbf, db_hdl, &tls_db_table,
-			&tls_server_domains, &tls_client_domains)){
+		if (*tls_server_domains && tls_server_domains_tmp) {
+			for (dom = tls_server_domains_tmp; dom; dom = dom->next)
+				if (!dom->next)
+					break;
+			dom->next = *tls_server_domains;
+		}
+		if (tls_server_domains_tmp)
+			*tls_server_domains = tls_server_domains_tmp;
+
+		if (*tls_client_domains && tls_client_domains_tmp) {
+			for (dom = tls_client_domains_tmp; dom; dom = dom->next)
+				if (!dom->next)
+					break;
+			dom->next = *tls_client_domains;
+		}
+		if (tls_client_domains_tmp)
+			*tls_client_domains = tls_client_domains_tmp;
+	}
+
+	if (*tls_default_server_domain == NULL &&
+		tls_new_default_domain(TLS_DOMAIN_SRV, tls_default_server_domain) < 0) {
+		LM_ERR("Failed to set up default server domain\n");
 		return -1;
 	}
 
-	/*
-	 * now initialize tls default domains
-	 */
-	if ( (n=init_tls_domains(&tls_default_server_domain)) ) {
-		return n;
+	tls_def_srv_dom_orig = *tls_default_server_domain;
+
+	if (def_srv_tmp)
+		*tls_default_server_domain = def_srv_tmp;
+
+	if (*tls_default_client_domain == NULL &&
+		tls_new_default_domain(TLS_DOMAIN_CLI, tls_default_client_domain) < 0) {
+		LM_ERR("Failed to set up default client domain\n");
+		return -1;
 	}
 
-	if ( (n=init_tls_domains(&tls_default_client_domain)) ) {
-		return n;
-	}
-	/*
-	 * now initialize tls virtual domains
-	 */
-	if ( (n=init_tls_domains(tls_server_domains)) ) {
-		return n;
+	tls_def_cli_dom_orig = *tls_default_client_domain;
+
+	if (def_cli_tmp)
+		*tls_default_client_domain = def_cli_tmp;
+
+	/* initialize tls default domains */
+	init_tls_domains(tls_default_server_domain);
+
+	if (*tls_default_server_domain == NULL) {
+		/* DB default domain failed to init, fallback to standard default domain */
+		if (def_srv_tmp) {
+			init_tls_domains(&tls_def_srv_dom_orig);
+			if (tls_def_srv_dom_orig == NULL)
+				return -1;
+			*tls_default_server_domain = tls_def_srv_dom_orig;
+		} else
+			return -1;
 	}
 
-	if ( (n=init_tls_domains(tls_client_domains)) ) {
-		return n;
+	init_tls_domains(tls_default_client_domain);
+
+	if (*tls_default_client_domain == NULL) {
+		if (def_cli_tmp) {
+			init_tls_domains(&tls_def_cli_dom_orig);
+			if (tls_def_cli_dom_orig == NULL)
+				return -1;
+			*tls_default_client_domain = tls_def_cli_dom_orig;
+		} else
+			return -1;
 	}
-	/*
-	 * we are all set
-	 */
+
+	/* initialize tls virtual domains */
+	if (init_tls_domains(tls_server_domains) < 0)
+		return -1;
+	if (init_tls_domains(tls_client_domains) < 0)
+		return -1;
+
 	return 0;
-
 }
 
-/*
- * called from main.c when opensips exits (main process)
- */
+
 static void mod_destroy(void)
 {
 	struct tls_domain *d;
 
-	if (dom_lock) {
+	if (dom_lock)
 		lock_destroy_rw(dom_lock);
-		dom_lock = 0;
-	}
 
-	d = tls_server_domains;
+	d = *tls_server_domains;
 	while (d) {
 		if (d->ctx)
 			SSL_CTX_free(d->ctx);
@@ -1627,7 +1831,7 @@ static void mod_destroy(void)
 		lock_dealloc(d->lock);
 		d = d->next;
 	}
-	d = tls_client_domains;
+	d = *tls_client_domains;
 	while (d) {
 		if (d->ctx)
 			SSL_CTX_free(d->ctx);
@@ -1636,13 +1840,40 @@ static void mod_destroy(void)
 		d = d->next;
 	}
 
-	if (tls_default_server_domain.ctx) {
-		SSL_CTX_free(tls_default_server_domain.ctx);
+	if (*tls_default_server_domain != tls_def_srv_dom_orig) {
+		if (tls_def_srv_dom_orig->ctx)
+			SSL_CTX_free(tls_def_srv_dom_orig->ctx);
+		lock_destroy(tls_def_srv_dom_orig->lock);
+		lock_dealloc(tls_def_srv_dom_orig->lock);
+		shm_free(tls_def_srv_dom_orig);
 	}
-	if (tls_default_client_domain.ctx) {
-		SSL_CTX_free(tls_default_client_domain.ctx);
+
+	if (*tls_default_client_domain != tls_def_cli_dom_orig) {
+		if (tls_def_cli_dom_orig->ctx)
+			SSL_CTX_free(tls_def_cli_dom_orig->ctx);
+		lock_destroy(tls_def_cli_dom_orig->lock);
+		lock_dealloc(tls_def_cli_dom_orig->lock);
+		shm_free(tls_def_cli_dom_orig);
 	}
+
+	if ((*tls_default_server_domain)->ctx)
+		SSL_CTX_free((*tls_default_server_domain)->ctx);
+	lock_destroy((*tls_default_server_domain)->lock);
+	lock_dealloc((*tls_default_server_domain)->lock);
+	shm_free(*tls_default_server_domain);
+	shm_free(tls_default_server_domain);
+
+	if ((*tls_default_client_domain)->ctx)
+		SSL_CTX_free((*tls_default_client_domain)->ctx);
+	lock_destroy((*tls_default_client_domain)->lock);
+	lock_dealloc((*tls_default_client_domain)->lock);
+	shm_free(*tls_default_client_domain);
+	shm_free(tls_default_client_domain);
+
 	tls_free_domains();
+
+	shm_free(tls_server_domains);
+	shm_free(tls_client_domains);
 
 	/* TODO - destroy static locks */
 
@@ -1734,10 +1965,10 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 	char *addr;
 
 	while (d) {
-		node = add_mi_node_child(root, MI_DUP_VALUE, "ID", 2,
-			d->id.s, d->id.len);
-		;
+		node = add_mi_node_child(root, MI_DUP_VALUE, "Domain", 6,
+			d->name.s, d->name.len);
 		if (node == NULL) goto error;
+
 		if (d->type & TLS_DOMAIN_SRV)
 			child = add_mi_node_child(node, 0, "Type", 4, "TLS_DOMAIN_SRV", 14);
 		else
@@ -1745,19 +1976,12 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 
 		if (child == NULL) goto error;
 
-		if (d->type & TLS_DOMAIN_NAME) {
-			child = add_mi_node_child(node, MI_DUP_VALUE, "Name", 4,
-				d->name.s, d->name.len);
-			if (child == NULL) goto error;
-		} else {
-			addr = ip_addr2a(&d->addr);
+		addr = ip_addr2a(&d->addr);
+		if (addr == NULL) goto error;
 
-			if (addr == NULL) goto error;
-
-			child = add_mi_node_child(node, MI_DUP_VALUE, "Address", 7,
-				addr, strlen(addr));
-			if (child == NULL) goto error;
-		}
+		child = add_mi_node_child(node, MI_DUP_VALUE, "Address", 7,
+			addr, strlen(addr));
+		if (child == NULL) goto error;
 
 		switch (d->method) {
 		case TLS_USE_TLSv1_cli:
@@ -1797,7 +2021,7 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "no", 2);
 		if (child == NULL) goto error;
 
-		if(!tls_db_enabled) {
+		if (!(d->type & TLS_DOMAIN_DB)) {
 			child = add_mi_node_child(node, MI_DUP_VALUE, "CERT_FILE", 9,
 				d->cert.s, d->cert.len);
 			if (child == NULL) goto error;
@@ -1807,7 +2031,7 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 			d->crl_directory, len(d->crl_directory));
 		if (child == NULL) goto error;
 
-		if(!tls_db_enabled) {
+		if (!(d->type & TLS_DOMAIN_DB)) {
 			child = add_mi_node_child(node, MI_DUP_VALUE, "CA_FILE", 7,
 				d->ca.s, d->ca.len);
 			if (child == NULL) goto error;
@@ -1816,7 +2040,7 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 			d->ca_directory, len(d->ca_directory));
 		if (child == NULL) goto error;
 
-		if(!tls_db_enabled) {
+		if (!(d->type & TLS_DOMAIN_DB)) {
 			child = add_mi_node_child(node, MI_DUP_VALUE, "PKEY_FILE", 9,
 				d->pkey.s, d->pkey.len);
 
@@ -1827,8 +2051,8 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 
 		if (child == NULL) goto error;
 
-		if(!tls_db_enabled) {
-			child = add_mi_node_child(node, MI_DUP_VALUE, "DH_PARAMS", 9,
+		if (!(d->type & TLS_DOMAIN_DB)) {
+			child = add_mi_node_child(node, MI_DUP_VALUE, "DH_PARAMS_FILE", 9,
 				d->dh_param.s, d->dh_param.len);
 		}
 		if (child == NULL) goto error;
@@ -1861,10 +2085,16 @@ static struct mi_root * tls_list(struct mi_root *cmd_tree, void *param)
 
 	root = &rpl_tree->node;
 
-	if (list_domain(root, tls_client_domains) < 0)
+	if (list_domain(root, *tls_default_client_domain) < 0)
 		goto error;
 
-	if (list_domain(root, tls_server_domains) < 0)
+	if (list_domain(root, *tls_default_server_domain) < 0)
+		goto error;
+
+	if (list_domain(root, *tls_client_domains) < 0)
+		goto error;
+
+	if (list_domain(root, *tls_server_domains) < 0)
 		goto error;
 
 	if (dom_lock)

@@ -171,6 +171,17 @@ int register_module(struct module_exports* e, char* path, void* handle)
 		}
 	}
 
+	/* register module transformations */
+	if (e->trans) {
+		LM_DBG("register_trans: %s\n", e->name);
+		if (register_trans_mod(e->name, e->trans) !=0) {
+			LM_ERR("failed to register transformations for module %s\n",
+				e->name);
+			pkg_free(mod);
+			return -1;
+		}
+	}
+
 	/* register all module dependencies */
 	if (e->deps) {
 		ret = add_module_dependencies(mod);

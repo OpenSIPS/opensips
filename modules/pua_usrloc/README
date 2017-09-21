@@ -111,6 +111,6 @@ modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
 
    Example 1.4. pua_set_publish usage
 ...
-if(is_method("REGISTER") && from_uri=~"john@opensips.org")
+if(is_method("REGISTER") && $fu=~"john@opensips.org")
         pua_set_publish();
 ...

@@ -134,7 +134,7 @@ modparam("qos", "qos_flag", "QOS_FLAG")
 ...
 route {
   ...
-  if (method=="INVITE") {
+  if ($rm=="INVITE") {
     setflag(QOS_FLAG); # Set the qos flag
 	create_dialog(); # create the dialog
   }

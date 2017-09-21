@@ -39,7 +39,6 @@
 #include "../locking.h"
 #include "../ip_addr.h"
 
-
 /* keepalive */
 #ifndef NO_TCP_KEEPALIVE
     #define HAVE_SO_KEEPALIVE
@@ -77,9 +76,12 @@
 
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING		(1<<0)
-#define F_CONN_REMOVED			(1<<1) /*!< no longer in "main" listen fd list */
+#define F_CONN_TRACE_DROPPED	(1<<1) /*!< tracing dropped on this connection */
 #define F_CONN_ACCEPTED			(1<<2) /*!< created after a connect event */
-#define F_CONN_TRACE_DROPPED	(1<<3) /*!< tracing dropped on this connection */
+#define F_CONN_REMOVED_READ		(1<<3) /*!< no longer in "main" reactor for read */
+#define F_CONN_REMOVED_WRITE	(1<<4) /*!< no longer in "main" reactor for write */
+/*!< no longer in "main" reactor for read or write */
+#define F_CONN_REMOVED			(F_CONN_REMOVED_READ|F_CONN_REMOVED_WRITE)
 
 enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
 		S_CONN_CONNECTING, S_CONN_EOF };
@@ -128,6 +130,7 @@ struct tcp_connection{
 	unsigned short flags;
 	/*!< protocol related & reserved flags */
 	unsigned short proto_flags;
+	struct struct_hist *hist;
 	/* protocol specific data attached to this connection */
 	void *proto_data;
 };

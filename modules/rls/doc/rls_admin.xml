@@ -397,7 +397,7 @@ For rls only:
 		<title><function>rls_handle_notify</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(method=="NOTIFY")
+if($rm=="NOTIFY")
     rls_handle_notify();
 ...
 </programlisting>

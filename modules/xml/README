@@ -29,7 +29,7 @@ Robert-Vladut Patrascu
 
    1.1. Creating a document
    1.2. Inserting nodes with indentation
-   1.3. A more complex example with variables in path
+   1.3. Using script variables in path
 
 Chapter 1. Admin Guide
 
@@ -37,11 +37,13 @@ Chapter 1. Admin Guide
 
    This module exposes a script variable that provides basic
    parsing and manipulation of XML documents or blocks of XML
-   data. The processing does not take into account any DTDs or
-   schemas in terms of validation.
+   data. The variable provides ways to access entire XML elements,
+   their text content or their attributes. You can modify the
+   content and attributes as well as adding or removing nodes in
+   the XML tree.
 
-   The variable provides ways to access entire XML elements or
-   their text content or attributes.
+   The processing does not take into account any DTDs or schemas
+   in terms of validation.
 
 1.2. Dependencies
 
@@ -180,10 +182,14 @@ $xml(my_doc/doc/list) = "\n\t\t<item></item>\n\t";
 # <doc><list><item></item></list></doc>
 ...
 
-   Example 1.3. A more complex example with variables in path
+   Example 1.3. Using script variables in path
 ...
-$xml(obj_1/root/$var(my_list)/$var(my_item)[$var(my_idx)]/$var(my_sublis
-t).attr/$var(my_attr)) = "attr_val";
+# accessing the attribute of second item in list
+$var(my_list) = "list";
+$var(my_idx) = 1;
+$var(my_attr) = "sort";
+xlog("$xml(my_doc/doc/$var(my_list)/item[$var(my_idx)].attr/$var(my_attr
+))\n");
 ...
 
 1.5. Exported Functions

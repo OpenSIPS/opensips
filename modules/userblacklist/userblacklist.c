@@ -122,6 +122,7 @@ struct module_exports exports= {
 	0,
 	mi_cmds,
 	0,
+	0,				 /* exported transformations */
 	0,
 	mod_init,
 	0,

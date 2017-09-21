@@ -36,6 +36,7 @@
 #include "../../timer.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
+#include "../../rw_locking.h"
 
 #include "mid_registrar.h"
 #include "save.h"
@@ -45,6 +46,8 @@
 
 #include "../../lib/reg/rerrno.h"
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/regtime.h"
+
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/msg_parser.h"
@@ -62,6 +65,10 @@ str expires_param = str_init("expires");
 struct usrloc_api ul_api;
 struct tm_binds tm_api;
 struct sig_binds sig_api;
+
+/* specifically used to mutually exclude concurrent calls of the
+ * TMCB_RESPONSE_IN callback, upon SIP 200 OK retransmissions */
+rw_lock_t *tm_retrans_lk;
 
 int default_expires = 3600; /*!< Default expires value in seconds */
 int min_expires     = 10;   /*!< Minimum expires the phones are allowed to use
@@ -198,6 +205,7 @@ struct module_exports exports= {
 	NULL,       /* exported statistics */
 	NULL,         /* exported MI functions */
 	NULL,       /* exported pseudo-variables */
+	NULL,	    /* exported transformations */
 	NULL,               /* extra processes */
 	mod_init,        /* module initialization function */
 	NULL,               /* reply processing function */
@@ -250,7 +258,7 @@ static int registrar_fixup(void** param, int param_no)
 		/* AoR */
 		return fixup_sgp(param);
 	case 4:
-		/* outbound registration interval */
+		/* outgoing registration interval */
 		return fixup_igp(param);
 	}
 
@@ -264,6 +272,11 @@ static int mod_init(void)
 
 	if (load_ul_api(&ul_api) < 0) {
 		LM_ERR("failed to load user location API\n");
+		return -1;
+	}
+
+	if (ul_api.db_mode != NO_DB) {
+		LM_ERR("the 2.3 mid_registrar only works with usrloc 'db_mode = 0'!\n");
 		return -1;
 	}
 
@@ -303,6 +316,11 @@ static int mod_init(void)
 			default_q = MIN_Q;
 		}
 	}
+
+	/*
+	 * Import use_domain parameter from usrloc
+	 */
+	reg_use_domain = ul_api.use_domain;
 
 	if (rcv_avp_param && *rcv_avp_param) {
 		s.s = rcv_avp_param; s.len = strlen(s.s);
@@ -345,7 +363,7 @@ static int mod_init(void)
 		}
 
 		if (ul_api.register_ulcb(
-			UL_CONTACT_INSERT|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
+			UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
 			mid_reg_ct_event, &ucontact_data_idx) < 0) {
 			LM_ERR("cannot register usrloc contact callback\n");
 			return -1;
@@ -372,84 +390,49 @@ static int mod_init(void)
 		return -1;
 	}
 
+	tm_retrans_lk = lock_init_rw();
+	if (!tm_retrans_lk) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	return 0;
 }
 
-inline void set_ct(struct mid_reg_info *ct)
+void set_ct(struct mid_reg_info *ct)
 {
 	__info = ct;
 }
 
-inline struct mid_reg_info *get_ct(void)
+struct mid_reg_info *get_ct(void)
 {
 	return __info;
 }
 
-static time_t act_time;
-/*! \brief
- * Get actual time and store
- * value in act_time
- */
-void update_act_time(void)
-{
-	act_time = time(0);
-}
-
-time_t get_act_time(void)
-{
-	return act_time;
-}
-
-int calc_contact_q(param_t* _q, qvalue_t* _r)
-{
-	int rc;
-
-	if (!_q || (_q->body.len == 0)) {
-		*_r = default_q;
-	} else {
-		rc = str2q(_r, _q->body.s, _q->body.len);
-		if (rc < 0) {
-			rerrno = R_INV_Q; /* Invalid q parameter */
-			LM_ERR("invalid qvalue (%.*s): %s\n",
-					_q->body.len, _q->body.s, qverr2str(rc));
-			return -1;
-		}
-	}
-	return 0;
-}
 
 void mri_free(struct mid_reg_info *mri)
 {
+	if (!mri)
+		return;
+
 	LM_DBG("aor: '%.*s' %p\n", mri->aor.len, mri->aor.s, mri->aor.s);
 	LM_DBG("from: '%.*s' %p\n", mri->from.len, mri->from.s, mri->from.s);
 	LM_DBG("to: '%.*s' %p\n", mri->to.len, mri->to.s, mri->to.s);
 	LM_DBG("callid: '%.*s' %p\n", mri->callid.len, mri->callid.s, mri->callid.s);
-	LM_DBG("ruri: '%.*s' %p\n", mri->ruri.len, mri->ruri.s, mri->ruri.s);
+	LM_DBG("main reg: '%.*s' %p\n", mri->main_reg_uri.len, mri->main_reg_uri.s,
+	       mri->main_reg_uri.s);
 	LM_DBG("ct_uri: '%.*s' %p\n", mri->ct_uri.len, mri->ct_uri.s, mri->ct_uri.s);
 
-	if (mri->aor.s)
-		shm_free(mri->aor.s);
+	shm_free(mri->aor.s);
+	shm_free(mri->from.s);
+	shm_free(mri->to.s);
+	shm_free(mri->callid.s);
 
-	if (mri->from.s)
-		shm_free(mri->from.s);
-
-	if (mri->to.s)
-		shm_free(mri->to.s);
-
-	if (mri->callid.s)
-		shm_free(mri->callid.s);
-
-	if (mri->ruri.s)
-		shm_free(mri->ruri.s);
-
-	if (mri->next_hop.s)
-		shm_free(mri->next_hop.s);
+	if (mri->main_reg_uri.s)
+		shm_free(mri->main_reg_uri.s);
 
 	if (mri->ct_uri.s)
 		shm_free(mri->ct_uri.s);
-
-	if (mri->ct_body.s)
-		shm_free(mri->ct_body.s);
 
 #ifdef EXTRA_DEBUG
 	memset(mri, 0, sizeof *mri);
@@ -463,7 +446,7 @@ int get_expires_hf(struct sip_msg* _m)
 
 	if (_m->expires) {
 		p = (exp_body_t*)_m->expires->parsed;
-		if (p->valid) {
+		if (p != NULL && p->valid) {
 			if (p->val != 0) {
 				return p->val;
 			} else return 0;

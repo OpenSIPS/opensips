@@ -359,6 +359,7 @@ struct module_exports exports= {
 	mod_stats, /* exported statistics */
 	mi_cmds,   /* exported MI functions */
 	mod_items, /* exported pseudo-variables */
+	0,		   /* exported transformations */
 	0,         /* extra processes */
 	mod_init,  /* module initialization function */
 	(response_function) reply_received,
@@ -754,6 +755,11 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 
 	reset_e2eack_t();
 
+	if ( (t=get_t())!=NULL && t!=T_UNDEFINED &&   /* we have a transaction */
+	/* with an UAS request not yet updated from script msg */
+	t->uas.request && (t->uas.request->msg_flags & FL_SHM_UPDATED)==0 )
+		update_cloned_msg_from_msg( t->uas.request, foo);
+
 	return t_unref(foo) == 0 ? SCB_DROP_MSG : SCB_RUN_ALL;
 }
 
@@ -1025,7 +1031,7 @@ static int t_check_trans(struct sip_msg* msg)
 				return 0;
 			case -2:
 				/* e2e ACK found */
-				return 1;
+				return -1;
 			default:
 				/* notfound */
 				return -1;
@@ -1299,18 +1305,21 @@ static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
 			t->flags|=T_CANCEL_REASON_FLAG;
 
-		update_cloned_msg_from_msg( t->uas.request, p_msg);
+		/* update the transaction only if in REQUEST route; for other types
+		   of routes we do not want to inherit the local changes */
+		if (route_type==REQUEST_ROUTE)
+			update_cloned_msg_from_msg( t->uas.request, p_msg);
 
 		if (route_type==FAILURE_ROUTE) {
 			/* If called from failure route we need reset the branch counter to
 			 * ignore the previous set of branches (already terminated) */
-			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/);
+			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/,1/*locked*/);
 		} else {
 			/* if called from request route and the transaction was previously
 			 * created, better lock here to avoid any overlapping with 
 			 * branch injection from other processes */
 			LOCK_REPLIES(t);
-			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/);
+			ret = t_forward_nonack( t, p_msg, p, 1/*reset*/,1/*locked*/);
 			UNLOCK_REPLIES(t);
 		}
 		if (ret<=0 ) {

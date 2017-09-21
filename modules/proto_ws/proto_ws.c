@@ -74,13 +74,15 @@ static str ws_resource = str_init("/");
 #include "ws_common.h"
 
 #define WS_TRACE_PROTO "proto_hep"
-#define WS_TRANS_TRACE_PROTO_ID "trans"
+#define WS_TRANS_TRACE_PROTO_ID "net"
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 trace_proto_t tprot;
 
+extern int is_tcp_main;
+
 /* module  tracing parameters */
-static int trace_is_on_tmp=1, *trace_is_on;
+static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
 static int trace_filter_route_id = -1;
 /**/
@@ -148,6 +150,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	mi_cmds,    /* exported MI functions */
 	0,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -252,7 +255,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 	if (!d)
 		return;
 
-	if (c->state == S_CONN_OK) {
+	if (c->state == S_CONN_OK && !is_tcp_main) {
 		switch (d->code) {
 		case WS_ERR_NOSEND:
 			break;
@@ -282,7 +285,7 @@ static void ws_report(int type, unsigned long long conn_id, int conn_flags,
 	str s;
 
 	if (type==TCP_REPORT_CLOSE) {
-		if ( !*trace_is_on || (conn_flags & F_CONN_TRACE_DROPPED) )
+		if ( !*trace_is_on || !t_dst || (conn_flags & F_CONN_TRACE_DROPPED) )
 			return;
 		/* grab reason text */
 
@@ -438,6 +441,7 @@ static int proto_ws_send(struct socket_info* send_sock,
 		if ( d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 			}
 
 			/* don't allow future traces for this cnection */
@@ -515,6 +519,7 @@ static int ws_read_req(struct tcp_connection* con, int* bytes_read)
 		if ( d && d->dest && d->tprot ) {
 			if ( d->message ) {
 				send_trace_message( d->message, t_dst);
+				d->message = NULL;
 			}
 
 			/* don't allow future traces for this connection */

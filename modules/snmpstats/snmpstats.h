@@ -140,6 +140,7 @@ struct module_exports exports =
 	0,                       /* exported statistics */
 	0,                       /* MI Functions */
 	0,                       /* pseudo-variables */
+	0,						 /* exported transformations */
 	mod_procs,               /* extra processes */
 	mod_init,                /* module initialization function */
 	0,                       /* reply processing function */

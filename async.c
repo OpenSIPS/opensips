@@ -125,6 +125,7 @@ int async_fd_resume(int *fd, void *param)
 		if (reactor_add_reader(*fd,F_FD_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0 ) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
+				async_status = ASYNC_DONE;
 				ret = ((async_resume_fd*)ctx->resume_f)(*fd,ctx->resume_param);
 				if (async_status == ASYNC_CHANGE_FD)
 					*fd=ret;
@@ -132,7 +133,7 @@ int async_fd_resume(int *fd, void *param)
 			goto done;
 		} else {
 
-			/* succesfully changed fd */
+			/* successfully changed fd */
 			return 0;
 		}
 	}
@@ -205,6 +206,7 @@ int async_launch_resume(int *fd, void *param)
 		(void*)ctx)<0 ) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
+				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
 					( *fd, &req, ctx->async.resume_param );
 				if (async_status == ASYNC_CHANGE_FD)
@@ -213,7 +215,7 @@ int async_launch_resume(int *fd, void *param)
 			goto run_route;
 		} else {
 
-			/* succesfully changed fd */
+			/* successfully changed fd */
 			goto restore;
 		}
 	}
@@ -279,7 +281,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		/* async I/O was successfully launched */
 		fd = async_status;
 	} else if (async_status==ASYNC_NO_FD) {
-		/* async was succesfully launched but without a FD resume
+		/* async was successfully launched but without a FD resume
 		 * in this case, we need to push the async ctx back to the
 		 * function, so it can trigger the resume later, by itself */
 	} else if (async_status==ASYNC_NO_IO) {
@@ -320,6 +322,7 @@ sync:
 	/* run the resume function */
 	LM_DBG("running launch job in sync mode\n");
 	do {
+		async_status = ASYNC_DONE;
 		return_code = ((async_resume_module*)(ctx->async.resume_f))
 			( fd, msg, ctx->async.resume_param );
 		if (async_status == ASYNC_CHANGE_FD)

@@ -84,8 +84,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 
 	/* get the number of streams */
 	lumps_len = 0;
-	//FIXME
-	cur_session = NULL;//msg->sdp->sessions;
+	cur_session = get_sdp(msg)->sessions;
 
 	while(cur_session)
 	{
@@ -107,8 +106,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 	LM_DBG("creating %d streams\n",lumps_len);
 
 	count = 0;
-	//FIXME
-	cur_session = NULL;//msg->sdp->sessions;
+	cur_session = get_sdp(msg)->sessions;
 
 	while(cur_session)
 	{
@@ -316,13 +314,14 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 				regex_t* re, int op,int desc)
 {
 	struct sdp_session_cell * cur_session;
+	sdp_info_t *sdp;
 	int rez;
 
 	if (msg==NULL || msg==FAKED_REPLY)
 		return -1;
 
-	if(!parse_sdp(msg))
-	{
+	sdp = parse_sdp(msg);
+	if (!sdp) {
 		LM_DBG("Message has no SDP\n");
 		return -1;
 	}
@@ -332,8 +331,7 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 		return -1;
 	}
 
-	//FIXME
-	cur_session = NULL;//msg->sdp->sessions;
+	cur_session = sdp->sessions;
 	rez = -1;
 
 	while(cur_session)
@@ -966,9 +964,8 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 
 	/* search for the stream */
 	match = 0;
-	//FIXME
-	//for(session=msg->sdp->sessions; session && !match ;session=session->next){
-	for(session=NULL; session && !match ;session=session->next){
+	for (session = get_sdp(msg)->sessions; session && !match;
+	     session = session->next) {
 		prev_stream = NULL;
 		for( stream=session->streams ; stream ;
 		prev_stream=stream,stream=stream->next){

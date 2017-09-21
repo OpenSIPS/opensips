@@ -542,7 +542,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	static db_ps_t my_ps = NULL;
 	static db_ps_t my_ps2 = NULL;
 	int m;
-	int n;
+	int n = 0;
 	int i, j;
 	unsigned int _created=0;
 	unsigned int  _setup_time=0;
@@ -606,7 +606,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+((ctx&&cdr_flag)?2:0)) < 0 )
 				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+((ctx&&cdr_flag)?2:0)) < 0) {
-				LM_ERR("failed to insert into database\n");
+				LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 				return -1;
 			}
 		} else {
@@ -617,7 +617,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 				if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n+((ctx&&cdr_flag)?2:0)) < 0 )
 					CON_RESET_INSLIST(db_handle);
 				if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n+((ctx&&cdr_flag)?2:0)) < 0) {
-					LM_ERR("failed to insert into database\n");
+					LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 					accX_unlock(&ctx->lock);
 					return -1;
 				}
@@ -628,7 +628,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m) < 0 )
 				CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
-			LM_ERR("failed to insert into database\n");
+			LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 			return -1;
 		}
 	}
@@ -998,7 +998,14 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	accX_lock(&ctx->lock);
 
 	/* call-legs attributes also get inserted */
-	for (extra=aaa_extra_tags, i=ACC_CORE_LEN+1; extra; extra=extra->next, ++i) {
+	/**
+	 * there are RA_STATIC_MAX values in that enum
+	 * and there are three more values defined in rd_attrs:
+	 * Sip-From-Tag, Sip-ToTag, Acct-Session-Id
+	 * so the total number of values we willhave to jump over is
+	 * RA_STATIC_MAX+3
+	 */
+	for (extra=aaa_extra_tags, i=RA_STATIC_MAX+3; extra; extra=extra->next, ++i) {
 		ADD_AAA_AVPAIR( i, ctx->extra_values[extra->tag_idx].value.s ,
 							ctx->extra_values[extra->tag_idx].value.len );
 	}
@@ -1008,7 +1015,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		for (i=0; i<ctx->legs_no; i++) {
 			for (extra=aaa_leg_tags,j=0; extra; extra=extra->next, j++) {
 				ADD_AAA_AVPAIR( offset+j,
-					LEG_VALUE(j, extra, ctx).s, LEG_VALUE(j, extra, ctx).len);
+					LEG_VALUE(i, extra, ctx).s, LEG_VALUE(i, extra, ctx).len);
 			}
 		}
 	}

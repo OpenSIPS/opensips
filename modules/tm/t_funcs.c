@@ -231,7 +231,7 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 	if (flags&TM_T_REPLY_reason_FLAG) t->flags|=T_CANCEL_REASON_FLAG;
 
 	/* now go ahead and forward ... */
-	ret=t_forward_nonack( t, p_msg, proxy, 0/* no reset */);
+	ret=t_forward_nonack( t, p_msg, proxy, 0/*no reset*/, 0/*unlocked*/);
 	if (ret<=0) {
 		LM_DBG("t_forward_nonack returned error \n");
 		/* we don't want to pass upstream any reply regarding replicating

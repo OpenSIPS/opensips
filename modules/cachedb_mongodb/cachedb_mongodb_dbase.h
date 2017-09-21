@@ -52,6 +52,7 @@ typedef struct {
 
 	mongoc_client_t *client;
 	mongoc_collection_t *collection;
+	mongoc_database_t *database;
 
 	/* cursor result for the query */
 	mongoc_cursor_t *cursor;

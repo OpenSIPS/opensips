@@ -109,7 +109,11 @@ static void os_free(void *ptr)
 {
 	/* TODO: also handle free file and line */
 	if (ptr)
+#if (defined DBG_MALLOC  && OPENSSL_VERSION_NUMBER >= 0x10100000L)
+		_shm_free(ptr, file, __FUNCTION__, line);
+#else
 		shm_free(ptr);
+#endif
 }
 
 

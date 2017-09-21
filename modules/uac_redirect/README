@@ -326,9 +326,9 @@ loadmodule "modules/uac_redirect/uac_redirect.so"
 modparam("usrloc", "db_mode",   0)
 
 route{
-        if (uri==myself) {
+        if (is_myself("$rd")) {
 
-                if (method=="REGISTER") {
+                if ($rm=="REGISTER") {
                         save("location");
                         exit;
                 };

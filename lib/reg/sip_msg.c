@@ -97,6 +97,7 @@ int check_contacts(struct sip_msg* _m, int* _s)
 	*_s = 0;
 	/* Message without contacts is OK */
 	if (_m->contact == 0) return 0;
+	if (_m->contact->parsed == 0) return 0;
 
 	if (((contact_body_t*)_m->contact->parsed)->star == 1) {
 		/* The first Contact HF is star */
@@ -157,6 +158,7 @@ static struct hdr_field* act_contact_2;
 static contact_t* __get_first_contact(struct sip_msg* _m, struct hdr_field **act_contact)
 {
 	if (_m->contact == 0) return 0;
+	if (_m->contact->parsed == 0) return 0;
 
 	*act_contact = _m->contact;
 	return (((contact_body_t*)_m->contact->parsed)->contacts);
@@ -220,4 +222,27 @@ contact_t* get_next_contact2(contact_t* _c)
 void reset_first_contact2(void)
 {
 	return __reset_first_contact(&act_contact_2);
+}
+
+/*! \brief
+ * Calculate contact q value as follows:
+ * 1) If q parameter exists, use it
+ * 2) If the parameter doesn't exist, use the default value
+ */
+int calc_contact_q(param_t* _q, qvalue_t* _r)
+{
+	int rc;
+
+	if (!_q || (_q->body.len == 0)) {
+		*_r = default_q;
+	} else {
+		rc = str2q(_r, _q->body.s, _q->body.len);
+		if (rc < 0) {
+			rerrno = R_INV_Q; /* Invalid q parameter */
+			LM_ERR("invalid qvalue (%.*s): %s\n",
+					_q->body.len, _q->body.s, qverr2str(rc));
+			return -1;
+		}
+	}
+	return 0;
 }

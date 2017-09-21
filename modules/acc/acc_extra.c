@@ -265,12 +265,25 @@ static int parse_extra_token(str* token, str* tag, str* value)
 		return -1;
 	}
 
+	/* remove tabs, newlines etc */
+	while ( token->s[0] == '\n' || token->s[0] == '\t' || token->s[0] == ' ') {
+		token->s++;
+		token->len--;
+	}
+
 	/* value will not point exactly where the value is
 	 * will point where the - character from the '->' delimiter will be */
 	if ((value->s = str_strstr(token, &tag_delim)) == NULL) {
 		/* if not found then the value is the same as the token */
 		str_trim_spaces_lr(*token);
 
+		/**
+		 * FIXME null terminate the string
+		 * quite insane to do this but it should be safe because after the token
+		 * it's either a delimiter for another token or a '\0' that
+		 * terminates the string
+		 */
+		token->s[token->len] = 0;
 		*value = *tag = *token;
 	} else {
 		tag->s = token->s;
@@ -282,6 +295,20 @@ static int parse_extra_token(str* token, str* tag, str* value)
 
 		str_trim_spaces_lr(*tag);
 		str_trim_spaces_lr(*value);
+
+		/**
+		 * FIXME null terminate the string
+		 * safe because after the tag it's the tag-value delimiter
+		 */
+		tag->s[tag->len] = 0;
+
+		/**
+		 * FIXME null terminate the string
+		 * quite insane to do this but it should be safe because after the token
+		 * it's either a delimiter for another token or a '\0' that
+		 * terminates the string
+		 */
+		value->s[value->len] = 0;
 	}
 
 	return 0;
@@ -354,6 +381,7 @@ static int parse_acc_list_generic(void* val, str2bkend str2bk,
 			LM_ERR("failed to parse token!\n");
 			return -1;
 		}
+
 
 		if (add_extra(&tag, &value, bkend_list, tag_arr, tags_len) < 0) {
 			LM_ERR("failed to add extra!\n");
@@ -457,11 +485,6 @@ int expand_legs(acc_ctx_t* ctx)
 	return build_acc_extra_array(leg_tags,
 					leg_tgs_len, &ctx->leg_values[ctx->legs_no++]);
 }
-
-
-
-
-
 
 void destroy_extras( struct acc_extra *extra)
 {

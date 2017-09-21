@@ -151,8 +151,10 @@ again:
 #ifdef HAVE_EPOLL
 inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 {
-	int ret, n, r;
+	int ret, n, r, i;
 	struct fd_map *e;
+	struct epoll_event ep_event;
+	int fd;
 
 again:
 		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
@@ -175,9 +177,32 @@ again:
 				h->name, ((struct fd_map*)h->ep_array[r].data.ptr)->fd,
 				h->ep_array[r].events, ((struct fd_map*)h->ep_array[r].data.ptr)->flags);
 #endif
+			/* do some sanity check over the triggered fd */
+			e = ((struct fd_map*)h->ep_array[r].data.ptr);
+			if (e->type==0 || e->fd<=0 || (e->flags&(IO_WATCH_READ|IO_WATCH_WRITE))==0 ) {
+				fd = e - h->fd_hash;
+				LM_ERR("[%s] unset/bogus map (idx=%d) triggered for %d by epoll "
+					"(fd=%d,type=%d,flags=%x,data=%p) -> removing from epoll\n", h->name,
+					fd, h->ep_array[r].events,
+					e->fd, e->type, e->flags, e->data);
+				/* as the triggering fd has no corresponding in fd_map, better
+				 remove it from poll, to avoid un-managed reporting on this fd */
+				if (epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event)<0) {
+					LM_ERR("failed to remove from epoll %s(%d)\n",
+						strerror(errno), errno);
+				}
+				close(fd);
+				continue;
+			}
 
 			/* anything containing EPOLLIN (like HUP or ERR) goes as a READ */
 			if (h->ep_array[r].events & EPOLLIN) {
+				if ((e->flags&IO_WATCH_READ)==0) {
+					LM_BUG("[%s] EPOLLIN triggered(%d) for non-read fd_map "
+						"(fd=%d,type=%d,flags=%x,data=%p)\n",h->name,
+						h->ep_array[r].events,
+						e->fd, e->type, e->flags, e->data);
+				}
 				if (h->ep_array[r].events&EPOLLHUP) {
 					LM_DBG("[%s] EPOLLHUP on IN ->"
 						"connection closed by the remote peer!\n",h->name);
@@ -188,6 +213,12 @@ again:
 
 			/* anything containing EPOLLOUT (like HUP or ERR) goes as a WRITE*/
 			} else if (h->ep_array[r].events & EPOLLOUT){
+				if ((e->flags&IO_WATCH_WRITE)==0) {
+					LM_BUG("[%s] EPOLLOUT triggered(%d) for non-read fd_map "
+						"(fd=%d,type=%d,flags=%x,data=%p)\n",h->name,
+						h->ep_array[r].events,
+						e->fd, e->type, e->flags, e->data);
+				}
 				if (h->ep_array[r].events&EPOLLHUP) {
 					LM_DBG("[%s] EPOLLHUP on OUT ->"
 						"connection closed by the remote peer!\n",h->name);
@@ -220,6 +251,30 @@ again:
 		/* now do the actual running of IO handlers */
 		for(r=h->fd_no-1; (r>=0) && n ; r--) {
 			e = get_fd_map(h, h->fd_array[r].fd);
+			/* test the sanity of the fd_map */
+			if (e->flags & (IO_WATCH_PRV_TRIG_READ|IO_WATCH_PRV_TRIG_WRITE)) {
+				/* the fd correlated to this fd_map was triggered by the
+				 * reactor, so let's check if the fd_map payload is still
+				 * valid */
+				if (e->fd==-1 || e->type==F_NONE) {
+					/* this is bogus!! */
+					LM_BUG("[%s] FD %d with map (%d,%d,%p) is out of sync,"
+						" removing it from reactor\n",
+						h->name, h->fd_array[r].fd, e->fd, e->type, e->data);
+					/* remove from epoll */
+					epoll_ctl(h->epfd, EPOLL_CTL_DEL, h->fd_array[r].fd,
+						&ep_event);
+					close(h->fd_array[r].fd);
+					/* remove from fd_array */
+					memmove(&h->fd_array[r], &h->fd_array[r+1],
+						(h->fd_no-(r+1))*sizeof(*(h->fd_array)));
+					for( i=0 ; i<h->max_prio && h->prio_idx[i]<=r ; i++ );
+					for( ; i<h->max_prio ; i++ ) h->prio_idx[i]-- ;
+					h->fd_no--;
+					/* no handler triggering for this FD */
+					continue;
+				}
+			}
 			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
 				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
 				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);

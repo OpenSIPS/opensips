@@ -12,8 +12,13 @@ FLAGS_LUA = $(shell pkg-config --cflags lua5.1 2> /dev/null) $(shell pkg-config 
 ifeq (,$(findstring -l,$(LIB_LUA)))
 LIB_LUA = -llua
 endif
-DEFS += $(shell $(MYSQLCFG) --include | sed 's/\(-I.*\)\/mysql/\1/g' ) -I/usr/include/lua5.1/ -I$(LOCALBASE)/include/memcached $(FLAGS_LUA)
-LIBS += $(shell $(MYSQLCFG) --libs) -L/usr/lib/ -L/usr/local/lib/ -lmemcached $(LIB_LUA)
+DEFS += $(shell $(MYSQLCFG) --include | sed 's/\(-I.*\)\/mysql/\1/g' ) -I/usr/include/lua5.1/ $(FLAGS_LUA)
+LIBS += $(shell $(MYSQLCFG) --libs) -lmemcached $(LIB_LUA)
+
+ifneq ($(CROSS_COMPILE),)
+DEFS += -I$(LOCALBASE)/include/memcached
+LIBS = -L$(LOCALBASE)/lib $(LIBS)
+endif
 
 include ../../Makefile.modules
 

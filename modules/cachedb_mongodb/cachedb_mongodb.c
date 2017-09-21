@@ -43,11 +43,6 @@ static void destroy(void);
 static str cache_mod_name = str_init("mongodb");
 struct cachedb_url *mongodb_script_urls = NULL;
 
-int mongo_op_timeout=3000; /* 3000 milliseconds */
-int mongo_slave_ok=0;      /* not ok to send read requests to secondaries */
-str mongo_write_concern_str = {0,0};
-bson_t mongo_write_concern_b;
-//mongo_write_concern mwc;
 int mongo_exec_threshold=0;
 
 int compat_mode_30;
@@ -60,15 +55,23 @@ int set_connection(unsigned int type, void *val)
 
 static param_export_t params[]={
 	{ "cachedb_url",   STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
-	{ "op_timeout",    INT_PARAM, &mongo_op_timeout},
-	{ "slave_ok",      INT_PARAM, &mongo_slave_ok},
-	{ "write_concern", STR_PARAM, &mongo_write_concern_str },
 	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
 	{ "compat_mode_3.0", INT_PARAM, &compat_mode_30 },
 	{ "compat_mode_2.4", INT_PARAM, &compat_mode_24 },
 	{0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+
+		/* tls_mgm must init TLS first, since it also sets custom alloc func */
+		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
@@ -76,13 +79,14 @@ struct module_exports exports= {
 	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	0,						/* exported functions */
 	0,						/* exported async functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
 	0,							/* exported pseudo-variables */
+	0,							/* exported transformations */
 	0,							/* extra processes */
 	mod_init,					/* module initialization function */
 	(response_function) 0,      /* response handling function */
@@ -97,6 +101,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	cachedb_engine cde;
+
+	mongoc_init();
 
 	LM_NOTICE("initializing module cachedb_mongodb ...\n");
 	memset(&cde,0,sizeof(cachedb_engine));
@@ -120,29 +126,8 @@ static int mod_init(void)
 
 	cde.cdb_func.capability = 0;
 
-#if 0
-	if (mongo_write_concern_str.s != NULL) {
-		/* TODO - try manually building the getlasterror bson_t */
-		memset(&mongo_write_concern_b,0,sizeof(bson_t));
-		if (json_to_bson(mongo_write_concern_str.s,&mongo_write_concern_b) != 0) {
-			LM_ERR("Invalid write concern json\n");
-			return -1;
-		}
-
-		mongo_write_concern_init(&mwc);
-		mwc.cmd = &mongo_write_concern_b;
-	}
-#endif
-
-
-#if 0
-	if (mongo_slave_ok == 1) {
-		mongo_slave_ok = MONGO_SLAVE_OK | MONGO_PARTIAL ;
-	}
-#endif
-
 	if (register_cachedb(&cde) < 0) {
-		LM_ERR("failed to initialize cachedb_redis\n");
+		LM_ERR("failed to initialize cachedb_mongodb\n");
 		return -1;
 	}
 
@@ -157,8 +142,6 @@ static int child_init(int rank)
 	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
 		return 0;
 	}
-
-	mongoc_init();
 
 	for (it = mongodb_script_urls;it;it=it->next) {
 		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);

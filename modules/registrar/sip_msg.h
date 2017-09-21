@@ -53,11 +53,4 @@ struct save_ctx {
 void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx);
 
 
-/*! \brief
- * Calculate contact q value as follows:
- * 1) If q parameter exist, use it
- * 2) If the parameter doesn't exist, use default value
- */
-int calc_contact_q(param_t* _q, qvalue_t* _r);
-
 #endif /* SIP_MSG_H */

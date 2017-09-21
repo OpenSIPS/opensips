@@ -296,6 +296,7 @@ struct module_exports exports = {
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
 	0,           /* exported pseudo-variables */
+	0,			 /* exported transformations */
 	0,           /* extra processes */
 	mod_init,
 	0,           /* reply processing */
@@ -747,6 +748,12 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 			c->uri.s = buf + 1;
 			c->uri.len = len - 2;
 		}
+		/*
+		 * the new contact uri points to a buffer stored in the lumps; when
+		 * doing async operations, this contact header is no longer copied
+		 * thus the pointer is lost; in order to overcome this, we need to
+		 * restore the pointer every time a faked reply is built
+		 */
 		//LM_DBG("new uri is--- |%.*s|\n",c->uri.len,c->uri.s);
 	}
 

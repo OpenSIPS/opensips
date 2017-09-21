@@ -20,6 +20,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "../../dprint.h"
 #include "../../str.h"
 #include "../../async.h"
@@ -149,6 +150,29 @@ int cgrates_set_reply(int type, int_str *value)
 	return 0;
 }
 
+static int cgr_id_index = 0;
+
+int cgr_init_common(void)
+{
+	/*
+	 * the format is 'rand | my_pid'
+	 * rand is (int) - (unsigned short) long
+	 * my_pid is (short) long
+	 */
+	cgr_id_index = my_pid() & USHRT_MAX;
+	cgr_id_index |= rand() << sizeof(unsigned short);
+
+	return 0;
+}
+
+
+static inline int cgr_unique_id(void)
+{
+	cgr_id_index += (1 << sizeof(unsigned short));
+	/* make sure we always return something positive */
+	return cgr_id_index < 0 ? -cgr_id_index : cgr_id_index;
+}
+
 #define JSON_CHECK(_c, _s) \
 	do { \
 		if (!(_c)) { \
@@ -170,6 +194,9 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	JSON_CHECK(cmsg.msg, "new json object");
 	JSON_CHECK(jtmp = json_object_new_string_len(method->s, method->len), "method");
 	json_object_object_add(cmsg.msg,"method", jtmp);
+
+	JSON_CHECK(jtmp = json_object_new_int(cgr_unique_id()), "id");
+	json_object_object_add(cmsg.msg, "id", jtmp);
 
 	JSON_CHECK(jarr = json_object_new_array(), "params array");
 	json_object_object_add(cmsg.msg,"params", jarr);
@@ -390,7 +417,7 @@ int cgr_handle_cmd(struct sip_msg *msg, json_object *jmsg,
 	if (!c)
 		return -3;
 
-	/* message succesfully sent - now fetch the reply */
+	/* message successfully sent - now fetch the reply */
 	do {
 		ret = cgrc_async_read(c, f, p);
 	} while(async_status == ASYNC_CONTINUE);
@@ -467,7 +494,7 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 			continue;
 		}
 		cp->c = c;
-		/* message succesfully sent - now fetch the reply */
+		/* message successfully sent - now fetch the reply */
 		if (CGRC_IS_DEFAULT(c)) {
 			/* reset the error */
 			CGR_RESET_REPLY_CTX();
@@ -517,6 +544,10 @@ try_again:
 	if (bytes_read < 0) {
 		if (errno == EINTR || errno == EAGAIN)
 			goto try_again;
+		else if (errno == ECONNRESET) {
+			LM_INFO("CGRateS engine reset the connection\n");
+			goto disable;
+		}
 		LM_ERR("read() failed with %d(%s)\n from %.*s:%d\n", errno,
 				strerror(errno), e->host.len, e->host.s, e->port);
 		/* close the connection, since we don't know now to parse what's
@@ -666,15 +697,16 @@ int cgrates_process(json_object *jobj,
 		struct cgr_conn *c, cgr_proc_reply_f proc_reply, void *p)
 {
 	json_object *jresult = NULL;
+	json_object *jerror = NULL;
 	char *method = NULL;
 	json_object *id = NULL;
 	json_object *tmp = NULL;
 	int l = 0;
 	int is_reply = 0;
 	enum json_type type;
+	char *rpc = (char *)json_object_to_json_string(jobj);
 
-	LM_DBG("Processing JSON-RPC: %s\n",
-			(char *)json_object_to_json_string(jobj));
+	LM_DBG("Processing JSON-RPC: %s\n", rpc);
 
 	/* check to see if it is a reply */
 	if (json_object_object_get_ex(jobj, "result", &jresult) && jresult) {
@@ -682,24 +714,29 @@ int cgrates_process(json_object *jobj,
 		if (json_object_get_type(jresult) == json_type_null)
 			jresult = NULL;
 	}
+	if (json_object_object_get_ex(jobj, "error", &jerror) && jerror) {
+		is_reply = 1;
+		if (json_object_get_type(jerror) == json_type_null)
+			jerror = NULL;
+	}
 
 	if (is_reply) {
 		LM_DBG("treating JSON-RPC as a reply\n");
-		if (json_object_object_get_ex(jobj, "error", &tmp) && tmp) {
-			type = json_object_get_type(tmp);
+		if (jerror) {
+			type = json_object_get_type(jerror);
 			switch (type) {
 			case json_type_null:
 				if (!jresult) {
-					LM_ERR("Invalid RPC: both \"error\" and \"result\" are null\n");
+					LM_ERR("Invalid RPC: both \"error\" and \"result\" are null: %s\n", rpc);
 					return -3;
 				}
 				break;
 			case json_type_string:
-				if (!jresult) {
-					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null\n");
+				if (jresult) {
+					LM_ERR("Invalid RPC: both \"error\" and \"result\" are not null: %s\n", rpc);
 					return -3;
 				}
-				return proc_reply(c, NULL, p, (char *)json_object_get_string(tmp));
+				return proc_reply(c, NULL, p, (char *)json_object_get_string(jerror));
 			default:
 				LM_DBG("Invalid RPC: Unknown type %d for the \"error\" key\n", type);
 				return -3;
@@ -711,12 +748,12 @@ int cgrates_process(json_object *jobj,
 		LM_DBG("treating JSON-RPC as a request\n");
 		if (json_object_object_get_ex(jobj, "method", &tmp) && tmp) {
 			if (json_object_get_type(tmp) != json_type_string) {
-				LM_ERR("Invalid RPC: \"method\" not string\n");
+				LM_ERR("Invalid RPC: \"method\" not string: %s\n", rpc);
 				return -3;
 			}
 			method = (char *)json_object_get_string(tmp);
 		} else {
-			LM_ERR("Invalid RPC: \"method\" not present in request\n");
+			LM_ERR("Invalid RPC: \"method\" not present in request: %s\n", rpc);
 			return -3;
 		}
 		if (json_object_object_get_ex(jobj, "params", &tmp) && tmp) {
@@ -726,17 +763,17 @@ int cgrates_process(json_object *jobj,
 				break;
 			case json_type_array:
 				if ((l = json_object_array_length(tmp)) != 1) {
-					LM_ERR("too many elements in JSON array: %d\n", l);
+					LM_ERR("too many elements in JSON array: %d: %s\n", l, rpc);
 					return -3;
 				}
 				jresult = json_object_array_get_idx(tmp, 0);
 				break;
 			default:
-				LM_ERR("Invalid RPC: \"params\" is not array\n");
+				LM_ERR("Invalid RPC: \"params\" is not array: %s\n", rpc);
 				return -3;
 			}
 		} else {
-			LM_ERR("Invalid RPC: \"params\" not present in request\n");
+			LM_ERR("Invalid RPC: \"params\" not present in request: %s\n", rpc);
 			return -3;
 		}
 
@@ -851,7 +888,7 @@ str *cgr_get_dst(struct sip_msg *msg, char *dst_p)
 			return &dst;
 	}
 	if(msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg)<0) {
-		LM_ERR("cannot parse Requst URI!\n");
+		LM_ERR("cannot parse Request URI!\n");
 		return NULL;
 	}
 	return &msg->parsed_uri.user;

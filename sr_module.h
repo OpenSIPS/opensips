@@ -52,6 +52,7 @@
 #include "version.h"
 #include "route.h"
 #include "async.h"
+#include "transformations.h"
 
 #include "sr_module_deps.h"
 
@@ -190,6 +191,9 @@ struct module_exports{
 
 	pv_export_t* items;             /*!< null terminated array of the exported
 	                                   module items (pseudo-variables) */
+
+	trans_export_t* trans;          /*!< null terminated array of the exported
+	                                   module transformations */
 
 	proc_export_t* procs;           /*!< null terminated array of the additional
 	                                   processes reqired by the module */

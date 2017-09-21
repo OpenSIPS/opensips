@@ -80,7 +80,7 @@ struct hep_message_id hep_ids[] = {
 	{ "xlog",  0x56},
 	{ "mi"  ,  0x57},
 	{ "rest",  0x58},
-	{ "trans", 0x59},
+	{ "net", 0x59},
 	{ "control", 0x60},
 	{ NULL  ,  0   }
 };
@@ -687,7 +687,7 @@ int parse_hep_id(unsigned int type, void *val)
 		return -1;
 	}
 
-	LM_DBG("Uri succesfully parsed! Building uri structure!\n");
+	LM_DBG("Uri successfully parsed! Building uri structure!\n");
 
 	el=shm_malloc(sizeof(hid_list_t));
 	if (el == NULL) {
@@ -1259,7 +1259,7 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 			memset( &correlation, 0, sizeof(generic_chunk_t));
 			correlation.chunk.vendor_id = htons(0);
 			/* hardcoded but this is the header */
-			correlation.chunk.type_id = htons(101);
+			correlation.chunk.type_id = htons(HEP_EXTRA_CORRELATION);
 			correlation.chunk.length = sizeof(hep_chunk_t);
 
 			correlation.data = JSON_toString(hep_msg->correlation);
@@ -1402,11 +1402,15 @@ trace_message create_hep_message(union sockaddr_union* from_su, union sockaddr_u
 {
 	hid_list_p hep_dest = (hid_list_p) dest;
 
-	if ( !from_su )
+	if ( !from_su ) {
+		local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
 		from_su = &local_su;
+	}
 
-	if ( !to_su )
+	if ( !to_su ) {
+		local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK2;
 		to_su = &local_su;
+	}
 
 	switch (hep_dest->version) {
 		case 1:
@@ -1484,7 +1488,7 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 
 	memcpy(hep_chunk->data, data, len);
 
-	LM_DBG("Hep chunk with (id=%d; vendor=%d) succesfully built!\n", data_id, vendor);
+	LM_DBG("Hep chunk with (id=%d; vendor=%d) successfully built!\n", data_id, vendor);
 
 	if (hep_msg->u.hepv3.chunk_list) {
 		hep_chunk->next = hep_msg->u.hepv3.chunk_list;
@@ -1507,6 +1511,11 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 	}
 
 	hep_msg = (struct hep_desc*) message;
+
+	if (hep_msg->version < 3) {
+		LM_DBG("Won't add data to HEP proto lower than 3!\n");
+		return 0;
+	}
 
 	if ( !homer5_on ) {
 		if ( hep_msg->correlation) {
@@ -1556,6 +1565,11 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 
 	hep_msg = (struct hep_desc*) message;
 
+	if (hep_msg->version < 3) {
+		LM_DBG("Won't add data to HEP proto lower than 3!\n");
+		return 0;
+	}
+
 	if ( !homer5_on ) {
 		if ( hep_msg->fPayload ) {
 			root = (cJSON *) hep_msg->fPayload;
@@ -1579,7 +1593,7 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 			homer5_buf = pkg_malloc( sizeof(str) );
 			if ( !homer5_buf ) {
 				LM_ERR("no more pkg mem!\n");
-				return 0;
+				return -1;
 			}
 
 			homer5_buf->len = 0;
@@ -1589,7 +1603,9 @@ int add_hep_payload(trace_message message, char* pld_name, str* pld_value)
 
 		if ( !homer5_buf->s ) {
 			LM_ERR("no more pkg mem!\n");
-			return 0;
+			if (hep_msg->fPayload==NULL)
+				pkg_free(homer5_buf);
+			return -1;
 		}
 
 		if ( hep_msg->fPayload ) {
@@ -1677,11 +1693,16 @@ void free_hep_message(trace_message message)
 	generic_chunk_t *foo=NULL, *it;
 	struct hep_desc* hep_msg = message;
 
+	if (hep_msg==NULL)
+		return;
+
 	if (hep_msg->version == 3) {
 		/* free custom chunks */
-		for (it=hep_msg->u.hepv3.chunk_list; it; foo=it, it=it->next) {
-			if (foo)
-				pkg_free(foo);
+		it = hep_msg->u.hepv3.chunk_list;
+		while( it ) {
+			foo = it;
+			it = it->next;
+			pkg_free(foo);
 		}
 
 		/* free JSON payload if there */
@@ -1689,7 +1710,8 @@ void free_hep_message(trace_message message)
 			if ( !homer5_on ) {
 				JSON_free( hep_msg->fPayload );
 			} else {
-				pkg_free( ((str *)hep_msg->fPayload)->s );
+				if ( ((str *)hep_msg->fPayload)->s )
+					pkg_free( ((str *)hep_msg->fPayload)->s );
 				pkg_free( hep_msg->fPayload );
 			}
 		}
@@ -1702,9 +1724,6 @@ void free_hep_message(trace_message message)
 				pkg_free( hep_msg->correlation );
 			}
 		}
-
-		if (foo)
-			pkg_free(foo);
 	}
 
 	pkg_free(hep_msg);

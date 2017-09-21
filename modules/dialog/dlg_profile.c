@@ -1113,6 +1113,29 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 	return 0;
 }
 
+static inline int add_counter_no_val_to_rpl(void * param, int counter)
+{
+	struct mi_node* rpl = (struct mi_node* ) param;
+	struct mi_node* node;
+	struct mi_attr* attr;
+	int len;
+	char *p;
+
+	node = add_mi_node_child(rpl, MI_DUP_VALUE,
+	                         MI_SSTR("value"), MI_SSTR("WITHOUT VALUE"));
+
+	if( node == NULL )
+		return -1;
+
+	p= int2str((unsigned long)counter, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
+
+	if( attr == NULL )
+		return -1;
+
+	return 0;
+}
+
 struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 {
 	struct mi_node* node;
@@ -1121,7 +1144,6 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	struct dlg_profile_table *profile;
 	str *profile_name;
 	int i, ret,n;
-	str tmp;
 
 	node = cmd_tree->node.kids;
 	if (node==NULL || !node->value.s || !node->value.len)
@@ -1169,10 +1191,10 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 			lock_set_release( profile->locks, i);
 		}
 
-		tmp.s = "WITHOUT VALUE";
-		tmp.len = sizeof("WITHOUT VALUE")-1;
-		ret =  add_val_to_rpl(rpl, tmp , (void *)(long)n );
+		if (profile->repl_type != REPL_CACHEDB)
+			n += replicate_profiles_count(profile->repl);
 
+		ret = add_counter_no_val_to_rpl(rpl, n);
 	}
 
 	if ( ret )

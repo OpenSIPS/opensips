@@ -33,6 +33,7 @@
 #include "../../msg_callbacks.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+#include "../../parser/contact/parse_contact.h"
 #include "dlg.h"
 
 
@@ -128,6 +129,10 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 		struct ua_server *uas, struct ua_client *uac, int with_dst)
 {
+	struct hdr_field *hdr;
+	struct lump *ld, *la;
+	contact_t *c;
+
 	/* on_negative_reply faked msg now copied from shmem msg (as opposed
 	 * to zero-ing) -- more "read-only" actions (exec in particular) will
 	 * work from reply_route as they will see msg->from, etc.; caution,
@@ -206,6 +211,48 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 		}
 		memcpy(faked_req->path_vec.s, shm_msg->path_vec.s,
 			   shm_msg->path_vec.len);
+	}
+
+	/*
+	 * the fix_nated_contact() function in the nathelper module changes the
+	 * contact to point to a buffer stored in a lump; the following code
+	 * restores the pointer so that functions that use the contact header body
+	 * to see the "fixed" contact, rather than the original header
+	 */
+	for (hdr = shm_msg->contact; hdr; hdr = hdr->sibling) {
+		/* not something critical right now, so we can pass the error */
+		if (parse_contact(hdr) < 0 || !hdr->parsed)
+			continue;
+
+		for (c = ((contact_body_t *)hdr->parsed)->contacts; c; c = c->next) {
+			/* search for the lump */
+			for (ld = shm_msg->add_rm; ld; ld = ld->next) {
+				if (ld->op != LUMP_DEL)
+					continue;
+				for (la = ld->after; la; la = la->after) {
+					/* LM_DBG("matching contact lump op=%d type=%d offset=%d"
+							"len = %d c.offset=%d c.len=%d\n", la->op,
+							la->type, ld->u.offset, ld->len,
+							(int)(c->uri.s-shm_msg->buf), c->uri.len); */
+					if (la->op == LUMP_ADD && la->type == HDR_CONTACT_T &&
+							ld->u.offset == c->uri.s-shm_msg->buf &&
+							ld->len == c->uri.len) {
+						/* if enclosed, skip enclosing */
+						if (la->u.value[0] == '<') {
+							c->uri.s = la->u.value + 1;
+							c->uri.len = la->len - 2;
+						} else {
+							c->uri.s = la->u.value;
+							c->uri.len = la->len;
+						}
+						LM_DBG("buffer found <%.*s>\n", c->uri.len, c->uri.s);
+						goto next_contact;
+					}
+				}
+			}
+next_contact:
+			;
+		}
 	}
 
 	if (clone_sip_msg_body( shm_msg, faked_req, &faked_req->body, 0)!=0) {

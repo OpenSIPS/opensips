@@ -8,13 +8,17 @@ Edited by
 
 Maxim Sobolev
 
+Edited by
+
 Bogdan-Andrei Iancu
+
+Edited by
 
 Razvan Crainea
 
-   Copyright � 2003-2008 Sippy Software, Inc.
+   Copyright © 2003-2008 Sippy Software, Inc.
 
-   Copyright � 2005 Voice Sistem SRL
+   Copyright © 2005 Voice Sistem SRL
      __________________________________________________________
 
    Table of Contents
@@ -37,12 +41,13 @@ Razvan Crainea
               1.5.4. rtpproxy_autobridge (integer)
               1.5.5. rtpproxy_tout (integer)
               1.5.6. rtpproxy_retr (integer)
-              1.5.7. nortpproxy_str (string)
-              1.5.8. db_url (string)
-              1.5.9. db_table (string)
-              1.5.10. rtpp_socket_col (string)
-              1.5.11. set_id_col (string)
-              1.5.12. rtpp_notify_socket (string)
+              1.5.7. default_set (integer)
+              1.5.8. nortpproxy_str (string)
+              1.5.9. db_url (string)
+              1.5.10. db_table (string)
+              1.5.11. rtpp_socket_col (string)
+              1.5.12. set_id_col (string)
+              1.5.13. rtpp_notify_socket (string)
 
         1.6. Exported Functions
 
@@ -67,7 +72,7 @@ Razvan Crainea
                       sock_pvar]])
 
               1.6.7. rtpproxy_start_recording([set_id [, sock_pvar
-                      [, flags]]])
+                      [, flags [, destination]]]])
 
               1.6.8. rtpproxy_stats(up_pvar, down_pvar, sent_pvar,
                       fail_pvar [, set_id [, sock_pvar]])
@@ -94,23 +99,24 @@ Razvan Crainea
    1.3. Set rtpproxy_timeout parameter to 200ms
    1.4. Enable auto-bridging feature
    1.5. Set rtpproxy_retr parameter
-   1.6. Set nortpproxy_str parameter
-   1.7. Set db_url parameter
-   1.8. Set db_table parameter
-   1.9. Set rtpp_socket_col parameter
-   1.10. Set set_id parameter
-   1.11. Set rtpp_notify_socket parameter
-   1.12. rtpproxy_engage usage
-   1.13. rtpproxy_offer usage
-   1.14. rtpproxy_answer usage
-   1.15. rtpproxy_unforce usage
-   1.16. rtpproxy_stream2xxx usage
-   1.17. rtpproxy_start_recording usage
-   1.18. rtpproxy_stats usage
-   1.19. rtpproxy_all_stats usage
-   1.20. rtpproxy_enable usage
-   1.21. rtpproxy_show usage
-   1.22. rtpproxy_reload usage
+   1.6. Set default_set parameter
+   1.7. Set nortpproxy_str parameter
+   1.8. Set db_url parameter
+   1.9. Set db_table parameter
+   1.10. Set rtpp_socket_col parameter
+   1.11. Set set_id parameter
+   1.12. Set rtpp_notify_socket parameter
+   1.13. rtpproxy_engage usage
+   1.14. rtpproxy_offer usage
+   1.15. rtpproxy_answer usage
+   1.16. rtpproxy_unforce usage
+   1.17. rtpproxy_stream2xxx usage
+   1.18. rtpproxy_start_recording usage
+   1.19. rtpproxy_stats usage
+   1.20. rtpproxy_all_stats usage
+   1.21. rtpproxy_enable usage
+   1.22. rtpproxy_show usage
+   1.23. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -133,7 +139,7 @@ Chapter 1. Admin Guide
    - load-balancing will be performed over a set and the user has
    the ability to choose what set should be used. The set is
    selected via its id - the id being defined along with the set.
-   Refer to the "rtpproxy_sock" module parameter definition for
+   Refer to the “rtpproxy_sock” module parameter definition for
    syntax description.
 
    The balancing inside a set is done automatically by the module
@@ -163,7 +169,7 @@ Chapter 1. Admin Guide
 
    In our tests with RTPProxy we observed some limitations and
    also provide a patch for it against git commit
-   "600c80493793bafd2d69427bc22fcb43faad98c5". It contains an
+   “600c80493793bafd2d69427bc22fcb43faad98c5”. It contains an
    addition and implements separate timeout parameters for the
    phases of session establishment and ongoing sessions. In the
    official code a single timeout parameter controls both session
@@ -179,23 +185,23 @@ Chapter 1. Admin Guide
    must follow:
 
    Start OpenSIPS timeout detection by setting the
-   "rtpp_notify_socket" module parameter in your configuration
+   “rtpp_notify_socket” module parameter in your configuration
    script. This is the socket where further notification will be
    received from rtpproxies. This socket must be a TCP or UNIX
    socket. Also, for all the calls that require notification, the
    rtpproxy_engage(), rtpproxy_offer() and rtpproxy_answer()
-   functions must be called with the "n" flag.
+   functions must be called with the “n” flag.
 
    Configure RTPProxy to use timeout notification by adding the
    following command line parameters:
-     * " -n timeout_socket" - specifies where the notifications
+     * “ -n timeout_socket” - specifies where the notifications
        will be sent. This socket must be the same as
-       "rtpp_notify_socket" OpenSIPS module parameter. This
+       “rtpp_notify_socket” OpenSIPS module parameter. This
        parameter is mandatory.
-     * " -T ttl" - limits the rtp session timeout to "ttl". This
+     * “ -T ttl” - limits the rtp session timeout to “ttl”. This
        parameter is optional and the default value is 60 seconds.
-     * " -W ttl" - limits the session establishment timeout to
-       "ttl". This parameter is optional and the default value is
+     * “ -W ttl” - limits the session establishment timeout to
+       “ttl”. This parameter is optional and the default value is
        60 seconds.
 
    All of the previous parameters can be used with the offical
@@ -206,11 +212,11 @@ Chapter 1. Admin Guide
 
    To get the patched version from git you must follow theese
    steps:
-     * Get the latest source code: "git clone
-       git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy"
-     * Make a branch from the commit: "git checkout -b branch_name
-       600c80493793bafd2d69427bc22fcb43faad98c5"
-     * Patch RTPProxy: "patch < path_to_rtpproxy_patch"
+     * Get the latest source code: “git clone
+       git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy”
+     * Make a branch from the commit: “git checkout -b branch_name
+       600c80493793bafd2d69427bc22fcb43faad98c5”
+     * Patch RTPProxy: “patch < path_to_rtpproxy_patch”
 
    The patched version can also be found at:
    http://opensips.org/pub/rtpproxy/
@@ -238,7 +244,7 @@ Chapter 1. Admin Guide
    Definition of socket(s) used to connect to (a set) RTPProxy. It
    may specify a UNIX socket or an IPv4/IPv6 UDP socket.
 
-   Default value is "NONE" (disabled).
+   Default value is “NONE” (disabled).
 
    Example 1.1. Set rtpproxy_sock parameter
 ...
@@ -260,7 +266,7 @@ modparam("rtpproxy", "rtpproxy_sock",
    rtpproxy will not attempt to establish communication to
    RTPProxy for rtpproxy_disable_tout seconds.
 
-   Default value is "60".
+   Default value is “60”.
 
    Example 1.2. Set rtpproxy_disable_tout parameter
 ...
@@ -271,7 +277,7 @@ modparam("rtpproxy", "rtpproxy_disable_tout", 20)
 
    Timeout value in waiting for reply from RTPProxy.
 
-   Default value is "1".
+   Default value is “1”.
 
    Example 1.3. Set rtpproxy_timeout parameter to 200ms
 ...
@@ -283,7 +289,7 @@ modparam("rtpproxy", "rtpproxy_timeout", "0.2")
    Enable auto-bridging feature. Does not properly function when
    doing serial/parallel forking!
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.4. Enable auto-bridging feature
 ...
@@ -299,14 +305,28 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
    How many times rtpproxy should retry to send and receive after
    timeout was generated.
 
-   Default value is "5".
+   Default value is “5”.
 
    Example 1.5. Set rtpproxy_retr parameter
 ...
 modparam("rtpproxy", "rtpproxy_retr", 2)
 ...
 
-1.5.7. nortpproxy_str (string)
+1.5.7. default_set (integer)
+
+   The parameter indicates the default RTPProxy set to be used
+   when provisioning an engine in the config file without an
+   explicit set, or when calling one of the rtpproxy_*() functions
+   without an explicit set.
+
+   Default value is set “0”.
+
+   Example 1.6. Set default_set parameter
+...
+modparam("rtpproxy", "default_set", 1)
+...
+
+1.5.8. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by rtpproxy to mark
    the packet SDP informations have already been mangled.
@@ -318,14 +338,14 @@ Note
    The string must be a complete SDP line, including the EOH
    (\r\n).
 
-   Default value is "a=nortpproxy:yes\r\n".
+   Default value is “a=nortpproxy:yes\r\n”.
 
-   Example 1.6. Set nortpproxy_str parameter
+   Example 1.7. Set nortpproxy_str parameter
 ...
 modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.5.8. db_url (string)
+1.5.9. db_url (string)
 
    The database url. This parameter should be set if you want to
    use a database table from where to load or reload definitions
@@ -335,59 +355,59 @@ modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
    the MI command rtpproxy_reload is issued(the definitions will
    be replaced with the ones from the database table).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
-   Example 1.7. Set db_url parameter
+   Example 1.8. Set db_url parameter
 ...
 modparam("rtpproxy", "db_url",
                 "mysql://opensips:opensipsrw@192.168.2.132/opensips")
 ...
 
 
-1.5.9. db_table (string)
+1.5.10. db_table (string)
 
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
 
-   Default value is "rtpproxy_sockets".
+   Default value is “rtpproxy_sockets”.
 
-   Example 1.8. Set db_table parameter
+   Example 1.9. Set db_table parameter
 ...
 modparam("rtpproxy", "db_table", "nh_sockets")
 ...
 
 
-1.5.10. rtpp_socket_col (string)
+1.5.11. rtpp_socket_col (string)
 
    The name rtpp socket column in the database table.
 
-   Default value is "rtpproxy_sock".
+   Default value is “rtpproxy_sock”.
 
-   Example 1.9. Set rtpp_socket_col parameter
+   Example 1.10. Set rtpp_socket_col parameter
 ...
 modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket")
 ...
 
 
-1.5.11. set_id_col (string)
+1.5.12. set_id_col (string)
 
    The name set id column in the database table.
 
-   Default value is "set_id".
+   Default value is “set_id”.
 
-   Example 1.10. Set set_id parameter
+   Example 1.11. Set set_id parameter
 ...
 modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 ...
 
 
-1.5.12. rtpp_notify_socket (string)
+1.5.13. rtpp_notify_socket (string)
 
    The socket used by OpenSIPS to receive timeout notifications.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
-   Example 1.11. Set rtpp_notify_socket parameter
+   Example 1.12. Set rtpp_notify_socket parameter
 ...
 modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 
@@ -416,7 +436,7 @@ sock_pvar]]]])
      * flags(optional) - flags to turn on some features.
           + a - flags that UA from which message is received
             doesn't support symmetric RTP.
-          + l - force "lookup", that is, only rewrite SDP when
+          + l - force “lookup”, that is, only rewrite SDP when
             corresponding session is already exists in the RTP
             proxy. By default is on when the session is to be
             completed (reply in non-swap or ACK in swap mode).
@@ -484,7 +504,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.12. rtpproxy_engage usage
+   Example 1.13. rtpproxy_engage usage
 ...
 if (is_method("INVITE") && has_totag()) {
         if ($var(setid) != 0) {
@@ -511,7 +531,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.13. rtpproxy_offer usage
+   Example 1.14. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -556,7 +576,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. rtpproxy_answer usage
+   Example 1.15. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
@@ -572,7 +592,7 @@ sock_pvar]]]])
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. rtpproxy_unforce usage
+   Example 1.16. rtpproxy_unforce usage
 ...
 rtpproxy_unforce();
 ...
@@ -616,7 +636,7 @@ sock_pvar]])
      * sock_pvar(optional) - pvar used to store the RTPProxy
        socket chosen for this call.
 
-   Example 1.16. rtpproxy_stream2xxx usage
+   Example 1.17. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -644,7 +664,8 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
 
    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
-1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar [, flags]]])
+1.6.7.  rtpproxy_start_recording([set_id [, sock_pvar [, flags [,
+destination]]]])
 
    This command will send a signal to the RTP-Proxy to record the
    RTP stream on the RTP-Proxy.
@@ -658,10 +679,15 @@ rtpproxy_stop_stream2uas([set_id [, sock_pvar]])
        indicates that RTPProxy should record both audio legs in a
        single file. Note that this feature is available starting
        with RTPProxy 2.0.
+     * destination(optional) - the destination of the recording.
+       If it has the udp:IP:port format, RTPProxy sends the RTP
+       stream to that IP:port remote destination. Otherwise,
+       destination represents the name of the file in the
+       recording directory.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.17. rtpproxy_start_recording usage
+   Example 1.18. rtpproxy_start_recording usage
 ...
 rtpproxy_start_recording();
 ...
@@ -687,7 +713,7 @@ set_id [, sock_pvar]])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.18. rtpproxy_stats usage
+   Example 1.19. rtpproxy_stats usage
 ...
 rtpproxy_stats("$var(up)","$var(down)","$var(sent)","$var(fail)");
 xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
@@ -726,7 +752,7 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
      * rtpa_lost - $(avp(ret)[8])
      * rtpa_perrs - $(avp(ret)[9])
 
-   Example 1.19. rtpproxy_all_stats usage
+   Example 1.20. rtpproxy_all_stats usage
 ...
 rtpproxy_all_stats("$avp(stats)");
 xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
@@ -750,10 +776,10 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    new enabled/disabled state.
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
-   diferente sete), all its instances will be enables/disabled IF
+   different set), all its instances will be enables/disabled IF
    no set ID provided (as second param).
 
-   Example 1.20.  rtpproxy_enable usage
+   Example 1.21.  rtpproxy_enable usage
 ...
 ## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
@@ -768,7 +794,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 
    No parameter.
 
-   Example 1.21.  rtpproxy_show usage
+   Example 1.22.  rtpproxy_show usage
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
@@ -782,7 +808,7 @@ $ opensipsctl fifo rtpproxy_show
 
    No parameter.
 
-   Example 1.22.  rtpproxy_reload usage
+   Example 1.23.  rtpproxy_reload usage
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...
@@ -803,38 +829,38 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   What happened with "rtpproxy_disable" parameter?
+       What happened with “rtpproxy_disable” parameter?
 
-   It was removed as it became obsolete - now "rtpproxy_sock" can
-   take empty value to disable the rtpproxy functionality.
+       It was removed as it became obsolete - now “rtpproxy_sock” can
+       take empty value to disable the rtpproxy functionality.
 
    2.2.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    2.3.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    2.4.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.

@@ -57,7 +57,7 @@ static int bin_port = 5555;
 static int bin_send_timeout = 100;
 static struct tcp_req bin_current_req;
 static int bin_max_msg_chunks = 32;
-static int bin_async = 0;
+static int bin_async = 1;
 static int bin_async_max_postponed_chunks = 32;
 static int bin_async_local_connect_timeout = 100;
 static int bin_async_local_write_timeout = 10;
@@ -111,6 +111,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -283,7 +284,7 @@ poll_loop:
 			LM_ERR("Failed to add write chunk to connection \n");
 			return -1;
 		} else {
-			/* we have succesfully added async write chunk
+			/* we have successfully added async write chunk
 			 * tell MAIN to poll out for us */
 			LM_DBG("Data still pending for write on conn %p\n",c);
 			return 0;
@@ -586,7 +587,7 @@ static int proto_bin_send(struct socket_info* send_sock,
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
 
-			/* we succesfully added our write chunk - success */
+			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
 		} else {
@@ -604,7 +605,7 @@ send_it:
 
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
 	if (n<0){
 		LM_ERR("failed to send\n");
@@ -633,7 +634,7 @@ static int bin_handle_req(struct tcp_req *req,
 	long size;
 
 	if (req->complete){
-		/* update the timeout - we succesfully read the request */
+		/* update the timeout - we successfully read the request */
 		tcp_conn_set_lifetime( con, tcp_con_lifetime);
 		con->timeout = con->lifetime;
 

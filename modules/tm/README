@@ -10,7 +10,11 @@ Edited by
 
 Jiri Kuthan
 
+Edited by
+
 Bogdan-Andrei Iancu
+
+Edited by
 
 Ovidiu Sas
 
@@ -786,8 +790,11 @@ t_relay(); # send the call further
        request is not a retransmission.
      * CANCEL request - true if the cancelled INVITE transaction
        exists.
-     * ACK request - true if the ACK is a local end-to-end ACK
-       corresponding to an previous INVITE transaction.
+     * ACK request - true if the ACK is a hop-by-hop ACK (to a
+       negative reply) corresponding to an previous INVITE
+       transaction. IMPORTANT: end-to-end ACKs (to 2xx replies)
+       are not detected by this function as end-to-end ACKs form a
+       different transaction.
 
    Note: To detect retransmissions using this function you have to
    make sure that the initial request has already created a
@@ -1050,11 +1057,11 @@ route {
 }
 
 branch_route[1] {
-        if (uri=~"bad_uri") {
+        if ($ru=~"bad_uri") {
                 xlog("dropping branch $ru \n");
                 drop;
         }
-        if (uri=~"GW_uri") {
+        if ($ru=~"GW_uri") {
                 append_rpid();
         }
 }
@@ -1387,14 +1394,14 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   What happened with old cancel_call() function
+       What happened with old cancel_call() function
 
-   The function was replace (as functionality) by
-   cancel_branch("a") - cancel all braches.
+       The function was replace (as functionality) by
+       cancel_branch("a") - cancel all braches.
 
    3.2.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.

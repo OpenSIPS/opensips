@@ -42,6 +42,7 @@
 #include "../../md5utils.h"
 #include "../../async.h"
 #include "../../usr_avp.h"
+#include "../../lib/list.h"
 #include "config.h"
 
 struct s_table;
@@ -326,11 +327,6 @@ struct s_table
 	unsigned short timer_sets;
 };
 
-
-/* XXX: use the container of function in header
-#define tm_list_entry(ptr, type, member) \
-	((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->member)))
-*/
 
 #define get_retr_timer_payload(_tl_) \
 	container_of( _tl_, struct retr_buf, retr_timer)

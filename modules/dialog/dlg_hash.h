@@ -140,6 +140,7 @@ struct dlg_cell
 	unsigned int         mod_flags;
 	unsigned int         initial_t_hash_index;
 	unsigned int         initial_t_label;
+	unsigned int         replicated; /* indicates if the dialog is replicated */
 	struct dlg_tl        tl;
 	struct dlg_ping_list *pl;
 	struct dlg_ping_list *reinvite_pl;

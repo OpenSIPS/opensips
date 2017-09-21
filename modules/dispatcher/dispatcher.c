@@ -326,6 +326,7 @@ struct module_exports exports= {
 	0,          /* exported statistics */
 	mi_cmds,    /* exported MI functions */
 	0,          /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	(response_function) 0,
@@ -538,7 +539,7 @@ static int set_partition_arguments(unsigned int type, void *val)
 					return -1;
 			}
 			else{
-				/* No paramater found */
+				/* No parameter found */
 				LM_ERR("No such parameter known: %.*s\n", arg.len, arg.s);
 				return -1;
 			}
@@ -663,7 +664,7 @@ static int inherit_from_default_head(ds_db_head_t *head)
 		str *p_param = partition_params[i].getter_func(head);
 
 		if (p_param->len == 0 && def_param->len > 0) {
-			/* Paramater not specified for function */
+			/* Parameter not specified for function */
 			if (strstr(partition_params[i].name.s, "avp")
 				&& def_param->len > 0) {
 

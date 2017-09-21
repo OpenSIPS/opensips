@@ -220,7 +220,7 @@ modparam("pua", "update_period", 100)
 		<title><function>pua_update_contact</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(method=="NOTIFY")
+if($rm=="NOTIFY")
     pua_update_contact();
 ...
 </programlisting>

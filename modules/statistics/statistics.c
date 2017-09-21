@@ -125,6 +125,7 @@ struct module_exports exports= {
 	0,					/* exported statistics */
 	0,					/* exported MI functions */
 	mod_items,			/* exported pseudo-variables */
+	0,					/* exported transformations */
 	0,					/* extra processes */
 	mod_init,			/* module initialization function */
 	0,					/* reply processing function */
@@ -202,13 +203,33 @@ static void mod_destroy(void)
 	}
 }
 
+static int resolve_stat(str *in, str *out_group, str *out_name, int *out_grp_idx)
+{
+	module_stats *ms;
+
+	parse_groupname(in, out_group, out_name);
+	if (out_group->s) {
+		ms = get_stat_module(out_group);
+		if (!ms) {
+			LM_ERR("stat group '%.*s' must be explicitly defined "
+			       "using the 'stat_groups' module parameter!\n",
+			       out_group->len, out_group->s);
+			return -1;
+		}
+		*out_grp_idx = ms->idx;
+	} else {
+		*out_grp_idx = -1;
+	}
+
+	return 0;
+}
+
 static int fixup_stat(void** param, int param_no)
 {
 	struct stat_param *sp;
 	pv_elem_t *format;
-	str s, group, name;
-	module_stats *ms;
-	int grp_idx __attribute__((unused)) = -1;
+	str s, sname, group;
+	int grp_idx __attribute__((unused));
 
 	s.s = (char*)*param;
 	s.len = strlen(s.s);
@@ -229,20 +250,11 @@ static int fixup_stat(void** param, int param_no)
 		/* is it only one token ? */
 		if (format->next==NULL && (format->text.len==0 || format->spec.type==PVT_NONE)) {
 			if (format->text.s && format->text.len) {
-				parse_groupname(&format->text, &group, &name);
-				if (group.s) {
-					ms = get_stat_module(&group);
-					if (!ms) {
-						LM_ERR("stat group '%.*s' must be explicitly defined "
-						       "using the 'stat_groups' module parameter!\n",
-						       group.len, group.s);
-						return E_CFG;
-					}
-					grp_idx = ms->idx;
+				if (resolve_stat(&format->text, &group, &sname, &grp_idx) != 0) {
+					return E_CFG;
 				}
-
 				/* text token */
-				sp->u.stat = __get_stat(&format->text, grp_idx);
+				sp->u.stat = __get_stat(&sname, grp_idx);
 				if (sp->u.stat) {
 					/* statistic found */
 					sp->type = STAT_PARAM_TYPE_STAT;
@@ -352,9 +364,8 @@ static int w_update_stat(struct sip_msg *msg, char *stat_p, char *val)
 	pv_value_t pv_val;
 	stat_var *stat;
 	int n;
-	str group, name;
-	int grp_idx __attribute__((unused)) = -1;
-	module_stats *ms;
+	str name, group;
+	int grp_idx __attribute__((unused));
 
 	/* evaluate the value first */
 	if (fixup_get_ivalue( msg, (gparam_p)val, &n)<0) {
@@ -391,32 +402,24 @@ static int w_update_stat(struct sip_msg *msg, char *stat_p, char *val)
 
 	LM_DBG("needed statistic is <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
 
-	parse_groupname(&pv_val.rs, &group, &name);
-	if (group.s && group.len > 0) {
-		ms = get_stat_module(&group);
-		if (!ms) {
-			LM_ERR("stat group '%.*s' must be explicitly defined using the "
-			       "'stat_groups' module parameter!\n",
-			       group.len, group.s);
-			return E_CFG;
-		}
-		grp_idx = ms->idx;
+	if (resolve_stat(&pv_val.rs, &group, &name, &grp_idx) != 0) {
+		return E_CFG;
 	}
 
 	stat = __get_stat(&name, grp_idx);
 	if ( stat==NULL ) {
 		/* stats not found -> create it */
-		LM_DBG("creating dynamic statistic <%.*s>\n", name.len, name.s);
+		LM_DBG("creating statistic <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
 
-		if (group.s && group.len > 0) {
+		if (grp_idx > 0) {
 			if (__register_dynamic_stat(&group, &name, &stat) != 0) {
-				LM_ERR("failed to create dynamic statistic <%.*s:%.*s>\n",
+				LM_ERR("failed to create statistic <%.*s:%.*s>\n",
 				       group.len, group.s, name.len, name.s);
 				return -1;
 			}
 		} else {
-			if (register_dynamic_stat( &name, &stat )!=0) {
-				LM_ERR("failed to create dynamic statistic <%.*s>\n",
+			if (register_dynamic_stat(&name, &stat)!=0) {
+				LM_ERR("failed to create statistic <%.*s>\n",
 				       name.len, name.s);
 				return -1;
 			}
@@ -439,8 +442,7 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 	pv_value_t pv_val;
 	stat_var *stat;
 	str group, name;
-	int grp_idx __attribute__((unused)) = -1;
-	module_stats *ms;
+	int grp_idx __attribute__((unused));
 
 	if (sp->type==STAT_PARAM_TYPE_STAT) {
 		/* we have the statistic */
@@ -468,32 +470,24 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 
 	LM_DBG("needed statistic is <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
 
-	parse_groupname(&pv_val.rs, &group, &name);
-	if (group.s && group.len > 0) {
-		ms = get_stat_module(&group);
-		if (!ms) {
-			LM_ERR("stat group '%.*s' must be explicitly defined using the "
-			       "'stat_groups' module parameter!\n",
-			       group.len, group.s);
-			return E_CFG;
-		}
-		grp_idx = ms->idx;
+	if (resolve_stat(&pv_val.rs, &group, &name, &grp_idx) != 0) {
+		return E_CFG;
 	}
 
 	stat = __get_stat(&name, grp_idx);
 	if ( stat==NULL ) {
 		/* stats not found -> create it */
-		LM_DBG("creating dynamic statistic <%.*s>\n", name.len, name.s);
+		LM_DBG("creating statistic <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
 
-		if (group.s && group.len > 0) {
+		if (grp_idx > 0) {
 			if (__register_dynamic_stat(&group, &name, &stat) != 0) {
-				LM_ERR("failed to create dynamic statistic <%.*s:%.*s>\n",
+				LM_ERR("failed to create statistic <%.*s:%.*s>\n",
 				       group.len, group.s, name.len, name.s);
 				return -1;
 			}
 		} else {
 			if (register_dynamic_stat( &name, &stat )!=0) {
-				LM_ERR("failed to create dynamic statistic <%.*s>\n",
+				LM_ERR("failed to create statistic <%.*s>\n",
 				       name.len, name.s);
 				return -1;
 			}
@@ -566,6 +560,8 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 												int create, stat_var **stat)
 {
 	pv_value_t pv_val;
+	str sname, group;
+	int grp_idx __attribute__((unused));
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
@@ -583,20 +579,31 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 			/* name is string */
 			pv_val.rs = name->u.isname.name.s;
 		}
+
+		if (resolve_stat(&pv_val.rs, &group, &sname, &grp_idx) != 0) {
+			return E_CFG;
+		}
+
 		/* lookup for the statistic */
-		*stat = get_stat( &pv_val.rs );
+		*stat = __get_stat(&sname, grp_idx);
 		LM_DBG("stat name %p (%.*s) after lookup is %p\n",
-			name, pv_val.rs.len, pv_val.rs.s, *stat);
+		       name, pv_val.rs.len, pv_val.rs.s, *stat);
 		if (*stat==NULL) {
 			if (!create)
 				return 0;
-			LM_DBG("creating dynamic statistic <%.*s>\n",
-				pv_val.rs.len, pv_val.rs.s);
-			/* stats not found -> create it */
-			if (register_dynamic_stat( &pv_val.rs, stat )!=0) {
-				LM_ERR("failed to create dynamic statistic <%.*s>\n",
-					pv_val.rs.len, pv_val.rs.s);
-				return -1;
+			LM_DBG("creating statistic <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
+			if (grp_idx > 0) {
+				if (__register_dynamic_stat(&group, &sname, stat) != 0) {
+					LM_ERR("failed to create statistic <%.*s>\n",
+					       pv_val.rs.len, pv_val.rs.s);
+					return -1;
+				}
+			} else {
+				if (register_dynamic_stat(&sname, stat)!=0) {
+					LM_ERR("failed to create statistic <%.*s>\n",
+					       pv_val.rs.len, pv_val.rs.s);
+					return -1;
+				}
 			}
 		}
 		/* if name is static string, better link the stat directly
@@ -616,7 +623,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 	} else {
 		/* stat already found ! */
 		*stat = (stat_var*)name->u.dname;
-		LM_DBG("stat name %p is founded\n",name);
+		LM_DBG("found stat name %p\n",name);
 	}
 
 	return 0;

@@ -570,7 +570,7 @@ int t_add_reason(struct sip_msg *msg, char *val)
 
 
 void cancel_invite(struct sip_msg *cancel_msg,
-								struct cell *t_cancel, struct cell *t_invite )
+					struct cell *t_cancel, struct cell *t_invite, int locked)
 {
 #define CANCEL_REASON_SIP_487  \
 	"Reason: SIP;cause=487;text=\"ORIGINATOR_CANCEL\"" CRLF
@@ -585,7 +585,10 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	/* send back 200 OK as per RFC3261 */
 	reason.s = CANCELING;
 	reason.len = sizeof(CANCELING)-1;
-	t_reply( t_cancel, cancel_msg, 200, &reason );
+	if (locked)
+		t_reply_unsafe( t_cancel, cancel_msg, 200, &reason );
+	else
+		t_reply( t_cancel, cancel_msg, 200, &reason );
 
 	reason.s = NULL;
 	reason.len = 0;
@@ -648,7 +651,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
  *      -1 - error during forward
  */
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
-									struct proxy_l * proxy, int reset_bcounter)
+						struct proxy_l * proxy, int reset_bcounter, int locked)
 {
 	str reply_reason_487 = str_init("Request Terminated");
 	str backup_uri;
@@ -676,7 +679,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		t_invite=t_lookupOriginalT(  p_msg );
 		if (t_invite!=T_NULL_CELL) {
 			t_invite->flags |= T_WAS_CANCELLED_FLAG;
-			cancel_invite( p_msg, t, t_invite );
+			cancel_invite( p_msg, t, t_invite, locked );
 			return 1;
 		}
 	}
@@ -693,7 +696,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			/* if no other signalling was performed on the transaction
 			 * and the transaction was already canceled, better
 			 * internally generate the 487 reply here */
-			t_reply( t, p_msg , 487 , &reply_reason_487);
+			if (locked)
+				t_reply_unsafe( t, p_msg , 487 , &reply_reason_487);
+			else
+				t_reply( t, p_msg , 487 , &reply_reason_487);
 		}
 		LM_INFO("discarding fwd for a cancelled transaction\n");
 		ser_error = E_NO_DESTINATION;
@@ -754,8 +760,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	p_msg->path_vec = bk_path;
 	p_msg->ruri_bflags = bk_bflags;
 
-	/* update on_branch, if modified */
-	t->on_branch = get_on_branch();
+	/* update on_branch, _only_ if modified, otherwise it overwrites
+	 * whatever it is already in the transaction */
+	if (get_on_branch())
+		t->on_branch = get_on_branch();
+
 	/* update flags, if changed in branch route */
 	t->uas.request->flags = p_msg->flags;
 
@@ -818,11 +827,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			set_kr(REQ_FWDED);
 
 			/* successfully sent out -> run callbacks */
-			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
+			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT) ) {
 				set_extra_tmcb_params( &t->uac[i].request.buffer,
 					&t->uac[i].request.dst);
-				run_trans_callbacks( TMCB_REQUEST_BUILT, t, p_msg,0,
-					-p_msg->REQ_METHOD);
+				run_trans_callbacks( TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT, t,
+					p_msg, 0, 0);
 			}
 
 		}
@@ -995,7 +1004,7 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 	}
 
 	/* generated the new branches, without branch counter reset */
-	rc = t_forward_nonack( t, &faked_req , NULL, 0 );
+	rc = t_forward_nonack( t, &faked_req , NULL, 0, 1/*locked*/ );
 
 	/* do we have to cancel the existing branches before injecting new ones? */
 	if (flags&TM_INJECT_FLAG_CANCEL) {
@@ -1058,7 +1067,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 
 		t->flags|=T_IS_LOCAL_FLAG;
 
-		return t_forward_nonack( t, p_msg, NULL, 1/*reset*/);
+		return t_forward_nonack( t, p_msg, NULL, 1/*reset*/, 0/*unlocked*/);
 	}
 }
 

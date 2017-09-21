@@ -42,8 +42,8 @@ static struct sip_msg dummy_req;
 
 /* error reasons */
 str AS_CONNECT_INIT = str_init("Async connect in progress...");
-str CONNECT_OK = str_init("Succesfully connected...");
-str ASYNC_CONNECT_OK = str_init("Succesfully connected asynchronously...");
+str CONNECT_OK = str_init("Successfully connected...");
+str ASYNC_CONNECT_OK = str_init("Successfully connected asynchronously...");
 str ACCEPT_OK = str_init("Connection accepted...");
 str ACCEPT_FAIL = str_init("Failed to accept connection...");
 str CONNECT_FAIL = str_init("Failed to connect...");
@@ -124,8 +124,10 @@ int send_trace_message( void* message, void* destination)
 {
 	if ( net_trace_api->send_message( message, destination, 0) < 0 ) {
 		LM_ERR("failed to trace message!\n");
+		net_trace_api->free_message( message );
 		return -1;
 	}
+
 	net_trace_api->free_message( message );
 
 	return 0;

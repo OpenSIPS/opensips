@@ -35,7 +35,6 @@
 #include "save.h"
 #include "gruu.h"
 
-#include "../../lib/reg/rerrno.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/contact/contact.h"
@@ -49,8 +48,14 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+
 #include "../../lib/path.h"
+#include "../../lib/reg/ci.h"
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/path.h"
+
 #include "../../trim.h"
 
 #include "../usrloc/usrloc.h"
@@ -73,7 +78,32 @@ static struct {
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
 
-/* with the optionally added outbound timeout extension */
+/*
+ * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
+ */
+void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
+{
+	if (!_ep || !_ep->body.len) {
+		*_e = get_expires_hf(_m);
+	} else {
+		if (str2int(&_ep->body, (unsigned int*)_e) < 0) {
+			*_e = default_expires;
+		}
+	}
+
+	if ((*_e != 0) && ((*_e) < min_expires))
+		*_e = min_expires;
+
+	if ((*_e != 0) && max_expires && ((*_e) > max_expires))
+		*_e = max_expires;
+
+	LM_DBG("expires: %d\n", *_e);
+}
+
+/* with the optionally added outgoing timeout extension
+ *
+ * @_e: output param (UNIX timestamp) - expiration time on the main registrar
+ */
 void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
 {
 	if (!_ep || !_ep->body.len) {
@@ -84,7 +114,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 		}
 	}
 
-	/* extend outbound timeout, thus "throttling" heavy incoming traffic */
+	/* extend outgoing timeout, thus "throttling" heavy incoming traffic */
 	if (*_e > 0 && *_e < outgoing_expires)
 		*_e = outgoing_expires;
 
@@ -100,7 +130,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 		*_e = max_expires + get_act_time();
 	}
 
-	LM_DBG("outbound expires: %d\n", *_e);
+	LM_DBG("outgoing expires: %d\n", *_e);
 }
 
 static int trim_to_single_contact(struct sip_msg *msg, str *aor)
@@ -109,7 +139,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 	struct socket_info *adv_sock;
 	struct lump *anchor = NULL;
 	char *buf;
-	int len, len1;
+	int e, is_dereg = 1, len, len1;
 	struct hdr_field *ct;
 
 	adv_sock = *get_sock_info_list(PROTO_UDP);
@@ -124,6 +154,10 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 
 	for (c = ((contact_body_t *)ct->parsed)->contacts; c;
 	     c = get_next_contact(c)) {
+		calc_contact_expires(msg, c->expires, &e, NULL);
+		if (e != 0)
+			is_dereg = 0;
+
 		LM_DBG("deleting Contact '%.*s'\n", c->len, c->name.s);
 		anchor = del_lump(msg, c->name.s - msg->buf, c->len, HDR_CONTACT_T);
 		if (!anchor)
@@ -138,20 +172,35 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		}
 	}
 
-	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 + 2;
+	/*   <   sip:            @                                 :ddddd  > */
+	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 +
+	      + 9 + 10 + 1;
+	        /* ;expires=<integer> \0 */
+
 	buf = pkg_malloc(len);
 	if (buf == NULL) {
 		LM_ERR("out of pkg memory\n");
 		return -1;
 	}
 
-	len1 = sprintf(buf, "<sip:%.*s@%s:%s>",
-	               aor->len, aor->s, adv_sock->address_str.s, adv_sock->port_no_str.s);
+	/* if use_domain is enabled then don't append proxy ip:port */
+	if (reg_use_domain == 0)
+		len1 = sprintf(buf, "<sip:%.*s@%s:%s>", aor->len, aor->s,
+		               adv_sock->address_str.s, adv_sock->port_no_str.s);
+	else
+		len1 = sprintf(buf, "<sip:%.*s>", aor->len, aor->s);
+
+	if (!msg->expires || msg->expires->body.len == 0) {
+		len1 += sprintf(buf + len1, ";expires=%d",
+		                is_dereg ? 0 : outgoing_expires);
+	}
 
 	if (len1 >= len) {
 		LM_BUG("buffer overflow");
 		abort();
 	}
+
+	LM_DBG("inserting new Contact '%.*s'\n", len1, buf);
 
 	if (insert_new_lump_after(anchor, buf, len1, HDR_CONTACT_T) == 0) {
 		pkg_free(buf);
@@ -280,38 +329,47 @@ static int overwrite_all_contact_hostports(struct sip_msg *msg)
 	return 0;
 }
 
+static int replace_expires_hf(struct sip_msg *msg, int new_expiry)
+{
+	struct lump *lump;
+	char *p;
+	int len;
+
+	if (msg->expires && msg->expires->body.len > 0) {
+		LM_DBG("....... Exp hdr: '%.*s'\n",
+		       msg->expires->body.len, msg->expires->body.s);
+
+		lump = del_lump(msg, msg->expires->body.s - msg->buf,
+		                msg->expires->body.len, HDR_EXPIRES_T);
+		if (!lump) {
+			LM_ERR("fail del_lump on 'Expires:' hf value!\n");
+			return -1;
+		}
+
+		p = pkg_malloc(10);
+		if (!p)
+			return -1;
+
+		len = sprintf(p, "%d", new_expiry);
+
+		if (!insert_new_lump_after(lump, p, len, HDR_OTHER_T)) {
+			LM_ERR("fail to insert_new_lump over 'Expires' hf value!\n");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	return 1;
+}
+
 static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
                             int *skip_exp_header)
 {
-	struct lump *lump;
-	int len;
-	char *p;
-
 	/* TODO FIXME we're now assuming the request has an "Expires: " header */
 	if (c->expires == NULL || c->expires->body.len == 0) {
-		if (*skip_exp_header == 0) {
-			LM_DBG("....... Exp hdr: '%.*s'\n",
-			       msg->expires->body.len, msg->expires->body.s);
-			lump = del_lump(msg, msg->expires->body.s - msg->buf,
-			                msg->expires->body.len, HDR_EXPIRES_T);
-			if (lump == NULL) {
-				LM_ERR("fail del_lump on 'Expires:' hf value!\n");
-				return -1;
-			}
-
-			p = pkg_malloc(10);
-			if (!p)
-				return -1;
-
-			len = sprintf(p, "%d", new_expires);
-
-			if (!insert_new_lump_after(lump, p, len, HDR_OTHER_T)) {
-				LM_ERR("fail to insert_new_lump over 'Expires' hf value!\n");
-				return -1;
-			}
-
+		if (*skip_exp_header == 0 && replace_expires_hf(msg, new_expires) == 0)
 			*skip_exp_header = 1;
-		}
 	} else {
 		/* TODO ";expires" overwriting!!! */
 	}
@@ -319,39 +377,11 @@ static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
 	return 0;
 }
 
-void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
+void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri)
 {
-	if (!_ep || !_ep->body.len) {
-		*_e = get_expires_hf(_m);
-	} else {
-		if (str2int(&_ep->body, (unsigned int*)_e) < 0) {
-			*_e = default_expires;
-		}
-	}
-
-	if ((*_e != 0) && ((*_e) < min_expires))
-		*_e = min_expires;
-
-	if ((*_e != 0) && max_expires && ((*_e) > max_expires))
-		*_e = max_expires;
-
-	LM_DBG("expires: %d\n", *_e);
-}
-
-
-void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
-{
-	struct sip_msg *req = params->req;
-	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
-	str *ruri = GET_RURI(req), *next_hop = GET_NEXT_HOP(req);
 	contact_t *c;
 	int e, expiry_tick, new_expires;
 	int skip_exp_header = 0;
-	//str ct_uri;
-
-	parse_reg_headers(req);
-	if (req->expires)
-		LM_DBG("msg expires: '%.*s'\n", req->expires->body.len, req->expires->body.s);
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, NULL);
@@ -367,268 +397,51 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		mri->expires = e;
 		mri->expires_out = new_expires;
 
-		if (new_expires > 0 &&
+		if (e != new_expires &&
 		    replace_expires(c, req, new_expires, &skip_exp_header) != 0) {
 			LM_ERR("failed to replace expires for ct '%.*s'\n",
 			       c->uri.len, c->uri.s);
 		}
 	}
+}
 
-	shm_str_dup(&mri->ruri, ruri);
-	shm_str_dup(&mri->next_hop, next_hop);
+
+void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
+{
+	struct sip_msg *req = params->req;
+	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+	str user = {NULL, 0};
+
+	parse_reg_headers(req);
+	if (req->expires)
+		LM_DBG("msg expires: '%.*s'\n", req->expires->body.len, req->expires->body.s);
+
+	if (reg_mode != MID_REG_MIRROR) {
+		overwrite_contact_expirations(req, mri);
+	}
+
+	shm_str_dup(&mri->main_reg_uri, GET_NEXT_HOP(req));
+
+	if (reg_mode == MID_REG_THROTTLE_AOR) {
+		LM_DBG("trimming all Contact URIs into one...\n");
+		if (trim_to_single_contact(req, &mri->aor))
+			LM_ERR("failed to overwrite Contact URI\n");
+	}
 
 	if (insertion_mode == INSERT_BY_PATH) {
-		if (prepend_path(req, &mri->aor, 0, 0))
+		if (prepend_path(req, &user, 0, 0))
 			LM_ERR("failed to append Path header for aor '%.*s'!\n",
 			       mri->aor.len, mri->aor.s);
 	} else {
-		if (reg_mode == MID_REG_THROTTLE_CT) {
+		if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
 			LM_DBG("fixing Contact URI ...\n");
 			if (overwrite_all_contact_hostports(req))
-				LM_ERR("failed to overwrite Contact URI\n");
-		} else if (reg_mode == MID_REG_THROTTLE_AOR) {
-			LM_DBG("fixing Contact URI + username ...\n");
-			if (trim_to_single_contact(req, &mri->aor))
 				LM_ERR("failed to overwrite Contact URI\n");
 		}
 	}
 
 	LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
-	       ruri->len, ruri->s, mri->expires_out);
-}
-
-/*! \brief
- * Combines all Path HF bodies into one string.
- */
-int build_path_vector(struct sip_msg *_m, str *path, str *received,
-														unsigned int flags)
-{
-	static char buf[MAX_PATH_SIZE];
-	char *p;
-	struct hdr_field *hdr;
-	struct sip_uri puri;
-
-	rr_t *route = 0;
-
-	path->len = 0;
-	path->s = 0;
-	received->s = 0;
-	received->len = 0;
-
-	if(parse_headers(_m, HDR_EOH_F, 0) < 0) {
-		LM_ERR("failed to parse the message\n");
-		goto error;
-	}
-
-	for( hdr=_m->path,p=buf ; hdr ; hdr=hdr->sibling) {
-		/* check for max. Path length */
-		if( p-buf+hdr->body.len+1 >= MAX_PATH_SIZE) {
-			LM_ERR("Overall Path body exceeds max. length of %d\n",
-					MAX_PATH_SIZE);
-			goto error;
-		}
-		if(p!=buf)
-			*(p++) = ',';
-		memcpy( p, hdr->body.s, hdr->body.len);
-		p +=  hdr->body.len;
-	}
-
-	if (p!=buf) {
-		/* check if next hop is a loose router */
-		if (parse_rr_body( buf, p-buf, &route) < 0) {
-			LM_ERR("failed to parse Path body, no head found\n");
-			goto error;
-		}
-		if (parse_uri(route->nameaddr.uri.s,route->nameaddr.uri.len,&puri)<0){
-			LM_ERR("failed to parse the first Path URI\n");
-			goto error;
-		}
-		if (!puri.lr.s) {
-			LM_ERR("first Path URI is not a loose-router, not supported\n");
-			goto error;
-		}
-		if ( flags&REG_SAVE_PATH_RECEIVED_FLAG ) {
-			param_hooks_t hooks;
-			param_t *params;
-
-			if (parse_params(&(puri.params),CLASS_CONTACT,&hooks,&params)!=0){
-				LM_ERR("failed to parse parameters of first hop\n");
-				goto error;
-			}
-			if (hooks.contact.received)
-				*received = hooks.contact.received->body;
-			free_params(params);
-		}
-		free_rr(&route);
-	}
-
-	path->s = buf;
-	path->len = p-buf;
-	return 0;
-error:
-	if(route) free_rr(&route);
-	return -1;
-}
-
-/*! \brief
- * Fills the common part (for all contacts) of the info structure
- */
-static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
-    unsigned int _e, unsigned int _e_out, unsigned int _f, unsigned int _flags)
-{
-	static ucontact_info_t ci;
-	static str no_ua = str_init("n/a");
-	static str callid;
-	static str path_received = {0,0};
-	static str path;
-	static str received = {0,0};
-	static int received_found;
-	static unsigned int allowed, allow_parsed;
-	static struct sip_msg *m = 0;
-	static int_str attr_avp_value;
-	static struct usr_avp *avp_attr;
-	int_str val;
-
-	if (_m!=0) {
-		memset( &ci, 0, sizeof(ucontact_info_t));
-
-		/* Get callid of the message */
-		callid = _m->callid->body;
-		trim_trailing(&callid);
-		if (callid.len > CALLID_MAX_SIZE) {
-			rerrno = R_CALLID_LEN;
-			LM_ERR("callid too long\n");
-			goto error;
-		}
-		ci.callid = &callid;
-
-		/* Get CSeq number of the message */
-		if (str2int(&get_cseq(_m)->number, (unsigned int*)&ci.cseq) < 0) {
-			rerrno = R_INV_CSEQ;
-			LM_ERR("failed to convert cseq number\n");
-			goto error;
-		}
-
-		ci.sock = _m->rcv.bind_address;
-
-		/* additional info from message */
-		if (parse_headers(_m, HDR_USERAGENT_F, 0) != -1 && _m->user_agent &&
-		_m->user_agent->body.len>0 && _m->user_agent->body.len<UA_MAX_SIZE) {
-			ci.user_agent = &_m->user_agent->body;
-		} else {
-			ci.user_agent = &no_ua;
-		}
-
-		/* extract Path headers */
-		if ( _flags&REG_SAVE_PATH_FLAG ) {
-			if (build_path_vector(_m, &path, &path_received, _flags) < 0) {
-				rerrno = R_PARSE_PATH;
-				goto error;
-			}
-			if (path.len && path.s) {
-				ci.path = &path;
-				/* save in msg too for reply */
-				if (set_path_vector(_m, &path) < 0) {
-					rerrno = R_PARSE_PATH;
-					goto error;
-				}
-			}
-		}
-
-		ci.last_modified = get_act_time();
-
-		/* set flags */
-		ci.flags  = _f;
-		ci.cflags =  getb0flags(_m);
-
-		/* get received */
-		if (path_received.len && path_received.s) {
-			ci.cflags |= ul_api.nat_flag;
-			ci.received = path_received;
-		}
-
-		allow_parsed = 0; /* not parsed yet */
-		received_found = 0; /* not found yet */
-		m = _m; /* remember the message */
-	}
-
-	if(_c!=0) {
-		/* Calculate q value of the contact */
-		if (calc_contact_q(_c->q, &ci.q) < 0) {
-			rerrno = R_INV_Q;
-			LM_ERR("failed to calculate q\n");
-			goto error;
-		}
-
-		/* set expire time */
-		ci.expires = _e + get_act_time();
-		ci.expires_out = _e_out;
-
-		/* Get methods of contact */
-		if (_c->methods) {
-			if (parse_methods(&(_c->methods->body), &ci.methods) < 0) {
-				rerrno = R_PARSE;
-				LM_ERR("failed to parse contact methods\n");
-				goto error;
-			}
-		} else {
-			/* check on Allow hdr */
-			if (allow_parsed == 0) {
-				if (m && parse_allow( m ) != -1) {
-					allowed = get_allow_methods(m);
-				} else {
-					allowed = ALL_METHODS;
-				}
-				allow_parsed = 1;
-			}
-			ci.methods = allowed;
-		}
-
-		if (_c->instance) {
-			ci.instance = _c->instance->body;
-		}
-
-		/* get received */
-		if (ci.received.len==0) {
-			if (_c->received) {
-				ci.received = _c->received->body;
-			} else {
-				if (received_found==0) {
-					memset(&val, 0, sizeof(int_str));
-					if (rcv_avp_name>=0
-								&& search_first_avp(rcv_avp_type, rcv_avp_name, &val, 0)
-								&& val.s.len > 0) {
-						if (val.s.len>RECEIVED_MAX_SIZE) {
-							rerrno = R_CONTACT_LEN;
-							LM_ERR("received too long\n");
-							goto error;
-						}
-						received = val.s;
-					} else {
-						received.s = 0;
-						received.len = 0;
-					}
-					received_found = 1;
-				}
-				ci.received = received;
-			}
-		}
-
-		/* additional information (script pvar) */
-		if (attr_avp_name != -1) {
-			avp_attr = search_first_avp(attr_avp_type, attr_avp_name,
-										&attr_avp_value, NULL);
-			if (avp_attr) {
-				ci.attr = &attr_avp_value.s;
-
-				LM_DBG("Attributes: %.*s\n", ci.attr->len, ci.attr->s);
-			}
-		}
-	}
-
-	return &ci;
-error:
-	return 0;
+	       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
 }
 
 int replace_response_expires(struct sip_msg *msg, contact_t *ct, int expires)
@@ -671,7 +484,7 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 		return NULL;
 	memset(ret, 0, sizeof *ret);
 
-	ret->flags = mri->flags;
+	ret->reg_flags = mri->reg_flags;
 
 	if (mri->aor.s)
 		shm_str_dup(&ret->aor, &mri->aor);
@@ -688,11 +501,8 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 	if (mri->ct_uri.s)
 		shm_str_dup(&ret->ct_uri, &mri->ct_uri);
 
-	if (mri->ruri.s)
-		shm_str_dup(&ret->ruri, &mri->ruri);
-
-	if (mri->next_hop.s)
-		shm_str_dup(&ret->next_hop, &mri->next_hop);
+	if (mri->main_reg_uri.s)
+		shm_str_dup(&ret->main_reg_uri, &mri->main_reg_uri);
 
 	return ret;
 }
@@ -915,16 +725,20 @@ static int match_contact(struct sip_uri *ct, struct sip_msg *msg, contact_t **ou
 	for (c = get_first_contact2(msg); c; c = get_next_contact2(c)) {
 		LM_DBG("it='%.*s'\n", c->uri.len, c->uri.s);
 
-		if (get_match_token(&c->uri, &match_tok, &uri, &i) != 0) {
-			LM_ERR("failed to get match token\n");
-			return -1;
-		}
+		if (insertion_mode == INSERT_BY_PATH) {
+			dec_uri = c->uri;
+		} else {
+			if (get_match_token(&c->uri, &match_tok, &uri, &i) != 0) {
+				LM_ERR("failed to get match token\n");
+				return -1;
+			}
 
-		if (decrypt_str(&match_tok, &dec_uri)) {
-			LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
-			       matching_param.len, matching_param.s,
-			       match_tok.len, match_tok.s);
-			return -1;
+			if (decrypt_str(&match_tok, &dec_uri)) {
+				LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
+				       matching_param.len, matching_param.s,
+				       match_tok.len, match_tok.s);
+				return -1;
+			}
 		}
 
 		if (parse_uri(dec_uri.s, dec_uri.len, &match_uri) < 0) {
@@ -959,7 +773,7 @@ static int match_contact(struct sip_uri *ct, struct sip_msg *msg, contact_t **ou
  * in order to determine each new ";expires" value, since responses MUST
  * contain all bindings, not just the ones from the request!
  */
-static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
+static inline int save_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 			struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
 	struct mid_reg_info *cti;
@@ -973,7 +787,7 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	struct sip_uri uri;
 	str ct_uri;
 
-	cflags = (mri->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (mri->reg_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
 	}
@@ -1016,7 +830,7 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 
 		/*
 		 * if (mri->max_contacts && (num >= mri->max_contacts)) {
-		 * 	if (mri->flags&REG_SAVE_FORCE_REG_FLAG) {
+		 * 	if (mri->reg_flags&REG_SAVE_FORCE_REG_FLAG) {
 		 * 		// we are overflowing the number of maximum contacts,
 		 * 		 //  so remove the first (oldest) one to prevent this
 		 * 		if (r==NULL || r->contacts==NULL) {
@@ -1051,11 +865,13 @@ static inline int insert_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
-		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
+		ci = pack_ci(req, __c, e + get_act_time(), cflags,
+		             ul_api.nat_flag, mri->reg_flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
+		ci->expires_out = e_out;
 
 		if ((r->contacts==0 ||
 		ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c)!=0) && e > 0) {
@@ -1071,7 +887,7 @@ update_usrloc:
 
 				cti->expires = e;
 				cti->expires_out = e_out;
-				cti->last_register_out_ts = mri->last_register_out_ts;
+				cti->last_reg_ts = get_act_time();
 				set_ct(cti);
 			}
 
@@ -1085,6 +901,9 @@ update_usrloc:
 
 		} else if (c != NULL) {
 			if (e == 0) {
+				cti = (struct mid_reg_info *)c->attached_data[ucontact_data_idx];
+				cti->skip_dereg = 1;
+
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
@@ -1141,10 +960,11 @@ error:
 	return -1;
 }
 
-static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
+/* only relevant in MID_REG_THROTTLE_AOR mode */
+static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
                          struct mid_reg_info *mri, str* _a, urecord_t *r)
 {
-	struct mid_reg_info *cti;
+	struct mid_reg_info *ri, *cti;
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
 	contact_t *_c, *__c, *__cn;
@@ -1158,12 +978,12 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	char *buf;
 	int len;
 
-	cflags = (mri->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (mri->reg_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
 	}
 
-	LM_DBG("running\n");
+	LM_DBG("saving + restoring all contact URIs ... \n");
 
 	/* in MID_REG_THROTTLE_AOR mode, any reply will only contain 1 contact */
 	_c = get_first_contact(rpl);
@@ -1178,14 +998,14 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		if (_c == NULL)
 			return 0;
 
-		cti = mri_dup(mri);
-		ct.len = _c->len;
-		ct.s = _c->name.s;
-		shm_str_dup(&cti->ct_body, &ct);
-		cti->expires_out = e_out;
-		cti->last_register_out_ts = mri->last_register_out_ts;
+		ri = mri_dup(mri);
+		ct.len = _c->uri.len;
+		ct.s = _c->uri.s;
+		shm_str_dup(&ri->ct_uri, &ct);
+		ri->expires_out = e_out;
+		ri->last_reg_ts = get_act_time();
 
-		set_ct(cti);
+		set_ct(ri);
 
 		if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
 			rerrno = R_UL_NEW_R;
@@ -1195,8 +1015,13 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 
 		set_ct(NULL);
 	} else {
-		if (_c == NULL)
-			((struct mid_reg_info *)r->attached_data[urecord_data_idx])->last_register_out_ts = 0;
+		ri = (struct mid_reg_info *)r->attached_data[urecord_data_idx];
+		if (_c == NULL) {
+			ri->last_reg_ts = 0;
+			ri->skip_dereg = 1;
+		} else {
+			ri->last_reg_ts = get_act_time();
+		}
 	}
 
 	if (_c != NULL) {
@@ -1228,6 +1053,11 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 			goto update_usrloc;
 		}
 
+		/* the main registrar might enforce shorter lifetimes */
+		if (e_out < e) {
+			e = e_out;
+		}
+
 		LM_DBG("expires: %d - %d\n", e, e_out);
 
 		LM_DBG("REQ ct: '%.*s']\n", __c->uri.len, __c->uri.s);
@@ -1246,8 +1076,9 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		              __c->len, __c->name.s);
 
 		if (__c->expires == NULL)
-			len += sprintf(buf + len, ";expires=%d\r\n%s", e,
-			               __cn == NULL ? "\r\n" : "");
+			len += sprintf(buf + len, ";expires=%d\r\n", e);
+		if (__cn == NULL)
+			len += sprintf(buf + len, "\r\n");
 
 		anchor = anchor_lump(rpl, rpl->unparsed - rpl->buf, 0);
 		if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == NULL) {
@@ -1260,11 +1091,13 @@ static inline int insert_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
 update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
-		ci = pack_ci(req, __c, e, e_out, cflags, mri->flags);
+		ci = pack_ci(req, __c, e + get_act_time(), cflags,
+		             ul_api.nat_flag, mri->reg_flags);
 		if (ci == NULL) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
+		ci->expires_out = e_out;
 
 		if ((r->contacts == NULL ||
 		    ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c) != 0) && e > 0) {
@@ -1280,7 +1113,7 @@ update_usrloc:
 
 				cti->expires = e;
 				cti->expires_out = e_out;
-				cti->last_register_out_ts = mri->last_register_out_ts;
+				cti->last_reg_ts = mri->last_reg_ts;
 				set_ct(cti);
 			}
 
@@ -1355,7 +1188,7 @@ error:
  * Fixes the required 200 OK reply Contact header field domain
  * so it matches the one from the INVITE
  */
-static int fix_rpl_contact_by_ct(struct sip_msg *req, struct sip_msg *rpl)
+static int restore_reply_contacts(struct sip_msg *req, struct sip_msg *rpl)
 {
 	contact_t *c, *req_ct;
 	struct sip_uri newuri, uri, match_uri;
@@ -1477,7 +1310,7 @@ static inline int star(udomain_t* _d, struct mid_reg_info *mri,
 	if (!ul_api.get_urecord(_d, &mri->aor, &r)) {
 		c = r->contacts;
 		while(c) {
-			if (mri->flags&REG_SAVE_MEMORY_FLAG) {
+			if (mri->reg_flags&REG_SAVE_MEMORY_FLAG) {
 				c->flags |= FL_MEM;
 			} else {
 				c->flags &= ~FL_MEM;
@@ -1507,11 +1340,21 @@ static inline int star(udomain_t* _d, struct mid_reg_info *mri,
 
 void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 {
-	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+	struct mid_reg_info *mri;
 	urecord_t *rec = NULL;
 	struct sip_msg *rpl = params->rpl;
 	struct sip_msg *req = params->req;
 	int code;
+
+	lock_start_write(tm_retrans_lk);
+	mri = *(struct mid_reg_info **)(params->param);
+	if (!mri) {
+		LM_DBG("SIP reply retransmission -> exit\n");
+		lock_stop_write(tm_retrans_lk);
+		return;
+	}
+	*params->param = NULL; /* do not run this callback multiple times! */
+	lock_stop_write(tm_retrans_lk);
 
 	code = rpl->first_line.u.reply.statuscode;
 	LM_DBG("pushing reply back to caller: %d\n", code);
@@ -1519,7 +1362,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("reply -------------- \n%s\n", rpl->buf);
 
 	if (code < 200 || code >= 300)
-		return;
+		goto out_free;
 
 	update_act_time();
 
@@ -1532,15 +1375,13 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 			       mri->aor.len, mri->aor.s);
 		}
 
-		goto out;
+		goto out_free;
 	}
 
-	if (reg_mode != MID_REG_MIRROR && insertion_mode == INSERT_BY_CONTACT) {
-		LM_DBG("fixing contact domain ... \n");
-		if (reg_mode == MID_REG_THROTTLE_CT) {
-			if (fix_rpl_contact_by_ct(req, rpl)) {
-				LM_ERR("failed to overwrite Contact header field domain\n");
-			}
+	if (reg_mode != MID_REG_THROTTLE_AOR && insertion_mode == INSERT_BY_CONTACT) {
+		LM_DBG("restoring contact URIs ... \n");
+		if (restore_reply_contacts(req, rpl)) {
+			LM_ERR("failed to overwrite Contact header field domain\n");
 		}
 	}
 
@@ -1550,12 +1391,12 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("rec=%p\n", rec);
 
 	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
-		if (insert_rpl_contacts(req, rpl, mri, &mri->aor, rec)) {
+		if (save_rpl_contacts(req, rpl, mri, &mri->aor, rec)) {
 			LM_ERR("failed to process rpl contacts for AoR '%.*s'\n",
 			       mri->aor.len, mri->aor.s);
 		}
 	} else if (reg_mode == MID_REG_THROTTLE_AOR) {
-		if (insert_req_contacts(req, rpl, mri, &mri->aor, rec)) {
+		if (save_restore_req_contacts(req, rpl, mri, &mri->aor, rec)) {
 			LM_ERR("failed to process req contacts for AoR '%.*s'\n",
 			       mri->aor.len, mri->aor.s);
 		}
@@ -1566,7 +1407,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("got ptr back: %p\n", mri);
 	LM_DBG("RESPONSE FORWARDED TO caller!\n");
 
-out:
+out_free:
 	mri_free(mri);
 }
 
@@ -1592,8 +1433,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	mri->expires = 0;
 	mri->expires_out = sctx->expires_out;
 	mri->dom = ud;
-	mri->last_register_out_ts = get_act_time();
-	mri->flags = sctx->flags;
+	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
 
 	if (aor)
@@ -1601,6 +1441,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	if (parse_from_header(msg) != 0) {
 		LM_ERR("failed to parse From hf\n");
+		mri_free(mri);
 		return -1;
 	}
 
@@ -1612,13 +1453,12 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	shm_str_dup(&mri->callid, &msg->callid->body);
 
-	if (reg_mode != MID_REG_MIRROR) {
-		LM_DBG("registering ptr %p on TMCB_REQUEST_FWDED ...\n", mri);
-		if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
-		    mid_reg_req_fwded, mri, NULL) <= 0) {
-			LM_ERR("cannot register additional callbacks\n");
-			return -1;
-		}
+	LM_DBG("registering ptr %p on TMCB_REQUEST_FWDED ...\n", mri);
+	if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
+	    mid_reg_req_fwded, mri, NULL) <= 0) {
+		LM_ERR("cannot register additional callbacks\n");
+		mri_free(mri);
+		return -1;
 	}
 
 	LM_DBG("registering callback on TMCB_RESPONSE_FWDED, mri=%p ...\n", mri);
@@ -1929,7 +1769,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, 0, cflags))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, 0, ul_api.nat_flag, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -1954,20 +1794,20 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 			mri = c->attached_data[ucontact_data_idx];
 
-			if (get_act_time() - mri->last_register_out_ts >=
-			    mri->expires_out - e) {
-				mri->last_register_out_ts = get_act_time();
+			if (get_act_time() - mri->last_reg_ts >= mri->expires_out - e) {
 				LM_DBG("FWD 2\n");
 				/* FIXME: should update "last_reg_out_ts" for all cts? */
 				return 1;
 			} else {
 				/* pack the contact specific info */
-				ci = pack_ci(msg, ct, e, c->expires_out, 0, cflags);
+				ci = pack_ci(msg, ct, e + get_act_time(), 0,
+				             ul_api.nat_flag, cflags);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
 					return -1;
 				}
+				ci->expires_out = c->expires_out;
 
 				if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 					rerrno = R_UL_UPD_C;
@@ -2030,7 +1870,7 @@ static int calc_max_ct_diff(urecord_t *urec)
 static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
                                    unsigned int flags)
 {
-	int e, ret, cflags, max_diff = -1;
+	int e, ret, ctno = 0, cflags, max_diff = -1;
 	struct mid_reg_info *cinfo, *rinfo;
 	ucontact_info_t *ci;
 	ucontact_t *c;
@@ -2043,23 +1883,27 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	rinfo = urec->attached_data[ucontact_data_idx];
 	e_out = rinfo->expires_out;
 
-	LM_DBG("processing contacts...\n");
+	LM_DBG("AoR info: e=%d, e_out=%d, lrts=%d...\n",
+	       rinfo->expires, rinfo->expires_out, rinfo->last_reg_ts);
 
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, 0, 0, cflags))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, 0, ul_api.nat_flag, cflags))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
+
+	for (c = urec->contacts; c; c = c->next)
+		ctno++;
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
 		calc_contact_expires(req, ct->expires, &e, NULL);
 		if (e > e_out) {
-			LM_ERR("cannot reduce contact expiration from %d sec to %d sec!\n",
+			LM_DBG("reducing contact expiration from %d sec to %d sec!\n",
 			       e, e_out);
-			return -1;
+			e = e_out;
 		}
 
 		ret = ul_api.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq, &c);
@@ -2069,6 +1913,12 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			return -1;
 		} else if (ret == 0) { /* found */
 			if (e == 0) {
+				/* immediately forward De-REGISTERs for the last contact */
+				if (ctno == 1) {
+					LM_DBG("quickly forward last contact de-register\n");
+					return 1;
+				}
+
 				if (ul_api.delete_ucontact(urec, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					return -1;
@@ -2084,12 +1934,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e, c->expires_out, 0, cflags);
+			ci = pack_ci(req, ct, e + get_act_time(), 0,
+			             ul_api.nat_flag, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
 				return -1;
 			}
+			ci->expires_out = c->expires_out;
 
 			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
@@ -2106,12 +1958,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			set_ct(cinfo);
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e, e_out, 0, cflags);
+			ci = pack_ci(req, ct, e + get_act_time(), 0,
+			             ul_api.nat_flag, cflags);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
 				return -1;
 			}
+			ci->expires_out = e_out;
 
 			if (ul_api.insert_ucontact(urec, &ct->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
@@ -2127,9 +1981,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	max_diff = calc_max_ct_diff(urec);
 
 	LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
-	       max_diff, rinfo->last_register_out_ts + max_diff, get_act_time());
-	if (max_diff >= 0 && rinfo->last_register_out_ts + max_diff <= get_act_time()) {
-		rinfo->last_register_out_ts = get_act_time();
+	       max_diff, rinfo->last_reg_ts + max_diff, get_act_time());
+	if (max_diff >= 0 && rinfo->last_reg_ts + max_diff <= get_act_time()) {
 		return 1;
 	}
 
@@ -2190,7 +2043,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
                           char *to_uri_gp, char *expires_gp)
 {
 	udomain_t *ud = (udomain_t *)dom;
-	urecord_t *rec;
+	urecord_t *rec = NULL;
 	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	struct save_ctx sctx;
 	int rc = -1, st;
@@ -2200,6 +2053,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		return -1;
 	}
 
+	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
@@ -2212,6 +2066,8 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 		parse_save_flags(&flags_str, &sctx);
 	}
+
+	parse_reg_headers(msg);
 
 	if (!to_uri_gp) {
 		to_uri = get_to(msg)->uri;
@@ -2232,8 +2088,6 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		ul_api.unlock_udomain(ud, &sctx.aor);
 		return -1;
 	}
-
-	parse_reg_headers(msg);
 
 	if (check_contacts(msg, &st) > 0) {
 		goto out_error;
@@ -2273,7 +2127,8 @@ quick_reply:
 	/* forwarding not needed! This REGISTER will be absorbed */
 
 	/* prepare the Contact header field for a quick 200 OK response */
-	build_contact(rec->contacts, msg);
+	if (rec != NULL && rec->contacts != NULL)
+		build_contact(rec->contacts, msg);
 
 	/* no contacts need updating on the far end registrar */
 	ul_api.unlock_udomain(ud, &sctx.aor);

@@ -27,7 +27,12 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mmgeoip.so
-#LIBS+=-lGeoIP
+
+ifeq ($(CROSS_COMPILE),)
+LIBS=-lGeoIP
+else
 LIBS=-L$(LOCALBASE)/lib -lGeoIP
 DEFS+=-I$(LOCALBASE)/include
+endif
+
 include ../../Makefile.modules

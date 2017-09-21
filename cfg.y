@@ -131,7 +131,7 @@ static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str s_tmp;
 static str tstr;
-static struct ip_addr* ip_tmp;
+static struct net* net_tmp;
 static pv_spec_t *spec;
 static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
@@ -145,6 +145,7 @@ static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 static struct multi_str *new_string(char *s);
+static int parse_ipnet(char *in, int len, struct net **ipnet);
 
 extern int line;
 extern int column;
@@ -270,7 +271,6 @@ static struct multi_str *tmp_mod;
 %token NEXT_BRANCHES
 %token USE_BLACKLIST
 %token UNUSE_BLACKLIST
-%token MAX_LEN
 %token SETFLAG
 %token RESETFLAG
 %token ISFLAGSET
@@ -278,16 +278,9 @@ static struct multi_str *tmp_mod;
 %token RESETBFLAG
 %token ISBFLAGSET
 %token METHOD
-%token URI
-%token FROM_URI
-%token TO_URI
-%token SRCIP
-%token SRCPORT
-%token DSTIP
-%token DSTPORT
 %token PROTO
 %token AF
-%token MYSELF
+%token IS_MYSELF
 %token MSGLEN
 %token NULLV
 %token CACHE_STORE
@@ -432,6 +425,8 @@ static struct multi_str *tmp_mod;
 %token <strval> STRING
 %token <strval> SCRIPTVAR
 %token <strval> IPV6ADDR
+%token <strval> IPV4ADDR
+%token <strval> IPNET
 
 /* other */
 %token COMMA
@@ -469,7 +464,6 @@ static struct multi_str *tmp_mod;
 %type <sockid> phostport
 %type <intval> proto port any_proto
 %type <strval> host_sep
-%type <intval> uri_type
 %type <intval> equalop compop matchop strop intop
 %type <intval> assignop
 %type <intval> snumber
@@ -701,47 +695,82 @@ assign_stm: DEBUG EQUAL snumber
 			#ifdef HP_MALLOC
 			shm_hash_split_percentage=$3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support "
-				"for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
 			#endif
 			}
-		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error { yyerror("number expected"); }
+		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+				}
 		| SHM_SECONDARY_HASH_SIZE EQUAL NUMBER {
 			#ifdef HP_MALLOC
 			shm_secondary_hash_size=$3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support"
-				" for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with support"
+				" for HP_MALLOC\n");
 			#endif
 			}
-		| SHM_SECONDARY_HASH_SIZE EQUAL error { yyerror("number expected"); }
+		| SHM_SECONDARY_HASH_SIZE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEM_WARMING_ENABLED EQUAL NUMBER {
 			#ifdef HP_MALLOC
 			mem_warming_enabled = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with support"
-				" for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with support"
+				" for HP_MALLOC\n");
 			#endif
 			}
-		| MEM_WARMING_ENABLED EQUAL error { yyerror("number expected"); }
+		| MEM_WARMING_ENABLED EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEM_WARMING_PATTERN_FILE EQUAL STRING {
 			#ifdef HP_MALLOC
 			mem_warming_pattern_file = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with "
-				"support for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with "
+				"support for HP_MALLOC\n");
 			#endif
 			}
-		| MEM_WARMING_PATTERN_FILE EQUAL error { yyerror("string expected"); }
+		| MEM_WARMING_PATTERN_FILE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("string expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEM_WARMING_PERCENTAGE EQUAL NUMBER {
 			#ifdef HP_MALLOC
 			mem_warming_percentage = $3;
 			#else
-			yyerror("Cannot set parameter; Please recompile with "
-				"support for HP_MALLOC");
+			LM_ERR("Cannot set parameter; Please recompile with "
+				"support for HP_MALLOC\n");
 			#endif
 			}
-		| MEM_WARMING_PERCENTAGE EQUAL error { yyerror("number expected"); }
+		| MEM_WARMING_PERCENTAGE EQUAL error {
+			#ifdef HP_MALLOC
+			yyerror("number expected");
+			#else
+			LM_ERR("Cannot set parameter; Please recompile with support "
+				"for HP_MALLOC\n");
+			#endif
+			}
 		| MEMLOG EQUAL snumber { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL snumber { memdump=$3; }
@@ -1054,7 +1083,7 @@ assign_stm: DEBUG EQUAL snumber
 		| TOS EQUAL error { yyerror("number expected"); }
 		| MPATH EQUAL STRING { mpath=$3; strcpy(mpath_buf, $3);
 								mpath_len=strlen($3);
-								if(mpath_buf[mpath_len-1]!='/') {
+								if(mpath_len==0 || mpath_buf[mpath_len-1]!='/') {
 									mpath_buf[mpath_len]='/';
 									mpath_len++;
 									mpath_buf[mpath_len]='\0';
@@ -1122,38 +1151,20 @@ ip:		 ipv4  { $$=$1; }
 		|ipv6  { $$=$1; }
 		;
 
-ipv4:	NUMBER DOT NUMBER DOT NUMBER DOT NUMBER {
-											$$=pkg_malloc(
-													sizeof(struct ip_addr));
-											if ($$==0){
-												LM_CRIT("cfg. parser: "
-												        "out of memory\n");
-												YYABORT;
-											}else{
-												memset($$, 0,
-													sizeof(struct ip_addr));
-												$$->af=AF_INET;
-												$$->len=4;
-												if (($1>255) || ($1<0) ||
-													($3>255) || ($3<0) ||
-													($5>255) || ($5<0) ||
-													($7>255) || ($7<0)){
-													yyerror("invalid ipv4"
-															"address");
-													$$->u.addr32[0]=0;
-													/* $$=0; */
-												}else{
-													$$->u.addr[0]=$1;
-													$$->u.addr[1]=$3;
-													$$->u.addr[2]=$5;
-													$$->u.addr[3]=$7;
-													/*
-													$$=htonl( ($1<<24)|
-													($3<<16)| ($5<<8)|$7 );
-													*/
-												}
-											}
-												}
+ipv4:	IPV4ADDR {
+					$$=pkg_malloc(sizeof(struct ip_addr));
+					if ($$==0){
+						LM_CRIT("ERROR: cfg. parser: out of memory.\n");
+						YYABORT;
+					}else{
+						memset($$, 0, sizeof(struct ip_addr));
+						$$->af=AF_INET;
+						$$->len=16;
+						if (inet_pton(AF_INET, $1, $$->u.addr)<=0){
+							yyerror("bad ipv4 address");
+						}
+					}
+				}
 	;
 
 ipv6addr:	IPV6ADDR {
@@ -1420,10 +1431,6 @@ strop:	equalop	{$$=$1; }
 		| matchop	{$$=$1; }
 	;
 
-uri_type:	URI			{$$=URI_O;}
-		|	FROM_URI	{$$=FROM_URI_O;}
-		|	TO_URI		{$$=TO_URI_O;}
-		;
 
 script_var:	SCRIPTVAR	{
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
@@ -1453,147 +1460,35 @@ exp_elem: exp_cond		{$$=$1; }
 		| script_var    {
 				$$=mk_elem(NO_OP, SCRIPTVAR_O,0,SCRIPTVAR_ST,(void*)$1);
 			}
-		| uri_type strop host 	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
-				 			}
-		| DSTIP equalop ipnet	{ $$=mk_elem($2, DSTIP_O, 0, NET_ST, $3);
-								}
-		| DSTIP strop host	{ $$=mk_elem($2, DSTIP_O, 0, STR_ST, $3);
-								}
-		| SRCIP equalop ipnet	{ $$=mk_elem($2, SRCIP_O, 0, NET_ST, $3);
-								}
-		| SRCIP strop host	{ $$=mk_elem($2, SRCIP_O, 0, STR_ST, $3);
-								}
 	;
 
-exp_cond:	METHOD strop STRING	{$$= mk_elem($2, METHOD_O, 0, STR_ST, $3);
-									}
-		| METHOD strop  ID	{$$ = mk_elem($2, METHOD_O, 0, STR_ST, $3);
-				 			}
-		| METHOD strop error { $$=0; yyerror("string expected"); }
-		| METHOD error	{ $$=0; yyerror("invalid operator,"
-										"== , !=, or =~ expected");
-						}
-		| script_var strop script_var {
+exp_cond: script_var strop script_var {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,SCRIPTVAR_ST,(void*)$3);
 			}
 		| script_var strop STRING {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STR_ST,$3);
 			}
-		| script_var strop ID {
-				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,STR_ST,$3);
-			}
 		| script_var intop snumber {
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1,NUMBER_ST,(void *)$3);
-			}
-		| script_var equalop MYSELF	{
-				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, MYSELF_ST, 0);
 			}
 		| script_var equalop NULLV	{
 				$$=mk_elem( $2, SCRIPTVAR_O,(void*)$1, NULLV_ST, 0);
 			}
-		| uri_type strop STRING	{$$ = mk_elem($2, $1, 0, STR_ST, $3);
-				 				}
-		| uri_type equalop MYSELF	{ $$=mk_elem($2, $1, 0, MYSELF_ST, 0);
-								}
-		| uri_type strop error { $$=0; yyerror("string or MYSELF expected"); }
-		| uri_type error	{ $$=0; yyerror("invalid operator,"
-									" == , != or =~ expected");
-					}
-		| SRCPORT intop NUMBER	{ $$=mk_elem($2, SRCPORT_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| SRCPORT intop error { $$=0; yyerror("number expected"); }
-		| SRCPORT error { $$=0; yyerror("==, !=, <,>, >= or <=  expected"); }
-		| DSTPORT intop NUMBER	{ $$=mk_elem($2, DSTPORT_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| DSTPORT intop error { $$=0; yyerror("number expected"); }
-		| DSTPORT error { $$=0; yyerror("==, !=, <,>, >= or <=  expected"); }
-		| PROTO intop proto	{ $$=mk_elem($2, PROTO_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| PROTO intop error { $$=0;
-								yyerror("protocol expected (udp, tcp or tls)");
-							}
-		| PROTO error { $$=0; yyerror("equal/!= operator expected"); }
-		| AF intop NUMBER	{ $$=mk_elem($2, AF_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| AF intop error { $$=0; yyerror("number expected"); }
-		| AF error { $$=0; yyerror("equal/!= operator expected"); }
-		| MSGLEN intop NUMBER	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
-												(void *) $3 ); }
-		| MSGLEN intop MAX_LEN	{ $$=mk_elem($2, MSGLEN_O, 0, NUMBER_ST,
-												(void *) BUF_SIZE); }
-		| MSGLEN intop error { $$=0; yyerror("number expected"); }
-		| MSGLEN error { $$=0; yyerror("equal/!= operator expected"); }
-		| SRCIP strop STRING	{	s_tmp.s=$3;
-									s_tmp.len=strlen($3);
-									ip_tmp=str2ip(&s_tmp);
-									if (ip_tmp==0)
-										ip_tmp=str2ip6(&s_tmp);
-									if (ip_tmp){
-										$$=mk_elem($2, SRCIP_O, 0, NET_ST,
-												mk_net_bitlen(ip_tmp,
-														ip_tmp->len*8) );
-									}else{
-										$$=mk_elem($2, SRCIP_O, 0, STR_ST,
-												$3);
-									}
-								}
-		| SRCIP equalop MYSELF  { $$=mk_elem($2, SRCIP_O, 0, MYSELF_ST, 0);
-								}
-		| SRCIP strop error { $$=0; yyerror( "ip address or hostname"
-						 "expected" ); }
-		| SRCIP error  { $$=0;
-						 yyerror("invalid operator, ==, != or =~ expected");}
-		| DSTIP strop STRING	{	s_tmp.s=$3;
-									s_tmp.len=strlen($3);
-									ip_tmp=str2ip(&s_tmp);
-									if (ip_tmp==0)
-										ip_tmp=str2ip6(&s_tmp);
-									if (ip_tmp){
-										$$=mk_elem($2, DSTIP_O, 0, NET_ST,
-												mk_net_bitlen(ip_tmp,
-														ip_tmp->len*8) );
-									}else{
-										$$=mk_elem($2, DSTIP_O, 0, STR_ST,
-												$3);
-									}
-								}
-		| DSTIP equalop MYSELF  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
-								}
-		| DSTIP strop error { $$=0; yyerror( "ip address or hostname"
-						 			"expected" ); }
-		| DSTIP error { $$=0;
-						yyerror("invalid operator, ==, != or =~ expected");}
-		| MYSELF equalop uri_type	{ $$=mk_elem($2, $3, 0, MYSELF_ST, 0);
-								}
-		| MYSELF equalop SRCIP  { $$=mk_elem($2, SRCIP_O, 0, MYSELF_ST, 0);
-								}
-		| MYSELF equalop DSTIP  { $$=mk_elem($2, DSTIP_O, 0, MYSELF_ST, 0);
-								}
-		| MYSELF equalop error {	$$=0;
-									yyerror(" URI, SRCIP or DSTIP expected"); }
-		| MYSELF error	{ $$=0;
-							yyerror ("invalid operator, == or != expected");
-						}
+		| script_var equalop ipnet {
+				$$=mk_elem($2, SCRIPTVAR_O, (void*)$1, NET_ST, $3);
+			}
 	;
 
-ipnet:	ip SLASH ip	{ $$=mk_net($1, $3); }
-	| ip SLASH NUMBER 	{	if (($3<0) || ($3>(long)$1->len*8)){
-								yyerror("invalid bit number in netmask");
-								$$=0;
-							}else{
-								$$=mk_net_bitlen($1, $3);
-							/*
-								$$=mk_net($1,
-										htonl( ($3)?~( (1<<(32-$3))-1 ):0 ) );
-							*/
-							}
-						}
-	| ip				{ $$=mk_net_bitlen($1, $1->len*8); }
-	| ip SLASH error	{ $$=0;
-						 yyerror("netmask (eg:255.0.0.0 or 8) expected");
-						}
-	;
 
+
+ipnet:	IPNET	{
+				if (parse_ipnet($1, strlen($1), &net_tmp) < 0)
+					yyerror("unable to parse ip and/or netmask\n");
+
+				$$ = net_tmp;
+			}
+		| ip	{ $$=mk_net_bitlen($1, $1->len*8); }
+		;
 
 
 host_sep:	DOT {$$=".";}
@@ -1633,7 +1528,6 @@ assignop:
 assignexp :
 	snumber { $$ = mk_elem(VALUE_OP, NUMBERV_O, (void*)$1, 0, 0); }
 	| STRING { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
-	| ID { $$ = mk_elem(VALUE_OP, STRINGV_O, $1, 0, 0); }
 	| script_var { $$ = mk_elem(VALUE_OP, SCRIPTVAR_O, $1, 0, 0); }
 	| exp_cond { $$= $1; }
 	| cmd { $$=mk_elem( NO_OP, ACTION_O, 0, ACTIONS_ST, $1 ); }
@@ -2710,6 +2604,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
 						$3, (void*)(long)-1);
 				}
+		| IS_MYSELF LPAREN STRING RPAREN {
+				mk_action2($$, IS_MYSELF_T, STR_ST, 0, $3, 0);
+				}
+		| IS_MYSELF LPAREN STRING COMMA STRING RPAREN {
+				mk_action2($$, IS_MYSELF_T, STR_ST, STR_ST, $3, $5);
+				}
 	;
 
 
@@ -2782,4 +2682,82 @@ static struct socket_id* set_listen_id_adv(struct socket_id* sock,
 	sock->adv_name=adv_name;
 	sock->adv_port=adv_port;
 	return sock;
+}
+
+static int parse_ipnet(char *in, int len, struct net **ipnet)
+{
+	char *p = NULL;
+	str ip_s, mask_s;
+	struct ip_addr *ip = NULL, *mask = NULL, *ip_tmp;
+	int af;
+	unsigned int bitlen;
+
+	p = q_memchr(in, '.', len);
+	if (p)
+		af = AF_INET;
+	else if (q_memchr(in, ':', len)) {
+		af = AF_INET6;
+	} else {
+		LM_ERR("Not an IP");
+		return -1;
+	}
+
+	p = q_memchr(in, '/', len);
+	if (!p) {
+		LM_ERR("No netmask\n");
+		return -1;
+	}
+	ip_s.s = in;
+	ip_s.len = p - in;
+
+	mask_s.s = p + 1;
+	mask_s.len = len - ip_s.len - 1;
+	if (!mask_s.s || mask_s.len == 0) {
+		LM_ERR("Empty netmask\n");
+		return -1;
+	}
+
+	ip_tmp = (af == AF_INET) ? str2ip(&ip_s) : str2ip6(&ip_s);
+	if (!ip_tmp) {
+		LM_ERR("Invalid IP\n");
+		return -1;
+	}
+	ip = pkg_malloc(sizeof *ip);
+	if (!ip) {
+		LM_CRIT("No more pkg memory\n");
+		return -1;
+	}
+	memcpy(ip, ip_tmp, sizeof *ip);
+
+	p = (af == AF_INET) ? q_memchr(p, '.', len-(p-in)+1) : q_memchr(p, ':', len-(p-in)+1);
+	if (p) {
+		ip_tmp = (af == AF_INET) ? str2ip(&mask_s) : str2ip6(&mask_s);
+		if (!ip_tmp) {
+			LM_ERR("Invalid netmask\n");
+			return -1;
+		}
+		mask = pkg_malloc(sizeof *mask);
+		if (!mask) {
+			LM_CRIT("No more pkg memory\n");
+			return -1;
+		}
+		memcpy(mask, ip_tmp, sizeof *mask);
+
+		*ipnet = mk_net(ip, mask);
+	} else {
+		if (str2int(&mask_s, &bitlen) < 0) {
+			LM_ERR("Invalid netmask bitlen\n");
+			return -1;
+		}
+
+		*ipnet = mk_net_bitlen(ip, bitlen);
+	}
+
+	pkg_free(ip);
+	pkg_free(mask);
+
+	if (*ipnet == NULL)
+			return -1;
+
+	return 0;
 }

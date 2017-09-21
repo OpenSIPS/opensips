@@ -1,14 +1,14 @@
 RabbitMQ Module
 
-Razvan Crainea
+Răzvan Crainea
 
    OpenSIPS Project
 
 Edited by
 
-Razvan Crainea
+Răzvan Crainea
 
-   Copyright � 2017 www.opensips-solutions.com
+   Copyright © 2017 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -85,8 +85,7 @@ Chapter 1. Admin Guide
        down. Optional parameter, default is disabled (do not
        retry).
      * exchange - exchange used to send AMQP messages to. Optional
-       parameter, default is "". 131072) - the maximum size of an
-       AMQP frame.
+       parameter, default is "".
      * heartbeat - interval in seconds used to send heartbeat
        messages. Optional parameter, default is disabled.
      * immediate - indicate to the broker that the message MUST be

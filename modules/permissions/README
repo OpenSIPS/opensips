@@ -6,9 +6,15 @@ Edited by
 
 Miklos Tirpak
 
+Edited by
+
 Bogdan-Andrei Iancu
 
+Edited by
+
 Juha Heinanen
+
+Edited by
 
 Irina-Maria Stanescu
 
@@ -532,7 +538,7 @@ if (allow_routing("rules.allow", "rules.deny")) {
 
    Example 1.19. allow_register(basename) usage
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
         if (allow_register("register")) {
                 save("location");
                 exit;
@@ -563,7 +569,7 @@ if (method=="REGISTER") {
 
    Example 1.20. allow_register(allow_file, deny_file) usage
 ...
-if (method=="REGISTER") {
+if ($rm=="REGISTER") {
         if (allow_register("register.allow", "register.deny")) {
                 save("location");
                 exit;

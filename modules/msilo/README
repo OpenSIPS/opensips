@@ -626,10 +626,10 @@ route{
     };
 
 
-    if (uri==myself) {
+    if (is_myself("$rd")) {
     {
         # for testing purposes, simply okay all REGISTERs
-        if (method=="REGISTER")
+        if ($rm=="REGISTER")
         {
             save("location");
             log("REGISTER received -> dumping messages with MSILO\n");
@@ -654,7 +654,7 @@ route{
                 exit;
             };
             # we do not care about anything else but MESSAGEs
-            if (!method=="MESSAGE")
+            if (!$rm=="MESSAGE")
             {
                 if (!t_reply("404", "Not found"))
                 {
@@ -693,7 +693,7 @@ route{
 
 failure_route[1] {
     # forwarding failed -- check if the request was a MESSAGE
-    if (!method=="MESSAGE")
+    if (!$rm=="MESSAGE")
     {
         exit;
     };

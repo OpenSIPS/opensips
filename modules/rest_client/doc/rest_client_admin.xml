@@ -239,10 +239,16 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		<programlisting format="linespecific">
 ...
 # Example of querying a REST service to get the credit of an account
+$var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)", "$var(ct)", "$var(rcode)");
 
-if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct)", "$var(rcode)")) {
-	xlog("Error code $var(rcode) in HTTP GET!\n");
-	send_reply("403", "Not registered");
+if ($var(rc) &lt; 0) {
+	xlog("rest_get() failed with $var(rc), acc=$fU\n");
+	send_reply("500", "Server Internal Error");
+	exit;
+}
+if ($var(rcode) >= 300) {
+	xlog("L_INFO", "rest_get() rcode=$var(rcode), acc=$fU\n");
+	send_reply("403", "Forbidden");
 	exit;
 }
 ...
@@ -301,11 +307,17 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct)", "$va
 		<title><function moreinfo="none">rest_post</function> usage</title>
 		<programlisting format="linespecific">
 ...
-# Storing data using a RESTful service with an HTTP POST request
+# Creating a resource using a RESTful service with an HTTP POST request
+$var(rc) = rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)");
 
-if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)")) {
-	xlog("Error code $var(rcode) in HTTP POST!\n");
-	send_reply("403", "POST Forbidden");
+if ($var(rc) &lt; 0) {
+	xlog("rest_post() failed with $var(rc), user=$fU\n");
+	send_reply("500", "Server Internal Error 1");
+	exit;
+}
+if ($var(rcode) >= 300) {
+	xlog("rest_post() rcode=$var(rcode), user=$fU\n");
+	send_reply("500", "Server Internal Error 2");
 	exit;
 }
 ...
@@ -365,11 +377,17 @@ if (!rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var
 		<title><function moreinfo="none">rest_put</function> usage</title>
 		<programlisting format="linespecific">
 ...
-# Storing data using a RESTful service with an HTTP PUT request
+# Creating/Updating a resource using a RESTful service with an HTTP PUT request
+$var(rc) = rest_put("http://myserver.org/users/$fU", "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(rcode)");
 
-if (!rest_put("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)")) {
-	xlog("Error code $var(rcode) in HTTP PUT!\n");
-	send_reply("403", "PUT Forbidden");
+if ($var(rc) &lt; 0) {
+	xlog("rest_put() failed with $var(rc), user=$fU\n");
+	send_reply("500", "Server Internal Error 3");
+	exit;
+}
+if ($var(rcode) >= 300) {
+	xlog("rest_put() rcode=$var(rcode), user=$fU\n");
+	send_reply("500", "Server Internal Error 4");
 	exit;
 }
 ...
@@ -406,9 +424,7 @@ if (!rest_put("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(
 # Example of querying a REST service requiring additional headers
 
 rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
-if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)")) {
-				...
-}
+$var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 ...
 		</programlisting>
 		</example>
@@ -427,24 +443,31 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)")) {
 		<emphasis role='bold'><xref linkend="rest_get"/></emphasis>
 		(in terms of input, output and processing),
 		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response if available.
+		entire content of the HTTP response is available.
 		</para>
 		<example>
 		<title><function moreinfo="none">async rest_get</function> usage</title>
 		<programlisting format="linespecific">
 route {
 	...
-	async(rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", , "$var(rcode)"), resume);
+	async(rest_get("http://getcredit.org/?account=$fU", "$var(credit)", , "$var(rcode)"), resume);
 }
 
-route [resume]
-{
-	if ($rc &lt; 0) {
-		xlog("Error code $var(rcode) in HTTP GET!\n");
-		send_reply("403", "GET Forbidden");
+route [resume] {
+	$var(rc) = $rc;
+	if ($var(rc) &lt; 0) {
+		xlog("async rest_get() failed with $var(rc), acc=$fU\n");
+		send_reply("500", "Server Internal Error");
 		exit;
 	}
-	......
+
+	if ($var(rcode) >= 300) {
+		xlog("L_INFO", "async rest_get() rcode=$var(rcode), acc=$fU\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+
+	...
 }
 </programlisting>
 		</example>
@@ -460,7 +483,7 @@ route [resume]
 		Sends a POST HTTP request. This function behaves exactly the same as
 		<emphasis role='bold'><xref linkend="rest_post"/></emphasis> (in terms of input, output and processing),
 		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response if available.
+		entire content of the HTTP response is available.
 		</para>
 		<example>
 		<title><function moreinfo="none">async rest_post</function> usage</title>
@@ -470,14 +493,20 @@ route {
 	async(rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
-route [resume]
-{
-	if ($rc &lt; 0) {
-		xlog("Error code $var(rcode) in HTTP POST!\n");
-		send_reply("403", "POST Forbidden");
+route [resume] {
+	$var(rc) = $rc;
+	if ($var(rc) &lt; 0) {
+		xlog("async rest_post() failed with $var(rc), user=$fU\n");
+		send_reply("500", "Server Internal Error 1");
 		exit;
 	}
-	......
+	if ($var(rcode) >= 300) {
+		xlog("async rest_post() rcode=$var(rcode), user=$fU\n");
+		send_reply("500", "Server Internal Error 2");
+		exit;
+	}
+
+	...
 }
 
 </programlisting>
@@ -494,24 +523,30 @@ route [resume]
 		Sends a PUT HTTP request. This function behaves exactly the same as
 		<emphasis role='bold'><xref linkend="rest_put"/></emphasis> (in terms of input, output and processing),
 		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response if available.
+		entire content of the HTTP response is available.
 		</para>
 		<example>
 		<title><function moreinfo="none">async rest_put</function> usage</title>
 		<programlisting format="linespecific">
 route {
 	...
-	async(rest_put("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+	async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
-route [resume]
-{
-	if ($rc &lt; 0) {
-		xlog("Error code $var(rcode) in HTTP PUT!\n");
-		send_reply("403", "PUT Forbidden");
+route [resume] {
+	$var(rc) = $rc;
+	if ($var(rc) &lt; 0) {
+		xlog("async rest_put() failed with $var(rc), user=$fU\n");
+		send_reply("500", "Server Internal Error 3");
 		exit;
 	}
-	......
+	if ($var(rcode) >= 300) {
+		xlog("async rest_put() rcode=$var(rcode), user=$fU\n");
+		send_reply("500", "Server Internal Error 4");
+		exit;
+	}
+
+	...
 }
 </programlisting>
 		</example>

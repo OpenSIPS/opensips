@@ -155,7 +155,7 @@ modparam("mi_json", "trace_bwlist", "w: sip_trace")
 		<para>
 		This is an example showing the JSON format for the
 		<quote>get_statistics net: uri:</quote> MI command.
-		Notice how the paramaters are comma-separated then URI-encoded.
+		Notice how the parameters are comma-separated then URI-encoded.
 		</para>
 		<example>
 		<title>JSON request</title>

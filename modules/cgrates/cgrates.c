@@ -145,6 +145,7 @@ struct module_exports exports = {
 	0,           /* exported statistics */
 	mi_cmds,     /* exported MI functions */
 	pvars,       /* exported pseudo-variables */
+	0,			 /* exported transformations */
 	0,           /* extra processes */
 	mod_init,
 	0,           /* reply processing */
@@ -273,8 +274,7 @@ static int child_init(int rank)
 				cgrc_start_listen(c);
 		}
 	}
-
-	return 0;
+	return cgr_init_common();
 }
 
 

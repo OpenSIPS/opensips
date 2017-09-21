@@ -20,18 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#ifndef __LIB_REG_TIME__
+#define __LIB_REG_TIME__
 
-#include "regtime.h"
+#include <time.h>
 
+void update_act_time(void);
+time_t get_act_time(void);
 
-time_t act_time;
-
-
-/*! \brief
- * Get actual time and store
- * value in act_time
- */
-void get_act_time(void)
-{
-	act_time = time(0);
-}
+#endif /* __LIB_REG_TIME__ */

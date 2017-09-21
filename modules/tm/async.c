@@ -153,6 +153,7 @@ int t_resume_async(int *fd, void *param)
 		if(reactor_add_reader(return_code,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
+				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
 					( return_code, &faked_req, ctx->async.resume_param );
 				if (async_status == ASYNC_CHANGE_FD && fd)
@@ -212,7 +213,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	async_tm_ctx *ctx = NULL;
 	struct cell *t;
 	int r;
-	int fd;
+	int fd = 0;
 
 	/* create transaction and save everything into transaction */
 	t=get_t();
@@ -268,7 +269,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 			goto sync;
 		}
 	} else if (async_status==ASYNC_NO_FD) {
-		/* async was succesfully launched but without a FD resume
+		/* async was successfully launched but without a FD resume
 		 * in this case, we need to push the async ctx back to the
 		 * function, so it can trigger the resume later, by itself */
 	} else if (async_status==ASYNC_NO_IO) {
@@ -295,6 +296,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	if ( 0/*reactor_exists()*/ ) {
 		/* no reactor, so we directly call the resume function
 		   which will block waiting for data */
+		goto sync;
+	}
+
+	if (route_type!=REQUEST_ROUTE) {
+		LM_DBG("async detected in non-request route, switching to sync\n");
 		goto sync;
 	}
 
@@ -333,6 +339,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 sync:
 	/* run the resume function */
 	do {
+		async_status = ASYNC_DONE;
 		return_code = ((async_resume_module*)(ctx->async.resume_f))
 			( fd, msg, ctx->async.resume_param );
 		if (async_status == ASYNC_CHANGE_FD)

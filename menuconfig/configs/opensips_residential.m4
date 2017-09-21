@@ -39,8 +39,8 @@ auto_aliases=no
 
 listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
 
-ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME' , `')
-ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME' , `')
+ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060  # CUSTOMIZE ME' , `')dnl
+ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061  # CUSTOMIZE ME' , `')dnl
 
 ####### Modules Section ########
 
@@ -76,24 +76,22 @@ loadmodule "mi_fifo.so"
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("mi_fifo", "fifo_mode", 0666)
 
-
 #### URI module
 loadmodule "uri.so"
 modparam("uri", "use_uri_table", 0)
 
-ifelse(USE_DR_PSTN,`yes',` ifelse(HAVE_INBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',HAVE_OUTBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',) ', `')
-
-ifelse(USE_AUTH,`yes',`define(`DB_NEEDED',`yes')',USE_MULTIDOMAIN,`yes',`define(`DB_NEEDED',`yes')',USE_PRESENCE,`yes',`define(`DB_NEEDED',`yes')',USE_DBACC,`yes',`define(`DB_NEEDED',`yes')',USE_DBUSRLOC,`yes',`define(`DB_NEEDED',`yes')',USE_DIALOG,`yes',`define(`DB_NEEDED',`yes')',USE_DIALPLAN,`yes',`define(`DB_NEEDED',`yes')',USE_DR_MODULE,`yes',`define(`DB_NEEDED',`yes')',)
-
-ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
-
+ifelse(USE_DR_PSTN,`yes',` ifelse(HAVE_INBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',HAVE_OUTBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',) ', `')dnl
+ifelse(USE_AUTH,`yes',`define(`DB_NEEDED',`yes')',USE_MULTIDOMAIN,`yes',`define(`DB_NEEDED',`yes')',USE_PRESENCE,`yes',`define(`DB_NEEDED',`yes')',USE_DBACC,`yes',`define(`DB_NEEDED',`yes')',USE_DBUSRLOC,`yes',`define(`DB_NEEDED',`yes')',USE_DIALOG,`yes',`define(`DB_NEEDED',`yes')',USE_DIALPLAN,`yes',`define(`DB_NEEDED',`yes')',USE_DR_MODULE,`yes',`define(`DB_NEEDED',`yes')',)dnl
+ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')dnl
 ifdef(`DB_NEEDED',`#### MYSQL module
-loadmodule "db_mysql.so"')
+loadmodule "db_mysql.so"
 
+')dnl
 ifdef(`HTTPD_NEEDED',`#### HTTPD module
 loadmodule "httpd.so"
-modparam("httpd", "port", 8888)')
+modparam("httpd", "port", 8888)
 
+')dnl
 #### USeR LOCation module
 loadmodule "usrloc.so"
 modparam("usrloc", "nat_bflag", "NAT")
@@ -105,7 +103,7 @@ modparam("usrloc", "db_url",
 #### REGISTRAR module
 loadmodule "registrar.so"
 modparam("registrar", "tcp_persistent_flag", "TCP_PERSISTENT")
-ifelse(USE_NAT,`yes',`modparam("registrar", "received_avp", "$avp(received_nh)")',`')
+ifelse(USE_NAT,`yes',`modparam("registrar", "received_avp", "$avp(received_nh)")',`')dnl
 /* uncomment the next line not to allow more than 10 contacts per AOR */
 #modparam("registrar", "max_contacts", 10)
 
@@ -120,7 +118,7 @@ modparam("acc", "report_cancels", 0)
 modparam("acc", "detect_direction", 0)
 ifelse(USE_DBACC,`yes',`modparam("acc", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-', `')
+', `')dnl
 
 ifelse(USE_AUTH,`yes',`#### AUTHentication modules
 loadmodule "auth.so"
@@ -130,22 +128,22 @@ modparam("auth_db", "password_column", "password")
 modparam("auth_db|uri", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("auth_db", "load_credentials", "")
-', `')
 
+', `')dnl
 ifelse(USE_ALIASES,`yes',`#### ALIAS module
 loadmodule "alias_db.so"
 modparam("alias_db", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-', `')
 
+', `')dnl
 ifelse(USE_MULTIDOMAIN,`yes',`#### DOMAIN module
 loadmodule "domain.so"
 modparam("domain", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("domain", "db_mode", 1)   # Use caching
 modparam("auth_db|usrloc|uri", "use_domain", 1)
-', `')
 
+', `')dnl
 ifelse(USE_PRESENCE,`yes',`#### PRESENCE modules
 loadmodule "xcap.so"
 loadmodule "presence.so"
@@ -154,8 +152,8 @@ modparam("xcap|presence", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("presence_xml", "force_active", 1)
 modparam("presence", "server_address", "sip:127.0.0.1:5060") # CUSTOMIZE ME
-', `')
 
+', `')dnl
 ifelse(USE_DIALOG,`yes',`#### DIALOG module
 loadmodule "dialog.so"
 modparam("dialog", "dlg_match_mode", 1)
@@ -163,8 +161,8 @@ modparam("dialog", "default_timeout", 21600)  # 6 hours timeout
 modparam("dialog", "db_mode", 2)
 modparam("dialog", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-',`')
 
+',`')dnl
 ifelse(USE_NAT,`yes',`####  NAT modules
 loadmodule "nathelper.so"
 modparam("nathelper", "natping_interval", 10)
@@ -175,43 +173,43 @@ modparam("nathelper", "received_avp", "$avp(received_nh)")
 
 loadmodule "rtpproxy.so"
 modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221") # CUSTOMIZE ME
-',`')
 
+',`')dnl
 ifelse(USE_DIALPLAN,`yes',`####  DIALPLAN module
 loadmodule "dialplan.so"
 modparam("dialplan", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-',`')
 
+',`')dnl
 ifelse(USE_DR_MODULE,`yes',`####  DYNAMMIC ROUTING module
 loadmodule "drouting.so"
 modparam("drouting", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-',`')
 
+',`')dnl
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
 loadmodule "mi_http.so"
-',`')
 
+',`')dnl
 loadmodule "proto_udp.so"
-
-ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
+ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')dnl
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
-modparam("proto_tls","verify_cert", "1")
-modparam("proto_tls","require_cert", "0")
-modparam("proto_tls","tls_method", "TLSv1")
-modparam("proto_tls","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
-modparam("proto_tls","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
-modparam("proto_tls","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
+loadmodule "tls_mgm.so"
+modparam("tls_mgm","verify_cert", "1")
+modparam("tls_mgm","require_cert", "0")
+modparam("tls_mgm","tls_method", "TLSv1")
+modparam("tls_mgm","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
+modparam("tls_mgm","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
+modparam("tls_mgm","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
 
-' , `')
+' , `')dnl
 
 ####### Routing Logic ########
 
 # main request routing logic
 
 route{
-	ifelse(USE_NAT,`yes',`force_rport();
+ifelse(USE_NAT,`yes',`force_rport();
 	if (nat_uac_test("23")) {
 		if (is_method("REGISTER")) {
 			fix_nated_register();
@@ -221,7 +219,7 @@ route{
 			setflag(NAT);
 		}
 	}
- 	',`')
+',`')dnl
 
 	if (!mf_process_maxfwd_header("10")) {
 		sl_send_reply("483","Too Many Hops");
@@ -229,54 +227,49 @@ route{
 	}
 
 	if (has_totag()) {
-		# sequential request withing a dialog should
+
+		# handle hop-by-hop ACK (no routing required)
+		if ( is_method("ACK") && t_check_trans() ) {
+			t_relay();
+			exit;
+		}
+
+		# sequential request within a dialog should
 		# take the path determined by record-routing
-		if (loose_route()) {
-			ifelse(USE_DIALOG,`yes',`
-			# validate the sequential request against dialog
-			if ( $DLG_status!=NULL && !validate_dialog() ) {
-				xlog("In-Dialog $rm from $si (callid=$ci) is not valid according to dialog\n");
-				## exit;
-			}
-			',`')
-			if (is_method("BYE")) {
-				# do accounting even if the transaction fails
-				ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
-				', `do_accounting("log","failed");')
-			} else if (is_method("INVITE")) {
-				# even if in most of the cases is useless, do RR for
-				# re-INVITEs alos, as some buggy clients do change route set
-				# during the dialog.
-				record_route();
-			}
-
-			ifelse(USE_NAT,`yes',`if (check_route_param("nat=yes")) 
-				setflag(NAT);',`')
-
-			# route it out to whatever destination was set by loose_route()
-			# in $du (destination URI).
-			route(relay);
-		} else {
-			ifelse(USE_PRESENCE,`yes',
+		if ( !loose_route() ) {
+ifelse(USE_PRESENCE,`yes',
 			`if (is_method("SUBSCRIBE") && $rd == "127.0.0.1:5060") { # CUSTOMIZE ME
 				# in-dialog subscribe requests
 				route(handle_presence);
 				exit;
-			}',`')
-			if ( is_method("ACK") ) {
-				if ( t_check_trans() ) {
-					# non loose-route, but stateful ACK; must be an ACK after 
-					# a 487 or e.g. 404 from upstream server
-					t_relay();
-					exit;
-				} else {
-					# ACK without matching transaction ->
-					# ignore and discard
-					exit;
-				}
 			}
+',`')dnl
+			# we do record-routing for all our traffic, so we should not
+			# receive any sequential requests without Route hdr.
 			sl_send_reply("404","Not here");
+			exit;
 		}
+ifelse(USE_DIALOG,`yes',`
+		# validate the sequential request against dialog
+		if ( $DLG_status!=NULL && !validate_dialog() ) {
+			xlog("In-Dialog $rm from $si (callid=$ci) is not valid according to dialog\n");
+			## exit;
+		}
+',`')dnl
+
+		if (is_method("BYE")) {
+			# do accounting even if the transaction fails
+			ifelse(USE_DBACC,`yes',`do_accounting("db","failed");
+			', `do_accounting("log","failed");')
+		}
+
+ifelse(USE_NAT,`yes',`
+		if (check_route_param("nat=yes")) 
+			setflag(NAT);
+',`')dnl
+		# route it out to whatever destination was set by loose_route()
+		# in $du (destination URI).
+		route(relay);
 		exit;
 	}
 
@@ -290,10 +283,10 @@ route{
 
 	t_check_trans();
 
-	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| (src_ip==11.22.33.44 && src_port=5060 /* CUSTOMIZE ME */)')',`') ) ) {
+	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| ($si==11.22.33.44 && $sp=5060 /* CUSTOMIZE ME */)')',`') ) ) {
 		ifelse(USE_MULTIDOMAIN,`yes',`
 		if (is_from_local())',`
-		if (from_uri==myself)
+		if (is_myself("$fd"))
 		')
 		{
 			ifelse(USE_AUTH,`yes',`
@@ -316,7 +309,7 @@ route{
 			# if caller is not local, then called number must be local
 			ifelse(USE_MULTIDOMAIN,`yes',`
 			if (!is_uri_host_local())',`
-			if (!uri==myself)') {
+			if (!is_myself("$rd"))') {
 				send_reply("403","Rely forbidden");
 				exit;
 			}
@@ -352,7 +345,7 @@ route{
 
 	ifelse(USE_MULTIDOMAIN,`yes',`
 	if (!is_uri_host_local())',`
-	if (!uri==myself)') {
+	if (!is_myself("$rd"))') {
 		append_hf("P-hint: outbound\r\n"); 
 		ifelse(ENABLE_TLS,`yes',`
 		# if you have some interdomain connections via TLS
@@ -389,13 +382,21 @@ route{
 		{
 			sl_send_reply("403","Forbidden auth ID");
 			exit;
-		}',`')
-
-		if ( ifelse(ENABLE_TCP,`yes',`proto==TCP ||',`') ifelse(ENABLE_TLS,`yes',`proto==TLS ||',`') 0 ) setflag(TCP_PERSISTENT);
-
+		}',`')dnl
+ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
+		if ($proto == "tcp" || $proto == "tls")
+			setflag(TCP_PERSISTENT);
+', `
+		if ($proto == "tcp")
+			setflag(TCP_PERSISTENT);
+'), ifelse(ENABLE_TLS, `yes', `
+		if ($proto == "tls")
+			setflag(TCP_PERSISTENT);
+',
+`'))dnl
 		ifelse(USE_NAT,`yes',`if (isflagset(NAT)) {
 			setbflag(SIP_PING_FLAG);
-		}',`')
+		}',`')dnl
 
 		if (!save("location"))
 			sl_reply_error();
@@ -444,7 +445,6 @@ route{
 		$du = "sip:127.0.0.2:5060"; # CUSTOMIZE ME
 		route(relay);
 		',`
-		t_newtran();
 		t_reply("404", "Not Found");
 		exit;')
 	} 

@@ -421,7 +421,7 @@ modparam("dialplan", "attrs_col", "column_name")
           + pvar - the dialplan id is the value of an existing
             pseudo-variable (as integer value)
      * partition - Specifies the partition where the search will
-       take place. This parameter can be ommited. If the paramater
+       take place. This parameter can be ommited. If the parameter
        is omitted the default partition will be used if exists.
        The partition parameter can have the following types:
           + string - the table name is statically assigned

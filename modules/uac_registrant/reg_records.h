@@ -35,7 +35,7 @@
 #include "../../mem/shm_mem.h"
 #include "../tm/dlg.h"
 #include "../tm/tm_load.h"
-#include "../../sliblist.h"
+#include "../../lib/sliblist.h"
 
 
 #define NOT_REGISTERED_STATE	0

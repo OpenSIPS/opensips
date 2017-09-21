@@ -116,7 +116,12 @@ static struct mi_root* tls_trace_mi(struct mi_root* cmd, void* param );
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
 {
-	return tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	int ret;
+
+	lock_get(&c->write_lock);
+	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	lock_release(&c->write_lock);
+	return ret;
 }
 
 /* buffer to be used for reading all TCP SIP messages
@@ -137,13 +142,14 @@ trace_dest t_dst;
 trace_proto_t tprot;
 
 /* module  tracing parameters */
-static int trace_is_on_tmp=1, *trace_is_on;
+static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
 static int trace_filter_route_id = -1;
 /**/
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
 static int proto_tls_conn_init(struct tcp_connection* c);
+static void proto_tls_conn_clean(struct tcp_connection* c);
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tls_init, 0, 0, 0, 0},
@@ -190,6 +196,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	mi_cmds,    /* exported MI functions */
 	NULL,       /* exported pseudo-variables */
+	0,			/* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -270,7 +277,7 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)tls_read_req;
 	pi->net.conn_init		= proto_tls_conn_init;
-	pi->net.conn_clean		= tls_conn_clean;
+	pi->net.conn_clean		= proto_tls_conn_clean;
 	pi->net.report			= tls_report;
 
 	return 0;
@@ -329,13 +336,27 @@ out:
 	return tls_conn_init(c, &tls_mgm_api);
 }
 
+
+static void proto_tls_conn_clean(struct tcp_connection* c)
+{
+	struct tls_data *data = (struct tls_data*)c->proto_data;
+
+	if (data) {
+		shm_free(data);
+		c->proto_data = NULL;
+	}
+
+	tls_conn_clean(c);
+}
+
+
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 																void *extra)
 {
 	str s;
 
 	if (type==TCP_REPORT_CLOSE) {
-		if ( !*trace_is_on || (conn_flags & F_CONN_TRACE_DROPPED) )
+		if ( !*trace_is_on || !t_dst || (conn_flags & F_CONN_TRACE_DROPPED) )
 			return;
 
 		/* grab reason text */
@@ -446,11 +467,16 @@ static int proto_tls_send(struct socket_info* send_sock,
 	}
 
 send_it:
-	if ( c->proto_flags & F_TLS_TRACE_READY ) {
+	/* if there is pending tracing data on a connection startet by us
+	 * (connected) -> flush it
+	 * As this is a write op, we look only for connected conns, not to conflict
+	 * with accepted conns (flushed on read op) */
+	if ( (c->flags&F_CONN_ACCEPTED)==0 && c->proto_flags & F_TLS_TRACE_READY ) {
 		data = c->proto_data;
 		/* send the message if set from tls_mgm */
 		if ( data->message ) {
 			send_trace_message( data->message, t_dst);
+			data->message = NULL;
 		}
 
 		/* don't allow future traces for this connection */
@@ -462,7 +488,9 @@ send_it:
 
 	LM_DBG("sending via fd %d...\n",fd);
 
+	lock_get(&c->write_lock);
 	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	lock_release(&c->write_lock);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
@@ -512,12 +540,15 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	/* do this trick in order to trace whether if it's an error or not */
 	ret=tls_fix_read_conn(con);
 
-	if ( con->proto_flags & F_TLS_TRACE_READY ) {
+	/* if there is pending tracing data on an accepted connection, flush it
+	 * As this is a read op, we look only for accepted conns, not to conflict
+	 * with connected conns (flushed on write op) */
+	if ( con->flags&F_CONN_ACCEPTED && con->proto_flags & F_TLS_TRACE_READY ) {
 		data = con->proto_data;
 		/* send the message if set from tls_mgm */
 		if ( data->message ) {
-			tprot.send_message( data->message, t_dst, 0);
-			tprot.free_message( data->message );
+			send_trace_message( data->message, t_dst);
+			data->message = NULL;
 		}
 
 		/* don't allow future traces for this connection */

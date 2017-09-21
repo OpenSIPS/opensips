@@ -242,8 +242,11 @@ int write_to_db(str *username, str *domain, str *xml, str *bin)
 		}
 	}
 
+	cpl_dbf.free_result( db_hdl, res);
 	return 1;
 error:
+	if (res)
+		cpl_dbf.free_result( db_hdl, res);
 	return -1;
 }
 

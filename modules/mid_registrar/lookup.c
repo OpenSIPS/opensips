@@ -33,6 +33,8 @@
 #include "lookup.h"
 #include "encode.h"
 
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/ci.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../dset.h"
@@ -216,7 +218,7 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		uri = *GET_RURI(_m);
 	}
 
-	if (reg_mode == MID_REG_THROTTLE_CT && insertion_mode == INSERT_BY_CONTACT) {
+	if (reg_mode != MID_REG_THROTTLE_AOR && insertion_mode == INSERT_BY_CONTACT) {
 		if (get_match_token(&uri, &match_tok, NULL, NULL) != 0) {
 			LM_ERR("failed to get match token\n");
 			return -1;
@@ -228,6 +230,8 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			       match_tok.len, match_tok.s);
 			return -1;
 		}
+
+		LM_DBG("dec URI: %.*s\n", dec_tok.len, dec_tok.s);
 
 		if (parse_uri(dec_tok.s, dec_tok.len, &dec_uri) < 0) {
 			LM_ERR("failed to parse dec URI <%.*s>\n", dec_tok.len, dec_tok.s);
@@ -257,6 +261,8 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			return -1;
 		}
 
+		LM_DBG("printed URI: %.*s\n", pst.len, pst.s);
+
 		pkg_free(dec_tok.s);
 
 		if (!_s) {
@@ -265,7 +271,9 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 				return -1;
 			}
 		}
+	}
 
+	if (reg_mode != MID_REG_THROTTLE_AOR) {
 		return 1;
 	}
 

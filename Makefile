@@ -35,7 +35,6 @@
 NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
-
 # whether or not to install opensips.cfg or just opensips.cfg.default
 # (opensips.cfg will never be overwritten by make install, this is useful
 #  when creating packages)
@@ -47,9 +46,11 @@ skip_modules?=
 # whether or not to overwrite TLS certificates
 tls_overwrite_certs?=
 
+# default debian version when running 'make deb'
+DEBIAN_VERSION ?= jessie #TODO: can we determine this?
 
 makefile_defs=0
-DEFS?=
+DEFS:= $(DEFS_EXTRA_OPTS)
 DEBUG_PARSER?=
 
 # json libs check
@@ -68,11 +69,19 @@ ifeq (,$(wildcard Makefile.conf))
 $(shell cp Makefile.conf.template Makefile.conf)
 endif
 include Makefile.conf
+
 ifneq (,$(findstring SHM_EXTRA_STATS, $(DEFS)))
 MEM_STATS_HDR = mem/mem_stats.h
 deps_gen += $(MEM_STATS_HDR)
 auto_gen += mem/mem_stats.c
 endif
+
+ifneq (,$(findstring DBG_STRUCT_HIST,$(DEFS)))
+dbg_objs=lib/dbg/struct_hist.c
+else
+dbg_objs=
+endif
+
 include Makefile.sources
 include Makefile.defs
 
@@ -428,7 +437,7 @@ bin:
 
 .PHONY: deb-orig-tar
 deb-orig-tar: tar
-	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE).orig.tar.gz
+	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE:-dev=).orig.tar.gz
 
 .PHONY: deb-%
 deb-%:
@@ -444,7 +453,7 @@ deb-%:
 	rm -rf debian
 
 .PHONY: deb
-deb: deb-common
+deb: deb-$(DEBIAN_VERSION)
 
 
 .PHONY: sunpkg

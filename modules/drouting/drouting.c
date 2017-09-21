@@ -240,8 +240,6 @@ static int dr_disable_w_part(struct sip_msg *req,
 		struct head_db *current_partition);
 static int to_partition(struct sip_msg*, dr_partition_t *,
 		struct head_db **);
-static inline int init_part_grp(dr_part_group_t **, struct head_db *,
-		gparam_t*);
 
 
 /* reader-writers lock for reloading the data */
@@ -491,6 +489,7 @@ struct module_exports exports = {
 	0,               /* exported statistics */
 	mi_cmds,         /* exported MI functions */
 	0,               /* exported pseudo-variables */
+	0,			 	 /* exported transformations */
 	0,               /* additional processes */
 	dr_init,         /* Module initialization function */
 	(response_function) 0,
@@ -767,8 +766,12 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 			params->current_partition = it;
 
 			if (dr_tmb.t_request_within(&dr_probe_method, NULL, NULL, dlg,
-						dr_probing_callback, (void*)params, param_prob_callback_free) < 0) {
-				LM_ERR("unable to execute dialog\n");
+			dr_probing_callback, (void*)params, param_prob_callback_free)<0) {
+				LM_ERR("unable to execute dialog, disabling destination...\n");
+				if ( (dst->flags&DR_DST_STAT_DSBL_FLAG)==0 ) {
+					dst->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
+					dr_gw_status_changed( it, dst);
+				}
 			}
 			dr_tmb.free_dlg(dlg);
 
@@ -2046,28 +2049,22 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 }
 
 
-static inline int init_part_grp(dr_part_group_t ** part_w_no_grp,
-							struct head_db * current_partition, gparam_t * grp)
+static inline void pack_part_grp(dr_part_group_t ** part_w_no_grp,
+						struct head_db * current_partition, gparam_t * grp)
 {
-	dr_partition_t * part;
-	*part_w_no_grp = pkg_malloc(sizeof(dr_part_group_t));
-	if(*part_w_no_grp == NULL) {
-		LM_ERR("No more pkg memory.\n");
-		return -1;
-	}
+	static dr_part_group_t  part_grp;
+	static dr_partition_t   part;
 
-	part = pkg_malloc(sizeof(dr_partition_t));
-	if(part == NULL) {
-		LM_ERR("No more pkg memory.\n");
-		return -1;
-	}
-	memset(part, 0, sizeof(dr_partition_t));
-	part->type = DR_PTR_PART;
-	part->v.part = current_partition;
+	memset( &part_grp, 0, sizeof(dr_part_group_t));
+	memset( &part, 0, sizeof(dr_partition_t));
 
-	(*part_w_no_grp)->gid = grp;
-	(*part_w_no_grp)->dr_part = part;
-	return 0;
+	part.type = DR_PTR_PART;
+	part.v.part = current_partition;
+
+	part_grp.gid = grp;
+	part_grp.dr_part = &part;
+
+	*part_w_no_grp = &part_grp;
 }
 
 static int do_routing_0(struct sip_msg* msg)
@@ -2079,8 +2076,7 @@ static int do_routing_0(struct sip_msg* msg)
 			LM_ERR("Error while loading configuration\n");
 			return -1;
 		}
-		if(init_part_grp(&part_w_no_grp, head_db_start, 0) < 0)
-			return -1;
+		pack_part_grp(&part_w_no_grp, head_db_start, 0);
 		return do_routing(msg, part_w_no_grp, (int)0, NULL);
 	} else {
 		LM_ERR("Partition name is mandatory");
@@ -2339,7 +2335,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
 		}
 
 		LM_DBG("new RURI set to <%.*s> via socket <%.*s>\n",
-				val.s.len,val.s.s,
+				ruri.len, ruri.s,
 				sock?sock->name.len:4, sock?sock->name.s:"none");
 
 		/* get value for next gw ID from avp */
@@ -2401,13 +2397,7 @@ rule_fallback:
 		wl_list.v.sval.s[--wl_list.v.sval.len] = 0;
 	}
 
-	part_grp = pkg_malloc(sizeof(dr_part_group_t));
-	if(part_grp == NULL) {
-		LM_ERR("No more pkg memory!\n");
-		return -1;
-	}
-
-	init_part_grp(&part_grp, current_partition, &grp);
+	pack_part_grp(&part_grp, current_partition, &grp);
 	if (do_routing( msg, part_grp, flags, wl_list.type?&wl_list:NULL)==1) {
 		return 1;
 	}
@@ -2866,12 +2856,11 @@ search_again:
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
-		ret = run_top_route( rlist[rt_info->route_idx].a, msg );
-		if (ret&ACT_FL_DROP) {
+		fret = run_top_route( rlist[rt_info->route_idx].a, msg );
+		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
-					"by %d\n", rlist[rt_info->route_idx].name, ret);
-			ret = -1;
+					"by %d\n", rlist[rt_info->route_idx].name, fret);
 			goto error2;
 		}
 	}
@@ -4319,7 +4308,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char * part, char* _type, char* fla
 				GET_NEXT_HOP(msg));
 	} else {
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, _type, (!part ? -1 : (int)(long)part),
+		return _is_dr_uri_gw(msg, NULL, flags_pv, (!_type ? -1 : (int)(long)_type),
 				GET_NEXT_HOP(msg));
 	}
 }
@@ -4358,7 +4347,7 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
 			return -1;
 		}
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, type_s ,!src_pv ? -1:(int)(long)src_pv
+		return _is_dr_uri_gw(msg, NULL, flags_pv ,!type_s ? -1:(int)(long)type_s
 				,&src.rs);
 	}
 }
@@ -4633,8 +4622,9 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	}
 	if (old_flags!=cr->flags) {
 		cr->flags |= DR_CR_FLAG_DIRTY;
-		replicate_dr_carrier_status_event( current_partition, cr,
-			replicated_status_cluster);
+		if (replicated_status_cluster > 0)
+			replicate_dr_carrier_status_event( current_partition, cr,
+				replicated_status_cluster);
 	}
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);

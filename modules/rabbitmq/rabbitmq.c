@@ -81,6 +81,7 @@ struct module_exports exports= {
 	0,								/* exported statistics */
 	0,								/* exported MI functions */
 	0,								/* exported pseudo-variables */
+	0,								/* exported transformations */
 	0,								/* extra processes */
 	mod_init,						/* module initialization function */
 	(response_function) 0,			/* response handling function */
@@ -207,5 +208,5 @@ static int rmq_publish(struct sip_msg *msg, char *sid, char *rkey, char *body,
 	return rmq_send(srv, &srkey, &sbody,
 			(ctype ? &sctype : NULL),
 			(hnames ? &aname : NULL),
-			(hvals ? &avals : NULL));
+			(hvals ? &avals : NULL)) == 0 ? 1: -1;
 }

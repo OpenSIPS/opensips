@@ -40,9 +40,13 @@
 #include "../../parser/parse_rr.h"
 #include "../usrloc/usrloc.h"
 #include "../../parser/parse_from.h"
+
 #include "../../lib/reg/sip_msg.h"
+#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/config.h"
+#include "../../lib/reg/ci.h"
+
 #include "common.h"
-#include "regtime.h"
 #include "reg_mod.h"
 #include "lookup.h"
 #include "sip_msg.h"
@@ -184,7 +188,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		return -3;
 	}
 
-	get_act_time();
+	update_act_time();
 
 	ul.lock_udomain((udomain_t*)_t, &aor);
 	res = ul.get_urecord((udomain_t*)_t, &aor, &r);
@@ -211,7 +215,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	/* look first for an un-expired and suported contact */
 search_valid_contact:
 	while ( (ptr) &&
-	!(VALID_CONTACT(ptr,act_time) && (ret=-2) && allowed_method(_m,ptr,flags)))
+	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(_m,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
 		/* nothing found */
@@ -257,7 +261,7 @@ search_valid_contact:
 
 		it = ptr->next;
 		while ( it ) {
-			if (VALID_CONTACT(it,act_time)) {
+			if (VALID_CONTACT(it,get_act_time())) {
 				if (it->instance.len-2 == sip_instance.len && sip_instance.s &&
 						memcmp(it->instance.s+1,sip_instance.s,sip_instance.len) == 0)
 					if (it->last_modified > ptr->last_modified) {
@@ -337,7 +341,7 @@ search_valid_contact:
 
 	do {
 		for( ; ptr ; ptr = ptr->next ) {
-			if (VALID_CONTACT(ptr, act_time) && allowed_method(_m,ptr,flags)) {
+			if (VALID_CONTACT(ptr, get_act_time()) && allowed_method(_m,ptr,flags)) {
 				path_dst.len = 0;
 				if(ptr->path.s && ptr->path.len
 				&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
@@ -516,13 +520,13 @@ int is_registered(struct sip_msg* _m, char *_d, char* _a)
 	}
 
 	CHECK_DOMAIN(ud);
-	get_act_time();
+	update_act_time();
 
 	LM_DBG("checking aor <%.*s>\n",aor.len,aor.s);
 	ul.lock_udomain(ud, &aor);
 	if (ul.get_urecord(ud, &aor, &r) == 0) {
 		for ( c=r->contacts; c && (ret==NOT_FOUND); c=c->next ) {
-			if (VALID_CONTACT(c,act_time)) {
+			if (VALID_CONTACT(c,get_act_time())) {
 				/* populate the 'attributes' avp */
 				if (attr_avp_name != -1) {
 					istr.s = c->attr;
@@ -671,8 +675,9 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 {
 	str aor;
 	str host, pv_host={NULL, 0};
+	struct sip_uri tmp_uri;
+	str uri;
 
-	int start;
 	char is_avp=1;
 
 	udomain_t* ud = (udomain_t*)_d;
@@ -717,16 +722,18 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 	}
 
 	for (c=r->contacts; c; c=c->next) {
-		if (!c->received.len || !c->received.s || c->received.len < 4)
-			continue;
-
-		/* 'sip:' or 'sips:' ?; is this sane? FIXME if problems */
-		start    = c->received.s[3]==':'?4:5;
-		host.s   = c->received.s   + start;
-		host.len = c->received.len - start;
+		if (c->received.len && c->received.s)
+			uri = c->received;
+		else
+			uri = c->c;
+		if (parse_uri(uri.s, uri.len, &tmp_uri) < 0) {
+			LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
+				  uri.len, uri.s);
+		}
+		host = tmp_uri.host;
 
 		if (!is_avp) {
-			if (pv_host.len <= host.len
+			if (pv_host.len == host.len
 				&& !memcmp(host.s, pv_host.s, pv_host.len))
 				goto out_unlock_found;
 
@@ -742,7 +749,7 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 				continue;
 			}
 
-			if (pv_host.len <= host.len
+			if (pv_host.len == host.len
 					&& !memcmp(host.s, pv_host.s, pv_host.len))
 				goto out_unlock_found;
 		}

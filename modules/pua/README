@@ -196,7 +196,7 @@ modparam("pua", "update_period", 100)
 
    Example 1.7. pua_update_contact usage
 ...
-if(method=="NOTIFY")
+if($rm=="NOTIFY")
     pua_update_contact();
 ...
 

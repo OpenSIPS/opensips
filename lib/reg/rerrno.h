@@ -88,6 +88,8 @@ typedef enum rerr {
 	R_PATH_UNSUP  /*!< Path not supported by UAC */
 } rerr_t;
 
+extern str error_info[];
+extern int rerr_codes[];
 extern rerr_t rerrno;
 
 #endif /* __RERRNO_H__ */

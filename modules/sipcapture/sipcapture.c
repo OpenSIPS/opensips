@@ -83,6 +83,8 @@
 #include "../../forward.h"
 #include "../../msg_translator.h"
 
+#include "../../lib/cJSON.h"
+
 #ifdef STATISTICS
 #include "../../statistics.h"
 #endif
@@ -202,6 +204,9 @@ struct _sipcapture_object {
 	long long tmstamp;
 	str node;
 	str msg;
+	str custom_field1;
+	str custom_field2;
+	str custom_field3;
 #ifdef STATISTICS
 	stat_var *stat;
 #endif
@@ -215,11 +220,16 @@ struct _sipcapture_object {
  * WARNING: if you add/remove keys take care to update
  * VALUES_STR
  */
-#define NR_KEYS 41
-#define RTCP_NR_KEYS 12
+#define NR_KEYS 44
+
+/* allocate more for HOMERv6 */
+#define RTCP_NR_KEYS 17
+#define RTCP_H5_NR_KEYS 12
 
 typedef void* sc_async_param_t;
 db_key_t db_keys[NR_KEYS];
+
+static int rtp_keys_no = RTCP_NR_KEYS;
 db_key_t rtcp_db_keys[RTCP_NR_KEYS];
 
 /* module function prototypes */
@@ -227,13 +237,14 @@ static int mod_init(void);
 static int child_init(int rank);
 static void raw_socket_process(int rank);
 static void destroy(void);
-static int sip_capture(struct sip_msg *msg, char *s1, char *s2);
-static int async_sip_capture(struct sip_msg* msg, async_ctx *actx,
-		char* s1, char* s2);
+static int sip_capture(struct sip_msg *msg, char *s1,
+                       char *s2, char *s3, char *s4);
+static int async_sip_capture(struct sip_msg* msg, async_ctx *actx, char *s1,
+                             char *s2, char *s3, char *s4);
 static int sip_capture_fixup(void** param, int param_no);
 static int sip_capture_async_fixup(void** param, int param_no);
 static int w_sip_capture(struct sip_msg *msg, char *table_name,
-		async_ctx *actx);
+		async_ctx *actx, str *cf1, str *cf2, str *cf3);
 
 
 static void set_rtcp_keys(void);
@@ -365,7 +376,33 @@ static str from_domain_column = str_init("from_domain");
 static str to_domain_column = str_init("to_domain");
 static str ruri_domain_column = str_init("ruri_domain");
 static str msg_column 		= str_init("msg");
+static str custom_field1	= str_init("custom_field1");
+static str custom_field2	= str_init("custom_field2");
+static str custom_field3	= str_init("custom_field3");
 static str capture_node 	= str_init("homer01");
+
+
+/* HOMER6 columns for report capture */
+static str date_column6 = str_init("tss");
+static str micro_ts_column6 = str_init("tsu");
+static str correlation_column6 = str_init("transaction_id");
+static str extra_correlation_column6 = str_init("correlation_id");
+static str source_ip_column6 	= str_init("source_ip");
+static str source_port_column6 	= str_init("source_port");
+static str dest_ip_column6	= str_init("destination_ip");
+static str dest_port_column6 	= str_init("destination_port");
+static str capture_ip_column6 = str_init("capture_ip");
+static str proto_column6 	= str_init("proto");
+static str family_column6 	= str_init("family");
+static str type_column6 		= str_init("type");
+static str capture_id_column6 		= str_init("capt_id");
+static str node_column6 		= str_init("node");
+static str event_column6 		= str_init("event");
+static str payload_len_column6 		= str_init("payload_len");
+static str msg_column6 		= str_init("data");
+
+
+/*************/
 
 
 /* hep pvar related */
@@ -415,11 +452,11 @@ struct sip_msg dummy_req;
 
 
 
-#define VALUES_STR "(%d,%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
+#define VALUES_STR "(%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
 					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s','%.*s'," \
-					"'%.*s', '%.*s', '%.*s')"
+					"'%.*s', '%.*s', '%.*s', '%.*s', '%.*s', '%.*s')"
 
 #define RTCP_VALUES_STR "(%ld, %lld, '%.*s', '%.*s', %d, '%.*s', %d," \
 						"%d, %d, %d, '%.*s', '%.*s')"
@@ -490,6 +527,12 @@ static cmd_export_t cmds[] = {
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"sip_capture", (cmd_function)sip_capture, 1, sip_capture_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 2, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 3, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"sip_capture", (cmd_function)sip_capture, 4, sip_capture_fixup, 0,
+	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_set", (cmd_function)w_set_hep_generic, 2, set_hep_generic_fixup, 0,
 	        REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"hep_set", (cmd_function)w_set_hep, 4, set_hep_fixup, 0,
@@ -519,6 +562,9 @@ static acmd_export_t acmds[] = {
 
 	{"sip_capture",    (acmd_function)async_sip_capture, 0, 0},
 	{"sip_capture",    (acmd_function)async_sip_capture, 1, sip_capture_async_fixup},
+	{"sip_capture",    (acmd_function)async_sip_capture, 2, sip_capture_async_fixup},
+	{"sip_capture",    (acmd_function)async_sip_capture, 3, sip_capture_async_fixup},
+	{"sip_capture",    (acmd_function)async_sip_capture, 4, sip_capture_async_fixup},
 	{"report_capture", (acmd_function)w_report_capture_async_1, 1, rc_async_fixup_1},
 	{"report_capture", (acmd_function)w_report_capture_async_2, 2, rc_async_fixup},
 	{"report_capture", (acmd_function)w_report_capture_async_3, 3, rc_async_fixup},
@@ -662,6 +708,7 @@ struct module_exports exports = {
 #endif
 	mi_cmds,    /*!< exported MI functions */
 	mod_items,          /*!< exported pseudo-variables */
+	0,                  /*!< exported transformations */
 	procs,          /*!< extra processes */
 	mod_init,   /*!< module initialization function */
 	0,          /*!< response function */
@@ -730,6 +777,57 @@ static int mod_init(void) {
 	int i;
 	struct ip_addr *ip = NULL;
 
+	if (hep_capture_on) {
+		load_hep = (load_hep_f)find_export("load_hep", 1, 0);
+		if (!load_hep) {
+			LM_ERR("Can't bind proto hep!\n");
+			return -1;
+		}
+
+		if (load_hep(&hep_api)) {
+			LM_ERR("can't bind proto hep\n");
+			return -1;
+		}
+
+		if (hep_api.register_hep_cb(hep_msg_received)) {
+			LM_ERR("failed to register hep callback\n");
+			return -1;
+		}
+
+		if (hep_route_name != NULL) {
+			if ( parse_hep_route(hep_route_name) < 0 ) {
+				LM_ERR("bad hep route name %s\n", hep_route_name);
+				return -1;
+			}
+
+			if (hep_route_id > HEP_SIP_ROUTE) {
+				/* builds a dummy message for being able to use the hep route */
+				build_dummy_msg();
+			}
+		}
+
+		set_rtcp_keys();
+
+		/* db_url is mandatory if sip_capture is used */
+		if (((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)) ||
+				hep_route_id == HEP_NO_ROUTE) ||
+			(is_script_func_used("report_capture", -1) ||
+				is_script_async_func_used("report_capture", -1))) {
+			init_db_url(db_url, 0);
+		} else {
+			init_db_url(db_url, 1);
+		}
+	} else {
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1))) {
+			init_db_url(db_url, 0);
+		} else {
+			init_db_url(db_url, 1);
+		}
+	}
+
+
 	/* init db keys */
 	db_keys[0] = &id_column;
 	db_keys[1] = &date_column;
@@ -772,8 +870,9 @@ static int mod_init(void) {
 	db_keys[38] = &to_domain_column;
 	db_keys[39] = &ruri_domain_column;
 	db_keys[40] = &msg_column;
-
-	set_rtcp_keys();
+	db_keys[41] = &custom_field1;
+	db_keys[42] = &custom_field2;
+	db_keys[43] = &custom_field3;
 
 
 #ifdef STATISTICS
@@ -837,55 +936,6 @@ static int mod_init(void) {
 		raw_socket_listen.len = strlen(raw_socket_listen.s);
 	if(raw_interface.s)
 		raw_interface.len = strlen(raw_interface.s);
-
-	if (hep_capture_on) {
-		load_hep = (load_hep_f)find_export("load_hep", 1, 0);
-		if (!load_hep) {
-			LM_ERR("Can't bind proto hep!\n");
-			return -1;
-		}
-
-		if (load_hep(&hep_api)) {
-			LM_ERR("can't bind proto hep\n");
-			return -1;
-		}
-
-		if (hep_api.register_hep_cb(hep_msg_received)) {
-			LM_ERR("failed to register hep callback\n");
-			return -1;
-		}
-
-		if (hep_route_name != NULL) {
-			if ( parse_hep_route(hep_route_name) < 0 ) {
-				LM_ERR("bad hep route name %s\n", hep_route_name);
-				return -1;
-			}
-
-			if (hep_route_id > HEP_SIP_ROUTE) {
-				/* builds a dummy message for being able to use the hep route */
-				build_dummy_msg();
-			}
-		}
-
-		/* db_url is mandatory if sip_capture is used */
-		if (((is_script_func_used("sip_capture", -1) ||
-				is_script_async_func_used("sip_capture", -1)) ||
-				hep_route_id == HEP_NO_ROUTE) ||
-			(is_script_func_used("report_capture", -1) ||
-				is_script_async_func_used("report_capture", -1))) {
-			init_db_url(db_url, 0);
-		} else {
-			init_db_url(db_url, 1);
-		}
-	} else {
-		if ((is_script_func_used("sip_capture", -1) ||
-				is_script_async_func_used("sip_capture", -1))) {
-			init_db_url(db_url, 0);
-		} else {
-			init_db_url(db_url, 1);
-		}
-	}
-
 
 	if (db_url.s && db_url.len) {
 		/* Find a database module */
@@ -2364,17 +2414,20 @@ int hep_msg_received(void)
 	#endif
 
 		/* we basically move the sip_capture() call from the scripts here */
-		if (w_sip_capture(&msg, NULL, NULL) < 0) {
+		if (w_sip_capture(&msg, NULL, NULL, NULL, NULL, NULL) < 0) {
 			LM_ERR("failed to store the message!\n");
 			return -1;
 		}
+
+		/* avoid freeing buffer read from HEP structure */
+		msg.buf = 0;
+		free_sip_msg( &msg );
 
 		/* don't go through the main route */
 		return HEP_SCRIPT_SKIP;
 	} else if (hep_route_id > HEP_SIP_ROUTE) {
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
-
 
 		/* run given hep route */
 		run_top_route(rlist[hep_route_id].a, &dummy_req);
@@ -2483,24 +2536,32 @@ shm_err:
 
 static int sip_capture_fixup(void** param, int param_no)
 {
-	if (param_no != 1) {
+	switch (param_no) {
+	case 1:
+		return fixup_tz_table(param, &tz_list);
+	case 2:
+	case 3:
+	case 4:
+		return fixup_sgp(param);
+	default:
 		LM_ERR("Invalid param number!\n");
 		return -1;
 	}
-
-	return fixup_tz_table(param, &tz_list);
 }
 
 static int sip_capture_async_fixup(void** param, int param_no)
 {
-
-	if (param_no != 1) {
+	switch (param_no) {
+	case 1:
+		return fixup_async_tz_table(param, &tz_list);
+	case 2:
+	case 3:
+	case 4:
+		return fixup_sgp(param);
+	default:
 		LM_ERR("Invalid param number!\n");
 		return -1;
 	}
-
-
-	return fixup_async_tz_table(param, &tz_list);
 }
 
 
@@ -2530,8 +2591,11 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 		return -1;
 	}
 
-    db_vals[0].type = DB_INT;
-    db_vals[0].val.int_val = 0;
+	/* To stay compatible with both Postgres and MySQL, we omit auto-increment
+	 * columns, rather than setting them to zero
+	db_vals[0].type = DB_INT;
+	db_vals[0].val.int_val = 0;
+	*/
 
 	db_vals[1].type = DB_DATETIME;
 	db_vals[1].val.time_val = (sco->tmstamp/1000000);
@@ -2657,24 +2721,31 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	db_vals[40].type = DB_BLOB;
 	db_vals[40].val.blob_val = sco->msg;
 
+	db_vals[41].type = DB_STR;
+	db_vals[41].val.str_val = sco->custom_field1;
+
+	db_vals[42].type = DB_STR;
+	db_vals[42].val.str_val = sco->custom_field2;
+
+	db_vals[43].type = DB_STR;
+	db_vals[43].val.str_val = sco->custom_field3;
+
 	/* no field can be null */
-	for (i=0;i<NR_KEYS;i++)
-	         db_vals[i].nul = 0;
+	for (i = 1; i < NR_KEYS; i++)
+		db_vals[i].nul = 0;
 
 	ret=1;
 
-
 	/* each query has it's own parameters for the prepared statements */
-	if (con_set_inslist(&db_funcs,db_con,&sc_ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&sc_ins_list,db_keys+1,NR_KEYS-1) < 0)
 	               CON_RESET_INSLIST(db_con);
 	CON_PS_REFERENCE(db_con) = &sc_ps;
 
-
-	if (!actx && db_sync_store(db_vals, db_keys, NR_KEYS) != 1) {
+	if (!actx && db_sync_store(db_vals+1, db_keys+1, NR_KEYS-1) != 1) {
 		LM_ERR("failed to insert into database\n");
 		return -1;
 	} else if (actx) {
-		ret = db_async_store(db_vals, db_keys, NR_KEYS, append_sc_values,
+		ret = db_async_store(db_vals+1, db_keys+1, NR_KEYS-1, append_sc_values,
 				actx, t_el);
 	}
 
@@ -2713,7 +2784,7 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 	int len;
 
 	len = snprintf(buf, max_len, VALUES_STR,
-			VAL_INT(db_vals+0), VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
+			VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
 			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
 			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
 			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
@@ -2749,7 +2820,10 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 			VAL_STR(db_vals+37).len, VAL_STR(db_vals+37).s,
 			VAL_STR(db_vals+38).len, VAL_STR(db_vals+38).s,
 			VAL_STR(db_vals+39).len, VAL_STR(db_vals+39).s,
-			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s
+			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s,
+			VAL_STR(db_vals+41).len, VAL_STR(db_vals+41).s,
+			VAL_STR(db_vals+42).len, VAL_STR(db_vals+42).s,
+			VAL_STR(db_vals+43).len, VAL_STR(db_vals+43).s
 				);
 
 	return len;
@@ -2969,20 +3043,91 @@ static inline struct tz_table_list* search_table(tz_table_t* el, struct tz_table
 
 
 
-static int sip_capture(struct sip_msg *msg, char* s1, char* s2)
+static int sip_capture(struct sip_msg *msg, char* s1,
+                       char* s2, char* s3, char* s4)
 {
-	return w_sip_capture(msg, s1, NULL);
+	str st1, st2, st3, *cf1, *cf2, *cf3;
+
+	if (!s2) {
+		cf1 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s2, &st1) < 0) {
+			LM_ERR("bad value for 'custom_field1'\n");
+			return -1;
+		}
+
+		cf1 = &st1;
+	}
+
+	if (!s3) {
+		cf2 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s3, &st2) < 0) {
+			LM_ERR("bad value for 'custom_field2'\n");
+			return -1;
+		}
+
+		cf2 = &st2;
+	}
+
+	if (!s4) {
+		cf3 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s4, &st3) < 0) {
+			LM_ERR("bad value for 'custom_field3'\n");
+			return -1;
+		}
+
+		cf3 = &st3;
+	}
+
+	return w_sip_capture(msg, s1, NULL, cf1, cf2, cf3);
 }
 
-static int async_sip_capture(struct sip_msg* msg, async_ctx *actx,
-		char* s1, char* s2)
+static int async_sip_capture(struct sip_msg* msg, async_ctx *actx, char *s1,
+                             char* s2, char* s3, char* s4)
 {
-	return w_sip_capture(msg, s1, actx);
+	str st1, st2, st3, *cf1, *cf2, *cf3;
+
+	if (!s2) {
+		cf1 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s2, &st1) < 0) {
+			LM_ERR("bad value for 'custom_field1'\n");
+			return -1;
+		}
+
+		cf1 = &st1;
+	}
+
+	if (!s3) {
+		cf2 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s3, &st2) < 0) {
+			LM_ERR("bad value for 'custom_field2'\n");
+			return -1;
+		}
+
+		cf2 = &st2;
+	}
+
+	if (!s4) {
+		cf3 = NULL;
+	} else {
+		if (fixup_get_svalue(msg, (gparam_p)s4, &st3) < 0) {
+			LM_ERR("bad value for 'custom_field3'\n");
+			return -1;
+		}
+
+		cf3 = &st3;
+	}
+
+	return w_sip_capture(msg, s1, actx, cf1, cf2, cf3);
 }
 
 
 static int w_sip_capture(struct sip_msg *msg, char *table_name,
-															async_ctx *actx)
+                         async_ctx *actx, str *cf1, str *cf2, str *cf3)
 {
 	struct _sipcapture_object sco;
 	struct sip_uri from, to, pai, contact;
@@ -3004,6 +3149,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 	struct tz_table_list* t_it=&tz_global;
 
 	generic_chunk_t* it;
+	int hep3_correlation_identifier;
 
 	if (tzt == NULL ) {
 		tzt = &tz_table;
@@ -3414,8 +3560,14 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 	/* MSG */
 	if (h) {
 		if (h->version == 3) {
+			if ( hep_api.get_homer_version() == HOMER5 ) {
+				hep3_correlation_identifier = HEP_CORRELATION_ID;
+			} else {
+				hep3_correlation_identifier = HEP_EXTRA_CORRELATION;
+			}
+
 			for (it=h->u.hepv3.chunk_list; it; it=it->next) {
-				if (it->chunk.type_id == HEP_CORRELATION_ID) {
+				if (it->chunk.type_id == hep3_correlation_identifier) {
 					sco.correlation_id.s = it->data;
 					sco.correlation_id.len = it->chunk.length - sizeof(hep_chunk_t);
 
@@ -3434,6 +3586,15 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 	}
 	//EMPTY_STR(sco.msg);
 
+	if (cf1)
+		sco.custom_field1 = *cf1;
+
+	if (cf2)
+		sco.custom_field2 = *cf2;
+
+	if (cf3)
+		sco.custom_field3 = *cf3;
+
 #ifdef STATISTICS
 	if(msg->first_line.type==SIP_REPLY) {
 		sco.stat = sipcapture_rpl;
@@ -3441,6 +3602,7 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 		sco.stat = sipcapture_req;
 	}
 #endif
+
 	LM_DBG("DONE\n");
 	return sip_capture_store(&sco, actx, t_it);
 }
@@ -4636,18 +4798,44 @@ static int w_hep_resume_sip(struct sip_msg *msg)
 /* fixup */
 static void set_rtcp_keys(void)
 {
-	rtcp_db_keys[0] = &date_column;
-	rtcp_db_keys[1] = &micro_ts_column;
-	rtcp_db_keys[2] = &correlation_column;
-	rtcp_db_keys[3] = &source_ip_column;
-	rtcp_db_keys[4] = &source_port_column;
-	rtcp_db_keys[5] = &dest_ip_column;
-	rtcp_db_keys[6] = &dest_port_column;
-	rtcp_db_keys[7] = &proto_column;
-	rtcp_db_keys[8] = &family_column;
-	rtcp_db_keys[9] = &type_column;
-	rtcp_db_keys[10] = &node_column;
-	rtcp_db_keys[11] = &msg_column;
+	int homerV = hep_api.get_homer_version();
+
+	if ( homerV == HOMER5 ) {
+		rtcp_db_keys[0] = &date_column;
+		rtcp_db_keys[1] = &micro_ts_column;
+		rtcp_db_keys[2] = &correlation_column;
+		rtcp_db_keys[3] = &source_ip_column;
+		rtcp_db_keys[4] = &source_port_column;
+		rtcp_db_keys[5] = &dest_ip_column;
+		rtcp_db_keys[6] = &dest_port_column;
+		rtcp_db_keys[7] = &proto_column;
+		rtcp_db_keys[8] = &family_column;
+		rtcp_db_keys[9] = &type_column;
+		rtcp_db_keys[10] = &node_column;
+		rtcp_db_keys[11] = &msg_column;
+
+		rtp_keys_no = RTCP_H5_NR_KEYS;
+	} else if ( homerV == HOMER6 ) {
+		/* homer6 column adaptation */
+		rtcp_db_keys[0] = &date_column6;
+		rtcp_db_keys[1] = &micro_ts_column6;
+		rtcp_db_keys[2] = &correlation_column6;
+		rtcp_db_keys[3] = &source_ip_column6;
+		rtcp_db_keys[4] = &source_port_column6;
+		rtcp_db_keys[5] = &dest_ip_column6;
+		rtcp_db_keys[6] = &dest_port_column6;
+		rtcp_db_keys[7] = &proto_column6;
+		rtcp_db_keys[8] = &family_column6;
+		rtcp_db_keys[9] = &type_column6;
+		rtcp_db_keys[10] = &node_column6;
+		rtcp_db_keys[11] = &msg_column6;
+		rtcp_db_keys[12] = &payload_len_column6;
+		rtcp_db_keys[13] = &extra_correlation_column6;
+		rtcp_db_keys[14] = &capture_ip_column6;
+		rtcp_db_keys[15] = &capture_id_column6;
+		rtcp_db_keys[16] = &event_column6;
+		rtp_keys_no = RTCP_NR_KEYS;
+	}
 }
 
 
@@ -4798,15 +4986,23 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		unsigned int* proto_t, struct tz_table_list* t_el,
 		async_ctx *actx)
 {
-	char node[100];
+	char node[100], holder;
 	char src_ip[INET6_ADDRSTRLEN], dst_ip[INET6_ADDRSTRLEN];
+
+	int homerV = hep_api.get_homer_version();
 
 	struct _sipcapture_object sco;
 
 	struct hep_desc *h;
 	struct hep_context *ctx;
 
-	db_val_t db_vals[RTCP_NR_KEYS];
+	db_val_t db_vals[rtp_keys_no];
+
+	generic_chunk_t* it;
+	str addr_str, payload_str;
+
+	char addr[INET6_ADDRSTRLEN];
+	cJSON *pld_root, *event;
 
 	if ((ctx=HEP_GET_CONTEXT(hep_api)) == NULL) {
 		LM_WARN("not a hep message!\n");
@@ -4828,13 +5024,21 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	}
 
 
-	memset(db_vals, 0, sizeof(db_val_t) * RTCP_NR_KEYS);
+	memset(db_vals, 0, sizeof(db_val_t) * rtp_keys_no);
 
-	db_vals[0].type = DB_DATETIME;
-	db_vals[0].val.time_val = (sco.tmstamp/1000000);
+	if ( !(h->version == 3 && homerV == HOMER6) ) {
+		db_vals[0].type = DB_DATETIME;
+		db_vals[0].val.time_val = (sco.tmstamp/1000000);
 
-	db_vals[1].type = DB_BIGINT;
-	db_vals[1].val.bigint_val = sco.tmstamp;
+		db_vals[1].type = DB_BIGINT;
+		db_vals[1].val.bigint_val = sco.tmstamp;
+	} else {
+		db_vals[0].type = DB_DATETIME;
+		db_vals[0].val.time_val = h->u.hepv3.hg.time_sec.data;
+
+		db_vals[1].type = DB_INT;
+		db_vals[1].val.bigint_val = h->u.hepv3.hg.time_usec.data;
+	}
 
 	db_vals[2].type = DB_STR;
 	db_vals[2].val.str_val = *cor_id;
@@ -4861,7 +5065,11 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	db_vals[9].val.int_val = proto_t?(*proto_t):sco.proto_type;
 
 	db_vals[10].type = DB_STR;
-	db_vals[10].val.str_val = sco.node;
+	if ( !(h->version == 3 && homerV == HOMER6 ) ) {
+		db_vals[10].val.str_val = sco.node;
+	} else {
+		db_vals[10].val.str_val = capture_node;
+	}
 
 	db_vals[11].type = DB_BLOB;
 
@@ -4879,17 +5087,106 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		db_vals[11].val.str_val.len = msg->len;
 	}
 
+	if ( h->version == 3 && homerV == HOMER6 ) {
+		db_vals[12].type = DB_INT;
+		db_vals[12].val.int_val = db_vals[11].val.str_val.len;
+
+		db_vals[13].type = DB_STR;
+
+		/* search extra correlation header */
+		for (it=h->u.hepv3.chunk_list; it; it=it->next) {
+			if (it->chunk.type_id == HEP_EXTRA_CORRELATION) {
+				db_vals[13].val.str_val.s = it->data;
+				db_vals[13].val.str_val.len = it->chunk.length - sizeof(hep_chunk_t);
+
+				break;
+			}
+		}
+
+		/* not found; set it to empty */
+		if ( !it ) {
+			db_vals[13].val.str_val.s = "";
+			db_vals[13].val.str_val.s = "";
+		}
+
+		/* get incoming interface ip from receive info */
+		if (ctx->ri.dst_ip.af == AF_INET) {
+			if (inet_ntop(AF_INET, &ctx->ri.dst_ip.u.addr,
+						addr, INET_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				addr_str.s = "";
+				addr_str.len = 0;
+			} else {
+				addr_str.s = addr;
+				addr_str.len = strlen(addr);
+			}
+		} else {
+			if (inet_ntop(AF_INET6, &ctx->ri.dst_ip.u.addr,
+						addr, INET6_ADDRSTRLEN) == NULL) {
+				LM_ERR("failed to convert ipv4 address!\n");
+				addr_str.s = "";
+				addr_str.len = 0;
+			} else {
+				addr_str.s = addr;
+				addr_str.len = strlen(addr);
+			}
+		}
+
+		db_vals[14].type = DB_STR;
+		db_vals[14].val.str_val = addr_str;
+
+		db_vals[15].type = DB_INT;
+		if ( h->u.hepv3.hg.capt_id.chunk.length != 0 ) {
+			db_vals[15].val.int_val = h->u.hepv3.hg.capt_id.data;
+		} else {
+			/* chunk was removed*/
+			db_vals[15].val.int_val = 0;
+		}
+
+		/* event column; parse the payload as JSON and see if there's any Event key */
+		payload_str = db_vals[11].val.str_val;
+
+		/* VERY VERY UGLY HACK; but we should be safe since no one else should
+		 * access this memory area while we parse this as JSON */
+		holder = payload_str.s[payload_str.len];
+		payload_str.s[payload_str.len] = 0;
+
+		pld_root = cJSON_Parse(payload_str.s);
+
+		if ( pld_root ) {
+			payload_str.s[payload_str.len] = holder;
+
+			/* now search if we have any Event key */
+			event = cJSON_GetObjectItem(pld_root, "Event");
+			db_vals[16].type = DB_STR;
+			if ( event ) {
+				db_vals[16].val.str_val.s = event->valuestring;
+				db_vals[16].val.str_val.len = strlen(event->valuestring);
+			} else {
+				db_vals[16].val.str_val.s = "";
+				db_vals[16].val.str_val.len = 0;
+			}
+
+			cJSON_Delete( pld_root );
+		} else {
+			db_vals[16].val.str_val.s = "";
+			db_vals[16].val.str_val.len = 0;
+		}
+	} else if ( homerV == HOMER6 ) {
+		/* only warn; continue as usual */
+		LM_WARN("using homer6 but hepv2 message received!");
+	}
 
 	/* each query has it's own parameters for the prepared statements */
 	if (con_set_inslist(&db_funcs,db_con,&rc_ins_list,db_keys,NR_KEYS) < 0 )
 	               CON_RESET_INSLIST(db_con);
 	CON_PS_REFERENCE(db_con) = &rc_ps;
 
-	if (!actx && db_sync_store(db_vals, rtcp_db_keys, RTCP_NR_KEYS) != 1) {
+	if (!actx && db_sync_store(db_vals, rtcp_db_keys, rtp_keys_no) != 1) {
 		LM_ERR("failed to insert into database\n");
 		return -1;
 	} else if (actx) {
-		return db_async_store(db_vals, rtcp_db_keys, RTCP_NR_KEYS,
+		return db_async_store(db_vals, rtcp_db_keys, rtp_keys_no,
 			append_rc_values, actx, t_el);
 	}
 

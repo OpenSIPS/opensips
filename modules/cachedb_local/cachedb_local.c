@@ -100,6 +100,7 @@ struct module_exports exports= {
 	0,                          /* exported statistics */
 	mi_cmds,                    /* exported MI functions */
 	0,                          /* exported pseudo-variables */
+	0,							/* exported transformations */
 	0,                          /* extra processes */
 	mod_init,                   /* module initialization function */
 	(response_function) 0,      /* response handling function */
@@ -587,7 +588,7 @@ static int parse_collections(unsigned int type, void* val)
 
 	while ((rc=get_next_collection(&collection_list, &coll, &coll_size)) != 0) {
 		if ( rc < 0 ) {
-			LM_ERR("error occured!\n");
+			LM_ERR("error occurred!\n");
 			return -1;
 		}
 

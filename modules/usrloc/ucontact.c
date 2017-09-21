@@ -503,7 +503,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		return 0;
 	}
 
-	if (db_mode == DB_ONLY) {
+	if ((db_mode == DB_ONLY) && !strstr(db_url.s,"cachedb://")) {
 		start++;
 		nr_vals--;
 	}
@@ -666,10 +666,11 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 int db_update_ucontact(ucontact_t* _c)
 {
 	static db_ps_t my_ps = NULL;
-	db_key_t keys1[1];
-	db_val_t vals1[1];
-	db_key_t keys2[13];
-	db_val_t vals2[13];
+	db_key_t keys1[2];
+	db_val_t vals1[2];
+	db_key_t keys2[14];
+	db_val_t vals2[14];
+	int keys1_no = 1;
 	int keys2_no;
 
 	if (_c->flags & FL_MEM) {
@@ -682,87 +683,98 @@ int db_update_ucontact(ucontact_t* _c)
 	vals1[0].type = DB_BIGINT;
 	vals1[0].val.bigint_val = _c->contact_id;
 
-	keys2[0] = &expires_col;
-	keys2[1] = &q_col;
-	keys2[2] = &cseq_col;
-	keys2[3] = &flags_col;
-	keys2[4] = &cflags_col;
-	keys2[5] = &user_agent_col;
-	keys2[6] = &received_col;
-	keys2[7] = &path_col;
-	keys2[8] = &sock_col;
-	keys2[9] = &methods_col;
-	keys2[10] = &last_mod_col;
-	keys2[11] = &attr_col;
+	keys2[0] = &contactid_col;
+	keys2[1] = &expires_col;
+	keys2[2] = &q_col;
+	keys2[3] = &cseq_col;
+	keys2[4] = &flags_col;
+	keys2[5] = &cflags_col;
+	keys2[6] = &user_agent_col;
+	keys2[7] = &received_col;
+	keys2[8] = &path_col;
+	keys2[9] = &sock_col;
+	keys2[10] = &methods_col;
+	keys2[11] = &last_mod_col;
+	keys2[12] = &attr_col;
 
 	memset(vals2, 0, sizeof vals2);
 
-	vals2[0].type = DB_DATETIME;
-	vals2[0].val.time_val = _c->expires;
+	vals2[0].type = DB_BIGINT;
+	vals2[0].val.bigint_val = _c->contact_id;
 
-	vals2[1].type = DB_DOUBLE;
-	vals2[1].val.double_val = q2double(_c->q);
+	vals2[1].type = DB_DATETIME;
+	vals2[1].val.time_val = _c->expires;
 
-	vals2[2].type = DB_INT;
-	vals2[2].val.int_val = _c->cseq;
+	vals2[2].type = DB_DOUBLE;
+	vals2[2].val.double_val = q2double(_c->q);
 
-	vals2[3].type = DB_BITMAP;
-	vals2[3].val.bitmap_val = _c->flags;
+	vals2[3].type = DB_INT;
+	vals2[3].val.int_val = _c->cseq;
 
-	vals2[4].type = DB_STR;
-	vals2[4].val.str_val = bitmask_to_flag_list(FLAG_TYPE_BRANCH, _c->cflags);
+	vals2[4].type = DB_BITMAP;
+	vals2[4].val.bitmap_val = _c->flags;
 
 	vals2[5].type = DB_STR;
-	vals2[5].val.str_val = _c->user_agent;
+	vals2[5].val.str_val = bitmask_to_flag_list(FLAG_TYPE_BRANCH, _c->cflags);
 
 	vals2[6].type = DB_STR;
-	if (_c->received.s == 0) {
-		vals2[6].nul = 1;
-	} else {
-		vals2[6].val.str_val = _c->received;
-	}
+	vals2[6].val.str_val = _c->user_agent;
 
 	vals2[7].type = DB_STR;
-	if (_c->path.s == 0) {
+	if (_c->received.s == 0) {
 		vals2[7].nul = 1;
 	} else {
-		vals2[7].val.str_val = _c->path;
+		vals2[7].val.str_val = _c->received;
 	}
 
 	vals2[8].type = DB_STR;
+	if (_c->path.s == 0) {
+		vals2[8].nul = 1;
+	} else {
+		vals2[8].val.str_val = _c->path;
+	}
+
+	vals2[9].type = DB_STR;
 	if (_c->sock) {
-		vals2[8].val.str_val = _c->sock->adv_sock_str.len ?
+		vals2[9].val.str_val = _c->sock->adv_sock_str.len ?
 								_c->sock->adv_sock_str:  _c->sock->sock_str;
 	} else {
-		vals2[8].nul = 1;
-	}
-
-	vals2[9].type = DB_BITMAP;
-	if (_c->methods == 0xFFFFFFFF) {
 		vals2[9].nul = 1;
-	} else {
-		vals2[9].val.bitmap_val = _c->methods;
 	}
 
-	vals2[10].type = DB_DATETIME;
-	vals2[10].val.time_val = _c->last_modified;
+	vals2[10].type = DB_BITMAP;
+	if (_c->methods == 0xFFFFFFFF) {
+		vals2[10].nul = 1;
+	} else {
+		vals2[10].val.bitmap_val = _c->methods;
+	}
 
-	vals2[11].type = DB_STR;
+	vals2[11].type = DB_DATETIME;
+	vals2[11].val.time_val = _c->last_modified;
+
+	vals2[12].type = DB_STR;
 	if (_c->attr.s == 0) {
-		vals2[11].nul = 1;
+		vals2[12].nul = 1;
 	} else {
-		vals2[11].val.str_val = _c->attr;
+		vals2[12].val.str_val = _c->attr;
 	}
-	keys2_no = 12;
+	keys2_no = 13;
 
-	if (matching_mode!=CONTACT_CALLID) {
-		/* callid is part of the update */
-		keys2[keys2_no] = &callid_col;
-		vals2[keys2_no].type = DB_STR;
-		vals2[keys2_no].nul = 0;
-		vals2[keys2_no].val.str_val = _c->callid;
-		keys2_no++;
+	if (matching_mode == CONTACT_CALLID) {
+		/* callid is part of the matching key */
+		keys1[keys1_no] = &callid_col;
+		vals1[keys1_no].type = DB_STR;
+		vals1[keys1_no].nul = 0;
+		vals1[keys1_no].val.str_val = _c->callid;
+		keys1_no++;
 	}
+
+	/* callid is part of the update */
+	keys2[keys2_no] = &callid_col;
+	vals2[keys2_no].type = DB_STR;
+	vals2[keys2_no].nul = 0;
+	vals2[keys2_no].val.str_val = _c->callid;
+	keys2_no++;
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -772,7 +784,7 @@ int db_update_ucontact(ucontact_t* _c)
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2,
-				1, keys2_no) < 0) {
+				keys1_no, keys2_no) < 0) {
 		LM_ERR("updating database failed\n");
 		return -1;
 	}
@@ -789,8 +801,9 @@ int db_update_ucontact(ucontact_t* _c)
 int db_delete_ucontact(ucontact_t* _c)
 {
 	static db_ps_t my_ps = NULL;
-	db_key_t keys[1];
-	db_val_t vals[1];
+	db_key_t keys[2];
+	db_val_t vals[2];
+	int n;
 
 	if (_c->flags & FL_MEM)
 		return 0;
@@ -801,6 +814,16 @@ int db_delete_ucontact(ucontact_t* _c)
 	VAL_NULL(vals) = 0;
 	VAL_BIGINT(vals) = (long long)_c->contact_id;
 
+	n=1;
+
+	if (matching_mode == CONTACT_CALLID) {
+		/* callid is part of the matching key */
+		keys[n] = &callid_col;
+		vals[n].type = DB_STR;
+		vals[n].nul = 0;
+		vals[n].val.str_val = _c->callid;
+		n++;
+	}
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -809,7 +832,7 @@ int db_delete_ucontact(ucontact_t* _c)
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
-	if (ul_dbf.delete(ul_dbh, keys, 0, vals, 1) < 0) {
+	if (ul_dbf.delete(ul_dbh, keys, 0, vals, n) < 0) {
 		LM_ERR("deleting from database failed\n");
 		return -1;
 	}

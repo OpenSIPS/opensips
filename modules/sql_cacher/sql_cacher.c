@@ -109,6 +109,7 @@ struct module_exports exports = {
 	0,							/* exported statistics */
 	mi_cmds,					/* exported MI functions */
 	mod_items,					/* exported pseudo-variables */
+	0,							/* exported transformations */
 	0,							/* extra processes */
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
@@ -1161,7 +1162,7 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers)
 {
 	str cdb_key;
 	str rld_vers_key;
-	int rc;
+	int rc = -1;
 
 	cdb_key.len = pv_name->id.len + pv_name->key.len;
 	cdb_key.s = pkg_malloc(cdb_key.len);
@@ -1177,19 +1178,21 @@ static int cdb_fetch(pv_name_fix_t *pv_name, str *cdb_res, int *entry_rld_vers)
 		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
 		if (!rld_vers_key.s) {
 			LM_ERR("No more pkg memory\n");
-			return -1;
+			goto error;
 		}
 		memcpy(rld_vers_key.s, pv_name->id.s, pv_name->id.len);
 		memcpy(rld_vers_key.s + pv_name->id.len, "_sql_cacher_reload_vers", 23);
 
-		if(pv_name->db_hdls->cdbf.get_counter(pv_name->db_hdls->cdbcon,
-									&rld_vers_key, entry_rld_vers) < 0)
-			return -1;
+		rc = pv_name->db_hdls->cdbf.get_counter(pv_name->db_hdls->cdbcon,
+									&rld_vers_key, entry_rld_vers);
 		pkg_free(rld_vers_key.s);
+		if (rc < 0)
+			goto error;
 	} else
 		*entry_rld_vers = 0;
 
 	rc = pv_name->db_hdls->cdbf.get(pv_name->db_hdls->cdbcon, &cdb_key, cdb_res);
+error:
 	pkg_free(cdb_key.s);
 	return rc;
 }
@@ -1570,7 +1573,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	int rc, rc2, int_res = 0, l = 0;
 	char *ch = NULL;
 	long long one = 1;
-	str str_res = {NULL, 0}, cdb_res;
+	str str_res = {NULL, 0}, cdb_res = {NULL, 0};
 	int entry_rld_vers;
 
 	if (!param || param->pvn.type != PV_NAME_PVAR ||
@@ -1616,6 +1619,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	rc = cdb_fetch(pv_name, &cdb_res, &entry_rld_vers);
 	if (rc == -1) {
 		LM_ERR("Error fetching from cachedb\n");
+		if (!pv_name->c_entry->on_demand)
+			lock_stop_read(pv_name->c_entry->ref_lock);
 		return pv_get_null(msg, param, res);
 	}
 
@@ -1693,11 +1698,13 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	}
 
-	pkg_free(cdb_res.s);
+	if (cdb_res.s)
+		pkg_free(cdb_res.s);
 	return 0;
 
 out_free_null:
-	pkg_free(cdb_res.s);
+	if (cdb_res.s)
+		pkg_free(cdb_res.s);
 	return pv_get_null(msg, param, res);
 }
 

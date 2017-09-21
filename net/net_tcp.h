@@ -28,6 +28,7 @@
 
 #include "../mi/mi.h"
 #include "tcp_conn_defs.h"
+#include "net_tcp_dbg.h"
 
 #define TCP_PARTITION_SIZE 32
 

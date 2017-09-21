@@ -462,11 +462,14 @@ struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
 	return NULL;
 }
 
-void init_shm_statistics(void)
+void init_shm_post_yyparse(void)
 {
-	#ifdef HP_MALLOC
+#ifdef HP_MALLOC
+	if (mem_warming_enabled && hp_mem_warming(shm_block) != 0) {
+		LM_INFO("skipped memory warming\n");
+	}
 	hp_init_shm_statistics(shm_block);
-	#endif
+#endif
 
 #ifdef SHM_EXTRA_STATS
 	struct multi_str *mod_name;
