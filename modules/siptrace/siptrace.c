@@ -2192,6 +2192,10 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 			}
 
 			it=get_list_start(&node->value);
+                        if (!it) {
+                               return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+                        }
+
 			hash=it->hash;
 
 			for (;it&&it->hash==hash;it=it->next)
