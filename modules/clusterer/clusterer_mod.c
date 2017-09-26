@@ -45,6 +45,7 @@ int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
 int ping_timeout = DEFAULT_PING_TIMEOUT;
 int current_id = -1;
+int db_mode = 1;
 
 str clusterer_db_url = {NULL, 0};
 str db_table = str_init("clusterer");
@@ -124,6 +125,9 @@ static param_export_t params[] = {
 	{"priority_col",		STR_PARAM,  &priority_col		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
+	{"db_mode",				INT_PARAM,	&db_mode			},
+	{"neighbor_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
+	{"current_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
 	{0, 0, 0}
 };
 
@@ -190,13 +194,62 @@ static inline int gcd(int a, int b) {
 	return a;
 }
 
+#define PARSE_PROP(col_name, _col_idx, _type) \
+do { \
+	p = str_strstr(descr, &col_name);	\
+	if (p) {	\
+		p = p + col_name.len;	\
+		if (*p != '=') {	\
+			LM_ERR("Expected '=' after <%.*s>\n", col_name.len,	\
+				col_name.s);	\
+			return -1;	\
+		}	\
+		pe = q_memchr(p + 1, ',', descr->s + descr->len - p - 1);	\
+		aux.s = p + 1;	\
+		aux.len = pe ? pe - p - 1 : descr->s + descr->len - p - 1;	\
+		if (aux.s >= descr->s + descr->len || !aux.len) {	\
+			LM_ERR("<%.*s> value expected\n", col_name.len,	\
+				col_name.s);	\
+			return -1;	\
+		}	\
+		if ((_type) == 0) {	\
+			if (str2int(&aux, (unsigned int*)&int_vals[(_col_idx)])) {	\
+				LM_ERR("Bad value for <%.*s>\n", col_name.len,	\
+					col_name.s);	\
+				return -1;	\
+			}	\
+		} else \
+			str_vals[(_col_idx)] = aux.len ? aux.s : NULL;	\
+	} else {	\
+		if ((_type) == 0)	\
+			int_vals[(_col_idx)] = -1;	\
+		else	\
+			str_vals[(_col_idx)] = NULL;	\
+	}	\
+} while(0)
+
+int parse_param_node_info(str *descr, int *int_vals, char **str_vals)
+{
+	char *p, *pe;
+	str aux;
+
+	PARSE_PROP(cluster_id_col, INT_VALS_CLUSTER_ID_COL, 0);
+	PARSE_PROP(node_id_col, INT_VALS_NODE_ID_COL, 0);
+	PARSE_PROP(url_col, STR_VALS_URL_COL, 1);
+	PARSE_PROP(no_ping_retries_col, INT_VALS_NO_PING_RETRIES_COL, 0);
+	PARSE_PROP(priority_col, INT_VALS_PRIORITY_COL, 0);
+	PARSE_PROP(sip_addr_col, STR_VALS_SIP_ADDR_COL, 1);
+
+	return 0;
+}
+
 static int mod_init(void)
 {
 	int heartbeats_timer_interval;
 
 	LM_INFO("Clusterer module - initializing\n");
 
-	init_db_url(clusterer_db_url, 0 /*cannot be null*/);
+	init_db_url(clusterer_db_url, 1);
 	db_table.len = strlen(db_table.s);
 	id_col.len = strlen(id_col.s);
 	cluster_id_col.len = strlen(cluster_id_col.s);
@@ -233,23 +286,27 @@ static int mod_init(void)
 	}
 
 	/* data pointer in shm */
-	cluster_list = shm_malloc(sizeof *cluster_list);
-	if (!cluster_list) {
-		LM_CRIT("No more shm memory\n");
-		goto error;
-	}
-	*cluster_list = NULL;
-
-	/* bind to the mysql module */
-	if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
-		LM_CRIT("Cannot bind to database module! "
-			"Did you forget to load a database module ?\n");
-		goto error;
+	if (cluster_list == NULL) {
+		cluster_list = shm_malloc(sizeof *cluster_list);
+		if (!cluster_list) {
+			LM_CRIT("No more shm memory\n");
+			goto error;
+		}
+		*cluster_list = NULL;
 	}
 
-	if (!DB_CAPABILITY(dr_dbf, DB_CAP_QUERY)) {
-		LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
-		goto error;
+	if (db_mode) {
+		/* bind to the mysql module */
+		if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
+			LM_CRIT("Cannot bind to database module! "
+				"Did you forget to load a database module ?\n");
+			goto error;
+		}
+
+		if (!DB_CAPABILITY(dr_dbf, DB_CAP_QUERY)) {
+			LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
+			goto error;
+		}
 	}
 
 	/* register timer */
@@ -295,7 +352,7 @@ error:
 /* initialize child */
 static int child_init(int rank)
 {
-	if (rank == PROC_TCP_MAIN || rank == PROC_BIN)
+	if (!db_mode || rank == PROC_TCP_MAIN || rank == PROC_BIN)
 		return 0;
 
 	/* init DB connection */
@@ -317,6 +374,11 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 {
 	cluster_info_t *new_info;
 	cluster_info_t *old_info;
+
+	if (!db_mode) {
+		LM_ERR("Running in non-DB mode\n");
+		return init_mi_tree(400, "Non-DB mode", 11);
+	}
 
 	if (load_db_info(&dr_dbf, db_hdl, &db_table, &new_info) != 0) {
 		LM_ERR("Failed to load info from DB\n");
@@ -404,7 +466,7 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				MI_SSTR("Node"), val.s, val.len);
 			if (!node) goto error;
 
-			val.s = int2str(n_info->id, &val.len);
+			val.s = sint2str(n_info->id, &val.len);
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,
 				MI_SSTR("DB_ID"), val.s, val.len);
 			if (!attr) goto error;

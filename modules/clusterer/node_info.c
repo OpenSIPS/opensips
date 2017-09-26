@@ -51,6 +51,8 @@ extern str priority_col;
 extern str sip_addr_col;
 extern str description_col;
 
+int parse_param_node_info(str *descr, int *int_vals, char **str_vals);
+
 db_con_t *db_hdl;
 db_func_t dr_dbf;
 
@@ -146,9 +148,11 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	else
 		(*new_info)->link_state = LS_UP;
 
-	if (strlen(str_vals[STR_VALS_DESCRIPTION_COL]) != 0) {
+	if (str_vals[STR_VALS_DESCRIPTION_COL] &&
+		strlen(str_vals[STR_VALS_DESCRIPTION_COL]) != 0) {
 		(*new_info)->description.len = strlen(str_vals[STR_VALS_DESCRIPTION_COL]);
-		(*new_info)->description.s = shm_malloc((*new_info)->description.len * sizeof(char));
+		(*new_info)->description.s =
+			shm_malloc((*new_info)->description.len * sizeof(char));
 		if ((*new_info)->description.s == NULL) {
 			LM_ERR("no more shm memory\n");
 			goto error;
@@ -160,7 +164,8 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		(*new_info)->description.len = 0;
 	}
 
-	if (strlen(str_vals[STR_VALS_SIP_ADDR_COL]) != 0) {
+	if (str_vals[STR_VALS_SIP_ADDR_COL] &&
+		strlen(str_vals[STR_VALS_SIP_ADDR_COL]) != 0) {
 		(*new_info)->sip_addr.len = strlen(str_vals[STR_VALS_SIP_ADDR_COL]);
 		(*new_info)->sip_addr.s = shm_malloc((*new_info)->sip_addr.len * sizeof(char));
 		if ((*new_info)->sip_addr.s == NULL) {
@@ -451,6 +456,109 @@ error:
 		free_info(*cl_list);
 	*cl_list = NULL;
 	return -1;
+}
+
+int provision_neighbor(modparam_t type, void *val)
+{
+	int int_vals[NO_DB_INT_VALS];
+	char *str_vals[NO_DB_STR_VALS];
+	str prov_str;
+	node_info_t *new_info;
+
+	if (db_mode) {
+		LM_INFO("Runnin in db mode, neighbor provisioning from the script is ignored\n");
+		return 0;
+	}
+
+	prov_str.s = (char*)val;
+	prov_str.len = strlen(prov_str.s);
+
+	if (parse_param_node_info(&prov_str, int_vals, str_vals) < 0) {
+		LM_ERR("Unable to define a neighbor node\n");
+		return -1;
+	}
+
+	if (int_vals[INT_VALS_CLUSTER_ID_COL] == -1 ||
+		int_vals[INT_VALS_NODE_ID_COL] == -1 ||
+		str_vals[STR_VALS_URL_COL] == NULL) {
+		LM_ERR("At least the cluster id, node id and url are required for a neighbor node\n");
+		return -1;
+	}
+	int_vals[INT_VALS_STATE_COL] = 1;
+	if (int_vals[INT_VALS_NO_PING_RETRIES_COL] == -1)
+		int_vals[INT_VALS_NO_PING_RETRIES_COL] = DEFAULT_NO_PING_RETRIES;
+	if (int_vals[INT_VALS_PRIORITY_COL] == -1)
+		int_vals[INT_VALS_PRIORITY_COL] = DEFAULT_NO_PING_RETRIES;
+
+	str_vals[STR_VALS_DESCRIPTION_COL] = NULL;
+	int_vals[INT_VALS_ID_COL] = -1;
+
+	if (cluster_list == NULL) {
+		cluster_list = shm_malloc(sizeof *cluster_list);
+		if (!cluster_list) {
+			LM_CRIT("No more shm memory\n");
+			return -1;
+		}
+		*cluster_list = NULL;
+	}
+
+	if (add_node_info(&new_info, cluster_list, int_vals, str_vals) < 0) {
+		LM_ERR("Unable to add node info to backing list\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int provision_current(modparam_t type, void *val)
+{
+	int int_vals[NO_DB_INT_VALS];
+	char *str_vals[NO_DB_STR_VALS];
+	node_info_t *new_info;
+	str prov_str;
+
+	if (db_mode) {
+		LM_INFO("Runnin in db mode, current node provisioning from the script is ignored\n");
+		return 0;
+	}
+
+	prov_str.s = (char*)val;
+	prov_str.len = strlen(prov_str.s);
+
+	if (parse_param_node_info(&prov_str, int_vals, str_vals) < 0) {
+		LM_ERR("Unable to define current node\n");
+		return -1;
+	}
+
+	if (int_vals[INT_VALS_CLUSTER_ID_COL] == -1 || str_vals[STR_VALS_URL_COL] == NULL) {
+		LM_ERR("At least the cluster id and url are required for the current node\n");
+		return -1;
+	}
+	int_vals[INT_VALS_NODE_ID_COL] = current_id;
+	int_vals[INT_VALS_STATE_COL] = 1;
+	if (int_vals[INT_VALS_NO_PING_RETRIES_COL] == -1)
+		int_vals[INT_VALS_NO_PING_RETRIES_COL] = DEFAULT_NO_PING_RETRIES;
+	if (int_vals[INT_VALS_PRIORITY_COL] == -1)
+		int_vals[INT_VALS_PRIORITY_COL] = DEFAULT_NO_PING_RETRIES;
+
+	str_vals[STR_VALS_DESCRIPTION_COL] = NULL;
+	int_vals[INT_VALS_ID_COL] = -1;
+
+	if (cluster_list == NULL) {
+		cluster_list = shm_malloc(sizeof *cluster_list);
+		if (!cluster_list) {
+			LM_CRIT("No more shm memory\n");
+			return -1;
+		}
+		*cluster_list = NULL;
+	}
+
+	if (add_node_info(&new_info, cluster_list, int_vals, str_vals) != 0) {
+		LM_ERR("Unable to add node info to backing list\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 int update_db_state(int state) {

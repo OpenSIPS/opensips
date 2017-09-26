@@ -38,6 +38,9 @@ Robert-Vladut Patrascu
               1.3.13. ping_interval
               1.3.14. ping_timeout
               1.3.15. node_timeout
+              1.3.16. db_mode
+              1.3.17. current_info
+              1.3.18. neighbor_info
 
         1.4. Exported Functions
 
@@ -98,14 +101,17 @@ Robert-Vladut Patrascu
    1.13. Set ping_interval parameter
    1.14. Set ping_timeout parameter
    1.15. Set node_timeout parameter
-   1.16. cluster_send_req() usage
-   1.17. cluster_send_rpl() usage
-   1.18. cluster_broadcast_req() usage
-   1.19. clusterer_list usage
-   1.20. clusterer_list_topology usage
-   1.21. Example database content - clusterer table
-   1.22. Node A configuration
-   1.23. Node B configuration
+   1.16. Set db_mode parameter
+   1.17. Set current_info parameter
+   1.18. Set neighbor_info parameter
+   1.19. cluster_send_req() usage
+   1.20. cluster_send_rpl() usage
+   1.21. cluster_broadcast_req() usage
+   1.22. clusterer_list usage
+   1.23. clusterer_list_topology usage
+   1.24. Example database content - clusterer table
+   1.25. Node A configuration
+   1.26. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -120,35 +126,36 @@ Chapter 1. Admin Guide
    dialogs/profiles, the ratelimit module can share pipes across
    multiple instances etc.) or at the script level. The clusterer
    module itself only provides an interface to send/receive BIN
-   packets and get notifications about node availability. It does
-   this by internally learning the cluster topology and state of
-   the nodes. Provisioning the nodes within a cluster is done over
-   the database. The node-related information can be checked and
-   triggered to be reloaded by sending commands over the MI
-   interface.
+   packets and get notifications about node availability. It
+   achieves this by internally learning the cluster topology and
+   state of the nodes. Provisioning the nodes within a cluster is
+   done over the database or through the configuration script. The
+   node-related information can be checked and triggered to be
+   reloaded by sending commands over the MI interface.
 
    The topology established by the clusterer module is an overlay
    of nodes where the "links" represent communication availability
    at BIN interface level. For this purpose, a probing mechanism
-   is used, consisting of regular pings to all nodes which must
-   receive a reply within a given interval. All nodes in the
-   cluster exchange information about the state of their links
-   with other nodes and compute a "routing table" which gives a
-   next hop for each destination. The metric for the shortest path
-   is the number of hops. When there is no direct link to a
-   destination, the BIN packet sent by a module is transparently
-   routed through the cluster.
+   is used, consisting of regular pings to all nodes in a cluster
+   for which replies must be received within a given interval. All
+   nodes in the cluster exchange information about the state of
+   their links with other nodes and compute a "routing table"
+   which gives a next hop for each destination. The metric for the
+   shortest path is the number of hops. When there is no direct
+   link to a destination, the BIN packet sent by a module is
+   transparently routed through the cluster.
 
    Note that an OpenSIPS instance can belong to multiple clusters,
    communicating and establishing the topology separately for each
-   one. In order to provision this in the database, each node has
-   an unique ID at global level, which can be referenced by each
-   cluster.
+   one. In order to provision this in the database or the script,
+   each node has an unique ID at global level, which can be
+   referenced in each cluster.
 
-   While existing nodes can learn about newly added nodes without
-   additional provisioning, the new nodes must be fully aware of
-   the existing components of the cluster they are joining, in
-   order to properly advertise themselves.
+   An OpenSIPS instance can dynamically learn all the nodes in the
+   cluster that are not provisioned in the database. For instances
+   that do not load any node info from the DB, it is enough to
+   define at least one neigbour in the script in order to discover
+   all the cluster components.
 
 1.2. Dependencies
 
@@ -346,6 +353,62 @@ modparam("clusterer", "ping_timeout", 500)
 modparam("clusterer", "node_timeout", 10)
 ...
 
+1.3.16. db_mode
+
+   Specifies whether the node specifciation information for the
+   current instance, as well as the other instances in the
+   cluster, should be loaded from the database or configured in
+   the script. A value of “0” means that the DB is not used.
+
+   Default value is “1”
+
+   Example 1.16. Set db_mode parameter
+...
+modparam("clusterer", "db_mode", 0)
+...
+
+1.3.17. current_info
+
+   Node specification similar to the information provided by a row
+   in the clusterer DB table corresponding to the current
+   instance. At least the cluster_id and url propreties should be
+   defined. This parameter can be set multiple times in order to
+   include the current node in multiple clusters.
+
+   Parameter format: multiple "prop=value" property definitions
+   separated by ',' where the name of the properties is the same
+   as the DB column names.
+
+   This parameter is mandatory if db_mode is set to “0”.
+
+   Example 1.17. Set current_info parameter
+...
+modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
+:5566")
+...
+
+1.3.18. neighbor_info
+
+   Node specification similar to the information provided by a row
+   in the clusterer DB table corresponding to another instance in
+   the current cluster. At least the cluster_id, node_id and url
+   propreties should be defined. This parameter can be set
+   multiple times.
+
+   Parameter format: multiple "prop=value" property definitions
+   separated by ',' where the name of the properties is the same
+   as the DB column names.
+
+   This parameter should be set at least once if db_mode is set to
+   0 in order to properly learn and advertise the cluster
+   topology.
+
+   Example 1.18. Set neighbor_info parameter
+...
+modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
+92.168.0.6:5566")
+...
+
 1.4. Exported Functions
 
 1.4.1.  cluster_send_req(cluster_id, dst_id, msg[, tag])
@@ -380,7 +443,7 @@ modparam("clusterer", "node_timeout", 10)
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.16. cluster_send_req() usage
+   Example 1.19. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
@@ -425,7 +488,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.17. cluster_send_rpl() usage
+   Example 1.20. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_ta
@@ -456,7 +519,7 @@ p(rcv_tag)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.18. cluster_broadcast_req() usage
+   Example 1.21. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 ...
@@ -490,7 +553,7 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
                 :clusterer_list
                 _empty_line_
 
-   Example 1.19. clusterer_list usage
+   Example 1.22. clusterer_list usage
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
         Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
@@ -521,7 +584,7 @@ Cluster:: 2
                 :clusterer_list_topology
                 _empty_line_
 
-   Example 1.20. clusterer_list_topology usage
+   Example 1.23. clusterer_list_topology usage
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
         Node:: 1 Neighbours=4
@@ -641,19 +704,19 @@ Cluster:: 2
    pipes. Therefore, we have to provision them in the clusterer
    table.
 
-   Example 1.21. Example database content - clusterer table
+   Example 1.24. Example database content - clusterer table
++----+------------+---------+----------------------+-------+------------
+-----+----------+------------------------+
+| id | cluster_id | node_id | url                  | state | no_ping_ret
+ries | priority | sip_addr | description |
 +----+------------+---------+----------------------+-------+-----------+
-------------+-----------------+----------+------------------------+
-| id | cluster_id | node_id | url                  | state | ls_seq_no |
- top_seq_no | no_ping_retries | priority | sip_addr | description |
+------------+-----------------+----------+
+|  1 |          1 |       1 | bin:192.168.0.5:5566 |     1 |
+   3 |       50 | NULL     | Node A      |
+|  2 |          1 |       2 | bin:192.168.0.6:5566 |     1 |
+   3 |       50 | NULL     | Node B      |
 +----+------------+---------+----------------------+-------+-----------+
-------------+-----------------+----------+------------------------+
-|  1 |          1 |       1 | bin:192.168.0.5:5566 |     1 |         0 |
-          0 |               3 |       50 | NULL     | Node A      |
-|  2 |          1 |       2 | bin:192.168.0.6:5566 |     1 |         0 |
-          0 |               3 |       50 | NULL     | Node B      |
-+----+------------+---------+----------------------+-------+-----------+
-------------+-----------------+----------+------------------------+
+------------+-----------------+----------+
 
      * “cluster_id” - this column represents the identifier of the
        cluster. All nodes within a group/cluster should have the
@@ -693,7 +756,7 @@ Cluster:: 2
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.22. Node A configuration
+   Example 1.25. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -712,7 +775,7 @@ modparam("ratelimit", "accept_pipes_from", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.23. Node B configuration
+   Example 1.26. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 

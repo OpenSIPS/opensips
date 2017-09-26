@@ -34,11 +34,14 @@
 #define NO_DB_STR_VALS 3
 #define NO_DB_COLS (NO_DB_INT_VALS + NO_DB_STR_VALS)
 
+#define DEFAULT_NO_PING_RETRIES 3
+#define DEFAULT_PRIORITY 50
+
 #define CLUSTERER_TABLE_VERSION 3
 /* also compatible with this version as the current version only removed columns */
 #define BACKWARDS_COMPAT_TABLE_VER 2
 
-#define MAX_NO_NODES 64
+#define MAX_NO_NODES 16
 #define MAX_NO_CLUSTERS 16
 #define MAX_MODS_PER_CLUSTER 8
 
@@ -107,6 +110,7 @@ typedef struct node_info node_info_t;
 typedef struct cluster_info cluster_info_t;
 
 extern int current_id;
+extern int db_mode;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
@@ -116,6 +120,9 @@ void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
 					char **str_vals);
+
+int provision_neighbor(modparam_t type, void* val);
+int provision_current(modparam_t type, void *val);
 
 int cl_get_my_id(void);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);

@@ -8,16 +8,16 @@
 	<title>Overview</title>
 	<para>
 		The <emphasis>clusterer</emphasis> module is used to organize multiple &osips; instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the <emphasis>clusterer</emphasis> interface (i.e. the <emphasis>dialog</emphasis> module can replicate dialogs/profiles, the <emphasis>ratelimit</emphasis> module can share pipes across multiple 
-		instances etc.) or at the script level. The <emphasis>clusterer</emphasis> module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It does this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
+		instances etc.) or at the script level. The <emphasis>clusterer</emphasis> module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It achieves this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database or through the configuration script. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
 	</para>
 	<para>
-		The topology established by the <emphasis>clusterer</emphasis> module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes which must receive a reply within a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
+		The topology established by the <emphasis>clusterer</emphasis> module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes in a cluster for which replies must be received within a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
 	</para>
 	<para>
-		Note that an &osips; instance can belong to multiple clusters, communicating and establishing the topology separately for each one. In order to provision this in the database, each node has an unique ID at global level, which can be referenced by each cluster.
+		Note that an &osips; instance can belong to multiple clusters, communicating and establishing the topology separately for each one. In order to provision this in the database or the script, each node has an unique ID at global level, which can be referenced in each cluster.
 	</para>
 	<para>
-		While existing nodes can learn about newly added nodes without additional provisioning, the new nodes must be fully aware of the existing components of the cluster they are joining, in order to properly advertise themselves.
+		An &osips; instance can dynamically learn all the nodes in the cluster that are not provisioned in the database. For instances that do not load any node info from the DB, it is enough to define at least one neigbour in the script in order to discover all the cluster components. 
 	</para>
 	</section>
 
@@ -358,6 +358,68 @@ modparam("clusterer", "ping_timeout", 500)
 		<programlisting format="linespecific">
 ...
 modparam("clusterer", "node_timeout", 10)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section>
+            <title><varname>db_mode</varname></title>
+            <para>
+				Specifies whether the node specifciation information for the current instance, as well as the other instances in the cluster, should be loaded from the database or configured in the script. A value of <quote>0</quote> means that the DB is not used.
+			</para>
+            <para>
+		<emphasis>
+			Default value is <quote>1</quote>
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>db_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "db_mode", 0)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section>
+            <title><varname>current_info</varname></title>
+            <para>
+				Node specification similar to the information provided by a row in the clusterer DB table corresponding to the current instance. At least the <emphasis>cluster_id</emphasis> and <emphasis>url</emphasis> propreties should be defined. This parameter can be set multiple times in order to include the current node in multiple clusters.
+			</para>
+			<para>
+				Parameter format: multiple "<emphasis>prop=value</emphasis>" property definitions separated by '<emphasis>,</emphasis>' where the name of the properties is the same as the DB column names. 
+			</para>
+            <para>
+			This parameter is mandatory if <emphasis>db_mode</emphasis> is set to <quote>0</quote>.
+            </para>
+            <example>
+		<title>Set <varname>current_info</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section>
+            <title><varname>neighbor_info</varname></title>
+            <para>
+				Node specification similar to the information provided by a row in the clusterer DB table corresponding to another instance in the current cluster. At least the <emphasis>cluster_id</emphasis>, <emphasis>node_id</emphasis> and <emphasis>url</emphasis> propreties should be defined. This parameter can be set multiple times.
+			</para>
+			<para>
+				Parameter format: multiple "<emphasis>prop=value</emphasis>" property definitions separated by '<emphasis>,</emphasis>' where the name of the properties is the same as the DB column names. 
+			</para>
+            <para>
+			This parameter should be set at least once if <emphasis>db_mode</emphasis> is set to <emphasis>0</emphasis> in order to properly learn and advertise the cluster topology.
+            </para>
+            <example>
+		<title>Set <varname>neighbor_info</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:192.168.0.6:5566")
 ...
 		</programlisting>
 		</example>
@@ -793,12 +855,12 @@ Cluster:: 2
 	<example>
 		<title>Example database content - clusterer table</title>
 		<programlisting format="linespecific">
-+----+------------+---------+----------------------+-------+-----------+------------+-----------------+----------+------------------------+
-| id | cluster_id | node_id | url                  | state | ls_seq_no | top_seq_no | no_ping_retries | priority | sip_addr | description |
-+----+------------+---------+----------------------+-------+-----------+------------+-----------------+----------+------------------------+
-|  1 |          1 |       1 | bin:192.168.0.5:5566 |     1 |         0 |          0 |               3 |       50 | NULL     | Node A      |
-|  2 |          1 |       2 | bin:192.168.0.6:5566 |     1 |         0 |          0 |               3 |       50 | NULL     | Node B      |
-+----+------------+---------+----------------------+-------+-----------+------------+-----------------+----------+------------------------+
++----+------------+---------+----------------------+-------+-----------------+----------+------------------------+
+| id | cluster_id | node_id | url                  | state | no_ping_retries | priority | sip_addr | description |
++----+------------+---------+----------------------+-------+-----------+------------+-----------------+----------+
+|  1 |          1 |       1 | bin:192.168.0.5:5566 |     1 |               3 |       50 | NULL     | Node A      |
+|  2 |          1 |       2 | bin:192.168.0.6:5566 |     1 |               3 |       50 | NULL     | Node B      |
++----+------------+---------+----------------------+-------+-----------+------------+-----------------+----------+
 		</programlisting>
 	</example>
 	<para>
