@@ -36,5 +36,7 @@ int srec_restore_callback(struct src_sess *sess);
 void srec_logic_destroy(struct src_sess *sess);
 
 extern struct b2b_api srec_b2b;
+extern str skip_failover_codes;
+int src_init(void);
 
 #endif /* _SIPREC_LOGIC_H_ */

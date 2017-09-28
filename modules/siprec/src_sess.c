@@ -32,7 +32,7 @@ struct tm_binds srec_tm;
 struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
-static struct src_sess *src_create_session(str *srs, str *rtp, str *grp,
+static struct src_sess *src_create_session(str *rtp, str *grp,
 		struct socket_info *si, int version, time_t ts, siprec_uuid *uuid)
 {
 	struct src_sess *ss = shm_malloc(sizeof *ss +
@@ -42,13 +42,6 @@ static struct src_sess *src_create_session(str *srs, str *rtp, str *grp,
 		return NULL;
 	}
 	memset(ss, 0, sizeof *ss);
-	/* uri might be changed, so we store it separately */
-	ss->srs_uri.s = shm_malloc(srs->len);
-	if (!ss->srs_uri.s) {
-		LM_ERR("not enough memory for siprec uri!\n");
-		shm_free(ss);
-		return NULL;
-	}
 	ss->socket = si;
 	if (rtp) {
 		ss->rtpproxy.s = (char *)(ss + 1);
@@ -65,8 +58,7 @@ static struct src_sess *src_create_session(str *srs, str *rtp, str *grp,
 	ss->participants_no = 0;
 	ss->ts = ts;
 
-	memcpy(ss->srs_uri.s, srs->s, srs->len);
-	ss->srs_uri.len = srs->len;
+	INIT_LIST_HEAD(&ss->srs);
 
 	lock_init(&ss->lock);
 	ss->ref = 0;
@@ -77,10 +69,46 @@ static struct src_sess *src_create_session(str *srs, str *rtp, str *grp,
 struct src_sess *src_new_session(str *srs, str *rtp, str *grp,
 		struct socket_info *si)
 {
+	struct src_sess *sess;
+	struct srs_node *node;
+	char *p, *end;
+	str s;
+
 	siprec_uuid uuid;
 	siprec_build_uuid(uuid);
 
-	return src_create_session(srs, rtp, grp, si, 0, time(NULL), &uuid);
+	sess = src_create_session(rtp, grp, si, 0, time(NULL), &uuid);
+	if (!sess)
+		return NULL;
+
+	/* parse the srs here */
+	end = srs->s + srs->len;
+	do {
+		p = end - 1;
+		while (p > srs->s && *p != ',')
+			p--;
+		if (p == srs->s)
+			s.s = p;
+		else
+			s.s = p + 1; /* skip ',' */
+		s.len = end - s.s;
+		end = p;
+
+		trim(&s);
+		node = shm_malloc(sizeof(*node) + s.len);
+		if (!node) {
+			LM_ERR("cannot add srs node information!\n");
+			src_free_session(sess);
+			return NULL;
+		}
+		node->uri.s = (char *)(node + 1);
+		node->uri.len = s.len;
+		memcpy(node->uri.s, s.s, s.len);
+		list_add(&node->list, &sess->srs);
+		LM_DBG("add srs_uri %.*s\n", node->uri.len, node->uri.s);
+	} while (end > srs->s);
+
+	return sess;
 }
 
 
@@ -105,6 +133,7 @@ void src_unref_session(void *p)
 void src_free_session(struct src_sess *sess)
 {
 	int p;
+	struct srs_node *node;
 
 	/* extra check here! */
 	if (sess->ref != 0) {
@@ -114,8 +143,12 @@ void src_free_session(struct src_sess *sess)
 
 	for (p = 0; p < sess->participants_no; p++)
 		src_free_participant(&sess->participants[p]);
-	if (sess->srs_uri.s)
-		shm_free(sess->srs_uri.s);
+	while (!list_empty(&sess->srs)) {
+		node = list_entry(sess->srs.next, struct srs_node, list);
+		LM_DBG("freeing %.*s\n", node->uri.len, node->uri.s);
+		list_del(&node->list);
+		shm_free(node);
+	}
 	srec_logic_destroy(sess);
 	lock_destroy(&sess->lock);
 	shm_free(sess);
@@ -168,6 +201,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 {
 	str buf;
 	struct src_sess *sess = NULL;
+	struct srs_node *node = NULL;
 	bin_packet_t packet;
 	int version;
 	time_t ts;
@@ -229,14 +263,24 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(&uuid, tmp.s, tmp.len);
 
-	sess = src_create_session(&srs_uri,
-			(rtpproxy.len ? &rtpproxy : NULL),
+	sess = src_create_session((rtpproxy.len ? &rtpproxy : NULL),
 			(group.len ? &group : NULL),
 			si, version, ts, &uuid);
 	if (!sess) {
 		LM_ERR("cannot create a new siprec session!\n");
 		return;
 	}
+
+	node = shm_malloc(sizeof(*node) + srs_uri.len);
+	if (!node) {
+		LM_ERR("cannot add srs node information!\n");
+		goto error;
+	}
+	node->uri.s = (char *)(node + 1);
+	node->uri.len = srs_uri.len;
+	memcpy(node->uri.s, srs_uri.s, srs_uri.len);
+	list_add(&node->list, &sess->srs);
+
 	SIPREC_BIN_POP(str, &tmp);
 	sess->b2b_key.s = shm_malloc(tmp.len);
 	if (!sess->b2b_key.s) {
@@ -373,7 +417,8 @@ void srec_shutdown_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->ts));
 	SIPREC_BIN_PUSH(int, ss->version);
 	SIPREC_BIN_PUSH(str, &ss->rtpproxy);
-	SIPREC_BIN_PUSH(str, &ss->srs_uri);
+	/* push only the first SRS - this is the one chosen */
+	SIPREC_BIN_PUSH(str, &SIPREC_SRS(ss));
 	SIPREC_BIN_PUSH(str, &ss->group);
 	if (ss->socket)
 		SIPREC_BIN_PUSH(str, &ss->socket->sock_str);
@@ -383,6 +428,7 @@ void srec_shutdown_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, &ss->b2b_key);
 	SIPREC_BIN_PUSH(str, &ss->b2b_fromtag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_totag);
+	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
 	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 

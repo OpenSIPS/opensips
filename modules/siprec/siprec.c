@@ -73,8 +73,9 @@ static cmd_export_t cmds[] = {
 
 /* exported parameters */
 static param_export_t params[] = {
-	{"media_port_min",   INT_PARAM, &siprec_port_min },
-	{"media_port_max",   INT_PARAM, &siprec_port_max },
+	{"media_port_min",		INT_PARAM, &siprec_port_min },
+	{"media_port_max",		INT_PARAM, &siprec_port_max },
+	{"skip_failover_codes",	STR_PARAM, &skip_failover_codes.s },
 	{0, 0, 0}
 };
 
@@ -108,6 +109,11 @@ static int mod_init(void)
 
 	if (srs_init() < 0) {
 		LM_ERR("cannot initialize srs structures!\n");
+		return -1;
+	}
+
+	if (src_init() < 0) {
+		LM_ERR("cannot initialize src structures!\n");
 		return -1;
 	}
 

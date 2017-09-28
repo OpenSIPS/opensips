@@ -47,6 +47,11 @@
 
 struct srec_dlg;
 
+struct srs_node {
+	str uri;
+	struct list_head list;
+};
+
 struct src_part {
 	str aor;
 	str name;
@@ -57,6 +62,8 @@ struct src_part {
 #define SIPREC_STARTED	(1<<0)
 #define SIPREC_DLG_CBS	(1<<1)
 
+#define SIPREC_SRS(_s) (list_entry((_s)->srs.next, struct srs_node, list)->uri)
+
 struct src_sess {
 
 	/* media */
@@ -66,7 +73,7 @@ struct src_sess {
 	str rtpproxy;
 
 	/* SRS */
-	str srs_uri;
+	struct list_head srs;
 	str group;
 	struct socket_info *socket; /* socket used towards SRS */
 
