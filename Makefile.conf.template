@@ -51,7 +51,7 @@
 #rest_client= Simple HTTP client | CURL library - libcurl
 #rls= Resource List Server implementation following the specification in RFC 4662 and RFC 4826 | parsing/building XML library, tipically libxml-dev
 #sngtc= Voice Transcoding using the D-series Sangoma transcoding cards | libsngtc_node
-#siprec= SIP Call Recording to an external/passive recorder | libuuid1
+#siprec= SIP Call Recording to an external/passive recorder | uuid-dev
 #snmpstats= Provides an SNMP management interface to OpenSIPS | NetSNMP v5.3
 #tls_mgm= Provides a TLS interface to manage certificates for OpenSIPS | SSL development library, tipically libssl-dev
 #xcap= XCAP utility functions for OpenSIPS. | libxml-dev
