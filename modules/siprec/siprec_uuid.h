@@ -26,7 +26,7 @@
 #ifndef _SIPREC_UUID_H_
 #define _SIPREC_UUID_H_
 
-#include <uuid/uuid.h>
+#include <uuid.h>
 
 #define SIPREC_UUID_LEN calc_base64_encode_len(sizeof(uuid_t))
 typedef unsigned char siprec_uuid[SIPREC_UUID_LEN];
