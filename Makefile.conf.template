@@ -51,6 +51,7 @@
 #rest_client= Simple HTTP client | CURL library - libcurl
 #rls= Resource List Server implementation following the specification in RFC 4662 and RFC 4826 | parsing/building XML library, tipically libxml-dev
 #sngtc= Voice Transcoding using the D-series Sangoma transcoding cards | libsngtc_node
+#siprec= SIP Call Recording to an external/passive recorder | libuuid1
 #snmpstats= Provides an SNMP management interface to OpenSIPS | NetSNMP v5.3
 #tls_mgm= Provides a TLS interface to manage certificates for OpenSIPS | SSL development library, tipically libssl-dev
 #xcap= XCAP utility functions for OpenSIPS. | libxml-dev
@@ -58,7 +59,7 @@
 #xml= Introduces a new type of variable that provides both serialization and de-serialization from XML format. | XML library, libxml2-dev
 #xmpp= Gateway between OpenSIPS and a jabber server. It enables the exchange of IMs between SIP clients and XMPP(jabber) clients. | parsing/building XML files, tipically libexpat1-devel
 
-exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq h350 httpd identity jabber json ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_xml proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python regex rabbitmq rest_client rls sngtc snmpstats tls_mgm xcap xcap_client xml xmpp
+exclude_modules?= aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq h350 httpd identity jabber json ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_xml proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python regex rabbitmq rest_client rls siprec sngtc snmpstats tls_mgm xcap xcap_client xml xmpp
 
 include_modules?=
 
