@@ -8,6 +8,5 @@ auto_gen=
 NAME=siprec.so
 
 LIBS+=-luuid
-DEFS+=-I/usr/include/uuid
 
 include ../../Makefile.modules
