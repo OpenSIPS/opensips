@@ -186,8 +186,8 @@ int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3)
 	if (_s2 == NULL || fixup_get_svalue(msg, (gparam_p)_s2, &uri) != 0)
 		uri = msg->first_line.u.request.uri;
 
-	if (_s3) {
-		counter_s = int2str((unsigned long)(void *)_s3, &counter_len);
+	if (_s3 && *(unsigned int *)_s3 > 0) {
+		counter_s = int2str(*(unsigned int *)_s3, &counter_len);
 	} else {
 		counter_len = -1;
 		counter_s = NULL;

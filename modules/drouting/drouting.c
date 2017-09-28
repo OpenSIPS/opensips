@@ -4212,7 +4212,7 @@ static int is_from_gw_1(struct sip_msg* msg, char * part)
 	if(use_partitions) {
 		return _is_dr_gw( msg, part, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port);
 	} else {
-		return _is_dr_gw(msg, NULL, NULL, (!part? -1:(int)(long)part), &msg->rcv.src_ip,
+		return _is_dr_gw(msg, NULL, NULL, (!part? -1 : *(int *)part), &msg->rcv.src_ip,
 				msg->rcv.src_port);
 	}
 }
@@ -4224,10 +4224,10 @@ static int is_from_gw_1(struct sip_msg* msg, char * part)
 static int is_from_gw_2(struct sip_msg* msg, char * part, char* type_s)
 {
 	if(use_partitions) {
-		return _is_dr_gw(msg, part, NULL, (!type_s ? -1 : (int)(long)type_s),
+		return _is_dr_gw(msg, part, NULL, (!type_s ? -1 : *(int *)type_s),
 				&msg->rcv.src_ip , msg->rcv.src_port);
 	} else {
-		return _is_dr_gw(msg, NULL, type_s, (!part ? -1: (int)(long)part),
+		return _is_dr_gw(msg, NULL, type_s, (!part ? -1: *(int *)part),
 				&msg->rcv.src_ip, msg->rcv.src_port);
 	}
 }
@@ -4236,11 +4236,11 @@ static int is_from_gw_2(struct sip_msg* msg, char * part, char* type_s)
 static int is_from_gw_3(struct sip_msg* msg, char * part,char* type_s,
 		char* flags_pv) {
 	if(use_partitions) {
-		return _is_dr_gw(msg, part, flags_pv, (!type_s ? -1:(int)(long)type_s),
+		return _is_dr_gw(msg, part, flags_pv, (!type_s ? -1:*(int *)type_s),
 				&msg->rcv.src_ip, msg->rcv.src_port);
 	} else {
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_gw(msg, NULL, type_s, (!part ? -1:(int)(long)part),
+		return _is_dr_gw(msg, NULL, type_s, (!part ? -1:*(int *)part),
 				&msg->rcv.src_ip, msg->rcv.src_port);
 	}
 }
@@ -4255,7 +4255,7 @@ static int is_from_gw_4(struct sip_msg* msg, char * part,char* type_s, char* fla
 
 	if(use_partitions) {
 		return _is_dr_gw( msg, part, flags_pv,
-				(!type_s ? -1 : (int)(long)type_s), &msg->rcv.src_ip ,
+				(!type_s ? -1 : *(int *)type_s), &msg->rcv.src_ip ,
 				msg->rcv.src_port);
 	} else {
 		LM_ERR("Too many parameters\n");
@@ -4338,7 +4338,7 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
 			LM_ERR("failed to get string value for src\n");
 			return -1;
 		}
-		return _is_dr_uri_gw(msg, part, flags_pv, !type_s ? -1:(int)(long)type_s, &src.rs);
+		return _is_dr_uri_gw(msg, part, flags_pv, !type_s ? -1:*(int *)type_s, &src.rs);
 	}
 	else {
 		if ( pv_get_spec_value(msg, (pv_spec_p)part, &src)!=0 ||
@@ -4347,7 +4347,7 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
 			return -1;
 		}
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, flags_pv ,!type_s ? -1:(int)(long)type_s
+		return _is_dr_uri_gw(msg, NULL, flags_pv ,!type_s ? -1:*(int *)type_s
 				,&src.rs);
 	}
 }

@@ -907,7 +907,7 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 {
 	int tests;
 
-	tests = (int)(long)str1;
+	tests = (int)*(unsigned int *)str1;
 
 	/* return true if any of the NAT-UAC tests holds */
 
@@ -1161,7 +1161,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 	struct lump* anchor;
 	struct body_part * p;
 
-	level = (int)(long)str1;
+	level = (int)*(unsigned int *)str1;
 	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
 		return -1;
 
@@ -1536,7 +1536,7 @@ add_rcv_param_f(struct sip_msg* msg, char* str1, char* str2)
 	str uri;
 	int hdr_param;
 
-	hdr_param = str1?0:1;
+	hdr_param = (str1 && *(unsigned int *)str1 > 0) ? 0 : 1;
 
 	if (create_rcv_uri(&uri, msg) < 0) {
 		return -1;

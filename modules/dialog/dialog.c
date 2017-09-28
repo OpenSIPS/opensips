@@ -1421,8 +1421,8 @@ static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val)
 	if ( (dlg=get_current_dialog())==NULL )
 		return -2;
 
-	return test_and_set_dlg_flag(dlg, (unsigned long)(void *)_idx,
-			(unsigned long)(void *) _val);
+	return test_and_set_dlg_flag(dlg, (unsigned long)*(unsigned int *)_idx,
+			(unsigned long)*(unsigned int *) _val);
 }
 
 

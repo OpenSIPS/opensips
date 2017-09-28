@@ -818,7 +818,7 @@ static int w_lb_is_dst4(struct sip_msg *msg,char *ip,char *port,char *grp,
 	lock_start_read( ref_lock );
 
 	ret = lb_is_dst(*curr_data, msg, (pv_spec_t*)ip, (gparam_t*)port,
-	                group, (int)(long)active);
+	                group, active ? (int)*(unsigned int *)active : 0);
 
 	lock_stop_read( ref_lock );
 
@@ -900,7 +900,7 @@ static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 	lock_start_read( ref_lock );
 
 	ret = lb_count_call( *curr_data, req, ipa, port_no, grp_no, lb_rl,
-			(unsigned int)(long)dir);
+			dir ? (int)*(unsigned int *)dir : 0);
 
 	lock_stop_read( ref_lock );
 

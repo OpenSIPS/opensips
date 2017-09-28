@@ -173,7 +173,7 @@ typedef struct Keepalive_Params {
 //
 static int NAT_Keepalive(struct sip_msg *msg);
 static int FixContact(struct sip_msg *msg);
-static int ClientNatTest(struct sip_msg *msg, unsigned int tests);
+static int ClientNatTest(struct sip_msg *msg, unsigned int *tests);
 
 static Bool test_private_contact(struct sip_msg *msg);
 static Bool test_source_address(struct sip_msg *msg);
@@ -1551,12 +1551,12 @@ FixContact(struct sip_msg *msg)
 
 
 static int
-ClientNatTest(struct sip_msg *msg, unsigned int tests)
+ClientNatTest(struct sip_msg *msg, unsigned int *tests)
 {
     int i;
 
     for (i=0; NAT_Tests[i].test!=NTNone; i++) {
-        if ((tests & NAT_Tests[i].test)!=0 && NAT_Tests[i].proc(msg)) {
+        if ((*tests & NAT_Tests[i].test)!=0 && NAT_Tests[i].proc(msg)) {
             return 1;
         }
     }

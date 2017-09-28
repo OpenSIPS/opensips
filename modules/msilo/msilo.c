@@ -810,8 +810,8 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	db_key_t db_cols[6];
 	db_res_t* db_res = NULL;
 	int i, db_no_cols = 6, db_no_keys = 3, mid, n;
-	int sent_cnt = 0;
-	int maxmsg_i;
+	unsigned int sent_cnt = 0;
+	unsigned int maxmsg_i = 0;
 	static char hdr_buf[1024];
 	static char body_buf[1024];
 	struct sip_uri puri;
@@ -837,13 +837,13 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	db_cols[4]=&sc_ctype;
 	db_cols[5]=&sc_inc_time;
 
-
 	hdr_str.s=hdr_buf;
 	hdr_str.len=1024;
 	body_str.s=body_buf;
 	body_str.len=1024;
 
-	maxmsg_i = (int)(long)maxmsg;
+	if (maxmsg)
+		maxmsg_i = *(unsigned int *)maxmsg;
 
 	/* get the owner */
 	memset(&puri, 0, sizeof(struct sip_uri));

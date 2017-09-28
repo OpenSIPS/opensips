@@ -300,7 +300,8 @@ static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 
 	/* we have a valid EBR event here, let's subscribe on it */
 	if (add_ebr_subscription( msg, event, (int)(long)avp_filter,
-	(int)(long)timeout, route, EBR_SUBS_TYPE_NOTY ) <0 ) {
+	    timeout ? (int)*(unsigned int *)timeout : 0, route,
+	    EBR_SUBS_TYPE_NOTY ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
 		return -1;
@@ -325,7 +326,8 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 
 	/* we have a valid EBR event here, let's subscribe on it */
 	if (add_ebr_subscription( msg, event, (int)(long)avp_filter,
-	(int)(long)timeout, (void*)ctx, EBR_SUBS_TYPE_WAIT ) <0 ) {
+	    (int)*(unsigned int *)timeout, (void*)ctx,
+	    EBR_SUBS_TYPE_WAIT ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
 		return -1;

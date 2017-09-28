@@ -164,7 +164,12 @@ int fixup_uint(void** param)
 	if(str2int(&s, &ui)==0)
 	{
 		pkg_free(*param);
-		*param=(void *)(unsigned long)ui;
+		*param = pkg_malloc(sizeof ui);
+		if (!*param) {
+			LM_ERR("oom\n");
+			return E_OUT_OF_MEM;
+		}
+		*(unsigned int *)*param = ui;
 		return 0;
 	}
 	LM_ERR("bad number <%s>\n", (char *)(*param));
@@ -216,7 +221,12 @@ int fixup_sint( void** param)
 	if(str2sint(&s, &si)==0)
 	{
 		pkg_free(*param);
-		*param=(void *)(unsigned long)si;
+		*param = pkg_malloc(sizeof si);
+		if (!*param) {
+			LM_ERR("oom\n");
+			return E_OUT_OF_MEM;
+		}
+		*(int *)*param = si;
 		return 0;
 	}
 	LM_ERR("bad number <%s>\n", (char *)(*param));

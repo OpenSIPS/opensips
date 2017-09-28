@@ -1494,7 +1494,7 @@ static int w_ds_is_in_list(struct sip_msg *msg,char *ip,char *port,char *set,
 	}
 
 	return ds_is_in_list(msg, (gparam_t *)ip, (gparam_t *)port, i_set,
-			(int)(long)active_only, partition);
+			active_only ? *(int *)active_only : 0, partition);
 
 wrong_set_arg:
 		LM_ERR("wrong format for set argument\n");
