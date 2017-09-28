@@ -1530,7 +1530,7 @@ static int dr_init(void)
 
 		if( (*head_db_end->db_con =
 					head_db_end->db_funcs.init(&head_db_end->db_url)) == 0) {
-			LM_ERR("Cand't load db ulr %.*s", head_db_end->db_url.len,
+			LM_ERR("failed to connect to db url %.*s", head_db_end->db_url.len,
 					head_db_end->db_url.s);
 			return -1;
 		}
