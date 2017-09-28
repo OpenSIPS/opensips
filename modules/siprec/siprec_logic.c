@@ -23,8 +23,8 @@
  *  2017-06-20  created (razvanc)
  */
 
-#include "src_logic.h"
-#include "srs_body.h"
+#include "siprec_logic.h"
+#include "siprec_body.h"
 #include "../../mod_fix.h"
 
 struct b2b_api srec_b2b;

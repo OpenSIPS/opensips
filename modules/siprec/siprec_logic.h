@@ -26,7 +26,7 @@
 #ifndef _SIPREC_LOGIC_H_
 #define _SIPREC_LOGIC_H_
 
-#include "src_sess.h"
+#include "siprec_sess.h"
 #include "../b2b_entities/b2b_entities.h"
 
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess);

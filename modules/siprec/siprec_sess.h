@@ -26,7 +26,7 @@
 #ifndef _SIPREC_SESS_H_
 #define _SIPREC_SESS_H_
 
-#include "srs_body.h"
+#include "siprec_body.h"
 #include "../dialog/dlg_load.h"
 #include "../tm//tm_load.h"
 #include "../../ut.h"

@@ -29,17 +29,17 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 
-#include "src_sess.h"
-#include "src_logic.h"
+#include "siprec_sess.h"
+#include "siprec_logic.h"
 
 static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
-static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
-		char *_rtp, char *_grp);
-static int fixup_srec_engage(void **param, int param_no);
-static int free_fixup_srec_engage(void **param, int param_no);
+static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
+		char *_cA, char *_cB, char *_rtp);
+static int free_fixup_siprec_rec(void **param, int param_no);
+static int free_free_fixup_siprec_rec(void **param, int param_no);
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -58,16 +58,16 @@ static dep_export_t deps = {
 
 /* exported commands */
 static cmd_export_t cmds[] = {
-	{"siprec_engage",(cmd_function)srec_engage, 1, fixup_srec_engage,
-		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
-	{"siprec_engage",(cmd_function)srec_engage, 2, fixup_srec_engage,
-		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
-	{"siprec_engage",(cmd_function)srec_engage, 3, fixup_srec_engage,
-		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
-	{"siprec_engage",(cmd_function)srec_engage, 4, fixup_srec_engage,
-		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
-	{"siprec_engage",(cmd_function)srec_engage, 5, fixup_srec_engage,
-		free_fixup_srec_engage, REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE },
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, 1,
+		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, 2,
+		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, 3,
+		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, 4,
+		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, 5,
+		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -163,7 +163,7 @@ static void mod_destroy(void)
 /*
  * fixup siprec function
  */
-static int fixup_srec_engage(void **param, int param_no)
+static int free_fixup_siprec_rec(void **param, int param_no)
 {
 	if (param_no > 0 && param_no < 7)
 		return fixup_spve(param);
@@ -171,7 +171,7 @@ static int fixup_srec_engage(void **param, int param_no)
 	return E_CFG;
 }
 
-static int free_fixup_srec_engage(void **param, int param_no)
+static int free_free_fixup_siprec_rec(void **param, int param_no)
 {
 	if (param_no > 0 && param_no < 3)
 		return fixup_free_spve(param);
@@ -182,8 +182,8 @@ static int free_fixup_srec_engage(void **param, int param_no)
 /*
  * function that simply prints the parameters passed
  */
-static int srec_engage(struct sip_msg *msg, char *_srs, char *_cA, char *_cB,
-		char *_rtp, char *_grp)
+static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
+		char *_cA, char *_cB, char *_rtp)
 {
 	int ret;
 	str srs, rtp, group, tmp_str, *aor, *display;

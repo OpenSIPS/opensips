@@ -24,8 +24,8 @@
  */
 
 #include <string.h>
-#include "srs_body.h"
-#include "src_sess.h"
+#include "siprec_body.h"
+#include "siprec_sess.h"
 #include "../../parser/sdp/sdp.h"
 #include "../../mem/shm_mem.h"
 #include "../../msg_translator.h"

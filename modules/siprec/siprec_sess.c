@@ -23,9 +23,9 @@
  *  2017-06-20  created (razvanc)
  */
 
-#include "src_sess.h"
-#include "srs_body.h"
-#include "src_logic.h"
+#include "siprec_sess.h"
+#include "siprec_body.h"
+#include "siprec_logic.h"
 #include "../../bin_interface.h"
 
 struct tm_binds srec_tm;
