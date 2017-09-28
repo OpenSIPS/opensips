@@ -1,0 +1,361 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="siprec_overview">
+	<title>Overview</title>
+	<para>
+		This module provides the means to do calls recording using an
+		external/passive recorder - the entity that records the call is not in
+		the media path between the caller and callee, but it is completely
+		separate, thus it can not affect by any means the quality of the
+		conversation. This is done in a standardized manner, using
+		the <ulink url='https://tools.ietf.org/html/rfc7866'>SIPREC
+			Protocol</ulink>, thus it can be used by any recorder that
+		implements this protocol.
+	</para>
+	<para>
+		Since a passive server is used to record calls, there are no
+		constraints regarding the location of the recorder, thus it can be
+		placed arbitrary. This offers huge flexibility to your architecture
+		configuration and various means for scaling.
+	</para>
+	<para>
+		The work for this module has been sponsored by the <ulink
+			url='http://www.orecx.com/'>OrecX Company</ulink>. This module is
+		fully integrated with the OrecX Call Recording products.
+	</para>
+	</section>
+
+	<section id="siprec_how_it_works">
+	<title>How it works</title>
+	<para>
+		The full architecture of a SIP Media Recording platform is
+		documented in <ulink url='https://tools.ietf.org/html/rfc7245'>
+			RFC 7245</ulink>. According to this architecture, this &osips;
+		module implements a SRC (Session Recording Client) that instructs a SRS
+		(Session Recording Server) when new calls are started, the
+		participants of the calls and their profiles. Based on this data, the
+		SRS can decide whether the call should be recorded or not.
+	</para>
+	<para>
+		From SIP signalling perspective, the module does not change the call
+		flow between the caller and callee. The call is established just as
+		any other calls that are not recorded. But for each call that has
+		<emphasis>SIPREC</emphasis> engaged, a completely separate SIP session
+		is started by the SRC (&osips;) towards the SRS, using the <ulink
+			url='b2b_entities'>&osips; Back-2-Back module</ulink>. The
+		<emphasis>INVITE</emphasis> message sent to the SRS contains a
+		multi-part body consisting of two parts:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>Recording SDP</emphasis> - the SDP of the Media Server
+			that will <emphasis>fork</emphasis> the RTP to the recorder.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Participants Metadata</emphasis> - an XML-formated
+			document that contains information about the participants. The
+			structure of the document is detailed in <ulink
+				url='https://tools.ietf.org/html/rfc7865'>RFC 7865</ulink>.
+		</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		The SRS can respond with negative reply, indicating that the session
+		does not need to be recorded, or with a positive reply (200 OK),
+		indicating in the SDP body where the media RTP should be
+		<emphasis>sent/forked</emphasis>. When the call ends, the SRC must
+		send a <emphasis>BYE</emphasis> message to the SRS, indicating that
+		the recording should be completed.
+	</para>
+	<para>
+		Full examples of call flows can be found in <ulink url='https://tools.ietf.org/html/rfc8068'>RFC 8068</ulink>.
+	</para>
+	</section>
+
+	<section id="siprec_media_handling">
+	<title>Media Handling</title>
+	<para>
+		Since &osips; is a SIP Proxy, it does not have any Media Capabilities
+		by itself. Thus we need to rely on a different Media Server to capture
+		the RTP traffic and fork it to the SRS. This module currently uses the
+		<ulink url='rtpproxy'>RTPProxy module</ulink> in &osips; to instruct
+		the <ulink url='http://www.rtpproxy.org/'>RTPProxy Media
+			Server</ulink> to fork the RTP media to the SRS.
+	</para>
+	</section>
+
+	<section id="siprec_srs_failover" xreflabel="siprec_srs_failover">
+	<title>SRS Failover</title>
+	<para>
+		The <emphasis>siprec</emphasis> module supports failover between
+		multiple SRS servers - when calling the <emphasis><xref
+				linkend="siprec_start_recording"/></emphasis> function, one
+		can provision more SRS URIs, separated by comma. In this case, &osips;
+		will try to use them in the same order specified, one by one, until
+		either one of them responds with a positive reply (200 OK), or the
+		response code is one of the codes matched by the <emphasis><xref
+				linkend="skip_failover_codes"/></emphasis> regular expression.
+		In the latter case the call is not recorded at all.
+	</para>
+	</section>
+
+	<section id="siprec_limitations">
+	<title>Limitations</title>
+	<para>
+	This module only implements the SRC
+	specifications of the <ulink
+		url='https://tools.ietf.org/html/rfc7866'>SIPREC RFC</ulink>. In
+	order to have a full recording solution, you will also need a SRS solution
+	such as <ulink url='http://oreka.sourceforge.net/'>Oreka</ulink> - an
+	open-source project provided by <ulink
+		url='http://www.orecx.com/'>OrecX</ulink>.
+	</para>
+	<para>
+		Although this module provides all the necessary tools to do calls
+		recording, it does not fully implement the entire
+		<emphasis>SIPREC</emphasis> SRC specifications. This list contains
+		some of the module's limitations:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>There is no Recording Indicator played to the
+				callee</emphasis> - since &osips; continues to act as a proxy,
+			there is no way for us to postpone the media between the caller
+			and callee to play a Recording Indicator message.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Cannot handle Recording Sessions initiated by
+				SRS</emphasis> - we do not support the scenario when an SRS
+			suddently decides to record a call in the middle of the dialog.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>&osips; cannot be <quote>queried</quote> for ongoing
+				recording sessions</emphasis> - this is scheduled to be
+			implemented in further releases.
+		</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section id="siprec_dependencies">
+	<title>Dependencies</title>
+	<section id="siprec_modules_dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>TM</emphasis> - Transaction module.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> - Dialog module for keeping track of the call.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>RTPProxy</emphasis> - RTPProxy module used for controlling the media forked.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>B2B_ENTITIES</emphasis> - Back-2-Back module used for communicating with the SRS.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	
+	<section id="siprec_external_dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	
+	<section id="siprec_parameters">
+		<title>Exported Parameters</title>
+		<section id="media_port_min">
+		<title><varname>media_port_min</varname> (integer)</title>
+		<para>
+			The minimum value of the port used in the SDP sent to the SRS.
+			This value should correlate to the port-range configured in the
+			RTPProxy Media Server.
+		</para>
+		
+		<para>
+		<emphasis>Default value is <quote>35000</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>media_port_min</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("siprec", "media_port_min", 10000)
+...
+		</programlisting>
+		</example>
+		</section>
+
+		<section id="media_port_max">
+		<title><varname>media_port_max</varname> (integer)</title>
+		<para>
+			The maximum value of the port used in the SDP sent to the SRS.
+			This value should correlate to the port-range configured in the
+			RTPProxy Media Server.
+		</para>
+		
+		<para>
+		<emphasis>Default value is <quote>65000</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>media_port_max</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("siprec", "media_port_max", 20000)
+...
+		</programlisting>
+		</example>
+		</section>
+
+		<section id="skip_failover_codes" xreflabel="skip_failover_codes">
+		<title><varname>skip_failover_codes</varname> (string)</title>
+		<para>
+			A regular expression used to specify the codes that should prevent
+			the module from failing over to a new SRS server.
+		</para>
+		<para>
+		<emphasis>By default any negative reply generates a failover.</emphasis>
+		</para>
+		
+		<example>
+		<title>Set <varname>skip_failover_codes</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# do not failover on 408 reply codes
+modparam("siprec", "skip_failover_codes", "408")
+
+# do not failover on 408 or 487 reply codes
+modparam("siprec", "skip_failover_codes", "408|487")
+
+# do not failover on any 3xx or 4xx reply code
+modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
+...
+		</programlisting>
+		</example>
+		
+		</section>
+	</section>
+
+	<section id="siprec_functions">
+		<title>Exported Functions</title>
+		<section id="siprec_start_recording" xreflabel="siprec_start_recording">
+			<title>
+			<function moreinfo="none">siprec_start_recording([srs [, group [, caller [, callee [, rtpproxy_set] ]]]])</function>
+			</title>
+			<para>
+				Calling this function on an initial
+				<emphasis>INVITE</emphasis> engages call recording to SRSs for
+				that call. Note that it does not necessary mean that the call
+				will be recorded - it just means that &osips; will query
+				instruct the SRS that a new call has sterted, but the SRS
+				might decide that the recording is disabled for those
+				participants.
+			</para>
+			<para>
+				<emphasis>Note</emphasis> that the call recording is not
+				started right away, but only when the call is actually
+				answered - 200 OK is sent by the callee.
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>srs</emphasis> - a comma-separated list of SRS
+					URIs. These URIs are used in the order specified. See
+					<xref linkend="siprec_srs_failover"/> for more
+					information.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>group</emphasis> (optional) - an opaque values
+					used by the SIPREC protocol to group calls in certain
+					profiles.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>caller</emphasis> (optional) - a nameaddr header
+					containing information about the caller. If absent, the
+					<emphasis>From</emphasis> header is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>callee</emphasis> (optional) - a nameaddr header
+					containing information about the callee. If absent, the
+					<emphasis>To</emphasis> header is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>rtpproxy_set</emphasis> (optional) - the
+					RTPProxy set used for this call. If absent, the default
+					set provisioned in the <emphasis>rtpproxy</emphasis>
+					module is used.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				The function returns false when an internal error is triggered
+				and the call recording setup fails. Otherwise, if all the
+				internal mechanisms are activated, it returns true.
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+			<title>Use <function>siprec_start_recording()</function> function with a single SRS</title>
+			<programlisting format="linespecific">
+	...
+	if (!has_totag() &amp;&amp; is_method("INVITE")) {
+		$var(srs) = "sip:127.0.0.1";
+		xlog("Engage SIPREC call recording to $var(srs) for $ci\n");
+		siprec_start_recording("$var(srs)");
+	}
+	...
+	</programlisting>
+			</example>
+
+			<example>
+			<title>Use <function>siprec_start_recording()</function> function with multiple SRS servers</title>
+			<programlisting format="linespecific">
+	...
+	if (!has_totag() &amp;&amp; is_method("INVITE")) {
+		$var(srs) = "sip:127.0.0.1, sip:127.0.0.1;transport=TCP";
+		xlog("Engage SIPREC call recording to servers $var(srs) for $ci in inbound group\n");
+		siprec_start_recording("$var(srs)", "inbound");
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+</chapter>
+
