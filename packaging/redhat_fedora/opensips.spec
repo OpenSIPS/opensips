@@ -881,6 +881,19 @@ encapsulated in SIP. The available operations are: reading and modifying paramet
 from an ISUP message, removing or adding new optional parameters, adding an ISUP part
 to a SIP message body. This is done explicitly via script pseudovariables and functions.
 
+%package  siprec
+Summary:  SIP Recording module
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: libuuid-devel
+
+%description  siprec
+This module provides the means to do calls recording using an external/passive recorder -
+the entity that records the call is not in the media path between the caller and callee,
+but it is completely separate, thus it can not affect by any means the quality of the
+conversation. This is done in a standardized manner, using the SIPREC Protocol, thus it
+can be used by any recorder that implements this protocol.
+
 %package  sms
 Summary:  Gateway between SIP and GSM networks via sms
 Group:    System Environment/Daemons
@@ -1654,6 +1667,10 @@ fi
 %{_libdir}/opensips/modules/sip_i.so
 %doc docdir/README.sip_i
 
+%files siprec
+%{_libdir}/opensips/modules/siprec.so
+%doc docdir/README.siprec
+
 %files sms
 %{_libdir}/opensips/modules/sms.so
 %doc docdir/README.sms
@@ -1706,6 +1723,10 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
+* Fri Sep 29 2017 Nick Altmann <nick.altmann@gmail.com> - 2.4.0-1
+- Specification updated for opensips 2.4
+- New packages: siprec
+
 * Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
 - Specification updated for opensips 2.3
 - New packages: event_routing, freeswitch, mid_registrar, sip_i, xml
