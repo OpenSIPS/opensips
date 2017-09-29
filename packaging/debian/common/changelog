@@ -7,17 +7,20 @@ opensips (2.4.0-1) unstable; urgency=medium
     + Add packaging for the xml module.
     + Add packaging for the mongodb module.
     + Add packaging for the cgrates module.
+    + Add packaging for the siprec module.
     + Add rabbitmq module to the opensips-rabbitmq-modules package.
   * debian/control:
     + Add new opensips-xml-module.
     + Add new opensips-mongodb-module.
     + Add new opensips-cgrates-module.
+    + Add new opensips-siprec-module.
     + Rename opensips-rabbitmq-module to opensips-rabbitmq-modules.
     + Change LUA capitalization to Lua.
   * debian/copyright:
     + Add copyright info for xml module files.
     + Add copyright info for wss module files.
     + Add copyright info for cgrates module files.
+    + Add copyright info for siprec module files.
     + Add copyright info for rabbitmq module files.
     + Add copyright info for parser/parse_body.* files.
     + Update copyright info for modules/cachedb_mongodb/* files.

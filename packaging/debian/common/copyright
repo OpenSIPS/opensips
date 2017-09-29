@@ -1080,6 +1080,10 @@ Files: modules/db_sqlite/*
 Copyright: 2015, OpenSIPS Foundation
 License: GPL-2+
 
+Files: modules/siprec/*
+Copyright: 2017, Răzvan Crainea
+License: GPL-2+
+
 Files: modules/sst/*
 Copyright: 2006-2008, SOMA Networks, Inc
 License: GPL-2+

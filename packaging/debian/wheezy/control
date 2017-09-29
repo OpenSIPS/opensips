@@ -30,6 +30,7 @@ Build-Depends: bison,
                libsnmp-dev,
                libsqlite3-dev,
                libssl-dev,
+               uuid-dev,
                libxml2-dev,
                pkg-config,
                python,
@@ -609,3 +610,14 @@ Description: CGRateS connector for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides a connnector to the CGRateS rating/billing engine.
+
+Package: opensips-siprec-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: SIP Call Recording Implementation for the SIPREC Protocol
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module provides the means to Record Calls using the SIPREC protocol.

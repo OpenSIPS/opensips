@@ -56,7 +56,7 @@ ALL_MODPKG_LIST := \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
 	PROTO_SCTP PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
-	SQLITE CGRATES XML
+	SQLITE CGRATES XML SIPREC
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -180,6 +180,9 @@ CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
 XML_PKGNAME = opensips-xml-module
 XML_MODULES = xml
 XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
+SIPREC_PKGNAME = opensips-siprec-module
+SIPREC_MODULES = siprec
+SIPREC_MOD_PATH=$(addprefix modules/, $(SIPREC_MODULES))
 
 
 # Need this per-package variables available in environment so accessible
