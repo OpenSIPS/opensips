@@ -1513,11 +1513,10 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 	}
 }
 
-static void handle_cl_gen_msg(bin_packet_t *packet)
+static void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_id)
 {
 	int req_like;
 	str rcv_msg, rcv_tag;
-	int cluster_id, source_id;
 
 	LM_DBG("Received generic clusterer message\n");
 
@@ -1651,7 +1650,7 @@ static void handle_other_cl_msg(bin_packet_t *packet, int packet_type)
 		}
 	} else {
 		if (packet_type == CLUSTERER_GENERIC_MSG)
-			handle_cl_gen_msg(packet);
+			handle_cl_gen_msg(packet, cluster_id, source_id);
 		else if (packet_type == CLUSTERER_MI_CMD)
 			handle_cl_mi_msg(packet);
 	}
