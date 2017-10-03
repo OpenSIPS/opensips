@@ -8,7 +8,7 @@
 	<title>Overview</title>
 	<para>
 		This module provides the means to do calls recording using an
-		external/passive recorder - the entity that records the call is not in
+		external recorder - the entity that records the call is not in
 		the media path between the caller and callee, but it is completely
 		separate, thus it can not affect by any means the quality of the
 		conversation. This is done in a standardized manner, using
@@ -17,7 +17,7 @@
 		implements this protocol.
 	</para>
 	<para>
-		Since a passive server is used to record calls, there are no
+		Since an external server is used to record calls, there are no
 		constraints regarding the location of the recorder, thus it can be
 		placed arbitrary. This offers huge flexibility to your architecture
 		configuration and various means for scaling.
