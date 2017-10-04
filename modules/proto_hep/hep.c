@@ -1708,6 +1708,7 @@ void free_hep_message(trace_message message)
 		/* free JSON payload if there */
 		if ( hep_msg->fPayload ) {
 			if ( !homer5_on ) {
+				cJSON_PurgeString( hep_msg->u.hepv3.payload_chunk.data );
 				JSON_free( hep_msg->fPayload );
 			} else {
 				if ( ((str *)hep_msg->fPayload)->s )
@@ -1719,6 +1720,7 @@ void free_hep_message(trace_message message)
 		/* free JSON correlation if there */
 		if ( hep_msg->correlation ) {
 			if ( !homer5_on ) {
+				cJSON_PurgeString(((generic_chunk_t *)hep_msg->correlation)->data);
 				JSON_free( hep_msg->correlation );
 			} else {
 				pkg_free( hep_msg->correlation );
