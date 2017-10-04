@@ -1026,14 +1026,14 @@ char* generate_cid(char* uri, int uri_len)
 	char* cid;
 	int len;
 
-	cid = (char*) pkg_malloc(uri_len + 30);
+	cid = (char*) pkg_malloc(max_contentid_len+2);
 	if(cid == NULL)
 	{
 		LM_ERR("no more memory\n");
 		return NULL;
 	}
 
-	len= sprintf(cid, "%d.%.*s.%d", (int)time(NULL), uri_len, uri, rand());
+	len= snprintf(cid, max_contentid_len, "%d.%.*s.%d", (int)time(NULL), uri_len, uri, rand());
 	cid[len]= '\0';
 
 	return cid;
