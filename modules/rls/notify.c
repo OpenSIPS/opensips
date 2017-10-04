@@ -333,7 +333,7 @@ int add_resource_instance(char* uri, xmlNodePtr resource_node,
 		cmp_code= strncmp(row_vals[resource_uri_col].val.string_val, uri,
 				strlen(uri));
 		if(cmp_code> 0)
-			break;
+			continue;
 
 		if(cmp_code== 0)
 		{
