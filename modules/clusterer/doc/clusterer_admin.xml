@@ -549,6 +549,7 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 				</programlisting>
 				</example>
 			</section>
+
 			<section>
 				<title>
 				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg[, tag])</function>
@@ -584,6 +585,28 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 						<programlisting format="linespecific">
 ...
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
+...
+				</programlisting>
+				</example>
+			</section>
+
+			<section>
+				<title>
+				<function moreinfo="none">cluster_check_addr(cluster_id, ip)</function>
+				</title>
+				<para>
+					This function checks whether the given IP address belongs to one of the nodes in the cluster. Note that the comparison is made against the addresses of the BIN listeners of the instances.
+				</para>
+				<para>
+					This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
+				</para>
+				<example>
+						<title>cluster_check_addr() usage</title>
+						<programlisting format="linespecific">
+...
+if (cluster_check_addr("1", "$si")) {
+	...
+}
 ...
 				</programlisting>
 				</example>
