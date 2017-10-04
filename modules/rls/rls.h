@@ -84,6 +84,7 @@ extern unsigned int xcap_port;
 extern str server_address;
 extern str presence_server;
 extern int waitn_time;
+extern int max_contentid_len;
 extern str rlsubs_table;
 extern str rlpres_table;
 extern int hash_size;

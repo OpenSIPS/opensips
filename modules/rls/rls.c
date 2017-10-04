@@ -67,6 +67,8 @@ db_func_t rls_dbf;
 str server_address= {0, 0};
 str presence_server= {0, 0};
 int waitn_time = 50;
+/* some cisco device has limitation on the max Content-ID length in the multipart body */
+int max_contentid_len = 128;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
 
@@ -180,6 +182,7 @@ static param_export_t params[]={
 	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
 	{ "rlpres_table",           STR_PARAM, &rlpres_table.s             },
 	{ "waitn_time",             INT_PARAM, &waitn_time                 },
+	{ "max_contentid_len",      INT_PARAM, &max_contentid_len          },
 	{ "clean_period",           INT_PARAM, &clean_period               },
 	{ "max_expires",            INT_PARAM, &rls_max_expires            },
 	{ "hash_size",              INT_PARAM, &hash_size                  },
@@ -392,6 +395,9 @@ static int mod_init(void)
 
 	if(waitn_time<= 0)
 		waitn_time= 50;
+
+	if(max_contentid_len<= 0)
+		max_contentid_len= 128;
 
 	/* bind libxml wrapper functions */
 
