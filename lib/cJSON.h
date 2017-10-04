@@ -88,6 +88,8 @@ extern void cJSON_InitHooks(cJSON_Hooks* hooks);
 extern cJSON *cJSON_Parse(const char *value);
 /* Render a cJSON entity to text for transfer/storage. Free the char* when finished. */
 extern char  *cJSON_Print(const cJSON *item);
+/* Purge strings allocated by cJSON_Print() */
+void cJSON_PurgeString(char *ptr);
 /* Render a cJSON entity to text for transfer/storage without any formatting. Free the char* when finished. */
 extern char  *cJSON_PrintUnformatted(const cJSON *item);
 /* Render a cJSON entity to text using a buffered strategy. prebuffer is a guess at the final size. guessing well reduces reallocation. fmt=0 gives unformatted, =1 gives formatted */

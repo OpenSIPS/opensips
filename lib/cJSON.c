@@ -898,6 +898,11 @@ char *cJSON_Print(const cJSON *item)
     return (char*)print_value(item, 0, 1, 0);
 }
 
+void cJSON_PurgeString(char *ptr)
+{
+	cJSON_free(ptr);
+}
+
 char *cJSON_PrintUnformatted(const cJSON *item)
 {
     return (char*)print_value(item, 0, 0, 0);
