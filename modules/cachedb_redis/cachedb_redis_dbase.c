@@ -35,6 +35,7 @@
 
 int redis_query_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int redis_connnection_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
+int shutdown_on_error = 0;
 
 redisContext *redis_get_ctx(char *ip, int port)
 {
@@ -89,7 +90,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 		freeReplyObject(rpl);
 	}
 
-	if ((con->type & REDIS_SINGLE_INSTANCE) && con->id->database) {
+	if ((con->flags & REDIS_SINGLE_INSTANCE) && con->id->database) {
 		rpl = redisCommand(node->context,"SELECT %s",con->id->database);
 		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to select database %s - %.*s\n",con->id->database,
@@ -147,7 +148,7 @@ int redis_connect(redis_con *con)
 	rpl = redisCommand(ctx,"CLUSTER NODES");
 	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 		/* single instace mode */
-		con->type |= REDIS_SINGLE_INSTANCE;
+		con->flags |= REDIS_SINGLE_INSTANCE;
 		len = strlen(con->id->host);
 		con->nodes = pkg_malloc(sizeof(cluster_node) + len + 1);
 		if (con->nodes == NULL) {
@@ -167,17 +168,22 @@ int redis_connect(redis_con *con)
 		LM_DBG("single instance mode\n");
 	} else {
 		/* cluster instance mode */
-		con->type |= REDIS_CLUSTER_INSTANCE;
+		con->flags |= REDIS_CLUSTER_INSTANCE;
 		con->slots_assigned = 0;
 		LM_DBG("cluster instance mode\n");
 		if (build_cluster_nodes(con,rpl->str,rpl->len) < 0) {
 			LM_ERR("failed to parse Redis cluster info\n");
+			freeReplyObject(rpl);
+			redisFree(ctx);
 			return -1;
 		}
 	}
 
 	freeReplyObject(rpl);
 	redisFree(ctx);
+
+	con->flags |= REDIS_INIT_NODES;
+
 	for (it=con->nodes;it;it=it->next) {
 
 		if (it->end_slot > con->slots_assigned )
@@ -218,8 +224,10 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 
 	if (redis_connect(con) < 0) {
 		LM_ERR("failed to connect to DB\n");
-		pkg_free(con);
-		return 0;
+		if (shutdown_on_error) {
+			pkg_free(con);
+			return NULL;
+		}
 	}
 
 	return con;
@@ -250,6 +258,10 @@ void redis_destroy(cachedb_con *con) {
 #define redis_run_command(con,key,fmt,args...) \
 	do {\
 		con = (redis_con *)connection->data; \
+		if (!(con->flags & REDIS_INIT_NODES) && redis_connect(con) < 0) { \
+			LM_ERR("failed to connect to DB\n"); \
+			return -9; \
+		} \
 		node = get_redis_connection(con,key); \
 		if (node == NULL) { \
 			LM_ERR("Bad cluster configuration\n"); \
@@ -623,6 +635,12 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 	str query_key;
 
 	con = (redis_con *)connection->data;
+
+	if (!(con->flags & REDIS_INIT_NODES) && redis_connect(con) < 0) {
+		LM_ERR("failed to connect to DB\n");
+		return -9;
+	}
+
 	if (redis_raw_query_extract_key(attr,&query_key) < 0) {
 		LM_ERR("Failed to extra Redis raw query key \n");
 		return -1;

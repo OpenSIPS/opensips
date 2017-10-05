@@ -157,9 +157,11 @@ cache_remove("redis:cluster1","key");
 			This parameter specifies how many milliseconds &osips; should wait
 			for connecting to a Redis node.
 		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>5000 ms</quote>.
 		</emphasis>
+		</para>
 
 		<example>
 		<title>Set <varname>connect_timeout</varname> parameter</title>
@@ -179,9 +181,11 @@ modparam("cachedb_redis", "connect_timeout",1000)
 			This parameter specifies how many milliseconds &osips; should wait
 			for a query response from a Redis node.
 		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>5000 ms</quote>.
 		</emphasis>
+		</para>
 
 		<example>
 		<title>Set <varname>connect_timeout</varname> parameter</title>
@@ -189,6 +193,30 @@ modparam("cachedb_redis", "connect_timeout",1000)
 ...
 # wait 1 seconds for Redis queries
 modparam("cachedb_redis", "query_timeout",1000)
+...
+		</programlisting>
+		</example>
+		</section>
+
+		<section>
+		<title><varname>shutdown_on_error</varname> (integer)</title>
+		<para>
+			By setting this parameter to 1, &osips; will abort startup if
+		the initial connection to Redis is not possible. Runtime reconnect
+		behavior is unaffected by this parameter, and is always enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set the <varname>shutdown_on_error</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# abort OpenSIPS startup if Redis is down
+modparam("cachedb_redis", "shutdown_on_error", 1)
 ...
 		</programlisting>
 		</example>

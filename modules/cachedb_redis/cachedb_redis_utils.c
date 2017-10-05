@@ -88,7 +88,7 @@ cluster_node *get_redis_connection(redis_con *con,str *key)
 	unsigned short hash_slot;
 	cluster_node *it;
 
-	if (con->type & REDIS_SINGLE_INSTANCE)
+	if (con->flags & REDIS_SINGLE_INSTANCE)
 		return con->nodes;
 	else {
 		hash_slot = redisHash(con, key);

@@ -44,15 +44,20 @@ typedef struct cluster_nodes {
 
 extern int redis_query_tout;
 extern int redis_connnection_tout;
+extern int shutdown_on_error;
 
-#define REDIS_SINGLE_INSTANCE	(1<<0)
-#define REDIS_CLUSTER_INSTANCE	(1<<1)
+enum redis_flag {
+	REDIS_SINGLE_INSTANCE  = 1 << 0,
+	REDIS_CLUSTER_INSTANCE = 1 << 1,
+	REDIS_INIT_NODES       = 1 << 2,
+};
+
 typedef struct {
 	struct cachedb_id *id;
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
 
-	int type; /* single node or cluster node */
+	enum redis_flag flags;
 	unsigned short slots_assigned; /* total slots for cluster */
 	cluster_node *nodes; /* one or more Redis nodes */
 } redis_con;
