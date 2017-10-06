@@ -1339,6 +1339,17 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		return -1;
 	}
 
+	if (!msg) {
+		LM_ERR("no SIP message\n");
+		return -1;
+	}
+
+	if (skip_cancel(msg)) {
+		LM_WARN("do_accounting() called on CANCEL but 'report_cancels' modparam"
+				" not set - no accounting will be done for this transaction!\n");
+		return 1;
+	}
+
 	acc_param = (acc_type_param_t *)type_p;
 	if (acc_param->t == DO_ACC_PARAM_TYPE_VALUE) {
 		type = acc_param->u.ival;
@@ -1457,8 +1468,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 	acc_ctx->flags |= ACC_PROCESSING_CTX_NO_FREE;
 	ACC_PUT_CTX(acc_ctx);
 
-	if ( msg && !skip_cancel(msg) &&
-	(is_acc_on(acc_ctx->flags) || is_mc_acc_on(acc_ctx->flags)) ) {
+	if (is_acc_on(acc_ctx->flags) || is_mc_acc_on(acc_ctx->flags)) {
 		/* do some parsing in advance */
 		if (acc_preparse_req(msg)<0)
 			return -1;
