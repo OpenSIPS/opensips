@@ -961,10 +961,8 @@ static int mod_init(void)
 			LM_ERR("failed to initialize the DB support\n");
 			return -1;
 		}
-		run_load_callbacks();
 	}
 
-	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
 	
 	return 0;
