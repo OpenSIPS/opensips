@@ -10,7 +10,7 @@ CREATE TABLE dialplan (
     repl_exp VARCHAR(32),
     timerec VARCHAR(255),
     disabled INTEGER DEFAULT 0 NOT NULL,
-    attrs VARCHAR(32)
+    attrs VARCHAR(256)
 );
 
 ALTER SEQUENCE dialplan_id_seq MAXVALUE 2147483647 CYCLE;

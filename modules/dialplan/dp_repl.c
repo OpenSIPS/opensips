@@ -360,7 +360,7 @@ static inline int check_time(tmrec_t *time_rec) {
 	return 1;
 }
 
-#define DP_MAX_ATTRS_LEN	32
+#define DP_MAX_ATTRS_LEN	256
 static char dp_attrs_buf[DP_MAX_ATTRS_LEN+1];
 int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * attrs) {
 
@@ -457,13 +457,16 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 		if(rulep->attrs.len>0) {
 			LM_DBG("the rule's attrs are %.*s\n",
 				rulep->attrs.len, rulep->attrs.s);
-			if(rulep->attrs.len >= DP_MAX_ATTRS_LEN) {
-				LM_ERR("EXCEEDED Max attribute length.\n");
-				return -1;
-			}
 			attrs->s = dp_attrs_buf;
-			memcpy(attrs->s, rulep->attrs.s, rulep->attrs.len*sizeof(char));
-			attrs->len = rulep->attrs.len;
+			if (rulep->attrs.len >= DP_MAX_ATTRS_LEN) {
+				LM_WARN("attribute for rule %d truncated to %d chars only\n",
+					rulep->dpid, DP_MAX_ATTRS_LEN);
+				memcpy(attrs->s, rulep->attrs.s, DP_MAX_ATTRS_LEN);
+				attrs->len = DP_MAX_ATTRS_LEN;
+			} else {
+				memcpy(attrs->s, rulep->attrs.s, rulep->attrs.len);
+				attrs->len = rulep->attrs.len;
+			}
 			attrs->s[attrs->len] = '\0';
 
 			LM_DBG("the copied attributes are: %.*s\n",

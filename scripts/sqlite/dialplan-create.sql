@@ -10,6 +10,6 @@ CREATE TABLE dialplan (
     repl_exp CHAR(32),
     timerec CHAR(255),
     disabled INTEGER DEFAULT 0 NOT NULL,
-    attrs CHAR(32)
+    attrs CHAR(256)
 );
 
