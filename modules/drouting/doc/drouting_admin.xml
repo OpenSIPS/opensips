@@ -159,8 +159,8 @@
 	<itemizedlist>
 	<listitem><para>id (string)</para></listitem>
 	<listitem><para>SIP address (SIP URI)</para></listitem>
-	<listitem><para>type (number to allow to group GW based on purpose,
-	like inbound, outbound, etc)</para></listitem>
+	<listitem><para>type (integer which allows GWs to be grouped by purpose,
+	e.g. inbound, outbound, etc.)</para></listitem>
 	<listitem>strip value (number of digits) from dialled
 	number<para></para></listitem>
 	<listitem><para>prefix (string) to be added to dialled
@@ -1620,7 +1620,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
 					type to be checked; when omitting this parameter or specifying
-					a negative value i.e. "-1", matching will be done against all groups
+					the special value "-1", matching will be done against all groups
 					(in a given partition if <varname>use_partition</varname> parameter is 1; if
 					<varname>use_partitions</varname> is 1 the partition being mandatory at this
 					point, it is not possible to do matching against all the partitions)
@@ -1730,7 +1730,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
 					type to be checked; when omitting this parameter or specifying
-					a negative value i.e. "-1", matching will be done against all groups
+					the special value "-1", matching will be done against all groups
 					</para>
 				</listitem>
 				<listitem>
@@ -1837,7 +1837,7 @@ if (is_from_gw("my_partition","3","1") {
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
 					type to be checked; when omitting this parameter or specifying
-					a negative value i.e. "-1", matching will be done against all groups
+					the special value "-1", matching will be done against all groups
 					</para>
 				</listitem>
 				<listitem>
