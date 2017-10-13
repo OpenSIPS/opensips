@@ -623,7 +623,7 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 	if (_s2 == NULL) {
 		num_pcre = 0;
 	} else {
-		num_pcre = (uint)(long)_s2;
+		num_pcre = *(unsigned int *)_s2;
 	}
 
 	if (num_pcre >= *num_pcres) {

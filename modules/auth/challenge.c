@@ -214,7 +214,8 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
  */
 int www_challenge(struct sip_msg* _msg, char* _realm, char* _qop)
 {
-	return challenge(_msg, (gparam_p)_realm, (int)(long)_qop, 401,
+	return challenge(_msg, (gparam_p)_realm,
+			!_qop ? 0 : (int)*(unsigned int *)_qop, 401,
 			MESSAGE_401, WWW_AUTH_CHALLENGE);
 }
 
@@ -224,7 +225,8 @@ int www_challenge(struct sip_msg* _msg, char* _realm, char* _qop)
  */
 int proxy_challenge(struct sip_msg* _msg, char* _realm, char* _qop)
 {
-	return challenge(_msg, (gparam_p)_realm, (int)(long)_qop, 407,
+	return challenge(_msg, (gparam_p)_realm,
+			!_qop ? 0 : (int)*(unsigned int *)_qop, 407,
 			MESSAGE_407, PROXY_AUTH_CHALLENGE);
 }
 

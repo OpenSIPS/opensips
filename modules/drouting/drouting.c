@@ -4304,11 +4304,11 @@ static int goes_to_gw_1(struct sip_msg* msg, char * part, char* _type, char* fla
 
 	if(use_partitions) {
 		gw_attrs_spec = (pv_spec_p)gw_att;
-		return _is_dr_uri_gw(msg, part, flags_pv, (!_type ? -1 : (int)(long)_type),
+		return _is_dr_uri_gw(msg, part, flags_pv, (!_type ? -1 : *(int *)_type),
 				GET_NEXT_HOP(msg));
 	} else {
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, flags_pv, (!_type ? -1 : (int)(long)_type),
+		return _is_dr_uri_gw(msg, NULL, flags_pv, (!_type ? -1 : *(int *)_type),
 				GET_NEXT_HOP(msg));
 	}
 }
