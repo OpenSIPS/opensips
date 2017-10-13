@@ -155,6 +155,7 @@
 #include <stdlib.h>
 #include <sys/uio.h>
 
+#include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
