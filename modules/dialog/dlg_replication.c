@@ -194,6 +194,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	bin_pop_str(packet, &vars);
 	bin_pop_str(packet, &profiles);
 	bin_pop_int(packet, &dlg->user_flags);
+	bin_pop_int(packet, &dlg->mod_flags);
 	bin_pop_int(packet, &dlg->flags);
 	bin_pop_int(packet, (void *) &dlg->tl.timeout);
 	bin_pop_int(packet, &dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
@@ -336,6 +337,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 	bin_pop_str(packet, &vars);
 	bin_pop_str(packet, &profiles);
 	bin_pop_int(packet, &dlg->user_flags);
+	bin_pop_int(packet, &dlg->mod_flags);
 	bin_pop_int(packet, &dlg->flags);
 
 	bin_pop_int(packet, &timeout);
@@ -501,6 +503,7 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	bin_push_str(&packet, vars);
 	bin_push_str(&packet, profiles);
 	bin_push_int(&packet, dlg->user_flags);
+	bin_push_int(&packet, dlg->mod_flags);
 	bin_push_int(&packet, dlg->flags &
 			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
 	bin_push_int(&packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
@@ -582,6 +585,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	bin_push_str(&packet, vars);
 	bin_push_str(&packet, profiles);
 	bin_push_int(&packet, dlg->user_flags);
+	bin_push_int(&packet, dlg->mod_flags);
 	bin_push_int(&packet, dlg->flags &
 			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
 	bin_push_int(&packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
