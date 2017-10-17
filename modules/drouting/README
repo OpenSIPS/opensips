@@ -8,8 +8,6 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-Edited by
-
 Anca-Maria Vamanu
 
    Copyright © 2005-2008 Voice Sistem SRL
@@ -270,8 +268,8 @@ Chapter 1. Admin Guide
    In DR, a gateway is defined by:
      * id (string)
      * SIP address (SIP URI)
-     * type (number to allow to group GW based on purpose, like
-       inbound, outbound, etc)
+     * type (integer which allows GWs to be grouped by purpose,
+       e.g. inbound, outbound, etc.)
      * strip value (number of digits) from dialled number
      * prefix (string) to be added to dialled number
      * attributes (not used by DR engine, but only pushed to
@@ -1184,7 +1182,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
        otherwise it will be omitted altogether) - the name of the
        partition containing the gateway/destination to be checked.
      * type (optional) - GW/destination type to be checked; when
-       omitting this parameter or specifying a negative value i.e.
+       omitting this parameter or specifying the special value
        "-1", matching will be done against all groups (in a given
        partition if use_partition parameter is 1; if
        use_partitions is 1 the partition being mandatory at this
@@ -1244,7 +1242,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
        containing the destination/gw to be checked. If *(wildcard)
        operator is used all partitions shall be checked.
      * type (optional) - GW/destination type to be checked; when
-       omitting this parameter or specifying a negative value i.e.
+       omitting this parameter or specifying the special value
        "-1", matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:
@@ -1295,7 +1293,7 @@ if (is_from_gw("my_partition","3","1") {
      * src_avp (mandatory) - avp containing a SIP URI. Does not
        support other OpenSIPS variables.
      * type (optional) - GW/destination type to be checked; when
-       omitting this parameter or specifying a negative value i.e.
+       omitting this parameter or specifying the special value
        "-1", matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:

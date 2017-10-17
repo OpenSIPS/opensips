@@ -1,16 +1,16 @@
 SIPREC Module
 
-Razvan Crainea
+Răzvan Crainea
 
    OpenSIPS Solutions
 
 Edited by
 
-Razvan Crainea
+Răzvan Crainea
 
-   Copyright � 2017 www.opensips-solutions.com
+   Copyright © 2017 www.opensips-solutions.com
 
-   Copyright � 2017 Module sponsored by OrecX
+   Copyright © 2017 Module sponsored by OrecX
      __________________________________________________________
 
    Table of Contents
@@ -138,7 +138,7 @@ Chapter 1. Admin Guide
      * Cannot handle Recording Sessions initiated by SRS - we do
        not support the scenario when an SRS suddently decides to
        record a call in the middle of the dialog.
-     * OpenSIPS cannot be "queried" for ongoing recording sessions
+     * OpenSIPS cannot be “queried” for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
 
 1.6. Dependencies
@@ -167,7 +167,7 @@ Chapter 1. Admin Guide
    This value should correlate to the port-range configured in the
    RTPProxy Media Server.
 
-   Default value is "35000".
+   Default value is “35000”.
 
    Example 1.1. Set media_port_min parameter
 ...
@@ -180,7 +180,7 @@ modparam("siprec", "media_port_min", 10000)
    This value should correlate to the port-range configured in the
    RTPProxy Media Server.
 
-   Default value is "65000".
+   Default value is “65000”.
 
    Example 1.2. Set media_port_max parameter
 ...

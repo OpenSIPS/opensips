@@ -10,11 +10,7 @@ Edited by
 
 Jiri Kuthan
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Ovidiu Sas
 
@@ -1394,14 +1390,14 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with old cancel_call() function
+   What happened with old cancel_call() function
 
-       The function was replace (as functionality) by
-       cancel_branch("a") - cancel all braches.
+   The function was replace (as functionality) by
+   cancel_branch("a") - cancel all braches.
 
    3.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

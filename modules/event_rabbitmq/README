@@ -329,90 +329,90 @@ failure_route[1] {
 
 Chapter 2. Frequently Asked Questions
 
-2.1.
+   2.1.
 
-    What is the maximum lenght of a AMQP message?
+   What is the maximum lenght of a AMQP message?
 
-    The maximum length of a datagram event is 16384 bytes.
+   The maximum length of a datagram event is 16384 bytes.
 
-2.2.
+   2.2.
 
-    Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-    Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
-2.3.
+   2.3.
 
-    What is the vhost used by the AMQP server?
+   What is the vhost used by the AMQP server?
 
-    Currently, the only vhost supported is '/'.
+   Currently, the only vhost supported is '/'.
 
-2.4.
+   2.4.
 
-    How can I set a vhost in the socket?
+   How can I set a vhost in the socket?
 
-    This version doesn't support a different vhost.
+   This version doesn't support a different vhost.
 
-2.5.
+   2.5.
 
-    How can I send an event to my RabbitMQ server?
+   How can I send an event to my RabbitMQ server?
 
-       This module acts as a transport module for the OpenSIPS Event
-       Interface. Therefore, this module should follow the Event
-       Interface behavior:
+   This module acts as a transport module for the OpenSIPS Event
+   Interface. Therefore, this module should follow the Event
+   Interface behavior:
 
-       The first step is to subscribe the RabbitMQ server to the
-       OpenSIPS Event Interface. This can be done using the
-       subscribe_event core function:
+   The first step is to subscribe the RabbitMQ server to the
+   OpenSIPS Event Interface. This can be done using the
+   subscribe_event core function:
 
-       Example 2.1. Event subscription
-    startup_route {
-            subscribe_event("E_RABBITMQ_EVENT", "rabbitmq:127.0.0.1/queue");
-    }
+   Example 2.1. Event subscription
+startup_route {
+        subscribe_event("E_RABBITMQ_EVENT", "rabbitmq:127.0.0.1/queue");
+}
 
-       The next step is to raise the event from the script, using the
-       raise_event core function:
+   The next step is to raise the event from the script, using the
+   raise_event core function:
 
-       Example 2.2. Event subscription
-    route {
-            ...
-            /* decided that an event should be raised */
-            raise_event("E_RABBITMQ_EVENT");
-            ...
-    }
+   Example 2.2. Event subscription
+route {
+        ...
+        /* decided that an event should be raised */
+        raise_event("E_RABBITMQ_EVENT");
+        ...
+}
 
-       NOTE that the event used above is only to exemplify the usage
-       from the script. Any event published through the OpenSIPS Event
-       Interface can be raised using this module.
+   NOTE that the event used above is only to exemplify the usage
+   from the script. Any event published through the OpenSIPS Event
+   Interface can be raised using this module.
 
-2.6.
+   2.6.
 
-    Where can I find more information about RabbitMQ?
+   Where can I find more information about RabbitMQ?
 
-    You can find more information about RabbitMQ on their official
-    website ( http://www.rabbitmq.com/).
+   You can find more information about RabbitMQ on their official
+   website ( http://www.rabbitmq.com/).
 
-2.7.
+   2.7.
 
-    Where can I post a question about this module?
+   Where can I post a question about this module?
 
-    First at all check if your question was already answered on one
-    of our mailing lists:
-      * User Mailing List -
-        http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-      * Developer Mailing List -
-        http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-    E-mails regarding any stable OpenSIPS release should be sent to
-    <users@lists.opensips.org> and e-mails regarding development
-    versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-    If you want to keep the mail private, send it to
-    <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
-2.8.
+   2.8.
 
-    How can I report a bug?
+   How can I report a bug?
 
-    Please follow the guidelines provided at:
-    https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

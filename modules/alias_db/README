@@ -245,16 +245,16 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with old use_domain parameter
+   What happened with old use_domain parameter
 
-       The global parameter (affecting the entire module) was replaced
-       with a per lookup parameter (affecting only current lookup).
-       See the "d" (do not used domain part) flag in the
-       db_alias_lookup() and db_alias_find() functions.
+   The global parameter (affecting the entire module) was replaced
+   with a per lookup parameter (affecting only current lookup).
+   See the "d" (do not used domain part) flag in the
+   db_alias_lookup() and db_alias_find() functions.
 
    2.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

@@ -6,8 +6,6 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-Edited by
-
 Vladut-Stefan Paiu
 
    Copyright © 2006-2009 Voice Sistem SRL
@@ -1887,61 +1885,61 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with “topology_hiding()” function?
+   What happened with “topology_hiding()” function?
 
-       The respective functionality was moved into the topology_hiding
-       module. Function prototype has remained the same.
+   The respective functionality was moved into the topology_hiding
+   module. Function prototype has remained the same.
 
    3.2.
 
-       What happened with “use_tight_match” parameter?
+   What happened with “use_tight_match” parameter?
 
-       The parameter was removed with version 1.3 as the option of
-       tight matching became mandatory and not configurable. Now, the
-       tight matching is done all the time (when using DID matching).
+   The parameter was removed with version 1.3 as the option of
+   tight matching became mandatory and not configurable. Now, the
+   tight matching is done all the time (when using DID matching).
 
    3.3.
 
-       What happened with “bye_on_timeout_flag” parameter?
+   What happened with “bye_on_timeout_flag” parameter?
 
-       The parameter was removed in a dialog module parameter
-       restructuring. To keep the bye on timeout behavior, you need to
-       provide a "B" string parameter to the create_dialog() function.
+   The parameter was removed in a dialog module parameter
+   restructuring. To keep the bye on timeout behavior, you need to
+   provide a "B" string parameter to the create_dialog() function.
 
    3.4.
 
-       What happened with “dlg_flag” parameter?
+   What happened with “dlg_flag” parameter?
 
-       The parameter is considered obsolete. The only way to create a
-       dialog is to call the create_dialog() function
+   The parameter is considered obsolete. The only way to create a
+   dialog is to call the create_dialog() function
 
    3.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    3.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    3.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

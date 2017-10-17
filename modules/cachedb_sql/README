@@ -178,7 +178,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with the old “db_url” module parameter?
+   What happened with the old “db_url” module parameter?
 
-       It was replaced with the “cachedb_url” parameter. See the
-       documentation for the usage of the “cachedb_url” parameter.
+   It was replaced with the “cachedb_url” parameter. See the
+   documentation for the usage of the “cachedb_url” parameter.

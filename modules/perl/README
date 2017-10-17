@@ -1311,50 +1311,50 @@ Chapter 4. Frequently Asked Questions
 
    4.1.
 
-       Are there known bugs in the Perl module?
+   Are there known bugs in the Perl module?
 
-       The Perl module does have a few shortcomings that may be
-       regarded as bugs.
-         * Missing module functions. Not all functions of other
-           modules are available for Perl access. The reason for this
-           is a design property of OpenSIPS. Making available more
-           functions is work in progress.
-         * Perl and threads. Perl itself is, when compiled with the
-           correct parameters, thread safe; unfortunately, not all
-           Perl modules are. The DBI modules, especially (but not
-           restricted to) DBI::ODBC are known NOT to be thread safe.
-           Using DBI::ODBC -- and possibly other non-thread-safe Perl
-           extensions -- may result in erroneous behavior of OpenSIPS,
-           including (but not restricted to) server crashes and wrong
-           routing.
+   The Perl module does have a few shortcomings that may be
+   regarded as bugs.
+     * Missing module functions. Not all functions of other
+       modules are available for Perl access. The reason for this
+       is a design property of OpenSIPS. Making available more
+       functions is work in progress.
+     * Perl and threads. Perl itself is, when compiled with the
+       correct parameters, thread safe; unfortunately, not all
+       Perl modules are. The DBI modules, especially (but not
+       restricted to) DBI::ODBC are known NOT to be thread safe.
+       Using DBI::ODBC -- and possibly other non-thread-safe Perl
+       extensions -- may result in erroneous behavior of OpenSIPS,
+       including (but not restricted to) server crashes and wrong
+       routing.
 
    4.2.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    4.3.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    4.4.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

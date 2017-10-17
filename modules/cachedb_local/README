@@ -8,8 +8,6 @@ Edited by
 
 Anca-Maria Vamanu
 
-Edited by
-
 Vladut-Stefan Paiu
 
    Copyright © 2009 Anca-Maria
@@ -182,11 +180,11 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with old cache_table_size parameter?
+   What happened with old cache_table_size parameter?
 
-       The parameter was removed because it was redundant. Since the
-       addition of collections, the old hash now belongs to the
-       default collection. This collection is created every time and
-       it has a default size of 512. The size can be changed by
-       setting the default collection size using cache_collections
-       paramter.
+   The parameter was removed because it was redundant. Since the
+   addition of collections, the old hash now belongs to the
+   default collection. This collection is created every time and
+   it has a default size of 512. The size can be changed by
+   setting the default collection size using cache_collections
+   paramter.

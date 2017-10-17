@@ -10,13 +10,9 @@ Ovidiu Sas
 
    <osas@voipembedded.com>
 
-Edited by
-
 Daniel-Constantin Mierla
 
    <team@voice-system.ro>
-
-Edited by
 
 Carsten Bock
 
@@ -1067,89 +1063,89 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Does dispatcher provide a fair distribution?
+   Does dispatcher provide a fair distribution?
 
-       There is no guarantee of that. You should do some measurements
-       to decide what distribution algorithm fits better in your
-       environment.
+   There is no guarantee of that. You should do some measurements
+   to decide what distribution algorithm fits better in your
+   environment.
 
    2.2.
 
-       Is dispatcher dialog stateful?
+   Is dispatcher dialog stateful?
 
-       No. Dispatcher is stateless, although some distribution
-       algorithms are designed to select same destination for
-       subsequent requests of the same dialog (e.g., hashing the
-       call-id).
+   No. Dispatcher is stateless, although some distribution
+   algorithms are designed to select same destination for
+   subsequent requests of the same dialog (e.g., hashing the
+   call-id).
 
    2.3.
 
-       What happened with the ds_is_from_list() function?
+   What happened with the ds_is_from_list() function?
 
-       The function was replaced by the more generic ds_is_in_list()
-       function that takes as parameters the IP and PORT to test
-       against the dispatcher list.
+   The function was replaced by the more generic ds_is_in_list()
+   function that takes as parameters the IP and PORT to test
+   against the dispatcher list.
 
-       ds_is_from_list() == ds_is_in_list("$si","$sp")
+   ds_is_from_list() == ds_is_in_list("$si","$sp")
 
    2.4.
 
-       How is weight and priority used by the dispatcher in selecting
-       a destination?
+   How is weight and priority used by the dispatcher in selecting
+   a destination?
 
-       The weight of a destination is currently used in the hashing
-       algorithms and it increases the probability of it to be
-       chosen(if we have two destinations with weights 1 respectively
-       4 than the second one is 4 times more likely to be selected
-       than the other). The sum of all weights does not need to add up
-       to a specific number. Weights are now used in the round-robin
-       algorithm, a destination is chosen a number of times equal to
-       its weight consecutively before going to the next destination.
+   The weight of a destination is currently used in the hashing
+   algorithms and it increases the probability of it to be
+   chosen(if we have two destinations with weights 1 respectively
+   4 than the second one is 4 times more likely to be selected
+   than the other). The sum of all weights does not need to add up
+   to a specific number. Weights are now used in the round-robin
+   algorithm, a destination is chosen a number of times equal to
+   its weight consecutively before going to the next destination.
 
-       The priority field is used at ordering the destinations from a
-       set. It does not affect the overall probability of a
-       destination to be chosen. It is reflected when listing the
-       destination, the field can definetly be used in further
-       selecting algorithms.
+   The priority field is used at ordering the destinations from a
+   set. It does not affect the overall probability of a
+   destination to be chosen. It is reflected when listing the
+   destination, the field can definetly be used in further
+   selecting algorithms.
 
    2.5.
 
-       What happened with the list_file module parameter ?
+   What happened with the list_file module parameter ?
 
-       The support for text file (for provisioning destinations) was
-       dropped. Only the DB support (provisioning via a DB table) is
-       now available - if you still want to use a text file for
-       provisioning, use db_text DB driver (DB emulated via text
-       files)
+   The support for text file (for provisioning destinations) was
+   dropped. Only the DB support (provisioning via a DB table) is
+   now available - if you still want to use a text file for
+   provisioning, use db_text DB driver (DB emulated via text
+   files)
 
    2.6.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.7.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable version should be sent to
-       <users@lists.opensips.org> and e-mail regarding development
-       versions or SVN snapshots should be send to
-       <devel@lists.opensips.org>.
+   E-mails regarding any stable version should be sent to
+   <users@lists.opensips.org> and e-mail regarding development
+   versions or SVN snapshots should be send to
+   <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.8.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues
