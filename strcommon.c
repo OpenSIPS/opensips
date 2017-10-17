@@ -274,8 +274,7 @@ int escape_user(str *sin, str *sout)
 			LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
 			return -1;
 		}
-		if (isdigit((int)*p) || ((*p >= 'A') && (*p <= 'Z')) ||
-				((*p >= 'a') && (*p <= 'z')))
+		if (isalnum((int)*p))
 		{
 			*at = *p;
 		} else {
@@ -358,42 +357,46 @@ int escape_param(str *sin, str *sout)
 			LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
 			return -1;
 		}
-		switch (*p) {
-			/* unreserved chars */
-			case '-':
-			case '_':
-			case '.':
-			case '!':
-			case '~':
-			case '*':
-			case '\'':
-			case '(':
-			case ')':
-			/* param unreserved chars */
-			case '[':
-			case ']':
-			case '/':
-			case ':':
-			case '&':
-			case '+':
-			case '$':
-				*at = *p;
-				break;
-			default:
-				*at++ = '%';
-				x = (*p) >> 4;
-				if (x < 10)
-				{
-					*at++ = x + '0';
-				} else {
-					*at++ = x - 10 + 'a';
-				}
-				x = (*p) & 0x0f;
-				if (x < 10) {
-					*at = x + '0';
-				} else {
-					*at = x - 10 + 'a';
-				}
+		if (isalnum((int)*p)) {
+			*at = *p;
+		} else {
+			switch (*p) {
+				/* unreserved chars */
+				case '-':
+				case '_':
+				case '.':
+				case '!':
+				case '~':
+				case '*':
+				case '\'':
+				case '(':
+				case ')':
+				/* param unreserved chars */
+				case '[':
+				case ']':
+				case '/':
+				case ':':
+				case '&':
+				case '+':
+				case '$':
+					*at = *p;
+					break;
+				default:
+					*at++ = '%';
+					x = (*p) >> 4;
+					if (x < 10)
+					{
+						*at++ = x + '0';
+					} else {
+						*at++ = x - 10 + 'a';
+					}
+					x = (*p) & 0x0f;
+					if (x < 10) {
+						*at = x + '0';
+					} else {
+						*at = x - 10 + 'a';
+					}
+			}
 		}
 		at++;
 		p++;
