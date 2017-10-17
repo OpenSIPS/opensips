@@ -28,6 +28,7 @@ Vladut-Stefan Paiu
               1.5.1. cachedb_url (string)
               1.5.2. connect_timeout (integer)
               1.5.3. query_timeout (integer)
+              1.5.4. shutdown_on_error (integer)
 
         1.6. Exported Functions
         1.7. Raw Query Syntax
@@ -116,6 +117,7 @@ cache_remove("redis:cluster1","key");
 
    This parameter specifies how many milliseconds OpenSIPS should
    wait for connecting to a Redis node.
+
    Default value is “5000 ms”.
 
    Example 1.3. Set connect_timeout parameter
@@ -128,6 +130,7 @@ modparam("cachedb_redis", "connect_timeout",1000)
 
    This parameter specifies how many milliseconds OpenSIPS should
    wait for a query response from a Redis node.
+
    Default value is “5000 ms”.
 
    Example 1.4. Set connect_timeout parameter
@@ -136,12 +139,13 @@ modparam("cachedb_redis", "connect_timeout",1000)
 modparam("cachedb_redis", "query_timeout",1000)
 ...
 
-1.5.3.1. shutdown_on_error (integer)
+1.5.4. shutdown_on_error (integer)
 
    By setting this parameter to 1, OpenSIPS will abort startup if
    the initial connection to Redis is not possible. Runtime
    reconnect behavior is unaffected by this parameter, and is
    always enabled.
+
    Default value is “0” (disabled).
 
    Example 1.5. Set the shutdown_on_error parameter
