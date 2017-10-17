@@ -90,7 +90,13 @@ listen=tcp:127.0.0.1:5080       # change with the listening IP and port
 
 1.3.1. tcp_port (integer)
 
-   The default port to be used by all TCP listeners.
+   The default port to be used for all TCP related operation. Be
+   careful as the default port impacts both the SIP listening part
+   (if no port is defined in the TCP listeners) and the SIP
+   sending part (if the destination URI has no explicit port).
+
+   If you want to change only the listening port for TCP, use the
+   port option in the SIP listener defintion.
 
    Default value is 5060.
 
