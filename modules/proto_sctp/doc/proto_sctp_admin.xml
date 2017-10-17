@@ -53,7 +53,14 @@
 	<section>
 		<title><varname>sctp_port</varname> (integer)</title>
 		<para>
-		The default port to be used by all SCTP listeners.
+		The default port to be used for all SCTP related operation. Be careful
+		as the default port impacts both the SIP listening part (if no port is
+		defined in the SCTP listeners) and the SIP sending part (if the 
+		destination SCTP URI has no explicit port).
+		</para>
+		<para>
+		If you want to change only the listening port for STP, use the port
+		option in the SIP listener defintion.
 		</para>
 		<para>
 		<emphasis>
