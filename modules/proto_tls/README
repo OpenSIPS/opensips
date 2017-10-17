@@ -12,23 +12,13 @@ Edited by
 
 Klaus Darilion
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Cesc Santasusana
 
-Edited by
-
 Klaus Darilion
 
-Edited by
-
 Christian Lahme
-
-Edited by
 
 Ionut-Razvan Ionita
 
@@ -240,7 +230,13 @@ listen = tls:1.2.3.4:5061
 
 1.5.2. tls_port (integer)
 
-   Sets the default TLS listening port.
+   The default port to be used for all TLS related operation. Be
+   careful as the default port impacts both the SIP listening part
+   (if no port is defined in the TLS listeners) and the SIP
+   sending part (if the destination URI has no explicit port).
+
+   If you want to change only the listening port for TLS, use the
+   port option in the SIP listener defintion.
 
    Default value is 5061.
 
@@ -397,75 +393,75 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Where can I post a question about TLS?
+   Where can I post a question about TLS?
 
-       Use one (the most appropriate) of the OpenSIPS mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   Use one (the most appropriate) of the OpenSIPS mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       Remember: first at all, check if your question wasn't already
-       answered.
+   Remember: first at all, check if your question wasn't already
+   answered.
 
    2.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Accumulate as much as possible information (OpenSIPS version,
-       opensips -V output, your OS (uname -a), OpenSIPS logs, network
-       dumps, core dump files, configuration file) and send a mail to
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   Accumulate as much as possible information (OpenSIPS version,
+   opensips -V output, your OS (uname -a), OpenSIPS logs, network
+   dumps, core dump files, configuration file) and send a mail to
+   http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       Also you may try OpenSIPS's bug report web page:
-       http://www.opensips.org/pmwiki.php?n=Development.Tracker
+   Also you may try OpenSIPS's bug report web page:
+   http://www.opensips.org/pmwiki.php?n=Development.Tracker
 
    2.3.
 
-       How can I debug ssl/tls problems?
+   How can I debug ssl/tls problems?
 
-       Increase the log level in opensips.cfg (log_level=4) and watch
-       the log statements in syslog.
+   Increase the log level in opensips.cfg (log_level=4) and watch
+   the log statements in syslog.
 
-       Install the ssldump utility and start it. This will give you a
-       trace of the ssl/tls connections.
+   Install the ssldump utility and start it. This will give you a
+   trace of the ssl/tls connections.
 
    2.4.
 
-       What is the difference between the TLS directory and the TLSOPS
-       module directory?
+   What is the difference between the TLS directory and the TLSOPS
+   module directory?
 
-       The code in the TLS directory implements the TLS transport
-       layer. The TLSOPS module implements TLS related functions which
-       can be used in the routing script.
+   The code in the TLS directory implements the TLS transport
+   layer. The TLSOPS module implements TLS related functions which
+   can be used in the routing script.
 
    2.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

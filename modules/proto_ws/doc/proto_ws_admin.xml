@@ -97,7 +97,14 @@ listen=ws:127.0.0.1:5060	# change with the listening IP and port
 	<section>
 		<title><varname>ws_port</varname> (integer)</title>
 		<para>
-		The default port to be used by all WebSocket listeners.
+		The default port to be used for all WS related operation. Be careful
+		as the default port impacts both the SIP listening part (if no port is
+		defined in the WS listeners) and the SIP sending part (if the 
+		destination WS URI has no explicit port).
+		</para>
+		<para>
+		If you want to change only the listening port for WS, use the port
+		option in the SIP listener defintion.
 		</para>
 		<para>
 		<emphasis>

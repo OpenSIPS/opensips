@@ -104,7 +104,13 @@ listen=ws:127.0.0.1:5060        # change with the listening IP and port
 
 1.3.1. ws_port (integer)
 
-   The default port to be used by all WebSocket listeners.
+   The default port to be used for all WS related operation. Be
+   careful as the default port impacts both the SIP listening part
+   (if no port is defined in the WS listeners) and the SIP sending
+   part (if the destination WS URI has no explicit port).
+
+   If you want to change only the listening port for WS, use the
+   port option in the SIP listener defintion.
 
    Default value is 80.
 
@@ -247,13 +253,13 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Can OpenSIPS act as a WebSocket client?
+   Can OpenSIPS act as a WebSocket client?
 
-       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
-       client.
+   Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+   client.
 
    2.2.
 
-       Does OpenSIPS support WebSocket message fragmentation?
+   Does OpenSIPS support WebSocket message fragmentation?
 
-       No, WebSocket fragmentation mechanism is not supported.
+   No, WebSocket fragmentation mechanism is not supported.
