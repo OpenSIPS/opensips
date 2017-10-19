@@ -782,15 +782,15 @@ static int mod_init(void)
 
 	/* we are only interested in these parameters if the cachedb url was defined */
 	if (cdb_url.s) {
+		cdb_val_prefix.len = strlen(cdb_val_prefix.s);
+		cdb_noval_prefix.len = strlen(cdb_noval_prefix.s);
+		cdb_size_prefix.len = strlen(cdb_size_prefix.s);
 		cdb_url.len = strlen(cdb_url.s);
+
 		if (init_cachedb_utils() <0) {
 			LM_ERR("cannot init cachedb utils\n");
 			return -1;
 		}
-
-		cdb_val_prefix.len = strlen(cdb_val_prefix.s);
-		cdb_noval_prefix.len = strlen(cdb_noval_prefix.s);
-		cdb_size_prefix.len = strlen(cdb_size_prefix.s);
 	}
 
 	/* allocate a slot in the processing context */
