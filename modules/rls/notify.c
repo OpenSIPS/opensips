@@ -1254,13 +1254,13 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 
                     result->rows[i].values[resource_uri_col].type = DB_STRING;
                     result->rows[i].values[resource_uri_col].nul = 0;
-                    result->rows[i].values[resource_uri_col].free = 0;
+                    result->rows[i].values[resource_uri_col].free = 1;
                     result->rows[i].values[resource_uri_col].val.string_val = (char *) pkg_malloc(normalized_uri->len+1);
                     strcpy((char *) result->rows[i].values[resource_uri_col].val.string_val, normalized_uri->s);
 
                     result->rows[i].values[ctype_col].type = DB_STRING;
                     result->rows[i].values[ctype_col].nul = 0;
-                    result->rows[i].values[ctype_col].free = 0;
+                    result->rows[i].values[ctype_col].free = 1;
                     result->rows[i].values[ctype_col].val.string_val = (char *) pkg_malloc(30);
                     strcpy((char *) result->rows[i].values[ctype_col].val.string_val, "application/dialog-info+xml");
 
@@ -1270,14 +1270,20 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
                     snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\" direction=\"receiver\"><state>terminated</state><remote><local><identity display=\"%s\">sip:@vm.example.net</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username);
                     result->rows[i].values[pres_state_col].type = DB_STRING;
                     result->rows[i].values[pres_state_col].nul = 0;
-                    result->rows[i].values[pres_state_col].free = 0;
+                    result->rows[i].values[pres_state_col].free = 1;
                     result->rows[i].values[pres_state_col].val.string_val = (char *) pkg_malloc(strlen(buf)+1);
                     strcpy((char *) result->rows[i].values[pres_state_col].val.string_val, buf);
 
                     result->rows[i].values[auth_state_col].type = DB_INT;
                     result->rows[i].values[auth_state_col].nul = 0;
-                    result->rows[i].values[auth_state_col].free = 0;
+                    result->rows[i].values[auth_state_col].free = 1;
                     result->rows[i].values[auth_state_col].val.int_val = 2;
+
+                    result->rows[i].values[reason_col].type = DB_STRING;
+                    result->rows[i].values[reason_col].nul = 0;
+                    result->rows[i].values[reason_col].free = 1;
+                    result->rows[i].values[reason_col].val.string_val = (char *) pkg_malloc(16);
+                    strcpy((char *) result->rows[i].values[reason_col].val.string_val, "");
 
                     i++;
                 }
