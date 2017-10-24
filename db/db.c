@@ -244,7 +244,10 @@ int db_bind_mod(const str* mod, db_func_t* mydbf)
 		dbf.insert_update = (db_insert_update_f)find_mod_export(tmp,
 			"db_insert_update", 2, 0);
 	}
-	if(db_check_api(&dbf, tmp)!=0)
+	/* check if the module pre-populated the capabilities, or we need to
+	 * compute them ourselves - we check for the INSERT capability, because
+	 * it's the only one that should be exported by all modules */
+	if(!DB_CAPABILITY(dbf, DB_CAP_INSERT) && db_check_api(&dbf, tmp)!=0)
 		goto error;
 
 	*mydbf=dbf; /* copy */
