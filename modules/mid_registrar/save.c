@@ -432,7 +432,9 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		overwrite_contact_expirations(req, mri);
 	}
 
-	shm_str_dup(&mri->main_reg_uri, GET_NEXT_HOP(req));
+	shm_str_dup(&mri->main_reg_uri, GET_RURI(req));
+	if (GET_RURI(req) != GET_NEXT_HOP(req))
+		shm_str_dup(&mri->main_reg_next_hop, GET_NEXT_HOP(req));
 
 	if (reg_mode == MID_REG_THROTTLE_AOR) {
 		LM_DBG("trimming all Contact URIs into one...\n");
@@ -452,8 +454,10 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
-	LM_DBG("REQ FORWARDED TO '%.*s', expires=%d\n",
-	       mri->main_reg_uri.len, mri->main_reg_uri.s, mri->expires_out);
+	LM_DBG("REQ FORWARDED TO '%.*s' (obp: %.*s), expires=%d\n",
+	       mri->main_reg_uri.len, mri->main_reg_uri.s,
+	       mri->main_reg_next_hop.len, mri->main_reg_next_hop.s,
+	       mri->expires_out);
 }
 
 int replace_response_expires(struct sip_msg *msg, contact_t *ct, int expires)
@@ -533,6 +537,9 @@ static struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 
 	if (mri->main_reg_uri.s)
 		shm_str_dup(&ret->main_reg_uri, &mri->main_reg_uri);
+
+	if (mri->main_reg_next_hop.s)
+		shm_str_dup(&ret->main_reg_next_hop, &mri->main_reg_next_hop);
 
 	return ret;
 }

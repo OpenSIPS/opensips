@@ -89,6 +89,12 @@ static int unregister_contact(struct mid_reg_info *mri)
 	}
 	dlg->state = DLG_CONFIRMED;
 
+	if (mri->main_reg_next_hop.s) {
+		LM_DBG("adding next hop: %.*s\n", mri->main_reg_next_hop.len,
+		       mri->main_reg_next_hop.s);
+		dlg->obp = mri->main_reg_next_hop;
+	}
+
 	if (build_unregister_hdrs(mri) != 0) {
 		LM_ERR("failed to build unregister headers\n");
 		return -1;
