@@ -431,6 +431,9 @@ void mri_free(struct mid_reg_info *mri)
 	if (mri->main_reg_uri.s)
 		shm_free(mri->main_reg_uri.s);
 
+	if (mri->main_reg_next_hop.s)
+		shm_free(mri->main_reg_next_hop.s);
+
 	if (mri->ct_uri.s)
 		shm_free(mri->ct_uri.s);
 

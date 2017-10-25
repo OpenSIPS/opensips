@@ -63,7 +63,8 @@ enum mid_reg_matching_mode {
 
 /* fields marked with [NEW] must be persisted into usrloc */
 struct mid_reg_info {
-	str main_reg_uri; /* [NEW] De-REGISTER next hop */
+	str main_reg_uri;      /* [NEW] De-REGISTER URI */
+	str main_reg_next_hop; /* [NEW] De-REGISTER next hop */
 
 	str ct_uri;  /* [NEW] De-REGISTER Contact hf value */
 
