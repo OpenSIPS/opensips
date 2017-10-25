@@ -346,7 +346,7 @@ static int replace_expires_hf(struct sip_msg *msg, int new_expiry)
 			return -1;
 		}
 
-		p = pkg_malloc(10);
+		p = pkg_malloc(11);
 		if (!p)
 			return -1;
 
@@ -361,6 +361,18 @@ static int replace_expires_hf(struct sip_msg *msg, int new_expiry)
 	}
 
 	return 1;
+}
+
+static void remove_expires_hf(struct sip_msg *msg)
+{
+	if (msg->expires && msg->expires->body.len > 0) {
+		LM_DBG("remove Exp hdr: '%.*s'\n",
+		       msg->expires->body.len, msg->expires->body.s);
+
+		if (!del_lump(msg, msg->expires->name.s - msg->buf,
+		              msg->expires->len, HDR_EXPIRES_T))
+			LM_ERR("fail del_lump on 'Expires:' hf value!\n");
+	}
 }
 
 static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
@@ -450,22 +462,40 @@ int replace_response_expires(struct sip_msg *msg, contact_t *ct, int expires)
 	int len;
 	char *p;
 
-	LM_DBG("replacing expires for ct '%.*s' '%.*s' with %d, %p -> %p (? %p)\n",
-	       ct->uri.len, ct->uri.s, ct->expires->body.len, ct->expires->body.s,
-	       expires, msg->buf, msg->buf+msg->len, ct->expires->body.s);
+	if (!ct->expires) {
+		LM_DBG("adding expires, ct '%.*s' with %d, %p -> %p\n",
+		       ct->uri.len, ct->uri.s, expires, msg->buf, msg->buf+msg->len);
 
-	lump = del_lump(msg, ct->expires->body.s - msg->buf, ct->expires->body.len,
-	                HDR_EXPIRES_T);
-	if (!lump) {
-		LM_ERR("del_lump() failed!\n");
-		return -1;
+		lump = anchor_lump(msg, ct->name.s + ct->len - msg->buf, HDR_OTHER_T);
+		if (!lump) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		p = pkg_malloc(20);
+		if (!p)
+			return -1;
+
+		len = sprintf(p, ";expires=%d", expires);
+	} else {
+		LM_DBG("replacing expires, ct '%.*s' '%.*s' with %d, %p -> %p (%p)\n",
+		       ct->uri.len, ct->uri.s, ct->expires->body.len,
+		       ct->expires->body.s, expires, msg->buf, msg->buf+msg->len,
+		       ct->expires->body.s);
+
+		lump = del_lump(msg, ct->expires->body.s - msg->buf, ct->expires->body.len,
+		                HDR_EXPIRES_T);
+		if (!lump) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		p = pkg_malloc(11);
+		if (!p)
+			return -1;
+
+		len = sprintf(p, "%d", expires);
 	}
-
-	p = pkg_malloc(10);
-	if (!p)
-		return -1;
-
-	len = sprintf(p, "%d", expires);
 
 	if (!insert_new_lump_after(lump, p, len, HDR_OTHER_T)) {
 		LM_ERR("insert_new_lump_after() failed!\n");
@@ -784,6 +814,7 @@ static inline int save_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 	int e, e_out;
 	int e_max = 0;
 	int tcp_check = 0;
+	int remove_exp_hf = 1;
 	struct sip_uri uri;
 	str ct_uri;
 
@@ -827,6 +858,8 @@ static inline int save_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 		}
 
 		calc_contact_expires(rpl, _c->expires, &e_out, NULL);
+		if (!_c->expires)
+			remove_exp_hf = 0;
 
 		/*
 		 * if (mri->max_contacts && (num >= mri->max_contacts)) {
@@ -946,6 +979,9 @@ update_usrloc:
 	if (r) {
 		ul_api.release_urecord(r, 0);
 	}
+
+	if (remove_exp_hf)
+		remove_expires_hf(rpl);
 
 	if ( tcp_check && e_max>0 ) {
 		e_max -= get_act_time();
