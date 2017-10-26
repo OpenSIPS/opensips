@@ -2696,10 +2696,9 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		union sockaddr_union* to_su, str* payload,
 		int net_proto, str* correlation_id, struct modify_trace* mod_p)
 {
-	int trace_id_hash;
-
 	tlist_elem_p it;
 	trace_info_p info = GET_SIPTRACE_CONTEXT;
+	int hash;
 
 	trace_message trace_msg;
 
@@ -2713,7 +2712,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		return 0;
 	}
 
-	if ((trace_id_hash=is_id_traced(id, info)) == 0) {
+	if (is_id_traced(id, info) == 0) {
 		LM_DBG("id %d not traced! aborting...\n", id);
 		return 0;
 	}
@@ -2729,8 +2728,17 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		}
 	}
 
-	for (it=info->trace_list;
-			it && it->hash == trace_id_hash; it=it->next) {
+	for(it=info->trace_list; it; it=it->next)
+		LM_DBG("name %.*s, hash %d, type %d, traceable %d\n",
+			it->name.len,it->name.s,
+			it->hash, it->type, *it->traceable);
+
+	/* iterate through the list of trace URIs but use only those
+	 * with the same name (given by same hash) - keep in midn that
+	 * the list is hash-ordered, so all trace URIs under the same
+	 * name will be grouped */
+	hash = info->trace_list->hash;
+	for (it=info->trace_list; it && (it->hash==hash); it=it->next) {
 		if (it->type != TYPE_HEP || !(*it->traceable))
 			continue;
 
