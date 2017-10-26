@@ -823,6 +823,10 @@ int find_domain(str* _d, udomain_t** _p)
 
 /*
  * retrieve the ucontact from a domain using the contact id
+ *
+ * Returns:
+ *	NULL, if contact not found
+ *  contact, *with grabbed ulslot lock*
  */
 ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **_r)
 {
@@ -865,7 +869,6 @@ ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **
 		for (c = r->contacts; c != NULL; c = c->next)
 			if ((unsigned short)c->label == clabel) {
 				*_r = r;
-				unlock_ulslot(d, sl);
 				return c;
 			}
 	}
@@ -878,7 +881,8 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 {
 	ucontact_t *c, virt_c;
 	urecord_t *r;
-
+	unsigned int sl, rlabel;
+	unsigned short aorhash, clabel;
 
 	/* if contact only in database */
 	if (db_mode == DB_ONLY) {
@@ -915,6 +919,11 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 
 		mem_delete_ucontact(r, c);
 	}
+
+	unpack_indexes(contact_id, &aorhash, &rlabel, &clabel);
+
+	sl = aorhash & (d->size - 1);
+	unlock_ulslot(d, sl);
 
 	return 0;
 }
