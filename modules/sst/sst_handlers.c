@@ -1054,23 +1054,17 @@ static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo)
  */
 static int send_reject(struct sip_msg *msg, unsigned int min_se)
 {
-	char tmp[2]; /* to find the length */
+	char tmp[8 /* "MIN-SE: " */ + INT2STR_MAX_LEN + 2 /* CRLF */ + 1 /* '\0' */];
 	int hdr_len = 0;
 	char *minse_hdr = NULL;
 
-	hdr_len = snprintf(tmp, 2, "%s %d%s", "MIN-SE:", min_se, CRLF);
-	if ((minse_hdr = pkg_malloc(hdr_len+1)) != NULL) {
-		memset(minse_hdr, 0, hdr_len+1);
-		snprintf(minse_hdr, hdr_len+1, "%s %d%s", "MIN-SE:", min_se, CRLF);
-		if (send_response(msg, 422, &sst_422_rpl, minse_hdr, hdr_len)) {
-			LM_ERR("Error sending 422 reply.\n");
-			return(-1);
-		}
-		pkg_free(minse_hdr);
-		LM_DBG("Send reject reply 422 with Min-SE: %d\n", min_se);
-		return(0);
+	hdr_len = snprintf(tmp, sizeof(tmp), "%s %d%s", "MIN-SE:", min_se, CRLF);
+	if (send_response(msg, 422, &sst_422_rpl, minse_hdr, hdr_len)) {
+		LM_ERR("Error sending 422 reply.\n");
+		return(-1);
 	}
-	return(-1);
+	LM_DBG("Send reject reply 422 with Min-SE: %d\n", min_se);
+	return(0);
 }
 
 /**
