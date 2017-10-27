@@ -2465,13 +2465,13 @@ struct rtpp_node *
 search_rtpp_node(struct rtpp_set *set, char * url)
 {
 	struct rtpp_node* node = NULL;
-    int found;
+	int found;
 
-    if (!url) {
-        return NULL;
-    }
+	if (!url) {
+		return NULL;
+	}
 
-    LM_DBG("Searching for node with url=%s\n", url);
+	LM_DBG("Searching for node with url=%s\n", url);
 	/* check last list version */
 	if (my_version != *list_version && update_rtpp_proxies() < 0) {
 		LM_ERR("cannot update rtpp proxies list\n");
@@ -2483,24 +2483,24 @@ search_rtpp_node(struct rtpp_set *set, char * url)
 		return NULL;
 	}
 
-    found = 0;
+	found = 0;
 	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
 		if (strcmp(node->rn_url.s, url) == 0) {
 			node->rn_disabled = rtpp_test(node, 1, 0);
-            if (node->rn_disabled == 0) {
-                found = 1;
-            }
-            break;
+			if (node->rn_disabled == 0) {
+				found = 1;
+			}
+			break;
 		}
 	}
-    if (found == 1) {
-        LM_DBG("Found node with url=%s\n", url);
-	    return node;
-    }
-    else {
-        LM_DBG("Not able to find node with url=%s\n", url);
-        return NULL;
-    }
+	if (found == 1) {
+		LM_DBG("Found node with url=%s\n", url);
+		return node;
+	}
+	else {
+		LM_DBG("Not able to find node with url=%s\n", url);
+		return NULL;
+	}
 }
 
 static int
@@ -3437,11 +3437,11 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 				}
 			}
 		}
-        else if (args.offer == 0 && use_url) {
-            // for rtpproxy_answer, if provided OFFER stage rtpproxy URL, we will search in
-            // the node list to find a matching one and use it
-            args.node = search_rtpp_node(args.set, use_url);
-        }
+		else if (args.offer == 0 && use_url) {
+			// for rtpproxy_answer, if provided OFFER stage rtpproxy URL, we will search in
+			// the node list to find a matching one and use it
+			args.node = search_rtpp_node(args.set, use_url);
+		}
 
 		LM_DBG("Forcing body:\n[%.*s]\n", args.body.len, args.body.s);
 		ret = force_rtp_proxy_body(msg, &args, (pv_spec_p)var);
@@ -3861,9 +3861,9 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 					}
 					LM_DBG("trying new rtpproxy node %s\n", args->node->rn_address);
 				}
-                else {
-                    LM_DBG("trying existing rtpproxy node = %s\n", args->node->rn_address);
-                }
+				else {
+					LM_DBG("trying existing rtpproxy node = %s\n", args->node->rn_address);
+				}
 				/* if we don't have, we should choose a new node */
 				if (rep_opts.oidx > 0) {
 					if (args->node->rn_rep_supported == 0) {
