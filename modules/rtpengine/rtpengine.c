@@ -1036,6 +1036,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 		return 0;
 
 	iniface.len = outiface.len = 0;
+	iniface.s = outiface.s = NULL;
 
 	while (1) {
 		while (*flags_str == ' ')
