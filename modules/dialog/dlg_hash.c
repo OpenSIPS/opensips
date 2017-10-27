@@ -1286,7 +1286,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		}
 		/* print dlg profiles */
 		if (dlg->profile_links) {
-			node3 = add_mi_node_child(node1, MI_IS_ARRAY, "profiles", 8, 0, 0);
+			node3 = add_mi_node_child(node1, 0, "profiles", 8, 0, 0);
 			if(node3 == 0)
 				goto error;
 			for( dl=dlg->profile_links ; dl ; dl=dl->next) {
