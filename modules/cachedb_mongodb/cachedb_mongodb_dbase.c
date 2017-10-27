@@ -1065,6 +1065,10 @@ int kvo_to_bson(const db_key_t *_k, const db_val_t *_v, const db_op_t *_op,
 			} else if (strcmp(_op[i], OP_NEQ) == 0) {
 				key.s = "$ne";
 				key.len = 3;
+			} else {
+				/* shouldn't get here, but let's make gcc happy */
+				key.s = "";
+				key.len = 0;
 			}
 		}
 
