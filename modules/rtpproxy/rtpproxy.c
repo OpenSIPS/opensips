@@ -4452,6 +4452,8 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 		goto error;
 	}
 
+	media_start = media_stop = 0;
+
 	if (destination) {
 		/* if name is specified, we need to change the command */
 		cmd = 'C';
