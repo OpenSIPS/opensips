@@ -212,7 +212,7 @@ int setmodemparams( struct modem *mdm )
 
 int initmodem(struct modem *mdm, cds_report cds_report_f)
 {
-	char command[100];
+	char command[11 /* "AT+CPIN=""\r" */ + MAX_CHAR_BUF /* pin */ + 1 /* '\0' */];
 	char answer[100];
 	int retries=0;
 	int success=0;
