@@ -840,8 +840,8 @@ static int fixup_offer_answer(void ** param, int param_no)
 		return fixup_set_id(param);
 	if (param_no == 4)
 		return fixup_pvar(param);
-    if (param_no == 5)
-        return fixup_spve(param);
+	if (param_no == 5)
+		return fixup_spve(param);
 	LM_ERR("Too many parameters %d\n", param_no);
 	return E_CFG;
 }
