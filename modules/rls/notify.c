@@ -119,12 +119,11 @@ int send_full_notify(subs_t* subs, xmlNodePtr service_node, int version, str* rl
 		LM_ERR("in sql query\n");
 		goto error;
 	}
-	if(result== NULL)
-		goto error;
 	*/
 
 	// build result instead of query in DB since initial query result is guaranteed to be empty
-    result = build_db_result(service_node, n_result_cols);
+    if ((result = build_db_result(service_node, n_result_cols)) == 0)
+		goto error;
 
 	rlmi_body= constr_rlmi_doc(result, rl_uri, version, service_node, &cid_array, subs->from_user, subs->from_domain);
 	if(rlmi_body== NULL)
@@ -1199,8 +1198,9 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 	int i;
 	str uri;
 	str *normalized_uri;
-	db_res_t * result = db_new_result();
-	result->n = 0;
+	db_res_t * result;
+    db_row_t* row;
+    db_val_t* val;
 
 	LM_DBG("start\n");
 
@@ -1218,12 +1218,24 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 	}
 
     // pass 2 : build result
+    if ((result = db_new_result()) == 0)
+        return 0;
+    RES_ROW_N(result) = 0;
+
     if (count <= 0)
         return result;
 
-    db_allocate_columns(result, n_result_cols);
-    db_allocate_rows(result, count);
-    result->n = count;
+    if (db_allocate_columns(result, n_result_cols) == -1) {
+        db_free_result(result);
+        return 0;
+    }
+    RES_COL_N(result) = n_result_cols;
+    if (db_allocate_rows(result, count) == -1) {
+        db_free_result(result);
+        return 0;
+    }
+    RES_ROW_N(result) = count;
+
     i = 0;
 	for(node= list_node->children; node; node= node->next)
 	{
@@ -1235,7 +1247,8 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 			        if(uri.s == NULL)
 			        {
 				        LM_ERR("when extracting entry uri attribute\n");
-				        return result;
+                        db_free_result(result);
+				        return 0;
 			        }
                     uri.len = strlen(uri.s);
 			        LM_DBG("uri= %.*s\n", uri.len, uri.s);
@@ -1245,45 +1258,67 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
                     {
 				        LM_ERR("failed to normalize entry URI\n");
 				        xmlFree(uri.s);
-				        return result;
+                        db_free_result(result);
+				        return 0;
                     }
 			        xmlFree(uri.s);
 
-                    result->rows[i].n = n_result_cols;
-                    result->rows[i].values = (db_val_t*) pkg_malloc(n_result_cols * sizeof(db_val_t));
+                    row = &(RES_ROWS(result)[i]);
+                    ROW_N(row) = n_result_cols;
 
-                    result->rows[i].values[resource_uri_col].type = DB_STRING;
-                    result->rows[i].values[resource_uri_col].nul = 0;
-                    result->rows[i].values[resource_uri_col].free = 1;
-                    result->rows[i].values[resource_uri_col].val.string_val = (char *) pkg_malloc(normalized_uri->len+1);
-                    strcpy((char *) result->rows[i].values[resource_uri_col].val.string_val, normalized_uri->s);
+                    val = &(ROW_VALUES(row)[resource_uri_col]);
+                    VAL_TYPE(val) = DB_STRING;
+                    VAL_NULL(val) = 0;
+                    VAL_FREE(val) = 1;
+                    if ((VAL_STRING(val) = (char *) pkg_malloc(normalized_uri->len+1)) == NULL) {
+                        LM_ERR("no more pkg mem!\n");
+                        db_free_result(result);
+                        return 0;
+                    }
+                    strcpy((char *) VAL_STRING(val), normalized_uri->s);
 
-                    result->rows[i].values[ctype_col].type = DB_STRING;
-                    result->rows[i].values[ctype_col].nul = 0;
-                    result->rows[i].values[ctype_col].free = 1;
-                    result->rows[i].values[ctype_col].val.string_val = (char *) pkg_malloc(30);
-                    strcpy((char *) result->rows[i].values[ctype_col].val.string_val, "application/dialog-info+xml");
+                    val = &(ROW_VALUES(row)[ctype_col]);
+                    VAL_TYPE(val) = DB_STRING;
+                    VAL_NULL(val) = 0;
+                    VAL_FREE(val) = 1;
+                    if ((VAL_STRING(val) = (char *) pkg_malloc(32)) == NULL) {
+                        LM_ERR("no more pkg mem!\n");
+                        db_free_result(result);
+                        return 0;
+                    }
+                    strcpy((char *) VAL_STRING(val), "application/dialog-info+xml");
 
                     char username[512];
                     extractSipUsername(normalized_uri->s, username);
                     char buf[1024];
-                    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\" direction=\"receiver\"><state>terminated</state><remote><local><identity display=\"%s\">sip:@vm.example.net</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username);
-                    result->rows[i].values[pres_state_col].type = DB_STRING;
-                    result->rows[i].values[pres_state_col].nul = 0;
-                    result->rows[i].values[pres_state_col].free = 1;
-                    result->rows[i].values[pres_state_col].val.string_val = (char *) pkg_malloc(strlen(buf)+1);
-                    strcpy((char *) result->rows[i].values[pres_state_col].val.string_val, buf);
+                    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\" direction=\"receiver\"><state>terminated</state><remote><local><identity display=\"%s\">%s</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
+                    val = &(ROW_VALUES(row)[pres_state_col]);
+                    VAL_TYPE(val) = DB_STRING;
+                    VAL_NULL(val) = 0;
+                    VAL_FREE(val) = 1;
+                    if ((VAL_STRING(val) = (char *) pkg_malloc(strlen(buf)+1)) == NULL) {
+                        LM_ERR("no more pkg mem!\n");
+                        db_free_result(result);
+                        return 0;
+                    }
+                    strcpy((char *) VAL_STRING(val), buf);
 
-                    result->rows[i].values[auth_state_col].type = DB_INT;
-                    result->rows[i].values[auth_state_col].nul = 0;
-                    result->rows[i].values[auth_state_col].free = 1;
-                    result->rows[i].values[auth_state_col].val.int_val = 2;
+                    val = &(ROW_VALUES(row)[auth_state_col]);
+                    VAL_TYPE(val) = DB_INT;
+                    VAL_NULL(val) = 0;
+                    VAL_FREE(val) = 1;
+                    VAL_INT(val) = 2;
 
-                    result->rows[i].values[reason_col].type = DB_STRING;
-                    result->rows[i].values[reason_col].nul = 0;
-                    result->rows[i].values[reason_col].free = 1;
-                    result->rows[i].values[reason_col].val.string_val = (char *) pkg_malloc(16);
-                    strcpy((char *) result->rows[i].values[reason_col].val.string_val, "");
+                    val = &(ROW_VALUES(row)[reason_col]);
+                    VAL_TYPE(val) = DB_STRING;
+                    VAL_NULL(val) = 0;
+                    VAL_FREE(val) = 1;
+                    if ((VAL_STRING(val) = (char *) pkg_malloc(4)) == NULL) {
+                        LM_ERR("no more pkg mem!\n");
+                        db_free_result(result);
+                        return 0;
+                    }
+                    strcpy((char *) VAL_STRING(val), "");
 
                     i++;
                 }
@@ -1293,7 +1328,6 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 	}
 	LM_DBG("node count = %d, result->n=%d", count, result->n);
 	return result;
-
 }
 
 void extractSipUsername(char * uri, char * username)
