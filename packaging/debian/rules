@@ -13,6 +13,7 @@
 #	upstreamcflags -- don't set cflags, let upstream package Makefile do it
 
 DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
@@ -47,16 +48,31 @@ endif
 
 # List of all debian module packages we will build
 # Used to index the make variable below, which has details about each package
-#
-# LUA has been removed due to libmemcache dependency.
-#     See https://github.com/OpenSIPS/opensips/issues/580
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
-	PROTO_SCTP PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
+	PROTO_TLS PROTO_WSS TLS_MGM REST_CLIENT LUA \
 	SQLITE CGRATES XML SIPREC
+# add SCTP only on linux systems
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+	ALL_MODPKG_LIST += PROTO_SCTP
+endif
+
+MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
+
+# use a dummy architecture for the packages we do not want to build
+ifeq ($(shell dpkg-vendor --derives-from Debian && echo yes),yes)
+	LIBMONGOC_MAJOR_RELEASE=9
+endif
+ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
+	LIBMONGOC_MAJOR_RELEASE=16
+endif
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(LIBMONGOC_MAJOR_RELEASE); echo $$?),0)
+	ALL_MODPKG_LIST += MONGODB
+endif
+RADCLI_MAJOR_RELEASE=$(LIBMONGOC_MAJOR_RELEASE)
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -180,6 +196,9 @@ CGRATES_MOD_PATH=$(addprefix modules/, $(CGRATES_MODULES))
 XML_PKGNAME = opensips-xml-module
 XML_MODULES = xml
 XML_MOD_PATH=$(addprefix modules/, $(XML_MODULES))
+MONGODB_PKGNAME = opensips-mongodb-module
+MONGODB_MODULES = cachedb_mongodb
+MONGODB_MOD_PATH=$(addprefix modules/, $(MONGODB_MODULES))
 SIPREC_PKGNAME = opensips-siprec-module
 SIPREC_MODULES = siprec
 SIPREC_MOD_PATH=$(addprefix modules/, $(SIPREC_MODULES))
@@ -199,9 +218,6 @@ BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 ## Everything we don't specifically exclude here will get built into the primary package
 NONCORE_MODULES = $(ALL_MODULES) osp
 
-# https://wiki.debian.org/ReproducibleBuilds/
-CC_EXTRA_OPTS += -DVERSION_NODATE
-
 ifeq (cc, $(CC))
 	CC = gcc
 endif
@@ -218,24 +234,38 @@ else
 endif
 endif
 
-# inherit variables from dpkg-builder
-BUILD_CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
-BUILD_CFLAGS = $(shell dpkg-buildflags --get CFLAGS)
-CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
-LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
+# disable thumb mode for armhf architecture
+ifeq (armhf, $(DEB_HOST_ARCH))
+	CFLAGS += -marm
+endif
 
 # https://wiki.debian.org/ReproducibleBuilds/
 CFLAGS += -DVERSION_NODATE
 
+# add hardening flags
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
+
+# inherit variables from dpkg-builder
+CPPFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
+CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
+CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
+LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
+
 # force multiach lib path and SMP support all the time
 VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
 
-# Debian Jessie doesn't package radius-ng, so use freeradius instead
-VARS += FREERADIUS=yes
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(RADCLI_MAJOR_RELEASE); echo $$?),0)
+	VARS += RADIUSCLIENT=RADCLI
+else
+	VARS += RADIUSCLIENT=FREERADIUS
+endif
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
+
+# Enable verbose compile logs
+VARS += NICER=0
 
 # support parallel compiling
 NJOBS =
@@ -343,5 +373,5 @@ get-orig-source:
 
 # generic rule
 %:
-	dh $@ --with python2
+	dh $@ --with systemd
 

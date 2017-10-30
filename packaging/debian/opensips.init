@@ -18,12 +18,12 @@
 set -e
 
 PATH=/sbin:/bin:/usr/sbin:/usr/binPATH_EXTRA
-DAEMON=DEB_BIN_PREFIX/sbin/opensips
+DAEMON=/sbin/opensips
 NAME=opensips
 DESC=opensips
-CFGFILE=DEB_INST_PREFIX/etc/opensips/opensips.cfg
-M4CFGFILE=DEB_INST_PREFIX/etc/opensips/opensips.m4
-M4ARCHIVEDIR=DEB_INST_PREFIX/etc/opensips/archive
+CFGFILE=/etc/opensips/opensips.cfg
+M4CFGFILE=/etc/opensips/opensips.m4
+M4ARCHIVEDIR=/etc/opensips/archive
 HOMEDIR=/var/run/opensips
 PIDFILE=$HOMEDIR/$NAME.pid
 DEFAULTS=/etc/default/opensips

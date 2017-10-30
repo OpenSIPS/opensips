@@ -439,22 +439,17 @@ bin:
 deb-orig-tar: tar
 	mv "$(NAME)-$(RELEASE)_src".tar.gz ../$(NAME)_$(RELEASE:-dev=).orig.tar.gz
 
-.PHONY: deb-%
-deb-%:
+.PHONY: deb
+deb:
 	rm -rf debian
 	# dpkg-source cannot use links for debian source
-	cp -r packaging/debian/common debian
-	[ "$@" = "deb-common" ] || cp -r packaging/debian/$(@:deb-%=%)/* debian
+	cp -r packaging/debian debian
 	dpkg-buildpackage \
 		-I.git -I.gitignore \
 		-I*.swp -I*~ \
 		-i\\.git\|debian\|^\\.\\w+\\.swp\|lex\\.yy\\.c\|cfg\\.tab\\.\(c\|h\)\|\\w+\\.patch \
 		-rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -rf debian
-
-.PHONY: deb
-deb: deb-$(DEBIAN_VERSION)
-
 
 .PHONY: sunpkg
 sunpkg:
