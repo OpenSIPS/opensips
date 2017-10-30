@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Răzvan Crainea <razvan@opensips.org>
 Build-Depends: bison,
                debhelper (>= 9),
-               default-libmysqlclient-dev,
+               default-libmysqlclient-dev | libmysqlclient-dev,
                dh-systemd (>= 1.5),
                dpkg-dev (>= 1.16.1.1),
                flex,
@@ -19,14 +19,14 @@ Build-Depends: bison,
                liblua5.1-0-dev,
                libmemcached-dev,
                libmicrohttpd-dev,
-               libbson-dev,
-               libmongoc-dev,
+               libbson-dev | base-files (<< 9.4),
+               libmongoc-dev | base-files (<< 9.4),
                libncurses5-dev,
                libpcre3-dev,
                libperl-dev,
                libpq-dev,
                librabbitmq-dev,
-               libradcli-dev,
+               libradcli-dev | libfreeradius-client-dev,
                libsctp-dev [linux-any],
                libsnmp-dev,
                libsqlite3-dev,
@@ -611,15 +611,3 @@ Description: CGRateS connector for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides a connnector to the CGRateS rating/billing engine.
-
-Package: opensips-mongodb-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a MongoDB server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module is an implementation of a cache system designed to work with
- MongoDB servers.
