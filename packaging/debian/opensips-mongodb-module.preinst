@@ -1,0 +1,14 @@
+#!/bin/sh
+
+LIBMONGOC_NAME=libmongoc-1.0-0
+
+# check if libmongoc is installed
+dpkg -s $LIBMONGOC_NAME > /dev/null
+if [ "$?" -ne "0" ]
+then
+    echo "This packages was not built for your release!"
+    echo "opensips-mongodb-module wasn't installed and you cannot use it in your script!"
+    exit 1
+fi
+
+exit 0
