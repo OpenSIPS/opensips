@@ -39,7 +39,7 @@ struct clusterer_binds clusterer_api;
 void replicate_urecord_insert(urecord_t *r)
 {
 	if (bin_init(&repl_module_name, REPL_URECORD_INSERT, BIN_VERSION) != 0) {
-		LM_ERR("failed to replicate this event\n");
+		LM_DBG("failed to replicate this event\n");
 		return;
 	}
 
@@ -49,7 +49,7 @@ void replicate_urecord_insert(urecord_t *r)
 	bin_push_str(&r->aor);
 
 	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate urecord insert failed\n");
+		LM_DBG("replicate urecord insert failed\n");
  	}
 }
 
@@ -57,7 +57,7 @@ void replicate_urecord_delete(urecord_t *r)
 {
 
 	if (bin_init(&repl_module_name, REPL_URECORD_DELETE, BIN_VERSION) != 0) {
-		LM_ERR("failed to replicate this event\n");
+		LM_DBG("failed to replicate this event\n");
 		return;
 	}
 
@@ -66,7 +66,7 @@ void replicate_urecord_delete(urecord_t *r)
 	bin_push_str(&r->aor);
 
 	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate urecord delete failed\n");
+		LM_DBG("replicate urecord delete failed\n");
  	}	
 }
 
@@ -75,7 +75,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	str st;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION) != 0) {
-		LM_ERR("failed to replicate this event\n");
+		LM_DBG("failed to replicate this event\n");
 		return;
 	}
 	bin_push_int(clusterer_api.get_my_id());
@@ -109,7 +109,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&st);
 
 	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact insert failed\n");
+		LM_DBG("replicate ucontact insert failed\n");
  	}
 
 }
@@ -119,7 +119,7 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	str st;
 
 	if (bin_init(&repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION) != 0) {
-		LM_ERR("failed to replicate this event\n");
+		LM_DBG("failed to replicate this event\n");
 		return;
 	}
 
@@ -153,14 +153,14 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&st);
 
 	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact delete failed\n");
+		LM_DBG("replicate ucontact delete failed\n");
  	}
 }
 
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 {
 	if (bin_init(&repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION) != 0) {
-		LM_ERR("failed to replicate this event\n");
+		LM_DBG("failed to replicate this event\n");
 		return;
 	}
 	
@@ -172,7 +172,7 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	bin_push_int(c->cseq);
 
 	if (clusterer_api.send_to(ul_replicate_cluster, PROTO_BIN) < 0) {
-		LM_ERR("replicate ucontact delete failed\n");
+		LM_DBG("replicate ucontact delete failed\n");
  	}
 }
 
@@ -211,7 +211,7 @@ out:
 	return 0;
 
 out_err:
-	LM_ERR("failed to replicate event locally. dom: '%.*s', aor: '%.*s'\n",
+	LM_DBG("failed to replicate event locally. dom: '%.*s', aor: '%.*s'\n",
 		d.len, d.s, aor.len, aor.s);
 	return -1;
 }
