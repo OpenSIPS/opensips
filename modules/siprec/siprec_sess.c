@@ -178,6 +178,11 @@ int src_add_participant(struct src_sess *sess, str *aor, str *name, siprec_uuid 
 	part->aor.len = aor->len;
 	memcpy(part->aor.s, aor->s, aor->len);
 	if (name) {
+		/* remove the quotes, if provided */
+		if (name->len > 2 && name->s[0] == '"') {
+			name->s++;
+			name->len -= 2;
+		}
 		part->name.len = name->len;
 		part->name.s = part->aor.s + part->aor.len;
 		memcpy(part->name.s, name->s, name->len);
