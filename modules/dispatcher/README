@@ -669,7 +669,8 @@ modparam("dispatcher", "socket_col", "my_sock")
    stats arrive from FreeSWITCH. The update formula is shown below
    (FreeSWITCH stats are highlighted in bold):
 
-   weight = 100 * (Idle-CPU / 100) * (1 - Sessions / Max-Sessions)
+   weight = 100 * (Idle-CPU / 100) * (1 - Session-Count /
+   Max-Sessions)
 
    Default value is 0 (disabled).
 

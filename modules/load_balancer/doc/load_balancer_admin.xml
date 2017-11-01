@@ -304,11 +304,30 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		</para>
 		<para>
 		The max value of a resource is updated every 20 seconds, as the stats
-		arrive from FreeSWITCH. The update formula is shown below (FreeSWITCH stats
-		are highlighted in bold):
+		arrive from FreeSWITCH.
 	</para>
 	<para>
-		<emphasis>max_load = (<emphasis role='bold'>Idle-CPU</emphasis> / 100) * (<emphasis role='bold'>Max-Sessions</emphasis> - (profile_count - <emphasis role='bold'>Sessions</emphasis>))</emphasis>
+		Given the following format for FreeSWITCH heartbeat messages:
+		<programlisting format="linespecific">
+{
+  ...
+  "FreeSWITCH-Hostname": "pbx2",
+  "FreeSWITCH-IPv4": "172.17.0.3",
+  "Idle-CPU": "78.400000",
+  "Max-Sessions": "1000",
+  "Session-Count": "0",
+  ...
+}
+</programlisting>
+		, the load balancer uses the following formula in order to periodically
+		update its "max_load" values for each FreeSWITCH box (FreeSWITCH data
+		is highlighted in bold):
+		</para>
+		<para>
+			<emphasis>max_load = (<emphasis role='bold'>Idle-CPU</emphasis> / 100)
+				* (<emphasis role='bold'>Max-Sessions</emphasis> -
+				(<emphasis role='bold'>Session-Count</emphasis> -
+				current_load))</emphasis>
 		</para>
 		<para>
 		<emphasis>
