@@ -816,7 +816,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 		are highlighted in bold):
 	</para>
 	<para>
-		<emphasis>weight = 100 * (<emphasis role='bold'>Idle-CPU</emphasis> / 100) * (1 - <emphasis role='bold'>Sessions</emphasis> / <emphasis role='bold'>Max-Sessions</emphasis>)</emphasis>
+		<emphasis>weight = 100 * (<emphasis role='bold'>Idle-CPU</emphasis> / 100) * (1 - <emphasis role='bold'>Session-Count</emphasis> / <emphasis role='bold'>Max-Sessions</emphasis>)</emphasis>
 		</para>
 		<para>
 		<emphasis>
