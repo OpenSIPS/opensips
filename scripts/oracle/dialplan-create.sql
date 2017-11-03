@@ -10,7 +10,7 @@ CREATE TABLE dialplan (
     repl_exp VARCHAR2(32),
     timerec VARCHAR2(255),
     disabled NUMBER(10) DEFAULT 0 NOT NULL,
-    attrs VARCHAR2(256)
+    attrs VARCHAR2(255)
 );
 
 CREATE OR REPLACE TRIGGER dialplan_tr

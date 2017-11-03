@@ -97,7 +97,7 @@
     <column id="attrs">
         <name>attrs</name>
         <type>string</type>
-        <size>256</size>
+        <size>255</size>
         <null/>
         <description>General attributes string to be returned in case of rule matching.</description>
     </column>
