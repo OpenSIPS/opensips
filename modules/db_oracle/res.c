@@ -390,6 +390,13 @@ static int get_rows(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 		goto stop_load;
 	}
 
+	if (rcnt > 5) {
+		ub4 prefetch = rcnt/5;
+		status = OCIAttrSet(_c, OCI_HTYPE_STMT, &prefetch, 0,
+			OCI_ATTR_PREFETCH_ROWS, con->errhp);
+		if (status != OCI_SUCCESS) goto ora_err;
+	}
+
 	RES_ROW_N(_r) = rcnt;
 	if (db_allocate_rows( _r, rcnt)!=0) {
 		LM_ERR("no private memory left\n");
