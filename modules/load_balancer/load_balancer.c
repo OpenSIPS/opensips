@@ -117,10 +117,6 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 static void lb_update_max_loads(unsigned int ticks, void *param);
 
-void receive_lb_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
-
-
 static cmd_export_t cmds[]={
 	{"lb_start",         (cmd_function)w_lb_start,         2, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
@@ -575,8 +571,9 @@ static int mod_init(void)
 	}
 
 	/* register handler for processing load_balancer replication packets to the clusterer module */
-	if (accept_replicated_status > 0 && clusterer_api.register_module(repl_lb_module_name.s,
-		receive_lb_binary_packet, 1, &accept_replicated_status, 1) < 0) {
+	if (accept_replicated_status > 0 && 
+		clusterer_api.register_capability(&status_repl_cap,
+		receive_lb_binary_packet, NULL, 1, accept_replicated_status) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}
@@ -1294,18 +1291,9 @@ error:
 }
 
 
-void receive_lb_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
+void receive_lb_binary_packet(bin_packet_t *packet, int packet_type, int src_id)
 {
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
-
-	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
-		return;
-	else if (ev == CLUSTER_ROUTE_FAILED) {
-		LM_INFO("Failed to route replication packet of type %d from node id: %d "
-			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
-		return;
-	}
 
 	if(get_bin_pkg_version(packet) != BIN_VERSION) {
 		LM_ERR("incompatible bin protocol version\n");

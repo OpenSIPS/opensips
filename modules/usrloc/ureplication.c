@@ -28,7 +28,7 @@
 #include "dlist.h"
 #include "../../forward.h"
 
-str repl_module_name = str_init("ul");
+str contact_repl_cap = str_init("usrloc-contact-repl");
 
 /* Skip all DB operations when receiving replicated data */
 int skip_replicated_db_ops;
@@ -41,7 +41,7 @@ void replicate_urecord_insert(urecord_t *r)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &repl_module_name, REPL_URECORD_INSERT, BIN_VERSION, 1024) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_URECORD_INSERT, BIN_VERSION, 1024) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -76,7 +76,7 @@ void replicate_urecord_delete(urecord_t *r)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &repl_module_name, REPL_URECORD_DELETE, BIN_VERSION, 1024) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_URECORD_DELETE, BIN_VERSION, 1024) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -112,7 +112,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &repl_module_name, REPL_UCONTACT_INSERT, BIN_VERSION, 0) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_INSERT, BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -173,7 +173,7 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &repl_module_name, REPL_UCONTACT_UPDATE, BIN_VERSION, 0) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_UPDATE, BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -233,7 +233,7 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &repl_module_name, REPL_UCONTACT_DELETE, BIN_VERSION, 0) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_DELETE, BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -616,18 +616,9 @@ error:
 	return -1;
 }
 
-void receive_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
+void receive_binary_packet(bin_packet_t *packet, int packet_type, int src_id)
 {
 	int rc;
-
-	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
-		return;
-	else if (ev == CLUSTER_ROUTE_FAILED) {
-		LM_INFO("Failed to route replication packet of type %d from node id: %d "
-			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
-		return;
-	}
 
 	LM_DBG("received a binary packet [%d]!\n", packet_type);
 

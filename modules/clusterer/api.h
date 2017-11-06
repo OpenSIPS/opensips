@@ -34,7 +34,7 @@
 
 #define UNDEFINED_PACKET_TYPE -1
 #define INVAL_NODE_ID -1
-#define MAX_MOD_REG_CLUSTERS 8
+#define MAX_CAP_REG_CLUSTERS 8
 
 enum cl_node_state {
 	STATE_DISABLED,	/* the node does not send any messages and ignores received ones */
@@ -60,12 +60,7 @@ enum clusterer_event {
 	/* node with id provided in the @dest_id param of clusterer_cb_f is back up */
 	CLUSTER_NODE_UP,
 	/* node with id provided in the @dest_id param of clusterer_cb_f is unreachable */
-	CLUSTER_NODE_DOWN,
-	/* failed to route received message (source and destination nodes
-	 * provided in clusterer_cb_f params) */
-	CLUSTER_ROUTE_FAILED,
-	/* received message for current node */
-	CLUSTER_RECV_MSG
+	CLUSTER_NODE_DOWN
 };
 
 /* returns the list of reachable nodes in the cluster */
@@ -84,7 +79,8 @@ typedef int (*check_addr_f)(int cluster_id, union sockaddr_union *su);
 typedef int (*get_my_id_f)(void);
 
 /* send message to specific node in the cluster */
-typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_id, int node_id);
+typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_id,
+												int node_id);
 
 /* send message to all nodes in the cluster */
 typedef enum clusterer_send_ret (*send_all_f)(bin_packet_t *packet, int cluster_id);
@@ -96,16 +92,21 @@ typedef clusterer_node_t* (*get_next_hop_f)(int cluster_id, int node_id);
 typedef void (*free_next_hop_f)(clusterer_node_t *next_hop);
 
 /*
- * This function will be called for every binary packet received or
- * to signal certain cluster events.
+ * This function will be called for every binary packet received
  */
-typedef void (*clusterer_cb_f)(enum clusterer_event ev,bin_packet_t *, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
+typedef void (*cl_packet_cb_f)(bin_packet_t *packet, int packet_type,
+								int source_id);
 
-/* Register module to clusterer; must be called only once for each module
- * @accept_clusters_ids accept - array of cluster ids from wich packets are accepted */
-typedef int (*register_module_f)(char *mod_name,  clusterer_cb_f cb, int auth_check,
-									int *accept_clusters_ids, int no_accept_clusters);
+/*
+ * This function will be called in order to signal certain cluster events.
+ */
+typedef void (*cl_event_cb_f)(enum clusterer_event ev, int node_id);
+
+/* Register a capability (grouping of BIN packets/cluster events used to
+ * 						  achieve a certain functionality)
+ */
+typedef int (*register_capability_f)(str *cap, cl_packet_cb_f packet_cb,
+					cl_event_cb_f event_cb, int auth_check, int cluster_id);
 
 struct clusterer_binds {
 	get_nodes_f get_nodes;
@@ -117,7 +118,7 @@ struct clusterer_binds {
 	send_all_f send_all;
 	get_next_hop_f get_next_hop;
 	free_next_hop_f free_next_hop;
-	register_module_f register_module;
+	register_capability_f register_capability;
 };
 
 typedef int (*load_clusterer_f)(struct clusterer_binds *binds);

@@ -31,13 +31,14 @@ struct clusterer_binds clusterer_api;
 int accept_replicated_status = 0;
 int replicated_status_cluster = 0;
 
+str status_repl_cap = str_init("load_balancer-status-repl");
 
 void replicate_lb_status(struct lb_dst *dst)
 {
 	bin_packet_t packet;
 	int rc;
 
-	if (bin_init(&packet, &repl_lb_module_name, REPL_LB_STATUS_UPDATE, BIN_VERSION, 0)!=0){
+	if (bin_init(&packet, &status_repl_cap, REPL_LB_STATUS_UPDATE, BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}

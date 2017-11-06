@@ -124,6 +124,8 @@ int dialog_replicate_cluster = 0;
 int profile_replicate_cluster = 0;
 int accept_repl_profiles=0;
 int replication_auth_check = 0;
+str dlg_repl_cap = str_init("dialog-dlg-repl");
+str prof_repl_cap = str_init("dialog-prof-repl");
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -734,8 +736,6 @@ static void ctx_dlg_idx_destroy(void *v)
 static int mod_init(void)
 {
 	unsigned int n;
-	int accept_clusters_ids[MAX_MOD_REG_CLUSTERS];
-	int no_accept_clusters = 0;
 
 	LM_INFO("Dialog module - initializing\n");
 
@@ -906,23 +906,20 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (accept_replicated_dlg)
-		accept_clusters_ids[no_accept_clusters++] = accept_replicated_dlg;
-
-	if (accept_repl_profiles)
-		accept_clusters_ids[no_accept_clusters++] = accept_repl_profiles;
-
-	if (no_accept_clusters && accept_replicated_dlg == accept_repl_profiles)
-		no_accept_clusters = 1;
-
 	if (replication_auth_check < 0) {
 		LM_ERR("Invalid value for replication_auth_check, must be 0 or 1\n");
 		return -1;	
 	}
 
-	if (no_accept_clusters && clusterer_api.register_module("dialog", receive_repl_packets,
-		replication_auth_check, accept_clusters_ids, no_accept_clusters) < 0) {
-		LM_ERR("Cannot register clusterer callback!\n");
+	if (accept_replicated_dlg && clusterer_api.register_capability(&dlg_repl_cap,
+		receive_dlg_repl, NULL, replication_auth_check, accept_replicated_dlg) < 0) {
+		LM_ERR("Cannot register clusterer callback for dialog replication!\n");
+		return -1;
+	}
+
+	if (accept_repl_profiles && clusterer_api.register_capability(&prof_repl_cap,
+		receive_prof_repl, NULL, replication_auth_check, accept_repl_profiles) < 0) {
+		LM_ERR("Cannot register clusterer callback for profile replication!\n");
 		return -1;
 	}
 

@@ -60,9 +60,14 @@ enum db_str_vals_idx {
 	STR_VALS_DESCRIPTION_COL
 };
 
-struct cluster_mod {
-	struct mod_registration *reg;
-	struct cluster_mod *next;
+struct local_cap {
+	struct capability_reg *reg;
+	struct local_cap *next;
+};
+
+struct remote_cap {
+	str name;
+	struct remote_cap *next;
 };
 
 struct cluster_info;
@@ -89,6 +94,7 @@ struct node_info {
 	int top_timestamp;
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct node_search_info *sp_info;   /* shortest path info */
+	struct remote_cap *capabilities;	/* known capabilities of this node */
 	int flags;
 	gen_lock_t *lock;
 	struct node_info *next;
@@ -96,7 +102,7 @@ struct node_info {
 
 struct cluster_info {
 	int cluster_id;
-	struct cluster_mod *modules;    /* modules registered for this cluster */
+	struct local_cap *capabilities;	/* capabilities registered for this cluster */
 	struct node_info *node_list;
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *current_node; /* current node's info in this cluster */

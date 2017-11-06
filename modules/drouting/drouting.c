@@ -1720,8 +1720,9 @@ skip:
 	}
 
 	/* register handler for processing droutimg packets to the clusterer module */
-	if (accept_replicated_status > 0 && clusterer_api.register_module(repl_dr_module_name.s,
-		receive_dr_binary_packet, 1, &accept_replicated_status, 1) < 0) {
+	if (accept_replicated_status > 0 &&
+		clusterer_api.register_capability(&status_repl_cap, receive_dr_binary_packet,
+		NULL, 1, accept_replicated_status) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}

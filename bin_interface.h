@@ -39,8 +39,8 @@
 #define HEADER_SIZE \
 			(BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE + VERSION_FIELD_SIZE)
 #define MIN_BIN_PACKET_SIZE \
-			(HEADER_SIZE + LEN_FIELD_SIZE + 2 + CMD_FIELD_SIZE)
-                                         /* ^ e.g. "tm" */
+			(HEADER_SIZE + LEN_FIELD_SIZE + 1 + CMD_FIELD_SIZE)
+                                         /* ^ capability */
 
 #define is_valid_bin_packet(_p) \
 	(memcmp(_p, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE) == 0)
@@ -53,8 +53,8 @@ typedef struct bin_packet {
 } bin_packet_t;
 
 struct packet_cb_list {
-	str module;							/* registered module */
-	void (*cbf)(bin_packet_t *, int packet_type,		/* module callback */
+	str capability;									 /* registered capability */
+	void (*cbf)(bin_packet_t *, int packet_type,	 /* callback */
 				struct receive_info *ri, void *att);
         void *att;
 
@@ -68,9 +68,9 @@ struct packet_cb_list {
 short get_bin_pkg_version(bin_packet_t *packet);
 
 /*
- * returns the module that generated the message
+ * returns the capability from the message
  */
-void bin_get_module(bin_packet_t *packet, str *module);
+void bin_get_capability(bin_packet_t *packet, str *capability);
 
 /**
 	calls all the registered functions
@@ -81,21 +81,22 @@ void bin_get_module(bin_packet_t *packet, str *module);
 void call_callbacks(char* buffer, struct receive_info *rcv);
 /*
  * registers a callback function to be triggered on a received
- * binary packet marked with the @mod_name module name
+ * binary packet marked with the @cap capability
  */
-int bin_register_cb(char *mod_name, void (*cb)(bin_packet_t *, int,
+int bin_register_cb(str *cap, void (*cb)(bin_packet_t *, int,
                     struct receive_info *, void * atr), void *att);
 
 
 /**
  * first function called when building a binary packet
  *
- * @mod_name:  module specific string
- * @packet_type:  module specific identifier for this new packet
+ * @capability:   capability string
+ * @packet_type:  capability specific identifier for this new packet
  *
  * @return: 0 on success
  */
-int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type, short version, int length);
+int bin_init(bin_packet_t *packet, str *capability, int cmd_type, short version,
+				int length);
 
 /**
  * function called to build a binary packet with a known buffer

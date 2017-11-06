@@ -51,7 +51,8 @@ typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
 				CLUSTERER_UNKNOWN_ID, CLUSTERER_NODE_DESCRIPTION,
 				CLUSTERER_GENERIC_MSG,
-				CLUSTERER_MI_CMD
+				CLUSTERER_MI_CMD,
+				CLUSTERER_CAP_UPDATE
 } clusterer_msg_type;
 
 typedef enum {
@@ -73,13 +74,13 @@ typedef enum {
 	JOIN_SUCCESS
 } clusterer_join_state;
 
-struct mod_registration {
-   str mod_name;
-   clusterer_cb_f cb;
+struct capability_reg {
+   str name;
+   cl_packet_cb_f packet_cb;
+   cl_event_cb_f event_cb;
    int auth_check;
-   int accept_clusters_ids[MAX_MOD_REG_CLUSTERS];
-   int no_accept_clusters;
-   struct mod_registration *next;
+   int cluster_id;
+   struct capability_reg *next;
 };
 
 struct node_info;
@@ -97,12 +98,17 @@ struct node_search_info {
 	struct node_search_info *next;      /* linker in queue */
 };
 
-extern struct mod_registration *clusterer_reg_modules;
+extern struct capability_reg *capabilities;
 extern enum sip_protos clusterer_proto;
+
+extern str cl_internal_cap;
+extern str cl_extra_cap;
 
 void heartbeats_timer(void);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
+									struct receive_info *ri, void *att);
+void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
 
 int get_next_hop(struct node_info *dest);
@@ -120,8 +126,8 @@ int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
 enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
-int cl_register_module(char *mod_name,  clusterer_cb_f cb, int auth_check,
-								int *accept_clusters_ids, int no_accept_clusters);
+int cl_register_cap(str *cap, cl_packet_cb_f packet_cb,
+					cl_event_cb_f event_cb, int auth_check, int cluster_id);
 
 struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params);
 

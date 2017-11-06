@@ -35,10 +35,14 @@ extern struct clusterer_binds clusterer_api;
 extern int accept_replicated_status;
 extern int replicated_status_cluster;
 
+extern str status_repl_cap;
+
 /* replicate the LB status via BIN */
 void replicate_lb_status(struct lb_dst *dst);
 
 /* handler for incoming BIN packets */
 int replicate_lb_status_update(bin_packet_t *packet, struct lb_data *data);
+
+void receive_lb_binary_packet(bin_packet_t *packet, int packet_type, int src_id);
 
 #endif

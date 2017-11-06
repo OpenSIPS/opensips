@@ -76,9 +76,8 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	cluster_info_t *cluster = NULL;
 	struct timeval t;
 	str st;
-	struct mod_registration *mod;
-	struct cluster_mod *new_cl_mod = NULL;
-	int i;
+	struct capability_reg *cap;
+	struct local_cap *new_cl_cap = NULL;
 
 	cluster_id = int_vals[INT_VALS_CLUSTER_ID_COL];
 	/* new_info is checked whether it is initialized or not in case of error,
@@ -96,23 +95,20 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		}
 		memset(cluster, 0, sizeof *cluster);
 
-		cluster->modules = NULL;
+		cluster->capabilities = NULL;
 
-		/* look for modules that registered for this cluster */
-		for (mod = clusterer_reg_modules; mod; mod = mod->next)
-			for (i = 0; i < mod->no_accept_clusters; i++)
-				if (mod->accept_clusters_ids[i] == cluster_id) {
-					new_cl_mod = shm_malloc(sizeof *new_cl_mod);
-					if (!new_cl_mod) {
-						LM_ERR("No more shm memory\n");
-						goto error;
-					}
-					new_cl_mod->reg = mod;
-					new_cl_mod->next = cluster->modules;
-					cluster->modules = new_cl_mod;
-
-					break;
+		/* look for capabilities that registered for this cluster */
+		for (cap = capabilities; cap; cap = cap->next)
+			if (cap->cluster_id == cluster_id) {
+				new_cl_cap = shm_malloc(sizeof *new_cl_cap);
+				if (!new_cl_cap) {
+					LM_ERR("No more shm memory\n");
+					goto error;
 				}
+				new_cl_cap->reg = cap;
+				new_cl_cap->next = cluster->capabilities;
+				cluster->capabilities = new_cl_cap;
+			}
 
 		cluster->cluster_id = cluster_id;
 		cluster->join_state = JOIN_INIT;
@@ -595,7 +591,8 @@ void free_info(cluster_info_t *cl_list)
 {
 	cluster_info_t *tmp_cl;
 	node_info_t *info, *tmp_info;
-	struct cluster_mod *cl_m, *tmp_cl_m;
+	struct local_cap *cl_cap, *tmp_cl_cap;
+	struct remote_cap *cap, *tmp_cap;
 
 	while (cl_list != NULL) {
 		tmp_cl = cl_list;
@@ -614,16 +611,23 @@ void free_info(cluster_info_t *cl_list)
 				lock_dealloc(info->lock);
 			}
 
+			cap = info->capabilities;
+			while (cap != NULL) {
+				tmp_cap = cap;
+				cap = cap->next;
+				shm_free(tmp_cap);
+			}
+
 			tmp_info = info;
 			info = info->next;
 			shm_free(tmp_info);
 		}
 
-		cl_m = tmp_cl->modules;
-		while (cl_m != NULL) {
-			tmp_cl_m = cl_m;
-			cl_m = cl_m->next;
-			shm_free(tmp_cl_m);
+		cl_cap = tmp_cl->capabilities;
+		while (cl_cap != NULL) {
+			tmp_cl_cap = cl_cap;
+			cl_cap = cl_cap->next;
+			shm_free(tmp_cl_cap);
 		}
 
 		if (tmp_cl->lock) {

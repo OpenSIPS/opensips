@@ -49,7 +49,6 @@ typedef struct repl_prof_value {
 	repl_prof_novalue_t *noval;
 } repl_prof_value_t;
 
-/* profiles functions */
 extern int accept_repl_profiles;
 extern int accept_replicated_profile_timeout;
 extern int repl_prof_auth_check;
@@ -57,11 +56,14 @@ extern int repl_prof_buffer_th;
 extern int repl_prof_utimer;
 extern int repl_prof_timer_check;
 extern int repl_prof_timer_expire;
+extern str prof_repl_cap;
+
+/* profiles functions */
 int repl_prof_init(void);
 int repl_prof_remove(str *name, str *value);
 int repl_prof_dest(modparam_t type, void *val);
 int replicate_profiles_count(repl_prof_novalue_t *rp);
-
+void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id);
 
 #define REPLICATION_DLG_PROFILE		4
 #define DLG_REPL_PROF_TIMER			10

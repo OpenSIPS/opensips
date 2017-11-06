@@ -44,10 +44,11 @@
 #define BIN_VERSION 1
 
 extern int accept_replicated_udata;
-extern str repl_module_name;
 
 extern int ul_replicate_cluster;
 extern struct clusterer_binds clusterer_api;
+
+extern str contact_repl_cap;
 
 /* duplicate local events to other OpenSIPS instances */
 void replicate_urecord_insert(urecord_t *r);
@@ -56,8 +57,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci);
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci);
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c);
 
-void receive_binary_packet(enum clusterer_event ev, bin_packet_t *, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
+void receive_binary_packet(bin_packet_t *packet, int packet_type, int src_id);
 
 #endif /* _USRLOC_REPLICATION_H_ */
 

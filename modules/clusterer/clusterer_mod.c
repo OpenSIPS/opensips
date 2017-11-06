@@ -333,8 +333,12 @@ static int mod_init(void)
 		}
 	}
 
-	if (bin_register_cb("clusterer", bin_rcv_cl_packets, NULL) < 0) {
+	if (bin_register_cb(&cl_internal_cap, bin_rcv_cl_packets, NULL) < 0) {
 		LM_CRIT("Cannot register clusterer binary packet callback!\n");
+		goto error;
+	}
+	if (bin_register_cb(&cl_extra_cap, bin_rcv_cl_extra_packets, NULL) < 0) {
+		LM_CRIT("Cannot register extra clusterer binary packet callback!\n");
 		goto error;
 	}
 
@@ -1049,7 +1053,7 @@ int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip)
 
 static void destroy(void)
 {
-	struct mod_registration *tmp;
+	struct capability_reg *tmp;
 
 	if (db_hdl) {
 		/* close DB connection */
@@ -1065,9 +1069,9 @@ static void destroy(void)
 		cluster_list = NULL;
 	}
 
-	while (clusterer_reg_modules) {
-		tmp = clusterer_reg_modules;
-		clusterer_reg_modules = clusterer_reg_modules->next;
+	while (capabilities) {
+		tmp = capabilities;
+		capabilities = capabilities->next;
 		shm_free(tmp);
 	}
 
@@ -1092,7 +1096,7 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->send_all = cl_send_all;
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;
-	binds->register_module = cl_register_module;
+	binds->register_capability = cl_register_cap;
 
 	return 1;
 }

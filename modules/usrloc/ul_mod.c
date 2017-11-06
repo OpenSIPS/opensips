@@ -393,8 +393,13 @@ static int mod_init(void)
 	}
 
 	if (ul_replicate_cluster < 0) {
-		LM_ERR("Invalid ul_replicate_cluster, must be 0 or "
-			"a positive cluster id\n");
+		LM_ERR("Invalid cluster id to replicate contacts to, must be 0 or "
+			"a positive number\n");
+		return -1;
+	}
+	if (accept_replicated_udata < 0) {
+		LM_ERR("Invalid cluster id to accept contacts from, must be 0 or "
+			"a positive number\n");
 		return -1;
 	}
 
@@ -410,8 +415,8 @@ static int mod_init(void)
 	}
 
 	/* register handler for processing usrloc packets to the clusterer module */
-	if (accept_replicated_udata > 0 && clusterer_api.register_module(repl_module_name.s,
-		receive_binary_packet, ul_repl_auth_check, &accept_replicated_udata, 1) < 0) {
+	if (accept_replicated_udata && clusterer_api.register_capability(&contact_repl_cap,
+		receive_binary_packet, NULL, ul_repl_auth_check, accept_replicated_udata) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}
