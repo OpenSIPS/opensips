@@ -449,7 +449,6 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 	static str str_up   = 	str_init("Up     ");
 	static str str_prob = 	str_init("Probe  ");
 	static str str_down = 	str_init("Down   ");
-	static str str_no_link =str_init("No_link");
 	static str str_none = 	str_init("none");
 	int n_hop;
 
@@ -499,8 +498,6 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				val = str_up;
 			else if (n_info->link_state == LS_DOWN)
 				val = str_down;
-			else if (n_info->link_state == LS_NO_LINK)
-				val = str_no_link;
 			else
 				val = str_prob;
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,

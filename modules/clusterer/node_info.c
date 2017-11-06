@@ -111,7 +111,6 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 			}
 
 		cluster->cluster_id = cluster_id;
-		cluster->join_state = JOIN_INIT;
 		cluster->next = *cl_list;
 		if ((cluster->lock = lock_alloc()) == NULL) {
 			LM_CRIT("Failed to allocate lock\n");

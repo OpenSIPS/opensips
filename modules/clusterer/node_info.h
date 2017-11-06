@@ -43,7 +43,6 @@
 
 #define MAX_NO_NODES 16
 #define MAX_NO_CLUSTERS 16
-#define MAX_MODS_PER_CLUSTER 8
 
 enum db_int_vals_idx {
 	INT_VALS_ID_COL,
@@ -106,7 +105,6 @@ struct cluster_info {
 	struct node_info *node_list;
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *current_node; /* current node's info in this cluster */
-	clusterer_join_state join_state;
 	int top_version;        		/* topology version */
 	gen_lock_t *lock;
 	struct cluster_info *next;

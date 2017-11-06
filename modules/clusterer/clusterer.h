@@ -45,7 +45,6 @@
 #define NODE_STATE_ENABLED	(1<<0)
 #define CALL_CBS_DOWN		(1<<1)
 #define CALL_CBS_UP			(1<<2)
-#define DB_PROVISIONED		(1<<3)
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
@@ -63,16 +62,7 @@ typedef enum {
 	LS_RESTART_PINGING,
 	LS_RESTARTED,
 	LS_RETRYING,
-	/* link not established */
-	LS_NO_LINK
 } clusterer_link_state;
-
-typedef enum {
-	JOIN_INIT,
-	JOIN_REQ_SENT,
-	JOIN_CONFIRM_SENT,
-	JOIN_SUCCESS
-} clusterer_join_state;
 
 struct capability_reg {
    str name;

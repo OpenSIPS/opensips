@@ -32,10 +32,6 @@
 #include "../../sr_module.h"
 #include "../../bin_interface.h"
 
-#define UNDEFINED_PACKET_TYPE -1
-#define INVAL_NODE_ID -1
-#define MAX_CAP_REG_CLUSTERS 8
-
 enum cl_node_state {
 	STATE_DISABLED,	/* the node does not send any messages and ignores received ones */
 	STATE_ENABLED
