@@ -812,7 +812,7 @@ static int prep_gen_msg(bin_packet_t *packet, int cluster_id, int dst_id,
 							str *gen_msg, str *exchg_tag, int req_like)
 {
 	/* build packet */
-	if (bin_init(packet, &cl_internal_cap, CLUSTERER_GENERIC_MSG, BIN_VERSION, 0) < 0) {
+	if (bin_init(packet, &cl_extra_cap, CLUSTERER_GENERIC_MSG, BIN_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin send buffer\n");
 		return -1;
 	}
@@ -885,7 +885,7 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 	bin_packet_t packet;
 	int i;
 
-	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_MI_CMD, BIN_VERSION, 0) < 0) {
+	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_MI_CMD, BIN_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin send buffer\n");
 		return CLUSTERER_SEND_ERR;
 	}
