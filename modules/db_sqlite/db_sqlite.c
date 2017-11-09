@@ -120,7 +120,6 @@ int db_sqlite_bind_api(const str* mod, db_func_t *dbb)
 	dbb->last_inserted_id = db_last_inserted_id;
 	dbb->insert_update    = db_insert_update;
 
-	dbb->cap = DB_CAP_ALL ^ DB_CAP_ASYNC_RAW_QUERY;
 	return 0;
 }
 
