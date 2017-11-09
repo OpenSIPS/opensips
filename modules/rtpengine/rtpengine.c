@@ -1149,9 +1149,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 				break;
 
 			case 14:
-				if (str_eq(&key, "replace-origin"))
-					bencode_list_add_string(ng_flags->replace, "origin");
-				else if (str_eq(&key, "address-family")) {
+				if (str_eq(&key, "replace-origin")) {
+					if (!ng_flags->replace)
+						LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
+					else
+						bencode_list_add_string(ng_flags->replace, "origin");
+				} else if (str_eq(&key, "address-family")) {
 					err = "missing value";
 					if (!val.s)
 						goto error;
@@ -1193,9 +1196,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 				break;
 
 			case 26:
-				if (str_eq(&key, "replace-session-connection"))
-					bencode_list_add_string(ng_flags->replace, "session-connection");
-				else
+				if (str_eq(&key, "replace-session-connection")) {
+					if (!ng_flags->replace)
+						LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
+					else
+						bencode_list_add_string(ng_flags->replace, "session-connection");
+				} else
 					goto error;
 				break;
 
