@@ -33,6 +33,8 @@
 #define STAT_PREFIX "shmem_"
 #define STAT_PREFIX_LEN 12
 
+#define GROUP_IDX_INVALID ((unsigned long)-1)
+
 extern struct multi_str* mod_names;
 extern unsigned int mem_free_idx;
 extern void* main_handle;
@@ -54,7 +56,7 @@ struct multi_str{
 
 int set_mem_idx(char* mod_name, int  mem_free_idx);
 
-void update_module_stats(long mem_used, long real_used, int frags, int group_idx);
+void update_module_stats(long mem_used, long real_used, int frags, unsigned long group_idx);
 
 int alloc_group_stat(void);
 

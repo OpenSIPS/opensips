@@ -175,12 +175,16 @@ unsigned long frag_size(void* p){
 }
 
 #ifdef SHM_EXTRA_STATS
+#include "module_info.h"
 void set_stat_index (void *ptr, unsigned long idx) {
+	if (!ptr)
+		return;
+
 	FRAG(ptr)->statistic_index = idx;
 }
 
 unsigned long get_stat_index(void *ptr) {
-	return FRAG(ptr)->statistic_index;
+	return !ptr ? GROUP_IDX_INVALID : FRAG(ptr)->statistic_index;
 }
 #endif
 
