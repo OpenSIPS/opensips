@@ -17,7 +17,7 @@
 
 set -e
 
-PATH=/sbin:/bin:/usr/sbin:/usr/binPATH_EXTRA
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/sbin/opensips
 NAME=opensips
 DESC=opensips
