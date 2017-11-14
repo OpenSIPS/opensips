@@ -1305,7 +1305,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		dest = map_find(_d->table[sl].records, *_aor);
 
 		if( dest == NULL )
-			return 1;
+			goto out;
 
 		*_r = *dest;
 
@@ -1319,6 +1319,8 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		}
 	}
 
+out:
+	*_r = NULL;
 	return 1;   /* Nothing found */
 }
 
