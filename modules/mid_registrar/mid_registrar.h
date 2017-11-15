@@ -56,9 +56,19 @@ enum mid_reg_insertion_mode {
 	INSERT_BY_PATH,
 };
 
+//TODO: remove the Path-based mid-registrar logic starting with OpenSIPS 2.4
 enum mid_reg_matching_mode {
 	MATCH_BY_PARAM,
 	MATCH_BY_USER,
+};
+
+struct ct_mapping {
+	str req_ct_uri;
+	str new_username;
+	int zero_expires;
+	uint64_t ctid;
+
+	struct list_head list;
 };
 
 /* fields marked with [NEW] must be persisted into usrloc */
@@ -84,6 +94,7 @@ struct mid_reg_info {
 	                                   marks the last successful reg */
 
 	int skip_dereg;
+	struct list_head ct_mappings;
 
 	udomain_t *dom; /* used during 200 OK ul_api operations */
 	str aor;        /* used during both "reg out" and "resp in" */
@@ -140,6 +151,8 @@ extern int tcp_persistent_flag;
 extern int ucontact_data_idx;
 extern int urecord_data_idx;
 
+struct mid_reg_info *mri_alloc(void);
+struct mid_reg_info *mri_dup(struct mid_reg_info *mri);
 void mri_free(struct mid_reg_info *mri);
 
 void set_ct(struct mid_reg_info *ct);
