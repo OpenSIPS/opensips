@@ -515,6 +515,30 @@ static inline int str2int(str* _s, unsigned int* _r)
 }
 
 /*
+ * Convert a str into a big integer
+ */
+static inline int str2int64(str* _s, uint64_t *_r)
+{
+	int i;
+
+	if (_s==0 || _s->s == 0 || _s->len == 0 || _r == 0)
+		return -1;
+
+	*_r = 0;
+	for(i = 0; i < _s->len; i++) {
+		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
+			*_r *= 10;
+			*_r += _s->s[i] - '0';
+		} else {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
+/*
  * Convert a str into signed integer
  */
 static inline int str2sint(str* _s, int* _r)
