@@ -981,27 +981,6 @@ static int pv_get_flags(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strval(msg, param, res, &buf);
 }
 
-static inline char* int_to_8hex(int val)
-{
-	unsigned short digit;
-	int i;
-	static char outbuf[9];
-
-	outbuf[8] = '\0';
-	for(i=0; i<8; i++)
-	{
-		if(val!=0)
-		{
-			digit =  val & 0x0f;
-			outbuf[7-i] = digit >= 10 ? digit + 'a' - 10 : digit + '0';
-			val >>= 4;
-		}
-		else
-			outbuf[7-i] = '0';
-	}
-	return outbuf;
-}
-
 static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {

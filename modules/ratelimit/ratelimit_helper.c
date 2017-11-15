@@ -891,7 +891,7 @@ release:
  * same as hist_check() in ratelimit.c but this one
  * only counts, no updates on the window ==> faster
  */
-static inline int hist_count(rl_pipe_t *pipe)
+static inline int ALLOW_UNUSED hist_count(rl_pipe_t *pipe)
 {
 	/* Window ELement*/
 	#define U2MILI(__usec__) (__usec__/1000)

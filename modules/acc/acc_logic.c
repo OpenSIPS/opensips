@@ -200,18 +200,6 @@ static inline void free_extra_array(tag_t* tags, int tags_len,
 	shm_free(array);
 }
 
-static inline void free_extra_array_pkg(tag_t* tags, int tags_len,
-											extra_value_t* array)
-{
-	int i;
-
-	for (i=0; i < tags_len; i++) {
-		if (array[i].shm_buf_len)
-			shm_free(array[i].value.s);
-	}
-	pkg_free(array);
-}
-
 static inline void free_acc_ctx(acc_ctx_t* ctx)
 {
 	int i;

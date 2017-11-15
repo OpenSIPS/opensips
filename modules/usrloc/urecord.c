@@ -267,7 +267,7 @@ static inline int nodb_timer(urecord_t* _r)
  * This routine is used when db_mode is
  * set to WRITE_THROUGH
  */
-static inline int wt_timer(urecord_t* _r)
+static inline int ALLOW_UNUSED wt_timer(urecord_t* _r)
 {
 	ucontact_t* ptr, *t;
 

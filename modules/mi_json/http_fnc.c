@@ -340,7 +340,7 @@ error:
 }
 
 
-static inline int mi_json_write_node_array(struct page_buf* pb,
+static inline int ALLOW_UNUSED mi_json_write_node_array(struct page_buf* pb,
           struct mi_node *node)
 {
   LM_DBG("start\n");
@@ -372,7 +372,7 @@ static inline int mi_json_write_node_hash(struct page_buf* pb,
   return pb->status;
 }
 
-static inline int mi_json_write_node(struct page_buf* pb,
+static inline int ALLOW_UNUSED mi_json_write_node(struct page_buf* pb,
           struct mi_node *node)
 {
   struct mi_attr *attr;

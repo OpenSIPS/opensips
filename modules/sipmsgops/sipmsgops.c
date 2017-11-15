@@ -294,36 +294,6 @@ static int mod_init(void)
 	return 0;
 }
 
-static inline int find_line_start(char *text, unsigned int text_len,
-		char **buf, unsigned int *buf_len)
-{
-	char *ch, *start;
-	unsigned int len;
-
-	start = *buf;
-	len = *buf_len;
-
-	while (text_len <= len) {
-		if (strncmp(text, start, text_len) == 0) {
-			*buf = start;
-			*buf_len = len;
-			return 1;
-		}
-		if ((ch = memchr(start, 13, len - 1))) {
-			if (*(ch + 1) != 10) {
-				LM_ERR("No LF after CR\n");
-				return 0;
-			}
-			len = len - (ch - start + 2);
-			start = ch + 2;
-		} else {
-			LM_ERR("No CRLF found\n");
-			return 0;
-		}
-	}
-	return 0;
-}
-
 
 int get_pvs_header_value(struct sip_msg *msg, gparam_p gp, pv_value_p ret)
 {

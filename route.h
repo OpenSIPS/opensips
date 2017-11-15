@@ -107,6 +107,8 @@ int get_script_route_ID_by_name(char *name,
 
 void push(struct action* a, struct action** head);
 
+int check_self_op(int op, str* s, unsigned short p);
+
 int add_actions(struct action* a, struct action** head);
 
 void print_rl();

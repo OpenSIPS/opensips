@@ -729,22 +729,6 @@ end:
 	return res;
 }
 
-/************ AAA PROTOCOLS helper functions **************/
-inline static uint32_t phrase2code(str *phrase)
-{
-	uint32_t code;
-	int i;
-
-	if (phrase->len<3) return 0;
-	code=0;
-	for (i=0;i<3;i++) {
-		if (!(phrase->s[i]>='0' && phrase->s[i]<'9'))
-				return 0;
-		code=code*10+phrase->s[i]-'0';
-	}
-	return code;
-}
-
 
 /********************************************
  *        AAA PROTOCOL  ACCOUNTING

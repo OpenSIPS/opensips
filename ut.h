@@ -95,6 +95,11 @@ struct sip_msg;
 	((_via)->bsize-((_via)->name.s-\
 		((_via)->hdr.s+(_via)->hdr.len)))
 
+#ifdef __GNUC__
+#define ALLOW_UNUSED __attribute__ ((unused))
+#else
+#define ALLOW_UNUSED
+#endif
 
 #define PTR_STRING_SIZE  2+16+1
 #define PTR_STR_SIZE     2+16

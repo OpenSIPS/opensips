@@ -2615,7 +2615,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 %%
 
-static inline void warn(char* s)
+static inline void ALLOW_UNUSED warn(char* s)
 {
 	LM_WARN("warning in config file %s, line %d, column %d-%d: %s\n",
 			get_cfg_file_name, line, startcolumn, column, s);

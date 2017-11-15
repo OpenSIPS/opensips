@@ -77,13 +77,13 @@ int exec_msg(struct sip_msg *msg, char *cmd )
 		goto error01;
 	}
 
-	schedule_to_kill(pid);
-	wait(&exit_status);
-
 	/* success */
 	ret=1;
 
 error01:
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	if (ferror(pipe)) {
 		LM_ERR("pipe: %s\n", strerror(errno));
 		ser_error=E_EXEC;

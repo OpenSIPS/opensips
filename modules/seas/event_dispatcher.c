@@ -149,7 +149,7 @@ int dispatcher_main_loop(void)
 		     continue;
 		  }
 		  /*overwrite the obsolete 'i' position with the next position*/
-		  for(j=3+i;j<(as_nr+unc_as_nr+3-1);i++){
+		  for(j=3+i;j<(as_nr+unc_as_nr+3-1);j++){
 		     poll_fds[j].fd=poll_fds[j+1].fd;
 		     poll_fds[j].events=poll_fds[j+1].events;
 		     poll_fds[j].revents=poll_fds[j+1].revents;
