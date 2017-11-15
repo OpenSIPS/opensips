@@ -116,6 +116,8 @@ int mix_dialog_presence= 0;
 int notify_offline_body= 0;
 /* if subscription should be automatically ended on SIP timeout 408 */
 int end_sub_on_timeout= 1;
+/* if the presence event should be aggregated in NOTIFY */
+int aggregate_presence = 1;
 /* holder for the pointer to presence event */
 pres_ev_t** pres_event_p= NULL;
 pres_ev_t** dialog_event_p= NULL;
@@ -163,6 +165,7 @@ static param_export_t params[]={
 	{ "bla_fix_remote_target",  INT_PARAM, &fix_remote_target},
 	{ "notify_offline_body",    INT_PARAM, &notify_offline_body},
 	{ "end_sub_on_timeout",     INT_PARAM, &end_sub_on_timeout},
+	{ "aggregate_presence",     INT_PARAM, &aggregate_presence},
 	{0,0,0}
 };
 
