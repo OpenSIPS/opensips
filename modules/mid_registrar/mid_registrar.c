@@ -133,6 +133,8 @@ unsigned int outgoing_expires = 600;
 #define matching_mode_str(v) (v == MATCH_BY_PARAM ? "by uri param" : "by user")
 
 enum mid_reg_insertion_mode   insertion_mode  = INSERT_BY_CONTACT;
+
+//TODO: remove the Path-based mid-registrar logic starting with OpenSIPS 2.4
 enum mid_reg_matching_mode  matching_mode = MATCH_BY_PARAM;
 
 /*
@@ -176,7 +178,6 @@ static param_export_t mod_params[] = {
 	{ "disable_gruu",         INT_PARAM, &disable_gruu },
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
 	{ "insertion_mode",       INT_PARAM, &insertion_mode },
-	{ "contact_match_mode",   INT_PARAM, &matching_mode },
 	{ "contact_match_param",  STR_PARAM, &matching_param.s },
 	{ 0,0,0 }
 };
@@ -409,9 +410,61 @@ struct mid_reg_info *get_ct(void)
 	return __info;
 }
 
+struct mid_reg_info *mri_alloc(void)
+{
+	struct mid_reg_info *new;
+
+	new = shm_malloc(sizeof *new);
+	if (!new) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+	memset(new, 0, sizeof *new);
+	INIT_LIST_HEAD(&new->ct_mappings);
+
+	return new;
+}
+
+struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
+{
+	struct mid_reg_info *new;
+
+	new = mri_alloc();
+	if (!new)
+		return NULL;
+
+	new->reg_flags = mri->reg_flags;
+	new->last_cseq = mri->last_cseq;
+
+	if (mri->aor.s)
+		shm_str_dup(&new->aor, &mri->aor);
+
+	if (mri->from.s)
+		shm_str_dup(&new->from, &mri->from);
+
+	if (mri->to.s)
+		shm_str_dup(&new->to, &mri->to);
+
+	if (mri->callid.s)
+		shm_str_dup(&new->callid, &mri->callid);
+
+	if (mri->ct_uri.s)
+		shm_str_dup(&new->ct_uri, &mri->ct_uri);
+
+	if (mri->main_reg_uri.s)
+		shm_str_dup(&new->main_reg_uri, &mri->main_reg_uri);
+
+	if (mri->main_reg_next_hop.s)
+		shm_str_dup(&new->main_reg_next_hop, &mri->main_reg_next_hop);
+
+	return new;
+}
 
 void mri_free(struct mid_reg_info *mri)
 {
+	struct list_head *_, *__;
+	struct ct_mapping *ctmap;
+
 	if (!mri)
 		return;
 
@@ -436,6 +489,13 @@ void mri_free(struct mid_reg_info *mri)
 
 	if (mri->ct_uri.s)
 		shm_free(mri->ct_uri.s);
+
+	list_for_each_safe(_, __, &mri->ct_mappings) {
+		ctmap = list_entry(_, struct ct_mapping, list);
+		shm_free(ctmap->req_ct_uri.s);
+		shm_free(ctmap->new_username.s);
+		shm_free(ctmap);
+	}
 
 #ifdef EXTRA_DEBUG
 	memset(mri, 0, sizeof *mri);

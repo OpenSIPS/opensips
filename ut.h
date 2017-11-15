@@ -161,9 +161,9 @@ static inline int btostr( char *p,  unsigned char val)
 /* 2^64~= 16*10^18 => 19+1+1 sign + digits + \0 */
 #define INT2STR_MAX_LEN  (1+19+1+1)
 
-/* INTeger-TO-Buffer-STRing : convers an unsigned long to a string
+/* INTeger-TO-Buffer-STRing : converts a 64-bit integer to a string
  * IMPORTANT: the provided buffer must be at least INT2STR_MAX_LEN size !! */
-static inline char* int2bstr(unsigned long l, char *s, int* len)
+static inline char* int2bstr(uint64_t l, char *s, int* len)
 {
 	int i;
 
@@ -182,10 +182,10 @@ static inline char* int2bstr(unsigned long l, char *s, int* len)
 }
 
 
-/* INTeger-TO-STRing : convers an unsigned long to a string
+/* INTeger-TO-STRing : convers a 64-bit integer to a string
  * returns a pointer to a static buffer containing l in asciiz & sets len */
 extern char int2str_buf[INT2STR_MAX_LEN];
-static inline char* int2str(unsigned long l, int* len)
+static inline char* int2str(uint64_t l, int* len)
 {
 	return int2bstr( l, int2str_buf, len);
 }
@@ -513,6 +513,30 @@ static inline int str2int(str* _s, unsigned int* _r)
 
 	return 0;
 }
+
+/*
+ * Convert a str into a big integer
+ */
+static inline int str2int64(str* _s, uint64_t *_r)
+{
+	int i;
+
+	if (_s==0 || _s->s == 0 || _s->len == 0 || _r == 0)
+		return -1;
+
+	*_r = 0;
+	for(i = 0; i < _s->len; i++) {
+		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
+			*_r *= 10;
+			*_r += _s->s[i] - '0';
+		} else {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 
 /*
  * Convert a str into signed integer

@@ -89,6 +89,9 @@ static int unregister_contact(struct mid_reg_info *mri)
 	}
 	dlg->state = DLG_CONFIRMED;
 
+	/* t_request_within() will increment it for us */
+	dlg->loc_seq.value = mri->last_cseq;
+
 	if (mri->main_reg_next_hop.s) {
 		LM_DBG("adding next hop: %.*s\n", mri->main_reg_next_hop.len,
 		       mri->main_reg_next_hop.s);

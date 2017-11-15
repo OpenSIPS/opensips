@@ -481,7 +481,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 			LM_ERR("failed to sync with db\n");
 		/* now simply free everything */
 		free_urecord(_r);
-	} else if (_r->contacts == 0) {
+	} else if (_r->no_clear_ref <= 0 && _r->contacts == 0) {
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
@@ -503,11 +503,13 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	int first_contact = _r->contacts == NULL ? 1 : 0;
 
 	/* not used in db only mode */
-	_ci->contact_id =
-		pack_indexes((unsigned short)_r->aorhash,
-									 _r->label,
-					 ((unsigned short)_r->next_clabel));
-	_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+	if (_ci == 0) {
+		_ci->contact_id =
+		        pack_indexes((unsigned short)_r->aorhash,
+		                                     _r->label,
+		                    ((unsigned short)_r->next_clabel));
+		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+	}
 
 	if ( ((*_c)=mem_insert_ucontact(_r, _contact, _ci)) == 0) {
 		LM_ERR("failed to insert contact\n");
@@ -661,3 +663,15 @@ int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co)
 }
 
 
+uint64_t next_contact_id(urecord_t* _r)
+{
+	uint64_t contact_id;
+
+	contact_id =
+		pack_indexes((unsigned short)_r->aorhash,
+		                             _r->label,
+		            ((unsigned short)_r->next_clabel));
+		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+
+	return contact_id;
+}

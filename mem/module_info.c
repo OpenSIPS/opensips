@@ -97,11 +97,11 @@ int init_new_stat(stat_var* stat) {
 #undef MALLOC_UNSAFE
 }
 
-inline void update_module_stats(long mem_used, long real_used, int frags, int group_idx) {
+inline void update_module_stats(long mem_used, long real_used, int frags, unsigned long group_idx) {
 
 	unsigned long local_max, global_max;
 
-	if (mem_skip_stats)
+	if (mem_skip_stats || group_idx == GROUP_IDX_INVALID)
 		return;
 
 #ifdef SHM_SHOW_DEFAULT_GROUP

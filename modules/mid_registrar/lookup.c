@@ -108,7 +108,7 @@ int get_match_token(str *uri, str *out_tok, struct sip_uri *out_puri, int *out_i
 	return 0;
 }
 
-int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
+int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 {
 	unsigned int flags;
 	urecord_t* r;
@@ -128,9 +128,8 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	pv_value_t val;
 	int_str istr;
 	str sip_instance = {0,0},call_id = {0,0};
-	str pst, dec_tok, match_tok, hostport;
-	struct sip_uri dec_uri;
-	int i;
+	struct sip_uri puri;
+	uint64_t contact_id;
 
 	/* branch index */
 	int idx;
@@ -145,7 +144,7 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 	flags = 0;
 	if (_f && _f[0]!=0) {
-		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
+		if (fixup_get_svalue(req, (gparam_p)_f, &flags_s)!=0) {
 			LM_ERR("invalid owner uri parameter");
 			return -1;
 		}
@@ -205,7 +204,7 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 
 	if (_s) {
-		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
+		if (pv_get_spec_value(req, (pv_spec_p)_s, &val)!=0) {
 			LM_ERR("failed to get PV value\n");
 			return -1;
 		}
@@ -215,66 +214,33 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		}
 		uri = val.rs;
 	} else {
-		uri = *GET_RURI(_m);
+		uri = *GET_RURI(req);
 	}
 
 	if (reg_mode != MID_REG_THROTTLE_AOR && insertion_mode == INSERT_BY_CONTACT) {
-		if (get_match_token(&uri, &match_tok, NULL, NULL) != 0) {
-			LM_ERR("failed to get match token\n");
+		if (parse_uri(uri.s, uri.len, &puri) < 0) {
+			LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri.len,
+			       uri.s, req->callid->body.len, req->callid->body.s);
 			return -1;
 		}
 
-		if (decrypt_str(&match_tok, &dec_tok)) {
-			LM_ERR("failed to decrypt matching Contact param (%.*s=%.*s)\n",
-			       matching_param.len, matching_param.s,
-			       match_tok.len, match_tok.s);
+		if (str2int64(&puri.user, &contact_id) != 0) {
+			LM_ERR("invalid contact_id in R-URI <%.*s>, ci: %.*s\n",
+			       uri.len, uri.s, req->callid->body.len,
+			       req->callid->body.s);
 			return -1;
 		}
 
-		LM_DBG("dec URI: %.*s\n", dec_tok.len, dec_tok.s);
+		LM_DBG("getting ucontact from contact_id %lu\n", contact_id);
 
-		if (parse_uri(dec_tok.s, dec_tok.len, &dec_uri) < 0) {
-			LM_ERR("failed to parse dec URI <%.*s>\n", dec_tok.len, dec_tok.s);
+		ptr = ul_api.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
+		if (!ptr) {
+			LM_ERR("no record found for %.*s, ci: %.*s\n", uri.len, uri.s,
+			       req->callid->body.len, req->callid->body.s);
 			return -1;
 		}
-
-		hostport = dec_uri.host;
-		if (dec_uri.port.len > 0)
-			hostport.len = dec_uri.port.s + dec_uri.port.len - dec_uri.host.s;
-
-		/* replace the host:port part */
-		dec_uri.port.s = NULL;
-		dec_uri.host = hostport;
-
-		/* remove the match parameter */
-		for (i = 0; i < dec_uri.u_params_no; i++) {
-			if (str_strcmp(&dec_uri.u_name[i], &matching_param) == 0) {
-				dec_uri.u_name[i].s = NULL;
-				break;
-			}
-		}
-
-		pst.s = uri_buf;
-		pst.len = MAX_URI_SIZE;
-		if (print_uri(&dec_uri, &pst) != 0) {
-			LM_ERR("failed to print URI\n");
-			return -1;
-		}
-
-		LM_DBG("printed URI: %.*s\n", pst.len, pst.s);
-
-		pkg_free(dec_tok.s);
-
-		if (!_s) {
-			if (set_ruri(_m, &pst) != 0) {
-				LM_ERR("failed to set R-URI\n");
-				return -1;
-			}
-		}
-	}
-
-	if (reg_mode != MID_REG_THROTTLE_AOR) {
-		return 1;
+		aor = r->aor;
+		goto have_contact;
 	}
 
 	if (extract_aor(&uri, &aor,&sip_instance,&call_id) < 0) {
@@ -309,7 +275,7 @@ int mid_reg_lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	/* look first for an un-expired and suported contact */
 search_valid_contact:
 	while ( (ptr) &&
-	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(_m,ptr,flags)))
+	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(req,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
 		/* nothing found */
@@ -374,10 +340,11 @@ search_valid_contact:
 
 	LM_DBG("found a complete match\n");
 
+have_contact:
 	ret = 1;
 	if (ptr) {
 		LM_DBG("setting as ruri <%.*s>\n",ptr->c.len,ptr->c.s);
-		if (set_ruri(_m, &ptr->c) < 0) {
+		if (set_ruri(req, &ptr->c) < 0) {
 			LM_ERR("unable to rewrite Request-URI\n");
 			ret = -3;
 			goto done;
@@ -392,29 +359,29 @@ search_valid_contact:
 				ret = -3;
 				goto done;
 			}
-			if (set_path_vector(_m, &ptr->path) < 0) {
+			if (set_path_vector(req, &ptr->path) < 0) {
 				LM_ERR("failed to set path vector\n");
 				ret = -3;
 				goto done;
 			}
-			if (set_dst_uri(_m, &path_dst) < 0) {
+			if (set_dst_uri(req, &path_dst) < 0) {
 				LM_ERR("failed to set dst_uri of Path\n");
 				ret = -3;
 				goto done;
 			}
 		} else if (ptr->received.s && ptr->received.len) {
-			if (set_dst_uri(_m, &ptr->received) < 0) {
+			if (set_dst_uri(req, &ptr->received) < 0) {
 				ret = -3;
 				goto done;
 			}
 		}
 
-		set_ruri_q( _m, ptr->q);
+		set_ruri_q(req, ptr->q);
 
-		setbflag( _m, 0, ptr->cflags);
+		setbflag(req, 0, ptr->cflags);
 
 		if (ptr->sock)
-			_m->force_send_socket = ptr->sock;
+			req->force_send_socket = ptr->sock;
 
 		/* populate the 'attributes' avp */
 		if (attr_avp_name != -1) {
@@ -435,7 +402,7 @@ search_valid_contact:
 
 	do {
 		for( ; ptr ; ptr = ptr->next ) {
-			if (VALID_CONTACT(ptr, get_act_time()) && allowed_method(_m,ptr,flags)) {
+			if (VALID_CONTACT(ptr, get_act_time()) && allowed_method(req,ptr,flags)) {
 				path_dst.len = 0;
 				if(ptr->path.s && ptr->path.len
 				&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
@@ -448,7 +415,7 @@ search_valid_contact:
 				/* The same as for the first contact applies for branches
 				 * regarding path vs. received. */
 				LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
-				if (append_branch(_m,&ptr->c,path_dst.len?&path_dst:&ptr->received,
+				if (append_branch(req,&ptr->c,path_dst.len?&path_dst:&ptr->received,
 				&ptr->path, ptr->q, ptr->cflags, ptr->sock) == -1) {
 					LM_ERR("failed to append a branch\n");
 					/* Also give a chance to the next branches*/

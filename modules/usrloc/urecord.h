@@ -53,12 +53,13 @@ typedef struct urecord {
 	str aor;                       /*!< Address of record */
 	unsigned int aorhash;          /*!< Hash over address of record */
 	unsigned int label;            /*!< Labels over AVL tree */
-	unsigned short next_clabel;      /*!< Labels to be assigned to contacts */
+	unsigned short next_clabel;    /*!< Labels to be assigned to contacts */
 	ucontact_t* contacts;          /*!< One or more contact fields */
 
 	struct hslot* slot;            /*!< Collision slot in the hash table
                                     * array we belong to */
 
+	int no_clear_ref;              /*!< Keep the record while positive */
 	void **attached_data;          /*!< data attached by API subscribers >*/
 } urecord_t;
 
@@ -144,6 +145,13 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		struct ucontact** _co);
 int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
 
+
+/*! \brief
+ * Returns the next contact_id key for the given record and advances
+ * the internal counter
+ */
+typedef uint64_t (*next_contact_id_t) (urecord_t* _r);
+uint64_t next_contact_id(urecord_t* _r);
 
 
 #endif /* URECORD_H */
