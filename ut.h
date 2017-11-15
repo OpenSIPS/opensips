@@ -161,9 +161,9 @@ static inline int btostr( char *p,  unsigned char val)
 /* 2^64~= 16*10^18 => 19+1+1 sign + digits + \0 */
 #define INT2STR_MAX_LEN  (1+19+1+1)
 
-/* INTeger-TO-Buffer-STRing : convers an unsigned long to a string
+/* INTeger-TO-Buffer-STRing : converts a 64-bit integer to a string
  * IMPORTANT: the provided buffer must be at least INT2STR_MAX_LEN size !! */
-static inline char* int2bstr(unsigned long l, char *s, int* len)
+static inline char* int2bstr(uint64_t l, char *s, int* len)
 {
 	int i;
 
@@ -182,10 +182,10 @@ static inline char* int2bstr(unsigned long l, char *s, int* len)
 }
 
 
-/* INTeger-TO-STRing : convers an unsigned long to a string
+/* INTeger-TO-STRing : convers a 64-bit integer to a string
  * returns a pointer to a static buffer containing l in asciiz & sets len */
 extern char int2str_buf[INT2STR_MAX_LEN];
-static inline char* int2str(unsigned long l, int* len)
+static inline char* int2str(uint64_t l, int* len)
 {
 	return int2bstr( l, int2str_buf, len);
 }
