@@ -661,3 +661,15 @@ int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co)
 }
 
 
+uint64_t next_contact_id(urecord_t* _r)
+{
+	uint64_t contact_id;
+
+	contact_id =
+		pack_indexes((unsigned short)_r->aorhash,
+		                             _r->label,
+		            ((unsigned short)_r->next_clabel));
+		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
+
+	return contact_id;
+}

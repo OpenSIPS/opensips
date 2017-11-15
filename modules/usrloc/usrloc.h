@@ -54,18 +54,20 @@ typedef struct usrloc_api {
 	insert_urecord_t          insert_urecord;
 	delete_urecord_t          delete_urecord;
 	get_urecord_t             get_urecord;
+	release_urecord_t         release_urecord;
 	lock_udomain_t            lock_udomain;
 	unlock_udomain_t          unlock_udomain;
 
-	release_urecord_t         release_urecord;
 	insert_ucontact_t         insert_ucontact;
 	delete_ucontact_t         delete_ucontact;
 	delete_ucontact_from_id_t delete_ucontact_from_id;
+	get_ucontact_from_id_t    get_ucontact_from_id;
 	get_ucontact_t            get_ucontact;
 
 	update_ucontact_t         update_ucontact;
 
 	get_next_udomain_t        get_next_udomain;
+	next_contact_id_t         next_contact_id;
 	lock_ulslot_t             lock_ulslot;
 	unlock_ulslot_t           unlock_ulslot;
 

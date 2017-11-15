@@ -145,5 +145,12 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
 
 
+/*! \brief
+ * Returns the next contact_id key for the given record and advances
+ * the internal counter
+ */
+typedef uint64_t (*next_contact_id_t) (urecord_t* _r);
+uint64_t next_contact_id(urecord_t* _r);
+
 
 #endif /* URECORD_H */
