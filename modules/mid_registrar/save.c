@@ -1304,13 +1304,14 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 		shm_str_dup(&ri->ct_uri, &ct);
 		ri->expires_out = e_out;
 		ri->last_reg_ts = get_act_time();
+		ri->last_cseq = cseq;
 
 		set_ct(ri);
 
 		if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
 			rerrno = R_UL_NEW_R;
 			LM_ERR("failed to insert new record structure\n");
-			goto error;
+			goto out_err;
 		}
 
 		set_ct(NULL);
@@ -1322,6 +1323,23 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 		} else {
 			ri->last_reg_ts = get_act_time();
 		}
+
+		/*
+		 * the AoR registration update may sometimes get forwarded
+		 * under a different Call-ID, when aggregating contacts
+		 */
+		if (ri->callid.len != req->callid->body.len &&
+		    str_strcmp(&ri->callid, &req->callid->body) != 0) {
+			if (shm_str_dup(&aux, &req->callid->body) != 0) {
+				rerrno = R_UL_UPD_C;
+				LM_ERR("oom\n");
+				goto out_err;
+			}
+			shm_free(ri->callid.s);
+			ri->callid = aux;
+			ri->last_cseq = cseq;
+		} else if (cseq > ri->last_cseq)
+			ri->last_cseq = cseq;
 	}
 
 	if (_c != NULL) {
@@ -2078,6 +2096,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 					return -1;
 				}
 				ci->expires_out = c->expires_out;
+				mri->last_cseq = ci->cseq;
 
 				if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 					rerrno = R_UL_UPD_C;
@@ -2212,6 +2231,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				return -1;
 			}
 			ci->expires_out = c->expires_out;
+			cinfo->last_cseq = ci->cseq;
 
 			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
@@ -2240,6 +2260,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				return -1;
 			}
 			ci->expires_out = e_out;
+			cinfo->last_cseq = ci->cseq;
 
 			if (ul_api.insert_ucontact(urec, &ct->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;

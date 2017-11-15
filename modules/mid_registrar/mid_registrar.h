@@ -82,6 +82,8 @@ struct mid_reg_info {
 	str from;   /* [NEW] De-REGISTER */
 	str callid; /* De-REGISTER */
 
+	unsigned int last_cseq;
+
 	int reg_flags; /* temporary holder until response arrives */
 	int star;      /* temporary holder until response arrives */
 
