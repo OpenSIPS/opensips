@@ -1156,7 +1156,7 @@ int mem_timer_udomain(udomain_t* _d)
 				flush=1;
 
 			/* Remove the entire record if it is empty */
-			if (ptr->contacts == NULL)
+			if (ptr->no_clear_ref <= 0 && ptr->contacts == NULL)
 			{
 				if (exists_ulcb_type(UL_AOR_EXPIRE))
 					run_ul_callbacks(UL_AOR_EXPIRE, ptr);
@@ -1349,9 +1349,6 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		}
 	}
 
-	if (!is_replicated && ul_replicate_cluster)
-		replicate_urecord_delete(_r);
-
 	c = _r->contacts;
 	while(c) {
 		t = c;
@@ -1361,6 +1358,13 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 			return -1;
 		}
 	}
+
+	if (_r->no_clear_ref > 0)
+		return 0;
+
+	if (!is_replicated && ul_replicate_cluster)
+		replicate_urecord_delete(_r);
+
 	release_urecord(_r, is_replicated);
 	return 0;
 }

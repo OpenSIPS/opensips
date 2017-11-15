@@ -53,12 +53,13 @@ typedef struct urecord {
 	str aor;                       /*!< Address of record */
 	unsigned int aorhash;          /*!< Hash over address of record */
 	unsigned int label;            /*!< Labels over AVL tree */
-	unsigned short next_clabel;      /*!< Labels to be assigned to contacts */
+	unsigned short next_clabel;    /*!< Labels to be assigned to contacts */
 	ucontact_t* contacts;          /*!< One or more contact fields */
 
 	struct hslot* slot;            /*!< Collision slot in the hash table
                                     * array we belong to */
 
+	int no_clear_ref;              /*!< Keep the record while positive */
 	void **attached_data;          /*!< data attached by API subscribers >*/
 } urecord_t;
 

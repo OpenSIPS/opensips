@@ -481,7 +481,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 			LM_ERR("failed to sync with db\n");
 		/* now simply free everything */
 		free_urecord(_r);
-	} else if (_r->contacts == 0) {
+	} else if (_r->no_clear_ref <= 0 && _r->contacts == 0) {
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
