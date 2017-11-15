@@ -136,6 +136,8 @@ void lock_udomain(udomain_t* _d, str *_aor);
 typedef void (*unlock_udomain_t)(udomain_t* _d, str *_aor);
 void unlock_udomain(udomain_t* _d, str *_aor);
 
+typedef struct ucontact* (*get_ucontact_from_id_t)(udomain_t *d, uint64_t contact_id, struct urecord **_r);
+struct ucontact* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, struct urecord **_r);
 
 /*! \brief
  * Locks the specific domain hash entrie
