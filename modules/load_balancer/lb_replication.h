@@ -43,6 +43,6 @@ void replicate_lb_status(struct lb_dst *dst);
 /* handler for incoming BIN packets */
 int replicate_lb_status_update(bin_packet_t *packet, struct lb_data *data);
 
-void receive_lb_binary_packet(bin_packet_t *packet, int packet_type, int src_id);
+void receive_lb_binary_packet(bin_packet_t *packet);
 
 #endif

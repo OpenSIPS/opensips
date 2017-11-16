@@ -57,7 +57,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci);
 void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci);
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c);
 
-void receive_binary_packet(bin_packet_t *packet, int packet_type, int src_id);
+void receive_binary_packet(bin_packet_t *packet);
 
 #endif /* _USRLOC_REPLICATION_H_ */
 

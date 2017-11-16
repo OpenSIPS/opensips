@@ -29,7 +29,7 @@
 #include "crc.h"
 #include "net/proto_tcp/tcp_common_defs.h"
 
-#define MAX_BUF_LEN TCP_BUF_SIZE
+#define BIN_MAX_BUF_LEN TCP_BUF_SIZE
 #define BIN_PACKET_MARKER      "P4CK"
 #define BIN_PACKET_MARKER_SIZE 4
 #define PKG_LEN_FIELD_SIZE     4
@@ -50,6 +50,10 @@ typedef struct bin_packet {
 	str buffer;
 	char *front_pointer;
 	int size;
+	int type;
+	/* not populated by bin_interface */
+	struct bin_packet *next;
+	int src_id;
 } bin_packet_t;
 
 struct packet_cb_list {
@@ -71,6 +75,7 @@ short get_bin_pkg_version(bin_packet_t *packet);
  * returns the capability from the message
  */
 void bin_get_capability(bin_packet_t *packet, str *capability);
+
 
 /**
 	calls all the registered functions
@@ -95,7 +100,7 @@ int bin_register_cb(str *cap, void (*cb)(bin_packet_t *, int,
  *
  * @return: 0 on success
  */
-int bin_init(bin_packet_t *packet, str *capability, int cmd_type, short version,
+int bin_init(bin_packet_t *packet, str *capability, int packet_type, short version,
 				int length);
 
 /**

@@ -792,7 +792,7 @@ error:
 
 
 
-void rl_rcv_bin(bin_packet_t *packet, int packet_type, int src_id)
+void rl_rcv_bin(bin_packet_t *packet)
 {
 	rl_algo_t algo;
 	int limit;
@@ -803,9 +803,9 @@ void rl_rcv_bin(bin_packet_t *packet, int packet_type, int src_id)
 	time_t now;
 	rl_repl_counter_t *destination;
 
-	if (packet_type != RL_PIPE_COUNTER) {
+	if (packet->type != RL_PIPE_COUNTER) {
 		LM_WARN("Invalid binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, accept_repl_pipes);
+			packet->type, packet->src_id, accept_repl_pipes);
 		return;
 	}
 
@@ -869,7 +869,7 @@ void rl_rcv_bin(bin_packet_t *packet, int packet_type, int src_id)
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
-		destination = find_destination(*pipe, src_id);
+		destination = find_destination(*pipe, packet->src_id);
 		destination->counter = counter;
 		destination->update = now;
 		RL_RELEASE_LOCK(hash_idx);

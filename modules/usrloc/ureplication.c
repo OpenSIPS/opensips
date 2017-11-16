@@ -616,39 +616,34 @@ error:
 	return -1;
 }
 
-void receive_binary_packet(bin_packet_t *packet, int packet_type, int src_id)
+void receive_binary_packets(bin_packet_t *packet)
 {
 	int rc;
 
-	LM_DBG("received a binary packet [%d]!\n", packet_type);
+	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
-	switch (packet_type) {
+	switch (packet->type) {
 	case REPL_URECORD_INSERT:
 		rc = receive_urecord_insert(packet);
 		break;
-
 	case REPL_URECORD_DELETE:
 		rc = receive_urecord_delete(packet);
 		break;
-
 	case REPL_UCONTACT_INSERT:
 		rc = receive_ucontact_insert(packet);
 		break;
-
 	case REPL_UCONTACT_UPDATE:
 		rc = receive_ucontact_update(packet);
 		break;
-
 	case REPL_UCONTACT_DELETE:
 		rc = receive_ucontact_delete(packet);
 		break;
-
 	default:
 		rc = -1;
-		LM_ERR("invalid usrloc binary packet type: %d\n", packet_type);
+		LM_ERR("invalid usrloc binary packet type: %d\n", packet->type);
 	}
 
 	if (rc != 0)
-		LM_ERR("failed to process a binary packet!\n");
+		LM_ERR("failed to process binary packet!\n");
 }
 

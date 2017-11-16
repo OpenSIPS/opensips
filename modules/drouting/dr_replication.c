@@ -180,16 +180,16 @@ static int cr_status_update(bin_packet_t *packet)
 }
 
 
-void receive_dr_binary_packet(bin_packet_t *packet, int packet_type, int src_id)
+void receive_dr_binary_packet(bin_packet_t *packet)
 {
-	LM_DBG("received a binary packet [%d]!\n", packet_type);
+	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
 	if(get_bin_pkg_version(packet) != BIN_VERSION) {
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
 
-	switch (packet_type) {
+	switch (packet->type) {
 	case REPL_GW_STATUS_UPDATE:
 		gw_status_update(packet);
 		break;
@@ -198,6 +198,6 @@ void receive_dr_binary_packet(bin_packet_t *packet, int packet_type, int src_id)
 		break;
 	default:
 		LM_WARN("Invalid drouting binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, accept_replicated_status);
+			packet->type, packet->src_id, accept_replicated_status);
 	}
 }

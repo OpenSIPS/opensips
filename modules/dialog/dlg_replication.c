@@ -697,11 +697,11 @@ error:
 	LM_ERR("Failed to replicate deleted dialog\n");
 }
 
-void receive_dlg_repl(bin_packet_t *packet, int packet_type, int src_id)
+void receive_dlg_repl(bin_packet_t *packet)
 {
 	int rc = 0;
 
-	switch (packet_type) {
+	switch (packet->type) {
 	case REPLICATION_DLG_CREATED:
 		if (accept_replicated_dlg) {
 			rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
@@ -723,7 +723,7 @@ void receive_dlg_repl(bin_packet_t *packet, int packet_type, int src_id)
 	default:
 		rc = -1;
 		LM_WARN("Invalid dialog binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, accept_replicated_dlg);
+			packet->type, packet->src_id, accept_replicated_dlg);
 	}
 
 	if (rc != 0)
@@ -862,7 +862,7 @@ error:
 }
 
 
-void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id)
+void receive_prof_repl(bin_packet_t *packet)
 {
 	time_t now;
 	str name;
@@ -882,9 +882,9 @@ void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id)
 	if (!accept_repl_profiles)
 		return;
 
-	if (packet_type != REPLICATION_DLG_PROFILE) {
+	if (packet->type != REPLICATION_DLG_PROFILE) {
 		LM_WARN("Invalid dialog binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, accept_repl_profiles);
+			packet->type, packet->src_id, accept_repl_profiles);
 		return;
 	}
 
@@ -901,7 +901,7 @@ void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id)
 			old_profile = get_dlg_profile(&name);
 			if (!old_profile)
 				LM_WARN("received unknown profile <%.*s> from node %d\n",
-					name.len, name.s, src_id);
+					name.len, name.s, packet->src_id);
 			old_name = name;
 		}
 		profile = old_profile;
@@ -914,7 +914,8 @@ void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id)
 		if (has_value) {
 			if (!profile->has_value) {
 				LM_WARN("The other end does not have a value for this profile:"
-					"<%.*s> [node: %d]\n", profile->name.len, profile->name.s, src_id);
+					"<%.*s> [node: %d]\n", profile->name.len, profile->name.s,
+					packet->src_id);
 				profile = NULL;
 			}
 			if (bin_pop_str(packet, &value)) {
@@ -931,7 +932,7 @@ void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id)
 		if (profile) {
 			if (!profile->has_value) {
 				lock_get(&profile->repl->lock);
-				destination = find_destination(profile->repl, src_id);
+				destination = find_destination(profile->repl, packet->src_id);
 				if(destination == NULL){
 					lock_release(&profile->repl->lock);
 					return;
@@ -966,7 +967,7 @@ void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id)
 					rp->noval = repl_prof_allocate();
 				if (rp->noval) {
 					lock_release(&rp->noval->lock);
-					destination = find_destination(rp->noval, src_id);
+					destination = find_destination(rp->noval, packet->src_id);
 					if (destination == NULL) {
 						lock_release(&rp->noval->lock);
 						lock_set_release(profile->locks, i);

@@ -425,6 +425,26 @@ modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:192.168.0
 		</example>
         </section>
 
+        <section>
+            <title><varname>sync_packet_max_size</varname></title>
+            <para>
+                The maximum size of the BIN packets sent while doing data synchronization. This is only a suggested value as the actual size of the packets may be slightly larger.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>65535</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>sync_packet_max_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "sync_packet_max_size", 32765)
+...
+		</programlisting>
+		</example>
+        </section>
+
         </section>
 
         <section>

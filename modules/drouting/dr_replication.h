@@ -47,6 +47,6 @@ void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
 																int cluster);
 
 /* handler for incoming BIN packets */
-void receive_dr_binary_packet(bin_packet_t *packet, int packet_type, int src_id);
+void receive_dr_binary_packet(bin_packet_t *packet);
 
 #endif

@@ -63,7 +63,7 @@ int repl_prof_init(void);
 int repl_prof_remove(str *name, str *value);
 int repl_prof_dest(modparam_t type, void *val);
 int replicate_profiles_count(repl_prof_novalue_t *rp);
-void receive_prof_repl(bin_packet_t *packet, int packet_type, int src_id);
+void receive_prof_repl(bin_packet_t *packet);
 
 #define REPLICATION_DLG_PROFILE		4
 #define DLG_REPL_PROF_TIMER			10

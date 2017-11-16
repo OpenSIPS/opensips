@@ -40,6 +40,7 @@
 #include "api.h"
 #include "node_info.h"
 #include "clusterer.h"
+#include "sync.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
@@ -133,6 +134,8 @@ static param_export_t params[] = {
 	{"db_mode",				INT_PARAM,	&db_mode			},
 	{"neighbor_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
 	{"current_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
+	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
+	{"sync_from",			INT_PARAM,	&_sync_from_id		},
 	{0, 0, 0}
 };
 
@@ -308,7 +311,6 @@ static int mod_init(void)
 				"Did you forget to load a database module ?\n");
 			goto error;
 		}
-
 		if (!DB_CAPABILITY(dr_dbf, DB_CAP_QUERY)) {
 			LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
 			goto error;
@@ -1094,6 +1096,9 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;
 	binds->register_capability = cl_register_cap;
+	binds->request_sync = cl_request_sync;
+	binds->sync_chunk_start = cl_sync_chunk_start;
+	binds->sync_chunk_iter = cl_sync_chunk_iter;
 
 	return 1;
 }

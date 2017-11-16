@@ -54,9 +54,9 @@ void set_len(bin_packet_t *packet) {
  * +-------------------+-----------------------------------------------------------------+
  *
  * @param: { LEN, CAP } + CMD + VERSION
- * @length: initial packet size. specify 0 to use the default size (MAX_BUF_LEN)
+ * @length: initial packet size. specify 0 to use the default size (BIN_MAX_BUF_LEN)
  */
-int bin_init(bin_packet_t *packet, str *capability, int cmd_type,
+int bin_init(bin_packet_t *packet, str *capability, int packet_type,
              short version, int length)
 {
 	if (length != 0 && length < MIN_BIN_PACKET_SIZE + capability->len) {
@@ -66,7 +66,9 @@ int bin_init(bin_packet_t *packet, str *capability, int cmd_type,
 	}
 
 	if (!length) 
-		length = MAX_BUF_LEN;
+		length = BIN_MAX_BUF_LEN;
+
+	packet->type = packet_type;
 
 	packet->buffer.s = pkg_malloc(length);
 	if (!packet->buffer.s) {
@@ -75,6 +77,8 @@ int bin_init(bin_packet_t *packet, str *capability, int cmd_type,
 	}
 	packet->buffer.len = 0;
 	packet->size = length;
+
+	packet->next = NULL;
 
 	/* binary packet header: marker + pkg_len */
 	memcpy(packet->buffer.s + packet->buffer.len,
@@ -91,8 +95,8 @@ int bin_init(bin_packet_t *packet, str *capability, int cmd_type,
 	memcpy(packet->buffer.s + packet->buffer.len, capability->s, capability->len);
 	packet->buffer.len += capability->len;
 
-	memcpy(packet->buffer.s + packet->buffer.len, &cmd_type, sizeof(cmd_type));
-	packet->buffer.len += sizeof(cmd_type);
+	memcpy(packet->buffer.s + packet->buffer.len, &packet_type, sizeof(packet_type));
+	packet->buffer.len += sizeof(packet_type);
 
 	set_len(packet);
 	return 0;
@@ -115,9 +119,11 @@ void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 	packet->buffer.len = length;
 	packet->buffer.s = buffer;
 	packet->size = length;
+	packet->next = NULL;
 
 	bin_get_capability(packet, &capability);
 
+	packet->type = *(int *)(capability.s + capability.len);
 	packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
 	LM_INFO("init buffer length %d\n", length);
 }
@@ -409,7 +415,6 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	struct packet_cb_list *p;
 	unsigned int pkg_len;
 	bin_packet_t packet;
-	int packet_type;
 	str capability;
 
 	pkg_len = *(unsigned int*)(buffer + BIN_PACKET_MARKER_SIZE);
@@ -427,7 +432,8 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	bin_get_capability(&packet, &capability);
 
 	packet.front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
-	packet_type = *(int *)(capability.s + capability.len);
+	packet.type = *(int *)(capability.s + capability.len);
+	packet.next = NULL;
 
 	/* packet will be now processed for a specific capability */
 	for (p = reg_cbs; p; p = p->next) {
@@ -435,9 +441,9 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 		    memcmp(capability.s, p->capability.s, capability.len) == 0) {
 
 			LM_DBG("binary Packet CMD: %d. Capability: %.*s\n",
-					packet_type, capability.len, capability.s);
+					packet.type, capability.len, capability.s);
 
-			p->cbf(&packet, packet_type, rcv,p->att);
+			p->cbf(&packet, packet.type, rcv,p->att);
 
 			break;
 		}
@@ -450,15 +456,15 @@ static int bin_extend(bin_packet_t *packet, int size)
 {
 	int required;
 
-	if (size < 0 || packet->buffer.len + size > MAX_BUF_LEN) {
+	if (size < 0 || packet->buffer.len + size > BIN_MAX_BUF_LEN) {
 		LM_ERR("cannot make the buffer bigger\n");
 		return -1;
 	}
 
 	required = packet->buffer.len + size;
 
-	if (2 * required > MAX_BUF_LEN)
-		packet->size = MAX_BUF_LEN;
+	if (2 * required > BIN_MAX_BUF_LEN)
+		packet->size = BIN_MAX_BUF_LEN;
 	else
 		packet->size = 2 * required;
 

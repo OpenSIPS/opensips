@@ -41,6 +41,7 @@ Robert-Vladut Patrascu
               1.3.16. db_mode
               1.3.17. current_info
               1.3.18. neighbor_info
+              1.3.19. sync_packet_max_size
 
         1.4. Exported Functions
 
@@ -106,15 +107,16 @@ Robert-Vladut Patrascu
    1.16. Set db_mode parameter
    1.17. Set current_info parameter
    1.18. Set neighbor_info parameter
-   1.19. cluster_send_req() usage
-   1.20. cluster_send_rpl() usage
-   1.21. cluster_broadcast_req() usage
-   1.22. cluster_check_addr() usage
-   1.23. clusterer_list usage
-   1.24. clusterer_list_topology usage
-   1.25. Example database content - clusterer table
-   1.26. Node A configuration
-   1.27. Node B configuration
+   1.19. Set sync_packet_max_size parameter
+   1.20. cluster_send_req() usage
+   1.21. cluster_send_rpl() usage
+   1.22. cluster_broadcast_req() usage
+   1.23. cluster_check_addr() usage
+   1.24. clusterer_list usage
+   1.25. clusterer_list_topology usage
+   1.26. Example database content - clusterer table
+   1.27. Node A configuration
+   1.28. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -412,6 +414,19 @@ modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
 92.168.0.6:5566")
 ...
 
+1.3.19. sync_packet_max_size
+
+   The maximum size of the BIN packets sent while doing data
+   synchronization. This is only a suggested value as the actual
+   size of the packets may be slightly larger.
+
+   Default value is “65535”.
+
+   Example 1.19. Set sync_packet_max_size parameter
+...
+modparam("clusterer", "sync_packet_max_size", 32765)
+...
+
 1.4. Exported Functions
 
 1.4.1.  cluster_send_req(cluster_id, dst_id, msg[, tag])
@@ -446,7 +461,7 @@ modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.19. cluster_send_req() usage
+   Example 1.20. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
@@ -491,7 +506,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.20. cluster_send_rpl() usage
+   Example 1.21. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_ta
@@ -522,7 +537,7 @@ p(rcv_tag)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.21. cluster_broadcast_req() usage
+   Example 1.22. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 ...
@@ -537,7 +552,7 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.22. cluster_check_addr() usage
+   Example 1.23. cluster_check_addr() usage
 ...
 if (cluster_check_addr("1", "$si")) {
         ...
@@ -573,7 +588,7 @@ if (cluster_check_addr("1", "$si")) {
                 :clusterer_list
                 _empty_line_
 
-   Example 1.23. clusterer_list usage
+   Example 1.24. clusterer_list usage
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
         Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
@@ -604,7 +619,7 @@ Cluster:: 2
                 :clusterer_list_topology
                 _empty_line_
 
-   Example 1.24. clusterer_list_topology usage
+   Example 1.25. clusterer_list_topology usage
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
         Node:: 1 Neighbours=4
@@ -724,7 +739,7 @@ Cluster:: 2
    pipes. Therefore, we have to provision them in the clusterer
    table.
 
-   Example 1.25. Example database content - clusterer table
+   Example 1.26. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+------------
 -----+----------+------------------------+
 | id | cluster_id | node_id | url                  | state | no_ping_ret
@@ -776,7 +791,7 @@ ries | priority | sip_addr | description |
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.26. Node A configuration
+   Example 1.27. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -795,7 +810,7 @@ modparam("ratelimit", "accept_pipes_from", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.27. Node B configuration
+   Example 1.28. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 

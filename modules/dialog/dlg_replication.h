@@ -53,7 +53,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 int dlg_replicated_update(bin_packet_t *packet);
 int dlg_replicated_delete(bin_packet_t *packet);
 
-void receive_dlg_repl(bin_packet_t *packet, int packet_type, int src_id);
+void receive_dlg_repl(bin_packet_t *packet);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 

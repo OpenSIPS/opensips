@@ -43,15 +43,16 @@
 
 /* node flags */
 #define NODE_STATE_ENABLED	(1<<0)
-#define CALL_CBS_DOWN		(1<<1)
-#define CALL_CBS_UP			(1<<2)
+#define NODE_EVENT_DOWN		(1<<1)
+#define NODE_EVENT_UP		(1<<2)
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
 				CLUSTERER_UNKNOWN_ID, CLUSTERER_NODE_DESCRIPTION,
 				CLUSTERER_GENERIC_MSG,
 				CLUSTERER_MI_CMD,
-				CLUSTERER_CAP_UPDATE
+				CLUSTERER_CAP_UPDATE,
+				CLUSTERER_SYNC_REQ, CLUSTERER_SYNC, CLUSTERER_SYNC_END
 } clusterer_msg_type;
 
 typedef enum {
@@ -71,6 +72,28 @@ struct capability_reg {
    int auth_check;
    int cluster_id;
    struct capability_reg *next;
+};
+
+struct buf_bin_pkt {
+	str buf;
+	int src_id;
+	struct buf_bin_pkt *next;
+};
+
+struct local_cap {
+	struct capability_reg *reg;
+	struct buf_bin_pkt *pkt_q_front;
+	struct buf_bin_pkt *pkt_q_back;
+	struct buf_bin_pkt *pkt_q_cutpos;
+	int pkt_buffering;
+	int sync_req_pending;
+	struct local_cap *next;
+};
+
+struct remote_cap {
+	str name;
+	int sync_repl_pending;
+	struct remote_cap *next;
 };
 
 struct node_info;
@@ -102,6 +125,9 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
 
 int get_next_hop(struct node_info *dest);
+int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
+enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
+												int cluster_id, int dst_id);
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);

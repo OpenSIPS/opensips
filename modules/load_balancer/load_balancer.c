@@ -1291,20 +1291,20 @@ error:
 }
 
 
-void receive_lb_binary_packet(bin_packet_t *packet, int packet_type, int src_id)
+void receive_lb_binary_packet(bin_packet_t *packet)
 {
-	LM_DBG("received a binary packet [%d]!\n", packet_type);
+	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
 	if(get_bin_pkg_version(packet) != BIN_VERSION) {
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
 
-	if (packet_type == REPL_LB_STATUS_UPDATE) {
+	if (packet->type == REPL_LB_STATUS_UPDATE) {
 		lock_start_read(ref_lock);
 		replicate_lb_status_update(packet, *curr_data);
 		lock_stop_read(ref_lock);
 	} else {
-		LM_ERR("invalid load_balancer binary packet type: %d\n", packet_type);
+		LM_ERR("invalid load_balancer binary packet type: %d\n", packet->type);
 	}
 }

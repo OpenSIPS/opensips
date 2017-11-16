@@ -59,16 +59,6 @@ enum db_str_vals_idx {
 	STR_VALS_DESCRIPTION_COL
 };
 
-struct local_cap {
-	struct capability_reg *reg;
-	struct local_cap *next;
-};
-
-struct remote_cap {
-	str name;
-	struct remote_cap *next;
-};
-
 struct cluster_info;
 
 struct node_info {
