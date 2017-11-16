@@ -324,7 +324,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			ptr = ptr->next;
 
 			/* Should we remove the contact from the database ? */
-			if (st_expired_ucontact(t) == 1 && (!(t->flags)&FL_MEM)) {
+			if (st_expired_ucontact(t) == 1 && !(t->flags & FL_MEM)) {
 				VAL_BIGINT(cid_vals+cid_len) = t->contact_id;
 				if ((++cid_len) == max_contact_delete) {
 					if (db_multiple_ucontact_delete(_r->domain, cid_keys,
