@@ -232,7 +232,7 @@ int cgrc_start_listen(struct cgr_conn *c)
 }
 
 /* disables the cgrates engine */
-static inline int cgre_disable(struct cgr_engine *e)
+static inline int ALLOW_UNUSED cgre_disable(struct cgr_engine *e)
 {
 	struct list_head *l;
 	struct cgr_conn *c;

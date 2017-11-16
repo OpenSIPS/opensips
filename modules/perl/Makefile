@@ -17,6 +17,9 @@ LIBS=
 ifeq ($(CC_NAME), gcc)
 	DEFS+=-Wno-unused -Wno-redundant-decls
 endif
+ifeq ($(CC_NAME), clang)
+	DEFS+=-Wno-unused -Wno-redundant-decls
+endif
 
 ifeq ($(PERLLDOPTS),)
 	LIBS+=$(shell perl -MExtUtils::Embed -e ldopts)

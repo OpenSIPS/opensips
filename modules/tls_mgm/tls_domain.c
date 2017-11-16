@@ -555,7 +555,7 @@ int db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
 			struct tls_domain *script_srv_doms, struct tls_domain *script_cli_doms)
 {
 	struct ip_addr *ip = NULL;
-	unsigned int port;
+	unsigned int port = 0;
 	str name, address;
 
 	name.s = str_vals[STR_VALS_DOMAIN_COL];

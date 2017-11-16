@@ -295,7 +295,6 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
 	SV *resultset;
 
 	int retval = 0;
-        int i;
 	/* Create parameter set */
 	condarr = conds2perlarray(k, op, v, n);
 
@@ -339,7 +338,6 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
  */
 int perlvdb_db_free_result(db_con_t* _h, db_res_t* _r) {
 	int i,j;
-	SV* temp;
 	/* free result set
 	 * use the order of allocation
 	 * first free values

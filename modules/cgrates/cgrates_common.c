@@ -680,12 +680,6 @@ static inline int cgrates_process_req(struct cgr_conn *c, json_object *id,
 	return -1;
 }
 
-static inline int cgrates_process_repl(struct cgr_engine *e, json_object *param)
-{
-	LM_INFO("Received new reply param=%p\n", param);
-	return -1;
-}
-
 /* Returns:
  * -  1: on success
  * - -1: on error received from CGRateS

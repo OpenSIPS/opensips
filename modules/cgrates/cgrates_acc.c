@@ -273,7 +273,7 @@ static inline int has_totag(struct sip_msg *msg)
 }
 
 
-static inline int cgr_help_set_str(str **dst, str src)
+static inline int ALLOW_UNUSED cgr_help_set_str(str **dst, str src)
 {
 	if (*dst)
 		shm_free(*dst);
