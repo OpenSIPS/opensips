@@ -323,13 +323,6 @@ override_dh_auto_install:
 	find $(CURDIR)/debian/opensips/$(INSTALL_PREFIX)/etc/opensips -type f -exec chmod -x {} \;
 	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/$(BIN_PREFIX)/sbin/opensipsctl
 
-ifneq ($(INSTALL_PREFIX),)
-	sed -i -e "s#PATH_EXTRA#:$(BIN_PREFIX)/sbin:$(BIN_PREFIX)/bin#g" \
-		   $(CURDIR)/debian/opensips.init
-else
-	sed -i -e "s#PATH_EXTRA##g" $(CURDIR)/debian/opensips.init
-endif
-
 	set -e;\
 	for pkg in $(BUILD_MODPKG_LIST) ; do\
 	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
@@ -357,6 +350,13 @@ endif
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg
+
+override_dh_installinit:
+	dh_installinit
+ifneq ($(INSTALL_PREFIX),)
+	sed -i -e "s#PATH_EXTRA=#PATH_EXTRA=$(BIN_PREFIX)/sbin:$(BIN_PREFIX)/bin#g" \
+		   $(CURDIR)/debian/opensips/etc/init.d/opensips
+endif
 
 override_dh_auto_test:
 	#Disable tests, too old and they are obsolete

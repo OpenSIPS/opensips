@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 #
 ### BEGIN INIT INFO
 # Provides:          opensips
@@ -17,7 +17,8 @@
 
 set -e
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin
+PATH_EXTRA=
+PATH=/sbin:/bin:/usr/sbin:/usr/bin${PATH_EXTRA:+:${PATH_EXTRA}}
 DAEMON=/sbin/opensips
 NAME=opensips
 DESC=opensips
