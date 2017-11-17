@@ -347,6 +347,10 @@ override_dh_auto_install:
 	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
 	mv $(CURDIR)/debian/opensips-berkeley-module/$(BIN_PREFIX)/sbin \
 		$(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
+	# install m4cfg
+	mkdir -p $(CURDIR)/debian/opensips/$(BIN_PREFIX)/sbin
+	install -m0755 $(CURDIR)/debian/opensips-m4cfg \
+		$(CURDIR)/debian/opensips/$(BIN_PREFIX)/sbin
 
 override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg
