@@ -1,0 +1,33 @@
+#!/bin/bash
+
+prog=opensips
+cfgdir="/etc/$prog"
+configfile="$cfgdir/$prog.cfg"
+m4configfile="$cfgdir/$prog.m4"
+m4archivedir="$cfgdir/archive"
+
+# Generate config from M4
+if [ -f $m4configfile ]; then
+	cd "$cfgdir"
+	m4 -Q $m4configfile >$configfile.tmp
+	if [ $? != 0 ]; then
+		echo "cannot process m4 macro"
+		rm "$configfile.tmp"
+		exit 1
+	fi
+
+	[ -e $configfile ] || touch $configfile
+
+	# compare configs
+	if [ `md5sum ${configfile}|awk '{print $1}'` != `md5sum ${configfile}.tmp|awk '{print $1}'` ]; then
+		mkdir -p "${m4archivedir}"
+		mv "${configfile}" "${m4archivedir}/${prog}.cfg-`date +%Y%m%d_%H%M%S`"
+	fi
+
+	mv "${configfile}.tmp" "${configfile}"
+	chown ${prog}:${prog} ${configfile}
+	chmod 640 ${configfile}
+fi
+set -e
+
+$prog -c -f $configfile
