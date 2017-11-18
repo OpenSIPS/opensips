@@ -594,4 +594,4 @@ Description: SQLite database connectivity module for OpenSIPS
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
-This package provides the SQLite database driver for OpenSIPS.
+ This package provides the SQLite database driver for OpenSIPS.
