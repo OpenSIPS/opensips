@@ -28,6 +28,7 @@ Build-Depends: bison,
                librabbitmq-dev,
                libsctp-dev,
                libsnmp-dev,
+               libsqlite3-dev,
                libxml2-dev,
                libxmlrpc-core-c3-dev,
                pkg-config,
@@ -583,3 +584,14 @@ Description: REST client module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the REST client support for OpenSIPS.
+ 
+Package: opensips-sqlite-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: SQLite database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+This package provides the SQLite database driver for OpenSIPS.
