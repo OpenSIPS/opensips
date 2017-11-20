@@ -28,6 +28,5 @@ if [ -f $m4configfile ]; then
 	chown ${prog}:${prog} ${configfile}
 	chmod 640 ${configfile}
 fi
-set -e
 
-$prog -c -f $configfile
+exec $prog -c -f $configfile
