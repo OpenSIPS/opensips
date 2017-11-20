@@ -29,4 +29,4 @@ if [ -f $m4configfile ]; then
 	chmod 640 ${configfile}
 fi
 
-exit 0
+exec $prog -c -f $configfile
