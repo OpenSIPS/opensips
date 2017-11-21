@@ -8,7 +8,7 @@ Edited by
 
 Vladut-Stefan Paiu
 
-   Copyright © 2013 www.opensips-solutions.com
+   Copyright � 2013 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -95,12 +95,12 @@ Chapter 1. Admin Guide
    Example 1.1. Set cachedb_url parameter
 ...
 modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhos
-t:6379/default");
+t:6379/default")
 modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random
-_url:8888/my_bucket");
-#Multiple hosts
+_url:8888/my_bucket")
+# Multiple hosts
 modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random
-_url1:8888;random_url2:8888;random_url3:8888/my_bucket");
+_url1:8888,random_url2:8888,random_url3:8888/my_bucket")
 ...
 
 1.5.2. timeout (int)
@@ -119,7 +119,7 @@ modparam("cachedb_couchbase", "timeout",5000000);
    last. Anything above the threshold will trigger a warning
    message to the log
 
-   Default value is “0 ( unlimited - no warnings )”.
+   Default value is "0 ( unlimited - no warnings )".
 
    Example 1.3. Set exec_threshold parameter
 ...

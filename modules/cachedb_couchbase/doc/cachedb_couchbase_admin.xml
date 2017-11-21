@@ -130,10 +130,10 @@
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhost:6379/default");
-modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:8888/my_bucket");
-#Multiple hosts
-modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url1:8888;random_url2:8888;random_url3:8888/my_bucket");
+modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhost:6379/default")
+modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:8888/my_bucket")
+# Multiple hosts
+modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url1:8888,random_url2:8888,random_url3:8888/my_bucket")
 ...
 	</programlisting>
 		</example>

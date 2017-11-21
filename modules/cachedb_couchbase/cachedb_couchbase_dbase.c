@@ -198,8 +198,85 @@ lcb_error_t cb_remove(lcb_t instance, const void *command_cookie, lcb_size_t num
 	return op_error;
 }
 
+#define CBASE_BUF_SIZE	256
+
+/*
+ * fill the options based on the id field
+ * the buf and len are used to store the URL/Host in case we need to build it
+ */
+int couchbase_fill_options(struct cachedb_id *id, struct lcb_create_st *opt,
+		char *buf, int len)
+{
+#if LCB_VERSION <= 0x020300
+	char *p;
+#endif
+	int l;
+	memset(opt, 0, sizeof(*opt));
+
+#if LCB_VERSION <= 0x020300
+	opt->version = 0;
+	opt->v.v0.user = id->username;
+	opt->v.v0.passwd = id->password;
+	opt->v.v0.bucket = id->database;
+	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
+		p = q_memchr(id->host, ',', len);
+		if (p) {
+			l = p - id->host;
+			if (l >= len) {
+				LM_ERR("Not enough space for the host [%.*s]%d>=%d\n",
+						l, id->host, l, CBASE_BUF_SIZE);
+				return -1;
+			}
+			memcpy(buf, id->host, l);
+			buf[l] = 0;
+			LM_WARN("Version %s does not support multiple hosts connection! "
+					"Connecting only to first host: %s!\n",
+					LCB_VERSION_STRING, buf);
+			opt->v.v0.host = buf;
+		}
+	}
+	/* when it comes with multiple hosts, the port is already in the id->host
+	 * field, so we no longer need to worry to put it in the buffer */
+	if (id->port) {
+		if (snprintf(buf, len, "%s:%hu", id->host, id->port) >= len) {
+			LM_ERR("cannot print %s:%hu in %d buffer\n", id->host, id->port, len);
+			return -1;
+		}
+		opt->v.v0.host = buf;
+	} else if (!opt->v.v0.host) {
+		opt->v.v0.host = id->host;
+	}
+	LM_DBG("Connecting HOST: %s BUCKET: %s\n", opt->v.v0.host, opt->v.v0.bucket);
+#else
+	opt->version = 3;
+	opt->v.v3.username = id->username;
+	opt->v.v3.passwd = id->password;
+
+	/* we don't care whether it has CACHEDB_ID_MULTIPLE_HOSTS, because
+	 * - if it does, it does not have a port and it should be printed as
+	 *   string
+	 * - if it does not, simply port the host as string and port if necessary
+	 */
+	if (!id->port)
+		l = snprintf(buf, len, "couchbase://%s/%s", id->host, id->database);
+	else
+		l = snprintf(buf, len, "couchbase://%s:%hu/%s", id->host, id->port,
+				id->database);
+	if (l >= len) {
+		LM_ERR("not enough buffer to print the URL: %.*s\n", len, buf);
+		return -1;
+	}
+	opt->v.v3.connstr = buf;
+	LM_DBG("Connecting URL: %s\n", opt->v.v3.connstr);
+#endif
+
+	return 0;
+}
+
 couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 {
+	/* buffer used to temporary store the host, in case we need to build it */
+	char tmp_buf[CBASE_BUF_SIZE];
 	couchbase_con *con;
 	struct lcb_create_st options;
 	lcb_uint32_t tmo = 0;
@@ -221,13 +298,11 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 	con->id = id;
 	con->ref = 1;
 
-	/* TODO - support custom ports - couchbase expects host:port in id->host */
-	memset(&options,0,sizeof(struct lcb_create_st));
-	options.version = 0;
-	options.v.v0.host = id->host;
-	options.v.v0.user = id->username;
-	options.v.v0.passwd = id->password;
-	options.v.v0.bucket = id->database;
+	if (couchbase_fill_options(id, &options, tmp_buf, CBASE_BUF_SIZE) < 0) {
+		LM_ERR("cannot create connection options!\n");
+		return 0;
+	}
+
 	rc=lcb_create(&instance, &options);
 	if (rc!=LCB_SUCCESS) {
 		LM_ERR("Failed to create libcouchbase instance: 0x%02x, %s\n",
@@ -632,7 +707,7 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	stop_expire_timer(start,couch_exec_threshold,
 	"cachedb_couchbase get counter",attr->s,attr->len,0);
-	
+
 	if (str2sint((str *)&get_res,val)) {
 		LM_ERR("Failued to convert counter [%.*s] to int\n",get_res.len,get_res.s);
 		pkg_free(get_res.s);
