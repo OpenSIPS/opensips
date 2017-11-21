@@ -35,7 +35,6 @@
 #include <mysql/mysql.h>
 #include <mysql/errmsg.h>
 #include <mysql/mysqld_error.h>
-#include <mysql/mysql_version.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../db/db_query.h"
