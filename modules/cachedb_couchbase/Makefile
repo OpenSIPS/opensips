@@ -10,7 +10,7 @@ auto_gen=
 NAME=cachedb_couchbase.so
 
 ifeq ($(CROSS_COMPILE),)
-LIB=-lcouchbase
+LIBS=-lcouchbase
 else
 DEFS+=-I$(LOCALBASE)/include
 LIBS=-L$(LOCALBASE)/lib -lcouchbase
