@@ -18,7 +18,8 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 DEBVERSION:=$(shell head -n 1 debian/changelog \
                     | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
-UPVERSION:=$(shell echo $(DEBVERSION) | sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
+UPVERSION:=$(shell echo $(DEBVERSION) \
+                    | sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
 
 FILENAME := opensips_$(UPVERSION).orig.tar.gz
 URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
