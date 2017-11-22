@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/OpenSIPS/opensips.svg?branch=master)](https://travis-ci.org/OpenSIPS/opensips)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/7580/badge.svg)](https://scan.coverity.com/projects/opensips-opensips)
 
 # Welcome to OpenSIPS Project
 
