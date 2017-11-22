@@ -29,7 +29,7 @@ URL := https://github.com/OpenSIPS/opensips/archive/$(UPVERSION).tar.gz
 # List of all debian module packages we will build
 # Used to index the make variable below, which has details about each package
 ALL_MODPKG_LIST := \
-	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
+	MYSQL POSTGRES UNIXODBC JABBER CPL \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
 	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
@@ -42,15 +42,14 @@ MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
 
 # use a dummy architecture for the packages we do not want to build
 ifeq ($(shell dpkg-vendor --derives-from Debian && echo yes),yes)
-	LIBMONGOC_MAJOR_RELEASE=9
+	LIBRADIUS_LAST_RELEASE=8
 endif
 ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
-	LIBMONGOC_MAJOR_RELEASE=16
+	LIBRADIUS_LAST_RELEASE=16
 endif
-ifeq ($(shell test $(MAJOR_RELEASE) -ge $(LIBMONGOC_MAJOR_RELEASE); echo $$?),0)
-	ALL_MODPKG_LIST += MONGODB
+ifeq ($(shell test $(MAJOR_RELEASE) -le $(LIBRADIUS_LAST_RELEASE); echo $$?),0)
+	ALL_MODPKG_LIST += RADIUS
 endif
-RADCLI_MAJOR_RELEASE=$(LIBMONGOC_MAJOR_RELEASE)
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -220,12 +219,7 @@ LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
 # force multiach lib path and SMP support all the time
 VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
-
-ifeq ($(shell test $(MAJOR_RELEASE) -ge $(RADCLI_MAJOR_RELEASE); echo $$?),0)
-	VARS += RADIUSCLIENT=RADCLI
-else
-	VARS += RADIUSCLIENT=FREERADIUS
-endif
+VARS += RADIUSCLIENT=FREERADIUS
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
