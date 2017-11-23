@@ -796,7 +796,7 @@ static int fixup_stats(void ** param, int param_no)
 		return E_CFG;
 	}
 	if (param_no > 4)
-		return fixup_two_options(param, param_no + 4);
+		return fixup_two_options(param, param_no - 4);
 	return fixup_pvar(param);
 }
 
