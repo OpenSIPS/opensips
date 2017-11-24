@@ -81,6 +81,9 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	int i;
 
 	cluster_id = int_vals[INT_VALS_CLUSTER_ID_COL];
+	/* new_info is checked whether it is initialized or not in case of error,
+	 * so we have to initialize it as soon as possible */
+	*new_info = NULL;
 
 	for (cluster = *cl_list; cluster && cluster->cluster_id != cluster_id;
 		cluster = cluster->next) ;
@@ -126,7 +129,6 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		*cl_list = cluster;
 	}
 
-	*new_info = NULL;
 	*new_info = shm_malloc(sizeof **new_info);
 	if (!*new_info) {
 		LM_ERR("no more shm memory\n");
