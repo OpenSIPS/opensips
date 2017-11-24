@@ -242,7 +242,9 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 			LM_ERR("cannot fetch caller information!\n");
 			goto session_cleanup;
 		}
-		if (parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body) < 0) {
+		parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body);
+		/* if we have a correct uri, we're ok :) */
+		if (!tmp_body.uri.s && tmp_body.error != PARSE_OK) {
 			LM_ERR("invalid caller information: [%.*s]!\n", tmp_str.len, tmp_str.s);
 			goto session_cleanup;
 		}
@@ -271,8 +273,8 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 			LM_ERR("cannot fetch callee information!\n");
 			goto session_cleanup;
 		}
-		if (!parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body) ||
-				tmp_body.error == PARSE_ERROR) {
+		parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body);
+		if (!tmp_body.uri.s && tmp_body.error != PARSE_OK) {
 			LM_ERR("invalid callee information: [%.*s]!\n", tmp_str.len, tmp_str.s);
 			goto session_cleanup;
 		}
