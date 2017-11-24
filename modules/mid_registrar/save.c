@@ -915,6 +915,10 @@ update_usrloc:
 
 		if ((r->contacts==0 ||
 		ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c)!=0) && e > 0) {
+			/* contact not found and not present on main reg either */
+			if (!_c)
+				continue;
+
 			LM_DBG("INSERTING .....\n");
 			LM_DBG(":: inserting contact with expires %lu\n", ci->expires);
 
@@ -940,7 +944,8 @@ update_usrloc:
 			set_ct(NULL);
 
 		} else if (c != NULL) {
-			if (e == 0) {
+			/* delete expired or stale contact (not present on main reg) */
+			if (e == 0 || !_c) {
 				cti = (struct mid_reg_info *)c->attached_data[ucontact_data_idx];
 				cti->skip_dereg = 1;
 
@@ -1144,6 +1149,10 @@ update_usrloc:
 
 		if ((r->contacts == NULL ||
 		    ul_api.get_ucontact(r, &__c->uri, ci->callid, ci->cseq+1, &c) != 0) && e > 0) {
+			/* contact not found and not present on main reg either */
+			if (!_c)
+				continue;
+
 			LM_DBG("INSERTING .....\n");
 			LM_DBG(":: inserting contact with expires %lu\n", ci->expires);
 
@@ -1169,7 +1178,8 @@ update_usrloc:
 			set_ct(NULL);
 
 		} else if (c != NULL) {
-			if (e == 0) {
+			/* delete expired or stale contact (not present on main reg) */
+			if (e == 0 || !_c) {
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
