@@ -217,6 +217,17 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		uri = *GET_RURI(req);
 	}
 
+	if (flags & REG_LOOKUP_UAFILTER_FLAG) {
+		tmp = *(ua+re_len);
+		*(ua+re_len) = '\0';
+		if (regcomp(&ua_re, ua, regexp_flags) != 0) {
+			LM_ERR("bad regexp '%s'\n", ua);
+			*(ua+re_len) = tmp;
+			return -1;
+		}
+		*(ua+re_len) = tmp;
+	}
+
 	if (reg_mode != MID_REG_THROTTLE_AOR && insertion_mode == INSERT_BY_CONTACT) {
 		if (parse_uri(uri.s, uri.len, &puri) < 0) {
 			LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri.len,
@@ -257,18 +268,6 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		ul_api.unlock_udomain((udomain_t*)_t, &aor);
 		return -1;
 	}
-
-	if (flags & REG_LOOKUP_UAFILTER_FLAG) {
-		tmp = *(ua+re_len);
-		*(ua+re_len) = '\0';
-		if (regcomp(&ua_re, ua, regexp_flags) != 0) {
-			LM_ERR("bad regexp '%s'\n", ua);
-			*(ua+re_len) = tmp;
-			return -1;
-		}
-		*(ua+re_len) = tmp;
-	}
-
 
 	ptr = r->contacts;
 	ret = -1;
