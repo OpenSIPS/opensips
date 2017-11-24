@@ -70,15 +70,16 @@ static char *build_mongodb_connect_string(struct cachedb_id *id)
 	p = memchr(id->database, '.', strlen(id->database));
 
 	if (id->username && id->password) {
-		if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
+		if (id->port == 0) {
 			sprintf(ret, "mongodb://%s:%s@%s/%s", id->username, id->password,
 			        id->host, id->database);
 		} else {
 			sprintf(ret, "mongodb://%s:%s@%s:%d/%s", id->username, id->password,
 			        id->host, id->port, id->database);
 		}
+
 	} else {
-		if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
+		if (id->port == 0) {
 			sprintf(ret, "mongodb://%s/%.*s", id->host,
 			        (int)(p ? p - id->database : strlen(id->database)), id->database);
 		} else {
