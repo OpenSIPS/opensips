@@ -442,7 +442,10 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 
 #if ( MHD_VERSION >= 0x000092800 )
 	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;
-	getsockname( sv_sockfd, &httpd_server_info.s, &addrlen);
+	if (getsockname( sv_sockfd, &httpd_server_info.s, &addrlen) < 0) {
+		LM_ERR("cannot resolve server's IP: %s:%d\n", strerror(errno), errno);
+		return -1;
+	}
 
 	/* we could do
 	 * httpd_server_info.sin.sin_port = ntohs(httpd_server_info.sin.sin_port);
