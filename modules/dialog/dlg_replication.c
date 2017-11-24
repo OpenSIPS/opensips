@@ -76,6 +76,14 @@ static struct socket_info * fetch_socket_info(str *addr)
 	return sock;
 }
 
+#define DLG_BIN_POP(_type, _p, _field, _label) \
+	do { \
+		if (bin_pop_ ## _type(_p, (str *)&_field) != 0) { \
+			LM_WARN("cannot find %s field in bin packet!\n", #_field); \
+			goto _label; \
+		} \
+	} while (0)
+
 /*  Binary Packet receiving functions   */
 
 /**
@@ -95,11 +103,11 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 
 	LM_DBG("Received replicated dialog!\n");
 	if (!cell) {
-		bin_pop_str(packet, &callid);
-		bin_pop_str(packet, &from_tag);
-		bin_pop_str(packet, &to_tag);
-		bin_pop_str(packet, &from_uri);
-		bin_pop_str(packet, &to_uri);
+		DLG_BIN_POP(str, packet, callid, malformed);
+		DLG_BIN_POP(str, packet, from_tag, malformed);
+		DLG_BIN_POP(str, packet, to_tag, malformed);
+		DLG_BIN_POP(str, packet, from_uri, malformed);
+		DLG_BIN_POP(str, packet, to_uri, malformed);
 
 		dlg = get_dlg(&callid, &from_tag, &to_tag, &dir, &dst_leg);
 
@@ -135,21 +143,19 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	}
 	if_update_stat(dlg_enable_stats, processed_dlgs, 1);
 
-	bin_pop_int(packet, &dlg->h_id);
-	bin_pop_int(packet, &dlg->start_ts);
-	bin_pop_int(packet, &dlg->state);
+	DLG_BIN_POP(int, packet, dlg->h_id, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->start_ts, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->state, pre_linking_error);
 
 	/* next_id follows the max value of all replicated ids */
 	if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
 		d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
 
-	if (bin_pop_str(packet, &sock))
-		goto pre_linking_error;
+	DLG_BIN_POP(str, packet, sock, pre_linking_error);
 
 	caller_sock = fetch_socket_info(&sock);
 
-	if (bin_pop_str(packet, &sock))
-		goto pre_linking_error;
+	DLG_BIN_POP(str, packet, sock, pre_linking_error);
 
 	callee_sock = fetch_socket_info(&sock);
 
@@ -158,14 +164,14 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		goto pre_linking_error;
 	}
 
-	bin_pop_str(packet, &cseq1);
-	bin_pop_str(packet, &cseq2);
-	bin_pop_str(packet, &rroute1);
-	bin_pop_str(packet, &rroute2);
-	bin_pop_str(packet, &contact1);
-	bin_pop_str(packet, &contact2);
-	bin_pop_str(packet, &mangled_fu);
-	bin_pop_str(packet, &mangled_tu);
+	DLG_BIN_POP(str, packet, cseq1, pre_linking_error);
+	DLG_BIN_POP(str, packet, cseq2, pre_linking_error);
+	DLG_BIN_POP(str, packet, rroute1, pre_linking_error);
+	DLG_BIN_POP(str, packet, rroute2, pre_linking_error);
+	DLG_BIN_POP(str, packet, contact1, pre_linking_error);
+	DLG_BIN_POP(str, packet, contact2, pre_linking_error);
+	DLG_BIN_POP(str, packet, mangled_fu, pre_linking_error);
+	DLG_BIN_POP(str, packet, mangled_tu, pre_linking_error);
 
 	/* add the 2 legs */
 	/* TODO - sdp here */
@@ -190,14 +196,14 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	dlg->ref++;
 	d_entry->cnt++;
 
-	bin_pop_str(packet, &vars);
-	bin_pop_str(packet, &profiles);
-	bin_pop_int(packet, &dlg->user_flags);
-	bin_pop_int(packet, &dlg->mod_flags);
-	bin_pop_int(packet, &dlg->flags);
-	bin_pop_int(packet, (void *) &dlg->tl.timeout);
-	bin_pop_int(packet, &dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
-	bin_pop_int(packet, &dlg->legs[callee_idx(dlg)].last_gen_cseq);
+	DLG_BIN_POP(str, packet, vars, pre_linking_error);
+	DLG_BIN_POP(str, packet, profiles, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->user_flags, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->mod_flags, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->flags, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->tl.timeout, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->legs[callee_idx(dlg)].last_gen_cseq, pre_linking_error);
 
 	if (dlg->tl.timeout <= (unsigned int) time(0))
 		dlg->tl.timeout = 0;
@@ -270,6 +276,7 @@ error:
 	if (dlg)
 		unref_dlg(dlg, 1);
 
+malformed:
 	return -1;
 }
 
@@ -389,9 +396,9 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	struct dlg_cell *dlg;
 	int old_state, new_state, unref, ret;
 
-	bin_pop_str(packet, &call_id);
-	bin_pop_str(packet, &from_tag);
-	bin_pop_str(packet, &to_tag);
+	DLG_BIN_POP(str, packet, call_id, malformed);
+	DLG_BIN_POP(str, packet, from_tag, malformed);
+	DLG_BIN_POP(str, packet, to_tag, malformed);
 
 	LM_DBG("Deleting dialog with callid: %.*s\n", call_id.len, call_id.s);
 
@@ -445,7 +452,10 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	if_update_stat(dlg_enable_stats, active_dlgs, -1);
 
 	return 0;
+malformed:
+	return -1;
 }
+#undef DLG_BIN_POP
 
 /*  Binary Packet sending functions   */
 
