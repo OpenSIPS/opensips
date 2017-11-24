@@ -4444,7 +4444,8 @@ static int w_rtpproxy_recording(struct sip_msg *msg, str *callid,
 
 	STR2IOVEC(*callid, v[4]);
 	STR2IOVEC(*from_tag, v[8]);
-	STR2IOVEC(*to_tag, v[12]);
+	if (to_tag)
+		STR2IOVEC(*to_tag, v[12]);
 
 	if (!to_tag || to_tag->len <= 0) {
 		if (cmd == 'C')
