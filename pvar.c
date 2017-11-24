@@ -4673,7 +4673,7 @@ int pv_add_extra(pv_export_t *e)
 		LM_ERR("no more memory\n");
 		return -1;
 	}
-	memcpy(pvn, e, sizeof(pv_extra_t));
+	memcpy(&pvn->pve, e, sizeof(*e));
 	pvn->pve.type += PVT_EXTRA;
 
 	if(pvj==0)
