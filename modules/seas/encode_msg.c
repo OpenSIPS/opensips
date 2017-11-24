@@ -273,6 +273,10 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
    /*j+=k;*/
    /*pkg_free(payload2);*/
    /*now we copy the actual message after the headers-meta-section*/
+   if (j < 0 || j >= len) {
+	   LM_ERR("payload index too high: %d<%d\n", len, j);
+	   return -1;
+   }
    memcpy(&payload[j],msg->buf,msg->len);
    LM_DBG("msglen = %d,msg starts at %d\n",msg->len,j);
    j=htons(j);
@@ -292,6 +296,10 @@ int decode_msg(struct sip_msg *msg,char *code, unsigned int len)
    memcpy(&h,&code[2],2);
    h=ntohs(h);
    /*TODO use shorcuts in meta-info header.*/
+   if (h >= len) {
+	   LM_ERR("received size too big: %d>=%d\n", h, len);
+	   return -1;
+   }
 
    msg->buf=&code[h];
    memcpy(&h,&code[4],2);

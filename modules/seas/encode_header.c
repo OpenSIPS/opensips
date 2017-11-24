@@ -333,6 +333,11 @@ int print_encoded_header(FILE *fp,char *msg,int msglen,unsigned char *payload,in
    memcpy(&start_idx,payload,2);
    start_idx=ntohs(start_idx);
 
+	if (start_idx < 0 || start_idx >= msglen) {
+		LM_ERR("invalid index received %d - should be [0:%d]\n", start_idx, msglen);
+		return -1;
+	}
+
    hdr_start_ptr = &msg[start_idx];
    memcpy(&i,payload+HEADER_LEN_IDX,2);
    i=ntohs(i);
@@ -442,6 +447,11 @@ int dump_headers_test(char *msg,int msglen,unsigned char *payload,int len,char t
 
    memcpy(&start_idx,payload,2);
    start_idx=ntohs(start_idx);
+
+	if (start_idx < 0 || start_idx >= msglen) {
+		LM_ERR("invalid index received %d - should be [0:%d]\n", start_idx, msglen);
+		return -1;
+	}
 
    hdr_start_ptr = &msg[start_idx];
 
