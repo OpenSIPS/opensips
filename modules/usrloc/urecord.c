@@ -503,7 +503,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	int first_contact = _r->contacts == NULL ? 1 : 0;
 
 	/* not used in db only mode */
-	if (_ci == 0) {
+	if (_ci->contact_id == 0) {
 		_ci->contact_id =
 		        pack_indexes((unsigned short)_r->aorhash,
 		                                     _r->label,
