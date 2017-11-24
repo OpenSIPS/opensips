@@ -686,7 +686,7 @@ int get_isup_param_msg(struct sip_msg *msg, pv_param_t *param, int *pv_idx,
 		*parse_struct = (struct isup_parsed_struct*)(*isup_part)->parsed;
 	else {
 		*parse_struct = parse_isup_body(msg);
-		if (!parse_struct) {
+		if (!*parse_struct) {
 			LM_WARN("Unable to parse ISUP message\n");
 			return -1;
 		}
