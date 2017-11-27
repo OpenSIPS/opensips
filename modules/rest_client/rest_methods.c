@@ -124,6 +124,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			/* set port to 0 */
 			tparam->local_port = 0;
 #endif
+			/* coverity[BUFFER_SIZE_WARNING] */
 			strncpy( tparam->local_ip, ip, INET6_ADDRSTRLEN);
 
 #if ( LIBCURL_VERSION_NUM >= 0x072100 )
@@ -133,6 +134,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			/* set boggus localhost ip */
 			ip = "127.0.0.1";
 #endif
+			/* coverity[BUFFER_SIZE_WARNING] */
 			strncpy( tparam->remote_ip, ip, INET6_ADDRSTRLEN);
 
 #if ( LIBCURL_VERSION_NUM >= 0x071900 )
