@@ -117,8 +117,7 @@ Description: very fast and configurable SIP server [debug symbols]
 Package: opensips-mysql-module
 Architecture: any
 Multi-Arch: same
-Depends: default-mysql-client | virtual-mysql-client,
-         opensips (= ${binary:Version}),
+Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: MySQL database connectivity module for OpenSIPS
