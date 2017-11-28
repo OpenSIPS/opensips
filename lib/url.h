@@ -24,12 +24,34 @@
 #include "../str.h"
 
 /*
+ * Support for generic URL parsing. Various URL requirements/enforcements may
+ * be obtained by combining the below "url_parse_flags" enum bits.
+ *
+ * The currently supported URL syntax is:
+ *
  * [scheme:[group:]//]
  * [username@|[username]:password@]
  *	host1[:port1][,host2[:port2][, ...]]
  * [/database]
  * [?foo=bar,raz]
- * */
+ *
+ * Some explanations:
+ *   - "scheme" may be optional. if a scheme is present, a "group" is optional
+ *   - any combination of "username" and "password" (F/F, T/F, F/T, T/T)
+ *   - a single, first "host" is mandatory. Additional hosts are optional.
+ *   - any host may have a designated "port"
+ *   - a "database" portion is optional
+ *   - "parameter" support is included
+ *	 - a parameter may or may not have a value
+ *
+ * Returned structure:
+ *   - if a "part" is mandatory (i.e. flag is set) and the function returns
+ *     a non-NULL value, its value will _not_ be empty (part.len > 0)
+ *     (this includes: scheme, group, user, password, host, database, >1 param)
+ *   - if a "port" is not present, its value will be zero
+ *   - if a "param" has no value (i.e. "foo,bar"), params.val == {NULL, 0}
+ *   - if a "param" has empty value (i.e. "foo=,bar"), params.val == {0x7b*, 0}
+ */
 
 enum url_parse_flags {
 	URL_REQ_SCHEME         = (1<<0),
@@ -64,9 +86,14 @@ struct url {
 	struct url_param_list *params;
 };
 
-struct url *parse_url(const str *string, enum url_parse_flags opts, int pkg_dup);
+/* parse a generic URL according to "opts".
+ *	@pkg_dup: if true, any returned strings will be dup'ed in PKG
+ */
+struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup);
 
 /* free all the metadata (hooks, lists, etc.) associated with a URL string */
 void free_url(struct url *url);
+
+void print_url(struct url *url);
 
 #endif /* __LIB_URL__ */
