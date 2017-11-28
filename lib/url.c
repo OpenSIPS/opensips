@@ -46,8 +46,8 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 	str st, port;
 	struct url_host_list *last, *hostlist;
 	struct url_param_list *lastp, *paramlist;
-	struct csv_record *hosts_db = NULL, *hosts_chunk = NULL, *hosts = NULL;
-	struct csv_record *params, *rec;
+	struct str_list *hosts_db = NULL, *hosts_chunk = NULL, *hosts = NULL;
+	struct str_list *params, *rec;
 
 #define ENSURE_N_LEFT(n) \
 	do { \
@@ -146,23 +146,23 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 	/* hosts[/database][?params] */
 	hosts_db = __parse_csv_record(&st, CSV_SIMPLE, '?');
-	hosts_chunk = __parse_csv_record(&hosts_db->field, CSV_SIMPLE, '/');
+	hosts_chunk = __parse_csv_record(&hosts_db->s, CSV_SIMPLE, '/');
 
-	if (!hosts_chunk->field.s || hosts_chunk->field.len <= 0) {
+	if (!hosts_chunk->s.s || hosts_chunk->s.len <= 0) {
 		LM_ERR("empty/missing \"host\" part in URL %.*s\n", in->len, in->s);
 		goto out_err;
 	}
 
 	/* host1[:port1][,host2[:port2]...]] */
-	hosts = _parse_csv_record(&hosts_chunk->field, CSV_SIMPLE);
-	if (hosts->next_field && !(opts & URL_ALLOW_EXTRA_HOSTS)) {
+	hosts = _parse_csv_record(&hosts_chunk->s, CSV_SIMPLE);
+	if (hosts->next && !(opts & URL_ALLOW_EXTRA_HOSTS)) {
 		LM_ERR("multiple hosts not allowed in URL %.*s\n", in->len, in->s);
 		goto out_err;
 	}
 
 	last = NULL;
 	/* host[:port] chunks */
-	for (rec = hosts; rec; rec = rec->next_field) {
+	for (rec = hosts; rec; rec = rec->next) {
 		hostlist = pkg_malloc(sizeof *hostlist);
 		if (!hostlist) {
 			LM_ERR("oom\n");
@@ -176,15 +176,15 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 		last = hostlist;
 
-		hostlist->host.s = rec->field.s;
-		ch = memchr(rec->field.s, ':', rec->field.len);
+		hostlist->host.s = rec->s.s;
+		ch = memchr(rec->s.s, ':', rec->s.len);
 		if (ch) {
-			if (ch == rec->field.s) {
+			if (ch == rec->s.s) {
 				LM_ERR("empty \"host\" in URL %.*s\n", in->len, in->s);
 				goto out_err;
 			}
 
-			port.len = rec->field.len - (ch + 1 - rec->field.s);
+			port.len = rec->s.len - (ch + 1 - rec->s.s);
 			port.s = ch + 1;
 			if (port.len <= 0 && (opts & URL_REQ_PORT)) {
 				LM_ERR("empty \"port\" in URL %.*s\n", in->len, in->s);
@@ -195,17 +195,17 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 				goto out_err;
 			}
 
-			hostlist->host.len = ch - rec->field.s;
+			hostlist->host.len = ch - rec->s.s;
 		} else {
-			hostlist->host.len = rec->field.len;
+			hostlist->host.len = rec->s.len;
 		}
 	}
 
 	/* [/database] */
-	if (hosts_chunk->next_field &&
-	    hosts_chunk->next_field->field.s &&
-	    hosts_chunk->next_field->field.len > 0)
-			url->database = hosts_chunk->next_field->field;
+	if (hosts_chunk->next &&
+	    hosts_chunk->next->s.s &&
+	    hosts_chunk->next->s.len > 0)
+			url->database = hosts_chunk->next->s;
 
 	if (!url->database.s && (opts & URL_REQ_DB)) {
 		LM_ERR("missing \"database\" part in URL %.*s\n", in->len, in->s);
@@ -213,12 +213,12 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 	}
 
 	/* [?foo=bar,raz] */
-	if (hosts_db->next_field &&
-	    hosts_db->next_field->field.s && hosts_db->next_field->field.len > 0) {
+	if (hosts_db->next &&
+	    hosts_db->next->s.s && hosts_db->next->s.len > 0) {
 
-		params = _parse_csv_record(&hosts_db->next_field->field, CSV_SIMPLE);
+		params = _parse_csv_record(&hosts_db->next->s, CSV_SIMPLE);
 		lastp = NULL;
-		for (rec = params; rec; rec = rec->next_field) {
+		for (rec = params; rec; rec = rec->next) {
 			paramlist = pkg_malloc(sizeof *paramlist);
 			if (!paramlist) {
 				LM_ERR("oom\n");
@@ -232,21 +232,21 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 			lastp = paramlist;
 
-			paramlist->key.s = rec->field.s;
-			ch = memchr(rec->field.s, '=', rec->field.len);
+			paramlist->key.s = rec->s.s;
+			ch = memchr(rec->s.s, '=', rec->s.len);
 			if (ch) {
-				if (ch == rec->field.s) {
+				if (ch == rec->s.s) {
 					LM_ERR("empty \"key\" parameter part in URL %.*s\n",
 					       in->len, in->s);
 					goto out_err;
 				}
 
-				paramlist->val.len = rec->field.len - (ch + 1 - rec->field.s);
+				paramlist->val.len = rec->s.len - (ch + 1 - rec->s.s);
 				paramlist->val.s = ch + 1;
 
-				paramlist->key.len = ch - rec->field.s;
+				paramlist->key.len = ch - rec->s.s;
 			} else {
-				paramlist->key.len = rec->field.len;
+				paramlist->key.len = rec->s.len;
 			}
 		}
 

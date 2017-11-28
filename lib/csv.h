@@ -21,12 +21,7 @@
 #ifndef __LIB_CSV__
 #define __LIB_CSV__
 
-#include "../str.h"
-
-struct csv_record {
-	str field;
-	struct csv_record *next_field;
-};
+#include "../str_list.h"
 
 /*
  * disable the RFC 4180 quoting mechanism
@@ -73,11 +68,14 @@ struct csv_record {
  *	- does NOT dup the resulting strings!
  *	- remember to free result field holders with free_csv_record()
  */
-struct csv_record *__parse_csv_record(const str *in, int parse_flags,
-                                      unsigned char sep);
+struct str_list *__parse_csv_record(const str *in, int parse_flags,
+                                    unsigned char sep);
 #define _parse_csv_record(in, flags) __parse_csv_record(in, flags, ',')
 #define parse_csv_record(in) _parse_csv_record(in, 0)
 
-void free_csv_record(struct csv_record *record);
+static inline void free_csv_record(struct str_list *record)
+{
+	_free_str_list(record, osips_pkg_free, NULL);
+}
 
 #endif /* __LIB_CSV__ */

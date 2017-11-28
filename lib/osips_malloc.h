@@ -23,6 +23,12 @@
 #ifndef __OSIPS_MALLOC_H__
 #define __OSIPS_MALLOC_H__
 
+typedef void *(*osips_malloc_t)(size_t size);
+typedef void  (*osips_free_t)(void *ptr);
+typedef void *(*osips_calloc_t)(size_t nmemb, size_t size);
+typedef void *(*osips_realloc_t)(void *ptr, size_t size);
+typedef char *(*osips_strdup_t)(const char *s);
+
 void *osips_pkg_malloc(size_t size);
 void osips_pkg_free(void *ptr);
 void *osips_pkg_calloc(size_t nmemb, size_t size);

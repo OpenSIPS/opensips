@@ -26,10 +26,10 @@
 
 #include "csv.h"
 
-static struct csv_record *push_csv_field(const str *field,
-                                         struct csv_record **record)
+static struct str_list *push_csv_field(const str *field,
+                                       struct str_list **record)
 {
-	struct csv_record *rec;
+	struct str_list *rec;
 
 	rec = pkg_malloc(sizeof *rec);
 	if (!rec) {
@@ -38,20 +38,20 @@ static struct csv_record *push_csv_field(const str *field,
 	}
 
 	memset(rec, 0, sizeof *rec);
-	rec->field = *field;
+	rec->s = *field;
 
 	if (!*record)
 		*record = rec;
 	else
-		(*record)->next_field = rec;
+		(*record)->next = rec;
 
 	return rec;
 }
 
-struct csv_record *__parse_csv_record(const str *_in, int parse_flags,
+struct str_list *__parse_csv_record(const str *_in, int parse_flags,
                                       unsigned char sep)
 {
-	struct csv_record *record = NULL, **last = &record;
+	struct str_list *record = NULL, **last = &record;
 	str in = *_in, field;
 	char *ch;
 
@@ -85,19 +85,8 @@ struct csv_record *__parse_csv_record(const str *_in, int parse_flags,
 		if (in.len <= 0)
 			break;
 
-		last = &(*last)->next_field;
+		last = &(*last)->next;
 	}
 
 	return record;
-}
-
-void free_csv_record(struct csv_record *record)
-{
-	struct csv_record *prev;
-
-	while (record) {
-		prev = record;
-		record = record->next_field;
-		pkg_free(prev);
-	}
 }
