@@ -495,6 +495,28 @@ static inline void strlower(str* _s)
 	}
 }
 
+/*
+ * Convert a str into a short integer
+ */
+static inline int str2short(str* _s, unsigned short *_r)
+{
+	int i;
+
+	if (_s==0 || _s->s == 0 || _s->len == 0 || _r == 0)
+		return -1;
+
+	*_r = 0;
+	for(i = 0; i < _s->len; i++) {
+		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
+			*_r *= 10;
+			*_r += _s->s[i] - '0';
+		} else {
+			return -1;
+		}
+	}
+
+	return 0;
+}
 
 /*
  * Convert a str into integer
