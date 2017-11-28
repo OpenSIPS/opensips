@@ -41,12 +41,13 @@ static int dup_pkg_fields(struct url *url)
 
 struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 {
-	struct url *url;
+	struct url *url = NULL;
 	char *ch, *p;
 	str st, port;
 	struct url_host_list *last, *hostlist;
 	struct url_param_list *lastp, *paramlist;
-	struct csv_record *hosts_db, *hosts_chunk, *hosts, *params, *rec;
+	struct csv_record *hosts_db = NULL, *hosts_chunk = NULL, *hosts = NULL;
+	struct csv_record *params, *rec;
 
 #define ENSURE_N_LEFT(n) \
 	do { \
@@ -60,6 +61,8 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 		LM_ERR("null or empty URL!\n");
 		return NULL;
 	}
+
+	LM_DBG("parsing '%.*s'\n", in->len, in->s);
 
 	st = *in;
 	if (opts & (URL_REQ_SCHEME|URL_REQ_SCHEME_GROUP))
@@ -92,7 +95,8 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 	if (opts & (URL_REQ_SCHEME|URL_REQ_SCHEME_GROUP)) {
 		if (!url->scheme.s || url->scheme.len <= 0) {
-			LM_ERR("missing \"scheme://\" part in URL %.*s\n", in->len, in->s);
+			LM_ERR("incomplete \"scheme://\" part in URL %.*s\n",
+			       in->len, in->s);
 			goto out_err;
 		}
 
@@ -279,6 +283,9 @@ void free_url(struct url *url)
 	struct url_host_list *host;
 	struct url_param_list *params;
 
+	if (!url)
+		return;
+
 	while (url->hosts) {
 		host = url->hosts;
 		url->hosts = url->hosts->next;
@@ -299,18 +306,24 @@ void print_url(struct url *url)
 	struct url_host_list *host;
 	struct url_param_list *param;
 
-	LM_GEN1(L_DBG, "scheme: '%.*s'\ngroup_name: '%.*s'\nusername: '%.*s'\n"
-	        "password: '%.*s'\ndatabase: '%.*s'\n", url->scheme.len,
-	        url->scheme.s, url->group_name.len, url->group_name.s,
-	        url->username.len, url->username.s, url->password.len,
-	        url->password.s, url->database.len, url->database.s);
+	if (!url)
+		return;
 
-	LM_GEN1(L_DBG, "Hosts: ");
+	LM_GEN1(L_DBG, ":::URL DEBUG\nscheme[%d]: '%.*s'\ngroup_name[%d]: '%.*s'\n"
+	      "username[%d]: '%.*s'\npassword[%d]: '%.*s'\ndatabase[%d]: '%.*s'\n",
+	      url->scheme.len, url->scheme.len, url->scheme.s, url->group_name.len,
+	      url->group_name.len, url->group_name.s, url->username.len,
+	      url->username.len,url->username.s, url->password.len,
+	      url->password.len,url->password.s, url->database.len,
+	      url->database.len, url->database.s);
+
+	LM_GEN1(L_DBG, "== Hosts ==\n");
 	for (host = url->hosts; host; host = host->next)
-		LM_GEN1(L_DBG, "'%.*s:%d' ", host->host.len, host->host.s, host->port);
+		LM_GEN1(L_DBG, "Host[%d]: '%.*s:%d'\n", host->host.len, host->host.len,
+		        host->host.s, host->port);
 
-	LM_GEN1(L_DBG, "Params: ");
+	LM_GEN1(L_DBG, "== Params ==\n");
 	for (param = url->params; param; param = param->next)
-		LM_GEN1(L_DBG, "'%.*s=%.*s' ", param->key.len, param->key.s,
-		        param->val.len, param->val.s);
+		LM_GEN1(L_DBG, "Param[%d]: '%.*s=%.*s'\n", param->key.len,
+				param->key.len, param->key.s, param->val.len, param->val.s);
 }
