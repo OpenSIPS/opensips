@@ -21,15 +21,58 @@
 #ifndef __LIB_CSV__
 #define __LIB_CSV__
 
+#include "../str.h"
+
 struct csv_record {
 	str field;
 	struct csv_record *next_field;
 };
 
+/*
+ * disable the RFC 4180 quoting mechanism
+ *
+ * Example:
+ *	input: 123,"""foo"" bar",abc
+ *
+ * with CSV_REC_NO_DQUOTE:
+ *		123
+ *		"""foo"" bar"
+ *		abc
+ *
+ * default:
+ *		123
+ *		"foo" bar
+ *		abc
+ */
 #define CSV_REC_NO_DQUOTE     (1<<0)
+
+/*
+ * trim all leading and trailing whitespace (' ', '\t', '\r', '\n')
+ *
+ * Example:
+ *	input: "123\n",  \tfoo ,  abc
+ *
+ * with CSV_REC_NO_OUTSIDE_WS:
+ *		123\n
+ *		foo
+ *		abc
+ *
+ * default:
+ *		123\n
+ *		  \tfoo
+ *		  abc
+ */
 #define CSV_REC_NO_OUTSIDE_WS (1<<1)
+
 #define CSV_SIMPLE            (CSV_REC_NO_DQUOTE|CSV_REC_NO_OUTSIDE_WS)
 
+/*
+ * Chop an input string by the given separator
+ *
+ * Notes:
+ *	- does NOT dup the resulting strings!
+ *	- remember to free result field holders with free_csv_record()
+ */
 struct csv_record *__parse_csv_record(const str *in, int parse_flags,
                                       unsigned char sep);
 #define _parse_csv_record(in, flags) __parse_csv_record(in, flags, ',')
