@@ -23,22 +23,97 @@
 #ifndef __OSIPS_MALLOC_H__
 #define __OSIPS_MALLOC_H__
 
+#include "../mem/mem.h"
+#include "../mem/shm_mem.h"
+
 typedef void *(*osips_malloc_t)(size_t size);
 typedef void  (*osips_free_t)(void *ptr);
 typedef void *(*osips_calloc_t)(size_t nmemb, size_t size);
 typedef void *(*osips_realloc_t)(void *ptr, size_t size);
 typedef char *(*osips_strdup_t)(const char *s);
 
-void *osips_pkg_malloc(size_t size);
-void osips_pkg_free(void *ptr);
-void *osips_pkg_calloc(size_t nmemb, size_t size);
-void *osips_pkg_realloc(void *ptr, size_t size);
-char *osips_pkg_strdup(const char *s);
+static inline void *osips_pkg_malloc(size_t size)
+{
+	return pkg_malloc(size);
+}
 
-void *osips_shm_malloc(size_t size);
-void osips_shm_free(void *ptr);
-void *osips_shm_calloc(size_t nmemb, size_t size);
-void *osips_shm_realloc(void *ptr, size_t size);
-char *osips_shm_strdup(const char *s);
+static inline void osips_pkg_free(void *ptr)
+{
+	pkg_free(ptr);
+}
+
+static inline void *osips_pkg_calloc(size_t nmemb, size_t size)
+{
+	void *p;
+
+	p = pkg_malloc(nmemb * size);
+	if (p) {
+		memset(p, '\0', nmemb * size);
+	}
+
+	return p;
+}
+
+static inline void *osips_pkg_realloc(void *ptr, size_t size)
+{
+	return pkg_realloc(ptr, size);
+}
+
+static inline char *osips_pkg_strdup(const char *s)
+{
+	char *rval;
+	int len;
+
+	len = strlen(s) + 1;
+	rval = pkg_malloc(len);
+	if (!rval) {
+		return NULL;
+	}
+
+	memcpy(rval, s, len);
+	return rval;
+}
+
+static inline void *osips_shm_malloc(size_t size)
+{
+	return shm_malloc(size);
+}
+
+static inline void osips_shm_free(void *ptr)
+{
+	shm_free(ptr);
+}
+
+static inline void *osips_shm_calloc(size_t nmemb, size_t size)
+{
+	void *p;
+
+	p = shm_malloc(nmemb * size);
+	if (p) {
+		memset(p, '\0', nmemb * size);
+	}
+
+	return p;
+}
+
+static inline void *osips_shm_realloc(void *ptr, size_t size)
+{
+	return shm_realloc(ptr, size);
+}
+
+static inline char *osips_shm_strdup(const char *s)
+{
+	char *rval;
+	int len;
+
+	len = strlen(s) + 1;
+	rval = shm_malloc(len);
+	if (!rval) {
+		return NULL;
+	}
+
+	memcpy(rval, s, len);
+	return rval;
+}
 
 #endif /* __OSIPS_MALLOC_H__ */

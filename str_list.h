@@ -24,7 +24,6 @@
 #include <stdlib.h>
 
 #include "str.h"
-#include "mem/mem.h"
 #include "lib/osips_malloc.h"
 
 struct str_list {
@@ -49,7 +48,10 @@ static inline void _free_str_list(struct str_list *list,
 	}
 }
 
-#define free_pkg_str_list(list) _free_str_list(list, pkg_free, pkg_free)
-#define free_shm_str_list(list) _free_str_list(list, shm_free, shm_free)
+#define free_pkg_str_list(list) \
+	_free_str_list(list, osips_pkg_free, osips_pkg_free)
+
+#define free_shm_str_list(list) \
+	_free_str_list(list, osips_shm_free, osips_shm_free)
 
 #endif /* __STR_LIST__ */
