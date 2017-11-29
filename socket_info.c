@@ -382,7 +382,7 @@ error:
  * WARNING: it only works with ipv6 addresses on FreeBSD
  * return: -1 on error, 0 on success
  */
-int add_interfaces(char* if_name, int family, unsigned short port,
+int add_interfaces(char* if_name, unsigned short port,
 					unsigned short proto, unsigned short children,
 					struct socket_info** list)
 {
@@ -443,7 +443,7 @@ end:
 	#endif
 #endif
 	/* ipv4 or ipv6 only*/
-	s=socket(family, SOCK_DGRAM, 0);
+	s=socket(AF_INET, SOCK_DGRAM, 0);
 	lastlen=0;
 	ifc.ifc_req=0;
 	for (size=100; ; size*=2){
@@ -487,7 +487,7 @@ end:
 		/* copy contents into ifr structure
 		 * warning: it might be longer (e.g. ipv6 address) */
 		memcpy(&ifr, p, sizeof(ifr));
-		if (ifr.ifr_addr.sa_family!=family){
+		if (ifr.ifr_addr.sa_family!=AF_INET){
 			/*printf("strange family %d skipping...\n",
 					ifr->ifr_addr.sa_family);*/
 			continue;
@@ -559,7 +559,7 @@ int fix_socket_list(struct socket_info **list)
 
 	for (si=*list;si;){
 		next=si->next;
-		if (add_interfaces(si->name.s, AF_INET, si->port_no,
+		if (add_interfaces(si->name.s, si->port_no,
 							si->proto, si->children, list)!=-1){
 			/* success => remove current entry (shift the entire array)*/
 			sock_listrm(list, si);
