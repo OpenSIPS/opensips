@@ -112,10 +112,12 @@ struct socket_info* new_sock_info(	char* name,
 	if (si==0) goto error;
 	memset(si, 0, sizeof(struct socket_info));
 	si->socket=-1;
-	si->name.len=strlen(name);
-	si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
-	if (si->name.s==0) goto error;
-	memcpy(si->name.s, name, si->name.len+1);
+	if (name) {
+		si->name.len=strlen(name);
+		si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
+		if (si->name.s==0) goto error;
+		memcpy(si->name.s, name, si->name.len+1);
+	}
 	/* set port & proto */
 	si->port_no=port;
 	si->proto=proto;
@@ -346,7 +348,6 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 	unsigned short c_proto;
 
 	c_proto=(proto)?proto:PROTO_UDP;
-	LM_INFO("XXX - c_proto = %d\n",c_proto);
 	do{
 		list=get_sock_info_list(c_proto);
 		if (list==0){
