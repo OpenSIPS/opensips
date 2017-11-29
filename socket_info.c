@@ -406,11 +406,10 @@ int add_interfaces(char* if_name, unsigned short port,
 				continue;
 			/*
 			 * if it is ipv6, and there was no explicit interface specified,
-			 * we make sure we don't add link-local or site-link interface
+			 * make sure we don't add any "scoped" interface
 			 */
 			if (it->ifa_addr->sa_family == AF_INET6 &&
-					(((struct sockaddr_in6 *)it->ifa_addr)->sin6_scope_id == 0x2 ||
-					((struct sockaddr_in6 *)it->ifa_addr)->sin6_scope_id == 0x5))
+					(((struct sockaddr_in6 *)it->ifa_addr)->sin6_scope_id != 0))
 
 				continue;
 			sockaddr2ip_addr(&addr, it->ifa_addr);
