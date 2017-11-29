@@ -466,7 +466,7 @@ static struct multi_str *tmp_mod;
 %type <sockid> listen_def
 %type <sockid> id_lst
 %type <sockid> alias_def
-%type <sockid> phostport
+%type <sockid> phostport panyhostport
 %type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> uri_type
@@ -579,6 +579,10 @@ phostport: proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			}
 			;
 
+panyhostport: proto COLON MULT				{ $$=mk_listen_id(0, $1, 0); }
+			| proto COLON MULT COLON port	{ $$=mk_listen_id(0, $1, $5); }
+			;
+
 alias_def:	listen_id						{ $$=mk_listen_id($1, PROTO_NONE, 0); }
 		 |	ANY COLON listen_id				{ $$=mk_listen_id($3, PROTO_NONE, 0); }
 		 |	ANY COLON listen_id COLON port	{ $$=mk_listen_id($3, PROTO_NONE, $5); }
@@ -594,7 +598,9 @@ id_lst:		alias_def		{  $$=$1 ; }
 		;
 
 
-listen_def:	phostport				{ $$=$1; }
+listen_def:	panyhostport			{ $$=$1; }
+			| panyhostport USE_CHILDREN NUMBER { $$=$1; $$->children=$3; }
+			| phostport				{ $$=$1; }
 			| phostport USE_CHILDREN NUMBER { $$=$1; $$->children=$3; }
 			| phostport AS listen_id {
 				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
