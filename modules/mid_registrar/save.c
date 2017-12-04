@@ -1208,6 +1208,7 @@ update_usrloc:
 				cti->expires = e;
 				cti->expires_out = e_out;
 				cti->last_reg_ts = get_act_time();
+				cti->last_cseq = ci->cseq;
 				set_ct(cti);
 			}
 
@@ -1238,6 +1239,7 @@ update_usrloc:
 			LM_DBG("UPDATING .....\n");
 			if (reg_mode != MID_REG_MIRROR) {
 				mri->expires_out = e_out;
+				mri->last_cseq = ci->cseq;
 				set_ct(mri);
 			}
 
