@@ -371,19 +371,64 @@ modparam("mid_registrar", "insertion_mode", 1)
 </programlisting>
 		</example>
 	</section>
+	<section id="modparam-min-expires" xreflabel="min_expires">
+		<title><varname>min_expires</varname> (integer)</title>
+		<para>
+			The minimum expires value of a Contact, values lower than this
+			minimum will be automatically set to the minimum. Value 0 disables the checking.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>10</emphasis> (seconds)
+		</para>
+		<example>
+		<title>Setting the <emphasis>min_expires</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "min_expires", 600)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-default-expires" xreflabel="default_expires">
+		<title><varname>default_expires</varname> (integer)</title>
+		<para>
+			If the processed message contains neither Expires HFs nor expires
+			contact parameters, this value will be used as the expiration
+			interval of any newly created usrloc records.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>3600</emphasis> (seconds)
+		</para>
+		<example>
+		<title>Setting the <emphasis>default_expires</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "default_expires", 1800)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-max-expires" xreflabel="max_expires">
+		<title><varname>max_expires</varname> (integer)</title>
+		<para>
+			The maximum expires value of a Contact, values higher than this
+			maximum will be automatically set to the maximum. Value 0 disables the checking.
+		</para>
+		<para>
+		Default value is <emphasis role='bold'>3600</emphasis> (seconds)
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_expires</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "max_expires", 7200)
+</programlisting>
+		</example>
+	</section>
 	<section id="modparam-outgoing-expires" xreflabel="outgoing_expires">
 		<title><varname>outgoing_expires</varname> (integer)</title>
 		<para>
-			Only relevant in Contact/AOR throttling modes. Sets the default
-			value for the expiration intervals of outgoing contacts. Values for
-			this parameter which are shorter than the expiration intervals of
-			some contacts present in a REGISTER request being processed will
-			lead to the outgoing expiration intervals of these contacts
-			remaining unchanged.
+			Only relevant in Contact/AOR throttling modes. Sets a minimal
+			value for the expiration intervals of egressing contacts.
 		</para>
 
 		<para>
-		Default value is <emphasis role='bold'>600</emphasis> (seconds)
+		Default value is <emphasis role='bold'>3600</emphasis> (seconds)
 		</para>
 		<example>
 		<title>Setting the <emphasis>outgoing_expires</emphasis> module parameter</title>
