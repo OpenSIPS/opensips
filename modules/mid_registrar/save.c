@@ -91,7 +91,7 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save
 		}
 	}
 
-	if ((*_e != 0) && ((*_e) < min_expires))
+	if ((*_e != 0) && min_expires && ((*_e) < min_expires))
 		*_e = min_expires;
 
 	if ((*_e != 0) && max_expires && ((*_e) > max_expires))
@@ -103,8 +103,15 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save
 /* with the optionally added outgoing timeout extension
  *
  * @_e: output param (UNIX timestamp) - expiration time on the main registrar
+ * @behavior:
+ *		if 0: the "outgoing_expires" modparam works as a minimal value
+ *		       (useful when forcing egress expirations)
+ *
+ *		if !0: the "outgoing_expires" modparam works as a maximal value
+ *		       (useful when interpreting expirations of successful
+ *		        main registrar replies)
  */
-void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
+void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int behavior)
 {
 	if (!_ep || !_ep->body.len) {
 		*_e = get_expires_hf(_m);
@@ -115,20 +122,18 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct s
 	}
 
 	/* extend outgoing timeout, thus "throttling" heavy incoming traffic */
-	if (reg_mode != MID_REG_MIRROR && *_e > 0 && *_e < outgoing_expires)
-		*_e = outgoing_expires;
+	if (reg_mode != MID_REG_MIRROR && *_e > 0) {
+		if (behavior == 0) {
+			if (*_e < outgoing_expires)
+				*_e = outgoing_expires;
+		} else {
+			if (*_e > outgoing_expires)
+				*_e = outgoing_expires;
+		}
+	}
 
 	/* Convert to absolute value */
 	if (*_e > 0) *_e += get_act_time();
-
-	if (*_e > 0 && (*_e - get_act_time()) < min_expires) {
-		*_e = min_expires + get_act_time();
-	}
-
-	/* cutting timeout down to "max_expires" */
-	if (*_e > 0 && max_expires && ((*_e - get_act_time()) > max_expires)) {
-		*_e = max_expires + get_act_time();
-	}
 
 	LM_DBG("outgoing expires: %d\n", *_e);
 }
@@ -296,7 +301,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 
 		new_username.s = int2str(ctid, &new_username.len);
 
-		calc_ob_contact_expires(req, c->expires, &expiry_tick, NULL);
+		calc_ob_contact_expires(req, c->expires, &expiry_tick, 0);
 		expires = expiry_tick == 0 ? 0 : expiry_tick - get_act_time();
 		ctmap = append_ct_mapping(&c->uri, &new_username, mri);
 		if (!ctmap) {
@@ -463,7 +468,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, NULL);
-		calc_ob_contact_expires(req, c->expires, &expiry_tick, NULL);
+		calc_ob_contact_expires(req, c->expires, &expiry_tick, 0);
 		if (expiry_tick == 0)
 			new_expires = 0;
 		else
@@ -1173,7 +1178,8 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 		if (!_c)
 			goto update_usrloc;
 
-		calc_contact_expires(rpl, _c->expires, &e_out, NULL);
+		calc_ob_contact_expires(rpl, _c->expires, &e_out, 1);
+		e_out -= get_act_time();
 
 		LM_DBG("    >> REGISTER %ds ------- %ds 200 OK <<!\n", e, e_out);
 

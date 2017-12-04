@@ -127,7 +127,7 @@ static int registrar_fixup(void** param, int param_no);
  */
 enum mid_reg_mode reg_mode = MID_REG_MIRROR;
 
-unsigned int outgoing_expires = 600;
+unsigned int outgoing_expires = 3600;
 
 #define is_matching_mode(v) (v == MATCH_BY_PARAM || v == MATCH_BY_USER)
 #define matching_mode_str(v) (v == MATCH_BY_PARAM ? "by uri param" : "by user")
@@ -164,7 +164,9 @@ static cmd_export_t cmds[] = {
 
 static param_export_t mod_params[] = {
 	{ "mode",                 INT_PARAM, &reg_mode },
+	{ "default_expires",      INT_PARAM, &default_expires },
 	{ "min_expires",          INT_PARAM, &min_expires },
+	{ "max_expires",          INT_PARAM, &max_expires },
 	{ "default_q",            INT_PARAM, &default_q },
 	{ "tcp_persistent_flag",  INT_PARAM, &tcp_persistent_flag },
 	{ "tcp_persistent_flag",  STR_PARAM, &tcp_persistent_flag_s },
@@ -305,6 +307,18 @@ static int mod_init(void)
 		        matching_mode, matching_mode_str(matching_mode));
 	} else {
 		LM_DBG("contact matching mode: '%s'\n", matching_mode_str(matching_mode));
+	}
+
+	if (min_expires > default_expires) {
+		LM_ERR("min_expires > default_expires! "
+		       "Decreasing min_expires to %d...\n", default_expires);
+		min_expires = default_expires;
+	}
+
+	if (max_expires < default_expires) {
+		LM_ERR("max_expires < default_expires! "
+		       "Increasing max_expires to %d...\n", default_expires);
+		max_expires = default_expires;
 	}
 
 	/* Normalize default_q parameter */
