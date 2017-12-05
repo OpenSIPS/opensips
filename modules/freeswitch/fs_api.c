@@ -39,7 +39,7 @@ rw_lock_t *box_lock;
 
 static fs_mod_ref *mk_fs_mod_ref(str *tag);
 static void free_fs_mod_ref(fs_mod_ref *mref);
-static fs_evs *get_fs_evs(str *hostport);
+static fs_evs *get_fs_evs(const str *fs_url);
 
 /*
  * Parses and validates FreeSWITCH URLs:
@@ -136,7 +136,7 @@ static fs_mod_ref *get_fs_mod_ref(fs_evs *evs, str *tag)
 	return NULL;
 }
 
-static fs_evs *get_fs_evs(str *fs_url)
+static fs_evs *get_fs_evs(const str *fs_url)
 {
 	struct list_head *ele;
 	str user, pass, host;
@@ -164,7 +164,7 @@ static fs_evs *get_fs_evs(str *fs_url)
 }
 
 
-static fs_evs *mk_fs_evs(str *fs_url)
+static fs_evs *mk_fs_evs(const str *fs_url)
 {
 	fs_evs *evs;
 	str user, pass, host;
@@ -221,14 +221,67 @@ static fs_evs *mk_fs_evs(str *fs_url)
 	return evs;
 }
 
-fs_evs *get_evs(str *evs_str, str *tag, struct str_list *sub_events)
+fs_evs *get_evs(const str *evs_str)
 {
-	return NULL;
+	fs_evs *evs;
+
+	if (!evs_str->s || evs_str->len == 0) {
+		LM_ERR("empty string given!\n");
+		return NULL;
+	}
+
+	lock_start_write(box_lock);
+
+	evs = get_fs_evs(evs_str);
+	LM_DBG("getevs (%.*s): %p\n", evs_str->len, evs_str->s, evs);
+	if (!evs) {
+		evs = mk_fs_evs(evs_str);
+		if (!evs) {
+			LM_ERR("failed to create FS box!\n");
+			lock_stop_write(box_lock);
+			return NULL;
+		}
+
+		list_add(&evs->list, fs_boxes);
+	}
+
+	evs->ref++;
+
+	lock_stop_write(box_lock);
+	return evs;
 }
 
-int put_evs(fs_evs *evs, str *tag, struct str_list *unsub_events)
+int evs_sub(fs_evs *evs, const str *tag, const struct str_list *events,
+            fs_event_cb_f ev_cb)
 {
 	return 0;
+}
+
+void evs_unsub(fs_evs *evs, const str *tag, const struct str_list *events)
+{
+}
+
+void put_evs(fs_evs *evs)
+{
+	/**
+	 * This prevents a series of deadlocks on shutdown, since the FS connection
+	 * manager process is often terminated (SIGTERM) on a typical OpenSIPS
+	 * restart along with any locks it has acquired.
+	 *
+	 * If the "main" process gets here, then he's the only one left anyway
+	 */
+	if (!is_main)
+		lock_start_write(box_lock);
+
+	evs->ref--;
+
+	/**
+	 * We cannot immediately free the event socket, as the fd might be polled
+	 * by the FreeSWITCH worker process. The ref == 0 check is done there
+	 */
+
+	if (!is_main)
+		lock_stop_write(box_lock);
 }
 
 fs_evs *get_stats_evs(str *evs_str, str *tag)
