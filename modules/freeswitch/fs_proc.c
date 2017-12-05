@@ -55,7 +55,7 @@ static int destroy_fs_evs(fs_evs *evs, int idx)
 	}
 
 	list_del(&evs->list);
-	lock_destroy_rw(evs->hb_data_lk);
+	lock_destroy_rw(evs->stats_lk);
 	shm_free(evs);
 
 	return ret;
@@ -63,14 +63,13 @@ static int destroy_fs_evs(fs_evs *evs, int idx)
 
 inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 {
-	struct list_head *ele;
 	fs_evs *box = (fs_evs *)fm->data;
-	fs_mod_ref *mod;
-	fs_ev_hb hb;
+	fs_stats stats;
 	esl_status_t rc;
 	cJSON *ev = NULL;
 	char *s, *end;
 
+	memset(&stats, 0, sizeof stats);
 	LM_DBG("FS data available on box %s:%d, ref: %d\n",
 	       box->host.s, box->port, box->ref);
 
@@ -120,40 +119,35 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			}
 
 			s = cJSON_GetObjectItem(ev, "Idle-CPU")->valuestring;
-			hb.id_cpu = strtof(s, &end);
+			stats.id_cpu = strtof(s, &end);
 			if (*end) {
 				LM_ERR("bad Idle-CPU: %s\n", s);
 				goto out_free;
 			}
 
 			s = cJSON_GetObjectItem(ev, "Session-Count")->valuestring;
-			hb.sess = strtol(s, &end, 0);
+			stats.sess = strtol(s, &end, 0);
 			if (*end) {
 				LM_ERR("bad Session-Count: %s\n", s);
 				goto out_free;
 			}
 
 			s = cJSON_GetObjectItem(ev, "Max-Sessions")->valuestring;
-			hb.max_sess = strtol(s, &end, 0);
+			stats.max_sess = strtol(s, &end, 0);
 			if (*end) {
 				LM_ERR("bad Max-Sessions: %s\n", s);
 				goto out_free;
 			}
 
+			stats.valid = 1;
+
 			LM_DBG("FS (%s:%d) heartbeat (id: %.3f, ch: %d/%d):\n%s\n", box->host.s,
-			       box->port, hb.id_cpu, hb.sess, hb.max_sess,
+			       box->port, stats.id_cpu, stats.sess, stats.max_sess,
 			       box->handle->last_sr_event->body);
 
-			lock_start_write(box->hb_data_lk);
-			box->hb_data = hb;
-			lock_stop_write(box->hb_data_lk);
-
-			list_for_each(ele, &box->modules) {
-				mod = list_entry(ele, fs_mod_ref, list);
-				if (mod->hb_cb) {
-					mod->hb_cb(box, &mod->tag, mod->priv);
-				}
-			}
+			lock_start_write(box->stats_lk);
+			box->stats = stats;
+			lock_stop_write(box->stats_lk);
 
 			break;
 		default:

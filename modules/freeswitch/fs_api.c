@@ -28,21 +28,24 @@
 #include "../../resolve.h"
 #include "../../forward.h"
 #include "../../ut.h"
+#include "../../lib/url.h"
 
 #include "fs_api.h"
+
+extern int event_heartbeat_interval;
 
 struct list_head *fs_boxes;
 rw_lock_t *box_lock;
 
-static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
+static fs_mod_ref *mk_fs_mod_ref(str *tag);
 static void free_fs_mod_ref(fs_mod_ref *mref);
 static fs_evs *get_fs_evs(str *hostport);
 
 /*
  * Parses and validates FreeSWITCH URLs:
- *        "fs://[username]:password@host[:port]"
+ *        "[fs://][[username]:password@]host[:port][;EVENT1[,EVENT2[,.. ]]]"
  */
-static int parse_fs_url(str *in, str *user_out, str *pass_out, str *host_out,
+static int parse_fs_url(const str *in, str *user_out, str *pass_out, str *host_out,
                         unsigned int *port_out)
 {
 	str st = *in;
@@ -58,7 +61,7 @@ static int parse_fs_url(str *in, str *user_out, str *pass_out, str *host_out,
 
 	p = memchr(st.s, ':', st.len);
 	if (!p || !(h = memchr(p, '@', st.len - (p - st.s)))) {
-		LM_ERR("missing password!\n");
+		LM_ERR("failed to locate \":password\" part!\n");
 		return -1;
 	}
 
@@ -93,7 +96,7 @@ static int parse_fs_url(str *in, str *user_out, str *pass_out, str *host_out,
 	return 0;
 }
 
-static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
+static fs_mod_ref *mk_fs_mod_ref(str *tag)
 {
 	fs_mod_ref *mref = NULL;
 
@@ -107,9 +110,6 @@ static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
 	mref->tag.s = (char *)(mref + 1);
 	mref->tag.len = tag->len;
 	memcpy(mref->tag.s, tag->s, tag->len);
-
-	mref->hb_cb = cbf;
-	mref->priv = priv;
 
 	return mref;
 }
@@ -169,6 +169,15 @@ static fs_evs *mk_fs_evs(str *fs_url)
 	fs_evs *evs;
 	str user, pass, host;
 	unsigned int port;
+	struct url *url;
+
+	url = parse_url(fs_url, URL_REQ_SCHEME|URL_REQ_PASS, 0);
+	if (!url) {
+		LM_ERR("bad FS URL: '%.*s'! "
+		       "Need: fs://[user]:pass@host[:port][;EVENT1[EVENT2,..]]\n",
+		       fs_url->len, fs_url->s);
+		return NULL;
+	}
 
 	if (parse_fs_url(fs_url, &user, &pass, &host, &port) != 0) {
 		LM_ERR("bad FS URL: '%.*s'! Need: fs://[user]:pass@host[:port]\n",
@@ -184,8 +193,8 @@ static fs_evs *mk_fs_evs(str *fs_url)
 	memset(evs, 0, sizeof *evs);
 	INIT_LIST_HEAD(&evs->modules);
 
-	evs->hb_data_lk = lock_init_rw();
-	if (!evs->hb_data_lk) {
+	evs->stats_lk = lock_init_rw();
+	if (!evs->stats_lk) {
 		LM_ERR("out of mem\n");
 		shm_free(evs);
 		return NULL;
@@ -212,7 +221,17 @@ static fs_evs *mk_fs_evs(str *fs_url)
 	return evs;
 }
 
-fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
+fs_evs *get_evs(str *evs_str, str *tag, struct str_list *sub_events)
+{
+	return NULL;
+}
+
+int put_evs(fs_evs *evs, str *tag, struct str_list *unsub_events)
+{
+	return 0;
+}
+
+fs_evs *get_stats_evs(str *evs_str, str *tag)
 {
 	fs_evs *evs;
 	fs_mod_ref *mref;
@@ -238,7 +257,7 @@ fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
 		list_add(&evs->list, fs_boxes);
 	}
 
-	mref = mk_fs_mod_ref(tag, cbf, priv);
+	mref = mk_fs_mod_ref(tag);
 	if (!mref) {
 		LM_ERR("mk tag failed\n");
 		goto out_err;
@@ -256,7 +275,7 @@ out_err:
 	return NULL;
 }
 
-int del_hb_evs(fs_evs *evs, str *tag)
+int put_stats_evs(fs_evs *evs, str *tag)
 {
 	fs_mod_ref *mref;
 
@@ -306,8 +325,11 @@ int fs_bind(struct fs_binds *fapi)
 
 	memset(fapi, 0, sizeof *fapi);
 
-	fapi->add_hb_evs = add_hb_evs;
-	fapi->del_hb_evs = del_hb_evs;
+	fapi->stats_update_interval = event_heartbeat_interval;
+	fapi->get_evs               = get_evs;
+	fapi->put_evs               = put_evs;
+	fapi->get_stats_evs         = get_stats_evs;
+	fapi->put_stats_evs         = put_stats_evs;
 
 	return 0;
 }

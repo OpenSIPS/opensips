@@ -337,7 +337,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	pkg_free(proxy);
 
 	if (fetch_freeswitch_stats && fs_url.s && fs_url.len > 0) {
-		dst->fs_sock = fs_api.add_hb_evs(&fs_url, &lb_str, NULL, NULL);
+		dst->fs_sock = fs_api.get_stats_evs(&fs_url, &lb_str);
 		if (!dst->fs_sock) {
 			LM_ERR("failed to create FreeSWITCH stats socket!\n");
 		}
@@ -388,7 +388,7 @@ void free_lb_data(struct lb_data *data)
 		lbd2 = lbd1;
 		lbd1 = lbd1->next;
 		if (lbd2->fs_sock) {
-			fs_api.del_hb_evs(lbd2->fs_sock, &lb_str);
+			fs_api.put_stats_evs(lbd2->fs_sock, &lb_str);
 		}
 		shm_free(lbd2);
 	}
