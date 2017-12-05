@@ -80,10 +80,15 @@ struct _fs_evs {
 	struct list_head modules;  /* distinct modules referencing the same box */
 };
 
-typedef fs_evs* (*get_evs_f) (str *evs_str, str *tag,
-                              struct str_list *sub_events);
-typedef int (*put_evs_f) (fs_evs *evs, str *tag,
-                          struct str_list *unsub_events);
+typedef void (*fs_event_cb_f) (const fs_evs *sock, const str *ev_name,
+                               const cJSON *ev_body);
+
+typedef fs_evs* (*get_evs_f) (const str *evs_str);
+typedef int (*evs_sub_f) (fs_evs *evs, const str *tag,
+                          const struct str_list *events, fs_event_cb_f ev_cb);
+typedef void (*evs_unsub_f) (fs_evs *evs, const str *tag,
+                             const struct str_list *events);
+typedef void (*put_evs_f) (fs_evs *evs);
 
 typedef fs_evs* (*get_stats_evs_f) (str *evs_str, str *tag);
 typedef int (*put_stats_evs_f) (fs_evs *evs, str *tag);
@@ -96,22 +101,56 @@ struct fs_binds {
 	int stats_update_interval;
 
 	/*
-	 * Obtain a FreeSWITCH event socket that is guaranteed to be subscribed
-	 * to all given events that are FreeSWITCH-valid.
+	 * Obtain a FreeSWITCH event socket corresponding to the given FreeSWITCH
+	 * URL and increment its ref count. FreeSWITCH URLs are of the form:
 	 *
-	 * Examples of some valid events FreeSWITCH allows subscriptions to:
-	 *	CHANNEL_STATE, CHANNEL_ANSWER, BACKGROUND_JOB, DTMF, HEARTBEAT
+	 *   [fs://][[username]:password@]host[:port][;EVENT1[,EVENT2[,.. ]]]
 	 *
-	 * NOTE: each get() must be paired up with an eventual put()
-	 *        (e.g., put() makes sense during a reload or shutdown)
+	 * NOTE: get_evs() must be paired up with an eventual put_evs()
+	 *
+	 * Return: required socket or NULL on internal error
 	 */
 	get_evs_f get_evs;
 
 	/*
-	 * Return a FreeSWITCH event socket and unsubscribe from the given
-	 * list of FreeSWITCH-valid events.
+	 * Expands the set of events for FreeSWITCH instance "sock" that the
+	 * current "tag" is subscribed to with the "events" list. The current
+	 * event callback function for "sock" and "tag" is updated with "ev_cb".
 	 *
-	 * Return: 0 on success, < 0 on failure
+	 * NOTE: Each event subscription is reference-counted! For each event sub,
+	 * you must eventually call unsub. This helps during reloads.
+	 * E.g.: Initial event set is "A B C". While keeping the current data, we
+	 * hit a reload, which happens to change the event set to "A B C D", to
+	 * which we immediately re-subscribe. Finally, we free the previous data,
+	 * unsubscribing from "A B C" events in the process. Thanks to reference
+	 * counting, the set will not become "D", rather it will remain "A B C D"!
+	 *
+	 * Examples of some valid events that FreeSWITCH allows subscriptions to:
+	 *    * CHANNEL_STATE
+	 *    * CHANNEL_ANSWER
+	 *    * BACKGROUND_JOB
+	 *    * DTMF
+	 *    * HEARTBEAT
+	 *
+	 * TL;DR: each evs_sub() for event set X must be paired up with an eventual
+	 * evs_unsub() for event set X
+	 *
+	 * Return: 0 on success, -1 on internal error
+	 */
+	evs_sub_f evs_sub;
+
+	/*
+	 * Unsubscribes the current "tag" from the "events" of the "sock". Event
+	 * subscriptions are ref-counted, so your callback for some of these
+	 * events may still get called even after calling this function.
+	 *
+	 * Read "evs_sub" description for more info.
+	 */
+	evs_unsub_f evs_unsub;
+
+	/*
+	 * Return a FreeSWITCH event socket. If its reference count reaches zero,
+	 * it will get destroyed, along with any subscriptions attached to it.
 	 */
 	put_evs_f put_evs;
 
@@ -134,7 +173,6 @@ struct fs_binds {
 	 * Return: 0 on success, < 0 on failure
 	 */
 	put_stats_evs_f put_stats_evs;
-
 };
 
 static inline int is_fs_url(str *in)
