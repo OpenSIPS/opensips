@@ -41,7 +41,7 @@ static ipc_handler *ipc_handlers = NULL;
 static unsigned int ipc_handlers_no = 0;
 
 
-int ipc_register_handler( ipc_handler_f *hdl, char *name)
+ipc_job_type ipc_register_job( ipc_handler_f *hdl, char *name)
 {
 	ipc_handler *new;
 
@@ -76,7 +76,7 @@ int ipc_register_handler( ipc_handler_f *hdl, char *name)
 }
 
 
-int ipc_send_job(int dst_proc, int type, void *payload)
+int ipc_send_job(int dst_proc, ipc_job_type type, void *payload)
 {
 	ipc_job job;
 	int n;

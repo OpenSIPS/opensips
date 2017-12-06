@@ -51,7 +51,7 @@ static str ebr_print(evi_reply_sock *sock);
 
 
 /* IPC type registered with the IPC layer */
-int ebr_ipc_type;
+ipc_job_type ebr_ipc_type;
 
 /* the TM API */
 struct tm_binds ebr_tmb;
@@ -156,8 +156,8 @@ static int mod_init(void)
 	}
 
 	/* register with the IPC layer */
-	ebr_ipc_type = ipc_register_handler( handle_ebr_ipc, "EBR");
-	if (ebr_ipc_type<0) {
+	ebr_ipc_type = ipc_register_job( handle_ebr_ipc, "EBR");
+	if (BAD_JOB_TYPE(ebr_ipc_type)) {
 		LM_ERR("cannot register IPC handler for 'EBR'\n");
 		return -1;
 	}

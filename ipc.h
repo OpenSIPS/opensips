@@ -33,7 +33,8 @@ typedef struct _ipc_job {
 	void *payload;
 } ipc_job;
 
-
+typedef int ipc_job_type;
+#define BAD_JOB_TYPE(job) (job < 0)
 
 #define IPC_FD_READ(_proc_no)   pt[_proc_no].ipc_pipe[0]
 #define IPC_FD_WRITE(_proc_no)  pt[_proc_no].ipc_pipe[1]
@@ -41,11 +42,25 @@ typedef struct _ipc_job {
 
 typedef void (ipc_handler_f)(int sender, void *payload);
 
-int ipc_register_handler( ipc_handler_f *hdl, char *name);
+/*
+ * Register a new IPC job type and associate "name" and "hdl" to it.
+ * Must be called in the pre-fork phase.
+ *
+ * Returned value: validate with BAD_JOB_TYPE()
+ */
+ipc_job_type ipc_register_job(ipc_handler_f *hdl, char *name);
 
-int ipc_send_job(int dst_proc, int type, void *payload);
+/*
+ * Push a job for "dst_proc" and quickly return
+ *
+ * Return: 0 on success, -1 on failure
+ */
+int ipc_send_job(int dst_proc, ipc_job_type type, void *payload);
 
+/*
+ * default handler for F_IPC reactor jobs. Copy-paste its code and improve
+ * if this is not enough for you
+ */
 void ipc_handle_job(void);
 
 #endif
-
