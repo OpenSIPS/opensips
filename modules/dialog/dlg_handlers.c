@@ -1379,6 +1379,24 @@ static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag),dlg->legs_no[DLG_LEGS_USED]);
 }
 
+void update_dialog_route (struct sip_msg* req, struct dlg_cell *dlg, unsigned int src_leg) {
+	if (src_leg < 0){
+		return;
+	}
+	struct dlg_leg * leg = &dlg->legs[src_leg];
+	int is_req = (req->first_line.type==SIP_REQUEST)?1:0;
+	unsigned int skip_recs = 0;
+	str contact;
+	str rr_set;
+	get_routing_info(req, is_req, &skip_recs, &contact, &rr_set);
+	if ( contact.len != 0 && (contact.len != leg->contact.len || strncmp(contact.s,leg->contact.s,leg->contact.len)) != 0) {
+		LM_DBG("Leg has a new IP, updating contact. Old contact=%.*s, new contact=%.*s\n", leg->contact.len, leg->contact.s, contact.len, contact.s);
+        dlg_lock_dlg(dlg);
+		dlg_update_leg_contact(leg, &contact);
+        dlg_unlock_dlg(dlg);
+	}
+}
+
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
 	struct dlg_cell *dlg;
@@ -1417,6 +1435,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	dlg = 0;
 	dir = DLG_DIR_NONE;
 	dst_leg = -1;
+    src_leg = -1;
 
 	/* From RR callback, param will be NULL
 	 * From match_dialog, param might have a value, if we
@@ -1449,7 +1468,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 					unref_dlg(dlg, 1);
 					return;
 				}
-				if (match_dialog(dlg,&callid,&ftag,&ttag,&dir, &dst_leg )==0){
+				if (match_dialog(dlg, &callid, &ftag, &ttag, &dir, &dst_leg, &src_leg) == 0) {
 					if (!accept_replicated_dlg) {
 						/* not an error when accepting replicating dialogs -
 						   we might have generated a different h_id when
@@ -1489,7 +1508,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			return;
 		/* TODO - try to use the RR dir detection to speed up here the
 		 * search -bogdan */
-		dlg = get_dlg(&callid, &ftag, &ttag, &dir, &dst_leg);
+		dlg = get_dlg(&callid, &ftag, &ttag, &dir, &dst_leg, &src_leg);
 		if (!dlg){
 			LM_DBG("Callid '%.*s' not found\n",
 				req->callid->body.len, req->callid->body.s);
@@ -1497,6 +1516,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		}
 	}
 
+	update_dialog_route(req, dlg, src_leg);
 	/* run state machine */
 	switch ( req->first_line.u.request.method_value ) {
 		case METHOD_PRACK:

@@ -85,7 +85,7 @@ static struct socket_info * fetch_socket_info(str *addr)
 int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 {
 	int h_entry;
-	unsigned int dir, dst_leg;
+	unsigned int dir, dst_leg, src_leg;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
 	str sock, vars, profiles;
@@ -101,7 +101,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 		bin_pop_str(&from_uri);
 		bin_pop_str(&to_uri);
 
-		dlg = get_dlg(&callid, &from_tag, &to_tag, &dir, &dst_leg);
+		dlg = get_dlg(&callid, &from_tag, &to_tag, &dir, &dst_leg, &src_leg);
 
 		h_entry = dlg_hash(&callid);
 		d_entry = &d_table->entries[h_entry];
@@ -280,7 +280,7 @@ int dlg_replicated_update(void)
 {
 	struct dlg_cell *dlg;
 	str call_id, from_tag, to_tag, from_uri, to_uri, vars, profiles;
-	unsigned int dir, dst_leg;
+	unsigned int dir, dst_leg, src_leg;
 	int timeout, h_entry;
 	str st;
 	struct dlg_entry *d_entry;
@@ -383,7 +383,7 @@ error:
 int dlg_replicated_delete(void)
 {
 	str call_id, from_tag, to_tag;
-	unsigned int dir, dst_leg;
+	unsigned int dir, dst_leg, src_leg;
 	struct dlg_cell *dlg;
 	int old_state, new_state, unref, ret;
 
@@ -393,7 +393,7 @@ int dlg_replicated_delete(void)
 
 	LM_DBG("Deleting dialog with callid: %.*s\n", call_id.len, call_id.s);
 
-	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
+	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg, &src_leg);
 	if (!dlg) {
 		LM_ERR("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
 			call_id.len, call_id.s, from_tag.len, from_tag.s);

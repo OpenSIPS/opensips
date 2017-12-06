@@ -196,8 +196,6 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].contact.s);
 			if (dlg->legs[i].route_set.s)
 				shm_free(dlg->legs[i].route_set.s);
-			if (dlg->legs[i].th_sent_contact.s)
-				shm_free(dlg->legs[i].th_sent_contact.s);
 			if (dlg->legs[i].from_uri.s)
 				shm_free(dlg->legs[i].from_uri.s);
 			if (dlg->legs[i].to_uri.s)
@@ -326,6 +324,28 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 }
 
 
+int dlg_update_leg_contact(struct dlg_leg *leg, str *contact) {
+	rr_t *head = NULL, *rrp;
+
+	if (contact->len) {
+		/* contact */
+		if (leg->contact.s != NULL) {
+			shm_free(leg->contact.s);
+		}
+		leg->contact.s = shm_malloc(contact->len);
+		if (leg->contact.s == NULL) {
+			LM_ERR("no more shm mem\n");
+			return -1;
+		}
+		leg->contact.len = contact->len;
+		memcpy(leg->contact.s, contact->s, contact->len);
+	}
+
+	return 0;
+}
+
+
+
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
@@ -370,38 +390,13 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		}
 	}
 
-	if (contact->len) {
-		/* contact */
-		leg->contact.s = shm_malloc(contact->len);
-		if (leg->contact.s==NULL) {
-			LM_ERR("no more shm mem\n");
-			goto error2;
-		}
-		leg->contact.len = contact->len;
-		memcpy( leg->contact.s, contact->s, contact->len);
-		/* rr */
-		if (rr->len) {
-			leg->route_set.s = shm_malloc(rr->len);
-			if (leg->route_set.s==NULL) {
-				LM_ERR("no more shm mem for rr set\n");
-				goto error_all;
-			}
-			leg->route_set.len = rr->len;
-			memcpy(leg->route_set.s, rr->s, rr->len);
-
-			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
-				LM_ERR("failed parsing route set\n");
-				goto error_all;
-			}
-			rrp = head;
-			leg->nr_uris = 0;
-			while (rrp) {
-				leg->route_uris[leg->nr_uris++] = rrp->nameaddr.uri;
-				rrp = rrp->next;
-			}
-			free_rr(&head);
-		}
+	if (dlg_update_leg_contact(leg, contact) == -1){
+		shm_free(leg->tag.s);
+		shm_free(leg->r_cseq.s);
+		shm_free(leg->contact.s);
+		return -1;
 	}
+
 
 	/* save mangled from URI, if any */
 	if (mangled_from && mangled_from->s && mangled_from->len) {
@@ -424,17 +419,6 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 
 		leg->to_uri.len = mangled_to->len;
 		memcpy(leg->to_uri.s,mangled_to->s,mangled_to->len);
-	}
-
-	if (sdp && sdp->s && sdp->len) {
-		leg->sdp.s = shm_malloc(sdp->len);
-		if (!leg->sdp.s) {
-			LM_ERR("no more shm\n");
-			goto error_all;
-		}
-
-		leg->sdp.len = sdp->len;
-		memcpy(leg->sdp.s,sdp->s,sdp->len);
 	}
 
 	/* tag */
@@ -640,7 +624,7 @@ not_found:
 /* defines a peer-to-peer SIP relationship between [two UAs] and is  */
 /* referred to as a dialog."*/
 struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
-									unsigned int *dir, unsigned int *dst_leg)
+									unsigned int *dir, unsigned int *dst_leg, unsigned int *src_leg)
 {
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
@@ -669,7 +653,7 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 			dlg->legs[DLG_CALLER_LEG].contact.len,
 				dlg->legs[DLG_CALLER_LEG].contact.len);
 #endif
-		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg)==1) {
+		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg, src_leg)==1) {
 			if (dlg->state==DLG_STATE_DELETED)
 				/* even if matched, skip the deleted dialogs as they may be
 				   a previous unsuccessfull attempt of established call

@@ -315,6 +315,9 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *sdp);
 
+int dlg_update_leg_contact(struct dlg_leg *leg, str *contact);
+
+
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
 						int field_type);
 
@@ -323,7 +326,7 @@ int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,str *rr, str *cont
 struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id);
 
 struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
-		unsigned int *dir, unsigned int *dst_leg);
+		unsigned int *dir, unsigned int *dst_leg, unsigned int *src_leg);
 
 struct dlg_cell* get_dlg_by_val(str *attr, str *val);
 
@@ -346,7 +349,7 @@ static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt
 }
 
 static inline int match_dialog(struct dlg_cell *dlg, str *callid,
-			str *ftag, str *ttag, unsigned int *dir, unsigned int *dst_leg) {
+			str *ftag, str *ttag, unsigned int *dir, unsigned int *dst_leg, unsigned int * src_leg) {
 	str *tag;
 	unsigned int i;
 
@@ -362,6 +365,7 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 		/* from tag = from tag matching */
 		*dir = DLG_DIR_DOWNSTREAM;
 		tag = ttag;
+		*src_leg = 0;
 	} else if (dlg->legs[DLG_CALLER_LEG].tag.len == ttag->len &&
 	strncmp(dlg->legs[DLG_CALLER_LEG].tag.s, ttag->s, ttag->len)==0 ) {
 		/* from tag = to tag matching */
@@ -379,6 +383,7 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 			if (dlg->legs[i].tag.len == tag->len &&
 			strncmp(dlg->legs[i].tag.s, tag->s, tag->len)==0 ) {
 				if (*dst_leg==-1) *dst_leg = i; /* destination is callee */
+				if (*src_leg==-1) *src_leg = i; /* source is callee */
 				return 1;
 			}
 		}
