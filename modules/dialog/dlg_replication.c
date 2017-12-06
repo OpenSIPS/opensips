@@ -295,7 +295,7 @@ int dlg_replicated_update(void)
 		call_id.len, call_id.s, from_tag.len, from_tag.s, to_tag.len, to_tag.s,
 		from_uri.len, from_uri.s, to_uri.len, to_uri.s);
 
-	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
+	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg, &src_leg);
 
 	h_entry = dlg_hash(&call_id);
 	d_entry = &d_table->entries[h_entry];
