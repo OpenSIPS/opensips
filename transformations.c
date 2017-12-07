@@ -1771,7 +1771,16 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			break;
 		case TR_IP_RESOLVE:
 			val->flags = PV_VAL_STR;
-			server = resolvehost(val->rs.s,0);
+			buffer = pkg_malloc(val->rs.len + 1);
+			if (!buffer) {
+				LM_ERR("out of pkg memory!\n");
+				val->flags = PV_VAL_NULL;
+				return -1;
+			}
+			memcpy(buffer, val->rs.s, val->rs.len);
+			buffer[val->rs.len] = '\0';
+			server = resolvehost(buffer, 0);
+			pkg_free(buffer);
 			if (!server || !server->h_addr)
 			{
 				val->flags = PV_VAL_NULL;
