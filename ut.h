@@ -610,11 +610,12 @@ static inline char *shm_strdup(const char *str)
 	if (!str)
 		return NULL;
 
-	len = strlen(str) + 1;
-	rval = shm_malloc(len);
+	len = strlen(str);
+	rval = shm_malloc(len + 1);
 	if (!rval)
 		return NULL;
 	memcpy(rval, str, len);
+	rval[len] = '\0';
 	return rval;
 }
 
@@ -662,11 +663,12 @@ static inline char *pkg_strdup(const char *str)
 	if (!str)
 		return NULL;
 
-	len = strlen(str) + 1;
-	rval = pkg_malloc(len);
+	len = strlen(str);
+	rval = pkg_malloc(len + 1);
 	if (!rval)
 		return NULL;
 	memcpy(rval, str, len);
+	rval[len] = '\0';
 	return rval;
 }
 
