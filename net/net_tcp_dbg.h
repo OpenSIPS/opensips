@@ -21,12 +21,16 @@
 #ifndef __NET_TCP_DBG__
 #define __NET_TCP_DBG__
 
-#if !defined(DBG_TCPCON) && defined(DBG_STRUCT_HIST)
-#undef DBG_STRUCT_HIST
-#include "../lib/dbg/struct_hist.h"
-#define DBG_STRUCT_HIST
+#if defined(DBG_TCPCON) && !defined(DBG_STRUCT_HIST)
+#	warning "DBG_TCPCON is useless without DBG_STRUCT_HIST"
+#	undef DBG_TCPCON
+#	include "../lib/dbg/struct_hist.h"
+#elif !defined(DBG_TCPCON) && defined(DBG_STRUCT_HIST)
+#	undef DBG_STRUCT_HIST
+#	include "../lib/dbg/struct_hist.h"
+#	define DBG_STRUCT_HIST
 #else
-#include "../lib/dbg/struct_hist.h"
+#	include "../lib/dbg/struct_hist.h"
 #endif
 
 #endif /* __NET_TCP_DBG__ */
