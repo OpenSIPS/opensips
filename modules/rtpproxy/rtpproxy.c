@@ -2248,10 +2248,16 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		/* Drain input buffer */
 		while ((poll(fds, 1, 0) == 1) &&
 		    ((fds[0].revents & POLLIN) != 0)) {
-			if (recv(rtpp_socks[node->idx], buf, sizeof(buf) - 1, 0) < 0 &&
-					errno != EINTR)
-				LM_ERR("error while draining rtpproxy %d!\n", errno);
+			if (fds[0].revents & (POLLERR|POLLNVAL)) {
+				LM_ERR("error on rtpproxy socket %d!\n", rtpp_socks[node->idx]);
+				break;
+			}
 			fds[0].revents = 0;
+			if (recv(rtpp_socks[node->idx], buf, sizeof(buf) - 1, 0) < 0 &&
+					errno != EINTR) {
+				LM_ERR("error while draining rtpproxy %d!\n", errno);
+				break;
+			}
 		}
 		v[0].iov_base = gencookie();
 		v[0].iov_len = strlen(v[0].iov_base);
