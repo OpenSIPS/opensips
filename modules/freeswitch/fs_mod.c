@@ -33,17 +33,23 @@
 #include "../../lib/osips_malloc.h"
 #include "../../lib/csv.h"
 #include "../../lib/url.h"
+#include "../../lib/list.h"
 
 #include "fs_api.h"
 #include "fs_proc.h"
 
-extern struct list_head *fs_boxes;
-extern rw_lock_t *box_lock;
+extern struct list_head *fs_sockets;
+extern struct list_head *fs_sockets_down;
+extern struct list_head *fs_sockets_esl;
+extern rw_lock_t *sockets_lock;
+extern rw_lock_t *sockets_down_lock;
+extern rw_lock_t *sockets_esl_lock;
 
 /* this correlates with FreeSWITCH's "event-heartbeat-interval" param,
  * located in autoload_configs/switch.conf.xml. The default there is 20s,
  * but we're using a more granular default, just to be on the safe side */
-int event_heartbeat_interval = 1;
+unsigned int event_heartbeat_interval = 1; /* s */
+unsigned int fs_connect_timeout = 5000; /* ms */
 
 static int mod_init(void);
 
@@ -56,13 +62,14 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t mod_params[] = {
-	{"event_heartbeat_interval", INT_PARAM, &event_heartbeat_interval},
-	{"fs_subscribe",      STR_PARAM|USE_FUNC_PARAM, modparam_sub_evs },
+	{"event_heartbeat_interval", INT_PARAM,         &event_heartbeat_interval},
+	{"esl_connect_timeout",      INT_PARAM,               &fs_connect_timeout},
+	{"fs_subscribe",             STR_PARAM|USE_FUNC_PARAM,   modparam_sub_evs},
 	{0, 0, 0}
 };
 
 static proc_export_t procs[] = {
-	{ "fs_stats", NULL, NULL, fs_stats_loop, 1, 0 },
+	{ "fs_stats", NULL, NULL, fs_conn_mgr_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
@@ -100,20 +107,26 @@ static int mod_init(void)
 {
 	cJSON_Hooks hooks;
 
-	fs_boxes = shm_malloc(sizeof *fs_boxes);
-	if (!fs_boxes) {
-		LM_ERR("out of mem\n");
+	fs_sockets = shm_malloc(3 * sizeof *fs_sockets);
+	if (!fs_sockets) {
+		LM_ERR("oom\n");
 		return -1;
 	}
-	INIT_LIST_HEAD(fs_boxes);
+	INIT_LIST_HEAD(fs_sockets);
 
-	box_lock = shm_malloc(sizeof *box_lock);
-	if (!box_lock) {
-		LM_ERR("out of mem\n");
+	fs_sockets_down = fs_sockets + 1;
+	INIT_LIST_HEAD(fs_sockets_down);
+
+	fs_sockets_esl = fs_sockets + 2;
+	INIT_LIST_HEAD(fs_sockets_esl);
+
+	sockets_lock = lock_init_rw();
+	sockets_down_lock = lock_init_rw();
+	sockets_esl_lock = lock_init_rw();
+	if (!sockets_lock || !sockets_down_lock || !sockets_esl_lock) {
+		LM_ERR("oom\n");
 		return -1;
 	}
-
-	box_lock = lock_init_rw();
 
 	hooks.malloc_fn = osips_pkg_malloc;
 	hooks.free_fn = osips_pkg_free;

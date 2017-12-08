@@ -27,6 +27,6 @@
 #ifndef __FREESWITCH_PROC__
 #define __FREESWITCH_PROC__
 
-void fs_stats_loop(int proc_no);
+void fs_conn_mgr_loop(int proc_no);
 
 #endif /* __FREESWITCH_PROC__ */

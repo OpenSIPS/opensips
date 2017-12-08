@@ -40,18 +40,15 @@
 
 #define FS_DEFAULT_EVS_PORT 8021
 
-enum fs_evs_types {
-	FS_GW_STATS,
-};
-
 typedef struct _fs_evs fs_evs;
 typedef struct _fs_stats fs_stats;
 
-typedef struct _fs_mod_ref {
-	str tag;
-
-	struct list_head list;
-} fs_mod_ref;
+/*
+ * WARNING: do _not_ call any FS API functions during the callback
+ *   (this will very likely run into a deadlock)
+ */
+typedef void (*fs_event_cb_f) (const fs_evs *sock, const str *ev_name,
+                               const cJSON *ev_body);
 
 /* statistics contained within a FreeSWITCH instance */
 struct _fs_stats {
@@ -62,8 +59,47 @@ struct _fs_stats {
 	int valid; /* FS stats are invalid until the first heartbeat */
 };
 
+struct fs_event_subscription {
+	str tag;
+	fs_event_cb_f func;
+	int ref;
+
+	struct list_head list;
+};
+
+struct fs_event {
+	str event_name;
+	int refsum; /* multiple subs from multiple modules */
+	struct list_head subscriptions; /* different modules subbed for an event */
+	struct list_head list;
+};
+
+enum esl_cmd_types {
+	ESL_EVENT_SUB,
+	ESL_EVENT_UNSUB,
+	ESL_CMD,
+};
+#define is_event_cmd(cmd) (cmd == ESL_EVENT_SUB || cmd == ESL_EVENT_UNSUB)
+
+struct esl_cmd {
+	enum esl_cmd_types type;
+	str text; /* event name or full body of the fs_cli cmd */
+	str tag;
+	int count; /* multiple of these may accumulate before getting consumed */
+	unsigned long cli_reply_id;
+	fs_event_cb_f func;
+
+	struct list_head list;
+};
+
+struct fs_cli_reply {
+	char *text;
+	unsigned long cli_reply_id;
+
+	struct list_head list;
+};
+
 struct _fs_evs {
-	enum fs_evs_types type;
 	str user;
 	str pass;
 	str host; /* host->s is NULL-terminated */
@@ -76,22 +112,34 @@ struct _fs_evs {
 
 	int ref;
 
-	struct list_head list;     /* distinct FS boxes */
-	struct list_head modules;  /* distinct modules referencing the same box */
+	rw_lock_t *lists_lk;         /* protects all three internal lists */
+
+	unsigned long cli_reply_id;  /* ID/counter for each FS cli send/recv */
+	struct list_head cli_replies;
+
+	struct list_head events;     /* events we're successfully subscribed to */
+	struct list_head esl_cmds;   /* pending ESL commands: sub / unsub / cli */
+
+	/* a socket may concurrently be part of up to three lists! */
+	struct list_head list;           /* "fs_sockets" - all FS sockets */
+	struct list_head reconnect_list; /* "fs_sockets_down" - new/failed conns */
+	struct list_head esl_cmd_list;   /* "fs_sockets_esl" - pending ESL cmds */
 };
 
-typedef void (*fs_event_cb_f) (const fs_evs *sock, const str *ev_name,
-                               const cJSON *ev_body);
+typedef fs_evs* (*get_evs_f) (const str *host, unsigned short port,
+                              const str *user, const str *pass);
+typedef fs_evs* (*get_evs_by_url_f) (const str *fs_url);
+typedef fs_evs* (*get_stats_evs_f) (str *fs_url, str *tag);
 
-typedef fs_evs* (*get_evs_f) (const str *evs_str);
-typedef int (*evs_sub_f) (fs_evs *evs, const str *tag,
+typedef int (*evs_sub_f) (fs_evs *sock, const str *tag,
                           const struct str_list *events, fs_event_cb_f ev_cb);
-typedef void (*evs_unsub_f) (fs_evs *evs, const str *tag,
+typedef void (*evs_unsub_f) (fs_evs *sock, const str *tag,
                              const struct str_list *events);
-typedef void (*put_evs_f) (fs_evs *evs);
 
-typedef fs_evs* (*get_stats_evs_f) (str *evs_str, str *tag);
-typedef int (*put_stats_evs_f) (fs_evs *evs, str *tag);
+typedef void (*put_evs_f) (fs_evs *sock);
+typedef void (*put_stats_evs_f) (fs_evs *sock, str *tag);
+
+typedef int (*fs_cli_f) (fs_evs *sock, const str *fs_cmd, str *reply);
 
 struct fs_binds {
 	/*
@@ -102,20 +150,23 @@ struct fs_binds {
 
 	/*
 	 * Obtain a FreeSWITCH event socket corresponding to the given FreeSWITCH
-	 * URL and increment its ref count. FreeSWITCH URLs are of the form:
+	 * host:port interface or URL and increment its ref count.
+	 * FreeSWITCH URLs are of the form:
 	 *
-	 *   [fs://][[username]:password@]host[:port][;EVENT1[,EVENT2[,.. ]]]
+	 *   [fs://][[username]:password@]host[:port][?EVENT1[,EVENT2[,.. ]]]
 	 *
 	 * NOTE: get_evs() must be paired up with an eventual put_evs()
 	 *
 	 * Return: required socket or NULL on internal error
 	 */
 	get_evs_f get_evs;
+	get_evs_by_url_f get_evs_by_url;
 
 	/*
 	 * Expands the set of events for FreeSWITCH instance "sock" that the
-	 * current "tag" is subscribed to with the "events" list. The current
-	 * event callback function for "sock" and "tag" is updated with "ev_cb".
+	 * current "tag" is subscribed to with the "events" list of arbitrary
+	 * strings. The current event callback function for "sock" and "tag" is
+	 * updated with "ev_cb".
 	 *
 	 * NOTE: Each event subscription is reference-counted! For each event sub,
 	 * you must eventually call unsub. This helps during reloads.
@@ -155,24 +206,39 @@ struct fs_binds {
 	put_evs_f put_evs;
 
 	/*
-	 * Obtain a FreeSWITCH statistics event socket. The relevant statistics
-	 * can be found under "evs->stats", and calling code can expect them to be
-	 * updated at most every "api->stats_update_interval" seconds
+	 * Obtain a FreeSWITCH statistics event socket corresponding to the given
+	 * FreeSWITCH URL and increment its ref count. URLs are of the form:
+	 *
+	 *   [fs://][[username]:password@]host[:port][?EVENT1[,EVENT2[,.. ]]]
+	 *
+	 * The relevant statistics can be found under "evs->stats", and calling
+	 * code can expect them to be updated at most every
+	 * "api->stats_update_interval" seconds
 	 *
 	 * NOTE 1: always grab "evs->stats_lk" before reading the stats,
 	 * otherwise you may read partially updated / corrupt data!
 	 *
 	 * NOTE 2: each get() must be paired up with an eventual put()
 	 *          (e.g., put() makes sense during a reload or shutdown)
+	 *
+	 * Return: required socket or NULL on internal error
 	 */
 	get_stats_evs_f get_stats_evs;
 
 	/*
 	 * Return a FreeSWITCH statistics event socket.
-	 *
-	 * Return: 0 on success, < 0 on failure
 	 */
 	put_stats_evs_f put_stats_evs;
+
+	/*
+	 * Run an arbitrary FreeSWITCH CLI command on the given "sock" socket.
+	 * Blocks until an answer from FreeSWITCH arrives.
+	 *
+	 * Return:
+	 *	0 on success. "*reply" contains a SHM string which must be freed
+	 *	-1 on failure. "*reply" is zeroized
+	 */
+	fs_cli_f fs_cli;
 };
 
 static inline int is_fs_url(str *in)
