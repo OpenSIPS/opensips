@@ -352,9 +352,15 @@ int tcp_worker_proc_reactor_init( int unix_sock)
 	}
 
 	/* init: start watching for the IPC jobs */
-	if (reactor_add_reader( IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC,NULL)<0){
+	if (reactor_add_reader(IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
 		LM_CRIT("failed to add IPC pipe to reactor\n");
 		goto error;
+	}
+
+	/* init: start watching for IPC "dispatched" jobs */
+	if (reactor_add_reader(IPC_FD_READ_SHARED, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
+		LM_CRIT("failed to add IPC shared pipe to reactor\n");
+		return -1;
 	}
 
 	/* add the unix socket */

@@ -108,6 +108,7 @@
 #include "mem/shm_mem.h"
 #include "sr_module.h"
 #include "timer.h"
+#include "ipc.h"
 #include "parser/msg_parser.h"
 #include "ip_addr.h"
 #include "resolve.h"
@@ -1173,6 +1174,12 @@ try_again:
 	/* init timer */
 	if (init_timer()<0){
 		LM_CRIT("could not initialize timer, exiting...\n");
+		goto error;
+	}
+
+	/* init IPC */
+	if (init_ipc()<0){
+		LM_CRIT("could not initialize IPC support, exiting...\n");
 		goto error;
 	}
 
