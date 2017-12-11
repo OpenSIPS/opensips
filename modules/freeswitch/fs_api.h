@@ -248,8 +248,10 @@ static inline int is_fs_url(str *in)
 	        ? 0 : 1;
 }
 
-typedef int (*bind_fs_t)(struct fs_binds *fsb);
-static inline int load_fs_api(struct fs_binds *fsb)
+typedef int (*bind_fs_t)(struct fs_binds *fapi);
+int fs_bind(struct fs_binds *fapi);
+
+static inline int load_fs_api(struct fs_binds *fapi)
 {
 	bind_fs_t bind_fs;
 
@@ -259,7 +261,7 @@ static inline int load_fs_api(struct fs_binds *fsb)
 		return -1;
 	}
 
-	if (bind_fs(fsb) < 0)
+	if (bind_fs(fapi) < 0)
 		return -1;
 
 	return 0;

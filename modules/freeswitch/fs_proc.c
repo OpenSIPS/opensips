@@ -30,6 +30,7 @@
 #include "../../reactor.h"
 #include "../../timer.h"
 #include "../../ut.h"
+#include "../../ipc.h"
 
 #include "esl/src/include/esl.h"
 
@@ -223,6 +224,9 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			}
 
 			break;
+		case F_IPC:
+			ipc_handle_job();
+			break;
 		default:
 			LM_CRIT("unknown fd type %d in FreeSWITCH worker\n", fm->type);
 			return 0;
@@ -376,8 +380,13 @@ void fs_conn_mgr_loop(int proc_no)
 
 	LM_DBG("size: %d, method: %d\n", reactor_size, io_poll_method);
 
-	if (init_worker_reactor("FS Stats", RCT_PRIO_MAX) != 0) {
-		LM_BUG("failed to init reactor");
+	if (init_worker_reactor("FS Manager", RCT_PRIO_MAX) != 0) {
+		LM_BUG("failed to init FS reactor");
+		abort();
+	}
+
+	if (reactor_add_reader(IPC_FD_READ_SHARED, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
+		LM_CRIT("failed to add IPC shared pipe to FS reactor\n");
 		abort();
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Client for the FreeSWITCH ESL (Event Socket Layer)
+ * Driver and API to command and control FreeSWITCH ESL connections
  *
  * Copyright (C) 2017 OpenSIPS Solutions
  *
@@ -17,11 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2017-01-19 initial version (liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
 #include "../../sr_module.h"
@@ -37,6 +33,7 @@
 
 #include "fs_api.h"
 #include "fs_proc.h"
+#include "fs_ipc.h"
 
 extern struct list_head *fs_sockets;
 extern struct list_head *fs_sockets_down;
@@ -53,9 +50,6 @@ unsigned int fs_connect_timeout = 5000; /* ms */
 
 static int mod_init(void);
 
-int fs_bind(struct fs_binds *fapi);
-int modparam_sub_evs(modparam_t type, void *string);
-
 static cmd_export_t cmds[] = {
 	{ "fs_bind", (cmd_function)fs_bind, 1, NULL, NULL, 0 },
 	{ NULL, NULL, 0, NULL, NULL, 0 }
@@ -64,7 +58,6 @@ static cmd_export_t cmds[] = {
 static param_export_t mod_params[] = {
 	{"event_heartbeat_interval", INT_PARAM,         &event_heartbeat_interval},
 	{"esl_connect_timeout",      INT_PARAM,               &fs_connect_timeout},
-	{"fs_subscribe",             STR_PARAM|USE_FUNC_PARAM,   modparam_sub_evs},
 	{0, 0, 0}
 };
 
@@ -107,6 +100,11 @@ static int mod_init(void)
 {
 	cJSON_Hooks hooks;
 
+	if (fs_ipc_init() != 0) {
+		LM_ERR("failed to init IPC\n");
+		return -1;
+	}
+
 	fs_sockets = shm_malloc(3 * sizeof *fs_sockets);
 	if (!fs_sockets) {
 		LM_ERR("oom\n");
@@ -131,22 +129,6 @@ static int mod_init(void)
 	hooks.malloc_fn = osips_pkg_malloc;
 	hooks.free_fn = osips_pkg_free;
 	cJSON_InitHooks(&hooks);
-
-	return 0;
-}
-
-int modparam_sub_evs(modparam_t type, void *string)
-{
-	struct url *url;
-	str st = {string, strlen(string)};
-
-	url = parse_url(&st, URL_REQ_SCHEME|URL_REQ_PASS, 0);
-	if (!url) {
-		LM_ERR("failed to parse FS URL '%.*s'\n", st.len, st.s);
-		return 0;
-	}
-
-	print_url(url);
 
 	return 0;
 }
