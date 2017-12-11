@@ -25,10 +25,16 @@
 
 #include "str.h"
 #include "lib/osips_malloc.h"
+#include "lib/list.h"
 
 struct str_list {
 	str s;
 	struct str_list *next;
+};
+
+struct str_dlist {
+	str s;
+	struct list_head list;
 };
 
 static inline void _free_str_list(struct str_list *list,
@@ -53,5 +59,27 @@ static inline void _free_str_list(struct str_list *list,
 
 #define free_shm_str_list(list) \
 	_free_str_list(list, osips_shm_free, osips_shm_free)
+
+static inline void _free_str_dlist(struct list_head *dlist,
+                        osips_free_t free_item, osips_free_t free_str)
+{
+	struct list_head *_, *__;
+	struct str_dlist *item;
+
+	list_for_each_safe(_, __, dlist) {
+		item = list_entry(_, struct str_dlist, list);
+		if (free_str)
+			free_str(item->s.s);
+
+		if (free_item)
+			free_item(item);
+	}
+}
+
+#define free_pkg_str_dlist(list) \
+	_free_str_dlist(list, osips_pkg_free, osips_pkg_free)
+
+#define free_shm_str_dlist(list) \
+	_free_str_dlist(list, osips_shm_free, osips_shm_free)
 
 #endif /* __STR_LIST__ */
