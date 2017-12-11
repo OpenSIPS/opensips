@@ -44,13 +44,14 @@
  *   - "parameter" support is included
  *	 - a parameter may or may not have a value
  *
- * Returned structure:
+ * Returned structure (allocated in pkg):
  *   - if a "part" is mandatory (i.e. flag is set) and the function returns
  *     a non-NULL value, its value will _not_ be empty (part.len > 0)
  *     (this includes: scheme, group, user, password, host, database, >1 param)
  *   - if a "port" is not present, its value will be zero
  *   - if a "param" has no value (i.e. "foo,bar"), params.val == {NULL, 0}
  *   - if a "param" has empty value (i.e. "foo=,bar"), params.val == {0x7b*, 0}
+ *	 >>> remember to call free_url() afterwards
  */
 
 enum url_parse_flags {

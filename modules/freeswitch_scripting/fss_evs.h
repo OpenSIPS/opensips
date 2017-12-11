@@ -26,5 +26,8 @@
 #include "../freeswitch/fs_api.h"
 
 extern struct fs_binds fs_api;
+extern struct list_head *fss_sockets;
+
+int subscribe_to_fs_urls(const struct list_head *urls);
 
 #endif /* __FSS_EVS__ */

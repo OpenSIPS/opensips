@@ -61,7 +61,6 @@ struct _fs_stats {
 
 struct fs_event_subscription {
 	str tag;
-	fs_event_cb_f func;
 	int ref;
 
 	struct list_head list;
@@ -87,7 +86,6 @@ struct esl_cmd {
 	str tag;
 	int count; /* multiple of these may accumulate before getting consumed */
 	unsigned long cli_reply_id;
-	fs_event_cb_f func;
 
 	struct list_head list;
 };
@@ -132,7 +130,7 @@ typedef fs_evs* (*get_evs_by_url_f) (const str *fs_url);
 typedef fs_evs* (*get_stats_evs_f) (str *fs_url, str *tag);
 
 typedef int (*evs_sub_f) (fs_evs *sock, const str *tag,
-                          const struct str_list *events, fs_event_cb_f ev_cb);
+                          const struct str_list *events);
 typedef void (*evs_unsub_f) (fs_evs *sock, const str *tag,
                              const struct str_list *events);
 
@@ -165,8 +163,7 @@ struct fs_binds {
 	/*
 	 * Expands the set of events for FreeSWITCH instance "sock" that the
 	 * current "tag" is subscribed to with the "events" list of arbitrary
-	 * strings. The current event callback function for "sock" and "tag" is
-	 * updated with "ev_cb".
+	 * strings.
 	 *
 	 * NOTE: Each event subscription is reference-counted! For each event sub,
 	 * you must eventually call unsub. This helps during reloads.

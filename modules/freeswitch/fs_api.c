@@ -48,10 +48,10 @@ rw_lock_t *sockets_lock;
  *	fs_sockets ⊇ fs_sockets_down (sockets which require a (re)connect)
  *	fs_sockets ⊇ fs_sockets_esl (sockets which have pending sub/unsub/cli cmds)
  */
-static struct list_head *fs_sockets_down;
+struct list_head *fs_sockets_down;
 rw_lock_t *sockets_down_lock;
 
-static struct list_head *fs_sockets_esl;
+struct list_head *fs_sockets_esl;
 rw_lock_t *sockets_esl_lock;
 
 /* mem reusage - unique string tags and events accumulated so far */
@@ -278,11 +278,11 @@ static fs_evs *get_evs_by_url(const str *_fs_url)
 	}
 
 	sock = get_evs(&fs_url->hosts->host, fs_url->hosts->port,
-	              &fs_url->username, &fs_url->password );
+	               &fs_url->username, &fs_url->password);
 
 	if (!sock) {
 		if (!fs_url->password.s)
-			LM_ERR("FS socket '%.*s' not found and password not provided!\n",
+			LM_ERR("refusing to connect to FS '%.*s' without a password!\n",
 			       _fs_url->len, _fs_url->s);
 		else
 			LM_ERR("internal error - oom?\n");
@@ -333,8 +333,7 @@ int dup_common_tag(const str *tag, str *out)
 	return 0;
 }
 
-int add_event_subscription(struct fs_event *fs_ev, const str *tag,
-                           fs_event_cb_f func)
+int add_event_subscription(struct fs_event *fs_ev, const str *tag)
 {
 	struct fs_event_subscription *fs_sub;
 
@@ -352,7 +351,6 @@ int add_event_subscription(struct fs_event *fs_ev, const str *tag,
 	}
 
 	fs_sub->ref = 1;
-	fs_sub->func = func;
 
 	list_add_tail(&fs_sub->list, &fs_ev->subscriptions);
 	return 0;
@@ -387,7 +385,7 @@ int del_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
 }
 
 struct esl_cmd *esl_cmd_init(enum esl_cmd_types type, const str *text,
-                             const str *tag, fs_event_cb_f func)
+                             const str *tag)
 {
 	struct esl_cmd *cmd;
 
@@ -399,7 +397,6 @@ struct esl_cmd *esl_cmd_init(enum esl_cmd_types type, const str *text,
 	memset(cmd, 0, sizeof *cmd);
 
 	cmd->type = type;
-	cmd->func = func;
 	cmd->count = 1;
 
 	if (dup_common_tag(tag, &cmd->tag) != 0)
@@ -422,7 +419,7 @@ out_err:
 }
 
 int add_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
-                        const str *tag, fs_event_cb_f func)
+                        const str *tag)
 {
 	struct list_head *_, *__;
 	struct esl_cmd *cmd;
@@ -439,7 +436,7 @@ int add_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
 		}
 	}
 
-	cmd = esl_cmd_init(type, text, tag, func);
+	cmd = esl_cmd_init(type, text, tag);
 	if (!cmd) {
 		LM_ERR("failed to init esl_cmd\n");
 		return -1;
@@ -450,8 +447,7 @@ int add_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
 	return 0;
 }
 
-int evs_sub(fs_evs *sock, const str *tag, const struct str_list *event,
-            fs_event_cb_f func)
+int evs_sub(fs_evs *sock, const str *tag, const struct str_list *event)
 {
 	struct list_head *_, *__;
 	struct fs_event *fs_ev;
@@ -478,14 +474,13 @@ int evs_sub(fs_evs *sock, const str *tag, const struct str_list *event,
 					fs_sub = list_entry(__, struct fs_event_subscription,list);
 					if (str_strcmp(&fs_sub->tag, tag) == 0) {
 						fs_sub->ref++;
-						fs_sub->func = func;
 						sub_found = 1;
 						break;
 					}
 				}
 
 				if (!sub_found) {
-				    if (add_event_subscription(fs_ev, tag, func) != 0) {
+				    if (add_event_subscription(fs_ev, tag) != 0) {
 						ret = -1;
 					} else {
 						/* there is a pending unsub command we must delete! */
@@ -504,7 +499,7 @@ int evs_sub(fs_evs *sock, const str *tag, const struct str_list *event,
 		/* lazy subscribe for this event */
 		if (!event_found) {
 			if (add_pending_esl_cmd(sock,
-			            ESL_EVENT_SUB, &event->s, tag, func) != 0)
+			            ESL_EVENT_SUB, &event->s, tag) != 0)
 				ret = -1;
 		} else if (undo_unsub) {
 			if (del_pending_esl_cmd(sock, ESL_EVENT_UNSUB, &event->s, tag))
@@ -584,7 +579,7 @@ void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *event)
 				       event->s.len, event->s.s);
 		} else if (must_unsub) {
 			if (add_pending_esl_cmd(sock,
-			                ESL_EVENT_UNSUB, &event->s, tag, NULL) == 0)
+			                ESL_EVENT_UNSUB, &event->s, tag) == 0)
 				LM_DBG("%.*s: queued ESL %.*s UNSUB for %.*s\n",
 				       tag->len, tag->s, sock->host.len, sock->host.s,
 				       event->s.len, event->s.s);
@@ -651,7 +646,7 @@ fs_evs *get_stats_evs(str *fs_url, str *tag)
 		return NULL;
 	}
 
-	if (evs_sub(sock, tag, &ev_list, NULL) != 0) {
+	if (evs_sub(sock, tag, &ev_list) != 0) {
 		LM_ERR("failed to subscribe for stats on %s:%d\n",
 		       sock->host.s, sock->port);
 		put_evs(sock);

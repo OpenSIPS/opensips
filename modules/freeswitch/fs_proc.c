@@ -128,7 +128,7 @@ int fs_raise_event(fs_evs *sock, const char *ev_name, const cJSON *ev_body)
 {
 	struct list_head *_, *__;
 	struct fs_event *fs_ev;
-	struct fs_event_subscription *fs_sub;
+	//struct fs_event_subscription *fs_sub;
 	str _ev_name = {(char *)ev_name, strlen(ev_name)};
 
 	lock_start_read(sock->lists_lk);
@@ -137,7 +137,7 @@ int fs_raise_event(fs_evs *sock, const char *ev_name, const cJSON *ev_body)
 		fs_ev = list_entry(_, struct fs_event, list);
 		if (str_strcmp(&fs_ev->event_name, &_ev_name) == 0) {
 			list_for_each(__, &fs_ev->subscriptions) {
-				fs_sub = list_entry(__, struct fs_event_subscription, list);
+				//fs_sub = list_entry(__, struct fs_event_subscription, list);
 				//TODO: upgrade IPC support and submit a func() job
 				//fs_sub->func(sock,
 			}

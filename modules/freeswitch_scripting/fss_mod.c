@@ -24,6 +24,7 @@
 #include "../../str.h"
 #include "../../lib/url.h"
 #include "../../ipc.h"
+#include "../../ut.h"
 
 #include "fss_api.h"
 #include "fss_ipc.h"
@@ -32,7 +33,7 @@
 static int mod_init(void);
 
 static int fs_cli(struct sip_msg *msg, char *cmd, char *url);
-static int modparam_sub_evs(modparam_t type, void *string);
+static int fs_sub_add_url(modparam_t type, void *string);
 
 struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *param);
 struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *param);
@@ -45,7 +46,7 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t mod_params[] = {
-	{ "fs_subscribe",           STR_PARAM|USE_FUNC_PARAM,   modparam_sub_evs },
+	{ "fs_subscribe",           STR_PARAM|USE_FUNC_PARAM,   fs_sub_add_url },
 	{ 0, 0, 0 }
 };
 
@@ -86,6 +87,32 @@ struct module_exports exports= {
 	NULL              /* per-child init function */
 };
 
+struct list_head startup_fs_subs;
+static int fs_sub_add_url(modparam_t type, void *string)
+{
+	struct str_dlist *strl;
+	str url = {string, strlen(string)};
+
+	if (!startup_fs_subs.next)
+		INIT_LIST_HEAD(&startup_fs_subs);
+
+	strl = shm_malloc(sizeof *strl);
+	if (!strl) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(strl, 0, sizeof *strl);
+
+	if (shm_str_dup(&strl->s, &url) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	list_add_tail(&strl->list, &startup_fs_subs);
+
+	return 0;
+}
+
 static int mod_init(void)
 {
 	if (fss_ipc_init() != 0) {
@@ -93,26 +120,22 @@ static int mod_init(void)
 		return -1;
 	}
 
+	fss_sockets = shm_malloc(sizeof *fss_sockets);
+	if (!fss_sockets) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	INIT_LIST_HEAD(fss_sockets);
+
 	if (load_fs_api(&fs_api) != 0) {
 		LM_ERR("failed to load the FreeSWITCH API - is freeswitch loaded?\n");
 		return -1;
 	}
 
-	return 0;
-}
+	if (subscribe_to_fs_urls(&startup_fs_subs) != 0)
+		LM_ERR("ignored one or more broken FS URL modparams (or oom!)\n");
 
-static int modparam_sub_evs(modparam_t type, void *string)
-{
-	struct url *url;
-	str st = {string, strlen(string)};
-
-	url = parse_url(&st, URL_REQ_SCHEME|URL_REQ_PASS, 0);
-	if (!url) {
-		LM_ERR("failed to parse FS URL '%.*s'\n", st.len, st.s);
-		return 0;
-	}
-
-	print_url(url);
+	free_shm_str_dlist(&startup_fs_subs);
 
 	return 0;
 }
