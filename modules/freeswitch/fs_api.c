@@ -675,6 +675,8 @@ void put_stats_evs(fs_evs *sock, str *tag)
 
 int fs_cli(fs_evs *sock, const str *fs_cmd, str *reply)
 {
+	LM_DBG("TODO!\n");
+	memset(reply, 0, sizeof *reply);
 	/* the "fs_cli" API command may be called by the FS worker, during
 	 * an event raise, */
 	/*

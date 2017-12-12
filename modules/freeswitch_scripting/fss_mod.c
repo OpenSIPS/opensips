@@ -25,14 +25,18 @@
 #include "../../lib/url.h"
 #include "../../ipc.h"
 #include "../../ut.h"
+#include "../../mod_fix.h"
 
+#include "../freeswitch/fs_api.h"
 #include "fss_api.h"
 #include "fss_ipc.h"
 #include "fss_evs.h"
 
 static int mod_init(void);
 
-static int fs_cli(struct sip_msg *msg, char *cmd, char *url);
+static int fs_cli(struct sip_msg *msg, char *cmd, char *url, char *out_pv);
+static int fixup_fs_cli(void **param, int param_no);
+
 static int fs_sub_add_url(modparam_t type, void *string);
 
 struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *param);
@@ -40,8 +44,9 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *param);
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param);
 
 static cmd_export_t cmds[] = {
-	{ "fss_bind", (cmd_function)fss_bind, 1, NULL, NULL,          0 },
-	{ "fs_cli", (cmd_function)fs_cli,     2, NULL, NULL, ALL_ROUTES },
+	{ "fss_bind", (cmd_function)fss_bind, 1, NULL,            NULL,          0 },
+	{ "fs_cli", (cmd_function)fs_cli,     2, fixup_fs_cli, NULL, ALL_ROUTES },
+	{ "fs_cli", (cmd_function)fs_cli,     3, fixup_fs_cli, NULL, ALL_ROUTES },
 	{ NULL, NULL, 0, NULL, NULL, 0 }
 };
 
@@ -87,6 +92,7 @@ struct module_exports exports= {
 	NULL              /* per-child init function */
 };
 
+/* temporarily dup the URL modparams in shm until mod_init() runs */
 struct list_head startup_fs_subs;
 static int fs_sub_add_url(modparam_t type, void *string)
 {
@@ -140,9 +146,69 @@ static int mod_init(void)
 	return 0;
 }
 
-static int fs_cli(struct sip_msg *msg, char *cmd, char *url)
+static int fixup_fs_cli(void **param, int param_no)
 {
-	return 0;
+	switch (param_no) {
+	case 1:
+	case 2:
+		return fixup_spve(param);
+	case 3:
+		return fixup_pvar(param);
+	default:
+		LM_BUG("fs_cli() called with > 3 params!\n");
+		return -1;
+	}
+}
+
+static int fs_cli(struct sip_msg *msg, char *cmd_gp, char *url_gp,
+                  char *reply_pvs)
+{
+	fs_evs *sock;
+	pv_value_t reply_val;
+	str url, cmd, reply;
+	int ret = 0;
+
+	if (fixup_get_svalue(msg, (gparam_p)cmd_gp, &cmd) != 0) {
+		LM_ERR("failed to print cmd parameter!\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)url_gp, &url) != 0) {
+		LM_ERR("failed to print url parameter!\n");
+		return -1;
+	}
+
+	sock = fs_api.get_evs_by_url(&url);
+	if (!sock) {
+		LM_ERR("failed to get a socket for FS URL %.*s\n", url.len, url.s);
+		return -1;
+	}
+
+	LM_DBG("running '%.*s' on %s:%d\n", cmd.len, cmd.s,
+	       sock->host.s, sock->port);
+
+	if (fs_api.fs_cli(sock, &cmd, &reply) != 0) {
+		LM_ERR("failed to run fs_cli cmd '%*s.' on %s:%d\n", cmd.len, cmd.s,
+		       sock->host.s, sock->port);
+		ret = -1;
+		goto out;
+	}
+
+	LM_DBG("success, output is: '%.*s'\n", reply.len, reply.s);
+
+	reply_val.flags = PV_VAL_STR;
+	reply_val.rs = reply;
+
+	if (pv_set_value(msg, (pv_spec_p)reply_pvs, 0, &reply_val) != 0) {
+		LM_ERR("Set body pv value failed!\n");
+		ret = -1;
+	}
+
+out:
+	if (reply.s)
+		shm_free(reply.s);
+	fs_api.put_evs(sock);
+	return ret;
 }
 
 struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *param)
