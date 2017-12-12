@@ -22,27 +22,34 @@
  * History:
  * ---------
  *  2009-09-04  first version (andreidragus)
+ *  2017-12-12  use opensips_json_c_helper.h (besser82)
  */
 
-#include <json.h>
-#include <json_object_private.h>
+#include "opensips_json_c_helper.h"
 
-void array_list_del_idx( struct array_list * arr, int idx)
+#if JSON_C_VERSION_NUM < JSON_C_VER_013
+void array_list_del_idx(struct array_list * arr, int idx)
 {
 	int i;
 
-	if( idx >= arr->length)
+	if(idx >= arr->length)
 		return;
 
 
 	arr->free_fn(arr->array[idx]);
 	arr->length--;
 
-	for( i=idx; i<arr->length; i++ )
+	for(i=idx; i<arr->length; i++)
 		arr->array[i]  = arr->array[i+1];
 };
+#endif
 
 void json_object_array_del(struct json_object* obj, int idx)
 {
+#if JSON_C_VERSION_NUM >= JSON_C_VER_013
+	struct array_list * arr = json_object_get_array(obj);
+	array_list_del_idx(arr, idx, arr->length);
+#else
 	array_list_del_idx(obj->o.c_array, idx);
+#endif
 };
