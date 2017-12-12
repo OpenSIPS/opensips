@@ -111,7 +111,7 @@ static fs_evs *evs_init(const str *host, unsigned short port,
 	}
 
 	if (!pass || !pass->s || pass->len == 0) {
-		LM_ERR("password cannot be NULL for a new socket!\n");
+		LM_ERR("the password part is mandatory for a new socket!\n");
 		return NULL;
 	}
 
@@ -217,7 +217,8 @@ static fs_evs* get_evs(const str *host, unsigned short port,
 	if (port == 0)
 		port = FS_DEFAULT_EVS_PORT;
 
-	LM_DBG("fetching %.*s:%d, '%.*s/%.*s'\n", host->len, host->s, port,
+	LM_DBG("fetching %.*s:%d, user='%.*s', pass='%.*s'\n",
+	       host->len, host->s, port,
 	       user ? user->len : 0, user ? user->s : NULL,
 	       pass ? pass->len : 0, pass ? pass->s : NULL);
 
@@ -246,6 +247,9 @@ static fs_evs* get_evs(const str *host, unsigned short port,
 		lock_stop_write(sockets_down_lock);
 	} else {
 		evs_update(sock, user, pass);
+
+		LM_DBG("found & updated FS sock: host=%s, port=%d, user=%s, pass=%s\n",
+		       sock->host.s, sock->port, sock->user.s, sock->pass.s);
 	}
 
 	sock->ref++;

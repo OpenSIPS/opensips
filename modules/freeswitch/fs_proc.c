@@ -337,7 +337,7 @@ static int apply_socket_commands(int first_run)
 			continue;
 		}
 
-		LM_DBG("successfully connected to FS!\n");
+		LM_DBG("successfully connected to FS %s:%d!\n", sock->host.s, sock->port);
 
 		if (!sock->handle->connected) {
 			LM_BUG("FS bad connect to %s:%d", sock->host.s, sock->port);
