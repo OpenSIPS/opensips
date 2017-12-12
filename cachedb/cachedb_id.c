@@ -55,7 +55,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 /**
  * Parse a database URL of form
- * scheme://[username[:password]@]hostname[:port]/database
+ * scheme[:group]://[username[:password]@]hostname[:port]/database
  *
  * \param id filled id struct
  * \param url parsed URL
@@ -122,6 +122,9 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 					if (dupl_string(&id->group_name,begin,url->s+i) < 0) goto err;
 					break;
 				case '/':
+					/* a '/' not right after ':' ?? */
+					if (begin!=(url->s+i))
+						goto err;
 					st = ST_SLASH2;
 					break;
 			}
