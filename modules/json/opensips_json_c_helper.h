@@ -26,11 +26,13 @@
 #ifndef OPENSIPS_JSON_C_HELPER_H
 #define OPENSIPS_JSON_C_HELPER_H
 
-// If those are not defined, we assume to build against json-c v0.9.
-// Starting with v0.11 there is json_c_version.h, which we prefer
-// anyways, so there are no regressions in this case.  Everything
-// conditionalized for v0.10 or later doesn't produce any fallout,
-// when we are asuming v0.9 and building against v0.10.
+/*
+ * If those are not defined, we assume to build against json-c v0.9.
+ * Starting with v0.11 there is json_c_version.h, which we prefer
+ * anyways, so there are no regressions in this case.  Everything
+ * conditionalized for v0.10 or later doesn't produce any fallout,
+ * when we are asuming v0.9 and building against v0.10.
+ */
 #ifndef JSON_PKG_MAJOR
 #define JSON_PKG_MAJOR	0
 #endif
@@ -41,30 +43,34 @@
 #define JSON_PKG_MICRO	0
 #endif
 
-// json.h automatically includes json_c_version.h, if available.
+/* json.h automatically includes json_c_version.h, if available. */
 #include <json.h>
 
-// We prefer JSON_C_VERSION_NUM defined in json_c_version.h.  If it is
-// not defined, we construct it the same way from our JSON_PKG_* defines.
+/*
+ * We prefer JSON_C_VERSION_NUM defined in json_c_version.h.  If it is
+ * not defined, we construct it the same way from our JSON_PKG_* defines.
+ */
 #ifndef JSON_C_VERSION_NUM
 #define JSON_C_VERSION_NUM (JSON_PKG_MAJOR << 16) | \
 			   (JSON_PKG_MINOR << 8)  | \
 			    JSON_PKG_MICRO
 #endif
 
-// Macros for checking specific versions.
-#define JSON_C_VER_010 (10 << 8)
-#define JSON_C_VER_013 (13 << 8)
+/* Macros for checking specific versions. */
+#define JSON_C_VERSION_010 (10 << 8)
+#define JSON_C_VERSION_013 (13 << 8)
 
-// json_object_private.h is gone and not needed anymore in json-c v0.13+.
-#if JSON_C_VERSION_NUM < JSON_C_VER_013
+/* json_object_private.h is gone and not needed anymore in json-c v0.13+. */
+#if JSON_C_VERSION_NUM < JSON_C_VERSION_013
 #include <json_object_private.h>
 #endif
 
-// Newer versions of json-c define this in their headers, so we prefer
-// their definition in that case.
+/*
+ * Newer versions of json-c define this in their headers, so we prefer
+ * their definition in that case.
+ */
 #ifndef JSON_FILE_BUF_SIZE
 #define JSON_FILE_BUF_SIZE 4096
 #endif
 
-#endif // OPENSIPS_JSON_C_HELPER_H
+#endif /* OPENSIPS_JSON_C_HELPER_H */

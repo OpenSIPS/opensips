@@ -27,7 +27,7 @@
 
 #include "opensips_json_c_helper.h"
 
-#if JSON_C_VERSION_NUM < JSON_C_VER_013
+#if JSON_C_VERSION_NUM < JSON_C_VERSION_013
 void array_list_del_idx(struct array_list * arr, int idx)
 {
 	int i;
@@ -46,7 +46,7 @@ void array_list_del_idx(struct array_list * arr, int idx)
 
 void json_object_array_del(struct json_object* obj, int idx)
 {
-#if JSON_C_VERSION_NUM >= JSON_C_VER_013
+#if JSON_C_VERSION_NUM >= JSON_C_VERSION_013
 	struct array_list * arr = json_object_get_array(obj);
 	array_list_del_idx(arr, idx, arr->length);
 #else
