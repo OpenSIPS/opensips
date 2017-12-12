@@ -76,4 +76,26 @@
 /* Declaration of helper functions. */
 void json_object_array_del(struct json_object* obj, int idx);
 
+/* implement a few functions that are not available before v0.10. */
+#if JSON_C_VERSION_NUM < JSON_C_VERSION_010
+static inline int json_object_object_get_ex(struct json_object* jso,
+		const char *key, struct json_object **value)
+{
+	struct json_object *val = json_object_object_get(jso, key);
+	if (value)
+		*value = val;
+	return val != NULL;
+}
+
+static inline enum json_tokener_error json_tokener_get_error(struct json_tokener *tok)
+{
+	return tok->err;
+}
+
+static inline const char *json_tokener_errors_desc(enum json_tokener_error jerr)
+{
+	return json_tokener_errors[(unsigned long)jerr];
+}
+#endif
+
 #endif /* OPENSIPS_JSON_C_HELPER_H */

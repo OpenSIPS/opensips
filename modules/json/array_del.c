@@ -26,7 +26,7 @@
  *  2017-12-12  improve readability (besser82)
  */
 
-#include "opensips_json_c_helper.h"
+#include "../../lib/json/opensips_json_c_helper.h"
 
 void json_object_array_del(struct json_object* obj, int idx)
 {

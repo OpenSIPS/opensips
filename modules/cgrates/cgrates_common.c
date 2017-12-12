@@ -584,13 +584,7 @@ reprocess:
 		/* we do not release the context yet */
 		return 1;
 	} else if (jerr != json_tokener_success) {
-		LM_ERR("Unable to parse json: %s\n",
-#if JSON_LIB_VERSION >= 10
-				json_tokener_error_desc(jerr)
-#else
-				json_tokener_errors[(unsigned long)jerr]
-#endif
-			  );
+		LM_ERR("Unable to parse json: %s\n", json_tokener_error_desc(jerr));
 		goto disable;
 	}
 	/* now we need to see if there are any other bytes to read */
