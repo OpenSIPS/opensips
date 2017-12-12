@@ -166,53 +166,41 @@ err_free:
 	return NULL;
 }
 
-// TODO: review this a 2nd time, seems broken
-//
 int evs_update(fs_evs *sock, const str *user, const str *pass)
 {
-	str user_bak = {NULL, 0}, pass_bak = {NULL, 0};
+	str user_dup = {NULL, 0}, pass_dup;
 
-	if (!user || !user->s || user->len == 0) {
+	if (!ZSTRP(user)) {
+		if (shm_str_dup(&user_dup, user) != 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	}
+
+	if (!ZSTRP(pass)) {
+		if (shm_str_dup(&pass_dup, pass) != 0) {
+			LM_ERR("oom\n");
+			if (!ZSTRP(user))
+				shm_free(user_dup.s);
+			return -1;
+		}
+	}
+
+	if (!ZSTRP(user)) {
+		shm_free(sock->user.s);
+		sock->user = user_dup;
+	} else {
 		shm_free(sock->user.s);
 		memset(&sock->user, 0, sizeof sock->user);
-	} else if (str_strcmp(&sock->user, user) != 0) {
-		user_bak = sock->user;
-		if (shm_str_dup(&sock->user, user) != 0) {
-			LM_ERR("oom\n");
-			goto err_restore;
-		}
 	}
 
-	if (!pass || !pass->s || pass->len == 0) {
+	/* never end up with an empty password */
+	if (!ZSTRP(pass)) {
 		shm_free(sock->pass.s);
-		memset(&sock->pass, 0, sizeof sock->pass);
-	} else if (str_strcmp(&sock->pass, pass) != 0) {
-		pass_bak = sock->pass;
-		if (shm_str_dup(&sock->pass, pass) != 0) {
-			LM_ERR("oom\n");
-			goto err_restore;
-		}
+		sock->pass = pass_dup;
 	}
-
-	if (user_bak.s)
-		shm_free(user_bak.s);
-
-	if (pass_bak.s)
-		shm_free(pass_bak.s);
 
 	return 0;
-
-err_restore:
-	if (user_bak.s) {
-		shm_free(sock->user.s);
-		sock->user = user_bak;
-	}
-	if (pass_bak.s) {
-		shm_free(sock->pass.s);
-		sock->pass = pass_bak;
-	}
-
-	return -1;
 }
 
 static fs_evs* get_evs(const str *host, unsigned short port,
