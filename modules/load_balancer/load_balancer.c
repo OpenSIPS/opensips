@@ -176,14 +176,6 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
-static module_dependency_t *get_deps_clusterer(param_export_t *param)
-{
-	int cluster_id = *(int *)param->param_pointer;
-	if (cluster_id <= 0)
-		return NULL;
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
-}
-
 static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)

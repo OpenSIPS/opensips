@@ -189,5 +189,17 @@ static inline int load_clusterer_api(struct clusterer_binds *binds) {
 	return 0;
 }
 
+/* function used to add dependencies to clusterer module */
+static inline module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
+}
+
+
 #endif  /* CLUSTERER_API_H */
 
