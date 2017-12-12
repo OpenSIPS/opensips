@@ -95,7 +95,7 @@ e the
 modparam("cachedb_local", "cachedb_url", "local:///collection1")
 ### this URL will use collection2; it will be referenced from the script
 ### with "local:group2"
-modparam("cachedb_local", "cachedb_url", "local:group2///collection2")
+modparam("cachedb_local", "cachedb_url", "local:group2:///collection2")
 
 ## how to use the URLs from the script
 ## as defined above, this call will use collection1
