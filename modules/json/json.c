@@ -293,7 +293,7 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 				!json_object_is_type( cur_obj, json_type_object ) )
 				goto error;
 
-#if JSON_C_VERSION_NUM >= JSON_C_VER_010
+#if JSON_C_VERSION_NUM >= JSON_C_VERSION_010
 			if (!json_object_object_get_ex( cur_obj,buff, &cur_obj ) &&
 				tag == NULL)
 				goto error;
@@ -410,7 +410,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 	{
 		val->flags = PV_VAL_STR;
 		val->rs.s = (char*)json_object_get_string( obj );
-#if JSON_C_VERSION_NUM >= JSON_C_VER_010
+#if JSON_C_VERSION_NUM >= JSON_C_VERSION_010
 		val->rs.len = json_object_get_string_len( obj );
 #else
 		val->rs.len = strlen(val->rs.s);
@@ -582,7 +582,7 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 		if (obj == NULL)
 		{
 			LM_ERR("Error parsing json: %s\n",
-#if JSON_C_VERSION_NUM >= JSON_C_VER_010
+#if JSON_C_VERSION_NUM >= JSON_C_VERSION_010
 				json_tokener_error_desc(parse_status)
 #else
 				json_tokener_errors[(unsigned long)obj]
