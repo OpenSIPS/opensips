@@ -44,7 +44,7 @@
 #include "../../mi/mi.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
-#include "opensips_json_c_helper.h"
+#include "../../lib/json/opensips_json_c_helper.h"
 
 
 enum
@@ -292,16 +292,9 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 				!json_object_is_type( cur_obj, json_type_object ) )
 				goto error;
 
-#if JSON_C_VERSION_NUM >= JSON_C_VERSION_010
 			if (!json_object_object_get_ex( cur_obj,buff, &cur_obj ) &&
 				tag == NULL)
 				goto error;
-#else
-			cur_obj = json_object_object_get( cur_obj, buff );
-
-			if( cur_obj == NULL && tag == NULL)
-				goto error;
-#endif
 		}
 
 		if( cur_tag->type & TAG_IDX )

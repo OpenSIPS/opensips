@@ -54,17 +54,6 @@ makefile_defs=0
 DEFS:= $(DEFS_EXTRA_OPTS)
 DEBUG_PARSER?=
 
-# json libs check
-ifeq ($(JSONPATH),)
-ifneq ("$(wildcard /usr/include/json-c/json.h)","")
-DEFS += -I/usr/include/json-c
-else
-DEFS += -I/usr/include/json
-endif
-else
-DEFS += -I$(JSONPATH)
-endif
-
 # create the template only if the file is not yet created
 ifeq (,$(wildcard Makefile.conf))
 $(shell cp Makefile.conf.template Makefile.conf)
