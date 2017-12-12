@@ -52,5 +52,7 @@ struct _str{
 
 typedef struct _str str;
 
+#define ZSTR(_s)    (!(_s).s || (_s).len == 0)
+#define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
 
 #endif
