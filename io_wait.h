@@ -495,9 +495,16 @@ inline static int io_watch_add(	io_wait_h* h,
 				ep_event.events|=EPOLLOUT;
 			if (!already) {
 again1:
+#if 0
+/* This is currently broken, because when using EPOLLEXCLUSIVE, the OS will
+ * send sequential events to the same process - thus our pseudo-dispatcher
+ * will no longer work, since events on a pipe will be queued by a single
+ * process. - razvanc
+ */
 #if (defined __OS_linux) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 24)
 				if (e->flags & IO_WATCH_READ)
 					ep_event.events|=EPOLLEXCLUSIVE;
+#endif
 #endif
 				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
 				if (n==-1){
@@ -527,9 +534,12 @@ again11:
 				ep_event.events|=EPOLLOUT;
 again2:
 			if (!already) {
+#if 0
+/* disabled due to the same reason explained above */
 #if (defined __OS_linux) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 24)
 				if (e->flags & IO_WATCH_READ)
 					ep_event.events|=EPOLLEXCLUSIVE;
+#endif
 #endif
 				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
 				if (n==-1){
