@@ -316,7 +316,7 @@ static int do_action_set_adv_address(struct sip_msg *msg, struct action *a)
 	int ret = 1; /* continue processing */
 
 	if (a->elem[0].type != STR_ST) {
-		report_programming_bug("set_advertised_address type %d", a->elem[0].type);
+		LM_BUG("set_advertised_address type %d", a->elem[0].type);
 		ret = E_BUG;
 		goto out;
 	}
@@ -353,7 +353,7 @@ static int do_action_set_adv_port(struct sip_msg *msg, struct action *a)
 	int ret = 1;
 
 	if (a->elem[0].type != STR_ST) {
-		report_programming_bug("set_advertised_port type %d", a->elem[0].type);
+		LM_BUG("set_advertised_port type %d", a->elem[0].type);
 		ret = E_BUG;
 		goto out;
 	}
