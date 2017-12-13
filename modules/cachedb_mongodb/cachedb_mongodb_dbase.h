@@ -23,13 +23,13 @@
 
 #include "../../cachedb/cachedb.h"
 #include "../../db/db.h"
+#include "../../lib/json/opensips_json_c_helper.h"
 
 #define MONGO_HAVE_STDINT 1
 
 #include <mongoc.h>
 #include <bson.h>
 
-#include <json.h>
 #include <stdint.h>
 
 extern int mongo_op_timeout;
