@@ -25,11 +25,6 @@
 
 #include "../../ipc.h"
 
-typedef struct _fss_ipc_cli_cmd {
-	char *content;
-} fss_ipc_cli_cmd;
-
 int fss_ipc_init(void);
-int fs_ipc_send_cli_cmd(fss_ipc_cli_cmd *fs_cmd);
 
 #endif /* __FSS_IPC__ */

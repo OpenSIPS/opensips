@@ -46,7 +46,3 @@ void fss_ipc_rcv_event(int sender, void *fs_event)
 
 }
 
-int fs_ipc_send_cli_cmd(fss_ipc_cli_cmd *fs_cmd)
-{
-	return 0;
-}
