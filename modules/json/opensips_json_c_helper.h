@@ -73,4 +73,7 @@
 #define JSON_FILE_BUF_SIZE 4096
 #endif
 
+/* Declaration of helper functions. */
+void json_object_array_del(struct json_object* obj, int idx);
+
 #endif /* OPENSIPS_JSON_C_HELPER_H */

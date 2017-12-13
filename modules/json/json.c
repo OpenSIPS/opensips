@@ -94,7 +94,6 @@ char buff[JSON_FILE_BUF_SIZE];
 static int mod_init(void);
 static int child_init(int );
 static void mod_destroy(void);
-void json_object_array_del(struct json_object* , int );
 static int fixup_json_bind(void**, int );
 static int pv_set_json (struct sip_msg*,  pv_param_t*, int , pv_value_t* );
 static int pv_get_json (struct sip_msg*,  pv_param_t*, pv_value_t* );
