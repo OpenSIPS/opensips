@@ -35,20 +35,18 @@
 #include "fs_proc.h"
 #include "fs_ipc.h"
 
-extern struct list_head *fs_sockets;
-extern struct list_head *fs_sockets_down;
-extern struct list_head *fs_sockets_esl;
-extern rw_lock_t *sockets_lock;
-extern rw_lock_t *sockets_down_lock;
-extern rw_lock_t *sockets_esl_lock;
-
-/* this correlates with FreeSWITCH's "event-heartbeat-interval" param,
+/* this correlates with FreeSWITCH's "event-heartbeat-interval" setting,
  * located in autoload_configs/switch.conf.xml. The default there is 20s,
- * but we're using a more granular default, just to be on the safe side */
+ * but we're using a more granular value, just to be on the safe side */
 unsigned int event_heartbeat_interval = 1; /* s */
-unsigned int fs_connect_timeout = 5000; /* ms */
+unsigned int fs_connect_timeout = 5000;    /* ms */
+unsigned int esl_cmd_timeout = 5000;       /* ms */
+unsigned int esl_cmd_polling_itv = 5000;   /* us */
 
 static int mod_init(void);
+
+extern int fs_api_init(void);
+int fs_api_wait_init(void);
 
 static cmd_export_t cmds[] = {
 	{ "fs_bind", (cmd_function)fs_bind, 1, NULL, NULL, 0 },
@@ -58,14 +56,15 @@ static cmd_export_t cmds[] = {
 static param_export_t mod_params[] = {
 	{"event_heartbeat_interval", INT_PARAM,         &event_heartbeat_interval},
 	{"esl_connect_timeout",      INT_PARAM,               &fs_connect_timeout},
+	{"esl_cmd_timeout",          INT_PARAM,                  &esl_cmd_timeout},
+	{"esl_cmd_polling_itv",      INT_PARAM,              &esl_cmd_polling_itv},
 	{0, 0, 0}
 };
 
 static proc_export_t procs[] = {
-	{ "fs_stats", NULL, NULL, fs_conn_mgr_loop, 1, 0 },
+	{ "FS Manager", NULL, fs_api_wait_init, fs_conn_mgr_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
-
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -101,28 +100,12 @@ static int mod_init(void)
 	cJSON_Hooks hooks;
 
 	if (fs_ipc_init() != 0) {
-		LM_ERR("failed to init IPC\n");
+		LM_ERR("failed to init IPC, oom?\n");
 		return -1;
 	}
 
-	fs_sockets = shm_malloc(3 * sizeof *fs_sockets);
-	if (!fs_sockets) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	INIT_LIST_HEAD(fs_sockets);
-
-	fs_sockets_down = fs_sockets + 1;
-	INIT_LIST_HEAD(fs_sockets_down);
-
-	fs_sockets_esl = fs_sockets + 2;
-	INIT_LIST_HEAD(fs_sockets_esl);
-
-	sockets_lock = lock_init_rw();
-	sockets_down_lock = lock_init_rw();
-	sockets_esl_lock = lock_init_rw();
-	if (!sockets_lock || !sockets_down_lock || !sockets_esl_lock) {
-		LM_ERR("oom\n");
+	if (fs_api_init() != 0) {
+		LM_ERR("failed to init API internals, oom?\n");
 		return -1;
 	}
 

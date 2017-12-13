@@ -35,9 +35,9 @@
 #include "esl/src/include/esl.h"
 
 #include "fs_api.h"
+#include "fs_ipc.h"
 
 #define FS_REACTOR_TIMEOUT  1 /* sec */
-
 #define FS_STATS_EVENT_NAME "HEARTBEAT"
 
 extern struct list_head *fs_sockets;
@@ -48,8 +48,9 @@ extern rw_lock_t *sockets_lock;
 extern rw_lock_t *sockets_down_lock;
 extern rw_lock_t *sockets_esl_lock;
 
-extern int fs_connect_timeout;
+extern unsigned int fs_connect_timeout;
 
+extern void fs_api_set_proc_no(void);
 extern void evs_free(fs_evs *sock);
 extern void esl_cmd_free(struct esl_cmd *cmd);
 
@@ -162,22 +163,22 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	cJSON *ev = NULL;
 	char *s;
 
-	LM_DBG("FS data available on sock %s:%d, ref: %d\n",
-	       sock->host.s, sock->port, sock->ref);
-
-	/* ignore the event: nobody's using this socket anymore, close it */
-	lock_start_write(sockets_lock);
-	if (sock->ref == 0) {
-		if (destroy_fs_evs(sock, idx) != 0)
-			LM_ERR("failed to destroy FS evs!\n");
-
-		lock_stop_write(sockets_lock);
-		return 0;
-	}
-	lock_stop_write(sockets_lock);
-
 	switch (fm->type) {
 		case F_FS_CONN:
+			LM_DBG("FS data available on sock %s:%d, ref: %d\n",
+			       sock->host.s, sock->port, sock->ref);
+
+			/* ignore the event: nobody's using this socket anymore, close it */
+			lock_start_write(sockets_lock);
+			if (sock->ref == 0) {
+				if (destroy_fs_evs(sock, idx) != 0)
+					LM_ERR("failed to destroy FS evs!\n");
+
+				lock_stop_write(sockets_lock);
+				return 0;
+			}
+			lock_stop_write(sockets_lock);
+
 			rc = esl_recv_event(sock->handle, 0, &sock->handle->last_sr_event);
 			if (rc != ESL_SUCCESS) {
 				LM_ERR("read error %d on FS sock %.*s:%d. Reconnecting...\n",
@@ -225,6 +226,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 
 			break;
 		case F_IPC:
+			LM_DBG("received IPC job!\n");
 			ipc_handle_job();
 			break;
 		default:
@@ -236,17 +238,79 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	return 0;
 }
 
+void fs_run_esl_command(int sender, void *_cmd)
+{
+	fs_ipc_esl_cmd *cmd = (fs_ipc_esl_cmd *)_cmd;
+	char *exec_cmd;
+	static char command[4096];
+	struct fs_esl_reply *reply;
+
+	LM_DBG("running ESL CMD %.*s\n", cmd->fs_cmd.len, cmd->fs_cmd.s);
+
+	if (cmd->fs_cmd.len > 4093) {
+		LM_ERR("max command size exceeded!\n");
+		goto out;
+	}
+
+	if (cmd->fs_cmd.len >= 2 &&
+	    memcmp(cmd->fs_cmd.s + cmd->fs_cmd.len - 2, "\n\n", 2) != 0) {
+		exec_cmd = cmd->fs_cmd.s;
+	} else {
+		if (cmd->fs_cmd.s[cmd->fs_cmd.len - 1] == '\n')
+			snprintf(command, 4096, "%s\n", cmd->fs_cmd.s);
+		else
+			snprintf(command, 4096, "%s\n\n", cmd->fs_cmd.s);
+		exec_cmd = command;
+	}
+
+	if (esl_send_recv(cmd->sock->handle, exec_cmd) != ESL_SUCCESS) {
+		LM_ERR("failed to run fs_esl command on sock %s:%d\n",
+		       cmd->sock->host.s, cmd->sock->port);
+		goto out;
+	}
+
+	LM_DBG("received reply: %s\n", cmd->sock->handle->last_sr_reply);
+
+	reply = shm_malloc(sizeof *reply);
+	if (!reply) {
+		/* we already ran the command, just let the reader time out */
+		LM_ERR("oom\n");
+		goto out;
+	}
+	memset(reply, 0, sizeof *reply);
+
+	reply->text.s = shm_strdup(cmd->sock->handle->last_sr_reply);
+	if (!reply->text.s) {
+		shm_free(reply);
+		LM_ERR("oom\n");
+		goto out;
+	}
+	reply->text.len = strlen(reply->text.s);
+	reply->esl_reply_id = cmd->esl_reply_id;
+
+	LM_DBG("adding to esl_replies\n");
+	lock_start_write(cmd->sock->lists_lk);
+	list_add_tail(&reply->list, &cmd->sock->esl_replies);
+	lock_stop_write(cmd->sock->lists_lk);
+
+	/* TODO: should add some error reply instead of letting reader time out? */
+out:
+	shm_free(cmd->fs_cmd.s);
+	shm_free(cmd);
+}
+
 int run_esl_commands(fs_evs *sock)
 {
 	struct list_head *_, *__;
 	struct esl_cmd *cmd;
 
+	/* only event sub/unsub commands */
 	list_for_each_safe(_, __, &sock->esl_cmds) {
 		cmd = list_entry(_, struct esl_cmd, list);
 
 		// TODO 1:
 		/* -------- all commands must be "\n\n" terminated
-		 *               (event sub/unsub, fs_cli)
+		 *               (event sub/unsub, fs_esl)
 		LM_DBG("registering for HEARTBEAT events...\n");
 		if (esl_send_recv(sock->handle, "event json HEARTBEAT\n\n")
 		    != ESL_SUCCESS) {
@@ -260,9 +324,6 @@ int run_esl_commands(fs_evs *sock)
 
 		LM_DBG("answer: %s\n", sock->handle->last_sr_reply);
 		LM_DBG("successfully enabled HEARTBEAT events!\n");
-
-		TODO 2:
-			prepare any "struct fs_cli_reply" for blocked workers
 		   */
 
 		list_del(&cmd->list);
@@ -282,20 +343,6 @@ static int apply_socket_commands(int first_run)
 	fs_evs *sock;
 	int ret = 0;
 	esl_status_t rc;
-
-	// TODO: rework this granularity mechanism to be less random and more
-	//       configurable
-	// now:
-	//	- can skip some runs (poll t/o is 1 sec, so get_ticks()
-	//	  may appear to jump from 17 -> 19
-	//	- can run multiple times during a second:
-	//	  say we have two FS sockets which receive events in get_ticks() == 18:
-	//	   -> apply_socket_commands() will run twice
-	//
-	// fix to "run at most once every X seconds"
-	if (!first_run && get_ticks() % 10 != 9) {
-		return 0;
-	}
 
 	LM_DBG("applying FS socket commands\n");
 
@@ -378,6 +425,8 @@ void fs_conn_mgr_loop(int proc_no)
 {
 	int rc;
 
+	fs_api_set_proc_no();
+
 	LM_DBG("size: %d, method: %d\n", reactor_size, io_poll_method);
 
 	if (init_worker_reactor("FS Manager", RCT_PRIO_MAX) != 0) {
@@ -385,8 +434,8 @@ void fs_conn_mgr_loop(int proc_no)
 		abort();
 	}
 
-	if (reactor_add_reader(IPC_FD_READ_SHARED, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
-		LM_CRIT("failed to add IPC shared pipe to FS reactor\n");
+	if (reactor_add_reader(IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
+		LM_CRIT("failed to add IPC pipe to FS reactor\n");
 		abort();
 	}
 

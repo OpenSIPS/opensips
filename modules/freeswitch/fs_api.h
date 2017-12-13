@@ -82,17 +82,17 @@ enum esl_cmd_types {
 
 struct esl_cmd {
 	enum esl_cmd_types type;
-	str text; /* event name or full body of the fs_cli cmd */
+	str text; /* event name or full body of the fs_esl cmd */
 	str tag;
 	int count; /* multiple of these may accumulate before getting consumed */
-	unsigned long cli_reply_id;
+	unsigned long esl_reply_id;
 
 	struct list_head list;
 };
 
-struct fs_cli_reply {
-	char *text;
-	unsigned long cli_reply_id;
+struct fs_esl_reply {
+	str text;
+	unsigned long esl_reply_id;
 
 	struct list_head list;
 };
@@ -112,11 +112,11 @@ struct _fs_evs {
 
 	rw_lock_t *lists_lk;         /* protects all three internal lists */
 
-	unsigned long cli_reply_id;  /* ID/counter for each FS cli send/recv */
-	struct list_head cli_replies;
+	unsigned long esl_reply_id;  /* positive ID/counter for each FS esl cmd */
+	struct list_head esl_replies;
 
 	struct list_head events;     /* events we're successfully subscribed to */
-	struct list_head esl_cmds;   /* pending ESL commands: sub / unsub / cli */
+	struct list_head esl_cmds;   /* pending ESL commands: sub / unsub / esl */
 
 	/* a socket may concurrently be part of up to three lists! */
 	struct list_head list;           /* "fs_sockets" - all FS sockets */
@@ -137,7 +137,7 @@ typedef void (*evs_unsub_f) (fs_evs *sock, const str *tag,
 typedef void (*put_evs_f) (fs_evs *sock);
 typedef void (*put_stats_evs_f) (fs_evs *sock, str *tag);
 
-typedef int (*fs_cli_f) (fs_evs *sock, const str *fs_cmd, str *reply);
+typedef int (*fs_esl_f) (fs_evs *sock, const str *fs_cmd, str *reply);
 
 struct fs_binds {
 	/*
@@ -228,14 +228,14 @@ struct fs_binds {
 	put_stats_evs_f put_stats_evs;
 
 	/*
-	 * Run an arbitrary FreeSWITCH CLI command on the given "sock" socket.
+	 * Run an arbitrary FreeSWITCH ESL command on the given "sock" socket.
 	 * Blocks until an answer from FreeSWITCH arrives.
 	 *
 	 * Return:
 	 *	0 on success. "*reply" contains a SHM string which must be freed
 	 *	-1 on failure. "*reply" is zeroized
 	 */
-	fs_cli_f fs_cli;
+	fs_esl_f fs_esl;
 };
 
 static inline int is_fs_url(str *in)

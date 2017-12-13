@@ -31,11 +31,17 @@
 #include "../../lib/url.h"
 
 #include "fs_api.h"
+#include "fs_ipc.h"
 
 #define FS_STATS_EVENT_NAME "HEARTBEAT"
 #define FS_STATS_EVENT_STR {FS_STATS_EVENT_NAME,sizeof(FS_STATS_EVENT_NAME)-1}
 
 extern int event_heartbeat_interval;
+extern int esl_cmd_polling_itv;
+extern int esl_cmd_timeout;
+
+/* SHM pointer */
+unsigned int *conn_mgr_process_no;
 
 /*
  * Any FreeSWITCH socket which is still referenced at least once
@@ -46,7 +52,7 @@ rw_lock_t *sockets_lock;
 
 /*
  *	fs_sockets ⊇ fs_sockets_down (sockets which require a (re)connect)
- *	fs_sockets ⊇ fs_sockets_esl (sockets which have pending sub/unsub/cli cmds)
+ *	fs_sockets ⊇ fs_sockets_esl (sockets which have pending sub/unsub/esl cmds)
  */
 struct list_head *fs_sockets_down;
 rw_lock_t *sockets_down_lock;
@@ -57,6 +63,63 @@ rw_lock_t *sockets_esl_lock;
 /* mem reusage - unique string tags and events accumulated so far */
 static struct str_list *all_tags;
 //static struct str_list *all_events;
+
+int fs_api_init(void)
+{
+	fs_sockets = shm_malloc(3 * sizeof *fs_sockets);
+	if (!fs_sockets) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	INIT_LIST_HEAD(fs_sockets);
+
+	fs_sockets_down = fs_sockets + 1;
+	INIT_LIST_HEAD(fs_sockets_down);
+
+	fs_sockets_esl = fs_sockets + 2;
+	INIT_LIST_HEAD(fs_sockets_esl);
+
+	sockets_lock = lock_init_rw();
+	sockets_down_lock = lock_init_rw();
+	sockets_esl_lock = lock_init_rw();
+	if (!sockets_lock || !sockets_down_lock || !sockets_esl_lock) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	conn_mgr_process_no = shm_malloc(sizeof *conn_mgr_process_no);
+	if (!conn_mgr_process_no) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int fs_api_set_proc_no(void)
+{
+	LM_DBG("setting global mgr process_no=%d\n", process_no);
+	*conn_mgr_process_no = process_no;
+	return 0;
+}
+
+/* TODO: rework this specific "PID advertising" hack
+ * as part of a more reusable OpenSIPS mechanism */
+int fs_api_wait_init(void)
+{
+	int i;
+
+	/* time out startup after 10 sec */
+	for (i = 0; i < 2000000; i++) {
+		if (*conn_mgr_process_no != 0)
+			return 0;
+
+		usleep(5);
+	}
+
+	LM_ERR("FS API is not ready for use after 10 sec, aborting\n");
+	return -1;
+}
 
 void esl_cmd_free(struct esl_cmd *cmd)
 {
@@ -88,7 +151,7 @@ void evs_free(fs_evs *sock)
 		esl_cmd_free(cmd);
 	}
 
-	// TODO: clean up sock->cli_replies
+	// TODO: clean up sock->esl_replies
 
 	shm_free(sock->host.s);
 	shm_free(sock->user.s);
@@ -121,7 +184,7 @@ static fs_evs *evs_init(const str *host, unsigned short port,
 		return NULL;
 	}
 	memset(sock, 0, sizeof *sock);
-	INIT_LIST_HEAD(&sock->cli_replies);
+	INIT_LIST_HEAD(&sock->esl_replies);
 	INIT_LIST_HEAD(&sock->events);
 	INIT_LIST_HEAD(&sock->esl_cmds);
 	INIT_LIST_HEAD(&sock->reconnect_list);
@@ -155,6 +218,7 @@ static fs_evs *evs_init(const str *host, unsigned short port,
 	}
 
 	sock->port = port;
+	sock->esl_reply_id = 1;
 
 	LM_DBG("new FS sock: host=%s, port=%d, user=%s, pass=%s\n",
 	       sock->host.s, sock->port, sock->user.s, sock->pass.s);
@@ -284,9 +348,6 @@ static fs_evs *get_evs_by_url(const str *_fs_url)
 	return sock;
 }
 
-
-
-
 int dup_common_tag(const str *tag, str *out)
 {
 	struct str_list *t;
@@ -398,7 +459,7 @@ struct esl_cmd *esl_cmd_init(enum esl_cmd_types type, const str *text,
 		if (dup_common_tag(text, &cmd->text) != 0)
 			goto out_err;
 	} else {
-		if (shm_str_dup(&cmd->text, text) != 0)
+		if (shm_nt_str_dup(&cmd->text, text) != 0)
 			goto out_err;
 	}
 
@@ -410,6 +471,13 @@ out_err:
 	return NULL;
 }
 
+/*
+ * Write-grab sock->lists_lk before calling this function
+ *
+ * Return:
+ *   - 0 on success, -1 on failure
+ *   - if type == ESL_CMD, *reply_id will also contain the reply ID to block on
+ */
 int add_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
                         const str *tag)
 {
@@ -665,23 +733,61 @@ void put_stats_evs(fs_evs *sock, str *tag)
 	put_evs(sock);
 }
 
-int fs_cli(fs_evs *sock, const str *fs_cmd, str *reply)
+/* This function assumes that the FS worker process _cannot_ reach the OpenSIPS
+ * script, thus never being in a position to call fs_api->fs_esl(). Otherwise,
+ * it would immediately deadlock itself. Should the FS worker need to raise
+ * script events, it should do it via IPC dispatch to other OpenSIPS procs */
+int fs_esl(fs_evs *sock, const str *fs_cmd, str *reply_txt)
 {
-	LM_DBG("TODO!\n");
-	memset(reply, 0, sizeof *reply);
-	/* the "fs_cli" API command may be called by the FS worker, during
-	 * an event raise, */
-	/*
-	if (!is_fs_worker())
+	struct list_head *_, *__;
+	struct fs_esl_reply *reply = NULL;
+	unsigned long reply_id;
+	int total_us;
+
+	if (ZSTRP(fs_cmd)) {
+		LM_ERR("refusing to run a NULL or empty command!\n");
+		return -1;
+	}
+
+	memset(reply_txt, 0, sizeof *reply_txt);
+
+	LM_DBG("Queuing job for ESL command '%.*s' on %s:%d\n", fs_cmd->len,
+	       fs_cmd->s, sock->host.s, sock->port);
+
+	reply_id = fs_ipc_send_esl_cmd(sock, fs_cmd);
+	if (reply_id == 0) {
+		LM_ERR("failed to queue ESL command '%.*s' on %s:%d\n", fs_cmd->len,
+		       fs_cmd->s, sock->host.s, sock->port);
+		return -1;
+	}
+
+	LM_DBG("success, reply_id=%lu, waiting for reply...\n", reply_id);
+
+	for (total_us = 0; total_us < esl_cmd_timeout * 1000;
+	     total_us += esl_cmd_polling_itv) {
 		lock_start_write(sock->lists_lk);
+		list_for_each_safe(_, __, &sock->esl_replies) {
+			reply = list_entry(_, struct fs_esl_reply, list);
 
-		add_pending_esl_cmd();
+			if (reply->esl_reply_id == reply_id) {
+				list_del(&reply->list);
+				lock_stop_write(sock->lists_lk);
+				LM_DBG("got reply after %dms: %.*s!\n", total_us / 1000,
+				       reply->text.len, reply->text.s);
 
-	if (!is_fs_worker())
+				*reply_txt = reply->text;
+				shm_free(reply);
+				return 0;
+			}
+		}
 		lock_stop_write(sock->lists_lk);
-	*/
 
-	return 0;
+		usleep(esl_cmd_polling_itv);
+	}
+
+	LM_ERR("timed out on ESL command '%.*s' on %s:%d\n", fs_cmd->len,
+	       fs_cmd->s, sock->host.s, sock->port);
+	return -1;
 }
 
 int fs_bind(struct fs_binds *fapi)
@@ -698,7 +804,7 @@ int fs_bind(struct fs_binds *fapi)
 	fapi->put_evs               = put_evs;
 	fapi->get_stats_evs         = get_stats_evs;
 	fapi->put_stats_evs         = put_stats_evs;
-	fapi->fs_cli                = fs_cli;
+	fapi->fs_esl                = fs_esl;
 
 	return 0;
 }
