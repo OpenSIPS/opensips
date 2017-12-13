@@ -397,27 +397,6 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		return -1;
 	}
 
-    /* rr */
-    if (rr->len) {
-        leg->route_set.s = shm_malloc(rr->len);
-        if (leg->route_set.s==NULL) {
-            LM_ERR("no more shm mem for rr set\n");
-            goto error_all;
-        }
-        leg->route_set.len = rr->len;
-        memcpy(leg->route_set.s, rr->s, rr->len);
-        if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
-            LM_ERR("failed parsing route set\n");
-            goto error_all;
-        }
-        rrp = head;
-        leg->nr_uris = 0;
-        while (rrp) {
-            leg->route_uris[leg->nr_uris++] = rrp->nameaddr.uri;
-            rrp = rrp->next;
-        }
-        free_rr(&head);
-    }
 
 	/* save mangled from URI, if any */
 	if (mangled_from && mangled_from->s && mangled_from->len) {
