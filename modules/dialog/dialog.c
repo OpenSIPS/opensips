@@ -1878,7 +1878,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		/* store it until we match the dialog */
 		ctx_timeout_set( timeout );
 	} else {
-		LM_CRIT("BUG - no proicessing context found !\n");
+		LM_CRIT("BUG - no processing context found!\n");
 		return -1;
 	}
 
