@@ -572,7 +572,7 @@ static inline int check_against_rule_list(struct ip_addr *ip, str *text,
 	LM_DBG("using list %.*s \n",
 		blst_heads[i].name.len, blst_heads[i].name.s);
 
-	if( !blst_heads[i].flags&BL_READONLY_LIST ) {
+	if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
 		/* get list for read */
 		lock_get( blst_heads[i].lock );
 		while(blst_heads[i].count_write) {
@@ -597,7 +597,7 @@ static inline int check_against_rule_list(struct ip_addr *ip, str *text,
 		}
 	}
 
-	if( !blst_heads[i].flags&BL_READONLY_LIST ) {
+	if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
 		lock_get( blst_heads[i].lock );
 		blst_heads[i].count_read--;
 		lock_release(blst_heads[i].lock);
@@ -647,7 +647,7 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
 
 	for ( i=0 ; i<used_heads ; i++ ) {
 
-		if( !blst_heads[i].flags&BL_READONLY_LIST ) {
+		if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
 			/* get list for read */
 				lock_get( blst_heads[i].lock );
 			while(blst_heads[i].count_write) {
@@ -726,7 +726,7 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
 
 		}
 
-		if( !blst_heads[i].flags&BL_READONLY_LIST ) {
+		if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
 			lock_get( blst_heads[i].lock );
 			blst_heads[i].count_read--;
 			lock_release(blst_heads[i].lock);
@@ -736,7 +736,7 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
 
 	return rpl_tree;
 error:
-	if( !blst_heads[i].flags&BL_READONLY_LIST ) {
+	if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
 		lock_get( blst_heads[i].lock );
 		blst_heads[i].count_read--;
 		lock_release(blst_heads[i].lock);
