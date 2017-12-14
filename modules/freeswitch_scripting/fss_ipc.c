@@ -27,11 +27,9 @@
 
 ipc_handler_type ipc_hdl_rcv_event;
 
-void fss_ipc_rcv_event(int sender, void *fs_event);
-
 int fss_ipc_init(void)
 {
-	ipc_hdl_rcv_event = ipc_register_handler(fss_ipc_rcv_event,
+	ipc_hdl_rcv_event = ipc_register_handler(fss_raise_freeswitch_event,
 	                                         "Receive FS event");
 	if (ipc_bad_handler_type(ipc_hdl_rcv_event)) {
 		LM_ERR("failed to register 'Receive FS event' IPC handler\n");
@@ -41,8 +39,9 @@ int fss_ipc_init(void)
 	return 0;
 }
 
-void fss_ipc_rcv_event(int sender, void *fs_event)
+void fss_raise_freeswitch_event(int sender, void *_esl_event)
 {
+	//fs_ipc_esl_event *esl_event = (fs_ipc_esl_event *)_esl_event;
 
+	LM_INFO("TODO: raise script event part!\n");
 }
-

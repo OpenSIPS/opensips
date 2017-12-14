@@ -21,14 +21,12 @@
  */
 
 #include "fs_ipc.h"
-#include "../freeswitch_scripting/fss_api.h"
 
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../ipc.h"
 
 static ipc_handler_type ipc_hdl_run_esl;
-static struct fss_binds fss_api;
 
 extern void fs_run_esl_command(int sender, void *fs_cmd);
 
@@ -44,18 +42,31 @@ int fs_ipc_init(void)
 		return -1;
 	}
 
-	LM_DBG("loading FSS api\n");
-
-	/* just a soft dependency */
-	if (load_fss_api(&fss_api) != 0)
-		LM_DBG("failed to find freeswitch_scripting module\n");
-
 	return 0;
 }
 
-int fs_ipc_dispatch_esl_event(fs_ipc_esl_event *fs_event)
+int fs_ipc_dispatch_esl_event(fs_evs *sock, const str *name,
+                              const cJSON *body, ipc_handler_type ipc_type)
 {
-	return ipc_dispatch_job(fss_api.get_ipc_dispatch_hdl_type(), fs_event);
+	fs_ipc_esl_event *cmd;
+
+	cmd = shm_malloc(sizeof *cmd);
+	if (!cmd) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(cmd, 0, sizeof *cmd);
+
+	cmd->sock = sock;
+	if (shm_nt_str_dup(&cmd->name, name) != 0) {
+		shm_free(cmd);
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	/* TODO: dup cJSON in SHM */
+
+	return ipc_dispatch_job(ipc_type, cmd);
 }
 
 

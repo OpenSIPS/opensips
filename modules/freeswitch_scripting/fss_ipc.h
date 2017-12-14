@@ -25,6 +25,9 @@
 
 #include "../../ipc.h"
 
+extern ipc_handler_type ipc_hdl_rcv_event;
+
 int fss_ipc_init(void);
+void fss_raise_freeswitch_event(int sender, void *esl_event);
 
 #endif /* __FSS_IPC__ */

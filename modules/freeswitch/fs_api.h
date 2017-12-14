@@ -32,6 +32,7 @@
 #include "../../rw_locking.h"
 #include "../../ip_addr.h"
 #include "../../sr_module.h"
+#include "../../ipc.h"
 
 #include "esl/src/include/esl.h"
 
@@ -43,10 +44,6 @@
 typedef struct _fs_evs fs_evs;
 typedef struct _fs_stats fs_stats;
 
-/*
- * WARNING: do _not_ call any FS API functions during the callback
- *   (this will very likely run into a deadlock)
- */
 typedef void (*fs_event_cb_f) (const fs_evs *sock, const str *ev_name,
                                const cJSON *ev_body);
 
@@ -59,33 +56,25 @@ struct _fs_stats {
 	int valid; /* FS stats are invalid until the first heartbeat */
 };
 
+enum fs_event_actions {
+	FS_EVENT_NOP, /* no action requkred */
+	FS_EVENT_SUB,
+	FS_EVENT_UNSUB,
+};
+
 struct fs_event_subscription {
 	str tag;
+	ipc_handler_type ipc_type;
 	int ref;
 
 	struct list_head list;
 };
 
 struct fs_event {
-	str event_name;
+	str name;
+	enum fs_event_actions action;
 	int refsum; /* multiple subs from multiple modules */
 	struct list_head subscriptions; /* different modules subbed for an event */
-	struct list_head list;
-};
-
-enum esl_cmd_types {
-	ESL_EVENT_SUB,
-	ESL_EVENT_UNSUB,
-	ESL_CMD,
-};
-#define is_event_cmd(cmd) (cmd == ESL_EVENT_SUB || cmd == ESL_EVENT_UNSUB)
-
-struct esl_cmd {
-	enum esl_cmd_types type;
-	str text; /* event name or full body of the fs_esl cmd */
-	str tag;
-	int count; /* multiple of these may accumulate before getting consumed */
-	unsigned long esl_reply_id;
 
 	struct list_head list;
 };
@@ -130,7 +119,7 @@ typedef fs_evs* (*get_evs_by_url_f) (const str *fs_url);
 typedef fs_evs* (*get_stats_evs_f) (str *fs_url, str *tag);
 
 typedef int (*evs_sub_f) (fs_evs *sock, const str *tag,
-                          const struct str_list *events);
+                    const struct str_list *events, ipc_handler_type ipc_type);
 typedef void (*evs_unsub_f) (fs_evs *sock, const str *tag,
                              const struct str_list *events);
 
@@ -163,7 +152,8 @@ struct fs_binds {
 	/*
 	 * Expands the set of events for FreeSWITCH instance "sock" that the
 	 * current "tag" is subscribed to with the "events" list of arbitrary
-	 * strings.
+	 * strings. The current event callback function for "sock" and "tag" is
+	 * triggered via the "ipc_type" channel.
 	 *
 	 * NOTE: Each event subscription is reference-counted! For each event sub,
 	 * you must eventually call unsub. This helps during reloads.

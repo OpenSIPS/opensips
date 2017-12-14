@@ -52,7 +52,7 @@ rw_lock_t *sockets_lock;
 
 /*
  *	fs_sockets ⊇ fs_sockets_down (sockets which require a (re)connect)
- *	fs_sockets ⊇ fs_sockets_esl (sockets which have pending sub/unsub/esl cmds)
+ *	fs_sockets ⊇ fs_sockets_esl (sockets which have pending sub/unsub ESL cmds)
  */
 struct list_head *fs_sockets_down;
 rw_lock_t *sockets_down_lock;
@@ -121,22 +121,10 @@ int fs_api_wait_init(void)
 	return -1;
 }
 
-void esl_cmd_free(struct esl_cmd *cmd)
-{
-	if (!is_event_cmd(cmd->type))
-		shm_free(cmd->text.s);
-
-	/* tags are globally reused; same for text events */
-
-	shm_free(cmd);
-}
-
-
 void evs_free(fs_evs *sock)
 {
 	struct list_head *_, *__;
 	struct fs_event *ev;
-	struct esl_cmd *cmd;
 
 	if (sock->ref != 0)
 		LM_BUG("non-zero ref @ free");
@@ -144,11 +132,6 @@ void evs_free(fs_evs *sock)
 	list_for_each_safe(_, __, &sock->events) {
 		ev = list_entry(_, struct fs_event, list);
 		shm_free(ev);
-	}
-
-	list_for_each_safe(_, __, &sock->esl_cmds) {
-		cmd = list_entry(_, struct esl_cmd, list);
-		esl_cmd_free(cmd);
 	}
 
 	// TODO: clean up sock->esl_replies
@@ -364,7 +347,7 @@ int dup_common_tag(const str *tag, str *out)
 		}
 	}
 
-	t = shm_malloc(sizeof *t + tag->len);
+	t = shm_malloc(sizeof *t + tag->len + 1);
 	if (!t) {
 		LM_ERR("oom\n");
 		return -1;
@@ -374,6 +357,7 @@ int dup_common_tag(const str *tag, str *out)
 	t->s.s = (char *)(t + 1);
 	t->s.len = tag->len;
 	memcpy(t->s.s, tag->s, tag->len);
+	t->s.s[t->s.len] = '\0';
 
 	if (!all_tags) {
 		all_tags = t;
@@ -386,184 +370,126 @@ int dup_common_tag(const str *tag, str *out)
 	return 0;
 }
 
-int add_event_subscription(struct fs_event *fs_ev, const str *tag)
+int add_event_subscription(struct fs_event *event, const str *tag,
+                           ipc_handler_type ipc_type)
 {
-	struct fs_event_subscription *fs_sub;
+	struct list_head *_;
+	struct fs_event_subscription *sub = NULL;
 
-	fs_sub = shm_malloc(sizeof *fs_sub);
-	if (!fs_sub) {
-		LM_ERR("oom\n");
-		return -1;
+	list_for_each(_, &event->subscriptions) {
+		sub = list_entry(_, struct fs_event_subscription, list);
+		if (str_strcmp(&sub->tag, tag) == 0) {
+			sub->ref++;
+			if (!ipc_bad_handler_type(ipc_type))
+				sub->ipc_type = ipc_type;
+			break;
+		}
+
+		sub = NULL;
 	}
-	memset(fs_sub, 0, sizeof *fs_sub);
 
-	if (dup_common_tag(tag, &fs_sub->tag) != 0) {
-		shm_free(fs_sub);
-		LM_ERR("oom\n");
-		return -1;
+	if (!sub) {
+		sub = shm_malloc(sizeof *sub);
+		if (!sub) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		memset(sub, 0, sizeof *sub);
+
+		if (dup_common_tag(tag, &sub->tag) != 0) {
+			shm_free(sub);
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		sub->ref = 1;
+		sub->ipc_type = ipc_type;
+		list_add_tail(&sub->list, &event->subscriptions);
 	}
 
-	fs_sub->ref = 1;
-
-	list_add_tail(&fs_sub->list, &fs_ev->subscriptions);
+	event->refsum++;
 	return 0;
 }
 
-int del_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
-                        const str *tag)
+struct fs_event *add_event(fs_evs *sock, const str *name)
 {
-	struct list_head *_, *__;
-	struct esl_cmd *cmd;
+	struct fs_event *event;
 
-	list_for_each_safe(_, __, &sock->esl_cmds) {
-		cmd = list_entry(_, struct esl_cmd, list);
-		if (cmd->type == type && str_strcmp(&cmd->text, text) == 0 &&
-		    str_strcmp(&cmd->tag, tag) == 0) {
-			if (cmd->count > 1) {
-				cmd->count--;
-				return 0;
-			}
-
-			// TODO: del this
-			if (cmd->count < 0)
-				LM_BUG("negative cmd count");
-
-			list_del(&cmd->list);
-			esl_cmd_free(cmd);
-			return 0;
-		}
-	}
-
-	return -1;
-}
-
-struct esl_cmd *esl_cmd_init(enum esl_cmd_types type, const str *text,
-                             const str *tag)
-{
-	struct esl_cmd *cmd;
-
-	cmd = shm_malloc(sizeof *cmd);
-	if (!cmd) {
+	event = shm_malloc(sizeof *event);
+	if (!event) {
 		LM_ERR("oom\n");
 		return NULL;
 	}
-	memset(cmd, 0, sizeof *cmd);
+	memset(event, 0, sizeof *event);
 
-	cmd->type = type;
-	cmd->count = 1;
-
-	if (dup_common_tag(tag, &cmd->tag) != 0)
-		goto out_err;
-
-	if (is_event_cmd(type)) {
-		if (dup_common_tag(text, &cmd->text) != 0)
-			goto out_err;
-	} else {
-		if (shm_nt_str_dup(&cmd->text, text) != 0)
-			goto out_err;
+	if (dup_common_tag(name, &event->name) != 0) {
+		shm_free(event);
+		LM_ERR("oom\n");
+		return NULL;
 	}
 
-	return cmd;
+	event->action = FS_EVENT_SUB;
+	INIT_LIST_HEAD(&event->subscriptions);
 
-out_err:
-	shm_free(cmd);
-	LM_ERR("oom\n");
+	list_add_tail(&event->list, &sock->events);
+	return event;
+}
+
+struct fs_event *get_event(fs_evs *sock, const str *name)
+{
+	struct list_head *_;
+	struct fs_event *event;
+
+	list_for_each(_, &sock->events) {
+		event = list_entry(_, struct fs_event, list);
+		if (str_strcmp(&event->name, name) == 0)
+			return event;
+	}
+
 	return NULL;
 }
 
-/*
- * Write-grab sock->lists_lk before calling this function
- *
- * Return:
- *   - 0 on success, -1 on failure
- *   - if type == ESL_CMD, *reply_id will also contain the reply ID to block on
- */
-int add_pending_esl_cmd(fs_evs *sock, enum esl_cmd_types type, const str *text,
-                        const str *tag)
+void del_event(struct fs_event *event)
 {
-	struct list_head *_, *__;
-	struct esl_cmd *cmd;
+	/* TODO? should walk & free event->subscriptions, or is it empty? */
 
-	list_for_each_safe(_, __, &sock->esl_cmds) {
-		cmd = list_entry(_, struct esl_cmd, list);
-
-		if (cmd->type == type && str_strcmp(&cmd->text, text) == 0 &&
-		    str_strcmp(&cmd->tag, tag) == 0) {
-			if (cmd->count < 0)
-				LM_BUG("negative cmd count");
-			cmd->count++;
-			return 0;
-		}
-	}
-
-	cmd = esl_cmd_init(type, text, tag);
-	if (!cmd) {
-		LM_ERR("failed to init esl_cmd\n");
-		return -1;
-	}
-
-	list_add_tail(&cmd->list, &sock->esl_cmds);
-
-	return 0;
+	list_del(&event->list);
+	shm_free(event);
 }
 
-int evs_sub(fs_evs *sock, const str *tag, const struct str_list *event)
+int evs_sub(fs_evs *sock, const str *tag, const struct str_list *name,
+            ipc_handler_type ipc_type)
 {
-	struct list_head *_, *__;
-	struct fs_event *fs_ev;
-	struct fs_event_subscription *fs_sub;
-	int event_found, sub_found, undo_unsub;
+	struct fs_event *event;
 	int ret = 0;
 
 	lock_start_write(sock->lists_lk);
 
-	for (; event; event = event->next) {
-		event_found = 0;
-		undo_unsub = 0;
+	for (; name; name = name->next) {
+		event = NULL;
 
-		/* is this sock already ESL-subscribed to this event? */
-		list_for_each(_, &sock->events) {
-			fs_ev = list_entry(_, struct fs_event, list);
-
-			/* yes! we either ref it, or make a new entry for this module */
-			if (str_strcmp(&fs_ev->event_name, &event->s) == 0) {
-				event_found = 1;
-
-				sub_found = 0;
-				list_for_each(__, &fs_ev->subscriptions) {
-					fs_sub = list_entry(__, struct fs_event_subscription,list);
-					if (str_strcmp(&fs_sub->tag, tag) == 0) {
-						fs_sub->ref++;
-						sub_found = 1;
-						break;
-					}
-				}
-
-				if (!sub_found) {
-				    if (add_event_subscription(fs_ev, tag) != 0) {
-						ret = -1;
-					} else {
-						/* there is a pending unsub command we must delete! */
-						if (fs_ev->refsum++ == 0)
-							undo_unsub = 1;
-					}
-				} else {
-					if (fs_ev->refsum++ == 0)
-						undo_unsub = 1;
-				}
-
-				break;
+		event = get_event(sock, &name->s);
+		if (!event) {
+			event = add_event(sock, &name->s);
+			if (!event) {
+				LM_ERR("failed to alloc event\n");
+				ret = -1;
+				continue;
 			}
 		}
 
-		/* lazy subscribe for this event */
-		if (!event_found) {
-			if (add_pending_esl_cmd(sock,
-			            ESL_EVENT_SUB, &event->s, tag) != 0)
-				ret = -1;
-		} else if (undo_unsub) {
-			if (del_pending_esl_cmd(sock, ESL_EVENT_UNSUB, &event->s, tag))
-				LM_BUG("undo unsub");
+		if (add_event_subscription(event, tag, ipc_type) != 0) {
+			LM_ERR("failed to alloc subscription\n");
+			ret = -1;
+			continue;
+		}
+
+		if (event->refsum == 1) {
+			/* there is a pending unsub action we must cancel! */
+			if (event->action == FS_EVENT_UNSUB)
+				event->action = FS_EVENT_NOP;
+			else
+				event->action = FS_EVENT_SUB;
 		}
 	}
 
@@ -574,7 +500,7 @@ int evs_sub(fs_evs *sock, const str *tag, const struct str_list *event)
 	 * worst case: we mark it as "todo" with no pending cmds, which is fine */
 	lock_start_write(sockets_esl_lock);
 	if (list_empty(&sock->esl_cmd_list))
-			list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
+		list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
 	lock_stop_write(sockets_esl_lock);
 
 	if (ret != 0)
@@ -602,7 +528,7 @@ void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *event)
 			fs_ev = list_entry(_, struct fs_event, list);
 
 			/* yes! unref it and unref/delete the module subscription */
-			if (str_strcmp(&fs_ev->event_name, &event->s) == 0) {
+			if (str_strcmp(&fs_ev->name, &event->s) == 0) {
 				event_found = 1;
 				/* an unsub cmd must already be queued! */
 				if (fs_ev->refsum == 0)
@@ -626,27 +552,6 @@ void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *event)
 
 				break;
 			}
-		}
-
-		if (!event_found) {
-			if (del_pending_esl_cmd(sock, ESL_EVENT_SUB, &event->s, tag) == 0)
-				LM_DBG("%.*s: deleted pending ESL %.*s SUB for %.*s\n",
-				       tag->len, tag->s, sock->host.len, sock->host.s,
-				       event->s.len, event->s.s);
-			else
-				LM_ERR("%.*s: failed to ESL %.*s SUB for %.*s\n",
-				       tag->len, tag->s, sock->host.len, sock->host.s,
-				       event->s.len, event->s.s);
-		} else if (must_unsub) {
-			if (add_pending_esl_cmd(sock,
-			                ESL_EVENT_UNSUB, &event->s, tag) == 0)
-				LM_DBG("%.*s: queued ESL %.*s UNSUB for %.*s\n",
-				       tag->len, tag->s, sock->host.len, sock->host.s,
-				       event->s.len, event->s.s);
-			else
-				LM_ERR("%.*s: failed to ESL %.*s UNSUB for %.*s\n",
-				       tag->len, tag->s, sock->host.len, sock->host.s,
-				       event->s.len, event->s.s);
 		}
 	}
 
@@ -706,7 +611,7 @@ fs_evs *get_stats_evs(str *fs_url, str *tag)
 		return NULL;
 	}
 
-	if (evs_sub(sock, tag, &ev_list) != 0) {
+	if (evs_sub(sock, tag, &ev_list, IPC_TYPE_NONE) != 0) {
 		LM_ERR("failed to subscribe for stats on %s:%d\n",
 		       sock->host.s, sock->port);
 		put_evs(sock);

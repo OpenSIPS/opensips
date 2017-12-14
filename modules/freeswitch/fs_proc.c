@@ -52,7 +52,7 @@ extern unsigned int fs_connect_timeout;
 
 extern void fs_api_set_proc_no(void);
 extern void evs_free(fs_evs *sock);
-extern void esl_cmd_free(struct esl_cmd *cmd);
+extern struct fs_event *get_event(fs_evs *sock, const str *name);
 
 static int destroy_fs_evs(fs_evs *sock, int idx)
 {
@@ -125,24 +125,34 @@ int fs_renew_stats(fs_evs *sock, const cJSON *ev)
 	return 0;
 }
 
-int fs_raise_event(fs_evs *sock, const char *ev_name, const cJSON *ev_body)
+int fs_raise_event(fs_evs *sock, const char *name, const cJSON *body)
 {
-	struct list_head *_, *__;
-	struct fs_event *fs_ev;
-	//struct fs_event_subscription *fs_sub;
-	str _ev_name = {(char *)ev_name, strlen(ev_name)};
+	struct list_head *_;
+	struct fs_event *event;
+	struct fs_event_subscription *sub;
+	str name_str = {(char *)name, strlen(name)};
+
+	LM_DBG("pushing jobs for event %s\n", name);
 
 	lock_start_read(sock->lists_lk);
 
-	list_for_each(_, &sock->events) {
-		fs_ev = list_entry(_, struct fs_event, list);
-		if (str_strcmp(&fs_ev->event_name, &_ev_name) == 0) {
-			list_for_each(__, &fs_ev->subscriptions) {
-				//fs_sub = list_entry(__, struct fs_event_subscription, list);
-				//TODO: upgrade IPC support and submit a func() job
-				//fs_sub->func(sock,
+	event = get_event(sock, &name_str);
+	if (!event) {
+		lock_stop_read(sock->lists_lk);
+		LM_BUG("event %s raised with no backing subscription", name);
+		return -1;
+	}
+
+	list_for_each(_, &event->subscriptions) {
+		sub = list_entry(_, struct fs_event_subscription, list);
+		if (!ipc_bad_handler_type(sub->ipc_type)) {
+			LM_DBG("pushing event %s IPC job %d for %s\n", name,
+			       sub->ipc_type, sub->tag.s);
+			if (fs_ipc_dispatch_esl_event(sock, &name_str, body,
+			                              sub->ipc_type) != 0) {
+				LM_ERR("failed to raise %s event on %s:%d\n", name,
+				       sock->host.s, sock->port);
 			}
-			break;
 		}
 	}
 
@@ -213,12 +223,12 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 
 			s = cJSON_GetObjectItem(ev, "Event-Name")->valuestring;
 
-			/* some generic FS event, fire it to all subscribers */
-			if (strcmp(s, FS_STATS_EVENT_NAME) != 0) {
-				if (fs_raise_event(sock, s, ev) != 0)
-					LM_ERR("errors during event %s raise on %.*s:%d\n",
-					       s, sock->host.len, sock->host.s, sock->port);
-			} else {
+			/* fire event notifications to any subscribers */
+			if (fs_raise_event(sock, s, ev) != 0)
+				LM_ERR("errors during event %s raise on %.*s:%d\n",
+				       s, sock->host.len, sock->host.s, sock->port);
+
+			if (strcmp(s, FS_STATS_EVENT_NAME) == 0) {
 				if (fs_renew_stats(sock, ev) != 0)
 					LM_ERR("errors during stats %s renew on %s:%d\n",
 					       s, sock->host.s, sock->port);
@@ -227,7 +237,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			break;
 		case F_IPC:
 			LM_DBG("received IPC job!\n");
-			ipc_handle_job();
+			ipc_handle_job(fm->fd);
 			break;
 		default:
 			LM_CRIT("unknown fd type %d in FreeSWITCH worker\n", fm->type);
@@ -238,33 +248,93 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	return 0;
 }
 
+enum esl_cmd_types {
+	ESL_CMD,
+	ESL_EVENT_SUB,
+	ESL_EVENT_UNSUB,
+};
+
+int w_esl_send_recv(esl_handle_t *handle, const str *cmd, enum esl_cmd_types t)
+{
+#define ESL_BUF_SIZE 4096
+#define LONGEST_CMD_EXTRA (sizeof("event json \n\n") - 1)
+	static char command[BUF_SIZE];
+	char *exec_cmd;
+
+	if (cmd->len > ESL_BUF_SIZE - LONGEST_CMD_EXTRA - 1) {
+		LM_ERR("refusing to run ESL commands longer than 4K bytes!\n");
+		return -1;
+	}
+
+	switch (t) {
+	case ESL_CMD:
+		if (cmd->len >= 2 &&
+		    memcmp(cmd->s + cmd->len - 2, "\n\n", 2) != 0) {
+			exec_cmd = cmd->s;
+		} else {
+			if (cmd->s[cmd->len - 1] == '\n')
+				snprintf(command, 4096, "%s\n", cmd->s);
+			else
+				snprintf(command, 4096, "%s\n\n", cmd->s);
+			exec_cmd = command;
+		}
+		break;
+	case ESL_EVENT_SUB:
+		if (cmd->len >= 2 &&
+		    memcmp(cmd->s + cmd->len - 2, "\n\n", 2) != 0) {
+			snprintf(command, 4096, "event json %s", cmd->s);
+		} else {
+			if (cmd->s[cmd->len - 1] == '\n')
+				snprintf(command, 4096, "event json %s\n", cmd->s);
+			else
+				snprintf(command, 4096, "event json %s\n\n", cmd->s);
+		}
+		exec_cmd = command;
+		break;
+	case ESL_EVENT_UNSUB:
+		if (cmd->len >= 2 &&
+		    memcmp(cmd->s + cmd->len - 2, "\n\n", 2) != 0) {
+			snprintf(command, 4096, "nixevent %s", cmd->s);
+		} else {
+			if (cmd->s[cmd->len - 1] == '\n')
+				snprintf(command, 4096, "nixevent %s\n", cmd->s);
+			else
+				snprintf(command, 4096, "nixevent %s\n\n", cmd->s);
+		}
+		exec_cmd = command;
+		break;
+	default:
+		LM_BUG("invalid ESL command type: %d\n", t);
+		return -1;
+	}
+
+	LM_DBG("running ESL command '%s'\n", exec_cmd);
+
+	if (esl_send_recv(handle, exec_cmd) != ESL_SUCCESS) {
+		LM_ERR("failed to run ESL command\n");
+		return -1;
+	}
+
+	LM_DBG("success, reply is '%s'\n", handle->last_sr_reply);
+
+	if (strncmp(handle->last_sr_reply, "-ERR", 4) == 0) {
+		LM_ERR("error reply from ESL: %s\n", handle->last_sr_reply);
+		return 1;
+	} else if (strncmp(handle->last_sr_reply, "+OK", 3) != 0) {
+		LM_DBG("unknown reply from ESL: %s\n", handle->last_sr_reply);
+	}
+
+	return 0;
+}
+
 void fs_run_esl_command(int sender, void *_cmd)
 {
 	fs_ipc_esl_cmd *cmd = (fs_ipc_esl_cmd *)_cmd;
-	char *exec_cmd;
-	static char command[4096];
 	struct fs_esl_reply *reply;
 
-	LM_DBG("running ESL CMD %.*s\n", cmd->fs_cmd.len, cmd->fs_cmd.s);
-
-	if (cmd->fs_cmd.len > 4093) {
-		LM_ERR("max command size exceeded!\n");
-		goto out;
-	}
-
-	if (cmd->fs_cmd.len >= 2 &&
-	    memcmp(cmd->fs_cmd.s + cmd->fs_cmd.len - 2, "\n\n", 2) != 0) {
-		exec_cmd = cmd->fs_cmd.s;
-	} else {
-		if (cmd->fs_cmd.s[cmd->fs_cmd.len - 1] == '\n')
-			snprintf(command, 4096, "%s\n", cmd->fs_cmd.s);
-		else
-			snprintf(command, 4096, "%s\n\n", cmd->fs_cmd.s);
-		exec_cmd = command;
-	}
-
-	if (esl_send_recv(cmd->sock->handle, exec_cmd) != ESL_SUCCESS) {
-		LM_ERR("failed to run fs_esl command on sock %s:%d\n",
+	if (w_esl_send_recv(cmd->sock->handle, &cmd->fs_cmd, ESL_CMD) < 0) {
+		LM_ERR("failed to run %.*s command on sock %s:%d\n",
+		       cmd->fs_cmd.len, cmd->fs_cmd.s,
 		       cmd->sock->host.s, cmd->sock->port);
 		goto out;
 	}
@@ -299,49 +369,80 @@ out:
 	shm_free(cmd);
 }
 
-int run_esl_commands(fs_evs *sock)
+int update_event_subscriptions(fs_evs *sock)
 {
 	struct list_head *_, *__;
-	struct esl_cmd *cmd;
+	struct fs_event *event;
+	int rc, ret = 0;
 
-	/* only event sub/unsub commands */
-	list_for_each_safe(_, __, &sock->esl_cmds) {
-		cmd = list_entry(_, struct esl_cmd, list);
+	lock_start_write(sock->lists_lk);
 
-		// TODO 1:
-		/* -------- all commands must be "\n\n" terminated
-		 *               (event sub/unsub, fs_esl)
-		LM_DBG("registering for HEARTBEAT events...\n");
-		if (esl_send_recv(sock->handle, "event json HEARTBEAT\n\n")
-		    != ESL_SUCCESS) {
-			LM_ERR("failed to register HEARTBEAT event on FS sock %s:%d\n",
-			       sock->host.s, sock->port);
-			ret++;
-			continue;
+	/* handle any pending event actions */
+	list_for_each_safe(_, __, &sock->events) {
+		event = list_entry(_, struct fs_event, list);
+		if (event->refsum > 0 && event->action == FS_EVENT_SUB) {
+			LM_DBG("subscribing to %s events on %s:%d\n",
+			       event->name.s, sock->host.s, sock->port);
+
+			rc = w_esl_send_recv(sock->handle, &event->name, ESL_EVENT_SUB);
+			switch (rc) {
+			case -1:
+				LM_ERR("error while subscribing to %s on ESL sock %s:%d\n",
+				       event->name.s, sock->host.s, sock->port);
+				ret++;
+				continue;
+			case 1:
+				LM_ERR("ESL replied '%s' when we subscribed for %s on sock "
+				       "%s:%d\n", sock->handle->last_sr_reply, event->name.s,
+					   sock->host.s, sock->port);
+				ret++;
+				continue;
+			}
+
+			LM_INFO("subscribed to %s events on FS sock %s:%d\n",
+			        event->name.s, sock->host.s, sock->port);
+			event->action = FS_EVENT_NOP;
 		}
 
-		>> print sock->handle->last_sr_reply
+		if (event->refsum == 0 && event->action == FS_EVENT_UNSUB) {
+			LM_DBG("unsubscribing from %s events on %s:%d\n",
+			       event->name.s, sock->host.s, sock->port);
 
-		LM_DBG("answer: %s\n", sock->handle->last_sr_reply);
-		LM_DBG("successfully enabled HEARTBEAT events!\n");
-		   */
+			rc = w_esl_send_recv(sock->handle, &event->name, ESL_EVENT_UNSUB);
+			switch (rc) {
+			case -1:
+				LM_ERR("error while unsubbing from %s on ESL sock %s:%d\n",
+				       event->name.s, sock->host.s, sock->port);
+				ret++;
+				continue;
+			case 1:
+				LM_ERR("ESL replied '%s' when we unsubbed from %s on sock "
+				       "%s:%d\n", sock->handle->last_sr_reply, event->name.s,
+					   sock->host.s, sock->port);
+				ret++;
+				continue;
+			}
 
-		list_del(&cmd->list);
-		esl_cmd_free(cmd);
+			LM_INFO("unsubscribed from %s events on FS sock %s:%d\n",
+			        event->name.s, sock->host.s, sock->port);
+			event->action = FS_EVENT_NOP;
+		}
 	}
 
-	return 0;
+	lock_stop_write(sock->lists_lk);
+
+	return ret;
 }
 
 /*
  * - reconnects any socket found in the "fs_sockets_down" list
- * - applies all "sock->esl_cmds" commands of any sockets in "fs_sockets_esl"
+ * - performs any necessary event subscribe / unsubscribe socket operations
  */
-static int apply_socket_commands(int first_run)
+static int apply_socket_commands(void)
 {
 	struct list_head *_, *__;
 	fs_evs *sock;
-	int ret = 0;
+	int ret = 0, _rc;
 	esl_status_t rc;
 
 	LM_DBG("applying FS socket commands\n");
@@ -409,12 +510,19 @@ static int apply_socket_commands(int first_run)
 	list_for_each_safe(_, __, fs_sockets_esl) {
 		sock = list_entry(_, fs_evs, esl_cmd_list);
 
+		/* above connect may have failed for this socket; skip it for now */
 		if (!list_empty(&sock->reconnect_list))
 			continue;
 
-		if (run_esl_commands(sock) != 0)
-			LM_ERR("errors while processing sock %s:%d commands\n",
-			       sock->host.s, sock->port);
+		_rc = update_event_subscriptions(sock);
+		if (_rc != 0) {
+			LM_ERR("%d errors while processing sock %s:%d commands\n",
+			       _rc, sock->host.s, sock->port);
+			continue;
+		}
+
+		list_del(&sock->esl_cmd_list);
+		INIT_LIST_HEAD(&sock->esl_cmd_list);
 	}
 	lock_stop_write(sockets_esl_lock);
 
@@ -439,11 +547,12 @@ void fs_conn_mgr_loop(int proc_no)
 		abort();
 	}
 
-	rc = apply_socket_commands(1);
+	/* connect to all FS sockets created on mod_init() or modparam */
+	rc = apply_socket_commands();
 	if (rc != 0)
 		LM_ERR("failed to connect to %d FS boxes!\n", rc);
 
-	reactor_main_loop(FS_REACTOR_TIMEOUT, out_err, apply_socket_commands(0));
+	reactor_main_loop(FS_REACTOR_TIMEOUT, out_err, apply_socket_commands());
 
 out_err:
 	destroy_io_wait(&_worker_io);

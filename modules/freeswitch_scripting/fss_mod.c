@@ -28,7 +28,6 @@
 #include "../../mod_fix.h"
 
 #include "../freeswitch/fs_api.h"
-#include "fss_api.h"
 #include "fss_ipc.h"
 #include "fss_evs.h"
 
@@ -44,7 +43,6 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *param);
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param);
 
 static cmd_export_t cmds[] = {
-	{ "fss_bind", (cmd_function)fss_bind, 1, NULL,            NULL,          0 },
 	{ "freeswitch_esl", (cmd_function)fs_esl, 2, fixup_fs_esl, NULL, ALL_ROUTES },
 	{ "freeswitch_esl", (cmd_function)fs_esl, 3, fixup_fs_esl, NULL, ALL_ROUTES },
 	{ NULL, NULL, 0, NULL, NULL, 0 }

@@ -24,7 +24,9 @@
 #include "../../lib/url.h"
 
 #include "../freeswitch/fs_api.h"
+
 #include "fss_evs.h"
+#include "fss_ipc.h"
 
 #define FSS_MOD_NAME "freeswitch_scripting"
 str fss_mod_name = {FSS_MOD_NAME, sizeof(FSS_MOD_NAME) - 1};
@@ -87,7 +89,8 @@ int subscribe_to_fs_urls(const struct list_head *urls)
 
 		for (event = fs_url->params; event; event = event->next) {
 			evlist.s = event->key;
-			if (fs_api.evs_sub(sock, &fss_mod_name, &evlist) != 0) {
+			if (fs_api.evs_sub(sock, &fss_mod_name, &evlist,
+			                   ipc_hdl_rcv_event) != 0) {
 				LM_ERR("event sub failed to FS URL '%.*s', skipping!\n",
 				       url->s.len, url->s.s);
 				ret = 1;
