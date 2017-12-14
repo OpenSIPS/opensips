@@ -411,6 +411,30 @@ int add_event_subscription(struct fs_event *event, const str *tag,
 	return 0;
 }
 
+int del_event_subscription(struct fs_event *event, const str *tag)
+{
+	struct list_head *_;
+	struct fs_event_subscription *sub = NULL;
+
+	list_for_each(_, &event->subscriptions) {
+		sub = list_entry(_, struct fs_event_subscription, list);
+		if (str_strcmp(&sub->tag, tag) == 0) {
+			if (sub->ref == 0)
+				return -1;
+
+			sub->ref--;
+
+			if (event->refsum <= 0)
+				LM_BUG("del event refsum");
+
+			event->refsum--;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
 struct fs_event *add_event(fs_evs *sock, const str *name)
 {
 	struct fs_event *event;
@@ -509,49 +533,32 @@ int evs_sub(fs_evs *sock, const str *tag, const struct str_list *name,
 	return ret;
 }
 
-void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *event)
+void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *name)
 {
-	struct list_head *_, *__, *___;
-	struct fs_event *fs_ev;
-	struct fs_event_subscription *fs_sub;
-	int event_found, must_unsub;
+	struct fs_event *event;
 	int ret = 0;
 
 	lock_start_write(sock->lists_lk);
 
-	for (; event; event = event->next) {
-		event_found = 0;
-		must_unsub = 1;
+	for (; name; name = name->next) {
+		event = get_event(sock, &name->s);
+		if (!event) {
+			LM_DBG("not subscribed for %.*s\n", name->s.len, name->s.s);
+			continue;
+		}
 
-		/* is this sock already ESL-subscribed to this event? */
-		list_for_each(_, &sock->events) {
-			fs_ev = list_entry(_, struct fs_event, list);
+		if (del_event_subscription(event, tag) != 0) {
+			LM_DBG("%.*s is not subscribed to %.*s\n", tag->len, tag->s,
+			       name->s.len, name->s.s);
+			continue;
+		}
 
-			/* yes! unref it and unref/delete the module subscription */
-			if (str_strcmp(&fs_ev->name, &event->s) == 0) {
-				event_found = 1;
-				/* an unsub cmd must already be queued! */
-				if (fs_ev->refsum == 0)
-					break;
-
-				fs_ev->refsum--;
-				if (fs_ev->refsum == 0) /* need to queue up an ESL unsub */
-					must_unsub = 1;
-
-				list_for_each_safe(__, ___, &fs_ev->subscriptions) {
-					fs_sub = list_entry(__, struct fs_event_subscription,list);
-					if (str_strcmp(&fs_sub->tag, tag) == 0) {
-						fs_sub->ref--;
-						if (fs_sub->ref == 0) {
-							list_del(&fs_sub->list);
-							shm_free(fs_sub);
-						}
-						break;
-					}
-				}
-
-				break;
-			}
+		if (event->refsum == 0) {
+			/* there is a pending sub action we must cancel! */
+			if (event->action == FS_EVENT_SUB)
+				event->action = FS_EVENT_NOP;
+			else
+				event->action = FS_EVENT_UNSUB;
 		}
 	}
 
@@ -562,13 +569,11 @@ void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *event)
 	 * worst case: we mark it as "todo" with no pending cmds, which is fine */
 	lock_start_write(sockets_esl_lock);
 	if (list_empty(&sock->esl_cmd_list))
-			list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
+		list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
 	lock_stop_write(sockets_esl_lock);
 
 	if (ret != 0)
 		LM_ERR("oom! some events may have been skipped\n");
-
-	return;
 }
 
 void put_evs(fs_evs *sock)
