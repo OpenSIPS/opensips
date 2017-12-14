@@ -26,6 +26,7 @@
 
 typedef int ipc_handler_type;
 extern int ipc_shared_fd_read;
+#define IPC_TYPE_NONE (-1)
 #define ipc_bad_handler_type(htype) ((htype) < 0)
 
 #define IPC_FD_READ(_proc_no)   pt[_proc_no].ipc_pipe[0]
@@ -61,7 +62,7 @@ int ipc_dispatch_job(ipc_handler_type type, void *payload);
  * default handler for F_IPC reactor jobs. Copy-paste its code and improve
  * if this is not enough for you
  */
-void ipc_handle_job(void);
+void ipc_handle_job(int fd);
 
 /* internal functions */
 int init_ipc(void);

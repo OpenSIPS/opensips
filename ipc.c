@@ -151,7 +151,7 @@ int ipc_dispatch_job(ipc_handler_type type, void *payload)
 	return __ipc_send_job(ipc_shared_pipe[1], type, payload);
 }
 
-void ipc_handle_job(void)
+void ipc_handle_job(int fd)
 {
 	ipc_job job;
 	int n;
@@ -159,7 +159,7 @@ void ipc_handle_job(void)
 	/* read one IPC job from the pipe; even if the read is blocking,
 	 * we are here triggered from the reactor, on a READ event, so 
 	 * we shouldn;t ever block */
-	n = read( IPC_FD_READ_SELF, &job, sizeof(job) );
+	n = read(fd, &job, sizeof(job) );
 	if (n==-1) {
 		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
 			return;

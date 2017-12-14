@@ -141,7 +141,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			async_launch_resume( &fm->fd, fm->data);
 			return 0;
 		case F_IPC:
-			ipc_handle_job();
+			ipc_handle_job(fm->fd);
 			return 0;
 		case F_TCPMAIN:
 again:
