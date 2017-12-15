@@ -52,6 +52,10 @@ struct _str{
 
 typedef struct _str str;
 
+/* str initialization */
+#define str_init(_string)  {_string, sizeof(_string) - 1}
+
+/* zero-str tests */
 #define ZSTR(_s)    (!(_s).s || (_s).len == 0)
 #define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
 

@@ -31,7 +31,7 @@
 #include "fss_ipc.h"
 #include "fss_evs.h"
 
-str mod_tag = { MI_SSTR("freeswitch_scripting") };
+str mod_tag = str_init("freeswitch_scripting");
 
 static int mod_init(void);
 
@@ -123,6 +123,11 @@ static int mod_init(void)
 {
 	if (fss_ipc_init() != 0) {
 		LM_ERR("failed to init IPC\n");
+		return -1;
+	}
+
+	if (fss_evi_init() != 0) {
+		LM_ERR("failed to init FS script events!\n");
 		return -1;
 	}
 

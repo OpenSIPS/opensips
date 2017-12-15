@@ -145,14 +145,16 @@ int fs_raise_event(fs_evs *sock, const char *name, const cJSON *body)
 
 	list_for_each(_, &event->subscriptions) {
 		sub = list_entry(_, struct fs_event_subscription, list);
-		if (!ipc_bad_handler_type(sub->ipc_type)) {
-			LM_DBG("pushing event %s IPC job %d for %s\n", name,
-			       sub->ipc_type, sub->tag.s);
-			if (fs_ipc_dispatch_esl_event(sock, &name_str, body,
-			                              sub->ipc_type) != 0) {
-				LM_ERR("failed to raise %s event on %s:%d\n", name,
-				       sock->host.s, sock->port);
-			}
+		if (sub->ref == 0 || ipc_bad_handler_type(sub->ipc_type))
+			continue;
+
+		LM_DBG("pushing event %s IPC job %d for %s\n", name,
+		       sub->ipc_type, sub->tag.s);
+
+		if (fs_ipc_dispatch_esl_event(sock, &name_str, body,
+		                              sub->ipc_type) != 0) {
+			LM_ERR("failed to raise %s event on %s:%d\n", name,
+			       sock->host.s, sock->port);
 		}
 	}
 
