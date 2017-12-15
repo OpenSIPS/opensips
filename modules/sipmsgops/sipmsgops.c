@@ -82,7 +82,8 @@
 #include "../../mod_fix.h"
 #include "../../trim.h"
 
-#include"codecs.h"
+#include "codecs.h"
+#include "list_hdr.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -136,6 +137,11 @@ static int add_header_fixup(void** param, int param_no);
 static int fixup_body_type(void** param, int param_no);
 static int fixup_privacy(void** param, int param_no);
 static int fixup_sip_validate(void** param, int param_no);
+
+static int hl_opt_fixup(void** param, int param_no);
+static int list_hdr_has_option(struct sip_msg*, char*, char *);
+static int list_hdr_add_option(struct sip_msg*, char*, char *);
+static int list_hdr_remove_option(struct sip_msg*, char*, char *);
 
 static int change_reply_status_f(struct sip_msg*, char*, char *);
 static int change_reply_status_fixup(void** param, int param_no);
@@ -262,6 +268,15 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"stream_delete",	(cmd_function)stream_delete,             1,
 		fixup_regexp_dynamic_null,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"list_hdr_has_option", (cmd_function)list_hdr_has_option,   2,
+		hl_opt_fixup, NULL,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"list_hdr_add_option", (cmd_function)list_hdr_add_option,   2,
+		hl_opt_fixup, NULL,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"list_hdr_remove_option", (cmd_function)list_hdr_remove_option,   2,
+		hl_opt_fixup, NULL,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -1958,5 +1973,61 @@ static int change_reply_status_f(struct sip_msg* msg, char* str1, char* str2)
 	}
 
 	return 1;
+}
+
+
+static int hl_opt_fixup(void** param, int param_no)
+{
+	if (param_no==1)
+		/* name of the header */
+		return hname_fixup( param, param_no);
+
+	if (param_no==2)
+		/* value for the option */
+		return fixup_spve( param );
+
+	LM_BUG("too many parameters found\n");
+	return -1;
+}
+
+static int list_hdr_has_option(struct sip_msg *msg, char *s1, char *s2)
+{
+	str option;
+
+	/* evaluate the value for the option */
+	if (fixup_get_svalue( msg, (gparam_p)s2, &option)==-1) {
+		LM_ERR("failed to evaluate the value for the option\n");
+		return -1;
+	}
+
+	return list_hdr_has_val(msg, (gparam_p)s1, &option);
+}
+
+
+static int list_hdr_add_option(struct sip_msg *msg, char *s1, char *s2)
+{
+	str option;
+
+	/* evaluate the value for the option */
+	if (fixup_get_svalue( msg, (gparam_p)s2, &option)==-1) {
+		LM_ERR("failed to evaluate the value for the option\n");
+		return -1;
+	}
+
+	return list_hdr_add_val(msg, (gparam_p)s1, &option);
+}
+
+
+static int list_hdr_remove_option(struct sip_msg *msg, char *s1, char *s2)
+{
+	str option;
+
+	/* evaluate the value for the option */
+	if (fixup_get_svalue( msg, (gparam_p)s2, &option)==-1) {
+		LM_ERR("failed to evaluate the value for the option\n");
+		return -1;
+	}
+
+	return list_hdr_remove_val(msg, (gparam_p)s1, &option);
 }
 

@@ -1162,6 +1162,156 @@ stream_delete("video");
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">list_hdr_has_option(hdr_name,option)</function>
+		</title>
+		<para>
+		Checks and returns true if the given option/token is listed in the 
+		body of the given header. The header must have its body formated as a 
+		CSV list of tokens/option (like the Supported, Require,
+		Content-Dispsition headers)
+		body format
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>hdr_name</emphasis> - the name of the header to be 
+		checked. Note that all instances of that header will be checked (if the
+		header has multiple instances in the SIP message). Any kind of header
+		name is supported - RFC3261 standard, RFC extensions or custom names.
+		</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>opt</emphasis> - the option/tolen to be searched for.
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<para>
+		The function returns true if the options was found listed in one of the
+		header instances. If no header was found, if the option was not found
+		or if there was a parsing or runtime error, false will be returned.
+		</para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>list_hdr_has_option</function> usage</title>
+		<programlisting format="linespecific">
+...
+# check if 100rel is advertised
+if (list_hdr_has_option("Supported","100rel")) 
+	xlog("100rel option founded\n");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">list_hdr_add_option(hdr_name,option)</function>
+		</title>
+		<para>
+		Add a new option/token at the end of the list in the body of the given
+		header. The header must have its body formated as a 
+		CSV list of tokens/option (like the Supported, Require,
+		Content-Dispsition headers)
+		body format
+		</para>
+		<para>
+		Multiple add / remove operations can be performed over the same header.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>hdr_name</emphasis> - the name of the header where the
+		option has to be added. If multiple instances of that header are 
+		present in the SIP message, the add will be performed on the first
+		instance. Any kind of header name is supported - RFC3261 standard,
+		RFC extensions or custom names.
+		</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>opt</emphasis> - the option/token to be added to the 
+		CSV list. Note there is not verification for duplicated (if the newly
+		added option is not already present in the header).
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<para>
+		The function returns true if the options was successfully added to
+		the listed of the given header. If no header was found or if there was
+		a parsing or runtime error, false will be returned.
+		</para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>list_hdr_add_option</function> usage</title>
+		<programlisting format="linespecific">
+...
+# add 100rel for advertising
+if (!list_hdr_has_option("Supported","100rel")) 
+    list_hdr_add_option("Supported","100rel")
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">list_hdr_remove_option(hdr_name,option)</function>
+		</title>
+		<para>
+		Removes an option/token from the list inside the body of the given
+		header. The header must have its body formated as a 
+		CSV list of tokens/option (like the Supported, Require,
+		Content-Dispsition headers)
+		body format
+		</para>
+		<para>
+		Multiple add / remove operations can be performed over the same header.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>hdr_name</emphasis> - the name of the header where the
+		option has to be removed from. If the option is duplicated in the same
+		header, only the last one will be removed. If multiple instances of 
+		that header are present in the SIP message, the remove will be 
+		performed on all instance instance. Any kind of header name is
+		supported - RFC3261 standard, RFC extensions or custom names.
+		</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>opt</emphasis> - the option/token to be removed from
+		the CSV list. Note that if this the only option in the header, the 
+		whole header will be removed.
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<para>
+		The function returns true if the options was successfully removed from
+		at least one heaer instance. If no header was found or if the 
+		token was not found or if there was a parsing or runtime error, false
+		will be returned.
+		</para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>list_hdr_remove_option</function> usage</title>
+		<programlisting format="linespecific">
+...
+# add 100rel for advertising
+if (list_hdr_has_option("Supported","100rel")) 
+    list_hdr_remove_option("Supported","100rel");
+list_hdr_add_option("Supported","optionX");
+</programlisting>
+		</example>
+	</section>
 
 
 	</section>
