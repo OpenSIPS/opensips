@@ -215,6 +215,7 @@ out:
 struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 {
 	struct mi_node *param, *event;
+	struct mi_root *reply;
 	struct str_list *evlist, *li, **last = &evlist;
 	fs_evs *sock;
 	str *url;
@@ -227,7 +228,7 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 	sock = fs_api.get_evs_by_url(url);
 	if (!sock) {
 		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
-		return init_mi_tree(400, MI_SSTR(MI_INTERNAL_ERR));
+		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
 	}
 
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
@@ -237,6 +238,7 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 		li = pkg_malloc(sizeof *li);
 		if (!li) {
 			LM_ERR("oom\n");
+			reply = init_mi_tree(501, MI_SSTR(MI_INTERNAL_ERR));
 			goto out_free;
 		}
 		memset(li, 0, sizeof *li);
@@ -251,16 +253,19 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 	if (fs_api.evs_sub(sock, &mod_tag, evlist, ipc_hdl_rcv_event) != 0)
 		LM_ERR("failed to subscribe for one or more events!\n");
 
+	reply = init_mi_tree(200, MI_SSTR(MI_OK));
+
 out_free:
 	_free_str_list(evlist, osips_pkg_free, NULL);
 	fs_api.put_evs(sock);
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return reply;
 }
 
 /* fs_unsubscribe 10.0.0.10 DTMF HEARTBEAT CHANNEL_STATE FOO ... */
 struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 {
 	struct mi_node *param, *event;
+	struct mi_root *reply;
 	struct str_list *evlist, *li, **last = &evlist;
 	fs_evs *sock;
 	str *url;
@@ -273,7 +278,7 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 	sock = fs_api.get_evs_by_url(url);
 	if (!sock) {
 		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
-		return init_mi_tree(400, MI_SSTR(MI_INTERNAL_ERR));
+		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
 	}
 
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
@@ -283,6 +288,7 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 		li = pkg_malloc(sizeof *li);
 		if (!li) {
 			LM_ERR("oom\n");
+			reply = init_mi_tree(501, MI_SSTR(MI_INTERNAL_ERR));
 			goto out_free;
 		}
 		memset(li, 0, sizeof *li);
@@ -295,11 +301,12 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 	}
 
 	fs_api.evs_unsub(sock, &mod_tag, evlist);
+	reply = init_mi_tree(200, MI_SSTR(MI_OK));
 
 out_free:
 	_free_str_list(evlist, osips_pkg_free, NULL);
 	fs_api.put_evs(sock);
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return reply;
 }
 
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param)
