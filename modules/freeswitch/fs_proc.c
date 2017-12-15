@@ -434,22 +434,22 @@ int update_event_subscriptions(fs_evs *sock)
 	return ret;
 }
 
-/*
- * - reconnects any socket found in the "fs_sockets_down" list
- * - performs any necessary event subscribe / unsubscribe socket operations
- */
-static int apply_socket_commands(void)
+void handle_reconnects(void)
 {
 	struct list_head *_, *__;
 	fs_evs *sock;
-	int ret = 0, _rc;
 	esl_status_t rc;
 
-	LM_DBG("applying FS socket commands\n");
-
-	lock_start_write(sockets_down_lock);
 	list_for_each_safe(_, __, fs_sockets_down) {
 		sock = list_entry(_, fs_evs, reconnect_list);
+
+		if (sock->ref == 0) {
+			// TODO: find a way to implement this cleanup, the reactor API
+			// does not allow a fd to be deleted outside handle_io()
+			//if (destroy_fs_evs(sock, idx) != 0)
+			//	LM_ERR("failed to destroy FS evs!\n");
+			continue;
+		}
 
 		if (sock->handle) {
 			if (sock->handle->connected &&
@@ -469,7 +469,6 @@ static int apply_socket_commands(void)
 			sock->handle = pkg_malloc(sizeof *sock->handle);
 			if (!sock->handle) {
 				LM_ERR("failed to create FS handle!\n");
-				ret++;
 				continue;
 			}
 		}
@@ -481,7 +480,6 @@ static int apply_socket_commands(void)
 		      sock->user.s, sock->pass.s, fs_connect_timeout) != ESL_SUCCESS) {
 			LM_ERR("failed to connect to FS sock '%s:%d'\n",
 			       sock->host.s, sock->port);
-			ret++;
 			continue;
 		}
 
@@ -496,7 +494,6 @@ static int apply_socket_commands(void)
 		                       RCT_PRIO_TIMER, sock) < 0) {
 			LM_ERR("failed to add FS socket %s:%d to reactor\n",
 			       sock->host.s, sock->port);
-			ret++;
 			sock->handle->connected = 0;
 			continue;
 		}
@@ -504,7 +501,26 @@ static int apply_socket_commands(void)
 		list_del(&sock->reconnect_list);
 		INIT_LIST_HEAD(&sock->reconnect_list);
 	}
+}
+
+/*
+ * - reconnects any socket found in the "fs_sockets_down" list
+ * - performs any necessary event subscribe / unsubscribe socket operations
+ */
+static void apply_socket_commands(void)
+{
+	struct list_head *_, *__;
+	fs_evs *sock;
+	int rc;
+
+	LM_DBG("applying FS socket commands\n");
+
+	/* we may also clean up some sockets */
+	lock_start_write(sockets_lock);
+	lock_start_write(sockets_down_lock);
+	handle_reconnects();
 	lock_stop_write(sockets_down_lock);
+	lock_stop_write(sockets_lock);
 
 	lock_start_write(sockets_esl_lock);
 	list_for_each_safe(_, __, fs_sockets_esl) {
@@ -514,10 +530,10 @@ static int apply_socket_commands(void)
 		if (!list_empty(&sock->reconnect_list))
 			continue;
 
-		_rc = update_event_subscriptions(sock);
-		if (_rc != 0) {
+		rc = update_event_subscriptions(sock);
+		if (rc != 0) {
 			LM_ERR("%d errors while processing sock %s:%d commands\n",
-			       _rc, sock->host.s, sock->port);
+			       rc, sock->host.s, sock->port);
 			continue;
 		}
 
@@ -525,14 +541,10 @@ static int apply_socket_commands(void)
 		INIT_LIST_HEAD(&sock->esl_cmd_list);
 	}
 	lock_stop_write(sockets_esl_lock);
-
-	return ret;
 }
 
 void fs_conn_mgr_loop(int proc_no)
 {
-	int rc;
-
 	fs_api_set_proc_no();
 
 	LM_DBG("size: %d, method: %d\n", reactor_size, io_poll_method);
@@ -548,9 +560,7 @@ void fs_conn_mgr_loop(int proc_no)
 	}
 
 	/* connect to all FS sockets created on mod_init() or modparam */
-	rc = apply_socket_commands();
-	if (rc != 0)
-		LM_ERR("failed to connect to %d FS boxes!\n", rc);
+	apply_socket_commands();
 
 	reactor_main_loop(FS_REACTOR_TIMEOUT, out_err, apply_socket_commands());
 

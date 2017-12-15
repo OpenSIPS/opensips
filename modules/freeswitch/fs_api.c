@@ -589,6 +589,10 @@ void put_evs(fs_evs *sock)
 
 	lock_start_write(sockets_lock);
 	sock->ref--;
+	if (sock->ref == 0) {
+		if (!list_empty(&sock->reconnect_list))
+			list_add(&sock->reconnect_list, fs_sockets_down);
+	}
 	lock_stop_write(sockets_lock);
 
 	/**
