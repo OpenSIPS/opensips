@@ -149,6 +149,7 @@ void timeout_listener_process(int rank);
 struct rtpp_set *get_rtpp_set(struct sip_msg *, nh_set_param_t *);
 struct rtpp_node *select_rtpp_node(struct sip_msg *, str, struct rtpp_set *, pv_spec_p, int);
 char *send_rtpp_command(struct rtpp_node *, struct iovec *, int);
-int force_rtp_proxy_body(struct sip_msg *, struct force_rtpp_args *, pv_spec_p);
+int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
+               pv_spec_p var, pv_spec_p ipvar);
 
 #endif

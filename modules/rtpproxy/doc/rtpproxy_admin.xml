@@ -487,7 +487,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar [, ret_pvar]]]]])</function>
 		</title>
 
 		<para>
@@ -602,6 +602,13 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 		socket chosen for this call. Note that the variable will only be populated in the
 		initial request.
 		</para></listitem>
+		<listitem><para>
+		<emphasis>ret_pvar(optional)</emphasis> - pvar used to print the IP and port
+		the RTPProxy server is using for this call. This is useful especially when using
+		the <emphasis>rtp_cluster</emphasis>, which can advertise multiple servers behind it.
+		The format of the value returned is <emphasis>IP:port</emphasis>.
+		Note that the variable will only be populated in the initial request.
+		</para></listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
@@ -626,7 +633,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_offer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+                <function moreinfo="none">rtpproxy_offer([flags [, ip_address [, set_id [, sock_pvar [, ret_pvar]]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -680,7 +687,7 @@ onreply_route[2]
 	</section>
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_answer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+                <function moreinfo="none">rtpproxy_answer([flags [, ip_address [, set_id [, sock_pvar [, ret_pvar]]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
