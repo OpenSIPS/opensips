@@ -1417,6 +1417,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res,
 		if (!lock_init(new_key->wait_sql_query)) {
 			LM_ERR("Failed to init wait_sql_query lock\n");
 			lock_dealloc(new_key->wait_sql_query);
+			shm_free(new_key);
 			lock_release(queries_lock);
 			return -1;
 		}
