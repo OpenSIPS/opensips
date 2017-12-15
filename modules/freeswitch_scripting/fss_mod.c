@@ -31,6 +31,8 @@
 #include "fss_ipc.h"
 #include "fss_evs.h"
 
+str mod_tag = { MI_SSTR("freeswitch_scripting") };
+
 static int mod_init(void);
 
 static int fs_esl(struct sip_msg *msg, char *cmd, char *url, char *out_pv);
@@ -38,9 +40,9 @@ static int fixup_fs_esl(void **param, int param_no);
 
 static int fs_sub_add_url(modparam_t type, void *string);
 
-struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *param);
-struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *param);
-struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param);
+struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *_);
+struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *_);
+struct mi_root *mi_fs_reload(struct mi_root *cmd, void *_);
 
 static cmd_export_t cmds[] = {
 	{ "freeswitch_esl", (cmd_function)fs_esl, 2, fixup_fs_esl, NULL, ALL_ROUTES },
@@ -209,14 +211,95 @@ out:
 	return ret;
 }
 
-struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *param)
+/* fs_subscribe 10.0.0.10 DTMF HEARTBEAT CHANNEL_STATE FOO ... */
+struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 {
-	return NULL;
+	struct mi_node *param, *event;
+	struct str_list *evlist, *li, **last = &evlist;
+	fs_evs *sock;
+	str *url;
+
+	param = cmd_tree->node.kids;
+	if (!param || ZSTR(param->value))
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+
+	url = &param->value;
+	sock = fs_api.get_evs_by_url(url);
+	if (!sock) {
+		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
+		return init_mi_tree(400, MI_SSTR(MI_INTERNAL_ERR));
+	}
+
+	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
+	       url->len, url->s);
+
+	for (event = param->next; event; event = event->next) {
+		li = pkg_malloc(sizeof *li);
+		if (!li) {
+			LM_ERR("oom\n");
+			goto out_free;
+		}
+		memset(li, 0, sizeof *li);
+
+		li->s = event->value;
+		*last = li;
+		last = &li->next;
+
+		LM_DBG("queued up sub for %.*s\n", li->s.len, li->s.s);
+	}
+
+	if (fs_api.evs_sub(sock, &mod_tag, evlist, ipc_hdl_rcv_event) != 0)
+		LM_ERR("failed to subscribe for one or more events!\n");
+
+out_free:
+	_free_str_list(evlist, osips_pkg_free, NULL);
+	fs_api.put_evs(sock);
+	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
 
-struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *param)
+/* fs_unsubscribe 10.0.0.10 DTMF HEARTBEAT CHANNEL_STATE FOO ... */
+struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 {
-	return NULL;
+	struct mi_node *param, *event;
+	struct str_list *evlist, *li, **last = &evlist;
+	fs_evs *sock;
+	str *url;
+
+	param = cmd_tree->node.kids;
+	if (!param || ZSTR(param->value))
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+
+	url = &param->value;
+	sock = fs_api.get_evs_by_url(url);
+	if (!sock) {
+		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
+		return init_mi_tree(400, MI_SSTR(MI_INTERNAL_ERR));
+	}
+
+	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
+	       url->len, url->s);
+
+	for (event = param->next; event; event = event->next) {
+		li = pkg_malloc(sizeof *li);
+		if (!li) {
+			LM_ERR("oom\n");
+			goto out_free;
+		}
+		memset(li, 0, sizeof *li);
+
+		li->s = event->value;
+		*last = li;
+		last = &li->next;
+
+		LM_DBG("queued up unsub for %.*s\n", li->s.len, li->s.s);
+	}
+
+	fs_api.evs_unsub(sock, &mod_tag, evlist);
+
+out_free:
+	_free_str_list(evlist, osips_pkg_free, NULL);
+	fs_api.put_evs(sock);
+	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
 
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param)
