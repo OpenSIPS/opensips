@@ -1305,15 +1305,30 @@ static void optimize_cdb_decode(pv_name_fix_t *pv_name)
 		pv_name->col_offset = -1;
 }
 
+static void unlink_from_query_list(struct queried_key *pos)
+{
+	struct queried_key *prev;
+
+	if (pos == *queries_in_progress) {
+		*queries_in_progress = (*queries_in_progress)->next;
+		return;
+	}
+
+	for (prev = *queries_in_progress; prev->next != pos; prev = prev->next) ;
+
+	prev->next = pos->next;
+}
+
 /*  return:
  *  0 - succes
  *  1 - succes, null value in db
  * -1 - error
  * -2 - not found in sql db
  */
-static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, int *int_res)
+static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res,
+							int *int_res)
 {
-	struct queried_key *it, *prev = NULL, *tmp, *new_key;
+	struct queried_key *it, *tmp, *new_key;
 	str src_key;
 	db_res_t *sql_res = NULL;
 	db_val_t *values;
@@ -1321,7 +1336,8 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 	int i, rld_vers_dummy, rc;
 
 	for (i = 0; i < pv_name->c_entry->nr_columns; i++)
-		if (!memcmp((*pv_name->c_entry->columns[i]).s, pv_name->col.s, pv_name->col.len)) {
+		if (!memcmp((*pv_name->c_entry->columns[i]).s, pv_name->col.s,
+			pv_name->col.len)) {
 			pv_name->col_nr = i;
 			break;
 		}
@@ -1355,10 +1371,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 				lock_destroy(it->wait_sql_query);
 				lock_dealloc(it->wait_sql_query);
 				/* if this is the last process waiting, delete key from list */
-				if (prev)
-					prev->next = it->next;
-				else
-					*queries_in_progress = it->next;
+				unlink_from_query_list(it);
 				tmp = it;
 				it = it->next;
 				shm_free(tmp);
@@ -1376,11 +1389,10 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 
 			if (pv_name->last_str == -1)
 				optimize_cdb_decode(pv_name);
+
 			return cdb_val_decode(pv_name, cdb_res, 0, str_res, int_res);
-		} else {
+		} else
 			it = it->next;
-		}
-		prev = it;
 	}
 
 	if (!it) {	/* if key not found in list */
@@ -1404,16 +1416,16 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 			lock_release(queries_lock);
 			return -1;
 		}
-		new_key->next = NULL;
-		if (*queries_in_progress)
-			new_key->next = *queries_in_progress;
+
+		new_key->next = *queries_in_progress;
 		*queries_in_progress = new_key;
 
 		lock_get(new_key->wait_sql_query);
 
 		lock_release(queries_lock);
 
-		rc = load_key(pv_name->c_entry, pv_name->db_hdls, pv_name->key, &values, &sql_res);
+		rc = load_key(pv_name->c_entry, pv_name->db_hdls, pv_name->key, &values,
+				&sql_res);
 
 		if (rc) {
 			lock_release(new_key->wait_sql_query);
@@ -1428,7 +1440,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res, in
 		if (new_key->nr_waiting_procs == 0) {
 			lock_destroy(new_key->wait_sql_query);
 			lock_dealloc(new_key->wait_sql_query);
-			*queries_in_progress = new_key->next;
+			unlink_from_query_list(new_key);
 			shm_free(new_key->key.s);
 			shm_free(new_key);
 		}
