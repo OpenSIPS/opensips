@@ -18,11 +18,11 @@ Hendrik Scholz
 
 Razvan Crainea
 
-   Copyright © 2006 Freenet Cityline GmbH
+   Copyright � 2006 Freenet Cityline GmbH
 
-   Copyright © 2008 VoIP Embedded Inc.
+   Copyright � 2008 VoIP Embedded Inc.
 
-   Copyright © 2011 OpenSIPS Foundation
+   Copyright � 2011 OpenSIPS Foundation
    Revision History
    Revision $Revision: 5901 $ $Date$
      __________________________________________________________
@@ -202,9 +202,9 @@ Chapter 1. Admin Guide
    should be. The number of slots will be window_size/slot_period.
    If, for example, you have window_size= slot_period=1 second,
    then after each second you shall lose the call count, but if
-   you set the slot_period to 100 microseconds, then when your
+   you set the slot_period to 100 milliseconds, then when your
    call will be outside the window, the calls in the first 100
-   microseconds shall be dropped, and the rest in the next 900
+   milliseconds shall be dropped, and the rest in the next 900
    shall be kept.
 
 1.3.4. Network Algorithm (NETWORK)
@@ -421,7 +421,7 @@ modparam("ratelimit", "accept_pipes_timeout", 1)
 
    Authentication check for incoming packets.
 
-   Default value is “0” (disabled).
+   Default value is "0" (disabled).
 
    Example 1.13. Set repl_pipes_auth_check parameter
 ...
@@ -432,7 +432,7 @@ modparam("ratelimit", "repl_pipes_auth_check", 1)
 
    How long the history in SBT should be in seconds.
 
-   Default value is “10”.
+   Default value is "10".
 
    Example 1.14. Set window_size parameter
 ...
@@ -441,16 +441,16 @@ modparam("ratelimit", "window_size", 5)
 
 1.6.15. slot_period (int)
 
-   Value of one slot in microseconds. This parameter determines
+   Value of one slot in milliseconds. This parameter determines
    how granular the algorithm should be. The number of slots will
    be determined by window_size/slot_period.
 
-   Default value is “200”.
+   Default value is "200".
 
    Example 1.15. Set slot_period parameter
 ...
 modparam("ratelimit", "window_size", 5)
-#we will have 50 slots of 100 microseconds
+#we will have 50 slots of 100 milliseconds
 modparam("ratelimit", "slot_period", 100)
 ...
 

@@ -118,8 +118,8 @@
 			If, for example, you have <emphasis>window_size</emphasis>=
 			<emphasis>slot_period</emphasis>=1 second, then after each second
 			you shall lose the call count, but if you set the
-			<emphasis>slot_period</emphasis> to 100 microseconds, then when your
-			call will be outside the window, the calls in the first 100 microseconds
+			<emphasis>slot_period</emphasis> to 100 milliseconds, then when your
+			call will be outside the window, the calls in the first 100 milliseconds
 			shall be dropped, and the rest in the next 900 shall be kept.
 		</para>
 	</section>
@@ -501,7 +501,7 @@ modparam("ratelimit", "window_size", 5)
         <section>
 		<title><varname>slot_period</varname> (int)</title>
 		<para>
-			Value of one slot in microseconds. This parameter determines
+			Value of one slot in milliseconds. This parameter determines
 		how granular the algorithm should be. The number of slots will be
 		determined by window_size/slot_period.
 		</para>
@@ -515,7 +515,7 @@ modparam("ratelimit", "window_size", 5)
 		<programlisting format="linespecific">
 ...
 modparam("ratelimit", "window_size", 5)
-#we will have 50 slots of 100 microseconds
+#we will have 50 slots of 100 milliseconds
 modparam("ratelimit", "slot_period", 100)
 ...
 </programlisting>
