@@ -539,8 +539,11 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 {
 	static db_ps_t my_ps_ins = NULL;
 	static db_ps_t my_ps_ins2 = NULL;
+	static db_ps_t my_ps_ins3 = NULL;
 	static db_ps_t my_ps = NULL;
 	static db_ps_t my_ps2 = NULL;
+	static db_ps_t my_ps3 = NULL;
+	db_ps_t *ps;
 	int m;
 	int n = 0;
 	int i, j;
@@ -585,8 +588,25 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	}
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
-	CON_PS_REFERENCE(db_handle) = (ctx && cdr_flag) ?
-		(ins_list? &my_ps_ins2:&my_ps2) : (ins_list? &my_ps_ins:&my_ps);
+	if (ctx && cdr_flag) {
+		if (ins_list)
+			ps = &my_ps_ins2; /* CDR to known table */
+		else
+			ps = &my_ps2; /* CDR to custom table */
+	} else if (ctx) {
+		if (ins_list)
+			ps = &my_ps_ins; /* normal acc to known table */
+		else
+			ps = &my_ps; /* normal acc to custom table */
+	} else {
+		/* no ctx - no extra */
+		if (ins_list)
+			ps = &my_ps_ins3;
+		else
+			ps = &my_ps3;
+	}
+
+	CON_PS_REFERENCE(db_handle) = ps;
 
 
 	/* multi-leg columns */
