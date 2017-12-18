@@ -34,12 +34,12 @@ typedef struct _fs_ipc_esl_cmd {
 typedef struct _fs_ipc_esl_event {
 	fs_evs *sock;
 	str name;
-	cJSON *body;
+	char *body;
 } fs_ipc_esl_event;
 
 int fs_ipc_init(void);
 unsigned long fs_ipc_send_esl_cmd(fs_evs *sock, const str *fs_cmd);
 int fs_ipc_dispatch_esl_event(fs_evs *sock, const str *name,
-                              const cJSON *body, ipc_handler_type ipc_type);
+                              const char *body, ipc_handler_type ipc_type);
 
 #endif /* __FS_IPC__ */

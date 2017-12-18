@@ -125,7 +125,7 @@ int fs_renew_stats(fs_evs *sock, const cJSON *ev)
 	return 0;
 }
 
-int fs_raise_event(fs_evs *sock, const char *name, const cJSON *body)
+int fs_raise_event(fs_evs *sock, const char *name, const char *body)
 {
 	struct list_head *_;
 	struct fs_event *event;
@@ -226,7 +226,8 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			s = cJSON_GetObjectItem(ev, "Event-Name")->valuestring;
 
 			/* fire event notifications to any subscribers */
-			if (fs_raise_event(sock, s, ev) != 0)
+			if (fs_raise_event(sock, s,
+			                   sock->handle->last_sr_event->body) != 0)
 				LM_ERR("errors during event %s raise on %.*s:%d\n",
 				       s, sock->host.len, sock->host.s, sock->port);
 

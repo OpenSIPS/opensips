@@ -46,27 +46,32 @@ int fs_ipc_init(void)
 }
 
 int fs_ipc_dispatch_esl_event(fs_evs *sock, const str *name,
-                              const cJSON *body, ipc_handler_type ipc_type)
+                              const char *body, ipc_handler_type ipc_type)
 {
 	fs_ipc_esl_event *cmd;
 
 	cmd = shm_malloc(sizeof *cmd);
-	if (!cmd) {
-		LM_ERR("oom\n");
-		return -1;
-	}
+	if (!cmd)
+		goto out_oom;
 	memset(cmd, 0, sizeof *cmd);
 
 	cmd->sock = sock;
 	if (shm_nt_str_dup(&cmd->name, name) != 0) {
-		shm_free(cmd);
-		LM_ERR("oom\n");
-		return -1;
+		goto out_oom;
 	}
 
-	/* TODO: dup cJSON in SHM */
+	cmd->body = shm_strdup(body);
+	if (!cmd->body) {
+		shm_free(cmd->name.s);
+		goto out_oom;
+	}
 
 	return ipc_dispatch_job(ipc_type, cmd);
+
+out_oom:
+	shm_free(cmd);
+	LM_ERR("oom\n");
+	return -1;
 }
 
 

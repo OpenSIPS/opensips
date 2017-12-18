@@ -91,6 +91,7 @@ int fss_evi_init(void)
 void fss_raise_freeswitch_event(int sender, void *_esl_event)
 {
 	fs_ipc_esl_event *esl_event = (fs_ipc_esl_event *)_esl_event;
+	str body = {esl_event->body, strlen(esl_event->body)};
 
 	if (evi_param_set_str(fs_event_name_param, &esl_event->name) < 0) {
 		LM_ERR("failed to set event name\n");
@@ -102,12 +103,15 @@ void fss_raise_freeswitch_event(int sender, void *_esl_event)
 		return;
 	}
 
-	/* TODO: actual JSON body */
-	if (evi_param_set_str(fs_event_body_param, &esl_event->name) < 0) {
+	if (evi_param_set_str(fs_event_body_param, &body) < 0) {
 		LM_ERR("failed to set event body\n");
 		return;
 	}
 
 	if (evi_raise_event(evi_fs_event_id, fs_event_params) < 0)
 		LM_ERR("failed to raise FS event\n");
+
+	shm_free(esl_event->body);
+	shm_free(esl_event->name.s);
+	shm_free(esl_event);
 }
