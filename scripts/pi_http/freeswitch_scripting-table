@@ -1,0 +1,11 @@
+	<!-- Declaration of freeswitch table-->
+	<db_table id="freeswitch">
+		<table_name>freeswitch</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>username</field><type>DB_STR</type></column>
+		<column><field>password</field><type>DB_STR</type></column>
+		<column><field>ip</field><type>DB_STR</type></column>
+		<column><field>port</field><type>DB_INT</type></column>
+		<column><field>events_csv</field><type>DB_STR</type></column>
+	</db_table>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="freeswitch" xmlns:db="http://docbook.org/ns/docbook">
+	<name>freeswitch</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>Generic FreeSWITCH integration, allowing full control over
+		the ESL commands and event notifications. More information can be found
+		at: &OPENSIPS_MOD_DOC;freeswitch_scripting.html
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+        <autoincrement/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+        <description>unique ID</description>
+	</column>
+
+	<column id="username">
+		<name>username</name>
+		<type>string</type>
+		<size>64</size>
+		<null/>
+		<description>FreeSWITCH ESL authentication username</description>
+	</column>
+
+	<column id="password">
+		<name>password</name>
+		<type>string</type>
+		<size>64</size>
+		<description>FreeSWITCH ESL authentication password (plain text)</description>
+	</column>
+
+	<column id="ip">
+		<name>ip</name>
+		<type>string</type>
+		<size>20</size>
+		<description>FreeSWITCH ESL IP address</description>
+	</column>
+
+	<column id="port">
+		<name>port</name>
+		<type>int</type>
+		<size>11</size>
+		<default>8021</default>
+		<description>FreeSWITCH ESL port</description>
+	</column>
+
+	<column id="events_csv">
+		<name>events_csv</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>Comma-separated, case-sensitive values holding the exact FreeSWITCH ESL events which OpenSIPS will attempt to subscribe to</description>
+	</column>
+</table>
