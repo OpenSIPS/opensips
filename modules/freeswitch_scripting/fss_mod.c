@@ -26,14 +26,24 @@
 #include "../../ipc.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
+#include "../../mi/mi.h"
 
 #include "../freeswitch/fs_api.h"
 #include "fss_ipc.h"
 #include "fss_evs.h"
+#include "fss_db.h"
 
-str mod_tag = str_init("freeswitch_scripting");
+str fss_mod_tag = str_init("freeswitch_scripting");
+
+str fss_table      = str_init("freeswitch");
+str fss_col_user   = str_init("username");
+str fss_col_pass   = str_init("password");
+str fss_col_ip     = str_init("ip");
+str fss_col_port   = str_init("port");
+str fss_col_events = str_init("events_csv");
 
 static int mod_init(void);
+static void mod_destroy(void);
 
 static int fs_esl(struct sip_msg *msg, char *cmd, char *url, char *out_pv);
 static int fixup_fs_esl(void **param, int param_no);
@@ -46,12 +56,19 @@ struct mi_root *mi_fs_list(struct mi_root *cmd, void *_);
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *_);
 
 static cmd_export_t cmds[] = {
-	{ "freeswitch_esl", (cmd_function)fs_esl, 2, fixup_fs_esl, NULL, ALL_ROUTES },
-	{ "freeswitch_esl", (cmd_function)fs_esl, 3, fixup_fs_esl, NULL, ALL_ROUTES },
+	{ "freeswitch_esl", (cmd_function)fs_esl, 2, fixup_fs_esl, 0, ALL_ROUTES },
+	{ "freeswitch_esl", (cmd_function)fs_esl, 3, fixup_fs_esl, 0, ALL_ROUTES },
 	{ NULL, NULL, 0, NULL, NULL, 0 }
 };
 
 static param_export_t mod_params[] = {
+	{ "db_url",                 STR_PARAM,                       &db_url.s },
+	{ "db_table",               STR_PARAM,                    &fss_table.s },
+	{ "db_col_username",        STR_PARAM,                 &fss_col_user.s },
+	{ "db_col_password",        STR_PARAM,                 &fss_col_pass.s },
+	{ "db_col_ip",              STR_PARAM,                   &fss_col_ip.s },
+	{ "db_col_port",            STR_PARAM,                 &fss_col_port.s },
+	{ "db_col_events",          STR_PARAM,               &fss_col_events.s },
 	{ "fs_subscribe",           STR_PARAM|USE_FUNC_PARAM,   fs_sub_add_url },
 	{ 0, 0, 0 }
 };
@@ -70,6 +87,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "db_url",           get_deps_sqldb_url },
 		{ NULL, NULL },
 	},
 };
@@ -84,13 +102,13 @@ struct module_exports exports= {
 	NULL,             /* exported async functions */
 	mod_params,       /* param exports */
 	NULL,             /* exported statistics */
-	mi_cmds,             /* exported MI functions */
+	mi_cmds,          /* exported MI functions */
 	NULL,             /* exported pseudo-variables */
 	NULL,             /* exported transformations */
 	NULL,             /* extra processes */
 	mod_init,         /* module initialization function */
 	NULL,             /* reply processing function */
-	NULL,
+	mod_destroy,      /* destroy function */
 	NULL              /* per-child init function */
 };
 
@@ -123,27 +141,25 @@ static int fs_sub_add_url(modparam_t type, void *string)
 
 static int mod_init(void)
 {
+	fss_table.len = strlen(fss_table.s);
+
+	if (fss_init() != 0) {
+		LM_ERR("failed to init runtime environment\n");
+		return -1;
+	}
+
 	if (fss_ipc_init() != 0) {
 		LM_ERR("failed to init IPC\n");
 		return -1;
 	}
 
 	if (fss_evi_init() != 0) {
-		LM_ERR("failed to init FS script events!\n");
+		LM_ERR("failed to init script events\n");
 		return -1;
 	}
 
-	fss_sockets = shm_malloc(sizeof *fss_sockets);
-	if (!fss_sockets) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	INIT_LIST_HEAD(fss_sockets);
-
-	if (load_fs_api(&fs_api) != 0) {
-		LM_ERR("failed to load the FreeSWITCH API - is freeswitch loaded?\n");
-		return -1;
-	}
+	if (fss_db_init() != 0)
+		LM_ERR("failed to init DB support, running without it\n");
 
 	if (subscribe_to_fs_urls(&startup_fs_subs) != 0)
 		LM_ERR("ignored one or more broken FS URL modparams (or oom!)\n");
@@ -151,6 +167,11 @@ static int mod_init(void)
 	free_shm_str_dlist(&startup_fs_subs);
 
 	return 0;
+}
+
+static void mod_destroy(void)
+{
+	fss_db_close();
 }
 
 static int fixup_fs_esl(void **param, int param_no)
@@ -203,12 +224,14 @@ static int fs_esl(struct sip_msg *msg, char *cmd_gp, char *url_gp,
 
 	LM_DBG("success, output is: '%.*s'\n", reply.len, reply.s);
 
-	reply_val.flags = PV_VAL_STR;
-	reply_val.rs = reply;
+	if (reply_pvs) {
+		reply_val.flags = PV_VAL_STR;
+		reply_val.rs = reply;
 
-	if (pv_set_value(msg, (pv_spec_p)reply_pvs, 0, &reply_val) != 0) {
-		LM_ERR("failed to set output pvar!\n");
-		ret = -1;
+		if (pv_set_value(msg, (pv_spec_p)reply_pvs, 0, &reply_val) != 0) {
+			LM_ERR("failed to set output pvar!\n");
+			ret = -1;
+		}
 	}
 
 out:
@@ -223,7 +246,7 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 {
 	struct mi_node *param, *event;
 	struct mi_root *reply;
-	struct str_list *evlist, *li, **last = &evlist;
+	struct str_list *evlist = NULL, *li, **last = &evlist;
 	fs_evs *sock;
 	str *url;
 
@@ -238,14 +261,31 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
 	}
 
+	lock_start_write(db_reload_lk);
+
+	if (find_evs(sock) != 0) {
+		if (add_evs(sock) != 0) {
+			lock_stop_write(db_reload_lk);
+			fs_api.put_evs(sock);
+			LM_ERR("failed to ref socket\n");
+			return init_mi_tree(501, MI_SSTR(MI_INTERNAL_ERR));
+		}
+	} else {
+		/* we're already referencing this socket */
+		fs_api.put_evs(sock);
+	}
+
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
 	       url->len, url->s);
 
 	for (event = param->next; event; event = event->next) {
+		if (ZSTR(event->value) || add_to_fss_sockets(sock, &event->value) <= 0)
+			continue;
+
 		li = pkg_malloc(sizeof *li);
 		if (!li) {
 			LM_ERR("oom\n");
-			reply = init_mi_tree(501, MI_SSTR(MI_INTERNAL_ERR));
+			reply = init_mi_tree(502, MI_SSTR(MI_INTERNAL_ERR));
 			goto out_free;
 		}
 		memset(li, 0, sizeof *li);
@@ -257,14 +297,20 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 		LM_DBG("queued up sub for %.*s\n", li->s.len, li->s.s);
 	}
 
-	if (fs_api.evs_sub(sock, &mod_tag, evlist, ipc_hdl_rcv_event) != 0)
-		LM_ERR("failed to subscribe for one or more events!\n");
+	if (fs_api.evs_sub(sock, &fss_mod_tag, evlist, ipc_hdl_rcv_event) != 0) {
+		LM_ERR("failed to subscribe for one or more events on %s:%d\n",
+		       sock->host.s, sock->port);
+		fs_api.evs_unsub(sock, &fss_mod_tag, evlist);
+		reply = init_mi_tree(503, MI_SSTR(MI_INTERNAL_ERR));
+		goto out_free;
+	}
 
 	reply = init_mi_tree(200, MI_SSTR(MI_OK));
 
 out_free:
+	lock_stop_write(db_reload_lk);
+
 	_free_str_list(evlist, osips_pkg_free, NULL);
-	fs_api.put_evs(sock);
 	return reply;
 }
 
@@ -273,9 +319,10 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 {
 	struct mi_node *param, *event;
 	struct mi_root *reply;
-	struct str_list *evlist, *li, **last = &evlist;
+	struct str_list *evlist = NULL, *li, **last = &evlist;
 	fs_evs *sock;
 	str *url;
+	int rc, do_unref = 0;
 
 	param = cmd_tree->node.kids;
 	if (!param || ZSTR(param->value))
@@ -288,10 +335,30 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
 	}
 
+	lock_start_write(db_reload_lk);
+
+	if (find_evs(sock) != 0) {
+		lock_stop_write(db_reload_lk);
+		LM_DBG("we're not even referencing this socket: %s:%d\n",
+		       sock->host.s, sock->port);
+		fs_api.put_evs(sock);
+		return init_mi_tree(200, MI_SSTR(MI_OK));
+	}
+
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
 	       url->len, url->s);
 
 	for (event = param->next; event; event = event->next) {
+		if (ZSTR(event->value))
+			continue;
+
+		rc = del_from_fss_sockets(sock, &event->value);
+		if (rc < 0)
+			continue;
+
+		if (rc == 1)
+			do_unref = 1;
+
 		li = pkg_malloc(sizeof *li);
 		if (!li) {
 			LM_ERR("oom\n");
@@ -307,12 +374,15 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 		LM_DBG("queued up unsub for %.*s\n", li->s.len, li->s.s);
 	}
 
-	fs_api.evs_unsub(sock, &mod_tag, evlist);
+	fs_api.evs_unsub(sock, &fss_mod_tag, evlist);
 	reply = init_mi_tree(200, MI_SSTR(MI_OK));
 
 out_free:
+	lock_stop_write(db_reload_lk);
+
 	_free_str_list(evlist, osips_pkg_free, NULL);
-	fs_api.put_evs(sock);
+	if (do_unref)
+		fs_api.put_evs(sock);
 	return reply;
 }
 

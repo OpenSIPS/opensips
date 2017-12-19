@@ -1,5 +1,5 @@
 /*
- * Script and MI utilities for custom FreeSWITCH interactions
+ * SQL DB provisioning
  *
  * Copyright (C) 2017 OpenSIPS Solutions
  *
@@ -20,30 +20,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#ifndef __FSS_EVS__
-#define __FSS_EVS__
+#ifndef __FSS_DB__
+#define __FSS_DB__
 
-#include "../freeswitch/fs_api.h"
+#include "../../str.h"
 
-struct fs_evs_list {
-	fs_evs *sock;
-	struct str_list *events;
+#define TABLE_VERSION 1
 
-	struct list_head list;
-};
+extern str db_url;
+extern rw_lock_t *db_reload_lk;
 
-extern struct fs_binds fs_api;
-extern struct list_head *fss_sockets;
+int fss_db_init(void);
+void fss_db_close(void);
+int fss_db_connect(void);
+int fss_db_reload(void);
+static inline int have_db(void) { return !!db_url.s; };
 
-int fss_init(void);
-int subscribe_to_fs_urls(const struct list_head *urls);
-
-int is_subscribed(fs_evs *sock, str *event);
-int find_evs(fs_evs *sock);
-int add_evs(fs_evs *sock);
-struct fs_evs_list *mk_fs_sock_list(fs_evs *sock, struct str_list *events);
-void free_fs_sock_list(struct list_head *sock_list);
-int add_to_fss_sockets(fs_evs *sock, const str *event);
-int del_from_fss_sockets(fs_evs *sock, const str *event_name);
-
-#endif /* __FSS_EVS__ */
+#endif /* __FSS_DB__ */
