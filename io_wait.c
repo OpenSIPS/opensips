@@ -511,6 +511,11 @@ enum poll_types get_poll_type(char* s)
 		if ((strlen(poll_method_str[r])==l) &&
 			(strncasecmp(poll_method_str[r], s, l)==0))
 			break;
+	if (r == POLL_EPOLL_ET) {
+		LM_WARN("epoll_et method is deprecated and will be completely removed "
+				"in future versions! Using epoll_lt instead of epoll_et!\n");
+		r = POLL_EPOLL_LT;
+	}
 	return r;
 }
 
