@@ -234,6 +234,7 @@ modparam("ratelimit", "timer_interval", 5)
 		<title><varname>expire_time</varname> (integer)</title>
 		<para>
 		This parameter specifies how long a pipe should be kept in memory
+		after it becomes idle (no more operations are performed on the pipe)
 		until deleted.
 		</para>
 		<para>
