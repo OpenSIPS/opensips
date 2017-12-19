@@ -42,6 +42,7 @@ static int fs_sub_add_url(modparam_t type, void *string);
 
 struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *_);
 struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *_);
+struct mi_root *mi_fs_list(struct mi_root *cmd, void *_);
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *_);
 
 static cmd_export_t cmds[] = {
@@ -56,10 +57,11 @@ static param_export_t mod_params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "fs_subscribe",       0, mi_fs_subscribe,   0,  0,  0 },
-	{ "fs_unsubscribe",     0, mi_fs_unsubscribe, 0,  0,  0 },
-	{ "fs_reload",          0, mi_fs_reload,      0,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0 }
+	{ "fs_subscribe",       0, mi_fs_subscribe,   0,  0,              0 },
+	{ "fs_unsubscribe",     0, mi_fs_unsubscribe, 0,  0,              0 },
+	{ "fs_list",            0, mi_fs_list,        0,  0,              0 },
+	{ "fs_reload",          0, mi_fs_reload,      0,  0, fss_db_connect },
+	{ 0, 0, 0, 0, 0, 0 }                         /* TODO ^ is this useless? */
 };
 
 static dep_export_t deps = {
@@ -314,7 +316,72 @@ out_free:
 	return reply;
 }
 
+struct mi_root *mi_fs_list(struct mi_root *cmd, void *_param)
+{
+	struct list_head *_;
+	struct fs_evs_list *sock_list;
+	struct mi_root *rpl_tree;
+	struct mi_node *node, *_node, *rpl;
+	struct mi_attr *attr;
+	struct str_list *event;
+
+	rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
+	if (!rpl_tree) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
+
+	lock_start_read(db_reload_lk);
+
+	list_for_each(_, fss_sockets) {
+		sock_list = list_entry(_, struct fs_evs_list, list);
+
+		node = add_mi_node_child(rpl, 0, "socket", 6, NULL, 0);
+		if (!node)
+			goto out_err;
+
+		attr = addf_mi_attr(node, 0, "if", 2, "%s:%d",
+		                    sock_list->sock->host.s, sock_list->sock->port);
+		if (!attr)
+			goto out_err;
+
+		node = add_mi_node_child(node, MI_IS_ARRAY, "events", 6, NULL, 0);
+		if (!node)
+			goto out_err;
+
+		for (event = sock_list->events; event; event = event->next) {
+			_node = add_mi_node_child(node, 0, "event", 5, NULL, 0);
+			if (!_node)
+				goto out_err;
+
+			if (!add_mi_node_child(_node, 0, "name", 4,
+			                       event->s.s, event->s.len))
+				goto out_err;
+		}
+	}
+
+	lock_stop_read(db_reload_lk);
+	return rpl_tree;
+
+out_err:
+	lock_stop_read(db_reload_lk);
+	LM_ERR("failed to list FS sockets\n");
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
+
 struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param)
 {
-	return NULL;
+	if (!have_db())
+		return NULL;
+
+	if (fss_db_reload() != 0) {
+		LM_ERR("failed to reload DB data, keeping old data set\n");
+		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
+	}
+
+	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
