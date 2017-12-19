@@ -467,6 +467,12 @@ modparam("ratelimit", "slot_period", 100)
    NOTE: A pipe's algorithm cannot be dynamically changed. Only
    the one specified when the pipe was created will be considered.
 
+   NOTE: This function increments the pipe's couter every time it
+   is called, even if the call should be declined. Therefore If
+   you are using ratelimit to limit only successful traffic, you
+   need to explicitely decrease the counter for the declined calls
+   using the rl_dec_count() function.
+
    The method will return an error code if the limit for the
    matched pipe is reached.
 
@@ -499,6 +505,13 @@ m
         # use default algorithm for each different gateway
         $var(limit) = 10;
         if (!rl_check("gw_$ru", "$var(limit)")) {
+                sl_send_reply("503", "Server Unavailable");
+                exit;
+        };
+...
+        # count only successful calls
+        if (!rl_check("gw_$ru", "100")) {
+                rl_dec_count("gw_$ru");
                 sl_send_reply("503", "Server Unavailable");
                 exit;
         };
