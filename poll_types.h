@@ -28,7 +28,7 @@
 #ifndef _poll_types_h
 #define _poll_types_h
 
-enum poll_types { POLL_NONE, POLL_POLL, POLL_EPOLL_LT, POLL_EPOLL_ET,
+enum poll_types { POLL_NONE, POLL_POLL, POLL_EPOLL,
 					POLL_SIGIO_RT, POLL_SELECT, POLL_KQUEUE, POLL_DEVPOLL,
 					POLL_END};
 

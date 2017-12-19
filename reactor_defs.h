@@ -96,7 +96,7 @@ int init_reactor_size(void);
 	destroy_io_wait(&_worker_io)
 
 #define reactor_has_async() \
-	(io_poll_method==POLL_POLL || io_poll_method==POLL_EPOLL_LT || io_poll_method==POLL_EPOLL_ET)
+	(io_poll_method==POLL_POLL || io_poll_method==POLL_EPOLL)
 
 #endif
 

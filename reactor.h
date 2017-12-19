@@ -69,15 +69,9 @@
 
 #ifdef HAVE_EPOLL
 #define reactor_EPOLL_CASE(_timeout,_loop_extra) \
-		case POLL_EPOLL_LT: \
+		case POLL_EPOLL: \
 			while(1){ \
 				io_wait_loop_epoll(&_worker_io, _timeout, 0); \
-				_loop_extra;\
-			} \
-			break; \
-		case POLL_EPOLL_ET: \
-			while(1){ \
-				io_wait_loop_epoll(&_worker_io, _timeout, 1); \
 				_loop_extra;\
 			} \
 			break;

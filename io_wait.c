@@ -56,7 +56,7 @@
 
 char* poll_support="poll"
 #ifdef HAVE_EPOLL
-", epoll_lt, epoll_et"
+", epoll"
 #endif
 #ifdef HAVE_SIGIO_RT
 ", sigio_rt"
@@ -73,7 +73,7 @@ char* poll_support="poll"
 ;
 
 /*! supported poll methods */
-char* poll_method_str[POLL_END]={ "none", "poll", "epoll_lt", "epoll_et",
+char* poll_method_str[POLL_END]={ "none", "poll", "epoll",
 								  "sigio_rt", "select", "kqueue",  "/dev/poll"
 								};
 
@@ -377,8 +377,7 @@ char* check_poll_method(enum poll_types poll_method)
 			ret="select not supported, try re-compiling with -DHAVE_SELECT";
 #endif
 			break;
-		case POLL_EPOLL_LT:
-		case POLL_EPOLL_ET:
+		case POLL_EPOLL:
 #ifndef HAVE_EPOLL
 			ret="epoll not supported, try re-compiling with -DHAVE_EPOLL";
 #else
@@ -448,7 +447,7 @@ enum poll_types choose_poll_method(void)
 	poll_method=0;
 #ifdef HAVE_EPOLL
 	if (os_ver>=0x020542) /* if ver >= 2.5.66 */
-		poll_method=POLL_EPOLL_LT; /* or POLL_EPOLL_ET */
+		poll_method=POLL_EPOLL;
 
 #endif
 #ifdef HAVE_KQUEUE
@@ -511,11 +510,6 @@ enum poll_types get_poll_type(char* s)
 		if ((strlen(poll_method_str[r])==l) &&
 			(strncasecmp(poll_method_str[r], s, l)==0))
 			break;
-	if (r == POLL_EPOLL_ET) {
-		LM_WARN("epoll_et method is deprecated and will be completely removed "
-				"in future versions! Using epoll_lt instead of epoll_et!\n");
-		r = POLL_EPOLL_LT;
-	}
 	return r;
 }
 
@@ -623,8 +617,7 @@ int init_io_wait(io_wait_h* h, char *name, int max_fd,
 			break;
 #endif
 #ifdef HAVE_EPOLL
-		case POLL_EPOLL_LT:
-		case POLL_EPOLL_ET:
+		case POLL_EPOLL:
 			h->ep_array=local_malloc(sizeof(*(h->ep_array))*h->max_fd_no);
 			if (h->ep_array==0){
 				LM_CRIT("could not alloc epoll array\n");
@@ -681,8 +674,7 @@ void destroy_io_wait(io_wait_h* h)
 {
 	switch(h->poll_method){
 #ifdef HAVE_EPOLL
-		case POLL_EPOLL_LT:
-		case POLL_EPOLL_ET:
+		case POLL_EPOLL:
 			destroy_epoll(h);
 			if (h->ep_array){
 				local_free(h->ep_array);

@@ -486,7 +486,7 @@ inline static int io_watch_add(	io_wait_h* h,
 			break;
 #endif
 #ifdef HAVE_EPOLL
-		case POLL_EPOLL_LT:
+		case POLL_EPOLL:
 			ep_event.data.ptr=e;
 			ep_event.events=0;
 			if (e->flags & IO_WATCH_READ)
@@ -523,43 +523,6 @@ again11:
 					goto error;
 				}
 			}
-			break;
-		case POLL_EPOLL_ET:
-			set_fd_flags(O_NONBLOCK);
-			ep_event.events=EPOLLET;
-			ep_event.data.ptr=e;
-			if (e->flags & IO_WATCH_READ)
-				ep_event.events|=EPOLLIN;
-			if (e->flags & IO_WATCH_WRITE)
-				ep_event.events|=EPOLLOUT;
-again2:
-			if (!already) {
-#if 0
-/* disabled due to the same reason explained above */
-#if (defined __OS_linux) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 24)
-				if (e->flags & IO_WATCH_READ)
-					ep_event.events|=EPOLLEXCLUSIVE;
-#endif
-#endif
-				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
-				if (n==-1){
-					if (errno==EAGAIN) goto again2;
-					LM_ERR("[%s] epoll_ctl failed: %s [%d]\n",
-						h->name,strerror(errno), errno);
-					goto error;
-				}
-				//check_io=1; FIXME
-			} else {
-again22:
-				n=epoll_ctl(h->epfd, EPOLL_CTL_MOD, fd, &ep_event);
-				if (n==-1){
-					if (errno==EAGAIN) goto again22;
-					LM_ERR("[%s] epoll_ctl failed: %s [%d]\n",
-						h->name,strerror(errno), errno);
-					goto error;
-				}
-			}
-			//idx=-1;  FIXME
 			break;
 #endif
 #ifdef HAVE_KQUEUE
@@ -754,8 +717,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 			break;
 #endif
 #ifdef HAVE_EPOLL
-		case POLL_EPOLL_LT:
-		case POLL_EPOLL_ET:
+		case POLL_EPOLL:
 			/* epoll doesn't seem to automatically remove sockets,
 			 * if the socket is a dupplicate/moved and the original
 			 * is still open. The fd is removed from the epoll set
