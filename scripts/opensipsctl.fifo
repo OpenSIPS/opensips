@@ -105,8 +105,17 @@ fifo_cmd()
 	# immediately after a request was sent out
 	cat < $path | filter_fl &
 
-	# issue FIFO request (printf taken to deal with \n)
-	printf "$CMD" > $OSIPS_FIFO
+	if [ -n "$FLOCK" ]; then
+		(
+			$FLOCK -x -w 10 200 || exit 1
+
+			# issue FIFO request (printf taken to deal with \n)
+			printf "$CMD" > $OSIPS_FIFO
+		) 200>/var/lock/opensipsctl.lock
+	else
+		# issue FIFO request (printf taken to deal with \n)
+		printf "$CMD" > $OSIPS_FIFO
+	fi
 
 	# wait for the reader to complete
 	wait

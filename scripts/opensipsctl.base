@@ -76,6 +76,14 @@ if [ -z "$GDB" ] ; then
 		GDB="$TOOLPATH"
 	fi
 fi
+if [ -z "$FLOCK" ] ; then
+	locate_tool flock
+	if [ -z "$TOOLPATH" ] ; then
+		FLOCK=""
+	else
+		FLOCK="$TOOLPATH"
+	fi
+fi
 if [ -z "$MD5" ]; then
 	locate_tool md5sum md5
 	if [ -z "$TOOLPATH" ] ; then
