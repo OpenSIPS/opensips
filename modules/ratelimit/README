@@ -283,7 +283,8 @@ modparam("ratelimit", "timer_interval", 5)
 1.6.2. expire_time (integer)
 
    This parameter specifies how long a pipe should be kept in
-   memory until deleted.
+   memory after it becomes idle (no more operations are performed
+   on the pipe) until deleted.
 
    Default value is 3600.
 
