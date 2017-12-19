@@ -102,7 +102,6 @@ int fss_db_reload(void)
 	fs_evs *sock;
 	db_res_t *res = NULL;
 	db_val_t *values;
-	db_row_t *rows;
 	db_key_t query_cols[5] = { &fss_col_user, &fss_col_pass, &fss_col_ip,
 	                           &fss_col_port, &fss_col_events };
 	str user, pass, ip, events;
@@ -134,7 +133,6 @@ int fss_db_reload(void)
 		LM_INFO("table %.*s is empty, clearing all sockets\n",
 		        fss_table.len, fss_table.s);
 
-	rows = RES_ROWS(res);
 	INIT_LIST_HEAD(&new_sockets);
 
 	for (i = 0; i < RES_ROW_N(res); i++) {
