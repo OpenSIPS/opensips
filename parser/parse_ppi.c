@@ -34,51 +34,48 @@
 /*
  * This method is used to parse P-Preferred-Identity header (RFC 3325).
  *
- * Currently only one name-addr / addr-spec is supported in the header
- * and it must contain a sip or sips URI.
- *
  * params: msg : sip msg
  * returns 0 on success,
  *        -1 on failure.
  */
 int parse_ppi_header( struct sip_msg *msg )
 {
-    struct to_body* ppi_b;
+	struct to_body* ppi_b;
 
-    if ( !msg->ppi &&
-	 (parse_headers(msg, HDR_PPI_F,0)==-1 || !msg->ppi)) {
-	goto error;
-    }
+	if ( !msg->ppi &&
+		(parse_headers(msg, HDR_PPI_F,0)==-1 || !msg->ppi)) {
+		goto error;
+	}
 
-    /* maybe the header is already parsed! */
-    if (msg->ppi->parsed)
-	return 0;
+	/* maybe the header is already parsed! */
+	if (msg->ppi->parsed)
+		return 0;
 
-    /* bad luck! :-( - we have to parse it */
-    /* first, get some memory */
-    ppi_b = pkg_malloc(sizeof(struct to_body));
-    if (ppi_b == 0) {
-	LM_ERR("out of pkg_memory\n");
-	goto error;
-    }
+	/* bad luck! :-( - we have to parse it */
+	/* first, get some memory */
+	ppi_b = pkg_malloc(sizeof(struct to_body));
+	if (ppi_b == 0) {
+		LM_ERR("out of pkg_memory\n");
+		goto error;
+	}
 
-    /* now parse it!! */
-    parse_to(msg->ppi->body.s,
-	     msg->ppi->body.s + msg->ppi->body.len+1,
-	     ppi_b);
-    if (ppi_b->error == PARSE_ERROR) {
-	LM_ERR("bad P-Preferred-Identity header\n");
-	pkg_free(ppi_b);
-	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+	/* now parse it!! */
+	parse_multi_to(msg->ppi->body.s,
+		msg->ppi->body.s + msg->ppi->body.len+1,
+		ppi_b);
+	if (ppi_b->error == PARSE_ERROR) {
+		LM_ERR("bad P-Preferred-Identity header\n");
+		pkg_free(ppi_b);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 			"error parsing PPI header");
-	set_err_reply(400, "bad header");
-	goto error;
-    }
- 	msg->ppi->parsed = ppi_b;
+		set_err_reply(400, "bad header");
+		goto error;
+	}
+	msg->ppi->parsed = ppi_b;
 
- 	return 0;
- error:
- 	return -1;
+	return 0;
+error:
+	return -1;
 }
 
 

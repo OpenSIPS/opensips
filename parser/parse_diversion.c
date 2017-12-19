@@ -28,7 +28,8 @@
 #include "msg_parser.h"
 
 /*
- * This method is used to parse DIVERSION header.
+ * This method is used to parse DIVERSION header as per RFC5806
+ *  (Diversion Indication in SIP)
  *
  * params: msg : sip msg
  * returns 0 on success,
@@ -56,7 +57,7 @@ int parse_diversion_header(struct sip_msg *msg)
 	}
 
 	/* now parse it!! */
-	parse_to(msg->diversion->body.s,
+	parse_multi_to(msg->diversion->body.s,
 		msg->diversion->body.s + msg->diversion->body.len + 1, diversion_b);
 	if (diversion_b->error == PARSE_ERROR) {
 		LM_ERR("bad diversion header\n");
