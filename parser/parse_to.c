@@ -81,14 +81,18 @@ void free_to_params(struct to_body* tb)
 
 void free_to(struct to_body* tb)
 {
-	free_to_params(tb);
-	pkg_free(tb);
+	if (tb) {
+		free_to( tb->next );
+		free_to_params(tb);
+		pkg_free(tb);
+	}
 }
 
 
 static inline char* parse_to_param(char *buffer, char *end,
 					struct to_body *to_b,
-					int *returned_status)
+					int *returned_status,
+					int multi)
 {
 	struct to_param *param;
 	int status;
@@ -197,7 +201,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 						goto parse_error;
 				}
 				break;
-			case 0:
+			case  0:
+			case ',':
 				switch (status)
 				{
 					case PARA_NAME:
@@ -213,6 +218,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 						add_param( param , to_b );
 					case E_PARA_VALUE:
 						saved_status = status;
+						if ( !multi && *tmp==',')
+							goto parse_error;
 						goto endofheader;
 						break;
 					default:
@@ -475,12 +482,14 @@ error:
 
 
 
-char* parse_to(char* buffer, char *end, struct to_body *to_b)
+static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
+																	int multi)
 {
 	int status;
 	int saved_status;
 	char  *tmp;
 	char  *end_mark;
+	struct to_body *first_b = to_b;
 
 	status=START_TO;
 	saved_status=START_TO;
@@ -490,6 +499,7 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 
 	for( tmp=buffer; tmp<end; tmp++)
 	{
+		LM_DBG("handling char <%c> pos %d in state %d\n",*tmp,(int)(tmp-buffer),status);
 		switch(*tmp)
 		{
 			case ' ':
@@ -573,6 +583,31 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 					case END:
 						saved_status = status = END;
 						goto endofheader;
+					default:
+						goto parse_error;
+				}
+				break;
+			case ',':
+				switch (status)
+				{
+					case URI_OR_TOKEN:
+					case MAYBE_URI_END:
+						to_b->uri.len = tmp - to_b->uri.s;
+					case END:
+						if (multi==0)
+							goto parse_error;
+						to_b->next = (struct to_body*)
+							pkg_malloc(sizeof(struct to_body));
+						if (to_b->next==NULL) {
+							LM_ERR("failed to allocate new TO body\n");
+							goto error;
+						}
+						to_b = to_b->next;
+						memset(to_b, 0, sizeof(struct to_body));
+						to_b->error = PARSE_OK;
+						saved_status = status = START_TO;
+						end_mark=0;
+						break;
 					default:
 						goto parse_error;
 				}
@@ -669,8 +704,24 @@ char* parse_to(char* buffer, char *end, struct to_body *to_b)
 						to_b->uri.len = end_mark - to_b->uri.s;
 					case END:
 						to_b->body.len = tmp-to_b->body.s;
-						tmp = parse_to_param(tmp,end,to_b,&saved_status);
-						goto endofheader;
+						tmp = parse_to_param(tmp,end,to_b,&saved_status,multi);
+						if (to_b->error!=PARSE_ERROR && multi && *tmp==',') {
+							/* continue with a new body instance */
+							to_b->next = (struct to_body*)
+								pkg_malloc(sizeof(struct to_body));
+							if (to_b->next==NULL) {
+								LM_ERR("failed to allocate new TO body\n");
+								goto error;
+							}
+							to_b = to_b->next;
+							memset(to_b, 0, sizeof(struct to_body));
+							to_b->error=PARSE_OK;
+							saved_status = status = START_TO;
+							end_mark=0;
+							break;
+						} else {
+							goto endofheader;
+						}
 					case F_CRLF:
 					case F_LF:
 					case F_CR:
@@ -739,10 +790,23 @@ parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
 		*tmp,status, (int)(tmp-buffer), buffer);
 error:
-	to_b->error=PARSE_ERROR;
-	free_to_params(to_b);
+	first_b->error=PARSE_ERROR;
+	free_to_params(first_b);
+	free_to(first_b->next);
 	return tmp;
 
+}
+
+
+char* parse_to(char* buffer, char *end, struct to_body *to_b)
+{
+	return _parse_to( buffer, end, to_b, 0/*multi*/);
+}
+
+
+char* parse_multi_to(char* buffer, char *end, struct to_body *to_b)
+{
+	return _parse_to( buffer, end, to_b, 1/*multi*/);
 }
 
 

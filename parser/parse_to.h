@@ -46,6 +46,7 @@ struct to_body{
 	struct sip_uri parsed_uri;    /* Parsed URI */
 	struct to_param *param_lst;   /* Linked list of parameters */
 	struct to_param *last_param;  /* Last parameter in the list */
+	struct to_body *next;         /* Next body if multi-instance header */
 };
 
 
@@ -65,5 +66,7 @@ struct sip_uri *parse_to_uri(struct sip_msg *msg);
 void free_to(struct to_body* tb);
 
 void free_to_params(struct to_body *tb);
+
+char* parse_multi_to(char* buffer, char *end, struct to_body *to_b);
 
 #endif
