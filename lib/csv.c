@@ -27,29 +27,61 @@
 #include "csv.h"
 
 static struct str_list *push_csv_field(const str *field,
-                                       struct str_list **record)
+                      struct str_list **record, enum csv_flags parse_flags)
 {
 	struct str_list *rec;
+	osips_malloc_t malloc_f;
+	osips_free_t free_f;
+	enum csv_flags *flags_holder;
+	int len;
 
-	rec = pkg_malloc(sizeof *rec);
+	if (parse_flags & CSV_SHM) {
+		malloc_f = osips_shm_malloc;
+		free_f = osips_shm_free;
+	} else {
+		malloc_f = osips_pkg_malloc;
+		free_f = osips_pkg_free;
+	}
+
+	len = sizeof *rec;
+	if (!*record)
+		len += sizeof *flags_holder;
+
+	rec = malloc_f(len);
 	if (!rec) {
 		LM_ERR("oom\n");
 		return NULL;
 	}
 
-	memset(rec, 0, sizeof *rec);
-	rec->s = *field;
+	memset(rec, 0, len);
 
-	if (!*record)
+	if (parse_flags & CSV_DUP_FIELDS) {
+		rec->s.s = malloc_f(field->len + 1);
+		if (!rec->s.s) {
+			free_f(rec);
+			LM_ERR("oom\n");
+			return NULL;
+		}
+		memcpy(rec->s.s, field->s, field->len);
+		rec->s.len = field->len;
+		rec->s.s[field->len] = '\0';
+	} else {
+		rec->s = *field;
+	}
+
+	if (!*record) {
+		flags_holder = (enum csv_flags *)(rec + 1);
+		*flags_holder = parse_flags;
 		*record = rec;
-	else
+	} else {
 		(*record)->next = rec;
+	}
 
 	return rec;
 }
 
-struct str_list *__parse_csv_record(const str *_in, int parse_flags,
-                                      unsigned char sep)
+csv_record *__parse_csv_record(const str *_in, enum csv_flags parse_flags,
+                               unsigned char sep)
 {
 	struct str_list *record = NULL, **last = &record;
 	str in = *_in, field;
@@ -76,7 +108,7 @@ struct str_list *__parse_csv_record(const str *_in, int parse_flags,
 		in.len -= field.len + 1;
 		trim(&field);
 
-		if (!push_csv_field(&field, last)) {
+		if (!push_csv_field(&field, last, parse_flags)) {
 			LM_ERR("oom\n");
 			free_csv_record(record);
 			return NULL;
@@ -89,4 +121,30 @@ struct str_list *__parse_csv_record(const str *_in, int parse_flags,
 	}
 
 	return record;
+}
+
+void free_csv_record(csv_record *record)
+{
+	osips_free_t free_f;
+	enum csv_flags flags_holder;
+	struct str_list *prev;
+
+	if (!record)
+		return;
+
+	flags_holder = *(enum csv_flags *)(record + 1);
+	if (flags_holder & CSV_SHM)
+		free_f = osips_shm_free;
+	else
+		free_f = osips_pkg_free;
+
+	while (record) {
+		prev = record;
+		record = record->next;
+
+		if (flags_holder & CSV_DUP_FIELDS)
+			free_f(prev->s.s);
+
+		free_f(prev);
+	}
 }

@@ -23,59 +23,67 @@
 
 #include "../str_list.h"
 
-/*
- * disable the RFC 4180 quoting mechanism
- *
- * Example:
- *	input: 123,"""foo"" bar",abc
- *
- * with CSV_REC_NO_DQUOTE:
- *		123
- *		"""foo"" bar"
- *		abc
- *
- * default:
- *		123
- *		"foo" bar
- *		abc
- */
-#define CSV_REC_NO_DQUOTE     (1<<0)
+enum csv_flags {
+	/*
+	 * disable the RFC 4180 quoting mechanism
+	 *
+	 * Example:
+	 *	input: 123,"""foo"" bar",abc
+	 *
+	 * with CSV_NO_DQUOTE:
+	 *		123
+	 *		"""foo"" bar"
+	 *		abc
+	 *
+	 * default:
+	 *		123
+	 *		"foo" bar
+	 *		abc
+	 */
+	CSV_NO_DQUOTE     = (1<<0),
 
-/*
- * trim all leading and trailing whitespace (' ', '\t', '\r', '\n')
- *
- * Example:
- *	input: "123\n",  \tfoo ,  abc
- *
- * with CSV_REC_NO_OUTSIDE_WS:
- *		123\n
- *		foo
- *		abc
- *
- * default:
- *		123\n
- *		  \tfoo
- *		  abc
- */
-#define CSV_REC_NO_OUTSIDE_WS (1<<1)
+	/*
+	 * trim all leading and trailing whitespace (' ', '\t', '\r', '\n')
+	 *
+	 * Example:
+	 *	input: "123\n",  \tfoo ,  abc
+	 *
+	 * with CSV_NO_OUTSIDE_WS:
+	 *		123\n
+	 *		foo
+	 *		abc
+	 *
+	 * default:
+	 *		123\n
+	 *		  \tfoo
+	 *		  abc
+	 */
+	CSV_NO_OUTSIDE_WS = (1<<1),
 
-#define CSV_SIMPLE            (CSV_REC_NO_DQUOTE|CSV_REC_NO_OUTSIDE_WS)
+	CSV_PKG           = (1<<2), /* the default */
+	CSV_SHM           = (1<<3), /* overrides CSV_PKG */
+
+	CSV_DUP_FIELDS    = (1<<4),
+};
+
+#define CSV_SIMPLE            (CSV_NO_DQUOTE|CSV_NO_OUTSIDE_WS)
+
+typedef struct str_list csv_record;
 
 /*
  * Chop an input string by the given separator
  *
- * Notes:
- *	- does NOT dup the resulting strings!
- *	- remember to free result field holders with free_csv_record()
+ * Note: free the result with free_csv_record()
  */
-struct str_list *__parse_csv_record(const str *in, int parse_flags,
-                                    unsigned char sep);
+csv_record *__parse_csv_record(const str *in, enum csv_flags parse_flags,
+                               unsigned char sep);
 #define _parse_csv_record(in, flags) __parse_csv_record(in, flags, ',')
 #define parse_csv_record(in) _parse_csv_record(in, 0)
 
-static inline void free_csv_record(struct str_list *record)
-{
-	_free_str_list(record, osips_pkg_free, NULL);
-}
+/*
+ * Use this to easily free your CSV records, regardless of any
+ * CSV_DUP_FIELDS, CSV_PKG or CSV_SHM flags you may have set during parsing
+ */
+void free_csv_record(csv_record *record);
 
 #endif /* __LIB_CSV__ */
