@@ -65,6 +65,8 @@ extern int mix_dialog_presence;
 extern int notify_offline_body;
 extern int end_sub_on_timeout;
 extern int aggregate_presence;
+extern int fix_loop_timeout;
+extern int fix_loop_skipevent;
 
 extern int phtable_size;
 extern phtable_t* pres_htable;

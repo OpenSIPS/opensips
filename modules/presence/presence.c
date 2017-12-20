@@ -118,6 +118,10 @@ int notify_offline_body= 0;
 int end_sub_on_timeout= 1;
 /* if the presence event should be aggregated in NOTIFY */
 int aggregate_presence = 1;
+/* fix_loop_timeout : timeout in ms, set to 0 to disable the fix loop feature  */
+int fix_loop_timeout = 3;
+/* fix_loop_skipevent : always skip event when loop detected (set to 1) or try to process the event (set to 0) */
+int fix_loop_skipevent = 0;
 /* holder for the pointer to presence event */
 pres_ev_t** pres_event_p= NULL;
 pres_ev_t** dialog_event_p= NULL;
@@ -166,6 +170,8 @@ static param_export_t params[]={
 	{ "notify_offline_body",    INT_PARAM, &notify_offline_body},
 	{ "end_sub_on_timeout",     INT_PARAM, &end_sub_on_timeout},
 	{ "aggregate_presence",     INT_PARAM, &aggregate_presence},
+	{ "fix_loop_timeout",       INT_PARAM, &fix_loop_timeout},
+	{ "fix_loop_skipevent",     INT_PARAM, &fix_loop_skipevent},
 	{0,0,0}
 };
 
