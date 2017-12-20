@@ -41,7 +41,7 @@
 unsigned int event_heartbeat_interval = 1; /* s */
 unsigned int fs_connect_timeout = 5000;    /* ms */
 unsigned int esl_cmd_timeout = 5000;       /* ms */
-unsigned int esl_cmd_polling_itv = 5000;   /* us */
+unsigned int esl_cmd_polling_itv = 1000;   /* us */
 
 static int mod_init(void);
 
