@@ -2252,19 +2252,23 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 static void check_node_events(node_info_t *node_s, enum clusterer_event ev)
 {
 	node_info_t *n;
-	int nhop;
+	int nhop, had_nhop;
 
 	for(n = node_s->cluster->node_list; n; n = n->next) {
 		if (n == node_s)
 			continue;
 
-		nhop = get_next_hop_2(n);
+		lock_get(n->lock);
+		had_nhop = n->next_hop ? 1 : 0;
+		lock_release(n->lock);
+
+		nhop = get_next_hop(n);
 
 		lock_get(n->lock);
 		if (n->link_state != LS_UP) {
-			if(ev == CLUSTER_NODE_DOWN && n->next_hop && nhop <= 0)
+			if(ev == CLUSTER_NODE_DOWN && had_nhop && nhop <= 0)
 				n->flags |= NODE_EVENT_DOWN;
-			if(ev == CLUSTER_NODE_UP && !n->next_hop && nhop > 0)
+			if(ev == CLUSTER_NODE_UP && !had_nhop && nhop > 0)
 				n->flags |= NODE_EVENT_UP;
 		}
 		lock_release(n->lock);
