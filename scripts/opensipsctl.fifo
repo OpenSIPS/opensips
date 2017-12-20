@@ -111,7 +111,7 @@ fifo_cmd()
 
 			# issue FIFO request (printf taken to deal with \n)
 			printf "$CMD" > $OSIPS_FIFO
-		) 200>/var/lock/opensipsctl.lock
+		) 200>/var/lock/$(echo $OSIPS_FIFO | sed 's#/#%#g').lock
 	else
 		# issue FIFO request (printf taken to deal with \n)
 		printf "$CMD" > $OSIPS_FIFO
