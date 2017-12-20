@@ -854,6 +854,7 @@ static int ul_contact_event_to_msg(struct sip_msg *req)
 	int_str vals[UL_MAX];
 	int proto, port;
 	str host;
+	str path_dst;
 
 	if (avp_ids[0]==-1) {
 		/* init the avp IDs mapping us on the UL event */
@@ -892,18 +893,26 @@ static int ul_contact_event_to_msg(struct sip_msg *req)
 		return -1;
 	}
 
+	/* contact PATH goes as path */
+	if (vals[UL_PATH].s.len) {
+		if (get_path_dst_uri(&vals[UL_PATH].s, &path_dst) < 0) {
+			LM_ERR("failed to get dst_uri for Path\n");
+			return -1;
+		}
+		if (set_dst_uri( req, &path_dst) < 0) {
+			LM_ERR("failed to set dst_uri of Path\n");
+			return -1;
+		}
+
+		if (set_path_vector( req, &vals[UL_PATH].s)<0) {
+			LM_ERR("failed to set PATH\n");
+			return -1;
+		}
+	} else
 	/* contact RECEIVED goes as DURI */
 	if (vals[UL_RECEIVED].s.len) {
 		if (set_dst_uri( req, &vals[UL_RECEIVED].s)<0) {
 			LM_ERR("failed to set DST URI\n");
-			return -1;
-		}
-	}
-
-	/* contact PATH goes as path */
-	if (vals[UL_PATH].s.len) {
-		if (set_path_vector( req, &vals[UL_PATH].s)<0) {
-			LM_ERR("failed to set PATH\n");
 			return -1;
 		}
 	}
