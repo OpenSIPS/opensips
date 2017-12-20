@@ -1,0 +1,415 @@
+<!-- Module User's Guide -->
+
+<chapter id="sec-admin-guide">
+	<title>&adminguide;</title>
+
+	<section id="sec-overview">
+	<title>Overview</title>
+	<para>
+		<emphasis>freeswitch_scripting</emphasis> is a helper module that
+		exposes full control over the FreeSWITCH ESL interface to the OpenSIPS
+		script.
+	</para>
+	<para>
+		It allows the OpenSIPS script writer to subscribe
+		to generic FreeSWITCH ESL events as well as to run arbitrary
+		FreeSWITCH ESL commands and interpret their results.
+		It makes use of the <emphasis>freeswitch</emphasis>
+		module for the management of ESL connections and event subscriptions.
+	</para>
+	</section>
+
+	<section id="sec-dependencies">
+	<title>Dependencies</title>
+	<section id="sec-module-dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded together with this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>freeswitch</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>(optional) an SQL DB module</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section id="sec-external-dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="sec-modparam">
+	<title>Exported Parameters</title>
+
+	<section id="modparam-db-url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		An SQL database URL which the module will use in order to
+		load a set of FreeSWITCH ESL sockets and their event subscriptions.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote> (DB support disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-db-table" xreflabel="db_table">
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+		The SQL table name for this module.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>freeswitch</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_table", "freeswitch_sockets")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-db-col-username" xreflabel="db_col_username">
+		<title><varname>db_col_username</varname> (string)</title>
+		<para>
+		The SQL column name for the "username" ESL connect information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>username</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_col_username</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_col_username", "user")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-db-col-password" xreflabel="db_col_password">
+		<title><varname>db_col_password</varname> (string)</title>
+		<para>
+		The SQL column name for the "password" ESL connect information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>password</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_col_password</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_col_password", "pass")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-db-col-ip" xreflabel="db_col_ip">
+		<title><varname>db_col_ip</varname> (string)</title>
+		<para>
+		The SQL column name for the "ip" ESL connect information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>ip</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_col_ip</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_col_ip", "ip_addr")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-db-col-port" xreflabel="db_col_port">
+		<title><varname>db_col_port</varname> (string)</title>
+		<para>
+		The SQL column name for the "port" ESL connect information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>port</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_col_port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_col_port", "tcp_port")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-db-col-events" xreflabel="db_col_events">
+		<title><varname>db_col_events</varname> (string)</title>
+		<para>
+		The SQL column name for the comma-separated, case-sensitive FreeSWITCH
+		event names which OpenSIPS will subscribe to.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>events_csv</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>db_col_events</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "db_col_events", "fs_events")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="modparam-fs-subscribe" xreflabel="fs_subscribe">
+		<title><varname>fs_subscribe</varname> (string)</title>
+		<para>
+		Add a FreeSWITCH ESL URL to which OpenSIPS will connect at startup.
+		The URL syntax includes support for specifying a list of events to
+		subscribe to and follows this pattern:
+		<emphasis role='bold'>[fs://][[username]:password@]host[:port][?event1[,event2]...]</emphasis>
+		</para>
+		<para>
+		<emphasis>
+			This parameter can be set multiple times.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>fs_subscribe</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.10?CHANNEL_STATE")
+modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,BACKGROUND_JOB")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="sec-modfunc">
+	<title>Exported Functions</title>
+	<section id="modfunc-freeswitch-esl" xreflabel="freeswitch_esl()">
+		<title>
+		<function moreinfo="none">freeswitch_esl(command, freeswitch_url[, response_pvar])</function>
+		</title>
+		<para>
+		Run an arbitrary command on an arbitrary FreeSWITCH ESL socket. The
+		socket need not necessarily be defined in the database or through
+		<emphasis role='bold'><xref linkend="modparam-fs-subscribe"/></emphasis>.
+		However, if this is the case, then the "password" part of the URL
+		becomes mandatory.
+		</para>
+		<para>
+		The current OpenSIPS worker will block until an answer from FreeSWITCH
+		arrives. The timeout for this operation can be controlled via the
+		<emphasis role='bold'>esl_cmd_timeout</emphasis> parameter of the
+		freeswitch connection manager module.
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - the ESL command string to
+			execute. Includes support for variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>freeswitch_url</emphasis> - the ESL interface to
+			connect to. The syntax is:
+			[fs://][[username]:password@]host[:port][?event1[,event2]...].
+			The "?events" part of the URL will be silently discarded.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>response_pvar (optional)</emphasis> - a
+			variable which will hold the text result of the ESL command.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para><emphasis role='bold'>Return value</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				1 (success) - the ESL command executed successfully and any
+				output variables were successfully written to. Note that this
+				does not say anything about the nature of the ESL answer (it
+				may well be a "-ERR" type of response)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				-1 (failure) - internal error or the ESL command failed to
+				execute
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+			<title><function moreinfo="none">
+				<emphasis>freeswitch_esl()</emphasis></function> usage</title>
+		<programlisting format="linespecific">
+...
+	# ESL socket 10.0.0.10 is defined in the database (password "ClueCon")
+	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", "10.0.0.10", "$var(response)");
+	if (!$var(rc)) {
+		xlog("failed to execute ESL command ($var(rc))\n");
+		return -1;
+	}
+...
+	# ESL socket 10.0.0.10 is new, we must specify a password
+	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", "$var(response)");
+	if (!$var(rc)) {
+		xlog("failed to execute ESL command ($var(rc))\n");
+		return -1;
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="sec-mi-commands">
+	<title>Exported MI Commands</title>
+	<section id="mi-fs-subscribe" xreflabel="fs_subscribe">
+		<title>fs_subscribe</title>
+		<para>
+		Ensures that the given FreeSWITCH ESL socket is subscribed to the given
+		list of events. In case an event cannot be subscribed to, the freeswitch
+		driver will periodically retry to subscribe to it until an fs_unsubscribe
+		MI command for the respective event is issued.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>freeswitch_url</emphasis> - the ESL interface to
+				connect to. The syntax is:
+				[fs://][[username]:password@]host[:port][?event1[,event2]...].
+				The "?events" part of the URL will be silently discarded.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>event</emphasis> - the name of the event to subscribe to
+			</para></listitem>
+			<listitem><para>
+				<emphasis>...</emphasis> - (other events)
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section id="mi-fs-unsubscribe" xreflabel="fs_unsubscribe">
+		<title>fs_unsubscribe</title>
+		<para>
+		Ensures that the given FreeSWITCH ESL socket is unsubscribed from the given
+		list of events.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>freeswitch_url</emphasis> - the ESL interface to
+				search for. The syntax is:
+				[fs://][[username]:password@]host[:port][?event1[,event2]...].
+				The "?events" part of the URL will be silently discarded.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>event</emphasis> - the name of the event to unsubscribe from
+			</para></listitem>
+			<listitem><para>
+				<emphasis>...</emphasis> - (other events)
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section id="mi-fs-list" xreflabel="fs_list">
+		<title>fs_list</title>
+		<para>
+		Displays the current set of FreeSWITCH ESL sockets and the list of events
+		that the module is subscribed to for each socket.
+		</para>
+	</section>
+	<section id="mi-fs-reload" xreflabel="fs_reload">
+		<title>fs_reload</title>
+		<para>
+		Replaces the current set* of FreeSWITCH ESL sockets along with their respective
+		events with the current data (ESL sockets and their events) found in the
+		"freeswitch" table.
+		</para>
+		<para>
+			* this includes any sockets/events provisioned through
+			<xref linkend="modparam-fs-subscribe"/>, MI
+			<xref linkend="mi-fs-subscribe"/> commands or previous DB data set.
+		</para>
+	</section>
+
+	</section>
+
+	<section>
+	<title>Exported Events</title>
+	<section id="event-freeswitch" xreflabel="freeswitch">
+		<title>
+		<function moreinfo="none">E_FREESWITCH</function>
+		</title>
+		<para>
+		This event is raised when OpenSIPS receives an ESL event notification from
+		a socket that the "freeswitch_scripting" module is subscribed to.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>name</emphasis> - the name of the event
+			</para></listitem>
+			<listitem><para>
+					<emphasis>sender</emphasis> - the FreeSWITCH sender IP address
+			</para></listitem>
+			<listitem><para>
+					<emphasis>body</emphasis> - the full JSON-encoded body of the event,
+					as sent by FreeSWITCH. Use the json module ($json variable)
+					to easily interpret it.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	</section>
+
+</chapter>
