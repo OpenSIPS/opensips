@@ -1,5 +1,5 @@
 /*
- * Client for the FreeSWITCH ESL (Event Socket Layer)
+ * Driver and API to command and control FreeSWITCH ESL connections
  *
  * Copyright (C) 2017 OpenSIPS Solutions
  *
@@ -17,11 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2017-01-19 initial version (liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
 #include "../../sr_module.h"
@@ -31,16 +27,26 @@
 #include "../../parser/msg_parser.h"
 #include "../../mem/mem.h"
 #include "../../lib/osips_malloc.h"
+#include "../../lib/csv.h"
+#include "../../lib/url.h"
+#include "../../lib/list.h"
 
 #include "fs_api.h"
 #include "fs_proc.h"
+#include "fs_ipc.h"
 
-extern struct list_head *fs_boxes;
-extern rw_lock_t *box_lock;
+/* this correlates with FreeSWITCH's "event-heartbeat-interval" setting,
+ * located in autoload_configs/switch.conf.xml. The default there is 20s,
+ * but we're using a more granular value, just to be on the safe side */
+unsigned int event_heartbeat_interval = 1; /* s */
+unsigned int fs_connect_timeout = 5000;    /* ms */
+unsigned int esl_cmd_timeout = 5000;       /* ms */
+unsigned int esl_cmd_polling_itv = 1000;   /* us */
 
 static int mod_init(void);
 
-int fs_bind(struct fs_binds *fapi);
+extern int fs_api_init(void);
+int fs_api_wait_init(void);
 
 static cmd_export_t cmds[] = {
 	{ "fs_bind", (cmd_function)fs_bind, 1, NULL, NULL, 0 },
@@ -48,14 +54,17 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t mod_params[] = {
-	{ 0,0,0 }
+	{"event_heartbeat_interval", INT_PARAM,         &event_heartbeat_interval},
+	{"esl_connect_timeout",      INT_PARAM,               &fs_connect_timeout},
+	{"esl_cmd_timeout",          INT_PARAM,                  &esl_cmd_timeout},
+	{"esl_cmd_polling_itv",      INT_PARAM,              &esl_cmd_polling_itv},
+	{0, 0, 0}
 };
 
 static proc_export_t procs[] = {
-	{ "fs_stats", NULL, NULL, fs_stats_loop, 1, 0 },
+	{ "FS Manager", NULL, fs_api_wait_init, fs_conn_mgr_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
-
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -90,20 +99,15 @@ static int mod_init(void)
 {
 	cJSON_Hooks hooks;
 
-	fs_boxes = shm_malloc(sizeof *fs_boxes);
-	if (!fs_boxes) {
-		LM_ERR("out of mem\n");
-		return -1;
-	}
-	INIT_LIST_HEAD(fs_boxes);
-
-	box_lock = shm_malloc(sizeof *box_lock);
-	if (!box_lock) {
-		LM_ERR("out of mem\n");
+	if (fs_ipc_init() != 0) {
+		LM_ERR("failed to init IPC, oom?\n");
 		return -1;
 	}
 
-	box_lock = lock_init_rw();
+	if (fs_api_init() != 0) {
+		LM_ERR("failed to init API internals, oom?\n");
+		return -1;
+	}
 
 	hooks.malloc_fn = osips_pkg_malloc;
 	hooks.free_fn = osips_pkg_free;

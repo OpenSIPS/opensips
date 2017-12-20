@@ -24,28 +24,47 @@
 
 #include "pt.h"
 
-typedef struct _ipc_job {
-	/* the ID (internal) of the process sending the job */
-	int snd_proc;
-	/* the type pf the job */
-	int type;
-	/* the payload of the job, just a pointer */
-	void *payload;
-} ipc_job;
-
-
+typedef int ipc_handler_type;
+extern int ipc_shared_fd_read;
+#define IPC_TYPE_NONE (-1)
+#define ipc_bad_handler_type(htype) ((htype) < 0)
 
 #define IPC_FD_READ(_proc_no)   pt[_proc_no].ipc_pipe[0]
 #define IPC_FD_WRITE(_proc_no)  pt[_proc_no].ipc_pipe[1]
 #define IPC_FD_READ_SELF        IPC_FD_READ(process_no)
+#define IPC_FD_READ_SHARED      ipc_shared_fd_read
 
 typedef void (ipc_handler_f)(int sender, void *payload);
 
-int ipc_register_handler( ipc_handler_f *hdl, char *name);
+/*
+ * Register a new IPC handler type, associated with "name" and "hdl".
+ * Must be called in the pre-fork phase.
+ *
+ * Returned value: validate with BAD_HANDLER_TYPE()
+ */
+ipc_handler_type ipc_register_handler(ipc_handler_f *hdl, char *name);
 
-int ipc_send_job(int dst_proc, int type, void *payload);
+/*
+ * Push a job for "dst_proc" and quickly return
+ *
+ * Return: 0 on success, -1 on failure
+ */
+int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload);
 
-void ipc_handle_job(void);
+/*
+ * Push a job for the next available OpenSIPS worker and quickly return
+ *
+ * Return: 0 on success, -1 on failure
+ */
+int ipc_dispatch_job(ipc_handler_type type, void *payload);
+
+/*
+ * default handler for F_IPC reactor jobs. Copy-paste its code and improve
+ * if this is not enough for you
+ */
+void ipc_handle_job(int fd);
+
+/* internal functions */
+int init_ipc(void);
 
 #endif
-

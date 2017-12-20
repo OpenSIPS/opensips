@@ -40,10 +40,89 @@
 
 	<section id="sec-modparam">
 	<title>Exported Parameters</title>
+	<section id="modparam-event-heartbeat-interval" xreflabel="event_hearbeat_interval">
+		<title><varname>event_heartbeat_interval</varname> (integer)</title>
+		<para>
+		The expected interval between FreeSWITCH HEARTBEAT event arrivals.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> (second).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>event_heartbeat_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch", "event_heartbeat_interval", 20)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-esl-connect-timeout" xreflabel="esl_connect_timeout">
+		<title><varname>esl_connect_timeout</varname> (integer)</title>
+		<para>
+		The maximally allowed duration for the establishment of an ESL connection.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5000</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>esl_connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch", "esl_connect_timeout", 3000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-esl-cmd-timeout" xreflabel="esl_cmd_timeout">
+		<title><varname>esl_cmd_timeout</varname> (integer)</title>
+		<para>
+		The maximally allowed duration for the execution of an ESL command.
+		This interval does not include the connect duration.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5000</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>esl_cmd_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch", "esl_cmd_timeout", 3000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-esl-cmd-polling-itv" xreflabel="esl_cmd_polling_itv">
+		<title><varname>esl_cmd_polling_itv</varname> (integer)</title>
+		<para>
+		The sleep interval used when polling for an ESL command response. Since the
+		value of this parameter imposes a minimal duration for any ESL command,
+		you should run OpenSIPS in debug mode in order to first determine an expected
+		response time for an arbitrary ESL command, then tune this parameter accordingly.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1000</quote> (microseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>esl_cmd_polling_itv</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("freeswitch", "esl_cmd_polling_itv", 3000)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="sec-modfunc">
 	<title>Exported Functions</title>
 	</section>
 </chapter>
-

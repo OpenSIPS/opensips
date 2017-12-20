@@ -519,7 +519,7 @@ static int mod_init(void)
 		/* Register the max load recalculation timer */
 		if (fetch_freeswitch_stats &&
 		    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
-		                   FS_HEARTBEAT_ITV, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+		           fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
 			LM_ERR("failed to register timer for max load recalc!\n");
 			return -1;
 		}
@@ -1000,7 +1000,7 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 		if (!dst->fs_sock)
 			continue;
 
-		lock_start_read(dst->fs_sock->hb_data_lk);
+		lock_start_read(dst->fs_sock->stats_lk);
 		for (ri = 0; ri < dst->rmap_no; ri++) {
 			if (dst->rmap[ri].fs_enabled) {
 				psz = lb_dlg_binds.get_profile_size(
@@ -1012,25 +1012,25 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 				 * of sessions as FreeSWITCH does. Any differences must be
 				 * subtracted from the remote "max sessions" value
 				 */
-				if (psz < dst->fs_sock->hb_data.max_sess) {
+				if (psz < dst->fs_sock->stats.max_sess) {
 					dst->rmap[ri].max_load =
-					(dst->fs_sock->hb_data.id_cpu / (float)100) *
-						(dst->fs_sock->hb_data.max_sess -
-						 (dst->fs_sock->hb_data.sess - psz));
+					(dst->fs_sock->stats.id_cpu / (float)100) *
+						(dst->fs_sock->stats.max_sess -
+						 (dst->fs_sock->stats.sess - psz));
 				} else {
 					dst->rmap[ri].max_load =
-					(dst->fs_sock->hb_data.id_cpu / (float)100) *
-						dst->fs_sock->hb_data.max_sess;
+					(dst->fs_sock->stats.id_cpu / (float)100) *
+						dst->fs_sock->stats.max_sess;
 				}
 				LM_DBG("load update on FS (%p) %s:%d: "
 				       "%d -> %d (%d %d %.3f), prof=%d\n",
 				       dst->fs_sock, dst->fs_sock->host.s, dst->fs_sock->port,
-				       old, dst->rmap[ri].max_load, dst->fs_sock->hb_data.sess,
-				       dst->fs_sock->hb_data.max_sess,
-				       dst->fs_sock->hb_data.id_cpu, psz);
+				       old, dst->rmap[ri].max_load, dst->fs_sock->stats.sess,
+				       dst->fs_sock->stats.max_sess,
+				       dst->fs_sock->stats.id_cpu, psz);
 			}
 		}
-		lock_stop_read(dst->fs_sock->hb_data_lk);
+		lock_stop_read(dst->fs_sock->stats_lk);
 	}
 	lock_stop_write(ref_lock);
 }

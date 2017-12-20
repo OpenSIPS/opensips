@@ -28,275 +28,683 @@
 #include "../../resolve.h"
 #include "../../forward.h"
 #include "../../ut.h"
+#include "../../lib/url.h"
 
 #include "fs_api.h"
+#include "fs_ipc.h"
 
-struct list_head *fs_boxes;
-rw_lock_t *box_lock;
+#define FS_STATS_EVENT_NAME "HEARTBEAT"
+#define FS_STATS_EVENT_STR {FS_STATS_EVENT_NAME,sizeof(FS_STATS_EVENT_NAME)-1}
 
-static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv);
-static void free_fs_mod_ref(fs_mod_ref *mref);
-static fs_evs *get_fs_evs(str *hostport);
+extern int event_heartbeat_interval;
+extern int esl_cmd_polling_itv;
+extern int esl_cmd_timeout;
+
+/* SHM pointer */
+unsigned int *conn_mgr_process_no;
 
 /*
- * Parses and validates FreeSWITCH URLs:
- *        "fs://[username]:password@host[:port]"
+ * Any FreeSWITCH socket which is still referenced at least once
+ * Both FS proc and random OpenSIPS MI reloaders may write to this list
  */
-static int parse_fs_url(str *in, str *user_out, str *pass_out, str *host_out,
-                        unsigned int *port_out)
+struct list_head *fs_sockets;
+rw_lock_t *sockets_lock;
+
+/*
+ *	fs_sockets ⊇ fs_sockets_down (sockets which require a (re)connect)
+ *	fs_sockets ⊇ fs_sockets_esl (sockets which have pending sub/unsub ESL cmds)
+ */
+struct list_head *fs_sockets_down;
+rw_lock_t *sockets_down_lock;
+
+struct list_head *fs_sockets_esl;
+rw_lock_t *sockets_esl_lock;
+
+/* mem reusage - unique string tags and events accumulated so far */
+static struct str_list *all_tags;
+//static struct str_list *all_events;
+
+int fs_api_init(void)
 {
-	str st = *in;
-	str port;
-	char *p, *h;
-
-	if (st.len > FS_SOCK_PREFIX_LEN) {
-		if (memcmp(st.s, FS_SOCK_PREFIX, FS_SOCK_PREFIX_LEN) == 0) {
-			st.len -= FS_SOCK_PREFIX_LEN;
-			st.s += FS_SOCK_PREFIX_LEN;
-		}
+	fs_sockets = shm_malloc(3 * sizeof *fs_sockets);
+	if (!fs_sockets) {
+		LM_ERR("oom\n");
+		return -1;
 	}
+	INIT_LIST_HEAD(fs_sockets);
 
-	p = memchr(st.s, ':', st.len);
-	if (!p || !(h = memchr(p, '@', st.len - (p - st.s)))) {
-		LM_ERR("missing password!\n");
+	fs_sockets_down = fs_sockets + 1;
+	INIT_LIST_HEAD(fs_sockets_down);
+
+	fs_sockets_esl = fs_sockets + 2;
+	INIT_LIST_HEAD(fs_sockets_esl);
+
+	sockets_lock = lock_init_rw();
+	sockets_down_lock = lock_init_rw();
+	sockets_esl_lock = lock_init_rw();
+	if (!sockets_lock || !sockets_down_lock || !sockets_esl_lock) {
+		LM_ERR("oom\n");
 		return -1;
 	}
 
-	user_out->len = p - st.s;
-	user_out->s = st.s;
-
-	p++;
-	pass_out->len = h - p;
-	pass_out->s = p;
-
-	h++;
-	p = memchr(h, ':', (st.len - (h - st.s)));
-	if (p) {
-		p++;
-		port.s = p;
-		port.len = st.len - (p - st.s);
-
-		if (str2int(&port, port_out) != 0) {
-			LM_ERR("failed to parse port '%.*s' %d in host '%.*s'\n",
-			       port.len, port.s, port.len, st.len, st.s);
-			return -1;
-		}
-
-		host_out->s = h;
-		host_out->len = (p - 1) - h;
-	} else {
-		host_out->s = h;
-		host_out->len = st.len - (h - st.s);
-		*port_out = FS_DEFAULT_EVS_PORT;
+	conn_mgr_process_no = shm_malloc(sizeof *conn_mgr_process_no);
+	if (!conn_mgr_process_no) {
+		LM_ERR("oom\n");
+		return -1;
 	}
 
 	return 0;
 }
 
-static fs_mod_ref *mk_fs_mod_ref(str *tag, ev_hb_cb_f cbf, const void *priv)
+int fs_api_set_proc_no(void)
 {
-	fs_mod_ref *mref = NULL;
+	LM_DBG("setting global mgr process_no=%d\n", process_no);
+	*conn_mgr_process_no = process_no;
+	return 0;
+}
 
-	mref = shm_malloc(sizeof *mref + tag->len);
-	if (!mref) {
-		LM_ERR("out of mem\n");
+/* TODO: rework this specific "PID advertising" hack
+ * as part of a more reusable OpenSIPS mechanism */
+int fs_api_wait_init(void)
+{
+	int i;
+
+	/* time out startup after 10 sec */
+	for (i = 0; i < 2000000; i++) {
+		if (*conn_mgr_process_no != 0)
+			return 0;
+
+		usleep(5);
+	}
+
+	LM_ERR("FS API is not ready for use after 10 sec, aborting\n");
+	return -1;
+}
+
+void evs_free(fs_evs *sock)
+{
+	struct list_head *_, *__;
+	struct fs_event *ev;
+	struct fs_esl_reply *reply;
+
+	if (sock->ref > 0) {
+		LM_BUG("non-zero ref @ free");
+		return;
+	}
+
+	list_for_each_safe(_, __, &sock->events) {
+		ev = list_entry(_, struct fs_event, list);
+		shm_free(ev);
+	}
+
+	list_for_each_safe(_, __, &sock->esl_replies) {
+		reply = list_entry(_, struct fs_esl_reply, list);
+		shm_free(reply->text.s);
+		shm_free(reply);
+	}
+
+	shm_free(sock->host.s);
+	shm_free(sock->user.s);
+	shm_free(sock->pass.s);
+
+	lock_destroy_rw(sock->stats_lk);
+	lock_destroy_rw(sock->lists_lk);
+
+	memset(sock, 0, sizeof *sock);
+	shm_free(sock);
+}
+
+static fs_evs *evs_init(const str *host, unsigned short port,
+                        const str *user, const str *pass)
+{
+	fs_evs *sock;
+
+	if (!host || !host->s || host->len == 0) {
+		LM_ERR("host cannot be NULL!\n");
 		return NULL;
 	}
-	memset(mref, 0, sizeof *mref);
 
-	mref->tag.s = (char *)(mref + 1);
-	mref->tag.len = tag->len;
-	memcpy(mref->tag.s, tag->s, tag->len);
+	if (!pass || !pass->s || pass->len == 0) {
+		LM_ERR("the password part is mandatory for a new socket!\n");
+		return NULL;
+	}
 
-	mref->hb_cb = cbf;
-	mref->priv = priv;
+	sock = shm_malloc(sizeof *sock);
+	if (!sock) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+	memset(sock, 0, sizeof *sock);
+	INIT_LIST_HEAD(&sock->esl_replies);
+	INIT_LIST_HEAD(&sock->events);
+	INIT_LIST_HEAD(&sock->reconnect_list);
+	INIT_LIST_HEAD(&sock->esl_cmd_list);
 
-	return mref;
+	sock->stats_lk = lock_init_rw();
+	if (!sock->stats_lk) {
+		LM_ERR("oom\n");
+		goto err_free;
+	}
+
+	sock->lists_lk = lock_init_rw();
+	if (!sock->lists_lk) {
+		LM_ERR("oom\n");
+		goto err_free;
+	}
+
+	if (shm_nt_str_dup(&sock->host, host) != 0) {
+		LM_ERR("oom\n");
+		goto err_free;
+	}
+
+	if (user && shm_nt_str_dup(&sock->user, user) != 0) {
+		LM_ERR("oom\n");
+		goto err_free;
+	}
+
+	if (pass && shm_nt_str_dup(&sock->pass, pass) != 0) {
+		LM_ERR("oom\n");
+		goto err_free;
+	}
+
+	sock->port = port;
+	sock->esl_reply_id = 1;
+
+	LM_DBG("new FS sock: host=%s, port=%d, user=%s, pass=%s\n",
+	       sock->host.s, sock->port, sock->user.s, sock->pass.s);
+
+	return sock;
+
+err_free:
+	evs_free(sock);
+	return NULL;
 }
 
-static void free_fs_mod_ref(fs_mod_ref *mref)
+int evs_update(fs_evs *sock, const str *user, const str *pass)
 {
-	mref->tag.s = NULL;
-	shm_free(mref);
-}
+	str user_dup = {NULL, 0}, pass_dup;
 
-static fs_mod_ref *get_fs_mod_ref(fs_evs *evs, str *tag)
-{
-	struct list_head *ele;
-	fs_mod_ref *mref;
-
-	list_for_each(ele, &evs->modules) {
-		mref = list_entry(ele, fs_mod_ref, list);
-
-		if (str_strcmp(&mref->tag, tag) == 0) {
-			return mref;
+	if (!ZSTRP(user)) {
+		if (shm_nt_str_dup(&user_dup, user) != 0) {
+			LM_ERR("oom\n");
+			return -1;
 		}
+	}
+
+	if (!ZSTRP(pass)) {
+		if (shm_nt_str_dup(&pass_dup, pass) != 0) {
+			LM_ERR("oom\n");
+			if (!ZSTRP(user))
+				shm_free(user_dup.s);
+			return -1;
+		}
+	}
+
+	if (!ZSTRP(user)) {
+		shm_free(sock->user.s);
+		sock->user = user_dup;
+	} else {
+		shm_free(sock->user.s);
+		memset(&sock->user, 0, sizeof sock->user);
+	}
+
+	/* never end up with an empty password */
+	if (!ZSTRP(pass)) {
+		shm_free(sock->pass.s);
+		sock->pass = pass_dup;
+	}
+
+	return 0;
+}
+
+static fs_evs* get_evs(const str *host, unsigned short port,
+                       const str *user, const str *pass)
+{
+	struct list_head *_;
+	fs_evs *sock = NULL;
+
+	if (!host || !host->s || host->len == 0) {
+		LM_ERR("cannot locate a socket without a host!\n");
+		return NULL;
+	}
+
+	if (port == 0)
+		port = FS_DEFAULT_EVS_PORT;
+
+	LM_DBG("fetching %.*s:%d, user='%.*s', pass='%.*s'\n",
+	       host->len, host->s, port,
+	       user ? user->len : 0, user ? user->s : NULL,
+	       pass ? pass->len : 0, pass ? pass->s : NULL);
+
+	lock_start_write(sockets_lock);
+
+	list_for_each(_, fs_sockets) {
+		sock = list_entry(_, fs_evs, list);
+		if (str_strcmp(host, &sock->host) == 0 && port == sock->port)
+			break;
+
+		sock = NULL;
+	}
+
+	if (!sock) {
+		sock = evs_init(host, port, user, pass);
+		if (!sock) {
+			lock_stop_write(sockets_lock);
+			LM_ERR("failed to create FS event socket!\n");
+			return NULL;
+		}
+
+		list_add(&sock->list, fs_sockets);
+
+		lock_start_write(sockets_down_lock);
+		list_add(&sock->reconnect_list, fs_sockets_down);
+		lock_stop_write(sockets_down_lock);
+	} else {
+		evs_update(sock, user, pass);
+
+		LM_DBG("found & updated FS sock: host=%s, port=%d, user=%s, pass=%s\n",
+		       sock->host.s, sock->port, sock->user.s, sock->pass.s);
+	}
+
+	sock->ref++;
+
+	lock_stop_write(sockets_lock);
+	return sock;
+}
+
+static fs_evs *get_evs_by_url(const str *_fs_url)
+{
+	fs_evs *sock;
+	struct url *fs_url;
+
+	fs_url = parse_url(_fs_url, 0, 0);
+	if (!fs_url) {
+		LM_ERR("failed to parse FS URL '%.*s'\n", _fs_url->len, _fs_url->s);
+		return NULL;
+	}
+
+	sock = get_evs(&fs_url->hosts->host, fs_url->hosts->port,
+	               &fs_url->username, &fs_url->password);
+
+	if (!sock) {
+		if (!fs_url->password.s)
+			LM_ERR("refusing to connect to FS '%.*s' without a password!\n",
+			       _fs_url->len, _fs_url->s);
+		else
+			LM_ERR("internal error - oom?\n");
+	}
+
+	free_url(fs_url);
+	return sock;
+}
+
+int dup_common_tag(const str *tag, str *out)
+{
+	struct str_list *t;
+
+	if (!tag || !tag->s || tag->len == 0) {
+		memset(out, 0, sizeof *out);
+		return 0;
+	}
+
+	for (t = all_tags; t; t = t->next) {
+		if (str_strcmp(&t->s, tag) == 0) {
+			*out = t->s;
+			return 0;
+		}
+	}
+
+	t = shm_malloc(sizeof *t + tag->len + 1);
+	if (!t) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(t, 0, sizeof *t);
+
+	t->s.s = (char *)(t + 1);
+	t->s.len = tag->len;
+	memcpy(t->s.s, tag->s, tag->len);
+	t->s.s[t->s.len] = '\0';
+
+	if (!all_tags) {
+		all_tags = t;
+	} else {
+		t->next = all_tags;
+		all_tags = t;
+	}
+
+	*out = t->s;
+	return 0;
+}
+
+int add_event_subscription(struct fs_event *event, const str *tag,
+                           ipc_handler_type ipc_type)
+{
+	struct list_head *_;
+	struct fs_event_subscription *sub = NULL;
+
+	list_for_each(_, &event->subscriptions) {
+		sub = list_entry(_, struct fs_event_subscription, list);
+		if (str_strcmp(&sub->tag, tag) == 0) {
+			sub->ref++;
+			if (!ipc_bad_handler_type(ipc_type))
+				sub->ipc_type = ipc_type;
+			break;
+		}
+
+		sub = NULL;
+	}
+
+	if (!sub) {
+		sub = shm_malloc(sizeof *sub);
+		if (!sub) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		memset(sub, 0, sizeof *sub);
+
+		if (dup_common_tag(tag, &sub->tag) != 0) {
+			shm_free(sub);
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		sub->ref = 1;
+		sub->ipc_type = ipc_type;
+		list_add_tail(&sub->list, &event->subscriptions);
+	}
+
+	event->refsum++;
+	return 0;
+}
+
+int del_event_subscription(struct fs_event *event, const str *tag)
+{
+	struct list_head *_;
+	struct fs_event_subscription *sub = NULL;
+
+	list_for_each(_, &event->subscriptions) {
+		sub = list_entry(_, struct fs_event_subscription, list);
+		if (str_strcmp(&sub->tag, tag) == 0) {
+			if (sub->ref == 0)
+				return -1;
+
+			sub->ref--;
+
+			if (event->refsum <= 0)
+				LM_BUG("del event refsum");
+
+			event->refsum--;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+struct fs_event *add_event(fs_evs *sock, const str *name)
+{
+	struct fs_event *event;
+
+	event = shm_malloc(sizeof *event);
+	if (!event) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+	memset(event, 0, sizeof *event);
+
+	if (dup_common_tag(name, &event->name) != 0) {
+		shm_free(event);
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	event->action = FS_EVENT_SUB;
+	INIT_LIST_HEAD(&event->subscriptions);
+
+	list_add_tail(&event->list, &sock->events);
+	return event;
+}
+
+struct fs_event *get_event(fs_evs *sock, const str *name)
+{
+	struct list_head *_;
+	struct fs_event *event;
+
+	list_for_each(_, &sock->events) {
+		event = list_entry(_, struct fs_event, list);
+		if (str_strcmp(&event->name, name) == 0)
+			return event;
 	}
 
 	return NULL;
 }
 
-static fs_evs *get_fs_evs(str *fs_url)
+int evs_sub(fs_evs *sock, const str *tag, const struct str_list *name,
+            ipc_handler_type ipc_type)
 {
-	struct list_head *ele;
-	str user, pass, host;
-	unsigned int port;
-	fs_evs *evs;
+	struct fs_event *event;
+	int ret = 0;
 
-	if (parse_fs_url(fs_url, &user, &pass, &host, &port) != 0) {
-		LM_ERR("bad FS URL: '%.*s'! Need: fs://[user]:pass@host[:port]\n",
-		       fs_url->len, fs_url->s);
-		return NULL;
-	}
+	lock_start_write(sock->lists_lk);
 
-	list_for_each(ele, fs_boxes) {
-		evs = list_entry(ele, fs_evs, list);
+	for (; name; name = name->next) {
+		event = NULL;
 
-		if (str_strcmp(&host, &evs->host) == 0 &&
-		    str_strcmp(&user, &evs->user) == 0 &&
-		    str_strcmp(&pass, &evs->pass) == 0 &&
-		    port == evs->port) {
-			return evs;
+		event = get_event(sock, &name->s);
+		if (!event) {
+			event = add_event(sock, &name->s);
+			if (!event) {
+				LM_ERR("failed to alloc event\n");
+				ret = -1;
+				continue;
+			}
+		}
+
+		if (add_event_subscription(event, tag, ipc_type) != 0) {
+			LM_ERR("failed to alloc subscription\n");
+			ret = -1;
+			continue;
+		}
+
+		if (event->refsum == 1) {
+			/* there is a pending unsub action we must cancel! */
+			if (event->action == FS_EVENT_UNSUB)
+				event->action = FS_EVENT_NOP;
+			else
+				event->action = FS_EVENT_SUB;
 		}
 	}
 
-	return NULL;
+	lock_stop_write(sock->lists_lk);
+
+	/* always place it in the ESL "todo" list; we released the lock, so we
+	 * cannot guarantee that the above esl_cmd's haven't been consumed by now
+	 * worst case: we mark it as "todo" with no pending cmds, which is fine */
+	lock_start_write(sockets_esl_lock);
+	if (list_empty(&sock->esl_cmd_list))
+		list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
+	lock_stop_write(sockets_esl_lock);
+
+	if (ret != 0)
+		LM_ERR("oom! some events may have been skipped\n");
+
+	return ret;
 }
 
-
-static fs_evs *mk_fs_evs(str *fs_url)
+void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *name)
 {
-	fs_evs *evs;
-	str user, pass, host;
-	unsigned int port;
+	struct fs_event *event;
+	int ret = 0;
 
-	if (parse_fs_url(fs_url, &user, &pass, &host, &port) != 0) {
-		LM_ERR("bad FS URL: '%.*s'! Need: fs://[user]:pass@host[:port]\n",
-		       fs_url->len, fs_url->s);
-		return NULL;
-	}
+	lock_start_write(sock->lists_lk);
 
-	evs = shm_malloc(sizeof *evs + host.len + 1 + user.len + 1 + pass.len + 1);
-	if (!evs) {
-		LM_ERR("out of mem\n");
-		return NULL;
-	}
-	memset(evs, 0, sizeof *evs);
-	INIT_LIST_HEAD(&evs->modules);
-
-	evs->hb_data_lk = lock_init_rw();
-	if (!evs->hb_data_lk) {
-		LM_ERR("out of mem\n");
-		shm_free(evs);
-		return NULL;
-	}
-
-	LM_DBG("new FS box: host=%.*s, port=%d\n", host.len, host.s, port);
-
-	evs->user.s = (char *)(evs + 1);
-	evs->user.len = user.len;
-	memcpy(evs->user.s, user.s, user.len);
-	evs->user.s[evs->user.len] = '\0';
-
-	evs->pass.s = evs->user.s + evs->user.len + 1;
-	evs->pass.len = pass.len;
-	memcpy(evs->pass.s, pass.s, pass.len);
-	evs->pass.s[evs->pass.len] = '\0';
-
-	evs->host.s = evs->pass.s + evs->pass.len + 1;
-	evs->host.len = host.len;
-	memcpy(evs->host.s, host.s, host.len);
-	evs->host.s[evs->host.len] = '\0';
-
-	evs->port = port;
-	return evs;
-}
-
-fs_evs *add_hb_evs(str *evs_str, str *tag, ev_hb_cb_f cbf, const void *priv)
-{
-	fs_evs *evs;
-	fs_mod_ref *mref;
-
-	if (!evs_str->s || evs_str->len == 0 || !tag) {
-		LM_ERR("bad params: '%.*s', %.*s\n", evs_str->len, evs_str->s,
-		       (tag ? tag->len:0), (tag ? tag->s: ""));
-		return NULL;
-	}
-
-	lock_start_write(box_lock);
-
-	evs = get_fs_evs(evs_str);
-	LM_DBG("getevs (%.*s): %p\n", evs_str->len, evs_str->s, evs);
-	if (!evs) {
-		evs = mk_fs_evs(evs_str);
-		if (!evs) {
-			LM_ERR("failed to create FS box!\n");
-			goto out_err;
+	for (; name; name = name->next) {
+		event = get_event(sock, &name->s);
+		if (!event) {
+			LM_DBG("not subscribed for %.*s\n", name->s.len, name->s.s);
+			continue;
 		}
-		evs->type = FS_GW_STATS;
 
-		list_add(&evs->list, fs_boxes);
+		if (del_event_subscription(event, tag) != 0) {
+			LM_DBG("%.*s is not subscribed to %.*s\n", tag->len, tag->s,
+			       name->s.len, name->s.s);
+			continue;
+		}
+
+		if (event->refsum == 0) {
+			/* there is a pending sub action we must cancel! */
+			if (event->action == FS_EVENT_SUB)
+				event->action = FS_EVENT_NOP;
+			else
+				event->action = FS_EVENT_UNSUB;
+		}
 	}
 
-	mref = mk_fs_mod_ref(tag, cbf, priv);
-	if (!mref) {
-		LM_ERR("mk tag failed\n");
-		goto out_err;
-	}
+	lock_stop_write(sock->lists_lk);
 
-	list_add(&mref->list, &evs->modules);
+	/* always place it in the ESL "todo" list; we released the lock, so we
+	 * cannot guarantee that the above esl_cmd's haven't been consumed by now
+	 * worst case: we mark it as "todo" with no pending cmds, which is fine */
+	lock_start_write(sockets_esl_lock);
+	if (list_empty(&sock->esl_cmd_list))
+		list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
+	lock_stop_write(sockets_esl_lock);
 
-	evs->ref++;
-
-	lock_stop_write(box_lock);
-	return evs;
-
-out_err:
-	lock_stop_write(box_lock);
-	return NULL;
+	if (ret != 0)
+		LM_ERR("oom! some events may have been skipped\n");
 }
 
-int del_hb_evs(fs_evs *evs, str *tag)
+void put_evs(fs_evs *sock)
 {
-	fs_mod_ref *mref;
-
-	/**
-	 * This prevents a series of deadlocks on shutdown, since the FS connection
-	 * manager process is often terminated (SIGTERM) on a typical OpenSIPS
-	 * restart along with any locks it has acquired.
+	/* prevents deadlocks on shutdown.
 	 *
-	 * If the "main" process gets here, then he's the only one left anyway
+	 * For the FreeSWITCH OpenSIPS module, "graceful shutdowns" are not
+	 * possible, since the main process brutally murders the FS connection
+	 * manager before it gets a chance to gracefully EOF its TCP connections.
 	 */
-	if (!is_main)
-		lock_start_write(box_lock);
+	if (is_main)
+		return;
 
-	mref = get_fs_mod_ref(evs, tag);
-	if (!mref) {
-		LM_ERR("mod ref %.*s does not exist in evs %s:%d\n", tag->len, tag->s,
-		       evs->host.s, evs->port);
-		goto out_err;
+	lock_start_write(sockets_lock);
+	lock_start_write(sockets_down_lock);
+	sock->ref--;
+	if (sock->ref == 0) {
+		if (list_empty(&sock->reconnect_list))
+			list_add(&sock->reconnect_list, fs_sockets_down);
 	}
+	lock_stop_write(sockets_down_lock);
+	lock_stop_write(sockets_lock);
 
-	list_del(&mref->list);
-	free_fs_mod_ref(mref);
-
-	evs->ref--;
+	LM_DBG("sock %s:%d, ref=%d, rpl_id=%lu\n", sock->host.s, sock->port,
+	       sock->ref, sock->esl_reply_id);
 
 	/**
 	 * We cannot immediately free the event socket, as the fd might be polled
 	 * by the FreeSWITCH worker process. The ref == 0 check is done there
 	 */
+}
 
-	if (!is_main)
-		lock_stop_write(box_lock);
+fs_evs *get_stats_evs(str *fs_url, str *tag)
+{
+	fs_evs *sock;
+	struct str_list ev_list = {FS_STATS_EVENT_STR, NULL};
 
-	return 0;
+	if (!fs_url->s || fs_url->len == 0 || !tag || !tag->s || tag->len == 0) {
+		LM_ERR("bad params: '%.*s', %.*s\n", fs_url->len, fs_url->s,
+		       (tag ? tag->len:0), (tag ? tag->s: ""));
+		return NULL;
+	}
 
-out_err:
+	sock = get_evs_by_url(fs_url);
+	LM_DBG("getevs (%.*s): %p\n", fs_url->len, fs_url->s, sock);
+	if (!sock) {
+		LM_ERR("failed to create a FS socket for %.*s!\n",
+		       fs_url->len, fs_url->s);
+		return NULL;
+	}
 
-	if (!is_main)
-		lock_stop_write(box_lock);
+	if (evs_sub(sock, tag, &ev_list, IPC_TYPE_NONE) != 0) {
+		LM_ERR("failed to subscribe for stats on %s:%d\n",
+		       sock->host.s, sock->port);
+		put_evs(sock);
+		return NULL;
+	}
 
+	return sock;
+}
+
+void put_stats_evs(fs_evs *sock, str *tag)
+{
+	struct str_list ev_list = {FS_STATS_EVENT_STR, NULL};
+
+	/* prevents deadlocks on shutdown.
+	 *
+	 * For the FreeSWITCH OpenSIPS module, "graceful shutdowns" are not
+	 * possible, since the main process brutally murders the FS connection
+	 * manager before it gets a chance to gracefully EOF its TCP connections.
+	 */
+	if (is_main)
+		return;
+
+	evs_unsub(sock, tag, &ev_list);
+	put_evs(sock);
+}
+
+/* This function assumes that the FS worker process _cannot_ reach the OpenSIPS
+ * script, thus never being in a position to call fs_api->fs_esl(). Otherwise,
+ * it would immediately deadlock itself. Should the FS worker need to raise
+ * script events, it should do it via IPC dispatch to other OpenSIPS procs */
+int fs_esl(fs_evs *sock, const str *fs_cmd, str *reply_txt)
+{
+	struct list_head *_, *__;
+	struct fs_esl_reply *reply = NULL;
+	unsigned long reply_id;
+	int total_us;
+
+	if (ZSTRP(fs_cmd)) {
+		LM_ERR("refusing to run a NULL or empty command!\n");
+		return -1;
+	}
+
+	memset(reply_txt, 0, sizeof *reply_txt);
+
+	LM_DBG("Queuing job for ESL command '%.*s' on %s:%d\n", fs_cmd->len,
+	       fs_cmd->s, sock->host.s, sock->port);
+
+	reply_id = fs_ipc_send_esl_cmd(sock, fs_cmd);
+	if (reply_id == 0) {
+		LM_ERR("failed to queue ESL command '%.*s' on %s:%d\n", fs_cmd->len,
+		       fs_cmd->s, sock->host.s, sock->port);
+		return -1;
+	}
+
+	LM_DBG("success, reply_id=%lu, waiting for reply...\n", reply_id);
+
+	for (total_us = 0; total_us < esl_cmd_timeout * 1000;
+	     total_us += esl_cmd_polling_itv) {
+		lock_start_write(sock->lists_lk);
+		list_for_each_safe(_, __, &sock->esl_replies) {
+			reply = list_entry(_, struct fs_esl_reply, list);
+
+			if (reply->esl_reply_id == reply_id) {
+				list_del(&reply->list);
+				lock_stop_write(sock->lists_lk);
+				LM_DBG("got reply after %dms: %.*s!\n", total_us / 1000,
+				       reply->text.len, reply->text.s);
+
+				*reply_txt = reply->text;
+				shm_free(reply);
+				return 0;
+			}
+		}
+		lock_stop_write(sock->lists_lk);
+
+		usleep(esl_cmd_polling_itv);
+	}
+
+	LM_ERR("timed out on ESL command '%.*s' on %s:%d\n", fs_cmd->len,
+	       fs_cmd->s, sock->host.s, sock->port);
 	return -1;
 }
 
@@ -306,8 +714,15 @@ int fs_bind(struct fs_binds *fapi)
 
 	memset(fapi, 0, sizeof *fapi);
 
-	fapi->add_hb_evs = add_hb_evs;
-	fapi->del_hb_evs = del_hb_evs;
+	fapi->stats_update_interval = event_heartbeat_interval;
+	fapi->get_evs               = get_evs;
+	fapi->get_evs_by_url        = get_evs_by_url;
+	fapi->evs_sub               = evs_sub;
+	fapi->evs_unsub             = evs_unsub;
+	fapi->put_evs               = put_evs;
+	fapi->get_stats_evs         = get_stats_evs;
+	fapi->put_stats_evs         = put_stats_evs;
+	fapi->fs_esl                = fs_esl;
 
 	return 0;
 }

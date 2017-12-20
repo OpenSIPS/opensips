@@ -273,7 +273,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			async_launch_resume( &fm->fd, fm->data);
 			return 0;
 		case F_IPC:
-			ipc_handle_job();
+			ipc_handle_job(fm->fd);
 			return 0;
 		default:
 			LM_CRIT("unknown fd type %d in UDP worker\n", fm->type);
@@ -299,9 +299,15 @@ int udp_proc_reactor_init( struct socket_info *si )
 	}
 
 	/* init: start watching for the IPC jobs */
-	if (reactor_add_reader( IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC,NULL)<0){
+	if (reactor_add_reader(IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
 		LM_CRIT("failed to add IPC pipe to reactor\n");
 		goto error;
+	}
+
+	/* init: start watching for IPC "dispatched" jobs */
+	if (reactor_add_reader(IPC_FD_READ_SHARED, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
+		LM_CRIT("failed to add IPC shared pipe to reactor\n");
+		return -1;
 	}
 
 	/* init: start watching the SIP UDP fd */

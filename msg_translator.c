@@ -452,13 +452,13 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_address_str->len; \
 				} else \
-					report_programming_bug("null bind address 1"); \
+					LM_BUG("null bind address 1"); \
 				break; \
 			case SUBST_RCV_PORT: \
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_port_str->len; \
 				} else \
-					report_programming_bug("null bind address 2"); \
+					LM_BUG("null bind address 2"); \
 				break; \
 			case SUBST_RCV_PROTO: \
 				if (msg->rcv.bind_address){ \
@@ -482,7 +482,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								msg->rcv.bind_address->proto); \
 					}\
 				} else \
-					report_programming_bug("null bind address 3"); \
+					LM_BUG("null bind address 3"); \
 				break; \
 			case SUBST_RCV_ALL: \
 				if (msg->rcv.bind_address){ \
@@ -512,19 +512,19 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								msg->rcv.bind_address->proto); \
 					}\
 				} else \
-					report_programming_bug("null bind address 4"); \
+					LM_BUG("null bind address 4"); \
 				break; \
 			case SUBST_SND_IP: \
 				if (send_sock){ \
 					new_len+=send_address_str->len; \
 				} else \
-					report_programming_bug("null send_socket 1"); \
+					LM_BUG("null send_socket 1"); \
 				break; \
 			case SUBST_SND_PORT: \
 				if (send_sock){ \
 					new_len+=send_port_str->len; \
 				} else \
-					report_programming_bug("null send_socket 2"); \
+					LM_BUG("null send_socket 2"); \
 				break; \
 			case SUBST_SND_PROTO: \
 				if (send_sock){ \
@@ -547,7 +547,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								send_sock->proto); \
 					}\
 				} else \
-					report_programming_bug("null send_socket 3"); \
+					LM_BUG("null send_socket 3"); \
 				break; \
 			case SUBST_SND_ALL: \
 				if (send_sock){ \
@@ -578,7 +578,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 								send_sock->proto); \
 					}\
 				} else \
-					report_programming_bug("null send_socket 4"); \
+					LM_BUG("null send_socket 4"); \
 				break; \
 			case SUBST_NOP: /* do nothing */ \
 				break; \
@@ -685,21 +685,21 @@ skip_before:
 				new_len += t->len;
 				break;
 			case LUMP_ADD_OPT:
-				report_programming_bug("LUMP_ADD_OPT");
+				LM_BUG("LUMP_ADD_OPT");
 				/* we don't do anything here, it's only a condition for
 				 * before & after */
 				break;
 			case LUMP_SKIP:
-				report_programming_bug("LUMP_SKIP");
+				LM_BUG("LUMP_SKIP");
 				/* we don't do anything here, it's only a condition for
 				 * before & after */
 				break;
 			case LUMP_ADD_SUBST:
-				report_programming_bug("LUMP_ADD_SUBST");
+				LM_BUG("LUMP_ADD_SUBST");
 				SUBST_LUMP_LEN(t);
 				break;
 			default:
-				report_programming_bug("op for data lump (%x)", r->op);
+				LM_BUG("op for data lump (%x)", r->op);
 		}
 
 		for (r = t->after; r; r = r->after) {
@@ -1089,7 +1089,7 @@ void process_lumps(	struct sip_msg* msg,
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							report_programming_bug("invalid op 1 (%x)",r->op);
+							LM_BUG("invalid op 1 (%x)",r->op);
 					}
 				}
 skip_nop_before:
@@ -1128,7 +1128,7 @@ skip_nop_before:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							report_programming_bug("invalid op 2 (%x)", r->op);
+							LM_BUG("invalid op 2 (%x)", r->op);
 					}
 				}
 skip_nop_after:
@@ -1136,7 +1136,7 @@ skip_nop_after:
 			case LUMP_ADD:
 			case LUMP_ADD_SUBST:
 			case LUMP_ADD_OPT:
-				report_programming_bug("ADD|SUBST|OPT");
+				LM_BUG("ADD|SUBST|OPT");
 				/* skip if this is an OPT lump and the condition is
 				 * not satisfied */
 				if ((t->op==LUMP_ADD_OPT) &&
@@ -1167,7 +1167,7 @@ skip_nop_after:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							report_programming_bug("invalid op 3 (%x)", r->op);
+							LM_BUG("invalid op 3 (%x)", r->op);
 					}
 				}
 skip_before:
@@ -1185,7 +1185,7 @@ skip_before:
 						break;
 					default:
 						/* should not ever get here */
-						report_programming_bug("invalid op 4 %d", t->op);
+						LM_BUG("invalid op 4 %d", t->op);
 				}
 				/* process after */
 				for(r=t->after;r;r=r->after){
@@ -1211,13 +1211,13 @@ skip_before:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							report_programming_bug("invalid op 5 (%x)", r->op);
+							LM_BUG("invalid op 5 (%x)", r->op);
 					}
 				}
 skip_after:
 				break;
 			case LUMP_SKIP:
-				report_programming_bug("LUMP_SKIP");
+				LM_BUG("LUMP_SKIP");
 				/* if a SKIP lump, go to the last in the list*/
 				if (!t->next || !t->next->next)
 					continue;
@@ -1225,7 +1225,7 @@ skip_after:
 					;
 				break;
 			default:
-				report_programming_bug("invalid op 6 (%x)", t->op);
+				LM_BUG("invalid op 6 (%x)", t->op);
 		}
 	}
 

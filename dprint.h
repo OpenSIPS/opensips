@@ -460,10 +460,11 @@ static inline char* dp_time(void)
 	#endif /*SUN_PRO_C*/
 #endif
 
-#define report_programming_bug(format, args...) \
-	LM_CRIT("\n>>> " format"\nIt seems you have hit a programming bug.\n" \
-			"Please help us make OpenSIPS better by reporting it at " \
-			"https://github.com/OpenSIPS/opensips/issues\n\n", ##args);
-#define LM_BUG report_programming_bug
+#define LM_BUG(format, args...) \
+	do { \
+		LM_CRIT("\n>>> " format"\nIt seems you have hit a programming bug.\n" \
+				"Please help us make OpenSIPS better by reporting it at " \
+				"https://github.com/OpenSIPS/opensips/issues\n\n", ##args); \
+	} while (0)
 
 #endif /* ifndef dprint_h */

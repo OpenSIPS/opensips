@@ -28,6 +28,8 @@
 #include "dprint.h"
 #include "mem/mem.h"
 
+#include <fcntl.h>
+
 #define IPC_HANDLER_NAME_MAX  32
 typedef struct _ipc_handler {
 	/* handler function */
@@ -36,12 +38,51 @@ typedef struct _ipc_handler {
 	char name[IPC_HANDLER_NAME_MAX+1];
 } ipc_handler;
 
+typedef struct _ipc_job {
+	/* the ID (internal) of the process sending the job */
+	int snd_proc;
+	/* the job's handler type */
+	ipc_handler_type handler_type;
+	/* the payload of the job, just a pointer */
+	void *payload;
+} ipc_job;
 
 static ipc_handler *ipc_handlers = NULL;
 static unsigned int ipc_handlers_no = 0;
 
+/* shared IPC support: dispatching a job to a random OpenSIPS worker */
+static int ipc_shared_pipe[2];
 
-int ipc_register_handler( ipc_handler_f *hdl, char *name)
+int ipc_shared_fd_read;
+
+int init_ipc(void)
+{
+	int optval;
+
+	/* create the pipe for dispatching the timer jobs */
+	if (pipe(ipc_shared_pipe) != 0) {
+		LM_ERR("failed to create ipc pipe (%s)!\n", strerror(errno));
+		return -1;
+	}
+
+	/* make reading fd non-blocking */
+	optval = fcntl(ipc_shared_pipe[0], F_GETFL);
+	if (optval == -1) {
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+		return -1;
+	}
+
+	if (fcntl(ipc_shared_pipe[0], F_SETFL, optval|O_NONBLOCK) == -1) {
+		LM_ERR("set non-blocking failed: (%d) %s\n", errno, strerror(errno));
+		return -1;
+	}
+
+	ipc_shared_fd_read = ipc_shared_pipe[0];
+
+	return 0;
+}
+
+ipc_handler_type ipc_register_handler( ipc_handler_f *hdl, char *name)
 {
 	ipc_handler *new;
 
@@ -75,8 +116,7 @@ int ipc_register_handler( ipc_handler_f *hdl, char *name)
 	return ipc_handlers_no++;
 }
 
-
-int ipc_send_job(int dst_proc, int type, void *payload)
+static inline int __ipc_send_job(int fd, ipc_handler_type type, void *payload)
 {
 	ipc_job job;
 	int n;
@@ -85,25 +125,33 @@ int ipc_send_job(int dst_proc, int type, void *payload)
 	// for read, otherwise we may end up filling in the pipe and block
 
 	job.snd_proc = process_no;
-	job.type = type;
+	job.handler_type = type;
 	job.payload = payload;
 
 again:
 	// TODO - should we do this non blocking and discard if we block ??
-	n = write( IPC_FD_WRITE(dst_proc), &job, sizeof(job) );
+	n = write(fd, &job, sizeof(job) );
 	if (n<0) {
 		if (errno==EINTR)
 			goto again;
 		LM_ERR("sending job type %d[%s] on %d failed: %s\n",
-			type, ipc_handlers[type].name, IPC_FD_WRITE(dst_proc),
-			strerror(errno));
+			type, ipc_handlers[type].name, fd, strerror(errno));
 		return -1;
 	}
 	return 0;
 }
 
+int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload)
+{
+	return __ipc_send_job(IPC_FD_WRITE(dst_proc), type, payload);
+}
 
-void ipc_handle_job(void)
+int ipc_dispatch_job(ipc_handler_type type, void *payload)
+{
+	return __ipc_send_job(ipc_shared_pipe[1], type, payload);
+}
+
+void ipc_handle_job(int fd)
 {
 	ipc_job job;
 	int n;
@@ -111,7 +159,7 @@ void ipc_handle_job(void)
 	/* read one IPC job from the pipe; even if the read is blocking,
 	 * we are here triggered from the reactor, on a READ event, so 
 	 * we shouldn;t ever block */
-	n = read( IPC_FD_READ_SELF, &job, sizeof(job) );
+	n = read(fd, &job, sizeof(job) );
 	if (n==-1) {
 		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
 			return;
@@ -120,9 +168,9 @@ void ipc_handle_job(void)
 	}
 
 	LM_DBG("received job type %d[%s] from process %d\n",
-		job.type, ipc_handlers[job.type].name, job.snd_proc);
+		job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
 
-	ipc_handlers[job.type].func( job.snd_proc, job.payload );
+	ipc_handlers[job.handler_type].func( job.snd_proc, job.payload );
 
 	return;
 }

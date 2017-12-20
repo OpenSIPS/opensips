@@ -28,7 +28,7 @@
 extern int is_tcp_main;
 
 /* the IPC type for our reporting handler */
-static int ipc_type = -1;
+static ipc_handler_type ipc_type = -1;
 
 typedef struct _tcp_report_job {
 	/* TCP connection ID */
@@ -57,8 +57,8 @@ static void tcp_report_ipc_handler(int sender, void *payload)
 int init_tcp_reporting(void) {
 	/* init the IPC channel to be used from TCP MAIN */
 
-	ipc_type = ipc_register_handler( tcp_report_ipc_handler, "TCP reporting");
-	if (ipc_type<0) {
+	ipc_type = ipc_register_handler(tcp_report_ipc_handler, "TCP reporting");
+	if (ipc_bad_handler_type(ipc_type)) {
 		LM_ERR("failed to register IPC handler\n");
 		return -1;
 	}

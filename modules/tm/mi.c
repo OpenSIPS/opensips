@@ -27,6 +27,8 @@
 
 #include <stdlib.h>
 #include "../../parser/parse_from.h"
+#include "../../str_list.h"
+
 #include "mi.h"
 #include "h_table.h"
 #include "t_lookup.h"
@@ -36,11 +38,6 @@
 #include "callid.h"
 #include "uac.h"
 
-
-struct str_list {
-	str s;
-	struct str_list *next;
-};
 
 
 #define skip_hf(_hf) \

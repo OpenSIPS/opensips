@@ -41,8 +41,8 @@
   * add a zero at the end by yourself. Keep in mind that the length of the char
   * array is normally not large enough to store this additional null-termination.
   * So you must copy the char array to a new buffer that is (len + 1) big,
-  * otherwise memory corruption and undefinied behavour will occur.
-  * Most libraries provides also functions that can work with an explicit given
+  * otherwise memory corruption and undefined behavour will occur.
+  * Most libraries often provide functions that can work with an explicit given
   * length, thus avoiding the need for this copy operation.
   */
 struct _str{
@@ -52,5 +52,11 @@ struct _str{
 
 typedef struct _str str;
 
+/* str initialization */
+#define str_init(_string)  {_string, sizeof(_string) - 1}
+
+/* zero-str tests */
+#define ZSTR(_s)    (!(_s).s || (_s).len == 0)
+#define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
 
 #endif

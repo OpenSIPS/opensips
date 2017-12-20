@@ -65,8 +65,8 @@ enum fd_types { F_NONE=0,
 		F_TCPMAIN, F_TCPCONN,
 		/* fd types for TCP management process (TCP main process) */
 		F_TCP_LISTENER, F_TCP_TCPWORKER, F_TCP_WORKER,
-		/* fd type specific to FreeSWITCH ESL traffic (FS Stats process) */
-		F_FS_STATS,
+		/* fd type specific to FreeSWITCH ESL traffic (FS worker process) */
+		F_FS_CONN,
 		};
 
 extern io_wait_h _worker_io;

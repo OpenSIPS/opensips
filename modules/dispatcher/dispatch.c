@@ -135,7 +135,7 @@ static void ds_destroy_data_set( ds_data_t *d)
 				if(dest->param)
 					shm_free(dest->param);
 				if (dest->fs_sock)
-					fs_api.del_hb_evs(dest->fs_sock, &ds_str);
+					fs_api.put_stats_evs(dest->fs_sock, &ds_str);
 				dest = dest->next;
 			}while(dest);
 			shm_free(sp_curr->dlist);
@@ -318,7 +318,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 
 	if (fetch_freeswitch_stats) {
 		if (comsock->s && comsock->len > 0) {
-			dp->fs_sock = fs_api.add_hb_evs(comsock, &ds_str, NULL, NULL);
+			dp->fs_sock = fs_api.get_stats_evs(comsock, &ds_str);
 			if (!dp->fs_sock) {
 				LM_ERR("failed to create FreeSWITCH stats socket!\n");
 			} else {
@@ -398,21 +398,21 @@ static inline void re_calculate_active_dsts(ds_set_p sp)
 	/* pre-calculate the running weights for each destination */
 	for( j=0,i=-1,sp->active_nr=sp->nr ; j<sp->nr ; j++ ) {
 		dst = &sp->dlist[j];
-		if (dst->fs_sock && dst->fs_sock->hb_data.is_valid) {
-			lock_start_read(dst->fs_sock->hb_data_lk);
+		if (dst->fs_sock && dst->fs_sock->stats.valid) {
+			lock_start_read(dst->fs_sock->stats_lk);
 
 			oldw = dst->weight;
 			dst->weight = round(max_freeswitch_weight *
-			(1 - dst->fs_sock->hb_data.sess /
-			     (float)dst->fs_sock->hb_data.max_sess) *
-			(dst->fs_sock->hb_data.id_cpu / (float)100));
+			(1 - dst->fs_sock->stats.sess /
+			     (float)dst->fs_sock->stats.max_sess) *
+			(dst->fs_sock->stats.id_cpu / (float)100));
 
 			LM_DBG("weight update for %.*s: %d -> %d (%d %d %.3f)\n",
 			       dst->uri.len, dst->uri.s, oldw, dst->weight,
-				   dst->fs_sock->hb_data.sess, dst->fs_sock->hb_data.max_sess,
-				   dst->fs_sock->hb_data.id_cpu);
+				   dst->fs_sock->stats.sess, dst->fs_sock->stats.max_sess,
+				   dst->fs_sock->stats.id_cpu);
 
-			lock_stop_read(dst->fs_sock->hb_data_lk);
+			lock_stop_read(dst->fs_sock->stats_lk);
 		}
 
 		/* running weight is the current weight plus the running weight of
