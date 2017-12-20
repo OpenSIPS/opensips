@@ -44,7 +44,7 @@
 #include "utime.h"
 #include "ul_mod.h"
 #include "usrloc.h"
-
+#include "ureplication.h"
 
 
 #define MI_UL_CSEQ 1
@@ -744,4 +744,15 @@ struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param)
 			lock_stop_write(sync_lock);
 		return ret;
 	}
+}
+
+/*! \brief
+ * Expects the node id
+ */
+struct mi_root* mi_usrloc_cl_sync(struct mi_root *cmd, void *param)
+{
+	if (clusterer_api.request_sync(&contact_repl_cap, accept_replicated_udata) < 0)
+		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
+	else
+		return init_mi_tree(200, MI_SSTR(MI_OK));
 }

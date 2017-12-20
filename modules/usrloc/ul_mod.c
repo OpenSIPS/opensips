@@ -217,6 +217,8 @@ static mi_export_t mi_cmds[] = {
 				mi_child_init },
 	{ MI_USRLOC_SYNC,         0, mi_usrloc_sync,         0,                 0,
 				mi_child_init },
+	{ MI_USRLOC_CL_SYNC,      0, mi_usrloc_cl_sync,      MI_NO_INPUT_FLAG,  0,
+				mi_child_init },
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -416,10 +418,14 @@ static int mod_init(void)
 
 	/* register handler for processing usrloc packets to the clusterer module */
 	if (accept_replicated_udata && clusterer_api.register_capability(&contact_repl_cap,
-		receive_binary_packet, NULL, ul_repl_auth_check, accept_replicated_udata) < 0) {
-		LM_ERR("cannot register binary packet callback to clusterer module!\n");
+		receive_binary_packets, receive_cluster_event, ul_repl_auth_check,
+		accept_replicated_udata) < 0) {
+		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}
+
+	if (clusterer_api.request_sync(&contact_repl_cap, accept_replicated_udata) < 0)
+		LM_ERR("Sync request failed\n");
 
 	init_flag = 1;
 

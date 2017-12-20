@@ -616,34 +616,149 @@ error:
 	return -1;
 }
 
+static int receive_sync_packet(bin_packet_t *packet)
+{
+	int is_contact;
+	int rc = -1;
+
+	while (clusterer_api.sync_chunk_iter(packet)) {
+		bin_pop_int(packet, &is_contact);
+		if (is_contact) {
+			if (receive_ucontact_insert(packet) == 0)
+				rc = 0;
+		} else
+			if (receive_urecord_insert(packet) == 0)
+				rc = 0;
+	}
+
+	return rc;
+}
+
 void receive_binary_packets(bin_packet_t *packet)
 {
 	int rc;
+	bin_packet_t *pkt;
 
-	LM_DBG("received a binary packet [%d]!\n", packet->type);
+	for (pkt = packet; pkt; pkt = pkt->next) {
+		LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-	switch (packet->type) {
-	case REPL_URECORD_INSERT:
-		rc = receive_urecord_insert(packet);
-		break;
-	case REPL_URECORD_DELETE:
-		rc = receive_urecord_delete(packet);
-		break;
-	case REPL_UCONTACT_INSERT:
-		rc = receive_ucontact_insert(packet);
-		break;
-	case REPL_UCONTACT_UPDATE:
-		rc = receive_ucontact_update(packet);
-		break;
-	case REPL_UCONTACT_DELETE:
-		rc = receive_ucontact_delete(packet);
-		break;
-	default:
-		rc = -1;
-		LM_ERR("invalid usrloc binary packet type: %d\n", packet->type);
+		switch (pkt->type) {
+		case REPL_URECORD_INSERT:
+			rc = receive_urecord_insert(pkt);
+			break;
+		case REPL_URECORD_DELETE:
+			rc = receive_urecord_delete(pkt);
+			break;
+		case REPL_UCONTACT_INSERT:
+			rc = receive_ucontact_insert(pkt);
+			break;
+		case REPL_UCONTACT_UPDATE:
+			rc = receive_ucontact_update(pkt);
+			break;
+		case REPL_UCONTACT_DELETE:
+			rc = receive_ucontact_delete(pkt);
+			break;
+		case SYNC_PACKET_TYPE:
+			rc = receive_sync_packet(pkt);
+			break;
+		default:
+			rc = -1;
+			LM_ERR("invalid usrloc binary packet type: %d\n", pkt->type);
+		}
+
+		if (rc != 0)
+			LM_ERR("failed to process binary packet!\n");
+	}
+}
+
+static int receive_sync_request(int node_id)
+{
+	bin_packet_t *sync_packet;
+	dlist_t *dl;
+	udomain_t *dom;
+	map_iterator_t it;
+	struct urecord *r;
+	ucontact_t* c;
+	str st;
+	void **p;
+	int i;
+
+	for (dl = root; dl; dl = dl->next) {
+		dom = dl->d;
+		for(i = 0; i < dom->size; i++) {
+			lock_ulslot(dom, i);
+			for (map_first(dom->table[i].records, &it);
+				iterator_is_valid(&it);
+				iterator_next(&it)) {
+
+				p = iterator_val(&it);
+				if (p == NULL)
+					goto error_unlock;
+				r = (urecord_t *)*p;
+
+				sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
+											ul_replicate_cluster, node_id);
+				if (!sync_packet)
+					goto error_unlock;
+
+				/* urecord in this chunk */
+				bin_push_int(sync_packet, 0);
+
+				bin_push_str(sync_packet, r->domain);
+				bin_push_str(sync_packet, &r->aor);
+
+				for (c = r->contacts; c; c = c->next) {
+					sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
+												ul_replicate_cluster, node_id);
+					if (!sync_packet)
+						goto error_unlock;
+
+					/* contact in this chunk */
+					bin_push_int(sync_packet, 1);
+
+					bin_push_str(sync_packet, r->domain);
+					bin_push_str(sync_packet, &r->aor);
+					bin_push_str(sync_packet, &c->c);
+					bin_push_str(sync_packet, &c->callid);
+					bin_push_str(sync_packet, &c->user_agent);
+					bin_push_str(sync_packet, &c->path);
+					bin_push_str(sync_packet, &c->attr);
+					bin_push_str(sync_packet, &c->received);
+					bin_push_str(sync_packet, &c->instance);
+
+					st.s = (char *)&c->expires;
+					st.len = sizeof c->expires;
+					bin_push_str(sync_packet, &st);
+
+					st.s = (char *)&c->q;
+					st.len = sizeof c->q;
+					bin_push_str(sync_packet, &st);
+
+					bin_push_str(sync_packet, c->sock?&c->sock->sock_str:NULL);
+					bin_push_int(sync_packet, c->cseq);
+					bin_push_int(sync_packet, c->flags);
+					bin_push_int(sync_packet, c->cflags);
+					bin_push_int(sync_packet, c->methods);
+
+					st.s = (char *)&c->last_modified;
+					st.len = sizeof c->last_modified;
+					bin_push_str(sync_packet, &st);
+				}
+			}
+			unlock_ulslot(dom, i);
+		}
 	}
 
-	if (rc != 0)
-		LM_ERR("failed to process binary packet!\n");
+	return 0;
+
+error_unlock:
+	unlock_ulslot(dom, i);
+	return -1;
+}
+
+void receive_cluster_event(enum clusterer_event ev, int node_id)
+{
+	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
+		LM_ERR("Failed to send sync data to node: %d\n", node_id);
 }
 
