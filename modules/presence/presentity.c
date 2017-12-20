@@ -562,12 +562,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 				lock_get(&pres_htable[hash_code].lock);
 				p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
 					&presentity->etag, hash_code);
-                i ++;
-                if ((i >= 30) && p && (turn!=p->current_turn)) {
-				    lock_release(&pres_htable[hash_code].lock);
-                    LM_INFO("loop detected, skipping : pres_uri= %.*s, event=%d, etag= %.*s, turn = %d, current_turn = %d, last_turn = %d\n", pres_uri.len,  pres_uri.s, presentity->event->evp->parsed, presentity->etag.len, presentity->etag.s, turn, p->current_turn, p->last_turn);
-                    goto done;
-                }
+				i ++;
+				if ((i >= 30) && p && (turn!=p->current_turn)) {
+					lock_release(&pres_htable[hash_code].lock);
+					LM_INFO("loop detected, skipping : pres_uri= %.*s, event=%d, etag= %.*s, turn = %d, current_turn = %d, last_turn = %d\n", pres_uri.len,  pres_uri.s, presentity->event->evp->parsed, presentity->etag.len, presentity->etag.s, turn, p->current_turn, p->last_turn);
+					goto done;
+				}
 			}
 
 		} else {
