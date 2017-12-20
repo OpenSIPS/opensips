@@ -57,7 +57,7 @@ struct _fs_stats {
 };
 
 enum fs_event_actions {
-	FS_EVENT_NOP, /* no action requkred */
+	FS_EVENT_NOP, /* no action required */
 	FS_EVENT_SUB,
 	FS_EVENT_UNSUB,
 };
@@ -74,7 +74,7 @@ struct fs_event {
 	str name;
 	enum fs_event_actions action;
 	int refsum; /* multiple subs from multiple modules */
-	struct list_head subscriptions; /* different modules subbed for an event */
+	struct list_head subscriptions; /* different modules subbed to an event */
 
 	struct list_head list;
 };
@@ -105,7 +105,6 @@ struct _fs_evs {
 	struct list_head esl_replies;
 
 	struct list_head events;     /* events we're successfully subscribed to */
-	struct list_head esl_cmds;   /* pending ESL commands: sub / unsub / esl */
 
 	/* a socket may concurrently be part of up to three lists! */
 	struct list_head list;           /* "fs_sockets" - all FS sockets */

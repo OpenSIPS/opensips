@@ -78,7 +78,7 @@ static mi_export_t mi_cmds[] = {
 	{ "fs_unsubscribe",     0, mi_fs_unsubscribe, 0,  0,              0 },
 	{ "fs_list",            0, mi_fs_list,        0,  0,              0 },
 	{ "fs_reload",          0, mi_fs_reload,      0,  0, fss_db_connect },
-	{ 0, 0, 0, 0, 0, 0 }                         /* TODO ^ is this useless? */
+	{ 0, 0, 0, 0, 0, 0 }
 };
 
 static dep_export_t deps = {
@@ -129,7 +129,7 @@ static int fs_sub_add_url(modparam_t type, void *string)
 	}
 	memset(strl, 0, sizeof *strl);
 
-	if (shm_str_dup(&strl->s, &url) != 0) {
+	if (shm_nt_str_dup(&strl->s, &url) != 0) {
 		LM_ERR("oom\n");
 		return -1;
 	}
@@ -345,6 +345,9 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 		return init_mi_tree(200, MI_SSTR(MI_OK));
 	}
 
+	/* we're already referencing this socket */
+	fs_api.put_evs(sock);
+
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
 	       url->len, url->s);
 
@@ -381,8 +384,10 @@ out_free:
 	lock_stop_write(db_reload_lk);
 
 	_free_str_list(evlist, osips_pkg_free, NULL);
-	if (do_unref)
+	if (do_unref) {
+		LM_DBG("unreffing sock %s:%d\n", sock->host.s, sock->port);
 		fs_api.put_evs(sock);
+	}
 	return reply;
 }
 

@@ -288,7 +288,7 @@ int del_from_fss_sockets(fs_evs *sock, const str *event_name)
 		return -1;
 	}
 
-	LM_DBG("sock not found");
+	LM_DBG("sock not found\n");
 	return -1;
 
 out_free:

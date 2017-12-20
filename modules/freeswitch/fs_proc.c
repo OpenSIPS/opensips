@@ -59,6 +59,8 @@ static int destroy_fs_evs(fs_evs *sock, int idx)
 	esl_status_t rc;
 	int ret = 0;
 
+	LM_DBG("destroying sock %s:%d\n", sock->host.s, sock->port);
+
 	if (reactor_del_reader(sock->handle->sock, idx, IO_WATCH_READ) != 0) {
 		LM_ERR("del failed for sock %d\n", sock->handle->sock);
 		ret = 1;
@@ -73,11 +75,15 @@ static int destroy_fs_evs(fs_evs *sock, int idx)
 
 	list_del(&sock->list);
 
-	if (!list_empty(&sock->reconnect_list))
+	if (!list_empty(&sock->reconnect_list)) {
+		LM_DBG("unlinking from reconnect_list\n");
 		list_del(&sock->reconnect_list);
+	}
 
-	if (!list_empty(&sock->esl_cmd_list))
+	if (!list_empty(&sock->esl_cmd_list)) {
+		LM_DBG("unlinking from esl_cmd_list\n");
 		list_del(&sock->esl_cmd_list);
+	}
 
 	evs_free(sock);
 
@@ -366,7 +372,6 @@ void fs_run_esl_command(int sender, void *_cmd)
 	list_add_tail(&reply->list, &cmd->sock->esl_replies);
 	lock_stop_write(cmd->sock->lists_lk);
 
-	/* TODO: should add some error reply instead of letting reader time out? */
 out:
 	shm_free(cmd->fs_cmd.s);
 	shm_free(cmd);
@@ -437,36 +442,33 @@ int update_event_subscriptions(fs_evs *sock)
 	return ret;
 }
 
+#define SHOULD_KEEP_EVS(sock) ((sock)->ref > 0 || (sock)->esl_reply_id > 1)
 void handle_reconnects(void)
 {
 	struct list_head *_, *__;
 	fs_evs *sock;
-	esl_status_t rc;
 
 	list_for_each_safe(_, __, fs_sockets_down) {
 		sock = list_entry(_, fs_evs, reconnect_list);
 
-		if (sock->ref == 0) {
-			// TODO: find a way to implement this cleanup, the reactor API
-			// does not allow a fd to be deleted outside handle_io()
-			//if (destroy_fs_evs(sock, idx) != 0)
-			//	LM_ERR("failed to destroy FS evs!\n");
-			continue;
-		}
+		LM_DBG("reconnecting sock %s:%d\n", sock->host.s, sock->port);
 
 		if (sock->handle) {
-			if (sock->handle->connected &&
-			      sock->handle->sock != ESL_SOCK_INVALID) {
-				LM_BUG("Fake Disconnect on %s:%d", sock->host.s, sock->port);
+			if (sock->handle->connected && sock->handle->sock != ESL_SOCK_INVALID) {
+				if (!SHOULD_KEEP_EVS(sock)) {
+					/*
+					 * TODO: implement clean up for unused ESL connections here.
+					 *       Currently not immediately possible because:
+					 *	- reactor_del_reader() can only be called under handle_io()
+					 *	- esl_disconnect() closes the fd, so handle_io() is skipped
+					 */
+					continue;
+				}
+
+				LM_DBG("fake disconnect on %s:%d\n", sock->host.s, sock->port);
 				list_del(&sock->reconnect_list);
 				INIT_LIST_HEAD(&sock->reconnect_list);
 				continue;
-			} else {
-				rc = esl_disconnect(sock->handle);
-				if (rc != ESL_SUCCESS) {
-					LM_ERR("disconnect error %d on FS sock %s:%d\n",
-					       rc, sock->host.s, sock->port);
-				}
 			}
 		} else {
 			sock->handle = pkg_malloc(sizeof *sock->handle);
@@ -518,19 +520,12 @@ static void apply_socket_commands(void)
 
 	LM_DBG("applying FS socket commands\n");
 
-	/* we may also clean up some sockets */
-	lock_start_write(sockets_lock);
-	lock_start_write(sockets_down_lock);
-	handle_reconnects();
-	lock_stop_write(sockets_down_lock);
-	lock_stop_write(sockets_lock);
-
 	lock_start_write(sockets_esl_lock);
 	list_for_each_safe(_, __, fs_sockets_esl) {
 		sock = list_entry(_, fs_evs, esl_cmd_list);
 
 		/* above connect may have failed for this socket; skip it for now */
-		if (!list_empty(&sock->reconnect_list))
+		if (SHOULD_KEEP_EVS(sock) && !list_empty(&sock->reconnect_list))
 			continue;
 
 		rc = update_event_subscriptions(sock);
@@ -544,6 +539,14 @@ static void apply_socket_commands(void)
 		INIT_LIST_HEAD(&sock->esl_cmd_list);
 	}
 	lock_stop_write(sockets_esl_lock);
+
+	/* we may also clean up some sockets */
+	lock_start_write(sockets_lock);
+	lock_start_write(sockets_down_lock);
+	handle_reconnects();
+	lock_stop_write(sockets_down_lock);
+	lock_stop_write(sockets_lock);
+
 }
 
 void fs_conn_mgr_loop(int proc_no)

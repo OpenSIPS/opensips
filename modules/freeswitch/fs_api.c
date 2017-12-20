@@ -125,16 +125,23 @@ void evs_free(fs_evs *sock)
 {
 	struct list_head *_, *__;
 	struct fs_event *ev;
+	struct fs_esl_reply *reply;
 
-	if (sock->ref != 0)
+	if (sock->ref > 0) {
 		LM_BUG("non-zero ref @ free");
+		return;
+	}
 
 	list_for_each_safe(_, __, &sock->events) {
 		ev = list_entry(_, struct fs_event, list);
 		shm_free(ev);
 	}
 
-	// TODO: clean up sock->esl_replies
+	list_for_each_safe(_, __, &sock->esl_replies) {
+		reply = list_entry(_, struct fs_esl_reply, list);
+		shm_free(reply->text.s);
+		shm_free(reply);
+	}
 
 	shm_free(sock->host.s);
 	shm_free(sock->user.s);
@@ -143,6 +150,7 @@ void evs_free(fs_evs *sock)
 	lock_destroy_rw(sock->stats_lk);
 	lock_destroy_rw(sock->lists_lk);
 
+	memset(sock, 0, sizeof *sock);
 	shm_free(sock);
 }
 
@@ -169,7 +177,6 @@ static fs_evs *evs_init(const str *host, unsigned short port,
 	memset(sock, 0, sizeof *sock);
 	INIT_LIST_HEAD(&sock->esl_replies);
 	INIT_LIST_HEAD(&sock->events);
-	INIT_LIST_HEAD(&sock->esl_cmds);
 	INIT_LIST_HEAD(&sock->reconnect_list);
 	INIT_LIST_HEAD(&sock->esl_cmd_list);
 
@@ -218,14 +225,14 @@ int evs_update(fs_evs *sock, const str *user, const str *pass)
 	str user_dup = {NULL, 0}, pass_dup;
 
 	if (!ZSTRP(user)) {
-		if (shm_str_dup(&user_dup, user) != 0) {
+		if (shm_nt_str_dup(&user_dup, user) != 0) {
 			LM_ERR("oom\n");
 			return -1;
 		}
 	}
 
 	if (!ZSTRP(pass)) {
-		if (shm_str_dup(&pass_dup, pass) != 0) {
+		if (shm_nt_str_dup(&pass_dup, pass) != 0) {
 			LM_ERR("oom\n");
 			if (!ZSTRP(user))
 				shm_free(user_dup.s);
@@ -473,14 +480,6 @@ struct fs_event *get_event(fs_evs *sock, const str *name)
 	return NULL;
 }
 
-void del_event(struct fs_event *event)
-{
-	/* TODO? should walk & free event->subscriptions, or is it empty? */
-
-	list_del(&event->list);
-	shm_free(event);
-}
-
 int evs_sub(fs_evs *sock, const str *tag, const struct str_list *name,
             ipc_handler_type ipc_type)
 {
@@ -588,12 +587,17 @@ void put_evs(fs_evs *sock)
 		return;
 
 	lock_start_write(sockets_lock);
+	lock_start_write(sockets_down_lock);
 	sock->ref--;
 	if (sock->ref == 0) {
-		if (!list_empty(&sock->reconnect_list))
+		if (list_empty(&sock->reconnect_list))
 			list_add(&sock->reconnect_list, fs_sockets_down);
 	}
+	lock_stop_write(sockets_down_lock);
 	lock_stop_write(sockets_lock);
+
+	LM_DBG("sock %s:%d, ref=%d, rpl_id=%lu\n", sock->host.s, sock->port,
+	       sock->ref, sock->esl_reply_id);
 
 	/**
 	 * We cannot immediately free the event socket, as the fd might be polled
