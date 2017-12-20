@@ -555,7 +555,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			/* wait to get our turn as order of handling pubishs
 			   (need to wait the ongoing published to terminate
 			   before starting */
-            int i = 0;
+			int i = 0;
 			while (p && turn!=p->current_turn) {
 				lock_release(&pres_htable[hash_code].lock);
 				sleep_us(100);
