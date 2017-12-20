@@ -501,7 +501,6 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 
 	for( tmp=buffer; tmp<end; tmp++)
 	{
-		LM_DBG("handling char <%c> pos %d in state %d\n",*tmp,(int)(tmp-buffer),status);
 		switch(*tmp)
 		{
 			case ' ':
