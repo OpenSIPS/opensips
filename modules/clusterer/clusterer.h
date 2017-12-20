@@ -70,8 +70,6 @@ struct capability_reg {
    cl_packet_cb_f packet_cb;
    cl_event_cb_f event_cb;
    int auth_check;
-   int cluster_id;
-   struct capability_reg *next;
 };
 
 struct buf_bin_pkt {
@@ -81,7 +79,7 @@ struct buf_bin_pkt {
 };
 
 struct local_cap {
-	struct capability_reg *reg;
+	struct capability_reg reg;
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
 	struct buf_bin_pkt *pkt_q_cutpos;
@@ -111,7 +109,6 @@ struct node_search_info {
 	struct node_search_info *next;      /* linker in queue */
 };
 
-extern struct capability_reg *capabilities;
 extern enum sip_protos clusterer_proto;
 
 extern str cl_internal_cap;

@@ -76,8 +76,6 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	cluster_info_t *cluster = NULL;
 	struct timeval t;
 	str st;
-	struct capability_reg *cap;
-	struct local_cap *new_cl_cap = NULL;
 
 	cluster_id = int_vals[INT_VALS_CLUSTER_ID_COL];
 	/* new_info is checked whether it is initialized or not in case of error,
@@ -94,21 +92,6 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 			goto error;
 		}
 		memset(cluster, 0, sizeof *cluster);
-
-		cluster->capabilities = NULL;
-
-		/* look for capabilities that registered for this cluster */
-		for (cap = capabilities; cap; cap = cap->next)
-			if (cap->cluster_id == cluster_id) {
-				new_cl_cap = shm_malloc(sizeof *new_cl_cap);
-				if (!new_cl_cap) {
-					LM_ERR("No more shm memory\n");
-					goto error;
-				}
-				new_cl_cap->reg = cap;
-				new_cl_cap->next = cluster->capabilities;
-				cluster->capabilities = new_cl_cap;
-			}
 
 		cluster->cluster_id = cluster_id;
 		cluster->next = *cl_list;

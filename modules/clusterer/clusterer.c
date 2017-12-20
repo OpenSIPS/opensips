@@ -42,8 +42,6 @@
 
 struct clusterer_binds clusterer_api;
 
-struct capability_reg *capabilities;
-
 enum sip_protos clusterer_proto = PROTO_BIN;
 
 str cl_internal_cap = str_init("clusterer-internal");
@@ -1863,7 +1861,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		/* try to pass message to registered callback */
 
 		for (cl_cap = cl->capabilities; cl_cap; cl_cap = cl_cap->next)
-			if (!str_strcmp(&cl_cap->reg->name, &cap->name))
+			if (!str_strcmp(&cl_cap->reg.name, &cap->name))
 				break;
 		if (!cl_cap) {
 			LM_ERR("Packet's capability: %.*s not found in cluster info\n",
@@ -2142,7 +2140,7 @@ static int send_cap_update(node_info_t *dest_node)
 		bin_push_int(&packet, current_id);
 		bin_push_int(&packet, nr_cap);
 		for (cl_cap=dest_node->cluster->capabilities; cl_cap; cl_cap=cl_cap->next)
-			bin_push_str(&packet, &cl_cap->reg->name);
+			bin_push_str(&packet, &cl_cap->reg.name);
 	}
 
 	/* known capabilities for other nodes */
@@ -2196,8 +2194,8 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 				lock_release(node->lock);
 
 				for (cap_it = cl->capabilities; cap_it; cap_it = cap_it->next)
-					if (cap_it->reg->event_cb)
-						cap_it->reg->event_cb(CLUSTER_NODE_DOWN, node->node_id);
+					if (cap_it->reg.event_cb)
+						cap_it->reg.event_cb(CLUSTER_NODE_DOWN, node->node_id);
 
 			} else if (node->flags & NODE_EVENT_UP) {
 				node->flags &= ~NODE_EVENT_UP;
@@ -2229,7 +2227,7 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 							lock_release(cl->lock);
 
 							/* send sync request now that the source node is up */
-							if (send_sync_req(&cap_it->reg->name,
+							if (send_sync_req(&cap_it->reg.name,
 								cl->cluster_id, sync_source_id) < 0)
 								LM_ERR("Failed to send sync request\n");
 						} else if (sync_source_id < 0) {
@@ -2241,8 +2239,8 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					} else
 						lock_release(cl->lock);
 
-					if (cap_it->reg->event_cb)
-						cap_it->reg->event_cb(CLUSTER_NODE_UP, node->node_id);
+					if (cap_it->reg.event_cb)
+						cap_it->reg.event_cb(CLUSTER_NODE_UP, node->node_id);
 				}
 
 			} else
@@ -2466,28 +2464,35 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 	return 0;
 }
 
-int cl_register_cap(str *cap, cl_packet_cb_f packet_cb,
-						cl_event_cb_f event_cb, int auth_check, int cluster_id)
+int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
+						int auth_check, int cluster_id)
 {
-	struct capability_reg *new_cap;
+	struct local_cap *new_cl_cap = NULL;
+	cluster_info_t *cluster;
 
-	new_cap = shm_malloc(sizeof *new_cap);
-	if (!new_cap) {
-		LM_ERR("No more shm memory\n");
+	cluster = get_cluster_by_id(cluster_id);
+	if (!cluster) {
+		LM_ERR("Cluster id: %d not found\n", cluster_id);
 		return -1;
 	}
 
-	new_cap->name.len = cap->len;
-	new_cap->name.s = cap->s;
-	new_cap->packet_cb = packet_cb;
-	new_cap->event_cb = event_cb;
-	new_cap->auth_check = auth_check;
-	new_cap->cluster_id = cluster_id;
+	new_cl_cap = shm_malloc(sizeof *new_cl_cap);
+	if (!new_cl_cap) {
+		LM_ERR("No more shm memory\n");
+		return -1;
+	}
+	memset(new_cl_cap, 0, sizeof *new_cl_cap);
 
-	new_cap->next = capabilities;
-	capabilities = new_cap;
+	new_cl_cap->reg.name.len = cap->len;
+	new_cl_cap->reg.name.s = cap->s;
+	new_cl_cap->reg.packet_cb = packet_cb;
+	new_cl_cap->reg.event_cb = event_cb;
+	new_cl_cap->reg.auth_check = auth_check;
 
-	bin_register_cb(cap, bin_rcv_mod_packets, new_cap);
+	new_cl_cap->next = cluster->capabilities;
+	cluster->capabilities = new_cl_cap;
+
+	bin_register_cb(cap, bin_rcv_mod_packets, &new_cl_cap->reg);
 
 	LM_DBG("Registered capability: %.*s\n", cap->len, cap->s);
 

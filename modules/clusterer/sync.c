@@ -85,7 +85,7 @@ int cl_request_sync(str *capability, int cluster_id)
 	}
 
 	for (lcap = cluster->capabilities; lcap; lcap = lcap->next)
-		if (!str_strcmp(capability, &lcap->reg->name))
+		if (!str_strcmp(capability, &lcap->reg.name))
 			break;
 	if (!lcap) {
 		LM_ERR("Request sync for unknown capability: %.*s\n",
@@ -200,7 +200,7 @@ int send_sync_repl(cluster_info_t *cluster, int node_id, str *cap_name)
 	int rc;
 
 	for (cap = cluster->capabilities; cap; cap = cap->next)
-		if (!str_strcmp(cap_name, &cap->reg->name))
+		if (!str_strcmp(cap_name, &cap->reg.name))
 			break;
 	if (!cap) {
 		LM_ERR("Sync request for unknown capability: %.*s\n",
@@ -208,7 +208,7 @@ int send_sync_repl(cluster_info_t *cluster, int node_id, str *cap_name)
 		return -1;
 	}
 
-	cap->reg->event_cb(SYNC_REQ_RCV, node_id);
+	cap->reg.event_cb(SYNC_REQ_RCV, node_id);
 
 	if (sync_packet_snd) {
 		/* send and free the previously built packet */
@@ -284,7 +284,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 
 	bin_pop_str(packet, &cap_name);
 	for (cap = cluster->capabilities; cap; cap = cap->next)
-		if (!str_strcmp(&cap_name, &cap->reg->name))
+		if (!str_strcmp(&cap_name, &cap->reg.name))
 			break;
 	if (!cap) {
 		LM_ERR("Capability: %.*s from sync packet, not found\n",
@@ -301,7 +301,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		packet->type = SYNC_PACKET_TYPE;
 		packet->src_id = source_id;
 
-		cap->reg->packet_cb(packet);
+		cap->reg.packet_cb(packet);
 	} else { /* CLUSTERER_SYNC_END */
 		LM_DBG("Received all sync packets for capability: %.*s\n", cap_name.len,
 			cap_name.s);
@@ -336,7 +336,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 			lock_release(cluster->lock);
 
 			/* deliver list of bin packets to module for processing */
-			cap->reg->packet_cb(bin_pkt_list);
+			cap->reg.packet_cb(bin_pkt_list);
 
 			lock_get(cluster->lock);
 

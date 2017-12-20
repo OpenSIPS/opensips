@@ -315,6 +315,15 @@ static int mod_init(void)
 			LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
 			goto error;
 		}
+		/* init DB connection */
+		if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
+			LM_ERR("cannot initialize database connection\n");
+			goto error;
+		}
+		if (load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
+			LM_ERR("Failed to load info from DB\n");
+			goto error;
+		}
 	}
 
 	/* register timer */
@@ -364,21 +373,6 @@ error:
 /* initialize child */
 static int child_init(int rank)
 {
-	if (!db_mode || rank == PROC_TCP_MAIN || rank == PROC_BIN)
-		return 0;
-
-	/* init DB connection */
-	if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
-		LM_ERR("cannot initialize database connection\n");
-		return -1;
-	}
-
-	/* child 1 loads the clusterer DB info */
-	if (rank == 1 && load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
-		LM_ERR("Failed to load info from DB\n");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -1052,8 +1046,6 @@ int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip)
 
 static void destroy(void)
 {
-	struct capability_reg *tmp;
-
 	if (db_hdl) {
 		/* close DB connection */
 		dr_dbf.close(db_hdl);
@@ -1066,12 +1058,6 @@ static void destroy(void)
 			free_info(*cluster_list);
 		shm_free(cluster_list);
 		cluster_list = NULL;
-	}
-
-	while (capabilities) {
-		tmp = capabilities;
-		capabilities = capabilities->next;
-		shm_free(tmp);
 	}
 
 	/* destroy lock */
