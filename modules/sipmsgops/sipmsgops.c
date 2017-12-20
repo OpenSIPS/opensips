@@ -1652,33 +1652,38 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 				if(hf->type==HDR_PPI_T || hf->type==HDR_PAI_T) {
 					/* check enforcements as per RFC3325 */
 					if (parse_uri( to->uri.s, to->uri.len, &uri)<0) {
-						LM_ERR("invalid uri [%.*s] in first PAI value\n",
-							to->uri.len,to->uri.s);
+						LM_ERR("invalid uri [%.*s] in first [%.*s] value\n",
+							to->uri.len, to->uri.s,
+							hf->name.len, hf->name.s);
 						goto failed;
 					}
 					if (uri.type!=SIP_URI_T && uri.type!=SIPS_URI_T) {
-						LM_ERR("invalid uri type [[%.*s] in first PAI value "
-							"(SIP or SIPS expected) \n",
-							to->uri.len,to->uri.s);
+						LM_ERR("invalid uri type [[%.*s] in first [%.*s] "
+							"value (SIP or SIPS expected) \n",
+							to->uri.len, to->uri.s,
+							hf->name.len, hf->name.s);
 						goto failed;
 					}
 					/* a second value ? */
 					if (to->next) {
 						to = to->next;
 						if (parse_uri( to->uri.s, to->uri.len, &uri)<0) {
-							LM_ERR("invalid uri [%.*s] in second PAI value\n",
-								to->uri.len,to->uri.s);
+							LM_ERR("invalid uri [%.*s] in second [%.*s] "
+								"value\n", to->uri.len, to->uri.s,
+								hf->name.len, hf->name.s);
 							goto failed;
 						}
 						if (uri.type!=TEL_URI_T && uri.type!=TELS_URI_T) {
-							LM_ERR("invalid uri type [[%.*s] in second PAI "
+							LM_ERR("invalid uri type [%.*s] in second [%.*s] "
 								"value (expected TEL or TELS)\n",
-								to->uri.len,to->uri.s);
+								to->uri.len,to->uri.s,
+								hf->name.len, hf->name.s);
 							goto failed;
 						}
 					}
 					if (to->next) {
-						LM_ERR("too many PAI values in header (max=2)\n");
+						LM_ERR("too many values (max=2) in hdr [%.*s]\n",
+							hf->name.len, hf->name.s);
 						goto failed;
 					}
 				}
