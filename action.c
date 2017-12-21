@@ -1371,7 +1371,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 				spec = (pv_spec_t*)a->elem[2].u.data;
 				if (pv_set_value(msg, spec, 0, &val) < 0) {
 					LM_ERR("cannot set the variable value\n");
-					pkg_free(aux.s);
 					return -1;
 				}
 			}
