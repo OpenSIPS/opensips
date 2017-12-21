@@ -2365,12 +2365,11 @@ select_rtpp_node(struct sip_msg * msg,
 	int was_forced, sumcut, found, constant_weight_sum;
 	pv_value_t val;
 
-	my_version = *list_version;
-	/* skip healthcheck on each call (check last list version)
+	/* check last list version */
 	if (my_version != *list_version && update_rtpp_proxies() < 0) {
 		LM_ERR("cannot update rtpp proxies list\n");
 		return 0;
-	} */
+	} 
 
 	if (!set) {
 		LM_ERR("no set specified\n");
