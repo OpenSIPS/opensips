@@ -1387,7 +1387,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				set_final_update_cols(values+21, cell,
 					(on_shutdown) || (cell->flags&DLG_FLAG_CHANGED)  );
 				SET_INT_VALUE(values+25, cell->flags &
-					~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
+					~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
