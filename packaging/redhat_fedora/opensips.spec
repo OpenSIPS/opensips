@@ -432,6 +432,18 @@ The "freeswitch" module is a C driver for the FreeSWITCH Event Socket Layer inte
 It can interact with one or more FreeSWITCH servers either by issuing commands to them,
 or by receiving events from them.
 
+%package  freeswitch_scripting
+Summary:  FreeSWITCH events & commands at OpenSIPS script level
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  freeswitch_scripting
+reeswitch_scripting is a helper module that exposes full control over the FreeSWITCH ESL
+interface to the OpenSIPS script.
+It allows the OpenSIPS script writer to subscribe to generic FreeSWITCH ESL events as
+well as to run arbitrary FreeSWITCH ESL commands and interpret their results. It makes
+use of the freeswitch module for the management of ESL connections and event subscriptions.
+
 %package  h350
 Summary:  H350 implementation
 Group:    System Environment/Daemons
@@ -1498,6 +1510,10 @@ fi
 %files freeswitch
 %{_libdir}/opensips/modules/freeswitch.so
 %doc docdir/README.freeswitch
+
+%files freeswitch_scripting
+%{_libdir}/opensips/modules/freeswitch_scripting.so
+%doc docdir/README.freeswitch_scripting
 
 %files h350
 %{_libdir}/opensips/modules/h350.so
