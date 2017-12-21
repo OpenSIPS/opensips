@@ -438,7 +438,7 @@ Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
 %description  freeswitch_scripting
-reeswitch_scripting is a helper module that exposes full control over the FreeSWITCH ESL
+freeswitch_scripting is a helper module that exposes full control over the FreeSWITCH ESL
 interface to the OpenSIPS script.
 It allows the OpenSIPS script writer to subscribe to generic FreeSWITCH ESL events as
 well as to run arbitrary FreeSWITCH ESL commands and interpret their results. It makes

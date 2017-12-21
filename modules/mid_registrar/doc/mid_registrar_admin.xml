@@ -362,7 +362,7 @@ modparam("mid_registrar", "mode", 2)
 		</itemizedlist>
 
 		<para>
-		Default value is <emphasis role='bold'>0</emphasis> (route by Contact)
+		Default value is <emphasis role='bold'>0</emphasis> (Insertion by Contact)
 		</para>
 		<example>
 		<title>Setting the <emphasis>insertion_mode</emphasis> module parameter</title>

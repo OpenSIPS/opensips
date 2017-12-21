@@ -185,7 +185,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 		<example>
 		<title>Setting lock_pool_size module parameter</title>
 		<programlisting format="linespecific">
-modparam("cfgutils", "lock_pool_size", "64")
+modparam("cfgutils", "lock_pool_size", 64)
 </programlisting>
 		</example>
 	</section>

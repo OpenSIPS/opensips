@@ -818,7 +818,7 @@ void* get_dnscache_value(char *name,int r_type,int name_len)
  *	ttl - seconds the key should be kept in cache
  *
  * Returns:
- *	0  - sucess
+ *	0  - success
  *	1  - cache not initialized yet
  *	-1 - internal failure
  */

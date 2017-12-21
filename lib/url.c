@@ -212,7 +212,7 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 		goto out_err;
 	}
 
-	/* [?foo=bar,raz] */
+	/* [?foo=bar,baz] */
 	if (hosts_db->next &&
 	    hosts_db->next->s.s && hosts_db->next->s.len > 0) {
 

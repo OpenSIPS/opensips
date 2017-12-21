@@ -33,7 +33,7 @@
  * [username@|[username]:password@]
  *	host1[:port1][,host2[:port2][, ...]]
  * [/database]
- * [?foo=bar,raz]
+ * [?foo=bar,baz]
  *
  * Some explanations:
  *   - "scheme" may be optional. if a scheme is present, a "group" is optional

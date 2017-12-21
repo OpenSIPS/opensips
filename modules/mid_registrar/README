@@ -318,7 +318,7 @@ modparam("mid_registrar", "mode", 2)
      * 0 (Insertion by Contact)
      * 1 (Insertion by Path)
 
-   Default value is 0 (route by Contact)
+   Default value is 0 (Insertion by Contact)
 
    Example 1.2. Setting the insertion_mode module parameter
 modparam("mid_registrar", "insertion_mode", 1)

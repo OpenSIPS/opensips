@@ -240,7 +240,7 @@ route[route_to_user] {
 
 route[fork_call]
 {
-    xlog("user $avp(aor) registered the a new "
+    xlog("user $avp(aor) registered a new "
         "contact $avp(uri), injecting\n");
     # take the contact described by the E_UL_CONTACT_INSERT
     # event and inject it as a new branch into the original
