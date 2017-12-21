@@ -664,8 +664,10 @@ cachedb_con* cachedb_do_init(str *url,void* (*new_connection)(struct cachedb_id 
 		}
 
 		cachedb_pool_insert((cachedb_pool_con *)con);
-	} else
+	} else {
 		LM_DBG("connection already in pool\n");
+		free_cachedb_id(id);
+	}
 
 	res->data = con;
 	return res;
