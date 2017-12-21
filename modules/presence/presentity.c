@@ -566,12 +566,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 				i ++;
 				if ((loop > 0) && (i >= loop) && p && (turn!=p->current_turn)) {
 					if ((fix_loop_skipevent == 0) && (turn == p->current_turn + 1)) {
-						LM_INFO("loop detected, process event : pres_uri= %.*s, event=%d, etag= %.*s, turn = %d, current_turn = %d, last_turn = %d\n", pres_uri.len,  pres_uri.s, presentity->event->evp->parsed, presentity->etag.len, presentity->etag.s, turn, p->current_turn, p->last_turn);
+						LM_INFO("loop detected (%d loops), process event : pres_uri= %.*s, event=%d, etag= %.*s, turn = %d, current_turn = %d, last_turn = %d\n", i, pres_uri.len,  pres_uri.s, presentity->event->evp->parsed, presentity->etag.len, presentity->etag.s, turn, p->current_turn, p->last_turn);
 						break;
 					}
 					else {
 						lock_release(&pres_htable[hash_code].lock);
-						LM_INFO("loop detected, skip event : pres_uri= %.*s, event=%d, etag= %.*s, turn = %d, current_turn = %d, last_turn = %d\n", pres_uri.len,  pres_uri.s, presentity->event->evp->parsed, presentity->etag.len, presentity->etag.s, turn, p->current_turn, p->last_turn);
+						LM_INFO("loop detected (%d loops), skip event : pres_uri= %.*s, event=%d, etag= %.*s, turn = %d, current_turn = %d, last_turn = %d\n", i, pres_uri.len,  pres_uri.s, presentity->event->evp->parsed, presentity->etag.len, presentity->etag.s, turn, p->current_turn, p->last_turn);
 						goto done;
 					}
 				}
