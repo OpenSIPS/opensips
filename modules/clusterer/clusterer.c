@@ -1237,7 +1237,9 @@ static void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 
 		/* search the saved nodes to delete the corresponding links */
 		for (it = source->cluster->node_list; it; it = it->next) {
-			if (it->node_id == top_node_id[i])
+			if (it->node_id == top_node_id[i] ||
+				/* a node has no info about the links from it's neighbours to itself */
+				it->node_id == source->node_id)
 				continue;
 
 			present = 0;
@@ -1890,21 +1892,21 @@ exit:
 	lock_stop_read(cl_list_lock);
 }
 
-static int delete_neighbour(node_info_t *from_n, node_info_t *old_n)
+static int delete_neighbour(node_info_t *from_node, node_info_t *to_delete_n)
 {
 	struct neighbour *neigh, *tmp;
 
-	neigh = from_n->neighbour_list;
+	neigh = from_node->neighbour_list;
 	if (!neigh)
 		return 0;
 
-	if (neigh->node->node_id == old_n->node_id) {
-		from_n->neighbour_list = neigh->next;
+	if (neigh->node->node_id == to_delete_n->node_id) {
+		from_node->neighbour_list = neigh->next;
 		shm_free(neigh);
 		return 1;
 	}
 	while (neigh->next) {
-		if (neigh->next->node->node_id == old_n->node_id) {
+		if (neigh->next->node->node_id == to_delete_n->node_id) {
 			tmp = neigh->next;
 			neigh->next = neigh->next->next;
 			shm_free(tmp);
@@ -1916,11 +1918,11 @@ static int delete_neighbour(node_info_t *from_n, node_info_t *old_n)
 	return 0;
 }
 
-static int add_neighbour(node_info_t *to_n, node_info_t *new_n)
+static int add_neighbour(node_info_t *to_node, node_info_t *new_n)
 {
 	struct neighbour *neigh;
 
-	neigh = to_n->neighbour_list;
+	neigh = to_node->neighbour_list;
 	while (neigh) {
 		if (neigh->node->node_id == new_n->node_id)
 			return 0;
@@ -1933,8 +1935,8 @@ static int add_neighbour(node_info_t *to_n, node_info_t *new_n)
 		return -1;
 	}
 	neigh->node = new_n;
-	neigh->next = to_n->neighbour_list;
-	to_n->neighbour_list = neigh;
+	neigh->next = to_node->neighbour_list;
+	to_node->neighbour_list = neigh;
 	return 1;
 }
 
@@ -2014,12 +2016,6 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 		for (neigh = it->neighbour_list, no_neigh = 0; neigh;
 			neigh = neigh->next, no_neigh++)
 			bin_push_int(&packet, neigh->node->node_id);
-		/* the current node does not appear in the neighbour_list of other nodes
-		 * but it should be present in the adjacency list to be sent if there is a link */
-		if (it->link_state == LS_UP) {
-			bin_push_int(&packet, current_id);
-			no_neigh++;
-		}
 		/* set the number of neighbours */
 		bin_remove_int_buffer_end(&packet, no_neigh + 1);
 		bin_push_int(&packet, no_neigh);
@@ -2047,7 +2043,6 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 {
 	struct neighbour *neigh;
 	str send_buffer;
-	int msg_created = 0;
 	node_info_t* destinations[MAX_NO_NODES];
 	int no_dests = 0, i;
 	bin_packet_t packet;
@@ -2057,51 +2052,55 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 
 	lock_get(node->cluster->current_node->lock);
 
-	/* send link state update to all neighbours */
 	for (neigh = node->cluster->current_node->neighbour_list; neigh;
 		neigh = neigh->next) {
 		if (neigh->node->node_id == node->node_id)
 			continue;
 
-		if (!msg_created) {
-			if (bin_init(&packet, &cl_internal_cap, CLUSTERER_LS_UPDATE, BIN_VERSION, SMALL_MSG) < 0) {
-				LM_ERR("Failed to init bin send buffer\n");
-				lock_release(node->cluster->current_node->lock);
-				return -1;
-			}
-			bin_push_int(&packet, node->cluster->cluster_id);
-			bin_push_int(&packet, current_id);
-			bin_push_int(&packet, ++node->cluster->current_node->ls_seq_no);
-			bin_push_int(&packet, timestamp);
-			/* The link state update message's update content consists of a neighbour
-			 * and it's new link state */
-			bin_push_int(&packet, node->node_id);
-			bin_push_int(&packet, new_ls != LS_UP ? LS_DOWN : LS_UP);
-			bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
-			bin_push_int(&packet, current_id);
-			bin_get_buffer(&packet, &send_buffer);
-			msg_created = 1;
-		}
-
 		destinations[no_dests++] = neigh->node;
 	}
 
+	if (no_dests == 0) {
+		lock_release(node->cluster->current_node->lock);
+		return 0;
+	}
+
+	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_LS_UPDATE, BIN_VERSION,
+		SMALL_MSG) < 0) {
+		LM_ERR("Failed to init bin send buffer\n");
+		lock_release(node->cluster->current_node->lock);
+		return -1;
+	}
+	bin_push_int(&packet, node->cluster->cluster_id);
+	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, ++node->cluster->current_node->ls_seq_no);
+	bin_push_int(&packet, timestamp);
+
+	/* The link state update message's update content consists of a neighbour
+	 * and it's new link state */
+	bin_push_int(&packet, node->node_id);
+	bin_push_int(&packet, new_ls);
+
+	/* path length is 1, only current node at this point */
+	bin_push_int(&packet, 1);
+	bin_push_int(&packet, current_id);
+
 	lock_release(node->cluster->current_node->lock);
 
+	bin_get_buffer(&packet, &send_buffer);
 	for (i = 0; i < no_dests; i++) {
-		if (msg_send(NULL, clusterer_proto, &destinations[i]->addr, 0, send_buffer.s,
-			send_buffer.len, 0) < 0) {
-			LM_ERR("Failed to send link state update to node [%d]\n", destinations[i]->node_id);
+		if (msg_send(NULL, clusterer_proto, &destinations[i]->addr, 0,
+			send_buffer.s, send_buffer.len, 0) < 0) {
+			LM_ERR("Failed to send link state update to node [%d]\n",
+				destinations[i]->node_id);
 			/* this node was supposed to be up, restart pinging */
 			set_link_w_neigh_adv(LS_RESTART_PINGING, destinations[i]);
 		}
 	}
 
-	if (msg_created){
-		bin_free_packet(&packet);
-		LM_DBG("Sent link state update about node [%d] to all reachable neighbours\n",
-			node->node_id);
-	}
+	bin_free_packet(&packet);
+	LM_DBG("Sent link state update about node [%d] to all reachable neighbours\n",
+		node->node_id);
 
 	return 0;
 }
@@ -2381,22 +2380,14 @@ static int set_link_w_neigh_up(node_info_t *neigh, int nr_nodes, int *node_list)
 static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 						node_info_t *node_b)
 {
-	int top_change = 0;
-	int lock_a_released = 0;
+	int top_change;
 
 	if (new_ls == LS_DOWN) {
-		lock_get(node_b->lock);
-		top_change = delete_neighbour(node_b, node_a);
-		lock_release(node_b->lock);
-
 		lock_get(node_a->lock);
 
-		top_change += delete_neighbour(node_a, node_b);
-
-		if (top_change > 0) {
+		if (delete_neighbour(node_a, node_b)) {
 			if (node_a->next_hop) {
 				lock_release(node_a->lock);
-				lock_a_released = 1;
 
 				if (get_next_hop(node_b) <= 0) {
 					lock_get(node_b->lock);
@@ -2405,41 +2396,26 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 
 					check_node_events(node_b, CLUSTER_NODE_DOWN);
 				}
-			}
-		}
+			} else
+				lock_release(node_a->lock);
 
-		if (!lock_a_released)
-			lock_release(node_a->lock);
-
-		if (top_change > 0) {
 			lock_get(node_a->cluster->lock);
 			node_a->cluster->top_version++;
 			lock_release(node_a->cluster->lock);
 			LM_DBG("setting link between nodes [%d] and [%d] to state <%d>\n",
 				node_a->node_id, node_b->node_id, new_ls);
-		}
+		} else
+			lock_release(node_a->lock);
 	} else { /* new_ls == LS_UP */
-		lock_get(node_b->lock);
-		top_change = add_neighbour(node_b, node_a);
-		if (top_change < 0) {
-			lock_release(node_b->lock);
-			return -1;
-		}
-		lock_release(node_b->lock);
-
 		lock_get(node_a->lock);
 
-		top_change += add_neighbour(node_a, node_b);
-
+		top_change = add_neighbour(node_a, node_b);
 		if (top_change < 0) {
 			lock_release(node_a->lock);
 			return -1;
-		}
-
-		if (top_change > 0) {
+		} else if (top_change > 0) {
 			if (node_a->next_hop) {
 				lock_release(node_a->lock);
-				lock_a_released = 1;
 
 				lock_get(node_b->lock);
 				if (!node_b->next_hop) {
@@ -2451,19 +2427,16 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 					get_next_hop_2(node_b);
 				} else
 					lock_release(node_b->lock);
-			}
-		}
+			} else
+				lock_release(node_a->lock);
 
-		if (!lock_a_released)
-			lock_release(node_a->lock);
-
-		if (top_change > 0) {
 			lock_get(node_a->cluster->lock);
 			node_a->cluster->top_version++;
 			lock_release(node_a->cluster->lock);
 			LM_DBG("setting link between nodes [%d] and [%d] to state <%d>\n",
 				node_a->node_id, node_b->node_id, new_ls);
-		}
+		} else
+			lock_release(node_a->lock);
 	}
 
 	return 0;
