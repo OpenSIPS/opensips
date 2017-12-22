@@ -214,8 +214,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 	/* store uri and attrs strings */
 
 	dp->uri.len = uri.len;
-	if (puri.user.len == 0 && puri.passwd.len == 0 && puri.params.len == 0
-			&& puri.headers.len == 0) {
+	if (puri.user.len == 0 && puri.passwd.len == 0) {
 
 		/* The uri from db is good for ds_select_dst */
 		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1 + description.len + 1);
@@ -229,7 +228,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 	}
 	else {
 		dp->dst_uri.len = uri_typestrlen(puri.type) + 1 + puri.host.len
-						+ (puri.port.len ? puri.port.len + 1 : 0);
+						+ (puri.port.len ? puri.port.len + 1 : 0) + puri.params.len;
 		dp->uri.s = shm_malloc(uri.len+1 + dp->dst_uri.len + 1 + attrs.len+1
 								+ description.len + 1);
 		if(dp->uri.s==NULL){
@@ -250,6 +249,8 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 			*(p++) = ':';
 			memcpy(p, puri.port.s, puri.port.len);
 		}
+		memcpy(p, puri.params.s, puri.params.len);
+		p += puri.params.len;
 		dp->dst_uri.s[dp->dst_uri.len]='\0';
 	}
 
