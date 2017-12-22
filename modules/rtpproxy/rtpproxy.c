@@ -2476,12 +2476,10 @@ search_rtpp_node(struct rtpp_set *set, char * url, int offer, pv_spec_p spec, st
 	}
 
 	LM_DBG("Searching for node with url=%s\n", url);
-	my_version = *list_version;
-	/* skip healthcheck on each call (check last list version)
 	if (my_version != *list_version && update_rtpp_proxies() < 0) {
 		LM_ERR("cannot update rtpp proxies list\n");
 		return NULL;
-	} */
+	}
 
 	if (!set) {
 		LM_ERR("no set specified\n");
