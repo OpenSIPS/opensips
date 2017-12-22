@@ -77,7 +77,7 @@ extern int ds_persistent_state;
 
 typedef struct _ds_dest
 {
-	str uri;
+	str uri;        /* URI used in pinging and for matching destination at reload */
 	str dst_uri;    /* Actual uri used in ds_select_dst ds_select_domain */
 	str attrs;
 	str description;
