@@ -342,9 +342,18 @@ modparam("permissions", "deny_suffix", ".deny")
 	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		This is URL of the database to be used.
-		Since version 2.2, this url represents the db_url for the <quote>default</quote>
-		partition.
+		This is URL of the database to be used for loading the date related to
+		IP-based checking (<quote>address</quote> table).
+		</para>
+		<para>
+		This parameter is optional and it is needed only if you use
+		functions related to IP-based checking. If you do so, you need to
+		explicitly set this parameter (it is not covered by 
+		<quote>db_default_url</quote>)
+		</para>
+		<para>
+		Since version 2.2, this URL represents the db_url for the 
+		<quote>default</quote> partition.
 		</para>
 		<para>
 		<emphasis>

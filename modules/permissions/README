@@ -313,8 +313,16 @@ modparam("permissions", "deny_suffix", ".deny")
 
 1.3.6. db_url (string)
 
-   This is URL of the database to be used. Since version 2.2, this
-   url represents the db_url for the “default” partition.
+   This is URL of the database to be used for loading the date
+   related to IP-based checking (“address” table).
+
+   This parameter is optional and it is needed only if you use
+   functions related to IP-based checking. If you do so, you need
+   to explicitly set this parameter (it is not covered by
+   “db_default_url”)
+
+   Since version 2.2, this URL represents the db_url for the
+   “default” partition.
 
    Default value is “NULL”.
 
