@@ -906,14 +906,11 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (accept_replicated_dlg) {
-		no_accept_clusters++;
-		accept_clusters_ids[0] = accept_replicated_dlg;
-	}
-	if (accept_repl_profiles) {
-		no_accept_clusters++;
-		accept_clusters_ids[1] = accept_repl_profiles;
-	}
+	if (accept_replicated_dlg)
+		accept_clusters_ids[no_accept_clusters++] = accept_replicated_dlg;
+
+	if (accept_repl_profiles)
+		accept_clusters_ids[no_accept_clusters++] = accept_repl_profiles;
 
 	if (no_accept_clusters && accept_replicated_dlg == accept_repl_profiles)
 		no_accept_clusters = 1;
