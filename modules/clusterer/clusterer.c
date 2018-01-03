@@ -71,30 +71,41 @@ static int set_link_w_neigh_up(node_info_t *neigh, int nr_nodes, int *node_list)
 static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 								int no_clusters);
 
-/* actions to be done for the transitions of the simple 'state machine' used for
- * establishing the link states with the other nodes */
 
-static void do_action_trans_0(node_info_t *node, int *link_state_to_set)
+static int send_ping(node_info_t *node, int req_node_list)
 {
 	struct timeval now;
 	str send_buffer;
 	bin_packet_t packet;
+	int rc;
 
 	gettimeofday(&now, NULL);
-
 	node->last_ping = now;
 
-	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION, SMALL_MSG) < 0) {
+	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION,
+		SMALL_MSG) < 0) {
 		LM_ERR("Failed to init bin send buffer\n");
-		return;
+		return -1;
 	}
 	bin_push_int(&packet, node->cluster->cluster_id);
 	bin_push_int(&packet, current_id);
-	bin_push_int(&packet, 1);	/* request list of known nodes */
+	bin_push_int(&packet, req_node_list);	/* request list of known nodes ? */
 	bin_get_buffer(&packet, &send_buffer);
 
-	if (msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
-		send_buffer.len, 0) < 0) {
+	rc = msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
+		send_buffer.len, 0);
+
+	bin_free_packet(&packet);
+
+	return rc;
+}
+
+/* actions to be done for the transitions of the simple state machine' used for
+ * establishing the link states with the other nodes */
+
+static void do_action_trans_0(node_info_t *node, int *link_state_to_set)
+{
+	if (send_ping(node, 1) < 0) {
 		LM_ERR("Failed to send ping to node [%d]\n", node->node_id);
 		if (node->no_ping_retries == 0)
 			*link_state_to_set = LS_DOWN;
@@ -106,32 +117,13 @@ static void do_action_trans_0(node_info_t *node, int *link_state_to_set)
 		*link_state_to_set = LS_RESTARTED;
 		LM_DBG("Sent ping to node [%d]\n", node->node_id);
 	}
-
-	bin_free_packet(&packet);
 }
 
 static void do_action_trans_1(node_info_t *node, int *link_state_to_set)
 {
-	struct timeval now;
-	str send_buffer;
-	bin_packet_t packet;
-
-	gettimeofday(&now, NULL);
-
-	node->last_ping = now;
 	node->curr_no_retries--;
 
-	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION, SMALL_MSG) < 0) {
-		LM_ERR("Failed to init bin send buffer\n");
-		return;
-	}
-	bin_push_int(&packet, node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
-	bin_push_int(&packet, 1);	/* request list of known nodes */
-	bin_get_buffer(&packet, &send_buffer);
-
-	if (msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
-		send_buffer.len, 0) < 0) {
+	if (send_ping(node, 1) < 0) {
 		LM_ERR("Failed to send ping retry to node [%d]\n", node->node_id);
 		if (node->curr_no_retries == 0) {
 			*link_state_to_set = LS_DOWN;
@@ -142,37 +134,18 @@ static void do_action_trans_1(node_info_t *node, int *link_state_to_set)
 		LM_DBG("Sent ping to node [%d]\n", node->node_id);
 		*link_state_to_set = LS_RETRYING;
 	}
-
-	bin_free_packet(&packet);
 }
 
 static void do_action_trans_2(node_info_t *node, int *link_state_to_set)
 {
-	struct timeval now;
-	str send_buffer;
-	bin_packet_t packet;
-
-	gettimeofday(&now, NULL);
-
 	if (node->no_ping_retries == 0) {
 		*link_state_to_set = LS_DOWN;
-		LM_INFO("Pong not received, node [%d] is down\n", node->node_id);
+		LM_INFO("Ping reply not received, node [%d] is down\n", node->node_id);
 	} else {
-		LM_INFO("Pong not received, node [%d] is possibly down, retrying\n",
+		LM_INFO("Ping reply not received, node [%d] is possibly down, retrying\n",
 			node->node_id);
-		node->last_ping = now;
 
-		if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION, SMALL_MSG) < 0) {
-			LM_ERR("Failed to init bin send buffer\n");
-			return;
-		}
-		bin_push_int(&packet, node->cluster->cluster_id);
-		bin_push_int(&packet, current_id);
-		bin_push_int(&packet, 1);	/* request list of known nodes */
-		bin_get_buffer(&packet, &send_buffer);
-
-		if (msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
-			send_buffer.len, 0) < 0) {
+		if (send_ping(node, 1) < 0) {
 			LM_ERR("Failed to send ping to node [%d]\n", node->node_id);
 			node->curr_no_retries = node->no_ping_retries;
 			*link_state_to_set = LS_RETRY_SEND_FAIL;
@@ -181,33 +154,13 @@ static void do_action_trans_2(node_info_t *node, int *link_state_to_set)
 			*link_state_to_set = LS_RETRYING;
 			node->curr_no_retries = --node->no_ping_retries;
 		}
-
-		bin_free_packet(&packet);
 	}
 }
 
 static void do_action_trans_3(node_info_t *node, int *link_state_to_set)
 {
-	struct timeval now;
-	str send_buffer;
-	bin_packet_t packet;
-
-	gettimeofday(&now, NULL);
-
 	if (node->curr_no_retries > 0) {
-		node->last_ping = now;
-
-		if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION, SMALL_MSG) < 0) {
-			LM_ERR("Failed to init bin send buffer\n");
-			return;
-		}
-		bin_push_int(&packet, node->cluster->cluster_id);
-		bin_push_int(&packet, current_id);
-		bin_push_int(&packet, 1);	/* request list of known nodes */
-		bin_get_buffer(&packet, &send_buffer);
-
-		if (msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
-			send_buffer.len, 0) < 0) {
+		if (send_ping(node, 1) < 0) {
 			LM_ERR("Failed to send ping retry to node [%d]\n",
 				node->node_id);
 			*link_state_to_set = LS_RETRY_SEND_FAIL;
@@ -215,38 +168,18 @@ static void do_action_trans_3(node_info_t *node, int *link_state_to_set)
 			LM_DBG("Sent ping retry to node [%d]\n", node->node_id);
 			node->curr_no_retries--;
 		}
-
-		bin_free_packet(&packet);
 	} else {
 		*link_state_to_set = LS_DOWN;
-		LM_INFO("Pong not received, node [%d] is down\n", node->node_id);
+		LM_INFO("Ping reply not received, node [%d] is down\n", node->node_id);
 	}
 }
 
 static void do_action_trans_4(node_info_t *node, int *link_state_to_set)
 {
-	struct timeval now;
-	str send_buffer;
-	bin_packet_t packet;
-
-	gettimeofday(&now, NULL);
-
 	LM_INFO("Node timeout passed, restart pinging node [%d]\n",
 		node->node_id);
 
-	node->last_ping = now;
-
-	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION, SMALL_MSG) < 0) {
-		LM_ERR("Failed to init bin send buffer\n");
-		return;
-	}
-	bin_push_int(&packet, node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
-	bin_push_int(&packet, 1);	/* request list of known nodes */
-	bin_get_buffer(&packet, &send_buffer);
-
-	if (msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
-		send_buffer.len, 0) < 0) {
+	if (send_ping(node, 1) < 0) {
 		LM_ERR("Failed to send ping to node [%d]\n", node->node_id);
 		if (node->no_ping_retries != 0) {
 			node->curr_no_retries = node->no_ping_retries;
@@ -256,32 +189,12 @@ static void do_action_trans_4(node_info_t *node, int *link_state_to_set)
 		*link_state_to_set = LS_RESTARTED;
 		LM_DBG("Sent ping to node [%d]\n", node->node_id);
 	}
-
-	bin_free_packet(&packet);
 }
 
 static void do_action_trans_5(node_info_t *node, int *link_state_to_set,
 								int *ev_actions_required, int no_clusters)
 {
-	struct timeval now;
-	str send_buffer;
-	bin_packet_t packet;
-
-	gettimeofday(&now, NULL);
-
-	node->last_ping = now;
-
-	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PING, BIN_VERSION, SMALL_MSG) < 0) {
-		LM_ERR("Failed to init bin send buffer\n");
-		return;
-	}
-	bin_push_int(&packet, node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
-	bin_push_int(&packet, 0);	/* don't request list of known nodes */
-	bin_get_buffer(&packet, &send_buffer);
-
-	if (msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
-		send_buffer.len, 0) < 0) {
+	if (send_ping(node, 0) < 0) {
 		LM_ERR("Failed to send ping to node [%d]\n", node->node_id);
 		if (node->no_ping_retries == 0)
 			*link_state_to_set = LS_DOWN;
@@ -292,8 +205,6 @@ static void do_action_trans_5(node_info_t *node, int *link_state_to_set,
 		ev_actions_required[no_clusters] = 1;
 	} else
 		LM_DBG("Sent ping to node [%d]\n", node->node_id);
-
-	bin_free_packet(&packet);
 }
 
 void heartbeats_timer(void)
@@ -1460,14 +1371,15 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 	node_info_t *it;
 	str bin_buffer;
 	int send_rc;
-	int set_ls_restart = 0;
+	int new_ls = -1;
+	int rst_ping_now = 0;
 	int req_list;
 	int node_list[MAX_NO_NODES], i, nr_nodes;
 	bin_packet_t packet;
 
 	switch (packet_type) {
 	case CLUSTERER_PONG:
-		LM_DBG("Received pong from node [%d]\n", src_node->node_id);
+		LM_DBG("Received ping reply from node [%d]\n", src_node->node_id);
 
 		bin_pop_int(received, &nr_nodes);
 		for (i=0; i<nr_nodes; i++)
@@ -1478,7 +1390,8 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 		src_node->last_pong = rcv_time;
 
 		/* if the node was retried and a reply was expected, it should be UP again */
-		if (src_node->link_state == LS_RESTARTED || src_node->link_state == LS_RETRYING) {
+		if (src_node->link_state == LS_RESTARTED ||
+			src_node->link_state == LS_RETRYING) {
 			lock_release(src_node->lock);
 
 			set_link_w_neigh_up(src_node, nr_nodes, node_list);
@@ -1493,7 +1406,8 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 		bin_pop_int(received, &req_list);
 
 		/* reply with pong */
-		if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PONG, BIN_VERSION, SMALL_MSG) < 0) {
+		if (bin_init(&packet, &cl_internal_cap, CLUSTERER_PONG, BIN_VERSION,
+			SMALL_MSG) < 0) {
 			LM_ERR("Failed to init bin send buffer\n");
 			return;
 		}
@@ -1519,7 +1433,7 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 		if (send_rc < 0) {
 			LM_ERR("Failed to reply to ping from node [%d]\n", src_node->node_id);
 			if (src_node->link_state == LS_UP) {
-				set_ls_restart = 1;
+				new_ls = LS_RESTART_PINGING;
 				*ev_actions_required = 1;
 			}
 		} else
@@ -1528,13 +1442,22 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 		/* if the node was down, restart pinging */
 		if (src_node->link_state == LS_DOWN) {
 			LM_DBG("Received ping from failed node, restart pinging\n");
-			set_ls_restart = 1;
+
+			if (send_rc == 0)
+				/* restart right now */
+				rst_ping_now = 1;
+			else
+				/* restart on timer */
+				new_ls = LS_RESTART_PINGING;
 		}
 
 		lock_release(src_node->lock);
 
-		if (set_ls_restart)
-			set_link_w_neigh_adv(LS_RESTART_PINGING, src_node);
+		if (rst_ping_now)
+			do_action_trans_0(src_node, &new_ls);
+
+		if (new_ls >= 0)
+			set_link_w_neigh_adv(new_ls, src_node);
 
 		bin_free_packet(&packet);
 		break;
