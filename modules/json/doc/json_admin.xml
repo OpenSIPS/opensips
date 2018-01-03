@@ -66,14 +66,13 @@
 	<section>
 	<title>Exported Variables</title>
 
-	<para>
-		This module exports the $json(id) variable.
-	</para>
-
-	<para>
-		The json variable provides methods to access fields
-		in json objects and indexes in json arrays.
-	</para>
+	<section>
+		<title><varname>$json(id)</varname></title>
+		<para>
+			The <varname>json</varname> variable provides
+			methods to access fields in json objects and
+			indexes in json arrays.
+		</para>
 
 		<section>
 		<title>Variable lifetime </title>
@@ -330,8 +329,25 @@ $json(object/array) := $json(array) ;
 
 
 		</section>
-
-
+	</section>
+	<section>
+		<title><varname>$json_pretty(id)</varname></title>
+		<para>
+			The <varname>json_pretty</varname> variable has the
+			same purpose as the <varname>json</varname> variable,
+			but prints the JSON object in a pretty format, adding
+			spaces and tabs to make the output more readable.
+		</para>
+	</section>
+	<section>
+		<title><varname>$json_compact(id)</varname></title>
+		<para>
+			The <varname>json_compact</varname> variable has the
+			same purpose as the <varname>json</varname> variable,
+			but prints the JSON object in a more compact form,
+			without formatting spaces.
+		</para>
+	</section>
 	</section>
 
 	<section>

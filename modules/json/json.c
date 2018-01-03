@@ -97,6 +97,9 @@ static void mod_destroy(void);
 static int fixup_json_bind(void**, int );
 static int pv_set_json (struct sip_msg*,  pv_param_t*, int , pv_value_t* );
 static int pv_get_json (struct sip_msg*,  pv_param_t*, pv_value_t* );
+static int pv_get_json_compact(struct sip_msg*,  pv_param_t*, pv_value_t* );
+static int pv_get_json_pretty(struct sip_msg*,  pv_param_t*, pv_value_t* );
+static int pv_get_json_ext(struct sip_msg*,  pv_param_t*, pv_value_t* , int flags);
 static int json_bind(struct sip_msg* , char* , char* );
 static void print_tag_list( json_tag *, json_tag *, int);
 static json_t * get_object(pv_json_t * , pv_param_t* ,  json_tag **, int  );
@@ -118,6 +121,10 @@ static cmd_export_t cmds[]={
 
 static pv_export_t mod_items[] = {
 	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
+		pv_set_json, pv_parse_json_name, 0, 0, 0},
+	{ {"json_compact",  sizeof("json_compact")-1}, PVT_JSON, pv_get_json_compact,
+		pv_set_json, pv_parse_json_name, 0, 0, 0},
+	{ {"json_pretty",  sizeof("json_pretty")-1}, PVT_JSON, pv_get_json_pretty,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -359,8 +366,22 @@ error:
 
 }
 
+int pv_get_json(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
+{
+	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_SPACED);
+}
 
-int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
+int pv_get_json_compact(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
+{
+	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PLAIN);
+}
+
+int pv_get_json_pretty(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
+{
+	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PRETTY);
+}
+
+int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int flags)
 {
 
 	pv_json_t * var ;
@@ -410,7 +431,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 #endif
 	} else {
 		val->flags = PV_VAL_STR;
-		val->rs.s = (char*)json_object_to_json_string( obj );
+		val->rs.s = (char*)json_object_to_json_string_ext( obj, flags);
 		val->rs.len = strlen(val->rs.s);
 	}
 
@@ -936,12 +957,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 	if( get_value(state, id, start, cur) )
 		return -1;
 
-
 	sp->pvp.pvn.u.dname = id ;
-	sp->type = PVT_JSON;
-	sp->getf = pv_get_json;
-	sp->setf = pv_set_json;
-
 
 	return 0;
 }

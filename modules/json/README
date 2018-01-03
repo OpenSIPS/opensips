@@ -8,7 +8,7 @@ Edited by
 
 Andrei Dragus
 
-   Copyright Â© 2009 Voice Sistem SRL
+   Copyright © 2009 Voice Sistem SRL
    Revision History
    Revision $Revision: 8740 $ $Date$
      __________________________________________________________
@@ -26,10 +26,9 @@ Andrei Dragus
         1.3. Exported Parameters
         1.4. Exported Variables
 
-              1.4.1. Variable lifetime
-              1.4.2. Accessing the $json(id) variable
-              1.4.3. Returned values from $json(id)
-              1.4.4. Operators for the $json(id) variable
+              1.4.1. $json(id)
+              1.4.2. $json_pretty(id)
+              1.4.3. $json_compact(id)
 
         1.5. Exported Functions
 
@@ -85,12 +84,12 @@ Chapter 1. Admin Guide
 
 1.4. Exported Variables
 
-   This module exports the $json(id) variable.
+1.4.1. $json(id)
 
    The json variable provides methods to access fields in json
    objects and indexes in json arrays.
 
-1.4.1. Variable lifetime
+1.4.1.1. Variable lifetime
 
    The json variables will be available to the process that
    created them from the moment they were initialized. They will
@@ -98,7 +97,7 @@ Chapter 1. Admin Guide
    the on a per message basis you should initialize them each
    time.
 
-1.4.2. Accessing the $json(id) variable
+1.4.1.2. Accessing the $json(id) variable
 
    The grammar that describes the id is:
 
@@ -170,7 +169,7 @@ while( $json(ar1[$var(i)]) )
 
 ...
 
-1.4.3.  Returned values from $json(id)
+1.4.1.3.  Returned values from $json(id)
 
    If the value specified by the id is an integer it will be
    returned as an integer value.
@@ -187,11 +186,11 @@ while( $json(ar1[$var(i)]) )
 
    If the id does not exist a NULL value will be returned.
 
-1.4.4.  Operators for the $json(id) variable
+1.4.1.4.  Operators for the $json(id) variable
 
    There are 2 operators available for this variable.
 
-1.4.4.1.  The "=" operator
+1.4.1.4.1.  The "=" operator
 
    This will cause the value to be taken as is and be added to the
    json object ( e.g. string value or integer value ).
@@ -213,7 +212,7 @@ $json(array1[-1]) = NULL;
 $json(object1/some_key) = "some_value";
 ...
 
-1.4.4.2.  The ":=" operator
+1.4.1.4.2.  The ":=" operator
 
    This will cause the value to be taken and interpreted as a json
    object ( e.g. this operator should be used to parse json inputs
@@ -239,6 +238,18 @@ $json(object) := "{}";
 $json(object/array) := $json(array) ;
 
 ...
+
+1.4.2. $json_pretty(id)
+
+   The json_pretty variable has the same purpose as the json
+   variable, but prints the JSON object in a pretty format, adding
+   spaces and tabs to make the output more readable.
+
+1.4.3. $json_compact(id)
+
+   The json_compact variable has the same purpose as the json
+   variable, but prints the JSON object in a more compact form,
+   without formatting spaces.
 
 1.5. Exported Functions
 
