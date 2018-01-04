@@ -614,6 +614,26 @@ modparam("mid_registrar", "max_contacts", 10)
 </programlisting>
 		</example>
 	</section>
+	<section id="modparam-extra-contact-params-pvar" xreflabel="extra_contact_params_pvar">
+		<title><varname>extra_contact_params_pvar</varname> (string)</title>
+		<para>
+		A pseudo-variable specification. This variable is evaluated during
+		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>:
+		if it holds a valid string, its content be appended to
+		<emphasis>each</emphasis> new Contact URI built by the mid-registrar,
+		for the outgoing request.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>None</emphasis> (not used)
+		</para>
+		<example>
+		<title>Setting the <emphasis>extra_contact_params_pvar</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+# we're using an AVP to guarantee it's cleared with every new SIP request
+modparam("mid_registrar", "extra_contact_params_pvar", "$avp(extra_ct_params)")
+</programlisting>
+		</example>
+	</section>
 	<section id="modparam-retry-after" xreflabel="retry_after">
 		<title><varname>retry_after</varname> (integer)</title>
 		<para>

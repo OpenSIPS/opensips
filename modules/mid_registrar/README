@@ -49,9 +49,10 @@ Liviu Chircu
               1.5.12. received_avp (string)
               1.5.13. received_param (string)
               1.5.14. max_contacts (integer)
-              1.5.15. retry_after (integer)
-              1.5.16. disable_gruu (integer)
-              1.5.17. gruu_secret (string)
+              1.5.15. extra_contact_params_pvar (string)
+              1.5.16. retry_after (integer)
+              1.5.17. disable_gruu (integer)
+              1.5.18. gruu_secret (string)
 
         1.6. Exported Functions
 
@@ -77,11 +78,12 @@ Liviu Chircu
    1.12. Setting the received_avp module parameter
    1.13. Setting the received_param module parameter
    1.14. Setting the max_contacts module parameter
-   1.15. Setting the retry_after module parameter
-   1.16. Setting the gruu_secret module parameter
+   1.15. Setting the extra_contact_params_pvar module parameter
+   1.16. Setting the retry_after module parameter
    1.17. Setting the gruu_secret module parameter
-   1.18. mid_registrar_save usage
-   1.19. mid_registrar_lookup usage
+   1.18. Setting the gruu_secret module parameter
+   1.19. mid_registrar_save usage
+   1.20. mid_registrar_lookup usage
 
 Chapter 1. Admin Guide
 
@@ -485,7 +487,23 @@ modparam("mid_registrar", "received_param", "rcv")
    Example 1.14. Setting the max_contacts module parameter
 modparam("mid_registrar", "max_contacts", 10)
 
-1.5.15. retry_after (integer)
+1.5.15. extra_contact_params_pvar (string)
+
+   A pseudo-variable specification. This variable is evaluated
+   during mid_registrar_save(): if it holds a valid string, its
+   content be appended to each new Contact URI built by the
+   mid-registrar, for the outgoing request.
+
+   Default value is None (not used)
+
+   Example 1.15. Setting the extra_contact_params_pvar module
+   parameter
+# we're using an AVP to guarantee it's cleared with every new SIP reques
+t
+modparam("mid_registrar", "extra_contact_params_pvar", "$avp(extra_ct_pa
+rams)")
+
+1.5.16. retry_after (integer)
 
    The mid-registrar can generate 5xx replies to registrations in
    various situations. It could, for example, happen when the
@@ -500,26 +518,26 @@ modparam("mid_registrar", "max_contacts", 10)
 
    Default value is 0 (disabled)
 
-   Example 1.15. Setting the retry_after module parameter
+   Example 1.16. Setting the retry_after module parameter
 modparam("mid_registrar", "retry_after", 30)
 
-1.5.16. disable_gruu (integer)
+1.5.17. disable_gruu (integer)
 
    Globally disable GRUU handling.
 
    Default value is 1 (GRUUs will not be handled)
 
-   Example 1.16. Setting the gruu_secret module parameter
+   Example 1.17. Setting the gruu_secret module parameter
 modparam("mid_registrar", "disable_gruu", 0)
 
-1.5.17. gruu_secret (string)
+1.5.18. gruu_secret (string)
 
    The string that will be used in XORing when generating
    temporary GRUUs.
 
    Default value is "0p3nS1pS"
 
-   Example 1.17. Setting the gruu_secret module parameter
+   Example 1.18. Setting the gruu_secret module parameter
 modparam("mid_registrar", "gruu_secret", "my_secret")
 
 1.6. Exported Functions
@@ -620,7 +638,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 
    This function can only be used from the request route.
 
-   Example 1.18. mid_registrar_save usage
+   Example 1.19. mid_registrar_save usage
 ...
 if (is_method("REGISTER")) {
         mid_registrar_save("location");
@@ -728,7 +746,7 @@ if (is_method("REGISTER")) {
 
    This function can only be used from the request route.
 
-   Example 1.19. mid_registrar_lookup usage
+   Example 1.20. mid_registrar_lookup usage
 ...
         # initial invites from the main registrar - need to look them up
 !
