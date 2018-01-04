@@ -68,6 +68,12 @@ struct ct_mapping {
 	int zero_expires;
 	uint64_t ctid;
 
+	int expires;
+	unsigned int methods;
+	qvalue_t q;
+	str received;
+	str instance;
+
 	struct list_head list;
 };
 
@@ -100,6 +106,13 @@ struct mid_reg_info {
 
 	udomain_t *dom; /* used during 200 OK ul_api operations */
 	str aor;        /* used during both "reg out" and "resp in" */
+
+	/* ucontact_info dup'ed fields */
+	str user_agent;
+	str path_received;
+	str path;
+	unsigned int ul_flags;
+	unsigned int cflags;
 };
 
 struct save_ctx {
