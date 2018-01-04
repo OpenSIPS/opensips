@@ -176,5 +176,6 @@ struct mid_reg_info *get_ct(void);
 int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id);
 
 int get_expires_hf(struct sip_msg* _m);
+str get_extra_ct_params(struct sip_msg *msg);
 
 #endif /* __MID_REG_ */

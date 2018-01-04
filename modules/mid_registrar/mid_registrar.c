@@ -96,6 +96,8 @@ char* attr_avp_param = 0;
 unsigned short attr_avp_type = 0;
 int attr_avp_name;
 
+str extra_ct_params_str;
+pv_spec_t extra_ct_params_pv;
 
 static struct mid_reg_info *__info;
 int ucontact_data_idx;
@@ -119,6 +121,8 @@ static int mod_init(void);
 static int domain_fixup(void** param);
 static int registrar_fixup(void** param, int param_no);
 
+void fix_extra_ct_params(void);
+
 /* 
  * Working modes:
  *    0 = mirror
@@ -138,6 +142,7 @@ enum mid_reg_insertion_mode   insertion_mode  = INSERT_BY_CONTACT;
 enum mid_reg_matching_mode  matching_mode = MATCH_BY_PARAM;
 
 /*
+ * TODO: get rid of this (no pun intended)
  * Only used in INSERT_BY_CONTACT insertion mode
  * Allows us to match the request contact set with the reply contact set,
  * which contains rewritten Contact header field domains
@@ -181,6 +186,7 @@ static param_export_t mod_params[] = {
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
 	{ "insertion_mode",       INT_PARAM, &insertion_mode },
 	{ "contact_match_param",  STR_PARAM, &matching_param.s },
+	{ "extra_contact_params_pvar", STR_PARAM, &extra_ct_params_str.s },
 	{ 0,0,0 }
 };
 
@@ -356,6 +362,8 @@ static int mod_init(void)
 	}
 
 	rcv_param.len = strlen(rcv_param.s);
+
+	fix_extra_ct_params();
 
 	realm_prefix.s = realm_pref;
 	realm_prefix.len = strlen(realm_pref);
@@ -533,4 +541,38 @@ int get_expires_hf(struct sip_msg* _m)
 	} else {
 		return default_expires;
 	}
+}
+
+void fix_extra_ct_params(void)
+{
+	extra_ct_params_str.len = strlen(extra_ct_params_str.s);
+
+	if (extra_ct_params_str.len) {
+		if (!pv_parse_spec(&extra_ct_params_str, &extra_ct_params_pv)) {
+			LM_ERR("malformed 'extra_ct_params_pvar' definition\n");
+			memset(&extra_ct_params_str, 0, sizeof extra_ct_params_str);
+		}
+	}
+}
+
+str get_extra_ct_params(struct sip_msg *msg)
+{
+	str null_str = {NULL, 0};
+	pv_value_t extra_params;
+
+	if (ZSTR(extra_ct_params_str))
+		return null_str;
+
+	if (pv_get_spec_value(msg, &extra_ct_params_pv, &extra_params) != 0) {
+		LM_ERR("failed to get extra params\n");
+		return null_str;
+	}
+
+	if (!(extra_params.flags & PV_VAL_STR)) {
+		LM_ERR("skipping extra Contact params with int value (%d)\n",
+		       extra_params.ri);
+		return null_str;
+	}
+
+	return extra_params.rs;
 }

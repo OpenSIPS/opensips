@@ -147,6 +147,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 	int e, is_dereg = 1, len, len1;
 	struct hdr_field *ct;
 	union sockaddr_union _;
+	str extra_ct_params;
 
 	/* get the source socket on the way to the next hop */
 	adv_sock = uri2sock(msg, GET_NEXT_HOP(msg), &_, PROTO_NONE);
@@ -184,10 +185,12 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		}
 	}
 
-	/*   <   sip:            @                                 :ddddd  > */
-	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 + 1 +
-	      + 9 + 10 + 1;
-	        /* ;expires=<integer> \0 */
+	extra_ct_params = get_extra_ct_params(msg);
+
+	/*   <   sip:            @                                 :ddddd */
+	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 +
+	      extra_ct_params.len + 1 + 9 + 10 + 1;
+	                   /* > ;expires=<integer> \0 */
 
 	buf = pkg_malloc(len);
 	if (buf == NULL) {
@@ -195,12 +198,9 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		return -1;
 	}
 
-	/* if use_domain is enabled then don't append proxy ip:port */
-	if (reg_use_domain == 0)
-		len1 = sprintf(buf, "<sip:%.*s@%s:%s>", aor->len, aor->s,
-		               adv_sock->address_str.s, adv_sock->port_no_str.s);
-	else
-		len1 = sprintf(buf, "<sip:%.*s>", aor->len, aor->s);
+	len1 = sprintf(buf, "<sip:%.*s@%s:%s%.*s>", aor->len, aor->s,
+	               adv_sock->address_str.s, adv_sock->port_no_str.s,
+	               extra_ct_params.len, extra_ct_params.s);
 
 	if (!msg->expires || msg->expires->body.len == 0) {
 		len1 += sprintf(buf + len1, ";expires=%d",
@@ -257,6 +257,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	struct ct_mapping *ctmap;
 	struct list_head *_;
 	union sockaddr_union __;
+	str extra_ct_params;
 
 	ul_api.lock_udomain(mri->dom, &mri->aor);
 	ul_api.get_urecord(mri->dom, &mri->aor, &r);
@@ -320,9 +321,11 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		if (!anchor)
 			return -1;
 
+		extra_ct_params = get_extra_ct_params(req);
+
 		len = new_username.len + 1 + strlen(adv_sock->address_str.s) +
-		      6 /*port*/ + 2 /*IPv6*/ + 15 /* <sip:>;expires= */ +
-			  10 /* len(expires) */ + 1 /*\0*/;
+		      6 /*port*/ + extra_ct_params.len + 2 /*IPv6*/ +
+		      15 /* <sip:>;expires= */ + 10 /* len(expires) */ + 1 /*\0*/;
 		lump_buf = pkg_malloc(len);
 		if (!lump_buf) {
 			LM_ERR("oom\n");
@@ -334,9 +337,10 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		       new_username.len, new_username.s, adv_sock->address_str.s,
 		       adv_sock->port_no_str.s, c->uri.len, c->uri.s);
 
-		len1 = snprintf(lump_buf, len, "<sip:%.*s@%s:%s>;expires=%d", new_username.len,
-		                new_username.s, adv_sock->address_str.s,
-		                adv_sock->port_no_str.s, expires);
+		len1 = snprintf(lump_buf, len, "<sip:%.*s@%s:%s%.*s>;expires=%d",
+		                new_username.len, new_username.s,
+		                adv_sock->address_str.s, adv_sock->port_no_str.s,
+		                extra_ct_params.len, extra_ct_params.s, expires);
 
 		if (len1 < len)
 			len = len1;
