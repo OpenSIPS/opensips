@@ -146,8 +146,15 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 	char *buf;
 	int e, is_dereg = 1, len, len1;
 	struct hdr_field *ct;
+	union sockaddr_union _;
 
-	adv_sock = *get_sock_info_list(PROTO_UDP);
+	/* get the source socket on the way to the next hop */
+	adv_sock = uri2sock(msg, GET_NEXT_HOP(msg), &_, PROTO_NONE);
+	if (!adv_sock) {
+		LM_ERR("failed to obtain next hop socket, ci=%.*s\n",
+		       msg->callid->body.len, msg->callid->body.s);
+		return -1;
+	}
 
 	/* completely remove all Contact hfs, except the last one */
 	for (ct = msg->contact; ct && ct->sibling; ct = ct->sibling) {
@@ -249,6 +256,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	uint64_t ctid;
 	struct ct_mapping *ctmap;
 	struct list_head *_;
+	union sockaddr_union __;
 
 	ul_api.lock_udomain(mri->dom, &mri->aor);
 	ul_api.get_urecord(mri->dom, &mri->aor, &r);
@@ -269,7 +277,13 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		return -1;
 	}
 
-	adv_sock = *get_sock_info_list(PROTO_UDP);
+	/* get the source socket on the way to the next hop */
+	adv_sock = uri2sock(req, GET_NEXT_HOP(req), &__, PROTO_NONE);
+	if (!adv_sock) {
+		LM_ERR("failed to obtain next hop socket, ci=%.*s\n",
+		       req->callid->body.len, req->callid->body.s);
+		return -1;
+	}
 
 	c = get_first_contact(req);
 	list_for_each(_, &mri->ct_mappings) {
