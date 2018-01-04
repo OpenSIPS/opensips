@@ -1518,7 +1518,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 	ucontact_t* c;
 	urecord_t *r = NULL;
 	contact_t *_c;
-	unsigned int cflags, cseq;
+	unsigned int cseq;
 	int e_out = -1;
 	int e_max = 0;
 	int tcp_check = 0;
@@ -1533,7 +1533,6 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 		return -1;
 	}
 
-	cflags = (mri->reg_flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
 		tcp_check = 1;
 	}
