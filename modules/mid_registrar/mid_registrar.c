@@ -474,11 +474,9 @@ struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 	return new;
 }
 
+extern void free_ct_mappings(struct list_head *mappings);
 void mri_free(struct mid_reg_info *mri)
 {
-	struct list_head *_, *__;
-	struct ct_mapping *ctmap;
-
 	if (!mri)
 		return;
 
@@ -504,12 +502,16 @@ void mri_free(struct mid_reg_info *mri)
 	if (mri->ct_uri.s)
 		shm_free(mri->ct_uri.s);
 
-	list_for_each_safe(_, __, &mri->ct_mappings) {
-		ctmap = list_entry(_, struct ct_mapping, list);
-		shm_free(ctmap->req_ct_uri.s);
-		shm_free(ctmap->new_username.s);
-		shm_free(ctmap);
-	}
+	if (mri->user_agent.s)
+		shm_free(mri->user_agent.s);
+
+	if (mri->path.s)
+		shm_free(mri->path.s);
+
+	if (mri->path_received.s)
+		shm_free(mri->path_received.s);
+
+	free_ct_mappings(&mri->ct_mappings);
 
 #ifdef EXTRA_DEBUG
 	memset(mri, 0, sizeof *mri);
