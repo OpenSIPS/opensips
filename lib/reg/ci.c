@@ -192,3 +192,22 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 error:
 	return 0;
 }
+
+void print_ci(ucontact_info_t *ci)
+{
+	LM_DBG(" ----- UCI DUMP (%p) ------\n", ci);
+	LM_DBG("received: %.*s, path: %.*s\n", ci->received.len, ci->received.s,
+	       ci->path ? ci->path->len : 0, ci->path ? ci->path->s : NULL);
+	LM_DBG("expires: %ld, expires_in: %ld, expires_out: %ld\n", ci->expires,
+	       ci->expires_in, ci->expires_out);
+	LM_DBG("q: %d, instance: %.*s, callid: %.*s\n", ci->q, ci->instance.len,
+	       ci->instance.s, ci->callid ? ci->callid->len : 0,
+	       ci->callid ? ci->callid->s : NULL);
+	LM_DBG("cseq: %d, flags: %d, cflags: %d\n", ci->cseq, ci->flags,
+	       ci->cflags);
+	LM_DBG("user_agent: %.*s, sock: %p, methods: %d\n",
+	       ci->user_agent ? ci->user_agent->len : 0,
+	       ci->user_agent ? ci->user_agent->s : NULL, ci->sock, ci->methods);
+	LM_DBG("last_modified: %ld, attr: %.*s\n", ci->last_modified,
+	       ci->attr ? ci->attr->len : 0, ci->attr ? ci->attr->s : NULL);
+}
