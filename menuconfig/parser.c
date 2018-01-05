@@ -235,7 +235,8 @@ int parse_defs_line(char *line,select_menu *parent,int *group_idx,int *start_grp
 int parse_prefix_line(char *line,select_menu *menu)
 {
 	char *p;
-	int pref_len,len = strlen(line);
+	int pref_len, len = strlen(line);
+	int new_buf_len;
 
 	p=memchr(line,'=',len);
 	if (!p) {
@@ -250,22 +251,22 @@ int parse_prefix_line(char *line,select_menu *menu)
 		p++;
 	}
 
+	/* fix missing trailing slash */
 	if (p[pref_len-1] != '/')
-		pref_len++;
+		new_buf_len = pref_len + 2;
+	else
+		new_buf_len = pref_len + 1;
 
-	install_prefix=malloc(pref_len+1);
+	install_prefix = malloc(new_buf_len);
 	if (!install_prefix) {
 		fprintf(output,"No more memory\n");
 		return -1;
 	}
+	memset(install_prefix, 0, new_buf_len);
 
-	memcpy(install_prefix,p,pref_len);
-	if (p[pref_len-1] != '/') {
-		install_prefix[pref_len-1]='/';
-		install_prefix[pref_len]='\0';
-	} else {
-		install_prefix[pref_len-1]='\0';
-	}
+	memcpy(install_prefix, p, pref_len);
+	if (p[pref_len-1] != '/')
+		install_prefix[pref_len] = '/';
 
 	/* also init the prev prefix, used for
 	 * resetting changes */
