@@ -1204,6 +1204,13 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			<listitem><para>
 				<emphasis>cseq</emphasis> - The cseq number as an int value.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>attr</emphasis> - The attributes string attached
+				to the contact (the custom attributes attached from the 
+				script level). As this string is options, if missing in the
+				contact, the event will push the empty string for this event 
+				field.
+			</para></listitem>
 		</itemizedlist>
 	</section>
 	<section>

@@ -834,6 +834,10 @@ modparam("usrloc", "regen_broken_contactid", 1)
        timestamp integer).
      * callid - The Call-ID header of the registration message.
      * cseq - The cseq number as an int value.
+     * attr - The attributes string attached to the contact (the
+       custom attributes attached from the script level). As this
+       string is options, if missing in the contact, the event
+       will push the empty string for this event field.
 
 1.7.4.  E_UL_CONTACT_DELETE
 

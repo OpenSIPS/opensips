@@ -149,6 +149,7 @@ static str ei_c_bflags_name = str_init("bflags");
 static str ei_c_expires_name = str_init("expires");
 static str ei_callid_name = str_init("callid");
 static str ei_cseq_name = str_init("cseq");
+static str ei_attr_name = str_init("attr");
 static evi_params_p ul_contact_event_params;
 static evi_params_p ul_event_params;
 static evi_param_p ul_aor_param;
@@ -162,6 +163,7 @@ static evi_param_p ul_c_bflags_param;
 static evi_param_p ul_c_expires_param;
 static evi_param_p ul_c_callid_param;
 static evi_param_p ul_c_cseq_param;
+static evi_param_p ul_c_attr_param;
 
 /*! \brief
  * Initialize event structures
@@ -285,6 +287,12 @@ int ul_event_init(void)
 		return -1;
 	}
 
+	ul_c_attr_param = evi_param_create(ul_contact_event_params, &ei_attr_name);
+	if (!ul_c_attr_param) {
+		LM_ERR("cannot create cseq parameter\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -372,6 +380,12 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 	/* the CSeq value */
 	if (evi_param_set_int(ul_c_cseq_param, &_c->cseq) < 0) {
 		LM_ERR("cannot set cseq parameter\n");
+		return;
+	}
+
+	/* the ATTR value */
+	if(evi_param_set_str(ul_c_attr_param,_c->attr.len?&_c->attr:&str_empty)<0){
+		LM_ERR("cannot set attr parameter\n");
 		return;
 	}
 
