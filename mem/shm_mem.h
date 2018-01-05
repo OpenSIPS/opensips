@@ -616,12 +616,16 @@ inline static void shm_status(void)
 }
 
 
-#define shm_info(mi) \
-do{\
-	shm_lock(); \
-	MY_MEMINFO(shm_block, mi); \
-	shm_unlock(); \
-}while(0)
+inline static void shm_info(struct mem_info* mi)
+{
+#ifndef HP_MALLOC
+	shm_lock();
+#endif
+	MY_MEMINFO(shm_block, mi);
+#ifndef HP_MALLOC
+	shm_unlock();
+#endif
+}
 
 /*
  * performs a full shared memory pool scan for any corruptions or inconsistencies
