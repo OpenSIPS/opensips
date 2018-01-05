@@ -1168,7 +1168,6 @@ static int st_parse_flags(str *sflags)
 
 int st_parse_types(str* stypes)
 {
-
 	str tok;
 	int have_next=1, i, ret=0;
 	char* end;
@@ -1201,9 +1200,9 @@ int st_parse_types(str* stypes)
 			}
 		}
 		if (i==get_traced_protos_no()) {
-			/* the trace type was not found; throw error */
-			LM_ERR("trace type [%.*s] wasn't defined!\n", tok.len, tok.s);
-			return -1;
+			/* the trace type was not found */
+			LM_WARN("trace type [%.*s] wasn't defined, ignoring...\n",
+				tok.len, tok.s);
 		}
 	}
 
@@ -1506,8 +1505,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		}
 
 		trace_types = st_parse_types(&trace_types_s);
-		if (trace_types == -1) {
-			LM_ERR("failed to parse trace types!\n");
+		if (trace_types == 0) {
+			LM_DBG("no types to be traced, abording!\n");
 			return -1;
 		}
 	} else {
