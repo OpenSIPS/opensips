@@ -189,58 +189,48 @@ static inline int add_extra(str* tag, str* value,
 }
 
 
-static inline struct acc_extra** extra_str2bkend(str* bkend)
+static struct acc_extra** extra_str2bkend(str* bkend)
 {
-	static str log_bkend_s = str_init("log");
-	static str db_bkend_s = str_init("db");
-	static str aaa_bkend_s = str_init("aaa");
-	static str evi_bkend_s = str_init("evi");
+	str log_bkend_s = str_init("log");
+	str db_bkend_s = str_init("db");
+	str aaa_bkend_s = str_init("aaa");
+	str evi_bkend_s = str_init("evi");
 
-	if (bkend->len == log_bkend_s.len &&
-			!memcmp(bkend->s, log_bkend_s.s, log_bkend_s.len)) {
+	if (!str_strcmp(bkend, &log_bkend_s))
 		return &log_extra_tags;
-	} else
-	if (bkend->len == db_bkend_s.len &&
-			!memcmp(bkend->s, db_bkend_s.s, db_bkend_s.len)) {
+
+	if (!str_strcmp(bkend, &db_bkend_s))
 		return &db_extra_tags;
-	} else
-	if (bkend->len == aaa_bkend_s.len &&
-			!memcmp(bkend->s, aaa_bkend_s.s, aaa_bkend_s.len)) {
+
+	if (!str_strcmp(bkend, &aaa_bkend_s))
 		return &aaa_extra_tags;
-	} else
-	if (bkend->len == evi_bkend_s.len &&
-			!memcmp(bkend->s, evi_bkend_s.s, evi_bkend_s.len)) {
+
+	if (!str_strcmp(bkend, &evi_bkend_s))
 		return &evi_extra_tags;
-	} else {
-		return NULL;
-	}
+
+	return NULL;
 }
 
-static inline struct acc_extra** leg_str2bkend(str* bkend)
+static struct acc_extra** leg_str2bkend(str* bkend)
 {
-	static str log_bkend_s = str_init("log");
-	static str db_bkend_s = str_init("db");
-	static str aaa_bkend_s = str_init("aaa");
-	static str evi_bkend_s = str_init("evi");
+	str log_bkend_s = str_init("log");
+	str db_bkend_s = str_init("db");
+	str aaa_bkend_s = str_init("aaa");
+	str evi_bkend_s = str_init("evi");
 
-	if (bkend->len == log_bkend_s.len &&
-			!memcmp(bkend->s, log_bkend_s.s, log_bkend_s.len)) {
+	if (!str_strcmp(bkend, &log_bkend_s))
 		return &log_leg_tags;
-	} else
-	if (bkend->len == db_bkend_s.len &&
-			!memcmp(bkend->s, db_bkend_s.s, db_bkend_s.len)) {
+
+	if (!str_strcmp(bkend, &db_bkend_s))
 		return &db_leg_tags;
-	} else
-	if (bkend->len == aaa_bkend_s.len &&
-			!memcmp(bkend->s, aaa_bkend_s.s, aaa_bkend_s.len)) {
+
+	if (!str_strcmp(bkend, &aaa_bkend_s))
 		return &aaa_leg_tags;
-	} else
-	if (bkend->len == evi_bkend_s.len &&
-			!memcmp(bkend->s, evi_bkend_s.s, evi_bkend_s.len)) {
+
+	if (!str_strcmp(bkend, &evi_bkend_s))
 		return &evi_leg_tags;
-	} else {
-		return NULL;
-	}
+
+	return NULL;
 }
 
 
