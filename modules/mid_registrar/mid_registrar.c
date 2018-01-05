@@ -545,6 +545,9 @@ int get_expires_hf(struct sip_msg* _m)
 
 void fix_extra_ct_params(void)
 {
+	if (ZSTR(extra_ct_params_str))
+		return;
+
 	extra_ct_params_str.len = strlen(extra_ct_params_str.s);
 
 	if (extra_ct_params_str.len) {
