@@ -847,11 +847,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	w_curl_easy_setopt(sync_handle, CURLOPT_STDERR, stdout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_FAILONERROR, 0);
 
-	w_curl_easy_setopt(sync_handle, CURLOPT_HEADER, 1L);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
-
-
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &st);
