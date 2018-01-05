@@ -844,13 +844,14 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 static int ul_contact_event_to_msg(struct sip_msg *req)
 {
 	static enum ul_attrs { UL_URI, UL_RECEIVED, UL_PATH, UL_QVAL,
-		UL_SOCKET, UL_BFLAGS, UL_MAX } ul_attr;
+		UL_SOCKET, UL_BFLAGS, UL_ATTR, UL_MAX } ul_attr;
 	/* keep the names of the AVPs aligned with the contact-related events
 	 * from USRLOC module !!!! */
 	static str ul_names[UL_MAX]= {str_init("uri"),str_init("received"),
 	                              str_init("path"),str_init("qval"),
-	                              str_init("socket"),str_init("bflags")};
-	static int avp_ids[UL_MAX] = { -1, -1, -1, -1, -1, -1};
+	                              str_init("socket"),str_init("bflags"),
+	                              str_init("attr") };
+	static int avp_ids[UL_MAX] = { -1, -1, -1, -1, -1, -1, -1};
 	int_str vals[UL_MAX];
 	int proto, port;
 	str host;
@@ -879,13 +880,14 @@ static int ul_contact_event_to_msg(struct sip_msg *req)
 
 	/* OK, we have the values, lets inject them into the SIP msg */
 	LM_DBG("injecting new branch: uri=<%.*s>, received=<%.*s>,"
-		"path=<%.*s>, qval=%d, socket=<%.*s>, bflags=%X\n",
+		"path=<%.*s>, qval=%d, socket=<%.*s>, bflags=%X, attr=<%.*s>\n",
 		vals[UL_URI].s.len, vals[UL_URI].s.s,
 		vals[UL_RECEIVED].s.len, vals[UL_RECEIVED].s.s,
 		vals[UL_PATH].s.len, vals[UL_PATH].s.s,
 		vals[UL_QVAL].n,
 		vals[UL_SOCKET].s.len, vals[UL_SOCKET].s.s,
-		vals[UL_BFLAGS].n);
+		vals[UL_BFLAGS].n,
+		vals[UL_ATTR].s.len, vals[UL_ATTR].s.s);
 
 	/* contact URI goes as RURI */
 	if (set_ruri( req, &vals[UL_URI].s)<0) {
