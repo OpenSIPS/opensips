@@ -581,7 +581,8 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 		}
 
 		/* instance */
-		if (shm_str_dup(&ctmap->instance, &c->instance->body) != 0) {
+		if (c->instance && shm_str_dup(&ctmap->instance,
+		                               &c->instance->body) != 0) {
 			LM_ERR("oom\n");
 			goto err_free;
 		}
