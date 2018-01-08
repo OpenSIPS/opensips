@@ -40,6 +40,7 @@
 #include "../../mi/mi.h"
 #include "../../parser/parse_to.h"
 #include "../../mod_fix.h"
+#include "../../ipc.h"
 #include "dialplan.h"
 #include "dp_db.h"
 
@@ -470,6 +471,20 @@ static int mod_init(void)
 #undef init_db_url_part
 }
 
+
+/* RPC function for (re)loading (no db init) data for all partitions;
+ * This is fired from child_init(child==1) only once, so close connections
+ * when done */
+static void dp_rpc_data_load(int sender_id, void *unused)
+{
+	if(dp_load_all_db() != 0){
+		LM_ERR("failed to reload database\n");
+		return;
+	}
+	dp_disconnect_all_db();
+}
+
+
 static int child_init(int rank)
 {
 	dp_connection_list_p el;
@@ -478,29 +493,35 @@ static int child_init(int rank)
 	if (rank != 1)
 		return 0;
 
-	/*Connect to DB s and get rules*/
+	/* Connect to DBs.... */
 	for(el = dp_conns; el; el = el->next){
-		if (init_db_data(el) != 0) {
+		if (dp_connect_db(el) != 0) {
 			/* all el shall be freed in mod destroy */
-			LM_ERR("Unable to init db data\n");
+			LM_ERR("Unable to init/connect db connection\n");
 			return -1;
 		}
 	}
 
-	dp_disconnect_all_db();
+	/* ...and fire the RPC to perform the data load in the
+	 * same process, but after child_init is done */
+	if (ipc_send_rpc( process_no, dp_rpc_data_load, NULL)<0) {
+		LM_ERR("failed to fire RPC for data load\n");
+		return -1;
+	}
 
 	return 0;
 }
+
+
 static int mi_child_init(void)
 {
-
 	dp_connection_list_p el;
 
-	/*Connect to DB s and get rules*/
+	/* Connect to DB s */
 	for(el = dp_conns; el; el = el->next){
 		if (dp_connect_db(el) != 0) {
 			/* all el shall be freed in mod destroy */
-			LM_ERR("Unable to init db data\n");
+			LM_ERR("Unable to init/connect db connection\n");
 			return -1;
 		}
 	}
