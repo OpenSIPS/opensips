@@ -50,6 +50,7 @@
 #include "../../timer.h"     /* register_timer */
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
+#include "../../ipc.h"
 #include "dlist.h"           /* register_udomain */
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
@@ -421,10 +422,22 @@ static int mod_init(void)
 }
 
 
-static int child_init(int _rank)
+static void ul_rpc_data_load(int sender_id, void *unsused)
 {
 	dlist_t* ptr;
 
+	for( ptr=root ; ptr ; ptr=ptr->next) {
+		if (preload_udomain(ul_dbh, ptr->d) < 0) {
+			LM_ERR("failed to preload domain '%.*s'\n",
+				ptr->name.len, ZSW(ptr->name.s));
+			/* continue with the other ul domains */;
+		}
+	}
+}
+
+
+static int child_init(int _rank)
+{
 	/* connecting to DB ? */
 	switch (db_mode) {
 		case NO_DB:
@@ -446,12 +459,9 @@ static int child_init(int _rank)
 	/* _rank==1 is used even when fork is disabled */
 	if (_rank==1 && db_mode!= DB_ONLY) {
 		/* if cache is used, populate domains from DB */
-		for( ptr=root ; ptr ; ptr=ptr->next) {
-			if (preload_udomain(ul_dbh, ptr->d) < 0) {
-				LM_ERR("child(%d): failed to preload domain '%.*s'\n",
-						_rank, ptr->name.len, ZSW(ptr->name.s));
-				return -1;
-			}
+		if (ipc_send_rpc( process_no, ul_rpc_data_load, NULL)<0) {
+			LM_ERR("failed to fire RPC for data load\n");
+			return -1;
 		}
 	}
 
