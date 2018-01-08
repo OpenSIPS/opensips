@@ -35,6 +35,7 @@
 
 #include "../../evi/evi.h"
 #include "../../map.h"
+#include "../../ipc.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
@@ -1780,11 +1781,18 @@ static int db_load_head(struct head_db *x) {
 }
 
 
+/* simple wrapper over dr_reload_data to make it compatible with ipc_rpc_f,
+ * so triggerable via IPC */
+static void rpc_dr_reload_data(int sender_id, void *unused)
+{
+	dr_reload_data();
+}
+
 
 static int dr_child_init(int rank)
 {
 	/* We need DB connection from:
-	 * 	 - attendant - for shutdown, flushingmstate
+	 *   - attendant - for shutdown, flushingmstate
 	 *   - timer - may trigger routes with dr group
 	 *   - workers - execute routes with dr group
 	 *   - module's proc - ??? */
@@ -1801,12 +1809,12 @@ static int dr_child_init(int rank)
 		LM_DBG("Child iterates\n");
 	}
 
-	/* child 1 load the routing info */
-	if ( (rank==1) && dr_reload_data()!=0 ) {
-		LM_CRIT("failed to load routing data\n");
+	/* if child 1, send a job for itself to run the data loading after
+	 * the init sequance is done */
+	if ( (rank==1) && ipc_send_rpc( process_no, rpc_dr_reload_data, NULL)<0) {
+		LM_CRIT("failed to RPC the data loading\n");
 		return -1;
 	}
-	srand(getpid()+time(0)+rank);
 	return 0;
 }
 
