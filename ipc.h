@@ -24,7 +24,7 @@
 
 #include "pt.h"
 
-typedef int ipc_handler_type;
+typedef short ipc_handler_type;
 extern int ipc_shared_fd_read;
 #define IPC_TYPE_NONE (-1)
 #define ipc_bad_handler_type(htype) ((htype) < 0)
@@ -34,7 +34,14 @@ extern int ipc_shared_fd_read;
 #define IPC_FD_READ_SELF        IPC_FD_READ(process_no)
 #define IPC_FD_READ_SHARED      ipc_shared_fd_read
 
+/* prototype of IPC handler - function called by the IPC engine
+ * when the a job with the correspoding type was received */
 typedef void (ipc_handler_f)(int sender, void *payload);
+
+/* prototype of a Remotely Executed Function (RPC) via IPC - function
+ * to be passed via an IPC job in order to be executed in a different process*/
+typedef void (ipc_rpc_f)(int sender, void *param);
+
 
 /*
  * Register a new IPC handler type, associated with "name" and "hdl".
@@ -44,12 +51,23 @@ typedef void (ipc_handler_f)(int sender, void *payload);
  */
 ipc_handler_type ipc_register_handler(ipc_handler_f *hdl, char *name);
 
+
 /*
  * Push a job for "dst_proc" and quickly return
  *
  * Return: 0 on success, -1 on failure
  */
 int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload);
+
+
+/*
+ * Push the execution of a function, remotely, on the "dst_proc" process
+ * and quickly return
+ *
+ * Return: 0 on success, -1 on failure
+ */
+int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param);
+
 
 /*
  * Push a job for the next available OpenSIPS worker and quickly return
@@ -58,11 +76,13 @@ int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload);
  */
 int ipc_dispatch_job(ipc_handler_type type, void *payload);
 
+
 /*
  * default handler for F_IPC reactor jobs. Copy-paste its code and improve
  * if this is not enough for you
  */
 void ipc_handle_job(int fd);
+
 
 /* internal functions */
 int init_ipc(void);

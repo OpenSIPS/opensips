@@ -40,11 +40,12 @@ typedef struct _ipc_handler {
 
 typedef struct _ipc_job {
 	/* the ID (internal) of the process sending the job */
-	int snd_proc;
+	unsigned short snd_proc;
 	/* the job's handler type */
 	ipc_handler_type handler_type;
-	/* the payload of the job, just a pointer */
-	void *payload;
+	/* the payload of the job, just pointers */
+	void *payload1;
+	void *payload2;
 } ipc_job;
 
 static ipc_handler *ipc_handlers = NULL;
@@ -53,6 +54,10 @@ static unsigned int ipc_handlers_no = 0;
 /* shared IPC support: dispatching a job to a random OpenSIPS worker */
 static int ipc_shared_pipe[2];
 
+/* IPC type used for RPC - a self registered type */
+static ipc_handler_type ipc_rpc_type = 0;
+
+/* FD (pipe) used for dispatching IPC jobs between all processes (1 to any) */
 int ipc_shared_fd_read;
 
 int init_ipc(void)
@@ -79,8 +84,17 @@ int init_ipc(void)
 
 	ipc_shared_fd_read = ipc_shared_pipe[0];
 
+	/* self-register the IPC type for RPC */
+	ipc_rpc_type = ipc_register_handler( NULL, "RPC");
+	if (ipc_bad_handler_type(ipc_rpc_type)) {
+		LM_ERR("failed to self register RPC type\n");
+		return -1;
+	}
+
+	/* we are all set */
 	return 0;
 }
+
 
 ipc_handler_type ipc_register_handler( ipc_handler_f *hdl, char *name)
 {
@@ -116,7 +130,9 @@ ipc_handler_type ipc_register_handler( ipc_handler_f *hdl, char *name)
 	return ipc_handlers_no++;
 }
 
-static inline int __ipc_send_job(int fd, ipc_handler_type type, void *payload)
+
+static inline int __ipc_send_job(int fd, ipc_handler_type type,
+												void *payload1, void *payload2)
 {
 	ipc_job job;
 	int n;
@@ -124,9 +140,10 @@ static inline int __ipc_send_job(int fd, ipc_handler_type type, void *payload)
 	// FIXME - we should check if the destination process really listens
 	// for read, otherwise we may end up filling in the pipe and block
 
-	job.snd_proc = process_no;
+	job.snd_proc = (short)process_no;
 	job.handler_type = type;
-	job.payload = payload;
+	job.payload1 = payload1;
+	job.payload2 = payload2;
 
 again:
 	// TODO - should we do this non blocking and discard if we block ??
@@ -143,13 +160,19 @@ again:
 
 int ipc_send_job(int dst_proc, ipc_handler_type type, void *payload)
 {
-	return __ipc_send_job(IPC_FD_WRITE(dst_proc), type, payload);
+	return __ipc_send_job(IPC_FD_WRITE(dst_proc), type, payload, NULL);
 }
 
 int ipc_dispatch_job(ipc_handler_type type, void *payload)
 {
-	return __ipc_send_job(ipc_shared_pipe[1], type, payload);
+	return __ipc_send_job(ipc_shared_pipe[1], type, payload, NULL);
 }
+
+int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param)
+{
+	return __ipc_send_job(IPC_FD_WRITE(dst_proc), ipc_rpc_type, rpc, param);
+}
+
 
 void ipc_handle_job(int fd)
 {
@@ -170,7 +193,13 @@ void ipc_handle_job(int fd)
 	LM_DBG("received job type %d[%s] from process %d\n",
 		job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
 
-	ipc_handlers[job.handler_type].func( job.snd_proc, job.payload );
+	/* custom handling for RPC type */
+	if (job.handler_type==ipc_rpc_type) {
+		((ipc_rpc_f*)job.payload1)( job.snd_proc, job.payload2);
+	} else {
+		/* generic registered type */
+		ipc_handlers[job.handler_type].func( job.snd_proc, job.payload1);
+	}
 
 	return;
 }
