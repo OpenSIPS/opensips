@@ -1792,7 +1792,15 @@ static inline int calculate_body_diff(struct sip_msg *msg,
 	if (msg->body==NULL) {
 		return lumps_len(msg, msg->body_lumps, sock, -1);
 	} else {
-		return ((int)prep_reassemble_body_parts( msg, sock) - msg->body->body.len);
+		/* prep_reassemble_body_parts() computes the total length of the
+		 * generated body, but only considers each valid body part. However,
+		 * when we receive a body larger than the Content-Length, we need to
+		 * also drop those extra bytes. Therefore the body diff should be
+		 * computed against the entire body received (msg->len - headers),
+		 * not to what the Content-Length indicates (msg->body->len) - razvanc
+		 */
+		return ((int)prep_reassemble_body_parts( msg, sock) -
+				(msg->len + (msg->buf - msg->body->body.s)));
 	}
 }
 
