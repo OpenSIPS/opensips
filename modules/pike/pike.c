@@ -127,6 +127,14 @@ static int pike_init(void)
 
 	LM_INFO("initializing...\n");
 
+	if (timeout <= time_unit) {
+		LM_WARN("remove_latency smaller than sampling_time_unit! "
+				"Having a smaller or equal value for remove_latency may "
+				"lead to missing UNBLOCK events!\n");
+		timeout = time_unit + 1;
+		LM_NOTICE("Forcing remove_latency to %ds\n", timeout);
+	}
+
 	/* alloc the timer lock */
 	timer_lock=lock_alloc();
 	if (timer_lock==0) {
