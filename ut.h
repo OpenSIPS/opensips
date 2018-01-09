@@ -43,6 +43,14 @@
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 
+typedef struct _int_str_t {
+	union {
+		int i;
+		str s;
+	};
+	unsigned char is_str;
+} int_str_t;
+
 struct sip_msg;
 
 /* zero-string wrapper */

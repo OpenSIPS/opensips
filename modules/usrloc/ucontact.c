@@ -54,6 +54,8 @@
 
 extern event_id_t ei_c_update_id;
 
+void destroy_kv_storage_val(void* _val);
+
 /*
  * Determines the IP address of the next hop on the way to given contact based
  * on following URIs: path URI -> received URI -> contact URI
@@ -111,14 +113,19 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	}
 	memset(c, 0, sizeof(ucontact_t) + att_data_sz);
 
+	c->kv_storage = map_create(AVLMAP_SHARED);
+	if (!c->kv_storage) {
+		LM_ERR("oom\n");
+		goto out_free;
+	}
+
 	if (att_data_sz > 0)
 		c->attached_data = (void **)(c + 1);
 
 	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
 		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
 			  _contact->len, _contact->s);
-		shm_free(c);
-		return NULL;
+		goto out_free;
 	}
 
 	if (shm_str_dup( &c->c, _contact) < 0) goto mem_error;
@@ -179,6 +186,7 @@ out_free:
 	if (c->c.s) shm_free(c->c.s);
 	if (c->instance.s) shm_free(c->instance.s);
 	if (c->attr.s) shm_free(c->attr.s);
+	if (c->kv_storage) map_destroy(c->kv_storage, destroy_kv_storage_val);
 	shm_free(c);
 	return NULL;
 }
@@ -198,6 +206,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
+	map_destroy(_c->kv_storage, destroy_kv_storage_val);
 	shm_free( _c );
 }
 
@@ -970,4 +979,75 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		}
 	}
 	return 0;
+}
+
+void destroy_kv_storage_val(void* _val)
+{
+	int_str_t *val = (int_str_t *)_val;
+
+	if (val->is_str && !ZSTR(val->s))
+		shm_free(val->s.s);
+
+	shm_free(val);
+}
+
+int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key)
+{
+	int_str_t **val;
+
+	val = (int_str_t **)map_get(_ct->kv_storage, *_key);
+	if (!val) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	return *val;
+}
+
+int_str_t *put_ucontact_key(ucontact_t* _ct, const str* _key,
+                            const int_str_t* _val)
+{
+	int_str_t **cur, *new_val;
+
+	cur = (int_str_t **)map_get(_ct->kv_storage, *_key);
+	if (!cur) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	if (!*cur) {
+		*cur = shm_malloc(sizeof **cur);
+		if (!*cur) {
+			LM_ERR("oom\n");
+			return NULL;
+		}
+		memset(*cur, 0, sizeof **cur);
+
+	}
+
+	new_val = *cur;
+
+	if (!_val->is_str) {
+		if (new_val->is_str) {
+			new_val->is_str = 0;
+			shm_free(new_val->s.s);
+		}
+
+		new_val->i = _val->i;
+	} else {
+		if (!new_val->is_str) {
+			memset(new_val, 0, sizeof *new_val);
+			new_val->is_str = 1;
+		}
+
+		if (shm_str_resize(&new_val->s, _val->s.len + 1) != 0) {
+			LM_ERR("oom\n");
+			return NULL;
+		}
+
+		memcpy(new_val->s.s, _val->s.s, _val->s.len);
+		new_val->s.s[_val->s.len] = '\0';
+	}
+
+	return new_val;
 }

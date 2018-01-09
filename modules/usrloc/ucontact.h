@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include "../../map.h"
 #include "../../qvalue.h"
 #include "../../str.h"
 #include "../../proxy.h"
@@ -96,7 +97,9 @@ typedef struct ucontact {
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
 	unsigned int label;     /*!< label to find the contact in contact list>*/
 
-	void **attached_data;   /*!< data attached by API subscribers >*/
+	map_t kv_storage;       /*!< data attached by API subscribers >*/
+
+	void **attached_data;   /*!< TODO del; data attached by API subscribers >*/
 
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
@@ -242,5 +245,30 @@ typedef int (*update_ucontact_t)(struct urecord* _r, ucontact_t* _c,
 
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
                     char is_replicated);
+
+/*! \brief
+ * Fetch a key from the contact-level storage
+ * NOTE: assumes the corresponding udomain lock is properly acquired
+ *
+ * Returns: NULL on error/key not found, value pointer otherwise
+ */
+typedef int_str_t *(*get_ucontact_key_t)(ucontact_t* _ct,
+                                         const str* _key);
+
+int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key);
+
+/*! \brief
+ * Create or re-assign a key-value pair within contact-level storage.
+ *   ("_key" and "_val" are fully duplicated in shared memory)
+ *
+ * NOTE: assumes the corresponding udomain lock is properly acquired
+ *
+ * Returns: NULL on error, new value pointer otherwise
+ */
+typedef int_str_t *(*put_ucontact_key_t)(ucontact_t* _ct,
+                                    const str* _key, const int_str_t* _val);
+
+int_str_t *put_ucontact_key(ucontact_t* _ct, const str* _key,
+                            const int_str_t* _val);
 
 #endif /* UCONTACT_H */
