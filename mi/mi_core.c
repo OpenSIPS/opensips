@@ -347,7 +347,7 @@ static struct mi_root *mi_log_level(struct mi_root *cmd, void *param)
 
 	if (pid) {
 		/* convert pid to OpenSIPS id */
-		i = id_of_pid(pid);
+		i = get_process_ID_by_PID(pid);
 		if (i == -1)
 			goto out_bad_param;
 

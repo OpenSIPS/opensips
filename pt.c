@@ -106,7 +106,7 @@ void set_proc_attrs( char *fmt, ...)
 
 /* This function is to be called only by the main process!
  * */
-pid_t internal_fork(char *proc_desc)
+pid_t internal_fork(char *proc_desc, int flags)
 {
 	#define CHILD_COUNTER_STOP  656565656
 	static int process_counter = 1;
@@ -130,10 +130,12 @@ pid_t internal_fork(char *proc_desc)
 	}
 
 	/* create the IPC pipe */
-	if (pipe(pt[process_counter].ipc_pipe)<0) {
-		LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
-			process_counter, errno, strerror(errno));
-		return -1;
+	if ( (flags & OSS_FORK_NO_IPC)==0 ) {
+		if (pipe(pt[process_counter].ipc_pipe)<0) {
+			LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
+				process_counter, errno, strerror(errno));
+			return -1;
+		}
 	}
 
 	pt[process_counter].pid = 0;
@@ -208,13 +210,3 @@ int count_init_children(int flags)
 	return ret;
 }
 
-int id_of_pid(pid_t pid)
-{
-	int i;
-
-	for (i = 0; i < counted_processes; i++)
-		if (pt[i].pid == pid)
-			return i;
-
-	return -1;
-}

@@ -68,11 +68,11 @@ extern unsigned int counted_processes;
 
 int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
-pid_t internal_fork(char *proc_desc);
-int count_init_children(int flags);
+int   count_init_children(int flags);
 
-/* @return: -1 or the index of the given process */
-int id_of_pid(pid_t pid);
+#define OSS_FORK_NO_IPC   (1<<0)
+
+pid_t internal_fork(char *proc_desc, int flags);
 
 /* return processes pid */
 inline static int my_pid(void)
@@ -80,5 +80,17 @@ inline static int my_pid(void)
 	return pt ? pt[process_no].pid : getpid();
 }
 
+/* Get the process internal ID based on its PID 
+ * @return: -1 or the index of the given process */
+inline static int get_process_ID_by_PID(pid_t pid)
+{
+	int i;
+
+	for( i=0 ; i<counted_processes ; i++ )
+		if (pt[i].pid==pid)
+			return i;
+
+	return -1;
+}
 
 #endif

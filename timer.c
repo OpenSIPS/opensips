@@ -576,7 +576,7 @@ int start_timer_processes(void)
 	 * was unable to detect timeouts.
 	 */
 
-	if ( (pid=internal_fork("time_keeper"))<0 ) {
+	if ( (pid=internal_fork("time_keeper", OSS_FORK_NO_IPC))<0 ) {
 		LM_CRIT("cannot fork time keeper process\n");
 		goto error;
 	} else if (pid==0) {
@@ -588,7 +588,7 @@ int start_timer_processes(void)
 	}
 
 	/* fork a timer-trigger process */
-	if ( (pid=internal_fork("timer"))<0 ) {
+	if ( (pid=internal_fork("timer", OSS_FORK_NO_IPC))<0 ) {
 		LM_CRIT("cannot fork timer process\n");
 		goto error;
 	} else if (pid==0) {
@@ -662,7 +662,7 @@ int start_timer_extra_processes(int *chd_rank)
 	pid_t pid;
 
 	(*chd_rank)++;
-	if ( (pid=internal_fork( "Timer handler"))<0 ) {
+	if ( (pid=internal_fork( "Timer handler", 0))<0 ) {
 		LM_CRIT("cannot fork Timer handler process\n");
 		return -1;
 	} else if (pid==0) {

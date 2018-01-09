@@ -346,7 +346,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			for (i=0;i<si->children;i++) {
 				(*chd_rank)++;
-				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
+				if ( (pid=internal_fork( "UDP receiver", 0))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (pid==0) {

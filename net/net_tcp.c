@@ -48,6 +48,7 @@
 #include "../daemonize.h"
 #include "../reactor.h"
 #include "../timer.h"
+#include "../ipc.h"
 
 #include "tcp_passfd.h"
 #include "net_tcp_proc.h"
@@ -1480,6 +1481,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		case F_TCP_WORKER:
 			ret = handle_worker((struct process_table*)fm->data, idx);
 			break;
+		case F_IPC:
+			ipc_handle_job(fm->fd);
+			return 0;
 		case F_NONE:
 			LM_CRIT("empty fd map\n");
 			goto error;
@@ -1625,6 +1629,12 @@ static void tcp_main_server(void)
 				goto error;
 			}
 		}
+	}
+
+	/* init: start watching for the IPC jobs */
+	if (reactor_add_reader(IPC_FD_READ_SELF, F_IPC, RCT_PRIO_ASYNC, NULL)<0){
+		LM_CRIT("failed to add IPC pipe to reactor\n");
+		goto error;
 	}
 
 	is_tcp_main = 1;
@@ -1832,7 +1842,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		}
 
 		(*chd_rank)++;
-		pid=internal_fork("SIP receiver TCP");
+		pid=internal_fork("SIP receiver TCP", 0);
 		if (pid<0){
 			LM_ERR("fork failed\n");
 			goto error;
@@ -1896,7 +1906,7 @@ int tcp_start_listener(void)
 		return 0;
 
 	/* start the TCP manager process */
-	if ( (pid=internal_fork( "TCP main"))<0 ) {
+	if ( (pid=internal_fork( "TCP main", 0))<0 ) {
 		LM_CRIT("cannot fork tcp main process\n");
 		goto error;
 	}else if (pid==0){
