@@ -473,7 +473,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 	}
 	if (type==TMCB_RESPONSE_OUT) {
-		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_replicate_cluster &&
+		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_repl_cluster &&
 				param->code >= 200 && param->code < 300)
 			replicate_dialog_created(dlg);
 		return;
@@ -1267,7 +1267,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	types = TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED|TMCB_TRANS_CANCELLED;
 	/* replicate dialogs after the 200 OK was fwded - speed & after all msg
 	 * processing was done ( eg. ACC ) */
-	if (dialog_replicate_cluster)
+	if (dialog_repl_cluster)
 		types |= TMCB_RESPONSE_OUT;
 
 	if ( d_tmb.register_tmcb( req, t,types,dlg_onreply,
@@ -1451,7 +1451,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 					return;
 				}
 				if (match_dialog(dlg,&callid,&ftag,&ttag,&dir, &dst_leg )==0){
-					if (!accept_replicated_dlg) {
+					if (!dialog_repl_cluster) {
 						/* not an error when accepting replicating dialogs -
 						   we might have generated a different h_id when
 						   accepting the replicated dialog */
@@ -1724,7 +1724,7 @@ after_unlock5:
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
 
-				if (dialog_replicate_cluster)
+				if (dialog_repl_cluster)
 					replicate_dialog_updated(dlg);
 			}
 		} else {
@@ -1837,7 +1837,7 @@ early_check:
 		if(dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
-		if (dialog_replicate_cluster)
+		if (dialog_repl_cluster)
 			replicate_dialog_updated(dlg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER ||

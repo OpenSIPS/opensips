@@ -74,15 +74,12 @@ Vladut-Stefan Paiu
               1.6.42. profile_no_value_prefix (string)
               1.6.43. profile_size_prefix (string)
               1.6.44. profile_timeout (int)
-              1.6.45. accept_replicated_dialogs (int)
-              1.6.46. replicate_dialogs_to (int)
-              1.6.47. accept_replicated_profiles (int)
-              1.6.48. replicate_profiles_to (int)
-              1.6.49. accept_replicated_profile_timeout (int)
-              1.6.50. replicate_profiles_buffer (string)
-              1.6.51. replicate_profiles_check (string)
-              1.6.52. replicate_profiles_timer (string)
-              1.6.53. replicate_profiles_expire (string)
+              1.6.45. dialog_replication_cluster (int)
+              1.6.46. profile_replication_cluster (int)
+              1.6.47. replicate_profiles_buffer (string)
+              1.6.48. replicate_profiles_check (string)
+              1.6.49. replicate_profiles_timer (string)
+              1.6.50. replicate_profiles_expire (string)
 
         1.7. Exported Functions
 
@@ -201,31 +198,28 @@ Vladut-Stefan Paiu
    1.42. Set profile_no_value_prefix parameter
    1.43. Set profile_size_prefix parameter
    1.44. Set profile_timeout parameter
-   1.45. Set accept_replicated_dialogs parameter
-   1.46. Set replicate_dialogs_to parameter
-   1.47. Set accept_replicated_profiles parameter
-   1.48. Set replicate_profiles_to parameter
-   1.49. Set accept_replicated_profile_timeout parameter
-   1.50. Set replicate_profiles_buffer parameter
-   1.51. Set replicate_profiles_check parameter
-   1.52. Set replicate_profiles_timer parameter
-   1.53. Set replicate_profiles_expire parameter
-   1.54. create_dialog() usage
-   1.55. match_dialog() usage
-   1.56. validate_dialog() usage
-   1.57. fix_route_dialog() usage
-   1.58. get_dialog_info usage
-   1.59. get_dialog_vals usage
-   1.60. set_dlg_profile usage
-   1.61. unset_dlg_profile usage
-   1.62. is_in_profile usage
-   1.63. get_profile_size usage
-   1.64. set_dlg_flag usage
-   1.65. test_and_set_dlg_flag usage
-   1.66. reset_dlg_flag usage
-   1.67. is_dlg_flag_set usage
-   1.68. store_dlg_value usage
-   1.69. fetch_dlg_value usage
+   1.45. Set dialog_replication_cluster parameter
+   1.46. Set profile_replication_cluster parameter
+   1.47. Set replicate_profiles_buffer parameter
+   1.48. Set replicate_profiles_check parameter
+   1.49. Set replicate_profiles_timer parameter
+   1.50. Set replicate_profiles_expire parameter
+   1.51. create_dialog() usage
+   1.52. match_dialog() usage
+   1.53. validate_dialog() usage
+   1.54. fix_route_dialog() usage
+   1.55. get_dialog_info usage
+   1.56. get_dialog_vals usage
+   1.57. set_dlg_profile usage
+   1.58. unset_dlg_profile usage
+   1.59. is_in_profile usage
+   1.60. get_profile_size usage
+   1.61. set_dlg_flag usage
+   1.62. test_and_set_dlg_flag usage
+   1.63. reset_dlg_flag usage
+   1.64. is_dlg_flag_set usage
+   1.65. store_dlg_value usage
+   1.66. fetch_dlg_value usage
 
 Chapter 1. Admin Guide
 
@@ -283,21 +277,21 @@ Chapter 1. Admin Guide
    reply routes of the original request.
 
    Dialog profiles can also be used in distributed systems, using
-   the OpenSIPS CacheDB Interface. This feature allows you to
-   share dialog profile information with multiple OpenSIPS
-   instaces that use the same CacheDB backend. In order to do
-   that, the cachedb_url parameter must be defined. Also, the
-   profile must be marked as shared, by adding the '/s' suffix to
-   the name of the profile in the profiles_with_value or
-   profiles_no_value parameters.
+   the OpenSIPS CacheDB Interface or the clusterer module. This
+   feature allows you to share dialog profile information with
+   multiple OpenSIPS instaces that use the same CacheDB backend or
+   are part of an OpenSIPS cluster. In order to do that, the
+   cachedb_url or profile_replication_cluster parameters must be
+   defined. Also, the profile must be marked as shared, by adding
+   one of the '/s' or '/b' suffixes to the name of the profile in
+   the profiles_with_value or profiles_no_value parameters.
 
 1.4. Dialog replication
 
    Dialog replication is a mechanism used to mirror all dialog
    changes taking place in one OpenSIPS instance to one or more
-   other different instances. The logic is simplified by using the
-   core Binary Internal Interface to build and send the
-   replication-related UDP packets.
+   other instances. The logic is simplified by using the clusterer
+   module to send the replication-related BIN packets.
 
    The feature is especially useful when dealing with very large
    systems, where failover through a database backend is no longer
@@ -307,14 +301,16 @@ Chapter 1. Admin Guide
 
    Configuring both receival and sending of dialog replication
    packets is trivial and can be done by using the
-   accept_replicated_dialogs and replicate_dialogs_to parameters
-   of the module. In addition to this, the module also exports
-   several statistics regarding the number of replication packets
-   sent/received.
+   dialog_replication_cluster parameter of the module. In addition
+   to this, the module also exports several statistics regarding
+   the number of replication packets sent/received.
 
-   Profiles replication can also be achieved using the
-   accept_replicated_profiles and replicate_profiles_to
-   parameters.
+   Also configuring profiles replication via the
+   profile_replication_cluster parameter is not necessary when
+   dialog replication is already configured, as profile
+   information is included in the dialog updates. The profiles
+   must still be marked for sharing though in the
+   profiles_with_value or profiles_no_value parameters.
 
 1.5. Dependencies
 
@@ -323,6 +319,8 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * TM - Transaction module
      * RR - Record-Route module
+     * clusterer - if replication_cluster parameter is set
+       (contact replication via clusterer module)
 
 1.5.2. External Libraries or Applications
 
@@ -787,9 +785,9 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 1.6.36. profiles_with_value (string)
 
-   List of names for profiles with values. Flag /b allows
-   replicating dialogs over the bin interface. Before, all of them
-   were replicated.
+   List of names for profiles with values. Flags /b or /s allow
+   sharing profiles between OpenSIPS instances using the clusterer
+   module or a CacheDB backend, respectively.
 
    Default value is “empty”.
 
@@ -801,9 +799,9 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s;
 
 1.6.37. profiles_no_value (string)
 
-   List of names for profiles without values. Flag /b allows
-   replicating dialogs over the bin interface. Before, all of them
-   were replicated.
+   List of names for profiles without values. Flags /b or /s allow
+   sharing profiles between OpenSIPS instances using the clusterer
+   module or a CacheDB backend, respectively.
 
    Default value is “empty”.
 
@@ -902,73 +900,34 @@ modparam("dialog", "profile_size_prefix", "dlgs_")
 modparam("dialog", "profile_timeout", "43200")
 ...
 
-1.6.45. accept_replicated_dialogs (int)
+1.6.45. dialog_replication_cluster (int)
 
-   Registers the dialog module to the OpenSIPS Binary Internal
-   Interface. It specifies the instances, that belong to a certain
-   cluster, from which we should expect incoming packets.
+   Specifies the cluster ID for dialog replication using the
+   clusterer module. This enables sending and receiving all the
+   dialog-related events (creation, update and deletion) in the
+   cluster.
 
-   Default value is 0 (not registered).
+   Default value is “0” (no replication).
 
-   Example 1.45. Set accept_replicated_dialogs parameter
+   Example 1.45. Set dialog_replication_cluster parameter
 ...
-modparam("dialog", "accept_replicated_dialogs", 1)
-...
-
-1.6.46. replicate_dialogs_to (int)
-
-   Adds dialog replication destinations,that belong to the
-   specified cluster id. The destination will receive all
-   dialog-related events (creation, updating and deletion) over
-   TCP, using the Binary Internal Interface.
-
-   Default value is “0” (no replication destinations).
-
-   Example 1.46. Set replicate_dialogs_to parameter
-...
-modparam("dialog", "replicate_dialogs_to", 1)
+modparam("dialog", "dialog_replication_cluster", 1)
 ...
 
-1.6.47. accept_replicated_profiles (int)
+1.6.46. profile_replication_cluster (int)
 
-   Registers the dialog module to the OpenSIPS Binary Internal
-   Interface for profiles replication. It specifies the instances,
-   that belong to a certain cluster, from which we should expect
-   incoming packets.
+   Specifies the cluster ID for profile replication using the
+   clusterer module. This enables sending and receiving the
+   profile information (value, dialog count) in the cluster.
 
-   Default value is 0 (not registered).
+   Default value is “0” (no replication).
 
-   Example 1.47. Set accept_replicated_profiles parameter
+   Example 1.46. Set profile_replication_cluster parameter
 ...
-modparam("dialog", "accept_replicated_profiles", 1)
-...
-
-1.6.48. replicate_profiles_to (int)
-
-   Adds profiles replication destinations, that belong to the
-   specified cluster id. The destination will receive all
-   dialog-related events (creation, updating and deletion) over
-   TCP, using the Binary Internal Interface.
-
-   Default value is “0” (no replication destinations).
-
-   Example 1.48. Set replicate_profiles_to parameter
-...
-modparam("dialog", "replicate_profiles_to", 1)
+modparam("dialog", "profile_replication_cluster", 1)
 ...
 
-1.6.49. accept_replicated_profile_timeout (int)
-
-   The time between two succesive incoming packets.
-
-   Default value is “10”.
-
-   Example 1.49. Set accept_replicated_profile_timeout parameter
-...
-modparam("dialog", "accept_replicated_profile_timeout", 30)
-...
-
-1.6.50. replicate_profiles_buffer (string)
+1.6.47. replicate_profiles_buffer (string)
 
    Used to specify the length of the buffer used by the binary
    replication, in bytes. Usually this should be big enough to
@@ -978,12 +937,12 @@ modparam("dialog", "accept_replicated_profile_timeout", 30)
 
    Default value is 1400 bytes.
 
-   Example 1.50. Set replicate_profiles_buffer parameter
+   Example 1.47. Set replicate_profiles_buffer parameter
 ...
 modparam("dialog", "replicate_profiles_buffer", 500)
 ...
 
-1.6.51. replicate_profiles_check (string)
+1.6.48. replicate_profiles_check (string)
 
    Timer in seconds, used to specify how often the module should
    check whether old, replicated profiles values are obsolete and
@@ -992,24 +951,24 @@ modparam("dialog", "replicate_profiles_buffer", 500)
 
    Default value is 10 s.
 
-   Example 1.51. Set replicate_profiles_check parameter
+   Example 1.48. Set replicate_profiles_check parameter
 ...
 modparam("dialog", "replicate_profiles_check", 100)
 ...
 
-1.6.52. replicate_profiles_timer (string)
+1.6.49. replicate_profiles_timer (string)
 
    Timer in milliseconds, used to specify how often the module
    should replicate its profiles to the other instances.
 
    Default value is 10 ms.
 
-   Example 1.52. Set replicate_profiles_timer parameter
+   Example 1.49. Set replicate_profiles_timer parameter
 ...
 modparam("dialog", "replicate_profiles_timer", 100)
 ...
 
-1.6.53. replicate_profiles_expire (string)
+1.6.50. replicate_profiles_expire (string)
 
    Timer in seconds, used to specify when the profiles counters
    received from a different instance should no longer be taken
@@ -1018,7 +977,7 @@ modparam("dialog", "replicate_profiles_timer", 100)
 
    Default value is 10 s.
 
-   Example 1.53. Set replicate_profiles_expire parameter
+   Example 1.50. Set replicate_profiles_expire parameter
 ...
 modparam("dialog", "replicate_profiles_expire", 10)
 ...
@@ -1049,7 +1008,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.54. create_dialog() usage
+   Example 1.51. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -1084,7 +1043,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.55. match_dialog() usage
+   Example 1.52. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1114,7 +1073,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.56. validate_dialog() usage
+   Example 1.53. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1136,7 +1095,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.57. fix_route_dialog() usage
+   Example 1.54. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1174,7 +1133,7 @@ create_dialog("B");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.58. get_dialog_info usage
+   Example 1.55. get_dialog_info usage
 ...
 if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
         xlog("caller $fU has another ongoing, talking to callee $var(x)\
@@ -1211,7 +1170,7 @@ $dlg_val(callee) = $ru;
 
    This function can be used from any type of route.
 
-   Example 1.59. get_dialog_vals usage
+   Example 1.56. get_dialog_vals usage
 ...
 if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
         xlog("the call $var(callid) has the variables:\n);
@@ -1243,7 +1202,7 @@ als)[$var(i)])'\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.60. set_dlg_profile usage
+   Example 1.57. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
@@ -1265,7 +1224,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. unset_dlg_profile usage
+   Example 1.58. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
@@ -1292,7 +1251,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. is_in_profile usage
+   Example 1.59. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1323,7 +1282,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. get_profile_size usage
+   Example 1.60. get_profile_size usage
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1348,7 +1307,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. set_dlg_flag usage
+   Example 1.61. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
@@ -1369,7 +1328,7 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. test_and_set_dlg_flag usage
+   Example 1.62. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
@@ -1388,7 +1347,7 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. reset_dlg_flag usage
+   Example 1.63. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
@@ -1407,7 +1366,7 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. is_dlg_flag_set usage
+   Example 1.64. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
@@ -1432,7 +1391,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. store_dlg_value usage
+   Example 1.65. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1458,7 +1417,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.69. fetch_dlg_value usage
+   Example 1.66. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");

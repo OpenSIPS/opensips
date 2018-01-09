@@ -119,10 +119,8 @@ static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 str cdb_url = {0,0};
 
 /* dialog replication using clusterer */
-int accept_replicated_dlg=0;
-int dialog_replicate_cluster = 0;
-int profile_replicate_cluster = 0;
-int accept_repl_profiles=0;
+int dialog_repl_cluster = 0;
+int profile_repl_cluster = 0;
 str dlg_repl_cap = str_init("dialog-dlg-repl");
 str prof_repl_cap = str_init("dialog-prof-repl");
 
@@ -276,14 +274,12 @@ static param_export_t mod_params[]={
 	{ "profile_size_prefix",     STR_PARAM, &cdb_size_prefix.s      },
 	{ "profile_timeout",         INT_PARAM, &profile_timeout        },
 	/* dialog replication through clusterer using TCP binary packets */
-	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
-	{ "replicate_dialogs_to",     INT_PARAM, &dialog_replicate_cluster},
-	{ "accept_replicated_profiles",INT_PARAM, &accept_repl_profiles },
+	{ "dialog_replication_cluster",     INT_PARAM, &dialog_repl_cluster  },
+	{ "profile_replication_cluster",	INT_PARAM, &profile_repl_cluster },
 	{ "replicate_profiles_timer", INT_PARAM, &repl_prof_utimer      },
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
-	{ "replicate_profiles_to", INT_PARAM,	&profile_replicate_cluster},
 	{ 0,0,0 }
 };
 
@@ -383,10 +379,8 @@ static dep_export_t deps = {
 	{ /* modparam dependencies */
 		{ "db_mode",			get_deps_db_mode	},
 		{ "cachedb_url",		get_deps_cachedb_url	},
-		{ "accept_replicated_dialogs",	get_deps_clusterer	},
-		{ "replicate_dialogs_to",	get_deps_clusterer	},
-		{ "accept_replicated_profiles",	get_deps_clusterer	},
-		{ "replicate_profiles_to",	get_deps_clusterer	},
+		{ "dialog_replication_cluster",	get_deps_clusterer	},
+		{ "profile_replication_cluster",	get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
@@ -876,42 +870,31 @@ static int mod_init(void)
 	}
 
 	/* check params and register to clusterer for dialogs and profiles replication */
-	if (accept_replicated_dlg < 0) {
-		LM_ERR("Invalid value for accept_replicated_dlg, must be 0 or "
+	if (dialog_repl_cluster < 0) {
+		LM_ERR("Invalid dialog_replication_cluster, must be 0 or "
 			"a positive cluster id\n");
 		return -1;
 	}
-	if (accept_repl_profiles < 0) {
-		LM_ERR("Invalid value for accept_repl_profiles, must be 0 or "
-			"a positive cluster id\n");
-		return -1;
-	}
-	if (dialog_replicate_cluster < 0) {
-		LM_ERR("Invalid dialog_replicate_cluster, must be 0 or "
-			"a positive cluster id\n");
-		return -1;
-	}
-	if (profile_replicate_cluster < 0) {
-		LM_ERR("Invalid profile_replicate_cluster, must be 0 or "
+	if (profile_repl_cluster < 0) {
+		LM_ERR("Invalid profile_repl_cluster, must be 0 or "
 			"a positive cluster id\n");
 		return -1;
 	}
 
-	if ((dialog_replicate_cluster || profile_replicate_cluster ||
-		accept_replicated_dlg || accept_repl_profiles) &&
+	if ((dialog_repl_cluster || profile_repl_cluster) &&
 		(load_clusterer_api(&clusterer_api) < 0)) {
 		LM_DBG("failed to load clusterer API - is clusterer module loaded?\n");
 		return -1;
 	}
 
-	if (accept_replicated_dlg && clusterer_api.register_capability(&dlg_repl_cap,
-		receive_dlg_repl, NULL, accept_replicated_dlg) < 0) {
+	if (dialog_repl_cluster && clusterer_api.register_capability(
+		&dlg_repl_cap, receive_dlg_repl, NULL, dialog_repl_cluster) < 0) {
 		LM_ERR("Cannot register clusterer callback for dialog replication!\n");
 		return -1;
 	}
 
-	if (accept_repl_profiles && clusterer_api.register_capability(&prof_repl_cap,
-		receive_prof_repl, NULL, accept_repl_profiles) < 0) {
+	if (profile_repl_cluster && clusterer_api.register_capability(
+		&prof_repl_cap, receive_prof_repl, NULL, profile_repl_cluster) < 0) {
 		LM_ERR("Cannot register clusterer callback for profile replication!\n");
 		return -1;
 	}
@@ -1845,7 +1828,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (db_update)
 			update_dialog_timeout_info(dlg);
 
-		if (dialog_replicate_cluster)
+		if (dialog_repl_cluster)
 			replicate_dialog_updated(dlg);
 
 		if (timer_update) {

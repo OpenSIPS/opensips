@@ -39,9 +39,11 @@
 
 #define BIN_VERSION 1
 
-extern int accept_replicated_dlg;
-extern int dialog_replicate_cluster;
+extern int dialog_repl_cluster;
+extern int profile_repl_cluster;
+
 extern str dlg_repl_cap;
+extern str prof_repl_cap;
 
 extern struct clusterer_binds clusterer_api;
 
