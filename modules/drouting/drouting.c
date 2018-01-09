@@ -1791,22 +1791,20 @@ static void rpc_dr_reload_data(int sender_id, void *unused)
 
 static int dr_child_init(int rank)
 {
+	struct head_db *head_db_it = head_db_start;
+
 	/* We need DB connection from:
 	 *   - attendant - for shutdown, flushingmstate
 	 *   - timer - may trigger routes with dr group
 	 *   - workers - execute routes with dr group
 	 *   - module's proc - ??? */
-	LM_DBG("Child initialization\n");
 	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
 		return 0;
 
-	struct head_db *head_db_it = head_db_start;
-
+	LM_DBG("Child initialization on rank %d \n",rank);
 	while( head_db_it!=NULL ) {
 		db_load_head( head_db_it );
 		head_db_it = head_db_it->next;
-
-		LM_DBG("Child iterates\n");
 	}
 
 	/* if child 1, send a job for itself to run the data loading after
@@ -1815,6 +1813,7 @@ static int dr_child_init(int rank)
 		LM_CRIT("failed to RPC the data loading\n");
 		return -1;
 	}
+
 	return 0;
 }
 
