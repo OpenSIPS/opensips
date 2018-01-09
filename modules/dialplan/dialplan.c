@@ -533,21 +533,11 @@ static int mi_child_init(void)
 
 static void mod_destroy(void)
 {
-	dp_connection_list_p el;
 	/*destroy shared memory*/
 	if(default_par2){
 		shm_free(default_par2);
 		default_par2 = NULL;
 	}
-
-	LM_DBG("Disconnecting from all databases\n");
-	for(el = dp_conns; el ; el = el->next){
-		dp_disconnect_db(el);
-
-		LM_DBG("Successfully disconnected from DB %.*s\n" ,
-						 el->db_url.len, el->db_url.s);
-	}
-
 
 	destroy_data();
 }
