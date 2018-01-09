@@ -499,7 +499,11 @@ int mongo_raw_update(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out;
 	}
 
+#if MONGOC_CHECK_VERSION(1,9,0)
+	bulk = mongoc_collection_create_bulk_operation_with_opts(col, NULL);
+#else
 	bulk = mongoc_collection_create_bulk_operation(col, false, NULL);
+#endif
 	if (!bulk) {
 		LM_ERR("failed to create bulk op!\n");
 		goto out_err;
@@ -605,7 +609,11 @@ int mongo_raw_insert(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out;
 	}
 
+#if MONGOC_CHECK_VERSION(1,9,0)
+	bulk = mongoc_collection_create_bulk_operation_with_opts(col, NULL);
+#else
 	bulk = mongoc_collection_create_bulk_operation(col, false, NULL);
+#endif
 	if (!bulk) {
 		LM_ERR("failed to create bulk op!\n");
 		goto out_err;
@@ -690,7 +698,11 @@ int mongo_raw_remove(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns)
 		goto out;
 	}
 
+#if MONGOC_CHECK_VERSION(1,9,0)
+	bulk = mongoc_collection_create_bulk_operation_with_opts(col, NULL);
+#else
 	bulk = mongoc_collection_create_bulk_operation(col, false, NULL);
+#endif
 	if (!bulk) {
 		LM_ERR("failed to create bulk op!\n");
 		goto out_err;
