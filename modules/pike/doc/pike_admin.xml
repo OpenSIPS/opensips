@@ -142,6 +142,14 @@ modparam("pike", "reqs_density_per_unit", 30)
 		request from that IP address. It's a sort of timeout value.
 		</para>
 		<para>
+		<emphasis>Note:</emphasis> If the <emphasis>remove_latency</emphasis>
+		value is lower than <emphasis>sampling_time_unit</emphasis> value,
+		nodes might expire before being unblocked, therefore losing some
+		UNBLOCK events. In order to prevent this, if the
+		<emphasis>remove_latency</emphasis> is lower, &osips; internally
+		forces its value to <emphasis>sampling_time_unit + 1</emphasis>.
+		</para>
+		<para>
 		<emphasis>
 			Default value is 120.
 		</emphasis>
