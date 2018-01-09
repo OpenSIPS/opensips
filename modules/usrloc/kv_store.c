@@ -28,13 +28,11 @@ int_str_t *kv_get(map_t _store, const str* _key)
 {
 	int_str_t **val;
 
-	val = (int_str_t **)map_get(_store, *_key);
-	if (!val) {
-		LM_ERR("oom\n");
-		return NULL;
-	}
+	val = (int_str_t **)map_find(_store, *_key);
+	if (val)
+		return *val;
 
-	return *val;
+	return NULL;
 }
 
 int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
