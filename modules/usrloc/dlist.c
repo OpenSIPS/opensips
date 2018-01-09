@@ -375,6 +375,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	int needed;
 	int count;
 	int i = 0;
+	int cur_node_idx, nr_nodes;
+
 	cp = buf;
 	shortage = 0;
 	/* Reserve space for terminating 0000 */
@@ -407,7 +409,13 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			}
 			r =( urecord_t * ) *dest;
 
-
+			/* determine if the current node is respnosible for this record */
+			if (accept_replicated_udata) {
+				cur_node_idx = clusterer_api.get_my_index(accept_replicated_udata,
+														&nr_nodes);
+				if (r->aorhash % (nr_nodes+1) != cur_node_idx)
+					continue;
+			}
 
 			for (c = r->contacts; c != NULL; c = c->next) {
 				if (c->c.len <= 0)

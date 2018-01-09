@@ -1077,6 +1077,7 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->set_state = cl_set_state;
 	binds->check_addr = clusterer_check_addr;
 	binds->get_my_id = cl_get_my_id;
+	binds->get_my_index = cl_get_my_index;
 	binds->send_to = cl_send_to;
 	binds->send_all = cl_send_all;
 	binds->get_next_hop = api_get_next_hop;

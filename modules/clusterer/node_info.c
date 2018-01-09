@@ -704,10 +704,11 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
-		LM_DBG("cluster id: %d not found!\n", cluster_id);
-		goto end;
+		LM_ERR("cluster id: %d not found!\n", cluster_id);
+		lock_stop_read(cl_list_lock);
+		return NULL;
 	}
-	for (node = cl->node_list; node; node = node->next) {
+	for (node = cl->node_list; node; node = node->next)
 		if (get_next_hop(node) > 0)
 			if (add_clusterer_node(&ret_nodes, node) < 0) {
 				lock_stop_read(cl_list_lock);
@@ -716,9 +717,7 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 				free_clusterer_nodes(ret_nodes);
 				return NULL;
 			}
-	}
 
-end:
 	lock_stop_read(cl_list_lock);
 
 	return ret_nodes;
@@ -777,3 +776,38 @@ int cl_get_my_id(void)
 	return current_id;
 }
 
+int cl_get_my_index(int cluster_id, int *nr_nodes)
+{
+	int i, j, tmp;
+	int sorted[MAX_NO_NODES];
+	node_info_t *node;
+	cluster_info_t *cl;
+
+	lock_start_read(cl_list_lock);
+
+	cl = get_cluster_by_id(cluster_id);
+	if (!cl) {
+		LM_ERR("cluster id: %d not found!\n", cluster_id);
+		lock_stop_read(cl_list_lock);
+		return -1;
+	}
+
+	*nr_nodes = 0;
+	for (node = cl->node_list; node; node = node->next)
+		if (get_next_hop(node) > 0)
+			sorted[(*nr_nodes)++] = node->node_id;
+
+	/* sort array of reachable node ids */
+	for (i = 1; i < *nr_nodes; i++) {
+		tmp = sorted[i];
+		for (j = i - 1; j >= 0 && sorted[j] > tmp; j = j - 1)
+			sorted[j+1] = sorted[j];
+		sorted[j+1] = tmp;
+	}
+
+	for (i = 0; i < *nr_nodes && sorted[i] < current_id; i++) ;
+
+	lock_stop_read(cl_list_lock);
+
+	return i;
+}
