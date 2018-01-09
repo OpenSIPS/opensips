@@ -121,6 +121,7 @@
 #include "dset.h"
 #include "blacklists.h"
 #include "xlog.h"
+#include "ipc.h"
 
 #include "pt.h"
 #include "ut.h"
@@ -385,7 +386,6 @@ static void kill_all_children(int signum)
 }
 
 
-
 /**
  * Timeout handler during wait for children exit.
  * If this handler is called, a critical timeout has occurred while
@@ -417,6 +417,108 @@ static void sig_alarm_abort(int signo)
 }
 
 
+/* RPC function send by main process to all worker processes supporting
+ * IPC in order to force a gracefull termination
+ */
+static void rpc_process_terminate(int sender_id, void *code)
+{
+	#ifdef PKG_MALLOC
+	LM_GEN1(memdump, "Memory status (pkg):\n");
+	pkg_status();
+	#endif
+
+	/* simply terminate the process */
+	LM_INFO("Process %d exiting with code %d...\n",
+		process_no, (int)(long)code);
+
+	exit( (int)(long)code );
+}
+
+
+/* Implements full shutdown sequence (terminate processes and cleanup)
+ * To be called ONLY from MAIN process, not from workers !!!
+ */
+static void shutdown_opensips( int status )
+{
+	pid_t  proc;
+	int i, n, p;
+	int chld_status;
+	const unsigned int shutdown_time = 60; /* one minute close timeout */
+
+	/* terminate all processes */
+
+	/* first we try to terminate the processes via the IPC channel */
+	for( i=1,n=0 ; i<counted_processes; i++) {
+		/* Depending on the processes status, its PID may be:
+		 *   -1 - process not forked yet
+		 *    0 - process forked but not fully configured by core
+		 *   >0 - process fully running
+		 */
+		if (pt[i].pid!=-1) {
+			/* use IPC (if avaiable) for a graceful termination */
+			if ( IPC_FD_WRITE(i)>0 ) {
+				LM_DBG("Asking process %d [%s] to terminate\n", i, pt[i].desc);
+				if (ipc_send_rpc( i, rpc_process_terminate, (void*)0)<0) {
+					LM_ERR("failed to trigger RPC termination for "
+						"process %d\n", i );
+				}
+			} else {
+				while (pt[i].pid==0) usleep(1000);
+				kill(pt[i].pid, SIGTERM);
+			}
+			n++;
+		}
+	}
+
+	/* now wait for the processes to finish */
+	i = 500; /* max 1000 iterations of 10 miliseconds -> 5 secs */
+	while( i && n ) {
+		proc = waitpid( -1, &chld_status, WNOHANG);
+		if (proc<=0) {
+			/* no process exited so far, do a small sleep before retry */
+			usleep(10000);
+			i--;
+		} else {
+			if ( (p=get_process_ID_by_PID(proc)) == -1 ) {
+				LM_DBG("unknown child process %d ended. Ignoring\n",proc);
+			} else {
+				LM_INFO("process %d(%d) [%s] terminated, "
+					"still waiting for %d more\n", p, proc, pt[p].desc, n-1);
+				/* mark the child process as terminated / not running */
+				pt[p].pid = -1;
+				status |= chld_status;
+				n--;
+			}
+		}
+	}
+
+	if (i==0 && n!=0) {
+		/* whatever processes are still running are to be brutally 
+		 * terminated via SIGTERM */
+		LM_DBG("force termination for all processes\n");
+		kill_all_children(SIGTERM);
+		if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
+			LM_ERR("could not install SIGALARM handler\n");
+			/* continue, the process will die anyway if no
+			 * alarm is installed which is exactly what we want */
+		}
+		LM_DBG("waiting for all processes\n");
+		alarm(shutdown_time);
+		/* wait for all the children to terminate*/
+		while(wait(&chld_status) > 0)
+			status |= chld_status;
+	}
+
+	/* cleanup & show status*/
+	signal(SIGALRM, sig_alarm_abort);
+	cleanup(1);
+	alarm(0);
+	signal(SIGALRM, SIG_IGN);
+	dprint("Thank you for running " NAME "\n");
+	exit( status );
+}
+
+
 /**
  * Signal handler for the server.
  */
@@ -426,7 +528,6 @@ void handle_sigs(void)
 	int    chld_status,overall_status=0;
 	int    i;
 	int    do_exit;
-	const unsigned int shutdown_time = 60; /* one minute close timeout */
 
 	switch(sig_flag){
 		case 0: break; /* do nothing*/
@@ -440,26 +541,11 @@ void handle_sigs(void)
 		case SIGTERM:
 			/* we end the program in all these cases */
 			if (sig_flag==SIGINT)
-				LM_DBG("INT received, program terminates\n");
+				LM_DBG("SIGINT received, program terminates\n");
 			else
 				LM_DBG("SIGTERM received, program terminates\n");
 
-			/* first of all, kill the children also */
-			kill_all_children(SIGTERM);
-			if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
-				LM_ERR("could not install SIGALARM handler\n");
-				/* continue, the process will die anyway if no
-				 * alarm is installed which is exactly what we want */
-			}
-			alarm(shutdown_time);
-			while(wait(0) > 0); /* Wait for all the children to terminate */
-			signal(SIGALRM, sig_alarm_abort);
-
-			cleanup(1); /* cleanup & show status*/
-			alarm(0);
-			signal(SIGALRM, SIG_IGN);
-			dprint("Thank you for flying " NAME "\n");
-			exit(0);
+			shutdown_opensips( 0/*status*/ );
 			break;
 
 		case SIGUSR1:
@@ -481,16 +567,14 @@ void handle_sigs(void)
 			do_exit = 0;
 			while ((chld=waitpid( -1, &chld_status, WNOHANG ))>0) {
 				/* is it a process we know about? */
-				for( i=0 ; i<counted_processes ; i++ )
-					if (pt[i].pid==chld) break;
-				if (i==counted_processes) {
+				if ( (i=get_process_ID_by_PID( chld )) == -1 ) {
 					LM_DBG("unknown child process %d ended. Ignoring\n",chld);
 					continue;
 				}
 				do_exit = 1;
 				/* process the signal */
 				overall_status |= chld_status;
-				LM_DBG("status = %d\n",overall_status);
+				LM_DBG("OpenSIPS exit status = %d\n",overall_status);
 
 				if (WIFEXITED(chld_status))
 					LM_INFO("child process %d exited normally,"
@@ -507,25 +591,15 @@ void handle_sigs(void)
 					LM_INFO("child process %d stopped by a"
 								" signal %d\n", chld,
 								 WSTOPSIG(chld_status));
+
+				/* mark the child process as terminated / not running */
+				pt[i].pid = -1;
 			}
 			if (!do_exit)
 				break;
 			LM_INFO("terminating due to SIGCHLD\n");
 			/* exit */
-			kill_all_children(SIGTERM);
-			if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
-				LM_ERR("could not install SIGALARM handler\n");
-				/* continue, the process will die anyway if no
-				 * alarm is installed which is exactly what we want */
-			}
-			alarm(shutdown_time);
-			while(wait(0) > 0); /* wait for all the children to terminate*/
-			signal(SIGALRM, sig_alarm_abort);
-			cleanup(1); /* cleanup & show status*/
-			alarm(0);
-			signal(SIGALRM, SIG_IGN);
-			LM_DBG("terminating due to SIGCHLD\n");
-			exit(overall_status ? -1 : 0);
+			shutdown_opensips( overall_status );
 			break;
 
 		case SIGHUP: /* ignoring it*/
@@ -559,9 +633,8 @@ static void sig_usr(int signo)
 		/* process the important signals */
 		switch(signo){
 			case SIGPIPE:
-					LM_INFO("signal %d received\n", signo);
-				break;
 			case SIGINT:
+					break;
 			case SIGTERM:
 					/* if some shutdown already in progress, ignore this one */
 					if (sig_flag==0) sig_flag=signo;
