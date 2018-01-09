@@ -573,7 +573,7 @@ static int mod_init(void)
 	/* register handler for processing load_balancer replication packets to the clusterer module */
 	if (accept_replicated_status > 0 && 
 		clusterer_api.register_capability(&status_repl_cap,
-		receive_lb_binary_packet, NULL, 1, accept_replicated_status) < 0) {
+		receive_lb_binary_packet, NULL, accept_replicated_status) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}

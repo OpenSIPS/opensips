@@ -12,17 +12,23 @@ Edited by
 
 Ovidiu Sas
 
+Edited by
+
 Bogdan Vasile Harjoc
+
+Edited by
 
 Hendrik Scholz
 
+Edited by
+
 Razvan Crainea
 
-   Copyright � 2006 Freenet Cityline GmbH
+   Copyright © 2006 Freenet Cityline GmbH
 
-   Copyright � 2008 VoIP Embedded Inc.
+   Copyright © 2008 VoIP Embedded Inc.
 
-   Copyright � 2011 OpenSIPS Foundation
+   Copyright © 2011 OpenSIPS Foundation
    Revision History
    Revision $Revision: 5901 $ $Date$
      __________________________________________________________
@@ -63,9 +69,8 @@ Razvan Crainea
               1.6.10. replicate_pipes_to (integer)
               1.6.11. accept_pipes_from (integer)
               1.6.12. accept_pipes_timeout (integer)
-              1.6.13. repl_pipes_auth_check (int)
-              1.6.14. window_size (int)
-              1.6.15. slot_period (int)
+              1.6.13. window_size (int)
+              1.6.14. slot_period (int)
 
         1.7. Exported Functions
 
@@ -99,12 +104,11 @@ Razvan Crainea
    1.10. Set replicate_pipes_to parameter
    1.11. Set accept_pipes_from parameter
    1.12. Set accept_pipes_timeout parameter
-   1.13. Set repl_pipes_auth_check parameter
-   1.14. Set window_size parameter
-   1.15. Set slot_period parameter
-   1.16. rl_check usage
-   1.17. rl_dec_count usage
-   1.18. rl_reset_count usage
+   1.13. Set window_size parameter
+   1.14. Set slot_period parameter
+   1.15. rl_check usage
+   1.16. rl_dec_count usage
+   1.17. rl_reset_count usage
 
 Chapter 1. Admin Guide
 
@@ -418,37 +422,26 @@ modparam("ratelimit", "accept_pipes_from", 1)
 modparam("ratelimit", "accept_pipes_timeout", 1)
 ...
 
-1.6.13. repl_pipes_auth_check (int)
-
-   Authentication check for incoming packets.
-
-   Default value is "0" (disabled).
-
-   Example 1.13. Set repl_pipes_auth_check parameter
-...
-modparam("ratelimit", "repl_pipes_auth_check", 1)
-...
-
-1.6.14. window_size (int)
+1.6.13. window_size (int)
 
    How long the history in SBT should be in seconds.
 
-   Default value is "10".
+   Default value is “10”.
 
-   Example 1.14. Set window_size parameter
+   Example 1.13. Set window_size parameter
 ...
 modparam("ratelimit", "window_size", 5)
 ...
 
-1.6.15. slot_period (int)
+1.6.14. slot_period (int)
 
    Value of one slot in milliseconds. This parameter determines
    how granular the algorithm should be. The number of slots will
    be determined by window_size/slot_period.
 
-   Default value is "200".
+   Default value is “200”.
 
-   Example 1.15. Set slot_period parameter
+   Example 1.14. Set slot_period parameter
 ...
 modparam("ratelimit", "window_size", 5)
 #we will have 50 slots of 100 milliseconds
@@ -492,7 +485,7 @@ modparam("ratelimit", "slot_period", 100)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.16. rl_check usage
+   Example 1.15. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -528,7 +521,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.17. rl_dec_count usage
+   Example 1.16. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -547,7 +540,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.18. rl_reset_count usage
+   Example 1.17. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;

@@ -139,7 +139,6 @@ unsigned int init_flag = 0;
 /* usrloc data replication using the bin interface */
 int accept_replicated_udata = 0;
 int ul_replicate_cluster = 0;
-int ul_repl_auth_check = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -188,7 +187,6 @@ static param_export_t params[] = {
     /* data replication through clusterer using TCP binary packets */
 	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
 	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
-	{ "repl_auth_check",		INT_PARAM, &ul_repl_auth_check	   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
@@ -411,15 +409,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (ul_repl_auth_check < 0) {
-		LM_ERR("Invalid value for ul_repl_auth_check, must be 0 or 1\n");
-		return -1;	
-	}
-
 	/* register handler for processing usrloc packets to the clusterer module */
 	if (accept_replicated_udata && clusterer_api.register_capability(&contact_repl_cap,
-		receive_binary_packets, receive_cluster_event, ul_repl_auth_check,
-		accept_replicated_udata) < 0) {
+		receive_binary_packets, receive_cluster_event, accept_replicated_udata) < 0) {
 		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}

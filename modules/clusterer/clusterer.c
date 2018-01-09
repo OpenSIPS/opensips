@@ -1744,7 +1744,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 
-	if (cap->auth_check && !ip_check(cl, &ri->src_su)) {
+	if (!su_ip_cmp(&ri->src_su, &node->addr) && !ip_check(cl, &ri->src_su)) {
 		LM_WARN("Received message from unknown source, addr: %s\n", ip);
 		goto exit;
 	}
@@ -2366,7 +2366,7 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 }
 
 int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
-						int auth_check, int cluster_id)
+						int cluster_id)
 {
 	struct local_cap *new_cl_cap = NULL;
 	cluster_info_t *cluster;
@@ -2388,7 +2388,6 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->reg.name.s = cap->s;
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
-	new_cl_cap->reg.auth_check = auth_check;
 
 	new_cl_cap->next = cluster->capabilities;
 	cluster->capabilities = new_cl_cap;

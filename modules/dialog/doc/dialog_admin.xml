@@ -1245,26 +1245,6 @@ modparam("dialog", "accept_replicated_profile_timeout", 30)
 		</example>
 	</section>
 
-         <section>
-		<title><varname>auth_check</varname> (int)</title>
-		<para>
-			Authentication check for incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote> (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>auth_check</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "auth_check", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title><varname>replicate_profiles_buffer</varname> (string)</title>
 		<para>

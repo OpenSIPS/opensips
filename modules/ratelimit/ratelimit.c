@@ -65,7 +65,6 @@ int rl_timer_interval = RL_TIMER_INTERVAL;
 
 int accept_repl_pipes = 0;
 int rl_repl_cluster = 0;
-int repl_pipes_auth_check = 0;
 struct clusterer_binds clusterer_api;
 
 int rl_window_size=10;   /* how many seconds the window shall hold*/
@@ -141,7 +140,6 @@ static param_export_t params[] = {
 	{ "repl_timer_expire",		INT_PARAM,	&rl_repl_timer_expire		},
 	{ "accept_pipes_from",		INT_PARAM,	&accept_repl_pipes		},
 	{ "replicate_pipes_to",		INT_PARAM,	&rl_repl_cluster		},
-	{ "repl_pipes_auth_check",	INT_PARAM,	&repl_pipes_auth_check		},
 	{ "window_size",            INT_PARAM,  &rl_window_size},
 	{ "slot_period",            INT_PARAM,  &rl_slot_period},
 	{ 0, 0, 0}
@@ -342,11 +340,6 @@ static int mod_init(void)
 
 	if (accept_repl_pipes < 0) {
 		LM_ERR("Invalid value for accept_repl_pipes, must be 0 or a positive cluster id\n");
-		return -1;
-	}
-
-	if (repl_pipes_auth_check < 0) {
-		LM_ERR("Invalid value for repl_pipes_auth_check, must be 0 or 1\n");
 		return -1;
 	}
 

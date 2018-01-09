@@ -128,7 +128,7 @@ typedef void (*cl_event_cb_f)(enum clusterer_event ev, int node_id);
  * 						  achieve a certain functionality)
  */
 typedef int (*register_capability_f)(str *cap, cl_packet_cb_f packet_cb,
-					cl_event_cb_f event_cb, int auth_check, int cluster_id);
+					cl_event_cb_f event_cb, int cluster_id);
 
 /*
  * Request to synchronize data for a given capability from another node.

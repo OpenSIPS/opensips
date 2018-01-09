@@ -940,7 +940,7 @@ int rl_repl_init(void)
 	}
 
 	if (accept_repl_pipes && clusterer_api.register_capability(&pipe_repl_cap,
-		rl_rcv_bin, NULL, repl_pipes_auth_check, accept_repl_pipes) < 0) {
+		rl_rcv_bin, NULL, accept_repl_pipes) < 0) {
 		LM_ERR("Cannot register clusterer callback!\n");
 		return -1;
 	}

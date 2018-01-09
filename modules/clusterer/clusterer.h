@@ -69,7 +69,6 @@ struct capability_reg {
    str name;
    cl_packet_cb_f packet_cb;
    cl_event_cb_f event_cb;
-   int auth_check;
 };
 
 struct buf_bin_pkt {
@@ -140,7 +139,7 @@ int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
 enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
 int cl_register_cap(str *cap, cl_packet_cb_f packet_cb,
-					cl_event_cb_f event_cb, int auth_check, int cluster_id);
+					cl_event_cb_f event_cb, int cluster_id);
 
 struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params);
 

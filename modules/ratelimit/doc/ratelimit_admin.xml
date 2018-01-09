@@ -460,26 +460,6 @@ modparam("ratelimit", "accept_pipes_timeout", 1)
 	</section>
 
         <section>
-		<title><varname>repl_pipes_auth_check</varname> (int)</title>
-		<para>
-			Authentication check for incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote> (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>repl_pipes_auth_check</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("ratelimit", "repl_pipes_auth_check", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-        <section>
 		<title><varname>window_size</varname> (int)</title>
 		<para>
 			How long the history in SBT should be in seconds.
