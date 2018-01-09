@@ -51,10 +51,9 @@
 #include "dlist.h"
 #include "utime.h"
 #include "usrloc.h"
+#include "kv_store.h"
 
 extern event_id_t ei_c_update_id;
-
-void destroy_kv_storage_val(void* _val);
 
 /*
  * Determines the IP address of the next hop on the way to given contact based
@@ -186,7 +185,7 @@ out_free:
 	if (c->c.s) shm_free(c->c.s);
 	if (c->instance.s) shm_free(c->instance.s);
 	if (c->attr.s) shm_free(c->attr.s);
-	if (c->kv_storage) map_destroy(c->kv_storage, destroy_kv_storage_val);
+	if (c->kv_storage) destroy_store(c->kv_storage);
 	shm_free(c);
 	return NULL;
 }
@@ -206,7 +205,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
-	map_destroy(_c->kv_storage, destroy_kv_storage_val);
+	destroy_store(_c->kv_storage);
 	shm_free( _c );
 }
 
@@ -981,73 +980,13 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 	return 0;
 }
 
-void destroy_kv_storage_val(void* _val)
-{
-	int_str_t *val = (int_str_t *)_val;
-
-	if (val->is_str && !ZSTR(val->s))
-		shm_free(val->s.s);
-
-	shm_free(val);
-}
-
 int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key)
 {
-	int_str_t **val;
-
-	val = (int_str_t **)map_get(_ct->kv_storage, *_key);
-	if (!val) {
-		LM_ERR("oom\n");
-		return NULL;
-	}
-
-	return *val;
+	return kv_get(_ct->kv_storage, _key);
 }
 
 int_str_t *put_ucontact_key(ucontact_t* _ct, const str* _key,
                             const int_str_t* _val)
 {
-	int_str_t **cur, *new_val;
-
-	cur = (int_str_t **)map_get(_ct->kv_storage, *_key);
-	if (!cur) {
-		LM_ERR("oom\n");
-		return NULL;
-	}
-
-	if (!*cur) {
-		*cur = shm_malloc(sizeof **cur);
-		if (!*cur) {
-			LM_ERR("oom\n");
-			return NULL;
-		}
-		memset(*cur, 0, sizeof **cur);
-
-	}
-
-	new_val = *cur;
-
-	if (!_val->is_str) {
-		if (new_val->is_str) {
-			new_val->is_str = 0;
-			shm_free(new_val->s.s);
-		}
-
-		new_val->i = _val->i;
-	} else {
-		if (!new_val->is_str) {
-			memset(new_val, 0, sizeof *new_val);
-			new_val->is_str = 1;
-		}
-
-		if (shm_str_resize(&new_val->s, _val->s.len + 1) != 0) {
-			LM_ERR("oom\n");
-			return NULL;
-		}
-
-		memcpy(new_val->s.s, _val->s.s, _val->s.len);
-		new_val->s.s[_val->s.len] = '\0';
-	}
-
-	return new_val;
+	return kv_put(_ct->kv_storage, _key, _val);
 }

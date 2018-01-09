@@ -252,8 +252,7 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
  *
  * Returns: NULL on error/key not found, value pointer otherwise
  */
-typedef int_str_t *(*get_ucontact_key_t)(ucontact_t* _ct,
-                                         const str* _key);
+typedef int_str_t *(*get_ucontact_key_t)(ucontact_t* _ct, const str* _key);
 
 int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key);
 

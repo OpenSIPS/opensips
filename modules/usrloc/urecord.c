@@ -46,6 +46,7 @@
 #include "udomain.h"
 #include "dlist.h"
 #include "usrloc.h"
+#include "kv_store.h"
 
 extern int max_contact_delete;
 extern db_key_t *cid_keys;
@@ -75,6 +76,14 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	}
 	memset(*_r, 0, sizeof(urecord_t) + att_data_sz);
 
+	(*_r)->kv_storage = map_create(AVLMAP_SHARED);
+	if (!(*_r)->kv_storage) {
+		LM_ERR("oom\n");
+		shm_free(*_r);
+		*_r = NULL;
+		return -1;
+	}
+
 	if (att_data_sz > 0)
 		(*_r)->attached_data = (void **)(*_r + 1);
 
@@ -82,8 +91,8 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	if ((*_r)->aor.s == 0) {
 		LM_ERR("no more share memory\n");
 		shm_free(*_r);
-		*_r = 0;
-		return -2;
+		*_r = NULL;
+		return -1;
 	}
 	memcpy((*_r)->aor.s, _aor->s, _aor->len);
 	(*_r)->aor.len = _aor->len;
@@ -108,6 +117,8 @@ void free_urecord(urecord_t* _r)
 		_r->contacts = _r->contacts->next;
 		free_ucontact(ptr);
 	}
+
+	destroy_store(_r->kv_storage);
 
 	/* if mem cache is not used, the urecord struct is static*/
 	if (db_mode!=DB_ONLY) {
@@ -674,4 +685,15 @@ uint64_t next_contact_id(urecord_t* _r)
 		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
 
 	return contact_id;
+}
+
+int_str_t *get_urecord_key(urecord_t* _rec, const str* _key)
+{
+	return kv_get(_rec->kv_storage, _key);
+}
+
+int_str_t *put_urecord_key(urecord_t* _rec, const str* _key,
+                           const int_str_t* _val)
+{
+	return kv_put(_rec->kv_storage, _key, _val);
 }

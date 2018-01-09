@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "hslot.h"
+#include "../../map.h"
 #include "../../str.h"
 #include "../../qvalue.h"
 #include "../../db/db_insertq.h"
@@ -60,6 +61,10 @@ typedef struct urecord {
                                     * array we belong to */
 
 	int no_clear_ref;              /*!< Keep the record while positive */
+
+	map_t kv_storage;              /*!< data attached by API subscribers >*/
+
+	/* TODO: del */
 	void **attached_data;          /*!< data attached by API subscribers >*/
 } urecord_t;
 
@@ -153,5 +158,28 @@ int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
 typedef uint64_t (*next_contact_id_t) (urecord_t* _r);
 uint64_t next_contact_id(urecord_t* _r);
 
+/*! \brief
+ * Fetch a key from the record-level storage
+ * NOTE: assumes the corresponding udomain lock is properly acquired
+ *
+ * Returns: NULL on error/key not found, value pointer otherwise
+ */
+typedef int_str_t *(*get_urecord_key_t)(urecord_t* _rec, const str* _key);
+
+int_str_t *get_urecord_key(urecord_t* _rec, const str* _key);
+
+/*! \brief
+ * Create or re-assign a key-value pair within record-level storage.
+ *   ("_key" and "_val" are fully duplicated in shared memory)
+ *
+ * NOTE: assumes the corresponding udomain lock is properly acquired
+ *
+ * Returns: NULL on error, new value pointer otherwise
+ */
+typedef int_str_t *(*put_urecord_key_t)(urecord_t* _rec,
+                                    const str* _key, const int_str_t* _val);
+
+int_str_t *put_urecord_key(urecord_t* _rec, const str* _key,
+                           const int_str_t* _val);
 
 #endif /* URECORD_H */

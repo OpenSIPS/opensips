@@ -70,8 +70,12 @@ int bind_usrloc(usrloc_api_t* api)
 	api->get_ucontact            = get_ucontact;
 	api->get_ucontact_from_id    = get_ucontact_from_id;
 	api->update_ucontact         = update_ucontact;
+
+	api->get_urecord_key         = get_urecord_key;
+	api->put_urecord_key         = put_urecord_key;
 	api->get_ucontact_key        = get_ucontact_key;
 	api->put_ucontact_key        = put_ucontact_key;
+
 	api->register_ulcb           = register_ulcb;
 
 	api->use_domain = use_domain;

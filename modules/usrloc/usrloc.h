@@ -71,6 +71,8 @@ typedef struct usrloc_api {
 	lock_ulslot_t             lock_ulslot;
 	unlock_ulslot_t           unlock_ulslot;
 
+	get_urecord_key_t         get_urecord_key;
+	put_urecord_key_t         put_urecord_key;
 	get_ucontact_key_t        get_ucontact_key;
 	put_ucontact_key_t        put_ucontact_key;
 
