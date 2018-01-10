@@ -81,7 +81,8 @@ static struct {
 /*
  * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
  */
-void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx)
+void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
+                          int enforce_expires_limits)
 {
 	if (!_ep || !_ep->body.len) {
 		*_e = get_expires_hf(_m);
@@ -91,11 +92,13 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save
 		}
 	}
 
-	if ((*_e != 0) && min_expires && ((*_e) < min_expires))
-		*_e = min_expires;
+	if (enforce_expires_limits) {
+		if ((*_e != 0) && min_expires && ((*_e) < min_expires))
+			*_e = min_expires;
 
-	if ((*_e != 0) && max_expires && ((*_e) > max_expires))
-		*_e = max_expires;
+		if ((*_e != 0) && max_expires && ((*_e) > max_expires))
+			*_e = max_expires;
+	}
 
 	LM_DBG("expires: %d\n", *_e);
 }
@@ -166,7 +169,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 
 	for (c = ((contact_body_t *)ct->parsed)->contacts; c;
 	     c = get_next_contact(c)) {
-		calc_contact_expires(msg, c->expires, &e, NULL);
+		calc_contact_expires(msg, c->expires, &e, 1);
 		if (e != 0)
 			is_dereg = 0;
 
@@ -471,7 +474,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 	int skip_exp_header = 0;
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
-		calc_contact_expires(req, c->expires, &e, NULL);
+		calc_contact_expires(req, c->expires, &e, 1);
 		calc_ob_contact_expires(req, c->expires, &expiry_tick, 0);
 		if (expiry_tick == 0)
 			new_expires = 0;
@@ -556,7 +559,7 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 		}
 
 		update_act_time();
-		calc_contact_expires(req, c->expires, &ctmap->expires, NULL);
+		calc_contact_expires(req, c->expires, &ctmap->expires, 1);
 
 		/* q */
 		if (calc_contact_q(c->q, &ctmap->q) < 0) {
@@ -1064,7 +1067,7 @@ static inline int _save_rpl_contacts_path_mode(struct sip_msg *req, struct sip_m
 
 	for (__c = get_first_contact(req); __c; __c = get_next_contact(__c)) {
 		/* calculate expires */
-		calc_contact_expires(req, __c->expires, &e, NULL);
+		calc_contact_expires(req, __c->expires, &e, 1);
 
 		if (parse_uri(__c->uri.s, __c->uri.len, &uri) < 0) {
 			LM_ERR("failed to parse contact <%.*s>\n",
@@ -1086,7 +1089,7 @@ static inline int _save_rpl_contacts_path_mode(struct sip_msg *req, struct sip_m
 			goto update_usrloc;
 		}
 
-		calc_contact_expires(rpl, _c->expires, &e_out, NULL);
+		calc_contact_expires(rpl, _c->expires, &e_out, 1);
 		if (!_c->expires)
 			remove_exp_hf = 0;
 
@@ -1563,7 +1566,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 	/* in MID_REG_THROTTLE_AOR mode, any reply will only contain 1 contact */
 	_c = get_first_contact(rpl);
 	if (_c != NULL)
-		calc_contact_expires(rpl, _c->expires, &e_out, NULL);
+		calc_contact_expires(rpl, _c->expires, &e_out, 0);
 
 	ul_api.lock_udomain(mri->dom, &mri->aor);
 	ul_api.get_urecord(mri->dom, &mri->aor, &r);
@@ -2238,7 +2241,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
-		calc_contact_expires(msg, ct->expires, &e, NULL);
+		calc_contact_expires(msg, ct->expires, &e, 1);
 		if (e == 0) {
 			LM_DBG("FWD 1\n");
 			return 1;
@@ -2362,7 +2365,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
-		calc_contact_expires(req, ct->expires, &e, NULL);
+		calc_contact_expires(req, ct->expires, &e, 1);
 		if (e > e_out) {
 			LM_DBG("reducing contact expiration from %d sec to %d sec!\n",
 			       e, e_out);
