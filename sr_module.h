@@ -104,6 +104,7 @@ typedef int (*mod_proc_wrapper)();
 
 
 #define PROC_FLAG_INITCHILD  (1<<0)
+#define PROC_FLAG_HAS_IPC    (1<<1)
 
 
 struct cmd_export_ {

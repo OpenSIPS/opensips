@@ -62,7 +62,8 @@ static param_export_t mod_params[] = {
 };
 
 static proc_export_t procs[] = {
-	{ "FS Manager", NULL, fs_api_wait_init, fs_conn_mgr_loop, 1, 0 },
+	{ "FS Manager", NULL, fs_api_wait_init, fs_conn_mgr_loop, 1,
+		PROC_FLAG_HAS_IPC },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
