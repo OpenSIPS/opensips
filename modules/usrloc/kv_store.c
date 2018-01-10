@@ -39,6 +39,10 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 {
 	int_str_t **cur, *new_val;
 
+	LM_DBG("putting %.*s: [ %.*s  / %d ]\n", _key->len, _key->s,
+	        _val->is_str ? _val->s.len : 0, _val->is_str ? _val->s.s : NULL,
+	        !_val->is_str ? _val->i : -1);
+
 	cur = (int_str_t **)map_get(_store, *_key);
 	if (!cur) {
 		LM_ERR("oom\n");
@@ -77,6 +81,7 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 
 		memcpy(new_val->s.s, _val->s.s, _val->s.len);
 		new_val->s.s[_val->s.len] = '\0';
+		new_val->s.len--;
 	}
 
 	return new_val;
