@@ -641,6 +641,12 @@ inline static int _hep_write_on_socket(struct tcp_connection *c, int fd,
 
 	lock_get(&c->write_lock);
 	if (hep_async) {
+		/*
+		 * if there is any data pending to write, we have to wait for those chunks
+		 * to be sent, otherwise we will completely break the messages' order
+		 */
+		if (((struct hep_data*)c->proto_data)->async_chunks_no)
+			return add_write_chunk(c, buf, len, 0);
 		n=async_tsend_stream(c,fd,buf,len, hep_async_local_write_timeout);
 	} else {
 		n = tsend_stream(fd, buf, len, hep_send_timeout);
