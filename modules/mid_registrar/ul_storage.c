@@ -40,6 +40,7 @@ str ul_key_main_reg_next_hop = str_init("hop");
 str ul_key_callid            = str_init("CID");
 str ul_key_last_cseq         = str_init("Seq");
 str ul_key_ct_uri            = str_init("Con");
+str ul_key_expires           = str_init("exp");
 str ul_key_expires_out       = str_init("expO");
 str ul_key_last_reg_ts       = str_init("LRTs");
 str ul_key_skip_dereg        = str_init("noDR");
@@ -56,12 +57,12 @@ int store_urecord_data(urecord_t *r, struct mid_reg_info *mri,
 	if (!ul_api.put_urecord_key(r, &ul_key_expires_out, &value))
 		return -1;
 
-	value.i = last_cseq;
-	if (!ul_api.put_urecord_key(r, &ul_key_last_cseq, &value))
-		return -1;
-
 	value.i = last_reg_ts;
 	if (!ul_api.put_urecord_key(r, &ul_key_last_reg_ts, &value))
+		return -1;
+
+	value.i = last_cseq;
+	if (!ul_api.put_urecord_key(r, &ul_key_last_cseq, &value))
 		return -1;
 
 	/* strings */
@@ -153,6 +154,88 @@ int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
 	if (!ul_api.put_urecord_key(r, &ul_key_last_reg_ts, &value))
 		return -1;
 
+	return 0;
+}
+
+int store_ucontact_data(ucontact_t *c, struct mid_reg_info *mri,
+                        const str *ct_uri, int expires, int expires_out,
+                        int last_reg_ts, int last_cseq)
+{
+	int_str_t value;
+
+	/* integers */
+	value.is_str = 0;
+
+	value.i = expires;
+	if (!ul_api.put_ucontact_key(c, &ul_key_expires, &value))
+		return -1;
+
+	value.i = expires_out;
+	if (!ul_api.put_ucontact_key(c, &ul_key_expires_out, &value))
+		return -1;
+
+	value.i = last_reg_ts;
+	if (!ul_api.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
+		return -1;
+
+	value.i = last_cseq;
+	if (!ul_api.put_ucontact_key(c, &ul_key_last_cseq, &value))
+		return -1;
+
+	/* strings */
+	value.is_str = 1;
+
+	value.s = mri->from;
+	if (!ul_api.put_ucontact_key(c, &ul_key_from, &value))
+		return -1;
+
+	value.s = mri->to;
+	if (!ul_api.put_ucontact_key(c, &ul_key_to, &value))
+		return -1;
+
+	value.s = mri->callid;
+	if (!ul_api.put_ucontact_key(c, &ul_key_callid, &value))
+		return -1;
+
+	value.s = mri->main_reg_uri;
+	if (!ul_api.put_ucontact_key(c, &ul_key_main_reg_uri, &value))
+		return -1;
+
+	if (!ZSTR(mri->main_reg_next_hop)) {
+		value.s = mri->main_reg_next_hop;
+		if (!ul_api.put_ucontact_key(c, &ul_key_main_reg_next_hop, &value))
+			return -1;
+	}
+
+	value.s = *ct_uri;
+	if (!ul_api.put_ucontact_key(c, &ul_key_ct_uri, &value))
+		return -1;
+
+	return 0;
+}
+
+int update_ucontact_data(ucontact_t *c, int expires, int expires_out,
+                         int last_cseq)
+{
+	int_str_t value;
+
+	value.is_str = 0;
+
+	value.i = expires;
+	if (!ul_api.put_ucontact_key(c, &ul_key_expires, &value))
+		return -1;
+
+	value.i = expires_out;
+	if (!ul_api.put_ucontact_key(c, &ul_key_expires_out, &value))
+		return -1;
+
+	value.i = last_cseq;
+	if (!ul_api.put_ucontact_key(c, &ul_key_last_cseq, &value))
+		return -1;
+
+	value.i = get_act_time();
+	if (!ul_api.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
+		return -1;
 
 	return 0;
 }

@@ -35,6 +35,7 @@ extern str ul_key_main_reg_next_hop;
 extern str ul_key_callid;
 extern str ul_key_last_cseq;
 extern str ul_key_ct_uri;
+extern str ul_key_expires;
 extern str ul_key_expires_out;
 extern str ul_key_last_reg_ts;
 extern str ul_key_skip_dereg;
@@ -45,5 +46,13 @@ int store_urecord_data(urecord_t *r, struct mid_reg_info *mri,
 
 int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
                         int last_cseq);
+
+/* dumps mid-registrar's required K/V pairs into usrloc contact storage */
+int store_ucontact_data(ucontact_t *c, struct mid_reg_info *mri,
+                        const str *ct_uri, int expires, int expires_out,
+                        int last_reg_ts, int last_cseq);
+
+int update_ucontact_data(ucontact_t *c, int expires, int expires_out,
+                         int last_cseq);
 
 #endif /* __UL_STORAGE_H__ */
