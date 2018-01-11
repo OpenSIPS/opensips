@@ -142,7 +142,7 @@ on=itu-t")
    automatically deduced from the SIP message as follows:
      * INVITE - IAM
      * BYE - REL
-     * 180, 183 - REL
+     * 180, 183 - ACM
      * 4xx, 5xx - REL
      * 200 OK INVITE - ANM
      * 200 OK BYE - RLC
@@ -153,9 +153,9 @@ on=itu-t")
      * Address complete - ACM
      * Answer - ANM
      * Connect - CON
-     * Connect - CON
      * Release - REL
      * Release complete - RLC
+     * Call progress - CPG
      * Facility reject - FRJ
      * Facility accepted - FAA
      * Facility request - FAR

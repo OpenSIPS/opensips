@@ -125,7 +125,7 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 			</listitem>
 			<listitem>
 			<para>
-				180, 183 - REL
+				180, 183 - ACM
 			</para>
 			</listitem>
 			<listitem>
@@ -170,17 +170,17 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 			</listitem>
 			<listitem>
 			<para>
-				Connect - <emphasis>CON</emphasis>
-			</para>
-			</listitem>
-			<listitem>
-			<para>
 				Release - <emphasis>REL</emphasis>
 			</para>
 			</listitem>
 			<listitem>
 			<para>
 				Release complete - <emphasis>RLC</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Call progress - <emphasis>CPG</emphasis>
 			</para>
 			</listitem>
 			<listitem>
