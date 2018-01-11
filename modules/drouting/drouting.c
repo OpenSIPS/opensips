@@ -4333,29 +4333,32 @@ static int goes_to_gw_0(struct sip_msg* msg)
 /*
  * Checks if a variable (containing a SIP URI) is a GW; tests the TYPE too
  */
-static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s,
-		char* flags_pv, char* gw_att)
+static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv,
+									char* type_s, char* flags_pv, char* gw_att)
 {
 	pv_value_t src;
 
 	if(use_partitions) {
-		gw_attrs_spec = (pv_spec_p)gw_att;
 		if ( pv_get_spec_value(msg, (pv_spec_p)src_pv, &src)!=0 ||
 				(src.flags&PV_VAL_STR)==0 || src.rs.len<=0) {
 			LM_ERR("failed to get string value for src\n");
 			return -1;
 		}
-		return _is_dr_uri_gw(msg, part, flags_pv, !type_s ? -1:*(int *)type_s, &src.rs);
+		gw_attrs_spec = (pv_spec_p)gw_att;
+		return _is_dr_uri_gw(msg, part, flags_pv, !type_s ? -1:*(int *)type_s,
+			&src.rs);
 	}
 	else {
+		/* shift (as meaning) all parameters to the left one position (as
+		 * there is no partition parameter */
 		if ( pv_get_spec_value(msg, (pv_spec_p)part, &src)!=0 ||
 				(src.flags&PV_VAL_STR)==0 || src.rs.len<=0) {
 			LM_ERR("failed to get string value for src\n");
 			return -1;
 		}
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, flags_pv ,!type_s ? -1:*(int *)type_s
-				,&src.rs);
+		return _is_dr_uri_gw(msg, NULL, type_s ,!src_pv ? -1:*(int *)src_pv,
+			&src.rs);
 	}
 }
 
