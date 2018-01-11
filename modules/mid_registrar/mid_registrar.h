@@ -163,9 +163,6 @@ extern str gruu_secret;
 
 extern int tcp_persistent_flag;
 
-extern int ucontact_data_idx;
-extern int urecord_data_idx;
-
 struct mid_reg_info *mri_alloc(void);
 struct mid_reg_info *mri_dup(struct mid_reg_info *mri);
 void mri_free(struct mid_reg_info *mri);

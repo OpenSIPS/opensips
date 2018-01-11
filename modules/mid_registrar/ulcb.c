@@ -227,14 +227,12 @@ static int unregister_record(urecord_t *r)
 	return send_unregister(from, to, ruri, callid, last_cseq, obp, ct);
 }
 
-void mid_reg_ct_event(void *binding, int type, void **data)
+void mid_reg_ct_event(void *binding, ul_cb_type type)
 {
 	ucontact_t *c = (ucontact_t *)binding;
 	int_str_t *skip_dereg;
 
-	LM_DBG("Contact callback (%d): contact='%.*s' | "
-	       "param=(%p -> %p)\n", type, c->c.len, c->c.s, data,
-	       data ? *data : NULL);
+	LM_DBG("Contact callback (%d): contact='%.*s'\n", type, c->c.len, c->c.s);
 
 	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
 		if (reg_mode == MID_REG_THROTTLE_CT) {
@@ -248,14 +246,13 @@ void mid_reg_ct_event(void *binding, int type, void **data)
 	}
 }
 
-void mid_reg_aor_event(void *binding, int type, void **data)
+void mid_reg_aor_event(void *binding, ul_cb_type type)
 {
 	urecord_t *r = (urecord_t *)binding;
 	int_str_t *skip_dereg;
 
-	LM_DBG("AOR callback (%d): contact='%.*s' | "
-	       "param=(%p -> %p)\n", type,
-	       r->aor.len, r->aor.s, data, data ? *data : NULL);
+	LM_DBG("AOR callback (%d): contact='%.*s'\n", type,
+	       r->aor.len, r->aor.s);
 
 	if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
 		skip_dereg = ul_api.get_urecord_key(r, &ul_key_skip_dereg);

@@ -183,7 +183,7 @@ error:
 	return NULL;
 }
 
-void ul_contact_publish(void *binding, int type, void **data)
+void ul_contact_publish(void *binding, ul_cb_type type)
 {
 	ucontact_t *c = (ucontact_t *)binding;
 	str* body= NULL;

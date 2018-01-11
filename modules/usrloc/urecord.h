@@ -63,9 +63,6 @@ typedef struct urecord {
 	int no_clear_ref;              /*!< Keep the record while positive */
 
 	map_t kv_storage;              /*!< data attached by API subscribers >*/
-
-	/* TODO: del */
-	void **attached_data;          /*!< data attached by API subscribers >*/
 } urecord_t;
 
 

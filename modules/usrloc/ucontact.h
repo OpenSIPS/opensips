@@ -99,8 +99,6 @@ typedef struct ucontact {
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 
-	void **attached_data;   /*!< TODO del; data attached by API subscribers >*/
-
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
 } ucontact_t;

@@ -116,11 +116,11 @@ int registerForUSRLOCCallbacks(void)
 		goto error;
 	}
 
-	ul.register_ulcb(UL_CONTACT_INSERT, handleContactCallbacks, NULL);
+	ul.register_ulcb(UL_CONTACT_INSERT, handleContactCallbacks);
 
-	ul.register_ulcb(UL_CONTACT_EXPIRE, handleContactCallbacks, NULL);
+	ul.register_ulcb(UL_CONTACT_EXPIRE, handleContactCallbacks);
 
-	ul.register_ulcb(UL_CONTACT_DELETE, handleContactCallbacks, NULL);
+	ul.register_ulcb(UL_CONTACT_DELETE, handleContactCallbacks);
 
 	return 1;
 

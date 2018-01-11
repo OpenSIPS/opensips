@@ -100,26 +100,20 @@ ucontact_t*
 new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
 	struct sip_uri tmp_uri;
-	size_t att_data_sz;
 	ucontact_t *c;
 
-	att_data_sz = get_att_ct_data_sz();
-
-	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t) + att_data_sz);
+	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
 	if (!c) {
 		LM_ERR("no more shm memory\n");
 		return NULL;
 	}
-	memset(c, 0, sizeof(ucontact_t) + att_data_sz);
+	memset(c, 0, sizeof(ucontact_t));
 
 	c->kv_storage = map_create(AVLMAP_SHARED);
 	if (!c->kv_storage) {
 		LM_ERR("oom\n");
 		goto out_free;
 	}
-
-	if (att_data_sz > 0)
-		c->attached_data = (void **)(c + 1);
 
 	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
 		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",

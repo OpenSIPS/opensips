@@ -34,15 +34,17 @@
 #include "urecord.h"
 #include "../../lib/list.h"
 
-#define UL_CONTACT_INSERT      (1<<0)
-#define UL_CONTACT_UPDATE      (1<<1)
-#define UL_CONTACT_DELETE      (1<<2) /* exclusive with EXPIRE */
-#define UL_CONTACT_EXPIRE      (1<<3) /* exclusive with DELETE */
-#define UL_AOR_INSERT          (1<<4)
-#define UL_AOR_UPDATE          (1<<5)
-#define UL_AOR_DELETE          (1<<6) /* exclusive with EXPIRE */
-#define UL_AOR_EXPIRE          (1<<7) /* exclusive with DELETE */
-#define ULCB_MAX               ((1<<8)-1)
+typedef enum ul_cb_types {
+	UL_CONTACT_INSERT     = (1<<0),
+	UL_CONTACT_UPDATE     = (1<<1),
+	UL_CONTACT_DELETE     = (1<<2), /* exclusive with EXPIRE */
+	UL_CONTACT_EXPIRE     = (1<<3), /* exclusive with DELETE */
+	UL_AOR_INSERT         = (1<<4),
+	UL_AOR_UPDATE         = (1<<5),
+	UL_AOR_DELETE         = (1<<6), /* exclusive with EXPIRE */
+	UL_AOR_EXPIRE         = (1<<7), /* exclusive with DELETE */
+	ULCB_MAX              = ((1<<8)-1),
+} ul_cb_type;
 
 #define is_contact_cb(type) \
 	(type & \
@@ -57,26 +59,23 @@
  * @binding: depending on the registered type,
  *             it should be casted to either (ucontact_t *) or (urecord_t *)
  * @type:    type of the callback
- * @data:    writable holder where data may be attached to the binding
- *            and processed during subsequent callbacks triggered for the
- *            same binding
  */
-typedef void (ul_cb) (void *binding, int type, void **data);
+typedef void (ul_cb) (void *binding, ul_cb_type type);
 /*! \brief register callback function prototype */
-typedef int (*register_ulcb_t)(int cb_types, ul_cb f, int *data_idx);
+typedef int (*register_ulcb_t)(ul_cb_type types, ul_cb f);
 
 
 struct ul_callback {
-	int id;                      /*!< id of this callback - useless */
-	int types;                   /*!< types of events that trigger the callback*/
-	ul_cb* callback;             /*!< callback function */
-	int has_data;                /*!< requests additional storage */
+	int id;                    /*!< id of this callback - useless */
+	ul_cb_type types;          /*!< types of events that trigger the callback*/
+	ul_cb *callback;           /*!< callback function */
+
 	struct list_head list;
 };
 
 struct ulcb_head_list {
 	struct list_head first;
-	int reg_types;
+	ul_cb_type reg_types;
 };
 
 
@@ -96,11 +95,8 @@ void destroy_ulcb_list();
  *
  * @types:       mask of callback types
  * @f:           registered function
- * @data_idx:    if given, the concerned contact / record
- *                 structures will be extended to hold additional data,
- *                 and the resulting "data_idx" can used to access it
  */
-int register_ulcb(int types, ul_cb f, int *data_idx);
+int register_ulcb(ul_cb_type types, ul_cb f);
 
 /*! \brief run all transaction callbacks for an event type
  *
@@ -109,57 +105,24 @@ int register_ulcb(int types, ul_cb f, int *data_idx);
  *    - an (ucontact_t *) for contact callbacks
  *    - an (urecord_t *) for AoR callbacks
  */
-static inline void run_ul_callbacks(int type, void *binding)
+static inline void run_ul_callbacks(ul_cb_type type, void *binding)
 {
-	struct list_head *ele;
+	struct list_head *_;
 	struct ul_callback *cbp;
-	int ct_extra_idx = 0, aor_extra_idx = 0;
 
-	list_for_each(ele, &ulcb_list->first) {
-		cbp = list_entry(ele, struct ul_callback, list);
+	list_for_each(_, &ulcb_list->first) {
+		cbp = list_entry(_, struct ul_callback, list);
 		if (cbp->types & type) {
 			LM_DBG("contact=%p, callback type %d/%d, id %d entered\n",
 			       binding, type, cbp->types, cbp->id);
 
 			if (is_contact_cb(type)) {
-				if (cbp->has_data) {
-					cbp->callback(binding, type,
-					    ((ucontact_t *)binding)->attached_data + ct_extra_idx);
-					ct_extra_idx++;
-				} else {
-					cbp->callback(binding, type, NULL);
-				}
+				cbp->callback(binding, type);
 			} else if (is_aor_cb(type)) {
-				if (cbp->has_data) {
-					cbp->callback(binding, type,
-					    ((urecord_t *)binding)->attached_data + aor_extra_idx);
-					aor_extra_idx++;
-				} else {
-					cbp->callback(binding, type, NULL);
-				}
+				cbp->callback(binding, type);
 			}
 		}
 	}
-}
-
-/*
- * Additional bytes attached to an (ucontact_t), as private data
- */
-static inline size_t get_att_ct_data_sz(void)
-{
-	extern int att_ct_items;
-
-	return att_ct_items * sizeof(void *);
-}
-
-/*
- * Additional bytes attached to an (urecord_t), as private data
- */
-static inline size_t get_att_aor_data_sz(void)
-{
-	extern int att_aor_items;
-
-	return att_aor_items * sizeof(void *);
 }
 
 #endif

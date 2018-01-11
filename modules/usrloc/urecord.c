@@ -65,16 +65,12 @@ extern event_id_t ei_c_del_id;
  */
 int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 {
-	size_t att_data_sz;
-
-	att_data_sz = get_att_aor_data_sz();
-
-	*_r = (urecord_t*)shm_malloc(sizeof(urecord_t) + att_data_sz);
+	*_r = (urecord_t*)shm_malloc(sizeof(urecord_t));
 	if (*_r == 0) {
 		LM_ERR("no more share memory\n");
 		return -1;
 	}
-	memset(*_r, 0, sizeof(urecord_t) + att_data_sz);
+	memset(*_r, 0, sizeof(urecord_t));
 
 	(*_r)->kv_storage = map_create(AVLMAP_SHARED);
 	if (!(*_r)->kv_storage) {
@@ -83,9 +79,6 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 		*_r = NULL;
 		return -1;
 	}
-
-	if (att_data_sz > 0)
-		(*_r)->attached_data = (void **)(*_r + 1);
 
 	(*_r)->aor.s = (char*)shm_malloc(_aor->len);
 	if ((*_r)->aor.s == 0) {

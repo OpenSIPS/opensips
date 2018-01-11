@@ -200,25 +200,25 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(ul.register_ulcb(UL_CONTACT_INSERT, bla_contact_cb , NULL)< 0)
+	if(ul.register_ulcb(UL_CONTACT_INSERT, bla_contact_cb)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" insert\n");
 		return -1;
 	}
-	if(ul.register_ulcb(UL_CONTACT_EXPIRE, bla_contact_cb, NULL)< 0)
+	if(ul.register_ulcb(UL_CONTACT_EXPIRE, bla_contact_cb)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" insert\n");
 		return -1;
 	}
-	if(ul.register_ulcb(UL_CONTACT_UPDATE, bla_contact_cb, NULL)< 0)
+	if(ul.register_ulcb(UL_CONTACT_UPDATE, bla_contact_cb)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" update\n");
 		return -1;
 	}
-	if(ul.register_ulcb(UL_CONTACT_DELETE, bla_contact_cb, NULL)< 0)
+	if(ul.register_ulcb(UL_CONTACT_DELETE, bla_contact_cb)< 0)
 	{
 		LM_ERR("can not register callback for"
 				" delete\n");

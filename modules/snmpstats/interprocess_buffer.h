@@ -51,6 +51,7 @@
 #include "snmpstats_globals.h"
 #include "hashTable.h"
 
+#include "../usrloc/ul_callback.h"
 #include "../usrloc/ucontact.h"
 
 /* Represents an element of the interprocess buffer. */
@@ -98,7 +99,7 @@ int setInterprocessBuffersAlarm(void);
  * any race conditions between this function and the consumeInterprocessBuffer()
  * function.
  */
-void handleContactCallbacks(void *binding, int type, void **data);
+void handleContactCallbacks(void *binding, ul_cb_type type);
 
 
 /* Interprocess Buffer consumption Function.  This function will iterate over

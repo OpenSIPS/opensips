@@ -100,8 +100,6 @@ str extra_ct_params_str;
 pv_spec_t extra_ct_params_pv;
 
 static struct mid_reg_info *__info;
-int ucontact_data_idx;
-int urecord_data_idx;
 
 #define RCV_NAME "received"
 str rcv_param = str_init(RCV_NAME);
@@ -387,14 +385,14 @@ static int mod_init(void)
 
 		if (ul_api.register_ulcb(
 			UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
-			mid_reg_ct_event, &ucontact_data_idx) < 0) {
+			mid_reg_ct_event) < 0) {
 			LM_ERR("cannot register usrloc contact callback\n");
 			return -1;
 		}
 
 		if (reg_mode == MID_REG_THROTTLE_AOR) {
 			if (ul_api.register_ulcb(UL_AOR_INSERT|UL_AOR_DELETE|UL_AOR_EXPIRE,
-				mid_reg_aor_event, &urecord_data_idx) < 0) {
+				mid_reg_aor_event) < 0) {
 				LM_ERR("cannot register usrloc AoR callback\n");
 				return -1;
 			}

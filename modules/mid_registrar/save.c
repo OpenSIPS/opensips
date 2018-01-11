@@ -1146,11 +1146,6 @@ update_usrloc:
 
 		} else if (c != NULL) {
 			if (e == 0) {
-				if (reg_mode != MID_REG_MIRROR) {
-					cti = (struct mid_reg_info *)c->attached_data[ucontact_data_idx];
-					cti->skip_dereg = 1;
-				}
-
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
