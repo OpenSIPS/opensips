@@ -319,6 +319,7 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 		/* the message has no body so far */
 		msg->body = (struct sip_msg_body*)pkg_malloc(
 			sizeof(struct sip_msg_body) + (body?body->len:0) + mime_s->len );
+		memset(msg->body, 0, sizeof(struct sip_msg_body));
 
 		msg->body->part_count = 0;
 		msg->body->updated_part_count = 1;
