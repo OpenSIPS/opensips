@@ -32,6 +32,7 @@
 #include "../../locking.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
+#include "../../ipc.h"
 #include "sql_cacher.h"
 
 static int mod_init(void);
@@ -641,7 +642,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 		return NULL;
 	}
 	/* setting and getting a test key in cachedb */
-	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val, 0) < 0) {
+	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val,
+		0) < 0) {
 		LM_ERR("Failed to set test key in cachedb: %.*s\n",
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
@@ -692,8 +694,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 
 	query_key_col = &c_entry->key;
 
-	if (new_db_hdls->db_funcs.query(new_db_hdls->db_con, &query_key_col, 0, &query_key_val,
-					c_entry->columns, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
+	if (new_db_hdls->db_funcs.query(new_db_hdls->db_con, &query_key_col, 0,
+		&query_key_val, c_entry->columns, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
 		LM_ERR("Failure to issuse test query to SQL DB: %.*s\n",
 			c_entry->db_url.len, c_entry->db_url.s);
 		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
@@ -701,7 +703,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 		return NULL;
 	}
 
-	/* no columns specified in cache entry -> cache entire table and get column names from the sql result */
+	/* no columns specified in cache entry -> cache entire table and get column
+	 * names from the sql result */
 	if (!c_entry->columns) {
 		c_entry->nr_columns = RES_COL_N(sql_res);
 		c_entry->columns = shm_malloc(c_entry->nr_columns * sizeof(str*));
@@ -709,7 +712,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 			c_entry->columns[i] = shm_malloc(sizeof(str));
 			(*c_entry->columns[i]).len = RES_NAMES(sql_res)[i]->len;
 			(*c_entry->columns[i]).s = shm_malloc((*c_entry->columns[i]).len);
-			memcpy((*c_entry->columns[i]).s, RES_NAMES(sql_res)[i]->s, (*c_entry->columns[i]).len);
+			memcpy((*c_entry->columns[i]).s, RES_NAMES(sql_res)[i]->s,
+				(*c_entry->columns[i]).len);
 		}
 	}
 
@@ -1029,13 +1033,52 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 	return init_mi_tree(200, MI_SSTR(MI_OK_S));
 }
 
+static void full_caching_load(int sender, void *param)
+{
+	cache_entry_t *c_entry;
+	db_handlers_t *db_hdls;
+	str rld_vers_key;
+	int reload_version = -1;
+
+	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry;
+		c_entry = c_entry->next, db_hdls = db_hdls->next) {
+
+		if (c_entry->on_demand)
+			continue;
+
+		/* cache the entire table if on demand is not set */
+		if (load_entire_table(c_entry, db_hdls, 0) < 0) {
+			LM_ERR("Failed to cache the entire table: %s\n", c_entry->table.s);
+			continue;
+		}
+
+		/* set up reload version counter for this entry in cachedb */
+		rld_vers_key.len = c_entry->id.len + 23;
+		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
+		if (!rld_vers_key.s) {
+			LM_ERR("No more pkg memory\n");
+			return;
+		}
+		memcpy(rld_vers_key.s, c_entry->id.s, c_entry->id.len);
+		memcpy(rld_vers_key.s + c_entry->id.len, "_sql_cacher_reload_vers", 23);
+
+		db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &reload_version);
+		db_hdls->cdbf.sub(db_hdls->cdbcon, &rld_vers_key, 1, 0, &reload_version);
+		if (reload_version != 0)
+			LM_ERR("Failed to set up reload version counter in cahchedb for "
+				"entry %.*s\n", c_entry->id.len, c_entry->id.s);
+
+		LM_DBG("Cached the entire table: %s\n", c_entry->table.s);
+
+		pkg_free(rld_vers_key.s);
+	}
+}
+
 static int mod_init(void)
 {
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
-	char use_timer = 0, entry_success = 0;
-	str rld_vers_key;
-	int reload_version = -1;
+	char use_timer = 0;
 
 	if (full_caching_expire <= 0) {
 		full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
@@ -1076,7 +1119,6 @@ static int mod_init(void)
 		if ((db_hdls = db_init_test_conn(c_entry)) == NULL)
 			continue;
 
-		/* cache the entire table if on demand is not set*/
 		if (!c_entry->on_demand) {
 			use_timer = 1;
 			c_entry->expire = full_caching_expire;
@@ -1085,41 +1127,12 @@ static int mod_init(void)
 				LM_ERR("Failed to init readers-writers lock\n");
 				continue;
 			}
-
-			if (load_entire_table(c_entry, db_hdls, 0) < 0)
-				LM_ERR("Failed to cache the entire table: %s\n", c_entry->table.s);
-			else {
-				/* set up reload version counter for this entry in cachedb */
-				rld_vers_key.len = c_entry->id.len + 23;
-				rld_vers_key.s = pkg_malloc(rld_vers_key.len);
-				if (!rld_vers_key.s) {
-					LM_ERR("No more pkg memory\n");
-					return -1;
-				}
-				memcpy(rld_vers_key.s, c_entry->id.s, c_entry->id.len);
-				memcpy(rld_vers_key.s + c_entry->id.len, "_sql_cacher_reload_vers", 23);
-
-				db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &reload_version);
-				db_hdls->cdbf.sub(db_hdls->cdbcon, &rld_vers_key, 1, 0, &reload_version);
-				if (reload_version != 0)
-					LM_ERR("Failed to set up reload version counter in cahchedb for "
-						"entry %.*s\n", c_entry->id.len, c_entry->id.s);
-				else
-					entry_success = 1;
-				LM_DBG("Cached the entire table %s\n", c_entry->table.s);
-			}
-		} else
-			entry_success = 1;
+		}
 
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
 		db_hdls->cdbf.destroy(db_hdls->cdbcon);
 		db_hdls->cdbcon = 0;
-	}
-
-	if (!entry_success) {
-		LM_ERR("Failed to set up any cache entry\n");
-		return -1;
 	}
 
 	if (use_timer && register_timer("sql_cacher_reload-timer", reload_timer, NULL,
@@ -1148,6 +1161,12 @@ static int child_init(int rank)
 			LM_ERR("Cannot connect to SQL DB from child\n");
 			return -1;
 		}
+	}
+
+	/* perform full caching load in the same process but after child_init is done */
+	if ((rank == 1) && ipc_send_rpc(process_no, full_caching_load, NULL) < 0) {
+		LM_ERR("Failed to RPC full caching load\n");
+		return -1;
 	}
 
 	return 0;
