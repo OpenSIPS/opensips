@@ -205,6 +205,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 			case ',':
 				switch (status)
 				{
+					case PARA_VALUE_QUOTED:
+						break;
 					case PARA_NAME:
 						param->name.len = tmp-param->name.s;
 					case S_EQUAL:
@@ -590,6 +592,8 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 			case ',':
 				switch (status)
 				{
+					case DISPLAY_QUOTED:
+						break;
 					case URI_OR_TOKEN:
 					case MAYBE_URI_END:
 						to_b->uri.len = tmp - to_b->uri.s;
