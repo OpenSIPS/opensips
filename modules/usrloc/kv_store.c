@@ -74,7 +74,7 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 			new_val->is_str = 1;
 		}
 
-		if (shm_str_resize(&new_val->s, _val->s.len + 1) != 0) {
+		if (shm_str_extend(&new_val->s, _val->s.len + 1) != 0) {
 			LM_ERR("oom\n");
 			return NULL;
 		}

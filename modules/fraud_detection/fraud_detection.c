@@ -346,7 +346,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		++se->stats.seq_calls;
 	}
 	else {
-		if (shm_str_resize(&se->stats.last_called_prefix, matched_len) != 0) {
+		if (shm_str_extend(&se->stats.last_called_prefix, matched_len) != 0) {
 			LM_ERR("oom\n");
 			return rc_error;
 		}
