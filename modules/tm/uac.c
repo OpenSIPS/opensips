@@ -372,7 +372,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					buf1 = build_req_buf_from_sip_req(req,
 						(unsigned int*)&buf_len1,
 						new_send_sock, new_send_sock->proto,
-						MSG_TRANS_SHM_FLAG);
+						NULL, MSG_TRANS_SHM_FLAG);
 					reset_init_lump_flags();
 					del_flaged_lumps( &req->add_rm, LUMPFLAG_BRANCH);
 
@@ -383,7 +383,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					buf1 = build_req_buf_from_sip_req(req,
 						(unsigned int*)&buf_len1,
 						dialog->send_sock, dialog->send_sock->proto,
-						MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG);
+						NULL, MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG);
 					/* now as it used, hide the original VIA header */
 					del_lump(req,req->h_via1->name.s - req->buf,
 						req->h_via1->len, 0);

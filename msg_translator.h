@@ -109,7 +109,7 @@ static inline str *get_adv_port(struct socket_info *send_sock)
 
 char * build_req_buf_from_sip_req (	struct sip_msg* msg,
 				unsigned int *returned_len, struct socket_info* send_sock,
-				int proto, unsigned int flags);
+				int proto, str *via_params, unsigned int flags);
 
 char * build_res_buf_from_sip_res(	struct sip_msg* msg,
 				unsigned int *returned_len, struct socket_info *sock,int flags);

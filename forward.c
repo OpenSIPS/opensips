@@ -344,7 +344,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 				pkg_free(buf.s);
 
 			buf.s = build_req_buf_from_sip_req( msg, (unsigned int*)&buf.len,
-				send_sock, p->proto, 0 /*flags*/);
+				send_sock, p->proto, NULL, 0 /*flags*/);
 			if (!buf.s){
 				LM_ERR("building req buf failed\n");
 				tcp_no_new_conn = 0;

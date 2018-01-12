@@ -1315,7 +1315,7 @@ static int dlg_th_needs_decoding(struct sip_msg *msg)
 static inline char *dlg_th_rebuild_req(struct sip_msg *msg,int *len)
 {
 	return build_req_buf_from_sip_req(msg,(unsigned int*)len,
-			NULL,PROTO_NONE,MSG_TRANS_NOVIA_FLAG);
+			NULL,PROTO_NONE,NULL,MSG_TRANS_NOVIA_FLAG);
 }
 
 static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)

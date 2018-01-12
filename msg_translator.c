@@ -2039,7 +2039,7 @@ int is_del_via1_lump(struct sip_msg* msg)
 char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								unsigned int *returned_len,
 								struct socket_info* send_sock, int proto,
-								unsigned int flags)
+								str *via_params, unsigned int flags)
 {
 	unsigned int len, new_len, received_len, rport_len, uri_len, via_len, body_delta;
 	char *line_buf, *received_buf, *rport_buf, *new_buf, *buf, *id_buf;
@@ -2092,14 +2092,32 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		}
 		LM_DBG("id added: <%.*s>, rcv proto=%d\n",
 				(int)id_len, id_buf, msg->rcv.proto);
-		extra_params.s=id_buf;
-		extra_params.len=id_len;
+		/* if there was already something there, simply copy them */
+		if (via_params && via_params->len != 0) {
+			extra_params.len = id_len + via_params->len;
+			extra_params.s=pkg_malloc(extra_params.len);
+			if(extra_params.s==0) {
+				LM_ERR("extra params building failed\n");
+				pkg_free(id_buf);
+				goto error;
+			}
+			memcpy(extra_params.s, via_params->s, via_params->len);
+			memcpy(extra_params.s + via_params->len, id_buf, id_len);
+		} else {
+			extra_params.s=id_buf;
+			extra_params.len=id_len;
+		}
 	}
 
 	/* check whether to add rport parameter to local via */
 	if(msg->msg_flags&FL_FORCE_LOCAL_RPORT) {
 		id_buf=extra_params.s;
 		id_len=extra_params.len;
+		if (via_params && !extra_params.len) {
+			/* if no other parameters were added yet, consider via_params */
+			extra_params.len = via_params->len;
+			/* otherwise, the via_params were already copied in the id block */
+		}
 		extra_params.len += RPORT_LEN-1; /* last char in RPORT define is '='
 										which is not added, but the new buffer
 										will be null terminated */
@@ -2113,7 +2131,8 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		if(id_buf!=0) {
 			memcpy(extra_params.s, id_buf, id_len);
 			pkg_free(id_buf);
-		}
+		} else if (via_params)
+			memcpy(extra_params.s, via_params->s, via_params->len);
 		memcpy(extra_params.s+id_len, RPORT, RPORT_LEN-1);
 		extra_params.s[extra_params.len]='\0';
 		LM_DBG("extra param added: <%.*s>\n",extra_params.len, extra_params.s);
@@ -2123,7 +2142,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	branch.len=msg->add_to_branch_len;
 	set_hostport(&hp, msg);
 	line_buf = via_builder( &via_len, send_sock, &branch,
-							extra_params.len?&extra_params:0, proto, &hp);
+						extra_params.len?&extra_params:via_params, proto, &hp);
 	if (!line_buf){
 		LM_ERR("no via received!\n");
 		goto error00;
