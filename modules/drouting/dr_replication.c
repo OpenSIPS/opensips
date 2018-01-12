@@ -27,8 +27,7 @@
 
 
 /* module parameter to control the replication */
-int accept_replicated_status = 0;
-int replicated_status_cluster = 0;
+int dr_repl_cluster = 0;
 
 str status_repl_cap = str_init("drouting-status-repl");
 struct clusterer_binds clusterer_api;
@@ -198,6 +197,6 @@ void receive_dr_binary_packet(bin_packet_t *packet)
 		break;
 	default:
 		LM_WARN("Invalid drouting binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet->type, packet->src_id, accept_replicated_status);
+			packet->type, packet->src_id, dr_repl_cluster);
 	}
 }

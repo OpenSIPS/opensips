@@ -31,8 +31,7 @@
 #define REPL_GW_STATUS_UPDATE 1
 #define REPL_CR_STATUS_UPDATE 2
 
-extern int accept_replicated_status;
-extern int replicated_status_cluster;
+extern int dr_repl_cluster;
 
 extern str repl_dr_module_name;
 extern struct clusterer_binds clusterer_api;

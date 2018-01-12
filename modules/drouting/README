@@ -8,6 +8,8 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
 Anca-Maria Vamanu
 
    Copyright © 2005-2008 Voice Sistem SRL
@@ -59,16 +61,15 @@ Anca-Maria Vamanu
               1.3.20. probing_method (string)
               1.3.21. probing_from (string)
               1.3.22. probing_reply_codes (string)
-              1.3.23. replicate_status_to (integer)
-              1.3.24. accept_replicated_status (integer)
-              1.3.25. use_domain (int)
-              1.3.26. drg_user_col (str)
-              1.3.27. drg_domain_col (str)
-              1.3.28. drg_grpid_col (str)
-              1.3.29. use_partitions (int)
-              1.3.30. db_partitions_url (int)
-              1.3.31. db_partitions_table (int)
-              1.3.32. partition_id_pvar (pvar)
+              1.3.23. status_replication_cluster (integer)
+              1.3.24. use_domain (int)
+              1.3.25. drg_user_col (str)
+              1.3.26. drg_domain_col (str)
+              1.3.27. drg_grpid_col (str)
+              1.3.28. use_partitions (int)
+              1.3.29. db_partitions_url (int)
+              1.3.30. db_partitions_table (int)
+              1.3.31. partition_id_pvar (pvar)
 
         1.4. Exported Functions
 
@@ -135,40 +136,39 @@ Anca-Maria Vamanu
    1.20. Set probing_method parameter
    1.21. Set probing_from parameter
    1.22. Set probing_reply_codes parameter
-   1.23. Set replicate_status_to parameter
-   1.24. Set accept_replicated_status parameter
-   1.25. Set use_domain parameter
-   1.26. Set drg_user_col parameter
-   1.27. Set drg_domain_col parameter
-   1.28. Set drg_grpid_col parameter
-   1.29. Set use_partitions parameter
-   1.30. Set db_partitions_url parameter
-   1.31. Set db_partitions_table parameter
-   1.32. Set partition_id_pvar parameter
-   1.33. do_routing usage
-   1.34. route_to_carrier usage when use_partitions parameter is 0
+   1.23. Set status_replication_cluster parameter
+   1.24. Set use_domain parameter
+   1.25. Set drg_user_col parameter
+   1.26. Set drg_domain_col parameter
+   1.27. Set drg_grpid_col parameter
+   1.28. Set use_partitions parameter
+   1.29. Set db_partitions_url parameter
+   1.30. Set db_partitions_table parameter
+   1.31. Set partition_id_pvar parameter
+   1.32. do_routing usage
+   1.33. route_to_carrier usage when use_partitions parameter is 0
+   1.34. route_to_carrier usage when use_partitions parameter is 1
    1.35. route_to_carrier usage when use_partitions parameter is 1
-   1.36. route_to_carrier usage when use_partitions parameter is 1
           with variables
 
-   1.37. route_to_gw usage when use_partition parameter is 0
-   1.38. route_to_gw usage when use_partition parameter is 1
-   1.39. use_next_gw usage
-   1.40. use_next_gw usage when use_partition parameter is 1
-   1.41. goes_to_gw usage when use_partitions parameter is 0
-   1.42. goes_to_gw usage, when use_partitions parameter is 1
-   1.43. is_from_gw usage when use_partitions is 0
-   1.44. is_from_gw usage when use_partitions is 1
-   1.45. dr_is_gw usage when use_partitions is 0
-   1.46. dr_is_gw usage when use_partitions is 1
-   1.47. dr_disable() usage when use_partitions is 0
-   1.48. dr_disable() usage when use_partitions is 1
-   1.49. dr_gw_status usage when use_partitions is set to 0
-   1.50. dr_gw_status usage when use_partitionsis set to 1
-   1.51. dr_carrier_status usage when use_partitions is 0
-   1.52. dr_carrier_status usage when use_partitions is 1
-   1.53. dr_reload_status usage when use_partitions is 0
-   1.54. dr_reload_status usage when use_partitions is 1
+   1.36. route_to_gw usage when use_partition parameter is 0
+   1.37. route_to_gw usage when use_partition parameter is 1
+   1.38. use_next_gw usage
+   1.39. use_next_gw usage when use_partition parameter is 1
+   1.40. goes_to_gw usage when use_partitions parameter is 0
+   1.41. goes_to_gw usage, when use_partitions parameter is 1
+   1.42. is_from_gw usage when use_partitions is 0
+   1.43. is_from_gw usage when use_partitions is 1
+   1.44. dr_is_gw usage when use_partitions is 0
+   1.45. dr_is_gw usage when use_partitions is 1
+   1.46. dr_disable() usage when use_partitions is 0
+   1.47. dr_disable() usage when use_partitions is 1
+   1.48. dr_gw_status usage when use_partitions is set to 0
+   1.49. dr_gw_status usage when use_partitionsis set to 1
+   1.50. dr_carrier_status usage when use_partitions is 0
+   1.51. dr_carrier_status usage when use_partitions is 1
+   1.52. dr_reload_status usage when use_partitions is 0
+   1.53. dr_reload_status usage when use_partitions is 1
 
 Chapter 1. Admin Guide
 
@@ -428,7 +428,8 @@ Chapter 1. Admin Guide
      * a database module.
 
      * tm module.
-     * clustere - only if "replicate_status_to" option is enabled.
+     * clusterer - only if "status_replication_cluster" option is
+       enabled.
 
 1.2.2. External Libraries or Applications
 
@@ -736,91 +737,76 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
 
-1.3.23. replicate_status_to (integer)
+1.3.23. status_replication_cluster (integer)
 
-   A cluster ID for sharing (via BIN replication) the
-   gateways/destination and carriers status changes. Whenever such
-   a status is changes (following an MI command, a probing result,
-   a script command), the module will replicate this status change
-   to all the nodes in this given cluster. A value of 0 means that
-   sending replication data is disabled.
+   A cluster ID for sharing the gateways/destinations and carriers
+   status changes with other OpenSIPS instances that are part of a
+   cluster. Whenever such a status changes (following an MI
+   command, a probing result, a script command), the module will
+   replicate this status change to all the nodes in this given
+   cluster. A value of 0 means that sending replication data is
+   disabled.
 
-   For more on how to define and populate a cluster (with OpenSIPS
-   nodes) see the "clusterer" module.
-
-   Default value is “0”.
-
-   Example 1.23. Set replicate_status_to parameter
-...
-# replicate gw/carrier status with all OpenSIPS in cluster ID 9
-modparam("drouting", "replicate_status_to", 9)
-...
-
-1.3.24. accept_replicated_status (integer)
-
-   A cluster ID for accepting replicated info about the change of
-   gateway/carrier status from other OpenSIPS nodes from that
-   cluster. A value of 0 means that accepting is disabled.
+   For more info on how to define and populate a cluster (with
+   OpenSIPS nodes) see the "clusterer" module.
 
    Default value is “0”.
 
-   Example 1.24. Set accept_replicated_status parameter
+   Example 1.23. Set status_replication_cluster parameter
 ...
 # replicate gw/carrier status with all OpenSIPS in cluster ID 9
-modparam("drouting", "replicate_status_to", 9)
-# but do not accept incoming replication (just send, no receive)
-modparam("drouting", "accept_replicated_status", 0)
+modparam("drouting", "status_replication_cluster", 9)
 ...
 
-1.3.25. use_domain (int)
+1.3.24. use_domain (int)
 
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
    Default value is “1”.
 
-   Example 1.25. Set use_domain parameter
+   Example 1.24. Set use_domain parameter
 ...
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.26. drg_user_col (str)
+1.3.25. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is “username”.
 
-   Example 1.26. Set drg_user_col parameter
+   Example 1.25. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.27. drg_domain_col (str)
+1.3.26. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is “domain”.
 
-   Example 1.27. Set drg_domain_col parameter
+   Example 1.26. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.28. drg_grpid_col (str)
+1.3.27. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is “groupid”.
 
-   Example 1.28. Set drg_grpid_col parameter
+   Example 1.27. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
-1.3.29. use_partitions (int)
+1.3.28. use_partitions (int)
 
    Flag to configure whether to use partitions for routing. If
    this flag is set then the db_partitions_url and
@@ -828,12 +814,12 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
    Default value is “0”.
 
-   Example 1.29. Set use_partitions parameter
+   Example 1.28. Set use_partitions parameter
 ...
 modparam("drouting", "use_partitions", 1)
 ...
 
-1.3.30. db_partitions_url (int)
+1.3.29. db_partitions_url (int)
 
    The url to the database containing partition-specific
    information. (partition-specific information includes partition
@@ -844,25 +830,25 @@ modparam("drouting", "use_partitions", 1)
 
    Default value is “"NULL"”.
 
-   Example 1.30. Set db_partitions_url parameter
+   Example 1.29. Set db_partitions_url parameter
 ...
 modparam("drouting", "db_partitions_url", "mysql://user:password@localho
 st/opensips_partitions")
 ...
 
-1.3.31. db_partitions_table (int)
+1.3.30. db_partitions_table (int)
 
    The name of the table containing partition definitions. To be
    used with use_partitions and db_partitions_url.
 
    Default value is “dr_partitions”.
 
-   Example 1.31. Set db_partitions_table parameter
+   Example 1.30. Set db_partitions_table parameter
 ...
 modparam("drouting", "db_partitions_table", "partition_defs")
 ...
 
-1.3.32. partition_id_pvar (pvar)
+1.3.31. partition_id_pvar (pvar)
 
    Variable which will store the name of the name partition when
    wildcard(*) operatior is used. Use_partitions must be set in
@@ -872,7 +858,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 
    Default value is “null(not used)”.
 
-   Example 1.32. Set partition_id_pvar parameter
+   Example 1.31. Set partition_id_pvar parameter
 ...
 modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 ...
@@ -942,7 +928,7 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
        which will be populated with the attributes of the matched
        carrier.
 
-   Example 1.33. do_routing usage
+   Example 1.32. do_routing usage
 ...
 # all groups, sort on order, use_partitions is 0
 do_routing();
@@ -1000,7 +986,7 @@ do_routing("2", "F", , , "$var(gw_attributes)");
        which will be populated with the attributes of this
        carrier.
 
-   Example 1.34. route_to_carrier usage when use_partitions
+   Example 1.33. route_to_carrier usage when use_partitions
    parameter is 0
 ...
 if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
@@ -1011,7 +997,7 @@ if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
 }
 ...
 
-   Example 1.35. route_to_carrier usage when use_partitions
+   Example 1.34. route_to_carrier usage when use_partitions
    parameter is 1
 ...
 if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att
@@ -1023,7 +1009,7 @@ if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att
 }
 ...
 
-   Example 1.36. route_to_carrier usage when use_partitions
+   Example 1.35. route_to_carrier usage when use_partitions
    parameter is 1 with variables
 ...
 if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
@@ -1059,7 +1045,7 @@ if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
        which will be populated with the attributes of the
        currently matched gateway.
 
-   Example 1.37. route_to_gw usage when use_partition parameter is
+   Example 1.36. route_to_gw usage when use_partition parameter is
    0
 ...
 if ( route_to_gw("gw_europe") ) {
@@ -1075,7 +1061,7 @@ if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
 }
 ...
 
-   Example 1.38. route_to_gw usage when use_partition parameter is
+   Example 1.37. route_to_gw usage when use_partition parameter is
    1
 ...
 if ( route_to_gw("my_partition:gw_europe") ) {
@@ -1126,7 +1112,7 @@ if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
        which will be populated with the attributes of the matched
        carrier.
 
-   Example 1.39. use_next_gw usage
+   Example 1.38. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -1142,7 +1128,7 @@ if (use_next_gw(, , "$var(carrier_attrs)")) {
 }
 ...
 
-   Example 1.40. use_next_gw usage when use_partition parameter is
+   Example 1.39. use_next_gw usage when use_partition parameter is
    1
 ...
 if (use_next_gw("my_partition")) {
@@ -1204,7 +1190,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
        which will be populated with the attributes of the matched
        gateway.
 
-   Example 1.41. goes_to_gw usage when use_partitions parameter is
+   Example 1.40. goes_to_gw usage when use_partitions parameter is
    0
 ...
 if (goes_to_gw("1", , "$var(gw_attrs)")) {
@@ -1213,7 +1199,7 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
 }
 ...
 
-   Example 1.42. goes_to_gw usage, when use_partitions parameter
+   Example 1.41. goes_to_gw usage, when use_partitions parameter
    is 1
 ...
 if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
@@ -1260,13 +1246,13 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
        which will be populated with the attributes of the matched
        gateway.
 
-   Example 1.43. is_from_gw usage when use_partitions is 0
+   Example 1.42. is_from_gw usage when use_partitions is 0
 ...
 if (is_from_gw("3","1") {
 }
 ...
 
-   Example 1.44. is_from_gw usage when use_partitions is 1
+   Example 1.43. is_from_gw usage when use_partitions is 1
 ...
 if (is_from_gw("my_partition","3","1") {
 }
@@ -1310,13 +1296,13 @@ if (is_from_gw("my_partition","3","1") {
        which will be populated with the attributes of the matched
        gateway.
 
-   Example 1.45. dr_is_gw usage when use_partitions is 0
+   Example 1.44. dr_is_gw usage when use_partitions is 0
 ...
 if (dr_is_gw("$avp(uac)","3") {
 }
 ...
 
-   Example 1.46. dr_is_gw usage when use_partitions is 1
+   Example 1.45. dr_is_gw usage when use_partitions is 1
 ...
 if (dr_is_gw("my_partition","$avp(uac)","3") {
 }
@@ -1339,7 +1325,7 @@ if (dr_is_gw("my_partition","$avp(uac)","3") {
        otherwise it will be omitted altogether) - Partition
        containing the destination/gateway to be disabled.
 
-   Example 1.47. dr_disable() usage when use_partitions is 0
+   Example 1.46. dr_disable() usage when use_partitions is 0
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -1348,7 +1334,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 ...
 
-   Example 1.48. dr_disable() usage when use_partitions is 1
+   Example 1.47. dr_disable() usage when use_partitions is 1
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable("my_partition");
@@ -1402,7 +1388,7 @@ ise will be omitted altogether)
                 status (optional)
                 _empty_line_
 
-   Example 1.49. dr_gw_status usage when use_partitions is set to
+   Example 1.48. dr_gw_status usage when use_partitions is set to
    0
 $ ./opensipsctl fifo dr_gw_status 2
 State:: Active
@@ -1412,7 +1398,7 @@ Enabled:: Disabled MI
 $ ./opensipsctl fifo dr_gw_status 3
 Enabled:: Inactive
 
-   Example 1.50. dr_gw_status usage when use_partitionsis set to 1
+   Example 1.49. dr_gw_status usage when use_partitionsis set to 1
 $ ./opensipsctl fifo dr_gw_status part_1 my_gw
 State:: Active
 $ ./opensipsctl fifo dr_gw_status my_partition 3 0
@@ -1451,14 +1437,14 @@ se it will be omitted)
                 status (optional)
                 _empty_line_
 
-   Example 1.51. dr_carrier_status usage when use_partitions is 0
+   Example 1.50. dr_carrier_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: yes
 
-   Example 1.52. dr_carrier_status usage when use_partitions is 1
+   Example 1.51. dr_carrier_status usage when use_partitions is 1
 $ ./opensipsctl fifo dr_carrier_status my_partition CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status partition_1 CR1 1
@@ -1485,11 +1471,11 @@ Enabled:: yes
 is 0 it must be omitted)
                 _empty_line_
 
-   Example 1.53. dr_reload_status usage when use_partitions is 0
+   Example 1.52. dr_reload_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
-   Example 1.54. dr_reload_status usage when use_partitions is 1
+   Example 1.53. dr_reload_status usage when use_partitions is 1
 $ ./opensipsctl fifo dr_reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014

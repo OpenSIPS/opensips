@@ -413,7 +413,7 @@
 
 			<listitem>
 			<para>
-				<emphasis>clustere</emphasis> - only if "replicate_status_to"
+				<emphasis>clusterer</emphasis> - only if "status_replication_cluster"
 				option is enabled.
 			</para>
 			</listitem>
@@ -913,16 +913,16 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 	</section>
 
 	<section>
-		<title><varname>replicate_status_to</varname> (integer)</title>
+		<title><varname>status_replication_cluster</varname> (integer)</title>
 		<para>
-		A cluster ID for sharing (via BIN replication) the gateways/destination
-		and carriers status changes. Whenever such a status is changes
-		(following an MI command, a probing result, a script command), the
-		module will replicate this status change to all the nodes in this
-		given cluster. A value of 0 means that sending replication data is disabled.
+		A cluster ID for sharing the gateways/destinations
+		and carriers status changes with other OpenSIPS instances that are part
+		of a cluster. Whenever such a status changes (following an MI command,
+		a probing result, a script command), the module will replicate this status
+		change to all the nodes in this given cluster. A value of 0 means that sending replication data is disabled.
 		</para>
 		<para>
-		For more on how to define and populate a cluster (with OpenSIPS nodes)
+		For more info on how to define and populate a cluster (with OpenSIPS nodes)
 		see the "clusterer" module.
 		</para>
 		<para>
@@ -931,35 +931,11 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>replicate_status_to</varname> parameter</title>
+		<title>Set <varname>status_replication_cluster</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 # replicate gw/carrier status with all OpenSIPS in cluster ID 9
-modparam("drouting", "replicate_status_to", 9)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>accept_replicated_status</varname> (integer)</title>
-		<para>
-		A cluster ID for accepting replicated info about the change of gateway/carrier
-		status from other OpenSIPS nodes from that cluster. A value of 0 means that accepting is disabled.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>accept_replicated_status</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-# replicate gw/carrier status with all OpenSIPS in cluster ID 9
-modparam("drouting", "replicate_status_to", 9)
-# but do not accept incoming replication (just send, no receive)
-modparam("drouting", "accept_replicated_status", 0)
+modparam("drouting", "status_replication_cluster", 9)
 ...
 </programlisting>
 		</example>
