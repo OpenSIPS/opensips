@@ -34,8 +34,7 @@ Bogdan-Andrei Iancu
               1.5.7. lb_define_blacklist (string)
               1.5.8. fetch_freeswitch_stats (integer)
               1.5.9. initial_freeswitch_load (integer)
-              1.5.10. replicate_status_to (integer)
-              1.5.11. accept_replicated_status (integer)
+              1.5.10. status_replication_cluster (integer)
 
         1.6. Exported Functions
 
@@ -78,16 +77,15 @@ Bogdan-Andrei Iancu
    1.7. Set the lb_define_blacklist parameter
    1.8. Set the fetch_freeswitch_load parameter
    1.9. Set the initial_freeswitch_load parameter
-   1.10. Set replicate_status_to parameter
-   1.11. Set accept_replicated_status parameter
-   1.12. lb_start usage
+   1.10. Set status_replication_cluster parameter
+   1.11. lb_start usage
+   1.12. lb_next() usage
    1.13. lb_next() usage
-   1.14. lb_next() usage
-   1.15. lb_disable_dst() usage
-   1.16. lb_is_destination usage
-   1.17. lb_count_call usage
-   1.18. lb_list usage
-   1.19. lb_status usage
+   1.14. lb_disable_dst() usage
+   1.15. lb_is_destination usage
+   1.16. lb_count_call usage
+   1.17. lb_list usage
+   1.18. lb_status usage
 
 Chapter 1. Admin Guide
 
@@ -157,7 +155,8 @@ Chapter 1. Admin Guide
      * Dialog - Dialog module
        freeswitch. - only if "fetch_freeswitch_stats" is enabled.
      * dialog - TM module (only if probing is enabled)
-     * clustere - only if "replicate_status_to" option is enabled.
+     * clustere - only if "status_replication_cluster" option is
+       enabled.
      * database - one of the DB modules
 
 1.4.2. External Libraries or Applications
@@ -313,40 +312,25 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
 modparam("load_balancer", "initial_freeswitch_load", 200)
 ...
 
-1.5.10. replicate_status_to (integer)
+1.5.10. status_replication_cluster (integer)
 
-   A cluster ID for sharing (via BIN replication) the any change
-   in the status of the destination. Whenever such a status is
-   changes (following an MI command, a probing result, a script
-   command), the module will replicate this status change to all
-   the nodes in this given cluster. A value of 0 means that
-   sending replication data is disabled.
+   A cluster ID for sharing any change in the status of the
+   destinations with other OpenSIPS instances that are part of a
+   cluster. Whenever such a status changes (following an MI
+   command, a probing result, a script command), the module will
+   replicate this status change to all the nodes in the given
+   cluster. A value of 0 means that sending replication data is
+   disabled.
 
-   For more on how to define and populate a cluster (with OpenSIPS
-   nodes) see the "clusterer" module.
+   For more info on how to define and populate a cluster (with
+   OpenSIPS nodes) see the "clusterer" module.
 
    Default value is “0”.
 
-   Example 1.10. Set replicate_status_to parameter
+   Example 1.10. Set status_replication_cluster parameter
 ...
 # replicate LB status with all OpenSIPS in cluster ID 9
-modparam("load_balancer", "replicate_status_to", 9)
-...
-
-1.5.11. accept_replicated_status (integer)
-
-   A cluster ID for accepting replicated info about the change of
-   LB destination's status from other OpenSIPS nodes from that
-   cluster. A value of 0 means that accepting is disabled.
-
-   Default value is “0”.
-
-   Example 1.11. Set accept_replicated_status parameter
-...
-# replicate LB destinations status with all OpenSIPS in cluster ID 9
-modparam("load_balancer", "replicate_status_to", 9)
-# but do not accept incoming replication (just send, no receive)
-modparam("load_balancer", "accept_replicated_status", 0)
+modparam("load_balancer", "status_replication_cluster", 9)
 ...
 
 1.6. Exported Functions
@@ -404,7 +388,7 @@ modparam("load_balancer", "accept_replicated_status", 0)
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.12. lb_start usage
+   Example 1.11. lb_start usage
 ...
 if (lb_start("1","trascoding;conference")) {
         # dst URI points to the new destination
@@ -436,7 +420,7 @@ if (lb_start("1","trascoding;conference")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.13. lb_next() usage
+   Example 1.12. lb_next() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         /* check next available LB destination */
@@ -471,7 +455,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.14. lb_next() usage
+   Example 1.13. lb_next() usage
 ...
 if (t_check_status("(5[0-9][0-9])")) {
         /* check next available LB destination */
@@ -507,7 +491,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.15. lb_disable_dst() usage
+   Example 1.14. lb_disable_dst() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         lb_disable_dst();
@@ -542,7 +526,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        "active" (not disabled) destinations. If missing, the
        search will consider any kind of destinations.
 
-   Example 1.16. lb_is_destination usage
+   Example 1.15. lb_is_destination usage
 ...
 if (lb_is_destination("$si","$sp") ) {
         # request from a LB destination
@@ -576,7 +560,7 @@ if (lb_is_destination("$si","$sp") ) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.17. lb_count_call usage
+   Example 1.16. lb_count_call usage
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {
@@ -632,7 +616,7 @@ if (lb_is_destination("$si","$sp") ) {
                 :lb_list:_reply_fifo_file_
                 _empty_line_
 
-   Example 1.18. lb_list usage
+   Example 1.17. lb_list usage
 $ ./opensipsctl fifo lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
@@ -658,7 +642,7 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
                 status (optional)
                 _empty_line_
 
-   Example 1.19. lb_status usage
+   Example 1.18. lb_status usage
 $ ./opensipsctl fifo lb_status 2
 enable:: no
 $ ./opensipsctl fifo lb_status 2 1
@@ -688,31 +672,31 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    3.2.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    3.3.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.

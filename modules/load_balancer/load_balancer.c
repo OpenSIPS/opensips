@@ -161,8 +161,7 @@ static param_export_t mod_params[]={
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
 	{ "lb_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_lb_bl},
-	{ "accept_replicated_status",INT_PARAM, &accept_replicated_status },
-	{ "replicate_status_to",     INT_PARAM, &replicated_status_cluster },
+	{ "status_replication_cluster",   INT_PARAM, &lb_repl_cluster 			},
 	{ "fetch_freeswitch_stats",  INT_PARAM, &fetch_freeswitch_stats},
 	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load},
 	{ 0,0,0 }
@@ -210,8 +209,7 @@ static dep_export_t deps = {
 	{ /* modparam dependencies */
 		{ "probing_interval", get_deps_probing_interval },
 		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
-		{ "accept_replicated_status", get_deps_clusterer},
-		{ "replicate_status_to", get_deps_clusterer},
+		{ "status_replication_cluster", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -558,22 +556,21 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (replicated_status_cluster < 0) {
-		LM_ERR("Invalid replicated_status_cluster, must be 0 or "
+	if (lb_repl_cluster < 0) {
+		LM_ERR("Invalid replication_cluster, must be 0 or "
 			"a positive cluster id\n");
 		return -1;
 	}
 
-	if( (replicated_status_cluster > 0 || accept_replicated_status > 0)
-		&& load_clusterer_api(&clusterer_api)!=0) {
+	if (lb_repl_cluster && load_clusterer_api(&clusterer_api)!=0) {
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
 		return -1;
 	}
 
 	/* register handler for processing load_balancer replication packets to the clusterer module */
-	if (accept_replicated_status > 0 && 
+	if (lb_repl_cluster > 0 &&
 		clusterer_api.register_capability(&status_repl_cap,
-		receive_lb_binary_packet, NULL, accept_replicated_status) < 0) {
+		receive_lb_binary_packet, NULL, lb_repl_cluster) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}

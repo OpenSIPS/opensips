@@ -28,8 +28,7 @@
 str repl_lb_module_name = str_init("load_balancer");
 struct clusterer_binds clusterer_api;
 
-int accept_replicated_status = 0;
-int replicated_status_cluster = 0;
+int lb_repl_cluster = 0;
 
 str status_repl_cap = str_init("load_balancer-status-repl");
 
@@ -47,17 +46,17 @@ void replicate_lb_status(struct lb_dst *dst)
 	bin_push_str(&packet, &dst->uri);
 	bin_push_int(&packet, dst->flags&LB_DST_STAT_MASK);
 
-	rc = clusterer_api.send_all(&packet, replicated_status_cluster);
+	rc = clusterer_api.send_all(&packet, lb_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", replicated_status_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", lb_repl_cluster);
 		break;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			replicated_status_cluster);
+			lb_repl_cluster);
 		break;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", replicated_status_cluster);
+		LM_ERR("Error sending in cluster: %d\n", lb_repl_cluster);
 		break;
 	}
 

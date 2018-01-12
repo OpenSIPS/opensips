@@ -32,8 +32,7 @@
 extern str repl_lb_module_name;
 extern struct clusterer_binds clusterer_api;
 
-extern int accept_replicated_status;
-extern int replicated_status_cluster;
+extern int lb_repl_cluster;
 
 extern str status_repl_cap;
 
