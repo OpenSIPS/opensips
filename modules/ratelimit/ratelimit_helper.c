@@ -805,7 +805,7 @@ void rl_rcv_bin(bin_packet_t *packet)
 
 	if (packet->type != RL_PIPE_COUNTER) {
 		LM_WARN("Invalid binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet->type, packet->src_id, accept_repl_pipes);
+			packet->type, packet->src_id, rl_repl_cluster);
 		return;
 	}
 
@@ -939,8 +939,8 @@ int rl_repl_init(void)
 		return -1;
 	}
 
-	if (accept_repl_pipes && clusterer_api.register_capability(&pipe_repl_cap,
-		rl_rcv_bin, NULL, accept_repl_pipes) < 0) {
+	if (rl_repl_cluster && clusterer_api.register_capability(&pipe_repl_cap,
+		rl_rcv_bin, NULL, rl_repl_cluster) < 0) {
 		LM_ERR("Cannot register clusterer callback!\n");
 		return -1;
 	}

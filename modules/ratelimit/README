@@ -66,11 +66,9 @@ Razvan Crainea
               1.6.7. repl_buffer_threshold (string)
               1.6.8. repl_timer_interval (string)
               1.6.9. repl_timer_expire (string)
-              1.6.10. replicate_pipes_to (integer)
-              1.6.11. accept_pipes_from (integer)
-              1.6.12. accept_pipes_timeout (integer)
-              1.6.13. window_size (int)
-              1.6.14. slot_period (int)
+              1.6.10. pipe_replication_cluster (integer)
+              1.6.11. window_size (int)
+              1.6.12. slot_period (int)
 
         1.7. Exported Functions
 
@@ -101,14 +99,12 @@ Razvan Crainea
    1.7. Set repl_buffer_threshold parameter
    1.8. Set repl_timer_interval parameter
    1.9. Set repl_timer_expire parameter
-   1.10. Set replicate_pipes_to parameter
-   1.11. Set accept_pipes_from parameter
-   1.12. Set accept_pipes_timeout parameter
-   1.13. Set window_size parameter
-   1.14. Set slot_period parameter
-   1.15. rl_check usage
-   1.16. rl_dec_count usage
-   1.17. rl_reset_count usage
+   1.10. Set pipe_replication_cluster parameter
+   1.11. Set window_size parameter
+   1.12. Set slot_period parameter
+   1.13. rl_check usage
+   1.14. rl_dec_count usage
+   1.15. rl_reset_count usage
 
 Chapter 1. Admin Guide
 
@@ -122,14 +118,19 @@ Chapter 1. Admin Guide
    interface can be used to change tunables while running
    OpenSIPS.
 
-   This module is also integrated with the OpenSIPS Key-Value
+   This module is integrated with the OpenSIPS Key-Value
    Interface, providing support for distributed rate limiting
-   using Redis or Memcached CacheDB backends.
+   using Redis or Memcached CacheDB backends. The internal
+   limiting data will no longer be kept on each OpenSIPS instance.
+   It will be stored in the distributed Key-Value database and
+   queried by each instance before deciding if a SIP message
+   should be blocked or not.
 
-   To achieve a distributed ratelimit feature, the module can
-   replicate its pipes counters to different OpenSIPS interfaces
-   using the binary replicate interface (BIN). To do that, define
-   the repl_* parameters in your configuration script.
+   To achieve a distributed ratelimit feature, the module can also
+   replicate its pipes counters to different OpenSIPS instances
+   using the clusterer module. To do that, define the
+   pipe_replication_cluster parameter in your configuration
+   script.
 
 1.2. Use Cases
 
@@ -140,10 +141,7 @@ Chapter 1. Admin Guide
 
    Distributed limiting is useful when the rate limit should be
    performed not only on a specific node, but on the entire
-   platform. The internal limiting data will no longer be kept on
-   each OpenSIPS instance. It will be stored in a distributed
-   Key-Value database and queried by each instance before deciding
-   if a SIP message should be blocked or not.
+   platform.
 
    NOTE: that this behavior only makes sense when the pipe
    algorithm used is TAILDROP or RED.
@@ -387,53 +385,30 @@ modparam("ratelimit", "repl_timer_interval", 100)
 modparam("ratelimit", "repl_timer_expire", 10)
 ...
 
-1.6.10. replicate_pipes_to (integer)
+1.6.10. pipe_replication_cluster (integer)
 
-   Used to specify the instances, that belong to a certain
-   cluster, where the pipes should be replicated.
+   Specifies the cluster ID where pipes will be replicated to and
+   received from.
 
-   Default value is 0. (no replication destinations)
+   Default value is 0. (no replication)
 
-   Example 1.10. Set replicate_pipes_to parameter
+   Example 1.10. Set pipe_replication_cluster parameter
 ...
-modparam("ratelimit", "replicate_pipes_to", 1)
-...
-
-1.6.11. accept_pipes_from (integer)
-
-   Used to specify the instances, that belong to a certain
-   cluster, from which we should expect incoming packets.
-
-   Default value is 0. (disabled)
-
-   Example 1.11. Set accept_pipes_from parameter
-...
-modparam("ratelimit", "accept_pipes_from", 1)
+modparam("ratelimit", "pipe_replication_cluster", 1)
 ...
 
-1.6.12. accept_pipes_timeout (integer)
-
-   The time between two succesive incoming packets.
-
-   Default value is 10.
-
-   Example 1.12. Set accept_pipes_timeout parameter
-...
-modparam("ratelimit", "accept_pipes_timeout", 1)
-...
-
-1.6.13. window_size (int)
+1.6.11. window_size (int)
 
    How long the history in SBT should be in seconds.
 
    Default value is “10”.
 
-   Example 1.13. Set window_size parameter
+   Example 1.11. Set window_size parameter
 ...
 modparam("ratelimit", "window_size", 5)
 ...
 
-1.6.14. slot_period (int)
+1.6.12. slot_period (int)
 
    Value of one slot in milliseconds. This parameter determines
    how granular the algorithm should be. The number of slots will
@@ -441,7 +416,7 @@ modparam("ratelimit", "window_size", 5)
 
    Default value is “200”.
 
-   Example 1.14. Set slot_period parameter
+   Example 1.12. Set slot_period parameter
 ...
 modparam("ratelimit", "window_size", 5)
 #we will have 50 slots of 100 milliseconds
@@ -485,7 +460,7 @@ modparam("ratelimit", "slot_period", 100)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.15. rl_check usage
+   Example 1.13. rl_check usage
 ...
         # perform a pipe match for all INVITE methods using RED algorith
 m
@@ -521,7 +496,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.16. rl_dec_count usage
+   Example 1.14. rl_dec_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
@@ -540,7 +515,7 @@ m
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.17. rl_reset_count usage
+   Example 1.15. rl_reset_count usage
 ...
         if (!rl_check("gw_$ru", "100", "TAILDROP")) {
                 exit;
