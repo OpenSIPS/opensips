@@ -410,8 +410,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			r =( urecord_t * ) *dest;
 
 			/* determine if the current node is respnosible for this record */
-			if (accept_replicated_udata) {
-				cur_node_idx = clusterer_api.get_my_index(accept_replicated_udata,
+			if (ul_replication_cluster) {
+				cur_node_idx = clusterer_api.get_my_index(ul_replication_cluster,
 														&nr_nodes);
 				if (r->aorhash % (nr_nodes+1) != cur_node_idx)
 					continue;
@@ -912,7 +912,7 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 		return 0;
 	}
 
-	if (!is_replicated && ul_replicate_cluster)
+	if (!is_replicated && ul_replication_cluster)
 		replicate_ucontact_delete(r, c);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {

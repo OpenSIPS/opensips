@@ -43,9 +43,7 @@
 
 #define BIN_VERSION 1
 
-extern int accept_replicated_udata;
-
-extern int ul_replicate_cluster;
+extern int ul_replication_cluster;
 extern struct clusterer_binds clusterer_api;
 
 extern str contact_repl_cap;
