@@ -32,6 +32,7 @@
 #include "../../locking.h"
 #include "../../rw_locking.h"
 #include "../../timer.h"
+#include "../../ipc.h"
 #include "sql_cacher.h"
 
 static int mod_init(void);
@@ -1031,7 +1032,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 	return init_mi_tree(200, MI_SSTR(MI_OK_S));
 }
 
-static int full_caching_load(void)
+static void full_caching_load(int sender, void *param)
 {
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
@@ -1055,7 +1056,7 @@ static int full_caching_load(void)
 		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
 		if (!rld_vers_key.s) {
 			LM_ERR("No more pkg memory\n");
-			return -1;
+			return;
 		}
 		memcpy(rld_vers_key.s, c_entry->id.s, c_entry->id.len);
 		memcpy(rld_vers_key.s + c_entry->id.len, "_sql_cacher_reload_vers", 23);
@@ -1070,8 +1071,6 @@ static int full_caching_load(void)
 
 		pkg_free(rld_vers_key.s);
 	}
-
-	return 0;
 }
 
 static int mod_init(void)
@@ -1163,9 +1162,9 @@ static int child_init(int rank)
 		}
 	}
 
-	/* perform full caching load in the first child */
-	if (rank == 1 && full_caching_load() < 0) {
-		LM_ERR("Failed to do full caching load\n");
+	/* perform full caching load in the same process but after child_init is done */
+	if ((rank == 1) && ipc_send_rpc(process_no, full_caching_load, NULL) < 0) {
+		LM_ERR("Failed to RPC full caching load\n");
 		return -1;
 	}
 
