@@ -60,6 +60,7 @@
 #include "t_fwd.h"
 #include "fix_lumps.h"
 #include "config.h"
+#include "cluster.h"
 #include "../../msg_callbacks.h"
 #include "../../mod_fix.h"
 
@@ -227,10 +228,14 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 		struct socket_info *send_sock, enum sip_protos proto )
 {
 	char *buf;
+	str *cid = NULL;
+
+	if (1/* TODO: check if the cid should be used */)
+		cid = tm_via_cid();
 
 	/* build the shm buffer now */
 	buf=build_req_buf_from_sip_req( i_req, len, send_sock, proto,
-			NULL, MSG_TRANS_SHM_FLAG);
+			cid, MSG_TRANS_SHM_FLAG);
 	if (!buf) {
 		LM_ERR("no more shm_mem\n");
 		ser_error=E_OUT_OF_MEM;

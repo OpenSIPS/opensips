@@ -76,6 +76,7 @@
 #include "tm_load.h"
 #include "t_ctx.h"
 #include "async.h"
+#include "cluster.h"
 
 
 /* item functions */
@@ -153,7 +154,6 @@ static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
 static str uac_ctx_avp = str_init("uac_ctx");
 static int uac_ctx_avp_id;
 
-
 int pv_get_tm_branch_avp(struct sip_msg*, pv_param_t*, pv_value_t*);
 int pv_set_tm_branch_avp(struct sip_msg*, pv_param_t*, int, pv_value_t*);
 int pv_get_tm_fr_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
@@ -180,6 +180,16 @@ stat_var *tm_trans_5xx;
 stat_var *tm_trans_6xx;
 stat_var *tm_trans_inuse;
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "replicate_trans_to",	get_deps_clusterer	},
+		{ "accept_trans_from",	get_deps_clusterer	},
+		{ NULL, NULL },
+	},
+};
 
 static cmd_export_t cmds[]={
 	{"t_newtran",       (cmd_function)w_t_newtran,      0, 0,
@@ -289,6 +299,12 @@ static param_export_t params[]={
 		&timer_partitions },
 	{ "auto_100trying",           INT_PARAM,
 		&auto_100trying },
+	{ "replicate_trans_to",       INT_PARAM,
+		&tm_replicate_cluster },
+	{ "accept_trans_from",       INT_PARAM,
+		&tm_accept_cluster },
+	{ "cluster_param",           STR_PARAM,
+		&tm_cluster_param.s },
 	{0,0,0}
 };
 
@@ -352,7 +368,7 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,      /* exported functions */
 	NULL,      /* exported async functions */
 	params,    /* exported variables */
@@ -924,6 +940,11 @@ static int mod_init(void)
 	if ( register_async_script_handlers( t_handle_async, t_resume_async )<0 ) {
 		LM_ERR("failed to register async handler to core \n");
 		return -1;
+	}
+
+	if (tm_init_cluster() < 0) {
+		LM_ERR("cannot initialize cluster support for transactions!\n");
+		LM_WARN("running without cluster support for transactions!\n");
 	}
 
 	return 0;
