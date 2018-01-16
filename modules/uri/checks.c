@@ -234,6 +234,9 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 
 		if (!str_strcmp(param, &key)) {
 			/* found the param to remove */
+			/* include the leading ';' */
+			param_tok.s--;
+			param_tok.len++;
 			old_uri = *GET_RURI(_msg);
 			new_uri.len = old_uri.len - param_tok.len;
 			new_uri.s = pkg_malloc(new_uri.len);
@@ -242,8 +245,7 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 				return -1;
 			}
 
-			begin_len = param_tok.s - old_uri.s - 1/*remove also the ';'
-													before the param */;
+			begin_len = param_tok.s - old_uri.s;
 			memcpy(new_uri.s, old_uri.s, begin_len);
 
 			end_len = old_uri.len - ((param_tok.s + param_tok.len) - old_uri.s);
