@@ -342,7 +342,7 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 		}
 
 		pkg_free(args);
-		SET_GLOBAL_CTX(compact_ctx_pos, NULL);
+		SET_GLOBAL_CTX(compress_ctx_pos, NULL);
 
 		break;
 	case COMPACT_CB:
@@ -583,11 +583,14 @@ static int mc_compact(struct sip_msg* msg, char* whitelist)
 	struct mc_cmpct_args* args;
 	mc_param_p wh_param = (mc_param_p)whitelist;
 
+	/* first check if anyone else has called mc_compact() on this msg */
+	if (GET_GLOBAL_CTX(compact_ctx_pos))
+		return 1;
+
 	if (mc_get_whitelist(msg, &wh_param, &wh_list, mnd_hdrs_mask)) {
 		LM_ERR("Cannot get whitelist\n");
 		return -1;
 	}
-
 
 	/* args shall be created only if global contexts do not exist and
 	 * tm is not present or tm context is empty */
@@ -603,7 +606,7 @@ static int mc_compact(struct sip_msg* msg, char* whitelist)
 	/* register stateless callbacks */
 	if (register_post_raw_processing_cb(wrap_msg_compact, POST_RAW_PROCESSING, 1/*to be freed*/) < 0) {
 		LM_ERR("failed to add raw processing cb\n");
-		return -1;
+		goto err00;
 	}
 
 	if (tm_api.t_gett && msg->flags&FL_TM_CB_REGISTERED)
@@ -621,8 +624,11 @@ static int mc_compact(struct sip_msg* msg, char* whitelist)
 	return 1;
 
 err00:
-	if (wh_param && wh_param->type == WH_TYPE_PVS)
-		free_whitelist(&wh_list);
+	if (wh_param) {
+		if (wh_param->type == WH_TYPE_PVS)
+			free_whitelist(&wh_list);
+	} else
+		pkg_free(wh_list);
 	return -1;
 }
 
@@ -684,6 +690,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 		buf=get_hdr_field(buf, end, hf);
 
 		if (hf->type == HDR_ERROR_T) {
+			pkg_free(hf);
 			goto free_mem;
 		}
 
@@ -698,7 +705,8 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 				if (append_hf2lst(&hdr_mask[hf->type], hf,
 							&msg_total_len)) {
 					LM_ERR("Cannot append hdr to lst\n");
-					return -1;
+					pkg_free(hf);
+					goto free_mem;
 				}
 			} else {
 				unsigned char c;
@@ -719,6 +727,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 			}
 		} else {
 			clean_hdr_field(hf);
+			pkg_free(hf);
 		}
 
 		hf = 0;
@@ -890,6 +899,7 @@ again:
 
 				hdr_field = temp->sibling;
 				clean_hdr_field(temp);
+				pkg_free(temp);
 				temp = hdr_field;
 			}
 
@@ -898,12 +908,14 @@ again:
 								&new_buf.len);
 
 			if (hdr_mask[i]->next) {
+				/* XXX: is this really getting here?! */
 				/* If more other headers, put all of them in
 					the new buffer and free every allocated
 					member */
 				temp = hdr_mask[i];
 				hdr_mask[i] = hdr_mask[i]->next;
 				clean_hdr_field(temp);
+				pkg_free(temp);
 
 				goto again;
 			} else {
@@ -954,15 +966,22 @@ again:
 	pkg_free(hdr_mask);
 
 	/* Free the whitelist if pvs */
-	if (wh_param && wh_param->type == WH_TYPE_PVS)
-		free_whitelist(&wh_list);
+	if (wh_param) {
+		if (wh_param->type == WH_TYPE_PVS)
+			free_whitelist(&wh_list);
+	} else
+		pkg_free(wh_list);
 
 	return 0;
 memerr:
 	LM_ERR("No more pkg mem\n");
 free_mem:
 	free_hdr_mask(hdr_mask);
-	free_whitelist(&wh_list);
+	if (wh_param) {
+		if (wh_param->type == WH_TYPE_PVS)
+			free_whitelist(&wh_list);
+	} else
+		pkg_free(wh_list);
 	return -1;
 }
 
@@ -1189,6 +1208,7 @@ int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 	mc_whitelist_p hdr2compress_list;
 
 	wh_param = args->wh_param;
+
 	hdr2compress_list = args->hdr2compress_list;
 	algo = args->algo;
 	flags = args->flags;
@@ -1646,16 +1666,22 @@ only_body:
 	free_hdr_list(&mnd_hdrs_head);
 	free_hdr_list(&non_mnd_hdrs_head);
 
-	if (wh_param && wh_param->type == WH_TYPE_PVS)
-		free_whitelist(&hdr2compress_list);
+	if (wh_param) {
+		if (wh_param->type == WH_TYPE_PVS)
+			free_whitelist(&hdr2compress_list);
+	} else
+		pkg_free(hdr2compress_list);
 
 	return 0;
 
 free_mem_full:
 	free_hdr_list(&mnd_hdrs_head);
 	free_hdr_list(&non_mnd_hdrs_head);
-	if (wh_param && wh_param->type == WH_TYPE_PVS)
-		free_whitelist(&hdr2compress_list);
+	if (wh_param) {
+		if (wh_param->type == WH_TYPE_PVS)
+			free_whitelist(&hdr2compress_list);
+	} else
+		pkg_free(hdr2compress_list);
 
 	return -1;
 }
