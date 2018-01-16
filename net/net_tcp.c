@@ -1256,10 +1256,11 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 		case CONN_EOF:
 			/* WARNING: this will auto-dec. refcnt! */
 			tcp_c->busy--;
-			/* main doesn't listen on it => we don't have to delete it
-			 if (tcpconn->s!=-1)
-				io_watch_del(&io_h, tcpconn->s, -1, IO_FD_CLOSING);
-			*/
+			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
+				(tcpconn->s!=-1)){
+				reactor_del_all( tcpconn->s, -1, IO_FD_CLOSING);
+				tcpconn->flags|=F_CONN_REMOVED;
+			}
 			tcpconn_destroy(tcpconn); /* closes also the fd */
 			break;
 		default:
