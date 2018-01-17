@@ -179,23 +179,21 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 int xl_print_log(struct sip_msg* msg, pv_elem_p list, int *len)
 {
-	if (pv_printf(msg, list, log_buf, len) < 0) {
-		LM_ERR("failed to resolve xlog variables!\n");
+	if (pv_printf(msg, list, log_buf, len) < 0)
 		return -1;
-	}
 
 	if (trace_xlog(msg, log_buf, *len) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
-		return -1;
+		return -2;
 	}
 
-	return 0;
+	return 1;
 }
 
 
 int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 {
-	int log_len;
+	int log_len, ret;
 	long level;
 	xl_level_p xlp;
 	pv_value_t value;
@@ -220,7 +218,9 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	log_len = xlog_buf_size;
 
 	xlog_level = level;
-	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0) {
+	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
+	if (ret == -1) {
+		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
 		xlog_level = INT_MAX;
 		return -1;
 	}
@@ -229,13 +229,13 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1((int)level, "%.*s", log_len, log_buf);
 
-	return 1;
+	return ret;
 }
 
 
 int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 {
-	int log_len;
+	int log_len, ret;
 
 	if(!is_printable(L_ERR))
 		return 1;
@@ -243,7 +243,9 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 	log_len = xlog_buf_size;
 
 	xlog_level = xlog_default_level;
-	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0) {
+	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
+	if (ret == -1) {
+		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
 		xlog_level = INT_MAX;
 		return -1;
 	}
@@ -252,14 +254,14 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1(xlog_default_level, "%.*s", log_len, log_buf);
 
-	return 1;
+	return ret;
 }
 
 /**
  */
 int xdbg(struct sip_msg* msg, char* frm, char* str2)
 {
-	int log_len;
+	int log_len, ret;
 
 	if(!is_printable(L_DBG))
 		return 1;
@@ -267,7 +269,9 @@ int xdbg(struct sip_msg* msg, char* frm, char* str2)
 	log_len = xlog_buf_size;
 
 	xlog_level = L_DBG;
-	if(xl_print_log(msg, (pv_elem_t*)frm, &log_len)<0) {
+	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
+	if (ret == -1) {
+		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
 		xlog_level = INT_MAX;
 		return -1;
 	}
@@ -276,7 +280,7 @@ int xdbg(struct sip_msg* msg, char* frm, char* str2)
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1(L_DBG, "%.*s", log_len, log_buf);
 
-	return 1;
+	return ret;
 }
 
 int pv_parse_color_name(pv_spec_p sp, str *in)
