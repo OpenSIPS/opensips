@@ -72,6 +72,8 @@ emergency_service_provider|
 emergency_service_provider|1
 fraud_detection|
 fraud_detection|1
+freeswitch|
+freeswitch|1
 METADATA_DEFAULTS
 NIL|NIL|NIL|NIL|8021|NIL
 globalblacklist|

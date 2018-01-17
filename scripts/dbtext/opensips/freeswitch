@@ -1,2 +1,1 @@
 id(int,auto) username(string,null) password(string) ip(string) port(int) events_csv(string,null) 
-freeswitch:1
