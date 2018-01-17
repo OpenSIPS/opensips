@@ -862,18 +862,24 @@ enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
 										str *exchg_tag, int req_like)
 {
 	bin_packet_t packet;
+	int rc;
 
 	if (prep_gen_msg(&packet, cluster_id, dst_id, gen_msg, exchg_tag, req_like) < 0) {
 		LM_ERR("Failed to build generic clusterer message\n");
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_send_msg(&packet, cluster_id, dst_id);
+	rc = clusterer_send_msg(&packet, cluster_id, dst_id);
+
+	bin_free_packet(&packet);
+
+	return rc;
 }
 
 enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag)
 {
 	bin_packet_t packet;
+	int rc;
 
 	if (prep_gen_msg(&packet, cluster_id, -1 /* dummy value */, gen_msg,
 			exchg_tag, 1) < 0) {
@@ -881,7 +887,11 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_bcast_msg(&packet, cluster_id);
+	rc = clusterer_bcast_msg(&packet, cluster_id);
+
+	bin_free_packet(&packet);
+
+	return rc;
 }
 
 enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
