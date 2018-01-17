@@ -1,3 +1,1104 @@
+=========================== Release 2.3.3 ==============================
+
+2018-01-17  Razvan Crainea  <razvan at opensips dot org>
+	* [90774364b] :
+
+	rtpengine: handle POLLHUP while draining
+	Thanks go to Pete Kelly for reporting this
+	(cherry picked from commit 151c1cf0e7b0b600a7ce2ec2807738aec214b607)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [34da7a773] :
+
+	xlog: Fix a series of issues
+	    * properly report xlog() success/failure at script level
+	    * differentiate between xlog errors (-1) and HEP errors (-2)
+	    * do not cancel logging because of HEP errors
+	    * remove bogus error log
+	    * hint at 'xlog_buf_size' if the print string is too large
+	(cherry picked from commit 95ab8c05f7f34d83267fc8950367d98ac8e9e3b9)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [b00e6ffbe] :
+
+	mid_registrar: Fix an AoR throttling bug
+	Do not apply min/max "expires" module limitations when computing the
+	main registrar's contact expiration value.
+	(cherry picked from commit 0d1bc44237b8046b7ea0fb34c9806806c913de2d)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [66a0cd5d2] :
+
+	mid_registrar: Fix unsafe strdup operation
+	(cherry picked from commit 14baedfbd23cd513347d46f3a4412e3e3aad1adf)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [6894b3ce3] :
+
+	mid_registrar: Improve the advertised socket logic
+	Instead of blindly advertising the first UDP interface in the
+	self-generated, outgoing Contact URIs, the mid_registrar is now
+	aware of the next SIP hop and properly advertises the actual
+	sending interface which will be used. This includes any forced
+	send socket logic at script level.
+	(cherry picked from commit 7bafce982b1c7a2416025fed6b04b4d9dffc5b0a)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [f48a0cc90] :
+
+	mid_registrar: Fix unused variable
+	(cherry picked from commit 3acaf2e92a74cd8b13539eb75cf45a5edcc352ae)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [dbfc155d9] :
+
+	mid_registrar: Fix a PKG memory leak
+	Although the TMCB_RESPONSE_IN callback provides a reference to the initial
+	request during reply processing, this sip_msg must not be parsed (i.e. passed
+	to parse_headers()), otherwise we leak PKG memory, since parsing is
+	PKG-based, while the request buffer is copied in SHM.
+
+	The current workaround for mid_registrar is to immediately duplicate all
+	contact-related data we could possibly need, should the contact successfully
+	register on the downstream registrar. This copying takes place during request
+	processing. Once the reply arrives, we only make use of this info in order to
+	store the contact in usrloc, and barely even use the "req" sip_msg
+	provided by tm.
+	(cherry picked from commit 86628e6d418ed72d159ebb1b055b86daca0c4f6e)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [370705422] :
+
+	Add a "struct ucontact_info" logging function
+	(cherry picked from commit a2dd10a49b2557c1343cd87c364a1144e9ea7118)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [59f98e968] :
+
+	mid_registrar: Never parallel fork in "mode == 1"
+	This patch fixes a subtle bug where a "mode == 1" mid-registrar would
+	parallel fork to a random number of contacts by walking the remaining
+	"->next" values of the currently looked up contact.
+	(cherry picked from commit 02b114902dc91ea3a1f2dfc36d00658150cb9946)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [2adf24ff2] :
+
+	mid_registrar: Update docs
+	(cherry picked from commit fee1ccb72bc62823259dedfaccd5a262c8dbd1e3)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [d3bcf482b] :
+
+	mid_registrar: Restore "default_expires" and "max_expires"
+	These registrar modparams were left unmaintained / ignored during development.
+	However, they are still valid and completely separate from
+	"outgoing_expires". The former two params control ingress expirations,
+	while the latter one controls egress expirations.
+
+	To match the newly introduced defaults, we also increase the default
+	"outgoing_expires" from 600s to 3600s.
+	(cherry picked from commit 67c31603e2215bca6211bcaaa4b0682d9325fa18)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [478637e0e] :
+
+	mid_registrar: Fix a CSeq bug in mode == 1
+	Contact updates would not also update the last cseq value. This, in turn,
+	would lead to SIP-wise incorrect self-generated de-registrations.
+	(cherry picked from commit 7bcf0323369587ae0f153de1f7a87c7f85aefd4d)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [16bd2dd27] :
+
+	mid_registrar: Restore reply contact mangling
+	The contact rework commits have rendered the restore_reply_contacts()
+	function obsolete, thus the contact headers were propagating upstream unchanged.
+
+	We now rebuild the reply contact set in all modes by using build_contacts()
+
+	Thanks to Răzvan Crainea for spotting the issue
+	(cherry picked from commit f298587d6277d28e01ab26f64655a8b5d1bcf100)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [a8b63f5a7] :
+
+	usrloc: Fix bad comparison
+	Also complete commit d3790e6c
+
+	Reported by Răzvan Crainea
+	Fixes Coverity CID #180087
+	Fixes Coverity CID #180093
+	(cherry picked from commit 0124344f9733a123753435367525ec9f56e06f1b)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [695e7d430] :
+
+	mid_registrar: Fix CSeq handling for De-REGISTERs
+	Keep track of outgoing CSeq values and use this value during
+	self-generated de-registrations, rather than using the tm's built-in
+	default CSeq value of "13".
+	(cherry picked from commit 016da2f7f31b764da5dcce1d4189b8f9ef77b5cb)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [1c0ea0207] :
+
+	mid_registrar: Fix NAT issues in "contact" insertion mode
+	This patch completely reworks the saving/matching logic with regards
+	to the SIP contacts generated by the mid-registrar. It is only relevant
+	to working modes "0" (mirror) and "1" (contact throttling).
+
+	The former logic (encoding the requests's Contact as a URI parameter
+	of the outgoing contact) was somewhat stateless, as it would forward
+	requests to the mid-registrar's contacts directly to their actual Contact
+	URIs (UA side). When NAT comes into play, this no longer works well.
+
+	Fortunately, the user location already handles this problem. Thus, we
+	change the mid-registrar to advertise contact IDs instead of the device's
+	contact. As requests arrive for the contact IDs, we are easily able to
+	look up their corresponding user location AoR, contact, along with any
+	other useful information for NAT traversal.
+	(cherry picked from commit 7e190a8b1cdcdfe66afe9eea4b0be4c75f275a89)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [512acb13b] :
+
+	mid_registrar: Fix possible crash in mirror mode
+	(cherry picked from commit 8c46ab3cad07029a1e78fdb1d57300247c00c4eb)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [3a079a756] :
+
+	usrloc: Add urecord reference counting mechanism
+	This mechanism is required by the mid-registrar, which needs to
+	"reserve" contact IDs while the main registrar decides upon them.
+	This means that a blank urecord structure must be kept alive during
+	this process.
+
+	By reference counting the blank urecord structures, we prevent them
+	from being cleared by the timer before the outgoing registrations
+	get a chance to receive a reply.
+	(cherry picked from commit ad274fad9a6fd072737d45230a0c297d0e4b9329)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [b2554c3c3] :
+
+	usrloc: Allow forced IDs during contact inserts
+	(cherry picked from commit 7d4894943ad522406d1f2cb9231821c91f423562)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [f47d185e0] :
+
+	usrloc: Add some useful API functions
+	    * get_ucontact_from_id() - fetch both ct and rec from an id
+	    * next_contact_id() - fetch and advance the current ct counter
+	(cherry picked from commit 15a5067b2d493c273842b723199d42c695a1b93f)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [3894087d5] :
+
+	Add str2int64() parsing function
+	(cherry picked from commit e9be01680557a030c5fd6346299f5db663467018)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [520b4d4d3] :
+
+	Fix int2str() function signature
+	Although implemented to be able to print 64-bit integers, int2str()
+	downcasted all of its parameters to an "unsigned long" type, thus
+	breaking behavior on 32-bit architectures.
+	(cherry picked from commit a5d633924fc78cd4d9999a727ab529cb1bf50405)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [99432b1a9] :
+
+	usrloc: Fix locking for contact_id-based deletion
+	The delete_ucontact_from_id(), get_ucontact_from_id() pair of functions
+	were masking possible code execution paths which would lead to unsafe memory
+	access. This, in turn, would cause the ping_checker_timer() job of nathelper to
+	occasionally crash and burn.
+
+	Reported by solo@astercc.org.
+	(cherry picked from commit 18a93c89aa1c32498689a6f6dd09911272c18896)
+
+
+2018-01-17  Liviu Chircu  <liviu at opensips dot org>
+	* [8d139f375] :
+
+	usrloc API: Make get_urecord() more robust
+	Zeroize the output pointer if record is not found.
+	(cherry picked from commit d4967201bf4243646eef0a92be1c37dff0aba29d)
+
+
+2018-01-16  Razvan Crainea  <razvan at opensips dot org>
+	* [96452b15a] :
+
+	compression: fix memory leak due to whitelists
+	Thanks go to Nick Altmann for reporting this
+	Closes #1252
+	(cherry picked from commit d33253b6bdf4561f2a978fc093992d72a87773fb)
+
+
+2018-01-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [50735b935] :
+
+	Fix RURI len calculation after removing param.
+	Reported by Denis Lemire
+
+
+2018-01-16  Razvan Crainea  <razvan at opensips dot org>
+	* [4657dd58d] :
+
+	net_tcp: remove fd from reactor before cleaning up
+	(cherry picked from commit 8c5651be24edfc3aef8478089fb7c6495638b5a9)
+
+
+2018-01-12  rvlad-patrascu  <vladp at opensips dot org>
+	* [c30e59221] :
+
+	Revert "sql_cacher: do data loading for full caching in the first child process"
+	This reverts commit ca2f6633ed9d8fafa15a8a10c10471f3ac99cfaf.
+
+
+2018-01-12  rvlad-patrascu  <vladp at opensips dot org>
+	* [ef81f3be9] :
+
+	Revert "sql_cacher: fix data loading from previous commit"
+	This reverts commit 7e475405e9729077e6d813eb98a081847ccb37e1.
+
+
+2018-01-12  rvlad-patrascu  <vladp at opensips dot org>
+	* [7e475405e] :
+
+	sql_cacher: fix data loading from previous commit
+	Fix backporting of previous commit and do data loading in the child_init
+	function as the IPC framework doesn't have the ability to send RPC yet.
+
+
+2018-01-11  rvlad-patrascu  <vladp at opensips dot org>
+	* [ca2f6633e] :
+
+	sql_cacher: do data loading for full caching in the first child process
+	Speed up OpenSIPS starting sequence by doing the full caching data load
+	in the first process, after child_init is done (via RPC), instead of
+	during module init.
+	(cherry picked from commit 71960b917deef997799c2abbd80cae2182642341)
+
+
+2018-01-11  rvlad-patrascu  <vladp at opensips dot org>
+	* [bfa1df2a2] :
+
+	sip_i: small doc fix for add_isup_part function
+	(cherry picked from commit 0b06e6ee3346dd60c5837c982608531e06d53416)
+
+
+2018-01-11  Razvan Crainea  <razvan at opensips dot org>
+	* [7d6f2fc6a] :
+
+	msg: properly compute the initial body size
+	Also initialilize the body structure in case there is no body in the message.
+
+	Thanks go to Aqs Younas for reporting it
+
+
+2018-01-11  Razvan Crainea  <razvan at opensips dot org>
+	* [a3b192739] :
+
+	protos/tcp: respect async operations order
+	In case there is a write request, before actually writing the data on
+	the network, check if there are any async chunks left, and make sure
+	they are sent before any other write happens. This is necessary to make
+	sure the order of the packets is respected, otherwise we might end up
+	with fragments of other packets in the stream.
+
+	Thanks go to Vlad Patrascu for reporting and testing this.
+	(cherry picked from commit 5773e65b9058643191544763e0f5ff26f5a7fb3b)
+
+
+2018-01-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8bf502c7f] :
+
+	Fix TO parsing when there is a comma inside a quoted display/value
+	This bug was introduced during the re-factoring of the TO parser to support multple body parts - see 908b9f190bff3b356f76ce8ca75d43a2c149a412
+
+	Reported by Tito Cumpen <tito@xsvoce.com>
+	(cherry picked from commit 769fb3c5913c9d7e583c4cdbdf26aae82cdaa205)
+
+
+2018-01-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d448ab6e3] :
+
+	Fixed parameter passing for dr_is_gw().
+	If partitions are not used, do a logic shift for the parameters with one position to the left to compensate the missing partition param.
+
+	Reported by Jonathan Hunter <hunterj91@hotmail.com>
+	(cherry picked from commit 963f05169c18abd9b2ccdf26170e08628a54becb)
+
+
+2018-01-09  Razvan Crainea  <razvan at opensips dot org>
+	* [f71f6f3b0] :
+
+	pike: enforce remove latency to at least sampling_time_unit + 1
+	This prevents UNBLOCK events from being lost.
+	(cherry picked from commit cf190a95515def67333aeab2ab5b74629ed74d22)
+
+
+2018-01-09  Razvan Crainea  <razvan at opensips dot org>
+	* [730d1b0aa] :
+
+	msg: remove extra bytes from malformed bodies
+	This commit fixes an abort() generated by the message builder
+	when a malformed message is received that has a Content-Length lower
+	than the actual body.
+
+	Thanks go to Jon Hunter for reporting this issue and offering all
+	necessary information for debugging it.
+
+	Closes #1244
+	(cherry picked from commit fecb4b244c3cf84435af03db88bfd88002a69177)
+
+
+2018-01-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a3b332ca4] :
+
+	Ignore tracing types which are not recognized.
+	Instead of exiting with error and abording the whole tracing, better simple ignore the unrecognized tracing types.
+	(cherry picked from commit c6c937d1e7e2fc14339de79590c49455bfe4eaf7)
+
+
+2018-01-05  Liviu Chircu  <liviu at opensips dot org>
+	* [aa81c6721] :
+
+	rest_client: Fix a rest_post() regression bug
+	Commit c549e6ec added an unnecessary libcurl option which caused
+	the HTTP headers to be logged into the output body pseudo-variable
+	alongside the request body when performing a rest_post().
+
+	This patch disables the above-mentioned libcurl option (CURLOPT_HEADER).
+
+	Reported by @goharahmed on GitHub.
+	Fixes #1247.
+	(cherry picked from commit 91d7e7f4bc44857b6649dcbfd48b0ad9decf902c)
+
+
+2018-01-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4f35c99a0] :
+
+	Fixed expantion of shm_info() for HP_MALLOC
+	Reported by Nick Altmann
+	Closes #1240
+	(cherry picked from commit cec2d66b72a1c65cd3c7fa0276211aa8566cc268)
+
+
+2018-01-05  Liviu Chircu  <liviu at opensips dot org>
+	* [5f8f3e1f6] :
+
+	menuconfig: Fix a PREFIX handling bug
+	This patch fixes a bug where menuconfig corrupts the Makefile.conf
+	PREFIX variable value by incorrectly trimming the last char in an
+	attempt to ensure that the value has a trailing '/' char. This would
+	happen each time the user launches menuconfig and chooses
+	"Exit & Save All Changes".
+
+	Reported by @Jeffrey2019 on GitHub.
+	Fixes #1248.
+	(cherry picked from commit aab1ec7e0dcefdef173e327cd35a857895ad3a75)
+
+
+2018-01-03  rvlad-patrascu  <vladp at opensips dot org>
+	* [dfe4cd43e] :
+
+	dialog: fix a clusterer module registration bug
+	Bad cluster id provided to the clusterer module when only the
+	accept_replicated_profiles parameter was defined without accept_replicated_dialogs.
+
+	Thanks go to Nick Altmann for reporting this.
+
+	Closes #1243
+	(cherry picked from commit 9bb8021e257fe5db8a9be086fe41931e9b8741c3)
+
+
+2018-01-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f9b26fbc8] :
+
+	Improve docs on db_url setting
+	(cherry picked from commit f7216003b5d19a80fbf115987c9b4f8b4f43bc5e)
+
+
+2018-01-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7dbb7c7dd] :
+
+	Fixed handling of TTL 0 in DNS answers.
+	RFC1035 states : "Zero TTL values are interpreted to mean that the RR can only be used for the transaction in progress, and should not be cached."
+
+	Reported by Marcin Luczkiewicz @ Magrathea Telecom
+	(cherry picked from commit b4d74ebd5fee055065e2e400f10c97a8bad3d9dd)
+
+
+2017-12-22  Razvan Crainea  <razvan at opensips dot org>
+	* [01c078df2] :
+
+	dispatcher: restore URI headers check from prev. commit
+	(cherry picked from commit 6b2ad1fe3f37ccb5aa0b7fc4da6676278baacedb)
+
+
+2017-12-22  Razvan Crainea  <razvan at opensips dot org>
+	* [74c5e9c32] :
+
+	dispatcher: fix TCP and TLS destinations
+	Before this commit, the structures used internally to store the
+	destinations URI were not storing the URI parameters - since these were
+	dropped, URIs that contain TCP or TLS transport would be involuntary
+	converted to UDP.
+	This fix also stores the provisioned parameters in the dst_uri.
+
+	Closes #1227
+	(cherry picked from commit 575a1b15936bdc306e00ca01c8534567201d13a9)
+
+
+2017-12-21  Razvan Crainea  <razvan at opensips dot org>
+	* [8f4a31818] :
+
+	dialog: don't mark new dialogs as deleted
+	(cherry picked from commit e845b37a598d6315b68c4063528b8c72496ce23c)
+
+
+2017-12-21  Liviu Chircu  <liviu at opensips dot org>
+	* [774653190] :
+
+	cache_counter_fetch(): Fix bogus error handling
+	(looks like a copy-paste bug)
+	(cherry picked from commit 9a19ff96a2c7db4c544c20065c1c90bb2a5e8aae)
+
+
+2017-12-21  Liviu Chircu  <liviu at opensips dot org>
+	* [1f41367d0] :
+
+	cachedb core: Fix a minor mem leak
+	(cherry picked from commit 1f3a0a3358d13cdfab9e844790ac58711be6ef99)
+
+
+2017-12-21  Liviu Chircu  <liviu at opensips dot org>
+	* [11e4181e6] :
+
+	db: Fix a minor mem leak
+	(cherry picked from commit 8b6884e98e8b4cbabcd3218f8b7a73864a07fc95)
+
+
+2017-12-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [03cd65c9f] :
+
+	Fixed error message.
+	Properly report the hdr name (PAI or PPI) when hdr fields validation fails
+	(cherry picked from commit 30d47e65835bacc766ae05257ef50df2e9420468)
+
+
+2017-12-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1702ebe44] :
+
+	Remove some heavy log (instroduced with the prev commit).
+	(cherry picked from commit ef89e181ff7cb8274b12d0a34aff74e0ae5a3a4a)
+
+
+2017-12-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a6ee57698] :
+
+	Use as OBP the first PATH URI.
+	If PATH defined, when injecting a new branch, extract the first PATH URI and use it as destination.
+	Reported by @futsystems in #1235
+	Fix for problem 1.
+	(cherry picked from commit f78926432f1beb3594fd1fd72e64407a5b0ad1b7)
+
+
+2017-12-20  Razvan Crainea  <razvan at opensips dot org>
+	* [b2ce0c2ed] :
+
+	debian: let debuild figure out mysql dependencies
+	Reported by Nick Altmann
+	(cherry picked from commit 5916511339e638ff301ad7556c2ef8f4cb7f36bb)
+
+
+2017-12-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c57bd60af] :
+
+	Fix validation for PAI, PPI and Diversion headers
+	These headers must be parsed as multu-field headers
+	Also for PAI and PPI we apply extra checks as per RFC3325.
+
+	Close #1134
+	Close #1228
+	(cherry picked from commit 69ef92cd9f74020da5398eab0f81668bb8e12281)
+
+
+2017-12-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9ae04214b] :
+
+	Fix hdr parsing to accept multi-value bodies.
+	The parser for Diversion, PAI and PPI use now the parse_multi_to() in order to handle multi name-addr/addr-spec hdr bodies.
+	(cherry picked from commit 908b9f190bff3b356f76ce8ca75d43a2c149a412)
+
+
+2017-12-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [25c30561b] :
+
+	Refactor generic parse_to() to accept multi-value headers.
+	New function parse_multi_to() added to allow parsing of multi-value (comma separated) name-addr/addr-spec headers (like Diversion, PAI, PPI).
+	Changes are backward compatible in regards to original parse_to() function.
+	(cherry picked from commit a7e724a09c01c78a5f3c303d2966a55883eaffeb)
+
+
+2017-12-19  Razvan Crainea  <razvan at opensips dot org>
+	* [781e1b372] :
+
+	deprecate epoll_et and use epoll_lt instead
+	epoll_et needs draining the socket out of data, which behaves against
+	our balancing mechanism.
+	(cherry picked from commit cbfef48c726bd4679f7f63df83250523101068f6)
+
+
+2017-12-19  Razvan Crainea  <razvan at opensips dot org>
+	* [04a0192ee] :
+
+	acc: fix prepared statements for non-ctx records
+	In case one is doing a "manual" acc_db_request() in local route, where
+	you don't have a context, there are not extra values available, thus we
+	need to use a different prepared statement.
+
+	Credits go to Pete Kelly for reporting this
+	(cherry picked from commit a250191728b761cdfb18fe37d2625e94623918f7)
+
+
+2017-12-19  Razvan Crainea  <razvan at opensips dot org>
+	* [5047ff98f] :
+
+	ratelimit: improve expire_time parameter doc
+	Kudos the Ecosmob team for reporting this!
+	(cherry picked from commit 49805a1c0a6ca1a59de1d6b0298e3288bca9b45f)
+
+
+2017-12-19  Razvan Crainea  <razvan at opensips dot org>
+	* [880d628e2] :
+
+	ratelimit: improve documentation on rl_check()
+	Consider using rl_dec_count() for declined calls.
+
+	Credits go to Ecosmob for reporting this.
+	(cherry picked from commit 0124e7f28ad8fd04f9d8f7f3d555568c21fa3b28)
+
+
+2017-12-19  Razvan Crainea  <razvan at opensips dot org>
+	* [801cbca4b] :
+
+	ratelimit: fix slot_period documentation
+	slot_period should be expressed in milliseconds, not milliseconds
+
+	Kudos to the Ecosmob team for reporting this!
+	(cherry picked from commit f932cc4c02d34bcc725ee0a3659343bdee0afd5e)
+
+
+2017-12-15  rvlad-patrascu  <vladp at opensips dot org>
+	* [68ea1c250] :
+
+	sql_cacher: complete mem leak fix from previous commit
+	(cherry picked from commit 5923267fb67200562bcae1662878d3024106613e)
+
+
+2017-12-15  rvlad-patrascu  <vladp at opensips dot org>
+	* [2b266f328] :
+
+	sql_cacher: fix memory leaks when loading from SQL on demand
+	(cherry picked from commit 5179bc2f97b65236dddfe59cc9c6795e4a1bde36)
+
+
+2017-12-15  rvlad-patrascu  <vladp at opensips dot org>
+	* [fe22adbcf] :
+
+	sql_cacher: fix possible crash when loading from SQL on demand
+	Elements from the list of queries in progress are now properly removed.
+	(cherry picked from commit 6aef8347bbfaf5bec21455abc0baa4024faf55d6)
+
+
+2017-12-13  Razvan Crainea  <razvan at opensips dot org>
+	* [2ae87c644] :
+
+	dialog: fix error typo
+	(cherry picked from commit 49bb70dd1a018efe04e9640778bb295f8ad2665c)
+
+
+2017-12-13  Razvan Crainea  <razvan at opensips dot org>
+	* [4371208a6] :
+
+	disable EPOLLEXCLUSIVE due to bogus behavior
+	(cherry picked from commit 3596efdc004b1ab9241cb6e235477cb4c7e11eff)
+
+
+2017-12-13  Razvan Crainea  <razvan at opensips dot org>
+	* [f6ceb3ea9] :
+
+	clang: fix blacklist bitwise check warnings
+	(cherry picked from commit e37be3ab2f8c985c2e59323f8dfcc22153695e51)
+
+
+2017-12-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ca96dd653] :
+
+	Fix README file
+	local:group2///collection2 Cache DB URL is broken in example.
+
+
+2017-12-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [87025cc92] :
+
+	Fix ambuguity in cache DB URL parser.
+	Do not accept URLs like schema:group//.. ; Correct format is schema:group://.. or schema://..
+
+
+2017-12-08  Razvan Crainea  <razvan at opensips dot org>
+	* [b24672a4f] :
+
+	rtpproxy/rtpengine: handle error while draining
+	(cherry picked from commit 5ae5daecbd13b3ec0565a68bc93c45a61b740546)
+
+
+2017-12-07  Razvan Crainea  <razvan at opensips dot org>
+	* [8da763af6] :
+
+	ip.resolve: null terminate queried string
+	Thanks go to Nick Altman for reporting this!
+	(cherry picked from commit f0fcf326ccd240b9b3de7d8e9f83aa82e8e12662)
+
+
+2017-12-07  Razvan Crainea  <razvan at opensips dot org>
+	* [0082cf93a] :
+
+	Revert "ut: fix *_strdup() functions"
+	This reverts commit 99acfd150eefb43813e562784c17f79e770024af.
+
+
+2017-12-07  Razvan Crainea  <razvan at opensips dot org>
+	* [99acfd150] :
+
+	ut: fix *_strdup() functions
+	(cherry picked from commit 595c91590cbbb3eed3ba789d689281c7088f0ffe)
+
+
+2017-12-06  Razvan Crainea  <razvan at opensips dot org>
+	* [0d62b1296] :
+
+	add interface name only if specified
+	(cherry picked from commit 27de1916851ffc7d4208b5db119c0036170b1f56)
+
+
+2017-12-06  Razvan Crainea  <razvan at opensips dot org>
+	* [a13d6d76b] :
+
+	add support for '*' keyword for listeners
+	Using this feature you can specify opensips it should listen for a
+	specific protocol on all interfaces. The syntax is:
+	```
+	listen = udp:*:5060
+	```
+	(cherry picked from commit 4b39b578d430d49301a7d3fcf2f13d1bcc52a962)
+
+
+2017-11-24  Liviu Chircu  <liviu at opensips dot org>
+	* [2c92b923a] :
+
+	cachedb_mongodb: Start OpenSIPS if ":port" URL part is missing
+	Reported by Răzvan Crainea
+	(cherry picked from commit 70eea5c61b3262c2fd182cf82ec9da8df6b4e259)
+
+
+2017-11-24  Liviu Chircu  <liviu at opensips dot org>
+	* [2eaef62bc] :
+
+	mid_registrar: Fix an AoR throttling corner-case
+	If the main registrar omits the Contact in the 200 OK reply,
+	it could possibly crash the mid registrar.
+
+	Reported by Răzvan Crainea.
+	Fixes Coverity CID #180107
+	(cherry picked from commit d3790e6cdd77d4a180189f27f617c99c2f6b1b81)
+
+
+2017-11-23  Razvan Crainea  <razvan at opensips dot org>
+	* [450c3bb3a] :
+
+	rtpproxy: fix rtpproxy_stats() fixup for more params
+	Thanks go to Lt-Flash(github) for reporting and providing the fix
+	Closes #1219
+	(cherry picked from commit 5e1568660007d3b45911301764caeebf6933d09b)
+
+
+2017-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [e7d6aba8f] :
+
+	packaging/debian: merge master changes
+
+
+2017-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [514206800] :
+
+	packaging: sync debian and redhat_fedora service files
+	Thanks to Nick Altman's suggestions
+	(cherry picked from commit ef82312cbef3ba944df546eaee25b49659df899a)
+
+
+2017-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [fc8f87c11] :
+
+	debian: add m4 support in systemctl
+	(cherry picked from commit f562251d91a8a57e662db513e2d393a1f9de2884)
+
+
+2017-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [2f8e3100c] :
+
+	debian: add lsb-release dependency
+	Suggested by Nick Altmann to fix stretch and xenial build errros
+	(cherry picked from commit 069a8f6d187b8b714da40783554d02db31d8319e)
+
+
+2017-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [1ab7d29b0] :
+
+	move all debian files in a single directory
+	(cherry picked from commit d4fdc854fc337e6749b2c17ad376b4b8827a2651)
+
+
+2017-11-21  Razvan Crainea  <razvan at opensips dot org>
+	* [4f0558c20] :
+
+	Merge branch 'lemenkov-mariadb_unnecessary_include'
+	(cherry picked from commit 63042c9221e596556233f7fc1b174cc30f6cfb8b)
+
+
+2017-11-21  Razvan Crainea  <razvan at opensips dot org>
+	* [f55b58ad2] :
+
+	couchbase: fix multiple hosts usage
+	Closes #1216
+	(cherry picked from commit c23ad230af545e2ed9a153a0f4a4e5c3998f16f3)
+
+
+2017-11-21  Razvan Crainea  <razvan at opensips dot org>
+	* [3dba6912b] :
+
+	couchbase: fix LIBS in Makefile
+	(cherry picked from commit 56490e4e325bab1714be516c88f3627a558e5f4d)
+
+
+2017-11-16  Liviu Chircu  <liviu at opensips dot org>
+	* [823044b45] :
+
+	usrloc: Fix bad logical condition
+	Reported by Răzvan Crainea.
+	(cherry picked from commit a644f1b370d61e60b2f4de20c9728564d8d8a06d)
+
+
+2017-11-09  Razvan Crainea  <razvan at opensips dot org>
+	* [93eb6599e] :
+
+	rtpengine: do not use replace bson for delete
+	Prevent the module for using replace-* attributes for any other
+	operation than offer or answer. This allows you to use the
+	rtpengine_manage() function easier.
+
+	Reported by Edwin Hoff
+	(cherry picked from commit d67fbb9809427cc4087563bbbebf556420f1f330)
+
+
+2017-11-09  Razvan Crainea  <razvan at opensips dot org>
+	* [b72d2272a] :
+
+	db_sqlite: let the DB interface determine the capabilities
+	This prevens the module from advertising bogus capabilities - in this
+	case the sqlite module was saying that it has the ASYNC RAW queries
+	support, although it didn't.
+
+	Reported by Wilhelm Lundgren on list
+	(cherry picked from commit b9ca13a643e4c21aeba1fa9d88c57a054a290f64)
+
+
+2017-11-01  Liviu Chircu  <liviu at opensips dot org>
+	* [7581bd575] :
+
+	doc: Fix formulas for FS-driven routing
+	Also add a useful example
+	(cherry picked from commit 18e95e6e96cb01a1c261eef635ae89a2d5edd9b1)
+
+
+2017-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [53a271eb4] :
+
+	clusterer: Add "proto_bin" module dependency
+	(cherry picked from commit fbb54143ec90fe944051a4b05e2e142aa593f911)
+
+
+2017-10-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e5a32e360] :
+
+	Fix creating the profiles list in the dlg_list_ctx MI command
+	The profiles are not array, but list as they have different names for the nodes.Reported by Vladimir Dubov (@vovad)
+	Closes #1166
+	(cherry picked from commit 60d161d447ccf082aa1be7fbb2261c5548dcd3bf)
+
+
+2017-10-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [420d13296] :
+
+	Fixed trace URI identification for the non-SIP protos.
+	In the e59a7399e982ef58a7a12ffb53d8aa8432f537ab commit, I broke the hash based matching logic, so tracing for non-sip (xlog, net, rest) was affected.
+
+
+2017-10-25  Liviu Chircu  <liviu at opensips dot org>
+	* [3ed8010e7] :
+
+	mid_registrar: Add "next hop" awareness
+	The mid_registrar must preserve the values of both $ru and $du, in
+	order to replicate the same behavior for its De-REGISTER requests.
+	(cherry picked from commit 3a1d8053357b5ac4d84bc5de89ca0059af9cdc28)
+
+
+2017-10-25  Liviu Chircu  <liviu at opensips dot org>
+	* [1c55866d9] :
+
+	mid_registrar: Fix crash on missing Contact ";expires"
+	Correctly process contact expirations on 200 OK replies
+	in "db_mode = 1".
+
+	Reported by Jim DeVito.
+	(cherry picked from commit fc5762694201ebe4902d027e8daeaf29047a2a8a)
+
+
+2017-10-24  Razvan Crainea  <razvan at opensips dot org>
+	* [119c841b0] :
+
+	db_virtual: fix previous commit
+	(cherry picked from commit f53a74f5a6d572d69fa7439a3762ca6c3faba751)
+
+
+2017-10-24  Razvan Crainea  <razvan at opensips dot org>
+	* [9b1cd8aee] :
+
+	db_virtual: provide DELETE capabilities for ROUND mode
+	(cherry picked from commit 4c7cbb7e06183b318393977f993b0ff31508cd4c)
+
+
+2017-10-24  Razvan Crainea  <razvan at opensips dot org>
+	* [f25fbf631] :
+
+	db: do not compute capabilities
+	Do not compute capabilities for modules that pre-populate them. This
+	fixes an issue where the db engine was overwriting the db capabilities
+	of db_virtual.
+
+	Thanks go to Jonathan Hulme for reporting and providing testing
+	environment
+	(cherry picked from commit 0527560978028de80a51343714429e5a3d923919)
+
+
+2017-10-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [77683dda3] :
+
+	Fix init of the cachedb related module params
+	Init val_prefix, noval_prefix and size_prefix before general cachedb init.
+	Credits go to @Tinet-AaronAn
+	Closes #1203
+	(cherry picked from commit ec8d6a982a93d96fec8683426d2107bda67de66f)
+
+
+2017-10-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [862ec4f03] :
+
+	Improved explanation on the "port" parameter.
+	The port parameter sets the default port for the protocol, affecting both listeners and sending URIs.
+	(cherry picked from commit e67a055fc8c3481dd6189d3d412f69dac1a20842)
+
+
+2017-10-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bdc1d68e5] :
+
+	Fix escaping URI parameters - skip alphanumerical chars.
+	Reported by Ben Newlin on "user" mailing list.
+	(cherry picked from commit b5094f0dc6a4f52555f9cca1ea9df7c846749482)
+
+
+2017-10-16  rvlad-patrascu  <vladp at opensips dot org>
+	* [18a9ad19a] :
+
+	dialog: also share module flags when replicating dialogs
+	(cherry picked from commit ad35e7cedc44efd90c58f26a853585ece5883bac)
+
+
+2017-10-16  rvlad-patrascu  <vladp at opensips dot org>
+	* [3d3c27aec] :
+
+	dialog: fix a runtime bug with DLGCB_LOADED callbacks
+	Relying on the fact that all modules that register dialog callbacks are initialised
+	after the dialog module (thanks to module dependencies), we can run all DLGCB_LOADED
+	callbacks at registration time and also keep them in a list for calling them later
+	(i.e reloading from database via MI cmd or receiving replicated dialog).
+
+	This fixes a series of bugs where the DLGCB_LOADED callback is not run during, e.g.
+	"dlg_db_sync" MI command or received replicated dialogs which do not have their
+	callbacks installed or run.
+	(cherry picked from commit 8c8f27f6091289061f6aaf0d3c85ccd27db80a0d)
+
+
+2017-10-13  Liviu Chircu  <liviu at opensips dot org>
+	* [9cf184ec7] :
+
+	drouting docs: Clarify behavior for the gateway "type" parameter
+
+
+2017-10-13  Liviu Chircu  <liviu at opensips dot org>
+	* [0003db957] :
+
+	dns_cache: Avoid incorrect error logs during startup
+	(cherry picked from commit 5c4db4f320cef56bb91f17629e259711c706eacd)
+
+
+2017-10-12  Liviu Chircu  <liviu at opensips dot org>
+	* [289901940] :
+
+	proto_hep: Fix pkg memory leaks
+	(cherry picked from commit 6f54f780d20e84a4fb029f12b0d3f3129b0b2810)
+
+
+2017-10-12  rvlad-patrascu  <vladp at opensips dot org>
+	* [c3ff507ef] :
+
+	acc: fix possbile memory leak when calling do_accounting() on CANCEL while "report_cancels" modparam not set
+	(cherry picked from commit aa32bf1b6909c8471eea8c2170a3a2a3f94be1cf)
+
+
+2017-10-10  Liviu Chircu  <liviu at opensips dot org>
+	* [8035f95bf] :
+
+	drouting: Fix verbose log line
+	(cherry picked from commit b10b142378a18a302360f56de495efead509f3c0)
+
+
+2017-09-25  Răzvan Crainea  <razvan at opensips dot org>
+	* [111417b2a] :
+
+	Merge pull request #1195 from etamme/master
+	check if trace id node exists before de-reference (fix segfault)
+	(cherry picked from commit 675164c747e4f538dfa34fcdfb46b9adbf3567e4)
+
+
+2017-09-21  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [1017327e4] :
+
+	Merge pull request #1168 from sippy/master_freebsd_fix
+	Fix some minor build issues on FreeBSD
+	(cherry picked from commit bf1c6de3c7ec7aae74df3fe6f5a753f5cf2488ee)
+
+
+2017-09-21  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [69e4a9436] :
+
+	Merge pull request #1191 from etamme/master
+	fix memory leak in cpl-c write_to_db
+	(cherry picked from commit 2a64a1455d63fdabf9d9130811d2932e245afd1e)
+
+
+2017-09-21  Razvan Crainea  <razvan at opensips dot org>
+	* [9970f3abb] :
+
+	add sqlite for jessie and wheezy
+	Fix provided by Nick Altman
+	(cherry picked from commit 6c1a79d291af802d0b7115b15582b068acfe18d5)
+
+
+2017-09-15  Razvan Crainea  <razvan at opensips dot org>
+	* [8a17c82ce] :
+
+	siptrace: allow capturing on any port
+	reported by Eric Tamme from OnSIP
+	(cherry picked from commit b7f9ca3316f4d6c740fc62599a55bae97026efbd)
+
+
+2017-09-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9e497ea4a] :
+
+	Fix bogus error message (probabaly copy paste error)
+	Credits for the fix go to Michael Mavroudis.
+
+
+2017-09-13  Razvan Crainea  <razvan at opensips dot org>
+	* [6b3ba3c7e] :
+
+	proto_wss: release lock even if write fails
+	Detected and fixed by Eric Tamme from OnSIP
+	(cherry picked from commit 99af2fc44f0b8216bdbe7320d41adb208144ada0)
+
+
+2017-09-13  Razvan Crainea  <razvan at opensips dot org>
+	* [cf9c0f17e] :
+
+	proto_wss: write all TLS chunks under a single lock
+	Reported by Eric Tamme from OnSIP
+	(cherry picked from commit e113e147c71b2fa4f84bed3621b91d1ed1de38f6)
+
+
+2017-09-12  Razvan Crainea  <razvan at opensips dot org>
+	* [f77ae3034] :
+
+	parse_fline: fix implicit cast sign
+	(cherry picked from commit b0eb928e7241e9c8c2fcfff3e3bb3704fbfddae6)
+
+
+2017-09-01  Liviu Chircu  <liviu at opensips dot org>
+	* [935fd57e6] :
+
+	sipcapture: Fix primary key issues with PostgreSQL
+	Postgres handles zero-value auto-increment columns which are part of
+	composite primary keys differently than MySQL. Omitting the column
+	altogether from the INSERT statements rather than setting it to
+	zero leads to the expected behavior on both platforms
+	(i.e. "always try to insert a unique id").
+
+	Thanks to Jennifer Hashimoto for reporting and troubleshooting
+	(cherry picked from commit e3be4a13d36898998beafd4acf89ef0c2520749c)
+
+
+2017-08-31  Razvan Crainea  <razvan at opensips dot org>
+	* [166bb4489] :
+
+	Bump version to 2.3.2 in redhat specs as well
+	Reported by Nick Altmann
+
+
+2017-08-31  Razvan Crainea  <razvan at opensips dot org>
+	* [f74855934] :
+
+	Update ChangeLog for 2.3.2
+
+
 =========================== Release 2.3.2 ==============================
 
 2017-08-31  Razvan Crainea  <razvan at opensips dot org>
