@@ -52,6 +52,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 	static struct usr_avp *avp_attr;
 	int_str val;
 
+	ci.contact_id = 0;
+
 	if (_m!=0) {
 		memset( &ci, 0, sizeof(ucontact_info_t));
 
