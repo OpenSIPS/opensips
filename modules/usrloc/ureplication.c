@@ -346,6 +346,8 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	ucontact_t *contact;
 	int port, proto;
 
+	memset(&ci, 0, sizeof ci);
+
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
 
@@ -444,6 +446,8 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	ucontact_t *contact;
 	int port, proto;
 	int rc;
+
+	memset(&ci, 0, sizeof ci);
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
