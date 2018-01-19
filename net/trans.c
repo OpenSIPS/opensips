@@ -127,7 +127,7 @@ int trans_load(void)
 #undef PROTO_PREFIX_LEN
 
 
-int add_listener(struct socket_id *sock, enum si_flags flags)
+int add_listener(struct socket_id *sock)
 {
 	/*
 	 * XXX: using the new version, the protocol _MUST_ be specified
@@ -143,7 +143,7 @@ int add_listener(struct socket_id *sock, enum si_flags flags)
 
 	/* convert to socket_info */
 	if (new_sock2list(sock->name, sock->port, sock->proto, sock->adv_name, sock->adv_port,
-			sock->children, flags, &protos[proto].listeners) < 0) {
+			sock->children, sock->flags, &protos[proto].listeners) < 0) {
 		LM_ERR("cannot add socket to the list\n");
 		return -1;
 	}
@@ -175,7 +175,7 @@ int fix_cmd_listeners(void)
 	for (si = cmd_listeners; si;) {
 		if (si->proto == PROTO_NONE)
 			si->proto = PROTO_UDP;
-		if (add_listener(si, 0) < 0)
+		if (add_listener(si) < 0)
 			LM_ERR("Cannot add socket <%s>, skipping...\n", si->name);
 		prev = si;
 		si = si->next;
@@ -262,8 +262,9 @@ void print_all_socket_lists(void)
 			continue;
 
 		for (si = protos[i].listeners; si; si = si->next)
-			printf("             %s: %s [%s]:%s%s\n", protos[i].name,
+			printf("             %s: %s [%s]:%s%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
-					si->flags & SI_IS_MCAST ? " mcast" : "");
+					si->flags & SI_IS_MCAST ? " mcast" : "",
+					si->flags & SI_IS_ANYCAST ? " anycast" : "");
 	}
 }

@@ -82,7 +82,8 @@ union sockaddr_union{
 
 
 
-enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4 };
+enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4,
+	SI_IS_ANYCAST=8 };
 
 struct socket_info {
 	int socket;
@@ -91,7 +92,7 @@ struct socket_info {
 	str address_str;        /*!< ip address converted to string -- optimization*/
 	unsigned short port_no;  /*!< port number */
 	str port_no_str; /*!< port number converted to string -- optimization*/
-	enum si_flags flags; /*!< SI_IS_IP | SI_IS_LO | SI_IS_MCAST */
+	enum si_flags flags; /*!< SI_IS_IP | SI_IS_LO | SI_IS_MCAST | SI_IS_ANYCAST */
 	union sockaddr_union su;
 	int proto; /*!< tcp or udp*/
 	str sock_str;
@@ -135,6 +136,7 @@ struct socket_id {
 	int proto;
 	int port;
 	int children;
+	enum si_flags flags;
 	struct socket_id* next;
 };
 

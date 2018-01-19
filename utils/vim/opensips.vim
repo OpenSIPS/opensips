@@ -48,7 +48,7 @@ syn keyword osGlobalParam tcp_keepcount tcp_keepidle tcp_keepinterval
 syn keyword osGlobalParam open_files_limit mcast_loopback mcast_ttl tos
 syn keyword osGlobalParam max_while_loops disable_stateless_fwd db_default_url
 syn keyword osGlobalParam disable_503_translation import_file server_header
-syn keyword osGlobalParam tcp_max_msg_time abort_on_assert
+syn keyword osGlobalParam tcp_max_msg_time abort_on_assert anycast
 
 " String constants
 syn match	osSpecial	contained 	display "\\\(x\x\+\|\o\{1,3}\|.\|$\)"

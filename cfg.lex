@@ -376,6 +376,7 @@ DOT			\.
 CR			\n
 
 ANY		"any"
+ANYCAST "anycast"
 
 
 COM_LINE	#
@@ -688,6 +689,7 @@ IMPORTFILE      "import_file"
 <INITIAL>\\{CR}		{count(); } /* eat the escaped CR */
 <INITIAL>{CR}		{ count();/* return CR;*/ }
 <INITIAL>{ANY}	{ count(); return ANY; }
+<INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 
 <INITIAL>{SCRIPTVAR_START} { np=0; state=SCRIPTVAR_S;

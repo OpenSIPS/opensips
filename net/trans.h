@@ -94,7 +94,7 @@ int trans_load(void);
 /*
  * adds a new listener
  */
-int add_listener(struct socket_id *sock, enum si_flags flags);
+int add_listener(struct socket_id *sock);
 
 /*
  * adds a temporary listener

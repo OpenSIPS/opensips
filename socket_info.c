@@ -729,9 +729,10 @@ int fix_socket_list(struct socket_info **list)
 #endif /* USE_MCAST */
 
 #ifdef EXTRA_DEBUG
-		printf("              %.*s [%s]:%s%s\n", si->name.len,
+		printf("              %.*s [%s]:%s%s%s\n", si->name.len,
 				si->name.s, si->address_str.s, si->port_no_str.s,
-		                si->flags & SI_IS_MCAST ? " mcast" : "");
+		                si->flags & SI_IS_MCAST ? " mcast" : "",
+		                si->flags & SI_IS_ANYCAST ? " anycast" : "");
 #endif
 	}
 	/* removing duplicate addresses*/
