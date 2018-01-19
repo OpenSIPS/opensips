@@ -61,24 +61,25 @@
 #include "usrloc.h"
 
 
+#define CONTACTID_COL  "contact_id"
 #define USER_COL       "username"
 #define DOMAIN_COL     "domain"
 #define CONTACT_COL    "contact"
+#define RECEIVED_COL   "received"
+#define PATH_COL       "path"
 #define EXPIRES_COL    "expires"
 #define Q_COL          "q"
 #define CALLID_COL     "callid"
 #define CSEQ_COL       "cseq"
+#define LAST_MOD_COL   "last_modified"
 #define FLAGS_COL      "flags"
 #define CFLAGS_COL     "cflags"
 #define USER_AGENT_COL "user_agent"
-#define RECEIVED_COL   "received"
-#define PATH_COL       "path"
 #define SOCK_COL       "socket"
 #define METHODS_COL    "methods"
-#define ATTR_COL       "attr"
-#define LAST_MOD_COL   "last_modified"
 #define SIP_INSTANCE_COL   "sip_instance"
-#define CONTACTID_COL  "contact_id"
+#define KV_STORE_COL   "kv_store"
+#define ATTR_COL       "attr"
 
 static int mod_init(void);                          /*!< Module initialization function */
 static void destroy(void);                          /*!< Module destroy function */
@@ -120,9 +121,11 @@ str path_col        = str_init(PATH_COL);		/*!< Name of column containing the Pa
 str sock_col        = str_init(SOCK_COL);		/*!< Name of column containing the received socket */
 str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the supported methods */
 str last_mod_col    = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
+str kv_store_col    = str_init(KV_STORE_COL);		/*!< Name of column containing generic key-value data*/
 str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str contactid_col   = str_init(CONTACTID_COL);
+
 str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
 enum usrloc_modes db_mode = NO_DB;		/*!< Database sync scheme */
@@ -179,6 +182,7 @@ static param_export_t params[] = {
 	{"socket_column",      STR_PARAM, &sock_col.s        },
 	{"methods_column",     STR_PARAM, &methods_col.s     },
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
+	{"kv_store",           STR_PARAM, &kv_store_col.s    },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
 	{"matching_mode",      INT_PARAM, &matching_mode     },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
@@ -298,6 +302,7 @@ static int mod_init(void)
 	sock_col.len = strlen(sock_col.s);
 	methods_col.len = strlen(methods_col.s);
 	sip_instance_col.len = strlen(sip_instance_col.s);
+	kv_store_col.len = strlen(kv_store_col.s);
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
 

@@ -155,6 +155,13 @@ int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
 typedef uint64_t (*next_contact_id_t) (urecord_t* _r);
 uint64_t next_contact_id(urecord_t* _r);
 
+/*
+ * Prepares the K/V store of an urecord_t to be persisted to DB by serializing
+ * it and storing it in one of the contact's K/V store using an internal key
+ * ("_urec_kvs").
+ */
+int persist_urecord_kv_store(urecord_t* _r);
+
 /*! \brief
  * Fetch a key from the record-level storage
  * NOTE: assumes the corresponding udomain lock is properly acquired

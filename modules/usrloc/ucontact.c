@@ -109,10 +109,16 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	}
 	memset(c, 0, sizeof(ucontact_t));
 
-	c->kv_storage = map_create(AVLMAP_SHARED);
-	if (!c->kv_storage) {
-		LM_ERR("oom\n");
-		goto out_free;
+	if (db_mode != DB_ONLY) {
+		if (!ZSTRP(_ci->packed_kv_storage))
+			c->kv_storage = store_deserialize(_ci->packed_kv_storage);
+		else
+			c->kv_storage = map_create(AVLMAP_SHARED);
+
+		if (!c->kv_storage) {
+			LM_ERR("oom\n");
+			goto out_free;
+		}
 	}
 
 	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
@@ -179,7 +185,7 @@ out_free:
 	if (c->c.s) shm_free(c->c.s);
 	if (c->instance.s) shm_free(c->instance.s);
 	if (c->attr.s) shm_free(c->attr.s);
-	if (c->kv_storage) destroy_store(c->kv_storage);
+	if (c->kv_storage) store_destroy(c->kv_storage);
 	shm_free(c);
 	return NULL;
 }
@@ -199,7 +205,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
-	destroy_store(_c->kv_storage);
+	if (_c->kv_storage) store_destroy(_c->kv_storage);
 	shm_free( _c );
 }
 
@@ -492,14 +498,14 @@ int st_flush_ucontact(ucontact_t* _c)
  */
 int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 {
-	int nr_vals = 17;
+	int nr_vals = UL_COLS;
 	int start = 0;
 
 	static db_ps_t myI_ps = NULL;
 	static db_ps_t myR_ps = NULL;
 	char* dom;
-	db_key_t keys[18];
-	db_val_t vals[18];
+	db_key_t keys[UL_COLS];
+	db_val_t vals[UL_COLS];
 
 	if (_c->flags & FL_MEM) {
 		return 0;
@@ -526,8 +532,9 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[13] = &methods_col;
 	keys[14] = &last_mod_col;
 	keys[15] = &sip_instance_col;
-	keys[16] = &attr_col;
-	keys[17] = &domain_col;
+	keys[16] = &kv_store_col;
+	keys[17] = &attr_col;
+	keys[UL_COLS - 1] = &domain_col; /* "domain" always stays last */
 
 	memset(vals, 0, sizeof vals);
 
@@ -608,24 +615,33 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	}
 
 	vals[16].type = DB_STR;
-	if (_c->attr.s == 0) {
+	if (map_size(_c->kv_storage) == 0) {
+		LM_DBG("zero map size\n");
 		vals[16].nul = 1;
 	} else {
-		vals[16].val.str_val.s = _c->attr.s;
-		vals[16].val.str_val.len = _c->attr.len;
+		vals[16].val.str_val = store_serialize(_c->kv_storage);
+	}
+
+	vals[17].type = DB_STR;
+	if (_c->attr.s == 0) {
+		vals[17].nul = 1;
+	} else {
+		vals[17].val.str_val.s = _c->attr.s;
+		vals[17].val.str_val.len = _c->attr.len;
 	}
 
 	if (use_domain) {
-		vals[17].type = DB_STR;
+		vals[UL_COLS - 1].type = DB_STR;
 
 		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
 		if (dom==0) {
 			vals[1].val.str_val.len = 0;
-			vals[17].val.str_val = *_c->aor;
+			vals[UL_COLS - 1].val.str_val = *_c->aor;
 		} else {
 			vals[1].val.str_val.len = dom - _c->aor->s;
-			vals[17].val.str_val.s = dom + 1;
-			vals[17].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
+			vals[UL_COLS - 1].val.str_val.s = dom + 1;
+			vals[UL_COLS - 1].val.str_val.len =
+			         _c->aor->s + _c->aor->len - dom - 1;
 		}
 
 		nr_vals++;
@@ -658,6 +674,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		}
 	}
 
+	store_free_buffer(&vals[16].val.str_val);
 	return 0;
 }
 
@@ -670,8 +687,8 @@ int db_update_ucontact(ucontact_t* _c)
 	static db_ps_t my_ps = NULL;
 	db_key_t keys1[2];
 	db_val_t vals1[2];
-	db_key_t keys2[14];
-	db_val_t vals2[14];
+	db_key_t keys2[15];
+	db_val_t vals2[15];
 	int keys1_no = 1;
 	int keys2_no;
 
@@ -697,7 +714,8 @@ int db_update_ucontact(ucontact_t* _c)
 	keys2[9] = &sock_col;
 	keys2[10] = &methods_col;
 	keys2[11] = &last_mod_col;
-	keys2[12] = &attr_col;
+	keys2[12] = &kv_store_col;
+	keys2[13] = &attr_col;
 
 	memset(vals2, 0, sizeof vals2);
 
@@ -755,12 +773,19 @@ int db_update_ucontact(ucontact_t* _c)
 	vals2[11].val.time_val = _c->last_modified;
 
 	vals2[12].type = DB_STR;
-	if (_c->attr.s == 0) {
+	if (map_size(_c->kv_storage) == 0) {
 		vals2[12].nul = 1;
 	} else {
-		vals2[12].val.str_val = _c->attr;
+		vals2[12].val.str_val = store_serialize(_c->kv_storage);
 	}
-	keys2_no = 13;
+
+	vals2[13].type = DB_STR;
+	if (_c->attr.s == 0) {
+		vals2[13].nul = 1;
+	} else {
+		vals2[13].val.str_val = _c->attr;
+	}
+	keys2_no = 14;
 
 	if (matching_mode == CONTACT_CALLID) {
 		/* callid is part of the matching key */
@@ -964,6 +989,9 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 	st_update_ucontact(_c);
 
 	if (db_mode == WRITE_THROUGH) {
+		if (persist_urecord_kv_store(_r) != 0)
+			LM_ERR("failed to persist latest urecord K/V storage\n");
+
 		ret = db_update_ucontact(_c) ;
 		if (ret < 0) {
 			LM_ERR("failed to update database\n");
