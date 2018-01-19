@@ -24,6 +24,9 @@
 
 #include "kv_store.h"
 
+#include "../../lib/cJSON.h"
+#include "../../lib/osips_malloc.h"
+
 int_str_t *kv_get(map_t _store, const str* _key)
 {
 	int_str_t **val;
@@ -87,6 +90,120 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 	return new_val;
 }
 
+static int push_kv_to_json(void *param, str key, void *value)
+{
+	cJSON *flat_map = (cJSON *)param, *val_json;
+	int_str_t *val = (int_str_t *)value;
+
+	if (!val->is_str)
+		val_json = cJSON_CreateNumber(val->i);
+	else
+		val_json = cJSON_CreateStr(val->s.s, val->s.len);
+
+	if (!val_json) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	_cJSON_AddItemToObject(flat_map, &key, val_json);
+
+	return 0;
+}
+
+static cJSON_Hooks shm_hooks = {
+	.malloc_fn = osips_shm_malloc,
+	.free_fn   = osips_shm_free,
+};
+
+str store_serialize(map_t _store)
+{
+	cJSON *flat_map;
+	str ret = {NULL, 0};
+
+	cJSON_InitHooks(&shm_hooks);
+
+	flat_map = cJSON_CreateObject();
+	if (!flat_map) {
+		LM_ERR("oom\n");
+		return ret;
+	}
+
+	if (map_for_each(_store, push_kv_to_json, flat_map) != 0)
+		LM_ERR("oom - serialized map is incomplete!\n");
+
+	ret.s = cJSON_Print(flat_map);
+	if (!ret.s) {
+		LM_ERR("oom\n");
+		goto out;
+	}
+	ret.len = strlen(ret.s);
+
+out:
+	cJSON_Delete(flat_map);
+	cJSON_InitHooks(NULL);
+	return ret;
+}
+
+void store_free_buffer(const str *serialized)
+{
+	cJSON_InitHooks(&shm_hooks);
+	cJSON_PurgeString(serialized->s);
+	cJSON_InitHooks(NULL);
+}
+
+map_t store_deserialize(const str *input)
+{
+	map_t map;
+	cJSON *json_map, *obj;
+	str key;
+	int_str_t value;
+
+	map = map_create(AVLMAP_SHARED);
+	if (!map) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	cJSON_InitHooks(&shm_hooks);
+
+	json_map = cJSON_Parse(input->s);
+	if (!json_map) {
+		LM_ERR("bad JSON input or oom\n");
+		goto out;
+	}
+
+	if (json_map->type != cJSON_Object) {
+		LM_BUG("non-cJSON_Object kv_store col type (%d)", json_map->type);
+		goto out;
+	}
+
+	for (obj = json_map->child; obj; obj = obj->next) {
+		init_str(&key, obj->string);
+
+		switch (obj->type) {
+		case cJSON_String:
+			value.is_str = 1;
+			init_str(&value.s, obj->valuestring);
+			break;
+		case cJSON_Number:
+			value.is_str = 0;
+			value.i = obj->valueint;
+			break;
+		default:
+			LM_BUG("unknown obj type (%d)", obj->type);
+			continue;
+		}
+
+		if (!kv_put(map, &key, &value))
+			LM_ERR("oom, map will be incomplete\n");
+	}
+
+out:
+	cJSON_Delete(json_map);
+	cJSON_InitHooks(NULL);
+	return map;
+}
+
 static void destroy_kv_store_val(void* _val)
 {
 	int_str_t *val = (int_str_t *)_val;
@@ -97,7 +214,7 @@ static void destroy_kv_store_val(void* _val)
 	shm_free(val);
 }
 
-void destroy_store(map_t _store)
+void store_destroy(map_t _store)
 {
 	map_destroy(_store, destroy_kv_store_val);
 }

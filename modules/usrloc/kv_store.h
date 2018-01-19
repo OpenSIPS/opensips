@@ -27,6 +27,22 @@
 
 int_str_t *kv_get(map_t _store, const str* _key);
 int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val);
-void destroy_store(map_t _store);
+
+/*
+ * Serialize the given K/V store as a JSON, SHM mem string.
+ * On oom, a NULL string is returned.
+ */
+str store_serialize(map_t _store);
+
+/* Free a buffer returned by store_serialize() */
+void store_free_buffer(const str *serialized);
+
+/*
+ * De-serialize the given JSON string into an SHM map_t object
+ * On oom, a NULL map_t is returned.
+ */
+map_t store_deserialize(const str *input);
+
+void store_destroy(map_t _store);
 
 #endif /* __KV_STORE_H__ */
