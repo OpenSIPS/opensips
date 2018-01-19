@@ -547,7 +547,7 @@ install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 		# install opensipsctl (and family) tool
 		cat scripts/opensipsctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
-		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+		sed -e "s#/usr/local/lib64/opensips#$(lib-target)#g" | \
 		sed -e "s#/usr/local/etc/opensips#$(cfg_target)#g"  >/tmp/opensipsctl
 		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/opensipsctl
 		$(INSTALL_BIN) /tmp/opensipsctl $(bin_prefix)/$(bin_dir)
@@ -590,7 +590,7 @@ install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 		rm -fr /tmp/opensipsdbctl.base
 		cat scripts/opensipsdbctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
-		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+		sed -e "s#/usr/local/lib64/opensips#$(lib-target)#g" | \
 		sed -e "s#/usr/local/etc/opensips#$(cfg_target)#g"  >/tmp/opensipsdbctl
 		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/opensipsdbctl
 		$(INSTALL_BIN) /tmp/opensipsdbctl $(bin_prefix)/$(bin_dir)

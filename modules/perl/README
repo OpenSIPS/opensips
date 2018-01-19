@@ -315,7 +315,7 @@ modparam("perl", "filename", "/home/john/opensips/myperl.pl")
 
    Example 1.2. Set modpath parameter
 ...
-modparam("perl", "modpath", "/usr/local/lib/opensips/perl/")
+modparam("perl", "modpath", "/usr/local/lib64/opensips/perl/")
 ...
 
 1.6. Exported Functions
