@@ -45,7 +45,7 @@ ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061  # CUSTOMIZE ME' , `')dnl
 ####### Modules Section ########
 
 #set module path
-mpath="/usr/local/lib/opensips/modules/"
+mpath="/usr/local/lib64/opensips/modules/"
 
 #### SIGNALING module
 loadmodule "signaling.so"

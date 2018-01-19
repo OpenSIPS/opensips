@@ -229,7 +229,7 @@ rev_dns=no      # (cmd. line: -R)
 
 # ------------------ module loading ----------------------------------
 
-mpath="/usr/local/lib/opensips/modules"
+mpath="/usr/local/lib64/opensips/modules"
 loadmodule "sl.so"
 loadmodule "tm.so"
 loadmodule "rr.so"

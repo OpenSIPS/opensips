@@ -44,7 +44,7 @@
  		fi
  		# opensipsctl config
 @@ -445,7 +432,7 @@
- 		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+ 		sed -e "s#/usr/local/lib64/opensips#$(lib-target)#g" | \
  		sed -e "s#/usr/local/etc/opensips#$(cfg-target)#g"  >/tmp/opensipsctl
  		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsctl
 -		$(INSTALL_BIN) /tmp/opensipsctl $(bin-prefix)/$(bin-dir)
@@ -53,7 +53,7 @@
  		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
  			< scripts/opensipsctl.base > /tmp/opensipsctl.base
 @@ -492,10 +479,10 @@
- 		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
+ 		sed -e "s#/usr/local/lib64/opensips#$(lib-target)#g" | \
  		sed -e "s#/usr/local/etc/opensips#$(cfg-target)#g"  >/tmp/opensipsdbctl
  		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsdbctl
 -		$(INSTALL_BIN) /tmp/opensipsdbctl $(bin-prefix)/$(bin-dir)

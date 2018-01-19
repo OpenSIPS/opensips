@@ -47,7 +47,7 @@ ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
 ####### Modules Section ########
 
 #set module path
-mpath="/usr/local/lib/opensips/modules/"
+mpath="/usr/local/lib64/opensips/modules/"
 
 ifdef(`HTTPD_NEEDED',`#### HTTPD module
 loadmodule "httpd.so"

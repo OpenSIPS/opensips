@@ -661,15 +661,15 @@ dns=no          # (cmd. line: -r)
 rev_dns=no      # (cmd. line: -R)
 port=5060
 children=4
-loadmodule "/usr/local/lib/opensips/modules/sl.so"
-loadmodule "/usr/local/lib/opensips/modules/tm.so"
-loadmodule "/usr/local/lib/opensips/modules/rr.so"
-loadmodule "/usr/local/lib/opensips/modules/maxfwd.so"
-loadmodule "/usr/local/lib/opensips/modules/usrloc.so"
-loadmodule "/usr/local/lib/opensips/modules/registrar.so"
-loadmodule "/usr/local/lib/opensips/modules/textops.so"
-loadmodule "/usr/local/lib/opensips/modules/seas.so"
-loadmodule "/usr/local/lib/opensips/modules/mi_fifo.so"
+loadmodule "/usr/local/lib64/opensips/modules/sl.so"
+loadmodule "/usr/local/lib64/opensips/modules/tm.so"
+loadmodule "/usr/local/lib64/opensips/modules/rr.so"
+loadmodule "/usr/local/lib64/opensips/modules/maxfwd.so"
+loadmodule "/usr/local/lib64/opensips/modules/usrloc.so"
+loadmodule "/usr/local/lib64/opensips/modules/registrar.so"
+loadmodule "/usr/local/lib64/opensips/modules/textops.so"
+loadmodule "/usr/local/lib64/opensips/modules/seas.so"
+loadmodule "/usr/local/lib64/opensips/modules/mi_fifo.so"
 
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("usrloc", "db_mode",   0)
