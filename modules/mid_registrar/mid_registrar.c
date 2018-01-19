@@ -282,8 +282,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (ul_api.db_mode != NO_DB) {
-		LM_ERR("the 2.3 mid_registrar only works with usrloc 'db_mode = 0'!\n");
+	if (ul_api.db_mode == DB_ONLY) {
+		LM_ERR("refusing to work with usrloc 'db_mode = 3'\n");
 		return -1;
 	}
 

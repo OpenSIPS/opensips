@@ -1462,15 +1462,15 @@ update_usrloc:
 
 			LM_DBG("UPDATING .....\n");
 
-			if (ul_api.update_ucontact(r, c, ci, 0) < 0) {
-				rerrno = R_UL_UPD_C;
-				LM_ERR("failed to update contact\n");
-				goto error;
-			}
-
 			if (reg_mode == MID_REG_THROTTLE_CT &&
 			    update_ucontact_data(c, ctmap->expires, e_out, ci->cseq) != 0) {
 				LM_ERR("failed to update ucontact data - oom?\n");
+				goto error;
+			}
+
+			if (ul_api.update_ucontact(r, c, ci, 0) < 0) {
+				rerrno = R_UL_UPD_C;
+				LM_ERR("failed to update contact\n");
 				goto error;
 			}
 		}
@@ -1652,15 +1652,15 @@ update_usrloc:
 				continue;
 			}
 
-			if (ul_api.update_ucontact( r, c, ci, 0) < 0) {
-				rerrno = R_UL_UPD_C;
-				LM_ERR("failed to update contact\n");
-				goto out_clear_err;
-			}
-
 			if (reg_mode == MID_REG_THROTTLE_AOR &&
 			    update_ucontact_data(c, ctmap->expires, e_out, ci->cseq) != 0) {
 				LM_ERR("failed to update ucontact data - oom?\n");
+				goto out_clear_err;
+			}
+
+			if (ul_api.update_ucontact( r, c, ci, 0) < 0) {
+				rerrno = R_UL_UPD_C;
+				LM_ERR("failed to update contact\n");
 				goto out_clear_err;
 			}
 		}
@@ -2390,14 +2390,14 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 			ci->expires_out = c->expires_out;
 
-			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
-				rerrno = R_UL_UPD_C;
-				LM_ERR("failed to update contact\n");
+			if (update_ucontact_data(c, e, e_out, ci->cseq) != 0) {
+				LM_ERR("failed to update ucontact data - oom?\n");
 				return -1;
 			}
 
-			if (update_ucontact_data(c, e, e_out, ci->cseq) != 0) {
-				LM_ERR("failed to update ucontact data - oom?\n");
+			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
+				rerrno = R_UL_UPD_C;
+				LM_ERR("failed to update contact\n");
 				return -1;
 			}
 		} else if (ret == 1) {
