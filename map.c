@@ -72,7 +72,7 @@ static int str_cmp(str s1, str s2)
    and memory allocator |allocator|.
    Returns |NULL| if memory allocation failed. */
 
-map_t map_create(int flags)
+map_t map_create(enum map_flags flags)
 {
 	map_t tree;
 
