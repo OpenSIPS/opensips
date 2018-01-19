@@ -144,7 +144,7 @@ out:
 	return ret;
 }
 
-void store_free_buffer(const str *serialized)
+void store_free_buffer(str *serialized)
 {
 	cJSON_InitHooks(&shm_hooks);
 	cJSON_PurgeString(serialized->s);

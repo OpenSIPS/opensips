@@ -35,7 +35,7 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val);
 str store_serialize(map_t _store);
 
 /* Free a buffer returned by store_serialize() */
-void store_free_buffer(const str *serialized);
+void store_free_buffer(str *serialized);
 
 /*
  * De-serialize the given JSON string into an SHM map_t object
