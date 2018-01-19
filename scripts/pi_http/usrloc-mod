@@ -21,6 +21,7 @@
 				<col><field>socket</field></col>
 				<col><field>methods</field></col>
 				<col><field>sip_instance</field></col>
+				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
 			</query_cols>
 		</cmd>
@@ -44,6 +45,7 @@
 				<col><field>socket</field></col>
 				<col><field>methods</field></col>
 				<col><field>sip_instance</field></col>
+				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
 			</query_cols>
 		</cmd>
@@ -70,6 +72,7 @@
 				<col><field>socket</field></col>
 				<col><field>methods</field></col>
 				<col><field>sip_instance</field></col>
+				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
 			</query_cols>
 		</cmd>
