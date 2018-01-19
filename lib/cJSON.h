@@ -23,6 +23,8 @@
 #ifndef cJSON__h
 #define cJSON__h
 
+#include "../str.h"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -130,6 +132,7 @@ extern cJSON *cJSON_CreateStringArray(const char **strings, int count);
 
 /* Append item to the specified array/object. */
 extern void cJSON_AddItemToArray(cJSON *array, cJSON *item);
+extern void	_cJSON_AddItemToObject(cJSON *object, const str *string, cJSON *item);
 extern void	cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item);
 /* Use this when string is definitely const (i.e. a literal, or as good as), and will definitely survive the cJSON object.
  * WARNING: When this function was used, make sure to always check that (item->type & cJSON_StringIsConst) is zero before
