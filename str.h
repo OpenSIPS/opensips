@@ -21,6 +21,8 @@
 #ifndef str_h
 #define str_h
 
+#include <string.h>
+
 /**
  * \file
  * \brief Common data type for text variables.
@@ -54,6 +56,11 @@ typedef struct _str str;
 
 /* str initialization */
 #define str_init(_string)  {_string, sizeof(_string) - 1}
+static inline void init_str(str *dst, char *in)
+{
+	dst->s = in;
+	dst->len = strlen(in);
+}
 
 /* zero-str tests */
 #define ZSTR(_s)    (!(_s).s || (_s).len == 0)
