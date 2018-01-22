@@ -66,10 +66,10 @@ int decode_contact_header (struct sip_msg *msg, char *unused1,char *unused2);
 int encode2format (str uri, struct uri_format *format);
 int decode2format (str uri, char separator, struct uri_format *format);
 
-int encode_uri (str uri, char *encoding_prefix, char *public_ip,char separator, str * result);
+int encode_uri (str uri, char *encoding_prefix, str *public_ip,char separator, str * result);
 int decode_uri (str uri, char separator, str * result);
 
-
+int fixup_encode_ct(void ** param, int param_no);
 
 
 

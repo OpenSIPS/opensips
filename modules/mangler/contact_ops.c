@@ -34,10 +34,21 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../ut.h"
+#include "../../mod_fix.h"
 
 #include <stdio.h>
 #include <string.h>
 
+int fixup_encode_ct(void ** param, int param_no)
+{
+	if (param_no == 1)
+		return 0;
+	else if (param_no == 2)
+		return fixup_spve(param);
+
+	LM_CRIT("Unknown parameter number %d\n", param_no);
+	return E_UNSPEC;
+}
 
 //#define DEBUG
 int
@@ -50,8 +61,12 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 	str newUri;
 	int res;
 	char separator;
+	str public_ip_str;
 
-
+	if (fixup_get_svalue(msg, (gparam_p)public_ip, &public_ip_str) < 0) {
+		LM_ERR("Failed to fetch public_ip parameter\n");
+		return -1;
+	}
 
 	/*
 	 * I have a list of contacts in contact->parsed which is of type
@@ -93,7 +108,7 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 				return -1;
 			}
 
-			res = encode_uri(uri, encoding_prefix,public_ip,separator,&newUri);
+			res = encode_uri(uri, encoding_prefix,&public_ip_str,separator,&newUri);
 			if (res != 0)
 				{
 				LM_ERR("failed encoding contact.Code %d\n", res);
@@ -115,7 +130,7 @@ encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip)
 				c = c->next;
 				uri = c->uri;
 
-				res = encode_uri (uri, encoding_prefix,public_ip,separator,&newUri);
+				res = encode_uri (uri, encoding_prefix,&public_ip_str,separator,&newUri);
 				if (res != 0)
 					{
 					LM_ERR("failed encode_uri.Code %d\n",res);
@@ -376,7 +391,7 @@ encode2format (str uri, struct uri_format *format)
 
 
 int
-encode_uri (str uri, char *encoding_prefix, char *public_ip,char separator, str * result)
+encode_uri (str uri, char *encoding_prefix, str *public_ip,char separator, str * result)
 {
 	struct uri_format format;
 	char *pos;
@@ -392,6 +407,12 @@ encode_uri (str uri, char *encoding_prefix, char *public_ip,char separator, str 
 			LM_ERR("invalid NULL value for public_ip parameter\n");
 			return -2;
 		}
+
+	if (public_ip->s == NULL || public_ip->len == 0) {
+		LM_ERR("Empty public_ip parameter\n");
+		return -2;
+	}
+
 #ifdef DEBUG
 	fprintf (stdout, "Primit cerere de encodare a [%.*s] cu %s-%s\n", uri.len,uri.s, encoding_prefix, public_ip);
 #endif
@@ -417,7 +438,7 @@ encode_uri (str uri, char *encoding_prefix, char *public_ip,char separator, str 
 		format.username.len + foo +
 		format.password.len + foo +
 		format.ip.len + foo + format.port.len + foo +
-		format.protocol.len + 1 + strlen (public_ip);
+		format.protocol.len + 1 + public_ip->len;
 	/* adding one comes from @ */
 	result->s = pkg_malloc (result->len);
 	pos = result->s;
@@ -447,8 +468,8 @@ encode_uri (str uri, char *encoding_prefix, char *public_ip,char separator, str 
 	fprintf(stdout,"res= %d\npos=%s\n",res,pos);
 #endif
 	pos = pos + res ;/* overwriting the \0 from snprintf */
-	memcpy (pos, public_ip, strlen (public_ip));
-	pos = pos + strlen (public_ip);
+	memcpy (pos, public_ip->s, public_ip->len);
+	pos = pos + public_ip->len;
 	memcpy (pos, uri.s + format.second, uri.len - format.second);
 
 #ifdef DEBUG
