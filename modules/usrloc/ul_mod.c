@@ -121,7 +121,7 @@ str path_col        = str_init(PATH_COL);		/*!< Name of column containing the Pa
 str sock_col        = str_init(SOCK_COL);		/*!< Name of column containing the received socket */
 str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the supported methods */
 str last_mod_col    = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
-str kv_store_col    = str_init(KV_STORE_COL);		/*!< Name of column containing generic key-value data*/
+str kv_store_col    = str_init(KV_STORE_COL);		/*!< Name of column containing generic key-value data */
 str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str contactid_col   = str_init(CONTACTID_COL);
@@ -182,7 +182,7 @@ static param_export_t params[] = {
 	{"socket_column",      STR_PARAM, &sock_col.s        },
 	{"methods_column",     STR_PARAM, &methods_col.s     },
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
-	{"kv_store",           STR_PARAM, &kv_store_col.s    },
+	{"kv_store_column",    STR_PARAM, &kv_store_col.s    },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
 	{"matching_mode",      INT_PARAM, &matching_mode     },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },

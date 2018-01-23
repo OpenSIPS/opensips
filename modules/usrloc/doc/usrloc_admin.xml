@@ -496,20 +496,40 @@ modparam("usrloc", "sip_instance_column", "sip_instance")
 	</section>
 
 	<section>
+		<title><varname>kv_store_column</varname> (string)</title>
+		<para>
+		Name of column containing generic key-value data.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>kv_store</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>kv_store_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "kv_store_column", "json_data")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>attr_column</varname> (string)</title>
 		<para>
 		Name of column containing additional registration-related information.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NULL</quote>.
+			Default value is <quote>attr</quote>.
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>attr_column</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "attr_column", "attr")
+modparam("usrloc", "attr_column", "attributes")
 ...
 </programlisting>
 		</example>
