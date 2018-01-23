@@ -1174,31 +1174,37 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 	str cap;
 	int nr_cap, i, j;
 	struct remote_cap *cur;
+	struct local_cap *lcap;
 	int nr_nodes;
 	int node_id;
 	node_info_t *node;
+	int cap_state;
+	int rc;
 
 	bin_pop_int(packet, &nr_nodes);
 
 	for (i = 0; i < nr_nodes; i++) {
 		bin_pop_int(packet, &node_id);
+
 		if (node_id == current_id) {
 			bin_pop_int(packet, &nr_cap);
-			bin_skip_str(packet, nr_cap);
+			for (j = 0; j < nr_cap; j++) {
+				bin_pop_str(packet, &cap);
+				bin_pop_int(packet, &cap_state);
+			}
 			continue;
 		}
 		node = get_node_by_id(source->cluster, node_id);
 		if (!node) {
-			LM_DBG("Unknown id [%d] in capability update from node [%d]\n",
+			LM_ERR("Unknown id [%d] in capability update from node [%d]\n",
 				node_id, source->node_id);
-			bin_pop_int(packet, &nr_cap);
-			bin_skip_str(packet, nr_cap);
-			continue;
+			return;
 		}
 
 		bin_pop_int(packet, &nr_cap);
 		for (j = 0; j < nr_cap; j++) {
 			bin_pop_str(packet, &cap);
+			bin_pop_int(packet, &cap_state);
 
 			for (cur = node->capabilities; cur && str_strcmp(&cap, &cur->name);
 				cur = cur->next) ;
@@ -1208,13 +1214,47 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 					LM_ERR("No more shm memory!\n");
 					return;
 				}
+				memset(cur, 0, sizeof *cur);
 				cur->name.s = (char *)(cur + 1);
 				cur->name.len = cap.len;
 				memcpy(cur->name.s, cap.s, cap.len);
-				cur->sync_repl_pending = 0;
 
 				cur->next = node->capabilities;
 				node->capabilities = cur;
+			}
+
+			lock_get(node->lock);
+			if (cap_state == 0)
+				cur->flags &= ~CAP_STATE_OK;
+			else if (cap_state == 1)
+				cur->flags |= CAP_STATE_OK;
+			else
+				LM_ERR("Received bad state for capability:%.*s from node [%d]\n",
+					cap.len, cap.s, source->node_id);
+			lock_release(node->lock);
+
+			/* for a node in state OK, check pending sync requests */
+			if (cap_state == 1) {
+				for (lcap = source->cluster->capabilities; lcap; lcap = lcap->next)
+					if (!str_strcmp(&cap, &lcap->reg.name))
+						break;
+				if (lcap) {
+					lock_get(source->cluster->lock);
+					if (lcap->flags & CAP_SYNC_PENDING) {
+						lock_release(source->cluster->lock);
+
+						rc = send_sync_req(&cap, source->cluster->cluster_id,
+											node_id);
+						if (rc == CLUSTERER_SEND_SUCCES) {
+							lock_get(source->cluster->lock);
+							lcap->flags &= ~CAP_SYNC_PENDING;
+							lock_release(source->cluster->lock);
+						} else if (rc == CLUSTERER_SEND_ERR)
+							LM_ERR("Failed to send sync request to node: %d\n",
+								node_id);
+					} else
+						lock_release(source->cluster->lock);
+				}
 			}
 		}
 	}
@@ -1797,7 +1837,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 
 		lock_get(cl->lock);
 
-		if (cl_cap->pkt_buffering == 1) {
+		if (cl_cap->flags & CAP_PKT_BUFFERING) {
 			/* buffer regular packets during sync or during processing of
 			 * previously buffered packets */
 			buffer_bin_pkt(packet, cl_cap, source_id);
@@ -2028,6 +2068,62 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 	return 0;
 }
 
+int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
+							int cap_state)
+{
+	bin_packet_t packet;
+	str bin_buffer;
+	node_info_t* destinations[MAX_NO_NODES];
+	struct neighbour *neigh;
+	int no_dests = 0, i;
+
+	lock_get(cluster->current_node->lock);
+
+	for (neigh = cluster->current_node->neighbour_list; neigh;
+		neigh = neigh->next)
+		destinations[no_dests++] = neigh->node;
+
+	lock_release(cluster->current_node->lock);
+
+	if (no_dests == 0)
+		return 0;
+
+	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_CAP_UPDATE,
+		BIN_VERSION, 0) < 0) {
+		LM_ERR("Failed to init bin send buffer\n");
+		return -1;
+	}
+	bin_push_int(&packet, cluster->cluster_id);
+	bin_push_int(&packet, current_id);
+
+	/* only the current node */
+	bin_push_int(&packet, 1);
+	bin_push_int(&packet, current_id);
+
+	/* only a single capability */
+	bin_push_int(&packet, 1);
+	bin_push_str(&packet, &cap->reg.name);
+	bin_push_int(&packet, cap_state);
+
+	bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
+	bin_push_int(&packet, current_id);
+	bin_get_buffer(&packet, &bin_buffer);
+
+	for (i = 0; i < no_dests; i++)
+		if (msg_send(NULL, clusterer_proto, &destinations[i]->addr, 0,
+			bin_buffer.s, bin_buffer.len, 0) < 0) {
+			LM_ERR("Failed to send capability update to node [%d]\n",
+				destinations[i]->node_id);
+			set_link_w_neigh_adv(LS_RESTART_PINGING, destinations[i]);
+		} else
+			LM_DBG("Sent capability update to node [%d]\n",
+				destinations[i]->node_id);
+
+	bin_free_packet(&packet);
+
+	return 0;
+}
+
 static int send_cap_update(node_info_t *dest_node)
 {
 	bin_packet_t packet;
@@ -2062,8 +2158,12 @@ static int send_cap_update(node_info_t *dest_node)
 	if (nr_cap) {
 		bin_push_int(&packet, current_id);
 		bin_push_int(&packet, nr_cap);
-		for (cl_cap=dest_node->cluster->capabilities; cl_cap; cl_cap=cl_cap->next)
+		for (cl_cap=dest_node->cluster->capabilities;cl_cap;cl_cap=cl_cap->next) {
 			bin_push_str(&packet, &cl_cap->reg.name);
+			lock_get(dest_node->cluster->lock);
+			bin_push_int(&packet, cl_cap->flags & CAP_STATE_OK ? 1 : 0);
+			lock_release(dest_node->cluster->lock);
+		}
 	}
 
 	/* known capabilities for other nodes */
@@ -2075,8 +2175,12 @@ static int send_cap_update(node_info_t *dest_node)
 		if (nr_cap) {
 			bin_push_int(&packet, node->node_id);
 			bin_push_int(&packet, nr_cap);
-			for (n_cap = node->capabilities; n_cap; n_cap = n_cap->next)
+			for (n_cap = node->capabilities; n_cap; n_cap = n_cap->next) {
 				bin_push_str(&packet, &n_cap->name);
+				lock_get(node->lock);
+				bin_push_int(&packet, n_cap->flags & CAP_STATE_OK ? 1 : 0);
+				lock_release(node->lock);
+			}
 		}
 	}
 
@@ -2092,6 +2196,7 @@ static int send_cap_update(node_info_t *dest_node)
 		LM_DBG("Sent capability update to node [%d]\n", dest_node->node_id);
 
 	bin_free_packet(&packet);
+
 	return 0;
 }
 
@@ -2103,7 +2208,7 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 	struct local_cap *cap_it;
 	struct remote_cap *n_cap;
 	int k;
-	int sync_source_id;
+	int rc;
 
 	for (k = 0, cl = clusters; k < no_clusters && cl; k++, cl = clusters->next) {
 		if (!select_cluster[k])
@@ -2127,8 +2232,8 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 				/* check pending sync replies */
 				for (n_cap = node->capabilities; n_cap; n_cap = n_cap->next) {
 					lock_get(node->lock);
-					if (n_cap->sync_repl_pending) {
-						n_cap->sync_repl_pending = 0;
+					if (n_cap->flags & CAP_SYNC_PENDING) {
+						n_cap->flags &= ~CAP_SYNC_PENDING;
 						lock_release(node->lock);
 
 						/* reply now that the node is up */
@@ -2138,26 +2243,30 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 				}
 
 				for (cap_it = cl->capabilities; cap_it; cap_it = cap_it->next) {
-					/* check pending sync requests */
+					/* check pending sync request */
 					lock_get(cl->lock);
-					if (cap_it->sync_req_pending) {
+					if (cap_it->flags & CAP_SYNC_PENDING) {
 						lock_release(cl->lock);
 
-						sync_source_id = get_sync_source(cl);
-						if (sync_source_id == node->node_id) {
-							lock_get(cl->lock);
-							cap_it->sync_req_pending = 0;
-							lock_release(cl->lock);
+						for (n_cap = node->capabilities; n_cap;
+							n_cap = n_cap->next) {
+							if (!str_strcmp(&cap_it->reg.name, &n_cap->name)) {
+								lock_get(node->lock);
+								if (n_cap->flags & CAP_STATE_OK) {
+									lock_release(node->lock);
 
-							/* send sync request now that the source node is up */
-							if (send_sync_req(&cap_it->reg.name,
-								cl->cluster_id, sync_source_id) < 0)
-								LM_ERR("Failed to send sync request\n");
-						} else if (sync_source_id < 0) {
-							LM_ERR("Failed to obtain node to sync from\n");
-							lock_get(cl->lock);
-							cap_it->sync_req_pending = 0;
-							lock_release(cl->lock);
+									rc = send_sync_req(&n_cap->name,
+										cl->cluster_id, node->node_id);
+									if (rc == CLUSTERER_SEND_SUCCES) {
+										lock_get(cl->lock);
+										cap_it->flags &= ~CAP_SYNC_PENDING;
+										lock_release(cl->lock);
+									} else if (rc == CLUSTERER_SEND_ERR)
+										LM_ERR("Failed to send sync request to"
+											"node: %d\n", node->node_id);
+								} else
+									lock_release(node->lock);
+							}
 						}
 					} else
 						lock_release(cl->lock);
@@ -2165,7 +2274,6 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					if (cap_it->reg.event_cb)
 						cap_it->reg.event_cb(CLUSTER_NODE_UP, node->node_id);
 				}
-
 			} else
 				lock_release(node->lock);
 		}
@@ -2388,6 +2496,9 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->reg.name.s = cap->s;
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
+
+	if (cluster->current_node->flags & NODE_IS_SEED)
+		new_cl_cap->flags |= CAP_STATE_OK;
 
 	new_cl_cap->next = cluster->capabilities;
 	cluster->capabilities = new_cl_cap;

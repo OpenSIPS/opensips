@@ -30,6 +30,7 @@ emergency_report:1
 emergency_routing:1
 emergency_service_provider:1
 fraud_detection:1
+freeswitch:1
 globalblacklist:2
 grp:3
 imc_members:2

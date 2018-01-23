@@ -45,6 +45,13 @@
 #define NODE_STATE_ENABLED	(1<<0)
 #define NODE_EVENT_DOWN		(1<<1)
 #define NODE_EVENT_UP		(1<<2)
+#define NODE_IS_SEED		(1<<3)
+
+/* capability flags */
+#define CAP_STATE_OK		(1<<0)
+#define CAP_SYNC_PENDING	(1<<1)
+#define CAP_PKT_BUFFERING	(1<<2)
+
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
@@ -82,18 +89,18 @@ struct local_cap {
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
 	struct buf_bin_pkt *pkt_q_cutpos;
-	int pkt_buffering;
-	int sync_req_pending;
+	unsigned int flags;
 	struct local_cap *next;
 };
 
 struct remote_cap {
 	str name;
-	int sync_repl_pending;
+	unsigned int flags;
 	struct remote_cap *next;
 };
 
 struct node_info;
+struct cluster_info;
 
 /* used for adjacency list */
 struct neighbour {
@@ -124,6 +131,8 @@ int get_next_hop(struct node_info *dest);
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 												int cluster_id, int dst_id);
+int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
+							int cap_state);
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);

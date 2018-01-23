@@ -45,7 +45,7 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 
 	rc = clusterer_send_msg(&packet, cluster_id, source_id);
 	if (rc == CLUSTERER_SEND_SUCCES)
-		LM_DBG("Sent sync request for capability: %.*s to node: %d\n",
+		LM_DBG("Sync request sent for capability: %.*s to node: %d\n",
 			capability->len, capability->s, source_id);
 
 	bin_free_packet(&packet);
@@ -53,23 +53,27 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 	return rc;
 }
 
-int get_sync_source(cluster_info_t *cluster)
+static int get_sync_source(cluster_info_t *cluster, str *capability)
 {
 	node_info_t *node;
-	int nhop;
+	struct remote_cap *cap;
 
-	if (!_sync_from_id) {
-		LM_ERR("No node to sync from defined\n");
-		return -1;
-	}
+	for (node = cluster->node_list; node; node = node->next)
+		if (get_next_hop(node) > 0) {
+			for (cap = node->capabilities; cap; cap = cap->next)
+				if (!str_strcmp(capability, &cap->name))
+					break;
+			/* if the node does have the capability and it's in the OK state
+			 * then it can be a source for syncing */
+			lock_get(node->lock);
+			if (cap && cap->flags & CAP_STATE_OK) {
+				lock_release(node->lock);
+				return node->node_id;
+			} else
+				lock_release(node->lock);
+		}
 
-	node = get_node_by_id(cluster, _sync_from_id);
-	if (!node)
-		return 0;
-
-	nhop = get_next_hop(node);
-
-	return (nhop > 0) ? _sync_from_id : nhop;
+	return 0;
 }
 
 int cl_request_sync(str *capability, int cluster_id)
@@ -77,6 +81,7 @@ int cl_request_sync(str *capability, int cluster_id)
 	cluster_info_t *cluster;
 	struct local_cap *lcap;
 	int source_id;
+	int rc;
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
@@ -93,18 +98,41 @@ int cl_request_sync(str *capability, int cluster_id)
 		return -1;
 	}
 
-	source_id = get_sync_source(cluster);
-	if (source_id < 0) {
-		LM_ERR("Failed to obtain node to sync from\n");
-		return -1;
-	} else if (source_id == 0) {
-		lock_get(cluster->lock);
-		lcap->sync_req_pending = 1;
-		lock_release(cluster->lock);
+	/* the seed node is already considered synchronized */
+	if (cluster->current_node->flags & NODE_IS_SEED)
 		return 0;
+
+	lock_get(cluster->lock);
+	if (lcap->flags & CAP_SYNC_PENDING) {
+		lock_release(cluster->lock);
+		LM_DBG("Sync request already pending\n");
+		return 0;
+	}
+
+	/* node is no longer OK for this capability if it previously were */
+	if (lcap->flags & CAP_STATE_OK) {
+		lcap->flags &= ~CAP_STATE_OK;
+		lock_release(cluster->lock);
+		send_single_cap_update(cluster, lcap, 0);
 	} else
-		if (send_sync_req(capability, cluster_id, source_id) != CLUSTERER_SEND_SUCCES)
+		lock_release(cluster->lock);
+
+	source_id = get_sync_source(cluster, capability);
+	if (source_id == 0) {	/* we didn't find any node ready to sync from */
+		/* send requst later */
+		lock_get(cluster->lock);
+		lcap->flags |= CAP_SYNC_PENDING;
+		lock_release(cluster->lock);
+	} else {
+		rc = send_sync_req(capability, cluster_id, source_id);
+		if (rc == CLUSTERER_DEST_DOWN || rc == CLUSTERER_CURR_DISABLED) {
+			/* node was up and ready but in the meantime got disabled or down */
+			lock_get(cluster->lock);
+			lcap->flags |= CAP_SYNC_PENDING;
+			lock_release(cluster->lock);
+		} else if (rc == CLUSTERER_SEND_ERR)
 			return -1;
+	}
 
 	return 0;
 }
@@ -269,7 +297,8 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 			return;
 		}
 		lock_get(source->lock);
-		cap->sync_repl_pending = 1;
+		/* reply to sync later when the node is up */
+		cap->flags |= CAP_SYNC_PENDING;
 		lock_release(source->lock);
 	}
 }
@@ -294,7 +323,8 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 
 	if (packet_type == CLUSTERER_SYNC) {
 		lock_get(cluster->lock);
-		cap->pkt_buffering = 1;
+		/* buffer other types of packets during sync */
+		cap->flags |= CAP_PKT_BUFFERING;
 		lock_release(cluster->lock);
 
 		/* overwrite packet type with one identifiable by modules */
@@ -361,7 +391,11 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		}
 
 		/* no more buffered packets to process, stop buffering */
-		cap->pkt_buffering = 0;
+		cap->flags &= ~CAP_PKT_BUFFERING;
+		cap->flags |= CAP_STATE_OK;
+
+		/* send update about the state of this capability */
+		send_single_cap_update(cluster, cap, 1);
 
 		lock_release(cluster->lock);
 	}

@@ -86,11 +86,13 @@ typedef int (*check_addr_f)(int cluster_id, union sockaddr_union *su);
  */
 typedef int (*get_my_id_f)(void);
 /*
- * Return the index of the current node, with a value between [0, @nr_nodes-1],
- * that belongs to a continous sequence of identifiers for the reachable nodes.
- * @nr_nodes - output parameter, the number of reachable nodes in the cluster.
+ * Return an index for the current node, with a value between [0, @nr_nodes-1],
+ * which belongs to a continous sequence of identifiers for the nodes in the cluster.
+ * This function operates on a set of nodes which are reachable and
+ * synchronized (for a certain capability).
+ * @nr_nodes - output parameter, the number of nodes in the set.
  */
-typedef int (*get_my_index_f)(int cluster_id, int *nr_nodes);
+typedef int (*get_my_index_f)(int cluster_id, str *capability, int *nr_nodes);
 
 /*
  * Send a message to a specific node in the cluster.

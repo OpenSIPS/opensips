@@ -26,7 +26,6 @@
 #define SYNC_CHUNK_START_MARKER 101010101
 
 extern int sync_packet_size;
-extern int _sync_from_id;
 
 int cl_request_sync(str *capability, int cluster_id);
 bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id);
@@ -40,7 +39,6 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 int buffer_bin_pkt(bin_packet_t *packet, struct local_cap *cap, int src_id);
 int send_sync_req(str *capability, int cluster_id, int source_id);
 int send_sync_repl(cluster_info_t *cluster, int node_id, str *cap_name);
-int get_sync_source(cluster_info_t *cluster);
 
 #endif  /* CLUSTERER_SYNC_H */
 

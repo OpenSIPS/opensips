@@ -412,7 +412,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			/* determine if the current node is respnosible for this record */
 			if (ul_replication_cluster) {
 				cur_node_idx = clusterer_api.get_my_index(ul_replication_cluster,
-														&nr_nodes);
+												&contact_repl_cap, &nr_nodes);
 				if (r->aorhash % (nr_nodes+1) != cur_node_idx)
 					continue;
 			}

@@ -58,6 +58,7 @@ str state_col = str_init("state");
 str no_ping_retries_col = str_init("no_ping_retries");
 str priority_col = str_init("priority");
 str sip_addr_col = str_init("sip_addr");
+str flags_col = str_init("flags");
 str description_col = str_init("description");
 
 extern db_con_t *db_hdl;
@@ -130,12 +131,12 @@ static param_export_t params[] = {
 	{"no_ping_retries_col",	STR_PARAM,	&no_ping_retries_col.s	},
 	{"priority_col",		STR_PARAM,  &priority_col		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
+	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
 	{"neighbor_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
 	{"current_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
 	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
-	{"sync_from",			INT_PARAM,	&_sync_from_id		},
 	{0, 0, 0}
 };
 
@@ -248,6 +249,7 @@ int parse_param_node_info(str *descr, int *int_vals, char **str_vals)
 	PARSE_PROP(no_ping_retries_col, INT_VALS_NO_PING_RETRIES_COL, 0);
 	PARSE_PROP(priority_col, INT_VALS_PRIORITY_COL, 0);
 	PARSE_PROP(sip_addr_col, STR_VALS_SIP_ADDR_COL, 1);
+	PARSE_PROP(flags_col, STR_VALS_FLAGS_COL, 1);
 
 	return 0;
 }
@@ -259,17 +261,6 @@ static int mod_init(void)
 	LM_INFO("Clusterer module - initializing\n");
 
 	init_db_url(clusterer_db_url, 1);
-	db_table.len = strlen(db_table.s);
-	id_col.len = strlen(id_col.s);
-	cluster_id_col.len = strlen(cluster_id_col.s);
-	node_id_col.len = strlen(node_id_col.s);
-	id_col.len = strlen(id_col.s);
-	url_col.len = strlen(url_col.s);
-	state_col.len = strlen(state_col.s);
-	no_ping_retries_col.len = strlen(no_ping_retries_col.s);
-	priority_col.len = strlen(priority_col.s);
-	sip_addr_col.len = strlen(sip_addr_col.s);
-	description_col.len = strlen(description_col.s);
 
 	if (current_id < 1) {
 		LM_CRIT("Invalid current_id parameter\n");

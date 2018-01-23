@@ -79,6 +79,14 @@
         <description>SIP address, currently not used by the module</description>
     </column>
 
+    <column id="flags">
+        <name>flags</name>
+        <type>string</type>
+        <size>64</size>
+        <null/>
+        <description>Node flags: "seed" - node automatically considered to be synchronized</description>
+    </column>
+
     <column id="description">
         <name>description</name>
         <type>string</type>

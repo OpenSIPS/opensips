@@ -31,18 +31,18 @@
 #include "clusterer.h"
 
 #define NO_DB_INT_VALS 6
-#define NO_DB_STR_VALS 3
+#define NO_DB_STR_VALS 4
 #define NO_DB_COLS (NO_DB_INT_VALS + NO_DB_STR_VALS)
 
 #define DEFAULT_NO_PING_RETRIES 3
 #define DEFAULT_PRIORITY 50
 
-#define CLUSTERER_TABLE_VERSION 3
-/* also compatible with this version as the current version only removed columns */
-#define BACKWARDS_COMPAT_TABLE_VER 2
+#define CLUSTERER_TABLE_VERSION 4
 
 #define MAX_NO_NODES 16
 #define MAX_NO_CLUSTERS 16
+
+#define SEED_NODE_FLAG_STR "seed"
 
 enum db_int_vals_idx {
 	INT_VALS_ID_COL,
@@ -56,6 +56,7 @@ enum db_int_vals_idx {
 enum db_str_vals_idx {
 	STR_VALS_URL_COL,
 	STR_VALS_SIP_ADDR_COL,
+	STR_VALS_FLAGS_COL,
 	STR_VALS_DESCRIPTION_COL
 };
 
@@ -119,7 +120,7 @@ int provision_neighbor(modparam_t type, void* val);
 int provision_current(modparam_t type, void *val);
 
 int cl_get_my_id(void);
-int cl_get_my_index(int cluster_id, int *nr_nodes);
+int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);
 clusterer_node_t *api_get_next_hop(int cluster_id, int node_id);
