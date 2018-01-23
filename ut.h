@@ -43,6 +43,14 @@
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 
+typedef struct _int_str_t {
+	union {
+		int i;
+		str s;
+	};
+	unsigned char is_str;
+} int_str_t;
+
 struct sip_msg;
 
 /* zero-string wrapper */
@@ -669,8 +677,12 @@ static inline char *shm_strdup(const char *str)
 	return rval;
 }
 
-/* Extend the given buffer only if needed */
-static inline int shm_str_resize(str *in, int size)
+/*
+ * Ensure the given (str *) points to an SHM buffer of at least "size" bytes
+ *
+ * Return: 0 on success, -1 on failure
+ */
+static inline int shm_str_extend(str *in, int size)
 {
 	char *p;
 

@@ -46,6 +46,7 @@
 #include "udomain.h"
 #include "dlist.h"
 #include "usrloc.h"
+#include "kv_store.h"
 
 extern int max_contact_delete;
 extern db_key_t *cid_keys;
@@ -59,31 +60,34 @@ int cseq_delay = 20;
 extern event_id_t ei_c_ins_id;
 extern event_id_t ei_c_del_id;
 
+str urec_store_key = str_init("_urec_kvs");
+
 /*! \brief
  * Create and initialize new record structure
  */
 int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 {
-	size_t att_data_sz;
-
-	att_data_sz = get_att_aor_data_sz();
-
-	*_r = (urecord_t*)shm_malloc(sizeof(urecord_t) + att_data_sz);
+	*_r = (urecord_t*)shm_malloc(sizeof(urecord_t));
 	if (*_r == 0) {
 		LM_ERR("no more share memory\n");
 		return -1;
 	}
-	memset(*_r, 0, sizeof(urecord_t) + att_data_sz);
+	memset(*_r, 0, sizeof(urecord_t));
 
-	if (att_data_sz > 0)
-		(*_r)->attached_data = (void **)(*_r + 1);
+	(*_r)->kv_storage = map_create(AVLMAP_SHARED);
+	if (!(*_r)->kv_storage) {
+		LM_ERR("oom\n");
+		shm_free(*_r);
+		*_r = NULL;
+		return -1;
+	}
 
 	(*_r)->aor.s = (char*)shm_malloc(_aor->len);
 	if ((*_r)->aor.s == 0) {
 		LM_ERR("no more share memory\n");
 		shm_free(*_r);
-		*_r = 0;
-		return -2;
+		*_r = NULL;
+		return -1;
 	}
 	memcpy((*_r)->aor.s, _aor->s, _aor->len);
 	(*_r)->aor.len = _aor->len;
@@ -108,6 +112,8 @@ void free_urecord(urecord_t* _r)
 		_r->contacts = _r->contacts->next;
 		free_ucontact(ptr);
 	}
+
+	store_destroy(_r->kv_storage);
 
 	/* if mem cache is not used, the urecord struct is static*/
 	if (db_mode!=DB_ONLY) {
@@ -155,6 +161,7 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 {
 	ucontact_t* ptr, *prev = 0;
 	ucontact_t* c;
+	int_str_t **urec_kv_store;
 
 	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _ci)) == 0) {
 		LM_ERR("failed to create new contact\n");
@@ -162,6 +169,17 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 	}
 
 	if_update_stat( _r->slot, _r->slot->d->contacts, 1);
+
+	if (c->kv_storage) {
+		urec_kv_store = (int_str_t **)map_find(c->kv_storage, urec_store_key);
+		if (urec_kv_store) {
+			if (map_size(_r->kv_storage) != 0)
+				LM_BUG("urec key in 2 contacts");
+
+			store_destroy(_r->kv_storage);
+			_r->kv_storage = store_deserialize(&(*urec_kv_store)->s);
+		}
+	}
 
 	ptr = _r->contacts;
 
@@ -201,6 +219,8 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
  */
 void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 {
+	int_str_t **rstore;
+
 	if (_c->prev) {
 		_c->prev->next = _c->next;
 		if (_c->next) {
@@ -212,6 +232,15 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 			_c->next->prev = 0;
 		}
 	}
+
+	if (db_mode == WRITE_THROUGH || db_mode == WRITE_BACK) {
+		rstore = (int_str_t **)map_find(_c->kv_storage, urec_store_key);
+		if (rstore && _r->contacts) {
+			if (!put_ucontact_key(_r->contacts, &urec_store_key, *rstore))
+				LM_ERR("oom\n");
+		}
+	}
+
 	ul_raise_contact_event(ei_c_del_id, _c);
 }
 
@@ -312,6 +341,9 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 	int op,ins_done=0;
 
 	ptr = _r->contacts;
+
+	if (db_mode != DB_ONLY && persist_urecord_kv_store(_r) != 0)
+		LM_ERR("failed to persist latest urecord K/V storage\n");
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
@@ -526,6 +558,9 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		run_ul_callbacks(UL_AOR_UPDATE, _r);
 
 	if (db_mode == WRITE_THROUGH) {
+		if (persist_urecord_kv_store(_r) != 0)
+			LM_ERR("failed to persist latest urecord K/V storage\n");
+
 		if (db_insert_ucontact(*_c,0,0) < 0) {
 			LM_ERR("failed to insert in database\n");
 		} else {
@@ -674,4 +709,56 @@ uint64_t next_contact_id(urecord_t* _r)
 		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
 
 	return contact_id;
+}
+
+int persist_urecord_kv_store(urecord_t* _r)
+{
+	ucontact_t *c;
+	int_str_t val;
+	str packed_kv;
+
+	if (!_r->contacts) {
+		LM_ERR("cannot persist the K/V store - no contacts!\n");
+		return -1;
+	}
+
+	if (map_size(_r->kv_storage) == 0)
+		return 0;
+
+	packed_kv = store_serialize(_r->kv_storage);
+	if (ZSTR(packed_kv)) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	for (c = _r->contacts; c; c = c->next) {
+		if (map_find(c->kv_storage, urec_store_key))
+			goto have_contact;
+	}
+
+	c = _r->contacts;
+
+have_contact:
+	val.is_str = 1;
+	val.s = packed_kv;
+
+	if (!put_ucontact_key(c, &urec_store_key, &val)) {
+		LM_ERR("oom\n");
+		store_free_buffer(&packed_kv);
+		return -1;
+	}
+
+	store_free_buffer(&packed_kv);
+	return 0;
+}
+
+int_str_t *get_urecord_key(urecord_t* _rec, const str* _key)
+{
+	return kv_get(_rec->kv_storage, _key);
+}
+
+int_str_t *put_urecord_key(urecord_t* _rec, const str* _key,
+                           const int_str_t* _val)
+{
+	return kv_put(_rec->kv_storage, _key, _val);
 }

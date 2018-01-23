@@ -37,26 +37,18 @@
 #include "ul_callback.h"
 
 
-struct ulcb_head_list* ulcb_list = 0;
-
-/*
- * (u_contact_t) and (urecord_t) structures may be dynamically
- * extended to hold data for any subscribing module
- */
-int att_ct_items;
-int att_aor_items;
-
+struct ulcb_head_list *ulcb_list;
 
 int init_ulcb_list(void)
 {
-	ulcb_list = (struct ulcb_head_list*)shm_malloc
-		( sizeof(struct ulcb_head_list) );
-	if (ulcb_list==0) {
+	ulcb_list = shm_malloc(sizeof *ulcb_list);
+	if (!ulcb_list) {
 		LM_CRIT("no more shared mem\n");
 		return -1;
 	}
+	memset(ulcb_list, 0, sizeof *ulcb_list);
 	INIT_LIST_HEAD(&ulcb_list->first);
-	ulcb_list->reg_types = 0;
+
 	return 1;
 }
 
@@ -82,15 +74,16 @@ void destroy_ulcb_list(void)
 /*! \brief
 	register a callback function 'f' for 'types' mask of events;
 */
-int register_ulcb(int types, ul_cb f, int *data_idx)
+int register_ulcb(ul_cb_type types, ul_cb f)
 {
 	struct ul_callback *cbp;
 
 	/* are the callback types valid?... */
-	if ( types<0 || types>ULCB_MAX ) {
+	if (types > ULCB_MAX) {
 		LM_CRIT("invalid callback types: mask=%d\n",types);
 		return E_BUG;
 	}
+
 	/* we don't register null functions */
 	if (f==0) {
 		LM_CRIT("null callback function\n");
@@ -117,17 +110,6 @@ int register_ulcb(int types, ul_cb f, int *data_idx)
 
 	/* ... and fill it up */
 	cbp->callback = f;
-
-	if (data_idx != NULL) {
-		cbp->has_data = 1;
-		if (is_contact_cb(types)) {
-			*data_idx = att_ct_items;
-			att_ct_items++;
-		} else if (is_aor_cb(types)) {
-			*data_idx = att_aor_items;
-			att_aor_items++;
-		}
-	}
 
 	cbp->types = types;
 

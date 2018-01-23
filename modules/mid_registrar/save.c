@@ -30,6 +30,7 @@
  */
 
 #include "mid_registrar.h"
+#include "ul_storage.h"
 #include "lookup.h"
 #include "encode.h"
 #include "save.h"
@@ -1145,11 +1146,6 @@ update_usrloc:
 
 		} else if (c != NULL) {
 			if (e == 0) {
-				if (reg_mode != MID_REG_MIRROR) {
-					cti = (struct mid_reg_info *)c->attached_data[ucontact_data_idx];
-					cti->skip_dereg = 1;
-				}
-
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
@@ -1345,16 +1341,15 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
 			struct mid_reg_info *mri, str* _a)
 {
-	struct mid_reg_info *cti;
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
 	urecord_t *r;
 	contact_t *_c = NULL;
+	int_str_t value;
 	int e_out;
 	int e_max = 0;
 	int tcp_check = 0;
 	struct sip_uri uri;
-	str ct_uri;
 	struct ct_mapping *ctmap;
 	struct hdr_field *hdr;
 	struct list_head *_;
@@ -1432,22 +1427,7 @@ update_usrloc:
 			if (!_c)
 				continue;
 
-			LM_DBG("INSERTING .....\n");
-			LM_DBG(":: inserting contact with expires %lu\n", ci->expires);
-
-			if (reg_mode != MID_REG_MIRROR) {
-				cti = mri_dup(mri);
-				ct_uri.len = _c->uri.len;
-				ct_uri.s = _c->uri.s;
-
-				shm_str_dup(&cti->ct_uri, &ct_uri);
-
-				cti->expires = ctmap->expires;
-				cti->expires_out = e_out;
-				cti->last_reg_ts = get_act_time();
-				cti->last_cseq = ci->cseq;
-				set_ct(cti);
-			}
+			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
 			if (ul_api.insert_ucontact( r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
@@ -1455,14 +1435,20 @@ update_usrloc:
 				goto error;
 			}
 
-			set_ct(NULL);
-
+			if (reg_mode == MID_REG_THROTTLE_CT &&
+			    store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
+			                        get_act_time(), ci->cseq) != 0) {
+				LM_ERR("failed to attach ucontact data - oom?\n");
+				goto error;
+			}
 		} else if (c != NULL) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
-				if (reg_mode != MID_REG_MIRROR) {
-					cti = (struct mid_reg_info *)c->attached_data[ucontact_data_idx];
-					cti->skip_dereg = 1;
+				if (reg_mode == MID_REG_THROTTLE_CT) {
+					value.is_str = 0;
+					value.i = 1;
+					if (!ul_api.put_ucontact_key(c, &ul_key_skip_dereg, &value))
+						LM_ERR("oom\n");
 				}
 
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
@@ -1470,23 +1456,23 @@ update_usrloc:
 					LM_ERR("failed to update contact\n");
 					goto error;
 				}
+
 				continue;
 			}
 
 			LM_DBG("UPDATING .....\n");
-			if (reg_mode != MID_REG_MIRROR) {
-				mri->expires_out = e_out;
-				mri->last_cseq = ci->cseq;
-				set_ct(mri);
+
+			if (reg_mode == MID_REG_THROTTLE_CT &&
+			    update_ucontact_data(c, ctmap->expires, e_out, ci->cseq) != 0) {
+				LM_ERR("failed to update ucontact data - oom?\n");
+				goto error;
 			}
 
-			if (ul_api.update_ucontact( r, c, ci, 0) < 0) {
+			if (ul_api.update_ucontact(r, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				goto error;
 			}
-
-			set_ct(NULL);
 		}
 
 		if (tcp_check) {
@@ -1535,7 +1521,6 @@ error:
 static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
                          struct mid_reg_info *mri, str* _a)
 {
-	struct mid_reg_info *ri, *cti;
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
 	urecord_t *r = NULL;
@@ -1547,7 +1532,6 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 	struct sip_uri uri;
 	struct list_head *_;
 	struct ct_mapping *ctmap;
-	str ct, aux;
 
 	if (str2int(&get_cseq(rpl)->number, &cseq) < 0) {
 		rerrno = R_INV_CSEQ;
@@ -1577,48 +1561,22 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 		if (_c == NULL)
 			goto out;
 
-		ri = mri_dup(mri);
-		ct.len = _c->uri.len;
-		ct.s = _c->uri.s;
-		shm_str_dup(&ri->ct_uri, &ct);
-		ri->expires_out = e_out;
-		ri->last_reg_ts = get_act_time();
-		ri->last_cseq = cseq;
-
-		set_ct(ri);
-
 		if (ul_api.insert_urecord(mri->dom, _a, &r, 0) < 0) {
 			rerrno = R_UL_NEW_R;
 			LM_ERR("failed to insert new record structure\n");
 			goto out_err;
 		}
 
-		set_ct(NULL);
-	} else {
-		ri = (struct mid_reg_info *)r->attached_data[urecord_data_idx];
-		if (_c == NULL) {
-			ri->last_reg_ts = 0;
-			ri->skip_dereg = 1;
-		} else {
-			ri->last_reg_ts = get_act_time();
+		if (store_urecord_data(r, mri, &_c->uri, e_out, get_act_time(),
+		                       cseq) != 0) {
+			LM_ERR("failed to attach urecord data - oom?\n");
+			goto out_err;
 		}
-
-		/*
-		 * the AoR registration update may sometimes get forwarded
-		 * under a different Call-ID, when aggregating contacts
-		 */
-		if (ri->callid.len != mri->callid.len &&
-		    str_strcmp(&ri->callid, &mri->callid) != 0) {
-			if (shm_str_dup(&aux, &mri->callid) != 0) {
-				rerrno = R_UL_UPD_C;
-				LM_ERR("oom\n");
-				goto out_err;
-			}
-			shm_free(ri->callid.s);
-			ri->callid = aux;
-			ri->last_cseq = cseq;
-		} else if (cseq > ri->last_cseq)
-			ri->last_cseq = cseq;
+	} else {
+		if (update_urecord_data(r, _c == NULL, &mri->callid, cseq) != 0) {
+			LM_ERR("failed to update urecord data - oom?\n");
+			goto out_err;
+		}
 	}
 
 	if (_c != NULL) {
@@ -1669,21 +1627,7 @@ update_usrloc:
 			if (!_c)
 				continue;
 
-			LM_DBG("INSERTING .....\n");
-			LM_DBG(":: inserting contact with expires %lu\n", ci->expires);
-
-			if (reg_mode != MID_REG_MIRROR) {
-				cti = mri_dup(mri);
-				ct.len = _c->uri.len;
-				ct.s = _c->uri.s;
-
-				shm_str_dup(&cti->ct_uri, &ct);
-
-				cti->expires = ctmap->expires;
-				cti->expires_out = e_out;
-				cti->last_reg_ts = mri->last_reg_ts;
-				set_ct(cti);
-			}
+			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
 			if (ul_api.insert_ucontact( r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
@@ -1691,8 +1635,12 @@ update_usrloc:
 				goto out_clear_err;
 			}
 
-			set_ct(NULL);
-
+			if (reg_mode == MID_REG_THROTTLE_AOR &&
+			    store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
+			                        mri->last_reg_ts, ci->cseq) != 0) {
+				LM_ERR("failed to attach ucontact data - oom?\n");
+				goto out_clear_err;
+			}
 		} else if (c != NULL) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
@@ -1704,11 +1652,10 @@ update_usrloc:
 				continue;
 			}
 
-			LM_DBG("UPDATING .....\n");
-			if (reg_mode != MID_REG_MIRROR) {
-				mri->expires = ctmap->expires;
-				mri->expires_out = e_out;
-				set_ct(mri);
+			if (reg_mode == MID_REG_THROTTLE_AOR &&
+			    update_ucontact_data(c, ctmap->expires, e_out, ci->cseq) != 0) {
+				LM_ERR("failed to update ucontact data - oom?\n");
+				goto out_clear_err;
 			}
 
 			if (ul_api.update_ucontact( r, c, ci, 0) < 0) {
@@ -1716,8 +1663,6 @@ update_usrloc:
 				LM_ERR("failed to update contact\n");
 				goto out_clear_err;
 			}
-
-			set_ct(NULL);
 		}
 
 		if (tcp_check) {
@@ -2224,11 +2169,12 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
                                   unsigned int flags)
 {
-	int e, ret, cflags;
-	struct mid_reg_info *mri;
+	int e, expires_out, ret, cflags;
+	unsigned int last_reg_ts;
 	ucontact_info_t *ci;
 	ucontact_t *c;
 	contact_t *ct;
+	int_str_t value, *valuep;
 
 	LM_DBG("processing contacts...\n");
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
@@ -2257,9 +2203,21 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 		} else if (ret == 0) { /* found */
 			LM_DBG("found >> %d --- [ %ld, %ld ]\n", e, c->expires_in, c->expires_out);
 
-			mri = c->attached_data[ucontact_data_idx];
+			valuep = ul_api.get_ucontact_key(c, &ul_key_last_reg_ts);
+			if (!valuep) {
+				LM_ERR("'last_reg_ts' key not found!\n");
+				return -1;
+			}
+			last_reg_ts = valuep->i;
 
-			if (get_act_time() - mri->last_reg_ts >= mri->expires_out - e) {
+			valuep = ul_api.get_ucontact_key(c, &ul_key_expires_out);
+			if (!valuep) {
+				LM_ERR("'expires_out' key not found!\n");
+				return -1;
+			}
+			expires_out = valuep->i;
+
+			if (get_act_time() - last_reg_ts >= expires_out - e) {
 				LM_DBG("FWD 2\n");
 				/* FIXME: should update "last_reg_out_ts" for all cts? */
 				return 1;
@@ -2273,7 +2231,11 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 					return -1;
 				}
 				ci->expires_out = c->expires_out;
-				mri->last_cseq = ci->cseq;
+
+				value.is_str = 0;
+				value.i = ci->cseq;
+				if (!ul_api.put_ucontact_key(c, &ul_key_last_cseq, &value))
+					LM_ERR("failed to update CSeq - oom?\n");
 
 				if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 					rerrno = R_UL_UPD_C;
@@ -2295,14 +2257,27 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 static int calc_max_ct_diff(urecord_t *urec)
 {
 	ucontact_t *ct;
-	int max_diff = -1;
-	struct mid_reg_info *mri;
+	int expires, expires_out, max_diff = -1;
+	int_str_t *valuep;
 
 	for (ct = urec->contacts; ct; ct = ct->next) {
-		mri = (struct mid_reg_info *)ct->attached_data[ucontact_data_idx];
-		LM_DBG("ct - %d - %d - %d\n", mri->expires_out, mri->expires, max_diff);
-		if (mri->expires_out - mri->expires > max_diff)
-			max_diff = mri->expires_out - mri->expires;
+		valuep = ul_api.get_ucontact_key(ct, &ul_key_expires);
+		if (!valuep) {
+			LM_ERR("'expires' key not found!\n");
+			return -1;
+		}
+		expires = valuep->i;
+
+		valuep = ul_api.get_ucontact_key(ct, &ul_key_expires_out);
+		if (!valuep) {
+			LM_ERR("'expires_out' key not found!\n");
+			return -1;
+		}
+		expires_out = valuep->i;
+
+		LM_DBG("ct - %d - %d - %d\n", expires_out, expires, max_diff);
+		if (expires_out - expires > max_diff)
+			max_diff = expires_out - expires;
 	}
 
 	LM_DBG("max diff: %d\n", max_diff);
@@ -2337,20 +2312,31 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
                                    unsigned int flags)
 {
 	int e, ret, ctno = 0, cflags, max_diff = -1;
-	struct mid_reg_info *cinfo, *rinfo;
 	ucontact_info_t *ci;
 	ucontact_t *c;
 	contact_t *ct;
 	int e_out;
+	unsigned int last_reg_ts;
+	int_str_t *value;
 
 	if (urec->contacts == NULL)
 		return 1;
 
-	rinfo = urec->attached_data[ucontact_data_idx];
-	e_out = rinfo->expires_out;
+	value = ul_api.get_urecord_key(urec, &ul_key_last_reg_ts);
+	if (!value) {
+		LM_ERR("'last_reg_ts' key not found!\n");
+		return -1;
+	}
+	last_reg_ts = value->i;
 
-	LM_DBG("AoR info: e=%d, e_out=%d, lrts=%d...\n",
-	       rinfo->expires, rinfo->expires_out, rinfo->last_reg_ts);
+	value = ul_api.get_urecord_key(urec, &ul_key_expires_out);
+	if (!value) {
+		LM_ERR("'expires_out' key not found!\n");
+		return -1;
+	}
+	e_out = value->i;
+
+	LM_DBG("AoR info: e_out=%d, lrts=%d...\n", e_out, last_reg_ts);
 
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
@@ -2394,11 +2380,6 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			LM_DBG("found >> [ %ld, %ld ], e=%d, e_out=%d\n",
 			       c->expires_in, c->expires_out, e, e_out);
 
-			cinfo = c->attached_data[ucontact_data_idx];
-			cinfo->expires = e;
-			cinfo->expires_out = e_out;
-			set_ct(cinfo);
-
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), 0,
 			             ul_api.nat_flag, cflags);
@@ -2408,25 +2389,19 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				return -1;
 			}
 			ci->expires_out = c->expires_out;
-			cinfo->last_cseq = ci->cseq;
+
+			if (update_ucontact_data(c, e, e_out, ci->cseq) != 0) {
+				LM_ERR("failed to update ucontact data - oom?\n");
+				return -1;
+			}
 
 			if (ul_api.update_ucontact(urec, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				return -1;
 			}
-			set_ct(NULL);
 		} else if (ret == 1) {
 			/* not found */
-			cinfo = mri_alloc();
-			if (!cinfo) {
-				LM_ERR("oom\n");
-				return -1;
-			}
-
-			cinfo->expires = e;
-			cinfo->expires_out = e_out;
-			set_ct(cinfo);
 
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), 0,
@@ -2437,14 +2412,17 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				return -1;
 			}
 			ci->expires_out = e_out;
-			cinfo->last_cseq = ci->cseq;
 
 			if (ul_api.insert_ucontact(urec, &ct->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				return -1;
 			}
-			set_ct(NULL);
+
+			if (update_ucontact_data(c, e, e_out, ci->cseq) != 0) {
+				LM_ERR("failed to update ucontact data - oom?\n");
+				return -1;
+			}
 		}
 
 		/* ignore contacts with duplicate / lower cseq (ret == -2) */
@@ -2453,8 +2431,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	max_diff = calc_max_ct_diff(urec);
 
 	LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
-	       max_diff, rinfo->last_reg_ts + max_diff, get_act_time());
-	if (max_diff >= 0 && rinfo->last_reg_ts + max_diff <= get_act_time()) {
+	       max_diff, last_reg_ts + max_diff, get_act_time());
+	if (max_diff >= 0 && last_reg_ts + max_diff <= get_act_time()) {
 		return 1;
 	}
 

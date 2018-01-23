@@ -41,8 +41,9 @@
  */
 
 
-#define UL_TABLE_VERSION 1011
+#define UL_TABLE_VERSION 1012
 
+#define UL_COLS 19
 extern str contactid_col;
 extern str user_col;
 extern str domain_col;
@@ -58,6 +59,7 @@ extern str received_col;
 extern str path_col;
 extern str sock_col;
 extern str methods_col;
+extern str kv_store_col;
 extern str attr_col;
 extern str last_mod_col;
 extern str sip_instance_col;

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1011');
+INSERT INTO version (table_name, table_version) values ('location','1012');
 CREATE TABLE location (
     contact_id BIGSERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
@@ -17,6 +17,7 @@ CREATE TABLE location (
     socket VARCHAR(64) DEFAULT NULL,
     methods INTEGER DEFAULT NULL,
     sip_instance VARCHAR(255) DEFAULT NULL,
+    kv_store TEXT DEFAULT NULL,
     attr VARCHAR(255) DEFAULT NULL
 );
 

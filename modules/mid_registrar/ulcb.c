@@ -38,11 +38,12 @@
 #include "../../lib/reg/regtime.h"
 
 #include "mid_registrar.h"
+#include "ul_storage.h"
 
 char extra_hdrs_buf[512];
 static str extra_hdrs={extra_hdrs_buf, 512};
 
-static int build_unregister_hdrs(struct mid_reg_info *mri)
+static int build_unregister_hdrs(const str *ct_uri)
 {
 	char *p;
 
@@ -50,11 +51,11 @@ static int build_unregister_hdrs(struct mid_reg_info *mri)
 	memcpy(p, contact_hdr.s, contact_hdr.len);
 	p += contact_hdr.len;
 
-	LM_DBG("building contact from uri '%.*s'\n", mri->ct_uri.len, mri->ct_uri.s);
+	LM_DBG("building contact from uri '%.*s'\n", ct_uri->len, ct_uri->s);
 
 	*p++ = '<';
-	memcpy(p, mri->ct_uri.s, mri->ct_uri.len);
-	p += mri->ct_uri.len;
+	memcpy(p, ct_uri->s, ct_uri->len);
+	p += ct_uri->len;
 	*p++ = '>';
 
 	*p++ = ';';
@@ -76,29 +77,28 @@ static void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	LM_DBG(">> [REPLY] UNREGISTER !\n");
 }
 
-static int unregister_contact(struct mid_reg_info *mri)
+static int send_unregister(str *from, str *to, str *ruri, str *callid,
+                           unsigned int last_cseq, str *obp, str *ct_uri)
 {
 	dlg_t *dlg;
 	int ret;
 
-	/* create a mystical dialog in preparation for our De-REGISTER */
-	if (tm_api.new_auto_dlg_uac(&mri->from, &mri->to, &mri->main_reg_uri,
-	    &mri->callid, NULL, &dlg)) {
+	/* create a tm dialog in preparation for our De-REGISTER */
+	if (tm_api.new_auto_dlg_uac(from, to, ruri, callid, NULL, &dlg)) {
 		LM_ERR("failed to create new TM dlg\n");
 		return -1;
 	}
 	dlg->state = DLG_CONFIRMED;
 
 	/* t_request_within() will increment it for us */
-	dlg->loc_seq.value = mri->last_cseq;
+	dlg->loc_seq.value = last_cseq;
 
-	if (mri->main_reg_next_hop.s) {
-		LM_DBG("adding next hop: %.*s\n", mri->main_reg_next_hop.len,
-		       mri->main_reg_next_hop.s);
-		dlg->obp = mri->main_reg_next_hop;
+	if (!ZSTRP(obp)) {
+		LM_DBG("adding next hop: %.*s\n", obp->len, obp->s);
+		dlg->obp = *obp;
 	}
 
-	if (build_unregister_hdrs(mri) != 0) {
+	if (build_unregister_hdrs(ct_uri) != 0) {
 		LM_ERR("failed to build unregister headers\n");
 		return -1;
 	}
@@ -117,68 +117,149 @@ static int unregister_contact(struct mid_reg_info *mri)
 	return (ret == 1 ? 0 : ret);
 }
 
-void mid_reg_ct_event(void *binding, int type, void **data)
+static int unregister_contact(ucontact_t *c)
+{
+	int_str_t *value;
+	str *from, *to, *ruri, *callid, *obp = NULL, *ct;
+	unsigned int last_cseq;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_from);
+	if (!value) {
+		LM_ERR("'from' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	from = &value->s;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_to);
+	if (!value) {
+		LM_ERR("'to' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	to = &value->s;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_main_reg_uri);
+	if (!value) {
+		LM_ERR("'main_reg_uri' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	ruri = &value->s;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_callid);
+	if (!value) {
+		LM_ERR("'callid' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	callid = &value->s;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_main_reg_next_hop);
+	if (value)
+		obp = &value->s;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_ct_uri);
+	if (!value) {
+		LM_ERR("'ct_uri' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	ct = &value->s;
+
+	value = ul_api.get_ucontact_key(c, &ul_key_last_cseq);
+	if (!value) {
+		LM_ERR("'last_cseq' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	last_cseq = value->i;
+
+	return send_unregister(from, to, ruri, callid, last_cseq, obp, ct);
+}
+
+static int unregister_record(urecord_t *r)
+{
+	int_str_t *value;
+	str *from, *to, *ruri, *callid, *obp = NULL, *ct;
+	unsigned int last_cseq;
+
+	value = ul_api.get_urecord_key(r, &ul_key_from);
+	if (!value) {
+		LM_ERR("'from' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	from = &value->s;
+
+	value = ul_api.get_urecord_key(r, &ul_key_to);
+	if (!value) {
+		LM_ERR("'to' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	to = &value->s;
+
+	value = ul_api.get_urecord_key(r, &ul_key_main_reg_uri);
+	if (!value) {
+		LM_ERR("'main_reg_uri' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	ruri = &value->s;
+
+	value = ul_api.get_urecord_key(r, &ul_key_callid);
+	if (!value) {
+		LM_ERR("'callid' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	callid = &value->s;
+
+	value = ul_api.get_urecord_key(r, &ul_key_main_reg_next_hop);
+	if (value)
+		obp = &value->s;
+
+	value = ul_api.get_urecord_key(r, &ul_key_ct_uri);
+	if (!value) {
+		LM_ERR("'ct_uri' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	ct = &value->s;
+
+	value = ul_api.get_urecord_key(r, &ul_key_last_cseq);
+	if (!value) {
+		LM_ERR("'last_cseq' key not found, skipping De-REGISTER\n");
+		return -1;
+	}
+	last_cseq = value->i;
+
+	return send_unregister(from, to, ruri, callid, last_cseq, obp, ct);
+}
+
+void mid_reg_ct_event(void *binding, ul_cb_type type)
 {
 	ucontact_t *c = (ucontact_t *)binding;
-	struct mid_reg_info *mri, *update;
+	int_str_t *skip_dereg;
 
-	if (!data)
-		return;
+	LM_DBG("Contact callback (%d): contact='%.*s'\n", type, c->c.len, c->c.s);
 
-	update = get_ct();
+	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
+		if (reg_mode == MID_REG_THROTTLE_CT) {
+			skip_dereg = ul_api.get_ucontact_key(c, &ul_key_skip_dereg);
+			if (skip_dereg && skip_dereg->i == 1)
+				return;
 
-	LM_DBG("Contact callback (%d): contact='%.*s' | "
-	       "param=(%p -> %p) | data[%d]=(%p)\n", type, c->c.len, c->c.s, data,
-	       data ? *data : NULL, ucontact_data_idx,
-	       c->attached_data[ucontact_data_idx]);
-
-	if (type & UL_CONTACT_INSERT) {
-		*data = get_ct();
-	} else {
-		mri = *(struct mid_reg_info **)data;
-		if (!mri)
-			return;
-
-		if (type & UL_CONTACT_UPDATE) {
-			if (update) {
-				LM_DBG("setting e_out to %d\n", update->expires_out);
-				mri->expires_out = update->expires_out;
-				mri->last_reg_ts = get_act_time();
-			}
-		} else if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
-			if (reg_mode == MID_REG_THROTTLE_CT) {
-				if (!mri->skip_dereg && unregister_contact(mri) != 0) {
-					LM_ERR("failed to unregister contact\n");
-				}
-			}
-			mri_free(mri);
+			if (unregister_contact(c) != 0)
+				LM_ERR("failed to unregister contact\n");
 		}
 	}
 }
 
-void mid_reg_aor_event(void *binding, int type, void **data)
+void mid_reg_aor_event(void *binding, ul_cb_type type)
 {
 	urecord_t *r = (urecord_t *)binding;
-	struct mid_reg_info *mri;
+	int_str_t *skip_dereg;
 
-	if (!data)
-		return;
+	LM_DBG("AOR callback (%d): contact='%.*s'\n", type,
+	       r->aor.len, r->aor.s);
 
-	LM_DBG("AOR callback (%d): contact='%.*s' | "
-	       "param=(%p -> %p) | data[%d]=(%p)\n", type,
-	       r->aor.len, r->aor.s, data, data ? *data : NULL,
-	       urecord_data_idx, r->attached_data[urecord_data_idx]);
-
-	if (type & UL_AOR_INSERT) {
-		*data = get_ct();
-	} else if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
-		mri = *(struct mid_reg_info **)data;
-		if (!mri)
+	if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
+		skip_dereg = ul_api.get_urecord_key(r, &ul_key_skip_dereg);
+		if (skip_dereg && skip_dereg->i == 1)
 			return;
 
-		if (!mri->skip_dereg && unregister_contact(mri) != 0)
+		if (unregister_record(r) != 0)
 			LM_ERR("failed to unregister contact\n");
-
-		mri_free(mri);
 	}
 }

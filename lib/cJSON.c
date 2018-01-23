@@ -36,6 +36,7 @@
 
 #include "cJSON.h"
 #include "../mem/mem.h"
+#include "osips_malloc.h"
 
 /* Determine the number of bits that an integer has using the preprocessor */
 #if INT_MAX == 32767
@@ -116,18 +117,8 @@ static int cJSON_strcasecmp(const unsigned char *s1, const unsigned char *s2)
     return tolower(*s1) - tolower(*s2);
 }
 
-static void* osip_malloc( size_t sz )
-{
-	return pkg_malloc( sz );
-}
-
-static void osip_free( void *ptr )
-{
-	pkg_free( ptr );
-}
-
-static void *(*cJSON_malloc)(size_t sz) = osip_malloc;
-static void (*cJSON_free)(void *ptr) = osip_free;
+static void *(*cJSON_malloc)(size_t sz) = osips_pkg_malloc;
+static void (*cJSON_free)(void *ptr) = osips_pkg_free;
 
 static unsigned char* cJSON_strdup(const unsigned char* str)
 {
@@ -172,13 +163,13 @@ void cJSON_InitHooks(cJSON_Hooks* hooks)
     if (!hooks)
     {
         /* Reset hooks */
-        cJSON_malloc = malloc;
-        cJSON_free = free;
+        cJSON_malloc = osips_pkg_malloc;
+        cJSON_free = osips_pkg_free;
         return;
     }
 
-    cJSON_malloc = (hooks->malloc_fn) ? hooks->malloc_fn : malloc;
-    cJSON_free = (hooks->free_fn) ? hooks->free_fn : free;
+    cJSON_malloc = (hooks->malloc_fn) ? hooks->malloc_fn : osips_pkg_malloc;
+    cJSON_free = (hooks->free_fn) ? hooks->free_fn : osips_pkg_free;
 }
 
 /* Internal constructor. */
@@ -196,7 +187,7 @@ static cJSON *cJSON_New_Item(void)
 /* Delete a cJSON structure. */
 void cJSON_Delete(cJSON *c)
 {
-    cJSON *next = NULL;
+    cJSON *next;
     while (c)
     {
         next = c->next;
@@ -1821,6 +1812,23 @@ void cJSON_AddItemToArray(cJSON *array, cJSON *item)
         }
         suffix_object(child, item);
     }
+}
+
+void   _cJSON_AddItemToObject(cJSON *object, const str *string, cJSON *item)
+{
+    if (!item)
+    {
+        return;
+    }
+
+    /* free old key and set new one */
+    if (item->string)
+    {
+        cJSON_free(item->string);
+    }
+    item->string = (char*)cJSON_strndup((const unsigned char*)string->s, string->len);
+
+    cJSON_AddItemToArray(object,item);
 }
 
 void   cJSON_AddItemToObject(cJSON *object, const char *string, cJSON *item)

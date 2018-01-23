@@ -953,6 +953,7 @@
 		<column><field>socket</field><type>DB_STR</type></column>
 		<column><field>methods</field><type>DB_INT</type></column>
 		<column><field>sip_instance</field><type>DB_STR</type></column>
+		<column><field>kv_store</field><type>DB_BLOB</type></column>
 		<column><field>attr</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declare all mods
@@ -4525,6 +4526,7 @@
 				<col><field>socket</field></col>
 				<col><field>methods</field></col>
 				<col><field>sip_instance</field></col>
+				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
 			</query_cols>
 		</cmd>
@@ -4548,6 +4550,7 @@
 				<col><field>socket</field></col>
 				<col><field>methods</field></col>
 				<col><field>sip_instance</field></col>
+				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
 			</query_cols>
 		</cmd>
@@ -4574,6 +4577,7 @@
 				<col><field>socket</field></col>
 				<col><field>methods</field></col>
 				<col><field>sip_instance</field></col>
+				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
 			</query_cols>
 		</cmd>

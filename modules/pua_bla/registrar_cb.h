@@ -29,4 +29,4 @@
 #include "../../dprint.h"
 #include "../usrloc/usrloc.h"
 
-void bla_contact_cb(void *binding, int type, void **data);
+void bla_contact_cb(void *binding, ul_cb_type type);

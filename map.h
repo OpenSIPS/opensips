@@ -37,7 +37,7 @@
 #endif
 
 /* Flags that can be passed on when creating a map */
-enum
+enum map_flags
 {
 	AVLMAP_SHARED = 1,		/* determines if the map is to be allocated in
 				shared or private memory */
@@ -47,7 +47,7 @@ enum
 
 /* Tree data structure. */
 typedef struct avl_table {
-	int flags;			/* Shared memory or private memory */
+	enum map_flags flags;		/* Shared memory or private memory */
 	struct avl_node *avl_root;	/* Tree's root. */
 	size_t avl_count;		/* Number of items in tree. */
 	int ret_code;
@@ -101,7 +101,7 @@ typedef  int (* process_each_func )(void * param, str key, void * value);
  *
  */
 
-map_t map_create ( int flags );
+map_t map_create ( enum map_flags flags );
 
 
 /*
