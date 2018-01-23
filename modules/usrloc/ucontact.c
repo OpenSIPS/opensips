@@ -620,6 +620,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		vals[16].nul = 1;
 	} else {
 		vals[16].val.str_val = store_serialize(_c->kv_storage);
+		if (ZSTR(vals[16].val.str_val))
+			vals[16].nul = 1;
 	}
 
 	vals[17].type = DB_STR;
@@ -649,7 +651,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
-		return -1;
+		goto out_err;
 	}
 
 	if ( !update ) {
@@ -663,19 +665,22 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 		if (ul_dbf.insert(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
-			return -1;
+			goto out_err;
 		}
 	} else {
 		/* do insert-update / replace */
 		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
 		if (ul_dbf.insert_update(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
-			return -1;
+			goto out_err;
 		}
 	}
 
 	store_free_buffer(&vals[16].val.str_val);
 	return 0;
+out_err:
+	store_free_buffer(&vals[16].val.str_val);
+	return -1;
 }
 
 
@@ -777,6 +782,8 @@ int db_update_ucontact(ucontact_t* _c)
 		vals2[12].nul = 1;
 	} else {
 		vals2[12].val.str_val = store_serialize(_c->kv_storage);
+		if (ZSTR(vals2[12].val.str_val))
+			vals2[12].nul = 1;
 	}
 
 	vals2[13].type = DB_STR;
@@ -805,7 +812,7 @@ int db_update_ucontact(ucontact_t* _c)
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
-		return -1;
+		goto out_err;
 	}
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
@@ -813,10 +820,14 @@ int db_update_ucontact(ucontact_t* _c)
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2,
 				keys1_no, keys2_no) < 0) {
 		LM_ERR("updating database failed\n");
-		return -1;
+		goto out_err;
 	}
 
+	store_free_buffer(&vals2[12].val.str_val);
 	return 0;
+out_err:
+	store_free_buffer(&vals2[12].val.str_val);
+	return -1;
 }
 
 

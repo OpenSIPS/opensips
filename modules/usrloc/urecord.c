@@ -726,7 +726,7 @@ int persist_urecord_kv_store(urecord_t* _r)
 		return 0;
 
 	packed_kv = store_serialize(_r->kv_storage);
-	if (!packed_kv.s) {
+	if (ZSTR(packed_kv)) {
 		LM_ERR("oom\n");
 		return -1;
 	}
