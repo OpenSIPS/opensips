@@ -498,7 +498,7 @@ int st_flush_ucontact(ucontact_t* _c)
  */
 int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 {
-	int nr_vals = UL_COLS;
+	int nr_vals = UL_COLS - 1;
 	int start = 0;
 
 	static db_ps_t myI_ps = NULL;
