@@ -364,7 +364,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/
-		update_stat( pt[process_no].load, +1 );
 #ifdef EXTRA_DEBUG
 		LM_DBG("calling receive_msg(%p, %d, )\n",
 				req->start, (int)(req->parsed-req->start));
@@ -419,8 +418,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 				pkg_free(req);
 			}
 		}
-
-		update_stat( pt[process_no].load, -1 );
 
 		if (size) {
 			/* restoring the char only makes sense if there is something else to

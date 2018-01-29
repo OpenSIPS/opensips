@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-struct stat_var_;
+#include "pt_load.h"
 
 #define MAX_PT_DESC	128
 
@@ -57,7 +57,7 @@ struct process_table {
 	int default_log_level;
 
 	/* the load statistic of this process */
-	struct stat_var_ *load;
+	struct proc_load load;
 };
 
 typedef void(*forked_proc_func)(int i);

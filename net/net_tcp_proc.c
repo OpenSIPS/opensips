@@ -24,6 +24,7 @@
  */
 
 
+#include "../pt_load.h"
 #include "../ipc.h"
 #include "../timer.h"
 #include "../reactor.h"
@@ -127,22 +128,23 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	long resp;
 	long response[2];
 
+	pt_become_active();
 	switch(fm->type){
 		case F_TIMER_JOB:
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
 			async_script_resume_f( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_FD_ASYNC:
 			async_fd_resume( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_LAUNCH_ASYNC:
 			async_launch_resume( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);
-			return 0;
+			break;
 		case F_TCPMAIN:
 again:
 			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);
@@ -170,7 +172,7 @@ again:
 			if (s==-1) {
 				LM_BUG("read_fd:no fd read\n");
 				/* FIXME? */
-				return -1;
+				goto error;
 			}
 
 			LM_DBG("We have received conn %p with rw %d on fd %d\n",con,rw,s);
@@ -276,12 +278,15 @@ again:
 			goto error;
 	}
 
+	pt_become_idle();
 	return ret;
 con_error:
 	con->state=S_CONN_BAD;
 	tcpconn_release_error(con, 0, "Internal error");
+	pt_become_idle();
 	return ret;
 error:
+	pt_become_idle();
 	return -1;
 }
 

@@ -45,6 +45,7 @@
 #include "../socket_info.h"
 #include "../ut.h"
 #include "../pt.h"
+#include "../pt_load.h"
 #include "../daemonize.h"
 #include "../reactor.h"
 #include "../timer.h"
@@ -1466,8 +1467,9 @@ error:
  */
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
-	int ret;
+	int ret = 0;
 
+	pt_become_active();
 	switch(fm->type){
 		case F_TCP_LISTENER:
 			ret = handle_new_connect((struct socket_info*)fm->data);
@@ -1484,7 +1486,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);
-			return 0;
+			break;
 		case F_NONE:
 			LM_CRIT("empty fd map\n");
 			goto error;
@@ -1492,8 +1494,10 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			LM_CRIT("unknown fd type %d\n", fm->type);
 			goto error;
 	}
+	pt_become_idle();
 	return ret;
 error:
+	pt_become_idle();
 	return -1;
 }
 
@@ -1816,7 +1820,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	int reader_fd[2]; /* for comm. with the tcp children read  */
 	pid_t pid;
 	struct socket_info *si;
-	stat_var *load_p = NULL;
 
 	if (tcp_disabled)
 		return 0;
@@ -1828,11 +1831,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
 		if ( is_tcp_based_proto(n) )
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
-
-	if (register_tcp_load_stat( &load_p )!=0) {
-		LM_ERR("failed to init tcp load statistic\n");
-		goto error;
-	}
 
 	/* start the TCP workers & create the socket pairs */
 	for(r=0; r<tcp_children_no; r++){
@@ -1858,7 +1856,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			/* child */
 			set_proc_attrs("TCP receiver");
 			pt[process_no].idx=r;
-			pt[process_no].load = load_p;
 			if (tcp_worker_proc_reactor_init(reader_fd[1]) < 0 ||
 					init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");

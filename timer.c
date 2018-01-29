@@ -36,6 +36,7 @@
 /* keep this first as it needs to include some glib h file with
  * special defines enabled (mainly sys/types.h) */
 #include "reactor.h"
+#include "pt_load.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -607,27 +608,32 @@ error:
 
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
+	int n=0;
+
+	pt_become_active();
 	switch(fm->type){
 		case F_TIMER_JOB:
 			handle_timer_job();
-			return 0;
+			break;
 		case F_SCRIPT_ASYNC:
 			async_script_resume_f( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_FD_ASYNC:
 			async_fd_resume( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_LAUNCH_ASYNC:
 			async_launch_resume( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);
-			return 0;
+			break;
 		default:
 			LM_CRIT("unknown fd type %d in Timer Extra\n", fm->type);
-			return -1;
+			n = -1;
+			break;
 	}
-	return -1;
+	pt_become_idle();
+	return n;
 }
 
 int timer_proc_reactor_init(void)

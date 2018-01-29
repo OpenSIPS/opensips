@@ -31,6 +31,7 @@
 #include "../daemonize.h"
 #include "../reactor.h"
 #include "../timer.h"
+#include "../pt_load.h"
 #include "net_udp.h"
 
 
@@ -251,35 +252,37 @@ error:
 
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {
-	int n,read;
+	int n = 0;
+	int read;
 
+	pt_become_active();
 	switch(fm->type){
 		case F_UDP_READ:
-			update_stat( pt[process_no].load, +1 );
 			n = protos[((struct socket_info*)fm->data)->proto].net.
 				read( fm->data /*si*/, &read);
-			update_stat( pt[process_no].load, -1 );
-			return n;
+			break;
 		case F_TIMER_JOB:
 			handle_timer_job();
-			return 0;
+			break;
 		case F_SCRIPT_ASYNC:
 			async_script_resume_f( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_FD_ASYNC:
 			async_fd_resume( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_LAUNCH_ASYNC:
 			async_launch_resume( &fm->fd, fm->data);
-			return 0;
+			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);
-			return 0;
+			break;
 		default:
 			LM_CRIT("unknown fd type %d in UDP worker\n", fm->type);
-			return -1;
+			n = -1;
+			break;
 	}
-	return -1;
+	pt_become_idle();
+	return n;
 }
 
 
@@ -327,7 +330,6 @@ error:
 int udp_start_processes(int *chd_rank, int *startup_done)
 {
 	struct socket_info *si;
-	stat_var *load_p = NULL;
 	pid_t pid;
 	int i,p;
 
@@ -339,10 +341,6 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 			continue;
 
 		for(si=protos[p].listeners; si ; si=si->next ) {
-			if (register_udp_load_stat(&si->sock_str,&load_p,si->children)!=0){
-				LM_ERR("failed to init load statistics\n");
-				goto error;
-			}
 
 			for (i=0;i<si->children;i++) {
 				(*chd_rank)++;
@@ -378,10 +376,6 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					}
 
 					report_conditional_status( (!no_daemon_mode), 0);
-
-					/* all UDP listeners on same interface
-					 * have same SHM load pointer */
-					pt[process_no].load = load_p;
 
 					/**
 					 * Main UDP receiver loop, processes data from the

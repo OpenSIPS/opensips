@@ -85,6 +85,25 @@ int init_multi_proc_support(void)
 
 	counted_processes = proc_no;
 
+	/* register the stats for the global load */
+	if ( register_stat2( "load", "load", (stat_var**)pt_get_rt_load,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
+	if ( register_stat2( "load", "load1m", (stat_var**)pt_get_1m_load,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
+	if ( register_stat2( "load", "load10m", (stat_var**)pt_get_10m_load,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -102,6 +121,54 @@ void set_proc_attrs( char *fmt, ...)
 	pt[process_no].pid=getpid();
 }
 
+
+static int register_process_stats(int pid)
+{
+	char *stat_name;
+	str stat_prefix;
+	char *pid_s;
+	str name;
+
+	pid_s = int2str( (unsigned int)pid, NULL);
+
+	stat_prefix.s = "load-proc";
+	stat_prefix.len = sizeof("load-proc")-1;
+	if ( (stat_name = build_stat_name( &stat_prefix, pid_s)) == 0 ||
+	register_stat2( "load", stat_name, (stat_var**)pt_get_rt_proc_load,
+	STAT_IS_FUNC, (void*)(long)pid, 0) != 0) {
+		LM_ERR("failed to add RT load stat for process %d\n",pid);
+		return -1;
+	}
+	name.s = stat_name;
+	name.len = strlen(stat_name);
+	pt[pid].load.load_rt = get_stat(&name);
+
+	stat_prefix.s = "load1m-proc";
+	stat_prefix.len = sizeof("load1m-proc")-1;
+	if ( (stat_name = build_stat_name( &stat_prefix, pid_s)) == 0 ||
+	register_stat2( "load", stat_name, (stat_var**)pt_get_1m_proc_load,
+	STAT_IS_FUNC, (void*)(long)pid, 0) != 0) {
+		LM_ERR("failed to add RT load stat for process %d\n",pid);
+		return -1;
+	}
+	name.s = stat_name;
+	name.len = strlen(stat_name);
+	pt[pid].load.load_1m = get_stat(&name);
+
+	stat_prefix.s = "load10m-proc";
+	stat_prefix.len = sizeof("load10m-proc")-1;
+	if ( (stat_name = build_stat_name( &stat_prefix, pid_s)) == 0 ||
+	register_stat2( "load", stat_name, (stat_var**)pt_get_10m_proc_load,
+	STAT_IS_FUNC, (void*)(long)pid, 0) != 0) {
+		LM_ERR("failed to add RT load stat for process %d\n",pid);
+		return -1;
+	}
+	name.s = stat_name;
+	name.len = strlen(stat_name);
+	pt[pid].load.load_10m = get_stat(&name);
+
+	return 0;
+}
 
 
 /* This function is to be called only by the main process!
@@ -136,6 +203,12 @@ pid_t internal_fork(char *proc_desc, int flags)
 				process_counter, errno, strerror(errno));
 			return -1;
 		}
+	}
+
+	if (register_process_stats(process_counter)<0) {
+		LM_ERR("failed to create load stats for future proc %d\n",
+			process_no);
+		return -1;
 	}
 
 	pt[process_counter].pid = 0;

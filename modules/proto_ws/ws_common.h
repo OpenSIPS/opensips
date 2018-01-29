@@ -457,8 +457,6 @@ again:
 		tcp_conn_set_lifetime(con, _ws_common_write_tout);
 		con->timeout=con->lifetime;
 
-		/* if we are here everything is nice and ok*/
-		update_stat( pt[process_no].load, +1 );
 		/* rcv.bind_address should always be !=0 */
 		bind_address=con->rcv.bind_address;
 
@@ -541,8 +539,6 @@ again:
 				LM_BUG("Can't handle %d\n", req->op);
 				goto error;
 			}
-
-		update_stat( pt[process_no].load, -1 );
 
 		if (size) memmove(req->tcp.buf, req->tcp.parsed, size);
 #ifdef EXTRA_DEBUG
