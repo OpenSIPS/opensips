@@ -29,6 +29,8 @@
 #include "../../socket_info.h"
 #include "../../timer.h"
 
+#include "dlg_replication.h"
+
 #ifndef _DIALOG_DLG_PROFILE_REPLICATION_H_
 #define _DIALOG_DLG_PROFILE_REPLICATION_H_
 
@@ -49,19 +51,17 @@ typedef struct repl_prof_value {
 	repl_prof_novalue_t *noval;
 } repl_prof_value_t;
 
-/* profiles functions */
-extern int accept_repl_profiles;
-extern int accept_replicated_profile_timeout;
-extern int repl_prof_auth_check;
 extern int repl_prof_buffer_th;
 extern int repl_prof_utimer;
 extern int repl_prof_timer_check;
 extern int repl_prof_timer_expire;
+
+/* profiles functions */
 int repl_prof_init(void);
 int repl_prof_remove(str *name, str *value);
 int repl_prof_dest(modparam_t type, void *val);
 int replicate_profiles_count(repl_prof_novalue_t *rp);
-
+void receive_prof_repl(bin_packet_t *packet);
 
 #define REPLICATION_DLG_PROFILE		4
 #define DLG_REPL_PROF_TIMER			10
@@ -106,7 +106,7 @@ static inline void repl_prof_inc(void **dst)
 {
 	repl_prof_value_t *rp;
 
-	if (accept_repl_profiles) {
+	if (profile_repl_cluster) {
 		/* if the destination does not exist, create it */
 		if (!*dst) {
 			rp = shm_malloc(sizeof(repl_prof_value_t));
@@ -128,7 +128,7 @@ static inline void repl_prof_inc(void **dst)
 static inline int repl_prof_get_all(void **dst)
 {
 	repl_prof_value_t *rp;
-	if (accept_repl_profiles) {
+	if (profile_repl_cluster) {
 		rp = (repl_prof_value_t *)(*dst);
 		if (!rp->noval)
 			return rp->counter;
@@ -143,7 +143,7 @@ static inline void repl_prof_dec(void **dst)
 	repl_prof_value_t *rp;
 	int counter;
 
-	if (accept_repl_profiles) {
+	if (profile_repl_cluster) {
 		rp = (repl_prof_value_t *)(*dst);
 		rp->counter--;
 		/* check all the others to see if we should delete the profile */
@@ -163,7 +163,7 @@ static inline int repl_prof_get(void **dst)
 {
 	repl_prof_value_t *rp;
 
-	if (accept_repl_profiles) {
+	if (profile_repl_cluster) {
 		rp = (repl_prof_value_t *)(*dst);
 		return rp->counter;
 	} else {

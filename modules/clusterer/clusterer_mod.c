@@ -40,6 +40,7 @@
 #include "api.h"
 #include "node_info.h"
 #include "clusterer.h"
+#include "sync.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
@@ -57,6 +58,7 @@ str state_col = str_init("state");
 str no_ping_retries_col = str_init("no_ping_retries");
 str priority_col = str_init("priority");
 str sip_addr_col = str_init("sip_addr");
+str flags_col = str_init("flags");
 str description_col = str_init("description");
 
 extern db_con_t *db_hdl;
@@ -129,10 +131,12 @@ static param_export_t params[] = {
 	{"no_ping_retries_col",	STR_PARAM,	&no_ping_retries_col.s	},
 	{"priority_col",		STR_PARAM,  &priority_col		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
+	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
 	{"neighbor_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
 	{"current_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
+	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
 	{0, 0, 0}
 };
 
@@ -245,6 +249,7 @@ int parse_param_node_info(str *descr, int *int_vals, char **str_vals)
 	PARSE_PROP(no_ping_retries_col, INT_VALS_NO_PING_RETRIES_COL, 0);
 	PARSE_PROP(priority_col, INT_VALS_PRIORITY_COL, 0);
 	PARSE_PROP(sip_addr_col, STR_VALS_SIP_ADDR_COL, 1);
+	PARSE_PROP(flags_col, STR_VALS_FLAGS_COL, 1);
 
 	return 0;
 }
@@ -256,17 +261,6 @@ static int mod_init(void)
 	LM_INFO("Clusterer module - initializing\n");
 
 	init_db_url(clusterer_db_url, 1);
-	db_table.len = strlen(db_table.s);
-	id_col.len = strlen(id_col.s);
-	cluster_id_col.len = strlen(cluster_id_col.s);
-	node_id_col.len = strlen(node_id_col.s);
-	id_col.len = strlen(id_col.s);
-	url_col.len = strlen(url_col.s);
-	state_col.len = strlen(state_col.s);
-	no_ping_retries_col.len = strlen(no_ping_retries_col.s);
-	priority_col.len = strlen(priority_col.s);
-	sip_addr_col.len = strlen(sip_addr_col.s);
-	description_col.len = strlen(description_col.s);
 
 	if (current_id < 1) {
 		LM_CRIT("Invalid current_id parameter\n");
@@ -308,9 +302,17 @@ static int mod_init(void)
 				"Did you forget to load a database module ?\n");
 			goto error;
 		}
-
 		if (!DB_CAPABILITY(dr_dbf, DB_CAP_QUERY)) {
 			LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
+			goto error;
+		}
+		/* init DB connection */
+		if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
+			LM_ERR("cannot initialize database connection\n");
+			goto error;
+		}
+		if (load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
+			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
 	}
@@ -333,8 +335,12 @@ static int mod_init(void)
 		}
 	}
 
-	if (bin_register_cb("clusterer", bin_rcv_cl_packets, NULL) < 0) {
+	if (bin_register_cb(&cl_internal_cap, bin_rcv_cl_packets, NULL) < 0) {
 		LM_CRIT("Cannot register clusterer binary packet callback!\n");
+		goto error;
+	}
+	if (bin_register_cb(&cl_extra_cap, bin_rcv_cl_extra_packets, NULL) < 0) {
+		LM_CRIT("Cannot register extra clusterer binary packet callback!\n");
 		goto error;
 	}
 
@@ -358,21 +364,6 @@ error:
 /* initialize child */
 static int child_init(int rank)
 {
-	if (!db_mode || rank == PROC_TCP_MAIN || rank == PROC_BIN)
-		return 0;
-
-	/* init DB connection */
-	if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
-		LM_ERR("cannot initialize database connection\n");
-		return -1;
-	}
-
-	/* child 1 loads the clusterer DB info */
-	if (rank == 1 && load_db_info(&dr_dbf, db_hdl, &db_table, cluster_list) < 0) {
-		LM_ERR("Failed to load info from DB\n");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -445,7 +436,6 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 	static str str_up   = 	str_init("Up     ");
 	static str str_prob = 	str_init("Probe  ");
 	static str str_down = 	str_init("Down   ");
-	static str str_no_link =str_init("No_link");
 	static str str_none = 	str_init("none");
 	int n_hop;
 
@@ -495,8 +485,6 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				val = str_up;
 			else if (n_info->link_state == LS_DOWN)
 				val = str_down;
-			else if (n_info->link_state == LS_NO_LINK)
-				val = str_no_link;
 			else
 				val = str_prob;
 			attr = add_mi_attr(node_s, MI_DUP_VALUE,
@@ -1049,8 +1037,6 @@ int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip)
 
 static void destroy(void)
 {
-	struct mod_registration *tmp;
-
 	if (db_hdl) {
 		/* close DB connection */
 		dr_dbf.close(db_hdl);
@@ -1063,12 +1049,6 @@ static void destroy(void)
 			free_info(*cluster_list);
 		shm_free(cluster_list);
 		cluster_list = NULL;
-	}
-
-	while (clusterer_reg_modules) {
-		tmp = clusterer_reg_modules;
-		clusterer_reg_modules = clusterer_reg_modules->next;
-		shm_free(tmp);
 	}
 
 	/* destroy lock */
@@ -1088,11 +1068,15 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->set_state = cl_set_state;
 	binds->check_addr = clusterer_check_addr;
 	binds->get_my_id = cl_get_my_id;
+	binds->get_my_index = cl_get_my_index;
 	binds->send_to = cl_send_to;
 	binds->send_all = cl_send_all;
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;
-	binds->register_module = cl_register_module;
+	binds->register_capability = cl_register_cap;
+	binds->request_sync = cl_request_sync;
+	binds->sync_chunk_start = cl_sync_chunk_start;
+	binds->sync_chunk_iter = cl_sync_chunk_iter;
 
 	return 1;
 }

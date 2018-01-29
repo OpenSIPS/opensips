@@ -27,10 +27,9 @@
 
 
 /* module parameter to control the replication */
-int accept_replicated_status = 0;
-int replicated_status_cluster = 0;
+int dr_repl_cluster = 0;
 
-str repl_dr_module_name = str_init("drouting");
+str status_repl_cap = str_init("drouting-status-repl");
 struct clusterer_binds clusterer_api;
 
 /* implemented in drouting.c */
@@ -44,7 +43,7 @@ void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster)
 	bin_packet_t packet;
 	int rc;
 
-	if(bin_init(&packet, &repl_dr_module_name, REPL_GW_STATUS_UPDATE, BIN_VERSION, 0)!=0){
+	if(bin_init(&packet, &status_repl_cap, REPL_GW_STATUS_UPDATE, BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -80,7 +79,7 @@ void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
 	bin_packet_t packet;
 	int rc;
 
-	if(bin_init(&packet, &repl_dr_module_name, REPL_CR_STATUS_UPDATE, BIN_VERSION, 0)!=0){
+	if(bin_init(&packet, &status_repl_cap, REPL_CR_STATUS_UPDATE, BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -180,25 +179,16 @@ static int cr_status_update(bin_packet_t *packet)
 }
 
 
-void receive_dr_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
+void receive_dr_binary_packet(bin_packet_t *packet)
 {
-	LM_DBG("received a binary packet [%d]!\n", packet_type);
-
-	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
-		return;
-	else if (ev == CLUSTER_ROUTE_FAILED) {
-		LM_INFO("Failed to route replication packet of type %d from node id: %d "
-			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
-		return;
-	}
+	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
 	if(get_bin_pkg_version(packet) != BIN_VERSION) {
 		LM_ERR("incompatible bin protocol version\n");
 		return;
 	}
 
-	switch (packet_type) {
+	switch (packet->type) {
 	case REPL_GW_STATUS_UPDATE:
 		gw_status_update(packet);
 		break;
@@ -207,6 +197,6 @@ void receive_dr_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int
 		break;
 	default:
 		LM_WARN("Invalid drouting binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, cluster_id);
+			packet->type, packet->src_id, dr_repl_cluster);
 	}
 }

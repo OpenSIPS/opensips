@@ -43,15 +43,23 @@
 
 /* node flags */
 #define NODE_STATE_ENABLED	(1<<0)
-#define CALL_CBS_DOWN		(1<<1)
-#define CALL_CBS_UP			(1<<2)
-#define DB_PROVISIONED		(1<<3)
+#define NODE_EVENT_DOWN		(1<<1)
+#define NODE_EVENT_UP		(1<<2)
+#define NODE_IS_SEED		(1<<3)
+
+/* capability flags */
+#define CAP_STATE_OK		(1<<0)
+#define CAP_SYNC_PENDING	(1<<1)
+#define CAP_PKT_BUFFERING	(1<<2)
+
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
 				CLUSTERER_UNKNOWN_ID, CLUSTERER_NODE_DESCRIPTION,
 				CLUSTERER_GENERIC_MSG,
-				CLUSTERER_MI_CMD
+				CLUSTERER_MI_CMD,
+				CLUSTERER_CAP_UPDATE,
+				CLUSTERER_SYNC_REQ, CLUSTERER_SYNC, CLUSTERER_SYNC_END
 } clusterer_msg_type;
 
 typedef enum {
@@ -62,27 +70,37 @@ typedef enum {
 	LS_RESTART_PINGING,
 	LS_RESTARTED,
 	LS_RETRYING,
-	/* link not established */
-	LS_NO_LINK
 } clusterer_link_state;
 
-typedef enum {
-	JOIN_INIT,
-	JOIN_REQ_SENT,
-	JOIN_CONFIRM_SENT,
-	JOIN_SUCCESS
-} clusterer_join_state;
+struct capability_reg {
+   str name;
+   cl_packet_cb_f packet_cb;
+   cl_event_cb_f event_cb;
+};
 
-struct mod_registration {
-   str mod_name;
-   clusterer_cb_f cb;
-   int auth_check;
-   int accept_clusters_ids[MAX_MOD_REG_CLUSTERS];
-   int no_accept_clusters;
-   struct mod_registration *next;
+struct buf_bin_pkt {
+	str buf;
+	int src_id;
+	struct buf_bin_pkt *next;
+};
+
+struct local_cap {
+	struct capability_reg reg;
+	struct buf_bin_pkt *pkt_q_front;
+	struct buf_bin_pkt *pkt_q_back;
+	struct buf_bin_pkt *pkt_q_cutpos;
+	unsigned int flags;
+	struct local_cap *next;
+};
+
+struct remote_cap {
+	str name;
+	unsigned int flags;
+	struct remote_cap *next;
 };
 
 struct node_info;
+struct cluster_info;
 
 /* used for adjacency list */
 struct neighbour {
@@ -97,15 +115,24 @@ struct node_search_info {
 	struct node_search_info *next;      /* linker in queue */
 };
 
-extern struct mod_registration *clusterer_reg_modules;
 extern enum sip_protos clusterer_proto;
+
+extern str cl_internal_cap;
+extern str cl_extra_cap;
 
 void heartbeats_timer(void);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
+void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
+									struct receive_info *ri, void *att);
 
 int get_next_hop(struct node_info *dest);
+int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
+enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
+												int cluster_id, int dst_id);
+int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
+							int cap_state);
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
@@ -120,8 +147,8 @@ int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
 enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
-int cl_register_module(char *mod_name,  clusterer_cb_f cb, int auth_check,
-								int *accept_clusters_ids, int no_accept_clusters);
+int cl_register_cap(str *cap, cl_packet_cb_f packet_cb,
+					cl_event_cb_f event_cb, int cluster_id);
 
 struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params);
 

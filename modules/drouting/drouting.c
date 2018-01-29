@@ -417,8 +417,7 @@ static param_export_t params[] = {
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
 	{"partition_id_pvar", STR_PARAM, &partition_pvar.s},
-	{"accept_replicated_status",INT_PARAM, &accept_replicated_status },
-	{"replicate_status_to", INT_PARAM, &replicated_status_cluster },
+	{"status_replication_cluster",INT_PARAM, &dr_repl_cluster },
 	{0, 0, 0}
 };
 
@@ -472,8 +471,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "probing_interval", get_deps_probing_interval },
-		{ "accept_replicated_status", get_deps_clusterer},
-		{ "replicate_gw_status_to", get_deps_clusterer},
+		{ "status_replication_cluster", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -609,8 +607,8 @@ error:
 static void dr_gw_status_changed(struct head_db *p, pgw_t *gw)
 {
 	/* do BIN replication if configured */
-	if (replicated_status_cluster > 0)
-		replicate_dr_gw_status_event( p, gw, replicated_status_cluster);
+	if (dr_repl_cluster > 0)
+		replicate_dr_gw_status_event( p, gw, dr_repl_cluster);
 
 	/* raise the event */
 	dr_raise_event( p, gw);
@@ -1707,21 +1705,21 @@ skip:
 		goto error;
 	}
 
-	if (replicated_status_cluster < 0) {
-		LM_ERR("Invalid replicated_status_cluster, must be 0 or "
+	if (dr_repl_cluster < 0) {
+		LM_ERR("Invalid status_replication_cluster, must be 0 or "
 			"a positive cluster id\n");
 		return -1;
 	}
 
-	if( (replicated_status_cluster > 0 || accept_replicated_status > 0)
-		&& load_clusterer_api(&clusterer_api)!=0) {
+	if (dr_repl_cluster && load_clusterer_api(&clusterer_api)!=0) {
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
 		return -1;
 	}
 
 	/* register handler for processing droutimg packets to the clusterer module */
-	if (accept_replicated_status > 0 && clusterer_api.register_module(repl_dr_module_name.s,
-		receive_dr_binary_packet, 1, &accept_replicated_status, 1) < 0) {
+	if (dr_repl_cluster > 0 &&
+		clusterer_api.register_capability(&status_repl_cap, receive_dr_binary_packet,
+		NULL, dr_repl_cluster) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}
@@ -4632,9 +4630,9 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	}
 	if (old_flags!=cr->flags) {
 		cr->flags |= DR_CR_FLAG_DIRTY;
-		if (replicated_status_cluster > 0)
+		if (dr_repl_cluster > 0)
 			replicate_dr_carrier_status_event( current_partition, cr,
-				replicated_status_cluster);
+				dr_repl_cluster);
 	}
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);

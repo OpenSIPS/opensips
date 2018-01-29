@@ -15,14 +15,17 @@
 		tunables while running OpenSIPS.
 	</para>
 	<para>
-		This module is also integrated with the &osips; Key-Value Interface,
+		This module is integrated with the &osips; Key-Value Interface,
 		providing support for distributed rate limiting using Redis or Memcached
-		CacheDB backends.
+		CacheDB backends. The internal limiting data will no longer be kept on each
+		&osips; instance. It will be stored in the distributed Key-Value database
+		and queried by each instance before deciding if a SIP message should be
+		blocked or not.
 	</para>
 	<para>
-		To achieve a distributed ratelimit feature, the module can replicate
-		its pipes counters to different &osips; interfaces using the binary replicate
-		interface (BIN). To do that, define the <emphasis>repl_*</emphasis> parameters
+		To achieve a distributed ratelimit feature, the module can also replicate
+		its pipes counters to different &osips; instances using the clusterer module.
+		To do that, define the <emphasis>pipe_replication_cluster</emphasis> parameter
 		in your configuration script.
 	</para>
 	</section>
@@ -37,10 +40,6 @@
 	<para>
 		Distributed limiting is useful when the rate limit should be
 		performed not only on a specific node, but on the entire platform.
-		The internal limiting data will no longer be kept on each &osips;
-		instance. It will be stored in a distributed Key-Value database and
-		queried by each instance before deciding if a SIP message
-		should be blocked or not.
 	</para>
 	<para>
 		NOTE: that this behavior only makes sense when the pipe algorithm
@@ -398,82 +397,21 @@ modparam("ratelimit", "repl_timer_expire", 10)
 		</example>
 	</section>
 	<section>
-		<title><varname>replicate_pipes_to</varname> (integer)</title>
+		<title><varname>pipe_replication_cluster</varname> (integer)</title>
 		<para>
-                   Used to specify the instances, that belong to a certain cluster,
-                where the pipes should be replicated.
+			Specifies the cluster ID where pipes will be replicated to and
+			received from.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0. (no replication destinations)
+			Default value is 0. (no replication)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>replicate_pipes_to</varname> parameter</title>
+		<title>Set <varname>pipe_replication_cluster</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("ratelimit", "replicate_pipes_to", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-        <section>
-		<title><varname>accept_pipes_from</varname> (integer)</title>
-		<para>
-                   Used to specify the instances, that belong to a certain cluster,
-                from which we should expect incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0. (disabled)
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>accept_pipes_from</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("ratelimit", "accept_pipes_from", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-        <section>
-		<title><varname>accept_pipes_timeout</varname> (integer)</title>
-		<para>
-                   The time between two succesive incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 10.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>accept_pipes_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("ratelimit", "accept_pipes_timeout", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-        <section>
-		<title><varname>repl_pipes_auth_check</varname> (int)</title>
-		<para>
-			Authentication check for incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote> (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>repl_pipes_auth_check</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("ratelimit", "repl_pipes_auth_check", 1)
+modparam("ratelimit", "pipe_replication_cluster", 1)
 ...
 </programlisting>
 		</example>

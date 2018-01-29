@@ -31,19 +31,18 @@
 #include "clusterer.h"
 
 #define NO_DB_INT_VALS 6
-#define NO_DB_STR_VALS 3
+#define NO_DB_STR_VALS 4
 #define NO_DB_COLS (NO_DB_INT_VALS + NO_DB_STR_VALS)
 
 #define DEFAULT_NO_PING_RETRIES 3
 #define DEFAULT_PRIORITY 50
 
-#define CLUSTERER_TABLE_VERSION 3
-/* also compatible with this version as the current version only removed columns */
-#define BACKWARDS_COMPAT_TABLE_VER 2
+#define CLUSTERER_TABLE_VERSION 4
 
 #define MAX_NO_NODES 16
 #define MAX_NO_CLUSTERS 16
-#define MAX_MODS_PER_CLUSTER 8
+
+#define SEED_NODE_FLAG_STR "seed"
 
 enum db_int_vals_idx {
 	INT_VALS_ID_COL,
@@ -57,12 +56,8 @@ enum db_int_vals_idx {
 enum db_str_vals_idx {
 	STR_VALS_URL_COL,
 	STR_VALS_SIP_ADDR_COL,
+	STR_VALS_FLAGS_COL,
 	STR_VALS_DESCRIPTION_COL
-};
-
-struct cluster_mod {
-	struct mod_registration *reg;
-	struct cluster_mod *next;
 };
 
 struct cluster_info;
@@ -89,6 +84,7 @@ struct node_info {
 	int top_timestamp;
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct node_search_info *sp_info;   /* shortest path info */
+	struct remote_cap *capabilities;	/* known capabilities of this node */
 	int flags;
 	gen_lock_t *lock;
 	struct node_info *next;
@@ -96,11 +92,10 @@ struct node_info {
 
 struct cluster_info {
 	int cluster_id;
-	struct cluster_mod *modules;    /* modules registered for this cluster */
+	struct local_cap *capabilities;	/* capabilities registered for this cluster */
 	struct node_info *node_list;
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *current_node; /* current node's info in this cluster */
-	clusterer_join_state join_state;
 	int top_version;        		/* topology version */
 	gen_lock_t *lock;
 	struct cluster_info *next;
@@ -125,6 +120,7 @@ int provision_neighbor(modparam_t type, void* val);
 int provision_current(modparam_t type, void *val);
 
 int cl_get_my_id(void);
+int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);
 clusterer_node_t *api_get_next_hop(int cluster_id, int node_id);

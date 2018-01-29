@@ -32,12 +32,11 @@
 #include "../../sr_module.h"
 #include "../../bin_interface.h"
 
-#define UNDEFINED_PACKET_TYPE -1
-#define INVAL_NODE_ID -1
-#define MAX_MOD_REG_CLUSTERS 8
+/* the type for any sync packet, for any capability */
+#define SYNC_PACKET_TYPE 101
 
 enum cl_node_state {
-	STATE_DISABLED,	/* the node does not send any messages and ignores received ones */
+	STATE_DISABLED,	/* don't send any messages and drop received ones */
 	STATE_ENABLED
 };
 
@@ -57,55 +56,103 @@ enum clusterer_send_ret {
 };
 
 enum clusterer_event {
-	/* node with id provided in the @dest_id param of clusterer_cb_f is back up */
-	CLUSTER_NODE_UP,
-	/* node with id provided in the @dest_id param of clusterer_cb_f is unreachable */
-	CLUSTER_NODE_DOWN,
-	/* failed to route received message (source and destination nodes
-	 * provided in clusterer_cb_f params) */
-	CLUSTER_ROUTE_FAILED,
-	/* received message for current node */
-	CLUSTER_RECV_MSG
+	CLUSTER_NODE_UP,	/* node became reachable */
+	CLUSTER_NODE_DOWN,	/* node became unreachable */
+	SYNC_REQ_RCV		/* received a data sync request */
 };
 
-/* returns the list of reachable nodes in the cluster */
-typedef clusterer_node_t* (*get_nodes_f)(int cluster_id);
 
-/* free the list returned by the get_nodes_f function */
+/*
+ * Return the list of reachable nodes in the cluster.
+ */
+typedef clusterer_node_t* (*get_nodes_f)(int cluster_id);
+/*
+ * Free the list returned by the get_nodes_f function.
+ */
 typedef void (*free_nodes_f)(clusterer_node_t *list);
 
-/* sets the state (enabled or disabled) of the current node in the cluster */
+/*
+ * Set the state (enabled or disabled) of the current node in the cluster.
+ */
 typedef int (*set_state_f)(int cluster_id, enum cl_node_state state);
 
-/* checks if the given address belongs to one of the nodes in the cluster */
+/*
+ * Check if the given address belongs to one of the nodes in the cluster.
+ */
 typedef int (*check_addr_f)(int cluster_id, union sockaddr_union *su);
 
-/* get the node id of the current node */
+/*
+ * Get the node id of the current node.
+ */
 typedef int (*get_my_id_f)(void);
+/*
+ * Return an index for the current node, with a value between [0, @nr_nodes-1],
+ * which belongs to a continous sequence of identifiers for the nodes in the cluster.
+ * This function operates on a set of nodes which are reachable and
+ * synchronized (for a certain capability).
+ * @nr_nodes - output parameter, the number of nodes in the set.
+ */
+typedef int (*get_my_index_f)(int cluster_id, str *capability, int *nr_nodes);
 
-/* send message to specific node in the cluster */
-typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_id, int node_id);
-
-/* send message to all nodes in the cluster */
+/*
+ * Send a message to a specific node in the cluster.
+ */
+typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_id,
+												int node_id);
+/*
+ * Send a message to all the nodes in the cluster.
+ */
 typedef enum clusterer_send_ret (*send_all_f)(bin_packet_t *packet, int cluster_id);
 
-/* return the next hop from the shortest path to the given destination */
+/*
+ * Return the next hop from the shortest path to the given destination.
+ */
 typedef clusterer_node_t* (*get_next_hop_f)(int cluster_id, int node_id);
-
-/* free node returned by get_next_hop_f function */
+/*
+ * Free node returned by the get_next_hop_f function.
+ */
 typedef void (*free_next_hop_f)(clusterer_node_t *next_hop);
 
 /*
- * This function will be called for every binary packet received or
- * to signal certain cluster events.
+ * This function will be called for:
+ *   - every regular binary packet received;
+ *   - every sync packet received;
+ *   - all regular packets buffered during sync (@packet - list head).
  */
-typedef void (*clusterer_cb_f)(enum clusterer_event ev,bin_packet_t *, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
+typedef void (*cl_packet_cb_f)(bin_packet_t *packet);
+/*
+ * This function will be called in order to signal certain cluster events.
+ */
+typedef void (*cl_event_cb_f)(enum clusterer_event ev, int node_id);
 
-/* Register module to clusterer; must be called only once for each module
- * @accept_clusters_ids accept - array of cluster ids from wich packets are accepted */
-typedef int (*register_module_f)(char *mod_name,  clusterer_cb_f cb, int auth_check,
-									int *accept_clusters_ids, int no_accept_clusters);
+/*
+ * Register a capability (grouping of BIN packets/cluster events used to
+ * 						  achieve a certain functionality)
+ */
+typedef int (*register_capability_f)(str *cap, cl_packet_cb_f packet_cb,
+					cl_event_cb_f event_cb, int cluster_id);
+
+/*
+ * Request to synchronize data for a given capability from another node.
+ */
+typedef int (*request_sync_f)(str * capability, int cluster_id);
+/*
+ * Returns a BIN packet in which to include a distinct "chunk" of data
+ * (e.g. info about a single usrloc contact) to sync.
+ *
+ * The same packet will be returned multiple times if there is enough space left
+ * otherwise, a new packet will be built and the previous one will be sent out.
+ *
+ * This function should only be called from the callback for the SYNC_REQ_RCV event.
+ */
+typedef bin_packet_t* (*sync_chunk_start_f)(str *capability, int cluster_id, int dst_id);
+/*
+ * Iterate over chunks of data from a received sync packet.
+ *
+ * Returns 1 if there are any chunks left, and 0 otherwise.
+ */
+typedef int (*sync_chunk_iter_f)(bin_packet_t *packet);
+
 
 struct clusterer_binds {
 	get_nodes_f get_nodes;
@@ -113,11 +160,15 @@ struct clusterer_binds {
 	set_state_f set_state;
 	check_addr_f check_addr;
 	get_my_id_f get_my_id;
+	get_my_index_f get_my_index;
 	send_to_f send_to;
 	send_all_f send_all;
 	get_next_hop_f get_next_hop;
 	free_next_hop_f free_next_hop;
-	register_module_f register_module;
+	register_capability_f register_capability;
+	request_sync_f request_sync;
+	sync_chunk_start_f sync_chunk_start;
+	sync_chunk_iter_f sync_chunk_iter;
 };
 
 typedef int (*load_clusterer_f)(struct clusterer_binds *binds);
@@ -127,11 +178,11 @@ int load_clusterer(struct clusterer_binds *binds);
 static inline int load_clusterer_api(struct clusterer_binds *binds) {
 	load_clusterer_f load_clusterer;
 
-	/* import the DLG auto-loading function */
+	/* import the clusterer auto-loading function */
 	if (!(load_clusterer = (load_clusterer_f) find_export("load_clusterer", 0, 0)))
 		return -1;
 
-	/* let the auto-loading function load all DLG stuff */
+	/* let the auto-loading function load all clusterer API functions */
 	if (load_clusterer(binds) == -1)
 		return -1;
 

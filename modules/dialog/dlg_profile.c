@@ -190,7 +190,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 							name.len, name.s);
 				}
 			} else if ( p < e && *p == 'b') {
-				if (profile_replicate_cluster) {
+				if (profile_repl_cluster) {
 					type = REPL_PROTOBIN;
 				} else {
 					LM_WARN("profile %.*s configured to be replicated over BIN, "

@@ -1246,7 +1246,7 @@ error:
 void lb_status_changed(struct lb_dst *dst)
 {
 	/* do BIN replication if configured */
-	if (replicated_status_cluster > 0)
+	if (lb_repl_cluster > 0)
 		replicate_lb_status( dst );
 
 	/* raise the event */

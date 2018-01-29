@@ -79,12 +79,14 @@
 	</para>
 	<para>
 	Dialog profiles can also be used in distributed systems, using the &osips;
-	CacheDB Interface. This feature allows you to share dialog profile
-	information with multiple &osips; instaces that use the same CacheDB
-	backend. In order to do that, the <emphasis>cachedb_url</emphasis> parameter
-	must be defined. Also, the profile must be marked as shared, by adding the
-	<emphasis>'/s'</emphasis> suffix to the name of the profile in the
-	<emphasis>profiles_with_value</emphasis> or
+	CacheDB Interface or the <emphasis>clusterer</emphasis> module. This feature
+	allows you to share dialog profile information with multiple &osips; instaces
+	that use the same CacheDB backend or are part of an &osips; cluster. In order
+	to do that, the <emphasis role='bold'>cachedb_url</emphasis> or
+	<emphasis role='bold'>profile_replication_cluster</emphasis> parameters must be defined.
+	Also, the profile must be marked as shared, by adding one of the
+	<emphasis>'/s'</emphasis> or <emphasis>'/b'</emphasis> suffixes to the name of
+	the profile in the <emphasis>profiles_with_value</emphasis> or
 	<emphasis>profiles_no_value</emphasis> parameters.
 	</para>
 	</section>
@@ -94,9 +96,8 @@
 	<para>
 	<emphasis role='bold'>Dialog replication</emphasis> is a mechanism used to
 	mirror all dialog changes taking place in one OpenSIPS instance to one or
-	more other different instances. The logic is simplified by using the core
-	<emphasis>Binary Internal Interface</emphasis> to build and send the
-	replication-related UDP packets.
+	more other instances. The logic is simplified by using the
+	<emphasis>clusterer</emphasis> module to send the replication-related BIN packets.
 	</para>
 	<para>
 		The feature is especially useful when dealing with very large systems,
@@ -108,15 +109,17 @@
 	<para>
 		Configuring both receival and sending of dialog replication packets is
 	trivial and can be done by using the
-	<emphasis role='bold'>accept_replicated_dialogs</emphasis> and
-	<emphasis role='bold'>replicate_dialogs_to</emphasis> parameters of the
+	<emphasis role='bold'>dialog_replication_cluster</emphasis> parameter of the
 	module. In addition to this, the module also exports several statistics
 	regarding the number of replication packets sent/received.
 	</para>
 	<para>
-		Profiles replication can also be achieved using the
-	<emphasis role='bold'>accept_replicated_profiles</emphasis> and
-	<emphasis role='bold'>replicate_profiles_to</emphasis> parameters.
+		Also configuring profiles replication via the
+	<emphasis>profile_replication_cluster</emphasis> parameter is
+	<emphasis>not</emphasis> necessary when dialog replication is already configured,
+	as profile information is included in the dialog updates. The profiles must still
+	be marked for sharing though in the <emphasis>profiles_with_value</emphasis> or
+	<emphasis>profiles_no_value</emphasis> parameters.
 	</para>
 	</section>
 
@@ -135,6 +138,13 @@
 			<listitem>
 			<para>
 				<emphasis>RR</emphasis> - Record-Route module
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clusterer</emphasis> - if <emphasis>replication_cluster</emphasis>
+				parameter is set (contact replication via clusterer
+				module)
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -943,10 +953,10 @@ modparam("dialog", "flags_column", "flags_c_name")
 	<section>
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
-			List of names for profiles with values. Flag
-			<emphasis>/b</emphasis> allows replicating dialogs over the bin
-			interface. Before, all of them were replicated.
-
+			List of names for profiles with values. Flags
+			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
+			profiles between &osips; instances using the clusterer module or a
+			CacheDB backend, respectively.
 		</para>
 		<para>
 		<emphasis>
@@ -966,9 +976,10 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;
 	<section>
 		<title><varname>profiles_no_value</varname> (string)</title>
 		<para>
-			List of names for profiles without values. Flag
-			<emphasis>/b</emphasis> allows replicating dialogs over the bin
-			interface. Before, all of them were replicated.
+			List of names for profiles without values. Flags
+			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
+			profiles between &osips; instances using the clusterer module or a
+			CacheDB backend, respectively.
 		</para>
 		<para>
 		<emphasis>
@@ -1138,128 +1149,46 @@ modparam("dialog", "profile_timeout", "43200")
 	</section>
 
 	<section>
-		<title><varname>accept_replicated_dialogs</varname> (int)</title>
+		<title><varname>dialog_replication_cluster</varname> (int)</title>
 		<para>
-		Registers the <emphasis>dialog</emphasis> module to the &osips; Binary
-		Internal Interface. It specifies the instances, that belong
-                to a certain cluster, from which we should expect incoming packets.
+			Specifies the cluster ID for dialog replication using the
+			<emphasis>clusterer</emphasis> module. This enables sending
+			and receiving all the dialog-related events (creation, update and
+			deletion) in the cluster.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0 (not registered).
+			Default value is <quote>0</quote> (no replication).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>accept_replicated_dialogs</varname> parameter</title>
+		<title>Set <varname>dialog_replication_cluster</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "accept_replicated_dialogs", 1)
+modparam("dialog", "dialog_replication_cluster", 1)
 ...
 </programlisting>
 		</example>
 	</section>
 
 	<section>
-		<title><varname>replicate_dialogs_to</varname> (int)</title>
+		<title><varname>profile_replication_cluster</varname> (int)</title>
 		<para>
-			Adds dialog replication destinations,that belong to the
-		specified cluster id. The destination will receive all dialog-related events
-		(creation, updating and deletion) over TCP, using the Binary Internal Interface.
+			Specifies the cluster ID for profile replication using the
+			<emphasis>clusterer</emphasis> module. This enables sending
+			and receiving the profile information (value, dialog count)
+			in the cluster.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>0</quote> (no replication destinations).
+			Default value is <quote>0</quote> (no replication).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>replicate_dialogs_to</varname> parameter</title>
+		<title>Set <varname>profile_replication_cluster</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "replicate_dialogs_to", 1)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>accept_replicated_profiles</varname> (int)</title>
-		<para>
-		Registers the <emphasis>dialog</emphasis> module to the &osips; Binary
-		Internal Interface for profiles replication. It specifies the
-                instances, that belong to a certain cluster, from which we should expect
-                incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (not registered).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>accept_replicated_profiles</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "accept_replicated_profiles", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>replicate_profiles_to</varname> (int)</title>
-		<para>
-			Adds profiles replication destinations, that belong  to the
-		specified cluster id. The destination will receive all dialog-related events
-		(creation, updating and deletion) over TCP, using the Binary Internal Interface.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote> (no replication destinations).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>replicate_profiles_to</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "replicate_profiles_to", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-        <section>
-		<title><varname>accept_replicated_profile_timeout</varname> (int)</title>
-		<para>
-			The time between two succesive incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>10</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>accept_replicated_profile_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "accept_replicated_profile_timeout", 30)
-...
-</programlisting>
-		</example>
-	</section>
-
-         <section>
-		<title><varname>auth_check</varname> (int)</title>
-		<para>
-			Authentication check for incoming packets.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote> (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>auth_check</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "auth_check", 1)
+modparam("dialog", "profile_replication_cluster", 1)
 ...
 </programlisting>
 		</example>

@@ -139,10 +139,8 @@ unsigned int nat_bflag = (unsigned int)-1;
 static char *nat_bflag_str = 0;
 unsigned int init_flag = 0;
 
-/* usrloc data replication using the bin interface */
-int accept_replicated_udata = 0;
-int ul_replicate_cluster = 0;
-int ul_repl_auth_check = 0;
+/* usrloc data replication using the clusterer module */
+int ul_replication_cluster = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -190,10 +188,8 @@ static param_export_t params[] = {
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
 	{"nat_bflag",          INT_PARAM, &nat_bflag         },
     /* data replication through clusterer using TCP binary packets */
-	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
-	{ "replicate_contacts_to",	INT_PARAM, &ul_replicate_cluster   },
-	{ "repl_auth_check",		INT_PARAM, &ul_repl_auth_check	   },
-	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
+	{ "contact_replication_cluster",	INT_PARAM, &ul_replication_cluster   },
+	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
 	{0, 0, 0}
@@ -220,6 +216,8 @@ static mi_export_t mi_cmds[] = {
 	{ MI_USRLOC_SHOW_CONTACT, 0, mi_usrloc_show_contact, 0,                 0,
 				mi_child_init },
 	{ MI_USRLOC_SYNC,         0, mi_usrloc_sync,         0,                 0,
+				mi_child_init },
+	{ MI_USRLOC_CL_SYNC,      0, mi_usrloc_cl_sync,      MI_NO_INPUT_FLAG,  0,
 				mi_child_init },
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -248,8 +246,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "db_mode",			get_deps_db_mode	},
-		{ "accept_replicated_contacts",	get_deps_clusterer	},
-		{ "replicate_contacts_to",	get_deps_clusterer	},
+		{ "contact_replication_cluster",get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
@@ -397,29 +394,26 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (ul_replicate_cluster < 0) {
-		LM_ERR("Invalid ul_replicate_cluster, must be 0 or "
-			"a positive cluster id\n");
+	if (ul_replication_cluster < 0) {
+		LM_ERR("Invalid cluster id to replicate contacts to, must be 0 or "
+			"a positive number\n");
 		return -1;
 	}
 
-	if( (ul_replicate_cluster > 0 || accept_replicated_udata > 0)
-		&& load_clusterer_api(&clusterer_api)!=0){
+	if (ul_replication_cluster && load_clusterer_api(&clusterer_api) != 0) {
 		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
 		return -1;
 	}
 
-	if (ul_repl_auth_check < 0) {
-		LM_ERR("Invalid value for ul_repl_auth_check, must be 0 or 1\n");
-		return -1;	
-	}
-
 	/* register handler for processing usrloc packets to the clusterer module */
-	if (accept_replicated_udata > 0 && clusterer_api.register_module(repl_module_name.s,
-		receive_binary_packet, ul_repl_auth_check, &accept_replicated_udata, 1) < 0) {
-		LM_ERR("cannot register binary packet callback to clusterer module!\n");
+	if (ul_replication_cluster && clusterer_api.register_capability(&contact_repl_cap,
+		receive_binary_packets, receive_cluster_event, ul_replication_cluster) < 0) {
+		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}
+
+	if (clusterer_api.request_sync(&contact_repl_cap, ul_replication_cluster) < 0)
+		LM_ERR("Sync request failed\n");
 
 	init_flag = 1;
 

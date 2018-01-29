@@ -147,7 +147,6 @@ extern str cdb_noval_prefix;
 extern str cdb_size_prefix;
 extern str cdb_url;
 extern int profile_timeout;
-extern int profile_replicate_cluster;
 
 extern struct dlg_profile_table *profiles;
 

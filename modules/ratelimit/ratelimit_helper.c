@@ -63,6 +63,8 @@ static cachedb_con *cdbc = 0;
 
 int rl_buffer_th = RL_BUF_THRESHOLD;
 
+static str pipe_repl_cap = str_init("ratelimit-pipe-repl");
+
 /* returnes the idex of the pipe in our hash */
 #define RL_GET_INDEX(_n)		core_hash(&(_n), NULL, rl_htable.size);
 
@@ -790,8 +792,7 @@ error:
 
 
 
-void rl_rcv_bin(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-					struct receive_info *ri, int cluster_id, int src_id, int dest_id)
+void rl_rcv_bin(bin_packet_t *packet)
 {
 	rl_algo_t algo;
 	int limit;
@@ -802,17 +803,9 @@ void rl_rcv_bin(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
 	time_t now;
 	rl_repl_counter_t *destination;
 
-	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
-		return;
-	else if (ev == CLUSTER_ROUTE_FAILED) {
-		LM_INFO("failed to route replication packet of type %d from node %d to node"
-			" %d in cluster: %d\n", packet_type, src_id, dest_id, cluster_id);
-		return;
-	}
-
-	if (packet_type != RL_PIPE_COUNTER) {
+	if (packet->type != RL_PIPE_COUNTER) {
 		LM_WARN("Invalid binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, cluster_id);
+			packet->type, packet->src_id, rl_repl_cluster);
 		return;
 	}
 
@@ -876,7 +869,7 @@ void rl_rcv_bin(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
 		/* set the last used time */
 		(*pipe)->last_used = time(0);
 		/* set the destination's counter */
-		destination = find_destination(*pipe, src_id);
+		destination = find_destination(*pipe, packet->src_id);
 		destination->counter = counter;
 		destination->update = now;
 		RL_RELEASE_LOCK(hash_idx);
@@ -940,16 +933,14 @@ static inline int ALLOW_UNUSED hist_count(rl_pipe_t *pipe)
 
 int rl_repl_init(void)
 {
-
 	if (rl_buffer_th > (BUF_SIZE * 0.9)) {
 		LM_WARN("Buffer size too big %d - pipe information might get lost",
 			rl_buffer_th);
 		return -1;
 	}
 
-	if (accept_repl_pipes &&
-		clusterer_api.register_module("ratelimit", rl_rcv_bin,
-		repl_pipes_auth_check, &accept_repl_pipes, 1) < 0) {
+	if (rl_repl_cluster && clusterer_api.register_capability(&pipe_repl_cap,
+		rl_rcv_bin, NULL, rl_repl_cluster) < 0) {
 		LM_ERR("Cannot register clusterer callback!\n");
 		return -1;
 	}
@@ -983,7 +974,6 @@ error:
 
 void rl_timer_repl(utime_t ticks, void *param)
 {
-	static str module_name = str_init("ratelimit");
 	unsigned int i = 0;
 	map_iterator_t it;
 	rl_pipe_t **pipe;
@@ -992,7 +982,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 	int ret;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &module_name, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
+	if (bin_init(&packet, &pipe_repl_cap, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}

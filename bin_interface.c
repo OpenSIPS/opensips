@@ -32,7 +32,7 @@ static int bin_extend(bin_packet_t *packet, int size);
 
 struct socket_info *bin;
 
-static struct packet_cb_list *reg_modules;
+static struct packet_cb_list *reg_cbs;
 
 
 short get_bin_pkg_version(bin_packet_t *packet)
@@ -50,23 +50,25 @@ void set_len(bin_packet_t *packet) {
  * +-----------------------------+-------------------------------------------------------+
  * |    12-byte HEADER           |       BODY                max 65535 bytes             |
  * +-----------------------------+-------------------------------------------------------+
- * | PK_MARKER |PGK LEN| VERSION | LEN | MOD_NAME | CMD | LEN | FIELD | LEN | FIELD |....|
+ * | PK_MARKER |PGK LEN| VERSION | LEN | CAP | CMD | LEN | FIELD | LEN | FIELD |.........|
  * +-------------------+-----------------------------------------------------------------+
  *
- * @param: { LEN, MOD_NAME } + CMD + VERSION
- * @length: initial packet size. specify 0 to use the default size (MAX_BUF_LEN)
+ * @param: { LEN, CAP } + CMD + VERSION
+ * @length: initial packet size. specify 0 to use the default size (BIN_MAX_BUF_LEN)
  */
-int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type,
+int bin_init(bin_packet_t *packet, str *capability, int packet_type,
              short version, int length)
 {
-	if (length != 0 && length < MIN_BIN_PACKET_SIZE + mod_name->len) {
+	if (length != 0 && length < MIN_BIN_PACKET_SIZE + capability->len) {
 		LM_ERR("Length parameter has to be greater than: %lu\n",
-		       MIN_BIN_PACKET_SIZE + mod_name->len);
+		       MIN_BIN_PACKET_SIZE + capability->len);
 		return -1;
 	}
 
 	if (!length) 
-		length = MAX_BUF_LEN;
+		length = BIN_MAX_BUF_LEN;
+
+	packet->type = packet_type;
 
 	packet->buffer.s = pkg_malloc(length);
 	if (!packet->buffer.s) {
@@ -75,6 +77,8 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type,
 	}
 	packet->buffer.len = 0;
 	packet->size = length;
+
+	packet->next = NULL;
 
 	/* binary packet header: marker + pkg_len */
 	memcpy(packet->buffer.s + packet->buffer.len,
@@ -85,23 +89,23 @@ int bin_init(bin_packet_t *packet, str *mod_name, int cmd_type,
 	memcpy(packet->buffer.s + packet->buffer.len, &version, sizeof(version));
 	packet->buffer.len += VERSION_FIELD_SIZE;
 
-	/* module name */
-	memcpy(packet->buffer.s + packet->buffer.len, &mod_name->len, LEN_FIELD_SIZE);
+	/* capability name */
+	memcpy(packet->buffer.s + packet->buffer.len, &capability->len, LEN_FIELD_SIZE);
 	packet->buffer.len += LEN_FIELD_SIZE;
-	memcpy(packet->buffer.s + packet->buffer.len, mod_name->s, mod_name->len);
-	packet->buffer.len += mod_name->len;
+	memcpy(packet->buffer.s + packet->buffer.len, capability->s, capability->len);
+	packet->buffer.len += capability->len;
 
-	memcpy(packet->buffer.s + packet->buffer.len, &cmd_type, sizeof(cmd_type));
-	packet->buffer.len += sizeof(cmd_type);
+	memcpy(packet->buffer.s + packet->buffer.len, &packet_type, sizeof(packet_type));
+	packet->buffer.len += sizeof(packet_type);
 
 	set_len(packet);
 	return 0;
 }
 
-void bin_get_module(bin_packet_t *packet, str *module)
+void bin_get_capability(bin_packet_t *packet, str *capability)
 {
-	module->len = *(unsigned short *)(packet->buffer.s + HEADER_SIZE);
-	module->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
+	capability->len = *(unsigned short *)(packet->buffer.s + HEADER_SIZE);
+	capability->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
 }
 
 /*
@@ -110,15 +114,17 @@ void bin_get_module(bin_packet_t *packet, str *module)
  */
 void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 {
-	str mod_name;
+	str capability;
 
 	packet->buffer.len = length;
 	packet->buffer.s = buffer;
 	packet->size = length;
+	packet->next = NULL;
 
-	bin_get_module(packet, &mod_name);
+	bin_get_capability(packet, &capability);
 
-	packet->front_pointer = mod_name.s + mod_name.len + CMD_FIELD_SIZE;
+	packet->type = *(int *)(capability.s + capability.len);
+	packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
 	LM_INFO("init buffer length %d\n", length);
 }
 
@@ -235,7 +241,8 @@ int bin_skip_int_packet_end(bin_packet_t *packet, int count)
  */
 int bin_skip_int(bin_packet_t *packet, int count)
 {
-	if (packet->front_pointer - packet->buffer.s + count * sizeof(int) > packet->buffer.len) {
+	if (packet->front_pointer - packet->buffer.s + count * sizeof(int) >
+		packet->buffer.len) {
 		packet->front_pointer = packet->buffer.s + packet->buffer.len;
 		LM_ERR("Buffer limit reached\n");
 		return -1;
@@ -257,7 +264,8 @@ int bin_skip_str(bin_packet_t *packet, int count)
 	int i, len;
 
 	for (i = 0; i < count; i++) {
-		if (packet->front_pointer - packet->buffer.s + LEN_FIELD_SIZE > packet->buffer.len)
+		if (packet->front_pointer - packet->buffer.s + LEN_FIELD_SIZE >
+			packet->buffer.len)
 			goto error;
 
 		len = 0;
@@ -369,46 +377,45 @@ int bin_pop_back_int(bin_packet_t *packet, void *info)
 }
 
 /**
- * bin_register_cb - registers a module handler for specific packets
- * @mod_name: used to classify the incoming packets
- * @cb:       the handler function, called once for each matched packet
+ * bin_register_cb - registers a handler for a specific capability
+ * @cap: used to classify the incoming packets
+ * @cb:  the handler function, called once for each matched packet
  *
  * @return:   0 on success
  */
-int bin_register_cb(char *mod_name, void (*cb)(bin_packet_t *, int,
+int bin_register_cb(str *cap, void (*cb)(bin_packet_t *, int,
                     struct receive_info *, void * atr), void *att)
 {
-	struct packet_cb_list *new_mod;
+	struct packet_cb_list *new_cb;
 
-	new_mod = pkg_malloc(sizeof(*new_mod));
-	if (!new_mod) {
+	new_cb = pkg_malloc(sizeof(*new_cb));
+	if (!new_cb) {
 		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
-	memset(new_mod, 0, sizeof(*new_mod));
+	memset(new_cb, 0, sizeof(*new_cb));
 
-	new_mod->cbf = cb;
-	new_mod->module.len = strlen(mod_name);
-	new_mod->module.s = mod_name;
-	new_mod->att = att;
+	new_cb->cbf = cb;
+	new_cb->capability.len = cap->len;
+	new_cb->capability.s = cap->s;
+	new_cb->att = att;
 
-	new_mod->next = reg_modules;
-	reg_modules = new_mod;
+	new_cb->next = reg_cbs;
+	reg_cbs = new_cb;
 
 	return 0;
 }
 
 
 /*
- * main binary packet UDP receiver loop
+ * main binary packet receiver loop
  */
 void call_callbacks(char* buffer, struct receive_info *rcv)
 {
 	struct packet_cb_list *p;
 	unsigned int pkg_len;
 	bin_packet_t packet;
-	int packet_type;
-	str mod_name;
+	str capability;
 
 	pkg_len = *(unsigned int*)(buffer + BIN_PACKET_MARKER_SIZE);
 	//add extra size so a realloc wont trigger after small altering of the packet 
@@ -422,20 +429,21 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	packet.size = pkg_len + 50;
 	memcpy(packet.buffer.s, buffer, pkg_len);
 
-	bin_get_module(&packet, &mod_name);
+	bin_get_capability(&packet, &capability);
 
-	packet.front_pointer = mod_name.s + mod_name.len + CMD_FIELD_SIZE;
-	packet_type = *(int *)(mod_name.s + mod_name.len);
+	packet.front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
+	packet.type = *(int *)(capability.s + capability.len);
+	packet.next = NULL;
 
-	/* packet will be now processed by a specific module */
-	for (p = reg_modules; p; p = p->next) {
-		if (p->module.len == mod_name.len &&
-		    memcmp(mod_name.s, p->module.s, mod_name.len) == 0) {
+	/* packet will be now processed for a specific capability */
+	for (p = reg_cbs; p; p = p->next) {
+		if (p->capability.len == capability.len &&
+		    memcmp(capability.s, p->capability.s, capability.len) == 0) {
 
-			LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
-					packet_type, mod_name.len, mod_name.s);
+			LM_DBG("binary Packet CMD: %d. Capability: %.*s\n",
+					packet.type, capability.len, capability.s);
 
-			p->cbf(&packet, packet_type, rcv,p->att);
+			p->cbf(&packet, packet.type, rcv,p->att);
 
 			break;
 		}
@@ -448,15 +456,15 @@ static int bin_extend(bin_packet_t *packet, int size)
 {
 	int required;
 
-	if (size < 0 || packet->buffer.len + size > MAX_BUF_LEN) {
+	if (size < 0 || packet->buffer.len + size > BIN_MAX_BUF_LEN) {
 		LM_ERR("cannot make the buffer bigger\n");
 		return -1;
 	}
 
 	required = packet->buffer.len + size;
 
-	if (2 * required > MAX_BUF_LEN)
-		packet->size = MAX_BUF_LEN;
+	if (2 * required > BIN_MAX_BUF_LEN)
+		packet->size = BIN_MAX_BUF_LEN;
 	else
 		packet->size = 2 * required;
 
@@ -492,13 +500,13 @@ int bin_get_buffer(bin_packet_t *packet, str *buffer)
 
 int bin_reset_back_pointer(bin_packet_t *packet)
 {
-	int mod_len;
+	int cap_len;
 	if (!packet->buffer.s  || !packet->size)
 		return -1;
 
-	mod_len = *(unsigned short*)(packet->buffer.s + HEADER_SIZE);
+	cap_len = *(unsigned short*)(packet->buffer.s + HEADER_SIZE);
 
-	packet->buffer.len = HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + mod_len;
+	packet->buffer.len = HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + cap_len;
 
 	return 0;
 }

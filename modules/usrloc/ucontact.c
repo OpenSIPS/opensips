@@ -984,7 +984,7 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		return -1;
 	}
 
-	if (!is_replicated && ul_replicate_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
 		replicate_ucontact_update(_r, &_c->c, _ci);
 
 	/* run callbacks for UPDATE event */

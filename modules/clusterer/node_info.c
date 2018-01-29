@@ -49,6 +49,7 @@ extern str top_seq_no_col;
 extern str no_ping_retries_col;
 extern str priority_col;
 extern str sip_addr_col;
+extern str flags_col;
 extern str description_col;
 
 int parse_param_node_info(str *descr, int *int_vals, char **str_vals);
@@ -76,9 +77,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	cluster_info_t *cluster = NULL;
 	struct timeval t;
 	str st;
-	struct mod_registration *mod;
-	struct cluster_mod *new_cl_mod = NULL;
-	int i;
+	str seed_flag = str_init(SEED_NODE_FLAG_STR);
 
 	cluster_id = int_vals[INT_VALS_CLUSTER_ID_COL];
 	/* new_info is checked whether it is initialized or not in case of error,
@@ -96,26 +95,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		}
 		memset(cluster, 0, sizeof *cluster);
 
-		cluster->modules = NULL;
-
-		/* look for modules that registered for this cluster */
-		for (mod = clusterer_reg_modules; mod; mod = mod->next)
-			for (i = 0; i < mod->no_accept_clusters; i++)
-				if (mod->accept_clusters_ids[i] == cluster_id) {
-					new_cl_mod = shm_malloc(sizeof *new_cl_mod);
-					if (!new_cl_mod) {
-						LM_ERR("No more shm memory\n");
-						goto error;
-					}
-					new_cl_mod->reg = mod;
-					new_cl_mod->next = cluster->modules;
-					cluster->modules = new_cl_mod;
-
-					break;
-				}
-
 		cluster->cluster_id = cluster_id;
-		cluster->join_state = JOIN_INIT;
 		cluster->next = *cl_list;
 		if ((cluster->lock = lock_alloc()) == NULL) {
 			LM_CRIT("Failed to allocate lock\n");
@@ -180,6 +160,11 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		(*new_info)->sip_addr.s = NULL;
 		(*new_info)->sip_addr.len = 0;
 	}
+
+	if (str_vals[STR_VALS_FLAGS_COL] &&
+		strlen(str_vals[STR_VALS_FLAGS_COL]) != 0)
+		if (memcmp(str_vals[STR_VALS_FLAGS_COL], seed_flag.s, seed_flag.len) == 0)
+			(*new_info)->flags |= NODE_IS_SEED;
 
 	if (str_vals[STR_VALS_URL_COL] == NULL) {
 		LM_ERR("no url specified in DB\n");
@@ -299,7 +284,8 @@ error:
     } while (0)
 
 /* loads info from the db */
-int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list)
+int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
+					cluster_info_t **cl_list)
 {
 	int int_vals[NO_DB_INT_VALS];
 	char *str_vals[NO_DB_STR_VALS];
@@ -326,12 +312,12 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 	columns[5] = &no_ping_retries_col;
 	columns[6] = &priority_col;
 	columns[7] = &sip_addr_col;
-	columns[8] = &description_col;
+	columns[8] = &flags_col;
+	columns[9] = &description_col;
 
 	CON_OR_RESET(db_hdl);
 
-	if (db_check_table_version(dr_dbf, db_hdl, db_table, CLUSTERER_TABLE_VERSION) != 0 &&
-		db_check_table_version(dr_dbf, db_hdl, db_table, BACKWARDS_COMPAT_TABLE_VER) != 0)
+	if (db_check_table_version(dr_dbf, db_hdl, db_table, CLUSTERER_TABLE_VERSION))
 		goto error;
 
 	if (dr_dbf->use_table(db_hdl, db_table) < 0) {
@@ -432,8 +418,11 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 		check_val(sip_addr_col, ROW_VALUES(row) + 7, DB_STRING, 0, 0);
 		str_vals[STR_VALS_SIP_ADDR_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 7);
 
-		check_val(description_col, ROW_VALUES(row) + 8, DB_STRING, 0, 0);
-		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 8);
+		check_val(flags_col, ROW_VALUES(row) + 8, DB_STRING, 0, 0);
+		str_vals[STR_VALS_FLAGS_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 8);
+
+		check_val(description_col, ROW_VALUES(row) + 9, DB_STRING, 0, 0);
+		str_vals[STR_VALS_DESCRIPTION_COL] = (char*) VAL_STRING(ROW_VALUES(row) + 9);
 
 		/* add info to backing list */
 		if ((rc = add_node_info(&new_info, cl_list, int_vals, str_vals)) != 0) {
@@ -595,7 +584,8 @@ void free_info(cluster_info_t *cl_list)
 {
 	cluster_info_t *tmp_cl;
 	node_info_t *info, *tmp_info;
-	struct cluster_mod *cl_m, *tmp_cl_m;
+	struct local_cap *cl_cap, *tmp_cl_cap;
+	struct remote_cap *cap, *tmp_cap;
 
 	while (cl_list != NULL) {
 		tmp_cl = cl_list;
@@ -614,16 +604,23 @@ void free_info(cluster_info_t *cl_list)
 				lock_dealloc(info->lock);
 			}
 
+			cap = info->capabilities;
+			while (cap != NULL) {
+				tmp_cap = cap;
+				cap = cap->next;
+				shm_free(tmp_cap);
+			}
+
 			tmp_info = info;
 			info = info->next;
 			shm_free(tmp_info);
 		}
 
-		cl_m = tmp_cl->modules;
-		while (cl_m != NULL) {
-			tmp_cl_m = cl_m;
-			cl_m = cl_m->next;
-			shm_free(tmp_cl_m);
+		cl_cap = tmp_cl->capabilities;
+		while (cl_cap != NULL) {
+			tmp_cl_cap = cl_cap;
+			cl_cap = cl_cap->next;
+			shm_free(tmp_cl_cap);
 		}
 
 		if (tmp_cl->lock) {
@@ -718,10 +715,11 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
-		LM_DBG("cluster id: %d not found!\n", cluster_id);
-		goto end;
+		LM_ERR("cluster id: %d not found!\n", cluster_id);
+		lock_stop_read(cl_list_lock);
+		return NULL;
 	}
-	for (node = cl->node_list; node; node = node->next) {
+	for (node = cl->node_list; node; node = node->next)
 		if (get_next_hop(node) > 0)
 			if (add_clusterer_node(&ret_nodes, node) < 0) {
 				lock_stop_read(cl_list_lock);
@@ -730,9 +728,7 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 				free_clusterer_nodes(ret_nodes);
 				return NULL;
 			}
-	}
 
-end:
 	lock_stop_read(cl_list_lock);
 
 	return ret_nodes;
@@ -791,3 +787,47 @@ int cl_get_my_id(void)
 	return current_id;
 }
 
+int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
+{
+	int i, j, tmp;
+	int sorted[MAX_NO_NODES];
+	node_info_t *node;
+	cluster_info_t *cl;
+	struct remote_cap *cap;
+
+	lock_start_read(cl_list_lock);
+
+	cl = get_cluster_by_id(cluster_id);
+	if (!cl) {
+		LM_ERR("cluster id: %d not found!\n", cluster_id);
+		lock_stop_read(cl_list_lock);
+		return -1;
+	}
+
+	*nr_nodes = 0;
+	for (node = cl->node_list; node; node = node->next)
+		if (get_next_hop(node) > 0) {
+			for (cap = node->capabilities; cap; cap = cap->next)
+				if (!str_strcmp(capability, &cap->name))
+					break;
+
+			lock_get(node->lock);
+			if (cap && cap->flags & CAP_STATE_OK)
+				sorted[(*nr_nodes)++] = node->node_id;
+			lock_release(node->lock);
+		}
+
+	/* sort array of reachable node ids */
+	for (i = 1; i < *nr_nodes; i++) {
+		tmp = sorted[i];
+		for (j = i - 1; j >= 0 && sorted[j] > tmp; j = j - 1)
+			sorted[j+1] = sorted[j];
+		sorted[j+1] = tmp;
+	}
+
+	for (i = 0; i < *nr_nodes && sorted[i] < current_id; i++) ;
+
+	lock_stop_read(cl_list_lock);
+
+	return i;
+}

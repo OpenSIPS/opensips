@@ -8,6 +8,7 @@ CREATE TABLE clusterer (
     no_ping_retries INTEGER DEFAULT 3 NOT NULL,
     priority INTEGER DEFAULT 50 NOT NULL,
     sip_addr CHAR(64),
+    flags CHAR(64),
     description CHAR(64),
     CONSTRAINT clusterer_clusterer_idx  UNIQUE (cluster_id, node_id)
 );

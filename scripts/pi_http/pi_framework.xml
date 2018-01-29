@@ -349,6 +349,7 @@
 		<column><field>no_ping_retries</field><type>DB_INT</type></column>
 		<column><field>priority</field><type>DB_INT</type></column>
 		<column><field>sip_addr</field><type>DB_STR</type></column>
+		<column><field>flags</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of cpl table-->
@@ -2173,6 +2174,7 @@
 				<col><field>no_ping_retries</field></col>
 				<col><field>priority</field></col>
 				<col><field>sip_addr</field></col>
+				<col><field>flags</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -2187,6 +2189,7 @@
 				<col><field>no_ping_retries</field></col>
 				<col><field>priority</field></col>
 				<col><field>sip_addr</field></col>
+				<col><field>flags</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -2204,6 +2207,7 @@
 				<col><field>no_ping_retries</field></col>
 				<col><field>priority</field></col>
 				<col><field>sip_addr</field></col>
+				<col><field>flags</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>

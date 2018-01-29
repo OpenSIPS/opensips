@@ -517,7 +517,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
-		if (!is_replicated && ul_replicate_cluster)
+		if (!is_replicated && ul_replication_cluster)
 			replicate_urecord_delete(_r);
 
 		mem_delete_urecord(_r->slot->d, _r);
@@ -548,7 +548,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		return -1;
 	}
 
-	if (!is_replicated && ul_replicate_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
 		replicate_ucontact_insert(_r, _contact, _ci);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT))
@@ -577,7 +577,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
  */
 int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 {
-	if (!is_replicated && ul_replicate_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
 		replicate_ucontact_delete(_r, _c);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {

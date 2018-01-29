@@ -51,8 +51,6 @@ extern stat_var *delete_recv;
 
 struct clusterer_binds clusterer_api;
 
-static int dlg_replicated_profiles(bin_packet_t *packet, struct receive_info *ri, int server_id);
-
 static struct socket_info * fetch_socket_info(str *addr)
 {
 	struct socket_info *sock;
@@ -466,7 +464,6 @@ malformed:
  */
 void replicate_dialog_created(struct dlg_cell *dlg)
 {
-	static str module_name = str_init("dialog");
 	int callee_leg;
 	str *vars, *profiles;
 	int rc;
@@ -487,7 +484,7 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 		goto no_send;
 	}
 
-	if (bin_init(&packet, &module_name, REPLICATION_DLG_CREATED, BIN_VERSION, 0) != 0)
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_CREATED, BIN_VERSION, 0) != 0)
 		goto init_error;
 
 	callee_leg = callee_idx(dlg);
@@ -534,17 +531,17 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	dlg->replicated = 1;
 	dlg_unlock_dlg(dlg);
 
-	rc = clusterer_api.send_all(&packet, dialog_replicate_cluster);
+	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_replicate_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			dialog_replicate_cluster);
+			dialog_repl_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_replicate_cluster);
+		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
 		goto error;
 	}
 
@@ -570,7 +567,6 @@ no_send:
  */
 void replicate_dialog_updated(struct dlg_cell *dlg)
 {
-	static str module_name = str_init("dialog");
 	int callee_leg;
 	str *vars, *profiles;
 	int rc;
@@ -585,7 +581,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 		goto end;
 	}
 
-	if (bin_init(&packet, &module_name, REPLICATION_DLG_UPDATED, BIN_VERSION, 0) != 0)
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_UPDATED, BIN_VERSION, 0) != 0)
 		goto init_error;
 
 	callee_leg = callee_idx(dlg);
@@ -632,17 +628,17 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	dlg->replicated = 1;
 	dlg_unlock_dlg(dlg);
 
-	rc = clusterer_api.send_all(&packet, dialog_replicate_cluster);
+	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_replicate_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_ERR("All destinations in cluster: %d are down or probing\n",
-			dialog_replicate_cluster);
+			dialog_repl_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_replicate_cluster);
+		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
 		goto error;
 	}
 
@@ -668,28 +664,27 @@ end:
  */
 void replicate_dialog_deleted(struct dlg_cell *dlg)
 {
-	static str module_name = str_init("dialog");
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &module_name, REPLICATION_DLG_DELETED, BIN_VERSION, 1024) != 0)
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_DELETED, BIN_VERSION, 1024) != 0)
 		goto error;
 
 	bin_push_str(&packet, &dlg->callid);
 	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].tag);
 	bin_push_str(&packet, &dlg->legs[callee_idx(dlg)].tag);
 
-	rc = clusterer_api.send_all(&packet, dialog_replicate_cluster);
+	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_replicate_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
 		goto error_free;
 	case CLUSTERER_DEST_DOWN:
 		LM_ERR("All destinations in cluster: %d are down or probing\n",
-			dialog_replicate_cluster);
+			dialog_repl_cluster);
 		goto error_free;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_replicate_cluster);
+		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
 		goto error_free;
 	}
 
@@ -702,46 +697,33 @@ error:
 	LM_ERR("Failed to replicate deleted dialog\n");
 }
 
-void receive_repl_packets(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id)
+void receive_dlg_repl(bin_packet_t *packet)
 {
 	int rc = 0;
 
-	if (ev == CLUSTER_NODE_DOWN || ev == CLUSTER_NODE_UP)
-		return;
-	else if (ev == CLUSTER_ROUTE_FAILED) {
-		LM_INFO("Failed to route replication packet of type %d from node id: %d "
-			"to node id: %d in cluster: %d\n", cluster_id, packet_type, src_id, dest_id);
-		return;
-	}
-
-	switch (packet_type) {
+	switch (packet->type) {
 	case REPLICATION_DLG_CREATED:
-		if (accept_replicated_dlg) {
+		if (dialog_repl_cluster) {
 			rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
 			if_update_stat(dlg_enable_stats, create_recv, 1);
 		}
 		break;
 	case REPLICATION_DLG_UPDATED:
-		if (accept_replicated_dlg) {
+		if (dialog_repl_cluster) {
 			rc = dlg_replicated_update(packet);
 			if_update_stat(dlg_enable_stats, update_recv, 1);
 		}
 		break;
 	case REPLICATION_DLG_DELETED:
-		if (accept_replicated_dlg) {
+		if (dialog_repl_cluster) {
 			rc = dlg_replicated_delete(packet);
 			if_update_stat(dlg_enable_stats, delete_recv, 1);
 		}
 		break;
-	case REPLICATION_DLG_PROFILE:
-		if (accept_repl_profiles)
-			rc = dlg_replicated_profiles(packet, ri, src_id);
-		break;
 	default:
 		rc = -1;
 		LM_WARN("Invalid dialog binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet_type, src_id, cluster_id);
+			packet->type, packet->src_id, dialog_repl_cluster);
 	}
 
 	if (rc != 0)
@@ -777,7 +759,7 @@ static void repl_prof_timer_f(unsigned int ticks, void *param);
 
 int repl_prof_init(void)
 {
-	if (!profile_replicate_cluster && !accept_repl_profiles)
+	if (!profile_repl_cluster)
 		return 0;
 
 	if (repl_prof_timer_check < 0) {
@@ -797,9 +779,6 @@ int repl_prof_init(void)
 		LM_ERR("failed to register profiles utimer\n");
 		return -1;
 	}
-
-	if (!profile_replicate_cluster)
-		return 0;
 
 	if (repl_prof_utimer < 0) {
 		LM_ERR("negative replicate timer for profiles %d\n", repl_prof_utimer);
@@ -833,17 +812,17 @@ static inline void dlg_replicate_profiles(bin_packet_t *packet)
 {
 	int rc;
 
-	rc = clusterer_api.send_all(packet, profile_replicate_cluster);
+	rc = clusterer_api.send_all(packet, profile_repl_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", profile_replicate_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", profile_repl_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_ERR("All destinations in cluster: %d are down or probing\n",
-			profile_replicate_cluster);
+			profile_repl_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster %d\n", profile_replicate_cluster);
+		LM_ERR("Error sending in cluster %d\n", profile_repl_cluster);
 		goto error;
 	}
 
@@ -880,13 +859,11 @@ error:
 }
 
 
-static int dlg_replicated_profiles(bin_packet_t *packet, struct receive_info *ri, int server_id)
+void receive_prof_repl(bin_packet_t *packet)
 {
 	time_t now;
 	str name;
 	str value;
-	char *ip;
-	unsigned short port;
 	unsigned int counter;
 	struct dlg_profile_table *profile;
 	int has_value;
@@ -895,10 +872,18 @@ static int dlg_replicated_profiles(bin_packet_t *packet, struct receive_info *ri
 	repl_prof_value_t *rp;
 	repl_prof_count_t *destination;
 
-
 	/* optimize profile search */
 	struct dlg_profile_table *old_profile = NULL;
 	str old_name = {NULL,0};
+
+	if (!profile_repl_cluster)
+		return;
+
+	if (packet->type != REPLICATION_DLG_PROFILE) {
+		LM_WARN("Invalid dialog binary packet command: %d (from node: %d in cluster: %d)\n",
+			packet->type, packet->src_id, profile_repl_cluster);
+		return;
+	}
 
 	now = time(0);
 	//*repl_prof_dests[index].last_msg = now;
@@ -911,45 +896,43 @@ static int dlg_replicated_profiles(bin_packet_t *packet, struct receive_info *ri
 		if (!old_profile || old_name.len != name.len ||
 			memcmp(name.s, old_name.s, name.len) != 0) {
 			old_profile = get_dlg_profile(&name);
-			if (!old_profile) {
-				get_su_info(&ri->src_su.s, ip, port);
-				LM_WARN("received unknown profile <%.*s> from %s:%hu\n",
-					name.len, name.s, ip, port);
-			}
+			if (!old_profile)
+				LM_WARN("received unknown profile <%.*s> from node %d\n",
+					name.len, name.s, packet->src_id);
 			old_name = name;
 		}
 		profile = old_profile;
 
 		if (bin_pop_int(packet, &has_value) < 0) {
 			LM_ERR("cannot pop profile's has_value int\n");
-			return -1;
+			return;
 		}
 
 		if (has_value) {
 			if (!profile->has_value) {
-				get_su_info(&ri->src_su.s, ip, port);
 				LM_WARN("The other end does not have a value for this profile:"
-					"<%.*s> [%s:%hu]\n", profile->name.len, profile->name.s, ip, port);
+					"<%.*s> [node: %d]\n", profile->name.len, profile->name.s,
+					packet->src_id);
 				profile = NULL;
 			}
 			if (bin_pop_str(packet, &value)) {
 				LM_ERR("cannot pop the value of the profile\n");
-				return -1;
+				return;
 			}
 		}
 
 		if (bin_pop_int(packet, &counter) < 0) {
 			LM_ERR("cannot pop profile's counter\n");
-			return -1;
+			return;
 		}
 
 		if (profile) {
 			if (!profile->has_value) {
 				lock_get(&profile->repl->lock);
-				destination = find_destination(profile->repl, server_id);
+				destination = find_destination(profile->repl, packet->src_id);
 				if(destination == NULL){
 					lock_release(&profile->repl->lock);
-					return -1;
+					return;
 				}
 				destination->counter = counter;
 				destination->update = now;
@@ -981,11 +964,11 @@ static int dlg_replicated_profiles(bin_packet_t *packet, struct receive_info *ri
 					rp->noval = repl_prof_allocate();
 				if (rp->noval) {
 					lock_release(&rp->noval->lock);
-					destination = find_destination(rp->noval, server_id);
+					destination = find_destination(rp->noval, packet->src_id);
 					if (destination == NULL) {
 						lock_release(&rp->noval->lock);
 						lock_set_release(profile->locks, i);
-						return -1;
+						return;
 					}
 					destination->counter = counter;
 					destination ->update = now;
@@ -996,7 +979,7 @@ release:
 			}
 		}
 	}
-	return 0;
+	return;
 }
 
 static int repl_prof_add(bin_packet_t *packet, str *name, int has_value, str *value,
@@ -1021,12 +1004,11 @@ static int repl_prof_add(bin_packet_t *packet, str *name, int has_value, str *va
 
 int repl_prof_remove(str *name, str *value)
 {
-	static str module_name = str_init("dialog");
 	bin_packet_t packet;
 
-	if (profile_replicate_cluster <= 0)
+	if (profile_repl_cluster <= 0)
 		return 0;
-	if (bin_init(&packet, &module_name, REPLICATION_DLG_PROFILE, BIN_VERSION, 1024) < 0) {
+	if (bin_init(&packet, &prof_repl_cap, REPLICATION_DLG_PROFILE, BIN_VERSION, 1024) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return -1;
 	}
@@ -1122,7 +1104,6 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 	} while (0)
 
 	struct dlg_profile_table *profile;
-	static str module_name = str_init("dialog");
 	map_iterator_t it;
 	unsigned int count;
 	int i;
@@ -1132,7 +1113,7 @@ static void repl_prof_utimer_f(utime_t ticks, void *param)
 	str *value;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &module_name, REPLICATION_DLG_PROFILE, BIN_VERSION, 0) < 0) {
+	if (bin_init(&packet, &prof_repl_cap, REPLICATION_DLG_PROFILE, BIN_VERSION, 0) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
 		return;
 	}

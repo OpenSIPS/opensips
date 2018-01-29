@@ -31,11 +31,12 @@
 #define REPL_GW_STATUS_UPDATE 1
 #define REPL_CR_STATUS_UPDATE 2
 
-extern int accept_replicated_status;
-extern int replicated_status_cluster;
+extern int dr_repl_cluster;
 
 extern str repl_dr_module_name;
 extern struct clusterer_binds clusterer_api;
+
+extern str status_repl_cap;
 
 /* replicate the GW status via BIN */
 void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster);
@@ -45,9 +46,6 @@ void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
 																int cluster);
 
 /* handler for incoming BIN packets */
-void receive_dr_binary_packet(enum clusterer_event ev, bin_packet_t *packet, int packet_type,
-				struct receive_info *ri, int cluster_id, int src_id, int dest_id);
-
-
+void receive_dr_binary_packet(bin_packet_t *packet);
 
 #endif

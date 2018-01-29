@@ -57,11 +57,11 @@
 		<section id="usrloc-replication">
 		<title>Contact replication</title>
 		<para>
-		Starting from &osips; 1.11, the <emphasis>usrloc</emphasis> module
-		offers the possibility of performing real-time mirroring of the entire
-		in-memory user location information of one &osips; instance to one or more
-		other instances. This module-to-module communication is UDP-based, and
-		it is done through the <emphasis>Binary Interface</emphasis>.
+		The <emphasis>usrloc</emphasis> module offers the possibility of
+		performing real-time mirroring of the entire in-memory user location
+		information of one &osips; instance to one or more other instances.
+		This communication is TCP-based (BIN protocol) and
+		it is done through the <emphasis>clusterer</emphasis> module.
 		</para>
 		<para>
 		Advantages of replicating user-location data using this feature
@@ -115,8 +115,7 @@
 		<para>
 		Configuring both receival and sending of usrloc replication packets is
 		trivial and can be done by using the
-		<emphasis role='bold'><xref linkend="accept_replicated_contacts"/></emphasis> and
-		<emphasis role='bold'><xref linkend="replicate_contacts_to"/></emphasis> parameters of the
+		<emphasis role='bold'><xref linkend="contact_replication_cluster"/></emphasis> parameter of the
 		module.
 		</para>
 		<para>
@@ -144,7 +143,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>clusterer, if <xref linkend="replicate_contacts_to"/>
+				<emphasis>clusterer, if <xref linkend="contact_replication_cluster"/>
 				parameters is turned on (contact replication via clusterer
 				module)</emphasis>.
 			</para>
@@ -764,54 +763,27 @@ modparam("usrloc", "cseq_delay", 5)
 		</example>
 	</section>
 
-	<section id='accept_replicated_contacts'
-	         xreflabel="accept_replicated_contacts">
-		<title><varname>accept_replicated_contacts</varname> (integer)</title>
+	<section id='contact_replication_cluster'
+	         xreflabel="contact_replication_cluster">
+		<title><varname>contact_replication_cluster</varname> (integer)</title>
 		<para>
-		Set this to a valid cluster id in order to accept and process
-                user-location related information received from other &osips;
-                instances, that belong to the specified cluster id, through the
-                <emphasis role='bold'>Binary Interface</emphasis>.
+		Specifies the cluster ID which this instance will send to, and receive from,
+		all user-location related information
+        (<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
+		organized into specific events (inserts, deletes or updates).
 		</para>
 		<para>
-		Default value is <quote>0</quote> (no cluster id specified) -
-                Binary Interface listeners (if any) will simply ignore any usrloc-related packets
-		</para>
-		<para>
-			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
-		</para>
-		<example>
-		<title>Setting the <varname>accept_replicated_contacts</varname>
-			parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("usrloc", "accept_replicated_contacts", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id='replicate_contacts_to'
-	         xreflabel="replicate_contacts_to">
-		<title><varname>replicate_contacts_to</varname> (integer)</title>
-		<para>
-		Defines the &osips; instances that belong to a ceratin cluster
-                which will receive all the user-location related information from
-                this machine (<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
-		organized into specific events (inserts, deletes or updates)
-		</para>
-		<para>
-		Default value is 0 (no cluster id specified)
+		Default value is 0 (replication disabled)
 		</para>
 		<para>
 			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
 		</para>
 		<example>
-		<title>Setting the <varname>replicate_contacts_to</varname>
+		<title>Setting the <varname>contact_replication_cluster</varname>
 			parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "replicate_contacts_to", 1)
+modparam("usrloc", "contact_replication_cluster", 1)
 ...
 </programlisting>
 		</example>

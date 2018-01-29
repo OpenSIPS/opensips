@@ -106,7 +106,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>clustere</emphasis> - only if "replicate_status_to"
+				<emphasis>clustere</emphasis> - only if "status_replication_cluster"
 				option is enabled.
 			</para>
 			</listitem>
@@ -368,16 +368,16 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
 	</section>
 
 	<section>
-		<title><varname>replicate_status_to</varname> (integer)</title>
+		<title><varname>status_replication_cluster</varname> (integer)</title>
 		<para>
-		A cluster ID for sharing (via BIN replication) the any change in the 
-		status of the destination. Whenever such a status is changes
+		A cluster ID for sharing any change in the status of the destinations with other
+		OpenSIPS instances that are part of a cluster. Whenever such a status changes
 		(following an MI command, a probing result, a script command), the
-		module will replicate this status change to all the nodes in this
+		module will replicate this status change to all the nodes in the
 		given cluster. A value of 0 means that sending replication data is disabled.
 		</para>
 		<para>
-		For more on how to define and populate a cluster (with OpenSIPS nodes)
+		For more info on how to define and populate a cluster (with OpenSIPS nodes)
 		see the "clusterer" module.
 		</para>
 		<para>
@@ -386,35 +386,11 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>replicate_status_to</varname> parameter</title>
+		<title>Set <varname>status_replication_cluster</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 # replicate LB status with all OpenSIPS in cluster ID 9
-modparam("load_balancer", "replicate_status_to", 9)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>accept_replicated_status</varname> (integer)</title>
-		<para>
-		A cluster ID for accepting replicated info about the change of
-		LB destination's status from other OpenSIPS nodes from that cluster. A value of 0 means that accepting is disabled.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>accept_replicated_status</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-# replicate LB destinations status with all OpenSIPS in cluster ID 9
-modparam("load_balancer", "replicate_status_to", 9)
-# but do not accept incoming replication (just send, no receive)
-modparam("load_balancer", "accept_replicated_status", 0)
+modparam("load_balancer", "status_replication_cluster", 9)
 ...
 </programlisting>
 		</example>
