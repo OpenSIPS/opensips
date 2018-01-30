@@ -400,20 +400,22 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (ul_replication_cluster && load_clusterer_api(&clusterer_api) != 0) {
-		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
-		return -1;
-	}
+	if (ul_replication_cluster) {
+		if (load_clusterer_api(&clusterer_api) != 0) {
+			LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
+			return -1;
+		}
 
-	/* register handler for processing usrloc packets to the clusterer module */
-	if (ul_replication_cluster && clusterer_api.register_capability(&contact_repl_cap,
-		receive_binary_packets, receive_cluster_event, ul_replication_cluster) < 0) {
-		LM_ERR("cannot register callbacks to clusterer module!\n");
-		return -1;
-	}
+		/* register handler for processing usrloc packets to the clusterer module */
+		if (clusterer_api.register_capability(&contact_repl_cap,
+			receive_binary_packets, receive_cluster_event, ul_replication_cluster) < 0) {
+			LM_ERR("cannot register callbacks to clusterer module!\n");
+			return -1;
+		}
 
-	if (clusterer_api.request_sync(&contact_repl_cap, ul_replication_cluster) < 0)
-		LM_ERR("Sync request failed\n");
+		if (clusterer_api.request_sync(&contact_repl_cap, ul_replication_cluster) < 0)
+			LM_ERR("Sync request failed\n");
+	}
 
 	init_flag = 1;
 
