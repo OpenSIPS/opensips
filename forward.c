@@ -523,7 +523,8 @@ int forward_reply(struct sip_msg* msg)
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;
 			len=msg->via1->i->value.len;
-			reverse_hex2int(s, len, &id);
+			if (reverse_hex2int(s, len, &id)<0)
+				id = 0;
 		}
 	}
 
