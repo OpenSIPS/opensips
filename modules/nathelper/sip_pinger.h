@@ -94,7 +94,8 @@ static void init_sip_ping(int rto)
 
 static int parse_branch(str branch)
 {
-	int hash_id, cid_len;
+	unsigned int hash_id;
+	int cid_len;
 	char *end;
 
 	int64_t ret;
@@ -115,13 +116,13 @@ static int parse_branch(str branch)
 	if (0 == end) {
 		/* if reverse hex2int succeeds on this it's a simple
 		 * ping based on sipping_callid_cnt label */
-		if (reverse_hex2int(branch.s, end-branch.s) > 0)
+		if (reverse_hex2int(branch.s, end-branch.s, &hash_id)==0)
 			return 0;
 
 		return 1;
 	}
 
-	hash_id = reverse_hex2int(branch.s, end-branch.s);
+	reverse_hex2int(branch.s, end-branch.s, &hash_id);
 
 	branch.len -= (end-branch.s + 1);
 	branch.s = end+1;

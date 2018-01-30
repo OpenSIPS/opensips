@@ -238,22 +238,21 @@ static inline char* q_memrchr(char* p, int c, unsigned int size)
 }
 
 
-inline static int reverse_hex2int( char *c, int len )
+inline static int reverse_hex2int( char *c, int len, unsigned int *r)
 {
 	char *pc;
-	int r;
 	char mychar;
 
-	r=0;
+	*r=0;
 	for (pc=c+len-1; len>0; pc--, len--) {
-		r <<= 4 ;
+		(*r) <<= 4 ;
 		mychar=*pc;
-		if ( mychar >='0' && mychar <='9') r+=mychar -'0';
-		else if (mychar >='a' && mychar <='f') r+=mychar -'a'+10;
-		else if (mychar  >='A' && mychar <='F') r+=mychar -'A'+10;
+		if ( mychar >='0' && mychar <='9') (*r)+=mychar -'0';
+		else if (mychar >='a' && mychar <='f') (*r)+=mychar -'a'+10;
+		else if (mychar  >='A' && mychar <='F') (*r)+=mychar -'A'+10;
 		else return -1;
 	}
-	return r;
+	return 0;
 }
 
 inline static int int2reverse_hex( char **c, int *size, unsigned int nr )
