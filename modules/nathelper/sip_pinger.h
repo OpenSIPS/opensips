@@ -97,8 +97,6 @@ static int parse_branch(str branch)
 	unsigned int hash_id;
 	int cid_len;
 	char *end;
-
-	int64_t ret;
 	uint64_t contact_id=0;
 
 	struct ping_cell *p_cell;
@@ -133,15 +131,12 @@ static int parse_branch(str branch)
 
 	end = q_memchr(branch.s, '.', branch.len);
 	cid_len = end-branch.s;
-	ret = reverse_hex2int64(branch.s, cid_len, 1/* request unsafe parsing */);
+	reverse_hex2int64(branch.s, cid_len, 1/* request unsafe parsing */,
+		&contact_id);
+	/* reverse_hex2int64() cannot fail in unsafe mode and it will return 
+	   whatever it was able to parse (0 if nothing )*/
+
 	/* we don't parse the label since we don't need it */
-
-	if (ret == -1) {
-		LM_ERR("received invalid contact id\n");
-		return -1;
-	}
-
-	contact_id = (uint64_t)ret;
 
 	lock_hash(hash_id);
 	if ((p_cell=get_cell(hash_id, contact_id))==NULL) {
