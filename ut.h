@@ -280,24 +280,23 @@ inline static int int2reverse_hex( char **c, int *size, unsigned int nr )
 /* if unsafe requested when first non numerical character shall be
  * met the number shall be returned; avoid giving the
  * exact len of the number */
-inline static int64_t reverse_hex2int64( char *c, int len, int unsafe)
+inline static int reverse_hex2int64( char *c, int len, int unsafe, uint64_t *r)
 {
 	char *pc;
-	int64_t r;
 	char mychar;
 
-	r=0;
+	*r=0;
 	for (pc=c+len-1; len>0; pc--, len--) {
-		r <<= 4 ;
+		(*r) <<= 4 ;
 		mychar=*pc;
-		if ( mychar >='0' && mychar <='9') r+=mychar -'0';
-		else if (mychar >='a' && mychar <='f') r+=mychar -'a'+10;
-		else if (mychar  >='A' && mychar <='F') r+=mychar -'A'+10;
+		if ( mychar >='0' && mychar <='9') (*r)+=mychar -'0';
+		else if (mychar >='a' && mychar <='f') (*r)+=mychar -'a'+10;
+		else if (mychar  >='A' && mychar <='F') (*r)+=mychar -'A'+10;
 		else if (unsafe)
-			return r;
+			return 0;
 		else return -1;
 	}
-	return r;
+	return 0;
 }
 
 inline static int64_t int64_2reverse_hex( char **c, int *size, uint64_t nr )
