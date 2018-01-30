@@ -694,9 +694,9 @@ found:
 int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 {
 	struct cell*  p_cell;
-	int hash_index   = 0;
-	int entry_label  = 0;
-	int branch_id    = 0;
+	unsigned int hash_index   = 0;
+	unsigned int entry_label  = 0;
+	unsigned int branch_id    = 0;
 	char  *hashi, *branchi, *p, *n;
 	int hashl, branchl;
 	int scan_space;
@@ -765,19 +765,19 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 	branchi=p;
 
 	/* sanity check */
-	if ((hash_index=reverse_hex2int(hashi, hashl))<0
+	if (reverse_hex2int(hashi, hashl, &hash_index)<0
 		||hash_index>=TM_TABLE_ENTRIES
-		|| (branch_id=reverse_hex2int(branchi, branchl))<0
+		|| reverse_hex2int(branchi, branchl, &branch_id)<0
 		||branch_id>=MAX_BRANCHES
-		|| (syn_branch ? (entry_label=reverse_hex2int(syni, synl))<0
+		|| (syn_branch ? reverse_hex2int(syni, synl, &entry_label)<0
 			: loopl!=MD5_LEN )
 	) {
-		LM_DBG("poor reply labels %d label %d branch %d\n",
+		LM_DBG("poor reply labels %u label %u branch %u\n",
 				hash_index, entry_label, branch_id );
 		goto nomatch2;
 	}
 
-	LM_DBG("hash %d label %d branch %d\n",hash_index, entry_label, branch_id);
+	LM_DBG("hash %u label %d branch %u\n",hash_index, entry_label, branch_id);
 
 	cseq = get_cseq(p_msg);
 
