@@ -165,7 +165,7 @@ Robert-Vladut Patrascu
    1.9. Set dh_params variable
    1.10. Set verify_cert & require_cert variable
    1.11. Set tls_handshake_timeout & tls_send_timeout variable
-   1.12. Set tls_client_domain_avp variable
+   1.12. Set client_domain_avp variable
    1.13. Usage of db_url block
    1.14. Usage of db_table block
    1.15. Usage of domain_col block
@@ -249,7 +249,7 @@ Chapter 1. Admin Guide
    socket. Thus, the certificate selection (selection of the
    proper TLS client domain) can be name based. If the SIP proxy
    establishes a new outgoing TLS connection, it checks for the
-   TLS client domain AVP (parameter tls_client_domain_avp). If
+   TLS client domain AVP (parameter client_domain_avp). If
    this AVP is set (e.g. in OpenSIPS.cfg), OpenSIPS searches for a
    TLS client domain with the same name as the AVP value and uses
    the associated certificates.
@@ -577,9 +577,9 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 
    Default value is 0.
 
-   Example 1.12. Set tls_client_domain_avp variable
+   Example 1.12. Set client_domain_avp variable
 ...
-modparam("tls_mgm", "tls_client_domain_avp", "tls_cli_dom")
+modparam("tls_mgm", "client_domain_avp", "tls_cli_dom")
 ...
 
 1.8.13. db_url (string)
@@ -739,7 +739,7 @@ listen=tls:IP_2:port2
 listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "tls_client_domain_avp", "tls_cli_dom")
+modparam("proto_tls", "client_domain_avp", "tls_cli_dom")
 ...
 
 # 'atlanta' server domain
