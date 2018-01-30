@@ -148,7 +148,7 @@ void pt_become_idle(void)
 				_TYPE##_WINDOW_SIZE; \
 			/* ajust the index where we start counting the past used-time \
 			 * based on the "ratio" option, if present */  \
-			if (_ratio) { \
+			if (_ratio!=0) { \
 				idx_start = (idx_new+(int)(_TYPE##_WINDOW_SIZE*(1-_ratio))) % \
 					_TYPE##_WINDOW_SIZE; \
 				/* the start is between [new,old], so no used recorded yet */ \
