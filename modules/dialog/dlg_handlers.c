@@ -1386,8 +1386,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	str callid;
 	str ftag;
 	str ttag;
-	int h_entry;
-	int h_id;
+	unsigned int h_entry;
+	unsigned int h_id;
 	int new_state;
 	int old_state;
 	int unref;

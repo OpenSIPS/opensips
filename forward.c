@@ -468,7 +468,7 @@ int forward_reply(struct sip_msg* msg)
 	unsigned int new_len;
 	struct sr_module *mod;
 	int proto;
-	int id; /* used only by tcp*/
+	unsigned int id; /* used only by tcp*/
 	struct socket_info *send_sock;
 	char* s;
 	int len;
@@ -523,7 +523,7 @@ int forward_reply(struct sip_msg* msg)
 		if (msg->via1->i&&msg->via1->i->value.s){
 			s=msg->via1->i->value.s;
 			len=msg->via1->i->value.len;
-			id=reverse_hex2int(s, len);
+			reverse_hex2int(s, len, &id);
 		}
 	}
 
@@ -535,7 +535,7 @@ int forward_reply(struct sip_msg* msg)
 		goto error;
 	}
 
-	if (msg_send(send_sock, proto, to, id, new_buf, new_len, msg)<0) {
+	if (msg_send(send_sock, proto, to, (int)id, new_buf, new_len, msg)<0) {
 		update_stat( drp_rpls, 1);
 		goto error0;
 	}
