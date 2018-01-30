@@ -2549,10 +2549,10 @@ $var(account) = $dlg_val(account_type);
 					to uniquely identify the dialog.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>ostate</emphasis> - the old state of the dialog.
+				<emphasis>old_state</emphasis> - the old state of the dialog.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>nstate</emphasis> - the new state of the dialog.
+				<emphasis>new_state</emphasis> - the new state of the dialog.
 			</para></listitem>
 		</itemizedlist>
 	</section>
