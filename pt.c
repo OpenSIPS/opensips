@@ -122,50 +122,12 @@ void set_proc_attrs( char *fmt, ...)
 }
 
 
-static int register_process_stats(int pid)
+static int register_process_stats(int process_no)
 {
-	char *stat_name;
-	str stat_prefix;
-	char *pid_s;
-	str name;
-
-	pid_s = int2str( (unsigned int)pid, NULL);
-
-	stat_prefix.s = "load-proc";
-	stat_prefix.len = sizeof("load-proc")-1;
-	if ( (stat_name = build_stat_name( &stat_prefix, pid_s)) == 0 ||
-	register_stat2( "load", stat_name, (stat_var**)pt_get_rt_proc_load,
-	STAT_IS_FUNC, (void*)(long)pid, 0) != 0) {
-		LM_ERR("failed to add RT load stat for process %d\n",pid);
+	if (register_process_load_stats(process_no) != 0) {
+		LM_ERR("failed to create load stats\n");
 		return -1;
 	}
-	name.s = stat_name;
-	name.len = strlen(stat_name);
-	pt[pid].load.load_rt = get_stat(&name);
-
-	stat_prefix.s = "load1m-proc";
-	stat_prefix.len = sizeof("load1m-proc")-1;
-	if ( (stat_name = build_stat_name( &stat_prefix, pid_s)) == 0 ||
-	register_stat2( "load", stat_name, (stat_var**)pt_get_1m_proc_load,
-	STAT_IS_FUNC, (void*)(long)pid, 0) != 0) {
-		LM_ERR("failed to add RT load stat for process %d\n",pid);
-		return -1;
-	}
-	name.s = stat_name;
-	name.len = strlen(stat_name);
-	pt[pid].load.load_1m = get_stat(&name);
-
-	stat_prefix.s = "load10m-proc";
-	stat_prefix.len = sizeof("load10m-proc")-1;
-	if ( (stat_name = build_stat_name( &stat_prefix, pid_s)) == 0 ||
-	register_stat2( "load", stat_name, (stat_var**)pt_get_10m_proc_load,
-	STAT_IS_FUNC, (void*)(long)pid, 0) != 0) {
-		LM_ERR("failed to add RT load stat for process %d\n",pid);
-		return -1;
-	}
-	name.s = stat_name;
-	name.len = strlen(stat_name);
-	pt[pid].load.load_10m = get_stat(&name);
 
 	return 0;
 }
@@ -206,8 +168,7 @@ pid_t internal_fork(char *proc_desc, int flags)
 	}
 
 	if (register_process_stats(process_counter)<0) {
-		LM_ERR("failed to create load stats for future proc %d\n",
-			process_no);
+		LM_ERR("failed to create stats for future proc %d\n", process_no);
 		return -1;
 	}
 

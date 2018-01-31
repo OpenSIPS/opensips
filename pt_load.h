@@ -51,7 +51,7 @@ struct proc_load {
 	 * update (when switching to idle/busy) */
 	utime_t last_time;
 
-	/* set to 1 when the process swiched to busy; set on 0 if idle */
+	/* set to 1 when the process switched to busy; set on 0 if idle */
 	unsigned char is_busy;
 
 	/* the load statistics of the process */
@@ -64,13 +64,15 @@ struct proc_load {
 void pt_become_active(void);
 void pt_become_idle(void);
 
-unsigned int pt_get_rt_load(int useless);
-unsigned int pt_get_1m_load(int useless);
-unsigned int pt_get_10m_load(int useless);
+unsigned int pt_get_rt_load(int _);
+unsigned int pt_get_1m_load(int _);
+unsigned int pt_get_10m_load(int _);
 
 unsigned int pt_get_rt_proc_load(int pid);
 unsigned int pt_get_1m_proc_load(int pid);
 unsigned int pt_get_10m_proc_load(int pid);
 
+/* OpenSIPS startup */
+int register_process_load_stats(int process_no);
 
 #endif

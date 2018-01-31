@@ -26,8 +26,9 @@
 #include "dprint.h"
 #include "pt_load.h"
 #include "pt.h"
+#include "ut.h"
 
-#define PT_LOAD(_pid)    pt[_pid].load
+#define PT_LOAD(_pno)    pt[_pno].load
 
 #define MY_LOAD          PT_LOAD(process_no)
 
@@ -134,15 +135,15 @@ void pt_become_idle(void)
 }
 
 
-#define SUM_UP_LOAD(_now, _pid, _TYPE, _ratio) \
+#define SUM_UP_LOAD(_now, _pno, _TYPE, _ratio) \
 	do { \
 		/* check if the entire time window has the same status */ \
-		if ((_now-PT_LOAD(_pid).last_time) >= (_TYPE##_WINDOW_TIME)*(_ratio)) { \
+		if ((_now-PT_LOAD(_pno).last_time) >= (_TYPE##_WINDOW_TIME)*(_ratio)) { \
 			/* nothing recorded in the last time window */ \
-			used += PT_LOAD(_pid).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
+			used += PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
 		} else { \
 			/* get the index inside window for the last time update */ \
-			idx_old = (PT_LOAD(_pid).last_time / _TYPE##_WINDOW_UNIT) % \
+			idx_old = (PT_LOAD(_pno).last_time / _TYPE##_WINDOW_UNIT) % \
 				_TYPE##_WINDOW_SIZE; \
 			idx_new = (_now / _TYPE##_WINDOW_UNIT) % \
 				_TYPE##_WINDOW_SIZE; \
@@ -153,22 +154,22 @@ void pt_become_idle(void)
 					_TYPE##_WINDOW_SIZE; \
 				/* the start is between [new,old], so no used recorded yet */ \
 				if (idx_start>=idx_old && idx_start<=idx_new) {\
-					return PT_LOAD(_pid).is_busy?_TYPE##_WINDOW_TIME*_ratio:0;\
+					return PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0;\
 				}\
 			} else { \
 				idx_start = idx_new; \
 			}\
 			/* sum up the already accounted used time */ \
 			FOR_ALL_INDEXES( i, idx_start, idx_old, _TYPE) { \
-				used += PT_LOAD(_pid)._TYPE##_window[i]; \
+				used += PT_LOAD(_pno)._TYPE##_window[i]; \
 			} \
 			/* add what is not accounted since last update */ \
-			if (PT_LOAD(_pid).is_busy) { \
+			if (PT_LOAD(_pno).is_busy) { \
 				if (idx_old!=idx_new) { \
 					/* count the last used index (existing + new) */ \
-					used += PT_LOAD(_pid)._TYPE##_window[idx_old] + \
+					used += PT_LOAD(_pno)._TYPE##_window[idx_old] + \
 						(_TYPE##_WINDOW_UNIT - \
-						(PT_LOAD(_pid).last_time % _TYPE##_WINDOW_UNIT)); \
+						(PT_LOAD(_pno).last_time % _TYPE##_WINDOW_UNIT)); \
 					/* update the fully used */ \
 					FOR_ALL_INDEXES( i, idx_old, idx_new, _TYPE) { \
 						used += _TYPE##_WINDOW_UNIT; \
@@ -179,13 +180,13 @@ void pt_become_idle(void)
 					used += \
 						(_now % _TYPE##_WINDOW_UNIT) \
 						 - \
-						(PT_LOAD(_pid).last_time % _TYPE##_WINDOW_UNIT); \
+						(PT_LOAD(_pno).last_time % _TYPE##_WINDOW_UNIT); \
 				} \
 			} \
 		} \
 	} while(0)
 
-unsigned int pt_get_rt_proc_load( int pid )
+unsigned int pt_get_rt_proc_load( int pno )
 {
 	utime_t usec_now;
 	struct timeval tv;
@@ -195,13 +196,13 @@ unsigned int pt_get_rt_proc_load( int pid )
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	SUM_UP_LOAD( usec_now, pid, ST, 1);
+	SUM_UP_LOAD( usec_now, pno, ST, 1);
 
 	return (used*100/ST_WINDOW_TIME);
 }
 
 
-unsigned int pt_get_1m_proc_load( int pid )
+unsigned int pt_get_1m_proc_load( int pno )
 {
 	utime_t usec_now;
 	struct timeval tv;
@@ -211,13 +212,13 @@ unsigned int pt_get_1m_proc_load( int pid )
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	SUM_UP_LOAD( usec_now, pid, LT, LT_1m_RATIO);
+	SUM_UP_LOAD( usec_now, pno, LT, LT_1m_RATIO);
 
 	return (used*100/(LT_WINDOW_TIME*LT_1m_RATIO));
 }
 
 
-unsigned int pt_get_10m_proc_load( int pid )
+unsigned int pt_get_10m_proc_load( int pno )
 {
 	utime_t usec_now;
 	struct timeval tv;
@@ -227,13 +228,13 @@ unsigned int pt_get_10m_proc_load( int pid )
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	SUM_UP_LOAD( usec_now, pid, LT, 1);
+	SUM_UP_LOAD( usec_now, pno, LT, 1);
 
 	return (used*100/LT_WINDOW_TIME);
 }
 
 
-unsigned int pt_get_rt_load(int useless)
+unsigned int pt_get_rt_load(int _)
 {
 	utime_t usec_now;
 	struct timeval tv;
@@ -251,7 +252,7 @@ unsigned int pt_get_rt_load(int useless)
 }
 
 
-unsigned int pt_get_1m_load(int useless)
+unsigned int pt_get_1m_load(int _)
 {
 	utime_t usec_now;
 	struct timeval tv;
@@ -270,7 +271,7 @@ unsigned int pt_get_1m_load(int useless)
 }
 
 
-unsigned int pt_get_10m_load(int useless)
+unsigned int pt_get_10m_load(int _)
 {
 	utime_t usec_now;
 	struct timeval tv;
@@ -287,4 +288,50 @@ unsigned int pt_get_10m_load(int useless)
 	return (used*100/(LT_WINDOW_TIME*counted_processes));
 }
 
+int register_process_load_stats(int pno)
+{
+	char *stat_name;
+	str stat_prefix;
+	char *pno_s;
+	str name;
 
+	pno_s = int2str( (unsigned int)pno, NULL);
+
+	stat_prefix.s = "load-proc";
+	stat_prefix.len = sizeof("load-proc")-1;
+	if ( (stat_name = build_stat_name( &stat_prefix, pno_s)) == 0 ||
+	register_stat2( "load", stat_name, (stat_var**)pt_get_rt_proc_load,
+	STAT_IS_FUNC, (void*)(long)pno, 0) != 0) {
+		LM_ERR("failed to add RT load stat for process %d\n",pno);
+		return -1;
+	}
+	name.s = stat_name;
+	name.len = strlen(stat_name);
+	pt[pno].load.load_rt = get_stat(&name);
+
+	stat_prefix.s = "load1m-proc";
+	stat_prefix.len = sizeof("load1m-proc")-1;
+	if ( (stat_name = build_stat_name( &stat_prefix, pno_s)) == 0 ||
+	register_stat2( "load", stat_name, (stat_var**)pt_get_1m_proc_load,
+	STAT_IS_FUNC, (void*)(long)pno, 0) != 0) {
+		LM_ERR("failed to add RT load stat for process %d\n",pno);
+		return -1;
+	}
+	name.s = stat_name;
+	name.len = strlen(stat_name);
+	pt[pno].load.load_1m = get_stat(&name);
+
+	stat_prefix.s = "load10m-proc";
+	stat_prefix.len = sizeof("load10m-proc")-1;
+	if ( (stat_name = build_stat_name( &stat_prefix, pno_s)) == 0 ||
+	register_stat2( "load", stat_name, (stat_var**)pt_get_10m_proc_load,
+	STAT_IS_FUNC, (void*)(long)pno, 0) != 0) {
+		LM_ERR("failed to add RT load stat for process %d\n",pno);
+		return -1;
+	}
+	name.s = stat_name;
+	name.len = strlen(stat_name);
+	pt[pno].load.load_10m = get_stat(&name);
+
+	return 0;
+}
