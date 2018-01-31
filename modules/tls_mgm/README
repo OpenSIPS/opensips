@@ -12,43 +12,29 @@ Edited by
 
 Klaus Darilion
 
-Edited by
-
 Bogdan-Andrei Iancu
-
-Edited by
 
 Cesc Santasusana
 
-Edited by
-
 Klaus Darilion
-
-Edited by
 
 Christian Lahme
 
-Edited by
-
 Ionut-Razvan Ionita
-
-Edited by
 
 Marius Cristian Eseanu
 
-Edited by
-
 Robert-Vladut Patrascu
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL
 
-   Copyright © 2005 Cesc Santasusana
+   Copyright � 2005 Cesc Santasusana
 
-   Copyright © 2006 enum.at
+   Copyright � 2006 enum.at
 
-   Copyright © 2013 Secusmart GmbH
+   Copyright � 2013 Secusmart GmbH
 
-   Copyright © 2015 OpenSIPS Solutions
+   Copyright � 2015 OpenSIPS Solutions
      __________________________________________________________
 
    Table of Contents
@@ -179,7 +165,7 @@ Robert-Vladut Patrascu
    1.9. Set dh_params variable
    1.10. Set verify_cert & require_cert variable
    1.11. Set tls_handshake_timeout & tls_send_timeout variable
-   1.12. Set tls_client_domain_avp variable
+   1.12. Set client_domain_avp variable
    1.13. Usage of db_url block
    1.14. Usage of db_table block
    1.15. Usage of domain_col block
@@ -224,7 +210,7 @@ Chapter 1. Admin Guide
    module parameters (script level) and via an SQL table.
 
    A script example which details this module's usage can be found
-   in Section 1.10, “OpenSIPS with TLS - script example”.
+   in Section 1.10, "OpenSIPS with TLS - script example".
 
 1.3. TLS domains
 
@@ -263,10 +249,10 @@ Chapter 1. Admin Guide
    socket. Thus, the certificate selection (selection of the
    proper TLS client domain) can be name based. If the SIP proxy
    establishes a new outgoing TLS connection, it checks for the
-   TLS client domain AVP (parameter tls_client_domain_avp). If
-   this AVP is set (e.g. in OpenSIPS.cfg), OpenSIPS searches for a
-   TLS client domain with the same name as the AVP value and uses
-   the associated certificates.
+   TLS client domain AVP (parameter client_domain_avp). If this
+   AVP is set (e.g. in OpenSIPS.cfg), OpenSIPS searches for a TLS
+   client domain with the same name as the AVP value and uses the
+   associated certificates.
 
    TLS client domains can also be matched by socket. If no TLS
    client domain AVP is found, OpenSIPS searches for a TLS client
@@ -582,17 +568,18 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 
 1.8.12. client_domain_avp (integer)
 
-   This sets the interger AVP used for name based TLS server
-   domains (please see tls_client_domain for more details).
-   Setting the value to 0 disables name based TLS client domains.
+   This sets the AVP used for name based TLS client domain
+   matching (please see Section 1.8.29, "server_domain,
+   client_domain (string)" for more details). Setting the value to
+   0 disables name based TLS client domain matching.
 
    It's usable only if TLS support was compiled.
 
    Default value is 0.
 
-   Example 1.12. Set tls_client_domain_avp variable
+   Example 1.12. Set client_domain_avp variable
 ...
-modparam("tls_mgm", "tls_client_domain_avp", "400")
+modparam("tls_mgm", "client_domain_avp", "tls_cli_dom")
 ...
 
 1.8.13. db_url (string)
@@ -752,7 +739,7 @@ listen=tls:IP_2:port2
 listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "tls_client_domain_avp", "tls_cli_dom")
+modparam("proto_tls", "client_domain_avp", "tls_cli_dom")
 ...
 
 # 'atlanta' server domain
@@ -849,7 +836,7 @@ route{
 
    Some variables are available for both, the peer'S certificate
    and the local certificate. Further, some parameters can be read
-   from the “Subject” field or the “Issuer” field.
+   from the "Subject" field or the "Issuer" field.
 
 1.9.1. $tls_version
 
@@ -922,23 +909,23 @@ route{
 
 1.9.14. $tls_[peer|my]_san_email
 
-   $tls_[peer|my]_san_email - email address in the “subject
-   alternative name” extension. String type.
+   $tls_[peer|my]_san_email - email address in the "subject
+   alternative name" extension. String type.
 
 1.9.15. $tls_[peer|my]_san_hostname
 
-   $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
-   alternative name” extension. String type.
+   $tls_[peer|my]_san_hostname - hostname (DNS) in the "subject
+   alternative name" extension. String type.
 
 1.9.16. $tls_[peer|my]_san_uri
 
-   $tls_[peer|my]_san_uri - URI in the “subject alternative name”
+   $tls_[peer|my]_san_uri - URI in the "subject alternative name"
    extension. String type.
 
 1.9.17. $tls_[peer|my]_san_ip
 
-   $tls_[peer|my]_san_ip - ip address in the “subject alternative
-   name” extension. String type.
+   $tls_[peer|my]_san_ip - ip address in the "subject alternative
+   name" extension. String type.
 
 1.9.18. $tls_peer_verified
 
