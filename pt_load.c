@@ -137,7 +137,7 @@ void pt_become_idle(void)
 #define SUM_UP_LOAD(_now, _pid, _TYPE, _ratio) \
 	do { \
 		/* check if the entire time window has the same status */ \
-		if ((_now-PT_LOAD(_pid).last_time) >= _TYPE##_WINDOW_TIME) { \
+		if ((_now-PT_LOAD(_pid).last_time) >= (_TYPE##_WINDOW_TIME)*(_ratio)) { \
 			/* nothing recorded in the last time window */ \
 			used += PT_LOAD(_pid).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
 		} else { \
@@ -148,7 +148,7 @@ void pt_become_idle(void)
 				_TYPE##_WINDOW_SIZE; \
 			/* ajust the index where we start counting the past used-time \
 			 * based on the "ratio" option, if present */  \
-			if (_ratio!=0) { \
+			if (_ratio!=1) { \
 				idx_start = (idx_new+(int)(_TYPE##_WINDOW_SIZE*(1-_ratio))) % \
 					_TYPE##_WINDOW_SIZE; \
 				/* the start is between [new,old], so no used recorded yet */ \
@@ -195,7 +195,7 @@ unsigned int pt_get_rt_proc_load( int pid )
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	SUM_UP_LOAD( usec_now, pid, ST, 0);
+	SUM_UP_LOAD( usec_now, pid, ST, 1);
 
 	return (used*100/ST_WINDOW_TIME);
 }
@@ -227,7 +227,7 @@ unsigned int pt_get_10m_proc_load( int pid )
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	SUM_UP_LOAD( usec_now, pid, LT, 0);
+	SUM_UP_LOAD( usec_now, pid, LT, 1);
 
 	return (used*100/LT_WINDOW_TIME);
 }
@@ -245,10 +245,9 @@ unsigned int pt_get_rt_load(int useless)
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		SUM_UP_LOAD( usec_now, n, ST, 0);
+		SUM_UP_LOAD( usec_now, n, ST, 1);
 
 	return (used*100/(ST_WINDOW_TIME*counted_processes));
-
 }
 
 
@@ -283,7 +282,7 @@ unsigned int pt_get_10m_load(int useless)
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		 SUM_UP_LOAD( usec_now, n, LT, 0);
+		 SUM_UP_LOAD( usec_now, n, LT, 1);
 
 	return (used*100/(LT_WINDOW_TIME*counted_processes));
 }
