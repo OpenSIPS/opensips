@@ -461,10 +461,10 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 				Default value is 0.
 			</emphasis></para>
 			<example>
-				<title>Set <varname>tls_client_domain_avp</varname> variable</title>
+				<title>Set <varname>client_domain_avp</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "tls_client_domain_avp", "400")
+modparam("tls_mgm", "client_domain_avp", "400")
 ...
 				</programlisting>
 			</example>
@@ -813,7 +813,7 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 			Thus, the certificate selection (selection of the proper TLS client domain) will be name based.
 			For this purpose, TLS client domains can be associated with a name (e.g. the domain can be
 			used as name). If the SIP proxy establishes a new outgoing TLS connection, it checks
-			for the TLS client domain AVP (parameter tls_client_domain_avp). If this AVP is set (e.g.
+			for the TLS client domain AVP (parameter client_domain_avp). If this AVP is set (e.g.
 			in &osips;.cfg), &osips; searches for a TLS client domain with the same name and uses
 			the certificates defined in the respective tls_client_domain section.
 			</para>
@@ -848,7 +848,7 @@ listen=tls:IP_2:port2
 listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "tls_client_domain_avp", "400")
+modparam("proto_tls", "client_domain_avp", "400")
 ...
 
 # 'atlanta' server domain
