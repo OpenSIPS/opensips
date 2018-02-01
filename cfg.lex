@@ -838,7 +838,7 @@ IMPORTFILE      "import_file"
 <<EOF>>							{
 									switch(state){
 										case STRING_S:
-											LM_CRIT("cfg. parser: unexpected EOF in"
+											LM_CRIT("unexpected EOF in"
 														" unclosed string\n");
 											if (s_buf.s){
 												pkg_free(s_buf.s);
@@ -847,11 +847,11 @@ IMPORTFILE      "import_file"
 											}
 											break;
 										case COMMENT_S:
-											LM_CRIT("cfg. parser: unexpected EOF:"
+											LM_CRIT("unexpected EOF in"
 														" %d comments open\n", comment_nest);
 											break;
 										case COMMENT_LN_S:
-											LM_CRIT("unexpected EOF:"
+											LM_CRIT("unexpected EOF in"
 														"comment line open\n");
 											break;
 										case SCRIPTVAR_S:
