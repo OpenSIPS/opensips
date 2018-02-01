@@ -35,6 +35,7 @@
 struct sip_msg;
 struct cell;
 
+/* callback documentation: see below! */
 
 #define TMCB_REQUEST_IN         (1<<0)
 #define TMCB_RESPONSE_IN        (1<<1)
@@ -84,6 +85,8 @@ struct cell;
  *
  * TMCB_RESPONSE_IN -- a brand-new reply was received which matches
  *  an existing transaction. It may or may not be a retransmission.
+ *  WARNING: the callback will be ran once for _each_ SIP reply, possibly
+ *           concurrently, so make sure to write it accordingly!
  *
  * TMCB_RESPONSE_PRE_OUT -- a final reply is about to be sent out
  *  (either local or proxied); you cannnot change the reply, but
@@ -136,9 +139,20 @@ struct cell;
  * TMCB_REQUEST_FWDED -- request is being forwarded out. It is
  *  called before a message is forwarded and it is your last
  *  chance to change its shape.
+ *  On serial/parallel forking: called once per each outgoing branch, serially!
+ *  On ingress retransmission forwarding: not called (since relaying is denied)
+ *  On egress retransmission: not called
  *
  * TMCB_LOCAL_COMPLETED -- final reply for localy initiated
  *  transaction arrived. Message may be FAKED_REPLY.
+ *
+ * TMCB_TRANS_DELETED -- the very last tm callback type, succeeding all other
+ *  types and getting triggered exactly once per SIP transaction, regardless of
+ *  the transaction's final response or branching factor. When invoked, the
+ *  transaction is completed and no longer referenced by or (easily) accessible
+ *  to any other piece of code except the transaction cleanup routine. All
+ *  registered callbacks of this type will be invoked by the cleanup routine,
+ *  after which the transaction object will be freed.
  *
  * TMCB_MSG_MATCHED_IN -- triggered whenever there is an
  *  incoming SIP message matching the transaction. It may be
