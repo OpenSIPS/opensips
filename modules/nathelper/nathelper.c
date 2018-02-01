@@ -99,7 +99,7 @@
 
 static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
 static int fix_nated_contact_f(struct sip_msg *, char *, char *);
-static int fix_nated_sdp_f(struct sip_msg *, char *, char *);
+static int fix_nated_sdp_f(struct sip_msg *, char *, char *, char *);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int fixup_fix_nated_register(void** param, int param_no);
 static int fixup_fix_sdp(void** param, int param_no);
@@ -222,6 +222,9 @@ static cmd_export_t cmds[] = {
 		fixup_fix_sdp,  0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f,        2,
+		fixup_fix_sdp, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f,        3,
 		fixup_fix_sdp, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"nat_uac_test",       (cmd_function)nat_uac_test_f,         1,
@@ -1152,10 +1155,11 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
 
 
 static int
-fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
+fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 {
 	str body;
 	str ip;
+	str new_sdp_lines;
 	int level;
 	char *buf;
 	struct lump* anchor;
@@ -1163,6 +1167,8 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 
 	level = (int)*(unsigned int *)str1;
 	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
+		return -1;
+	if (str3 && pv_printf_s( msg, (pv_elem_p)str3, &new_sdp_lines)!=0)
 		return -1;
 
 	if ( parse_sip_body(msg)<0 || msg->body==NULL )
@@ -1214,6 +1220,19 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 				memcpy(buf + CRLF_LEN, nortpproxy_str.s, nortpproxy_str.len);
 				if (insert_new_lump_after(anchor, buf, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
 					LM_ERR("insert_new_lump_after failed 2\n");
+					pkg_free(buf);
+					return -1;
+				}
+			}
+			if (str3) {
+				buf = pkg_malloc((new_sdp_lines.len) * sizeof(char));
+				if (buf == NULL) {
+					LM_ERR("out of pkg memory\n");
+					return -1;
+				}
+				memcpy(buf, new_sdp_lines.s, new_sdp_lines.len);
+				if (insert_new_lump_after(anchor, buf, new_sdp_lines.len, 0) == NULL) {
+					LM_ERR("insert_new_lump_after failed 3\n");
 					pkg_free(buf);
 					return -1;
 				}
