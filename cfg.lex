@@ -722,15 +722,15 @@ IMPORTFILE      "import_file"
 <INITIAL>{ANY}	{ count(); return ANY; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 
-<INITIAL>{SCRIPTVAR_START} { count(); np=0; state=SCRIPTVAR_S;
+<INITIAL>{SCRIPTVAR_START} { np=0; state=SCRIPTVAR_S;
 								svar_tlen = yyleng;
 								yymore();
 								BEGIN(SCRIPTVARS);
 							}
-<SCRIPTVARS>{LPAREN} { count(); np++; yymore(); svar_tlen = yyleng; }
+<SCRIPTVARS>{LPAREN} { np++; yymore(); svar_tlen = yyleng; }
 <SCRIPTVARS>{RPAREN} {
-			count();
 			if(np==0 || np==1) {
+				count();
 				if(np==0)
 				{
 					addstr(&s_buf, yytext, yyleng-1);
@@ -752,8 +752,8 @@ IMPORTFILE      "import_file"
 			}
 		}
 <SCRIPTVARS>{WHITESPACE} {
-			count();
 			if(np==0) {
+				count();
 				addstr(&s_buf, yytext, yyleng-1);
 				unput(yytext[yyleng-1]);
 				yyleng--;
@@ -768,8 +768,8 @@ IMPORTFILE      "import_file"
 			}
 		}
 <SCRIPTVARS>{SEMICOLON}|{COMMA}|{ASSIGNOP}|{ARITHOP}|{BITOP}|{LOGOP} {
-						count();
 						if(np==0) {
+							count();
 							addstr(&s_buf, yytext, svar_tlen);
 							while(yyleng>svar_tlen) {
 								unput(yytext[yyleng-1]);
@@ -885,6 +885,10 @@ IMPORTFILE      "import_file"
 										case COMMENT_LN_S:
 											LM_CRIT("unexpected EOF:"
 														"comment line open\n");
+											break;
+										case SCRIPTVAR_S:
+											LM_CRIT("unexpected EOF in"
+														" unclosed variable\n");
 											break;
 									}
 									if(oss_pop_yy_state()<0)
