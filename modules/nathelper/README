@@ -8,7 +8,13 @@ Edited by
 
 Maxim Sobolev
 
+Edited by
+
 Bogdan-Andrei Iancu
+
+Edited by
+
+Ovidiu Sas
 
    Copyright © 2003-2008 Sippy Software, Inc.
 
@@ -49,7 +55,9 @@ Bogdan-Andrei Iancu
         1.5. Exported Functions
 
               1.5.1. fix_nated_contact([uri_params])
-              1.5.2. fix_nated_sdp(flags [, ip_address])
+              1.5.2. fix_nated_sdp(flags [, ip_address [,
+                      sdp_fields]])
+
               1.5.3. add_rcv_param([flag]),
               1.5.4. fix_nated_register()
               1.5.5. nat_uac_test(flags)
@@ -390,7 +398,7 @@ if (search("User-Agent: Cisco ATA.*") {
 }
 ...
 
-1.5.2.  fix_nated_sdp(flags [, ip_address])
+1.5.2.  fix_nated_sdp(flags [, ip_address [, sdp_fields]])
 
    Alters the SDP information in orer to facilitate NAT traversal.
    What changes to be performed may be controled via the “flags”
@@ -415,13 +423,20 @@ if (search("User-Agent: Cisco ATA.*") {
        parameter allows pseudo-variables usage. NOTE: For the IP
        to be used, you need to use 0x02 or 0x08 flags, otherwise
        it will have no effect.
+     * sdp_fields - SDP field(s) to be appended to SDP. Note: Each
+       SDP field must be preceded by "\r\n".
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.17. fix_nated_sdp usage
 ...
-if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
+# Add "a=direction:active" SDP line
+# Rewrite media IP (c= line)
+# Add extra "a=x-attr1" SDP line
+# Add extra "a=x-attr2" SDP line
+if (search("User-Agent: Cisco ATA.*")
+    {fix_nated_sdp("3",,"\r\na=x-attr1\r\na=x-attr2");};
 ...
 
 1.5.3.  add_rcv_param([flag]),
@@ -517,31 +532,31 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    2.2.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    2.3.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.

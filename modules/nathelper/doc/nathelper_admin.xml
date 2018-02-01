@@ -500,7 +500,7 @@ if (search("User-Agent: Cisco ATA.*") {
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">fix_nated_sdp(flags [, ip_address])</function>
+		<function moreinfo="none">fix_nated_sdp(flags [, ip_address [, sdp_fields]])</function>
 		</title>
 		<para>
 		Alters the SDP information in orer to facilitate NAT traversal. What
@@ -547,6 +547,11 @@ if (search("User-Agent: Cisco ATA.*") {
 			no effect.
 			</para>
 			</listitem>
+			<listitem><para>
+			<emphasis>sdp_fields</emphasis> - SDP field(s) to be appended to SDP.
+			Note: Each SDP field must be preceded by "\r\n".
+			</para>
+			</listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -556,7 +561,12 @@ if (search("User-Agent: Cisco ATA.*") {
 		<title><function>fix_nated_sdp</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
+# Add "a=direction:active" SDP line
+# Rewrite media IP (c= line)
+# Add extra "a=x-attr1" SDP line
+# Add extra "a=x-attr2" SDP line
+if (search("User-Agent: Cisco ATA.*")
+    {fix_nated_sdp("3",,"\r\na=x-attr1\r\na=x-attr2");};
 ...
 </programlisting>
 		</example>
