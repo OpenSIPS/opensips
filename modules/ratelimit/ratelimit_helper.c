@@ -1030,7 +1030,13 @@ void rl_timer_repl(utime_t ticks, void *param)
 			if (bin_push_int(&packet, (*pipe)->limit) < 0)
 				goto error;
 
-			if ((ret = bin_push_int(&packet, (*pipe)->my_last_counter)) < 0)
+			/*
+			 * for the SBT algorithm it is safe to replicate the current
+			 * counter, since it is always updating according to the window
+			 */
+			if ((ret = bin_push_int(&packet,
+						((*pipe)->algo == PIPE_ALGO_HISTORY ?
+						 (*pipe)->counter : (*pipe)->my_last_counter))) < 0)
 				goto error;
 			nr++;
 
