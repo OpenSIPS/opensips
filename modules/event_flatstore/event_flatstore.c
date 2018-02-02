@@ -302,54 +302,49 @@ static int insert_in_list(struct flat_socket *entry) {
 	struct flat_socket *head = *list_files, *aux, *parent = NULL;
 	int expected = initial_capacity - 1;
 
-	lock_get(global_lock);
-
 	if (head == NULL) {
 		LM_DBG("Its the single entry in list [%s]\n", entry->path.s);
 		entry->file_index_process = 0;
 		*list_files = entry;
 		entry->prev = NULL;
 		entry->next = NULL;
-		lock_release(global_lock);
 		return 0;
 	}
 
 	if (head->file_index_process < initial_capacity - 1) {
-		LM_DBG("Inserting [%s] at the head of the list, index: [%d]\n",entry->path.s, head->file_index_process + 1);
+		LM_DBG("Inserting [%s] at the head of the list, index: [%d]\n",
+			entry->path.s, head->file_index_process + 1);
 		entry->file_index_process = head->file_index_process + 1;
 		entry->prev = NULL;
 		entry->next = head;
 		head->prev = entry;
 		*list_files = entry;
-		lock_release(global_lock);
 		return 0;
 	}
 
 	for (aux = head; aux != NULL; aux = aux->next, expected--) {
 		if(aux->file_index_process != expected){
-			LM_DBG("Inserting [%s] in a gap, index: [%d]\n", entry->path.s, expected);
+			LM_DBG("Inserting [%s] in a gap, index: [%d]\n",
+				entry->path.s, expected);
 			entry->file_index_process = expected;
 			entry->prev = aux->prev;
 			entry->next = aux;
 			aux->prev =entry;
 			entry->prev->next = entry;
-			lock_release(global_lock);
 			return 0;
 		}
 		parent = aux;
 	}
 
 	if (expected >= 0) {
-		LM_DBG("Inserting [%s] at end of list, index: [%d]\n", entry->path.s, expected);
+		LM_DBG("Inserting [%s] at end of list, index: [%d]\n",
+			entry->path.s, expected);
 		entry->file_index_process = expected;
 		entry->prev = parent;
 		entry->next = NULL;
 		parent->next = entry;
-		lock_release(global_lock);
 		return 0;
 	}
-
-	lock_release(global_lock);
 
 	LM_ERR("no more free sockets\n");
 	return -1;
@@ -368,23 +363,31 @@ static evi_reply_sock* flat_parse(str socket){
 		return NULL;
 	}
 
+	lock_get(global_lock);
+
 	/* if not all processes finished closing the file
 	   find the structure and reuse it */
 	if (head) {
 		if (str_cmp(socket, head->socket->path)) {
-			LM_DBG("Found structure at head of deleted list, reusing it [%s]\n", head->socket->path.s);
+			LM_DBG("Found structure at head of deleted list, reusing it [%s]\n",
+				head->socket->path.s);
 			*list_deleted_files = head->next;
 			entry = head->socket;
 			shm_free(head);
+
+			lock_release(global_lock);
 			return (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
 		} else {
 			for (aux = head; aux->next != NULL; aux=aux->next)
 				if (str_cmp(socket, aux->next->socket->path)) {
-					LM_DBG("Found structure inside deleted list, reusing it [%s]\n", aux->next->socket->path.s);
+					LM_DBG("Found structure inside deleted list, reusing it [%s]\n",
+						aux->next->socket->path.s);
 					tmp = aux->next;
 					aux->next = aux->next->next;
 					entry = tmp->socket;
 					shm_free(tmp);
+
+					lock_release(global_lock);
 					return (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
 				}
 		}
@@ -394,6 +397,7 @@ static evi_reply_sock* flat_parse(str socket){
 
 	if (!entry) {
 		LM_ERR("not enough shared memory\n");
+		lock_release(global_lock);
 		return NULL;
 	}
 
@@ -416,6 +420,7 @@ static evi_reply_sock* flat_parse(str socket){
 	if (stat(dname, &st_buf) < 0) {
 		LM_ERR("invalid directory name\n");
 		shm_free(entry);
+		lock_release(global_lock);
 		return NULL;
 	}
 
@@ -424,11 +429,13 @@ static evi_reply_sock* flat_parse(str socket){
 	if (stat(entry->path.s, &st_buf) == 0 && S_ISDIR (st_buf.st_mode)) {
 		LM_ERR("path is a directory\n");
 		shm_free(entry);
+		lock_release(global_lock);
 		return NULL;
 	}
 
 	if (insert_in_list(entry) < 0) {
 		shm_free(entry);
+		lock_release(global_lock);
 		return NULL;
 	}
 
@@ -445,6 +452,8 @@ static evi_reply_sock* flat_parse(str socket){
 	sock->flags |= EVI_ADDRESS;
 	sock->flags |= EVI_EXPIRE;
 
+	lock_release(global_lock);
+
 	return sock;
 }
 
@@ -456,6 +465,9 @@ static void rotating(struct flat_socket *fs){
 	int rc;
 
 	lock_get(global_lock);
+
+	if (!fs)
+		return;
 
 	if (opened_fds[index] == -1) {
 		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
@@ -505,9 +517,9 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	char endline = '\n';
 	char *ptr_buff;
 	int nr_params = 0;
+	int f_idx;
 
-	if (entry)
-		rotating(entry);
+	rotating(entry);
 
 	verify_delete();
 
@@ -569,8 +581,12 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	io_param[idx].iov_len = 1;
 	idx++;
 
+	lock_get(global_lock);
+	f_idx = entry->file_index_process;
+	lock_release(global_lock);
+
 	do {
-		nwritten = writev(opened_fds[entry->file_index_process], io_param, idx);
+		nwritten = writev(opened_fds[f_idx], io_param, idx);
 	} while (nwritten < 0 && errno == EINTR);
 
 	if (ev_name && ev_name->s)
@@ -622,17 +638,23 @@ static void verify_delete(void) {
 	struct flat_deleted *head = *list_deleted_files;
 	struct flat_deleted *aux, *prev, *tmp;
 
-	if (head == NULL && opened_fds == NULL)
+	if (opened_fds == NULL)
 		return;
 
 	lock_get(global_lock);
+
+	if (head == NULL) {
+		lock_release(global_lock);
+		return;
+	}
 
 	/* close fd if necessary */
 	aux = head;
 	prev = NULL;
 	while (aux != NULL) {
 		if (opened_fds[aux->socket->file_index_process] != -1) {
-			LM_DBG("File %s is closed locally, open_counter is %d\n", aux->socket->path.s, aux->socket->counter_open - 1);
+			LM_DBG("File %s is closed locally, open_counter is %d\n",
+				aux->socket->path.s, aux->socket->counter_open - 1);
 			close(opened_fds[aux->socket->file_index_process]);
 			aux->socket->counter_open--;
 			opened_fds[aux->socket->file_index_process] = -1;
@@ -640,7 +662,8 @@ static void verify_delete(void) {
 
 		/* free file from lists if all other processes closed it */
 		if (aux->socket->counter_open == 0) {
-			LM_DBG("File %s is deleted globally, count open reached 0\n", aux->socket->path.s);
+			LM_DBG("File %s is deleted globally, count open reached 0\n",
+				aux->socket->path.s);
 			if (aux->socket->prev)
 				aux->socket->prev->next = aux->socket->next;
 			else
