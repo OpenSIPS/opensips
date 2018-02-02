@@ -1712,7 +1712,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	}
 
 	if ((pv_name->c_entry->column_types & (one << pv_name->col_nr)) != 0) {
-		if (pkg_str_resize(&valbuff, str_res.len) != 0) {
+		if (pkg_str_extend(&valbuff, str_res.len) != 0) {
 			LM_ERR("failed to alloc buffer\n");
 			goto out_free_null;
 		}

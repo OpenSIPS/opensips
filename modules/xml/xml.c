@@ -526,7 +526,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 			}
 		}
 
-		if (pkg_str_resize(&res_buf, xml_buf_len) != 0) {
+		if (pkg_str_extend(&res_buf, xml_buf_len) != 0) {
 			LM_ERR("No more pkg mem\n");
 			if (xml_buf)
 				xmlBufferFree(xml_buf);
@@ -558,7 +558,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 		}
 
 		xml_buf_len = xmlBufferLength(xml_buf);
-		if (pkg_str_resize(&res_buf, xml_buf_len) != 0) {
+		if (pkg_str_extend(&res_buf, xml_buf_len) != 0) {
 			LM_ERR("No more pkg mem\n");
 			goto err_free_xml_buf;
 		}

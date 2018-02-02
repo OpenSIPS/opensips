@@ -628,6 +628,7 @@ static inline int shm_str_dup(str* dst, const str* src)
 	dst->s = shm_malloc(src->len);
 	if (!dst->s) {
 		LM_ERR("no shared memory left\n");
+		dst->len = 0;
 		return -1;
 	}
 
@@ -635,6 +636,7 @@ static inline int shm_str_dup(str* dst, const str* src)
 	dst->len = src->len;
 	return 0;
 }
+
 
 /*
  * Make a copy of an str structure using shm_malloc
@@ -650,6 +652,7 @@ static inline int shm_nt_str_dup(str* dst, const str* src)
 	dst->s = shm_malloc(src->len + 1);
 	if (!dst->s) {
 		LM_ERR("no shared memory left\n");
+		dst->len = 0;
 		return -1;
 	}
 
@@ -698,15 +701,49 @@ static inline int shm_str_extend(str *in, int size)
 	return 0;
 }
 
+
+/*
+ * Ensure "dst" matches the content of "src" without leaking memory
+ *
+ * Note: if you just want to dup a string, use "shm_str_dup()" instead
+ */
+static inline int shm_str_sync(str* dst, const str* src)
+{
+	if (ZSTRP(src)) {
+		if (dst->s)
+			shm_free(dst->s);
+		memset(dst, 0, sizeof *dst);
+		return 0;
+	}
+
+	if (shm_str_extend(dst, src->len) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	memcpy(dst->s, src->s, src->len);
+	dst->len = src->len;
+	return 0;
+}
+
+
+static inline void shm_str_clean(str* dst)
+{
+	if (dst->s)
+		shm_free(dst->s);
+	memset(dst, 0, sizeof *dst);
+}
+
+
 /*
  * Make a copy of a str structure using pkg_malloc
  */
 static inline int pkg_str_dup(str* dst, const str* src)
 {
 	dst->s = pkg_malloc(src->len);
-	if (dst->s==NULL)
-	{
+	if (!dst->s) {
 		LM_ERR("no private memory left\n");
+		dst->len = 0;
 		return -1;
 	}
 
@@ -732,7 +769,7 @@ static inline char *pkg_strdup(const char *str)
 }
 
 /* Extend the given buffer only if needed */
-static inline int pkg_str_resize(str *in, int size)
+static inline int pkg_str_extend(str *in, int size)
 {
 	char *p;
 
