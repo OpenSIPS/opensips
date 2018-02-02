@@ -97,7 +97,7 @@ unsigned short attr_avp_type = 0;
 int attr_avp_name;
 
 str extra_ct_params_str;
-pv_spec_t extra_ct_params_pv;
+pv_spec_t extra_ct_params_avp;
 
 static struct mid_reg_info *__info;
 
@@ -119,7 +119,7 @@ static int mod_init(void);
 static int domain_fixup(void** param);
 static int registrar_fixup(void** param, int param_no);
 
-void fix_extra_ct_params(void);
+int solve_avp_defs(void);
 
 /* 
  * Working modes:
@@ -184,7 +184,7 @@ static param_export_t mod_params[] = {
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
 	{ "insertion_mode",       INT_PARAM, &insertion_mode },
 	{ "contact_match_param",  STR_PARAM, &matching_param.s },
-	{ "extra_contact_params_pvar", STR_PARAM, &extra_ct_params_str.s },
+	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ 0,0,0 }
 };
 
@@ -274,9 +274,6 @@ static int registrar_fixup(void** param, int param_no)
 
 static int mod_init(void)
 {
-	str s;
-	pv_spec_t avp_spec;
-
 	if (load_ul_api(&ul_api) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
@@ -341,27 +338,12 @@ static int mod_init(void)
 	 */
 	reg_use_domain = ul_api.use_domain;
 
-	if (rcv_avp_param && *rcv_avp_param) {
-		s.s = rcv_avp_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n", rcv_avp_param);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &rcv_avp_name, &rcv_avp_type)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", rcv_avp_param);
-			return -1;
-		}
-	} else {
-		rcv_avp_name = -1;
-		rcv_avp_type = 0;
-	}
-
 	rcv_param.len = strlen(rcv_param.s);
 
-	fix_extra_ct_params();
+	if (solve_avp_defs() != 0) {
+		LM_ERR("failed to parse one or more module AVPs\n");
+		return -1;
+	}
 
 	realm_prefix.s = realm_pref;
 	realm_prefix.len = strlen(realm_pref);
@@ -440,6 +422,14 @@ struct mid_reg_info *mri_alloc(void)
 		return NULL;
 	}
 	memset(new, 0, sizeof *new);
+
+	new->tm_lock = lock_init_rw();
+	if (!new->tm_lock) {
+		shm_free(new);
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
 	INIT_LIST_HEAD(&new->ct_mappings);
 
 	return new;
@@ -499,6 +489,8 @@ void mri_free(struct mid_reg_info *mri)
 	shm_free(mri->to.s);
 	shm_free(mri->callid.s);
 
+	lock_destroy_rw(mri->tm_lock);
+
 	if (mri->main_reg_uri.s)
 		shm_free(mri->main_reg_uri.s);
 
@@ -541,19 +533,42 @@ int get_expires_hf(struct sip_msg* _m)
 	}
 }
 
-void fix_extra_ct_params(void)
+int solve_avp_defs(void)
 {
-	if (!extra_ct_params_str.s)
-		return;
+	str s;
+	pv_spec_t avp_spec;
 
-	extra_ct_params_str.len = strlen(extra_ct_params_str.s);
+	if (rcv_avp_param && *rcv_avp_param) {
+		s.s = rcv_avp_param; s.len = strlen(s.s);
+		if (pv_parse_spec(&s, &avp_spec)==0
+				|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %s AVP definition\n", rcv_avp_param);
+			return -1;
+		}
 
-	if (extra_ct_params_str.len) {
-		if (!pv_parse_spec(&extra_ct_params_str, &extra_ct_params_pv)) {
-			LM_ERR("malformed 'extra_ct_params_pvar' definition\n");
-			memset(&extra_ct_params_str, 0, sizeof extra_ct_params_str);
+		if(pv_get_avp_name(0, &avp_spec.pvp, &rcv_avp_name, &rcv_avp_type)!=0)
+		{
+			LM_ERR("[%s]- invalid AVP definition\n", rcv_avp_param);
+			return -1;
+		}
+	} else {
+		rcv_avp_name = -1;
+		rcv_avp_type = 0;
+	}
+
+	if (extra_ct_params_str.s) {
+		extra_ct_params_str.len = strlen(extra_ct_params_str.s);
+
+		if (extra_ct_params_str.len) {
+			if (!pv_parse_spec(&extra_ct_params_str, &extra_ct_params_avp) ||
+			     extra_ct_params_avp.type != PVT_AVP) {
+				LM_ERR("extra_ct_params_avp: malformed or non-AVP content!\n");
+				return -1;
+			}
 		}
 	}
+
+	return 0;
 }
 
 str get_extra_ct_params(struct sip_msg *msg)
@@ -564,7 +579,7 @@ str get_extra_ct_params(struct sip_msg *msg)
 	if (ZSTR(extra_ct_params_str))
 		return null_str;
 
-	if (pv_get_spec_value(msg, &extra_ct_params_pv, &extra_params) != 0) {
+	if (pv_get_spec_value(msg, &extra_ct_params_avp, &extra_params) != 0) {
 		LM_ERR("failed to get extra params\n");
 		return null_str;
 	}
