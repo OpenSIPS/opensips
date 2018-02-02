@@ -11,13 +11,19 @@ Andrei Pelinescu-Onciul
 
    <pelinescu-onciul@fokus.fraunhofer.de>
 
+Edited by
+
 Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
+Edited by
+
 Ovidiu Sas
 
    <osas@voipembedded.com>
+
+Edited by
 
 Razvan Crainea
 
@@ -386,7 +392,11 @@ if(has_body_part("application/sdp"))
 1.3.12.  is_audio_on_hold()
 
    The function returns true if the SIP message has an SDP body
-   attached and at least one audio stream in on hold.
+   attached and at least one audio stream in on hold. The return
+   code of the function indicates the detected hold type:
+     * 1 - RFC2543 hold type: null connection IP detected
+     * 2 - RFC3264 hold type: inactive or sendonly attributes
+       detected
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
@@ -395,7 +405,15 @@ if(has_body_part("application/sdp"))
 ...
 if(is_audio_on_hold())
 {
-    # do interesting stuff here
+    switch ($rc) {
+    case 1:
+        # RFC2543 hold type
+        # do interesting stuff here
+        break;
+    case 2:
+        # RFC3264 hold type
+        # do interesting stuff here
+        break;
 }
 ...
 
