@@ -267,12 +267,14 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 	struct flat_socket *found_fd = search_for_fd(root->node.kids->value);
 
 	if (found_fd == NULL) {
-		LM_DBG("Not found path %.*s [lung : %d]\n",root->node.kids->value.len, root->node.kids->value.s, root->node.kids->value.len);
+		LM_DBG("Path: %.*s is not valid\n", root->node.kids->value.len,
+			root->node.kids->value.s);
 		lock_release(global_lock);
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));;
+		return init_mi_tree( 400, MI_SSTR("File not found"));
 	}
 
-	LM_DBG("Found file descriptor and updating rotating version for %s, to %d\n",found_fd->path.s, found_fd->rotate_version + 1);
+	LM_DBG("Found file descriptor and updating rotating version for %s, to %d\n",
+		found_fd->path.s, found_fd->rotate_version + 1);
 
 	found_fd->rotate_version++;
 
