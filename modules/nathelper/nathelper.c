@@ -962,6 +962,7 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 #define	FIX_MEDIP	0x02
 #define	ADD_ANORTPPROXY	0x04
 #define	FIX_ORGIP	0x08
+#define	FORCE_NULL_ADDR	0x10
 
 #define	ADIRECTION	"a=direction:active"
 #define	ADIRECTION_LEN	(sizeof(ADIRECTION) - 1)
@@ -980,7 +981,7 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 
 static int
 alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
-  str *newip, int newpf, int preserve, char type)
+  str *newip, int newpf, int preserve, char type, int forcenulladdr)
 {
 	char *buf;
 	int offset;
@@ -988,7 +989,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 	str omip, nip, oip;
 
 	/* check that updating mediaip is really necessary */
-	if (oldpf == newpf && isnulladdr(oldip, oldpf))
+	if (oldpf == newpf && isnulladdr(oldip, oldpf) && !forcenulladdr)
 		return 0;
 	if (newip->len == oldip->len &&
 	    memcmp(newip->s, oldip->s, newip->len) == 0)
@@ -1103,7 +1104,7 @@ get_field_flag(char value)
 }
 
 static inline int
-replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
+replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip, int forcenulladdr)
 {
 	str body1, oldip, newip;
 	str body = *org_body;
@@ -1137,7 +1138,7 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
 		body2.len = bodylimit - body2.s;
 		if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf,
 					!(get_field_flag(line[0])&skip_oldip),
-					line[0]) == -1) {
+					line[0], forcenulladdr) == -1) {
 					/*if flag set do not set oldmediaip field*/
 			LM_ERR("can't alter '%s' IP\n",line);
 			return -1;
@@ -1161,6 +1162,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 	str ip;
 	str new_sdp_lines;
 	int level;
+	int forcenulladdr = 0;
 	char *buf;
 	struct lump* anchor;
 	struct body_part * p;
@@ -1239,14 +1241,16 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 			}
 		}
 
+		if (level & FORCE_NULL_ADDR) { forcenulladdr = 1; }
+
 		if (level & FIX_ORGIP) {
 			/* Iterate all o= and replace ips in them. */
-			if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0)==-1)
+			if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0, forcenulladdr)==-1)
 				return -1;
 		}
 		if (level & FIX_MEDIP) {
 			/* Iterate all c= and replace ips in them. */
-			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0)==-1)
+			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0, forcenulladdr)==-1)
 				return -1;
 		}
 	}
