@@ -1152,7 +1152,7 @@ static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 				if(sdp_stream->media.len==AUDIO_STR_LEN &&
 						strncmp(sdp_stream->media.s,AUDIO_STR,AUDIO_STR_LEN)==0 &&
 						sdp_stream->is_on_hold)
-					return 1;
+					return sdp_stream->is_on_hold;
 				sdp_stream_num++;
 			}
 			sdp_session_num++;
