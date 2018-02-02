@@ -33,6 +33,10 @@
 
 #include "../msg_parser.h"
 
+#define      NO_HOLD 0
+#define RFC2543_HOLD 1
+#define RFC3264_HOLD 2
+
 typedef struct sdp_attr {
 	struct sdp_attr *next;
 	str attribute;

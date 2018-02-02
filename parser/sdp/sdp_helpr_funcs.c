@@ -32,6 +32,7 @@
 #include "../msg_parser.h"
 #include "../parser_f.h"
 #include "../parse_hname2.h"
+#include "sdp.h"
 
 
 static struct {
@@ -226,7 +227,7 @@ int extract_sendrecv_mode(str *body, str *sendrecv_mode, int *is_on_hold)
 			(strncasecmp(cp1, "a=sendonly", 10) == 0) )) {
 			return -1;
 		} else {
-			*is_on_hold = 1;
+			*is_on_hold = RFC3264_HOLD;
 		}
 		return -1;
 	}
