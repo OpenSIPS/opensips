@@ -231,7 +231,9 @@ void free_ct_mappings(struct list_head *mappings)
 	struct ct_mapping *ctmap;
 
 	list_for_each_safe(_, __, mappings) {
+		list_del(_);
 		ctmap = list_entry(_, struct ct_mapping, list);
+
 		shm_free(ctmap->req_ct_uri.s);
 		shm_free(ctmap->new_username.s);
 		shm_free(ctmap->instance.s);
@@ -511,12 +513,15 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 		ua = &no_ua;
 	}
 
-	if (shm_str_dup(&mri->user_agent, ua) != 0) {
+	if (shm_str_sync(&mri->user_agent, ua) != 0) {
 		LM_ERR("oom\n");
 		return -1;
 	}
 
-	mri->cflags |= getb0flags(req);
+	mri->cflags = getb0flags(req);
+
+	shm_str_clean(&mri->path);
+	shm_str_clean(&mri->path_received);
 
 	if (mri->reg_flags & REG_SAVE_PATH_FLAG) {
 		if (build_path_vector(req, &path, &path_received, mri->reg_flags) < 0) {
@@ -545,6 +550,7 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 	else
 		allowed = ALL_METHODS;
 
+	free_ct_mappings(&mri->ct_mappings);
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		ctmap = shm_malloc(sizeof *ctmap);
 		if (!ctmap) {
@@ -611,18 +617,36 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	struct sip_msg *req = params->req;
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	str user = {NULL, 0};
+	str *next_hop = NULL;
+
+	if (mri->sip_state == SIP_REQ_OUT) {
+		LM_ERR("mid-registrar does not support forked REGISTERs!\n");
+		return;
+	}
+
+	/* can reach this state on either an initial request or a REGISTER retry */
+	mri->sip_state = SIP_REQ_OUT;
 
 	if (parse_reg_headers(req) != 0) {
 		LM_ERR("failed to parse req headers\n");
-		goto out_err;
+		return;
 	}
 
 	if (req->expires)
 		LM_DBG("msg expires: '%.*s'\n", req->expires->body.len, req->expires->body.s);
 
-	shm_str_dup(&mri->main_reg_uri, GET_RURI(req));
+	if (shm_str_sync(&mri->main_reg_uri, GET_RURI(req)) != 0) {
+		LM_ERR("oom\n");
+		return;
+	}
+
 	if (GET_RURI(req) != GET_NEXT_HOP(req))
-		shm_str_dup(&mri->main_reg_next_hop, GET_NEXT_HOP(req));
+		next_hop = GET_NEXT_HOP(req);
+
+	if (shm_str_sync(&mri->main_reg_next_hop, next_hop) != 0) {
+		LM_ERR("oom\n");
+		return;
+	}
 
 	if (mri->star)
 		goto out;
@@ -634,7 +658,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		LM_DBG("trimming all Contact URIs into one...\n");
 		if (trim_to_single_contact(req, &mri->aor)) {
 			LM_ERR("failed to overwrite Contact URI\n");
-			goto out_err;
+			return;
 		}
 	}
 
@@ -649,7 +673,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	 */
 	if (dup_req_info(req, mri) != 0) {
 		LM_ERR("oom\n");
-		goto out_err;
+		return;
 	}
 
 	if (insertion_mode == INSERT_BY_PATH) {
@@ -661,7 +685,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 			LM_DBG("fixing Contact URI ...\n");
 			if (overwrite_req_contacts(req, mri)) {
 				LM_ERR("failed to overwrite Contact URIs\n");
-				goto out_err;
+				return;
 			}
 		}
 	}
@@ -671,13 +695,6 @@ out:
 	       mri->main_reg_uri.len, mri->main_reg_uri.s,
 	       mri->main_reg_next_hop.len, mri->main_reg_next_hop.s,
 	       mri->expires_out);
-	return;
-
-out_err:
-	lock_start_write(tm_retrans_lk);
-	mri_free(mri);
-	*params->param = NULL;
-	lock_stop_write(tm_retrans_lk);
 }
 
 static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
@@ -1394,7 +1411,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 			                  hdr->len, HDR_CONTACT_T) == NULL) {
 				LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
 				       hdr->name.s);
-				return -1;
+				goto error;
 			}
 		}
 	}
@@ -1787,47 +1804,41 @@ static inline void star(struct mid_reg_info *mri, struct sip_msg *_m)
 		}
 	}
 
-	/* delete_urecord() cannot fail with mid_registrar, it's not DB-reliant */
-	ul_api.delete_urecord(_d, &mri->aor, NULL, 0);
+	if (ul_api.delete_urecord(_d, &mri->aor, NULL, 0) != 0)
+		LM_ERR("failed to delete urcord %.*s\n", mri->aor.len, mri->aor.s);
+
 	ul_api.unlock_udomain(_d, &mri->aor);
 }
 
 
 void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 {
-	struct mid_reg_info *mri;
+	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	struct sip_msg *rpl = params->rpl;
 	struct sip_msg *req = params->req;
-	int code;
+	int code = rpl->first_line.u.reply.statuscode;
 
-	lock_start_write(tm_retrans_lk);
-	mri = *(struct mid_reg_info **)(params->param);
-	if (!mri) {
-		LM_DBG("SIP reply retransmission -> exit\n");
-		lock_stop_write(tm_retrans_lk);
-		return;
-	}
-	*params->param = NULL; /* do not run this callback multiple times! */
-	lock_stop_write(tm_retrans_lk);
-
-	code = rpl->first_line.u.reply.statuscode;
-	LM_DBG("pushing reply back to caller: %d\n", code);
 	LM_DBG("request -------------- \n%s\nxxx: \n", req->buf);
-	LM_DBG("reply -------------- \n%s\n", rpl->buf);
+	LM_DBG("reply: %d -------------- \n%s\n", code, rpl->buf);
 
-	if (code < 200 || code >= 300)
-		goto out_free;
+	lock_start_write(mri->tm_lock);
+	if (mri->sip_state != SIP_RESP_IN_RETRANS)
+		mri->sip_state = SIP_RESP_IN;
+
+	/* no processing on replies with missing Contact headers or retransmits */
+	if (code < 200 || code >= 300 || mri->sip_state == SIP_RESP_IN_RETRANS)
+		goto out;
 
 	update_act_time();
 
 	if (parse_reg_headers(rpl) != 0) {
 		LM_ERR("failed to parse rpl headers\n");
-		goto out_free;
+		goto out;
 	}
 
 	if (mri->star) {
 		star(mri, req);
-		goto out_free;
+		goto out;
 	}
 
 	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
@@ -1835,7 +1846,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		if (insertion_mode == INSERT_BY_PATH) {
 			if (parse_reg_headers(req) != 0) {
 				LM_ERR("failed to parse req headers\n");
-				goto out_free;
+				goto out;
 			}
 
 			if (_save_rpl_contacts_path_mode(req, rpl, mri, &mri->aor)) {
@@ -1855,11 +1866,17 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
+	mri->sip_state = SIP_RESP_IN_RETRANS;
+out:
+	lock_stop_write(mri->tm_lock);
+
 	LM_DBG("got ptr back: %p\n", mri);
 	LM_DBG("RESPONSE FORWARDED TO caller!\n");
+}
 
-out_free:
-	mri_free(mri);
+void mid_reg_tmcb_deleted(struct cell *t, int type, struct tmcb_params *params)
+{
+	mri_free(*(struct mid_reg_info **)(params->param));
 }
 
 /* !! retcodes: 1 or -1 !! */
@@ -1922,9 +1939,16 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 		goto out_free;
 	}
 
-	LM_DBG("registering callback on TMCB_RESPONSE_FWDED, mri=%p ...\n", mri);
+	LM_DBG("registering for TMCB_RESPONSE_FWDED, mri=%p ...\n", mri);
 	if (tm_api.register_tmcb(msg, NULL, TMCB_RESPONSE_IN,
 	    mid_reg_resp_in, mri, NULL) <= 0) {
+		LM_ERR("cannot register additional callbacks\n");
+		return -1;
+	}
+
+	LM_DBG("registering for TMCB_RESPONSE_DELETED, mri=%p ...\n", mri);
+	if (tm_api.register_tmcb(msg, NULL, TMCB_TRANS_DELETED,
+	    mid_reg_tmcb_deleted, mri, NULL) <= 0) {
 		LM_ERR("cannot register additional callbacks\n");
 		return -1;
 	}

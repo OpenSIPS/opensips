@@ -269,9 +269,6 @@ static int registrar_fixup(void** param, int param_no)
 
 static int mod_init(void)
 {
-	str s;
-	pv_spec_t avp_spec;
-
 	if (load_ul_api(&ul_api) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
@@ -335,24 +332,6 @@ static int mod_init(void)
 	 * Import use_domain parameter from usrloc
 	 */
 	reg_use_domain = ul_api.use_domain;
-
-	if (rcv_avp_param && *rcv_avp_param) {
-		s.s = rcv_avp_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n", rcv_avp_param);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &rcv_avp_name, &rcv_avp_type)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", rcv_avp_param);
-			return -1;
-		}
-	} else {
-		rcv_avp_name = -1;
-		rcv_avp_type = 0;
-	}
 
 	rcv_param.len = strlen(rcv_param.s);
 
@@ -433,6 +412,14 @@ struct mid_reg_info *mri_alloc(void)
 		return NULL;
 	}
 	memset(new, 0, sizeof *new);
+
+	new->tm_lock = lock_init_rw();
+	if (!new->tm_lock) {
+		shm_free(new);
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
 	INIT_LIST_HEAD(&new->ct_mappings);
 
 	return new;
@@ -491,6 +478,8 @@ void mri_free(struct mid_reg_info *mri)
 	shm_free(mri->from.s);
 	shm_free(mri->to.s);
 	shm_free(mri->callid.s);
+
+	lock_destroy_rw(mri->tm_lock);
 
 	if (mri->main_reg_uri.s)
 		shm_free(mri->main_reg_uri.s);
