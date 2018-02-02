@@ -49,7 +49,7 @@ Liviu Chircu
               1.5.12. received_avp (string)
               1.5.13. received_param (string)
               1.5.14. max_contacts (integer)
-              1.5.15. extra_contact_params_pvar (string)
+              1.5.15. extra_contact_params_avp (string)
               1.5.16. retry_after (integer)
               1.5.17. disable_gruu (integer)
               1.5.18. gruu_secret (string)
@@ -78,7 +78,7 @@ Liviu Chircu
    1.12. Setting the received_avp module parameter
    1.13. Setting the received_param module parameter
    1.14. Setting the max_contacts module parameter
-   1.15. Setting the extra_contact_params_pvar module parameter
+   1.15. Setting the extra_contact_params_avp module parameter
    1.16. Setting the retry_after module parameter
    1.17. Setting the gruu_secret module parameter
    1.18. Setting the gruu_secret module parameter
@@ -487,21 +487,20 @@ modparam("mid_registrar", "received_param", "rcv")
    Example 1.14. Setting the max_contacts module parameter
 modparam("mid_registrar", "max_contacts", 10)
 
-1.5.15. extra_contact_params_pvar (string)
+1.5.15. extra_contact_params_avp (string)
 
-   A pseudo-variable specification. This variable is evaluated
-   during mid_registrar_save(): if it holds a valid string, its
-   content be appended to each new Contact URI built by the
-   mid-registrar, for the outgoing request.
+   An AVP specification. This AVP is evaluated during
+   mid_registrar_save(): if it holds a valid string, its content
+   be appended to each new Contact URI built by the mid-registrar,
+   for the outgoing request.
 
    Default value is None (not used)
 
-   Example 1.15. Setting the extra_contact_params_pvar module
+   Example 1.15. Setting the extra_contact_params_avp module
    parameter
-# we're using an AVP to guarantee it's cleared with every new SIP reques
-t
-modparam("mid_registrar", "extra_contact_params_pvar", "$avp(extra_ct_pa
-rams)")
+# NB: AVPs are cleared with every new SIP request
+modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_par
+ams)")
 
 1.5.16. retry_after (integer)
 
