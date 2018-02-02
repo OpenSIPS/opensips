@@ -305,6 +305,7 @@ static mi_export_t mi_cmds[] = {
 	{ "dlg_end_dlg",        0, mi_terminate_dlg,      0,  0,  0},
 	{ "dlg_db_sync",        0, mi_sync_db_dlg,        0,  0,  0},
 	{ "dlg_restore_db",     0, mi_restore_dlg_db,     0,  0,  0},
+	{ "dlg_cluster_sync",   0, mi_sync_cl_dlg,   	  0,  0,  0},
 	{ "profile_get_size",   0, mi_get_profile,        0,  0,  0},
 	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
@@ -862,16 +863,21 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (dialog_repl_cluster && clusterer_api.register_capability(
-		&dlg_repl_cap, receive_dlg_repl, NULL, dialog_repl_cluster) < 0) {
-		LM_ERR("Cannot register clusterer callback for dialog replication!\n");
-		return -1;
-	}
-
 	if (profile_repl_cluster && clusterer_api.register_capability(
 		&prof_repl_cap, receive_prof_repl, NULL, profile_repl_cluster) < 0) {
 		LM_ERR("Cannot register clusterer callback for profile replication!\n");
 		return -1;
+	}
+
+	if (dialog_repl_cluster) {
+		if (clusterer_api.register_capability(&dlg_repl_cap, receive_dlg_repl,
+								rcv_cluster_event, dialog_repl_cluster) < 0) {
+			LM_ERR("Cannot register clusterer callback for dialog replication!\n");
+			return -1;
+		}
+
+		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
+			LM_ERR("Sync request failed\n");
 	}
 
 	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,

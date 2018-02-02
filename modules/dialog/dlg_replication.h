@@ -56,6 +56,9 @@ int dlg_replicated_update(bin_packet_t *packet);
 int dlg_replicated_delete(bin_packet_t *packet);
 
 void receive_dlg_repl(bin_packet_t *packet);
+void rcv_cluster_event(enum clusterer_event ev, int node_id);
+
+struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 

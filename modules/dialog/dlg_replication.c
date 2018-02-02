@@ -158,7 +158,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	callee_sock = fetch_socket_info(&sock);
 
 	if (!caller_sock || !callee_sock) {
-		LM_ERR("Dialog in DB doesn't match any listening sockets\n");
+		LM_ERR("Replicated dialog doesn't match any listening sockets\n");
 		goto pre_linking_error;
 	}
 
@@ -455,6 +455,54 @@ malformed:
 }
 #undef DLG_BIN_POP
 
+void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
+{
+	int callee_leg;
+	str *vars, *profiles;
+
+	callee_leg = callee_idx(dlg);
+
+	bin_push_str(packet, &dlg->callid);
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].tag);
+	bin_push_str(packet, &dlg->legs[callee_leg].tag);
+
+	bin_push_str(packet, &dlg->from_uri);
+	bin_push_str(packet, &dlg->to_uri);
+
+	bin_push_int(packet, dlg->h_id);
+	bin_push_int(packet, dlg->start_ts);
+	bin_push_int(packet, dlg->state);
+
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+	if (dlg->legs[callee_leg].bind_addr)
+		bin_push_str(packet, &dlg->legs[callee_leg].bind_addr->sock_str);
+	else
+		bin_push_str(packet, NULL);
+
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].r_cseq);
+	bin_push_str(packet, &dlg->legs[callee_leg].r_cseq);
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].route_set);
+	bin_push_str(packet, &dlg->legs[callee_leg].route_set);
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].contact);
+	bin_push_str(packet, &dlg->legs[callee_leg].contact);
+	bin_push_str(packet, &dlg->legs[callee_leg].from_uri);
+	bin_push_str(packet, &dlg->legs[callee_leg].to_uri);
+
+	/* XXX: on shutdown only? */
+	vars = write_dialog_vars(dlg->vals);
+	profiles = write_dialog_profiles(dlg->profile_links);
+
+	bin_push_str(packet, vars);
+	bin_push_str(packet, profiles);
+	bin_push_int(packet, dlg->user_flags);
+	bin_push_int(packet, dlg->mod_flags);
+	bin_push_int(packet, dlg->flags &
+			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
+	bin_push_int(packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
+	bin_push_int(packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
+	bin_push_int(packet, dlg->legs[callee_leg].last_gen_cseq);
+}
+
 /*  Binary Packet sending functions   */
 
 
@@ -464,12 +512,11 @@ malformed:
  */
 void replicate_dialog_created(struct dlg_cell *dlg)
 {
-	int callee_leg;
-	str *vars, *profiles;
 	int rc;
 	bin_packet_t packet;
 
 	dlg_lock_dlg(dlg);
+
 	if (dlg->state != DLG_STATE_CONFIRMED_NA && dlg->state != DLG_STATE_CONFIRMED) {
 		/* we don't need to replicate when in deleted state */
 		LM_WARN("not replicating dlg create message due to bad state %d (%.*s)\n",
@@ -487,48 +534,10 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_CREATED, BIN_VERSION, 0) != 0)
 		goto init_error;
 
-	callee_leg = callee_idx(dlg);
+	bin_push_dlg(&packet, dlg);
 
-	bin_push_str(&packet, &dlg->callid);
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].tag);
-	bin_push_str(&packet, &dlg->legs[callee_leg].tag);
-
-	bin_push_str(&packet, &dlg->from_uri);
-	bin_push_str(&packet, &dlg->to_uri);
-
-	bin_push_int(&packet, dlg->h_id);
-	bin_push_int(&packet, dlg->start_ts);
-	bin_push_int(&packet, dlg->state);
-
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str);
-	if (dlg->legs[callee_leg].bind_addr)
-		bin_push_str(&packet, &dlg->legs[callee_leg].bind_addr->sock_str);
-	else
-		bin_push_str(&packet, NULL);
-
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].r_cseq);
-	bin_push_str(&packet, &dlg->legs[callee_leg].r_cseq);
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].route_set);
-	bin_push_str(&packet, &dlg->legs[callee_leg].route_set);
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].contact);
-	bin_push_str(&packet, &dlg->legs[callee_leg].contact);
-	bin_push_str(&packet, &dlg->legs[callee_leg].from_uri);
-	bin_push_str(&packet, &dlg->legs[callee_leg].to_uri);
-
-	/* XXX: on shutdown only? */
-	vars = write_dialog_vars(dlg->vals);
-	profiles = write_dialog_profiles(dlg->profile_links);
-
-	bin_push_str(&packet, vars);
-	bin_push_str(&packet, profiles);
-	bin_push_int(&packet, dlg->user_flags);
-	bin_push_int(&packet, dlg->mod_flags);
-	bin_push_int(&packet, dlg->flags &
-			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
-	bin_push_int(&packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
-	bin_push_int(&packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
-	bin_push_int(&packet, dlg->legs[callee_leg].last_gen_cseq);
 	dlg->replicated = 1;
+
 	dlg_unlock_dlg(dlg);
 
 	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
@@ -567,8 +576,6 @@ no_send:
  */
 void replicate_dialog_updated(struct dlg_cell *dlg)
 {
-	int callee_leg;
-	str *vars, *profiles;
 	int rc;
 	bin_packet_t packet;
 
@@ -584,48 +591,10 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_UPDATED, BIN_VERSION, 0) != 0)
 		goto init_error;
 
-	callee_leg = callee_idx(dlg);
+	bin_push_dlg(&packet, dlg);
 
-	bin_push_str(&packet, &dlg->callid);
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].tag);
-	bin_push_str(&packet, &dlg->legs[callee_leg].tag);
-
-	bin_push_str(&packet, &dlg->from_uri);
-	bin_push_str(&packet, &dlg->to_uri);
-
-	bin_push_int(&packet, dlg->h_id);
-	bin_push_int(&packet, dlg->start_ts);
-	bin_push_int(&packet, dlg->state);
-
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str);
-	if (dlg->legs[callee_leg].bind_addr)
-		bin_push_str(&packet, &dlg->legs[callee_leg].bind_addr->sock_str);
-	else
-		bin_push_str(&packet, NULL);
-
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].r_cseq);
-	bin_push_str(&packet, &dlg->legs[callee_leg].r_cseq);
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].route_set);
-	bin_push_str(&packet, &dlg->legs[callee_leg].route_set);
-	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].contact);
-	bin_push_str(&packet, &dlg->legs[callee_leg].contact);
-	bin_push_str(&packet, &dlg->legs[callee_leg].from_uri);
-	bin_push_str(&packet, &dlg->legs[callee_leg].to_uri);
-
-	/* XXX: on shutdown only? */
-	vars = write_dialog_vars(dlg->vals);
-	profiles = write_dialog_profiles(dlg->profile_links);
-
-	bin_push_str(&packet, vars);
-	bin_push_str(&packet, profiles);
-	bin_push_int(&packet, dlg->user_flags);
-	bin_push_int(&packet, dlg->mod_flags);
-	bin_push_int(&packet, dlg->flags &
-			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
-	bin_push_int(&packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
-	bin_push_int(&packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
-	bin_push_int(&packet, dlg->legs[callee_leg].last_gen_cseq);
 	dlg->replicated = 1;
+
 	dlg_unlock_dlg(dlg);
 
 	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
@@ -700,34 +669,71 @@ error:
 void receive_dlg_repl(bin_packet_t *packet)
 {
 	int rc = 0;
+	bin_packet_t *pkt;
 
-	switch (packet->type) {
-	case REPLICATION_DLG_CREATED:
-		if (dialog_repl_cluster) {
-			rc = dlg_replicated_create(packet, NULL, NULL, NULL, 1);
+	for (pkt = packet; pkt; pkt = pkt->next) {
+		switch (pkt->type) {
+		case REPLICATION_DLG_CREATED:
+			rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 1);
 			if_update_stat(dlg_enable_stats, create_recv, 1);
-		}
-		break;
-	case REPLICATION_DLG_UPDATED:
-		if (dialog_repl_cluster) {
-			rc = dlg_replicated_update(packet);
+			break;
+		case REPLICATION_DLG_UPDATED:
+			rc = dlg_replicated_update(pkt);
 			if_update_stat(dlg_enable_stats, update_recv, 1);
-		}
-		break;
-	case REPLICATION_DLG_DELETED:
-		if (dialog_repl_cluster) {
-			rc = dlg_replicated_delete(packet);
+			break;
+		case REPLICATION_DLG_DELETED:
+			rc = dlg_replicated_delete(pkt);
 			if_update_stat(dlg_enable_stats, delete_recv, 1);
+			break;
+		case SYNC_PACKET_TYPE:
+			while (clusterer_api.sync_chunk_iter(pkt))
+				if (dlg_replicated_create(pkt, NULL, NULL, NULL, 1) < 0) {
+					LM_ERR("Failed to process sync packet\n");
+					return;
+				}
+			break;
+		default:
+			rc = -1;
+			LM_WARN("Invalid dialog binary packet command: %d "
+				"(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
+				dialog_repl_cluster);
 		}
-		break;
-	default:
-		rc = -1;
-		LM_WARN("Invalid dialog binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet->type, packet->src_id, dialog_repl_cluster);
+
+		if (rc != 0)
+			LM_ERR("Failed to process a binary packet!\n");
+	}
+}
+
+static int receive_sync_request(int node_id)
+{
+	int i;
+	struct dlg_cell *dlg;
+	bin_packet_t *sync_packet;
+
+	for (i = 0; i < d_table->size; i++) {
+		dlg_lock(d_table, &(d_table->entries[i]));
+		for (dlg = d_table->entries[i].first; dlg; dlg = dlg->next) {
+			sync_packet = clusterer_api.sync_chunk_start(&dlg_repl_cap,
+												dialog_repl_cluster, node_id);
+			if (!sync_packet)
+				goto error;
+
+			bin_push_dlg(sync_packet, dlg);
+		}
+		dlg_unlock(d_table, &(d_table->entries[i]));
 	}
 
-	if (rc != 0)
-		LM_ERR("Failed to process a binary packet!\n");
+	return 0;
+
+error:
+	dlg_unlock(d_table, &(d_table->entries[i]));
+	return -1;
+}
+
+void rcv_cluster_event(enum clusterer_event ev, int node_id)
+{
+	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
+		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
 }
 
 /**
@@ -1179,4 +1185,12 @@ done:
 		dlg_replicate_profiles(&packet);
 	bin_free_packet(&packet);
 #undef REPL_PROF_TRYSEND
+}
+
+struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
+{
+	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
+		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
+	else
+		return init_mi_tree(200, MI_SSTR(MI_OK));
 }
