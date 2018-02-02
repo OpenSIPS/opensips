@@ -164,6 +164,7 @@ static int mod_init(void) {
 	}
 
 	list_deleted_files = (struct flat_deleted**)(list_files + 1);
+	*list_deleted_files = NULL;
 
 	global_lock = lock_alloc();
 
