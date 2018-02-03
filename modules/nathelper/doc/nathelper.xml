@@ -55,6 +55,12 @@
 		<year>2005</year>
 		<holder>&voicesystem;</holder>
 	</copyright>
+	<copyright>
+		<year>2018</year>
+		<holder>
+			<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
+		</holder>
+	</copyright>
 	<revhistory>
 		<revision>
 		<revnumber>$Revision: 8740 $</revnumber>
