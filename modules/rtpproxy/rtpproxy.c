@@ -1898,7 +1898,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 	str omip, nip, oip;
 
 	/* check that updating media-ip is really necessary */
-	if (oldpf == newpf && isnulladdr(oldip, oldpf))
+	if (oldpf == newpf || isnulladdr(oldip, oldpf))
 		return 0;
 	if (newip->len == oldip->len &&
 	    memcmp(newip->s, oldip->s, newip->len) == 0)
