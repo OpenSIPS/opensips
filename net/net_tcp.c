@@ -1730,12 +1730,6 @@ int tcp_init(void)
 			TCP_ID_HASH_SIZE * sizeof(struct tcp_connection*));
 	}
 
-	/* init the TCP reporting engine too */
-	if (init_tcp_reporting()!=0) {
-		LM_ERR("failed to init the reporting engine\n");
-		goto error;
-	}
-
 	return 0;
 error:
 	/* clean-up */

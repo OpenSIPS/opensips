@@ -27,9 +27,6 @@
 /* is the process TCP MAIN ? */
 extern int is_tcp_main;
 
-/* the IPC type for our reporting handler */
-static ipc_handler_type ipc_type = -1;
-
 typedef struct _tcp_report_job {
 	/* TCP connection ID */
 	unsigned long long conn_id;
@@ -44,25 +41,15 @@ typedef struct _tcp_report_job {
 } tcp_report_job;
 
 
-static void tcp_report_ipc_handler(int sender, void *payload)
+static void tcp_report_ipc_handler(int sender, void *param)
 {
-	tcp_report_job *job = (tcp_report_job*)payload;
+	tcp_report_job *job = (tcp_report_job*)param;
 
 	/* run the report callback  */
 	protos[job->proto].net.report( job->type, job->conn_id, job->conn_flags,
 		job->extra);
-}
-
-
-int init_tcp_reporting(void) {
-	/* init the IPC channel to be used from TCP MAIN */
-
-	ipc_type = ipc_register_handler(tcp_report_ipc_handler, "TCP reporting");
-	if (ipc_bad_handler_type(ipc_type)) {
-		LM_ERR("failed to register IPC handler\n");
-		return -1;
-	}
-	return 0;
+	/* and free the job memory */
+	shm_free(job);
 }
 
 
@@ -123,7 +110,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 		job->extra = extra;
 		/* ...sending it to the last TCP worker for now
 		 * The last TCP worker is the prev,prev to TCP MAIN */
-		if (ipc_send_job( process_no-2 , ipc_type, (void *)job)<0) {
+		if (ipc_dispatch_rpc( tcp_report_ipc_handler, job)<0) {
 			LM_ERR("failed to send IPC job, discarding report\n");
 			shm_free(job);
 			return;

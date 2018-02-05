@@ -26,8 +26,6 @@
 #define TCP_REPORT_CLOSE   (1)
 #define TCP_REPORT_STATS   (2)
 
-int init_tcp_reporting(void);
-
 void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra);
 
 #endif
