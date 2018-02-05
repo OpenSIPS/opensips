@@ -51,6 +51,8 @@ static void tcp_report_ipc_handler(int sender, void *payload)
 	/* run the report callback  */
 	protos[job->proto].net.report( job->type, job->conn_id, job->conn_flags,
 		job->extra);
+	/* and free the job memory */
+	shm_free(job);
 }
 
 
