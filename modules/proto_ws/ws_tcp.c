@@ -64,6 +64,7 @@ again:
 		} else if (errno == ECONNRESET) {
 			c->state=S_CONN_EOF;
 			LM_DBG("EOF on %p, FD %d\n", c, fd);
+			bytes_read = 0;
 		} else {
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;

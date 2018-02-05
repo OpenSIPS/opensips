@@ -847,7 +847,7 @@ static void hep_parse_headers(struct tcp_req *req){
 	}
 }
 
-int tcp_read(struct tcp_connection *c,struct tcp_req *r) {
+static int _tcp_read(struct tcp_connection *c,struct tcp_req *r) {
 	int bytes_free, bytes_read;
 	int fd;
 
@@ -870,6 +870,7 @@ again:
 		} else if (errno == ECONNRESET) {
 			c->state=S_CONN_EOF;
 			LM_DBG("EOF on %p, FD %d\n", c, fd);
+			bytes_read = 0;
 		} else {
 			LM_ERR("error reading: %s\n",strerror(errno));
 			r->error=TCP_READ_ERROR;
@@ -1085,7 +1086,7 @@ static int hep_tcp_read_req(struct tcp_connection* con, int* bytes_read)
 		if (req->parsed < req->pos){
 			bytes=0;
 		} else {
-			bytes=tcp_read(con,req);
+			bytes=_tcp_read(con,req);
 			if (bytes < 0) {
 				LM_ERR("failed to read \n");
 				goto error;
