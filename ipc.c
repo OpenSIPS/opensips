@@ -173,6 +173,11 @@ int ipc_send_rpc(int dst_proc, ipc_rpc_f *rpc, void *param)
 	return __ipc_send_job(IPC_FD_WRITE(dst_proc), ipc_rpc_type, rpc, param);
 }
 
+int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param)
+{
+	return __ipc_send_job(ipc_shared_pipe[1], ipc_rpc_type, rpc, param);
+}
+
 
 void ipc_handle_job(int fd)
 {

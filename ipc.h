@@ -78,6 +78,15 @@ int ipc_dispatch_job(ipc_handler_type type, void *payload);
 
 
 /*
+ * Push the execution of a function, remotely, to next available OpenSIPS
+ * worker process and quickly return
+ *
+ * Return: 0 on success, -1 on failure
+ */
+
+int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param);
+
+/*
  * default handler for F_IPC reactor jobs. Copy-paste its code and improve
  * if this is not enough for you
  */
