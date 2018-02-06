@@ -97,6 +97,9 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 	struct cgr_ctx *ctx = CGR_GET_CTX();
 
 	if (ctx && ctx->acc)
+		return ctx->acc;
+
+	if (!cgr_dlgb.get_dlg) /* dlg not even loaded */
 		return NULL;
 
 	dlg = cgr_dlgb.get_dlg();
