@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('clusterer','3');
+INSERT INTO version (table_name, table_version) values ('clusterer','4');
 CREATE TABLE clusterer (
     id NUMBER(10) PRIMARY KEY,
     cluster_id NUMBER(10),
