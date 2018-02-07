@@ -955,6 +955,9 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 	stop_expire_timer(start, mongo_exec_threshold, "MongoDB counter add",
 	                  NULL, 0, 0);
 
+	if (!new_val)
+		goto out;
+
 	if (bson_iter_init_find(&iter, &reply, "value") &&
 	    BSON_ITER_HOLDS_DOCUMENT(&iter) &&
 	    bson_iter_recurse(&iter, &sub_iter)) {
