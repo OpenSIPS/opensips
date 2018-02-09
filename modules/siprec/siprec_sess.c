@@ -32,11 +32,11 @@ struct tm_binds srec_tm;
 struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
-static struct src_sess *src_create_session(str *rtp, str *grp,
+static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
 		struct socket_info *si, int version, time_t ts, siprec_uuid *uuid)
 {
-	struct src_sess *ss = shm_malloc(sizeof *ss +
-			(rtp ? rtp->len : 0) + (grp ? grp->len : 0));
+	struct src_sess *ss = shm_malloc(sizeof *ss + (rtp ? rtp->len : 0) +
+			(m_ip ? m_ip->len : 0) + (grp ? grp->len : 0));
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
@@ -49,8 +49,17 @@ static struct src_sess *src_create_session(str *rtp, str *grp,
 		ss->rtpproxy.len = rtp->len;
 	}
 
+	if (m_ip) {
+		ss->media_ip.s = (char *)(ss + 1) + ss->rtpproxy.len;
+		memcpy(ss->media_ip.s, m_ip->s, m_ip->len);
+		ss->media_ip.len = m_ip->len;
+	} else {
+		ss->media_ip.s = NULL;
+		ss->media_ip.len = 0;
+	}
+
 	if (grp) {
-		ss->group.s = (char *)(ss + 1) + ss->rtpproxy.len;
+		ss->group.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media_ip.len;
 		memcpy(ss->group.s, grp->s, grp->len);
 		ss->group.len = grp->len;
 	}
@@ -66,7 +75,7 @@ static struct src_sess *src_create_session(str *rtp, str *grp,
 	return ss;
 }
 
-struct src_sess *src_new_session(str *srs, str *rtp, str *grp,
+struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *grp,
 		struct socket_info *si)
 {
 	struct src_sess *sess;
@@ -77,7 +86,7 @@ struct src_sess *src_new_session(str *srs, str *rtp, str *grp,
 	siprec_uuid uuid;
 	siprec_build_uuid(uuid);
 
-	sess = src_create_session(rtp, grp, si, 0, time(NULL), &uuid);
+	sess = src_create_session(rtp, m_ip, grp, si, 0, time(NULL), &uuid);
 	if (!sess)
 		return NULL;
 
@@ -210,7 +219,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	bin_packet_t packet;
 	int version;
 	time_t ts;
-	str tmp, rtpproxy, srs_uri, group, host;
+	str tmp, rtpproxy, media_ip, srs_uri, group, host;
 	str aor, name;
 	siprec_uuid uuid;
 	struct socket_info *si;
@@ -242,6 +251,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	memcpy(&ts, tmp.s, tmp.len);
 	SIPREC_BIN_POP(int, &version);
 	SIPREC_BIN_POP(str, &rtpproxy);
+	SIPREC_BIN_POP(str, &media_ip);
 	SIPREC_BIN_POP(str, &srs_uri);
 	SIPREC_BIN_POP(str, &group);
 	SIPREC_BIN_POP(str, &tmp);
@@ -269,7 +279,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	memcpy(&uuid, tmp.s, tmp.len);
 
 	sess = src_create_session((rtpproxy.len ? &rtpproxy : NULL),
-			(group.len ? &group : NULL),
+			(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
 			si, version, ts, &uuid);
 	if (!sess) {
 		LM_ERR("cannot create a new siprec session!\n");
@@ -422,6 +432,7 @@ void srec_shutdown_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->ts));
 	SIPREC_BIN_PUSH(int, ss->version);
 	SIPREC_BIN_PUSH(str, &ss->rtpproxy);
+	SIPREC_BIN_PUSH(str, &ss->media_ip);
 	/* push only the first SRS - this is the one chosen */
 	SIPREC_BIN_PUSH(str, &SIPREC_SRS(ss));
 	SIPREC_BIN_PUSH(str, &ss->group);

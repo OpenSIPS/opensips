@@ -71,6 +71,7 @@ struct src_sess {
 	int version;
 	int streams_no;
 	str rtpproxy;
+	str media_ip;
 
 	/* SRS */
 	struct list_head srs;
@@ -98,7 +99,7 @@ struct src_sess {
 };
 
 void src_unref_session(void *p);
-struct src_sess *src_new_session(str *srs, str *rtp, str *group,
+struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *group,
 		struct socket_info *si);
 void src_free_session(struct src_sess *sess);
 int src_add_participant(struct src_sess *sess, str *aor, str *name,

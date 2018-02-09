@@ -37,7 +37,7 @@ static int child_init(int);
 static void mod_destroy(void);
 
 static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
-		char *_cA, char *_cB, char *_rtp);
+		char *_cA, char *_cB, char *_rtp, char *_m_ip);
 static int free_fixup_siprec_rec(void **param, int param_no);
 static int free_free_fixup_siprec_rec(void **param, int param_no);
 
@@ -67,6 +67,8 @@ static cmd_export_t cmds[] = {
 	{"siprec_start_recording",(cmd_function)siprec_start_rec, 4,
 		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
 	{"siprec_start_recording",(cmd_function)siprec_start_rec, 5,
+		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, 6,
 		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
 	{0, 0, 0, 0, 0, 0}
 };
@@ -183,10 +185,10 @@ static int free_free_fixup_siprec_rec(void **param, int param_no)
  * function that simply prints the parameters passed
  */
 static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
-		char *_cA, char *_cB, char *_rtp)
+		char *_cA, char *_cB, char *_rtp, char *_m_ip)
 {
 	int ret;
-	str srs, rtp, group, tmp_str, *aor, *display;
+	str srs, rtp, m_ip, group, tmp_str, *aor, *display;
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
 	struct to_body tmp_body;
@@ -209,6 +211,11 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 		return -1;
 	}
 
+	if (_m_ip && fixup_get_svalue(msg, (gparam_p)_m_ip, &m_ip) < 0) {
+		LM_ERR("cannot fetch media IP!\n");
+		return -1;
+	}
+
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
 	if (!dlg) {
@@ -223,7 +230,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 	 * this is the only way to provide a different socket for SRS, but
 	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_new_session(&srs, (_rtp ? &rtp : NULL),
+	if (!(ss = src_new_session(&srs, (_rtp ? &rtp : NULL), (_m_ip ? &m_ip : NULL),
 				(_grp ? &group : NULL), msg->force_send_socket))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
