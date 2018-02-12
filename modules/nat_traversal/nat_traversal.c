@@ -267,35 +267,35 @@ static stat_export_t statistics[] = {
 #endif
 
 static dep_export_t deps = {
-	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "sl",     DEP_ABORT  },
-		{ MOD_TYPE_DEFAULT, "tm",     DEP_ABORT  },
-		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
-		{ MOD_TYPE_NULL, NULL, 0 },
-	},
-	{ /* modparam dependencies */
-		{ NULL, NULL },
-	},
+    { // OpenSIPS module dependencies
+        { MOD_TYPE_DEFAULT, "sl",     DEP_ABORT  },
+        { MOD_TYPE_DEFAULT, "tm",     DEP_ABORT  },
+        { MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
+        { MOD_TYPE_NULL, NULL, 0 },
+    },
+    { // modparam dependencies
+        { NULL, NULL },
+    },
 };
 
 struct module_exports exports = {
-    "nat_traversal", // module name
-    MOD_TYPE_DEFAULT,// class of this module
-    MODULE_VERSION,  // module version
-    DEFAULT_DLFLAGS, // dlopen flags
-    &deps,           // OpenSIPS module dependencies
-    commands,        // exported functions
-    0,               // exported async functions
-    parameters,      // exported parameters
-    NULL,            // exported statistics (initialized early in mod_init)
-    NULL,            // exported MI functions
-    pvars,           // exported pseudo-variables
-    NULL,            // exported transformations
-    NULL,            // extra processes
-    mod_init,        // module init function (before fork. kids will inherit)
-    reply_filter,    // reply processing function
-    mod_destroy,     // destroy function
-    child_init       // child init function
+    "nat_traversal",  // module name
+    MOD_TYPE_DEFAULT, // class of this module
+    MODULE_VERSION,   // module version
+    DEFAULT_DLFLAGS,  // dlopen flags
+    &deps,            // OpenSIPS module dependencies
+    commands,         // exported functions
+    NULL,             // exported async functions
+    parameters,       // exported parameters
+    NULL,             // exported statistics (initialized early in mod_init)
+    NULL,             // exported MI functions
+    pvars,            // exported pseudo-variables
+    NULL,             // exported transformations
+    NULL,             // extra processes
+    mod_init,         // module init function (before fork. kids will inherit)
+    reply_filter,     // reply processing function
+    mod_destroy,      // destroy function
+    child_init        // child init function
 };
 
 
@@ -1626,13 +1626,13 @@ send_keepalive(NAT_Contact *contact)
     nat_port = strtol(ptr+1, NULL, 10);
     hostent = sip_resolvehost(&nat_ip, NULL, NULL, False, NULL);
     hostent2su(&to, hostent, 0, nat_port);
+    tolen=sockaddru_len(to);
 
-	tolen=sockaddru_len(to);
 again:
-	if (sendto(contact->socket->socket, buffer, len, 0, &to.s, tolen)==-1) {
-		if (errno==EINTR) goto again;
-		LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
-	}
+    if (sendto(contact->socket->socket, buffer, len, 0, &to.s, tolen)==-1) {
+        if (errno==EINTR) goto again;
+        LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
+    }
 }
 
 
@@ -1936,7 +1936,7 @@ preprocess_request(struct sip_msg *msg, void *_param)
         msg->msg_flags |= FL_NAT_TRACK_DIALOG;
     }
 
-	return SCB_RUN_ALL;
+    return SCB_RUN_ALL;
 }
 
 
