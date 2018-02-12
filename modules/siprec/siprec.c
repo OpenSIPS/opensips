@@ -188,10 +188,9 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 		char *_cA, char *_cB, char *_rtp, char *_m_ip)
 {
 	int ret;
-	str srs, rtp, m_ip, group, tmp_str, *aor, *display;
+	str srs, rtp, m_ip, group, tmp_str, *aor, *display, *xml_val;
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
-	struct to_body tmp_body;
 
 	if (!_srs) {
 		LM_ERR("No siprec SRS uri specified!\n");
@@ -249,14 +248,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 			LM_ERR("cannot fetch caller information!\n");
 			goto session_cleanup;
 		}
-		parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body);
-		/* if we have a correct uri, we're ok :) */
-		if (!tmp_body.uri.s && tmp_body.error != PARSE_OK) {
-			LM_ERR("invalid caller information: [%.*s]!\n", tmp_str.len, tmp_str.s);
-			goto session_cleanup;
-		}
-		aor = &tmp_body.uri;
-		display = (tmp_body.display.s ? &tmp_body.display : NULL);
+		xml_val = &tmp_str;
 	} else {
 		if (parse_from_header(msg) < 0) {
 			LM_ERR("cannot parse from header!\n");
@@ -264,9 +256,10 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 		}
 		aor = &get_from(msg)->uri;
 		display = (get_from(msg)->display.s ? &get_from(msg)->display : NULL);
+		xml_val = NULL;
 	}
 
-	if (src_add_participant(ss, aor, display, NULL) < 0) {
+	if (src_add_participant(ss, aor, display, xml_val, NULL) < 0) {
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
@@ -280,13 +273,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 			LM_ERR("cannot fetch callee information!\n");
 			goto session_cleanup;
 		}
-		parse_to(tmp_str.s, tmp_str.s + tmp_str.len, &tmp_body);
-		if (!tmp_body.uri.s && tmp_body.error != PARSE_OK) {
-			LM_ERR("invalid callee information: [%.*s]!\n", tmp_str.len, tmp_str.s);
-			goto session_cleanup;
-		}
-		aor = &tmp_body.uri;
-		display = (tmp_body.display.s ? &tmp_body.display : NULL);
+		xml_val = &tmp_str;
 	} else {
 		if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
 			LM_ERR("inexisting or invalid to header!\n");
@@ -294,9 +281,10 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 		}
 		aor = &get_to(msg)->uri;
 		display = (get_to(msg)->display.s ? &get_to(msg)->display : NULL);
+		xml_val = NULL;
 	}
 
-	if (src_add_participant(ss, aor, display, NULL) < 0) {
+	if (src_add_participant(ss, aor, display, xml_val, NULL) < 0) {
 		LM_ERR("cannot add callee pariticipant!\n");
 		goto session_cleanup;
 	}

@@ -47,6 +47,9 @@ Răzvan Crainea
    1.5. Use siprec_start_recording() function with multiple SRS
           servers
 
+   1.6. Use siprec_start_recording() function with custom XML
+          values for participants
+
 Chapter 1. Admin Guide
 
 1.1. Overview
@@ -228,12 +231,12 @@ rtpproxy_set [, media_ip] ]]]])
        more information.
      * group (optional) - an opaque values used by the SIPREC
        protocol to group calls in certain profiles.
-     * caller (optional) - a nameaddr header containing
-       information about the caller. If absent, the From header is
-       used.
-     * callee (optional) - a nameaddr header containing
-       information about the callee. If absent, the To header is
-       used.
+     * caller (optional) - an XML block containing information
+       about the caller. If absent, the From header is used to
+       build the value from.
+     * callee (optional) - an XML block containing information
+       about the callee. If absent, the To header is used to build
+       the value from.
      * rtpproxy_set (optional) - the RTPProxy set used for this
        call. If absent, the default set provisioned in the
        rtpproxy module is used.
@@ -267,4 +270,14 @@ n");
 for $ci in inbound group\n");
                 siprec_start_recording("$var(srs)", "inbound");
         }
+        ...
+
+   Example 1.6. Use siprec_start_recording() function with custom
+   XML values for participants
+        ...
+        $xml(caller_xml) = "<nameID></nameID>";
+        $xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:509
+0";
+        $xml(caller_xml/nameID) = "<name>test</name>";
+        siprec_start_recording("$var(srs)",,"$xml(caller_xml/nameID)");
         ...

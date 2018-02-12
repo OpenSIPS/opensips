@@ -132,6 +132,8 @@ void src_free_participant(struct src_part *part)
 	}
 	if (part->aor.s)
 		shm_free(part->aor.s);
+	if (part->xml_val.s)
+		shm_free(part->xml_val.s);
 }
 
 void src_unref_session(void *p)
@@ -163,7 +165,8 @@ void src_free_session(struct src_sess *sess)
 	shm_free(sess);
 }
 
-int src_add_participant(struct src_sess *sess, str *aor, str *name, siprec_uuid *uuid)
+int src_add_participant(struct src_sess *sess, str *aor, str *name,
+					str *xml_val, siprec_uuid *uuid)
 {
 	struct src_part *part;
 	if (sess->participants_no >= SRC_MAX_PARTICIPANTS) {
@@ -178,24 +181,37 @@ int src_add_participant(struct src_sess *sess, str *aor, str *name, siprec_uuid 
 	else
 		siprec_build_uuid(part->uuid);
 
-	part->aor.s = shm_malloc(aor->len + (name ? name->len: 0));
-	if (!part->aor.s) {
-		LM_ERR("out of shared memory!\n");
-		return -1;
+	if (xml_val) {
+		part->xml_val.s = shm_malloc(xml_val->len);
+		if (!part->xml_val.s) {
+			LM_ERR("out of shared memory!\n");
+			return -1;
+		}
+		memcpy(part->xml_val.s, xml_val->s, xml_val->len);
+		part->xml_val.len = xml_val->len;
+	} else {
+		part->xml_val.s = NULL;
+
+		part->aor.s = shm_malloc(aor->len + (name ? name->len: 0));
+		if (!part->aor.s) {
+			LM_ERR("out of shared memory!\n");
+			return -1;
+		}
+
+		part->aor.len = aor->len;
+		memcpy(part->aor.s, aor->s, aor->len);
+		if (name) {
+			/* remove the quotes, if provided */
+			if (name->len > 2 && name->s[0] == '"') {
+				name->s++;
+				name->len -= 2;
+			}
+			part->name.len = name->len;
+			part->name.s = part->aor.s + part->aor.len;
+			memcpy(part->name.s, name->s, name->len);
+		}
 	}
 
-	part->aor.len = aor->len;
-	memcpy(part->aor.s, aor->s, aor->len);
-	if (name) {
-		/* remove the quotes, if provided */
-		if (name->len > 2 && name->s[0] == '"') {
-			name->s++;
-			name->len -= 2;
-		}
-		part->name.len = name->len;
-		part->name.s = part->aor.s + part->aor.len;
-		memcpy(part->name.s, name->s, name->len);
-	}
 	sess->participants_no++;
 
 	return 1;
@@ -220,10 +236,11 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	int version;
 	time_t ts;
 	str tmp, rtpproxy, media_ip, srs_uri, group, host;
-	str aor, name;
+	str aor, name, *xml_val;
 	siprec_uuid uuid;
 	struct socket_info *si;
 	int p, port, proto, c, label, medianum;
+	int p_type;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch siprec info!\n");
@@ -331,8 +348,14 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 
 	SIPREC_BIN_POP(int, &p);
 	for (; p > 0; p--) {
-		SIPREC_BIN_POP(str, &aor);
-		SIPREC_BIN_POP(str, &name);
+		SIPREC_BIN_POP(int, &p_type); /* actual xml val or nameaddr ? */
+		if (p_type == 0)
+			SIPREC_BIN_POP(str, xml_val);
+		else {
+			SIPREC_BIN_POP(str, &aor);
+			SIPREC_BIN_POP(str, &name);
+			xml_val = NULL;
+		}
 		SIPREC_BIN_POP(str, &tmp);
 		if (tmp.len != sizeof(siprec_uuid)) {
 			LM_ERR("invalid length for uuid (%d != %d)\n", tmp.len,
@@ -340,7 +363,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 			goto error;
 		}
 		memcpy(&uuid, tmp.s, tmp.len);
-		if (src_add_participant(sess, &aor, &name, &uuid) < 0) {
+		if (src_add_participant(sess, &aor, &name, xml_val, &uuid) < 0) {
 			LM_ERR("cannot add new participant!\n");
 			goto error;
 		}
@@ -449,8 +472,16 @@ void srec_shutdown_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 
 	for (p = 0; p < ss->participants_no; p++) {
-		SIPREC_BIN_PUSH(str, &ss->participants[p].aor);
-		SIPREC_BIN_PUSH(str, &ss->participants[p].name);
+		if (ss->participants[p].xml_val.s) {
+			/* serialize actual xml val */
+			SIPREC_BIN_PUSH(int, 0);
+			SIPREC_BIN_PUSH(str, &ss->participants[p].xml_val);
+		} else {
+			/* serialize nameaddr */
+			SIPREC_BIN_PUSH(int, 1);
+			SIPREC_BIN_PUSH(str, &ss->participants[p].aor);
+			SIPREC_BIN_PUSH(str, &ss->participants[p].name);
+		}
 		SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->participants[p].uuid));
 		/* count the number of sessions */
 		c = 0;

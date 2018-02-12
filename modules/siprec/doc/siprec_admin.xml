@@ -304,14 +304,14 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 					profiles.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>caller</emphasis> (optional) - a nameaddr header
+					<emphasis>caller</emphasis> (optional) - an XML block
 					containing information about the caller. If absent, the
-					<emphasis>From</emphasis> header is used.
+					<emphasis>From</emphasis> header is used to build the value from.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>callee</emphasis> (optional) - a nameaddr header
+					<emphasis>callee</emphasis> (optional) - an XML block
 					containing information about the callee. If absent, the
-					<emphasis>To</emphasis> header is used.
+					<emphasis>To</emphasis> header is used to build the value from.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>rtpproxy_set</emphasis> (optional) - the
@@ -359,6 +359,19 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	...
 	</programlisting>
 			</example>
+
+			<example>
+			<title>Use <function>siprec_start_recording()</function> function with custom XML values for participants</title>
+			<programlisting format="linespecific">
+	...
+	$xml(caller_xml) = "&lt;nameID&gt;&lt;/nameID&gt;";
+	$xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:5090";
+	$xml(caller_xml/nameID) = "&lt;name&gt;test&lt;/name&gt;";
+	siprec_start_recording("$var(srs)",,"$xml(caller_xml/nameID)");
+	...
+	</programlisting>
+			</example>
+
 		</section>
 	</section>
 

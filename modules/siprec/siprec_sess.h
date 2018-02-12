@@ -55,6 +55,7 @@ struct srs_node {
 struct src_part {
 	str aor;
 	str name;
+	str xml_val;
 	siprec_uuid uuid;
 	struct list_head streams;
 };
@@ -102,7 +103,7 @@ void src_unref_session(void *p);
 struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *group,
 		struct socket_info *si);
 void src_free_session(struct src_sess *sess);
-int src_add_participant(struct src_sess *sess, str *aor, str *name,
+int src_add_participant(struct src_sess *sess, str *aor, str *name, str *xml_val,
 		siprec_uuid *uuid);
 
 extern struct tm_binds srec_tm;

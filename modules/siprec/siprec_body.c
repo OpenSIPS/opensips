@@ -559,23 +559,28 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 		SIPREC_COPY("\r\n\t</session>\r\n", buf);
 	}
 	for (p = 0; p < sess->participants_no; p++) {
-		if (!sess->participants[p].aor.s)
+		if (!sess->participants[p].aor.s && !sess->participants[p].xml_val.s)
 			continue;
 		SIPREC_COPY("\t<participant participant_id=\"", buf);
 		SIPREC_COPY_UUID(sess->participants[p].uuid, buf);
-		SIPREC_COPY("\">\r\n\t\t<nameID aor=\"", buf);
-		SIPREC_COPY_STR(sess->participants[p].aor, buf);
-		if (sess->participants[p].name.s) {
-			SIPREC_COPY("\">\r\n\t\t\t<name>", buf);
-			SIPREC_COPY_STR(sess->participants[p].name, buf);
-			SIPREC_COPY("</name>\r\n\t\t</nameID>", buf);
-		} else
-			SIPREC_COPY("\"/>", buf);
+		SIPREC_COPY("\">\r\n", buf);
+		if (sess->participants[p].xml_val.s)
+			SIPREC_COPY_STR(sess->participants[p].xml_val, buf);
+		else {
+			SIPREC_COPY("\t\t<nameID aor=\"", buf);
+			SIPREC_COPY_STR(sess->participants[p].aor, buf);
+			if (sess->participants[p].name.s) {
+				SIPREC_COPY("\">\r\n\t\t\t<name>", buf);
+				SIPREC_COPY_STR(sess->participants[p].name, buf);
+				SIPREC_COPY("</name>\r\n\t\t</nameID>", buf);
+			} else
+				SIPREC_COPY("\"/>", buf);
+		}
 		SIPREC_COPY("\r\n\t</participant>\r\n", buf);
 	}
 
 	for (p = 0; p < sess->participants_no; p++) {
-		if (!sess->participants[p].aor.s)
+		if (!sess->participants[p].aor.s && !sess->participants[p].xml_val.s)
 			continue;
 		list_for_each(it, &sess->participants[p].streams) {
 			stream = list_entry(it, struct srs_sdp_stream, list);
