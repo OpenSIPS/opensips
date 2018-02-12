@@ -1868,14 +1868,17 @@ mod_init(void)
         LM_NOTICE("using 10 seconds for keepalive_interval\n");
         keepalive_interval = 10;
     }
+
     // allocate a shm variable to keep the counter used by the keepalive
     // timer routine - it must be shared as the routine get executed
     // in different processes
-    if (NULL==(param=(int*) shm_malloc(sizeof(int)))) {
+    param = (int*)shm_malloc(sizeof(int));
+    if (param == NULL) {
         LM_ERR("cannot allocate shm memory for keepalive counter\n");
         return -1;
     }
     *param = 0;
+
     if (register_timer( "nt-pinger", keepalive_timer, (void*)(long)param, 1, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
         LM_ERR("failed to register keepalive timer\n");
         return -1;
