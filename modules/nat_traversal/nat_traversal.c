@@ -235,8 +235,8 @@ static NatTest NAT_Tests[] = {
 
 static cmd_export_t commands[] = {
     {"nat_keepalive",   (cmd_function)NAT_Keepalive, 0, NULL, 0, REQUEST_ROUTE},
-    {"fix_contact",     (cmd_function)FixContact,    0, NULL, 0, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE |LOCAL_ROUTE},
-    {"client_nat_test", (cmd_function)ClientNatTest, 1, fixup_uint_null, 0, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE|LOCAL_ROUTE},
+    {"fix_contact",     (cmd_function)FixContact,    0, NULL, 0, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {"client_nat_test", (cmd_function)ClientNatTest, 1, fixup_uint_null, 0, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {0, 0, 0, 0, 0, 0}
 };
 
@@ -268,13 +268,13 @@ static stat_export_t statistics[] = {
 
 static dep_export_t deps = {
     { // OpenSIPS module dependencies
-        { MOD_TYPE_DEFAULT, "sl",     DEP_ABORT  },
-        { MOD_TYPE_DEFAULT, "tm",     DEP_ABORT  },
-        { MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
-        { MOD_TYPE_NULL, NULL, 0 },
+        {MOD_TYPE_DEFAULT, "sl",     DEP_ABORT},
+        {MOD_TYPE_DEFAULT, "tm",     DEP_ABORT},
+        {MOD_TYPE_DEFAULT, "dialog", DEP_SILENT},
+        {MOD_TYPE_NULL, NULL, 0},
     },
     { // modparam dependencies
-        { NULL, NULL },
+        {NULL, NULL},
     },
 };
 
@@ -1876,8 +1876,7 @@ mod_init(void)
         return -1;
     }
     *param = 0;
-    if (register_timer( "nt-pinger", keepalive_timer, (void*)(long)param, 1,
-    TIMER_FLAG_DELAY_ON_DELAY)<0) {
+    if (register_timer( "nt-pinger", keepalive_timer, (void*)(long)param, 1, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
         LM_ERR("failed to register keepalive timer\n");
         return -1;
     }
