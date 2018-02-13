@@ -135,6 +135,8 @@ int pv_get_acc_extra(struct sip_msg *msg, pv_param_t *param,
  */
 int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 {
+	str s;
+
 	if (pvt == NULL || pvt->flags&PV_VAL_NULL) {
 		if (extra->shm_buf_len) {
 			shm_free(extra->value.s);
@@ -142,24 +144,30 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 		}
 		extra->value.s = NULL;
 		extra->value.len = 0;
-	} else if (pvt->flags&PV_TYPE_INT || pvt->flags&PV_VAL_STR) {
-		if (extra->shm_buf_len == 0) {
-			extra->value.s = shm_malloc(pvt->rs.len);
-			extra->shm_buf_len = extra->value.len = pvt->rs.len;
-		} else if (extra->shm_buf_len < pvt->rs.len) {
-			extra->value.s = shm_realloc(extra->value.s, pvt->rs.len);
-			extra->shm_buf_len = extra->value.len = pvt->rs.len;
+	} else {
+		if (pvt->flags&PV_VAL_STR) {
+			s = pvt->rs;
+		} else if (pvt->flags&PV_VAL_INT) {
+			s.s = int2str( pvt->ri, &s.len);
 		} else {
-			extra->value.len = pvt->rs.len;
+			LM_ERR("invalid pvt value!\n");
+			return -1;
+		}
+
+		if (extra->shm_buf_len == 0) {
+			extra->value.s = shm_malloc(s.len);
+			extra->shm_buf_len = extra->value.len = s.len;
+		} else if (extra->shm_buf_len < s.len) {
+			extra->value.s = shm_realloc(extra->value.s, s.len);
+			extra->shm_buf_len = extra->value.len = s.len;
+		} else {
+			extra->value.len = s.len;
 		}
 
 		if (extra->value.s == NULL)
 			goto memerr;
 
-		memcpy(extra->value.s, pvt->rs.s, pvt->rs.len);
-	} else {
-		LM_ERR("invalid pvt value!\n");
-		return -1;
+		memcpy(extra->value.s, s.s, s.len);
 	}
 
 	return 0;
