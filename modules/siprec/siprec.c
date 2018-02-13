@@ -249,6 +249,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 			goto session_cleanup;
 		}
 		xml_val = &tmp_str;
+		display = aor = NULL;
 	} else {
 		if (parse_from_header(msg) < 0) {
 			LM_ERR("cannot parse from header!\n");
