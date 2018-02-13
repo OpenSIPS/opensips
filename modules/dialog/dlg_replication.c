@@ -754,8 +754,8 @@ int repl_prof_utimer = DLG_REPL_PROF_TIMER;
 int repl_prof_timer_check = DLG_REPL_PROF_TIMER;
 int repl_prof_timer_expire = DLG_REPL_PROF_EXPIRE_TIMER;
 
-static void repl_prof_utimer_f(utime_t ticks, void *param);
-static void repl_prof_timer_f(unsigned int ticks, void *param);
+static void broadcast_profiles(utime_t ticks, void *param);
+static void clean_profiles(unsigned int ticks, void *param);
 
 int repl_prof_init(void)
 {
@@ -774,7 +774,7 @@ int repl_prof_init(void)
 		return -1;
 	}
 
-	if (register_timer("dialog-repl-profiles-timer", repl_prof_timer_f, NULL,
+	if (register_timer("dialog-repl-profiles-timer", clean_profiles, NULL,
 		repl_prof_timer_check, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 		LM_ERR("failed to register profiles utimer\n");
 		return -1;
@@ -791,7 +791,7 @@ int repl_prof_init(void)
 		return -1;
 	}
 
-	if (register_utimer("dialog-repl-profiles-utimer", repl_prof_utimer_f, NULL,
+	if (register_utimer("dialog-repl-profiles-utimer", broadcast_profiles, NULL,
 		repl_prof_utimer * 1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 		LM_ERR("failed to register profiles utimer\n");
 		return -1;
@@ -1041,7 +1041,7 @@ int replicate_profiles_count(repl_prof_novalue_t *rp)
 	return counter;
 }
 
-static void repl_prof_timer_f(unsigned int ticks, void *param)
+static void clean_profiles(unsigned int ticks, void *param)
 {
 	map_iterator_t it, del;
 	unsigned int count;
@@ -1089,7 +1089,7 @@ next_entry:
 	}
 }
 
-static void repl_prof_utimer_f(utime_t ticks, void *param)
+static void broadcast_profiles(utime_t ticks, void *param)
 {
 #define REPL_PROF_TRYSEND() \
 	do { \
