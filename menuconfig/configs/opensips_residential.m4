@@ -310,7 +310,7 @@ ifelse(USE_NAT,`yes',`
 			ifelse(USE_MULTIDOMAIN,`yes',`
 			if (!is_uri_host_local())',`
 			if (!is_myself("$rd"))') {
-				send_reply("403","Rely forbidden");
+				send_reply("403","Relay Forbidden");
 				exit;
 			}
 		}
