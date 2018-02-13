@@ -135,17 +135,17 @@ int reload_address_table(struct pm_part_struct *part_struct)
 			LM_ERR("invalid IP column type on row %d, skipping..\n", i);
 			continue;
 		}
-		if (VAL_TYPE(val + 1) != DB_INT || VAL_NULL(val + 1) ||
+		if ((VAL_TYPE(val + 1) != DB_INT && VAL_TYPE(val + 1) != DB_BIGINT) || VAL_NULL(val + 1) ||
 					VAL_INT(val + 1) < 0) {
 			LM_ERR("invalid group column type on row %d, skipping..\n", i);
 			continue;
 		}
-		if (VAL_TYPE(val + 2) != DB_INT || VAL_NULL(val + 2) ||
+		if ((VAL_TYPE(val + 2) != DB_INT && VAL_TYPE(val + 2) != DB_BIGINT) || VAL_NULL(val + 2) ||
 					VAL_INT(val + 2) < 0 || VAL_INT(val + 2) > 32) {
 			LM_ERR("invalid mask column type on row %d, skipping..\n", i);
 			continue;
 		}
-		if (VAL_TYPE(val + 3) != DB_INT || VAL_NULL(val + 3)) {
+		if ((VAL_TYPE(val + 3) != DB_INT && VAL_TYPE(val + 3) != DB_BIGINT) || VAL_NULL(val + 3)) {
 			LM_ERR("invalid port column type on row %d, skipping..\n", i);
 			continue;
 		}
