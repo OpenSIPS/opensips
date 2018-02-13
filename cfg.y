@@ -2040,6 +2040,16 @@ route_param: STRING {
 							$$=$1+1;
 						}
 			}
+		| route_param COMMA NULLV {
+						if ($1+1>=MAX_ACTION_ELEMS) {
+							yyerror("too many arguments in function\n");
+							$$=-1;
+						} else {
+							route_elems[$1].type = NULLV_ST;
+							route_elems[$1].u.data = 0;
+							$$=$1+1;
+						}
+			}
 	;
 
 async_func: ID LPAREN RPAREN {
