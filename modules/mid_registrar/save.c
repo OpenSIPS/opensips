@@ -620,7 +620,8 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	str *next_hop = NULL;
 
 	if (mri->sip_state == SIP_REQ_OUT) {
-		LM_ERR("mid-registrar does not support forked REGISTERs!\n");
+		LM_ERR("mid-registrar does not support forked REGISTERs (ci: %.*s)!\n",
+		       mri->callid.len, mri->callid.s);
 		return;
 	}
 
