@@ -28,15 +28,7 @@
 #include "../sr_module.h"
 
 void init_unit_tests(void) {
-	mpath = "modules/";
-	strcpy(mpath_buf, mpath);
-	mpath_len = strlen(mpath);
-	if(mpath_len==0 || mpath_buf[mpath_len-1]!='/') {
-		mpath_buf[mpath_len]='/';
-		mpath_len++;
-		mpath_buf[mpath_len]='\0';
-	}
-
+	set_mpath("modules/");
 	init_cachedb_tests();
 }
 

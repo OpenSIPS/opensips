@@ -208,9 +208,7 @@ struct module_exports{
 	                                    after the fork */
 };
 
-extern char *mpath;
-extern char mpath_buf[];
-extern int  mpath_len;
+void set_mpath(const char *new_mpath);
 
 struct sr_module* modules; /*!< global module list*/
 
