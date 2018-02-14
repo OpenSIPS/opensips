@@ -1,0 +1,17 @@
+.PHONY: test unit_tests system_tests
+
+ensure_test_defs:
+	@grep -q '^#DEFS+= -DUNIT_TESTS' Makefile.conf && \
+		sed -i 's/^#DEFS+= -DUNIT_TESTS/DEFS+= -DUNIT_TESTS/g' Makefile.conf && \
+		echo "-DUNIT_TESTS was not enabled in Makefile.conf," \
+			"run 'make test' again." && exit 1 || true
+
+unit_tests: ensure_test_defs $(NAME)
+	-@echo "======== Start Unit Tests ========"
+	./$(NAME) -T -w .
+	-@echo "======== Unit Tests Finished ========"
+
+system_tests:
+	$(MAKE) -C test/ all
+
+test: unit_tests #system_tests #TODO: bring these up to date!

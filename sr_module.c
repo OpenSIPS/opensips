@@ -58,7 +58,7 @@
 #include "net/proto_udp/proto_udp_handler.h"
 #include "net/proto_tcp/proto_tcp_handler.h"
 
-
+#include "test/unit_tests.h"
 
 struct sr_module* modules=0;
 
@@ -683,6 +683,11 @@ static int init_mod( struct sr_module* m, int skip_others)
 int init_modules(void)
 {
 	int ret;
+
+	if (testing_framework) {
+		init_unit_tests();
+		solve_module_dependencies(modules);
+	}
 
 	ret = init_mod(modules, 0);
 

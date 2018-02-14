@@ -96,5 +96,6 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC
 DEFS+= -DSHM_EXTRA_STATS #Provides tools to get extra statistics for the shared memory used
+#DEFS+= -DUNIT_TESTS #Include unit testing code into opensips and modules
 
 PREFIX ?= /usr/local/

@@ -34,6 +34,8 @@
 #define DO_DNS     1
 #define DO_REV_DNS 2
 
+extern int testing_framework;
+
 extern char * cfg_file;
 extern int config_check;
 extern char *stat_file;

@@ -56,9 +56,9 @@ typedef struct _str str;
 
 /* str initialization */
 #define str_init(_string)  {_string, sizeof(_string) - 1}
-static inline void init_str(str *dst, char *in)
+static inline void init_str(str *dst, const char *in)
 {
-	dst->s = in;
+	dst->s = (char *)in;
 	dst->len = strlen(in);
 }
 
