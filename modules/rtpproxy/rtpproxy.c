@@ -2277,8 +2277,14 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		/* Drain input buffer */
 		while ((poll(fds, 1, 0) == 1) &&
 		    ((fds[0].revents & POLLIN) != 0)) {
-			recv(rtpp_socks[node->idx], buf, sizeof(buf) - 1, 0);
-			fds[0].revents = 0;
+			do {
+			    len = recv(rtpp_socks[node->idx], buf, sizeof(buf)-1, 0);
+				fds[0].revents = 0;
+			} while (len == -1 && errno == EINTR);
+			if (len <= 0) {
+				LM_ERR("can't read reply from a RTP proxy\n");
+				goto badproxy;
+			}
 		}
 		v[0].iov_base = gencookie();
 		v[0].iov_len = strlen(v[0].iov_base);
