@@ -32,6 +32,7 @@
 #include "cachedb_con.h"
 #include "cachedb_pool.h"
 #include "cachedb_id.h"
+#include "cachedb_dtype.h"
 
 struct cachedb_url
 {
@@ -39,14 +40,8 @@ struct cachedb_url
 	struct cachedb_url *next;
 };
 
-typedef enum {
-	CDB_INT,
-	CDB_STR,
-	CDB_NULL,
-} cdb_raw_type_t;
-
 typedef struct {
-	cdb_raw_type_t type;
+	cdb_type_t type;
 	union {
 		int n;
 		str s;
@@ -70,6 +65,14 @@ typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);
 typedef int (cachedb_remove_f)(cachedb_con *con,str *attr);
 typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
+
+typedef int (cachedb_get_rows_f)(cachedb_con *con, const cdb_filter_t *filter,
+                                cdb_res_t **res);
+typedef int (cachedb_set_cols_f)(cachedb_con *con, const cdb_key_t *keys,
+                               const cdb_val_t *vals, int n, int ttl);
+typedef int (cachedb_unset_cols_f)(cachedb_con *con, const cdb_key_t *filter_keys,
+                          const cdb_val_t *filter_vals, const cdb_key_t *keys);
+
 /* bi-dimensional array will be returned */
 typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
 
@@ -89,6 +92,13 @@ typedef struct cachedb_funcs_t {
 	cachedb_add_f			*add;
 	cachedb_sub_f			*sub;
 	cachedb_raw_f			*raw_query;
+
+	/* API for column-oriented NoSQL databases (Cassandra, Mongo) */
+	cachedb_get_rows_f		*get_rows;
+	cachedb_set_cols_f		*set_cols;
+	cachedb_unset_cols_f	*unset_cols;
+	/* TODO: can we adapt these ^ to also work with Redis? */
+
 	cachedb_query_trans_f	*db_query_trans;
 	cachedb_free_trans_f	*db_free_trans;
 	cachedb_insert_trans_f	*db_insert_trans;
