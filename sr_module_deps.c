@@ -268,7 +268,7 @@ int solve_module_dependencies(struct sr_module *modules)
 		if (!dep_solved) {
 			switch (dep_type) {
 			case DEP_SILENT:
-				LM_DBG("module %s depends on %s%s%s%.*s, but %s loaded!\n",
+				LM_DBG("module %s depends on %s%s%s%.*s%s%s, but %s loaded!\n",
 						md->mod->exports->name,
 						md->dep.len == 0 ?
 							((md->mod_type == MOD_TYPE_SQLDB ||
@@ -277,11 +277,13 @@ int solve_module_dependencies(struct sr_module *modules)
 						mod_type_to_string(md->mod_type),
 						md->dep.len == 0 ? "" : " ",
 						md->dep.len, md->dep.s,
+						md->script_param ? " due to modparam " : "",
+						md->script_param ? md->script_param : "",
 						md->dep.len == 0 ? "none was" : "it was not");
 				break;
 			case DEP_WARN:
 			case DEP_ABORT:
-				LM_WARN("module %s depends on %s%s%s%.*s, but %s loaded!\n",
+				LM_WARN("module %s depends on %s%s%s%.*s%s%s, but %s loaded!\n",
 						md->mod->exports->name,
 						md->dep.len == 0 ?
 							((md->mod_type == MOD_TYPE_SQLDB ||
@@ -290,6 +292,8 @@ int solve_module_dependencies(struct sr_module *modules)
 						mod_type_to_string(md->mod_type),
 						md->dep.len == 0 ? "" : " ",
 						md->dep.len, md->dep.s,
+						md->script_param ? " due to modparam " : "",
+						md->script_param ? md->script_param : "",
 						md->dep.len == 0 ? "none was" : "it was not");
 				break;
 			}
