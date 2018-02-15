@@ -1070,7 +1070,7 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 {
 	char buf[MAX_HEADER_FIELD_LEN];
 
-	if (hfv->len > MAX_HEADER_FIELD_LEN) {
+	if (hfv->len + 1 > MAX_HEADER_FIELD_LEN) {
 		LM_ERR("header field buffer too small\n");
 		return -1;
 	}
@@ -1079,6 +1079,7 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 
 	/* append the header to the global list */
 	strncpy(buf, hfv->s, hfv->len);
+	buf[hfv->len] = '\0';
 	header_list = curl_slist_append(header_list, buf);
 
 	return 1;
