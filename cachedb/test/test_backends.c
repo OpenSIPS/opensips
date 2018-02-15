@@ -41,9 +41,7 @@ static void test_cachedb_api(const char *cachedb_name)
 	ok(cachedb_remove(&cdb_str, &key) == 1, "remove key");
 
 	memset(&val, 1, sizeof val);
-	ok(cachedb_fetch(&cdb_str, &key, &val) == 1, "fetch non-existing key");
-	ok(val.len == 0, "zero val len");
-	ok(!val.s, "NULL val str");
+	ok(cachedb_fetch(&cdb_str, &key, &val) == -2, "fetch non-existing key");
 }
 
 void init_cachedb_tests(void)

@@ -179,6 +179,7 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 	struct timeval start;
 	unsigned long ival;
 	char *p;
+	int ret = 0;
 
 	LM_DBG("find %.*s in %s\n", attr->len, attr->s,
 	       MONGO_NAMESPACE(con));
@@ -219,7 +220,7 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 					goto out_err;
 				}
 				memcpy(val->s, value->value.v_utf8.str, val->len);
-				goto out;
+				goto out_found;
 			case BSON_TYPE_INT32:
 				ival = (unsigned long)value->value.v_int32;
 				break;
@@ -239,16 +240,18 @@ int mongo_con_get(cachedb_con *con, str *attr, str *val)
 				goto out_err;
 			}
 			memcpy(val->s, p, val->len);
-			goto out;
+			goto out_found;
 		}
 	}
 
+	ret = -2;
+	memset(val, 0, sizeof *val);
 	LM_DBG("key not found: %.*s\n", attr->len, attr->s);
 
-out:
+out_found:
 	bson_destroy(filter);
 	mongoc_cursor_destroy(cursor);
-	return 0;
+	return ret;
 
 out_err:
 	bson_destroy(filter);
