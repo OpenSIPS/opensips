@@ -390,7 +390,8 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 	{
 		n = FRAG_NEXT(frag);
 
-		if ( ((char*)n < (char*)qm->last_frag) &&  n->prev && frag->prev )
+		if (((char*)n < (char*)qm->last_frag) &&
+		    frag_is_free(n) && frag_is_free(frag))
 		{
 			/* detach frag*/
 			fm_remove_free(qm, frag);
@@ -417,7 +418,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 				n = FRAG_NEXT(frag);
 			}
 			while
-			( ((char*)n < (char*)qm->last_frag) &&  n->prev);
+			( ((char*)n < (char*)qm->last_frag) && frag_is_free(n));
 
 			fm_insert_free(qm,frag);
 
@@ -493,6 +494,18 @@ void fm_free(struct fm_block* qm, void* p)
 	}
 	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
 
+#ifndef F_MALLOC_OPTIMIZATIONS
+	if (frag_is_free(f)) {
+	#ifdef DBG_MALLOC
+		LM_CRIT("freeing already freed pointer (%p), first free: "
+		        "%s: %s(%ld) - aborting\n", p, f->file, f->func, f->line);
+		abort();
+	#else
+		LM_CRIT("freeing already freed pointer (%p) - skipping!\n", p);
+		return;
+	#endif
+	}
+#endif
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "freeing block alloc'ed from %s: %s(%ld)\n", f->file, f->func,
 			f->line);
@@ -505,7 +518,7 @@ join:
 
 	n = FRAG_NEXT(f);
 
-	if (((char*)n < (char*)qm->last_frag) &&  n->prev )
+	if (((char*)n < (char*)qm->last_frag) &&  frag_is_free(n) )
 	{
 
 		fm_remove_free(qm, n);
@@ -595,7 +608,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 		diff=size-f->size;
 		n=FRAG_NEXT(f);
 
-		if (((char*)n < (char*)qm->last_frag) &&  n->prev &&
+		if (((char*)n < (char*)qm->last_frag) && frag_is_free(n) &&
 		 ((n->size+FRAG_OVERHEAD)>=diff)){
 
 			fm_remove_free(qm,n);
