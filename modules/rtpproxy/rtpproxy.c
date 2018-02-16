@@ -2279,13 +2279,13 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		    ((fds[0].revents & POLLIN) != 0)) {
 			if (fds[0].revents & (POLLERR|POLLNVAL)) {
 				LM_ERR("error on rtpproxy socket %d!\n", rtpp_socks[node->idx]);
-				break;
+				goto badproxy;
 			}
 			fds[0].revents = 0;
 			if (recv(rtpp_socks[node->idx], buf, sizeof(buf) - 1, 0) < 0 &&
 				errno != EINTR) {
 				LM_ERR("error while draining rtpproxy socket %d!\n", errno);
-				break;
+				goto badproxy;
 			}
 		}
 		v[0].iov_base = gencookie();
