@@ -87,6 +87,7 @@ extern int waitn_time;
 extern int max_contentid_len;
 extern str rlsubs_table;
 extern str rlpres_table;
+extern str rls_displayname_table;
 extern int hash_size;
 extern shtable_t rls_table;
 extern int pid;
@@ -170,6 +171,7 @@ extern str str_doc_type_col;
 extern str str_etag_col;
 extern str str_doc_col;
 extern str str_doc_uri_col;
+extern str str_displayname_col;
 
 #define DID_SEP_LEN   strlen(DID_SEP)
 #define DID_SEP       ";"

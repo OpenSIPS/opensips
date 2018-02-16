@@ -71,6 +71,7 @@ int waitn_time = 50;
 int max_contentid_len = 128;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
+str rls_displayname_table= str_init("rls_displayname");
 
 int hash_size= 512;
 shtable_t rls_table;
@@ -156,6 +157,7 @@ str str_doc_type_col = str_init("doc_type");
 str str_etag_col = str_init("etag");
 str str_doc_col = str_init("doc");
 str str_doc_uri_col = str_init("doc_uri");
+str str_displayname_col = str_init("displayname");
 
 
 /** module functions */
@@ -181,6 +183,7 @@ static param_export_t params[]={
 	{ "presence_server",        STR_PARAM, &presence_server.s          },
 	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
 	{ "rlpres_table",           STR_PARAM, &rlpres_table.s             },
+	{ "rls_displayname_table",  STR_PARAM, &rls_displayname_table.s    },
 	{ "waitn_time",             INT_PARAM, &waitn_time                 },
 	{ "max_contentid_len",      INT_PARAM, &max_contentid_len          },
 	{ "clean_period",           INT_PARAM, &clean_period               },
@@ -343,6 +346,7 @@ static int mod_init(void)
 	rlsubs_table.len= strlen(rlsubs_table.s);
 	rlpres_table.len= strlen(rlpres_table.s);
 	rls_xcap_table.len= strlen(rls_xcap_table.s);
+	rls_displayname_table.len= strlen(rls_displayname_table.s);
 
 	/* binding to mysql module  */
 	if (db_bind_mod(&db_url, &rls_dbf))
@@ -551,6 +555,11 @@ static int child_init(int rank)
 		if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 		{
 			LM_ERR("child %d: Error in use_table rlpres_table\n", rank);
+			return -1;
+		}
+		if (rls_dbf.use_table(rls_db, &rls_displayname_table) < 0)
+		{
+			LM_ERR("child %d: Error in use_table rls_displayname_table\n", rank);
 			return -1;
 		}
 

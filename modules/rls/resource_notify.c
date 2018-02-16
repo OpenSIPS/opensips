@@ -513,6 +513,14 @@ void timer_send_notify(unsigned int ticks,void *param)
 		body_col, ctype_col;
 	int n_result_cols= 0, i;
 	db_res_t *result= NULL;
+
+	db_key_t displayquery_cols[1], displayquery_result_cols[2];
+	db_val_t displayquery_vals[1];
+	int displayquery_resource_uri_col, displayquery_displayname_col;
+	int displayquery_n_result_cols= 0;
+	db_res_t *displayquery_result = NULL;
+	char * displayquery_displayname;
+
 	char* prev_did= NULL, * curr_did= NULL;
 	db_row_t *row;
 	db_val_t *row_vals;
@@ -687,11 +695,46 @@ void timer_send_notify(unsigned int ticks,void *param)
 		/* there might be more records with the same uri- more instances-
 		 * search and add them all */
 
+		/* find display for the resource_uri */
+		char displayname[512];
+		extractSipUsername(resource_uri, displayname);
+
+		displayquery_n_result_cols = 0;
+		displayquery_result = NULL;
+		displayquery_cols[0] = &str_resource_uri_col;
+		displayquery_vals[0].type = DB_STRING;
+		displayquery_vals[0].nul  = 0;
+		displayquery_vals[0].val.string_val = resource_uri;
+		displayquery_result_cols[displayquery_resource_uri_col= displayquery_n_result_cols++]= &str_resource_uri_col;
+		displayquery_result_cols[displayquery_displayname_col= displayquery_n_result_cols++]= &str_displayname_col;
+		if (rls_dbf.use_table(rls_db, &rls_displayname_table) < 0)
+		{
+			LM_ERR("in use_table\n");
+			goto error;
+		}
+
+		if(rls_dbf.query(rls_db, displayquery_cols, 0, displayquery_vals, displayquery_result_cols, 1, displayquery_n_result_cols, 0, &displayquery_result)< 0)
+		{
+			LM_ERR("in sql query\n");
+			goto error;
+		}
+
+		if (displayquery_result != NULL)
+		{
+			if (displayquery_result->n > 0)
+			{
+				row = &displayquery_result->rows[0];
+				row_vals = ROW_VALUES(row);
+				displayquery_displayname = (char*)row_vals[displayquery_displayname_col].val.string_val;
+				strcpy(displayname, displayquery_displayname);
+			}
+			rls_dbf.free_result(rls_db, displayquery_result);
+			displayquery_result = NULL;
+		}
+            
 		while(1)
 		{
-            char username[512];
-            extractSipUsername(resource_uri, username);
-            xmlNewChild(resource_node, NULL, BAD_CAST "name", BAD_CAST username);
+			xmlNewChild(resource_node, NULL, BAD_CAST "name", BAD_CAST displayname);
 
 			cid.s = NULL;
 			cid.len = 0;
