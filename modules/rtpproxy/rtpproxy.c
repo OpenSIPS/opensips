@@ -2275,6 +2275,7 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		fds[0].events = POLLIN;
 		fds[0].revents = 0;
 		/* Drain input buffer */
+		LM_ERR("node->rn_disabled: %d node->idx: %d rtpp_socks[node->idx]: %d\n", node->rn_disabled, node->idx, rtpp_socks[node->idx]);
 		while ((poll(fds, 1, 0) == 1) &&
 		    ((fds[0].revents & POLLIN) != 0)) {
 			if (fds[0].revents & (POLLERR|POLLNVAL)) {
