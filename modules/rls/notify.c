@@ -1311,8 +1311,18 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 					}
 					strcpy((char *) VAL_STRING(val), "application/dialog-info+xml");
 
+					str display;
 					char username[512];
 					extractSipUsername(normalized_uri->s, username);
+
+					display.s = XMLNodeGetAttrContentByName(subnode, "display");
+					if(display.s != NULL)
+					{
+						display.len = strlen(display.s);
+						strncpy(username, display.s, 511);
+						username[511] = 0;
+						xmlFree(display.s);
+					}
 					char buf[1024];
 					snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\" direction=\"receiver\"><state>terminated</state><remote><local><identity display=\"%s\">%s</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
 					val = &(ROW_VALUES(row)[pres_state_col]);
