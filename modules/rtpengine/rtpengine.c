@@ -1222,8 +1222,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				else if (str_eq(&key, "rtcp-mux-accept"))
 					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "accept"));
 				else
-					goto error;
-				break;
+					break;
+				continue;
 
 			case 16:
 				if (str_eq(&key, "UDP/TLS/RTP/SAVP"))
