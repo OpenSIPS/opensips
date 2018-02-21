@@ -23,8 +23,9 @@ Razvan Pistolea
 
               1.1.1. The idea
               1.1.2. Modes
-              1.1.3. Failures
-              1.1.4. The timer process
+              1.1.3. Capabilities
+              1.1.4. Failures
+              1.1.5. The timer process
 
         1.2. Dependencies
 
@@ -33,7 +34,7 @@ Razvan Pistolea
 
         1.3. Exported Parameters
 
-              1.3.1. db_urls (str)
+              1.3.1. db_URLs (str)
               1.3.2. db_probe_time (integer)
               1.3.3. db_max_consec_retrys (integer)
 
@@ -44,7 +45,7 @@ Razvan Pistolea
 
    List of Examples
 
-   1.1. Set db_urls parameter
+   1.1. Set db_URLs parameter
    1.2. Set db_probe_time parameter
    1.3. Set db_max_consec_retrys parameter
 
@@ -54,93 +55,75 @@ Chapter 1. Admin Guide
 
 1.1.1.  The idea
 
-   A virtual db will expose the same front db api however, it will
-   backed by many real db. This means that a virtual db url
-   translates to many real db urls. This virtual layer also
+   A virtual DB will expose the same front DB api however, it will
+   backed by many real DB. This means that a virtual DB URL
+   translates to many real DB URLs. This virtual layer also
    enables us to use the real dbs in multiple ways such as:
-   parallel, failover(hotswap), round-robin. Therefore: each
-   virtual db url with associated real dbs and a way to use(mode)
+   parallel, failover(hotswap) and round-robin. Therefore: each
+   virtual DB URL with associated real dbs and a way to use(mode)
    it's real dbs must be specified.
 
-1.1.2.  Modes
+1.1.2. Modes
 
    The implemented modes are:
      * FAILOVER
-       Use the first url; if it fails, use the next one, redo
-       operation.
+       Use the first URL; if it fails, take the next URL and redo
+       the operation.
      * PARALLEL
-       Use all the urls in the virtual db url. Fails if all the
-       urls fail.
+       Use all the URLs in the virtual DB URL set. Fails if all
+       the URLs fail.
      * ROUND (round-robin)
-       Use the next url each time; if it fails, use the next one,
+       Use the next URL each time; if it fails, use the next one,
        redo operation.
 
-   There are conceptual limitations to the above modes with
-   respect to the operation. For example in parallel mode it is ok
-   to insert into multiple dbs the same value but it is bad to
-   query multiple dbs into the same result. This implementation
-   threats such operation as it would be in failover mode.
+   When choosing the db virtual mode, be sure that there is a full
+   compatibility between the DB operations you want to do
+   (inserts, updates, deletes,...) and the relation (if any)
+   between the real DB URLs you have in the set - can be
+   completely independent, can be nodes of the same cluster, or
+   any other combination.
 
-  Conceptual allowed(1) and not allowed(0) operations
-                          parallel    round
-    dbb->use_table
-    dbb->init
-    dbb->close
+1.1.3. Capabilities
 
-    dbb->query              0           1
-    dbb->fetch_result       0           0
-    dbb->raw_query          0           1
-    dbb->free_result        0           0
-    dbb->insert             1           1
-    dbb->delete             1           0
-    dbb->update             1           0
-    dbb->replace            1           0
-    dbb->last_inserted_id   0           0
-    dbb->insert_update      1           1
-        dbb->async_raw_query    0           1
-        dbb->async_raw_resume   0           1
+   For each set (or new virtual DB URL), the capabilities are
+   automatically calculated based on the capabilities provided by
+   the real DB URLs from the set. A logical AND is done for each
+   cabability over all the URLs in the set. Shortly, in order for
+   the virtual URL to provide a certain capability, ALL its real
+   URLs must provide that capability.
 
-   Note 1: The capabilities returned are the minimum common
-   denominator of all the dbs in the set. The capabilities are
-   reduced even more based on the mode of the set (PARALLEL,
-   ROUND).
+   Note that starting with version 2.2 db_virtual supports
+   async_raw_query and async_raw_resume functions currently
+   implemented only by the mysql database engine.
 
-   Note 2: The capabilities will not be reduced for PARALLEL mode
-   but conceptual not allowed operations will be done on a single
-   db. Ex: query will only query one db.
+1.1.4.  Failures
 
-   Note 3: Since version 2.2 db_virtual supports async_raw_query
-   and async_raw_resume functions currently implemented only by
-   the mysql database engine.
+        When an operation from a process on a real DB fails:
+                it is marked (global and local CAN flag down)
+                its connection closed
 
-1.1.3.  Failures
+        Later a timer process (probe):
+        foreach virtual db_url
+                foreach real db_url
+                        if global CAN down
+                                try to connect
+                        if ok
+                                global CAN up
+                                close connection
 
-    When an operation from a process on a real db fails:
-        it is marked (global and local CAN flag down)
-        its connection closed
-
-    Later a timer process (probe):
-    foreach virtual db url
-        foreach real db_url
-            if global CAN down
-                try to connect
-            if ok
-                global CAN up
-                close connection
-
-    Later each process:
-        if local CAN down and global CAN up
-            if db_max_consec_retrys *
-                try to connect
-        if ok
-            local CAN up
+        Later each process:
+                if local CAN down and global CAN up
+                        if db_max_consec_retrys *
+                                try to connect
+                if ok
+                        local CAN up
 
 
    Note *: there could be inconsistencies between the probe and
    each process so a retry limit is in order. It is reset and
    ignored by an MI command.
 
-1.1.4. The timer process
+1.1.5. The timer process
 
    The timer process(probe) is a process that tries to reconnect
    to failed dbs from time to time. It is a separate process so
@@ -152,7 +135,7 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * At least one real db module.
+     * At least one real DB module.
 
 1.2.2. External Libraries or Applications
 
@@ -162,24 +145,24 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1.  db_urls (str)
+1.3.1.  db_URLs (str)
 
-   Multiple value parameter used for virtual db urls declaration.
+   Multiple value parameter used for virtual DB URLs declaration.
 
-   Example 1.1. Set db_urls parameter
+   Example 1.1. Set db_URLs parameter
 ...
 
-modparam("group","db_url","virtual://set1")
-modparam("presence|presence_xml", "db_url","virtual://set2")
+modparam("group","db_URL","virtual://set1")
+modparam("presence|presence_xml", "db_URL","virtual://set2")
 
-modparam("db_virtual", "db_urls", "define set1 PARALLEL")
-modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost
+modparam("db_virtual", "db_URLs", "define set1 PARALLEL")
+modparam("db_virtual", "db_URLs", "mysql://opensips:opensipsrw@localhost
 /testa")
-modparam("db_virtual", "db_urls", "postgres://opensips:opensipsrw@localh
+modparam("db_virtual", "db_URLs", "postgres://opensips:opensipsrw@localh
 ost/opensips")
 
-modparam("db_virtual", "db_urls", "define set2 FAILOVER")
-modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost
+modparam("db_virtual", "db_URLs", "define set2 FAILOVER")
+modparam("db_virtual", "db_URLs", "mysql://opensips:opensipsrw@localhost
 /testa")
 ...
 
@@ -188,7 +171,7 @@ modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost
    Time interval after which a registered timer process attempts
    to check failed(as reported by other processes) connections to
    real dbs. The probe will connect and disconnect to the failed
-   real db and announce others.
+   real DB and announce others.
 
    Default value is 10 (10 sec).
 
@@ -226,8 +209,8 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
      * None.
 
    MI FIFO Command Format:
-                db_get
-                _empty_line_
+                                db_get
+                                _empty_line_
 
 1.4.2.  db_set
 
@@ -239,16 +222,16 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 
    Parameters:
      * set_index [int]
-     * db_url_index [int]
+     * db_URL_index [int]
      * may_use_db_flag [boolean]
      * ignore db_max_consec_retrys[boolean](optional)
 
    db_set 3 2 0 1 means:
      * 3 - the fourth set (must exist)
-     * 2 - the third url in the fourth set(must exist)
-     * 0 - processes are not allowed to use that url
+     * 2 - the third URL in the fourth set(must exist)
+     * 0 - processes are not allowed to use that URL
      * 1 - reset and suppress db_max_consec_retrys
 
    MI FIFO Command Format:
-                db_set 3 2 0 1
-                _empty_line_
+                                db_set 3 2 0 1
+                                _empty_line_

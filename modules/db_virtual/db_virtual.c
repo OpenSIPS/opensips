@@ -443,22 +443,14 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
             break;
     }
 
-    LM_DBG("REDUCING capabilities for %.*s\n",
-        global->set_list[i].set_name.len, global->set_list[i].set_name.s);
-
-    dbb->cap = DB_CAP_FAILOVER;
-    for(j=0; j< global->set_list[i].size; j++){
+    dbb->cap = global->set_list[i].db_list[0].dbf.cap;
+    for(j=1; j< global->set_list[i].size; j++){
         dbb->cap &= global->set_list[i].db_list[j].dbf.cap;
     }
 
-    if(global->set_list[i].set_mode == FAILOVER){
-        dbb->cap &= DB_CAP_FAILOVER;
-    }else if(global->set_list[i].set_mode == PARALLEL){
-        dbb->cap &= DB_CAP_PARALLEL;
-    }else if(global->set_list[i].set_mode == ROUND){
-        dbb->cap &= DB_CAP_ROUND;
-    }
-
+    LM_DBG("Computed capabilities for %.*s are %x\n",
+        global->set_list[i].set_name.len, global->set_list[i].set_name.s,
+        dbb->cap);
 
     dbb->use_table         = db_virtual_use_table;
     dbb->init              = db_virtual_init;
