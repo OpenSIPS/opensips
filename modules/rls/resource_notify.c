@@ -514,13 +514,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 	int n_result_cols= 0, i;
 	db_res_t *result= NULL;
 
-	db_key_t displayquery_cols[1], displayquery_result_cols[2];
-	db_val_t displayquery_vals[1];
-	int displayquery_resource_uri_col, displayquery_displayname_col;
-	int displayquery_n_result_cols= 0;
-	db_res_t *displayquery_result = NULL;
-	char * displayquery_displayname;
-
 	char* prev_did= NULL, * curr_did= NULL;
 	db_row_t *row;
 	db_val_t *row_vals;
@@ -699,37 +692,49 @@ void timer_send_notify(unsigned int ticks,void *param)
 		char displayname[512];
 		extractSipUsername(resource_uri, displayname);
 
-		displayquery_n_result_cols = 0;
-		displayquery_result = NULL;
-		displayquery_cols[0] = &str_resource_uri_col;
-		displayquery_vals[0].type = DB_STRING;
-		displayquery_vals[0].nul  = 0;
-		displayquery_vals[0].val.string_val = resource_uri;
-		displayquery_result_cols[displayquery_resource_uri_col= displayquery_n_result_cols++]= &str_resource_uri_col;
-		displayquery_result_cols[displayquery_displayname_col= displayquery_n_result_cols++]= &str_displayname_col;
+		db_key_t q2_cols[1], q2_result_cols[2];
+		db_val_t q2_vals[1];
+		int q2_resource_uri_col, q2_displayname_col;
+		int q2_n_result_cols= 0;
+		db_res_t *q2_result = NULL;
+		db_row_t *q2_row;
+		db_val_t *q2_row_vals;
+
+		q2_n_result_cols = 0;
+		q2_result = NULL;
+		q2_cols[0] = &str_resource_uri_col;
+		q2_vals[0].type = DB_STRING;
+		q2_vals[0].nul  = 0;
+		q2_vals[0].val.string_val = resource_uri;
+		q2_result_cols[q2_resource_uri_col= q2_n_result_cols++]= &str_resource_uri_col;
+		q2_result_cols[q2_displayname_col= q2_n_result_cols++]= &str_displayname_col;
 		if (rls_dbf.use_table(rls_db, &rls_displayname_table) < 0)
 		{
 			LM_ERR("in use_table\n");
 			goto error;
 		}
 
-		if(rls_dbf.query(rls_db, displayquery_cols, 0, displayquery_vals, displayquery_result_cols, 1, displayquery_n_result_cols, 0, &displayquery_result)< 0)
+		if(rls_dbf.query(rls_db, q2_cols, 0, q2_vals, q2_result_cols, 1, q2_n_result_cols, 0, &q2_result)< 0)
 		{
-			LM_ERR("in sql query\n");
+			LM_ERR("in sql query - q2\n");
+			if (q2_result)
+			{
+				rls_dbf.free_result(rls_db, q2_result);
+				q2_result = NULL;
+			}
 			goto error;
 		}
 
-		if (displayquery_result != NULL)
+		if (q2_result != NULL)
 		{
-			if (displayquery_result->n > 0)
+			if (q2_result->n > 0)
 			{
-				row = &displayquery_result->rows[0];
-				row_vals = ROW_VALUES(row);
-				displayquery_displayname = (char*)row_vals[displayquery_displayname_col].val.string_val;
-				strcpy(displayname, displayquery_displayname);
+				q2_row = &q2_result->rows[0];
+				q2_row_vals = ROW_VALUES(q2_row);
+				strcpy(displayname, (char*)q2_row_vals[q2_displayname_col].val.string_val);
 			}
-			rls_dbf.free_result(rls_db, displayquery_result);
-			displayquery_result = NULL;
+			rls_dbf.free_result(rls_db, q2_result);
+			q2_result = NULL;
 		}
             
 		while(1)
