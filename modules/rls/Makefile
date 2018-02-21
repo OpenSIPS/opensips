@@ -5,6 +5,7 @@
 # 
 # WARNING: do not run this directly, it should be run by the master Makefile
 
+CC_OPTIMIZE_FLAG=-g
 include ../../Makefile.defs
 auto_gen=
 NAME=rls.so
