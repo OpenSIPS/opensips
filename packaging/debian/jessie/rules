@@ -287,7 +287,7 @@ override_dh_auto_install:
 		$(CURDIR)/debian/opensips-berkeley-bin/usr/
 
 override_dh_strip:
-	dh_strip --dbg-package=opensips-dbg
+	##dh_strip --dbg-package=opensips-dbg
 
 override_dh_auto_test:
 	#Disable tests, too old and they are obsolete
