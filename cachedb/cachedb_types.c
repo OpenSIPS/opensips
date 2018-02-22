@@ -20,57 +20,47 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __CACHEDB_DATA_H__
-#define __CACHEDB_DATA_H__
+#include "cachedb_types.h"
 
-#include "../ut.h"
-#include "../lib/list.h"
+void cdb_free_entries(cdb_dict_t *dict)
+{
+	struct list_head *_, *__;
+	cdb_kv_t *kv;
 
-typedef enum {
-	CDB_INT, /* signed, 32-bit integer */
-	CDB_STR,
-	CDB_DICT,
-	CDB_NULL,
-} cdb_type_t;
+	list_for_each_safe(_, __, dict) {
+		kv = list_entry(_, cdb_kv_t, list);
 
-enum cdb_filter_ops {
-	CDB_OP_LT,
-	CDB_OP_GT,
-};
+		switch (kv->val.type) {
+		case CDB_DICT:
+			cdb_free_entries(&kv->val.val.dict);
+			break;
+		case CDB_STR:
+			pkg_free(kv->val.val.st.s);
+			break;
+		default:
+			break;
+		}
 
-typedef struct {
-	str *key;
-	str *subkey; /* used to refer to sub-dictionary keys within a row */
-} cdb_key_t;
+		list_del(&kv->list);
 
-typedef struct {
-	enum cdb_filter_ops op;
-	int val;
-} cdb_filter_t;
+		/* TODO: is it ok to impose alloc linearization like this? */
+		pkg_free(kv);
+	}
+}
 
-struct cdb_dict;
+void cdb_free_rows(cdb_res_t *res)
+{
+	struct list_head *_, *__;
+	cdb_row_t *row;
 
-typedef struct {
-	cdb_type_t type;
-	int nul;
-	union {
-		int int_val;
-		str str_val;
-		struct cdb_dict *dict_val;
-	};
-} cdb_val_t;
+	if (!res)
+		return;
 
-typedef struct cdb_dict {
-	str key;
-	cdb_val_t val;
+	list_for_each_safe(_, __, &res->rows) {
+		row = list_entry(_, cdb_row_t, list);
+		list_del(&row->list);
+		cdb_free_entries(&row->dict);
+	}
 
-	struct cdb_dict *next;
-} cdb_dict_t;
-
-typedef struct {
-	cdb_dict_t row;
-
-	struct list_head list;
-} cdb_res_t;
-
-#endif /* __CACHEDB_DATA_H__ */
+	cdb_res_init(res);
+}

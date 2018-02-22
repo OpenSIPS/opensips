@@ -1568,7 +1568,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 							}
 
 							switch (cdb_reply[i][j].type) {
-								case CDB_INT:
+								case CDB_INT32:
 									avp_val.n = cdb_reply[i][j].val.n;
 									break;
 								case CDB_STR:
