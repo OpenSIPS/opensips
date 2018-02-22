@@ -99,6 +99,32 @@ struct sip_msg;
 #define  translate_pointer( _new_buf , _org_buf , _p) \
 	( (_p)?(_new_buf + (_p-_org_buf)):(0) )
 
+#define add_last(what, where) \
+	do { \
+		if (!(where)) { \
+			(where) = (what); \
+		} else { \
+			typeof(where) __wit = (where); \
+			while (__wit->next) \
+				__wit = __wit->next; \
+			__wit->next = (what); \
+		} \
+	} while (0)
+
+#define pkg_free_all(things) \
+	do { \
+		typeof(things) pos; \
+		while (things) \
+			{ pos = (things); (things) = (things)->next; pkg_free(pos); } \
+	} while (0)
+
+#define shm_free_all(things) \
+	do { \
+		typeof(things) pos; \
+		while (things) \
+			{ pos = (things); (things) = (things)->next; shm_free(pos); } \
+	} while (0)
+
 #define via_len(_via) \
 	((_via)->bsize-((_via)->name.s-\
 		((_via)->hdr.s+(_via)->hdr.len)))
