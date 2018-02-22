@@ -31,6 +31,7 @@
 #include "../mem/mem.h"
 #include "../mem/meminfo.h"
 #include "../str.h"
+#include "../ut.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -81,7 +82,7 @@ void cachedb_free_url(struct cachedb_url *list)
 
 static struct cachedb_engine_t* cachedb_list = NULL;
 
-static inline cachedb_engine* lookup_cachedb(str *name)
+cachedb_engine* lookup_cachedb(str *name)
 {
 	struct cachedb_engine_t* cde_node;
 
@@ -769,4 +770,34 @@ void free_raw_fetch(cdb_raw_entry **reply, int no_val, int no_key)
 	}
 
 	pkg_free(reply);
+}
+
+cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const str *key,
+                                enum cdb_filter_op op, const int_str_t *val)
+{
+	cdb_filter_t *new;
+
+	new = pkg_malloc(sizeof *new + key->len + (val->is_str ? val->s.len : 0));
+	if (!new) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+	memset(new, 0, sizeof *new);
+
+	new->key.s = (char *)(new + 1);
+	str_cpy(&new->key, key);
+
+	new->op = op;
+
+	if (val->is_str) {
+		new->val.is_str = 1;
+
+		new->val.s.s = (char *)(new + 1) + key->len;
+		str_cpy(&new->val.s, &val->s);
+	} else {
+		new->val.i = val->i;
+	}
+
+	add_last(new, existing);
+	return existing;
 }

@@ -32,7 +32,7 @@
 #include "cachedb_con.h"
 #include "cachedb_pool.h"
 #include "cachedb_id.h"
-#include "cachedb_dtype.h"
+#include "cachedb_types.h"
 
 struct cachedb_url
 {
@@ -67,11 +67,12 @@ typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int expires,int *
 typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 
 typedef int (cachedb_get_rows_f)(cachedb_con *con, const cdb_filter_t *filter,
-                                cdb_res_t **res);
+                                 cdb_res_t *res);
 typedef int (cachedb_set_cols_f)(cachedb_con *con, const cdb_key_t *keys,
-                               const cdb_val_t *vals, int n, int ttl);
-typedef int (cachedb_unset_cols_f)(cachedb_con *con, const cdb_key_t *filter_keys,
-                          const cdb_val_t *filter_vals, const cdb_key_t *keys);
+                                 const cdb_val_t *vals, int n, int ttl);
+typedef int (cachedb_unset_cols_f)(cachedb_con *con,
+                    const cdb_key_t *filter_keys, const cdb_val_t *filter_vals,
+                    const cdb_key_t *keys);
 
 /* bi-dimensional array will be returned */
 typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
@@ -116,6 +117,19 @@ typedef struct cachedb_engines {
 } cachedb_engine;
 
 int register_cachedb(cachedb_engine* cde_entry);
+
+/*
+ * Create a new key filter or append to existing ones. Multiple filters shall
+ * only be linked using a logical AND, due to limitations of some backends
+ *
+ * Returns NULL in case of an error, without touching existing filters
+ */
+cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const str *key,
+                                enum cdb_filter_op op, const int_str_t *val);
+static inline void cdb_free_filters(cdb_filter_t *filters)
+{
+	pkg_free_all(filters);
+}
 
 /* functions to be used from script */
 int cachedb_store(str* cachedb_engine, str* attr, str* val,int expires);
