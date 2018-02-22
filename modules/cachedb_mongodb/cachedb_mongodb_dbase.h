@@ -98,4 +98,3 @@ int mongo_con_set_cols(cachedb_con *con, const cdb_key_t *keys,
 int mongo_con_unset_cols(cachedb_con *con, const cdb_key_t *filter_keys,
                        const cdb_val_t *filter_vals, const cdb_key_t *keys);
 #endif /* CACHEDBMONGO_DBASE_H */
-

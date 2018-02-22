@@ -1762,10 +1762,10 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 				init_str(&text_op, "$lte");
 				break;
 			case CDB_OP_GT:
-				init_str(&text_op, "$gte");
+				init_str(&text_op, "$gt");
 				break;
 			case CDB_OP_GE:
-				init_str(&text_op, "$ge");
+				init_str(&text_op, "$gte");
 				break;
 			default:
 				LM_BUG("unsupported operator: %d\n", filter->op);
@@ -1827,9 +1827,11 @@ int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
 	}
 	bson_append_document_end(&bson_filter, &child);
 
-	bstr = bson_as_json(&bson_filter, NULL);
-	LM_DBG("using filter: %s\n", bstr);
-	bson_free(bstr);
+	if (is_printable(L_DBG)) {
+		bstr = bson_as_json(&bson_filter, NULL);
+		LM_DBG("using filter: %s\n", bstr);
+		bson_free(bstr);
+	}
 
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
@@ -1849,8 +1851,6 @@ int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
 		}
 
 		res->count++;
-		LM_DBG("adding %p to [ %p / %p / %p / %p ]\n", &row->list,
-		       &res->rows, res->rows.next, res->rows.next->next, res->rows.next->next->next);
 		list_add_tail(&row->list, &res->rows);
 	}
 
