@@ -91,5 +91,11 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
                           const db_key_t *_k, const db_op_t *_o,
                           const db_val_t *_v, const db_key_t *_uk,
                           const db_val_t *_uv, const int _n, const int _un);
+int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
+                       cdb_res_t *res);
+int mongo_con_set_cols(cachedb_con *con, const cdb_key_t *keys,
+                       const cdb_val_t *vals, int n, int ttl);
+int mongo_con_unset_cols(cachedb_con *con, const cdb_key_t *filter_keys,
+                       const cdb_val_t *filter_vals, const cdb_key_t *keys);
 #endif /* CACHEDBMONGO_DBASE_H */
 

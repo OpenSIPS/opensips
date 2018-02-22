@@ -1626,3 +1626,255 @@ out_err:
 	if (col) mongoc_collection_destroy(col);
 	return -1;
 }
+
+int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
+{
+	bson_iter_t iter;
+	bson_t subdoc;
+	const bson_value_t *v;
+	str key;
+	cdb_kv_t *entry;
+	union cdb_val_u *val;
+
+	if (bson_iter_init(&iter, doc)) {
+		while (bson_iter_next(&iter)) {
+			init_str(&key, bson_iter_key(&iter));
+			v = bson_iter_value(&iter);
+
+			entry = pkg_malloc(sizeof *entry + key.len);
+			if (!entry) {
+				LM_ERR("oom\n");
+				goto out_err;
+			}
+			memset(entry, 0, sizeof *entry);
+
+			val = &entry->val.val;
+
+			switch (v->value_type) {
+			case BSON_TYPE_UTF8:
+				entry->val.type = CDB_STR;
+				val->st.len = v->value.v_utf8.len;
+				val->st.s = pkg_malloc(val->st.len);
+					if (!val->st.s) {
+						LM_ERR("oom!\n");
+					pkg_free(entry);
+					goto out_err;
+				}
+				memcpy(val->st.s, v->value.v_utf8.str, val->st.len);
+				break;
+			case BSON_TYPE_INT32:
+				entry->val.type = CDB_INT32;
+				val->i32 = v->value.v_int32;
+				break;
+			case BSON_TYPE_INT64:
+				entry->val.type = CDB_INT64;
+				val->i64 = v->value.v_int64;
+				break;
+			case BSON_TYPE_DOCUMENT:
+				entry->val.type = CDB_DICT;
+				bson_init_static(&subdoc, v->value.v_doc.data,
+				                 v->value.v_doc.data_len);
+				INIT_LIST_HEAD(&val->dict);
+
+				if (mongo_doc_to_dict(&subdoc, &val->dict) != 0) {
+					LM_ERR("failed to parse subdoc\n");
+					pkg_free(entry);
+					goto out_err;
+				}
+				break;
+			case BSON_TYPE_NULL:
+				entry->val.type = CDB_NULL;
+				break;
+			default:
+				LM_ERR("unsupported MongoDB type %d!\n", v->value_type);
+				pkg_free(entry);
+				goto out_err;
+			}
+
+			entry->key.s = (char *)(entry + 1);
+			str_cpy(&entry->key, &key);
+
+			list_add(&entry->list, out_dict);
+		}
+	}
+
+	return 0;
+
+out_err:
+	cdb_free_entries(out_dict);
+	return -1;
+}
+
+cdb_row_t *mongo_mk_row(const bson_t *doc)
+{
+	cdb_row_t *row;
+
+	row = pkg_malloc(sizeof *row);
+	if (!row) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	INIT_LIST_HEAD(&row->dict);
+
+	if (mongo_doc_to_dict(doc, &row->dict) != 0) {
+		LM_ERR("failed to convert bson to dict\n");
+		goto out_err;
+	}
+
+	return row;
+
+out_err:
+	pkg_free(row);
+	return NULL;
+}
+
+int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
+{
+	bson_t child, subchild, _subchild;
+	str text_op;
+
+	if (filter) {
+		bson_append_array_begin(cur, "$and", 4, &child);
+		for (; filter; filter = filter->next) {
+			bson_append_document_begin(&child, "", 0, &subchild);
+			/* TODO: clean this up when forcing MongoDB 3.0+, as only then
+			 *       did they finally invent the $eq operator, doh!
+			 */
+			if (filter->op == CDB_OP_EQ) {
+				if (filter->val.is_str)
+					bson_append_utf8(&subchild, filter->key.s, filter->key.len,
+					                 filter->val.s.s, filter->val.s.len);
+				else
+					bson_append_int32(&subchild, filter->key.s, filter->key.len,
+					                  filter->val.i);
+				goto next_filter;
+			}
+
+			bson_append_document_begin(&subchild, filter->key.s,
+			                           filter->key.len, &_subchild);
+
+			switch (filter->op) {
+			case CDB_OP_LT:
+				init_str(&text_op, "$lt");
+				break;
+			case CDB_OP_LE:
+				init_str(&text_op, "$lte");
+				break;
+			case CDB_OP_GT:
+				init_str(&text_op, "$gte");
+				break;
+			case CDB_OP_GE:
+				init_str(&text_op, "$ge");
+				break;
+			default:
+				LM_BUG("unsupported operator: %d\n", filter->op);
+				return -1;
+			}
+
+			if (filter->val.is_str)
+				bson_append_utf8(&_subchild, text_op.s, text_op.len,
+				                 filter->val.s.s, filter->val.s.len);
+			else
+				bson_append_int32(&_subchild, text_op.s, text_op.len,
+				                  filter->val.i);
+
+			bson_append_document_end(&subchild, &_subchild);
+next_filter:
+			bson_append_document_end(&child, &subchild);
+		}
+		bson_append_array_end(cur, &child);
+	}
+
+	return 0;
+}
+
+int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
+                       cdb_res_t *res)
+{
+	bson_t child, bson_filter = BSON_INITIALIZER;
+	mongoc_cursor_t *cursor;
+	cdb_row_t *row;
+	const bson_t *doc;
+	struct timeval start;
+	char *bstr;
+
+	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
+
+#if MONGOC_CHECK_VERSION(1, 5, 0)
+	/* TODO: double-check */
+	if (mongo_cdb_filter_to_bson(filter, &bson_filter) != 0) {
+		LM_ERR("failed to build bson filter\n");
+		return -1;
+	}
+
+	start_expire_timer(start, mongo_exec_threshold);
+	cursor = mongoc_collection_find_with_opts(
+	                MONGO_COLLECTION(con), &bson_filter, NULL, NULL);
+
+	/* TODO */
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB get all rows",
+	                  NULL, 0, 0);
+
+	cdb_res_init(res);
+
+	while (mongoc_cursor_next(cursor, &doc)) {
+#else
+	BSON_APPEND_DOCUMENT_BEGIN(&bson_filter, "$query", &child);
+	if (mongo_cdb_filter_to_bson(filter, &child) != 0) {
+		LM_ERR("failed to build bson filter\n");
+		goto out_err;
+	}
+	bson_append_document_end(&bson_filter, &child);
+
+	bstr = bson_as_json(&bson_filter, NULL);
+	LM_DBG("using filter: %s\n", bstr);
+	bson_free(bstr);
+
+	start_expire_timer(start, mongo_exec_threshold);
+	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
+	                                0, 0, 0, &bson_filter, NULL, NULL);
+	/* TODO */
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB get all rows",
+	                  NULL, 0, 0);
+
+	cdb_res_init(res);
+
+	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
+#endif
+		row = mongo_mk_row(doc);
+		if (!row) {
+			LM_ERR("oom\n");
+			goto out_err;
+		}
+
+		res->count++;
+		LM_DBG("adding %p to [ %p / %p / %p / %p ]\n", &row->list,
+		       &res->rows, res->rows.next, res->rows.next->next, res->rows.next->next->next);
+		list_add_tail(&row->list, &res->rows);
+	}
+
+	LM_DBG("found %d results\n", res->count);
+
+	bson_destroy(&bson_filter);
+	mongoc_cursor_destroy(cursor);
+	return 0;
+
+out_err:
+	bson_destroy(&bson_filter);
+	mongoc_cursor_destroy(cursor);
+	cdb_free_rows(res);
+	return -1;
+}
+
+int mongo_con_set_cols(cachedb_con *con, const cdb_key_t *keys,
+                       const cdb_val_t *vals, int n, int ttl)
+{
+	return 0;
+}
+
+int mongo_con_unset_cols(cachedb_con *con, const cdb_key_t *filter_keys,
+                       const cdb_val_t *filter_vals, const cdb_key_t *keys)
+{
+	return 0;
+}
