@@ -7,9 +7,11 @@ ensure_test_defs:
 			"run 'make test' again." && exit 1 || true
 
 unit_tests: ensure_test_defs $(NAME)
-	-@echo "======== Start Unit Tests ========"
+	-@echo "          =============   Start Unit Tests   ============="
 	./$(NAME) -T -w .
-	-@echo "======== Unit Tests Finished ========"
+	-@echo "          ================================================"
+	-@echo "          ========   Passed All Tests! ᕦ(ò_óˇ)ᕤ   ========"
+	-@echo "          ================================================"
 
 system_tests:
 	$(MAKE) -C test/ all
