@@ -120,7 +120,27 @@ int res_has_kv(const cdb_res_t *res, const char *key, const cdb_val_t *val)
 	return 0;
 }
 
-static int test_get_rows(cachedb_funcs *api, cachedb_con *con)
+int test_get_rows_int32(cachedb_funcs *api, cachedb_con *con)
+{
+	return 1;
+}
+
+int test_get_rows_int64(cachedb_funcs *api, cachedb_con *con)
+{
+	return 1;
+}
+
+int test_get_rows_dict(cachedb_funcs *api, cachedb_con *con)
+{
+	return 1;
+}
+
+int test_get_rows_null(cachedb_funcs *api, cachedb_con *con)
+{
+	return 1;
+}
+
+static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 {
 	str key;
 	str sa = str_init("A"), sb = str_init("B"), sc = str_init("C"),
@@ -147,6 +167,8 @@ static int test_get_rows(cachedb_funcs *api, cachedb_con *con)
 	isv.is_str = 1;
 	isv.s = sd;
 	cdb_val.type = CDB_STR;
+
+	/* single filter tests */
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
 	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 4 items");
@@ -187,6 +209,47 @@ static int test_get_rows(cachedb_funcs *api, cachedb_con *con)
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
+	/* multi filter tests */
+
+	init_str(&isv.s, "D");
+	filter = cdb_append_filter(NULL, &key, CDB_OP_LT, &isv);
+	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 3 items");
+	ok(res.count == 3, "test_get_rows: have 3 items");
+	init_str(&isv.s, "A");
+	filter = cdb_append_filter(filter, &key, CDB_OP_GE, &isv);
+	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 3 items");
+	ok(res.count == 3, "test_get_rows: have 3 items");
+	init_str(&isv.s, "B");
+	filter = cdb_append_filter(filter, &key, CDB_OP_GT, &isv);
+	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 1 item");
+	ok(res.count == 1, "test_get_rows: have 1 item");
+	init_str(&isv.s, "C");
+	filter = cdb_append_filter(filter, &key, CDB_OP_EQ, &isv);
+	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 1 item");
+	ok(res.count == 1, "test_get_rows: have 1 item");
+	cdb_free_rows(&res);
+	cdb_free_filters(filter);
+
+	return 1;
+}
+
+static int test_get_rows(cachedb_funcs *api, cachedb_con *con)
+{
+	int rc = 1;
+
+	rc &= ok(test_get_rows_str(api, con), "test_get_rows - str tests");
+	todo();
+	rc &= ok(test_get_rows_int32(api, con), "test_get_rows - int32 tests");
+	rc &= ok(test_get_rows_int64(api, con), "test_get_rows - int64 tests");
+	rc &= ok(test_get_rows_dict(api, con), "test_get_rows - dict tests");
+	rc &= ok(test_get_rows_null(api, con), "test_get_rows - null tests");
+	end_todo;
+
+	return rc;
+}
+
+static int test_set_cols(cachedb_funcs *api, cachedb_con *con)
+{
 	return 1;
 }
 
@@ -228,7 +291,7 @@ static void test_cachedb_api(const char *cachedb_name)
 
 	todo();
 	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_SET_COLS))
-		ok(cde->cdb_func.set_cols(con, NULL, NULL, 0, 0) == 0, "multi-col set");
+		ok(test_set_cols(&cde->cdb_func, con), "multi-col set");
 
 	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_UNSET_COLS))
 		ok(cde->cdb_func.unset_cols(con, NULL, NULL, NULL) == 0, "multi-col unset");
