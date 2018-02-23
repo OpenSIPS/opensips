@@ -60,6 +60,7 @@ void cdb_free_rows(cdb_res_t *res)
 		row = list_entry(_, cdb_row_t, list);
 		list_del(&row->list);
 		cdb_free_entries(&row->dict);
+		pkg_free(row);
 	}
 
 	cdb_res_init(res);
