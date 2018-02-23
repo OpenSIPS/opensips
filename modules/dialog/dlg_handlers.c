@@ -411,6 +411,15 @@ routing_info:
 	}
 }
 
+static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
+		struct dlg_cell *dlg);
+
+void dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
+		struct dlg_cell *dlg)
+{
+	_dlg_setup_reinvite_callbacks(t, req, dlg);
+}
+
 static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 {
 	struct sip_msg *rpl,*req;
@@ -1086,14 +1095,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog is fully initialized */
 		dlg->flags |= DLG_FLAG_ISINIT;
-
-		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-			if(d_tmb.register_tmcb( 0, t, TMCB_RESPONSE_OUT,
-			dlg_onreply_out, (void *)dlg, 0) <=0) {
-				LM_ERR("can't register trace_onreply_out\n");
-			}
-		}
+		_dlg_setup_reinvite_callbacks(t, param->req, dlg);
 	}
 }
 
@@ -1195,6 +1197,31 @@ static void dlg_update_contact(struct cell* t, int type, struct tmcb_params *ps)
 	LM_DBG("Updated dialog %p contact to <%.*s>\n", dlg, contact.len, contact.s);
 }
 
+static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
+		struct dlg_cell *dlg)
+{
+	if (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REQ) &&
+			(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+			 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE)) {
+		/* register out callback in order to save SDP */
+		if (d_tmb.register_tmcb(req, 0, TMCB_REQUEST_BUILT,
+				dlg_onreq_out, (void *)dlg, 0) <= 0)
+			LM_ERR("can't register trace_onreq_out\n");
+		else
+			dlg->flags |= DLG_FLAG_REINVITE_PING_ENGAGED_REQ;
+	}
+
+	if (t && (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REPL) &&
+			(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+			 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE))) {
+		if (d_tmb.register_tmcb(0, t, TMCB_RESPONSE_OUT,
+				dlg_onreply_out, (void *)dlg, 0) <= 0)
+			LM_ERR("can't register trace_onreply_out\n");
+		else
+			dlg->flags |= DLG_FLAG_REINVITE_PING_ENGAGED_REPL;
+	}
+}
+
 int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 {
 	struct dlg_cell *dlg;
@@ -1289,14 +1316,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	}
 	dlg->lifetime = get_dlg_timeout(req);
 
-	if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-	dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-		/* register out callback in order to save Contact and SDP */
-		if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT, dlg_onreq_out, (void *)dlg, 0) <=0) {
-			LM_ERR("can't register trace_onreq_out\n");
-			return -1;
-		}
-	}
+	_dlg_setup_reinvite_callbacks(t, req, dlg);
 
 	if(d_tmb.register_tmcb(req, 0, TMCB_REQUEST_FWDED, dlg_update_contact,
 			(void *)dlg, 0) <=0) {
