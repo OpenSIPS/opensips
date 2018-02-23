@@ -1063,6 +1063,9 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 
 	flags = parse_create_dlg_flags(res);
 
+	t = d_tmb.t_gett();
+	if (t == T_UNDEFINED)
+		t = NULL;
 	/* is the dialog already created? */
 	if ( (dlg=get_current_dialog())!=NULL  )
 	{
@@ -1070,11 +1073,11 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | 
 		DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER | DLG_FLAG_REINVITE_PING_CALLEE);
 		dlg->flags |= flags;
+		dlg_setup_reinvite_callbacks(t, req, dlg);
 		return 1;
 	}
 
-	t = d_tmb.t_gett();
-	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req,flags)!=0)
+	if (dlg_create_dialog(t, req, flags)!=0)
 		return -1;
 
 	return 1;
