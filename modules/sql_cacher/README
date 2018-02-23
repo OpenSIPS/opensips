@@ -226,13 +226,15 @@ modparam("sql_cacher", "reload_interval", 5)
 
 1.5.1. sql_cacher_reload
 
-   Reloads the entire SQL table in cache for full caching or the
-   specified key for on demand caching.
+   Reloads the entire SQL table in cache in full caching mode.
 
-   The first parameter is the caching id.
+   Reloads the given key or invalidates all the keys in cache in
+   on demand mode.
 
-   The second parameter must be a value of the key column from the
-   SQL table. For full caching this parameter is not needed.
+   The first parameter is the caching entry's id.
+
+   The second parameter is the key. This parameter is optional and
+   only makes sense in on demand mode.
 
    Example 1.8. sql_cacher_reload usage
 ...
