@@ -51,6 +51,10 @@ extern stat_var *delete_recv;
 
 struct clusterer_binds clusterer_api;
 
+str repltag_dlg_val = str_init("dlgX_repltag");
+struct dlg_repl_tag **repltags_list;
+rw_lock_t *repltags_lock;
+
 static struct socket_info * fetch_socket_info(str *addr)
 {
 	struct socket_info *sock;
@@ -666,6 +670,97 @@ error:
 	LM_ERR("Failed to replicate deleted dialog\n");
 }
 
+struct dlg_repl_tag *create_dlg_repltag(str *tag_name)
+{
+	struct dlg_repl_tag *new_tag;
+
+	new_tag = shm_malloc(sizeof *new_tag + tag_name->len);
+	if (!new_tag) {
+		LM_ERR("No more shm memory\n");
+		return NULL;
+	}
+	memset(new_tag, 0, sizeof *new_tag);
+
+	new_tag->name.s = (char *)(new_tag + 1);
+	new_tag->name.len = tag_name->len;
+	memcpy(new_tag->name.s, tag_name->s, tag_name->len);
+
+	new_tag->state = REPLTAG_STATE_BACKUP;
+
+	new_tag->next = *repltags_list;
+	*repltags_list = new_tag;
+
+	return new_tag;
+}
+
+/* should be called under writing lock */
+struct dlg_repl_tag *get_repltag_unsafe(str *tag_name)
+{
+	struct dlg_repl_tag *tag;
+
+	for (tag = *repltags_list; tag && str_strcmp(&tag->name, tag_name);
+		tag = tag->next) ;
+	if (!tag && !(tag = create_dlg_repltag(tag_name))) {
+		LM_ERR("Failed to create replication tag\n");
+		return NULL;
+	}
+
+	return tag;
+}
+
+/* you must release the lock for switchable reading if @lock_stop_r = 0
+ * in case of error the lock is released by the function
+ */
+struct dlg_repl_tag *get_repltag(str *tag_name, int lock_stop_r)
+{
+	struct dlg_repl_tag *tag;
+	int lock_old_flag;
+
+	lock_start_sw_read(repltags_lock);
+
+	for (tag = *repltags_list; tag && str_strcmp(&tag->name, tag_name);
+		tag = tag->next) ;
+	if (!tag) {
+		lock_switch_write(repltags_lock, lock_old_flag);
+		if ((tag = create_dlg_repltag(tag_name)) == NULL) {
+			LM_ERR("Failed to create replication tag\n");
+			lock_switch_read(repltags_lock, lock_old_flag);
+			lock_stop_sw_read(repltags_lock);
+			return NULL;
+		}
+		lock_switch_read(repltags_lock, lock_old_flag);
+	}
+
+	if (lock_stop_r)
+		lock_stop_sw_read(repltags_lock);
+
+	return tag;
+}
+
+static int receive_repltag_active_msg(bin_packet_t *packet)
+{
+	str tag_name;
+	struct dlg_repl_tag *tag;
+
+	bin_pop_str(packet, &tag_name);
+
+	lock_start_write(repltags_lock);
+
+	if ((tag = get_repltag_unsafe(&tag_name)) == NULL) {
+		LM_ERR("Unable to fetch replication tag\n");
+		lock_stop_write(repltags_lock);
+		return -1;
+	}
+
+	/* directly go to backup state when another
+	 * node in the cluster is to active */
+	tag->state = REPLTAG_STATE_BACKUP;
+
+	lock_stop_write(repltags_lock);
+
+	return 0;
+}
+
 void receive_dlg_repl(bin_packet_t *packet)
 {
 	int rc = 0;
@@ -684,6 +779,9 @@ void receive_dlg_repl(bin_packet_t *packet)
 		case REPLICATION_DLG_DELETED:
 			rc = dlg_replicated_delete(pkt);
 			if_update_stat(dlg_enable_stats, delete_recv, 1);
+			break;
+		case REPLICATION_TAG_ACTIVE:
+			rc = receive_repltag_active_msg(pkt);
 			break;
 		case SYNC_PACKET_TYPE:
 			while (clusterer_api.sync_chunk_iter(pkt))
@@ -1193,4 +1291,94 @@ struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
 		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_tree(200, MI_SSTR(MI_OK));
+}
+
+int set_dlg_repltag(struct dlg_cell *dlg, str *tag_name)
+{
+	if (get_repltag(tag_name, 1) == NULL) {
+		LM_ERR("Unable to fetch replication tag\n");
+		return -1;
+	}
+
+	if (store_dlg_value(dlg, &repltag_dlg_val, tag_name) < 0) {
+		LM_ERR("Failed to store dlg value\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int broadcast_repltag_active(str *tag_name)
+{
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_TAG_ACTIVE, BIN_VERSION,
+		0) < 0) {
+		LM_ERR("Failed to init bin packet");
+		return -1;
+	}
+	bin_push_str(&packet, tag_name);
+
+	if (clusterer_api.send_all(&packet, dialog_repl_cluster) !=
+		CLUSTERER_SEND_SUCCES) {
+		bin_free_packet(&packet);
+		return -1;
+	}
+
+	bin_free_packet(&packet);
+
+	return 0;
+}
+
+struct mi_root *mi_set_repltag_active(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_node* node;
+	struct dlg_repl_tag *tag;
+
+	node = cmd_tree->node.kids;
+	if (node == NULL || !node->value.s || !node->value.len)
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+
+	lock_start_write(repltags_lock);
+
+	if ((tag = get_repltag_unsafe(&node->value)) == NULL)
+		return init_mi_tree(500, MI_SSTR("Unable to set replication tag"));
+
+	tag->state = REPLTAG_STATE_ACTIVE;
+
+	lock_stop_write(repltags_lock);
+
+	if (broadcast_repltag_active(&node->value) < 0)
+		LM_ERR("Failed to broadcast message about tag [%.*s] going active\n",
+			node->value.len, node->value.s);
+
+	return init_mi_tree( 200, MI_SSTR(MI_OK));
+}
+
+/* @return:
+ *	0 - backup
+ *	1 - active
+ * -1 - error
+ */
+int get_repltag_state(struct dlg_cell *dlg)
+{
+	str tag_name;
+	struct dlg_repl_tag *tag;
+	int rc;
+
+	if (fetch_dlg_value(dlg, &repltag_dlg_val, &tag_name, 0) < 0) {
+		LM_ERR("Unable to fetch dlg value for replication tag\n");
+		return -1;
+	}
+
+	if ((tag = get_repltag(&tag_name, 0)) == NULL) {
+		LM_ERR("Unable to fetch replication tag\n");
+		return -1;
+	}
+
+	rc = tag->state;
+
+	lock_stop_sw_read(repltags_lock);
+
+	return rc;
 }

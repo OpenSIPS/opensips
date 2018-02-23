@@ -44,7 +44,6 @@
 #include "dlg_profile.h"
 #include "dlg_handlers.h"
 
-
 extern str dlg_extra_hdrs;
 
 int free_tm_dlg(dlg_t *td)

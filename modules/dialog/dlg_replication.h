@@ -28,6 +28,7 @@
 #include "../../bin_interface.h"
 #include "../../socket_info.h"
 #include "../../timer.h"
+#include "../../rw_locking.h"
 #include "../clusterer/api.h"
 
 #ifndef _DIALOG_DLG_REPLICATION_H_
@@ -36,8 +37,21 @@
 #define REPLICATION_DLG_CREATED		1
 #define REPLICATION_DLG_UPDATED		2
 #define REPLICATION_DLG_DELETED		3
+#define REPLICATION_TAG_ACTIVE		4
 
 #define BIN_VERSION 1
+
+#define REPLTAG_STATE_BACKUP 0
+#define REPLTAG_STATE_ACTIVE 1
+
+struct dlg_repl_tag {
+	str name;
+	int state;
+	struct dlg_repl_tag *next;
+};
+
+extern struct dlg_repl_tag **repltags_list;
+extern rw_lock_t *repltags_lock;
 
 extern int dialog_repl_cluster;
 extern int profile_repl_cluster;
@@ -47,11 +61,14 @@ extern str prof_repl_cap;
 
 extern struct clusterer_binds clusterer_api;
 
+extern str repltag_dlg_val;
+
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
 void replicate_dialog_deleted(struct dlg_cell *dlg);
 
-int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag, str *ttag, int safe);
+int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag,
+							str *ttag, int safe);
 int dlg_replicated_update(bin_packet_t *packet);
 int dlg_replicated_delete(bin_packet_t *packet);
 
@@ -59,6 +76,10 @@ void receive_dlg_repl(bin_packet_t *packet);
 void rcv_cluster_event(enum clusterer_event ev, int node_id);
 
 struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param);
+struct mi_root *mi_set_repltag_active(struct mi_root *cmd, void *param);
+
+int get_repltag_state(struct dlg_cell *dlg);
+int set_dlg_repltag(struct dlg_cell *dlg, str *tag_name);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 

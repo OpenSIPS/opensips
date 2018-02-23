@@ -153,6 +153,7 @@ static int fixup_get_vals(void** param, int param_no);
 static int w_get_dlg_info(struct sip_msg*, char*, char*, char*, char*);
 static int w_get_dlg_vals(struct sip_msg*, char*, char*, char*);
 static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
+static int w_set_dlg_repltag(struct sip_msg *msg, char *repltag);
 
 /* item/pseudo-variables functions */
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
@@ -222,6 +223,8 @@ static cmd_export_t cmds[]={
 			BRANCH_ROUTE | LOCAL_ROUTE | EVENT_ROUTE | TIMER_ROUTE },
 	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
 			0, REQUEST_ROUTE},
+	{"set_dlg_repl_tag", (cmd_function)w_set_dlg_repltag, 1,
+			fixup_spve_null, 0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
@@ -311,6 +314,7 @@ static mi_export_t mi_cmds[] = {
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
 	{ "profile_end_dlgs",   0, mi_profile_terminate,  0,  0,  0},
+	{ "set_repl_tag_active",0, mi_set_repltag_active, 0,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -878,6 +882,17 @@ static int mod_init(void)
 
 		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
 			LM_ERR("Sync request failed\n");
+
+		if ((repltags_list = shm_malloc(sizeof *repltags_list)) == NULL) {
+			LM_CRIT("No more shm memory\n");
+			return -1;
+		}
+		*repltags_list = NULL;
+
+		if ((repltags_lock = lock_init_rw()) == NULL) {
+			LM_CRIT("Failed to init lock\n");
+			return -1;
+		}
 	}
 
 	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,
@@ -995,6 +1010,24 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
+	struct dlg_repl_tag *tag, *tag_tmp;
+
+	if (repltags_list) {
+		if (*repltags_list) {
+			for (tag = *repltags_list; tag; ) {
+				tag_tmp = tag;
+				tag = tag->next;
+				shm_free(tag_tmp);
+			}
+		}
+		shm_free(repltags_list);
+		repltags_list = NULL;
+	}
+	if (repltags_lock) {
+		lock_destroy_rw(repltags_lock);
+		repltags_lock = NULL;
+	}
+
 	if (dlg_db_mode != DB_MODE_NONE) {
 		dialog_update_db(0, 0/*do not do locking*/);
 		destroy_dlg_db();
@@ -1595,6 +1628,34 @@ static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
 	}
 
 	unref_dlg(dlg, 1);
+
+	return 1;
+}
+
+static int w_set_dlg_repltag(struct sip_msg *msg, char *repltag)
+{
+	str tag_name;
+	struct dlg_cell *dlg;
+
+	if (!dialog_repl_cluster) {
+		LM_DBG("Dialog replication not configured\n");
+		return 1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)repltag, &tag_name) < 0) {
+		LM_ERR("no replication tag\n");
+		return -1;
+	}
+
+	if ((dlg = get_current_dialog()) == NULL) {
+		LM_ERR("Unable to fetch dialog\n");
+		return -1;
+	}
+
+	if (set_dlg_repltag(dlg, &tag_name) < 0) {
+		LM_ERR("Unable to set replication tag\n");
+		return -1;
+	}
 
 	return 1;
 }

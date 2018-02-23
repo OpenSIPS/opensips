@@ -43,7 +43,6 @@
 #include "dlg_cb.h"
 #include "dlg_profile.h"
 
-
 str dlg_id_column			=	str_init(DLG_ID_COL);
 str call_id_column			=	str_init(CALL_ID_COL);
 str from_uri_column			=	str_init(FROM_URI_COL);
