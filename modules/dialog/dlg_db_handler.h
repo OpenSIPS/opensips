@@ -28,6 +28,7 @@
 
 #include "../../str.h"
 #include "../../db/db.h"
+#include "../tm/tm_load.h"
 
 #define DLG_ID_COL				"dlg_id"
 #define CALL_ID_COL				"callid"
