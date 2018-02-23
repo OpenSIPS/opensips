@@ -39,7 +39,7 @@ cdb_val_t *dict_fetch(const str *key, const cdb_dict_t *dict)
 	list_for_each(_, dict) {
 		pair = list_entry(_, cdb_kv_t, list);
 
-		if (!str_strcmp(&pair->key, key))
+		if (!str_strcmp(&pair->key.name, key))
 			return &pair->val;
 	}
 
@@ -61,7 +61,7 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 	list_for_each(p1, a) {
 		pair = list_entry(p1, cdb_kv_t, list);
 
-		val = dict_fetch(&pair->key, b);
+		val = dict_fetch(&pair->key.name, b);
 		if (!val)
 			return 1;
 
@@ -142,7 +142,7 @@ int test_get_rows_null(cachedb_funcs *api, cachedb_con *con)
 
 static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 {
-	str key;
+	cdb_key_t key;
 	str sa = str_init("A"), sb = str_init("B"), sc = str_init("C"),
 	    sd = str_init("D");
 	int_str_t isv;
@@ -150,19 +150,20 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 	cdb_res_t res;
 	cdb_val_t cdb_val;
 
-	init_str(&key, "tgr_1");
-	ok(api->set(con, &key, &sa, 0) == 0, "test_get_rows: set A");
+	init_str(&key.name, "tgr_1");
+	ok(api->set(con, &key.name, &sa, 0) == 0, "test_get_rows: set A");
 
-	init_str(&key, "tgr_2");
-	ok(api->set(con, &key, &sb, 0) == 0, "test_get_rows: set B");
+	init_str(&key.name, "tgr_2");
+	ok(api->set(con, &key.name, &sb, 0) == 0, "test_get_rows: set B");
 
-	init_str(&key, "tgr_3");
-	ok(api->set(con, &key, &sc, 0) == 0, "test_get_rows: set C");
+	init_str(&key.name, "tgr_3");
+	ok(api->set(con, &key.name, &sc, 0) == 0, "test_get_rows: set C");
 
-	init_str(&key, "tgr_4");
-	ok(api->set(con, &key, &sd, 0) == 0, "test_get_rows: set D");
+	init_str(&key.name, "tgr_4");
+	ok(api->set(con, &key.name, &sd, 0) == 0, "test_get_rows: set D");
 
-	init_str(&key, "opensips");
+	memset(&key, 0, sizeof key);
+	init_str(&key.name, "opensips");
 
 	isv.is_str = 1;
 	isv.s = sd;
@@ -294,7 +295,7 @@ static void test_cachedb_api(const char *cachedb_name)
 		ok(test_set_cols(&cde->cdb_func, con), "multi-col set");
 
 	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_UNSET_COLS))
-		ok(cde->cdb_func.unset_cols(con, NULL, NULL, NULL) == 0, "multi-col unset");
+		ok(cde->cdb_func.unset_cols(con, NULL, NULL, 0) == 0, "multi-col unset");
 
 	end_todo;
 }

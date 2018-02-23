@@ -1691,8 +1691,8 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 				goto out_err;
 			}
 
-			entry->key.s = (char *)(entry + 1);
-			str_cpy(&entry->key, &key);
+			entry->key.name.s = (char *)(entry + 1);
+			str_cpy(&entry->key.name, &key);
 
 			list_add(&entry->list, out_dict);
 		}
@@ -1733,26 +1733,31 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 {
 	bson_t child, subchild, _subchild;
 	str text_op;
+	str key;
 
 	if (filter) {
 		bson_append_array_begin(cur, "$and", 4, &child);
 		for (; filter; filter = filter->next) {
 			bson_append_document_begin(&child, "", 0, &subchild);
+			if (filter->key.is_pk)
+				init_str(&key, "_id");
+			else
+				key = filter->key.name;
+
 			/* TODO: clean this up when forcing MongoDB 3.0+, as only then
 			 *       did they finally invent the $eq operator, doh!
 			 */
 			if (filter->op == CDB_OP_EQ) {
 				if (filter->val.is_str)
-					bson_append_utf8(&subchild, filter->key.s, filter->key.len,
+					bson_append_utf8(&subchild, key.s, key.len,
 					                 filter->val.s.s, filter->val.s.len);
 				else
-					bson_append_int32(&subchild, filter->key.s, filter->key.len,
+					bson_append_int32(&subchild, key.s, key.len,
 					                  filter->val.i);
 				goto next_filter;
 			}
 
-			bson_append_document_begin(&subchild, filter->key.s,
-			                           filter->key.len, &_subchild);
+			bson_append_document_begin(&subchild, key.s, key.len, &_subchild);
 
 			switch (filter->op) {
 			case CDB_OP_LT:
@@ -1867,14 +1872,14 @@ out_err:
 	return -1;
 }
 
-int mongo_con_set_cols(cachedb_con *con, const cdb_key_t *keys,
-                       const cdb_val_t *vals, int n, int ttl)
+int mongo_con_set_cols(cachedb_con *con, const cdb_filter_t *row_filter,
+                       const cdb_dict_t *cols)
 {
 	return 0;
 }
 
-int mongo_con_unset_cols(cachedb_con *con, const cdb_key_t *filter_keys,
-                       const cdb_val_t *filter_vals, const cdb_key_t *keys)
+int mongo_con_unset_cols(cachedb_con *con, const cdb_filter_t *row_filter,
+                         const cdb_key_t *cols, int nc)
 {
 	return 0;
 }

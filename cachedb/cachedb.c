@@ -772,27 +772,29 @@ void free_raw_fetch(cdb_raw_entry **reply, int no_val, int no_key)
 	pkg_free(reply);
 }
 
-cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const str *key,
+cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const cdb_key_t *key,
                                 enum cdb_filter_op op, const int_str_t *val)
 {
 	cdb_filter_t *new;
 
-	new = pkg_malloc(sizeof *new + key->len + (val->is_str ? val->s.len : 0));
+	new = pkg_malloc(sizeof *new + key->name.len
+	                 + (val->is_str ? val->s.len : 0));
 	if (!new) {
 		LM_ERR("oom\n");
 		return NULL;
 	}
 	memset(new, 0, sizeof *new);
 
-	new->key.s = (char *)(new + 1);
-	str_cpy(&new->key, key);
+	new->key.name.s = (char *)(new + 1);
+	str_cpy(&new->key.name, &key->name);
 
+	new->key.is_pk = key->is_pk;
 	new->op = op;
 
 	if (val->is_str) {
 		new->val.is_str = 1;
 
-		new->val.s.s = (char *)(new + 1) + key->len;
+		new->val.s.s = (char *)(new + 1) + key->name.len;
 		str_cpy(&new->val.s, &val->s);
 	} else {
 		new->val.i = val->i;

@@ -43,16 +43,16 @@ enum cdb_filter_op {
 };
 
 typedef struct {
-	str *key;
-	str *subkey; /* used to refer to sub-dictionary keys within a row */
+	str name;
+	char is_pk;
 } cdb_key_t;
 
-typedef struct _cdb_filter_t {
-	str key;
+typedef struct cdb_filter {
+	cdb_key_t key;
 	enum cdb_filter_op op;
 	int_str_t val;
 
-	struct _cdb_filter_t *next;
+	struct cdb_filter *next;
 } cdb_filter_t;
 
 typedef struct list_head cdb_dict_t; /* list of cdb_kv_t */
@@ -68,8 +68,10 @@ typedef struct {
 } cdb_val_t;
 
 typedef struct {
-	str key;
+	cdb_key_t key;
+	str subkey; /* may be used during "SET" to refer to a sub-dictionary key */
 	cdb_val_t val;
+	int ttl; /* may be used during "SET" operations; 0 means "no ttl set" */
 
 	struct list_head list;
 } cdb_kv_t;
