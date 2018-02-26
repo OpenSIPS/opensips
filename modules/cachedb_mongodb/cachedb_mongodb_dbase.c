@@ -1746,65 +1746,83 @@ out_err:
 
 int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 {
-	bson_t child, subchild, _subchild;
+	bson_t and_bson, *child, arr_doc, *subchild, _subchild;
 	str text_op;
 	str key;
+	char prepend_and = filter ? !!filter->next : 0;
 
-	if (filter) {
-		bson_append_array_begin(cur, "$and", 4, &child);
-		for (; filter; filter = filter->next) {
-			bson_append_document_begin(&child, "", 0, &subchild);
-			if (filter->key.is_pk)
-				init_str(&key, "_id");
-			else
-				key = filter->key.name;
+	if (!filter)
+		return 0;
 
-			/* TODO: clean this up when forcing MongoDB 3.0+, as only then
-			 *       did they finally invent the $eq operator, doh!
-			 */
-			if (filter->op == CDB_OP_EQ) {
-				if (filter->val.is_str)
-					bson_append_utf8(&subchild, key.s, key.len,
-					                 filter->val.s.s, filter->val.s.len);
-				else
-					bson_append_int32(&subchild, key.s, key.len,
-					                  filter->val.i);
-				goto next_filter;
-			}
+	if (prepend_and) {
+		bson_append_array_begin(cur, "$and", 4, &and_bson);
+		child = &and_bson;
+	} else {
+		child = cur;
+	}
 
-			bson_append_document_begin(&subchild, key.s, key.len, &_subchild);
+	for (; filter; filter = filter->next) {
+		if (prepend_and) {
+			bson_append_document_begin(child, "", 0, &arr_doc);
+			subchild = &arr_doc;
+		} else {
+			subchild = cur;
+		}
 
-			switch (filter->op) {
-			case CDB_OP_LT:
-				init_str(&text_op, "$lt");
-				break;
-			case CDB_OP_LE:
-				init_str(&text_op, "$lte");
-				break;
-			case CDB_OP_GT:
-				init_str(&text_op, "$gt");
-				break;
-			case CDB_OP_GE:
-				init_str(&text_op, "$gte");
-				break;
-			default:
-				LM_BUG("unsupported operator: %d\n", filter->op);
-				return -1;
-			}
+		if (filter->key.is_pk)
+			init_str(&key, "_id");
+		else
+			key = filter->key.name;
 
+		/* TODO: clean this up when forcing MongoDB 3.0+, as only then
+		 *       did they finally invent the $eq operator, doh!
+		 */
+		if (filter->op == CDB_OP_EQ) {
 			if (filter->val.is_str)
-				bson_append_utf8(&_subchild, text_op.s, text_op.len,
+				bson_append_utf8(subchild, key.s, key.len,
 				                 filter->val.s.s, filter->val.s.len);
 			else
-				bson_append_int32(&_subchild, text_op.s, text_op.len,
+				bson_append_int32(subchild, key.s, key.len,
 				                  filter->val.i);
-
-			bson_append_document_end(&subchild, &_subchild);
-next_filter:
-			bson_append_document_end(&child, &subchild);
+			goto next_filter;
 		}
-		bson_append_array_end(cur, &child);
+
+		bson_append_document_begin(subchild, key.s, key.len, &_subchild);
+
+		switch (filter->op) {
+		case CDB_OP_LT:
+			init_str(&text_op, "$lt");
+			break;
+		case CDB_OP_LE:
+			init_str(&text_op, "$lte");
+			break;
+		case CDB_OP_GT:
+			init_str(&text_op, "$gt");
+			break;
+		case CDB_OP_GE:
+			init_str(&text_op, "$gte");
+			break;
+		default:
+			LM_BUG("unsupported operator: %d\n", filter->op);
+			return -1;
+		}
+
+		if (filter->val.is_str)
+			bson_append_utf8(&_subchild, text_op.s, text_op.len,
+			                 filter->val.s.s, filter->val.s.len);
+		else
+			bson_append_int32(&_subchild, text_op.s, text_op.len,
+			                  filter->val.i);
+
+		bson_append_document_end(subchild, &_subchild);
+
+	next_filter:
+		if (prepend_and)
+			bson_append_document_end(child, subchild);
 	}
+
+	if (prepend_and)
+		bson_append_array_end(cur, child);
 
 	return 0;
 }
@@ -1817,7 +1835,6 @@ int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
 	cdb_row_t *row;
 	const bson_t *doc;
 	struct timeval start;
-	char *bstr;
 
 	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
 
