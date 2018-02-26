@@ -2292,12 +2292,13 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		v[0].iov_base = gencookie();
 		v[0].iov_len = strlen(v[0].iov_base);
 		for (i = 0; i < rtpproxy_retr; i++) {
+			int error_counter = 0;
 			do {
 				len = writev(rtpp_socks[node->idx], v, vcnt);
-				if (errno < 0) {
+				if (errno < 0 && error_counter < 10) {
 					LM_ERR("writev rtpp_socks[%d] len: %d errno: %d\n", node->idx, len, errno);
+					error_counter++;
 				}
-		}
 			} while (len == -1 && (errno == EINTR || errno == ENOBUFS));
 			if (len <= 0) {
 				LM_ERR("can't send command to a RTP proxy %s\n",
@@ -2306,10 +2307,12 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 			}
 			while ((poll(fds, 1, rtpproxy_tout) == 1) &&
 			    (fds[0].revents & POLLIN) != 0) {
+				int error_counter = 0;
 				do {
 					len = recv(rtpp_socks[node->idx], buf, sizeof(buf)-1, 0);
-					if (errno < 0) {
+					if (errno < 0 && error_counter < 10) {
 						LM_ERR("recv  rtpp_socks[%d] len: %d errno: %d\n", node->idx, len, errno);
+						error_counter++;
 					}
 				} while (len == -1 && errno == EINTR);
 				if (len <= 0) {
