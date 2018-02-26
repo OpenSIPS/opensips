@@ -1885,10 +1885,210 @@ out_err:
 	return -1;
 }
 
-int mongo_con_set_cols(cachedb_con *con, const cdb_filter_t *row_filter,
-                       const cdb_dict_t *cols)
+int mongo_print_cdb_key(str *dest, const cdb_key_t *key, const str *subkey)
 {
+	static str static_pkg_buf;
+	str main_key;
+	int total_len;
+
+	if (key->is_pk)
+		init_str(&main_key, "_id");
+	else
+		main_key = key->name;
+
+	if (ZSTR(*subkey)) {
+		*dest = main_key;
+		return 0;
+	}
+
+	total_len = main_key.len + 1 + subkey->len;
+
+	if (pkg_str_extend(&static_pkg_buf, total_len + 1)) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	sprintf(static_pkg_buf.s, "%.*s.%.*s", main_key.len, main_key.s,
+	        subkey->len, subkey->s);
+
+	dest->s = static_pkg_buf.s;
+	dest->len = total_len;
+
 	return 0;
+}
+
+int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
+{
+	struct list_head *_;
+	bson_t bson_val = BSON_INITIALIZER;
+	cdb_kv_t *pair;
+	str key;
+
+	list_for_each (_, dict) {
+		pair = list_entry(_, cdb_kv_t, list);
+		key = pair->key.name;
+
+		switch (pair->val.type) {
+		case CDB_NULL:
+			if (!bson_append_null(out_doc, key.s, key.len)) {
+				LM_ERR("failed to append NULL doc\n");
+				return -1;
+			}
+			break;
+		case CDB_INT32:
+			if (!bson_append_int32(out_doc, key.s, key.len,
+			                       pair->val.val.i32)) {
+				LM_ERR("failed to append %.*s: %d\n", key.len,
+				       key.s, pair->val.val.i32);
+				return -1;
+			}
+			break;
+		case CDB_INT64:
+			if (!bson_append_int64(out_doc, key.s, key.len,
+			                       pair->val.val.i64)) {
+				LM_ERR("failed to append %.*s: %ld\n", key.len,
+				       key.s, pair->val.val.i64);
+				return -1;
+			}
+			break;
+		case CDB_STR:
+			if (!bson_append_utf8(out_doc, key.s, key.len,
+			                      pair->val.val.st.s, pair->val.val.st.len)) {
+				LM_ERR("failed to append %.*s: %.*s\n", key.len,
+				       key.s, pair->val.val.st.len, pair->val.val.st.s);
+				return -1;
+			}
+			break;
+		case CDB_DICT:
+			if (mongo_cdb_dict_to_bson(&pair->val.val.dict, &bson_val) != 0) {
+				LM_ERR("failed to convert dict to bson\n");
+				return -1;
+			}
+
+			if (!bson_append_document(out_doc, key.s, key.len,
+			                          &bson_val)) {
+				LM_ERR("failed to append doc\n");
+				return -1;
+			}
+			bson_destroy(&bson_val);
+			bson_reinit(&bson_val);
+			break;
+		default:
+			LM_ERR("unsupported type %d for key %.*s\n", pair->val.type,
+			       key.len, key.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int mongo_con_set_cols(cachedb_con *con, const cdb_filter_t *row_filter,
+                       const cdb_dict_t *pairs)
+{
+	struct list_head *_;
+	bson_t filter = BSON_INITIALIZER, update = BSON_INITIALIZER;
+	bson_t child, bson_val = BSON_INITIALIZER;
+	bson_error_t error;
+	struct timeval start;
+	int ret = 0;
+	cdb_kv_t *pair;
+	str key;
+
+	if (mongo_cdb_filter_to_bson(row_filter, &filter) != 0) {
+		LM_ERR("failed to build bson filter\n");
+		return -1;
+	}
+
+	BSON_APPEND_DOCUMENT_BEGIN(&update, "$set", &child);
+	list_for_each(_, pairs) {
+		pair = list_entry(_, cdb_kv_t, list);
+
+		/* we only support one level of subkey indirection --
+		 * any subkeys present at deeper nesting levels will be ignored */
+		if (mongo_print_cdb_key(&key, &pair->key, &pair->subkey) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+			goto out;
+		}
+
+		LM_DBG("appending key %.*s\n", key.len, key.s);
+
+		switch (pair->val.type) {
+		case CDB_NULL:
+			if (!bson_append_null(&child, key.s, key.len)) {
+				LM_ERR("failed to append NULL doc\n");
+				ret = -1;
+				goto out;
+			}
+			break;
+		case CDB_INT32:
+			if (!bson_append_int32(&child, key.s, key.len,
+			                       pair->val.val.i32)) {
+				LM_ERR("failed to append i32 val: %d\n", pair->val.val.i32);
+				ret = -1;
+				goto out;
+			}
+			break;
+		case CDB_INT64:
+			if (!bson_append_int64(&child, key.s, key.len,
+			                       pair->val.val.i64)) {
+				LM_ERR("failed to append i64 val: %ld\n", pair->val.val.i64);
+				ret = -1;
+				goto out;
+			}
+			break;
+		case CDB_STR:
+			if (!bson_append_utf8(&child, key.s, key.len,
+			                      pair->val.val.st.s, pair->val.val.st.len)) {
+				LM_ERR("failed to append str val: %.*s\n",
+				       pair->val.val.st.len, pair->val.val.st.s);
+				ret = -1;
+				goto out;
+			}
+			break;
+		case CDB_DICT:
+			if (mongo_cdb_dict_to_bson(&pair->val.val.dict, &bson_val) != 0) {
+				LM_ERR("failed to convert dict to bson\n");
+				ret = -1;
+				goto out;
+			}
+
+			if (!bson_append_document(&child, key.s, key.len, &bson_val)) {
+				LM_ERR("failed to append key %.*s to doc\n", key.len, key.s);
+				ret = -1;
+				goto out;
+			}
+			bson_destroy(&bson_val);
+			bson_reinit(&bson_val);
+			break;
+		default:
+			LM_ERR("unsupported val type: %d\n", pair->val.type);
+			ret = -1;
+			goto out;
+		}
+	}
+
+	bson_append_document_end(&update, &child);
+
+	dbg_bson("using filter: ", &filter);
+	dbg_bson("using update: ", &update);
+
+	start_expire_timer(start, mongo_exec_threshold);
+	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
+	                              &filter, &update, NULL, &error)) {
+		dump_mongo_err(&error);
+		ret = -1;
+	}
+
+	/* TODO */
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB set multi-cols",
+	                  NULL, 0, 0);
+
+out:
+	bson_destroy(&filter);
+	bson_destroy(&update);
+	return ret;
 }
 
 int mongo_con_unset_cols(cachedb_con *con, const cdb_filter_t *row_filter,
