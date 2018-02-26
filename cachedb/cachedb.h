@@ -70,7 +70,7 @@ typedef int (cachedb_get_rows_f)(cachedb_con *con, const cdb_filter_t *filter,
                                  cdb_res_t *res);
 typedef int (cachedb_set_cols_f)(cachedb_con *con,
                                  const cdb_filter_t *row_filter,
-                                 const cdb_dict_t *cols);
+                                 const cdb_dict_t *pairs);
 typedef int (cachedb_unset_cols_f)(cachedb_con *con,
                                    const cdb_filter_t *row_filter,
                                    const cdb_key_t *keys, int nk);

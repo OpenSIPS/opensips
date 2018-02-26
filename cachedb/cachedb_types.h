@@ -42,6 +42,15 @@ enum cdb_filter_op {
 	CDB_OP_GE,
 };
 
+/**
+ * This macro can be used to initialize a #cdb_key_t structure on the stack
+ */
+#define CDB_KEY_INITIALIZER \
+   {                        \
+      STR_NULL,             \
+      0,                    \
+   }
+
 typedef struct {
 	str name;
 	char is_pk;
@@ -71,7 +80,7 @@ typedef struct {
 	cdb_key_t key;
 	str subkey; /* may be used during "SET" to refer to a sub-dictionary key */
 	cdb_val_t val;
-	int ttl; /* may be used during "SET" operations; 0 means "no ttl set" */
+	int ttl; /* seconds; may be used during "SET"; 0 means "no ttl set" */
 
 	struct list_head list;
 } cdb_kv_t;
@@ -86,6 +95,40 @@ typedef struct {
 	struct list_head rows; /* list of cdb_row_t */
 	int count;
 } cdb_res_t;
+
+static inline void cdb_dict_init(cdb_dict_t *dict)
+{
+	INIT_LIST_HEAD(dict);
+}
+
+static inline cdb_kv_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
+{
+	cdb_kv_t *pair;
+
+	pair = pkg_malloc(sizeof *pair + key->name.len
+	                  + (subkey ? subkey->len : 0));
+	if (!pair) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+	memset(pair, 0, sizeof *pair);
+
+	pair->key.name.s = (char *)(pair + 1);
+	str_cpy(&pair->key.name, &key->name);
+	pair->key.is_pk = key->is_pk;
+
+	if (subkey) {
+		pair->subkey.s = pair->key.name.s + key->name.len;
+		str_cpy(&pair->subkey, subkey);
+	}
+
+	return pair;
+}
+
+static inline void cdb_dict_add(cdb_kv_t *pair, cdb_dict_t *dict)
+{
+	list_add(&pair->list, dict);
+}
 
 static inline void cdb_res_init(cdb_res_t *res)
 {

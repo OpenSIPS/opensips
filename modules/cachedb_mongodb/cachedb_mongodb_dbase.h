@@ -96,7 +96,7 @@ int mongo_truncate(cachedb_con *con);
 int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *row_filter,
                        cdb_res_t *res);
 int mongo_con_set_cols(cachedb_con *con, const cdb_filter_t *row_filter,
-                       const cdb_dict_t *cols);
+                       const cdb_dict_t *pairs);
 int mongo_con_unset_cols(cachedb_con *con, const cdb_filter_t *row_filter,
                          const cdb_key_t *cols, int nc);
 #endif /* CACHEDBMONGO_DBASE_H */

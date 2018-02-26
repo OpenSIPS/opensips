@@ -1651,69 +1651,65 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 	bson_iter_t iter;
 	bson_t subdoc;
 	const bson_value_t *v;
-	str key;
-	cdb_kv_t *entry;
+	cdb_key_t key = CDB_KEY_INITIALIZER;
+	cdb_kv_t *pair;
 	union cdb_val_u *val;
 
 	if (bson_iter_init(&iter, doc)) {
 		while (bson_iter_next(&iter)) {
-			init_str(&key, bson_iter_key(&iter));
+			init_str(&key.name, bson_iter_key(&iter));
 			v = bson_iter_value(&iter);
 
-			entry = pkg_malloc(sizeof *entry + key.len);
-			if (!entry) {
+			pair = cdb_mk_pair(&key, NULL);
+			if (!pair) {
 				LM_ERR("oom\n");
 				goto out_err;
 			}
-			memset(entry, 0, sizeof *entry);
 
-			val = &entry->val.val;
+			val = &pair->val.val;
 
 			switch (v->value_type) {
 			case BSON_TYPE_UTF8:
-				entry->val.type = CDB_STR;
+				pair->val.type = CDB_STR;
 				val->st.len = v->value.v_utf8.len;
 				val->st.s = pkg_malloc(val->st.len);
 					if (!val->st.s) {
 						LM_ERR("oom!\n");
-					pkg_free(entry);
+					pkg_free(pair);
 					goto out_err;
 				}
 				memcpy(val->st.s, v->value.v_utf8.str, val->st.len);
 				break;
 			case BSON_TYPE_INT32:
-				entry->val.type = CDB_INT32;
+				pair->val.type = CDB_INT32;
 				val->i32 = v->value.v_int32;
 				break;
 			case BSON_TYPE_INT64:
-				entry->val.type = CDB_INT64;
+				pair->val.type = CDB_INT64;
 				val->i64 = v->value.v_int64;
 				break;
 			case BSON_TYPE_DOCUMENT:
-				entry->val.type = CDB_DICT;
+				pair->val.type = CDB_DICT;
 				bson_init_static(&subdoc, v->value.v_doc.data,
 				                 v->value.v_doc.data_len);
 				INIT_LIST_HEAD(&val->dict);
 
 				if (mongo_doc_to_dict(&subdoc, &val->dict) != 0) {
 					LM_ERR("failed to parse subdoc\n");
-					pkg_free(entry);
+					pkg_free(pair);
 					goto out_err;
 				}
 				break;
 			case BSON_TYPE_NULL:
-				entry->val.type = CDB_NULL;
+				pair->val.type = CDB_NULL;
 				break;
 			default:
 				LM_ERR("unsupported MongoDB type %d!\n", v->value_type);
-				pkg_free(entry);
+				pkg_free(pair);
 				goto out_err;
 			}
 
-			entry->key.name.s = (char *)(entry + 1);
-			str_cpy(&entry->key.name, &key);
-
-			list_add(&entry->list, out_dict);
+			cdb_dict_add(pair, out_dict);
 		}
 	}
 
