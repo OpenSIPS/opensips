@@ -1,5 +1,5 @@
 /*
- * Common NoSQL data abstractions
+ * Unified NoSQL data abstractions
  *
  * Copyright (C) 2018 OpenSIPS Solutions
  *
@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
 #ifndef __CACHEDB_TYPES_H__
