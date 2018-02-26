@@ -56,6 +56,18 @@ typedef struct {
 	char is_pk;
 } cdb_key_t;
 
+static inline void cdb_key_init(cdb_key_t *key, const char *name)
+{
+	init_str(&key->name, name);
+	key->is_pk = 0;
+}
+
+static inline void cdb_pkey_init(cdb_key_t *key, const char *name)
+{
+	init_str(&key->name, name);
+	key->is_pk = 1;
+}
+
 typedef struct cdb_filter {
 	cdb_key_t key;
 	enum cdb_filter_op op;

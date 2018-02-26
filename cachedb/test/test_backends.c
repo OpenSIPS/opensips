@@ -257,6 +257,64 @@ static int test_get_rows(cachedb_funcs *api, cachedb_con *con)
 
 static int test_set_cols(cachedb_funcs *api, cachedb_con *con)
 {
+	cdb_filter_t *filter;
+	int_str_t isv;
+	cdb_key_t key;
+	str subkey;
+	cdb_dict_t pairs;
+	cdb_kv_t *pair, *dict_pair;
+
+	cdb_pkey_init(&key, "aor");
+	init_str(&isv.s, "foobar@opensips.org"); isv.is_str = 1;
+	filter = cdb_append_filter(NULL, &key, CDB_OP_EQ, &isv);
+
+	cdb_dict_init(&pairs);
+
+	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-null");
+	pair = cdb_mk_pair(&key, &subkey);
+	pair->val.type = CDB_NULL;
+	cdb_dict_add(pair, &pairs);
+
+	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-32bit");
+	pair = cdb_mk_pair(&key, &subkey);
+	pair->val.type = CDB_INT32;
+	pair->val.val.i32 = 2147483647;
+	cdb_dict_add(pair, &pairs);
+
+	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-64bit");
+	pair = cdb_mk_pair(&key, &subkey);
+	pair->val.type = CDB_INT64;
+	pair->val.val.i64 = 9223372036854775807;
+	cdb_dict_add(pair, &pairs);
+
+	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-str");
+	pair = cdb_mk_pair(&key, &subkey);
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("31337"));
+	cdb_dict_add(pair, &pairs);
+
+	/* set a dict subkey which contains a dict */
+
+	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-dict");
+	dict_pair = cdb_mk_pair(&key, &subkey);
+	dict_pair->val.type = CDB_DICT;
+	cdb_dict_init(&dict_pair->val.val.dict);
+	cdb_key_init(&key, "foo");
+	pair = cdb_mk_pair(&key, NULL);
+	pair->val.type = CDB_INT32;
+	pair->val.val.i32 = 373333337;
+	cdb_dict_add(pair, &dict_pair->val.val.dict);
+	cdb_key_init(&key, "bar");
+	pair = cdb_mk_pair(&key, NULL);
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("hello, world!"));
+	cdb_dict_add(pair, &dict_pair->val.val.dict);
+	cdb_dict_add(dict_pair, &pairs);
+
+	ok(api->set_cols(con, filter, &pairs) == 0, "test_set_cols");
+	cdb_free_entries(&pairs);
+	cdb_free_filters(filter);
+
 	return 1;
 }
 
