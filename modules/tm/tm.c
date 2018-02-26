@@ -185,8 +185,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "replicate_trans_to",	get_deps_clusterer	},
-		{ "accept_trans_from",	get_deps_clusterer	},
+		{ "tm_replication_cluster",	get_deps_clusterer	},
 		{ NULL, NULL },
 	},
 };
@@ -299,10 +298,8 @@ static param_export_t params[]={
 		&timer_partitions },
 	{ "auto_100trying",           INT_PARAM,
 		&auto_100trying },
-	{ "replicate_trans_to",       INT_PARAM,
-		&tm_replicate_cluster },
-	{ "accept_trans_from",       INT_PARAM,
-		&tm_accept_cluster },
+	{ "tm_replication_cluster", INT_PARAM,
+		&tm_repl_cluster },
 	{ "cluster_param",           STR_PARAM,
 		&tm_cluster_param.s },
 	{0,0,0}

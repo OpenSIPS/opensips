@@ -24,10 +24,10 @@
 #include "../../str.h"
 #include "../clusterer/api.h"
 
+#define TM_CLUSTER_TYPE 1
 #define TM_CLUSTER_DEFAULT_PARAM "cid"
 
-extern int tm_replicate_cluster;
-extern int tm_accept_cluster;
+extern int tm_repl_cluster;
 extern str tm_cluster_param;
 extern str tm_cid;
 extern struct clusterer_binds cluster_api;
@@ -36,7 +36,7 @@ extern struct clusterer_binds cluster_api;
 int tm_init_cluster(void);
 
 /* returns true if clusterer is enabled */
-#define tm_cluster_enabled() (cluster_api.register_module != 0)
+#define tm_cluster_enabled() (cluster_api.register_capability != 0)
 
 /* returns the via parameter for the cluster */
 #define tm_via_cid() (tm_cluster_enabled()?&tm_cid:0)
