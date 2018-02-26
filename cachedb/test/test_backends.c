@@ -150,6 +150,9 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 	cdb_res_t res;
 	cdb_val_t cdb_val;
 
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
+
 	init_str(&key.name, "tgr_1");
 	ok(api->set(con, &key.name, &sa, 0) == 0, "test_get_rows: set A");
 
@@ -230,6 +233,9 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 	ok(res.count == 1, "test_get_rows: have 1 item");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
+
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
 
 	return 1;
 }

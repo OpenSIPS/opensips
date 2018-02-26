@@ -327,6 +327,8 @@ static int mod_init(void)
 	url_lst_t *it=url_list, *foo=NULL;
 	lcache_col_t *default_col, *col_it;
 
+	memset(&cde, 0, sizeof cde);
+
 	/* register the cache system */
 	cde.name = cache_mod_name;
 

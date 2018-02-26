@@ -515,6 +515,7 @@ static int mod_init(void)
 	cachedb_engine cde;
 
 	LM_INFO("initializing module cachedb_sql...\n");
+	memset(&cde, 0, sizeof cde);
 
 	db_table.len = strlen(db_table.s);
 	key_column.len = strlen(key_column.s);

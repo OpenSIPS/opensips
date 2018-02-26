@@ -78,6 +78,8 @@ typedef int (cachedb_unset_cols_f)(cachedb_con *con,
 /* bi-dimensional array will be returned */
 typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
 
+typedef int (cachedb_truncate_f)(cachedb_con *con);
+
 typedef int(cachedb_query_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r);
 typedef int(cachedb_free_trans_f)(cachedb_con* con, db_res_t* _r);
 typedef int(cachedb_insert_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n);
@@ -94,6 +96,7 @@ typedef struct cachedb_funcs_t {
 	cachedb_add_f			*add;
 	cachedb_sub_f			*sub;
 	cachedb_raw_f			*raw_query;
+	cachedb_truncate_f		*truncate;
 
 	/* API for column-oriented NoSQL databases (Cassandra, Mongo) */
 	cachedb_get_rows_f		*get_rows;
