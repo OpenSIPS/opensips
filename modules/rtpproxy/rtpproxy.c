@@ -2275,7 +2275,7 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		fds[0].events = POLLIN;
 		fds[0].revents = 0;
 		/* Drain input buffer */
-		LM_ERR("node->rn_disabled: %d node->idx: %d rtpp_socks[node->idx]: %d\n", node->rn_disabled, node->idx, rtpp_socks[node->idx]);
+		// LM_ERR("node->rn_disabled: %d node->idx: %d rtpp_socks[node->idx]: %d\n", node->rn_disabled, node->idx, rtpp_socks[node->idx]);
 		while ((poll(fds, 1, 0) == 1) &&
 		    ((fds[0].revents & POLLIN) != 0)) {
 			if (fds[0].revents & (POLLERR|POLLNVAL)) {
@@ -2294,6 +2294,10 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		for (i = 0; i < rtpproxy_retr; i++) {
 			do {
 				len = writev(rtpp_socks[node->idx], v, vcnt);
+				if (errno < 0) {
+					LM_ERR("writev rtpp_socks[%d] len: %d errno: %d\n", node->idx, len, errno);
+				}
+		}
 			} while (len == -1 && (errno == EINTR || errno == ENOBUFS));
 			if (len <= 0) {
 				LM_ERR("can't send command to a RTP proxy %s\n",
@@ -2304,6 +2308,9 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 			    (fds[0].revents & POLLIN) != 0) {
 				do {
 					len = recv(rtpp_socks[node->idx], buf, sizeof(buf)-1, 0);
+					if (errno < 0) {
+						LM_ERR("recv  rtpp_socks[%d] len: %d errno: %d\n", node->idx, len, errno);
+					}
 				} while (len == -1 && errno == EINTR);
 				if (len <= 0) {
 					LM_ERR("can't read reply from a RTP proxy\n");
