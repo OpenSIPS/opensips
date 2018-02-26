@@ -91,6 +91,7 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
                           const db_key_t *_k, const db_op_t *_o,
                           const db_val_t *_v, const db_key_t *_uk,
                           const db_val_t *_uv, const int _n, const int _un);
+int mongo_truncate(cachedb_con *con);
 
 int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *row_filter,
                        cdb_res_t *res);

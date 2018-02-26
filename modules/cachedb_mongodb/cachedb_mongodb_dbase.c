@@ -1627,6 +1627,25 @@ out_err:
 	return -1;
 }
 
+int mongo_truncate(cachedb_con *con)
+{
+	bson_t empty_doc = BSON_INITIALIZER;
+	bson_error_t error;
+	struct timeval start;
+	int ret = 0;
+
+	start_expire_timer(start, mongo_exec_threshold);
+	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
+	                         MONGOC_REMOVE_NONE, &empty_doc, NULL, &error)) {
+		LM_ERR("failed to truncate con %.*s!\n", con->url.len, con->url.s);
+		ret = -1;
+	}
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB truncate",
+	                  con->url.s, con->url.len, 0);
+
+	return ret;
+}
+
 int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 {
 	bson_iter_t iter;
