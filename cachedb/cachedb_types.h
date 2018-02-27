@@ -108,6 +108,13 @@ typedef struct {
 	int count;
 } cdb_res_t;
 
+#define dbg_cdb_dict(_pre_text, _dict_ptr) \
+	do { \
+		if (is_printable(L_DBG)) \
+			_dbg_cdb_dict(_pre_text, _dict_ptr); \
+	} while (0)
+void _dbg_cdb_dict(const char *pre_txt, const cdb_dict_t *dict);
+
 static inline void cdb_dict_init(cdb_dict_t *dict)
 {
 	INIT_LIST_HEAD(dict);
