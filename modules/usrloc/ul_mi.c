@@ -378,14 +378,13 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 		dom = dl->d;
 		/* add some attributes to the domain node */
 		p= int2str((unsigned long)dom->size, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "table", 5, p, len);
+		attr = add_mi_attr( node, MI_DUP_VALUE, "hash_size", 9, p, len);
 		if (attr==0)
 			goto error;
 
 		/* add the entries per hash */
 		for(i=0,n=0; i<dom->size; i++) {
 			lock_ulslot( dom, i);
-
 
 			for ( map_first( dom->table[i].records, &it);
 				iterator_is_valid(&it);
@@ -408,12 +407,6 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 
 			unlock_ulslot( dom, i);
 		}
-
-		/* add more attributes to the domain node */
-		p= int2str((unsigned long)n, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "records", 7, p, len);
-		if (attr==0)
-			goto error;
 
 	}
 
