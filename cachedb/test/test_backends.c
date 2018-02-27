@@ -31,7 +31,7 @@ extern cachedb_engine* lookup_cachedb(str *name);
 int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b);
 int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2);
 
-cdb_val_t *dict_fetch(const str *key, const cdb_dict_t *dict)
+cdb_kv_t *dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
 {
 	struct list_head *_;
 	cdb_kv_t *pair;
@@ -39,8 +39,9 @@ cdb_val_t *dict_fetch(const str *key, const cdb_dict_t *dict)
 	list_for_each(_, dict) {
 		pair = list_entry(_, cdb_kv_t, list);
 
-		if (!str_strcmp(&pair->key.name, key))
-			return &pair->val;
+		if ((key->is_pk && pair->key.is_pk)
+		    || !str_strcmp(&pair->key.name, &key->name))
+			return pair;
 	}
 
 	return NULL;
@@ -49,8 +50,8 @@ cdb_val_t *dict_fetch(const str *key, const cdb_dict_t *dict)
 int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 {
 	const struct list_head *p1, *p2;
-	cdb_kv_t *pair;
-	cdb_val_t *val;
+	cdb_kv_t *pair1;
+	cdb_kv_t *pair2;
 
 	/* different # of pairs? */
 	for (p1 = a, p2 = b; p1 != a && p2 != b; p1 = p1->next, p2 = p2->next)
@@ -59,13 +60,14 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 		return 1;
 
 	list_for_each(p1, a) {
-		pair = list_entry(p1, cdb_kv_t, list);
+		pair1 = list_entry(p1, cdb_kv_t, list);
 
-		val = dict_fetch(&pair->key.name, b);
-		if (!val)
+		pair2 = dict_fetch(&pair1->key, b);
+		if (!pair2)
 			return 1;
 
-		if (val_cmp(&pair->val, val))
+		if ((!pair1->key.is_pk || !pair2->key.is_pk) &&
+		     val_cmp(&pair1->val, &pair2->val))
 			return 1;
 	}
 
@@ -74,6 +76,9 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 
 int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2)
 {
+	if (v1->type != v2->type)
+		return 1;
+
 	switch (v1->type) {
 	case CDB_INT32:
 		return v1->val.i32 != v2->val.i32;
@@ -92,55 +97,47 @@ int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2)
 	}
 }
 
-int has_kv(const cdb_dict_t *haystack, const char *key, const cdb_val_t *val)
+int dict_has_pair(const cdb_dict_t *haystack, const cdb_kv_t *pair)
 {
-	str skey;
-	cdb_val_t *needle;
+	cdb_kv_t *needle;
 
-	init_str(&skey, key);
-
-	needle = dict_fetch(&skey, haystack);
-	if (!needle || needle->type != val->type)
+	needle = dict_fetch(&pair->key, haystack);
+	if (!needle || needle->val.type != pair->val.type)
 		return 0;
 
-	return !val_cmp(needle, val);
+	return !val_cmp(&needle->val, &pair->val);
 }
 
-int res_has_kv(const cdb_res_t *res, const char *key, const cdb_val_t *val)
+int res_has_kv(const cdb_res_t *res, const cdb_kv_t *pair)
 {
 	struct list_head *_;
 	cdb_row_t *row;
 
 	list_for_each(_, &res->rows) {
 		row = list_entry(_, cdb_row_t, list);
-		if (has_kv(&row->dict, key, val))
+		if (dict_has_pair(&row->dict, pair))
 			return 1;
 	}
 
 	return 0;
 }
 
-int test_get_rows_int32(cachedb_funcs *api, cachedb_con *con)
+static inline cdb_dict_t *nth_dict(const cdb_res_t *res, int nth)
 {
-	return 1;
+	struct list_head *_;
+	cdb_row_t *row;
+
+	list_for_each (_, &res->rows) {
+		if (--nth == 0) {
+			row = list_entry(_, cdb_row_t, list);
+			return &row->dict;
+		}
+	}
+
+	return NULL;
 }
 
-int test_get_rows_int64(cachedb_funcs *api, cachedb_con *con)
-{
-	return 1;
-}
-
-int test_get_rows_dict(cachedb_funcs *api, cachedb_con *con)
-{
-	return 1;
-}
-
-int test_get_rows_null(cachedb_funcs *api, cachedb_con *con)
-{
-	return 1;
-}
-
-static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
+static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
 {
 	cdb_key_t key;
 	str sa = str_init("A"), sb = str_init("B"), sc = str_init("C"),
@@ -148,10 +145,9 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 	int_str_t isv;
 	cdb_filter_t *filter;
 	cdb_res_t res;
-	cdb_val_t cdb_val;
+	cdb_kv_t pair;
 
-	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
-		ok(api->truncate(con) == 0, "truncate");
+	memset(&pair, 0, sizeof pair);
 
 	init_str(&key.name, "tgr_1");
 	ok(api->set(con, &key.name, &sa, 0) == 0, "test_get_rows: set A");
@@ -170,29 +166,30 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 
 	isv.is_str = 1;
 	isv.s = sd;
-	cdb_val.type = CDB_STR;
+	pair.val.type = CDB_STR;
 
 	/* single filter tests */
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
 	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 4 items");
 	ok(res.count == 4, "test_get_rows: have 4 items");
-	cdb_val.val.st = sa; ok(res_has_kv(&res, "opensips", &cdb_val), "has A");
-	cdb_val.val.st = sb; ok(res_has_kv(&res, "opensips", &cdb_val), "has B");
-	cdb_val.val.st = sc; ok(res_has_kv(&res, "opensips", &cdb_val), "has C");
-	cdb_val.val.st = sd; ok(res_has_kv(&res, "opensips", &cdb_val), "has D");
-	init_str(&cdb_val.val.st, "Z");
-	ok(!res_has_kv(&res, "opensips", &cdb_val), "!has Z");
+	init_str(&pair.key.name, "opensips");
+	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
+	pair.val.val.st = sb; ok(res_has_kv(&res, &pair), "has B");
+	pair.val.val.st = sc; ok(res_has_kv(&res, &pair), "has C");
+	pair.val.val.st = sd; ok(res_has_kv(&res, &pair), "has D");
+	init_str(&pair.val.val.st, "Z");
+	ok(!res_has_kv(&res, &pair), "!has Z");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LT, &isv);
 	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 3 items");
 	ok(res.count == 3, "test_get_rows: have 3 items");
-	cdb_val.val.st = sa; ok(res_has_kv(&res, "opensips", &cdb_val), "has A");
-	cdb_val.val.st = sb; ok(res_has_kv(&res, "opensips", &cdb_val), "has B");
-	cdb_val.val.st = sc; ok(res_has_kv(&res, "opensips", &cdb_val), "has C");
-	cdb_val.val.st = sd; ok(!res_has_kv(&res, "opensips", &cdb_val), "!has D");
+	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
+	pair.val.val.st = sb; ok(res_has_kv(&res, &pair), "has B");
+	pair.val.val.st = sc; ok(res_has_kv(&res, &pair), "has C");
+	pair.val.val.st = sd; ok(!res_has_kv(&res, &pair), "!has D");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
@@ -200,16 +197,16 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LT, &isv);
 	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 0 items");
 	ok(res.count == 0, "test_get_rows: have 0 items");
-	cdb_val.val.st = sa; ok(!res_has_kv(&res, "opensips", &cdb_val), "!has A");
-	cdb_val.val.st = sc; ok(!res_has_kv(&res, "opensips", &cdb_val), "!has C");
+	pair.val.val.st = sa; ok(!res_has_kv(&res, &pair), "!has A");
+	pair.val.val.st = sc; ok(!res_has_kv(&res, &pair), "!has C");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
 	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 1 item");
 	ok(res.count == 1, "test_get_rows: have 1 item");
-	cdb_val.val.st = sa; ok(res_has_kv(&res, "opensips", &cdb_val), "has A");
-	cdb_val.val.st = sb; ok(!res_has_kv(&res, "opensips", &cdb_val), "!has B");
+	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
+	pair.val.val.st = sb; ok(!res_has_kv(&res, &pair), "!has B");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
@@ -234,64 +231,66 @@ static int test_get_rows_str(cachedb_funcs *api, cachedb_con *con)
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
-	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
-		ok(api->truncate(con) == 0, "truncate");
+	return 1;
+}
+
+static int test_get_rows(cachedb_funcs *api, cachedb_con *con,
+                         const cdb_dict_t *pairs)
+{
+	cdb_res_t res;
+
+	if (!ok(api->get_rows(con, NULL, &res) == 0, "get_rows: NULL filter"))
+		return 0;
+
+	ok(res.count == 2, "get_rows: 2 results");
+	dbg_cdb_dict("pairs: ", pairs);
+	dbg_cdb_dict("res 1: ", nth_dict(&res, 1));
+	dbg_cdb_dict("res 2: ", nth_dict(&res, 2));
+
+	ok(!dict_cmp(nth_dict(&res, 1), nth_dict(&res, 2)), "identical results");
+
+	cdb_free_rows(&res);
 
 	return 1;
 }
 
-static int test_get_rows(cachedb_funcs *api, cachedb_con *con)
-{
-	int rc = 1;
-
-	rc &= ok(test_get_rows_str(api, con), "test_get_rows - str tests");
-	todo();
-	rc &= ok(test_get_rows_int32(api, con), "test_get_rows - int32 tests");
-	rc &= ok(test_get_rows_int64(api, con), "test_get_rows - int64 tests");
-	rc &= ok(test_get_rows_dict(api, con), "test_get_rows - dict tests");
-	rc &= ok(test_get_rows_null(api, con), "test_get_rows - null tests");
-	end_todo;
-
-	return rc;
-}
-
-static int test_set_cols(cachedb_funcs *api, cachedb_con *con)
+static int test_set_cols(cachedb_funcs *api, cachedb_con *con,
+                         cdb_dict_t *out_pairs)
 {
 	cdb_filter_t *filter;
 	int_str_t isv;
 	cdb_key_t key;
 	str subkey;
-	cdb_dict_t pairs;
 	cdb_kv_t *pair, *dict_pair;
 
 	cdb_pkey_init(&key, "aor");
-	init_str(&isv.s, "foobar@opensips.org"); isv.is_str = 1;
+	init_str(&isv.s, "foo@opensips.org"); isv.is_str = 1;
 	filter = cdb_append_filter(NULL, &key, CDB_OP_EQ, &isv);
 
-	cdb_dict_init(&pairs);
+	cdb_dict_init(out_pairs);
 
 	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-null");
 	pair = cdb_mk_pair(&key, &subkey);
 	pair->val.type = CDB_NULL;
-	cdb_dict_add(pair, &pairs);
+	cdb_dict_add(pair, out_pairs);
 
 	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-32bit");
 	pair = cdb_mk_pair(&key, &subkey);
 	pair->val.type = CDB_INT32;
 	pair->val.val.i32 = 2147483647;
-	cdb_dict_add(pair, &pairs);
+	cdb_dict_add(pair, out_pairs);
 
 	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-64bit");
 	pair = cdb_mk_pair(&key, &subkey);
 	pair->val.type = CDB_INT64;
 	pair->val.val.i64 = 9223372036854775807;
-	cdb_dict_add(pair, &pairs);
+	cdb_dict_add(pair, out_pairs);
 
 	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-str");
 	pair = cdb_mk_pair(&key, &subkey);
 	pair->val.type = CDB_STR;
 	init_str(&pair->val.val.st, pkg_strdup("31337"));
-	cdb_dict_add(pair, &pairs);
+	cdb_dict_add(pair, out_pairs);
 
 	/* set a dict subkey which contains a dict */
 
@@ -309,11 +308,43 @@ static int test_set_cols(cachedb_funcs *api, cachedb_con *con)
 	pair->val.type = CDB_STR;
 	init_str(&pair->val.val.st, pkg_strdup("hello, world!"));
 	cdb_dict_add(pair, &dict_pair->val.val.dict);
-	cdb_dict_add(dict_pair, &pairs);
+	cdb_dict_add(dict_pair, out_pairs);
 
-	ok(api->set_cols(con, filter, &pairs) == 0, "test_set_cols");
-	cdb_free_entries(&pairs);
+	ok(api->set_cols(con, filter, out_pairs) == 0, "test_set_cols #1");
+
 	cdb_free_filters(filter);
+	cdb_pkey_init(&key, "aor");
+	init_str(&isv.s, "bar@opensips.org");
+	filter = cdb_append_filter(NULL, &key, CDB_OP_EQ, &isv);
+
+	ok(api->set_cols(con, filter, out_pairs) == 0, "test_set_cols #2");
+
+	cdb_free_filters(filter);
+
+	return 1;
+}
+
+static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
+{
+	cdb_dict_t cols;
+
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
+
+	if (!ok(test_get_rows_filters(api, con), "test get_rows filters"))
+		return 0;
+
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
+
+	if (!ok(test_set_cols(api, con, &cols), "test set_cols")
+	    || !ok(test_get_rows(api, con, &cols), "test get_rows"))
+		return 0;
+
+	cdb_free_entries(&cols);
+
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
 
 	return 1;
 }
@@ -351,17 +382,8 @@ static void test_cachedb_api(const char *cachedb_name)
 	if (!ok(con != NULL, "engine has con"))
 		return;
 
-	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_GET_ROWS))
-		ok(test_get_rows(&cde->cdb_func, con), "multi-row fetch");
-
-	todo();
-	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_SET_COLS))
-		ok(test_set_cols(&cde->cdb_func, con), "multi-col set");
-
-	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_UNSET_COLS))
-		ok(cde->cdb_func.unset_cols(con, NULL, NULL, 0) == 0, "multi-col unset");
-
-	end_todo;
+	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_COL_ORIENTED))
+		ok(test_column_ops(&cde->cdb_func, con), "column-oriented tests");
 }
 
 void init_cachedb_tests(void)
