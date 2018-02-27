@@ -255,6 +255,35 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
 	</section>
 
 	<section>
+		<title><varname>probing_verbose</varname> (number)</title>
+		<para>
+		A boolean option to enable extra logging related to the 
+		enabling or disabling of the destinations based on probing
+		replies and MI commands.
+		</para>
+		<para>
+		A 0 value means disabled, anything else means enabled.
+		</para>
+		<para>
+		The extra logging will be done on INFO level.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_verbose</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "probing_verbose", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>lb_define_blacklist</varname> (string)</title>
 		<para>
 		Defines a blacklist based on a lb group. This list will contain the IPs
