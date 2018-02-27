@@ -87,6 +87,7 @@
 #include "dlg.h" /* for t_lookup_callid */
 #include "t_msgbuilder.h" /* for t_lookup_callid */
 #include "t_fwd.h" /* for get_on_branch */
+#include "cluster.h" /*for messages replication */
 
 #define EQ_VIA_LEN(_via)\
 	( (p_msg->via1->bsize-(p_msg->_via->name.s-(p_msg->_via->hdr.s+p_msg->_via->hdr.len)))==\
@@ -914,9 +915,13 @@ int t_check( struct sip_msg* p_msg , int *param_branch )
 						return -1;
 					}
 			}
-
-			t_reply_matching( p_msg ,
-				param_branch!=0?param_branch:&local_branch );
+			/* first check if the transaction is addressed to us */
+			if (!tm_reply_replicated(p_msg))
+				t_reply_matching(p_msg ,
+						param_branch!=0?param_branch:&local_branch);
+			else
+				T = NULL; /* reply replicated
+					should have never got here */
 
 		}
 #ifdef EXTRA_DEBUG

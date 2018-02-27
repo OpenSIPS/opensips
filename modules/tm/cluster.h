@@ -24,7 +24,9 @@
 #include "../../str.h"
 #include "../clusterer/api.h"
 
-#define TM_CLUSTER_TYPE 1
+#define TM_CLUSTER_REPLY 1
+#define TM_CLUSTER_REQUEST 2
+#define TM_CLUSTER_VERSION 0
 #define TM_CLUSTER_DEFAULT_PARAM "cid"
 
 extern int tm_repl_cluster;
@@ -35,11 +37,13 @@ extern struct clusterer_binds cluster_api;
 /* initializes cluster support for tm */
 int tm_init_cluster(void);
 
+/* Checks if a message should be replicated, and if it is, replicates it */
+int tm_reply_replicated(struct sip_msg *msg);
+
 /* returns true if clusterer is enabled */
 #define tm_cluster_enabled() (cluster_api.register_capability != 0)
 
 /* returns the via parameter for the cluster */
 #define tm_via_cid() (tm_cluster_enabled()?&tm_cid:0)
-
 
 #endif /* _TM_CLUSTER_H_ */
