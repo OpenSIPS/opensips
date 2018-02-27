@@ -1667,7 +1667,10 @@ int tcp_init(void)
 	/* first we do auto-detection to see if there are any TCP based
 	 * protocols loaded */
 	for ( i=PROTO_FIRST ; i<PROTO_LAST ; i++ )
-		if (is_tcp_based_proto(i)) {tcp_disabled=0;break;}
+		if (is_tcp_based_proto(i) && proto_has_listeners(i)) {
+			tcp_disabled=0;
+			break;
+		}
 
 	if (tcp_disabled)
 		return 0;
