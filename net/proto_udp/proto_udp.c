@@ -121,23 +121,11 @@ static int udp_read_req(struct socket_info *si, int* bytes_read)
 {
 	struct receive_info ri;
 	int len;
-#ifdef DYN_BUF
-	char* buf;
-#else
 	static char buf [BUF_SIZE+1];
-#endif
 	char *tmp;
 	unsigned int fromlen;
 	callback_list* p;
 	str msg;
-
-#ifdef DYN_BUF
-	buf=pkg_malloc(BUF_SIZE+1);
-	if (buf==0){
-		LM_ERR("could not allocate receive buffer\n");
-		goto error;
-	}
-#endif
 
 	fromlen=sockaddru_len(si->su);
 	len=recvfrom(bind_address->socket, buf, BUF_SIZE,0,&ri.src_su.s,&fromlen);

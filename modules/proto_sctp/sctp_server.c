@@ -144,22 +144,11 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 {
 	struct receive_info ri;
 	int len;
-#ifdef DYN_BUF
-	char* buf;
-#else
 	static char buf [BUF_SIZE+1];
-#endif
 	char *tmp;
 	unsigned int fromlen;
 	struct sctp_sndrcvinfo sinfo;
 
-#ifdef DYN_BUF
-	buf=pkg_malloc(BUF_SIZE+1);
-	if (buf==0){
-		LM_ERR(" could not allocate receive buffer in pkg memory\n");
-		goto error;
-	}
-#endif
 	fromlen=sockaddru_len(si->su);
 	len = sctp_recvmsg(si->socket, buf, BUF_SIZE, &ri.src_su.s, &fromlen,
 		&sinfo, 0);

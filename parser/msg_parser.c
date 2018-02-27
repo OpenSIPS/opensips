@@ -687,9 +687,6 @@ void free_sip_msg(struct sip_msg* msg)
 	if (msg->reply_lump)   free_reply_lump(msg->reply_lump);
 	if (msg->body )    { free_sip_body(msg->body);msg->body = 0;}
 	/* don't free anymore -- now a pointer to a static buffer */
-#	ifdef DYN_BUF
-	pkg_free(msg->buf);
-#	endif
 }
 
 

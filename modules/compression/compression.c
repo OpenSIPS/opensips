@@ -2065,15 +2065,7 @@ static int mc_decompress(struct sip_msg* msg)
 
 	/* new buffer because msg_final(out_buf) will
 	 * be overwritten at next iteration */
-#ifdef DYN_BUF
-	new_buf = pkg_malloc(msg_final.len+1);
-	if (new_buf == NULL) {
-		LM_ERR("no more pkg mem\n");
-		return -1;
-	}
-#else
 	new_buf = msg->buf;
-#endif
 
 	memcpy(new_buf, msg_final.s, msg_final.len);
 	new_buf[msg_final.len] = '\0';
