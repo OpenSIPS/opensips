@@ -97,7 +97,7 @@ int trans_load(void)
 			}
 			found_proto = 1;
 			/* check if there is any listener for this protocol */
-			if (!protos[pi.id].listeners) {
+			if (!proto_has_listeners(pi.id)) {
 				LM_DBG("No listener defined for proto %s\n", pi.name);
 				continue;
 			}
@@ -241,7 +241,7 @@ int fix_all_socket_lists(void)
 			}
 
 			found++;
-		} else if (protos[i].listeners) {
+		} else if (proto_has_listeners(i)) {
 			p = proto2str(i, buf);
 			if (p == NULL)
 				goto error;
