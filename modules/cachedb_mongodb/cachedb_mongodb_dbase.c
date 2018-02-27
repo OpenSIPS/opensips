@@ -1636,13 +1636,15 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 	bson_iter_t iter;
 	bson_t subdoc;
 	const bson_value_t *v;
-	cdb_key_t key = CDB_KEY_INITIALIZER;
+	cdb_key_t key;
 	cdb_kv_t *pair;
 	union cdb_val_u *val;
 
 	if (bson_iter_init(&iter, doc)) {
 		while (bson_iter_next(&iter)) {
 			init_str(&key.name, bson_iter_key(&iter));
+			key.is_pk = !memcmp(key.name.s, "_id", 3);
+
 			v = bson_iter_value(&iter);
 
 			pair = cdb_mk_pair(&key, NULL);
@@ -1705,7 +1707,7 @@ out_err:
 	return -1;
 }
 
-cdb_row_t *mongo_mk_row(const bson_t *doc)
+cdb_row_t *mongo_mk_cdb_row(const bson_t *doc)
 {
 	cdb_row_t *row;
 
@@ -1862,9 +1864,9 @@ int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
 
 	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
 #endif
-		row = mongo_mk_row(doc);
+		row = mongo_mk_cdb_row(doc);
 		if (!row) {
-			LM_ERR("oom\n");
+			LM_ERR("failed to create row\n");
 			goto out_err;
 		}
 
@@ -2011,8 +2013,6 @@ int mongo_con_set_cols(cachedb_con *con, const cdb_filter_t *row_filter,
 			ret = -1;
 			goto out;
 		}
-
-		LM_DBG("appending key %.*s\n", key.len, key.s);
 
 		switch (pair->val.type) {
 		case CDB_NULL:
