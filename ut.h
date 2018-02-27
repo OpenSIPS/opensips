@@ -612,8 +612,6 @@ static inline int shm_nt_str_dup(str* dst, const str* src)
 	if (!src || !src->s)
 		return -1;
 
-	memset(dst, 0, sizeof *dst);
-
 	dst->s = shm_malloc(src->len + 1);
 	if (!dst->s) {
 		LM_ERR("no shared memory left\n");
