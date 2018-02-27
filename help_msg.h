@@ -71,7 +71,7 @@ Options:\n\
                   addr= host|ip_address|interface_name. E.g: -l locahost, \n\
                   -l udp:127.0.0.1:5080, -l eth0:5062 The default behavior\n\
                   is to listen on all the interfaces.\n\
-    -n processes Number of child processes to fork per interface\n\
+    -n processes Number of worker processes to fork per UDP interface\n\
                   (default: 8)\n\
     -r           Use dns to check if is necessary to add a \"received=\"\n\
                   field to a via\n\
@@ -79,10 +79,10 @@ Options:\n\
                   (to use both use `-rR`)\n\
     -v           Turn on \"via:\" host checking when forwarding replies\n\
     -d           Debugging mode (multiple -d increase the level)\n\
-    -D           Do not fork into daemon mode\n\
+    -D           Run in debug mode\n\
     -F           Daemon mode, but leave main process foreground\n\
     -E           Log to stderr\n\
-    -N processes Number of tcp child processes (default: equal to `-n`)\n\
+    -N processes Number of TCP worker processes (default: equal to `-n`)\n\
     -W method    poll method\n\
     -V           Version number\n\
     -h           This help message\n\
