@@ -62,21 +62,21 @@ xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
 static str pu_200_rpl  = str_init("OK");
 static str pu_412_rpl  = str_init("Conditional request failed");
 
-static char etag_buf[ETAG_LEN];
+static char etag_buf[ETAG_LEN+1];
 
 int generate_ETag(int publ_count, str* etag)
 {
 	etag->s = etag_buf;
-	memset(etag_buf, 0, ETAG_LEN);
+	memset(etag_buf, 0, ETAG_LEN+1);
 
-	etag->len = sprintf (etag_buf, "%c.%d.%d.%d.%d",
+	etag->len = snprintf (etag_buf, ETAG_LEN, "%c.%d.%d.%d.%d",
 			prefix, (int)startup_time, pid, counter, publ_count);
 	if( etag->len <0 )
 	{
 		LM_ERR("unsuccessfull sprintf\n ");
 		return -1;
 	}
-	if(etag->len > ETAG_LEN)
+	if(etag->len >= ETAG_LEN)
 	{
 		LM_ERR("buffer size overflown\n");
 		return -1;
@@ -598,6 +598,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			if (result->n <= 0)
 			{
 					pa_dbf.free_result(pa_db, result);
+					result = 0;
 					LM_ERR("No E_Tag match [%.*s]\n", presentity->etag.len,
 							presentity->etag.s);
 					if (msg && sigb.reply(msg, 412, &pu_412_rpl, 0)==-1 )
@@ -610,6 +611,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 
 			pa_dbf.free_result(pa_db, result);
+			result = 0;
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
 					presentity->etag.len, presentity->etag.s);
 		}
@@ -1154,7 +1156,7 @@ char* get_sphere(str* pres_uri)
 	{
 		if(p->sphere)
 		{
-			sphere= (char*)pkg_malloc(strlen(p->sphere));
+			sphere= (char*)pkg_malloc(strlen(p->sphere)+1);
 			if(sphere== NULL)
 			{
 				lock_release(&pres_htable[hash_code].lock);
