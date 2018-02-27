@@ -1157,8 +1157,15 @@ error_op:
 /*! \brief compare str to str */
 inline static int comp_s2s(int op, str *s1, str *s2)
 {
-	char backup;
-	char backup2;
+#define make_nt_copy(_sd,_so) \
+	do { \
+		if (pkg_str_resize(_sd, (_so)->len+1)<0) \
+			return -1; \
+		memcpy((_sd)->s, (_so)->s, (_so)->len);\
+		(_sd)->s[(_so)->len] = '\0'; \
+	} while(0)
+	static str cp1 = {NULL,0};
+	static str cp2 = {NULL,0};
 	int n;
 	int rt;
 	int ret;
@@ -1223,15 +1230,13 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			break;
 		case MATCH_OP:
 			if ( s2==NULL || s1->len == 0 ) return 0;
-			backup = s1->s[s1->len];  s1->s[s1->len] = '\0';
-			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)==0);
-			s1->s[s1->len] = backup;
+			make_nt_copy( &cp1, s1);
+			ret=(regexec((regex_t*)s2, cp1.s, 0, 0, 0)==0);
 			break;
 		case NOTMATCH_OP:
 			if ( s2==NULL || s1->len == 0 ) return 0;
-			backup = s1->s[s1->len];  s1->s[s1->len] = '\0';
-			ret=(regexec((regex_t*)s2, s1->s, 0, 0, 0)!=0);
-			s1->s[s1->len] = backup;
+			make_nt_copy( &cp1, s1);
+			ret=(regexec((regex_t*)s2, cp1.s, 0, 0, 0)!=0);
 			break;
 		case MATCHD_OP:
 		case NOTMATCHD_OP:
@@ -1242,23 +1247,19 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 				return -1;
 			}
 
-			backup  = s1->s[s1->len];  s1->s[s1->len] = '\0';
-			backup2 = s2->s[s2->len];  s2->s[s2->len] = '\0';
+			make_nt_copy( &cp1, s1);
+			make_nt_copy( &cp2, s2);
 
-			if (regcomp(re, s2->s, REG_EXTENDED|REG_NOSUB|REG_ICASE)) {
+			if (regcomp(re, cp2.s, REG_EXTENDED|REG_NOSUB|REG_ICASE)) {
 				pkg_free(re);
-				s2->s[s2->len] = backup2;
-				s1->s[s1->len] = backup;
 				return -1;
 			}
 			if(op==MATCHD_OP)
-				ret=(regexec(re, s1->s, 0, 0, 0)==0);
+				ret=(regexec(re, cp1.s, 0, 0, 0)==0);
 			else
-				ret=(regexec(re, s1->s, 0, 0, 0)!=0);
+				ret=(regexec(re, cp1.s, 0, 0, 0)!=0);
 			regfree(re);
 			pkg_free(re);
-			s2->s[s2->len] = backup2;
-			s1->s[s1->len] = backup;
 			break;
 		default:
 			LM_CRIT("unknown op %d\n", op);
