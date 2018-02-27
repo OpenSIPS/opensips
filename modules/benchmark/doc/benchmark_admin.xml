@@ -16,6 +16,14 @@
 		via &osips;'s logging facility. Please note that all durations are given as
 		microseconds (don't confuse with milliseconds!).
 	</para>
+	<para> Important note: as this benchmarking is intended to measure the time
+		spent in executing different parts/blocks of the script (and not for 
+		measuring the time induced by the SIP signaling), the benchmark module
+		is to be used within the SAME top route (request route, failure route, 
+		branch route, onreply rout, etc). It is not design to be used across 
+		different types of top routes (like started in request route and ended in 
+		failure route)!!
+	</para>
 	</section>
 	<section>
 	<title>Dependencies</title>
