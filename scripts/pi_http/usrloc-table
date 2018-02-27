@@ -8,7 +8,7 @@
 		<column><field>contact</field><type>DB_STR</type></column>
 		<column><field>received</field><type>DB_STR</type></column>
 		<column><field>path</field><type>DB_STR</type></column>
-		<column><field>expires</field><type>DB_DATETIME</type></column>
+		<column><field>expires</field><type>DB_INT</type></column>
 		<column><field>q</field><type>DB_DOUBLE</type></column>
 		<column><field>callid</field><type>DB_STR</type></column>
 		<column><field>cseq</field><type>DB_INT</type></column>

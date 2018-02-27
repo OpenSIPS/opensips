@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1012');
+INSERT INTO version (table_name, table_version) values ('location','1013');
 CREATE TABLE location (
     contact_id  INTEGER PRIMARY KEY AUTOINCREMENT  NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE location (
     contact CHAR(255) DEFAULT '' NOT NULL,
     received CHAR(128) DEFAULT NULL,
     path CHAR(255) DEFAULT NULL,
-    expires DATETIME DEFAULT '2020-05-28 21:32:15' NOT NULL,
+    expires INTEGER NOT NULL,
     q FLOAT(10,2) DEFAULT 1.0 NOT NULL,
     callid CHAR(255) DEFAULT 'Default-Call-ID' NOT NULL,
     cseq INTEGER DEFAULT 13 NOT NULL,

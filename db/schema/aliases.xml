@@ -9,7 +9,7 @@
 
 <table id="aliases" xmlns:db="http://docbook.org/ns/docbook">
     <name>aliases</name>
-    <version>1009</version>
+    <version>1013</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table for the registrar module is similar to the "location" table, (the aliases index makes lookup of missed calls much faster). Thus, the function lookup("alias") can be used to map aliases to AORs. More information is available at: &OPENSIPS_MOD_DOC;registrar.html. Most people uses the dbaliases table with the alias_db module now.
@@ -72,10 +72,10 @@
 
     <column>
         <name>expires</name>
-        <type>datetime</type>
+        <type>unsigned int</type>
+        <size>10</size>
         <default>&DEFAULT_ALIASES_EXPIRES;</default>
-        <default db="oracle">to_date('&DEFAULT_ALIASES_EXPIRES;','yyyy-mm-dd hh24:mi:ss')</default>
-        <description>Date and time when this entry expires.</description>
+        <description>Unix timestamp when this entry expires.</description>
     </column>
 
     <column>

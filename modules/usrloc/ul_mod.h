@@ -41,7 +41,7 @@
  */
 
 
-#define UL_TABLE_VERSION 1012
+#define UL_TABLE_VERSION 1013
 
 #define UL_COLS 19
 extern str contactid_col;

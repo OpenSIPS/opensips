@@ -549,8 +549,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	vals[2].val.str_val.s = _c->c.s;
 	vals[2].val.str_val.len = _c->c.len;
 
-	vals[3].type = DB_DATETIME;
-	vals[3].val.time_val = _c->expires;
+	vals[3].type = DB_INT;
+	vals[3].val.int_val = _c->expires;
 
 	vals[4].type = DB_DOUBLE;
 	vals[4].val.double_val = q2double(_c->q);
@@ -727,8 +727,8 @@ int db_update_ucontact(ucontact_t* _c)
 	vals2[0].type = DB_BIGINT;
 	vals2[0].val.bigint_val = _c->contact_id;
 
-	vals2[1].type = DB_DATETIME;
-	vals2[1].val.time_val = _c->expires;
+	vals2[1].type = DB_INT;
+	vals2[1].val.int_val = _c->expires;
 
 	vals2[2].type = DB_DOUBLE;
 	vals2[2].val.double_val = q2double(_c->q);

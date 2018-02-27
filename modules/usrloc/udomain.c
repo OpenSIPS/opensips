@@ -497,7 +497,7 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 		LM_CRIT("empty expire\n");
 		return 0;
 	}
-	ci.expires = VAL_TIME(vals+2);
+	ci.expires = VAL_INT(vals+2);
 
 	if (VAL_NULL(vals+3)) {
 		LM_CRIT("empty q\n");
@@ -1059,11 +1059,11 @@ int db_timer_udomain(udomain_t* _d)
 
 	memset(vals, 0, sizeof vals);
 
-	vals[0].type = DB_DATETIME;
-	vals[0].val.time_val = act_time + 1;
+	vals[0].type = DB_INT;
+	vals[0].val.int_val = act_time + 1;
 
-	vals[1].type = DB_DATETIME;
-	vals[1].val.time_val = 0;
+	vals[1].type = DB_INT;
+	vals[1].val.int_val = 0;
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 	ul_dbf.use_table(ul_dbh, _d->name);
