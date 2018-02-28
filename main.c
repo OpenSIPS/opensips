@@ -138,6 +138,18 @@
 #include "db/db_insertq.h"
 #include "net/trans.h"
 
+#include "test/unit_tests.h"
+
+/*
+ * when enabled ("-T" cmdline param), OpenSIPS startup will unfold as follows:
+ *   - enable debug mode
+ *   - fork workers normally
+ *   - run all currently enabled unit tests
+ *   - print the unit test summary
+ *   - exit with 0 on success, non-zero otherwise
+ */
+int testing_framework;
+
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
 #ifdef VERSION_NODATE
@@ -785,6 +797,16 @@ static int main_loop(void)
 	is_main=1;
 	set_proc_attrs("attendant");
 
+	if (testing_framework) {
+		if (init_child(1) < 0) {
+			LM_ERR("error in init_child for PROC_MAIN\n");
+			report_failure_status();
+			goto error;
+		}
+
+		return run_unit_tests();
+	}
+
 	if (init_child(PROC_MAIN) < 0) {
 		LM_ERR("error in init_child for PROC_MAIN\n");
 		report_failure_status();
@@ -1008,6 +1030,11 @@ int main(int argc, char** argv)
 					if (add_arg_var(optarg) < 0)
 						LM_ERR("cannot add option %s\n", optarg);
 					break;
+#ifdef UNIT_TESTS
+			case 'T':
+					testing_framework = 1;
+					break;
+#endif
 			case '?':
 					if (isprint(optopt))
 						LM_ERR("Unknown option `-%c`.\n", optopt);
@@ -1024,18 +1051,20 @@ int main(int argc, char** argv)
 
 	log_stderr = cfg_log_stderr;
 
-	/* fill missing arguments with the default values*/
-	if (cfg_file==0) cfg_file=CFG_FILE;
+	if (!testing_framework) {
+		/* fill missing arguments with the default values*/
+		if (cfg_file==0) cfg_file=CFG_FILE;
 
-	if (strlen(cfg_file) == 1 && cfg_file[0] == '-') {
-		cfg_stream = stdin;
-	} else {
-		/* load config file or die */
-		cfg_stream=fopen (cfg_file, "r");
-		if (cfg_stream==0){
-			LM_ERR("loading config file(%s): %s\n", cfg_file,
-					strerror(errno));
-			goto error00;
+		if (strlen(cfg_file) == 1 && cfg_file[0] == '-') {
+			cfg_stream = stdin;
+		} else {
+			/* load config file or die */
+			cfg_stream=fopen (cfg_file, "r");
+			if (cfg_stream==0){
+				LM_ERR("loading config file(%s): %s\n", cfg_file,
+						strerror(errno));
+				goto error00;
+			}
 		}
 	}
 
@@ -1091,12 +1120,14 @@ try_again:
 		goto error;
 	}
 
-	/* parse the config file, prior to this only default values
-	   e.g. for debugging settings will be used */
-	yyin=cfg_stream;
-	if ((yyparse()!=0)||(cfg_errors)){
-		LM_ERR("bad config file (%d errors)\n", cfg_errors);
-		goto error00;
+	if (!testing_framework) {
+		/* parse the config file, prior to this only default values
+		   e.g. for debugging settings will be used */
+		yyin=cfg_stream;
+		if ((yyparse()!=0)||(cfg_errors)){
+			LM_ERR("bad config file (%d errors)\n", cfg_errors);
+			goto error00;
+		}
 	}
 
 	/* shm statistics, module stat groups, memory warming */
@@ -1128,7 +1159,7 @@ try_again:
 	if (protos_no < 0) {
 		LM_ERR("cannot load transport protocols\n");
 		goto error;
-	} else if (protos_no == 0) {
+	} else if (protos_no == 0 && !testing_framework) {
 		LM_ERR("no transport protocol loaded\n");
 		goto error;
 	} else
@@ -1172,8 +1203,10 @@ try_again:
 		goto error;
 	}
 
-	if (debug_mode) {
+	if (testing_framework)
+		debug_mode = 1;
 
+	if (debug_mode) {
 		LM_NOTICE("DEBUG MODE activated\n");
 		if (no_daemon_mode==0) {
 			LM_NOTICE("disabling daemon mode (found enabled)\n");
@@ -1208,11 +1241,9 @@ try_again:
 		}
 
 	} else { /* debug_mode */
-
 		/* init_daemon */
 		if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
 			goto error;
-
 	}
 
 	/* install signal handlers */

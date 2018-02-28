@@ -32,6 +32,7 @@
 #include "cachedb_con.h"
 #include "cachedb_pool.h"
 #include "cachedb_id.h"
+#include "cachedb_types.h"
 
 struct cachedb_url
 {
@@ -39,14 +40,8 @@ struct cachedb_url
 	struct cachedb_url *next;
 };
 
-typedef enum {
-	CDB_INT,
-	CDB_STR,
-	CDB_NULL,
-} cdb_raw_type_t;
-
 typedef struct {
-	cdb_raw_type_t type;
+	cdb_type_t type;
 	union {
 		int n;
 		str s;
@@ -70,8 +65,17 @@ typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);
 typedef int (cachedb_remove_f)(cachedb_con *con,str *attr);
 typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
+
+typedef int (cachedb_query_f)(cachedb_con *con, const cdb_filter_t *filter,
+                              cdb_res_t *res);
+typedef int (cachedb_update_f)(cachedb_con *con,
+                               const cdb_filter_t *row_filter,
+                               const cdb_dict_t *pairs);
+
 /* bi-dimensional array will be returned */
 typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
+
+typedef int (cachedb_truncate_f)(cachedb_con *con);
 
 typedef int(cachedb_query_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r);
 typedef int(cachedb_free_trans_f)(cachedb_con* con, db_res_t* _r);
@@ -89,11 +93,48 @@ typedef struct cachedb_funcs_t {
 	cachedb_add_f			*add;
 	cachedb_sub_f			*sub;
 	cachedb_raw_f			*raw_query;
+	cachedb_truncate_f		*truncate;
+
 	cachedb_query_trans_f	*db_query_trans;
 	cachedb_free_trans_f	*db_free_trans;
 	cachedb_insert_trans_f	*db_insert_trans;
 	cachedb_delete_trans_f	*db_delete_trans;
 	cachedb_update_trans_f	*db_update_trans;
+
+	/*
+	 * Endpoints specific to "column-oriented" NoSQL DBs (Cassandra, Mongo)
+	 * Support for these endpoints can be verified via CACHEDB_CAP_COL_ORIENTED
+	 */
+
+	/**
+	 * query() - SQL-like select function.
+	 * @con: The cacheDB connection to use.
+	 * @filter: NULL, one or more AND'ed filters for the query.
+	 * @res: Will contain zero or more results.
+	 */
+	cachedb_query_f         *query;
+
+	/**
+	 * update() - SQL-like update function with "set", "unset" and TTL support.
+	 * @con: The cacheDB connection to use.
+	 * @row_filter: NULL, one or more AND'ed filters for the update.
+	 * @pairs: A list of columns (and values) to set or unset.
+	 *
+	 * In addition to behaving like the SQL equivalent, the update() function
+	 * shall _always_ perform an "UPSERT" operation wherever possible,
+	 * i.e. it will insert any missing rows or columns (keys) without failing.
+	 *
+	 * Regarding the TTL support -- the input allows for maximal flexibility,
+	 * allowing calling code to set a TTL per either each key/value or
+	 * key.subkey/value pair. From here onwards, it is up to the cacheDB API
+	 * implementation to decide how to use this information. For example, some
+	 * backends may only support row-level TTLs and set a TTL equal to the
+	 * max TTL between all input and existing DB TTL (e.g. MongoDB), others
+	 * may actually fully support dictionary-level TTLs (e.g. Cassandra).
+	 */
+	cachedb_update_f        *update;
+	/* TODO: can we also implement these ^ with Redis, or can we adapt them? */
+
 	int capability;
 } cachedb_funcs;
 

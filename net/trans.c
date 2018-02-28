@@ -214,10 +214,11 @@ int fix_all_socket_lists(void)
 		}
 	}
 
-	if (!found){
+	if (!found && !testing_framework) {
 		LM_ERR("no listening sockets\n");
 		goto error;
 	}
+
 	return 0;
 error:
 	return -1;

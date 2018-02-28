@@ -91,5 +91,10 @@ int mongo_db_update_trans(cachedb_con *con, const str *table,
                           const db_key_t *_k, const db_op_t *_o,
                           const db_val_t *_v, const db_key_t *_uk,
                           const db_val_t *_uv, const int _n, const int _un);
-#endif /* CACHEDBMONGO_DBASE_H */
+int mongo_truncate(cachedb_con *con);
 
+int mongo_con_query(cachedb_con *con, const cdb_filter_t *row_filter,
+                    cdb_res_t *res);
+int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
+                     const cdb_dict_t *pairs);
+#endif /* CACHEDBMONGO_DBASE_H */

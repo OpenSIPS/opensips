@@ -55,15 +55,23 @@ struct _str{
 typedef struct _str str;
 
 /* str initialization */
+#define STR_NULL {NULL, 0}
 #define str_init(_string)  {_string, sizeof(_string) - 1}
-static inline void init_str(str *dst, char *in)
+static inline void init_str(str *dest, const char *src)
 {
-	dst->s = in;
-	dst->len = strlen(in);
+	dest->s = (char *)src;
+	dest->len = strlen(src);
 }
 
 /* zero-str tests */
 #define ZSTR(_s)    (!(_s).s || (_s).len == 0)
 #define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
+
+static inline str *str_cpy(str *dest, const str *src)
+{
+	memcpy(dest->s, src->s, src->len);
+	dest->len = src->len;
+	return dest;
+}
 
 #endif

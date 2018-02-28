@@ -1087,14 +1087,7 @@ assign_stm: DEBUG EQUAL snumber
 							}
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
-		| MPATH EQUAL STRING { mpath=$3; strcpy(mpath_buf, $3);
-								mpath_len=strlen($3);
-								if(mpath_len==0 || mpath_buf[mpath_len-1]!='/') {
-									mpath_buf[mpath_len]='/';
-									mpath_len++;
-									mpath_buf[mpath_len]='\0';
-								}
-							}
+		| MPATH EQUAL STRING { set_mpath($3); }
 		| MPATH EQUAL error  { yyerror("string value expected"); }
 		| DISABLE_DNS_FAILOVER EQUAL NUMBER {
 										disable_dns_failover=$3;

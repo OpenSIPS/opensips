@@ -58,7 +58,7 @@
 #include "net/proto_udp/proto_udp_handler.h"
 #include "net/proto_tcp/proto_tcp_handler.h"
 
-
+#include "test/unit_tests.h"
 
 struct sr_module* modules=0;
 
@@ -89,10 +89,9 @@ struct sr_module* modules=0;
 	extern struct module_exports sl_exports;
 #endif
 
-char *mpath=NULL;
-char mpath_buf[256];
-int  mpath_len = 0;
-
+static const char *mpath;
+static char mpath_buf[256];
+static int  mpath_len;
 
 /* initializes statically built (compiled in) modules*/
 int register_builtin_modules(void)
@@ -344,6 +343,18 @@ static int load_static_module(char *path)
 	}
 
 	return -1;
+}
+
+void set_mpath(const char *new_mpath)
+{
+	mpath = new_mpath;
+	strcpy(mpath_buf, new_mpath);
+	mpath_len = strlen(mpath);
+	if (mpath_len == 0 || mpath_buf[mpath_len - 1] != '/') {
+		mpath_buf[mpath_len] = '/';
+		mpath_len++;
+		mpath_buf[mpath_len] = '\0';
+	}
 }
 
 /* returns 0 on success , <0 on error */
@@ -683,6 +694,11 @@ static int init_mod( struct sr_module* m, int skip_others)
 int init_modules(void)
 {
 	int ret;
+
+	if (testing_framework) {
+		init_unit_tests();
+		solve_module_dependencies(modules);
+	}
 
 	ret = init_mod(modules, 0);
 

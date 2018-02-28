@@ -95,6 +95,7 @@ static int mod_init(void)
 	cachedb_engine cde;
 
 	LM_NOTICE("initializing module cachedb_couchbase ...\n");
+	memset(&cde, 0, sizeof cde);
 
 	cde.name = cache_mod_name;
 

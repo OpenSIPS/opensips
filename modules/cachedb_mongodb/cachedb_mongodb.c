@@ -105,7 +105,7 @@ static int mod_init(void)
 	mongoc_init();
 
 	LM_NOTICE("initializing module cachedb_mongodb ...\n");
-	memset(&cde,0,sizeof(cachedb_engine));
+	memset(&cde, 0, sizeof cde);
 
 	cde.name = cache_mod_name;
 
@@ -117,14 +117,15 @@ static int mod_init(void)
 	cde.cdb_func.remove = mongo_con_remove;
 	cde.cdb_func.add = mongo_con_add;
 	cde.cdb_func.sub = mongo_con_sub;
+	cde.cdb_func.query = mongo_con_query;
+	cde.cdb_func.update = mongo_con_update;
 	cde.cdb_func.raw_query = mongo_con_raw_query;
+	cde.cdb_func.truncate = mongo_truncate;
 	cde.cdb_func.db_query_trans = mongo_db_query_trans;
 	cde.cdb_func.db_free_trans = mongo_db_free_result_trans;
 	cde.cdb_func.db_insert_trans = mongo_db_insert_trans;
 	cde.cdb_func.db_delete_trans = mongo_db_delete_trans;
 	cde.cdb_func.db_update_trans = mongo_db_update_trans;
-
-	cde.cdb_func.capability = 0;
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_mongodb\n");

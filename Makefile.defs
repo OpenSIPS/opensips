@@ -1649,5 +1649,13 @@ $(warning	No locking method found so far, trying SYS V sems)
 		found_lock_method=yes
 endif
 
+## Unit Testing - required extensions
+ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' Makefile.conf))
+DEFS := $(DEFS) -DUNIT_TESTS
+LIBS := $(LIBS) -ltap
+test_src := $(shell find . -wholename "*/test/*\.c" | grep -v "^./modules/")
+test_objs := $(test_src:.c=.o)
+objs := $(objs) $(test_objs)
+endif
 
 endif  # ifeq ($(makefile_defs, 1)

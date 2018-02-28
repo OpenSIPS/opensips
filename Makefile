@@ -693,12 +693,6 @@ install-modules-docbook: $(doc_prefix)/$(doc_dir)
 		fi ; \
 	done
 
-.PHONY: test
-test:
-	-@echo "Start tests"
-	$(MAKE) -C test/
-	-@echo "Tests finished"
-
 doxygen:
 	-@echo "Create Doxygen documentation"
 	# disable call graphes, because of the DOT dependencies
@@ -711,3 +705,5 @@ comp_menuconfig:
 	$(MAKE) -C menuconfig
 menuconfig: comp_menuconfig
 	./menuconfig/configure --local
+
+include Makefile.test
