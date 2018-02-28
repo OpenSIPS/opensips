@@ -250,7 +250,7 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 
 			end_len = old_uri.len - ((param_tok.s + param_tok.len) - old_uri.s);
 			if (end_len)
-				memcpy(new_uri.s + begin_len, param_tok.s + param_tok.len, end_len+1);
+				memcpy(new_uri.s + begin_len, param_tok.s + param_tok.len, end_len);
 
 			if (set_ruri(_msg, &new_uri) == 1) {
 				pkg_free(new_uri.s);
