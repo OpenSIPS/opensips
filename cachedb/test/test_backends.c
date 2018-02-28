@@ -54,7 +54,8 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 	cdb_kv_t *pair2;
 
 	/* different # of pairs? */
-	for (p1 = a, p2 = b; p1 != a && p2 != b; p1 = p1->next, p2 = p2->next)
+	for (p1 = a->next, p2 = b->next; p1 != a && p2 != b;
+	     p1 = p1->next, p2 = p2->next)
 		{}
 	if (p1 != a || p2 != b)
 		return 1;
@@ -120,6 +121,21 @@ int res_has_kv(const cdb_res_t *res, const cdb_kv_t *pair)
 	}
 
 	return 0;
+}
+
+static inline cdb_kv_t *nth_pair(const cdb_dict_t *dict, int nth)
+{
+	struct list_head *_;
+	cdb_kv_t *pair;
+
+	list_for_each (_, dict) {
+		if (--nth == 0) {
+			pair = list_entry(_, cdb_kv_t, list);
+			return pair;
+		}
+	}
+
+	return NULL;
 }
 
 static inline cdb_dict_t *nth_dict(const cdb_res_t *res, int nth)
@@ -324,6 +340,63 @@ static int test_update(cachedb_funcs *api, cachedb_con *con,
 	return 1;
 }
 
+static int test_update_unset(cachedb_funcs *api, cachedb_con *con,
+                             cdb_dict_t *out_pairs)
+{
+	struct list_head *_;
+	cdb_kv_t *pair;
+
+	list_for_each (_, out_pairs) {
+		pair = list_entry(_, cdb_kv_t, list);
+		pair->unset = 1;
+	}
+
+	ok(api->update(con, NULL, out_pairs) == 0, "test_update_unset ALL");
+
+	return 1;
+}
+
+static int test_query_unset(cachedb_funcs *api, cachedb_con *con,
+                            const cdb_dict_t *pairs)
+{
+	cdb_res_t res;
+	cdb_dict_t *dict1, *dict2;
+	cdb_kv_t *pair;
+	cdb_key_t key = CDB_KEY_INITIALIZER;
+
+	if (!ok(api->query(con, NULL, &res) == 0, "query: NULL filter"))
+		return 0;
+
+	ok(res.count == 2, "query: 2 results");
+	dbg_cdb_dict("pairs: ", pairs);
+	dict1 = nth_dict(&res, 1);
+	dict2 = nth_dict(&res, 2);
+
+	dbg_cdb_dict("res 1: ", dict1);
+	dbg_cdb_dict("res 2: ", dict2);
+
+	init_str(&key.name, "key");
+
+	pair = dict_fetch(&key, dict1);
+	ok(!pair ||
+	   (pair->val.type == CDB_DICT && cdb_dict_empty(&pair->val.val.dict)),
+	   "subdict-1 is empty");
+
+	pair = dict_fetch(&key, dict2);
+	ok(!pair ||
+	   (pair->val.type == CDB_DICT && cdb_dict_empty(&pair->val.val.dict)),
+	   "subdict-2 is empty");
+
+	ok(nth_pair(dict1, 3) == NULL, "dict1 has 2 entries");
+	ok(nth_pair(dict2, 3) == NULL, "dict2 has 2 entries");
+
+	ok(!dict_cmp(dict1, dict2), "identical results");
+
+	cdb_free_rows(&res);
+
+	return 1;
+}
+
 static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 {
 	cdb_dict_t cols;
@@ -337,8 +410,10 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");
 
-	if (!ok(test_update(api, con, &cols), "test update")
-	    || !ok(test_query(api, con, &cols), "test query"))
+	if (!ok(test_update(api, con, &cols), "test update-set")
+	    || !ok(test_query(api, con, &cols), "test query-set")
+	    || !ok(test_update_unset(api, con, &cols), "test update-unset")
+	    || !ok(test_query_unset(api, con, &cols), "test query-unset"))
 		return 0;
 
 	cdb_free_entries(&cols);

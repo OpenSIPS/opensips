@@ -124,6 +124,11 @@ static inline void cdb_dict_init(cdb_dict_t *dict)
 	INIT_LIST_HEAD(dict);
 }
 
+static inline int cdb_dict_empty(cdb_dict_t *dict)
+{
+	return list_empty(dict);
+}
+
 static inline cdb_kv_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
 {
 	cdb_kv_t *pair;
