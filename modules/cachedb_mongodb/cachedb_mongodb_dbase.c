@@ -1814,7 +1814,7 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 	return 0;
 }
 
-int mongo_con_get_rows(cachedb_con *con, const cdb_filter_t *filter,
+int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
                        cdb_res_t *res)
 {
 	bson_t child, bson_filter = BSON_INITIALIZER;
@@ -1985,8 +1985,8 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 	return 0;
 }
 
-int mongo_con_set_cols(cachedb_con *con, const cdb_filter_t *row_filter,
-                       const cdb_dict_t *pairs)
+int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
+                     const cdb_dict_t *pairs)
 {
 	struct list_head *_;
 	bson_t filter = BSON_INITIALIZER, update = BSON_INITIALIZER;
@@ -2089,10 +2089,4 @@ out:
 	bson_destroy(&filter);
 	bson_destroy(&update);
 	return ret;
-}
-
-int mongo_con_unset_cols(cachedb_con *con, const cdb_filter_t *row_filter,
-                         const cdb_key_t *cols, int nc)
-{
-	return 0;
 }

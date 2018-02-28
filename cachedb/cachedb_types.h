@@ -90,9 +90,13 @@ typedef struct {
 
 typedef struct {
 	cdb_key_t key;
-	str subkey; /* may be used during "SET" to refer to a sub-dictionary key */
+	/* may be used during an update() to refer to a sub-dictionary key */
+	str subkey;
 	cdb_val_t val;
-	int ttl; /* seconds; may be used during "SET"; 0 means "no ttl set" */
+	/* seconds; may be set during an update(); 0 means "no ttl set" */
+	int ttl;
+	/* set to 1 during an update() in order to unset the given key */
+	char unset;
 
 	struct list_head list;
 } cdb_kv_t;

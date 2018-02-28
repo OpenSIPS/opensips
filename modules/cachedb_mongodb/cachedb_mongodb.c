@@ -117,9 +117,8 @@ static int mod_init(void)
 	cde.cdb_func.remove = mongo_con_remove;
 	cde.cdb_func.add = mongo_con_add;
 	cde.cdb_func.sub = mongo_con_sub;
-	cde.cdb_func.get_rows = mongo_con_get_rows;
-	cde.cdb_func.set_cols = mongo_con_set_cols;
-	cde.cdb_func.unset_cols = mongo_con_unset_cols;
+	cde.cdb_func.query = mongo_con_query;
+	cde.cdb_func.update = mongo_con_update;
 	cde.cdb_func.raw_query = mongo_con_raw_query;
 	cde.cdb_func.truncate = mongo_truncate;
 	cde.cdb_func.db_query_trans = mongo_db_query_trans;

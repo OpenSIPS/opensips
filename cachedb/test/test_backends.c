@@ -137,7 +137,7 @@ static inline cdb_dict_t *nth_dict(const cdb_res_t *res, int nth)
 	return NULL;
 }
 
-static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
+static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 {
 	cdb_key_t key;
 	str sa = str_init("A"), sb = str_init("B"), sc = str_init("C"),
@@ -150,16 +150,16 @@ static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
 	memset(&pair, 0, sizeof pair);
 
 	init_str(&key.name, "tgr_1");
-	ok(api->set(con, &key.name, &sa, 0) == 0, "test_get_rows: set A");
+	ok(api->set(con, &key.name, &sa, 0) == 0, "test_query: set A");
 
 	init_str(&key.name, "tgr_2");
-	ok(api->set(con, &key.name, &sb, 0) == 0, "test_get_rows: set B");
+	ok(api->set(con, &key.name, &sb, 0) == 0, "test_query: set B");
 
 	init_str(&key.name, "tgr_3");
-	ok(api->set(con, &key.name, &sc, 0) == 0, "test_get_rows: set C");
+	ok(api->set(con, &key.name, &sc, 0) == 0, "test_query: set C");
 
 	init_str(&key.name, "tgr_4");
-	ok(api->set(con, &key.name, &sd, 0) == 0, "test_get_rows: set D");
+	ok(api->set(con, &key.name, &sd, 0) == 0, "test_query: set D");
 
 	memset(&key, 0, sizeof key);
 	init_str(&key.name, "opensips");
@@ -171,8 +171,8 @@ static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
 	/* single filter tests */
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 4 items");
-	ok(res.count == 4, "test_get_rows: have 4 items");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 4 items");
+	ok(res.count == 4, "test_query: have 4 items");
 	init_str(&pair.key.name, "opensips");
 	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
 	pair.val.val.st = sb; ok(res_has_kv(&res, &pair), "has B");
@@ -184,8 +184,8 @@ static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
 	cdb_free_filters(filter);
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LT, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 3 items");
-	ok(res.count == 3, "test_get_rows: have 3 items");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 3 items");
+	ok(res.count == 3, "test_query: have 3 items");
 	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
 	pair.val.val.st = sb; ok(res_has_kv(&res, &pair), "has B");
 	pair.val.val.st = sc; ok(res_has_kv(&res, &pair), "has C");
@@ -195,16 +195,16 @@ static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
 
 	init_str(&isv.s, "A");
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LT, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 0 items");
-	ok(res.count == 0, "test_get_rows: have 0 items");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 0 items");
+	ok(res.count == 0, "test_query: have 0 items");
 	pair.val.val.st = sa; ok(!res_has_kv(&res, &pair), "!has A");
 	pair.val.val.st = sc; ok(!res_has_kv(&res, &pair), "!has C");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 1 item");
-	ok(res.count == 1, "test_get_rows: have 1 item");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 1 item");
+	ok(res.count == 1, "test_query: have 1 item");
 	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
 	pair.val.val.st = sb; ok(!res_has_kv(&res, &pair), "!has B");
 	cdb_free_rows(&res);
@@ -214,35 +214,35 @@ static int test_get_rows_filters(cachedb_funcs *api, cachedb_con *con)
 
 	init_str(&isv.s, "D");
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LT, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 3 items");
-	ok(res.count == 3, "test_get_rows: have 3 items");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 3 items");
+	ok(res.count == 3, "test_query: have 3 items");
 	init_str(&isv.s, "A");
 	filter = cdb_append_filter(filter, &key, CDB_OP_GE, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 3 items");
-	ok(res.count == 3, "test_get_rows: have 3 items");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 3 items");
+	ok(res.count == 3, "test_query: have 3 items");
 	init_str(&isv.s, "B");
 	filter = cdb_append_filter(filter, &key, CDB_OP_GT, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 1 item");
-	ok(res.count == 1, "test_get_rows: have 1 item");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 1 item");
+	ok(res.count == 1, "test_query: have 1 item");
 	init_str(&isv.s, "C");
 	filter = cdb_append_filter(filter, &key, CDB_OP_EQ, &isv);
-	ok(api->get_rows(con, filter, &res) == 0, "test_get_rows: get 1 item");
-	ok(res.count == 1, "test_get_rows: have 1 item");
+	ok(api->query(con, filter, &res) == 0, "test_query: get 1 item");
+	ok(res.count == 1, "test_query: have 1 item");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
 	return 1;
 }
 
-static int test_get_rows(cachedb_funcs *api, cachedb_con *con,
+static int test_query(cachedb_funcs *api, cachedb_con *con,
                          const cdb_dict_t *pairs)
 {
 	cdb_res_t res;
 
-	if (!ok(api->get_rows(con, NULL, &res) == 0, "get_rows: NULL filter"))
+	if (!ok(api->query(con, NULL, &res) == 0, "query: NULL filter"))
 		return 0;
 
-	ok(res.count == 2, "get_rows: 2 results");
+	ok(res.count == 2, "query: 2 results");
 	dbg_cdb_dict("pairs: ", pairs);
 	dbg_cdb_dict("res 1: ", nth_dict(&res, 1));
 	dbg_cdb_dict("res 2: ", nth_dict(&res, 2));
@@ -254,8 +254,8 @@ static int test_get_rows(cachedb_funcs *api, cachedb_con *con,
 	return 1;
 }
 
-static int test_set_cols(cachedb_funcs *api, cachedb_con *con,
-                         cdb_dict_t *out_pairs)
+static int test_update(cachedb_funcs *api, cachedb_con *con,
+                       cdb_dict_t *out_pairs)
 {
 	cdb_filter_t *filter;
 	int_str_t isv;
@@ -310,14 +310,14 @@ static int test_set_cols(cachedb_funcs *api, cachedb_con *con,
 	cdb_dict_add(pair, &dict_pair->val.val.dict);
 	cdb_dict_add(dict_pair, out_pairs);
 
-	ok(api->set_cols(con, filter, out_pairs) == 0, "test_set_cols #1");
+	ok(api->update(con, filter, out_pairs) == 0, "test_update #1");
 
 	cdb_free_filters(filter);
 	cdb_pkey_init(&key, "aor");
 	init_str(&isv.s, "bar@opensips.org");
 	filter = cdb_append_filter(NULL, &key, CDB_OP_EQ, &isv);
 
-	ok(api->set_cols(con, filter, out_pairs) == 0, "test_set_cols #2");
+	ok(api->update(con, filter, out_pairs) == 0, "test_update #2");
 
 	cdb_free_filters(filter);
 
@@ -331,14 +331,14 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");
 
-	if (!ok(test_get_rows_filters(api, con), "test get_rows filters"))
+	if (!ok(test_query_filters(api, con), "test query filters"))
 		return 0;
 
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");
 
-	if (!ok(test_set_cols(api, con, &cols), "test set_cols")
-	    || !ok(test_get_rows(api, con, &cols), "test get_rows"))
+	if (!ok(test_update(api, con, &cols), "test update")
+	    || !ok(test_query(api, con, &cols), "test query"))
 		return 0;
 
 	cdb_free_entries(&cols);
