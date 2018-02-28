@@ -178,7 +178,8 @@ struct socket_id {
  */
 #define AF2PF(af)   (((af)==AF_INET)?PF_INET:((af)==AF_INET6)?PF_INET6:(af))
 
-
+/* check if a socket_info is marked as anycast */
+#define is_anycast(_si) (_si->flags & SI_IS_ANYCAST)
 
 
 struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask);

@@ -265,6 +265,6 @@ void print_all_socket_lists(void)
 			printf("             %s: %s [%s]:%s%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "",
-					si->flags & SI_IS_ANYCAST ? " anycast" : "");
+					is_anycast(si)? " anycast" : "");
 	}
 }

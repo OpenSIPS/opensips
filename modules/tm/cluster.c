@@ -279,7 +279,7 @@ int tm_reply_replicated(struct sip_msg *msg)
 		return 0;
 
 	/* double-check we have received the message on a anycast network */
-	if (!(msg->rcv.bind_address->flags & SI_IS_ANYCAST))
+	if (!is_anycast(msg->rcv.bind_address))
 		return 0;
 	cid = tm_get_cid(msg);
 	/* if there was no parameter, or it was, but it was ours, handle it */
