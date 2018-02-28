@@ -2109,8 +2109,9 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	dbg_bson("update: ", &update);
 
 	start_expire_timer(start, mongo_exec_threshold);
-	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
-	                              &filter, &update, NULL, &error)) {
+	if (!mongoc_collection_update(MONGO_COLLECTION(con),
+	                           MONGOC_UPDATE_UPSERT|MONGOC_UPDATE_MULTI_UPDATE,
+	                           &filter, &update, NULL, &error)) {
 		dump_mongo_err(&error);
 		ret = -1;
 	}
