@@ -1879,7 +1879,8 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 				LM_DBG("Trying to apply regexp [%.*s] on : [%.*s]\n",
 						sv.len,sv.s,val->rs.len, val->rs.s);
-				if (!buf_re.s || buf_re.len != sv.len || memcmp(buf_re.s, sv.s, sv.len) != 0) {
+				if (subst_re==NULL || !buf_re.s || buf_re.len != sv.len ||
+				memcmp(buf_re.s, sv.s, sv.len) != 0) {
 					LM_DBG("we must compile the regexp\n");
 					if (subst_re != NULL) {
 						LM_DBG("freeing prev regexp\n");
