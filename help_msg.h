@@ -96,6 +96,9 @@ Options:\n\
     -g gid       Change gid \n\
     -P file      Create a pid file\n\
     -G file      Create a pgid file\n"
+#ifdef UNIT_TESTS
+"    -T           Fork, run unit tests and exit.\n"
+#endif
 ;
 
 #endif
