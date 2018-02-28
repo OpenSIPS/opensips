@@ -126,7 +126,7 @@ typedef struct cachedb_funcs_t {
 	 *
 	 * Regarding the TTL support -- the input allows for maximal flexibility,
 	 * allowing calling code to set a TTL per either each key/value or
-	 * key.subkey/value pairs. From here onwards, it is up to the cacheDB
+	 * key.subkey/value pair. From here onwards, it is up to the cacheDB API
 	 * implementation to decide how to use this information. For example, some
 	 * backends may only support row-level TTLs and set a TTL equal to the
 	 * max TTL between all input and existing DB TTL (e.g. MongoDB), others
@@ -147,19 +147,6 @@ typedef struct cachedb_engines {
 } cachedb_engine;
 
 int register_cachedb(cachedb_engine* cde_entry);
-
-/*
- * Create a new row filter or append to existing ones. Multiple filters shall
- * only be linked using a logical AND, due to limitations of some backends
- *
- * Returns NULL in case of an error, without touching existing filters
- */
-cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const cdb_key_t *key,
-                                enum cdb_filter_op op, const int_str_t *val);
-static inline void cdb_free_filters(cdb_filter_t *filters)
-{
-	pkg_free_all(filters);
-}
 
 /* functions to be used from script */
 int cachedb_store(str* cachedb_engine, str* attr, str* val,int expires);

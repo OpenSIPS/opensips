@@ -25,6 +25,7 @@
 
 #include "../ut.h"
 #include "../lib/list.h"
+#include "cachedb_dict.h"
 
 typedef enum {
 	CDB_INT32, /* signed */
@@ -51,10 +52,52 @@ enum cdb_filter_op {
       0,                    \
    }
 
-typedef struct {
+typedef struct cdb_key {
 	str name;
 	char is_pk;
 } cdb_key_t;
+
+typedef struct cdb_filter {
+	cdb_key_t key;
+	enum cdb_filter_op op;
+	int_str_t val;
+
+	struct cdb_filter *next;
+} cdb_filter_t;
+
+typedef struct cdb_val {
+	cdb_type_t type;
+	union cdb_val_u {
+		int32_t i32;
+		int64_t i64;
+		str st;
+		cdb_dict_t dict;
+	} val;
+} cdb_val_t;
+
+typedef struct cdb_pair {
+	cdb_key_t key;
+	/* may be used during an update() to refer to a sub-dictionary key */
+	str subkey;
+	cdb_val_t val;
+	/* seconds; may be set during an update(); 0 means "no ttl set" */
+	int ttl;
+	/* set to 1 during an update() in order to unset the given key */
+	char unset;
+
+	struct list_head list;
+} cdb_pair_t;
+
+typedef struct {
+	cdb_dict_t dict;
+
+	struct list_head list;
+} cdb_row_t;
+
+typedef struct {
+	struct list_head rows; /* list of cdb_row_t */
+	int count;
+} cdb_res_t;
 
 static inline void cdb_key_init(cdb_key_t *key, const char *name)
 {
@@ -68,70 +111,9 @@ static inline void cdb_pkey_init(cdb_key_t *key, const char *name)
 	key->is_pk = 1;
 }
 
-typedef struct cdb_filter {
-	cdb_key_t key;
-	enum cdb_filter_op op;
-	int_str_t val;
-
-	struct cdb_filter *next;
-} cdb_filter_t;
-
-typedef struct list_head cdb_dict_t; /* list of cdb_kv_t */
-
-typedef struct {
-	cdb_type_t type;
-	union cdb_val_u {
-		int32_t i32;
-		int64_t i64;
-		str st;
-		cdb_dict_t dict;
-	} val;
-} cdb_val_t;
-
-typedef struct {
-	cdb_key_t key;
-	/* may be used during an update() to refer to a sub-dictionary key */
-	str subkey;
-	cdb_val_t val;
-	/* seconds; may be set during an update(); 0 means "no ttl set" */
-	int ttl;
-	/* set to 1 during an update() in order to unset the given key */
-	char unset;
-
-	struct list_head list;
-} cdb_kv_t;
-
-typedef struct {
-	cdb_dict_t dict;
-
-	struct list_head list;
-} cdb_row_t;
-
-typedef struct {
-	struct list_head rows; /* list of cdb_row_t */
-	int count;
-} cdb_res_t;
-
-#define dbg_cdb_dict(_pre_text, _dict_ptr) \
-	do { \
-		if (is_printable(L_DBG)) \
-			_dbg_cdb_dict(_pre_text, _dict_ptr); \
-	} while (0)
-void _dbg_cdb_dict(const char *pre_txt, const cdb_dict_t *dict);
-
-static inline void cdb_dict_init(cdb_dict_t *dict)
+static inline cdb_pair_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
 {
-	INIT_LIST_HEAD(dict);
-}
-
-static inline int cdb_dict_empty(cdb_dict_t *dict)
-{
-	return list_empty(dict);
-}
-
-static inline cdb_kv_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
-{
-	cdb_kv_t *pair;
+	cdb_pair_t *pair;
 
 	pair = pkg_malloc(sizeof *pair + key->name.len
 	                  + (subkey ? subkey->len : 0));
@@ -153,9 +135,17 @@ static inline cdb_kv_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
 	return pair;
 }
 
-static inline void cdb_dict_add(cdb_kv_t *pair, cdb_dict_t *dict)
+/*
+ * Create a new row filter or append to existing ones. Multiple filters shall
+ * only be linked using a logical AND, due to limitations of some backends
+ *
+ * Returns NULL in case of an error, without touching existing filters
+ */
+cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const cdb_key_t *key,
+                                enum cdb_filter_op op, const int_str_t *val);
+static inline void cdb_free_filters(cdb_filter_t *filters)
 {
-	list_add(&pair->list, dict);
+	pkg_free_all(filters);
 }
 
 static inline void cdb_res_init(cdb_res_t *res)
@@ -164,7 +154,6 @@ static inline void cdb_res_init(cdb_res_t *res)
 	INIT_LIST_HEAD(&res->rows);
 }
 
-void cdb_free_entries(cdb_dict_t *dict);
 void cdb_free_rows(cdb_res_t *res);
 
 #endif /* __CACHEDB_TYPES_H__ */

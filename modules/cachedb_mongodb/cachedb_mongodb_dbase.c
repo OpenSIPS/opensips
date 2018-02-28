@@ -1637,7 +1637,7 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 	bson_t subdoc;
 	const bson_value_t *v;
 	cdb_key_t key;
-	cdb_kv_t *pair;
+	cdb_pair_t *pair;
 	union cdb_val_u *val;
 
 	if (bson_iter_init(&iter, doc)) {
@@ -1922,11 +1922,11 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 {
 	struct list_head *_;
 	bson_t bson_val = BSON_INITIALIZER;
-	cdb_kv_t *pair;
+	cdb_pair_t *pair;
 	str key;
 
 	list_for_each (_, dict) {
-		pair = list_entry(_, cdb_kv_t, list);
+		pair = list_entry(_, cdb_pair_t, list);
 		key = pair->key.name;
 
 		switch (pair->val.type) {
@@ -1995,7 +1995,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	struct timeval start;
 	int ret = 0;
 	char has_set = 0, has_unset = 0;
-	cdb_kv_t *pair;
+	cdb_pair_t *pair;
 	str key;
 
 	if (mongo_cdb_filter_to_bson(row_filter, &filter) != 0) {
@@ -2004,7 +2004,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	}
 
 	list_for_each (_, pairs) {
-		pair = list_entry(_, cdb_kv_t, list);
+		pair = list_entry(_, cdb_pair_t, list);
 
 		/* we only support one level of subkey indirection --
 		 * any subkeys present at deeper nesting levels will be ignored */

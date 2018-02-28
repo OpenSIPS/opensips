@@ -28,114 +28,18 @@
 
 extern cachedb_engine* lookup_cachedb(str *name);
 
-int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b);
-int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2);
-
-cdb_kv_t *dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
-{
-	struct list_head *_;
-	cdb_kv_t *pair;
-
-	list_for_each(_, dict) {
-		pair = list_entry(_, cdb_kv_t, list);
-
-		if ((key->is_pk && pair->key.is_pk)
-		    || !str_strcmp(&pair->key.name, &key->name))
-			return pair;
-	}
-
-	return NULL;
-}
-
-int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
-{
-	const struct list_head *p1, *p2;
-	cdb_kv_t *pair1;
-	cdb_kv_t *pair2;
-
-	/* different # of pairs? */
-	for (p1 = a->next, p2 = b->next; p1 != a && p2 != b;
-	     p1 = p1->next, p2 = p2->next)
-		{}
-	if (p1 != a || p2 != b)
-		return 1;
-
-	list_for_each(p1, a) {
-		pair1 = list_entry(p1, cdb_kv_t, list);
-
-		pair2 = dict_fetch(&pair1->key, b);
-		if (!pair2)
-			return 1;
-
-		if ((!pair1->key.is_pk || !pair2->key.is_pk) &&
-		     val_cmp(&pair1->val, &pair2->val))
-			return 1;
-	}
-
-	return 0;
-}
-
-int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2)
-{
-	if (v1->type != v2->type)
-		return 1;
-
-	switch (v1->type) {
-	case CDB_INT32:
-		return v1->val.i32 != v2->val.i32;
-	case CDB_INT64:
-		return v1->val.i64 != v2->val.i64;
-	case CDB_DICT:
-		return dict_cmp(&v1->val.dict, &v2->val.dict);
-	case CDB_STR:
-		return str_strcmp(&v1->val.st, &v2->val.st);
-	case CDB_NULL:
-		return 0;
-		break;
-	default:
-		LM_BUG("unsupported type: %d\n", v1->type);
-		return 1;
-	}
-}
-
-int dict_has_pair(const cdb_dict_t *haystack, const cdb_kv_t *pair)
-{
-	cdb_kv_t *needle;
-
-	needle = dict_fetch(&pair->key, haystack);
-	if (!needle || needle->val.type != pair->val.type)
-		return 0;
-
-	return !val_cmp(&needle->val, &pair->val);
-}
-
-int res_has_kv(const cdb_res_t *res, const cdb_kv_t *pair)
+int res_has_kv(const cdb_res_t *res, const cdb_pair_t *pair)
 {
 	struct list_head *_;
 	cdb_row_t *row;
 
-	list_for_each(_, &res->rows) {
+	list_for_each (_, &res->rows) {
 		row = list_entry(_, cdb_row_t, list);
 		if (dict_has_pair(&row->dict, pair))
 			return 1;
 	}
 
 	return 0;
-}
-
-static inline cdb_kv_t *nth_pair(const cdb_dict_t *dict, int nth)
-{
-	struct list_head *_;
-	cdb_kv_t *pair;
-
-	list_for_each (_, dict) {
-		if (--nth == 0) {
-			pair = list_entry(_, cdb_kv_t, list);
-			return pair;
-		}
-	}
-
-	return NULL;
 }
 
 static inline cdb_dict_t *nth_dict(const cdb_res_t *res, int nth)
@@ -161,7 +65,7 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 	int_str_t isv;
 	cdb_filter_t *filter;
 	cdb_res_t res;
-	cdb_kv_t pair;
+	cdb_pair_t pair;
 
 	memset(&pair, 0, sizeof pair);
 
@@ -277,7 +181,7 @@ static int test_update(cachedb_funcs *api, cachedb_con *con,
 	int_str_t isv;
 	cdb_key_t key;
 	str subkey;
-	cdb_kv_t *pair, *dict_pair;
+	cdb_pair_t *pair, *dict_pair;
 
 	cdb_pkey_init(&key, "aor");
 	init_str(&isv.s, "foo@opensips.org"); isv.is_str = 1;
@@ -344,10 +248,10 @@ static int test_update_unset(cachedb_funcs *api, cachedb_con *con,
                              cdb_dict_t *out_pairs)
 {
 	struct list_head *_;
-	cdb_kv_t *pair;
+	cdb_pair_t *pair;
 
 	list_for_each (_, out_pairs) {
-		pair = list_entry(_, cdb_kv_t, list);
+		pair = list_entry(_, cdb_pair_t, list);
 		pair->unset = 1;
 	}
 
@@ -361,7 +265,7 @@ static int test_query_unset(cachedb_funcs *api, cachedb_con *con,
 {
 	cdb_res_t res;
 	cdb_dict_t *dict1, *dict2;
-	cdb_kv_t *pair;
+	cdb_pair_t *pair;
 	cdb_key_t key = CDB_KEY_INITIALIZER;
 
 	if (!ok(api->query(con, NULL, &res) == 0, "query: NULL filter"))
