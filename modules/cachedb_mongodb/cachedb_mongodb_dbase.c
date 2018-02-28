@@ -1990,10 +1990,12 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 {
 	struct list_head *_;
 	bson_t filter = BSON_INITIALIZER, update = BSON_INITIALIZER;
-	bson_t child, bson_val = BSON_INITIALIZER;
+	bson_t bson_val = BSON_INITIALIZER;
+	bson_t set_keys = BSON_INITIALIZER, unset_keys = BSON_INITIALIZER;
 	bson_error_t error;
 	struct timeval start;
 	int ret = 0;
+	char has_set = 0, has_unset = 0;
 	cdb_kv_t *pair;
 	str key;
 
@@ -2002,8 +2004,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 		return -1;
 	}
 
-	BSON_APPEND_DOCUMENT_BEGIN(&update, "$set", &child);
-	list_for_each(_, pairs) {
+	list_for_each (_, pairs) {
 		pair = list_entry(_, cdb_kv_t, list);
 
 		/* we only support one level of subkey indirection --
@@ -2014,16 +2015,27 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 			goto out;
 		}
 
+		if (pair->unset) {
+			if (!bson_append_null(&unset_keys, key.s, key.len)) {
+				LM_ERR("failed to append NULL doc\n");
+				ret = -1;
+				goto out;
+			}
+
+			has_unset = 1;
+			continue;
+		}
+
 		switch (pair->val.type) {
 		case CDB_NULL:
-			if (!bson_append_null(&child, key.s, key.len)) {
+			if (!bson_append_null(&set_keys, key.s, key.len)) {
 				LM_ERR("failed to append NULL doc\n");
 				ret = -1;
 				goto out;
 			}
 			break;
 		case CDB_INT32:
-			if (!bson_append_int32(&child, key.s, key.len,
+			if (!bson_append_int32(&set_keys, key.s, key.len,
 			                       pair->val.val.i32)) {
 				LM_ERR("failed to append i32 val: %d\n", pair->val.val.i32);
 				ret = -1;
@@ -2031,7 +2043,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 			}
 			break;
 		case CDB_INT64:
-			if (!bson_append_int64(&child, key.s, key.len,
+			if (!bson_append_int64(&set_keys, key.s, key.len,
 			                       pair->val.val.i64)) {
 				LM_ERR("failed to append i64 val: %ld\n", pair->val.val.i64);
 				ret = -1;
@@ -2039,7 +2051,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 			}
 			break;
 		case CDB_STR:
-			if (!bson_append_utf8(&child, key.s, key.len,
+			if (!bson_append_utf8(&set_keys, key.s, key.len,
 			                      pair->val.val.st.s, pair->val.val.st.len)) {
 				LM_ERR("failed to append str val: %.*s\n",
 				       pair->val.val.st.len, pair->val.val.st.s);
@@ -2054,7 +2066,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 				goto out;
 			}
 
-			if (!bson_append_document(&child, key.s, key.len, &bson_val)) {
+			if (!bson_append_document(&set_keys, key.s, key.len, &bson_val)) {
 				LM_ERR("failed to append key %.*s to doc\n", key.len, key.s);
 				ret = -1;
 				goto out;
@@ -2067,12 +2079,34 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 			ret = -1;
 			goto out;
 		}
+
+		has_set = 1;
 	}
 
-	bson_append_document_end(&update, &child);
+	dbg_bson("filter: ", &filter);
+	dbg_bson("set: ", &set_keys);
+	dbg_bson("unset: ", &unset_keys);
 
-	dbg_bson("using filter: ", &filter);
-	dbg_bson("using update: ", &update);
+	if (!has_set && !has_unset) {
+		LM_ERR("redundant update query\n");
+		ret = -1;
+		goto out;
+	}
+
+	if (has_set && !bson_append_document(&update, "$set", 4, &set_keys)) {
+		LM_ERR("failed to append $set key\n");
+		ret = -1;
+		goto out;
+	}
+
+	if (has_unset && !bson_append_document(&update, "$unset", 6,
+	                                       &unset_keys)) {
+		LM_ERR("failed to append $set key\n");
+		ret = -1;
+		goto out;
+	}
+
+	dbg_bson("update: ", &update);
 
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
@@ -2087,6 +2121,8 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 
 out:
 	bson_destroy(&filter);
+	bson_destroy(&set_keys);
+	bson_destroy(&unset_keys);
 	bson_destroy(&update);
 	return ret;
 }
