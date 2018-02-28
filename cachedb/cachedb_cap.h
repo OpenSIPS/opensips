@@ -80,18 +80,18 @@ static inline int check_cachedb_api(cachedb_engine *cde)
 		cde->cdb_func.capability |= CACHEDB_CAP_SUB;
 	if (cde->cdb_func.raw_query)
 		cde->cdb_func.capability |= CACHEDB_CAP_RAW;
+	if (cde->cdb_func.truncate)
+		cde->cdb_func.capability |= CACHEDB_CAP_TRUNCATE;
+
 	if (cde->cdb_func.get_rows)
 		cde->cdb_func.capability |= CACHEDB_CAP_GET_ROWS;
-
 	if (cde->cdb_func.set_cols)
 		cde->cdb_func.capability |= CACHEDB_CAP_SET_COLS;
 	if (cde->cdb_func.unset_cols)
 		cde->cdb_func.capability |= CACHEDB_CAP_UNSET_COLS;
-	if (cde->cdb_func.truncate)
-		cde->cdb_func.capability |= CACHEDB_CAP_TRUNCATE;
 
-	if (cde->cdb_func.set_cols && cde->cdb_func.unset_cols
-	    && cde->cdb_func.truncate)
+	if (cde->cdb_func.get_rows && cde->cdb_func.set_cols
+	    && cde->cdb_func.unset_cols)
 		cde->cdb_func.capability |= CACHEDB_CAP_COL_ORIENTED;
 
 	return 0;
