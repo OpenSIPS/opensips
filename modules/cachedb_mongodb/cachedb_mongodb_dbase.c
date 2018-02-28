@@ -1826,7 +1826,7 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
-	/* TODO: double-check */
+	/* TODO: test this! */
 	if (mongo_cdb_filter_to_bson(filter, &bson_filter) != 0) {
 		LM_ERR("failed to build bson filter\n");
 		return -1;
@@ -1836,9 +1836,8 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	cursor = mongoc_collection_find_with_opts(
 	                MONGO_COLLECTION(con), &bson_filter, NULL, NULL);
 
-	/* TODO */
-	stop_expire_timer(start, mongo_exec_threshold, "MongoDB get all rows",
-	                  NULL, 0, 0);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query rows",
+	                  con->url.s, con->url.len, 0);
 
 	cdb_res_init(res);
 
@@ -1856,9 +1855,9 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find(MONGO_COLLECTION(con), MONGOC_QUERY_NONE,
 	                                0, 0, 0, &bson_filter, NULL, NULL);
-	/* TODO */
-	stop_expire_timer(start, mongo_exec_threshold, "MongoDB get all rows",
-	                  NULL, 0, 0);
+
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query rows",
+	                  con->url.s, con->url.len, 0);
 
 	cdb_res_init(res);
 
@@ -2116,9 +2115,8 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 		ret = -1;
 	}
 
-	/* TODO */
-	stop_expire_timer(start, mongo_exec_threshold, "MongoDB set multi-cols",
-	                  NULL, 0, 0);
+	stop_expire_timer(start, mongo_exec_threshold, "MongoDB update",
+	                  con->url.s, con->url.len, 0);
 
 out:
 	bson_destroy(&filter);
