@@ -511,8 +511,10 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 		goto done;
 	}
 
-	addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%.*s = [%.*s]", attr.len,
-			attr.s, value.len, value.s);
+	addf_mi_node_child(&rpl_tree->node, 0, "key", 3, "%.*s",
+	                   attr.len, attr.s);
+	addf_mi_node_child(&rpl_tree->node, 0, "value", 5, "%.*s",
+	                   value.len, value.s);
 
 	pkg_free(value.s);
 
