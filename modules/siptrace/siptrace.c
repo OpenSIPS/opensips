@@ -432,17 +432,6 @@ static int parse_siptrace_id(str *suri)
 			memset(__list_el, 0, __lel_size);                           \
 		} while (0);
 
-	#define ADD2LIST(__list__, __list_type__,  __el__)                  \
-		do {                                                            \
-			if (__list__ == NULL) {                                     \
-				__list__ = __el__;                                      \
-				break;                                                  \
-			}                                                           \
-			__list_type__ __it = __list__;                              \
-			while (__it->next) __it = __it->next;                       \
-			__it->next = __el__;                                        \
-		} while(0);
-
 	#define PARSE_NAME(__uri, __name)                                   \
 		do {                                                            \
 			while (__uri->s[0]==' ')                                    \
@@ -560,15 +549,12 @@ static int parse_siptrace_id(str *suri)
 		elem->el.hep.name.len = trace_uri.len - HEP_PREFIX_LEN;
 	}
 
-
-
-	ADD2LIST(trace_list, tlist_elem_p, elem);
+	add_last(elem, trace_list);
 
 	return 0;
 
 	#undef LIST_SEARCH
 	#undef ALLOC_EL
-	#undef ADD2LIST
 	#undef PARSE_NAME
 	#undef IS_HEP_URI
 	#undef IS_SIP_URI
