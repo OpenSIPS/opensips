@@ -75,7 +75,6 @@ static void tm_repl_received(bin_packet_t *packet)
 	memcpy((char *)&ri.src_ip, tmp.s, tmp.len);
 	TM_BIN_POP(int, &ri.src_port, "src port");
 	TM_BIN_POP(str, &tmp, "message");
-	/* TODO: mark the packet as replicated, to make sure we don't replicate it again */
 
 	/* all set up - process it */
 	receive_msg(tmp.s, tmp.len, &ri, NULL, FL_TM_REPLICATED);
@@ -321,7 +320,6 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		goto not_replicated;
 	}
 
-	/* TODO: where should we set this :)? */
 	if (msg->flags & FL_TM_REPLICATED) {
 		LM_DBG("message already replicated, shouldn't have got here\n");
 		return -2;
