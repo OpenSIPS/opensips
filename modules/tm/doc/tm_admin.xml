@@ -773,8 +773,8 @@ modparam("tm", "auto_100trying", 0)
 			</listitem>
 			<listitem>
 				<para><emphasis>0x04</emphasis> - disable the DNS failover
-				for the transaction. Only first IP will be used. It disable
-				the failover both at transaport and transaction level.
+				for the transaction. Only first IP will be used. It disables
+				the failover both at transport and transaction level.
 				</para>
 			</listitem>
 			<listitem>
