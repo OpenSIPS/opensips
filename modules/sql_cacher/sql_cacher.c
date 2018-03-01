@@ -412,7 +412,6 @@ parse_err:
 static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_columns)
 {
 	unsigned int i;
-	long long one = 1;
 	db_type_t val_type;
 
 	c_entry->nr_ints = 0;
@@ -426,14 +425,17 @@ static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_col
 			case DB_BIGINT:
 			case DB_DOUBLE:
 				c_entry->nr_ints++;
-				c_entry->column_types &= ~(one << i);
+				c_entry->column_types &= ~(1LL << i);
 				break;
 			case DB_STRING:
 			case DB_STR:
+			case DB_BLOB:
 				c_entry->nr_strs++;
-				c_entry->column_types |= (one << i);
+				c_entry->column_types |= (1LL << i);
 				break;
 			default:
+				LM_ERR("Unsupported type: %d for column: %.*s\n", val_type,
+					c_entry->columns[i]->len, c_entry->columns[i]->s);
 				return -1;
 		}
 	}
@@ -458,6 +460,9 @@ static unsigned int get_cdb_val_size(cache_entry_t *c_entry, db_val_t *values, i
 				break;
 			case DB_STR:
 				len += VAL_STR(values + i).len;
+				break;
+			case DB_BLOB:
+				len += VAL_BLOB(values + i).len;
 				break;
 			default: continue;
 		}
@@ -536,6 +541,9 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			case DB_STR:
 				str_val = VAL_STR(values + i);
 				break;
+			case DB_BLOB:
+				str_val = VAL_BLOB(values + i);
+				break;
 			default: continue;
 		}
 		if (VAL_NULL(values + i))
@@ -562,6 +570,9 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			break;
 		case DB_STR:
 			str_key = VAL_STR(key);
+			break;
+		case DB_BLOB:
+			str_key = VAL_BLOB(key);
 			break;
 		case DB_INT:
 			int_key_buf = sint2str(VAL_INT(key), &int_key_len);
@@ -777,10 +788,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	}
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
-	if (get_column_types(c_entry, values + 1, ROW_N(row) - 1) < 0) {
-		LM_ERR("One ore more SQL columns have an unsupported type\n");
+	if (get_column_types(c_entry, values + 1, ROW_N(row) - 1) < 0)
 		goto error;
-	}
 
 	/* load the rows into the cahchedb */
 	do {
@@ -878,10 +887,8 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 	*values = ROW_VALUES(row);
 
 	if (c_entry->nr_ints + c_entry->nr_strs == 0 &&
-		get_column_types(c_entry, *values, ROW_N(row)) < 0) {
-		LM_ERR("SQL column has unsupported type\n");
+		get_column_types(c_entry, *values, ROW_N(row)) < 0)
 		goto sql_error;
-	}
 
 	if (insert_in_cachedb(c_entry, db_hdls, &key_val, *values, rld_vers, ROW_N(row)) < 0)
 		return -1;
@@ -1521,6 +1528,9 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 			case DB_STR:
 				str_res = &(VAL_STR(values + pv_name->col_nr));
 				break;
+			case DB_BLOB:
+				str_res = &(VAL_BLOB(values + pv_name->col_nr));
+				break;
 			case DB_INT:
 				*int_res = VAL_INT(values + pv_name->col_nr);
 				break;
@@ -1645,7 +1655,6 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	db_handlers_t *it_db;
 	int rc, rc2, int_res = 0, l = 0;
 	char *ch = NULL;
-	long long one = 1;
 	str str_res = {NULL, 0}, cdb_res = {NULL, 0};
 	int entry_rld_vers;
 
@@ -1762,7 +1771,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		}
 	}
 
-	if ((pv_name->c_entry->column_types & (one << pv_name->col_nr)) != 0) {
+	if ((pv_name->c_entry->column_types & (1LL << pv_name->col_nr)) != 0) {
 		if (pkg_str_extend(&valbuff, str_res.len) != 0) {
 			LM_ERR("failed to alloc buffer\n");
 			goto out_free_null;
