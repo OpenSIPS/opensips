@@ -119,6 +119,7 @@ enum request_method {
                                       * generated based on the transaction,
                                       * either in failure route or resume 
                                       * route */
+#define FL_TM_REPLICATED	 (1<<19) /* message received due to a tm replication */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10

@@ -57,6 +57,8 @@ int get_branch_index(void);
 
 int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags);
 
+void get_cancel_reason(struct sip_msg *msg, int flags, str *reason);
+
 #endif
 
 

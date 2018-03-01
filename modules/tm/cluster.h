@@ -37,8 +37,11 @@ extern struct clusterer_binds cluster_api;
 /* initializes cluster support for tm */
 int tm_init_cluster(void);
 
-/* Checks if a message should be replicated, and if it is, replicates it */
-int tm_reply_replicated(struct sip_msg *msg);
+/* Checks if a reply message should be replicated, and if it is, replicates it */
+int tm_reply_replicate(struct sip_msg *msg);
+
+/* Replicates an anycast message */
+int tm_anycast_replicate(struct sip_msg *msg);
 
 /* returns true if clusterer is enabled */
 #define tm_cluster_enabled() (cluster_api.register_capability != 0)

@@ -916,7 +916,7 @@ int t_check( struct sip_msg* p_msg , int *param_branch )
 					}
 			}
 			/* first check if the transaction is addressed to us */
-			if (!tm_reply_replicated(p_msg))
+			if (!tm_reply_replicate(p_msg))
 				t_reply_matching(p_msg ,
 						param_branch!=0?param_branch:&local_branch);
 			else

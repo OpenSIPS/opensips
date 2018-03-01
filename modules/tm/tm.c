@@ -247,6 +247,8 @@ static cmd_export_t cmds[]={
 		0, REQUEST_ROUTE},
 	{"t_wait_for_new_branches",(cmd_function)w_t_wait_for_new_branches,0, 0,
 		0, REQUEST_ROUTE},
+	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, 0, 0,
+		0, REQUEST_ROUTE},
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -298,9 +300,9 @@ static param_export_t params[]={
 		&timer_partitions },
 	{ "auto_100trying",           INT_PARAM,
 		&auto_100trying },
-	{ "tm_replication_cluster", INT_PARAM,
+	{ "tm_replication_cluster",   INT_PARAM,
 		&tm_repl_cluster },
-	{ "cluster_param",           STR_PARAM,
+	{ "cluster_param",            STR_PARAM,
 		&tm_cluster_param.s },
 	{0,0,0}
 };

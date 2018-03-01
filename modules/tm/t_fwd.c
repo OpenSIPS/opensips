@@ -573,17 +573,47 @@ int t_add_reason(struct sip_msg *msg, char *val)
 	return 1;
 }
 
+void get_cancel_reason(struct sip_msg *msg, int flags, str *reason)
+{
+#define CANCEL_REASON_SIP_487  \
+	"Reason: SIP;cause=487;text=\"ORIGINATOR_CANCEL\"" CRLF
+	int_str avp_reason;
+	struct hdr_field *hdr;
+
+	reason->s = NULL;
+	reason->len = 0;
+
+	if (search_first_avp( AVP_VAL_STR, _reason_avp_id, &avp_reason, NULL)) {
+		*reason = avp_reason.s;
+	} else {
+		/* propagate the REASON flag ? */
+		if ( flags&T_CANCEL_REASON_FLAG ) {
+			/* look for the Reason header */
+			if (parse_headers(msg, HDR_EOH_F, 0)<0) {
+				LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
+				} else {
+				hdr = get_header_by_static_name(msg, "Reason");
+				if (hdr!=NULL) {
+					reason->s = hdr->name.s;
+					reason->len = hdr->len;
+				}
+			}
+		}
+	}
+
+	/* if no reason, use NORMAL CLEARING */
+	if (reason->s == NULL) {
+		reason->s = CANCEL_REASON_SIP_487;
+		reason->len = sizeof(CANCEL_REASON_SIP_487) - 1;
+	}
+}
 
 void cancel_invite(struct sip_msg *cancel_msg,
 					struct cell *t_cancel, struct cell *t_invite, int locked)
 {
-#define CANCEL_REASON_SIP_487  \
-	"Reason: SIP;cause=487;text=\"ORIGINATOR_CANCEL\"" CRLF
 
 	branch_bm_t cancel_bitmap;
 	str reason;
-	struct hdr_field *hdr;
-	int_str avp_reason;
 
 	cancel_bitmap=0;
 
@@ -595,32 +625,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	else
 		t_reply( t_cancel, cancel_msg, 200, &reason );
 
-	reason.s = NULL;
-	reason.len = 0;
-
-	if (search_first_avp( AVP_VAL_STR, _reason_avp_id, &avp_reason, NULL)) {
-		reason = avp_reason.s;
-	} else {
-		/* propagate the REASON flag ? */
-		if ( t_cancel->flags&T_CANCEL_REASON_FLAG ) {
-			/* look for the Reason header */
-			if (parse_headers(cancel_msg, HDR_EOH_F, 0)<0) {
-				LM_ERR("failed to parse all hdrs - ignoring Reason hdr\n");
-				} else {
-				hdr = get_header_by_static_name(cancel_msg, "Reason");
-				if (hdr!=NULL) {
-					reason.s = hdr->name.s;
-					reason.len = hdr->len;
-				}
-			}
-		}
-	}
-
-	/* if no reason, use NORMAL CLEARING */
-	if (reason.s == NULL) {
-		reason.s = CANCEL_REASON_SIP_487;
-		reason.len = sizeof(CANCEL_REASON_SIP_487) - 1;
-	}
+	get_cancel_reason(cancel_msg, cancel_msg->flags, &reason);
 
 	/* generate local cancels for all branches */
 	which_cancel(t_invite, &cancel_bitmap );

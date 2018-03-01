@@ -19,6 +19,9 @@
  */
 
 #include "cluster.h"
+#include "t_lookup.h"
+#include "t_cancel.h"
+#include "t_fwd.h"
 #include "../../ut.h"
 #include "../../receive.h"
 #include "../../socket_info.h"
@@ -72,6 +75,7 @@ static void tm_repl_received(bin_packet_t *packet)
 	memcpy((char *)&ri.src_ip, tmp.s, tmp.len);
 	TM_BIN_POP(int, &ri.src_port, "src port");
 	TM_BIN_POP(str, &tmp, "message");
+	/* TODO: mark the packet as replicated, to make sure we don't replicate it again */
 
 	/* all set up - process it */
 	receive_msg(tmp.s, tmp.len, &ri, NULL);
@@ -83,6 +87,7 @@ static void receive_tm_repl(bin_packet_t *packet)
 	LM_DBG("received %d packet from %d in cluster %d\n",
 			packet->type, packet->src_id, tm_repl_cluster);
 	switch (packet->type) {
+		/* both ACK, reply, and non-auto CANCEL we send to script */
 		case TM_CLUSTER_REPLY:
 		case TM_CLUSTER_REQUEST:
 			tm_repl_received(packet);
@@ -155,15 +160,15 @@ cluster_error:
 	} while(0)
 
 /**
- * Builds a replicated message, regardless the type
+ * Builds a replicated message
  */
-static bin_packet_t *tm_replicate_packet(struct sip_msg *msg)
+static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 {
 	static bin_packet_t packet;
 	str tmp;
 
 	/* XXX: could estimate better here, but let's assume we need msg->len */
-	if (bin_init(&packet, &tm_repl_cap, TM_CLUSTER_REPLY, TM_CLUSTER_VERSION,
+	if (bin_init(&packet, &tm_repl_cap, type, TM_CLUSTER_VERSION,
 			msg->len + 128) < 0) {
 		LM_ERR("cannot initiate bin reply buffer\n");
 		return NULL;
@@ -189,7 +194,7 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg)
 static void tm_replicate_reply(struct sip_msg *msg, int cid)
 {
 	int rc;
-	bin_packet_t *packet = tm_replicate_packet(msg);
+	bin_packet_t *packet = tm_replicate_packet(msg, TM_CLUSTER_REPLY);
 	if (!packet)
 		return;
 
@@ -215,11 +220,11 @@ static void tm_replicate_reply(struct sip_msg *msg, int cid)
  * Replicates a request message to all the member of the cluster
  * hoping that one of them will match the transaction and will act on it
  */
-static void tm_replicate_request(struct sip_msg *msg)
+static void tm_replicate_broadcast(struct sip_msg *msg)
 {
 	int rc;
 
-	bin_packet_t *packet = tm_replicate_packet(msg);
+	bin_packet_t *packet = tm_replicate_packet(msg, TM_CLUSTER_REQUEST);
 	if (!packet)
 		return;
 
@@ -272,7 +277,7 @@ not_found:
  *  0: if the message should not be replicated
  *  1: if the message was replicated
  */
-int tm_reply_replicated(struct sip_msg *msg)
+int tm_reply_replicate(struct sip_msg *msg)
 {
 	int cid;
 	if (!tm_cluster_enabled())
@@ -292,5 +297,46 @@ int tm_reply_replicated(struct sip_msg *msg)
 	LM_DBG("reply should get to node %d\n", cid);
 	tm_replicate_reply(msg, cid);
 	return 0;
+}
 
+
+/**
+ * Replicates a message within a cluster/
+ * Returns:
+ *   1: message was successfully replicated
+ *  -1: message should not be replicated
+ *  -2: message was already replicated to here - avoid loops
+ */
+int tm_anycast_replicate(struct sip_msg *msg)
+{
+	struct cell *t;
+
+	if (msg->REQ_METHOD != METHOD_CANCEL && msg->REQ_METHOD != METHOD_ACK) {
+		LM_DBG("only CANCEL and ACK can be replicated\n");
+		goto not_replicated;
+	}
+
+	if (!is_anycast(msg->rcv.bind_address)) {
+		LM_DBG("request not received on an anycast network\n");
+		goto not_replicated;
+	}
+
+	/* TODO: where should we set this :)? */
+	if (msg->flags & FL_TM_REPLICATED) {
+		LM_DBG("message already replicated, shouldn't have got here\n");
+		return -2;
+	}
+
+	t = get_t();
+	if (t == T_UNDEFINED && t_lookup_request(msg, 0) != -1) {
+		LM_DBG("e2e ACK or known cancel, do not replicate\n");
+		goto not_replicated;
+	}
+	if (t) {
+		LM_DBG("transaction already present here, no need to replicate\n");
+		goto not_replicated;
+	}
+	tm_replicate_broadcast(msg);
+not_replicated:
+	return -1;
 }
