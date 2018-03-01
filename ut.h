@@ -99,18 +99,42 @@ struct sip_msg;
 #define  translate_pointer( _new_buf , _org_buf , _p) \
 	( (_p)?(_new_buf + (_p-_org_buf)):(0) )
 
-#define add_last(what, where) \
+/**
+ * _add_last() - Walk the @next_member field of any struct and append last.
+ * @what: Pointer to the struct that is to be appended.
+ * @where: Pointer to the list that is to be appended to.
+ * @next_member: The name of the member used to link to the next ones.
+ *
+ * If the list @where is NULL, @what will be assigned to it.
+ */
+#define _add_last(what, where, next_member) \
 	do { \
 		if (!(where)) { \
 			(where) = (what); \
 		} else { \
 			typeof(where) __wit = (where); \
-			while (__wit->next) \
-				__wit = __wit->next; \
-			__wit->next = (what); \
+			while (__wit->next_member) \
+				__wit = __wit->next_member; \
+			__wit->next_member = (what); \
 		} \
 	} while (0)
 
+/**
+ * add_last() - Walk the "->next" field of any struct and append last.
+ * @what: Pointer to the struct that is to be appended.
+ * @where: Pointer to the list that is to be appended to.
+ *
+ * If the list @where is NULL, @what will be assigned to it.
+ */
+#define add_last(what, where) \
+	_add_last(what, where, next)
+
+/**
+ * pkg_free_all() - pkg_free() each element of the given list.
+ * @things: Pointer to the list that is to be freed in succession.
+ *
+ * The list is walked using "->next".
+ */
 #define pkg_free_all(things) \
 	do { \
 		typeof(things) pos; \
@@ -118,6 +142,12 @@ struct sip_msg;
 			{ pos = (things); (things) = (things)->next; pkg_free(pos); } \
 	} while (0)
 
+/**
+ * shm_free_all() - shm_free() each element of the given list.
+ * @things: Pointer to the list that is to be freed in succession.
+ *
+ * The list is walked using "->next".
+ */
 #define shm_free_all(things) \
 	do { \
 		typeof(things) pos; \
