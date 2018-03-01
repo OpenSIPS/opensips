@@ -31,7 +31,7 @@
 #include "context.h"
 
 int receive_msg(char* buf, unsigned int len, struct receive_info *ri,
-		context_p existing_context);
+		context_p existing_context, unsigned int flags);
 
 unsigned int get_next_msg_no(void);
 

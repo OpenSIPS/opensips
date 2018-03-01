@@ -78,7 +78,7 @@ static void tm_repl_received(bin_packet_t *packet)
 	/* TODO: mark the packet as replicated, to make sure we don't replicate it again */
 
 	/* all set up - process it */
-	receive_msg(tmp.s, tmp.len, &ri, NULL);
+	receive_msg(tmp.s, tmp.len, &ri, NULL, FL_TM_REPLICATED);
 }
 #undef TM_BIN_POP
 

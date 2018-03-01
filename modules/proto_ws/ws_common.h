@@ -528,7 +528,7 @@ again:
 					"keeping connection \n");
 			}
 
-			if (receive_msg(msg_buf, msg_len, &local_rcv, NULL) <0)
+			if (receive_msg(msg_buf, msg_len, &local_rcv, NULL, 0) <0)
 					LM_ERR("receive_msg failed \n");
 
 			*req->tcp.parsed = bk;

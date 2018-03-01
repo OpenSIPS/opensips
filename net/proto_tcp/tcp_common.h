@@ -409,7 +409,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			}
 
 			if (receive_msg(msg_buf, msg_len,
-				&local_rcv, NULL) <0)
+				&local_rcv, NULL, 0) <0)
 					LM_ERR("receive_msg failed \n");
 
 			if (!size && req != &_tcp_common_current_req) {

@@ -97,7 +97,7 @@ unsigned int get_next_msg_no(void)
  * break (e.g.: modules/textops)
  */
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
-		context_p existing_context)
+		context_p existing_context, unsigned int flags)
 {
 	static context_p ctx = NULL;
 	struct sip_msg* msg;
@@ -139,6 +139,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	msg->len=len;
 	msg->rcv=*rcv_info;
 	msg->id=msg_no;
+	msg->flags=flags;
 	msg->ruri_q = Q_UNSPECIFIED;
 
 	if (parse_msg(in_buff.s,len, msg)!=0){
