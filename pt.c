@@ -104,6 +104,27 @@ int init_multi_proc_support(void)
 		return -1;
 	}
 
+	/* register the stats for the extended global load */
+	if ( register_stat2( "load", "load-all", (stat_var**)pt_get_rt_loadall,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
+	if ( register_stat2( "load", "load1m-all", (stat_var**)pt_get_1m_loadall,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
+	if ( register_stat2( "load", "load10m-all", (stat_var**)pt_get_10m_loadall,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
+
+
 	return 0;
 }
 

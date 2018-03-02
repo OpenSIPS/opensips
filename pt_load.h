@@ -68,6 +68,11 @@ unsigned int pt_get_rt_load(int _);
 unsigned int pt_get_1m_load(int _);
 unsigned int pt_get_10m_load(int _);
 
+unsigned int pt_get_rt_loadall(int _);
+unsigned int pt_get_1m_loadall(int _);
+unsigned int pt_get_10m_loadall(int _);
+
+
 unsigned int pt_get_rt_proc_load(int pid);
 unsigned int pt_get_1m_proc_load(int pid);
 unsigned int pt_get_10m_proc_load(int pid);
