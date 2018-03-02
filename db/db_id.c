@@ -40,6 +40,8 @@
  */
 static int dupl_string(char** dst, const char* begin, const char* end)
 {
+	str old, new;
+
 	if (*dst) pkg_free(*dst);
 
 	*dst = pkg_malloc(end - begin + 1);
@@ -47,8 +49,12 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 		return -1;
 	}
 
-	memcpy(*dst, begin, end - begin);
-	(*dst)[end - begin] = '\0';
+	old.s = (char*)begin;
+	old.len = end - begin;
+	new.s = *dst;
+	un_escape(&old, &new );
+
+	new.s[new.len] = '\0';
 	return 0;
 }
 
