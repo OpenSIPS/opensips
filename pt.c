@@ -135,7 +135,7 @@ static int register_process_stats(int process_no)
 
 /* This function is to be called only by the main process!
  * */
-pid_t internal_fork(char *proc_desc, int flags)
+pid_t internal_fork(char *proc_desc, unsigned int flags)
 {
 	#define CHILD_COUNTER_STOP  656565656
 	static int process_counter = 1;
@@ -186,6 +186,7 @@ pid_t internal_fork(char *proc_desc, int flags)
 		/* set uid and pid */
 		process_no = process_counter;
 		pt[process_no].pid = getpid();
+		pt[process_no].flags = flags;
 		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);

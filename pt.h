@@ -41,6 +41,9 @@ struct process_table {
 	/* name/description of the process (null terminated) */
 	char desc[MAX_PT_DESC];
 
+	/* various flags describing properties of this process */
+	unsigned int flags;
+
 	/* pipe used by the process to receive designated jobs (used by IPC)
 	 * [1] for writting into by other process,
 	 * [0] to listen on by this process */
@@ -70,9 +73,11 @@ int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 int   count_init_children(int flags);
 
-#define OSS_FORK_NO_IPC   (1<<0)
+#define OSS_FORK_NO_IPC        (1<<0)
+#define OSS_FORK_NO_LOAD       (1<<1)
+#define OSS_FORK_IS_EXTRA      (1<<2)
 
-pid_t internal_fork(char *proc_desc, int flags);
+pid_t internal_fork(char *proc_desc, unsigned int flags);
 
 /* return processes pid */
 inline static int my_pid(void)

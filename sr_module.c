@@ -768,8 +768,8 @@ int start_module_procs(void)
 				LM_DBG("forking process \"%s\"/%d for module %s\n",
 					m->exports->procs[n].name, l, m->exports->name);
 				x = internal_fork( m->exports->procs[n].name,
-						(m->exports->procs[n].flags&PROC_FLAG_HAS_IPC) ?
-						0 : OSS_FORK_NO_IPC );
+						((m->exports->procs[n].flags&PROC_FLAG_HAS_IPC) ?
+						0 : OSS_FORK_NO_IPC)|OSS_FORK_IS_EXTRA );
 				if (x<0) {
 					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
 						m->exports->procs[n].name, l, m->exports->name);

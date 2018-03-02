@@ -796,6 +796,7 @@ static int main_loop(void)
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
+	pt[process_no].flags = OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD;
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {
