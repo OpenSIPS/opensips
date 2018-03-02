@@ -487,11 +487,13 @@ void fm_free(struct fm_block* qm, void* p)
 #ifndef F_MALLOC_OPTIMIZATIONS
 	if (f->prev) {
 	#ifdef DBG_MALLOC
-		LM_CRIT("freeing already freed pointer (%p), first free: "
-		        "%s: %s(%ld) - aborting\n", p, f->file, f->func, f->line);
+		LM_CRIT("freeing already freed %s pointer (%p), first free: "
+		        "%s: %s(%ld) - aborting\n", qm->name, p,
+		        f->file, f->func, f->line);
 		abort();
 	#else
-		LM_CRIT("freeing already freed pointer (%p) - skipping!\n", p);
+		LM_CRIT("freeing already freed %s pointer (%p) - skipping!\n",
+		        qm->name, p);
 		return;
 	#endif
 	}
