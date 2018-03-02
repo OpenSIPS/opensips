@@ -1846,7 +1846,7 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	BSON_APPEND_DOCUMENT_BEGIN(&bson_filter, "$query", &child);
 	if (mongo_cdb_filter_to_bson(filter, &child) != 0) {
 		LM_ERR("failed to build bson filter\n");
-		goto out_err;
+		return -1;
 	}
 	bson_append_document_end(&bson_filter, &child);
 
