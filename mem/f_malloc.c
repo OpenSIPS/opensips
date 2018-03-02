@@ -527,6 +527,12 @@ join:
 
 no_join:
 
+#ifdef DBG_MALLOC
+	f->file = file;
+	f->func = func;
+	f->line = line;
+#endif
+
 	fm_insert_free(qm, f);
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	qm->fragments -= 1;
