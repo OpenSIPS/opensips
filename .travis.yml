@@ -32,10 +32,9 @@ addons:
             - liblua5.1-0-dev
             - libncurses5-dev
             - libjson0-dev
-            - libmongo-client-dev
             - uuid-dev
 script: CC_EXTRA_OPTS=-Werror FASTER=1 NICER=0 make \
-    exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase" all
+    exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb" all
 notifications:
     irc:
         channels:
