@@ -1346,6 +1346,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 	struct dlg_cell    *cur_dlg;
 	struct dlg_profile_link *cur_link;
 	struct dialog_list *deleted = NULL, *delete_entry ;
+	int rtag_state;
 
 	node = cmd_tree->node.kids;
 	if (node==NULL || !node->value.s || !node->value.len)
@@ -1407,7 +1408,22 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 
 		delete_entry = deleted;
 		while(delete_entry){
-			init_dlg_term_reason(delete_entry->dlg,"MI Termination",sizeof("MI Termination")-1);
+			if (dialog_repl_cluster) {
+				rtag_state = get_repltag_state(delete_entry->dlg);
+				if (rtag_state < 0) {
+					while(delete_entry){
+						deleted = delete_entry;
+						delete_entry = delete_entry->next;
+						pkg_free(deleted);
+					}
+					LM_ERR("error while checking replication tag\n");
+					return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
+				} else if (rtag_state == 0)
+					continue;
+			}
+
+			init_dlg_term_reason(delete_entry->dlg, "MI Termination",
+									sizeof("MI Termination") - 1);
 
 			if ( dlg_end_dlg( delete_entry->dlg, NULL) ) {
 				while(delete_entry){
@@ -1415,7 +1431,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 					delete_entry = delete_entry->next;
 					pkg_free(deleted);
 				}
-				LM_CRIT("error while terminating dlg\n");
+				LM_ERR("error while terminating dlg\n");
 				return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
 			}
 
