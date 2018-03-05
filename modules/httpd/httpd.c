@@ -130,7 +130,7 @@ static int mod_init(void)
 		return -1;
 	}
 	if (buffer.len == 0)
-		buffer.len = (pkg_mem_size/4)*3;
+		buffer.len = (pkg_mem_size/4);
 	LM_DBG("buf_size=[%d]\n", buffer.len);
 
 	return 0;
