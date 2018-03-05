@@ -216,5 +216,6 @@ static void destroy_kv_store_val(void* _val)
 
 void store_destroy(map_t _store)
 {
-	map_destroy(_store, destroy_kv_store_val);
+	if (_store)
+		map_destroy(_store, destroy_kv_store_val);
 }

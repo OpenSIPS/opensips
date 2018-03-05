@@ -615,7 +615,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	}
 
 	vals[16].type = DB_STR;
-	if (map_size(_c->kv_storage) == 0) {
+	if (!_c->kv_storage || map_size(_c->kv_storage) == 0) {
 		LM_DBG("zero map size\n");
 		vals[16].nul = 1;
 	} else {
@@ -778,7 +778,7 @@ int db_update_ucontact(ucontact_t* _c)
 	vals2[11].val.time_val = _c->last_modified;
 
 	vals2[12].type = DB_STR;
-	if (map_size(_c->kv_storage) == 0) {
+	if (!_c->kv_storage || map_size(_c->kv_storage) == 0) {
 		vals2[12].nul = 1;
 	} else {
 		vals2[12].val.str_val = store_serialize(_c->kv_storage);
