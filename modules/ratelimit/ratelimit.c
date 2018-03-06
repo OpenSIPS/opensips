@@ -814,7 +814,6 @@ static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 
 	counter = rl_get_counter_value(&res->rs);
 	if (counter < 0) {
-		LM_ERR("Cannot get counter's value\n");
 		return pv_get_null(msg, param, res);
 	}
 
