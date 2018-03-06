@@ -387,8 +387,7 @@ modparam("cgrates", "retry_timeout", 120)
      * -3 - No suitable CGRateS server found. message type (not an
        initial INVITE).
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE and LOCAL_ROUTE.
+   This function can be used from any route.
 
    Example 1.7. cgrates_cmd() usage
                 ...
