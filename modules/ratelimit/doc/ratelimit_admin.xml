@@ -521,7 +521,8 @@ modparam("ratelimit", "slot_period", 100)
 
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
+			BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function>rl_check</function> usage</title>
@@ -568,7 +569,8 @@ modparam("ratelimit", "slot_period", 100)
 			</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
+			BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function>rl_dec_count</function> usage</title>
@@ -599,7 +601,8 @@ modparam("ratelimit", "slot_period", 100)
 			</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
+			BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function>rl_reset_count</function> usage</title>
