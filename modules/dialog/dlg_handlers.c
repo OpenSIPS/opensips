@@ -1907,7 +1907,7 @@ early_check:
 /* When done, this function also has the job to unref the dialog as removed
  * from timer list. This must be done in all cases!!
  */
-void dlg_ontimeout( struct dlg_tl *tl)
+void dlg_ontimeout(struct dlg_tl *tl)
 {
 	struct sip_msg *fake_msg;
 	context_p old_ctx;
@@ -1916,28 +1916,35 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	int new_state;
 	int old_state;
 	int unref;
+	int do_expire_actions = 1;
 
 	dlg = get_dlg_tl_payload(tl);
 
-	LM_DBG("byeontimeout ? %d , state = %d\n",dlg->flags,dlg->state);
+	LM_DBG("byeontimeout ? flags = %d , state = %d\n",dlg->flags,dlg->state);
 
-	if ( (dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
-	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
+	if (dialog_repl_cluster)
+		/* if dialog replication is used, send BYEs only if the current node
+		 * is "in charge" of the dialog (or if unable to fetch this info) */
+		do_expire_actions = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
 
-		init_dlg_term_reason(dlg,"Lifetime Timeout",sizeof("Lifetime Timeout")-1);
+	if ((dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
+		(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
 
+		if (do_expire_actions)
+			init_dlg_term_reason(dlg,"Lifetime Timeout",sizeof("Lifetime Timeout")-1);
 		/* we just send the BYEs in both directions */
-		dlg_end_dlg( dlg, NULL);
-		/* dialog is no longer refed by timer; from now one it is refed
+		dlg_end_dlg(dlg, NULL, do_expire_actions);
+		/* dialog is no longer refed by timer; from now on it is refed
 		   by the send_bye functions */
-		unref_dlg( dlg, 1);
+		unref_dlg(dlg, 1);
 		/* is not 100% sure, but do it */
-		if_update_stat( dlg_enable_stats, expired_dlgs, 1);
-		return ;
+		if_update_stat(dlg_enable_stats, expired_dlgs, 1);
+
+		return;
 	}
 
 	/* act like as if we've received a BYE from caller */
-	next_state_dlg( dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
+	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
 	               &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
 
 	if (new_state==DLG_STATE_DELETED && old_state!=DLG_STATE_DELETED) {
@@ -1955,8 +1962,8 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		dlg_unlock_dlg(dlg);
 
 		/* dialog timeout */
-		if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
-			run_dlg_callbacks( DLGCB_EXPIRED, dlg, fake_msg,
+		if (push_new_processing_context(dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
+			run_dlg_callbacks(DLGCB_EXPIRED, dlg, fake_msg,
 				DLG_DIR_NONE, NULL, 0);
 
 			if (current_processing_ctx == NULL)
@@ -1974,8 +1981,8 @@ void dlg_ontimeout( struct dlg_tl *tl)
 
 		unref_dlg(dlg, unref + 1 /*timer list*/);
 
-		if_update_stat( dlg_enable_stats, expired_dlgs, 1);
-		if_update_stat( dlg_enable_stats, active_dlgs, -1);
+		if_update_stat(dlg_enable_stats, expired_dlgs, 1);
+		if_update_stat(dlg_enable_stats, active_dlgs, -1);
 	} else {
 		unref_dlg(dlg, 1 /*just timer list*/);
 	}
@@ -2363,7 +2370,7 @@ int terminate_dlg(unsigned int h_entry, unsigned int h_id,str *reason)
 
 	init_dlg_term_reason(dlg,reason->s,reason->len);
 
-	if ( dlg_end_dlg( dlg, 0) ) {
+	if (dlg_end_dlg(dlg, 0, 1) ) {
 		LM_ERR("Failed to end dialog");
 		ret = -1;
 	}

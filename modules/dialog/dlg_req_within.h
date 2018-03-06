@@ -117,7 +117,7 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 }
 
 
-int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs);
+int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes);
 
 struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param );
 

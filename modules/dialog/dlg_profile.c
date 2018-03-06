@@ -1425,7 +1425,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 			init_dlg_term_reason(delete_entry->dlg, "MI Termination",
 									sizeof("MI Termination") - 1);
 
-			if ( dlg_end_dlg( delete_entry->dlg, NULL) ) {
+			if (dlg_end_dlg( delete_entry->dlg, NULL, 1) ) {
 				while(delete_entry){
 					deleted = delete_entry;
 					delete_entry = delete_entry->next;

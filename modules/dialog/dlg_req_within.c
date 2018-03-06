@@ -316,7 +316,7 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
 	/* mark the transaction as belonging to this dialog */
 	t->dialog_ctx = *(ps->param);
 
-	dual_bye_event( (struct dlg_cell *)(*(ps->param)), ps->req, 1);
+	dual_bye_event((struct dlg_cell *)(*(ps->param)), ps->req, 1);
 }
 
 
@@ -421,7 +421,7 @@ err:
 /* sends BYE in both directions
  * returns 0 if both BYEs were successful
  */
-int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
+int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 {
 	str str_hdr = {NULL,0};
 	struct cell* t;
@@ -429,7 +429,8 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	int callee;
 
 	/* lookup_dlg has incremented the reference count !! */
-	if (dlg->state == DLG_STATE_UNCONFIRMED || dlg->state == DLG_STATE_EARLY) {
+	if (send_byes &&
+		(dlg->state == DLG_STATE_UNCONFIRMED || dlg->state == DLG_STATE_EARLY)) {
 		/* locate initial transaction */
 		LM_DBG("trying to find transaction with hash_index = %u and label = %u\n",
 				dlg->initial_t_hash_index,dlg->initial_t_label);
@@ -449,23 +450,29 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 		return 0;
 	}
 
-	if ((build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
+	if (send_byes && (build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
 		LM_ERR("failed to create extra headers\n");
 		return -1;
 	}
 
 	callee = callee_idx(dlg);
-	if ( send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
+	if (send_byes && send_leg_bye(dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
 		res--;
 	}
-	if (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
+	if (send_byes && send_leg_bye(dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
 		res--;
 	}
 
-	for( i=res ; i<0 ; i++)
-		dual_bye_event( dlg, NULL, 0);
+	if (!send_byes) {
+		dual_bye_event(dlg, NULL, 0);
+		dual_bye_event(dlg, NULL, 0);
+	} else
+		for(i=res ; i<0 ; i++)
+			dual_bye_event(dlg, NULL, 0);
 
-	pkg_free(str_hdr.s);
+	if (str_hdr.s)
+		pkg_free(str_hdr.s);
+
 	return res;
 }
 
@@ -546,7 +553,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 		/* lookup_dlg has incremented the reference count !! */
 		init_dlg_term_reason(dlg,"MI Termination",sizeof("MI Termination")-1);
 
-		if ( dlg_end_dlg( dlg, mi_extra_hdrs) ) {
+		if (dlg_end_dlg(dlg, mi_extra_hdrs, 1) ) {
 			status = 500;
 			msg = MI_DLG_OPERATION_ERR;
 			msg_len = MI_DLG_OPERATION_ERR_LEN;

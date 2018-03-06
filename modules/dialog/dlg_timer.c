@@ -910,7 +910,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 		init_dlg_term_reason(dlg,"Ping Timeout",sizeof("Ping Timeout")-1);
 		/* FIXME - maybe better not to send BYE both ways as we know for
 		 * sure one end in down . */
-		dlg_end_dlg(dlg,0);
+		dlg_end_dlg(dlg,0,1);
 
 		/* no longer reffed in list */
 		unref_dlg(dlg,1);
@@ -1008,7 +1008,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 		init_dlg_term_reason(dlg,"ReINVITE Ping Timeout",sizeof("ReINVITE Ping Timeout")-1);
 		/* FIXME - maybe better not to send BYE both ways as we know for
 		 * sure one end in down . */
-		dlg_end_dlg(dlg,0);
+		dlg_end_dlg(dlg,0,1);
 
 		/* no longer reffed in list */
 		unref_dlg(dlg,1);
