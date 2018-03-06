@@ -230,9 +230,22 @@ static int topo_delete_record_routes(struct sip_msg *req)
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
 			}
-			if(lump == req->add_rm)
-				req->add_rm = lump->next;
-			else
+			if (lump == req->add_rm) {
+				if (lump->flags&LUMPFLAG_SHMEM) {
+					/*
+					 * if the chunk is in shm, we cannot remove it, because
+					 * it be in the middle of the big shm chunk
+					 * therefore we simply mark it as false and move on
+					 */
+					if (lump->after)
+						insert_cond_lump_after(lump, COND_FALSE, 0);
+					if (lump->before)
+						insert_cond_lump_before(lump, COND_FALSE, 0);
+				} else {
+					req->add_rm = lump->next;
+				}
+				prev_crt = lump;
+			} else
 				prev_crt->next = lump->next;
 			if (!(lump->flags&LUMPFLAG_SHMEM))
 				free_lump(lump);
