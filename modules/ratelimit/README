@@ -490,7 +490,9 @@ modparam("ratelimit", "slot_period", 100)
        default value is used. It accepts a string or a
        pseudovariable.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
+   TIMER_ROUTE and EVENT_ROUTE.
 
    Example 1.16. rl_check usage
 ...
@@ -526,7 +528,9 @@ m
    Meaning of the parameters is as follows:
      * name - identifies the name of the pipe.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
+   TIMER_ROUTE and EVENT_ROUTE.
 
    Example 1.17. rl_dec_count usage
 ...
@@ -545,7 +549,9 @@ m
    Meaning of the parameters is as follows:
      * name - identifies the name of the pipe.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
+   TIMER_ROUTE and EVENT_ROUTE.
 
    Example 1.18. rl_reset_count usage
 ...
