@@ -85,10 +85,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"cgrates_auth", (cmd_function)w_cgr_auth, 3, fixup_cgrates_auth, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 1, fixup_spve_null, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 2, fixup_spve_spve, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 1, fixup_spve_null, 0, ALL_ROUTES},
+	{"cgrates_cmd", (cmd_function)w_cgr_cmd, 2, fixup_spve_spve, 0, ALL_ROUTES},
 	{0, 0, 0, 0, 0, 0}
 };
 
