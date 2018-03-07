@@ -194,7 +194,7 @@ static inline void free_extra_array(tag_t* tags, int tags_len,
 	int i;
 
 	for (i=0; i < tags_len; i++) {
-		if (array[i].shm_buf_len)
+		if (array[i].value.s)
 			shm_free(array[i].value.s);
 	}
 	shm_free(array);
