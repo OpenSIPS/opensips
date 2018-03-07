@@ -137,6 +137,10 @@ static str val_buf = { NULL, 0};
 static int val_buf_size;
 
 
+/* return:
+ *  0 - succes
+ * -1 - error
+ * -2 - not found */
 int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 {
 	struct dlg_val *dv;
@@ -194,7 +198,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 		dlg_unlock_dlg( dlg );
 	LM_DBG("var NOT found!\n");
 
-	return -1;
+	return -2;
 }
 
 

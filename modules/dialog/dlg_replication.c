@@ -1359,6 +1359,7 @@ struct mi_root *mi_set_repltag_active(struct mi_root *cmd_tree, void *param)
  *	0 - backup
  *	1 - active
  * -1 - error
+ * -2 - dlg val not found
  */
 int get_repltag_state(struct dlg_cell *dlg)
 {
@@ -1366,9 +1367,13 @@ int get_repltag_state(struct dlg_cell *dlg)
 	struct dlg_repl_tag *tag;
 	int rc;
 
-	if (fetch_dlg_value(dlg, &repltag_dlg_val, &tag_name, 0) < 0) {
+	rc = fetch_dlg_value(dlg, &repltag_dlg_val, &tag_name, 0);
+	if (rc == -1) {
 		LM_ERR("Unable to fetch dlg value for replication tag\n");
 		return -1;
+	} else if (rc == -2) {
+		LM_DBG("dlg value for replication tag not found\n");
+		return -2;
 	}
 
 	if ((tag = get_repltag(&tag_name, 0)) == NULL) {

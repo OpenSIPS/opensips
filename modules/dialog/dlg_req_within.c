@@ -539,7 +539,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	if (dlg) {
 		if (dialog_repl_cluster) {
 			rtag_state = get_repltag_state(dlg);
-			if (rtag_state < 0) {
+			if (rtag_state == -1) {
 				unref_dlg(dlg, 1);
 				return init_mi_tree(403, MI_DLG_OPERATION_ERR,
 										MI_DLG_OPERATION_ERR_LEN);
