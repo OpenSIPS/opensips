@@ -137,8 +137,9 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 {
 	str s;
 
-	if (pvt == NULL || pvt->flags&PV_VAL_NULL) {
-		if (extra->shm_buf_len) {
+	if (pvt == NULL || pvt->flags&PV_VAL_NULL || pvt->rs.len == 0) {
+		/* treat 0-length values as NULL now */
+		if (extra->value.s) {
 			shm_free(extra->value.s);
 			extra->shm_buf_len = 0;
 		}
@@ -154,7 +155,7 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 			return -1;
 		}
 
-		if (extra->shm_buf_len == 0) {
+		if (extra->value.s == 0) {
 			extra->value.s = shm_malloc(s.len);
 			extra->shm_buf_len = extra->value.len = s.len;
 		} else if (extra->shm_buf_len < s.len) {

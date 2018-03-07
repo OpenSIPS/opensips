@@ -151,7 +151,7 @@ static inline int add_extra(str* tag, str* value,
 		return -1;
 	}
 
-	if ((xel=shm_malloc(sizeof(struct acc_extra))) == NULL) {
+	if ((xel=pkg_malloc(sizeof(struct acc_extra))) == NULL) {
 		LM_ERR("no more pkg mem!\n");
 		return -1;
 	}
