@@ -326,9 +326,12 @@ int tm_anycast_replicate(struct sip_msg *msg)
 	}
 
 	t = get_t();
-	if (t == T_UNDEFINED && t_lookup_request(msg, 0) != -1) {
-		LM_DBG("e2e ACK or known cancel, do not replicate\n");
-		goto not_replicated;
+	if (t == T_UNDEFINED) {
+		if (t_lookup_request(msg, 0) != -1) {
+			LM_DBG("e2e ACK or known cancel, do not replicate\n");
+			goto not_replicated;
+		}
+		t = get_t(); /* fetch again the transaction */
 	}
 	if (t) {
 		LM_DBG("transaction already present here, no need to replicate\n");
