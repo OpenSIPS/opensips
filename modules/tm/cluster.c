@@ -77,8 +77,10 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	/* try to get the transaction */
 	t = t_lookupOriginalT(&msg);
 	/* if transaction is not here, must be somebody else's */
-	if (!t)
+	if (!t) {
+		LM_DBG("Original transaction not here!\n");
 		return;
+	}
 
 	/* transaction is located here - do a proper parsing */
 	msg.via1 = NULL;
