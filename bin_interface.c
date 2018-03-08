@@ -144,7 +144,7 @@ int bin_push_str(bin_packet_t *packet, const str *info)
 	}
 
 	if (packet->buffer.len + LEN_FIELD_SIZE + (info ? info->len : 0) > packet->size) {
-		if (!bin_extend(packet, (info ? info->len : 0)))
+		if (bin_extend(packet, LEN_FIELD_SIZE + (info ? info->len : 0)) < 0)
 			return -1;
 	}
 
@@ -180,7 +180,7 @@ int bin_push_int(bin_packet_t *packet, int info)
 	}
 
 	if (packet->buffer.len + sizeof info > packet->size) {
-		if (!bin_extend(packet, sizeof info))
+		if (bin_extend(packet, sizeof info) < 0)
 			return -1;
 	}
 
