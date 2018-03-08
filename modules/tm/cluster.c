@@ -71,6 +71,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	TM_BIN_POP(int, &msg.via1->transport.len, "via transport length");
 	TM_BIN_POP(int, &msg.via1->port, "via port");
 	TM_BIN_POP(str, &stmp, "cancel reason");
+	TM_BIN_POP(int, &msg.hash_index, "hash index");
 
 	LM_DBG("Got CANCEL with branch id=%.*s\n", branch.value.len, branch.value.s);
 
@@ -270,8 +271,11 @@ static void *tm_replicate_cancel(struct sip_msg *msg)
 	TM_BIN_PUSH(int, msg->via1->transport.s - msg->buf, "via transport offset");
 	TM_BIN_PUSH(int, msg->via1->transport.len, "via transport length");
 	TM_BIN_PUSH(int, msg->via1->port, "via port");
+	/* cancel reason */
 	get_cancel_reason(msg, T_CANCEL_REASON_FLAG, &reason);
 	TM_BIN_PUSH(str, &reason, "cancel reason");
+	/* message hash */
+	TM_BIN_PUSH(int, msg->hash_index, "hash index");
 
 	rc = cluster_api.send_all(&packet, tm_repl_cluster);
 	switch (rc) {
