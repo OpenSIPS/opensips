@@ -46,6 +46,8 @@ int add_phony_uac( struct cell *t);
 
 int t_add_reason(struct sip_msg *msg, char *val);
 
+int t_set_reason(struct sip_msg *msg, str *reason);
+
 int t_forward_ack( struct sip_msg* p_msg );
 
 void t_on_branch( unsigned int go_to );

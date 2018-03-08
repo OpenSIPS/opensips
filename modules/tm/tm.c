@@ -304,6 +304,8 @@ static param_export_t params[]={
 		&tm_repl_cluster },
 	{ "cluster_param",            STR_PARAM,
 		&tm_cluster_param.s },
+	{ "cluster_auto_cancel",      INT_PARAM,
+		&tm_repl_auto_cancel },
 	{0,0,0}
 };
 

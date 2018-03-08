@@ -548,15 +548,10 @@ int add_phony_uac( struct cell *t)
 
 static int _reason_avp_id = 0;
 
-int t_add_reason(struct sip_msg *msg, char *val)
+int t_set_reason(struct sip_msg *msg, str *val)
 {
 	str avp_name = str_init("_reason_avp_internal");
 	int_str reason;
-
-	if (fixup_get_svalue(msg, (gparam_p)val, &reason.s)!=0) {
-		LM_ERR("invalid reason value\n");
-		return -1;
-	}
 
 	if (_reason_avp_id==0) {
 		if (parse_avp_spec( &avp_name, &_reason_avp_id) ) {
@@ -565,12 +560,25 @@ int t_add_reason(struct sip_msg *msg, char *val)
 		}
 	}
 
+	reason.s = *val;
 	if (add_avp( AVP_VAL_STR, _reason_avp_id, reason)!=0) {
 		LM_ERR("failed to add the internal reason AVP\n");
 		return -1;
 	}
-
 	return 1;
+}
+
+
+int t_add_reason(struct sip_msg *msg, char *val)
+{
+	str reason;
+
+	if (fixup_get_svalue(msg, (gparam_p)val, &reason)!=0) {
+		LM_ERR("invalid reason value\n");
+		return -1;
+	}
+
+	return t_set_reason(msg, &reason);
 }
 
 void get_cancel_reason(struct sip_msg *msg, int flags, str *reason)

@@ -26,10 +26,12 @@
 
 #define TM_CLUSTER_REPLY 1
 #define TM_CLUSTER_REQUEST 2
+#define TM_CLUSTER_AUTO_CANCEL 3
 #define TM_CLUSTER_VERSION 0
 #define TM_CLUSTER_DEFAULT_PARAM "cid"
 
 extern int tm_repl_cluster;
+extern int tm_repl_auto_cancel;
 extern str tm_cluster_param;
 extern str tm_cid;
 extern struct clusterer_binds cluster_api;

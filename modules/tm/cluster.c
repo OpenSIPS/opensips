@@ -20,15 +20,16 @@
 
 #include "cluster.h"
 #include "t_lookup.h"
-#include "t_cancel.h"
 #include "t_fwd.h"
 #include "../../ut.h"
 #include "../../receive.h"
 #include "../../socket_info.h"
 #include "../../bin_interface.h"
+#include "../../parser/parse_cseq.h"
 
 str tm_cid;
 int tm_repl_cluster = 0;
+int tm_repl_auto_cancel = 1;
 str tm_cluster_param = str_init(TM_CLUSTER_DEFAULT_PARAM);
 static int tm_node_id = 0;
 static str tm_repl_cap = str_init("tm-repl");
@@ -42,13 +43,79 @@ struct clusterer_binds cluster_api;
 			return; \
 		} \
 	} while(0)
-static void tm_repl_received(bin_packet_t *packet)
+
+static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *ri)
+{
+	int itmp;
+	char *tmp;
+	str stmp;
+	struct cell *t;
+	/* build a nice static message, exactly how t_lookupOriginalT() expects */
+	struct sip_msg msg;
+	struct via_body via;
+	struct via_param branch;
+
+	msg.REQ_METHOD = METHOD_CANCEL;
+
+	msg.via1 = &via;
+	msg.via1->branch = &branch;
+
+	TM_BIN_POP(int, &itmp, "via branch offset");
+	msg.via1->branch->value.s = buf->s + itmp;
+	TM_BIN_POP(int, &msg.via1->branch->value.len, "via branch length");
+	TM_BIN_POP(int, &itmp, "via host offset");
+	msg.via1->host.s = buf->s + itmp;
+	TM_BIN_POP(int, &msg.via1->host.len, "via host length");
+	TM_BIN_POP(int, &itmp, "via transport offset");
+	msg.via1->transport.s = buf->s + itmp;
+	TM_BIN_POP(int, &msg.via1->transport.len, "via transport length");
+	TM_BIN_POP(int, &msg.via1->port, "via port");
+	TM_BIN_POP(str, &stmp, "cancel reason");
+
+	LM_DBG("Got CANCEL with branch id=%.*s\n", branch.value.len, branch.value.s);
+
+	/* try to get the transaction */
+	t = t_lookupOriginalT(&msg);
+	/* if transaction is not here, must be somebody else's */
+	if (!t)
+		return;
+
+	/* transaction is located here - do a proper parsing */
+	msg.via1 = NULL;
+	if (parse_msg(buf->s, buf->len, &msg) != 0) {
+		tmp = ip_addr2a(&(ri->src_ip));
+		LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
+			tmp, ri->src_port);
+	} else {
+		t_set_reason(&msg, &stmp);
+		if (t_relay_to(&msg, NULL, 0) >= 0)
+			LM_DBG("successfully handled auto-CANCEL for %p\n", t);
+		else
+			LM_ERR("cannot handle auto-CANCEL for %p!\n", t);
+	}
+
+	free_sip_msg(&msg);
+}
+
+static void receive_tm_repl(bin_packet_t *packet)
 {
 	int proto;
 	int port;
 	str tmp;
 	struct receive_info ri;
 
+	LM_DBG("received %d packet from %d in cluster %d\n",
+			packet->type, packet->src_id, tm_repl_cluster);
+
+	if (packet->type != TM_CLUSTER_REPLY &&
+			packet->type != TM_CLUSTER_REQUEST &&
+			packet->type != TM_CLUSTER_AUTO_CANCEL) {
+		LM_WARN("Invalid tm binary packet command: %d (from node: %d in cluster: %d)\n",
+				packet->type, packet->src_id, tm_repl_cluster);
+		return;
+	}
+
+	/* first part is common to all messages */
 	TM_BIN_POP(int, &proto, "proto");
 	TM_BIN_POP(str, &tmp, "dst host");
 	TM_BIN_POP(int, &port, "dst port");
@@ -76,26 +143,17 @@ static void tm_repl_received(bin_packet_t *packet)
 	TM_BIN_POP(int, &ri.src_port, "src port");
 	TM_BIN_POP(str, &tmp, "message");
 
-	/* all set up - process it */
+	/* only auto-CANCEL is treated differently */
+	if (packet->type == TM_CLUSTER_AUTO_CANCEL) {
+		if (tm_repl_auto_cancel) {
+			tm_repl_cancel(packet, &tmp, &ri);
+			return;
+		}
+		LM_WARN("auto-CANCEL handling is disabled, but got one auto-CANCEL here!\n");
+	}
 	receive_msg(tmp.s, tmp.len, &ri, NULL, FL_TM_REPLICATED);
 }
 #undef TM_BIN_POP
-
-static void receive_tm_repl(bin_packet_t *packet)
-{
-	LM_DBG("received %d packet from %d in cluster %d\n",
-			packet->type, packet->src_id, tm_repl_cluster);
-	switch (packet->type) {
-		/* both ACK, reply, and non-auto CANCEL we send to script */
-		case TM_CLUSTER_REPLY:
-		case TM_CLUSTER_REQUEST:
-			tm_repl_received(packet);
-			break;
-		default:
-			LM_WARN("Invalid tm binary packet command: %d (from node: %d in cluster: %d)\n",
-					packet->type, packet->src_id, tm_repl_cluster);
-	}
-}
 
 int tm_init_cluster(void)
 {
@@ -185,6 +243,51 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 	TM_BIN_PUSH(str, &tmp, "message");
 
 	return &packet;
+}
+
+/**
+ * Replicates an auto-CANCEL message to all nodes
+ */
+static void *tm_replicate_cancel(struct sip_msg *msg)
+{
+	int rc;
+	str reason;
+	static bin_packet_t *pckt, packet;
+
+	/* initially we build a similar packet */
+	pckt = tm_replicate_packet(msg, TM_CLUSTER_AUTO_CANCEL);
+	if (!pckt)
+		return NULL;
+	packet = *pckt;
+
+	/* send offset of the via information */
+	TM_BIN_PUSH(int, msg->via1->branch->value.s - msg->buf, "via branch offset");
+	TM_BIN_PUSH(int, msg->via1->branch->value.len, "via branch length");
+	TM_BIN_PUSH(int, msg->via1->host.s - msg->buf, "via host offset");
+	TM_BIN_PUSH(int, msg->via1->host.len, "via host length");
+	TM_BIN_PUSH(int, msg->via1->transport.s - msg->buf, "via transport offset");
+	TM_BIN_PUSH(int, msg->via1->transport.len, "via transport length");
+	TM_BIN_PUSH(int, msg->via1->port, "via port");
+	get_cancel_reason(msg, T_CANCEL_REASON_FLAG, &reason);
+	TM_BIN_PUSH(str, &reason, "cancel reason");
+
+	rc = cluster_api.send_all(&packet, tm_repl_cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n",
+				tm_repl_cluster);
+		break;
+	case CLUSTERER_DEST_DOWN:
+		LM_INFO("All nodes are disabled in cluster: %d\n",
+				tm_repl_cluster);
+		break;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending message to cluster: %d\n",
+				tm_repl_cluster);
+		break;
+	}
+	bin_free_packet(&packet);
+	return NULL; /* dummy return to comply with TM_BIN_PUSH() */
 }
 #undef TM_BIN_PUSH
 /**
@@ -324,7 +427,7 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		LM_DBG("message already replicated, shouldn't have got here\n");
 		return -2;
 	}
-
+	
 	t = get_t();
 	if (t == T_UNDEFINED) {
 		if (t_lookup_request(msg, 0) != -1) {
@@ -337,7 +440,11 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		LM_DBG("transaction already present here, no need to replicate\n");
 		goto not_replicated;
 	}
-	tm_replicate_broadcast(msg);
+	/* we are currently doing auto-CANCEL only for 3261 transactions */
+	if (tm_repl_auto_cancel && msg->REQ_METHOD == METHOD_CANCEL && msg->via1->branch)
+		tm_replicate_cancel(msg);
+	else
+		tm_replicate_broadcast(msg);
 not_replicated:
 	return -1;
 }
