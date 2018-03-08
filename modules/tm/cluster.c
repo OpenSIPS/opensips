@@ -76,6 +76,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	LM_DBG("Got CANCEL with branch id=%.*s\n", branch.value.len, branch.value.s);
 
 	/* try to get the transaction */
+	reset_cancelled_t();
 	t = t_lookupOriginalT(&msg);
 	/* if transaction is not here, must be somebody else's */
 	if (!t) {
