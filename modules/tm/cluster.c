@@ -76,6 +76,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	LM_DBG("Got CANCEL with branch id=%.*s\n", branch.value.len, branch.value.s);
 
 	/* try to get the transaction */
+	set_t(T_UNDEFINED); /* set undefined, because we might have already got a cancel here */
 	reset_cancelled_t();
 	t = t_lookupOriginalT(&msg);
 	/* if transaction is not here, must be somebody else's */
@@ -84,8 +85,15 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 		return;
 	}
 
+	/* cleanup new message */
+	memset(&msg, 0, sizeof(msg));
+	msg.buf = buf->s;
+	msg.len = buf->len;
+	msg.rcv=*ri;
+	msg.ruri_q = Q_UNSPECIFIED;
+	msg.id=get_next_msg_no();
+
 	/* transaction is located here - do a proper parsing */
-	msg.via1 = NULL;
 	if (parse_msg(buf->s, buf->len, &msg) != 0) {
 		tmp = ip_addr2a(&(ri->src_ip));
 		LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
