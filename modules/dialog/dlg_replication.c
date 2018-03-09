@@ -406,9 +406,10 @@ int dlg_replicated_delete(bin_packet_t *packet)
 
 	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
 	if (!dlg) {
-		LM_ERR("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
+		/* may be already deleted due to timeout */
+		LM_DBG("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
 			call_id.len, call_id.s, from_tag.len, from_tag.s);
-		return -1;
+		return 0;
 	}
 
 	dlg_lock_dlg(dlg);
