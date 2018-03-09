@@ -81,11 +81,12 @@
 #define KV_STORE_COL   "kv_store"
 #define ATTR_COL       "attr"
 
-static int mod_init(void);                          /*!< Module initialization function */
-static void destroy(void);                          /*!< Module destroy function */
-static void timer(unsigned int ticks, void* param); /*!< Timer handler */
-static int child_init(int rank);                    /*!< Per-child init function */
+static int mod_init(void);        /*!< Module initialization */
+static void destroy(void);        /*!< Module destroy */
+static void update_db_state(unsigned int ticks, void* param); /*!< Timer */
+static int child_init(int rank);  /*!< Per-child init function */
 static int mi_child_init(void);
+int check_runtime_config(void);
 
 //static int add_replication_dest(modparam_t type, void *val);
 
@@ -127,10 +128,24 @@ str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str contactid_col   = str_init(CONTACTID_COL);
 
 str db_url          = {NULL, 0};					/*!< Database URL */
-int timer_interval  = 60;				/*!< Timer interval in seconds */
-enum usrloc_modes db_mode = NO_DB;		/*!< Database sync scheme */
-int use_domain      = 0;				/*!< Whether usrloc should use domain part of aor */
-int desc_time_order = 0;				/*!< By default do not enable timestamp ordering */
+int timer_interval  = 60;              /*!< Timer interval in seconds */
+enum usrloc_modes db_mode = NOT_SET;   /*!< XXX: DEPRECATED: DB sync scheme */
+char *runtime_preset;
+
+/*!< Clustering scheme */
+enum ul_cluster_mode cluster_mode = CM_NONE;
+char *cluster_mode_str;
+
+/*!< Restart persistency */
+enum ul_rr_persist rr_persist = RRP_NONE;
+char *rr_persist_str;
+
+/*!< SQL write mode */
+enum ul_sql_write_mode sql_wmode = SQL_WRITE_BACK;
+char *sql_wmode_str;
+
+int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
+int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
 
 int ul_hash_size = 9;
 
@@ -171,7 +186,14 @@ static param_export_t params[] = {
 	{"cflags_column",      STR_PARAM, &cflags_col.s      },
 	{"db_url",             STR_PARAM, &db_url.s          },
 	{"timer_interval",     INT_PARAM, &timer_interval    },
-	{"db_mode",            INT_PARAM, &db_mode           },
+
+	/* runtime behavior selection */
+	{"db_mode",            INT_PARAM, &db_mode           }, /* bw-compat */
+	{"working_mode_preset",STR_PARAM, &runtime_preset    },
+	{"cluster_mode",       STR_PARAM, &cluster_mode      },
+	{"restart_persistency",STR_PARAM, &rr_persist        },
+	{"sql_write_mode",     STR_PARAM, &sql_wmode         },
+
 	{"use_domain",         INT_PARAM, &use_domain        },
 	{"desc_time_order",    INT_PARAM, &desc_time_order   },
 	{"user_agent_column",  STR_PARAM, &user_agent_col.s  },
@@ -224,10 +246,38 @@ static mi_export_t mi_cmds[] = {
 
 static module_dependency_t *get_deps_db_mode(param_export_t *param)
 {
-	if (*(int *)param->param_pointer == NO_DB)
+	if (*(int *)param->param_pointer <= NO_DB)
 		return NULL;
 
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
+{
+	char *haystack = (char *)param->param_pointer;
+
+	if (l_memmem(haystack, "sql-", strlen(haystack), 4))
+		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+
+	return NULL;
+}
+
+static module_dependency_t *get_deps_rr_persist(param_export_t *param)
+{
+	if (!strcasecmp((char *)param->param_pointer, "load-from-sql"))
+		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+
+	return NULL;
+}
+
+static module_dependency_t *get_deps_clusterer(param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+
+	if (cluster_id <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
 }
 
 static dep_export_t deps = {
@@ -235,9 +285,12 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "db_mode",			get_deps_db_mode	},
-		{ "contact_replication_cluster",get_deps_clusterer	},
-		{ NULL, NULL },
+		{"db_mode", get_deps_db_mode},
+		{"working_mode_preset", get_deps_wmode_preset},
+		{"cluster_mode", get_deps_wmode_preset},
+		{"restart_persistency", get_deps_rr_persist},
+		{"contact_replication_cluster", get_deps_clusterer},
+		{NULL, NULL},
 	},
 };
 
@@ -304,7 +357,12 @@ static int mod_init(void)
 		ul_hash_size = 1<<ul_hash_size;
 	ul_locks_no = ul_hash_size;
 
-	if (db_mode != NO_DB) {
+	if (check_runtime_config() != 0) {
+		LM_ERR("bad runtime config - exiting...\n");
+		return -1;
+	}
+
+	if (have_mem_storage()) {
 		cid_keys = pkg_malloc(max_contact_delete *
 				(sizeof(db_key_t) * sizeof(db_val_t)));
 		if (cid_keys == NULL) {
@@ -336,7 +394,7 @@ static int mod_init(void)
 	}
 
 	/* Register cache timer */
-	register_timer( "ul-timer", timer, 0, timer_interval,
+	register_timer( "ul-timer", update_db_state, 0, timer_interval,
 		TIMER_FLAG_DELAY_ON_DELAY);
 
 	/* init the callbacks list */
@@ -345,10 +403,10 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* Shall we use database ? */
-	if (db_mode != NO_DB) { /* Yes */
+	/* use database if needed */
+	if (cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL) {
 		if (db_url.s==NULL || db_url.len==0) {
-			LM_ERR("selected db_mode requires a db connection -> db_url \n");
+			LM_ERR("selected mode requires a db connection -> db_url \n");
 			return -1;
 		}
 		if (db_bind_mod(&db_url, &ul_dbf) < 0) { /* Find database module */
@@ -360,9 +418,11 @@ static int mod_init(void)
 					" needed by the module\n");
 			return -1;
 		}
-		if (db_mode != DB_ONLY && (sync_lock = lock_init_rw()) == NULL) {
-			LM_ERR("cannot init rw lock\n");
-			return -1;
+		if (rr_persist == RRP_LOAD_FROM_SQL) {
+			if (!(sync_lock = lock_init_rw())) {
+				LM_ERR("cannot init rw lock\n");
+				return -1;
+			}
 		}
 	}
 
@@ -429,18 +489,12 @@ static void ul_rpc_data_load(int sender_id, void *unsused)
 
 static int child_init(int _rank)
 {
-	/* connecting to DB ? */
-	switch (db_mode) {
-		case NO_DB:
-			return 0;
-		case DB_ONLY:
-		case WRITE_THROUGH:
-		case WRITE_BACK:
-			/* we need connection from SIP workers, BIN and MAIN procs */
-			if (_rank < PROC_MAIN && _rank != PROC_BIN )
-				return 0;
-			break;
-	}
+	if (!have_db_conns())
+		return 0;
+
+	/* we need connection from SIP workers, BIN and MAIN procs */
+	if (_rank < PROC_MAIN && _rank != PROC_BIN )
+		return 0;
 
 	ul_dbh = ul_dbf.init(&db_url); /* Get a new database connection */
 	if (!ul_dbh) {
@@ -448,7 +502,7 @@ static int child_init(int _rank)
 		return -1;
 	}
 	/* _rank==1 is used even when fork is disabled */
-	if (_rank==1 && db_mode!= DB_ONLY) {
+	if (_rank==1 && rr_persist == RRP_LOAD_FROM_SQL) {
 		/* if cache is used, populate domains from DB */
 		if (ipc_send_rpc( process_no, ul_rpc_data_load, NULL)<0) {
 			LM_ERR("failed to fire RPC for data load\n");
@@ -468,7 +522,7 @@ static int mi_child_init(void)
 	if (done)
 		return 0;
 
-	if (db_mode != NO_DB) {
+	if (have_db_conns()) {
 		ul_dbh = ul_dbf.init(&db_url);
 		if (!ul_dbh) {
 			LM_ERR("failed to connect to database\n");
@@ -513,7 +567,7 @@ static void destroy(void)
 /*! \brief
  * Timer handler
  */
-static void timer(unsigned int ticks, void* param)
+static void update_db_state(unsigned int ticks, void* param)
 {
 	if (sync_lock)
 		lock_start_read(sync_lock);
@@ -522,4 +576,179 @@ static void timer(unsigned int ticks, void* param)
 	}
 	if (sync_lock)
 		lock_stop_read(sync_lock);
+}
+
+int check_runtime_config(void)
+{
+	if (db_mode >= NO_DB && db_mode <= DB_ONLY) {
+		if (runtime_preset) {
+			LM_ERR("both 'db_mode' and 'working_mode_preset' are present "
+			       "-- please pick one!\n");
+			return -1;
+		}
+
+		LM_WARN("'db_mode' is now deprecated, use 'working_mode_preset'!\n");
+
+		switch (db_mode) {
+		case NOT_SET:
+		case NO_DB:
+			runtime_preset = "single-instance-no-db";
+			break;
+		case WRITE_THROUGH:
+			runtime_preset = "single-instance-sql-write-through";
+			break;
+		case WRITE_BACK:
+			runtime_preset = "single-instance-sql-write-back";
+			break;
+		case DB_ONLY:
+			runtime_preset = "sql-only";
+			break;
+		}
+	} else if (db_mode != NOT_SET) {
+		LM_WARN("ignoring unknown db_mode: %d\n", db_mode);
+	}
+
+	if (runtime_preset) {
+		if (!strcasecmp(runtime_preset, "single-instance-no-db")) {
+			cluster_mode = CM_NONE;
+			rr_persist = RRP_NONE;
+		} else if (!strcasecmp(runtime_preset,
+		           "single-instance-sql-write-through")) {
+			cluster_mode = CM_NONE;
+			rr_persist = RRP_LOAD_FROM_SQL;
+			sql_wmode = SQL_WRITE_THROUGH;
+		} else if (!strcasecmp(runtime_preset,
+		           "single-instance-sql-write-back")) {
+			cluster_mode = CM_NONE;
+			rr_persist = RRP_LOAD_FROM_SQL;
+			sql_wmode = SQL_WRITE_BACK;
+		} else if (!strcasecmp(runtime_preset, "sql-only")) {
+			cluster_mode = CM_SQL_ONLY;
+			rr_persist = RRP_NONE;
+		} else if (!strcasecmp(runtime_preset, "edge-cluster")) {
+			cluster_mode = CM_EDGE;
+			rr_persist = RRP_SYNC_FROM_CLUSTER;
+		} else if (!strcasecmp(runtime_preset, "edge-cluster-cachedb-only")) {
+			cluster_mode = CM_EDGE_CACHEDB_ONLY;
+			rr_persist = RRP_NONE;
+		} else if (!strcasecmp(runtime_preset, "core-cluster")) {
+			cluster_mode = CM_CORE;
+			rr_persist = RRP_SYNC_FROM_CLUSTER;
+		} else if (!strcasecmp(runtime_preset, "core-cluster-cachedb-only")) {
+			cluster_mode = CM_CORE_CACHEDB_ONLY;
+			rr_persist = RRP_NONE;
+		}
+	} else {
+		if (cluster_mode_str) {
+			if (!strcasecmp(cluster_mode_str, "none"))
+				cluster_mode = CM_NONE;
+			else if (!strcasecmp(cluster_mode_str, "edge"))
+				cluster_mode = CM_EDGE;
+			else if (!strcasecmp(cluster_mode_str, "edge-cachedb-only"))
+				cluster_mode = CM_EDGE_CACHEDB_ONLY;
+			else if (!strcasecmp(cluster_mode_str, "core"))
+				cluster_mode = CM_CORE;
+			else if (!strcasecmp(cluster_mode_str, "core-cachedb-only"))
+				cluster_mode = CM_CORE_CACHEDB_ONLY;
+			else if (!strcasecmp(cluster_mode_str, "sql-only"))
+				cluster_mode = CM_SQL_ONLY;
+			else
+				LM_ERR("unknown 'cluster_mode' value: %s, using 'none'\n",
+				       cluster_mode_str);
+		}
+
+		if (rr_persist_str) {
+			if (!strcasecmp(rr_persist_str, "none"))
+				rr_persist = RRP_NONE;
+			else if (!strcasecmp(rr_persist_str, "load-from-sql"))
+				rr_persist = RRP_LOAD_FROM_SQL;
+			else if (!strcasecmp(rr_persist_str, "sync-from-cluster"))
+				rr_persist = RRP_SYNC_FROM_CLUSTER;
+			else
+				LM_ERR("unknown 'restart_persistency' value: %s, "
+				       "using 'none'\n", rr_persist_str);
+		}
+
+		if (sql_wmode_str) {
+			if (!strcasecmp(sql_wmode_str, "write-through"))
+				sql_wmode = SQL_WRITE_THROUGH;
+			else if (!strcasecmp(sql_wmode_str, "write-back"))
+				sql_wmode = SQL_WRITE_BACK;
+			else
+				LM_ERR("unknown 'sql_write_mode' value: %s, "
+				       "using 'write-back'\n", sql_wmode_str);
+		}
+	}
+
+	if (bad_cluster_mode(cluster_mode)) {
+		LM_ERR("bad cluster mode (%d) - select one from the docs\n",
+		       cluster_mode);
+		return -1;
+	}
+
+	if (bad_rr_persist(rr_persist)) {
+		LM_ERR("bad restart persistency (%d) - select one from the docs\n",
+		       rr_persist);
+		return -1;
+	}
+
+	if (bad_sql_write_mode(sql_wmode)) {
+		LM_ERR("bad sql write mode (%d) - select one from the docs\n",
+		       sql_wmode);
+		return -1;
+	}
+
+	if (cluster_mode == CM_EDGE || cluster_mode == CM_EDGE_CACHEDB_ONLY) {
+		LM_ERR("buit-in edge clustering not implemented yet! :(\n");
+		return -1;
+	}
+
+	if (cluster_mode == CM_NONE) {
+		if (rr_persist == RRP_SYNC_FROM_CLUSTER) {
+			LM_ERR("cannot 'sync-from-cluster' without clustering support!\n");
+			return -1;
+		}
+
+		if (ul_replication_cluster) {
+			LM_ERR("please select an appropriate 'cluster_mode' or "
+			       "'working_mode_preset' before defining a cluster id!\n");
+			return -1;
+		}
+	}
+
+	if (cluster_mode == CM_CORE) {
+		if (!ul_replication_cluster) {
+			LM_ERR("'contact_replication_cluster' is not set!\n");
+			return -1;
+		}
+	}
+
+	if (cluster_mode == CM_CORE_CACHEDB_ONLY) {
+		if (rr_persist != RRP_NONE) {
+			LM_WARN("externally managed data is already restart persistent!"
+			        " -- auto-disabling 'restart_persistency'\n");
+			rr_persist = RRP_NONE;
+		}
+
+		if (!ul_replication_cluster) {
+			LM_ERR("'contact_replication_cluster' is not set!\n");
+			return -1;
+		}
+	}
+
+	if (cluster_mode == CM_SQL_ONLY) {
+		if (rr_persist != RRP_NONE) {
+			LM_WARN("externally managed data is already restart persistent!"
+			        " -- auto-disabling 'restart_persistency'\n");
+			rr_persist = RRP_NONE;
+		}
+
+		if (ul_replication_cluster) {
+			LM_ERR("setting a 'contact_replication_cluster' will have no "
+			       "effect in 'sql-only' mode!\n");
+			return -1;
+		}
+	}
+
+	return 0;
 }

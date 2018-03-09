@@ -35,7 +35,19 @@
 #include "ucontact.h"
 #include "ul_callback.h"
 
+enum ul_cluster_mode {
+	CM_NONE,
+	CM_EDGE,
+	CM_EDGE_CACHEDB_ONLY,
+	CM_CORE,
+	CM_CORE_CACHEDB_ONLY,
+	CM_SQL_ONLY,
+} ul_cluster_mode_t;
+
+/* XXX: deprecated! */
 enum usrloc_modes {
+	NOT_SET       = -1,
+
 	NO_DB         = 0,
 	WRITE_THROUGH = 1,
 	WRITE_BACK    = 2,
@@ -98,5 +110,15 @@ static inline int load_ul_api(usrloc_api_t *ul)
 
 	return 0;
 }
+
+/* internal module use only */
+#define bad_cluster_mode(mode) ((mode) < CM_NONE || (mode) > CM_SQL_ONLY)
+#define have_db_conns() \
+	(cluster_mode == CM_SQL_ONLY || \
+	 rr_persist == RRP_LOAD_FROM_SQL)
+#define have_mem_storage() \
+	(cluster_mode == CM_NONE || \
+	 cluster_mode == CM_EDGE || \
+	 cluster_mode == CM_CORE)
 
 #endif /* USRLOC_H */

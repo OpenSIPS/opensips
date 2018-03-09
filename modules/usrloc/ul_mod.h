@@ -35,6 +35,25 @@
 #include "../../db/db.h"
 #include "../../str.h"
 
+extern enum ul_cluster_mode cluster_mode;
+extern enum ul_rr_persist rr_persist;
+extern enum ul_sql_write_mode sql_wmode;
+
+/* manner in which node data should be restored (or not) following a restart */
+enum ul_rr_persist {
+	RRP_NONE,
+	RRP_LOAD_FROM_SQL,
+	RRP_SYNC_FROM_CLUSTER,
+} ul_rr_persist_t;
+#define bad_rr_persist(rrp) ((rrp) < RRP_NONE || (rrp) > RRP_SYNC_FROM_CLUSTER)
+
+/* if using SQL for restart persistency,
+ * should runtime SQL blocking writes be performed eagerly or lazily? */
+enum ul_sql_write_mode {
+	SQL_WRITE_THROUGH,
+	SQL_WRITE_BACK,
+} ul_sql_write_mode_t;
+#define bad_sql_write_mode(wm) ((wm) < SQL_WRITE_THROUGH || (wm) > SQL_WRITE_BACK)
 
 /*
  * Module parameters
