@@ -132,6 +132,8 @@ typedef struct cachedb_engines {
 									  for this particular cachedb engine */
 } cachedb_engine;
 
+#include "cachedb_cap.h"
+
 int register_cachedb(cachedb_engine* cde_entry);
 
 /* functions to be used from script */

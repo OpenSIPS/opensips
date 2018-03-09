@@ -127,7 +127,8 @@ str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additi
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str contactid_col   = str_init(CONTACTID_COL);
 
-str db_url          = {NULL, 0};					/*!< Database URL */
+str db_url          = STR_NULL;					/*!< Database URL */
+str cdb_url         = STR_NULL;					/*!< Cache Database URL */
 int timer_interval  = 60;              /*!< Timer interval in seconds */
 enum usrloc_modes db_mode = NOT_SET;   /*!< XXX: DEPRECATED: DB sync scheme */
 char *runtime_preset;
@@ -160,6 +161,9 @@ int ul_replication_cluster = 0;
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
 
+cachedb_funcs cdbf;
+cachedb_con *cdbc;
+
 
 /*! \brief
  * Exported functions
@@ -185,6 +189,7 @@ static param_export_t params[] = {
 	{"flags_column",       STR_PARAM, &flags_col.s       },
 	{"cflags_column",      STR_PARAM, &cflags_col.s      },
 	{"db_url",             STR_PARAM, &db_url.s          },
+	{"cachedb_url",        STR_PARAM, &cdb_url.s         },
 	{"timer_interval",     INT_PARAM, &timer_interval    },
 
 	/* runtime behavior selection */
@@ -256,8 +261,11 @@ static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
 {
 	char *haystack = (char *)param->param_pointer;
 
-	if (l_memmem(haystack, "sql-", strlen(haystack), 4))
+	if (l_memmem(haystack, "sql-", strlen(haystack), strlen("sql-")))
 		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+
+	if (l_memmem(haystack, "cachedb", strlen(haystack), strlen("cachedb")))
+		return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
 
 	return NULL;
 }
@@ -360,6 +368,22 @@ static int mod_init(void)
 	if (check_runtime_config() != 0) {
 		LM_ERR("bad runtime config - exiting...\n");
 		return -1;
+	}
+
+	if (have_cdb_conns()) {
+		cdb_url.len = strlen(cdb_url.s);
+
+		if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
+			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
+			       cdb_url.len, cdb_url.s);
+			return -1;
+		}
+
+		if (!CACHEDB_CAPABILITY(&cdbf, CACHEDB_CAP_COL_ORIENTED)) {
+			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
+			       cdb_url.len, cdb_url.s);
+			return -1;
+		}
 	}
 
 	if (have_mem_storage()) {
@@ -486,9 +510,30 @@ static void ul_rpc_data_load(int sender_id, void *unsused)
 	}
 }
 
+int init_cachedb(void)
+{
+	if (!cdbf.init) {
+		LM_ERR("cachedb functions not initialized\n");
+		return -1;
+	}
+
+	cdbc = cdbf.init(&cdb_url);
+	if (!cdbc) {
+		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		return -1;
+	}
+
+	LM_DBG("Init'ed cachedb\n");
+	return 0;
+}
 
 static int child_init(int _rank)
 {
+	if (have_cdb_conns() && init_cachedb() < 0) {
+	    LM_ERR("cannot init cachedb feature\n");
+	    return -1;
+	}
+
 	if (!have_db_conns())
 		return 0;
 
@@ -540,6 +585,10 @@ static int mi_child_init(void)
  */
 static void destroy(void)
 {
+	if (cdbc)
+		cdbf.destroy(cdbc);
+	cdbc = NULL;
+
 	/* we need to sync DB in order to flush the cache */
 	if (ul_dbh) {
 		ul_unlock_locks();
@@ -732,6 +781,11 @@ int check_runtime_config(void)
 
 		if (!ul_replication_cluster) {
 			LM_ERR("'contact_replication_cluster' is not set!\n");
+			return -1;
+		}
+
+		if (ZSTR(cdb_url)) {
+			LM_ERR("no cache database URL defined! ('cdb_url')\n");
 			return -1;
 		}
 	}

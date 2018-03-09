@@ -34,6 +34,7 @@
 
 #include "../../db/db.h"
 #include "../../str.h"
+#include "../../cachedb/cachedb.h"
 
 extern enum ul_cluster_mode cluster_mode;
 extern enum ul_rr_persist rr_persist;
@@ -93,6 +94,9 @@ extern int ul_hash_size;
 
 extern db_con_t* ul_dbh;   /* Database connection handle */
 extern db_func_t ul_dbf;
+
+extern cachedb_funcs cdbf;
+extern cachedb_con *cdbc;
 
 /*
  * Matching algorithms

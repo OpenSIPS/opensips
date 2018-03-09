@@ -116,6 +116,9 @@ static inline int load_ul_api(usrloc_api_t *ul)
 #define have_db_conns() \
 	(cluster_mode == CM_SQL_ONLY || \
 	 rr_persist == RRP_LOAD_FROM_SQL)
+#define have_cdb_conns() \
+	(cluster_mode == CM_EDGE_CACHEDB_ONLY || \
+	 cluster_mode == CM_CORE_CACHEDB_ONLY)
 #define have_mem_storage() \
 	(cluster_mode == CM_NONE || \
 	 cluster_mode == CM_EDGE || \
