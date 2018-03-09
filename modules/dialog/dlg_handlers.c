@@ -1422,7 +1422,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
 	char *final_cseq;
-	int replicate_events = 1;
+	int is_active = 1;
 
 	/* as this callback is triggered from loose_route, which can be
 	   accidentaly called more than once from script, we need to be sure
@@ -1523,7 +1523,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	}
 
 	if (dialog_repl_cluster)
-		replicate_events = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+		is_active = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
 
 	/* run state machine */
 	switch ( req->first_line.u.request.method_value ) {
@@ -1538,7 +1538,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	}
 
 	next_state_dlg(dlg, event, dir, &old_state, &new_state, &unref, dst_leg,
-					replicate_events);
+					is_active);
 
 	/* set current dialog - it will keep a ref! */
 	ctx_dialog_set(dlg);
@@ -1627,7 +1627,8 @@ after_unlock5:
 		}
 
 		/* dialog terminated (BYE) */
-		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, NULL, 0);
+		if (is_active)
+			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, NULL, 0);
 
 		/* delete the dialog from DB */
 		if (should_remove_dlg_db())
@@ -1752,7 +1753,7 @@ after_unlock5:
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
 
-				if (dialog_repl_cluster && replicate_events)
+				if (dialog_repl_cluster && is_active)
 					replicate_dialog_updated(dlg);
 			}
 		} else {
@@ -1865,7 +1866,7 @@ early_check:
 		if(dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
-		if (dialog_repl_cluster && replicate_events)
+		if (dialog_repl_cluster && is_active)
 			replicate_dialog_updated(dlg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER ||
@@ -1971,8 +1972,9 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 		/* dialog timeout */
 		if (push_new_processing_context(dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
-			run_dlg_callbacks(DLGCB_EXPIRED, dlg, fake_msg,
-				DLG_DIR_NONE, NULL, 0);
+			if (do_expire_actions)
+				run_dlg_callbacks(DLGCB_EXPIRED, dlg, fake_msg,
+					DLG_DIR_NONE, NULL, 0);
 
 			if (current_processing_ctx == NULL)
 				*new_ctx = NULL;

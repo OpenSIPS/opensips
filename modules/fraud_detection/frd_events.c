@@ -168,7 +168,12 @@ void dialog_terminate_CB(struct dlg_cell *dlgc, int type,
 	lock_get(&frdparam->stats->lock);
 	--frdparam->stats->stats.concurrent_calls;
 	lock_release(&frdparam->stats->lock);
+}
 
-	shm_free(frdparam->number.s);
-	shm_free(frdparam);
+void free_dialog_CB_param(void *param)
+{
+	frd_dlg_param *p = (frd_dlg_param *)param;
+
+	shm_free(p->number.s);
+	shm_free(p);
 }

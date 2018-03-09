@@ -266,13 +266,17 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 {
 	str info_ptr;
 	struct sngtc_info *info;
+	int rc;
 
-	LM_DBG("freeing the sdp buffer\n");
+	rc = dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &info_ptr, 0);
 
-	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &info_ptr, 0) != 0) {
+	if (rc == -1) {
 		LM_ERR("failed to fetch caller sdp\n");
 		return;
-	}
+	} else  if (rc == -2)
+		return;
+
+	LM_DBG("freeing the sdp buffer\n");
 
 	info = *(struct sngtc_info **)info_ptr.s;
 	LM_DBG("Info ptr: %p\n", info);
@@ -285,6 +289,9 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 		shm_free(info->modified_caller_sdp.s);
 
 	shm_free(info);
+
+	if (dlg_binds.store_dlg_value(dlg, &dlg_key_sngtc_info, NULL) < 0)
+		LM_ERR("failed to clear dlg val with caller sdp\n");
 }
 
 static int mod_init(void)
@@ -538,7 +545,7 @@ static int sngtc_offer(struct sip_msg *msg)
 
 		/* register a callback to free the above */
 		if (dlg_binds.register_dlgcb(dlg,
-			                         DLGCB_EXPIRED|DLGCB_FAILED|DLGCB_TERMINATED,
+			DLGCB_EXPIRED|DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_DESTROY,
 		    sngtc_dlg_terminated, NULL, NULL) != 0) {
 
 			LM_ERR("failed to register dialog callback\n");

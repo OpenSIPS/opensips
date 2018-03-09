@@ -217,7 +217,7 @@ error:
 
 
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
-							int extra_unref, int replicate_events)
+							int extra_unref, int is_active)
 {
 	int event, old_state, new_state, unref, ret;
 	struct sip_msg *fake_msg=NULL;
@@ -226,7 +226,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 
 	event = DLG_EVENT_REQBYE;
 	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
-			&unref, dlg->legs_no[DLG_LEG_200OK], replicate_events);
+			&unref, dlg->legs_no[DLG_LEG_200OK], is_active);
 	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
@@ -265,8 +265,9 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 			/* set new msg & processing context */
 			if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
 				/* dialog terminated (BYE) */
-				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg,
-					DLG_DIR_NONE, NULL, 0);
+				if (is_active)
+					run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg,
+						DLG_DIR_NONE, NULL, 0);
 				/* reset the processing context */
 				if (current_processing_ctx == NULL)
 					*new_ctx = NULL;
@@ -277,8 +278,9 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 		} else {
 			/* we should have the msg and context from upper levels */
 			/* dialog terminated (BYE) */
-			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req,
-				DLG_DIR_NONE, NULL, 0);
+			if (is_active)
+				run_dlg_callbacks( DLGCB_TERMINATED, dlg, req,
+					DLG_DIR_NONE, NULL, 0);
 		}
 
 		LM_DBG("first final reply\n");

@@ -50,6 +50,6 @@ typedef struct {
 
  void dialog_terminate_CB(struct dlg_cell *dlgc, int type,
 		struct dlg_cb_params *params);
-
+ void free_dialog_CB_param(void *param);
 
 #endif
