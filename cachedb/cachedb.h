@@ -96,6 +96,8 @@ typedef struct cachedb_funcs_t {
 	 * @con: The cacheDB connection to use.
 	 * @filter: NULL, one or more AND'ed filters for the query.
 	 * @res: Will contain zero or more results.
+	 *
+	 * Return: 0 on success, -1 otherwise. @res is always safe to free.
 	 */
 	int (*query) (cachedb_con *con, const cdb_filter_t *filter, cdb_res_t *res);
 
@@ -116,6 +118,8 @@ typedef struct cachedb_funcs_t {
 	 * backends may only support row-level TTLs and set a TTL equal to the
 	 * max TTL between all input and existing DB TTL (e.g. MongoDB), others
 	 * may actually fully support dictionary-level TTLs (e.g. Cassandra).
+	 *
+	 * Return: 0 on success, -1 otherwise.
 	 */
 	int (*update) (cachedb_con *con, const cdb_filter_t *row_filter,
 	               const cdb_dict_t *pairs);

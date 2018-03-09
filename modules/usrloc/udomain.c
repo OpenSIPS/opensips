@@ -1199,7 +1199,10 @@ urecord_t* cachedb_load_urecord(db_con_t* _c, const udomain_t* _d,
 		return NULL;
 	}
 
-	cdbf.query(cdbc, aor_filter, &res);
+	if (cdbf.query(cdbc, aor_filter, &res) != 0) {
+		LM_ERR("query failed for AoR %.*s\n", _aor->len, _aor->s);
+		goto out_null;
+	}
 
 	/* TODO: implement use table _d->name */
 

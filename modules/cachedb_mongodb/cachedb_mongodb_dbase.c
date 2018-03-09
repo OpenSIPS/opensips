@@ -1825,6 +1825,8 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 
 	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
 
+	cdb_res_init(res);
+
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 	/* TODO: test this! */
 	if (mongo_cdb_filter_to_bson(filter, &bson_filter) != 0) {
@@ -1838,8 +1840,6 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 
 	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query rows",
 	                  con->url.s, con->url.len, 0);
-
-	cdb_res_init(res);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
 #else
@@ -1861,8 +1861,6 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 
 	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query rows",
 	                  con->url.s, con->url.len, 0);
-
-	cdb_res_init(res);
 
 	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
 #endif
