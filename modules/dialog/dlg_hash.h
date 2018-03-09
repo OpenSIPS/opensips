@@ -343,7 +343,7 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 void ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 
 void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
-		int *new_state, int *unref, int last_dst_leg, char is_replicated);
+		int *new_state, int *unref, int last_dst_leg, char replicate_events);
 
 struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
 struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );

@@ -1923,7 +1923,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (db_update)
 			update_dialog_timeout_info(dlg);
 
-		if (dialog_repl_cluster)
+		if (dialog_repl_cluster && get_repltag_state(dlg) != REPLTAG_STATE_BACKUP)
 			replicate_dialog_updated(dlg);
 
 		if (timer_update) {

@@ -961,7 +961,7 @@ static inline void log_next_state_dlg(const int event,
 
 
 void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
-		int *new_state, int *unref, int last_dst_leg, char is_replicated)
+		int *new_state, int *unref, int last_dst_leg, char replicate_events)
 {
 	struct dlg_entry *d_entry;
 
@@ -1111,7 +1111,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 		raise_state_changed_event(dlg, (unsigned int)(*old_state),
 			(unsigned int)(*new_state));
 
-	 if ( !is_replicated && dialog_repl_cluster &&
+	 if (dialog_repl_cluster && replicate_events &&
 	(*old_state==DLG_STATE_CONFIRMED_NA || *old_state==DLG_STATE_CONFIRMED) &&
 	*new_state==DLG_STATE_DELETED )
 		replicate_dialog_deleted(dlg);

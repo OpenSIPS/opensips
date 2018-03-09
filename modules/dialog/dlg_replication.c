@@ -418,7 +418,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
-		&new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 1);
+		&new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
 
 	if (old_state == new_state) {
 		LM_ERR("duplicate dialog delete request (callid: |%.*s|"

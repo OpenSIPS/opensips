@@ -431,10 +431,13 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	str mangled_from = {0,0};
 	str mangled_to = {0,0};
 	str *req_out_buff;
+	int replicate_events = 1;
 
 	dlg = (struct dlg_cell *)(*param->param);
 	if (shutdown_done || dlg==0)
 		return;
+
+	replicate_events = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
 
 	rpl = param->rpl;
 	req = param->req;
@@ -483,7 +486,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	}
 	if (type==TMCB_RESPONSE_OUT) {
 		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_repl_cluster &&
-				param->code >= 200 && param->code < 300)
+				replicate_events && param->code >= 200 && param->code < 300)
 			replicate_dialog_created(dlg);
 		return;
 	}
@@ -502,7 +505,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	}
 
 	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state,
-	               &unref, DLG_CALLER_LEG, 0);
+	               &unref, DLG_CALLER_LEG, replicate_events);
 
 	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
 		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0);
@@ -1419,6 +1422,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
 	char *final_cseq;
+	int replicate_events = 1;
 
 	/* as this callback is triggered from loose_route, which can be
 	   accidentaly called more than once from script, we need to be sure
@@ -1518,6 +1522,9 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		}
 	}
 
+	if (dialog_repl_cluster)
+		replicate_events = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+
 	/* run state machine */
 	switch ( req->first_line.u.request.method_value ) {
 		case METHOD_PRACK:
@@ -1530,7 +1537,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			event = DLG_EVENT_REQ;
 	}
 
-	next_state_dlg( dlg, event, dir, &old_state, &new_state, &unref, dst_leg, 0);
+	next_state_dlg(dlg, event, dir, &old_state, &new_state, &unref, dst_leg,
+					replicate_events);
 
 	/* set current dialog - it will keep a ref! */
 	ctx_dialog_set(dlg);
@@ -1744,7 +1752,7 @@ after_unlock5:
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
 
-				if (dialog_repl_cluster)
+				if (dialog_repl_cluster && replicate_events)
 					replicate_dialog_updated(dlg);
 			}
 		} else {
@@ -1857,7 +1865,7 @@ early_check:
 		if(dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
-		if (dialog_repl_cluster)
+		if (dialog_repl_cluster && replicate_events)
 			replicate_dialog_updated(dlg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER ||
@@ -1945,7 +1953,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 	/* act like as if we've received a BYE from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
-	               &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
+	               &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], do_expire_actions);
 
 	if (new_state==DLG_STATE_DELETED && old_state!=DLG_STATE_DELETED) {
 		LM_DBG("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
