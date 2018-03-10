@@ -1,8 +1,8 @@
 .PHONY: test unit_tests system_tests
 
 ensure_test_defs:
-	@grep -q '^#DEFS+= -DUNIT_TESTS' Makefile.conf && \
-		sed -i 's/^#DEFS+= -DUNIT_TESTS/DEFS+= -DUNIT_TESTS/g' Makefile.conf && \
+	@! grep -q '^DEFS+= -DUNIT_TESTS' Makefile.conf && \
+		echo 'DEFS+= -DUNIT_TESTS' >> Makefile.conf && \
 		echo "-DUNIT_TESTS was not enabled in Makefile.conf," \
 			"run 'make test' again." && exit 1 || true
 
