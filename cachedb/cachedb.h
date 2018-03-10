@@ -54,52 +54,37 @@ void cachedb_free_url(struct cachedb_url *list);
 cachedb_con* cachedb_do_init(str *url,void* (*new_connection)(struct cachedb_id *));
 void cachedb_do_close(cachedb_con *con, void (*free_connection)(cachedb_pool_con *));
 
-typedef cachedb_con* (cachedb_init_f)(str *url);
-typedef void (cachedb_destroy_f)(cachedb_con *con);
-
-/* NOTE: "val->s" shall be allocated in PKG memory,
- * and MUST be freed by the calling layer! */
-typedef int (cachedb_get_f)(cachedb_con *con,str *attr,str *val);
-typedef int (cachedb_getcounter_f)(cachedb_con *con,str *attr,int *val);
-typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);
-typedef int (cachedb_remove_f)(cachedb_con *con,str *attr);
-typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
-typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
-
-typedef int (cachedb_query_f)(cachedb_con *con, const cdb_filter_t *filter,
-                              cdb_res_t *res);
-typedef int (cachedb_update_f)(cachedb_con *con,
-                               const cdb_filter_t *row_filter,
-                               const cdb_dict_t *pairs);
-
-/* bi-dimensional array will be returned */
-typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
-
-typedef int (cachedb_truncate_f)(cachedb_con *con);
-
-typedef int(cachedb_query_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r);
-typedef int(cachedb_free_trans_f)(cachedb_con* con, db_res_t* _r);
-typedef int(cachedb_insert_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n);
-typedef int(cachedb_delete_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n);
-typedef int (cachedb_update_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un);
-
 typedef struct cachedb_funcs_t {
-	cachedb_init_f			*init;
-	cachedb_destroy_f		*destroy;
-	cachedb_get_f			*get;
-	cachedb_getcounter_f	*get_counter;
-	cachedb_set_f			*set;
-	cachedb_remove_f		*remove;
-	cachedb_add_f			*add;
-	cachedb_sub_f			*sub;
-	cachedb_raw_f			*raw_query;
-	cachedb_truncate_f		*truncate;
+	cachedb_con * (*init) (str *url);
+	void (*destroy) (cachedb_con *con);
 
-	cachedb_query_trans_f	*db_query_trans;
-	cachedb_free_trans_f	*db_free_trans;
-	cachedb_insert_trans_f	*db_insert_trans;
-	cachedb_delete_trans_f	*db_delete_trans;
-	cachedb_update_trans_f	*db_update_trans;
+	/* NOTE: "val->s" shall be allocated in PKG memory,
+	 * and MUST be freed by the calling layer! */
+	int (*get) (cachedb_con *con, str *attr, str *val);
+	int (*get_counter) (cachedb_con *con, str *attr, int *val);
+	int (*set) (cachedb_con *con, str *attr, str *val, int expires);
+	int (*remove) (cachedb_con *con, str *attr);
+	int (*add) (cachedb_con *con, str *attr, int val,
+	        int expires, int *new_val);
+	int (*sub) (cachedb_con *con, str *attr, int val,
+	        int expires, int *new_val);
+	/* bi-dimensional array will be returned */
+	int (*raw_query) (cachedb_con *con, str *query, cdb_raw_entry ***reply,
+	                  int expected_key_no,int *reply_no);
+	int (*truncate) (cachedb_con *con);
+
+	int (*db_query_trans) (cachedb_con *con, const str *table,
+            const db_key_t* _k, const db_op_t* _op, const db_val_t* _v,
+            const db_key_t* _c, int _n, int _nc, const db_key_t _o,
+            db_res_t** _r);
+	int (*db_free_trans) (cachedb_con* con, db_res_t* _r);
+	int (*db_insert_trans) (cachedb_con *con, const str *table,
+	        const db_key_t* _k, const db_val_t* _v, int _n);
+	int (*db_delete_trans) (cachedb_con *con, const str *table,
+	        const db_key_t* _k, const db_op_t *_o, const db_val_t* _v, int _n);
+	int (*db_update_trans) (cachedb_con *con, const str *table,
+	        const db_key_t* _k, const db_op_t *_o, const db_val_t* _v,
+	        const db_key_t* _uk, const db_val_t* _uv, int _n, int _un);
 
 	/*
 	 * Endpoints specific to "column-oriented" NoSQL DBs (Cassandra, Mongo)
@@ -112,7 +97,7 @@ typedef struct cachedb_funcs_t {
 	 * @filter: NULL, one or more AND'ed filters for the query.
 	 * @res: Will contain zero or more results.
 	 */
-	cachedb_query_f         *query;
+	int (*query) (cachedb_con *con, const cdb_filter_t *filter, cdb_res_t *res);
 
 	/**
 	 * update() - SQL-like update function with "set", "unset" and TTL support.
@@ -132,7 +117,8 @@ typedef struct cachedb_funcs_t {
 	 * max TTL between all input and existing DB TTL (e.g. MongoDB), others
 	 * may actually fully support dictionary-level TTLs (e.g. Cassandra).
 	 */
-	cachedb_update_f        *update;
+	int (*update) (cachedb_con *con, const cdb_filter_t *row_filter,
+	               const cdb_dict_t *pairs);
 	/* TODO: can we also implement these ^ with Redis, or can we adapt them? */
 
 	int capability;
