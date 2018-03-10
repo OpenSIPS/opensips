@@ -1817,7 +1817,7 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
                        cdb_res_t *res)
 {
-	bson_t child, bson_filter = BSON_INITIALIZER;
+	bson_t bson_filter = BSON_INITIALIZER;
 	mongoc_cursor_t *cursor;
 	cdb_row_t *row;
 	const bson_t *doc;
@@ -1843,12 +1843,15 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 
 	while (mongoc_cursor_next(cursor, &doc)) {
 #else
+	bson_t child;
+
 	BSON_APPEND_DOCUMENT_BEGIN(&bson_filter, "$query", &child);
 	if (mongo_cdb_filter_to_bson(filter, &child) != 0) {
 		LM_ERR("failed to build bson filter\n");
 		return -1;
 	}
 	bson_append_document_end(&bson_filter, &child);
+	bson_destroy(&child);
 
 	dbg_bson("using filter: ", &bson_filter);
 
