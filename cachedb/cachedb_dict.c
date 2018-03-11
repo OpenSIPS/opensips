@@ -126,6 +126,9 @@ void _dbg_cdb_dict(const char *pre_txt, const cdb_dict_t *dict)
 	char *head;
 	int final_len = 0;
 
+	if (!dict)
+		goto out;
+
 	if (pkg_str_extend(&static_pkg_buf, 32) != 0) {
 		LM_ERR("oom\n");
 		goto out;
@@ -159,6 +162,9 @@ cdb_pair_t *dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
 	struct list_head *_;
 	cdb_pair_t *pair;
 
+	if (!dict)
+		return NULL;
+
 	list_for_each (_, dict) {
 		pair = list_entry(_, cdb_pair_t, list);
 
@@ -175,6 +181,12 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 	const struct list_head *p1, *p2;
 	cdb_pair_t *pair1;
 	cdb_pair_t *pair2;
+
+	if (a == b)
+		return 0;
+
+	if (!a || !b)
+		return 1;
 
 	/* different # of pairs? */
 	for (p1 = a->next, p2 = b->next; p1 != a && p2 != b;
@@ -225,6 +237,9 @@ int dict_has_pair(const cdb_dict_t *haystack, const cdb_pair_t *pair)
 {
 	cdb_pair_t *needle;
 
+	if (!haystack)
+		return 0;
+
 	needle = dict_fetch(&pair->key, haystack);
 	if (!needle || needle->val.type != pair->val.type)
 		return 0;
@@ -236,6 +251,9 @@ cdb_pair_t *nth_pair(const cdb_dict_t *dict, int nth)
 {
 	struct list_head *_;
 	cdb_pair_t *pair;
+
+	if (!dict)
+		return NULL;
 
 	list_for_each (_, dict) {
 		if (--nth == 0) {
