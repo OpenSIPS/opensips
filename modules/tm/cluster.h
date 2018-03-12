@@ -45,6 +45,9 @@ int tm_reply_replicate(struct sip_msg *msg);
 /* Replicates an anycast message */
 int tm_anycast_replicate(struct sip_msg *msg);
 
+/* Handles an anycast CANCEL message */
+int tm_anycast_cancel(struct sip_msg *msg);
+
 /* returns true if clusterer is enabled */
 #define tm_cluster_enabled() (cluster_api.register_capability != 0)
 

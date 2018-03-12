@@ -781,7 +781,7 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 }
 
 
-static int script_init( struct sip_msg *foo, void *bar)
+static int script_init( struct sip_msg *msg, void *bar)
 {
 	/* we primarily reset all private memory here to make sure
 	 * private values left over from previous message will
@@ -799,6 +799,10 @@ static int script_init( struct sip_msg *foo, void *bar)
 	t_on_negative( 0 );
 	t_on_reply(0);
 	t_on_branch(0);
+
+	if (msg->REQ_METHOD == METHOD_CANCEL && is_anycast(msg->rcv.bind_address) &&
+			tm_anycast_cancel(msg) == 0)
+		return SCB_DROP_MSG;
 
 	return SCB_RUN_ALL;
 }

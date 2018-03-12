@@ -337,13 +337,13 @@ static void tm_replicate_reply(struct sip_msg *msg, int cid)
  * Replicates a request message to all the member of the cluster
  * hoping that one of them will match the transaction and will act on it
  */
-static void tm_replicate_broadcast(struct sip_msg *msg)
+static int tm_replicate_broadcast(struct sip_msg *msg)
 {
 	int rc;
 
 	bin_packet_t *packet = tm_replicate_packet(msg, TM_CLUSTER_REQUEST);
 	if (!packet)
-		return;
+		return -1;
 
 	rc = cluster_api.send_all(packet, tm_repl_cluster);
 	switch (rc) {
@@ -361,6 +361,7 @@ static void tm_replicate_broadcast(struct sip_msg *msg)
 		break;
 	}
 	bin_free_packet(packet);
+	return 0;
 }
 
 /**
@@ -416,50 +417,75 @@ int tm_reply_replicate(struct sip_msg *msg)
 	return 0;
 }
 
+static int tm_existing_trans(struct sip_msg *msg)
+{
+	struct cell *t = get_t();
+	if (t == T_UNDEFINED) {
+		if (t_lookup_request(msg, 0) != -1) {
+			LM_DBG("e2e ACK or known CANCEL, do not replicate\n");
+			return 0;
+		}
+		t = get_t(); /* fetch again the transaction */
+	}
+	if (t) {
+		LM_DBG("transaction already present here, no need to replicate\n");
+		return 0;
+	}
+	return -1;
+}
 
 /**
- * Replicates a message within a cluster/
+ * Replicates a message within a cluster
  * Returns:
  *   1: message was successfully replicated
  *  -1: message should not be replicated
  *  -2: message was already replicated to here - avoid loops
+ *  -3: internal error - message was not replicated
  */
 int tm_anycast_replicate(struct sip_msg *msg)
 {
-	struct cell *t;
 
 	if (msg->REQ_METHOD != METHOD_CANCEL && msg->REQ_METHOD != METHOD_ACK) {
 		LM_DBG("only CANCEL and ACK can be replicated\n");
-		goto not_replicated;
+		return -1;
 	}
 
 	if (!is_anycast(msg->rcv.bind_address)) {
 		LM_DBG("request not received on an anycast network\n");
-		goto not_replicated;
+		return -1;
 	}
 
 	if (msg->flags & FL_TM_REPLICATED) {
 		LM_DBG("message already replicated, shouldn't have got here\n");
 		return -2;
 	}
-	
-	t = get_t();
-	if (t == T_UNDEFINED) {
-		if (t_lookup_request(msg, 0) != -1) {
-			LM_DBG("e2e ACK or known cancel, do not replicate\n");
-			goto not_replicated;
-		}
-		t = get_t(); /* fetch again the transaction */
-	}
-	if (t) {
-		LM_DBG("transaction already present here, no need to replicate\n");
-		goto not_replicated;
-	}
+	if (tm_existing_trans(msg))
+		return -1;
+
 	/* we are currently doing auto-CANCEL only for 3261 transactions */
 	if (tm_repl_auto_cancel && msg->REQ_METHOD == METHOD_CANCEL && msg->via1->branch)
-		tm_replicate_cancel(msg);
+		return tm_replicate_cancel(msg)? 1: -3;
 	else
-		tm_replicate_broadcast(msg);
-not_replicated:
-	return -1;
+		return tm_replicate_broadcast(msg)? 1: -3;
+}
+
+/**
+ * Handles a CANCEL message received over anycast
+ * Returns:
+ *  0: message was successfully handled
+ * -1: message was not handled
+ */
+int tm_anycast_cancel(struct sip_msg *msg)
+{
+	if (!tm_repl_auto_cancel)
+		return -1;
+
+	if (!tm_existing_trans(msg))
+		return tm_replicate_cancel(msg)? 0: -2;
+	else if (t_relay_to(msg, NULL, 0) < 0) {
+		LM_ERR("cannot handle auto-CANCEL here - send to script!\n");
+		return -1;
+	}
+
+	return 0;
 }
