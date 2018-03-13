@@ -115,9 +115,15 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	if (country_code.len < 2 || country_code.len > 4) {
-		LM_ERR("Invalid country code parameter, must be a \"+\" sign followed by 1-3 digits\n");
+		LM_ERR("Invalid country code parameter, must be a \"+\" sign "
+			"followed by 1-3 digits\n");
 		return -1;
 	}
+
+	/* update the len of the str's, if changed via modparam */
+	param_subf_sep.len = strlen( param_subf_sep.s );
+	isup_mime.len = strlen( isup_mime.s );
+	country_code.len = strlen( country_code.s );
 
 	return 0;
 }
