@@ -76,7 +76,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst, st
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (((s && !cgr_get_const_kv(s, "OriginID")) || !s) &&
+	if (((s && !cgr_get_const_kv(&s->event_kvs, "OriginID")) || !s) &&
 			cgr_msg_push_str(cmsg, "OriginID", &msg->callid->body) < 0) {
 		LM_ERR("cannot push OriginID!\n");
 		goto error;

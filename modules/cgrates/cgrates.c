@@ -40,6 +40,7 @@
 #include "cgrates_common.h"
 #include "cgrates_engine.h"
 
+int cgre_compat_mode = 0;
 int cgre_retry_tout = CGR_DEFAULT_RETRY_TIMEOUT;
 int cgrc_max_conns = CGR_DEFAULT_MAX_CONNS;
 str cgre_bind_ip;
@@ -56,10 +57,19 @@ int cgr_ctx_local_idx;
 int cgr_tm_ctx_idx = -1;
 
 static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val, int reqopt);
+static int w_pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val);
+static int w_pv_set_cgr_opt(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val);
 static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val, int reqopt);
+static int w_pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val);
+static int w_pv_get_cgr_opt(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 static int pv_parse_cgr(pv_spec_p sp, str *in);
+static int w_pv_parse_cgr(pv_spec_p sp, str *in);
 static int pv_parse_idx_cgr(pv_spec_p sp, str *in);
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
@@ -91,9 +101,11 @@ static cmd_export_t cmds[] = {
 };
 
 static pv_export_t pvars[] = {
-	{ str_init("cgr"), 2003, pv_get_cgr, pv_set_cgr,
+	{ str_init("cgr"), 2003, w_pv_get_cgr, w_pv_set_cgr,
 		pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
-	{ str_init("cgrret"), 2004, pv_get_cgr_reply,
+	{ str_init("cgr_opt"), 2004, w_pv_get_cgr_opt, w_pv_set_cgr_opt,
+		w_pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
+	{ str_init("cgrret"), 2005, pv_get_cgr_reply,
 		0, 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -115,6 +127,7 @@ static param_export_t params[] = {
 	{"bind_ip", STR_PARAM, &cgre_bind_ip.s },
 	{"max_async_connections", INT_PARAM, &cgrc_max_conns },
 	{"retry_timeout", INT_PARAM, &cgre_retry_tout },
+	{"compat_mode", INT_PARAM, &cgre_compat_mode },
 	{0, 0, 0}
 };
 
@@ -366,9 +379,10 @@ static inline str *pv_get_idx_value(struct sip_msg *msg, pv_param_t *param)
 }
 
 static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
-		int op, pv_value_t *val)
+		int op, pv_value_t *val, int reqopt)
 {
 	pv_value_t name_val;
+	struct list_head *kvs;
 	struct cgr_session *s;
 	struct cgr_ctx *ctx;
 	struct cgr_kv *kv;
@@ -409,8 +423,10 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		return -2;
 	}
 
+	kvs = (reqopt? &s->req_kvs: &s->event_kvs);
+
 	/* check if there already is a kv with that name */
-	kv = cgr_get_kv(s, name_val.rs);
+	kv = cgr_get_kv(kvs, name_val.rs);
 	if (kv) {
 		/* replace the old value */
 		cgr_free_kv_val(kv);
@@ -425,7 +441,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("cannot allocate new key-value\n");
 			return -1;
 		}
-		list_add(&kv->list, &s->kvs);
+		list_add(&kv->list, kvs);
 	}
 	if (val->flags & PV_VAL_NULL) {
 		kv->flags |= CGR_KVF_TYPE_NULL;
@@ -450,13 +466,26 @@ free_kv:
 	return -1;
 }
 
+static int w_pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	return pv_set_cgr(msg, param, op, val, 0);
+}
+
+static int w_pv_set_cgr_opt(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	return pv_set_cgr(msg, param, op, val, cgre_compat_mode? 0: 1);
+}
+
 static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *val)
+		pv_value_t *val, int reqopt)
 {
 	pv_value_t name_val;
 	struct cgr_ctx *ctx;
 	struct cgr_kv *kv;
 	struct cgr_session *s;
+	struct list_head *kvs;
 
 	if (!param || !val) {
 		LM_ERR("invalid parameter or value to set\n");
@@ -485,8 +514,10 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 		name_val.rs = param->pvn.u.isname.name.s;
 	}
 
+	kvs = (reqopt? &s->req_kvs: &s->event_kvs);
+
 	/* check if there already is a kv with that name */
-	if (!(kv = cgr_get_kv(s, name_val.rs)) || \
+	if (!(kv = cgr_get_kv(kvs, name_val.rs)) || \
 			kv->flags & CGR_KVF_TYPE_NULL)
 		return pv_get_null(msg, param, val);
 
@@ -501,6 +532,18 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 	return 0;
+}
+
+static int w_pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val)
+{
+	return pv_get_cgr(msg, param, val, 0);
+}
+
+static int w_pv_get_cgr_opt(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val)
+{
+	return pv_get_cgr(msg, param, val, cgre_compat_mode? 0: 1);
 }
 
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
@@ -564,6 +607,17 @@ static int pv_parse_cgr(pv_spec_p sp, str *in)
 		sp->pvp.pvn.type = PV_NAME_INTSTR;
 	}
 	return 0;
+}
+
+static int w_pv_parse_cgr(pv_spec_p sp, str *in)
+{
+	if (cgre_compat_mode) {
+		LM_WARN("using $cgr_opt(%.*s) in compat mode is not possible!\n",
+				in->len, in->s);
+		LM_WARN("using $cgr_opt(%.*s) exactly as $cgr(NAME)!\n",
+				in->len, in->s);
+	}
+	return pv_parse_cgr(sp, in);
 }
 
 static int pv_parse_idx_cgr(pv_spec_p sp, str *in)

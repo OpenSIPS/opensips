@@ -125,13 +125,13 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 			/* if there is a matching session. move everything from
 			 * the one in accounting to the one in local ctx */
 			if (s) {
-				list_for_each_safe(l, t, &sa->kvs) {
+				list_for_each_safe(l, t, &sa->event_kvs) {
 					kv = list_entry(l, struct cgr_kv, list);
-					if (cgr_get_kv(s, kv->key))
+					if (cgr_get_kv(&s->event_kvs, kv->key))
 						cgr_free_kv(kv);
 					else {
 						list_del(&kv->list);
-						list_add(&kv->list, &s->kvs);
+						list_add(&kv->list, &s->event_kvs);
 					}
 				}
 				if (s->acc_info) {
@@ -333,7 +333,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(s, "OriginID")) {
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "OriginID")) {
 		if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
 				(msg->callid==NULL)) ) {
 			LM_ERR("Cannot get callid of the message!\n");
@@ -347,13 +347,13 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 		}
 	}
 
-	if (ctx && !cgr_get_const_kv(s, "DialogID") &&
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogID") &&
 			cgr_msg_push_int(cmsg, "DialogID", dlg->h_id) < 0) {
 		LM_ERR("cannot push DialogID!\n");
 		goto error;
 	}
 
-	if (ctx && !cgr_get_const_kv(s, "DialogEntry") &&
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogEntry") &&
 			cgr_msg_push_int(cmsg, "DialogEntry", dlg->h_entry) < 0) {
 		LM_ERR("cannot push DialogEntry!\n");
 		goto error;
@@ -426,7 +426,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(s, "OriginID")) {
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "OriginID")) {
 		callid = cgr_get_sess_callid(msg, s, &dlg->callid);
 		if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
 			LM_ERR("cannot push OriginID!\n");
@@ -602,7 +602,7 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 				sizeof(unsigned) /* number of keys */;
 
 			/* count the keys now */
-			list_for_each(ls, &s->kvs) {
+			list_for_each(ls, &s->event_kvs) {
 				sessions_kvs[sessions_no-1]++;
 				kv = list_entry(ls, struct cgr_kv, list);
 				buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
@@ -676,7 +676,7 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 			memcpy(p, &sessions_kvs[i], sizeof(unsigned));
 			p += sizeof(unsigned);
 
-			list_for_each(ls, &s->kvs) {
+			list_for_each(ls, &s->event_kvs) {
 				/* if does not have acc_info, it does not have start_time */
 				kv = list_entry(ls, struct cgr_kv, list);
 
@@ -1087,7 +1087,7 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 				CGR_CTX_COPY(kv->value.s.s, kv->value.s.len, "key.value.str.s");
 			}
 			/* all good - link the new value */
-			list_add(&kv->list, &s->kvs);
+			list_add(&kv->list, &s->event_kvs);
 		}
 	}
 store:

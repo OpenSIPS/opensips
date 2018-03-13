@@ -52,8 +52,9 @@ struct cgr_acc_sess;
 
 struct cgr_session {
 	str tag;
-	struct list_head kvs;
 	struct list_head list;
+	struct list_head req_kvs;
+	struct list_head event_kvs;
 	struct cgr_acc_sess *acc_info;
 };
 
@@ -109,8 +110,8 @@ struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup);
 void cgr_free_kv(struct cgr_kv *kv);
 void cgr_free_kv_val(struct cgr_kv *kv);
 void cgr_free_sess(struct cgr_session *sess);
-struct cgr_kv *cgr_get_kv(struct cgr_session *sess, str name);;
-struct cgr_kv *cgr_get_const_kv(struct cgr_session *sess, const char *name);
+struct cgr_kv *cgr_get_kv(struct list_head *list, str name);
+struct cgr_kv *cgr_get_const_kv(struct list_head *list, const char *name);
 struct cgr_session *cgr_get_sess(struct cgr_ctx *ctx, str *name);
 struct cgr_session *cgr_new_sess(str *tag);
 struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *name);

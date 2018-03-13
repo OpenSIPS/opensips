@@ -35,14 +35,12 @@
 #include "cgrates_engine.h"
 
 /* key-value manipulation */
-struct cgr_kv *cgr_get_kv(struct cgr_session *s, str name)
+struct cgr_kv *cgr_get_kv(struct list_head *list, str name)
 {
 	struct list_head *l;
 	struct cgr_kv *kv;
 
-	if (!s)
-		return NULL;
-	list_for_each(l, &s->kvs) {
+	list_for_each(l, list) {
 		kv = list_entry(l, struct cgr_kv, list);
 		if (kv->key.len == name.len && !memcmp(kv->key.s, name.s, name.len))
 			return kv;
@@ -50,12 +48,12 @@ struct cgr_kv *cgr_get_kv(struct cgr_session *s, str name)
 	return NULL;
 }
 
-struct cgr_kv *cgr_get_const_kv(struct cgr_session *s, const char *name)
+struct cgr_kv *cgr_get_const_kv(struct list_head *list, const char *name)
 {
 	str sname;
 	sname.s = (char *)name;
 	sname.len = strlen(name);
-	return cgr_get_kv(s, sname);
+	return cgr_get_kv(list, sname);
 }
 
 struct cgr_kv *cgr_new_real_kv(char *key, int klen, int dup)
@@ -205,7 +203,7 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	json_object_array_add(jarr, cmsg.params);
 
 	if (s) {
-		list_for_each(l, &s->kvs) {
+		list_for_each(l, &s->event_kvs) {
 			kv = list_entry(l, struct cgr_kv, list);
 			if (kv->flags & CGR_KVF_TYPE_NULL) {
 				jtmp = NULL;
@@ -345,7 +343,8 @@ struct cgr_session *cgr_new_sess(str *tag)
 		s->tag.len = 0;
 	}
 	s->acc_info = 0;
-	INIT_LIST_HEAD(&s->kvs);
+	INIT_LIST_HEAD(&s->event_kvs);
+	INIT_LIST_HEAD(&s->req_kvs);
 	return s;
 }
 
@@ -780,7 +779,9 @@ void cgr_free_sess(struct cgr_session *s)
 
 	if (s->acc_info)
 		shm_free(s->acc_info);
-	list_for_each_safe(l, t, &s->kvs)
+	list_for_each_safe(l, t, &s->event_kvs)
+		cgr_free_kv(list_entry(l, struct cgr_kv, list));
+	list_for_each_safe(l, t, &s->req_kvs)
 		cgr_free_kv(list_entry(l, struct cgr_kv, list));
 	list_del(&s->list);
 	shm_free(s);
