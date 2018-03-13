@@ -80,8 +80,9 @@ int bind_usrloc(usrloc_api_t* api)
 
 	api->update_sipping_latency  = update_sipping_latency;
 	api->use_domain = use_domain;
-	api->db_mode    = db_mode;
+	api->cluster_mode    = cluster_mode;
 	api->nat_flag   = nat_bflag;
+	api->have_mem_storage = have_mem_storage;
 
 	return 0;
 }

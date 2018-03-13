@@ -558,7 +558,7 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
 
 	for (p = root; p != NULL; p = p->next) {
 		ini_len = len;
-		if (db_mode != DB_ONLY) {
+		if (cluster_mode != DB_ONLY) {
 			shortage +=
 				get_domain_mem_ucontacts(p->d, buf+cur_pos, &len, flags,
 					part_idx, part_max, 0 /* don't add zeroed contact*/,
@@ -616,13 +616,14 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
 int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
 					unsigned int part_idx, unsigned int part_max, int pack_cid)
 {
-	if (db_mode == DB_ONLY)
+	if (cluster_mode == CM_SQL_ONLY)
 		return get_domain_db_ucontacts(d, buf, &len,
 							flags, part_idx, part_max, 1, pack_cid);
+	else if (cluster_mode == CM_CORE_CACHEDB_ONLY)
+		abort(); /* TODO */
 	else
 		return get_domain_mem_ucontacts(d, buf, &len, flags,
 											part_idx, part_max, 1, pack_cid);
-
 }
 
 
@@ -703,7 +704,7 @@ int register_udomain(const char* _n, udomain_t** _d)
 	/* Test tables from database if we are gonna
 	 * to use database
 	 */
-	if (db_mode != NO_DB) {
+	if (sql_wmode != SQL_NO_WRITE) {
 		con = ul_dbf.init(&db_url);
 		if (!con) {
 			LM_ERR("failed to open database connection\n");
@@ -805,13 +806,13 @@ int synchronize_all_udomains(void)
 
 	get_act_time(); /* Get and save actual time */
 
-	if (db_mode==DB_ONLY) {
+	if (cluster_mode == CM_SQL_ONLY) {
 		for( ptr=root ; ptr ; ptr=ptr->next)
 			res |= db_timer_udomain(ptr->d);
-	} else {
+	} else if (have_mem_storage()) {
 		for( ptr=root ; ptr ; ptr=ptr->next)
 			res |= mem_timer_udomain(ptr->d);
-	}
+	} /* TODO: add a form of cleanup here, or implement cache API TTLs */
 
 	return res;
 }
@@ -894,7 +895,7 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 	urecord_t *r;
 
 	/* if contact only in database */
-	if (db_mode == DB_ONLY) {
+	if (cluster_mode == DB_ONLY) {
 		virt_c.contact_id = contact_id;
 		virt_c.domain = d->name;
 
@@ -920,7 +921,7 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 	}
 
 	if (st_delete_ucontact(c) > 0) {
-		if (db_mode == WRITE_THROUGH) {
+		if (sql_wmode == SQL_WRITE_THROUGH) {
 			if (db_delete_ucontact(c) < 0) {
 				LM_ERR("failed to remove contact from database\n");
 			}

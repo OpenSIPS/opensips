@@ -233,7 +233,7 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 		}
 	}
 
-	if (db_mode == WRITE_THROUGH || db_mode == WRITE_BACK) {
+	if (sql_wmode != SQL_NO_WRITE) {
 		rstore = (int_str_t **)map_find(_c->kv_storage, urec_store_key);
 		if (rstore && _r->contacts) {
 			if (!put_ucontact_key(_r->contacts, &urec_store_key, *rstore))
@@ -259,7 +259,7 @@ void mem_delete_ucontact(urecord_t* _r, ucontact_t* _c)
 
 /*! \brief
  * This timer routine is used when
- * db_mode is set to NO_DB
+ * 'rr_persist' is set to RRP_NONE
  */
 static inline int nodb_timer(urecord_t* _r)
 {
@@ -293,8 +293,7 @@ static inline int nodb_timer(urecord_t* _r)
 
 
 /*! \brief
- * This routine is used when db_mode is
- * set to WRITE_THROUGH
+ * This routine is used when 'sql_wmode' is set to SQL_WRITE_THROUGH
  */
 static inline int ALLOW_UNUSED wt_timer(urecord_t* _r)
 {
@@ -771,12 +770,12 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
 	}
 
-	if ( ((*_c)=mem_insert_ucontact(_r, _contact, _ci)) == 0) {
+	if (!(*_c = mem_insert_ucontact(_r, _contact, _ci))) {
 		LM_ERR("failed to insert contact\n");
 		return -1;
 	}
 
-	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && have_data_replication())
 		replicate_ucontact_insert(_r, _contact, _ci);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT))
@@ -785,7 +784,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	if (!first_contact && exists_ulcb_type(UL_AOR_UPDATE))
 		run_ul_callbacks(UL_AOR_UPDATE, _r);
 
-	if (db_mode == WRITE_THROUGH) {
+	if (sql_wmode == SQL_WRITE_THROUGH) {
 		if (persist_urecord_kv_store(_r) != 0)
 			LM_ERR("failed to persist latest urecord K/V storage\n");
 
@@ -805,12 +804,11 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
  */
 int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 {
-	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && have_data_replication())
 		replicate_ucontact_delete(_r, _c);
 
-	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
-		run_ul_callbacks( UL_CONTACT_DELETE, _c);
-	}
+	if (exists_ulcb_type(UL_CONTACT_DELETE))
+		run_ul_callbacks(UL_CONTACT_DELETE, _c);
 
 	if (exists_ulcb_type(UL_AOR_UPDATE))
 		run_ul_callbacks(UL_AOR_UPDATE, _r);
@@ -818,7 +816,7 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 	LM_DBG("deleting contact '%.*s'\n", _c->c.len, _c->c.s);
 
 	if (st_delete_ucontact(_c) > 0) {
-		if (db_mode == WRITE_THROUGH) {
+		if (sql_wmode == SQL_WRITE_THROUGH) {
 			if (db_delete_ucontact(_c) < 0) {
 				LM_ERR("failed to remove contact from database\n");
 			}
@@ -826,7 +824,7 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 
 		mem_delete_ucontact(_r, _c);
 
-		if (db_mode == DB_ONLY) {
+		if (cluster_mode == CM_SQL_ONLY) {
 			/* force flushing to DB*/
 			if (db_only_timer(_r) < 0)
 				LM_ERR("failed to sync with db\n");

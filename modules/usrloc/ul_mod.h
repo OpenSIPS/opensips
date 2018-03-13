@@ -51,10 +51,11 @@ enum ul_rr_persist {
 /* if using SQL for restart persistency,
  * should runtime SQL blocking writes be performed eagerly or lazily? */
 enum ul_sql_write_mode {
+	SQL_NO_WRITE,
 	SQL_WRITE_THROUGH,
 	SQL_WRITE_BACK,
 } ul_sql_write_mode_t;
-#define bad_sql_write_mode(wm) ((wm) < SQL_WRITE_THROUGH || (wm) > SQL_WRITE_BACK)
+#define bad_sql_write_mode(wm) ((wm) < SQL_NO_WRITE || (wm) > SQL_WRITE_BACK)
 
 /*
  * Module parameters

@@ -279,8 +279,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (ul_api.db_mode == DB_ONLY) {
-		LM_ERR("refusing to work with usrloc 'db_mode = 3'\n");
+	if (!ul_api.have_mem_storage()) {
+		LM_ERR("no support for external-storage usrloc!\n");
 		return -1;
 	}
 
@@ -359,12 +359,6 @@ static int mod_init(void)
 	matching_param.len = strlen(matching_param.s);
 
 	if (reg_mode != MID_REG_MIRROR) {
-		if (ul_api.db_mode == DB_ONLY) {
-			LM_ERR("mid_registrar traffic conversion cannot work with "
-			       "usrloc \"db_mode\" = %d!\n", DB_ONLY);
-			return -1;
-		}
-
 		if (ul_api.register_ulcb(
 			UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
 			mid_reg_ct_event) < 0) {

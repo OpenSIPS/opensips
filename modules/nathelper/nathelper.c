@@ -523,7 +523,11 @@ mod_init(void)
 			return -1;
 		}
 
-		if (bind_usrloc(&ul) < 0) {
+		if (bind_usrloc(&ul) < 0)
+			return -1;
+
+		if (ul.cluster_mode == CM_CORE_CACHEDB_ONLY) {
+			LM_ERR("support for cachedb core usrloc not available yet\n");
 			return -1;
 		}
 

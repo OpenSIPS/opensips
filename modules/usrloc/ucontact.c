@@ -109,7 +109,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	}
 	memset(c, 0, sizeof(ucontact_t));
 
-	if (db_mode != DB_ONLY) {
+	if (have_mem_storage()) {
 		if (!ZSTRP(_ci->packed_kv_storage))
 			c->kv_storage = store_deserialize(_ci->packed_kv_storage);
 		else
@@ -377,7 +377,7 @@ void st_update_ucontact(ucontact_t* _c)
 			  * again. For db mode 1 we try to update right
 			  * now and if fails, let the timer to do the job
 			  */
-		if (db_mode != NO_DB) {
+		if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
 			_c->state = CS_DIRTY;
 		}
 		break;
@@ -415,7 +415,7 @@ int st_delete_ucontact(ucontact_t* _c)
 		      * the contact from the memory as well as
 		      * from the database
 		      */
-		if (db_mode != WRITE_THROUGH) {
+		if (sql_wmode != SQL_WRITE_THROUGH) {
 			_c->expires = UL_EXPIRED_TIME;
 			return 0;
 		} else {
@@ -517,7 +517,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		return 0;
 	}
 
-	if ((db_mode == DB_ONLY) && !strstr(db_url.s,"cachedb://")) {
+	if (cluster_mode == CM_SQL_ONLY) {
 		start++;
 		nr_vals--;
 	}
@@ -984,13 +984,13 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 	int ret;
 
 	/* we have to update memory in any case, but database directly
-	 * only in db_mode 1 */
-	if (mem_update_ucontact( _c, _ci) < 0) {
+	 * only in sql_wmode SQL_WRITE_THROUGH */
+	if (mem_update_ucontact(_c, _ci) < 0) {
 		LM_ERR("failed to update memory\n");
 		return -1;
 	}
 
-	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && have_data_replication())
 		replicate_ucontact_update(_r, &_c->c, _ci);
 
 	/* run callbacks for UPDATE event */
@@ -1000,12 +1000,12 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		run_ul_callbacks( UL_CONTACT_UPDATE, _c);
 	}
 
-	if (_r && db_mode!=DB_ONLY)
+	if (_r && have_mem_storage())
 		update_contact_pos( _r, _c);
 
 	st_update_ucontact(_c);
 
-	if (db_mode == WRITE_THROUGH) {
+	if (sql_wmode == SQL_WRITE_THROUGH) {
 		if (persist_urecord_kv_store(_r) != 0)
 			LM_ERR("failed to persist latest urecord K/V storage\n");
 

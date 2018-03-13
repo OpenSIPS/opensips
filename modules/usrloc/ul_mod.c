@@ -142,7 +142,7 @@ enum ul_rr_persist rr_persist = RRP_NONE;
 char *rr_persist_str;
 
 /*!< SQL write mode */
-enum ul_sql_write_mode sql_wmode = SQL_WRITE_BACK;
+enum ul_sql_write_mode sql_wmode = SQL_NO_WRITE;
 char *sql_wmode_str;
 
 int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
@@ -661,6 +661,7 @@ int check_runtime_config(void)
 		if (!strcasecmp(runtime_preset, "single-instance-no-db")) {
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_NONE;
+			sql_wmode = SQL_NO_WRITE;
 		} else if (!strcasecmp(runtime_preset,
 		           "single-instance-sql-write-through")) {
 			cluster_mode = CM_NONE;
@@ -674,18 +675,23 @@ int check_runtime_config(void)
 		} else if (!strcasecmp(runtime_preset, "sql-only")) {
 			cluster_mode = CM_SQL_ONLY;
 			rr_persist = RRP_NONE;
+			sql_wmode = SQL_NO_WRITE;
 		} else if (!strcasecmp(runtime_preset, "edge-cluster")) {
 			cluster_mode = CM_EDGE;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
+			sql_wmode = SQL_NO_WRITE;
 		} else if (!strcasecmp(runtime_preset, "edge-cluster-cachedb-only")) {
 			cluster_mode = CM_EDGE_CACHEDB_ONLY;
 			rr_persist = RRP_NONE;
+			sql_wmode = SQL_NO_WRITE;
 		} else if (!strcasecmp(runtime_preset, "core-cluster")) {
 			cluster_mode = CM_CORE;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
+			sql_wmode = SQL_NO_WRITE;
 		} else if (!strcasecmp(runtime_preset, "core-cluster-cachedb-only")) {
 			cluster_mode = CM_CORE_CACHEDB_ONLY;
 			rr_persist = RRP_NONE;
+			sql_wmode = SQL_NO_WRITE;
 		}
 	} else {
 		if (cluster_mode_str) {
@@ -719,13 +725,14 @@ int check_runtime_config(void)
 		}
 
 		if (sql_wmode_str) {
-			if (!strcasecmp(sql_wmode_str, "write-through"))
+			if (!strcasecmp(sql_wmode_str, "none"))
+				sql_wmode = SQL_NO_WRITE;
+			else if (!strcasecmp(sql_wmode_str, "write-through"))
 				sql_wmode = SQL_WRITE_THROUGH;
 			else if (!strcasecmp(sql_wmode_str, "write-back"))
 				sql_wmode = SQL_WRITE_BACK;
 			else
-				LM_ERR("unknown 'sql_write_mode' value: %s, "
-				       "using 'write-back'\n", sql_wmode_str);
+				LM_ERR("unknown 'sql_write_mode' value: %s\n", sql_wmode_str);
 		}
 	}
 
@@ -747,20 +754,31 @@ int check_runtime_config(void)
 		return -1;
 	}
 
+	if (rr_persist != RRP_LOAD_FROM_SQL && sql_wmode != SQL_NO_WRITE) {
+		LM_ERR("the 'sql_write_mode' can only be set with an "
+		       "SQL-based restart persistency!\n");
+		return -1;
+	} else if (rr_persist == RRP_LOAD_FROM_SQL && sql_wmode == SQL_NO_WRITE) {
+		LM_WARN("using SQL restart persistency without an 'sql_write_mode' "
+		        "- defaulting to 'write-back'...\n");
+		sql_wmode = SQL_WRITE_BACK;
+	}
+
 	if (cluster_mode == CM_EDGE || cluster_mode == CM_EDGE_CACHEDB_ONLY) {
-		LM_ERR("buit-in edge clustering not implemented yet! :(\n");
+		LM_ERR("built-in edge clustering not implemented yet! :(\n");
 		return -1;
 	}
 
 	if (cluster_mode == CM_NONE) {
 		if (rr_persist == RRP_SYNC_FROM_CLUSTER) {
-			LM_ERR("cannot 'sync-from-cluster' without clustering support!\n");
+			LM_ERR("cannot sync from cluster without first "
+			       "enabling a clustering mode!\n");
 			return -1;
 		}
 
 		if (ul_replication_cluster) {
-			LM_ERR("please select an appropriate 'cluster_mode' or "
-			       "'working_mode_preset' before defining a cluster id!\n");
+			LM_ERR("please select an appropriate 'working_mode_preset' or "
+			       "'cluster_mode' before defining a cluster id!\n");
 			return -1;
 		}
 	}
@@ -777,6 +795,12 @@ int check_runtime_config(void)
 			LM_WARN("externally managed data is already restart persistent!"
 			        " -- auto-disabling 'restart_persistency'\n");
 			rr_persist = RRP_NONE;
+		}
+
+		if (sql_wmode != SQL_NO_WRITE) {
+			LM_WARN("externally managed data is already restart persistent!"
+			        " -- auto-disabling 'sql_write_mode'\n");
+			sql_wmode = SQL_NO_WRITE;
 		}
 
 		if (!ul_replication_cluster) {
@@ -797,9 +821,15 @@ int check_runtime_config(void)
 			rr_persist = RRP_NONE;
 		}
 
+		if (sql_wmode != SQL_NO_WRITE) {
+			LM_WARN("externally managed data is already restart persistent!"
+			        " -- auto-disabling 'sql_write_mode'\n");
+			sql_wmode = SQL_NO_WRITE;
+		}
+
 		if (ul_replication_cluster) {
 			LM_ERR("setting a 'contact_replication_cluster' will have no "
-			       "effect in 'sql-only' mode!\n");
+			       "effect in the 'sql-only' clustering mode!\n");
 			return -1;
 		}
 	}

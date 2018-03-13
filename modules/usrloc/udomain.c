@@ -1445,7 +1445,7 @@ int mem_timer_udomain(udomain_t* _d)
 void lock_udomain(udomain_t* _d, str* _aor)
 {
 	unsigned int sl;
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 	{
 		sl = core_hash(_aor, 0, _d->size);
 
@@ -1464,7 +1464,7 @@ void lock_udomain(udomain_t* _d, str* _aor)
 void unlock_udomain(udomain_t* _d, str* _aor)
 {
 	unsigned int sl;
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 	{
 		sl = core_hash(_aor, 0, _d->size);
 #ifdef GEN_LOCK_T_PREFERED
@@ -1480,7 +1480,7 @@ void unlock_udomain(udomain_t* _d, str* _aor)
  */
 void lock_ulslot(udomain_t* _d, int i)
 {
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 #ifdef GEN_LOCK_T_PREFERED
 		lock_get(_d->table[i].lock);
 #else
@@ -1494,7 +1494,7 @@ void lock_ulslot(udomain_t* _d, int i)
  */
 void unlock_ulslot(udomain_t* _d, int i)
 {
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 #ifdef GEN_LOCK_T_PREFERED
 		lock_release(_d->table[i].lock);
 #else

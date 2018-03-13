@@ -55,9 +55,10 @@ enum usrloc_modes {
 };
 
 typedef struct usrloc_api {
-	int               use_domain;
-	enum usrloc_modes db_mode;
-	unsigned int      nat_flag;
+	int use_domain;
+	enum ul_cluster_mode cluster_mode;
+	int (*have_mem_storage) (void);
+	unsigned int nat_flag;
 
 	register_udomain_t     register_udomain;
 	get_all_ucontacts_t    get_all_ucontacts;
@@ -119,9 +120,16 @@ static inline int load_ul_api(usrloc_api_t *ul)
 #define have_cdb_conns() \
 	(cluster_mode == CM_EDGE_CACHEDB_ONLY || \
 	 cluster_mode == CM_CORE_CACHEDB_ONLY)
-#define have_mem_storage() \
-	(cluster_mode == CM_NONE || \
-	 cluster_mode == CM_EDGE || \
+
+extern enum ul_cluster_mode cluster_mode;
+static inline int have_mem_storage(void)
+{
+	return cluster_mode == CM_NONE ||
+	       cluster_mode == CM_EDGE ||
+	       cluster_mode == CM_CORE;
+}
+#define have_data_replication() \
+	(cluster_mode == CM_EDGE || \
 	 cluster_mode == CM_CORE)
 
 #endif /* USRLOC_H */
