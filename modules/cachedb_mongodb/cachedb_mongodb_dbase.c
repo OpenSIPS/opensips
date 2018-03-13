@@ -1737,6 +1737,8 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 	str text_op;
 	str key;
 	char prepend_and = filter ? !!filter->next : 0;
+	int arr_idx = 0, arr_idx_len;
+	char *arr_idx_str;
 
 	if (!filter)
 		return 0;
@@ -1750,7 +1752,9 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 
 	for (; filter; filter = filter->next) {
 		if (prepend_and) {
-			bson_append_document_begin(child, "", 0, &arr_doc);
+			arr_idx_str = int2str(arr_idx, &arr_idx_len);
+			bson_append_document_begin(child, arr_idx_str, arr_idx_len, &arr_doc);
+			arr_idx++;
 			subchild = &arr_doc;
 		} else {
 			subchild = cur;
