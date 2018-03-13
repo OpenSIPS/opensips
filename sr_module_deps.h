@@ -104,6 +104,7 @@ module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
  *	  (strlen(url) > 0)
  */
 module_dependency_t *get_deps_sqldb_url(param_export_t *param);
+module_dependency_t *get_deps_cachedb_url(param_export_t *param);
 
 /* core level structures and functions */
 struct sr_module_dep {

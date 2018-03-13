@@ -195,9 +195,9 @@ static param_export_t params[] = {
 	/* runtime behavior selection */
 	{"db_mode",            INT_PARAM, &db_mode           }, /* bw-compat */
 	{"working_mode_preset",STR_PARAM, &runtime_preset    },
-	{"cluster_mode",       STR_PARAM, &cluster_mode      },
-	{"restart_persistency",STR_PARAM, &rr_persist        },
-	{"sql_write_mode",     STR_PARAM, &sql_wmode         },
+	{"cluster_mode",       STR_PARAM, &cluster_mode_str  },
+	{"restart_persistency",STR_PARAM, &rr_persist_str    },
+	{"sql_write_mode",     STR_PARAM, &sql_wmode_str     },
 
 	{"use_domain",         INT_PARAM, &use_domain        },
 	{"desc_time_order",    INT_PARAM, &desc_time_order   },
@@ -294,6 +294,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{"db_mode", get_deps_db_mode},
+		{"cachedb_url", get_deps_cachedb_url},
 		{"working_mode_preset", get_deps_wmode_preset},
 		{"cluster_mode", get_deps_wmode_preset},
 		{"restart_persistency", get_deps_rr_persist},
@@ -808,7 +809,7 @@ int check_runtime_config(void)
 			return -1;
 		}
 
-		if (ZSTR(cdb_url)) {
+		if (!cdb_url.s) {
 			LM_ERR("no cache database URL defined! ('cdb_url')\n");
 			return -1;
 		}
