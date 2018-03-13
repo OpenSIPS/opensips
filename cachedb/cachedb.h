@@ -74,9 +74,9 @@ typedef struct cachedb_funcs_t {
 	int (*truncate) (cachedb_con *con);
 
 	int (*db_query_trans) (cachedb_con *con, const str *table,
-            const db_key_t* _k, const db_op_t* _op, const db_val_t* _v,
-            const db_key_t* _c, int _n, int _nc, const db_key_t _o,
-            db_res_t** _r);
+	        const db_key_t* _k, const db_op_t* _op, const db_val_t* _v,
+	        const db_key_t* _c, int _n, int _nc, const db_key_t _o,
+	        db_res_t** _r);
 	int (*db_free_trans) (cachedb_con* con, db_res_t* _r);
 	int (*db_insert_trans) (cachedb_con *con, const str *table,
 	        const db_key_t* _k, const db_val_t* _v, int _n);
@@ -97,7 +97,7 @@ typedef struct cachedb_funcs_t {
 	 * @filter: NULL, one or more AND'ed filters for the query.
 	 * @res: Will contain zero or more results.
 	 *
-	 * Return: 0 on success, -1 otherwise. @res is always safe to free.
+	 * Return: 0 on success, -1 otherwise. @res is always safe to clean.
 	 */
 	int (*query) (cachedb_con *con, const cdb_filter_t *filter, cdb_res_t *res);
 

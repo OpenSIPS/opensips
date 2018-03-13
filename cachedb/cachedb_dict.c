@@ -22,6 +22,96 @@
 
 #include "cachedb_types.h"
 
+int cdb_dict_add_str(cdb_dict_t *dest, const char *key, int key_len,
+                     const str *val)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_STR;
+	pair->val.val.st = *val;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
+int cdb_dict_add_int32(cdb_dict_t *dest, const char *key, int key_len,
+                       uint32_t v)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_INT32;
+	pair->val.val.i32 = v;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
+int cdb_dict_add_int64(cdb_dict_t *dest, const char *key, int key_len,
+                       uint64_t v)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_INT64;
+	pair->val.val.i64 = v;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
+int cdb_dict_add_null(cdb_dict_t *dest, const char *key, int key_len)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_NULL;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
 void cdb_dict_add(struct cdb_pair *pair, cdb_dict_t *dict)
 {
 	list_add(&pair->list, dict);

@@ -89,7 +89,7 @@ typedef struct cdb_pair {
 } cdb_pair_t;
 
 typedef struct {
-	cdb_dict_t dict;
+	cdb_dict_t dict; /* list of cdb_pair_t */
 
 	struct list_head list;
 } cdb_row_t;
