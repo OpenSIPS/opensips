@@ -110,6 +110,11 @@ int timer_urecord(urecord_t* _r,query_list_t **ins_list);
 int db_delete_urecord(urecord_t* _r);
 
 
+/*
+ * Delete the whole record from the cache database
+ */
+int cdb_delete_urecord(urecord_t* _r);
+
 /* ===== Module interface ======== */
 
 

@@ -491,11 +491,12 @@ void print_udomain(FILE* _f, udomain_t* _d)
 }
 
 /*! \brief
- * expects (UL_COLS - 4) rows:
+ * expects (UL_COLS - 4) fields:
  *   contact, expires, q, callid, cseq, flags, cflags, ua,
  *   received, path, socket, methods, last_modified, instance, attr)
  */
-static inline ucontact_info_t* cdb_row2info(const cdb_row_t *row, str *contact)
+static inline ucontact_info_t *
+cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 {
 	static ucontact_info_t ci;
 	static str callid, ua, received, host, path, instance;
@@ -508,7 +509,7 @@ static inline ucontact_info_t* cdb_row2info(const cdb_row_t *row, str *contact)
 	memset(&ci, 0, sizeof(ucontact_info_t));
 
 	/* TODO: find a less convoluted way of implementing this */
-	list_for_each (_, &row->dict) {
+	list_for_each (_, ct_fields) {
 		pair = list_entry(_, cdb_pair_t, list);
 
 		switch (pair->key.name.s[0]) {
@@ -1175,7 +1176,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 /*! \brief
  * loads from cache DB all contacts of an AOR
  */
-urecord_t* cachedb_load_urecord(db_con_t* _c, const udomain_t* _d,
+urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
                                 const str *_aor)
 {
 	static const cdb_key_t aor_key = {{"aor", 3}, 1};
@@ -1185,7 +1186,8 @@ urecord_t* cachedb_load_urecord(db_con_t* _c, const udomain_t* _d,
 	int_str_t val;
 	cdb_res_t res;
 	cdb_row_t *row;
-	str contact;
+	cdb_pair_t *contacts, *pair;
+	str contact, contacts_key = str_init("contacts");
 
 	urecord_t *r;
 	ucontact_t *c;
@@ -1213,11 +1215,26 @@ urecord_t* cachedb_load_urecord(db_con_t* _c, const udomain_t* _d,
 		return NULL;
 	}
 
+	if (res.count != 1)
+		LM_BUG("more than 1 results for AoR %.*s\n", _aor->len, _aor->s);
+
 	r = NULL;
 
-	list_for_each (_, &res.rows) {
-		row = list_entry(_, cdb_row_t, list);
-		ci = cdb_row2info(row, &contact);
+	row = list_entry(res.rows.next, cdb_row_t, list);
+	list_for_each (_, &row->dict) {
+		contacts = list_entry(_, cdb_pair_t, list);
+		if (!str_strcmp(&contacts->key.name, &contacts_key))
+			goto have_contacts;
+	}
+
+	LM_ERR("no 'contacts' field for AoR %.*s\n", _aor->len, _aor->s);
+	goto out_null;
+
+have_contacts:
+	list_for_each (_, &contacts->val.val.dict) {
+		pair = list_entry(_, cdb_pair_t, list);
+
+		ci = cdb_ctdict2info(&pair->val.val.dict, &contact);
 		if (!ci) {
 			LM_ERR("skipping record for %.*s in table %s\n",
 			       _aor->len, _aor->s, _d->name->s);
@@ -1497,7 +1514,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 {
 	int sl;
 
-	if (db_mode!=DB_ONLY) {
+	if (have_mem_storage()) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
 			LM_ERR("inserting record failed\n");
 			return -1;
@@ -1556,7 +1573,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		}
 		break;
 	case CM_CORE_CACHEDB_ONLY:
-		r = cachedb_load_urecord(ul_dbh, _d, _aor);
+		r = cdb_load_urecord(ul_dbh, _d, _aor);
 		if (r) {
 			*_r = r;
 			return 0;
@@ -1579,15 +1596,30 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 {
 	struct ucontact* c, *t;
 
-	if (db_mode==DB_ONLY) {
-		if (_r==0)
-			get_static_urecord( _d, _aor, &_r);
-		if (db_delete_urecord(_r)<0) {
+	switch (cluster_mode) {
+	case CM_SQL_ONLY:
+		if (!_r)
+			get_static_urecord(_d, _aor, &_r);
+		if (db_delete_urecord(_r) < 0) {
 			LM_ERR("DB delete failed\n");
 			return -1;
 		}
 		free_urecord(_r);
 		return 0;
+	case CM_CORE_CACHEDB_ONLY:
+		if (!_r)
+			get_static_urecord(_d, _aor, &_r);
+		if (cdb_delete_urecord(_r) < 0) {
+			LM_ERR("failed to delete %.*s from cache\n", _aor->len, _aor->s);
+			return -1;
+		}
+		free_urecord(_r);
+		return 0;
+	case CM_EDGE_CACHEDB_ONLY:
+		/* TODO */
+		abort();
+	default:
+		break;
 	}
 
 	if (_r==0) {
