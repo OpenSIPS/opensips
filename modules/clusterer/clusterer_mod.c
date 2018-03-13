@@ -263,7 +263,8 @@ static int mod_init(void)
 
 	LM_INFO("Clusterer module - initializing\n");
 
-	init_db_url(clusterer_db_url, 1);
+	/* only allow the DB URL to be skipped in "P2P discovery" mode */
+	init_db_url(clusterer_db_url, db_mode == 0);
 
 	if (current_id < 1) {
 		LM_CRIT("Invalid current_id parameter\n");
