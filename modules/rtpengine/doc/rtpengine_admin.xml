@@ -744,6 +744,26 @@ rtpengine_start_recording();
 		</example>
 		</section>
 		<section>
+			<title><function moreinfo="none">$rtpstat(STAT)</function></title>
+			<para>
+			Returnes one of the pre-fined statistics listed below:
+			</para>
+			<itemizedlist>
+			<listitem><para>
+			<emphasis>MOS-average</emphasis> - returns the average of all SSRCs involved in the call.
+			</para></listitem>
+			</itemizedlist>
+
+		<example>
+		<title>$rtpstat(STAT)</title>
+		<programlisting format="linespecific">
+...
+    xlog("Average MOS of the entire call is $rtpstat(mos-average)\r\n");
+...
+		</programlisting>
+		</example>
+		</section>
+		<section>
 			<title><function moreinfo="none">$rtpquery</function></title>
 			<para>
 			Does a Query command to the &rtp; proxy and returns the answer in a JSON format.

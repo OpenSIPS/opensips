@@ -129,6 +129,11 @@ enum rtpe_operation {
 	OP_QUERY,
 };
 
+enum rtpe_stat {
+	STAT_MOS_AVERAGE = 0,
+	STAT_UNKNOWN /* always keep last */
+};
+
 struct rtpe_stats {
 	bencode_item_t *dict;
 	bencode_buffer_t buf;
@@ -157,6 +162,10 @@ static const char *command_strings[] = {
 	[OP_DELETE]		= "delete",
 	[OP_START_RECORDING]	= "start recording",
 	[OP_QUERY]		= "query",
+};
+
+static const str stat_maps[] = {
+	[STAT_MOS_AVERAGE]		= str_init("mos-average"),
 };
 
 static char *gencookie();
@@ -299,14 +308,55 @@ static cmd_export_t cmds[] = {
 static int pv_rtpengine_stats_used(pv_spec_p sp, str *in)
 {
 	rtpengine_stats_used = 1;
+	sp->pvp.pvn.type = -1;
+	return 0;
+}
+
+static inline enum rtpe_stat rtpe_get_stat_by_name(str *name)
+{
+	enum rtpe_stat s;
+	for (s = 0; s < STAT_UNKNOWN; s++) {
+		if (str_strcasecmp(stat_maps, name) == 0)
+			return s;
+	}
+	return STAT_UNKNOWN;
+}
+
+static int pv_parse_rtpstat(pv_spec_p sp, str *in)
+{
+	enum rtpe_stat s;
+	pv_elem_t *format;
+	if (!in || in->s == NULL || in->len == 0 || sp == NULL)
+		return -1;
+
+	LM_DBG("name %p with name <%.*s>\n", &sp->pvp.pvn, in->len, in->s);
+	if (pv_parse_format( in, &format)!=0) {
+		LM_ERR("failed to parse statistic name format <%.*s> \n",
+			in->len,in->s);
+		return -1;
+	}
+	if (format->next==NULL && format->spec.type==PVT_NONE) {
+		s = rtpe_get_stat_by_name(in);
+		if (s == STAT_UNKNOWN) {
+			LM_ERR("Unknown RTP statistic %.*s\n", in->len, in->s);
+			return -1;
+		}
+		sp->pvp.pvn.type = PV_NAME_INTSTR;
+		sp->pvp.pvn.u.isname.name.n = s;
+	} else {
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.isname.type = 0; /* not string */
+		sp->pvp.pvn.u.isname.name.s.s = (char*)(void*)format;
+		sp->pvp.pvn.u.isname.name.s.len = 0;
+	}
 	return 0;
 }
 
 static pv_export_t mod_pvs[] = {
 	{{"rtpstat", (sizeof("rtpstat")-1)}, /* RTP-Statistics */
-		1000, pv_get_rtpstat_f, 0, pv_rtpengine_stats_used, 0, 0, 0},
+		1000, pv_get_rtpstat_f, 0, pv_parse_rtpstat, pv_rtpengine_stats_used, 0, 0},
 	{{"rtpquery", (sizeof("rtpquery")-1)},
-		1000, pv_get_rtpquery_f, 0, pv_rtpengine_stats_used, 0, 0, 0},
+		1000, pv_get_rtpquery_f, 0, 0, pv_rtpengine_stats_used, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -2184,25 +2234,19 @@ static int rtpe_fetch_stats(struct sip_msg *msg, bencode_buffer_t *retbuf, benco
 /*
  * Returns the current RTP-Statistics from the RTP-Proxy
  */
-static int
-pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
-		  pv_value_t *res)
+static inline void pv_get_rtpstat_line(bencode_item_t *dict, pv_value_t *res)
 {
-	bencode_buffer_t bencbuf;
-	bencode_item_t *dict, *tot, *rtp, *rtcp;
 	static char buf[256];
+	bencode_item_t *tot, *rtp, *rtcp;
 	str ret;
-	int rc;
-
-	rc = rtpe_fetch_stats(msg, &bencbuf, &dict);
-	if (rc < 0)
-		return -1;
 
 	tot = bencode_dictionary_get_expect(dict, "totals", BENCODE_DICTIONARY);
 	rtp = bencode_dictionary_get_expect(tot, "RTP", BENCODE_DICTIONARY);
 	rtcp = bencode_dictionary_get_expect(tot, "RTCP", BENCODE_DICTIONARY);
-	if (!rtp || !rtcp)
-		goto error;
+	if (!rtp || !rtcp) {
+		pv_get_null(NULL, NULL, res);
+		return;
+	}
 	ret.s = buf;
 	ret.len = snprintf(buf, sizeof(buf),
 		"RTP: %lli bytes, %lli packets, %lli errors; "
@@ -2213,10 +2257,93 @@ pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
 		bencode_dictionary_get_integer(rtcp, "bytes", -1),
 		bencode_dictionary_get_integer(rtcp, "packets", -1),
 		bencode_dictionary_get_integer(rtcp, "errors", -1));
+	pv_get_strval(NULL, NULL, res, &ret);
+}
+
+static inline int
+pv_get_rtpstat(struct sip_msg *msg, pv_param_t *param,
+		  pv_value_t *res, bencode_item_t *dict)
+{
+	str tmp;
+	bencode_item_t *c, *i;
+	enum rtpe_stat s;
+	int mos_sum, mos_no;
+
+	if (param->pvn.type == PV_NAME_PVAR) {
+		if (pv_printf_s(msg, (pv_elem_t *)param->pvn.u.isname.name.s.s, &tmp) < 0) {
+			LM_ERR("Cannot fetch RTP stat name!\n");
+			return -1;
+		}
+		s = rtpe_get_stat_by_name(&tmp);
+		if (s == STAT_UNKNOWN) {
+			LM_ERR("Unknown RTP stat %.*s\n", tmp.len, tmp.s);
+			return -1;
+		}
+	} else
+		s = param->pvn.u.isname.name.n;
+	/* now fetch the values from the dictionary */
+	switch (s) {
+	case STAT_MOS_AVERAGE:
+		/* get the SSRC and make an average */
+		dict = bencode_dictionary_get_expect(dict, "SSRC", BENCODE_DICTIONARY);
+		if (!dict) {
+			LM_DBG("no SSRC node in response!\n");
+			goto null;
+		}
+		mos_sum = 0;
+		mos_no = 0;
+		for (c = dict->child; c; c = c->sibling) {
+			if (c->type != BENCODE_DICTIONARY)
+				continue;
+			/* we are only interested in dictionaries */
+			i = bencode_dictionary_get_expect(c, "average MOS", BENCODE_DICTIONARY);
+			if (!i)
+				continue;
+			i = bencode_dictionary_get_expect(i, "MOS", BENCODE_INTEGER);
+			if (!i)
+				continue;
+			/* got one! */
+			mos_sum += i->value;
+			mos_no++;
+		}
+		if (mos_no == 0) {
+			LM_DBG("no MOS found!\n");
+			goto null;
+		}
+		pv_get_sintval(NULL, NULL, res, mos_sum / mos_no);
+		goto success;
+	default:
+		LM_BUG("unhandled command %d\n", s);
+		return -1;
+	}
+null:
+	pv_get_null(NULL, NULL, res);
+success:
+	return 1;
+}
+
+static int
+pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
+		  pv_value_t *res)
+{
+	bencode_buffer_t bencbuf;
+	bencode_item_t *dict;
+	int rc;
+
+	rc = rtpe_fetch_stats(msg, &bencbuf, &dict);
+	if (rc < 0)
+		return -1;
+
+	if (param->pvn.type == -1)
+		pv_get_rtpstat_line(dict, res);
+	else if (pv_get_rtpstat(msg, param, res, dict) < 0) {
+		LM_ERR("cannot fetch RTP statistic!\n");
+		goto error;
+	}
 
 	if (!rc)
 		bencode_buffer_free(&bencbuf);
-	return pv_get_strval(msg, param, res, &ret);
+	return 0;
 
 error:
 	if (!rc)
