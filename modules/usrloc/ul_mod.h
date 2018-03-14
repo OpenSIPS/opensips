@@ -36,6 +36,8 @@
 #include "../../str.h"
 #include "../../cachedb/cachedb.h"
 
+#include "usrloc.h"
+
 extern enum ul_cluster_mode cluster_mode;
 extern enum ul_rr_persist rr_persist;
 extern enum ul_sql_write_mode sql_wmode;
@@ -56,6 +58,25 @@ enum ul_sql_write_mode {
 	SQL_WRITE_BACK,
 } ul_sql_write_mode_t;
 #define bad_sql_write_mode(wm) ((wm) < SQL_NO_WRITE || (wm) > SQL_WRITE_BACK)
+
+#define bad_cluster_mode(mode) ((mode) < CM_NONE || (mode) > CM_SQL_ONLY)
+
+#define have_db_conns() \
+	(cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL)
+
+#define have_cdb_conns() \
+	(cluster_mode == CM_EDGE_CACHEDB_ONLY || \
+	 cluster_mode == CM_CORE_CACHEDB_ONLY)
+
+static inline int have_mem_storage(void)
+{
+	return cluster_mode == CM_NONE ||
+	       cluster_mode == CM_EDGE ||
+	       cluster_mode == CM_CORE;
+}
+
+#define have_data_replication() \
+	(cluster_mode == CM_EDGE || cluster_mode == CM_CORE)
 
 /*
  * Module parameters
