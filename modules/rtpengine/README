@@ -282,14 +282,14 @@ rtpengine_offer();
    ACK.
 
    Meaning of the parameters is as follows:
-
-   When passing an option that OpenSIPS is not aware of, it will
-   be blindly sent to the rtpengine daemon to be processed.
      * flags(optional) - flags to turn on some features.
        The "flags" string is a list of space-separated items. Each
        item is either an individual token, or a token in
        "key=value" format. The possible tokens are described
        below.
+       When passing an option that OpenSIPS is not aware of, it
+       will be blindly sent to the rtpengine daemon to be
+       processed.
           + via-branch=... - Include the "branch" value of one of
             the "Via" headers in the request to the RTP proxy.
             Possible values are: "1" - use the first "Via" header;
