@@ -524,7 +524,8 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 				ci.callid = &callid;
 				break;
 			case 'f':
-				ci.flags = pair->val.val.i32;
+				ci.cflags = flag_list_to_bitmask(&pair->val.val.st,
+				                                 FLAG_TYPE_BRANCH, FLAG_DELIM);
 				break;
 			case 'o':
 				*contact = pair->val.val.st;
@@ -538,8 +539,7 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 			ci.expires = pair->val.val.i32;
 			break;
 		case 'f':
-			ci.cflags = flag_list_to_bitmask(&pair->val.val.st,
-			                                 FLAG_TYPE_BRANCH, FLAG_DELIM);
+			ci.flags = pair->val.val.i32;
 			break;
 		case 'l':
 			ci.last_modified = pair->val.val.i64;
@@ -552,10 +552,7 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 			ci.path = &path;
 			break;
 		case 'q':
-			if (str2q(&ci.q, pair->val.val.st.s, pair->val.val.st.len) != 0) {
-				LM_ERR("bad q: %.*s\n", pair->val.val.st.len,
-				       pair->val.val.st.s);
-			}
+			ci.q = pair->val.val.i32;
 			break;
 		case 'r':
 			received = pair->val.val.st;
@@ -1216,7 +1213,7 @@ urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
 	}
 
 	if (res.count != 1)
-		LM_BUG("more than 1 results for AoR %.*s\n", _aor->len, _aor->s);
+		LM_BUG("more than 1 result for AoR %.*s\n", _aor->len, _aor->s);
 
 	r = NULL;
 

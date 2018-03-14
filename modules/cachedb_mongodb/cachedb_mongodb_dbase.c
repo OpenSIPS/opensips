@@ -25,6 +25,7 @@
 #include "../../ut.h"
 #include "../../pt.h"
 #include "../../cachedb/cachedb.h"
+#include "../../lib/osips_malloc.h"
 
 #include <string.h>
 
@@ -1703,7 +1704,7 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 	return 0;
 
 out_err:
-	cdb_free_entries(out_dict);
+	cdb_free_entries(out_dict, osips_pkg_free);
 	return -1;
 }
 
@@ -1832,11 +1833,12 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	cdb_res_init(res);
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
-	/* TODO: test this! */
 	if (mongo_cdb_filter_to_bson(filter, &bson_filter) != 0) {
 		LM_ERR("failed to build bson filter\n");
 		return -1;
 	}
+
+	dbg_bson("using filter: ", &bson_filter);
 
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find_with_opts(

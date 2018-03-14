@@ -34,6 +34,7 @@
 #include "urecord.h"
 #include "ucontact.h"
 #include "ul_callback.h"
+#include "ul_mod.h"
 
 enum ul_cluster_mode {
 	CM_NONE,
@@ -114,22 +115,22 @@ static inline int load_ul_api(usrloc_api_t *ul)
 
 /* internal module use only */
 #define bad_cluster_mode(mode) ((mode) < CM_NONE || (mode) > CM_SQL_ONLY)
+
 #define have_db_conns() \
-	(cluster_mode == CM_SQL_ONLY || \
-	 rr_persist == RRP_LOAD_FROM_SQL)
+	(cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL)
+
 #define have_cdb_conns() \
 	(cluster_mode == CM_EDGE_CACHEDB_ONLY || \
 	 cluster_mode == CM_CORE_CACHEDB_ONLY)
 
-extern enum ul_cluster_mode cluster_mode;
 static inline int have_mem_storage(void)
 {
 	return cluster_mode == CM_NONE ||
 	       cluster_mode == CM_EDGE ||
 	       cluster_mode == CM_CORE;
 }
+
 #define have_data_replication() \
-	(cluster_mode == CM_EDGE || \
-	 cluster_mode == CM_CORE)
+	(cluster_mode == CM_EDGE || cluster_mode == CM_CORE)
 
 #endif /* USRLOC_H */

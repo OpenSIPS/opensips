@@ -56,7 +56,7 @@ int cdb_dict_add_null(cdb_dict_t *dest, const char *key, int key_len);
 	cdb_dict_add_null(dest, key, strlen(key))
 
 void cdb_dict_add(struct cdb_pair *pair, cdb_dict_t *dict);
-void cdb_free_entries(cdb_dict_t *dict);
+void cdb_free_entries(cdb_dict_t *dict, void (*free_val_str) (void *val));
 
 struct cdb_pair *dict_fetch(const struct cdb_key *key, const cdb_dict_t *dict);
 int dict_has_pair(const cdb_dict_t *haystack, const struct cdb_pair *pair);

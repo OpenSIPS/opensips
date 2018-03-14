@@ -355,7 +355,7 @@ cdb_pair_t *nth_pair(const cdb_dict_t *dict, int nth)
 	return NULL;
 }
 
-void cdb_free_entries(cdb_dict_t *dict)
+void cdb_free_entries(cdb_dict_t *dict, void (*free_val_str) (void *val))
 {
 	struct list_head *_, *__;
 	cdb_pair_t *kv;
@@ -365,18 +365,17 @@ void cdb_free_entries(cdb_dict_t *dict)
 
 		switch (kv->val.type) {
 		case CDB_DICT:
-			cdb_free_entries(&kv->val.val.dict);
+			cdb_free_entries(&kv->val.val.dict, free_val_str);
 			break;
 		case CDB_STR:
-			pkg_free(kv->val.val.st.s);
+			if (free_val_str)
+				free_val_str(kv->val.val.st.s);
 			break;
 		default:
 			break;
 		}
 
 		list_del(&kv->list);
-
-		/* TODO: is it ok to impose alloc linearization like this? */
 		pkg_free(kv);
 	}
 }

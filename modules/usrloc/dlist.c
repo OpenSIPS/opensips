@@ -558,7 +558,7 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
 
 	for (p = root; p != NULL; p = p->next) {
 		ini_len = len;
-		if (cluster_mode != DB_ONLY) {
+		if (cluster_mode != CM_SQL_ONLY) {
 			shortage +=
 				get_domain_mem_ucontacts(p->d, buf+cur_pos, &len, flags,
 					part_idx, part_max, 0 /* don't add zeroed contact*/,
@@ -895,7 +895,7 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 	urecord_t *r;
 
 	/* if contact only in database */
-	if (cluster_mode == DB_ONLY) {
+	if (cluster_mode == CM_SQL_ONLY) {
 		virt_c.contact_id = contact_id;
 		virt_c.domain = d->name;
 

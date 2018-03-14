@@ -355,7 +355,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 				ptr->aor->len, ZSW(ptr->aor->s),
 				ptr->c.len, ZSW(ptr->c.s));
 
-			if (cluster_mode != CM_SQL_ONLY)
+			if (have_mem_storage())
 				update_stat( _r->slot->d->expires, 1);
 
 			t = ptr;
@@ -514,28 +514,38 @@ int db_delete_urecord(urecord_t* _r)
 
 int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 {
-	static str ctkey_pkg_buf;
+	static str ctkey_pkg_buf, ctkeyb64_pkg_buf;
 	cdb_pair_t *pair;
 	cdb_dict_t *ct_fields;
 	str subkey;
 	cdb_key_t contacts_key;
 	str printed_flags;
+	int len, base64len;
 
 	cdb_key_init(&contacts_key, "contacts");
+	len = ct->c.len + 1 + ct->callid.len;
+	base64len = calc_base64_encode_len(len);
 
-	if (pkg_str_extend(&ctkey_pkg_buf,
-	                   ct->c.len + 1 + ct->callid.len) < 0) {
+	if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
 		LM_ERR("oom\n");
 		return -1;
 	}
 
 	memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
-	ctkey_pkg_buf.s[ct->c.len] = '.';
+	ctkey_pkg_buf.s[ct->c.len] = ':';
 	memcpy(ctkey_pkg_buf.s + ct->c.len + 1, ct->callid.s,
 	       ct->callid.len);
 
-	subkey.s = ctkey_pkg_buf.s;
-	subkey.len = ct->c.len + 1 + ct->callid.len;
+	base64encode((unsigned char *)ctkeyb64_pkg_buf.s,
+	             (unsigned char *)ctkey_pkg_buf.s, len);
+
+	subkey.s = ctkeyb64_pkg_buf.s;
+	subkey.len = base64len;
 
 	pair = cdb_mk_pair(&contacts_key, &subkey);
 	if (!pair) {
@@ -548,6 +558,7 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 		goto done;
 	}
 
+	pair->val.type = CDB_DICT;
 	ct_fields = &pair->val.val.dict;
 	cdb_dict_init(ct_fields);
 
@@ -655,7 +666,7 @@ int cdb_flush_urecord(urecord_t *_r)
 				ct->aor->len, ZSW(ct->aor->s),
 				ct->c.len, ZSW(ct->c.s));
 
-			if (cluster_mode != CM_SQL_ONLY)
+			if (have_mem_storage())
 				update_stat( _r->slot->d->expires, 1);
 
 			/* Should we remove the contact from the cache? */
@@ -671,6 +682,9 @@ int cdb_flush_urecord(urecord_t *_r)
 			continue;
 		}
 
+		LM_DBG("adding AoR: %.*s, Contact: %.*s.\n",
+		       ct->aor->len, ZSW(ct->aor->s), ct->c.len, ZSW(ct->c.s));
+
 		/* Determine the operation we have to do */
 		old_state = ct->state;
 		op = st_flush_ucontact(ct);
@@ -685,11 +699,14 @@ int cdb_flush_urecord(urecord_t *_r)
 				LM_ERR("failed to prepare ct %s, AoR: %.*s ci: %.*s\n",
 				       op == 1 ? "insert" : "update", ct->aor->len, ct->aor->s,
 				       ct->callid.len, ct->callid.s);
+				ct->state = old_state;
 				goto err_free;
 			}
 			break;
 		}
 	}
+
+	dbg_cdb_dict("final ct changes: ", &ct_changes);
 
 	val.is_str = 1;
 	val.s = *ct->aor;
@@ -700,17 +717,18 @@ int cdb_flush_urecord(urecord_t *_r)
 	}
 
 	if (cdbf.update(cdbc, aor_filter, &ct_changes) < 0) {
-		LM_ERR("oom\n");
+		LM_ERR("cache update query for AoR %.*s failed!\n",
+		       _r->aor.len, _r->aor.s);
 		goto err_free;
 	}
 
 	cdb_free_filters(aor_filter);
-	cdb_free_entries(&ct_changes);
+	cdb_free_entries(&ct_changes, NULL);
 	return 0;
 
 err_free:
 	cdb_free_filters(aor_filter);
-	cdb_free_entries(&ct_changes);
+	cdb_free_entries(&ct_changes, NULL);
 	return -1;
 }
 

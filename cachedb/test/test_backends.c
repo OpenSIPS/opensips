@@ -23,6 +23,7 @@
 #include "../../str.h"
 #include "../../cachedb/cachedb.h"
 #include "../../cachedb/cachedb_cap.h"
+#include "../../lib/osips_malloc.h"
 #include "../../sr_module.h"
 #include "../../modparam.h"
 
@@ -320,7 +321,7 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 	    || !ok(test_query_unset(api, con, &cols), "test query-unset"))
 		return 0;
 
-	cdb_free_entries(&cols);
+	cdb_free_entries(&cols, osips_pkg_free);
 
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");

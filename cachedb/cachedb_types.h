@@ -132,6 +132,7 @@ static inline cdb_pair_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
 		str_cpy(&pair->subkey, subkey);
 	}
 
+	pair->val.type = CDB_NULL;
 	return pair;
 }
 
