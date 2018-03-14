@@ -94,8 +94,12 @@
 
 #define SKIP_OLDORIGIP		(1<<0)
 #define SKIP_OLDMEDIAIP		(1<<1)
-#define REMOVE_ON_TIMEOUT (sipping_flag && rm_on_to_flag)
 
+#define STORE_BRANCH_CTID \
+	(sipping_flag && (rm_on_to_flag || sipping_latency_flag))
+
+#define ctid_match_enabled(flags) \
+	((flags) & (rm_on_to_flag | sipping_latency_flag))
 
 static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
 static int fix_nated_contact_f(struct sip_msg *, char *, char *);
@@ -194,6 +198,8 @@ static int sipping_flag = -1;
 static char *sipping_flag_str = 0;
 static int rm_on_to_flag = -1;
 static char *rm_on_to_flag_str = 0;
+static int sipping_latency_flag = -1;
+static char *sipping_latency_flag_str = 0;
 static int natping_tcp = 0;
 static int natping_partitions = 1;
 
@@ -252,6 +258,8 @@ static param_export_t params[] = {
 	{"sipping_method",           STR_PARAM, &sipping_method.s      },
 	{"sipping_bflag",            STR_PARAM, &sipping_flag_str      },
 	{"sipping_bflag",            INT_PARAM, &sipping_flag          },
+	{"sipping_latency_flag",     STR_PARAM, &sipping_latency_flag_str},
+	{"sipping_latency_flag",     INT_PARAM, &sipping_latency_flag  },
 	{"remove_on_timeout_bflag",  STR_PARAM, &rm_on_to_flag_str     },
 	{"remove_on_timeout_bflag",  INT_PARAM, &rm_on_to_flag         },
 	{"natping_tcp",              INT_PARAM, &natping_tcp           },
@@ -559,6 +567,21 @@ mod_init(void)
 		rm_on_to_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH, rm_on_to_flag_str);
 		rm_on_to_flag = (rm_on_to_flag==-1)?0:(1<<rm_on_to_flag);
 
+		fix_flag_name(sipping_latency_flag_str, sipping_latency_flag);
+		sipping_latency_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH,
+		                                           sipping_latency_flag_str);
+		sipping_latency_flag = (sipping_latency_flag==-1)?
+		                                    0:(1<<sipping_latency_flag);
+
+		LM_DBG("sip ping flags: sipping_flag: %d rm_on_to_flag: %d "
+		       "sipping_latency_flag : %d\n", sipping_flag, rm_on_to_flag,
+		       sipping_latency_flag);
+
+		if (sipping_latency_flag && !sipping_flag) {
+			LM_ERR("SIP ping latency enabled, but sipping_flag is off "
+			       "-- ping latencies will not be computed!\n");
+		}
+
 		/* set reply function if SIP natping is enabled */
 		if (sipping_flag) {
 			if (sipping_from.s==0 || sipping_from.s[0]==0) {
@@ -572,23 +595,23 @@ mod_init(void)
 			sipping_method.len = strlen(sipping_method.s);
 			sipping_from.len = strlen(sipping_from.s);
 			exports.response_f = sipping_rpl_filter;
-			init_sip_ping(rm_on_to_flag);
+			init_sip_ping(STORE_BRANCH_CTID);
 		}
 
-		if (REMOVE_ON_TIMEOUT &&
+		if (STORE_BRANCH_CTID &&
 				0 == init_hash_table()) {
 			LM_ERR("failed to create hash table\n");
 			return -1;
 		}
 
-		if (REMOVE_ON_TIMEOUT &&
+		if (STORE_BRANCH_CTID &&
 		register_timer("pg-chk-timer", ping_checker_timer,
 		NULL, ping_checker_interval, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 			LM_ERR("failed to register ping checker timer\n");
 			return -1;
 		}
 
-		if (REMOVE_ON_TIMEOUT) {
+		if (STORE_BRANCH_CTID) {
 			if (ping_threshold > natping_interval) {
 				LM_WARN("Maximum ping threshold must be smaller than "
 						"the interval between two pings! Setting threshold "
@@ -1359,7 +1382,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
 			((unsigned int)(unsigned long)timer_idx)*natping_interval+
 			(ticks%natping_interval), natping_partitions*natping_interval,
-			REMOVE_ON_TIMEOUT?1:0);
+			STORE_BRANCH_CTID?1:0);
 
 		if (rval<0) {
 			LM_ERR("failed to fetch contacts\n");
@@ -1378,7 +1401,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			rval = ul.get_domain_ucontacts(d, buf, cblen, (ping_nated_only?ul.nat_flag:0),
 				((unsigned int)(unsigned long)timer_idx)*natping_interval+
 				(ticks%natping_interval), natping_partitions*natping_interval,
-				REMOVE_ON_TIMEOUT?1:0);
+				STORE_BRANCH_CTID?1:0);
 			if (rval != 0) {
 				goto done;
 			}
@@ -1407,7 +1430,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			memcpy(&next_hop, cp, sizeof(next_hop));
 			cp = (char*)cp + sizeof(next_hop);
 
-			if (REMOVE_ON_TIMEOUT) {
+			if (STORE_BRANCH_CTID) {
 				memcpy(&contact_id, cp, sizeof(contact_id));
 				cp = (char*)cp + sizeof(contact_id);
 			}
@@ -1442,7 +1465,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 			if ((flags & sipping_flag) &&
 			    (opt.s = build_sipping(d, &c, send_sock, &path, &opt.len,
-									   contact_id ,flags&rm_on_to_flag))) {
+			                         contact_id, ctid_match_enabled(flags)))) {
 				if (msg_send(send_sock, next_hop.proto, &to, 0, opt.s, opt.len, NULL) < 0) {
 					LM_ERR("sip msg_send failed\n");
 				}
@@ -1746,7 +1769,7 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 
 			shm_free(prev);
 
-			if (ul.delete_ucontact_from_id &&
+			if (rm_on_to_flag && ul.delete_ucontact_from_id &&
 				ul.delete_ucontact_from_id(_d, _contact_id, 0) < 0) {
 				/* we keep going since it might work for other contacts */
 				LM_ERR("failed to remove ucontact from db\n");

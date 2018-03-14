@@ -63,6 +63,7 @@
 		_p += sizeof(_s)-1;\
 	}while(0)
 
+extern  usrloc_api_t ul;
 /* info used to generate SIP ping requests */
 static int  sipping_fromtag = 0;
 static char sipping_callid_buf[8];
@@ -70,10 +71,10 @@ static int  sipping_callid_cnt = 0;
 static str  sipping_callid = {0,0};
 static str  sipping_from = {0,0};
 static str  sipping_method = {"OPTIONS",7};
-static int  remove_on_timeout=0;
+static int  match_ctid=0;
 
 
-static void init_sip_ping(int rto)
+static void init_sip_ping(int _match_ctid)
 {
 	int len;
 	char *p;
@@ -88,18 +89,20 @@ static void init_sip_ping(int rto)
 	sipping_callid.len = 8-len;
 	/* callid counter part */
 	sipping_callid_cnt = rand();
-	remove_on_timeout=(rto>0?1:0);
+	match_ctid=(_match_ctid>0?1:0);
 }
 
 
 static int parse_branch(str branch)
 {
 	unsigned int hash_id;
-	int cid_len;
+	int cid_len, sipping_latency;
 	char *end;
 	uint64_t contact_id=0;
+	struct timeval timeval_st;
 
 	struct ping_cell *p_cell;
+	gettimeofday(&timeval_st, NULL);
 
 	if (branch.len < BMAGIC_LEN
 			|| memcmp(branch.s, BMAGIC, BMAGIC_LEN)) {
@@ -146,6 +149,17 @@ static int parse_branch(str branch)
 		return 0;
 	}
 
+	sipping_latency =
+	    (timeval_st.tv_sec - p_cell->last_send_time.tv_sec) * 1000000 +
+		(timeval_st.tv_usec - p_cell->last_send_time.tv_usec);
+
+	LM_DBG("update_sipping_latency with %d us\n", sipping_latency);
+	if (ul.update_sipping_latency &&
+		ul.update_sipping_latency(p_cell->d, p_cell->contact_id,
+		                          sipping_latency) < 0) {
+		/* we keep going since it might work for other contacts */
+		LM_ERR("failed to update_sipping_latency ucontact from db\n");
+	}
 	/* when we receive answer to a ping we consider all pings sent
 	 * confirmed, because what we want to know is that the contact
 	 * is alive; only remove the cell from the hash; will be
@@ -190,10 +204,10 @@ static int sipping_rpl_filter(struct sip_msg *rpl)
 	rpl->callid->body.s[sipping_callid.len]!='-')
 		goto skip;
 
-	LM_DBG("reply for SIP natping filtered\n");
+	LM_DBG("reply for SIP natping filtered (%d)\n", match_ctid);
 	/* it's a reply to a SIP NAT ping -> absorb it and stop any
 	 * further processing of it */
-	if (remove_on_timeout && parse_branch(rpl->via1->branch->value))
+	if (match_ctid && parse_branch(rpl->via1->branch->value))
 			goto skip;
 
 	return 0;
@@ -209,21 +223,23 @@ error:
 
 static inline int
 build_branch(char *branch, int *size,
-		str *curi, udomain_t *d, uint64_t contact_id, int rm_on_to)
+		str *curi, udomain_t *d, uint64_t contact_id, int match_ctid)
 {
-
 	int hash_id, ret, label;
 	time_t timestamp;
 	struct ping_cell *p_cell;
 	struct nh_table *htable;
+	struct timeval timeval_st;
 
 	/* we want all contact pings from a contact in one bucket*/
 	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
 
-	if (rm_on_to) {
+	if (match_ctid) {
 		/* get the time before the lock - we may wait a little bit
 		 * on this lock */
 		timestamp=now;
+		gettimeofday(&timeval_st, NULL);
+
 		lock_hash(hash_id);
 		if ((p_cell=get_cell(hash_id, contact_id))==NULL) {
 			if (0 == (p_cell = build_p_cell(hash_id, d, contact_id))) {
@@ -234,6 +250,7 @@ build_branch(char *branch, int *size,
 		}
 
 		p_cell->timestamp = timestamp;
+		p_cell->last_send_time = timeval_st;
 		unlock_hash(hash_id);
 
 		htable = get_htable();
@@ -263,7 +280,7 @@ build_branch(char *branch, int *size,
 
 	branch += BMAGIC_LEN;
 
-	if (rm_on_to) {
+	if (match_ctid) {
 		ret=int2reverse_hex(&branch, size, hash_id);
 		if (ret < 0)
 			goto out_nospace;
@@ -300,7 +317,7 @@ out_nospace:
 /* build the buffer of a SIP ping request */
 static inline char*
 build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
-		int *len_p, uint64_t contact_id, int rm_on_to)
+		int *len_p, uint64_t contact_id, int match_ctid)
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
@@ -309,16 +326,16 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	str st;
 	int len;
 
-	int  bsize = 100;
+	int  bsize = 120;
 	str  sbranch;
-	char branch[100];
+	char branch[120];
 	char *bbuild = branch;
 
 	memcpy(bbuild, BSTART, sizeof(BSTART) - 1);
 	bbuild += sizeof(BSTART) - 1;
 	bsize -= (bbuild - branch);
 
-	build_branch( bbuild, &bsize, curi, d, contact_id, rm_on_to);
+	build_branch( bbuild, &bsize, curi, d, contact_id, match_ctid);
 
 	sbranch.s = branch;
 	sbranch.len = strlen(branch);

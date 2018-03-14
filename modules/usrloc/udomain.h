@@ -151,6 +151,13 @@ void lock_ulslot(udomain_t* _d, int slot);
  */
 typedef void (*unlock_ulslot_t)(udomain_t* _d, int slot);
 void unlock_ulslot(udomain_t* _d, int slot);
+#define _unlock_ulslot(domain, contact_id) \
+	do { \
+		unsigned int _rlab; \
+		unsigned short _aorh, _clab; \
+		unpack_indexes(contact_id, &_aorh, &_rlab, &_clab); \
+		unlock_ulslot(domain, _aorh & ((domain)->size - 1)); \
+	} while (0)
 
 /* ===== module interface ======= */
 

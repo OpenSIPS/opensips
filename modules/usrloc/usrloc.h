@@ -77,6 +77,7 @@ typedef struct usrloc_api {
 	put_ucontact_key_t        put_ucontact_key;
 
 	register_ulcb_t           register_ulcb;
+	update_sipping_latency_t  update_sipping_latency;
 } usrloc_api_t;
 
 
