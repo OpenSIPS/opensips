@@ -111,6 +111,12 @@ typedef struct cachedb_funcs_t {
 	 * shall _always_ perform an "UPSERT" operation wherever possible,
 	 * i.e. it will insert any missing rows or columns (keys) without failing.
 	 *
+	 * Key naming restrictions: apparently, there are none. However, depending
+	 * on the destination backend, you might need to base64encode() some of
+	 * your keys and/or subkeys. For example, any keys containing '.' will
+	 * cause MongoDB to chop them and create something resembling:
+	 * "key1: {key2: value}" instead of "key1.key2: value".
+	 *
 	 * Regarding the TTL support -- the input allows for maximal flexibility,
 	 * allowing calling code to set a TTL per either each key/value or
 	 * key.subkey/value pair. From here onwards, it is up to the cacheDB API
