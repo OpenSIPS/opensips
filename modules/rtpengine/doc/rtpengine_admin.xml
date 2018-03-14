@@ -462,6 +462,23 @@ rtpengine_offer();
 				record the call or not. When using this parameter, you may pass further
 				information in the <quote>metadata</quote>.
 				</para></listitem>
+				<listitem><para>
+				<emphasis>transcode-CODEC</emphasis> - used only for offer, indicates that
+				rtpengine should transcode the CODEC towards the B-side. Example:
+				<emphasis>transcode-PCMA</emphasis> will present to the B-side the PCMA codec.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>codec-strip-CODEC</emphasis> - used only for offer, indicates that
+				the A-side of the call will not end up talking CODEC. Example:
+				<emphasis>codec-strip-PCMA</emphasis> will prevent the A-side from receiving
+				the PCMA codec.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>codec-mask-CODEC</emphasis> - used only for offer, indicates that
+				the A-side will use the CODEC, but it will not be presented to the B-side. Example:
+				<emphasis>codec-mask-PCMA</emphasis> will make the A-side receive the PCMA codec,
+				but B-side will use something else.
+				</para></listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem><para>
@@ -543,6 +560,18 @@ $json(recording_keys/toDomain) = $dlg_val(recording_to_domain);
 
 $var(rtpengine_flags) = $var(rtpengine_flags) + " metadata=" + $(json(recording_keys){s.encode.hexa});
 rtpengine_offer("$var(rtpengine_flags)");
+...
+</programlisting>
+                </example>
+		<example>
+		<title><function>rtpengine_offer</function> usage for transcoding</title>
+		<programlisting format="linespecific">
+...
+# Goal: make A-side talk PCMA and B-side talk opus
+# * do not present PCMA to B-side: codec-mask-PCMA, but use it on A-side
+# * do not use opus for A-side: codec-strip-opus
+# * offer opus to B-side: transcode-opus
+rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 ...
 </programlisting>
                 </example>
