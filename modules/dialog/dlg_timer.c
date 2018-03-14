@@ -30,6 +30,7 @@
 #include "dlg_timer.h"
 #include "dlg_hash.h"
 #include "dlg_req_within.h"
+#include "dlg_replication.h"
 
 struct dlg_timer *d_timer = 0;
 dlg_timer_handler timer_hdl = 0;
@@ -943,6 +944,11 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 		dlg = it->dlg;
 		next=it->next;
 
+		if (dialog_repl_cluster && get_repltag_state(dlg) == REPLTAG_STATE_BACKUP) {
+			it = next;
+			continue;
+		}
+
 		/* do not ping ended dialogs - we might have missed them earlier or
 		 * might have terminated in the mean time - we'll clean them up on
 		 * our next iteration */
@@ -1040,6 +1046,11 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 		dlg = it->dlg;
 		next=it->next;
+
+		if (dialog_repl_cluster && get_repltag_state(dlg) == REPLTAG_STATE_BACKUP) {
+			it = next;
+			continue;
+		}
 
 		/* do not ping ended dialogs - we might have missed them earlier or
 		 * might have terminated in the mean time - we'll clean them up on

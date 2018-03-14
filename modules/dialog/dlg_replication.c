@@ -232,13 +232,11 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	/* reference the dialog as kept in the timer list */
 	ref_dlg_unsafe(dlg, 1);
 
-	LM_DBG("Received initial timeout of %d for dialog %.*s, safe = %d\n", dlg->tl.timeout, callid.len, callid.s, safe);
+	LM_DBG("Received initial timeout of %d for dialog %.*s, safe = %d\n",
+		dlg->tl.timeout, callid.len, callid.s, safe);
 
 	dlg->lifetime = 0;
 
-	/*
-	Do not replicate the pinging - we might terminate dialogs badly when running
-	as backup
 	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 		if (insert_ping_timer(dlg) != 0)
 			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
@@ -246,7 +244,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 			ref_dlg_unsafe(dlg, 1);
 		}
 	}
-	 */
 
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
