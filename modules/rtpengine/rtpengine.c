@@ -75,6 +75,7 @@
 #include "../../dset.h"
 #include "../../route.h"
 #include "../../modules/tm/tm_load.h"
+#include "../../lib/cJSON.h"
 #include "rtpengine.h"
 #include "rtpengine_funcs.h"
 #include "bencode.h"
@@ -112,13 +113,12 @@
 
 #define	CPORT		"22222"
 
-#define ctx_rtpeset_get() \
-	((struct rtpe_set*)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, ctx_rtpeset_idx))
+#define rtpe_ctx_tryget() \
+	(current_processing_ctx == NULL ? NULL : \
+	 ((struct rtpe_ctx *)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, rtpe_ctx_idx)))
 
-#define ctx_rtpeset_set(_set) \
-	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, ctx_rtpeset_idx, _set)
-
-
+#define rtpe_ctx_set(_ctx) \
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, rtpe_ctx_idx, _ctx)
 
 
 enum rtpe_operation {
@@ -128,6 +128,18 @@ enum rtpe_operation {
 	OP_START_RECORDING,
 	OP_QUERY,
 };
+
+struct rtpe_stats {
+	bencode_item_t *dict;
+	bencode_buffer_t buf;
+	str json;
+};
+
+struct rtpe_ctx {
+	struct rtpe_stats *stats;
+	struct rtpe_set *set;
+} rtpe_ctx_t;
+
 
 struct ng_flags_parse {
 	int via, to, packetize, transport;
@@ -180,6 +192,7 @@ static void mod_destroy(void);
 
 /* Pseudo-Variables */
 static int pv_get_rtpstat_f(struct sip_msg *, pv_param_t *, pv_value_t *);
+static int pv_get_rtpquery_f(struct sip_msg *, pv_param_t *, pv_value_t *);
 
 /*mi commands*/
 static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
@@ -190,6 +203,7 @@ static struct mi_root* mi_teardown_call(struct mi_root* cmd_tree,
 		void* param);
 
 
+static int rtpengine_stats_used = 0;
 static int rtpengine_disable_tout = 60;
 static int rtpengine_retr = 5;
 static int rtpengine_tout = 1;
@@ -201,7 +215,7 @@ static char *setid_avp_param = NULL;
 static char ** rtpe_strings=0;
 static int rtpe_sets=0; /*used in rtpengine_set_store()*/
 static int rtpe_set_count = 0;
-static int ctx_rtpeset_idx = -1;
+static int rtpe_ctx_idx = -1;
 /* RTP proxy balancing list */
 struct rtpe_set_head * rtpe_set_list =0;
 struct rtpe_set * default_rtpe_set=0;
@@ -282,9 +296,17 @@ static cmd_export_t cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
+static int pv_rtpengine_stats_used(pv_spec_p sp, str *in)
+{
+	rtpengine_stats_used = 1;
+	return 0;
+}
+
 static pv_export_t mod_pvs[] = {
 	{{"rtpstat", (sizeof("rtpstat")-1)}, /* RTP-Statistics */
-		1000, pv_get_rtpstat_f, 0, 0, 0, 0, 0},
+		1000, pv_get_rtpstat_f, 0, pv_rtpengine_stats_used, 0, 0, 0},
+	{{"rtpquery", (sizeof("rtpquery")-1)},
+		1000, pv_get_rtpquery_f, 0, pv_rtpengine_stats_used, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -364,7 +386,56 @@ int msg_has_sdp(struct sip_msg *msg)
 	return 0;
 }
 
+static void rtpe_stats_free(struct rtpe_stats *stats)
+{
+	if (stats->json.s)
+		cJSON_PurgeString(stats->json.s);
+	bencode_buffer_free(&stats->buf);
+}
 
+static void rtpe_ctx_free(void *param)
+{
+	struct rtpe_ctx *ctx = (struct rtpe_ctx *)param;
+	if (ctx) {
+		if (ctx->stats) {
+			rtpe_stats_free(ctx->stats);
+			pkg_free(ctx->stats);
+		}
+		pkg_free(ctx);
+	}
+}
+
+static inline struct rtpe_ctx *rtpe_ctx_get(void)
+{
+	struct rtpe_ctx *ctx = rtpe_ctx_tryget();
+	if (!ctx) {
+		if (!current_processing_ctx) {
+			LM_ERR("no processing ctx found - cannot use rtpengine context!\n");
+			return NULL;
+		}
+		ctx = pkg_malloc(sizeof(*ctx));
+		if (!ctx) {
+			LM_ERR("not enough pkg memory!\n");
+			return NULL;
+		}
+		memset(ctx, 0, sizeof(*ctx));
+		rtpe_ctx_set(ctx);
+	}
+	return ctx;
+}
+
+static inline void rtpe_ctx_set_fill(struct rtpe_set *set)
+{
+	struct rtpe_ctx *ctx = rtpe_ctx_get();
+	if (ctx)
+		ctx->set = set;
+}
+
+static inline struct rtpe_set *rtpe_ctx_set_get(void)
+{
+	struct rtpe_ctx *ctx = rtpe_ctx_tryget();
+	return ctx ? ctx->set: NULL;
+}
 
 static inline int str_eq(const str *p, const char *q) {
 	int l = strlen(q);
@@ -813,7 +884,7 @@ mod_init(void)
 	unsigned short avp_flags;
 	str s;
 
-	ctx_rtpeset_idx = context_register_ptr(CONTEXT_GLOBAL, NULL);
+	rtpe_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, rtpe_ctx_free);
 
 	/* any rtpengine configured? */
 	if(rtpe_set_list)
@@ -1310,6 +1381,7 @@ error:
 }
 #undef BCHECK
 
+
 static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_msg *msg,
 	enum rtpe_operation op, const char *flags_str, str *body_out, pv_spec_t *spvar)
 {
@@ -1427,7 +1499,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		goto error;
 	}
 
-	if ( (set=ctx_rtpeset_get())==NULL )
+	if ( (set=rtpe_ctx_set_get())==NULL )
 		set = default_rtpe_set;
 
 	do {
@@ -1479,9 +1551,30 @@ static int rtpe_function_call_simple(struct sip_msg *msg, enum rtpe_operation op
 		const char *flags_str, pv_spec_t *spvar)
 {
 	bencode_buffer_t bencbuf;
+	struct rtpe_ctx *ctx;
+	bencode_item_t *ret;
 
-	if (!rtpe_function_call(&bencbuf, msg, op, flags_str, NULL, spvar))
+	ret = rtpe_function_call(&bencbuf, msg, op, flags_str, NULL, spvar);
+	if (!ret)
 		return -1;
+
+	if (op == OP_DELETE && rtpengine_stats_used) {
+		/* if statistics are to be used, store stats in the ctx, if possible */
+		if ((ctx = rtpe_ctx_get())) {
+			if (ctx->stats)
+				rtpe_stats_free(ctx->stats); /* release the buffer */
+			else
+				ctx->stats = pkg_malloc(sizeof *ctx->stats);
+			if (ctx->stats) {
+				ctx->stats->buf = bencbuf;
+				ctx->stats->dict = ret;
+				ctx->stats->json.s = 0;
+				/* return here to prevent buffer from being freed */
+				return 1;
+			} else
+				LM_WARN("no more pkg memory - cannot cache stats!\n");
+		}
+	}
 
 	bencode_buffer_free(&bencbuf);
 	return 1;
@@ -1816,7 +1909,7 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 		return -1;
 	}
 
-	ctx_rtpeset_set( set );
+	rtpe_ctx_set_fill( set );
 	LM_DBG("using rtpengine set %d\n", setid_val.n);
 
 	return 1;
@@ -1856,7 +1949,7 @@ set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
 	rtpl = set_param;
 
 	if(rtpl->rset != NULL) {
-		ctx_rtpeset_set( rtpl->rset );
+		rtpe_ctx_set_fill( rtpl->rset );
 	} else {
 		if(pv_get_spec_value(msg, &rtpl->rpv, &val)<0) {
 			LM_ERR("cannot evaluate pv param\n");
@@ -1871,7 +1964,7 @@ set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
 			LM_ERR("could not locate rtpengine set %d\n", val.ri);
 			return -1;
 		}
-		ctx_rtpeset_set( set );
+		rtpe_ctx_set_fill( set );
 	}
 	return 1;
 }
@@ -2037,6 +2130,57 @@ start_recording_f(struct sip_msg* msg, pv_spec_t *spvar)
 	return rtpe_function_call_simple(msg, OP_START_RECORDING, NULL, spvar);
 }
 
+/**
+ * Gets the rtp stats and tries to store them in a context, if that's possible
+ * Returns:
+ *   1: success, stored in ctx and/or taken from ctx
+ *   0: query ok, but didn't get to save the buffer in ctx
+ *  -1: failure
+ */
+static int rtpe_fetch_stats(struct sip_msg *msg, bencode_buffer_t *retbuf, bencode_item_t **retdict)
+{
+	/* we need a ctx */
+	struct rtpe_ctx *ctx;
+	bencode_item_t *dict;
+	static bencode_buffer_t bencbuf;
+
+	/* caching mechanism for statistics */
+	ctx = rtpe_ctx_get();
+	if (ctx) {
+		/* allocate stats now */
+		if (ctx->stats) {
+			*retbuf = ctx->stats->buf;
+			*retdict = ctx->stats->dict;
+			return 1;
+		}
+		ctx->stats = pkg_malloc(sizeof *ctx->stats);
+		if (!ctx->stats) {
+			LM_ERR("not enough pkg for stats!\n");
+			/* cannot store stats */
+			ctx = NULL;
+		} else
+			ctx->stats->json.s = NULL;
+	}
+
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_QUERY, NULL, NULL, NULL);
+	if (!dict)
+		return -1;
+
+	/* if thers's no ctx, we make the request on the spot, but we don't save
+	 * the reply, because we don't have where */
+	if (ctx) {
+		ctx->stats->buf = bencbuf;
+		ctx->stats->dict = dict;
+		*retbuf = bencbuf;
+		*retdict = dict;
+		return 1;
+	} else {
+		*retbuf = bencbuf;
+		*retdict = dict;
+		return 0;
+	}
+}
+
 /*
  * Returns the current RTP-Statistics from the RTP-Proxy
  */
@@ -2048,9 +2192,10 @@ pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
 	bencode_item_t *dict, *tot, *rtp, *rtcp;
 	static char buf[256];
 	str ret;
+	int rc;
 
-	dict = rtpe_function_call_ok(&bencbuf, msg, OP_QUERY, NULL, NULL, NULL);
-	if (!dict)
+	rc = rtpe_fetch_stats(msg, &bencbuf, &dict);
+	if (rc < 0)
 		return -1;
 
 	tot = bencode_dictionary_get_expect(dict, "totals", BENCODE_DICTIONARY);
@@ -2069,11 +2214,112 @@ pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
 		bencode_dictionary_get_integer(rtcp, "packets", -1),
 		bencode_dictionary_get_integer(rtcp, "errors", -1));
 
-	bencode_buffer_free(&bencbuf);
+	if (!rc)
+		bencode_buffer_free(&bencbuf);
 	return pv_get_strval(msg, param, res, &ret);
 
 error:
-	bencode_buffer_free(&bencbuf);
+	if (!rc)
+		bencode_buffer_free(&bencbuf);
+	return -1;
+}
+
+static cJSON *bson2json(bencode_item_t *i)
+{
+	str stmp;
+	cJSON *ret, *tmp;
+	bencode_item_t *c;
+	switch (i->type) {
+		case BENCODE_STRING:
+			return cJSON_CreateStr(i->iov[1].iov_base, i->iov[1].iov_len);
+
+		case BENCODE_INTEGER:
+			return cJSON_CreateNumber(i->value);
+
+		case BENCODE_LIST:
+			ret = cJSON_CreateArray();
+			for (c = i->child; c; c = c->sibling) {
+				tmp = bson2json(c);
+				if (!tmp) {
+					cJSON_Delete(ret);
+					return NULL;
+				}
+				cJSON_AddItemToArray(ret, tmp);
+			}
+			return ret;
+
+		case BENCODE_DICTIONARY:
+			ret = cJSON_CreateObject();
+			for (c = i->child; c; c = c->sibling) {
+				/* first is key */
+				stmp.s = c->iov[1].iov_base;
+				stmp.len = c->iov[1].iov_len;
+				/* next is value */
+				c = c->sibling;
+				tmp = bson2json(c);
+				if (!tmp) {
+					cJSON_Delete(ret);
+					return NULL;
+				}
+				_cJSON_AddItemToObject(ret, &stmp, tmp);
+			}
+			return ret;
+
+		default:
+			LM_ERR("unsupported bson type %d\n", i->type);
+			return NULL;
+	}
+}
+
+static int
+pv_get_rtpquery_f(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	static char query_buf[512];
+	bencode_buffer_t bencbuf;
+	bencode_item_t *dict;
+	struct rtpe_ctx *ctx;
+	cJSON *out = NULL;
+	str ret;
+
+	if (rtpe_fetch_stats(msg, &bencbuf, &dict) < 0)
+		return -1;
+	ctx = rtpe_ctx_tryget();
+
+	/* TODO: handle reply */
+	out = bson2json(dict);
+	if (!out) {
+		LM_ERR("cannot convert bson to json!\n");
+		goto error;
+	}
+	if (ctx) {
+		/* we have ctx, just print it there */
+		ret.s = cJSON_PrintUnformatted(out);
+		if (!ret.s) {
+			LM_ERR("cannot print unformatted json!\n");
+			goto error;
+		}
+		ret.len = strlen(ret.s);
+		ctx->stats->json = ret;
+	} else {
+		if (cJSON_PrintPreallocated(out, query_buf, sizeof(query_buf), 0) == 0) {
+			LM_ERR("cannot print in preallocated buffer!\n");
+			goto error;
+		}
+		ret.s = query_buf;
+		ret.len = strlen(ret.s);
+		/* also release the buffer */
+		bencode_buffer_free(&bencbuf);
+	}
+
+	cJSON_Delete(out);
+	return pv_get_strval(msg, param, res, &ret);
+
+error:
+	if (!ctx)
+		bencode_buffer_free(&bencbuf);
+	if (out)
+		cJSON_Delete(out);
 	return -1;
 }
 

@@ -731,8 +731,7 @@ rtpengine_start_recording();
 			<title><function moreinfo="none">$rtpstat</function></title>
 			<para>
 			Returns the &rtp; statistics from the &rtp; proxy. The &rtp; statistics from the &rtp; proxy
-			are provided as a string and it does contain several packet counters. The statistics
-			must be retrieved before the session is deleted	(before <function>rtpengine_delete()</function>).
+			are provided as a string and it does contain several packet counters.
 			</para>
 
 		<example>
@@ -743,7 +742,30 @@ rtpengine_start_recording();
 ...
 		</programlisting>
 		</example>
-	        </section>
+		</section>
+		<section>
+			<title><function moreinfo="none">$rtpquery</function></title>
+			<para>
+			Does a Query command to the &rtp; proxy and returns the answer in a JSON format.
+			You can use this variable to fetch arbitrary data from the &rtp; proxy such as
+			raw statistics about the call, or other indicators.
+			</para>
+			<para>
+			You can use a <emphasis>$json()</emphasis> variable to parse
+			its output and extract any information from the query, such as
+			RTP statistics, or MOS values.
+			</para>
+
+		<example>
+		<title>$rtpquery Usage</title>
+		<programlisting format="linespecific">
+...
+	$json(reply) := $rtpquery;
+	xlog("Total RTP Stats: $json(reply/totals)\n");
+...
+		</programlisting>
+		</example>
+		</section>
 
 	</section>
 

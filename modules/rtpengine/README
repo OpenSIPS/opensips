@@ -75,6 +75,7 @@ Richard Fuchs
         1.6. Exported Pseudo Variables
 
               1.6.1. $rtpstat
+              1.6.2. $rtpquery
 
         1.7. MI Commands
 
@@ -102,9 +103,10 @@ Richard Fuchs
    1.14. rtpengine_manage usage
    1.15. rtpengine_start_recording usage
    1.16. $rtpstat Usage
-   1.17. rtpengine_enable usage
-   1.18. rtpengine_show usage
-   1.19. teardown usage
+   1.17. $rtpquery Usage
+   1.18. rtpengine_enable usage
+   1.19. rtpengine_show usage
+   1.20. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -626,13 +628,28 @@ rtpengine_start_recording();
 
    Returns the RTP statistics from the RTP proxy. The RTP
    statistics from the RTP proxy are provided as a string and it
-   does contain several packet counters. The statistics must be
-   retrieved before the session is deleted (before
-   rtpengine_delete()).
+   does contain several packet counters.
 
    Example 1.16. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
+...
+
+1.6.2. $rtpquery
+
+   Does a Query command to the RTP proxy and returns the answer in
+   a JSON format. You can use this variable to fetch arbitrary
+   data from the RTP proxy such as raw statistics about the call,
+   or other indicators.
+
+   You can use a $json() variable to parse its output and extract
+   any information from the query, such as RTP statistics, or MOS
+   values.
+
+   Example 1.17. $rtpquery Usage
+...
+        $json(reply) := $rtpquery;
+        xlog("Total RTP Stats: $json(reply/totals)\n");
 ...
 
 1.7. MI Commands
@@ -650,7 +667,7 @@ rtpengine_start_recording();
    NOTE: if a RTP proxy is defined multiple times (in the same or
    different set), all of its instances will be enables/disabled.
 
-   Example 1.17.  rtpengine_enable usage
+   Example 1.18.  rtpengine_enable usage
 ...
 $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 ...
@@ -662,7 +679,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.18.  rtpengine_show usage
+   Example 1.19.  rtpengine_show usage
 ...
 $ opensipsctl fifo rtpengine_show
 ...
@@ -677,7 +694,7 @@ $ opensipsctl fifo rtpengine_show
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.19.  teardown usage
+   Example 1.20.  teardown usage
 ...
 $ opensipsctl fifo teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
