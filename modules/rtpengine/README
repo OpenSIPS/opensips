@@ -96,14 +96,15 @@ Richard Fuchs
    1.8. rtpengine_offer usage
    1.9. rtpengine_offer usage with body replace
    1.10. rtpengine_offer usage with call recording
-   1.11. rtpengine_answer usage
-   1.12. rtpengine_delete usage
-   1.13. rtpengine_manage usage
-   1.14. rtpengine_start_recording usage
-   1.15. $rtpstat Usage
-   1.16. rtpengine_enable usage
-   1.17. rtpengine_show usage
-   1.18. teardown usage
+   1.11. rtpengine_offer usage for transcoding
+   1.12. rtpengine_answer usage
+   1.13. rtpengine_delete usage
+   1.14. rtpengine_manage usage
+   1.15. rtpengine_start_recording usage
+   1.16. $rtpstat Usage
+   1.17. rtpengine_enable usage
+   1.18. rtpengine_show usage
+   1.19. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -447,6 +448,19 @@ rtpengine_offer();
             should record the call or not. When using this
             parameter, you may pass further information in the
             "metadata".
+          + transcode-CODEC - used only for offer, indicates that
+            rtpengine should transcode the CODEC towards the
+            B-side. Example: transcode-PCMA will present to the
+            B-side the PCMA codec.
+          + codec-strip-CODEC - used only for offer, indicates
+            that the A-side of the call will not end up talking
+            CODEC. Example: codec-strip-PCMA will prevent the
+            A-side from receiving the PCMA codec.
+          + codec-mask-CODEC - used only for offer, indicates that
+            the A-side will use the CODEC, but it will not be
+            presented to the B-side. Example: codec-mask-PCMA will
+            make the A-side receive the PCMA codec, but B-side
+            will use something else.
      * sock_pvar(optional) - pvar used to store the rtpengine
        socket chosen for this call.
      * sdp_pvar(optional) - pvar used to store the full SDP
@@ -517,6 +531,16 @@ cording_keys){s.encode.hexa});
 rtpengine_offer("$var(rtpengine_flags)");
 ...
 
+   Example 1.11. rtpengine_offer usage for transcoding
+...
+# Goal: make A-side talk PCMA and B-side talk opus
+# * do not present PCMA to B-side: codec-mask-PCMA, but use it on A-side
+# * do not use opus for A-side: codec-strip-opus
+# * offer opus to B-side: transcode-opus
+rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
+");
+...
+
 1.5.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
@@ -529,7 +553,7 @@ rtpengine_offer("$var(rtpengine_flags)");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.11. rtpengine_answer usage
+   Example 1.12. rtpengine_answer usage
 
    See rtpengine_offer() function example above for examples.
 
@@ -543,7 +567,7 @@ rtpengine_offer("$var(rtpengine_flags)");
 
    This function can be used from ANY_ROUTE.
 
-   Example 1.12. rtpengine_delete usage
+   Example 1.13. rtpengine_delete usage
 ...
 rtpengine_delete();
 ...
@@ -574,7 +598,7 @@ rtpengine_delete();
 
    This function can be used from ANY_ROUTE.
 
-   Example 1.13. rtpengine_manage usage
+   Example 1.14. rtpengine_manage usage
 ...
 rtpengine_manage();
 ...
@@ -591,7 +615,7 @@ rtpengine_manage();
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.14. rtpengine_start_recording usage
+   Example 1.15. rtpengine_start_recording usage
 ...
 rtpengine_start_recording();
 ...
@@ -606,7 +630,7 @@ rtpengine_start_recording();
    retrieved before the session is deleted (before
    rtpengine_delete()).
 
-   Example 1.15. $rtpstat Usage
+   Example 1.16. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -626,7 +650,7 @@ rtpengine_start_recording();
    NOTE: if a RTP proxy is defined multiple times (in the same or
    different set), all of its instances will be enables/disabled.
 
-   Example 1.16.  rtpengine_enable usage
+   Example 1.17.  rtpengine_enable usage
 ...
 $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 ...
@@ -638,7 +662,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.17.  rtpengine_show usage
+   Example 1.18.  rtpengine_show usage
 ...
 $ opensipsctl fifo rtpengine_show
 ...
@@ -653,7 +677,7 @@ $ opensipsctl fifo rtpengine_show
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.18.  teardown usage
+   Example 1.19.  teardown usage
 ...
 $ opensipsctl fifo teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
