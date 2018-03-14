@@ -276,6 +276,8 @@ rtpengine_offer();
 			<para>The <quote>flags</quote> string is a list of space-separated items. Each item
 			is either an individual token, or a token in <quote>key=value</quote> format. The
 			possible tokens are described below.</para>
+			<para> When passing an option that &osips; is not aware of, it will be
+			blindly sent to the rtpengine daemon to be processed.</para>
 			<itemizedlist>
 				<listitem><para>
 				<emphasis>via-branch=...</emphasis> - Include the <quote>branch</quote>
@@ -462,10 +464,6 @@ rtpengine_offer();
 				</para></listitem>
 			</itemizedlist>
 		</listitem>
-		<para>
-			When passing an option that &osips; is not aware of, it will be
-			blindly sent to the rtpengine daemon to be processed.
-		</para>
 		<listitem><para>
 		<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the rtpengine
 		socket chosen for this call.
