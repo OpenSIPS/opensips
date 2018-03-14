@@ -17,6 +17,11 @@
 		It makes use of the <emphasis>freeswitch</emphasis>
 		module for the management of ESL connections and event subscriptions.
 	</para>
+	<para>
+		Credits for the initial idea and working code samples providing
+		both ESL events and commands go to Giovanni Maruzzelli
+		&lt;gmaruzz@opentelecom.it&gt;.
+	</para>
 	</section>
 
 	<section id="sec-dependencies">

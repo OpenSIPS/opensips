@@ -5,6 +5,11 @@ Liviu Chircu
    OpenSIPS Solutions
    <liviu@opensips.org>
 
+Giovanni Maruzzelli
+
+   OpenTelecom.IT
+   <gmaruzz@opentelecom.it>
+
 Edited by
 
 Liviu Chircu
@@ -74,6 +79,10 @@ Chapter 1. Admin Guide
    ESL commands and interpret their results. It makes use of the
    freeswitch module for the management of ESL connections and
    event subscriptions.
+
+   Credits for the initial idea and working code samples providing
+   both ESL events and commands go to Giovanni Maruzzelli
+   <gmaruzz@opentelecom.it>.
 
 1.2. Dependencies
 

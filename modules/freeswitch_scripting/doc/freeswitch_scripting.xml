@@ -21,6 +21,12 @@
 			<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
 			<email>liviu@opensips.org</email>
 	    </author>
+	    <author>
+			<firstname>Giovanni</firstname>
+			<surname>Maruzzelli</surname>
+			<affiliation><orgname>OpenTelecom.IT</orgname></affiliation>
+			<email>gmaruzz@opentelecom.it</email>
+	    </author>
 		<editor>
 			<firstname>Liviu</firstname>
 			<surname>Chircu</surname>
