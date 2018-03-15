@@ -51,7 +51,6 @@ extern struct list_head cgrates_engines;
 #define CGRC_IS_DEFAULT(_c) ((_c)->flags & CGRF_DEFAULT)
 #define CGRC_SET_DEFAULT(_c) (_c)->flags |= CGRF_DEFAULT
 
-extern int cgre_compat_mode;
 extern int cgre_retry_tout;
 extern int cgrc_max_conns;
 extern str cgre_bind_ip;

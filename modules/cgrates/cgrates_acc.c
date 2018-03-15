@@ -340,7 +340,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 			goto error;
 		} else {
 			callid = cgr_get_sess_callid(msg, s, &msg->callid->body);
-			if (!callid || cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+			if (!callid || cgr_obj_push_str(cmsg->params, "OriginID", callid) < 0) {
 				LM_ERR("cannot push OriginID!\n");
 				goto error;
 			}
@@ -348,26 +348,26 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	}
 
 	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogID") &&
-			cgr_msg_push_int(cmsg, "DialogID", dlg->h_id) < 0) {
+			cgr_obj_push_int(cmsg->params, "DialogID", dlg->h_id) < 0) {
 		LM_ERR("cannot push DialogID!\n");
 		goto error;
 	}
 
 	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogEntry") &&
-			cgr_msg_push_int(cmsg, "DialogEntry", dlg->h_entry) < 0) {
+			cgr_obj_push_int(cmsg->params, "DialogEntry", dlg->h_entry) < 0) {
 		LM_ERR("cannot push DialogEntry!\n");
 		goto error;
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Account", &si->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
 
 	/* SetupTime */
 	stime.s = int2str(si->start_time, &stime.len);
-	if (cgr_msg_push_str(cmsg, "SetupTime", &stime) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "SetupTime", &stime) < 0) {
 		LM_ERR("cannot push SetupTime info!\n");
 		goto error;
 	}
@@ -375,14 +375,14 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	/* AnswerTime */
 	if (ctx) {
 		stime.s = int2str(ctx->answer_time, &stime.len);
-		if (cgr_msg_push_str(cmsg, "AnswerTime", &stime) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "AnswerTime", &stime) < 0) {
 			LM_ERR("cannot push AnswerTime info!\n");
 			goto error;
 		}
 	}
 
 	/* Destination */
-	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Destination", &si->dst) < 0) {
 		LM_ERR("cannot push Destination info!\n");
 		goto error;
 	}
@@ -428,14 +428,14 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	/* if origin was not added from script, add it now */
 	if (ctx && !cgr_get_const_kv(&s->event_kvs, "OriginID")) {
 		callid = cgr_get_sess_callid(msg, s, &dlg->callid);
-		if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "OriginID", callid) < 0) {
 			LM_ERR("cannot push OriginID!\n");
 			goto error;
 		}
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Account", &si->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
@@ -443,7 +443,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	/* SetupTime */
 	if (ctx->answer_time != si->start_time) {
 		tmp.s = int2str(si->start_time, &tmp.len);
-		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "SetupTime", &tmp) < 0) {
 			LM_ERR("cannot push SetupTime info!\n");
 			goto error;
 		}
@@ -451,7 +451,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 
 	/* AnswerTime */
 	tmp.s = int2str(ctx->answer_time, &tmp.len);
-	if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "AnswerTime", &tmp) < 0) {
 		LM_ERR("cannot push AnswerTime info!\n");
 		goto error;
 	}
@@ -461,7 +461,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	tmp.s[tmp.len] = 's';
 	tmp.len++;
 	tmp.s[tmp.len] = 0;
-	if (cgr_msg_push_str(cmsg, "Usage", &tmp) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Usage", &tmp) < 0) {
 		LM_ERR("cannot add Usage node\n");
 		goto error;
 	}
@@ -489,17 +489,17 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "OriginID", callid) < 0) {
 		LM_ERR("cannot add OriginID node\n");
 		goto error;
 	}
 
-	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Account", &si->acc) < 0) {
 		LM_ERR("cannot add Account node\n");
 		goto error;
 	}
 
-	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Destination", &si->dst) < 0) {
 		LM_ERR("cannot add Destination node\n");
 		goto error;
 	}
@@ -509,14 +509,14 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	tmp.s[tmp.len] = 's';
 	tmp.len++;
 	tmp.s[tmp.len] = 0;
-	if (cgr_msg_push_str(cmsg, "Usage", &tmp) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Usage", &tmp) < 0) {
 		LM_ERR("cannot add Usage node\n");
 		goto error;
 	}
 
 	if (ctx->answer_time) {
 		tmp.s = int2str(ctx->answer_time, &tmp.len);
-		if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "AnswerTime", &tmp) < 0) {
 			LM_ERR("cannot add AnswerTime node\n");
 			goto error;
 		}
@@ -524,13 +524,13 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 
 	if (si->start_time && si->start_time != ctx->answer_time) {
 		tmp.s = int2str(si->start_time, &tmp.len);
-		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "SetupTime", &tmp) < 0) {
 			LM_ERR("cannot add SetupTime node\n");
 			goto error;
 		}
 	}
 
-	if (dlg && cgr_msg_push_str(cmsg, "DisconnectCause", &dlg->terminate_reason) < 0) {
+	if (dlg && cgr_obj_push_str(cmsg->params, "DisconnectCause", &dlg->terminate_reason) < 0) {
 		LM_ERR("cannot add DisconnectCause node\n");
 		goto error;
 	}

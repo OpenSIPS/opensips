@@ -107,7 +107,16 @@ void cgr_free_kv(struct cgr_kv *kv)
 	shm_free(kv);
 }
 
-/* message builder */
+/* handle local ctx */
+
+/* local kvs are stored in pkg, whereas session kvs are stored in shm */
+struct cgr_kv *cgr_get_local(str key)
+{
+	struct cgr_local_ctx *ctx = CGR_GET_LOCAL_CTX();
+	if (!ctx)
+		return NULL;
+	return cgr_get_kv(&ctx->kvs, key);
+}
 
 int cgrates_set_reply(int type, int_str *value)
 {
@@ -126,6 +135,7 @@ int cgrates_set_reply(int type, int_str *value)
 			return -1;
 		}
 		memset(ctx, 0, sizeof(*ctx));
+		INIT_LIST_HEAD(&ctx->kvs);
 		CGR_PUT_LOCAL_CTX(ctx);
 		LM_DBG("new local ctx=%p\n", ctx);
 	}
@@ -148,6 +158,93 @@ int cgrates_set_reply(int type, int_str *value)
 	return 0;
 }
 
+static int cgr_add_local(struct list_head *list,
+		const char *key, int_str val, int flags)
+{
+	int klen;
+	struct cgr_kv *kv;
+
+	klen = strlen(key);
+	kv = pkg_malloc(sizeof *kv + klen +
+			(flags & CGR_KVF_TYPE_STR ? val.s.len: 0));
+	if (!kv) {
+		LM_ERR("no more pkgmem for new %s kv!\n", key);
+		return -1;
+	}
+	memset(kv, 0, sizeof *kv);
+	kv->flags = flags;
+	kv->key.s = (char *)(kv + 1);
+	kv->key.len = klen;
+	memcpy(kv->key.s, key, klen);
+	if (flags & CGR_KVF_TYPE_STR) {
+		kv->value.s.s = kv->key.s + kv->key.len;
+		kv->value.s.len = val.s.len;
+		memcpy(kv->value.s.s, val.s.s, val.s.len);
+	} else
+		kv->value.n = val.n;
+	list_add(&kv->list, list);
+	LM_DBG("created new local key %.*s\n", kv->key.len, kv->key.s);
+	return 0;
+}
+
+void cgr_free_local_kv(struct cgr_kv *kv)
+{
+	list_del(&kv->list);
+	pkg_free(kv);
+}
+
+int cgrates_set_reply_with_values(json_object *jobj)
+{
+	int_str val;
+	struct cgr_local_ctx *ctx;
+
+	/* here, we pass all the nodes in the list */
+	val.s.s = (char *)json_object_to_json_string(jobj);
+	val.s.len = strlen(val.s.s);
+	if (cgrates_set_reply(CGR_KVF_TYPE_STR, &val) < 0)
+		return -1;
+	ctx = CGR_GET_LOCAL_CTX();
+
+	if (!ctx) {
+		LM_BUG("local ctx not found but reply set\n");
+		return -1;
+	}
+
+	json_object_object_foreach(jobj, k, v) {
+		switch (json_object_get_type(v)) {
+		case json_type_null:
+			continue;
+		case json_type_boolean:
+		case json_type_int:
+			if (json_object_get_type(v) == json_type_int)
+				val.n = json_object_get_int(v);
+			else if (json_object_get_boolean(v))
+				val.n = 1;
+			else
+				val.n = 0;
+			if (cgr_add_local(&ctx->kvs, k, val, CGR_KVF_TYPE_INT) < 0) {
+				LM_ERR("cannot add integer kv!\n");
+				return -1;
+			}
+			break;
+
+		case json_type_string:
+		case json_type_double:
+		case json_type_object:
+		case json_type_array:
+			val.s.s = (char *)json_object_to_json_string(jobj);
+			val.s.len = strlen(val.s.s);
+			if (cgr_add_local(&ctx->kvs, k, val, CGR_KVF_TYPE_STR) < 0) {
+				LM_ERR("cannot add string kv!\n");
+				return -1;
+			}
+			break;
+		}
+	}
+	return 0;
+}
+
+/* message builder */
 static int cgr_id_index = 0;
 
 int cgr_init_common(void)
@@ -162,7 +259,6 @@ int cgr_init_common(void)
 
 	return 0;
 }
-
 
 static inline int cgr_unique_id(void)
 {
@@ -202,6 +298,33 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	JSON_CHECK(cmsg.params = json_object_new_object(), "params object");
 	json_object_array_add(jarr, cmsg.params);
 
+	if (!cgre_compat_mode) {
+		if (s) {
+			list_for_each(l, &s->req_kvs) {
+				kv = list_entry(l, struct cgr_kv, list);
+				if (kv->flags & CGR_KVF_TYPE_NULL) {
+					jtmp = NULL;
+				} else if (kv->flags & CGR_KVF_TYPE_INT) {
+					/* XXX: we treat here int values as booleans */
+					jtmp = json_object_new_boolean(kv->value.n);
+					JSON_CHECK(jtmp, kv->key.s);
+				} else {
+					jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
+					JSON_CHECK(jtmp, kv->key.s);
+				}
+				json_object_object_add(cmsg.params, kv->key.s, jtmp);
+			}
+		}
+
+		/* TODO: check if there is already an Event in the opts? */
+		/* in non-compat mode, event kvs go into the event object */
+		cmsg.opts = cmsg.params;
+		jtmp = json_object_new_object();
+		JSON_CHECK(jtmp, "Event");
+		json_object_object_add(cmsg.params, "Event", jtmp);
+		cmsg.params = jtmp;
+	}
+
 	if (s) {
 		list_for_each(l, &s->event_kvs) {
 			kv = list_entry(l, struct cgr_kv, list);
@@ -224,23 +347,34 @@ error:
 	return NULL;
 }
 
-int cgr_msg_push_str(struct cgr_msg *cmsg, const char *key, str *value)
+int cgr_obj_push_str(json_object *msg, const char *key, str *value)
 {
 	json_object *jmsg;
 	jmsg = json_object_new_string_len(value->s, value->len);
 	JSON_CHECK(jmsg, key);
-	json_object_object_add(cmsg->params, key, jmsg);
+	json_object_object_add(msg, key, jmsg);
 	return 0;
 error:
 	return -1;
 }
 
-int cgr_msg_push_int(struct cgr_msg *cmsg, const char *key, unsigned int value)
+int cgr_obj_push_int(json_object *msg, const char *key, unsigned int value)
 {
 	json_object *jmsg;
 	jmsg = json_object_new_int(value);
 	JSON_CHECK(jmsg, key);
-	json_object_object_add(cmsg->params, key, jmsg);
+	json_object_object_add(msg, key, jmsg);
+	return 0;
+error:
+	return -1;
+}
+
+int cgr_obj_push_bool(json_object *msg, const char *key, int value)
+{
+	json_object *jmsg;
+	jmsg = json_object_new_boolean(value);
+	JSON_CHECK(jmsg, key);
+	json_object_object_add(msg, key, jmsg);
 	return 0;
 error:
 	return -1;
@@ -361,14 +495,23 @@ struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *tag)
 	return s;
 }
 
+static void _cgr_free_local_ctx(struct cgr_local_ctx *ctx)
+{
+	struct list_head *l, *t;
+	LM_DBG("release local ctx=%p\n", ctx);
+	if (ctx->reply) {
+		pkg_free(ctx->reply);
+		ctx->reply = 0;
+	}
+	list_for_each_safe(l, t, &ctx->kvs)
+		cgr_free_local_kv(list_entry(l, struct cgr_kv, list));
+}
+
 #define CGR_RESET_REPLY_CTX() \
 	do { \
 		struct cgr_local_ctx *_c = CGR_GET_LOCAL_CTX(); \
-		if (_c) {\
-			if (_c->reply) \
-				pkg_free(_c->reply); \
-			_c->reply = 0; \
-		} \
+		if (_c) \
+			_cgr_free_local_ctx(_c); \
 	} while (0)
 
 /* CGR logic */
@@ -827,13 +970,12 @@ void cgr_move_ctx( struct cell* t, int type, struct tmcb_params *ps)
 	CGR_PUT_CTX(NULL);
 }
 
+
 /* function that removes local context */
 void cgr_free_local_ctx(void *param)
 {
 	struct cgr_local_ctx *ctx = (struct cgr_local_ctx *)param;
-	LM_DBG("release local ctx=%p\n", ctx);
-	if (ctx->reply)
-		pkg_free(ctx->reply);
+	_cgr_free_local_ctx(ctx);
 	pkg_free(ctx);
 }
 

@@ -72,6 +72,7 @@ struct cgr_ctx {
 struct cgr_local_ctx {
 	/* reply status */
 	unsigned reply_flags;
+	struct list_head kvs;
 	int_str *reply;
 };
 
@@ -91,17 +92,26 @@ struct cgr_conn {
 
 struct cgr_msg {
 	json_object *msg;
+	json_object *opts;
 	json_object *params;
 };
 
 /* init common variables */
+extern int cgre_compat_mode;
 int cgr_init_common(void);
 
 /* message builder */
-int cgrates_set_reply(int type, int_str *value);
 struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *sess);
-int cgr_msg_push_str(struct cgr_msg *cmsg, const char *key, str *value);
-int cgr_msg_push_int(struct cgr_msg *cmsg, const char *key, unsigned int value);
+int cgr_obj_push_str(json_object *msg, const char *key, str *value);
+int cgr_obj_push_int(json_object *msg, const char *key, unsigned int value);
+int cgr_obj_push_bool(json_object *msg, const char *key, int value);
+
+/* handle local ctx */
+extern int cgr_ctx_local_idx;
+void cgr_free_local_ctx(void *param);
+int cgrates_set_reply(int type, int_str *value);
+int cgrates_set_reply_with_values(json_object *msg);
+struct cgr_kv *cgr_get_local(str key);
 
 /* key-value manipulation */
 struct cgr_kv *cgr_new_kv(str key);
@@ -118,13 +128,11 @@ struct cgr_session *cgr_get_sess_new(struct cgr_ctx *ctx, str *name);
 
 /* context manipulation */
 extern int cgr_ctx_idx;
-extern int cgr_ctx_local_idx;
 extern int cgr_tm_ctx_idx;
 struct cgr_ctx *cgr_get_ctx_new(void);
 struct cgr_ctx *cgr_get_ctx(void);
 struct cgr_ctx *cgr_try_get_ctx(void);
 void cgr_free_ctx(void *param);
-void cgr_free_local_ctx(void *param);
 void cgr_move_ctx( struct cell* t, int type, struct tmcb_params *ps);
 
 #define CGR_GET_CTX() ((struct cgr_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
