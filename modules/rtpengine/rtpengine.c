@@ -130,7 +130,11 @@ enum rtpe_operation {
 };
 
 enum rtpe_stat {
-	STAT_MOS_AVERAGE = 0,
+	STAT_MOS_AVERAGE,
+	STAT_MOS_MIN,
+	STAT_MOS_MIN_AT,
+	STAT_MOS_MAX,
+	STAT_MOS_MAX_AT,
 	STAT_UNKNOWN /* always keep last */
 };
 
@@ -165,7 +169,11 @@ static const char *command_strings[] = {
 };
 
 static const str stat_maps[] = {
-	[STAT_MOS_AVERAGE]		= str_init("mos-average"),
+	[STAT_MOS_AVERAGE]	= str_init("mos-average"),
+	[STAT_MOS_MIN]		= str_init("mos-min"),
+	[STAT_MOS_MIN_AT]	= str_init("mos-min-at"),
+	[STAT_MOS_MAX]		= str_init("mos-max"),
+	[STAT_MOS_MAX_AT]	= str_init("mos-max-at"),
 };
 
 static char *gencookie();
@@ -305,10 +313,9 @@ static cmd_export_t cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
-static int pv_rtpengine_stats_used(pv_spec_p sp, str *in)
+static int pv_rtpengine_stats_used(pv_spec_p sp, int param)
 {
 	rtpengine_stats_used = 1;
-	sp->pvp.pvn.type = -1;
 	return 0;
 }
 
@@ -316,11 +323,15 @@ static inline enum rtpe_stat rtpe_get_stat_by_name(str *name)
 {
 	enum rtpe_stat s;
 	for (s = 0; s < STAT_UNKNOWN; s++) {
-		if (str_strcasecmp(stat_maps, name) == 0)
+		if (str_strcasecmp(&stat_maps[s], name) == 0)
 			return s;
 	}
 	return STAT_UNKNOWN;
 }
+
+#define PVE_NAME_NONE		0
+#define PVE_NAME_INTSTR		1
+#define PVE_NAME_PVAR		2
 
 static int pv_parse_rtpstat(pv_spec_p sp, str *in)
 {
@@ -329,8 +340,8 @@ static int pv_parse_rtpstat(pv_spec_p sp, str *in)
 	if (!in || in->s == NULL || in->len == 0 || sp == NULL)
 		return -1;
 
-	LM_DBG("name %p with name <%.*s>\n", &sp->pvp.pvn, in->len, in->s);
-	if (pv_parse_format( in, &format)!=0) {
+	LM_DBG("RTP stat name %p with name <%.*s>\n", &sp->pvp.pvn, in->len, in->s);
+	if (pv_parse_format(in, &format)!=0) {
 		LM_ERR("failed to parse statistic name format <%.*s> \n",
 			in->len,in->s);
 		return -1;
@@ -341,22 +352,51 @@ static int pv_parse_rtpstat(pv_spec_p sp, str *in)
 			LM_ERR("Unknown RTP statistic %.*s\n", in->len, in->s);
 			return -1;
 		}
-		sp->pvp.pvn.type = PV_NAME_INTSTR;
+		sp->pvp.pvn.type = PVE_NAME_INTSTR;
+		sp->pvp.pvn.u.isname.type = 0;
 		sp->pvp.pvn.u.isname.name.n = s;
 	} else {
-		sp->pvp.pvn.type = PV_NAME_PVAR;
-		sp->pvp.pvn.u.isname.type = 0; /* not string */
+		sp->pvp.pvn.type = PVE_NAME_PVAR;
+		sp->pvp.pvn.u.isname.type = 0;
 		sp->pvp.pvn.u.isname.name.s.s = (char*)(void*)format;
 		sp->pvp.pvn.u.isname.name.s.len = 0;
 	}
 	return 0;
 }
 
+static int pv_rtpengine_index(pv_spec_p sp, str *in)
+{
+	pv_elem_t *format;
+	if (!in || in->s == NULL || in->len == 0 || sp == NULL)
+		return -1;
+
+	LM_DBG("index %p with name <%.*s>\n", &sp->pvp.pvi, in->len, in->s);
+	if (pv_parse_format(in, &format)!=0) {
+		LM_ERR("failed to parse statistic name format <%.*s> \n",
+			in->len,in->s);
+		return -1;
+	}
+	if (format->next==NULL && format->spec.type==PVT_NONE) {
+		sp->pvp.pvi.type = PVE_NAME_INTSTR;
+		sp->pvp.pvi.u.dval = pkg_malloc(sizeof(str));
+		if (!sp->pvp.pvi.u.dval) {
+			LM_ERR("no more pkg for index!\n");
+			return -1;
+		}
+		*(str *)(sp->pvp.pvi.u.dval) = *in;
+	} else {
+		sp->pvp.pvi.type = PVE_NAME_PVAR;
+		sp->pvp.pvi.u.dval = (char*)(void*)format;
+	}
+	return 0;
+}
+
 static pv_export_t mod_pvs[] = {
 	{{"rtpstat", (sizeof("rtpstat")-1)}, /* RTP-Statistics */
-		1000, pv_get_rtpstat_f, 0, pv_parse_rtpstat, pv_rtpengine_stats_used, 0, 0},
+		1000, pv_get_rtpstat_f, 0, pv_parse_rtpstat,
+		pv_rtpengine_index, pv_rtpengine_stats_used, 0},
 	{{"rtpquery", (sizeof("rtpquery")-1)},
-		1000, pv_get_rtpquery_f, 0, 0, pv_rtpengine_stats_used, 0, 0},
+		1000, pv_get_rtpquery_f, 0, 0, 0, pv_rtpengine_stats_used, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -2260,65 +2300,266 @@ static inline void pv_get_rtpstat_line(bencode_item_t *dict, pv_value_t *res)
 	pv_get_strval(NULL, NULL, res, &ret);
 }
 
+#define BENCODE_GET_STR(_be, _s) \
+	do { \
+		(_s)->s = (_be)->iov[1].iov_base; \
+		(_s)->len = (_be)->iov[1].iov_len; \
+	} while (0)
+
+static int bencode_dictionary_tag_has_ssrc(bencode_item_t *dict, str *ssrc, str *tag)
+{
+	str i;
+	bencode_item_t *m, *s, *ss;
+	dict = bencode_dictionary_get_expect(dict, "medias", BENCODE_LIST);
+	if (!dict) {
+		LM_DBG("medias list not found!\n");
+		return 0;
+	}
+	/* go through each media */
+	for (m = dict->child; m; m = m->sibling) {
+		s = bencode_dictionary_get_expect(m, "streams", BENCODE_LIST);
+		if (!s)
+			continue;
+		/* now go through each stream */
+		for (s = s->child; s; s = s->sibling) {
+			ss = bencode_dictionary_get_expect(s, "SSRC", BENCODE_INTEGER);
+			if (!ss)
+				continue;
+			i.s = int2str(ss->value, &i.len);
+			if (str_strcmp(&i, ssrc) == 0) {
+				LM_DBG("SSRC %.*s belongs to tag %.*s\n", ssrc->len,
+						ssrc->s, tag->len, tag->s);
+				return 1;
+			}
+		}
+	}
+	/*LM_DBG("SSRC %.*s not for tag %.*s\n", ssrc->len, ssrc->s, tag->len, tag->s);*/
+	return 0;
+}
+
+static bencode_item_t *bencode_dictionary_get_tag(bencode_item_t *dict, str *tag)
+{
+	str tmp;
+	bencode_item_t *c;
+
+	dict = bencode_dictionary_get_expect(dict, "tags", BENCODE_DICTIONARY);
+	if (!dict) {
+		LM_DBG("tags dictionary not found!\n");
+		return 0;
+	}
+	for (c = dict->child; c; c = c->sibling)
+		if (c->type == BENCODE_STRING) {
+			BENCODE_GET_STR(c, &tmp);
+			if (str_strcmp(&tmp, tag) != 0)
+					continue;
+			/* found the dictionary, it's next element! */
+			c = c->sibling;
+			if (!c)
+				return NULL;
+			if (c->type != BENCODE_DICTIONARY)
+				return NULL;
+			return c;
+		}
+	return NULL;
+}
+
+static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
+		  pv_value_t *res, bencode_item_t *dict)
+{
+
+	bencode_item_t *c, *i, *m, *tag = NULL;
+	int mos, mos_no, mos_max, mos_min, mos_at;
+	time_t created;
+	str tmp;
+	char *key;
+
+	/* init to null */
+	pv_get_null(NULL, NULL, res);
+
+	if (s == STAT_MOS_MIN_AT || s == STAT_MOS_MAX_AT) {
+		/* for min and max, store when the session was created */
+		c = bencode_dictionary_get_expect(dict, "created", BENCODE_INTEGER);
+		if (!c) {
+			LM_DBG("no created number in the dictionary!\n");
+			return;
+		}
+		created = c->value;
+	}
+
+	if (index) {
+		tag = bencode_dictionary_get_tag(dict, index);
+		if (!tag) {
+			LM_DBG("no session with tag %.*s\n", index->len, index->s);
+			return;
+		}
+	}
+	dict = bencode_dictionary_get_expect(dict, "SSRC", BENCODE_DICTIONARY);
+	if (!dict) {
+		LM_DBG("no SSRC node in response!\n");
+		return;
+	}
+
+	/* search for the dictionary of this tag */
+	mos = 0;
+	mos_no = 0;
+	mos_max = -1;
+	mos_min = 101;
+	mos_at = -1;
+	for (c = dict->child; c; c = c->sibling) {
+		/* if a tag exists, check if this SSRC belongs to it */
+		if (tag) {
+			if (c->type == BENCODE_STRING) {
+				BENCODE_GET_STR(c, &tmp);
+				if (!bencode_dictionary_tag_has_ssrc(tag, &tmp, index))
+					continue;
+				/* this is the SSRC we are interested in! */
+				c = c->sibling;
+				if (!c) {
+					LM_DBG("no value for %.*s SSRC\n", tmp.len, tmp.s);
+					return;
+				}
+			} else
+				continue; /* go to the next object until we find the SSRC */
+		}
+		if (c->type != BENCODE_DICTIONARY)
+			continue;
+
+		switch (s) {
+			case STAT_MOS_AVERAGE:
+				key = "average MOS";
+				break;
+
+			case STAT_MOS_MAX:
+			case STAT_MOS_MAX_AT:
+				key = "highest MOS";
+				break;
+
+			case STAT_MOS_MIN:
+			case STAT_MOS_MIN_AT:
+				key = "lowest MOS";
+				break;
+
+			default:
+				LM_BUG("unknown command %d\n", s);
+				return;
+		}
+		m = bencode_dictionary_get_expect(c, key, BENCODE_DICTIONARY);
+		if (!m)
+			continue;
+
+		i = bencode_dictionary_get_expect(m, "MOS", BENCODE_INTEGER);
+		if (!i)
+			continue;
+
+		switch (s) {
+			case STAT_MOS_AVERAGE:
+				mos += i->value;
+				mos_no++;
+				break;
+
+			case STAT_MOS_MAX:
+			case STAT_MOS_MAX_AT:
+				if (i->value > mos_max) {
+					mos_max = i->value;
+					mos_at = -2; /* force update mos_at */
+				}
+				break;
+
+			case STAT_MOS_MIN:
+			case STAT_MOS_MIN_AT:
+				if (i->value < mos_min) {
+					mos_min = i->value;
+					mos_at = -2; /* force update mos_at */
+				}
+				break;
+
+			default:
+				LM_BUG("unknown command %d\n", s);
+				return;
+		}
+		if (mos_at == -2 && (s == STAT_MOS_MIN_AT || s == STAT_MOS_MAX_AT)) {
+			i = bencode_dictionary_get_expect(m, "reported at", BENCODE_INTEGER);
+			if (!i)
+				continue;
+			mos_at = i->value - created;
+		}
+	}
+	/* wrap them up */
+	switch (s) {
+		case STAT_MOS_AVERAGE:
+			if (mos == 0) {
+				LM_DBG("no MOS found!\n");
+				return;
+			}
+			mos = mos / mos_no;
+			break;
+
+		case STAT_MOS_MAX:
+			if (mos_max < 0) {
+				LM_DBG("max MOS not found!\n");
+				return;
+			}
+			mos = mos_max;
+			break;
+
+		case STAT_MOS_MIN:
+			if (mos_min > 100) {
+				LM_DBG("min MOS not found!\n");
+				return;
+			}
+			mos = mos_min;
+			break;
+
+		case STAT_MOS_MAX_AT:
+		case STAT_MOS_MIN_AT:
+			if (mos_at < 0) {
+				LM_DBG("MOS at not found!\n");
+				return;
+			}
+			mos = mos_at;
+			break;
+
+		default:
+			LM_BUG("unknown command %d\n", s);
+			return;
+	}
+	pv_get_sintval(NULL, NULL, res, mos);
+}
+
 static inline int
 pv_get_rtpstat(struct sip_msg *msg, pv_param_t *param,
 		  pv_value_t *res, bencode_item_t *dict)
 {
-	str tmp;
-	bencode_item_t *c, *i;
+	str aux;
+	str *idx;
 	enum rtpe_stat s;
-	int mos_sum, mos_no;
 
-	if (param->pvn.type == PV_NAME_PVAR) {
-		if (pv_printf_s(msg, (pv_elem_t *)param->pvn.u.isname.name.s.s, &tmp) < 0) {
+	if (param->pvn.type == PVE_NAME_PVAR) {
+		if (pv_printf_s(msg, (pv_elem_t *)param->pvn.u.isname.name.s.s, &aux) < 0) {
 			LM_ERR("Cannot fetch RTP stat name!\n");
 			return -1;
 		}
-		s = rtpe_get_stat_by_name(&tmp);
+		s = rtpe_get_stat_by_name(&aux);
 		if (s == STAT_UNKNOWN) {
-			LM_ERR("Unknown RTP stat %.*s\n", tmp.len, tmp.s);
+			LM_ERR("Unknown RTP stat %.*s\n", aux.len, aux.s);
 			return -1;
 		}
 	} else
 		s = param->pvn.u.isname.name.n;
-	/* now fetch the values from the dictionary */
-	switch (s) {
-	case STAT_MOS_AVERAGE:
-		/* get the SSRC and make an average */
-		dict = bencode_dictionary_get_expect(dict, "SSRC", BENCODE_DICTIONARY);
-		if (!dict) {
-			LM_DBG("no SSRC node in response!\n");
-			goto null;
+
+	if (param->pvi.type == PVE_NAME_NONE)
+		idx = NULL;
+	else if (param->pvi.type == PVE_NAME_INTSTR)
+		idx = (str *)param->pvi.u.dval;
+	else {
+		if (pv_printf_s(msg, (pv_elem_t *)param->pvi.u.dval, &aux) < 0) {
+			LM_ERR("Cannot fetch RTP stat index!\n");
+			return -1;
 		}
-		mos_sum = 0;
-		mos_no = 0;
-		for (c = dict->child; c; c = c->sibling) {
-			if (c->type != BENCODE_DICTIONARY)
-				continue;
-			/* we are only interested in dictionaries */
-			i = bencode_dictionary_get_expect(c, "average MOS", BENCODE_DICTIONARY);
-			if (!i)
-				continue;
-			i = bencode_dictionary_get_expect(i, "MOS", BENCODE_INTEGER);
-			if (!i)
-				continue;
-			/* got one! */
-			mos_sum += i->value;
-			mos_no++;
-		}
-		if (mos_no == 0) {
-			LM_DBG("no MOS found!\n");
-			goto null;
-		}
-		pv_get_sintval(NULL, NULL, res, mos_sum / mos_no);
-		goto success;
-	default:
-		LM_BUG("unhandled command %d\n", s);
-		return -1;
+		idx = &aux;
 	}
-null:
-	pv_get_null(NULL, NULL, res);
-success:
+	pv_handle_rtpstat(s, idx, res, dict);
+
 	return 1;
 }
 
@@ -2334,7 +2575,7 @@ pv_get_rtpstat_f(struct sip_msg *msg, pv_param_t *param,
 	if (rc < 0)
 		return -1;
 
-	if (param->pvn.type == -1)
+	if (param->pvn.type == PVE_NAME_NONE)
 		pv_get_rtpstat_line(dict, res);
 	else if (pv_get_rtpstat(msg, param, res, dict) < 0) {
 		LM_ERR("cannot fetch RTP statistic!\n");
