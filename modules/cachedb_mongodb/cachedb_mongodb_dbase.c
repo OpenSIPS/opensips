@@ -1880,7 +1880,7 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 		list_add_tail(&row->list, &res->rows);
 	}
 
-	LM_DBG("found %d results\n", res->count);
+	LM_DBG("result count: %d\n", res->count);
 
 	bson_destroy(&bson_filter);
 	mongoc_cursor_destroy(cursor);

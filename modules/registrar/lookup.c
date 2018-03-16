@@ -218,10 +218,18 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	ret = -1;
 	/* look first for an un-expired and suported contact */
 search_valid_contact:
-	while ( (ptr) &&
-	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(_m,ptr,flags)))
-		ptr = ptr->next;
-	if (ptr==0) {
+	for (; ptr; ptr = ptr->next) {
+		if (!VALID_CONTACT(ptr, get_act_time())) {
+			LM_DBG("skipping expired contact %.*s\n", ptr->c.len, ptr->c.s);
+			continue;
+		}
+
+		ret = -2;
+		if (allowed_method(_m, ptr, flags))
+			break;
+	}
+
+	if (!ptr) {
 		/* nothing found */
 		LM_DBG("nothing found !\n");
 		goto done;

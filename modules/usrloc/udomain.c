@@ -511,7 +511,10 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 			ci.last_modified = pair->val.val.i64;
 			break;
 		case 'm':
-			ci.methods = pair->val.val.i32;
+			if (pair->val.type == CDB_NULL)
+				ci.methods = ALL_METHODS;
+			else
+				ci.methods = pair->val.val.i32;
 			break;
 		case 'p':
 			path = pair->val.val.st;
@@ -1164,6 +1167,8 @@ urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
 		return NULL;
 	}
 
+	LM_DBG("querying AoR %.*s\n", _aor->len, _aor->s);
+
 	if (cdbf.query(cdbc, aor_filter, &res) != 0) {
 		LM_ERR("query failed for AoR %.*s\n", _aor->len, _aor->s);
 		goto out_null;
@@ -1181,8 +1186,6 @@ urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
 	if (res.count != 1)
 		LM_BUG("more than 1 result for AoR %.*s\n", _aor->len, _aor->s);
 
-	r = NULL;
-
 	row = list_entry(res.rows.next, cdb_row_t, list);
 	list_for_each (_, &row->dict) {
 		contacts = list_entry(_, cdb_pair_t, list);
@@ -1194,6 +1197,8 @@ urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
 	goto out_null;
 
 have_contacts:
+	r = NULL;
+
 	list_for_each (_, &contacts->val.val.dict) {
 		pair = list_entry(_, cdb_pair_t, list);
 

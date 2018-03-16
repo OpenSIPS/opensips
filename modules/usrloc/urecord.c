@@ -682,6 +682,8 @@ int cdb_flush_urecord(urecord_t *_r)
 	}
 
 	dbg_cdb_dict("final ct changes: ", &ct_changes);
+	if (cdb_dict_empty(&ct_changes))
+		goto out;
 
 	val.is_str = 1;
 	val.s = *ct->aor;
@@ -697,6 +699,7 @@ int cdb_flush_urecord(urecord_t *_r)
 		goto err_free;
 	}
 
+out:
 	cdb_free_filters(aor_filter);
 	cdb_free_entries(&ct_changes, NULL);
 	return 0;
