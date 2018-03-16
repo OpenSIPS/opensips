@@ -293,6 +293,9 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	bson_append_utf8(&child, "opensips", 8, val->s, val->len);
 	bson_append_document_end(update, &child);
 
+	dbg_bson("query: ", query);
+	dbg_bson("update: ", update);
+
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
 	                              query, update, NULL, &error)) {
@@ -318,6 +321,8 @@ int mongo_con_remove(cachedb_con *con, str *attr)
 
 	doc = bson_new();
 	bson_append_utf8(doc, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+
+	dbg_bson("removing: ", doc);
 
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
@@ -959,6 +964,8 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 
 	bson_append_bool(cmd, "new", 3, true);
 
+	dbg_bson("upsert: ", cmd);
+
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), cmd,
 	                              NULL, &reply, &error)) {
@@ -1013,6 +1020,8 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	bson_append_utf8(&child, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 	bson_append_document_end(query, &child);
 #endif
+
+	dbg_bson("query: ", query);
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 	start_expire_timer(start, mongo_exec_threshold);
