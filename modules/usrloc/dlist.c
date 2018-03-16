@@ -758,24 +758,6 @@ void free_all_udomains(void)
 
 
 /*! \brief
- * Just for debugging
- */
-void print_all_udomains(FILE* _f)
-{
-	dlist_t* ptr;
-
-	ptr = root;
-
-	fprintf(_f, "===Domain list===\n");
-	while(ptr) {
-		print_udomain(_f, ptr->d);
-		ptr = ptr->next;
-	}
-	fprintf(_f, "===/Domain list===\n");
-}
-
-
-/*! \brief
  *  Loops through all domains summing up the number of users.
  */
 unsigned long get_number_of_users(void* foo)

@@ -69,12 +69,6 @@ int register_udomain(const char* _n, udomain_t** _d);
 void free_all_udomains(void);
 
 
-/*
- * Just for debugging
- */
-void print_all_udomains(FILE* _f);
-
-
 /*! \brief
  * Called from timer
  */

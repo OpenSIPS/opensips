@@ -211,6 +211,10 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 
 	ptr = r->contacts;
+#ifdef EXTRA_DEBUG
+	print_urecord(r);
+#endif
+
 	ret = -1;
 	/* look first for an un-expired and suported contact */
 search_valid_contact:

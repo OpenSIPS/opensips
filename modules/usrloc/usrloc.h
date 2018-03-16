@@ -34,6 +34,7 @@
 #include "urecord.h"
 #include "ucontact.h"
 #include "ul_callback.h"
+#include "ul_dbg.h"
 
 enum ul_cluster_mode {
 	CM_NONE,

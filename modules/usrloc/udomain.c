@@ -457,40 +457,6 @@ get_static_urecord(const udomain_t* _d, const str* _aor, struct urecord** _r)
 }
 
 /*! \brief
- * Just for debugging
- */
-void print_udomain(FILE* _f, udomain_t* _d)
-{
-		int i;
-	int max=0, slot=0, n=0,count;
-	map_iterator_t it;
-	fprintf(_f, "---Domain---\n");
-	fprintf(_f, "name : '%.*s'\n", _d->name->len, ZSW(_d->name->s));
-	fprintf(_f, "size : %d\n", _d->size);
-	fprintf(_f, "table: %p\n", _d->table);
-	/*fprintf(_f, "lock : %d\n", _d->lock); -- can be a structure --andrei*/
-	fprintf(_f, "\n");
-	for(i=0; i<_d->size; i++)
-	{
-		count = map_size( _d->table[i].records);
-		n += count;
-		if(max<count){
-			max= count;
-			slot = i;
-		}
-
-		for ( map_first( _d->table[i].records, &it);
-			iterator_is_valid(&it);
-			iterator_next(&it) )
-			print_urecord(_f, (struct urecord *)*iterator_val(&it));
-
-	}
-
-	fprintf(_f, "\nMax slot: %d (%d/%d)\n", max, slot, n);
-	fprintf(_f, "\n---/Domain---\n");
-}
-
-/*! \brief
  * expects (UL_COLS - 4) fields:
  *   contact, expires, q, callid, cseq, flags, cflags, ua,
  *   received, path, socket, methods, last_modified, instance, attr)

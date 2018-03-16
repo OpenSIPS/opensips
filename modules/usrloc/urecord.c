@@ -126,31 +126,6 @@ void free_urecord(urecord_t* _r)
 
 
 /*! \brief
- * Print a record
- */
-void print_urecord(FILE* _f, urecord_t* _r)
-{
-	ucontact_t* ptr;
-
-	fprintf(_f, "...Record(%p)...\n", _r);
-	fprintf(_f, "domain : '%.*s'\n", _r->domain->len, ZSW(_r->domain->s));
-	fprintf(_f, "aor    : '%.*s'\n", _r->aor.len, ZSW(_r->aor.s));
-	fprintf(_f, "aorhash: '%u'\n", (unsigned)_r->aorhash);
-	fprintf(_f, "slot:    '%d'\n", _r->aorhash&(_r->slot->d->size-1));
-
-	if (_r->contacts) {
-		ptr = _r->contacts;
-		while(ptr) {
-			print_ucontact(_f, ptr);
-			ptr = ptr->next;
-		}
-	}
-
-	fprintf(_f, ".../Record...\n");
-}
-
-
-/*! \brief
  * Add a new contact
  * Contacts are ordered by: 1) q
  *                          2) descending modification time

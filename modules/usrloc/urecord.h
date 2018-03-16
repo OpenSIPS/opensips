@@ -75,12 +75,6 @@ void free_urecord(urecord_t* _r);
 
 
 /*
- * Print an element, for debugging purposes only
- */
-void print_urecord(FILE* _f, urecord_t* _r);
-
-
-/*
  * Add a new contact
  */
 ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci);

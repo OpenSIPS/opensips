@@ -651,7 +651,7 @@ int check_runtime_config(void)
 			runtime_preset = "single-instance-sql-write-back";
 			break;
 		case DB_ONLY:
-			runtime_preset = "sql-only";
+			runtime_preset = "sql-only-cluster";
 			break;
 		}
 	} else if (db_mode != NOT_SET) {
@@ -673,7 +673,7 @@ int check_runtime_config(void)
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_BACK;
-		} else if (!strcasecmp(runtime_preset, "sql-only")) {
+		} else if (!strcasecmp(runtime_preset, "sql-only-cluster")) {
 			cluster_mode = CM_SQL_ONLY;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;

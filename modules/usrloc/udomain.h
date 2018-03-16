@@ -83,12 +83,6 @@ void free_udomain(udomain_t* _d);
 
 
 /*! \brief
- * Just for debugging
- */
-void print_udomain(FILE* _f, udomain_t* _d);
-
-
-/*! \brief
  * Load data from a database
  */
 int preload_udomain(db_con_t* _c, udomain_t* _d);

@@ -155,12 +155,6 @@ void free_ucontact(ucontact_t* _c);
 
 
 /*! \brief
- * Print contact, for debugging purposes only
- */
-void print_ucontact(FILE* _f, ucontact_t* _c);
-
-
-/*! \brief
  * Update existing contact in memory with new values
  */
 int mem_update_ucontact(ucontact_t* _c, ucontact_info_t *_ci);

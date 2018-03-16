@@ -211,68 +211,6 @@ void free_ucontact(ucontact_t* _c)
 
 
 /*! \brief
- * Print contact, for debugging purposes only
- */
-void print_ucontact(FILE* _f, ucontact_t* _c)
-{
-	time_t t = time(0);
-	char* st;
-
-	switch(_c->state) {
-	case CS_NEW:   st = "CS_NEW";     break;
-	case CS_SYNC:  st = "CS_SYNC";    break;
-	case CS_DIRTY: st = "CS_DIRTY";   break;
-	default:       st = "CS_UNKNOWN"; break;
-	}
-
-	fprintf(_f, "~~~Contact(%p)~~~\n", _c);
-	fprintf(_f, "domain    : '%.*s'\n", _c->domain->len, ZSW(_c->domain->s));
-	fprintf(_f, "aor       : '%.*s'\n", _c->aor->len, ZSW(_c->aor->s));
-	fprintf(_f, "Contact   : '%.*s'\n", _c->c.len, ZSW(_c->c.s));
-	fprintf(_f, "Expires   : ");
-	if (_c->expires == 0) {
-		fprintf(_f, "Permanent\n");
-	} else if (_c->expires == UL_EXPIRED_TIME) {
-		fprintf(_f, "Deleted\n");
-	} else if (t > _c->expires) {
-		fprintf(_f, "Expired\n");
-	} else {
-		fprintf(_f, "%u\n", (unsigned int)(_c->expires - t));
-	}
-	fprintf(_f, "q         : %s\n", q2str(_c->q, 0));
-	fprintf(_f, "Call-ID   : '%.*s'\n", _c->callid.len, ZSW(_c->callid.s));
-	fprintf(_f, "CSeq      : %d\n", _c->cseq);
-	fprintf(_f, "User-Agent: '%.*s'\n",
-		_c->user_agent.len, ZSW(_c->user_agent.s));
-	fprintf(_f, "received  : '%.*s'\n",
-		_c->received.len, ZSW(_c->received.s));
-	fprintf(_f, "Path      : '%.*s'\n",
-		_c->path.len, ZSW(_c->path.s));
-	fprintf(_f, "State     : %s\n", st);
-	fprintf(_f, "Flags     : %u\n", _c->flags);
-	fprintf(_f, "Attrs     : '%.*s'\n", _c->attr.len, _c->attr.s);
-	if (_c->sipping_latency) {
-		fprintf(_f, "sipping_latency     : '%d \n", _c->sipping_latency);
-	}else{
-		fprintf(_f, "sipping_latency     : NULL \n");
-
-	}
-	if (_c->sock) {
-		fprintf(_f, "Sock      : %.*s (as %.*s )(%p)\n",
-				_c->sock->sock_str.len,_c->sock->sock_str.s,
-				_c->sock->adv_sock_str.len,ZSW(_c->sock->adv_sock_str.s),
-				_c->sock);
-	} else {
-		fprintf(_f, "Sock      : none (null)\n");
-	}
-	fprintf(_f, "Methods   : %u\n", _c->methods);
-	fprintf(_f, "next      : %p\n", _c->next);
-	fprintf(_f, "prev      : %p\n", _c->prev);
-	fprintf(_f, "~~~/Contact~~~~\n");
-}
-
-
-/*! \brief
  * Update ucontact structure in memory
  */
 int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
