@@ -735,6 +735,19 @@ struct dlg_repl_tag *get_repltag(str *tag_name, int lock_stop_r)
 	return tag;
 }
 
+void free_active_msgs_info(struct dlg_repl_tag *tag)
+{
+	struct n_send_info *it, *tmp;
+
+	it = tag->active_msgs_sent;
+	while (it) {
+		tmp = it;
+		it = it->next;
+		shm_free(tmp);
+	}
+	tag->active_msgs_sent = NULL;
+}
+
 static int receive_repltag_active_msg(bin_packet_t *packet)
 {
 	str tag_name;
@@ -753,6 +766,9 @@ static int receive_repltag_active_msg(bin_packet_t *packet)
 	/* directly go to backup state when another
 	 * node in the cluster is to active */
 	tag->state = REPLTAG_STATE_BACKUP;
+
+	tag->send_active_msg = 0;
+	free_active_msgs_info(tag);
 
 	lock_stop_write(repltags_lock);
 
@@ -826,10 +842,71 @@ error:
 	return -1;
 }
 
+int send_repltag_active_info(str *tag_name, int node_id)
+{
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_TAG_ACTIVE, BIN_VERSION,
+		0) < 0) {
+		LM_ERR("Failed to init bin packet");
+		return -1;
+	}
+	bin_push_str(&packet, tag_name);
+
+	if (node_id) {
+		if (clusterer_api.send_to(&packet, dialog_repl_cluster, node_id) !=
+			CLUSTERER_SEND_SUCCES) {
+			bin_free_packet(&packet);
+			return -1;
+		}
+	} else
+		if (clusterer_api.send_all(&packet, dialog_repl_cluster) !=
+			CLUSTERER_SEND_SUCCES) {
+			bin_free_packet(&packet);
+			return -1;
+		}
+
+	bin_free_packet(&packet);
+
+	return 0;
+}
+
 void rcv_cluster_event(enum clusterer_event ev, int node_id)
 {
+	struct dlg_repl_tag *tag;
+	struct n_send_info *ni;
+	int lock_old_flag;
+
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
+	else if (ev == CLUSTER_NODE_UP) {
+		lock_start_sw_read(repltags_lock);
+		for (tag = *repltags_list; tag; tag = tag->next) {
+			if (!tag->send_active_msg)
+				continue;
+
+			/* send repltag active msg to nodes to which we didn't already */
+			for (ni = tag->active_msgs_sent; ni && ni->node_id != node_id;
+				ni = ni->next) ;
+			if (!ni) {
+				if (send_repltag_active_info(&tag->name, node_id) < 0) {
+					LM_ERR("Failed to send info about replication tag\n");
+					continue;
+				}
+				ni = shm_malloc(sizeof *ni);
+				if (!ni) {
+					LM_ERR("No more shm memory!\n");
+					return;
+				}
+				ni->node_id = node_id;
+				ni->next = tag->active_msgs_sent;
+				lock_switch_write(repltags_lock, lock_old_flag);
+				tag->active_msgs_sent = ni;
+				lock_switch_read(repltags_lock, lock_old_flag);
+			}
+		}
+		lock_stop_sw_read(repltags_lock);
+	}
 }
 
 /**
@@ -1306,28 +1383,6 @@ int set_dlg_repltag(struct dlg_cell *dlg, str *tag_name)
 	return 0;
 }
 
-static int broadcast_repltag_active(str *tag_name)
-{
-	bin_packet_t packet;
-
-	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_TAG_ACTIVE, BIN_VERSION,
-		0) < 0) {
-		LM_ERR("Failed to init bin packet");
-		return -1;
-	}
-	bin_push_str(&packet, tag_name);
-
-	if (clusterer_api.send_all(&packet, dialog_repl_cluster) !=
-		CLUSTERER_SEND_SUCCES) {
-		bin_free_packet(&packet);
-		return -1;
-	}
-
-	bin_free_packet(&packet);
-
-	return 0;
-}
-
 struct mi_root *mi_set_repltag_active(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_node* node;
@@ -1346,8 +1401,8 @@ struct mi_root *mi_set_repltag_active(struct mi_root *cmd_tree, void *param)
 
 	lock_stop_write(repltags_lock);
 
-	if (broadcast_repltag_active(&node->value) < 0)
-		LM_ERR("Failed to broadcast message about tag [%.*s] going active\n",
+	if (send_repltag_active_info(&node->value, 0) < 0)
+		LM_WARN("Failed to broadcast message about tag [%.*s] going active\n",
 			node->value.len, node->value.s);
 
 	return init_mi_tree( 200, MI_SSTR(MI_OK));
@@ -1384,4 +1439,61 @@ int get_repltag_state(struct dlg_cell *dlg)
 	lock_stop_sw_read(repltags_lock);
 
 	return rc;
+}
+
+int dlg_repl_tag_paramf(modparam_t type, void *val)
+{
+	str tag_name;
+	str val_s;
+	int init_state;
+	char *p;
+	struct dlg_repl_tag *tag;
+
+	if (!dialog_repl_cluster) {
+		LM_DBG("Dialog replication not defined, can't set replication tag param\n");
+		return 0;
+	}
+
+	val_s.s = (char *)val;
+	val_s.len = strlen(val_s.s);
+
+	/* tag name */
+	p = memchr(val_s.s, '=', val_s.len);
+	if (!p) {
+		LM_ERR("Bad definition for replication tag param\n");
+		return -1;
+	}
+	tag_name.s = val_s.s;
+	tag_name.len = p - val_s.s;
+	/* initial tag state */
+	if (!memcmp(p+1, "active", val_s.len - tag_name.len - 1))
+		init_state = REPLTAG_STATE_ACTIVE;
+	else if (!memcmp(p+1, "backup", val_s.len - tag_name.len - 1))
+		init_state = REPLTAG_STATE_BACKUP;
+	else {
+		LM_ERR("Bad state for replication tag param\n");
+		return -1;
+	}
+
+	if (!repltags_list) {
+		if ((repltags_list = shm_malloc(sizeof *repltags_list)) == NULL) {
+			LM_CRIT("No more shm memory\n");
+			return -1;
+		}
+		*repltags_list = NULL;
+	}
+
+	/* create repl tag with given state */
+	if ((tag = get_repltag_unsafe(&tag_name)) == NULL) {
+		LM_ERR("Unable to create replication tag [%.*s]\n",
+			tag_name.len, tag_name.s);
+		return -1;
+	}
+	tag->state = init_state;
+
+	if (init_state == REPLTAG_STATE_ACTIVE)
+		/* broadcast (later) in cluster that this tag is active */
+		tag->send_active_msg = 1;
+
+	return 0;
 }

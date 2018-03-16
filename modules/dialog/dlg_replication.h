@@ -44,9 +44,16 @@
 #define REPLTAG_STATE_BACKUP 0
 #define REPLTAG_STATE_ACTIVE 1
 
+struct n_send_info {
+	int node_id;
+	struct n_send_info *next;
+};
+
 struct dlg_repl_tag {
 	str name;
 	int state;
+	int send_active_msg;
+	struct n_send_info *active_msgs_sent;
 	struct dlg_repl_tag *next;
 };
 
@@ -75,11 +82,14 @@ int dlg_replicated_delete(bin_packet_t *packet);
 void receive_dlg_repl(bin_packet_t *packet);
 void rcv_cluster_event(enum clusterer_event ev, int node_id);
 
-struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param);
+struct mi_root *mi_sync_cl_dlg(struct mi_root *cmd, void *param);
 struct mi_root *mi_set_repltag_active(struct mi_root *cmd, void *param);
 
 int get_repltag_state(struct dlg_cell *dlg);
 int set_dlg_repltag(struct dlg_cell *dlg, str *tag_name);
+void free_active_msgs_info(struct dlg_repl_tag *tag);
+
+int dlg_repl_tag_paramf(modparam_t type, void *val);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 

@@ -282,6 +282,7 @@ static param_export_t mod_params[]={
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
+	{ "dlg_repl_tag", STR_PARAM|USE_FUNC_PARAM, &dlg_repl_tag_paramf},
 	{ 0,0,0 }
 };
 
@@ -883,11 +884,13 @@ static int mod_init(void)
 		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
 			LM_ERR("Sync request failed\n");
 
-		if ((repltags_list = shm_malloc(sizeof *repltags_list)) == NULL) {
-			LM_CRIT("No more shm memory\n");
-			return -1;
+		if (!repltags_list) {
+			if ((repltags_list = shm_malloc(sizeof *repltags_list)) == NULL) {
+				LM_CRIT("No more shm memory\n");
+				return -1;
+			}
+			*repltags_list = NULL;
 		}
-		*repltags_list = NULL;
 
 		if ((repltags_lock = lock_init_rw()) == NULL) {
 			LM_CRIT("Failed to init lock\n");
@@ -1017,6 +1020,7 @@ static void mod_destroy(void)
 			for (tag = *repltags_list; tag; ) {
 				tag_tmp = tag;
 				tag = tag->next;
+				free_active_msgs_info(tag_tmp);
 				shm_free(tag_tmp);
 			}
 		}
