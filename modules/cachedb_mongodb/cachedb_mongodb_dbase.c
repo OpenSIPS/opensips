@@ -1949,7 +1949,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 		case CDB_NULL:
 			if (!bson_append_null(out_doc, key.s, key.len)) {
 				LM_ERR("failed to append NULL doc\n");
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_INT32:
@@ -1957,7 +1957,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			                       pair->val.val.i32)) {
 				LM_ERR("failed to append %.*s: %d\n", key.len,
 				       key.s, pair->val.val.i32);
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_INT64:
@@ -1965,7 +1965,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			                       pair->val.val.i64)) {
 				LM_ERR("failed to append %.*s: %ld\n", key.len,
 				       key.s, pair->val.val.i64);
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_STR:
@@ -1973,31 +1973,34 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			                      pair->val.val.st.s, pair->val.val.st.len)) {
 				LM_ERR("failed to append %.*s: %.*s\n", key.len,
 				       key.s, pair->val.val.st.len, pair->val.val.st.s);
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_DICT:
 			if (mongo_cdb_dict_to_bson(&pair->val.val.dict, &bson_val) != 0) {
 				LM_ERR("failed to convert dict to bson\n");
-				return -1;
+				goto out_err;
 			}
 
-			if (!bson_append_document(out_doc, key.s, key.len,
-			                          &bson_val)) {
+			if (!bson_append_document(out_doc, key.s, key.len, &bson_val)) {
 				LM_ERR("failed to append doc\n");
-				return -1;
+				goto out_err;
 			}
-			bson_destroy(&bson_val);
+
 			bson_reinit(&bson_val);
 			break;
 		default:
 			LM_ERR("unsupported type %d for key %.*s\n", pair->val.type,
 			       key.len, key.s);
-			return -1;
+			goto out_err;
 		}
 	}
 
+	bson_destroy(&bson_val);
 	return 0;
+out_err:
+	bson_destroy(&bson_val);
+	return -1;
 }
 
 int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
@@ -2086,7 +2089,6 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 				ret = -1;
 				goto out;
 			}
-			bson_destroy(&bson_val);
 			bson_reinit(&bson_val);
 			break;
 		default:
@@ -2135,6 +2137,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	                  con->url.s, con->url.len, 0);
 
 out:
+	bson_destroy(&bson_val);
 	bson_destroy(&filter);
 	bson_destroy(&set_keys);
 	bson_destroy(&unset_keys);
