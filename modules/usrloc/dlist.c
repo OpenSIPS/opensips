@@ -110,7 +110,7 @@ static inline int find_dlist(str* _n, dlist_t** _d)
 
 static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		unsigned int flags, unsigned int part_idx,
-		unsigned int part_max, char zero_end, int pack_cid)
+		unsigned int part_max, char zero_end, int pack_coords)
 {
 	static char query_buf[512];
 	static str query_str;
@@ -247,8 +247,8 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			needed = (int)(p_len + sizeof p_len + p1_len + sizeof p1_len +
 			               sizeof sock + sizeof dbflags + sizeof next_hop);
 
-			if (pack_cid)
-				needed += sizeof contact_id;
+			if (pack_coords)
+				needed += sizeof(ucontact_coords);
 
 			LM_DBG("len: %d, needed: %d\n", *len, needed);
 
@@ -324,7 +324,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			memcpy(&next_hop, (char *)buf - sizeof next_hop, sizeof next_hop);
 
 			*len -= needed;
-			if (!pack_cid)
+			if (!pack_coords)
 				continue;
 
 			/* write the contact id */
@@ -366,7 +366,7 @@ error:
 static inline int
 get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 								unsigned int part_idx, unsigned int part_max,
-								char zero_end, int pack_cid)
+								char zero_end, int pack_coords)
 {
 	urecord_t *r;
 	ucontact_t *c;
@@ -384,6 +384,10 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	/* Reserve space for terminating 0000 */
 	if (zero_end)
 		*len -= sizeof(c->c.len);
+
+#ifdef EXTRA_DEBUG
+	LM_DBG("part_idx: %d, part_max: %d\n", part_idx, part_max);
+#endif
 
 	for(i=0; i<d->size; i++) {
 
@@ -403,7 +407,6 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			iterator_is_valid(&it);
 			iterator_next(&it) ) {
 
-
 			dest = iterator_val(&it);
 			if( dest == NULL ) {
 				unlock_ulslot(d, i);
@@ -411,11 +414,11 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			}
 			r =( urecord_t * ) *dest;
 
-			/* determine if the current node is respnosible for this record */
+			/* distribute ping workload across cluster nodes */
 			if (ul_replication_cluster) {
-				cur_node_idx = clusterer_api.get_my_index(ul_replication_cluster,
-												&contact_repl_cap, &nr_nodes);
-				if (r->aorhash % (nr_nodes+1) != cur_node_idx)
+				cur_node_idx = clusterer_api.get_my_index(
+				         ul_replication_cluster, &contact_repl_cap, &nr_nodes);
+				if (r->aorhash % nr_nodes != cur_node_idx)
 					continue;
 			}
 
@@ -435,8 +438,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					           sizeof(c->path.len) + c->path.len +
 					           sizeof(c->sock) + sizeof(c->cflags) +
 					           sizeof(c->next_hop));
-					if (pack_cid)
-						needed += sizeof(c->contact_id);
+					if (pack_coords)
+						needed += sizeof(ucontact_coords);
 
 					if (*len >= needed) {
 						memcpy(cp,&c->received.len,sizeof(c->received.len));
@@ -455,7 +458,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 						cp = (char*)cp + sizeof(c->next_hop);
 
 						*len -= needed;
-						if (!pack_cid)
+						if (!pack_coords)
 							continue;
 
 						memcpy(cp, &c->contact_id, sizeof(c->contact_id));
@@ -470,8 +473,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					           sizeof(c->path.len) + c->path.len +
 					           sizeof(c->sock) + sizeof(c->cflags) +
 					           sizeof(c->next_hop));
-					if (pack_cid)
-						needed += sizeof(c->contact_id);
+					if (pack_coords)
+						needed += sizeof(ucontact_coords);
 
 					if (*len >= needed) {
 						memcpy(cp, &c->c.len, sizeof(c->c.len));
@@ -490,7 +493,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 						cp = (char*)cp + sizeof(c->next_hop);
 
 						*len -= needed;
-						if (!pack_cid)
+						if (!pack_coords)
 							continue;
 
 						memcpy(cp, &c->contact_id, sizeof(c->contact_id));
@@ -530,22 +533,22 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
  *
  * Information is packed into the buffer as follows:
  *
- * +------------+----------+-----+------+-----+-------------+
- * |contact1.len|contact1.s|sock1|flags1|path1| contact_id1 |
- * +------------+----------+-----+------+-----+-------------+
- * |contact2.len|contact2.s|sock2|flags2|path1| contact_id2 |
- * +------------+----------+-----+------+-----+-------------+
- * |..........................................|.............|
- * +------------+----------+-----+------+-----+-------------+
- * |contactN.len|contactN.s|sockN|flagsN|pathN| contact_idN |
- * +------------+----------+-----+------+-----+-------------+
+ * +------------+----------+-----+------+-----+----------------+
+ * |contact1.len|contact1.s|sock1|flags1|path1|contact_coords1 |
+ * +------------+----------+-----+------+-----+----------------+
+ * |contact2.len|contact2.s|sock2|flags2|path1|contact_coords2 |
+ * +------------+----------+-----+------+-----+----------------+
+ * |..........................................|................|
+ * +------------+----------+-----+------+-----+----------------+
+ * |contactN.len|contactN.s|sockN|flagsN|pathN|contact_coordsN |
+ * +------------+----------+-----+------+-----+----------------+
  * |000000000000|
  * +------------+
  *
- * if pack_cid not set, contact id will not be put into the buffer
+ * if @pack_coords is false, all "contact_coordsX" parts will be omitted
  */
 int get_all_ucontacts(void *buf, int len, unsigned int flags,
-					unsigned int part_idx, unsigned int part_max, int pack_cid)
+                 unsigned int part_idx, unsigned int part_max, int pack_coords)
 {
 	dlist_t *p;
 	ucontact_t c;
@@ -562,11 +565,11 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
 			shortage +=
 				get_domain_mem_ucontacts(p->d, buf+cur_pos, &len, flags,
 					part_idx, part_max, 0 /* don't add zeroed contact*/,
-					pack_cid);
+					pack_coords);
 		} else {
 			res =
 				get_domain_db_ucontacts(p->d, buf+cur_pos, &len, flags,
-					part_idx, part_max, 0, pack_cid);
+					part_idx, part_max, 0, pack_coords);
 			if (res >= 0) {
 				shortage += res;
 			} else {
@@ -597,33 +600,33 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
  *
  * Information is packed into the buffer as follows:
  *
- * +------------+----------+-----+------+-----+-------------+
- * |contact1.len|contact1.s|sock1|flags1|path1| contact_id1 |
- * +------------+----------+-----+------+-----+-------------+
- * |contact2.len|contact2.s|sock2|flags2|path1| contact_id2 |
- * +------------+----------+-----+------+-----+-------------+
- * |..........................................|.............|
- * +------------+----------+-----+------+-----+-------------+
- * |contactN.len|contactN.s|sockN|flagsN|pathN| contact_idN |
- * +------------+----------+-----+------+-----+-------------+
+ * +------------+----------+-----+------+-----+-----------------+
+ * |contact1.len|contact1.s|sock1|flags1|path1| contact_coords1 |
+ * +------------+----------+-----+------+-----+-----------------+
+ * |contact2.len|contact2.s|sock2|flags2|path1| contact_coords2 |
+ * +------------+----------+-----+------+-----+-----------------+
+ * |..........................................|.................|
+ * +------------+----------+-----+------+-----+-----------------+
+ * |contactN.len|contactN.s|sockN|flagsN|pathN| contact_coordsN |
+ * +------------+----------+-----+------+-----+-----------------+
  * |000000000000|
  * +------------+
  *
- * if pack_cid not set, contact id will not be put into the buffer
+ * if @pack_coords is false, all "contact_coordsX" parts will be omitted
  */
 
 
 int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
-					unsigned int part_idx, unsigned int part_max, int pack_cid)
+                 unsigned int part_idx, unsigned int part_max, int pack_coords)
 {
 	if (cluster_mode == CM_SQL_ONLY)
 		return get_domain_db_ucontacts(d, buf, &len,
-							flags, part_idx, part_max, 1, pack_cid);
+							flags, part_idx, part_max, 1, pack_coords);
 	else if (cluster_mode == CM_CORE_CACHEDB_ONLY)
 		abort(); /* TODO */
 	else
 		return get_domain_mem_ucontacts(d, buf, &len, flags,
-											part_idx, part_max, 1, pack_cid);
+											part_idx, part_max, 1, pack_coords);
 }
 
 
@@ -871,10 +874,14 @@ ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **
 	return NULL;
 }
 
-int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicated)
+int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
+                                char is_replicated)
 {
 	ucontact_t *c, virt_c;
 	urecord_t *r;
+	ucontact_id contact_id = (ucontact_id)ct_coords;
+
+	LM_DBG("deleting contact_id %llu\n", (unsigned long long)contact_id);
 
 	/* if contact only in database */
 	if (cluster_mode == CM_SQL_ONLY) {
@@ -918,10 +925,17 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 
 
 
-int update_sipping_latency(udomain_t *d, uint64_t contact_id,int sipping_latency )
+int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
+                           int sipping_latency)
 {
 	ucontact_t *c;
 	urecord_t *r;
+	ucontact_id contact_id = (ucontact_id)ct_coords;
+
+	/* TODO: add cachedb queries for latency updates */
+	if (cluster_mode == CM_SQL_ONLY || cluster_mode == CM_CORE_CACHEDB_ONLY)
+		return 0;
+
 	c = get_ucontact_from_id(d, contact_id, &r);
 	if (c == NULL) {
 		LM_WARN("contact with contact id [%" PRIu64 "] not found\n",

@@ -387,7 +387,7 @@ static int mod_init(void)
 		}
 	}
 
-	if (have_mem_storage()) {
+	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
 		cid_keys = pkg_malloc(max_contact_delete *
 				(sizeof(db_key_t) * sizeof(db_val_t)));
 		if (cid_keys == NULL) {
@@ -651,7 +651,7 @@ int check_runtime_config(void)
 			runtime_preset = "single-instance-sql-write-back";
 			break;
 		case DB_ONLY:
-			runtime_preset = "sql-only-cluster";
+			runtime_preset = "sql-only";
 			break;
 		}
 	} else if (db_mode != NOT_SET) {
@@ -673,7 +673,7 @@ int check_runtime_config(void)
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_BACK;
-		} else if (!strcasecmp(runtime_preset, "sql-only-cluster")) {
+		} else if (!strcasecmp(runtime_preset, "sql-only")) {
 			cluster_mode = CM_SQL_ONLY;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
@@ -778,9 +778,10 @@ int check_runtime_config(void)
 		}
 
 		if (ul_replication_cluster) {
-			LM_ERR("please select an appropriate 'working_mode_preset' or "
-			       "'cluster_mode' before defining a cluster id!\n");
-			return -1;
+			LM_WARN("a 'contact_replication_cluster' has been defined with "
+			        "a single-instance clustering mode! ignoring...\n");
+
+			ul_replication_cluster = 0;
 		}
 	}
 
@@ -829,9 +830,10 @@ int check_runtime_config(void)
 		}
 
 		if (ul_replication_cluster) {
-			LM_ERR("setting a 'contact_replication_cluster' will have no "
-			       "effect in the 'sql-only' clustering mode!\n");
-			return -1;
+			LM_WARN("a 'contact_replication_cluster' has been defined with "
+			        "a single-instance clustering mode! ignoring...\n");
+
+			ul_replication_cluster = 0;
 		}
 	}
 

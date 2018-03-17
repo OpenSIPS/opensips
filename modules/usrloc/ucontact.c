@@ -455,6 +455,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		return 0;
 	}
 
+	/* in CM_SQL_ONLY, we let the SQL engine auto-generate the ucontact_id */
 	if (cluster_mode == CM_SQL_ONLY) {
 		start++;
 		nr_vals--;
@@ -955,6 +956,12 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		}
 	}
 	return 0;
+}
+
+void free_ucontact_coords(ucontact_coords coords)
+{
+	if (cluster_mode == CM_CORE_CACHEDB_ONLY)
+		shm_free((ucontact_sip_coords *)coords);
 }
 
 int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key)

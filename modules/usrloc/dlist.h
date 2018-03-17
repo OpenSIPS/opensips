@@ -123,35 +123,29 @@ pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
 }
 
 
-static inline int
+static inline void
 unpack_indexes(uint64_t v,
 		unsigned short *aorhash, unsigned int *rlabel, unsigned short *clabel)
 {
-	if (aorhash == NULL || rlabel == NULL || clabel == NULL) {
-		LM_ERR("invalid arguments\n");
-		return -1;
-	}
-
 	/* first 14 bits 0-13 */
 	*clabel  = v & CLABEL_MASK;
 	/* middle 32 bits 14-45 */
 	*rlabel  = (v >> 14) & 0xFFFFFFFF;
 	/* last 16 bits 46-61 */
 	*aorhash = (v >> 46);
-
-	return 0;
 }
 
-typedef int (*delete_ucontact_from_id_t)(udomain_t *d,
-					uint64_t contact_id, char is_replicated);
-int delete_ucontact_from_id(udomain_t *d,
-		uint64_t contact_id, char is_replicated);
+typedef int (*delete_ucontact_from_coords_t)(udomain_t *d,
+                   ucontact_coords ct_coords, char is_replicated);
+int delete_ucontact_from_coords(udomain_t *d,
+		ucontact_coords ct_coords, char is_replicated);
 
 /*
  * update sipping latancy
  */
-typedef int (*update_sipping_latency_t)(udomain_t *d, uint64_t contact_id,
-										int sipping_latency);
-int update_sipping_latency(udomain_t *d, uint64_t contact_id, 	 int sipping_latency );
+typedef int (*update_sipping_latency_t)(udomain_t *d,
+                    ucontact_coords ct_coords, int sipping_latency);
+int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
+                           int sipping_latency);
 
 #endif /* UDLIST_H */

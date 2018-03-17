@@ -843,10 +843,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				}
 			}
 
-			if (unpack_indexes(ci->contact_id, &aorhash, &rlabel, &clabel)) {
-				LM_ERR("unpacking failed\n");
-				return -1;
-			}
+			unpack_indexes(ci->contact_id, &aorhash, &rlabel, &clabel);
 
 			lock_udomain(_d, &user);
 

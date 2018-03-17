@@ -63,6 +63,12 @@ typedef enum flags {
 	FL_ALL         = (int)0xFFFFFFFF  /*!< All flags set */
 } flags_t;
 
+/*! \brief
+ * An "ucontact_id" is a time-unique identifier for in-memory "ucontact_t"
+ * structs which also embeds all required internal hash coordinates
+ * in order to perform very fast "ucontact_t" lookups
+ */
+typedef uint64_t ucontact_id;
 
 /*! \brief
  * Main structure for handling of registered Contact: data
@@ -129,6 +135,26 @@ typedef struct ucontact_info {
 	str *packed_kv_storage;
 	str *attr;
 } ucontact_info_t;
+
+/*! \brief
+ * The representation (lookup coordinates) of a contact:
+ *	- ucontact_id: suitable for in-memory storage or when
+ *        running in CM_SQL_ONLY, which benefits from auto-generated ids
+ *	- ucontact_sip_coords *: a more verbose way of locating a contact.
+ *        This is required when the user location is held inside distributed
+ *        NoSQL databases, which have limited support for primary keys, hence
+ *        the contacts must be located (e.g. for deletion) using their SIP
+ *        coordinates
+ */
+typedef uint64_t ucontact_coords;
+
+typedef struct {
+	str aor;
+	str ct_key;
+} ucontact_sip_coords;
+
+typedef void (*free_ucontact_coords_t) (ucontact_coords coords);
+void free_ucontact_coords(ucontact_coords coords);
 
 /*! \brief
  * ancient time used for marking the contacts forced to expired

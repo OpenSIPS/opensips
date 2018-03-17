@@ -95,10 +95,10 @@ static void init_sip_ping(int _match_ctid)
 
 static int parse_branch(str branch)
 {
-	unsigned int hash_id;
-	int cid_len, sipping_latency;
+	unsigned int hash_id, label;
+	int sipping_latency;
 	char *end;
-	uint64_t contact_id=0;
+	ucontact_coords ct_coords;
 	struct timeval timeval_st;
 
 	struct ping_cell *p_cell;
@@ -114,37 +114,28 @@ static int parse_branch(str branch)
 	branch.len -= BMAGIC_LEN;
 
 	end = q_memchr(branch.s, '.', branch.len);
-	if (0 == end) {
+	if (!end) {
 		/* if reverse hex2int succeeds on this it's a simple
 		 * ping based on sipping_callid_cnt label */
-		if (reverse_hex2int(branch.s, end-branch.s, &hash_id)==0)
+		if (reverse_hex2int(branch.s, end - branch.s, &label) == 0)
 			return 0;
 
 		return 1;
 	}
 
-	reverse_hex2int(branch.s, end-branch.s, &hash_id);
+	reverse_hex2int(branch.s, end - branch.s, &hash_id);
 
-	branch.len -= (end-branch.s + 1);
-	branch.s = end+1;
+	branch.len -= (end - branch.s + 1);
+	branch.s = end + 1;
 
-
-	if (0 == end)
-		return 1;
-
-	end = q_memchr(branch.s, '.', branch.len);
-	cid_len = end-branch.s;
-	reverse_hex2int64(branch.s, cid_len, 1/* request unsafe parsing */,
-		&contact_id);
 	/* reverse_hex2int64() cannot fail in unsafe mode and it will return 
 	   whatever it was able to parse (0 if nothing )*/
-
-	/* we don't parse the label since we don't need it */
+	reverse_hex2int64(branch.s, branch.len, 1, &ct_coords);
 
 	lock_hash(hash_id);
-	if ((p_cell=get_cell(hash_id, contact_id))==NULL) {
-		LM_WARN("received ping response for a removed contact"
-				" with contact id %llu\n", (long long unsigned int)contact_id);
+	p_cell = get_cell(hash_id, ct_coords);
+	if (!p_cell) {
+		LM_WARN("received ping response for a removed contact\n");
 		unlock_hash(hash_id);
 		return 0;
 	}
@@ -155,10 +146,9 @@ static int parse_branch(str branch)
 
 	LM_DBG("update_sipping_latency with %d us\n", sipping_latency);
 	if (ul.update_sipping_latency &&
-		ul.update_sipping_latency(p_cell->d, p_cell->contact_id,
-		                          sipping_latency) < 0) {
+	    ul.update_sipping_latency(p_cell->d, ct_coords, sipping_latency) < 0) {
 		/* we keep going since it might work for other contacts */
-		LM_ERR("failed to update_sipping_latency ucontact from db\n");
+		LM_ERR("failed to update ucontact sipping_latency\n");
 	}
 	/* when we receive answer to a ping we consider all pings sent
 	 * confirmed, because what we want to know is that the contact
@@ -168,10 +158,8 @@ static int parse_branch(str branch)
 	/* mark for removal */
 	p_cell->timestamp = 0;
 
-	remove_given_cell(p_cell, &get_htable()->entries[p_cell->hash_id]);
-
+	remove_from_hash(p_cell);
 	unlock_hash(hash_id);
-
 	return 0;
 }
 
@@ -223,7 +211,7 @@ error:
 
 static inline int
 build_branch(char *branch, int *size,
-		str *curi, udomain_t *d, uint64_t contact_id, int match_ctid)
+		str *curi, udomain_t *d, ucontact_coords ct_coords, int match_ctid)
 {
 	int hash_id, ret, label;
 	time_t timestamp;
@@ -241,8 +229,8 @@ build_branch(char *branch, int *size,
 		gettimeofday(&timeval_st, NULL);
 
 		lock_hash(hash_id);
-		if ((p_cell=get_cell(hash_id, contact_id))==NULL) {
-			if (0 == (p_cell = build_p_cell(hash_id, d, contact_id))) {
+		if ((p_cell=get_cell(hash_id, ct_coords))==NULL) {
+			if (0 == (p_cell = build_p_cell(hash_id, d, ct_coords))) {
 				unlock_hash(hash_id);
 				goto out_memfault;
 			}
@@ -288,17 +276,14 @@ build_branch(char *branch, int *size,
 		*branch = '.';
 		branch++;
 
-		ret=int64_2reverse_hex(&branch, size, contact_id);
+		ret=int64_2reverse_hex(&branch, size, ct_coords);
 		if (ret < 0)
 			goto out_nospace;
-
-		*branch = '.';
-		branch++;
+	} else {
+		ret=int2reverse_hex(&branch, size, label);
+		if (ret < 0)
+			goto out_nospace;
 	}
-
-	ret=int2reverse_hex(&branch, size, label);
-	if (ret < 0)
-		goto out_nospace;
 
 	*branch = '\0';
 
@@ -317,7 +302,7 @@ out_nospace:
 /* build the buffer of a SIP ping request */
 static inline char*
 build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
-		int *len_p, uint64_t contact_id, int match_ctid)
+		int *len_p, ucontact_coords ct_coords, int match_ctid)
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
@@ -335,7 +320,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	bbuild += sizeof(BSTART) - 1;
 	bsize -= (bbuild - branch);
 
-	build_branch( bbuild, &bsize, curi, d, contact_id, match_ctid);
+	build_branch( bbuild, &bsize, curi, d, ct_coords, match_ctid);
 
 	sbranch.s = branch;
 	sbranch.len = strlen(branch);

@@ -74,7 +74,8 @@ typedef struct usrloc_api {
 
 	insert_ucontact_t         insert_ucontact;
 	delete_ucontact_t         delete_ucontact;
-	delete_ucontact_from_id_t delete_ucontact_from_id;
+	delete_ucontact_from_coords_t delete_ucontact_from_coords;
+	free_ucontact_coords_t    free_ucontact_coords;
 	get_ucontact_from_id_t    get_ucontact_from_id;
 	get_ucontact_t            get_ucontact;
 
