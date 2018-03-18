@@ -817,6 +817,8 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 			lock_release(node->lock);
 		}
 
+	lock_stop_read(cl_list_lock);
+
 	/* sort array of reachable node ids */
 	for (i = 1; i < *nr_nodes; i++) {
 		tmp = sorted[i];
@@ -827,7 +829,6 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 
 	for (i = 0; i < *nr_nodes && sorted[i] < current_id; i++) ;
 
-	lock_stop_read(cl_list_lock);
-
+	(*nr_nodes)++;
 	return i;
 }
