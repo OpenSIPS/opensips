@@ -135,7 +135,7 @@ struct ping_cell *get_cell(int hash_id, ucontact_coords coords)
 	cell = entry->first;
 
 	for (cell=entry->first; cell; cell = cell->next) {
-		if (cell->ct_coords == coords)
+		if (!ul.ucontact_coords_cmp(cell->ct_coords, coords))
 			return cell;
 	}
 

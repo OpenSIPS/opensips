@@ -685,6 +685,11 @@ int cdb_flush_urecord(urecord_t *_r)
 	if (cdb_dict_empty(&ct_changes))
 		goto out;
 
+	if (CDB_DICT_ADD_INT32(&ct_changes, "aorhash", _r->aorhash) != 0) {
+		LM_ERR("oom\n");
+		goto err_free;
+	}
+
 	val.is_str = 1;
 	val.s = *ct->aor;
 	aor_filter = cdb_append_filter(NULL, &aor_key, CDB_OP_EQ, &val);

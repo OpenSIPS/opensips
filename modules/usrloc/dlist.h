@@ -110,6 +110,11 @@ int find_domain(str* _d, udomain_t** _p);
 typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
+/* when using various DBs (SQL/NoSQL) in order to store AoR hashes, it's best
+ * to drop the MSB and assume that none of them support unsigned integers */
+#define DB_AOR_HASH_MASK (1U << 31)
+#define MAX_DB_AOR_HASH (DB_AOR_HASH_MASK - 1U)
+
 /*contact label may not be higher than 14 bits*/
 #define CLABEL_MASK ((1<<14)-1)
 #define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)

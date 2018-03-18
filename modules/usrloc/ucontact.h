@@ -139,7 +139,7 @@ typedef struct ucontact_info {
 /*! \brief
  * The representation (lookup coordinates) of a contact:
  *	- ucontact_id: suitable for in-memory storage or when
- *        running in CM_SQL_ONLY, which benefits from auto-generated ids
+ *        running in CM_SQL_ONLY, which benefits from auto-generated keys
  *	- ucontact_sip_coords *: a more verbose way of locating a contact.
  *        This is required when the user location is held inside distributed
  *        NoSQL databases, which have limited support for primary keys, hence
@@ -153,7 +153,7 @@ typedef struct {
 	str ct_key;
 } ucontact_sip_coords;
 
-typedef void (*free_ucontact_coords_t) (ucontact_coords coords);
+int ucontact_coords_cmp(ucontact_coords a, ucontact_coords b);
 void free_ucontact_coords(ucontact_coords coords);
 
 /*! \brief

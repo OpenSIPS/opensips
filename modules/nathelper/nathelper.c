@@ -526,11 +526,6 @@ mod_init(void)
 		if (bind_usrloc(&ul) < 0)
 			return -1;
 
-		if (ul.cluster_mode == CM_CORE_CACHEDB_ONLY) {
-			LM_ERR("support for cachedb core usrloc not available yet\n");
-			return -1;
-		}
-
 		if (force_socket_str) {
 			socket_str.s=force_socket_str;
 			socket_str.len=strlen(socket_str.s);
@@ -1753,9 +1748,9 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 		lock_hash(cell->hash_id);
 
 		/* for these cells threshold has been exceeded */
+		cell->not_responded++;
 		LM_DBG("cell with ucoords %llu has %d unresponded pings\n",
 		       (unsigned long long)cell->ct_coords, cell->not_responded);
-		cell->not_responded++;
 
 		if (cell->not_responded >= max_pings_lost) {
 			LM_DBG("cell with ucoords %llu exceeded max failed pings! "

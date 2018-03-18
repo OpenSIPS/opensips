@@ -451,7 +451,7 @@ get_static_urecord(const udomain_t* _d, const str* _aor, struct urecord** _r)
 	memset( &r, 0, sizeof(struct urecord) );
 	r.aor = *_aor;
 	r.domain = _d->name;
-	r.aorhash = core_hash(_aor, 0, 0)&(_d->size-1);
+	r.aorhash = core_hash(_aor, 0, DB_AOR_HASH_MASK);
 
 	*_r = &r;
 }
@@ -1142,7 +1142,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
                                 const str *_aor)
 {
-	static const cdb_key_t aor_key = {{"aor", 3}, 1};
+	static const cdb_key_t aor_key = {{"aor", 3}, 1}; /* TODO */
 	struct list_head *_;
 	ucontact_info_t *ci;
 	cdb_filter_t *aor_filter;
@@ -1150,7 +1150,7 @@ urecord_t* cdb_load_urecord(db_con_t* _c, const udomain_t* _d,
 	cdb_res_t res;
 	cdb_row_t *row;
 	cdb_pair_t *contacts, *pair;
-	str contact, contacts_key = str_init("contacts");
+	str contact, contacts_key = str_init("contacts"); /* TODO */
 
 	urecord_t *r;
 	ucontact_t *c;
