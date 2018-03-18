@@ -38,9 +38,9 @@ typedef enum {
 enum cdb_filter_op {
 	CDB_OP_EQ,
 	CDB_OP_LT,
-	CDB_OP_LE,
+	CDB_OP_LTE,
 	CDB_OP_GT,
-	CDB_OP_GE,
+	CDB_OP_GTE,
 };
 
 /**

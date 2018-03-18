@@ -1794,13 +1794,13 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 		case CDB_OP_LT:
 			init_str(&text_op, "$lt");
 			break;
-		case CDB_OP_LE:
+		case CDB_OP_LTE:
 			init_str(&text_op, "$lte");
 			break;
 		case CDB_OP_GT:
 			init_str(&text_op, "$gt");
 			break;
-		case CDB_OP_GE:
+		case CDB_OP_GTE:
 			init_str(&text_op, "$gte");
 			break;
 		default:
