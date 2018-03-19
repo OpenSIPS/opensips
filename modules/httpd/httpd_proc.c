@@ -716,7 +716,7 @@ void httpd_proc(int rank)
 	}
 
 	/* Allocating http response buffer */
-	buffer.s = (char*)pkg_malloc(sizeof(char)*buffer.len);
+	buffer.s = (char*)malloc(sizeof(char)*buffer.len);
 	if (buffer.s==NULL) {
 		LM_ERR("oom\n");
 		return;
