@@ -163,6 +163,21 @@ static int parse_branch(str branch)
 	return 0;
 }
 
+static inline int ignore_reply(const struct sip_msg *rpl)
+{
+	extern unsigned short *ignore_rpl_codes;
+	unsigned short *code;
+
+	if (!ignore_rpl_codes)
+		return 0;
+
+	for (code = ignore_rpl_codes; *code; code++)
+		if (*code == (unsigned short)rpl->REPLY_STATUS)
+			return 1;
+
+	return 0;
+}
+
 static int sipping_rpl_filter(struct sip_msg *rpl)
 {
 	struct cseq_body* cseq_b;
@@ -195,7 +210,8 @@ static int sipping_rpl_filter(struct sip_msg *rpl)
 	LM_DBG("reply for SIP natping filtered (%d)\n", match_ctid);
 	/* it's a reply to a SIP NAT ping -> absorb it and stop any
 	 * further processing of it */
-	if (match_ctid && parse_branch(rpl->via1->branch->value))
+	if (!ignore_reply(rpl) && match_ctid &&
+	    parse_branch(rpl->via1->branch->value))
 			goto skip;
 
 	return 0;
