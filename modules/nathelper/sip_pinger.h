@@ -234,6 +234,7 @@ build_branch(char *branch, int *size,
 	struct ping_cell *p_cell;
 	struct nh_table *htable;
 	struct timeval timeval_st;
+	int dangling_coords = 0;
 
 	/* we want all contact pings from a contact in one bucket*/
 	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
@@ -251,6 +252,8 @@ build_branch(char *branch, int *size,
 				goto out_memfault;
 			}
 			insert_into_hash(p_cell);
+		} else {
+			dangling_coords = 1;
 		}
 
 		p_cell->timestamp = timestamp;
@@ -300,6 +303,9 @@ build_branch(char *branch, int *size,
 		if (ret < 0)
 			goto out_nospace;
 	}
+
+	if (dangling_coords)
+		ul.free_ucontact_coords(ct_coords);
 
 	*branch = '\0';
 
