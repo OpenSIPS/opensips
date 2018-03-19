@@ -45,7 +45,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 	static str path_received = {0,0};
 	static str path;
 	static str received = {0,0};
-	static int received_found;
+	static int received_searched;
 	static unsigned int allowed, allow_parsed;
 	static struct sip_msg *m = 0;
 	static int_str attr_avp_value;
@@ -113,7 +113,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 		}
 
 		allow_parsed = 0; /* not parsed yet */
-		received_found = 0; /* not found yet */
+		received_searched = 0; /* not searched yet */
 		m = _m; /* remember the message */
 	}
 
@@ -157,7 +157,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 			if (_c->received) {
 				ci.received = _c->received->body;
 			} else {
-				if (received_found==0) {
+				if (!received_searched) {
 					memset(&val, 0, sizeof(int_str));
 					if (rcv_avp_name>=0
 								&& search_first_avp(rcv_avp_type, rcv_avp_name, &val, 0)
@@ -172,7 +172,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 						received.s = 0;
 						received.len = 0;
 					}
-					received_found = 1;
+					received_searched = 1;
 				}
 				ci.received = received;
 			}
