@@ -1015,6 +1015,11 @@ static void mod_destroy(void)
 {
 	struct dlg_repl_tag *tag, *tag_tmp;
 
+	if (dlg_db_mode != DB_MODE_NONE) {
+		dialog_update_db(0, 0/*do not do locking*/);
+		destroy_dlg_db();
+	}
+
 	if (repltags_list) {
 		if (*repltags_list) {
 			for (tag = *repltags_list; tag; ) {
@@ -1032,10 +1037,6 @@ static void mod_destroy(void)
 		repltags_lock = NULL;
 	}
 
-	if (dlg_db_mode != DB_MODE_NONE) {
-		dialog_update_db(0, 0/*do not do locking*/);
-		destroy_dlg_db();
-	}
 	/* no DB interaction from now on */
 	dlg_db_mode = DB_MODE_NONE;
 	destroy_dlg_table();
@@ -1889,6 +1890,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 {
 	struct dlg_cell *dlg;
 	int timeout, db_update = 0, timer_update = 0;
+	int do_actions = 1;
 
 	if (val==NULL || val->flags & PV_VAL_NULL) {
 		LM_ERR("cannot assign dialog timeout to NULL\n");
@@ -1924,10 +1926,12 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 
 		dlg_unlock_dlg(dlg);
 
-		if (db_update)
-			update_dialog_timeout_info(dlg);
+		if (dialog_repl_cluster)
+			do_actions = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
 
-		if (dialog_repl_cluster && get_repltag_state(dlg) != REPLTAG_STATE_BACKUP)
+		if (do_actions && db_update)
+			update_dialog_timeout_info(dlg);
+		if (dialog_repl_cluster && do_actions)
 			replicate_dialog_updated(dlg);
 
 		if (timer_update) {

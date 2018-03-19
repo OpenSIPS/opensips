@@ -431,13 +431,14 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	str mangled_from = {0,0};
 	str mangled_to = {0,0};
 	str *req_out_buff;
-	int replicate_events = 1;
+	int do_actions = 1;
 
 	dlg = (struct dlg_cell *)(*param->param);
 	if (shutdown_done || dlg==0)
 		return;
 
-	replicate_events = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+	if (dialog_repl_cluster)
+		do_actions = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
 
 	rpl = param->rpl;
 	req = param->req;
@@ -486,7 +487,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	}
 	if (type==TMCB_RESPONSE_OUT) {
 		if (dlg->state == DLG_STATE_CONFIRMED_NA && dialog_repl_cluster &&
-				replicate_events && param->code >= 200 && param->code < 300)
+				do_actions && param->code >= 200 && param->code < 300)
 			replicate_dialog_created(dlg);
 		return;
 	}
@@ -505,7 +506,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	}
 
 	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state,
-	               &unref, DLG_CALLER_LEG, replicate_events);
+	               &unref, DLG_CALLER_LEG, do_actions);
 
 	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
 		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0);
@@ -538,7 +539,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		 * if realtime saving mode configured- save dialog now
 		 * else: the next time the timer will fire the update*/
 		dlg->flags |= DLG_FLAG_NEW;
-		if ( dlg_db_mode==DB_MODE_REALTIME )
+		if (do_actions && dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
 		/* dialog confirmed */
@@ -1631,7 +1632,7 @@ after_unlock5:
 			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, NULL, 0);
 
 		/* delete the dialog from DB */
-		if (should_remove_dlg_db())
+		if (is_active && should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		/* destroy dialog */
@@ -1750,7 +1751,7 @@ after_unlock5:
 
 			if (ok) {
 				dlg->flags |= DLG_FLAG_CHANGED;
-				if ( dlg_db_mode==DB_MODE_REALTIME )
+				if (is_active && dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
 
 				if (dialog_repl_cluster && is_active)
@@ -1863,7 +1864,7 @@ early_check:
 
 	if(new_state==DLG_STATE_CONFIRMED && old_state==DLG_STATE_CONFIRMED_NA){
 		dlg->flags |= DLG_FLAG_CHANGED;
-		if(dlg_db_mode == DB_MODE_REALTIME)
+		if (is_active && dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
 		if (dialog_repl_cluster && is_active)
@@ -1986,7 +1987,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		}
 
 		/* delete the dialog from DB */
-		if (should_remove_dlg_db())
+		if (do_expire_actions && should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		unref_dlg(dlg, unref + 1 /*timer list*/);

@@ -294,7 +294,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 		/* trash the dialog from DB and memory */
 		LM_DBG("second final reply\n");
 		/* delete the dialog from DB */
-		if (should_remove_dlg_db())
+		if (is_active && should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 		/* force delete from mem */
 		unref_dlg(dlg, unref);

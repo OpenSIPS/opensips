@@ -42,6 +42,7 @@
 #include "dlg_db_handler.h"
 #include "dlg_cb.h"
 #include "dlg_profile.h"
+#include "dlg_replication.h"
 
 str dlg_id_column			=	str_init(DLG_ID_COL);
 str call_id_column			=	str_init(CALL_ID_COL);
@@ -1321,7 +1322,22 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 		if (do_lock)
 			dlg_lock( d_table, entry);
 
-		for(cell = entry->first; cell != NULL;){
+		for (cell = entry->first; cell != NULL; ) {
+			if (dialog_repl_cluster &&
+				get_repltag_state(cell) == REPLTAG_STATE_BACKUP) {
+				next_cell = cell->next;
+				if ((cell->flags & DLG_FLAG_NEW) != 0 &&
+					cell->state == DLG_STATE_DELETED &&
+					!(cell->flags & DLG_FLAG_DB_DELETED)) {
+					/* mark it as deleted so as we don't deal with it later */
+					cell->flags |= DLG_FLAG_DB_DELETED;
+					/* timer is done with this dialog */
+					unref_dlg_unsafe(cell,1,entry);
+				}
+				cell = next_cell;
+				continue;
+			}
+
 			callee_leg = callee_idx(cell);
 
 			if( (cell->flags & DLG_FLAG_NEW) != 0 ) {
