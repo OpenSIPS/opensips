@@ -1830,7 +1830,7 @@ int fix_ignore_rpl_codes(void)
 		}
 
 		ignore_rpl_codes = shm_realloc(ignore_rpl_codes,
-		                               (count + 1) * sizeof *ignore_rpl_codes);
+		                               (count + 2) * sizeof *ignore_rpl_codes);
 		if (!ignore_rpl_codes) {
 			LM_ERR("oom\n");
 			return -1;
@@ -1840,8 +1840,14 @@ int fix_ignore_rpl_codes(void)
 		count++;
 	}
 
-	for (it = ignore_rpl_codes; *it; it++)
-		LM_DBG("ignoring ping replies with status code %d\n", *it);
+	LM_DBG("ignoring %d codes\n", count);
+
+	if (ignore_rpl_codes) {
+		ignore_rpl_codes[count] = '\0';
+
+		for (it = ignore_rpl_codes; *it; it++)
+			LM_DBG("ignoring ping replies with status code %d\n", *it);
+	}
 
 	free_csv_record(chopped_codes);
 	return 0;
