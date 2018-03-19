@@ -316,6 +316,7 @@ static mi_export_t mi_cmds[] = {
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
 	{ "profile_end_dlgs",   0, mi_profile_terminate,  0,  0,  0},
 	{ "set_repl_tag_active",0, mi_set_repltag_active, 0,  0,  0},
+	{ "list_repl_tags",     0, mi_list_repl_tags,     0,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 

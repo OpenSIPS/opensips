@@ -89,6 +89,8 @@ int get_repltag_state(struct dlg_cell *dlg);
 int set_dlg_repltag(struct dlg_cell *dlg, str *tag_name);
 void free_active_msgs_info(struct dlg_repl_tag *tag);
 
+struct mi_root *mi_list_repl_tags(struct mi_root *cmd_tree, void *param);
+
 int dlg_repl_tag_paramf(modparam_t type, void *val);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */

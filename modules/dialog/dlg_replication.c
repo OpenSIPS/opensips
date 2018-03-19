@@ -1497,3 +1497,38 @@ int dlg_repl_tag_paramf(modparam_t type, void *val)
 
 	return 0;
 }
+
+struct mi_root *mi_list_repl_tags(struct mi_root *cmd_tree, void *param)
+{
+    struct mi_root *rpl_tree= NULL;
+    struct mi_node *node, *rpl = NULL;
+    struct mi_attr *attr;
+    struct dlg_repl_tag *tag;
+    str val;
+
+    rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
+    if (rpl_tree==0)
+        return NULL;
+    rpl = &rpl_tree->node;
+    rpl->flags |= MI_IS_ARRAY;
+
+    lock_start_read(repltags_lock);
+    for (tag = *repltags_list; tag; tag = tag->next) {
+        node = add_mi_node_child(rpl, MI_DUP_VALUE,
+            MI_SSTR("Tag"), tag->name.s, tag->name.len);
+        if (!node) goto error;
+
+        val.s = int2str(tag->state, &val.len);
+        attr = add_mi_attr(node, MI_DUP_VALUE,
+            MI_SSTR("State"), val.s, val.len);
+        if (!attr) goto error;
+    }
+    lock_stop_read(repltags_lock);
+
+    return rpl_tree;
+
+error:
+    lock_stop_read(repltags_lock);
+    if (rpl_tree) free_mi_tree(rpl_tree);
+    return NULL;
+}
