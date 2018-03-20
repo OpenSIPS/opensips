@@ -14,9 +14,9 @@ Bogdan-Andrei Iancu
 
 Ovidiu Sas
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS
 
-   Copyright © 2005-2008 Voice Sistem SRL
+   Copyright � 2005-2008 Voice Sistem SRL
    Revision History
    Revision $Revision: 8740 $ $Date$
      __________________________________________________________
@@ -30,7 +30,8 @@ Ovidiu Sas
               1.1.1. Per-Branch flags
               1.1.2. Timeout-Based Failover
               1.1.3. DNS Failover
-              1.1.4. Usage Scope
+              1.1.4. Anycast Scenario
+              1.1.5. Usage Scope
 
         1.2. Dependencies
 
@@ -58,6 +59,9 @@ Ovidiu Sas
               1.3.17. minor_branch_flag (string/integer)
               1.3.18. timer_partitions (integer)
               1.3.19. auto_100trying (integer)
+              1.3.20. tm_replication_cluster (integer)
+              1.3.21. cluster_param (string)
+              1.3.22. cluster_auto_cancel (boolean)
 
         1.4. Exported Functions
 
@@ -87,6 +91,7 @@ Ovidiu Sas
                       t_write_unix(info,sock)
 
               1.4.21. t_flush_flags()
+              1.4.22. t_anycast_replicate()
 
         1.5. Exported variables
 
@@ -148,27 +153,31 @@ Ovidiu Sas
    1.17. Set minor_branch_flag parameter
    1.18. Set timer_partitions parameter
    1.19. Set auto_100trying parameter
-   1.20. t_relay usage
-   1.21. t_relay usage
-   1.22. t_reply usage
-   1.23. t_reply_with_body usage
-   1.24. t_newtran usage
-   1.25. t_check_trans usage
-   1.26. t_check_status usage
-   1.27. t_local_replied usage
-   1.28. t_was_cancelled usage
-   1.29. t_cancel_branch usage
-   1.30. t_new_request usage
-   1.31. t_on_failure usage
-   1.32. t_on_reply usage
-   1.33. t_on_branch usage
-   1.34. t_inject_branches usage
-   1.35. t_wait_for_new_branches usage
-   1.36. t_add_hdrs usage
-   1.37. t_add_cancel_reason usage
-   1.38. t_replicate usage
-   1.39. t_write_req/unix usage
-   1.40. t_flush_flags usage
+   1.20. Set tm_replication_cluster parameter
+   1.21. Set the cluster_param parameter
+   1.22. Set the cluster_auto_cancel parameter
+   1.23. t_relay usage
+   1.24. t_relay usage
+   1.25. t_reply usage
+   1.26. t_reply_with_body usage
+   1.27. t_newtran usage
+   1.28. t_check_trans usage
+   1.29. t_check_status usage
+   1.30. t_local_replied usage
+   1.31. t_was_cancelled usage
+   1.32. t_cancel_branch usage
+   1.33. t_new_request usage
+   1.34. t_on_failure usage
+   1.35. t_on_reply usage
+   1.36. t_on_branch usage
+   1.37. t_inject_branches usage
+   1.38. t_wait_for_new_branches usage
+   1.39. t_add_hdrs usage
+   1.40. t_add_cancel_reason usage
+   1.41. t_replicate usage
+   1.42. t_write_req/unix usage
+   1.43. t_flush_flags usage
+   1.44. t_anycast_replicate usage
 
 Chapter 1. Admin Guide
 
@@ -251,7 +260,7 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.14, “ t_on_branch(branch_route) ” and the
+   Section 1.4.14, " t_on_branch(branch_route) " and the
    setbflag(), resetbflag() and isbflagset() script functions.
 
    Also, modules may set branch flags before transaction creation
@@ -314,7 +323,49 @@ Chapter 1. Admin Guide
    disable_dns_failover) or when the relay flag (per transaction)
    is set (see the t_relay() function).
 
-1.1.4. Usage Scope
+1.1.4. Anycast Scenario
+
+   Doing a load balancing scenario using Anycast IPs, one might
+   run into an issue where a transaction request comes on one
+   instance, and the reply (or replies) comes on different ones.
+   This would normaly break the transaction state, because the
+   local transaction will start re-transmissios and would
+   eventually timeout. Moreover, from UA's perspective, the reply
+   whould have been sent, but since it reaches a proxy that is not
+   aware of that transaction, it will not be forwarded (nor ACKed
+   in case of INVITES). And from this point things can escalade
+   quickly.
+
+   To sort out these problems, the module uses a distributed
+   mechanism to figure out where the transaction for a specific
+   reply was created. When an instance receives a reply that does
+   not have an associated transaction, it replicates it to be
+   handled by the instance that "owns" it. This is achieved using
+   the clusterer module support.
+
+   Setting up an anycast scenario is very simple: all the
+   instances that are part of an anycast secnario must be set up
+   in a cluster (more info at the tm_replication_cluster param).
+   When a transaction is created, a special identifier is appended
+   to the branch parameter, namely the instance that created the
+   transaction. When a reply comes in, the transaction module
+   checks who "owns" the transaction. If the identifier is the
+   instance's own id, then the reply is processed locally.
+   Otherwise it is replicated to the node indicated by the id.
+   Replication is done in a very efficient manner, using the
+   proto_bin transport.
+
+   Special handling is applied to CANCEL and ACK methods. Due to
+   the fact that these methods do not contain the special
+   identifier in the branch parameter (since they are generated by
+   the UAC and not by us), there is no way to determine who "owns"
+   the transaction. Therefore, if we do not find a local
+   transaction for these requests, we broadcast them to all the
+   other instances using the t_anycast_replicate function. Again,
+   this is done in a very efficient manner using the proto_bin
+   transport.
+
+1.1.5. Usage Scope
 
    Transaction functions and variables are only designed to be
    called on SIP request messages where a transaction can be
@@ -332,7 +383,8 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSIPS modules.
+     * clusterer module, if the anycast scenario is enabled (see
+       tm_replication_cluster param for more information).
 
 1.2.2. External Libraries or Applications
 
@@ -491,8 +543,8 @@ modparam("tm", "restart_fr_on_each_reply", 0)
      * tw_append = append_name':' element (';'element)*
      * element = ( [name '='] variable)
 
-   Each element will be appended per line in “name: value” format.
-   Element “$rb (message body)” is the only one which does not
+   Each element will be appended per line in "name: value" format.
+   Element "$rb (message body)" is the only one which does not
    accept name; the body it will be printed all the time at the
    end, disregarding its position in the definition string.
 
@@ -637,6 +689,56 @@ modparam("tm", "timer_partitions", 2)
 modparam("tm", "auto_100trying", 0)
 ...
 
+1.3.20. tm_replication_cluster (integer)
+
+   This parameter should be used in an anycast setup, and
+   specifies the cluster id of all the nodes that use an anycast
+   IP.
+
+   Check out the tm_anycast section for more details.
+
+   Anycast replication is disabled by default.
+
+   Example 1.20. Set tm_replication_cluster parameter
+...
+# replicate anycast messages in cluster 1
+modparam("tm", "tm_replication_cluster", 1)
+...
+
+1.3.21. cluster_param (string)
+
+   This parameter should be used in an anycast setup, and
+   specifies the name of the parameter used in the VIA branch
+   param to specifiy the instance id that created the transaction.
+
+   Check out the tm_anycast section for more details.
+
+   Default value is cid.
+
+   Example 1.21. Set the cluster_param parameter
+...
+modparam("tm", "cluster_param", "tid")
+...
+
+1.3.22. cluster_auto_cancel (boolean)
+
+   This parameter should be used in an anycast setup, and
+   specifies whether a CANCEL message received on a listener that
+   is marked as anycast should be automatically handled, or should
+   get in the OpenSIPS script. If this parameter is enabled
+   (default), CANCEL messages received on an anycast listener will
+   never enter the script, thus making the script cleaner.
+
+   Check out the tm_anycast section for more details.
+
+   Default value is yes (enabled).
+
+   Example 1.22. Set the cluster_auto_cancel parameter
+...
+# disable auto-cancel handling
+modparam("tm", "cluster_auto_cancel", no)
+...
+
 1.4. Exported Functions
 
 1.4.1.  t_relay([flags])
@@ -681,7 +783,7 @@ modparam("tm", "auto_100trying", 0)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.20. t_relay usage
+   Example 1.23. t_relay usage
 ...
 if (!t_relay()) {
     sl_reply_error();
@@ -692,18 +794,18 @@ if (!t_relay()) {
 1.4.2.  t_relay(proto:host:port,[flags])
 
    Relay a message statefully to a fixed destination. The
-   destination is specified as “[proto:]host[:port]”. If a
-   destination URI “$du” for this message was set before the
+   destination is specified as "[proto:]host[:port]". If a
+   destination URI "$du" for this message was set before the
    function is called then this value will be used as the
    destination instead of the function parameter.
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for details see the above
-   “t_relay([flags])” function.
+   "t_relay([flags])" function.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.21. t_relay usage
+   Example 1.24. t_relay usage
 ...
 t_relay("tcp:192.168.1.10:5060");
 t_relay("mydomain.com:5070","0x1");
@@ -725,7 +827,7 @@ t_relay("udp:mydomain.com");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.22. t_reply usage
+   Example 1.25. t_reply usage
 ...
 t_reply("404", "Use $rU not found");
 ...
@@ -746,7 +848,7 @@ t_reply("404", "Use $rU not found");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.23. t_reply_with_body usage
+   Example 1.26. t_reply_with_body usage
 ...
         if(is_method("INVITE"))
         {
@@ -766,7 +868,7 @@ t_reply("404", "Use $rU not found");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.24. t_newtran usage
+   Example 1.27. t_newtran usage
 ...
 t_newtran();  # 100 Trying is fired here
 xlog("doing my complicated routing logic");
@@ -801,7 +903,7 @@ t_relay(); # send the call further
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
 
-   Example 1.25. t_check_trans usage
+   Example 1.28. t_check_trans usage
 ...
 if ( is_method("CANCEL") ) {
         if ( t_check_trans() )
@@ -812,7 +914,7 @@ if ( is_method("CANCEL") ) {
 
 1.4.7.  t_check_status(re)
 
-   Returns true if the regualr expression “re” match the reply
+   Returns true if the regualr expression "re" match the reply
    code of the response message as follows:
      * in routing block - the code of the last sent reply.
      * in on_reply block - the code of the current received reply.
@@ -822,7 +924,7 @@ if ( is_method("CANCEL") ) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE .
 
-   Example 1.26. t_check_status usage
+   Example 1.29. t_check_status usage
 ...
 if (t_check_status("(487)|(408)")) {
     log("487 or 408 negative reply\n");
@@ -834,12 +936,12 @@ if (t_check_status("(487)|(408)")) {
    Returns true if all or last (depending of the parameter)
    reply(es) were local generated (and not received).
 
-   Parameter may be “all” or “last”.
+   Parameter may be "all" or "last".
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.27. t_local_replied usage
+   Example 1.30. t_local_replied usage
 ...
 if (t_local_replied("all")) {
         log ("no reply received\n");
@@ -853,7 +955,7 @@ if (t_local_replied("all")) {
 
    This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
 
-   Example 1.28. t_was_cancelled usage
+   Example 1.31. t_was_cancelled usage
 ...
 if (t_was_cancelled()) {
     log("transaction was cancelled by UAC\n");
@@ -875,7 +977,7 @@ if (t_was_cancelled()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.29. t_cancel_branch usage
+   Example 1.32. t_cancel_branch usage
 onreply_route[3] {
 ...
         if (t_check_status("183")) {
@@ -904,7 +1006,7 @@ onreply_route[3] {
        transaction as an AVP with name "uac_ctx" (it may be
        visible in local route)
 
-   Example 1.30. t_new_request usage
+   Example 1.33. t_new_request usage
 ...
         # send a MESSAGE request
         t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@m
@@ -920,7 +1022,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    new branch (good for services such as forward_on_no_reply) or
    send a final reply on your own (good for example for message
    silo, which received a negative reply from upstream and wants
-   to tell upstream “202 I will take care of it”).
+   to tell upstream "202 I will take care of it").
 
    As not all functions are available from failure route, please
    check the documentation for each function to see the
@@ -939,7 +1041,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. t_on_failure usage
+   Example 1.34. t_on_failure usage
 ...
 route {
         t_on_failure("1");
@@ -988,7 +1090,7 @@ failure_route[1] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.32. t_on_reply usage
+   Example 1.35. t_on_reply usage
 ...
 route {
         seturi("sip:bob@opensips.org");  # first branch
@@ -1045,7 +1147,7 @@ onreply_route[global] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.33. t_on_branch usage
+   Example 1.36. t_on_branch usage
 ...
 route {
         t_on_branch("1");
@@ -1097,7 +1199,7 @@ branch_route[1] {
           + cancel - cancel all the ongoing existing branches from
             the transaction before injecting the new branches.
 
-   Example 1.34. t_inject_branches usage
+   Example 1.37. t_inject_branches usage
 ...
 route[event_notification] {
         t_inject_branches("event");
@@ -1122,7 +1224,7 @@ route[event_notification] {
    caller - it will wait for new branches to be injected (see
    t_inject_branches function) until the fr_inv timer hits.
 
-   Example 1.35. t_wait_for_new_branches usage
+   Example 1.38. t_wait_for_new_branches usage
 ...
 t_newtran();
 t_wait_for_new_branches();
@@ -1135,7 +1237,7 @@ t_relay();
    headers will be appended to all requests related to the
    transaction (outgoing branches, local ACKS, CANCELs).
 
-   Example 1.36. t_add_hdrs usage
+   Example 1.39. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
 ...
@@ -1150,7 +1252,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
    before relaying the CANCEL request and its input must be a
    fully formated Reason header with name, body and CRLF.
 
-   Example 1.37. t_add_cancel_reason usage
+   Example 1.40. t_add_cancel_reason usage
 ...
 t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhe
 re"\r\n');
@@ -1169,12 +1271,12 @@ t_relay();
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for description see the
-   above “t_relay([flags])” function. Note that only 0x4 is
+   above "t_relay([flags])" function. Note that only 0x4 is
    applicable here.
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.38. t_replicate usage
+   Example 1.41. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
@@ -1185,12 +1287,12 @@ t_replicate("sip:1.2.3.4","0x4");
 
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
-   be control via the “tw_append” parameter.
+   be control via the "tw_append" parameter.
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.39. t_write_req/unix usage
+   Example 1.42. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -1209,9 +1311,25 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.40. t_flush_flags usage
+   Example 1.43. t_flush_flags usage
 ...
 t_flush_flags();
+...
+
+1.4.22.  t_anycast_replicate()
+
+   This function is used in an anycast setup to replicate a CANCEL
+   or ACK method for whom there are no local transactions found.
+   The function broadcasts the message to all the other nodes in
+   the cluster, but only the "owner" of the transaction will be
+   albe to handle it.
+
+   Example 1.44. t_anycast_replicate usage
+...
+if (is_method("ACK|CANCEL") && !t_check_trans()) {
+        t_anycast_replicate();
+        exit;
+}
 ...
 
 1.5. Exported variables
@@ -1282,13 +1400,13 @@ t_flush_flags();
    Parameters:
      * method - request method
      * RURI - request SIP URI
-     * NEXT HOP - next hop SIP URI (OBP); use “.” if no value.
+     * NEXT HOP - next hop SIP URI (OBP); use "." if no value.
      * socket - local socket to be used for sending the request;
-       use “.” if no value.
+       use "." if no value.
      * headers - set of additional headers to be added to the
-       request; at least “From” and “To” headers must be specify)
+       request; at least "From" and "To" headers must be specify)
      * body - (optional, may not be present) request body (if
-       present, requires the “Content-Type” and “Content-length”
+       present, requires the "Content-Type" and "Content-length"
        headers)
 
 1.6.2.  t_uac_cancel
@@ -1318,15 +1436,15 @@ t_flush_flags();
        format)
      * to_tag - To tag to be added to TO header
      * new_headers - extra headers to be appended to the reply;
-       use a dot (“.”) char only if there are no headers;
+       use a dot (".") char only if there are no headers;
      * body - (optional, may not be present) reply body (if
-       present, requires the “Content-Type” and “Content-length”
+       present, requires the "Content-Type" and "Content-length"
        headers)
 
 1.7. Exported statistics
 
    Exported statistics are listed in the next sections. All
-   statistics except “inuse_transactions” can be reset.
+   statistics except "inuse_transactions" can be reset.
 
 1.7.1. received_replies
 
@@ -1384,7 +1502,7 @@ Chapter 2. Developer Guide
 
    Meaning of the parameters is as follows:
      * import_structure - Pointer to the import structure - see
-       “struct tm_binds” in modules/tm/tm_load.h
+       "struct tm_binds" in modules/tm/tm_load.h
 
 Chapter 3. Frequently Asked Questions
 
