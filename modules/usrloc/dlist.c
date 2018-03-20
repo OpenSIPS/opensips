@@ -1188,7 +1188,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 	urecord_t *r;
 	ucontact_id contact_id = (ucontact_id)ct_coords;
 
-	LM_DBG("deleting contact_id %llu\n", (unsigned long long)contact_id);
+	LM_DBG("deleting ucoords %llu\n", (unsigned long long)ct_coords);
 
 	/* if contact only in database */
 	if (cluster_mode == CM_SQL_ONLY) {
@@ -1210,9 +1210,8 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 	}
 
 	c = get_ucontact_from_id(d, contact_id, &r);
-	if (c == NULL) {
-		LM_WARN("contact with contact id [%" PRIu64 "] not found\n",
-		        contact_id);
+	if (!c) {
+		LM_DBG("contact with contact id [%"PRIu64"] not found\n", contact_id);
 		return 0;
 	}
 
