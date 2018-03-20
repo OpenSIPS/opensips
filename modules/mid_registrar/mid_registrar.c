@@ -269,6 +269,9 @@ static int registrar_fixup(void** param, int param_no)
 
 static int mod_init(void)
 {
+	str s;
+	pv_spec_t avp_spec;
+
 	if (load_ul_api(&ul_api) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
@@ -332,6 +335,24 @@ static int mod_init(void)
 	 * Import use_domain parameter from usrloc
 	 */
 	reg_use_domain = ul_api.use_domain;
+
+	if (rcv_avp_param && *rcv_avp_param) {
+		s.s = rcv_avp_param; s.len = strlen(s.s);
+		if (pv_parse_spec(&s, &avp_spec)==0
+				|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %s AVP definition\n", rcv_avp_param);
+			return -1;
+		}
+
+		if(pv_get_avp_name(0, &avp_spec.pvp, &rcv_avp_name, &rcv_avp_type)!=0)
+		{
+			LM_ERR("[%s]- invalid AVP definition\n", rcv_avp_param);
+			return -1;
+		}
+	} else {
+		rcv_avp_name = -1;
+		rcv_avp_type = 0;
+	}
 
 	rcv_param.len = strlen(rcv_param.s);
 
