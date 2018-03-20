@@ -586,10 +586,10 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 	}
 
 	if (ZSTR(ct->instance)) {
-		if (CDB_DICT_ADD_NULL(ct_fields, "instance") != 0)
+		if (CDB_DICT_ADD_NULL(ct_fields, "sip_instance") != 0)
 			return -1;
 	} else {
-		if (CDB_DICT_ADD_STR(ct_fields, "instance", &ct->instance) != 0)
+		if (CDB_DICT_ADD_STR(ct_fields, "sip_instance", &ct->instance) != 0)
 			return -1;
 	}
 
