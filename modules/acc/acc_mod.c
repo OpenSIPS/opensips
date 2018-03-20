@@ -65,7 +65,6 @@ struct tm_binds tmb;
 struct rr_binds rrb;
 
 static int mod_init(void);
-static void destroy(void);
 static int child_init(int rank);
 
 
@@ -296,7 +295,7 @@ struct module_exports exports= {
 	0,          /* extra processes */
 	mod_init,   /* initialization module */
 	0,          /* response function */
-	destroy,    /* destroy function */
+	0,          /* destroy function */
 	child_init  /* per-child init function */
 };
 
@@ -462,27 +461,4 @@ static int child_init(int rank)
 	return 0;
 }
 
-
-static void destroy(void)
-{
-	if (log_extra_tags)
-		destroy_extras( log_extra_tags);
-	if (log_leg_tags)
-		destroy_extras( log_leg_tags);
-	acc_db_close();
-	if (db_extra_tags)
-		destroy_extras( db_extra_tags);
-	if (db_leg_tags)
-		destroy_extras( db_leg_tags);
-
-	if (aaa_extra_tags)
-		destroy_extras( aaa_extra_tags);
-	if (aaa_leg_tags)
-		destroy_extras( aaa_leg_tags);
-
-	if (evi_extra_tags)
-		destroy_extras( evi_extra_tags);
-	if (evi_leg_tags)
-		destroy_extras( evi_leg_tags);
-}
 
