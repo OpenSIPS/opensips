@@ -427,6 +427,7 @@ int timer_urecord(urecord_t* _r,query_list_t **ins_list)
 
 	switch (rr_persist) {
 	case RRP_NONE:
+	case RRP_SYNC_FROM_CLUSTER:
 		return nodb_timer(_r);
 	case RRP_LOAD_FROM_SQL:
 		/* use also the write_back timer routine to handle the failed
