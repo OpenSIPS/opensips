@@ -1332,22 +1332,38 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			if (ct==NULL) {
 				LM_ERR("failed to remove old CT / create anchor\n");
 			} else {
-				hdr = (char*)pkg_malloc( 14 + part->mime_s.len +CRLF_LEN +
-					part->headers.len);
-				if (hdr==NULL) {
-					LM_ERR("failed to allocate new ct hdr\n");
+				/* if a new part, we need to build the CT header; if a 
+				 * received part, simply copied from the part */
+				if (part->flags & SIP_BODY_PART_FLAG_NEW) {
+					hdr = (char*)pkg_malloc( 14 + part->mime_s.len +CRLF_LEN +
+						part->headers.len);
+					if (hdr==NULL) {
+						LM_ERR("failed to allocate new ct hdr\n");
+					} else {
+						memcpy( hdr, "Content-Type: ", 14);
+						memcpy( hdr+14, part->mime_s.s, part->mime_s.len);
+						memcpy( hdr+14+part->mime_s.len, CRLF, CRLF_LEN);
+						if (part->headers.len)
+							memcpy( hdr+14+part->mime_s.len+CRLF_LEN,
+								part->headers.s, part->headers.len);
+						if (insert_new_lump_before(ct, hdr,
+						14+part->mime_s.len+CRLF_LEN+part->headers.len,
+						HDR_CONTENTTYPE_T) == NULL) {
+							LM_ERR("failed to create insert lump\n");
+							pkg_free(hdr);
+						}
+					}
 				} else {
-					memcpy( hdr, "Content-Type: ", 14);
-					memcpy( hdr+14, part->mime_s.s, part->mime_s.len);
-					memcpy( hdr+14+part->mime_s.len, CRLF, CRLF_LEN);
-					if (part->headers.len)
-						memcpy( hdr+14+part->mime_s.len+CRLF_LEN,
-							part->headers.s, part->headers.len);
-					if (insert_new_lump_before(ct, hdr,
-					14+part->mime_s.len+CRLF_LEN+part->headers.len,
-					HDR_CONTENTTYPE_T) == NULL) {
-						LM_ERR("failed to create insert lump\n");
-						pkg_free(hdr);
+					hdr = (char*)pkg_malloc( part->headers.len);
+					if (hdr==NULL) {
+						LM_ERR("failed to allocate new ct hdr\n");
+					} else {
+						memcpy( hdr, part->headers.s, part->headers.len);
+						if (insert_new_lump_before(ct, hdr,
+						part->headers.len, HDR_CONTENTTYPE_T) == NULL) {
+							LM_ERR("failed to create insert lump\n");
+							pkg_free(hdr);
+						}
 					}
 				}
 			}
