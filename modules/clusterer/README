@@ -63,6 +63,7 @@ Robert-Vladut Patrascu
               1.5.4. clusterer_set_status
               1.5.5. cluster_send_mi
               1.5.6. cluster_broadcast_mi
+              1.5.7. clusterer_list_cap
 
         1.6. Exported Events
 
@@ -114,9 +115,10 @@ Robert-Vladut Patrascu
    1.23. cluster_check_addr() usage
    1.24. clusterer_list usage
    1.25. clusterer_list_topology usage
-   1.26. Example database content - clusterer table
-   1.27. Node A configuration
-   1.28. Node B configuration
+   1.26. clusterer_list_cap usage
+   1.27. Example database content - clusterer table
+   1.28. Node A configuration
+   1.29. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -691,6 +693,27 @@ Cluster:: 2
                 partition_5
                 _empty_line_
 
+1.5.7.  clusterer_list_cap
+
+   Lists the registered capabilities and their states.
+
+   Note that not all capabilities require data synchronization so
+   a not synced state does not necessarily indicate an issue.
+
+   Name: clusterer_list
+
+   Parameters:none
+
+   MI FIFO Command Format:
+                :clusterer_list_cap
+                _empty_line_
+
+   Example 1.26. clusterer_list_cap usage
+$ ./opensipsctl fifo clusterer_list
+Cluster:: 1
+        Capability:: dialog-dlg-repl State=Ok
+        Capability:: usrloc-contact-repl State=not synced
+
 1.6. Exported Events
 
 1.6.1.  E_CLUSTERER_REQ_RECEIVED
@@ -739,7 +762,7 @@ Cluster:: 2
    pipes. Therefore, we have to provision them in the clusterer
    table.
 
-   Example 1.26. Example database content - clusterer table
+   Example 1.27. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+------------
 -----+----------+------------------------+
 | id | cluster_id | node_id | url                  | state | no_ping_ret
@@ -791,7 +814,7 @@ ries | priority | sip_addr | description |
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.27. Node A configuration
+   Example 1.28. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -810,7 +833,7 @@ modparam("ratelimit", "accept_pipes_from", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.28. Node B configuration
+   Example 1.29. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 

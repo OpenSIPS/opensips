@@ -76,6 +76,7 @@ static struct mi_root* clusterer_list(struct mi_root *root, void *param);
 static struct mi_root* clusterer_list_topology(struct mi_root *cmd_tree, void *param);
 static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param);
 static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param);
+static struct mi_root* clusterer_list_cap(struct mi_root *cmd_tree, void *param);
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param);
 static void heartbeats_utimer_handler(utime_t ticks, void *param);
@@ -156,6 +157,8 @@ static mi_export_t mi_cmds[] = {
 	cluster_send_mi, MI_ASYNC_RPL_FLAG, 0, 0},
 	{ "cluster_broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster",
 	cluster_bcast_mi, MI_ASYNC_RPL_FLAG, 0, 0},
+	{ "clusterer_list_cap", "lists registered capabilities and their states",
+	clusterer_list_cap, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -520,6 +523,55 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 
 	lock_stop_read(cl_list_lock);
 	return rpl_tree;
+error:
+	lock_stop_read(cl_list_lock);
+	if (rpl_tree) free_mi_tree(rpl_tree);
+	return NULL;
+}
+
+static struct mi_root * clusterer_list_cap(struct mi_root *cmd_tree, void *param)
+{
+	cluster_info_t *cl;
+	struct local_cap *cap;
+	struct mi_root *rpl_tree = NULL;
+	struct mi_node *node = NULL;
+	struct mi_node *node_s = NULL;
+	struct mi_attr* attr;
+	str val;
+	static str str_ok = str_init("Ok");
+	static str str_not_synced = str_init("not synced");
+
+	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	if (!rpl_tree)
+		return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
+
+	lock_start_read(cl_list_lock);
+
+	for (cl = *cluster_list; cl; cl = cl->next) {
+		val.s = int2str(cl->cluster_id, &val.len);
+		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE|MI_IS_ARRAY,
+			MI_SSTR("Cluster"), val.s, val.len);
+		if (!node) goto error;
+
+		for (cap = cl->capabilities; cap; cap = cap->next) {
+			val.s = cap->reg.name.s;
+			val.len = cap->reg.name.len;
+			node_s = add_mi_node_child(node, MI_DUP_VALUE|MI_IS_ARRAY,
+			   MI_SSTR("Capability"), val.s, val.len);
+			if (!node_s) goto error;
+
+			val.s = int2str((cap->flags & CAP_STATE_OK) ? 1 : 0, &val.len);
+			attr = add_mi_attr(node_s, MI_DUP_VALUE, MI_SSTR("State"),
+				(cap->flags & CAP_STATE_OK) ? str_ok.s : str_not_synced.s,
+				(cap->flags & CAP_STATE_OK) ? str_ok.len : str_not_synced.len);
+			if (!attr) goto error;
+	   }
+	}
+
+	lock_stop_read(cl_list_lock);
+	return rpl_tree;
+
 error:
 	lock_stop_read(cl_list_lock);
 	if (rpl_tree) free_mi_tree(rpl_tree);
