@@ -1712,7 +1712,7 @@ skip:
 	/* register handler for processing droutimg packets to the clusterer module */
 	if (dr_repl_cluster > 0 &&
 		clusterer_api.register_capability(&status_repl_cap, receive_dr_binary_packet,
-		NULL, dr_repl_cluster) < 0) {
+		NULL, dr_repl_cluster, 0) < 0) {
 		LM_ERR("cannot register binary packet callback to clusterer module!\n");
 		return -1;
 	}

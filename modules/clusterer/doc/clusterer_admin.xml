@@ -833,10 +833,6 @@ Cluster:: 2
 			Lists the registered capabilities and their states.
 		</para>
 		<para>
-			Note that not all capabilities require data synchronization so a
-			<emphasis>not synced</emphasis> state does not necessarily indicate an issue.
-		</para>
-		<para>
 		Name: <emphasis>clusterer_list</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>

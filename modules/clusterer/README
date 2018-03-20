@@ -697,9 +697,6 @@ Cluster:: 2
 
    Lists the registered capabilities and their states.
 
-   Note that not all capabilities require data synchronization so
-   a not synced state does not necessarily indicate an issue.
-
    Name: clusterer_list
 
    Parameters:none

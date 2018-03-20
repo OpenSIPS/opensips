@@ -89,7 +89,8 @@ typedef int (*get_my_id_f)(void);
  * Return an index for the current node, with a value between [0, @nr_nodes-1],
  * which belongs to a continous sequence of identifiers for the nodes in the cluster.
  * This function operates on a set of nodes which are reachable and
- * synchronized (for a certain capability).
+ * synchronized/OK (for a certain capability).
+ *
  * @nr_nodes - output parameter, the number of nodes in the set.
  */
 typedef int (*get_my_index_f)(int cluster_id, str *capability, int *nr_nodes);
@@ -126,11 +127,14 @@ typedef void (*cl_packet_cb_f)(bin_packet_t *packet);
 typedef void (*cl_event_cb_f)(enum clusterer_event ev, int node_id);
 
 /*
- * Register a capability (grouping of BIN packets/cluster events used to
- * 						  achieve a certain functionality)
+ * Register a capability(grouping of BIN packets/cluster events used to
+ * achieve a certain functionality).
+ *
+ * @require_sync - 1 - if successful data sync is required in order for
+ * this capability to be in the OK state, 0 - otherwise
  */
 typedef int (*register_capability_f)(str *cap, cl_packet_cb_f packet_cb,
-					cl_event_cb_f event_cb, int cluster_id);
+					cl_event_cb_f event_cb, int cluster_id, int require_sync);
 
 /*
  * Request to synchronize data for a given capability from another node.
