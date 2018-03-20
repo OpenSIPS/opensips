@@ -87,6 +87,29 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>default_part_headers</varname> (str)</title>
+		<para>
+		The default set of headers (fully defined, including the header
+		termination) to be pushed into the ISUP part together 
+		with the <emphasis>Content-Type</emphasis> header.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "Content-Disposition:signal;handling=optional\r\n".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>default_part_headers</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sip_i", "default_part_headers", "Content-Disposition:signal;handling=required\r\n")
+...
+
+</programlisting>
+		</example>
+	</section>
+
 
 </section>
 
@@ -95,7 +118,7 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 
 		<section>
 		<title>
-			<function moreinfo="none">add_isup_part([isup_msg_type])</function>
+			<function moreinfo="none">add_isup_part([isup_msg_type][,extra_headers])</function>
 		</title>
 		<para>
 			Adds a new ISUP part to the SIP message body.
@@ -107,6 +130,10 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>isup_msg_type (string)</emphasis> - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. <emphasis>IAM</emphasis> for "Initial address").
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>extra_headers (string)</emphasis> - a chunck of fully defined SIP headers (including header terminatior) to be inserted into the ISUP part next to the <emphasis>Content-Type</emphasis> header. It overrides the global module paramerter <emphasis>default_part_headers</emphasis>. If not specified, the <emphasis>default_part_headers</emphasis> value will be used.
 			</para>
 		</listitem>
 		</itemizedlist>

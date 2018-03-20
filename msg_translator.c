@@ -1332,15 +1332,20 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			if (ct==NULL) {
 				LM_ERR("failed to remove old CT / create anchor\n");
 			} else {
-				hdr = (char*)pkg_malloc( 14 + part->mime_s.len +CRLF_LEN );
+				hdr = (char*)pkg_malloc( 14 + part->mime_s.len +CRLF_LEN +
+					part->headers.len);
 				if (hdr==NULL) {
 					LM_ERR("failed to allocate new ct hdr\n");
 				} else {
 					memcpy( hdr, "Content-Type: ", 14);
 					memcpy( hdr+14, part->mime_s.s, part->mime_s.len);
 					memcpy( hdr+14+part->mime_s.len, CRLF, CRLF_LEN);
+					if (part->headers.len)
+						memcpy( hdr+14+part->mime_s.len+CRLF_LEN,
+							part->headers.s, part->headers.len);
 					if (insert_new_lump_before(ct, hdr,
-					14+part->mime_s.len+CRLF_LEN, HDR_CONTENTTYPE_T) == NULL) {
+					14+part->mime_s.len+CRLF_LEN+part->headers.len,
+					HDR_CONTENTTYPE_T) == NULL) {
 						LM_ERR("failed to create insert lump\n");
 						pkg_free(hdr);
 					}
@@ -1372,7 +1377,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			/* separator and CT header */
 			len += 2 /* "--" */ + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN +
 			 14/* "Content-Type: " */ + part->mime_s.len +
-			 CRLF_LEN + CRLF_LEN ;
+			 CRLF_LEN + part->headers.len + CRLF_LEN ;
 
 			/* part with dump function ? */
 			if (part->dump_f) {
@@ -1467,7 +1472,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 				/* separator and CT header */
 				len += 2 /* "--" */ + msg->body->boundary.len +
 					CRLF_LEN + 14 /* "Content-Type: " */ + part->mime_s.len +
-					CRLF_LEN + CRLF_LEN ;
+					CRLF_LEN + part->headers.len + CRLF_LEN ;
 				/* simpy copy the body of the part */
 				if (part->dump_f) {
 					if (part->dump_f( part->parsed ,msg, &part->dump)<0) {
@@ -1625,8 +1630,17 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 			offset += 2 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN + 14;
 			memcpy(new_buf+offset, part->mime_s.s , part->mime_s.len);
 			offset += part->mime_s.len;
-			memcpy(new_buf+offset, CRLF CRLF , CRLF_LEN+CRLF_LEN);
-			offset += CRLF_LEN + CRLF_LEN ;
+			if (part->headers.len==0) {
+				memcpy(new_buf+offset, CRLF CRLF , CRLF_LEN+CRLF_LEN);
+				offset += CRLF_LEN + CRLF_LEN ;
+			} else {
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+				memcpy(new_buf+offset, part->headers.s , part->headers.len);
+				offset += part->headers.len ;
+				memcpy(new_buf+offset, CRLF , CRLF_LEN);
+				offset += CRLF_LEN;
+			}
 
 			/* part with dump function ? */
 			if (part->dump_f) {
@@ -1710,9 +1724,18 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 				offset += CRLF_LEN + 14 ;
 				memcpy(new_buf+offset, part->mime_s.s , part->mime_s.len);
 				offset += part->mime_s.len;
-				memcpy(new_buf+offset, CRLF CRLF , CRLF_LEN+CRLF_LEN);
-				offset += CRLF_LEN + CRLF_LEN ;
-				/* simpy copy the body of the part */
+				if (part->headers.len==0) {
+					memcpy(new_buf+offset, CRLF CRLF , CRLF_LEN+CRLF_LEN);
+					offset += CRLF_LEN + CRLF_LEN ;
+				} else {
+					memcpy(new_buf+offset, CRLF , CRLF_LEN);
+					offset += CRLF_LEN;
+					memcpy(new_buf+offset, part->headers.s , part->headers.len);
+					offset += part->headers.len ;
+					memcpy(new_buf+offset, CRLF , CRLF_LEN);
+					offset += CRLF_LEN;
+				}
+				/* simply copy the body of the part */
 				if (part->dump_f) {
 					memcpy(new_buf+offset, part->dump.s, part->dump.len );
 					offset += part->dump.len;

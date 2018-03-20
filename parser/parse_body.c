@@ -152,8 +152,6 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 	char * tmp, *body_end, * mime_end;
 	unsigned int mime;
 
-	part->all_data.s = start;
-	part->all_data.len = end - start;
 	part->mime = -1;
 
 	LM_DBG("parsing part [%.*s...]\n",
@@ -193,6 +191,9 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 			break;
 		}
 	}
+
+	part->headers.s = start;
+	part->headers.len = (tmp-2) - start;
 
 	if (part->mime < 0)
 		part->mime = ((TYPE_TEXT) << 16) + SUBTYPE_PLAIN;
@@ -293,7 +294,8 @@ int parse_sip_body(struct sip_msg * msg)
 		part->mime = type;
 		part->mime_s = msg->content_type->body;
 		part->body = body;
-		part->all_data = body;
+		part->headers.s = NULL;
+		part->headers.len = 0;
 		msg->body->part_count++;
 	}
 
@@ -304,7 +306,8 @@ int parse_sip_body(struct sip_msg * msg)
 };
 
 
-struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
+struct body_part* add_body_part(struct sip_msg *msg, str *mime_s,
+														str * hdrs, str *body)
 {
 	struct body_part *part, *last;
 	char *m;
@@ -314,11 +317,16 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 		return NULL;
 	}
 
+	LM_DBG("adding mime <%.*s>, hdrs <%.*s>, body=<%.*s>\n",
+		mime_s->len, mime_s->s, hdrs?hdrs->len:0 , hdrs?hdrs->s:NULL,
+		body?body->len:0, body?body->s:NULL );
+
 	if (msg->body==NULL) {
 
 		/* the message has no body so far */
 		msg->body = (struct sip_msg_body*)pkg_malloc(
-			sizeof(struct sip_msg_body) + (body?body->len:0) + mime_s->len );
+			sizeof(struct sip_msg_body) + (body?body->len:0) +
+			(hdrs?hdrs->len:0) + mime_s->len );
 		memset(msg->body, 0, sizeof(struct sip_msg_body));
 
 		msg->body->part_count = 0;
@@ -334,7 +342,8 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 
 		/* allocate a new body part */
 		part = (struct body_part*)pkg_malloc(
-			sizeof(struct body_part) + (body?body->len:0) + mime_s->len );
+			sizeof(struct body_part) + (body?body->len:0) +
+			(hdrs?hdrs->len:0) + mime_s->len );
 		if (part==NULL) {
 			LM_ERR("failed to allocated pkg mem\n");
 			return NULL;
@@ -358,9 +367,16 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s, str *body)
 	part->mime_s.s = m;
 	part->mime_s.len = mime_s->len;
 
+	if (hdrs) {
+		/* SIP hdrs follow right after mime, in the same mem chunk */
+		part->headers.s = m + mime_s->len;
+		memcpy( part->headers.s, hdrs->s, hdrs->len);
+		part->headers.len = hdrs->len;
+	}
+
 	if (body) {
-		/* body follows right after mime, in the same mem chunk */
-		part->body.s = m + mime_s->len;
+		/* body follows right after headers, in the same mem chunk */
+		part->body.s = m + mime_s->len + (hdrs?hdrs->len:0);
 		memcpy( part->body.s, body->s, body->len);
 		part->body.len = body->len;
 	}
@@ -505,11 +521,15 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 					p->body.s);
 				np->mime_s.s = translate_pointer((char*)dst, (char*)src,
 					p->mime_s.s);
+				np->headers.s = translate_pointer((char*)dst, (char*)src,
+					p->headers.s);
 			} else {
 				np->body.s = translate_pointer((char*)np ,(char*)p,
 					p->body.s);
 				np->mime_s.s = translate_pointer((char*)np, (char*)p,
 					p->mime_s.s);
+				np->headers.s = translate_pointer((char*)np, (char*)p,
+					p->headers.s);
 			}
 		} else {
 			/* links are pointing inside the sip msg body, so update only
@@ -519,8 +539,8 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 					src_msg->buf, p->body.s );
 				np->mime_s.s = translate_pointer( dst_msg->buf,
 					src_msg->buf, p->mime_s.s );
-				np->all_data.s = translate_pointer( dst_msg->buf,
-						src_msg->buf, p->all_data.s );
+				np->headers.s = translate_pointer( dst_msg->buf,
+						src_msg->buf, p->headers.s );
 			}
 		}
 		if (p->parsed && p->clone_parsed_f)

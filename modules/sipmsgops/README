@@ -11,19 +11,13 @@ Andrei Pelinescu-Onciul
 
    <pelinescu-onciul@fokus.fraunhofer.de>
 
-Edited by
-
 Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-Edited by
-
 Ovidiu Sas
 
    <osas@voipembedded.com>
-
-Edited by
 
 Razvan Crainea
 
@@ -60,7 +54,7 @@ Razvan Crainea
               1.3.12. is_audio_on_hold()
               1.3.13. is_privacy(privacy_type)
               1.3.14. remove_body_part([mime[,revert]]),
-              1.3.15. add_body_part(body,mime)
+              1.3.15. add_body_part(body,mime[,headers])
               1.3.16. sipmsg_validate([flags[,result_pvar]])
               1.3.17. codec_exists (name [,clock] )
               1.3.18. codec_delete (name [,clock] )
@@ -466,7 +460,7 @@ remove_body_part("application/isup");
 remove_body_part("application/sdp","revert")
 ...
 
-1.3.15.  add_body_part(body,mime)
+1.3.15.  add_body_part(body,mime[,headers])
 
    This function can be used to add a new body part to the message
    body. If another part already exist, body of the message will
@@ -476,6 +470,9 @@ remove_body_part("application/sdp","revert")
      * body - the content of the body part to be added - it may
        contain variables;
      * mime - the mime string for the body part to be added.
+     * headers - optional list of SIP headers (fully defined,
+       including the header separator) to be pushed into this part
+       next to the Content-Type header.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.

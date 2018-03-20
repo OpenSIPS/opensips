@@ -32,6 +32,8 @@
 
 #define DEFAULT_COUNTRY_CODE "+1"
 
+#define DEFAULT_PART_HEADERS "Content-Disposition:signal;handling=optional" CRLF
+
 enum tr_isup_subtype {
 	TR_ISUP_PARAM, TR_ISUP_PARAM_STR
 };

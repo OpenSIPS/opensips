@@ -123,7 +123,8 @@ static int is_method_f(struct sip_msg* msg, char* , char *);
 static int has_body_f(struct sip_msg *msg, char *type, char *str2 );
 static int is_privacy_f(struct sip_msg *msg, char *privacy, char *str2 );
 static int remove_body_part_f(struct sip_msg *msg, char *str1, char *str2 );
-static int add_body_part_f(struct sip_msg *msg, char *str1, char *str2 );
+static int add_body_part_f(struct sip_msg *msg, char *str1, char *str2,
+	char *str3 );
 static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 );
 static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result);
 
@@ -208,6 +209,9 @@ static cmd_export_t cmds[]={
 		fixup_body_type, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
 	{"add_body_part",    (cmd_function)add_body_part_f,   2,
+		add_header_fixup, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"add_body_part",    (cmd_function)add_body_part_f,   3,
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"codec_exists",	(cmd_function)codec_find,	1,
@@ -967,6 +971,8 @@ static int add_header_fixup(void** param, int param_no)
 		return fixup_spve_null(param, param_no);
 	} else if(param_no==2) {
 		return hname_fixup(param, param_no);
+	} else if(param_no==3) {
+		return fixup_spve(param);
 	} else {
 		LM_ERR("wrong number of parameters\n");
 		return E_UNSPEC;
@@ -1098,10 +1104,12 @@ static int remove_body_part_f(struct sip_msg *msg, char *type, char *revert )
 /*
  *	Function to add a new body
  * */
-static int add_body_part_f(struct sip_msg *msg, char *nbody, char *ctype )
+static int add_body_part_f(struct sip_msg *msg, char *nbody, char *ctype,
+															char *extra_hdrs)
 {
 	str body;
 	str mime;
+	str hdrs;
 
 	if(fixup_get_svalue(msg, (gparam_p)nbody, &body)!=0) {
 		LM_ERR("cannot print the format\n");
@@ -1123,7 +1131,16 @@ static int add_body_part_f(struct sip_msg *msg, char *nbody, char *ctype )
 		return -1;
 	}
 
-	if (add_body_part(msg, &mime, &body)==NULL) {
+	if (extra_hdrs) {
+		if(fixup_get_svalue(msg, (gparam_p)extra_hdrs, &hdrs)!=0) {
+			LM_ERR("cannot print the headers format\n");
+			return -1;
+		}
+		if (hdrs.s==NULL || hdrs.len==0)
+			extra_hdrs = NULL;
+	}
+
+	if (add_body_part(msg, &mime, extra_hdrs?&hdrs:NULL, &body)==NULL) {
 		LM_ERR("failed to add new body part <%.*s>\n",
 			mime.len, mime.s);
 		return -1;

@@ -641,7 +641,7 @@ remove_body_part("application/sdp","revert")
 
 	<section>
 		<title>
-		<function moreinfo="none">add_body_part(body,mime)</function>
+		<function moreinfo="none">add_body_part(body,mime[,headers])</function>
 		</title>
 		<para>
 		This function can be used to add a new body part to the message body.
@@ -660,6 +660,13 @@ remove_body_part("application/sdp","revert")
 			part to be added.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>headers</emphasis> - optional list of SIP headers
+			(fully defined, including the header separator) to be pushed into
+			this part next to the <emphasis>Content-Type</emphasis> header.
+			</para>
+		</listitem>
+
 		</itemizedlist>
 
 		<para>

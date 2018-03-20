@@ -29,6 +29,7 @@
 #include "../../pvar.h"
 #include "../../ut.h"
 #include "../../trim.h"
+#include "../../mod_fix.h"
 #include "../../parser/parse_body.h"
 #include "../../parser/parse_pai.h"
 #include "../../parser/parse_privacy.h"
@@ -51,7 +52,7 @@ int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *param, pv_value_t *re
 int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val);
 
 /* script functions */
-static int add_isup_part_cmd(struct sip_msg *msg, char *param);
+static int add_isup_part_cmd(struct sip_msg *msg, char *param, char *hdrs);
 
 /* script transformations */
 int tr_isup_parse(str* in, trans_t *t);
@@ -74,21 +75,28 @@ static pv_export_t mod_items[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{"add_isup_part", (cmd_function)add_isup_part_cmd, 0, 0, 0, REQUEST_ROUTE | FAILURE_ROUTE |
-		 ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
-	{"add_isup_part", (cmd_function)add_isup_part_cmd, 1, 0, 0, REQUEST_ROUTE | FAILURE_ROUTE |
-		 ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
+	{"add_isup_part", (cmd_function)add_isup_part_cmd, 0,
+		NULL, 0, REQUEST_ROUTE | FAILURE_ROUTE |
+		ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
+	{"add_isup_part", (cmd_function)add_isup_part_cmd, 1,
+		fixup_spve_spve, 0, REQUEST_ROUTE | FAILURE_ROUTE |
+		ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
+	{"add_isup_part", (cmd_function)add_isup_part_cmd, 2,
+		fixup_spve_spve, 0, REQUEST_ROUTE | FAILURE_ROUTE |
+		ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE},
 	{0,0,0,0,0,0}
 };
 
 static str param_subf_sep = str_init(DEFAULT_PARAM_SUBF_SEP);
 static str isup_mime = str_init(ISUP_MIME_S);
 static str country_code = str_init(DEFAULT_COUNTRY_CODE);
+static str default_part_headers = str_init(DEFAULT_PART_HEADERS);
 
 static param_export_t params[] = {
 	{"param_subfield_separator", STR_PARAM, &param_subf_sep.s},
 	{"isup_mime_str", STR_PARAM, &isup_mime.s},
 	{"country_code", STR_PARAM, &country_code.s},
+	{"default_part_headers", STR_PARAM, &default_part_headers.s},
 	{0,0,0}
 };
 
@@ -124,6 +132,7 @@ static int mod_init(void)
 	param_subf_sep.len = strlen( param_subf_sep.s );
 	isup_mime.len = strlen( isup_mime.s );
 	country_code.len = strlen( country_code.s );
+	default_part_headers.len = strlen( default_part_headers.s );
 
 	return 0;
 }
@@ -1604,12 +1613,13 @@ static int init_anm_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 }
 
 
-static int add_isup_part_cmd(struct sip_msg *msg, char *param)
+static int add_isup_part_cmd(struct sip_msg *msg, char *param, char *hdrs)
 {
 	struct isup_parsed_struct *isup_struct;
 	struct body_part *isup_part;
 	int isup_msg_idx = -1;
 	str param_msg_type;
+	str sip_hdrs;
 	int i;
 	int rc;
 
@@ -1653,9 +1663,17 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 			LM_ERR("Invalid SIP message\n");
 			return -1;
 		}
+
 	} else {
-		param_msg_type.len = strlen(param);
-		param_msg_type.s = param;
+
+		if(fixup_get_svalue(msg, (gparam_p)param, &param_msg_type)!=0) {
+			LM_ERR("cannot print the param format\n");
+			return -1;
+		}
+		if(param_msg_type.s==NULL || param_msg_type.len==0) {
+			LM_ERR("null/empty param found\n");
+			return -1;
+		}
 
 		for (i = 0; i < NO_ISUP_MESSAGES; i++)
 			if (param_msg_type.len == 3) {
@@ -1681,6 +1699,24 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 			LM_WARN("Initial address message maps only to INVITE\n");
 			return -1;
 		}
+	}
+
+	/* handle the extra SIP headers */
+	if (hdrs!=NULL) {
+		if(fixup_get_svalue(msg, (gparam_p)hdrs, &sip_hdrs)!=0) {
+			LM_ERR("cannot print the param format, ignoring SIP headers\n");
+			sip_hdrs.len = 0;
+			sip_hdrs.s = NULL;
+		} else if(sip_hdrs.s==NULL || sip_hdrs.len==0) {
+			LM_DBG("null/empty SIP headers found\n");
+			sip_hdrs.len = 0;
+			sip_hdrs.s = NULL;
+		}
+	} else if (default_part_headers.len) {
+		sip_hdrs = default_part_headers;
+	} else {
+		sip_hdrs.len = 0;
+		sip_hdrs.s = NULL;
 	}
 
 	/* first, build a blank isup message (no optional params, all mandatory fixed params zeroed) */
@@ -1740,7 +1776,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 		LM_DBG("%.*s message parameters set by default\n",
 			isup_messages[isup_msg_idx].name.len, isup_messages[isup_msg_idx].name.s);
 
-	isup_part = add_body_part(msg, &isup_mime, NULL);
+	isup_part = add_body_part(msg, &isup_mime, sip_hdrs.s?&sip_hdrs:NULL, NULL);
 	if (!isup_part) {
 		LM_ERR("Failed to add isup body part\n");
 		return -1;
