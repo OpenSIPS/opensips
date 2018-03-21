@@ -1280,6 +1280,28 @@ modparam("dialog", "replicate_profiles_expire", 10)
 </programlisting>
 		</example>
 	</section>
+	<section id='dlg_repl_tag' xreflabel="dlg_repl_tag">
+		<title><varname>dlg_repl_tag</varname> (string)</title>
+		<para>
+		This parameter can be set(mutiple times) in order to define tags, along with
+		their initial states, useful in dialog replication.
+		</para>
+		<para>
+		Format: "<emphasis>tag_name</emphasis>=<emphasis>state</emphasis>" where
+		<emphasis>state</emphasis> may have the "active" or "backup" values.
+		</para>
+		<para>If this parameter is not defined for a specific tag, and that tag is
+		encountered at runtime, it will have  the initial state of <emphasis>backup</emphasis>.
+		</para>
+		<example>
+		<title>Set <varname>dlg_repl_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "dlg_repl_tag", "vip1=active")
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 
@@ -1973,6 +1995,37 @@ $var(account) = $dlg_val(account_type);
 		</example>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">set_dlg_repl_tag(tag_name)</function>
+		</title>
+		<para>
+		Marks the current dialog with the replication tag <emphasis>tag_name</emphasis>.
+		From now on, actions like in-dialog pinging, DB updates etc. will depend on the tag state.
+		</para>
+		<para>
+		If the tag is not already defined through the <xref linkend="dlg_repl_tag"/> param and/or
+		have it's state changed by the <xref linkend="set_repl_tag_active"/> MI command, the
+		initial state will be <emphasis>backup</emphasis>.
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use
+		create_dialog() function before).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>set_dlg_repl_tag</function> usage</title>
+		<programlisting format="linespecific">
+...
+set_dlg_repl_tag("vip1");
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 
@@ -2351,6 +2404,44 @@ $var(account) = $dlg_val(account_type);
 		</para>
 		<programlisting  format="linespecific">
 		opensipsctl fifo list_all_profiles
+		</programlisting>
+		</section>
+
+		<section id='set_repl_tag_active' xreflabel="set_repl_tag_active">
+		<title><varname>set_repl_tag_active</varname></title>
+		<para>
+		Sets the given replication tag to the <emphasis>active</emphasis> state.
+		The information about this change is also broadcasted in the cluster in order
+		to force any other node that may be active on this tag to go backup.
+		</para>
+		<para>
+		Name: <emphasis>set_repl_tag_active</emphasis>
+		</para>
+		<para>Parameters: <emphasis>tag</emphasis> - name of the tag to be set active
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo set_repl_tag_active vip1
+		</programlisting>
+		</section>
+
+		<section>
+		<title><varname>list_repl_tags</varname></title>
+		<para>
+		Lists all known replication tags and their states.
+		</para>
+		<para>
+		Name: <emphasis>list_repl_tags</emphasis>
+		</para>
+		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo list_repl_tags
 		</programlisting>
 		</section>
 
