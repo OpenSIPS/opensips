@@ -61,6 +61,10 @@ enum clusterer_event {
 	SYNC_REQ_RCV		/* received a data sync request */
 };
 
+enum cl_node_match_op {
+	NODE_CMP_EQ_SIP_ADDR,
+	NODE_CMP_NEQ_SIP_ADDR,
+};
 
 /*
  * Return the list of reachable nodes in the cluster.
@@ -104,6 +108,13 @@ typedef enum clusterer_send_ret (*send_to_f)(bin_packet_t *packet, int cluster_i
  * Send a message to all the nodes in the cluster.
  */
 typedef enum clusterer_send_ret (*send_all_f)(bin_packet_t *packet, int cluster_id);
+
+/*
+ * Send a message to all @dst_cluster_id nodes (excluding self)
+ * which match ourselves using the @match_op filtering operator.
+ */
+typedef enum clusterer_send_ret (*send_all_having_f)(bin_packet_t *packet,
+                        int dst_cluster_id, enum cl_node_match_op match_op);
 
 /*
  * Return the next hop from the shortest path to the given destination.
@@ -167,6 +178,7 @@ struct clusterer_binds {
 	get_my_index_f get_my_index;
 	send_to_f send_to;
 	send_all_f send_all;
+	send_all_having_f send_all_having;
 	get_next_hop_f get_next_hop;
 	free_next_hop_f free_next_hop;
 	register_capability_f register_capability;

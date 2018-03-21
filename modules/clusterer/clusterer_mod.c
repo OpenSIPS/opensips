@@ -1124,6 +1124,7 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->get_my_index = cl_get_my_index;
 	binds->send_to = cl_send_to;
 	binds->send_all = cl_send_all;
+	binds->send_all_having = cl_send_all_having;
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;
 	binds->register_capability = cl_register_cap;
