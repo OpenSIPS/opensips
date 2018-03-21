@@ -122,8 +122,8 @@
 		$cgr(SetupTime) = "" + $Ts;
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
-		cgrates_cmd("SMGenericV1.GetMaxUsage");
-		xlog("Call is allowed to run $cgrret seconds\n");
+		cgrates_cmd("SessionSv1.AuthorizeEvent");
+		xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n");
 		...
 		</programlisting>
 	</para>
@@ -583,7 +583,7 @@ modparam("cgrates", "compat_mode", 1)
 		$cgr(SetupTime) = "" + $Ts;
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
-		cgrates_cmd("SMGenericV1.GetMaxUsage");
+		cgrates_cmd("SessionSv1.AuthorizeEvent");
 		xlog("Call is allowed to run $cgrret seconds\n");
 		...
 		</programlisting>
@@ -714,16 +714,23 @@ modparam("cgrates", "compat_mode", 1)
 		</example>
 		</section>
 		<section>
-			<title><varname>$cgrret</varname></title>
+			<title><varname>$cgrret(name)</varname></title>
 			<para>
-				Returns the reply message of a CGRateS command in script.
+				Returns the reply message of a CGRateS command in script,
+				or when used in the non-compat mode, one of the objects
+				within the reply.
 			</para>
 		<example>
-				<title>$cgrret usage</title>
+				<title>$cgrret(name) usage</title>
 				<programlisting format="linespecific">
 		...
 		cgrates_auth("$fU", "$rU");
+
+		# in compat mode
 		xlog("Call is allowed to run $cgrret seconds\n");
+
+		# in non-compat mode
+		xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n");
 		...
 		</programlisting>
 		</example>
@@ -878,7 +885,7 @@ route {
 	$cgr(SetupTime) = "" + $Ts;
 	$cgr(RequestType) = "*prepaid";
 	$cgr(Destination) = $rU;
-	async(cgrates_cmd("SMGenericV1.GetMaxUsage"), auth_reply);
+	async(cgrates_cmd("SessionSv1.AuthorizeEvent"), auth_reply);
 }
 
 route [auth_reply]
