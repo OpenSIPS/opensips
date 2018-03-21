@@ -215,9 +215,12 @@ int cgrates_set_reply_with_values(json_object *jobj)
 		case json_type_null:
 			continue;
 		case json_type_boolean:
+		case json_type_double:
 		case json_type_int:
 			if (json_object_get_type(v) == json_type_int)
 				val.n = json_object_get_int(v);
+			if (json_object_get_type(v) == json_type_double)
+				val.n = (int)json_object_get_double(v); /* lower precision to int :( */
 			else if (json_object_get_boolean(v))
 				val.n = 1;
 			else
@@ -229,7 +232,6 @@ int cgrates_set_reply_with_values(json_object *jobj)
 			break;
 
 		case json_type_string:
-		case json_type_double:
 		case json_type_object:
 		case json_type_array:
 			val.s.s = (char *)json_object_to_json_string(jobj);

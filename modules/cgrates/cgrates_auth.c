@@ -72,7 +72,7 @@ static json_object *cgr_get_auth_msg(struct sip_msg *msg, str *acc, str *dst, st
 {
 	struct cgr_session *s;
 	struct cgr_msg *cmsg = NULL;
-	static str cmd_ng = str_init("SessionSv1.AuthorizeEvent");
+	static str cmd_ng = str_init("SessionSv1.AuthorizeEventWithDigest");
 	static str cmd_compat = str_init("SMGenericV1.GetMaxUsage");
 	str stime;
 	str *cmd = (cgre_compat_mode ? &cmd_compat: &cmd_ng);
