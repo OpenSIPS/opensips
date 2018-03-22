@@ -162,14 +162,14 @@
         <description>SIP Instance for this particular contact</description>
     </column>
 
-	<column>
-		<name>kv_store</name>
-		<type>text</type>
-		<size>512</size>
-		<default><null/></default>
-		<null/>
-		<description>Generic Key-Value storage</description>
-	</column>
+    <column>
+        <name>kv_store</name>
+        <type>text</type>
+        <size>512</size>
+        <default><null/></default>
+        <null/>
+        <description>Generic Key-Value storage</description>
+    </column>
 
     <column>
         <name>attr</name>
