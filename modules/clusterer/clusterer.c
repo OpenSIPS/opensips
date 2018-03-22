@@ -600,7 +600,7 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest, int change_de
 }
 
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
-											int cluster_id, int dst_id)
+											int cluster_id, int dst_node_id)
 {
 	node_info_t *node;
 	int rc;
@@ -628,9 +628,9 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	}
 	lock_release(cl->current_node->lock);
 
-	node = get_node_by_id(cl, dst_id);
+	node = get_node_by_id(cl, dst_node_id);
 	if (!node) {
-		LM_ERR("Node id [%d] not found in cluster\n", dst_id);
+		LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
 		lock_stop_read(cl_list_lock);
 		return CLUSTERER_SEND_ERR;
 	}
@@ -656,7 +656,7 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	return CLUSTERER_SEND_ERR;
 }
 
-enum clusterer_send_ret clusterer_bcast_msg(bin_packet_t *packet, int cluster_id)
+static enum clusterer_send_ret clusterer_bcast_msg(bin_packet_t *packet, int cluster_id)
 {
 	node_info_t *node;
 	int rc, sent = 0, down = 1;

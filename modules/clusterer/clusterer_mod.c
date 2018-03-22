@@ -1116,6 +1116,8 @@ static void destroy(void)
 
 int load_clusterer(struct clusterer_binds *binds)
 {
+	memset(binds, 0, sizeof *binds);
+
 	binds->get_nodes = get_clusterer_nodes;
 	binds->free_nodes = free_clusterer_nodes;
 	binds->set_state = cl_set_state;
