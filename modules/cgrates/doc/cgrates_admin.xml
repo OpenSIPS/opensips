@@ -885,7 +885,7 @@ route {
 	$cgr(SetupTime) = "" + $Ts;
 	$cgr(RequestType) = "*prepaid";
 	$cgr(Destination) = $rU;
-	async(cgrates_cmd("SessionSv1.AuthorizeEvent"), auth_reply);
+	async(cgrates_cmd("SMGenericV1.GetMaxUsage"), auth_reply);
 }
 
 route [auth_reply]
@@ -916,7 +916,7 @@ route {
 route [auth_reply]
 {
 	if ($rc &lt; 0) {
-		xlog("Call not authorized: code=$cgrret!\n");
+		xlog("Call not authorized: MaxUsage=$cgrret(MaxUsage)!\n");
 		send_reply("403", "Forbidden");
 		exit;
 	}
