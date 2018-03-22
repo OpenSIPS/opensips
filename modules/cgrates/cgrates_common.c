@@ -911,6 +911,7 @@ int cgrates_process(json_object *jobj,
 
 		/* check to see if there is an id */
 		json_object_object_get_ex(jobj, "id", &id);
+		json_object_get(id);
 		cgrates_process_req(c, id, method, jresult);
 	}
 	return 0;
