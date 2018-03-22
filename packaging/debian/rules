@@ -229,7 +229,7 @@ CFLAGS += $(shell dpkg-buildflags --get CFLAGS) $(CPPFLAGS)
 CXXFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
 LDFLAGS += $(shell dpkg-buildflags --get LDFLAGS)
 
-# force multiach lib path and SMP support all the time
+# force multiarch lib path and SMP support all the time
 VARS = LIBDIR=lib/$(DEB_HOST_MULTIARCH) ISSMP=yes
 
 ifeq ($(shell test $(MAJOR_RELEASE) -ge $(RADCLI_MAJOR_RELEASE); echo $$?),0)
