@@ -40,6 +40,11 @@ endif
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
 
+# debian unstable (sid) doesn't output a version number, so emulate one
+ifeq ($(MAJOR_RELEASE), unstable)
+	MAJOR_RELEASE=1000
+endif
+
 # use a dummy architecture for the packages we do not want to build
 ifeq ($(shell dpkg-vendor --derives-from Debian && echo yes),yes)
 	LIBRADIUS_LAST_RELEASE=8
