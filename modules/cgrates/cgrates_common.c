@@ -782,7 +782,8 @@ static inline int cgrates_process_req(struct cgr_conn *c, json_object *id,
 
 	LM_INFO("Received new request method=%s param=%p\n",
 			method, param);
-	if (strcmp(method, "SMGClientV1.DisconnectSession") == 0) {
+	if (strcmp(method, "SMGClientV1.DisconnectSession") == 0 ||
+			strcmp(method, "SessionSv1.DisconnectSession") == 0) {
 		ret = cgr_acc_terminate(param, &jret);
 	} else {
 		LM_ERR("cannot handle method %s\n", method);
