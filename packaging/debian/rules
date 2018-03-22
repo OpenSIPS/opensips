@@ -228,7 +228,7 @@ else
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-        CFLAGS += -O0
+	CFLAGS += -O0
 else
 	CFLAGS += -O2
 endif
