@@ -393,7 +393,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 	struct cgr_kv *kv;
 	int dup;
 
-	if (!param || !val) {
+	if (!param) {
 		LM_ERR("invalid parameter or value to set\n");
 		return -1;
 	}
@@ -435,19 +435,21 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 	if (kv) {
 		/* replace the old value */
 		cgr_free_kv_val(kv);
-		if (val->flags & PV_VAL_NULL && op == COLONEQ_T) {
+		if ((!val || val->flags & PV_VAL_NULL) && op == COLONEQ_T) {
 			/* destroy the value */
 			cgr_free_kv(kv);
 			return 0;
 		}
-	} else {
+	} else if (val) {
 		kv = cgr_new_real_kv(name_val.rs.s, name_val.rs.len, dup);
 		if (!kv) {
 			LM_ERR("cannot allocate new key-value\n");
 			return -1;
 		}
 		list_add(&kv->list, kvs);
-	}
+	} else
+		return 0; /* initialised with NULL */
+
 	if (val->flags & PV_VAL_NULL) {
 		kv->flags |= CGR_KVF_TYPE_NULL;
 	} else if (val->flags & PV_VAL_INT) {
