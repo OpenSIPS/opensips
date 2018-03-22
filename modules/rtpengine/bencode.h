@@ -29,21 +29,11 @@
 #include <sys/uio.h>
 #include <string.h>
 
-#if defined(PKG_MALLOC) || defined(pkg_malloc)
-/* opensips */
-# include "../../mem/mem.h"
-# include "../../str.h"
-# ifndef BENCODE_MALLOC
+#include "../../mem/mem.h"
+#include "../../str.h"
+#ifndef BENCODE_MALLOC
 # define BENCODE_MALLOC pkg_malloc
 # define BENCODE_FREE pkg_free
-# endif
-#else
-/* mediaproxy-ng */
-# include "str.h"
-# ifndef BENCODE_MALLOC
-# define BENCODE_MALLOC malloc
-# define BENCODE_FREE free
-# endif
 #endif
 
 struct bencode_buffer;
