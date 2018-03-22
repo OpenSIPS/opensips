@@ -234,8 +234,13 @@ int cgrates_set_reply_with_values(json_object *jobj)
 		case json_type_string:
 		case json_type_object:
 		case json_type_array:
-			val.s.s = (char *)json_object_to_json_string(jobj);
+			val.s.s = (char *)json_object_to_json_string(v);
 			val.s.len = strlen(val.s.s);
+			/* remove quotes */
+			if (val.s.s[0] == '"' && val.s.s[val.s.len - 1] == '"') {
+				val.s.s++;
+				val.s.len -= 2;
+			}
 			if (cgr_add_local(&ctx->kvs, k, val, CGR_KVF_TYPE_STR) < 0) {
 				LM_ERR("cannot add string kv!\n");
 				return -1;
