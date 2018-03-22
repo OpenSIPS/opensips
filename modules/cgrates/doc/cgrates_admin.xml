@@ -116,14 +116,14 @@
 		The following example simulates the <emphasis>cgrates_auth()</emphasis> CGRateS call:
 		<programlisting format="linespecific">
 		...
-		$cgr(Tenant) = $fd;
+		$cgr_opt(Tenant) = $fd; # or $cgr(Tenant) = $fd; /* in compat mode */
 		$cgr(Account) = $fU;
 		$cgr(OriginID) = $ci;
 		$cgr(SetupTime) = "" + $Ts;
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
-		cgrates_cmd("SMGenericV1.GetMaxUsage");
-		xlog("Call is allowed to run $cgrret seconds\n");
+		cgrates_cmd("SessionSv1.AuthorizeEvent");
+		xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n");
 		...
 		</programlisting>
 	</para>
@@ -148,6 +148,21 @@
 		seconds, &osips; tries to connect once again to that server. If it
 		succeeds, that server is enabled. Otherwise, the other engines are
 		used, until none is available and the command fails.
+	</para>
+	</section>
+
+	<section>
+	<para>
+		The module supports two different versions of CGRateS: the
+		<emphasis>compat_mode</emphasis> one, which works with pre-rc8 releases, and a
+		new one which works with the post-rc8 releases. The difference between the two
+		versions consist in the way the requests and responses to and from CGRateS
+		are built. In the non-<emphasis>compat_mode</emphasis>/new version, a new
+		variable, <emphasis>$cgr_opt()</emphasis>, is available, and can be used to
+		tune the request options. This variable should not be used in
+		<emphasis>compat_mode</emphasis> mode to avoid abiguities, but if it is used,
+		it behaves exactly as <emphasis>$cgr()</emphasis>. By default
+		<emphasis>compat_mode</emphasis> is disabled.
 	</para>
 	</section>
 
@@ -270,6 +285,26 @@ modparam("cgrates", "max_async_connections", 20)
 		<programlisting format="linespecific">
 ...
 modparam("cgrates", "retry_timeout", 120)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>compat_mode</varname> (integer)</title>
+		<para>
+			Indicates whether OpenSIPS should use the old (compat_mode)
+			CGRateS version API (pre-rc8).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>false (0)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>compat_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cgrates", "compat_mode", 1)
 ...
 </programlisting>
 		</example>
@@ -542,13 +577,13 @@ modparam("cgrates", "retry_timeout", 120)
 				<programlisting format="linespecific">
 		...
 		# cgrates_auth("$fU", "$rU"); simulation
-		$cgr(Tenant) = $fd;
+		$cgr_opt(Tenant) = $fd;
 		$cgr(Account) = $fU;
 		$cgr(OriginID) = $ci;
 		$cgr(SetupTime) = "" + $Ts;
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
-		cgrates_cmd("SMGenericV1.GetMaxUsage");
+		cgrates_cmd("SessionSv1.AuthorizeEvent");
 		xlog("Call is allowed to run $cgrret seconds\n");
 		...
 		</programlisting>
@@ -593,7 +628,7 @@ modparam("cgrates", "retry_timeout", 120)
 		...
 		if (!has_totag()) {
 			...
-			$cgr(Tenant) = $fd; # set the From domain as a tenant
+			$cgr_opt(Tenant) = $fd; # set the From domain as a tenant
 			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
 			if (!cgrates_auth("$fU", "$rU")) {
 				sl_send_reply("403", "Forbidden");
@@ -610,7 +645,7 @@ modparam("cgrates", "retry_timeout", 120)
 		if (!has_totag()) {
 			...
 			# first session - authorize the user
-			$cgr(Tenant) = $fd; # set the From domain as a tenant
+			$cgr_opt(Tenant) = $fd; # set the From domain as a tenant
 			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
 			if (!cgrates_auth("$fU", "$rU")) {
 				sl_send_reply("403", "Forbidden");
@@ -618,7 +653,7 @@ modparam("cgrates", "retry_timeout", 120)
 			}
 
 			# second session - authorize the carrier
-			$(cgr(Tenant)[carrier]) = $td;
+			$(cgr_opt(Tenant)[carrier]) = $td;
 			$(cgr(RequestType)[carrier]) = "*postpaid";
 			if (!cgrates_auth("$tU", "$fU", "carrier")) {
 				# use a different carrier
@@ -634,16 +669,68 @@ modparam("cgrates", "retry_timeout", 120)
 		</example>
 		</section>
 		<section>
-			<title><varname>$cgrret</varname></title>
+			<title><varname>$cgr_opt(name) / $(cgr_opt(name)[session])</varname></title>
 			<para>
-				Returns the reply message of a CGRateS command in script.
+				Used to tune the request parameter of a CGRateS request when used in
+				non-<emphasis>compat_mode</emphasis>.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis> for all request options integer values act as
+				boolean values: <emphasis>0</emphasis> disables the feature and
+				<emphasis>1</emphasis>(or different than 0 value) enables it. String
+				variables are passed just as they are set.
+			</para>
+			<para>
+				Possible values at the time the documentation was written:
+				<itemizedlist>
+				<listitem>
+					<para><emphasis>Tenant</emphasis> - tune CGRateS Tenant.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>GetAttributes</emphasis> - requests the account
+						attributes from the CGRateS DB.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>GetMaxUsage</emphasis> - request the maximum time
+						the call is allowed to run.</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>GetSuppliers</emphasis> - request an array with
+						all the suppliers for that can terminate that call.</para>
+				</listitem>
+				</itemizedlist>
 			</para>
 		<example>
-				<title>$cgrret usage</title>
+				<title>$cgr_opt(name) usage</title>
+				<programlisting format="linespecific">
+		...
+		$cgr_opt(Tenant) = "cgrates.org";
+		$cgr_opt(GetMaxUsage) = 1; # also retrieve the max usage
+		if (!cgrates_auth("$fU", "$rU")) {
+			# call rejected
+		}
+		...
+		</programlisting>
+		</example>
+		</section>
+		<section>
+			<title><varname>$cgrret(name)</varname></title>
+			<para>
+				Returns the reply message of a CGRateS command in script,
+				or when used in the non-compat mode, one of the objects
+				within the reply.
+			</para>
+		<example>
+				<title>$cgrret(name) usage</title>
 				<programlisting format="linespecific">
 		...
 		cgrates_auth("$fU", "$rU");
+
+		# in compat mode
 		xlog("Call is allowed to run $cgrret seconds\n");
+
+		# in non-compat mode
+		xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n");
 		...
 		</programlisting>
 		</example>
@@ -771,8 +858,7 @@ route [auth_reply]
 		<listitem>
 			<para><emphasis>1</emphasis> - successful call - the CGRateS account
 				is allowed to make the call.
-			</para>
-		</listitem>
+			</para> </listitem>
 		<listitem>
 			<para><emphasis>-1</emphasis> - &osips; returned an internal error
 				(i.e. server is out of memory).
@@ -789,7 +875,7 @@ route [auth_reply]
 		</listitem>
 		</itemizedlist>
 		<example>
-		<title><function moreinfo="none">async cgrates_cmd</function> usage</title>
+		<title><function moreinfo="none">async cgrates_cmd compat_mode</function> usage</title>
 		<programlisting format="linespecific">
 route {
 	...
@@ -806,6 +892,31 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: code=$cgrret!\n");
+		send_reply("403", "Forbidden");
+		exit;
+	}
+	...
+}
+</programlisting>
+		</example>
+		<example>
+		<title><function moreinfo="none">async cgrates_cmd new</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	$cgr_opt(Tenant) = $fd;
+	$cgr(Account) = $fU;
+	$cgr(OriginID) = $ci;
+	$cgr(SetupTime) = "" + $Ts;
+	$cgr(RequestType) = "*prepaid";
+	$cgr(Destination) = $rU;
+	async(cgrates_cmd("SessionSv1.AuthorizeEventWithDigest"), auth_reply);
+}
+
+route [auth_reply]
+{
+	if ($rc &lt; 0) {
+		xlog("Call not authorized: MaxUsage=$cgrret(MaxUsage)!\n");
 		send_reply("403", "Forbidden");
 		exit;
 	}

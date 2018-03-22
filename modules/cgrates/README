@@ -16,39 +16,42 @@ Razvan Crainea
         1.3. Accounting
         1.4. Other Commands
         1.5. CGRateS Failover
-        1.6. Dependencies
+        1.6.
+        1.7. Dependencies
 
-              1.6.1. OpenSIPS Modules
-              1.6.2. External Libraries or Applications
+              1.7.1. OpenSIPS Modules
+              1.7.2. External Libraries or Applications
 
-        1.7. Exported Parameters
+        1.8. Exported Parameters
 
-              1.7.1. cgrates_engine (string)
-              1.7.2. bind_ip (string)
-              1.7.3. max_async_connections (integer)
-              1.7.4. retry_timeout (integer)
+              1.8.1. cgrates_engine (string)
+              1.8.2. bind_ip (string)
+              1.8.3. max_async_connections (integer)
+              1.8.4. retry_timeout (integer)
+              1.8.5. compat_mode (integer)
 
-        1.8. Exported Functions
+        1.9. Exported Functions
 
-              1.8.1. cgrates_acc([flags[, account[, destination[,
+              1.9.1. cgrates_acc([flags[, account[, destination[,
                       session]]]])
 
-              1.8.2. cgrates_auth([account[, destination[,
+              1.9.2. cgrates_auth([account[, destination[,
                       session]]])
 
-              1.8.3. cgrates_cmd(command[, session])
+              1.9.3. cgrates_cmd(command[, session])
 
-        1.9. Exported pseudo-variables
+        1.10. Exported pseudo-variables
 
-              1.9.1. $cgr(name) / $(cgr(name)[session])
-              1.9.2. $cgrret
+              1.10.1. $cgr(name) / $(cgr(name)[session])
+              1.10.2. $cgr_opt(name) / $(cgr_opt(name)[session])
+              1.10.3. $cgrret(name)
 
-        1.10. Exported Asynchronous Functions
+        1.11. Exported Asynchronous Functions
 
-              1.10.1. cgrates_auth([account[, destination[,
+              1.11.1. cgrates_auth([account[, destination[,
                       session]]])
 
-              1.10.2. cgrates_cmd(command[, session])
+              1.11.2. cgrates_cmd(command[, session])
 
    List of Examples
 
@@ -56,14 +59,17 @@ Razvan Crainea
    1.2. Set bind_ip parameter
    1.3. Set max_async_connections parameter
    1.4. Set retry_timeout parameter
-   1.5. cgrates_acc() usage
-   1.6. cgrates_auth() usage
-   1.7. cgrates_cmd() usage
-   1.8. $cgr(name) simple usage
-   1.9. $cgr(name) multiple sessions usage
-   1.10. $cgrret usage
-   1.11. async cgrates_auth usage
-   1.12. async cgrates_cmd usage
+   1.5. Set compat_mode parameter
+   1.6. cgrates_acc() usage
+   1.7. cgrates_auth() usage
+   1.8. cgrates_cmd() usage
+   1.9. $cgr(name) simple usage
+   1.10. $cgr(name) multiple sessions usage
+   1.11. $cgr_opt(name) usage
+   1.12. $cgrret(name) usage
+   1.13. async cgrates_auth usage
+   1.14. async cgrates_cmd compat_mode usage
+   1.15. async cgrates_cmd new usage
 
 Chapter 1. Admin Guide
 
@@ -160,14 +166,16 @@ Chapter 1. Admin Guide
    The following example simulates the cgrates_auth() CGRateS
    call:
                 ...
-                $cgr(Tenant) = $fd;
+                $cgr_opt(Tenant) = $fd; # or $cgr(Tenant) = $fd; /* in c
+ompat mode */
                 $cgr(Account) = $fU;
                 $cgr(OriginID) = $ci;
                 $cgr(SetupTime) = "" + $Ts;
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
-                cgrates_cmd("SMGenericV1.GetMaxUsage");
-                xlog("Call is allowed to run $cgrret seconds\n");
+                cgrates_cmd("SessionSv1.AuthorizeEvent");
+                xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n
+");
                 ...
 
 1.5. CGRateS Failover
@@ -189,22 +197,33 @@ Chapter 1. Admin Guide
    enabled. Otherwise, the other engines are used, until none is
    available and the command fails.
 
-1.6. Dependencies
+   The module supports two different versions of CGRateS: the
+   compat_mode one, which works with pre-rc8 releases, and a new
+   one which works with the post-rc8 releases. The difference
+   between the two versions consist in the way the requests and
+   responses to and from CGRateS are built. In the
+   non-compat_mode/new version, a new variable, $cgr_opt(), is
+   available, and can be used to tune the request options. This
+   variable should not be used in compat_mode mode to avoid
+   abiguities, but if it is used, it behaves exactly as $cgr(). By
+   default compat_mode is disabled.
 
-1.6.1. OpenSIPS Modules
+1.7. Dependencies
+
+1.7.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * dialog -- in case CGRateS accounting is used.
 
-1.6.2. External Libraries or Applications
+1.7.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libjson
 
-1.7. Exported Parameters
+1.8. Exported Parameters
 
-1.7.1. cgrates_engine (string)
+1.8.1. cgrates_engine (string)
 
    This parameter is used to specify a CGRateS engine connection.
    The format is IP[:port]. The port is optional, and if missing,
@@ -221,7 +240,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1")
 modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
 ...
 
-1.7.2. bind_ip (string)
+1.8.2. bind_ip (string)
 
    IP used to bind the socket that communicates with the CGRateS
    engines. This is useful to set when the engine is runing in a
@@ -235,7 +254,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
 modparam("cgrates", "bind_ip", "10.0.0.100")
 ...
 
-1.7.3. max_async_connections (integer)
+1.8.3. max_async_connections (integer)
 
    The maximum number of simultaneous asynchronous connections to
    a CGRateS engine.
@@ -247,7 +266,7 @@ modparam("cgrates", "bind_ip", "10.0.0.100")
 modparam("cgrates", "max_async_connections", 20)
 ...
 
-1.7.4. retry_timeout (integer)
+1.8.4. retry_timeout (integer)
 
    The number of seconds after which a disabled connection/engine
    is retried.
@@ -259,9 +278,21 @@ modparam("cgrates", "max_async_connections", 20)
 modparam("cgrates", "retry_timeout", 120)
 ...
 
-1.8. Exported Functions
+1.8.5. compat_mode (integer)
 
-1.8.1.  cgrates_acc([flags[, account[, destination[, session]]]])
+   Indicates whether OpenSIPS should use the old (compat_mode)
+   CGRateS version API (pre-rc8).
+
+   Default value is "false (0)".
+
+   Example 1.5. Set compat_mode parameter
+...
+modparam("cgrates", "compat_mode", 1)
+...
+
+1.9. Exported Functions
+
+1.9.1.  cgrates_acc([flags[, account[, destination[, session]]]])
 
    cgrates_acc() starts an accounting session on the CGRateS
    engine for the current dialog. It also ends the session when
@@ -312,7 +343,7 @@ modparam("cgrates", "retry_timeout", 120)
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.5. cgrates_acc() usage
+   Example 1.6. cgrates_acc() usage
                 ...
                 if (!has_totag()) {
                         ...
@@ -322,7 +353,7 @@ modparam("cgrates", "retry_timeout", 120)
                 }
                 ...
 
-1.8.2.  cgrates_auth([account[, destination[, session]]])
+1.9.2.  cgrates_auth([account[, destination[, session]]])
 
    cgrates_auth() does call authorization through using the
    CGRateS engine.
@@ -353,7 +384,7 @@ modparam("cgrates", "retry_timeout", 120)
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.6. cgrates_auth() usage
+   Example 1.7. cgrates_auth() usage
                 ...
                 if (!has_totag()) {
                         ...
@@ -365,7 +396,7 @@ modparam("cgrates", "retry_timeout", 120)
                 }
                 ...
 
-1.8.3.  cgrates_cmd(command[, session])
+1.9.3.  cgrates_cmd(command[, session])
 
    cgrates_cmd() can send arbitrary commands to the CGRateS
    engine.
@@ -389,22 +420,22 @@ modparam("cgrates", "retry_timeout", 120)
 
    This function can be used from any route.
 
-   Example 1.7. cgrates_cmd() usage
+   Example 1.8. cgrates_cmd() usage
                 ...
                 # cgrates_auth("$fU", "$rU"); simulation
-                $cgr(Tenant) = $fd;
+                $cgr_opt(Tenant) = $fd;
                 $cgr(Account) = $fU;
                 $cgr(OriginID) = $ci;
                 $cgr(SetupTime) = "" + $Ts;
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
-                cgrates_cmd("SMGenericV1.GetMaxUsage");
+                cgrates_cmd("SessionSv1.AuthorizeEvent");
                 xlog("Call is allowed to run $cgrret seconds\n");
                 ...
 
-1.9. Exported pseudo-variables
+1.10. Exported pseudo-variables
 
-1.9.1. $cgr(name) / $(cgr(name)[session])
+1.10.1. $cgr(name) / $(cgr(name)[session])
 
    Pseudo-variable used to set different parameters for the
    CGRateS command. Each name-value pair will be encoded as a
@@ -424,12 +455,12 @@ modparam("cgrates", "retry_timeout", 120)
    another. if the session tag does not exist, the default (no
    name) one is used.
 
-   Example 1.8. $cgr(name) simple usage
+   Example 1.9. $cgr(name) simple usage
                 ...
                 if (!has_totag()) {
                         ...
-                        $cgr(Tenant) = $fd; # set the From domain as a t
-enant
+                        $cgr_opt(Tenant) = $fd; # set the From domain as
+ a tenant
                         $cgr(RequestType) = "*prepaid"; # do prepaid acc
 ounting
                         if (!cgrates_auth("$fU", "$rU")) {
@@ -439,13 +470,13 @@ ounting
                 }
                 ...
 
-   Example 1.9. $cgr(name) multiple sessions usage
+   Example 1.10. $cgr(name) multiple sessions usage
                 ...
                 if (!has_totag()) {
                         ...
                         # first session - authorize the user
-                        $cgr(Tenant) = $fd; # set the From domain as a t
-enant
+                        $cgr_opt(Tenant) = $fd; # set the From domain as
+ a tenant
                         $cgr(RequestType) = "*prepaid"; # do prepaid acc
 ounting
                         if (!cgrates_auth("$fU", "$rU")) {
@@ -454,7 +485,7 @@ ounting
                         }
 
                         # second session - authorize the carrier
-                        $(cgr(Tenant)[carrier]) = $td;
+                        $(cgr_opt(Tenant)[carrier]) = $td;
                         $(cgr(RequestType)[carrier]) = "*postpaid";
                         if (!cgrates_auth("$tU", "$fU", "carrier")) {
                                 # use a different carrier
@@ -468,19 +499,54 @@ ounting
                 }
                 ...
 
-1.9.2. $cgrret
+1.10.2. $cgr_opt(name) / $(cgr_opt(name)[session])
 
-   Returns the reply message of a CGRateS command in script.
+   Used to tune the request parameter of a CGRateS request when
+   used in non-compat_mode.
 
-   Example 1.10. $cgrret usage
+   Note: for all request options integer values act as boolean
+   values: 0 disables the feature and 1(or different than 0 value)
+   enables it. String variables are passed just as they are set.
+
+   Possible values at the time the documentation was written:
+     * Tenant - tune CGRateS Tenant.
+     * GetAttributes - requests the account attributes from the
+       CGRateS DB.
+     * GetMaxUsage - request the maximum time the call is allowed
+       to run.
+     * GetSuppliers - request an array with all the suppliers for
+       that can terminate that call.
+
+   Example 1.11. $cgr_opt(name) usage
+                ...
+                $cgr_opt(Tenant) = "cgrates.org";
+                $cgr_opt(GetMaxUsage) = 1; # also retrieve the max usage
+                if (!cgrates_auth("$fU", "$rU")) {
+                        # call rejected
+                }
+                ...
+
+1.10.3. $cgrret(name)
+
+   Returns the reply message of a CGRateS command in script, or
+   when used in the non-compat mode, one of the objects within the
+   reply.
+
+   Example 1.12. $cgrret(name) usage
                 ...
                 cgrates_auth("$fU", "$rU");
+
+                # in compat mode
                 xlog("Call is allowed to run $cgrret seconds\n");
+
+                # in non-compat mode
+                xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n
+");
                 ...
 
-1.10. Exported Asynchronous Functions
+1.11. Exported Asynchronous Functions
 
-1.10.1.  cgrates_auth([account[, destination[, session]]])
+1.11.1.  cgrates_auth([account[, destination[, session]]])
 
    Does the CGRateS authorization call in an asynchronous way.
    Script execution is suspended until the CGRateS engine sends
@@ -509,7 +575,7 @@ ounting
        headers, or it is not an initial INVITE.
      * -5 - CGRateS returned an invalid message.
 
-   Example 1.11. async cgrates_auth usage
+   Example 1.13. async cgrates_auth usage
 route {
         ...
         async(cgrates_auth("$fU", "$rU"), auth_reply);
@@ -525,7 +591,7 @@ route [auth_reply]
         ...
 }
 
-1.10.2.  cgrates_cmd(command[, session])
+1.11.2.  cgrates_cmd(command[, session])
 
    Can run an arbitrary CGRateS command in an asynchronous way.
    The execution is suspended until the CGRateS engine sends the
@@ -548,7 +614,7 @@ route [auth_reply]
      * -3 - No suitable CGRateS server found. message type (not an
        initial INVITE).
 
-   Example 1.12. async cgrates_cmd usage
+   Example 1.14. async cgrates_cmd compat_mode usage
 route {
         ...
         $cgr(Tenant) = $fd;
@@ -564,6 +630,30 @@ route [auth_reply]
 {
         if ($rc < 0) {
                 xlog("Call not authorized: code=$cgrret!\n");
+                send_reply("403", "Forbidden");
+                exit;
+        }
+        ...
+}
+
+   Example 1.15. async cgrates_cmd new usage
+route {
+        ...
+        $cgr_opt(Tenant) = $fd;
+        $cgr(Account) = $fU;
+        $cgr(OriginID) = $ci;
+        $cgr(SetupTime) = "" + $Ts;
+        $cgr(RequestType) = "*prepaid";
+        $cgr(Destination) = $rU;
+        async(cgrates_cmd("SessionSv1.AuthorizeEventWithDigest"), auth_r
+eply);
+}
+
+route [auth_reply]
+{
+        if ($rc < 0) {
+                xlog("Call not authorized: MaxUsage=$cgrret(MaxUsage)!\n
+");
                 send_reply("403", "Forbidden");
                 exit;
         }

@@ -125,13 +125,13 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 			/* if there is a matching session. move everything from
 			 * the one in accounting to the one in local ctx */
 			if (s) {
-				list_for_each_safe(l, t, &sa->kvs) {
+				list_for_each_safe(l, t, &sa->event_kvs) {
 					kv = list_entry(l, struct cgr_kv, list);
-					if (cgr_get_kv(s, kv->key))
+					if (cgr_get_kv(&s->event_kvs, kv->key))
 						cgr_free_kv(kv);
 					else {
 						list_del(&kv->list);
-						list_add(&kv->list, &s->kvs);
+						list_add(&kv->list, &s->event_kvs);
 					}
 				}
 				if (s->acc_info) {
@@ -199,15 +199,36 @@ static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 	struct dlg_cell *dlg = (struct dlg_cell *)p;
 
 	/* we cannot set in the context, because we don't have access to it */
-	if (error)
+	if (error) /* XXX: should we set a terminate reason? */
 		return -1;
 
-	if (json_object_get_type(jobj) != json_type_int) {
-		LM_ERR("CGRateS returned a non-int type in InitiateSession reply: %d %s\n",
-				json_object_get_type(jobj), json_object_to_json_string(jobj));
-		return -4;
+	if (!cgre_compat_mode) {
+		if (json_object_get_type(jobj) != json_type_object) {
+			LM_ERR("CGRateS did not return an object in InitiateSession reply: %d %s\n",
+					json_object_get_type(jobj), json_object_to_json_string(jobj));
+			return -4;
+		}
+		/* we are only interested in the MaxUsage token */
+		jobj = json_object_object_get(jobj, "MaxUsage");
+		if (!jobj) {
+			LM_ERR("CGRateS did not return an MaxUsage in InitiateSession reply: %d %s\n",
+					json_object_get_type(jobj), json_object_to_json_string(jobj));
+			return -4;
+		}
+		if (json_object_get_type(jobj) != json_type_int) {
+			LM_ERR("CGRateS returned a non-int type for MaxUsage InitiateSession reply: %d %s\n",
+					json_object_get_type(jobj), json_object_to_json_string(jobj));
+			return -4;
+		}
+		val.n = json_object_get_int64(jobj) / 1000000000;
+	} else {
+		if (json_object_get_type(jobj) != json_type_int) {
+			LM_ERR("CGRateS returned a non-int type for InitiateSession reply: %d %s\n",
+					json_object_get_type(jobj), json_object_to_json_string(jobj));
+			return -4;
+		}
+		val.n = json_object_get_int(jobj);
 	}
-	val.n = json_object_get_int(jobj);
 	/* -1: always allowed (postpaid)
 	 *  0: not allowed to call
 	 *  *: allowed
@@ -276,21 +297,6 @@ static inline int has_totag(struct sip_msg *msg)
 }
 
 
-static inline int ALLOW_UNUSED cgr_help_set_str(str **dst, str src)
-{
-	if (*dst)
-		shm_free(*dst);
-	*dst = shm_malloc(sizeof(str) + src.len);
-	if (!(*dst)) {
-		LM_ERR("out of shm memory\n");
-		return -1;
-	}
-	(*dst)->s = ((char *)(*dst)) + sizeof(str);
-	(*dst)->len = src.len;
-	memcpy((*dst)->s, src.s, src.len);
-	return 0;
-}
-
 static inline str *cgr_get_sess_callid(struct sip_msg *msg,
 		struct cgr_session *s, str *msg_cid)
 {
@@ -321,53 +327,63 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 {
 	struct cgr_msg *cmsg;
 	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
-	static str cmd = str_init("SMGenericV1.InitiateSession");
+	static str cmd_compat = str_init("SMGenericV1.InitiateSession");
+	static str cmd_ng = str_init("SessionSv1.InitiateSession");
 	str stime;
 	str *callid;
+	str *cmd = (cgre_compat_mode ? &cmd_compat: &cmd_ng);
 
-	cmsg = cgr_get_generic_msg(&cmd, s);
+	cmsg = cgr_get_generic_msg(cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
 	}
 
+	/* ask to init the call */
+	if (!cgre_compat_mode &&
+			((s && !cgr_get_const_kv(&s->req_kvs, "InitSession")) || !s) &&
+			cgr_obj_push_bool(cmsg->opts, "InitSession", 1) < 0) {
+		LM_ERR("cannot push InitSession to request opts!\n");
+		goto error;
+	}
+
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(s, "OriginID")) {
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "OriginID")) {
 		if (msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
 				(msg->callid==NULL)) ) {
 			LM_ERR("Cannot get callid of the message!\n");
 			goto error;
 		} else {
 			callid = cgr_get_sess_callid(msg, s, &msg->callid->body);
-			if (!callid || cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+			if (!callid || cgr_obj_push_str(cmsg->params, "OriginID", callid) < 0) {
 				LM_ERR("cannot push OriginID!\n");
 				goto error;
 			}
 		}
 	}
 
-	if (ctx && !cgr_get_const_kv(s, "DialogID") &&
-			cgr_msg_push_int(cmsg, "DialogID", dlg->h_id) < 0) {
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogID") &&
+			cgr_obj_push_int(cmsg->params, "DialogID", dlg->h_id) < 0) {
 		LM_ERR("cannot push DialogID!\n");
 		goto error;
 	}
 
-	if (ctx && !cgr_get_const_kv(s, "DialogEntry") &&
-			cgr_msg_push_int(cmsg, "DialogEntry", dlg->h_entry) < 0) {
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogEntry") &&
+			cgr_obj_push_int(cmsg->params, "DialogEntry", dlg->h_entry) < 0) {
 		LM_ERR("cannot push DialogEntry!\n");
 		goto error;
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Account", &si->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
 
 	/* SetupTime */
 	stime.s = int2str(si->start_time, &stime.len);
-	if (cgr_msg_push_str(cmsg, "SetupTime", &stime) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "SetupTime", &stime) < 0) {
 		LM_ERR("cannot push SetupTime info!\n");
 		goto error;
 	}
@@ -375,14 +391,14 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	/* AnswerTime */
 	if (ctx) {
 		stime.s = int2str(ctx->answer_time, &stime.len);
-		if (cgr_msg_push_str(cmsg, "AnswerTime", &stime) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "AnswerTime", &stime) < 0) {
 			LM_ERR("cannot push AnswerTime info!\n");
 			goto error;
 		}
 	}
 
 	/* Destination */
-	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Destination", &si->dst) < 0) {
 		LM_ERR("cannot push Destination info!\n");
 		goto error;
 	}
@@ -401,7 +417,9 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	struct cgr_msg *cmsg = NULL;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
 	time_t now = time(NULL);
-	static str cmd = str_init("SMGenericV1.TerminateSession");
+	static str cmd_compat = str_init("SMGenericV1.TerminateSession");
+	static str cmd_ng = str_init("SessionSv1.TerminateSession");
+	str *cmd = (cgre_compat_mode ? &cmd_compat: &cmd_ng);
 	str *callid;
 	str tmp;
 
@@ -418,24 +436,32 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	cmsg = cgr_get_generic_msg(&cmd, s);
+	cmsg = cgr_get_generic_msg(cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
 	}
 
+	/* ask to terminate the call */
+	if (!cgre_compat_mode &&
+			((s && !cgr_get_const_kv(&s->req_kvs, "TerminateSession")) || !s) &&
+			cgr_obj_push_bool(cmsg->opts, "TerminateSession", 1) < 0) {
+		LM_ERR("cannot push TerminateSession to request opts!\n");
+		goto error;
+	}
+
 	/* OriginID */
 	/* if origin was not added from script, add it now */
-	if (ctx && !cgr_get_const_kv(s, "OriginID")) {
+	if (ctx && !cgr_get_const_kv(&s->event_kvs, "OriginID")) {
 		callid = cgr_get_sess_callid(msg, s, &dlg->callid);
-		if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "OriginID", callid) < 0) {
 			LM_ERR("cannot push OriginID!\n");
 			goto error;
 		}
 	}
 
 	/* Account */
-	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Account", &si->acc) < 0) {
 		LM_ERR("cannot push Account info!\n");
 		goto error;
 	}
@@ -443,7 +469,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	/* SetupTime */
 	if (ctx->answer_time != si->start_time) {
 		tmp.s = int2str(si->start_time, &tmp.len);
-		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "SetupTime", &tmp) < 0) {
 			LM_ERR("cannot push SetupTime info!\n");
 			goto error;
 		}
@@ -451,7 +477,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 
 	/* AnswerTime */
 	tmp.s = int2str(ctx->answer_time, &tmp.len);
-	if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "AnswerTime", &tmp) < 0) {
 		LM_ERR("cannot push AnswerTime info!\n");
 		goto error;
 	}
@@ -461,7 +487,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 	tmp.s[tmp.len] = 's';
 	tmp.len++;
 	tmp.s[tmp.len] = 0;
-	if (cgr_msg_push_str(cmsg, "Usage", &tmp) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Usage", &tmp) < 0) {
 		LM_ERR("cannot add Usage node\n");
 		goto error;
 	}
@@ -479,27 +505,29 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	str tmp;
 	struct cgr_msg *cmsg = NULL;
 	char int2str_buf[INT2STR_MAX_LEN + 1];
-	static str cmd = str_init("SMGenericV1.ProcessCDR");
+	static str cmd_compat = str_init("SMGenericV1.ProcessCDR");
+	static str cmd_ng = str_init("SessionSv1.ProcessCDR");
 	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
 	struct dlg_cell *dlg = cgr_dlgb.get_dlg();
+	str *cmd = (cgre_compat_mode ? &cmd_compat: &cmd_ng);
 
-	cmsg = cgr_get_generic_msg(&cmd, s);
+	cmsg = cgr_get_generic_msg(cmd, s);
 	if (!cmsg) {
 		LM_ERR("cannot create generic cgrates message!\n");
 		return NULL;
 	}
 
-	if (cgr_msg_push_str(cmsg, "OriginID", callid) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "OriginID", callid) < 0) {
 		LM_ERR("cannot add OriginID node\n");
 		goto error;
 	}
 
-	if (cgr_msg_push_str(cmsg, "Account", &si->acc) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Account", &si->acc) < 0) {
 		LM_ERR("cannot add Account node\n");
 		goto error;
 	}
 
-	if (cgr_msg_push_str(cmsg, "Destination", &si->dst) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Destination", &si->dst) < 0) {
 		LM_ERR("cannot add Destination node\n");
 		goto error;
 	}
@@ -509,14 +537,14 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 	tmp.s[tmp.len] = 's';
 	tmp.len++;
 	tmp.s[tmp.len] = 0;
-	if (cgr_msg_push_str(cmsg, "Usage", &tmp) < 0) {
+	if (cgr_obj_push_str(cmsg->params, "Usage", &tmp) < 0) {
 		LM_ERR("cannot add Usage node\n");
 		goto error;
 	}
 
 	if (ctx->answer_time) {
 		tmp.s = int2str(ctx->answer_time, &tmp.len);
-		if (cgr_msg_push_str(cmsg, "AnswerTime", &tmp) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "AnswerTime", &tmp) < 0) {
 			LM_ERR("cannot add AnswerTime node\n");
 			goto error;
 		}
@@ -524,13 +552,13 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 
 	if (si->start_time && si->start_time != ctx->answer_time) {
 		tmp.s = int2str(si->start_time, &tmp.len);
-		if (cgr_msg_push_str(cmsg, "SetupTime", &tmp) < 0) {
+		if (cgr_obj_push_str(cmsg->params, "SetupTime", &tmp) < 0) {
 			LM_ERR("cannot add SetupTime node\n");
 			goto error;
 		}
 	}
 
-	if (dlg && cgr_msg_push_str(cmsg, "DisconnectCause", &dlg->terminate_reason) < 0) {
+	if (dlg && cgr_obj_push_str(cmsg->params, "DisconnectCause", &dlg->terminate_reason) < 0) {
 		LM_ERR("cannot add DisconnectCause node\n");
 		goto error;
 	}
@@ -559,7 +587,10 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx,
 static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
-	int *sessions_kvs = NULL, *tmp;
+	struct _cgr_sess_no {
+		unsigned keys;
+		unsigned options;
+	} *sessions_kvs = NULL, *tmp;
 	struct cgr_acc_ctx *ctx;
 	struct cgr_session *s;
 	struct list_head *ls;
@@ -577,14 +608,15 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 		list_for_each(l, ctx->sessions) {
 			sessions_no++;
 			s = list_entry(l, struct cgr_session, list);
-			tmp = pkg_realloc(sessions_kvs, (sessions_no) * sizeof(int));
+			tmp = pkg_realloc(sessions_kvs, (sessions_no) * sizeof(struct _cgr_sess_no));
 			if (!tmp) {
 				if (sessions_kvs)
 					pkg_free(sessions_kvs);
 				return;
 			}
 			sessions_kvs = tmp;
-			sessions_kvs[sessions_no-1] = 0;
+			sessions_kvs[sessions_no-1].keys = 0;
+			sessions_kvs[sessions_no-1].options = 0;
 
 			/* if it was not yet engaged, skip it */
 			if (!s->acc_info) {
@@ -599,11 +631,23 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 				sizeof(unsigned) + s->acc_info->dst.len /* dst */ +
 				sizeof(branch_bm_t) /* branch_mask */ +
 				sizeof(unsigned) /* flags */ +
-				sizeof(unsigned) /* number of keys */;
+				sizeof(unsigned) /* number of keys */ +
+				sizeof(unsigned) /* number of opts */;
 
 			/* count the keys now */
-			list_for_each(ls, &s->kvs) {
-				sessions_kvs[sessions_no-1]++;
+			list_for_each(ls, &s->event_kvs) {
+				sessions_kvs[sessions_no-1].keys++;
+				kv = list_entry(ls, struct cgr_kv, list);
+				buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
+				if (kv->flags & CGR_KVF_TYPE_INT)
+					buf.len += sizeof(int);
+				else if (kv->flags & CGR_KVF_TYPE_STR)
+					buf.len += sizeof(unsigned) + kv->value.s.len;
+			}
+
+			/* count the request opts now */
+			list_for_each(ls, &s->req_kvs) {
+				sessions_kvs[sessions_no-1].options++;
 				kv = list_entry(ls, struct cgr_kv, list);
 				buf.len += sizeof(unsigned) + kv->key.len + sizeof(unsigned char);
 				if (kv->flags & CGR_KVF_TYPE_INT)
@@ -672,11 +716,11 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 			memcpy(p, &s->acc_info->flags, sizeof(unsigned));
 			p += sizeof(unsigned);
 
-			/* number of keys */
-			memcpy(p, &sessions_kvs[i], sizeof(unsigned));
+			/* number of event keys */
+			memcpy(p, &sessions_kvs[i].keys, sizeof(unsigned));
 			p += sizeof(unsigned);
 
-			list_for_each(ls, &s->kvs) {
+			list_for_each(ls, &s->event_kvs) {
 				/* if does not have acc_info, it does not have start_time */
 				kv = list_entry(ls, struct cgr_kv, list);
 
@@ -686,6 +730,37 @@ static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
 				memcpy(p, kv->key.s, kv->key.len);
 				p += kv->key.len;
 				LM_DBG("storing key %d [%.*s]\n", kv->key.len,kv->key.len,kv->key.s);
+
+				/* kv->flags */
+				memcpy(p, &kv->flags, sizeof(unsigned char));
+				p += sizeof(unsigned char);
+
+				/* kv->value */
+				if (kv->flags & CGR_KVF_TYPE_INT) {
+					memcpy(p, &kv->value.n, sizeof(int));
+					p += sizeof(int);
+				} else if (kv->flags & CGR_KVF_TYPE_STR) {
+					memcpy(p, &kv->value.s.len, sizeof(unsigned));
+					p += sizeof(unsigned);
+					memcpy(p, kv->value.s.s, kv->value.s.len);
+					p += kv->value.s.len;
+				}
+			}
+
+			/* number of options keys */
+			memcpy(p, &sessions_kvs[i].options, sizeof(unsigned));
+			p += sizeof(unsigned);
+
+			list_for_each(ls, &s->req_kvs) {
+				/* if does not have acc_info, it does not have start_time */
+				kv = list_entry(ls, struct cgr_kv, list);
+
+				/* kv->key */
+				memcpy(p, &kv->key.len, sizeof(unsigned));
+				p += sizeof(unsigned);
+				memcpy(p, kv->key.s, kv->key.len);
+				p += kv->key.len;
+				LM_DBG("storing opt key %d [%.*s]\n", kv->key.len,kv->key.len,kv->key.s);
 
 				/* kv->flags */
 				memcpy(p, &kv->flags, sizeof(unsigned char));
@@ -1087,7 +1162,42 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 				CGR_CTX_COPY(kv->value.s.s, kv->value.s.len, "key.value.str.s");
 			}
 			/* all good - link the new value */
-			list_add(&kv->list, &s->kvs);
+			list_add(&kv->list, &s->event_kvs);
+		}
+		CGR_CTX_COPY(&kvs_no, sizeof(unsigned), "req kvs no");
+		while (kvs_no > 0) {
+			kvs_no--;
+			//LM_DBG("p=%p end=%p\n", p, end);
+			CGR_CTX_COPY(&kvs.len, sizeof(unsigned), "key.len");
+			/* do the key manually because it's not worth doing a copy */
+			if (p + kvs.len <= end) {
+				kvs.s = p;
+				p += kvs.len;
+			} else {
+				LM_ERR("invalid ctx stored buffer: no more length for key.str\n");
+				goto internal_error;
+			}
+			LM_DBG("adding key %d [%.*s]\n", kvs.len, kvs.len, kvs.s);
+			kv = cgr_new_kv(kvs);
+			if (!kv) {
+				LM_ERR("cannot allocate a new kv\n");
+				goto internal_error;
+			}
+			CGR_CTX_COPY(&kv->flags, sizeof(unsigned char), "key.flags");
+			if (kv->flags & CGR_KVF_TYPE_INT)
+				CGR_CTX_COPY(&kv->value.n, sizeof(int), "key.value.int");
+			else if (kv->flags & CGR_KVF_TYPE_STR) {
+				CGR_CTX_COPY(&kv->value.s.len, sizeof(unsigned), "key.value.str.len");
+				kv->value.s.s = shm_malloc(kv->value.s.len);
+				if (!kv->value.s.s) {
+					LM_ERR("out of shm mem!\n");
+					cgr_free_kv(kv);
+					goto internal_error;
+				}
+				CGR_CTX_COPY(kv->value.s.s, kv->value.s.len, "key.value.str.s");
+			}
+			/* all good - link the new value */
+			list_add(&kv->list, &s->req_kvs);
 		}
 	}
 store:

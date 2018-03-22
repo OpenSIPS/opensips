@@ -40,6 +40,9 @@ static int cgr_proc_cmd_reply(struct cgr_conn *c, json_object *jobj,
 		return -2;
 	}
 
+	if (!cgre_compat_mode)
+		return cgrates_set_reply_with_values(jobj);
+
 	switch (json_object_get_type(jobj)) {
 	case json_type_int:
 		val.n = json_object_get_int(jobj);
@@ -78,6 +81,7 @@ static int cgr_proc_cmd_reply(struct cgr_conn *c, json_object *jobj,
 		LM_ERR("cannot set the reply value!\n");
 		return -1;
 	}
+
 	return ret;
 }
 
