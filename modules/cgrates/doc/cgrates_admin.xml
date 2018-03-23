@@ -152,6 +152,7 @@
 	</section>
 
 	<section>
+	<title>CGRateS Compatibility</title>
 	<para>
 		The module supports two different versions of CGRateS: the
 		<emphasis>compat_mode</emphasis> one, which works with pre-rc8 releases, and a

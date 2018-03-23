@@ -16,7 +16,7 @@ Razvan Crainea
         1.3. Accounting
         1.4. Other Commands
         1.5. CGRateS Failover
-        1.6.
+        1.6. CGRateS Compatibility
         1.7. Dependencies
 
               1.7.1. OpenSIPS Modules
@@ -197,6 +197,8 @@ ompat mode */
    once again to that server. If it succeeds, that server is
    enabled. Otherwise, the other engines are used, until none is
    available and the command fails.
+
+1.6. CGRateS Compatibility
 
    The module supports two different versions of CGRateS: the
    compat_mode one, which works with pre-rc8 releases, and a new
