@@ -50,6 +50,7 @@ typedef struct presentity
 	short etag_new;
 	char* sphere;
 	str body;
+	unsigned int flags; /* same as for pres_entry_t */
 } presentity_t;
 
 int internal_update_presentity(presentity_t* presentity);

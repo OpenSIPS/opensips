@@ -116,6 +116,8 @@ typedef struct subscription* (*mem_copy_subs_t)(struct subscription* s, int mem_
 
 void free_subs(struct subscription* s);
 
+#define PRES_FLAG_REPLICATED (1<<0)
+
 /* presentity hash table */
 typedef struct pres_entry
 {
@@ -125,36 +127,59 @@ typedef struct pres_entry
 	char* sphere;
 	char etag[ETAG_LEN];
 	int etag_len;
+	unsigned int flags;
 	/* ordering */
 	unsigned int current_turn;
 	unsigned int last_turn;
 	struct pres_entry* next;
 }pres_entry_t;
 
+typedef struct cluster_query_entry
+{
+	str pres_uri;
+	int event;
+	struct cluster_query_entry* next;
+}cluster_query_entry_t;
+
+
 typedef struct pres_htable
 {
-	pres_entry_t* entries;
+	pres_entry_t          *entries;
+	cluster_query_entry_t *cq_entries;
 	gen_lock_t lock;
 }phtable_t;
 
+
 phtable_t* new_phtable(void);
+void destroy_phtable(void);
 
 pres_entry_t* search_phtable(str* pres_uri, int event, unsigned int hash_code);
+
 pres_entry_t* search_phtable_etag(str* pres_uri, int event,
 		str* etag, unsigned int hash_code);
 
 void update_pres_etag(pres_entry_t* p, str* etag);
 
-pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, int init_turn);
+pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag,
+		char* sphere, unsigned int flags, int init_turn);
 
 int update_phtable(struct presentity* presentity, str pres_uri, str body);
 
 void next_turn_phtable(pres_entry_t* p_p, unsigned int hash_code);
 
 int delete_phtable(pres_entry_t* p, unsigned int hash_code);
+
 int delete_phtable_query(str *pres_uri, int event, str* etag);
 
-void destroy_phtable(void);
+
+
+cluster_query_entry_t* insert_cluster_query(str* pres_uri, int event,
+	unsigned int hash_code);
+
+cluster_query_entry_t* search_cluster_query(str* pres_uri, int event,
+	unsigned int hash_code);
+
+int delete_cluster_query(str* pres_uri, int event, unsigned int hash_code);
 
 #endif
 

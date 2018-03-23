@@ -474,7 +474,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 		/* insert new record in hash_table */
 		p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
-					&presentity->etag, presentity->sphere, 1);
+				&presentity->etag, presentity->sphere, presentity->flags, 1);
 		if (p==NULL)
 		{
 			LM_ERR("inserting record in hash table\n");
@@ -663,13 +663,15 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			if(p)
 			{
 				update_pres_etag(p, &etag);
+				p->flags = presentity->flags;
 				lock_release(&pres_htable[hash_code].lock);
 			}
 			else
 			{
 				lock_release(&pres_htable[hash_code].lock);
 				p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
-							&presentity->etag, presentity->sphere, 1);
+						&presentity->etag, presentity->sphere,
+						presentity->flags, 1);
 				if ( p==NULL )
 				{
 					LM_ERR("inserting record in hash table\n");
@@ -1005,7 +1007,7 @@ int pres_htable_restore(void)
 				sphere= extract_sphere(body);
 			}
 
-			if(insert_phtable(&uri, event, &etag, sphere, 0)== NULL)
+			if(insert_phtable(&uri, event, &etag, sphere, 0, 0)== NULL)
 			{
 				LM_ERR("inserting record in presentity hash table");
 				pkg_free(uri.s);

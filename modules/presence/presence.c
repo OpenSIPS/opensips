@@ -47,18 +47,19 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../usr_avp.h"
-#include "../tm/tm_load.h"
-#include "../signaling/signaling.h"
 #include "../../pt.h"
 #include "../../mi/mi.h"
+#include "../../evi/evi_modules.h"
+#include "../tm/tm_load.h"
+#include "../signaling/signaling.h"
 #include "../pua/hash.h"
 #include "publish.h"
 #include "subscribe.h"
 #include "event_list.h"
 #include "bind_presence.h"
 #include "notify.h"
-#include "../../evi/evi_modules.h"
 #include "utils_func.h"
+#include "clustering.h"
 
 
 #define S_TABLE_VERSION  4
@@ -168,6 +169,8 @@ static param_export_t params[]={
 	{ "bla_fix_remote_target",  INT_PARAM, &fix_remote_target},
 	{ "notify_offline_body",    INT_PARAM, &notify_offline_body},
 	{ "end_sub_on_timeout",     INT_PARAM, &end_sub_on_timeout},
+	{ "sharding_cluster_id",    INT_PARAM, &shard_cluster_id},
+	{ "clustering_events",      STR_PARAM, &clustering_events.s},
 	{0,0,0}
 };
 
@@ -180,6 +183,7 @@ static mi_export_t mi_cmds[] = {
 	{  0,                  0, 0,                     0,  0,  0}
 };
 
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
@@ -188,9 +192,11 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "db_url", get_deps_sqldb_url },
+		{ "distribution_cluster_id", get_deps_clusterer },
 		{ NULL, NULL },
 	},
 };
+
 
 /** module exports */
 struct module_exports exports= {
@@ -218,18 +224,20 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
-	/* register event E_PRESENCE_NOTIFY */ 
-	if( (presence_event_id=evi_publish_event(presence_publish_event)) == EVI_ERROR )
-		LM_ERR("Cannot register E_PRESENCE_PUBLISH event\n");
-	if( (exposed_event_id=evi_publish_event(presence_exposed_event)) == EVI_ERROR )
-		LM_ERR("Cannot register E_PRESENCE_EXPOSED event\n");
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
 	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
 	presentity_table.len = strlen(presentity_table.s);
 	active_watchers_table.len = strlen(active_watchers_table.s);
 	watchers_table.len = strlen(watchers_table.s);
 
-	LM_NOTICE("initializing module ...\n");
+	/* register event E_PRESENCE_NOTIFY */ 
+	presence_event_id = evi_publish_event(presence_publish_event);
+	if ( presence_event_id == EVI_ERROR )
+		LM_ERR("Cannot register E_PRESENCE_PUBLISH event\n");
+
+	exposed_event_id=evi_publish_event(presence_exposed_event);
+	if ( exposed_event_id == EVI_ERROR )
+		LM_ERR("Cannot register E_PRESENCE_EXPOSED event\n");
 
 	EvList= init_evlist();
 	if(!EvList)
@@ -286,9 +294,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(db_url.s== NULL)
-	{
-		LM_ERR("database url not set!\n");
+	if (init_pres_clustering()<0) {
+		LM_ERR("failed to init clustering support\n");
 		return -1;
 	}
 
@@ -314,9 +321,12 @@ static int mod_init(void)
 	}
 
 	/*verify table versions */
-	if((db_check_table_version(&pa_dbf, pa_db, &presentity_table, P_TABLE_VERSION) < 0) ||
-		(db_check_table_version(&pa_dbf, pa_db, &active_watchers_table, ACTWATCH_TABLE_VERSION) < 0) ||
-		(db_check_table_version(&pa_dbf, pa_db, &watchers_table, S_TABLE_VERSION) < 0)) {
+	if ( (db_check_table_version(
+		&pa_dbf, pa_db, &presentity_table, P_TABLE_VERSION) < 0) ||
+	(db_check_table_version(
+		&pa_dbf, pa_db, &active_watchers_table, ACTWATCH_TABLE_VERSION) < 0) ||
+	(db_check_table_version(
+		&pa_dbf, pa_db, &watchers_table, S_TABLE_VERSION) < 0) ) {
 			LM_ERR("error during table version check\n");
 			return -1;
 	}

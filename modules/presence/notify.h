@@ -109,6 +109,12 @@ char* get_status_str(int flag);
 void free_watcher_list(watcher_t* w);
 int add_watcher_list(subs_t* s, watcher_t* watchers);
 subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender);
+
+int presentity_has_subscribers(str* pres_uri, pres_ev_t* event);
+
+db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
+		int* extra_hdrs_col, int* expires_col, int* etag_col);
+
 str* create_winfo_xml(watcher_t* watchers, char* version,
 		str resource, str event, int STATE_FLAG );
 str* xml_dialog2presence(str* pres_uri, str* body);

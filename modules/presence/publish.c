@@ -43,6 +43,7 @@
 #include "utils_func.h"
 #include "publish.h"
 #include "presentity.h"
+#include "clustering.h"
 
 static str pu_400_rpl = str_init("Bad request");
 static str pu_500_rpl  = str_init("Server Internal Error");
@@ -602,6 +603,10 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		reply_str = pu_500_rpl;
 		goto error;
 	}
+
+	/* see if this PUBLISH needs to be replicated via cluster */
+	if (is_sharding_cluster_enabled() && is_event_clustered(event->evp->parsed))
+		replicate_publish_on_cluster(&presentity);
 
 	if(sender)
 		pkg_free(sender);

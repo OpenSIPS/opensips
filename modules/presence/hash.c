@@ -396,6 +396,7 @@ phtable_t* new_phtable(void)
 			LM_ERR("initializing lock [%d]\n", i);
 			goto error;
 		}
+
 		htable[i].entries= (pres_entry_t*)shm_malloc(sizeof(pres_entry_t));
 		if(htable[i].entries== NULL)
 		{
@@ -403,6 +404,14 @@ phtable_t* new_phtable(void)
 		}
 		memset(htable[i].entries, 0, sizeof(pres_entry_t));
 		htable[i].entries->next= NULL;
+
+		htable[i].cq_entries= (cluster_query_entry_t*)shm_malloc(sizeof(cluster_query_entry_t));
+		if(htable[i].cq_entries== NULL)
+		{
+			ERR_MEM(SHARE_MEM);
+		}
+		memset(htable[i].cq_entries, 0, sizeof(cluster_query_entry_t));
+		htable[i].cq_entries->next= NULL;
 	}
 
 	return htable;
@@ -414,9 +423,10 @@ error:
 		{
 			if(htable[i].entries)
 				shm_free(htable[i].entries);
-			else
-				break;
-			lock_destroy(&htable[i].lock);
+			if(htable[i].cq_entries)
+				shm_free(htable[i].cq_entries);
+			if (htable[i].lock)
+				lock_destroy(&htable[i].lock);
 		}
 		shm_free(htable);
 	}
@@ -428,6 +438,7 @@ void destroy_phtable(void)
 {
 	int i;
 	pres_entry_t* p, *prev_p;
+	cluster_query_entry_t* cq, *prev_cq;
 
 	if(pres_htable== NULL)
 		return;
@@ -435,6 +446,7 @@ void destroy_phtable(void)
 	for(i= 0; i< phtable_size; i++)
 	{
 		lock_destroy(&pres_htable[i].lock);
+
 		p= pres_htable[i].entries;
 		while(p)
 		{
@@ -444,6 +456,15 @@ void destroy_phtable(void)
 				shm_free(prev_p->sphere);
 			shm_free(prev_p);
 		}
+
+		cq= pres_htable[i].cq_entries;
+		while(cq)
+		{
+			prev_cq= cq;
+			cq= cq->next;
+			shm_free(prev_cq);
+		}
+
 	}
 	shm_free(pres_htable);
 }
@@ -497,7 +518,8 @@ void update_pres_etag(pres_entry_t* p, str* etag)
 	p->etag_count++;
 }
 
-pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, int init_turn)
+pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere,
+											unsigned int flags, int init_turn)
 {
 	unsigned int hash_code;
 	pres_entry_t* p= NULL;
@@ -526,6 +548,7 @@ pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, 
 		strcpy(p->sphere, sphere);
 	}
 	p->event= event;
+	p->flags = flags;
 	update_pres_etag(p, etag);
 
 	hash_code= core_hash(pres_uri, NULL, phtable_size);
@@ -694,3 +717,73 @@ done:
 		pkg_free(sphere);
 	return ret;
 }
+
+
+cluster_query_entry_t* insert_cluster_query(str* pres_uri, int event,
+													unsigned int hash_code)
+{
+	cluster_query_entry_t* p;
+
+	p = (cluster_query_entry_t*)shm_malloc
+		(sizeof(cluster_query_entry_t)+ pres_uri->len);
+	if (p==NULL){
+		LM_ERR("failed to allocate shm mem (needed %d)\n",
+			(int)(sizeof(cluster_query_entry_t)+ pres_uri->len));
+		return NULL;
+	}
+
+	p->pres_uri.s = (char*)(p + 1);
+	memcpy(p->pres_uri.s, pres_uri->s, pres_uri->len);
+	p->pres_uri.len = pres_uri->len;
+
+	p->event = event;
+
+	p->next= pres_htable[hash_code].cq_entries->next;
+	pres_htable[hash_code].cq_entries->next= p;
+
+	return p;
+
+}
+
+
+cluster_query_entry_t* search_cluster_query(str* pres_uri, int event, unsigned int hash_code)
+{
+	cluster_query_entry_t* p;
+
+	LM_DBG("pres_uri= %.*s, event=%d\n", pres_uri->len,  pres_uri->s,
+			event);
+	p = pres_htable[hash_code].cq_entries->next;
+	while(p) {
+		if ( p->event==event && p->pres_uri.len==pres_uri->len &&
+		strncmp(p->pres_uri.s, pres_uri->s, pres_uri->len)== 0 ) {
+			return p;
+		}
+		p = p->next;
+	}
+	return NULL;
+}
+
+int delete_cluster_query(str* pres_uri, int event, unsigned int hash_code)
+{
+	cluster_query_entry_t* p, *old_p;
+
+	LM_DBG("pres_uri= %.*s, event=%d\n", pres_uri->len,  pres_uri->s,
+			event);
+	p = pres_htable[hash_code].cq_entries;
+	while(p->next) {
+		if ( p->next->event==event && p->next->pres_uri.len==pres_uri->len &&
+		strncmp(p->next->pres_uri.s, pres_uri->s, pres_uri->len)== 0 ) {
+			break;
+		}
+		p = p->next;
+	}
+	if (p->next==NULL)
+		return -1;
+
+	old_p = p->next;
+	p->next= p->next->next;
+	shm_free(old_p);
+	return 0;
+}
+
+

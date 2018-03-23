@@ -43,6 +43,7 @@
 #include "presence.h"
 #include "notify.h"
 #include "utils_func.h"
+#include "clustering.h"
 
 #define MAX_FORWARD 70
 
@@ -753,7 +754,7 @@ error:
 }
 
 
-static inline db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
+db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
 		int* extra_hdrs_col, int* expires_col, int* etag_col)
 {
 /*	static db_ps_t my_ps = NULL; */
@@ -913,8 +914,9 @@ error:
 	return NULL;
 }
 
-str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body,
-		str* contact, str* dbody, str* extra_hdrs, free_body_t** free_fct, int from_publish)
+static str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
+		str* publ_body, str* contact, str* dbody, str* extra_hdrs,
+		free_body_t** free_fct, int from_publish, int query_cluster)
 {
 	int body_col, extra_hdrs_col, expires_col, etag_col= 0;
 	db_res_t *result = NULL;
@@ -983,6 +985,10 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 		LM_DBG("No record exists in hash_table\n");
 		if(!fallback2db)
 		{
+			/* we do not have the presentity */
+			if (query_cluster && is_sharding_cluster_enabled())
+				query_cluster_for_presentity(&pres_uri, event->evp);
+
 			/* for pidf manipulation && dialog-presence mixing */
 			if(event->agg_nbody)
 			{
@@ -1030,6 +1036,11 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 
 		pa_dbf.free_result(pa_db, result);
 		result= NULL;
+
+		/* we do not have the presentity */
+		if (query_cluster && is_sharding_cluster_enabled() &&
+		is_event_clustered(event->evp->parsed))
+			query_cluster_for_presentity(&pres_uri, event->evp);
 
 		if(event->agg_nbody)
 		{
@@ -1654,6 +1665,99 @@ int update_in_list(subs_t* s, subs_t* s_array, int new_rec_no, int n)
 	return -1;
 }
 
+int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
+{
+	static db_ps_t ps;
+	unsigned int hash_code;
+	subs_t* s;
+	time_t now;
+	db_key_t keys[3];
+	db_val_t vals[3];
+	db_key_t cols[1];
+	db_res_t *res;
+
+	/* first check the in-memory hash, maybe we are lucky */
+	hash_code= core_hash(pres_uri, &event->name, shtable_size);
+
+	lock_get(&subs_htable[hash_code].lock);
+	s = subs_htable[hash_code].entries;
+	now = time(NULL);
+
+	while (s->next) {
+		s= s->next;
+
+		/* expired & active ? */
+		if ( (s->expires<(int)now) || (s->status!=ACTIVE_STATUS) ||
+		(s->reason.len!=0) )
+			continue;
+
+		if (s->event==event && s->pres_uri.len== pres_uri->len &&
+		strncmp(s->pres_uri.s, pres_uri->s, pres_uri->len)==0) {
+			/* found a subscriber for our presentity*/
+			lock_release(&subs_htable[hash_code].lock);
+			return 1;
+		}
+
+	}
+	lock_release(&subs_htable[hash_code].lock);
+
+	/* presentity has no subscriber in hash. Check db ?? */
+	if(fallback2db==0)
+		return 0;
+
+	keys[0] = &str_presentity_uri_col;
+	vals[0].type = DB_STR;
+	vals[0].nul = 0;
+	vals[0].val.str_val = *pres_uri;
+
+	keys[1] = &str_event_col;
+	vals[1].type = DB_STR;
+	vals[1].nul = 0;
+	vals[1].val.str_val = event->name;
+
+	keys[2] = &str_status_col;
+	vals[2].type = DB_INT;
+	vals[2].nul = 0;
+	vals[2].val.int_val = ACTIVE_STATUS;
+
+	cols[1] = &str_watcher_username_col;
+
+	if (pa_dbf.use_table(pa_db, &active_watchers_table) < -1) {
+		LM_ERR("in use_table\n");
+		goto error;
+	}
+	CON_PS_REFERENCE(pa_db) = ps;
+
+	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) {
+		if ( pa_dbf.query( pa_db, keys, 0, vals, cols, 3, 1, 0, 0) < 0) {
+			LM_ERR("DB query failed\n");
+			goto error;
+		}
+		if(pa_dbf.fetch_result( pa_db, &res, 1 )<0) {
+			LM_ERR("Error fetching rows\n");
+			goto error;
+		}
+	} else {
+		if ( pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
+			LM_ERR("DB query failed\n");
+			goto error;
+		}
+	}
+
+	if ( RES_ROW_N(res)>0 ) {
+		pa_dbf.free_result(pa_db, res);
+		return 1;
+	}
+
+	pa_dbf.free_result(pa_db, res);
+
+	/* no subscriber for presentity + event */
+	return 0;
+error:
+	return 0;
+}
+
+
 subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender)
 {
 	unsigned int hash_code;
@@ -1749,7 +1853,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, body,
 				NULL, dialog_body,
 				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct,
-				from_publish);
+				from_publish, 0);
 	}
 
 	s= subs_array;
@@ -1806,7 +1910,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	if(event->type & PUBL_TYPE)
 	{
 		notify_body = get_p_notify_body(*pres_uri, event, 0, 0, 0, 0,
-				&notify_extra_hdrs, &free_fct, 0);
+				&notify_extra_hdrs, &free_fct, 0, 1);
 	}
 
 	s= subs_array;
@@ -1918,7 +2022,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 					notify_body = get_p_notify_body(subs->pres_uri,
 							subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
 							NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs,
-							&free_fct, from_publish);
+							&free_fct, from_publish, 1);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
