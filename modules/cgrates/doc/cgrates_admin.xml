@@ -515,6 +515,30 @@ modparam("cgrates", "compat_mode", 1)
 		</programlisting>
 		</example>
 
+		<example>
+				<title>cgrates_auth() usage with attributes parsing</title>
+				<programlisting format="linespecific">
+		...
+		if (!has_totag()) {
+			...
+			$cgr_opt(GetAttributes) = 1;
+			if (!cgrates_auth("$fU", "$rU")) {
+				sl_send_reply("403", "Forbidden");
+				exit;
+			}
+			# move attributes from AttributesDigest variable to plain AVPs
+			$var(idx) = 0;
+			while ($(cgrret(AttributesDigest){s.select,$var(idx),,}) != NULL) {
+				$avp($(cgrret(AttributesDigest){s.select,$var(idx),,}{s.select,0,:}))
+					= $(cgrret(AttributesDigest){s.select,$var(idx),,}{s.select,1,:});
+				$var(idx) = $var(idx) + 1;
+			}
+			...
+		}
+		...
+		</programlisting>
+		</example>
+
 	</section>
 	<section id="cgrates_cmd">
 		<title>
