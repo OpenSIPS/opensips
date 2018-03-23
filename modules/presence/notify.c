@@ -1720,7 +1720,7 @@ int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 	vals[2].nul = 0;
 	vals[2].val.int_val = ACTIVE_STATUS;
 
-	cols[1] = &str_watcher_username_col;
+	cols[0] = &str_watcher_username_col;
 
 	if (pa_dbf.use_table(pa_db, &active_watchers_table) < -1) {
 		LM_ERR("in use_table\n");
