@@ -99,7 +99,7 @@
 
 	<section>
 	<title>Parameters</title>
-	<section id="rtpengine.p.rtpengine_sock">
+	<section id="rtpengine.p.rtpengine_sock" xreflabel="rtpengine.p.rtpengine_sock">
 		<title><varname>rtpengine_sock</varname> (string)</title>
 		<para>
 		Definition of socket(s) used to connect to (a set) &rtp; proxy. It may
@@ -224,6 +224,84 @@ modparam("rtpengine", "extra_id_pv", "$avp(extra_id)")
 <programlisting format="linespecific">
 ...
 modparam("rtpengine", "setid_avp", "$avp(setid)")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="rtpengine.p.db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			Database URL, used to load RTPEngines sockets
+			from db, instead of specifying them in the
+			script (<xref linkend="rtpengine.p.rtpengine_sock"/>
+			module parameter).
+		</para>
+		<para>
+			Default value is <quote>NULL</quote>, no database
+			is used.
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "db_url", 
+		"mysql://opensips:opensipsrw@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="rtpengine.p.db_table">
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+			The table where the RTPEngines sockets are stored.
+			Used when Database URL is provisioned.
+		</para>
+		<para>
+			Default value is <quote>rtpengines</quote>.
+		</para>
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "db_table", "rtpengine_new")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="rtpengine.p.socket_column">
+		<title><varname>socket_column</varname> (string)</title>
+		<para>
+			The name of the rtpengine socket column in the database table.
+		</para>
+		<para>
+			Default value is <quote>socket</quote>.
+		</para>
+		<example>
+		<title>Set <varname>socket_column</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "socket_column", "sock")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="rtpengine.p.set_column">
+		<title><varname>set_column</varname> (string)</title>
+		<para>
+			The name of the rtpengine set column in the database table.
+		</para>
+		<para>
+			Default value is <quote>set_id</quote>.
+		</para>
+		<example>
+		<title>Set <varname>set_column</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "set_column", "set_new")
 ...
 </programlisting>
 		</example>
@@ -877,6 +955,26 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 			<programlisting format="linespecific">
 ...
 $ opensipsctl fifo rtpengine_show
+...
+			</programlisting>
+			</example>
+		</section>
+
+		<section id="rtpengine.m.rtpengine_reload">
+			<title><function moreinfo="none">rtpengine_reload</function></title>
+			<para>
+			Reloads all rtpengine sets from the database. Used only when the
+			<emphasis>db_url</emphasis> parameter is set.
+			</para>
+			<para>
+			No parameter.
+			</para>
+			<example>
+			<title>
+				<function moreinfo="none">rtpengine_reload</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo rtpengine_reload
 ...
 			</programlisting>
 			</example>
