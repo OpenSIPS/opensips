@@ -45,6 +45,7 @@ registrant:1
 rls_presentity:1
 rls_watchers:2
 route_tree:2
+rtpengine:1
 rtpproxy_sockets:0
 silo:6
 sip_trace:5

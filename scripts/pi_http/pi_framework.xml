@@ -834,6 +834,14 @@
 		<column><field>socket_info</field><type>DB_STR</type></column>
 		<column><field>local_contact</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of rtpengine table-->
+	<db_table id="rtpengine">
+		<table_name>rtpengine</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>socket</field><type>DB_BLOB</type></column>
+		<column><field>set_id</field><type>DB_INT</type></column>
+	</db_table>
 	<!-- Declaration of rtpproxy_sockets table-->
 	<db_table id="rtpproxy_sockets">
 		<table_name>rtpproxy_sockets</table_name>
@@ -4108,6 +4116,44 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>rls_watchers</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- rtpengine provisionning -->
+	<mod><mod_name>rtpengine</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>rtpengine</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>socket</field></col>
+				<col><field>set_id</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>rtpengine</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>socket</field></col>
+				<col><field>set_id</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>rtpengine</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>socket</field></col>
+				<col><field>set_id</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>rtpengine</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>

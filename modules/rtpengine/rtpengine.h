@@ -60,4 +60,6 @@ struct rtpe_set_head{
 	struct rtpe_set		*rset_last;
 };
 
+#define RTPENGINE_TABLE_VERSION 1
+
 #endif

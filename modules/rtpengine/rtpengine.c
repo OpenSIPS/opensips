@@ -68,6 +68,7 @@
 #include "../../ut.h"
 #include "../../pt.h"
 #include "../../pvar.h"
+#include "../../db/db.h"
 #include "../../msg_translator.h"
 #include "../../usr_avp.h"
 #include "../../socket_info.h"
@@ -94,6 +95,7 @@
 #define MI_MAX_RECHECK_TICKS		(unsigned int)-1
 
 #define MI_SHOW_RTP_ENGINES			"rtpengine_show"
+#define MI_RELOAD_RTP_ENGINES		"rtpengine_reload"
 
 #define MI_RTP_ENGINE_NOT_FOUND		"RTP engine not found"
 #define MI_RTP_ENGINE_NOT_FOUND_LEN	(sizeof(MI_RTP_ENGINE_NOT_FOUND)-1)
@@ -120,6 +122,16 @@
 #define rtpe_ctx_set(_ctx) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, rtpe_ctx_idx, _ctx)
 
+#define RTPE_START_READ() \
+	do { \
+		if (rtpe_lock) \
+			lock_start_read(rtpe_lock); \
+	} while (0)
+#define RTPE_STOP_READ() \
+	do { \
+		if (rtpe_lock) \
+			lock_stop_read(rtpe_lock); \
+	} while (0)
 
 enum rtpe_operation {
 	OP_OFFER = 1,
@@ -155,9 +167,17 @@ struct ng_flags_parse {
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
 };
 
+enum rtpe_set_var {
+	RTPE_SET_NONE, RTPE_SET_FIXED, RTPE_SET_PVAR
+};
+
 typedef struct rtpe_set_link {
-	struct rtpe_set *rset;
-	pv_spec_t rpv;
+	enum rtpe_set_var type;
+	union {
+		int id;
+		struct rtpe_set *rset;
+		pv_spec_t rpv;
+	} v;
 } rtpe_set_link_t;
 
 static const char *command_strings[] = {
@@ -187,6 +207,7 @@ static int rtpengine_manage_f(struct sip_msg *, gparam_p str1,
 		pv_spec_t *spvar, pv_spec_t *bpvar);
 static int rtpengine_delete_f(struct sip_msg *, gparam_p str1,
 		pv_spec_t *spvar);
+static void free_rtpe_nodes(struct rtpe_set *list);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -200,12 +221,15 @@ static struct rtpe_node *select_rtpe_node(str, int, struct rtpe_set *);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
+static int update_rtpengines(void);
+static int _add_rtpengine_from_database(void);
 static int rtpengine_set_store(modparam_t type, void * val);
-static int rtpengine_add_rtpengine_set( char * rtp_proxies);
+static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id);
 
 static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
+static int mi_child_init(void);
 
 /* Pseudo-Variables */
 static int pv_get_rtpstat_f(struct sip_msg *, pv_param_t *, pv_value_t *);
@@ -218,6 +242,8 @@ static struct mi_root* mi_show_rtpengines(struct mi_root* cmd_tree,
 		void* param);
 static struct mi_root* mi_teardown_call(struct mi_root* cmd_tree,
 		void* param);
+static struct mi_root* mi_reload_rtpengines(struct mi_root* cmd_tree,
+                void* param);
 
 
 static int rtpengine_stats_used = 0;
@@ -233,22 +259,28 @@ static char ** rtpe_strings=0;
 static int rtpe_sets=0; /*used in rtpengine_set_store()*/
 static int rtpe_set_count = 0;
 static int rtpe_ctx_idx = -1;
-/* RTP proxy balancing list */
-struct rtpe_set_head * rtpe_set_list =0;
-struct rtpe_set * default_rtpe_set=0;
+struct rtpe_set_head **rtpe_set_list =0;
+struct rtpe_set **default_rtpe_set=0;
 
 /* array with the sockets used by rtpengine (per process)*/
-static unsigned int rtpe_no = 0;
 static int *rtpe_socks = 0;
+static str db_url = {NULL, 0};
+static str db_table = str_init("rtpengine");
+static str db_rtpe_set_col = str_init("set_id");
+static str db_rtpe_sock_col = str_init("socket");
+static db_con_t *db_connection = NULL;
+static db_func_t db_functions;
+static rw_lock_t *rtpe_lock=NULL;
+static unsigned int *rtpe_no = 0;
+static unsigned int *list_version;
+static unsigned int my_version = 0;
+static unsigned int rtpe_number = 0;
 
 static int     setid_avp_type;
 static int_str setid_avp;
 
 /* tm */
 static struct tm_binds tmb;
-
-/*0-> disabled, 1 ->enabled*/
-unsigned int *natping_state=0;
 
 static pv_elem_t *extra_id_pv = NULL;
 
@@ -408,12 +440,18 @@ static param_export_t params[] = {
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
 	{"extra_id_pv",            STR_PARAM, &extra_id_pv_param.s },
 	{"setid_avp",              STR_PARAM, &setid_avp_param },
+	{"db_url",                 STR_PARAM, &db_url.s               },
+	{"db_table",               STR_PARAM, &db_table.s             },
+	{"socket_column",          STR_PARAM, &db_rtpe_sock_col.s        },
+	{"set_column",             STR_PARAM, &db_rtpe_set_col.s         },
 	{0, 0, 0}
 };
 
 static mi_export_t mi_cmds[] = {
 	{MI_ENABLE_RTP_ENGINE,    0, mi_enable_rtp_proxy,  0,                0, 0},
 	{MI_SHOW_RTP_ENGINES,     0, mi_show_rtpengines,   MI_NO_INPUT_FLAG, 0, 0},
+	{MI_RELOAD_RTP_ENGINES,   0, mi_reload_rtpengines, MI_NO_INPUT_FLAG, 0,
+		mi_child_init},
 	{"teardown",              0, mi_teardown_call,     0,                0, 0},
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -424,6 +462,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
 		{ NULL, NULL },
 	},
 };
@@ -614,7 +653,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 			return -1;
 		}
 		memset(pnode, 0, sizeof(*pnode));
-		pnode->idx = rtpe_no++;
+		pnode->idx = (*rtpe_no)++;
 		pnode->rn_recheck_ticks = 0;
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
@@ -659,7 +698,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 /*	0-succes
  *  -1 - erorr
  * */
-static int rtpengine_add_rtpengine_set( char * rtp_proxies)
+static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id)
 {
 	char *p,*p2;
 	struct rtpe_set * rtpe_list;
@@ -678,27 +717,32 @@ static int rtpengine_add_rtpengine_set( char * rtp_proxies)
 		return 0;
 	}
 
-	rtp_proxies = strstr(p, "==");
-	if(rtp_proxies){
-		if(*(rtp_proxies +2)=='\0'){
-			LM_ERR("script error -invalid rtp proxy list!\n");
-			return -1;
+	if (set_id < 0) {
+		rtp_proxies = strstr(p, "==");
+		if(rtp_proxies){
+			if(*(rtp_proxies +2)=='\0'){
+				LM_ERR("script error -invalid rtp proxy list!\n");
+				return -1;
+			}
+
+			*rtp_proxies = '\0';
+			p2 = rtp_proxies-1;
+			for(;isspace(*p2); *p2 = '\0',p2--);
+			id_set.s = p;	id_set.len = p2 - p+1;
+
+			if(id_set.len <= 0 ||str2int(&id_set, &my_current_id)<0 ){
+			LM_ERR("script error -invalid set_id value!\n");
+				return -1;
+			}
+
+			rtp_proxies+=2;
+		}else{
+			rtp_proxies = p;
+			my_current_id = DEFAULT_RTPE_SET_ID;
 		}
-
-		*rtp_proxies = '\0';
-		p2 = rtp_proxies-1;
-		for(;isspace(*p2); *p2 = '\0',p2--);
-		id_set.s = p;	id_set.len = p2 - p+1;
-
-		if(id_set.len <= 0 ||str2int(&id_set, &my_current_id)<0 ){
-		LM_ERR("script error -invalid set_id value!\n");
-			return -1;
-		}
-
-		rtp_proxies+=2;
-	}else{
+	} else {
 		rtp_proxies = p;
-		my_current_id = DEFAULT_RTPE_SET_ID;
+		my_current_id = set_id;
 	}
 
 	for(;*rtp_proxies && isspace(*rtp_proxies);rtp_proxies++);
@@ -709,7 +753,7 @@ static int rtpengine_add_rtpengine_set( char * rtp_proxies)
 	}
 
 	/*search for the current_id*/
-	rtpe_list = rtpe_set_list ? rtpe_set_list->rset_first : 0;
+	rtpe_list = (*rtpe_set_list) ? (*rtpe_set_list)->rset_first : 0;
 	while( rtpe_list != 0 && rtpe_list->id_set!=my_current_id)
 		rtpe_list = rtpe_list->rset_next;
 
@@ -732,28 +776,24 @@ static int rtpengine_add_rtpengine_set( char * rtp_proxies)
 	}
 
 	if (new_list) {
-		if(!rtpe_set_list){/*initialize the list of set*/
-			rtpe_set_list = shm_malloc(sizeof(struct rtpe_set_head));
-			if(!rtpe_set_list){
+		if(!(*rtpe_set_list)){/*initialize the list of set*/
+			*rtpe_set_list = shm_malloc(sizeof(struct rtpe_set_head));
+			if(!(*rtpe_set_list)){
 				LM_ERR("no shm memory left\n");
 				return -1;
 			}
-			memset(rtpe_set_list, 0, sizeof(struct rtpe_set_head));
+			memset(*rtpe_set_list, 0, sizeof(struct rtpe_set_head));
 		}
 
 		/*update the list of set info*/
-		if(!rtpe_set_list->rset_first){
-			rtpe_set_list->rset_first = rtpe_list;
+		if(!(*rtpe_set_list)->rset_first){
+			(*rtpe_set_list)->rset_first = rtpe_list;
 		}else{
-			rtpe_set_list->rset_last->rset_next = rtpe_list;
+			(*rtpe_set_list)->rset_last->rset_next = rtpe_list;
 		}
 
-		rtpe_set_list->rset_last = rtpe_list;
+		(*rtpe_set_list)->rset_last = rtpe_list;
 		rtpe_set_count++;
-
-		if(my_current_id == DEFAULT_RTPE_SET_ID){
-			default_rtpe_set = rtpe_list;
-		}
 	}
 
 	return 0;
@@ -779,19 +819,22 @@ static int fixup_set_id(void ** param, int param_no)
 	s.len = strlen(s.s);
 
 	if(s.s[0] == PV_MARKER) {
-		if ( pv_parse_spec(&s, &rtpl->rpv) == NULL ) {
+		if (pv_parse_spec(&s, &rtpl->v.rpv) == NULL ) {
 			LM_ERR("invalid parameter %s\n", s.s);
 			return -1;
 		}
+		rtpl->type = RTPE_SET_PVAR;
 	} else {
 		int_val = str2s(*param, strlen(*param), &err);
 		if (err == 0) {
 			pkg_free(*param);
 			if((rtpe_list = select_rtpe_set(int_val)) ==0){
-				LM_ERR("rtpe_proxy set %i not configured\n", int_val);
-				return E_CFG;
+				rtpl->type = RTPE_SET_NONE;
+				rtpl->v.id = int_val;
+			} else {
+				rtpl->type = RTPE_SET_FIXED;
+				rtpl->v.rset = rtpe_list;
 			}
-			rtpl->rset = rtpe_list;
 		} else {
 			LM_ERR("bad number <%s>\n",	(char *)(*param));
 			return E_CFG;
@@ -812,7 +855,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 
 	found = 0;
 
-	if(rtpe_set_list ==NULL)
+	if(*rtpe_set_list ==NULL)
 		goto end;
 
 	node = cmd_tree->node.kids;
@@ -832,7 +875,8 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if( strno2int( &node->value, &enable) <0)
 		goto error;
 
-	for(rtpe_list = rtpe_set_list->rset_first; rtpe_list != NULL;
+	RTPE_START_READ();
+	for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
 
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
@@ -851,6 +895,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 			}
 		}
 	}
+	RTPE_STOP_READ();
 
 end:
 	if(found)
@@ -894,13 +939,14 @@ static struct mi_root* mi_show_rtpengines(struct mi_root* cmd_tree,
 		return 0;
 	}
 
-	if(rtpe_set_list ==NULL)
+	if(*rtpe_set_list ==NULL)
 		return root;
 
 	node = &root->node;
 	node->flags |= MI_IS_ARRAY;
 
-	for(rtpe_list = rtpe_set_list->rset_first; rtpe_list != NULL;
+	RTPE_START_READ();
+	for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
 
 		id =  int2str(rtpe_list->id_set, &id_len);
@@ -937,12 +983,54 @@ static struct mi_root* mi_show_rtpengines(struct mi_root* cmd_tree,
 				crt_rtpe->rn_recheck_ticks, attr, len, string, error);
 		}
 	}
+	RTPE_STOP_READ();
 
 	return root;
 error:
+	RTPE_STOP_READ();
 	if (root)
 		free_mi_tree(root);
 	return 0;
+}
+
+static struct mi_root* mi_reload_rtpengines(struct mi_root* cmd_tree,
+                void* param)
+{
+	struct rtpe_set *it;
+	if(db_url.s == NULL) {
+		LM_ERR("Dynamic loading of rtpengines not enabled\n");
+		return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	}
+
+	lock_start_write(rtpe_lock);
+	if(*rtpe_set_list) {
+		for (it = (*rtpe_set_list)->rset_first; it; it = it->rset_next)
+			free_rtpe_nodes(it);
+	}
+	*rtpe_no = 0;
+	(*list_version)++;
+
+	/* notify timeout process that the rtpp proxy list changes */
+
+	if(_add_rtpengine_from_database() < 0)
+		goto error;
+
+	if (update_rtpengines())
+		goto error;
+
+	/* update pointer to default_rtpp_set*/
+	*default_rtpe_set = select_rtpe_set(DEFAULT_RTPE_SET_ID);
+	if (*default_rtpe_set == NULL)
+		LM_WARN("there is no rtpengine in the default set %d\n",
+				DEFAULT_RTPE_SET_ID);
+
+	/* release the readers */
+	lock_stop_write(rtpe_lock);
+
+	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+error:
+	lock_stop_write(rtpe_lock);
+	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
 }
 
 
@@ -976,21 +1064,78 @@ mod_init(void)
 
 	rtpe_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, rtpe_ctx_free);
 
-	/* any rtpengine configured? */
-	if(rtpe_set_list)
-		default_rtpe_set = select_rtpe_set(DEFAULT_RTPE_SET_ID);
+	rtpe_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
+	list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
+	*rtpe_no = 0;
+	*list_version = 0;
+	my_version = 0;
 
-	/* storing the list of rtp proxy sets in shared memory*/
-	for(i=0;i<rtpe_sets;i++){
-		if(rtpengine_add_rtpengine_set(rtpe_strings[i]) !=0){
-			for(;i<rtpe_sets;i++)
-				if(rtpe_strings[i])
-					pkg_free(rtpe_strings[i]);
-			pkg_free(rtpe_strings);
+	if(!rtpe_no || !list_version) {
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+
+	if (!(rtpe_set_list = (struct rtpe_set_head **)
+		shm_malloc(sizeof(struct rtpe_set_head *)))) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+	*rtpe_set_list = 0;
+
+	if(db_url.s == NULL) {
+		/* storing the list of rtp proxy sets in shared memory*/
+		for(i=0;i<rtpe_sets;i++){
+			if(rtpengine_add_rtpengine_set(rtpe_strings[i], -1) !=0){
+				for(;i<rtpe_sets;i++)
+					if(rtpe_strings[i])
+						pkg_free(rtpe_strings[i]);
+				pkg_free(rtpe_strings);
+				return -1;
+			}
+			if(rtpe_strings[i])
+				pkg_free(rtpe_strings[i]);
+		}
+	} else {
+		db_url.len = strlen(db_url.s);
+		db_table.len = strlen(db_table.s);
+		db_rtpe_sock_col.len = strlen(db_rtpe_sock_col.s);
+		db_rtpe_set_col.len = strlen(db_rtpe_set_col.s);
+
+		if(db_bind_mod(&db_url, &db_functions) == -1) {
+			LM_ERR("Failed bind to database\n");
 			return -1;
 		}
-		if(rtpe_strings[i])
-			pkg_free(rtpe_strings[i]);
+
+		if (!DB_CAPABILITY(db_functions, DB_CAP_ALL))
+		{
+			LM_ERR("Database module does not implement all functions"
+					" needed by presence module\n");
+			return -1;
+		}
+
+		db_connection = db_functions.init(&db_url);
+		if(db_connection == NULL) {
+			LM_ERR("Failed to connect to database");
+			return -1;
+		}
+
+		/*verify table versions */
+		if(db_check_table_version(&db_functions, db_connection, &db_table,
+					RTPENGINE_TABLE_VERSION) < 0){
+				LM_ERR("error during table version check\n");
+				return -1;
+		}
+
+		if(_add_rtpengine_from_database() != 0) {
+			return -1;
+		}
+
+		db_functions.close(db_connection);
+		db_connection = NULL;
+		if ((rtpe_lock = lock_init_rw()) == NULL) {
+			LM_CRIT("failed to init lock\n");
+			return -1;
+		}
 	}
 
 	if (extra_id_pv_param.s && *extra_id_pv_param.s) {
@@ -1022,6 +1167,24 @@ mod_init(void)
 	if (rtpe_strings)
 		pkg_free(rtpe_strings);
 
+	default_rtpe_set = (struct rtpe_set**)shm_malloc(sizeof(struct rtpe_set*));
+	if(default_rtpe_set == NULL) {
+		LM_ERR("No more shared memory\n");
+		return -1;
+	}
+	*default_rtpe_set = NULL;
+
+	/* any rtpengine configured? */
+	if(rtpe_set_list && *rtpe_set_list) {
+		*default_rtpe_set = select_rtpe_set(DEFAULT_RTPE_SET_ID);
+		if (*default_rtpe_set == NULL)
+			LM_WARN("there is no rtpengine engine in the default set %d!"
+					"if you are not specifying sets in your rtpproxy_*()"
+					"commands, rtpproxy will not be used!\n",
+					DEFAULT_RTPE_SET_ID);
+	}
+
+
 	if (load_tm_api( &tmb ) < 0)
 	{
 		LM_DBG("could not load the TM-functions - answer-offer model"
@@ -1032,44 +1195,69 @@ mod_init(void)
 	return 0;
 }
 
+static int mi_child_init(void)
+{
+	if(child_init(1) < 0)
+	{
+		LM_ERR("Failed to initial rtpp socks\n");
+		return -1;
+	}
 
-static int
-child_init(int rank)
+	if(!db_url.s)
+		return 0;
+
+	if (db_functions.init==0)
+	{
+		LM_CRIT("database not bound\n");
+		return -1;
+	}
+
+	db_connection = db_functions.init(&db_url);
+	if(db_connection == NULL) {
+		LM_ERR("Failed to connect to database");
+		return -1;
+	}
+
+	LM_DBG("Database connection opened successfully\n");
+
+	return 0;
+}
+
+static int connect_rtpengines(void)
 {
 	int n;
 	char *cp;
+	char *hostname;
 	struct addrinfo hints, *res;
 	struct rtpe_set  *rtpe_list;
 	struct rtpe_node *pnode;
 
-	if(rtpe_set_list==NULL )
+	LM_DBG("[RTPEngine] set list %p\n", *rtpe_set_list);
+	if(!(*rtpe_set_list) )
 		return 0;
+	LM_DBG("[Re]connecting sockets (%d > %d)\n", *rtpe_no, rtpe_number);
 
-	/* Iterate known RTP proxies - create sockets */
-	mypid = getpid();
 
-	rtpe_socks = (int*)pkg_malloc( sizeof(int)*rtpe_no );
-	if (rtpe_socks==NULL) {
-		LM_ERR("no more pkg memory\n");
-		return -1;
+	if (*rtpe_no > rtpe_number) {
+		rtpe_socks = (int*)pkg_realloc(rtpe_socks, *rtpe_no * sizeof(int));
+		if (rtpe_socks==NULL) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
 	}
+	rtpe_number = *rtpe_no;
 
-	for(rtpe_list = rtpe_set_list->rset_first; rtpe_list != 0;
+	for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != 0;
 		rtpe_list = rtpe_list->rset_next){
 
 		for (pnode=rtpe_list->rn_first; pnode!=0; pnode = pnode->rn_next){
-			char *hostname;
 
 			if (pnode->rn_umode == 0) {
 				rtpe_socks[pnode->idx] = -1;
 				goto rptest;
 			}
 
-			/*
-			 * This is UDP or UDP6. Detect host and port; lookup host;
-			 * do connect() in order to specify peer address
-			 */
-			hostname = (char*)pkg_malloc(sizeof(char) * (strlen(pnode->rn_address) + 1));
+			hostname = (char*)pkg_malloc(strlen(pnode->rn_address) + 1);
 			if (hostname==NULL) {
 				LM_ERR("no more pkg memory\n");
 				return -1;
@@ -1103,7 +1291,7 @@ child_init(int rank)
 				return -1;
 			}
 
-			if (connect( rtpe_socks[pnode->idx], res->ai_addr, res->ai_addrlen) == -1) {
+			if (connect(rtpe_socks[pnode->idx], res->ai_addr, res->ai_addrlen) == -1) {
 				LM_ERR("can't connect to a RTP proxy\n");
 				close( rtpe_socks[pnode->idx] );
 				rtpe_socks[pnode->idx] = -1;
@@ -1116,40 +1304,85 @@ rptest:
 		}
 	}
 
+	LM_DBG("successfully updated rtpengine sets\n");
 	return 0;
 }
 
+static int
+child_init(int rank)
+{
 
-static void mod_destroy(void)
+	if(*rtpe_set_list==NULL )
+		return 0;
+
+	/* Iterate known RTP proxies - create sockets */
+	mypid = getpid();
+
+	return connect_rtpengines();
+}
+
+static int update_rtpengines(void)
+{
+	int i;
+
+	LM_DBG("updating list from %d to %d [%d]\n", my_version, *list_version, rtpe_number);
+	my_version = *list_version;
+	for (i = 0; i < rtpe_number; i++) {
+		shutdown(rtpe_socks[i], SHUT_RDWR);
+		close(rtpe_socks[i]);
+	}
+
+	return connect_rtpengines();
+}
+
+static void free_rtpe_nodes(struct rtpe_set *list)
+{
+	struct rtpe_node * crt_rtpp, *last_rtpp;
+
+	for(crt_rtpp = list->rn_first; crt_rtpp != NULL;  ){
+
+		if(crt_rtpp->rn_url.s)
+			shm_free(crt_rtpp->rn_url.s);
+
+		last_rtpp = crt_rtpp;
+		crt_rtpp = last_rtpp->rn_next;
+		shm_free(last_rtpp);
+	}
+	list->rn_first = NULL;
+	list->rtpe_node_count = 0;
+}
+
+static void free_rtpe_sets(void)
 {
 	struct rtpe_set * crt_list, * last_list;
-	struct rtpe_node * crt_rtpe, *last_rtpe;
 
-	/*free the shared memory*/
-	if (natping_state)
-		shm_free(natping_state);
+	for(crt_list = (*rtpe_set_list)->rset_first; crt_list != NULL; ){
 
-	if(rtpe_set_list == NULL)
-		return;
-
-	for(crt_list = rtpe_set_list->rset_first; crt_list != NULL; ){
-
-		for(crt_rtpe = crt_list->rn_first; crt_rtpe != NULL;  ){
-
-			if(crt_rtpe->rn_url.s)
-				shm_free(crt_rtpe->rn_url.s);
-
-			last_rtpe = crt_rtpe;
-			crt_rtpe = last_rtpe->rn_next;
-			shm_free(last_rtpe);
-		}
-
+		free_rtpe_nodes(crt_list);
 		last_list = crt_list;
 		crt_list = last_list->rset_next;
 		shm_free(last_list);
 	}
+	(*rtpe_set_list)->rset_first = NULL;
+	(*rtpe_set_list)->rset_last = NULL;
+}
 
+static void mod_destroy(void)
+{
+	if (default_rtpe_set)
+		shm_free(default_rtpe_set);
+
+	if(!rtpe_set_list || *rtpe_set_list == NULL)
+		return;
+
+	free_rtpe_sets();
+	shm_free(*rtpe_set_list);
 	shm_free(rtpe_set_list);
+
+	if (rtpe_lock) {
+		lock_destroy_rw(rtpe_lock);
+		rtpe_lock = NULL;
+	}
 }
 
 
@@ -1590,17 +1823,20 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	}
 
 	if ( (set=rtpe_ctx_set_get())==NULL )
-		set = default_rtpe_set;
+		set = *default_rtpe_set;
 
+	RTPE_START_READ();
 	do {
 		node = select_rtpe_node(callid, 1, set);
 		if (!node) {
 			LM_ERR("no available proxies\n");
+			RTPE_STOP_READ();
 			goto error;
 		}
 
 		cp = send_rtpe_command(node, ng_flags.dict, &ret);
 	} while (cp == NULL);
+	RTPE_STOP_READ();
 	LM_DBG("proxy reply: %.*s\n", ret, cp);
 
 	/* store the value of the selected node */
@@ -1869,20 +2105,19 @@ badproxy:
  * select the set with the id_set id
  */
 
-static struct rtpe_set * select_rtpe_set(int id_set ){
+static struct rtpe_set * select_rtpe_set(int id_set )
+{
 
 	struct rtpe_set * rtpe_list;
 	/*is it a valid set_id?*/
 
-	if(!rtpe_set_list || !rtpe_set_list->rset_first){
-		LM_ERR("no rtp_proxy configured\n");
+	if(!rtpe_set_list || !(*rtpe_set_list) || !(*rtpe_set_list)->rset_first)
 		return 0;
-	}
 
-	for(rtpe_list=rtpe_set_list->rset_first; rtpe_list!=0 &&
+	for(rtpe_list=(*rtpe_set_list)->rset_first; rtpe_list!=0 &&
 		rtpe_list->id_set!=id_set; rtpe_list=rtpe_list->rset_next);
 	if(!rtpe_list){
-		LM_ERR(" script error-invalid id_set to be selected\n");
+		LM_DBG("no engine in set %d\n", id_set);
 	}
 
 	return rtpe_list;
@@ -1896,20 +2131,30 @@ static struct rtpe_set * select_rtpe_set(int id_set ){
 static struct rtpe_node *
 select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 {
-	unsigned sum, sumcut, weight_sum;
+	unsigned sum, weight_sum;
 	struct rtpe_node* node;
-	int was_forced;
+	int was_forced, sumcut, found, constant_weight_sum;
+
+	/* check last list version */
+	if (my_version != *list_version && update_rtpengines() < 0) {
+		LM_ERR("cannot update rtpengines list\n");
+		return 0;
+	}
 
 	if(!set){
 		LM_ERR("script error -no valid set selected\n");
 		return NULL;
 	}
+
 	/* Most popular case: 1 proxy, nothing to calculate */
 	if (set->rtpe_node_count == 1) {
 		node = set->rn_first;
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks())
 			node->rn_disabled = rtpe_test(node, 1, 0);
-		return node->rn_disabled ? NULL : node;
+		if (node->rn_disabled)
+			return NULL;
+
+		return node;
 	}
 
 	/* XXX Use quick-and-dirty hashing algo */
@@ -1920,17 +2165,22 @@ select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 	was_forced = 0;
 retry:
 	weight_sum = 0;
+	constant_weight_sum = 0;
+	found = 0;
 	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
 
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks()){
 			/* Try to enable if it's time to try. */
 			node->rn_disabled = rtpe_test(node, 1, 0);
 		}
-		if (!node->rn_disabled)
+		constant_weight_sum += node->rn_weight;
+		if (!node->rn_disabled) {
 			weight_sum += node->rn_weight;
+			found = 1;
+		}
 	}
-	if (weight_sum == 0) {
-		/* No proxies? Force all to be redetected, if not yet */
+	if (found == 0) {
+		/* No proxies? Force all to be re-detected, if not yet */
 		if (was_forced)
 			return NULL;
 		was_forced = 1;
@@ -1939,17 +2189,26 @@ retry:
 		}
 		goto retry;
 	}
-	sumcut = sum % weight_sum;
+	sumcut = weight_sum ? sum % constant_weight_sum : -1;
 	/*
-	 * sumcut here lays from 0 to weight_sum-1.
+	 * sumcut here lays from 0 to constant_weight_sum-1.
 	 * Scan proxy list and decrease until appropriate proxy is found.
 	 */
-	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
-		if (node->rn_disabled)
-			continue;
-		if (sumcut < node->rn_weight)
-			goto found;
+	was_forced = 0;
+	for (node=set->rn_first; node!=NULL;) {
+		if (sumcut < (int)node->rn_weight) {
+			if (!node->rn_disabled)
+				goto found;
+			if (was_forced == 0) {
+				/* appropriate proxy is disabled : redistribute on enabled ones */
+				sumcut = weight_sum ? sum %  weight_sum : -1;
+				node = set->rn_first;
+				was_forced = 1;
+				continue;
+			}
+		}
 		sumcut -= node->rn_weight;
+		node = node->rn_next;
 	}
 	/* No node list */
 	return NULL;
@@ -1959,6 +2218,7 @@ found:
 		if (node->rn_disabled)
 			goto retry;
 	}
+
 	return node;
 }
 
@@ -1994,7 +2254,7 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 		return -1;
 	}
 
-	if ( (set=select_rtpe_set(setid_val.n)) == NULL) {
+	if ((set=select_rtpe_set(setid_val.n)) == NULL) {
 		LM_ERR("could not locate rtpengine set %d\n", setid_val.n);
 		return -1;
 	}
@@ -2033,29 +2293,35 @@ static int
 set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
 {
 	rtpe_set_link_t *rtpl;
-	pv_value_t val;
 	struct rtpe_set *set;
+	pv_value_t val;
 
 	rtpl = set_param;
 
-	if(rtpl->rset != NULL) {
-		rtpe_ctx_set_fill( rtpl->rset );
-	} else {
-		if(pv_get_spec_value(msg, &rtpl->rpv, &val)<0) {
-			LM_ERR("cannot evaluate pv param\n");
-			return -1;
-		}
-		if(!(val.flags & PV_VAL_INT)) {
-			LM_ERR("pv param must hold an integer value\n");
-			return -1;
-		}
+	if (rtpl->type != RTPE_SET_FIXED) {
+		if (rtpl->type == RTPE_SET_PVAR) {
+			if(pv_get_spec_value(msg, &rtpl->v.rpv, &val)<0) {
+				LM_ERR("cannot evaluate pv param\n");
+				return -1;
+			}
+			if(!(val.flags & PV_VAL_INT)) {
+				LM_ERR("pv param must hold an integer value\n");
+				return -1;
+			}
+		} else
+			val.ri = rtpl->v.id;
 		set = select_rtpe_set(val.ri);
 		if(set==NULL) {
 			LM_ERR("could not locate rtpengine set %d\n", val.ri);
 			return -1;
+		} else if (rtpl->type == RTPE_SET_NONE) {
+			/* found the set for this id! */
+			rtpl->type = RTPE_SET_FIXED;
+			rtpl->v.rset = set;
 		}
-		rtpe_ctx_set_fill( set );
-	}
+	} else
+		set = rtpl->v.rset;
+	rtpe_ctx_set_fill(set);
 	return 1;
 }
 
@@ -2250,8 +2516,8 @@ static int rtpe_fetch_stats(struct sip_msg *msg, bencode_buffer_t *retbuf, benco
 			LM_ERR("not enough pkg for stats!\n");
 			/* cannot store stats */
 			ctx = NULL;
-		} else
-			ctx->stats->json.s = NULL;
+		}
+		memset(ctx->stats, 0, sizeof *ctx->stats);
 	}
 
 	dict = rtpe_function_call_ok(&bencbuf, msg, OP_QUERY, NULL, NULL, NULL);
@@ -2703,3 +2969,76 @@ int fixup_rtpengine(void** param, int param_no)
 	return E_SCRIPT;
 }
 
+
+static int _add_rtpengine_from_database(void)
+{
+
+	/* select * from rtpproxy_sockets */
+	db_key_t colsToReturn[2];
+	db_res_t *result = NULL;
+	int rowCount = 0;
+	char *rtpe_socket;
+	db_row_t *row;
+	db_val_t *row_vals;
+	int set_id;
+
+	colsToReturn[0]=&db_rtpe_sock_col;
+	colsToReturn[1]=&db_rtpe_set_col;
+
+	if(db_functions.use_table(db_connection, &db_table) < 0) {
+		LM_ERR("Error trying to use table\n");
+		return -1;
+	}
+
+	if(db_functions.query(db_connection, 0, 0, 0,colsToReturn, 0, 2, 0,
+				&result) < 0) {
+		LM_ERR("Error querying database");
+		if(result)
+			db_functions.free_result(db_connection, result);
+		return -1;
+	}
+
+	if(result == NULL)
+	{
+		LM_ERR("mysql query failed - NULL result\n");
+		return -1;
+	}
+
+	if (RES_ROW_N(result)<=0 || RES_ROWS(result)[0].values[0].nul != 0) {
+		LM_DBG("No rtpengine proxies were found\n");
+		if(db_functions.free_result(db_connection, result) < 0){
+			LM_ERR("Error freeing result\n");
+			return -1;
+		}
+		return 0;
+	}
+
+	for(rowCount=0; rowCount < RES_ROW_N(result); rowCount++) {
+
+		row= &result->rows[rowCount];
+		row_vals = ROW_VALUES(row);
+
+		rtpe_socket = (char*)row_vals[0].val.string_val;
+		if(rtpe_socket == NULL)
+		{
+			LM_ERR("NULL value for %s column\n", db_rtpe_sock_col.s);
+			goto error;
+		}
+		set_id= row_vals[1].val.int_val;
+
+		if(rtpengine_add_rtpengine_set(rtpe_socket, set_id) == -1)
+		{
+			LM_ERR("failed to add RTPEngine socket %s\n", rtpe_socket);
+			goto error;
+		}
+	}
+
+	db_functions.free_result(db_connection, result);
+
+	return 0;
+
+error:
+	if(result)
+		db_functions.free_result(db_connection, result);
+	return -1;
+}

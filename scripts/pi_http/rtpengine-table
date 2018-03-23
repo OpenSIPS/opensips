@@ -1,0 +1,8 @@
+	<!-- Declaration of rtpengine table-->
+	<db_table id="rtpengine">
+		<table_name>rtpengine</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>socket</field><type>DB_BLOB</type></column>
+		<column><field>set_id</field><type>DB_INT</type></column>
+	</db_table>
