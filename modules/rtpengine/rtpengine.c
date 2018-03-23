@@ -2239,6 +2239,8 @@ static int rtpe_fetch_stats(struct sip_msg *msg, bencode_buffer_t *retbuf, benco
 	if (ctx) {
 		/* allocate stats now */
 		if (ctx->stats) {
+			if (ctx->stats->dict) /* there was a previous run and resulted in an error */
+				return -1;
 			*retbuf = ctx->stats->buf;
 			*retdict = ctx->stats->dict;
 			return 1;
