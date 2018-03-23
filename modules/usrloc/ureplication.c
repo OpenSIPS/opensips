@@ -49,17 +49,17 @@ void replicate_urecord_insert(urecord_t *r)
 	bin_push_str(&packet, r->domain);
 	bin_push_str(&packet, &r->aor);
 
-	rc = clusterer_api.send_all(&packet, ul_replication_cluster);
+	rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", ul_replication_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			ul_replication_cluster);
+			location_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", ul_replication_cluster);
+		LM_ERR("Error sending in cluster: %d\n", location_cluster);
 		goto error;
 	}
 
@@ -84,17 +84,17 @@ void replicate_urecord_delete(urecord_t *r)
 	bin_push_str(&packet, r->domain);
 	bin_push_str(&packet, &r->aor);
 
-	rc = clusterer_api.send_all(&packet, ul_replication_cluster);
+	rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", ul_replication_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			ul_replication_cluster);
+			location_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", ul_replication_cluster);
+		LM_ERR("Error sending in cluster: %d\n", location_cluster);
 		goto error;
 	}
 
@@ -145,17 +145,17 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&packet, &st);
 
-	rc = clusterer_api.send_all(&packet, ul_replication_cluster);
+	rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", ul_replication_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			ul_replication_cluster);
+			location_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", ul_replication_cluster);
+		LM_ERR("Error sending in cluster: %d\n", location_cluster);
 		goto error;
 	}
 
@@ -206,17 +206,17 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&packet, &st);
 
-	rc = clusterer_api.send_all(&packet, ul_replication_cluster);
+	rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", ul_replication_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			ul_replication_cluster);
+			location_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", ul_replication_cluster);
+		LM_ERR("Error sending in cluster: %d\n", location_cluster);
 		goto error;
 	}
 
@@ -244,17 +244,17 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	bin_push_str(&packet, &c->callid);
 	bin_push_int(&packet, c->cseq);
 
-	rc = clusterer_api.send_all(&packet, ul_replication_cluster);
+	rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", ul_replication_cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
 		goto error;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			ul_replication_cluster);
+			location_cluster);
 		goto error;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", ul_replication_cluster);
+		LM_ERR("Error sending in cluster: %d\n", location_cluster);
 		goto error;
 	}
 
@@ -701,7 +701,7 @@ static int receive_sync_request(int node_id)
 				r = (urecord_t *)*p;
 
 				sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
-											ul_replication_cluster, node_id);
+											location_cluster, node_id);
 				if (!sync_packet)
 					goto error_unlock;
 
@@ -713,7 +713,7 @@ static int receive_sync_request(int node_id)
 
 				for (c = r->contacts; c; c = c->next) {
 					sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
-												ul_replication_cluster, node_id);
+												location_cluster, node_id);
 					if (!sync_packet)
 						goto error_unlock;
 

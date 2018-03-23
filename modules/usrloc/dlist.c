@@ -536,7 +536,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 	int shortage;
 
 	cur_node_idx = clusterer_api.get_my_index(
-	         ul_replication_cluster, &contact_repl_cap, &nr_nodes);
+	         location_cluster, &contact_repl_cap, &nr_nodes);
 
 	unit = MAX_DB_AOR_HASH / (double)(part_max * nr_nodes);
 	min = (int)(unit * part_max * cur_node_idx + unit * part_idx);
@@ -677,9 +677,9 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			r =( urecord_t * ) *dest;
 
 			/* distribute ping workload across cluster nodes */
-			if (ul_replication_cluster) {
+			if (location_cluster) {
 				cur_node_idx = clusterer_api.get_my_index(
-				         ul_replication_cluster, &contact_repl_cap, &nr_nodes);
+				         location_cluster, &contact_repl_cap, &nr_nodes);
 				if (r->aorhash % nr_nodes != cur_node_idx)
 					continue;
 			}
@@ -886,7 +886,7 @@ int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
 	if (cluster_mode == CM_SQL_ONLY)
 		return get_domain_db_ucontacts(d, buf, &len,
 							flags, part_idx, part_max, 1, pack_coords);
-	else if (cluster_mode == CM_CORE_CACHEDB_ONLY)
+	else if (cluster_mode == CM_CACHEDB_ONLY)
 		return get_domain_cdb_ucontacts(d, buf, &len,
 		                    flags, part_idx, part_max, 1, pack_coords);
 	else
@@ -1200,7 +1200,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 			return -1;
 		}
 		return 0;
-	} else if (cluster_mode == CM_CORE_CACHEDB_ONLY) {
+	} else if (cluster_mode == CM_CACHEDB_ONLY) {
 		if (cdb_delete_ucontact_coords((ucontact_sip_coords *)ct_coords)) {
 			LM_ERR("failed to remove contact from cache\n");
 			return -1;
@@ -1215,7 +1215,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 		return 0;
 	}
 
-	if (!is_replicated && ul_replication_cluster)
+	if (!is_replicated && location_cluster)
 		replicate_ucontact_delete(r, c);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
@@ -1246,7 +1246,7 @@ int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
 	ucontact_id contact_id = (ucontact_id)ct_coords;
 
 	/* TODO: add cachedb queries for latency updates */
-	if (cluster_mode == CM_SQL_ONLY || cluster_mode == CM_CORE_CACHEDB_ONLY)
+	if (cluster_mode == CM_SQL_ONLY || cluster_mode == CM_CACHEDB_ONLY)
 		return 0;
 
 	c = get_ucontact_from_id(d, contact_id, &r);

@@ -730,12 +730,12 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		/* now simply free everything */
 		free_urecord(_r);
 		break;
-	case CM_CORE_CACHEDB_ONLY:
+	case CM_CACHEDB_ONLY:
 		if (cdb_flush_urecord(_r) < 0)
 			LM_ERR("failed to flush AoR %.*s\n", _r->aor.len, _r->aor.s);
 		free_urecord(_r);
 		break;
-	case CM_EDGE_CACHEDB_ONLY:
+	case CM_FEDERATION_CACHEDB:
 		/* TODO */
 		abort();
 		break;
@@ -746,7 +746,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
-		if (!is_replicated && ul_replication_cluster)
+		if (!is_replicated && location_cluster)
 			replicate_urecord_delete(_r);
 
 		mem_delete_urecord(_r->slot->d, _r);

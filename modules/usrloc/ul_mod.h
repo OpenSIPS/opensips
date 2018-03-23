@@ -61,22 +61,27 @@ enum ul_sql_write_mode {
 
 #define bad_cluster_mode(mode) ((mode) < CM_NONE || (mode) > CM_SQL_ONLY)
 
+/* TODO: rewrite/optimize these 4 checks at mod init */
 #define have_db_conns() \
 	(cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL)
 
 #define have_cdb_conns() \
-	(cluster_mode == CM_EDGE_CACHEDB_ONLY || \
-	 cluster_mode == CM_CORE_CACHEDB_ONLY)
+	(cluster_mode == CM_FEDERATION_CACHEDB || \
+	 cluster_mode == CM_CACHEDB_ONLY)
 
 static inline int have_mem_storage(void)
 {
 	return cluster_mode == CM_NONE ||
-	       cluster_mode == CM_EDGE ||
-	       cluster_mode == CM_CORE;
+	       cluster_mode == CM_FEDERATION ||
+	       cluster_mode == CM_FEDERATION_CACHEDB ||
+	       cluster_mode == CM_FULL_MIRRORING;
 }
 
 #define have_data_replication() \
-	(cluster_mode == CM_EDGE || cluster_mode == CM_CORE)
+	((cluster_mode == CM_FEDERATION_CACHEDB \
+	  && rr_persist == RRP_SYNC_FROM_CLUSTER) || \
+	 cluster_mode == CM_FEDERATION || \
+	 cluster_mode == CM_FULL_MIRRORING)
 
 /*
  * Module parameters

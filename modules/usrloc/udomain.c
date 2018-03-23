@@ -1490,7 +1490,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 
 		(*_r)->label = CID_NEXT_RLABEL(_d, sl);
 
-		if (!is_replicated && ul_replication_cluster)
+		if (!is_replicated && location_cluster)
 			replicate_urecord_insert(*_r);
 	} else {
 		get_static_urecord( _d, _aor, _r);
@@ -1514,8 +1514,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 
 	switch (cluster_mode) {
 	case CM_NONE:
-	case CM_EDGE:
-	case CM_CORE:
+	case CM_FULL_MIRRORING:
 		/* search in cache */
 		aorhash = core_hash(_aor, 0, 0);
 		sl = aorhash&(_d->size-1);
@@ -1537,7 +1536,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 			return 0;
 		}
 		break;
-	case CM_CORE_CACHEDB_ONLY:
+	case CM_CACHEDB_ONLY:
 		r = cdb_load_urecord(ul_dbh, _d, _aor);
 		if (r) {
 			*_r = r;
@@ -1571,7 +1570,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		}
 		free_urecord(_r);
 		return 0;
-	case CM_CORE_CACHEDB_ONLY:
+	case CM_CACHEDB_ONLY:
 		if (!_r)
 			get_static_urecord(_d, _aor, &_r);
 		if (cdb_delete_urecord(_r) < 0) {
@@ -1580,7 +1579,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		}
 		free_urecord(_r);
 		return 0;
-	case CM_EDGE_CACHEDB_ONLY:
+	case CM_FEDERATION_CACHEDB:
 		/* TODO */
 		abort();
 	default:
@@ -1606,7 +1605,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 	if (_r->no_clear_ref > 0)
 		return 0;
 
-	if (!is_replicated && ul_replication_cluster)
+	if (!is_replicated && location_cluster)
 		replicate_urecord_delete(_r);
 
 	release_urecord(_r, is_replicated);
