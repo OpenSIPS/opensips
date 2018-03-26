@@ -397,7 +397,6 @@ struct module_exports exports= {
 
 static int fixup_profile(void** param, int param_no)
 {
-	struct dlg_profile_table *profile;
 	pv_elem_t *model=NULL;
 	str s;
 
@@ -408,16 +407,9 @@ static int fixup_profile(void** param, int param_no)
 		return E_CFG;
 	}
 
-	if (param_no==1) {
-		profile = search_dlg_profile( &s );
-		if (profile==NULL) {
-			LM_CRIT("profile <%s> not defined\n",s.s);
-			return E_CFG;
-		}
-		pkg_free(*param);
-		*param = (void*)profile;
-		return 0;
-	} else if (param_no==2) {
+	if (param_no == 1)
+		return fixup_sgp(param);
+	else if (param_no==2) {
 		if(pv_parse_format(&s ,&model) || model==NULL) {
 			LM_ERR("wrong format [%s] for value param!\n", s.s);
 			return E_CFG;
@@ -435,12 +427,9 @@ static int fixup_get_profile2(void** param, int param_no)
 	int ret;
 	action_elem_t * p;
 
-
 	if (param_no==1) {
 		return fixup_profile(param, 1);
 	} else if (param_no==2) {
-
-
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
@@ -454,9 +443,8 @@ static int fixup_get_profile2(void** param, int param_no)
 		p->u.data = *param;
 
 		*param = NULL;
-
-
 	}
+
 	return 0;
 }
 
@@ -471,7 +459,6 @@ static int fixup_get_profile3(void** param, int param_no)
 	} else if (param_no==2) {
 		return fixup_profile(param, 2);
 	} else if (param_no==3) {
-
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
@@ -479,9 +466,8 @@ static int fixup_get_profile3(void** param, int param_no)
 			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
 			return E_SCRIPT;
 		}
-
-
 	}
+
 	return 0;
 }
 
@@ -1185,31 +1171,43 @@ static int w_fix_route_dialog(struct sip_msg *req)
 }
 
 
-static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
+static int w_set_dlg_profile(struct sip_msg *msg, char *prof_name, char *value)
 {
 	struct dlg_cell *dlg;
 	pv_elem_t *pve = (pv_elem_t *)value;
 	str val_s;
+	str prof_name_s;
+	struct dlg_profile_table *profile;
+
+	if (fixup_get_svalue(msg, (gparam_p)prof_name, &prof_name_s) != 0 ||
+		prof_name_s.len == 0 || prof_name_s.s == NULL) {
+		LM_WARN("cannot get profile name\n");
+		return -1;
+	}
+
+	profile = search_dlg_profile(&prof_name_s);
+	if (!profile) {
+		LM_ERR("profile <%.*s> not defined\n", prof_name_s.len, prof_name_s.s);
+		return -1;
+	}
 
 	if ( (dlg=get_current_dialog())==NULL ) {
 		LM_CRIT("BUG - setting profile from script, but no dialog found\n");
 		return -1;
 	}
 
-	if (((struct dlg_profile_table*)profile)->has_value) {
+	if (profile->has_value) {
 		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		if ( set_dlg_profile( dlg, &val_s,
-		(struct dlg_profile_table*)profile, 0) < 0 ) {
+		if ( set_dlg_profile( dlg, &val_s, profile, 0) < 0 ) {
 			LM_ERR("failed to set profile\n");
 			return -1;
 		}
 	} else {
-		if ( set_dlg_profile( dlg, NULL,
-		(struct dlg_profile_table*)profile, 0) < 0 ) {
+		if ( set_dlg_profile( dlg, NULL, profile, 0) < 0 ) {
 			LM_ERR("failed to set profile\n");
 			return -1;
 		}
@@ -1218,31 +1216,43 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 }
 
 
-static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
+static int w_unset_dlg_profile(struct sip_msg *msg, char *prof_name, char *value)
 {
 	struct dlg_cell *dlg;
 	pv_elem_t *pve = (pv_elem_t *)value;
 	str val_s;
+	str prof_name_s;
+	struct dlg_profile_table *profile;
+
+	if (fixup_get_svalue(msg, (gparam_p)prof_name, &prof_name_s) != 0 ||
+		prof_name_s.len == 0 || prof_name_s.s == NULL) {
+		LM_WARN("cannot get profile name\n");
+		return -1;
+	}
+
+	profile = search_dlg_profile(&prof_name_s);
+	if (!profile) {
+		LM_ERR("profile <%.*s> not defined\n", prof_name_s.len, prof_name_s.s);
+		return -1;
+	}
 
 	if ( (dlg=get_current_dialog())==NULL ) {
 		LM_CRIT("BUG - setting profile from script, but no dialog found\n");
 		return -1;
 	}
 
-	if (((struct dlg_profile_table*)profile)->has_value) {
+	if (profile->has_value) {
 		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		if ( unset_dlg_profile( dlg, &val_s,
-		(struct dlg_profile_table*)profile) < 0 ) {
+		if ( unset_dlg_profile( dlg, &val_s, profile) < 0 ) {
 			LM_ERR("failed to unset profile\n");
 			return -1;
 		}
 	} else {
-		if ( unset_dlg_profile( dlg, NULL,
-		(struct dlg_profile_table*)profile) < 0 ) {
+		if ( unset_dlg_profile( dlg, NULL, profile) < 0 ) {
 			LM_ERR("failed to unset profile\n");
 			return -1;
 		}
@@ -1251,33 +1261,45 @@ static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 }
 
 
-static int w_is_in_profile(struct sip_msg *msg, char *profile, char *value)
+static int w_is_in_profile(struct sip_msg *msg, char *prof_name, char *value)
 {
 	struct dlg_cell *dlg;
 	pv_elem_t *pve = (pv_elem_t *)value;
 	str val_s;
+	str prof_name_s;
+	struct dlg_profile_table *profile;
+
+	if (fixup_get_svalue(msg, (gparam_p)prof_name, &prof_name_s) != 0 ||
+		prof_name_s.len == 0 || prof_name_s.s == NULL) {
+		LM_WARN("cannot get profile name\n");
+		return -1;
+	}
+
+	profile = search_dlg_profile(&prof_name_s);
+	if (!profile) {
+		LM_ERR("profile <%.*s> not defined\n", prof_name_s.len, prof_name_s.s);
+		return -1;
+	}
 
 	if ( (dlg=get_current_dialog())==NULL ) {
 		LM_CRIT("BUG - setting profile from script, but no dialog found\n");
 		return -1;
 	}
 
-	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {
+	if (pve!=NULL && profile->has_value) {
 		if ( pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		return is_dlg_in_profile( dlg, (struct dlg_profile_table*)profile,
-			&val_s);
+		return is_dlg_in_profile(dlg, profile, &val_s);
 	} else {
-		return is_dlg_in_profile( dlg, (struct dlg_profile_table*)profile,
-			NULL);
+		return is_dlg_in_profile(dlg, profile, NULL);
 	}
 }
 
 
-static int w_get_profile_size(struct sip_msg *msg, char *profile,
+static int w_get_profile_size(struct sip_msg *msg, char *prof_name,
 													char *value, char *result)
 {
 	pv_elem_t *pve;
@@ -1288,19 +1310,33 @@ static int w_get_profile_size(struct sip_msg *msg, char *profile,
 	int avp_name;
 	unsigned short avp_type;
 	script_var_t * sc_var;
+	str prof_name_s;
+	struct dlg_profile_table *profile;
+
+	if (fixup_get_svalue(msg, (gparam_p)prof_name, &prof_name_s) != 0 ||
+		prof_name_s.len == 0 || prof_name_s.s == NULL) {
+		LM_WARN("cannot get profile name\n");
+		return -1;
+	}
+
+	profile = search_dlg_profile(&prof_name_s);
+	if (!profile) {
+		LM_ERR("profile <%.*s> not defined\n", prof_name_s.len, prof_name_s.s);
+		return -1;
+	}
 
 	pve = (pv_elem_t *)value;
 	sp_dest = (pv_spec_t *)result;
 
-	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {
+	if (pve!=NULL && profile->has_value) {
 		if ( pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		size = get_profile_size( (struct dlg_profile_table*)profile ,&val_s );
+		size = get_profile_size(profile, &val_s);
 	} else {
-		size = get_profile_size( (struct dlg_profile_table*)profile, NULL );
+		size = get_profile_size(profile, NULL);
 	}
 
 	switch (sp_dest->type) {

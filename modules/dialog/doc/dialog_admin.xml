@@ -1603,7 +1603,7 @@ if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>profile</emphasis> - name of the profile to be
-			added to;
+			added to; pseudo-variables are supported.
 			</para>
 		</listitem>
 		<listitem>
@@ -1645,7 +1645,7 @@ set_dlg_profile("caller","$fu");
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>profile</emphasis> - name of the profile to be
-			removed from;
+			removed from; pseudo-variables are supported.
 			</para>
 		</listitem>
 		<listitem>
@@ -1692,7 +1692,7 @@ unset_dlg_profile("caller","$fu");
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>profile</emphasis> - name of the profile to be
-			checked against;
+			checked against; pseudo-variables are supported.
 			</para>
 		</listitem>
 		<listitem>
@@ -1737,12 +1737,12 @@ if (is_in_profile("caller","XX")) {
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>profile</emphasis> - name of the profile to get
-			the size for;
+			the size for; pseudo-variables are supported.
 			</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>value</emphasis> (optional) - string value to
-			toughen  the check. Pseudo-variables are supported;
+			toughen  the check; pseudo-variables are supported.
 			</para>
 		</listitem>
 		<listitem>
