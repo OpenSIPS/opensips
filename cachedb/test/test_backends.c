@@ -36,7 +36,7 @@ int res_has_kv(const cdb_res_t *res, const cdb_pair_t *pair)
 
 	list_for_each (_, &res->rows) {
 		row = list_entry(_, cdb_row_t, list);
-		if (dict_has_pair(&row->dict, pair))
+		if (cdb_dict_has_pair(&row->dict, pair))
 			return 1;
 	}
 
@@ -282,12 +282,12 @@ static int test_query_unset(cachedb_funcs *api, cachedb_con *con,
 
 	init_str(&key.name, "key");
 
-	pair = dict_fetch(&key, dict1);
+	pair = cdb_dict_fetch(&key, dict1);
 	ok(!pair ||
 	   (pair->val.type == CDB_DICT && cdb_dict_empty(&pair->val.val.dict)),
 	   "subdict-1 is empty");
 
-	pair = dict_fetch(&key, dict2);
+	pair = cdb_dict_fetch(&key, dict2);
 	ok(!pair ||
 	   (pair->val.type == CDB_DICT && cdb_dict_empty(&pair->val.val.dict)),
 	   "subdict-2 is empty");

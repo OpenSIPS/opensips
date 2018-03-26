@@ -247,7 +247,7 @@ out:
 	LM_DBG("%s%.*s\n", pre_txt, final_len, static_pkg_buf.s);
 }
 
-cdb_pair_t *dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
+cdb_pair_t *cdb_dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
 {
 	struct list_head *_;
 	cdb_pair_t *pair;
@@ -288,7 +288,7 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 	list_for_each (p1, a) {
 		pair1 = list_entry(p1, cdb_pair_t, list);
 
-		pair2 = dict_fetch(&pair1->key, b);
+		pair2 = cdb_dict_fetch(&pair1->key, b);
 		if (!pair2)
 			return 1;
 
@@ -323,14 +323,14 @@ int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2)
 	}
 }
 
-int dict_has_pair(const cdb_dict_t *haystack, const cdb_pair_t *pair)
+int cdb_dict_has_pair(const cdb_dict_t *haystack, const cdb_pair_t *pair)
 {
 	cdb_pair_t *needle;
 
 	if (!haystack)
 		return 0;
 
-	needle = dict_fetch(&pair->key, haystack);
+	needle = cdb_dict_fetch(&pair->key, haystack);
 	if (!needle || needle->val.type != pair->val.type)
 		return 0;
 
