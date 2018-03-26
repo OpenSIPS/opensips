@@ -787,6 +787,12 @@ int check_runtime_config(void)
 		return -1;
 
 	case CM_FEDERATION_CACHEDB:
+		if (!use_domain) {
+			LM_ERR("usrloc 'federation-cachedb' clustering only works with "
+			       "'use_domain = 1'\n");
+			return -1;
+		}
+
 		if (!location_cluster) {
 			LM_ERR("'location_cluster' is not set!\n");
 			return -1;

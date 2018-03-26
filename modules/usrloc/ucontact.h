@@ -60,7 +60,14 @@ typedef enum cstate {
 typedef enum flags {
 	FL_NONE        = 0,          /*!< No flags set */
 	FL_MEM         = 1 << 0,     /*!< Update memory only */
-	FL_LOCAL_CT    = 1 << 1,     /*!< Makes sense in federation clustering */
+
+	/* This flag makes sense in federation clustering. If a returned
+	 * ucontact_t is flagged with FL_EXTRA_HOP, then it only has three
+	 * valid fields: .flags, .c (R-URI) and .received (outbound proxy).
+	 * The outbound proxy represents one of the AoR's current locations.
+	 */
+	FL_EXTRA_HOP   = 1 << 1,
+
 	FL_ALL         = (int)0xFFFFFFFF  /*!< All flags set */
 } ucontact_flags_t;
 

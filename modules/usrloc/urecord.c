@@ -115,8 +115,7 @@ void free_urecord(urecord_t* _r)
 
 	store_destroy(_r->kv_storage);
 
-	/* if mem cache is not used, the urecord struct is static*/
-	if (have_mem_storage()) {
+	if (have_mem_storage() && !_r->is_static) {
 		if (_r->aor.s) shm_free(_r->aor.s);
 		shm_free(_r);
 	} else {
@@ -440,6 +439,7 @@ int timer_urecord(urecord_t* _r,query_list_t **ins_list)
 
 int cdb_delete_urecord(urecord_t* _r)
 {
+	/* TODO: refactor; this looks incompatible with Cassandra */
 	if (cdbf.remove(cdbc, &_r->aor) < 0) {
 		LM_ERR("delete failed for AoR %.*s\n", _r->aor.len, _r->aor.s);
 		return -1;
@@ -540,12 +540,12 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 
 	if (CDB_DICT_ADD_STR(ct_fields, "contact", &ct->c) != 0 ||
 	    CDB_DICT_ADD_INT32(ct_fields, "expires", ct->expires) != 0 ||
-		CDB_DICT_ADD_INT32(ct_fields, "q", ct->q) != 0 ||
-		CDB_DICT_ADD_STR(ct_fields, "callid", &ct->callid) != 0 ||
-		CDB_DICT_ADD_INT32(ct_fields, "cseq", ct->cseq) != 0 ||
-		CDB_DICT_ADD_INT32(ct_fields, "flags", ct->flags) != 0 ||
-		CDB_DICT_ADD_STR(ct_fields, "ua", &ct->user_agent) != 0 ||
-		CDB_DICT_ADD_INT64(ct_fields, "last_mod", ct->last_modified) != 0)
+	    CDB_DICT_ADD_INT32(ct_fields, "q", ct->q) != 0 ||
+	    CDB_DICT_ADD_STR(ct_fields, "callid", &ct->callid) != 0 ||
+	    CDB_DICT_ADD_INT32(ct_fields, "cseq", ct->cseq) != 0 ||
+	    CDB_DICT_ADD_INT32(ct_fields, "flags", ct->flags) != 0 ||
+	    CDB_DICT_ADD_STR(ct_fields, "ua", &ct->user_agent) != 0 ||
+	    CDB_DICT_ADD_INT64(ct_fields, "last_mod", ct->last_modified) != 0)
 		return -1;
 
 	printed_flags = bitmask_to_flag_list(FLAG_TYPE_BRANCH, ct->cflags);
@@ -716,6 +716,35 @@ err_free:
 	return -1;
 }
 
+void free_fake_contacts(urecord_t *_r)
+{
+	ucontact_t *ct, *fake_cts;
+
+	if (!_r->contacts)
+		return;
+
+	if (_r->contacts->flags & FL_EXTRA_HOP) {
+		fake_cts = _r->contacts;
+		_r->contacts = NULL;
+		goto free_fake_contacts;
+	}
+
+	for (ct = _r->contacts; ct->next; ct = ct->next) {
+		if (ct->next->flags & FL_EXTRA_HOP)
+			break;
+	}
+
+	if (ct->next) {
+		fake_cts = ct->next;
+		ct->next = NULL;
+	} else {
+		fake_cts = NULL;
+	}
+
+free_fake_contacts:
+	shm_free_all(fake_cts);
+}
+
 /*! \brief
  * Release urecord previously obtained
  * through get_urecord
@@ -735,12 +764,11 @@ void release_urecord(urecord_t* _r, char is_replicated)
 			LM_ERR("failed to flush AoR %.*s\n", _r->aor.len, _r->aor.s);
 		free_urecord(_r);
 		break;
-	case CM_FEDERATION_CACHEDB:
-		/* TODO */
-		abort();
-		break;
 	default:
-		if (_r->no_clear_ref > 0 || _r->contacts)
+		if (cluster_mode == CM_FEDERATION_CACHEDB)
+			free_fake_contacts(_r);
+
+		if (_r->is_static || _r->no_clear_ref > 0 || _r->contacts)
 			return;
 
 		if (exists_ulcb_type(UL_AOR_DELETE))
