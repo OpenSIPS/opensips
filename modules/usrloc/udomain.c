@@ -134,11 +134,13 @@ static event_id_t ei_del_id = EVI_ERROR;
 event_id_t ei_c_ins_id = EVI_ERROR;
 event_id_t ei_c_del_id = EVI_ERROR;
 event_id_t ei_c_update_id = EVI_ERROR;
+event_id_t ei_c_latency_update_id = EVI_ERROR;
 static str ei_ins_name = str_init("E_UL_AOR_INSERT");
 static str ei_del_name = str_init("E_UL_AOR_DELETE");
 static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
 static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
 static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
+static str ei_contact_latency_update_name = str_init("E_UL_LATENCY_UPDATE");
 static str ei_aor_name = str_init("aor");
 static str ei_c_uri_name = str_init("uri");
 static str ei_c_recv_name = str_init("received");
@@ -149,6 +151,7 @@ static str ei_c_bflags_name = str_init("bflags");
 static str ei_c_expires_name = str_init("expires");
 static str ei_callid_name = str_init("callid");
 static str ei_cseq_name = str_init("cseq");
+static str ei_latency_name = str_init("latency");
 static evi_params_p ul_contact_event_params;
 static evi_params_p ul_event_params;
 static evi_param_p ul_aor_param;
@@ -162,6 +165,7 @@ static evi_param_p ul_c_bflags_param;
 static evi_param_p ul_c_expires_param;
 static evi_param_p ul_c_callid_param;
 static evi_param_p ul_c_cseq_param;
+static evi_param_p ul_c_latency_param;
 
 /*! \brief
  * Initialize event structures
@@ -193,6 +197,12 @@ int ul_event_init(void)
 	}
 
 	ei_c_update_id = evi_publish_event(ei_contact_update_name);
+	if (ei_c_update_id == EVI_ERROR) {
+		LM_ERR("cannot register contact delete event\n");
+		return -1;
+	}
+	
+	ei_c_latency_update_id = evi_publish_event(ei_contact_latency_update_name);
 	if (ei_c_update_id == EVI_ERROR) {
 		LM_ERR("cannot register contact delete event\n");
 		return -1;
@@ -282,6 +292,12 @@ int ul_event_init(void)
 	ul_c_cseq_param = evi_param_create(ul_contact_event_params, &ei_cseq_name);
 	if (!ul_c_cseq_param) {
 		LM_ERR("cannot create cseq parameter\n");
+		return -1;
+	}
+	
+	ul_c_latency_param = evi_param_create(ul_contact_event_params, &ei_latency_name);
+	if (!ul_c_latency_param) {
+		LM_ERR("cannot create latency parameter\n");
 		return -1;
 	}
 
@@ -374,6 +390,13 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 		LM_ERR("cannot set cseq parameter\n");
 		return;
 	}
+	
+	/* the last known ping latency */
+	if (evi_param_set_int(ul_c_latency_param, &_c->sipping_latency) < 0) {
+		LM_ERR("cannot set latency parameter\n");
+		return;
+	}
+
 
 	if (evi_raise_event(_e, ul_contact_event_params) < 0)
 		LM_ERR("cannot raise event\n");

@@ -59,7 +59,7 @@
  */
 dlist_t* root = 0;
 
-
+extern event_id_t ei_c_latency_update_id;
 /*! \brief
  * Returned the first udomain if input param in NULL or the next following
  * udomain after the given udomain
@@ -882,8 +882,6 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 {
 	ucontact_t *c, virt_c;
 	urecord_t *r;
-	unsigned int sl, rlabel;
-	unsigned short aorhash, clabel;
 
 	/* if contact only in database */
 	if (db_mode == DB_ONLY) {
@@ -921,11 +919,27 @@ int delete_ucontact_from_id(udomain_t *d, uint64_t contact_id, char is_replicate
 		mem_delete_ucontact(r, c);
 	}
 
-	unpack_indexes(contact_id, &aorhash, &rlabel, &clabel);
+	_unlock_ulslot(d, contact_id);
+	return 0;
+}
 
-	sl = aorhash & (d->size - 1);
-	unlock_ulslot(d, sl);
+int update_sipping_latency(udomain_t *d, uint64_t contact_id,int sipping_latency )
+{
+	ucontact_t *c;
+	urecord_t *r;
+	c = get_ucontact_from_id(d, contact_id, &r);
+	if (c == NULL) {
+		LM_WARN("contact with contact id [%" PRIu64 "] not found\n",
+				contact_id);
+		return 0;
+	}
+	LM_DBG("sipping latency changed: %d us -> %d us\n",
+	       c->sipping_latency, sipping_latency);
 
+	c->sipping_latency = sipping_latency;
+	ul_raise_contact_event(ei_c_latency_update_id , c);
+
+	_unlock_ulslot(d, contact_id);
 	return 0;
 }
 

@@ -49,7 +49,7 @@ struct ping_cell {
 
 	unsigned int timestamp; /* !< timestamp when ping was sent */
 	char not_responded; /* !< number of pings not responded to */
-
+	struct timeval last_send_time; /* !< timestamp which last send time ping */
 	/* hash table links */
 	struct ping_cell* next;
 	struct ping_cell* prev;

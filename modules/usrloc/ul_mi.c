@@ -235,6 +235,15 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
 			if (node==0)
 				return -1;
 		}
+		/* ping latency */
+		if (c->sipping_latency > 0) {
+			p = int2str((unsigned long)c->sipping_latency, &len);
+			node = add_mi_node_child(cnode, MI_DUP_VALUE,
+			                         MI_SSTR("Ping-Latency"), p, len);
+			if (node==0)
+				return -1;
+		}
+
 
 	} /* for */
 
