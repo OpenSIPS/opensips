@@ -95,6 +95,7 @@ typedef struct ucontact {
 	str attr;               /*!< Additional registration info  */
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
 	unsigned int label;     /*!< label to find the contact in contact list>*/
+	int sipping_latency;    /*!< useconds; not restart-persistent >*/
 
 	void **attached_data;   /*!< data attached by API subscribers >*/
 

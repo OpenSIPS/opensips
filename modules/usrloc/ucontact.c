@@ -243,6 +243,12 @@ void print_ucontact(FILE* _f, ucontact_t* _c)
 	fprintf(_f, "State     : %s\n", st);
 	fprintf(_f, "Flags     : %u\n", _c->flags);
 	fprintf(_f, "Attrs     : '%.*s'\n", _c->attr.len, _c->attr.s);
+	if (_c->sipping_latency) {
+		fprintf(_f, "sipping_latency     : '%d \n", _c->sipping_latency);
+	}else{
+		fprintf(_f, "sipping_latency     : NULL \n");
+
+	}
 	if (_c->sock) {
 		fprintf(_f, "Sock      : %.*s (as %.*s )(%p)\n",
 				_c->sock->sock_str.len,_c->sock->sock_str.s,

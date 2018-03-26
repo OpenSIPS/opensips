@@ -152,5 +152,11 @@ typedef int (*delete_ucontact_from_id_t)(udomain_t *d,
 					uint64_t contact_id, char is_replicated);
 int delete_ucontact_from_id(udomain_t *d,
 		uint64_t contact_id, char is_replicated);
+/*
+ * update sipping latancy
+ */
+typedef int (*update_sipping_latency_t)(udomain_t *d, uint64_t contact_id,
+										int sipping_latency);
+int update_sipping_latency(udomain_t *d, uint64_t contact_id, 	 int sipping_latency );
 
 #endif /* UDLIST_H */

@@ -71,7 +71,7 @@ int bind_usrloc(usrloc_api_t* api)
 	api->get_ucontact_from_id    = get_ucontact_from_id;
 	api->update_ucontact         = update_ucontact;
 	api->register_ulcb           = register_ulcb;
-
+	api->update_sipping_latency  = update_sipping_latency;
 	api->use_domain = use_domain;
 	api->db_mode    = db_mode;
 	api->nat_flag   = nat_bflag;
