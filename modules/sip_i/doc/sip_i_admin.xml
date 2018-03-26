@@ -425,7 +425,7 @@ if ($rs == "183") {
 	<title><varname>isup_msg_type</varname> usage</title>
 	<programlisting format="linespecific">
 ...
-	# may print: "ISUP msg is: Initial address"
+	# may print: "ISUP msg is: IAM"
 	xlog("ISUP msg is: $isup_msg_type");
 ...
 	</programlisting>

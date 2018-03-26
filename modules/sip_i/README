@@ -319,7 +319,7 @@ ators)");
 
    Example 1.7. isup_msg_type usage
 ...
-        # may print: "ISUP msg is: Initial address"
+        # may print: "ISUP msg is: IAM"
         xlog("ISUP msg is: $isup_msg_type");
 ...
 
