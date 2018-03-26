@@ -319,7 +319,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	}
 
 	/* if not parameterized, take current uri */
-	if (uri==0 || uri->len==0 || uri->s==0) {
+	if (ZSTRP(uri)) {
 		if (msg->new_uri.s)
 			luri = msg->new_uri;
 		else
@@ -336,22 +336,24 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	branches = dsct->branches;
 
 	/* copy the dst_uri */
-	if (dst_uri && dst_uri->len && dst_uri->s) {
+	if (ZSTRP(dst_uri)) {
+		branches[nr_branches].dst_uri[0] = '\0';
+		branches[nr_branches].dst_uri_len = 0;
+	} else {
 		if (dst_uri->len > MAX_URI_SIZE - 1) {
-			LM_ERR("too long dst_uri: %.*s\n",
-				dst_uri->len, dst_uri->s);
+			LM_ERR("too long dst_uri: %.*s\n", dst_uri->len, dst_uri->s);
 			return -1;
 		}
 		memcpy(branches[nr_branches].dst_uri, dst_uri->s, dst_uri->len);
 		branches[nr_branches].dst_uri[dst_uri->len] = '\0';
 		branches[nr_branches].dst_uri_len = dst_uri->len;
-	} else {
-		branches[nr_branches].dst_uri[0] = '\0';
-		branches[nr_branches].dst_uri_len = 0;
 	}
 
 	/* copy the path string */
-	if (path && path->len && path->s) {
+	if (ZSTRP(path)) {
+		branches[nr_branches].path[0] = '\0';
+		branches[nr_branches].path_len = 0;
+	} else {
 		if (path->len > MAX_PATH_SIZE - 1) {
 			LM_ERR("too long path: %.*s\n", path->len, path->s);
 			return -1;
@@ -359,9 +361,6 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		memcpy(branches[nr_branches].path, path->s, path->len);
 		branches[nr_branches].path[path->len] = 0;
 		branches[nr_branches].path_len = path->len;
-	} else {
-		branches[nr_branches].path[0] = '\0';
-		branches[nr_branches].path_len = 0;
 	}
 
 	/* copy the ruri */
@@ -407,7 +406,10 @@ int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
 
 	/* duri ? */
 	if (dst_uri) {
-		if (*dst_uri && (*dst_uri)->len && (*dst_uri)->s) {
+		if (ZSTRP(*dst_uri)) {
+			branches[idx].dst_uri[0] = '\0';
+			branches[idx].dst_uri_len = 0;
+		} else {
 			if ((*dst_uri)->len > MAX_URI_SIZE - 1) {
 				LM_ERR("too long dst_uri: %.*s\n",
 					(*dst_uri)->len, (*dst_uri)->s);
@@ -416,15 +418,15 @@ int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
 			memcpy(branches[idx].dst_uri, (*dst_uri)->s, (*dst_uri)->len);
 			branches[idx].dst_uri[(*dst_uri)->len] = '\0';
 			branches[idx].dst_uri_len = (*dst_uri)->len;
-		} else {
-			branches[idx].dst_uri[0] = '\0';
-			branches[idx].dst_uri_len = 0;
 		}
 	}
 
 	/* path ? */
 	if (path) {
-		if (*path && (*path)->len && (*path)->s) {
+		if (ZSTRP(*path)) {
+			branches[idx].path[0] = '\0';
+			branches[idx].path_len = 0;
+		} else {
 			if ((*path)->len > MAX_PATH_SIZE - 1) {
 				LM_ERR("too long path: %.*s\n", (*path)->len, (*path)->s);
 				return -1;
@@ -432,9 +434,6 @@ int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
 			memcpy(branches[idx].path, (*path)->s, (*path)->len);
 			branches[idx].path[(*path)->len] = '\0';
 			branches[idx].path_len = (*path)->len;
-		} else {
-			branches[idx].path[0] = '\0';
-			branches[idx].path_len = 0;
 		}
 	}
 
