@@ -1779,6 +1779,9 @@ wZjAzNGM1ZDY
        along with the hash_id, to uniquely identify the dialog.
      * hash_id - the id in the dialog table. This is used, along
        with the hash_entry, to uniquely identify the dialog.
+     * callid - the callid.
+     * from_tag - the From tag.
+     * to_tag - the To tag.
      * old_state - the old state of the dialog.
      * new_state - the new state of the dialog.
 

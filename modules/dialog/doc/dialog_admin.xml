@@ -2549,6 +2549,15 @@ $var(account) = $dlg_val(account_type);
 					to uniquely identify the dialog.
 			</para></listitem>
 			<listitem><para>
+					<emphasis>callid</emphasis> - the callid.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>from_tag</emphasis> - the From tag.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>to_tag</emphasis> - the To tag.
+			</para></listitem>
+			<listitem><para>
 				<emphasis>old_state</emphasis> - the old state of the dialog.
 			</para></listitem>
 			<listitem><para>

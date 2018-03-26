@@ -70,21 +70,23 @@ extern struct tm_binds d_tmb;
 struct dlg_table *d_table = NULL;
 int ctx_dlg_idx = 0;
 
-static inline void raise_state_changed_event(
-	unsigned int h_entry, unsigned int h_id,
-	unsigned int ostate, unsigned int nstate);
+static inline void raise_state_changed_event(struct dlg_cell *dlg,
+						unsigned int ostate, unsigned int nstate);
 static str ei_st_ch_name = str_init("E_DLG_STATE_CHANGED");
 static evi_params_p event_params;
 
 static str ei_h_entry = str_init("hash_entry");
 static str ei_h_id = str_init("hash_id");
+static str ei_c_id = str_init("callid");
+static str ei_from_tag = str_init("from_tag");
+static str ei_to_tag = str_init("to_tag");
 static str ei_old_state = str_init("old_state");
 static str ei_new_state = str_init("new_state");
 
 static event_id_t ei_st_ch_id = EVI_ERROR;
 
-static evi_param_p hentry_p, hid_p, ostate_p, nstate_p;
-
+static evi_param_p hentry_p, hid_p, cid_p, fromt_p, tot_p;
+static evi_param_p ostate_p, nstate_p;
 
 int dialog_cleanup( struct sip_msg *msg, void *param )
 {
@@ -850,6 +852,18 @@ int state_changed_event_init(void)
 	if (hid_p == NULL)
 		goto create_error;
 
+	cid_p = evi_param_create(event_params, &ei_c_id);
+	if (cid_p == NULL)
+		goto create_error;
+
+	fromt_p = evi_param_create(event_params, &ei_from_tag);
+	if (fromt_p == NULL)
+		goto create_error;
+
+	tot_p = evi_param_create(event_params, &ei_to_tag);
+	if (tot_p == NULL)
+		goto create_error;
+
 	ostate_p = evi_param_create(event_params, &ei_old_state);
 	if (ostate_p == NULL)
 		goto create_error;
@@ -876,14 +890,15 @@ void state_changed_event_destroy(void)
 /*
  * raise DLG_STATE_CHANGED event
  */
-static void raise_state_changed_event(unsigned int h_entry, unsigned int h_id,
+static void raise_state_changed_event(struct dlg_cell *dlg,
 									unsigned int ostate, unsigned int nstate)
 {
 	char b1[INT2STR_MAX_LEN], b2[INT2STR_MAX_LEN];
 	str s1, s2;
+	int callee_leg_idx;
 
-	s1.s = int2bstr( (unsigned long)h_entry, b1, &s1.len );
-	s2.s = int2bstr( (unsigned long)h_id, b2, &s2.len );
+	s1.s = int2bstr( (unsigned long)dlg->h_entry, b1, &s1.len);
+	s2.s = int2bstr( (unsigned long)dlg->h_id, b2, &s2.len);
 	if (s1.s==NULL || s2.s==NULL) {
 		LM_ERR("cannot convert hash params\n");
 		return;
@@ -892,9 +907,24 @@ static void raise_state_changed_event(unsigned int h_entry, unsigned int h_id,
 		LM_ERR("cannot set hash entry parameter\n");
 		return;
 	}
-
 	if (evi_param_set_str(hid_p, &s2) < 0) {
 		LM_ERR("cannot set hash id parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(cid_p, &dlg->callid) < 0) {
+		LM_ERR("cannot set callid parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(fromt_p, &dlg->legs[DLG_CALLER_LEG].tag) < 0) {
+		LM_ERR("cannot set from tag parameter\n");
+		return;
+	}
+
+	callee_leg_idx = callee_idx(dlg);
+	if (evi_param_set_str(tot_p, &dlg->legs[callee_leg_idx].tag) < 0) {
+		LM_ERR("cannot set from tag parameter\n");
 		return;
 	}
 
@@ -1078,8 +1108,8 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 	dlg_unlock( d_table, d_entry);
 
 	if (*old_state != *new_state)
-		raise_state_changed_event(  dlg->h_entry, dlg->h_id,
-			(unsigned int)(*old_state), (unsigned int)(*new_state) );
+		raise_state_changed_event(dlg, (unsigned int)(*old_state),
+			(unsigned int)(*new_state));
 
 	 if ( !is_replicated && dialog_repl_cluster &&
 	(*old_state==DLG_STATE_CONFIRMED_NA || *old_state==DLG_STATE_CONFIRMED) &&
