@@ -84,6 +84,7 @@ extern str str_status_col;
 extern str str_reason_col;
 extern str str_socket_info_col;
 extern str str_local_contact_col;
+extern str str_sharing_tag_col;
 extern str str_version_col;
 extern str str_presentity_uri_col;
 extern str str_inserted_time_col;
@@ -98,9 +99,10 @@ void printf_subs(subs_t* subs);
 int query_db_notify(str* pres_uri,pres_ev_t* event, subs_t* watcher_subs );
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_publish, int from_publish);
+		str* rules_doc, str* dialog_publish, int from_publish, str **sh_tags);
 
-int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body, str* extra_hdrs, int from_publish);
+int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,
+		int force_null_body, str* extra_hdrs, int from_publish);
 
 int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 		str* n_body,int force_null_body, str* extra_hdrs, int from_publish);
@@ -108,7 +110,8 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 char* get_status_str(int flag);
 void free_watcher_list(watcher_t* w);
 int add_watcher_list(subs_t* s, watcher_t* watchers);
-subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender);
+subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event,
+	str* sender, str **sh_tag);
 
 int presentity_has_subscribers(str* pres_uri, pres_ev_t* event);
 

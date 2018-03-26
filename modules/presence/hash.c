@@ -182,7 +182,7 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 		+ s->to_domain.len+ s->from_user.len+ s->from_domain.len+ s->callid.len
 		+ s->to_tag.len+ s->from_tag.len+s->event_id.len
 		+ s->local_contact.len + s->record_route.len+
-		+ s->reason.len+ 1;
+		+ s->reason.len + s->sh_tag.len + 1;
 
 	dest= (subs_t*)shm_malloc(size);
 	if(dest== NULL)
@@ -206,6 +206,8 @@ subs_t* mem_copy_subs_noc(subs_t* s)
 		CONT_COPY(dest, dest->event_id, s->event_id);
 	if(s->reason.s)
 		CONT_COPY(dest, dest->reason, s->reason);
+	if(s->sh_tag.s)
+		CONT_COPY(dest, dest->sh_tag, s->sh_tag);
 
 	dest->event= s->event;
 	dest->local_cseq= s->local_cseq;

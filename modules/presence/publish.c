@@ -168,9 +168,11 @@ static inline void build_extra_hdrs(struct sip_msg* msg, const str* map, str* ex
 	}
 }
 
-void msg_presentity_clean(unsigned int ticks,void *param)
+void msg_presentity_clean(unsigned int ticks,void *interval)
 {
 	static db_ps_t my_ps_delete = NULL;
+	static db_ps_t my_ps_select = NULL;
+	static unsigned int last_expire_check = 0;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
 	db_op_t  db_ops[2] ;
@@ -188,6 +190,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	int n_result_cols= 0;
 	str* rules_doc= NULL;
 	static str query_str = str_init("username");
+	str **sh_tags;
 
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
@@ -195,23 +198,32 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		return ;
 	}
 
+	sh_tags = is_presence_cluster_enabled() ? get_all_active_shtags() : NULL;
+
 	LM_DBG("cleaning expired presentity information\n");
 
 	db_keys[0] = &str_expires_col;
-	db_ops[0] = OP_LT;
+	db_ops[0] = OP_GT;
 	db_vals[0].type = DB_INT;
 	db_vals[0].nul = 0;
-	db_vals[0].val.int_val = (int)time(NULL) -10;
+	db_vals[0].val.int_val = last_expire_check;
+
+	db_keys[1] = &str_expires_col;
+	db_ops[1] = OP_LT;
+	db_vals[1].type = DB_INT;
+	db_vals[1].nul = 0;
+	db_vals[1].val.int_val = (int)time(NULL) -10;
+
+	last_expire_check = db_vals[1].val.int_val - 1;
 
 	result_cols[user_col= n_result_cols++] = &str_username_col;
 	result_cols[domain_col=n_result_cols++] = &str_domain_col;
 	result_cols[etag_col=n_result_cols++] = &str_etag_col;
 	result_cols[event_col=n_result_cols++] = &str_event_col;
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps_query;
-
+	CON_PS_REFERENCE(pa_db) = &my_ps_select;
 	if(pa_dbf.query(pa_db, db_keys, db_ops, db_vals, result_cols,
-						1, n_result_cols, &query_str, &result )< 0)
+						2, n_result_cols, &query_str, &result )< 0)
 	{
 		LM_ERR("querying database for expired messages\n");
 		if(result)
@@ -233,7 +245,9 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	p= (struct p_modif*)pkg_malloc(n* sizeof(struct p_modif));
 	if(p== NULL)
 	{
-		ERR_MEM(PKG_MEM_STR);
+		LM_ERR("failed to PKG allocate presentity array of %d\n",n);
+		pa_dbf.free_result(pa_db, result);
+		return;
 	}
 	memset(p, 0, n* sizeof(struct p_modif));
 
@@ -258,7 +272,9 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		pres= (presentity_t*)pkg_malloc(size);
 		if(pres== NULL)
 		{
-			ERR_MEM(PKG_MEM_STR);
+			LM_ERR("failde to PKG allocate new presentity\n");
+			p[i].p = 0;
+			continue;
 		}
 		memset(pres, 0, size);
 		size= sizeof(presentity_t);
@@ -283,19 +299,17 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		{
 			LM_DBG("event not found\n");
 			p[i].p = 0;
-			goto no_notify;
+			continue;
 		}
-
-		p[i].p= pres;
-
-no_notify:
 		if(uandd_to_uri(user, domain, &p[i].uri)< 0)
 		{
 			LM_ERR("constructing uri\n");
 			free_event_params(ev.params, PKG_MEM_TYPE);
-			goto error;
+			p[i].p = 0;
+			continue;
 		}
 		free_event_params(ev.params, PKG_MEM_TYPE);
+		p[i].p= pres;
 	}
 	pa_dbf.free_result(pa_db, result);
 	result= NULL;
@@ -306,7 +320,8 @@ no_notify:
 			continue;
 
 		LM_DBG("found expired publish for [user]=%.*s  [domanin]=%.*s\n",
-			p[i].p->user.len,p[i].p->user.s, p[i].p->domain.len, p[i].p->domain.s);
+			p[i].p->user.len,p[i].p->user.s,
+			p[i].p->domain.len, p[i].p->domain.s);
 
 		rules_doc= NULL;
 
@@ -314,12 +329,13 @@ no_notify:
 		p[i].p->event->get_rules_doc(&p[i].p->user, &p[i].p->domain, &rules_doc)< 0)
 		{
 			LM_ERR("getting rules doc\n");
-			goto error;
+			continue;
 		}
-		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL, 0)< 0)
+		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc,
+		NULL, 0, sh_tags)< 0)
 		{
 			LM_ERR("sending Notify request\n");
-			goto error;
+			continue;
 		}
 		if(rules_doc)
 		{
@@ -335,22 +351,19 @@ no_notify:
 		}
 	}
 
-error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
-	{
-		LM_ERR("in use_table\n");
-		goto clean;
-	}
+	/* now remove the expired records from DB ; just to be sure
+	 * that the presentity was handled (as expired) on all presence 
+	 * servers (if DB is shared), remove from only presentities older
+	 * than 3 times the timer cycle */
+	db_vals[1].val.int_val -= 3 * ((int)(long)interval);
 
 	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
-
-	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0)
+	if (pa_dbf.delete(pa_db, db_keys+1, db_ops+1, db_vals+1, 1) < 0)
 		LM_ERR("cleaning expired messages\n");
 
-clean:
 	if(p)
 	{
 		for(i= 0; i< n; i++)
@@ -379,7 +392,6 @@ clean:
  *				0: success
  *				-1: error
  *		- sends a reply in all cases (success or error).
- *	TODO replace -1 return code in error case with 0 ( exit from the script)
  **/
 
 int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
@@ -605,7 +617,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	}
 
 	/* see if this PUBLISH needs to be replicated via cluster */
-	if (is_sharding_cluster_enabled() && is_event_clustered(event->evp->parsed))
+	if (is_cluster_federation_enabled() &&
+	is_event_clustered(event->evp->parsed))
 		replicate_publish_on_cluster(&presentity);
 
 	if(sender)

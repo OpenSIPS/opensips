@@ -66,6 +66,7 @@ struct subscription
 	int db_flag;
 	str* auth_rules_doc;
 	int internal_update_flag;
+	str sh_tag;
 	struct subscription* next;
 
 };

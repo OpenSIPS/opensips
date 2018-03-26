@@ -35,6 +35,7 @@
 #include <time.h>
 #include <fnmatch.h>
 
+#include "../../mod_fix.h"
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "../../dprint.h"
@@ -64,7 +65,7 @@
 
 #define S_TABLE_VERSION  4
 #define P_TABLE_VERSION  5
-#define ACTWATCH_TABLE_VERSION 11
+#define ACTWATCH_TABLE_VERSION 12
 
 char *log_buf = NULL;
 static int clean_period=100;
@@ -140,12 +141,19 @@ event_id_t exposed_event_id = EVI_ERROR;
 
 static cmd_export_t cmds[]=
 {
-	{"handle_publish",  (cmd_function)handle_publish,  0,fixup_presence,0, REQUEST_ROUTE},
-	{"handle_publish",  (cmd_function)handle_publish,  1,fixup_presence, 0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe,0,fixup_subscribe,0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe,1,fixup_subscribe,0, REQUEST_ROUTE},
-	{"bind_presence",   (cmd_function)bind_presence,   1,     0,         0,  0},
-	{ 0,                    0,                         0,     0,         0,  0}
+	{"handle_publish",  (cmd_function)handle_publish,   0,
+		fixup_presence,0, REQUEST_ROUTE},
+	{"handle_publish",  (cmd_function)handle_publish,   1,
+		fixup_presence, 0, REQUEST_ROUTE},
+	{"handle_subscribe",(cmd_function)handle_subscribe, 0,
+		fixup_subscribe,0, REQUEST_ROUTE},
+	{"handle_subscribe",(cmd_function)handle_subscribe, 1,
+		fixup_subscribe,0, REQUEST_ROUTE},
+	{"handle_subscribe",(cmd_function)handle_subscribe, 2,
+		fixup_subscribe,0, REQUEST_ROUTE},
+	{"bind_presence",   (cmd_function)bind_presence,    1,
+		0, 0,  0},
+	{ 0, 0, 0, 0, 0,  0}
 };
 
 static param_export_t params[]={
@@ -169,18 +177,22 @@ static param_export_t params[]={
 	{ "bla_fix_remote_target",  INT_PARAM, &fix_remote_target},
 	{ "notify_offline_body",    INT_PARAM, &notify_offline_body},
 	{ "end_sub_on_timeout",     INT_PARAM, &end_sub_on_timeout},
-	{ "sharding_cluster_id",    INT_PARAM, &shard_cluster_id},
-	{ "clustering_events",      STR_PARAM, &clustering_events.s},
+	{ "cluster_id",             INT_PARAM, &pres_cluster_id},
+	{ "cluster_federation_mode",INT_PARAM, &cluster_federation},
+	{ "cluster_pres_events",    STR_PARAM, &clustering_events.s},
+	{ "cluster_sharing_tags",   STR_PARAM|USE_FUNC_PARAM, &sharing_tag_func},
 	{0,0,0}
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "refreshWatchers",   0, mi_refreshWatchers,    0,  0,  0},
-	{ "cleanup",           0, mi_cleanup,            0,  0,  0},
-	{ "pres_expose",       0, mi_pres_expose,        0,  0,  0},
-	{ "pres_phtable_list", 0, mi_list_phtable,       0,  0,  0},
-	{ "subs_phtable_list", 0, mi_list_shtable,       0,  0,  0},
-	{  0,                  0, 0,                     0,  0,  0}
+	{ "refreshWatchers",       0, mi_refreshWatchers,    0,  0,  0},
+	{ "cleanup",               0, mi_cleanup,            0,  0,  0},
+	{ "pres_expose",           0, mi_pres_expose,        0,  0,  0},
+	{ "pres_phtable_list",     0, mi_list_phtable,       0,  0,  0},
+	{ "subs_phtable_list" ,    0, mi_list_shtable,       0,  0,  0},
+	{ "set_sharing_tag_active",0, mi_set_shtag_active,   0,  0,  0},
+	{ "list_sharing_tags",     0, mi_list_shtags,        0,  0,  0},
+	{  0,                      0, 0,                     0,  0,  0}
 };
 
 
@@ -192,7 +204,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "db_url", get_deps_sqldb_url },
-		{ "distribution_cluster_id", get_deps_clusterer },
+		{ "cluster_id", get_deps_clusterer },
 		{ NULL, NULL },
 	},
 };
@@ -369,10 +381,10 @@ static int mod_init(void)
 
 	if(clean_period>0)
 	{
-		register_timer("presence-pclean", msg_presentity_clean, 0,
-			clean_period, TIMER_FLAG_DELAY_ON_DELAY);
-		register_timer("presence-wclean", msg_watchers_clean, 0,
-			watchers_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
+		register_timer("presence-pclean", msg_presentity_clean,
+			(void*)(long)clean_period, clean_period,TIMER_FLAG_DELAY_ON_DELAY);
+		register_timer("presence-wclean", msg_watchers_clean,
+			0, watchers_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
 	}
 
 	if(db_update_period>0)
@@ -519,6 +531,11 @@ static int fixup_subscribe(void** param, int param_no)
 		LM_ERR("Bad config - you can not call 'handle_subscribe' function"
 				" (db_url not set)\n");
 		return -1;
+	} else {
+		if (param_no==2)
+			/* second parameter is the sharing tag, which can be string
+			 * or variable  */
+			return fixup_sgp(param);
 	}
 	return 0;
 }
@@ -1055,7 +1072,7 @@ int terminate_watchers(str *pres_uri, pres_ev_t* ev)
 	subs_t *tmp;
 
 	/* get all watchers for the presentity */
-	all_s = get_subs_dialog( pres_uri, ev, NULL);
+	all_s = get_subs_dialog( pres_uri, ev, NULL, NULL);
 	if ( all_s==NULL ) {
 		LM_DBG("No subscription dialogs found for <%.*s>\n",
 			pres_uri->len, pres_uri->s);
@@ -1378,7 +1395,7 @@ int refresh_send_winfo_notify(watcher_t* watchers, str pres_uri,
 	if(watchers->next== NULL)
 		return 0;
 
-	subs_array= get_subs_dialog(&pres_uri, ev, NULL);
+	subs_array= get_subs_dialog(&pres_uri, ev, NULL, NULL);
 	if(subs_array == NULL)
 	{
 		LM_DBG("Could not get subscription dialog\n");

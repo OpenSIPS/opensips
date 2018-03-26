@@ -27,15 +27,17 @@
 
 #include "../../ut.h"
 #include "../../usr_avp.h"
+#include "../../mod_fix.h"
 #include "../../data_lump_rpl.h"
 #include "../../parser/parse_expires.h"
 #include "../../parser/parse_event.h"
 #include "../../parser/contact/parse_contact.h"
+#include "../pua/hash.h"
 #include "presence.h"
 #include "subscribe.h"
 #include "utils_func.h"
 #include "notify.h"
-#include "../pua/hash.h"
+#include "clustering.h"
 
 
 int get_stored_info(struct sip_msg* msg, subs_t* subs, int* error_ret,
@@ -359,9 +361,10 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 	{
 		if(subs->expires == 0)
 		{
-			LM_DBG("expires=0, deleting subscription from [%.*s@%.*s] to [%.*s]\n",
-					subs->from_user.len, subs->from_user.s, subs->from_domain.len,
-					subs->from_domain.s, subs->pres_uri.len, subs->pres_uri.s);
+			LM_DBG("expires=0, deleting subscription from "
+				"[%.*s@%.*s] to [%.*s]\n",
+				subs->from_user.len, subs->from_user.s, subs->from_domain.len,
+				subs->from_domain.s, subs->pres_uri.len, subs->pres_uri.s);
 
 			if(delete_db_subs(subs->pres_uri,subs->event->name,subs->to_tag)<0)
 			{
@@ -463,6 +466,8 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_key_t db_keys[3];
 	db_val_t db_vals[3];
 	db_op_t  db_ops[3] ;
+	str **tags=NULL;
+	unsigned int n=0;
 
 	LM_DBG("cleaning pending subscriptions\n");
 
@@ -478,14 +483,35 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_vals[1].nul = 0;
 	db_vals[1].val.int_val = PENDING_STATUS;
 
+	if (is_presence_cluster_enabled()) {
+		tags = get_all_active_shtags();
+		db_keys[2] = &str_sharing_tag_col;
+		db_ops [2] = OP_EQ;
+		db_vals[2].type = DB_STR;
+		db_vals[2].nul = 0;
+	}
+
 	if (pa_dbf.use_table(pa_db, &watchers_table) < 0)
 	{
 		LM_ERR("unsuccessful use_table sql operation\n");
 		return;
 	}
 
-	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 2) < 0)
-		LM_ERR("cleaning pending subscriptions\n");
+	if (tags==NULL) {
+
+		if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 2) < 0)
+			LM_ERR("cleaning pending subscriptions\n");
+
+	} else {
+
+		while(tags[n]!=NULL) {
+			db_vals[2].val.str_val = *tags[n];
+			if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 3) < 0)
+				LM_ERR("cleaning pending subscriptions\n");
+			n++;
+		}
+
+	}
 }
 
 /*
@@ -496,7 +522,7 @@ void msg_watchers_clean(unsigned int ticks,void *param)
  *		- sends a reply in all cases (success or error).
  *	TODO replace -1 return code in error case with 0 ( exit from the script)
  * */
-int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
+int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* tag)
 {
 	int  init_req = 0;
 	subs_t subs;
@@ -557,7 +583,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	ev_param= parsed_event->params;
 	while(ev_param)
 	{
-		if(ev_param->name.len== 2 && strncasecmp(ev_param->name.s, "id", 2)== 0)
+		if(ev_param->name.len==2 && strncasecmp(ev_param->name.s, "id", 2)==0)
 		{
 			subs.event_id= ev_param->body;
 			break;
@@ -578,11 +604,25 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 		goto error;
 	}
 
-	/* from now one most of the possible error are due to fail in internal processing */
+	/* from now one most of the possible error are due to fail
+	 * in internal processing */
 	reply_code= 500;
 	reply_str= pu_500_rpl;
 
-	/* getting presentity uri from Request-URI if initial subscribe - or else from database*/
+	if (tag) {
+		if (fixup_get_svalue(msg, (gparam_p)tag, &subs.sh_tag)<0) {
+			LM_ERR("failed to get value from sh tag param\n");
+			goto error;
+		}
+		if (get_shtag( &subs.sh_tag, 0, 0)==NULL) {
+			LM_ERR("failed to lookup the <%.*s> sharing tag\n",
+				subs.sh_tag.len, subs.sh_tag.s);
+			goto error;
+		}
+	}
+
+	/* getting presentity uri from Request-URI if initial subscribe;
+	 * or else from database*/
 	if(init_req)
 	{
 		if(parsed_event->parsed!= EVENT_DIALOG_SLA)
@@ -658,7 +698,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 		goto error;
 	}
 	LM_DBG("subscription status= %s - %s\n", get_status_str(subs.status),
-            found==0?"inserted":"found in watcher table");
+		found==0?"inserted":"found in watcher table");
 
 	if(update_subscription(msg, &subs, init_req) <0)
 	{
@@ -1620,8 +1660,8 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 int insert_subs_db(subs_t* s)
 {
 	static db_ps_t my_ps = NULL;
-	db_key_t query_cols[22];
-	db_val_t query_vals[22];
+	db_key_t query_cols[23];
+	db_val_t query_vals[23];
 	int n_query_cols= 0;
 
 	query_cols[n_query_cols] =&str_presentity_uri_col;
@@ -1749,6 +1789,17 @@ int insert_subs_db(subs_t* s)
 		query_vals[n_query_cols].val.str_val.len = 0;
 	}
 	n_query_cols++;
+
+	query_cols[n_query_cols] =&str_sharing_tag_col;
+	query_vals[n_query_cols].type = DB_STR;
+	if (s->sh_tag.len==0) {
+		query_vals[n_query_cols].nul = 1;
+	} else {
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val = s->sh_tag;
+	}
+	n_query_cols++;
+
 	if(pa_dbf.use_table(pa_db, &active_watchers_table)< 0)
 	{
 		LM_ERR("in use table\n");
@@ -1765,9 +1816,10 @@ int insert_subs_db(subs_t* s)
 	return 0;
 }
 
+
 int restore_db_subs(void)
 {
-	db_key_t result_cols[22];
+	db_key_t result_cols[23];
 	db_res_t *result= NULL;
 	db_row_t *rows = NULL;
 	db_val_t *row_vals= NULL;
@@ -1777,6 +1829,7 @@ int restore_db_subs(void)
 	int callid_col,totag_col,fromtag_col,to_domain_col,sockinfo_col,reason_col;
 	int event_col,contact_col,record_route_col, event_id_col, status_col;
 	int remote_cseq_col, local_cseq_col, local_contact_col, version_col;
+	int sharing_tag_col;
 	subs_t s;
 	str ev_sname, sockinfo_str;
 	pres_ev_t* event= NULL;
@@ -1808,6 +1861,7 @@ int restore_db_subs(void)
 	result_cols[version_col= n_result_cols++]	=&str_version_col;
 	result_cols[status_col= n_result_cols++]	=&str_status_col;
 	result_cols[reason_col= n_result_cols++]	=&str_reason_col;
+	result_cols[sharing_tag_col= n_result_cols++]	=&str_sharing_tag_col;
 
 	if(!pa_db)
 	{
@@ -1978,6 +2032,11 @@ int restore_db_subs(void)
 				}
 				s.sockinfo = grep_sock_info(&host, (unsigned short) port,
 						(unsigned short) proto);
+			}
+
+			if (row_vals[sharing_tag_col].nul==0) {
+				s.sh_tag.s=(char*)row_vals[sharing_tag_col].val.string_val;
+				s.sh_tag.len=strlen(s.sh_tag.s);
 			}
 
 			hash_code= core_hash(&s.pres_uri, &s.event->name, shtable_size);

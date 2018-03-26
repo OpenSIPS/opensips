@@ -13,7 +13,7 @@ CREATE TABLE presentity (
     CONSTRAINT presentity_presentity_idx  UNIQUE (username, domain, event, etag)
 );
 
-INSERT INTO version (table_name, table_version) values ('active_watchers','11');
+INSERT INTO version (table_name, table_version) values ('active_watchers','12');
 CREATE TABLE active_watchers (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     presentity_uri CHAR(128) NOT NULL,
@@ -36,6 +36,7 @@ CREATE TABLE active_watchers (
     version INTEGER DEFAULT 0 NOT NULL,
     socket_info CHAR(64) NOT NULL,
     local_contact CHAR(128) NOT NULL,
+    sharing_tag CHAR(32) DEFAULT NULL,
     CONSTRAINT ORA_active_watchers_idx  UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 

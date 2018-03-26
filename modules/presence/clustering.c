@@ -1,6 +1,4 @@
 /*
- * presence module - presence server implementation
- *
  * Copyright (C) 2018 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -22,12 +20,16 @@
 
 
 #include "../../lib/csv.h"
+#include "../../mi/mi.h"
 #include "presence.h"
 #include "notify.h"
 #include "utils_func.h"
 #include "clustering.h"
 
-int shard_cluster_id = 0;
+int pres_cluster_id = 0;
+
+int cluster_federation = 0;
+
 str clustering_events = {NULL,0};
 
 static unsigned char clustered_events[EVENT_LINE_SEIZE];
@@ -41,9 +43,10 @@ static str empty_val = str_init(" ");
 #define CL_PRESENCE_PUBLISH     101
 #define CL_PRESENCE_PRES_QUERY  102
 
-#define BIN_VERSION          1
+#define BIN_VERSION    1
 
 static void bin_packet_handler(bin_packet_t *packet);
+static void event_handler(enum clusterer_event ev, int node_id);
 
 
 int init_pres_clustering(void)
@@ -51,8 +54,14 @@ int init_pres_clustering(void)
 	csv_record *list, *it;
 	event_t e;
 
+	/* init the sharing tags */
+	if (init_shtag_list()<0) {
+		LM_ERR("failed to init the sharing tags list\n");
+		return -1;
+	}
+
 	/* is clustering needed ? */
-	if (!is_sharding_cluster_enabled())
+	if (!is_presence_cluster_enabled())
 		return 0;
 
 	/* load the clusterer api */
@@ -63,7 +72,7 @@ int init_pres_clustering(void)
 
 	/* register handler for receiving packets from the clusterer module */
 	if (c_api.register_capability( &presence_capability,
-	bin_packet_handler, NULL, shard_cluster_id) < 0) {
+	bin_packet_handler, event_handler, pres_cluster_id) < 0) {
 		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}
@@ -73,8 +82,9 @@ int init_pres_clustering(void)
 		clustering_events.len = strlen(clustering_events.s);
 		list = _parse_csv_record(&clustering_events, CSV_SIMPLE);
 		if (list==NULL) {
-			LM_ERR("failed to parse the event CSV list <%.*s>, ignoring...\n",
-				clustering_events.len, clustering_events.s);
+			LM_ERR("failed to parse the event CSV list <%.*s>, "
+				"ignoring...\n", clustering_events.len,
+				clustering_events.s);
 		}
 		for (it=list ; it ; it=it->next ) {
 			if (event_parser( it->s.s, it->s.len, &e)<0) {
@@ -226,7 +236,7 @@ void replicate_publish_on_cluster(presentity_t *pres)
 	if (pack_replicated_publish( &packet, pres)<0) {
 		LM_ERR("failed to build replicated publish\n");
 	} else {
-		cluster_broadcast(&packet, shard_cluster_id);
+		cluster_broadcast(&packet, pres_cluster_id);
 	}
 
 	bin_free_packet(&packet);
@@ -275,7 +285,7 @@ void query_cluster_for_presentity(str *pres_uri, event_t *evp)
 	if (bin_push_str(&packet, &evp->text) < 0)
 		goto error;
 
-	cluster_broadcast(&packet, shard_cluster_id);
+	cluster_broadcast(&packet, pres_cluster_id);
 
 	bin_free_packet(&packet);
 
@@ -521,7 +531,7 @@ static void handle_presentity_query(bin_packet_t *packet)
 		goto error_all;
 	}
 
-	cluster_send_to_node( &reply_packet, shard_cluster_id, packet->src_id);
+	cluster_send_to_node( &reply_packet, pres_cluster_id, packet->src_id);
 
 	bin_free_packet(&reply_packet);
 
@@ -532,7 +542,6 @@ error_all:
 	LM_ERR("failed to handle bin packet %d from node %d\n",
 		packet->type, packet->src_id);
 	return;
-
 }
 
 
@@ -545,11 +554,62 @@ static void bin_packet_handler(bin_packet_t *packet)
 		case CL_PRESENCE_PRES_QUERY:
 			handle_presentity_query(packet);
 			break;
+		case SHTAG_IS_ACTIVE:
+			//rc = receive_repltag_active_msg(pkt);
+			break;
 		default:
 			LM_ERR("Unknown binary packet %d received from node %d in "
-				"distributing data cluster %d)\n", packet->type,
-				packet->src_id, shard_cluster_id);
+				"presence cluster %d)\n", packet->type,
+				packet->src_id, pres_cluster_id);
 	}
 	return;
 }
 
+
+void event_handler(enum clusterer_event ev, int node_id)
+{
+	if (ev == CLUSTER_NODE_UP) {
+		shlist_flush_state(&c_api, pres_cluster_id,
+			&presence_capability, node_id);
+	}
+}
+
+
+struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_node* node;
+
+	node = cmd_tree->node.kids;
+
+	if (!is_presence_cluster_enabled())
+		return init_mi_tree(500, MI_SSTR("Clustering not enabled"));
+
+	if (node == NULL || !node->value.s || !node->value.len)
+		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+
+	if (get_shtag(&node->value, 1, SHTAG_STATE_ACTIVE) == NULL)
+		return init_mi_tree(500, MI_SSTR("Unable to set replication tag"));
+
+	if (send_shtag_active_info(&c_api, pres_cluster_id,
+	&presence_capability, &node->value, 0) < 0)
+		LM_WARN("Failed to broadcast message about tag [%.*s] going active\n",
+			node->value.len, node->value.s);
+
+	return init_mi_tree( 200, MI_SSTR(MI_OK));
+}
+
+
+struct mi_root *mi_list_shtags(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_root *rpl_tree= NULL;
+
+	rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
+	if (rpl_tree==0)
+		return NULL;
+
+	if (list_shtags(&rpl_tree->node)<0) {
+		LM_ERR("failed to list sharing tags\n");
+	}
+
+	return rpl_tree;
+}

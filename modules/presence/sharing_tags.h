@@ -19,38 +19,49 @@
  */
 
 
-#ifndef _PRESENCE_CLUSTERING_H
-#define _PRESENCE_CLUSTERING_H
+#ifndef _PRESENCE_SHARING_TAGS_H
+#define _PRESENCE_SHARING_TAGS_H
 
+#define SHTAG_STATE_BACKUP 0
+#define SHTAG_STATE_ACTIVE 1
+
+#include "../../sr_module.h"
 #include "../../mi/mi.h"
 #include "../clusterer/api.h"
-#include "presentity.h"
-#include "sharing_tags.h"
 
-#define is_presence_cluster_enabled() (pres_cluster_id>0)
+struct n_send_info {
+	int node_id;
+	struct n_send_info *next;
+};
 
-#define is_cluster_federation_enabled() \
-	(is_presence_cluster_enabled() && cluster_federation>0)
+struct sharing_tag {
+	str name;
+	int state;
+	int send_active_msg;
+	struct n_send_info *active_msgs_sent;
+	struct sharing_tag *next;
+};
 
-/* The ID of the presence cluster */
-extern int pres_cluster_id;
 
-/* If the federation/sharding should be enabled for clustering */
-extern int cluster_federation;
+#define SHTAG_IS_ACTIVE         10001
 
-/* events to be replicated via the sharding cluster */
-extern str clustering_events;
 
-int init_pres_clustering(void);
+int init_shtag_list(void);
 
-int is_event_clustered( int event_parsed );
+int sharing_tag_func(modparam_t type, void *val);
 
-void replicate_publish_on_cluster(presentity_t *pres);
+void shlist_flush_state(struct clusterer_binds *c_api, int c_id,
+		str *cap, int node_id);
 
-void query_cluster_for_presentity(str *pres_uri, event_t *evp);
+int send_shtag_active_info(struct clusterer_binds *c_api, int c_id,
+		str *cap, str *tag_name, int node_id);
 
-struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param);
+struct sharing_tag *get_shtag(str *tag_name, int set, int new_state);
 
-struct mi_root *mi_list_shtags(struct mi_root *cmd_tree, void *param);
+str** get_all_active_shtags(void);
+
+int list_shtags(struct mi_node *rpl);
+
 
 #endif
+

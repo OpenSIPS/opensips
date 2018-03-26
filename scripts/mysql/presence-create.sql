@@ -13,7 +13,7 @@ CREATE TABLE presentity (
     CONSTRAINT presentity_idx UNIQUE (username, domain, event, etag)
 ) ENGINE=InnoDB;
 
-INSERT INTO version (table_name, table_version) values ('active_watchers','11');
+INSERT INTO version (table_name, table_version) values ('active_watchers','12');
 CREATE TABLE active_watchers (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     presentity_uri CHAR(128) NOT NULL,
@@ -36,6 +36,7 @@ CREATE TABLE active_watchers (
     version INT(11) DEFAULT 0 NOT NULL,
     socket_info CHAR(64) NOT NULL,
     local_contact CHAR(128) NOT NULL,
+    sharing_tag CHAR(32) DEFAULT NULL,
     CONSTRAINT active_watchers_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
 ) ENGINE=InnoDB;
 

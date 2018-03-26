@@ -76,6 +76,7 @@ str str_status_col = str_init("status");
 str str_reason_col = str_init("reason");
 str str_socket_info_col = str_init("socket_info");
 str str_local_contact_col = str_init("local_contact");
+str str_sharing_tag_col = str_init("sharing_tag");
 str str_version_col = str_init("version");
 str str_presentity_uri_col = str_init("presentity_uri");
 str str_inserted_time_col = str_init("inserted_time");
@@ -986,7 +987,7 @@ static str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		if(!fallback2db)
 		{
 			/* we do not have the presentity */
-			if (query_cluster && is_sharding_cluster_enabled())
+			if (query_cluster && is_cluster_federation_enabled())
 				query_cluster_for_presentity(&pres_uri, event->evp);
 
 			/* for pidf manipulation && dialog-presence mixing */
@@ -1038,7 +1039,7 @@ static str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		result= NULL;
 
 		/* we do not have the presentity */
-		if (query_cluster && is_sharding_cluster_enabled() &&
+		if (query_cluster && is_cluster_federation_enabled() &&
 		is_event_clustered(event->evp->parsed))
 			query_cluster_for_presentity(&pres_uri, event->evp);
 
@@ -1417,12 +1418,12 @@ error:
 }
 
 int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
-		subs_t** s_array, int* n)
+		subs_t** s_array, int* n, str **sh_tags)
 {
 //	static db_ps_t my_ps = NULL;
-	db_key_t query_cols[7];
-	db_op_t  query_ops[7];
-	db_val_t query_vals[7];
+	db_key_t query_cols[8];
+	db_op_t  query_ops[8];
+	db_val_t query_vals[8];
 	db_key_t result_cols[19];
 	int n_result_cols = 0, n_query_cols = 0;
 	db_row_t *row ;
@@ -1438,6 +1439,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	str sockinfo_str;
 	int port, proto;
 	str host;
+	unsigned int tag_no = 0;
 
 	if (pa_dbf.use_table(pa_db, &active_watchers_table) < 0)
 	{
@@ -1471,7 +1473,6 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	query_ops[n_query_cols] = OP_NEQ;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-
 	if(sender)
 	{
 		LM_DBG("Do not send Notify to:[uri]= %.*s\n",sender->len,sender->s);
@@ -1483,6 +1484,17 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		query_vals[n_query_cols].val.str_val.len = 0;
 	}
 	n_query_cols++;
+
+	/* this must be the last select key! */
+	if (sh_tags) {
+		query_cols[n_query_cols] = &str_sharing_tag_col;
+		query_ops[n_query_cols] = OP_EQ;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+		n_query_cols++;
+		/* the tag value is filled during the 'while' loop ; we rely on the
+		 * fact that there is at least one tag in the list !! */
+	}
 
 	result_cols[to_user_col=n_result_cols++]      =   &str_to_user_col;
 	result_cols[to_domain_col=n_result_cols++]    =   &str_to_domain_col;
@@ -1501,119 +1513,125 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 	result_cols[local_contact_col=n_result_cols++]=   &str_local_contact_col;
 	result_cols[version_col=n_result_cols++]      =   &str_version_col;
 
-	//CON_PS_REFERENCE(pa_db) = &my_ps;
-	if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals,result_cols,
+	do {
+
+		if (sh_tags)
+			query_vals[n_query_cols-1].val.str_val = *sh_tags[tag_no];
+
+		//CON_PS_REFERENCE(pa_db) = &my_ps;
+		if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals,result_cols,
 				n_query_cols, n_result_cols, 0, &result) < 0)
-	{
-		LM_ERR("while querying database\n");
-		if(result)
 		{
-			pa_dbf.free_result(pa_db, result);
+			LM_ERR("while querying database\n");
+			if(result)
+				pa_dbf.free_result(pa_db, result);
+			return -1;
 		}
-		return -1;
-	}
 
-	if(result== NULL)
-		return -1;
+		if(result== NULL)
+			return -1;
 
-	if(result->n <=0 )
-	{
-		LM_DBG("The query for subscribtion for [uri]= %.*s for [event]= %.*s"
-			" returned no result\n",pres_uri->len, pres_uri->s,
-			event->name.len, event->name.s);
-		pa_dbf.free_result(pa_db, result);
-		return 0;
-	}
-	LM_DBG("found %d dialogs\n", result->n);
-
-	for(i=0; i<result->n; i++)
-	{
-		row = &result->rows[i];
-		row_vals = ROW_VALUES(row);
-
-	//	if(row_vals[expires_col].val.int_val< (int)time(NULL))
-	//		continue;
-
-        if(row_vals[reason_col].val.string_val)
-        {
-            if(strlen(row_vals[reason_col].val.string_val) != 0)
-                continue;
-        }
-		//	s.reason.len= strlen(s.reason.s);
-
-		memset(&s, 0, sizeof(subs_t));
-		s.status= ACTIVE_STATUS;
-
-		s.pres_uri= *pres_uri;
-		s.to_user.s= (char*)row_vals[to_user_col].val.string_val;
-		s.to_user.len= strlen(s.to_user.s);
-
-		s.to_domain.s= (char*)row_vals[to_domain_col].val.string_val;
-		s.to_domain.len= strlen(s.to_domain.s);
-
-		s.from_user.s= (char*)row_vals[from_user_col].val.string_val;
-		s.from_user.len= strlen(s.from_user.s);
-
-		s.from_domain.s= (char*)row_vals[from_domain_col].val.string_val;
-		s.from_domain.len= strlen(s.from_domain.s);
-
-		s.event_id.s=(char*)row_vals[event_id_col].val.string_val;
-		s.event_id.len= (s.event_id.s)?strlen(s.event_id.s):0;
-
-		s.to_tag.s= (char*)row_vals[to_tag_col].val.string_val;
-		s.to_tag.len= strlen(s.to_tag.s);
-
-		s.from_tag.s= (char*)row_vals[from_tag_col].val.string_val;
-		s.from_tag.len= strlen(s.from_tag.s);
-
-		s.callid.s= (char*)row_vals[callid_col].val.string_val;
-		s.callid.len= strlen(s.callid.s);
-
-		s.record_route.s=  (char*)row_vals[record_route_col].val.string_val;
-		s.record_route.len= (s.record_route.s)?strlen(s.record_route.s):0;
-
-		s.contact.s= (char*)row_vals[contact_col].val.string_val;
-		s.contact.len= strlen(s.contact.s);
-
-		sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
-		if (sockinfo_str.s)
+		if(result->n <=0 )
 		{
-			sockinfo_str.len = strlen(sockinfo_str.s);
-			if (parse_phostport (sockinfo_str.s, sockinfo_str.len,&host.s,
-					&host.len, &port, &proto )< 0)
+			LM_DBG("The query for subscribtion for [uri]= %.*s for [event]= %.*s"
+				" returned no result\n",pres_uri->len, pres_uri->s,
+				event->name.len, event->name.s);
+			pa_dbf.free_result(pa_db, result);
+			return 0;
+		}
+		LM_DBG("found %d dialogs\n", result->n);
+
+		for(i=0; i<result->n; i++)
+		{
+			row = &result->rows[i];
+			row_vals = ROW_VALUES(row);
+
+			//	if(row_vals[expires_col].val.int_val< (int)time(NULL))
+			//		continue;
+
+			if(row_vals[reason_col].val.string_val)
 			{
-				LM_ERR("bad format for stored sockinfo string\n");
+				if(strlen(row_vals[reason_col].val.string_val) != 0)
+					continue;
+			}
+			//	s.reason.len= strlen(s.reason.s);
+
+			memset(&s, 0, sizeof(subs_t));
+			s.status= ACTIVE_STATUS;
+
+			s.pres_uri= *pres_uri;
+			s.to_user.s= (char*)row_vals[to_user_col].val.string_val;
+			s.to_user.len= strlen(s.to_user.s);
+
+			s.to_domain.s= (char*)row_vals[to_domain_col].val.string_val;
+			s.to_domain.len= strlen(s.to_domain.s);
+
+			s.from_user.s= (char*)row_vals[from_user_col].val.string_val;
+			s.from_user.len= strlen(s.from_user.s);
+
+			s.from_domain.s= (char*)row_vals[from_domain_col].val.string_val;
+			s.from_domain.len= strlen(s.from_domain.s);
+
+			s.event_id.s=(char*)row_vals[event_id_col].val.string_val;
+			s.event_id.len= (s.event_id.s)?strlen(s.event_id.s):0;
+
+			s.to_tag.s= (char*)row_vals[to_tag_col].val.string_val;
+			s.to_tag.len= strlen(s.to_tag.s);
+
+			s.from_tag.s= (char*)row_vals[from_tag_col].val.string_val;
+			s.from_tag.len= strlen(s.from_tag.s);
+
+			s.callid.s= (char*)row_vals[callid_col].val.string_val;
+			s.callid.len= strlen(s.callid.s);
+
+			s.record_route.s=  (char*)row_vals[record_route_col].val.string_val;
+			s.record_route.len= (s.record_route.s)?strlen(s.record_route.s):0;
+
+			s.contact.s= (char*)row_vals[contact_col].val.string_val;
+			s.contact.len= strlen(s.contact.s);
+
+			sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
+			if (sockinfo_str.s)
+			{
+				sockinfo_str.len = strlen(sockinfo_str.s);
+				if (parse_phostport (sockinfo_str.s, sockinfo_str.len,&host.s,
+						&host.len, &port, &proto )< 0)
+				{
+					LM_ERR("bad format for stored sockinfo string\n");
+					goto error;
+				}
+				s.sockinfo = grep_sock_info(&host, (unsigned short) port,
+						(unsigned short) proto);
+			}
+
+			s.local_contact.s = (char*)row_vals[local_contact_col].val.string_val;
+			s.local_contact.len = s.local_contact.s?strlen(s.local_contact.s):0;
+
+			s.event= event;
+			s.local_cseq = row_vals[cseq_col].val.int_val;
+
+			if(row_vals[expires_col].val.int_val < (int)time(NULL))
+				s.expires = 0;
+			else
+				s.expires = row_vals[expires_col].val.int_val -(int)time(NULL);
+			s.version = row_vals[version_col].val.int_val;
+
+			s_new= mem_copy_subs(&s, PKG_MEM_TYPE);
+			if(s_new== NULL)
+			{
+				LM_ERR("while copying subs_t structure\n");
 				goto error;
 			}
-			s.sockinfo = grep_sock_info(&host, (unsigned short) port,
-					(unsigned short) proto);
+			s_new->next= (*s_array);
+			(*s_array)= s_new;
+
+			printf_subs(s_new);
+			inc++;
 		}
+		pa_dbf.free_result(pa_db, result);
 
-		s.local_contact.s = (char*)row_vals[local_contact_col].val.string_val;
-		s.local_contact.len = s.local_contact.s?strlen(s.local_contact.s):0;
+	} while(sh_tags && sh_tags[++tag_no]);
 
-		s.event= event;
-		s.local_cseq = row_vals[cseq_col].val.int_val;
-
-		if(row_vals[expires_col].val.int_val < (int)time(NULL))
-			s.expires = 0;
-		else
-			s.expires = row_vals[expires_col].val.int_val -(int)time(NULL);
-		s.version = row_vals[version_col].val.int_val;
-
-		s_new= mem_copy_subs(&s, PKG_MEM_TYPE);
-		if(s_new== NULL)
-		{
-			LM_ERR("while copying subs_t structure\n");
-			goto error;
-		}
-		s_new->next= (*s_array);
-		(*s_array)= s_new;
-
-		printf_subs(s_new);
-		inc++;
-	}
-	pa_dbf.free_result(pa_db, result);
 	*n= inc;
 
 	return 0;
@@ -1758,19 +1776,41 @@ error:
 }
 
 
-subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender)
+static int is_in_shtag_list(str *tag, str **list)
+{
+	unsigned int n = 0;
+
+	while( list[n] ) {
+		if (list[n]->len==tag->len &&
+		strncasecmp(list[n]->s,tag->s,tag->len)==0)
+			return 1;
+		n++;
+	}
+
+	return 0;
+}
+
+
+subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender,
+															str **sh_tags)
 {
 	unsigned int hash_code;
 	subs_t* s= NULL, *s_new;
 	subs_t* s_array= NULL;
 	int n= 0, i= 0;
 
+	/* if tag filtering is enabled but not active tag is present
+	 * in the list, simply return a 0 len list */
+	if (sh_tags && sh_tags[0]==NULL) {
+		return 0;
+	}
+
 	/* if fallback2db -> should take all dialogs from db
 	 * and the only those dialogs from cache with db_flag= INSERTDB_FLAG */
 
 	if(fallback2db)
 	{
-		if(get_subs_db(pres_uri, event, sender, &s_array, &n)< 0)
+		if(get_subs_db(pres_uri, event, sender, &s_array, &n, sh_tags)< 0)
 		{
 			LM_ERR("getting dialogs from database\n");
 			goto error;
@@ -1802,7 +1842,8 @@ subs_t* get_subs_dialog(str* pres_uri, pres_ev_t* event, str* sender)
 				s->event== event && s->pres_uri.len== pres_uri->len &&
 				strncmp(s->pres_uri.s, pres_uri->s, pres_uri->len)== 0)) ||
 				(sender && sender->len== s->contact.len &&
-				strncmp(sender->s, s->contact.s, sender->len)== 0))
+				strncmp(sender->s, s->contact.s, sender->len)== 0) ||
+				(sh_tags && !is_in_shtag_list(&s->sh_tag, sh_tags) ) )
 				continue;
 
 			s_new= mem_copy_subs(s, PKG_MEM_TYPE);
@@ -1831,7 +1872,7 @@ error:
 }
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_body, int from_publish)
+		str* rules_doc, str* dialog_body, int from_publish, str **sh_tags)
 {
 	str *notify_body = NULL;
 	str notify_extra_hdrs = {NULL, 0};
@@ -1839,7 +1880,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	int ret_code= -1;
 	free_body_t* free_fct = 0;
 
-	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
+	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender, sh_tags);
 	if(subs_array == NULL)
 	{
 		LM_DBG("Could not find subs_dialog\n");
@@ -1899,7 +1940,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	int ret_code= -1;
 	free_body_t* free_fct = 0;
 
-	subs_array= get_subs_dialog(pres_uri, event , NULL);
+	subs_array= get_subs_dialog(pres_uri, event , NULL, NULL);
 	if(subs_array == NULL)
 	{
 		LM_DBG("Could not get subscription dialog\n");

@@ -21,7 +21,7 @@ END presentity_tr;
 /
 BEGIN map2users('presentity'); END;
 /
-INSERT INTO version (table_name, table_version) values ('active_watchers','11');
+INSERT INTO version (table_name, table_version) values ('active_watchers','12');
 CREATE TABLE active_watchers (
     id NUMBER(10) PRIMARY KEY,
     presentity_uri VARCHAR2(128),
@@ -44,6 +44,7 @@ CREATE TABLE active_watchers (
     version NUMBER(10) DEFAULT 0 NOT NULL,
     socket_info VARCHAR2(64),
     local_contact VARCHAR2(128),
+    sharing_tag VARCHAR2(32) DEFAULT NULL,
     CONSTRAINT ORA_active_watchers_idx  UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 
