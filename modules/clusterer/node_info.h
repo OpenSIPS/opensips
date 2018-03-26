@@ -120,6 +120,7 @@ int provision_neighbor(modparam_t type, void* val);
 int provision_current(modparam_t type, void *val);
 
 int cl_get_my_id(void);
+int cl_get_my_sip_addr(int cluster_id, str *out_addr);
 int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);

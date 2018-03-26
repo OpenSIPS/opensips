@@ -89,6 +89,15 @@ typedef int (*check_addr_f)(int cluster_id, union sockaddr_union *su);
  * Get the node id of the current node.
  */
 typedef int (*get_my_id_f)(void);
+
+/*
+ * Get the SIP address of the current node within cluster @cluster_id.
+ *
+ * Return: 0 on success, -1 otherwise.
+ *         IMPORTANT: pkg_free(out_addr->s) after you're done!
+ */
+typedef int (*get_my_sip_addr_f)(int cluster_id, str *out_addr);
+
 /*
  * Return an index for the current node, with a value between [0, @nr_nodes-1],
  * which belongs to a continous sequence of identifiers for the nodes in the cluster.
@@ -175,6 +184,7 @@ struct clusterer_binds {
 	set_state_f set_state;
 	check_addr_f check_addr;
 	get_my_id_f get_my_id;
+	get_my_sip_addr_f get_my_sip_addr;
 	get_my_index_f get_my_index;
 	send_to_f send_to;
 	send_all_f send_all;
