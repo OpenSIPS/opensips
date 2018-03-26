@@ -607,7 +607,7 @@ mod_init(void)
 			return -1;
 		}
 
-		if (STORE_BRANCH_CTID {
+		if (STORE_BRANCH_CTID) {
 			if (ping_threshold > natping_interval) {
 				LM_WARN("Maximum ping threshold must be smaller than "
 						"the interval between two pings! Setting threshold "
