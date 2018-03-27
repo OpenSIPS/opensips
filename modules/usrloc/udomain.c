@@ -1677,11 +1677,13 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 static inline urecord_t *find_mem_urecord(udomain_t *_d, const str *_aor)
 {
 	unsigned int sl, aorhash;
+	urecord_t **r;
 
 	aorhash = core_hash(_aor, 0, 0);
 	sl = aorhash & (_d->size - 1);
 
-	return *(urecord_t **)map_find(_d->table[sl].records, *_aor);
+	r = (urecord_t **)map_find(_d->table[sl].records, *_aor);
+	return r ? *r : NULL;
 }
 
 /*! \brief
