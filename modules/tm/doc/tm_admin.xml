@@ -913,6 +913,17 @@ modparam("tm", "cluster_auto_cancel", no)
 				CANCEL - shortly, will propagate the Reason header.
 				</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>0x10</emphasis> - Allows OpenSIPS to inspect
+				and follow the Content-Disposition "no-cancel" indication (if
+				present). As per RFC3841, section 9.1, the TM module may be 
+				instructed not to cancel all ongoing branches when a 2xx reply
+				is received. It will keep the pending branches ongoing until
+				(1) all branches will receive a final reply or (2) the 
+				transactionhits the timeout.
+				</para>
+			</listitem>
+
 		</itemizedlist>
 		<para>
 		In case of error, the function returns the following codes:
