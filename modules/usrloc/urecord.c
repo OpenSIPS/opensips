@@ -759,7 +759,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		/* now simply free everything */
 		free_urecord(_r);
 		break;
-	case CM_CACHEDB_ONLY:
+	case CM_FULL_SHARING_CACHEDB:
 		if (cdb_flush_urecord(_r) < 0)
 			LM_ERR("failed to flush AoR %.*s\n", _r->aor.len, _r->aor.s);
 		free_urecord(_r);

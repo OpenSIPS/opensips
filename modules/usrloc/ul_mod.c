@@ -686,12 +686,12 @@ int check_runtime_config(void)
 			cluster_mode = CM_FEDERATION_CACHEDB;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
-		} else if (!strcasecmp(runtime_preset, "full-mirroring-cluster")) {
-			cluster_mode = CM_FULL_MIRRORING;
+		} else if (!strcasecmp(runtime_preset, "full-sharing-cluster")) {
+			cluster_mode = CM_FULL_SHARING;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
-		} else if (!strcasecmp(runtime_preset, "cachedb-only-cluster")) {
-			cluster_mode = CM_CACHEDB_ONLY;
+		} else if (!strcasecmp(runtime_preset, "full-sharing-cachedb-cluster")) {
+			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
 		}
@@ -703,10 +703,10 @@ int check_runtime_config(void)
 				cluster_mode = CM_FEDERATION;
 			else if (!strcasecmp(cluster_mode_str, "federation-cachedb"))
 				cluster_mode = CM_FEDERATION_CACHEDB;
-			else if (!strcasecmp(cluster_mode_str, "full-mirroring"))
-				cluster_mode = CM_FULL_MIRRORING;
-			else if (!strcasecmp(cluster_mode_str, "cachedb-only"))
-				cluster_mode = CM_CACHEDB_ONLY;
+			else if (!strcasecmp(cluster_mode_str, "full-sharing"))
+				cluster_mode = CM_FULL_SHARING;
+			else if (!strcasecmp(cluster_mode_str, "full-sharing-cachedb"))
+				cluster_mode = CM_FULL_SHARING_CACHEDB;
 			else if (!strcasecmp(cluster_mode_str, "sql-only"))
 				cluster_mode = CM_SQL_ONLY;
 			else
@@ -804,14 +804,14 @@ int check_runtime_config(void)
 		}
 		break;
 
-	case CM_FULL_MIRRORING:
+	case CM_FULL_SHARING:
 		if (!location_cluster) {
 			LM_ERR("'location_cluster' is not set!\n");
 			return -1;
 		}
 		break;
 
-	case CM_CACHEDB_ONLY:
+	case CM_FULL_SHARING_CACHEDB:
 		if (rr_persist != RRP_NONE) {
 			LM_WARN("externally managed data is already restart persistent!"
 			        " -- auto-disabling 'restart_persistency'\n");

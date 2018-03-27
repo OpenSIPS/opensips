@@ -1693,7 +1693,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 
 	switch (cluster_mode) {
 	case CM_NONE:
-	case CM_FULL_MIRRORING:
+	case CM_FULL_SHARING:
 		r = find_mem_urecord(_d, _aor);
 		if (!r)
 			goto out;
@@ -1712,7 +1712,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 
 		*_r = r;
 		return 0;
-	case CM_CACHEDB_ONLY:
+	case CM_FULL_SHARING_CACHEDB:
 		r = cdb_load_urecord(_d, _aor);
 		if (r) {
 			*_r = r;
@@ -1755,7 +1755,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		free_urecord(_r);
 		return 0;
 
-	case CM_CACHEDB_ONLY:
+	case CM_FULL_SHARING_CACHEDB:
 		if (!_r)
 			get_static_urecord(_d, _aor, &_r);
 		if (cdb_delete_urecord(_r) < 0) {

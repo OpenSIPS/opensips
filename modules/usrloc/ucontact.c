@@ -962,7 +962,7 @@ int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
 {
 	ucontact_sip_coords *a, *b;
 
-	if (cluster_mode != CM_CACHEDB_ONLY)
+	if (cluster_mode != CM_FULL_SHARING_CACHEDB)
 		return _a == _b ? 0 : -1;
 
 	a = (ucontact_sip_coords *)_a;
@@ -977,7 +977,7 @@ int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
 
 void free_ucontact_coords(ucontact_coords coords)
 {
-	if (cluster_mode == CM_CACHEDB_ONLY)
+	if (cluster_mode == CM_FULL_SHARING_CACHEDB)
 		shm_free((ucontact_sip_coords *)coords);
 }
 

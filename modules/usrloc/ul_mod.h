@@ -67,21 +67,21 @@ enum ul_sql_write_mode {
 
 #define have_cdb_conns() \
 	(cluster_mode == CM_FEDERATION_CACHEDB || \
-	 cluster_mode == CM_CACHEDB_ONLY)
+	 cluster_mode == CM_FULL_SHARING_CACHEDB)
 
 static inline int have_mem_storage(void)
 {
 	return cluster_mode == CM_NONE ||
 	       cluster_mode == CM_FEDERATION ||
 	       cluster_mode == CM_FEDERATION_CACHEDB ||
-	       cluster_mode == CM_FULL_MIRRORING;
+	       cluster_mode == CM_FULL_SHARING;
 }
 
 #define have_data_replication() \
 	((cluster_mode == CM_FEDERATION_CACHEDB \
 	  && rr_persist == RRP_SYNC_FROM_CLUSTER) || \
 	 cluster_mode == CM_FEDERATION || \
-	 cluster_mode == CM_FULL_MIRRORING)
+	 cluster_mode == CM_FULL_SHARING)
 
 /*
  * Module parameters

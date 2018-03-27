@@ -886,7 +886,7 @@ int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
 	if (cluster_mode == CM_SQL_ONLY)
 		return get_domain_db_ucontacts(d, buf, &len,
 							flags, part_idx, part_max, 1, pack_coords);
-	else if (cluster_mode == CM_CACHEDB_ONLY)
+	else if (cluster_mode == CM_FULL_SHARING_CACHEDB)
 		return get_domain_cdb_ucontacts(d, buf, &len,
 		                    flags, part_idx, part_max, 1, pack_coords);
 	else
@@ -1200,7 +1200,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 			return -1;
 		}
 		return 0;
-	} else if (cluster_mode == CM_CACHEDB_ONLY) {
+	} else if (cluster_mode == CM_FULL_SHARING_CACHEDB) {
 		if (cdb_delete_ucontact_coords((ucontact_sip_coords *)ct_coords)) {
 			LM_ERR("failed to remove contact from cache\n");
 			return -1;
@@ -1246,7 +1246,7 @@ int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
 	ucontact_id contact_id = (ucontact_id)ct_coords;
 
 	/* TODO: add cachedb queries for latency updates */
-	if (cluster_mode == CM_SQL_ONLY || cluster_mode == CM_CACHEDB_ONLY)
+	if (cluster_mode == CM_SQL_ONLY || cluster_mode == CM_FULL_SHARING_CACHEDB)
 		return 0;
 
 	c = get_ucontact_from_id(d, contact_id, &r);
