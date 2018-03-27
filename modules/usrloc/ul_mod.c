@@ -694,6 +694,12 @@ int check_runtime_config(void)
 			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
+		} else {
+			LM_ERR("unrecognized preset: %s, defaulting to "
+			       "'single-instance-no-db'\n", runtime_preset);
+			cluster_mode = CM_NONE;
+			rr_persist = RRP_NONE;
+			sql_wmode = SQL_NO_WRITE;
 		}
 	} else {
 		if (cluster_mode_str) {
