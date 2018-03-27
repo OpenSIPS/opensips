@@ -185,14 +185,14 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "refreshWatchers",       0, mi_refreshWatchers,    0,  0,  0},
-	{ "cleanup",               0, mi_cleanup,            0,  0,  0},
-	{ "pres_expose",           0, mi_pres_expose,        0,  0,  0},
-	{ "pres_phtable_list",     0, mi_list_phtable,       0,  0,  0},
-	{ "subs_phtable_list" ,    0, mi_list_shtable,       0,  0,  0},
-	{ "set_sharing_tag_active",0, mi_set_shtag_active,   0,  0,  0},
-	{ "list_sharing_tags",     0, mi_list_shtags,        0,  0,  0},
-	{  0,                      0, 0,                     0,  0,  0}
+	{ "refreshWatchers",            0, mi_refreshWatchers,    0,  0,  0},
+	{ "cleanup",                    0, mi_cleanup,            0,  0,  0},
+	{ "pres_expose",                0, mi_pres_expose,        0,  0,  0},
+	{ "pres_phtable_list",          0, mi_list_phtable,       0,  0,  0},
+	{ "subs_phtable_list" ,         0, mi_list_shtable,       0,  0,  0},
+	{ "pres_set_sharing_tag_active",0, mi_set_shtag_active,   0,  0,  0},
+	{ "pres_list_sharing_tags",     0, mi_list_shtags,        0,  0,  0},
+	{  0,                           0, 0,                     0,  0,  0}
 };
 
 
