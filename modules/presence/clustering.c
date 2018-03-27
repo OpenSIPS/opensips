@@ -72,7 +72,7 @@ int init_pres_clustering(void)
 
 	/* register handler for receiving packets from the clusterer module */
 	if (c_api.register_capability( &presence_capability,
-	bin_packet_handler, event_handler, pres_cluster_id) < 0) {
+	bin_packet_handler, event_handler, pres_cluster_id, 0) < 0) {
 		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}
