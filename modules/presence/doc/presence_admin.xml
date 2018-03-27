@@ -12,7 +12,7 @@
 	module and message-summary from presence_mwi module.
 	</para>
 	<para>
-	The modules uses database storage. 
+	The module uses database storage. 
 	It has later been improved with memory caching operations to improve
 	performance. The Subscribe dialog information are stored in memory and 
 	are periodically updated in database, while for Publish only the presence
@@ -35,6 +35,15 @@
 	</para>
 	</section>
 
+	<section id="presence_clustering">
+	<title>Presence clustering</title>
+	<para>
+	To read and understand the presence clustering, its abilities and how to
+	implement scenarios like High-Availability, Load Balancing or Federations,
+	please refer to this article <ulink url="https://blog.opensips.org/2018/03/27/clustering-presence-services-with-opensips-2-4/">https://blog.opensips.org/2018/03/27/clustering-presence-services-with-opensips-2-4/</ulink>.
+	</para>
+	</section>
+
 	<section>
 	<title>Dependencies</title>
 	<section>
@@ -52,6 +61,13 @@
 				<emphasis>signaling</emphasis>.
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clusterer</emphasis>, if the cluster_id 
+				module parameter is set and clustering support activated.
+			</para>
+			</listitem>
+
 			</itemizedlist>
 		</para>
 	</section>
@@ -94,95 +110,128 @@ modparam("presence", "db_url",
 </programlisting>
 		</example>
 	</section>
+
 	<section>
-		<title><varname>presentity_table</varname>(str)</title>
+		<title><varname>fallback2db</varname> (int)</title>
 		<para>
-		The name of the db table where Publish information are stored.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>presentity</quote>.
-		</emphasis>
+		Setting this parameter enables a fallback to db mode of operation.
+		In this mode, in case a searched record is not found in cache, 
+		the search is continued	in database. Useful for an architecture in
+		which processing and memory load might be divided on more machines
+		using the same database.
 		</para>
 		<example>
-		<title>Set <varname>presentity_table</varname> parameter</title>
+		<title>Set <varname>fallback2db</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("presence", "presentity_table", "presentity")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>active_watchers_table</varname>(str)</title>
-		<para>
-		The name of the db table where active subscription information are 
-		stored. 
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>active_watchers</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>active_watchers_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "active_watchers_table", "active_watchers")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>watchers_table</varname>(str)</title>
-		<para>
-		The name of the db table where subscription states are stored.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>watchers</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>watchers_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "watchers_table", "watchers")
+modparam("presence", "fallback2db", 1)
 ...
 </programlisting>
 		</example>
 	</section>
 
 	<section>
-		<title><varname>clean_period</varname> (int)</title>
+		<title><varname>cluster_id</varname> (int)</title>
 		<para>
-		The period at which to clean the expired subscription dialogs.
+		The ID of the cluster this presence server belongs to. This parameter
+		is to be used only if clustering mode is needed. In order to
+		understand th concept of a cluster ID, please see the 
+		<emphasis>clusterer</emphasis> module.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>100</quote>. A zero or negative value disables this activity.
+		For more on presence clustering see the 
+		<xref linkend="presence_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>None</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>clean_period</varname> parameter</title>
+		<title>Set <varname>cluster_id</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("presence", "clean_period", 100)
+modparam("presence", "cluster_id", 2)
 ...
 </programlisting>
 		</example>
 	</section>
+
 	<section>
-		<title><varname>db_update_period</varname> (int)</title>
+		<title><varname>cluster_federation_mode</varname> (int)</title>
 		<para>
-		The period at which to synchronize cached subscriber info with the
-		database.
+		When enabling the federation mode, the node inside the presence cluster
+		will start partitioning the data (each node will keep its own data
+		set) and exchange the minimimum of needed information via the
+		clustering support. A non-zero value means enabled.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>100</quote>. A zero or negative value disables synchronization.
+		For more on presence clustering see the 
+		<xref linkend="presence_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> (disabled).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>db_update_period</varname> parameter</title>
+		<title>Set <varname>cluster_federation_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("presence", "db_update_period", 100)
+modparam("presence", "cluster_federation_mode", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>cluster_pres_events</varname> (str)</title>
+		<para>
+		Comma Separated Value (CSV) list with the events to considered by the
+		federated cluster - only presentities advertising one of these events
+		will be broadcasted via the cluster.
+		</para>
+		<para>
+		For more on presence clustering see the 
+		<xref linkend="presence_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>empty</quote> (meaning all).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_pres_events</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, message-summary")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>cluster_sharing_tags</varname> (str)</title>
+		<para>
+		Definition of a sharing tag (and its value) to be known by OpenSIPS 
+		from the startup. Note that tags may be dynamically learned during
+		runtime.
+		</para>
+		<para>
+		Use this option if you want to force a certain value ("active" or 
+		"inactive") from the very beginning.
+		</para>
+		<para>
+		For more on presence clustering see the 
+		<xref linkend="presence_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>empty</quote> (none).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_sharing_tags</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "cluster_pres_events" ,"vip1=active")
+modparam("presence", "cluster_pres_events" ,"vip2=backup")
 ...
 </programlisting>
 		</example>
@@ -251,8 +300,13 @@ modparam("presence", "max_expires_publish", 3600)
 <section>
 		<title><varname>server_address</varname> (str)</title>
 		<para>
-		The presence server address which will become the value of Contact header filed 
-		for 200OK replies to Subscribe and Publish and in Notify messages.
+		The optional presence server address which will become the value of 
+		Contact header filed for 200OK replies to Subscribe and Publish 
+		and in Notify messages.
+		</para>
+		<para>
+		If not set (as it is by default), OpenSIPS will generate the Conact URI
+		based on the interface it received the SIP traffic.
 		</para>
 		<example>
 		<title>Set <varname>server_address</varname> parameter</title>
@@ -263,20 +317,270 @@ modparam("presence", "server_address", "sip:10.10.10.10:5060")
 </programlisting>
 		</example>
 	</section>
-<section>
-		<title><varname>fallback2db</varname> (int)</title>
+
+	<section>
+		<title><varname>enable_sphere_check</varname> (int)</title>
 		<para>
-		Setting this parameter enables a fallback to db mode of operation.
-		In this mode, in case a searched record is not found in cache, 
-		the search is continued	in database. Useful for an architecture in
-		which processing and memory load might be divided on more machines
-		using the same database.
+		This parameter is a flag that should be set if permission rules 
+		include sphere checking. The sphere information is expected to be 
+		present in the RPID body published by the presentity. The flag is 
+		introduced as this check requires extra processing that should be 
+		avoided if this feature is not supported by the clients.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 </quote>.
+		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>fallback2db</varname> parameter</title>
+		<title>Set <varname>enable_sphere_check</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("presence", "fallback2db", 1)
+modparam("presence", "enable_sphere_check", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>waiting_subs_daysno</varname> (int)</title>
+		<para>
+			The number of days to keep the record of a subscription in server
+			database if the subscription is in pending or waiting state 
+			(no authorization policy was defined for it or the target user 
+			did not register sice the subscription and was not informed about
+			it).
+		</para>
+		<para>
+			<emphasis>Default value is <quote>3</quote> days. Maximum accepted
+			value is 30 days.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>waiting_subs_daysno</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "waiting_subs_daysno", 2)
+...
+	</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>mix_dialog_presence</varname> (int)</title>
+		<para>
+		This module parameter enables a very nice feature in the presence 
+		server - generating presence information from dialogs state. If this 
+		parameter is set, the presence server will tell you if a buddy is in 
+		a call even if his phone did not send a presence Publish with this 
+		information. You will need to load the dialoginfo modules, 
+		presence_dialoginfo, pua_dialoginfo, dialog and pua.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mix_dialog_presence</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "mix_dialog_presence", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>bla_presentity_spec</varname> (str)</title>
+		<para>
+			By default the presentity uri for BLA subscribes (event=dialog;sla)
+			is computed from contact username + from domain. In some cases 
+			though, this way of computing the presentity might not be right 
+			(for example if you have a SBC in front that masquerades the 
+			contact). So we added this parameter that allows defining a custom 
+			uri to be used as presentity uri for BLA subscribes. You should 
+			set this parameter to the name of a pseudovariable and then set 
+			this pseudovariable to the desired URI before calling the function
+			handle_subscribe.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bla_presentity_spec</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>bla_fix_remote_target</varname> (int)</title>
+		<para>
+			Polycom has a bug in the bla implementation. It inserts the 
+			remote IP contact in the Notify body and when a phone picks up a 
+			call put on hold by another phone in the same BLA group, it sends 
+			an Invite directly to the remote IP. OpenSIPS BLA server tries to 
+			prevent this by replacing the IP contact with the
+			domain, when this is possible.
+		</para>
+		<para>
+			In some cases(configurations) however this is not desirable, so 
+			this parameter was introduced to disable this behaviour when 
+			needed.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bla_fix_remote_target</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "bla_fix_remote_target", 0)
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title><varname>notify_offline_body</varname> (int)</title>
+		<para>
+			If this parameter is set, when no published info is found for
+			a user, the presence server will generate a dummy body with status
+			'closed' and use it when sending Notify, instead of notifying with
+			no body.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>notify_offline_body</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "notify_offline_body", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>end_sub_on_timeout</varname> (int)</title>
+		<para>
+			If a presence subscription should be automatically terminated 
+			(destroyed) when receiving a SIP timeout (408) for a sent
+			NOTIFY requests.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>end_sub_on_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "end_sub_on_timeout", 0)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>clean_period</varname> (int)</title>
+		<para>
+		The period at which to clean the expired subscription dialogs.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>. A zero or negative 
+		value disables this activity.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>clean_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "clean_period", 100)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_update_period</varname> (int)</title>
+		<para>
+		The period at which to synchronize cached subscriber info with the
+		database.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>. A zero or negative 
+		value disables synchronization.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_update_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "db_update_period", 100)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>presentity_table</varname>(str)</title>
+		<para>
+		The name of the db table where Publish information are stored.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>presentity</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>presentity_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "presentity_table", "presentity")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>active_watchers_table</varname>(str)</title>
+		<para>
+		The name of the db table where active subscription information are 
+		stored. 
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>active_watchers</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>active_watchers_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "active_watchers_table", "active_watchers")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>watchers_table</varname>(str)</title>
+		<para>
+		The name of the db table where subscription states are stored.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>watchers</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>watchers_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence", "watchers_table", "watchers")
 ...
 </programlisting>
 		</example>
@@ -321,171 +625,6 @@ modparam("presence", "pres_htable_size", 11)
 	</programlisting>
 		</example>
 	</section>
-	<section>
-		<title><varname>enable_sphere_check</varname> (int)</title>
-		<para>
-		This parameter is a flag that should be set if permission rules include
-		sphere checking.
-		The sphere information is expected to be present in the RPID body
-		published by the presentity. The flag is introduced as this check requires
-		extra processing that should be avoided if this feature is not supported
-		by the clients.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>0 </quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>enable_sphere_check</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "enable_sphere_check", 1)
-...
-	</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>waiting_subs_daysno</varname> (int)</title>
-		<para>
-			The number of days to keep the record of a subscription in server database
-			if the subscription is in pending or waiting state (no authorization policy was
-			defined for it or the target user did not register sice the subscription 
-			and was not informed about it).
-		</para>
-		<para>
-			<emphasis>Default value is <quote>3</quote> days. Maximum accepted value is 30 days.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>waiting_subs_daysno</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "waiting_subs_daysno", 2)
-...
-	</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>mix_dialog_presence</varname> (int)</title>
-		<para>
-		This module parameter enables a very nice feature in the presence server -
-		generating presence information from dialogs state. If this parameter is set,
-		the presence server will tell you if a buddy is in a call even if his phone
-		did not send a presence Publish with this information.
-		You will need to load the dialoginfo modules, presence_dialoginfo, pua_dialoginfo, dialog and pua.
-		</para>
-		<para>
-			<emphasis>Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>mix_dialog_presence</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "mix_dialog_presence", 1)
-...
-	</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>bla_presentity_spec</varname> (str)</title>
-		<para>
-			By default the presentity uri for BLA subscribes (event=dialog;sla)
-			is computed from contact username + from domain. In some cases though,
-			this way of computing the presentity might not be right ( for example if you
-			have a SBC in front that masquerades the contact). So we added this parameter
-			that allows defining a custom uri to be used as presentity uri for BLA 
-			subscribes. You should set this parameter to the name of a pseudovariable
-			and then set this pseudovariable to the desired URI before calling the function
-			handle_subscribe.
-		</para>
-		<para>
-			<emphasis>Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>bla_presentity_spec</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
-...
-	</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>bla_fix_remote_target</varname> (int)</title>
-		<para>
-			Polycom has a bug in the bla implementation. It inserts the remote IP contact
-			in the Notify body and when a phone picks up a call put on hold by another
-			phone in the same BLA group, it sends an Invite directly to the remote IP.
-			OpenSIPS BLA server tries to prevent this by replacing the IP contact with the
-			domain, when this is possible.
-		</para>
-		<para>
-			In some cases(configurations) however this is not desirable, so this parameter
-			was introduced to disable this behaviour when needed.
-		</para>
-		<para>
-			<emphasis>Default value is <quote>1</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>bla_fix_remote_target</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "bla_fix_remote_target", 0)
-...
-	</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>notify_offline_body</varname> (int)</title>
-		<para>
-			If this parameter is set, when no published info is found for
-			a user, the presence server will generate a dummy body with status
-			'closed' and use it when sending Notify, instead of notifying with no
-			body.
-		</para>
-		<para>
-			<emphasis>Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>notify_offline_body</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "notify_offline_body", 1)
-...
-	</programlisting>
-		</example>
-	</section>
-
-
-	<section>
-		<title><varname>end_sub_on_timeout</varname> (int)</title>
-		<para>
-			If a presence subscription should be automatically terminated 
-			(destroyed) when receiving a SIP timeout (408) for a sent
-			NOTIFY requests.
-		</para>
-		<para>
-			<emphasis>Default value is <quote>1</quote> (enabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>end_sub_on_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "end_sub_on_timeout", 0)
-...
-	</programlisting>
-		</example>
-	</section>
-
 
 </section>
 
