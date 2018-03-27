@@ -247,10 +247,10 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 	/* if replication flag is set, mark the transaction as local
 	   so that replies will not be relaied */
 	t=get_t();
-	if (flags&TM_T_REPLY_repl_FLAG) t->flags|=T_IS_LOCAL_FLAG;
-	if (flags&TM_T_REPLY_nodnsfo_FLAG) t->flags|=T_NO_DNS_FAILOVER_FLAG;
-	if (flags&TM_T_REPLY_reason_FLAG) t->flags|=T_CANCEL_REASON_FLAG;
-	if ((flags&TM_T_REPLY_do_cancel_dis_FLAG) &&
+	if (flags&TM_T_RELAY_repl_FLAG) t->flags|=T_IS_LOCAL_FLAG;
+	if (flags&TM_T_RELAY_nodnsfo_FLAG) t->flags|=T_NO_DNS_FAILOVER_FLAG;
+	if (flags&TM_T_RELAY_reason_FLAG) t->flags|=T_CANCEL_REASON_FLAG;
+	if ((flags&TM_T_RELAY_do_cancel_dis_FLAG) &&
 	tm_has_request_disponsition_no_cancel(p_msg)==0 )
 		t->flags|=T_MULTI_200OK_FLAG;
 
@@ -260,7 +260,7 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 		LM_DBG("t_forward_nonack returned error \n");
 		/* we don't want to pass upstream any reply regarding replicating
 		 * a request; replicated branch must stop at us*/
-		if (!(flags&(TM_T_REPLY_repl_FLAG|TM_T_REPLY_noerr_FLAG))) {
+		if (!(flags&(TM_T_RELAY_repl_FLAG|TM_T_RELAY_noerr_FLAG))) {
 			reply_ret = kill_transaction( t );
 			if (reply_ret>0) {
 				/* we have taken care of all -- do nothing in

@@ -1326,11 +1326,11 @@ static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 			return 1;
 		}
 
-		if (((int)(long)flags)&TM_T_REPLY_nodnsfo_FLAG)
+		if (((int)(long)flags)&TM_T_RELAY_nodnsfo_FLAG)
 			t->flags|=T_NO_DNS_FAILOVER_FLAG;
-		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
+		if (((int)(long)flags)&TM_T_RELAY_reason_FLAG)
 			t->flags|=T_CANCEL_REASON_FLAG;
-		if ( (((int)(long)flags)&TM_T_REPLY_do_cancel_dis_FLAG) &&
+		if ( (((int)(long)flags)&TM_T_RELAY_do_cancel_dis_FLAG) &&
 		tm_has_request_disponsition_no_cancel(p_msg)==0 )
 			t->flags|=T_MULTI_200OK_FLAG;
 
