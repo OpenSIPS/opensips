@@ -229,6 +229,30 @@ modparam("ratelimit", "timer_interval", 5)
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>limit_per_interval</varname> (integer)</title>
+		<para>
+			This parameter configures the way that a pipe's limit is specified
+			in the <emphasis>rl_check</emphasis> function and only affects the
+			Taildrop and RED algorithms. A value of 1 means that the limit is
+			set per-<emphasis>timer_interval</emphasis> while a value of 0 means per-second.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0(limit per-second).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>limit_per_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "limit_per_interval", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>expire_time</varname> (integer)</title>
 		<para>

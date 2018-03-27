@@ -536,7 +536,8 @@ void rl_timer(unsigned int ticks, void *param)
 				case PIPE_ALGO_RED:
 					if ((*pipe)->limit && rl_timer_interval)
 						(*pipe)->load = (*pipe)->counter /
-						((*pipe)->limit * rl_timer_interval);
+						((*pipe)->limit *
+							(rl_limit_per_interval ? 1 : rl_timer_interval));
 					break;
 				default:
 					break;

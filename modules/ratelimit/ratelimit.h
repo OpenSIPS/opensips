@@ -96,6 +96,7 @@ typedef struct {
 extern gen_lock_t * rl_lock;
 extern rl_big_htable rl_htable;
 extern int rl_timer_interval;
+extern int rl_limit_per_interval;
 extern int rl_expire_time;
 extern unsigned int rl_hash_size;
 extern int *rl_network_count;

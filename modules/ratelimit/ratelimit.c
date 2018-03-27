@@ -63,6 +63,9 @@ int * rl_network_count;	/* flag for counting network algo users */
 /* these only change in the mod_init() process -- no locking needed */
 int rl_timer_interval = RL_TIMER_INTERVAL;
 
+/* specify limit per second by defualt */
+int rl_limit_per_interval = 0;
+
 int rl_repl_cluster = 0;
 struct clusterer_binds clusterer_api;
 
@@ -140,6 +143,7 @@ static param_export_t params[] = {
 	{ "pipe_replication_cluster",	INT_PARAM,	&rl_repl_cluster		},
 	{ "window_size",            INT_PARAM,  &rl_window_size},
 	{ "slot_period",            INT_PARAM,  &rl_slot_period},
+	{ "limit_per_interval",     INT_PARAM,  &rl_limit_per_interval},
 	{ 0, 0, 0}
 };
 
@@ -574,8 +578,8 @@ int rl_pipe_check(rl_pipe_t *pipe)
 			LM_ERR("no algorithm defined for this pipe\n");
 			return 1;
 		case PIPE_ALGO_TAILDROP:
-			return (counter <= pipe->limit * rl_timer_interval) ?
-				1 : -1;
+			return (counter <= pipe->limit *
+				(rl_limit_per_interval ? 1 : rl_timer_interval)) ? 1 : -1;
 		case PIPE_ALGO_RED:
 			if (!pipe->load)
 				return 1;
