@@ -199,6 +199,8 @@ struct totag_elem {
 #define T_NO_NEW_BRANCHES_FLAG  (1<<8)
 /* transaction must forward the REASON header (for CANCEL)  */
 #define T_CANCEL_REASON_FLAG    (1<<9)
+/* transaction must accept multiple 200 OK (different branches)  */
+#define T_MULTI_200OK_FLAG      (1<<10)
 
 /* transaction UAC's flags */
 /* is the UAC pending for CANCEL ?  */

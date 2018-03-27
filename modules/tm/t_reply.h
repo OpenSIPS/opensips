@@ -44,7 +44,9 @@ enum rps {
 	/* transaction completed */
 	RPS_COMPLETED,
 	/* provisional reply not affecting transaction state */
-	RPS_PROVISIONAL
+	RPS_PROVISIONAL,
+	/* just relay the reply*/
+	RPS_RELAY
 };
 
 extern char tm_tags[TOTAG_VALUE_LEN];

@@ -66,8 +66,16 @@ void cancel_uacs( struct cell *t, branch_bm_t cancel_bm )
 
 	/* cancel pending client transactions, if any */
 	for( i=0 ; i<t->nr_of_outgoings ; i++ )
-		if (cancel_bm & (1<<i))
-			cancel_branch(t, i);
+		if (cancel_bm & (1<<i)) {
+			/* any reply actually received on this branch */
+			if (t->uac[i].last_received!=0) {
+				/* send a cancel out */
+				cancel_branch(t, i);
+			} else {
+				/* set flag to catch the delaied replies */
+				t->uac[i].flags |= T_UAC_TO_CANCEL_FLAG;
+			}
+		}
 }
 
 

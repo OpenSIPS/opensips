@@ -1330,6 +1330,9 @@ static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 			t->flags|=T_NO_DNS_FAILOVER_FLAG;
 		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
 			t->flags|=T_CANCEL_REASON_FLAG;
+		if ( (((int)(long)flags)&TM_T_REPLY_do_cancel_dis_FLAG) &&
+		tm_has_request_disponsition_no_cancel(p_msg)==0 )
+			t->flags|=T_MULTI_200OK_FLAG;
 
 		/* update the transaction only if in REQUEST route; for other types
 		   of routes we do not want to inherit the local changes */

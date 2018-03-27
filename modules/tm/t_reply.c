@@ -793,6 +793,20 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 }
 
 
+/* Quick and harmless test to see if the transaction still has 
+   pending branches */
+static inline int tran_is_completed( struct cell *t )
+{
+	int i;
+
+	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ )
+		if ( t->uac[i].last_received<200 )
+			return 0;
+
+	return 1;
+}
+
+
 /* This is the neurological point of reply processing -- called
  * from within a REPLY_LOCK, t_should_relay_response decides
  * how a reply shall be processed and how transaction state is
@@ -820,6 +834,31 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 	   out
 	*/
 	LM_DBG("T_code=%d, new_code=%d\n", Trans->uas.status,new_code);
+
+	/* a final reply after 200 OK on a transaction with multi branch 200 OK */
+	if ( is_invite(Trans) && new_code>=200
+	&& Trans->flags&T_MULTI_200OK_FLAG
+	&& Trans->uas.status>=200 && Trans->uas.status<300) {
+		*should_store=0;
+		picked_branch=-1;
+		Trans->uac[branch].last_received=new_code;
+		if (new_code>=300) {
+			/* negative reply, we simply discard (no relay, no save) */
+			*should_relay = -1;
+			return RPS_DISCARDED;
+		}
+		/* 2xx reply - is this the last branch to complete?? */
+		if (tran_is_completed(Trans)) {
+			/* last branch gets also a 200OK, no more pending branches */
+			*should_relay = branch;
+			return RPS_COMPLETED;
+		} else {
+			/* 200 OK, but still having ongoing branches */
+			*should_relay = branch;
+			return RPS_RELAY;
+		}
+	}
+
 	inv_through=new_code>=200 && new_code<300 && is_invite(Trans);
 	/* if final response sent out, allow only INVITE 2xx  */
 	if ( Trans->uas.status >= 200 ) {
@@ -847,7 +886,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 #ifdef EXTRA_DEBUG
 		/* don't report on retransmissions */
 		if (Trans->uac[branch].last_received==new_code) {
-			LM_DBG("final reply retransmission\n");
+			LM_DBG("final rely retransmission\n");
 		} else
 		/* if you FR-timed-out, faked a local 408 and 487 came, don't
 		 * report on it either */
@@ -972,6 +1011,14 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 		*should_store=0;
 		*should_relay= new_code==100? -1 : branch;
 		if (new_code>=200 ) {
+			/* if a a multi-200OK transaction, prevent the transaction
+			   completion if we still have pending branches */
+			if (Trans->flags&T_MULTI_200OK_FLAG) {
+				if (tran_is_completed(Trans))
+					return RPS_COMPLETED;
+				else
+					return RPS_RELAY;
+			}
 			which_cancel( Trans, cancel_bitmap );
 			return RPS_COMPLETED;
 		} else return RPS_PROVISIONAL;
