@@ -392,7 +392,8 @@ int check_if_dialog(str body, int *is_dialog)
 }
 
 
-int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_reply)
+int update_presentity(struct sip_msg* msg, presentity_t* presentity,
+															int* sent_reply)
 {
 //	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
 //		   my_ps_update_body = NULL;
@@ -402,9 +403,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	db_val_t query_vals[13], update_vals[8];
 	int n_query_cols = 0;
 	int n_update_cols = 0;
-	str etag= {NULL, 0};
 	str notify_body = {NULL, 0};
-	str cur_etag= {NULL, 0};
 	str* rules_doc= NULL;
 	str pres_uri= {NULL, 0};
 	pres_entry_t* p= NULL;
@@ -453,19 +452,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	query_vals[n_query_cols].val.str_val = presentity->event->name;
 	n_query_cols++;
 
-	query_cols[n_query_cols] = &str_etag_col;
-	query_ops[n_query_cols] = OP_EQ;
-	query_vals[n_query_cols].type = DB_STR;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = presentity->etag;
-	n_query_cols++;
-
 	result_cols[0] = &str_etag_col;
 	hash_code= core_hash(&pres_uri, NULL, phtable_size);
 
 	if(presentity->etag_new)
 	{
-		if (msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
+		if (msg && publ_send200ok(msg, presentity->expires,
+		presentity->new_etag)<0)
 		{
 			LM_ERR("sending 200OK\n");
 			goto error;
@@ -474,7 +467,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 		/* insert new record in hash_table */
 		p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
-				&presentity->etag, presentity->sphere, presentity->flags, 1);
+				&presentity->new_etag, presentity->sphere,
+				presentity->flags, 1);
 		if (p==NULL)
 		{
 			LM_ERR("inserting record in hash table\n");
@@ -482,6 +476,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		}
 
 		/* insert new record into database */
+		query_cols[n_query_cols] = &str_etag_col;
+		query_ops[n_query_cols] = OP_EQ;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val = presentity->new_etag;
+		n_query_cols++;
+
 		query_cols[n_query_cols] = &str_expires_col;
 		query_vals[n_query_cols].type = DB_INT;
 		query_vals[n_query_cols].nul = 0;
@@ -545,7 +546,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	{
 		lock_get(&pres_htable[hash_code].lock);
 		p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
-				&presentity->etag, hash_code);
+				&presentity->old_etag, hash_code);
 		if (p) {
 
 			turn = p->last_turn++;
@@ -559,8 +560,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 				lock_release(&pres_htable[hash_code].lock);
 				sleep_us(100);
 				lock_get(&pres_htable[hash_code].lock);
-				p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
-					&presentity->etag, hash_code);
+				p = search_phtable_etag(&pres_uri,
+					presentity->event->evp->parsed, &presentity->old_etag,
+					hash_code);
 			}
 
 		} else {
@@ -572,6 +574,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					LM_ERR("unsuccessful sql use table\n");
 					goto error;
 			}
+			query_cols[n_query_cols] = &str_etag_col;
+			query_ops[n_query_cols] = OP_EQ;
+			query_vals[n_query_cols].type = DB_STR;
+			query_vals[n_query_cols].nul = 0;
+			query_vals[n_query_cols].val.str_val = presentity->old_etag;
+			n_query_cols++;
+
 			if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 					 result_cols, n_query_cols, 1, 0, &result) < 0)
 			{
@@ -584,8 +593,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			if (result->n <= 0)
 			{
 					pa_dbf.free_result(pa_db, result);
-					LM_ERR("No E_Tag match [%.*s]\n", presentity->etag.len,
-							presentity->etag.s);
+					LM_ERR("No E_Tag match [%.*s]\n", presentity->old_etag.len,
+							presentity->old_etag.s);
 					if (msg && sigb.reply(msg, 412, &pu_412_rpl, 0)==-1 )
 					{
 						LM_ERR("sending '412 Conditional request failed' reply\n");
@@ -597,7 +606,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 			pa_dbf.free_result(pa_db, result);
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
-					presentity->etag.len, presentity->etag.s);
+					presentity->old_etag.len, presentity->old_etag.s);
 		}
 
 		/* record found */
@@ -612,7 +621,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			p = NULL;
 
 			lock_release(&pres_htable[hash_code].lock);
-			if(msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
+			if(msg && publ_send200ok(msg, presentity->expires,
+			presentity->old_etag)<0)
 			{
 				LM_ERR("sending 200OK reply\n");
 				goto error;
@@ -620,7 +630,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			*sent_reply= 1;
 
 			if(publ_notify(presentity, pres_uri, body.s ? &body : 0,
-			&presentity->etag, rules_doc, NULL, 1, NULL) < 0)
+			&presentity->old_etag, rules_doc, NULL, 1, NULL) < 0)
 			{
 				LM_ERR("while sending notify\n");
 				goto error;
@@ -654,16 +664,20 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 		if(presentity->event->etag_not_new== 0)
 		{
-			if(generate_ETag(p?p->etag_count:0, &etag) < 0)
+			/* if we already have a new etag (probably received via cluster
+			 * replication) do not generate a new local one */
+			if (presentity->new_etag.s==NULL)
 			{
-				LM_ERR("while generating etag\n");
-				lock_release(&pres_htable[hash_code].lock);
-				goto error;
+				if(generate_ETag(p?p->etag_count:0, &presentity->new_etag) < 0)
+				{
+					LM_ERR("while generating etag\n");
+					lock_release(&pres_htable[hash_code].lock);
+					goto error;
+				}
 			}
-			cur_etag= etag;
 			if(p)
 			{
-				update_pres_etag(p, &etag);
+				update_pres_etag(p, &presentity->new_etag);
 				p->flags = presentity->flags;
 				lock_release(&pres_htable[hash_code].lock);
 			}
@@ -671,7 +685,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			{
 				lock_release(&pres_htable[hash_code].lock);
 				p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
-						&presentity->etag, presentity->sphere,
+						&presentity->new_etag, presentity->sphere,
 						presentity->flags, 1);
 				if ( p==NULL )
 				{
@@ -683,14 +697,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		else
 		{
 			lock_release(&pres_htable[hash_code].lock);
-			cur_etag= presentity->etag;
+			presentity->new_etag = presentity->old_etag;
 		}
 
 		n_update_cols= 0;
 		update_keys[n_update_cols] = &str_etag_col;
 		update_vals[n_update_cols].type = DB_STR;
 		update_vals[n_update_cols].nul = 0;
-		update_vals[n_update_cols].val.str_val = cur_etag;
+		update_vals[n_update_cols].val.str_val = presentity->new_etag;
 		n_update_cols++;
 
 		update_keys[n_update_cols] = &str_expires_col;
@@ -781,7 +795,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		}
 
 		/* send 200OK */
-		if (msg && publ_send200ok(msg, presentity->expires, cur_etag)<0 )
+		if (msg && publ_send200ok(msg, presentity->expires,
+		presentity->new_etag)<0 )
 		{
 			LM_ERR("sending 200OK reply\n");
 			goto error;
@@ -1150,8 +1165,8 @@ int pres_expose_evi(pres_ev_t *ev, str *filter)
 			presentity.domain.len = strlen(presentity.domain.s);
 			presentity.user.s = (char*)row_vals[user_col].val.string_val;
 			presentity.user.len = strlen(presentity.user.s);
-			presentity.etag.s = (char*)row_vals[etag_col].val.string_val;
-			presentity.etag.len = strlen(presentity.etag.s);
+			presentity.new_etag.s = (char*)row_vals[etag_col].val.string_val;
+			presentity.new_etag.len = strlen(presentity.new_etag.s);
 			presentity.event = ev;
 			presentity.expires = row_vals[expires_col].val.int_val;
 			presentity.body.s = (char*)row_vals[body_col].val.string_val;

@@ -177,7 +177,16 @@ static int pack_replicated_publish(bin_packet_t *packet, presentity_t *pres)
 		goto error;
 	step++;
 
-	if (bin_push_str(packet, &pres->etag) < 0)
+	if (pres->old_etag.s) {
+		if (bin_push_str(packet, &pres->old_etag) < 0)
+			goto error;
+	} else {
+		if (bin_push_str(packet, &empty_val) < 0)
+			goto error;
+	}
+	step++;
+
+	if (bin_push_str(packet, &pres->new_etag) < 0)
 		goto error;
 	step++;
 
@@ -335,8 +344,16 @@ static void handle_replicated_publish(bin_packet_t *packet)
 	if (!is_event_clustered( ev.parsed ))
 		return;
 
-	/* etag */
-	if (bin_pop_str(packet, &pres.etag) < 0)
+	/* old (received) etag */
+	if (bin_pop_str(packet, &s) < 0)
+		goto error;
+	step++;
+	if ( !(s.len==empty_val.len && memcmp(s.s, empty_val.s, s.len)==0) ) {
+		pres.old_etag = s;
+	}
+
+	/* new (saved) etag */
+	if (bin_pop_str(packet, &pres.new_etag) < 0)
 		goto error;
 	step++;
 
@@ -362,8 +379,12 @@ static void handle_replicated_publish(bin_packet_t *packet)
 	/* do we have any record of this presentity ? Let's search */
 	hash_code = core_hash( &s, NULL, phtable_size);
 	lock_get( &pres_htable[hash_code].lock );
-	p = search_phtable_etag( &s, ev.parsed,
-			&pres.etag, hash_code);
+	if (pres.old_etag.s) {
+		p = search_phtable_etag( &s, ev.parsed,
+				&pres.old_etag, hash_code);
+	} else {
+		p = NULL;
+	}
 	/* take the chance of the lock and delete the record for
 	 * waiting for a cluster query on this presentity */
 	delete_cluster_query( &s, ev.parsed, hash_code);
@@ -380,11 +401,19 @@ static void handle_replicated_publish(bin_packet_t *packet)
 		pres.expires = 0;
 	} else
 		LM_DBG("Presentity has some local subscribers\n");
-	pkg_free(s.s);
+	pkg_free(s.s); // allocated by uandd_to_uri()
 
 	/* the publish is worthy to be handle, carry on */
-
-	pres.etag_new = (p==NULL)? 1 : 0;
+	if (p) {
+		pres.etag_new = 0;
+	} else {
+		p = NULL;
+		pres.etag_new = 1;
+		/* reset the old (received tag) as useless for us; we wil handle
+		 * this presentity as a newly created one */
+		pres.old_etag.s = NULL;
+		pres.old_etag.len = 0;
+	}
 
 	/* sender, it may be empty */
 	if (bin_pop_str(packet, &s) < 0)
@@ -432,6 +461,7 @@ static void handle_replicated_publish(bin_packet_t *packet)
 		goto error_all;
 	}
 
+	return;
 error:
 	LM_ERR("failed to pop data (step=%d) from bin packet\n",step);
 error_all:
@@ -511,8 +541,8 @@ static void handle_presentity_query(bin_packet_t *packet)
 	pres.user = uri.user;
 	pres.domain = uri.host;
 	pres.event = search_event(&ev);
-	pres.etag.s = (char*)VAL_STRING(ROW_VALUES(RES_ROWS(res))+etag_col);
-	pres.etag.len = strlen(pres.etag.s);
+	pres.new_etag.s = (char*)VAL_STRING(ROW_VALUES(RES_ROWS(res))+etag_col);
+	pres.new_etag.len = strlen(pres.new_etag.s);
 	pres.expires = VAL_INT(ROW_VALUES(RES_ROWS(res))+expires_col) -
 		(int)time(NULL);
 	pres.received_time = (int)time(NULL);

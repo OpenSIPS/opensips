@@ -1685,7 +1685,7 @@ int update_in_list(subs_t* s, subs_t* s_array, int new_rec_no, int n)
 
 int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 {
-	static db_ps_t ps;
+	static db_ps_t ps = NULL;
 	unsigned int hash_code;
 	subs_t* s;
 	time_t now;
@@ -1746,20 +1746,9 @@ int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 	}
 	CON_PS_REFERENCE(pa_db) = ps;
 
-	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) {
-		if ( pa_dbf.query( pa_db, keys, 0, vals, cols, 3, 1, 0, 0) < 0) {
-			LM_ERR("DB query failed\n");
-			goto error;
-		}
-		if(pa_dbf.fetch_result( pa_db, &res, 1 )<0) {
-			LM_ERR("Error fetching rows\n");
-			goto error;
-		}
-	} else {
-		if ( pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
-			LM_ERR("DB query failed\n");
-			goto error;
-		}
+	if ( pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
+		LM_ERR("DB query failed\n");
+		goto error;
 	}
 
 	if ( RES_ROW_N(res)>0 ) {

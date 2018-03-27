@@ -209,7 +209,10 @@ int do_callinfo_publish(struct sca_line *sca)
 		memset(&presentity, 0, sizeof(presentity_t));
 		presentity.domain = host;
 		presentity.user   = user;
-		presentity.etag   = etag;
+		if (new_etag)
+			presentity.new_etag   = etag;
+		else
+			presentity.old_etag   = etag;
 		presentity.event  = callinfo_event;
 		presentity.expires = callinfo_event->default_expires;
 		presentity.received_time= (int)time(NULL);

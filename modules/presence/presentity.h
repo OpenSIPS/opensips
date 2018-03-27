@@ -42,7 +42,8 @@ typedef struct presentity
 	str domain;
 	pres_ev_t* event;
 	int etag_count;
-	str etag;
+	str old_etag;
+	str new_etag;
 	str* sender;
 	time_t expires;
 	time_t received_time;

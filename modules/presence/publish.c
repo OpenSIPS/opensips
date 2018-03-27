@@ -96,7 +96,7 @@ void presence_raise_event(event_id_t event, presentity_t* presentity)
                          evi_free_params(list);
                          return;
                 }
-                if (evi_param_add_str(list, &parameter_etag_str, &presentity->etag)) {
+                if (evi_param_add_str(list, &parameter_etag_str, &presentity->new_etag)) {
                          LM_ERR("unable to add etag parameter\n");
                          evi_free_params(list);
                          return;
@@ -289,9 +289,9 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		pres->domain.len= domain.len;
 		size+= domain.len;
 
-		pres->etag.s= (char*)pres+ size;
-		memcpy(pres->etag.s, etag.s, etag.len);
-		pres->etag.len= etag.len;
+		pres->new_etag.s= (char*)pres+ size;
+		memcpy(pres->new_etag.s, etag.s, etag.len);
+		pres->new_etag.len= etag.len;
 		//size+= etag.len;
 
 		pres->event= contains_event(&event, &ev);
@@ -331,7 +331,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 			LM_ERR("getting rules doc\n");
 			continue;
 		}
-		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc,
+		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->new_etag, rules_doc,
 		NULL, 0, sh_tags)< 0)
 		{
 			LM_ERR("sending Notify request\n");
@@ -345,7 +345,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		}
 		rules_doc= NULL;
 		/* delete from hash table */
-		if(delete_phtable_query(&p[i].uri, ev.parsed, &p[i].p->etag)< 0)
+		if(delete_phtable_query(&p[i].uri, ev.parsed, &p[i].p->new_etag)< 0)
 		{
 			LM_ERR("deleting from pres hash table\n");
 		}
@@ -592,7 +592,10 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	memset(&presentity, 0, sizeof(presentity_t));
 	presentity.domain = pres_domain;
 	presentity.user   = pres_user;
-	presentity.etag   = etag;
+	if (etag_new)
+		presentity.new_etag = etag;
+	else
+		presentity.old_etag = etag;
 	if(sender)
 		presentity.sender= sender;
 	presentity.event= event;
