@@ -1,0 +1,362 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of an JSON-RPC v2.0
+		client <ulink url="http://www.jsonrpc.org/specification"></ulink>.
+		that can send a RPC to a JSON-RPC server (when used in
+		<emphasis>sync_mode</emphasis>), or send a notification
+		(when <emphasis>sync_mode</emphasis> is disabled) whenever
+		whenever OpenSIPS raises a notification through the Event
+		Interface. This module acts as a transport layer for the Event
+		Notification Interface.
+	</para>
+
+	<para>
+		In order to be notified, a JSON-RPC server has to subscribe for a
+		certain event provided by OpenSIPS. This can be done using the generic
+		MI Interface (<emphasis>event_subscribe</emphasis> function) or from
+		OpenSIPS script (<emphasis>subscribe_event</emphasis> core function).
+	</para>
+	</section>
+
+	<section>
+	<title>JSON-RPC socket syntax</title>
+	<para>
+		<para><emphasis>'jsonrpc:' host ':' port ['/' method]</emphasis></para>
+	</para>
+	<para>
+		Meaning:
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>'jsonrpc:'</emphasis> - specifies the
+					transport protocol used by the Event Interface
+					to send the command. the <emphasis>jsonrpc</emphasis>
+					token indicates that the subscriber's events should be
+					notified using the
+					<emphasis>event_jsonrpc</emphasis> module.
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>host</emphasis> - host name of the JSON-RPC server.
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>port</emphasis> - port of the JSON-RPC server.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>method</emphasis> - method called remotely by the
+					JSON-RPC client.
+					<para>NOTE: this parameter is optional - if it is missing,
+						the method used is the actual event subscribed
+						to (i.e. if <emphasis>localhost:8080</emphasis>
+						subscribes to the <emphasis>E_PIKE_BLOCKED</emphasis>
+						event, the RPC call will use the
+						<emphasis>E_PIKE_BLOCKED</emphasis> method.
+					</para>
+			</para>	</listitem>
+		</itemizedlist>
+	</para>
+
+	<para>
+		The JSON-RPC command is built as it follows:
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>id</emphasis> - uniquly generated if
+				<emphasis>sync_mode</emphasis> is used, otherwise (for
+				notifications) <emphasis>null</emphasis>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method</emphasis> - if no method is specified in the
+				socket, the name of the event is set as method, otherwise
+				the token specified is used.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>params</emphasis> - if the event sent contains
+				named parameters, then this parameter contains a JSON object
+				with an object for each parameter. If the event sent only
+				contains values, the parameters will be sent as an array.
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>sync_mode</varname> (integer)</title>
+		<para>
+			This parameter controls the way the
+			<emphasis>event_jsonrpc</emphasis> module communicates
+			with the JSON-RPC server. If enabled, (set to
+			<emphasis>yes</emphasis>), each event is translated to
+			a JSON-RPC request. If disabled, each event will be sent
+			as a JSON-RPC notification - there will be no reply
+			expected by our client.
+		</para>
+		<para>
+			Note that if you need a reliable communication with
+			the JSON-RPC server, where each event sent needs to be
+			confirmed, you must set this parameter to
+			<emphasis>1/yes</emphasis>. Also, if you are using this
+			module in a failover setup (using the
+			<emphasis>event_virtual</emphasis> module), you should
+			also set this parameter to <emphasis>1/yes</emphasis>.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sync_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_jsonrpc", "sync_mode", yes)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>timeout</varname> (integer)</title>
+		<para>
+			Specified the amount of milliseconds the module
+			waits for a command to complete. In
+			<emphasis>sync_mode</emphasis>, it specifies the time
+			module waits the request to be sent and a reply received.
+			In non-<emphasis>sync_mode</emphasis>, it represents
+			only the time opensips takes to send the JSON-RPC
+			notification.
+		</para>
+		<para>
+			NOTE that if the event is not using names for its parameters,
+			the event will be the first parameter in the JSON-RPC command.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1000 milliseconds = 1 second</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# only wait for 200 milliseonds for a reply
+modparam("event_jsonrpc", "timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>event_param</varname> (string)</title>
+		<para>
+			By default, the name of the event subscribed to is not
+			send in the JSON-RPC command. If one needs to send the
+			name of the event as well, you can use this parameter to
+			specify the name of JSON object within the params that
+			will contain the name of the event.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>disabled</quote> - event is not added.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>event_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_jsonrpc", "event_param", "opensips_event")
+# json resulted will contain the "opensips_event": EVENT token
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Examples</title>
+	<section>
+		<example>
+		<title>JSON-RPC socket</title>
+		<programlisting format="linespecific">
+
+	# calls the 'block_ip' method
+	jsonrpc:127.0.0.1:8080/block_ip
+
+	# calls the 'E_PIKE_BLOCKED' method, if subscribed to the E_PIKE_BLOCKED event
+	jsonrpc:127.0.0.1:8080
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+	<title>JSON-RPC notification</title>
+		<para>
+			This is an example of an event raised when
+			<emphasis>sync_mode</emphasis> is disabled
+			by the pike module when it decides an ip should be blocked:
+		</para>
+		<example>
+		<title>E_PIKE_BLOCKED JSON-RPC notification</title>
+		<programlisting format="linespecific">
+<![CDATA[
+{
+	"id": null,
+	"jsonrpc": "2.0",
+	"method": "E_PIKE_BLOCKED",
+	"params": {
+		"ip": "192.168.2.11"
+	}
+}
+]]>
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+	<title>JSON-RPC Request</title>
+		<para>
+			This is an example of an event raised in
+			<emphasis>sync_mode</emphasis> by the pike module
+			when it decides an ip should be blocked:
+		</para>
+		<example>
+		<title>E_PIKE_BLOCKED JSON-RPC request (sync_mode)</title>
+		<programlisting format="linespecific">
+<![CDATA[
+# request
+{
+	"id": 915243442,
+	"jsonrpc": "2.0",
+	"method": "E_PIKE_BLOCKED",
+	"params": {
+		"ip": "192.168.2.11"
+	}
+}
+
+# reply
+{
+	"jsonrpc": "2.0",
+	"result": 8,
+	"id": 915243442
+}
+]]>
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+	<title>JSON-RPC Notification with Event's name</title>
+		<para>
+			when having the <emphasis>event_param</emphasis> set to
+			<emphasis>opensips_event</emphasis>, the event raised by
+			the pike module will look like the following:
+		</para>
+		<example>
+		<title>E_PIKE_BLOCKED notification with event name</title>
+		<programlisting format="linespecific">
+<![CDATA[
+# module configuration
+modparam("event_jsonrpc", "event_param", "opensips_event")
+
+# JSON-RPC socket: jsonrpc:HOST:PORT/handle_cmd
+
+# JSON-RPC command sent
+{
+	"id": null,
+	"jsonrpc": "2.0",
+	"method": "handle_cmd",
+	"params": {
+		"opensips_event": "E_PIKE_BLOCKED"
+		"ip": "192.168.2.11"
+	}
+}
+]]>
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+	<title>Custom JSON-RPC Notification from script</title>
+		<para>
+			This example contains a snippet to send a custom
+			event from the script using the
+			<emphasis>event_jsonrpc</emphasis> module.
+		</para>
+		<para>
+			Note that we are only populating values for the
+			event, we are not assinging names to those values.
+			Therefore, the parameters will be sent as an array.
+		</para>
+		<example>
+		<title>E_PIKE_BLOCKED event</title>
+		<programlisting format="linespecific">
+<![CDATA[
+startup_route {
+	subscribe_event("E_MY_EVENT", "jsonrpc:127.0.0.1:8080");
+}
+
+route {
+	...
+	$avp(attr-val) = 3;
+	$avp(attr-val) = 5;
+	raise_event("E_MY_EVENT", $avp(attr-val));
+	...
+}
+
+# JSON-RPC command sent
+{
+	"id": null,
+	"jsonrpc": "2.0",
+	"method": "E_MY_EVENT",
+	"params": [3, 5]
+}
+]]>
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+</chapter>
