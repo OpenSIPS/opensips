@@ -7,126 +7,199 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		User location module. The module keeps a user location table and
-		provides access to the table to other modules. The module exports no
-		functions that could be used directly from scripts.
+		A SIP user location implementation. Its main purpose is to store,
+		manage and provide access to SIP registration bindings (contacts) for
+		other modules (e.g. registrar, mid-registrar, nathelper, etc.). The
+		module exports no functions that could be directly used from the
+		OpenSIPS script.
 	</para>
-		<section id="contact-matching-algs">
-		<title>Contact matching</title>
-		<para>
-		How the contacts are matched (for same AOR - Address of Record) is an
-		important aspect of the usrloc modules, especialy in the context of NAT
-		traversal - this raise mre problems since contacts from different
-		phones of same users may overlap (if behind NATs with same
-		configuration) or the re-register contact of same phone may be
-		seen as a new one (due different binding via NAT).
-		</para>
-		<para>
-		The SIP RFC 3261 publishes a matching algorithm based only on the
-		contact string with callid and cseq number extra checking (if callid
-		is the same, it must have a higher cseq number, otherwise invalid).
-		But as argumented above, this is not enough in NAT traversal context,
-		so the &osips; implementation of contact machting offers more algorithms:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para>
-				<emphasis>contact based only</emphasis> - strict RFC 3261
-				compliancy - the contact is matched as string and extra checked
-				via callid and cseq (if callid is the same, it must have a
-				higher cseq number, otherwise invalid).
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				<emphasis>contact and callid based</emphasis> - an extension
-				of the first case - the contact and callid must match as
-				strings; the cseq must be higher than the previous one - so be
-				careful how you deal with REGISTER retransmissions in this
-				case.
-			</para>
-			</listitem>
-		</itemizedlist>
-		<para>
-		For more details on how to control/select the contact matching algorithm,
-		please see the module parameter matching_mode at
-		<xref linkend="matching-mode"/>.
-		</para>
-		</section>
-
-		<section id="usrloc-replication">
-		<title>Contact replication</title>
-		<para>
-		The <emphasis>usrloc</emphasis> module offers the possibility of
-		performing real-time mirroring of the entire in-memory user location
-		information of one &osips; instance to one or more other instances.
-		This communication is TCP-based (BIN protocol) and
-		it is done through the <emphasis>clusterer</emphasis> module.
-		</para>
-		<para>
-		Advantages of replicating user-location data using this feature
-		instead of sending duplicated SIP REGISTER requests:
-		<itemizedlist>
-			<listitem>
-				<para>
-					no message parsing required
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-					reduced bandwith usage
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-					no additional script logic needed
-				</para>
-			</listitem>
-		</itemizedlist>
-		</para>
-		<para>
-		In order to control the DB operations performed by the receiving instance(s),
-		the <emphasis role='bold'><xref linkend="skip_replicated_db_ops"/></emphasis>
-		parameter can be set. To summarise, the replication logic works together
-		with the DB modes as follows:
-		<itemizedlist>
-			<listitem>
-				<para>
-					<emphasis role='bold'>0 (No DB)</emphasis> - only in-memory
-					data is replicated (no DB operations are performed at all)
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-					<emphasis role='bold'>1 (Write through) and 2 (Write back)</emphasis>
-					- default behaviour on all instances, <emphasis role='bold'><xref
-						linkend="skip_replicated_db_ops"/></emphasis> can be set
-					on the receiving ones
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-					<emphasis role='bold'>3 (DB only)</emphasis> -
-						data replication is <emphasis role='bold'>OFF</emphasis>
-				</para>
-			</listitem>
-		</itemizedlist>
-		</para>
-		<para>
-		Configuring both receival and sending of usrloc replication packets is
-		trivial and can be done by using the
-		<emphasis role='bold'><xref linkend="contact_replication_cluster"/></emphasis> parameter of the
+	<para>
+		At runtime, the contacts may reside in memory, in an SQL database or in
+		a NoSQL database. Combinations of two of the above are also possible.
+		For example, contacts may only be directly manipulated in memory in
+		order to guarantee fast interactions while being asynchronously
+		synchronized to an SQL database. The latter helps achieve restart
+		persistency. Consult the
+		<emphasis role='bold'><xref linkend="working-mode-preset"/></emphasis>
+		parameter for more details on all possible runtime behaviors of the
 		module.
+	</para>
+	<para>
+		The OpenSIPS user location implementation is cluster-enabled. On top of
+		supporting traditional "single instance" setups, it also allows multiple
+		OpenSIPS user location nodes to form a single, global user location cluster.
+		This allows high-level features such as startup synchronization (data tunneling)
+		from a random, healthy "donor" node, and evenly distributed contact
+		pinging workloads (a mandatory requirement of NAT'ed endpoints).
+	</para>
+	</section>
+
+	<section id="distributed-sip-user-location"
+			 xreflabel="Distributed SIP User Location">
+	<title>Distributed SIP User Location</title>
+	<para>
+	Starting with OpenSIPS 2.4, the user location module offers several optional
+	data distribution models, each tailoring to specific real-life production use cases.
+	Built on top of the OpenSIPS clustering module, these models take into
+	account service concerns such as <emphasis>high availability, geographical
+	distribution, horizontal scalability and NAT traversal</emphasis>.
+	</para>
+	<para>
+	Depending on data locality, the distribution models are split in two main
+	categories:
+	</para>
+	<section id="federation-topology" xreflabel="Federation Topology">
+		<title>"Federation" Topology</title>
+		<para>
+		A <emphasis>federated</emphasis> user location keeps contact data local
+		to the original OpenSIPS node the contact initially registered to. In
+		order to share the reachability of these contacts with the global
+		OpenSIPS user location cluster, registrar nodes will only publish some
+		light "metadata" entries for any new Addresses-of-Record which are
+		reachable from it. These entries will cause other nodes to also fork
+		additional SIP branches pointing to the above-mentioned registrar upon
+		receiving a call for the above-mentioned Addresses-of-Record.
 		</para>
 		<para>
-		<emphasis>Note</emphasis> that for certain scenarios, where NAT or
-		multihomed interfaces are involved, you might need to preserve the
-		same interface among all the &osips; servers within the replication
-		cluster. Otherwise when an instance receives a replicated contact
-		for whom it does not have a listener, it will use a different
-		listener of his.
+		The <emphasis role='bold'>federation</emphasis> topology is an
+		optimized solution for the following core problems:
+		<itemizedlist>
+			<listitem>
+			<para>
+			<emphasis role='bold'>IP restrictions</emphasis> - In some cases,
+			calls routed towards registered contacts must necessarily egress
+			through the original registration nodes of these contacts. A
+			classic example of this situation is when an OpenSIPS registrar
+			sitting at the edge of the platform is directly facing a NAT device
+			on the way to the contact. Unless calls are sent out from this
+			exact registrar, they will not be able to traverse the NAT device
+			and reach the contact.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+			<emphasis role='bold'>horizontal scalability</emphasis> - Avoiding
+			global replication/contact broadcasting within the cluster not only
+			dramatically improves contact storage performance, but also leads
+			to better service scalability. Different geographical locations can
+			be sized according to their local subscriber populations (traffic
+			may be balanced to them using DNS SRV weights, for example),
+			without losing platform-wide reachability.
+			</para>
+			</listitem>
+		</itemizedlist>
 		</para>
-		</section>
+		<para>
+		Currently, the metadata information may be published to NoSQL databases
+		which support key/multi-value column-like associations. Example known
+		backends to support these abstractions at the time of writing are
+		MongoDB and Cassandra. Of these two, only the MongoDB OpenSIPS driver
+		has been so far extended to implement the required NoSQL API endpoints.
+		</para>
+	</section>
+	<section>
+		<title>"Full Sharing" Topology</title>
+		<para>
+		A <emphasis>fully sharing</emphasis> user location propagates
+		(broadcasts) contact information to all data nodes (OpenSIPS or NoSQL).
+		The main assumption behind this mode is that any routing
+		restrictions have been alleviated beforehand. Consequently, either SIP
+		traffic egressing from a "full sharing"
+		OpenSIPS user location topology is being intermediated by an
+		additional SIP edge endpoint of our platform, or there are no egress IP
+		restrictions at all (for example, if all SIP UAs have public IPs). In
+		this setup, all OpenSIPS user location nodes are
+		<emphasis>equivalent</emphasis> to one another, as they each have
+		access to the same dataset and have no routing restrictions.
+		</para>
+		<para>
+		The <emphasis role='bold'>full sharing</emphasis> topology is
+		an appropriate solution for multi-layer VoIP platforms, where the
+		OpenSIPS registrar nodes do not directly interact with external SIP
+		endpoints. Moreover, it can be configured to fully store contact data
+		within a NoSQL cluster (zero in-memory storage), thus taking full
+		advantage of the data sharing, sharding, migration and other
+		capabilities of a specialized distributed data handling engine.
+		</para>
+		<para>
+		Additionally, a "full sharing" topology can be used to achieve a basic
+		"hot backup" high-availability setup with an active-passive registrar
+		nodes configuration, both of which make use of a shared virtual IP.
+		</para>
+		<para>
+		Currently, registrations may optionally be fully managed inside NoSQL
+		databases which support key/multi-value column-like associations.
+		Example known backends to support these abstractions at the time of
+		writing are MongoDB and Cassandra. Of these two, only the MongoDB
+		OpenSIPS driver has been so far extended to implement the required
+		NoSQL API endpoints.
+		</para>
+	</section>
+	<section>
+		<title>"N Contact Pings" Problem</title>
+		<para>
+		A long-standing problem caused by contact information being replicated
+		to multiple SIP registrar instances directly through replication or
+		indirectly through a globally reachable database. As long as
+		traditionally clusterized nodes are not aware of
+		each other, they will each scan the entire contact dataset, thus
+		periodically sending "N pings" instead of "1 ping" for each contact.
+		This difference directly affects service scalability, as well as the
+		amount of consumed cloud compute resources such as CPU and network
+		bandwidth, both on the service and client side.
+		</para>
+		<para>
+		This problem is solved with the help of the OpenSIPS cluster layer,
+		which makes all nodes aware of each others' presence. Thus, the
+		distributed user location node topologies are able to collectively
+		partition the pinging workload and spread it evenly across the current
+		number of cluster nodes, at any given point in time.
+		</para>
+	</section>
+	</section>
+
+	<section id="contact-matching-algs" xreflabel="Contact Matching">
+	<title>Contact matching</title>
+	<para>
+	Contact matching (for the same Address-of-Record, AoR) is an important
+	aspect of a SIP user location service, especially in the context of NAT
+	traversal. The latter raises more problems, since contacts from different
+	phones of same users may overlap (if behind NATs with identical
+	configurations) or the re-register Contact of the same SIP User Agent may
+	be seen as a new one (due to the request arriving via a new NAT binding).
+	</para>
+	<para>
+	The SIP RFC 3261 publishes a matching algorithm based only on the
+	contact string with Call-ID and CSeq number extra checking (if the Call-ID
+	matches, it must have a higher CSeq number, otherwise the registration is
+	invalid). But as argumented above, this is not enough in a NAT traversal
+	context, so the &osips; implementation of contact matching offers more
+	algorithms:
+	</para>
+	<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>Contact based only</emphasis> - strict RFC 3261
+			compliancy - the contact is matched as string and extra checked
+			via Call-ID and CSeq (if Call-ID is the same, it must have a
+			higher CSeq number, otherwise the registration is invalid).
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Contact and Call-ID based</emphasis> - an extension
+			of the first case - the Contact and Call-ID header field values
+			must match as strings; the CSeq must be higher than the previous
+			one - so be careful how you deal with REGISTER retransmissions in
+			this case.
+		</para>
+		</listitem>
+	</itemizedlist>
+	<para>
+	For more details on how to control/select the contact matching algorithm,
+	please go to
+	<emphasis role='bold'><xref linkend="matching-mode"/></emphasis>.
+	</para>
 	</section>
 
 	<section>
@@ -143,7 +216,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>clusterer, if <xref linkend="contact_replication_cluster"/>
+				<emphasis>clusterer, if <xref linkend="location-cluster"/>
 				parameters is turned on (contact replication via clusterer
 				module)</emphasis>.
 			</para>
@@ -578,13 +651,20 @@ modparam("usrloc", "desc_time_order", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="timer-interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
 		Number of seconds between two timer runs. The module uses timer to
 		delete expired contacts, synchronize with database and other tasks,
 		that need to be run periodically.
 		</para>
+		<warning>
+		<para>
+			In case of crash or restart contacts that are in memory only and
+			haven't been flushed yet will get lost. If you want minimize the
+			risk, use a shorter timer interval.
+		</para>
+		</warning>
 		<para>
 		<emphasis>
 			Default value is 60.
@@ -600,7 +680,7 @@ modparam("usrloc", "timer_interval", 120)
 		</example>
 	</section>
 
-	<section>
+	<section id="db-url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		&url; of the database that should be used.
@@ -620,70 +700,39 @@ modparam("usrloc", "db_url", "&exampledb;")
 		</example>
 	</section>
 
-	<section>
-		<title><varname>db_mode</varname> (integer)</title>
+	<section id="cachedb-url" xreflabel="cachedb_url">
+		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
-		The usrloc module can utilize database for persistent contact storage.
-		If you use database, your contacts will survive machine restarts or
-		SW crashes. The disadvantage is that accessing database can be very
-		time consuming. Therefore, usrloc module implements four database
-		accessing modes:
+		&url; of a NoSQL database to be used. Only required in a
+		cachedb-enabled
+		<emphasis role='bold'><xref linkend="cluster-mode"/></emphasis>.
 		</para>
-		<itemizedlist>
-		<listitem>
-			<para>
-			0 - This disables database completely. Only memory will be used.
-			Contacts will not survive restart. Use this value if you need a
-			really fast usrloc and contact persistence is not necessary or
-			is provided by other means.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			1 - Write-Through scheme. All changes to usrloc are immediately
-			reflected in database too. This is very slow, but very reliable.
-			Use this scheme if speed is not your priority but need to make
-			sure that no registered contacts will be lost during crash or
-			reboot.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			2 - Write-Back scheme. This is a combination of previous two
-			schemes. All changes are made to memory and database
-			synchronization is done in the timer. The timer deletes all
-			expired contacts and flushes all modified or new contacts to
-			database.  Use this scheme if you encounter high-load peaks
-			and want them to process as fast as possible. The mode will
-			not help at all if the load is high all the time.  Also, latency
-			of this mode is much lower than latency of mode 1, but slightly
-			higher than latency of mode 0.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			3 - DB-Only scheme. No memory cache is kept, all operations being
-			directly performed with the database. The timer deletes all
-			expired contacts from database - cleans after clients that didn't
-			un-register or re-register. The mode is useful if you configure
-			more servers sharing the same DB without any replication at SIP
-			level. The mode may be slower due the high number of DB operation.
-			For example NAT pinging is a killer since during each ping cycle
-			all nated contact are loaded from the DB; The lack of memory
-			caching also disable the statistics exports.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<warning>
-		<para>
-			In case of crash or restart contacts that are in memory only and
-			haven't been flushed yet will get lost. If you want minimize the
-			risk, use shorter timer interval.
-		</para>
-		</warning>
 		<para>
 		<emphasis>
-			Default value is 0.
+			Default value is <quote>none</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "cachedb_url", "&examplecdb;")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_mode</varname> (integer, deprecated)</title>
+		<para>
+		<emphasis role='bold'>Although it is backwards-compatible, this
+		parameter has been deprecated in favour of the more complete
+		<xref linkend="working-mode-preset"/>, which it conflicts with.
+		</emphasis>
+		</para>
+		<para>
+		<emphasis>
+			Default value is "not set".
 		</emphasis>
 		</para>
 		<example>
@@ -696,7 +745,281 @@ modparam("usrloc", "db_mode", 2)
 		</example>
 	</section>
 
-	<section id="matching-mode">
+	<section id="working-mode-preset" xreflabel="working-mode-preset">
+		<title><varname>working_mode_preset</varname> (string)</title>
+		<para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role="bold">"single-instance-no-db"</emphasis> - This
+			disables database completely. Only memory will be used.
+			Contacts will not survive restart. Use this value if you need a
+			really fast usrloc and contact persistence is not necessary or
+			is provided by other means.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role="bold">"single-instance-sql-write-through"</emphasis>
+			- Write-Through scheme. All changes to usrloc are immediately
+			reflected in database too. This is very slow, but very reliable.
+			Use this scheme if speed is not your priority but need to make
+			sure that no registered contacts will be lost during crash or
+			reboot.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role="bold">"single-instance-sql-write-back"</emphasis>
+			- Write-Back scheme. This is a combination of previous two
+			schemes. All changes are made to memory and database
+			synchronization is done in the timer. The timer deletes all
+			expired contacts and flushes all modified or new contacts to
+			database.  Use this scheme if you encounter high-load peaks
+			and want them to process as fast as possible. The mode will
+			not help at all if the load is high all the time.  Also, latency
+			of this mode is much lower than latency of mode 1, but slightly
+			higher than latency of mode 0.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role="bold">"sql-only"</emphasis> -
+			DB-Only scheme. No memory cache is kept, all operations being
+			directly performed with the database. The timer deletes all
+			expired contacts from database - cleans after clients that didn't
+			un-register or re-register. The mode is useful if you configure
+			more servers sharing the same DB without any replication at SIP
+			level. The mode may be slower due the high number of DB operation.
+			For example NAT pinging is a killer since during each ping cycle
+			all nated contact are loaded from the DB; The lack of memory
+			caching also disable the statistics exports.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role="bold">"federation-cachedb"</emphasis> -
+			OpenSIPS will run with a "federation-cachedb"
+			<xref linkend="cluster-mode"/> and
+			"sync-from-cluster" <xref linkend="restart-persistency"/>.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role="bold">"full-sharing"</emphasis> -
+			OpenSIPS will run with a "full-sharing"
+			<xref linkend="cluster-mode"/> and
+			"sync-from-cluster" <xref linkend="restart-persistency"/>.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role="bold">"full-sharing-cachedb"</emphasis> -
+			OpenSIPS will run with a "full-sharing-cachedb"
+			<xref linkend="cluster-mode"/>, which is NoSQL-only, and has
+			natural restart persistency. 
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Refer to section
+		<xref linkend="distributed-sip-user-location"/> for details
+		regarding the clustering topologies and their behavior.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "single-instance-no-db".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>working_mode_preset</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "working_mode_preset", "full-sharing-cachedb")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="cluster-mode" xreflabel="cluster_mode">
+		<title><varname>cluster_mode</varname> (string)</title>
+		<para>
+			<emphasis role='bold'>This parameter is automatically set by
+				<xref linkend='working-mode-preset'/>.</emphasis>
+		</para>
+		<para>
+		The behavior of the global OpenSIPS user location cluster. Refer to
+		section <xref linkend="distributed-sip-user-location"/> for details.
+		</para>
+		<para>
+		This parameter may take the following values:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>"none"</emphasis> - single instance mode.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"federation-cachedb"</emphasis> -
+				federation-based data sharing. Local AoR metadata is published
+				inside a NoSQL database, so other cluster nodes can fork SIP
+				traffic over to the current node. Consequently, the
+				<xref linkend="location-cluster"/> and
+				<xref linkend="cachedb-url"/> parameters are mandatory.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"full-sharing"</emphasis> -
+				Full contact data broadcasting (mirroring) to all other
+				OpenSIPS cluster participants. 
+				inside a NoSQL database, so other cluster nodes are able to
+				route SIP traffic through the current node. Consequently, the
+				<xref linkend="location-cluster"/> parameter is mandatory.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"full-sharing-cachedb"</emphasis> -
+				Full contact data management through the use of a NoSQL
+				database (somewhat resembling the "sql-only" preset).
+				The cluster layer is still required in order to
+				be able to partition and spread the pinging workload evenly
+				among participating OpenSIPS nodes. Consequently, the
+				<xref linkend="location-cluster"/> parameter is mandatory.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <emphasis>none (single instance mode)</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "cluster_mode", "federation-cachedb")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="restart-persistency" xreflabel="restart_persistency">
+		<title><varname>restart_persistency</varname> (string)</title>
+		<para>
+			<emphasis role='bold'>This parameter is automatically set by
+				<xref linkend='working-mode-preset'/>.</emphasis>
+		</para>
+		<para>
+		Controls the behavior of OpenSIPS user location instance following a
+		restart. This parameter has no effect in some database-only working
+		mode presets, where restart persistency is naturally ensured.
+		</para>
+		<para>
+		This parameter may take the following values:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>"none"</emphasis> - no explicit data
+				synchronization following a restart. The node starts empty.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"load-from-sql"</emphasis> - enable
+				SQL-based restart persistency. This causes all runtime
+				in-memory writes (i.e. new registrations, re-registrations or
+				de-registrations) to also propagate to an SQL database, from
+				which all data will be imported following a restart.
+				Choosing this value will make the <xref linkend='db-url'/>
+				parameter mandatory, as well as cause
+				<xref linkend='sql-write-mode'/> to default to "write-back"
+				instead of "none".
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"sync-from-cluster"</emphasis> - enable
+				cluster-based restart persistency. Following a restart,
+				an OpenSIPS cluster node will search for a healthy "donor" node
+				from which to mirror the entire user location dataset via
+				direct cluster sync (TCP-based, binary-encoded data transfer).
+				Choosing this value will make the
+				<xref linkend='location-cluster'/> parameter mandatory.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is
+			<emphasis>"none" (no restart persistency)</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>restart_persistency</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "restart_persistency", "sync-from-cluster")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="sql-write-mode" xreflabel="sql_write_mode">
+		<title><varname>sql_write_mode</varname> (string)</title>
+		<para>
+			<emphasis role='bold'>This parameter is automatically set by
+				<xref linkend='working-mode-preset'/>.</emphasis>
+		</para>
+		<para>
+		Only valid if <xref linkend="restart-persistency"/> is enabled.
+		Controls the runtime behavior of OpenSIPS writes to the SQL database.
+		</para>
+		<para>
+		This parameter may take the following values:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>"none"</emphasis> - do not perform any
+				additional SQL writes at runtime to an SQL database in order
+				to specifically ensure restart persistency.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"write-through"</emphasis> - all in-memory
+				writes (i.e. new registrations, re-registrations or
+				de-registrations) also propagate into the SQL database, inline.
+				While this will definitely slow down registration performance
+				(lookups are served from memory!), it has the advantage of
+				making the instance crash-safe.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"write-back"</emphasis> - all in-memory
+				writes (i.e. new registrations, re-registrations or
+				de-registrations) eventually also propagate into the SQL
+				database, thanks to a separate timer routine. This dramatically
+				speeds up registrations, but also introduces the
+				possibility of crashing before the latest contact changes are
+				propagated to the database. See the
+				<xref linkend='timer-interval'/> for additional configuration.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <emphasis>"none" (no added SQL writes)</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sql_write_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "sql_write_mode", "write-back")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="matching-mode" xreflabel="matching_mode">
 		<title><varname>matching_mode</varname> (integer)</title>
 		<para>
 		What contact matching algorithm to be used. Refer to section
@@ -763,27 +1086,26 @@ modparam("usrloc", "cseq_delay", 5)
 		</example>
 	</section>
 
-	<section id='contact_replication_cluster'
-	         xreflabel="contact_replication_cluster">
-		<title><varname>contact_replication_cluster</varname> (integer)</title>
+	<section id='location-cluster' xreflabel="location_cluster">
+		<title><varname>location_cluster</varname> (integer)</title>
 		<para>
-		Specifies the cluster ID which this instance will send to, and receive from,
-		all user-location related information
+		Specifies the cluster ID which this instance will send to and receive
+		from all user-location related information
         (<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
 		organized into specific events (inserts, deletes or updates).
 		</para>
 		<para>
-		Default value is 0 (replication disabled)
+		Default value is 0 (replication disabled).
 		</para>
 		<para>
-			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
+		More details on the user location distribution mechanisms are
+		available under <xref linkend="distributed-sip-user-location"/>.
 		</para>
 		<example>
-		<title>Setting the <varname>contact_replication_cluster</varname>
-			parameter</title>
+		<title>Setting the <varname>location_cluster</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "contact_replication_cluster", 1)
+modparam("usrloc", "location_cluster", 1)
 ...
 </programlisting>
 		</example>
@@ -803,7 +1125,7 @@ modparam("usrloc", "contact_replication_cluster", 1)
 		</para>
 		<para>
 		More details on the user location replication mechanism are available
-		in <xref linkend="usrloc-replication"/>
+		in <xref linkend="distributed-sip-user-location"/>
 		</para>
 		<example>
 		<title>Setting the <varname>skip_replicated_db_ops</varname>

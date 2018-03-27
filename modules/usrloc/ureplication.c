@@ -24,14 +24,14 @@
  *  2013-10-09 initial version (Liviu)
  */
 
-#include "ureplication.h"
-#include "dlist.h"
 #include "../../forward.h"
+
+#include "ureplication.h"
+#include "ul_mod.h"
+#include "dlist.h"
 
 str contact_repl_cap = str_init("usrloc-contact-repl");
 
-/* Skip all DB operations when receiving replicated data */
-int skip_replicated_db_ops;
 struct clusterer_binds clusterer_api;
 
 /* packet sending */

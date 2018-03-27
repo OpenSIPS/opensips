@@ -93,7 +93,9 @@ int check_runtime_config(void);
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
 extern rw_lock_t *sync_lock;
-extern int skip_replicated_db_ops;
+
+/* Skip all DB operations when receiving replicated data */
+int skip_replicated_db_ops;
 
 int max_contact_delete=10;
 db_key_t *cid_keys=NULL;
@@ -674,10 +676,6 @@ int check_runtime_config(void)
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_BACK;
-		} else if (!strcasecmp(runtime_preset, "sql-only")) {
-			cluster_mode = CM_SQL_ONLY;
-			rr_persist = RRP_NONE;
-			sql_wmode = SQL_NO_WRITE;
 		} else if (!strcasecmp(runtime_preset, "federation-cluster")) {
 			cluster_mode = CM_FEDERATION;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
@@ -694,6 +692,11 @@ int check_runtime_config(void)
 			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
+		/* TODO: update CM_SQL_ONLY to work in clusterized environments
+		} else if (!strcasecmp(runtime_preset, "full-sharing-sql-cluster")) {
+			cluster_mode = CM_SQL_ONLY;
+			rr_persist = RRP_NONE;
+			sql_wmode = SQL_NO_WRITE;*/
 		} else {
 			LM_ERR("unrecognized preset: %s, defaulting to "
 			       "'single-instance-no-db'\n", runtime_preset);
@@ -713,8 +716,9 @@ int check_runtime_config(void)
 				cluster_mode = CM_FULL_SHARING;
 			else if (!strcasecmp(cluster_mode_str, "full-sharing-cachedb"))
 				cluster_mode = CM_FULL_SHARING_CACHEDB;
-			else if (!strcasecmp(cluster_mode_str, "sql-only"))
-				cluster_mode = CM_SQL_ONLY;
+			/* TODO: same as above
+			else if (!strcasecmp(cluster_mode_str, "full-sharing-sql"))
+				cluster_mode = CM_SQL_ONLY;*/
 			else
 				LM_ERR("unknown 'cluster_mode' value: %s, using 'none'\n",
 				       cluster_mode_str);

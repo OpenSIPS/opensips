@@ -114,6 +114,7 @@ extern str sip_instance_col;
 extern str db_url;
 extern int timer_interval;
 extern enum usrloc_modes db_mode;
+extern int skip_replicated_db_ops;
 extern int use_domain;
 extern int desc_time_order;
 extern int cseq_delay;
