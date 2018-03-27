@@ -1324,7 +1324,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 		for (cell = entry->first; cell != NULL; ) {
 			if (dialog_repl_cluster &&
-				get_repltag_state(cell) == REPLTAG_STATE_BACKUP) {
+				get_shtag_state(cell) == SHTAG_STATE_BACKUP) {
 				next_cell = cell->next;
 				if ((cell->flags & DLG_FLAG_NEW) != 0 &&
 					cell->state == DLG_STATE_DELETED &&

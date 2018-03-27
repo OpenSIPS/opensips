@@ -78,7 +78,7 @@ Vladut-Stefan Paiu
               1.6.48. replicate_profiles_check (string)
               1.6.49. replicate_profiles_timer (string)
               1.6.50. replicate_profiles_expire (string)
-              1.6.51. dlg_repl_tag (string)
+              1.6.51. dlg_sharing_tag (string)
 
         1.7. Exported Functions
 
@@ -98,7 +98,7 @@ Vladut-Stefan Paiu
               1.7.14. is_dlg_flag_set(idx)
               1.7.15. store_dlg_value(name,val)
               1.7.16. fetch_dlg_value(name,pvar)
-              1.7.17. set_dlg_repl_tag(tag_name)
+              1.7.17. set_dlg_sharing_tag(tag_name)
 
         1.8. Exported statistics
 
@@ -126,8 +126,8 @@ Vladut-Stefan Paiu
               1.9.8. dlg_db_sync
               1.9.9. dlg_restore_db
               1.9.10. list_all_profiles
-              1.9.11. set_repl_tag_active
-              1.9.12. list_repl_tags
+              1.9.11. dlg_set_sharing_tag_active
+              1.9.12. dlg_list_sharing_tags
 
         1.10. Exported pseudo-variables
 
@@ -206,7 +206,7 @@ Vladut-Stefan Paiu
    1.48. Set replicate_profiles_check parameter
    1.49. Set replicate_profiles_timer parameter
    1.50. Set replicate_profiles_expire parameter
-   1.51. Set dlg_repl_tag parameter
+   1.51. Set dlg_sharing_tag parameter
    1.52. create_dialog() usage
    1.53. match_dialog() usage
    1.54. validate_dialog() usage
@@ -223,7 +223,7 @@ Vladut-Stefan Paiu
    1.65. is_dlg_flag_set usage
    1.66. store_dlg_value usage
    1.67. fetch_dlg_value usage
-   1.68. set_dlg_repl_tag usage
+   1.68. set_dlg_sharing_tag usage
 
 Chapter 1. Admin Guide
 
@@ -986,11 +986,11 @@ modparam("dialog", "replicate_profiles_timer", 100)
 modparam("dialog", "replicate_profiles_expire", 10)
 ...
 
-1.6.51. dlg_repl_tag (string)
+1.6.51. dlg_sharing_tag (string)
 
-   This parameter can be set(mutiple times) in order to define
-   tags, along with their initial states, useful in dialog
-   replication.
+   This parameter can be set(mutiple times) in order to define a
+   sharing tag, along with its initial state, useful for
+   partitioning actions when sharing dialogs.
 
    Format: "tag_name=state" where state may have the "active" or
    "backup" values.
@@ -999,9 +999,9 @@ modparam("dialog", "replicate_profiles_expire", 10)
    tag is encountered at runtime, it will have the initial state
    of backup.
 
-   Example 1.51. Set dlg_repl_tag parameter
+   Example 1.51. Set dlg_sharing_tag parameter
 ...
-modparam("dialog", "dlg_repl_tag", "vip1=active")
+modparam("dialog", "dlg_sharing_tag", "vip1=active")
 ...
 
 1.7. Exported Functions
@@ -1451,15 +1451,16 @@ fetch_dlg_value("account type","$var(account)");
 $var(account) = $dlg_val(account_type);
 ...
 
-1.7.17.  set_dlg_repl_tag(tag_name)
+1.7.17.  set_dlg_sharing_tag(tag_name)
 
-   Marks the current dialog with the replication tag tag_name.
-   From now on, actions like in-dialog pinging, DB updates etc.
-   will depend on the tag state.
+   Marks the current dialog with the sharing tag tag_name. From
+   now on, actions like in-dialog pinging, DB updates etc. will
+   depend on the tag state.
 
-   If the tag is not already defined through the dlg_repl_tag
-   param and/or have it's state changed by the set_repl_tag_active
-   MI command, the initial state will be backup.
+   If the tag is not already defined through the dlg_sharing_tag
+   param and/or have it's state changed by the
+   dlg_set_sharing_tag_active MI command, the initial state will
+   be backup.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1467,9 +1468,9 @@ $var(account) = $dlg_val(account_type);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. set_dlg_repl_tag usage
+   Example 1.68. set_dlg_sharing_tag usage
 ...
-set_dlg_repl_tag("vip1");
+set_dlg_sharing_tag("vip1");
 ...
 
 1.8. Exported statistics
@@ -1715,30 +1716,30 @@ wZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensipsctl fifo list_all_profiles
 
-1.9.11. set_repl_tag_active
+1.9.11. dlg_set_sharing_tag_active
 
-   Sets the given replication tag to the active state. The
-   information about this change is also broadcasted in the
-   cluster in order to force any other node that may be active on
-   this tag to go backup.
+   Sets the given sharing tag to the active state. The information
+   about this change is also broadcasted in the cluster in order
+   to force any other node that may be active on this tag to go
+   backup.
 
-   Name: set_repl_tag_active
+   Name: dlg_set_sharing_tag_active
 
    Parameters: tag - name of the tag to be set active
 
    MI FIFO Command Format:
-                opensipsctl fifo set_repl_tag_active vip1
+                opensipsctl fifo dlg_set_sharing_tag_active vip1
 
-1.9.12. list_repl_tags
+1.9.12. dlg_list_sharing_tags
 
-   Lists all known replication tags and their states.
+   Lists all known sharing tags and their states.
 
-   Name: list_repl_tags
+   Name: dlg_list_sharing_tags
 
    Parameters: Command takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo list_repl_tags
+                opensipsctl fifo dlg_list_sharing_tags
 
 1.10. Exported pseudo-variables
 

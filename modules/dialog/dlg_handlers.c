@@ -438,7 +438,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 
 	if (dialog_repl_cluster)
-		do_actions = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+		do_actions = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
 
 	rpl = param->rpl;
 	req = param->req;
@@ -1524,7 +1524,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	}
 
 	if (dialog_repl_cluster)
-		is_active = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+		is_active = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
 
 	/* run state machine */
 	switch ( req->first_line.u.request.method_value ) {
@@ -1935,7 +1935,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 	if (dialog_repl_cluster)
 		/* if dialog replication is used, send BYEs only if the current node
 		 * is "in charge" of the dialog (or if unable to fetch this info) */
-		do_expire_actions = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+		do_expire_actions = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
 
 	if ((dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
 		(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {

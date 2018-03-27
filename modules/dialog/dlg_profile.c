@@ -1346,7 +1346,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 	struct dlg_cell    *cur_dlg;
 	struct dlg_profile_link *cur_link;
 	struct dialog_list *deleted = NULL, *delete_entry ;
-	int rtag_state;
+	int shtag_state;
 
 	node = cmd_tree->node.kids;
 	if (node==NULL || !node->value.s || !node->value.len)
@@ -1409,8 +1409,8 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 		delete_entry = deleted;
 		while(delete_entry){
 			if (dialog_repl_cluster) {
-				rtag_state = get_repltag_state(delete_entry->dlg);
-				if (rtag_state < 0) {
+				shtag_state = get_shtag_state(delete_entry->dlg);
+				if (shtag_state < 0) {
 					while(delete_entry){
 						deleted = delete_entry;
 						delete_entry = delete_entry->next;
@@ -1418,7 +1418,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 					}
 					LM_ERR("error while checking replication tag\n");
 					return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
-				} else if (rtag_state == 0)
+				} else if (shtag_state == 0)
 					continue;
 			}
 

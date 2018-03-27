@@ -153,7 +153,7 @@ static int fixup_get_vals(void** param, int param_no);
 static int w_get_dlg_info(struct sip_msg*, char*, char*, char*, char*);
 static int w_get_dlg_vals(struct sip_msg*, char*, char*, char*);
 static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
-static int w_set_dlg_repltag(struct sip_msg *msg, char *repltag);
+static int w_set_dlg_shtag(struct sip_msg *msg, char *shtag);
 
 /* item/pseudo-variables functions */
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
@@ -223,7 +223,7 @@ static cmd_export_t cmds[]={
 			BRANCH_ROUTE | LOCAL_ROUTE | EVENT_ROUTE | TIMER_ROUTE },
 	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
 			0, REQUEST_ROUTE},
-	{"set_dlg_repl_tag", (cmd_function)w_set_dlg_repltag, 1,
+	{"set_dlg_sharing_tag", (cmd_function)w_set_dlg_shtag, 1,
 			fixup_spve_null, 0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
@@ -282,7 +282,7 @@ static param_export_t mod_params[]={
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
-	{ "dlg_repl_tag", STR_PARAM|USE_FUNC_PARAM, &dlg_repl_tag_paramf},
+	{ "dlg_sharing_tag", STR_PARAM|USE_FUNC_PARAM, &dlg_sharing_tag_paramf},
 	{ 0,0,0 }
 };
 
@@ -315,8 +315,8 @@ static mi_export_t mi_cmds[] = {
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
 	{ "profile_end_dlgs",   0, mi_profile_terminate,  0,  0,  0},
-	{ "set_repl_tag_active",0, mi_set_repltag_active, 0,  0,  0},
-	{ "list_repl_tags",     0, mi_list_repl_tags,     0,  0,  0},
+	{ "dlg_set_sharing_tag_active",0, mi_set_shtag_active, 0,  0,  0},
+	{ "dlg_list_sharing_tags",     0, mi_list_sharing_tags,     0,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -885,15 +885,15 @@ static int mod_init(void)
 		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
 			LM_ERR("Sync request failed\n");
 
-		if (!repltags_list) {
-			if ((repltags_list = shm_malloc(sizeof *repltags_list)) == NULL) {
+		if (!shtags_list) {
+			if ((shtags_list = shm_malloc(sizeof *shtags_list)) == NULL) {
 				LM_CRIT("No more shm memory\n");
 				return -1;
 			}
-			*repltags_list = NULL;
+			*shtags_list = NULL;
 		}
 
-		if ((repltags_lock = lock_init_rw()) == NULL) {
+		if ((shtags_lock = lock_init_rw()) == NULL) {
 			LM_CRIT("Failed to init lock\n");
 			return -1;
 		}
@@ -1014,28 +1014,28 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
-	struct dlg_repl_tag *tag, *tag_tmp;
+	struct dlg_sharing_tag *tag, *tag_tmp;
 
 	if (dlg_db_mode != DB_MODE_NONE) {
 		dialog_update_db(0, 0/*do not do locking*/);
 		destroy_dlg_db();
 	}
 
-	if (repltags_list) {
-		if (*repltags_list) {
-			for (tag = *repltags_list; tag; ) {
+	if (shtags_list) {
+		if (*shtags_list) {
+			for (tag = *shtags_list; tag; ) {
 				tag_tmp = tag;
 				tag = tag->next;
 				free_active_msgs_info(tag_tmp);
 				shm_free(tag_tmp);
 			}
 		}
-		shm_free(repltags_list);
-		repltags_list = NULL;
+		shm_free(shtags_list);
+		shtags_list = NULL;
 	}
-	if (repltags_lock) {
-		lock_destroy_rw(repltags_lock);
-		repltags_lock = NULL;
+	if (shtags_lock) {
+		lock_destroy_rw(shtags_lock);
+		shtags_lock = NULL;
 	}
 
 	/* no DB interaction from now on */
@@ -1638,7 +1638,7 @@ static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
 	return 1;
 }
 
-static int w_set_dlg_repltag(struct sip_msg *msg, char *repltag)
+static int w_set_dlg_shtag(struct sip_msg *msg, char *shtag)
 {
 	str tag_name;
 	struct dlg_cell *dlg;
@@ -1648,8 +1648,8 @@ static int w_set_dlg_repltag(struct sip_msg *msg, char *repltag)
 		return 1;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)repltag, &tag_name) < 0) {
-		LM_ERR("no replication tag\n");
+	if (fixup_get_svalue(msg, (gparam_p)shtag, &tag_name) < 0) {
+		LM_ERR("no sharing tag\n");
 		return -1;
 	}
 
@@ -1658,8 +1658,8 @@ static int w_set_dlg_repltag(struct sip_msg *msg, char *repltag)
 		return -1;
 	}
 
-	if (set_dlg_repltag(dlg, &tag_name) < 0) {
-		LM_ERR("Unable to set replication tag\n");
+	if (set_dlg_shtag(dlg, &tag_name) < 0) {
+		LM_ERR("Unable to set sharing tag\n");
 		return -1;
 	}
 
@@ -1928,7 +1928,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		dlg_unlock_dlg(dlg);
 
 		if (dialog_repl_cluster)
-			do_actions = get_repltag_state(dlg) != REPLTAG_STATE_BACKUP;
+			do_actions = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
 
 		if (do_actions && db_update)
 			update_dialog_timeout_info(dlg);

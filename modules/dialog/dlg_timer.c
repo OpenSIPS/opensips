@@ -944,7 +944,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 		dlg = it->dlg;
 		next=it->next;
 
-		if (dialog_repl_cluster && get_repltag_state(dlg) == REPLTAG_STATE_BACKUP) {
+		if (dialog_repl_cluster && get_shtag_state(dlg) == SHTAG_STATE_BACKUP) {
 			it = next;
 			continue;
 		}
@@ -1047,7 +1047,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 		dlg = it->dlg;
 		next=it->next;
 
-		if (dialog_repl_cluster && get_repltag_state(dlg) == REPLTAG_STATE_BACKUP) {
+		if (dialog_repl_cluster && get_shtag_state(dlg) == SHTAG_STATE_BACKUP) {
 			it = next;
 			continue;
 		}

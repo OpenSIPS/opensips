@@ -492,7 +492,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	char *msg;
 	char *end;
 	char bkp;
-	int rtag_state = 1;
+	int shtag_state = 1;
 
 
 	if( d_table ==NULL)
@@ -541,12 +541,12 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 
 	if (dlg) {
 		if (dialog_repl_cluster) {
-			rtag_state = get_repltag_state(dlg);
-			if (rtag_state == -1) {
+			shtag_state = get_shtag_state(dlg);
+			if (shtag_state == -1) {
 				unref_dlg(dlg, 1);
 				return init_mi_tree(403, MI_DLG_OPERATION_ERR,
 										MI_DLG_OPERATION_ERR_LEN);
-			} else if (rtag_state == 0) {
+			} else if (shtag_state == 0) {
 				unref_dlg(dlg, 1);
 				return init_mi_tree(403, MI_DIALOG_BACKUP_ERR,
 										MI_DIALOG_BACKUP_ERR_LEN);

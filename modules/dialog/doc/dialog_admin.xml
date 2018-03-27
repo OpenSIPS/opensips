@@ -1280,11 +1280,11 @@ modparam("dialog", "replicate_profiles_expire", 10)
 </programlisting>
 		</example>
 	</section>
-	<section id='dlg_repl_tag' xreflabel="dlg_repl_tag">
-		<title><varname>dlg_repl_tag</varname> (string)</title>
+	<section id='dlg_sharing_tag' xreflabel="dlg_sharing_tag">
+		<title><varname>dlg_sharing_tag</varname> (string)</title>
 		<para>
-		This parameter can be set(mutiple times) in order to define tags, along with
-		their initial states, useful in dialog replication.
+		This parameter can be set(mutiple times) in order to define a sharing tag,
+		along with its initial state, useful for partitioning actions when sharing dialogs.
 		</para>
 		<para>
 		Format: "<emphasis>tag_name</emphasis>=<emphasis>state</emphasis>" where
@@ -1294,10 +1294,10 @@ modparam("dialog", "replicate_profiles_expire", 10)
 		encountered at runtime, it will have  the initial state of <emphasis>backup</emphasis>.
 		</para>
 		<example>
-		<title>Set <varname>dlg_repl_tag</varname> parameter</title>
+		<title>Set <varname>dlg_sharing_tag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "dlg_repl_tag", "vip1=active")
+modparam("dialog", "dlg_sharing_tag", "vip1=active")
 ...
 </programlisting>
 		</example>
@@ -1997,15 +1997,15 @@ $var(account) = $dlg_val(account_type);
 
 	<section>
 		<title>
-		<function moreinfo="none">set_dlg_repl_tag(tag_name)</function>
+		<function moreinfo="none">set_dlg_sharing_tag(tag_name)</function>
 		</title>
 		<para>
-		Marks the current dialog with the replication tag <emphasis>tag_name</emphasis>.
+		Marks the current dialog with the sharing tag <emphasis>tag_name</emphasis>.
 		From now on, actions like in-dialog pinging, DB updates etc. will depend on the tag state.
 		</para>
 		<para>
-		If the tag is not already defined through the <xref linkend="dlg_repl_tag"/> param and/or
-		have it's state changed by the <xref linkend="set_repl_tag_active"/> MI command, the
+		If the tag is not already defined through the <xref linkend="dlg_sharing_tag"/> param and/or
+		have it's state changed by the <xref linkend="dlg_set_sharing_tag_active"/> MI command, the
 		initial state will be <emphasis>backup</emphasis>.
 		</para>
 		<para>
@@ -2017,10 +2017,10 @@ $var(account) = $dlg_val(account_type);
 			REPLY_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>set_dlg_repl_tag</function> usage</title>
+		<title><function>set_dlg_sharing_tag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_dlg_repl_tag("vip1");
+set_dlg_sharing_tag("vip1");
 ...
 </programlisting>
 		</example>
@@ -2407,15 +2407,15 @@ set_dlg_repl_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section id='set_repl_tag_active' xreflabel="set_repl_tag_active">
-		<title><varname>set_repl_tag_active</varname></title>
+		<section id='dlg_set_sharing_tag_active' xreflabel="dlg_set_sharing_tag_active">
+		<title><varname>dlg_set_sharing_tag_active</varname></title>
 		<para>
-		Sets the given replication tag to the <emphasis>active</emphasis> state.
+		Sets the given sharing tag to the <emphasis>active</emphasis> state.
 		The information about this change is also broadcasted in the cluster in order
 		to force any other node that may be active on this tag to go backup.
 		</para>
 		<para>
-		Name: <emphasis>set_repl_tag_active</emphasis>
+		Name: <emphasis>dlg_set_sharing_tag_active</emphasis>
 		</para>
 		<para>Parameters: <emphasis>tag</emphasis> - name of the tag to be set active
 		</para>
@@ -2423,17 +2423,17 @@ set_dlg_repl_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo set_repl_tag_active vip1
+		opensipsctl fifo dlg_set_sharing_tag_active vip1
 		</programlisting>
 		</section>
 
 		<section>
-		<title><varname>list_repl_tags</varname></title>
+		<title><varname>dlg_list_sharing_tags</varname></title>
 		<para>
-		Lists all known replication tags and their states.
+		Lists all known sharing tags and their states.
 		</para>
 		<para>
-		Name: <emphasis>list_repl_tags</emphasis>
+		Name: <emphasis>dlg_list_sharing_tags</emphasis>
 		</para>
 		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
 		</para>
@@ -2441,7 +2441,7 @@ set_dlg_repl_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo list_repl_tags
+		opensipsctl fifo dlg_list_sharing_tags
 		</programlisting>
 		</section>
 
