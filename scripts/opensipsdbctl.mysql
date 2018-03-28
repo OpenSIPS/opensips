@@ -534,6 +534,22 @@ migrate_table ${dst_db}.fraud_detection \
 	${src_db}.fraud_detection \
 	"?ruleid,?profileid,?prefix,?start_hour,?end_hour,?daysoftheweek,?cpm_warning,?cpm_critical,?call_duration_warning,?call_duration_critical,?total_calls_warning,?total_calls_critical,?concurrent_calls_warning,?concurrent_calls_critical,?sequential_calls_warning,?sequential_calls_critical"
 
+## EMERGENCY module
+migrate_table ${dst_db}.emergency_routing \
+	"id,selectiveRoutingID,routingESN,npa,esgwri" \
+	${src_db}.emergency_routing \
+	"?id,?selectiveRoutingID,?routingESN,?npa,?esgwri"
+
+migrate_table ${dst_db}.emergency_report \
+	"id,callid,selectiveRoutingID,routingESN,npa,esgwri,lro,VPC_organizationName,VPC_hostname,VPC_timestamp,result,disposition" \
+	${src_db}.emergency_report \
+	"?id,?callid,?selectiveRoutingID,?routingESN,?npa,?esgwri,?lro,?VPC_organizationName,?VPC_hostname,?VPC_timestamp,?result,?disposition"
+
+migrate_table ${dst_db}.emergency_service_provider \
+	"id,organizationName,hostId,nenaId,contact,certUri,nodeIP,attribution" \
+	${src_db}.emergency_service_provider \
+	"?id,?organizationName,?hostId,?nenaId,?contact,?certUri,?nodeIP,?attribution"
+
 fi
 
 
