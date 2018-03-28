@@ -2,12 +2,11 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS team in alphabetical order as of 16 March 2017:
+Current OpenSIPS team in alphabetical order as of 28 March 2018:
 
 Core Team:
 
 Bogdan Andrei Iancu
-Ionut-Razvan Ionita
 Liviu Chircu
 Razvan Crainea
 
@@ -22,74 +21,65 @@ Di-Shi Sun
 Dynamic Packet
 Evandro Villaron
 Iñaki Baz Castillo
+Ionut-Razvan Ionita
 Marc Leurent
 Ovidiu Sas
 Robert Vladut Patrascu
 Robison Tesini
-Saúl Ibarra Corretgé
 Vladut-Stefan Paiu
+Saúl Ibarra Corretgé
 
-============== Release 2.3.0 =================
-Agalya Ramachandran
-Alessio Garzi
-Andrey Vorobiev
-Antonis Psaras
-Aqs Younas
-Aron Podrigal
+============== Release 2.4.0 =================
+Aaron An
+Ankur Gupta
+Artem Chalkov
+Augusto Caringi
+Ben Newlin
 Bernard Buitenhuis
+Björn Esser
+Bradley Jokinen
+Chad Attermann
+Chad Attermann
 Chris Maciejewski
+Cindy Leung
 Dan Bogos
-Daniel Fussia
-Daniel Knezevic
-Dawid Mielnik
-Deniz Beskök
+Daniel Zanutti
+Dmitry Burilov
+Edwin Hoff
 Eric Tamme
 Federico Edorna
-Grygoriy Dobrovolskyy
-Guillaume Lacroix
+Federico Santulli
+Flavio Goncalves
+Giovanni Maruzzelli
+Gohar Ahmed
 Hamid Elaosta
-Igor Pavlov
-Ionel Cerghit
 Jarrod Baumann
-Jeff Pyle
-Jeff Wilkie
+Jennifer Hashimoto
 Jim DeVito
-John Nash
-John Quick
-John Steel
-Jonathan Hunter
-Julián Moreno Patiño
-Kirill Galinurov
-Le Roy Christophe
+Jon Hunter
+Jonathan Hulme
 Maksym Sobolyev
-Michele Pinassi
-Nathaniel L. Keeling III
+Marcin Luczkiewicz
+Matthieu Casanova
+Max Mühlbronner
+Michael Mavroudis
+Mike Tesliuk
 Nick Altmann
-Octavian Cerna
-Ovidiu Sas
-Pete Baines
+Ognjen Šešlija
+Parantido De Rica
+Pasan Meemaduma
 Pete Kelly
-Petr Pisar
-Qasim Khan
-Rahul Gupta
-Ray Elliott
-Richard Robson
-Rik Broers
-Ryan Bullock
-Sammy
-Schneur Rosenberg
-Sebastien Couture
-Stas Kobzar
+Peter Lemenkov
+Shlomi Gutman
+Stepan Pologov
 Tito Cumpen
-Trevor Francis
-Varghese Paul
 Walter Doekes
-Aaron An (Tinet-AaronAn on GitHub)
-arovetto (GitHub)
-boris_t (GitHub)
-davesidwell (GitHub)
-Freenex (GitHub)
-kretor Andrew (GitHub)
-digitaldude (IRC)
-holysip (IRC)
-neo_land1 (IRC)
+Wilhelm Lundgren
+Andrew (kertor on GitHub)
+DigiDaz (GitHub)
+Jeffrey2019 (GitHub)
+futsystems (GitHub)
+Lt-Flash (GitHub)
+volga629 (GitHub)
+SamyGo (Mailing List)
+Denis (Mailing List)
