@@ -42,6 +42,8 @@
 
 #include "../../resolve.h"
 
+#include "tls_helper.h"
+
 typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsigned short);
 typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsigned short);
 typedef int (*get_send_timeout_f) (void);
@@ -93,24 +95,28 @@ parse_err:
 	return -1;
 }
 
-static inline int parse_domain_def(char *val, str *name, struct ip_addr **ip,
-									unsigned int *port)
+static inline int
+parse_domain_def(const str *val, str *out_name,
+                 struct ip_addr **ip, unsigned int *port)
 {
-	char *p = val;
-	int len = 0;
+	char *p;
+	int len;
 
-	if (!val || (len = strlen(val)) == 0) {
+	if (ZSTRP(val)) {
 		LM_ERR("Empty domain definition\n");
 		return -1;
 	}
 
+	p = val->s;
+	len = val->len;
+
 	/* get the domain name and optionally the address */
-	name->s = p;
+	out_name->s = p;
 	if ((p = strchr(p, '=')) == NULL) {
-		name->len = len;
+		out_name->len = len;
 		return 0;
 	} else {
-		if ((name->len = p - name->s) == 0) {
+		if ((out_name->len = p - out_name->s) == 0) {
 			LM_ERR("Empty domain name\n");
 			return -1;
 		}

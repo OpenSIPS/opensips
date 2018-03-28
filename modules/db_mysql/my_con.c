@@ -30,6 +30,7 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 
+/* if defined, it will be used to secure all MySQL connections */
 extern struct tls_domain *tls_dom;
 
 int db_mysql_connect(struct my_con* ptr)

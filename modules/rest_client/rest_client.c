@@ -36,6 +36,8 @@
 #include "../../lib/list.h"
 #include "../../trace_api.h"
 
+#include "../tls_mgm/api.h"
+
 #include "rest_methods.h"
 
 /*
@@ -58,6 +60,10 @@ int _async_resume_retr_itv = 100; /* us */
 /* libcurl enables these by default */
 int ssl_verifypeer = 1;
 int ssl_verifyhost = 1;
+
+/* tls_mgm module specific identifier for a TLS client cert/key */
+char *tls_client_domain;
+struct tls_mgm_binds tls_api;
 
 /* trace parameters for this module */
 #define REST_TRACE_API_MODULE "proto_hep"
@@ -98,6 +104,15 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 					 char *body_pv, char *ctype_pv, char *code_pv);
 
 static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
+static int w_rest_init_client_tls(struct sip_msg *msg, char *gp_tls_dom);
+
+static module_dependency_t *get_deps_tls_mgm(param_export_t *param)
+{
+	if (!*(char **)param->param_pointer)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
+}
 
 /* module dependencies */
 static dep_export_t deps = {
@@ -106,6 +121,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 }
 	},
 	{ /* modparam dependencies */
+		{ "tls_client_domain", get_deps_tls_mgm },
 		{ NULL, NULL}
 	}
 };
@@ -157,6 +173,9 @@ static cmd_export_t cmds[] = {
 	{ "rest_append_hf",(cmd_function)w_rest_append_hf, 1, fixup_spve_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+	{ "rest_init_client_tls",(cmd_function)w_rest_init_client_tls, 1,
+		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
@@ -169,6 +188,7 @@ static param_export_t params[] = {
 	{ "connect_poll_interval", INT_PARAM, &connect_poll_interval },
 	{ "max_async_transfers", INT_PARAM, &max_async_transfers },
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
+	{ "tls_client_domain",	STR_PARAM, &tls_client_domain	},
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
@@ -296,18 +316,25 @@ static int mod_init(void)
 	INIT_LIST_HEAD(&multi_pool);
 
 	/* try loading the trace api */
-	if ( register_trace_type ) {
+	if (register_trace_type) {
 		rest_proto_id = register_trace_type(rest_id_s);
 		if ( global_trace_api ) {
-			memcpy( &tprot, global_trace_api, sizeof(trace_proto_t));
+			memcpy(&tprot, global_trace_api, sizeof tprot);
 		} else {
-			memset( &tprot, 0, sizeof(trace_proto_t));
-			if ( trace_prot_bind( REST_TRACE_API_MODULE, &tprot )) {
+			memset(&tprot, 0, sizeof tprot);
+			if (trace_prot_bind( REST_TRACE_API_MODULE, &tprot))
 				LM_DBG("Can't bind <%s>!\n", REST_TRACE_API_MODULE);
-			}
 		}
 	} else {
-		memset( &tprot, 0, sizeof(trace_proto_t));
+		memset(&tprot, 0, sizeof tprot);
+	}
+
+	if (is_script_func_used("rest_init_client_tls", -1)) {
+		if (load_tls_mgm_api(&tls_api) != 0) {
+			LM_ERR("failed to load the tls_mgm API! "
+			       "Is the tls_mgm module loaded?\n");
+			return -1;
+		}
 	}
 
 	LM_INFO("Module initialized!\n");
@@ -686,4 +713,16 @@ static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv)
 	}
 
 	return rest_append_hf_method(msg, &hfv);
+}
+
+static int w_rest_init_client_tls(struct sip_msg *msg, char *gp_tls_dom)
+{
+	str tls_client_dom;
+
+	if (fixup_get_svalue(msg, (gparam_p)gp_tls_dom, &tls_client_dom) != 0) {
+		LM_ERR("cannot retrieve header field value\n");
+		return -1;
+	}
+
+	return rest_init_client_tls(msg, &tls_client_dom);
 }

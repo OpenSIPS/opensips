@@ -51,9 +51,10 @@ int tlsp_add_srv_domain(modparam_t type, void *val)
 {
 	struct ip_addr *ip = NULL;
 	unsigned int port;
-	str name;
+	str name, dom_str;
 
-	if (parse_domain_def((char*)val, &name, &ip, &port) < 0)
+	init_str(&dom_str, val);
+	if (parse_domain_def(&dom_str, &name, &ip, &port) < 0)
 		return -1;
 
 	if (ip == NULL) {
@@ -89,9 +90,10 @@ int tlsp_add_cli_domain(modparam_t type, void *val)
 {
 	struct ip_addr *ip = NULL;
 	unsigned int port = 0;
-	str name;
+	str name, dom_str;
 
-	if (parse_domain_def((char*)val, &name, &ip, &port) < 0)
+	init_str(&dom_str, val);
+	if (parse_domain_def(&dom_str, &name, &ip, &port) < 0)
 		return -1;
 
 	if (tls_client_domains == NULL) {

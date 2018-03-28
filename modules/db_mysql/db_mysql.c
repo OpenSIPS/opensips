@@ -60,7 +60,7 @@ static cmd_export_t cmds[] = {
 
 struct tls_mgm_binds tls_api;
 struct tls_domain *tls_dom;
-str tls_client_domain_str;
+str tls_client_domain;
 
 /*
  * Exported parameters
@@ -70,7 +70,7 @@ static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_mysql_exec_query_threshold},
 	{"max_db_retries", INT_PARAM, &max_db_retries},
 	{"max_db_queries", INT_PARAM, &max_db_queries},
-	{"tls_client_domain", STR_PARAM, &tls_client_domain_str.s},
+	{"tls_client_domain", STR_PARAM, &tls_client_domain.s},
 	{0, 0, 0}
 };
 
@@ -119,14 +119,14 @@ static int mysql_mod_init(void)
 		max_db_retries = 3;
 	}
 
-	if (tls_client_domain_str.s) {
-		tls_client_domain_str.len = strlen(tls_client_domain_str.s);
-		LM_INFO("using tls_mgm client domain '%.*s' for all MySQL connections\n",
-		        tls_client_domain_str.len, tls_client_domain_str.s);
+	if (tls_client_domain.s) {
+		LM_INFO("using tls_mgm client domain '%s' for all MySQL connections\n",
+		        tls_client_domain.s);
 
-		if (parse_domain_def(tls_client_domain_str.s, &domain, &ip, &port) < 0) {
-			LM_ERR("failed to parse tls_client_domain '%.*s'\n",
-			       tls_client_domain_str.len, tls_client_domain_str.s);
+		tls_client_domain.len = strlen(tls_client_domain.s);
+		if (parse_domain_def(&tls_client_domain, &domain, &ip, &port) < 0) {
+			LM_ERR("failed to parse tls_client_domain '%s'\n",
+			       tls_client_domain.s);
 			return -1;
 		}
 
@@ -136,9 +136,9 @@ static int mysql_mod_init(void)
 		}
 
 		tls_dom = tls_api.find_client_domain(ip, port);
-		if (tls_dom == NULL) {
-			LM_ERR("failed to match tls_client_domain '%.*s'!\n",
-			       tls_client_domain_str.len, tls_client_domain_str.s);
+		if (!tls_dom) {
+			LM_ERR("failed to match tls_client_domain '%s'!\n",
+			       tls_client_domain.s);
 			return -1;
 		}
 	}

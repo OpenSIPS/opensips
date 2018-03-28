@@ -33,6 +33,8 @@
 #include "../../trace_api.h"
 #include "../../resolve.h"
 
+#include "../tls_mgm/api.h"
+
 #include "rest_methods.h"
 #include "rest_cb.h"
 
@@ -42,6 +44,10 @@ static char print_buff[MAX_CONTENT_TYPE_LEN];
 
 /* additional HTTP headers for the next request */
 static struct curl_slist *header_list = NULL;
+
+/* specific TLS client cert/key for the next request */
+extern struct tls_mgm_binds tls_api;
+struct tls_domain *tls_dom;
 
 /* simultaneous ongoing transfers within this process */
 static int transfers;
@@ -65,8 +71,6 @@ extern trace_proto_t tprot;
 static inline int rest_trace_enabled(void);
 static int trace_rest_message( rest_trace_param_t* tparam );
 
-
-
 #define clean_header_list \
 	do { \
 		if (header_list) { \
@@ -80,7 +84,6 @@ static int trace_rest_message( rest_trace_param_t* tparam );
 		rc = curl_easy_setopt(h, opt, value); \
 		if (rc != CURLE_OK) { \
 			LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
-			clean_header_list; \
 			goto cleanup; \
 		} \
 	} while (0)
@@ -352,18 +355,22 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 	if (transfers == FD_SETSIZE) {
 		LM_ERR("too many ongoing transfers: %d\n", FD_SETSIZE);
-		clean_header_list;
-		return ASYNC_NO_IO;
+		goto cleanup;
 	}
 
 	handle = curl_easy_init();
 	if (!handle) {
 		LM_ERR("Init curl handle failed!\n");
-		clean_header_list;
-		return ASYNC_NO_IO;
+		goto cleanup;
 	}
 
 	w_curl_easy_setopt(handle, CURLOPT_URL, url);
+
+	if (tls_dom) {
+		w_curl_easy_setopt(handle, CURLOPT_SSLCERT, tls_dom->cert.s);
+		w_curl_easy_setopt(handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_dom = NULL;
+	}
 
 	switch (method) {
 	case REST_CLIENT_POST:
@@ -541,9 +548,11 @@ error:
 	}
 	put_multi(multi_list);
 
+	curl_easy_cleanup(handle);
+
 cleanup:
 	clean_header_list;
-	curl_easy_cleanup(handle);
+	tls_dom = NULL;
 	return ASYNC_NO_IO;
 }
 
@@ -688,11 +697,16 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		sync_handle = curl_easy_init();
 		if (!sync_handle) {
 			LM_ERR("Init curl handle failed!\n");
-			clean_header_list;
-			return -1;
+			goto cleanup;
 		}
 	} else {
 		curl_easy_reset(sync_handle);
+	}
+
+	if (tls_dom) {
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSLCERT, tls_dom->cert.s);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_dom = NULL;
 	}
 
 	if (header_list)
@@ -787,6 +801,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	return 1;
 
 cleanup:
+	clean_header_list;
+	tls_dom = NULL;
 	return -1;
 }
 
@@ -816,8 +832,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		sync_handle = curl_easy_init();
 		if (!sync_handle) {
 			LM_ERR("Init curl handle failed!\n");
-			clean_header_list;
-			return -1;
+			goto cleanup;
 		}
 	} else {
 		curl_easy_reset(sync_handle);
@@ -825,13 +840,18 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	if (!sync_handle) {
 		LM_ERR("Init curl handle failed!\n");
-		clean_header_list;
-		return -1;
+		goto cleanup;
 	}
 
 	if (ctype) {
 		sprintf(print_buff, "Content-Type: %s", ctype);
 		header_list = curl_slist_append(header_list, print_buff);
+	}
+
+	if (tls_dom) {
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSLCERT, tls_dom->cert.s);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_dom = NULL;
 	}
 
 	if (header_list)
@@ -926,7 +946,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		pkg_free(st.s);
 
 	return 1;
+
 cleanup:
+	clean_header_list;
+	tls_dom = NULL;
 	return -1;
 }
 
@@ -956,8 +979,7 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		sync_handle = curl_easy_init();
 		if (!sync_handle) {
 			LM_ERR("Init curl handle failed!\n");
-			clean_header_list;
-			return -1;
+			goto cleanup;
 		}
 	} else {
 		curl_easy_reset(sync_handle);
@@ -966,6 +988,12 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	if (ctype) {
 		sprintf(print_buff, "Content-Type: %s", ctype);
 		header_list = curl_slist_append(header_list, print_buff);
+	}
+
+	if (tls_dom) {
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSLCERT, tls_dom->cert.s);
+		w_curl_easy_setopt(sync_handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_dom = NULL;
 	}
 
 	if (header_list)
@@ -1060,6 +1088,8 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	return 1;
 
 cleanup:
+	clean_header_list;
+	tls_dom = NULL;
 	return -1;
 }
 
@@ -1080,9 +1110,36 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 	/* TODO: header validation */
 
 	/* append the header to the global list */
-	strncpy(buf, hfv->s, hfv->len);
+	memcpy(buf, hfv->s, hfv->len);
 	buf[hfv->len] = '\0';
 	header_list = curl_slist_append(header_list, buf);
+
+	return 1;
+}
+
+/**
+ * rest_set_tls - set a custom TLS client cert/key for the next transfer
+ * @msg:            sip message struct
+ * @tls_client_dom:	tls_mgm specific client domain identifier
+ */
+int rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
+{
+	struct ip_addr *ip;
+	unsigned int port = 0;
+	str domain;
+
+	if (parse_domain_def(tls_client_dom, &domain, &ip, &port) < 0) {
+		LM_ERR("failed to parse TLS client domain '%.*s'\n",
+		       tls_client_dom->len, tls_client_dom->s);
+		return -1;
+	}
+
+	tls_dom = tls_api.find_client_domain(ip, port);
+	if (!tls_dom) {
+		LM_ERR("failed to match TLS client domain '%.*s'!\n",
+		       tls_client_dom->len, tls_client_dom->s);
+		return -1;
+	}
 
 	return 1;
 }
