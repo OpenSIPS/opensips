@@ -75,6 +75,10 @@ int tcp_init_sock_opt(int s);
 int tcp_connect_blocking(int s, const struct sockaddr *servaddr,
 		socklen_t addrlen);
 
+/* blocking connect on a non-blocking socket with timeout */
+int tcp_connect_blocking_timeout(int s, const struct sockaddr *servaddr,
+		socklen_t addrlen, int timeout);
+
 /********************** TCP conn management functions ************************/
 
 /* returns the connection identified by either the id or the destination to */

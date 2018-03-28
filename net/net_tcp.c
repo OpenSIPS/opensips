@@ -238,9 +238,8 @@ error:
  * if BLOCKING_USE_SELECT and HAVE_SELECT are defined it will internally
  * use select() instead of poll (bad if fd > FD_SET_SIZE, poll is preferred)
  */
-
-int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
-															socklen_t addrlen)
+int tcp_connect_blocking_timeout(int fd, const struct sockaddr *servaddr,
+											socklen_t addrlen, int timeout)
 {
 	int n;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
@@ -260,7 +259,7 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 	unsigned short port;
 
 	poll_err=0;
-	to = tcp_connect_timeout*1000;
+	to = timeout*1000;
 
 	if (gettimeofday(&(begin), NULL)) {
 		LM_ERR("Failed to get TCP connect start time\n");
@@ -335,12 +334,20 @@ again:
 error_timeout:
 	/* timeout */
 	LM_ERR("timeout %d ms elapsed from %d s\n", elapsed,
-		tcp_connect_timeout*1000);
+		timeout*1000);
 error:
 	return -1;
 end:
 	return 0;
 }
+
+int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
+															socklen_t addrlen)
+{
+	return tcp_connect_blocking_timeout(fd, servaddr, addrlen,
+			tcp_connect_timeout);
+}
+
 
 
 static int send2child(struct tcp_connection* tcpconn,int rw)
