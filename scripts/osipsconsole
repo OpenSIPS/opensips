@@ -67,7 +67,7 @@ if ( -e "~/.osipsconsolerc" ) {
 my $OSIPSBIN = $PATH_BIN . "opensips";
 my $HISTORY_FILE = "/tmp/osipsconsole_history";
 my $argnum = $#ARGV + 1;
-### aliases configuration  ( DB | UL )
+### aliases configuration  ( DB )
 my $ALIASES_TYPE = "DB";
 
 my ($socket, @ACL_GROUPS, @arr, $var_name, @OSIPS, $STORE_PLAINTEXT_PW, $DUMP_CMD, $LOAD_CMD, $HA1, $HA1B, $sth, $dbh, @row, $RET, $RES,
@@ -352,9 +352,7 @@ if ( $STARTOPTIONS eq "" ) {
 ##### ------------------------------------------------ #####
 ### aliases configuration
 #
-if ( $ALIASES_TYPE =~ /^UL/ ) {
-	$ENABLE_ALIASES = 1;
-} elsif ( $ALIASES_TYPE =~ /DB/ ) {
+if ( $ALIASES_TYPE =~ /DB/ ) {
 	$ENABLE_ALIASES = 2;
 }
 
@@ -813,7 +811,7 @@ sub usage_ping() {
 
 #usrloc
 sub usage_usrloc() {
-	print " -- command 'ul|alias' - manage user location or aliases\n" .
+	print " -- command 'ul' - manage user location records\n" .
 	      "ul show [<username>]................ show in-RAM online users\n" .
 	      "ul show --brief..................... show in-RAM online users in short format\n" .
 	      "ul rm <username> [<contact URI>].... delete user's usrloc entries\n" .
@@ -1580,7 +1578,7 @@ sub cmd() {
 		system(&tls_ca());
 	} elsif ($cmd[0] =~ /^address$/) {
 		if (&db_load()) {system(&address()); }
-	} elsif ($cmd[0] =~ /(^ul$)|(^alias$)|(^usrloc$)/) {
+	} elsif ($cmd[0] =~ /(^ul$)|(^usrloc$)/) {
 		system(&opensips_usrloc());
 	} elsif ($cmd[0] =~ /^version$/) {
 		system(&opensips_version());
