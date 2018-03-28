@@ -438,6 +438,12 @@ migrate_table ${dst_db}.clusterer \
 	${src_db}.clusterer \
 	"?id,?cluster_id,?node_id,?url,?description"
 
+## TLS_MGM module
+migrate_table ${dst_db}.tls_mgm \
+	"id,domain,address,type,method,verify_cert,require_cert,certificate,private_key,crl_check_all,crl_dir,ca_list,ca_dir,cipher_list,dh_params,ec_curve" \
+	${src_db}.tls_mgm \
+	"?id,?domain,?address,?type,?method,?verify_cert,?require_cert,?certificate,?private_key,?crl_check_all,?crl_dir,?ca_list,?ca_dir,?cipher_list,?dh_params,?ec_curve"
+
 
 if [ "$HAS_EXTRA" = "yes" ] ; then
 
