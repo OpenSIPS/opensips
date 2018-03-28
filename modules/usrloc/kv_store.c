@@ -118,7 +118,10 @@ static cJSON_Hooks shm_hooks = {
 str store_serialize(map_t _store)
 {
 	cJSON *flat_map;
-	str ret = {NULL, 0};
+	str ret = STR_NULL;
+
+	if (map_size(_store) == 0)
+		return ret;
 
 	cJSON_InitHooks(&shm_hooks);
 

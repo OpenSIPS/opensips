@@ -45,6 +45,7 @@
 #include "ul_mod.h"
 #include "usrloc.h"
 #include "ureplication.h"
+#include "kv_store.h"
 
 
 #define MI_UL_CSEQ 1
@@ -52,8 +53,7 @@ static str mi_ul_cid = str_init("dfjrewr12386fd6-343@opensips.mi");
 static str mi_ul_ua  = str_init("OpenSIPS MI Server");
 rw_lock_t *sync_lock = 0;
 
-
-
+extern int mi_dump_kv_store;
 
 /************************ helper functions ****************************/
 
@@ -95,7 +95,7 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
 	struct mi_node *node;
 	struct mi_attr *attr;
 	ucontact_t* c;
-	str st;
+	str st, kv_buf;
 	char *p;
 	int len;
 
@@ -245,7 +245,29 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
 				return -1;
 		}
 
+		if (mi_dump_kv_store) {
+			kv_buf = store_serialize(c->kv_storage);
+			if (!ZSTR(kv_buf) && !add_mi_node_child(cnode, MI_DUP_VALUE,
+			                      MI_SSTR("KV-Store"), kv_buf.s, kv_buf.len)) {
+				store_free_buffer(&kv_buf);
+				return -1;
+			}
+
+			store_free_buffer(&kv_buf);
+		}
+
 	} /* for */
+
+	if (mi_dump_kv_store) {
+		kv_buf = store_serialize(r->kv_storage);
+		if (!ZSTR(kv_buf) && !add_mi_node_child(anode, MI_DUP_VALUE,
+		                          MI_SSTR("KV-Store"), kv_buf.s, kv_buf.len)) {
+			store_free_buffer(&kv_buf);
+			return -1;
+		}
+
+		store_free_buffer(&kv_buf);
+	}
 
 	return 0;
 }

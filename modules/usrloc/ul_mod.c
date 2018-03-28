@@ -177,6 +177,7 @@ db_func_t ul_dbf;
 cachedb_funcs cdbf;
 cachedb_con *cdbc;
 
+int mi_dump_kv_store;
 
 /*! \brief
  * Exported functions
@@ -221,6 +222,7 @@ static param_export_t params[] = {
 	{"methods_column",     STR_PARAM, &methods_col.s     },
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
 	{"kv_store_column",    STR_PARAM, &kv_store_col.s    },
+	{"mi_dump_kv_store",   INT_PARAM, &mi_dump_kv_store  },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
 	{"matching_mode",      INT_PARAM, &matching_mode     },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
