@@ -118,7 +118,7 @@ modparam("jsonrpc", "read_timeout", 300)
 
 	<section>
 	<title>Exported Functions</title>
-		<section id="jsonrpc.request" xreflabel="jsonrpc.request">
+		<section id="jsonrpc_request" xreflabel="jsonrpc_request">
 			<title>
 				<function moreinfo="none">jsonrpc_request(destination, method, params, ret_pvar)</function>
 			</title>
@@ -213,14 +213,14 @@ modparam("jsonrpc", "read_timeout", 300)
 	</programlisting>
 			</example>
 		</section>
-		<section id="jsonrpc.notification">
+		<section id="jsonrpc_notification">
 			<title>
 				<function moreinfo="none">jsonrpc_notification(destination, method, params)</function>
 			</title>
 			<para>
 				Does a JSON-RPC notification to the JSON-RPC server
 				indicated in the <emphasis>destination</emphasis>
-				parameter, but unlike <xref linkend="jsonrpc.request"/>,
+				parameter, but unlike <xref linkend="jsonrpc_request"/>,
 				it does not wait for a reply from the JSON-RPC server.
 			</para>
 			<para>
@@ -228,7 +228,7 @@ modparam("jsonrpc", "read_timeout", 300)
 			</para>
 			<para>
 				The function receives the same parameters as 
-				<xref linkend="jsonrpc.request"/>, except for the <emphasis>ret_pvar</emphasis>. Also, the same values are returned.
+				<xref linkend="jsonrpc_request"/>, except for the <emphasis>ret_pvar</emphasis>. Also, the same values are returned.
 			</para>
 			<example>
 			<title><function>jsonrpc_notification()</function> function usage</title>

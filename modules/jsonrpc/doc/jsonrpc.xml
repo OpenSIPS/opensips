@@ -14,7 +14,7 @@
 
 <book>
 	<bookinfo>
-	<title>event_jsonrpc Module</title>
+	<title>JSON-RPC Module</title>
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>

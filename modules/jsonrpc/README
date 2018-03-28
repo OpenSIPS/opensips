@@ -1,4 +1,4 @@
-event_jsonrpc Module
+JSON-RPC Module
 
 Razvan Crainea
 
@@ -151,12 +151,12 @@ modparam("jsonrpc", "read_timeout", 300)
 1.4.2.  jsonrpc_notification(destination, method, params)
 
    Does a JSON-RPC notification to the JSON-RPC server indicated
-   in the destination parameter, but unlike jsonrpc.request, it
+   in the destination parameter, but unlike jsonrpc_request, it
    does not wait for a reply from the JSON-RPC server.
 
    This function can be used from any route.
 
-   The function receives the same parameters as jsonrpc.request,
+   The function receives the same parameters as jsonrpc_request,
    except for the ret_pvar. Also, the same values are returned.
 
    Example 1.5. jsonrpc_notification() function usage
