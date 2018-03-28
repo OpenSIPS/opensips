@@ -60,6 +60,11 @@ Chapter 1. Admin Guide
    This module acts as a transport layer for the Event
    Notification Interface.
 
+   This module sends the JSON-RPC directly over TCP, avoiding the
+   any application transport layer (such as HTTP). This makes this
+   module a very lightweight and reliable module to deliver events
+   to an application server.
+
    In order to be notified, a JSON-RPC server has to subscribe for
    a certain event provided by OpenSIPS. This can be done using
    the generic MI Interface (event_subscribe function) or from
