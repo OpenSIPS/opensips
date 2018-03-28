@@ -134,12 +134,8 @@ fi
 ### aliases configuration
 #
 ENABLE_ALIASES=0
-if [ "$ALIASES_TYPE" = "UL" ] ; then
+if [ "$ALIASES_TYPE" = "DB" ] ; then
 	ENABLE_ALIASES=1
-else
-	if [ "$ALIASES_TYPE" = "DB" ] ; then
-		ENABLE_ALIASES=2
-	fi
 fi
 
 ##### ------------------------------------------------ #####
@@ -191,18 +187,6 @@ ACL_USER_COLUMN=username
 ACL_DOMAIN_COLUMN=domain
 ACL_GROUP_COLUMN=grp
 ACL_MODIFIED_COLUMN=last_modified
-
-# aliases table
-if [ -z "$ALS_TABLE" ] ; then
-	ALS_TABLE=aliases
-fi
-A_USER_COLUMN=username
-A_CONTACT_COLUMN=contact
-A_EXPIRES_COLUMN=expires
-A_Q_COLUMN=q
-A_CALLID_COLUMN=callid
-A_CSEQ_COLUMN=cseq
-A_LAST_MODIFIED_COLUMN=last_modified
 
 # domain table
 if [ -z "$DOMAIN_TABLE" ] ; then

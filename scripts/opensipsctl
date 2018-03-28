@@ -371,32 +371,6 @@ $CLAUSE;"
 ##### ------------------------------------------------ #####
 ### alias management
 #
-check_ul_alias() {
-	require_ctlengine
-	RES=`$CTLCMD ul_show_contact "$ALS_TABLE" "$1@$2"`
-	RET=$?
-	ALIAS_UL_EXISTS=0
-	if [ $RET -ne 0 ] ; then
-		merr "OpenSIPS $CTLENGINE not accessible: $RET"
-		exit 1
-	fi
-	echo "$RES" | $EGREP "^404" > /dev/null
-	if [ $? -ne 0 ] ; then
-		echo "$RES" | $EGREP "^400" > /dev/null
-		if [ $? -eq 0 ] ; then
-			merr "400; check if you use aliases in OpenSIPS"
-			exit 1
-		fi
-		echo "$RES" | $EGREP "^200" > /dev/null
-		if [ $? -eq 0 ] ; then
-			ALIAS_UL_EXISTS=1
-		fi
-		# other errors
-		merr "$RES"
-		exit 1
-	fi
-}
-
 check_db_alias() {
 	require_dbengine
 
@@ -420,14 +394,7 @@ and $DA_ALIAS_DOMAIN_COLUMN='$2';"
 check_alias() {
 	ALIAS_EXISTS=0
 
-	if [ $ENABLE_ALIASES -eq 1 ] ; then
-		check_ul_alias "$1" "$2"
-		if [ $ALIAS_UL_EXISTS -eq 0 ] ; then
-			ALIAS_EXISTS=0
-		else
-			ALIAS_EXISTS=1
-		fi
-	elif  [ $ENABLE_ALIASES -eq 2 ] ; then
+	if  [ $ENABLE_ALIASES -eq 1 ] ; then
 		check_db_alias "$1" "$2"
 		if [ $ALIAS_DB_EXISTS -eq 0 ] ; then
 			ALIAS_EXISTS=0
@@ -2377,13 +2344,7 @@ usrloc() {
 
 	require_ctlengine
 
-	if [ "$1" = "alias" ] ; then
-		USRLOC_TABLE="$ALS_TABLE"
-		if [ -z "$USRLOC_TABLE" ] ; then
-			USRLOC_TABLE=aliases
-		fi
-		CHECK_SUB=1
-	elif [ "$1" = "ul" ] ; then
+	if [ "$1" = "ul" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
 		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
@@ -2691,7 +2652,7 @@ case $1 in
 		subscriber "$@"
 		;;
 
-	alias|ul|usrloc)
+	ul|usrloc)
 		usrloc "$@"
 		;;
 

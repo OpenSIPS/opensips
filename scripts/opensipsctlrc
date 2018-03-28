@@ -103,7 +103,7 @@
 #                 b2b registrant call_center fraud_detection cachedb_sql"
 
 
-## type of aliases used: DB - database aliases; UL - usrloc aliases
+## type of aliases used: DB - database aliases
 ## - default: none
 # ALIASES_TYPE="DB"
 
