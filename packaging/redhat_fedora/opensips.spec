@@ -360,6 +360,20 @@ events, triggered through the OpenSIPS Event Interface,
 directly from the OpenSIPS script. The module logs the events
 along with their parameters in regular text files.
 
+%package  event_jsonrpc
+Summary:  Sends events using JSON-RPC command
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  event_jsonrpc
+This module is an implementation of an JSON-RPC v2.0 client
+http://www.jsonrpc.org/specification. that can send a RPC to a
+JSON-RPC server (when used in sync_mode), or send a
+notification (when sync_mode is disabled) whenever whenever
+OpenSIPS raises a notification through the Event Interface.
+This module acts as a transport layer for the Event
+Notification Interface.
+
 %package  event_rabbitmq
 Summary:  Event RabbitMQ module
 Group:    System Environment/Daemons
@@ -479,6 +493,16 @@ Requires: %{name} = %{version}-%{release}
 %description  json
 This module introduces a new type of variable that provides both serialization and
 de-serialization from JSON format.
+
+%package  jsonrpc
+Summary:  Execute JSON-RPC commands
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  jsonrpc
+This module is an implementation of an JSON-RPC v2.0 client
+http://www.jsonrpc.org/specification. that can send a call
+to a JSON-RPC server over a TCP connection.
 
 %package  ldap
 Summary:  LDAP connector
@@ -1483,6 +1507,10 @@ fi
 %{_libdir}/opensips/modules/event_flatstore.so
 %doc docdir/README.event_flatstore
 
+%files event_jsonrpc
+%{_libdir}/opensips/modules/event_jsonrpc.so
+%doc docdir/README.event_jsonrpc
+
 %files event_rabbitmq
 %{_libdir}/opensips/modules/event_rabbitmq.so
 %doc docdir/README.event_rabbitmq
@@ -1530,6 +1558,10 @@ fi
 %files json
 %{_libdir}/opensips/modules/json.so
 %doc docdir/README.json
+
+%files jsonrpc
+%{_libdir}/opensips/modules/jsonrpc.so
+%doc docdir/README.jsonrpc
 
 %files ldap
 %{_libdir}/opensips/modules/ldap.so
