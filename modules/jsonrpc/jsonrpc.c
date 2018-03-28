@@ -41,7 +41,6 @@ static int fixup_jrpc_notify(void** param, int param_no);
 static int jrpc_request(struct sip_msg *msg, char *_s, char *_m, char *_p, char *_r);
 static int jrpc_notify(struct sip_msg *msg, char *_s, char *_m, char *_p);
 static char *jsonrpc_build_cmd(str *method, str *params, int *id);
-static inline void jsonrpc_free_cmd(char *cmd);
 
 #define JSONRPC_PRINT(_su) \
 	inet_ntoa(_su->sin.sin_addr), ntohs(_su->sin.sin_port)
@@ -538,10 +537,6 @@ static int jrpc_request(struct sip_msg *msg, char *_s, char *_m, char *_p, char 
 		cJSON_PurgeString(val.rs.s);
 
 	return ret;
-}
-
-static inline void jsonrpc_free_cmd(char *cmd)
-{
 }
 
 static char *jsonrpc_build_cmd(str *method, str *params, int *id)
