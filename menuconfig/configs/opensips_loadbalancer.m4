@@ -38,9 +38,8 @@ auto_aliases=no
 
 
 listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
-
-ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME' , `')
-ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME' , `')
+ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME',`')
+ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME',`')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
 
@@ -163,7 +162,7 @@ modparam("tls_mgm","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem"
 route{
 
 	if (!mf_process_maxfwd_header("10")) {
-		sl_send_reply("483","Too Many Hops");
+		send_reply("483","Too Many Hops");
 		exit;
 	}
 
@@ -180,7 +179,7 @@ route{
 		if ( !loose_route() ) {
 			# we do record-routing for all our traffic, so we should not
 			# receive any sequential requests without Route hdr.
-			sl_send_reply("404","Not here");
+			send_reply("404","Not here");
 			exit;
 		}
 		ifelse(USE_DISPATCHER,`no',`
@@ -217,7 +216,7 @@ route{
 
 	if ($rU==NULL) {
 		# request with no Username in RURI
-		sl_send_reply("484","Address Incomplete");
+		send_reply("484","Address Incomplete");
 		exit;
 	}
 
@@ -226,9 +225,9 @@ route{
 	# preloaded route checking
 	if (loose_route()) {
 		xlog("L_ERR",
-		"Attempt to route with preloaded Route's [$fu/$tu/$ru/$ci]");
+			"Attempt to route with preloaded Route's [$fu/$tu/$ru/$ci]");
 		if (!is_method("ACK"))
-			sl_send_reply("403","Preload Route denied");
+			send_reply("403","Preload Route denied");
 		exit;
 	}
 
@@ -241,7 +240,7 @@ route{
 	ifelse(USE_DISPATCHER,`yes',`
 	if ( !ds_select_dst("1","4") ) {
 	',`
-	if ( !load_balance("1","channel")) {
+	if ( !lb_start("1","channel")) {
 	')
 		send_reply("500","No Destination available");
 		exit;
@@ -257,7 +256,7 @@ route{
 route[RELAY] {
 	if (!t_relay()) {
 		sl_reply_error();
-	};
+	}
 	exit;
 }
 
@@ -274,7 +273,7 @@ failure_route[GW_FAILOVER] {
 		ifelse(USE_DISPATCHER,`yes',`
 		if ( ds_next_dst() ) {
 		',`
-		if ( load_balance("1","channel") ) {
+		if ( lb_next() ) {
 		')
 			t_on_failure("GW_FAILOVER");
 			t_relay();
