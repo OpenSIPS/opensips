@@ -826,7 +826,7 @@ static void jsonrpc_cleanup_old(void)
 		con = list_entry(it_con, struct jsonrpc_con, list);
 		list_for_each_safe(it_cmd, tmp, &con->cmds) {
 			cmd = list_entry(it_cmd, struct jsonrpc_cmd, list);
-			if (get_time_diff(&cmd->job->time) > jsonrpc_timeout) {
+			if (get_time_diff(&cmd->job->time) > jsonrpc_timeout * 1000) {
 				if (jsonrpc_sync_mode)
 					jsonrpc_cmd_reply(cmd, JSONRPC_SEND_FAIL);
 				list_del(&cmd->list);
