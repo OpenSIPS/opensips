@@ -1771,9 +1771,9 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
-* Fri Sep 29 2017 Nick Altmann <nick.altmann@gmail.com> - 2.4.0-1
+* Wed Mar 28 2018 Nick Altmann <nick.altmann@gmail.com> - 2.4.0-1
 - Specification updated for opensips 2.4
-- New packages: siprec
+- New packages: event_jsonrpc, jsonrpc, siprec
 
 * Mon Mar 06 2017 Nick Altmann <nick.altmann@gmail.com> - 2.3.0-1
 - Specification updated for opensips 2.3
