@@ -1,0 +1,247 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of an JSON-RPC v2.0
+		client <ulink url="http://www.jsonrpc.org/specification"></ulink>.
+		that can send a call to a JSON-RPC server over a TCP connection.
+	</para>
+
+	<para>
+		NOTE that the current version of this module does not support TCP
+		connection reusage, nor asynchronous commands.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>connect_timeout</varname> (integer)</title>
+		<para>
+			The amount of milliseconds &osips; waits to connect to the the
+			JSON-RPC server, until it times out.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>500 milliseconds</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("jsonrpc", "connect_timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>write_timeout</varname> (integer)</title>
+		<para>
+			The amount of milliseconds &osips; waits to send a RPC command to
+			the JSON-RPC server, until it times out.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>500 milliseconds</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>write_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("jsonrpc", "write_timeout", 300)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>read_timeout</varname> (integer)</title>
+		<para>
+			The amount of milliseconds &osips; waits for the JSON-RPC server
+			to respond to a JSON-RPC request, until it times out. Note that
+			these parameter only affects the <emphasis>jsonrpc_request</emphasis>
+			command.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>500 milliseconds</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>read_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("jsonrpc", "read_timeout", 300)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+		<section id="jsonrpc.request" xreflabel="jsonrpc.request">
+			<title>
+				<function moreinfo="none">jsonrpc_request(destination, method, params, ret_pvar)</function>
+			</title>
+			<para>
+				Does a JSON-RPC request to the JSON-RPC server
+				indicated in the <emphasis>destination</emphasis>
+				parameter, and waits for a reply from it.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<para>
+			The function has the following parameters:
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>destination</emphasis> - address of the
+						JSON-RPC server. The format needs to be
+						<emphasis>IP:port</emphasis>.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>method</emphasis> - the method used in
+						the RPC request.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>params</emphasis> - these are the parameters
+						sent to the RPC method. This parameter needs to be
+						a properly formated JSON array, or JSON object,
+						according the the JSON-RPC specifications.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>ret_pvar</emphasis> a writeable variable
+						used to store the result of the JSON-RPC command. If
+						the command returns an error, the variable will be
+						populated with the error JSON, otherwise, with the
+						body of the JSON-RPC result.
+					</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+				The function has the following return codes:
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>1</emphasis> - JSON-RPC command executed
+						successfully, and the server returned success. You can
+						check the <emphasis>ret_pvar</emphasis> variable for
+						the result.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>-1</emphasis> - There was an internal error
+						during processing.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>-2</emphasis> - There was a connection
+						(timeout or connect) error with the destination.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>-3</emphasis> - The JSON-RPC was
+						successfully run, but the server returned an error.
+						Check the <emphasis>ret_pvar</emphasis> value to find
+						out more information.
+
+					</para>
+				</listitem>
+			</itemizedlist>
+			<example>
+			<title><function>jsonrpc_request()</function> function usage</title>
+			<programlisting format="linespecific">
+	...
+	if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", "$var(ret)")) {
+		xlog("JSON-RPC command failed with $var(ret)\n");
+		exit;
+	}
+	xlog(JSON-RPC command returned $var(ret)\n");
+	# parse $var(ret) as JSON, or whatever the function returns
+	...
+	</programlisting>
+			</example>
+		</section>
+		<section id="jsonrpc.notification">
+			<title>
+				<function moreinfo="none">jsonrpc_notification(destination, method, params)</function>
+			</title>
+			<para>
+				Does a JSON-RPC notification to the JSON-RPC server
+				indicated in the <emphasis>destination</emphasis>
+				parameter, but unlike <xref linkend="jsonrpc.request"/>,
+				it does not wait for a reply from the JSON-RPC server.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<para>
+				The function receives the same parameters as 
+				<xref linkend="jsonrpc.request"/>, except for the <emphasis>ret_pvar</emphasis>. Also, the same values are returned.
+			</para>
+			<example>
+			<title><function>jsonrpc_notification()</function> function usage</title>
+			<programlisting format="linespecific">
+	...
+	if (!jsonrpc_notification("127.0.0.1", "block_ip", "{ \"ip": \"$si\" }")) {
+		xlog("JSON-RPC notification failed with $rc!\n");
+		exit;
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+</chapter>
