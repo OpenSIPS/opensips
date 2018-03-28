@@ -48,6 +48,7 @@ Liviu Chircu
                       [retcode_pv]]])
 
               1.4.4. rest_append_hf(txt)
+              1.4.5. rest_init_client_tls(tls_client_domain)
 
         1.5. Exported Asynchronous Functions
 
@@ -75,9 +76,10 @@ Liviu Chircu
    1.9. rest_post usage
    1.10. rest_put usage
    1.11. rest_append_hf usage
-   1.12. async rest_get usage
-   1.13. async rest_post usage
-   1.14. async rest_put usage
+   1.12. rest_init_client_tls usage
+   1.13. async rest_get usage
+   1.14. async rest_post usage
+   1.15. async rest_put usage
 
 Chapter 1. Admin Guide
 
@@ -210,8 +212,7 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
        attribute-value fields in the URL)
      * body_pv, ctype_pv, retcode_pv - pseudo-variables
 
-   This function can be used from the startup, branch, failure,
-   request and timer routes.
+   This function can be used from any route.
 
    Example 1.8. rest_get usage
 ...
@@ -260,8 +261,7 @@ if ($var(rcode) >= 300) {
        or a String which includes pseudo-variables.
      * recv_body_pv, recv_ctype_pv, retcode_pv - pseudo-variables
 
-   This function can be used from the startup, branch, failure,
-   request and timer routes.
+   This function can be used from any route.
 
    Example 1.9. rest_post usage
 ...
@@ -311,8 +311,7 @@ if ($var(rcode) >= 300) {
        or a String which includes pseudo-variables.
      * recv_body_pv, recv_ctype_pv, retcode_pv - pseudo-variables
 
-   This function can be used from the startup, branch, failure,
-   request and timer routes.
+   This function can be used from any route.
 
    Example 1.10. rest_put usage
 ...
@@ -347,8 +346,7 @@ if ($var(rcode) >= 300) {
        pseudo-variables. (useful for specifying additional
        attribute-value fields in the URL)
 
-   This function can be used from the startup, branch, failure,
-   request and timer routes.
+   This function can be used from any route.
 
    Example 1.11. rest_append_hf usage
 ...
@@ -357,6 +355,34 @@ if ($var(rcode) >= 300) {
 rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
 $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)")
 ;
+...
+
+1.4.5.  rest_init_client_tls(tls_client_domain)
+
+   Force a specific TLS certificate and private key pair to be
+   eventually used during the next request. Refer to the tls_mgm
+   module for additional info regarding TLS client domains.
+
+   If using this parameter, you must also ensure that tls_mgm is
+   loaded and properly configured.
+
+   Note that if you want to use this feature, the certificate must
+   be provisioned in the configuration file, NOT in the database.
+   In case you are loading TLS certificates from the database, you
+   must at least define the default domain in the configuration
+   script, where is currently the only place you can define it.
+
+   Parameter types
+     * tls_client_domain - string, pseudo-variable, or a string
+       which includes pseudo-variables.
+
+   This function can be used from any route.
+
+   Example 1.12. rest_init_client_tls usage
+...
+rest_init_client_tls("1=10.11.12.13:3306");
+if (!rest_get("https://example.com"))
+    xlog("query failed\n");
 ...
 
 1.5. Exported Asynchronous Functions
@@ -368,7 +394,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)")
    but in an asynchronous way. Script execution is suspended until
    the entire content of the HTTP response is available.
 
-   Example 1.12. async rest_get usage
+   Example 1.13. async rest_get usage
 route {
         ...
         async(rest_get("http://getcredit.org/?account=$fU", "$var(credit
@@ -402,7 +428,7 @@ $fU\n");
    but in an asynchronous way. Script execution is suspended until
    the entire content of the HTTP response is available.
 
-   Example 1.13. async rest_post usage
+   Example 1.14. async rest_post usage
 route {
         ...
         async(rest_post("http://myserver.org/register_user", "$fU", , "$
@@ -435,7 +461,7 @@ route [resume] {
    but in an asynchronous way. Script execution is suspended until
    the entire content of the HTTP response is available.
 
-   Example 1.14. async rest_put usage
+   Example 1.15. async rest_put usage
 route {
         ...
         async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)"
