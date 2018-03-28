@@ -117,6 +117,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			switch (flags_s.s[res]) {
 				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
+				case 'l': flags |= REG_LOOKUP_LOCAL_ONLY_FLAG; break;
 				case 'r': flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 				case 'u':
 					if (flags_s.s[res+1] != '/') {
@@ -236,8 +237,14 @@ search_valid_contact:
 	}
 
 	/* no local UAs, only remote ones (in other PoPs) */
-	if (ptr->flags & FL_EXTRA_HOP)
+	if (ptr->flags & FL_EXTRA_HOP) {
+		if (flags & REG_LOOKUP_LOCAL_ONLY_FLAG) {
+			LM_DBG("nothing found!\n");
+			goto done;
+		}
+
 		goto have_contact;
+	}
 
 	ua_re_check(
 		ret = -1;
@@ -364,6 +371,9 @@ have_contact:
 	do {
 		for (; ptr; ptr = ptr->next) {
 			if (ptr->flags & FL_EXTRA_HOP) {
+				if (flags & REG_LOOKUP_LOCAL_ONLY_FLAG)
+					break;
+
 				LM_DBG("setting branch R-URI <%.*s>\n", ptr->c.len, ptr->c.s);
 
 				if (append_branch(_m, &ptr->c, &ptr->received, &_m->path_vec,
