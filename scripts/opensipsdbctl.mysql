@@ -442,7 +442,7 @@ migrate_table ${dst_db}.uri \
 migrate_table ${dst_db}.clusterer \
 	"id,cluster_id,node_id,url,description" \
 	${src_db}.clusterer \
-	"?id,?cluster_id,?machine_id,?url,?description"
+	"?id,?cluster_id,?node_id,?url,?description"
 
 
 if [ "$HAS_EXTRA" = "yes" ] ; then
@@ -515,7 +515,7 @@ migrate_table ${dst_db}.registrant \
 migrate_table ${dst_db}.sip_trace \
 	"id,time_stamp,callid,trace_attrs,msg,method,status,from_proto,from_ip,from_port,to_proto,to_ip,to_port,fromtag,direction" \
 	${src_db}.sip_trace \
-	"?id,?time_stamp,?callid,?traced_user,?msg,?method,?status,?from_proto,?from_ip,?from_port,?to_proto,?to_ip,?to_port,?fromtag,?direction"
+	"?id,?time_stamp,?callid,?trace_attrs,?msg,?method,?status,?from_proto,?from_ip,?from_port,?to_proto,?to_ip,?to_port,?fromtag,?direction"
 
 ## USERBLACKLIST module
 migrate_table ${dst_db}.userblacklist \
