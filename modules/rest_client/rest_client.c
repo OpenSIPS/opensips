@@ -143,39 +143,19 @@ static acmd_export_t acmds[] = {
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{ "rest_get",(cmd_function)w_rest_get, 2, fixup_rest_get, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_get",(cmd_function)w_rest_get, 3, fixup_rest_get, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_get",(cmd_function)w_rest_get, 4, fixup_rest_get, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_post",(cmd_function)w_rest_post, 4, fixup_rest_post, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_post",(cmd_function)w_rest_post, 5, fixup_rest_post, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_post",(cmd_function)w_rest_post, 6, fixup_rest_post, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_put",(cmd_function)w_rest_put, 4, fixup_rest_put, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_put",(cmd_function)w_rest_put, 5, fixup_rest_put, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_put",(cmd_function)w_rest_put, 6, fixup_rest_put, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+	{ "rest_get",(cmd_function)w_rest_get, 2, fixup_rest_get, 0, ALL_ROUTES },
+	{ "rest_get",(cmd_function)w_rest_get, 3, fixup_rest_get, 0, ALL_ROUTES },
+	{ "rest_get",(cmd_function)w_rest_get, 4, fixup_rest_get, 0, ALL_ROUTES },
+	{ "rest_post",(cmd_function)w_rest_post, 4, fixup_rest_post, 0, ALL_ROUTES },
+	{ "rest_post",(cmd_function)w_rest_post, 5, fixup_rest_post, 0, ALL_ROUTES },
+	{ "rest_post",(cmd_function)w_rest_post, 6, fixup_rest_post, 0, ALL_ROUTES },
+	{ "rest_put",(cmd_function)w_rest_put, 4, fixup_rest_put, 0, ALL_ROUTES },
+	{ "rest_put",(cmd_function)w_rest_put, 5, fixup_rest_put, 0, ALL_ROUTES },
+	{ "rest_put",(cmd_function)w_rest_put, 6, fixup_rest_put, 0, ALL_ROUTES },
 	{ "rest_append_hf",(cmd_function)w_rest_append_hf, 1, fixup_spve_null, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+		ALL_ROUTES },
 	{ "rest_init_client_tls",(cmd_function)w_rest_init_client_tls, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+		fixup_spve_null, 0, ALL_ROUTES },
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
