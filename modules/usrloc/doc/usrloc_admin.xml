@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		A SIP user location implementation. Its main purpose is to store,
@@ -97,7 +97,7 @@
 		has been so far extended to implement the required NoSQL API endpoints.
 		</para>
 	</section>
-	<section>
+	<section id="full-sharing-topology" xreflabel="Full Sharing Topology">
 		<title>"Full Sharing" Topology</title>
 		<para>
 		A <emphasis>fully sharing</emphasis> user location propagates
@@ -135,7 +135,7 @@
 		NoSQL API endpoints.
 		</para>
 	</section>
-	<section>
+	<section id="n-contact-pings-problem" xreflabel="N contact pings problem">
 		<title>"N Contact Pings" Problem</title>
 		<para>
 		A long-standing problem caused by contact information being replicated
@@ -158,7 +158,7 @@
 	</section>
 	</section>
 
-	<section id="contact-matching-algs" xreflabel="Contact Matching">
+	<section id="contact-matching" xreflabel="Contact Matching">
 	<title>Contact matching</title>
 	<para>
 	Contact matching (for the same Address-of-Record, AoR) is an important
@@ -216,9 +216,13 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>clusterer, if <xref linkend="location-cluster"/>
-				parameters is turned on (contact replication via clusterer
-				module)</emphasis>.
+				<emphasis>Optionally a NoSQL database module</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clusterer, if <xref linkend="cluster-mode"/>
+				is different than "none".</emphasis>
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -241,7 +245,7 @@
 	</section>
 	<section>
 	<title>Exported Parameters</title>
-	<section>
+	<section id="nat_bflag" xreflabel="nat_bflag">
 		<title><varname>nat_bflag</varname> (string/integer)</title>
 		<para>
 		The name of the branch flag to be used as NAT marker (if the contact
@@ -265,7 +269,7 @@ modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 		</example>
 	</section>
 
-	<section>
+	<section id="user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
 		Name of column containing usernames.
@@ -285,7 +289,7 @@ modparam("usrloc", "user_column", "username")
 		</example>
 	</section>
 
-	<section>
+	<section id="domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
 		Name of column containing domains.
@@ -305,7 +309,7 @@ modparam("usrloc", "domain_column", "domain")
 		</example>
 	</section>
 
-	<section>
+	<section id="contact_column" xreflabel="contact_column">
 		<title><varname>contact_column</varname> (string)</title>
 		<para>
 		Name of column containing contacts.
@@ -325,7 +329,7 @@ modparam("usrloc", "contact_column", "contact")
 		</example>
 	</section>
 
-	<section>
+	<section id="expires_column" xreflabel="expires_column">
 		<title><varname>expires_column</varname> (string)</title>
 		<para>
 		Name of column containing expires value.
@@ -345,7 +349,7 @@ modparam("usrloc", "expires_column", "expires")
 		</example>
 	</section>
 
-	<section>
+	<section id="q_column" xreflabel="q_column">
 		<title><varname>q_column</varname> (string)</title>
 		<para>
 		Name of column containing q values.
@@ -365,7 +369,7 @@ modparam("usrloc", "q_column", "q")
 		</example>
 	</section>
 
-	<section>
+	<section id="callid_column" xreflabel="callid_column">
 		<title><varname>callid_column</varname> (string)</title>
 		<para>
 		Name of column containing callid values.
@@ -385,7 +389,7 @@ modparam("usrloc", "callid_column", "callid")
 		</example>
 	</section>
 
-	<section>
+	<section id="cseq_column" xreflabel="cseq_column">
 		<title><varname>cseq_column</varname> (string)</title>
 		<para>
 		Name of column containing cseq numbers.
@@ -405,7 +409,7 @@ modparam("usrloc", "cseq_column", "cseq")
 		</example>
 	</section>
 
-	<section>
+	<section id="methods_column" xreflabel="methods_column">
 		<title><varname>methods_column</varname> (string)</title>
 		<para>
 		Name of column containing supported methods.
@@ -425,7 +429,7 @@ modparam("usrloc", "methods_column", "methods")
 		</example>
 	</section>
 
-	<section>
+	<section id="flags_column" xreflabel="flags_column">
 		<title><varname>flags_column</varname> (string)</title>
 		<para>
 		Name of column to save the internal flags of the record.
@@ -445,7 +449,7 @@ modparam("usrloc", "flags_column", "flags")
 		</example>
 	</section>
 
-	<section>
+	<section id="cflags_column" xreflabel="cflags_column">
 		<title><varname>cflags_column</varname> (string)</title>
 		<para>
 		Name of column to save the branch/contact flags of the record.
@@ -465,7 +469,7 @@ modparam("usrloc", "cflags_column", "cflags")
 		</example>
 	</section>
 
-	<section>
+	<section id="user_agent_column" xreflabel="user_agent_column">
 		<title><varname>user_agent_column</varname> (string)</title>
 		<para>
 		Name of column containing user-agent values.
@@ -485,7 +489,7 @@ modparam("usrloc", "user_agent_column", "user_agent")
 		</example>
 	</section>
 
-	<section>
+	<section id="received_column" xreflabel="received_column">
 		<title><varname>received_column</varname> (string)</title>
 		<para>
 		Name of column containing the source IP, port, and protocol from the REGISTER
@@ -506,7 +510,7 @@ modparam("usrloc", "received_column", "received")
 		</example>
 	</section>
 
-	<section>
+	<section id="socket_column" xreflabel="socket_column">
 		<title><varname>socket_column</varname> (string)</title>
 		<para>
 		Name of column containing the received socket information (IP:port)
@@ -527,7 +531,7 @@ modparam("usrloc", "socket_column", "socket")
 		</example>
 	</section>
 
-	<section>
+	<section id="path_column" xreflabel="path_column">
 		<title><varname>path_column</varname> (string)</title>
 		<para>
 		Name of column containing the Path header.
@@ -547,7 +551,7 @@ modparam("usrloc", "path_column", "path")
 		</example>
 	</section>
 
-	<section>
+	<section id="sip_instance_column" xreflabel="sip_instance_column">
 		<title><varname>sip_instance_column</varname> (string)</title>
 		<para>
 		Name of column containing the SIP instance.
@@ -567,7 +571,7 @@ modparam("usrloc", "sip_instance_column", "sip_instance")
 		</example>
 	</section>
 
-	<section>
+	<section id="kv_store_column" xreflabel="kv_store_column">
 		<title><varname>kv_store_column</varname> (string)</title>
 		<para>
 		Name of column containing generic key-value data.
@@ -587,7 +591,7 @@ modparam("usrloc", "kv_store_column", "json_data")
 		</example>
 	</section>
 
-	<section>
+	<section id="attr_column" xreflabel="attr_column">
 		<title><varname>attr_column</varname> (string)</title>
 		<para>
 		Name of column containing additional registration-related information.
@@ -607,7 +611,7 @@ modparam("usrloc", "attr_column", "attributes")
 		</example>
 	</section>
 
-	<section>
+	<section id="use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		If the domain part of the user should be also saved and used for
@@ -629,7 +633,7 @@ modparam("usrloc", "use_domain", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="desc_time_order" xreflabel="desc_time_order">
 		<title><varname>desc_time_order</varname> (integer)</title>
 		<para>
 		If the user's contacts should be kept timestamp ordered; otherwise the
@@ -722,7 +726,7 @@ modparam("usrloc", "cachedb_url", "&examplecdb;")
 		</example>
 	</section>
 
-	<section>
+	<section id="db_mode" xreflabel="db_mode">
 		<title><varname>db_mode</varname> (integer, deprecated)</title>
 		<para>
 		<emphasis role='bold'>Although it is backwards-compatible, this
@@ -798,7 +802,7 @@ modparam("usrloc", "db_mode", 2)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role="bold">"federation-cachedb"</emphasis> -
+			<emphasis role="bold">"federation-cachedb-cluster"</emphasis> -
 			OpenSIPS will run with a "federation-cachedb"
 			<xref linkend="cluster-mode"/> and
 			"sync-from-cluster" <xref linkend="restart-persistency"/>.
@@ -806,7 +810,7 @@ modparam("usrloc", "db_mode", 2)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role="bold">"full-sharing"</emphasis> -
+			<emphasis role="bold">"full-sharing-cluster"</emphasis> -
 			OpenSIPS will run with a "full-sharing"
 			<xref linkend="cluster-mode"/> and
 			"sync-from-cluster" <xref linkend="restart-persistency"/>.
@@ -814,10 +818,11 @@ modparam("usrloc", "db_mode", 2)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role="bold">"full-sharing-cachedb"</emphasis> -
+			<emphasis role="bold">"full-sharing-cachedb-cluster"</emphasis> -
 			OpenSIPS will run with a "full-sharing-cachedb"
-			<xref linkend="cluster-mode"/>, which is NoSQL-only, and has
-			natural restart persistency. 
+			<xref linkend="cluster-mode"/>, where all location data strictly
+			resides in a NoSQL database, thus it will have natural restart
+			persistency.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -1023,7 +1028,7 @@ modparam("usrloc", "sql_write_mode", "write-back")
 		<title><varname>matching_mode</varname> (integer)</title>
 		<para>
 		What contact matching algorithm to be used. Refer to section
-		<xref linkend="contact-matching-algs"/> for the description of the
+		<xref linkend="contact-matching"/> for the description of the
 		algorithms.
 		</para>
 		<para>
@@ -1056,7 +1061,7 @@ modparam("usrloc", "matching_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="cseq_delay" xreflabel="cseq_delay">
 		<title><varname>cseq_delay</varname> (integer)</title>
 		<para>
 		Delay (in seconds) for accepting as retransmissions register requests
@@ -1161,7 +1166,7 @@ modparam("usrloc", "max_contact_delete", 10)
 	</section>
 
 
-	<section>
+	<section id="hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The number of entries of the hash table used by usrloc to store the
@@ -1184,7 +1189,7 @@ modparam("usrloc", "hash_size", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="regen_broken_contactid" xreflabel="regen_broken_contactid">
 		<title><varname>regen_broken_contactid</varname> (integer)</title>
 		<para>
 			Since version 2.2, <emphasis role='bold'>contact_id</emphasis> concept
@@ -1225,7 +1230,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 	<section>
 	<title>Exported MI Functions</title>
 
-	<section>
+	<section id="ul_rm" xreflabel="ul_rm">
 		<title>
 		<function moreinfo="none">ul_rm</function>
 		</title>
@@ -1246,7 +1251,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="ul_rm_contact" xreflabel="ul_rm_contact">
 		<title>
 		<function moreinfo="none">ul_rm_contact</function>
 		</title>
@@ -1270,7 +1275,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="ul_dump" xreflabel="ul_dump">
 		<title>
 		<function moreinfo="none">ul_dump</function>
 		</title>
@@ -1287,7 +1292,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="ul_flush" xreflabel="ul_flush">
 		<title>
 		<function moreinfo="none">ul_flush</function>
 		</title>
@@ -1296,7 +1301,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</para>
 	</section>
 
-	<section>
+	<section id="ul_add" xreflabel="ul_add">
 		<title>
 		<function moreinfo="none">ul_add</function>
 		</title>
@@ -1342,7 +1347,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="ul_show_contact" xreflabel="ul_show_contact">
 		<title>
 		<function moreinfo="none">ul_show_contact</function>
 		</title>
@@ -1363,7 +1368,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="ul_sync" xreflabel="ul_sync">
 		<title>
 		<function moreinfo="none">ul_sync</function>
 		</title>
@@ -1435,7 +1440,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 
 	<section>
 	<title>Exported Events</title>
-	<section>
+	<section id="E_UL_AOR_INSERT" xreflabel="E_UL_AOR_INSERT">
 		<title>
 		<function moreinfo="none">E_UL_AOR_INSERT</function>
 		</title>
@@ -1450,7 +1455,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="E_UL_AOR_DELETE" xreflabel="E_UL_AOR_DELETE">
 		<title>
 		<function moreinfo="none">E_UL_AOR_DELETE</function>
 		</title>
@@ -1465,7 +1470,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="E_UL_CONTACT_INSERT" xreflabel="E_UL_CONTACT_INSERT">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_INSERT</function>
 		</title>
@@ -1527,7 +1532,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="E_UL_CONTACT_DELETE" xreflabel="E_UL_CONTACT_DELETE">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_DELETE</function>
 		</title>
@@ -1539,7 +1544,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</para>
 		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
 	</section>
-	<section>
+	<section id="E_UL_CONTACT_UPDATE" xreflabel="E_UL_CONTACT_UPDATE">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_UPDATE</function>
 		</title>

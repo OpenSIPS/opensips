@@ -351,8 +351,8 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * Optionally an SQL database module.
-     * clusterer, if location_cluster parameters is turned on
-       (contact replication via clusterer module).
+     * Optionally a NoSQL database module.
+     * clusterer, if cluster_mode is different than "none".
 
 1.4.2. External Libraries or Applications
 
@@ -683,14 +683,16 @@ modparam("usrloc", "db_mode", 2)
        NAT pinging is a killer since during each ping cycle all
        nated contact are loaded from the DB; The lack of memory
        caching also disable the statistics exports.
-     * "federation-cachedb" - OpenSIPS will run with a
+     * "federation-cachedb-cluster" - OpenSIPS will run with a
        "federation-cachedb" cluster_mode and "sync-from-cluster"
        restart_persistency.
-     * "full-sharing" - OpenSIPS will run with a "full-sharing"
-       cluster_mode and "sync-from-cluster" restart_persistency.
-     * "full-sharing-cachedb" - OpenSIPS will run with a
-       "full-sharing-cachedb" cluster_mode, which is NoSQL-only,
-       and has natural restart persistency.
+     * "full-sharing-cluster" - OpenSIPS will run with a
+       "full-sharing" cluster_mode and "sync-from-cluster"
+       restart_persistency.
+     * "full-sharing-cachedb-cluster" - OpenSIPS will run with a
+       "full-sharing-cachedb" cluster_mode, where all location
+       data strictly resides in a NoSQL database, thus it will
+       have natural restart persistency.
 
    Refer to section Distributed SIP User Location for details
    regarding the clustering topologies and their behavior.
