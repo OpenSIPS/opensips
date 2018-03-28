@@ -73,6 +73,7 @@
 #include "sip_pinger.h"
 #include "../../parser/parse_content.h"
 #include "../../sr_module.h"
+#include "../../lib/csv.h"
 
 #include "nh_table.h"
 
@@ -111,8 +112,8 @@ static int add_rcv_param_f(struct sip_msg *, char *, char *);
 static int get_oldip_fields_value(modparam_t type, void* val);
 
 static void nh_timer(unsigned int, void *);
-static void
-ping_checker_timer(unsigned int ticks, void *timer_idx);
+static void ping_checker_timer(unsigned int ticks, void *timer_idx);
+int fix_ignore_rpl_codes(void);
 static int mod_init(void);
 static void mod_destroy(void);
 
@@ -202,6 +203,8 @@ static int sipping_latency_flag = -1;
 static char *sipping_latency_flag_str = 0;
 static int natping_tcp = 0;
 static int natping_partitions = 1;
+static str ignore_rpl_codes_str;
+unsigned short *ignore_rpl_codes;
 
 static char* rcv_avp_param = NULL;
 static unsigned short rcv_avp_type = 0;
@@ -254,6 +257,7 @@ static param_export_t params[] = {
 	{"nortpproxy_str",           STR_PARAM, &nortpproxy_str.s      },
 	{"received_avp",             STR_PARAM, &rcv_avp_param         },
 	{"force_socket",             STR_PARAM, &force_socket_str      },
+	{"sipping_ignore_rpl_codes", STR_PARAM, &ignore_rpl_codes_str.s},
 	{"sipping_from",             STR_PARAM, &sipping_from.s        },
 	{"sipping_method",           STR_PARAM, &sipping_method.s      },
 	{"sipping_bflag",            STR_PARAM, &sipping_flag_str      },
@@ -523,9 +527,8 @@ mod_init(void)
 			return -1;
 		}
 
-		if (bind_usrloc(&ul) < 0) {
+		if (bind_usrloc(&ul) < 0)
 			return -1;
-		}
 
 		if (force_socket_str) {
 			socket_str.s=force_socket_str;
@@ -627,6 +630,11 @@ mod_init(void)
 				return -1;
 			}
 		}
+	}
+
+	if (fix_ignore_rpl_codes() != 0) {
+		LM_ERR("failed to parse ignored reply codes!\n");
+		return -1;
 	}
 
 	/* Prepare 1918/6598 networks list */
@@ -1363,7 +1371,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	struct socket_info* send_sock;
 	unsigned int flags;
 	struct proxy_l next_hop;
-	uint64_t contact_id=0;
+	ucontact_coords ct_coords;
 
 	udomain_t *d;
 
@@ -1431,8 +1439,8 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			cp = (char*)cp + sizeof(next_hop);
 
 			if (STORE_BRANCH_CTID) {
-				memcpy(&contact_id, cp, sizeof(contact_id));
-				cp = (char*)cp + sizeof(contact_id);
+				memcpy(&ct_coords, cp, sizeof ct_coords);
+				cp = (char*)cp + sizeof ct_coords;
 			}
 
 			if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
@@ -1465,7 +1473,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 			if ((flags & sipping_flag) &&
 			    (opt.s = build_sipping(d, &c, send_sock, &path, &opt.len,
-			                         contact_id, ctid_match_enabled(flags)))) {
+			                         ct_coords, ctid_match_enabled(flags)))) {
 				if (msg_send(send_sock, next_hop.proto, &to, 0, opt.s, opt.len, NULL) < 0) {
 					LM_ERR("sip msg_send failed\n");
 				}
@@ -1673,7 +1681,7 @@ static void
 ping_checker_timer(unsigned int ticks, void *timer_idx)
 {
 	time_t ctime;
-	uint64_t _contact_id;
+	ucontact_coords ct_coords;
 
 	udomain_t *_d;
 	struct nh_table *table;
@@ -1739,27 +1747,27 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 			/* ping confirmed and unlinked from hash; only free the cell */
 			prev = cell;
 			cell = cell->tnext;
+			ul.free_ucontact_coords(prev->ct_coords);
 			shm_free(prev);
 			continue;
 		}
-
 
 		/* we need lock since we don't know whether we will remove this
 		 * cell from the list or not */
 		lock_hash(cell->hash_id);
 
 		/* for these cells threshold has been exceeded */
-		LM_DBG("cell with cid %llu has %d unresponded pings\n",
-				(long long unsigned int)cell->contact_id, cell->not_responded);
 		cell->not_responded++;
+		LM_DBG("cell with ucoords %llu has %d unresponded pings\n",
+		       (unsigned long long)cell->ct_coords, cell->not_responded);
 
 		if (cell->not_responded >= max_pings_lost) {
-			LM_DBG("cell with cid %llu exceeded max pings threshold! removing...\n",
-					(long long unsigned int)cell->contact_id);
-			_contact_id = cell->contact_id;
+			LM_DBG("cell with ucoords %llu exceeded max failed pings! "
+			       "removing...\n", (unsigned long long)cell->ct_coords);
+			ct_coords = cell->ct_coords;
 			_d = cell->d;
 
-			remove_given_cell(cell, &table->entries[cell->hash_id]);
+			remove_from_hash(cell);
 
 			/* we put the lock on cell which now moved into prev */
 			unlock_hash(cell->hash_id);
@@ -1767,10 +1775,11 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 			prev = cell;
 			cell = cell->tnext;
 
+			ul.free_ucontact_coords(prev->ct_coords);
 			shm_free(prev);
 
-			if (rm_on_to_flag && ul.delete_ucontact_from_id &&
-				ul.delete_ucontact_from_id(_d, _contact_id, 0) < 0) {
+			if (rm_on_to_flag && ul.delete_ucontact_from_coords &&
+				ul.delete_ucontact_from_coords(_d, ct_coords, 0) < 0) {
 				/* we keep going since it might work for other contacts */
 				LM_ERR("failed to remove ucontact from db\n");
 			}
@@ -1790,4 +1799,56 @@ out_release_lock:
 	lock_release(&table->timer_list.mutex);
 }
 
+int fix_ignore_rpl_codes(void)
+{
+	csv_record *chopped_codes;
+	struct str_list *code;
+	unsigned short icode, *it;
+	int count = 0;
 
+	if (!ignore_rpl_codes_str.s)
+		return 0;
+
+	ignore_rpl_codes_str.len = strlen(ignore_rpl_codes_str.s);
+	chopped_codes = _parse_csv_record(&ignore_rpl_codes_str, CSV_SIMPLE);
+	if (!chopped_codes) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	for (code = chopped_codes; code; code = code->next) {
+		if (ZSTR(code->s))
+			continue;
+
+		if (str2short(&code->s, &icode) != 0)
+			LM_WARN("found non-int characters: %.*s\n",
+			        ignore_rpl_codes_str.len, ignore_rpl_codes_str.s);
+
+		if (icode < 100 || icode >= 700) {
+			LM_ERR("invalid SIP reply code: %d\n", icode);
+			return -1;
+		}
+
+		ignore_rpl_codes = shm_realloc(ignore_rpl_codes,
+		                               (count + 2) * sizeof *ignore_rpl_codes);
+		if (!ignore_rpl_codes) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		ignore_rpl_codes[count] = icode;
+		count++;
+	}
+
+	LM_DBG("ignoring %d codes\n", count);
+
+	if (ignore_rpl_codes) {
+		ignore_rpl_codes[count] = '\0';
+
+		for (it = ignore_rpl_codes; *it; it++)
+			LM_DBG("ignoring ping replies with status code %d\n", *it);
+	}
+
+	free_csv_record(chopped_codes);
+	return 0;
+}

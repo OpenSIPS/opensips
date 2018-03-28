@@ -96,7 +96,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	regmatch_t ua_match;
 	pv_value_t val;
 	int_str istr;
-	str sip_instance = {0,0},call_id = {0,0};
+	str sip_instance = STR_NULL, call_id = STR_NULL;
 
 	/* branch index */
 	int idx;
@@ -117,6 +117,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			switch (flags_s.s[res]) {
 				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
+				case 'l': flags |= REG_LOOKUP_LOCAL_ONLY_FLAG; break;
 				case 'r': flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 				case 'u':
 					if (flags_s.s[res+1] != '/') {
@@ -183,7 +184,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		else uri = _m->first_line.u.request.uri;
 	}
 
-	if (extract_aor(&uri, &aor,&sip_instance,&call_id) < 0) {
+	if (extract_aor(&uri, &aor, &sip_instance, &call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
 		return -3;
 	}
@@ -211,16 +212,38 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 
 	ptr = r->contacts;
+#ifdef EXTRA_DEBUG
+	print_urecord(r);
+#endif
+
 	ret = -1;
 	/* look first for an un-expired and suported contact */
 search_valid_contact:
-	while ( (ptr) &&
-	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(_m,ptr,flags)))
-		ptr = ptr->next;
-	if (ptr==0) {
+	for (; ptr && !(ptr->flags & FL_EXTRA_HOP); ptr = ptr->next) {
+		if (!VALID_CONTACT(ptr, get_act_time())) {
+			LM_DBG("skipping expired contact %.*s\n", ptr->c.len, ptr->c.s);
+			continue;
+		}
+
+		ret = -2;
+		if (allowed_method(_m, ptr, flags))
+			break;
+	}
+
+	if (!ptr) {
 		/* nothing found */
 		LM_DBG("nothing found !\n");
 		goto done;
+	}
+
+	/* no local UAs, only remote ones (in other PoPs) */
+	if (ptr->flags & FL_EXTRA_HOP) {
+		if (flags & REG_LOOKUP_LOCAL_ONLY_FLAG) {
+			LM_DBG("nothing found!\n");
+			goto done;
+		}
+
+		goto have_contact;
 	}
 
 	ua_re_check(
@@ -278,6 +301,7 @@ search_valid_contact:
 		}
 	}
 
+have_contact:
 	LM_DBG("found a complete match\n");
 
 	ret = 1;
@@ -315,12 +339,14 @@ search_valid_contact:
 			}
 		}
 
-		set_ruri_q( _m, ptr->q);
+		if (!(ptr->flags & FL_EXTRA_HOP)) {
+			set_ruri_q( _m, ptr->q);
 
-		setbflag( _m, 0, ptr->cflags);
+			setbflag( _m, 0, ptr->cflags);
 
-		if (ptr->sock)
-			_m->force_send_socket = ptr->sock;
+			if (ptr->sock)
+				_m->force_send_socket = ptr->sock;
+		}
 
 		/* populate the 'attributes' avp */
 		if (attr_avp_name != -1) {
@@ -336,15 +362,41 @@ search_valid_contact:
 	/* Append branches if enabled */
 	/* If we got to this point and the URI had a ;gr parameter and it was matched
 	 * to a contact. No point in branching */
-	if ( flags&REG_LOOKUP_NOBRANCH_FLAG || (sip_instance.len && sip_instance.s) ) goto done;
+	if (!(ptr->flags & FL_EXTRA_HOP) &&
+	    ((flags & REG_LOOKUP_NOBRANCH_FLAG) || !ZSTR(sip_instance)))
+		goto done;
+
 	LM_DBG("looking for branches\n");
 
 	do {
-		for( ; ptr ; ptr = ptr->next ) {
-			if (VALID_CONTACT(ptr, get_act_time()) && allowed_method(_m,ptr,flags)) {
+		for (; ptr; ptr = ptr->next) {
+			if (ptr->flags & FL_EXTRA_HOP) {
+				if (flags & REG_LOOKUP_LOCAL_ONLY_FLAG)
+					break;
+
+				LM_DBG("setting branch R-URI <%.*s>\n", ptr->c.len, ptr->c.s);
+
+				if (append_branch(_m, &ptr->c, &ptr->received, &_m->path_vec,
+				                  get_ruri_q(_m), getb0flags(_m),
+				                  _m->force_send_socket) == -1) {
+					LM_ERR("failed to append a branch\n");
+					/* Also give a chance to the next branches */
+					continue;
+				}
+
+				/* populate the 'attributes' avp */
+				if (attr_avp_name != -1) {
+					istr.s = ptr->attr;
+					if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
+						LM_ERR("Failed to populate attr avp!\n");
+					}
+				}
+			} else if (VALID_CONTACT(ptr, get_act_time()) &&
+			           allowed_method(_m, ptr, flags)) {
+
 				path_dst.len = 0;
-				if(ptr->path.s && ptr->path.len
-				&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
+				if (!ZSTR(ptr->path)
+				       && get_path_dst_uri(&ptr->path, &path_dst) < 0) {
 					LM_ERR("failed to get dst_uri for Path\n");
 					continue;
 				}
@@ -353,9 +405,10 @@ search_valid_contact:
 
 				/* The same as for the first contact applies for branches
 				 * regarding path vs. received. */
-				LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
-				if (append_branch(_m,&ptr->c,path_dst.len?&path_dst:&ptr->received,
-				&ptr->path, ptr->q, ptr->cflags, ptr->sock) == -1) {
+				LM_DBG("setting branch R-URI <%.*s>\n", ptr->c.len, ptr->c.s);
+				if (append_branch(_m, &ptr->c,
+				           path_dst.len ? &path_dst : &ptr->received,
+				           &ptr->path, ptr->q, ptr->cflags, ptr->sock) == -1) {
 					LM_ERR("failed to append a branch\n");
 					/* Also give a chance to the next branches*/
 					continue;
@@ -370,14 +423,14 @@ search_valid_contact:
 				}
 			}
 		}
+
 		/* 0 branches condition also filled; idx initially -1*/
-		if (!(flags&REG_BRANCH_AOR_LOOKUP_FLAG) || idx == nbranches)
+		if (!(flags & REG_BRANCH_AOR_LOOKUP_FLAG) || idx == nbranches)
 			goto done;
 
-
 		/* relsease old aor lock */
-		ul.unlock_udomain((udomain_t*)_t, &aor);
 		ul.release_urecord(r, 0);
+		ul.unlock_udomain((udomain_t *)_t, &aor);
 
 		/* idx starts from -1 */
 		uri = branch_uris[idx];
@@ -389,13 +442,13 @@ search_valid_contact:
 		/* release old urecord */
 
 		/* get lock on new aor */
-		LM_DBG("getting contacts from aor [%.*s]"
-					"in branch %d\n", aor.len, aor.s, idx);
+		LM_DBG("getting contacts from aor [%.*s] "
+		       "in branch %d\n", aor.len, aor.s, idx);
 		ul.lock_udomain((udomain_t*)_t, &aor);
 		res = ul.get_urecord((udomain_t*)_t, &aor, &r);
 
 		if (res > 0) {
-			LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
+			LM_DBG("aor '%.*s' not found in usrloc\n", aor.len, aor.s);
 			goto done;
 		}
 		idx++;

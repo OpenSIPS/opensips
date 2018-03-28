@@ -38,9 +38,9 @@ typedef enum {
 enum cdb_filter_op {
 	CDB_OP_EQ,
 	CDB_OP_LT,
-	CDB_OP_LE,
+	CDB_OP_LTE,
 	CDB_OP_GT,
-	CDB_OP_GE,
+	CDB_OP_GTE,
 };
 
 /**
@@ -89,7 +89,7 @@ typedef struct cdb_pair {
 } cdb_pair_t;
 
 typedef struct {
-	cdb_dict_t dict;
+	cdb_dict_t dict; /* list of cdb_pair_t */
 
 	struct list_head list;
 } cdb_row_t;
@@ -132,6 +132,7 @@ static inline cdb_pair_t *cdb_mk_pair(const cdb_key_t *key, const str *subkey)
 		str_cpy(&pair->subkey, subkey);
 	}
 
+	pair->val.type = CDB_NULL;
 	return pair;
 }
 

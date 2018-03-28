@@ -34,8 +34,21 @@
 #include "urecord.h"
 #include "ucontact.h"
 #include "ul_callback.h"
+#include "ul_dbg.h"
 
+enum ul_cluster_mode {
+	CM_NONE,
+	CM_FEDERATION,
+	CM_FEDERATION_CACHEDB,
+	CM_FULL_SHARING,
+	CM_FULL_SHARING_CACHEDB,
+	CM_SQL_ONLY,
+} ul_cluster_mode_t;
+
+/* XXX: deprecated! */
 enum usrloc_modes {
+	NOT_SET       = -1,
+
 	NO_DB         = 0,
 	WRITE_THROUGH = 1,
 	WRITE_BACK    = 2,
@@ -43,9 +56,10 @@ enum usrloc_modes {
 };
 
 typedef struct usrloc_api {
-	int               use_domain;
-	enum usrloc_modes db_mode;
-	unsigned int      nat_flag;
+	int use_domain;
+	enum ul_cluster_mode cluster_mode;
+	int (*have_mem_storage) (void);
+	unsigned int nat_flag;
 
 	register_udomain_t     register_udomain;
 	get_all_ucontacts_t    get_all_ucontacts;
@@ -60,10 +74,12 @@ typedef struct usrloc_api {
 
 	insert_ucontact_t         insert_ucontact;
 	delete_ucontact_t         delete_ucontact;
-	delete_ucontact_from_id_t delete_ucontact_from_id;
+	delete_ucontact_from_coords_t delete_ucontact_from_coords;
+	/* Return: 0 if equal, -1 otherwise */
+	int (*ucontact_coords_cmp) (ucontact_coords a, ucontact_coords b);
+	void (*free_ucontact_coords) (ucontact_coords coords);
 	get_ucontact_from_id_t    get_ucontact_from_id;
 	get_ucontact_t            get_ucontact;
-
 	update_ucontact_t         update_ucontact;
 
 	get_next_udomain_t        get_next_udomain;

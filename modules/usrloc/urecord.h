@@ -61,6 +61,7 @@ typedef struct urecord {
                                     * array we belong to */
 
 	int no_clear_ref;              /*!< Keep the record while positive */
+	int is_static;
 
 	map_t kv_storage;              /*!< data attached by API subscribers >*/
 } urecord_t;
@@ -73,12 +74,8 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r);
 /* Free all memory associated with the element */
 void free_urecord(urecord_t* _r);
 
-
-/*
- * Print an element, for debugging purposes only
- */
-void print_urecord(FILE* _f, urecord_t* _r);
-
+/* Federation clustering: Free any fake (remote) contacts within this record */
+void free_fake_contacts(urecord_t *_r);
 
 /*
  * Add a new contact
@@ -109,6 +106,11 @@ int timer_urecord(urecord_t* _r,query_list_t **ins_list);
  */
 int db_delete_urecord(urecord_t* _r);
 
+
+/*
+ * Delete the whole record from the cache database
+ */
+int cdb_delete_urecord(urecord_t* _r);
 
 /* ===== Module interface ======== */
 

@@ -265,7 +265,6 @@ static int mod_init(void)
 {
 	pv_spec_t avp_spec;
 	str s;
-	bind_usrloc_t bind_usrloc;
 
 	LM_INFO("initializing...\n");
 
@@ -338,9 +337,8 @@ static int mod_init(void)
 		attr_avp_type = 0;
 	}
 
-	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
-	if (!bind_usrloc) {
-		LM_ERR("can't bind usrloc\n");
+	if (load_ul_api(&ul) != 0) {
+		LM_ERR("failed to bind usrloc\n");
 		return -1;
 	}
 
@@ -353,11 +351,6 @@ static int mod_init(void)
 			LM_DBG("default_q = %d, raising to MIN_Q: %d\n", default_q, MIN_Q);
 			default_q = MIN_Q;
 		}
-	}
-
-
-	if (bind_usrloc(&ul) < 0) {
-		return -1;
 	}
 
 	/*

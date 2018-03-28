@@ -625,6 +625,13 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
             insensitive filtering for the 'u' flag.
           + 'e' (Use extended regexp) - this flag enables using of
             extended regexp format for the 'u' flag.
+          + 'l' (Local-only contacts) - this flag is only relevant
+            with federated user location clustering. Its purpose
+            is to prevent the local registrar from re-interpreting
+            the AoR metadata and further appending (incorrect)
+            branches for the call. Only the direct (local)
+            contacts behind the AoR will be routed to if this flag
+            is enabled.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
        used as AOR; This must be a variable.
 

@@ -25,6 +25,7 @@
 #include "../../ut.h"
 #include "../../pt.h"
 #include "../../cachedb/cachedb.h"
+#include "../../lib/osips_malloc.h"
 
 #include <string.h>
 
@@ -292,6 +293,9 @@ int mongo_con_set(cachedb_con *con, str *attr, str *val, int expires)
 	bson_append_utf8(&child, "opensips", 8, val->s, val->len);
 	bson_append_document_end(update, &child);
 
+	dbg_bson("query: ", query);
+	dbg_bson("update: ", update);
+
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_update(MONGO_COLLECTION(con), MONGOC_UPDATE_UPSERT,
 	                              query, update, NULL, &error)) {
@@ -317,6 +321,8 @@ int mongo_con_remove(cachedb_con *con, str *attr)
 
 	doc = bson_new();
 	bson_append_utf8(doc, MDB_PK, MDB_PKLEN, attr->s, attr->len);
+
+	dbg_bson("removing: ", doc);
 
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
@@ -958,6 +964,8 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 
 	bson_append_bool(cmd, "new", 3, true);
 
+	dbg_bson("upsert: ", cmd);
+
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_command_simple(MONGO_COLLECTION(con), cmd,
 	                              NULL, &reply, &error)) {
@@ -1012,6 +1020,8 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	bson_append_utf8(&child, MDB_PK, MDB_PKLEN, attr->s, attr->len);
 	bson_append_document_end(query, &child);
 #endif
+
+	dbg_bson("query: ", query);
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 	start_expire_timer(start, mongo_exec_threshold);
@@ -1703,7 +1713,7 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 	return 0;
 
 out_err:
-	cdb_free_entries(out_dict);
+	cdb_free_entries(out_dict, osips_pkg_free);
 	return -1;
 }
 
@@ -1737,6 +1747,8 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 	str text_op;
 	str key;
 	char prepend_and = filter ? !!filter->next : 0;
+	int arr_idx = 0, arr_idx_len;
+	char *arr_idx_str;
 
 	if (!filter)
 		return 0;
@@ -1750,7 +1762,9 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 
 	for (; filter; filter = filter->next) {
 		if (prepend_and) {
-			bson_append_document_begin(child, "", 0, &arr_doc);
+			arr_idx_str = int2str(arr_idx, &arr_idx_len);
+			bson_append_document_begin(child, arr_idx_str, arr_idx_len, &arr_doc);
+			arr_idx++;
 			subchild = &arr_doc;
 		} else {
 			subchild = cur;
@@ -1780,13 +1794,13 @@ int mongo_cdb_filter_to_bson(const cdb_filter_t *filter, bson_t *cur)
 		case CDB_OP_LT:
 			init_str(&text_op, "$lt");
 			break;
-		case CDB_OP_LE:
+		case CDB_OP_LTE:
 			init_str(&text_op, "$lte");
 			break;
 		case CDB_OP_GT:
 			init_str(&text_op, "$gt");
 			break;
-		case CDB_OP_GE:
+		case CDB_OP_GTE:
 			init_str(&text_op, "$gte");
 			break;
 		default:
@@ -1825,12 +1839,15 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 
 	LM_DBG("find all in %s\n", MONGO_NAMESPACE(con));
 
+	cdb_res_init(res);
+
 #if MONGOC_CHECK_VERSION(1, 5, 0)
-	/* TODO: test this! */
 	if (mongo_cdb_filter_to_bson(filter, &bson_filter) != 0) {
 		LM_ERR("failed to build bson filter\n");
 		return -1;
 	}
+
+	dbg_bson("using filter: ", &bson_filter);
 
 	start_expire_timer(start, mongo_exec_threshold);
 	cursor = mongoc_collection_find_with_opts(
@@ -1838,8 +1855,6 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 
 	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query rows",
 	                  con->url.s, con->url.len, 0);
-
-	cdb_res_init(res);
 
 	while (mongoc_cursor_next(cursor, &doc)) {
 #else
@@ -1862,8 +1877,6 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 	stop_expire_timer(start, mongo_exec_threshold, "MongoDB query rows",
 	                  con->url.s, con->url.len, 0);
 
-	cdb_res_init(res);
-
 	while (mongoc_cursor_more(cursor) && mongoc_cursor_next(cursor, &doc)) {
 #endif
 		row = mongo_mk_cdb_row(doc);
@@ -1876,7 +1889,7 @@ int mongo_con_query(cachedb_con *con, const cdb_filter_t *filter,
 		list_add_tail(&row->list, &res->rows);
 	}
 
-	LM_DBG("found %d results\n", res->count);
+	LM_DBG("result count: %d\n", res->count);
 
 	bson_destroy(&bson_filter);
 	mongoc_cursor_destroy(cursor);
@@ -1936,7 +1949,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 		case CDB_NULL:
 			if (!bson_append_null(out_doc, key.s, key.len)) {
 				LM_ERR("failed to append NULL doc\n");
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_INT32:
@@ -1944,7 +1957,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			                       pair->val.val.i32)) {
 				LM_ERR("failed to append %.*s: %d\n", key.len,
 				       key.s, pair->val.val.i32);
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_INT64:
@@ -1952,7 +1965,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			                       pair->val.val.i64)) {
 				LM_ERR("failed to append %.*s: %ld\n", key.len,
 				       key.s, pair->val.val.i64);
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_STR:
@@ -1960,31 +1973,34 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			                      pair->val.val.st.s, pair->val.val.st.len)) {
 				LM_ERR("failed to append %.*s: %.*s\n", key.len,
 				       key.s, pair->val.val.st.len, pair->val.val.st.s);
-				return -1;
+				goto out_err;
 			}
 			break;
 		case CDB_DICT:
 			if (mongo_cdb_dict_to_bson(&pair->val.val.dict, &bson_val) != 0) {
 				LM_ERR("failed to convert dict to bson\n");
-				return -1;
+				goto out_err;
 			}
 
-			if (!bson_append_document(out_doc, key.s, key.len,
-			                          &bson_val)) {
+			if (!bson_append_document(out_doc, key.s, key.len, &bson_val)) {
 				LM_ERR("failed to append doc\n");
-				return -1;
+				goto out_err;
 			}
-			bson_destroy(&bson_val);
+
 			bson_reinit(&bson_val);
 			break;
 		default:
 			LM_ERR("unsupported type %d for key %.*s\n", pair->val.type,
 			       key.len, key.s);
-			return -1;
+			goto out_err;
 		}
 	}
 
+	bson_destroy(&bson_val);
 	return 0;
+out_err:
+	bson_destroy(&bson_val);
+	return -1;
 }
 
 int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
@@ -2073,7 +2089,6 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 				ret = -1;
 				goto out;
 			}
-			bson_destroy(&bson_val);
 			bson_reinit(&bson_val);
 			break;
 		default:
@@ -2122,6 +2137,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	                  con->url.s, con->url.len, 0);
 
 out:
+	bson_destroy(&bson_val);
 	bson_destroy(&filter);
 	bson_destroy(&set_keys);
 	bson_destroy(&unset_keys);

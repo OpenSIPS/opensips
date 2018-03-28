@@ -66,7 +66,9 @@ int bind_usrloc(usrloc_api_t* api)
 	api->release_urecord         = release_urecord;
 	api->insert_ucontact         = insert_ucontact;
 	api->delete_ucontact         = delete_ucontact;
-	api->delete_ucontact_from_id = delete_ucontact_from_id;
+	api->delete_ucontact_from_coords = delete_ucontact_from_coords;
+	api->ucontact_coords_cmp     = ucontact_coords_cmp;
+	api->free_ucontact_coords    = free_ucontact_coords;
 	api->get_ucontact            = get_ucontact;
 	api->get_ucontact_from_id    = get_ucontact_from_id;
 	api->update_ucontact         = update_ucontact;
@@ -80,8 +82,9 @@ int bind_usrloc(usrloc_api_t* api)
 
 	api->update_sipping_latency  = update_sipping_latency;
 	api->use_domain = use_domain;
-	api->db_mode    = db_mode;
+	api->cluster_mode    = cluster_mode;
 	api->nat_flag   = nat_bflag;
+	api->have_mem_storage = have_mem_storage;
 
 	return 0;
 }

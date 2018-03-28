@@ -83,6 +83,9 @@ int cl_request_sync(str *capability, int cluster_id)
 	int source_id;
 	int rc;
 
+	LM_DBG("requesting %.*s sync in cluster %d\n",
+	       capability->len, capability->s, cluster_id);
+
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_ERR("Unknown cluster [%d]\n", cluster_id);
@@ -99,8 +102,10 @@ int cl_request_sync(str *capability, int cluster_id)
 	}
 
 	/* the seed node is already considered synchronized */
-	if (cluster->current_node->flags & NODE_IS_SEED)
+	if (cluster->current_node->flags & NODE_IS_SEED) {
+		LM_DBG("we are a seed node - sync is not required\n");
 		return 0;
+	}
 
 	lock_get(cluster->lock);
 	if (lcap->flags & CAP_SYNC_PENDING) {

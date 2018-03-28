@@ -147,6 +147,9 @@ int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
 enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
+enum clusterer_send_ret
+cl_send_all_having(bin_packet_t *packet, int dst_cluster_id,
+                   enum cl_node_match_op match_op);
 int cl_register_cap(str *cap, cl_packet_cb_f packet_cb,
 					cl_event_cb_f event_cb, int cluster_id, int require_sync);
 

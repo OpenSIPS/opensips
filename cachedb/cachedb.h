@@ -74,9 +74,9 @@ typedef struct cachedb_funcs_t {
 	int (*truncate) (cachedb_con *con);
 
 	int (*db_query_trans) (cachedb_con *con, const str *table,
-            const db_key_t* _k, const db_op_t* _op, const db_val_t* _v,
-            const db_key_t* _c, int _n, int _nc, const db_key_t _o,
-            db_res_t** _r);
+	        const db_key_t* _k, const db_op_t* _op, const db_val_t* _v,
+	        const db_key_t* _c, int _n, int _nc, const db_key_t _o,
+	        db_res_t** _r);
 	int (*db_free_trans) (cachedb_con* con, db_res_t* _r);
 	int (*db_insert_trans) (cachedb_con *con, const str *table,
 	        const db_key_t* _k, const db_val_t* _v, int _n);
@@ -96,6 +96,8 @@ typedef struct cachedb_funcs_t {
 	 * @con: The cacheDB connection to use.
 	 * @filter: NULL, one or more AND'ed filters for the query.
 	 * @res: Will contain zero or more results.
+	 *
+	 * Return: 0 on success, -1 otherwise. @res is always safe to clean.
 	 */
 	int (*query) (cachedb_con *con, const cdb_filter_t *filter, cdb_res_t *res);
 
@@ -109,6 +111,12 @@ typedef struct cachedb_funcs_t {
 	 * shall _always_ perform an "UPSERT" operation wherever possible,
 	 * i.e. it will insert any missing rows or columns (keys) without failing.
 	 *
+	 * Key naming restrictions: apparently, there are none. However, depending
+	 * on the destination backend, you might need to base64encode() some of
+	 * your keys and/or subkeys. For example, any keys containing '.' will
+	 * cause MongoDB to chop them and create something resembling:
+	 * "key1: {key2: value}" instead of "key1.key2: value".
+	 *
 	 * Regarding the TTL support -- the input allows for maximal flexibility,
 	 * allowing calling code to set a TTL per either each key/value or
 	 * key.subkey/value pair. From here onwards, it is up to the cacheDB API
@@ -116,6 +124,8 @@ typedef struct cachedb_funcs_t {
 	 * backends may only support row-level TTLs and set a TTL equal to the
 	 * max TTL between all input and existing DB TTL (e.g. MongoDB), others
 	 * may actually fully support dictionary-level TTLs (e.g. Cassandra).
+	 *
+	 * Return: 0 on success, -1 otherwise.
 	 */
 	int (*update) (cachedb_con *con, const cdb_filter_t *row_filter,
 	               const cdb_dict_t *pairs);
@@ -131,6 +141,8 @@ typedef struct cachedb_engines {
 	cachedb_con_list *connections; /* connection potentially used from script
 									  for this particular cachedb engine */
 } cachedb_engine;
+
+#include "cachedb_cap.h"
 
 int register_cachedb(cachedb_engine* cde_entry);
 

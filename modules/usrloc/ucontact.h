@@ -60,9 +60,23 @@ typedef enum cstate {
 typedef enum flags {
 	FL_NONE        = 0,          /*!< No flags set */
 	FL_MEM         = 1 << 0,     /*!< Update memory only */
-	FL_ALL         = (int)0xFFFFFFFF  /*!< All flags set */
-} flags_t;
 
+	/* This flag makes sense in federation clustering. If a returned
+	 * ucontact_t is flagged with FL_EXTRA_HOP, then it only has three
+	 * valid fields: .flags, .c (R-URI) and .received (outbound proxy).
+	 * The outbound proxy represents one of the AoR's current locations.
+	 */
+	FL_EXTRA_HOP   = 1 << 1,
+
+	FL_ALL         = (int)0xFFFFFFFF  /*!< All flags set */
+} ucontact_flags_t;
+
+/*! \brief
+ * An "ucontact_id" is a time-unique identifier for in-memory "ucontact_t"
+ * structs which also embeds all required internal hash coordinates
+ * in order to perform very fast "ucontact_t" lookups
+ */
+typedef uint64_t ucontact_id;
 
 /*! \brief
  * Main structure for handling of registered Contact: data
@@ -87,8 +101,8 @@ typedef struct ucontact {
 	str callid;             /*!< Call-ID header field of registration */
 	int cseq;               /*!< CSeq value */
 	cstate_t state;         /*!< State of the contact (\ref cstate) */
-	unsigned int flags;     /*!< Various flags (NAT, ping type, etc) */
-	unsigned int cflags;    /*!< Custom contact flags (from script) */
+	ucontact_flags_t flags; /*!< Usrloc-specific internal contact flags */
+	unsigned int cflags;    /*!< Custom branch flags (NAT, RTO, etc.) */
 	str user_agent;         /*!< User-Agent header field */
 	struct socket_info *sock; /*!< received socket */
 	time_t last_modified;   /*!< When the record was last modified */
@@ -120,7 +134,7 @@ typedef struct ucontact_info {
 	str instance;
 	str* callid;
 	int cseq;
-	unsigned int flags;
+	ucontact_flags_t flags;
 	unsigned int cflags;
 	str *user_agent;
 	struct socket_info *sock;
@@ -129,6 +143,26 @@ typedef struct ucontact_info {
 	str *packed_kv_storage;
 	str *attr;
 } ucontact_info_t;
+
+/*! \brief
+ * The representation (lookup coordinates) of a contact:
+ *	- ucontact_id: suitable for in-memory storage or when
+ *        running in CM_SQL_ONLY, which benefits from auto-generated keys
+ *	- ucontact_sip_coords *: a more verbose way of locating a contact.
+ *        This is required when the user location is held inside distributed
+ *        NoSQL databases, which have limited support for primary keys, hence
+ *        the contacts must be located (e.g. for deletion) using their SIP
+ *        coordinates
+ */
+typedef uint64_t ucontact_coords;
+
+typedef struct {
+	str aor;
+	str ct_key;
+} ucontact_sip_coords;
+
+int ucontact_coords_cmp(ucontact_coords a, ucontact_coords b);
+void free_ucontact_coords(ucontact_coords coords);
 
 /*! \brief
  * ancient time used for marking the contacts forced to expired
@@ -152,12 +186,6 @@ new_ucontact(str* _dom, str* _aor, str* _contact,  ucontact_info_t* _ci);
  * Free all memory associated with given contact structure
  */
 void free_ucontact(ucontact_t* _c);
-
-
-/*! \brief
- * Print contact, for debugging purposes only
- */
-void print_ucontact(FILE* _f, ucontact_t* _c);
 
 
 /*! \brief

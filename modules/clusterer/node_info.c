@@ -787,6 +787,45 @@ int cl_get_my_id(void)
 	return current_id;
 }
 
+int cl_get_my_sip_addr(int cluster_id, str *out_addr)
+{
+	cluster_info_t *cl;
+	int rc;
+
+	if (!cl_list_lock) {
+		LM_ERR("cluster shutdown\n");
+		memset(out_addr, 0, sizeof *out_addr);
+		return -1;
+	}
+	lock_start_read(cl_list_lock);
+
+	cl = get_cluster_by_id(cluster_id);
+	if (!cl) {
+		LM_ERR("unknown cluster id: %d\n", cluster_id);
+		lock_stop_read(cl_list_lock);
+		memset(out_addr, 0, sizeof *out_addr);
+		return -1;
+	}
+
+	lock_get(cl->current_node->lock);
+	if (ZSTR(cl->current_node->sip_addr)) {
+		memset(out_addr, 0, sizeof *out_addr);
+		rc = 0;
+	} else {
+		if (pkg_str_dup(out_addr, &cl->current_node->sip_addr) != 0) {
+			LM_ERR("oom\n");
+			memset(out_addr, 0, sizeof *out_addr);
+			rc = -1;
+		} else {
+			rc = 0;
+		}
+	}
+
+	lock_release(cl->current_node->lock);
+	lock_stop_read(cl_list_lock);
+	return rc;
+}
+
 int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 {
 	int i, j, tmp;
@@ -817,6 +856,8 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 			lock_release(node->lock);
 		}
 
+	lock_stop_read(cl_list_lock);
+
 	/* sort array of reachable node ids */
 	for (i = 1; i < *nr_nodes; i++) {
 		tmp = sorted[i];
@@ -827,7 +868,6 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 
 	for (i = 0; i < *nr_nodes && sorted[i] < current_id; i++) ;
 
-	lock_stop_read(cl_list_lock);
-
+	(*nr_nodes)++;
 	return i;
 }

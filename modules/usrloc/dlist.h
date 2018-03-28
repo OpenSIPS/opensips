@@ -69,12 +69,6 @@ int register_udomain(const char* _n, udomain_t** _d);
 void free_all_udomains(void);
 
 
-/*
- * Just for debugging
- */
-void print_all_udomains(FILE* _f);
-
-
 /*! \brief
  * Called from timer
  */
@@ -116,6 +110,11 @@ int find_domain(str* _d, udomain_t** _p);
 typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
+/* when using various DBs (SQL/NoSQL) in order to store AoR hashes, it's best
+ * to drop the MSB and assume that none of them support unsigned integers */
+#define DB_AOR_HASH_MASK (1U << 31)
+#define MAX_DB_AOR_HASH (DB_AOR_HASH_MASK - 1U)
+
 /*contact label may not be higher than 14 bits*/
 #define CLABEL_MASK ((1<<14)-1)
 #define CLABEL_INC_AND_TEST(_clabel_) ((_clabel_+1)&CLABEL_MASK)
@@ -129,35 +128,29 @@ pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
 }
 
 
-static inline int
+static inline void
 unpack_indexes(uint64_t v,
 		unsigned short *aorhash, unsigned int *rlabel, unsigned short *clabel)
 {
-	if (aorhash == NULL || rlabel == NULL || clabel == NULL) {
-		LM_ERR("invalid arguments\n");
-		return -1;
-	}
-
 	/* first 14 bits 0-13 */
 	*clabel  = v & CLABEL_MASK;
 	/* middle 32 bits 14-45 */
 	*rlabel  = (v >> 14) & 0xFFFFFFFF;
 	/* last 16 bits 46-61 */
 	*aorhash = (v >> 46);
-
-	return 0;
 }
 
-typedef int (*delete_ucontact_from_id_t)(udomain_t *d,
-					uint64_t contact_id, char is_replicated);
-int delete_ucontact_from_id(udomain_t *d,
-		uint64_t contact_id, char is_replicated);
+typedef int (*delete_ucontact_from_coords_t)(udomain_t *d,
+                   ucontact_coords ct_coords, char is_replicated);
+int delete_ucontact_from_coords(udomain_t *d,
+		ucontact_coords ct_coords, char is_replicated);
 
 /*
  * update sipping latancy
  */
-typedef int (*update_sipping_latency_t)(udomain_t *d, uint64_t contact_id,
-										int sipping_latency);
-int update_sipping_latency(udomain_t *d, uint64_t contact_id, 	 int sipping_latency );
+typedef int (*update_sipping_latency_t)(udomain_t *d,
+                    ucontact_coords ct_coords, int sipping_latency);
+int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
+                           int sipping_latency);
 
 #endif /* UDLIST_H */

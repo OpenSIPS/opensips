@@ -78,6 +78,16 @@ module_dependency_t *get_deps_sqldb_url(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_WARN);
 }
 
+module_dependency_t *get_deps_cachedb_url(param_export_t *param)
+{
+	char *cdb_url = *(char **)param->param_pointer;
+
+	if (!cdb_url || strlen(cdb_url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
+}
+
 static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep,
 								 char *script_param)
 {

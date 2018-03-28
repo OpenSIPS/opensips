@@ -51,5 +51,6 @@
 #define REG_LOOKUP_NOBRANCH_FLAG       (1<<1)
 #define REG_LOOKUP_UAFILTER_FLAG       (1<<2)
 #define REG_BRANCH_AOR_LOOKUP_FLAG     (1<<3)
+#define REG_LOOKUP_LOCAL_ONLY_FLAG     (1<<4)
 
 #endif /* __LIB_REG_CONFIG__ */

@@ -720,7 +720,7 @@ struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param)
 	struct mi_node *node;
 	udomain_t *dom;
 
-	if (db_mode == DB_ONLY || db_mode == NO_DB)
+	if (sql_wmode == SQL_NO_WRITE)
 		return init_mi_tree( 200, MI_SSTR("Contacts already synced"));
 
 	node = cmd->node.kids;
@@ -753,7 +753,7 @@ struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param)
  */
 struct mi_root* mi_usrloc_cl_sync(struct mi_root *cmd, void *param)
 {
-	if (clusterer_api.request_sync(&contact_repl_cap, ul_replication_cluster) < 0)
+	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster) < 0)
 		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_tree(200, MI_SSTR(MI_OK));

@@ -109,7 +109,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	}
 	memset(c, 0, sizeof(ucontact_t));
 
-	if (db_mode != DB_ONLY) {
+	if (have_mem_storage()) {
 		if (!ZSTRP(_ci->packed_kv_storage))
 			c->kv_storage = store_deserialize(_ci->packed_kv_storage);
 		else
@@ -207,68 +207,6 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->attr.s) shm_free(_c->attr.s);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
 	shm_free( _c );
-}
-
-
-/*! \brief
- * Print contact, for debugging purposes only
- */
-void print_ucontact(FILE* _f, ucontact_t* _c)
-{
-	time_t t = time(0);
-	char* st;
-
-	switch(_c->state) {
-	case CS_NEW:   st = "CS_NEW";     break;
-	case CS_SYNC:  st = "CS_SYNC";    break;
-	case CS_DIRTY: st = "CS_DIRTY";   break;
-	default:       st = "CS_UNKNOWN"; break;
-	}
-
-	fprintf(_f, "~~~Contact(%p)~~~\n", _c);
-	fprintf(_f, "domain    : '%.*s'\n", _c->domain->len, ZSW(_c->domain->s));
-	fprintf(_f, "aor       : '%.*s'\n", _c->aor->len, ZSW(_c->aor->s));
-	fprintf(_f, "Contact   : '%.*s'\n", _c->c.len, ZSW(_c->c.s));
-	fprintf(_f, "Expires   : ");
-	if (_c->expires == 0) {
-		fprintf(_f, "Permanent\n");
-	} else if (_c->expires == UL_EXPIRED_TIME) {
-		fprintf(_f, "Deleted\n");
-	} else if (t > _c->expires) {
-		fprintf(_f, "Expired\n");
-	} else {
-		fprintf(_f, "%u\n", (unsigned int)(_c->expires - t));
-	}
-	fprintf(_f, "q         : %s\n", q2str(_c->q, 0));
-	fprintf(_f, "Call-ID   : '%.*s'\n", _c->callid.len, ZSW(_c->callid.s));
-	fprintf(_f, "CSeq      : %d\n", _c->cseq);
-	fprintf(_f, "User-Agent: '%.*s'\n",
-		_c->user_agent.len, ZSW(_c->user_agent.s));
-	fprintf(_f, "received  : '%.*s'\n",
-		_c->received.len, ZSW(_c->received.s));
-	fprintf(_f, "Path      : '%.*s'\n",
-		_c->path.len, ZSW(_c->path.s));
-	fprintf(_f, "State     : %s\n", st);
-	fprintf(_f, "Flags     : %u\n", _c->flags);
-	fprintf(_f, "Attrs     : '%.*s'\n", _c->attr.len, _c->attr.s);
-	if (_c->sipping_latency) {
-		fprintf(_f, "sipping_latency     : '%d \n", _c->sipping_latency);
-	}else{
-		fprintf(_f, "sipping_latency     : NULL \n");
-
-	}
-	if (_c->sock) {
-		fprintf(_f, "Sock      : %.*s (as %.*s )(%p)\n",
-				_c->sock->sock_str.len,_c->sock->sock_str.s,
-				_c->sock->adv_sock_str.len,ZSW(_c->sock->adv_sock_str.s),
-				_c->sock);
-	} else {
-		fprintf(_f, "Sock      : none (null)\n");
-	}
-	fprintf(_f, "Methods   : %u\n", _c->methods);
-	fprintf(_f, "next      : %p\n", _c->next);
-	fprintf(_f, "prev      : %p\n", _c->prev);
-	fprintf(_f, "~~~/Contact~~~~\n");
 }
 
 
@@ -377,7 +315,7 @@ void st_update_ucontact(ucontact_t* _c)
 			  * again. For db mode 1 we try to update right
 			  * now and if fails, let the timer to do the job
 			  */
-		if (db_mode != NO_DB) {
+		if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
 			_c->state = CS_DIRTY;
 		}
 		break;
@@ -415,7 +353,7 @@ int st_delete_ucontact(ucontact_t* _c)
 		      * the contact from the memory as well as
 		      * from the database
 		      */
-		if (db_mode != WRITE_THROUGH) {
+		if (sql_wmode != SQL_WRITE_THROUGH) {
 			_c->expires = UL_EXPIRED_TIME;
 			return 0;
 		} else {
@@ -517,7 +455,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		return 0;
 	}
 
-	if ((db_mode == DB_ONLY) && !strstr(db_url.s,"cachedb://")) {
+	/* in CM_SQL_ONLY, we let the SQL engine auto-generate the ucontact_id */
+	if (cluster_mode == CM_SQL_ONLY) {
 		start++;
 		nr_vals--;
 	}
@@ -984,13 +923,13 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 	int ret;
 
 	/* we have to update memory in any case, but database directly
-	 * only in db_mode 1 */
-	if (mem_update_ucontact( _c, _ci) < 0) {
+	 * only in sql_wmode SQL_WRITE_THROUGH */
+	if (mem_update_ucontact(_c, _ci) < 0) {
 		LM_ERR("failed to update memory\n");
 		return -1;
 	}
 
-	if (!is_replicated && ul_replication_cluster && db_mode != DB_ONLY)
+	if (!is_replicated && have_data_replication())
 		replicate_ucontact_update(_r, &_c->c, _ci);
 
 	/* run callbacks for UPDATE event */
@@ -1000,12 +939,12 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		run_ul_callbacks( UL_CONTACT_UPDATE, _c);
 	}
 
-	if (_r && db_mode!=DB_ONLY)
+	if (_r && have_mem_storage())
 		update_contact_pos( _r, _c);
 
 	st_update_ucontact(_c);
 
-	if (db_mode == WRITE_THROUGH) {
+	if (sql_wmode == SQL_WRITE_THROUGH) {
 		if (persist_urecord_kv_store(_r) != 0)
 			LM_ERR("failed to persist latest urecord K/V storage\n");
 
@@ -1017,6 +956,29 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		}
 	}
 	return 0;
+}
+
+int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
+{
+	ucontact_sip_coords *a, *b;
+
+	if (cluster_mode != CM_FULL_SHARING_CACHEDB)
+		return _a == _b ? 0 : -1;
+
+	a = (ucontact_sip_coords *)_a;
+	b = (ucontact_sip_coords *)_b;
+
+	if (a->aor.len != b->aor.len || a->ct_key.len != b->ct_key.len ||
+		  str_strcmp(&a->aor, &b->aor) || str_strcmp(&a->ct_key, &b->ct_key))
+		return -1;
+
+	return 0;
+}
+
+void free_ucontact_coords(ucontact_coords coords)
+{
+	if (cluster_mode == CM_FULL_SHARING_CACHEDB)
+		shm_free((ucontact_sip_coords *)coords);
 }
 
 int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key)

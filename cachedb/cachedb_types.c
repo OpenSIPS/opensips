@@ -21,6 +21,7 @@
  */
 
 #include "cachedb_types.h"
+#include "../lib/osips_malloc.h"
 
 cdb_filter_t *cdb_append_filter(cdb_filter_t *existing, const cdb_key_t *key,
                                 enum cdb_filter_op op, const int_str_t *val)
@@ -65,7 +66,7 @@ void cdb_free_rows(cdb_res_t *res)
 	list_for_each_safe (_, __, &res->rows) {
 		row = list_entry(_, cdb_row_t, list);
 		list_del(&row->list);
-		cdb_free_entries(&row->dict);
+		cdb_free_entries(&row->dict, osips_pkg_free);
 		pkg_free(row);
 	}
 

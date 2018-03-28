@@ -858,6 +858,16 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.50.60");
 				enables using of extended regexp format for the 'u' flag.
 				</para>
 			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'l' (Local-only contacts)</emphasis> - this flag
+				is only relevant with federated user location clustering. Its
+				purpose is to prevent the local registrar from re-interpreting
+				the AoR metadata and further appending (incorrect) branches for
+				the call. Only the direct (local) contacts behind the AoR will
+				be routed to if this flag is enabled.
+				</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>

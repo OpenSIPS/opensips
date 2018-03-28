@@ -38,6 +38,7 @@
 <!ENTITY defaultdb "mysql://opensips:opensipsrw@localhost/opensips">
 <!ENTITY defaultrodb "mysql://opensipsro:opensipsro@localhost/opensips">
 <!ENTITY exampledb "dbdriver://username:password@dbhost/dbname">
+<!ENTITY examplecdb "mongodb://10.0.0.4:27017/opensipsDB.userlocation">
 
 <!-- Often used acronyms -->
 

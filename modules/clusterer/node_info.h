@@ -120,6 +120,7 @@ int provision_neighbor(modparam_t type, void* val);
 int provision_current(modparam_t type, void *val);
 
 int cl_get_my_id(void);
+int cl_get_my_sip_addr(int cluster_id, str *out_addr);
 int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes);
 clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);
@@ -128,24 +129,24 @@ void api_free_next_hop(clusterer_node_t *next_hop);
 
 static inline cluster_info_t *get_cluster_by_id(int cluster_id)
 {
-	cluster_info_t *cl = NULL;
+	cluster_info_t *cl;
 
 	for (cl = *cluster_list; cl; cl = cl->next)
 		if (cl->cluster_id == cluster_id)
-			break;
+			return cl;
 
-	return cl;
+	return NULL;
 }
 
 static inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id)
 {
-	node_info_t *node = NULL;
+	node_info_t *node;
 
 	for (node = cluster->node_list; node; node = node->next)
 		if (node->node_id == node_id)
-			break;
+			return node;
 
-	return node;
+	return NULL;
 }
 
 #endif /* CL_NODE_INFO_H */

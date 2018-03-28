@@ -263,7 +263,8 @@ static int mod_init(void)
 
 	LM_INFO("Clusterer module - initializing\n");
 
-	init_db_url(clusterer_db_url, 1);
+	/* only allow the DB URL to be skipped in "P2P discovery" mode */
+	init_db_url(clusterer_db_url, db_mode == 0);
 
 	if (current_id < 1) {
 		LM_CRIT("Invalid current_id parameter\n");
@@ -1115,14 +1116,18 @@ static void destroy(void)
 
 int load_clusterer(struct clusterer_binds *binds)
 {
+	memset(binds, 0, sizeof *binds);
+
 	binds->get_nodes = get_clusterer_nodes;
 	binds->free_nodes = free_clusterer_nodes;
 	binds->set_state = cl_set_state;
 	binds->check_addr = clusterer_check_addr;
 	binds->get_my_id = cl_get_my_id;
+	binds->get_my_sip_addr = cl_get_my_sip_addr;
 	binds->get_my_index = cl_get_my_index;
 	binds->send_to = cl_send_to;
 	binds->send_all = cl_send_all;
+	binds->send_all_having = cl_send_all_having;
 	binds->get_next_hop = api_get_next_hop;
 	binds->free_next_hop = api_free_next_hop;
 	binds->register_capability = cl_register_cap;

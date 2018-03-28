@@ -43,6 +43,8 @@
 #include "../../socket_info.h"
 #include "../../ut.h"
 #include "../../hash_func.h"
+#include "../../cachedb/cachedb.h"
+
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
 #include "ureplication.h"
@@ -441,60 +443,133 @@ void free_udomain(udomain_t* _d)
  * Returns a static dummy urecord for temporary usage
  */
 static inline void
-get_static_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
+get_static_urecord(const udomain_t* _d, const str* _aor, struct urecord** _r)
 {
 	static struct urecord r;
 
-	free_urecord( &r );
-	memset( &r, 0, sizeof(struct urecord) );
+	free_urecord(&r);
+	memset(&r, 0, sizeof r);
+
 	r.aor = *_aor;
 	r.domain = _d->name;
-	r.aorhash = core_hash(_aor, 0, 0)&(_d->size-1);
+	r.aorhash = core_hash(_aor, 0, DB_AOR_HASH_MASK);
+	r.is_static = 1;
 
 	*_r = &r;
 }
 
 /*! \brief
- * Just for debugging
+ * expects (UL_COLS - 4) fields:
+ *   contact, expires, q, callid, cseq, flags, cflags, ua,
+ *   received, path, socket, methods, last_modified, instance, attr)
  */
-void print_udomain(FILE* _f, udomain_t* _d)
+static inline ucontact_info_t *
+cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 {
-		int i;
-	int max=0, slot=0, n=0,count;
-	map_iterator_t it;
-	fprintf(_f, "---Domain---\n");
-	fprintf(_f, "name : '%.*s'\n", _d->name->len, ZSW(_d->name->s));
-	fprintf(_f, "size : %d\n", _d->size);
-	fprintf(_f, "table: %p\n", _d->table);
-	/*fprintf(_f, "lock : %d\n", _d->lock); -- can be a structure --andrei*/
-	fprintf(_f, "\n");
-	for(i=0; i<_d->size; i++)
-	{
-		count = map_size( _d->table[i].records);
-		n += count;
-		if(max<count){
-			max= count;
-			slot = i;
+	static ucontact_info_t ci;
+	static str callid, ua, received, host, path, instance;
+	static str attr;
+	struct list_head *_;
+
+	cdb_pair_t *pair;
+	int port, proto;
+
+	memset(&ci, 0, sizeof(ucontact_info_t));
+
+	/* TODO: find a less convoluted way of implementing this */
+	list_for_each (_, ct_fields) {
+		pair = list_entry(_, cdb_pair_t, list);
+
+		switch (pair->key.name.s[0]) {
+		case 'a':
+			attr = pair->val.val.st;
+			ci.attr = &attr;
+			break;
+		case 'c':
+			switch (pair->key.name.s[1]) {
+			case 'a':
+				callid = pair->val.val.st;
+				ci.callid = &callid;
+				break;
+			case 'f':
+				ci.cflags = flag_list_to_bitmask(&pair->val.val.st,
+				                                 FLAG_TYPE_BRANCH, FLAG_DELIM);
+				break;
+			case 'o':
+				*contact = pair->val.val.st;
+				break;
+			case 's':
+				ci.cseq = pair->val.val.i32;
+				break;
+			}
+			break;
+		case 'e':
+			ci.expires = pair->val.val.i32;
+			break;
+		case 'f':
+			ci.flags = pair->val.val.i32;
+			break;
+		case 'l':
+			ci.last_modified = pair->val.val.i64;
+			break;
+		case 'm':
+			if (pair->val.type == CDB_NULL)
+				ci.methods = ALL_METHODS;
+			else
+				ci.methods = pair->val.val.i32;
+			break;
+		case 'p':
+			path = pair->val.val.st;
+			ci.path = &path;
+			break;
+		case 'q':
+			ci.q = pair->val.val.i32;
+			break;
+		case 'r':
+			received = pair->val.val.st;
+			ci.received = received;
+			break;
+		case 's':
+			switch (pair->key.name.s[1]) {
+			case 'i':
+				instance = pair->val.val.st;
+				ci.instance = instance;
+				break;
+			case 'o':
+				if (ZSTR(pair->val.val.st)) {
+					ci.sock = NULL;
+				} else {
+					if (parse_phostport(pair->val.val.st.s, pair->val.val.st.len,
+					                    &host.s, &host.len, &port, &proto) != 0) {
+						LM_ERR("bad socket <%.*s>\n", pair->val.val.st.len,
+						       pair->val.val.st.s);
+						return NULL;
+					}
+
+					ci.sock = grep_sock_info(&host, (unsigned short)port, proto);
+					if (!ci.sock)
+						LM_DBG("non-local socket <%.*s>...ignoring\n",
+						       pair->val.val.st.len, pair->val.val.st.s);
+				}
+				break;
+			}
+			break;
+		case 'u':
+			ua = pair->val.val.st;
+			ci.user_agent = &ua;
+			break;
 		}
-
-		for ( map_first( _d->table[i].records, &it);
-			iterator_is_valid(&it);
-			iterator_next(&it) )
-			print_urecord(_f, (struct urecord *)*iterator_val(&it));
-
 	}
 
-	fprintf(_f, "\nMax slot: %d (%d/%d)\n", max, slot, n);
-	fprintf(_f, "\n---/Domain---\n");
+	return &ci;
 }
 
-
 /*! \brief
- * expects (UL_COLS - 2) rows:
+ * expects (UL_COLS - 2) columns:
  *   contact_id, contact, expires, q, callid, cseq, flags, cflags, ua,
  *   received, path, socket, methods, last_modified, instance, kv_store, attr)
  */
-static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
+static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 {
 	static ucontact_info_t ci;
 	static str callid, ua, received, host, path, instance;
@@ -770,10 +845,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				}
 			}
 
-			if (unpack_indexes(ci->contact_id, &aorhash, &rlabel, &clabel)) {
-				LM_ERR("unpacking failed\n");
-				return -1;
-			}
+			unpack_indexes(ci->contact_id, &aorhash, &rlabel, &clabel);
 
 			lock_udomain(_d, &user);
 
@@ -1066,6 +1138,191 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	return r;
 }
 
+int
+cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
+{
+	static const cdb_key_t aor_key = {str_init("aor"), 0}; /* TODO */
+	static const cdb_key_t home_ip_key = {str_init("home_ip"), 0}; /* TODO */
+	struct list_head *_;
+	cdb_filter_t *aor_filter;
+	int_str_t val;
+	cdb_res_t res;
+	cdb_row_t *row;
+	cdb_pair_t *pair;
+	ucontact_t *ct, *remote_pops = NULL /* Points of Presence */;
+	str my_sip_addr;
+
+	if (clusterer_api.get_my_sip_addr(location_cluster, &my_sip_addr) != 0) {
+		LM_ERR("failed to get local PoP SIP addr\n");
+		return -1;
+	}
+
+	val.is_str = 1;
+	val.s = *_aor;
+
+	aor_filter = cdb_append_filter(NULL, &aor_key, CDB_OP_EQ, &val);
+	if (!aor_filter) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	LM_DBG("querying AoR %.*s\n", _aor->len, _aor->s);
+
+	if (cdbf.query(cdbc, aor_filter, &res) != 0) {
+		LM_ERR("query failed for AoR %.*s\n", _aor->len, _aor->s);
+		goto out_err;
+	}
+
+	LM_DBG("res.count: %d\n", res.count);
+
+	if (res.count == 0)
+		goto out;
+
+	list_for_each (_, &res.rows) {
+		row = list_entry(_, cdb_row_t, list);
+		pair = cdb_dict_fetch(&home_ip_key, &row->dict);
+		if (!pair) {
+			LM_ERR("metadata with no home_ip, aor: %.*s", _aor->len, _aor->s);
+			continue;
+		}
+
+		if (!str_strcmp(&my_sip_addr, &pair->val.val.st)) {
+			LM_DBG("skipping my own SIP addr (%.*s)\n",
+			       my_sip_addr.len, my_sip_addr.s);
+			continue;
+		}
+
+		ct = shm_malloc(sizeof *ct + 4 + _aor->len + 4 + pair->val.val.st.len);
+		if (!ct) {
+			LM_ERR("oom\n");
+			goto out_err;
+		}
+		memset(ct, 0, sizeof *ct);
+
+		/* future R-URI */
+		ct->c.s = (char *)(ct + 1);
+		memcpy(ct->c.s, "sip:", 4);
+		memcpy(ct->c.s + 4, _aor->s, _aor->len);
+		ct->c.len = 4 + _aor->len;
+
+		/* future outbound proxy */
+		ct->received.s = ct->c.s + ct->c.len;
+		memcpy(ct->received.s, "sip:", 4);
+		memcpy(ct->received.s + 4, pair->val.val.st.s, pair->val.val.st.len);
+		ct->received.len = 4 + pair->val.val.st.len;
+
+		ct->flags = FL_EXTRA_HOP;
+		ct->next = remote_pops;
+		remote_pops = ct;
+	}
+
+	if (remote_pops)
+		add_last(remote_pops, _r->contacts);
+
+out:
+	cdb_free_rows(&res);
+	cdb_free_filters(aor_filter);
+	return 0;
+
+out_err:
+	cdb_free_rows(&res);
+	cdb_free_filters(aor_filter);
+	shm_free_all(remote_pops);
+	return -1;
+}
+
+/*! \brief
+ * loads from cache DB all contacts of an AOR
+ */
+urecord_t* cdb_load_urecord(const udomain_t* _d, const str *_aor)
+{
+	static const cdb_key_t aor_key = {str_init("aor"), 1}; /* TODO */
+	struct list_head *_;
+	ucontact_info_t *ci;
+	cdb_filter_t *aor_filter;
+	int_str_t val;
+	cdb_res_t res;
+	cdb_row_t *row;
+	cdb_pair_t *contacts, *pair;
+	str contact, contacts_key = str_init("contacts"); /* TODO */
+
+	urecord_t *r;
+	ucontact_t *c;
+
+	val.is_str = 1;
+	val.s = *_aor;
+
+	aor_filter = cdb_append_filter(NULL, &aor_key, CDB_OP_EQ, &val);
+	if (!aor_filter) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	LM_DBG("querying AoR %.*s\n", _aor->len, _aor->s);
+
+	if (cdbf.query(cdbc, aor_filter, &res) != 0) {
+		LM_ERR("query failed for AoR %.*s\n", _aor->len, _aor->s);
+		goto out_null;
+	}
+
+	/* TODO: implement use table _d->name */
+
+	if (res.count == 0) {
+		LM_DBG("aor %.*s not found in table %.*s\n", _aor->len, _aor->s,
+		       _d->name->len, _d->name->s);
+		cdb_free_filters(aor_filter);
+		return NULL;
+	}
+
+	if (res.count != 1)
+		LM_BUG("more than 1 result for AoR %.*s\n", _aor->len, _aor->s);
+
+	row = list_entry(res.rows.next, cdb_row_t, list);
+	list_for_each (_, &row->dict) {
+		contacts = list_entry(_, cdb_pair_t, list);
+		if (!str_strcmp(&contacts->key.name, &contacts_key))
+			goto have_contacts;
+	}
+
+	LM_ERR("no 'contacts' field for AoR %.*s\n", _aor->len, _aor->s);
+	goto out_null;
+
+have_contacts:
+	r = NULL;
+
+	list_for_each (_, &contacts->val.val.dict) {
+		pair = list_entry(_, cdb_pair_t, list);
+
+		ci = cdb_ctdict2info(&pair->val.val.dict, &contact);
+		if (!ci) {
+			LM_ERR("skipping record for %.*s in table %s\n",
+			       _aor->len, _aor->s, _d->name->s);
+			continue;
+		}
+
+		if (!r)
+			get_static_urecord(_d, _aor, &r);
+
+		if (!(c = mem_insert_ucontact(r, &contact, ci))) {
+			LM_ERR("mem_insert failed\n");
+			free_urecord(r);
+			goto out_null;
+		}
+
+		/* We have to do this, because insert_ucontact sets state to CS_NEW
+		 * and we have the contact in the database already */
+		c->state = CS_SYNC;
+	}
+
+	cdb_free_rows(&res);
+	cdb_free_filters(aor_filter);
+	return r;
+
+out_null:
+	cdb_free_filters(aor_filter);
+	cdb_free_rows(&res);
+	return NULL;
+}
 
 int db_timer_udomain(udomain_t* _d)
 {
@@ -1247,7 +1504,7 @@ int mem_timer_udomain(udomain_t* _d)
 void lock_udomain(udomain_t* _d, str* _aor)
 {
 	unsigned int sl;
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 	{
 		sl = core_hash(_aor, 0, _d->size);
 
@@ -1266,7 +1523,7 @@ void lock_udomain(udomain_t* _d, str* _aor)
 void unlock_udomain(udomain_t* _d, str* _aor)
 {
 	unsigned int sl;
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 	{
 		sl = core_hash(_aor, 0, _d->size);
 #ifdef GEN_LOCK_T_PREFERED
@@ -1282,7 +1539,7 @@ void unlock_udomain(udomain_t* _d, str* _aor)
  */
 void lock_ulslot(udomain_t* _d, int i)
 {
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 #ifdef GEN_LOCK_T_PREFERED
 		lock_get(_d->table[i].lock);
 #else
@@ -1296,7 +1553,7 @@ void lock_ulslot(udomain_t* _d, int i)
  */
 void unlock_ulslot(udomain_t* _d, int i)
 {
-	if (db_mode!=DB_ONLY)
+	if (have_mem_storage())
 #ifdef GEN_LOCK_T_PREFERED
 		lock_release(_d->table[i].lock);
 #else
@@ -1304,6 +1561,76 @@ void unlock_ulslot(udomain_t* _d, int i)
 #endif
 }
 
+
+int cdb_update_urecord_metadata(const str *_aor, int unpublish)
+{
+	static const cdb_key_t id_key = {str_init("id"), 1}; /* TODO */
+	static str id_print_buf;
+	cdb_filter_t *id_filter = NULL;
+	int_str_t val;
+	cdb_dict_t my_pop_info;
+	str sip_addr;
+
+	cdb_dict_init(&my_pop_info);
+
+	if (clusterer_api.get_my_sip_addr(location_cluster, &sip_addr) != 0) {
+		LM_ERR("failed to get local PoP SIP addr\n");
+		return -1;
+	}
+
+	if (pkg_str_extend(&id_print_buf, _aor->len + sip_addr.len) != 0) {
+		LM_ERR("oom\n");
+		goto out_err;
+	}
+
+	memcpy(id_print_buf.s, _aor->s, _aor->len);
+	memcpy(id_print_buf.s + _aor->len, sip_addr.s, sip_addr.len);
+
+	val.is_str = 1;
+	val.s.s = id_print_buf.s;
+	val.s.len = _aor->len + sip_addr.len;
+
+	if (unpublish) {
+		/* TODO: refactor; this looks incompatible with Cassandra */
+		if (cdbf.remove(cdbc, &val.s) < 0) {
+			LM_ERR("fail to del metadata, AoR %.*s\n", _aor->len, _aor->s);
+			return -1;
+		}
+
+		goto out;
+	}
+
+	id_filter = cdb_append_filter(NULL, &id_key, CDB_OP_EQ, &val);
+	if (!id_filter) {
+		LM_ERR("oom\n");
+		goto out_err;
+	}
+
+	if (CDB_DICT_ADD_STR(&my_pop_info, "aor", _aor) != 0 ||
+	    CDB_DICT_ADD_STR(&my_pop_info, "home_ip", &sip_addr) != 0) {
+		goto out_err;
+	}
+
+	dbg_cdb_dict("my pop: ", &my_pop_info);
+
+	if (cdbf.update(cdbc, id_filter, &my_pop_info) < 0) {
+		LM_ERR("cache update query for AoR %.*s failed!\n",
+		       _aor->len, _aor->s);
+		goto out_err;
+	}
+
+out:
+	pkg_free(sip_addr.s);
+	cdb_free_filters(id_filter);
+	cdb_free_entries(&my_pop_info, NULL);
+	return 0;
+
+out_err:
+	pkg_free(sip_addr.s);
+	cdb_free_filters(id_filter);
+	cdb_free_entries(&my_pop_info, NULL);
+	return -1;
+}
 
 
 /*! \brief
@@ -1316,7 +1643,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 {
 	int sl;
 
-	if (db_mode!=DB_ONLY) {
+	if (have_mem_storage()) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
 			LM_ERR("inserting record failed\n");
 			return -1;
@@ -1327,8 +1654,16 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 
 		(*_r)->label = CID_NEXT_RLABEL(_d, sl);
 
-		if (!is_replicated && ul_replication_cluster)
+		if (!is_replicated && cluster_mode == CM_FEDERATION_CACHEDB
+		    && cdb_update_urecord_metadata(_aor, 0) != 0) {
+			LM_ERR("failed to publish cachedb location for AoR %.*s\n",
+			       _aor->len, _aor->s);
+		}
+
+		/* TODO: in federation, only replicate to "EQ sip_addr" nodes! */
+		if (!is_replicated && location_cluster)
 			replicate_urecord_insert(*_r);
+
 	} else {
 		get_static_urecord( _d, _aor, _r);
 	}
@@ -1339,36 +1674,63 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 	return 0;
 }
 
+static inline urecord_t *find_mem_urecord(udomain_t *_d, const str *_aor)
+{
+	unsigned int sl, aorhash;
+	urecord_t **r;
+
+	aorhash = core_hash(_aor, 0, 0);
+	sl = aorhash & (_d->size - 1);
+
+	r = (urecord_t **)map_find(_d->table[sl].records, *_aor);
+	return r ? *r : NULL;
+}
 
 /*! \brief
  * obtain urecord pointer if urecord exists;
  */
 int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
-	unsigned int sl, aorhash;
 	urecord_t* r;
-	void ** dest;
 
-	if (db_mode!=DB_ONLY) {
-		/* search in cache */
-		aorhash = core_hash(_aor, 0, 0);
-		sl = aorhash&(_d->size-1);
-
-		dest = map_find(_d->table[sl].records, *_aor);
-
-		if( dest == NULL )
+	switch (cluster_mode) {
+	case CM_NONE:
+	case CM_FULL_SHARING:
+		r = find_mem_urecord(_d, _aor);
+		if (!r)
 			goto out;
 
-		*_r = *dest;
-
+		*_r = r;
 		return 0;
-	} else {
+	case CM_FEDERATION_CACHEDB:
+		r = find_mem_urecord(_d, _aor);
+		if (!r)
+			get_static_urecord(_d, _aor, &r);
+
+		if (cdb_load_urecord_locations(_d, _aor, r) != 0) {
+			if (r->is_static)
+				goto out;
+		}
+
+		*_r = r;
+		return 0;
+	case CM_FULL_SHARING_CACHEDB:
+		r = cdb_load_urecord(_d, _aor);
+		if (r) {
+			*_r = r;
+			return 0;
+		}
+		break;
+	case CM_SQL_ONLY:
 		/* search in DB */
 		r = db_load_urecord( ul_dbh, _d, _aor);
 		if (r) {
 			*_r = r;
 			return 0;
 		}
+		break;
+	default:
+		abort();
 	}
 
 out:
@@ -1384,15 +1746,37 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 {
 	struct ucontact* c, *t;
 
-	if (db_mode==DB_ONLY) {
-		if (_r==0)
-			get_static_urecord( _d, _aor, &_r);
-		if (db_delete_urecord(_r)<0) {
+	switch (cluster_mode) {
+	case CM_SQL_ONLY:
+		if (!_r)
+			get_static_urecord(_d, _aor, &_r);
+		if (db_delete_urecord(_r) < 0) {
 			LM_ERR("DB delete failed\n");
 			return -1;
 		}
 		free_urecord(_r);
 		return 0;
+
+	case CM_FULL_SHARING_CACHEDB:
+		if (!_r)
+			get_static_urecord(_d, _aor, &_r);
+		if (cdb_delete_urecord(_r) < 0) {
+			LM_ERR("failed to delete %.*s from cache\n", _aor->len, _aor->s);
+			return -1;
+		}
+		free_urecord(_r);
+		return 0;
+
+	case CM_FEDERATION_CACHEDB:
+		if (!is_replicated && cdb_update_urecord_metadata(&_r->aor, 1) != 0)
+			LM_ERR("failed to delete metadata, aor: %.*s\n",
+			       _r->aor.len, _r->aor.s);
+
+		free_fake_contacts(_r);
+		break;
+
+	default:
+		break;
 	}
 
 	if (_r==0) {
@@ -1414,7 +1798,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 	if (_r->no_clear_ref > 0)
 		return 0;
 
-	if (!is_replicated && ul_replication_cluster)
+	if (!is_replicated && location_cluster)
 		replicate_urecord_delete(_r);
 
 	release_urecord(_r, is_replicated);

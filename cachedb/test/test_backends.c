@@ -23,6 +23,7 @@
 #include "../../str.h"
 #include "../../cachedb/cachedb.h"
 #include "../../cachedb/cachedb_cap.h"
+#include "../../lib/osips_malloc.h"
 #include "../../sr_module.h"
 #include "../../modparam.h"
 
@@ -35,7 +36,7 @@ int res_has_kv(const cdb_res_t *res, const cdb_pair_t *pair)
 
 	list_for_each (_, &res->rows) {
 		row = list_entry(_, cdb_row_t, list);
-		if (dict_has_pair(&row->dict, pair))
+		if (cdb_dict_has_pair(&row->dict, pair))
 			return 1;
 	}
 
@@ -90,7 +91,7 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 
 	/* single filter tests */
 
-	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
+	filter = cdb_append_filter(NULL, &key, CDB_OP_LTE, &isv);
 	ok(api->query(con, filter, &res) == 0, "test_query: get 4 items");
 	ok(res.count == 4, "test_query: have 4 items");
 	init_str(&pair.key.name, "opensips");
@@ -122,7 +123,7 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
-	filter = cdb_append_filter(NULL, &key, CDB_OP_LE, &isv);
+	filter = cdb_append_filter(NULL, &key, CDB_OP_LTE, &isv);
 	ok(api->query(con, filter, &res) == 0, "test_query: get 1 item");
 	ok(res.count == 1, "test_query: have 1 item");
 	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
@@ -137,7 +138,7 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 	ok(api->query(con, filter, &res) == 0, "test_query: get 3 items");
 	ok(res.count == 3, "test_query: have 3 items");
 	init_str(&isv.s, "A");
-	filter = cdb_append_filter(filter, &key, CDB_OP_GE, &isv);
+	filter = cdb_append_filter(filter, &key, CDB_OP_GTE, &isv);
 	ok(api->query(con, filter, &res) == 0, "test_query: get 3 items");
 	ok(res.count == 3, "test_query: have 3 items");
 	init_str(&isv.s, "B");
@@ -281,12 +282,12 @@ static int test_query_unset(cachedb_funcs *api, cachedb_con *con,
 
 	init_str(&key.name, "key");
 
-	pair = dict_fetch(&key, dict1);
+	pair = cdb_dict_fetch(&key, dict1);
 	ok(!pair ||
 	   (pair->val.type == CDB_DICT && cdb_dict_empty(&pair->val.val.dict)),
 	   "subdict-1 is empty");
 
-	pair = dict_fetch(&key, dict2);
+	pair = cdb_dict_fetch(&key, dict2);
 	ok(!pair ||
 	   (pair->val.type == CDB_DICT && cdb_dict_empty(&pair->val.val.dict)),
 	   "subdict-2 is empty");
@@ -320,7 +321,7 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 	    || !ok(test_query_unset(api, con, &cols), "test query-unset"))
 		return 0;
 
-	cdb_free_entries(&cols);
+	cdb_free_entries(&cols, osips_pkg_free);
 
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");

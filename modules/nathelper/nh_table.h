@@ -45,7 +45,7 @@ struct ping_cell {
 
 	udomain_t* d;
 
-	uint64_t contact_id;
+	ucontact_coords ct_coords; /* !< helps locate the associated contact */
 
 	unsigned int timestamp; /* !< timestamp when ping was sent */
 	char not_responded; /* !< number of pings not responded to */
@@ -98,7 +98,7 @@ void free_hash_table();
 struct ping_cell *build_p_cell(int hash_id, udomain_t* d, uint64_t contact_id);
 void insert_into_hash( struct ping_cell* p_cell);
 struct ping_cell *get_cell(int hash_id, uint64_t contact_id);
-void remove_given_cell(struct ping_cell *cell, struct nh_entry *entry);
+void remove_from_hash(struct ping_cell *cell);
 
 
 #endif

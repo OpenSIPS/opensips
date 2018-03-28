@@ -22,6 +22,96 @@
 
 #include "cachedb_types.h"
 
+int cdb_dict_add_str(cdb_dict_t *dest, const char *key, int key_len,
+                     const str *val)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_STR;
+	pair->val.val.st = *val;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
+int cdb_dict_add_int32(cdb_dict_t *dest, const char *key, int key_len,
+                       uint32_t v)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_INT32;
+	pair->val.val.i32 = v;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
+int cdb_dict_add_int64(cdb_dict_t *dest, const char *key, int key_len,
+                       uint64_t v)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_INT64;
+	pair->val.val.i64 = v;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
+int cdb_dict_add_null(cdb_dict_t *dest, const char *key, int key_len)
+{
+	cdb_key_t _key;
+	cdb_pair_t *pair;
+
+	_key.name.s = (char *)key;
+	_key.name.len = key_len;
+	_key.is_pk = 0;
+
+	pair = cdb_mk_pair(&_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	pair->val.type = CDB_NULL;
+
+	cdb_dict_add(pair, dest);
+	return 0;
+}
+
 void cdb_dict_add(struct cdb_pair *pair, cdb_dict_t *dict)
 {
 	list_add(&pair->list, dict);
@@ -157,7 +247,7 @@ out:
 	LM_DBG("%s%.*s\n", pre_txt, final_len, static_pkg_buf.s);
 }
 
-cdb_pair_t *dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
+cdb_pair_t *cdb_dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
 {
 	struct list_head *_;
 	cdb_pair_t *pair;
@@ -198,7 +288,7 @@ int dict_cmp(const cdb_dict_t *a, const cdb_dict_t *b)
 	list_for_each (p1, a) {
 		pair1 = list_entry(p1, cdb_pair_t, list);
 
-		pair2 = dict_fetch(&pair1->key, b);
+		pair2 = cdb_dict_fetch(&pair1->key, b);
 		if (!pair2)
 			return 1;
 
@@ -233,14 +323,14 @@ int val_cmp(const cdb_val_t *v1, const cdb_val_t *v2)
 	}
 }
 
-int dict_has_pair(const cdb_dict_t *haystack, const cdb_pair_t *pair)
+int cdb_dict_has_pair(const cdb_dict_t *haystack, const cdb_pair_t *pair)
 {
 	cdb_pair_t *needle;
 
 	if (!haystack)
 		return 0;
 
-	needle = dict_fetch(&pair->key, haystack);
+	needle = cdb_dict_fetch(&pair->key, haystack);
 	if (!needle || needle->val.type != pair->val.type)
 		return 0;
 
@@ -265,7 +355,7 @@ cdb_pair_t *nth_pair(const cdb_dict_t *dict, int nth)
 	return NULL;
 }
 
-void cdb_free_entries(cdb_dict_t *dict)
+void cdb_free_entries(cdb_dict_t *dict, void (*free_val_str) (void *val))
 {
 	struct list_head *_, *__;
 	cdb_pair_t *kv;
@@ -275,18 +365,17 @@ void cdb_free_entries(cdb_dict_t *dict)
 
 		switch (kv->val.type) {
 		case CDB_DICT:
-			cdb_free_entries(&kv->val.val.dict);
+			cdb_free_entries(&kv->val.val.dict, free_val_str);
 			break;
 		case CDB_STR:
-			pkg_free(kv->val.val.st.s);
+			if (free_val_str)
+				free_val_str(kv->val.val.st.s);
 			break;
 		default:
 			break;
 		}
 
 		list_del(&kv->list);
-
-		/* TODO: is it ok to impose alloc linearization like this? */
 		pkg_free(kv);
 	}
 }
