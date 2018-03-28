@@ -38,9 +38,8 @@ auto_aliases=no
 
 
 listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
-
-ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060  # CUSTOMIZE ME' , `')dnl
-ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061  # CUSTOMIZE ME' , `')dnl
+ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME', `')
+ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME', `')
 
 ####### Modules Section ########
 
@@ -80,9 +79,9 @@ modparam("mi_fifo", "fifo_mode", 0666)
 loadmodule "uri.so"
 modparam("uri", "use_uri_table", 0)
 
-ifelse(USE_DR_PSTN,`yes',` ifelse(HAVE_INBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',HAVE_OUTBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',) ', `')dnl
+ifelse(USE_DR_PSTN,`yes',`ifelse(HAVE_INBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',HAVE_OUTBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',)',`')dnl
 ifelse(USE_AUTH,`yes',`define(`DB_NEEDED',`yes')',USE_MULTIDOMAIN,`yes',`define(`DB_NEEDED',`yes')',USE_PRESENCE,`yes',`define(`DB_NEEDED',`yes')',USE_DBACC,`yes',`define(`DB_NEEDED',`yes')',USE_DBUSRLOC,`yes',`define(`DB_NEEDED',`yes')',USE_DIALOG,`yes',`define(`DB_NEEDED',`yes')',USE_DIALPLAN,`yes',`define(`DB_NEEDED',`yes')',USE_DR_MODULE,`yes',`define(`DB_NEEDED',`yes')',)dnl
-ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')dnl
+ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')',`')dnl
 ifdef(`DB_NEEDED',`#### MYSQL module
 loadmodule "db_mysql.so"
 
@@ -151,7 +150,7 @@ loadmodule "presence_xml.so"
 modparam("xcap|presence", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("presence_xml", "force_active", 1)
-modparam("presence", "server_address", "sip:127.0.0.1:5060") # CUSTOMIZE ME
+modparam("presence", "fallback2db", 0)
 
 ', `')dnl
 ifelse(USE_DIALOG,`yes',`#### DIALOG module
@@ -209,7 +208,10 @@ modparam("tls_mgm","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem"
 # main request routing logic
 
 route{
-ifelse(USE_NAT,`yes',`force_rport();
+ifelse(USE_NAT,`yes',`
+	# initial NAT handling; detect if the request comes from behind a NAT
+	# and apply contact fixing
+	force_rport();
 	if (nat_uac_test("23")) {
 		if (is_method("REGISTER")) {
 			fix_nated_register();
@@ -222,7 +224,7 @@ ifelse(USE_NAT,`yes',`force_rport();
 ',`')dnl
 
 	if (!mf_process_maxfwd_header("10")) {
-		sl_send_reply("483","Too Many Hops");
+		send_reply("483","Too Many Hops");
 		exit;
 	}
 
@@ -238,7 +240,7 @@ ifelse(USE_NAT,`yes',`force_rport();
 		# take the path determined by record-routing
 		if ( !loose_route() ) {
 ifelse(USE_PRESENCE,`yes',
-			`if (is_method("SUBSCRIBE") && $rd == "127.0.0.1:5060") { # CUSTOMIZE ME
+`			if (is_method("SUBSCRIBE") && is_myself("$rd")) {
 				# in-dialog subscribe requests
 				route(handle_presence);
 				exit;
@@ -246,7 +248,7 @@ ifelse(USE_PRESENCE,`yes',
 ',`')dnl
 			# we do record-routing for all our traffic, so we should not
 			# receive any sequential requests without Route hdr.
-			sl_send_reply("404","Not here");
+			send_reply("404","Not here");
 			exit;
 		}
 ifelse(USE_DIALOG,`yes',`
@@ -274,21 +276,20 @@ ifelse(USE_NAT,`yes',`
 	}
 
 	# CANCEL processing
-	if (is_method("CANCEL"))
-	{
+	if (is_method("CANCEL")) {
 		if (t_check_trans())
 			t_relay();
 		exit;
 	}
 
+	# absorb retransmissions, but do not create transaction
 	t_check_trans();
 
 	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| ($si==11.22.33.44 && $sp=5060 /* CUSTOMIZE ME */)')',`') ) ) {
 		ifelse(USE_MULTIDOMAIN,`yes',`
-		if (is_from_local())',`
-		if (is_myself("$fd"))
-		')
-		{
+		if (is_from_local()) {',`
+		if (is_myself("$fd")) {
+		')dnl
 			ifelse(USE_AUTH,`yes',`
 			# authenticate if from local subscriber
 			# authenticate all initial non-REGISTER request that pretend to be
@@ -298,10 +299,10 @@ ifelse(USE_NAT,`yes',`
 				exit;
 			}
 			if (!db_check_from()) {
-				sl_send_reply("403","Forbidden auth ID");
+				send_reply("403","Forbidden auth ID");
 				exit;
 			}
-		
+
 			consume_credentials();
 			# caller authenticated
 			',`')
@@ -320,9 +321,9 @@ ifelse(USE_NAT,`yes',`
 	# preloaded route checking
 	if (loose_route()) {
 		xlog("L_ERR",
-		"Attempt to route with preloaded Route's [$fu/$tu/$ru/$ci]");
+			"Attempt to route with preloaded Route's [$fu/$tu/$ru/$ci]");
 		if (!is_method("ACK"))
-			sl_send_reply("403","Preload Route denied");
+			send_reply("403","Preload Route denied");
 		exit;
 	}
 
@@ -363,24 +364,20 @@ ifelse(USE_NAT,`yes',`
 	ifelse(USE_PRESENCE,`yes',`
 	if( is_method("PUBLISH|SUBSCRIBE"))
 			route(handle_presence);',`
-	if (is_method("PUBLISH|SUBSCRIBE"))
-	{
-		sl_send_reply("503", "Service Unavailable");
+	if (is_method("PUBLISH|SUBSCRIBE")) {
+		send_reply("503", "Service Unavailable");
 		exit;
 	}')
 
-	if (is_method("REGISTER"))
-	{
+	if (is_method("REGISTER")) {
 		ifelse(USE_AUTH,`yes',`# authenticate the REGISTER requests
-		if (!www_authorize("", "subscriber"))
-		{
+		if (!www_authorize("", "subscriber")) {
 			www_challenge("", "0");
 			exit;
 		}
 		
-		if (!db_check_to()) 
-		{
-			sl_send_reply("403","Forbidden auth ID");
+		if (!db_check_to()) {
+			send_reply("403","Forbidden auth ID");
 			exit;
 		}',`')dnl
 ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
@@ -406,7 +403,7 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 
 	if ($rU==NULL) {
 		# request with no Username in RURI
-		sl_send_reply("484","Address Incomplete");
+		send_reply("484","Address Incomplete");
 		exit;
 	}
 
@@ -473,11 +470,11 @@ route[relay] {
 
 	ifelse(USE_NAT,`yes',`if (isflagset(NAT)) {
 		add_rr_param(";nat=yes");
-		}',`')
+	}',`')
 
 	if (!t_relay()) {
 		send_reply("500","Internal Error");
-	};
+	}
 	exit;
 }
 
@@ -485,19 +482,15 @@ ifelse(USE_PRESENCE,`yes',`
 # Presence route
 route[handle_presence]
 {
-	if (!t_newtran())
-	{
+	if (!t_newtran()) {
 		sl_reply_error();
 		exit;
 	}
 
-	if(is_method("PUBLISH"))
-	{
+	if(is_method("PUBLISH")) {
 		handle_publish();
-	}
-	else
-	if( is_method("SUBSCRIBE"))
-	{
+	} else
+	if( is_method("SUBSCRIBE")) {
 		handle_subscribe();
 	}
 
