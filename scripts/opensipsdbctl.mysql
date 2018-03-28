@@ -528,6 +528,12 @@ migrate_table ${dst_db}.globalblacklist \
 	${src_db}.globalblacklist \
 	"?id,?prefix,?whitelist,?description"
 
+## FRAUD_DETECTION module
+migrate_table ${dst_db}.fraud_detection \
+	"ruleid,profileid,prefix,start_hour,end_hour,daysoftheweek,cpm_warning,cpm_critical,call_duration_warning,call_duration_critical,total_calls_warning,total_calls_critical,concurrent_calls_warning,concurrent_calls_critical,sequential_calls_warning,sequential_calls_critical" \
+	${src_db}.fraud_detection \
+	"?ruleid,?profileid,?prefix,?start_hour,?end_hour,?daysoftheweek,?cpm_warning,?cpm_critical,?call_duration_warning,?call_duration_critical,?total_calls_warning,?total_calls_critical,?concurrent_calls_warning,?concurrent_calls_critical,?sequential_calls_warning,?sequential_calls_critical"
+
 fi
 
 
