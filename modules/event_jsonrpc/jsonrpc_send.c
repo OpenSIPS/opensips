@@ -101,12 +101,6 @@ static int jsonrpc_create_pipe(void)
 
 int jsonrpc_init_process(void)
 {
-	/* initialize the cJSON to use shm memory */
-	cJSON_Hooks hooks;
-	hooks.malloc_fn = osips_shm_malloc;
-	hooks.free_fn = osips_shm_free;
-	cJSON_InitHooks(&hooks);
-
 	INIT_LIST_HEAD(&jsonrpc_conns);
 
 	return jsonrpc_create_pipe();
