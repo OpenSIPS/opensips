@@ -119,6 +119,8 @@ extern int use_domain;
 extern int desc_time_order;
 extern int cseq_delay;
 extern int ul_hash_size;
+extern int latency_event_min_us_delta;
+extern int latency_event_min_us;
 
 extern db_con_t* ul_dbh;   /* Database connection handle */
 extern db_func_t ul_dbf;

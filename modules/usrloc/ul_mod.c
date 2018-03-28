@@ -178,6 +178,8 @@ cachedb_funcs cdbf;
 cachedb_con *cdbc;
 
 int mi_dump_kv_store;
+int latency_event_min_us_delta;
+int latency_event_min_us;
 
 /*! \brief
  * Exported functions
@@ -223,6 +225,8 @@ static param_export_t params[] = {
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
 	{"kv_store_column",    STR_PARAM, &kv_store_col.s    },
 	{"mi_dump_kv_store",   INT_PARAM, &mi_dump_kv_store  },
+	{"latency_event_min_us_delta",   INT_PARAM, &latency_event_min_us_delta  },
+	{"latency_event_min_us",   INT_PARAM, &latency_event_min_us  },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
 	{"matching_mode",      INT_PARAM, &matching_mode     },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },

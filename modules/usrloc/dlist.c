@@ -1236,14 +1236,13 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 	return 0;
 }
 
-
-
 int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
-                           int sipping_latency)
+                           int new_latency)
 {
 	ucontact_t *c;
 	urecord_t *r;
 	ucontact_id contact_id = (ucontact_id)ct_coords;
+	int old_latency;
 
 	/* TODO: add cachedb queries for latency updates */
 	if (cluster_mode == CM_SQL_ONLY || cluster_mode == CM_FULL_SHARING_CACHEDB)
@@ -1256,10 +1255,15 @@ int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
 		return 0;
 	}
 	LM_DBG("sipping latency changed: %d us -> %d us\n",
-	       c->sipping_latency, sipping_latency);
+	       c->sipping_latency, new_latency);
 
-	c->sipping_latency = sipping_latency;
-	ul_raise_contact_event(ei_c_latency_update_id , c);
+	old_latency = c->sipping_latency;
+	c->sipping_latency = new_latency;
+
+	/* if the limits are not set, the condition is always true */
+	if (new_latency >= latency_event_min_us
+	       || abs(new_latency - old_latency) >= latency_event_min_us_delta)
+		ul_raise_contact_event(ei_c_latency_update_id, c);
 
 	_unlock_ulslot(d, contact_id);
 	return 0;
