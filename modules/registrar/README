@@ -632,6 +632,14 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
             branches for the call. Only the direct (local)
             contacts behind the AoR will be routed to if this flag
             is enabled.
+          + 'yXXXXX' (Max pinging latency) - maximally accepted
+            contact pinging latency (microseconds). Contacts of an
+            AoR with a higher latency will be discarded during the
+            lookup.
+          + 'Y' (Sort by pinging latency) - contacts will be
+            picked in ascending order of their last successful
+            pinging latency (fastest ping -> slowest ping). This
+            flag may work together with the "y" flag.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
        used as AOR; This must be a variable.
 

@@ -100,6 +100,8 @@ int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in
 int max_contacts = 0;		/*!< Maximum number of contacts per AOR (0=no checking) */
 int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
+extern ucontact_t **sorted_cts;
+extern int sorted_cts_sz;
 
 char* rcv_avp_param = 0;
 unsigned short rcv_avp_type = 0;
@@ -368,6 +370,13 @@ static int mod_init(void)
 	fix_flag_name(tcp_persistent_flag_s, tcp_persistent_flag);
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
+
+	/* init contact sorting array */
+	sorted_cts = pkg_malloc(sorted_cts_sz * sizeof *sorted_cts);
+	if (!sorted_cts) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 
 	return 0;
 }

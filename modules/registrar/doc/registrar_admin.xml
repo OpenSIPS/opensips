@@ -868,6 +868,21 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.50.60");
 				be routed to if this flag is enabled.
 				</para>
 			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'yXXXXX' (Max pinging latency)</emphasis> - maximally
+				accepted contact pinging latency (microseconds). Contacts of an
+				AoR with a higher latency will be discarded during the lookup.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'Y' (Sort by pinging latency)</emphasis> - contacts
+				will be picked in ascending order of their last successful
+				pinging latency (fastest ping -> slowest ping). This flag may
+				work together with the "y" flag.
+				</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
