@@ -863,11 +863,11 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
+	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:P:G:W:o:"
 #ifdef UNIT_TESTS
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:P:G:W:o:T";
-#else
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:P:G:W:o:";
+	"T"
 #endif
+	;
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
