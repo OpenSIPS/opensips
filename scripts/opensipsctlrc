@@ -94,7 +94,7 @@
 # accordingly in the opensipsdbctl.base script.
 
 # opensips standard modules
-# STANDARD_MODULES="standard acc domain group permissions registrar usrloc 
+# STANDARD_MODULES="standard acc domain group permissions usrloc 
 #                   msilo alias_db uri_db speeddial avpops auth_db dialog 
 #                   dispatcher dialplan drouting nathelper load_balancer"
 

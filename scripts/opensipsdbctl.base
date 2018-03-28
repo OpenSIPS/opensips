@@ -60,7 +60,7 @@ GREP=${GREP:-grep}
 SED=${SED:-sed}
 
 # define what modules should be installed
-STANDARD_MODULES=${STANDARD_MODULES:-standard acc domain group permissions registrar usrloc msilo alias_db uri_db rtpproxy speeddial avpops auth_db dialog dispatcher dialplan drouting load_balancer clusterer tls_mgm }
+STANDARD_MODULES=${STANDARD_MODULES:-standard acc domain group permissions usrloc msilo alias_db uri_db rtpproxy speeddial avpops auth_db dialog dispatcher dialplan drouting load_balancer clusterer tls_mgm }
 EXTRA_MODULES=${EXTRA_MODULES:-imc cpl siptrace domainpolicy carrierroute userblacklist b2b cachedb_sql registrant call_center fraud_detection freeswitch_scripting emergency}
 
 ############################################################

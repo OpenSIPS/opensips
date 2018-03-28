@@ -14,8 +14,8 @@ active_watchers|
 active_watchers|12
 address|
 address|5
-aliases|
-aliases|1013
+METADATA_DEFAULTS
+NIL|''|''|''|NULL|NULL|2147483648|1.0|'Default-Call-ID'|13|'1900-01-01 00:00:01'|0|NULL|''|NULL|NULL|NULL|NULL
 b2b_entities|
 b2b_entities|1
 b2b_logic|

@@ -414,12 +414,6 @@ migrate_table ${dst_db}.address \
 	${src_db}.address \
 	"?id,?grp,?ip,?mask,?port,?proto,?pattern,?context_info"
 
-## REGISTRAR module
-migrate_table ${dst_db}.aliases \
-	 "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods,sip_instance,attr" \
- 	 ${src_db}.aliases \
-	 "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods,?sip_instance,?attr"
-
 ## RTPPROXY module
 migrate_table ${dst_db}.rtpproxy_sockets \
 	"id,rtpproxy_sock,set_id" \

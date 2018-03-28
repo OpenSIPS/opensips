@@ -130,7 +130,7 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 			'dr_groups','rtpproxy_sockets','load_balancer');
 
 my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
-	'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
+	'permissions', 'usrloc', 'msilo', 'alias_db', 'uri_db',
 	'speeddial', 'avpops', 'auth_db', 'dialog', 'dispatcher', 
 	'dialplan','drouting','rtpproxy','load_balancer' );
 
