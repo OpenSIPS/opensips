@@ -46,14 +46,14 @@
 		The authorization is used to check if an account is allowed to start a new call
 		and it has enough credit to call to that destination. This is done using the
 		<emphasis>cgrates_auth()</emphasis> command, which returns the number of seconds
-		a call is allowed to run in the <emphasis>$cgrret</emphasis> pseudo-variable.
+		a call is allowed to run in the <emphasis>$cgr_ret</emphasis> pseudo-variable.
 	</para>
 	<para>
 		Usage example:
 		<programlisting format="linespecific">
 		...
 		if (cgrates_auth("$fU", "$rU"))
-			xlog("Call is allowed to run $cgrret seconds\n");
+			xlog("Call is allowed to run $cgr_ret seconds\n");
 		}
 		...
 		</programlisting>
@@ -92,7 +92,7 @@
 			sl_send_reply("403", "Forbidden");
 			exit;
 		}
-		xlog("Call is allowed to run $cgrret seconds\n");
+		xlog("Call is allowed to run $cgr_ret seconds\n");
 		# do accounting for this call
 		cgrates_acc("cdr", "$fU", "$rU");
 		...
@@ -109,7 +109,7 @@
 	<title>Other Commands</title>
 	<para>
 		You can use the <emphasis>cgrates_cmd()</emphasis> to send arbitrary
-		commands to the CGRateS engine, and use the <emphasis>$cgrret</emphasis>
+		commands to the CGRateS engine, and use the <emphasis>$cgr_ret</emphasis>
 		pseudo-variable to retrieve the response.
 	</para>
 	<para>
@@ -123,7 +123,7 @@
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
 		cgrates_cmd("SessionSv1.AuthorizeEvent");
-		xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n");
+		xlog("Call is allowed to run $cgr_ret(MaxUsage) seconds\n");
 		...
 		</programlisting>
 	</para>
@@ -529,9 +529,9 @@ modparam("cgrates", "compat_mode", 1)
 			}
 			# move attributes from AttributesDigest variable to plain AVPs
 			$var(idx) = 0;
-			while ($(cgrret(AttributesDigest){s.select,$var(idx),,}) != NULL) {
-				$avp($(cgrret(AttributesDigest){s.select,$var(idx),,}{s.select,0,:}))
-					= $(cgrret(AttributesDigest){s.select,$var(idx),,}{s.select,1,:});
+			while ($(cgr_ret(AttributesDigest){s.select,$var(idx),,}) != NULL) {
+				$avp($(cgr_ret(AttributesDigest){s.select,$var(idx),,}{s.select,0,:}))
+					= $(cgr_ret(AttributesDigest){s.select,$var(idx),,}{s.select,1,:});
 				$var(idx) = $var(idx) + 1;
 			}
 			...
@@ -609,7 +609,7 @@ modparam("cgrates", "compat_mode", 1)
 		$cgr(RequestType) = "*prepaid";
 		$cgr(Destination) = $rU;
 		cgrates_cmd("SessionSv1.AuthorizeEvent");
-		xlog("Call is allowed to run $cgrret seconds\n");
+		xlog("Call is allowed to run $cgr_ret seconds\n");
 		...
 		</programlisting>
 		</example>
@@ -739,23 +739,23 @@ modparam("cgrates", "compat_mode", 1)
 		</example>
 		</section>
 		<section>
-			<title><varname>$cgrret(name)</varname></title>
+			<title><varname>$cgr_ret(name)</varname></title>
 			<para>
 				Returns the reply message of a CGRateS command in script,
 				or when used in the non-compat mode, one of the objects
 				within the reply.
 			</para>
 		<example>
-				<title>$cgrret(name) usage</title>
+				<title>$cgr_ret(name) usage</title>
 				<programlisting format="linespecific">
 		...
 		cgrates_auth("$fU", "$rU");
 
 		# in compat mode
-		xlog("Call is allowed to run $cgrret seconds\n");
+		xlog("Call is allowed to run $cgr_ret seconds\n");
 
 		# in non-compat mode
-		xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n");
+		xlog("Call is allowed to run $cgr_ret(MaxUsage) seconds\n");
 		...
 		</programlisting>
 		</example>
@@ -841,7 +841,7 @@ route {
 route [auth_reply]
 {
 	if ($rc &lt; 0) {
-		xlog("Call not authorized: code=$cgrret!\n");
+		xlog("Call not authorized: code=$cgr_ret!\n");
 		send_reply("403", "Forbidden");
 		exit;
 	}
@@ -916,7 +916,7 @@ route {
 route [auth_reply]
 {
 	if ($rc &lt; 0) {
-		xlog("Call not authorized: code=$cgrret!\n");
+		xlog("Call not authorized: code=$cgr_ret!\n");
 		send_reply("403", "Forbidden");
 		exit;
 	}
@@ -941,7 +941,7 @@ route {
 route [auth_reply]
 {
 	if ($rc &lt; 0) {
-		xlog("Call not authorized: MaxUsage=$cgrret(MaxUsage)!\n");
+		xlog("Call not authorized: MaxUsage=$cgr_ret(MaxUsage)!\n");
 		send_reply("403", "Forbidden");
 		exit;
 	}

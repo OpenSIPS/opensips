@@ -75,6 +75,7 @@ static int w_pv_get_cgr_opt(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 static int pv_parse_cgr(pv_spec_p sp, str *in);
 static int w_pv_parse_cgr(pv_spec_p sp, str *in);
+static int w_pv_parse_cgr_warn(pv_spec_p sp, str *in);
 static int pv_parse_idx_cgr(pv_spec_p sp, str *in);
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
@@ -110,8 +111,10 @@ static pv_export_t pvars[] = {
 		pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
 	{ str_init("cgr_opt"), 2004, w_pv_get_cgr_opt, w_pv_set_cgr_opt,
 		w_pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
-	{ str_init("cgrret"), 2005, pv_get_cgr_reply, 0,
+	{ str_init("cgr_ret"), 2005, pv_get_cgr_reply, 0,
 		pv_parse_cgr, 0, 0, 0},
+	{ str_init("cgrret"), 2005, pv_get_cgr_reply, 0,
+		w_pv_parse_cgr_warn, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -653,6 +656,16 @@ static int w_pv_parse_cgr(pv_spec_p sp, str *in)
 				in->len, in->s);
 		LM_WARN("using $cgr_opt(%.*s) exactly as $cgr(NAME)!\n",
 				in->len, in->s);
+	}
+	return pv_parse_cgr(sp, in);
+}
+
+static int w_pv_parse_cgr_warn(pv_spec_p sp, str *in)
+{
+	static int warned = 0;
+	if (!warned) {
+		LM_WARN("$cgrret(name) is deprecated - please using $cgr_ret(name) instead!\n");
+		warned = 1;
 	}
 	return pv_parse_cgr(sp, in);
 }

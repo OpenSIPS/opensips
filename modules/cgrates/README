@@ -44,7 +44,7 @@ Razvan Crainea
 
               1.10.1. $cgr(name) / $(cgr(name)[session])
               1.10.2. $cgr_opt(name) / $(cgr_opt(name)[session])
-              1.10.3. $cgrret(name)
+              1.10.3. $cgr_ret(name)
 
         1.11. Exported Asynchronous Functions
 
@@ -67,7 +67,7 @@ Razvan Crainea
    1.10. $cgr(name) simple usage
    1.11. $cgr(name) multiple sessions usage
    1.12. $cgr_opt(name) usage
-   1.13. $cgrret(name) usage
+   1.13. $cgr_ret(name) usage
    1.14. async cgrates_auth usage
    1.15. async cgrates_cmd compat_mode usage
    1.16. async cgrates_cmd new usage
@@ -109,13 +109,13 @@ Chapter 1. Admin Guide
    start a new call and it has enough credit to call to that
    destination. This is done using the cgrates_auth() command,
    which returns the number of seconds a call is allowed to run in
-   the $cgrret pseudo-variable.
+   the $cgr_ret pseudo-variable.
 
    Usage example:
                 ...
                 if (cgrates_auth("$fU", "$rU"))
-                        xlog("Call is allowed to run $cgrret seconds\n")
-;
+                        xlog("Call is allowed to run $cgr_ret seconds\n"
+);
                 }
                 ...
 
@@ -149,7 +149,7 @@ Chapter 1. Admin Guide
                         sl_send_reply("403", "Forbidden");
                         exit;
                 }
-                xlog("Call is allowed to run $cgrret seconds\n");
+                xlog("Call is allowed to run $cgr_ret seconds\n");
                 # do accounting for this call
                 cgrates_acc("cdr", "$fU", "$rU");
                 ...
@@ -161,8 +161,8 @@ Chapter 1. Admin Guide
 1.4. Other Commands
 
    You can use the cgrates_cmd() to send arbitrary commands to the
-   CGRateS engine, and use the $cgrret pseudo-variable to retrieve
-   the response.
+   CGRateS engine, and use the $cgr_ret pseudo-variable to
+   retrieve the response.
 
    The following example simulates the cgrates_auth() CGRateS
    call:
@@ -175,8 +175,8 @@ ompat mode */
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
                 cgrates_cmd("SessionSv1.AuthorizeEvent");
-                xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n
-");
+                xlog("Call is allowed to run $cgr_ret(MaxUsage) seconds\
+n");
                 ...
 
 1.5. CGRateS Failover
@@ -411,12 +411,12 @@ modparam("cgrates", "compat_mode", 1)
                         # move attributes from AttributesDigest variable
  to plain AVPs
                         $var(idx) = 0;
-                        while ($(cgrret(AttributesDigest){s.select,$var(
-idx),,}) != NULL) {
-                                $avp($(cgrret(AttributesDigest){s.select
-,$var(idx),,}{s.select,0,:}))
-                                        = $(cgrret(AttributesDigest){s.s
-elect,$var(idx),,}{s.select,1,:});
+                        while ($(cgr_ret(AttributesDigest){s.select,$var
+(idx),,}) != NULL) {
+                                $avp($(cgr_ret(AttributesDigest){s.selec
+t,$var(idx),,}{s.select,0,:}))
+                                        = $(cgr_ret(AttributesDigest){s.
+select,$var(idx),,}{s.select,1,:});
                                 $var(idx) = $var(idx) + 1;
                         }
                         ...
@@ -457,7 +457,7 @@ elect,$var(idx),,}{s.select,1,:});
                 $cgr(RequestType) = "*prepaid";
                 $cgr(Destination) = $rU;
                 cgrates_cmd("SessionSv1.AuthorizeEvent");
-                xlog("Call is allowed to run $cgrret seconds\n");
+                xlog("Call is allowed to run $cgr_ret seconds\n");
                 ...
 
 1.10. Exported pseudo-variables
@@ -553,22 +553,22 @@ ounting
                 }
                 ...
 
-1.10.3. $cgrret(name)
+1.10.3. $cgr_ret(name)
 
    Returns the reply message of a CGRateS command in script, or
    when used in the non-compat mode, one of the objects within the
    reply.
 
-   Example 1.13. $cgrret(name) usage
+   Example 1.13. $cgr_ret(name) usage
                 ...
                 cgrates_auth("$fU", "$rU");
 
                 # in compat mode
-                xlog("Call is allowed to run $cgrret seconds\n");
+                xlog("Call is allowed to run $cgr_ret seconds\n");
 
                 # in non-compat mode
-                xlog("Call is allowed to run $cgrret(MaxUsage) seconds\n
-");
+                xlog("Call is allowed to run $cgr_ret(MaxUsage) seconds\
+n");
                 ...
 
 1.11. Exported Asynchronous Functions
@@ -611,7 +611,7 @@ route {
 route [auth_reply]
 {
         if ($rc < 0) {
-                xlog("Call not authorized: code=$cgrret!\n");
+                xlog("Call not authorized: code=$cgr_ret!\n");
                 send_reply("403", "Forbidden");
                 exit;
         }
@@ -656,7 +656,7 @@ route {
 route [auth_reply]
 {
         if ($rc < 0) {
-                xlog("Call not authorized: code=$cgrret!\n");
+                xlog("Call not authorized: code=$cgr_ret!\n");
                 send_reply("403", "Forbidden");
                 exit;
         }
@@ -679,8 +679,8 @@ eply);
 route [auth_reply]
 {
         if ($rc < 0) {
-                xlog("Call not authorized: MaxUsage=$cgrret(MaxUsage)!\n
-");
+                xlog("Call not authorized: MaxUsage=$cgr_ret(MaxUsage)!\
+n");
                 send_reply("403", "Forbidden");
                 exit;
         }
