@@ -1035,6 +1035,170 @@ if ($rs == "183") {
 			</itemizedlist>
 		</listitem>
 		<listitem>
+			<para>Original Called Number</para>
+			<itemizedlist>
+				<listitem>
+					<para>Odd/even indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>even</emphasis> - 0</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>odd</emphasis> - 1</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Nature of address indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>subscriber</emphasis> - 1</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>unknown</emphasis> - 2</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>national</emphasis> - 3</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>international</emphasis> - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Numbering plan indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>ISDN</emphasis> - 1</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>Data</emphasis> - 3</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>Telex</emphasis> - 4</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Address presentation restricted indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>allowed</emphasis> - 0</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>restricted</emphasis> - 1</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>not available</emphasis> - 2</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>reserved</emphasis> - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>Redirecting Number - same as <emphasis>Original Called Number</emphasis></para>
+		</listitem>
+		<listitem>
+			<para>Redirection Number - same as <emphasis>Called Party Number</emphasis></para>
+		</listitem>
+		<listitem>
+			<para>Redirection information</para>
+			<itemizedlist>
+				<listitem>
+					<para>Redirecting indicator</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>no redirection</emphasis> - 0</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>call rerouted</emphasis> - 1</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>call rerouted, all information restricted</emphasis> - 2</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>call diverted</emphasis> - 3</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>Call diverted, all information restricted</emphasis> - 4</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>call rerouted, redirection number restricted</emphasis> - 5</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>call diversion, redirection number restricted</emphasis> - 6</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Original redirection reason</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>unknown/not available</emphasis> - 0</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>user busy</emphasis> - 1</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>no reply</emphasis> - 2</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>unconditional</emphasis> - 3</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Redirection counter</para>
+					<itemizedlist>
+						<listitem>
+							<para>1</para>
+						</listitem>
+						<listitem>
+							<para>2</para>
+						</listitem>
+						<listitem>
+							<para>3</para>
+						</listitem>
+						<listitem>
+							<para>4</para>
+						</listitem>
+						<listitem>
+							<para>5</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+				<listitem>
+					<para>Redirecting reason</para>
+					<itemizedlist>
+						<listitem>
+							<para><emphasis>unknown/not available</emphasis> - 0</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>user busy</emphasis> - 1</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>no reply</emphasis> - 2</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>unconditional</emphasis> - 3</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>deflection alerting</emphasis> - 4</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>deflection response</emphasis> - 5</para>
+						</listitem>
+						<listitem>
+							<para><emphasis>mobile not reachable</emphasis> - 6</para>
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
 			<para>Cause Indicators</para>
 			<itemizedlist>
 				<listitem>

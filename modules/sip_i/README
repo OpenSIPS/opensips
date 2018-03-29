@@ -469,6 +469,54 @@ ators)");
                o user - 0
                o network - 1
           + Address signal
+     * Original Called Number
+          + Odd/even indicator
+               o even - 0
+               o odd - 1
+          + Nature of address indicator
+               o subscriber - 1
+               o unknown - 2
+               o national - 3
+               o international - 4
+          + Numbering plan indicator
+               o ISDN - 1
+               o Data - 3
+               o Telex - 4
+          + Address presentation restricted indicator
+               o allowed - 0
+               o restricted - 1
+               o not available - 2
+               o reserved - 3
+     * Redirecting Number - same as Original Called Number
+     * Redirection Number - same as Called Party Number
+     * Redirection information
+          + Redirecting indicator
+               o no redirection - 0
+               o call rerouted - 1
+               o call rerouted, all information restricted - 2
+               o call diverted - 3
+               o Call diverted, all information restricted - 4
+               o call rerouted, redirection number restricted - 5
+               o call diversion, redirection number restricted - 6
+          + Original redirection reason
+               o unknown/not available - 0
+               o user busy - 1
+               o no reply - 2
+               o unconditional - 3
+          + Redirection counter
+               o 1
+               o 2
+               o 3
+               o 4
+               o 5
+          + Redirecting reason
+               o unknown/not available - 0
+               o user busy - 1
+               o no reply - 2
+               o unconditional - 3
+               o deflection alerting - 4
+               o deflection response - 5
+               o mobile not reachable - 6
      * Cause Indicators
           + Location
                o user - 0
