@@ -205,6 +205,37 @@ static struct isup_subfield connected_num_subf[] = {
 	{str_init("Address signal"), {0, {{0, 0}}, {0}}},
 	SUBF_INIT_EMPTY};
 
+static struct isup_subfield original_called_num_subf[] = {
+        {str_init("Odd/even indicator"), {2,
+                {str_init("even"), str_init("odd")}, {0,1}}},
+        {str_init("Nature of address indicator"), {4,
+                {str_init("subscriber"), str_init("unknown"), str_init("national"),
+                 str_init("international")}, {1,2,3,4}}},
+        {str_init("Numbering plan indicator"), {3,
+                {str_init("ISDN"), str_init("Data"), str_init("Telex")}, {1,3,4}}},
+        {str_init("Address presentation restricted indicator"), {4,
+                {str_init("allowed"), str_init("restricted"), str_init("not available"), str_init("reserved")}, {0,1,2,3}}},
+        {str_init("Address signal"), {0, {{0, 0}}, {0}}},
+        SUBF_INIT_EMPTY};
+
+static struct isup_subfield redirection_info_subf[] = {
+	{str_init("Redirecting indicator"), {7,
+		{str_init("no redirection"), str_init("call rerouted"),
+		 str_init("call rerouted, all information restricted"), str_init("call diverted"),
+		 str_init("Call diverted, all information restricted"),
+		 str_init("call rerouted, redirection number restricted"),
+	     str_init("call diversion, redirection number restricted")}, {0,1,2,3,4,5,6}}},
+	{str_init("Original redirection reason"), {4,
+		{str_init("unknown/not available"), str_init("user busy"), str_init("no reply"),
+		 str_init("unconditional")}, {0,1,2,3}}},
+	{str_init("Redirection counter"), {5,
+		{str_init("1"), str_init("2"), str_init("3"), str_init("4"), str_init("5")}, {1,2,3,4,5}}},
+	{str_init("Redirecting reason"), {7,
+		{str_init("unknown/not available"), str_init("user busy"), str_init("no reply"),
+		 str_init("unconditional"), str_init("deflection alerting"), str_init("deflection response"),
+		 str_init("mobile not reachable")}, {0,1,2,3,4,5,6}}},
+	SUBF_INIT_EMPTY};
+
 /* Recommendation and Diagnostics subfields not supported */
 static struct isup_subfield cause_ind_subf[] = {
 	{str_init("Location"), {8,
@@ -521,6 +552,44 @@ int forward_call_ind_writef(int param_idx, int subfield_idx, unsigned char *para
 	return 0;
 }
 
+void redirection_info_parsef(int subfield_idx, unsigned char *param_val, int len,
+								int *int_res, str *str_res)
+{
+	int idx[] =   {0,0,1,1};
+	int shift[] = {0,4,0,4};
+	int mask[] =  {7,0xf,7,0xf};
+
+	if (subfield_idx < 0 || subfield_idx > 3) {
+		LM_ERR("BUG - bad subfield\n");
+		return;
+	}
+
+	*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
+}
+
+int redirection_info_writef(int param_idx, int subfield_idx, unsigned char *param_val,
+                                                                int *len, pv_value_t *val)
+{
+	int new_val;
+	int idx[] =   {0,0,1,1};
+	int mask[] =  {0x7,0xf0,0x7,0xf0};
+	int shift[] = {0,4,0,4};
+
+	PARAM_CHECK_INT_VAL();
+
+	if (subfield_idx < 0 || subfield_idx > 3) {
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+								mask[subfield_idx], shift[subfield_idx], new_val);
+
+	*len = 2;
+
+	return 0;
+}
+
 void opt_forward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
@@ -813,6 +882,65 @@ int connected_num_writef(int param_idx, int subfield_idx, unsigned char *param_v
 	return 0;
 }
 
+void original_called_num_parsef(int subfield_idx, unsigned char *param_val, int len,
+								int *int_res, str *str_res)
+{
+	int idx[] =   {0,0,1,1};
+	int shift[] = {7,0,4,2};
+	int mask[] =  {1,0x7f,7,3};
+	int oddeven = (param_val[0] >> 7) & 0x1;
+
+	if (subfield_idx < 0 || subfield_idx > 4) {
+		LM_ERR("BUG - bad subfield\n");
+		return;
+	}
+
+	switch (subfield_idx) {
+	case 0:
+		*int_res = oddeven;
+		break;
+	case 4:
+		isup_get_number(str_res, param_val + 2, len - 2, oddeven);
+		break;
+	default:
+		*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
+	}
+}
+
+int original_called_num_writef(int param_idx, int subfield_idx,
+							unsigned char *param_val, int *len, pv_value_t *val)
+{
+	int new_val;
+	int num_len, oddeven;
+	str num;
+	int idx[] =   {0,0,1,1};
+	int mask[] =  {0x80,0x7f,0x70,0xc};
+	int shift[] = {7,0,4,2};
+
+	NUM_PARAM_GET_VAL_PV(4);
+
+	if (subfield_idx < 0 || subfield_idx > 4) {
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	if (subfield_idx == 4) {
+		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
+	} else
+		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+								mask[subfield_idx], shift[subfield_idx], new_val);
+
+	if (subfield_idx == 4)
+		*len = num_len + 2;
+	else if (*len == 0)
+		*len = 2;
+
+	return 0;
+}
+
+
 void cause_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
@@ -960,7 +1088,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_OPT_FORWARD_CALL_INDICATOR, str_init("Optional forward call indicators"), opt_forward_call_ind_parsef, opt_forward_call_ind_writef, opt_forward_call_ind_subf, NULL, 0},
 	{ISUP_PARM_CALLING_PARTY_CAT, str_init("Calling Party's Category"), NULL, NULL, NULL, &calling_party_cat_pvals, 1},
 	{ISUP_PARM_CALLING_PARTY_NUM, str_init("Calling Party Number"), calling_party_num_parsef, calling_party_num_writef, calling_party_num_subf, NULL, 0},
-	{ISUP_PARM_REDIRECTING_NUMBER, str_init("Redirecting Number"), NULL, NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECTING_NUMBER, str_init("Redirecting Number"), original_called_num_parsef, original_called_num_writef, original_called_num_subf, NULL, 0},
 	{ISUP_PARM_REDIRECTION_NUMBER, str_init("Redirection Number"), called_party_num_parsef, called_party_num_writef, called_party_num_subf, NULL, 0},
 	{ISUP_PARM_CONNECTION_REQ, str_init("Connection Request"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_INR_IND, str_init("Information Request Indicators"), NULL, NULL, NULL, NULL, 0},
@@ -968,7 +1096,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_CONTINUITY_IND, str_init("Continuity Indicators"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_BACKWARD_CALL_IND, str_init("Backward Call Indicators"), backward_call_ind_parsef, backward_call_ind_writef, backward_call_ind_subf, NULL, 2},
 	{ISUP_PARM_CAUSE, str_init("Cause Indicators"), cause_ind_parsef, cause_ind_writef, cause_ind_subf, NULL, 0},
-	{ISUP_PARM_REDIRECTION_INFO, str_init("Redirection Information"), NULL, NULL, NULL, NULL, 0},
+	{ISUP_PARM_REDIRECTION_INFO, str_init("Redirection Information"), redirection_info_parsef, redirection_info_writef, redirection_info_subf, NULL, 0},
 	{ISUP_PARM_CIRCUIT_GROUP_SUPERVISION_IND, str_init("Circuit group supervision message type"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_RANGE_AND_STATUS, str_init("Range and status"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_CALL_MODIFICATION_IND, str_init("Call modification indicators"), NULL, NULL, NULL, NULL, 0},
@@ -984,7 +1112,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_CIRCUIT_ASSIGNMENT_MAP, str_init("Circuit Assignment Map"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_CIRCUIT_STATE_IND, str_init("Circuit State Indicator"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARAM_AUTOMATIC_CONGESTION_LEVEL, str_init("Automatic congestion level"), NULL, NULL, NULL, NULL, 0},
-	{ISUP_PARM_ORIGINAL_CALLED_NUM, str_init("Original called number"), NULL, NULL, NULL, NULL, 0},
+	{ISUP_PARM_ORIGINAL_CALLED_NUM, str_init("Original called number"), original_called_num_parsef, original_called_num_writef, original_called_num_subf, NULL, 0},
 	{ISUP_PARM_OPT_BACKWARD_CALL_IND, str_init("Optional Backward Call Indicators"), opt_backward_call_ind_parsef, opt_backward_call_ind_writef, opt_backward_call_ind_subf, NULL, 0},
 	{ISUP_PARM_USER_TO_USER_IND, str_init("User-to-user indicators"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_ORIGINATION_ISC_PC, str_init("Origination ISC point code"), NULL, NULL, NULL, NULL, 0},
