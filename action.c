@@ -1958,27 +1958,18 @@ next_avp:
 			break;
 		case SERIALIZE_BRANCHES_T:
 			script_trace("core", "serialize_branches", msg, a->file, a->line) ;
-			if (a->elem[0].type!=NUMBER_ST){
-				LM_ALERT("BUG in serialize_branches argument"
-						" type: %d\n", a->elem[0].type);
-				ret=E_BUG;
-				break;
-			}
-			if (serialize_branches(msg,(int)a->elem[0].u.number)!=0) {
+			if (serialize_branches(msg,(int)a->elem[0].u.number,
+						a->elem[1].u.data ? (int)a->elem[1].u.number : 0)!=0) {
 				LM_ERR("serialize_branches failed\n");
 				ret=E_UNSPEC;
 				break;
 			}
-			ret=1; /* continue processing */
+			ret=1;
 			break;
 		case NEXT_BRANCHES_T:
 			script_trace("core", "next_branches", msg, a->file, a->line) ;
-			if ((ret=next_branches(msg))<0) {
-				LM_ERR("next_branches failed\n");
-				ret=E_UNSPEC;
-				break;
-			}
-			/* continue processing */
+			if ((ret = next_branches(msg)) < 0)
+				LM_DBG("no more branches\n");
 			break;
 		case EQ_T:
 		case COLONEQ_T:
