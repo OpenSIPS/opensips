@@ -427,8 +427,7 @@ have_contact:
 	/* Append branches if enabled */
 	/* If we got to this point and the URI had a ;gr parameter and it was matched
 	 * to a contact. No point in branching */
-	if (!((*ptr)->flags & FL_EXTRA_HOP) &&
-	    ((flags & REG_LOOKUP_NOBRANCH_FLAG) || !ZSTR(sip_instance)))
+	if (flags & REG_LOOKUP_NOBRANCH_FLAG || !ZSTR(sip_instance))
 		goto done;
 
 	LM_DBG("looking for branches\n");
