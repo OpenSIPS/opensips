@@ -72,7 +72,7 @@ int init_serialization(void)
  * contact is the last one in its priority class.  Finally, removes
  * all branches from destination set.
  */
-int serialize_branches(struct sip_msg *msg, int clean_before )
+int serialize_branches(struct sip_msg *msg, int clean_before, int keep_order)
 {
 	static struct serial_contact contacts[MAX_BRANCHES];
 	int n, last, first, i, prev;
@@ -100,7 +100,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 			break;
 	}
 
-	if (branch.s == 0) {
+	if (branch.s == 0 && !keep_order) {
 		LM_DBG("nothing to do - all same q!\n");
 		return 0;
 	}
@@ -185,8 +185,15 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 		contacts[n].enc_info = enc_info;
 		contacts[n].q = q;
 
-		/* insert based on q */
-		for (i = first, prev=-1; i != -1 && contacts[i].q < q; prev=i,i = contacts[i].next);
+		if (keep_order) {
+			contacts[n].next = first;
+			first = n++;
+			continue;
+		}
+
+		/* insert based on ascending q values, so add_avp() reverses them */
+		for (i = first, prev = -1;
+		     i != -1 && contacts[i].q < q; prev = i ,i = contacts[i].next);
 
 		if (i == -1) {
 			/* append */
@@ -209,7 +216,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 
 	/* Assign values for q_flags */
 	for (i = first; contacts[i].next != -1; i = contacts[i].next) {
-		if (contacts[i].q < contacts[contacts[i].next].q)
+		if (keep_order || contacts[i].q < contacts[contacts[i].next].q)
 			contacts[contacts[i].next].q_flag = Q_FLAG;
 		else
 			contacts[contacts[i].next].q_flag = 0;

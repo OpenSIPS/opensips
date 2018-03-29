@@ -73,11 +73,21 @@ static str branch_uris[MAX_BRANCHES-1];
 ucontact_t **sorted_cts; /* always has an extra terminating NULL ptr */
 int sorted_cts_sz = 20;
 
-static int cmp_ucontact(const void *ct1, const void *ct2)
+static int cmp_ucontact(const void *_ct1, const void *_ct2)
 {
-	return
-		(*(ucontact_t **)ct1)->sipping_latency -
-		(*(ucontact_t **)ct2)->sipping_latency;
+	ucontact_t *ct1 = *(ucontact_t **)_ct1, *ct2 = *(ucontact_t **)_ct2;
+
+	if (ct1->sipping_latency == 0) {
+		if (ct2->sipping_latency == 0)
+			return 0;
+
+		return 1;
+	}
+
+	if (ct2->sipping_latency == 0)
+		return -1;
+
+	return ct1->sipping_latency - ct2->sipping_latency;
 }
 
 ucontact_t **sanitize_contacts(ucontact_t *contacts, int flags, int max_latency)

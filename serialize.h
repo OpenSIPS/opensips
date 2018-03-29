@@ -42,7 +42,7 @@ int init_serialization();
 /*! \brief converts the destination set (for parallel forking) into AVPS used
  * for serial forking.
  */
-int serialize_branches(struct sip_msg *msg, int clean_before );
+int serialize_branches(struct sip_msg *msg, int clean_before, int keep_order);
 
 
 /*! \brief gets the next branches for serial forking
