@@ -52,14 +52,8 @@ enum mid_reg_mode {
 };
 
 enum mid_reg_insertion_mode {
-	INSERT_BY_CONTACT,
-	INSERT_BY_PATH,
-};
-
-//TODO: remove the Path-based mid-registrar logic starting with OpenSIPS 2.4
-enum mid_reg_matching_mode {
-	MATCH_BY_PARAM,
-	MATCH_BY_USER,
+	MR_REPLACE_USER,
+	MR_APPEND_PARAM,
 };
 
 struct ct_mapping {
@@ -116,8 +110,6 @@ struct mid_reg_info {
 
 	/* ucontact_info dup'ed fields */
 	str user_agent;
-	str path_received;
-	str path;
 	unsigned int ul_flags;
 	unsigned int cflags;
 

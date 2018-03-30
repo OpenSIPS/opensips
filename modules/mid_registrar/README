@@ -23,11 +23,7 @@ Liviu Chircu
               1.2.2. Contact throttling
               1.2.3. AOR throttling
 
-        1.3. Insertion modes
-
-              1.3.1. Insertion by Contact (default)
-              1.3.2. Insertion by Path
-
+        1.3. Auto-Insertion Into Future SIP Flows
         1.4. Dependencies
 
               1.4.1. OpenSIPS Modules
@@ -36,20 +32,20 @@ Liviu Chircu
         1.5. Exported Parameters
 
               1.5.1. mode (integer)
-              1.5.2. insertion_mode (integer)
-              1.5.3. min_expires (integer)
-              1.5.4. default_expires (integer)
-              1.5.5. max_expires (integer)
-              1.5.6. outgoing_expires (integer)
-              1.5.7. contact_match_param (string)
-              1.5.8. default_q (integer)
-              1.5.9. tcp_persistent_flag (string)
-              1.5.10. realm_prefix (string)
-              1.5.11. case_sensitive (integer)
-              1.5.12. received_avp (string)
-              1.5.13. received_param (string)
-              1.5.14. max_contacts (integer)
-              1.5.15. extra_contact_params_avp (string)
+              1.5.2. contact_id_insertion (integer)
+              1.5.3. contact_id_param (string)
+              1.5.4. outgoing_expires (integer)
+              1.5.5. received_avp (string)
+              1.5.6. received_param (string)
+              1.5.7. extra_contact_params_avp (string)
+              1.5.8. min_expires (integer)
+              1.5.9. default_expires (integer)
+              1.5.10. max_expires (integer)
+              1.5.11. default_q (integer)
+              1.5.12. tcp_persistent_flag (string)
+              1.5.13. realm_prefix (string)
+              1.5.14. case_sensitive (integer)
+              1.5.15. max_contacts (integer)
               1.5.16. retry_after (integer)
               1.5.17. disable_gruu (integer)
               1.5.18. gruu_secret (string)
@@ -65,20 +61,20 @@ Liviu Chircu
    List of Examples
 
    1.1. Setting the mode module parameter
-   1.2. Setting the insertion_mode module parameter
-   1.3. Setting the min_expires module parameter
-   1.4. Setting the default_expires module parameter
-   1.5. Setting the max_expires module parameter
-   1.6. Setting the outgoing_expires module parameter
-   1.7. Setting the contact_match_param module parameter
-   1.8. Setting the default_q module parameter
-   1.9. Setting the tcp_persistent_flag module parameter
-   1.10. Setting the realm_prefix module parameter
-   1.11. Setting the case_sensitive module parameter
-   1.12. Setting the received_avp module parameter
-   1.13. Setting the received_param module parameter
-   1.14. Setting the max_contacts module parameter
-   1.15. Setting the extra_contact_params_avp module parameter
+   1.2. Setting the contact_id_insertion module parameter
+   1.3. Setting the contact_id_param module parameter
+   1.4. Setting the outgoing_expires module parameter
+   1.5. Setting the received_avp module parameter
+   1.6. Setting the received_param module parameter
+   1.7. Setting the extra_contact_params_avp module parameter
+   1.8. Setting the min_expires module parameter
+   1.9. Setting the default_expires module parameter
+   1.10. Setting the max_expires module parameter
+   1.11. Setting the default_q module parameter
+   1.12. Setting the tcp_persistent_flag module parameter
+   1.13. Setting the realm_prefix module parameter
+   1.14. Setting the case_sensitive module parameter
+   1.15. Setting the max_contacts module parameter
    1.16. Setting the retry_after module parameter
    1.17. Setting the gruu_secret module parameter
    1.18. Setting the gruu_secret module parameter
@@ -101,9 +97,9 @@ Chapter 1. Admin Guide
      * convert incoming high-rate registration traffic into a
        low-rate variant, towards the main registrar layer. With
        proper configuration, it can absorb over 90% of existing
-       registration traffic while preserving the back-end's user
-       location state, effectively reducing resource usage at the
-       respective layer.
+       registration traffic while correctly managing the
+       back-end's user location state, effectively reducing
+       resource usage at the respective layer.
      * stay synchronized with the main registrar (from a user
        location perspective), by properly accepting the contact
        states and expirations it decides.
@@ -114,13 +110,15 @@ Chapter 1. Admin Guide
 
 1.2.1. Contact mirroring (default)
 
-   In "contact mirroring" mode, the mid-registrar will insert
-   itself in the registration flow between end user and main
-   registrar only as a simple proxy registrar, without any other
-   contact processing. The incoming REGISTER requests will be
-   proxied further to the main registrar; the registered contact
-   will be stored in the mid-registrar only on 2xx replies,
-   according to the information returned by the main registrar.
+   In "contact mirroring" mode, the mid-registrar will only insert
+   itself in the SIP traffic flow between end user and main
+   registrar by altering the Contact header field values. See
+   section Section 1.3, “Auto-Insertion Into Future SIP Flows” for
+   a detailed description of possible Contact-based insertion
+   modes. The incoming REGISTER requests will be proxied further
+   to the main registrar; the registered contact will be stored in
+   the mid-registrar only on 2xx replies, according to the
+   information returned by the main registrar.
 
    A possible usage of this mode, for example, would be to clone
    registrations on a SIP front-end that extends the main platform
@@ -134,8 +132,8 @@ Chapter 1. Admin Guide
    while coping with a high registration rate on the end-user side
    (between end-user and mid-registrar). This is useful in
    scenarios were the end-users are very dynamic and short-lived
-   (like on mobile devices), but the main registrar cannot cope
-   with large traffic.
+   (e.g. mobile devices), but the main registrar cannot cope with
+   large amounts of registration traffic.
 
    Traffic conversion is done in a "per-device" manner, according
    to each unique SIP Contact header field value. It is achieved
@@ -214,39 +212,26 @@ Chapter 1. Admin Guide
    platform, such as advanced SIP calling features and/or media
    handling.
 
-1.3. Insertion modes
+1.3. Auto-Insertion Into Future SIP Flows
 
    A defining feature of the mid-registrar is that it must be easy
    to integrate, ideally a "plug-and-play" SIP component. It
    should not impose any "outbound-proxy" configurations on any of
    the platform's layers and automatically insert itself on the
-   call flow of successful registrations.
+   call flows which follow successful registrations.
 
-   The script writer can choose between two SIP insertion
-   mechanisms: either by having the module modify Contact headers
-   when forwarding registrations, or instruct it to make use of a
-   Path header (RFC 3327).
+   Regardless of its configured working mode, the mid-registrar
+   will mangle the Contact header field URIs of all forwarded
+   REGISTER requests and replace the original "hostname" and
+   "port" parts of a Contact URI with one of its listening
+   interfaces.
 
-1.3.1. Insertion by Contact (default)
-
-   This insertion mode will mangle the Contact header field values
-   of all forwarded registration requests, by replacing any
-   original IP and port of a Contact URI with those of one of the
-   mid-registrar's listening interfaces.
-
-   The mid-registrar will also append a parameter to each Contact
-   URI ("rid" by default, can be changed through the
-   contact_match_param module parameter) This URI parameter allows
-   reply contacts to be matched with request ones. This same
-   parameter will also be used when routing calls to the users. In
-   this case, it will be taken from the INVITE's Request-URI.
-
-1.3.2. Insertion by Path
-
-   Instructs the module to append a "Path" header field to each
-   forwarded registration request. By recording itself between
-   each user and the main registrar, the mid-registrar allows
-   subsequent calls to be properly routed to the called party.
+   Additionally, in modes "0" and "1", each Contact will be
+   assigned an unique identifier, which will be utilized in future
+   contact-based lookup operations. This information will be
+   included in each forwarded Contact URI. The
+   contact_id_insertion modparam controls how this information is
+   included.
 
 1.4. Dependencies
 
@@ -274,10 +259,10 @@ Chapter 1. Admin Guide
      * when a REGISTER is received, the script writer must call
        mid_registrar_save()
      * the mid-registrar will insert itself on the call flow of
-       all registrations according to the insertion_mode.
-     * registrations handled by the mid-registrar will
-       transparently result in a user location update if their
-       reply status is 2xx.
+       all registrations according to the contact_id_insertion.
+     * registrations forwarded by the mid-registrar will
+       transparently result in a user location update only if the
+       reply status code from the downstream registrar is 2xx.
 
    Each working mode behaves differently, as follows:
      * 0 (Contact mirroring mode)
@@ -296,12 +281,13 @@ Chapter 1. Admin Guide
        according to outgoing_expires
      * 2 (AOR throttling mode)
        AOR throttling is a step beyond "Contact throttling", as
-       the main registrar is made aware of the network presence of
-       AORs, rather than Contacts. This behaviour is also made
-       possible through the outgoing_expires module parameter or
-       the corresponding parameter to mid_registrar_save(), which
-       allow the script writer to prolong the life of the
-       registrations on the way to the main registrar.
+       the main registrar is only made aware of the network
+       presence of AORs, rather than Contacts. This behaviour is
+       also made possible through the outgoing_expires module
+       parameter or the corresponding parameter to
+       mid_registrar_save(), which allow the script writer to
+       prolong the life of the registrations on the way to the
+       main registrar.
        In this mode, the mid-registrar will fully replace the
        Contact set of all forwarded registrations with a single
        Contact, advertising that the AOR is available to the main
@@ -313,19 +299,98 @@ Chapter 1. Admin Guide
    Example 1.1. Setting the mode module parameter
 modparam("mid_registrar", "mode", 2)
 
-1.5.2. insertion_mode (integer)
+1.5.2. contact_id_insertion (integer)
 
-   SIP insertion mode of the module. Refer to Section 1.3,
-   “Insertion modes” for more details. Possible values are:
-     * 0 (Insertion by Contact)
-     * 1 (Insertion by Path)
+   Only relevant in a "mirroring" or "contact throttling" mode.
+   Controls where the additional unique Contact identification
+   information (64-bit, hex-encoded integer) will be placed within
+   outgoing Contact header field URIs. Refer to Section 1.3,
+   “Auto-Insertion Into Future SIP Flows” for more details.
 
-   Default value is 0 (Insertion by Contact)
+   Possible values are:
+     * "ct-param" (default) - the contact IDs shall be appended to
+       outgoing Contact URIs as ";ctid=" parameters.
+     * "ct-username" - the contact IDs will substitute the
+       "username" parts of outgoing Contact URIs
 
-   Example 1.2. Setting the insertion_mode module parameter
-modparam("mid_registrar", "insertion_mode", 1)
+   Example 1.2. Setting the contact_id_insertion module parameter
+modparam("mid_registrar", "contact_id_insertion", "ct-username")
 
-1.5.3. min_expires (integer)
+1.5.3. contact_id_param (string)
+
+   Only relevant in a "mirroring" or "contact throttling" mode.
+   Specifies the name of the Contact URI parameter which is used
+   by the module in order to match contacts and route SIP
+   requests.
+
+   Default value is “ctid”
+
+   Example 1.3. Setting the contact_id_param module parameter
+modparam("mid_registrar", "contact_id_param", "ctid")
+
+# Example resulting Contact header field:
+# Contact: <sip:liviu@10.0.0.10:5060;ctid=619244948763447138>;expires=18
+0.
+
+1.5.4. outgoing_expires (integer)
+
+   Only relevant in Contact/AOR throttling modes. Sets a minimal
+   value for the expiration intervals of egressing contacts.
+
+   Default value is 3600 (seconds)
+
+   Example 1.4. Setting the outgoing_expires module parameter
+modparam("mid_registrar", "outgoing_expires", 3600)
+
+1.5.5. received_avp (string)
+
+   The module will store the value of the AVP configured by this
+   parameter in the received column of the user location table. It
+   will leave the column empty if the AVP is empty. The AVP should
+   contain a SIP URI consisting of the source IP, port, and
+   protocol of the REGISTER message being processed.
+
+Note
+
+   The value of this parameter should be the same as the value of
+   corresponding parameter of nathelper module.
+
+   Default value is "NULL" (disabled)
+
+   Example 1.5. Setting the received_avp module parameter
+modparam("mid_registrar", "received_avp", "$avp(rcv)")
+
+1.5.6. received_param (string)
+
+   The name of the parameter that will be appended to Contacts of
+   200 OK replies if the received URI is set by nathelper module.
+
+Note
+
+   The value of this parameter should be the same as the value of
+   corresponding parameter of nathelper module.
+
+   Default value is "received"
+
+   Example 1.6. Setting the received_param module parameter
+modparam("mid_registrar", "received_param", "rcv")
+
+1.5.7. extra_contact_params_avp (string)
+
+   An AVP specification. This AVP is evaluated during
+   mid_registrar_save(): if it holds a valid string, its content
+   be appended to each new Contact URI built by the mid-registrar,
+   for the outgoing request.
+
+   Default value is None (not used)
+
+   Example 1.7. Setting the extra_contact_params_avp module
+   parameter
+# NB: AVPs are cleared with every new SIP request
+modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_par
+ams)")
+
+1.5.8. min_expires (integer)
 
    The minimum expires value of a Contact, values lower than this
    minimum will be automatically set to the minimum. Value 0
@@ -333,10 +398,10 @@ modparam("mid_registrar", "insertion_mode", 1)
 
    Default value is 10 (seconds)
 
-   Example 1.3. Setting the min_expires module parameter
+   Example 1.8. Setting the min_expires module parameter
 modparam("mid_registrar", "min_expires", 600)
 
-1.5.4. default_expires (integer)
+1.5.9. default_expires (integer)
 
    If the processed message contains neither Expires HFs nor
    expires contact parameters, this value will be used as the
@@ -344,10 +409,10 @@ modparam("mid_registrar", "min_expires", 600)
 
    Default value is 3600 (seconds)
 
-   Example 1.4. Setting the default_expires module parameter
+   Example 1.9. Setting the default_expires module parameter
 modparam("mid_registrar", "default_expires", 1800)
 
-1.5.5. max_expires (integer)
+1.5.10. max_expires (integer)
 
    The maximum expires value of a Contact, values higher than this
    maximum will be automatically set to the maximum. Value 0
@@ -355,31 +420,10 @@ modparam("mid_registrar", "default_expires", 1800)
 
    Default value is 3600 (seconds)
 
-   Example 1.5. Setting the max_expires module parameter
+   Example 1.10. Setting the max_expires module parameter
 modparam("mid_registrar", "max_expires", 7200)
 
-1.5.6. outgoing_expires (integer)
-
-   Only relevant in Contact/AOR throttling modes. Sets a minimal
-   value for the expiration intervals of egressing contacts.
-
-   Default value is 3600 (seconds)
-
-   Example 1.6. Setting the outgoing_expires module parameter
-modparam("mid_registrar", "outgoing_expires", 3600)
-
-1.5.7. contact_match_param (string)
-
-   Only relevant in "Contact throttling" mode. Specifies the name
-   of the Contact URI parameter which is used by the module in
-   order to match contacts and route calls.
-
-   Default value is “rid”
-
-   Example 1.7. Setting the contact_match_param module parameter
-modparam("mid_registrar", "contact_match_param", "regid")
-
-1.5.8. default_q (integer)
+1.5.11. default_q (integer)
 
    Sets the default "q" value for new contacts. Because OpenSIPS
    does not support floating point module parameters, the supplied
@@ -388,10 +432,10 @@ modparam("mid_registrar", "contact_match_param", "regid")
 
    Default value is 0
 
-   Example 1.8. Setting the default_q module parameter
+   Example 1.11. Setting the default_q module parameter
 modparam("mid_registrar", "default_q", 380)
 
-1.5.9. tcp_persistent_flag (string)
+1.5.12. tcp_persistent_flag (string)
 
    Specifies the message flag to be used to control the module
    behaviour regarding TCP connections. If the flag is set for a
@@ -402,11 +446,11 @@ modparam("mid_registrar", "default_q", 380)
 
    Default value is -1 (not set)
 
-   Example 1.9. Setting the tcp_persistent_flag module parameter
+   Example 1.12. Setting the tcp_persistent_flag module parameter
 modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATI
 ONS")
 
-1.5.10. realm_prefix (string)
+1.5.13. realm_prefix (string)
 
    In multi-domain user location scenarios ("use_domain" usrloc
    module parameter set to "1"), this parameter denotes a prefix
@@ -424,10 +468,10 @@ ONS")
 
    Default value is NULL (none)
 
-   Example 1.10. Setting the realm_prefix module parameter
+   Example 1.13. Setting the realm_prefix module parameter
 modparam("mid_registrar", "realm_prefix", "sip.")
 
-1.5.11. case_sensitive (integer)
+1.5.14. case_sensitive (integer)
 
    If set to 1, then AOR comparison will be case sensitive (as
    RFC3261 instructs), if set to 0 then AOR comparison will be
@@ -435,43 +479,10 @@ modparam("mid_registrar", "realm_prefix", "sip.")
 
    Default value is 1 (true)
 
-   Example 1.11. Setting the case_sensitive module parameter
+   Example 1.14. Setting the case_sensitive module parameter
 modparam("mid_registrar", "case_sensitive", 0)
 
-1.5.12. received_avp (string)
-
-   The module will store the value of the AVP configured by this
-   parameter in the received column of the user location table. It
-   will leave the column empty if the AVP is empty. The AVP should
-   contain a SIP URI consisting of the source IP, port, and
-   protocol of the REGISTER message being processed.
-
-Note
-
-   The value of this parameter should be the same as the value of
-   corresponding parameter of nathelper module.
-
-   Default value is "NULL" (disabled)
-
-   Example 1.12. Setting the received_avp module parameter
-modparam("mid_registrar", "received_avp", "$avp(rcv)")
-
-1.5.13. received_param (string)
-
-   The name of the parameter that will be appended to Contacts of
-   200 OK replies if the received URI is set by nathelper module.
-
-Note
-
-   The value of this parameter should be the same as the value of
-   corresponding parameter of nathelper module.
-
-   Default value is "received"
-
-   Example 1.13. Setting the received_param module parameter
-modparam("mid_registrar", "received_param", "rcv")
-
-1.5.14. max_contacts (integer)
+1.5.15. max_contacts (integer)
 
    This parameter can be used to limit the number of contacts per
    AOR (Address-of-Record) allowed at mid-registrar level. A value
@@ -484,23 +495,8 @@ modparam("mid_registrar", "received_param", "rcv")
 
    Default value is 0 (disabled)
 
-   Example 1.14. Setting the max_contacts module parameter
+   Example 1.15. Setting the max_contacts module parameter
 modparam("mid_registrar", "max_contacts", 10)
-
-1.5.15. extra_contact_params_avp (string)
-
-   An AVP specification. This AVP is evaluated during
-   mid_registrar_save(): if it holds a valid string, its content
-   be appended to each new Contact URI built by the mid-registrar,
-   for the outgoing request.
-
-   Default value is None (not used)
-
-   Example 1.15. Setting the extra_contact_params_avp module
-   parameter
-# NB: AVPs are cleared with every new SIP request
-modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_par
-ams)")
 
 1.5.16. retry_after (integer)
 
@@ -560,8 +556,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
    REGISTER request has been answered with 200 OK (absorbed at
    mid-registrar level).
 
-   Depending on the current working mode and insertion_mode, the
-   function may additionally perform the following series of
+   Depending on the current working mode and contact_id_insertion,
+   the function may additionally perform the following series of
    transformations when relaying REGISTER requests:
 
      * in "Contact throttling" mode
@@ -576,8 +572,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
           + append a parameter to each Contact URI, which will
             allow the module to match the reply contacts and also
             route calls. The name of this URI parameter is
-            configurable via contact_match_param
-          + append a "Path" header to the current REGISTER request
+            configurable via Section 1.5.3, “contact_id_param
+            (string)”
      * in "AOR throttling" mode
           + change the value of the Expires header field to the
             value of outgoing_expires, if given, otherwise the
@@ -586,7 +582,6 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
             a single Contact header field, which will contain the
             following SIP URI:
             "sip:address-of-record@proxy_ip:proxy_port"
-          + append a "Path" header to the current REGISTER request
 
    Meaning of the parameters is as follows:
      * domain - logical domain within the registrar. If a database
@@ -597,21 +592,6 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
             cache without no DB operation;
           + 'r' (no Reply) - do not generate a SIP reply to the
             current REGISTER request.
-          + 'p0' (Path support - 'off' mode) The Path header is
-            saved into usrloc, but is never included in the reply.
-          + 'p1' (Path support - lazy mode) The Path header is
-            saved into usrloc, but is only included in the reply
-            if path support is indicated in the registration
-            request by the “path” option of the “Supported”
-            header.
-          + 'p2' (Path support - strict mode) The path header is
-            only saved into usrloc, if path support is indicated
-            in the registration request by the “path” option of
-            the “Supported” header. If no path support is
-            indicated, the request is rejected with “420 - Bad
-            Extension” and the header “Unsupported: path” is
-            included in the reply along with the received “Path”
-            header. This mode is the one recommended by RFC-3327.
           + 'v' (path receiVed) if set, the “received” parameter
             of the first Path URI of a registration is set as
             received-uri and the NAT branch flag is set for this
@@ -684,10 +664,10 @@ if (is_method("REGISTER")) {
             being optionally created. (depending on the flags
             parameter)
      * in "Contact throttling" mode
-          + extract the contact_match_param from the Request-URI,
-            derive the actual SIP URI of the destination from it
-            and set it as the new Request-URI of the INVITE ($ru
-            variable).
+          + extract the Section 1.5.3, “contact_id_param (string)”
+            from the Request-URI, derive the actual SIP URI of the
+            destination from it and set it as the new Request-URI
+            of the INVITE ($ru variable).
      * in "AOR throttling" mode
           + extract the username (Address-of-Record) from the
             Request-URI and look up all of its contact bindings

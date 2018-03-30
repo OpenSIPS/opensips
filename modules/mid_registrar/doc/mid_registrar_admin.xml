@@ -6,23 +6,25 @@
 	<section id="sec-overview">
 	<title>Overview</title>
 	<para>
-		The <emphasis>mid_registrar</emphasis> is a mid-component of a SIP platform,
-		designed to work between end users and the platform's main registration component.
+		The <emphasis>mid_registrar</emphasis> is a mid-component of a SIP
+		platform, designed to work between end users and the platform's main
+		registration component.
 
 		It opens up new possibilities for leveraging existing infrastructure in
 		order to continue to grow (as subscribers and as registration traffic)
 		while keeping an existing low-resources registrar server.
 	</para>
 	<para>
-		Acting as a registration front-end to the main SIP registrar, the mid-registrar is able to:
+		Acting as a registration front-end to the main SIP registrar, the
+		mid-registrar is able to:
 		<itemizedlist>
 			<listitem>
 			<para>
-				convert incoming high-rate registration traffic into a low-rate variant,
-				towards the main registrar layer. With proper configuration, it can
-				absorb over 90% of existing registration traffic while
-				preserving the back-end's user location state, effectively reducing
-				resource usage at the respective layer.
+			convert incoming high-rate registration traffic into a low-rate
+			variant, towards the main registrar layer. With proper
+			configuration, it can absorb over 90% of existing registration
+			traffic while correctly managing the back-end's user location
+			state, effectively reducing resource usage at the respective layer.
 			</para>
 			</listitem>
 			<listitem>
@@ -45,12 +47,14 @@
 	<section id="sec-mirror-mode">
 		<title>Contact mirroring (default)</title>
 		<para>
-		In "contact mirroring" mode, the mid-registrar will insert itself
-		in the registration flow between end user and main registrar only as
-		a simple proxy registrar, without any other contact processing. The
-		incoming REGISTER requests will be proxied further to the main
-		registrar; the registered contact will be stored in the mid-registrar
-		only on 2xx replies, according to the information returned by the main registrar.
+		In "contact mirroring" mode, the mid-registrar will only insert itself
+		in the SIP traffic flow between end user and main registrar by
+		altering the Contact header field values. See section
+		<xref linkend="sip-flow-insertion"/> for a detailed description of
+		possible Contact-based insertion modes. The incoming REGISTER requests
+		will be proxied further to the main registrar; the registered contact
+		will be stored in the mid-registrar only on 2xx replies, according to
+		the information returned by the main registrar.
 		</para>
 		<para>
 		A possible usage of this mode, for example, would be to clone
@@ -66,33 +70,37 @@
 		reduce the registration rate on the main registrar side (between
 		mid-registrar and main registrar), while coping with a high registration
 		rate on the end-user side (between end-user and mid-registrar). This
-		is useful in scenarios were the end-users are very dynamic and short-lived 
-		(like on mobile devices), but the main registrar cannot cope with large traffic.
+		is useful in scenarios were the end-users are very dynamic and
+		short-lived  (e.g. mobile devices), but the main registrar cannot cope
+		with large amounts of registration traffic.
 		</para>
 		<para>
 		Traffic conversion is done in a <emphasis>"per-device"</emphasis>
-		manner, according to each unique SIP Contact header field value. It is achieved by
-		increasing the "expires" parameter value of each contact, when relaying
-		registrations to the main registrar.
-		Once such a registration is completed, subsequent registrations for the same
-		SIP Contact header field value will be continuously absorbed by the mid-registrar
-		until, eventually, the lifetime of the remote registration will have decreased
-		enough that a refresh (i.e. simply forwarding the next REGISTER request) is mandatory.
+		manner, according to each unique SIP Contact header field value. It is
+		achieved by increasing the "expires" parameter value of each contact,
+		when relaying registrations to the main registrar.
+		Once such a registration is completed, subsequent registrations for the
+		same SIP Contact header field value will be continuously absorbed by
+		the mid-registrar until, eventually, the lifetime of the remote
+		registration will have decreased enough that a refresh (i.e. simply
+		forwarding the next REGISTER request) is mandatory.
 		</para>
 		<para>
-		A common occurence is for some SIP User Agents to lose their network connection
-		(especially when dealing with mobile devices), hence they do not properly de-register
-		from the mid-registrar. In this case, in order to avoid stale registrations on the
-		main registrar (which contains SIP contacts with greatly extended lifetimes!),
-		the mid-registrar will appropriately generate De-REGISTER requests and remove
-		these contacts from the main registrar's location service as soon as it considers
+		A common occurence is for some SIP User Agents to lose their network
+		connection (especially when dealing with mobile devices), hence they do
+		not properly de-register from the mid-registrar. In this case, in order
+		to avoid stale registrations on the main registrar (which contains SIP
+		contacts with greatly extended lifetimes!), the mid-registrar will
+		appropriately generate De-REGISTER requests and remove these contacts
+		from the main registrar's location service as soon as it considers
 		them to have expired.
 		</para>
 		<para>
 		The main practical use for this mode is registration traffic conversion.
-		By minimizing the strain of processing registrations on the main registrar,
-		we allow it to dedicate more system resources to critical areas of the
-		platform, such as advanced SIP calling features and/or media handling.
+		By minimizing the strain of processing registrations on the main
+		registrar, we allow it to dedicate more system resources to critical
+		areas of the platform, such as advanced SIP calling features and/or
+		media handling.
 		</para>
 	</section>
 
@@ -148,47 +156,28 @@
 	</section>
 	</section>
 
-	<section id="sec-insertion-modes">
-	<title>Insertion modes</title>
+	<section id="sip-flow-insertion">
+	<title>Auto-Insertion Into Future SIP Flows</title>
 	<para>
-		A defining feature of the mid-registrar is that it must be easy to integrate,
-		ideally a "plug-and-play" SIP component. It should not impose any
-		"outbound-proxy" configurations on any of the platform's layers and
-		automatically insert itself on the call flow of successful registrations.
+		A defining feature of the mid-registrar is that it must be easy to
+		integrate, ideally a "plug-and-play" SIP component. It should not
+		impose any "outbound-proxy" configurations on any of the platform's
+		layers and automatically insert itself on the call flows which follow
+		successful registrations.
 	</para>
 	<para>
-		The script writer can choose between two
-		SIP insertion mechanisms: either by having the module modify Contact
-		headers when forwarding registrations, or instruct it to make use
-		of a Path header (RFC 3327).
+		Regardless of its configured working <xref linkend="mode"/>, the
+		mid-registrar will mangle the Contact header field URIs of all
+		forwarded REGISTER requests and replace the original "hostname" and
+		"port" parts of a Contact URI with one of its listening interfaces.
 	</para>
-	<section id="sec-insertion-by-contact">
-		<title>Insertion by Contact (default)</title>
-		<para>
-			This insertion mode will mangle the Contact header field values
-			of all forwarded registration requests, by replacing any
-			original IP and port of a Contact URI with those of one of the
-			mid-registrar's listening interfaces.
-		</para>
-		<para>
-			The mid-registrar will also append a parameter to each Contact URI
-			("rid" by default, can be changed through the
-			<emphasis><xref linkend="modparam-contact-match-param"/></emphasis> module parameter)
-			This URI parameter allows reply contacts to be matched with request
-			ones. This same parameter will also be used when
-			routing calls to the users. In this case, it will be taken from
-			the INVITE's Request-URI.
-		</para>
-	</section>
-	<section id="sec-insertion-by-path">
-		<title>Insertion by Path</title>
-		<para>
-			Instructs the module to append a "Path" header field to each
-			forwarded registration request. By recording itself between each
-			user and the main registrar, the mid-registrar allows subsequent
-			calls to be properly routed to the called party.
-		</para>
-	</section>
+	<para>
+		Additionally, in modes "0" and "1", each Contact will be assigned an
+		unique identifier, which will be utilized in future contact-based
+		lookup operations. This information will be included in each forwarded
+		Contact URI. The <xref linkend="contact_id_insertion"/> modparam
+		controls how this information is included.
+	</para>
 	</section>
 
 	<section id="sec-dependencies">
@@ -236,7 +225,7 @@
 	<section id="sec-modparam">
 	<title>Exported Parameters</title>
 
-	<section id="modparam-mode" xreflabel="mode">
+	<section id="mode" xreflabel="mode">
 		<title><varname>mode</varname> (integer)</title>
 
 		<para>
@@ -258,13 +247,14 @@
 			<para>
 			the mid-registrar will insert itself on the call flow of
 			all registrations according to the
-			<emphasis><xref linkend="modparam-insertion-mode"/></emphasis>.
+			<emphasis><xref linkend="contact_id_insertion"/></emphasis>.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-			registrations handled by the mid-registrar will transparently
-			result in a user location update if their reply status is 2xx.
+			registrations forwarded by the mid-registrar will transparently
+			result in a user location update only if the reply status code from
+			the downstream registrar is 2xx.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -310,8 +300,8 @@
 			<emphasis>2 (AOR throttling mode)</emphasis>
 		<para>
 		AOR throttling is a step beyond "Contact throttling", as the main registrar
-		is made aware of the network presence of AORs, rather than Contacts. This behaviour
-		is also made possible through the
+		is only made aware of the network presence of AORs, rather than
+		Contacts. This behaviour is also made possible through the
 		<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module
 		parameter or the corresponding parameter to
 		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
@@ -340,34 +330,142 @@ modparam("mid_registrar", "mode", 2)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-insertion-mode" xreflabel="insertion_mode">
-		<title><varname>insertion_mode</varname> (integer)</title>
+	<section id="contact_id_insertion" xreflabel="contact_id_insertion">
+		<title><varname>contact_id_insertion</varname> (integer)</title>
 		<para>
-			SIP insertion mode of the module. Refer to
-			<xref linkend="sec-insertion-modes"/> for more details. Possible
-			values are:
+		Only relevant in a "mirroring" or "contact throttling"
+			<xref linkend="mode"/>. Controls where the additional
+		unique Contact identification information (64-bit, hex-encoded integer)
+		will be placed within outgoing Contact header field URIs. Refer to
+		<xref linkend="sip-flow-insertion"/> for more details.
 		</para>
-
+		<para>
+		Possible values are:
+		</para>
 		<itemizedlist>
 		<listitem>
 		<para>
-			<emphasis>0 (Insertion by Contact)</emphasis>
+			<emphasis>"ct-param" (default)</emphasis> - the contact IDs shall
+			be appended to outgoing Contact URIs as ";ctid=" parameters.
 		</para>
 		</listitem>
 		<listitem>
 		<para>
-			<emphasis>1 (Insertion by Path)</emphasis>
+			<emphasis>"ct-username"</emphasis> - the contact IDs will
+			substitute the "username" parts of outgoing Contact URIs
 		</para>
 		</listitem>
 		</itemizedlist>
+		<example>
+		<title>Setting the <emphasis>contact_id_insertion</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "contact_id_insertion", "ct-username")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam_contact_id_param">
+		<title><varname>contact_id_param</varname> (string)</title>
+		<para>
+			Only relevant in a "mirroring" or "contact throttling"
+			<xref linkend="mode"/>. Specifies the name of the
+			Contact URI parameter which is used by the module in order to
+			match contacts and route SIP requests.
+		</para>
 
 		<para>
-		Default value is <emphasis role='bold'>0</emphasis> (Insertion by Contact)
+			Default value is <emphasis role='bold'><quote>ctid</quote></emphasis>
 		</para>
 		<example>
-		<title>Setting the <emphasis>insertion_mode</emphasis> module parameter</title>
+		<title>Setting the <emphasis>contact_id_param</emphasis> module parameter</title>
 		<programlisting format="linespecific">
-modparam("mid_registrar", "insertion_mode", 1)
+modparam("mid_registrar", "contact_id_param", "ctid")
+
+# Example resulting Contact header field:
+# Contact: &lt;sip:liviu@10.0.0.10:5060;ctid=619244948763447138&gt;;expires=180.
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-outgoing-expires" xreflabel="outgoing_expires">
+		<title><varname>outgoing_expires</varname> (integer)</title>
+		<para>
+			Only relevant in Contact/AOR throttling modes. Sets a minimal
+			value for the expiration intervals of egressing contacts.
+		</para>
+
+		<para>
+		Default value is <emphasis role='bold'>3600</emphasis> (seconds)
+		</para>
+		<example>
+		<title>Setting the <emphasis>outgoing_expires</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "outgoing_expires", 3600)
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-received-avp" xreflabel="received_avp">
+		<title><varname>received_avp</varname> (string)</title>
+		<para>
+		The module will store the value of the AVP configured by this
+		parameter in the <emphasis>received</emphasis> column of the user
+		location table. It will leave the column empty if the AVP is empty.
+		The AVP should contain a SIP URI consisting of the source IP, port,
+		and protocol of the REGISTER message being processed.
+		</para>
+		<note>
+		<para>
+			The value of this parameter should be the same as the value of
+			corresponding parameter of nathelper module.
+		</para>
+		</note>
+		<para>
+		Default value is <emphasis role='bold'>"NULL"</emphasis> (disabled)
+		</para>
+		<example>
+		<title>Setting the <emphasis>received_avp</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "received_avp", "$avp(rcv)")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-received-param" xreflabel="received_param">
+		<title><varname>received_param</varname> (string)</title>
+		<para>
+		The name of the parameter that will be appended to Contacts of
+		200 OK replies if the received URI is set by nathelper module.
+		</para>
+		<note>
+		<para>
+			The value of this parameter should be the same as the value of
+			corresponding parameter of nathelper module.
+		</para>
+		</note>
+		<para>
+		Default value is <emphasis role='bold'>"received"</emphasis>
+		</para>
+		<example>
+		<title>Setting the <emphasis>received_param</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("mid_registrar", "received_param", "rcv")
+</programlisting>
+		</example>
+	</section>
+	<section id="modparam-extra-contact-params-avp" xreflabel="extra_contact_params_avp">
+		<title><varname>extra_contact_params_avp</varname> (string)</title>
+		<para>
+		An AVP specification. This AVP is evaluated during
+		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>:
+		if it holds a valid string, its content be appended to
+		<emphasis>each</emphasis> new Contact URI built by the mid-registrar,
+		for the outgoing request.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>None</emphasis> (not used)
+		</para>
+		<example>
+		<title>Setting the <emphasis>extra_contact_params_avp</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+# NB: AVPs are cleared with every new SIP request
+modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_params)")
 </programlisting>
 		</example>
 	</section>
@@ -417,41 +515,6 @@ modparam("mid_registrar", "default_expires", 1800)
 		<title>Setting the <emphasis>max_expires</emphasis> module parameter</title>
 		<programlisting format="linespecific">
 modparam("mid_registrar", "max_expires", 7200)
-</programlisting>
-		</example>
-	</section>
-	<section id="modparam-outgoing-expires" xreflabel="outgoing_expires">
-		<title><varname>outgoing_expires</varname> (integer)</title>
-		<para>
-			Only relevant in Contact/AOR throttling modes. Sets a minimal
-			value for the expiration intervals of egressing contacts.
-		</para>
-
-		<para>
-		Default value is <emphasis role='bold'>3600</emphasis> (seconds)
-		</para>
-		<example>
-		<title>Setting the <emphasis>outgoing_expires</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "outgoing_expires", 3600)
-</programlisting>
-		</example>
-	</section>
-	<section id="modparam-contact-match-param" xreflabel="contact_match_param">
-		<title><varname>contact_match_param</varname> (string)</title>
-		<para>
-			Only relevant in "Contact throttling" mode. Specifies the name of the
-			Contact URI parameter which is used by the module in order to
-			match contacts and route calls.
-		</para>
-
-		<para>
-			Default value is <emphasis role='bold'><quote>rid</quote></emphasis>
-		</para>
-		<example>
-		<title>Setting the <emphasis>contact_match_param</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "contact_match_param", "regid")
 </programlisting>
 		</example>
 	</section>
@@ -544,53 +607,6 @@ modparam("mid_registrar", "case_sensitive", 0)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-received-avp" xreflabel="received_avp">
-		<title><varname>received_avp</varname> (string)</title>
-		<para>
-		The module will store the value of the AVP configured by this
-		parameter in the <emphasis>received</emphasis> column of the user
-		location table. It will leave the column empty if the AVP is empty.
-		The AVP should contain a SIP URI consisting of the source IP, port,
-		and protocol of the REGISTER message being processed.
-		</para>
-		<note>
-		<para>
-			The value of this parameter should be the same as the value of
-			corresponding parameter of nathelper module.
-		</para>
-		</note>
-		<para>
-		Default value is <emphasis role='bold'>"NULL"</emphasis> (disabled)
-		</para>
-		<example>
-		<title>Setting the <emphasis>received_avp</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "received_avp", "$avp(rcv)")
-</programlisting>
-		</example>
-	</section>
-	<section id="modparam-received-param" xreflabel="received_param">
-		<title><varname>received_param</varname> (string)</title>
-		<para>
-		The name of the parameter that will be appended to Contacts of
-		200 OK replies if the received URI is set by nathelper module.
-		</para>
-		<note>
-		<para>
-			The value of this parameter should be the same as the value of
-			corresponding parameter of nathelper module.
-		</para>
-		</note>
-		<para>
-		Default value is <emphasis role='bold'>"received"</emphasis>
-		</para>
-		<example>
-		<title>Setting the <emphasis>received_param</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "received_param", "rcv")
-</programlisting>
-		</example>
-	</section>
 	<section id="modparam-max-contacts" xreflabel="max_contacts">
 		<title><varname>max_contacts</varname> (integer)</title>
 		<para>
@@ -611,26 +627,6 @@ modparam("mid_registrar", "received_param", "rcv")
 		<title>Setting the <emphasis>max_contacts</emphasis> module parameter</title>
 		<programlisting format="linespecific">
 modparam("mid_registrar", "max_contacts", 10)
-</programlisting>
-		</example>
-	</section>
-	<section id="modparam-extra-contact-params-avp" xreflabel="extra_contact_params_avp">
-		<title><varname>extra_contact_params_avp</varname> (string)</title>
-		<para>
-		An AVP specification. This AVP is evaluated during
-		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>:
-		if it holds a valid string, its content be appended to
-		<emphasis>each</emphasis> new Contact URI built by the mid-registrar,
-		for the outgoing request.
-		</para>
-		<para>
-			Default value is <emphasis role='bold'>None</emphasis> (not used)
-		</para>
-		<example>
-		<title>Setting the <emphasis>extra_contact_params_avp</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-# NB: AVPs are cleared with every new SIP request
-modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_params)")
 </programlisting>
 		</example>
 	</section>
@@ -716,8 +712,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		</para>
 		<para>
 			Depending on the current working
-			<emphasis><xref linkend="modparam-mode"/></emphasis> and
-			<emphasis><xref linkend="modparam-insertion-mode"/></emphasis>,
+			<emphasis><xref linkend="mode"/></emphasis> and
+			<emphasis><xref linkend="contact_id_insertion"/></emphasis>,
 			the function may additionally perform
 			the following series of transformations when relaying REGISTER requests:
 		</para>
@@ -751,12 +747,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 								allow the module to match the reply contacts
 								and also route calls. The name of this URI
 								parameter is configurable via
-								<emphasis><xref linkend="modparam-contact-match-param"/></emphasis>
-							</para>
-						</listitem>
-						<listitem>
-							<para>
-								append a "Path" header to the current REGISTER request
+								<emphasis><xref linkend="modparam_contact_id_param"/></emphasis>
 							</para>
 						</listitem>
 					</itemizedlist>
@@ -779,11 +770,6 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 								replace all <emphasis>Contact</emphasis> header
 								fields of the request with a single <emphasis>Contact</emphasis> header field,
 								which will contain the following SIP URI: "sip:address-of-record@proxy_ip:proxy_port"
-							</para>
-						</listitem>
-						<listitem>
-							<para>
-								append a "Path" header to the current REGISTER request
 							</para>
 						</listitem>
 					</itemizedlist>
@@ -833,32 +819,6 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 					</para>
 				</listitem>
 				!-->
-				<listitem>
-					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
-					The Path header is saved into usrloc, but is never
-					included in the reply.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p1' (Path support - lazy mode)</emphasis>
-					The Path header is saved into usrloc, but is only included
-					in the reply if path support is indicated in the
-					registration request by the <quote>path</quote> option
-					of the <quote>Supported</quote> header.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p2' (Path support - strict mode)</emphasis>
-					The path header is only saved into usrloc, if path support
-					is indicated in the registration request by the
-					<quote>path</quote> option of the <quote>Supported</quote>
-					header. If no path support is indicated, the request is
-					rejected with <quote>420 - Bad Extension</quote> and the
-					header <quote>Unsupported: path</quote> is included in
-					the reply along with the received <quote>Path</quote>
-					header. This mode is the one recommended by RFC-3327.
-					</para>
-				</listitem>
 				<listitem>
 					<para><emphasis>'v' (path receiVed)</emphasis> if set,
 					the <quote>received</quote> parameter of the first Path
@@ -952,7 +912,7 @@ if (is_method("REGISTER")) {
 		</para>
 		<para>
 		Depending on the current working
-		<emphasis><xref linkend="modparam-mode"/></emphasis>,
+		<emphasis><xref linkend="mode"/></emphasis>,
 		the function will behave as follows:
 		</para>
 
@@ -978,7 +938,7 @@ if (is_method("REGISTER")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-				extract the <emphasis><xref linkend="modparam-contact-match-param"/></emphasis>
+				extract the <emphasis><xref linkend="modparam_contact_id_param"/></emphasis>
 				from the Request-URI, derive the actual SIP URI of the destination
 				from it and set it as the new Request-URI of the INVITE
 				(<emphasis role='bold'>$ru</emphasis> variable).
