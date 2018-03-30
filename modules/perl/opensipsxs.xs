@@ -1251,15 +1251,16 @@ append_branch(self, branch = NULL, qval = NULL)
 
 
 
-=head2 serialize_branches(clean_before)
+=head2 serialize_branches(clean_before, keep_order)
 
 Serialize branches.
 
 =cut
 
-int serialize_branches(self, clean_before)
+int serialize_branches(self, clean_before, keep_order)
 	SV *self;
 	int clean_before;
+	int keep_order;
   PREINIT:
 	struct sip_msg *msg = sv2msg(self);
   CODE:
@@ -1267,7 +1268,7 @@ int serialize_branches(self, clean_before)
 		LM_ERR("Invalid message reference\n");
 		RETVAL = -1;
 	} else {
-		RETVAL = serialize_branches(msg, clean_before);
+		RETVAL = serialize_branches(msg, clean_before, keep_order);
 	}
   OUTPUT:
 	RETVAL
