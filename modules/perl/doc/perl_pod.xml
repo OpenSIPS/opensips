@@ -316,7 +316,7 @@ $m->xlog("L_INFO", "foo");]]></screen>
 	Append a branch to current message.
       </para>
     </section>
-    <section id="ID-bff5c83f8c28e72abf1d8a5204310202"><title>serialize_branches(clean_before)</title>
+    <section id="ID-bff5c83f8c28e72abf1d8a5204310202"><title>serialize_branches(clean_before, keep_order)</title>
       <para>
 	Serialize branches.
       </para>
