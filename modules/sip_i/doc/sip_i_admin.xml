@@ -87,6 +87,32 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>country_code</varname> (str)</title>
+		<para>
+			Country Code that the first part of the number from
+			P-Asserted-Identity is tested against when trying to map the
+			Calling Party Number ISUP parameter from SIP by default. If there
+			is a match, the value assigned to the Nature of Address Indicator
+			subfield is <emphasis>3</emphasis>(national), otherwise it is
+			<emphasis>4</emphasis>(international).
+		</para>
+		<para>
+		<emphasis>
+			Default value is "+1".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>country_code</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("sip_i", "country_code", "+4")
+...
+
+</programlisting>
+		</example>
+	</section>
+
 
 </section>
 

@@ -21,6 +21,7 @@ Robert-Vladut Patrascu
 
               1.3.1. param_subfield_separator (str)
               1.3.2. isup_mime_str (str)
+              1.3.3. country_code (str)
 
         1.4. Exported Functions
 
@@ -43,10 +44,11 @@ Robert-Vladut Patrascu
 
    1.1. Set param_subfield_separator parameter
    1.2. Set isup_mime_str parameter
-   1.3. add_isup_part usage
-   1.4. isup_param usage
-   1.5. isup_param_str usage
-   1.6. isup_msg_type usage
+   1.3. Set country_code parameter
+   1.4. add_isup_part usage
+   1.5. isup_param usage
+   1.6. isup_param_str usage
+   1.7. isup_msg_type usage
 
 Chapter 1. Admin Guide
 
@@ -105,6 +107,23 @@ modparam("sip_i", "param_subfield_separator", ":")
 ...
 modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;versi
 on=itu-t")
+...
+
+
+1.3.3. country_code (str)
+
+   Country Code that the first part of the number from
+   P-Asserted-Identity is tested against when trying to map the
+   Calling Party Number ISUP parameter from SIP by default. If
+   there is a match, the value assigned to the Nature of Address
+   Indicator subfield is 3(national), otherwise it is
+   4(international).
+
+   Default value is "+1".
+
+   Example 1.3. Set country_code parameter
+...
+modparam("sip_i", "country_code", "+4")
 ...
 
 
@@ -169,7 +188,7 @@ on=itu-t")
    This function can be used from
    REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,LOCAL_ROUTE.
 
-   Example 1.3. add_isup_part usage
+   Example 1.4. add_isup_part usage
 ...
 if ($rs == "183") {
         # Encapsulate a CPG
@@ -231,7 +250,7 @@ if ($rs == "183") {
    For more information on supported subfields and aliases check
    Section 1.6, “ISUP parameter subfields and string aliases”.
 
-   Example 1.4. isup_param usage
+   Example 1.5. isup_param usage
 ...
         $isup_param(Called Party Number | Nature of address indicator) =
  3;
@@ -267,7 +286,7 @@ SDN";
      * subfield_name - name of the subfield of the ISUP parameter
        as it appears in ITU-T Rec. Q.763
 
-   Example 1.5. isup_param_str usage
+   Example 1.6. isup_param_str usage
 ...
         # may print: "NOA is: national"
         xlog("NOA is: $isup_param_str(Called Party Number|Nature of addr
@@ -286,7 +305,7 @@ ators)");
 
    Read-only variable, returns the ISUP message type as string.
 
-   Example 1.6. isup_msg_type usage
+   Example 1.7. isup_msg_type usage
 ...
         # may print: "ISUP msg is: Initial address"
         xlog("ISUP msg is: $isup_msg_type");
