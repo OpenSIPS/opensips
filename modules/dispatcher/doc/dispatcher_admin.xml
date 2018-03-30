@@ -1014,7 +1014,7 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
 		first one has the higher priority, followed by the second one and so on.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
 		<title><function>ds_select_dst</function> usage</title>
@@ -1054,7 +1054,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 		destinations.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
 	<section>
