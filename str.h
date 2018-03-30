@@ -78,4 +78,6 @@ static inline str *str_cpy(str *dest, const str *src)
 	return dest;
 }
 
+#define STR_L(s) s, strlen(s)
+
 #endif

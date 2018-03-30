@@ -66,48 +66,6 @@ unsigned int nbranches;
 static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 static str branch_uris[MAX_BRANCHES-1];
 
-int get_match_token(str *uri, str *out_tok, struct sip_uri *out_puri, int *out_idx)
-{
-	struct sip_uri puri;
-	int i;
-
-	if (parse_uri(uri->s, uri->len, &puri) < 0) {
-		LM_ERR("failed to parse contact <%.*s>\n", uri->len, uri->s);
-		return -1;
-	}
-
-	if (matching_mode == MATCH_BY_PARAM) {
-		for (i = 0; i < puri.u_params_no; i++) {
-			if (!str_strcmp(&puri.u_name[i], &matching_param)) {
-				*out_tok = puri.u_val[i];
-				if (out_idx)
-					*out_idx = i;
-				break;
-			}
-		}
-
-		if (!out_tok->s || out_tok->len <= 0) {
-			LM_ERR("a Contact from main registrar (%.*s) is missing the '%.*s'"
-			       " hf parameter\n", uri->len, uri->s,
-			       matching_param.len, matching_param.s);
-			return -1;
-		}
-	} else {
-		*out_tok = puri.user;
-
-		if (!out_tok->s || out_tok->len <= 0) {
-			LM_ERR("missing SIP user in Contact from main registrar (%.*s)\n",
-			       uri->len, uri->s);
-			return -1;
-		}
-	}
-
-	if (out_puri)
-		*out_puri = puri;
-
-	return 0;
-}
-
 int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 {
 	unsigned int flags;
@@ -228,7 +186,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		*(ua+re_len) = tmp;
 	}
 
-	if (reg_mode != MID_REG_THROTTLE_AOR && insertion_mode == INSERT_BY_CONTACT) {
+	if (reg_mode != MID_REG_THROTTLE_AOR) {
 		if (parse_uri(uri.s, uri.len, &puri) < 0) {
 			LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri.len,
 			       uri.s, req->callid->body.len, req->callid->body.s);

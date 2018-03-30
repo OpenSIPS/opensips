@@ -111,9 +111,6 @@ char* realm_pref    = "";
 str realm_prefix;
 int reg_use_domain = 0;
 
-#define is_insertion_mode(v) (v == INSERT_BY_CONTACT || v == INSERT_BY_PATH)
-#define insertion_mode_str(v) (v == INSERT_BY_CONTACT ? "by Contact" : "by Path")
-
 static int mod_init(void);
 
 static int domain_fixup(void** param);
@@ -131,21 +128,10 @@ enum mid_reg_mode reg_mode = MID_REG_MIRROR;
 
 unsigned int outgoing_expires = 3600;
 
-#define is_matching_mode(v) (v == MATCH_BY_PARAM || v == MATCH_BY_USER)
-#define matching_mode_str(v) (v == MATCH_BY_PARAM ? "by uri param" : "by user")
+enum mid_reg_insertion_mode   ctid_insertion  = MR_REPLACE_USER;
+char *mp_ctid_insertion = "ct-param";
 
-enum mid_reg_insertion_mode   insertion_mode  = INSERT_BY_CONTACT;
-
-//TODO: remove the Path-based mid-registrar logic starting with OpenSIPS 2.4
-enum mid_reg_matching_mode  matching_mode = MATCH_BY_PARAM;
-
-/*
- * TODO: get rid of this (no pun intended)
- * Only used in INSERT_BY_CONTACT insertion mode
- * Allows us to match the request contact set with the reply contact set,
- * which contains rewritten Contact header field domains
- */
-str matching_param = str_init("rid");
+str ctid_param = str_init("ctid");
 
 static cmd_export_t cmds[] = {
 	{ "mid_registrar_save", (cmd_function)mid_reg_save, 1,
@@ -182,8 +168,8 @@ static param_export_t mod_params[] = {
 	{ "gruu_secret",          STR_PARAM, &gruu_secret.s },
 	{ "disable_gruu",         INT_PARAM, &disable_gruu },
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
-	{ "insertion_mode",       INT_PARAM, &insertion_mode },
-	{ "contact_match_param",  STR_PARAM, &matching_param.s },
+	{ "contact_id_insertion", STR_PARAM, &mp_ctid_insertion },
+	{ "contact_id_param",     STR_PARAM, &ctid_param.s },
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ 0,0,0 }
 };
@@ -294,20 +280,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (!is_insertion_mode(insertion_mode)) {
-		insertion_mode = INSERT_BY_PATH;
-		LM_WARN("bad \"insertion_mode\" (%d) - using '%s' as a default\n",
-		        insertion_mode, insertion_mode_str(insertion_mode));
+	if (!strncasecmp(mp_ctid_insertion, STR_L("ct-param"))) {
+		ctid_insertion = MR_APPEND_PARAM;
+	} else if (!strncasecmp(mp_ctid_insertion, STR_L("ct-user"))) {
+		ctid_insertion = MR_REPLACE_USER;
 	} else {
-		LM_DBG("insertion mode: '%s'\n", insertion_mode_str(insertion_mode));
-	}
-
-	if (!is_matching_mode(matching_mode)) {
-		matching_mode = MATCH_BY_PARAM;
-		LM_WARN("bad \"matching_mode\" (%d) - using '%s' as a default\n",
-		        matching_mode, matching_mode_str(matching_mode));
-	} else {
-		LM_DBG("contact matching mode: '%s'\n", matching_mode_str(matching_mode));
+		LM_WARN("bad 'contact_id_insertion' (%s) - using 'ct-param' as a "
+		        "default\n", mp_ctid_insertion);
+		ctid_insertion = MR_APPEND_PARAM;
 	}
 
 	if (min_expires > default_expires) {
@@ -356,7 +336,7 @@ static int mod_init(void)
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag != -1) ? (1 << tcp_persistent_flag) : 0;
 
-	matching_param.len = strlen(matching_param.s);
+	ctid_param.len = strlen(ctid_param.s);
 
 	if (reg_mode != MID_REG_MIRROR) {
 		if (ul_api.register_ulcb(
@@ -496,12 +476,6 @@ void mri_free(struct mid_reg_info *mri)
 
 	if (mri->user_agent.s)
 		shm_free(mri->user_agent.s);
-
-	if (mri->path.s)
-		shm_free(mri->path.s);
-
-	if (mri->path_received.s)
-		shm_free(mri->path_received.s);
 
 	free_ct_mappings(&mri->ct_mappings);
 
