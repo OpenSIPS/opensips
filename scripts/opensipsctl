@@ -1577,7 +1577,7 @@ dr() {
 
 			$CTLCMD dr_reload
 			;;
-		rmgrule)
+		rmrule)
 			shift
 			if [ $# -ne 1 ] ; then
 				merr "missing gateway id to be removed"
