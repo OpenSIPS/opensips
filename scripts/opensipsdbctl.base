@@ -32,7 +32,6 @@ INSTALL_PRESENCE_TABLES=${INSTALL_PRESENCE_TABLES:-ask}
 STANDARD_TABLES=${STANDARD_TABLES:-
 	acc
 	address
-	aliases
 	clusterer
 	dbaliases
 	dialog
@@ -74,7 +73,7 @@ EXTRA_TABLES=${EXTRA_TABLES:-
 	emergency_report
 	emergency_routing
 	fraud_detection
-	freewitch_scripting
+	freeswitch
 	globalblacklist
 	imc_members
 	imc_rooms
