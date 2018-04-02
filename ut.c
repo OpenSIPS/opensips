@@ -30,7 +30,7 @@
 #include <grp.h>
 #include "ut.h"
 
-char int2str_buf[INT2STR_MAX_LEN];
+char int2str_buf[INT2STR_BUF_NO][INT2STR_MAX_LEN];
 
 /* make a null-termianted copy of the given string (in STR format) into
  * a static local buffer
