@@ -119,9 +119,18 @@ modparam("exec", "setvars", 1)
 
 1.3.2.  time_to_kill (integer)
 
-   Specifies the longest time (in seconds) that a program is
-   allowed to execute. Once this duration is exceeded, the program
-   is terminated (SIGTERM)
+   If set, this parameter specifies the longest time (in seconds)
+   that a program is allowed to execute. Once this duration is
+   exceeded, the program is terminated (SIGTERM).
+
+   NOTE: due to internal limitations, a SIGTERM will actually be
+   sent to all job pids once the "time_to_kill" expiration timeout
+   hits. On a standard system, this should have no side-effects,
+   as pids are monotonically increasing in a slow manner, and
+   OpenSIPS should run under the "opensips" user, thus rendering
+   it unable to terminate non-child processes. If this is not the
+   case on your system, do not use the OpenSIPS "time_to_kill"
+   feature -- rather implement it within your external app!
 
    Default value is 0 (disabled).
 
