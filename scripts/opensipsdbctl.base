@@ -29,9 +29,70 @@ INSTALL_PRESENCE_TABLES=${INSTALL_PRESENCE_TABLES:-ask}
 
 # Used by dbtext and db_berkeley to define tables to be created, used by
 # postgres to do the grants
-STANDARD_TABLES=${STANDARD_TABLES:-version acc dbaliases domain grp uri speed_dial subscriber location re_grp address missed_calls usr_preferences aliases silo dialog dispatcher dialplan dr_gateways dr_rules dr_groups dr_carriers dr_partitions rtpproxy_sockets load_balancer clusterer tls_mgm }
-EXTRA_TABLES=${EXTRA_TABLES:-imc_members imc_rooms cpl sip_trace domainpolicy carrierroute route_tree carrierfailureroute userblacklist globalblacklist b2b_entities b2b_logic cachedb registrant cc_flows cc_agents cc_cdrs cc_calls fraud_detection freewitch_scripting emergency_routing emergency_report}
-PRESENCE_TABLES=${PRESENCE_TABLES:-presentity active_watchers watchers xcap pua rls_presentity rls_watchers}
+STANDARD_TABLES=${STANDARD_TABLES:-
+	acc
+	address
+	aliases
+	clusterer
+	dbaliases
+	dialog
+	dialplan
+	dispatcher
+	domain
+	dr_carriers
+	dr_gateways
+	dr_groups
+	dr_partitions
+	dr_rules
+	grp
+	load_balancer
+	location
+	missed_calls
+	re_grp
+	rtpproxy_sockets
+	silo
+	speed_dial
+	subscriber
+	tls_mgm
+	uri
+	usr_preferences
+	version
+}
+
+EXTRA_TABLES=${EXTRA_TABLES:-
+	b2b_entities
+	b2b_logic
+	cachedb
+	carrierfailureroute
+	carrierroute
+	cc_agents
+	cc_calls
+	cc_cdrs
+	cc_flows
+	cpl
+	domainpolicy
+	emergency_report
+	emergency_routing
+	fraud_detection
+	freewitch_scripting
+	globalblacklist
+	imc_members
+	imc_rooms
+	registrant
+	route_tree
+	sip_trace
+	userblacklist
+}
+
+PRESENCE_TABLES=${PRESENCE_TABLES:-
+	active_watchers
+	presentity
+	pua
+	rls_presentity
+	rls_watchers
+	watchers
+	xcap
+}
 
 # SQL definitions
 # If you change this definitions here, then you must change them
@@ -60,8 +121,45 @@ GREP=${GREP:-grep}
 SED=${SED:-sed}
 
 # define what modules should be installed
-STANDARD_MODULES=${STANDARD_MODULES:-standard acc domain group permissions usrloc msilo alias_db uri_db rtpproxy speeddial avpops auth_db dialog dispatcher dialplan drouting load_balancer clusterer tls_mgm }
-EXTRA_MODULES=${EXTRA_MODULES:-imc cpl siptrace domainpolicy carrierroute userblacklist b2b cachedb_sql registrant call_center fraud_detection freeswitch_scripting emergency}
+# NOTE: "standard" must always be first!
+STANDARD_MODULES=${STANDARD_MODULES:-
+	standard
+	acc
+	alias_db
+	auth_db
+	avpops
+	clusterer
+	dialog
+	dialplan
+	dispatcher
+	domain
+	drouting
+	group
+	load_balancer
+	msilo
+	permissions
+	rtpproxy
+	speeddial
+	tls_mgm
+	uri_db
+	usrloc
+}
+
+EXTRA_MODULES=${EXTRA_MODULES:-
+	b2b
+	cachedb_sql
+	call_center
+	carrierroute
+	cpl
+	domainpolicy
+	emergency
+	fraud_detection
+	freeswitch_scripting
+	imc
+	registrant
+	siptrace
+	userblacklist
+}
 
 ############################################################
 
