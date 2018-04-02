@@ -106,7 +106,7 @@ static void timer_routine(unsigned int ticks , void * attr)
 		tmp_tl=ret->next_tl;
 		ret->next_tl=ret->prev_tl=0;
 		if (ret->time_out>0) {
-			LM_INFO("exec timeout, pid %d -> sending SIGTERM\n", ret->pid);
+			LM_DBG("pid %d -> sending SIGTERM\n", ret->pid);
 			killr=kill(ret->pid, SIGTERM);
 			LM_DBG("child process (%d) kill status: %d\n", ret->pid, killr );
 		}
