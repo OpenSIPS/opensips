@@ -66,6 +66,8 @@ int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b);
+int get_uri_param_idx(const str *param, struct sip_uri *parsed_uri);
+
 char * uri_type2str(const uri_type type, char *result);
 int uri_typestrlen(const uri_type type);
 uri_type str2uri_type(char * buf);
