@@ -103,7 +103,7 @@ if [ $? -ne 0 ] || check_oracle_log ; then
 fi
 
 if [ -n "$DBSYSUSER" ]; then
-	get_answer "ask" "Remove user '$DBROOTUSER' (complete remove scheme)? (y/n): "
+	get_answer "ask" "Remove user '$DBROOTUSER' (complete remove scheme)? (y/N): " "n"
 	if [ $ANSWER = "y" ]; then
 		prompt_oracle_pw sys
 		SUFF=""
@@ -133,7 +133,7 @@ fi
 minfo "creating scheme for '$DBROOTUSER' in database '$1' ..."
 
 if [ -n "$DBSYSUSER" ]; then
-	get_answer "ask" "Create user '$DBROOTUSER' (is new scheme)? (y/n): "
+	get_answer "ask" "Create user '$DBROOTUSER' (is new scheme)? (Y/n): " "y"
 	if [ $ANSWER = "y" ]; then
 		prompt_oracle_pw sys
 		prompt_oracle_pw root
@@ -208,12 +208,12 @@ fi
 
 minfo "Core OpenSIPS tables successfully created."
 
-get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
+get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (Y/n): " "y"
 if [ $ANSWER = "y" ]; then
 	presence_create $1
 fi
 
-get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
+get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (Y/n): " "y"
 if [ $ANSWER = "y" ]; then
 	extra_create $1
 fi

@@ -178,7 +178,7 @@ opensips_restore() #pars: <database name> <filename>
 		oracle_restore $1 $2
 	elif [ "$USED_DBENGINE" = "sqlite" ]; then
 		if [ -f $1 ] ; then
-			get_answer ask "Sqlite database exists? Remove current db (y/n): "
+			get_answer ask "Sqlite database exists? Remove current db (y/N): " "n"
 			if [ "$ANSWER" = "y" ]; then
 				rm $1
 			else
@@ -201,7 +201,7 @@ opensips_restore() #pars: <database name> <filename>
 opensips_pframework_create() #pars: none
 {
 	if [ -e $DEFAULT_CFG_DIR/pi_framework_sample ] ; then
-		get_answer ask "Sample already exists. Overwrite? (y/n): "
+		get_answer ask "Sample already exists. Overwrite? (y/N): " "n"
 		if [ "$ANSWER" != "y" ]; then
 			exit 1
 		fi
@@ -220,12 +220,12 @@ opensips_pframework_create() #pars: none
 	fi
 
 
-	get_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
+	get_answer $INSTALL_EXTRA_TABLES "Add provisioning framework for extra tables? (Y/n): " "y"
 	if [ "$ANSWER" = "y" ]; then
 		PI_MODULES="$PI_MODULES $EXTRA_MODULES"
 	fi
 
-	get_answer $INSTALL_PRESENCE_TABLES "Add provisionning framework for presence tables? (y/n): "
+	get_answer $INSTALL_PRESENCE_TABLES "Add provisioning framework for presence tables? (Y/n): " "y"
 	if [ "$ANSWER" = "y" ]; then
 		PI_PRESENCE_MODULES="TRUE"
 	fi
@@ -343,7 +343,7 @@ Behaviour when migrating earlier DB schemas (1.8 .. 2.2) to 2.4 is undefined."
 		# sqlite has backup function which creats a copy of the db
 		if [ "$USED_DBENGINE" = "sqlite" ] ; then
 			if [ -f $2 ] ; then
-				get_answer ask "File $2 exists? Remove file and install new db instead? (y/n): "
+				get_answer ask "File $2 exists? Remove file and install new DB instead? (y/N): " "n"
 				if [ "$ANSWER" = "y" ]; then
 					rm $2
 				else

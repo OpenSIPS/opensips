@@ -194,12 +194,12 @@ fi
 
 minfo "Core OpenSIPS tables successfully created."
 
-get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
+get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (Y/n): " "y"
 if [ $ANSWER = "y" ]; then
 	presence_create $1
 fi
 
-get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
+get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (Y/n): " "y"
 if [ $ANSWER = "y" ]; then
 	extra_create $1
 fi

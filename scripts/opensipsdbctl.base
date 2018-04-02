@@ -278,6 +278,7 @@ merr() {
 # Arguments:
 #  $1 - variable holding yes/no/ask
 #  $2 - question to print if value of variable is ask
+#  $3 - default answer
 #
 # Return:
 #  On return $ANSWER will be available with y/n
@@ -287,11 +288,12 @@ get_answer ()
     value=$1
     question=$2
     if [ "${value}" = "ask" ]; then
-        echo -n "$question"
-        read ANSWER
+        read -p"$question" ANSWER
     else
         ANSWER=${value}
     fi
+
+	ANSWER=${ANSWER:-$3}
 	ANSWER="`echo $ANSWER | sed 's/^\(.\).*/\1/g'`"
 	ANSWER="`echo $ANSWER | sed 's/Y/y/g'`"
 	ANSWER="`echo $ANSWER | sed 's/N/n/g'`"
