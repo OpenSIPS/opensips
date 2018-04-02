@@ -146,8 +146,8 @@ extern int retry_after;
 extern unsigned int outgoing_expires;
 
 extern enum mid_reg_mode reg_mode;
-extern enum mid_reg_insertion_mode insertion_mode;
-extern enum mid_reg_matching_mode matching_mode;
+extern enum mid_reg_insertion_mode ctid_insertion;
+extern str ctid_param;
 
 extern str register_method;
 extern str contact_hdr;

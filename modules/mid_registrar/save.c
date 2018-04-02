@@ -234,7 +234,6 @@ void free_ct_mappings(struct list_head *mappings)
 		ctmap = list_entry(_, struct ct_mapping, list);
 
 		shm_free(ctmap->req_ct_uri.s);
-		shm_free(ctmap->new_username.s);
 		shm_free(ctmap->instance.s);
 		shm_free(ctmap->received.s);
 		shm_free(ctmap);
@@ -251,17 +250,18 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	contact_t *c = NULL;
 	urecord_t *r;
 	ucontact_t *uc;
+	struct sip_uri puri;
 	struct socket_info *adv_sock;
 	struct lump *anchor;
 	str new_username;
 	char *lump_buf;
 	int expiry_tick, expires, len, len1;
 	int cseq;
-	uint64_t ctid;
+	ucontact_id ctid;
 	struct ct_mapping *ctmap;
 	struct list_head *_;
 	union sockaddr_union __;
-	str extra_ct_params;
+	str extra_ct_params, ctid_str;
 
 	ul_api.lock_udomain(mri->dom, &mri->aor);
 	ul_api.get_urecord(mri->dom, &mri->aor, &r);
@@ -307,10 +307,18 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		else
 			ctid = uc->contact_id;
 
-		new_username.s = int2str(ctid, &new_username.len);
-		if (shm_str_dup(&ctmap->new_username, &new_username) != 0) {
-			LM_ERR("oom\n");
-			return -1;
+		ctid_str.s = int2str(ctid, &ctid_str.len);
+
+		if (ctid_insertion == MR_APPEND_PARAM) {
+			if (parse_uri(c->uri.s, c->uri.len, &puri) < 0) {
+				LM_ERR("failed to parse reply contact uri <%.*s>\n",
+				       c->uri.len, c->uri.s);
+				return -1;
+			}
+
+			new_username = puri.user;
+		} else {
+			new_username = ctid_str;
 		}
 
 		calc_ob_contact_expires(req, c->expires, &expiry_tick, 0);
@@ -329,22 +337,40 @@ static int overwrite_req_contacts(struct sip_msg *req,
 
 		len = new_username.len + 1 + strlen(adv_sock->address_str.s) +
 		      6 /*port*/ + extra_ct_params.len + 2 /*IPv6*/ +
-		      15 /* <sip:>;expires= */ + 10 /* len(expires) */ + 1 /*\0*/;
+		      15 /* <sip:>;expires= */ + 10 /* len(expires) */ + 1 /*\0*/ +
+			  (ctid_insertion == MR_APPEND_PARAM ?
+					ctid_str.len + 2 + ctid_param.len : 0);
+
 		lump_buf = pkg_malloc(len);
 		if (!lump_buf) {
 			LM_ERR("oom\n");
 			return -1;
 		}
 
-		LM_DBG("building new Contact URI:\ndigest user: '%.*s'\n"
-		       "adv_sock: '%s'\nport: '%s'\nfull Contact: '%.*s'\n",
+		LM_DBG("building new Contact URI:\nuser: '%.*s'\n"
+		       "adv_sock: '%s'\nport: '%s'\nfull Contact: '%.*s'\n"
+			   "ctid_str: %.*s, ctid_param: %.*s\n",
 		       new_username.len, new_username.s, adv_sock->address_str.s,
-		       adv_sock->port_no_str.s, c->uri.len, c->uri.s);
+		       adv_sock->port_no_str.s, c->uri.len, c->uri.s,
+			   ctid_str.len, ctid_str.s, ctid_param.len, ctid_param.s);
 
-		len1 = snprintf(lump_buf, len, "<sip:%.*s@%s:%s%.*s>;expires=%d",
-		                new_username.len, new_username.s,
-		                adv_sock->address_str.s, adv_sock->port_no_str.s,
-		                extra_ct_params.len, extra_ct_params.s, expires);
+		if (ctid_insertion == MR_APPEND_PARAM) {
+			LM_DBG("param insertion\n");
+			len1 = snprintf(lump_buf, len,
+					"<sip:%.*s@%s:%s;%.*s=%lu%.*s>;expires=%d",
+			         new_username.len, new_username.s,
+			         adv_sock->address_str.s, adv_sock->port_no_str.s,
+			         ctid_param.len, ctid_param.s, ctid,
+			         extra_ct_params.len, extra_ct_params.s, expires);
+		} else {
+			LM_DBG("username insertion\n");
+			len1 = snprintf(lump_buf, len, "<sip:%.*s@%s:%s%.*s>;expires=%d",
+			                new_username.len, new_username.s,
+			                adv_sock->address_str.s, adv_sock->port_no_str.s,
+			                extra_ct_params.len, extra_ct_params.s, expires);
+		}
+
+		LM_DBG("final buffer: %.*s\n", len1, lump_buf);
 
 		if (len1 < len)
 			len = len1;
@@ -876,10 +902,14 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 	return 0;
 }
 
-static contact_t *match_contact(str *username, struct sip_msg *msg)
+static contact_t *match_contact(ucontact_id ctid, struct sip_msg *msg)
 {
 	contact_t *c;
 	struct sip_uri puri;
+	str ctid_str;
+	int idx;
+
+	ctid_str.s = int2str(ctid, &ctid_str.len);
 
 	for (c = get_first_contact2(msg); c; c = get_next_contact2(c)) {
 		LM_DBG("it='%.*s'\n", c->uri.len, c->uri.s);
@@ -891,8 +921,22 @@ static contact_t *match_contact(str *username, struct sip_msg *msg)
 		}
 
 		/* try to match the request Contact with a Contact from the reply */
-		if (str_strcmp(username, &puri.user) == 0)
-			return c;
+		if (ctid_insertion == MR_APPEND_PARAM) {
+			idx = get_uri_param_idx(&ctid_param, &puri);
+			if (idx < 0) {
+				LM_ERR("failed to locate our ';%.*s=' param, ci = %.*s!\n",
+				       ctid_param.len, ctid_param.s,
+				       msg->callid->body.len, msg->callid->body.s);
+				return NULL;
+			}
+
+			if (!str_strcmp(&ctid_str, &puri.u_val[idx]))
+				return c;
+
+		} else {
+			if (!str_strcmp(&ctid_str, &puri.user))
+				return c;
+		}
 	}
 
 	return NULL;
@@ -910,7 +954,7 @@ static int validate_msg_contacts(struct sip_msg *msg,
 
 	list_for_each(_, ct_mappings) {
 		ctmap = list_entry(_, struct ct_mapping, list);
-		if (!ctmap->zero_expires && !match_contact(&ctmap->new_username, msg))
+		if (!ctmap->zero_expires && !match_contact(ctmap->ctid, msg))
 			return -1;
 	}
 
@@ -1104,7 +1148,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 	 * generated out of the former */
 	list_for_each(_, &mri->ct_mappings) {
 		ctmap = list_entry(_, struct ct_mapping, list);
-		_c = match_contact(&ctmap->new_username, rpl);
+		_c = match_contact(ctmap->ctid, rpl);
 
 		/* contact is not present in the reply because it de-registered! */
 		if (!_c)

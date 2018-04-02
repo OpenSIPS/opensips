@@ -316,7 +316,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 	ptr = _r->contacts;
 
 	if (cluster_mode != CM_SQL_ONLY && persist_urecord_kv_store(_r) != 0)
-		LM_ERR("failed to persist latest urecord K/V storage\n");
+		LM_DBG("failed to persist latest urecord K/V storage\n");
 
 	while(ptr) {
 		if (!VALID_CONTACT(ptr, act_time)) {
@@ -816,7 +816,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 
 	if (sql_wmode == SQL_WRITE_THROUGH) {
 		if (persist_urecord_kv_store(_r) != 0)
-			LM_ERR("failed to persist latest urecord K/V storage\n");
+			LM_DBG("failed to persist latest urecord K/V storage\n");
 
 		if (db_insert_ucontact(*_c,0,0) < 0) {
 			LM_ERR("failed to insert in database\n");
@@ -974,7 +974,7 @@ int persist_urecord_kv_store(urecord_t* _r)
 	str packed_kv;
 
 	if (!_r->contacts) {
-		LM_ERR("cannot persist the K/V store - no contacts!\n");
+		LM_DBG("cannot persist the K/V store - no contacts!\n");
 		return -1;
 	}
 
