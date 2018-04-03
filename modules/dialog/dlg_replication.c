@@ -494,7 +494,9 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	bin_push_str(&packet, &dlg->legs[callee_leg].from_uri);
 	bin_push_str(&packet, &dlg->legs[callee_leg].to_uri);
 
-	/* XXX: on shutdown only? */
+	/* give modules the chance to write values/profiles before replicating */
+	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, NULL, 1);
+
 	vars = write_dialog_vars(dlg->vals);
 	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);

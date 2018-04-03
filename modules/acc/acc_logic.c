@@ -184,7 +184,7 @@ static int is_cdr_enabled=0;
 static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps );
 static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
-static void acc_dlg_onshutdown(struct dlg_cell *dlg, int type,
+static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
 static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps );
 
@@ -789,12 +789,12 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		 * tm must never free it */
 		set_dialog_context(*flags);
 
-		/* register program shutdown callback
+		/* register callback for program shutdown or dialog replication
 		 * won't register free function since TERMINATED|EXPIRED callback
 		 * free function will be called to free */
-		if (dlg_api.register_dlgcb(dlg, DLGCB_DB_WRITE_VP,
-					acc_dlg_onshutdown, ctx, NULL) != 0) {
-			LM_ERR("cannot register callback for program shutdown!\n");
+		if (dlg_api.register_dlgcb(dlg, DLGCB_WRITE_VP,
+					acc_dlg_onwrite, ctx, NULL) != 0) {
+			LM_ERR("cannot register callback for context serialization\n");
 			goto restore;
 		}
 
@@ -920,7 +920,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 }
 
 
-static void acc_dlg_onshutdown(struct dlg_cell *dlg, int type,
+static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	str flags_s;

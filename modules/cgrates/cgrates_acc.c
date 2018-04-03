@@ -545,7 +545,7 @@ static void cgr_cdr(struct sip_msg *msg, struct cgr_acc_ctx *ctx,
 	cgr_handle_cmd(msg, jmsg, cgr_proc_cdr_acc_reply, ctx);
 }
 
-static void cgr_dlg_onshutdown(struct dlg_cell *dlg, int type,
+static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	int *sessions_kvs = NULL, *tmp;
@@ -808,9 +808,9 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
 			return -1;
 		}
 
-		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_DB_WRITE_VP,
-					cgr_dlg_onshutdown, ctx, NULL) != 0) {
-			LM_ERR("cannot register callback for program shutdown!\n");
+		if (cgr_dlgb.register_dlgcb(dlg, DLGCB_WRITE_VP,
+					cgr_dlg_onwrite, ctx, NULL) != 0) {
+			LM_ERR("cannot register callback for context serialization!\n");
 			return -1;
 		}
 		ctx->engaged = 1;
