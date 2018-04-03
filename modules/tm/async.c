@@ -57,12 +57,14 @@ extern int return_code; /* from action.c, return code */
 
 
 
-static inline void run_resume_route( int resume_route, struct sip_msg *msg)
+static inline void run_resume_route( int resume_route, struct sip_msg *msg,
+															int run_post_cb)
 {
 	/* run the resume route and if it ends the msg handling (no other aysnc
 	 * started), run the post script callbacks. */
 	if ( (run_top_route(rlist[resume_route].a, msg) & ACT_FL_TBCONT) == 0 )
-		exec_post_req_cb(msg);
+		if (run_post_cb)
+			exec_post_req_cb(msg);
 }
 
 
@@ -177,7 +179,7 @@ route:
 
 	/* run the resume_route (some type as the original one) */
 	swap_route_type(route, ctx->route_type);
-	run_resume_route( ctx->resume_route, &faked_req);
+	run_resume_route( ctx->resume_route, &faked_req, 1);
 	set_route_type(route);
 
 	/* no need for the context anymore */
@@ -251,7 +253,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		goto failure;
 	}
 
-	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
+	async_status = ASYNC_NO_IO; /*assume default status "no IO done" */
 	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
 			(async_ctx*)ctx,
 			(char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
@@ -348,7 +350,7 @@ sync:
 	/* get rid of the context, useless at this point further */
 	shm_free(ctx);
 	/* run the resume route in sync mode */
-	run_resume_route( resume_route, msg);
+	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 
 	/* break original script */
 	return 0;
@@ -360,7 +362,7 @@ resume:
 	/* get rid of the context, useless at this point further */
 	if (ctx) shm_free(ctx);
 	/* run the resume route */
-	run_resume_route( resume_route, msg);
+	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 	/* the triggering route is terminated and whole script ended */
 	return 0;
 }
