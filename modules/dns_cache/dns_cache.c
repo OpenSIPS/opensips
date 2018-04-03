@@ -179,7 +179,7 @@ static char* serialize_he_rdata(struct hostent *he,int *buf_len,int do_encoding)
 		}
 
 	if (do_encoding) {
-		/* backend does not support binary values - allocate continous buffer
+		/* backend does not support binary values - allocate continuous buffer
 		for encoding */
 		base64_len = calc_base64_encode_len(len);
 		needed_len=len+base64_len;

@@ -1392,7 +1392,7 @@ static void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *
 		bin_free_packet(&packet);
 		break;
 	case CLUSTERER_NODE_DESCRIPTION:
-		LM_DBG("Received node descripiton from sorce [%d]\n", src_node_id);
+		LM_DBG("Received node description from sorce [%d]\n", src_node_id);
 
 		bin_pop_str(received, &str_vals[STR_VALS_URL_COL]);
 		bin_pop_str(received, &str_vals[STR_VALS_SIP_ADDR_COL]);
@@ -1611,7 +1611,7 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 		handle_unknown_id(src_node);
 		break;
 	case CLUSTERER_NODE_DESCRIPTION:
-		LM_DBG("Already got node descripiton for source [%d], drop this message\n",
+		LM_DBG("Already got node description for source [%d], drop this message\n",
 			src_node->node_id);
 		break;
 	case CLUSTERER_CAP_UPDATE:

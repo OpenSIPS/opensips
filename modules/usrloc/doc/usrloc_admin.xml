@@ -841,7 +841,7 @@ modparam("usrloc", "db_mode", 2)
 		<title>Set <varname>working_mode_preset</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "working_mode_preset", "full-sharing-cachedb")
+modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 ...
 </programlisting>
 		</example>
