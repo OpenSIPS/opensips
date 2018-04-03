@@ -184,10 +184,10 @@ int srec_register_callbacks(struct src_sess *sess)
 	}
 
 	/* store the session in the dialog */
-	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_DB_WRITE_VP,
-			srec_shutdown_callback, sess, NULL))
-		LM_WARN("cannot register callback for shutdown! Will not be able "
-				"to end siprec session in case of a restart!\n");
+	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_WRITE_VP,
+			srec_dlg_write_callback, sess, NULL))
+		LM_WARN("cannot register callback for session serialization! "
+			"Will not be able to end siprec session in case of a restart!\n");
 	sess->flags |= SIPREC_DLG_CBS;
 	return 0;
 }
