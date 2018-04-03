@@ -838,7 +838,7 @@ if (list_hdr_has_option("Supported","100rel"))
    Add a new option/token at the end of the list in the body of
    the given header. The header must have its body formated as a
    CSV list of tokens/option (like the Supported, Require,
-   Content-Dispsition headers) body format
+   Content-Disposition headers) body format
 
    Multiple add / remove operations can be performed over the same
    header.
@@ -864,7 +864,7 @@ if (list_hdr_has_option("Supported","100rel"))
 ...
 # add 100rel for advertising
 if (!list_hdr_has_option("Supported","100rel"))
-    list_hdr_add_option("Supported","100rel")
+    list_hdr_add_option("Supported","100rel");
 
 1.3.31.  list_hdr_remove_option(hdr_name,option)
 

@@ -100,7 +100,7 @@ typedef int (*get_my_sip_addr_f)(int cluster_id, str *out_addr);
 
 /*
  * Return an index for the current node, with a value between [0, @nr_nodes-1],
- * which belongs to a continous sequence of identifiers for the nodes in the cluster.
+ * which belongs to a continuous sequence of identifiers for the nodes in the cluster.
  * This function operates on a set of nodes which are reachable and
  * synchronized/OK (for a certain capability).
  *

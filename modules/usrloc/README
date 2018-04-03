@@ -701,7 +701,8 @@ modparam("usrloc", "db_mode", 2)
 
    Example 1.25. Set working_mode_preset parameter
 ...
-modparam("usrloc", "working_mode_preset", "full-sharing-cachedb")
+modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
+)
 ...
 
 1.5.26. cluster_mode (string)

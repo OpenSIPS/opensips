@@ -158,7 +158,7 @@ modparam("sip_i", "country_code", "+4")
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>extra_headers (string)</emphasis> - a chunck of fully defined SIP headers (including header terminatior) to be inserted into the ISUP part next to the <emphasis>Content-Type</emphasis> header. It overrides the global module paramerter <emphasis>default_part_headers</emphasis>. If not specified, the <emphasis>default_part_headers</emphasis> value will be used.
+			<para><emphasis>extra_headers (string)</emphasis> - a chunk of fully defined SIP headers (including header terminatior) to be inserted into the ISUP part next to the <emphasis>Content-Type</emphasis> header. It overrides the global module parameter <emphasis>default_part_headers</emphasis>. If not specified, the <emphasis>default_part_headers</emphasis> value will be used.
 			</para>
 		</listitem>
 		</itemizedlist>

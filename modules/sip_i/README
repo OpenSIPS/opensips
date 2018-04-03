@@ -175,10 +175,10 @@ modparam("sip_i", "country_code", "+4")
      * isup_msg_type (string) - name of the ISUP message to be
        added, exactly as it appears in ITU-T Rec. Q.763 or an
        abbreviation(eg. IAM for "Initial address").
-     * extra_headers (string) - a chunck of fully defined SIP
+     * extra_headers (string) - a chunk of fully defined SIP
        headers (including header terminatior) to be inserted into
        the ISUP part next to the Content-Type header. It overrides
-       the global module paramerter default_part_headers. If not
+       the global module parameter default_part_headers. If not
        specified, the default_part_headers value will be used.
 
    If isup_msg_type is not explicitly provided, it is
