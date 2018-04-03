@@ -59,12 +59,14 @@ extern int return_code; /* from action.c, return code */
 
 
 
-static inline void run_resume_route( int resume_route, struct sip_msg *msg)
+static inline void run_resume_route( int resume_route, struct sip_msg *msg,
+															int run_post_cb)
 {
 	/* run the resume route and if it ends the msg handling (no other aysnc
 	 * started), run the post script callbacks. */
 	if ( (run_top_route(rlist[resume_route].a, msg) & ACT_FL_TBCONT) == 0 )
-		exec_post_req_cb(msg);
+		if (run_post_cb)
+			exec_post_req_cb(msg);
 }
 
 
@@ -166,7 +168,7 @@ int t_resume_async(int *fd, void *param)
 route:
 	/* run the resume_route (some type as the original one) */
 	swap_route_type(route, ctx->route_type);
-	run_resume_route( ctx->resume_route, &faked_req);
+	run_resume_route( ctx->resume_route, &faked_req, 1);
 	set_route_type(route);
 
 	/* no need for the context anymore */
@@ -335,7 +337,7 @@ sync:
 			fd = return_code;
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* run the resume route in sync mode */
-	run_resume_route( resume_route, msg);
+	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 
 	/* break original script */
 	return 0;
@@ -345,7 +347,7 @@ failure:
 	return_code = -1;
 resume:
 	/* run the resume route */
-	run_resume_route( resume_route, msg);
+	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 	/* the triggering route is terminated and whole script ended */
 	return 0;
 }
