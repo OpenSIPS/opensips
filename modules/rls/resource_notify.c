@@ -44,6 +44,8 @@
  * */
 static str su_200_rpl     = str_init("OK");
 
+static int findDisplayName(str body, char * displayname);
+
 int parse_subs_state(str auth_state, str* reason, int* expires)
 {
         static str unknown = str_init("unknown");
@@ -612,6 +614,13 @@ void timer_send_notify(unsigned int ticks,void *param)
 		ctype.s = (char*)row_vals[ctype_col].val.string_val;
 		ctype.len = strlen(ctype.s);
 
+		/* find display for the resource_uri */
+		char displayname[512];
+		extractSipUsername(resource_uri, displayname);
+
+		if (findDisplayName(body, displayname) == -1)
+			continue;
+
 		/* if all the info for one dialog have been collected -> send notify */
 		/* the 'dialog' variable must be filled with the dialog info */
 		/* 'buf' must contain the body */
@@ -688,55 +697,6 @@ void timer_send_notify(unsigned int ticks,void *param)
 		/* there might be more records with the same uri- more instances-
 		 * search and add them all */
 
-		/* find display for the resource_uri */
-		char displayname[512];
-		extractSipUsername(resource_uri, displayname);
-
-		db_key_t q2_cols[1], q2_result_cols[2];
-		db_val_t q2_vals[1];
-		int q2_resource_uri_col, q2_displayname_col;
-		int q2_n_result_cols= 0;
-		db_res_t *q2_result = NULL;
-		db_row_t *q2_row;
-		db_val_t *q2_row_vals;
-
-		q2_n_result_cols = 0;
-		q2_result = NULL;
-		q2_cols[0] = &str_resource_uri_col;
-		q2_vals[0].type = DB_STRING;
-		q2_vals[0].nul  = 0;
-		q2_vals[0].val.string_val = resource_uri;
-		q2_result_cols[q2_resource_uri_col= q2_n_result_cols++]= &str_resource_uri_col;
-		q2_result_cols[q2_displayname_col= q2_n_result_cols++]= &str_displayname_col;
-		if (rls_dbf.use_table(rls_db, &rls_displayname_table) < 0)
-		{
-			LM_ERR("in use_table\n");
-			goto error;
-		}
-
-		if(rls_dbf.query(rls_db, q2_cols, 0, q2_vals, q2_result_cols, 1, q2_n_result_cols, 0, &q2_result)< 0)
-		{
-			LM_ERR("in sql query - q2\n");
-			if (q2_result)
-			{
-				rls_dbf.free_result(rls_db, q2_result);
-				q2_result = NULL;
-			}
-			goto error;
-		}
-
-		if (q2_result != NULL)
-		{
-			if (q2_result->n > 0)
-			{
-				q2_row = &q2_result->rows[0];
-				q2_row_vals = ROW_VALUES(q2_row);
-				strcpy(displayname, (char*)q2_row_vals[q2_displayname_col].val.string_val);
-			}
-			rls_dbf.free_result(rls_db, q2_result);
-			q2_result = NULL;
-		}
-            
 		while(1)
 		{
 			xmlNewChild(resource_node, NULL, BAD_CAST "name", BAD_CAST displayname);
@@ -806,6 +766,9 @@ void timer_send_notify(unsigned int ticks,void *param)
 			body.s=   (char*)row_vals[body_col].val.string_val;
 			body.len = strlen(body.s);
 		        trim(&body);
+
+			if (findDisplayName(body, displayname) == -1)
+				break;
 		}
 
 		prev_did= curr_did;
@@ -866,4 +829,87 @@ void rls_presentity_clean(unsigned int ticks,void *param)
 		return ;
 	}
 
+}
+
+/* 
+	find display name from NOTIFY body xml :
+	If xml syntax error, or found display name from PUBLISH body, return 0
+	otherwise, return -1
+	Input: char displayname[512]
+
+	- A typical BLF event looks like :
+<dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info" version="4" entity="sip:412@account-123456" state="partial">
+	<dialog id="412@account-123456">
+		<state>confirmed</state>
+		<duration>274</duration>
+		<local>
+			<identity display="412-firstname lastname">sip:412@account-123456</identity>
+			<target uri="sip:VH654321@account-123456"/>
+		</local>
+		<remote>
+			<identity display="402">sip:402@account-123456</identity>
+			<target uri="sip:402@account-123456"/>
+		</remote>
+	</dialog>
+</dialog-info>
+
+	- A typical event created by presence looks like:
+<dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info" version="0"		   state="full" entity="sip:412@account-123456"><dialog id="zxcnm3" direction="receiver"><state>terminated</state><remote><local><identity display="412">sip:412@account-123456</identity></local></remote></dialog></dialog-info>
+
+*/
+int findDisplayName(str body, char * displayname)
+{
+	xmlDocPtr xmldoc = NULL;
+	xmlNodePtr node, sub1, sub2, sub3;
+	char * buf;
+
+	if (body.len <= 0)
+		goto dn_error;
+
+	xmldoc = xmlParseMemory(body.s, body.len);
+	if (xmldoc == NULL)
+		goto dn_error;
+
+	node = XMLDocGetNodeByName(xmldoc,"dialog-info", NULL);
+	if (node == NULL)
+		goto dn_error;
+
+	for(sub1 = node->children; sub1; sub1 = sub1->next)
+	{
+		if(xmlStrcasecmp(sub1->name, (unsigned char*)"dialog")== 0) 
+		{
+			for (sub2 = sub1->children; sub2; sub2 = sub2->next)
+			{
+				if(xmlStrcasecmp(sub2->name, (unsigned char*)"local")== 0)
+				{
+					for (sub3 = sub2->children; sub3; sub3 = sub3->next)
+					{
+						if(xmlStrcasecmp(sub3->name, (unsigned char*)"identity")== 0)
+						{
+							buf = XMLNodeGetAttrContentByName(sub3, "display");
+							if (buf)
+							{
+								strncpy(displayname, buf, 511);
+								displayname[511] = 0;
+								xmlFree(buf);
+								/* xml format matches with PUBLISH event */
+								goto dn_normal;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+dn_skip:
+	if (xmldoc)
+		xmlFreeDoc(xmldoc);
+	return -1;
+
+dn_normal:
+dn_error:
+	if (xmldoc)
+		xmlFreeDoc(xmldoc);
+	return 0;
 }
