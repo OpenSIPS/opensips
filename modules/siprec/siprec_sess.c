@@ -429,7 +429,7 @@ static inline str *srec_serialize(void *field, int size)
 		} \
 	} while (0)
 
-void srec_shutdown_callback(struct dlg_cell *dlg, int type,
+void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params)
 {
 	str name = str_init("siprec");

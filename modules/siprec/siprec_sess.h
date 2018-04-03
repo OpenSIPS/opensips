@@ -152,7 +152,7 @@ extern struct dlg_binds srec_dlg;
 
 void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
-void srec_shutdown_callback(struct dlg_cell *dlg, int type,
+void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
 
 #endif /* _SIPREC_SESS_H_ */

@@ -64,7 +64,9 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
 #define DLGCB_MI_CONTEXT      (1<<10)
 #define DLGCB_DESTROY         (1<<11)
 #define DLGCB_DB_SAVED        (1<<12)
-#define DLGCB_DB_WRITE_VP     (1<<13)
+/* this callback is triggered just before writing the values/profiles
+ * (flushing into DB or replicating created dialog) */
+#define DLGCB_WRITE_VP     (1<<13)
 
 struct dlg_callback {
 	int types;
