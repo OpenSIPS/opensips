@@ -90,7 +90,8 @@ static str backend = str_init("xmlrpc");
 
 static union sockaddr_union* sv_socket = NULL;
 
-int mi_trace_mod_id;
+/* tracing is disabled by default */
+int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
 #define MI_XML_ERROR_BUF_MAX_LEN 1024
