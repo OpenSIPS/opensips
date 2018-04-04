@@ -49,40 +49,43 @@ Liviu Chircu
         1.5. Exported Parameters
 
               1.5.1. nat_bflag (string/integer)
-              1.5.2. user_column (string)
-              1.5.3. domain_column (string)
-              1.5.4. contact_column (string)
-              1.5.5. expires_column (string)
-              1.5.6. q_column (string)
-              1.5.7. callid_column (string)
-              1.5.8. cseq_column (string)
-              1.5.9. methods_column (string)
-              1.5.10. flags_column (string)
-              1.5.11. cflags_column (string)
-              1.5.12. user_agent_column (string)
-              1.5.13. received_column (string)
-              1.5.14. socket_column (string)
-              1.5.15. path_column (string)
-              1.5.16. sip_instance_column (string)
-              1.5.17. kv_store_column (string)
-              1.5.18. attr_column (string)
-              1.5.19. use_domain (integer)
-              1.5.20. desc_time_order (integer)
-              1.5.21. timer_interval (integer)
-              1.5.22. db_url (string)
-              1.5.23. cachedb_url (string)
-              1.5.24. db_mode (integer, deprecated)
-              1.5.25. working_mode_preset (string)
-              1.5.26. cluster_mode (string)
-              1.5.27. restart_persistency (string)
-              1.5.28. sql_write_mode (string)
-              1.5.29. matching_mode (integer)
-              1.5.30. cseq_delay (integer)
-              1.5.31. location_cluster (integer)
-              1.5.32. skip_replicated_db_ops (int)
-              1.5.33. max_contact_delete (int)
-              1.5.34. hash_size (integer)
-              1.5.35. regen_broken_contactid (integer)
+              1.5.2. contact_id_column (string)
+              1.5.3. user_column (string)
+              1.5.4. domain_column (string)
+              1.5.5. contact_column (string)
+              1.5.6. expires_column (string)
+              1.5.7. q_column (string)
+              1.5.8. callid_column (string)
+              1.5.9. cseq_column (string)
+              1.5.10. methods_column (string)
+              1.5.11. flags_column (string)
+              1.5.12. cflags_column (string)
+              1.5.13. user_agent_column (string)
+              1.5.14. received_column (string)
+              1.5.15. socket_column (string)
+              1.5.16. path_column (string)
+              1.5.17. sip_instance_column (string)
+              1.5.18. kv_store_column (string)
+              1.5.19. attr_column (string)
+              1.5.20. use_domain (integer)
+              1.5.21. desc_time_order (integer)
+              1.5.22. timer_interval (integer)
+              1.5.23. db_url (string)
+              1.5.24. cachedb_url (string)
+              1.5.25. db_mode (integer, deprecated)
+              1.5.26. working_mode_preset (string)
+              1.5.27. cluster_mode (string)
+              1.5.28. restart_persistency (string)
+              1.5.29. sql_write_mode (string)
+              1.5.30. matching_mode (integer)
+              1.5.31. cseq_delay (integer)
+              1.5.32. location_cluster (integer)
+              1.5.33. skip_replicated_db_ops (int)
+              1.5.34. max_contact_delete (int)
+              1.5.35. hash_size (integer)
+              1.5.36. regen_broken_contactid (integer)
+              1.5.37. latency_event_min_us (integer)
+              1.5.38. latency_event_min_us_delta (integer)
 
         1.6. Exported Functions
         1.7. Exported MI Functions
@@ -109,6 +112,7 @@ Liviu Chircu
               1.9.3. E_UL_CONTACT_INSERT
               1.9.4. E_UL_CONTACT_DELETE
               1.9.5. E_UL_CONTACT_UPDATE
+              1.9.6. E_UL_LATENCY_UPDATE
 
    2. Developer Guide
 
@@ -148,40 +152,43 @@ Liviu Chircu
    List of Examples
 
    1.1. Set nat_bflag parameter
-   1.2. Set user_column parameter
+   1.2. Set contact_id_column parameter
    1.3. Set user_column parameter
-   1.4. Set contact_column parameter
-   1.5. Set expires_column parameter
-   1.6. Set q_column parameter
-   1.7. Set callid_column parameter
-   1.8. Set cseq_column parameter
-   1.9. Set methods_column parameter
-   1.10. Set flags_column parameter
-   1.11. Set cflags_column parameter
-   1.12. Set user_agent_column parameter
-   1.13. Set received_column parameter
-   1.14. Set socket_column parameter
-   1.15. Set path_column parameter
-   1.16. Set sip_instance_column parameter
-   1.17. Set kv_store_column parameter
-   1.18. Set attr_column parameter
-   1.19. Set use_domain parameter
-   1.20. Set desc_time_order parameter
-   1.21. Set timer_interval parameter
-   1.22. Set db_url parameter
-   1.23. Set cachedb_url parameter
-   1.24. Set db_mode parameter
-   1.25. Set working_mode_preset parameter
-   1.26. Set cluster_mode parameter
-   1.27. Set restart_persistency parameter
-   1.28. Set sql_write_mode parameter
-   1.29. Set matching_mode parameter
-   1.30. Set cseq_delay parameter
-   1.31. Setting the location_cluster parameter
-   1.32. Setting the skip_replicated_db_ops parameter
-   1.33. Setting the max_contact_delete parameter
-   1.34. Set hash_size parameter
-   1.35. Set regen_broken_contactid parameter
+   1.4. Set user_column parameter
+   1.5. Set contact_column parameter
+   1.6. Set expires_column parameter
+   1.7. Set q_column parameter
+   1.8. Set callid_column parameter
+   1.9. Set cseq_column parameter
+   1.10. Set methods_column parameter
+   1.11. Set flags_column parameter
+   1.12. Set cflags_column parameter
+   1.13. Set user_agent_column parameter
+   1.14. Set received_column parameter
+   1.15. Set socket_column parameter
+   1.16. Set path_column parameter
+   1.17. Set sip_instance_column parameter
+   1.18. Set kv_store_column parameter
+   1.19. Set attr_column parameter
+   1.20. Set use_domain parameter
+   1.21. Set desc_time_order parameter
+   1.22. Set timer_interval parameter
+   1.23. Set db_url parameter
+   1.24. Set cachedb_url parameter
+   1.25. Set db_mode parameter
+   1.26. Set working_mode_preset parameter
+   1.27. Set cluster_mode parameter
+   1.28. Set restart_persistency parameter
+   1.29. Set sql_write_mode parameter
+   1.30. Set matching_mode parameter
+   1.31. Set cseq_delay parameter
+   1.32. Setting the location_cluster parameter
+   1.33. Setting the skip_replicated_db_ops parameter
+   1.34. Setting the max_contact_delete parameter
+   1.35. Set hash_size parameter
+   1.36. Set regen_broken_contactid parameter
+   1.37. Set latency_event_min_us parameter
+   1.38. Set latency_event_min_us_delta parameter
 
 Chapter 1. Admin Guide
 
@@ -377,197 +384,208 @@ Chapter 1. Admin Guide
 modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 ...
 
-1.5.2. user_column (string)
+1.5.2. contact_id_column (string)
+
+   Name of the column holding the unique contact IDs.
+
+   Default value is “contact_id”.
+
+   Example 1.2. Set contact_id_column parameter
+...
+modparam("usrloc", "contact_id_column", "ctid")
+...
+
+1.5.3. user_column (string)
 
    Name of column containing usernames.
 
    Default value is “username”.
 
-   Example 1.2. Set user_column parameter
+   Example 1.3. Set user_column parameter
 ...
 modparam("usrloc", "user_column", "username")
 ...
 
-1.5.3. domain_column (string)
+1.5.4. domain_column (string)
 
    Name of column containing domains.
 
    Default value is “domain”.
 
-   Example 1.3. Set user_column parameter
+   Example 1.4. Set user_column parameter
 ...
 modparam("usrloc", "domain_column", "domain")
 ...
 
-1.5.4. contact_column (string)
+1.5.5. contact_column (string)
 
    Name of column containing contacts.
 
    Default value is “contact”.
 
-   Example 1.4. Set contact_column parameter
+   Example 1.5. Set contact_column parameter
 ...
 modparam("usrloc", "contact_column", "contact")
 ...
 
-1.5.5. expires_column (string)
+1.5.6. expires_column (string)
 
    Name of column containing expires value.
 
    Default value is “expires”.
 
-   Example 1.5. Set expires_column parameter
+   Example 1.6. Set expires_column parameter
 ...
 modparam("usrloc", "expires_column", "expires")
 ...
 
-1.5.6. q_column (string)
+1.5.7. q_column (string)
 
    Name of column containing q values.
 
    Default value is “q”.
 
-   Example 1.6. Set q_column parameter
+   Example 1.7. Set q_column parameter
 ...
 modparam("usrloc", "q_column", "q")
 ...
 
-1.5.7. callid_column (string)
+1.5.8. callid_column (string)
 
    Name of column containing callid values.
 
    Default value is “callid”.
 
-   Example 1.7. Set callid_column parameter
+   Example 1.8. Set callid_column parameter
 ...
 modparam("usrloc", "callid_column", "callid")
 ...
 
-1.5.8. cseq_column (string)
+1.5.9. cseq_column (string)
 
    Name of column containing cseq numbers.
 
    Default value is “cseq”.
 
-   Example 1.8. Set cseq_column parameter
+   Example 1.9. Set cseq_column parameter
 ...
 modparam("usrloc", "cseq_column", "cseq")
 ...
 
-1.5.9. methods_column (string)
+1.5.10. methods_column (string)
 
    Name of column containing supported methods.
 
    Default value is “methods”.
 
-   Example 1.9. Set methods_column parameter
+   Example 1.10. Set methods_column parameter
 ...
 modparam("usrloc", "methods_column", "methods")
 ...
 
-1.5.10. flags_column (string)
+1.5.11. flags_column (string)
 
    Name of column to save the internal flags of the record.
 
    Default value is “flags”.
 
-   Example 1.10. Set flags_column parameter
+   Example 1.11. Set flags_column parameter
 ...
 modparam("usrloc", "flags_column", "flags")
 ...
 
-1.5.11. cflags_column (string)
+1.5.12. cflags_column (string)
 
    Name of column to save the branch/contact flags of the record.
 
    Default value is “cflags”.
 
-   Example 1.11. Set cflags_column parameter
+   Example 1.12. Set cflags_column parameter
 ...
 modparam("usrloc", "cflags_column", "cflags")
 ...
 
-1.5.12. user_agent_column (string)
+1.5.13. user_agent_column (string)
 
    Name of column containing user-agent values.
 
    Default value is “user_agent”.
 
-   Example 1.12. Set user_agent_column parameter
+   Example 1.13. Set user_agent_column parameter
 ...
 modparam("usrloc", "user_agent_column", "user_agent")
 ...
 
-1.5.13. received_column (string)
+1.5.14. received_column (string)
 
    Name of column containing the source IP, port, and protocol
    from the REGISTER message.
 
    Default value is “received”.
 
-   Example 1.13. Set received_column parameter
+   Example 1.14. Set received_column parameter
 ...
 modparam("usrloc", "received_column", "received")
 ...
 
-1.5.14. socket_column (string)
+1.5.15. socket_column (string)
 
    Name of column containing the received socket information
    (IP:port) for the REGISTER message.
 
    Default value is “socket”.
 
-   Example 1.14. Set socket_column parameter
+   Example 1.15. Set socket_column parameter
 ...
 modparam("usrloc", "socket_column", "socket")
 ...
 
-1.5.15. path_column (string)
+1.5.16. path_column (string)
 
    Name of column containing the Path header.
 
    Default value is “path”.
 
-   Example 1.15. Set path_column parameter
+   Example 1.16. Set path_column parameter
 ...
 modparam("usrloc", "path_column", "path")
 ...
 
-1.5.16. sip_instance_column (string)
+1.5.17. sip_instance_column (string)
 
    Name of column containing the SIP instance.
 
    Default value is “NULL”.
 
-   Example 1.16. Set sip_instance_column parameter
+   Example 1.17. Set sip_instance_column parameter
 ...
 modparam("usrloc", "sip_instance_column", "sip_instance")
 ...
 
-1.5.17. kv_store_column (string)
+1.5.18. kv_store_column (string)
 
    Name of column containing generic key-value data.
 
    Default value is “kv_store”.
 
-   Example 1.17. Set kv_store_column parameter
+   Example 1.18. Set kv_store_column parameter
 ...
 modparam("usrloc", "kv_store_column", "json_data")
 ...
 
-1.5.18. attr_column (string)
+1.5.19. attr_column (string)
 
    Name of column containing additional registration-related
    information.
 
    Default value is “attr”.
 
-   Example 1.18. Set attr_column parameter
+   Example 1.19. Set attr_column parameter
 ...
 modparam("usrloc", "attr_column", "attributes")
 ...
 
-1.5.19. use_domain (integer)
+1.5.20. use_domain (integer)
 
    If the domain part of the user should be also saved and used
    for identifing the user (along with the username part). Useful
@@ -575,12 +593,12 @@ modparam("usrloc", "attr_column", "attributes")
 
    Default value is “0 (false)”.
 
-   Example 1.19. Set use_domain parameter
+   Example 1.20. Set use_domain parameter
 ...
 modparam("usrloc", "use_domain", 1)
 ...
 
-1.5.20. desc_time_order (integer)
+1.5.21. desc_time_order (integer)
 
    If the user's contacts should be kept timestamp ordered;
    otherwise the contact will be ordered based on q value. Non 0
@@ -588,12 +606,12 @@ modparam("usrloc", "use_domain", 1)
 
    Default value is “0 (false)”.
 
-   Example 1.20. Set desc_time_order parameter
+   Example 1.21. Set desc_time_order parameter
 ...
 modparam("usrloc", "desc_time_order", 1)
 ...
 
-1.5.21. timer_interval (integer)
+1.5.22. timer_interval (integer)
 
    Number of seconds between two timer runs. The module uses timer
    to delete expired contacts, synchronize with database and other
@@ -607,38 +625,38 @@ Warning
 
    Default value is 60.
 
-   Example 1.21. Set timer_interval parameter
+   Example 1.22. Set timer_interval parameter
 ...
 modparam("usrloc", "timer_interval", 120)
 ...
 
-1.5.22. db_url (string)
+1.5.23. db_url (string)
 
    URL of the database that should be used.
 
    Default value is
    “mysql://opensips:opensipsrw@localhost/opensips”.
 
-   Example 1.22. Set db_url parameter
+   Example 1.23. Set db_url parameter
 ...
 modparam("usrloc", "db_url", "dbdriver://username:password@dbhost/dbname
 ")
 ...
 
-1.5.23. cachedb_url (string)
+1.5.24. cachedb_url (string)
 
    URL of a NoSQL database to be used. Only required in a
    cachedb-enabled cluster_mode.
 
    Default value is “none”.
 
-   Example 1.23. Set cachedb_url parameter
+   Example 1.24. Set cachedb_url parameter
 ...
 modparam("usrloc", "cachedb_url", "mongodb://10.0.0.4:27017/opensipsDB.u
 serlocation")
 ...
 
-1.5.24. db_mode (integer, deprecated)
+1.5.25. db_mode (integer, deprecated)
 
    Although it is backwards-compatible, this parameter has been
    deprecated in favour of the more complete working_mode_preset,
@@ -646,12 +664,12 @@ serlocation")
 
    Default value is "not set".
 
-   Example 1.24. Set db_mode parameter
+   Example 1.25. Set db_mode parameter
 ...
 modparam("usrloc", "db_mode", 2)
 ...
 
-1.5.25. working_mode_preset (string)
+1.5.26. working_mode_preset (string)
 
      * "single-instance-no-db" - This disables database
        completely. Only memory will be used. Contacts will not
@@ -699,13 +717,13 @@ modparam("usrloc", "db_mode", 2)
 
    Default value is "single-instance-no-db".
 
-   Example 1.25. Set working_mode_preset parameter
+   Example 1.26. Set working_mode_preset parameter
 ...
 modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
 )
 ...
 
-1.5.26. cluster_mode (string)
+1.5.27. cluster_mode (string)
 
    This parameter is automatically set by working_mode_preset.
 
@@ -733,12 +751,12 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
 
    Default value is none (single instance mode).
 
-   Example 1.26. Set cluster_mode parameter
+   Example 1.27. Set cluster_mode parameter
 ...
 modparam("usrloc", "cluster_mode", "federation-cachedb")
 ...
 
-1.5.27. restart_persistency (string)
+1.5.28. restart_persistency (string)
 
    This parameter is automatically set by working_mode_preset.
 
@@ -767,12 +785,12 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 
    Default value is "none" (no restart persistency).
 
-   Example 1.27. Set restart_persistency parameter
+   Example 1.28. Set restart_persistency parameter
 ...
 modparam("usrloc", "restart_persistency", "sync-from-cluster")
 ...
 
-1.5.28. sql_write_mode (string)
+1.5.29. sql_write_mode (string)
 
    This parameter is automatically set by working_mode_preset.
 
@@ -800,12 +818,12 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 
    Default value is "none" (no added SQL writes).
 
-   Example 1.28. Set sql_write_mode parameter
+   Example 1.29. Set sql_write_mode parameter
 ...
 modparam("usrloc", "sql_write_mode", "write-back")
 ...
 
-1.5.29. matching_mode (integer)
+1.5.30. matching_mode (integer)
 
    What contact matching algorithm to be used. Refer to section
    Contact Matching for the description of the algorithms.
@@ -816,12 +834,12 @@ modparam("usrloc", "sql_write_mode", "write-back")
 
    Default value is 0 (CONTACT_ONLY).
 
-   Example 1.29. Set matching_mode parameter
+   Example 1.30. Set matching_mode parameter
 ...
 modparam("usrloc", "matching_mode", 1)
 ...
 
-1.5.30. cseq_delay (integer)
+1.5.31. cseq_delay (integer)
 
    Delay (in seconds) for accepting as retransmissions register
    requests with same Call-ID and Cseq. The delay is calculated
@@ -836,12 +854,12 @@ modparam("usrloc", "matching_mode", 1)
 
    Default value is “20 seconds”.
 
-   Example 1.30. Set cseq_delay parameter
+   Example 1.31. Set cseq_delay parameter
 ...
 modparam("usrloc", "cseq_delay", 5)
 ...
 
-1.5.31. location_cluster (integer)
+1.5.32. location_cluster (integer)
 
    Specifies the cluster ID which this instance will send to and
    receive from all user-location related information
@@ -853,12 +871,12 @@ modparam("usrloc", "cseq_delay", 5)
    More details on the user location distribution mechanisms are
    available under Distributed SIP User Location.
 
-   Example 1.31. Setting the location_cluster parameter
+   Example 1.32. Setting the location_cluster parameter
 ...
 modparam("usrloc", "location_cluster", 1)
 ...
 
-1.5.32. skip_replicated_db_ops (int)
+1.5.33. skip_replicated_db_ops (int)
 
    Prevent OpenSIPS from performing any DB-related contact
    operations when events are received over the Binary Interface.
@@ -870,12 +888,12 @@ modparam("usrloc", "location_cluster", 1)
    More details on the user location replication mechanism are
    available in Distributed SIP User Location
 
-   Example 1.32. Setting the skip_replicated_db_ops parameter
+   Example 1.33. Setting the skip_replicated_db_ops parameter
 ...
 modparam("usrloc", "skip_replicated_db_ops", 1)
 ...
 
-1.5.33. max_contact_delete (int)
+1.5.34. max_contact_delete (int)
 
    Relevant only in WRITE_THROUGH or WRITE_BACK schemes. The
    maximum number of contacts to be deleted from the database at
@@ -884,12 +902,12 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 
    Default value is "10"
 
-   Example 1.33. Setting the max_contact_delete parameter
+   Example 1.34. Setting the max_contact_delete parameter
 ...
 modparam("usrloc", "max_contact_delete", 10)
 ...
 
-1.5.34. hash_size (integer)
+1.5.35. hash_size (integer)
 
    The number of entries of the hash table used by usrloc to store
    the location records is 2^hash_size. For hash_size=4, the
@@ -899,12 +917,12 @@ modparam("usrloc", "max_contact_delete", 10)
 
    Default value is “9”.
 
-   Example 1.34. Set hash_size parameter
+   Example 1.35. Set hash_size parameter
 ...
 modparam("usrloc", "hash_size", 10)
 ...
 
-1.5.35. regen_broken_contactid (integer)
+1.5.36. regen_broken_contactid (integer)
 
    Since version 2.2, contact_id concept was introduced. Since
    this parameter validates a contact each time OpenSIPS is
@@ -916,9 +934,46 @@ modparam("usrloc", "hash_size", 10)
 
    Default value is “0(not enabled)”
 
-   Example 1.35. Set regen_broken_contactid parameter
+   Example 1.36. Set regen_broken_contactid parameter
 ...
 modparam("usrloc", "regen_broken_contactid", 1)
+...
+
+1.5.37. latency_event_min_us (integer)
+
+   Defines a minimal pinging latency threshold, in microseconds,
+   past which contact pinging latency update events will get
+   raised. By default, an event is raised for each ping reply
+   (i.e. latency update).
+
+   If both latency_event_min_us and latency_event_min_us_delta are
+   set, the event will get raised if either of them is true.
+
+   Default value is “0 (no bottom limit set)”.
+
+   Example 1.37. Set latency_event_min_us parameter
+...
+# raise an event for any 425+ ms pinging latency
+modparam("usrloc", "latency_event_min_us", 425000)
+...
+
+1.5.38. latency_event_min_us_delta (integer)
+
+   Defines a minimal, absolute pinging latency difference, in
+   microseconds, past which contact pinging latency update events
+   will get raised. The difference is computed using the latencies
+   of the last two contact pinging replies. By default, an event
+   is raised for each ping reply (i.e. latency update).
+
+   If both latency_event_min_us and latency_event_min_us_delta are
+   set, the event will get raised if either of them is true.
+
+   Default value is “0 (no minimal latency delta set)”.
+
+   Example 1.38. Set latency_event_min_us_delta parameter
+...
+# raise an event only if a contact has pinging latency swings of 300+ ms
+modparam("usrloc", "latency_event_min_us_delta", 300000)
 ...
 
 1.6. Exported Functions
@@ -1076,6 +1131,9 @@ modparam("usrloc", "regen_broken_contactid", 1)
        custom attributes attached from the script level). As this
        string is options, if missing in the contact, the event
        will push the empty string for this event field.
+     * latency - The latency of the last successful ping for this
+       contact. Until the first ping reply for a given contact
+       arrives, its pinging latency will be 0.
 
 1.9.4.  E_UL_CONTACT_DELETE
 
@@ -1084,14 +1142,24 @@ modparam("usrloc", "regen_broken_contactid", 1)
    then both the E_UL_AOR_DELETE and E_UL_CONTACT_DELETE events
    will be raised.
 
-   Parameters: same as E_UL_CONTACT_INSERT event
+   Parameters: same as the E_UL_CONTACT_INSERT event
 
 1.9.5.  E_UL_CONTACT_UPDATE
 
    This event is raised when a contact's info is updated by
    receiving another registration message.
 
-   Parameters: same as E_UL_CONTACT_INSERT event
+   Parameters: same as the E_UL_CONTACT_INSERT event
+
+1.9.6.  E_UL_LATENCY_UPDATE
+
+   This event is raised when a contact pinging latency passes
+   either of the latency_event_min_us or
+   latency_event_min_us_delta filters. If none of these filters is
+   set, this event will get raised for each successful contact
+   ping operation.
+
+   Parameters: same as the E_UL_CONTACT_INSERT event
 
 Chapter 2. Developer Guide
 

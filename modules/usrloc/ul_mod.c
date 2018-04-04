@@ -194,7 +194,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"contactid_column",   STR_PARAM, &contactid_col.s   },
+	{"contact_id_column",   STR_PARAM,&contactid_col.s   },
 	{"user_column",        STR_PARAM, &user_col.s        },
 	{"domain_column",      STR_PARAM, &domain_col.s      },
 	{"contact_column",     STR_PARAM, &contact_col.s     },
@@ -225,8 +225,8 @@ static param_export_t params[] = {
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
 	{"kv_store_column",    STR_PARAM, &kv_store_col.s    },
 	{"mi_dump_kv_store",   INT_PARAM, &mi_dump_kv_store  },
-	{"latency_event_min_us_delta",   INT_PARAM, &latency_event_min_us_delta  },
 	{"latency_event_min_us",   INT_PARAM, &latency_event_min_us  },
+	{"latency_event_min_us_delta",   INT_PARAM, &latency_event_min_us_delta  },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
 	{"matching_mode",      INT_PARAM, &matching_mode     },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },

@@ -269,6 +269,26 @@ modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 		</example>
 	</section>
 
+	<section id="param_contact_id_column" xreflabel="contact_id_column">
+		<title><varname>contact_id_column</varname> (string)</title>
+		<para>
+		Name of the column holding the unique contact IDs.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>contact_id</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>contact_id_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "contact_id_column", "ctid")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
@@ -1215,6 +1235,67 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</example>
 	</section>
 
+	<section id="param_latency_event_min_us" xreflabel="latency_event_min_us">
+		<title><varname>latency_event_min_us</varname> (integer)</title>
+		<para>
+		Defines a minimal pinging latency threshold, in microseconds, past
+		which contact pinging latency update events will get raised. By
+		default, an event is raised for each ping reply (i.e. latency update).
+		</para>
+		<para>
+		If both <xref linkend="param_latency_event_min_us"/> and
+		<xref linkend="param_latency_event_min_us_delta"/> are set, the event
+		will get raised if either of them is true.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>0 (no bottom limit set)</quote>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>latency_event_min_us</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# raise an event for any 425+ ms pinging latency
+modparam("usrloc", "latency_event_min_us", 425000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_latency_event_min_us_delta"
+			 xreflabel="latency_event_min_us_delta">
+		<title><varname>latency_event_min_us_delta</varname> (integer)</title>
+		<para>
+		Defines a minimal, absolute pinging latency difference, in
+		microseconds, past which contact pinging latency update events will get
+		raised. The difference is computed using the latencies of the last two
+		contact pinging replies. By default, an event is raised for each ping
+		reply (i.e. latency update).
+		</para>
+		<para>
+		If both <xref linkend="param_latency_event_min_us"/> and
+		<xref linkend="param_latency_event_min_us_delta"/> are set, the event
+		will get raised if either of them is true.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>0 (no minimal latency delta set)</quote>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>latency_event_min_us_delta</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# raise an event only if a contact has pinging latency swings of 300+ ms
+modparam("usrloc", "latency_event_min_us_delta", 300000)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -1528,8 +1609,14 @@ modparam("usrloc", "regen_broken_contactid", 1)
 				contact, the event will push the empty string for this event 
 				field.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>latency</emphasis> - The latency of the last
+				successful ping for this contact. Until the first ping reply
+				for a given contact arrives, its pinging latency will be 0.
+			</para></listitem>
 		</itemizedlist>
 	</section>
+
 	<section id="event_E_UL_CONTACT_DELETE" xreflabel="E_UL_CONTACT_DELETE">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_DELETE</function>
@@ -1540,8 +1627,10 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			the list then both the E_UL_AOR_DELETE and
 			E_UL_CONTACT_DELETE events will be raised.
 		</para>
-		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
+		<para>Parameters: same as the
+			<xref linkend="event_E_UL_CONTACT_INSERT"/> event</para>
 	</section>
+
 	<section id="event_E_UL_CONTACT_UPDATE" xreflabel="E_UL_CONTACT_UPDATE">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_UPDATE</function>
@@ -1550,7 +1639,24 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			This event is raised when a contact's info is updated by receiving
 			another registration message.
 		</para>
-		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
+		<para>Parameters: same as the
+			<xref linkend="event_E_UL_CONTACT_INSERT"/> event</para>
 	</section>
+
+	<section id="event_E_UL_LATENCY_UPDATE" xreflabel="E_UL_LATENCY_UPDATE">
+		<title>
+		<function moreinfo="none">E_UL_LATENCY_UPDATE</function>
+		</title>
+		<para>
+		This event is raised when a contact pinging latency passes either
+		of the <xref linkend="param_latency_event_min_us"/> or
+		<xref linkend="param_latency_event_min_us_delta"/> filters. If none of
+		these filters is set, this event will get raised for each successful
+		contact ping operation.
+		</para>
+		<para>Parameters: same as the
+			<xref linkend="event_E_UL_CONTACT_INSERT"/> event</para>
+	</section>
+
 	</section>
 </chapter>
