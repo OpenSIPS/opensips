@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 
-	<section id="sec-overview">
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The mathops module provides a series of functions which enable various
@@ -12,7 +12,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -44,9 +44,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_decimal_digits" xreflabel="decimal_digits">
 		<title><varname>decimal_digits</varname> (integer)</title>
 		<para>
 		The precision of the results returned by all the module functions.

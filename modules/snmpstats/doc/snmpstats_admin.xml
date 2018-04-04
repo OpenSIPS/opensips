@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 
 		<para>The SNMPStats module provides an SNMP management interface
@@ -178,7 +178,7 @@
 
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -243,9 +243,9 @@
 	</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_sipEntityType" xreflabel="sipEntityType">
 		<title><varname>sipEntityType</varname> (String) </title>
 
 		<para>
@@ -277,7 +277,7 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
 		</para>
 	</section>
 
-	<section>
+	<section id="param_MsgQueueMinorThreshold" xreflabel="MsgQueueMinorThreshold">
 		<title><varname>MsgQueueMinorThreshold</varname> (Integer)</title>
 
 		<para>
@@ -304,7 +304,7 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
 		</para>
 	</section>
 
-	<section>
+	<section id="param_MsgQueueMajorThreshold" xreflabel="MsgQueueMajorThreshold">
 		<title><varname>MsgQueueMajorThreshold</varname> (Integer)</title>
 
 		<para>
@@ -332,7 +332,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
 		</para>
 	</section>
 
-	<section>
+	<section id="param_dlg_minor_threshold" xreflabel="dlg_minor_threshold">
 		<title><varname>dlg_minor_threshold</varname> (Integer)</title>
 
 		<para>
@@ -359,7 +359,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
 		</para>
 	</section>
 
-	<section>
+	<section id="param_dlg_major_threshold" xreflabel="dlg_major_threshold">
 		<title><varname>dlg_major_threshold</varname> (Integer)</title>
 
 		<para>
@@ -386,7 +386,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
 		</para>
 	</section>
 
-	<section>
+	<section id="param_snmpgetPath" xreflabel="snmpgetPath">
 		<title><varname>snmpgetPath</varname> (String)</title>
 
 		<para>
@@ -412,7 +412,7 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_snmpCommunity" xreflabel="snmpCommunity">
 		<title><varname>snmpCommunity</varname> (String)</title>
 
 		<para>

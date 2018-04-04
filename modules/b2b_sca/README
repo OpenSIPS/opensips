@@ -43,7 +43,7 @@ Ovidiu Sas
                       app[index]_call_info_appearance_uri_column(st
                       ring)
 
-              1.4.15. app[index]_b2bl_key_column(string)
+              1.4.15. appindex_b2bl_key_column(string)
 
         1.5. Exported Functions
 
@@ -348,7 +348,7 @@ modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_call
 _info_appearance_uri")
 ...
 
-1.4.15. app[index]_b2bl_key_column(string)
+1.4.15. appindex_b2bl_key_column(string)
 
    The column's name in the database storing the b2b_logic key of
    a particular appearance.

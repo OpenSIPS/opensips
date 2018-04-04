@@ -4,7 +4,7 @@
   
   <title>&adminguide;</title>
   
-  <section>
+  <section id="overview" xreflabel="Overview">
   <title>Overview</title>
     <para>
       Mediaproxy is an &osips; module that is designed to allow automatic 
@@ -102,7 +102,7 @@
     </para>
   </section>
 
-  <section>
+  <section id="dependencies" xreflabel="Dependencies">
   <title>Dependencies</title>
     <section>
     <title>&osips; Modules</title>
@@ -137,7 +137,7 @@
   
   <section>
   <title>Exported parameters</title>
-    <section>
+    <section id="param_disable" xreflabel="disable">
     <title><varname>disable</varname> (int)</title>
       <para>
         Boolean flag that specifies if mediaproxy should be disabled. This
@@ -163,7 +163,7 @@ modparam("mediaproxy", "disable", 1)
       </example>
     </section>
 
-    <section>
+    <section id="param_mediaproxy_socket" xreflabel="mediaproxy_socket">
     <title><varname>mediaproxy_socket</varname> (string)</title>
       <para>
         It is the path to the filesystem socket where the mediaproxy dispatcher
@@ -187,7 +187,7 @@ modparam("mediaproxy", "mediaproxy_socket", "/var/run/mediaproxy/dispatcher.sock
       </example>
     </section>
 
-    <section>
+    <section id="param_mediaproxy_timeout" xreflabel="mediaproxy_timeout">
     <title><varname>mediaproxy_timeout</varname> (int)</title>
       <para>
         How much time (in milliseconds) to wait for an answer from the
@@ -210,7 +210,7 @@ modparam("mediaproxy", "mediaproxy_timeout", 500)
       </example>
     </section>
 
-    <section>
+    <section id="param_signaling_ip_avp" xreflabel="signaling_ip_avp">
     <title><varname>signaling_ip_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds the IP address from where
@@ -244,7 +244,7 @@ modparam("mediaproxy", "signaling_ip_avp", "$avp(nat_ip)")
       </example>
     </section>
 
-    <section>
+    <section id="param_media_relay_avp" xreflabel="media_relay_avp">
     <title><varname>media_relay_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds an optional application
@@ -271,7 +271,7 @@ modparam("mediaproxy", "media_relay_avp", "$avp(media_relay)")
       </example>
     </section>
     
-    <section>
+    <section id="param_ice_candidate" xreflabel="ice_candidate">
     <title><varname>ice_candidate</varname> (string)</title>
       <para>
         Indicates the type of ICE candidate that will be added to the SDP. 
@@ -297,7 +297,7 @@ modparam("mediaproxy", "ice_candidate", "low-priority")
       </example>
     </section>
     
-    <section>
+    <section id="param_ice_candidate_avp" xreflabel="ice_candidate_avp">
     <title><varname>ice_candidate_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds the ICE candidate that will be 

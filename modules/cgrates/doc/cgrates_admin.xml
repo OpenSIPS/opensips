@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		<ulink url='http://www.cgrates.org/'><emphasis>CGRateS</emphasis></ulink>
@@ -167,7 +167,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -199,9 +199,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_cgrates_engine" xreflabel="cgrates_engine">
 		<title><varname>cgrates_engine</varname> (string)</title>
 		<para>
 			This parameter is used to specify a CGRateS engine connection.
@@ -227,7 +227,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bind_ip" xreflabel="bind_ip">
 		<title><varname>bind_ip</varname> (string)</title>
 		<para>
 			IP used to bind the socket that communicates with the
@@ -250,7 +250,7 @@ modparam("cgrates", "bind_ip", "10.0.0.100")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_max_async_connections" xreflabel="max_async_connections">
 		<title><varname>max_async_connections</varname> (integer)</title>
 		<para>
 			The maximum number of simultaneous asynchronous connections
@@ -270,7 +270,7 @@ modparam("cgrates", "max_async_connections", 20)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_retry_timeout" xreflabel="retry_timeout">
 		<title><varname>retry_timeout</varname> (integer)</title>
 		<para>
 			The number of seconds after which a disabled connection/engine
@@ -290,7 +290,7 @@ modparam("cgrates", "retry_timeout", 120)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_compat_mode" xreflabel="compat_mode">
 		<title><varname>compat_mode</varname> (integer)</title>
 		<para>
 			Indicates whether OpenSIPS should use the old (compat_mode)

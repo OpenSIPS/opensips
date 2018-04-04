@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <emphasis>event_flatstore</emphasis>
@@ -33,7 +33,7 @@
 		</itemizedlist>
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -63,9 +63,9 @@
 			</itemizedlist>
 		</para>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_max_open_sockets" xreflabel="max_open_sockets">
 		<title><varname>max_open_sockets</varname> (integer)</title>
 		<para>
 			Defines the maximum number of simultaneously opened files by the
@@ -87,7 +87,7 @@ modparam("event_flatstore", "max_open_sockets", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_delimiter" xreflabel="delimiter">
 		<title><varname>delimiter</varname> (string)</title>
 		<para>
 			Sets the separator between the parameters of the event in the logging file.
@@ -106,7 +106,7 @@ modparam("event_flatstore", "delimiter", ";")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_file_permissions" xreflabel="file_permissions">
 		<title><varname>file_permissions</varname> (string)</title>
 		<para>
 			Sets the permissions for the newly created logs. It

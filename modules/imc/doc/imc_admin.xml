@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module offers support for instant message conference. It
@@ -24,7 +24,7 @@
 	messages and commands.
 	</para>
 	</section>
-		<section>
+		<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -60,9 +60,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
 		The database url.
@@ -81,7 +81,7 @@ modparam("imc", "db_url", "&exampledb;")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_rooms_table" xreflabel="rooms_table">
 		<title><varname>rooms_table</varname> (str)</title>
 		<para>
 		The name of the table storing IMC rooms.
@@ -100,7 +100,7 @@ modparam("imc", "rooms_table", "rooms")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_members_table" xreflabel="members_table">
 		<title><varname>members_table</varname> (str)</title>
 		<para>
 		The name of the table storing IMC members.
@@ -119,7 +119,7 @@ modparam("imc", "rooms_table", "members")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The power of 2 to get the size of the hash table used for storing
@@ -139,7 +139,7 @@ modparam("imc", "hash_size", 8)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_imc_cmd_start_char" xreflabel="imc_cmd_start_char">
 		<title><varname>imc_cmd_start_char</varname> (str)</title>
 		<para>
 	The character which indicates that the body of the message is a command.
@@ -158,7 +158,7 @@ modparam("imc", "imc_cmd_start_char", "#")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_outbound_proxy" xreflabel="outbound_proxy">
 		<title><varname>outbound_proxy</varname> (str)</title>
 		<para>
 	   The SIP address used as next hop when sending the message. Very

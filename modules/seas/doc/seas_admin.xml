@@ -72,7 +72,7 @@
         message is relaied to it.</para>
       </section>
 
-      <section>
+      <section id="dependencies" xreflabel="Dependencies">
         <title>Dependencies</title>
 
         <section>
@@ -94,10 +94,10 @@
         </section>
       </section>
 
-      <section>
+      <section id="exported_parameters" xreflabel="Exported Parameters">
         <title>Exported Parameters</title>
 
-        <section>
+        <section id="param_listen_sockets" xreflabel="listen_sockets">
           <title><varname>listen_sockets</varname> (string)</title>
 
           <para>The listen_sockets string tells SEAS where to listen for

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		<acronym>TM</acronym> module enables stateful processing of SIP 
@@ -131,12 +131,12 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis role='bold'>fr_timeout</emphasis> - used when no response was
+				<emphasis role='bold'><xref linkend="param_fr_timeout"/></emphasis> - used when no response was
 				received yet. If there is no response after
-				<emphasis>fr_timeout</emphasis> seconds, the timer triggers
+				<emphasis><xref linkend="param_fr_timeout"/></emphasis> seconds, the timer triggers
 				(and failure route will be executed if t_on_failure() was
 				called). For INVITE transactions, if a provisional response was
-				received, the timeout is reset to <emphasis>fr_inv_timeout</emphasis>
+				received, the timeout is reset to <emphasis><xref linkend="param_fr_inv_timeout"/></emphasis>
 				seconds and RT_T2 for all other transactions. Once a final response
 				is received, the transaction has finished.
 			</para>
@@ -152,7 +152,7 @@
 		<para>
 		For example: You want to have failover if there is no provisional 
 		response after 3 seconds, but you want to ring for 60 seconds. 
-		Thus, set the <emphasis>fr_timeout</emphasis> to 3 and 
+		Thus, set the <emphasis><xref linkend="param_fr_timeout"/></emphasis> to 3 and 
 		<emphasis>fr_inv_timeout</emphasis> to 60.
 		</para>
 	</section>
@@ -213,7 +213,7 @@
 		<para>
 		Setting up an anycast scenario is very simple: all the instances
 		that are part of an anycast secnario must be set up in a cluster
-		(more info at the <xref linkend="tm_replication_cluster"/> param).
+		(more info at the <xref linkend="param_tm_replication_cluster"/> param).
 		When a transaction is created, a special identifier is appended to
 		the branch parameter, namely the instance that created the
 		transaction. When a reply comes in, the transaction module checks who
@@ -256,7 +256,7 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -266,7 +266,7 @@
 			<listitem>
 			<para>
 				<emphasis>clusterer</emphasis> module, if the anycast
-				scenario is enabled (see <xref linkend="tm_replication_cluster"/>
+				scenario is enabled (see <xref linkend="param_tm_replication_cluster"/>
 				param for more information).
 			</para>
 			</listitem>
@@ -289,9 +289,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section id='fr_timeout' xreflabel='fr_timeout'>
+	<section id="param_fr_timeout" xreflabel="fr_timeout">
 		<title><varname>fr_timeout</varname> (integer)</title>
 		<para>
 		Timeout which is triggered if no final reply for a request or ACK for a 
@@ -312,14 +312,15 @@ modparam("tm", "fr_timeout", 10)
 		</example>
 	</section>
 
-	<section id='fr_inv_timeout' xreflabel='fr_inv_timeout'>
+	<section id="param_fr_inv_timeout" xreflabel="fr_inv_timeout">
 		<title><varname>fr_inv_timeout</varname> (integer)</title>
 		<para>
 		Timeout which is triggered if no final reply for an INVITE arrives after a 
 		provisional message was received (in seconds). This timeout starts
 		counting down once the first provisional response is received. Thus,
 		fast failover (no 100 trying from gateway) can be achieved by setting
-		<emphasis> fr_timeout</emphasis> to low values. See example below.
+		<emphasis><xref linkend="param_fr_timeout"/></emphasis> to low values.
+		See example below.
 		</para>
 		<para>
 		<emphasis>
@@ -336,7 +337,7 @@ modparam("tm", "fr_inv_timeout", 200)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_wt_timer" xreflabel="wt_timer">
 		<title><varname>wt_timer</varname> (integer)</title>
 		<para>
 		Time for which a transaction stays in memory to absorb delayed 
@@ -366,7 +367,7 @@ modparam("tm", "wt_timer", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_delete_timer" xreflabel="delete_timer">
 		<title><varname>delete_timer</varname> (integer)</title>
 		<para>
 		Time after which a to-be-deleted transaction currently ref-ed by a
@@ -387,7 +388,7 @@ modparam("tm", "delete_timer", 5)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_T1_timer" xreflabel="T1_timer">
 		<title><varname>T1_timer</varname> (integer)</title>
 		<para>
 		Retransmission T1 period, in milliseconds.
@@ -407,7 +408,7 @@ modparam("tm", "T1_timer", 700)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_T2_timer" xreflabel="T2_timer">
 		<title><varname>T2_timer</varname> (integer)</title>
 		<para>
 		Maximum retransmission period, in milliseconds.
@@ -427,7 +428,7 @@ modparam("tm", "T2_timer", 8000)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ruri_matching" xreflabel="ruri_matching">
 		<title><varname>ruri_matching</varname> (integer)</title>
 		<para>
 		Should be request-uri matching used as a part of pre-3261 transaction
@@ -450,7 +451,7 @@ modparam("tm", "ruri_matching", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_via1_matching" xreflabel="via1_matching">
 		<title><varname>via1_matching</varname> (integer)</title>
 		<para>
 		Should be top most VIA matching used as a part of pre-3261 transaction
@@ -473,7 +474,7 @@ modparam("tm", "via1_matching", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_unix_tx_timeout" xreflabel="unix_tx_timeout">
 		<title><varname>unix_tx_timeout</varname> (integer)</title>
 		<para>
 		Send timeout to be used by function which use UNIX sockets 
@@ -494,12 +495,12 @@ modparam("tm", "unix_tx_timeout", 5)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_restart_fr_on_each_reply" xreflabel="restart_fr_on_each_reply">
 		<title><varname>restart_fr_on_each_reply</varname> (integer)</title>
 		<para>
 		If true (non null value), the final response timer will be re-triggered
 		for each received provisional reply. In this case, final response
-		timeout may occur after a time longer than <emphasis>fr_inv_timeout</emphasis>
+		timeout may occur after a time longer than <emphasis><xref linkend="param_fr_inv_timeout"/></emphasis>
 		(if UAS keeps sending provisional replies)
 		</para>
 		<para>
@@ -517,7 +518,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_tw_append" xreflabel="tw_append">
 		<title><varname>tw_append</varname> (string)</title>
 		<para>
 		List of additional information to be appended by t_write_req and
@@ -558,7 +559,7 @@ modparam("tm", "tw_append",
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pass_provisional_replies" xreflabel="pass_provisional_replies">
 		<title><varname>pass_provisional_replies</varname> (integer)</title>
 		<para>
 		Enable/disable passing of provisional replies to FIFO applications.
@@ -578,7 +579,7 @@ modparam("tm", "pass_provisional_replies", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_syn_branch" xreflabel="syn_branch">
 		<title><varname>syn_branch</varname> (integer)</title>
 		<para>
 		Enable/disable the usage of stateful synonym branch IDs in the 
@@ -599,7 +600,7 @@ modparam("tm", "syn_branch", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_onreply_avp_mode" xreflabel="onreply_avp_mode">
 		<title><varname>onreply_avp_mode</varname> (integer)</title>
 		<para>
 		Describes how the AVPs should be handled in reply route:
@@ -638,7 +639,7 @@ modparam("tm", "onreply_avp_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_disable_6xx_block" xreflabel="disable_6xx_block">
 		<title><varname>disable_6xx_block</varname> (integer)</title>
 		<para>
 		Tells how the 6xx replies should be internally handled:
@@ -671,7 +672,7 @@ modparam("tm", "disable_6xx_block", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_enable_stats" xreflabel="enable_stats">
 		<title><varname>enable_stats</varname> (integer)</title>
 		<para>
 		Enables statistics support in TM module - If enabled, the TM module
@@ -693,7 +694,7 @@ modparam("tm", "enable_stats", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_minor_branch_flag" xreflabel="minor_branch_flag">
 		<title><varname>minor_branch_flag</varname> (string/integer)</title>
 		<para>
 		A branch flag index to be used in script to mark the minor branches 
@@ -726,7 +727,7 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timer_partitions" xreflabel="timer_partitions">
 		<title><varname>timer_partitions</varname> (integer)</title>
 		<para>
 		The number of partitions for the internal TM timers (retransmissions,
@@ -753,7 +754,7 @@ modparam("tm", "timer_partitions", 2)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_auto_100trying" xreflabel="auto_100trying">
 		<title><varname>auto_100trying</varname> (integer)</title>
 		<para>
 		This parameter controls if the TM module should automatically 
@@ -780,7 +781,7 @@ modparam("tm", "auto_100trying", 0)
 		</example>
 	</section>
 
-	<section id="tm_replication_cluster" xreflabel='tm_replication_cluster'>
+	<section id="param_tm_replication_cluster" xreflabel="tm_replication_cluster">
 		<title><varname>tm_replication_cluster</varname> (integer)</title>
 		<para>
 		This parameter should be used in an anycast setup, and specifies
@@ -805,7 +806,7 @@ modparam("tm", "tm_replication_cluster", 1)
 		</example>
 	</section>
 
-	<section id="tm_cluster_param" xreflabel='tm_cluster_param'>
+	<section id="param_cluster_param" xreflabel="cluster_param">
 		<title><varname>cluster_param</varname> (string)</title>
 		<para>
 		This parameter should be used in an anycast setup, and specifies
@@ -830,7 +831,7 @@ modparam("tm", "cluster_param", "tid")
 		</example>
 	</section>
 
-	<section id="tm_cluster_auto_cancel" xreflabel='tm_cluster_auto_cancel'>
+	<section id="param_cluster_auto_cancel" xreflabel="cluster_auto_cancel">
 		<title><varname>cluster_auto_cancel</varname> (boolean)</title>
 		<para>
 		This parameter should be used in an anycast setup, and specifies
@@ -1859,11 +1860,11 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			With each different
 			request received, <emphasis>$T_fr_timeout</emphasis> will initially
 			be equal to the
-			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis> parameter.
+			<emphasis role='bold'><xref linkend="param_fr_timeout"/></emphasis> parameter.
 			</para>
 			<para>
 			<emphasis>"$T_fr_timeout = NULL;"</emphasis> will reset it to
-			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis>.
+			<emphasis role='bold'><xref linkend="param_fr_timeout"/></emphasis>.
 			</para>
 		</section>
 		<section>
@@ -1877,11 +1878,11 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			With each different request received,
 			<emphasis>$T_fr_inv_timeout</emphasis> will initially be equal to the
 			<emphasis role='bold'>
-			<xref linkend="fr_inv_timeout"/></emphasis> parameter.
+			<xref linkend="param_fr_inv_timeout"/></emphasis> parameter.
 			</para>
 			<para>
 			<emphasis>"$T_fr_inv_timeout = NULL;"</emphasis> will reset it to
-			<emphasis role='bold'><xref linkend="fr_inv_timeout"/></emphasis>.
+			<emphasis role='bold'><xref linkend="param_fr_inv_timeout"/></emphasis>.
 			</para>
 		</section>
 		<section>

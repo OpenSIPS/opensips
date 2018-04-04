@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section id="sec-overview">
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The <emphasis>rest_client</emphasis> module provides a means of interacting
@@ -12,7 +12,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -44,9 +44,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-	<section>
+	<section id="param_connection_timeout" xreflabel="connection_timeout">
 		<title><varname>connection_timeout</varname> (integer)</title>
 		<para>
 		Maximum time allowed to establish a connection with the server.
@@ -66,7 +66,7 @@ modparam("rest_client", "connection_timeout", 300)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_connect_poll_interval" xreflabel="connect_poll_interval">
 		<title><varname>connect_poll_interval</varname> (integer)</title>
 		<para>
 		Allows complete control over how quickly we want to detect libcurl's completed
@@ -88,7 +88,7 @@ modparam("rest_client", "connect_poll_interval", 2)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_max_async_transfers" xreflabel="max_async_transfers">
 		<title><varname>max_async_transfers</varname> (integer)</title>
 		<para>
 		Maximum number of asynchronous HTTP transfers <emphasis>a single</emphasis>
@@ -111,7 +111,7 @@ modparam("rest_client", "max_async_transfers", 300)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_curl_timeout" xreflabel="curl_timeout">
 		<title><varname>curl_timeout</varname> (integer)</title>
 		<para>
 		Maximum time allowed for the libcurl transfer to complete.
@@ -131,7 +131,7 @@ modparam("rest_client", "curl_timeout", 300)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ssl_verifypeer" xreflabel="ssl_verifypeer">
 		<title><varname>ssl_verifypeer</varname> (integer)</title>
 		<para>
 		Set this to 0 in order to disable the verification of the remote peer's
@@ -153,7 +153,7 @@ modparam("rest_client", "ssl_verifypeer", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ssl_verifyhost" xreflabel="ssl_verifyhost">
 		<title><varname>ssl_verifyhost</varname> (integer)</title>
 		<para>
 		Set this to 0 in order to disable the verification that the remote peer
@@ -174,7 +174,7 @@ modparam("rest_client", "ssl_verifyhost", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ssl_capath" xreflabel="ssl_capath">
 		<title><varname>ssl_capath</varname> (integer)</title>
 		<para>
 		An optional path for CA certificates to be used for host verifications.

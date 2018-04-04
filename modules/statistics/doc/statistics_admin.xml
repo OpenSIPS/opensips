@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <acronym>Statistics</acronym> module is a wrapper over the internal
@@ -26,7 +26,7 @@
 		separator (e.g. <emphasis role='bold'>$stat(method:invite)</emphasis> or
 <emphasis role='bold'>update_stat("packets:$var(ptype)", "+1")</emphasis>).
 		In order for this to work, the groups must be defined prior to OpenSIPS startup
-		using the <emphasis role='bold'><xref linkend="modparam-stat-groups"/></emphasis>
+		using the <emphasis role='bold'><xref linkend="param_stat_groups"/></emphasis>
 		module parameter.
 	</para>
 	<para>
@@ -41,7 +41,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -72,9 +72,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_variable" xreflabel="variable">
 		<title><varname>variable</varname> (string)</title>
 		<para>
 		Name of a new statistic variable. The name may be followed by additional
@@ -95,7 +95,7 @@ modparam("statistics", "variable", "active_calls/no_reset")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-stat-groups" xreflabel="stat_groups">
+	<section id="param_stat_groups" xreflabel="stat_groups">
 		<title><varname>stat_groups</varname> (string)</title>
 		<para>
 		A comma-separated values string, specifying the statistic groups that

@@ -4,7 +4,7 @@
   
   <title>&adminguide;</title>
   
-  <section>
+  <section id="overview" xreflabel="Overview">
   <title>Overview</title>
     <para>
       The nat_traversal module provides support for handling far-end NAT
@@ -304,7 +304,7 @@
     </section>
   </section>
 
-  <section>
+  <section id="dependencies" xreflabel="Dependencies">
   <title>Dependencies</title>
     <section>
     <title>&osips; Modules</title>
@@ -346,7 +346,7 @@
   
   <section>
   <title>Exported parameters</title>
-    <section>
+    <section id="param_keepalive_interval" xreflabel="keepalive_interval">
     <title><varname>keepalive_interval</varname> (integer)</title>
       <para>
         The time interval (in seconds) required to send a keepalive message to
@@ -369,7 +369,7 @@ modparam("nat_traversal", "keepalive_interval", 90)
       </example>
     </section>
   
-    <section>
+    <section id="param_keepalive_method" xreflabel="keepalive_method">
     <title><varname>keepalive_method</varname> (string)</title>
       <para>
         What SIP method to use to send keepalive messages. Typical methods
@@ -406,7 +406,7 @@ modparam("nat_traversal", "keepalive_method", "OPTIONS")
       </example>
     </section>
   
-    <section>
+    <section id="param_keepalive_from" xreflabel="keepalive_from">
     <title><varname>keepalive_from</varname> (string)</title>
       <para>
         Indicates what SIP URI to use in the From header of the keepalive
@@ -431,7 +431,7 @@ modparam("nat_traversal", "keepalive_from", "sip:keepalive@my-domain.com")
       </example>
     </section>
   
-    <section>
+    <section id="param_keepalive_extra_headers" xreflabel="keepalive_extra_headers">
     <title><varname>keepalive_extra_headers</varname> (string)</title>
       <para>
         Specifies extra headers that should be added to the keepalive messages
@@ -454,7 +454,7 @@ modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSIPS\r\nX-
       </example>
     </section>
   
-    <section>
+    <section id="param_keepalive_state_file" xreflabel="keepalive_state_file">
     <title><varname>keepalive_state_file</varname> (string)</title>
       <para>
         Specifies a filename where information about the NAT endpoints and the

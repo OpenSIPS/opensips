@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <emphasis role='bold'>proto_hep</emphasis> module is a
@@ -31,7 +31,7 @@ listen = hep_udp:127.0.0.1:6061 		# change the listening IP
 	</para>
 	</para>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -63,11 +63,11 @@ listen = hep_udp:127.0.0.1:6061 		# change the listening IP
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
 
-	<section>
+	<section id="param_hep_id" xreflabel="hep_id">
 		<title><varname>hep_id</varname> (str)</title>
 		<para>
 			Specify a destination for HEP packets and the version of
@@ -108,7 +108,7 @@ modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
 	</example>
 	</section>
 
-	<section>
+	<section id="param_homer5_on" xreflabel="homer5_on">
 		<title><varname>homer5_on</varname> (int) </title>
 		<para>
 			Specify how the data should be encapsulated, as plain text
@@ -128,7 +128,7 @@ modparam("proto_hep", "homer5_on", 0)
 	</example>
 	</section>
 
-	<section>
+	<section id="param_homer5_delim" xreflabel="homer5_delim">
 		<title><varname>homer5_delim</varname> (str) </title>
 		<para>
 			In case <emphasis role="bold">homer5_on</emphasis> is set
@@ -146,7 +146,7 @@ modparam("proto_hep", "homer5_delim", "##")
 	</example>
 	</section>
 
-	<section>
+	<section id="param_hep_port" xreflabel="hep_port">
 		<title><varname>hep_port</varname> (integer)</title>
 		<para>
 			The default port to be used by all TCP/UDP listeners.
@@ -166,7 +166,7 @@ modparam("proto_hep", "hep_port", 6666)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_hep_send_timeout" xreflabel="hep_send_timeout">
 		<title><varname>hep_send_timeout</varname> (integer)</title>
 		<para>
 		Time in milliseconds after a TCP connection will be closed if it is
@@ -187,7 +187,7 @@ modparam("proto_hep", "hep_send_timeout", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_hep_max_msg_chunks" xreflabel="hep_max_msg_chunks">
 		<title><varname>hep_max_msg_chunks</varname> (integer)</title>
 		<para>
 			The maximum number of chunks in which a HEP message is expected to
@@ -211,7 +211,7 @@ modparam("proto_hep", "hep_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_hep_async" xreflabel="hep_async">
 		<title><varname>hep_async</varname> (integer)</title>
 		<para>
 			Specifies whether the TCP connect and write operations should be
@@ -233,7 +233,7 @@ modparam("proto_hep", "hep_async", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_hep_async_max_postponed_chunks" xreflabel="hep_async_max_postponed_chunks">
 		<title><varname>hep_async_max_postponed_chunks</varname> (integer)</title>
 		<para>
 			If <emphasis>hep_async</emphasis> is enabled, this specifies the
@@ -256,7 +256,7 @@ modparam("proto_hep", "hep_async_max_postponed_chunks", 16)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_hep_capture_id" xreflabel="hep_capture_id">
 		<title><varname>hep_capture_id</varname> (integer)</title>
 		<para>
 			The parameter indicate the capture agent ID for HEPv2/v3 protocol.
@@ -277,7 +277,7 @@ modparam("proto_hep", "hep_capture_id", 234)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_hep_async_local_connect_timeout" xreflabel="hep_async_local_connect_timeout">
 		<title><varname>hep_async_local_connect_timeout</varname> (integer)</title>
 		<para>
 			If <emphasis>hep_async</emphasis> is enabled, this specifies the
@@ -300,7 +300,7 @@ modparam("proto_hep", "hep_async_local_connect_timeout", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_hep_async_local_write_timeout" xreflabel="hep_async_local_write_timeout">
 		<title><varname>hep_async_local_write_timeout</varname> (integer)</title>
 		<para>
 			If <emphasis>hep_async</emphasis> is enabled, this specifies the

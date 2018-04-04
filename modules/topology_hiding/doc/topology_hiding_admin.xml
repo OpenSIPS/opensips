@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which provides topology hiding capabilities.
@@ -13,7 +13,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -50,9 +50,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_th_callid_passwd" xreflabel="th_callid_passwd">
 		<title><varname>th_callid_passwd</varname> (string)</title>
 		<para>
 			The string password that will be used for encoding/decoding the callid in case of topology_hiding with callid mangling.
@@ -72,7 +72,7 @@ modparam("topology_hiding", "th_callid_passwd", "my_topo_hiding_secret")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_th_callid_prefix" xreflabel="th_callid_prefix">
 		<title><varname>th_callid_prefix</varname> (string)</title>
 		<para>
 			The prefix that will be used for detecting callids which have been encoded by the dialog topology hiding. Make sure to change this value in case your SIP path contains multiple OpenSIPS boxes with topology hiding.
@@ -92,7 +92,7 @@ modparam("topology_hiding", "th_callid_prefix", "MYCALLIDPREFIX_")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_th_passed_contact_uri_params" xreflabel="th_passed_contact_uri_params">
 		<title><varname>th_passed_contact_uri_params</varname> (string)</title>
 		<para>
 			List of semicolon-separated Contact URI parameters that will be passed from one side to the other for topology hiding calls. To be used when end-to-end functionality uses such Contact URI parameters. 
@@ -112,7 +112,7 @@ modparam("topology_hiding", "th_passed_contact_uri_params", "paramname1;myparam;
 		</example>
 	</section>
 
-	<section>
+	<section id="param_th_passed_contact_params" xreflabel="th_passed_contact_params">
 		<title><varname>th_passed_contact_params</varname> (string)</title>
 		<para>
 			List of semicolon-separated Contact header parameters that will be passed from one side to the other for topology hiding calls. To be used when end-to-end functionality uses such Contact header parameters. 
@@ -132,7 +132,7 @@ modparam("topology_hiding", "th_passed_contact_params", "paramname1;myparam;cust
 		</example>
 	</section>
 
-	<section>
+	<section id="param_force_dialog" xreflabel="force_dialog">
 		<title><varname>force_dialog</varname> (int)</title>
 		<para>
 			If set to 1, the module will internally create the dialog ( if not already created ). This will only work for INVITE based dialogs, and the dialog module must be loaded.
@@ -152,7 +152,7 @@ modparam("topology_hiding", "force_dialog", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_th_contact_encode_passwd" xreflabel="th_contact_encode_passwd">
 		<title><varname>th_contact_encode_passwd</varname> (string)</title>
 		<para>
 			When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. The parameter configures the string password that will be used for encoding/decoding that specific param .
@@ -172,7 +172,7 @@ modparam("topology_hiding", "th_contact_encode_passwd", "my_topoh_passwd")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_th_contact_encode_param" xreflabel="th_contact_encode_param">
 		<title><varname>th_contact_encode_param</varname> (string)</title>
 		<para>
 			When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. The parameter configures the respective parameter name.

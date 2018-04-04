@@ -3,7 +3,7 @@
 <chapter>
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> This module introduces a new type of variable that provides both
 	serialization and de-serialization from JSON format.
@@ -29,7 +29,7 @@
 	
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -53,7 +53,7 @@
 		</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	
 		<para>

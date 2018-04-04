@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The module implements a simplified database engine based on text
@@ -198,7 +198,7 @@ suser:supasswd:xxx:alpha.org:xxx
 		</para>
 		</section>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 		<section>
 			<title>&osips; modules</title>
@@ -228,12 +228,12 @@ suser:supasswd:xxx:alpha.org:xxx
 		</para>
 		</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 		<para>
 			<emphasis>None</emphasis>.
 		</para>
-		<section>
+		<section id="param_db_mode" xreflabel="db_mode">
 			<title><varname>db_mode</varname> (integer)</title>
 		<para>
 		Set caching mode (0) or non-caching mode (1). In caching mode, data
@@ -264,7 +264,7 @@ modparam("db_text", "db_mode", 1)
 	</section>
 	<section>
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="param_dbt_dump" xreflabel="dbt_dump">
 		<title><varname>dbt_dump</varname></title>
 		<para>
 			Write back to hard drive modified tables.
@@ -281,7 +281,7 @@ modparam("db_text", "db_mode", 1)
 _empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="param_dbt_reload" xreflabel="dbt_reload">
 		<title><varname>dbt_reload</varname></title>
 		<para>
 			Causes db_text module to reload cached tables from disk.

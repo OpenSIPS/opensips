@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module can be used to efficiently run Python code directly from
@@ -125,7 +125,7 @@
 	</section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -156,9 +156,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_script_name" xreflabel="script_name">
 		<title><varname>script_name</varname> (string)</title>
 		<para>
 		The script that contains the Python module.
@@ -177,7 +177,7 @@ modparam("python", "script_name", "/usr/local/bin/opensips_handler.py")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_mod_init_function" xreflabel="mod_init_function">
 		<title><varname>mod_init_function</varname> (string)</title>
 		<para>
 		The method used to initialize the Python module and return the object.
@@ -196,7 +196,7 @@ modparam("python", "mod_init_function", "module_initializer")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_child_init_method" xreflabel="child_init_method">
 		<title><varname>child_init_method</varname> (string)</title>
 		<para>
 		The method called for each child process.

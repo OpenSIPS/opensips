@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The WebSocket protocol (<ulink url='http://tools.ietf.org/html/rfc6455'>RFC 6455</ulink>)
@@ -60,7 +60,7 @@ listen=ws:127.0.0.1:5060	# change with the listening IP and port
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -92,9 +92,9 @@ listen=ws:127.0.0.1:5060	# change with the listening IP and port
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_ws_port" xreflabel="ws_port">
 		<title><varname>ws_port</varname> (integer)</title>
 		<para>
 		The default port to be used for all WS related operation. Be careful
@@ -121,7 +121,7 @@ modparam("proto_ws", "ws_port", 8080)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ws_send_timeout" xreflabel="ws_send_timeout">
 		<title><varname>ws_send_timeout</varname> (integer)</title>
 		<para>
 		Time in milliseconds after a WebSocket connection will be closed if it is
@@ -142,7 +142,7 @@ modparam("proto_ws", "ws_send_timeout", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_ws_max_msg_chunks" xreflabel="ws_max_msg_chunks">
 		<title><varname>ws_max_msg_chunks</varname> (integer)</title>
 		<para>
 			The maximum number of chunks in which a SIP message is expected to
@@ -166,7 +166,7 @@ modparam("proto_ws", "ws_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
-	<section id="trace-destination">
+	<section id="param_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -199,11 +199,11 @@ modparam("proto_ws", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
-	<section id="trace-on">
+	<section id="param_trace_on" xreflabel="trace_on">
 		<title><varname>trace_on</varname> (int)</title>
 		<para>
 			This controls whether tracing for ws is on or not. You still need to define
-			<xref linkend="trace-destination"/>in order to work, but this value will be
+			<xref linkend="param_trace_destination"/>in order to work, but this value will be
 			controlled using mi function <xref linkend="ws-trace"/>.
 		</para>
 		<emphasis>
@@ -219,7 +219,7 @@ modparam("proto_ws", "trace_on", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_filter_route" xreflabel="trace_filter_route">
 		<title><varname>trace_filter_route</varname> (string)</title>
 		<para>
 			Define the name of a route in which you can filter which connections will
@@ -228,7 +228,7 @@ modparam("proto_ws", "trace_on", 1)
 			connection. To disable tracing for a specific connection the last call in
 			this route must be <emphasis role="bold">drop</emphasis>, any other exit
 			mode resulting in tracing the current connection ( of course you still
-			have to define a <xref linkend="trace-destination"/> and trace must be
+			have to define a <xref linkend="param_trace_destination"/> and trace must be
 			on at the time this connection is opened.
 		</para>
 
@@ -246,7 +246,7 @@ modparam("proto_ws", "trace_on", 1)
 		</para>
 
 		<para>
-			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="trace-on"/> is
+			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="param_trace_on"/> is
 			set to 0 or tracing is deactived via the mi command <xref linkend="ws-trace"/>
 			this route won't be called.
 		</para>

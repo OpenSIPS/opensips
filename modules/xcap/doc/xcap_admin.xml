@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> 
         The module contains several parameters and functions common to all
@@ -15,7 +15,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -47,9 +47,9 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname>(str)</title>
 		<para>
 		The database url.
@@ -67,7 +67,7 @@ modparam("xcap", "db_url", "&exampledb;")
                 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_xcap_table" xreflabel="xcap_table">
 		<title><varname>xcap_table</varname>(str)</title>
 		<para>
 		The name of the db table where XCAP documents are stored.
@@ -85,7 +85,7 @@ modparam("xcap", "xcap_table", "xcap")
                 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_integrated_xcap_server" xreflabel="integrated_xcap_server">
 		<title><varname>integrated_xcap_server</varname> (int)</title>
 		<para>
 		This parameter is a flag for the type of XCAP server or servers 

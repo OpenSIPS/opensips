@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is used by &osips; to communicate with RTPProxy, a media
@@ -150,7 +150,7 @@
 	</section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -191,9 +191,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_rtpproxy_sock" xreflabel="rtpproxy_sock">
 		<title><varname>rtpproxy_sock</varname> (string)</title>
 		<para>
 		Definition of socket(s) used to connect to (a set) RTPProxy. It may 
@@ -222,7 +222,7 @@ modparam("rtpproxy", "rtpproxy_sock",
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_rtpproxy_disable_tout" xreflabel="rtpproxy_disable_tout">
 		<title><varname>rtpproxy_disable_tout</varname> (integer)</title>
 		<para>
 		Once RTPProxy was found unreachable and marked as disable, rtpproxy
@@ -243,7 +243,7 @@ modparam("rtpproxy", "rtpproxy_disable_tout", 20)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_rtpproxy_timeout" xreflabel="rtpproxy_timeout">
 		<title><varname>rtpproxy_timeout</varname> (string)</title>
 		<para>
 		Timeout value in waiting for reply from RTPProxy.
@@ -262,7 +262,7 @@ modparam("rtpproxy", "rtpproxy_timeout", "0.2")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_rtpproxy_autobridge" xreflabel="rtpproxy_autobridge">
 		<title><varname>rtpproxy_autobridge</varname> (integer)</title>
 		<para>
 		Enable auto-bridging feature. Does not properly function when doing serial/parallel forking!
@@ -281,13 +281,13 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_rtpproxy_tout" xreflabel="rtpproxy_tout">
 		<title><varname>rtpproxy_tout</varname> (integer)</title>
 		<para>
 		Obsolete. see rtpproxy_timeout.
 		</para>
 	</section>
-	<section>
+	<section id="param_rtpproxy_retr" xreflabel="rtpproxy_retr">
 		<title><varname>rtpproxy_retr</varname> (integer)</title>
 		<para>
 		How many times rtpproxy should retry to send and receive after
@@ -308,7 +308,7 @@ modparam("rtpproxy", "rtpproxy_retr", 2)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_default_set" xreflabel="default_set">
 		<title><varname>default_set</varname> (integer)</title>
 		<para>
 			The parameter indicates the default RTPProxy set to be used when
@@ -330,7 +330,7 @@ modparam("rtpproxy", "default_set", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_nortpproxy_str" xreflabel="nortpproxy_str">
 		<title><varname>nortpproxy_str</varname> (string)</title>
 		<para>
 		The parameter sets the SDP attribute used by rtpproxy to mark
@@ -357,7 +357,7 @@ modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 			The database url. This parameter should be set if you want to 
@@ -386,7 +386,7 @@ modparam("rtpproxy", "db_url",
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (string)</title>
 		<para>
 			The name of the database table containing definitions of
@@ -409,7 +409,7 @@ modparam("rtpproxy", "db_table", "nh_sockets")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rtpp_socket_col" xreflabel="rtpp_socket_col">
 		<title><varname>rtpp_socket_col</varname> (string)</title>
 		<para>
 			The name rtpp socket column in the database table.
@@ -431,7 +431,7 @@ modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_set_id_col" xreflabel="set_id_col">
 		<title><varname>set_id_col</varname> (string)</title>
 		<para>
 			The name set id column in the database table.
@@ -453,7 +453,7 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rtpp_notify_socket" xreflabel="rtpp_notify_socket">
 		<title><varname>rtpp_notify_socket</varname> (string)</title>
 		<para>
 			The socket used by &osips; to receive timeout notifications.
@@ -1128,7 +1128,7 @@ $ opensipsctl fifo rtpproxy_reload
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	</section>
+</section>
 
 </chapter>
 

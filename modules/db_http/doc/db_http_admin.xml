@@ -3,7 +3,7 @@
 <chapter>
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> This module provides access to a database that is implemented
 	as a HTTP server. It may be used in special cases where traversing
@@ -43,7 +43,7 @@ modparam("presence", "db_url","http://user:pass@www.some.com/some/some")
 
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -65,9 +65,9 @@ modparam("presence", "db_url","http://user:pass@www.some.com/some/some")
 		</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_SSL" xreflabel="SSL">
 		<title><varname>SSL</varname>(int)</title>
 		<para>
 		Whether or not to use SSL.
@@ -88,7 +88,7 @@ modparam("db_http", "SSL",1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_cap_raw_query" xreflabel="cap_raw_query">
 		<title><varname>cap_raw_query</varname>(int)</title>
 		<para>
 		Whether or not the server supports raw queries.
@@ -106,7 +106,7 @@ modparam("db_http", "cap_raw_query", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_cap_replace" xreflabel="cap_replace">
 		<title><varname>cap_replace</varname>(int)</title>
 		<para>
 		Whether or not the server supports replace capabilities.
@@ -124,7 +124,7 @@ modparam("db_http", "cap_replace", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_cap_insert_update" xreflabel="cap_insert_update">
 		<title><varname>cap_insert_update</varname>(int)</title>
 		<para>
 		Whether or not the server supports insert_update capabilities.
@@ -142,7 +142,7 @@ modparam("db_http", "cap_insert_update", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_cap_last_inserted_id" xreflabel="cap_last_inserted_id">
 		<title><varname>cap_last_inserted_id</varname>(int)</title>
 		<para>
 		Whether or not the server supports last_inserted_id capabilities.
@@ -161,7 +161,7 @@ modparam("db_http", "cap_last_inserted_id", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_field_delimiter" xreflabel="field_delimiter">
 		<title><varname>field_delimiter</varname> (str)</title>
 		<para>
 		Character to be used to delimit fields in the reply.Only
@@ -181,7 +181,7 @@ modparam("db_http", "field_delimiter",";")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_row_delimiter" xreflabel="row_delimiter">
 		<title><varname>row_delimiter</varname> (str)</title>
 		<para>
 		Character to be used to delimit rows in the reply.Only
@@ -201,7 +201,7 @@ modparam("db_http", "row_delimiter","\n")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_quote_delimiter" xreflabel="quote_delimiter">
 		<title><varname>quote_delimiter</varname> (str)</title>
 		<para>
 		Character to be used to quote  fields that require quoting
@@ -221,7 +221,7 @@ modparam("db_http", "quote_delimiter","|")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_value_delimiter" xreflabel="value_delimiter">
 		<title><varname>value_delimiter</varname> (str)</title>
 		<para>
 		The delimiter used to separate multiple fields of a single
@@ -242,7 +242,7 @@ modparam("db_http", "value_delimiter",";")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timeout" xreflabel="timeout">
 		<title><varname>timeout</varname> (int)</title>
 		<para>
 		The maximum number of milliseconds that the HTTP ops are allowed to last

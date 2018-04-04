@@ -72,7 +72,7 @@ Chapter 1. Admin Guide
    The amount of milliseconds OpenSIPS waits to connect to the the
    JSON-RPC server, until it times out.
 
-   Default value is "500 milliseconds".
+   Default value is “500 milliseconds”.
 
    Example 1.1. Set connect_timeout parameter
 ...
@@ -84,7 +84,7 @@ modparam("jsonrpc", "connect_timeout", 200)
    The amount of milliseconds OpenSIPS waits to send a RPC command
    to the JSON-RPC server, until it times out.
 
-   Default value is "500 milliseconds".
+   Default value is “500 milliseconds”.
 
    Example 1.2. Set write_timeout parameter
 ...
@@ -98,7 +98,7 @@ modparam("jsonrpc", "write_timeout", 300)
    Note that these parameter only affects the jsonrpc_request
    command.
 
-   Default value is "500 milliseconds".
+   Default value is “500 milliseconds”.
 
    Example 1.3. Set read_timeout parameter
 ...

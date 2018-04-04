@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section id="siprec_overview">
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides the means to do calls recording using an
@@ -101,7 +101,7 @@
 		will try to use them in the same order specified, one by one, until
 		either one of them responds with a positive reply (200 OK), or the
 		response code is one of the codes matched by the <emphasis><xref
-				linkend="skip_failover_codes"/></emphasis> regular expression.
+				linkend="param_skip_failover_codes"/></emphasis> regular expression.
 		In the latter case the call is not recorded at all.
 	</para>
 	</section>
@@ -149,7 +149,7 @@
 	</para>
 	</section>
 
-	<section id="siprec_dependencies">
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section id="siprec_modules_dependencies">
 		<title>&osips; Modules</title>
@@ -196,9 +196,9 @@
 	</section>
 	</section>
 	
-	<section id="siprec_parameters">
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section id="media_port_min">
+		<section id="param_media_port_min" xreflabel="media_port_min">
 		<title><varname>media_port_min</varname> (integer)</title>
 		<para>
 			The minimum value of the port used in the SDP sent to the SRS.
@@ -219,7 +219,7 @@ modparam("siprec", "media_port_min", 10000)
 		</example>
 		</section>
 
-		<section id="media_port_max">
+		<section id="param_media_port_max" xreflabel="media_port_max">
 		<title><varname>media_port_max</varname> (integer)</title>
 		<para>
 			The maximum value of the port used in the SDP sent to the SRS.
@@ -240,7 +240,7 @@ modparam("siprec", "media_port_max", 20000)
 		</example>
 		</section>
 
-		<section id="skip_failover_codes" xreflabel="skip_failover_codes">
+		<section id="param_skip_failover_codes" xreflabel="skip_failover_codes">
 		<title><varname>skip_failover_codes</varname> (string)</title>
 		<para>
 			A regular expression used to specify the codes that should prevent

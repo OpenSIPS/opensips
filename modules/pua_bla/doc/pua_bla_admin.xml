@@ -4,14 +4,14 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		 The pua_bla module enables Bridged Line Appearances support according to 
 		 the specifications in draft-anil-sipping-bla-03.txt.
 	</para>
 	</section>
-		<section>
+		<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -51,9 +51,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_default_domain" xreflabel="default_domain">
 		<title><varname>default_domain</varname>(str)</title>
 		<para>
 		The default domain for the registered users to be used when
@@ -72,7 +72,7 @@ modparam("pua_bla", "default_domain", "opensips.org")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_header_name" xreflabel="header_name">
 		<title><varname>header_name</varname>(str)</title>
 		<para>
 		The name of the header to be added to Publish requests.
@@ -94,7 +94,7 @@ modparam("pua_bla", "header_name", "Sender")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_outbound_proxy" xreflabel="outbound_proxy">
 		<title><varname>outbound_proxy</varname>(str)</title>
 		<para>
 		The outbound_proxy uri to be used when sending Subscribe requests.
@@ -112,7 +112,7 @@ modparam("pua_bla", "outbound_proxy", "sip:proxy@opensips.org")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_server_address" xreflabel="server_address">
 		<title><varname>server_address</varname>(str)</title>
 		<para>
 		The IP address of the server.
@@ -127,7 +127,7 @@ modparam("pua_bla", "server_address", "sip:bla@160.34.23.12")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_presence_server" xreflabel="presence_server">
 		<title><varname>presence_server</varname>(str)</title>
 		<para>
 			The address of the presence server - will be used as

@@ -3,7 +3,7 @@
 <chapter>
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
 			This module is a management module for TLS certificates and
@@ -131,7 +131,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies of external libraries</title>
 		<para>
 			&osips; TLS v1.0 support requires the following packages:
@@ -221,7 +221,7 @@ if (is_peer_verified()) {
 		to configure the behavior of &osips;-TLS.
 		</para>
 
-		<section>
+		<section id="param_listen" xreflabel="listen">
 			<title><varname>listen</varname>=interface</title>
 			<para>
 			Not specific to TLS. Allows to specify the protocol
@@ -238,7 +238,7 @@ listen = tls:1.2.3.4:5061
 			</example>
 		</section>
 
-		<section>
+		<section id="param_tls_method" xreflabel="tls_method">
 			<title><varname>tls_method</varname> ([domain]string)</title>
 			<para>
 				Sets the TLS protocol. The domain, if set, represents
@@ -304,7 +304,7 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_certificate" xreflabel="certificate">
 			<title><varname>certificate</varname> ([domain](string)</title>
 			<para>
 			Public certificate file for &osips;. It will be used as
@@ -327,7 +327,7 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 			</example>
 		</section>
 
-		<section>
+		<section id="param_private_key" xreflabel="private_key">
 			<title><varname>private_key</varname> ([domain](string)</title>
 			<para>
 			Private key of the above certificate. I must be kept in a
@@ -349,7 +349,7 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_ca_list" xreflabel="ca_list">
 			<title><varname>ca_list</varname> ([domain](string)</title>
 			<para>
 			List of trusted CAs. The file contains the certificates
@@ -371,7 +371,7 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_ca_dir" xreflabel="ca_dir">
 			<title><varname>ca_dir</varname> ([domain](string)</title>
 			<para>
 			Directory storing trusted CAs. The path contains the
@@ -393,7 +393,7 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_ciphers_list" xreflabel="ciphers_list">
 			<title><varname>ciphers_list</varname> ([domain](string)</title>
 			<para>
 			You can specify the list of algorithms for authentication
@@ -424,7 +424,7 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_dh_params" xreflabel="dh_params">
 			<title><varname>dh_params</varname> ([domain](string)</title>
 			<para>
 			You can specify a file which contains Diffie-Hellman
@@ -447,7 +447,7 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_ec_curve" xreflabel="ec_curve">
 			<title><varname>ec_curve</varname> ([domain](string)</title>
 			<para>
 			You can specify an elliptic curve which should be used for
@@ -466,7 +466,7 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			</emphasis></para>
 		</section>
 
-		<section>
+		<section id="param_verify_cert" xreflabel="verify_cert">
 			<title><varname>verify_cert</varname> ([domain](string) and
 				<varname>require_cert</varname> ([domain](string)</title>
 			<para>
@@ -503,7 +503,7 @@ modparam("tls_mgm", "verify_cert", "[dom]1")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_tls_handshake_timeout" xreflabel="tls_handshake_timeout">
 			<title><varname>tls_handshake_timeout</varname> (integer) and
 				<varname>tls_send_timeout</varname> (integer)</title>
 			<para>
@@ -524,7 +524,7 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 			</example>
 		</section>
 
-		<section>
+		<section id="param_client_domain_avp" xreflabel="client_domain_avp">
 			<title><varname>client_domain_avp</varname> (integer)</title>
 			<para>
 			This sets the AVP used for name based TLS client
@@ -547,7 +547,7 @@ modparam("tls_mgm", "client_domain_avp", "tls_cli_dom")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_db_url" xreflabel="db_url">
 			<title><varname>db_url</varname> (string)</title>
 			<para>
 			The database url. It cannot be NULL.

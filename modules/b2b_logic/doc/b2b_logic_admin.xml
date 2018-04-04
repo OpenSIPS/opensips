@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The B2BUA implementation in OpenSIPS is separated in two layers:
@@ -37,7 +37,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -66,9 +66,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-	<section>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (int)</title>
 		<para>
 			The size of the hash table that stores the scenario instatiation entities.
@@ -88,7 +88,7 @@ modparam("b2b_logic", "hash_size", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_script_scenario" xreflabel="script_scenario">
 		<title><varname>script_scenario</varname> (str)</title>
 		<para>
 			This parameter should be set with the path of a document
@@ -108,7 +108,7 @@ modparam("b2b_logic", "script_scenario", "/usr/local/opensips/scripts/b2b_prepai
 		</example>
 	</section>
 
-	<section>
+	<section id="param_extern_scenario" xreflabel="extern_scenario">
 		<title><varname>extern_scenario</varname> (str)</title>
 		<para>
 			This parameter should be set with the path of a document
@@ -127,7 +127,7 @@ modparam("b2b_logic", "extern_scenario", "/usr/local/opensips/scripts/b2b_market
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cleanup_period" xreflabel="cleanup_period">
 		<title><varname>cleanup_period</varname> (int)</title>
 		<para>
 			The time interval at which to search for an hanged b2b context.
@@ -149,7 +149,7 @@ modparam("b2b_logic", "cleanup_period", 60)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_custom_headers_regexp" xreflabel="custom_headers_regexp">
 		<title><varname>custom_headers_regexp</varname> (str)</title>
 		<para>
 		Regexp to search SIP header by names that should be passed
@@ -193,7 +193,7 @@ modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_custom_headers" xreflabel="custom_headers">
 		<title><varname>custom_headers</varname> (str)</title>
 		<para>
 		A list of SIP header names delimited by ';' that should be passed
@@ -226,7 +226,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_use_init_sdp" xreflabel="use_init_sdp">
 		<title><varname>use_init_sdp</varname> (int)</title>
 		<para>
 		This parameter modifies the behaviour of the B2BUA when bridging
@@ -251,7 +251,7 @@ modparam("b2b_logic", "use_init_sdp", 1)
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
 			Database URL.
@@ -265,7 +265,7 @@ modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips"
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_update_period" xreflabel="update_period">
 		<title><varname>update_period</varname> (int)</title>
 		<para>
 			The time interval at which to update the info in database.
@@ -282,7 +282,7 @@ modparam("b2b_logic", "update_period", 60)
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_max_duration" xreflabel="max_duration">
 		<title><varname>max_duration</varname> (int)</title>
 		<para>
 			The maximum duration of a call.
@@ -301,7 +301,7 @@ modparam("b2b_logic", "max_duration", 7200)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_b2bl_from_spec_param" xreflabel="b2bl_from_spec_param">
 		<title><varname>b2bl_from_spec_param</varname> (string)</title>
 		<para>
 			The name of the pseudo variable for storing the new
@@ -329,7 +329,7 @@ route{
 		</example>
 	</section>
 
-	<section>
+	<section id="param_server_address" xreflabel="server_address">
 		<title><varname>server_address</varname> (str)</title>
 		<para>
 			The IP address of the machine that will be used as Contact in
@@ -349,7 +349,7 @@ modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_init_callid_hdr" xreflabel="init_callid_hdr">
 		<title><varname>init_callid_hdr</varname> (str)</title>
 		<para>
 			The module offers the possibility to insert the original callid in a header
@@ -365,7 +365,7 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_mode" xreflabel="db_mode">
 		<title><varname>db_mode</varname> (int)</title>
 		<para>
 			The B2B modules have support for the 3 type of database storage
@@ -390,7 +390,7 @@ modparam("b2b_logic", "db_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (str)</title>
 		<para>
 			Name of the database table to be used
@@ -408,7 +408,7 @@ modparam("b2b_logic", "db_table", "some_table_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_b2bl_th_init_timeout" xreflabel="b2bl_th_init_timeout">
 		<title><varname>b2bl_th_init_timeout</varname> (int)</title>
 		<para>
 			Call setup timeout for topology hiding scenario.

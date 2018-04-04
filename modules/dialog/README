@@ -250,9 +250,9 @@ Chapter 1. Admin Guide
 
    The dialog is automatically destroyed when a “BYE” is received.
    In case of no “BYE”, the dialog lifetime is controlled via the
-   default timeout (see “default_timeout” - Section 1.6.5,
-   “default_timeout (integer)”) and custom timeout (see
-   “$DLG_timeout” - Section 1.10.8, “$DLG_timeout”).
+   default timeout (see “default_timeout” - default_timeout) and
+   custom timeout (see “$DLG_timeout” - Section 1.10.8,
+   “$DLG_timeout”).
 
 1.3. Dialog profiling
 

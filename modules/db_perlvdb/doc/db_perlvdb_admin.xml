@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The Perl Virtual Database (VDB) provides a virtualization framework
@@ -36,7 +36,7 @@ modparam("acc", "db_url", "perlvdb:OpenSIPS::VDB::Adapter::AccountingSIPtrace")
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -66,7 +66,7 @@ modparam("acc", "db_url", "perlvdb:OpenSIPS::VDB::Adapter::AccountingSIPtrace")
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 		<para>
 			<emphasis>None</emphasis>.

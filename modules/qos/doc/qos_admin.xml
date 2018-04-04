@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 
 		<para>The qos module provides a way to keep track of
@@ -65,7 +65,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -97,9 +97,9 @@
 	</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_qos_flag" xreflabel="qos_flag">
 		<title><varname>qos_flag</varname> (string/integer)</title>
 		
 		<para>Keeping with &osips;, the module will not do

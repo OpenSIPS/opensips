@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module to help with &nat; traversal. In particular,
@@ -80,7 +80,7 @@
 	</itemizedlist>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -112,9 +112,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_natping_interval" xreflabel="natping_interval">
 		<title><varname>natping_interval</varname> (integer)</title>
 		<para>
 		Period of time in seconds between sending the NAT pings to all
@@ -139,7 +139,7 @@ modparam("nathelper", "natping_interval", 10)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_ping_nated_only" xreflabel="ping_nated_only">
 		<title><varname>ping_nated_only</varname> (integer)</title>
 		<para>
 		If this variable is set then only contacts that have
@@ -160,7 +160,7 @@ modparam("nathelper", "ping_nated_only", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_natping_partitions" xreflabel="natping_partitions">
 		<title><varname>natping_partitions</varname> (integer)</title>
 		<para>
 		How many partitions/chunks to be used for sending the pingings.
@@ -181,7 +181,7 @@ modparam("nathelper", "natping_partitions", 4)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_natping_socket" xreflabel="natping_socket">
 		<title><varname>natping_socket</varname> (string)</title>
 		<para>
 		Spoof the natping's source-ip to this address. Works only for IPv4.
@@ -200,7 +200,7 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_received_avp" xreflabel="received_avp">
 		<title><varname>received_avp</varname> (str)</title>
 		<para>
 		The name of the Attribute-Value-Pair (AVP) used to store the URI
@@ -231,7 +231,7 @@ modparam("nathelper", "received_avp", "$avp(received)")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_force_socket" xreflabel="force_socket">
 		<title><varname>force_socket</varname> (string)</title>
 		<para>
 		Sending socket to be used for pinging contacts without local socket
@@ -254,7 +254,7 @@ modparam("nathelper", "force_socket", "localhost:33333")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_sipping_bflag" xreflabel="sipping_bflag">
 		<title><varname>sipping_bflag</varname> (string/integer)</title>
 		<para>
 		What branch flag should be used by the module to identify NATed
@@ -279,7 +279,7 @@ modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_remove_on_timeout_bflag" xreflabel="remove_on_timeout_bflag">
 		<title><varname>remove_on_timeout_bflag</varname> (string/integer)</title>
 		<para>
 		What flag to be used in order to activate usrloc contact removal when
@@ -304,7 +304,7 @@ modparam("nathelper", "remove_on_timeout_bflag", "RM_ONTO_FLAG")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_sipping_from" xreflabel="sipping_from">
 		<title><varname>sipping_from</varname> (string)</title>
 		<para>
 		The parameter sets the SIP URI to be used in generating the SIP
@@ -326,7 +326,7 @@ modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_sipping_method" xreflabel="sipping_method">
 		<title><varname>sipping_method</varname> (string)</title>
 		<para>
 		The parameter sets the SIP method to be used in generating the SIP
@@ -346,7 +346,7 @@ modparam("nathelper", "sipping_method", "INFO")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_nortpproxy_str" xreflabel="nortpproxy_str">
 		<title><varname>nortpproxy_str</varname> (string)</title>
 		<para>
 		The parameter sets the SDP attribute used by nathelper to mark
@@ -372,7 +372,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_natping_tcp" xreflabel="natping_tcp">
 		<title><varname>natping_tcp</varname> (integer)</title>
 		<para>
 		If the flag is set, TCP/TLS clients will also be pinged with
@@ -394,7 +394,7 @@ modparam("nathelper", "natping_tcp", 1)
 	</section>
 
 
-	<section>
+	<section id="param_oldip_skip" xreflabel="oldip_skip">
 		<title><varname>oldip_skip</varname> (string)</title>
 		<para>
 		Parameter which specifies whether old media ip and old origin ip
@@ -417,7 +417,7 @@ modparam("nathelper", "oldip_skip", "oc")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ping_threshold" xreflabel="ping_threshold">
 		<title><varname>ping_threshold</varname> (int)</title>
 		<para>
 			If a contact does not respond in <emphasis>ping_threshold</emphasis>
@@ -439,7 +439,7 @@ modparam("nathelper", "ping_threshold", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_max_pings_lost" xreflabel="max_pings_lost">
 		<title><varname>max_pings_lost</varname> (int)</title>
 		<para>
 			Number of unresponded pings after which the contact shall be removed

@@ -3,7 +3,7 @@
 <chapter id="sec-admin-guide">
 	<title>&adminguide;</title>
 
-	<section id="sec-overview">
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		<emphasis>freeswitch_scripting</emphasis> is a helper module that
@@ -24,7 +24,7 @@
 	</para>
 	</section>
 
-	<section id="sec-dependencies">
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section id="sec-module-dependencies">
 		<title>&osips; Modules</title>
@@ -61,10 +61,10 @@
 	</section>
 	</section>
 
-	<section id="sec-modparam">
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section id="modparam-db-url" xreflabel="db_url">
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		An SQL database URL which the module will use in order to
@@ -85,7 +85,7 @@ modparam("freeswitch_scripting", "db_url", "&exampledb;")
 		</example>
 	</section>
 
-	<section id="modparam-db-table" xreflabel="db_table">
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (string)</title>
 		<para>
 		The SQL table name for this module.
@@ -105,7 +105,7 @@ modparam("freeswitch_scripting", "db_table", "freeswitch_sockets")
 		</example>
 	</section>
 
-	<section id="modparam-db-col-username" xreflabel="db_col_username">
+	<section id="param_db_col_username" xreflabel="db_col_username">
 		<title><varname>db_col_username</varname> (string)</title>
 		<para>
 		The SQL column name for the "username" ESL connect information.
@@ -125,7 +125,7 @@ modparam("freeswitch_scripting", "db_col_username", "user")
 		</example>
 	</section>
 
-	<section id="modparam-db-col-password" xreflabel="db_col_password">
+	<section id="param_db_col_password" xreflabel="db_col_password">
 		<title><varname>db_col_password</varname> (string)</title>
 		<para>
 		The SQL column name for the "password" ESL connect information.
@@ -145,7 +145,7 @@ modparam("freeswitch_scripting", "db_col_password", "pass")
 		</example>
 	</section>
 
-	<section id="modparam-db-col-ip" xreflabel="db_col_ip">
+	<section id="param_db_col_ip" xreflabel="db_col_ip">
 		<title><varname>db_col_ip</varname> (string)</title>
 		<para>
 		The SQL column name for the "ip" ESL connect information.
@@ -165,7 +165,7 @@ modparam("freeswitch_scripting", "db_col_ip", "ip_addr")
 		</example>
 	</section>
 
-	<section id="modparam-db-col-port" xreflabel="db_col_port">
+	<section id="param_db_col_port" xreflabel="db_col_port">
 		<title><varname>db_col_port</varname> (string)</title>
 		<para>
 		The SQL column name for the "port" ESL connect information.
@@ -185,7 +185,7 @@ modparam("freeswitch_scripting", "db_col_port", "tcp_port")
 		</example>
 	</section>
 
-	<section id="modparam-db-col-events" xreflabel="db_col_events">
+	<section id="param_db_col_events" xreflabel="db_col_events">
 		<title><varname>db_col_events</varname> (string)</title>
 		<para>
 		The SQL column name for the comma-separated, case-sensitive FreeSWITCH
@@ -206,7 +206,7 @@ modparam("freeswitch_scripting", "db_col_events", "fs_events")
 		</example>
 	</section>
 
-	<section id="modparam-fs-subscribe" xreflabel="fs_subscribe">
+	<section id="param_fs_subscribe" xreflabel="fs_subscribe">
 		<title><varname>fs_subscribe</varname> (string)</title>
 		<para>
 		Add a FreeSWITCH ESL URL to which OpenSIPS will connect at startup.
@@ -241,7 +241,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 		<para>
 		Run an arbitrary command on an arbitrary FreeSWITCH ESL socket. The
 		socket need not necessarily be defined in the database or through
-		<emphasis role='bold'><xref linkend="modparam-fs-subscribe"/></emphasis>.
+		<emphasis role='bold'><xref linkend="param_fs_subscribe"/></emphasis>.
 		However, if this is the case, then the "password" part of the URL
 		becomes mandatory.
 		</para>
@@ -382,7 +382,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 		</para>
 		<para>
 			* this includes any sockets/events provisioned through
-			<xref linkend="modparam-fs-subscribe"/>, MI
+			<xref linkend="param_fs_subscribe"/>, MI
 			<xref linkend="mi-fs-subscribe"/> commands or previous DB data set.
 		</para>
 	</section>

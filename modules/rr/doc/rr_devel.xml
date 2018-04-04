@@ -85,7 +85,7 @@
 		The function checks the flow direction of the request 
 		<quote>msg</quote>. As for checking it's used the <quote>ftag</quote> 
 		Route header parameter, the append_fromtag (see 
-		<xref linkend="append-fromtag-id"/> module parameter 
+		<xref linkend="param_append_fromtag"/> module parameter 
 		must be enables. Also this must be call only after the loose_route is 
 		done.
 		</para>

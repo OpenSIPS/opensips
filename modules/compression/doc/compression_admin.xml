@@ -3,7 +3,7 @@
 <chapter>
     <title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	This module implements message compression/decompression and base64 encoding
@@ -50,7 +50,7 @@
 	</section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -83,10 +83,10 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section>
+	<section id="param_mc_level" xreflabel="mc_level">
 		<title><varname>mc_level</varname> (int)</title>
 		<para>
 		This parameter ranges from 1 to 9 and it specifies the level of compression you want to do.

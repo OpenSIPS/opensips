@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which provides a UNIX/UDP SOCKET transport layer
@@ -40,7 +40,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -71,9 +71,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_socket_name" xreflabel="socket_name">
 		<title><varname>socket_name</varname> (string)</title>
 		<para>
 		The name of a UNIX SOCKET or an IP address.
@@ -98,7 +98,7 @@ modparam("mi_datagram", "socket_name", "udp:192.168.2.133:8080")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_children_count" xreflabel="children_count">
 		<title><varname>children_count</varname> (string)</title>
 		<para>
 		The number of child processes to be created. Each child process
@@ -119,7 +119,7 @@ modparam("mi_datagram", "children_count", 3)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_unix_socket_mode" xreflabel="unix_socket_mode">
 		<title><varname>unix_socket_mode</varname> (integer)</title>
 		<para>
 		Permission to be used for creating the listening UNIX datagram socket.
@@ -141,7 +141,7 @@ modparam("mi_datagram", "unix_socket_mode", 0600)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_unix_socket_group" xreflabel="unix_socket_group">
 		<title><varname>unix_socket_group</varname> (integer)
 		<varname>unix_socket_group</varname> (string)</title>
 		<para>
@@ -163,7 +163,7 @@ modparam("mi_datagram", "unix_socket_group", "root")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_unix_socket_user" xreflabel="unix_socket_user">
 		<title><varname>unix_socket_user</varname> (integer)
 		<varname>unix_socket_group</varname> (string)</title>
 		<para>
@@ -185,7 +185,7 @@ modparam("mi_datagram", "unix_socket_user", "root")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_socket_timeout" xreflabel="socket_timeout">
 		<title><varname>socket_timeout</varname> (integer)</title>
 		<para>
 		The reply will expire after trying to sent it for socket_timeout
@@ -206,7 +206,7 @@ modparam("mi_datagram", "socket_timeout", 2000)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_reply_indent" xreflabel="reply_indent">
 		<title><varname>reply_indent</varname> (string)</title>
 		<para>
 		Strings to be used for line indentation. As the MI data structure
@@ -226,7 +226,7 @@ modparam("mi_datagram", "reply_indent", "    ")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -255,7 +255,7 @@ modparam("mi_datagram", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_bwlist" xreflabel="trace_bwlist">
 		<title><varname>trace_bwlist</varname> (string)</title>
 		<para>
 			Filter traced mi commands based on a blacklist or a whitelist.

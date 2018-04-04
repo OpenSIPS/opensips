@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides on-server speed dial facilities. An user can store
@@ -13,7 +13,7 @@
 		wants to call the SIP address associated with them.
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -43,9 +43,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		The URL of database where the table containing speed dial records.
@@ -64,7 +64,7 @@ modparam("speeddial", "db_url", "mysql://user:xxx@localhost/db_name")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
 		The name of column storing the user name of the owner of the speed dial
@@ -84,7 +84,7 @@ modparam("speeddial", "user_column", "userid")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
 		The name of column storing the domain of the owner of the speed dial
@@ -104,7 +104,7 @@ modparam("speeddial", "domain_column", "userdomain")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_sd_user_column" xreflabel="sd_user_column">
 		<title><varname>sd_user_column</varname> (string)</title>
 		<para>
 		The name of the column storing the user part of the short dial address.
@@ -123,7 +123,7 @@ modparam("speeddial", "sd_user_column", "short_user")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_sd_domain_column" xreflabel="sd_domain_column">
 		<title><varname>sd_domain_column</varname> (string)</title>
 		<para>
 		The name of the column storing the domain of the short dial address.
@@ -142,7 +142,7 @@ modparam("speeddial", "sd_domain_column", "short_domain")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_new_uri_column" xreflabel="new_uri_column">
 		<title><varname>new_uri_column</varname> (string)</title>
 		<para>
 		The name of the column containing the URI that will be use to replace
@@ -162,7 +162,7 @@ modparam("speeddial", "new_uri_column", "real_uri")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_domain_prefix" xreflabel="domain_prefix">
 		<title><varname>domain_prefix</varname> (string)</title>
 		<para>
 		If the domain of the owner (From URI) starts with the value of this parameter, then
@@ -182,7 +182,7 @@ modparam("speeddial", "domain_prefix", "tel.")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (int)</title>
 		<para>
 		The parameter specifies wheter or not to use the domain when searching a

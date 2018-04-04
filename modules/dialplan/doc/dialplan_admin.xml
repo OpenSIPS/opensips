@@ -3,7 +3,7 @@
 <chapter>
     <title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	This module implements generic string translations based on matching and
@@ -279,7 +279,7 @@
 
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -313,10 +313,10 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section>
+	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
 		<para>
 		This can be used to define new db_url and table_name parameters from which
@@ -349,7 +349,7 @@ modparam("dialplan", "partition",
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		The translation rules will be loaded using this database url.This
@@ -370,7 +370,7 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		The table's name from which to load the translation rules.This
@@ -393,7 +393,7 @@ modparam("dialplan", "table_name", "my_table")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dpid_col" xreflabel="dpid_col">
 		<title><varname>dpid_col</varname> (string)</title>
 		<para>
 		The column name to store the dialplan ID group.
@@ -413,7 +413,7 @@ modparam("dialplan", "dpid_col", "column_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pr_col" xreflabel="pr_col">
 		<title><varname>pr_col</varname> (string)</title>
 		<para>
 		The column name to store the priority of the corresponding rule from
@@ -434,7 +434,7 @@ modparam("dialplan", "pr_col", "column_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_match_op_col" xreflabel="match_op_col">
 		<title><varname>match_op_col</varname> (string)</title>
 		<para>
 		The column name to store the type of matching of the rule.
@@ -454,7 +454,7 @@ modparam("dialplan", "match_op_col", "column_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_match_exp_col" xreflabel="match_exp_col">
 		<title><varname>match_exp_col</varname> (string)</title>
 		<para>
 		The column name to store the rule match expression.
@@ -474,7 +474,7 @@ modparam("dialplan", "match_exp_col", "column_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_match_flags_col" xreflabel="match_flags_col">
 		<title><varname>match_flags_col</varname> (string)</title>
 		<para>
 		The column name to store various matching flags. Currently
@@ -495,7 +495,7 @@ modparam("dialplan", "match_flags_col", "column_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_subst_exp_col" xreflabel="subst_exp_col">
 		<title><varname>subst_exp_col</varname> (string)</title>
 		<para>
 		The column name to store the rule's substitution expression.
@@ -515,7 +515,7 @@ modparam("dialplan", "subst_exp_col", "column_name")
 		</example>
 	</section>
 
-		<section>
+		<section id="param_repl_exp_col" xreflabel="repl_exp_col">
 		<title><varname>repl_exp_col</varname> (string)</title>
 		<para>
 		The column name to store the rule's replacement expression.
@@ -535,7 +535,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timerec_col" xreflabel="timerec_col">
 		<title><varname>timerec_col</varname> (integer)</title>
 		<para>
 		The column name that indicates an additional time recurrence check within the rule.
@@ -556,7 +556,7 @@ modparam("dialplan", "timerec_col", "month_match")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_disabled_col" xreflabel="disabled_col">
 		<title><varname>disabled_col</varname> (integer)</title>
 		<para>
 		The column name that indicates if the dialplan rule is disabled.
@@ -576,7 +576,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_attrs_col" xreflabel="attrs_col">
 		<title><varname>attrs_col</varname> (string)</title>
 		<para>
 		The column name to store rule-specific attributes.

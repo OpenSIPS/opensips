@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<section id="sec-call-routing">
 		<title>Call Routing</title>
@@ -183,7 +183,7 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -214,9 +214,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_default_allow_file" xreflabel="default_allow_file">
 		<title><varname>default_allow_file</varname> (string)</title>
 		<para>
 		Default allow file used by functions without parameters. If you
@@ -237,7 +237,7 @@ modparam("permissions", "default_allow_file", "/etc/permissions.allow")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_default_deny_file" xreflabel="default_deny_file">
 		<title><varname>default_deny_file</varname> (string)</title>
 		<para>
 		Default file containing deny rules. The file is used by functions
@@ -258,7 +258,7 @@ modparam("permissions", "default_deny_file", "/etc/permissions.deny")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_check_all_branches" xreflabel="check_all_branches">
 		<title><varname>check_all_branches</varname> (integer)</title>
 		<para>
 		If set then allow_routing functions will check Request-URI of all
@@ -285,7 +285,7 @@ modparam("permissions", "check_all_branches", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_allow_suffix" xreflabel="allow_suffix">
 		<title><varname>allow_suffix</varname> (string)</title>
 		<para>
 		Suffix to be appended to basename to create filename of the allow
@@ -312,7 +312,7 @@ modparam("permissions", "allow_suffix", ".allow")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_deny_suffix" xreflabel="deny_suffix">
 		<title><varname>deny_suffix</varname> (string)</title>
 		<para>
 		Suffix to be appended to basename to create filename of the deny file
@@ -339,7 +339,7 @@ modparam("permissions", "deny_suffix", ".deny")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		This is URL of the database to be used for loading the date related to
@@ -369,7 +369,7 @@ modparam("permissions", "db_url", "&exampledb;")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_address_table" xreflabel="address_table">
 		<title><varname>address_table</varname> (string)</title>
 		<para>
 		Name of database table containing matching rules used by
@@ -391,7 +391,7 @@ modparam("permissions", "address_table", "pbx")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
 		<para>
 			Create a partition containg an url and a table name. Partitions
@@ -416,7 +416,7 @@ modparam("permissions", "partition", "my_part: db_url=<quote>some_url</quote>; t
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_grp_col" xreflabel="grp_col">
 		<title><varname>grp_col</varname> (string)</title>
 		<para>
 		Name of address table column containing group
@@ -436,7 +436,7 @@ modparam("permissions", "grp_col", "group_id")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_ip_col" xreflabel="ip_col">
 		<title><varname>ip_col</varname> (string)</title>
 		<para>
 		Name of address table column containing IP address
@@ -456,7 +456,7 @@ modparam("permissions", "ip_col", "ipess")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_mask_col" xreflabel="mask_col">
 		<title><varname>mask_col</varname> (string)</title>
 		<para>
 		Name of address table column containing network mask of
@@ -476,7 +476,7 @@ modparam("permissions", "mask_col", "subnet_length")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_port_col" xreflabel="port_col">
 		<title><varname>port_col</varname> (string)</title>
 		<para>
 		Name of address table column containing port
@@ -498,7 +498,7 @@ modparam("permissions", "port_col", "prt")
 	</section>
 
 
-	<section>
+	<section id="param_proto_col" xreflabel="proto_col">
 		<title><varname>proto_col</varname> (string)</title>
 		<para>
 		Name of address table column containing transport
@@ -524,7 +524,7 @@ modparam("permissions", "proto_col", "transport")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_pattern_col" xreflabel="pattern_col">
 		<title><varname>pattern_col</varname> (string)</title>
 		<para>
 		Name of address table column containinga a pattern (a shell wildcard
@@ -547,7 +547,7 @@ modparam("permissions", "pattern_col", "wildcard_col")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_info_col" xreflabel="info_col">
 		<title><varname>info_col</varname> (string)</title>
 		<para>
 		Name of address table column containing a string

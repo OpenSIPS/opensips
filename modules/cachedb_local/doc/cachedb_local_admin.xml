@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a local cache system designed as
@@ -17,7 +17,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -42,10 +42,10 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
 
-		<section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			URL parameter used to define cachedb_local collections. One collection
@@ -85,7 +85,7 @@ cache_store("local:group2", ...)
 		</example>
 	</section>
 
-		<section>
+		<section id="param_cache_collections" xreflabel="cache_collections">
 		<title><varname>cache_collections</varname> (string)</title>
 		<para>
 			Using this parameter collections(hash tables) and their sizes can be defined. Each
@@ -112,7 +112,7 @@ modparam("cachedb_local", "cache_collections", "collection1; collection2=5; defa
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cache_clean_period" xreflabel="cache_clean_period">
 		<title><varname>cache_clean_period</varname> (int)</title>
 		<para>
 			The time interval in seconds at which to go through all the
@@ -164,7 +164,7 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 	<section>
 	<title>Exported MI Functions</title>
 
-		<section>
+		<section id="param_cache_remove_chunk" xreflabel="cache_remove_chunk">
 		<title><varname>cache_remove_chunk</varname></title>
 		<para>
 		Removes all local cache entries that match the provided glob param.

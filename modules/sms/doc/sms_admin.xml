@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides a way of communication between &sip; network 
@@ -75,7 +75,7 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -106,9 +106,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_modems" xreflabel="modems">
 		<title><varname>modems</varname> (string)</title>
 		<para>
 		Define and configure one or more <acronym>GSM</acronym> modems.
@@ -184,7 +184,7 @@ modparam("sms", "modems", "Nokia[d=/dev/ttyS1];Siemens[d=/dev/ttyS2]")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_networks" xreflabel="networks">
 		<title><varname>networks</varname> (string)</title>
 		<para>
 		Define and configure used <acronym>GSM</acronym> networks.
@@ -231,7 +231,7 @@ modparam("sms", "networks", "D1 [m=10] ;d2[ m=20]")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_links" xreflabel="links">
 		<title><varname>links</varname> (string)</title>
 		<para>
 		Define from which network each modem should send <acronym>SMS</acronym>.
@@ -263,7 +263,7 @@ modparam("sms", "links", "NOKIA[D1;d2]")
 		</para>
 	</section>
 
-	<section>
+	<section id="param_default_net" xreflabel="default_net">
 		<title><varname>default_net</varname> (string)</title>
 		<para>
 		The default network to use. If no one specified, the first defined
@@ -281,7 +281,7 @@ modparam("sms", "default_net", "D1")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_max_sms_parts" xreflabel="max_sms_parts">
 		<title><varname>max_sms_parts</varname> (integer)</title>
 		<para>
 		Shows in how many parts (<acronym>SMS</acronym> messages) a &sip; 
@@ -304,7 +304,7 @@ modparam("sms", "max_sms_parts", 10)
 		</example>
 	</section>	
 
-	<section>
+	<section id="param_domain" xreflabel="domain">
 		<title><varname>domain</varname> (string)</title>
 		<para>
 		Specify a fake domain name to be used by the gateway. The Contact 
@@ -327,7 +327,7 @@ modparam("sms", "domain_str", "foo.bar")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_use_contact" xreflabel="use_contact">
 		<title><varname>use_contact</varname> (integer)</title>
 		<para>
 		If a contact header should be added to the outgoing &sip; messages. 
@@ -348,7 +348,7 @@ modparam("sms", "use_contact", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_sms_report_type" xreflabel="sms_report_type">
 		<title><varname>sms_report_type</varname> (integer)</title>
 		<para>
 		If the modem should ask for <acronym>SMS</acronym> confirmation from the

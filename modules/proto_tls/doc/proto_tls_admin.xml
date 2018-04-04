@@ -3,7 +3,7 @@
 <chapter>
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
 		TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies
@@ -159,7 +159,7 @@
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -216,7 +216,7 @@
 		to configure the behavior of &osips;-TLS.
 		</para>
 
-		<section>
+		<section id="param_listen" xreflabel="listen">
 			<title><varname>listen</varname>=interface</title>
 			<para>
 			Not specific to TLS. Allows to specify the protocol
@@ -233,7 +233,7 @@ listen = tls:1.2.3.4:5061
 			</example>
 		</section>
 
-		<section>
+		<section id="param_tls_port" xreflabel="tls_port">
 			<title><varname>tls_port</varname> (integer)</title>
 			<para>
 			The default port to be used for all TLS related operation. Be 
@@ -258,7 +258,7 @@ modparam("proto_tls", "tls_port", 5062)
 			</example>
 		</section>
 
-	<section>
+	<section id="param_tls_crlf_pingpong" xreflabel="tls_crlf_pingpong">
 		<title><varname>tls_crlf_pingpong</varname> (integer)</title>
 		<para>
 			Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over TLS.
@@ -278,7 +278,7 @@ modparam("proto_tls", "tls_crlf_pingpong", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_tls_crlf_drop" xreflabel="tls_crlf_drop">
 		<title><varname>tls_crlf_drop</varname> (integer)</title>
 		<para>
 			Drop CRLF (\r\n) ping messages. When this parameter is enabled,
@@ -301,7 +301,7 @@ modparam("proto_tls", "tls_crlf_drop", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_tls_max_msg_chunks" xreflabel="tls_max_msg_chunks">
 		<title><varname>tls_max_msg_chunks</varname> (integer)</title>
 		<para>
 			The maximum number of chunks that a SIP message is expected to
@@ -358,7 +358,7 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
-	<section id="trace-on">
+	<section id="param_trace_on" xreflabel="trace_on">
 		<title><varname>trace_on</varname> (int)</title>
 		<para>
 			This controls whether tracing for tls is on or not. You still need to define
@@ -378,7 +378,7 @@ modparam("proto_tls", "trace_on", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_filter_route" xreflabel="trace_filter_route">
 		<title><varname>trace_filter_route</varname> (string)</title>
 		<para>
 			Define the name of a route in which you can filter which connections will
@@ -404,7 +404,7 @@ modparam("proto_tls", "trace_on", 1)
 		</para>
 
 		<para>
-			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="trace-on"/> is
+			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="param_trace_on"/> is
 			set to 0 or tracing is deactived via the mi command <xref linkend="tls-trace"/>
 			this route won't be called.
 		</para>

@@ -4,7 +4,7 @@
     
     <title>&adminguide;</title>
 
-    <section>
+    <section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The sql_cacher module introduces the possibility to cache data from a
@@ -42,7 +42,7 @@
 	until it expires.
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<para>
 	    The following modules must be loaded before this module:
@@ -54,9 +54,9 @@
 	    </itemizedlist>
 	</para>
     </section>
-    <section>
+    <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_cache_table" xreflabel="cache_table">
 		<title><varname>cache_table</varname> (string)</title>
 		<para>
 		This parameter can be set multiple times in order to cache multiple SQL
@@ -133,7 +133,7 @@ on_demand=0")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_spec_delimiter" xreflabel="spec_delimiter">
 		<title><varname>spec_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the caching entry specification provided in the
@@ -153,7 +153,7 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_pvar_delimiter" xreflabel="pvar_delimiter">
 		<title><varname>pvar_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the <quote>$sql_cached_value</quote>
@@ -173,7 +173,7 @@ modparam("sql_cacher", "pvar_delimiter", " ")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_columns_delimiter" xreflabel="columns_delimiter">
 		<title><varname>columns_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the <emphasis>columns</emphasis> subparameter of
@@ -193,7 +193,7 @@ modparam("sql_cacher", "columns_delimiter", ",")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_sql_fetch_nr_rows" xreflabel="sql_fetch_nr_rows">
 		<title><varname>sql_fetch_nr_rows</varname> (integer)</title>
 		<para>
 		The number of rows to be fetched into &osips; private memory in one chunk from
@@ -213,7 +213,7 @@ modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_full_caching_expire" xreflabel="full_caching_expire">
 		<title><varname>full_caching_expire</varname> (integer)</title>
 		<para>
 		Expire period for the values stored in cache for the full caching type
@@ -233,7 +233,7 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_reload_interval" xreflabel="reload_interval">
 		<title><varname>reload_interval</varname> (integer)</title>
 		<para>
 		This parameter represents how many seconds before the data expires (for full caching) the

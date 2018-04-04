@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module that enables media streams to be proxied
@@ -31,8 +31,8 @@
 		Load-balancing will be performed over a set and the admin has the
 		ability to choose what set should be used. The set is selected via
 		its id - the id being defined with the set. Refer to the
-		<quote>rtpengine_sock</quote> module parameter definition for syntax
-		description.
+		<quote><xref linkend="param_rtpengine_sock"/></quote> module parameter
+		definition for syntax description.
 	</para>
 	<para>
 		The balancing inside a set is done automatically by the module based on
@@ -65,7 +65,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -99,7 +99,7 @@
 
 	<section>
 	<title>Parameters</title>
-	<section id="rtpengine.p.rtpengine_sock" xreflabel="rtpengine.p.rtpengine_sock">
+	<section id="param_rtpengine_sock" xreflabel="rtpengine_sock">
 		<title><varname>rtpengine_sock</varname> (string)</title>
 		<para>
 		Definition of socket(s) used to connect to (a set) &rtp; proxy. It may
@@ -128,7 +128,7 @@ modparam("rtpengine", "rtpengine_sock",
 </programlisting>
 		</example>
 	</section>
-	<section id="rtpengine.p.rtpengine_disable_tout">
+	<section id="param_rtpengine_disable_tout" xreflabel="rtpengine_disable_tout">
 		<title><varname>rtpengine_disable_tout</varname> (integer)</title>
 		<para>
 		Once an &rtp; proxy was found unreachable and marked as disabled, the rtpengine
@@ -149,7 +149,7 @@ modparam("rtpengine", "rtpengine_disable_tout", 20)
 </programlisting>
 		</example>
 	</section>
-	<section id="rtpengine.p.rtpengine_tout">
+	<section id="param_rtpengine_tout" xreflabel="rtpengine_tout">
 		<title><varname>rtpengine_tout</varname> (integer)</title>
 		<para>
 		Timeout value in waiting for reply from &rtp; proxy.
@@ -168,7 +168,7 @@ modparam("rtpengine", "rtpengine_tout", 2)
 </programlisting>
 		</example>
 	</section>
-	<section id="rtpengine.p.rtpengine_retr">
+	<section id="param_rtpengine_retr" xreflabel="rtpengine_retr">
 		<title><varname>rtpengine_retr</varname> (integer)</title>
 		<para>
 		How many times the module should retry to send and receive after
@@ -188,7 +188,7 @@ modparam("rtpengine", "rtpengine_retr", 2)
 </programlisting>
 		</example>
 	</section>
-	<section id="rtpengine.p.extra_id_pv">
+	<section id="param_extra_id_pv" xreflabel="extra_id_pv">
 		<title><varname>extra_id_pv</varname> (string)</title>
 		<para>
 			The parameter sets the PV defination to use when the <quote>b</quote>
@@ -207,7 +207,7 @@ modparam("rtpengine", "extra_id_pv", "$avp(extra_id)")
 		</example>
 	</section>
 
-	<section id="rtpengine.p.setid_pv">
+	<section id="param_setid_avp" xreflabel="setid_avp">
 		<title><varname>setid_avp</varname> (string)</title>
 		<para>
 			The parameter defines an AVP that, if set,
@@ -229,12 +229,12 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 		</example>
 	</section>
 
-	<section id="rtpengine.p.db_url">
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 			Database URL, used to load RTPEngines sockets
 			from db, instead of specifying them in the
-			script (<xref linkend="rtpengine.p.rtpengine_sock"/>
+			script (<xref linkend="param_rtpengine_sock"/>
 			module parameter).
 		</para>
 		<para>
@@ -252,7 +252,7 @@ modparam("rtpengine", "db_url",
 		</example>
 	</section>
 
-	<section id="rtpengine.p.db_table">
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (string)</title>
 		<para>
 			The table where the RTPEngines sockets are stored.
@@ -271,7 +271,7 @@ modparam("rtpengine", "db_table", "rtpengine_new")
 		</example>
 	</section>
 
-	<section id="rtpengine.p.socket_column">
+	<section id="param_socket_column" xreflabel="socket_column">
 		<title><varname>socket_column</varname> (string)</title>
 		<para>
 			The name of the rtpengine socket column in the database table.
@@ -289,7 +289,7 @@ modparam("rtpengine", "socket_column", "sock")
 		</example>
 	</section>
 
-	<section id="rtpengine.p.set_column">
+	<section id="param_set_column" xreflabel="set_column">
 		<title><varname>set_column</varname> (string)</title>
 		<para>
 			The name of the rtpengine set column in the database table.
@@ -366,7 +366,7 @@ rtpengine_offer();
 				<quote>auto</quote> - use the first <quote>Via</quote> header if this is
 				a request, or the second one if this is a reply;
 				<quote>extra</quote> - don't take the value from a header, but instead use
-				the value of the <quote>extra_id_pv</quote> variable.
+				the value of the <quote><xref linkend="param_extra_id_pv"/></quote> variable.
 				This can be used to create one media session per branch
 				on the &rtp; proxy. When sending a subsequent <quote>delete</quote> command to
 				the &rtp; proxy, you can then stop just the session for a specific branch when
@@ -964,7 +964,7 @@ $ opensipsctl fifo rtpengine_show
 			<title><function moreinfo="none">rtpengine_reload</function></title>
 			<para>
 			Reloads all rtpengine sets from the database. Used only when the
-			<emphasis>db_url</emphasis> parameter is set.
+			<quote><xref linkend="param_db_url"/></quote> parameter is set.
 			</para>
 			<para>
 			No parameter.

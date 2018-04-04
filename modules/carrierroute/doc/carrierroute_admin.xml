@@ -3,7 +3,7 @@
 <chapter>
     <title>&adminguide;</title>
 
-    <section>
+    <section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>A module which provides routing, balancing and blacklisting capabilities.</para>
 	<para>
@@ -54,7 +54,7 @@
 		derived failure routing descisions with the carrierfailureroute table.
 	</para>
     </section>
-    <section>
+    <section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 	    <title>&osips; Modules</title>
@@ -93,9 +93,9 @@
 	    </para>
 	</section>
     </section>
-    <section>
+    <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-    <section>
+    <section id="param_db_url" xreflabel="db_url">
 	    <title><varname>db_url</varname> (string)</title>
 	    <para>
 		Url to the database containing the routing data.
@@ -115,7 +115,7 @@ modparam("carrierroute", "db_url", "&exampledb;")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_db_table" xreflabel="db_table">
 	    <title><varname>db_table</varname> (string)</title>
 	    <para>
 		    Name of the table where the routing data is stored.
@@ -135,7 +135,7 @@ modparam("carrierroute", "db_table", "carrierroute")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_id_column" xreflabel="id_column">
 	    <title><varname>id_column</varname> (string)</title>
 	    <para>
 		    Name of the column containing the id identifier.
@@ -155,7 +155,7 @@ modparam("carrierroute", "id_column", "id")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_carrier_column" xreflabel="carrier_column">
 	    <title><varname>carrier_column</varname> (string)</title>
 	    <para>
 		    Name of the column containing the  carrier id.
@@ -175,7 +175,7 @@ modparam("carrierroute", "carrier_column", "carrier")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_scan_prefix_column" xreflabel="scan_prefix_column">
 	    <title><varname>scan_prefix_column</varname> (string)</title>
 	    <para>
 		    Name of column containing the scan prefixes. Scan prefixes define
@@ -200,7 +200,7 @@ modparam("carrierroute", "scan_prefix_column", "scan_prefix")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_domain_column" xreflabel="domain_column">
 	    <title><varname>domain_column</varname> (string)</title>
 	    <para>
 		    Name of column containing the rule domain. You can define several routing
@@ -222,7 +222,7 @@ modparam("carrierroute", "domain_column", "domain")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_flags_column" xreflabel="flags_column">
       <title><varname>flags_column</varname> (string)</title>
 			<para>
         Name of the column containing the flags.
@@ -242,7 +242,7 @@ modparam("carrierroute", "flags_column", "flags")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_mask_column" xreflabel="mask_column">
       <title><varname>mask_column</varname> (string)</title>
 			<para>
         Name of the column containing the flags mask.
@@ -262,7 +262,7 @@ modparam("carrierroute", "mask_column", "mask")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_prob_column" xreflabel="prob_column">
 	    <title><varname>prob_column</varname> (string)</title>
 	    <para>
 		    Name of column containing probability. The probability value is used to 
@@ -293,7 +293,7 @@ modparam("carrierroute", "prob_column", "prob")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_rewrite_host_column" xreflabel="rewrite_host_column">
 	    <title><varname>rewrite_host_column</varname> (string)</title>
 	    <para>
 		    Name of column containing rewrite host value. An empty field represents a
@@ -315,7 +315,7 @@ modparam("carrierroute", "rewrite_host_column", "rewrite_host")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_strip_column" xreflabel="strip_column">
 	    <title><varname>strip_column</varname> (string)</title>
 	    <para>
 		    Name of the column containing the number of digits to be stripped of the
@@ -336,7 +336,7 @@ modparam("carrierroute", "strip_column", "strip")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_comment_column" xreflabel="comment_column">
 	    <title><varname>comment_column</varname> (string)</title>
 	    <para>
 		    Name of the column containing an optional comment (useful in large routing tables)
@@ -357,7 +357,7 @@ modparam("carrierroute", "comment_column", "description")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_carrier_table" xreflabel="carrier_table">
 	    <title><varname>carrier_table</varname> (string)</title>
 	    <para>
 		    The name of the table containing the existing carriers, consisting
@@ -378,7 +378,7 @@ modparam("carrierroute", "carrier_table", "route_tree")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_rewrite_prefix_column" xreflabel="rewrite_prefix_column">
 	    <title><varname>rewrite_prefix_column</varname> (string)</title>
 	    <para>
 		    Name of column containing rewrite prefixes. Here you can define a rewrite
@@ -399,7 +399,7 @@ modparam("carrierroute", "rewrite_prefix_column", "rewrite_prefix")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_rewrite_suffix_column" xreflabel="rewrite_suffix_column">
 	    <title><varname>rewrite_suffix_column</varname> (string)</title>
 	    <para>
 		    Name of column containing rewrite suffixes. Here you can define a rewrite
@@ -420,7 +420,7 @@ modparam("carrierroute", "rewrite_suffix_column", "rewrite_suffix")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_carrier_id_col" xreflabel="carrier_id_col">
 	    <title><varname>carrier_id_col</varname> (string)</title>
 	    <para>
 		    The name of the column in the carrier table containing the carrier id.
@@ -440,7 +440,7 @@ modparam("carrierroute", "carrier_id_col", "id")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_carrier_name_col" xreflabel="carrier_name_col">
 	    <title><varname>carrier_name_col</varname> (string)</title>
 	    <para>
 		    The name of the column in the carrier table containing the carrier name.
@@ -460,7 +460,7 @@ modparam("carrierroute", "carrier_name_col", "carrier")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_subscriber_table" xreflabel="subscriber_table">
 	    <title><varname>subscriber_table</varname> (string)</title>
 	    <para>
 		    The name of the table containing the subscribers
@@ -480,7 +480,7 @@ modparam("carrierroute", "subscriber_table", "subscriber")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_subscriber_user_col" xreflabel="subscriber_user_col">
 	    <title><varname>subscriber_user_col</varname> (string)</title>
 	    <para>
 		    The name of the column in the subscriber table containing the usernames.
@@ -500,7 +500,7 @@ modparam("carrierroute", "subscriber_user_col", "username")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_subscriber_domain_col" xreflabel="subscriber_domain_col">
 	    <title><varname>subscriber_domain_col</varname> (string)</title>
 	    <para>
 		    The name of the column in the subscriber table containing the domain of 
@@ -521,7 +521,7 @@ modparam("carrierroute", "subscriber_domain_col", "domain")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_subscriber_carrier_col" xreflabel="subscriber_carrier_col">
 	    <title><varname>subscriber_carrier_col</varname> (string)</title>
 	    <para>
 		    The name of the column in the subscriber table containing the carrier id
@@ -543,7 +543,7 @@ modparam("carrierroute", "subscriber_carrier_col", "cr_preferred_carrier")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_config_source" xreflabel="config_source">
 	    <title><varname>config_source</varname> (string)</title>
 	    <para>
 		    Specifies whether the module loads its config data from a file or from a
@@ -564,7 +564,7 @@ modparam("carrierroute", "config_source", "file")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_config_file" xreflabel="config_file">
 	    <title><varname>config_file</varname> (string)</title>
 	    <para>
 		    Specifies the path to the config file.
@@ -584,7 +584,7 @@ modparam("carrierroute", "config_file", "/etc/opensips/carrierroute.conf")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_default_tree" xreflabel="default_tree">
 	    <title><varname>default_tree</varname> (string)</title>
 	    <para>
 		    The name of the carrier tree used per default (if the current
@@ -605,7 +605,7 @@ modparam("carrierroute", "default_tree", "default")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_use_domain" xreflabel="use_domain">
 	    <title><varname>use_domain</varname> (int)</title>
 	    <para>
 		    When using tree lookup per user, this parameter specifies whether
@@ -626,7 +626,7 @@ modparam("carrierroute", "use_domain", 0)
 	    </example>
     </section>
 
-    <section>
+    <section id="param_fallback_default" xreflabel="fallback_default">
 	    <title><varname>fallback_default</varname> (int)</title>
 	    <para>
 		    This parameter defines the behaviour when using user-based tree
@@ -649,7 +649,7 @@ modparam("carrierroute", "fallback_default", 1)
 	    </example>
     </section>
 
-    <section>
+    <section id="param_db_failure_table" xreflabel="db_failure_table">
       <title><varname>db_failure_table</varname> (string)</title>
 			<para>
         Name of the table where the failure routing data is stored.
@@ -669,7 +669,7 @@ modparam("carrierroute", "db_failure_table", "carrierfailureroute")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_id_column" xreflabel="failure_id_column">
       <title><varname>failure_id_column</varname> (string)</title>
 			<para>
         Name of the column containing the id identifier.
@@ -689,7 +689,7 @@ modparam("carrierroute", "failure_id_column", "id")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_carrier_column" xreflabel="failure_carrier_column">
       <title><varname>failure_carrier_column</varname> (string)</title>
 			<para>
         Name of the column containing the carrier id.
@@ -709,7 +709,7 @@ modparam("carrierroute", "failure_carrier_column", "carrier")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_scan_prefix_column" xreflabel="failure_scan_prefix_column">
       <title><varname>failure_scan_prefix_column</varname> (string)</title>
 			<para>
         Name of column containing the scan prefixes. Scan prexies
@@ -734,7 +734,7 @@ modparam("carrierroute", "failure_scan_prefix_column", "scan_prefix")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_domain_column" xreflabel="failure_domain_column">
       <title><varname>failure_domain_column</varname> (string)</title>
 			<para>
         Name of column containing the rule domain. You can define
@@ -757,7 +757,7 @@ modparam("carrierroute", "failure_domain_column", "domain")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_host_name_column" xreflabel="failure_host_name_column">
       <title><varname>failure_host_name_column</varname> (string)</title>
 			<para>
         Name of the column containing the host name of the last routing
@@ -778,7 +778,7 @@ modparam("carrierroute", "failure_host_name_column", "host_name")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_reply_code_column" xreflabel="failure_reply_code_column">
       <title><varname>failure_reply_code_column</varname> (string)</title>
 			<para>
         Name of the column containing the reply code.
@@ -798,7 +798,7 @@ modparam("carrierroute", "failure_reply_code_column", "reply_code")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_flags_column" xreflabel="failure_flags_column">
       <title><varname>failure_flags_column</varname> (string)</title>
 			<para>
         Name of the column containing the flags.
@@ -818,7 +818,7 @@ modparam("carrierroute", "failure_flags_column", "flags")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_mask_column" xreflabel="failure_mask_column">
       <title><varname>failure_mask_column</varname> (string)</title>
 			<para>
         Name of the column containing the flags mask.
@@ -838,7 +838,7 @@ modparam("carrierroute", "failure_mask_column", "mask")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_next_domain_column" xreflabel="failure_next_domain_column">
       <title><varname>failure_next_domain_column</varname> (string)</title>
 			<para>
         Name of the column containing the next routing domain.
@@ -858,7 +858,7 @@ modparam("carrierroute", "failure_next_domain_column", "next_domain")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_failure_comment_column" xreflabel="failure_comment_column">
       <title><varname>failure_comment_column</varname> (string)</title>
 			<para>
         Name of the column containing an optional comment.

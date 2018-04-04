@@ -4,7 +4,7 @@
 
   <title>&adminguide;</title>
 
-  <section>
+  <section id="overview" xreflabel="Overview">
   <title>Overview</title>
     <para>
       The presence_xcapdiff is an &osips; module that adds support for the
@@ -30,7 +30,7 @@
     </para>
   </section>
 
-  <section>
+  <section id="dependencies" xreflabel="Dependencies">
   <title>Dependencies</title>
     <section>
     <title>&osips; Modules</title>

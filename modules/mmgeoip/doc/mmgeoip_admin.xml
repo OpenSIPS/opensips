@@ -4,7 +4,7 @@
 
   <title>&adminguide;</title>
 
-  <section>
+  <section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	  This module is a lightweight wrapper for the MaxMind GeoIP
@@ -22,7 +22,7 @@
 	  databases.
 	</para>
   </section>
-  <section>
+  <section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 	  <title>&osips; Modules</title>
@@ -53,10 +53,10 @@
 	</section>
   </section>
 
-  <section>
+  <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section>
+	<section id="param_mmgeoip_city_db_path" xreflabel="mmgeoip_city_db_path">
 	  <title><varname>mmgeoip_city_db_path</varname> (string)</title>
 	  <para>
 		Path to either a GeoLite or GeoIP City database file.
@@ -77,7 +77,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 	  </example>
 	</section>
 
-	<section>
+	<section id="param_cache_type" xreflabel="cache_type">
 	  <title><varname>cache_type</varname> (string)</title>
 	  <para>
 		Databse memory caching options. The following options are available:

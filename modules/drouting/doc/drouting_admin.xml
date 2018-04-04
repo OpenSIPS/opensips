@@ -3,7 +3,7 @@
 <chapter>
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<section>
 	<title>Introduction</title>
@@ -389,7 +389,7 @@
 </section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -435,9 +435,9 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname>(str)</title>
 		<para>
 		The database url.
@@ -456,7 +456,7 @@ modparam("drouting", "db_url",
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_drd_table" xreflabel="drd_table">
 		<title><varname>drd_table</varname>(str)</title>
 		<para>
 		The name of the db table storing gateway addresses.
@@ -474,7 +474,7 @@ modparam("drouting", "drd_table", "dr_gateways")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_drr_table" xreflabel="drr_table">
 		<title><varname>drr_table</varname>(str)</title>
 		<para>
 		The name of the db table storing routing rules.
@@ -493,7 +493,7 @@ modparam("drouting", "drr_table", "rules")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_drg_table" xreflabel="drg_table">
 		<title><varname>drg_table</varname>(str)</title>
 		<para>
 		The name of the db table storing groups.
@@ -512,7 +512,7 @@ modparam("drouting", "drg_table", "groups")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_drc_table" xreflabel="drc_table">
 		<title><varname>drc_table</varname>(str)</title>
 		<para>
 		The name of the db table storing definitions of the carriers that will
@@ -532,7 +532,7 @@ modparam("drouting", "drc_table", "my_dr_carriers")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ruri_avp" xreflabel="ruri_avp">
 		<title><varname>ruri_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing Request URIs to be later used
@@ -556,7 +556,7 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 	</section>
 
 
-	<section>
+	<section id="param_gw_id_avp" xreflabel="gw_id_avp">
 		<title><varname>gw_id_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing the id of the current selected
@@ -581,7 +581,7 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 		</example>
 	</section>
 
-	<section>
+	<section id="param_gw_priprefix_avp" xreflabel="gw_priprefix_avp">
 		<title><varname>gw_priprefix_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing the PRI prefix of the current selected
@@ -604,7 +604,7 @@ modparam("drouting", "gw_priprefix_avp", '$avp(gw_priprefix)')
 	</section>
 
 
-	<section>
+	<section id="param_rule_id_avp" xreflabel="rule_id_avp">
 		<title><varname>rule_id_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing the id of the current matched
@@ -625,7 +625,7 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rule_prefix_avp" xreflabel="rule_prefix_avp">
 		<title><varname>rule_prefix_avp</varname> (str)</title>
 		<para>
 		The actual prefix that matched the routing rule (the part from RURI
@@ -646,7 +646,7 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 	</section>
 
 
-	<section>
+	<section id="param_carrier_id_avp" xreflabel="carrier_id_avp">
 		<title><varname>carrier_id_avp</varname> (str)</title>
 		<para>
 		AVP to be populate with the ID string for the carrier the
@@ -667,7 +667,7 @@ modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 	</section>
 
 
-	<section>
+	<section id="param_gw_sock_avp" xreflabel="gw_sock_avp">
 		<title><varname>gw_sock_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing sockets for alternative destinations
@@ -690,7 +690,7 @@ modparam("drouting", "gw_sock_avp", '$avp(77)')
 		</example>
 	</section>
 
-			<section>
+			<section id="param_rule_attrs_avp" xreflabel="rule_attrs_avp">
 		<title><varname>rule_attrs_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing rule attrs in case they are requested at least
@@ -713,7 +713,7 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 		</example>
 	</section>
 
-	<section>
+	<section id="param_define_blacklist" xreflabel="define_blacklist">
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
 		Defines a blacklist based on a list of GW types - the list will contain
@@ -737,7 +737,7 @@ modparam("drouting", "define_blacklist", 'list= 4,2')
 		</example>
 	</section>
 
-	<section>
+	<section id="param_default_group" xreflabel="default_group">
 		<title><varname>default_group</varname> (int)</title>
 		<para>
 		Group to be used if the caller (FROM user) is not found in the GROUP
@@ -757,7 +757,7 @@ modparam("drouting", "default_group", 4)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_force_dns" xreflabel="force_dns">
 		<title><varname>force_dns</varname> (int)</title>
 		<para>
 		Force DNS resolving of GW/destination names (if not IPs) during
@@ -778,7 +778,7 @@ modparam("drouting", "force_dns", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_persistent_state" xreflabel="persistent_state">
 		<title><varname>persistent_state</varname> (int)</title>
 		<para>
 		Specifies whether the <emphasis>state</emphasis> column
@@ -799,7 +799,7 @@ modparam("drouting", "persistent_state", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_no_concurrent_reload" xreflabel="no_concurrent_reload">
 		<title><varname>no_concurrent_reload</varname> (int)</title>
 		<para>
 			If enabled, the module will not allow do run multiple dr_reload
@@ -828,7 +828,7 @@ modparam("drouting", "no_concurrent_reload", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_interval" xreflabel="probing_interval">
 		<title><varname>probing_interval</varname> (integer)</title>
 		<para>
 		How often (in seconds) the probing of a destination should be done. If
@@ -850,7 +850,7 @@ modparam("drouting", "probing_interval", 60)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_method" xreflabel="probing_method">
 		<title><varname>probing_method</varname> (string)</title>
 		<para>
 		The SIP method to be used for the probing requests.
@@ -870,7 +870,7 @@ modparam("drouting", "probing_method", "INFO")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_from" xreflabel="probing_from">
 		<title><varname>probing_from</varname> (string)</title>
 		<para>
 		The FROM SIP URI to be advertised in the SIP probing requests.
@@ -890,7 +890,7 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_reply_codes" xreflabel="probing_reply_codes">
 		<title><varname>probing_reply_codes</varname> (string)</title>
 		<para>
 		A comma separted list of SIP reply codes. The codes defined here
@@ -912,7 +912,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_status_replication_cluster" xreflabel="status_replication_cluster">
 		<title><varname>status_replication_cluster</varname> (integer)</title>
 		<para>
 		A cluster ID for sharing the gateways/destinations
@@ -941,7 +941,7 @@ modparam("drouting", "status_replication_cluster", 9)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (int)</title>
 		<para>
 			Flag to configure whether to use domain match when querying
@@ -961,7 +961,7 @@ modparam("drouting", "use_domain", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_drg_user_col" xreflabel="drg_user_col">
 		<title><varname>drg_user_col</varname> (str)</title>
 		<para>
 		The name of the column in group db table where the username is stored.
@@ -980,7 +980,7 @@ modparam("drouting", "drg_user_col", "user")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_drg_domain_col" xreflabel="drg_domain_col">
 		<title><varname>drg_domain_col</varname> (str)</title>
 		<para>
 		The name of the column in group db table where the domain is stored.
@@ -999,7 +999,7 @@ modparam("drouting", "drg_domain_col", "host")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_drg_grpid_col" xreflabel="drg_grpid_col">
 		<title><varname>drg_grpid_col</varname> (str)</title>
 		<para>
 			The name of the column in group db table where the
@@ -1020,7 +1020,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 	</section>
 
 
-	<section>
+	<section id="param_use_partitions" xreflabel="use_partitions">
 		<title><varname>use_partitions</varname> (int)</title>
 		<para>
 		Flag to configure whether to use partitions for routing. If this
@@ -1042,7 +1042,7 @@ modparam("drouting", "use_partitions", 1)
 		</example>
 	</section>
 
-<section>
+<section id="param_db_partitions_url" xreflabel="db_partitions_url">
 		<title><varname>db_partitions_url</varname> (int)</title>
 		<para>
 		The url to the database containing partition-specific
@@ -1067,7 +1067,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opens
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_partitions_table" xreflabel="db_partitions_table">
 		<title><varname>db_partitions_table</varname> (int)</title>
 		<para>
 		The name of the table containing partition definitions. To be
@@ -1087,7 +1087,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_partition_id_pvar" xreflabel="partition_id_pvar">
 		<title><varname>partition_id_pvar</varname> (pvar)</title>
 		<para>
 			Variable which will store the name of the name partition when

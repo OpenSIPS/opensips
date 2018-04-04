@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	ALIAS_DB module can be used as an alternative for user aliases
@@ -19,7 +19,7 @@
 	tables in the same script.
 	</para>
 	</section>
-	<section>
+	<section  id="dependenciesid" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -49,9 +49,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
 		Database URL.
@@ -71,7 +71,7 @@ modparam("alias_db", "db_url", "&exampledb;")
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (str)</title>
 		<para>
 		Name of the column storing username.
@@ -91,7 +91,7 @@ modparam("alias_db", "user_column", "susername")
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (str)</title>
 		<para>
 		Name of the column storing user's domain.
@@ -111,7 +111,7 @@ modparam("alias_db", "domain_column", "sdomain")
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_alias_user_column" xreflabel="alias_user_column">
 		<title><varname>alias_user_column</varname> (str)</title>
 		<para>
 		Name of the column storing alias username.
@@ -131,7 +131,7 @@ modparam("alias_db", "alias_user_column", "auser")
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_alias_domain_column" xreflabel="alias_domain_column">
 		<title><varname>alias_domain_column</varname> (str)</title>
 		<para>
 		Name of the column storing alias domain.
@@ -151,7 +151,7 @@ modparam("alias_db", "alias_domain_column", "adomain")
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_domain_prefix" xreflabel="domain_prefix">
 		<title><varname>domain_prefix</varname> (str)</title>
 		<para>
 		Specifies the prefix to be stripped from the domain in R-URI before
@@ -172,7 +172,7 @@ modparam("alias_db", "domain_prefix", "sip.")
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_append_branches" xreflabel="append_branches">
 		<title><varname>append_branches</varname> (int)</title>
 		<para>
 			If the alias resolves to many SIP IDs, the first is replacing

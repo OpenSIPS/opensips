@@ -4,11 +4,11 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>Module description</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -45,9 +45,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_exec_query_threshold" xreflabel="exec_query_threshold">
 		<title><varname>exec_query_threshold</varname> (integer)</title>
 		<para>
 		If queries take longer than 'exec_query_threshold' microseconds, warning
@@ -67,7 +67,7 @@ modparam("db_postgres", "exec_query_threshold", 60000)
 </programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="param_max_db_queries" xreflabel="max_db_queries">
 		<title><varname>max_db_queries</varname> (integer)</title>
 		<para>
 		The maximum number of database queries to be executed. 

@@ -199,7 +199,7 @@ Chapter 1. Admin Guide
    directly manipulated in memory in order to guarantee fast
    interactions while being asynchronously synchronized to an SQL
    database. The latter helps achieve restart persistency. Consult
-   the working-mode-preset parameter for more details on all
+   the working_mode_preset parameter for more details on all
    possible runtime behaviors of the module.
 
    The OpenSIPS user location implementation is cluster-enabled.
@@ -641,7 +641,7 @@ serlocation")
 1.5.24. db_mode (integer, deprecated)
 
    Although it is backwards-compatible, this parameter has been
-   deprecated in favour of the more complete working-mode-preset,
+   deprecated in favour of the more complete working_mode_preset,
    which it conflicts with.
 
    Default value is "not set".
@@ -707,7 +707,7 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
 
 1.5.26. cluster_mode (string)
 
-   This parameter is automatically set by working-mode-preset.
+   This parameter is automatically set by working_mode_preset.
 
    The behavior of the global OpenSIPS user location cluster.
    Refer to section Distributed SIP User Location for details.
@@ -740,7 +740,7 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 
 1.5.27. restart_persistency (string)
 
-   This parameter is automatically set by working-mode-preset.
+   This parameter is automatically set by working_mode_preset.
 
    Controls the behavior of OpenSIPS user location instance
    following a restart. This parameter has no effect in some
@@ -774,7 +774,7 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 
 1.5.28. sql_write_mode (string)
 
-   This parameter is automatically set by working-mode-preset.
+   This parameter is automatically set by working_mode_preset.
 
    Only valid if restart_persistency is enabled. Controls the
    runtime behavior of OpenSIPS writes to the SQL database.

@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The dialog module provides dialog awareness to the &osips; proxy. Its
@@ -33,7 +33,7 @@
 	The dialog is automatically destroyed when a <quote>BYE</quote> is
 	received. In case of no <quote>BYE</quote>, the dialog lifetime is
 	controlled via the default timeout (see <quote>default_timeout</quote>
-	- <xref linkend="default-timeout-id"/>) and custom timeout (see
+	- <xref linkend="param_default_timeout"/>) and custom timeout (see
 	<quote>$DLG_timeout</quote> - <xref linkend="timeout-pvar-id"/>).
 	</para>
 	</section>
@@ -123,7 +123,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -169,9 +169,9 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_enable_stats" xreflabel="enable_stats">
 		<title><varname>enable_stats</varname> (integer)</title>
 		<para>
 		If the statistics support should be enabled or not. Via statistic
@@ -193,7 +193,7 @@ modparam("dialog", "enable_stats", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The size of the hash table internally used to keep the dialogs. A
@@ -221,7 +221,7 @@ modparam("dialog", "hash_size", 1024)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_log_profile_hash_size" xreflabel="log_profile_hash_size">
 		<title><varname>log_profile_hash_size</varname> (integer)</title>
 		<para>
 		The size of the hash table internally used to store  profile->dialog
@@ -246,7 +246,7 @@ modparam("dialog", "log_profile_hash_size", 5) #set a table size of 32
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rr_param" xreflabel="rr_param">
 		<title><varname>rr_param</varname> (string)</title>
 		<para>
 		Name of the Record-Route parameter to be added with the dialog cookie.
@@ -267,7 +267,7 @@ modparam("dialog", "rr_param", "xyz")
 		</example>
 	</section>
 
-	<section id="default-timeout-id">
+	<section id="param_default_timeout" xreflabel="default_timeout">
 		<title><varname>default_timeout</varname> (integer)</title>
 		<para>
 		The default dialog timeout (in seconds) if no custom one is set.
@@ -287,7 +287,7 @@ modparam("dialog", "default_timeout", 21600)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dlg_extra_hdrs" xreflabel="dlg_extra_hdrs">
 		<title><varname>dlg_extra_hdrs</varname> (string)</title>
 		<para>
 		A string containing the extra headers (full format, with EOH)
@@ -308,7 +308,7 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dlg_match_mode" xreflabel="dlg_match_mode">
 		<title><varname>dlg_match_mode</varname> (integer)</title>
 		<para>
 		How the seqential requests should be matched against the known dialogs.
@@ -350,7 +350,7 @@ modparam("dialog", "dlg_match_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		If you want to store the information about the dialogs in a database
@@ -371,7 +371,7 @@ modparam("dialog", "db_url", "&exampledb;")
 		</example>
 	</section>
 
-<section>
+<section id="param_db_mode" xreflabel="db_mode">
 		<title><varname>db_mode</varname> (integer)</title>
 		<para>
 		Describe how to push into the DB the dialogs' information from memory.
@@ -413,7 +413,7 @@ modparam("dialog", "db_mode", 1)
 		</example>
 	</section>
 
-<section>
+<section id="param_db_update_period" xreflabel="db_update_period">
 		<title><varname>db_update_period</varname> (integer)</title>
 		<para>
 			The interval (seconds) at which to update dialogs' information if you chose to store the dialogs' info at a given interval.
@@ -434,7 +434,7 @@ modparam("dialog", "db_update_period", 120)
 		</example>
 	</section>
 
-<section>
+<section id="param_options_ping_interval" xreflabel="options_ping_interval">
 		<title><varname>options_ping_interval</varname> (integer)</title>
 		<para>
 			The interval (seconds) at which OpenSIPS will generate in-dialog OPTIONS pings for dialogs.
@@ -454,7 +454,7 @@ modparam("dialog", "options_ping_interval", 20)
 		</example>
 	</section>
 
-<section>
+<section id="param_reinvite_ping_interval" xreflabel="reinvite_ping_interval">
 		<title><varname>reinvite_ping_interval</varname> (integer)</title>
 		<para>
 			The interval (seconds) at which OpenSIPS will generate in-dialog Re-INVITE pings for dialogs.
@@ -474,7 +474,7 @@ modparam("dialog", "reinvite_ping_interval", 600)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		If you want to store the information about the dialogs in a
@@ -495,7 +495,7 @@ modparam("dialog", "table_name", "my_dialog")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_call_id_column" xreflabel="call_id_column">
 		<title><varname>call_id_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' callid.
@@ -515,7 +515,7 @@ modparam("dialog", "call_id_column", "callid_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_from_uri_column" xreflabel="from_uri_column">
 		<title><varname>from_uri_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the caller's
@@ -536,7 +536,7 @@ modparam("dialog", "from_uri_column", "from_uri_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_from_tag_column" xreflabel="from_tag_column">
 		<title><varname>from_tag_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the From tag from
@@ -557,7 +557,7 @@ modparam("dialog", "from_tag_column", "from_tag_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_to_uri_column" xreflabel="to_uri_column">
 		<title><varname>to_uri_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the calee's sip address.
@@ -578,7 +578,7 @@ modparam("dialog", "to_uri_column", "to_uri_c_name")
 	</section>
 
 
-	<section>
+	<section id="param_to_tag_column" xreflabel="to_tag_column">
 		<title><varname>to_tag_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the To tag from
@@ -599,7 +599,7 @@ modparam("dialog", "to_tag_column", "to_tag_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_from_cseq_column" xreflabel="from_cseq_column">
 		<title><varname>from_cseq_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the cseq from caller
@@ -620,7 +620,7 @@ modparam("dialog", "from_cseq_column", "from_cseq_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_to_cseq_column" xreflabel="to_cseq_column">
 		<title><varname>to_cseq_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the cseq from callee
@@ -641,7 +641,7 @@ modparam("dialog", "to_cseq_column", "to_cseq_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_from_route_column" xreflabel="from_route_column">
 		<title><varname>from_route_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the route records from
@@ -662,7 +662,7 @@ modparam("dialog", "from_route_column", "from_route_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_to_route_column" xreflabel="to_route_column">
 		<title><varname>to_route_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the route records from
@@ -683,7 +683,7 @@ modparam("dialog", "to_route_column", "to_route_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_from_contact_column" xreflabel="from_contact_column">
 		<title><varname>from_contact_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the caller's contact
@@ -704,7 +704,7 @@ modparam("dialog", "from_contact_column", "from_contact_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_to_contact_column" xreflabel="to_contact_column">
 		<title><varname>to_contact_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the callee's contact
@@ -725,7 +725,7 @@ modparam("dialog", "to_contact_column", "to_contact_c_name")
 		</example>
 	</section>
 
-<section>
+<section id="param_from_sock_column" xreflabel="from_sock_column">
 		<title><varname>from_sock_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the information about
@@ -746,7 +746,7 @@ modparam("dialog", "from_sock_column", "from_sock_c_name")
 		</example>
 	</section>
 
-<section>
+<section id="param_to_sock_column" xreflabel="to_sock_column">
 		<title><varname>to_sock_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store information about the
@@ -767,7 +767,7 @@ modparam("dialog", "to_sock_column", "to_sock_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dlg_id_column" xreflabel="dlg_id_column">
 		<title><varname>dlg_id_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs'
@@ -788,7 +788,7 @@ modparam("dialog", "dlg_id_column", "dlg_id_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_state_column" xreflabel="state_column">
 		<title><varname>state_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the
@@ -809,7 +809,7 @@ modparam("dialog", "state_column", "state_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_start_time_column" xreflabel="start_time_column">
 		<title><varname>start_time_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the
@@ -830,7 +830,7 @@ modparam("dialog", "start_time_column", "start_time_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timeout_column" xreflabel="timeout_column">
 		<title><varname>timeout_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' timeout.
@@ -850,7 +850,7 @@ modparam("dialog", "timeout_column", "timeout_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profiles_column" xreflabel="profiles_column">
 		<title><varname>profiles_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' profiles.
@@ -870,7 +870,7 @@ modparam("dialog", "profiles_column", "profiles_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_vars_column" xreflabel="vars_column">
 		<title><varname>vars_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' vars.
@@ -890,7 +890,7 @@ modparam("dialog", "vars_column", "vars_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_sflags_column" xreflabel="sflags_column">
 		<title><varname>sflags_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' script flags.
@@ -910,7 +910,7 @@ modparam("dialog", "sflags_column", "sflags_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_mflags_column" xreflabel="mflags_column">
 		<title><varname>mflags_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' module flags.
@@ -930,7 +930,7 @@ modparam("dialog", "mflags_column", "mflags_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_flags_column" xreflabel="flags_column">
 		<title><varname>flags_column</varname> (string)</title>
 		<para>
 			The column's name in the database to store the dialogs' flags.
@@ -950,7 +950,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profiles_with_value" xreflabel="profiles_with_value">
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
 			List of names for profiles with values. Flags
@@ -973,7 +973,7 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profiles_no_value" xreflabel="profiles_no_value">
 		<title><varname>profiles_no_value</varname> (string)</title>
 		<para>
 			List of names for profiles without values. Flags
@@ -996,7 +996,7 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s; repl/b;"
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_flush_vals_profiles" xreflabel="db_flush_vals_profiles">
 		<title><varname>db_flush_vals_profiles</varname> (int)</title>
 		<para>
 			Pushes dialog values, profiles and flags into the database
@@ -1017,7 +1017,7 @@ modparam("dialog", "db_flush_vals_profiles", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timer_bulk_del_no" xreflabel="timer_bulk_del_no">
 		<title><varname>timer_bulk_del_no</varname> (int)</title>
 		<para>
 			The number of dialogs that should be attempted to be
@@ -1039,7 +1039,7 @@ modparam("dialog", "timer_bulk_del_no", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			Enables distributed dialog profiles and specifies the
@@ -1060,7 +1060,7 @@ modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profile_value_prefix" xreflabel="profile_value_prefix">
 		<title><varname>profile_value_prefix</varname> (string)</title>
 		<para>
 			Specifies what prefix should be added to the profiles with
@@ -1082,7 +1082,7 @@ modparam("dialog", "profile_value_prefix", "dlgv_")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profile_no_value_prefix" xreflabel="profile_no_value_prefix">
 		<title><varname>profile_no_value_prefix</varname> (string)</title>
 		<para>
 			Specifies what prefix should be added to the profiles without
@@ -1104,7 +1104,7 @@ modparam("dialog", "profile_no_value_prefix", "dlgnv_")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profile_size_prefix" xreflabel="profile_size_prefix">
 		<title><varname>profile_size_prefix</varname> (string)</title>
 		<para>
 			Specifies what prefix should be added to the entity that holds
@@ -1126,7 +1126,7 @@ modparam("dialog", "profile_size_prefix", "dlgs_")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profile_timeout" xreflabel="profile_timeout">
 		<title><varname>profile_timeout</varname> (int)</title>
 		<para>
 			Specifies how long a dialog profile should be kept in the CacheDB
@@ -1148,7 +1148,7 @@ modparam("dialog", "profile_timeout", "43200")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dialog_replication_cluster" xreflabel="dialog_replication_cluster">
 		<title><varname>dialog_replication_cluster</varname> (int)</title>
 		<para>
 			Specifies the cluster ID for dialog replication using the
@@ -1171,7 +1171,7 @@ modparam("dialog", "dialog_replication_cluster", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_profile_replication_cluster" xreflabel="profile_replication_cluster">
 		<title><varname>profile_replication_cluster</varname> (int)</title>
 		<para>
 			Specifies the cluster ID for profile replication using the
@@ -1194,7 +1194,7 @@ modparam("dialog", "profile_replication_cluster", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_replicate_profiles_buffer" xreflabel="replicate_profiles_buffer">
 		<title><varname>replicate_profiles_buffer</varname> (string)</title>
 		<para>
 		Used to specify the length of the buffer used by the binary
@@ -1217,7 +1217,7 @@ modparam("dialog", "replicate_profiles_buffer", 500)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_replicate_profiles_check" xreflabel="replicate_profiles_check">
 		<title><varname>replicate_profiles_check</varname> (string)</title>
 		<para>
 		Timer in seconds, used to specify how often the module should check
@@ -1238,7 +1238,7 @@ modparam("dialog", "replicate_profiles_check", 100)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_replicate_profiles_timer" xreflabel="replicate_profiles_timer">
 		<title><varname>replicate_profiles_timer</varname> (string)</title>
 		<para>
 		Timer in milliseconds, used to specify how often the module
@@ -1258,7 +1258,7 @@ modparam("dialog", "replicate_profiles_timer", 100)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_replicate_profiles_expire" xreflabel="replicate_profiles_expire">
 		<title><varname>replicate_profiles_expire</varname> (string)</title>
 		<para>
 		Timer in seconds, used to specify when the profiles counters received
@@ -1280,7 +1280,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 </programlisting>
 		</example>
 	</section>
-	<section id='dlg_sharing_tag' xreflabel="dlg_sharing_tag">
+	<section id="param_dlg_sharing_tag" xreflabel="dlg_sharing_tag">
 		<title><varname>dlg_sharing_tag</varname> (string)</title>
 		<para>
 		This parameter can be set(mutiple times) in order to define a sharing tag,
@@ -2004,7 +2004,7 @@ $var(account) = $dlg_val(account_type);
 		From now on, actions like in-dialog pinging, DB updates etc. will depend on the tag state.
 		</para>
 		<para>
-		If the tag is not already defined through the <xref linkend="dlg_sharing_tag"/> param and/or
+		If the tag is not already defined through the <xref linkend="param_dlg_sharing_tag"/> param and/or
 		have it's state changed by the <xref linkend="dlg_set_sharing_tag_active"/> MI command, the
 		initial state will be <emphasis>backup</emphasis>.
 		</para>

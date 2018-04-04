@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The purpose of the <emphasis role='bold'>Script Helper module</emphasis>
@@ -55,7 +55,7 @@
 
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 		<section>
 		<title>&osips; Modules</title>
@@ -64,7 +64,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>dialog</emphasis> (only if <emphasis role='bold'><xref linkend="use_dialog"/></emphasis> is enabled).
+				<emphasis>dialog</emphasis> (only if <emphasis role='bold'><xref linkend="param_use_dialog"/></emphasis> is enabled).
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -87,10 +87,10 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section id="use_dialog" xreflabel="use_dialog">
+	<section id="param_use_dialog" xreflabel="use_dialog">
 		<title><varname>use_dialog</varname> (integer)</title>
 		<para>
 		Enables dialog support. Note that the dialog module must be loaded before
@@ -109,7 +109,7 @@ modparam("script_helper", "use_dialog", 1)
 		</example>
 	</section>
 
-	<section id="create_dialog_flags" xreflabel="create_dialog_flags">
+	<section id="param_create_dialog_flags" xreflabel="create_dialog_flags">
 		<title><varname>create_dialog_flags</varname> (string)</title>
 		<para>
 		Flags used when creating dialogs. For details on these flags, please refer
@@ -128,7 +128,7 @@ modparam("script_helper", "create_dialog_flags", "PpB")
 		</example>
 	</section>
 
-	<section id="sequential_route" xreflabel="sequential_route">
+	<section id="param_sequential_route" xreflabel="sequential_route">
 		<title><varname>sequential_route</varname> (string)</title>
 		<para>
 		Optional route to be run just before sequential requests are relayed.
@@ -162,6 +162,6 @@ route [sequential_handling]
 		The Max-Forwards header is currently not handled at all.
 	</para>
 
-	</section>
+</section>
 </chapter>
 

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a cache system designed to work with
@@ -95,7 +95,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -141,9 +141,9 @@ sudo yum install json-c-devel mongo-c-driver-devel
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			The URLs of the server groups that OpenSIPS will connect to in order
@@ -182,7 +182,7 @@ cache_remove("mongodb:cluster1", "key");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_exec_threshold" xreflabel="exec_threshold">
 		<title><varname>exec_threshold</varname> (int)</title>
 		<para>
 			The maximum number of microseconds that a mongodb query can last.
@@ -202,7 +202,7 @@ modparam("cachedb_mongodb", "exec_threshold", 100000)
 		</example>
 	</section>
 
-		<section>
+		<section id="param_compat_mode_2.4" xreflabel="compat_mode_2.4">
 		<title><varname>compat_mode_2.4</varname> (int)</title>
 		<para>
 			Switch the module into compatibility mode for MongoDB 2.4 servers.
@@ -228,7 +228,7 @@ modparam("cachedb_mongodb", "compat_mode_2.4", 1)
 		</example>
 	</section>
 
-		<section>
+		<section id="param_compat_mode_3.0" xreflabel="compat_mode_3.0">
 		<title><varname>compat_mode_3.0</varname> (int)</title>
 		<para>
 			Switch the module into compatibility mode for MongoDB 2.6/3.0 servers.

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The Domain Policy module implements draft-lendl-domain-policy-ddds-02 in
@@ -21,7 +21,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<para>
 		The module depends on the following modules (in the other words the 
@@ -34,9 +34,9 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		This is <acronym>URL</acronym> of the database to be used.
@@ -52,7 +52,7 @@ modparam("domainpolicy", "db_url", "postgresql://user:pass@db_host/opensips")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_dp_table" xreflabel="dp_table">
 		<title><varname>dp_table</varname> (string)</title>
 		<para>
 		Name of table containing the local support domain policy setup.
@@ -67,7 +67,7 @@ modparam("domainpolicy", "dp_table", "supportedpolicies")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_dp_col_rule" xreflabel="dp_col_rule">
 		<title><varname>dp_col_rule</varname> (string)</title>
 		<para>
 		Name of column containing the domain policy rule name which is equal
@@ -83,7 +83,7 @@ modparam("domainpolicy", "dp_col_rule", "rules")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_dp_col_type" xreflabel="dp_col_type">
 		<title><varname>dp_col_type</varname> (string)</title>
 		<para>
 		Name of column containing the domain policy rule type.
@@ -103,7 +103,7 @@ modparam("domainpolicy", "dp_col_type", "type")
 	</section>
 
 
-	<section>
+	<section id="param_dp_col_att" xreflabel="dp_col_att">
 		<title><varname>dp_col_att</varname> (string)</title>
 		<para>
 		Name of column containing the AVP's name. If the rule stored in this
@@ -119,7 +119,7 @@ modparam("domainpolicy", "dp_col_att", "attribute")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_dp_col_val" xreflabel="dp_col_val">
 		<title><varname>dp_col_val</varname> (string)</title>
 		<para>
 		Name of column containing the value for AVPs created by dp_can_connect().
@@ -134,7 +134,7 @@ modparam("domainpolicy", "dp_col_val", "values")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_port_override_avp" xreflabel="port_override_avp">
 		<title><varname>port_override_avp</varname> (string)</title>
 		<para>
 		This parameter defines the name of the AVP where dp_apply_policy() will look
@@ -151,7 +151,7 @@ modparam("domainpolicy", "port_override_avp", "portoverride")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_transport_override_avp" xreflabel="transport_override_avp">
 		<title><varname>transport_override_avp</varname> (string)</title>
 		<para>
 		Name of the AVP which contains the override transport setting. 
@@ -168,7 +168,7 @@ modparam("domainpolicy", "transport_override_avp", "transportoverride")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_domain_replacement_avp" xreflabel="domain_replacement_avp">
 		<title><varname>domain_replacement_avp</varname> (string)</title>
 		<para>
 		Name of the AVP which contains a domain replacement. 
@@ -185,7 +185,7 @@ modparam("domainpolicy", "domain_replacement_avp", "domainreplacement")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_domain_prefix_avp" xreflabel="domain_prefix_avp">
 		<title><varname>domain_prefix_avp</varname> (string)</title>
 		<para>
 		Name of the AVP which contains a domain prefix. 
@@ -202,7 +202,7 @@ modparam("domainpolicy", "domain_prefix_avp", "domainprefix")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_domain_suffix_avp" xreflabel="domain_suffix_avp">
 		<title><varname>domain_suffix_avp</varname> (string)</title>
 		<para>
 		Name of the AVP which contains a domain suffix. 
@@ -218,7 +218,7 @@ modparam("domainpolicy", "domain_suffix_avp", "domainsuffix")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_send_socket_avp" xreflabel="send_socket_avp">
 		<title><varname>send_socket_avp</varname> (string)</title>
 		<para>
 		Name of the AVP which contains a send_socket. The format of the

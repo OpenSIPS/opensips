@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides a simple way for handling different events,
@@ -93,7 +93,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -124,7 +124,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	<para>The module does not export parameters to be used in configuration script.</para>
 	</section>

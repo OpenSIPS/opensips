@@ -4,12 +4,12 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>Various checks related to &sip; &uri;.</para>
 	<para>This module implements some URI related AAA or DB based tests.</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -45,9 +45,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_aaa_url" xreflabel="aaa_url">
 		<title><varname>aaa_url</varname> (string)</title>
 		<para>
 		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
@@ -61,7 +61,7 @@ modparam("uri", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_service_type" xreflabel="service_type">
 		<title><varname>service_type</varname> (integer)</title>
 		<para>
 		AAA service type used in
@@ -83,7 +83,7 @@ modparam("uri", "service_type", 11)
 	</section>
 
 
-	<section>
+	<section id="param_use_sip_uri_host" xreflabel="use_sip_uri_host">
 		<title><varname>use_sip_uri_host</varname> (integer)</title>
 		<para>
 		If zero, <function>aaa_does_uri_exist</function>
@@ -106,7 +106,7 @@ modparam("uri", "use_sip_uri_host", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		&url; of the database to be used.
@@ -130,13 +130,13 @@ modparam("uri", "db_url", "mysql://username:password@localhost/opensips")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (string)</title>
 		<para>
 		The DB table that should be used. Its possible to use the
 		<quote>subscriber</quote> and <quote>uri</quote> table. If the
 		<quote>uri</quote> table should be used, an additional parameter
-		(<xref linkend="use-uri-table"/>) must be set.
+		(<xref linkend="param_use_uri_table"/>) must be set.
 		</para>
 		<para>
 		<emphasis>
@@ -153,7 +153,7 @@ modparam("uri", "db_table", "uri")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
 		Column holding usernames in the table.
@@ -173,7 +173,7 @@ modparam("uri", "user_column", "username")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
 		Column holding domain in the table.
@@ -193,7 +193,7 @@ modparam("uri", "domain_column", "domain")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_uriuser_column" xreflabel="uriuser_column">
 		<title><varname>uriuser_column</varname> (string)</title>
 		<para>
 		Column holding &uri; username in the table.
@@ -213,7 +213,7 @@ modparam("uri", "uriuser_column", "uri_user")
 		</example>
 	</section>
 
-	<section id="use-uri-table">
+	<section id="param_use_uri_table" xreflabel="use_uri_table">
 		<title><varname>use_uri_table</varname> (integer)</title>
 		<para>
 		Specify if the <quote>uri</quote> table should be used for checkings
@@ -234,7 +234,7 @@ modparam("uri", "use_uri_table", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		Specify if the domain part of the URI should be used to identify the

@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which provides SQLite support for OpenSIPS.
@@ -12,7 +12,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -50,9 +50,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_alloc_limit" xreflabel="alloc_limit">
 		<title><varname>alloc_limit</varname> (integer)</title>
 		<para>
 		Since the library does not support a function to return the number of rows
@@ -77,7 +77,7 @@ modparam("db_sqlite", "alloc_limit", 25)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_load_extension" xreflabel="load_extension">
 		<title><varname>load_extension</varname> (string)</title>
 		<para>
 		Since the library does not support a function to return the number of rows
