@@ -1260,11 +1260,21 @@ int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
 	old_latency = c->sipping_latency;
 	c->sipping_latency = new_latency;
 
-	/* if the limits are not set, the condition is always true */
-	if (new_latency >= latency_event_min_us
-	       || abs(new_latency - old_latency) >= latency_event_min_us_delta)
-		ul_raise_contact_event(ei_c_latency_update_id, c);
+	if (latency_event_min_us && new_latency >= latency_event_min_us)
+		goto raise_event;
 
+	if (latency_event_min_us_delta && old_latency &&
+	        && abs(new_latency - old_latency >= latency_event_min_us_delta)
+		goto raise_event;
+
+	if (!latency_event_min_us && !latency_event_min_us_delta)
+		goto raise_event;
+
+	_unlock_ulslot(d, contact_id);
+	return 0;
+
+raise_event:
+	ul_raise_contact_event(ei_c_latency_update_id, c);
 	_unlock_ulslot(d, contact_id);
 	return 0;
 }
