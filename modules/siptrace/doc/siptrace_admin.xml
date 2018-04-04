@@ -206,9 +206,9 @@ modparam("siptrace", "trace_id",
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sip_trace" xreflabel="sip_trace()">
 		<title>
 		<function moreinfo="none">sip_trace(trace_id, [scope, [type, [trace_attrs]]])</function>
 		</title>

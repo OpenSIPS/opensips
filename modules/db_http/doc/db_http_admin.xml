@@ -264,7 +264,7 @@ modparam("db_http", "timeout",5000)
 
 </section>
 
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
 	This module does not export any functions.

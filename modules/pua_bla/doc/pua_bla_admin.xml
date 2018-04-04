@@ -151,11 +151,11 @@ modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
 </section>	
 	
 	
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-		<section>
+		<section id="func_bla_set_flag" xreflabel="bla_set_flag()">
 				<title>
-				<function moreinfo="none">bla_set_flag</function>
+				<function moreinfo="none">bla_set_flag()</function>
 				</title>
 			<para>
 				The function is used to mark REGISTER requests made to a BLA AOR.
@@ -175,9 +175,9 @@ if(is_method("REGISTER") &amp;&amp; $tu=~"bla_aor@opensips.org")
 		</example>
 
 		</section>
-	<section>
+	<section id="func_bla_handle_notify" xreflabel="bla_handle_notify()">
 				<title>
-				<function moreinfo="none">bla_handle_notify</function>
+				<function moreinfo="none">bla_handle_notify()</function>
 				</title>
 			<para>
 				The function handles Notify requests sent from phones on the

@@ -260,8 +260,8 @@ Chapter 1. Admin Guide
    executing replies from the other branch).
 
    For how to define branch flags and use via script, see
-   Section 1.4.14, “ t_on_branch(branch_route) ” and the
-   setbflag(), resetbflag() and isbflagset() script functions.
+   t_on_branch() and the setbflag(), resetbflag() and isbflagset()
+   script functions.
 
    Also, modules may set branch flags before transaction creation
    (for the moment this feature is not available in script). The
@@ -361,9 +361,9 @@ Chapter 1. Admin Guide
    the UAC and not by us), there is no way to determine who “owns”
    the transaction. Therefore, if we do not find a local
    transaction for these requests, we broadcast them to all the
-   other instances using the t_anycast_replicate function. Again,
-   this is done in a very efficient manner using the proto_bin
-   transport.
+   other instances using the t_anycast_replicate() function.
+   Again, this is done in a very efficient manner using the
+   proto_bin transport.
 
 1.1.5. Usage Scope
 
@@ -1181,12 +1181,12 @@ branch_route[1] {
    branches. Also it is possible for the transaction not to have
    any ongoing branches at the moment of the injection (still, the
    transaction must wait for new branches, even if all existing
-   ones are completed - see the t_wait_for_new_branches function
+   ones are completed - see the t_wait_for_new_branches() function
    for this).
 
    The main usage scenario for this function (and also what makes
-   it different from t_relay is the ability to add new branches to
-   an ongoing transaction from script routes not related to the
+   it different from t_relay() is the ability to add new branches
+   to an ongoing transaction from script routes not related to the
    transaction ( like timer route, event route, notification
    route, and other). In such routes, other functions/module used
    before the injection will point to the transaction to be
@@ -1229,7 +1229,7 @@ route[event_notification] {
    relaying the transaction, the transaction will not terminate
    upon the completion of the branches and not send the 404 to the
    caller - it will wait for new branches to be injected (see
-   t_inject_branches function) until the fr_inv timer hits.
+   t_inject_branches() function) until the fr_inv timer hits.
 
    Example 1.38. t_wait_for_new_branches usage
 ...

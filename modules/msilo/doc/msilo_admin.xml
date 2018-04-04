@@ -577,9 +577,9 @@ modparam("msilo", "max_messages", 0)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_m_store" xreflabel="m_store()">
 		<title><function moreinfo="none">m_store([owner])</function></title>
 		<para>
 		The method stores certain parts of the current &sip; request (it 
@@ -613,7 +613,7 @@ m_store("$tu");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_m_dump" xreflabel="m_dump()">
 		<title><function moreinfo="none">m_dump([owner, [maxmsg]])</function></title>
 		<para>
 		The method sends stored messages for the &sip; user that is going to 

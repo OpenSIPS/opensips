@@ -119,9 +119,9 @@ modparam("userblacklist", "use_domain", 0)
 	    </example>
     </section>
 </section>
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_check_user_blacklist" xreflabel="check_user_blacklist()">
 	    <title>
 		<function moreinfo="none">check_user_blacklist (string user, string domain, string number, string table)</function>
 	    </title>
@@ -146,7 +146,7 @@ if (!check_user_blacklist("user", "domain.com"))
 		</programlisting>
 	    </example>
 	</section>
-	<section>
+	<section id="func_check_blacklist" xreflabel="check_blacklist()">
 	    <title>
 		<function moreinfo="none">check_blacklist (string table)</function>
 	    </title>

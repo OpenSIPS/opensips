@@ -1116,9 +1116,9 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 
 </section>
 
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_do_routing" xreflabel="do_routing()">
 		<title>
 		<function moreinfo="none">do_routing([part_and_or_groupID], [flags], [gw_whitelist], [rule_attrs_pvar], [gw_attrs_pvar], [carrier_attrs_pvar])</function>
 		</title>
@@ -1273,7 +1273,7 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_route_to_carrier" xreflabel="route_to_carrier()">
 		<title>
 		<function moreinfo="none">route_to_carrier(part_and_or_carrier_id, [gw_attrs_pvar], [carrier_attrs_pvar])</function>
 		</title>
@@ -1372,7 +1372,7 @@ if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_route_to_gw" xreflabel="route_to_gw()">
 		<title>
 		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_pvar])</function>
 		</title>
@@ -1461,7 +1461,7 @@ if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_use_next_gw" xreflabel="use_next_gw()">
 		<title>
 		<function moreinfo="none">use_next_gw([partition','] [rule_attrs_pvar], [gw_attrs_pvar], [carrier_attrs_pvar])/next_routing()</function>
 		</title>
@@ -1560,7 +1560,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_goes_to_gw" xreflabel="goes_to_gw()">
 		<title>
 		<function moreinfo="none">goes_to_gw([partition','] [type], [flags], [gw_attrs_pvar])</function>
 		</title>
@@ -1673,7 +1673,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_from_gw" xreflabel="is_from_gw()">
 		<title>
 		<function moreinfo="none">is_from_gw([partition','] [type], [flag], [gw_attrs_pvar])</function>
 		</title>
@@ -1777,7 +1777,7 @@ if (is_from_gw("my_partition","3","1") {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_dr_is_gw" xreflabel="dr_is_gw()">
 		<title>
 		<function moreinfo="none">dr_is_gw([partition,] src_avp, [type], [flag], [gw_attrs_pvar])</function>
 		</title>
@@ -1881,7 +1881,7 @@ if (dr_is_gw("my_partition","$avp(uac)","3") {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_dr_disable" xreflabel="dr_disable()">
 		<title>
 		<function moreinfo="none">dr_disable()</function>
 		</title>

@@ -90,12 +90,12 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<para>
 	Functions exported to be used in configuration file.
 	</para>
-	<section>
+	<section id="func_pua_xmpp_notify" xreflabel="pua_xmpp_notify()">
 		<title>
 		<function moreinfo="none">pua_xmpp_notify()</function>
 		</title>
@@ -123,7 +123,7 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 		</example>
 	</section>
 
-	<section>
+	<section id="func_pua_xmpp_req_winfo" xreflabel="pua_xmpp_req_winfo()">
 		<title>
 		<function moreinfo="none">pua_xmpp_req_winfo(char* request_uri, char* expires)</function>
 		</title>

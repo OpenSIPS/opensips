@@ -283,7 +283,7 @@ modparam("mi_fifo", "trace_bwlist", "w: sip_trace")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 
 	<title>Exported Functions</title>
 		<para>

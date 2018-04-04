@@ -210,8 +210,8 @@ modparam("sms", "links", "NOKIA[D1;d2]")
 
    The default network to use. If no one specified, the first
    defined network is used. This parameter is useful only if the
-   “sms_send_msg” exported function is used (see Section 1.4,
-   “Exported Functions”).
+   “sms_send_msg” exported function is used (see
+   exported_functions).
 
    Example 1.4. Set default_net parameter
 ...

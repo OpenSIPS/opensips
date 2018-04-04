@@ -63,9 +63,9 @@ modparam("gflags", "initial", 15)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_set_gflag" xreflabel="set_gflag()">
 		<title><function moreinfo="none">set_gflag(flag)</function></title>
 		<para>
 		Set the bit at the position <quote>flag</quote> in global flags.
@@ -87,7 +87,7 @@ set_gflag("4");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_reset_gflag" xreflabel="reset_gflag()">
 		<title><function moreinfo="none">reset_gflag(flag)</function></title>
 		<para>
 		Reset the bit at the position <quote>flag</quote> in global flags.
@@ -109,7 +109,7 @@ reset_gflag("4");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_gflag" xreflabel="is_gflag()">
 		<title><function moreinfo="none">is_gflag(flag)</function></title>
 		<para>
 		Check if bit at the position <quote>flag</quote> in global flags is

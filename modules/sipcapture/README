@@ -119,9 +119,8 @@ Chapter 1. Admin Guide
      * Homer encapsulation protocl mode (HEP v1/2/3). With version
        2.2 comes the new HEPv3 support using the proto _hep
        module. Also header manipulation support for HEPv3 has been
-       added. See Section 1.4.3, “ hep_set([data_type,] chunk_id,
-       [vendor_id,] chunk_data) ” for more details. If you want
-       more information about hep protocol check this link.
+       added. See hep_set() for more details. If you want more
+       information about hep protocol check this link.
 
    The capturing can be turned on/off using fifo commad.
 
@@ -539,27 +538,23 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5
    UTE.
 
    Meaning of the parameters is as follows:
-     * data_type(string) - same meaning as in Section 1.4.3, “
-       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”;
-       can miss if it's a generic chunk
-     * chunk_id - same meaning as in Section 1.4.3, “
-       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”
+     * data_type(string) - same meaning as in hep_set(); can miss
+       if it's a generic chunk
+     * chunk_id - same meaning as in hep_set()
      * vendor_id_pv(writable pvar) - will hold the vendor id(int
        value) of the chunk
      * chunk_data_pv(writable pvar) - will hold the data inside
        the chunk; some of the generic chunk data come in specific
        format, as following:
           + 0x0001 - proto_family(string) - AF_INET/AF_INET6
-          + 0x0002 proto_id(string) - see Section 1.4.3, “
-            hep_set([data_type,] chunk_id, [vendor_id,]
-            chunk_data) ” for possible values
+          + 0x0002 proto_id(string) - see hep_set() for possible
+            values
           + 0x0003/0x0004/0x0005/0x0006 src/dst_ip(string) - ip
             addresses in human readable format
           + 0x0009 timestamp(string) - time and date in human
             readable format
-          + 0x000B proto_type(string) - see Section 1.4.3, “
-            hep_set([data_type,] chunk_id, [vendor_id,]
-            chunk_data) ” for possible values
+          + 0x000B proto_type(string) - see hep_set() for possible
+            values
 
    Example 1.19. hep_set usage
 ...
@@ -579,8 +574,7 @@ hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
    UTE.
 
    Meaning of the parameters is as follows:
-     * chunk_id - same meaning as the chunk_id in Section 1.4.3, “
-       hep_set([data_type,] chunk_id, [vendor_id,] chunk_data) ”.
+     * chunk_id - same meaning as the chunk_id in hep_set().
 
    Example 1.20. hep_set usage
 ...

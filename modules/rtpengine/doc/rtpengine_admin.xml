@@ -311,7 +311,7 @@ modparam("rtpengine", "set_column", "set_new")
 
 	<section>
 	<title>Functions</title>
-	<section id="rtpengine.f.rtpengine_use_set">
+	<section id="func_rtpengine_use_set" xreflabel="rtpengine_use_set()">
 		<title>
 		<function moreinfo="none">rtpengine_use_set(setid)</function>
 		</title>
@@ -335,7 +335,7 @@ rtpengine_offer();
 </programlisting>
 		</example>
 	</section>
-        <section id="rtpengine.f.rtpengine_offer">
+		<section id="func_rtpengine_offer" xreflabel="rtpengine_offer()">
                 <title>
                 <function moreinfo="none">rtpengine_offer([flags[, sock_pvar[, sdp_pvar]]])</function>
                 </title>
@@ -655,7 +655,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
                 </example>
 
 	</section>
-        <section id="rtpengine.f.rtpengine_answer">
+		<section id="func_rtpengine_answer" xreflabel="rtpengine_answer()">
                 <title>
                 <function moreinfo="none">rtpengine_answer([flags[, sock_pvar[, sdp_pvar]]])</function>
                 </title>
@@ -680,7 +680,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 		</para>
 		</example>
         </section>
-	<section id="rtpengine.f.rtpengine_delete">
+	<section id="func_rtpengine_delete" xreflabel="rtpengine_delete()">
 		<title>
 		<function moreinfo="none">rtpengine_delete([flags[, sock_pvar]])</function>
 		</title>
@@ -704,7 +704,7 @@ rtpengine_delete();
 		</example>
 	</section>
 
-    <section id="rtpengine.f.rtpengine_manage">
+	<section id="func_rtpengine_manage" xreflabel="rtpengine_manage()">
         <title>
         <function moreinfo="none">rtpengine_manage([flags[, sock_pvar[, sdp_pvar]]])</function>
         </title>
@@ -771,7 +771,7 @@ rtpengine_manage();
 		</example>
         </section>
 
-	<section id="rtpengine.f.start_recording">
+	<section id="func_rtpengine_start_recording" xreflabel="rtpengine_start_recording()">
 		<title>
 		<function moreinfo="none">rtpengine_start_recording([sock_pvar])</function>
 		</title>

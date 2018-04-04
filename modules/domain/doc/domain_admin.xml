@@ -125,9 +125,9 @@ modparam("domain", "attrs_col", "attributes")
 	</section>
 	
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_is_from_local" xreflabel="is_from_local()">
 		<title><function moreinfo="none">is_from_local([attrs_pvar])</function></title>
 		<para>
 		Checks based on domain table if host part of From header uri is
@@ -155,7 +155,7 @@ if (is_from_local("$var(attrs)")) {
 		</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_is_uri_host_local" xreflabel="is_uri_host_local()">
 		<title><function moreinfo="none">is_uri_host_local([attrs_pvar])</function></title>
 		<para>
 		If called from route or failure route block, checks
@@ -188,7 +188,7 @@ if (is_uri_host_local("$var(attrs)")) {
 		</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_is_domain_local" xreflabel="is_domain_local()">
 		<title><function moreinfo="none">is_domain_local(pseudo_variable [, attrs_pvar])</function></title>
 		<para>
 		This function checks if the domain contained in the

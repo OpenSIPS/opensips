@@ -217,10 +217,10 @@ modparam("regex", "pcre_extended", 1)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 
-		<section>
+		<section id="func_pcre_match" xreflabel="pcre_match()">
 			<title>
 				<function moreinfo="none">pcre_match (string, pcre_regex)</function>
 			</title>
@@ -284,7 +284,7 @@ if (pcre_match("$rU", "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 
 		</section>
 
-		<section>
+		<section id="func_pcre_match_group" xreflabel="pcre_match_group()">
 			<title>
 				<function moreinfo="none">pcre_match_group (string [, group])</function>
 			</title>

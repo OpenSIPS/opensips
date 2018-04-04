@@ -124,9 +124,9 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 	</section>
 
   </section>
-  <section>
+  <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_mmg_lookup" xreflabel="mmg_lookup()">
 	  <title>
 		<function moreinfo="none">mmg_lookup([fields,]src,dst)</function>
 	  </title>

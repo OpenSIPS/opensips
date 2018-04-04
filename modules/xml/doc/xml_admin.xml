@@ -172,7 +172,7 @@ xlog("$xml(my_doc/doc/$var(my_list)/item[$var(my_idx)].attr/$var(my_attr))\n");
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 		<para>The module does not export any script functions.</para>
 	</section>

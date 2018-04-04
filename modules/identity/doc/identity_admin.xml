@@ -170,10 +170,10 @@ modparam("identity", "useCrls", 1)
 	
 	
     </section>
-    <section>
+    <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	
-	<section>
+	<section id="func_authservice" xreflabel="authservice()">
 	    <title>
 		<function moreinfo="none">authservice()</function>
 	    </title>
@@ -279,7 +279,7 @@ route(1); #forward with ($retcode=1) or without ($retcode!=1) Identity header
 	</section>
 	
 	
-	<section>
+	<section id="func_verifier" xreflabel="verifier()">
 	    <title>
 		<function moreinfo="none">verifier()</function>
 	    </title>

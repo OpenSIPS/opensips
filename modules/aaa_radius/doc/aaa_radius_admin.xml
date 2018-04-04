@@ -212,10 +212,10 @@ modparam("aaa_radius", "fetch_all_values", 1)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 
-		<section>
+		<section id="func_radius_send_auth" xreflabel="radius_send_auth()">
 
 		<title>
 		<function moreinfo="none">radius_send_auth(input_set_name, output_set_name)</function>
@@ -271,7 +271,7 @@ switch ($rc) {
 		</example>
 		</section>
 
-		<section>
+		<section id="func_radius_send_acct" xreflabel="radius_send_acct()">
 		<title>
 		<function moreinfo="none">radius_send_acct(input_set_name)</function>
 		</title>
@@ -308,7 +308,7 @@ radius_send_acct("set1");
 	<section>
 		<title>Exported Async Functions</title>
 
-		<section>
+		<section id="afunc_radius_send_auth" xreflabel="radius_send_auth()">
 
 		<title>
 		<function moreinfo="none">radius_send_auth(input_set_name, output_set_name)</function>
@@ -365,7 +365,7 @@ switch ($rc) {
 		</example>
 		</section>
 
-		<section>
+		<section id="afunc_radius_send_acct" xreflabel="radius_send_acct()">
 		<title>
 		<function moreinfo="none">radius_send_acct(input_set_name)</function>
 		</title>

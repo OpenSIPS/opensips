@@ -31,8 +31,8 @@
 	</para>
 	<para>
 		The module allows easy iteration over the statistics of a group using
-		the <emphasis role='bold'><xref linkend="modfunc-stat-iter-init"/></emphasis>
-		and <emphasis role='bold'><xref linkend="modfunc-stat-iter-next"/></emphasis>
+		the <emphasis role='bold'><xref linkend="func_stat_iter_init"/></emphasis>
+		and <emphasis role='bold'><xref linkend="func_stat_iter_next"/></emphasis>
 		functions.
 	</para>
 	<para>
@@ -112,9 +112,9 @@ modparam("statistics", "stat_groups", "method, packet, response")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_update_stat" xreflabel="update_stat()">
 		<title>
 		<function moreinfo="none">update_stat(variable, value)</function>
 		</title>
@@ -151,7 +151,7 @@ update_stat("$var(a_calls)", "-1");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_reset_stat" xreflabel="reset_stat()">
 		<title>
 		<function moreinfo="none">reset_stat(variable)</function>
 		</title>
@@ -182,7 +182,7 @@ update_stat("$var(reg_counter)");
 </programlisting>
 		</example>
 	</section>
-	<section id="modfunc-stat-iter-init" xreflabel="stat_iter_init()">
+	<section id="func_stat_iter_init" xreflabel="stat_iter_init()">
 		<title>
 		<function moreinfo="none">stat_iter_init(group, iter)</function>
 		</title>
@@ -215,7 +215,7 @@ stat_iter_init("packet", "iter");
 </programlisting>
 		</example>
 	</section>
-	<section id="modfunc-stat-iter-next" xreflabel="stat_iter_next()">
+	<section id="func_stat_iter_next" xreflabel="stat_iter_next()">
 		<title>
 		<function moreinfo="none">stat_iter_next(name, val, iter)</function>
 		</title>

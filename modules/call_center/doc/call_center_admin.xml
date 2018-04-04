@@ -275,7 +275,7 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 </section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<section>
 		<title>

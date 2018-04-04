@@ -88,7 +88,7 @@ modparam("db_postgres", "max_db_queries", 2)
 		</example>
 	</section>
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		NONE

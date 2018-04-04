@@ -419,8 +419,8 @@ modparam("b2b_sca", "app2_b2bl_key_column", "second_b2bl_key")
 	</section>
 	</section>
 
-	<section><title>Exported Functions</title>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions"><title>Exported Functions</title>
+	<section id="func_sca_init_request" xreflabel="sca_init_request()">
 		<title>
 		<function moreinfo="none">sca_init_request(shared_line)</function>
 		</title>
@@ -482,7 +482,8 @@ modparam("b2b_sca",
 </programlisting>
 		</example>
 	</section>
-	<section><title><function moreinfo="none">sca_bridge_request(shared_line_to bridge)</function></title>
+	<section id="func_sca_bridge_request" xreflabel="sca_bridge_request()">
+		<title><function moreinfo="none">sca_bridge_request(shared_line_to bridge)</function></title>
 		<para>
 		This is the function that must be called by the script writer on an initial
 		"appearance" INVITE for an existing shared call.  It will bridge the current

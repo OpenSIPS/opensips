@@ -390,7 +390,7 @@ if (!rest_get("https://example.com"))
 1.5.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
 
    Sends a GET HTTP request. This function behaves exactly the
-   same as rest_get (in terms of input, output and processing),
+   same as rest_get() (in terms of input, output and processing),
    but in an asynchronous way. Script execution is suspended until
    the entire content of the HTTP response is available.
 
@@ -424,7 +424,7 @@ $fU\n");
 [recv_ctype_pv][, [retcode_pv]]])
 
    Sends a POST HTTP request. This function behaves exactly the
-   same as rest_post (in terms of input, output and processing),
+   same as rest_post() (in terms of input, output and processing),
    but in an asynchronous way. Script execution is suspended until
    the entire content of the HTTP response is available.
 
@@ -457,7 +457,7 @@ route [resume] {
 [recv_ctype_pv][, [retcode_pv]]])
 
    Sends a PUT HTTP request. This function behaves exactly the
-   same as rest_put (in terms of input, output and processing),
+   same as rest_put() (in terms of input, output and processing),
    but in an asynchronous way. Script execution is suspended until
    the entire content of the HTTP response is available.
 

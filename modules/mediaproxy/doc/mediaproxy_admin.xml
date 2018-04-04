@@ -327,9 +327,9 @@ modparam("mediaproxy", "ice_candidate_avp", "$avp(ice_candidate)")
     </section>
   </section>
 
-  <section>
+  <section id="exported_functions" xreflabel="exported_functions">
   <title>Exported Functions</title>
-    <section>
+    <section id="func_engage_media_proxy" xreflabel="engage_media_proxy()">
     <title><function moreinfo="none">engage_media_proxy()</function></title>
       <para>
         Trigger the use of MediaProxy for all the dialog requests and
@@ -378,7 +378,7 @@ if (method==INVITE &amp;&amp; !has_totag()) {
       </example>
     </section>
 
-    <section>
+    <section id="func_use_media_proxy" xreflabel="use_media_proxy()">
     <title><function moreinfo="none">use_media_proxy()</function></title>
       <para>
         Will make a call to the dispatcher and replace the IPs and ports
@@ -427,7 +427,7 @@ if (method==INVITE) {
       </example>
     </section>
 
-    <section>
+    <section id="func_end_media_session" xreflabel="end_media_session()">
     <title><function moreinfo="none">end_media_session()</function></title>
       <para>
         Will call on the dispatcher to inform the media relay to end the

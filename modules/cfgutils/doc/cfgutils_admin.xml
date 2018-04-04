@@ -191,9 +191,9 @@ modparam("cfgutils", "lock_pool_size", 64)
 	</section>
 </section>
 
-    <section>
+    <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_rand_event" xreflabel="rand_event()">
 		<title><function moreinfo="none">rand_event([probability])</function></title>
 		<para>
 			Return true or false, depending on a random value and a
@@ -215,7 +215,7 @@ if (rand_event()) {
 		</example>
 	</section>
 	
-	<section>
+	<section id="func_rand_set_prob" xreflabel="rand_set_prob()">
 	    <title><function moreinfo="none">rand_set_prob(probabiltiy)</function></title>
 	    <para>
 		Set the <quote>probability</quote> of the decision.
@@ -233,7 +233,7 @@ rand_set_prob("4");
 	    </example>
 	</section>
 
-	<section>
+	<section id="func_rand_reset_prob" xreflabel="rand_reset_prob()">
 	    <title><function moreinfo="none">rand_reset_prob()</function></title>
 	    <para>
 		Reset the probability back to the inital value.
@@ -248,7 +248,7 @@ rand_reset_prob();
 	    </example>
 	</section>
 
-	<section>
+	<section id="func_rand_get_prob" xreflabel="rand_get_prob()">
 	    <title><function moreinfo="none">rand_get_prob()</function></title>
 	    <para>
 		Return the current probability setting, e.g. for logging purposes.
@@ -262,7 +262,7 @@ rand_get_prob();
 </programlisting>
 	    </example>
 	</section>
-	<section id="sleep_sync">
+	<section id="func_sleep" xreflabel="sleep()">
 		<title>
 			<function moreinfo="none">sleep(time)</function>
 		</title>
@@ -295,7 +295,7 @@ sleep("$avp(secs)");
 		</example>
 	</section>
 	
-	<section id="usleep_sync">
+	<section id="func_usleep" xreflabel="usleep()">
 		<title>
 			<function moreinfo="none">usleep(time)</function>
 		</title>
@@ -325,7 +325,7 @@ usleep("500000"); # sleep half of sec
 		</example>
 	</section>
 	
-	<section>
+	<section id="func_abort" xreflabel="abort()">
 		<title>
 			<function moreinfo="none">abort()</function>
 		</title>
@@ -347,7 +347,7 @@ abort();
 		</example>
 	</section>
 	
-	<section>
+	<section id="func_pkg_status" xreflabel="pkg_status()">
 		<title>
 			<function moreinfo="none">pkg_status()</function>
 		</title>
@@ -371,7 +371,7 @@ pkg_status();
 		</example>
 	</section>
 	
-	<section>
+	<section id="func_shm_status" xreflabel="shm_status()">
 		<title>
 			<function moreinfo="none">shm_status()</function>
 		</title>
@@ -394,7 +394,7 @@ shm_status();
 			</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_set_count" xreflabel="set_count()">
 		<title>
 			<function moreinfo="none">set_count(pvar name, result pvar name)</function>
 		</title>
@@ -419,7 +419,7 @@ set_count("$avp(10)", "$avp(result)");
 			</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_set_select_weight" xreflabel="set_select_weight()">
 		<title>
 			<function moreinfo="none">set_select_weight(pseudovarible_name)</function>
 		</title>
@@ -443,7 +443,7 @@ $avp(21) = set_select_weight("$avp(10)");
 			</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_ts_usec_delta" xreflabel="ts_usec_delta()">
 		<title>
 			<function moreinfo="none">ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, delta)</function>
 		</title>
@@ -465,7 +465,7 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 			</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_check_time_rec" xreflabel="check_time_rec()">
 		<title>
 			<function moreinfo="none">check_time_rec(time_string)</function>
 		</title>
@@ -525,7 +525,7 @@ if (check_time_rec("20121101T000000||p30d")) {
 			</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_get_static_lock" xreflabel="get_static_lock()">
 		<title>
 		<function moreinfo="none">get_static_lock(string)</function>
 		</title>
@@ -574,7 +574,7 @@ release_static_lock("Zone_1");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_release_static_lock" xreflabel="release_static_lock()">
 		<title>
 		<function moreinfo="none">release_static_lock(string)</function>
 		</title>
@@ -614,7 +614,7 @@ release_static_lock("Zone_1");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_get_dynamic_lock" xreflabel="get_dynamic_lock()">
 		<title>
 		<function moreinfo="none">get_dynamic_lock(string)</function>
 		</title>
@@ -671,7 +671,7 @@ if (!release_dynamic_lock("$ci") {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_release_dynamic_lock" xreflabel="release_dynamic_lock()">
 		<title>
 		<function moreinfo="none">release_dynamic_lock(string)</function>
 		</title>
@@ -716,7 +716,7 @@ if (!release_dynamic_lock("$ci") {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_strings_share_lock" xreflabel="strings_share_lock()">
 		<title>
 		<function moreinfo="none">strings_share_lock(string1, string2)</function>
 		</title>
@@ -789,13 +789,13 @@ if (!release_dynamic_lock("$avp(1)") {
 
 	<section>
 	<title>Exported Asyncronous Functions</title>
-	<section>
+	<section id="afunc_sleep" xreflabel="sleep()">
 		<title>
 		<function moreinfo="none">sleep(seconds)</function>
 		</title>
 		<para>
 		Waits a number of seconds. This function does exactly the same as
-		<xref linkend="sleep_sync"/>,
+		<xref linkend="func_sleep"/>,
 		but in an asynchronous way. The script execution is suspended until
 		the waiting is done; then OpenSIPS resumes the script execution via 
 		the resume route.
@@ -820,13 +820,13 @@ route[after_sleep] {
 		</example>
 	</section>
 
-	<section>
+	<section id="afunc_usleep" xreflabel="usleep()">
 		<title>
 		<function moreinfo="none">usleep(seconds)</function>
 		</title>
 		<para>
 		Waits a number of micro-seconds. This function does exactly the same as
-		<xref linkend="usleep_sync"/>,
+		<xref linkend="func_usleep"/>,
 		but in an asynchronous way. The script execution is suspended until
 		the waiting is done; then OpenSIPS resumes the script execution via 
 		the resume route.

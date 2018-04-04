@@ -156,9 +156,9 @@ modparam("benchmark", "loglevel", 4)
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_bm_start_timer" xreflabel="bm_start_timer()">
 		<title>
 		<function moreinfo="none">bm_start_timer(name)</function>
 		</title>
@@ -176,7 +176,7 @@ bm_start_timer("test");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_bm_log_timer" xreflabel="bm_log_timer()">
 		<title>
 		<function moreinfo="none">bm_log_timer(name)</function>
 		</title>

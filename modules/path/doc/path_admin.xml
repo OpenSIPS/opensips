@@ -145,9 +145,9 @@ modparam("path", "enable_double_path", 0)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_add_path" xreflabel="add_path()">
 		<title>
 		<function moreinfo="none">add_path()</function>
 		</title>
@@ -172,7 +172,7 @@ if (!add_path()) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_add_path_2" xreflabel="add_path()">
 		<title>
 		<function moreinfo="none">add_path(user)</function>
 		</title>
@@ -204,7 +204,7 @@ if (!add_path("loadbalancer")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_add_path_received" xreflabel="add_path_received()">
 		<title>
 		<function moreinfo="none">add_path_received()</function>
 		</title>
@@ -230,7 +230,7 @@ if (!add_path_received()) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_add_path_received_2" xreflabel="add_path_received()">
 		<title>
 		<function moreinfo="none">add_path_received(user)</function>
 		</title>

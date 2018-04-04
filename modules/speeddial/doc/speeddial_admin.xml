@@ -204,9 +204,9 @@ modparam("speeddial", "use_domain", 1)
 		</example>
 	</section>
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sd_lookup" xreflabel="sd_lookup()">
 		<title>
 		<function moreinfo="none">sd_lookup(table [, owner])</function>
 		</title>

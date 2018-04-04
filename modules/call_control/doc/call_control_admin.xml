@@ -591,9 +591,9 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
     
   </section>
 
-  <section>
+  <section id="exported_functions" xreflabel="exported_functions">
   <title>Exported Functions</title>
-    <section>
+    <section id="func_call_control" xreflabel="call_control()">
     <title><function moreinfo="none">call_control()</function></title>
       <para>
         Trigger the use of callcontrol for the dialog started by the INVITE

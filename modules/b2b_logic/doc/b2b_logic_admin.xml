@@ -428,11 +428,11 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-	<section>
+	<section id="func_b2b_init_request" xreflabel="b2b_init_request()">
 		<title>
-		<function moreinfo="none">b2b_init_request</function>
+		<function moreinfo="none">b2b_init_request()</function>
 		</title>
 		<para>
 			This is the function that must be called by the script writer
@@ -482,7 +482,7 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_b2b_bridge_request" xreflabel="b2b_bridge_request()">
 		<title>
 		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
 		</title>

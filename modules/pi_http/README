@@ -73,7 +73,7 @@ Chapter 1. Admin Guide
 
 1.2. Usage
 
-   The layout of the provisionning interface is controlled via an
+   The layout of the provisioning interface is controlled via an
    external xml file (see the framework parameter). An example of
    a framework xml file is provided inside the examples directory
    of the pi_http module. A simple framework file can be generated

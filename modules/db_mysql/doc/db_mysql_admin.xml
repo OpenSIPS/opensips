@@ -170,7 +170,7 @@ modparam("db_mysql", "tls_client_domain", "1=10.11.12.13:3306")
 		</example>
 	</section>
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		No function exported to be used from configuration file.

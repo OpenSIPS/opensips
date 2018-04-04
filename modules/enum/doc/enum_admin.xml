@@ -257,9 +257,9 @@ modparam("enum", "bl_algorithm", "txt")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_enum_query" xreflabel="enum_query()">
 		<title>
 		<function moreinfo="none">enum_query(["suffix"[,"service"]])</function>
 		</title>
@@ -336,7 +336,7 @@ enum_query("e164.arpa.","+sip+voice:sip");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_enum_pv_query" xreflabel="enum_pv_query()">
 		<title>
 		<function moreinfo="none">enum_pv_query("pvar"[,"suffix"[,"service"]])</function>
 		</title>
@@ -395,7 +395,7 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
 		</example>
 	</section>
 
-        <section>
+        <section id="func_i_enum_query" xreflabel="i_enum_query()">
                 <title>
                 <function moreinfo="none">i_enum_query(["suffix"[,"service"]])</function>
                 </title>
@@ -411,7 +411,7 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
                 </para>
         </section>
 
-	<section>
+	<section id="func_isn_query" xreflabel="isn_query()">
 		<title>
 		<function moreinfo="none">isn_query(["suffix"[,"service"]])</function>
 		</title>
@@ -458,7 +458,7 @@ isn_query("freenum.org.","voice");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_from_user_enum" xreflabel="is_from_user_enum()">
 		<title><function moreinfo="none">is_from_user_enum()</function></title>
 		<para>
 		Checks if the user part of from <abbrev>URI</abbrev>

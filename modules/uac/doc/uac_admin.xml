@@ -215,10 +215,10 @@ modparam("uac", "force_dialog", yes)
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 
-		<section>
+		<section id="func_uac_replace_from" xreflabel="uac_replace_from()">
 			<title>
 				<function moreinfo="none">uac_replace_from(display,uri)</function>
 				<function moreinfo="none">uac_replace_to(display,uri)</function>
@@ -260,7 +260,7 @@ uac_replace_from("","");
 			</example>
 		</section>
 
-		<section>
+		<section id="func_uac_replace_from_2" xreflabel="uac_replace_from()">
 			<title>
 				<function moreinfo="none">uac_replace_from(uri)</function>
 				<function moreinfo="none">uac_replace_to(uri)</function>
@@ -285,7 +285,7 @@ uac_replace_from("sip:batman@gotham.org");
 			</example>
 		</section>
 
-		<section>
+		<section id="func_uac_restore_from" xreflabel="uac_restore_from()">
 			<title>
 				<function moreinfo="none">uac_restore_from()</function>
 				<function moreinfo="none">uac_restore_to()</function>
@@ -313,7 +313,7 @@ uac_restore_from();
 			</example>
 		</section>
 
-		<section>
+		<section id="func_uac_auth" xreflabel="uac_auth()">
 			<title>
 				<function moreinfo="none">uac_auth()</function>
 			</title>

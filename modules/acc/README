@@ -139,11 +139,11 @@ Chapter 1. Admin Guide
 
    To account a transaction and to choose which set of backends to
    be used, the script writer only has to mark the transaction for
-   accounting by using the Section 1.8.1, “ do_accounting(type,
-   flags, table) ” script function. Note that the function is not
-   actually doing the accounting at that very time, it is just
-   setting a marker - the actual accounting will be done later
-   when the transaction or dialog will be completed.
+   accounting by using the do_accounting() script function. Note
+   that the function is not actually doing the accounting at that
+   very time, it is just setting a marker - the actual accounting
+   will be done later when the transaction or dialog will be
+   completed.
 
    Even so, the module allows the script writer to force
    accounting on the spot in special cases via some other script
@@ -347,8 +347,8 @@ Note
 1.4.2. Configuration
 
    In order to have CDRs accounting, first you need to set the cdr
-   flag when calling Section 1.8.1, “ do_accounting(type, flags,
-   table) ” script function for the initial INVITE of the dialog.
+   flag when calling do_accounting() script function for the
+   initial INVITE of the dialog.
 
 1.4.3. How it works
 

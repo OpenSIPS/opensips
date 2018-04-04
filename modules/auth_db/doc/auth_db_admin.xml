@@ -282,9 +282,9 @@ modparam("auth_db", "skip_version_check", 1)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_www_authorize" xreflabel="www_authorize()">
 		<title>
 			<function moreinfo="none">www_authorize(realm, table)</function>
 		</title>
@@ -360,7 +360,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_proxy_authorize" xreflabel="proxy_authorize()">
 		<title>
 			<function moreinfo="none">proxy_authorize(realm, table)</function>
 		</title>

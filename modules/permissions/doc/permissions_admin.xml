@@ -572,9 +572,9 @@ modparam("permissions", "info_col", "info_col")
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_allow_routing" xreflabel="allow_routing()">
 		<title>
 		<function moreinfo="none">allow_routing()</function>
 		</title>
@@ -599,7 +599,7 @@ if (allow_routing()) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_allow_routing_1" xreflabel="allow_routing()">
 		<title>
 		<function moreinfo="none">allow_routing(basename)</function>
 		</title>
@@ -637,7 +637,7 @@ if (allow_routing("basename")) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_allow_routing_2" xreflabel="allow_routing()">
 		<title>
 		<function moreinfo="none">allow_routing(allow_file,deny_file)</function>
 		</title>
@@ -681,7 +681,7 @@ if (allow_routing("rules.allow", "rules.deny")) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_allow_register" xreflabel="allow_register()">
 		<title>
 		<function moreinfo="none">allow_register(basename)</function>
 		</title>
@@ -724,7 +724,7 @@ if ($rm=="REGISTER") {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_allow_register_2" xreflabel="allow_register()">
 		<title>
 		<function moreinfo="none">allow_register(allow_file, deny_file)</function>
 		</title>
@@ -773,7 +773,7 @@ if ($rm=="REGISTER") {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_allow_uri" xreflabel="allow_uri()">
 		<title>
 		<function moreinfo="none">allow_uri(basename, pvar)</function>
 		</title>
@@ -954,7 +954,7 @@ if (check_address("4","$si","5700","$proto","", "texttest")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_check_source_address" xreflabel="check_source_address()">
 		<title>
 		<function moreinfo="none">check_source_address(group_id [, context_info [, pattern]])</function>
 		</title>
@@ -980,7 +980,7 @@ if (check_source_address("$avp(partition):4","$avp(ctx)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_get_source_group" xreflabel="get_source_group()">
 		<title>
 		<function moreinfo="none">get_source_group(pvar)</function>
 		</title>

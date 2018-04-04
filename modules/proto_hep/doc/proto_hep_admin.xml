@@ -326,9 +326,9 @@ modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_correlate" xreflabel="correlate()">
 		<title>
 		<function moreinfo="none">correlate(hep_id, type1, correlation1, type2, correlation2)</function>
 		</title>

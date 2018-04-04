@@ -340,12 +340,11 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_emergency_call" xreflabel="emergency_call()">
 		<title>
-		<function moreinfo="none">emergency_call()
-		</function>
+		<function moreinfo="none">emergency_call()</function>
 		</title>
 		<para>
    		Checks whether the incoming call is an emergency call, case it is treats, and  
@@ -375,10 +374,9 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 		</example>
 	</section>
 
-	<section>
+	<section id="func_failure" xreflabel="failure()">
 		<title>
-		<function moreinfo="none">failure()
-		</function>
+		<function moreinfo="none">failure()</function>
 		</title>
 		<para>
    		This function is used when trying to route the emergency call to the 

@@ -108,10 +108,10 @@ modparam("mc", "mc_level", "3")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section>
+	<section id="func_mc_compress" xreflabel="mc_compress()">
 	<title>
 		<function moreinfo="none">mc_compress([algo], flags, [whitelist])</function>
 	</title>
@@ -248,7 +248,7 @@ xlog("compression registered\n");
 	</example>
 	</section>
 
-	<section>
+	<section id="func_mc_compact" xreflabel="mc_compact()">
 	<title>
 		<function moreinfo="none">mc_compact([whitelist])</function>
 	</title>
@@ -362,7 +362,7 @@ if (!mc_compact("Max-Forwards|P-Asserted-Identity"))
 
 	</section>
 
-	<section>
+	<section id="func_mc_decompress" xreflabel="mc_decompress()">
 	<title>
 		<function moreinfo="none">mc_decompress()</function>
 	</title>

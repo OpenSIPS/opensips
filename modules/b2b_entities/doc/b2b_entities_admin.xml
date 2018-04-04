@@ -275,7 +275,7 @@ modparam("b2b_entities", "replication_mode", 1)
 </section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 		<para>The module does not export functions to be used
 		in configuration script.</para>

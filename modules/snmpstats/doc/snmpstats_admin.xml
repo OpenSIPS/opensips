@@ -439,7 +439,7 @@ modparam("snmpstats", "snmpCommunity", "customCommunityString")
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		Currently, there are no exported functions.

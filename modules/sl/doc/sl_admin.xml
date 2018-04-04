@@ -92,9 +92,9 @@ modparam("sl", "enable_stats", 0)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sl_send_reply" xreflabel="sl_send_reply()">
 		<title>
 		<function moreinfo="none">sl_send_reply(code, reason)</function>
 		</title>
@@ -131,7 +131,7 @@ sl_send_reply("$err.rcode", "$err.rreason");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_sl_reply_error" xreflabel="sl_reply_error()">
 		<title>
 		<function moreinfo="none">sl_reply_error()</function>
 		</title>

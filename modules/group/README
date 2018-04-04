@@ -255,7 +255,6 @@ modparam("group", "multiple_gid", 0)
    location of the configuration file of this protocol.
 
    Example 1.11. Set aaa_url parameter
-
 ...
 modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.c
 onf")

@@ -872,9 +872,9 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
 
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_ds_select_dst" xreflabel="ds_select_dst()">
 		<title>
 		<function moreinfo="none">ds_select_dst(set, alg [, (flags M max_results)*])</function>
 		</title>
@@ -1038,7 +1038,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_ds_select_domain" xreflabel="ds_select_domain()">
 		<title>
 		<function moreinfo="none">ds_select_domain(set, alg [, "[flags] [M max_results]"])</function>
 		</title>
@@ -1057,7 +1057,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
-	<section>
+	<section id="func_ds_next_dst" xreflabel="ds_next_dst()">
 		<title>
 		<function moreinfo="none">ds_next_dst([partition_name])</function>
 		</title>
@@ -1071,7 +1071,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
-	<section>
+	<section id="func_ds_next_domain" xreflabel="ds_next_domain()">
 		<title>
 		<function moreinfo="none">ds_next_domain([partition_name])</function>
 		</title>
@@ -1085,7 +1085,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
-	<section>
+	<section id="func_ds_mark_dst_no_param" xreflabel="ds_mark_dst()">
 		<title>
 		<function moreinfo="none">ds_mark_dst()</function>
 		</title>
@@ -1101,7 +1101,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
-	<section>
+	<section id="func_ds_mark_dst" xreflabel="ds_mark_dst()">
 		<title>
 		<function moreinfo="none">ds_mark_dst([partition_name], "s")</function>
 		</title>
@@ -1130,7 +1130,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
-	<section>
+	<section id="func_ds_count" xreflabel="ds_count()">
 		<title>
 		<function moreinfo="none">ds_count(set, filter, result)</function>
 		</title>
@@ -1188,7 +1188,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_ds_is_in_list" xreflabel="ds_is_in_list()">
 		<title>
 		<function moreinfo="none">ds_is_in_list(ip, port [,set [,active_only]])</function>
 		</title>

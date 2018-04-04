@@ -243,9 +243,9 @@ modparam("domainpolicy", "send_socket_avp", "sendsocket")
 
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_dp_can_connect" xreflabel="dp_can_connect()">
 		<title><function moreinfo="none">dp_can_connect()</function></title>
 		<para>
 		Checks the interconnection policy of the caller. It uses the domain in the 
@@ -349,7 +349,7 @@ switch(retcode) {
 		</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_dp_apply_policy" xreflabel="dp_apply_policy()">
 		<title><function moreinfo="none">dp_apply_policy()</function></title>
 		<para>
 		This function sets the destination URI according to the policy returned

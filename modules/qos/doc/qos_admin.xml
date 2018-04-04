@@ -145,7 +145,7 @@ route {
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<para>There are no exported functions that could be used in scripts.
 	</para>

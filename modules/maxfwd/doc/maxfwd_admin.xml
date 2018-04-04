@@ -77,9 +77,9 @@ modparam("maxfwd", "max_limit", 32)
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_mf_process_maxfwd_header" xreflabel="mf_process_maxfwd_header()">
 		<title>
 		<function moreinfo="none">mf_process_maxfwd_header(max_value)</function>
 		</title>
@@ -141,7 +141,7 @@ if (!mf_process_maxfwd_header("10") &amp;&amp; $retcode==-1) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_maxfwd_lt" xreflabel="is_maxfwd_lt()">
 		<title>
 		<function moreinfo="none">is_maxfwd_lt(max_value)</function>
 		</title>

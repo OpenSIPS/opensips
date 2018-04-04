@@ -1306,10 +1306,10 @@ modparam("dialog", "dlg_sharing_tag", "vip1=active")
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section>
+	<section id="func_create_dialog" xreflabel="create_dialog()">
 		<title>
 		<function moreinfo="none">create_dialog()</function>
 		</title>
@@ -1360,7 +1360,7 @@ create_dialog("B");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_match_dialog" xreflabel="match_dialog()">
 		<title>
 		<function moreinfo="none">match_dialog()</function>
 		</title>
@@ -1402,7 +1402,7 @@ create_dialog("B");
 	</section>
 
 
-	<section>
+	<section id="func_validate_dialog" xreflabel="validate_dialog()">
 		<title>
 		<function moreinfo="none">validate_dialog()</function>
 		</title>
@@ -1460,7 +1460,7 @@ create_dialog("B");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_fix_route_dialog" xreflabel="fix_route_dialog()">
 		<title>
 		<function moreinfo="none">fix_route_dialog()</function>
 		</title>
@@ -1489,7 +1489,7 @@ create_dialog("B");
 	</section>
 
 
-	<section>
+	<section id="func_get_dialog_info" xreflabel="get_dialog_info()">
 		<title>
 		<function moreinfo="none">get_dialog_info(attr,var,key,key_val)</function>
 		</title>
@@ -1552,7 +1552,7 @@ $dlg_val(callee) = $ru;
 	</section>
 
 
-	<section>
+	<section id="func_get_dialog_vals" xreflabel="get_dialog_vals()">
 		<title>
 		<function moreinfo="none">get_dialog_vals(names,vals,callid)</function>
 		</title>
@@ -1608,7 +1608,7 @@ if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
 	</section>
 
 
-	<section>
+	<section id="func_set_dlg_profile" xreflabel="set_dlg_profile()">
 		<title>
 		<function moreinfo="none">set_dlg_profile(profile,[value])</function>
 		</title>
@@ -1652,7 +1652,7 @@ set_dlg_profile("caller","$fu");
 	</section>
 
 
-	<section>
+	<section id="func_unset_dlg_profile" xreflabel="unset_dlg_profile()">
 		<title>
 		<function moreinfo="none">unset_dlg_profile(profile,[value])</function>
 		</title>
@@ -1694,7 +1694,7 @@ unset_dlg_profile("caller","$fu");
 	</section>
 
 
-	<section>
+	<section id="func_is_in_profile" xreflabel="is_in_profile()">
 		<title>
 		<function moreinfo="none">is_in_profile(profile,[value])</function>
 		</title>
@@ -1743,7 +1743,7 @@ if (is_in_profile("caller","XX")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_get_profile_size" xreflabel="get_profile_size()">
 		<title>
 		<function moreinfo="none">get_profile_size(profile,[value],size)</function>
 		</title>
@@ -1793,7 +1793,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_set_dlg_flag" xreflabel="set_dlg_flag()">
 		<title>
 		<function moreinfo="none">set_dlg_flag(idx)</function>
 		</title>
@@ -1823,7 +1823,7 @@ set_dlg_flag("3");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_test_and_set_dlg_flag" xreflabel="test_and_set_dlg_flag()">
 		<title>
 		<function moreinfo="none">test_and_set_dlg_flag(idx, value)</function>
 		</title>
@@ -1856,7 +1856,7 @@ test_and_set_dlg_flag("3", "0");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_reset_dlg_flag" xreflabel="reset_dlg_flag()">
 		<title>
 		<function moreinfo="none">reset_dlg_flag(idx)</function>
 		</title>
@@ -1886,7 +1886,7 @@ reset_dlg_flag("16");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_dlg_flag_set" xreflabel="is_dlg_flag_set()">
 		<title>
 		<function moreinfo="none">is_dlg_flag_set(idx)</function>
 		</title>
@@ -1918,7 +1918,7 @@ if (is_dlg_flag_set("16")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_store_dlg_value" xreflabel="store_dlg_value()">
 		<title>
 		<function moreinfo="none">store_dlg_value(name,val)</function>
 		</title>
@@ -1956,7 +1956,7 @@ $dlg_val(account_type) = "prepaid";
 		</example>
 	</section>
 
-	<section>
+	<section id="func_fetch_dlg_value" xreflabel="fetch_dlg_value()">
 		<title>
 		<function moreinfo="none">fetch_dlg_value(name,pvar)</function>
 		</title>
@@ -1995,7 +1995,7 @@ $var(account) = $dlg_val(account_type);
 		</example>
 	</section>
 
-	<section>
+	<section id="func_set_dlg_sharing_tag" xreflabel="set_dlg_sharing_tag()">
 		<title>
 		<function moreinfo="none">set_dlg_sharing_tag(tag_name)</function>
 		</title>

@@ -129,10 +129,10 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 	<para>The module does not export parameters to be used in configuration script.</para>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section>
+	<section id="func_fetch_event_params" xreflabel="fetch_event_params()">
 		<title>
 		<function moreinfo="none">fetch_event_params(pvar_list)</function>
 		</title>

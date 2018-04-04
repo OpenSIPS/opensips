@@ -261,9 +261,9 @@ modparam("uri", "use_domain", 1)
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_db_check_to" xreflabel="db_check_to()">
 		<title>
 		<function moreinfo="none">db_check_to()</function>
 		</title>
@@ -286,7 +286,7 @@ if (db_check_to()) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_db_check_from" xreflabel="db_check_from()">
 		<title>
 		<function moreinfo="none">db_check_from()</function>
 		</title>
@@ -309,7 +309,7 @@ if (db_check_from()) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_db_does_uri_exist" xreflabel="db_does_uri_exist()">
 		<title>
 		<function moreinfo="none">db_does_uri_exist()</function>
 		</title>
@@ -336,7 +336,7 @@ if (db_does_uri_exist()) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_db_get_auth_id" xreflabel="db_get_auth_id()">
 		<title>
 		<function moreinfo="none">db_get_auth_id(string, var, var)</function>
 		</title>
@@ -360,7 +360,7 @@ if (db_get_auth_id("$ru", "$avp(auth_id)", "$avp(auth_realm)")) {
 </programlisting>
 		</example>
 	</section>
-		<section>
+		<section id="func_aaa_does_uri_exist" xreflabel="aaa_does_uri_exist()">
 		<title>
 		<function moreinfo="none">aaa_does_uri_exist([pvar])</function>
 		</title>
@@ -404,7 +404,7 @@ if (aaa_does_uri_exist()) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_aaa_does_uri_user_exist" xreflabel="aaa_does_uri_user_exist()">
 		<title>
 		<function moreinfo="none">aaa_does_uri_user_exist([pvar])</function>
 		</title>
@@ -428,7 +428,7 @@ if (aaa_does_uri_user_exist()) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_is_user" xreflabel="is_user()">
 		<title>
 		<function moreinfo="none">is_user(username)</function>
 		</title>
@@ -456,7 +456,7 @@ if (is_user("john")) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_has_totag" xreflabel="has_totag()">
 		<title>
 		<function moreinfo="none">has_totag()</function>
 		</title>
@@ -477,7 +477,7 @@ if (has_totag()) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_uri_param" xreflabel="uri_param()">
 		<title>
 		<function moreinfo="none">uri_param(param)</function>
 		</title>
@@ -505,7 +505,7 @@ if (uri_param("param1")) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_uri_param_2" xreflabel="uri_param()">
 		<title>
 		<function moreinfo="none">uri_param(param,value)</function>
 		</title>
@@ -537,7 +537,7 @@ if (uri_param("param1","value1")) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_add_uri_param" xreflabel="add_uri_param()">
 		<title>
 		<function moreinfo="none">add_uri_param(param)</function>
 		</title>
@@ -564,7 +564,7 @@ add_uri_param("nat=yes");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_del_uri_param" xreflabel="del_uri_param()">
 		<title>
 		<function moreinfo="none">del_uri_param(param)</function>
 		</title>
@@ -591,7 +591,7 @@ del_uri_param("name");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_tel2sip" xreflabel="tel2sip()">
 		<title>
 		<function moreinfo="none">tel2sip()</function>
 		</title>
@@ -612,7 +612,7 @@ tel2sip();
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_is_uri_user_e164" xreflabel="is_uri_user_e164()">
 		<title>
 		<function moreinfo="none">is_uri_user_e164(pseudo-variable)</function>
 		</title>

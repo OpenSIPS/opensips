@@ -154,7 +154,7 @@ _empty_line_
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		No function exported to be used from configuration file.

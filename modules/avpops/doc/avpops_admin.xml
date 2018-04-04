@@ -329,7 +329,7 @@ modparam("avpops", "buf_size", 1024)
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 		<section>
 			<title>
@@ -422,7 +422,7 @@ xlog("Loaded: $avp(caller_100)\n");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_db_store" xreflabel="avp_db_store()">
 			<title>
 				<function moreinfo="none">avp_db_store(source,name[,db_id])</function>
 			</title>
@@ -451,7 +451,7 @@ avp_db_store("$ru","$avp(1)","3");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_db_delete" xreflabel="avp_db_delete()">
 			<title>
 				<function moreinfo="none">avp_db_delete(source,name[,db_id])</function>
 			</title>
@@ -480,7 +480,7 @@ avp_db_delete("$ru","$avp(1)","3");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_db_query" xreflabel="avp_db_query()">
 			<title>
 				<function moreinfo="none">avp_db_query(query[[,dest],db_id])</function>
 			</title>
@@ -803,7 +803,7 @@ avp_copy("$avp(old)","$avp(new)/gd");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_subst" xreflabel="avp_subst()">
 			<title>
 				<function moreinfo="none">avp_subst(avps, subst)</function>
 			</title>
@@ -1046,7 +1046,7 @@ avp_insert("avp(20)", "$hdr(From)", 2);
 
 	<section>
 	<title>Exported Asynchronous Functions</title>
-		<section>
+		<section id="afunc_avp_db_query" xreflabel="avp_db_query()">
 			<title>
 				<function moreinfo="none">avp_db_query(query[[,dest],db_id])</function>
 			</title>

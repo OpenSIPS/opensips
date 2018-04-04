@@ -219,9 +219,9 @@ modparam("python", "child_init_method", "child_initializer")
 </section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_python_exec" xreflabel="python_exec()">
 			<title>
 				<function moreinfo="none">python_exec(method_name [, extra_args])</function>
 			</title>

@@ -404,7 +404,7 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	      <para>None to be used in configuration file.</para>
 	</section>

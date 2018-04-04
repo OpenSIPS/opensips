@@ -153,9 +153,9 @@ modparam("auth_aaa", "use_ruri_flag", "USE_RURI_FLAG")
         </section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_aaa_www_authorize" xreflabel="aaa_www_authorize()">
 		<title><function moreinfo="none">aaa_www_authorize(realm[, uri_user])</function></title>
 		<para>
 		The function verifies credentials according to 
@@ -235,9 +235,8 @@ if (!aaa_www_authorize("siphub.net")) {
 		</example>
 	</section>
 
-	<section>
-		<title><function
-		moreinfo="none">aaa_proxy_authorize(realm [, uri_user])</function></title>
+	<section id="func_aaa_proxy_authorize" xreflabel="aaa_proxy_authorize()">
+		<title><function moreinfo="none">aaa_proxy_authorize(realm [, uri_user])</function></title>
 		<para>
 		The function verifies credentials according to 
 		<ulink url="http://www.ietf.org/rfc/rfc2617.txt">RFC2617</ulink>. If 

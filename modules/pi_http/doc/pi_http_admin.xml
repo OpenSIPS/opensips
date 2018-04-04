@@ -40,7 +40,7 @@
 	<section>
 	<title>Usage</title>
 	<para>
-		The layout of the provisionning interface is controlled via an external
+		The layout of the provisioning interface is controlled via an external
 		xml file (see the framework parameter).
 		An example of a framework xml file is provided inside the examples
 		directory of the pi_http module.

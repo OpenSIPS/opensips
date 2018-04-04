@@ -89,9 +89,9 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sngtc_offer" xreflabel="sngtc_offer()">
 		<title>
 		<function moreinfo="none">sngtc_offer()</function>
 		</title>
@@ -131,7 +131,7 @@
 		</example>
 	</section>
 
-	<section>
+	<section id="func_sngtc_callee_answer" xreflabel="sngtc_callee_answer()">
 		<title>
 		<function moreinfo="none">sngtc_callee_answer([listen_if_A[, listen_if_B]])
 		</function>
@@ -199,7 +199,7 @@ onreply_route[1] {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_sngtc_caller_answer" xreflabel="sngtc_caller_answer()">
 		<title>
 		<function moreinfo="none">sngtc_caller_answer()</function>
 		</title>

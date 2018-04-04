@@ -414,11 +414,11 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 
 1.5.6.  append_rpid_hf(prefix, suffix)
 
-   This function is the same as Section 1.5.5, “
-   append_rpid_hf()”. The only difference is that it accepts two
-   parameters--prefix and suffix to be added to Remote-Party-ID
-   header field. This function ignores rpid_prefix and rpid_suffix
-   parameters, instead of that allows to set them in every call.
+   This function is the same as append_rpid_hf(). The only
+   difference is that it accepts two parameters--prefix and suffix
+   to be added to Remote-Party-ID header field. This function
+   ignores rpid_prefix and rpid_suffix parameters, instead of that
+   allows to set them in every call.
 
    Meaning of the parameters is as follows:
      * prefix - Prefix of the Remote-Party-ID URI. The string will

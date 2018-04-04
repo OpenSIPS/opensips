@@ -65,9 +65,9 @@ modparam("mathops", "decimal_digits", 10)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_math_eval" xreflabel="math_eval()">
 		<title>
 		<function moreinfo="none">math_eval(expression, result_pvar)</function>
 		</title>
@@ -128,7 +128,7 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(resul
 		</example>
 	</section>
 
-	<section>
+	<section id="func_math_rpn" xreflabel="math_rpn()">
 		<title>
 		<function moreinfo="none">math_rpn(expression, result_pvar)</function>
 		</title>
@@ -195,7 +195,7 @@ finally compute 1 divided by the result, giving 3 as the result. */
 	</section>
 
 
-	<section>
+	<section id="func_math_trunc" xreflabel="math_trunc()">
 		<title>
 		<function moreinfo="none">math_trunc(number, result_pvar)</function>
 		</title>
@@ -248,7 +248,7 @@ if (math_trunc("$avp(1)", "$avp(result)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_math_floor" xreflabel="math_floor()">
 		<title>
 		<function moreinfo="none">math_floor(number, result_pvar)</function>
 		</title>
@@ -301,7 +301,7 @@ if (math_floor("$avp(1)", "$avp(result)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_math_ceil" xreflabel="math_ceil()">
 		<title>
 		<function moreinfo="none">math_ceil(number, result_pvar)</function>
 		</title>
@@ -354,7 +354,7 @@ if (math_ceil("$avp(1)", "$avp(result)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_math_round" xreflabel="math_round()">
 		<title>
 		<function moreinfo="none">math_round(number, result_pvar[, decimals])</function>
 		</title>
@@ -430,7 +430,7 @@ if (math_round("$avp(1)", "$avp(result)", "4")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_math_round_sf" xreflabel="math_round_sf()">
 		<title>
 		<function moreinfo="none">math_round_sf(number, result_pvar, figures)</function>
 		</title>

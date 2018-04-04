@@ -272,9 +272,9 @@ modparam("auth", "disable_nonce_check", 1)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_www_challenge" xreflabel="www_challenge()">
 		<title>
 			<function moreinfo="none">www_challenge(realm, qop)</function>
 		</title>
@@ -339,7 +339,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_proxy_challenge" xreflabel="proxy_challenge()">
 		<title>
 			<function moreinfo="none">proxy_challenge(realm, qop)</function>
 		</title>
@@ -399,7 +399,7 @@ if (!proxy_authorize("", "subscriber)) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_consume_credentials" xreflabel="consume_credentials()">
 		<title>
 			<function moreinfo="none">consume_credentials()</function>
 		</title>
@@ -427,7 +427,7 @@ if (www_authorize("", "subscriber)) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_is_rpid_user_e164" xreflabel="is_rpid_user_e164()">
 		<title>
 			<function moreinfo="none">is_rpid_user_e164()</function>
 		</title>
@@ -452,7 +452,7 @@ if (is_rpid_user_e164()) {
 </programlisting>
 		</example>
 	</section>
-	<section id="append-rpid-hf-no-params">
+	<section id="func_append_rpid_hf_no_params" xreflabel="append_rpid_hf()">
 		<title>
 			<function moreinfo="none">append_rpid_hf()</function></title>
 		<para>
@@ -475,13 +475,13 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 </programlisting>
 		</example>
 	</section>
-	<section id="append-rpid-hf-params">
+	<section id="func_append_rpid_hf" xreflabel="append_rpid_hf()">
 		<title>
 			<function moreinfo="none">append_rpid_hf(prefix, suffix)</function>
 		</title>
 		<para>
 		This function is the same as 
-		<xref linkend="append-rpid-hf-no-params"/>. The only difference is
+		<xref linkend="func_append_rpid_hf_no_params"/>. The only difference is
 		that it accepts two parameters--prefix and suffix to be added to 
 		Remote-Party-ID header field. This function ignores rpid_prefix and 
 		rpid_suffix parameters, instead of that allows to set them in every 
@@ -517,7 +517,7 @@ append_rpid_hf("", ";party=calling;id-type=subscriber;screen=yes");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_pv_www_authorize" xreflabel="pv_www_authorize()">
 		<title>
 			<function moreinfo="none">pv_www_authorize(realm)</function>
 		</title>
@@ -591,7 +591,7 @@ if (!pv_www_authorize("opensips.org")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_pv_proxy_authorize" xreflabel="pv_proxy_authorize()">
 		<title>
 			<function moreinfo="none">pv_proxy_authorize(realm)</function>
 		</title>
