@@ -649,6 +649,7 @@ static void add_results_node(struct mi_node *node, benchmark_timer_t *timer) {
 	struct mi_node *timer_node;
 
 	timer_node = addf_mi_node_child(node, 0, 0, 0, "%s", timer->name);
+	timer_node->flags |= MI_IS_ARRAY;
 	addf_mi_node_child(timer_node, 0, 0, 0,
 			"%i/%lld/%lld/%lld/%f",
 			timer->calls,
