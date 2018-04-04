@@ -54,7 +54,8 @@ static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 extern http_mi_cmd_t* http_mi_cmds;
 
-int mi_trace_mod_id;
+/* tracing is disabled by default */
+int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
 

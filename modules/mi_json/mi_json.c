@@ -52,7 +52,8 @@ httpd_api_t httpd_api;
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 
-int mi_trace_mod_id;
+/* tracing is disabled by default */
+int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
 static const str MI_HTTP_U_ERROR = str_init("Internal server error");
