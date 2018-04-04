@@ -584,6 +584,7 @@ parse_hep_uri(const str *token, str *uri, str *transport, str* version)
 		case ':':
 		case '.':
 		case '_':
+		case '-':
 			break;
 		default:
 			if (_word_start==-1 && (isalnum(token->s[p])||token->s[p]=='$')) {
