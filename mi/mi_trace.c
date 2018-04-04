@@ -374,7 +374,7 @@ int allow_mi_cmd_trace(int id, char* name, int len)
 
 unsigned char is_mi_cmd_traced(int id, struct mi_cmd* cmd)
 {
-	return (1 << id) & *cmd->trace_mask;
+	return (id < 0)? 0 : (1 << id) & *cmd->trace_mask;
 }
 
 /**
