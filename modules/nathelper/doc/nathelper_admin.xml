@@ -254,6 +254,7 @@ modparam("nathelper", "force_socket", "localhost:33333")
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_sipping_bflag" xreflabel="sipping_bflag">
 		<title><varname>sipping_bflag</varname> (string/integer)</title>
 		<para>
@@ -274,16 +275,17 @@ modparam("nathelper", "force_socket", "localhost:33333")
 		<title>Set <varname>sipping_bflag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
+modparam("nathelper", "sipping_bflag", "SIPPING_ENABLE")
 ...
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_remove_on_timeout_bflag" xreflabel="remove_on_timeout_bflag">
 		<title><varname>remove_on_timeout_bflag</varname> (string/integer)</title>
 		<para>
-		What flag to be used in order to activate usrloc contact removal when
-		<emphasis>ping_threshold</emphasis> is exceeded.
+		What branch flag to be used in order to activate usrloc contact removal when
+		the <xref linkend="param_ping_threshold"/> is exceeded.
 		</para>
 		<para>
 		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
@@ -298,7 +300,29 @@ modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
 		<title>Set <varname>remove_on_timeout_bflag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "remove_on_timeout_bflag", "RM_ONTO_FLAG")
+modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_RTO")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_sipping_latency_flag" xreflabel="sipping_latency_flag">
+		<title><varname>sipping_latency_flag</varname> (string/integer)</title>
+		<para>
+		The branch flag which will be used in order to enable contact pinging
+		latency computation and reporting via the usrloc E_UL_LATENCY_UPDATE
+		event.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "NULL" (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sipping_latency_flag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "sipping_latency_flag", "SIPPING_CALC_LATENCY")
 ...
 </programlisting>
 		</example>
@@ -422,7 +446,7 @@ modparam("nathelper", "oldip_skip", "oc")
 		<para>
 			If a contact does not respond in <emphasis>ping_threshold</emphasis>
 			seconds since the ping has been sent, the contact shall be removed
-			after <emphasis>max_pings_lost</emphasis> unresponded pings.
+			after <xref linkend="param_max_pings_lost"/> unresponded pings.
 		</para>
 		<para>
 		<emphasis>
