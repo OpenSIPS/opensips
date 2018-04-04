@@ -256,12 +256,12 @@ bm_log_timer("test");
 	</section>
 	</section>
 
-	<section>
-		<title>Exported pseudo-variables</title>
+	<section id="exported_pseudo_variables">
+		<title>Exported Pseudo-Variables</title>
 		<para>
 		Exported pseudo-variables are listed in the next sections.
 		</para>
-		<section>
+		<section id="pv_BM_time_diff" xreflabel="BM_time_diff">
 		<title>$BM_time_diff</title>
 			<para>
 			<emphasis>$BM_time_diff</emphasis> - the time difference
@@ -272,16 +272,16 @@ bm_log_timer("test");
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section>
+		<section id="mi_bm_enable_global" xreflabel="bm_enable_global">
 			<title><function moreinfo="none">bm_enable_global</function></title>
 			<para>
 				Enables/disables the module. Parameter may be -1, 0 or 1. See
 				discription of "enable" parameter.
 			</para>
 		</section>
-		<section>
+		<section id="mi_bm_enable_timer" xreflabel="bm_enable_timer">
 			<title><function moreinfo="none">bm_enable_timer</function></title>
 			<para>
 				Enable or disable a single timer. The following example enables
@@ -296,19 +296,19 @@ opensipsctl fifo bm_enable_timer test 1
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_bm_granularity" xreflabel="bm_granularity">
 			<title><function moreinfo="none">bm_granularity</function></title>
 			<para>
 				Modifies the benchmarking granularity. See "granularity" variable.
 			</para>
 		</section>
-		<section>
+		<section id="mi_bm_loglevel" xreflabel="bm_loglevel">
 			<title><function moreinfo="none">bm_loglevel</function></title>
 			<para>
 				Modifies the module log level. See "loglevel" variable.
 			</para>
 		</section>
-		<section>
+		<section id="mi_bm_poll_results" xreflabel="bm_poll_results">
 			<title><function moreinfo="none">bm_poll_results</function></title>
 			<para>
 				Returns the current and global results for each timer. This command is only available if the "granularity" variable is set to 0. It can be used to get results in stable time intervals instead of every N messages. Each timer will have 2 nodes - the local and the global values. Format of the values is the same as the one normally used in logfile. This way of getting the results allows to interface with external graphing applications like Munin.

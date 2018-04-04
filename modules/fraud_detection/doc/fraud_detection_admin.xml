@@ -584,9 +584,9 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_show_fraud_stats" xreflabel="show_fraud_stats">
 		<title>
 		<function moreinfo="none">show_fraud_stats</function>
 		</title>
@@ -605,7 +605,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			<listitem><para>fraud_profile</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="mi_fraud_reload" xreflabel="fraud_reload">
 		<title>
 		<function moreinfo="none">fraud_reload</function>
 		</title>
@@ -620,9 +620,9 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_FRD_WARNING" xreflabel="E_FRD_WARNING">
 		<title>
 		<function moreinfo="none">E_FRD_WARNING</function>
 		</title>
@@ -652,7 +652,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="event_E_FRD_CRITICAL" xreflabel="E_FRD_CRITICAL">
 		<title>
 		<function moreinfo="none">E_FRD_CRITICAL</function>
 		</title>

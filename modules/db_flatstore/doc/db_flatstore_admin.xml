@@ -256,9 +256,9 @@ modparam("db_flatstore", "single_file", 1)
 	</para>
 	</section>
 	
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_flat_rotate" xreflabel="flat_rotate">
 		<title>
 		<function moreinfo="none">flat_rotate</function>
 		</title>

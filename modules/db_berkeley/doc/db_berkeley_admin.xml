@@ -126,9 +126,9 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		</para>
 	</section>
 	
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_bdb_reload" xreflabel="bdb_reload">
 		<title><function moreinfo="none">bdb_reload</function></title>
 		
 		<para>

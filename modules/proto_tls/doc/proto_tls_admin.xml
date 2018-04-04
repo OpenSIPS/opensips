@@ -363,7 +363,7 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 		<para>
 			This controls whether tracing for tls is on or not. You still need to define
 			<xref linkend="trace-destination"/>in order to work, but this value will be
-			controlled using mi function <xref linkend="tls-trace"/>.
+			controlled using mi function <xref linkend="mi_tls_trace"/>.
 		</para>
 		<emphasis>
 			Default value is 0(tracing inactive).
@@ -405,7 +405,7 @@ modparam("proto_tls", "trace_on", 1)
 
 		<para>
 			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="param_trace_on"/> is
-			set to 0 or tracing is deactived via the mi command <xref linkend="tls-trace"/>
+			set to 0 or tracing is deactived via the mi command <xref linkend="mi_tls_trace"/>
 			this route won't be called.
 		</para>
 		<emphasis>
@@ -438,10 +438,10 @@ route[tls_filter] {
 	</section>
 
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="tls-trace">
+		<section id="mi_tls_trace" xreflabel="tls_trace">
 			<title>
 			<function moreinfo="none">tls_trace</function>
 			</title>

@@ -827,8 +827,7 @@ acc_aaa_request("403 Destination not allowed");
    report is packed as an event sent through the OpenSIPS Event
    Interface as E_ACC_EVENT if the reply code is a positive one
    (lower than 300), or E_ACC_MISSED_EVENT for negative or no
-   codes. More information on this in Section 1.10, “Exported
-   Events”.
+   codes. More information on this in Exported Events.
 
    Meaning of the parameters is as follows:
      * comment - Comment describing how the request completed -

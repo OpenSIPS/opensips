@@ -200,8 +200,7 @@ modparam("proto_wss", "trace_destination", "hep_dest")
 
    This controls whether tracing for wss is on or not. You still
    need to define trace_destinationin order to work, but this
-   value will be controlled using mi function Section 1.4.1, “
-   wss_trace ”.
+   value will be controlled using mi function wss_trace.
    Default value is 0(tracing inactive).
 
    Example 1.7. Set trace_on parameter
@@ -231,8 +230,7 @@ modparam("proto_wss", "trace_on", 1)
    initiated a connection) $Ri (ip) and $Rp (port) can be used.
 
    WARNING: IF trace_on is set to 0 or tracing is deactived via
-   the mi command Section 1.4.1, “ wss_trace ” this route won't be
-   called.
+   the mi command wss_trace this route won't be called.
    Default value is none(no route is set).
 
    Example 1.8. Set trace_filter_route parameter

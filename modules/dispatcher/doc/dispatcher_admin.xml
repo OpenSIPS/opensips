@@ -1253,9 +1253,9 @@ if (ds_is_in_list("$rd", "$rp", "part2:2")) {
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_ds_set_state" xreflabel="ds_set_state">
 		<title>
 		<function moreinfo="none">ds_set_state</function>
 		</title>
@@ -1293,7 +1293,7 @@ _address_
 _empty_line_
 </programlisting>
 	</section>
-	<section>
+	<section id="mi_ds_list" xreflabel="ds_list">
 		<title>
 		<function moreinfo="none">ds_list</function>
 		</title>
@@ -1318,7 +1318,7 @@ _empty_line_
 _empty_line_
 </programlisting>
 	</section>
-	<section>
+	<section id="mi_ds_reload" xreflabel="ds_reload">
 		<title>
 		<function moreinfo="none">ds_reload</function>
 		</title>
@@ -1346,9 +1346,9 @@ _empty_line_
 
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_DISPATCHER_STATUS" xreflabel="E_DISPATCHER_STATUS">
 		<title>
 		<function moreinfo="none">E_DISPATCHER_STATUS</function>
 		</title>

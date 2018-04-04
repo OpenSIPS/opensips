@@ -725,11 +725,11 @@ xlog("translate to var $var(y) partition $var(partition)")
 	</section>
 
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section>
-			<title><varname>dp_reload</varname></title>
+		<section id="mi_dp_reload" xreflabel="dp_reload">
+			<title><function moreinfo="none">dp_reload</function></title>
 			<para>
 			It will update the translation rules, loading the database info.
 			</para>
@@ -753,8 +753,8 @@ xlog("translate to var $var(y) partition $var(partition)")
 		</programlisting>
 		</section>
 
-    <section>
-			<title><varname>dp_translate</varname></title>
+    <section id="mi_dp_translate" xreflabel="dp_translate">
+			<title><function moreinfo="none">dp_translate</function></title>
 			<para>
                 It will apply a translation rule identified by a dialplan
                 id and an input string.
@@ -782,8 +782,8 @@ xlog("translate to var $var(y) partition $var(partition)")
 		</programlisting>
 		</section>
 
-    <section>
-			<title><varname>dp_show_partiton</varname></title>
+    <section id="mi_dp_show_partiton" xreflabel="dp_show_partiton">
+			<title><function moreinfo="none">dp_show_partiton</function></title>
 			<para>
                 Display partition(s) details.
 			</para>

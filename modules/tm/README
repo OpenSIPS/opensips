@@ -110,7 +110,7 @@ Ovidiu Sas
               1.6.3. t_hash
               1.6.4. t_reply
 
-        1.7. Exported statistics
+        1.7. Exported Statistics
 
               1.7.1. received_replies
               1.7.2. relayed_replies
@@ -1448,7 +1448,7 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
        present, requires the “Content-Type” and “Content-length”
        headers)
 
-1.7. Exported statistics
+1.7. Exported Statistics
 
    Exported statistics are listed in the next sections. All
    statistics except “inuse_transactions” can be reset.

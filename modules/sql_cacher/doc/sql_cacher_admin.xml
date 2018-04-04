@@ -290,9 +290,9 @@ $ opensipsctl fifo sql_cacher_reload caching_name key
 	</section>
 </section>
 	
-<section>
-	<title>Exported pseudo-variables</title>
-		<section>
+<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_sql_cached_value" xreflabel="sql_cached_value">
 			<title><varname>$sql_cached_value(id{sep}col{sep}key)</varname></title>
 			<para>
 				The cached data is available through this read-only PV.The format

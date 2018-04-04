@@ -131,10 +131,10 @@ modparam("httpd", "post_buf_size", 4096)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-		<section id="param_httpd_list_root_path" xreflabel="httpd_list_root_path">
-		<title><varname>httpd_list_root_path</varname></title>
+		<section id="mi_httpd_list_root_path" xreflabel="httpd_list_root_path">
+		<title><function moreinfo="none">httpd_list_root_path</function></title>
 		<para>
 		Lists all the registered http root paths into the httpd module.
 		When a request comes in, if the root parth is in the list,

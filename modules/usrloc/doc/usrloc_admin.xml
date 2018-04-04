@@ -1225,10 +1225,10 @@ modparam("usrloc", "regen_broken_contactid", 1)
 	</section>
 
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="ul_rm" xreflabel="ul_rm">
+	<section id="mi_ul_rm" xreflabel="ul_rm">
 		<title>
 		<function moreinfo="none">ul_rm</function>
 		</title>
@@ -1249,7 +1249,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section id="ul_rm_contact" xreflabel="ul_rm_contact">
+	<section id="mi_ul_rm_contact" xreflabel="ul_rm_contact">
 		<title>
 		<function moreinfo="none">ul_rm_contact</function>
 		</title>
@@ -1273,7 +1273,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section id="ul_dump" xreflabel="ul_dump">
+	<section id="mi_ul_dump" xreflabel="ul_dump">
 		<title>
 		<function moreinfo="none">ul_dump</function>
 		</title>
@@ -1290,7 +1290,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section id="ul_flush" xreflabel="ul_flush">
+	<section id="mi_ul_flush" xreflabel="ul_flush">
 		<title>
 		<function moreinfo="none">ul_flush</function>
 		</title>
@@ -1299,7 +1299,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</para>
 	</section>
 
-	<section id="ul_add" xreflabel="ul_add">
+	<section id="mi_ul_add" xreflabel="ul_add">
 		<title>
 		<function moreinfo="none">ul_add</function>
 		</title>
@@ -1345,7 +1345,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section id="ul_show_contact" xreflabel="ul_show_contact">
+	<section id="mi_ul_show_contact" xreflabel="ul_show_contact">
 		<title>
 		<function moreinfo="none">ul_show_contact</function>
 		</title>
@@ -1366,7 +1366,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</itemizedlist>
 	</section>
 
-	<section id="ul_sync" xreflabel="ul_sync">
+	<section id="mi_ul_sync" xreflabel="ul_sync">
 		<title>
 		<function moreinfo="none">ul_sync</function>
 		</title>
@@ -1397,12 +1397,12 @@ modparam("usrloc", "regen_broken_contactid", 1)
 	</section>
 
 
-	<section>
-		<title>Exported statistics</title>
+	<section id="exported_statistics">
+		<title>Exported Statistics</title>
 		<para>
 		Exported statistics are listed in the next sections.
 		</para>
-		<section>
+		<section id="stat_users" xreflabel="users">
 		<title>users</title>
 			<para>
 			Number of AOR existing in the USRLOC memory cache for that domain
@@ -1410,7 +1410,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			used domain (Ex: location).
 			</para>
 		</section>
-		<section>
+		<section id="stat_contacts" xreflabel="contacts">
 		<title>contacts</title>
 			<para>
 			Number of contacts existing in the USRLOC memory cache for that
@@ -1418,7 +1418,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			each used domain (Ex: location).
 			</para>
 		</section>
-		<section>
+		<section id="stat_expires" xreflabel="expires">
 		<title>expires</title>
 			<para>
 			Total number of expired contacts for that domain - can be resetted;
@@ -1426,7 +1426,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			(Ex: location).
 			</para>
 		</section>
-		<section>
+		<section id="stat_registered_users" xreflabel="registered_users">
 		<title>registered_users</title>
 			<para>
 			Total number of AOR existing in the USRLOC memory cache for all
@@ -1436,9 +1436,9 @@ modparam("usrloc", "regen_broken_contactid", 1)
 	</section>
 
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section id="E_UL_AOR_INSERT" xreflabel="E_UL_AOR_INSERT">
+	<section id="event_E_UL_AOR_INSERT" xreflabel="E_UL_AOR_INSERT">
 		<title>
 		<function moreinfo="none">E_UL_AOR_INSERT</function>
 		</title>
@@ -1453,7 +1453,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section id="E_UL_AOR_DELETE" xreflabel="E_UL_AOR_DELETE">
+	<section id="event_E_UL_AOR_DELETE" xreflabel="E_UL_AOR_DELETE">
 		<title>
 		<function moreinfo="none">E_UL_AOR_DELETE</function>
 		</title>
@@ -1468,7 +1468,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section id="E_UL_CONTACT_INSERT" xreflabel="E_UL_CONTACT_INSERT">
+	<section id="event_E_UL_CONTACT_INSERT" xreflabel="E_UL_CONTACT_INSERT">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_INSERT</function>
 		</title>
@@ -1530,7 +1530,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section id="E_UL_CONTACT_DELETE" xreflabel="E_UL_CONTACT_DELETE">
+	<section id="event_E_UL_CONTACT_DELETE" xreflabel="E_UL_CONTACT_DELETE">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_DELETE</function>
 		</title>
@@ -1542,7 +1542,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 		</para>
 		<para>Parameters: same as E_UL_CONTACT_INSERT event</para>
 	</section>
-	<section id="E_UL_CONTACT_UPDATE" xreflabel="E_UL_CONTACT_UPDATE">
+	<section id="event_E_UL_CONTACT_UPDATE" xreflabel="E_UL_CONTACT_UPDATE">
 		<title>
 		<function moreinfo="none">E_UL_CONTACT_UPDATE</function>
 		</title>

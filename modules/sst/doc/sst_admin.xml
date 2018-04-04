@@ -355,9 +355,9 @@ route {
 	</section>
 
 
-	<section>
+	<section id="exported_statistics">
 	<title>Exported Statistics</title>
-	<section>
+	<section id="stat_expired_sst" xreflabel="expired_sst">
 		<title><varname>expired_sst</varname></title>
 		<para>
 		Number of dialogs which got expired session timer.

@@ -1014,10 +1014,10 @@ if ( get_source_group("$var(group)") ) {
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section>
+	<section id="mi_address_reload" xreflabel="address_reload">
 		<title>
 		<function moreinfo="none">address_reload</function>
 		</title>
@@ -1042,7 +1042,7 @@ if ( get_source_group("$var(group)") ) {
 
 	</section>
 
-	<section>
+	<section id="mi_address_dump" xreflabel="address_dump">
 		<title>
 		<function moreinfo="none">address_dump</function>
 		</title>
@@ -1063,7 +1063,7 @@ if ( get_source_group("$var(group)") ) {
 
 	</section>
 
-	<section>
+	<section id="mi_subnet_dump" xreflabel="subnet_dump">
 		<title>
 		<function moreinfo="none">subnet_dump</function>
 		</title>
@@ -1084,7 +1084,7 @@ if ( get_source_group("$var(group)") ) {
 
 	</section>
 
-	<section>
+	<section id="mi_allow_uri" xreflabel="allow_uri">
 		<title>
 		<function moreinfo="none">allow_uri</function>
 		</title>

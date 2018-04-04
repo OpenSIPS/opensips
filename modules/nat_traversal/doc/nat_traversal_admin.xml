@@ -613,27 +613,27 @@ if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
     </section>
   </section>
 
-  <section>
-  <title>Exported statistics</title>
-    <section>
+  <section id="exported_statistics">
+  <title>Exported Statistics</title>
+    <section id="stat_keepalive_endpoints" xreflabel="keepalive_endpoints">
     <title><varname>keepalive_endpoints</varname></title>
       <para>
         Indicates the total number of NAT endpoints that are being kept alive.
       </para>
     </section>
-    <section>
+    <section id="stat_registered_endpoints" xreflabel="registered_endpoints">
     <title><varname>registered_endpoints</varname></title>
       <para>
         Indicates how many of the NAT endpoints are kept alive for registrations.
       </para>
     </section>
-    <section>
+    <section id="stat_subscribed_endpoints" xreflabel="subscribed_endpoints">
     <title><varname>subscribed_endpoints</varname></title>
       <para>
         Indicates how many of the NAT endpoints are kept alive for subscriptions.
       </para>
     </section>
-    <section>
+    <section id="stat_dialog_endpoints" xreflabel="dialog_endpoints">
     <title><varname>dialog_endpoints</varname></title>
       <para>
         Indicates how many of the NAT endpoints are kept alive for taking part
@@ -642,9 +642,9 @@ if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
     </section>
   </section>
 
-  <section>
-  <title>Exported pseudo-variables</title>
-    <section>
+  <section id="exported_pseudo_variables">
+  <title>Exported Pseudo-Variables</title>
+    <section id="pv_keepalive.socket" xreflabel="keepalive.socket">
     <title><varname>$keepalive.socket(nat_endpoint)</varname></title>
       <para>
         Returns the local socket used to send messages to the given NAT
@@ -695,7 +695,7 @@ if ($rm=="INVITE" &amp;&amp; $hdr(X-Scope)=="nat-relay") {
       </example>
     </section>
 
-    <section>
+    <section id="pv_source_uri" xreflabel="source_uri">
     <title><varname>$source_uri</varname></title>
       <para>
         Returns the URI specification from where a request was received in the
@@ -779,7 +779,7 @@ if ($rm=="REGISTER") {
       </example>
 
     </section>
-    <section>
+    <section id="pv_nat_traversal.track_dialog" xreflabel="nat_traversal.track_dialog">
     <title><varname>$nat_traversal.track_dialog</varname></title>
       <para>
         Returns a boolean value (0 or 1) indicating if dialog tracking will

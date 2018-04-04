@@ -539,10 +539,9 @@ if ($rm=="REGISTER") {
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_cpl_process_register_norpl" xreflabel="cpl_process_register_norpl">
 			<title>
-				<function moreinfo="none">cpl_process_register_norpl()
-					</function>
+				<function moreinfo="none">cpl_process_register_norpl()</function>
 			</title>
 			<para>
 				Same as <quote>cpl_process_register</quote> without 
@@ -573,9 +572,9 @@ if ($rm=="REGISTER") {
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section>
+		<section id="mi_LOAD_CPL" xreflabel="LOAD_CPL">
 			<title>
 				<function moreinfo="none">LOAD_CPL</function>
 			</title>
@@ -602,7 +601,7 @@ if ($rm=="REGISTER") {
 </programlisting>
 		</section>
 
-		<section>
+		<section id="mi_REMOVE_CPL" xreflabel="REMOVE_CPL">
 			<title>
 				<function moreinfo="none">REMOVE_CPL</function>
 			</title>
@@ -628,7 +627,7 @@ if ($rm=="REGISTER") {
 </programlisting>
 		</section>
 
-		<section>
+		<section id="mi_GET_CPL" xreflabel="GET_CPL">
 			<title>
 				<function moreinfo="none">GET_CPL</function>
 			</title>

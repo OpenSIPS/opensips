@@ -130,9 +130,9 @@ modparam("xcap_client", "query_period", 50)
 	</para>
 </section>
 
-<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_refreshXcapDoc" xreflabel="refreshXcapDoc">
 		<title>
 		<function moreinfo="none">refreshXcapDoc</function>
 		</title>

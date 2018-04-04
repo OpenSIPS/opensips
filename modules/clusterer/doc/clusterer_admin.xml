@@ -633,9 +633,9 @@ if (cluster_check_addr("1", "$si")) {
 			</section>
         </section>
 
-        <section>
+        <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_clusterer_reload" xreflabel="clusterer_reload">
 		<title>
 		<function moreinfo="none">clusterer_reload</function>
 		</title>
@@ -655,7 +655,7 @@ if (cluster_check_addr("1", "$si")) {
 		</programlisting>
 	</section>
 
-        <section>
+        <section id="mi_clusterer_list" xreflabel="clusterer_list">
 		<title>
 		<function moreinfo="none">clusterer_list</function>
 		</title>
@@ -687,7 +687,7 @@ Cluster:: 2
 		</example>
 	</section>
 
-	<section>
+	<section id="mi_clusterer_list_topology" xreflabel="clusterer_list_topology">
 		<title>
 		<function moreinfo="none">clusterer_list_topology</function>
 		</title>
@@ -724,7 +724,7 @@ Cluster:: 2
 		</example>
 	</section>
 
-        <section>
+        <section id="mi_clusterer_set_status" xreflabel="clusterer_set_status">
 		<title>
 		<function moreinfo="none">clusterer_set_status</function>
 		</title>
@@ -754,7 +754,7 @@ Cluster:: 2
 		</programlisting>
 	</section>
 
-		<section>
+		<section id="mi_cluster_send_mi" xreflabel="cluster_send_mi">
 		<title>
 		<function moreinfo="none">cluster_send_mi</function>
 		</title>
@@ -791,7 +791,7 @@ Cluster:: 2
 		</programlisting>
 		</section>
 
-		<section>
+		<section id="mi_cluster_broadcast_mi" xreflabel="cluster_broadcast_mi">
 		<title>
 		<function moreinfo="none">cluster_broadcast_mi</function>
 		</title>
@@ -825,7 +825,7 @@ Cluster:: 2
 		</programlisting>
 		</section>
 
-		<section>
+		<section id="mi_clusterer_list_cap" xreflabel="clusterer_list_cap">
 		<title>
 		<function moreinfo="none">clusterer_list_cap</function>
 		</title>
@@ -856,9 +856,9 @@ Cluster:: 1
 
         </section>
 
-<section>
+<section id="exported_events" xreflabel="Exported Events">
 <title>Exported Events</title>
-	<section>
+	<section id="event_E_CLUSTERER_REQ_RECEIVED" xreflabel="E_CLUSTERER_REQ_RECEIVED">
 		<title>
 		<function moreinfo="none">E_CLUSTERER_REQ_RECEIVED</function>
 		</title>
@@ -882,7 +882,7 @@ Cluster:: 1
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="event_E_CLUSTERER_RPL_RECEIVED" xreflabel="E_CLUSTERER_RPL_RECEIVED">
 		<title>
 		<function moreinfo="none">E_CLUSTERER_RPL_RECEIVED</function>
 		</title>

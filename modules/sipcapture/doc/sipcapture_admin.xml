@@ -938,12 +938,12 @@ route[capture_resume] {
 </section>
 
 
-	<section>
-	<title>Exported PseudoVariables</title>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
 
-	<section>
+	<section id="pv_hep_net" xreflabel="hep_net">
 	<title>
-		<function moreinfo="none">hep_net</function>
+		<function moreinfo="none">$hep_net</function>
 	</title>
 	<para>Holds layer 3 and 4 information(IP addresses and ports) about
 		the node from where the hep message was received. The variable is
@@ -994,9 +994,9 @@ route[capture_resume] {
 	</example>
 	</section>
 
-	<section>
+	<section id="pv_HEPVERSION" xreflabel="HEPVERSION">
 	<title>
-		<function moreinfo="none">HEPVERSION - string,int</function>
+		<function moreinfo="none">HEPVERSION (string, int)</function>
 	</title>
 	<para>
 		Holds the version of the hep packet received on the interface.

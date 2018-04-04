@@ -1105,9 +1105,9 @@ $ opensipsctl fifo rtpproxy_reload
 
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_RTPPROXY_STATUS" xreflabel="E_RTPPROXY_STATUS">
 		<title>
 		<function moreinfo="none">E_RTPPROXY_STATUS</function>
 		</title>

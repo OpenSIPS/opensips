@@ -167,7 +167,7 @@
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_is_peer_verified" xreflabel="is_peer_verified()">
 		<title>
 		<function moreinfo="none">is_peer_verified</function>
 		</title>
@@ -193,9 +193,9 @@ if (is_peer_verified()) {
 	</section>
 	</section>
 
-        <section>
+        <section id="exported_mi_functions" xreflabel="Exported MI Functions">
             <title>Exported MI Functions</title>
-            <section>
+            <section id="mi_tls_list" xreflabel="tls_list">
                 <title>
 		<function moreinfo="none">tls_list</function>
                 </title>
@@ -204,7 +204,7 @@ if (is_peer_verified()) {
                 </para>
             </section>
 
-            <section>
+            <section id="mi_tls_reload" xreflabel="tls_reload">
                 <title>
 		<function moreinfo="none">tls_reload</function>
                 </title>

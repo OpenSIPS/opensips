@@ -316,7 +316,7 @@ modparam("proto_tls", "trace_destination", "hep_dest")
    This controls whether tracing for tls is on or not. You still
    need to define Section 1.5.6, “trace_destination (string)”in
    order to work, but this value will be controlled using mi
-   function Section 1.6.1, “ tls_trace ”.
+   function tls_trace.
    Default value is 0(tracing inactive).
 
    Example 1.7. Set trace_on parameter
@@ -346,8 +346,7 @@ modparam("proto_tls", "trace_on", 1)
    initiated a connection) $Ri (ip) and $Rp (port) can be used.
 
    WARNING: IF trace_on is set to 0 or tracing is deactived via
-   the mi command Section 1.6.1, “ tls_trace ” this route won't be
-   called.
+   the mi command tls_trace this route won't be called.
    Default value is none(no route is set).
 
    Example 1.8. Set trace_filter_route parameter

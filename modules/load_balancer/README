@@ -49,17 +49,16 @@ Bogdan-Andrei Iancu
               1.6.8. lb_is_destination(ip,port[,group[,active]])
               1.6.9. lb_count_call(ip,port,grp,resources[,undo])
 
-        1.7. Exported statistics
-        1.8. Exported MI Functions
+        1.7. Exported MI Functions
 
-              1.8.1. lb_reload
-              1.8.2. lb_resize
-              1.8.3. lb_list
-              1.8.4. lb_status
+              1.7.1. lb_reload
+              1.7.2. lb_resize
+              1.7.3. lb_list
+              1.7.4. lb_status
 
-        1.9. Exported Events
+        1.8. Exported Events
 
-              1.9.1. E_LOAD_BALANCER_STATUS
+              1.8.1. E_LOAD_BALANCER_STATUS
 
    2. Developer Guide
 
@@ -598,13 +597,9 @@ if (lb_is_destination("$si","$sp") ) {
 }
 ...
 
-1.7. Exported statistics
+1.7. Exported MI Functions
 
-   NONE
-
-1.8. Exported MI Functions
-
-1.8.1. lb_reload
+1.7.1. lb_reload
 
    Trigers the reload of the load balancing data from the DB.
 
@@ -612,7 +607,7 @@ if (lb_is_destination("$si","$sp") ) {
                 :lb_reload:_reply_fifo_file_
                 _empty_line_
 
-1.8.2. lb_resize
+1.7.2. lb_resize
 
    Changes the capacity for a resource of a destination. The
    function receives as parameters the ID (as per DB) of the
@@ -626,7 +621,7 @@ if (lb_is_destination("$si","$sp") ) {
                 56   /* new resource capacity*/
                 _empty_line_
 
-1.8.3. lb_list
+1.7.3. lb_list
 
    Lists all the destinations and the maximum and current load for
    each resource of the destination.
@@ -646,7 +641,7 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
         Resource:: trans max=57 load=0
         Resource:: vm max=5 load=0
 
-1.8.4. lb_status
+1.7.4. lb_status
 
    Gets or sets the status (enabled or disabled) of a destination.
    The function takes 2 parameters, first mandatory, the id of the
@@ -668,9 +663,9 @@ $ ./opensipsctl fifo lb_status 2 1
 $ ./opensipsctl fifo lb_status 2
 enable:: yes
 
-1.9. Exported Events
+1.8. Exported Events
 
-1.9.1.  E_LOAD_BALANCER_STATUS
+1.8.1.  E_LOAD_BALANCER_STATUS
 
    This event is raised when the module changes the state of a
    destination, either through MI or probing.

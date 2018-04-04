@@ -389,7 +389,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
 	<section id="event-freeswitch" xreflabel="freeswitch">
 		<title>

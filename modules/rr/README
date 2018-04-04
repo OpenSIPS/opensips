@@ -45,7 +45,7 @@ Bogdan-Andrei Iancu
               1.5.4. add_rr_param(param)
               1.5.5. check_route_param(re)
               1.5.6. is_direction(dir)
-              1.5.7. Exported pseudo-variables
+              1.5.7. Exported Pseudo-Variables
 
    2. Developer Guide
 
@@ -356,7 +356,7 @@ if (is_direction("upstream")) {
 }
 ...
 
-1.5.7. Exported pseudo-variables
+1.5.7. Exported Pseudo-Variables
 
    Exported pseudo-variables are listed in the next sections.
 

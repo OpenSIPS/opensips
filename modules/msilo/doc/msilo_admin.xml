@@ -653,31 +653,31 @@ m_dump("$fu", 10);
 
 	<section>
 	<title>Exported Statistics</title>
-	<section>
+	<section id="stat_stored_messages" xreflabel="stored_messages">
 		<title>stored_messages</title>
 		<para>
 		The number of messages stored by msilo.
 		</para>
 	</section>
-	<section>
+	<section id="stat_dumped_messages" xreflabel="dumped_messages">
 		<title>dumped_messages</title>
 		<para>
 		The number of dumped messages.
 		</para>
 	</section>
-	<section>
+	<section id="stat_failed_messages" xreflabel="failed_messages">
 		<title>failed_messages</title>
 		<para>
 		The number of failed dumped messages.
 		</para>
 	</section>
-	<section>
+	<section id="stat_dumped_reminders" xreflabel="dumped_reminders">
 		<title>dumped_reminders</title>
 		<para>
 		The number of dumped reminder messages.
 		</para>
 	</section>
-	<section>
+	<section id="stat_failed_reminders" xreflabel="failed_reminders">
 		<title>failed_reminders</title>
 		<para>
 		The number of failed reminder messages.

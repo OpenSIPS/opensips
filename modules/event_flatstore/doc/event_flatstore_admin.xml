@@ -134,9 +134,9 @@ modparam("event_flatstore", "file_permissions", "664")
 		</para>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_evi_flat_rotate" xreflabel="evi_flat_rotate">
 		<title>
 		<function>evi_flat_rotate</function>
 		</title>

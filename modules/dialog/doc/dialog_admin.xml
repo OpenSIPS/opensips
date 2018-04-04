@@ -34,7 +34,7 @@
 	received. In case of no <quote>BYE</quote>, the dialog lifetime is
 	controlled via the default timeout (see <quote>default_timeout</quote>
 	- <xref linkend="param_default_timeout"/>) and custom timeout (see
-	<quote>$DLG_timeout</quote> - <xref linkend="timeout-pvar-id"/>).
+	<quote>$DLG_timeout</quote> - <xref linkend="pv_DLG_timeout"/>).
 	</para>
 	</section>
 
@@ -2005,7 +2005,7 @@ $var(account) = $dlg_val(account_type);
 		</para>
 		<para>
 		If the tag is not already defined through the <xref linkend="param_dlg_sharing_tag"/> param and/or
-		have it's state changed by the <xref linkend="dlg_set_sharing_tag_active"/> MI command, the
+		have it's state changed by the <xref linkend="mi_dlg_set_sharing_tag_active"/> MI command, the
 		initial state will be <emphasis>backup</emphasis>.
 		</para>
 		<para>
@@ -2029,34 +2029,35 @@ set_dlg_sharing_tag("vip1");
 	</section>
 
 
-	<section>
-	<title>Exported statistics</title>
-		<section>
+	<section id="exported_statistics">
+	<title>Exported Statistics</title>
+		<section id="stat_active_dialogs" xreflabel="active_dialogs">
 			<title><varname>active_dialogs</varname></title>
 			<para>
 			Returns the number of current active dialogs (may be confirmed or
 			not).
 			</para>
 		</section>
-		<section>
+		<section id="stat_early_dialogs" xreflabel="early_dialogs">
 			<title><varname>early_dialogs</varname></title>
 			<para>
 			Returns the number of early dialogs.
 			</para>
-		</section>		<section>
+		</section>
+		<section id="stat_processed_dialogs" xreflabel="processed_dialogs">
 			<title><varname>processed_dialogs</varname></title>
 			<para>
 			Returns the total number of processed dialogs (terminated,
 			expired or active) from the startup.
 			</para>
 		</section>
-		<section>
+		<section id="stat_expired_dialogs" xreflabel="expired_dialogs">
 			<title><varname>expired_dialogs</varname></title>
 			<para>
 			Returns the total number of expired dialogs from the startup.
 			</para>
 		</section>
-		<section>
+		<section id="stat_failed_dialogs" xreflabel="failed_dialogs">
 			<title><varname>failed_dialogs</varname></title>
 			<para>
 			Returns the number of failed dialogs ( dialogs were
@@ -2064,7 +2065,7 @@ set_dlg_sharing_tag("vip1");
 			negative reply, cancelled, etc )
 			</para>
 		</section>
-		<section>
+		<section id="stat_create_sent" xreflabel="create_sent">
 			<title><varname>create_sent</varname></title>
 			<para>
 				Returns the number of replicated dialog
@@ -2072,7 +2073,7 @@ set_dlg_sharing_tag("vip1");
 			instances.
 			</para>
 		</section>
-		<section>
+		<section id="stat_update_sent" xreflabel="update_sent">
 			<title><varname>update_sent</varname></title>
 			<para>
 				Returns the number of replicated dialog
@@ -2080,7 +2081,7 @@ set_dlg_sharing_tag("vip1");
 			instances.
 			</para>
 		</section>
-		<section>
+		<section id="stat_delete_sent" xreflabel="delete_sent">
 			<title><varname>delete_sent</varname></title>
 			<para>
 				Returns the number of replicated dialog
@@ -2088,7 +2089,7 @@ set_dlg_sharing_tag("vip1");
 			instances.
 			</para>
 		</section>
-		<section>
+		<section id="stat_create_recv" xreflabel="create_recv">
 			<title><varname>create_recv</varname></title>
 			<para>
 				Returns the number of dialog
@@ -2096,7 +2097,7 @@ set_dlg_sharing_tag("vip1");
 			OpenSIPS instances.
 			</para>
 		</section>
-		<section>
+		<section id="stat_update_recv" xreflabel="update_recv">
 			<title><varname>update_recv</varname></title>
 			<para>
 				Returns the number of dialog
@@ -2104,7 +2105,7 @@ set_dlg_sharing_tag("vip1");
 			OpenSIPS instances.
 			</para>
 		</section>
-		<section>
+		<section id="stat_delete_recv" xreflabel="delete_recv">
 			<title><varname>delete_recv</varname></title>
 			<para>
 				Returns the number of dialog
@@ -2114,12 +2115,13 @@ set_dlg_sharing_tag("vip1");
 		</section>
 	</section>
 
-
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section>
-		<title><varname>dlg_list</varname></title>
+		<section id="mi_dlg_list" xreflabel="dlg_list">
+		<title>
+		<function moreinfo="none">dlg_list</function>
+		</title>
 		<para>
 		Lists the description of the dialogs (calls). If no parameter is given,
 		all dialogs will be listed. If a dialog identifier is passed
@@ -2169,8 +2171,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>dlg_list_ctx</varname></title>
+		<section id="mi_dlg_list_ctx" xreflabel="dlg_list_ctx">
+		<title><function moreinfo="none">dlg_list_ctx</function></title>
 		<para>
 		The same as the <quote>dlg_list</quote> but including in the
 		dialog description
@@ -2193,8 +2195,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section  id='dlg_end_dlg' xreflabel="dlg_end_dlg">
-			<title><varname>dlg_end_dlg</varname></title>
+		<section id='mi_dlg_end_dlg' xreflabel="dlg_end_dlg">
+			<title><function moreinfo="none">dlg_end_dlg</function></title>
 			<para>
 				Terminates an ongoing dialog.
 				If dialog is established, BYEs are sent in both directions.
@@ -2234,8 +2236,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>profile_get_size</varname></title>
+		<section id="mi_profile_get_size" xreflabel="profile_get_size">
+		<title><function moreinfo="none">profile_get_size</function></title>
 		<para>
 		Returns the number of dialogs belonging to a profile. If the profile
 		supports values, the check can be reinforced to take into account a
@@ -2266,8 +2268,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>profile_list_dlgs</varname></title>
+		<section id="mi_profile_list_dlgs" xreflabel="profile_list_dlgs">
+		<title><function moreinfo="none">profile_list_dlgs</function></title>
 		<para>
 		Lists all the dialogs belonging to a profile. If the profile
 		supports values, the check can be reinforced to take into account a
@@ -2300,8 +2302,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>profile_get_values</varname></title>
+		<section id="mi_profile_get_values" xreflabel="profile_get_values">
+		<title><function moreinfo="none">profile_get_values</function></title>
 		<para>
 		Lists all the values belonging to a profile along with their
 		count. If the profile does not support values a total count
@@ -2325,11 +2327,11 @@ set_dlg_sharing_tag("vip1");
 		opensipsctl fifo profile_get_values inbound_calls
 		</programlisting>
 		</section>
-		<section>
-		<title><varname>profile_end_dlgs</varname></title>
+		<section id="mi_profile_end_dlgs" xreflabel="profile_end_dlgs">
+		<title><function moreinfo="none">profile_end_dlgs</function></title>
 		<para>
 		Terminate all ongoing dialogs from a specified profile, on a single dialog it
-		performs the same operations as the command <emphasis role='bold'><xref linkend="dlg_end_dlg"/></emphasis>
+		performs the same operations as the command <emphasis role='bold'><xref linkend="mi_dlg_end_dlg"/></emphasis>
 		</para>
 		<para>
 		Name: <emphasis>profile_end_dlgs</emphasis>
@@ -2351,8 +2353,8 @@ set_dlg_sharing_tag("vip1");
 		opensipsctl fifo profile_end_dlgs inbound_calls
 		</programlisting>
 		</section>
-		<section>
-		<title><varname>dlg_db_sync</varname></title>
+		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
+		<title><function moreinfo="none">dlg_db_sync</function></title>
 		<para>
 		Will synchronize the information about the dialogs from the database
 		with the OpenSIPS internal memory. To be used mainly for transferring
@@ -2370,8 +2372,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>dlg_restore_db</varname></title>
+		<section id="mi_dlg_restore_db" xreflabel="dlg_restore_db">
+		<title><function moreinfo="none">dlg_restore_db</function></title>
 		<para>
 		Restores the dialog table after a potential desynchronization event.
 		The table is truncated, then populated with CONFIRMED dialogs from memory.
@@ -2388,8 +2390,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>list_all_profiles</varname></title>
+		<section id="mi_list_all_profiles" xreflabel="list_all_profiles">
+		<title><function moreinfo="none">list_all_profiles</function></title>
 		<para>
 		Lists all the dialog profiles, along with 1 or 0 if
 		the given profile has/does not have an associated value.
@@ -2407,8 +2409,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section id='dlg_set_sharing_tag_active' xreflabel="dlg_set_sharing_tag_active">
-		<title><varname>dlg_set_sharing_tag_active</varname></title>
+		<section id='mi_dlg_set_sharing_tag_active' xreflabel="dlg_set_sharing_tag_active">
+		<title><function moreinfo="none">dlg_set_sharing_tag_active</function></title>
 		<para>
 		Sets the given sharing tag to the <emphasis>active</emphasis> state.
 		The information about this change is also broadcasted in the cluster in order
@@ -2427,8 +2429,8 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>dlg_list_sharing_tags</varname></title>
+		<section id="mi_dlg_list_sharing_tags" xreflabel="dlg_list_sharing_tags">
+		<title><function moreinfo="none">dlg_list_sharing_tags</function></title>
 		<para>
 		Lists all known sharing tags and their states.
 		</para>
@@ -2448,10 +2450,9 @@ set_dlg_sharing_tag("vip1");
 	</section>
 
 
-	<section>
-	<title>Exported pseudo-variables</title>
-
-		<section>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_DLG_count" xreflabel="DLG_count">
 			<title><varname>$DLG_count</varname></title>
 			<para>
 			Returns the number of current active dialogs (may be confirmed or
@@ -2459,7 +2460,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section>
+		<section id="pv_DLG_status" xreflabel="DLG_status">
 			<title><varname>$DLG_status</varname></title>
 			<para>
 			Returns the status of the dialog corresponding to the processed
@@ -2496,7 +2497,7 @@ set_dlg_sharing_tag("vip1");
 			</itemizedlist>
 		</section>
 
-		<section>
+		<section id="pv_DLG_lifetime" xreflabel="DLG_lifetime">
 			<title><varname>$DLG_lifetime</varname></title>
 			<para>
 			Returns the duration (in seconds) of the dialog corresponding to
@@ -2509,7 +2510,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section>
+		<section id="pv_DLG_flags" xreflabel="DLG_flags">
 			<title><varname>$DLG_flags</varname></title>
 			<para>
 			Returns the dialog flags array (as a single integer value)
@@ -2522,7 +2523,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section>
+		<section id="pv_DLG_dir" xreflabel="DLG_dir">
 			<title><varname>$DLG_dir</varname></title>
 			<para>
 			Returns the direction of the request in dialog (as "UPSTREAM" or
@@ -2535,7 +2536,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section>
+		<section id="pv_DLG_did" xreflabel="DLG_did">
 			<title><varname>$DLG_did</varname></title>
 			<para>
 			Returns the id of the dialog corresponding to
@@ -2548,7 +2549,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section>
+		<section id="pv_DLG_end_reason" xreflabel="DLG_end_reason">
 			<title><varname>$DLG_end_reason</varname></title>
 			<para>
 				Returns the reason for the dialog termination. It can be
@@ -2587,7 +2588,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="timeout-pvar-id">
+		<section id="pv_DLG_timeout" xreflabel="DLG_timeout">
 			<title><varname>$DLG_timeout</varname></title>
 			<para>
 				Used to set the dialog lifetime (in seconds). When read, the variable
@@ -2603,7 +2604,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section>
+		<section id="pv_dlg_val" xreflabel="dlg_val">
 			<title><varname>$dlg_val(name)</varname></title>
 			<para>
 			This is a read/write variable that allows access to the dialog
@@ -2618,9 +2619,9 @@ set_dlg_sharing_tag("vip1");
 
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_DLG_STATE_CHANGED" xreflabel="E_DLG_STATE_CHANGED">
 		<title>
 		<function moreinfo="none">E_DLG_STATE_CHANGED</function>
 		</title>

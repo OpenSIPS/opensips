@@ -338,10 +338,10 @@ if ($rs == "183") {
 
 	</section>
 
-	<section>
-	<title>Exported PseudoVariables</title>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
 
-	<section>
+	<section id="pv_isup_param" xreflabel="isup_param">
 	<title>
 		<varname>$(isup_param(param_name{sep}subfield_name)[byte_index])</varname>
 	</title>
@@ -404,7 +404,7 @@ if ($rs == "183") {
 	</example>
 	</section>
 
-	<section>
+	<section id="pv_isup_param_str" xreflabel="isup_param_str">
 	<title>
 		<varname>$isup_param_str(param_name{sep}subfield_name)</varname>
 	</title>
@@ -439,7 +439,7 @@ if ($rs == "183") {
 	</example>
 	</section>
 
-	<section>
+	<section id="pv_isup_msg_type" xreflabel="isup_msg_type">
 	<title>
 		<varname>$isup_msg_type</varname>
 	</title>
@@ -459,13 +459,13 @@ if ($rs == "183") {
 
 </section>
 
-<section>
+<section id="exported_transformations">
 	<title>Exported script transformations</title>
 	<para>
 		The module also provides a way for accessing the value of ISUP parameters and their subfields from an ISUP message contained in a arbitrary script variable as opposed to directly from the processed SIP (with encapsulated ISUP) message. This is done by aplying a transformation to a script variable containing the ISUP message body. The value of the original variable is not altered and a corresponding integer or string value (representing an ISUP parameter or subfield as the exact value or string alias) is returned.
 	</para>
 
-	<section>
+	<section id="tran_isup.param" xreflabel="isup.param">
 		<title>
 			<varname>{isup.param,param_name,[subfield_name]}</varname>
 		</title>
@@ -507,7 +507,7 @@ if ($rs == "183") {
 
 	</section>
 
-	<section>
+	<section id="tran_isup.param.str" xreflabel="isup.param.str">
 		<title>
 			<varname>{isup.param.str,param_name,[subfield_name]}</varname>
 		</title>

@@ -644,9 +644,9 @@ modparam("ratelimit", "slot_period", 100)
 
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_rl_list" xreflabel="rl_list">
 		<title>
 		<function moreinfo="none">rl_list</function>
 		</title>
@@ -677,7 +677,7 @@ modparam("ratelimit", "slot_period", 100)
 		_empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="mi_rl_reset_pipe" xreflabel="rl_reset_pipe">
 		<title>
 		<function moreinfo="none">rl_reset_pipe</function>
 		</title>
@@ -703,7 +703,7 @@ modparam("ratelimit", "slot_period", 100)
 		_empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="mi_rl_set_pid" xreflabel="rl_set_pid">
 		<title>
 		<function moreinfo="none">rl_set_pid</function>
 		</title>
@@ -736,7 +736,7 @@ modparam("ratelimit", "slot_period", 100)
 		_empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="mi_rl_get_pid" xreflabel="rl_get_pid">
 		<title>
 		<function moreinfo="none">rl_get_pid</function>
 		</title>
@@ -755,7 +755,7 @@ modparam("ratelimit", "slot_period", 100)
 		_empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="mi_rl_bin_status" xreflabel="rl_bin_status">
 		<title>
 		<function moreinfo="none">rl_bin_status</function>
 		</title>
@@ -777,10 +777,10 @@ modparam("ratelimit", "slot_period", 100)
 	</section>
 	</section>
 
-	<section>
-	<title>Exported pseudo-variables</title>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
 
-		<section>
+		<section id="pv_rl_count" xreflabel="rl_count">
 			<title><varname>$rl_count(name)</varname></title>
 			<para>
 			Returns the counter of a pipe. The variable is read-only.

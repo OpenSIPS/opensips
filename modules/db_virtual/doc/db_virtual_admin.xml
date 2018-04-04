@@ -236,9 +236,9 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section>
+		<section id="mi_db_get" xreflabel="db_get">
 			<title>
 				<function moreinfo="none">db_get</function>
 			</title>
@@ -268,7 +268,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 
 
 
-		<section>
+		<section id="mi_db_set" xreflabel="db_set">
 			<title>
 				<function moreinfo="none">db_set</function>
 			</title>

@@ -617,10 +617,10 @@ modparam("cgrates", "compat_mode", 1)
 	</section>
 	</section>
 
-	<section>
-	<title>Exported pseudo-variables</title>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
 
-		<section>
+		<section id="pv_cgr" xreflabel="cgr">
 			<title><varname>$cgr(name) / $(cgr(name)[session])</varname></title>
 			<para>
 				Pseudo-variable used to set different parameters for the
@@ -693,7 +693,7 @@ modparam("cgrates", "compat_mode", 1)
 		</programlisting>
 		</example>
 		</section>
-		<section>
+		<section id="pv_cgr_opt" xreflabel="cgr_opt">
 			<title><varname>$cgr_opt(name) / $(cgr_opt(name)[session])</varname></title>
 			<para>
 				Used to tune the request parameter of a CGRateS request when used in
@@ -738,7 +738,7 @@ modparam("cgrates", "compat_mode", 1)
 		</programlisting>
 		</example>
 		</section>
-		<section>
+		<section id="pv_cgr_ret" xreflabel="cgr_ret">
 			<title><varname>$cgr_ret(name)</varname></title>
 			<para>
 				Returns the reply message of a CGRateS command in script,

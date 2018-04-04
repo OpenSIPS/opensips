@@ -54,7 +54,7 @@ Bogdan-Andrei Iancu
               1.7.6. cc_list_calls
               1.7.7. cc_reset_stats
 
-        1.8. Exported pseudo-variables
+        1.8. Exported Pseudo-Variables
 
    2. Developer Guide
 
@@ -98,7 +98,7 @@ Chapter 1. Admin Guide
    provisioning purposes - the cc_flows and cc_agents tables, see
    DB schema. Data is loaded at startup and cached into memory ;
    runtime reload is possible via the MI commands (see the
-   cc_reload command in Section 1.7, “Exported MI Functions”).
+   cc_reload command in Exported MI Functions).
 
    Additionally there is a table cc_cdrs for writing the CDRs -
    this operation is done in realtime, after the call in
@@ -157,8 +157,7 @@ Chapter 1. Admin Guide
    Additionally, the agent has a initial logstate - if he is
    logged in or not (being logged in is a must in order to receive
    calls). The log state may be changed at runtime via a dedicated
-   MI command cc_agent_login, see Section 1.7, “Exported MI
-   Functions”.
+   MI command cc_agent_login, see Exported MI Functions.
 
    There is a wrapup_time defined, saying the time interval for an
    agent before getting a new call from the system (after he
@@ -486,7 +485,7 @@ opensipsctl fifo cc_list_agents
    MI FIFO Command usage:
 opensipsctl fifo cc_reset_stats
 
-1.8. Exported pseudo-variables
+1.8. Exported Pseudo-Variables
 
    NONE
 

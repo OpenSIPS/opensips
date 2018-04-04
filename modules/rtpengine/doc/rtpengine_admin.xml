@@ -803,9 +803,9 @@ rtpengine_start_recording();
 
 	</section>
 
-	<section>
-		<title>Exported Pseudo Variables</title>
-		<section>
+	<section id="exported_pseudo_variables">
+		<title>Exported Pseudo-Variables</title>
+		<section id="pv_rtpstat_0" xreflabel="rtpstat">
 			<title><function moreinfo="none">$rtpstat</function></title>
 			<para>
 			Returns the &rtp; statistics from the &rtp; proxy. The &rtp; statistics from the &rtp; proxy
@@ -821,7 +821,7 @@ rtpengine_start_recording();
 		</programlisting>
 		</example>
 		</section>
-		<section>
+		<section id="pv_rtpstat" xreflabel="rtpstat">
 			<title><function moreinfo="none">$rtpstat(STAT)[index]</function></title>
 			<para>
 			Returnes one of the pre-fined statistics listed below:
@@ -884,7 +884,7 @@ rtpengine_start_recording();
 		</programlisting>
 		</example>
 		</section>
-		<section>
+		<section id="pv_rtpquery" xreflabel="rtpquery">
 			<title><function moreinfo="none">$rtpquery</function></title>
 			<para>
 			Does a Query command to the &rtp; proxy and returns the answer in a JSON format.
@@ -912,7 +912,7 @@ rtpengine_start_recording();
 
 	<section>
 		<title><acronym>MI</acronym> Commands</title>
-		<section id="rtpengine.m.rtpengine_enable">
+		<section id="mi_rtpengine_enable" xreflabel="rtpengine_enable">
 			<title><function moreinfo="none">rtpengine_enable</function></title>
 			<para>
 			Enables a &rtp; proxy if parameter value is greater than 0.
@@ -940,7 +940,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 			</example>
 		</section>
 
-		<section id="rtpengine.m.rtpengine_show">
+		<section id="mi_rtpengine_show" xreflabel="rtpengine_show">
 			<title><function moreinfo="none">rtpengine_show</function></title>
 			<para>
 			Displays all the &rtp; proxies and their information: set and
@@ -960,7 +960,7 @@ $ opensipsctl fifo rtpengine_show
 			</example>
 		</section>
 
-		<section id="rtpengine.m.rtpengine_reload">
+		<section id="mi_rtpengine_reload" xreflabel="rtpengine_reload">
 			<title><function moreinfo="none">rtpengine_reload</function></title>
 			<para>
 			Reloads all rtpengine sets from the database. Used only when the
@@ -980,7 +980,7 @@ $ opensipsctl fifo rtpengine_reload
 			</example>
 		</section>
 
-		<section id="rtpengine.m.teardown">
+		<section id="mi_teardown" xreflabel="teardown">
 			<title><function moreinfo="none">teardown</function></title>
 			<para>
 			Terminates the SIP dialog by the SIP Call-ID given as parameter.

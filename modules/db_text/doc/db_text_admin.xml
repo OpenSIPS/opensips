@@ -262,9 +262,9 @@ modparam("db_text", "db_mode", 1)
 			<emphasis>None</emphasis>.
 		</para>
 	</section>
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="param_dbt_dump" xreflabel="dbt_dump">
+	<section id="mi_dbt_dump" xreflabel="dbt_dump">
 		<title><varname>dbt_dump</varname></title>
 		<para>
 			Write back to hard drive modified tables.
@@ -281,7 +281,7 @@ modparam("db_text", "db_mode", 1)
 _empty_line_
 		</programlisting>
 	</section>
-	<section id="param_dbt_reload" xreflabel="dbt_reload">
+	<section id="mi_dbt_reload" xreflabel="dbt_reload">
 		<title><varname>dbt_reload</varname></title>
 		<para>
 			Causes db_text module to reload cached tables from disk.

@@ -332,9 +332,9 @@ modparam("siptrace", "trace_id",
 	</section>
 	</section>
 
-   <section>
+   <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_sip_trace" xreflabel="sip_trace">
 		<title>
 		<function moreinfo="none">sip_trace</function>
 		</title>

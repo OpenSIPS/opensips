@@ -514,8 +514,10 @@ modparam("b2b_sca",
 	</section>
 	</section>
 
-	<section><title>Exported MI Functions</title>
-	<section><title><function moreinfo="none">sca_list</function></title>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+	<section id="mi_sca_list" xreflabel="sca_list">
+		<title><function moreinfo="none">sca_list</function></title>
 	<para>
 	It lists the appearances belonging to a shared line/call.
 	</para>

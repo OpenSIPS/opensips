@@ -271,9 +271,9 @@ if (!pike_check_req()) { exit; };
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_pike_list" xreflabel="pike_list">
 		<title>
 		<function moreinfo="none">pike_list</function>
 		</title>
@@ -297,7 +297,7 @@ if (!pike_check_req()) { exit; };
 		_empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="mi_pike_rm" xreflabel="pike_rm">
 		<title>
 		<function moreinfo="none">pike_rm</function>
 		</title>
@@ -318,9 +318,9 @@ if (!pike_check_req()) { exit; };
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_PIKE_BLOCKED" xreflabel="E_PIKE_BLOCKED">
 		<title>
 		<function moreinfo="none">E_PIKE_BLOCKED</function>
 		</title>

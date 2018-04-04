@@ -76,7 +76,7 @@ Richard Fuchs
 
               1.5.6. rtpengine_start_recording([sock_pvar])
 
-        1.6. Exported Pseudo Variables
+        1.6. Exported Pseudo-Variables
 
               1.6.1. $rtpstat
               1.6.2. $rtpstat(STAT)[index]
@@ -682,7 +682,7 @@ rtpengine_manage();
 rtpengine_start_recording();
 ...
 
-1.6. Exported Pseudo Variables
+1.6. Exported Pseudo-Variables
 
 1.6.1. $rtpstat
 
