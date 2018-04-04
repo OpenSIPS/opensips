@@ -45,14 +45,14 @@ Dan Pascu
               1.5.2. fix_contact()
               1.5.3. nat_keepalive()
 
-        1.6. Exported statistics
+        1.6. Exported Statistics
 
               1.6.1. keepalive_endpoints
               1.6.2. registered_endpoints
               1.6.3. subscribed_endpoints
               1.6.4. dialog_endpoints
 
-        1.7. Exported pseudo-variables
+        1.7. Exported Pseudo-Variables
 
               1.7.1. $keepalive.socket(nat_endpoint)
               1.7.2. $source_uri
@@ -559,7 +559,7 @@ if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
 }
 ...
 
-1.6. Exported statistics
+1.6. Exported Statistics
 
 1.6.1. keepalive_endpoints
 
@@ -581,7 +581,7 @@ if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
    Indicates how many of the NAT endpoints are kept alive for
    taking part in an INVITE dialog.
 
-1.7. Exported pseudo-variables
+1.7. Exported Pseudo-Variables
 
 1.7.1. $keepalive.socket(nat_endpoint)
 

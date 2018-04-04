@@ -31,7 +31,7 @@ Ovidiu Sas
         1.5. Exported Functions
         1.6. Exported Statistics
         1.7. Exported MI Functions
-        1.8. Exported pseudo-variables
+        1.8. Exported Pseudo-Variables
         1.9. Installation and Running
 
    2. Developer Guide
@@ -142,7 +142,7 @@ route {
    the dialog MI functions for a way to inspect the internals of a
    dialog.
 
-1.8. Exported pseudo-variables
+1.8. Exported Pseudo-Variables
 
    There are no exported pseudo-variables for the qos module.
 

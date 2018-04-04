@@ -230,9 +230,4 @@ modparam("stun", "alternate_port", "5060 / 5062")
 
 	</section>
 
-
-	<section>
-		<title>Exported MI Functions</title>
-	</section>
-
 </chapter>

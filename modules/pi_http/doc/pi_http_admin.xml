@@ -318,10 +318,10 @@ modparam("pi_http", "pi_http_method", 1)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="param_pi_reload_tbls_and_cmds" xreflabel="pi_reload_tbls_and_cmds">
-		<title><varname>pi_reload_tbls_and_cmds</varname></title>
+	<section id="mi_pi_reload_tbls_and_cmds" xreflabel="pi_reload_tbls_and_cmds">
+		<title><function moreinfo="none">pi_reload_tbls_and_cmds</function></title>
 		<para>
 		Reloads the layout of the provisioning interface from the framework file.
 		</para>

@@ -1019,9 +1019,9 @@ $ opensipsctl fifo shv_get
 		</section>
 </section>
 	
-<section>
-	<title>Exported pseudo-variables</title>
-		<section>
+<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_env" xreflabel="env">
 			<title><varname>$env(name)</varname></title>
 			<para>
 				This PV provides access to the environment variable 'name'.
@@ -1035,7 +1035,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 				 </programlisting>
 			</example>
 	</section>
-	<section>
+	<section id="pv_RANDOM" xreflabel="RANDOM">
 			<title><varname>$RANDOM</varname></title>
 			<para>
 				Returns a random value from the [0 - 2^31) range.
@@ -1056,7 +1056,7 @@ exit;
 				 </programlisting>
 			</example>
 	</section>
-	<section>
+	<section id="pv_ctime" xreflabel="ctime">
 			<title><varname>$ctime(name)</varname></title>
 			<para>
 			The PV provides access to broken-down time attributes.
@@ -1104,7 +1104,7 @@ if ($ctime(year) == 2008) {
 				 </programlisting>
 			</example>
 	</section>
-	<section>
+	<section id="pv_shv" xreflabel="shv">
 			<title><varname>$shv(name)</varname></title>
 			<para>
 				It is a class of pseudo-variables stored in shared memory. The

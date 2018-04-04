@@ -199,9 +199,9 @@ modparam("db_mysql", "tls_client_domain", "1=10.11.12.13:3306")
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_MYSQL_CONNECTION" xreflabel="E_MYSQL_CONNECTION">
 		<title>
 		<function moreinfo="none">E_MYSQL_CONNECTION</function>
 		</title>

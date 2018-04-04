@@ -40,7 +40,7 @@ Vlad Paiu
               1.4.1. topology_hiding()
               1.4.2. topology_hiding_match()
 
-        1.5. Exported pseudo-variables
+        1.5. Exported Pseudo-Variables
 
               1.5.1. $TH_callee_callid
 
@@ -282,7 +282,7 @@ ogy hiding dialog\n");
     }
 ...
 
-1.5. Exported pseudo-variables
+1.5. Exported Pseudo-Variables
 
 1.5.1. $TH_callee_callid
 

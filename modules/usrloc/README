@@ -95,7 +95,7 @@ Liviu Chircu
               1.7.6. ul_show_contact
               1.7.7. ul_sync
 
-        1.8. Exported statistics
+        1.8. Exported Statistics
 
               1.8.1. users
               1.8.2. contacts
@@ -1001,7 +1001,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
      * AOR (optional) - user AOR in username[@domain] format
        (domain must be supplied only if use_domain option is on).
 
-1.8. Exported statistics
+1.8. Exported Statistics
 
    Exported statistics are listed in the next sections.
 

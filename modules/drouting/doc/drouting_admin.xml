@@ -1936,9 +1936,9 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 </section>
 
 
-<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_dr_reload" xreflabel="dr_reload">
 		<title>
 		<function moreinfo="none">dr_reload</function>
 		</title>
@@ -2185,9 +2185,9 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
 </section>
 
-<section>
+<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_DROUTING_STATUS" xreflabel="E_DROUTING_STATUS">
 		<title>
 		<function moreinfo="none">E_DROUTING_STATUS</function>
 		</title>

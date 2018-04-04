@@ -212,9 +212,9 @@ if(is_method("MESSAGE)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_imc_list_rooms" xreflabel="imc_list_rooms">
 		<title>
 		<function moreinfo="none">imc_list_rooms</function>
 		</title>
@@ -235,7 +235,7 @@ if(is_method("MESSAGE)
 		</programlisting>
 	</section>
 
-    <section>
+    <section id="mi_imc_list_members" xreflabel="imc_list_members">
 		<title>
 		<function moreinfo="none">imc_list_members</function>
 		</title>
@@ -264,7 +264,7 @@ if(is_method("MESSAGE)
 
 	<section>
 	<title>Exported Statistics</title>
-	<section>
+	<section id="stat_active_rooms" xreflabel="active_rooms">
 		<title>
 		<function moreinfo="none">active_rooms</function>
 		</title>

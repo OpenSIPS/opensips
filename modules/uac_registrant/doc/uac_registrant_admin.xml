@@ -409,9 +409,9 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 	      <para>None to be used in configuration file.</para>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_reg_list" xreflabel="reg_list">
 	<title><function moreinfo="none">reg_list</function></title>
 		<para>Lists the registrant records and their status.</para>
 		<para>Name: <emphasis>reg_list</emphasis></para>
@@ -422,7 +422,7 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 _empty_line_
 		</programlisting>
 	</section>
-	<section>
+	<section id="mi_reg_reload" xreflabel="reg_reload">
 	<title><function moreinfo="none">reg_reload</function></title>
 		<para>Reloads the registrant records from the database.</para>
 		<para>Name: <emphasis>reg_reload</emphasis></para>

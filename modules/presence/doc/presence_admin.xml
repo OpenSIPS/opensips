@@ -752,9 +752,9 @@ if($rm=="SUBSCRIBE")
 	</section>
 </section>
 
-<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_refreshWatchers" xreflabel="refreshWatchers">
 		<title>
 		<function moreinfo="none">refreshWatchers</function>
 		</title>
@@ -807,7 +807,7 @@ _empty_line_
 	</programlisting>
 	</section>
 
-	<section>
+	<section id="mi_cleanup" xreflabel="cleanup">
 	  <title>
 		<function moreinfo="none">cleanup</function>
 	  </title>
@@ -829,7 +829,7 @@ _empty_line_
 	  </programlisting>
 	</section>
 
-	<section>
+	<section id="mi_pres_phtable_list" xreflabel="pres_phtable_list">
 	  <title>
 		<function moreinfo="none">pres_phtable_list</function>
 	  </title>
@@ -850,7 +850,7 @@ _empty_line_
 	  </programlisting>
 	</section>
 
-	<section>
+	<section id="mi_subs_phtable_list" xreflabel="subs_phtable_list">
 	  <title>
 		<function moreinfo="none">subs_phtable_list</function>
 	  </title>
@@ -880,7 +880,7 @@ _empty_line_
 	  </programlisting>
 	</section>
 
-	<section>
+	<section id="mi_pres_expose" xreflabel="pres_expose">
 	  <title>
 		<function moreinfo="none">pres_expose</function>
 	  </title>
@@ -919,9 +919,9 @@ _empty_line_
 </section>
 
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_PRESENCE_PUBLISH" xreflabel="E_PRESENCE_PUBLISH">
 		<title>
 		<function moreinfo="none">E_PRESENCE_PUBLISH</function>
 		</title>
@@ -954,7 +954,7 @@ _empty_line_
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="event_E_PRESENCE_EXPOSED" xreflabel="E_PRESENCE_EXPOSED">
 		<title>
 		<function moreinfo="none">E_PRESENCE_EXPOSED</function>
 		</title>

@@ -246,9 +246,9 @@ if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
 		</example>
 	</section>
 	</section>
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_domain_reload" xreflabel="domain_reload">
 		<title><function moreinfo="none">domain_reload</function></title>
 		<para>
 		Causes domain module to re-read the contents of domain table
@@ -267,7 +267,7 @@ if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
 		</programlisting>
 		
 	</section>
-	<section>
+	<section id="mi_domain_dump" xreflabel="domain_dump">
 		<title><function moreinfo="none">domain_dump</function></title>
 		<para>
 		Causes domain module to dump hash indexes and domain names in

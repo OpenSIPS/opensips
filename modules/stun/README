@@ -37,8 +37,6 @@ Razvan Pistolea
               1.3.3. alternate_ip (str)
               1.3.4. alternate_port (str)
 
-        1.4. Exported MI Functions
-
    List of Examples
 
    1.1. Set primary_ip parameter
@@ -190,5 +188,3 @@ modparam("stun","alternate_port","3479")
 # Listening on an alternate port, but advertising a different one
 modparam("stun", "alternate_port", "5060 / 5062")
 ...
-
-1.4. Exported MI Functions

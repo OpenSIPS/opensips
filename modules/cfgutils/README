@@ -76,7 +76,7 @@ Sergio Gutierrez
               1.6.6. shv_set
               1.6.7. shv_get
 
-        1.7. Exported pseudo-variables
+        1.7. Exported Pseudo-Variables
 
               1.7.1. $env(name)
               1.7.2. $RANDOM
@@ -802,7 +802,7 @@ $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get
 ...
 
-1.7. Exported pseudo-variables
+1.7. Exported Pseudo-Variables
 
 1.7.1. $env(name)
 

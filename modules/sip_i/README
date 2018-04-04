@@ -29,7 +29,7 @@ Robert-Vladut Patrascu
               1.4.1.
                       add_isup_part([isup_msg_type][,extra_headers])
 
-        1.5. Exported PseudoVariables
+        1.5. Exported Pseudo-Variables
 
               1.5.1.
                       $(isup_param(param_name{sep}subfield_name)[byt
@@ -229,7 +229,7 @@ if ($rs == "183") {
 }
 ...
 
-1.5. Exported PseudoVariables
+1.5. Exported Pseudo-Variables
 
 1.5.1.  $(isup_param(param_name{sep}subfield_name)[byte_index])
 

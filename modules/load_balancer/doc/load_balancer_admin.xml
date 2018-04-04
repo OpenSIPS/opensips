@@ -832,20 +832,11 @@ if (lb_is_destination("$si","$sp") ) {
 
 	</section>
 
-
-	<section>
-	<title>Exported statistics</title>
-	<para>
-	NONE
-	</para>
-	</section>
-
-
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section>
-		<title><varname>lb_reload</varname></title>
+		<section id="mi_lb_reload" xreflabel="lb_reload">
+		<title><function moreinfo="none">lb_reload</function></title>
 		<para>
 		Trigers the reload of the load balancing data from the DB.
 		</para>
@@ -858,8 +849,8 @@ if (lb_is_destination("$si","$sp") ) {
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>lb_resize</varname></title>
+		<section id="mi_lb_resize" xreflabel="lb_resize">
+		<title><function moreinfo="none">lb_resize</function></title>
 		<para>
 		Changes the capacity for a resource of a destination. The function 
 		receives as parameters the ID (as per DB) of the destination along 
@@ -877,8 +868,8 @@ if (lb_is_destination("$si","$sp") ) {
 		</programlisting>
 		</section>
 
-		<section>
-		<title><varname>lb_list</varname></title>
+		<section id="mi_lb_list" xreflabel="lb_list">
+		<title><function moreinfo="none">lb_list</function></title>
 		<para>
 		Lists all the destinations and the maximum and current load for each 
 		resource of the destination.
@@ -906,8 +897,8 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 		</example>
 		</section>
 
-		<section>
-		<title><varname>lb_status</varname></title>
+		<section id="mi_lb_status" xreflabel="lb_status">
+		<title><function moreinfo="none">lb_status</function></title>
 		<para>
 		Gets or sets the status (enabled or disabled) of a destination. The 
 		function takes 2 parameters, first mandatory, the id of the destiantion
@@ -939,9 +930,9 @@ enable:: yes
 	</section>
 
 
-	<section>
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_LOAD_BALANCER_STATUS" xreflabel="E_LOAD_BALANCER_STATUS">
 		<title>
 		<function moreinfo="none">E_LOAD_BALANCER_STATUS</function>
 		</title>

@@ -66,10 +66,10 @@ Alexandr Dubovikov
 
               1.5.1. sip_capture()
 
-        1.6. Exported PseudoVariables
+        1.6. Exported Pseudo-Variables
 
-              1.6.1. hep_net
-              1.6.2. HEPVERSION - string,int
+              1.6.1. $hep_net
+              1.6.2. HEPVERSION (string, int)
 
         1.7. MI Commands
 
@@ -648,9 +648,9 @@ route[capture_resume] {
 }
 ...
 
-1.6. Exported PseudoVariables
+1.6. Exported Pseudo-Variables
 
-1.6.1.  hep_net
+1.6.1.  $hep_net
 
    Holds layer 3 and 4 information(IP addresses and ports) about
    the node from where the hep message was received. The variable
@@ -684,7 +684,7 @@ route[capture_resume] {
         }
 ...
 
-1.6.2.  HEPVERSION - string,int
+1.6.2.  HEPVERSION (string, int)
 
    Holds the version of the hep packet received on the interface.
 

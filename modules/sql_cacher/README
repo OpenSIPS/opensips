@@ -28,7 +28,7 @@ Robert-Vladut Patrascu
 
               1.5.1. sql_cacher_reload
 
-        1.6. Exported pseudo-variables
+        1.6. Exported Pseudo-Variables
 
               1.6.1. $sql_cached_value(id{sep}col{sep}key)
 
@@ -243,7 +243,7 @@ $ opensipsctl fifo sql_cacher_reload caching_name
 $ opensipsctl fifo sql_cacher_reload caching_name key
 ...
 
-1.6. Exported pseudo-variables
+1.6. Exported Pseudo-Variables
 
 1.6.1. $sql_cached_value(id{sep}col{sep}key)
 

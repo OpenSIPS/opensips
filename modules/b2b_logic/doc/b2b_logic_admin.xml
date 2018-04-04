@@ -528,9 +528,9 @@ route[b2b_request]
 
 </section>
 
-<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="mi_b2b_trigger_scenario" xreflabel="b2b_trigger_scenario">
 		<title>
 		<function moreinfo="none">b2b_trigger_scenario</function>
 		</title>
@@ -563,7 +563,7 @@ route[b2b_request]
 		</programlisting>
 	</section>
 
-	<section>
+	<section id="mi_b2b_bridge" xreflabel="b2b_bridge">
 		<title>
 		<function moreinfo="none">b2b_bridge</function>
 		</title>
@@ -611,7 +611,7 @@ route[b2b_request]
 	</programlisting>
 	</section>
 
-	<section>
+	<section id="mi_b2b_list" xreflabel="b2b_list">
 		<title>
 		<function moreinfo="none">b2b_list</function>
 		</title>

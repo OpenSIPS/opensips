@@ -334,10 +334,10 @@ if (pcre_match_group("$rU", "2")) {
 
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
 
-		<section>
+		<section id="mi_regex_reload" xreflabel="regex_reload">
 			<title>
 				<function moreinfo="none">regex_reload</function>
 			</title>

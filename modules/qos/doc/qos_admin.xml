@@ -156,7 +156,7 @@ route {
 	<para>There are no exported statistics for the qos module.</para>
 	</section>
 
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 	<para>There are no exported MI functions for the qos module.
 	Check the dialog MI functions for a way to inspect the internals
@@ -164,8 +164,8 @@ route {
 	</para>
 	</section>
 
-	<section>
-	<title>Exported pseudo-variables</title>
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
 	<para>There are no exported pseudo-variables for the qos module.
 	</para>
 	</section>

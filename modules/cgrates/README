@@ -40,7 +40,7 @@ Răzvan Crainea
 
               1.9.3. cgrates_cmd(command[, session])
 
-        1.10. Exported pseudo-variables
+        1.10. Exported Pseudo-Variables
 
               1.10.1. $cgr(name) / $(cgr(name)[session])
               1.10.2. $cgr_opt(name) / $(cgr_opt(name)[session])
@@ -460,7 +460,7 @@ select,$var(idx),,}{s.select,1,:});
                 xlog("Call is allowed to run $cgr_ret seconds\n");
                 ...
 
-1.10. Exported pseudo-variables
+1.10. Exported Pseudo-Variables
 
 1.10.1. $cgr(name) / $(cgr(name)[session])
 

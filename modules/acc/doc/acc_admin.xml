@@ -1088,7 +1088,7 @@ acc_aaa_request("403 Destination not allowed");
 		Interface as <emphasis>E_ACC_EVENT</emphasis> if the reply code is a
 		positive one (lower than 300), or <emphasis>E_ACC_MISSED_EVENT</emphasis>
 		for negative or no codes. More information on this in
-		<xref linkend="ACC-events-id"/>.
+		<xref linkend="exported_events"/>.
 		</para>
 		<para>
 		Meaning of the parameters is as follows:
@@ -1140,9 +1140,9 @@ acc_evi_request("403 Destination not allowed");
 	</section>
 
 
-	<section id="ACC-events-id">
+	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section>
+	<section id="event_E_ACC_CDR" xreflabel="E_ACC_CDR">
 		<title>
 		<function moreinfo="none">E_ACC_CDR</function>
 		</title>
@@ -1202,7 +1202,7 @@ acc_evi_request("403 Destination not allowed");
 
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="event_E_ACC_EVENT" xreflabel="E_ACC_EVENT">
 		<title>
 		<function moreinfo="none">E_ACC_EVENT</function>
 		</title>
@@ -1245,7 +1245,7 @@ acc_evi_request("403 Destination not allowed");
 			</para></listitem>
 		</itemizedlist>
 	</section>
-	<section>
+	<section id="event_E_ACC_MISSED_EVENT" xreflabel="E_ACC_MISSED_EVENT">
 		<title>
 		<function moreinfo="none">E_ACC_MISSED_EVENT</function>
 		</title>

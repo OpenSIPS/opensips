@@ -43,7 +43,7 @@ Bastian Friedrich
               1.4.1. bm_start_timer(name)
               1.4.2. bm_log_timer(name)
 
-        1.5. Exported pseudo-variables
+        1.5. Exported Pseudo-Variables
 
               1.5.1. $BM_time_diff
 
@@ -217,7 +217,7 @@ bm_start_timer("test");
 bm_log_timer("test");
 ...
 
-1.5. Exported pseudo-variables
+1.5. Exported Pseudo-Variables
 
    Exported pseudo-variables are listed in the next sections.
 

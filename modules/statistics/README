@@ -36,7 +36,7 @@ Bogdan Iancu
               1.5.3. stat_iter_init(group, iter)
               1.5.4. stat_iter_next(name, val, iter)
 
-        1.6. Exported pseudo-variables
+        1.6. Exported Pseudo-Variables
 
               1.6.1. $stat
 
@@ -194,7 +194,7 @@ while (stat_iter_next("$var(k)", "$var(v)", "iter")) {
 }
 ...
 
-1.6. Exported pseudo-variables
+1.6. Exported Pseudo-Variables
 
 1.6.1. $stat
 
