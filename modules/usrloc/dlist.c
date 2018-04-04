@@ -1263,8 +1263,8 @@ int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
 	if (latency_event_min_us && new_latency >= latency_event_min_us)
 		goto raise_event;
 
-	if (latency_event_min_us_delta && old_latency &&
-	        && abs(new_latency - old_latency >= latency_event_min_us_delta)
+	if (latency_event_min_us_delta && old_latency
+	        && abs(new_latency - old_latency >= latency_event_min_us_delta))
 		goto raise_event;
 
 	if (!latency_event_min_us && !latency_event_min_us_delta)
