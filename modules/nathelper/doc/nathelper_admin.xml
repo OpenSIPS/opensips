@@ -466,9 +466,9 @@ modparam("nathelper", "max_pings_lost", 5)
 </section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_fix_nated_contact" xreflabel="fix_nated_contact()">
 		<title>
 		<function moreinfo="none">fix_nated_contact([uri_params])</function>
 		</title>
@@ -498,7 +498,7 @@ if (search("User-Agent: Cisco ATA.*") {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_fix_nated_sdp" xreflabel="fix_nated_sdp()">
 		<title>
 		<function moreinfo="none">fix_nated_sdp(flags [, ip_address [, sdp_fields]])</function>
 		</title>
@@ -576,7 +576,7 @@ if (search("User-Agent: Cisco ATA.*")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_add_rcv_param" xreflabel="add_rcv_param()">
 		<title>
 		<function moreinfo="none">add_rcv_param([flag])</function>,
 		</title>
@@ -613,7 +613,7 @@ add_rcv_param("1"); # add the parameter to the Contact URI
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_fix_nated_register" xreflabel="fix_nated_register()">
 		<title>
 		<function moreinfo="none">fix_nated_register()</function>
 		</title>

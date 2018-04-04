@@ -195,9 +195,9 @@ modparam("alias_db", "append_branches", 1)
 	</section>
 	</section>
 	
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_alias_db_lookup" xreflabel="alias_db_lookup()">
 		<title>
 		<function moreinfo="none">alias_db_lookup( table_name [,flags] )</function>
 		</title>
@@ -253,7 +253,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 	</section>
 
 
-	<section>
+	<section id="func_alias_db_find" xreflabel="alias_db_find()">
 		<title>
 		<function moreinfo="none">alias_db_find( table_name , input, output [,flags] )</function>
 		</title>

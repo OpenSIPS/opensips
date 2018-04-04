@@ -183,9 +183,9 @@ modparam("imc", "outbound_proxy", "sip:opensips.org;transport=tcp")
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_imc_manager" xreflabel="imc_manager()">
 		<title>
 		<function moreinfo="none">imc_manager()</function>
 		</title>

@@ -249,7 +249,7 @@ modparam("db_flatstore", "single_file", 1)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<para>
 	There are no function exported to routing script.

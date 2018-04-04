@@ -47,10 +47,10 @@
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section>
+	<section id="func_append_to_reply" xreflabel="append_to_reply()">
 		<title>
 		<function moreinfo="none">append_to_reply(txt)</function>
 		</title>
@@ -81,7 +81,7 @@ append_to_reply("Foo: $rm at $Ts\r\n");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_append_hf" xreflabel="append_hf()">
 		<title>
 		<function moreinfo="none">append_hf(txt)</function>
 		</title>
@@ -118,7 +118,7 @@ append_hf("From-username: $fU\r\n");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_append_hf_2" xreflabel="append_hf()">
 		<title>
 		<function moreinfo="none">append_hf(txt, hdr)</function>
 		</title>
@@ -154,7 +154,7 @@ append_hf("From-username: $fU\r\n", "Call-ID");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_insert_hf" xreflabel="insert_hf()">
 		<title>
 		<function moreinfo="none">insert_hf(txt)</function>
 		</title>
@@ -186,7 +186,7 @@ insert_hf("To-username: $tU\r\n");
 	</section>
 
 
-	<section>
+	<section id="func_insert_hf_2" xreflabel="insert_hf()">
 		<title>
 		<function moreinfo="none">insert_hf(txt, hdr)</function>
 		</title>
@@ -222,7 +222,7 @@ insert_hf("To-username: $tU\r\n", "Call-ID");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_append_urihf" xreflabel="append_urihf()">
 		<title>
 		<function moreinfo="none">append_urihf(prefix, suffix)</function>
 		</title>
@@ -257,7 +257,7 @@ append_urihf("CC-Diversion: ", "\r\n");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_present_hf" xreflabel="is_present_hf()">
 		<title>
 		<function moreinfo="none">is_present_hf(hf_name)</function>
 		</title>
@@ -305,7 +305,7 @@ if (is_present_hf("From")) log(1, "From HF Present");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_append_time" xreflabel="append_time()">
 		<title>
 		<function moreinfo="none">append_time()</function>
 		</title>
@@ -362,7 +362,7 @@ append_time();
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_method" xreflabel="is_method()">
 		<title>
 		<function moreinfo="none">is_method(name)</function>
 		</title>
@@ -415,7 +415,7 @@ if(is_method("OPTION|UPDATE"))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_remove_hf" xreflabel="remove_hf()">
 		<title>
 		<function moreinfo="none">remove_hf(hname [,flags])</function>
 		</title>
@@ -488,7 +488,7 @@ remove_hf("^X-g.+[0-9]", "r");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_has_body_part" xreflabel="has_body_part()">
 		<title>
 		<function moreinfo="none">has_body_part([mime])</function>,
 		</title>
@@ -514,7 +514,7 @@ if(has_body_part("application/sdp"))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_audio_on_hold" xreflabel="is_audio_on_hold()">
 		<title>
 		<function moreinfo="none">is_audio_on_hold()</function>
 		</title>
@@ -561,7 +561,7 @@ if(is_audio_on_hold())
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_privacy" xreflabel="is_privacy()">
 		<title>
 		<function moreinfo="none">is_privacy(privacy_type)</function>
 		</title>
@@ -590,7 +590,7 @@ if(is_privacy("id"))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_remove_body_part" xreflabel="remove_body_part()">
 		<title>
 		<function moreinfo="none">remove_body_part([mime[,revert]]),</function>
 		</title>
@@ -639,7 +639,7 @@ remove_body_part("application/sdp","revert")
 		</example>
 	</section>
 
-	<section>
+	<section id="func_add_body_part" xreflabel="add_body_part()">
 		<title>
 		<function moreinfo="none">add_body_part(body,mime[,headers])</function>
 		</title>
@@ -683,7 +683,7 @@ add_body_part("Hello World!", "text/plain");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_sipmsg_validate" xreflabel="sipmsg_validate()">
 		<title>
 		<function moreinfo="none">sipmsg_validate([flags[,result_pvar]])</function>
 		</title>
@@ -812,7 +812,7 @@ if(!sipmsg_validate("sh"))
 
 
 
-	<section>
+	<section id="func_codec_exists" xreflabel="codec_exists()">
 		<title>
 		<function moreinfo="none">codec_exists (name [,clock] )</function>
 		</title>
@@ -839,7 +839,7 @@ codec_exists("GSM","8000");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_codec_delete" xreflabel="codec_delete()">
 		<title>
 		<function moreinfo="none">codec_delete (name [,clock] )</function>
 		</title>
@@ -869,7 +869,7 @@ codec_delete("GSM","8000");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_codec_move_up" xreflabel="codec_move_up()">
 		<title>
 		<function moreinfo="none">codec_move_up (name [,clock] )</function>
 		</title>
@@ -899,7 +899,7 @@ codec_move_up("GSM","8000");
 		</example>
 	</section>
 
-		<section>
+		<section id="func_codec_move_down" xreflabel="codec_move_down()">
 		<title>
 		<function moreinfo="none">codec_move_down (name [,clock] )</function>
 		</title>
@@ -947,7 +947,7 @@ codec_move_up("speex");
 	</section>
 
 
-	<section>
+	<section id="func_codec_exists_re" xreflabel="codec_exists_re()">
 		<title>
 		<function moreinfo="none">codec_exists_re ( regexp )</function>
 		</title>
@@ -971,7 +971,7 @@ codec_exists_re("sp[a-z]*");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_codec_delete_re" xreflabel="codec_delete_re()">
 		<title>
 		<function moreinfo="none">codec_delete_re ( regexp )</function>
 		</title>
@@ -996,7 +996,7 @@ codec_delete_re("PCMA|PCMU");
 		</example>
 	</section>
 
-        <section>
+        <section id="func_codec_delete_except_re" xreflabel="codec_delete_except_re()">
 		<title>
 		<function moreinfo="none">codec_delete_except_re ( regexp )</function>
 		</title>
@@ -1019,7 +1019,7 @@ codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA and PCMU
 		</example>
 	</section>
 
-	<section>
+	<section id="func_codec_move_up_re" xreflabel="codec_move_up_re()">
 		<title>
 		<function moreinfo="none">codec_move_up_re ( regexp )</function>
 		</title>
@@ -1043,7 +1043,7 @@ codec_move_up_re("sp[a-z]*");
 		</example>
 	</section>
 
-		<section>
+		<section id="func_codec_move_down_re" xreflabel="codec_move_down_re()">
 		<title>
 		<function moreinfo="none">codec_move_down_re ( regexp )</function>
 		</title>
@@ -1123,7 +1123,7 @@ onreply_route {
 	</example>
     </section>
 
-	<section>
+	<section id="func_stream_exists" xreflabel="stream_exists()">
 		<title>
 		<function moreinfo="none">stream_exists(regexp)</function>
 		</title>
@@ -1156,7 +1156,7 @@ stream_exists("image");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_stream_delete" xreflabel="stream_delete()">
 		<title>
 		<function moreinfo="none">stream_delete(regexp)</function>
 		</title>
@@ -1190,7 +1190,7 @@ stream_delete("video");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_list_hdr_has_option" xreflabel="list_hdr_has_option()">
 		<title>
 		<function moreinfo="none">list_hdr_has_option(hdr_name,option)</function>
 		</title>
@@ -1236,7 +1236,7 @@ if (list_hdr_has_option("Supported","100rel"))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_list_hdr_add_option" xreflabel="list_hdr_add_option()">
 		<title>
 		<function moreinfo="none">list_hdr_add_option(hdr_name,option)</function>
 		</title>
@@ -1286,7 +1286,7 @@ if (!list_hdr_has_option("Supported","100rel"))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_list_hdr_remove_option" xreflabel="list_hdr_remove_option()">
 		<title>
 		<function moreinfo="none">list_hdr_remove_option(hdr_name,option)</function>
 		</title>

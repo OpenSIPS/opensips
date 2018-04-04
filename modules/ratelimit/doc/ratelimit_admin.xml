@@ -488,7 +488,7 @@ modparam("ratelimit", "slot_period", 100)
 
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<section>
 		<title>
@@ -577,7 +577,7 @@ modparam("ratelimit", "slot_period", 100)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_rl_dec_count" xreflabel="rl_dec_count()">
 		<title>
 		<function moreinfo="none">rl_dec_count(name)</function>
 		</title>
@@ -609,7 +609,7 @@ modparam("ratelimit", "slot_period", 100)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_rl_reset_count" xreflabel="rl_reset_count()">
 		<title>
 		<function moreinfo="none">rl_reset_count(name)</function>
 		</title>

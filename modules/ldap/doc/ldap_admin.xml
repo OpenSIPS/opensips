@@ -519,7 +519,7 @@ modparam("ldap", "max_async_connections", 50)
 	  </section>
     </section>
 
-    <section>
+    <section id="exported_functions" xreflabel="exported_functions">
       <title>Exported Functions</title>
 
       <section id="ldap-search-fn">

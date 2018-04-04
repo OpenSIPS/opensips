@@ -49,7 +49,7 @@ Ovidiu Sas
 
         1.4. Exported Functions
 
-              1.4.1. b2b_init_request
+              1.4.1. b2b_init_request()
               1.4.2. b2b_bridge_request(b2bl_key,entity_no)
 
         1.5. Exported MI Functions
@@ -384,7 +384,7 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 
 1.4. Exported Functions
 
-1.4.1.  b2b_init_request
+1.4.1.  b2b_init_request()
 
    This is the function that must be called by the script writer
    on an initial INVITE for which a B2B scenario must be

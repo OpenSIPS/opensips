@@ -655,10 +655,9 @@ if (!release_dynamic_lock("$avp(1)") {
 1.5.1.  sleep(seconds)
 
    Waits a number of seconds. This function does exactly the same
-   as Section 1.4.5, “ sleep(time) ”, but in an asynchronous way.
-   The script execution is suspended until the waiting is done;
-   then OpenSIPS resumes the script execution via the resume
-   route.
+   as sleep(), but in an asynchronous way. The script execution is
+   suspended until the waiting is done; then OpenSIPS resumes the
+   script execution via the resume route.
 
    To read and understand more on the asynchronous functions, how
    to use them and what are their advantages, please refer to the
@@ -677,10 +676,9 @@ route[after_sleep] {
 1.5.2.  usleep(seconds)
 
    Waits a number of micro-seconds. This function does exactly the
-   same as Section 1.4.6, “ usleep(time) ”, but in an asynchronous
-   way. The script execution is suspended until the waiting is
-   done; then OpenSIPS resumes the script execution via the resume
-   route.
+   same as usleep(), but in an asynchronous way. The script
+   execution is suspended until the waiting is done; then OpenSIPS
+   resumes the script execution via the resume route.
 
    To read and understand more on the asynchronous functions, how
    to use them and what are their advantages, please refer to the

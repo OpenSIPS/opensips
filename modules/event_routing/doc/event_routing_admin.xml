@@ -104,10 +104,10 @@
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section>
+	<section id="func_notify_on_event" xreflabel="notify_on_event()">
 		<title>
 		<function moreinfo="none">notify_on_event(event, filter, route, timeout)</function>
 		</title>
@@ -182,7 +182,7 @@ route[reg_done] {
 	<section>
 	<title>Exported Asynchronous Functions</title>
 
-	<section>
+	<section id="afunc_wait_for_event" xreflabel="wait_for_event()">
 		<title>
 		<function moreinfo="none">wait_for_event(event,filter,timeout)</function>
 		</title>

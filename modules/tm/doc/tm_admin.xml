@@ -106,7 +106,7 @@
 		</para>
 		<para>
 		For how to define branch flags and use via script, see 
-		<xref linkend="branch-route"/> and the setbflag(), resetbflag() and
+		<xref linkend="func_t_on_branch"/> and the setbflag(), resetbflag() and
 		isbflagset() script functions.
 		</para>
 		<para>
@@ -231,7 +231,7 @@
 		there is no way to determine who <quote>owns</quote> the transaction.
 		Therefore, if we do not find a local transaction for these
 		requests, we broadcast them to all the other instances using
-		the <xref linkend="t_anycast_replicate"/> function. Again,
+		the <xref linkend="func_t_anycast_replicate"/> function. Again,
 		this is done in a very efficient manner using the
 		<emphasis>proto_bin</emphasis> transport.
 		</para>
@@ -864,9 +864,9 @@ modparam("tm", "cluster_auto_cancel", no)
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="t_relay" xreflabel='t_relay'>
+	<section id="func_t_relay" xreflabel="t_relay()">
 		<title>
 		<function moreinfo="none">t_relay([flags])</function>
 		</title>
@@ -974,7 +974,7 @@ if (!t_relay()) {
 		</example>
 	</section>
 
-	<section id="trelay-1">
+	<section id="func_t_relay_2" xreflabel="t_relay()">
 		<title>
 		<function moreinfo="none">t_relay(proto:host:port,[flags])</function>
 		</title>
@@ -1005,7 +1005,7 @@ t_relay("udp:mydomain.com");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_reply" xreflabel="t_reply()">
 		<title>
 		<function moreinfo="none">t_reply(code, reason_phrase)</function>
 		</title>
@@ -1042,7 +1042,7 @@ t_reply("404", "Use $rU not found");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_reply_with_body" xreflabel="t_reply_with_body()">
 		<title>
 		<function moreinfo="none">t_reply_with_body(code, reason_phrase, body)</function>
 		</title>
@@ -1090,7 +1090,7 @@ t_reply("404", "Use $rU not found");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_newtran" xreflabel="t_newtran()">
 		<title>
 		<function moreinfo="none">t_newtran()</function>
 		</title>
@@ -1116,7 +1116,7 @@ t_relay(); # send the call further
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_check_trans" xreflabel="t_check_trans()">
 		<title>
 		<function moreinfo="none">t_check_trans()</function>
 		</title>
@@ -1173,7 +1173,7 @@ if ( is_method("CANCEL") ) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_check_status" xreflabel="t_check_status()">
 		<title>
 		<function moreinfo="none">t_check_status(re)</function>
 		</title>
@@ -1214,7 +1214,7 @@ if (t_check_status("(487)|(408)")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_local_replied" xreflabel="t_local_replied()">
 		<title>
 		<function moreinfo="none">t_local_replied(reply)</function>
 		</title>
@@ -1241,7 +1241,7 @@ if (t_local_replied("all")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_was_cancelled" xreflabel="t_was_cancelled()">
 		<title>
 		<function moreinfo="none">t_was_cancelled()</function>
 		</title>
@@ -1264,7 +1264,7 @@ if (t_was_cancelled()) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_cancel_branch" xreflabel="t_cancel_branch()">
 		<title>
 		<function moreinfo="none">t_cancel_branch([flags])</function>
 		</title>
@@ -1316,7 +1316,7 @@ onreply_route[3] {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_new_request" xreflabel="t_new_request()">
 		<title>
 		<function moreinfo="none">t_new_request(method,RURI,from,to[,body[,ctx]])</function>
 		</title>
@@ -1369,7 +1369,7 @@ onreply_route[3] {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_on_failure" xreflabel="t_on_failure()">
 		<title>
 		<function moreinfo="none">t_on_failure(failure_route)</function>
 		</title>
@@ -1426,7 +1426,7 @@ failure_route[1] {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_on_reply" xreflabel="t_on_reply()">
 		<title>
 		<function moreinfo="none">t_on_reply(reply_route)</function>
 		</title>
@@ -1510,7 +1510,7 @@ onreply_route[global] {
 		</example>
 	</section>
 
-	<section id="branch-route">
+	<section id="func_t_on_branch" xreflabel="t_on_branch()">
 		<title>
 		<function moreinfo="none">t_on_branch(branch_route)</function>
 		</title>
@@ -1568,7 +1568,7 @@ branch_route[1] {
 		</example>
 	</section>
 
-	<section id="t_inject_branches" xreflabel='t_inject_branches'>
+	<section id="func_t_inject_branches" xreflabel="t_inject_branches()">
 		<title>
 		<function moreinfo="none">t_inject_branches(source[,flags])</function>
 		</title>
@@ -1580,11 +1580,11 @@ branch_route[1] {
 		for the transaction not to have any ongoing branches at the moment of
 		the injection (still, the transaction must wait for new branches, even
 		if all existing ones are completed - see 
-		the <xref linkend="t_wait_for_new_branches"/> function for this).
+		the <xref linkend="func_t_wait_for_new_branches"/> function for this).
 		</para>
 		<para>
 		The main usage scenario for this function (and also what makes it
-		different from <xref linkend="t_relay"/> is the ability to add new
+		different from <xref linkend="func_t_relay"/> is the ability to add new
 		branches to an ongoing transaction from script routes not related to 
 		the transaction ( like timer route, event route, notification route,
 		and other). In such routes, other functions/module used before the
@@ -1633,7 +1633,7 @@ route[event_notification] {
 		</example>
 	</section>
 
-	<section id="t_wait_for_new_branches" xreflabel='t_wait_for_new_branches'>
+	<section id="func_t_wait_for_new_branches" xreflabel="t_wait_for_new_branches()">
 		<title>
 		<function moreinfo="none">t_wait_for_new_branches()</function>
 		</title>
@@ -1653,7 +1653,7 @@ route[event_notification] {
 		before relaying the transaction, the transaction will not terminate
 		upon the completion of the branches and not send the 404 to the caller
 		- it will wait for new branches to be injected (see 
-		<xref linkend="t_inject_branches"/> function) until the fr_inv timer
+		<xref linkend="func_t_inject_branches"/> function) until the fr_inv timer
 		hits.
 		</para>
 		<example>
@@ -1668,7 +1668,7 @@ t_relay();
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_add_hdrs" xreflabel="t_add_hdrs()">
 		<title>
 		<function moreinfo="none">t_add_hdrs("sip_hdrs")</function>
 		</title>
@@ -1687,7 +1687,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_add_cancel_reason" xreflabel="t_add_cancel_reason()">
 		<title>
 		<function moreinfo="none">t_add_cancel_reason("Reason_hdr")</function>
 		</title>
@@ -1712,7 +1712,7 @@ t_relay();
 	</section>
 
 
-	<section id="treplicate">
+	<section id="func_t_replicate" xreflabel="t_replicate()">
 		<title>
 		<function moreinfo="none">t_replicate(URI,[flags])</function>
 		</title>
@@ -1746,7 +1746,7 @@ t_replicate("sip:1.2.3.4","0x4");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_write_req" xreflabel="t_write_req()">
 		<title>
 		<function moreinfo="none">t_write_req(info,fifo)</function>
 		<function moreinfo="none">t_write_unix(info,sock)</function>
@@ -1775,7 +1775,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_flush_flags" xreflabel="t_flush_flags()">
 		<title>
 		<function moreinfo="none">t_flush_flags()</function>
 		</title>
@@ -1797,7 +1797,7 @@ t_flush_flags();
 		</example>
 	</section>
 
-	<section id="t_anycast_replicate" xreflabel='t_anycast_replicate'>
+	<section id="func_t_anycast_replicate" xreflabel="t_anycast_replicate()">
 		<title>
 		<function moreinfo="none">t_anycast_replicate()</function>
 		</title>

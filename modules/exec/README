@@ -203,9 +203,7 @@ avp(env)");
 1.4.2.  exec_dset(command) (DEPRECATED)
 
    WARNING - this function is deprecated and it will be remove in
-   the next version - please use the exec() function (
-   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
-   [envavp]) ” ).
+   the next version - please use the exec() function ( exec() ).
 
    Executes an external command. The current R-URI is appended to
    the command as its last parameter. The output of the command
@@ -234,9 +232,7 @@ exec_dset("ruri-changer.sh '$ct'");
 1.4.3.  exec_msg(command) (DEPRECATED)
 
    WARNING - this function is deprecated and it will be remove in
-   the next version - please use the exec() function (
-   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
-   [envavp]) ” ).
+   the next version - please use the exec() function ( exec() ).
 
    Executes an external command. The current SIP message is passed
    to it in the standard input, no command-line parameters are
@@ -267,9 +263,7 @@ exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
 1.4.4.  exec_avp(command[, avplist]) (DEPRECATED)
 
    WARNING - this function is deprecated and it will be remove in
-   the next version - please use the exec() function (
-   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
-   [envavp]) ” ).
+   the next version - please use the exec() function ( exec() ).
 
    Executes an external command. Each output line of the command
    is saved in its corresponding AVP from avplist. If avplist is
@@ -302,9 +296,7 @@ model)");
 1.4.5.  exec_getenv(environment_variable[, avp]) (DEPRECATED)
 
    WARNING - this function is deprecated and it will be remove in
-   the next version - please use the exec() function (
-   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
-   [envavp]) ” ).
+   the next version - please use the exec() function ( exec() ).
 
    Obtains the value of a UNIX evironment_variable. The value is
    saved in 'avp'. If 'avp' is missing, output will be stored in
@@ -335,14 +327,13 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 1.5.1.  exec(command[,input[,output[,error[,env]]]])
 
    Executes an external command. This function does exactly the
-   same as Section 1.4.1, “ exec(command, [stdin], [stdout],
-   [stderr], [envavp]) ” (in terms of input, output and
-   processing), but in an asynchronous way. The script execution
-   is suspended until the external script provided all its output.
-   OpenSIPS waits for the external script to close its output
-   stream, not necessarily to terminate (so the script may still
-   be running when OpenSIPS resumes the script execution on
-   "seeing" EOF on the the output stream).
+   same as exec() (in terms of input, output and processing), but
+   in an asynchronous way. The script execution is suspended until
+   the external script provided all its output. OpenSIPS waits for
+   the external script to close its output stream, not necessarily
+   to terminate (so the script may still be running when OpenSIPS
+   resumes the script execution on "seeing" EOF on the the output
+   stream).
 
    NOTE: this function ignore the "error" parameters for now - the
    asynchronous waiting is done only on the output stream !! This

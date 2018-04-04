@@ -275,10 +275,10 @@ modparam("presence_callinfo", "line_hash_size", 128)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 
-		<section>
+		<section id="func_sca_set_calling_line" xreflabel="sca_set_calling_line()">
 			<title>
 			<function moreinfo="none">sca_set_calling_line([line])</function>
 			</title>
@@ -308,7 +308,7 @@ modparam("presence_callinfo", "line_hash_size", 128)
 			</example>
 		</section>
 
-		<section>
+		<section id="func_sca_set_called_line" xreflabel="sca_set_called_line()">
 			<title>
 			<function moreinfo="none">sca_set_called_line([line])</function>
 			</title>

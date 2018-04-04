@@ -110,7 +110,7 @@ modparam("xcap", "integrated_xcap_server", 1)
 	</section>
         </section>
 
-        <section>
+        <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<para>
 	None to be used in configuration file.

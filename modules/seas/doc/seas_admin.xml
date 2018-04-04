@@ -122,10 +122,10 @@ modparam("seas", "listen_sockets","127.0.0.1:5080")
         </section>
       </section>
 
-      <section>
+      <section id="exported_functions" xreflabel="exported_functions">
         <title>Exported Functions</title>
 
-        <section>
+        <section id="func_as_relay_t" xreflabel="as_relay_t()">
           <title><function moreinfo="none">as_relay_t(String
           name)</function></title>
 

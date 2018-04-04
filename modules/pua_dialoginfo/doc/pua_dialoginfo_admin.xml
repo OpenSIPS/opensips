@@ -491,9 +491,9 @@ modparam("pua_dialoginfo", "osips_ps", 0)
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_dialoginfo_set" xreflabel="dialoginfo_set()">
 		<title>
 		<function moreinfo="none">dialoginfo_set([side])</function>
 		</title>

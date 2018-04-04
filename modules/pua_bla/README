@@ -31,8 +31,8 @@ Anca-Maria Vamanu
 
         1.4. Exported Functions
 
-              1.4.1. bla_set_flag
-              1.4.2. bla_handle_notify
+              1.4.1. bla_set_flag()
+              1.4.2. bla_handle_notify()
 
    List of Examples
 
@@ -130,7 +130,7 @@ modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
 
 1.4. Exported Functions
 
-1.4.1.  bla_set_flag
+1.4.1.  bla_set_flag()
 
    The function is used to mark REGISTER requests made to a BLA
    AOR. The modules subscribes to the registered contacts for
@@ -142,7 +142,7 @@ if(is_method("REGISTER") && $tu=~"bla_aor@opensips.org")
         bla_set_flag();
 ...
 
-1.4.2.  bla_handle_notify
+1.4.2.  bla_handle_notify()
 
    The function handles Notify requests sent from phones on the
    same BLA to the server. The message is transformed in Publish

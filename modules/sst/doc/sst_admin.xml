@@ -287,9 +287,9 @@ route {
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sstCheckMin" xreflabel="sstCheckMin()">
 		<title>
 		<function moreinfo="none">sstCheckMin(send_reply_flag)</function>
 		</title>

@@ -234,8 +234,8 @@ if (perl_exec("ldap_alias")) {
 
    just as you would have done with the current alias_db module.
 
-   The functions you can use are listed in the "Exported
-   Functions" section below.
+   The functions you can use are listed in the exported_functions
+   section below.
 
    On the Perl side, there are a number of functions that let you
    read and modify the current SIP message, such as the RURI or

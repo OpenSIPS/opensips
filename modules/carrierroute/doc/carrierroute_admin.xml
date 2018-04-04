@@ -879,7 +879,7 @@ modparam("carrierroute", "failure_comment_column", "description")
     </section>
 
 </section>
-    <section>
+    <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<para>
     Previous versions of carrierroute had some more function. All the
@@ -914,7 +914,7 @@ cr_tree_rewrite_uri(tree, domain)
 -> cr_route(tree, domain, "$rU", "$rU", "call_id")
   </programlisting>
 		
-	<section>
+	<section id="func_cr_user_carrier" xreflabel="cr_user_carrier()">
 	    <title>
 		<function moreinfo="none">cr_user_carrier(user, domain, dstavp)</function>
 	    </title>
@@ -947,7 +947,7 @@ cr_tree_rewrite_uri(tree, domain)
         </listitem>
 	    </itemizedlist>
 	</section>
-	<section>
+	<section id="func_cr_route" xreflabel="cr_route()">
 	    <title>
 		<function moreinfo="none">cr_route(carrier, domain, prefix_matching, rewrite_user, hash_source, dstavp)</function>
 	    </title>
@@ -1005,7 +1005,7 @@ cr_tree_rewrite_uri(tree, domain)
         </listitem>
 	    </itemizedlist>
 	</section>
-		<section>
+		<section id="func_cr_prime_route" xreflabel="cr_prime_route()">
 	    <title>
 		<function moreinfo="none">cr_prime_route(carrier, domain, prefix_matching, rewrite_user, hash_source, dstavp)</function>
 	    </title>
@@ -1064,7 +1064,7 @@ cr_tree_rewrite_uri(tree, domain)
 	    </itemizedlist>
 	</section>
 
-	<section>
+	<section id="func_cr_next_domain" xreflabel="cr_next_domain()">
 	    <title>
 		<function moreinfo="none">cr_next_domain(carrier, domain, prefix_matching, host, reply_code, dstavp)</function>
 	    </title>

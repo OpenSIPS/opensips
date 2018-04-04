@@ -65,9 +65,9 @@ From: medabeda
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_search" xreflabel="search()">
 		<title>
 		<function moreinfo="none">search(re)</function>
 		</title>
@@ -95,7 +95,7 @@ if ( search("[Ss][Ii][Pp]") ) { /*....*/ };
 		</example>
 	</section>
 
-	<section>
+	<section id="func_search_body" xreflabel="search_body()">
 		<title>
 		<function moreinfo="none">search_body(re)</function>
 		</title>
@@ -123,7 +123,7 @@ if ( search_body("[Ss][Ii][Pp]") ) { /*....*/ };
 		</example>
 	</section>
 
-	<section>
+	<section id="func_search_append" xreflabel="search_append()">
 		<title>
 		<function moreinfo="none">search_append(re, txt)</function>
 		</title>
@@ -155,7 +155,7 @@ search_append("[Oo]pen[Ss]er", " SIP Proxy");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_search_append_body" xreflabel="search_append_body()">
 		<title>
 		<function moreinfo="none">search_append_body(re, txt)</function>
 		</title>
@@ -188,7 +188,7 @@ search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_replace" xreflabel="replace()">
 		<title>
 		<function moreinfo="none">replace(re, txt)</function>
 		</title>
@@ -220,7 +220,7 @@ replace("opensips", "Open SIP Server");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_replace_body" xreflabel="replace_body()">
 		<title>
 		<function moreinfo="none">replace_body(re, txt)</function>
 		</title>
@@ -253,7 +253,7 @@ replace_body("opensips", "Open SIP Server");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_replace_all" xreflabel="replace_all()">
 		<title>
 		<function moreinfo="none">replace_all(re, txt)</function>
 		</title>
@@ -285,7 +285,7 @@ replace_all("opensips", "Open SIP Server");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_replace_body_all" xreflabel="replace_body_all()">
 		<title>
 		<function moreinfo="none">replace_body_all(re, txt)</function>
 		</title>
@@ -318,7 +318,7 @@ replace_body_all("opensips", "Open SIP Server");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_replace_body_atonce" xreflabel="replace_body_atonce()">
 		<title>
 		<function moreinfo="none">replace_body_atonce(re, txt)</function>
 		</title>
@@ -353,7 +353,7 @@ if(has_body() &amp;&amp; replace_body_atonce("^.+$", ""))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_subst" xreflabel="subst()">
 		<title>
 		<function moreinfo="none">subst('/re/repl/flags')</function>
 		</title>
@@ -397,7 +397,7 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\2/ig') )
 		</example>
 	</section>
 
-	<section>
+	<section id="func_subst_uri" xreflabel="subst_uri()">
 		<title>
 		<function moreinfo="none">subst_uri('/re/repl/flags')</function>
 		</title>
@@ -444,7 +444,7 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\0/i')){$
 		</example>
 	</section>
 
-	<section>
+	<section id="func_subst_user" xreflabel="subst_user()">
 		<title>
 		<function moreinfo="none">subst_user('/re/repl/flags')</function>
 		</title>
@@ -490,7 +490,7 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 		</example>
 	</section>
 
-	<section>
+	<section id="func_subst_body" xreflabel="subst_body()">
 		<title>
 		<function moreinfo="none">subst_body('/re/repl/flags')</function>
 		</title>

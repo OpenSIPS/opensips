@@ -510,9 +510,9 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_check_fraud" xreflabel="check_fraud()">
 		<title>
 		<function moreinfo="none">check_fraud(user, number, profile_id)</function>
 		</title>

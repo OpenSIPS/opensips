@@ -269,7 +269,7 @@ modparam("sms", "links", "NOKIA[D1;d2]")
 		The default network to use. If no one specified, the first defined
 		network is used. This parameter is useful only if the 
 		<quote>sms_send_msg</quote> exported function is used 
-		(see <xref linkend="sec-exported-functions"/>).
+		(see <xref linkend="exported_functions"/>).
 		</para>
 		<example>
 		<title>Set <varname>default_net</varname> parameter</title>
@@ -388,9 +388,9 @@ modparam("sms", "sms_report_type", 1)
 	</section>	
 
 	</section>
-	<section id="sec-exported-functions">
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sms_send_msg_to_net" xreflabel="sms_send_msg_to_net()">
 		<title>
 		<function moreinfo="none">sms_send_msg_to_net(network_name)</function>
 		</title>
@@ -434,7 +434,7 @@ if (sms_send_msg_to_net("D1"))
 		</example>
 	</section>
 
-	<section>
+	<section id="func_sms_send_msg" xreflabel="sms_send_msg()">
 		<title>
 		<function moreinfo="none">sms_send_msg()</function>
 		</title>

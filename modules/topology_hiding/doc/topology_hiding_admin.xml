@@ -193,9 +193,9 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_topology_hiding" xreflabel="topology_hiding()">
 		<title>
 		<function moreinfo="none">topology_hiding()</function>
 		</title>
@@ -281,7 +281,7 @@ if (has_totag())
 		</example>
 	</section>
 
-	<section>
+	<section id="func_topology_hiding_match" xreflabel="topology_hiding_match()">
 		<title>
 		<function moreinfo="none">topology_hiding_match()</function>
 		</title>

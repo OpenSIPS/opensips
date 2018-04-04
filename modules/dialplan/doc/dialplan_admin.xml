@@ -598,10 +598,10 @@ modparam("dialplan", "attrs_col", "column_name")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section>
+	<section id="func_dp_translate" xreflabel="dp_translate()">
 	<title>
 		<function moreinfo="none">dp_translate([partition:]id, src/dest[, attrs_pvar])</function>
 	</title>

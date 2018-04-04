@@ -307,7 +307,6 @@ modparam("group", "multiple_gid", 0)
 		<example>
 		<title>Set <varname>aaa_url</varname> parameter</title>
 		<programlisting format="linespecific">
-		
 ...
 modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 ...
@@ -317,9 +316,9 @@ modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_db_is_user_in" xreflabel="db_is_user_in()">
 		<title>
 		<function moreinfo="none">db_is_user_in(URI, group)</function>
 		</title>
@@ -384,7 +383,7 @@ if (db_is_user_in("Credentials", "$avp(grouptocheck)")) {
 	</section>
 
 
-	<section>
+	<section id="func_db_get_user_group" xreflabel="db_get_user_group()">
 		<title>
 		<function moreinfo="none">db_get_user_group(URI, AVP)</function>
 		</title>
@@ -441,7 +440,7 @@ if (db_get_user_group("Request-URI", "$avp(10)")) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_aaa_is_user_in" xreflabel="aaa_is_user_in()">
 		<title>
 		<function moreinfo="none">aaa_is_user_in(URI, group)</function>
 		</title>

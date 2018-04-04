@@ -27,7 +27,7 @@
 			Homer encapsulation protocl mode (HEP v1/2/3). With version 2.2
 			comes the new HEPv3 support using the proto _hep module. Also
 			header manipulation support for HEPv3 has been added. See
-			<xref linkend="hep_set_id"/> for more details. If you want more
+			<xref linkend="func_hep_set"/> for more details. If you want more
 			information about hep protocol check this
 			<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
 			link</ulink>.
@@ -438,10 +438,10 @@ route[my_hep_route] {
 
 </section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-		<section>
+		<section id="func_sip_capture" xreflabel="sip_capture()">
 		<title>
 			<function moreinfo="none">sip_capture([table_name][, [custom_field1][, [custom_field2][, [custom_field3]]]])</function>
 		</title>
@@ -485,7 +485,7 @@ if (is_method("REGISTER"))
 
 		</section>
 
-		<section>
+		<section id="func_report_capture" xreflabel="report_capture()">
 		<title>
 			<function moreinfo="none">report_capture([table_name],correlation_id[,proto_type])</function>
 		</title>
@@ -547,7 +547,7 @@ if (is_method("REGISTER"))
 
 
 
-		<section id="hep_set_id">
+		<section id="func_hep_set" xreflabel="hep_set()">
 		<title>
 			<function moreinfo="none">hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)</function>
 		</title>
@@ -746,7 +746,7 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 
 		</section>
 
-		<section>
+		<section id="func_hep_get" xreflabel="hep_get()">
 		<title>
 			<function moreinfo="none">hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)</function>
 		</title>
@@ -760,11 +760,11 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 		<itemizedlist>
 		<listitem>
 		<para><emphasis>data_type(string)</emphasis> - same meaning as in
-			<xref linkend="hep_set_id"/>; can miss if it's a generic chunk</para>
+			<xref linkend="func_hep_set"/>; can miss if it's a generic chunk</para>
 		</listitem>
 		<listitem>
 		<para><emphasis>chunk_id</emphasis> - same meaning as in
-			<xref linkend="hep_set_id"/></para>
+			<xref linkend="func_hep_set"/></para>
 		</listitem>
 		<listitem>
 			<para><emphasis>vendor_id_pv(writable pvar)</emphasis> - will hold the vendor id(int value)
@@ -778,7 +778,7 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 				<para>0x0001 - proto_family(string) - AF_INET/AF_INET6</para>
 			</listitem>
 			<listitem>
-				<para>0x0002  proto_id(string) - see <xref linkend="hep_set_id"/> for possible values</para>
+				<para>0x0002  proto_id(string) - see <xref linkend="func_hep_set"/> for possible values</para>
 			</listitem>
 			<listitem>
 				<para>0x0003/0x0004/0x0005/0x0006  src/dst_ip(string) - ip addresses in human readable format</para>
@@ -787,7 +787,7 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 				<para>0x0009  timestamp(string) - time and date in human readable format</para>
 			</listitem>
 			<listitem>
-				<para>0x000B  proto_type(string) - see <xref linkend="hep_set_id"/> for possible values</para>
+				<para>0x000B  proto_type(string) - see <xref linkend="func_hep_set"/> for possible values</para>
 			</listitem>
 			</itemizedlist>
 		</listitem>
@@ -808,7 +808,7 @@ hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
 
 		</section>
 
-		<section>
+		<section id="func_hep_del" xreflabel="hep_del()">
 		<title>
 			<function moreinfo="none">hep_del(chunk_id)</function>
 		</title>
@@ -822,7 +822,7 @@ hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>chunk_id</emphasis> - same meaning as the <emphasis>chunk_id</emphasis> in
-				<xref linkend="hep_set_id"/>.
+				<xref linkend="func_hep_set"/>.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -839,7 +839,7 @@ hep_del("25"); /* removes chunk with chunk id 25 */
 		</section>
 
 
-		<section>
+		<section id="func_hep_relay" xreflabel="hep_relay()">
 		<title>
 			<function moreinfo="none">hep_relay()</function>
 		</title>
@@ -869,7 +869,7 @@ if (!hep_relay()) {
 
 		</section>
 
-		<section>
+		<section id="func_hep_resume_sip" xreflabel="hep_resume_sip()">
 		<title>
 			<function moreinfo="none">hep_resume_sip()</function>
 		</title>
@@ -908,7 +908,7 @@ route[my_hep_route] {
 	<section>
 	<title>Exported Async Functions</title>
 
-	<section>
+	<section id="afunc_sip_capture" xreflabel="sip_capture()">
 	<title>
 		<function moreinfo="none">sip_capture()</function>
 	</title>

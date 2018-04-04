@@ -138,10 +138,10 @@ modparam("sip_i", "country_code", "+4")
 
 </section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-		<section>
+		<section id="func_add_isup_part" xreflabel="add_isup_part()">
 		<title>
 			<function moreinfo="none">add_isup_part([isup_msg_type][,extra_headers])</function>
 		</title>

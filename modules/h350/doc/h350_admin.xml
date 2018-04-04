@@ -172,7 +172,7 @@ modparam("h350", "search_scope", "sub");
     </section>
 </section>
 
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
     <title>Exported Functions</title>
 
     <section>

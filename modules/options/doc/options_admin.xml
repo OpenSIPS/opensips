@@ -152,9 +152,9 @@ modparam("options", "support", "100rel")
 		</example>
 	</section>
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_options_reply" xreflabel="options_reply()">
 		<title>
 		<function moreinfo="none">options_reply()</function>
 		</title>

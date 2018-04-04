@@ -182,10 +182,10 @@ modparam("pua", "update_period", 100)
 	</section>
 	</section>
 
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		
-	<section>
+	<section id="func_pua_update_contact" xreflabel="pua_update_contact()">
 		<title>
 		<function moreinfo="none">pua_update_contact()</function>
 		</title>

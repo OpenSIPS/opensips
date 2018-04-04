@@ -112,7 +112,7 @@ modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite3_extens
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		No function exported to be used from configuration file.

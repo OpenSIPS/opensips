@@ -491,7 +491,7 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/keepalive_s
 
   <section>
   <title>Exported functions</title>
-    <section>
+    <section id="func_client_nat_test" xreflabel="client_nat_test()">
     <title>
       <function moreinfo="none">client_nat_test(type)</function>
     </title>
@@ -546,7 +546,7 @@ if (client_nat_test("3")) {
       </example>
     </section>
 
-    <section>
+    <section id="func_fix_contact" xreflabel="fix_contact()">
     <title>
     <function moreinfo="none">fix_contact()</function>
     </title>
@@ -572,7 +572,7 @@ if (client_nat_test("3")) {
       </example>
     </section>
 
-    <section>
+    <section id="func_nat_keepalive" xreflabel="nat_keepalive()">
     <title>
     <function moreinfo="none">nat_keepalive()</function>
     </title>

@@ -470,9 +470,9 @@ modparam("osp","identity_canon_avp","$avp(idcanon)")
       </example>
     </section>
   </section>
-  <section>
+  <section id="exported_functions" xreflabel="exported_functions">
     <title>Exported Functions</title>
-    <section>
+    <section id="func_checkospheader" xreflabel="checkospheader()">
       <title><function moreinfo="none">checkospheader()</function></title>
       <para>This function checks for the existence of the OSP-Auth-Token header field.</para>
       <para>This function can be used from REQUEST_ROUTE.</para>
@@ -489,7 +489,7 @@ if (checkospheader()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_validateospheader" xreflabel="validateospheader()">
       <title><function moreinfo="none">validateospheader()</function></title>
       <para>This function validates an OSP-Token specified in the OSP-Auth-Tokenheader field of the SIP message. If a peering token is present, it will be validated locally. If no OSP header is found or the header token is invalid or expired, -1 is returned; on successful validation 1 is returned.</para>
       <para>This function can be used from REQUEST_ROUTE.</para>
@@ -506,7 +506,7 @@ if (validateospheader()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_getlocaladdress" xreflabel="getlocaladdress()">
       <title><function moreinfo="none">getlocaladdress()</function></title>
       <para>This function gets the receiving IP address of SIP response and stores it as proxy egress address.</para>
       <para>This function can be used from ONREPLY_ROUTE.</para>
@@ -523,7 +523,7 @@ if (getlocaladdress()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_setrequestdate" xreflabel="setrequestdate()">
       <title><function moreinfo="none">setrequestdate()</function></title>
       <para>This function gets the receiving IP address of SIP response and stores it as proxy egress address.</para>
       <para>This function can be used from REQUEST_ROUTE.</para>
@@ -540,7 +540,7 @@ if (setrequest()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_requestosprouting" xreflabel="requestosprouting()">
       <title><function moreinfo="none">requestosprouting()</function></title>
       <para>This function launches a query to the peering server requesting the IP address of one or more destination peers serving the called party. If destination peers are available, the peering server will return the IP address and a peering authorization token for each destination peer. The OSP-Auth-Token Header field is inserted into the SIP message and the SIP uri is rewritten to the IP address of destination peer provided by the peering server.</para>
       <para>The address of the called party must be a valid E164 number, otherwise this function returns -1. If the transaction was accepted by the peering server, the uri is being rewritten and 1 returned, on errors (peering servers are not available, authentication failed or there is no route to destination or the route is blocked) -1 is returned.</para>
@@ -558,7 +558,7 @@ if (requestosprouting()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_checkosproute" xreflabel="checkosproute()">
       <title><function moreinfo="none">checkosproute()</function></title>
       <para>This function is used to check if there is any route for the call.</para>
       <para>This function can be used from REQUEST_ROUTE.</para>
@@ -575,7 +575,7 @@ if (checkosproute()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_prepareosproute" xreflabel="prepareosproute()">
       <title><function moreinfo="none">prepareosproute()</function></title>
       <para>This function tries to prepare the INVITE to be forwarded using the destination in the list returned by the peering server. If the calling number is translated, a RPID value for the RPID AVP will be set. If the route could not be prepared, the function returns 'FALSE' back to the script, which can then decide how to handle the failure. Note, if checkosproute has been called and returns 'TRUE' before calling prepareosproute, prepareosproute should not return 'FALSE' because checkosproute has confirmed that there is at least one route.</para>
       <para>This function can be used from BRANCH_ROUTE.</para>
@@ -592,7 +592,7 @@ if (prepareosproute()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_prepareospresponse" xreflabel="prepareospresponse()">
       <title><function moreinfo="none">prepareospresponse()</function></title>
       <para>This function tries to prepare all the routes in the list returned by the peering server into SIP 300 Redirect or SIP 380 Alternative Service message. The message is then replied to the source. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
       <para>This function can be used from REQUEST_ROUTE.</para>
@@ -609,7 +609,7 @@ if (prepareospresponse()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_prepareallosproutes" xreflabel="prepareallosproutes()">
       <title><function moreinfo="none">prepareallosproutes()</function></title>
       <para>This function tries to prepare all the routes in the list returned by the peering server. The message is then forked off to the destinations. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
       <para>This function can be used from REQUEST_ROUTE.</para>
@@ -626,7 +626,7 @@ if (prepareallosproutes()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_checkcallingtranslation" xreflabel="checkcallingtranslation()">
       <title><function moreinfo="none">checkcallingtranslation()</function></title>
       <para>This function is used to check if the calling number is translated. Before calling checkcallingtranslation, prepareosproute should be called. If the calling number does been translated, the original Remote-Party-ID, if it exists, should be removed from the INVITE message. And a new Remote-Party-ID header should be added (a RPID value for the RPID AVP has been set by prepareosproute). If the calling number is not translated, nothing should be done.</para>
       <para>This function can be used from BRANCH_ROUTE.</para>
@@ -646,7 +646,7 @@ if (checkcallingtranslation()) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_reportospusage" xreflabel="reportospusage()">
       <title><function moreinfo="none">reportospusage()</function></title>
       <para>This function should be called after receiving a BYE message. If the message contains an OSP cookie, the function will forward originating and/or terminating duration usage information to a peering server. The function returns TRUE if the BYE includes an OSP cookie. The actual usage message will be send on a different thread and will not delay BYE processing. The function should be called before relaying the message.</para>
       <para>Meaning of the parameter is as follows:
@@ -679,7 +679,7 @@ if (is_direction("downstream")) {
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="func_processsubscribe" xreflabel="processsubscribe()">
       <title><function moreinfo="none">processsubscribe()</function></title>
       <para>This function should be called after receiving a SUBSCRIBE for CNAM message and there is a cached CNAM record for this message. This function generates a NOTIFY message including the cached CNAM record, then sends the NOTIFY message to the device sending the SUBSCRIBE message.</para>
       <para>Meaning of the parameter is as follows:

@@ -14,7 +14,7 @@
 	<para>
 		To account a transaction and to choose which set of backends to be
 		used, the script writer only has to mark the transaction for
-		accounting by using the <xref linkend="do_accounting"/> script function.
+		accounting by using the <xref linkend="func_do_accounting"/> script function.
 		Note that the function is not actually doing the accounting at that
 		very time, it is just setting a marker - the actual accounting
 		will be done later when the transaction or dialog will be
@@ -317,7 +317,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 			<para>
 			In order to have CDRs accounting, first you need to set the
 			<emphasis>cdr</emphasis> flag when calling
-			<xref linkend="do_accounting"/> script function for the
+			<xref linkend="func_do_accounting"/> script function for the
 			initial INVITE of the dialog.
 			</para>
 		</section>
@@ -790,9 +790,9 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="do_accounting">
+	<section id="func_do_accounting" xreflabel="do_accounting()">
 		<title>
 			<function moreinfo="none">do_accounting(type, flags, table)</function>
 		</title>
@@ -885,7 +885,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	</section>
 
-	<section id="drop_accouting">
+	<section id="func_drop_accounting" xreflabel="drop_accounting()">
 		<title>
 			<function moreinfo="none">drop_accounting([type], [flags])</function>
 		</title>
@@ -972,7 +972,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 
 
-	<section>
+	<section id="func_acc_log_request" xreflabel="acc_log_request()">
 		<title>
 			<function moreinfo="none">acc_log_request(comment)</function>
 		</title>
@@ -1006,7 +1006,7 @@ acc_log_request("403 Destination not allowed");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_acc_db_request" xreflabel="acc_db_request()">
 		<title>
 			<function moreinfo="none">acc_db_request(comment, table)</function>
 		</title>
@@ -1044,7 +1044,7 @@ acc_db_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_acc_aaa_request" xreflabel="acc_aaa_request()">
 		<title>
 			<function moreinfo="none">acc_aaa_request(comment)</function>
 		</title>
@@ -1077,7 +1077,7 @@ acc_aaa_request("403 Destination not allowed");
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_acc_evi_request" xreflabel="acc_evi_request()">
 		<title>
 			<function moreinfo="none">acc_evi_request(comment)</function>
 		</title>
@@ -1116,7 +1116,7 @@ acc_evi_request("403 Destination not allowed");
 	</section>
 	</section>
 
-	<section>
+	<section id="func_acc_new_leg" xreflabel="acc_new_leg()">
 		<title>
 			<function moreinfo="none">acc_new_leg()</function>
 		</title>

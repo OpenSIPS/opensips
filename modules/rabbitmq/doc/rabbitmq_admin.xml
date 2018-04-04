@@ -145,7 +145,7 @@ heartbeat = 5")
 	</section>
 	
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 		<section>
 			<title>

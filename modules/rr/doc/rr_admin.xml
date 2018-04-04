@@ -45,12 +45,12 @@
 	</para>
 	<itemizedlist>
 		<listitem>
-			<para>add_rr_param() - see <xref linkend="add-rr-param-id"/>
+			<para>add_rr_param() - see <xref linkend="func_add_rr_param"/>
 			</para>
 		</listitem>
 		<listitem>
 			<para>check_route_param() - see 
-				<xref linkend="check-route-param-id"/>
+				<xref linkend="func_check_route_param"/>
 			</para>
 		</listitem>
 	</itemizedlist>
@@ -207,9 +207,9 @@ modparam("rr", "enable_socket_mismatch_warning", 0)
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="loose-route-id">
+	<section id="func_loose_route" xreflabel="loose_route()">
 		<title>
 		<function moreinfo="none">loose_route()</function>
 		</title>
@@ -262,7 +262,7 @@ loose_route();
 		</example>
 	</section>
 
-	<section id="record-route-id">
+	<section id="func_record_route" xreflabel="record_route()">
 		<title>
 		<function moreinfo="none">record_route()</function> and 
 		<function moreinfo="none">record_route(string)</function>
@@ -291,7 +291,7 @@ record_route();
 		</example>
 	</section>
 
-	<section>
+	<section id="func_record_route_preset" xreflabel="record_route_preset()">
 		<title>
 		<function moreinfo="none">record_route_preset(string [, string2])</function>
 		</title>
@@ -332,7 +332,7 @@ record_route_preset("1.2.3.4:5090");
 		</example>
 	</section>
 
-	<section id="add-rr-param-id">
+	<section id="func_add_rr_param" xreflabel="add_rr_param()">
 		<title>
 		<function moreinfo="none">add_rr_param(param)</function>
 		</title>
@@ -340,7 +340,7 @@ record_route_preset("1.2.3.4:5090");
 		Adds a parameter to the Record-Route URI (param must be in 
 		<quote>;name=value</quote> format. The function may be called also 
 		before or after the record_route() call 
-		(see <xref linkend="record-route-id"/>).
+		(see <xref linkend="func_record_route"/>).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -366,14 +366,14 @@ add_rr_param(";nat=yes");
 		</example>
 	</section>
 
-	<section id="check-route-param-id">
+	<section id="func_check_route_param" xreflabel="check_route_param()">
 		<title>
 		<function moreinfo="none">check_route_param(re)</function>
 		</title>
 		<para>The function checks if the URI parameters of the local Route 
 		header (corresponding to the local server) matches the given regular 
 		expression. It must be call after loose_route() 
-		(see <xref linkend="loose-route-id"/>).
+		(see <xref linkend="func_loose_route"/>).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -399,7 +399,7 @@ if (check_route_param("nat=yes")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_is_direction" xreflabel="is_direction()">
 		<title>
 		<function moreinfo="none">is_direction(dir)</function>
 		</title>
@@ -407,7 +407,7 @@ if (check_route_param("nat=yes")) {
 		As for checking it's used the <quote>ftag</quote> Route header 
 		parameter, the append_fromtag (see <xref linkend="param_append_fromtag"/> 
 		module parameter must be enabled. Also this must be called only after 
-		loose_route() (see <xref linkend="loose-route-id"/>).
+		loose_route() (see <xref linkend="func_loose_route"/>).
 		</para>
 		<para>
 		The function returns true if the <quote>dir</quote> is the same with

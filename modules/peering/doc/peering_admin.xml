@@ -117,9 +117,9 @@ modparam("peering", "verify_source_service_type", 22)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_verify_destination" xreflabel="verify_destination()">
 		<title><function moreinfo="none">verify_destination()</function></title>
 		<para>
 		Function verify_destination() queries from
@@ -188,7 +188,7 @@ if (verify_destination()) {
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_verify_source" xreflabel="verify_source()">
 		<title><function moreinfo="none">verify_source()</function></title>
 		<para>
 		Function verify_source() queries from

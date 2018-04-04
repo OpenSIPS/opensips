@@ -547,9 +547,9 @@ modparam("registrar", "disable_gruu", 0)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="save" xreflabel="save">
+	<section id="func_save" xreflabel="save()">
 		<title>
 		<function moreinfo="none">save(domain [,flags ,[aor]])</function>
 		</title>
@@ -698,7 +698,7 @@ save("location","mr", "$avp(aor)");
 		</example>
 	</section>
 
-	<section id="remove" xreflabel="remove">
+	<section id="func_remove" xreflabel="remove()">
 		<title>
 		<function moreinfo="none">remove(domain, AOR[, [contact], ip])</function>
 		</title>
@@ -772,7 +772,7 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.50.60");
 		</example>
 	</section>
 
-	<section id="lookup" xreflabel="lookup">
+	<section id="func_lookup" xreflabel="lookup()">
 		<title>
 		<function moreinfo="none">lookup(domain [, flags [, aor]])</function>
 		</title>
@@ -944,7 +944,7 @@ switch ($retcode) {
 		</example>
 	</section>
 
-	<section id="is_registered" xreflabel="is_registered">
+	<section id="func_is_registered" xreflabel="is_registered()">
 		<title>
 		<function moreinfo="none">is_registered(domain ,[AOR])</function>
 		</title>
@@ -998,7 +998,7 @@ if (is_registered("location","$fu")) {
 	</section>
 
 
-	<section id="is_contact_registered" xreflabel="is_contact_registered">
+	<section id="func_is_contact_registered" xreflabel="is_contact_registered()">
 		<title>
 		<function moreinfo="none">is_contact_registered(domain ,[AOR],[contact],[callid])</function>
 		</title>
@@ -1067,7 +1067,7 @@ if(is_method("INVITE")) {
 		</example>
 	</section>
 
-	<section id="is_ip_registered" xreflabel="is_ip_registered">
+	<section id="func_is_ip_registered" xreflabel="is_ip_registered()">
 		<title>
 		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
 		</title>
@@ -1125,7 +1125,7 @@ if (is_method("REGISTER")) {
 
 
 
-	<section id="add_sock_hdr" xreflabel="add_sock_hdr">
+	<section id="func_add_sock_hdr" xreflabel="add_sock_hdr()">
 		<title>
 		<function moreinfo="none">add_sock_hdr(hdr_name)</function>
 		</title>

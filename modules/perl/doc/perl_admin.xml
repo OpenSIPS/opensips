@@ -63,7 +63,8 @@ if (perl_exec("ldap_alias")) {
 		</para>
 
 		<para>
-		The functions you can use are listed in the "Exported Functions" section below.
+		The functions you can use are listed in the
+		<xref linkend="exported_functions"/> section below.
 		</para>
 		<para>
 		On the Perl side, there are a number of functions that let you read and modify the
@@ -184,9 +185,9 @@ modparam("perl", "modpath", "/usr/local/lib/opensips/perl/")
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<section>
+		<section id="func_perl_exec_simple" xreflabel="perl_exec_simple()">
 			<title>
 			<function moreinfo="none">perl_exec_simple(func, [param])</function>
 			</title>
@@ -214,7 +215,7 @@ if ($rm=="INVITE") {
 			</example>
 		</section>
 
-		<section>
+		<section id="func_perl_exec" xreflabel="perl_exec()">
 			<title>
 			<function moreinfo="none">perl_exec(func, [param])</function>
 			</title>

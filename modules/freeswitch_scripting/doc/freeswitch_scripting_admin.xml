@@ -232,9 +232,9 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 
 	</section>
 
-	<section id="sec-modfunc">
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="modfunc-freeswitch-esl" xreflabel="freeswitch_esl()">
+	<section id="func_freeswitch_esl" xreflabel="freeswitch_esl()">
 		<title>
 		<function moreinfo="none">freeswitch_esl(command, freeswitch_url[, response_pvar])</function>
 		</title>

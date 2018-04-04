@@ -87,7 +87,7 @@
 		No exported parameters to be used in the configuration file.
 		</para>
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		No exported functions to be used in the configuration file.

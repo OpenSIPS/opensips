@@ -104,7 +104,7 @@ modparam("db_unixodbc", "use_escape_common", 1)
 	</section>
     </section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		NONE

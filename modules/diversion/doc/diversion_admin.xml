@@ -61,9 +61,9 @@ modparam("diversion", "suffix", ";privacy=full")
 		</example>
 	</section>
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_add_diversion" xreflabel="add_diversion()">
 		<title><function moreinfo="none">add_diversion(reason [[,uri], counter])</function></title>
 		<para>
 		The function adds a new diversion header field before any other 

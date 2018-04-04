@@ -77,9 +77,9 @@ modparam("mangler", "contact_flds_separator", "-")
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_sdp_mangle_ip" xreflabel="sdp_mangle_ip()">
 		<title>
 		<function moreinfo="none">sdp_mangle_ip(pattern, newip)</function>
 		</title>
@@ -122,7 +122,7 @@ sdp_mangle_ip("10.0.0.0/8","193.175.135.38");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_sdp_mangle_port" xreflabel="sdp_mangle_port()">
 		<title>
 		<function moreinfo="none">sdp_mangle_port(offset)</function>
 		</title>
@@ -155,7 +155,7 @@ sdp_mangle_port("-12000");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_encode_contact" xreflabel="encode_contact()">
 		<title>
 		<function moreinfo="none">encode_contact(encoding_prefix, public_ip)</function>
 		</title>
@@ -195,7 +195,7 @@ if ($si == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_decode_contact" xreflabel="decode_contact()">
 		<title>
 		<function moreinfo="none">decode_contact()</function>
 		</title>
@@ -223,7 +223,7 @@ if ($ru =~ "^enc*") { decode_contact(); }
 		</example>
 	</section>
 
-	<section>
+	<section id="func_decode_contact_header" xreflabel="decode_contact_header()">
 		<title>
 		<function moreinfo="none">decode_contact_header()</function>
 		</title>

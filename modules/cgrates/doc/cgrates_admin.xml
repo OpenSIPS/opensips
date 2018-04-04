@@ -312,9 +312,9 @@ modparam("cgrates", "compat_mode", 1)
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="cgrates_acc">
+	<section id="func_cgrates_acc" xreflabel="cgrates_acc()">
 		<title>
 			<function moreinfo="none">cgrates_acc([flags[, account[, destination[, session]]]])</function>
 		</title>
@@ -428,7 +428,7 @@ modparam("cgrates", "compat_mode", 1)
 		</example>
 
 	</section>
-	<section id="cgrates_auth">
+	<section id="func_cgrates_auth" xreflabel="cgrates_auth()">
 		<title>
 			<function moreinfo="none">cgrates_auth([account[, destination[, session]]])</function>
 		</title>
@@ -541,7 +541,7 @@ modparam("cgrates", "compat_mode", 1)
 		</example>
 
 	</section>
-	<section id="cgrates_cmd">
+	<section id="func_cgrates_cmd" xreflabel="cgrates_cmd()">
 		<title>
 			<function moreinfo="none">cgrates_cmd(command[, session])</function>
 		</title>
@@ -765,7 +765,7 @@ modparam("cgrates", "compat_mode", 1)
 
 	<section>
 	<title>Exported Asynchronous Functions</title>
-	<section>
+	<section id="afunc_cgrates_auth" xreflabel="cgrates_auth()">
 		<title>
 		<function moreinfo="none">cgrates_auth([account[, destination[, session]]])</function>
 		</title>
@@ -850,7 +850,7 @@ route [auth_reply]
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="afunc_cgrates_cmd" xreflabel="cgrates_cmd()">
 		<title>
 		<function moreinfo="none">cgrates_cmd(command[, session])</function>
 		</title>

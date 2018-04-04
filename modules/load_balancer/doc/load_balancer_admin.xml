@@ -428,9 +428,9 @@ modparam("load_balancer", "status_replication_cluster", 9)
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_lb_start" xreflabel="lb_start()">
 		<title>
 		<function moreinfo="none">lb_start(grp,resources[,flags])</function>
 		</title>
@@ -540,7 +540,7 @@ if (lb_start("1","trascoding;conference")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_lb_next" xreflabel="lb_next()">
 		<title>
 		<function moreinfo="none">lb_next()</function>
 		</title>
@@ -601,7 +601,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 	</section>
 
 
-	<section>
+	<section id="func_lb_start_or_next" xreflabel="lb_start_or_next()">
 		<title>
 		<function moreinfo="none">lb_start_or_next(grp,resources[,flags])</function>
 		</title>
@@ -613,7 +613,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 	</section>
 
 
-	<section>
+	<section id="func_load_balance" xreflabel="load_balance()">
 		<title>
 		<function moreinfo="none">load_balance(grp,resources[,flags])</function>
 		</title>
@@ -626,7 +626,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 	</section>
 
 
-	<section>
+	<section id="func_lb_reset" xreflabel="lb_reset()">
 		<title>
 		<function moreinfo="none">lb_reset()</function>
 		</title>
@@ -663,7 +663,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_lb_is_started" xreflabel="lb_is_started()">
 		<title>
 		<function moreinfo="none">lb_is_started()</function>
 		</title>
@@ -677,7 +677,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 	</section>
 
 
-	<section>
+	<section id="func_lb_disable_dst" xreflabel="lb_disable_dst()">
 		<title>
 		<function moreinfo="none">lb_disable_dst()</function>
 		</title>
@@ -711,7 +711,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 	</section>
 
 
-	<section>
+	<section id="func_lb_is_destination" xreflabel="lb_is_destination()">
 		<title>
 		<function moreinfo="none">lb_is_destination(ip,port[,group[,active]])</function>
 		</title>
@@ -760,7 +760,7 @@ if (lb_is_destination("$si","$sp") ) {
 		</example>
 	</section>
 
-	<section>
+	<section id="func_lb_count_call" xreflabel="lb_count_call()">
 		<title>
 		<function moreinfo="none">lb_count_call(ip,port,grp,resources[,undo])</function>
 		</title>

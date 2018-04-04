@@ -191,13 +191,11 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="rest_get"
-			 xreflabel="rest_get">
+	<section id="func_rest_get" xreflabel="rest_get()">
 		<title>
-		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
-		</function>
+		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])</function>
 		</title>
 		<para>
 		Issues an HTTP GET request to the given 'url', and returns a representation
@@ -254,8 +252,7 @@ if ($var(rcode) >= 300) {
 </programlisting>
 		</example>
 	</section>
-	<section id="rest_post"
-			 xreflabel="rest_post">
+	<section id="func_rest_post" xreflabel="rest_post()">
 		<title>
 		<function moreinfo="none">rest_post(url, send_body_pv, [send_ctype_pv],
 				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
@@ -323,8 +320,7 @@ if ($var(rcode) >= 300) {
 </programlisting>
 		</example>
 	</section>
-	<section id="rest_put"
-			 xreflabel="rest_put">
+	<section id="func_rest_put" xreflabel="rest_put()">
 		<title>
 		<function moreinfo="none">rest_put(url, send_body_pv, [send_ctype_pv],
 				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
@@ -391,7 +387,7 @@ if ($var(rcode) >= 300) {
 </programlisting>
 		</example>
 	</section>
-	<section id="rest_append_hf" xreflabel="rest_append_hf">
+	<section id="func_rest_append_hf" xreflabel="rest_append_hf()">
 		<title>
 		<function moreinfo="none">rest_append_hf(txt)</function>
 		</title>
@@ -426,7 +422,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 		</programlisting>
 		</example>
 	</section>
-	<section id="rest_init_client_tls" xreflabel="rest_init_client_tls">
+	<section id="func_rest_init_client_tls" xreflabel="rest_init_client_tls()">
 		<title>
 		<function moreinfo="none">rest_init_client_tls(tls_client_domain)</function>
 		</title>
@@ -472,14 +468,14 @@ if (!rest_get("https://example.com"))
 
 	<section>
 	<title>Exported Asynchronous Functions</title>
-	<section>
+	<section id="afunc_rest_get" xreflabel="rest_get()">
 		<title>
 		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
 		</function>
 		</title>
 		<para>
 		Sends a GET HTTP request. This function behaves exactly the same as
-		<emphasis role='bold'><xref linkend="rest_get"/></emphasis>
+		<emphasis role='bold'><xref linkend="func_rest_get"/></emphasis>
 		(in terms of input, output and processing),
 		but in an asynchronous way. Script execution is suspended until the
 		entire content of the HTTP response is available.
@@ -512,7 +508,7 @@ route [resume] {
 		</example>
 	</section>
 
-	<section>
+	<section id="afunc_rest_post" xreflabel="rest_post()">
 		<title>
 		<function moreinfo="none">rest_post(url, send_body_pv, [send_ctype_pv],
 				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
@@ -520,7 +516,7 @@ route [resume] {
 		</title>
 		<para>
 		Sends a POST HTTP request. This function behaves exactly the same as
-		<emphasis role='bold'><xref linkend="rest_post"/></emphasis> (in terms of input, output and processing),
+		<emphasis role='bold'><xref linkend="func_rest_post"/></emphasis> (in terms of input, output and processing),
 		but in an asynchronous way. Script execution is suspended until the
 		entire content of the HTTP response is available.
 		</para>
@@ -552,7 +548,7 @@ route [resume] {
 		</example>
 	</section>
 
-	<section>
+	<section id="afunc_rest_put" xreflabel="rest_put()">
 		<title>
 		<function moreinfo="none">rest_put(url, send_body_pv, [send_ctype_pv],
 				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
@@ -560,7 +556,7 @@ route [resume] {
 		</title>
 		<para>
 		Sends a PUT HTTP request. This function behaves exactly the same as
-		<emphasis role='bold'><xref linkend="rest_put"/></emphasis> (in terms of input, output and processing),
+		<emphasis role='bold'><xref linkend="func_rest_put"/></emphasis> (in terms of input, output and processing),
 		but in an asynchronous way. Script execution is suspended until the
 		entire content of the HTTP response is available.
 		</para>

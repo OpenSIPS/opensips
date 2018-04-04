@@ -161,9 +161,9 @@ modparam("exec", "time_to_kill", 20)
 	</section>
 
 	</section>
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="exec_sync_exec">
+	<section id="func_exec" xreflabel="exec()">
 		<title>
 		<function moreinfo="none">exec(command, [stdin], [stdout], [stderr], [envavp])</function>
 		</title>
@@ -244,13 +244,13 @@ exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , "$avp(env)
 		</example>
 	</section>
 
-	<section>
+	<section id="func_exec_dset" xreflabel="exec_dset()">
 		<title>
 		<function moreinfo="none">exec_dset(command) (DEPRECATED)</function>
 		</title>
 		<para>
 		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="exec_sync_exec"/> ).
+		version - please use the exec() function (  <xref linkend="func_exec"/> ).
 		</para>
 		<para>
 		Executes an external command. The current &ruri; is appended to the command
@@ -286,13 +286,13 @@ exec_dset("ruri-changer.sh '$ct'");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_exec_msg" xreflabel="exec_msg()">
 		<title>
 		<function moreinfo="none">exec_msg(command) (DEPRECATED)</function>
 		</title>
 		<para>
 		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="exec_sync_exec"/> ).
+		version - please use the exec() function (  <xref linkend="func_exec"/> ).
 		</para>
 		<para>
 		Executes an external command. The current SIP message is passed to it in
@@ -332,13 +332,13 @@ exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_exec_avp" xreflabel="exec_avp()">
 		<title>
 		<function moreinfo="none">exec_avp(command[, avplist]) (DEPRECATED)</function>
 		</title>
 		<para>
 		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="exec_sync_exec"/> ).
+		version - please use the exec() function (  <xref linkend="func_exec"/> ).
 		</para>
 		<para>
 		Executes an external command. Each output line of the command
@@ -380,13 +380,13 @@ exec_avp("get-subscriber-details.sh '$rU'", "$avp(credit) $avp(contract_model)")
 		</example>
 	</section>
 
-	<section>
+	<section id="func_exec_getenv" xreflabel="exec_getenv()">
 		<title>
 		<function moreinfo="none">exec_getenv(environment_variable[, avp]) (DEPRECATED)</function>
 		</title>
 		<para>
 		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="exec_sync_exec"/> ).
+		version - please use the exec() function (  <xref linkend="func_exec"/> ).
 		</para>
 		<para>
 		Obtains the value of a UNIX evironment_variable. The value is saved
@@ -427,13 +427,13 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 
 	<section>
 	<title>Exported Asyncronous Functions</title>
-	<section>
+	<section id="afunc_exec" xreflabel="exec()">
 		<title>
 		<function moreinfo="none">exec(command[,input[,output[,error[,env]]]])</function>
 		</title>
 		<para>
 		Executes an external command. This function does exactly the same as
-		<xref linkend="exec_sync_exec"/> (in terms of input, output and processing),
+		<xref linkend="func_exec"/> (in terms of input, output and processing),
 		but in an asynchronous way. The script execution is suspended until the external script
 		provided all its output. OpenSIPS waits for the external script to close its output
 		stream, not necessarily to terminate (so the script may still be running when OpenSIPS

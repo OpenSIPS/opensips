@@ -267,9 +267,9 @@ modparam("uac_redirect","acc_db_table","acc_redirect")
 	</section>
 
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<section>
+		<section id="func_set_deny_filter" xreflabel="set_deny_filter()">
 			<title>
 				<function moreinfo="none">set_deny_filter(filter,flags)
 					</function>
@@ -319,7 +319,7 @@ set_deny_filter(".*@domain1.net","");
 			</example>
 		</section>
 
-		<section>
+		<section id="func_set_accept_filter" xreflabel="set_accept_filter()">
 			<title>
 				<function moreinfo="none">set_accept_filter(filter,flags)
 					</function>
@@ -369,7 +369,7 @@ set_accept_filter(".*@domain1.net","");
 			</example>
 		</section>
 
-		<section>
+		<section id="func_get_redirects" xreflabel="get_redirects()">
 			<title>
 				<function moreinfo="none">get_redirects(max)</function>
 			</title>
@@ -428,7 +428,7 @@ get_redirects("*");
 			</example>
 		</section>
 
-		<section>
+		<section id="func_get_redirects_2" xreflabel="get_redirects()">
 			<title>
 				<function moreinfo="none">get_redirects(max,reason)</function>
 			</title>

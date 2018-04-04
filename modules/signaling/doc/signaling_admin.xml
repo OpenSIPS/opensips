@@ -89,9 +89,9 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_send_reply" xreflabel="send_reply()">
 		<title>
 		<function moreinfo="none">send_reply(code, reason)</function>
 		</title>

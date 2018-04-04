@@ -628,9 +628,9 @@ modparam("presence", "pres_htable_size", 11)
 
 </section>
 
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_handle_publish" xreflabel="handle_publish()">
 		<title>
 		<function moreinfo="none">handle_publish(char* sender_uri)</function>
 		</title>
@@ -686,7 +686,7 @@ modparam("presence", "pres_htable_size", 11)
 		</example>
 	</section>
 
-	<section>
+	<section id="func_handle_subscribe" xreflabel="handle_subscribe()">
 		<title>
 		<function moreinfo="none">handle_subscribe(char* force_active)</function>
 		</title>

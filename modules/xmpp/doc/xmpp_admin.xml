@@ -256,9 +256,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_xmpp_send_message" xreflabel="xmpp_send_message()">
 		<title>
 		<function moreinfo="none">xmpp_send_message()</function>
 		</title>

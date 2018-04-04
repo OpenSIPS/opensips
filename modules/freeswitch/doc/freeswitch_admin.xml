@@ -122,7 +122,7 @@ modparam("freeswitch", "esl_cmd_polling_itv", 3000)
 	</section>
 	</section>
 
-	<section id="sec-modfunc">
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	</section>
 </chapter>

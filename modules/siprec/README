@@ -115,13 +115,13 @@ Chapter 1. Admin Guide
 1.4. SRS Failover
 
    The siprec module supports failover between multiple SRS
-   servers - when calling the siprec_start_recording function, one
-   can provision more SRS URIs, separated by comma. In this case,
-   OpenSIPS will try to use them in the same order specified, one
-   by one, until either one of them responds with a positive reply
-   (200 OK), or the response code is one of the codes matched by
-   the skip_failover_codes regular expression. In the latter case
-   the call is not recorded at all.
+   servers - when calling the siprec_start_recording() function,
+   one can provision more SRS URIs, separated by comma. In this
+   case, OpenSIPS will try to use them in the same order
+   specified, one by one, until either one of them responds with a
+   positive reply (200 OK), or the response code is one of the
+   codes matched by the skip_failover_codes regular expression. In
+   the latter case the call is not recorded at all.
 
 1.5. Limitations
 

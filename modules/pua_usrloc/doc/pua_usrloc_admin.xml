@@ -113,9 +113,9 @@ modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
 
 
 </section>
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-		<section>
+		<section id="func_pua_set_publish" xreflabel="pua_set_publish()">
 				<title>
 				<function moreinfo="none">pua_set_publish()</function>
 				</title>

@@ -447,9 +447,9 @@ modparam("clusterer", "sync_packet_max_size", 32765)
 
         </section>
 
-        <section>
+        <section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-			<section>
+			<section id="func_cluster_send_req" xreflabel="cluster_send_req()">
 				<title>
 				<function moreinfo="none">cluster_send_req(cluster_id, dst_id, msg[, tag])</function>
 				</title>
@@ -512,7 +512,7 @@ route[rpl_resume] {
 				</programlisting>
 				</example>
 			</section>
-			<section>
+			<section id="func_cluster_send_rpl" xreflabel="cluster_send_rpl()">
 				<title>
 				<function moreinfo="none">cluster_send_rpl(cluster_id, dst_id, msg, tag)</function>
 				</title>
@@ -570,7 +570,7 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 				</example>
 			</section>
 
-			<section>
+			<section id="func_cluster_broadcast_req" xreflabel="cluster_broadcast_req()">
 				<title>
 				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg[, tag])</function>
 				</title>
@@ -610,7 +610,7 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 				</example>
 			</section>
 
-			<section>
+			<section id="func_cluster_check_addr" xreflabel="cluster_check_addr()">
 				<title>
 				<function moreinfo="none">cluster_check_addr(cluster_id, ip)</function>
 				</title>

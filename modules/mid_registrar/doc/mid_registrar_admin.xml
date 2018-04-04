@@ -240,7 +240,7 @@
 			<listitem>
 			<para>
 			when a REGISTER is received, the script writer must call
-			<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>
+			<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>
 			</para>
 			</listitem>
 			<listitem>
@@ -282,7 +282,7 @@
 			is possible through the use of the
 			<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module
 			parameter or the corresponding parameter to
-			<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
+			<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>,
 			which allow the script writer to prolong the life of the registrations on the way
 			to the main registrar.
 			</para>
@@ -304,7 +304,7 @@
 		Contacts. This behaviour is also made possible through the
 		<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module
 		parameter or the corresponding parameter to
-		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
+		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>,
 		which allow the script writer to prolong the life of the registrations on the way
 		to the main registrar.
 		</para>
@@ -453,7 +453,7 @@ modparam("mid_registrar", "received_param", "rcv")
 		<title><varname>extra_contact_params_avp</varname> (string)</title>
 		<para>
 		An AVP specification. This AVP is evaluated during
-		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>:
+		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>:
 		if it holds a valid string, its content be appended to
 		<emphasis>each</emphasis> new Contact URI built by the mid-registrar,
 		for the outgoing request.
@@ -545,7 +545,7 @@ modparam("mid_registrar", "default_q", 380)
 		Specifies the message flag to be used to control the
 		module behaviour regarding TCP connections. If the flag is set for a
 		REGISTER via TCP containing a TCP contact, the module, via the
-		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>
+		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>
 		function, will set the lifetime of the TCP
 		connection to the contact expire value. By doing this, the TCP
 		connection will stay up as long as its contacts are valid.
@@ -617,7 +617,7 @@ modparam("mid_registrar", "case_sensitive", 0)
 		<para>
 		This is a global value and will only be used if no other value
 		(for max_contacts) is passed as parameter to
-		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>
+		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>
 		(i.e. a "max_contacts" function flag will override this parameter)
 		</para>
 		<para>
@@ -688,9 +688,9 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 
 	</section>
 
-	<section id="sec-modfunc">
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section id="modfunc-mid-registrar-save" xreflabel="mid_registrar_save()">
+	<section id="func_mid_registrar_save" xreflabel="mid_registrar_save()">
 		<title>
 		<function moreinfo="none">mid_registrar_save(domain[, [flags][, [aor][, [outgoing_expires]]]])</function>
 		</title>
@@ -899,7 +899,7 @@ if (is_method("REGISTER")) {
 		</example>
 	</section>
 
-	<section id="modfunc-mid-registrar-lookup" xreflabel="mid_registrar_lookup()">
+	<section id="func_mid_registrar_lookup" xreflabel="mid_registrar_lookup()">
 		<title>
 		<function moreinfo="none">mid_registrar_lookup(domain[, [flags][, [aor]]])</function>
 		</title>

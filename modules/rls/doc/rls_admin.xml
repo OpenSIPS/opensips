@@ -314,9 +314,9 @@ modparam("rls", "server_address", "sip:rls@opensips.org:5060")
 
 </section>
 
-<section>
+<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_rls_handle_subscribe" xreflabel="rls_handle_subscribe()">
 		<title>
 		<function moreinfo="none">rls_handle_subscribe()</function>
 		</title>
@@ -358,7 +358,7 @@ For rls only:
 		</example>
 	</section>
 
-	<section>
+	<section id="func_rls_handle_notify" xreflabel="rls_handle_notify()">
 		<title>
 		<function moreinfo="none">rls_handle_notify()</function>
 		</title>
