@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 
 		<para>The sst module provides a way to update the
@@ -97,7 +97,7 @@
 
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -133,9 +133,9 @@
 	</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_enable_stats" xreflabel="enable_stats">
 		<title><varname>enable_stats</varname> (integer)</title>
 
 		<para>If the statistics support should be enabled or
@@ -159,7 +159,7 @@ modparam("sst", "enable_stats", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_min_se" xreflabel="min_se">
 		<title><varname>min_se</varname> (integer)</title>
 
 		<para>The value is used to set the proxies MIN-SE
@@ -187,7 +187,7 @@ modparam("sst", "min_se", 2400)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_sst_interval" xreflabel="sst_interval">
 		<title><varname>sst_interval</varname> (integer)</title>
 
 		<para>The sst minimum interval in Session-Expires header if OpenSIPS
@@ -211,7 +211,7 @@ modparam("sst", "sst_interval", 2400)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_reject_to_small" xreflabel="reject_to_small">
 		<title><varname>reject_to_small</varname> (integer)</title>
 
 		<para>In the initial INVITE if the UAC has requested a
@@ -241,7 +241,7 @@ modparam("sst", "reject_to_small", 0)
 </programlisting>
 		</example>
 	</section>
-<section>
+<section id="param_sst_flag" xreflabel="sst_flag">
 		<title><varname>sst_flag</varname> (string/integer)</title>
 		
 		<para>Keeping with OpenSIPS, the module will not do

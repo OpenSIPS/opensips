@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>The modules is a Resource List Server implementation following the
 	specification in RFC 4662 and RFC 4826. 
@@ -39,7 +39,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -93,9 +93,9 @@
 		</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_rlsubs_table" xreflabel="rlsubs_table">
 		<title><varname>rlsubs_table</varname>(str)</title>
 		<para>
 		The name of the db table where resource lists subscription 
@@ -115,7 +115,7 @@ modparam("rls", "rlsubs_table", "rls_subscriptions")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rlpres_table" xreflabel="rlpres_table">
 		<title><varname>rlpres_table</varname>(str)</title>
 		<para>
 		The name of the db table where notified event specific
@@ -135,7 +135,7 @@ modparam("rls", "rlpres_table", "rls_notify")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_clean_period" xreflabel="clean_period">
 		<title><varname>clean_period</varname> (int)</title>
 		<para>
 		The period at which to check for expired information.
@@ -154,7 +154,7 @@ modparam("rls", "clean_period", 100)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_waitn_time" xreflabel="waitn_time">
 		<title><varname>waitn_time</varname> (int)</title>
 		<para>
 	 The timer period at which the server should attempt to send
@@ -175,7 +175,7 @@ modparam("rls", "waitn_time", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_max_expires" xreflabel="max_expires">
 		<title><varname>max_expires</varname> (int)</title>
 		<para>
 		The maximum accepted expires for a subscription to a list. 
@@ -194,7 +194,7 @@ modparam("rls", "max_expires", 10800)
 		</example>
 	</section>
  	
-	<section>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (int)</title>
 		<para>
         The dimension of the hash table used to store subscription to a list.
@@ -214,7 +214,7 @@ modparam("rls", "hash_size", 11)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_xcap_root" xreflabel="xcap_root">
 		<title><varname>xcap_root</varname> (str)</title>
 		<para>
 		The address of the xcap server.
@@ -233,7 +233,7 @@ modparam("rls", "xcap_root", "http://192.168.2.132/xcap-root:800")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_to_presence_code" xreflabel="to_presence_code">
 		<title><varname>to_presence_code</varname> (int)</title>
 		<para>
 		The code to be returned by rls_handle_subscribe function 
@@ -256,7 +256,7 @@ modparam("rls", "to_presence_code", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rls_event" xreflabel="rls_event">
 		<title><varname>rls_event</varname> (str)</title>
 		<para>
 		The default event that RLS handles is presence. If some other
@@ -277,7 +277,7 @@ modparam("rls", "rls_event", "dialog;sla")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_presence_server" xreflabel="presence_server">
 		<title><varname>presence_server</varname> (str)</title>
 		<para>
 		The address of the presence server. It will be used as outbound proxy for
@@ -295,7 +295,7 @@ modparam("rls", "presence_server", "sip:pres@opensips.org:5060")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_server_address" xreflabel="server_address">
 		<title><varname>server_address</varname> (str)</title>
 		<para>
 		The address of the server that will be used as a contact in sent

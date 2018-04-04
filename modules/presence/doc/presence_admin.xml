@@ -3,7 +3,7 @@
 <chapter>
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> The modules handles PUBLISH and SUBSCRIBE messages and generates
 	NOTIFY messages in a general, event independent way. It allows registering 
@@ -44,7 +44,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -85,9 +85,9 @@
 		</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname>(str)</title>
 		<para>
 		The database url.
@@ -111,7 +111,7 @@ modparam("presence", "db_url",
 		</example>
 	</section>
 
-	<section>
+	<section id="param_fallback2db" xreflabel="fallback2db">
 		<title><varname>fallback2db</varname> (int)</title>
 		<para>
 		Setting this parameter enables a fallback to db mode of operation.
@@ -130,7 +130,7 @@ modparam("presence", "fallback2db", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cluster_id" xreflabel="cluster_id">
 		<title><varname>cluster_id</varname> (int)</title>
 		<para>
 		The ID of the cluster this presence server belongs to. This parameter
@@ -156,7 +156,7 @@ modparam("presence", "cluster_id", 2)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cluster_federation_mode" xreflabel="cluster_federation_mode">
 		<title><varname>cluster_federation_mode</varname> (int)</title>
 		<para>
 		When enabling the federation mode, the node inside the presence cluster
@@ -182,7 +182,7 @@ modparam("presence", "cluster_federation_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cluster_pres_events" xreflabel="cluster_pres_events">
 		<title><varname>cluster_pres_events</varname> (str)</title>
 		<para>
 		Comma Separated Value (CSV) list with the events to considered by the
@@ -207,7 +207,7 @@ modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, message-summa
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cluster_sharing_tags" xreflabel="cluster_sharing_tags">
 		<title><varname>cluster_sharing_tags</varname> (str)</title>
 		<para>
 		Definition of a sharing tag (and its value) to be known by OpenSIPS 
@@ -237,7 +237,7 @@ modparam("presence", "cluster_pres_events" ,"vip2=backup")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_expires_offset" xreflabel="expires_offset">
 		<title><varname>expires_offset</varname> (int)</title>
 		<para>
 			The extra time to store a subscription/publication.
@@ -256,7 +256,7 @@ modparam("presence", "expires_offset", 10)
 		</example>
 
 </section>
-	<section>
+	<section id="param_max_expires_subscribe" xreflabel="max_expires_subscribe">
 		<title><varname>max_expires_subscribe</varname> (int)</title>
 		<para>
 		The the maximum admissible expires value for SUBSCRIBE
@@ -276,7 +276,7 @@ modparam("presence", "max_expires_subscribe", 3600)
 		</example>
 	</section>
 
-<section>
+<section id="param_max_expires_publish" xreflabel="max_expires_publish">
 		<title><varname>max_expires_publish</varname> (int)</title>
 		<para>
 		The the maximum admissible expires value for PUBLISH
@@ -297,7 +297,7 @@ modparam("presence", "max_expires_publish", 3600)
 	</section>
 
 
-<section>
+<section id="param_server_address" xreflabel="server_address">
 		<title><varname>server_address</varname> (str)</title>
 		<para>
 		The optional presence server address which will become the value of 
@@ -318,7 +318,7 @@ modparam("presence", "server_address", "sip:10.10.10.10:5060")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_enable_sphere_check" xreflabel="enable_sphere_check">
 		<title><varname>enable_sphere_check</varname> (int)</title>
 		<para>
 		This parameter is a flag that should be set if permission rules 
@@ -341,7 +341,7 @@ modparam("presence", "enable_sphere_check", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_waiting_subs_daysno" xreflabel="waiting_subs_daysno">
 		<title><varname>waiting_subs_daysno</varname> (int)</title>
 		<para>
 			The number of days to keep the record of a subscription in server
@@ -364,7 +364,7 @@ modparam("presence", "waiting_subs_daysno", 2)
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_mix_dialog_presence" xreflabel="mix_dialog_presence">
 		<title><varname>mix_dialog_presence</varname> (int)</title>
 		<para>
 		This module parameter enables a very nice feature in the presence 
@@ -387,7 +387,7 @@ modparam("presence", "mix_dialog_presence", 1)
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bla_presentity_spec" xreflabel="bla_presentity_spec">
 		<title><varname>bla_presentity_spec</varname> (str)</title>
 		<para>
 			By default the presentity uri for BLA subscribes (event=dialog;sla)
@@ -414,7 +414,7 @@ modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_bla_fix_remote_target" xreflabel="bla_fix_remote_target">
 		<title><varname>bla_fix_remote_target</varname> (int)</title>
 		<para>
 			Polycom has a bug in the bla implementation. It inserts the 
@@ -444,7 +444,7 @@ modparam("presence", "bla_fix_remote_target", 0)
 	</section>
 
 
-	<section>
+	<section id="param_notify_offline_body" xreflabel="notify_offline_body">
 		<title><varname>notify_offline_body</varname> (int)</title>
 		<para>
 			If this parameter is set, when no published info is found for
@@ -466,7 +466,7 @@ modparam("presence", "notify_offline_body", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_end_sub_on_timeout" xreflabel="end_sub_on_timeout">
 		<title><varname>end_sub_on_timeout</varname> (int)</title>
 		<para>
 			If a presence subscription should be automatically terminated 
@@ -487,7 +487,7 @@ modparam("presence", "end_sub_on_timeout", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_clean_period" xreflabel="clean_period">
 		<title><varname>clean_period</varname> (int)</title>
 		<para>
 		The period at which to clean the expired subscription dialogs.
@@ -507,7 +507,7 @@ modparam("presence", "clean_period", 100)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_update_period" xreflabel="db_update_period">
 		<title><varname>db_update_period</varname> (int)</title>
 		<para>
 		The period at which to synchronize cached subscriber info with the
@@ -528,7 +528,7 @@ modparam("presence", "db_update_period", 100)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_presentity_table" xreflabel="presentity_table">
 		<title><varname>presentity_table</varname>(str)</title>
 		<para>
 		The name of the db table where Publish information are stored.
@@ -547,7 +547,7 @@ modparam("presence", "presentity_table", "presentity")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_active_watchers_table" xreflabel="active_watchers_table">
 		<title><varname>active_watchers_table</varname>(str)</title>
 		<para>
 		The name of the db table where active subscription information are 
@@ -567,7 +567,7 @@ modparam("presence", "active_watchers_table", "active_watchers")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_watchers_table" xreflabel="watchers_table">
 		<title><varname>watchers_table</varname>(str)</title>
 		<para>
 		The name of the db table where subscription states are stored.
@@ -586,7 +586,7 @@ modparam("presence", "watchers_table", "watchers")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_subs_htable_size" xreflabel="subs_htable_size">
 		<title><varname>subs_htable_size</varname> (int)</title>
 		<para>
 		The size of the hash table to store subscription dialogs.
@@ -606,7 +606,7 @@ modparam("presence", "subs_htable_size", 11)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pres_htable_size" xreflabel="pres_htable_size">
 		<title><varname>pres_htable_size</varname> (int)</title>
 		<para>
 	The size of the hash table to store publish records.

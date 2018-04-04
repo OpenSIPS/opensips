@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module helps developers to benchmark their module functions. By adding
@@ -25,7 +25,7 @@
 		failure route)!!
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -55,10 +55,10 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section>
+	<section id="param_enable" xreflabel="enable">
 		<title><varname>enable</varname> (int)</title>
 		<para>
 			Even when the module is loaded, benchmarking is not enabled
@@ -98,7 +98,7 @@ modparam("benchmark", "enable", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_granularity" xreflabel="granularity">
 		<title><varname>granularity</varname> (int)</title>
 		<para>
 			Logging normally is not done for every reference to the log_timer()
@@ -123,7 +123,7 @@ modparam("benchmark", "granularity", 500)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_loglevel" xreflabel="loglevel">
 		<title><varname>loglevel</varname> (int)</title>
 		<para>
 			Set the log level for the benchmark logs. These levels should be used:

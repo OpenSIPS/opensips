@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>The module contains record routing logic</para>
 	</section>
@@ -77,7 +77,7 @@ UAC                       OpenSIPS PROXY                          UAS
 	</section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -110,9 +110,9 @@ UAC                       OpenSIPS PROXY                          UAS
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section id="append-fromtag-id">
+	<section id="param_append_fromtag" xreflabel="append_fromtag">
 		<title><varname>append_fromtag</varname> (integer)</title>
 		<para>
 		If turned on, request's from-tag is appended to record-route; that's 
@@ -135,7 +135,7 @@ modparam("rr", "append_fromtag", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_enable_double_rr" xreflabel="enable_double_rr">
 		<title><varname>enable_double_rr</varname> (integer)</title>
 		<para>
 		There are some situations when the server needs to insert two 
@@ -159,7 +159,7 @@ modparam("rr", "enable_double_rr", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_add_username" xreflabel="add_username">
 		<title><varname>add_username</varname> (integer)</title>
 		<para>
 		If set to a non 0 value (which means yes), the username part will
@@ -180,7 +180,7 @@ modparam("rr", "add_username", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_enable_socket_mismatch_warning" xreflabel="enable_socket_mismatch_warning">
 		<title><varname>enable_socket_mismatch_warning</varname> (integer)</title>
 		<para>
 		When a preset record-route header is forced in &osips; config and the
@@ -405,7 +405,7 @@ if (check_route_param("nat=yes")) {
 		</title>
 		<para>The function checks the flow direction of the request.
 		As for checking it's used the <quote>ftag</quote> Route header 
-		parameter, the append_fromtag (see <xref linkend="append-fromtag-id"/> 
+		parameter, the append_fromtag (see <xref linkend="param_append_fromtag"/> 
 		module parameter must be enabled. Also this must be called only after 
 		loose_route() (see <xref linkend="loose-route-id"/>).
 		</para>
@@ -456,6 +456,6 @@ if (is_direction("upstream")) {
 		</section>
 	</section>
 
-	</section>
+</section>
 </chapter>
 

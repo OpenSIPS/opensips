@@ -4,7 +4,8 @@
 	
 	<title>&adminguide;</title>
 	
-	<section><title>Overview</title>
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
 	<para>
 		This module provides core SCA (Shared Call Appearance) functionality
 		for &osips;.
@@ -86,7 +87,7 @@ alice1@example alice2@example  server   bob@example watcher@example
 		</itemizedlist>
 	</section>
 	
-	<section><title>Dependencies</title>
+	<section id="dependencies" xreflabel="Dependencies"><title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
 		<para>
@@ -104,8 +105,8 @@ alice1@example alice2@example  server   bob@example watcher@example
 	</section>
 	</section>
 
-	<section><title>Exported Parameters</title>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters"><title>Exported Parameters</title>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname>(integer)</title>
 		<para>
 		The size of the hash table internally used to keep the shared calls.
@@ -124,7 +125,7 @@ modparam("b2b_sca", "hash_size", "5")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_presence_server" xreflabel="presence_server">
 		<title><varname>presence_server</varname>(string)</title>
 		<para>
 		The address of the presence server, where the PUBLISH
@@ -144,7 +145,7 @@ modparam("b2b_sca", "presence_server", "sip:opensips.org")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_watchers_avp_spec" xreflabel="watchers_avp_spec">
 		<title><varname>watchers_avp_spec</varname>(string)</title>
 		<para>
 		AVP that will hold one or more watcher URI(s).
@@ -169,7 +170,8 @@ route {
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>shared_line_spec_param</varname>(string)</title>
+	<section id="param_shared_line_spec_param" xreflabel="shared_line_spec_param">
+		<title><varname>shared_line_spec_param</varname>(string)</title>
 		<para>
 		Mandatory parameter.
 		Opaque string identifing the shared line/call.
@@ -187,7 +189,8 @@ modparam("b2b_sca", "shared_line_spec_param", "$var(shared_line)")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>appearance_name_addr_spec_param</varname>(string)</title>
+	<section id="param_appearance_name_addr_spec_param" xreflabel="appearance_name_addr_spec_param">
+		<title><varname>appearance_name_addr_spec_param</varname>(string)</title>
 		<para>
 		Mandatory parameter.
 		It must be a valid SIP URI.
@@ -207,7 +210,8 @@ modparam("b2b_sca", "appearance_name_addr_spec_param", "")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>db_url</varname>(string)</title>
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname>(string)</title>
 		<para>
 		This is URL of the database to be used.
 		</para>
@@ -223,7 +227,8 @@ modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[dbhost]/[db
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>db_mode</varname>(integer)</title>
+	<section id="param_db_mode" xreflabel="db_mode">
+		<title><varname>db_mode</varname>(integer)</title>
 		<para>
 		The b2b_sca module can utilize database for persistent call appearance storage.
 		Using a database ensure that active call appearances will survive
@@ -248,7 +253,8 @@ modparam("b2b_sca", "db_mode", 1)
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>table_name</varname>(string)</title>
+	<section id="param_table_name" xreflabel="table_name">
+		<title><varname>table_name</varname>(string)</title>
 		<para>
 		Identifies the table name from the defined database.
 		</para>
@@ -264,7 +270,8 @@ modparam("b2b_sca", "table_name", "sla")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>shared_line_column</varname>(string)</title>
+	<section id="param_shared_line_column" xreflabel="shared_line_column">
+		<title><varname>shared_line_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the shared call/line id.
 		See "shared_line_spec_param" parameter.
@@ -281,7 +288,8 @@ modparam("b2b_sca", "shared_line_column", "")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>watchers_column</varname>(string)</title>
+	<section id="param_watchers_column" xreflabel="watchers_column">
+		<title><varname>watchers_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the list of watchers.
 		See "watchers_avp_spec" parameter.
@@ -298,7 +306,8 @@ modparam("b2b_sca", "watchers_column", "")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>app[index]_shared_entity_column</varname>(string)</title>
+	<section id="param_appindex_shared_entity_column" xreflabel="appindex_shared_entity_column">
+		<title><varname>app[index]_shared_entity_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the shared entity of a
 		particular appearance.
@@ -318,7 +327,8 @@ modparam("b2b_sca", "app2_shared_entity_column", "second_shared_entity")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>app[index]_call_state_column</varname>(string)</title>
+	<section id="param_appindex_call_state_column" xreflabel="appindex_call_state_column">
+		<title><varname>app[index]_call_state_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the call state of a
 		particular appearance.  The following states are stored:
@@ -345,7 +355,8 @@ modparam("b2b_sca", "app2_call_state_column", "second_call_state")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>app[index]_call_info_uri_column</varname>(string)</title>
+	<section id="param_appindex_call_info_uri_column" xreflabel="appindex_call_info_uri_column">
+		<title><varname>app[index]_call_info_uri_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the call info URI of a
 		particular appearance.
@@ -364,7 +375,8 @@ modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri")
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>app[index]_call_info_appearance_uri_column</varname>(string)</title>
+	<section id="param_appindex_call_info_appearance_uri_column" xreflabel="appindex_call_info_appearance_uri_column">
+		<title><varname>app[index]_call_info_appearance_uri_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the call info appearance URI
 		of a particular appearance.
@@ -385,7 +397,8 @@ modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_call_info_ap
 </programlisting>
 		</example>
 	</section>
-	<section><title><varname>app[index]_b2bl_key_column</varname>(string)</title>
+	<section id="param_appindex_b2bl_key_column" xreflabel="appindex_b2bl_key_column">
+		<title><varname>appindex_b2bl_key_column</varname>(string)</title>
 		<para>
 		The column's name in the database storing the b2b_logic key of a
 		particular appearance.

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module contains all authentication related functions that need 
@@ -16,7 +16,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -52,9 +52,9 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		This is URL of the database to be used. Value of the parameter depends 
@@ -76,7 +76,7 @@ modparam("auth_db", "db_url", "&exampledb;")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
 		This is the name of the column holding usernames. Default value is 
@@ -93,7 +93,7 @@ modparam("auth_db", "user_column", "user")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
 		This is the name of the column holding domains of users. Default value 
@@ -111,7 +111,7 @@ modparam("auth_db", "domain_column", "domain")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_password_column" xreflabel="password_column">
 		<title><varname>password_column</varname> (string)</title>
 		<para>
 		This is the name of the column holding passwords. Passwords can be 
@@ -131,7 +131,7 @@ modparam("auth_db", "password_column", "password")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_password_column_2" xreflabel="password_column_2">
 		<title><varname>password_column_2</varname> (string)</title>
 		<para>
 		As described in the previous section this parameter contains name of 
@@ -151,7 +151,7 @@ modparam("auth_db", "password_column_2", "ha1_2")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_calculate_ha1" xreflabel="calculate_ha1">
 		<title><varname>calculate_ha1</varname> (integer)</title>
 		<para>
 		This parameter tells the server whether it should considered the
@@ -204,7 +204,7 @@ modparam("auth_db", "calculate_ha1", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		If true (not 0), domain will be also used when looking up in the 
@@ -228,7 +228,7 @@ modparam("auth_db", "use_domain", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_load_credentials" xreflabel="load_credentials">
 		<title><varname>load_credentials</varname> (string)</title>
 		<para>
 		This parameter specifies credentials to be fetched from database when
@@ -263,7 +263,7 @@ modparam("auth_db", "load_credentials", "$avp(13)=rpid;email_address")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_skip_version_check" xreflabel="skip_version_check">
 		<title><varname>skip_version_check</varname> (int)</title>
 		<para>
 		This parameter specifies not to check the auth table version. This

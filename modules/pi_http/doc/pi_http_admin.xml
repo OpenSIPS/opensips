@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides an HTTP provisioning interface
@@ -226,7 +226,7 @@ opensipsdbctl pframework create
 		</itemizedlist>
 	</section>
 	
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -256,9 +256,9 @@ opensipsdbctl pframework create
 		</para>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_pi_http_root" xreflabel="pi_http_root">
 		<title><varname>pi_http_root</varname>(string)</title>
 		<para>
 		Specifies the root path for pi HTTP requests.
@@ -278,7 +278,7 @@ modparam("pi_http", "pi_http_root", "opensips_pi")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_framework" xreflabel="framework">
 		<title><varname>framework</varname>(string)</title>
 		<para>
 		Specifies the full path for xml framework descriptor.
@@ -295,7 +295,7 @@ modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.xml")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_pi_http_method" xreflabel="pi_http_method">
 		<title><varname>pi_http_method</varname>(integrer)</title>
 		<para>
 		Specifies the HTTP request method to be used:
@@ -320,7 +320,7 @@ modparam("pi_http", "pi_http_method", 1)
 
 	<section>
 	<title>Exported MI Functions</title>
-	<section>
+	<section id="param_pi_reload_tbls_and_cmds" xreflabel="pi_reload_tbls_and_cmds">
 		<title><varname>pi_reload_tbls_and_cmds</varname></title>
 		<para>
 		Reloads the layout of the provisioning interface from the framework file.

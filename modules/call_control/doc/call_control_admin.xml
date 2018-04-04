@@ -4,7 +4,7 @@
   
   <title>&adminguide;</title>
   
-  <section>
+  <section id="overview" xreflabel="Overview">
   <title>Overview</title>
     <para>
       This module allows one to limit the duration of calls and automatically
@@ -152,7 +152,7 @@
     </para>
   </section>
 
-  <section>
+  <section id="dependencies" xreflabel="Dependencies">
   <title>Dependencies</title>
     <section>
     <title>&osips; Modules</title>
@@ -186,7 +186,7 @@
   
   <section>
   <title>Exported parameters</title>
-    <section>
+    <section id="param_disable" xreflabel="disable">
     <title><varname>disable</varname> (int)</title>
       <para>
         Boolean flag that specifies if callcontrol should be disabled. This
@@ -213,7 +213,7 @@ modparam("call_control", "disable", 1)
       </example>
     </section>
 
-    <section>
+    <section id="param_socket_name" xreflabel="socket_name">
     <title><varname>socket_name</varname> (string)</title>
       <para>
         It is the path to the filesystem socket where the callcontrol
@@ -237,7 +237,7 @@ modparam("call_control", "socket_name", "/var/run/callcontrol/socket")
       </example>
     </section>
 
-    <section>
+    <section id="param_socket_timeout" xreflabel="socket_timeout">
     <title><varname>socket_timeout</varname> (int)</title>
       <para>
         How much time (in milliseconds) to wait for an answer from the
@@ -260,7 +260,7 @@ modparam("call_control", "socket_timeout", 500)
       </example>
     </section>
 
-    <section>
+    <section id="param_signaling_ip_avp" xreflabel="signaling_ip_avp">
     <title><varname>signaling_ip_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds the IP address from where
@@ -300,7 +300,7 @@ modparam("call_control", "signaling_ip_avp", "$avp(cc_signaling_ip)")
       </example>
     </section>
 
-    <section>
+    <section id="param_canonical_uri_avp" xreflabel="canonical_uri_avp">
     <title><varname>canonical_uri_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds an optional application defined
@@ -327,7 +327,7 @@ modparam("call_control", "canonical_uri_avp", "$avp(cc_can_uri)")
       </example>
     </section>
 
-    <section>
+    <section id="param_diverter_avp" xreflabel="diverter_avp">
     <title><varname>diverter_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds an optional
@@ -370,7 +370,7 @@ route {
       </example>
     </section>
 
-    <section>
+    <section id="param_prepaid_account_flag" xreflabel="prepaid_account_flag">
     <title><varname>prepaid_account_flag</varname> (string/integer)</title>
       <para>
         The flag that is used to specify whether the account making the call is
@@ -404,7 +404,7 @@ modparam("call_control", "prepaid_account_flag", "PP_ACC_FLAG")
       </example>
     </section>
 
-    <section>
+    <section id="param_call_limit_avp" xreflabel="call_limit_avp">
     <title><varname>call_limit_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds an optional application defined
@@ -429,7 +429,7 @@ modparam("call_control", "call_limit_avp", "$avp(cc_call_limit)")
       </example>
     </section>
 
-    <section>
+    <section id="param_call_token_avp" xreflabel="call_token_avp">
     <title><varname>call_token_avp</varname> (string)</title>
       <para>
         Specification of the AVP which holds an optional application defined
@@ -458,7 +458,7 @@ $avp(cc_call_token) := $RANDOM;
       </example>
     </section>
 
-    <section>
+    <section id="param_init" xreflabel="init">
     <title><varname>init</varname> (string)</title>
       <para>
       This parameter is used to describe custom call control initialize messages. It represents a
@@ -501,7 +501,7 @@ modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
       </example>
     </section>
     
-    <section>
+    <section id="param_start" xreflabel="start">
     <title><varname>start</varname> (string)</title>
       <para>
       This parameter is used to describe custom call control start messages. It represents a
@@ -543,7 +543,7 @@ modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
         </programlisting>
       </example>
     </section>
-    <section>
+    <section id="param_stop" xreflabel="stop">
     <title><varname>stop</varname> (string)</title>
       <para>
       This parameter is used to describe custom call control stop messages. It represents a

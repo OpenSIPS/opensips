@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module contains functions that are used to perform authentication 
@@ -65,7 +65,7 @@
 	</example>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -91,9 +91,9 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_aaa_url" xreflabel="aaa_url">
 		<title><varname>aaa_url</varname> (string)</title>
 		<para>
 		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
@@ -109,7 +109,7 @@ modparam("auth_aaa", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_service_type" xreflabel="service_type">
 		<title><varname>service_type</varname> (integer)</title>
 		<para>
 		This is the value of the Service-Type aaa attribute to be used. 
@@ -128,7 +128,7 @@ modparam("auth_aaa", "service_type", 15)
 		</programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="param_use_ruri_flag" xreflabel="use_ruri_flag">
                 <title><varname>use_ruri_flag</varname> (string/integer)</title>
                 <para>
                 When this parameter is set to the value other than "NULL" and the

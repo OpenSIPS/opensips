@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	This module allows to use the unixodbc package with &osips;. It have been 
@@ -22,7 +22,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -53,9 +53,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_auto_reconnect" xreflabel="auto_reconnect">
 		<title><varname>auto_reconnect</varname> (int)</title>
 		<para>
 		Turns on or off the auto_reconnect mode.
@@ -75,7 +75,7 @@ modparam("db_unixodbc", "auto_reconnect", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_use_escape_common" xreflabel="use_escape_common">
 		<title><varname>use_escape_common</varname> (int)</title>
 		<para>
 		Escape values in query using internal escape_common() function.

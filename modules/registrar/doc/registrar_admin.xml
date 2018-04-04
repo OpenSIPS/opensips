@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>The module contains REGISTER processing logic.</para>
 	<section>
@@ -106,7 +106,7 @@
 	</section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -141,9 +141,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section id="default_expires" xreflabel="default_expires">
+	<section id="param_default_expires" xreflabel="default_expires">
 		<title><varname>default_expires</varname> (integer)</title>
 		<para>
 		If the processed message contains neither Expires
@@ -165,7 +165,7 @@ modparam("registrar", "default_expires", 1800)
 </programlisting>
 		</example>
 	</section>
-	<section id="min_expires" xreflabel="min_expires">
+	<section id="param_min_expires" xreflabel="min_expires">
 		<title><varname>min_expires</varname> (integer)</title>
 		<para>
 		The minimum expires value of a Contact, values lower than this
@@ -186,7 +186,7 @@ modparam("registrar", "min_expires", 60)
 </programlisting>
 		</example>
 	</section>
-	<section id="max_expires" xreflabel="max_expires">
+	<section id="param_max_expires" xreflabel="max_expires">
 		<title><varname>max_expires</varname> (integer)</title>
 		<para>
 		The maximum expires value of a Contact, values higher than this
@@ -208,7 +208,7 @@ modparam("registrar", "max_expires", 120)
 		</example>
 	</section>
 
-	<section id="default_q" xreflabel="default_q">
+	<section id="param_default_q" xreflabel="default_q">
 		<title><varname>default_q</varname> (integer)</title>
 		<para>
 		The parameter represents default q value for new contacts. Because
@@ -231,7 +231,7 @@ modparam("registrar", "default_q", 1000)
 		</example>
 	</section>
 
-	<section id="tcp_persistent_flag" xreflabel="tcp_persistent_flag">
+	<section id="param_tcp_persistent_flag" xreflabel="tcp_persistent_flag">
 		<title><varname>tcp_persistent_flag</varname> (integer)</title>
 		<para>
 		The parameter specifies the message flag to be used to control the
@@ -256,7 +256,7 @@ modparam("registrar", "tcp_persistent_flag", 7)
 		</example>
 	</section>
 
-	<section id="realm_prefix" xreflabel="realm_prefix">
+	<section id="param_realm_prefix" xreflabel="realm_prefix">
 		<title><varname>realm_prefix</varname> (string)</title>
 		<para>
 		 Prefix to be automatically strip from realm. As an alternative to
@@ -282,7 +282,7 @@ modparam("registrar", "realm_prefix", "sip.")
 	</section>
 
 
-	<section id="case_sensitive" xreflabel="case_sensitive">
+	<section id="param_case_sensitive" xreflabel="case_sensitive">
 		<title><varname>case_sensitive</varname> (integer)</title>
 		<para>
 		If set to 1 then <acronym>AOR</acronym> comparison will be case
@@ -304,7 +304,7 @@ modparam("registrar", "case_sensitive", 0)
 		</example>
 	</section>
 
-	<section id="received_avp" xreflabel="received_avp">
+	<section id="param_received_avp" xreflabel="received_avp">
 		<title><varname>received_avp</varname> (str)</title>
 		<para>
 		Registrar will store the value of the AVP configured by this
@@ -334,7 +334,7 @@ modparam("registrar", "received_avp", "$avp(rcv)")
 		</example>
 	</section>
 
-	<section id="received_param" xreflabel="received_param">
+	<section id="param_received_param" xreflabel="received_param">
 		<title><varname>received_param</varname> (string)</title>
 		<para>
 		The name of the parameter that will be appended to Contacts of
@@ -356,7 +356,7 @@ modparam("registrar", "received_param", "rcv")
 	</section>
 
 
-	<section id="max_contacts" xreflabel="max_contacts">
+	<section id="param_max_contacts" xreflabel="max_contacts">
 		<title><varname>max_contacts</varname> (integer)</title>
 		<para>
 		The parameter can be used to limit the number of contacts per
@@ -384,7 +384,7 @@ modparam("registrar", "max_contacts", 10)
 		</example>
 	</section>
 
-	<section id="retry_after" xreflabel="retry_after">
+	<section id="param_retry_after" xreflabel="retry_after">
 		<title><varname>retry_after</varname> (integer)</title>
 		<para>
 		The registrar can generate 5xx reply to REGISTER in various
@@ -413,7 +413,7 @@ modparam("registrar", "retry_after", 30)
 		</example>
 	</section>
 
-	<section id="sock_hdr_name" xreflabel="sock_hdr_name">
+	<section id="param_sock_hdr_name" xreflabel="sock_hdr_name">
 		<title><varname>sock_hdr_name</varname> (string)</title>
 		<para>
 		Header which contains a socket description (proto:IP:port) to override
@@ -438,7 +438,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		</example>
 	</section>
 
-	<section id="mcontact_avp" xreflabel="mcontact_avp">
+	<section id="param_mcontact_avp" xreflabel="mcontact_avp">
 		<title><varname>mcontact_avp</varname> (string)</title>
 		<para>
 		AVP to store the modified binding that is set during cached
@@ -463,7 +463,7 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 		</programlisting>
 		</example>
 	</section>
-	<section id="attr_avp" xreflabel="attr_avp">
+	<section id="param_attr_avp" xreflabel="attr_avp">
 		<title><varname>attr_avp</varname> (string)</title>
 		<para>
 		AVP to store specific additional information for each registration.
@@ -506,7 +506,7 @@ branch_route[branch_route_1] {
 		</programlisting>
 		</example>
 	</section>
-	<section id="gruu_secret" xreflabel="gruu_secret">
+	<section id="param_gruu_secret" xreflabel="gruu_secret">
 		<title><varname>gruu_secret</varname> (string)</title>
 		<para>
 		The string that will be used in XORing when generating
@@ -526,7 +526,7 @@ modparam("registrar", "gruu_secret", "top_secret")
 		</programlisting>
 		</example>
 	</section>
-	<section id="disable_gruu" xreflabel="disable_gruu">
+	<section id="param_disable_gruu" xreflabel="disable_gruu">
 		<title><varname>disable_gruu</varname> (int)</title>
 		<para>
 			Globally disable GRUU handling
@@ -605,7 +605,8 @@ modparam("registrar", "disable_gruu", 0)
 					flag can be used to set minimum register expiration time.
 					Values lower than this minimum will be automatically set
 					to the minimum. Value 0 disables the checking.
-					This parameter overrides the global "min_expires" module parameter.
+					This parameter overrides the global
+					<xref linkend="param_min_expires"/> module parameter.
 					</para>
 				</listitem>
 				<listitem>
@@ -613,7 +614,8 @@ modparam("registrar", "disable_gruu", 0)
 					flag can be used to set maximum register expiration time.
 					Values higher than this maximum will be automatically set
 					to the maximum. Value 0 disables the checking.
-					This parameter overrides the global "max_expires" module parameter.
+					This parameter overrides the global
+					<xref linkend="param_max_expires"/> module parameter.
 					</para>
 				</listitem>
 				<listitem>

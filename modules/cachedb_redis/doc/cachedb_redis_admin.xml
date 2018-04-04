@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a cache system designed to work with a
@@ -82,7 +82,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -117,9 +117,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			The urls of the server groups that OpenSIPS will connect to in order
@@ -151,7 +151,7 @@ cache_remove("redis:cluster1","key");
 			</example>
 		</section>
 
-		<section>
+		<section id="param_connect_timeout" xreflabel="connect_timeout">
 		<title><varname>connect_timeout</varname> (integer)</title>
 		<para>
 			This parameter specifies how many milliseconds &osips; should wait
@@ -175,7 +175,7 @@ modparam("cachedb_redis", "connect_timeout",1000)
 
 		</section>
 
-		<section>
+		<section id="param_query_timeout" xreflabel="query_timeout">
 		<title><varname>query_timeout</varname> (integer)</title>
 		<para>
 			This parameter specifies how many milliseconds &osips; should wait
@@ -198,7 +198,7 @@ modparam("cachedb_redis", "query_timeout",1000)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_shutdown_on_error" xreflabel="shutdown_on_error">
 		<title><varname>shutdown_on_error</varname> (integer)</title>
 		<para>
 			By setting this parameter to 1, &osips; will abort startup if

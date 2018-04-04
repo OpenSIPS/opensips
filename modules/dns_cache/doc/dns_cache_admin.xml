@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a cache system designed for DNS records.
@@ -18,7 +18,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -30,9 +30,9 @@
 	
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			The url of the key-value back-end that will be used
@@ -53,7 +53,7 @@ modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/")
 		
 		</section>
 
-		<section>
+		<section id="param_blacklist_timeout" xreflabel="blacklist_timeout">
 		<title><varname>blacklist_timeout</varname> (int)</title>
 		<para>
 			The number of seconds that a failed DNS query will be kept in cache.

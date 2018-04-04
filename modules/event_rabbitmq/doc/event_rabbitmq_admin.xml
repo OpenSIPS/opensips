@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		<emphasis>RabbitMQ</emphasis>
@@ -100,7 +100,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -131,9 +131,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_heartbeat" xreflabel="heartbeat">
 		<title><varname>heartbeat</varname> (integer)</title>
 		<para>
 			Enables heartbeat support for the AMQP communication. If the
@@ -157,7 +157,7 @@ modparam("event_rabbitmq", "heartbeat", 3)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_sync_mode" xreflabel="sync_mode">
 		<title><varname>sync_mode</varname> (integer)</title>
 		<para>
 			Specifies whether an event raise operates synchronous or asynchronous relative to the process where the raise is triggered.In synchronous mode the process waits for the status of the raise from the actual worker process.In asynchronous mode the process continues its operation without receiving any confirmation.

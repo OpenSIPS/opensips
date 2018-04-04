@@ -5,7 +5,7 @@
 
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	  <title>Overview</title>
 	    <para> 
 		The module enable &osips; to register itself on a remote SIP registrar.
@@ -79,7 +79,7 @@
 	    </para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	  <title>Dependencies</title>
 	  <section>
 	  <title>&osips; Modules</title>
@@ -101,9 +101,9 @@
 	  </section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-        <section>
+        <section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The size of the hash table internally used to keep the registrants.
@@ -124,7 +124,7 @@ modparam("uac_registrant", "hash_size", 2)
 </programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="param_timer_interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
 		Defines the periodic timer for checking the registrations status.
@@ -144,7 +144,7 @@ modparam("uac_registrant", "timer_interval", 120)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		Database where to load the registrants from.
@@ -164,7 +164,7 @@ modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/database")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		The database table that holds the registrant records.
@@ -183,7 +183,7 @@ modparam("uac_registrant", "table_name", "my_registrant")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_registrar_column" xreflabel="registrar_column">
 		<title><varname>registrar_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -204,7 +204,7 @@ modparam("uac_registrant", "registrar_column", "registrant_uri")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_proxy_column" xreflabel="proxy_column">
 		<title><varname>proxy_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -226,7 +226,7 @@ modparam("uac_registrant", "proxy_column", "proxy_uri")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_aor_column" xreflabel="aor_column">
 		<title><varname>aor_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -248,7 +248,7 @@ modparam("uac_registrant", "aor_column", "to_uri")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_third_party_registrant_column" xreflabel="third_party_registrant_column">
 		<title><varname>third_party_registrant_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -272,7 +272,7 @@ modparam("uac_registrant", "third_party_registrant_column", "from_uri")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_username_column" xreflabel="username_column">
 		<title><varname>username_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -292,7 +292,7 @@ modparam("uac_registrant", "username_column", "auth_username")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_password_column" xreflabel="password_column">
 		<title><varname>password_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -312,7 +312,7 @@ modparam("uac_registrant", "password_column", "auth_passowrd")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_binding_URI_column" xreflabel="binding_URI_column">
 		<title><varname>binding_URI_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -334,7 +334,7 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_binding_params_column" xreflabel="binding_params_column">
 		<title><varname>binding_params_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -358,7 +358,7 @@ modparam("uac_registrant", "binding_params_column", "contact_params")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_expiry_column" xreflabel="expiry_column">
 		<title><varname>expiry_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the
@@ -379,7 +379,7 @@ modparam("uac_registrant", "expiry_column", "registration_timeout")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_forced_socket_column" xreflabel="forced_socket_column">
 		<title><varname>forced_socket_column</varname> (string)</title>
 		<para>
 		The column's name in the database storing the

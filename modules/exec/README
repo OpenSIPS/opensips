@@ -117,7 +117,7 @@ Chapter 1. Admin Guide
 modparam("exec", "setvars", 1)
 ...
 
-1.3.2.  time_to_kill (integer)
+1.3.2. time_to_kill (integer)
 
    If set, this parameter specifies the longest time (in seconds)
    that a program is allowed to execute. Once this duration is

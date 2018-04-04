@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <emphasis>event_virtual</emphasis>
@@ -55,7 +55,7 @@
 		</itemizedlist>
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -81,7 +81,7 @@
 			</itemizedlist>
 		</para>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 		<para>
 		No exported parameters to be used in the configuration file.

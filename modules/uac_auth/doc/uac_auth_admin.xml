@@ -5,7 +5,7 @@
 	<title>&adminguide;</title>
 
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
 		UAC AUTH (User Agent Client Authentication) module provides a
@@ -27,7 +27,7 @@
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -53,10 +53,10 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
 	
-		<section>
+		<section id="param_credential" xreflabel="credential">
 			<title><varname>credential</varname> (string)</title>
 			<para>
 			Contains a multiple definition of credentials used to perform
@@ -83,7 +83,7 @@ modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e15850420
 			</example>
 		</section>
 
-		<section id="auth-realm-avp-id">
+		<section id="param_auth_realm_avp" xreflabel="auth_realm_avp">
 			<title><varname>auth_realm_avp</varname> (string)</title>
 			<para>
 			The definition of an AVP that might contain the realm to be used
@@ -92,9 +92,9 @@ modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e15850420
 			<para><emphasis>
 				If you define it, you also need to define 
 				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-username-avp-id"/>) and 
-				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>).
+				(<xref linkend="param_auth_username_avp"/>) and 
+				<quote>auth_password_avp</quote> 
+				(<xref linkend="param_auth_password_avp"/>).
 			</emphasis></para>
 			<example>
 				<title>Set <varname>auth_realm_avp</varname> parameter</title>
@@ -106,7 +106,7 @@ modparam("uac_auth","auth_realm_avp","$avp(10)")
 			</example>
 		</section>
 
-		<section id="auth-username-avp-id">
+		<section id="param_auth_username_avp" xreflabel="auth_username_avp">
 			<title><varname>auth_username_avp</varname> (string)</title>
 			<para>
 			The definition of an AVP that might contain the username to be used
@@ -115,9 +115,9 @@ modparam("uac_auth","auth_realm_avp","$avp(10)")
 			<para><emphasis>
 				If you define it, you also need to define 
 				<quote>auth_realm_avp</quote> 
-				(<xref linkend="auth-realm-avp-id"/>) and 
-				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>).
+				(<xref linkend="param_auth_realm_avp"/>) and 
+				<quote>auth_password_avp</quote> 
+				(<xref linkend="param_auth_password_avp"/>).
 			</emphasis></para>
 			<example>
 				<title>Set <varname>auth_username_avp</varname> parameter</title>
@@ -129,7 +129,7 @@ modparam("uac_auth","auth_username_avp","$avp(11)")
 			</example>
 		</section>
 
-		<section id="auth-password-avp-id">
+		<section id="param_auth_password_avp" xreflabel="auth_password_avp">
 			<title><varname>auth_password_avp</varname> (string)</title>
 			<para>
 			The definition of an AVP that might contain the password to be used
@@ -140,10 +140,10 @@ modparam("uac_auth","auth_username_avp","$avp(11)")
 			</para>
 			<para><emphasis>
 				If you define it, you also need to define 
-				<quote>auth_password_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>) and 
+				<quote>auth_realm_avp</quote> 
+				(<xref linkend="param_auth_realm_avp"/>) and 
 				<quote>auth_username_avp</quote> 
-				(<xref linkend="auth-password-avp-id"/>).
+				(<xref linkend="param_auth_username_avp"/>).
 			</emphasis></para>
 			<example>
 				<title>Set <varname>auth_password_avp</varname> parameter</title>

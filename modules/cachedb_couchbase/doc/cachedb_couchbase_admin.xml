@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a cache system designed to work with a 
@@ -82,7 +82,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -112,9 +112,9 @@
 	</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			The urls of the server groups that OpenSIPS will connect to in order
@@ -139,7 +139,7 @@ modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url1:88
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timeout" xreflabel="timeout">
 		<title><varname>timeout</varname> (int)</title>
 		<para>
 			The max duration in microseconds that a couchbase op is expected to last.
@@ -155,7 +155,7 @@ modparam("cachedb_couchbase", "timeout",5000000);
 	</programlisting>
 		</example>
 	</section>
-		<section>
+		<section id="param_exec_threshold" xreflabel="exec_threshold">
 		<title><varname>exec_threshold</varname> (int)</title>
 		<para>
 			The maximum number of microseconds that a couchbase query can last.
@@ -175,7 +175,7 @@ modparam("cachedb_couchbase", "exec_threshold", 100000)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_lazy_connect" xreflabel="lazy_connect">
 		<title><varname>lazy_connect</varname> (int)</title>
 		<para>
 			Delay connecting to a bucket until the first time it is used.

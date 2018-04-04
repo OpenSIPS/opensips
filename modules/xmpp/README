@@ -27,7 +27,7 @@ Andreea Spirea
 
         1.3. Exported Parameters
 
-              1.3.1. backend(string)
+              1.3.1. backend (string)
               1.3.2. xmpp_domain (string)
               1.3.3. xmpp_host (string)
               1.3.4. sip_domain (string)
@@ -117,7 +117,7 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. backend(string)
+1.3.1. backend (string)
 
    The mode you are using the module; it can be either component
    or server.

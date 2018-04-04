@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which provides MySQL connectivity for OpenSIPS.
@@ -12,7 +12,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -21,7 +21,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>If a <xref linkend="modparam-tls-client-domain"/> is defined, the <emphasis role='bold'>tls_mgm</emphasis> module will need to be loaded as well</emphasis>.
+				<emphasis>If a <xref linkend="param_tls_client_domain"/> is defined, the <emphasis role='bold'>tls_mgm</emphasis> module will need to be loaded as well</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -42,9 +42,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_exec_query_threshold" xreflabel="exec_query_threshold">
 		<title><varname>exec_query_threshold</varname> (integer)</title>
 		<para>
 		If queries take longer than 'exec_query_threshold' microseconds, warning
@@ -64,7 +64,7 @@ modparam("db_mysql", "exec_query_threshold", 60000)
 </programlisting>
 		</example>
 	</section>
-		<section>
+		<section id="param_timeout_interval" xreflabel="timeout_interval">
 		<title><varname>timeout_interval</varname> (integer)</title>
 		<para>
 		Time interval after which a connection attempt (read or write request)
@@ -91,7 +91,7 @@ modparam("db_mysql", "timeout_interval", 2)
 </programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="param_max_db_queries" xreflabel="max_db_queries">
 		<title><varname>max_db_queries</varname> (integer)</title>
 		<para>
 		The maximum number of database queries to be executed. 
@@ -111,7 +111,7 @@ modparam("db_mysql", "max_db_queries", 2)
 </programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="param_max_db_retries" xreflabel="max_db_retries">
 		<title><varname>max_db_retries</varname> (integer)</title>
 		<para>
 		The maximum number of database connection retries. If this parameter
@@ -131,7 +131,7 @@ modparam("db_mysql", "max_db_retries", 2)
 </programlisting>
 		</example>
 	</section>
-        <section id="modparam-tls-client-domain" xreflabel="tls_client_domain">
+        <section  id="param_tls_client_domain" xreflabel="tls_client_domain">
 		<title><varname>tls_client_domain</varname> (string)</title>
 		<para>
 		Setting this parameter will enable TLS for all MySQL connections

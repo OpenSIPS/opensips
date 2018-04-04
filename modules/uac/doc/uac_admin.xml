@@ -5,7 +5,7 @@
 	<title>&adminguide;</title>
 
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
 		UAC (User Agent Client) module provides some basic UAC
@@ -34,7 +34,7 @@
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -83,10 +83,10 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
 	
-		<section>
+		<section id="param_restore_mode" xreflabel="restore_mode">
 			<title><varname>restore_mode</varname> (string)</title>
 			<para>
 			There are 3 mode of restoring the original headers (FROM/TO) URI:
@@ -129,7 +129,7 @@ modparam("uac","restore_mode","auto")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_restore_passwd" xreflabel="restore_passwd">
 			<title><varname>restore_passwd</varname> (string)</title>
 			<para>
 			String password to be used to encrypt the RR storing parameter
@@ -151,7 +151,7 @@ modparam("uac","restore_passwd","my_secret_passwd")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_rr_from_store_param" xreflabel="rr_from_store_param">
 			<title><varname>rr_from_store_param</varname> (string)</title>
 			<para>
 			Name of Record-Route header parameter that will be used to store 
@@ -173,7 +173,7 @@ modparam("uac","rr_from_store_param","my_Fparam")
 				</example>
 		</section>
 
-		<section>
+		<section id="param_rr_to_store_param" xreflabel="rr_to_store_param">
 			<title><varname>rr_to_store_param</varname> (string)</title>
 			<para>
 			Name of Record-Route header parameter that will be used to store 
@@ -195,7 +195,7 @@ modparam("uac","rr_to_store_param","my_Tparam")
 			</example>
 		</section>
 
-		<section id="force_dialog">
+		<section id="param_force_dialog" xreflabel="force_dialog">
 			<title><varname>force_dialog</varname> (int)</title>
 			<para>
 				Force create dialog if it is not created from the configuration script.

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		 The pua_usrloc is the connector between usrloc and pua modules.
@@ -18,7 +18,7 @@
 		be seen as online/offline. 
 	</para>
 	</section>
-		<section>
+		<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -53,9 +53,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_default_domain" xreflabel="default_domain">
 		<title><varname>default_domain</varname> (str)</title>
 		<para>
 		The default domain to use when constructing the presentity
@@ -74,7 +74,7 @@ modparam("pua_usrloc", "default_domain", "opensips.org")
 </programlisting>
 		</example>
 </section>
-	<section>
+	<section id="param_entity_prefix" xreflabel="entity_prefix">
 		<title><varname>entity_prefix</varname> (str)</title>
 		<para>
 		The prefix when construstructing entity attribute to be added to
@@ -95,7 +95,7 @@ modparam("pua_usrloc", "entity_prefix", "pres")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_presence_server" xreflabel="presence_server">
 		<title><varname>presence_server</varname> (str)</title>
 		<para>
 		The the address of the presence server. If set, it will be

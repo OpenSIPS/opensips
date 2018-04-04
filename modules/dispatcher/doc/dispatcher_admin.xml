@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This modules implements a dispatcher for destination addresses. It
@@ -46,7 +46,7 @@
 		"use_default" flags.
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; modules</title>
@@ -80,9 +80,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		Database where to load the destinations from.
@@ -111,7 +111,7 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_attrs_avp" xreflabel="attrs_avp">
 		<title><varname>attrs_avp</varname> (str)</title>
 		<para>
 		The name of the avp to contain the attributes string of the current
@@ -141,7 +141,7 @@ modparam("dispatcher", "attrs_avp", "$avp(272)")
 	</section>
 
 
-	<section>
+	<section id="param_hash_pvar" xreflabel="hash_pvar">
 		<title><varname>hash_pvar</varname> (str)</title>
 		<para>
 		String with PVs used for the hashing algorithm 7.
@@ -175,7 +175,7 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_setid_pvar" xreflabel="setid_pvar">
 		<title><varname>setid_pvar</varname> (str)</title>
 		<para>
 		The name of the PV where to store the set ID (group ID) when calling
@@ -196,7 +196,7 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_ping_method" xreflabel="ds_ping_method">
 		<title><varname>ds_ping_method</varname> (string)</title>
 		<para>
 		With this Method you can define, with which method you want to probe
@@ -218,7 +218,7 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_ping_from" xreflabel="ds_ping_from">
 		<title><varname>ds_ping_from</varname> (string)</title>
 		<para>
 		With this Method you can define the "From:"-Line for the request,
@@ -240,7 +240,7 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_ping_interval" xreflabel="ds_ping_interval">
 		<title><varname>ds_ping_interval</varname> (int)</title>
 		<para>
 		With this Method you can define the interval for sending a request to
@@ -263,7 +263,7 @@ modparam("dispatcher", "ds_ping_interval", 30)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_ping_maxfwd" xreflabel="ds_ping_maxfwd">
 		<title><varname>ds_ping_maxfwd</varname> (int)</title>
 		<para>
 		This parameter allows you to enforce a specific Max-Forward value
@@ -286,7 +286,7 @@ modparam("dispatcher", "ds_ping_maxfwd", 2)
 	</section>
 
 
-	<section>
+	<section id="param_ds_probing_sock" xreflabel="ds_probing_sock">
 		<title><varname>ds_probing_sock</varname> (str)</title>
 		<para>
 		A socket description [proto:]host[:port] of the local socket (which
@@ -308,7 +308,7 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_probing_threshhold" xreflabel="ds_probing_threshhold">
 		<title><varname>ds_probing_threshhold</varname> (int)</title>
 		<para>
 		If you want to set a gateway into probing mode, you will need a
@@ -330,7 +330,7 @@ modparam("dispatcher", "ds_probing_threshhold", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_probing_mode" xreflabel="ds_probing_mode">
 		<title><varname>ds_probing_mode</varname> (int)</title>
 		<para>
 		Controls what gateways are tested to see if they are reachable. If set
@@ -353,7 +353,7 @@ modparam("dispatcher", "ds_probing_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_probing_list" xreflabel="ds_probing_list">
 		<title><varname>ds_probing_list</varname> (str)</title>
 		<para>
                 Defines a list of one or more setids that limits which
@@ -377,7 +377,7 @@ modparam("dispatcher", "ds_probing_list", "1,2,3")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_ds_define_blacklist" xreflabel="ds_define_blacklist">
 		<title><varname>ds_define_blacklist</varname> (str)</title>
 		<para>
 		Defines a blacklist based on a dispatching setid from the 'default'
@@ -407,7 +407,7 @@ modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_options_reply_codes" xreflabel="options_reply_codes">
 		<title><varname>options_reply_codes</varname> (str)</title>
 		<para>
 		This parameter must contain a list of SIP reply codes separated by
@@ -429,7 +429,7 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dst_avp" xreflabel="dst_avp">
 		<title><varname>dst_avp</varname> (str)</title>
 		<para>
 		This is mainly for internal usage and represents the name of the avp
@@ -460,7 +460,7 @@ modparam("dispatcher", "dst_avp", "$avp(271)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_grp_avp" xreflabel="grp_avp">
 		<title><varname>grp_avp</varname> (str)</title>
 		<para>
 		This is mainly for internal usage and represents the name of the avp
@@ -487,7 +487,7 @@ modparam("dispatcher", "grp_avp", "$avp(273)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cnt_avp" xreflabel="cnt_avp">
 		<title><varname>cnt_avp</varname> (str)</title>
 		<para>
 		This is mainly for internal usage and represents the name of the avp
@@ -513,7 +513,7 @@ modparam("dispatcher", "cnt_avp", "$avp(274)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_sock_avp" xreflabel="sock_avp">
 		<title><varname>sock_avp</varname> (str)</title>
 		<para>
 		This is mainly for internal usage and represents the name of the avp
@@ -540,7 +540,7 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pvar_algo_pattern" xreflabel="pvar_algo_pattern">
 		<title><varname>pvar_algo_pattern</varname> (str)</title>
 		<para>
 		This parameter is used by the PVAR(9) algorithm to specify the
@@ -566,7 +566,7 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_persistent_state" xreflabel="persistent_state">
 		<title><varname>persistent_state</varname> (int)</title>
 		<para>
 		Specifies whether the <emphasis>state</emphasis> column
@@ -587,7 +587,7 @@ modparam("dispatcher", "persistent_state", 0)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		If you want to load the sets of gateways from the database you must set
@@ -612,7 +612,7 @@ modparam("dispatcher", "table_name", "my_dispatcher")
 	</section>
 
 
-	<section>
+	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
 		<para>
 		Using this parameter the partition specific parameters (db_url, table_name, dst_avp,
@@ -642,7 +642,7 @@ modparam("dispatcher", "partition",
 	</section>
 
 
-	<section>
+	<section id="param_setid_col" xreflabel="setid_col">
 		<title><varname>setid_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the gateway's group id.
@@ -662,7 +662,7 @@ modparam("dispatcher", "setid_col", "groupid")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_destination_col" xreflabel="destination_col">
 		<title><varname>destination_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the destination's
@@ -683,7 +683,7 @@ modparam("dispatcher", "destination_col", "uri")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_state_col" xreflabel="state_col">
 		<title><varname>state_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the state of the
@@ -704,7 +704,7 @@ modparam("dispatcher", "state_col", "dststate")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_weight_col" xreflabel="weight_col">
 		<title><varname>weight_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the weight for
@@ -725,7 +725,7 @@ modparam("dispatcher", "weight_col", "dstweight")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_priority_col" xreflabel="priority_col">
 		<title><varname>priority_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the priority for
@@ -746,7 +746,7 @@ modparam("dispatcher", "priority_col", "dstprio")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_attrs_col" xreflabel="attrs_col">
 		<title><varname>attrs_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the attributes (opaque
@@ -767,7 +767,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_socket_col" xreflabel="socket_col">
 		<title><varname>socket_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the socket (as
@@ -788,7 +788,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_fetch_freeswitch_stats" xreflabel="fetch_freeswitch_stats">
 		<title><varname>fetch_freeswitch_stats</varname> (integer)</title>
 		<para>
 		If enabled, FreeSWITCH destinations may have dynamic dispatching weights,
@@ -833,7 +833,7 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_max_freeswitch_weight" xreflabel="max_freeswitch_weight">
 		<title><varname>max_freeswitch_weight</varname> (integer)</title>
 		<para>
 		The maximum weight of a FreeSWITCH ESL-enabled destination. This value

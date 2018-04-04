@@ -345,9 +345,9 @@ modparam("proto_tls", "trace_on", 1)
    (either the one that accepted the connection or the one that
    initiated a connection) $Ri (ip) and $Rp (port) can be used.
 
-   WARNING: IF Section 1.5.7, “trace_on (int)” is set to 0 or
-   tracing is deactived via the mi command Section 1.6.1, “
-   tls_trace ” this route won't be called.
+   WARNING: IF trace_on is set to 0 or tracing is deactived via
+   the mi command Section 1.6.1, “ tls_trace ” this route won't be
+   called.
    Default value is none(no route is set).
 
    Example 1.8. Set trace_filter_route parameter

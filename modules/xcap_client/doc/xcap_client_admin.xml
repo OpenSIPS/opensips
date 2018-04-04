@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> 
 	The modules is an XCAP client for OpenSIPS that can be used by other modules.
@@ -34,7 +34,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -71,9 +71,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_periodical_query" xreflabel="periodical_query">
 		<title><varname>periodical_query</varname>(int)</title>
 		<para>
 		A flag to disable periodical query as an update method for
@@ -98,7 +98,7 @@ modparam("xcap_client", "periodical_query", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_query_period" xreflabel="query_period">
 		<title><varname>query_period</varname>(int)</title>
 		<para>
 		Should be set if periodical query is not disabled. 

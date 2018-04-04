@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of a cache system designed to work with a 
@@ -67,7 +67,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -93,9 +93,9 @@
 	</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			The url of the Database  that OpenSIPS will connect to in order
@@ -134,7 +134,7 @@ cache_store("sql:2nd-postgres","counter","10");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (string)</title>
 		<para>
 			The table of the Database  that OpenSIPS will connect to in order
@@ -151,7 +151,7 @@ modparam("cachedb_sql", "db_table","my_table");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_key_column" xreflabel="key_column">
 		<title><varname>key_column</varname> (string)</title>
 		<para>
 			The column where the key will be stored
@@ -167,7 +167,7 @@ modparam("cachedb_sql", "key_column","some_name");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_value_column" xreflabel="value_column">
 		<title><varname>value_column</varname> (string)</title>
 		<para>
 			The column where the value will be stored
@@ -183,7 +183,7 @@ modparam("cachedb_sql", "value_column","some_name");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_counter_column" xreflabel="counter_column">
 		<title><varname>counter_column</varname> (string)</title>
 		<para>
 			The column where the counter value will be stored
@@ -199,7 +199,7 @@ modparam("cachedb_sql", "counter_column","some_name");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_expires_column" xreflabel="expires_column">
 		<title><varname>expires_column</varname> (string)</title>
 		<para>
 			The column where the expires will be stored
@@ -215,7 +215,7 @@ modparam("cachedb_sql", "expires_column","some_name");
 		</example>
 	</section>
 
-		<section>
+		<section id="param_cache_clean_period" xreflabel="cache_clean_period">
 		<title><varname>cache_clean_period</varname> (int)</title>
 		<para>
 			The interval in seconds at which the expired keys will be removed from

@@ -1,7 +1,7 @@
   <chapter>
     <title>&adminguide;</title>
 
-    <section>
+    <section id="overview" xreflabel="Overview">
       <title>Overview</title>
 
       <para>The LDAP module implements an LDAP search interface for OpenSIPS. It exports script functions to perform an LDAP search operation and to store the search results as OpenSIPS AVPs. This allows for using LDAP directory data in the OpenSIPS SIP message routing script.</para>
@@ -173,7 +173,7 @@
       </section>
     </section>
 
-    <section>
+    <section id="dependencies" xreflabel="Dependencies">
       <title>Dependencies</title>
 
       <section>
@@ -476,10 +476,10 @@ ldap_client_bind_timeout = 500
       </section>
     </section>
 
-    <section>
+    <section id="exported_parameters" xreflabel="Exported Parameters">
       <title>Exported Parameters</title>
 
-      <section>
+      <section id="param_config_file" xreflabel="config_file">
         <title>config_file (string)</title>
 
         <para>Full path to LDAP configuration file.</para>
@@ -496,7 +496,7 @@ modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
         </example>
       </section>
 
-	  <section>
+	  <section id="param_max_async_connections" xreflabel="max_async_connections">
 		  <title>max_async_connections (int)</title>
 
 		  <para>Number of maximum asynchronous connections that will be started

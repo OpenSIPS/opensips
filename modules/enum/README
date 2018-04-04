@@ -245,8 +245,8 @@ modparam("enum", "bl_algorithm", "txt")
 1.4.1.  enum_query(["suffix"[,"service"]])
 
    The function performs an enum query and rewrites the
-   Request-URI with the result of the query. See Section 1.1,
-   “Overview” for more information.
+   Request-URI with the result of the query. See Overview for more
+   information.
 
    Meaning of the parameters is as follows:
      * suffix - Suffix to be appended to the domain name. The
@@ -287,8 +287,7 @@ enum_query("e164.arpa.","+sip+voice:sip");
 
    The function performs an enum query on E.164 number stored in
    its pseudo variable argument and rewrites the Request-URI with
-   the result of the query. See Section 1.1, “Overview” for more
-   information.
+   the result of the query. See Overview for more information.
 
    Meaning of the parameters is as follows:
      * pvar - Pseudo variable that holds an E.164 number on which
@@ -335,8 +334,8 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
 1.4.4.  isn_query(["suffix"[,"service"]])
 
    The function performs a ISN query and rewrites the Request-URI
-   with the result of the query. See Section 1.1, “Overview” for
-   more information.
+   with the result of the query. See Overview for more
+   information.
 
    Meaning of the parameters is as follows:
      * suffix - Suffix to be appended to the domain name.

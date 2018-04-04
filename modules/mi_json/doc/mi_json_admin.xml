@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module implements a JSON server that handles GET
@@ -12,7 +12,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>External Libraries or Applications</title>
@@ -32,9 +32,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_mi_json_root" xreflabel="mi_json_root">
 		<title><varname>mi_json_root</varname>(string)</title>
 		<para>
 		Specifies the root path for JSON requests:
@@ -53,7 +53,7 @@ modparam("mi_json", "mi_json_root", "opensips_mi_json")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -82,7 +82,7 @@ modparam("mi_json", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_bwlist" xreflabel="trace_bwlist">
 		<title><varname>trace_bwlist</varname> (string)</title>
 		<para>
 			Filter traced mi commands based on a blacklist or a whitelist.

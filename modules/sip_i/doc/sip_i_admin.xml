@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP. The available operations are: reading and modifying parameters from an ISUP message, removing or adding new optional parameters, adding an ISUP part to a SIP message body. This is done explicitly via script pseudovariables and functions.
@@ -16,7 +16,7 @@
 		The format and specification of the ISUP messages and parameters follow the recomandations from ITU-T Rec. Q.763.
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -48,7 +48,7 @@
 	</section>
 	<section>
 	<title>Parameters</title>
-	<section>
+	<section id="param_param_subfield_separator" xreflabel="param_subfield_separator">
 		<title><varname>param_subfield_separator</varname> (str)</title>
 		<para>
 		The character to be used as separator in the subname of the <emphasis>$isup_param</emphasis> and <emphasis>$isup_param_str</emphasis> pseudovariables between the ISUP parameter name and subfield name.
@@ -67,7 +67,7 @@ modparam("sip_i", "param_subfield_separator", ":")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_isup_mime_str" xreflabel="isup_mime_str">
 		<title><varname>isup_mime_str</varname> (str)</title>
 		<para>
 			The string to be used for the Content-Type header field of the ISUP MIME body when creating a new ISUP part.
@@ -87,7 +87,7 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_default_part_headers" xreflabel="default_part_headers">
 		<title><varname>default_part_headers</varname> (str)</title>
 		<para>
 		The default set of headers (fully defined, including the header
@@ -109,7 +109,7 @@ modparam("sip_i", "default_part_headers", "Content-Disposition:signal;handling=r
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_country_code" xreflabel="country_code">
 		<title><varname>country_code</varname> (str)</title>
 		<para>
 			Country Code that the first part of the number from

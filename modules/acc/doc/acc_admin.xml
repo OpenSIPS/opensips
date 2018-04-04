@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The ACC module is used to account transaction information to different
@@ -124,7 +124,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 
 	<section id="ACC-extra-id">
 		<title>Extra accounting</title>
-		<section>
+		<section id="overview_extra" xreflabel="Overview: Extra IDs">
 			<title>Overview</title>
 			<para>
 			Along the static default information, the ACC module
@@ -209,7 +209,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 
 	<section id="multi-call-legs">
 		<title>Multi Call-Legs accounting</title>
-		<section>
+		<section id="overview_multi_call_legs" xreflabel="Overview: Multi Call Legs">
 			<title>Overview</title>
 			<para>
 			A SIP call can have multiple legs due forwarding actions. For
@@ -304,7 +304,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 
 	<section id="ACC-cdr-id">
 		<title>CDRs accounting</title>
-		<section>
+		<section id="overview_cdr_accounting" xreflabel="Overview: CDR Accounting">
 			<title>Overview</title>
 			<para>
 			ACC module can now also maintain session/dialog accounting. This
@@ -337,7 +337,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -384,10 +384,10 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 		</section>
 	</section>
 
-	<section id="ACC-param-id">
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	<!-- Generic ACC parameters -->
-	<section>
+	<section id="param_early_media" xreflabel="early_media">
 		<title><varname>early_media</varname> (integer)</title>
 		<para>
 		Should be early media (any provisional reply with body) accounted too ?
@@ -402,7 +402,7 @@ modparam("acc", "early_media", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_report_cancels" xreflabel="report_cancels">
 		<title><varname>report_cancels</varname> (integer)</title>
 		<para>
 		By default, CANCEL reporting is disabled -- most accounting
@@ -419,7 +419,7 @@ modparam("acc", "report_cancels", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_detect_direction" xreflabel="detect_direction">
 		<title><varname>detect_direction</varname> (integer)</title>
 		<para>
 		Controls the direction detection for sequential requests. If
@@ -442,7 +442,7 @@ modparam("acc", "detect_direction", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_extra_fields" xreflabel="extra_fields">
 		<title><varname>extra_fields</varname> (string)</title>
 		<para>
 		Defines the tag-log_value set to be used in extra fields accounting.
@@ -473,7 +473,7 @@ modparam("acc", "extra_fields","a->2345;b->2346")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_leg_fields" xreflabel="leg_fields">
 		<title><varname>leg_fields</varname> (string)</title>
 		<para>
 		Defines the tag-log_value set to be used in multi-leg accounting.
@@ -505,7 +505,7 @@ modparam("acc", "leg_fields","a->2345;b->2346")
 	</section>
 
 
-	<section>
+	<section id="param_log_level" xreflabel="log_level">
 		<title><varname>log_level</varname> (integer)</title>
 		<para>
 		Log level at which accounting messages are issued to syslog.
@@ -520,7 +520,7 @@ modparam("acc", "log_level", 2)   # Set log_level to 2
 </programlisting>
 		</example>
 	</section>
-		<section>
+		<section id="param_log_facility" xreflabel="log_facility">
 		<title><varname>log_facility</varname> (string)</title>
 		<para>
 		Log facility to which accounting messages are issued to syslog.
@@ -540,7 +540,7 @@ modparam("acc", "log_facility", "LOG_DAEMON")
 
 	<!-- AAA specific ACC parameters -->
 
-	<section>
+	<section id="param_aaa_url" xreflabel="aaa_url">
 		<title><varname>aaa_url</varname> (string)</title>
 		<para>
 		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
@@ -562,7 +562,7 @@ modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_service_type" xreflabel="service_type">
 		<title><varname>service_type</varname> (integer)</title>
 		<para>
 		AAA service type used for accounting.
@@ -579,7 +579,7 @@ modparam("acc", "service_type", 15)
 		</example>
 	</section>
 	<!-- SQL specific ACC parameters -->
-	<section>
+	<section id="param_db_table_acc" xreflabel="db_table_acc">
 		<title><varname>db_table_acc</varname> (string)</title>
 		<para>
 		Table name of accounting successfull calls -- database specific.
@@ -594,7 +594,7 @@ modparam("acc", "db_table_acc", "myacc_table")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_table_missed_calls" xreflabel="db_table_missed_calls">
 		<title><varname>db_table_missed_calls</varname> (string)</title>
 		<para>
 		Table name for accounting missed calls -- database specific.
@@ -609,7 +609,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		SQL address -- database specific. If is set to NULL or empty string,
@@ -625,7 +625,7 @@ modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_method_column" xreflabel="acc_method_column">
 		<title><varname>acc_method_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the request's method name as
@@ -641,7 +641,7 @@ modparam("acc", "acc_method_column", "method")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_from_tag_column" xreflabel="acc_from_tag_column">
 		<title><varname>acc_from_tag_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the From header TAG parameter.
@@ -656,7 +656,7 @@ modparam("acc", "acc_from_tag_column", "from_tag")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_to_tag_column" xreflabel="acc_to_tag_column">
 		<title><varname>acc_to_tag_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the To header TAG parameter.
@@ -671,7 +671,7 @@ modparam("acc", "acc_to_tag_column", "to_tag")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_callid_column" xreflabel="acc_callid_column">
 		<title><varname>acc_callid_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the request's Callid value.
@@ -686,7 +686,7 @@ modparam("acc", "acc_callid_column", "callid")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_sip_code_column" xreflabel="acc_sip_code_column">
 		<title><varname>acc_sip_code_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the final reply's numeric code
@@ -702,7 +702,7 @@ modparam("acc", "acc_sip_code_column", "sip_code")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_sip_reason_column" xreflabel="acc_sip_reason_column">
 		<title><varname>acc_sip_reason_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the final reply's reason
@@ -718,7 +718,7 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_acc_time_column" xreflabel="acc_time_column">
 		<title><varname>acc_time_column</varname> (string)</title>
 		<para>
 		Column name in accounting table to store the time stamp of the
@@ -735,7 +735,7 @@ modparam("acc", "acc_time_column", "time")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_acc_created_avp_name" xreflabel="acc_created_avp_name">
 		<title><varname>acc_created_avp_name</varname> (string)</title>
 		<para>
 		The name of the openSips avp that will be used to hold the

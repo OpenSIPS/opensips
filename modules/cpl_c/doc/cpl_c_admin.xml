@@ -5,14 +5,14 @@
 	<title>&adminguide;</title>
 
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>cpl_c modules implements a CPL (Call Processing Language) 
 		interpreter. Support for uploading/downloading/removing scripts via 
 		SIP REGISTER method is present.
 		</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -73,9 +73,9 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_db_url" xreflabel="db_url">
 			<title><varname>db_url</varname> (string)</title>
 			<para>
 				A SQL URL have to be given to the module for knowing where the 
@@ -97,7 +97,7 @@ modparam("cpl_c","db_url","&exampledb;")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_db_table" xreflabel="db_table">
 			<title><varname>db_table</varname> (string)</title>
 			<para>
 				Indicates the name of the table that store the CPL scripts. 
@@ -119,7 +119,7 @@ modparam("cpl_c","cpl_table","cpl")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_username_column" xreflabel="username_column">
 			<title><varname>username_column</varname> (string)</title>
 			<para>
 				Indicates the name of the column used for storing the username.
@@ -138,7 +138,7 @@ modparam("cpl_c","username_column","username")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_domain_column" xreflabel="domain_column">
 			<title><varname>domain_column</varname> (string)</title>
 			<para>
 				Indicates the name of the column used for storing the domain.
@@ -157,7 +157,7 @@ modparam("cpl_c","domain_column","domain")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_cpl_xml_column" xreflabel="cpl_xml_column">
 			<title><varname>cpl_xml_column</varname> (string)</title>
 			<para>
 				Indicates the name of the column used for storing the 
@@ -177,7 +177,7 @@ modparam("cpl_c","cpl_xml_column","cpl_xml")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_cpl_bin_column" xreflabel="cpl_bin_column">
 			<title><varname>cpl_bin_column</varname> (string)</title>
 			<para>
 				Indicates the name of the column used for storing the 
@@ -197,7 +197,7 @@ modparam("cpl_c","cpl_bin_column","cpl_bin")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_cpl_dtd_file" xreflabel="cpl_dtd_file">
 			<title><varname>cpl_dtd_file</varname> (string)</title>
 			<para>
 				Points to the DTD file describing the CPL grammar. The file 
@@ -219,7 +219,7 @@ modparam("cpl_c","cpl_dtd_file","/etc/opensips/cpl-06.dtd")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_log_dir" xreflabel="log_dir">
 			<title><varname>log_dir</varname> (string)</title>
 			<para>
 				Points to a directory where should be created all the log file 
@@ -241,7 +241,7 @@ modparam("cpl_c","log_dir","/var/log/opensips/cpl")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_proxy_recurse" xreflabel="proxy_recurse">
 			<title><varname>proxy_recurse</varname> (int)</title>
 			<para>
 				Tells for how many time is allow to have recurse for PROXY CPL 
@@ -265,7 +265,7 @@ modparam("cpl_c","proxy_recurse",2)
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_proxy_route" xreflabel="proxy_route">
 			<title><varname>proxy_route</varname> (string)</title>
 			<para>
 				Before doing proxy (forward), a script route can be executed.
@@ -286,7 +286,7 @@ modparam("cpl_c","proxy_route", "1")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_case_sensitive" xreflabel="case_sensitive">
 			<title><varname>case_sensitive</varname> (int)</title>
 			<para>
 				Tells if the username matching should be perform case 
@@ -307,7 +307,7 @@ modparam("cpl_c","case_sensitive",1)
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_realm_prefix" xreflabel="realm_prefix">
 			<title><varname>realm_prefix</varname> (string)</title>
 			<para>
 				Defines a prefix for the domain part which should be ignored 
@@ -327,7 +327,7 @@ modparam("cpl_c","realm_prefix","sip.")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_lookup_domain" xreflabel="lookup_domain">
 			<title><varname>lookup_domain</varname> (string)</title>
 			<para>
 				Used by lookup tag to indicate where to perform user location.
@@ -352,7 +352,7 @@ modparam("cpl_c","lookup_domain","location")
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_lookup_append_branches" xreflabel="lookup_append_branches">
 			<title><varname>lookup_append_branches</varname> (int)</title>
 			<para>
 				Tells if the lookup tag should append branches (to do parallel
@@ -375,7 +375,7 @@ modparam("cpl_c","lookup_append_branches",1)
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_use_domain" xreflabel="use_domain">
 			<title><varname>use_domain</varname> (integer)</title>
 			<para>
 				Indicates if the domain part of the URI should be used in 

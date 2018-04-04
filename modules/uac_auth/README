@@ -101,9 +101,8 @@ modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e
    used to perform authentication.
 
    If you define it, you also need to define “auth_username_avp”
-   (Section 1.3.3, “auth_username_avp (string)”) and
-   “auth_username_avp” (Section 1.3.4, “auth_password_avp
-   (string)”).
+   (auth_username_avp) and “auth_password_avp”
+   (auth_password_avp).
 
    Example 1.2. Set auth_realm_avp parameter
 ...
@@ -116,9 +115,7 @@ modparam("uac_auth","auth_realm_avp","$avp(10)")
    used to perform authentication.
 
    If you define it, you also need to define “auth_realm_avp”
-   (Section 1.3.2, “auth_realm_avp (string)”) and
-   “auth_username_avp” (Section 1.3.4, “auth_password_avp
-   (string)”).
+   (auth_realm_avp) and “auth_password_avp” (auth_password_avp).
 
    Example 1.3. Set auth_username_avp parameter
 ...
@@ -134,10 +131,8 @@ modparam("uac_auth","auth_username_avp","$avp(11)")
    total of 34 chars) (for example
    "0xc17ba8157756f263d07e158504204629")
 
-   If you define it, you also need to define “auth_password_avp”
-   (Section 1.3.4, “auth_password_avp (string)”) and
-   “auth_username_avp” (Section 1.3.4, “auth_password_avp
-   (string)”).
+   If you define it, you also need to define “auth_realm_avp”
+   (auth_realm_avp) and “auth_username_avp” (auth_username_avp).
 
    Example 1.4. Set auth_password_avp parameter
 ...

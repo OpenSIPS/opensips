@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
 		The time needed when writing a new OpenSIPS module unfortunately is quite high, while the
@@ -73,7 +73,7 @@ if (perl_exec("ldap_alias")) {
 	</section>
 			
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -141,9 +141,9 @@ if (perl_exec("ldap_alias")) {
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_filename" xreflabel="filename">
 			<title><varname>filename</varname> (string)</title>
 			<para>
 			This is the file name of your script. This may be set once only, but it may include an arbitary
@@ -164,7 +164,7 @@ modparam("perl", "filename", "/home/john/opensips/myperl.pl")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_modpath" xreflabel="modpath">
 			<title><varname>modpath</varname> (string)</title>
 			<para>
 			The path to the Perl modules included (OpenSIPS.pm et.al). It is not absolutely

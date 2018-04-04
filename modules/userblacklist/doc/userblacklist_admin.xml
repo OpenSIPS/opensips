@@ -1,7 +1,7 @@
 <chapter>
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The userblacklist module allows OpenSIPS to handle blacklists
@@ -28,7 +28,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -57,9 +57,9 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-    <section>
+    <section id="param_db_url" xreflabel="db_url">
 	    <title><varname>db_url</varname> (string)</title>
 	    <para>
 		Url to the database containing the routing data.
@@ -79,7 +79,7 @@ modparam("userblacklist", "db_url", "&exampledb;")
 	    </example>
     </section>
 
-    <section>
+    <section id="param_db_table" xreflabel="db_table">
 	    <title><varname>db_table</varname> (string)</title>
 	    <para>
 		Name of the table where the user blacklist data is stored.
@@ -99,7 +99,7 @@ modparam("userblacklist", "db_table", "userblacklist")
 	    </example>
     </section>
 	
-    <section>
+    <section id="param_use_domain" xreflabel="use_domain">
 	    <title><varname>use_domain</varname> (integer)</title>
 	    <para>
 			If set to non-zero value, the domain column in the userblacklist is used.

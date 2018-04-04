@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	gflags module (global flags) keeps a bitmap of flags in shared memory
@@ -31,7 +31,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<para>
 		The module depends on the following modules (in the other words the
@@ -44,9 +44,9 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_initial" xreflabel="initial">
 		<title><varname>initial</varname> (integer)</title>
 		<para>
 		The initial value of global flags bitmap.

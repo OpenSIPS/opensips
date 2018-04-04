@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The pua_dialoginfo retrieves dialog state information from the 
@@ -151,8 +151,9 @@
 		It is possible to specify what URIs should be used for caller and callee by setting the
 		the pseudovariables with the names defined as module parameter "caller_spec_param" and
 		"callee_spec_param" before calling dialoginfo_set function.
-		Please read the description of this parameters in Exported Parameters section.
-		If this parameters are not set, the default sources will be used, From header for the caller
+		Please read the description of this parameters in
+		<xref linkend="exported_parameters"/> section. If this parameters are
+		not set, the default sources will be used, From header for the caller
 		and display name in To header + RURI for the callee.
 	</para>
 	<para>
@@ -170,7 +171,7 @@
 		debug them you define PUA_DIALOGINFO_DEBUG in pua_dialoginfo.c and recompile.
 	</para>
 	</section>
-		<section>
+		<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -206,10 +207,10 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
 
-		<section>
+		<section id="param_include_callid" xreflabel="include_callid">
 		<title><varname>include_callid</varname> (int)</title>
 		<para>
 			If this parameter is set, the optional call-id will be put into the
@@ -228,7 +229,7 @@ modparam("pua_dialoginfo", "include_callid", 0)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_include_tags" xreflabel="include_tags">
 		<title><varname>include_tags</varname> (int)</title>
 		<para>
 			If this parameter is set, the local and remote tag will be put
@@ -247,7 +248,7 @@ modparam("pua_dialoginfo", "include_tags", 0)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_include_localremote" xreflabel="include_localremote">
 		<title><varname>include_localremote</varname> (int)</title>
 		<para>
 			If this parameter is set, the optional local and remote elements
@@ -267,7 +268,7 @@ modparam("pua_dialoginfo", "include_localremote", 0)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_caller_confirmed" xreflabel="caller_confirmed">
 		<title><varname>caller_confirmed</varname> (int)</title>
 		<para>
 			Usually the dialog-info of the caller will be 
@@ -293,7 +294,7 @@ modparam("pua_dialoginfo", "caller_confirmed", 1)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_publish_on_trying" xreflabel="publish_on_trying">
 		<title><varname>publish_on_trying</varname> (int)</title>
 		<para>
 			Usually the dialog-info of the caller will be
@@ -388,7 +389,7 @@ modparam("pua_dialoginfo", "publish_on_trying", 1)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_nopublish_flag" xreflabel="nopublish_flag">
 		<title><varname>nopublish_flag</varname> (int)</title>
 		<para>
 			By default, reINVITEs will trigger a PUBLISH. They are actually
@@ -409,7 +410,7 @@ modparam("pua_dialoginfo", "nopublish_flag", 5)
 		</example>
 		</section>
 
-		<section>
+		<section id="param_presence_server" xreflabel="presence_server">
 		<title><varname>presence_server</varname> (string)</title>
 		<para>
 		The address of the presence server, where the PUBLISH messages
@@ -425,7 +426,7 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 		</example>
 		</section>
 
-	<section>
+	<section id="param_caller_spec_param" xreflabel="caller_spec_param">
 		<title><varname>caller_spec_param</varname> (string)</title>
 		<para>
 		The name of the pseudovariable that will hold a custom caller URI.
@@ -445,7 +446,7 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(10)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_callee_spec_param" xreflabel="callee_spec_param">
 		<title><varname>callee_spec_param</varname> (string)</title>
 		<para>
 		The name of the pseudovariable that will hold the callee URI.
@@ -464,7 +465,7 @@ modparam("pua_dialoginfo", "callee_spec_param", "$avp(11)")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_osips_ps" xreflabel="osips_ps">
 		<title><varname>osips_ps</varname> (int)</title>
 		<para>
 			It is advisable to specify if you use a different presence server

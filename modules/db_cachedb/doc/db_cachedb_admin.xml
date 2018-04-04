@@ -4,7 +4,7 @@
 	
     <title>&adminguide;</title>
 	
-    <section>
+    <section id="overview" xreflabel="Overview">
         <title>Overview</title>
 
         <section>
@@ -17,40 +17,43 @@
 				will now be able to run over a NoSQL back-end, allowing for a much easier distribution
 				and integration of the currently existing OpenSIPS modules in a distributed environment.
             </para>
-        </section>
+		</section>
+	</section>
 
-        <title>Dependencies</title>
-        <section>
-            <title>&osips; Modules</title>
-            <para>
-				The following modules must be loaded before this module:
-                <itemizedlist>
-                    <listitem>
-                        <para>
-				<!--<emphasis>No dependencies on other &osips; modules</emphasis>.-->
-                            <emphasis>At least one NoSQL cachedb_* module</emphasis>.
-                        </para>
-                    </listitem>
-                </itemizedlist>
-            </para>
-        </section>
-        <section>
-            <title>External Libraries or Applications</title>
-            <para>
-		The following libraries or applications must be installed before running
-		&osips; with this module loaded:
-                <itemizedlist>
-                    <listitem>
-                        <para>
-				<!--<emphasis>libmysqlclient-dev</emphasis> - the development libraries of mysql-client.-->
-                            <emphasis>None</emphasis>.
-                        </para>
-                    </listitem>
-                </itemizedlist>
-            </para>
-        </section>
+	<section id="dependencies" xreflabel="Dependencies">
+    <title>Dependencies</title>
+    <section>
+        <title>&osips; Modules</title>
+        <para>
+			The following modules must be loaded before this module:
+            <itemizedlist>
+                <listitem>
+                    <para>
+			<!--<emphasis>No dependencies on other &osips; modules</emphasis>.-->
+                        <emphasis>At least one NoSQL cachedb_* module</emphasis>.
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
     </section>
     <section>
+        <title>External Libraries or Applications</title>
+        <para>
+	The following libraries or applications must be installed before running
+	&osips; with this module loaded:
+            <itemizedlist>
+                <listitem>
+                    <para>
+			<!--<emphasis>libmysqlclient-dev</emphasis> - the development libraries of mysql-client.-->
+                        <emphasis>None</emphasis>.
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    </section>
+    </section>
+
+    <section id="exported_parameters" xreflabel="Exported Parameters">
         <title>Exported Parameters</title>
         <section>
             <title>

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> Peering module allows SIP
 	providers (operators or organizations) to verify from a broker
@@ -35,7 +35,7 @@
 
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 		<section>
 		<title>&osips; Modules</title>
@@ -52,9 +52,9 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_aaa_url" xreflabel="aaa_url">
 		<title><varname>aaa_url</varname> (string)</title>
 		<para>
 		This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
@@ -75,7 +75,7 @@ modparam("peering", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_verify_destination_service_type" xreflabel="verify_destination_service_type">
 		<title><varname>verify_destination_service_type</varname> (integer)</title>
 		<para>
 		This is the value of the Service-Type AAA attribute to be

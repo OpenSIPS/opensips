@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The module provides a simple mechanism for DOS protection - DOS based
@@ -54,7 +54,7 @@
 		</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -84,9 +84,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_sampling_time_unit" xreflabel="sampling_time_unit">
 		<title><varname>sampling_time_unit</varname> (integer)</title>
 		<para>
 		Time period used for sampling (or the sampling accuracy ;-) ). The
@@ -113,7 +113,7 @@ modparam("pike", "sampling_time_unit", 10)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_reqs_density_per_unit" xreflabel="reqs_density_per_unit">
 		<title><varname>reqs_density_per_unit</varname> (integer)</title>
 		<para>
 		How many requests should be allowed per sampling_time_unit before
@@ -135,7 +135,7 @@ modparam("pike", "reqs_density_per_unit", 30)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_remove_latency" xreflabel="remove_latency">
 		<title><varname>remove_latency</varname> (integer)</title>
 		<para>
 		For how long the IP address will be kept in memory after the last
@@ -164,7 +164,7 @@ modparam("pike", "remove_latency", 130)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_check_route" xreflabel="check_route">
 		<title><varname>check_route</varname> (integer)</title>
 		<para>
 		The name of the script route to be triggers (in automatic way) when a
@@ -197,7 +197,7 @@ route[pike]{
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pike_log_level" xreflabel="pike_log_level">
 		<title><varname>pike_log_level</varname> (integer)</title>
 		<para>
 		Log level to be used by module to auto report the blocking (only first

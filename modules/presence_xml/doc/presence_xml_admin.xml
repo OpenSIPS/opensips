@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> 
 	The module does specific handling for notify-subscribe events using xml bodies.
@@ -19,7 +19,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -76,9 +76,9 @@
 	</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_force_active" xreflabel="force_active">
 		<title><varname>force_active</varname> (int)</title>
 		<para>
 		This parameter is used for permissions when handling Subscribe messages.
@@ -107,7 +107,7 @@ modparam("presence_xml", "force_active", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_pidf_manipulation" xreflabel="pidf_manipulation">
 		<title><varname>pidf_manipulation</varname> (int)</title>
 		<para>
 		Setting this parameter to 1 enables the features described in RFC 4827.
@@ -131,7 +131,7 @@ modparam("presence_xml", "pidf_manipulation", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_xcap_server" xreflabel="xcap_server">
 		<title><varname>xcap_server</varname> (str)</title>
 		<para>
 		The address of the xcap servers used for storage.
@@ -148,7 +148,7 @@ modparam("presence_xml", "xcap_server", "xcap_server.ag.org")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_pres_rules_auid" xreflabel="pres_rules_auid">
 		<title><varname>pres_rules_auid</varname> (str)</title>
 		<para>
 		This parameter should be configured if you are using the non integrated xcap
@@ -164,7 +164,7 @@ modparam("presence_xml", "pres_rules_auid", "org.openmobilealliance.pres-rules")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pres_rules_filename" xreflabel="pres_rules_filename">
 		<title><varname>pres_rules_filename</varname> (str)</title>
 		<para>
 		This parameter should be configured if you are using the non integrated xcap
@@ -180,7 +180,7 @@ modparam("presence_xml", "pres_rules_filename", "pres-rules")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_generate_offline_body" xreflabel="generate_offline_body">
 		<title><varname>generate_offline_body</varname> (str)</title>
 		<para>
                 This parameter should be set to 0 if you want to prevent OpenSIPS from automatically

@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides an HTTP transport layer implementation
@@ -24,7 +24,7 @@
 		</itemizedlist>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -41,9 +41,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_mi_http_root" xreflabel="mi_http_root">
 		<title><varname>mi_http_root</varname>(string)</title>
 		<para>
 		Specifies the root path for mi http requests.
@@ -63,7 +63,7 @@ modparam("mi_http", "mi_http_root", "opensips_mi")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_mi_http_method" xreflabel="mi_http_method">
 		<title><varname>mi_http_method</varname>(integer)</title>
 		<para>
 		Specifies the HTTP request method to be used:
@@ -85,7 +85,7 @@ modparam("mi_http", "mi_http_method", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -114,7 +114,7 @@ modparam("mi_http", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_bwlist" xreflabel="trace_bwlist">
 		<title><varname>trace_bwlist</varname> (string)</title>
 		<para>
 			Filter traced mi commands based on a blacklist or a whitelist.

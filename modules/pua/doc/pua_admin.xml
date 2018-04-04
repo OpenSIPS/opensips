@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module offer the functionality of a presence user agent client,
@@ -31,7 +31,7 @@
 		used may cause deadlock in no fork mode).
 	</para>
 	</section>
-		<section>
+		<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -66,9 +66,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (int)</title>
 		<para>
 		The size of the hash table used for storing Subscribe and 
@@ -88,7 +88,7 @@ modparam("pua", "hash_size", 11)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
 		Database url.
@@ -106,7 +106,7 @@ modparam("pua", "db_url" "&exampledb;")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (str)</title>
 		<para>
 		The name of the database table.
@@ -124,7 +124,7 @@ modparam("pua", "db_table", "pua")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_min_expires" xreflabel="min_expires">
 		<title><varname>min_expires</varname> (int)</title>
 		<para>
 		The inferior expires limit for both Publish and Subscribe.
@@ -142,7 +142,7 @@ modparam("pua", "min_expires", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_default_expires" xreflabel="default_expires">
 		<title><varname>default_expires</varname> (int)</title>
 		<para>
 		The default expires value used in case this information is not provisioned.
@@ -160,7 +160,7 @@ modparam("pua", "default_expires", 3600)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_update_period" xreflabel="update_period">
 		<title><varname>update_period</varname> (int)</title>
 		<para>
 		The interval at which the information in database and hash table

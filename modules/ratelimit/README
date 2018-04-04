@@ -280,7 +280,7 @@ modparam("ratelimit", "timer_interval", 5)
 
 1.6.2. limit_per_interval (integer)
 
-   This parameter configures the way that the pipe's limit is
+   This parameter configures the way that a pipe's limit is
    specified in the rl_check function and only affects the
    Taildrop and RED algorithms. A value of 1 means that the limit
    is set per-timer_interval while a value of 0 means per-second.

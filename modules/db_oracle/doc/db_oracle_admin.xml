@@ -4,7 +4,7 @@
 
 	<title>User's Guide</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which provides Oracle connectivity for OpenSIPS.
@@ -16,7 +16,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -46,9 +46,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_timeout" xreflabel="timeout">
 		<title><varname>timeout</varname> (fixedpoint)</title>
 		<para>
 		Timeout value for any operation with BD.
@@ -82,7 +82,7 @@ modparam("db_oracle", "timeout", 0)
 </programlisting>
 		</example>
 	</section>
-		<section>
+		<section id="param_reconnect" xreflabel="reconnect">
 		<title><varname>reconnect</varname> (fixedpoint)</title>
 		<para>
 		Timeout value for connect (create session) operation.

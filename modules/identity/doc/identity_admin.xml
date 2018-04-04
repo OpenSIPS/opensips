@@ -4,11 +4,11 @@
 	
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>This module adds support for SIP Identity (see RFC 4474).</para>
     </section>
-    <section>
+    <section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 	    <title>&osips; Modules</title>
@@ -38,12 +38,12 @@
 	    </para>
 	</section>
     </section>
-    <section>
+    <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	
 	
 	
-	<section>
+	<section id="param_privKey" xreflabel="privKey">
 	    <title><varname>privKey</varname> (string)</title>
 	    <para>
 		Filename of private RSA-key of authentication service. This file must be in PEM format.
@@ -61,7 +61,7 @@ modparam("identity", "privKey", "/etc/openser/privkey.pem")
 
 	
 		
-	<section>
+	<section id="param_authCert" xreflabel="authCert">
 	    <title><varname>authCert</varname> (string)</title>
 	    <para>
 		Filename of certificate which belongs to <varname>privKey</varname>. This file must be in PEM format.
@@ -78,7 +78,7 @@ modparam("identity", "authCert", "/etc/openser/cert.pem")
 	</section>
 	
 	
-	<section>
+	<section id="param_certUri" xreflabel="certUri">
 	    <title><varname>certUri</varname> (string)</title>
 	    <para>
 		URI from which the certificate of the authentication service can be acquired. This string will be placed in the Identity-Info header.
@@ -95,7 +95,7 @@ modparam("identity", "certUri", "http://www.myserver.com/cert.pem")
 	</section>
 	
 	
-	<section>
+	<section id="param_verCert" xreflabel="verCert">
 	    <title><varname>verCert</varname> (string)</title>
 	    <para>
 		Path containing certificates for the verifier. Certificates must be in PEM format. The URI in the Identity-Info header field is used to find the corresponding certificate for the request. For this purpose the verifier replaces every character which is not alphanumeric, no <quote>_</quote> and no <quote>.</quote> with a <quote>-</quote>. A <quote>.</quote> at the beginning of the URI is forbidden. If the URI is <quote>http://www.test.com/cert.pem</quote> the verifier will look for the file <quote>http---www.test.com-cert.pem</quote>, for example.
@@ -113,7 +113,7 @@ modparam("identity", "verCert", "/etc/openser/verCert/")
 	</section>
 	
 	
-	<section>
+	<section id="param_caList" xreflabel="caList">
 	    <title><varname>caList</varname> (string)</title>
 	    <para>
 		File containing all trusted (root) certificates for the verifier. Certificates must be in PEM format.
@@ -130,7 +130,7 @@ modparam("identity", "caList", "/etc/openser/caList.pem")
 	</section>
 
 	
-	<section>
+	<section id="param_crlList" xreflabel="crlList">
 	    <title><varname>crlList</varname> (string)</title>
 	    <para>
 		File containing certificate revocation lists (crls) for the verifier. Setting this parameter is only necessary if <varname>useCrls</varname> is set to <quote>1</quote>.
@@ -147,7 +147,7 @@ modparam("identity", "crlList", "/etc/openser/crls.pem")
 	</section>	
 	
 	
-	<section>
+	<section id="param_useCrls" xreflabel="useCrls">
 	    <title><varname>useCrls</varname> (integer)</title>
 	    <para>
 		Switch to decide whether to use revocation lists (<quote>1</quote>) or not (<quote>0</quote>).

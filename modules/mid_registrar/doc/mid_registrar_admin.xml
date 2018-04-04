@@ -3,7 +3,7 @@
 <chapter id="sec-admin-guide">
 	<title>&adminguide;</title>
 
-	<section id="sec-overview">
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <emphasis>mid_registrar</emphasis> is a mid-component of a SIP
@@ -166,7 +166,7 @@
 		successful registrations.
 	</para>
 	<para>
-		Regardless of its configured working <xref linkend="mode"/>, the
+		Regardless of its configured working <xref linkend="param_mode"/>, the
 		mid-registrar will mangle the Contact header field URIs of all
 		forwarded REGISTER requests and replace the original "hostname" and
 		"port" parts of a Contact URI with one of its listening interfaces.
@@ -175,12 +175,12 @@
 		Additionally, in modes "0" and "1", each Contact will be assigned an
 		unique identifier, which will be utilized in future contact-based
 		lookup operations. This information will be included in each forwarded
-		Contact URI. The <xref linkend="contact_id_insertion"/> modparam
+		Contact URI. The <xref linkend="param_contact_id_insertion"/> modparam
 		controls how this information is included.
 	</para>
 	</section>
 
-	<section id="sec-dependencies">
+	<section  id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section id="sec-module-dependencies">
 		<title>&osips; Modules</title>
@@ -222,10 +222,10 @@
 	</section>
 	</section>
 
-	<section id="sec-modparam">
+	<section  id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section id="mode" xreflabel="mode">
+	<section id="param_mode" xreflabel="param_mode">
 		<title><varname>mode</varname> (integer)</title>
 
 		<para>
@@ -247,7 +247,7 @@
 			<para>
 			the mid-registrar will insert itself on the call flow of
 			all registrations according to the
-			<emphasis><xref linkend="contact_id_insertion"/></emphasis>.
+			<emphasis><xref linkend="param_contact_id_insertion"/></emphasis>.
 			</para>
 			</listitem>
 			<listitem>
@@ -280,7 +280,7 @@
 			<para>
 			Contact throttling is a first step in lowering registration traffic rates. This
 			is possible through the use of the
-			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module
+			<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module
 			parameter or the corresponding parameter to
 			<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
 			which allow the script writer to prolong the life of the registrations on the way
@@ -291,7 +291,7 @@
 			In this mode, the
 			mid-registrar may alter Expires header field values or "expires" Contact
 			header field parameters found in the initial request when forwarding registrations, according to
-			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+			<emphasis><xref linkend="param_outgoing_expires"/></emphasis>
 			</para>
 		</para>
 		</listitem>
@@ -302,7 +302,7 @@
 		AOR throttling is a step beyond "Contact throttling", as the main registrar
 		is only made aware of the network presence of AORs, rather than
 		Contacts. This behaviour is also made possible through the
-		<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module
+		<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module
 		parameter or the corresponding parameter to
 		<emphasis><xref linkend="modfunc-mid-registrar-save"/></emphasis>,
 		which allow the script writer to prolong the life of the registrations on the way
@@ -313,7 +313,7 @@
 		set of all forwarded registrations with a single Contact, advertising
 		that the AOR is available to the main registrar. The expiration value
 		for this Contact is given by 
-		<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>.
+		<emphasis><xref linkend="param_outgoing_expires"/></emphasis>.
 		</para>
 		</para>
 		</listitem>
@@ -330,11 +330,11 @@ modparam("mid_registrar", "mode", 2)
 </programlisting>
 		</example>
 	</section>
-	<section id="contact_id_insertion" xreflabel="contact_id_insertion">
+	<section id="param_contact_id_insertion" xreflabel="contact_id_insertion">
 		<title><varname>contact_id_insertion</varname> (integer)</title>
 		<para>
 		Only relevant in a "mirroring" or "contact throttling"
-			<xref linkend="mode"/>. Controls where the additional
+			<xref linkend="param_mode"/>. Controls where the additional
 		unique Contact identification information (64-bit, hex-encoded integer)
 		will be placed within outgoing Contact header field URIs. Refer to
 		<xref linkend="sip-flow-insertion"/> for more details.
@@ -363,11 +363,11 @@ modparam("mid_registrar", "contact_id_insertion", "ct-username")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam_contact_id_param">
+	<section id="param_contact_id_param" xreflabel="contact_id_param">
 		<title><varname>contact_id_param</varname> (string)</title>
 		<para>
 			Only relevant in a "mirroring" or "contact throttling"
-			<xref linkend="mode"/>. Specifies the name of the
+			<xref linkend="param_mode"/>. Specifies the name of the
 			Contact URI parameter which is used by the module in order to
 			match contacts and route SIP requests.
 		</para>
@@ -385,7 +385,7 @@ modparam("mid_registrar", "contact_id_param", "ctid")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-outgoing-expires" xreflabel="outgoing_expires">
+	<section id="param_outgoing_expires" xreflabel="outgoing_expires">
 		<title><varname>outgoing_expires</varname> (integer)</title>
 		<para>
 			Only relevant in Contact/AOR throttling modes. Sets a minimal
@@ -402,7 +402,7 @@ modparam("mid_registrar", "outgoing_expires", 3600)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-received-avp" xreflabel="received_avp">
+	<section id="param_received_avp" xreflabel="received_avp">
 		<title><varname>received_avp</varname> (string)</title>
 		<para>
 		The module will store the value of the AVP configured by this
@@ -427,7 +427,7 @@ modparam("mid_registrar", "received_avp", "$avp(rcv)")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-received-param" xreflabel="received_param">
+	<section id="param_received_param" xreflabel="received_param">
 		<title><varname>received_param</varname> (string)</title>
 		<para>
 		The name of the parameter that will be appended to Contacts of
@@ -449,7 +449,7 @@ modparam("mid_registrar", "received_param", "rcv")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-extra-contact-params-avp" xreflabel="extra_contact_params_avp">
+	<section id="param_extra_contact_params_avp" xreflabel="extra_contact_params_avp">
 		<title><varname>extra_contact_params_avp</varname> (string)</title>
 		<para>
 		An AVP specification. This AVP is evaluated during
@@ -469,7 +469,7 @@ modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_params)")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-min-expires" xreflabel="min_expires">
+	<section id="param_min_expires" xreflabel="min_expires">
 		<title><varname>min_expires</varname> (integer)</title>
 		<para>
 			The minimum expires value of a Contact, values lower than this
@@ -485,7 +485,7 @@ modparam("mid_registrar", "min_expires", 600)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-default-expires" xreflabel="default_expires">
+	<section id="param_default_expires" xreflabel="default_expires">
 		<title><varname>default_expires</varname> (integer)</title>
 		<para>
 			If the processed message contains neither Expires HFs nor expires
@@ -502,7 +502,7 @@ modparam("mid_registrar", "default_expires", 1800)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-max-expires" xreflabel="max_expires">
+	<section id="param_max_expires" xreflabel="max_expires">
 		<title><varname>max_expires</varname> (integer)</title>
 		<para>
 			The maximum expires value of a Contact, values higher than this
@@ -518,14 +518,14 @@ modparam("mid_registrar", "max_expires", 7200)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-default-q" xreflabel="default_q">
+	<section id="param_default_q" xreflabel="default_q">
 		<title><varname>default_q</varname> (integer)</title>
 		<para>
 		Sets the default <emphasis>"q"</emphasis> value for new contacts.
 		Because &osips; does not support floating point module parameters,
 		the supplied <emphasis>"q"</emphasis> value must be multiplied by 1000.
 		For example, if you want
-		<emphasis><xref linkend="modparam-default-q"/></emphasis>
+		<emphasis><xref linkend="param_default_q"/></emphasis>
 		to be 0.38, set this parameter to 380.
 		</para>
 
@@ -539,7 +539,7 @@ modparam("mid_registrar", "default_q", 380)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-tcp-persistent-flag" xreflabel="tcp_persistent_flag">
+	<section id="param_tcp_persistent_flag" xreflabel="tcp_persistent_flag">
 		<title><varname>tcp_persistent_flag</varname> (string)</title>
 		<para>
 		Specifies the message flag to be used to control the
@@ -561,7 +561,7 @@ modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATIONS")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-realm-prefix" xreflabel="realm_prefix">
+	<section id="param_realm_prefix" xreflabel="realm_prefix">
 		<title><varname>realm_prefix</varname> (string)</title>
 		<para>
 		In multi-domain user location scenarios
@@ -590,7 +590,7 @@ modparam("mid_registrar", "realm_prefix", "sip.")
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-case-sensitive" xreflabel="case_sensitive">
+	<section id="param_case_sensitive" xreflabel="case_sensitive">
 		<title><varname>case_sensitive</varname> (integer)</title>
 		<para>
 		If set to 1, then <acronym>AOR</acronym> comparison will be case
@@ -607,7 +607,7 @@ modparam("mid_registrar", "case_sensitive", 0)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-max-contacts" xreflabel="max_contacts">
+	<section id="param_max_contacts" xreflabel="max_contacts">
 		<title><varname>max_contacts</varname> (integer)</title>
 		<para>
 		This parameter can be used to limit the number of contacts per
@@ -630,12 +630,12 @@ modparam("mid_registrar", "max_contacts", 10)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-retry-after" xreflabel="retry_after">
+	<section id="param_retry_after" xreflabel="retry_after">
 		<title><varname>retry_after</varname> (integer)</title>
 		<para>
 		The mid-registrar can generate 5xx replies to registrations in various
 		situations. It could, for example, happen when the
-		<emphasis><xref linkend="modparam-max-contacts"/></emphasis> parameter
+		<emphasis><xref linkend="param_max_contacts"/></emphasis> parameter
 		is set and the processing of REGISTER request would exceed the limit.
 		In this case, OpenSIPS would respond with "503 Service Unavailable".
 		</para>
@@ -654,7 +654,7 @@ modparam("mid_registrar", "retry_after", 30)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-disable-gruu" xreflabel="disable_gruu">
+	<section id="param_disable_gruu" xreflabel="disable_gruu">
 		<title><varname>disable_gruu</varname> (integer)</title>
 		<para>
 			Globally disable GRUU handling.
@@ -669,7 +669,7 @@ modparam("mid_registrar", "disable_gruu", 0)
 </programlisting>
 		</example>
 	</section>
-	<section id="modparam-gruu-secret" xreflabel="gruu_secret">
+	<section id="param_gruu_secret" xreflabel="gruu_secret">
 		<title><varname>gruu_secret</varname> (string)</title>
 		<para>
 		The string that will be used in XORing when generating
@@ -712,8 +712,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		</para>
 		<para>
 			Depending on the current working
-			<emphasis><xref linkend="mode"/></emphasis> and
-			<emphasis><xref linkend="contact_id_insertion"/></emphasis>,
+			<emphasis><xref linkend="param_mode"/></emphasis> and
+			<emphasis><xref linkend="param_contact_id_insertion"/></emphasis>,
 			the function may additionally perform
 			the following series of transformations when relaying REGISTER requests:
 		</para>
@@ -728,7 +728,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 								header field to the value of
 								<emphasis>outgoing_expires</emphasis>, if given,
 								otherwise the value given by the
-								<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+								<emphasis><xref linkend="param_outgoing_expires"/></emphasis>
 								module parameter.
 								The same applies to any <emphasis>";expires"</emphasis>
 								Contact URI parameter.
@@ -747,7 +747,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 								allow the module to match the reply contacts
 								and also route calls. The name of this URI
 								parameter is configurable via
-								<emphasis><xref linkend="modparam_contact_id_param"/></emphasis>
+								<emphasis><xref linkend="param_contact_id_param"/></emphasis>
 							</para>
 						</listitem>
 					</itemizedlist>
@@ -761,7 +761,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 								header field to the value of
 								<emphasis>outgoing_expires</emphasis>, if given,
 								otherwise the value given by the
-								<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis>
+								<emphasis><xref linkend="param_outgoing_expires"/></emphasis>
 								module parameter.
 							</para>
 						</listitem>
@@ -842,7 +842,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 			in Contact/AOR throttling modes)</emphasis> - custom value
 		for the contact expiration interval of the outgoing REGISTER
 		request, which overrides the default
-			<emphasis><xref linkend="modparam-outgoing-expires"/></emphasis> module parameter.
+			<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module parameter.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -912,7 +912,7 @@ if (is_method("REGISTER")) {
 		</para>
 		<para>
 		Depending on the current working
-		<emphasis><xref linkend="mode"/></emphasis>,
+		<emphasis><xref linkend="param_mode"/></emphasis>,
 		the function will behave as follows:
 		</para>
 
@@ -938,7 +938,7 @@ if (is_method("REGISTER")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-				extract the <emphasis><xref linkend="modparam_contact_id_param"/></emphasis>
+				extract the <emphasis><xref linkend="param_contact_id_param"/></emphasis>
 				from the Request-URI, derive the actual SIP URI of the destination
 				from it and set it as the new Request-URI of the INVITE
 				(<emphasis role='bold'>$ru</emphasis> variable).

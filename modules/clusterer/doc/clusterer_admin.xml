@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <emphasis>clusterer</emphasis> module is used to organize multiple &osips; instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the <emphasis>clusterer</emphasis> interface (i.e. the <emphasis>dialog</emphasis> module can replicate dialogs/profiles, the <emphasis>ratelimit</emphasis> module can share pipes across multiple 
@@ -21,7 +21,7 @@
 	</para>
 	</section>
 
-        <section>
+        <section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -58,10 +58,10 @@
 	</section>
 	</section>
 
-    <section>
+    <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-		<section>
+		<section id="param_db_url" xreflabel="db_url">
             <title><varname>db_url</varname></title>
 		<para>
 		The database url.
@@ -82,7 +82,7 @@ modparam("clusterer", "db_url",
 		</example>
         </section>
 
-        <section>
+        <section id="param_db_table" xreflabel="db_table">
             <title><varname>db_table</varname></title>
             <para>
                 The name of the table storing the clustering information.
@@ -102,7 +102,7 @@ modparam("clusterer", "db_table", "clusterer")
 		</example>
         </section>
 
-        <section>
+        <section id="param_id_col" xreflabel="id_col">
             <title><varname>id_col</varname></title>
             <para>
                 The name of the column storing an id for the table rows.
@@ -122,7 +122,7 @@ modparam("clusterer", "id_col", "id")
 		</example>
         </section>
 
-        <section>
+        <section id="param_cluster_id_col" xreflabel="cluster_id_col">
             <title><varname>cluster_id_col</varname></title>
             <para>
                 The name of the column to store the id of a cluster.
@@ -142,7 +142,7 @@ modparam("clusterer", "cluster_id_col", "cluster_id")
 		</example>
         </section>
 
-        <section>
+        <section id="param_node_id_col" xreflabel="node_id_col">
             <title><varname>node_id_col</varname></title>
             <para>
                 The name of the column to store the id of an instance. The values must be greater than 0.
@@ -162,7 +162,7 @@ modparam("clusterer", "node_id_col", "node_id")
 		</example>
         </section>
 
-        <section>
+        <section id="param_url_col" xreflabel="url_col">
             <title><varname>url_col</varname></title>
             <para>
                 The name of the column containing the instance url. The values must be greater than 0.
@@ -182,7 +182,7 @@ modparam("clusterer", "url_col", "url")
 		</example>
         </section>
 
-        <section>
+        <section id="param_state_col" xreflabel="state_col">
             <title><varname>state_col</varname></title>
             <para>
                 The name of the column storing the state of the node(enabled/disabled).
@@ -202,7 +202,7 @@ modparam("clusterer", "state_col", "state")
 		</example>
         </section>
 
-        <section>
+        <section id="param_no_ping_retries_col" xreflabel="no_ping_retries_col">
             <title><varname>no_ping_retries_col</varname></title>
             <para>
                 The name of the column containing the maximum number of ping retries before the link with the neighbour node is considered down.
@@ -222,7 +222,7 @@ modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 		</example>
         </section>
 
-        <section>
+        <section id="param_priority_col" xreflabel="priority_col">
             <title><varname>priority_col</varname></title>
             <para>
                 The name of the column storing the node priority to be chosen as next hop in case of same length(number of hops) paths when rerouting messages.
@@ -242,7 +242,7 @@ modparam("clusterer", "priority_col", "priority")
 		</example>
         </section>
 
-        <section>
+        <section id="param_sip_addr_col" xreflabel="sip_addr_col">
             <title><varname>sip_addr_col</varname></title>
             <para>
                 The name of the column containing a SIP address for the node.
@@ -262,7 +262,7 @@ modparam("clusterer", "sip_addr_col", "sip_addr")
 		</example>
         </section>
 
-        <section>
+        <section id="param_description_col" xreflabel="description_col">
             <title><varname>description_col</varname></title>
             <para>
                 The name of the column containing a node description.
@@ -282,7 +282,7 @@ modparam("clusterer", "description_col", "description")
 		</example>
         </section>
 
-        <section>
+        <section id="param_current_id" xreflabel="current_id">
             <title><varname>current_id</varname></title>
             <para>
 				The id of the current instance. This parameter must be equal with one of the
@@ -303,7 +303,7 @@ modparam("clusterer", "current_id", 1)
 		</example>
         </section>
 
-        <section>
+        <section id="param_ping_interval" xreflabel="ping_interval">
             <title><varname>ping_interval</varname></title>
             <para>
 				The interval in seconds between regular pings sent to a neighbour node.
@@ -323,7 +323,7 @@ modparam("clusterer", "ping_interval", 1)
 		</example>
         </section>
 
-        <section>
+        <section id="param_ping_timeout" xreflabel="ping_timeout">
             <title><varname>ping_timeout</varname></title>
             <para>
 				The time in milliseconds to wait for a reply to a previously sent ping before retrying or considering the link with the neighbour node down. This is also the interval between successive retries if the send fails.
@@ -343,7 +343,7 @@ modparam("clusterer", "ping_timeout", 500)
 		</example>
         </section>
 
-        <section>
+        <section id="param_node_timeout" xreflabel="node_timeout">
             <title><varname>node_timeout</varname></title>
             <para>
 				The time in seconds to wait before pinging is restarted for a failed node.
@@ -363,7 +363,7 @@ modparam("clusterer", "node_timeout", 10)
 		</example>
         </section>
 
-        <section>
+        <section id="param_db_mode" xreflabel="db_mode">
             <title><varname>db_mode</varname></title>
             <para>
 				Specifies whether the node specifciation information for the current instance, as well as the other instances in the cluster, should be loaded from the database or configured in the script. A value of <quote>0</quote> means that the DB is not used.
@@ -383,7 +383,7 @@ modparam("clusterer", "db_mode", 0)
 		</example>
         </section>
 
-        <section>
+        <section id="param_current_info" xreflabel="current_info">
             <title><varname>current_info</varname></title>
             <para>
 				Node specification similar to the information provided by a row in the clusterer DB table corresponding to the current instance. At least the <emphasis>cluster_id</emphasis> and <emphasis>url</emphasis> propreties should be defined. This parameter can be set multiple times in order to include the current node in multiple clusters.
@@ -404,7 +404,7 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
 		</example>
         </section>
 
-        <section>
+        <section id="param_neighbor_info" xreflabel="neighbor_info">
             <title><varname>neighbor_info</varname></title>
             <para>
 				Node specification similar to the information provided by a row in the clusterer DB table corresponding to another instance in the current cluster. At least the <emphasis>cluster_id</emphasis>, <emphasis>node_id</emphasis> and <emphasis>url</emphasis> propreties should be defined. This parameter can be set multiple times.
@@ -425,7 +425,7 @@ modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:192.168.0
 		</example>
         </section>
 
-        <section>
+        <section id="param_sync_packet_max_size" xreflabel="sync_packet_max_size">
             <title><varname>sync_packet_max_size</varname></title>
             <para>
                 The maximum size of the BIN packets sent while doing data synchronization. This is only a suggested value as the actual size of the packets may be slightly larger.

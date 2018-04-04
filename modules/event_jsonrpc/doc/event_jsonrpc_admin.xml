@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module is an implementation of an JSON-RPC v2.0
@@ -91,7 +91,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -122,9 +122,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_sync_mode" xreflabel="sync_mode">
 		<title><varname>sync_mode</varname> (integer)</title>
 		<para>
 			This parameter controls the way the
@@ -158,7 +158,7 @@ modparam("event_jsonrpc", "sync_mode", yes)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_timeout" xreflabel="timeout">
 		<title><varname>timeout</varname> (integer)</title>
 		<para>
 			Specified the amount of milliseconds the module
@@ -188,7 +188,7 @@ modparam("event_jsonrpc", "timeout", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_event_param" xreflabel="event_param">
 		<title><varname>event_param</varname> (string)</title>
 		<para>
 			By default, the name of the event subscribed to is not

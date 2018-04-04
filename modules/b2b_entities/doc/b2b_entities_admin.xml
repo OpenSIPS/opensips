@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The B2BUA implementation in OpenSIPS is separated in two layers:
@@ -37,7 +37,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -77,9 +77,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-	<section>
+	<section id="param_server_hsize" xreflabel="server_hsize">
 		<title><varname>server_hsize</varname> (int)</title>
 		<para>
 			The size of the hash table that stores the b2b server entities.
@@ -100,7 +100,7 @@ modparam("b2b_entities", "server_hsize", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_client_hsize" xreflabel="client_hsize">
 		<title><varname>client_hsize</varname> (int)</title>
 		<para>
 			The size of the hash table that stores the b2b client entities.
@@ -121,7 +121,7 @@ modparam("b2b_entities", "client_hsize", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_script_req_route" xreflabel="script_req_route">
 		<title><varname>script_req_route</varname> (str)</title>
 		<para>
 			The name of the b2b script route that will be called when
@@ -137,7 +137,7 @@ modparam("b2b_entities", "script_req_route", "b2b_request")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_script_reply_route" xreflabel="script_reply_route">
 		<title><varname>script_reply_route</varname> (str)</title>
 		<para>
 			The name of the b2b script route that will be called when
@@ -153,7 +153,7 @@ modparam("b2b_entities", "script_reply_route", "b2b_reply")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
 			Database URL. It is not compulsory, if not set
@@ -169,7 +169,7 @@ modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensi
 		</example>
 	</section>
 
-	<section>
+	<section id="param_update_period" xreflabel="update_period">
 		<title><varname>update_period</varname> (int)</title>
 		<para>
 			The time interval at which to update the info in database.
@@ -187,7 +187,7 @@ modparam("b2b_entities", "update_period", 60)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_b2b_key_prefix" xreflabel="b2b_key_prefix">
 		<title><varname>b2b_key_prefix</varname> (string)</title>
 		<para>
 			The string to use when generating the key ( it is inserted
@@ -209,7 +209,7 @@ modparam("b2b_entities", "b2b_key_prefix", "B2B1")
 	</programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_mode" xreflabel="db_mode">
 		<title><varname>db_mode</varname> (int)</title>
 		<para>
 			The B2B modules have support for the 3 type of database storage
@@ -234,7 +234,7 @@ modparam("b2b_entities", "db_mode", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (str)</title>
 		<para>
 			The name of the table that will be used for storing B2B entities
@@ -252,7 +252,7 @@ modparam("b2b_entities", "db_table", "some table name")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_replication_mode" xreflabel="replication_mode">
 		<title><varname>replication_mode</varname> (int)</title>
 		<para>
 			Controls if the callid should be the same in more instances running at the same time.

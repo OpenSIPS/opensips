@@ -20,7 +20,7 @@
 		order to guarantee fast interactions while being asynchronously
 		synchronized to an SQL database. The latter helps achieve restart
 		persistency. Consult the
-		<emphasis role='bold'><xref linkend="working-mode-preset"/></emphasis>
+		<emphasis role='bold'><xref linkend="param_working_mode_preset"/></emphasis>
 		parameter for more details on all possible runtime behaviors of the
 		module.
 	</para>
@@ -198,11 +198,11 @@
 	<para>
 	For more details on how to control/select the contact matching algorithm,
 	please go to
-	<emphasis role='bold'><xref linkend="matching-mode"/></emphasis>.
+	<emphasis role='bold'><xref linkend="param_matching_mode"/></emphasis>.
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -221,7 +221,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>clusterer, if <xref linkend="cluster-mode"/>
+				<emphasis>clusterer, if <xref linkend="param_cluster_mode"/>
 				is different than "none".</emphasis>
 			</para>
 			</listitem>
@@ -243,9 +243,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section id="nat_bflag" xreflabel="nat_bflag">
+	<section id="param_nat_bflag" xreflabel="nat_bflag">
 		<title><varname>nat_bflag</varname> (string/integer)</title>
 		<para>
 		The name of the branch flag to be used as NAT marker (if the contact
@@ -269,7 +269,7 @@ modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 		</example>
 	</section>
 
-	<section id="user_column" xreflabel="user_column">
+	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
 		Name of column containing usernames.
@@ -289,7 +289,7 @@ modparam("usrloc", "user_column", "username")
 		</example>
 	</section>
 
-	<section id="domain_column" xreflabel="domain_column">
+	<section id="param_domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
 		Name of column containing domains.
@@ -309,7 +309,7 @@ modparam("usrloc", "domain_column", "domain")
 		</example>
 	</section>
 
-	<section id="contact_column" xreflabel="contact_column">
+	<section id="param_contact_column" xreflabel="contact_column">
 		<title><varname>contact_column</varname> (string)</title>
 		<para>
 		Name of column containing contacts.
@@ -329,7 +329,7 @@ modparam("usrloc", "contact_column", "contact")
 		</example>
 	</section>
 
-	<section id="expires_column" xreflabel="expires_column">
+	<section id="param_expires_column" xreflabel="expires_column">
 		<title><varname>expires_column</varname> (string)</title>
 		<para>
 		Name of column containing expires value.
@@ -349,7 +349,7 @@ modparam("usrloc", "expires_column", "expires")
 		</example>
 	</section>
 
-	<section id="q_column" xreflabel="q_column">
+	<section id="param_q_column" xreflabel="q_column">
 		<title><varname>q_column</varname> (string)</title>
 		<para>
 		Name of column containing q values.
@@ -369,7 +369,7 @@ modparam("usrloc", "q_column", "q")
 		</example>
 	</section>
 
-	<section id="callid_column" xreflabel="callid_column">
+	<section id="param_callid_column" xreflabel="callid_column">
 		<title><varname>callid_column</varname> (string)</title>
 		<para>
 		Name of column containing callid values.
@@ -389,7 +389,7 @@ modparam("usrloc", "callid_column", "callid")
 		</example>
 	</section>
 
-	<section id="cseq_column" xreflabel="cseq_column">
+	<section id="param_cseq_column" xreflabel="cseq_column">
 		<title><varname>cseq_column</varname> (string)</title>
 		<para>
 		Name of column containing cseq numbers.
@@ -409,7 +409,7 @@ modparam("usrloc", "cseq_column", "cseq")
 		</example>
 	</section>
 
-	<section id="methods_column" xreflabel="methods_column">
+	<section id="param_methods_column" xreflabel="methods_column">
 		<title><varname>methods_column</varname> (string)</title>
 		<para>
 		Name of column containing supported methods.
@@ -429,7 +429,7 @@ modparam("usrloc", "methods_column", "methods")
 		</example>
 	</section>
 
-	<section id="flags_column" xreflabel="flags_column">
+	<section id="param_flags_column" xreflabel="flags_column">
 		<title><varname>flags_column</varname> (string)</title>
 		<para>
 		Name of column to save the internal flags of the record.
@@ -449,7 +449,7 @@ modparam("usrloc", "flags_column", "flags")
 		</example>
 	</section>
 
-	<section id="cflags_column" xreflabel="cflags_column">
+	<section id="param_cflags_column" xreflabel="cflags_column">
 		<title><varname>cflags_column</varname> (string)</title>
 		<para>
 		Name of column to save the branch/contact flags of the record.
@@ -469,7 +469,7 @@ modparam("usrloc", "cflags_column", "cflags")
 		</example>
 	</section>
 
-	<section id="user_agent_column" xreflabel="user_agent_column">
+	<section id="param_user_agent_column" xreflabel="user_agent_column">
 		<title><varname>user_agent_column</varname> (string)</title>
 		<para>
 		Name of column containing user-agent values.
@@ -489,7 +489,7 @@ modparam("usrloc", "user_agent_column", "user_agent")
 		</example>
 	</section>
 
-	<section id="received_column" xreflabel="received_column">
+	<section id="param_received_column" xreflabel="received_column">
 		<title><varname>received_column</varname> (string)</title>
 		<para>
 		Name of column containing the source IP, port, and protocol from the REGISTER
@@ -510,7 +510,7 @@ modparam("usrloc", "received_column", "received")
 		</example>
 	</section>
 
-	<section id="socket_column" xreflabel="socket_column">
+	<section id="param_socket_column" xreflabel="socket_column">
 		<title><varname>socket_column</varname> (string)</title>
 		<para>
 		Name of column containing the received socket information (IP:port)
@@ -531,7 +531,7 @@ modparam("usrloc", "socket_column", "socket")
 		</example>
 	</section>
 
-	<section id="path_column" xreflabel="path_column">
+	<section id="param_path_column" xreflabel="path_column">
 		<title><varname>path_column</varname> (string)</title>
 		<para>
 		Name of column containing the Path header.
@@ -551,7 +551,7 @@ modparam("usrloc", "path_column", "path")
 		</example>
 	</section>
 
-	<section id="sip_instance_column" xreflabel="sip_instance_column">
+	<section id="param_sip_instance_column" xreflabel="sip_instance_column">
 		<title><varname>sip_instance_column</varname> (string)</title>
 		<para>
 		Name of column containing the SIP instance.
@@ -571,7 +571,7 @@ modparam("usrloc", "sip_instance_column", "sip_instance")
 		</example>
 	</section>
 
-	<section id="kv_store_column" xreflabel="kv_store_column">
+	<section id="param_kv_store_column" xreflabel="kv_store_column">
 		<title><varname>kv_store_column</varname> (string)</title>
 		<para>
 		Name of column containing generic key-value data.
@@ -591,7 +591,7 @@ modparam("usrloc", "kv_store_column", "json_data")
 		</example>
 	</section>
 
-	<section id="attr_column" xreflabel="attr_column">
+	<section id="param_attr_column" xreflabel="attr_column">
 		<title><varname>attr_column</varname> (string)</title>
 		<para>
 		Name of column containing additional registration-related information.
@@ -611,7 +611,7 @@ modparam("usrloc", "attr_column", "attributes")
 		</example>
 	</section>
 
-	<section id="use_domain" xreflabel="use_domain">
+	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		If the domain part of the user should be also saved and used for
@@ -633,7 +633,7 @@ modparam("usrloc", "use_domain", 1)
 		</example>
 	</section>
 
-	<section id="desc_time_order" xreflabel="desc_time_order">
+	<section id="param_desc_time_order" xreflabel="desc_time_order">
 		<title><varname>desc_time_order</varname> (integer)</title>
 		<para>
 		If the user's contacts should be kept timestamp ordered; otherwise the
@@ -655,7 +655,7 @@ modparam("usrloc", "desc_time_order", 1)
 		</example>
 	</section>
 
-	<section id="timer-interval" xreflabel="timer_interval">
+	<section id="param_timer_interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
 		Number of seconds between two timer runs. The module uses timer to
@@ -684,7 +684,7 @@ modparam("usrloc", "timer_interval", 120)
 		</example>
 	</section>
 
-	<section id="db-url" xreflabel="db_url">
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		&url; of the database that should be used.
@@ -704,12 +704,12 @@ modparam("usrloc", "db_url", "&exampledb;")
 		</example>
 	</section>
 
-	<section id="cachedb-url" xreflabel="cachedb_url">
+	<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 		&url; of a NoSQL database to be used. Only required in a
 		cachedb-enabled
-		<emphasis role='bold'><xref linkend="cluster-mode"/></emphasis>.
+		<emphasis role='bold'><xref linkend="param_cluster_mode"/></emphasis>.
 		</para>
 		<para>
 		<emphasis>
@@ -726,12 +726,12 @@ modparam("usrloc", "cachedb_url", "&examplecdb;")
 		</example>
 	</section>
 
-	<section id="db_mode" xreflabel="db_mode">
+	<section id="param_db_mode" xreflabel="db_mode">
 		<title><varname>db_mode</varname> (integer, deprecated)</title>
 		<para>
 		<emphasis role='bold'>Although it is backwards-compatible, this
 		parameter has been deprecated in favour of the more complete
-		<xref linkend="working-mode-preset"/>, which it conflicts with.
+		<xref linkend="param_working_mode_preset"/>, which it conflicts with.
 		</emphasis>
 		</para>
 		<para>
@@ -749,7 +749,7 @@ modparam("usrloc", "db_mode", 2)
 		</example>
 	</section>
 
-	<section id="working-mode-preset" xreflabel="working-mode-preset">
+	<section id="param_working_mode_preset" xreflabel="working_mode_preset">
 		<title><varname>working_mode_preset</varname> (string)</title>
 		<para>
 		<itemizedlist>
@@ -804,23 +804,23 @@ modparam("usrloc", "db_mode", 2)
 			<para>
 			<emphasis role="bold">"federation-cachedb-cluster"</emphasis> -
 			OpenSIPS will run with a "federation-cachedb"
-			<xref linkend="cluster-mode"/> and
-			"sync-from-cluster" <xref linkend="restart-persistency"/>.
+			<xref linkend="param_cluster_mode"/> and
+			"sync-from-cluster" <xref linkend="param_restart_persistency"/>.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
 			<emphasis role="bold">"full-sharing-cluster"</emphasis> -
 			OpenSIPS will run with a "full-sharing"
-			<xref linkend="cluster-mode"/> and
-			"sync-from-cluster" <xref linkend="restart-persistency"/>.
+			<xref linkend="param_cluster_mode"/> and
+			"sync-from-cluster" <xref linkend="param_restart_persistency"/>.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
 			<emphasis role="bold">"full-sharing-cachedb-cluster"</emphasis> -
 			OpenSIPS will run with a "full-sharing-cachedb"
-			<xref linkend="cluster-mode"/>, where all location data strictly
+			<xref linkend="param_cluster_mode"/>, where all location data strictly
 			resides in a NoSQL database, thus it will have natural restart
 			persistency.
 			</para>
@@ -847,11 +847,11 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 		</example>
 	</section>
 
-	<section id="cluster-mode" xreflabel="cluster_mode">
+	<section id="param_cluster_mode" xreflabel="cluster_mode">
 		<title><varname>cluster_mode</varname> (string)</title>
 		<para>
 			<emphasis role='bold'>This parameter is automatically set by
-				<xref linkend='working-mode-preset'/>.</emphasis>
+				<xref linkend='param_working_mode_preset'/>.</emphasis>
 		</para>
 		<para>
 		The behavior of the global OpenSIPS user location cluster. Refer to
@@ -870,8 +870,8 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 				federation-based data sharing. Local AoR metadata is published
 				inside a NoSQL database, so other cluster nodes can fork SIP
 				traffic over to the current node. Consequently, the
-				<xref linkend="location-cluster"/> and
-				<xref linkend="cachedb-url"/> parameters are mandatory.
+				<xref linkend="param_location_cluster"/> and
+				<xref linkend="param_cachedb_url"/> parameters are mandatory.
 				</para>
 			</listitem>
 			<listitem>
@@ -880,7 +880,7 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 				OpenSIPS cluster participants. 
 				inside a NoSQL database, so other cluster nodes are able to
 				route SIP traffic through the current node. Consequently, the
-				<xref linkend="location-cluster"/> parameter is mandatory.
+				<xref linkend="param_location_cluster"/> parameter is mandatory.
 				</para>
 			</listitem>
 			<listitem>
@@ -890,7 +890,7 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 				The cluster layer is still required in order to
 				be able to partition and spread the pinging workload evenly
 				among participating OpenSIPS nodes. Consequently, the
-				<xref linkend="location-cluster"/> parameter is mandatory.
+				<xref linkend="param_location_cluster"/> parameter is mandatory.
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -909,11 +909,11 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 		</example>
 	</section>
 
-	<section id="restart-persistency" xreflabel="restart_persistency">
+	<section id="param_restart_persistency" xreflabel="restart_persistency">
 		<title><varname>restart_persistency</varname> (string)</title>
 		<para>
 			<emphasis role='bold'>This parameter is automatically set by
-				<xref linkend='working-mode-preset'/>.</emphasis>
+				<xref linkend='param_working_mode_preset'/>.</emphasis>
 		</para>
 		<para>
 		Controls the behavior of OpenSIPS user location instance following a
@@ -935,9 +935,9 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 				in-memory writes (i.e. new registrations, re-registrations or
 				de-registrations) to also propagate to an SQL database, from
 				which all data will be imported following a restart.
-				Choosing this value will make the <xref linkend='db-url'/>
+				Choosing this value will make the <xref linkend='param_db_url'/>
 				parameter mandatory, as well as cause
-				<xref linkend='sql-write-mode'/> to default to "write-back"
+				<xref linkend='param_sql_write_mode'/> to default to "write-back"
 				instead of "none".
 				</para>
 			</listitem>
@@ -948,7 +948,7 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 				from which to mirror the entire user location dataset via
 				direct cluster sync (TCP-based, binary-encoded data transfer).
 				Choosing this value will make the
-				<xref linkend='location-cluster'/> parameter mandatory.
+				<xref linkend='param_location_cluster'/> parameter mandatory.
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -968,14 +968,14 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 		</example>
 	</section>
 
-	<section id="sql-write-mode" xreflabel="sql_write_mode">
+	<section id="param_sql_write_mode" xreflabel="sql_write_mode">
 		<title><varname>sql_write_mode</varname> (string)</title>
 		<para>
 			<emphasis role='bold'>This parameter is automatically set by
-				<xref linkend='working-mode-preset'/>.</emphasis>
+				<xref linkend='param_working_mode_preset'/>.</emphasis>
 		</para>
 		<para>
-		Only valid if <xref linkend="restart-persistency"/> is enabled.
+		Only valid if <xref linkend="param_restart_persistency"/> is enabled.
 		Controls the runtime behavior of OpenSIPS writes to the SQL database.
 		</para>
 		<para>
@@ -1005,7 +1005,7 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 				speeds up registrations, but also introduces the
 				possibility of crashing before the latest contact changes are
 				propagated to the database. See the
-				<xref linkend='timer-interval'/> for additional configuration.
+				<xref linkend='param_timer_interval'/> for additional configuration.
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -1024,7 +1024,7 @@ modparam("usrloc", "sql_write_mode", "write-back")
 		</example>
 	</section>
 
-	<section id="matching-mode" xreflabel="matching_mode">
+	<section id="param_matching_mode" xreflabel="matching_mode">
 		<title><varname>matching_mode</varname> (integer)</title>
 		<para>
 		What contact matching algorithm to be used. Refer to section
@@ -1061,7 +1061,7 @@ modparam("usrloc", "matching_mode", 1)
 		</example>
 	</section>
 
-	<section id="cseq_delay" xreflabel="cseq_delay">
+	<section id="param_cseq_delay" xreflabel="cseq_delay">
 		<title><varname>cseq_delay</varname> (integer)</title>
 		<para>
 		Delay (in seconds) for accepting as retransmissions register requests
@@ -1091,7 +1091,7 @@ modparam("usrloc", "cseq_delay", 5)
 		</example>
 	</section>
 
-	<section id='location-cluster' xreflabel="location_cluster">
+	<section id="param_location_cluster" xreflabel="location_cluster">
 		<title><varname>location_cluster</varname> (integer)</title>
 		<para>
 		Specifies the cluster ID which this instance will send to and receive
@@ -1116,8 +1116,7 @@ modparam("usrloc", "location_cluster", 1)
 		</example>
 	</section>
 
-	<section id='skip_replicated_db_ops'
-	         xreflabel="skip_replicated_db_ops">
+	<section id="param_skip_replicated_db_ops" xreflabel="skip_replicated_db_ops">
 		<title><varname>skip_replicated_db_ops</varname> (int)</title>
 		<para>
 		Prevent &osips; from performing any DB-related contact operations
@@ -1143,8 +1142,7 @@ modparam("usrloc", "skip_replicated_db_ops", 1)
 		</example>
 	</section>
 
-	<section id='max_contact_delete'
-	         xreflabel="max_contact_delete">
+	<section id="param_max_contact_delete" xreflabel="max_contact_delete">
 		<title><varname>max_contact_delete</varname> (int)</title>
 		<para>
 			Relevant only in WRITE_THROUGH or WRITE_BACK schemes. The maximum
@@ -1166,7 +1164,7 @@ modparam("usrloc", "max_contact_delete", 10)
 	</section>
 
 
-	<section id="hash_size" xreflabel="hash_size">
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The number of entries of the hash table used by usrloc to store the
@@ -1189,7 +1187,7 @@ modparam("usrloc", "hash_size", 10)
 		</example>
 	</section>
 
-	<section id="regen_broken_contactid" xreflabel="regen_broken_contactid">
+	<section id="param_regen_broken_contactid" xreflabel="regen_broken_contactid">
 		<title><varname>regen_broken_contactid</varname> (integer)</title>
 		<para>
 			Since version 2.2, <emphasis role='bold'>contact_id</emphasis> concept

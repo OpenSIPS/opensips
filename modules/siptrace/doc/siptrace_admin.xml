@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		Offer a possibility to store incoming/outgoing SIP messages in database.
@@ -40,7 +40,7 @@
 	opensipsctl fifo sip_trace [some_trace_id] off
 	</para>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -87,9 +87,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-		<section>
+		<section id="param_trace_on" xreflabel="trace_on">
 		<title><varname>trace_on</varname> (integer)</title>
 		<para>
 		Parameter to enable/disable trace (on(1)/off(0))
@@ -109,7 +109,7 @@ modparam("siptrace", "trace_on", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_local_ip" xreflabel="trace_local_ip">
 		<title><varname>trace_local_ip</varname> (str)</title>
 		<para>
 			The address to be used in the fields that specify the source address
@@ -149,7 +149,7 @@ modparam("siptrace", "trace_local_ip", "10.1.1.1")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_id" xreflabel="trace_id">
 		<title><varname>trace_id</varname> (str)</title>
 		<para>
 			Specify a destination for the trace. This can be a hep id defined

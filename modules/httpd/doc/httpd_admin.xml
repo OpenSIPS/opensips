@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides an HTTP transport layer for &osips;.
@@ -15,7 +15,7 @@
 	</para>
 	</section>
 	
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -47,9 +47,9 @@
 	</section>
 	</section>
 	
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_ip" xreflabel="ip">
 		<title><varname>ip</varname>(string)</title>
 		<para>
 		The IP address used by the HTTP server to listen for incoming 
@@ -69,7 +69,7 @@ modparam("httpd", "ip", "127.0.0.1")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_port" xreflabel="port">
 		<title><varname>port</varname>(integer)</title>
 		<para>
 		The port number used by the HTTP server to listen for incoming 
@@ -88,7 +88,7 @@ modparam("httpd", "port", 8000)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_buf_size" xreflabel="buf_size">
 		<title><varname>buf_size</varname> (integer)</title>
 		<para>
 		It specifies the maximum length (in bytes) of the buffer
@@ -110,7 +110,7 @@ modparam("httpd", "buf_size", 524288)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_post_buf_size" xreflabel="post_buf_size">
 		<title><varname>post_buf_size</varname> (integer)</title>
 		<para>
 		It specifies the length (in bytes) of the POST HTTP requests
@@ -133,7 +133,7 @@ modparam("httpd", "post_buf_size", 4096)
 
 	<section>
 	<title>Exported MI Functions</title>
-		<section>
+		<section id="param_httpd_list_root_path" xreflabel="httpd_list_root_path">
 		<title><varname>httpd_list_root_path</varname></title>
 		<para>
 		Lists all the registered http root paths into the httpd module.

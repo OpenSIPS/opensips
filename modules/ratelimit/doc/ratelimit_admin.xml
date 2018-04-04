@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module implements rate limiting for SIP requests. In contrast to
@@ -173,7 +173,7 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -203,9 +203,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_timer_interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
 			The timer interval in seconds when the Network and Feedback algorithms
@@ -230,7 +230,7 @@ modparam("ratelimit", "timer_interval", 5)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_limit_per_interval" xreflabel="limit_per_interval">
 		<title><varname>limit_per_interval</varname> (integer)</title>
 		<para>
 			This parameter configures the way that a pipe's limit is specified
@@ -253,7 +253,7 @@ modparam("ratelimit", "limit_per_interval", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_expire_time" xreflabel="expire_time">
 		<title><varname>expire_time</varname> (integer)</title>
 		<para>
 		This parameter specifies how long a pipe should be kept in memory
@@ -274,7 +274,7 @@ modparam("ratelimit", "expire_time", 1800)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_hash_size" xreflabel="hash_size">
 		<title><varname>hash_size</varname> (integer)</title>
 		<para>
 		The size of the hash table internally used to keep the pipes.
@@ -295,7 +295,7 @@ modparam("ratelimit", "hash_size", 512)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_default_algorithm" xreflabel="default_algorithm">
 		<title><varname>default_algorithm</varname> (string)</title>
 		<para>
 		Specifies which algorithm should be assumed in case it isn't
@@ -315,7 +315,7 @@ modparam("ratelimit", "default_algorithm", "RED")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 		Enables distributed rate limiting and specifies the backend
@@ -335,7 +335,7 @@ modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_db_prefix" xreflabel="db_prefix">
 		<title><varname>db_prefix</varname> (string)</title>
 		<para>
 		Specifies what prefix should be added to the pipe name. This is
@@ -355,7 +355,7 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_repl_buffer_threshold" xreflabel="repl_buffer_threshold">
 		<title><varname>repl_buffer_threshold</varname> (string)</title>
 		<para>
 		Used to specify the length of the buffer used by the binary
@@ -378,7 +378,7 @@ modparam("ratelimit", "repl_buffer_threshold", 500)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_repl_timer_interval" xreflabel="repl_timer_interval">
 		<title><varname>repl_timer_interval</varname> (string)</title>
 		<para>
 		Timer in milliseconds, used to specify how often the module
@@ -398,7 +398,7 @@ modparam("ratelimit", "repl_timer_interval", 100)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_repl_timer_expire" xreflabel="repl_timer_expire">
 		<title><varname>repl_timer_expire</varname> (string)</title>
 		<para>
 		Timer in seconds, used to specify when the counter received
@@ -420,7 +420,7 @@ modparam("ratelimit", "repl_timer_expire", 10)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_pipe_replication_cluster" xreflabel="pipe_replication_cluster">
 		<title><varname>pipe_replication_cluster</varname> (integer)</title>
 		<para>
 			Specifies the cluster ID where pipes will be replicated to and
@@ -441,7 +441,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 		</example>
 	</section>
 
-        <section>
+        <section id="param_window_size" xreflabel="window_size">
 		<title><varname>window_size</varname> (int)</title>
 		<para>
 			How long the history in SBT should be in seconds.
@@ -461,7 +461,7 @@ modparam("ratelimit", "window_size", 5)
 		</example>
 	</section>
 
-        <section>
+        <section id="param_slot_period" xreflabel="slot_period">
 		<title><varname>slot_period</varname> (int)</title>
 		<para>
 			Value of one slot in milliseconds. This parameter determines

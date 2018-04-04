@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which provides a FIFO transport layer
@@ -48,7 +48,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -79,9 +79,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_fifo_name" xreflabel="fifo_name">
 		<title><varname>fifo_name</varname> (string)</title>
 		<para>
 		The name of the FIFO file to be created for listening and
@@ -102,7 +102,7 @@ modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_fifo_mode" xreflabel="fifo_mode">
 		<title><varname>fifo_mode</varname> (integer)</title>
 		<para>
 		Permission to be used for creating the listening FIFO file. It
@@ -123,7 +123,7 @@ modparam("mi_fifo", "fifo_mode", 0600)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_fifo_group" xreflabel="fifo_group">
 		<title><varname>fifo_group</varname> (integer)
 		<varname>fifo_group</varname> (string)</title>
 		<para>
@@ -145,7 +145,7 @@ modparam("mi_fifo", "fifo_group", "root")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_fifo_user" xreflabel="fifo_user">
 		<title><varname>fifo_user</varname> (integer)
 		<varname>fifo_group</varname> (string)</title>
 		<para>
@@ -167,7 +167,7 @@ modparam("mi_fifo", "fifo_user", "root")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_reply_dir" xreflabel="reply_dir">
 		<title><varname>reply_dir</varname> (string)</title>
 		<para>
 		Directory to be used for creating the reply FIFO files.
@@ -187,7 +187,7 @@ modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_reply_indent" xreflabel="reply_indent">
 		<title><varname>reply_indent</varname> (string)</title>
 		<para>
 		Strings to be used for line indentation. As the MI data structure
@@ -208,7 +208,7 @@ modparam("mi_fifo", "reply_indent", "    ")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -237,7 +237,7 @@ modparam("mi_fifo", "trace_destination", "hep_dest")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_trace_bwlist" xreflabel="trace_bwlist">
 		<title><varname>trace_bwlist</varname> (string)</title>
 		<para>
 			Filter traced mi commands based on a blacklist or a whitelist.

@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 	The Load-Balancer module comes to provide traffic routing based on load. 
@@ -82,7 +82,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -137,10 +137,10 @@
 	</section>
 
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		The URL pointing to the database where the load-balancing rules 
@@ -161,7 +161,7 @@ modparam("load_balancer", "db_url", "&exampledb;")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table" xreflabel="db_table">
 		<title><varname>db_table</varname> (string)</title>
 		<para>
 		The name of the DB table containing the load-balancing rules.
@@ -181,7 +181,7 @@ modparam("load_balancer", "db_table", "lb")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_interval" xreflabel="probing_interval">
 		<title><varname>probing_interval</varname> (integer)</title>
 		<para>
 		How often (in seconds) the probing of a destination should be done. If
@@ -203,7 +203,7 @@ modparam("load_balancer", "probing_interval", 60)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_method" xreflabel="probing_method">
 		<title><varname>probing_method</varname> (string)</title>
 		<para>
 		The SIP method to be used for the probing requests.
@@ -223,7 +223,7 @@ modparam("load_balancer", "probing_method", "INFO")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_from" xreflabel="probing_from">
 		<title><varname>probing_from</varname> (string)</title>
 		<para>
 		The FROM SIP URI to be advertised in the SIP probing requests.
@@ -243,7 +243,7 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_reply_codes" xreflabel="probing_reply_codes">
 		<title><varname>probing_reply_codes</varname> (string)</title>
 		<para>
 		A comma separted list of SIP reply codes. The codes defined here 
@@ -265,7 +265,7 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_probing_verbose" xreflabel="probing_verbose">
 		<title><varname>probing_verbose</varname> (number)</title>
 		<para>
 		A boolean option to enable extra logging related to the 
@@ -294,7 +294,7 @@ modparam("load_balancer", "probing_verbose", 1)
 	</section>
 
 
-	<section>
+	<section id="param_lb_define_blacklist" xreflabel="lb_define_blacklist">
 		<title><varname>lb_define_blacklist</varname> (string)</title>
 		<para>
 		Defines a blacklist based on a lb group. This list will contain the IPs
@@ -319,7 +319,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_fetch_freeswitch_stats" xreflabel="fetch_freeswitch_stats">
 		<title><varname>fetch_freeswitch_stats</varname> (integer)</title>
 		<para>
 		If enabled, the maximum value of a resource may also consist of
@@ -373,7 +373,7 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_initial_freeswitch_load" xreflabel="initial_freeswitch_load">
 		<title><varname>initial_freeswitch_load</varname> (integer)</title>
 		<para>
 		This parameter is only relevant for some seconds after module startup/reload,
@@ -396,7 +396,7 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_status_replication_cluster" xreflabel="status_replication_cluster">
 		<title><varname>status_replication_cluster</varname> (integer)</title>
 		<para>
 		A cluster ID for sharing any change in the status of the destinations with other

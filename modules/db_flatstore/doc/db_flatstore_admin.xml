@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		Flatstore is one of so-called &osips; database modules. It does not
@@ -117,7 +117,7 @@ opensipsctl fifo flat_rotate
 	</section>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -148,9 +148,9 @@ opensipsctl fifo flat_rotate
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_flush" xreflabel="flush">
 		<title><varname>flush</varname> (integer)</title>
 		<para>
 		Enable or disable flushing after each write.
@@ -169,7 +169,7 @@ modparam("db_flatstore", "flush", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_delimiter" xreflabel="delimiter">
 		<title><varname>delimiter</varname> (char)</title>
 		<para>
 		Delimiter used to separate the values.
@@ -188,7 +188,7 @@ modparam("db_flatstore", "delimiter", ";")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_suffix" xreflabel="suffix">
 		<title><varname>suffix</varname> (string)</title>
 		<para>
 		The suffix appended to the table name. Can be a pseudo
@@ -208,7 +208,7 @@ modparam("db_flatstore", "suffix", "$time(%H)")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_prefix" xreflabel="prefix">
 		<title><varname>prefix</varname> (string)</title>
 		<para>
 		The table name prefix. Can be a pseudo variable.
@@ -227,7 +227,7 @@ modparam("db_flatstore", "prefix", "$time(%H)")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_single_file" xreflabel="single_file">
 		<title><varname>single_file</varname> (integer)</title>
 		<para>
 		Specifies if all the processes should dump the data

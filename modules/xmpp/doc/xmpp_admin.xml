@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>	This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between
 		SIP clients and XMPP(jabber) clients. </para>
@@ -23,7 +23,8 @@
 	<para> After you have a running XMPP server, what you need to do is set the following parameters in the OpenSIPS configuration file:</para>
 	<itemizedlist>
 		<listitem>
-			<para>xmpp_domain and xmpp_host, which are explained in the Exported Parameters section;
+			<para>xmpp_domain and xmpp_host, which are explained in the
+				<xref linkend="exported_parameters"/> section;
 			</para>
 		</listitem>
 		<listitem>
@@ -51,7 +52,10 @@
 	</itemizedlist>
 	<para>
 		In the server mode, the xmpp module is a minimal jabber server, thus you do not need to install another jabber server, the gateway will connect to the jabber servers, where the users you want to chat with have an account. </para>
-	<para>If you want to change to server-mode, you have to change the "backend" parameter, as shown in the Exported Parameters section, from component to server.</para>
+	<para>
+	If you want to change to server-mode, you have to change the
+	"backend" parameter, as shown in the
+	<xref linkend="exported_parameters"/> section, from component to server.</para>
 	<para>	A use case, for the server-mode, would look like this: </para>
 	<itemizedlist>
 		<listitem>
@@ -62,7 +66,7 @@
 		</listitem>
 	</itemizedlist>	
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -93,10 +97,10 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>backend(string)</varname></title>
+	<section id="param_backend" xreflabel="backend">
+		<title><varname>backend</varname> (string)</title>
 		<para>
 		The mode you are using the module; it can be either component or server.
 		</para>
@@ -114,7 +118,7 @@
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_xmpp_domain" xreflabel="xmpp_domain">
 		<title><varname>xmpp_domain</varname> (string)</title>
 		<para>
 			The xmpp domain of the component or the server, depending on the mode we are in.
@@ -133,7 +137,7 @@
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_xmpp_host" xreflabel="xmpp_host">
 		<title><varname>xmpp_host</varname> (string)</title>
 		<para>
 			 The ip address or the name of the local jabber server, if the backend is set to "component"; or the address to bind to in the server mode.
@@ -153,7 +157,7 @@
 		</example>
 	</section>
 
-	<section>
+	<section id="param_sip_domain" xreflabel="sip_domain">
 		<title><varname>sip_domain</varname> (string)</title>
 		<para>
 		This parameter must be set only if the xmpp module is used in component mode and the domain
@@ -183,7 +187,7 @@
 		</example>
 	</section>
 
-	<section>
+	<section id="param_xmpp_port" xreflabel="xmpp_port">
 		<title><varname>xmpp_port</varname> (integer)</title>
 		<para>
 			In the component mode, this is the port of the jabber router we connect to. In the server mode, it is the transport address to bind to.	 
@@ -203,7 +207,7 @@
 		</example>
 	</section>
 
-<section>
+<section id="param_xmpp_password" xreflabel="xmpp_password">
 		<title><varname>xmpp_password</varname> (string)</title>
 		<para>	The password of the local jabber server. 	</para>
 		<para>
@@ -227,7 +231,7 @@
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_outbound_proxy" xreflabel="outbound_proxy">
 		<title><varname>outbound_proxy</varname> (string)</title>
 		<para>
 		The SIP address used as next hop when sending the message. Very

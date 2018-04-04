@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides a Radius implementation for the AAA API from the core.
@@ -38,7 +38,7 @@
 
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -93,9 +93,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_sets" xreflabel="sets">
 		<title><varname>sets (string)</varname></title>
 		<para>
 			Sets of Radius AVPs to be used when building custom RADIUS requests (set of input RADIUS AVPs)
@@ -143,7 +143,7 @@ modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 		</example>
 		</section>
 
-		<section>
+		<section id="param_radius_config" xreflabel="radius_config">
 		<title><varname>radius_config (string)</varname></title>
 		<para>
 			Radiusclient configuration file.
@@ -164,7 +164,7 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 		</example>
 		</section>
 
-		<section>
+		<section id="param_syslog_name" xreflabel="syslog_name">
 		<title><varname>syslog_name (string)</varname></title>
 		<para>
 		Enable logging of the client library to syslog, using the given log name.
@@ -188,7 +188,7 @@ modparam("aaa_radius", "syslog_name", "aaa-radius")
 		</example>
 		</section>
 
-		<section>
+		<section id="param_fetch_all_values" xreflabel="fetch_all_values">
 		<title><varname>fetch_all_values (integer)</varname></title>
 		<para>
 		For the output sets, this parameter controls if all the values (for the same

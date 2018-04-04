@@ -18,22 +18,25 @@ Vladut-Stefan Paiu
         1.1. Overview
 
               1.1.1. The idea
-              1.1.2. OpenSIPS Modules
-              1.1.3. External Libraries or Applications
 
-        1.2. Exported Parameters
+        1.2. Dependencies
 
-              1.2.1. cachedb_url (str)
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
 
-        1.3. Examples of Usage
+        1.3. Exported Parameters
 
-              1.3.1. Distributed Subscriber Base
+              1.3.1. cachedb_url (str)
 
-        1.4. Current Limitations
+        1.4. Examples of Usage
 
-              1.4.1. CacheDB modules integration
-              1.4.2. Extensive Testing Needed
-              1.4.3. CacheDB Specific 'schema' and other
+              1.4.1. Distributed Subscriber Base
+
+        1.5. Current Limitations
+
+              1.5.1. CacheDB modules integration
+              1.5.2. Extensive Testing Needed
+              1.5.3. CacheDB Specific 'schema' and other
                       incompatibilities
 
    List of Examples
@@ -42,8 +45,6 @@ Vladut-Stefan Paiu
    1.2. OpenSIPS CFG Snippet for using DB_CACHEDB
 
 Chapter 1. Admin Guide
-
-1.1. Overview
 
 1.1. Overview
 
@@ -57,20 +58,22 @@ Chapter 1. Admin Guide
    much easier distribution and integration of the currently
    existing OpenSIPS modules in a distributed environment.
 
-1.1.2. OpenSIPS Modules
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * At least one NoSQL cachedb_* module.
 
-1.1.3. External Libraries or Applications
+1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.2. Exported Parameters
+1.3. Exported Parameters
 
-1.2.1.  cachedb_url (str)
+1.3.1.  cachedb_url (str)
 
    The URL for the CacheDB back-end to be used. It can be set more
    than one time.
@@ -81,9 +84,9 @@ modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017
 /db.col")
 ...
 
-1.3. Examples of Usage
+1.4. Examples of Usage
 
-1.3.1.  Distributed Subscriber Base
+1.4.1.  Distributed Subscriber Base
 
    In order to achieve such a setup, one would have to set the
    db_url parameter of the auth_db module to point to the
@@ -109,9 +112,9 @@ modparam("auth_db","db_url","cachedb://mongodb:mycluster")
    like usrloc, dialog, permissions, drouting, etc ) on top of a
    cachedb cluster.
 
-1.4. Current Limitations
+1.5. Current Limitations
 
-1.4.1.  CacheDB modules integration
+1.5.1.  CacheDB modules integration
 
    Currently the only cachedb_* module that implements this
    functionality is the cachedb_mongodb module, so currently you
@@ -119,7 +122,7 @@ modparam("auth_db","db_url","cachedb://mongodb:mycluster")
    There are plans to also extend this functionality to other
    cachedb_* backends, like Cassandra and CouchBase.
 
-1.4.2.  Extensive Testing Needed
+1.5.2.  Extensive Testing Needed
 
    Since there are many OpenSIPS modules that currently use the DB
    interface, it wasn't feasible to test all scenarios with all
@@ -128,7 +131,7 @@ modparam("auth_db","db_url","cachedb://mongodb:mycluster")
    usrloc, dialog, permissions, drouting ), but more testing is
    very much welcome, and feedback is appreciated.
 
-1.4.3.  CacheDB Specific 'schema' and other incompatibilities
+1.5.3.  CacheDB Specific 'schema' and other incompatibilities
 
    Since the NoSQL backends do not usually have a strict schema
    involved, we do not provide scripts for creating such schemas,

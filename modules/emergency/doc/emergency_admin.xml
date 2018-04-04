@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 
@@ -51,7 +51,7 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 
 	</section>
 	
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -93,10 +93,10 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
 
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		The database url must be specified.
@@ -116,7 +116,7 @@ modparam("emergency", "db_url", "mysql://opensips:opensipsrw@localhost/opensips�
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table_routing" xreflabel="db_table_routing">
 		<title><varname>db_table_routing</varname> (string)</title>
 		<para>
 		The name of the db table storing routing information to emergency calls.
@@ -136,7 +136,7 @@ modparam("emergency", "db_table_routing", "emergency_routing")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table_report" xreflabel="db_table_report">
 		<title><varname>db_table_report</varname> (string)</title>
 		<para>
 		The name of the db table that stores the emergency call report.
@@ -156,7 +156,7 @@ modparam("emergency", "db_table_report", "emergency_report")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_db_table_provider" xreflabel="db_table_provider">
 		<title><varname>db_table_provider</varname> (string)</title>
 		<para>
 		The name of the db table that stores the nodes information of organization involved in emergency calls.
@@ -177,7 +177,7 @@ modparam("emergency", "db_table_provider", "emergency_service_provider")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_proxy_role" xreflabel="proxy_role">
 		<title><varname>proxy_role</varname> (integer)</title>
 		<para>
 		This parameter define what role the opensips will take to treat emergency   
@@ -228,7 +228,7 @@ modparam("emergency", "proxy_role", 0))
 		</example>
 	</section>
 
-	<section>
+	<section id="param_url_vpc" xreflabel="url_vpc">
 		<title><varname>url_vpc</varname> (string)</title>
 		<para>
    		The VPC url that opensips request the routing information to emergency 
@@ -249,7 +249,7 @@ modparam("emergency", "url_vpc", “192.168.0.103:5060”)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_emergency_codes" xreflabel="emergency_codes">
 		<title><varname>emergency_codes</varname> (string)</title>
 		<para>
    		Local emergency number. Opensips uses this number to recognize a emergency 
@@ -273,7 +273,7 @@ modparam("emergency", "emergency_codes", “911-us emegency code”)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_timer_interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (interger)</title>
 		<para>
    		Sets the time interval polling to make the copy in memory of the 
@@ -294,7 +294,7 @@ modparam("emergency","timer_interval",20)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_contingency_hostname" xreflabel="contingency_hostname">
 		<title><varname>contingency_hostname</varname> (string)</title>
 		<para>
    		The contingency_hostname is the url of the server que will route the call 
@@ -316,7 +316,7 @@ modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 	</section>
 
 
-	<section>
+	<section id="param_emergency_call_server" xreflabel="emergency_call_server">
 		<title><varname>emergency_call_server</varname> (string)</title>
 		<para>
 		The emergency_call_server is the url of the Routing Proxy/Redirect Server

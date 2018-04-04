@@ -334,9 +334,9 @@ if (check_route_param("nat=yes")) {
 
    The function checks the flow direction of the request. As for
    checking it's used the “ftag” Route header parameter, the
-   append_fromtag (see Section 1.4.1, “append_fromtag (integer)”
-   module parameter must be enabled. Also this must be called only
-   after loose_route() (see Section 1.5.1, “ loose_route() ”).
+   append_fromtag (see append_fromtag module parameter must be
+   enabled. Also this must be called only after loose_route() (see
+   Section 1.5.1, “ loose_route() ”).
 
    The function returns true if the “dir” is the same with the
    request's flow direction.
@@ -414,9 +414,9 @@ Chapter 2. Developer Guide
 
    The function checks the flow direction of the request “msg”. As
    for checking it's used the “ftag” Route header parameter, the
-   append_fromtag (see Section 1.4.1, “append_fromtag (integer)”
-   module parameter must be enables. Also this must be call only
-   after the loose_route is done.
+   append_fromtag (see append_fromtag module parameter must be
+   enables. Also this must be call only after the loose_route is
+   done.
 
    The function returns 0 if the “dir” is the same with the
    request's flow direction. Otherwise, -1 is returned.

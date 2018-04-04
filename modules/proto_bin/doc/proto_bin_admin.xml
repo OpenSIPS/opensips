@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The <emphasis role='bold'>proto_bin</emphasis> module is a
@@ -28,7 +28,7 @@ listen = bin:127.0.0.1:5080	# change the listening IP and port
 	</para>
 	</para>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -60,9 +60,9 @@ listen = bin:127.0.0.1:5080	# change the listening IP and port
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_bin_port" xreflabel="bin_port">
 		<title><varname>bin_port</varname> (integer)</title>
 		<para>
 		The default port to be used by all TCP listeners.
@@ -82,7 +82,7 @@ modparam("proto_bin", "bin_port", 6666)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_bin_port_send_timeout" xreflabel="bin_port_send_timeout">
 		<title><varname>bin_port_send_timeout</varname> (integer)</title>
 		<para>
 		Time in milliseconds after a TCP connection will be closed if it is
@@ -103,7 +103,7 @@ modparam("proto_bin", "bin_send_timeout", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bin_max_msg_chunks" xreflabel="bin_max_msg_chunks">
 		<title><varname>bin_max_msg_chunks</varname> (integer)</title>
 		<para>
 			The maximum number of chunks in which a BIN message is expected to
@@ -127,7 +127,7 @@ modparam("proto_bin", "bin_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bin_async" xreflabel="bin_async">
 		<title><varname>bin_async</varname> (integer)</title>
 		<para>
 			Specifies whether the TCP connect and write operations should be
@@ -149,7 +149,7 @@ modparam("proto_bin", "bin_async", 0)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bin_async_max_postponed_chunks" xreflabel="bin_async_max_postponed_chunks">
 		<title><varname>bin_async_max_postponed_chunks</varname> (integer)</title>
 		<para>
 			If <emphasis>bin_async</emphasis> is enabled, this specifies the
@@ -171,7 +171,7 @@ modparam("proto_bin", "bin_async_max_postponed_chunks", 16)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bin_async_local_connect_timeout" xreflabel="bin_async_local_connect_timeout">
 		<title><varname>bin_async_local_connect_timeout</varname> (integer)</title>
 		<para>
 			If <emphasis>bin_async</emphasis> is enabled, this specifies the
@@ -194,7 +194,7 @@ modparam("proto_bin", "bin_async_local_connect_timeout", 200)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_bin_async_local_write_timeout" xreflabel="bin_async_local_write_timeout">
 		<title><varname>bin_async_local_write_timeout</varname> (integer)</title>
 		<para>
 			If <emphasis>bin_async</emphasis> is enabled, this specifies the

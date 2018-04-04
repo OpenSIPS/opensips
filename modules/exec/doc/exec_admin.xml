@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		The Exec module enables the execution of external commands from the
@@ -71,7 +71,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -102,9 +102,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_setvars" xreflabel="setvars">
 		<title><varname>setvars</varname> (integer)</title>
 		<para>
 		Set to 1 to enable setting all above-mentioned environment variables
@@ -128,10 +128,8 @@ modparam("exec", "setvars", 1)
 </programlisting>
 		</example>
 	</section>
-	<section id='time_to_kill' xreflabel='time_to_kill'>
-		<title>
-			<varname>time_to_kill</varname> (integer)
-		</title>
+	<section id="param_time_to_kill" xreflabel="time_to_kill">
+		<title><varname>time_to_kill</varname> (integer)</title>
 		<para>
 		If set, this parameter specifies the longest time (in seconds) that a
 		program is allowed to execute. Once this duration is exceeded, the
@@ -469,7 +467,7 @@ route[resume] {
 	<title>Known Issues</title>
 	<para>
 		When imposing an execution timeout using
-		<emphasis role='bold'><xref linkend="time_to_kill"/></emphasis>,
+		<emphasis role='bold'><xref linkend="param_time_to_kill"/></emphasis>,
 		make sure your "/bin/sh" is a shell which does not fork when executed,
 		case in which the job itself will not be killed, but rather its parent shell,
 		while the job is silently inherited by "init" and will continue to run.

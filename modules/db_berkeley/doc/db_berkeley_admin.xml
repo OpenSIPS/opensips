@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This is a module which integrates the Berkeley DB into OpenSIPS.
@@ -12,7 +12,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -43,9 +43,9 @@
 		</para>
 	</section>
 	</section>
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_auto_reload" xreflabel="auto_reload">
 		<title><varname>auto_reload</varname> (integer)</title>
 		<para>
 		The auto-reload will close and reopen a Berkeley DB when the
@@ -67,7 +67,7 @@ modparam("db_berkeley", "auto_reload", 1)
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_log_enable" xreflabel="log_enable">
 		<title><varname>log_enable</varname> (integer)</title>
 		<para>
 		The log_enable boolean controls when to create journal files.
@@ -96,7 +96,7 @@ modparam("db_berkeley", "log_enable", 1)
 		</example>
 	</section>
 	
-	<section>
+	<section id="param_journal_roll_interval" xreflabel="journal_roll_interval">
 		<title><varname>journal_roll_interval</varname> (integer seconds)</title>
 		<para>
 		The journal_roll_interval will close and open a new log file. 

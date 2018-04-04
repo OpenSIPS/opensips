@@ -4,7 +4,7 @@
 
 	<title>&adminguide;</title>
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides a way to prevent some basic fraud attacks.
@@ -66,7 +66,7 @@
 		</para>
 		</section>
 	</section>
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; modules</title>
@@ -102,9 +102,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		Database where to load the rules from.
@@ -125,7 +125,7 @@ modparam("fraud_detection", "db_url", "mysql://user:passwb@localhost/database")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		If you want to load the rules from the database you must set
@@ -146,7 +146,7 @@ modparam("fraud_detection", "table_name", "my_fraud")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_rid_col" xreflabel="rid_col">
 		<title><varname>rid_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -167,7 +167,7 @@ modparam("fraud_detection", "rid_col", "theruleid"")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_pid_col" xreflabel="pid_col">
 		<title><varname>pid_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -192,7 +192,7 @@ modparam("fraud_detection", "pid_col", "profile"")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_prefix_col" xreflabel="prefix_col">
 		<title><varname>prefix_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -213,7 +213,7 @@ modparam("fraud_detection", "prefix_col", "myprefix")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_start_h" xreflabel="start_h">
 		<title><varname>start_h</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -239,7 +239,7 @@ modparam("fraud_detection", "start_h", "the_start_time")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_end_h" xreflabel="end_h">
 		<title><varname>end_h</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -265,7 +265,7 @@ modparam("fraud_detection", "end_h", "the_end_time")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_days_col" xreflabel="days_col">
 		<title><varname>days_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -294,7 +294,7 @@ modparam("fraud_detection", "days_col", "days")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cpm_thresh_warn_col" xreflabel="cpm_thresh_warn_col">
 		<title><varname>cpm_thresh_warn_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -315,7 +315,7 @@ modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_cpm_thresh_crit_col" xreflabel="cpm_thresh_crit_col">
 		<title><varname>cpm_thresh_crit_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -336,7 +336,7 @@ modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_calldur_thresh_warn_col" xreflabel="calldur_thresh_warn_col">
 		<title><varname>calldur_thresh_warn_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -357,7 +357,7 @@ modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_calldur_thresh_crit_col" xreflabel="calldur_thresh_crit_col">
 		<title><varname>calldur_thresh_crit_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -378,7 +378,7 @@ modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_totalc_thresh_warn_col" xreflabel="totalc_thresh_warn_col">
 		<title><varname>totalc_thresh_warn_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -399,7 +399,7 @@ modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_totalc_thresh_crit_col" xreflabel="totalc_thresh_crit_col">
 		<title><varname>totalc_thresh_crit_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -420,7 +420,7 @@ modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_concalls_thresh_warn_col" xreflabel="concalls_thresh_warn_col">
 		<title><varname>concalls_thresh_warn_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -442,7 +442,7 @@ modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_concalls_thresh_crit_col" xreflabel="concalls_thresh_crit_col">
 		<title><varname>concalls_thresh_crit_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -464,7 +464,7 @@ modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_seqcalls_thresh_warn_col" xreflabel="seqcalls_thresh_warn_col">
 		<title><varname>seqcalls_thresh_warn_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the
@@ -486,7 +486,7 @@ modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_seqcalls_thresh_crit_col" xreflabel="seqcalls_thresh_crit_col">
 		<title><varname>seqcalls_thresh_crit_col</varname> (string)</title>
 		<para>
 			The column's name in the database storing the

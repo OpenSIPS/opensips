@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 
-	<section id="sec-overview">
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		Enum module implements [i_]enum_query functions that make an enum query 
@@ -99,7 +99,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<para>
 		The module depends on the following modules (in the other words the 
@@ -112,9 +112,9 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_domain_suffix" xreflabel="domain_suffix">
 		<title><varname>domain_suffix</varname> (string)</title>
 		<para>
 		The domain suffix to be added to the domain name obtained from
@@ -132,7 +132,7 @@ modparam("enum", "domain_suffix", "e1234.arpa.")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_tel_uri_params" xreflabel="tel_uri_params">
 		<title><varname>tel_uri_params</varname> (string)</title>
 		<para>
 		A string whose contents is appended to each new tel URI in the 
@@ -154,7 +154,7 @@ modparam("enum", "tel_uri_params", ";npdi")
 </programlisting>
 		</example>
 	</section>
-        <section>
+        <section id="param_i_enum_suffix" xreflabel="i_enum_suffix">
                 <title><varname>i_enum_suffix</varname> (string)</title>
                 <para>
                 The domain suffix to be used for i_enum_query() lookups.
@@ -170,7 +170,7 @@ modparam("enum", "i_enum_suffix", "e1234.arpa.")
 </programlisting>
                 </example>
         </section>
-        <section>
+        <section id="param_isn_suffix" xreflabel="isn_suffix">
                 <title><varname>isn_suffix</varname> (string)</title>
                 <para>
                 The domain suffix to be used for isn_query() lookups. Can
@@ -186,7 +186,7 @@ modparam("enum", "isn_suffix", "freenum.org.")
 </programlisting>
                 </example>
         </section>
-        <section>
+        <section id="param_branchlabel" xreflabel="branchlabel">
                 <title><varname>branchlabel</varname> (string)</title>
                 <para>
                 This parameter determines which label i_enum_query() will use
@@ -202,7 +202,7 @@ modparam("enum", "branchlabel", "i")
 </programlisting>
                 </example>
         </section>
-        <section>
+        <section id="param_bl_algorithm" xreflabel="bl_algorithm">
                 <title><varname>bl_algorithm</varname> (string)</title>
                 <para>
                 This parameter determines which algorithm i_enum_query() will use
@@ -265,7 +265,7 @@ modparam("enum", "bl_algorithm", "txt")
 		</title>
 		<para>
 		The function performs an enum query and rewrites the Request-URI with 
-		the result of the query. See <xref linkend="sec-overview"/> for more 
+		the result of the query. See <xref linkend="overview"/> for more 
 		information.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -343,7 +343,7 @@ enum_query("e164.arpa.","+sip+voice:sip");
 		<para>
 		The function performs an enum query on E.164 number stored
 		in its pseudo variable argument and rewrites the Request-URI with 
-		the result of the query. See <xref linkend="sec-overview"/> for more 
+		the result of the query. See <xref linkend="overview"/> for more 
 		information.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -417,7 +417,7 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
 		</title>
 		<para>
 		The function performs a ISN query and rewrites the Request-URI with 
-		the result of the query. See <xref linkend="sec-overview"/> for more 
+		the result of the query. See <xref linkend="overview"/> for more 
 		information.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>

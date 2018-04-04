@@ -4,7 +4,7 @@
 	
 	<title>&adminguide;</title>
 	
-	<section>
+	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides a function to answer OPTIONS requests which 
@@ -21,7 +21,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -57,9 +57,9 @@
 	</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section>
+	<section id="param_accept" xreflabel="accept">
 		<title><varname>accept</varname> (string)</title>
 		<para>
 			This parameter is the content of the Accept header field. If
@@ -83,7 +83,7 @@ modparam("options", "accept", "application/*")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_accept_encoding" xreflabel="accept_encoding">
 		<title><varname>accept_encoding</varname> (string)</title>
 		<para>
 			This parameter is the content of the Accept-Encoding header field.
@@ -105,7 +105,7 @@ modparam("options", "accept_encoding", "gzip")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_accept_language" xreflabel="accept_language">
 		<title><varname>accept_language</varname> (string)</title>
 		<para>
 			This parameter is the content of the Accept-Language header field.
@@ -129,7 +129,7 @@ modparam("options", "accept_language", "de")
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="param_support" xreflabel="support">
 		<title><varname>support</varname> (string)</title>
 		<para>
 			This parameter is the content of the Support header field.

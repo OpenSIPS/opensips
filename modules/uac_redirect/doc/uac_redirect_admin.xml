@@ -5,7 +5,7 @@
 	<title>&adminguide;</title>
 
 
-	<section>
+	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
 		UAC REDIRECT - User Agent Client redirection - module enhance &osips;
@@ -74,7 +74,7 @@
 	</section>
 
 
-	<section>
+	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
 			<title>&osips; Modules</title>
@@ -112,9 +112,9 @@
 		</section>
 	</section>
 
-	<section>
+	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_default_filter" xreflabel="default_filter">
 			<title><varname>default_filter</varname> (string)</title>
 			<para>
 			The default behavior in filtering contacts. It may be 
@@ -135,7 +135,7 @@ modparam("uac_redirect","default_filter","deny")
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_deny_filter" xreflabel="deny_filter">
 			<title><varname>deny_filter</varname> (string)</title>
 			<para>
 			The regular expression for default deny filtering. It make sens
@@ -167,7 +167,7 @@ modparam("uac_redirect","deny_filter",".*@siphub\.net")
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_accept_filter" xreflabel="accept_filter">
 			<title><varname>accept_filter</varname> (string)</title>
 			<para>
 			The regular expression for default accept filtering. It make sens
@@ -199,7 +199,7 @@ modparam("uac_redirect","accept_filter",".*@siphub\.net")
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_acc_function" xreflabel="acc_function">
 			<title><varname>acc_function</varname> (string)</title>
 			<para>
 			Specifies the accounting function to be used. Just be defining 
@@ -239,7 +239,7 @@ modparam("uac_redirect","acc_function","acc_db_request")
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="param_acc_db_table" xreflabel="acc_db_table">
 			<title><varname>acc_db_table</varname> (string)</title>
 			<para>
 			Specifies the accounting table to be used if DB accounting was 
