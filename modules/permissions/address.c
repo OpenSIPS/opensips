@@ -177,11 +177,10 @@ int reload_address_table(struct pm_part_struct *part_struct)
 			continue;
 		}
 
-		ip_addr = str2ip(&str_src_ip);
-
-		if (!ip_addr) {
-			LM_DBG("invalid ip field in address table, ignoring entry "
-				"with id %d\n", id);
+		if ( (ip_addr=str2ip(&str_src_ip))==NULL &&
+		(ip_addr=str2ip6(&str_src_ip))==NULL ) {
+			LM_DBG("invalid ip <%.*s> in address table, ignoring entry "
+				"with id %d\n", str_src_ip.len, str_src_ip.s, id);
 			continue;
 		}
 
@@ -512,9 +511,8 @@ int check_addr_6(struct sip_msg* msg,
 		return -1;
 	}
 
-	ip = str2ip(&str_ip);
-	if (!ip) {
-		LM_ERR("invalid ip set <%.*s>!\n", str_ip.len, str_ip.s);
+	if ( (ip=str2ip(&str_ip))==NULL && (ip=str2ip6(&str_ip))==NULL ) {
+		LM_ERR("invalid ip address <%.*s>!\n", str_ip.len, str_ip.s);
 		return -1;
 	}
 
@@ -594,8 +592,7 @@ int check_src_addr_3(struct sip_msg *msg,
 		                char *grp, char *info, char* pattern) {
 
 	int group, hash_ret, subnet_ret, ret = 1;
-	struct in_addr in;
-	str str_ip, str_part_group;
+	str str_part_group;
 	struct ip_addr *ip;
 	str pattern_s;
 	struct pm_part_struct *part_struct;
@@ -649,19 +646,9 @@ int check_src_addr_3(struct sip_msg *msg,
 		return -1;
 	}
 
-	in.s_addr = msg->rcv.src_ip.u.addr32[0];
-	str_ip.s = inet_ntoa(in);
-
-	if (!str_ip.s) {
-		LM_ERR("error at inet_ntoa\n");
-		return -1;
-	}
-
-	str_ip.len = strlen(str_ip.s);
-	ip = str2ip(&str_ip);
-
-	LM_DBG("Looking for : <%d, %.*s, %d, %d> in tables\n",
-				group, str_ip.len, str_ip.s,
+	ip = &msg->rcv.src_ip;
+	LM_DBG("Looking for : <%d, %s, %d, %d> in tables\n",
+				group, ip_addr2a(ip),
 				msg->rcv.src_port,
 				msg->rcv.proto);
 	if (pattern) {
@@ -715,7 +702,6 @@ int check_src_addr_1(struct sip_msg* msg,
 
 int get_source_group(struct sip_msg* msg, char *arg) {
 	int group = -1;
-	struct in_addr in;
 	struct ip_addr *ip;
 	str str_ip, partition;
 	pv_value_t pvt;
@@ -746,14 +732,9 @@ int get_source_group(struct sip_msg* msg, char *arg) {
 		}
 	}
 
-	LM_DBG("Looking for <%x, %u> in address table\n",
-			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
-
-	in.s_addr = msg->rcv.src_ip.u.addr32[0];
-	str_ip.s = inet_ntoa(in);
-	str_ip.len = str_ip.s ? strlen(str_ip.s) : 0;
-
-	ip = str2ip(&str_ip);
+	ip = &msg->rcv.src_ip;
+	LM_DBG("Looking for <%s, %u> in address table\n",
+			ip_addr2a(ip), msg->rcv.src_port);
 
 	group = find_group_in_hash_table(*ps->hash_table,
 				ip,
