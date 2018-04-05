@@ -125,6 +125,27 @@ modparam("fraud_detection", "db_url", "mysql://user:passwb@localhost/database")
 		</example>
 	</section>
 
+	<section id="param_use_local_time" xreflabel="use_local_time">
+		<title><varname>use_local_time</varname> (integer)</title>
+		<para>
+		Set this parameter to non-zero in order to enable local time-based interval
+		matching and statistics resets, rather than UTC-based.
+		</para>
+		<para>
+		<emphasis>
+			The default value is <quote>0</quote> (use UTC time).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>use_local_time</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("fraud_detection", "use_local_time", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>table_name</varname> (string)</title>
 		<para>
