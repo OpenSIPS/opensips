@@ -250,11 +250,11 @@ int find_group_in_hash_table(struct address_list** table,
 int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 		struct pm_part_struct *pm) {
 	int i, len;
-    struct address_list *node;
+	struct address_list *node;
 	struct mi_node *dst;
 	char *p, prbuf[PROTO_NAME_MAX_SIZE];
 
-    for (i = 0; i < PERM_HASH_SIZE; i++) {
+	for (i = 0; i < PERM_HASH_SIZE; i++) {
 		for (node = table[i]; node; node=node->next) {
 
 			dst = add_mi_node_child(rpl, 0, MI_SSTR("dest"), NULL, 0);
@@ -273,8 +273,16 @@ int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 				goto out_free;
 			}
 
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("mask"), MI_SSTR("32"))) {
-				goto out_free;
+			if (node->ip->af==AF_INET) {
+				if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("mask"),
+				MI_SSTR("32"))) {
+					goto out_free;
+				}
+			} else {
+				if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("mask"),
+				MI_SSTR("128"))) {
+					goto out_free;
+				}
 			}
 
 			p = int2str(node->port, &len);
