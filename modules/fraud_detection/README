@@ -26,23 +26,24 @@ Andrei Daniel Datcu
         1.3. Exported Parameters
 
               1.3.1. db_url (string)
-              1.3.2. table_name (string)
-              1.3.3. rid_col (string)
-              1.3.4. pid_col (string)
-              1.3.5. prefix_col (string)
-              1.3.6. start_h (string)
-              1.3.7. end_h (string)
-              1.3.8. days_col (string)
-              1.3.9. cpm_thresh_warn_col (string)
-              1.3.10. cpm_thresh_crit_col (string)
-              1.3.11. calldur_thresh_warn_col (string)
-              1.3.12. calldur_thresh_crit_col (string)
-              1.3.13. totalc_thresh_warn_col (string)
-              1.3.14. totalc_thresh_crit_col (string)
-              1.3.15. concalls_thresh_warn_col (string)
-              1.3.16. concalls_thresh_crit_col (string)
-              1.3.17. seqcalls_thresh_warn_col (string)
-              1.3.18. seqcalls_thresh_crit_col (string)
+              1.3.2. use_utc_time (integer)
+              1.3.3. table_name (string)
+              1.3.4. rid_col (string)
+              1.3.5. pid_col (string)
+              1.3.6. prefix_col (string)
+              1.3.7. start_h (string)
+              1.3.8. end_h (string)
+              1.3.9. days_col (string)
+              1.3.10. cpm_thresh_warn_col (string)
+              1.3.11. cpm_thresh_crit_col (string)
+              1.3.12. calldur_thresh_warn_col (string)
+              1.3.13. calldur_thresh_crit_col (string)
+              1.3.14. totalc_thresh_warn_col (string)
+              1.3.15. totalc_thresh_crit_col (string)
+              1.3.16. concalls_thresh_warn_col (string)
+              1.3.17. concalls_thresh_crit_col (string)
+              1.3.18. seqcalls_thresh_warn_col (string)
+              1.3.19. seqcalls_thresh_crit_col (string)
 
         1.4. Exported Functions
 
@@ -61,23 +62,24 @@ Andrei Daniel Datcu
    List of Examples
 
    1.1. Set the “db_url” parameter
-   1.2. Set the “table_name” parameter
-   1.3. Set “rid_col” parameter
-   1.4. Set “pid_col” parameter
-   1.5. Set “prefix_col” parameter
-   1.6. Set “start_h” parameter
-   1.7. Set “end_h” parameter
-   1.8. Set “days_col” parameter
-   1.9. Set “cpm_thresh_warn_col” parameter
-   1.10. Set “cpm_thresh_crit_col” parameter
-   1.11. Set “calldur_thresh_warn_col” parameter
-   1.12. Set “calldur_thresh_crit_col” parameter
-   1.13. Set “totalc_thresh_warn_col” parameter
-   1.14. Set “totalc_thresh_crit_col” parameter
-   1.15. Set “concalls_thresh_warn_col” parameter
-   1.16. Set “concalls_thresh_crit_col” parameter
-   1.17. Set “seqcalls_thresh_warn_col” parameter
-   1.18. Set “seqcalls_thresh_crit_col” parameter
+   1.2. Set the “use_utc_time” parameter
+   1.3. Set the “table_name” parameter
+   1.4. Set “rid_col” parameter
+   1.5. Set “pid_col” parameter
+   1.6. Set “prefix_col” parameter
+   1.7. Set “start_h” parameter
+   1.8. Set “end_h” parameter
+   1.9. Set “days_col” parameter
+   1.10. Set “cpm_thresh_warn_col” parameter
+   1.11. Set “cpm_thresh_crit_col” parameter
+   1.12. Set “calldur_thresh_warn_col” parameter
+   1.13. Set “calldur_thresh_crit_col” parameter
+   1.14. Set “totalc_thresh_warn_col” parameter
+   1.15. Set “totalc_thresh_crit_col” parameter
+   1.16. Set “concalls_thresh_warn_col” parameter
+   1.17. Set “concalls_thresh_crit_col” parameter
+   1.18. Set “seqcalls_thresh_warn_col” parameter
+   1.19. Set “seqcalls_thresh_crit_col” parameter
 
 Chapter 1. Admin Guide
 
@@ -144,30 +146,43 @@ modparam("fraud_detection", "db_url", "mysql://user:passwb@localhost/dat
 abase")
 ...
 
-1.3.2. table_name (string)
+1.3.2. use_utc_time (integer)
+
+   Set this parameter to non-zero in order to enable UTC-based
+   interval matching and statistics resets, rather than local
+   time-based.
+
+   The default value is “0” (use local time).
+
+   Example 1.2. Set the “use_utc_time” parameter
+...
+modparam("fraud_detection", "use_utc_time", 1)
+...
+
+1.3.3. table_name (string)
 
    If you want to load the rules from the database you must set
    this parameter as the database name.
 
    The default value is “fraud_detection”.
 
-   Example 1.2. Set the “table_name” parameter
+   Example 1.3. Set the “table_name” parameter
 ...
 modparam("fraud_detection", "table_name", "my_fraud")
 ...
 
-1.3.3. rid_col (string)
+1.3.4. rid_col (string)
 
    The column's name in the database storing the fraud rule's id.
 
    Default value is “ruleid”.
 
-   Example 1.3. Set “rid_col” parameter
+   Example 1.4. Set “rid_col” parameter
 ...
 modparam("fraud_detection", "rid_col", "theruleid"")
 ...
 
-1.3.4. pid_col (string)
+1.3.5. pid_col (string)
 
    The column's name in the database storing the fraud profile's
    id.
@@ -176,24 +191,24 @@ modparam("fraud_detection", "rid_col", "theruleid"")
 
    Default value is “profileid”.
 
-   Example 1.4. Set “pid_col” parameter
+   Example 1.5. Set “pid_col” parameter
 ...
 modparam("fraud_detection", "pid_col", "profile"")
 ...
 
-1.3.5. prefix_col (string)
+1.3.6. prefix_col (string)
 
    The column's name in the database storing the prefix for which
    the fraud rule will match.
 
    Default value is “prefix”.
 
-   Example 1.5. Set “prefix_col” parameter
+   Example 1.6. Set “prefix_col” parameter
 ...
 modparam("fraud_detection", "prefix_col", "myprefix")
 ...
 
-1.3.6. start_h (string)
+1.3.7. start_h (string)
 
    The column's name in the database storing the the start time of
    the interval in which the rule will match.
@@ -203,12 +218,12 @@ modparam("fraud_detection", "prefix_col", "myprefix")
 
    Default value is “start_hour”.
 
-   Example 1.6. Set “start_h” parameter
+   Example 1.7. Set “start_h” parameter
 ...
 modparam("fraud_detection", "start_h", "the_start_time")
 ...
 
-1.3.7. end_h (string)
+1.3.8. end_h (string)
 
    The column's name in the database storing the the end time of
    the interval in which the rule will match.
@@ -218,12 +233,12 @@ modparam("fraud_detection", "start_h", "the_start_time")
 
    Default value is “end_hour”.
 
-   Example 1.7. Set “end_h” parameter
+   Example 1.8. Set “end_h” parameter
 ...
 modparam("fraud_detection", "end_h", "the_end_time")
 ...
 
-1.3.8. days_col (string)
+1.3.9. days_col (string)
 
    The column's name in the database storing the week days in
    which the fraud rule's interval is available.
@@ -235,134 +250,134 @@ modparam("fraud_detection", "end_h", "the_end_time")
 
    Default value is “daysoftheweek”.
 
-   Example 1.8. Set “days_col” parameter
+   Example 1.9. Set “days_col” parameter
 ...
 modparam("fraud_detection", "days_col", "days")
 ...
 
-1.3.9. cpm_thresh_warn_col (string)
+1.3.10. cpm_thresh_warn_col (string)
 
    The column's name in the database storing the warning threshold
    value for calls per minute.
 
    Default value is “cpm_warning”.
 
-   Example 1.9. Set “cpm_thresh_warn_col” parameter
+   Example 1.10. Set “cpm_thresh_warn_col” parameter
 ...
 modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
 ...
 
-1.3.10. cpm_thresh_crit_col (string)
+1.3.11. cpm_thresh_crit_col (string)
 
    The column's name in the database storing the critical
    threshold value for calls per minute.
 
    Default value is “cpm_critical”.
 
-   Example 1.10. Set “cpm_thresh_crit_col” parameter
+   Example 1.11. Set “cpm_thresh_crit_col” parameter
 ...
 modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
 ...
 
-1.3.11. calldur_thresh_warn_col (string)
+1.3.12. calldur_thresh_warn_col (string)
 
    The column's name in the database storing the warning threshold
    value for call duration.
 
    Default value is “call_duration_warning”.
 
-   Example 1.11. Set “calldur_thresh_warn_col” parameter
+   Example 1.12. Set “calldur_thresh_warn_col” parameter
 ...
 modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thr
 esh")
 ...
 
-1.3.12. calldur_thresh_crit_col (string)
+1.3.13. calldur_thresh_crit_col (string)
 
    The column's name in the database storing the critical
    threshold value for call duration.
 
    Default value is “call_duration_critical”.
 
-   Example 1.12. Set “calldur_thresh_crit_col” parameter
+   Example 1.13. Set “calldur_thresh_crit_col” parameter
 ...
 modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thr
 esh")
 ...
 
-1.3.13. totalc_thresh_warn_col (string)
+1.3.14. totalc_thresh_warn_col (string)
 
    The column's name in the database storing the warning threshold
    value for the number of total calls.
 
    Default value is “total_calls_warning”.
 
-   Example 1.13. Set “totalc_thresh_warn_col” parameter
+   Example 1.14. Set “totalc_thresh_warn_col” parameter
 ...
 modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thres
 h")
 ...
 
-1.3.14. totalc_thresh_crit_col (string)
+1.3.15. totalc_thresh_crit_col (string)
 
    The column's name in the database storing the critical
    threshold value for the number of total calls.
 
    Default value is “total_calls_critical”.
 
-   Example 1.14. Set “totalc_thresh_crit_col” parameter
+   Example 1.15. Set “totalc_thresh_crit_col” parameter
 ...
 modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thres
 h")
 ...
 
-1.3.15. concalls_thresh_warn_col (string)
+1.3.16. concalls_thresh_warn_col (string)
 
    The column's name in the database storing the warning threshold
    value for the number of concurrent calls.
 
    Default value is “concurrent_calls_warning”.
 
-   Example 1.15. Set “concalls_thresh_warn_col” parameter
+   Example 1.16. Set “concalls_thresh_warn_col” parameter
 ...
 modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_t
 hresh")
 ...
 
-1.3.16. concalls_thresh_crit_col (string)
+1.3.17. concalls_thresh_crit_col (string)
 
    The column's name in the database storing the critical
    threshold value for the number of concurrent calls.
 
    Default value is “concurrent_calls_critical”.
 
-   Example 1.16. Set “concalls_thresh_crit_col” parameter
+   Example 1.17. Set “concalls_thresh_crit_col” parameter
 ...
 modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_t
 hresh")
 ...
 
-1.3.17. seqcalls_thresh_warn_col (string)
+1.3.18. seqcalls_thresh_warn_col (string)
 
    The column's name in the database storing the warning threshold
    value for the number of sequential calls.
 
    Default value is “sequential_calls_warning”.
 
-   Example 1.17. Set “seqcalls_thresh_warn_col” parameter
+   Example 1.18. Set “seqcalls_thresh_warn_col” parameter
 ...
 modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_t
 hresh")
 ...
 
-1.3.18. seqcalls_thresh_crit_col (string)
+1.3.19. seqcalls_thresh_crit_col (string)
 
    The column's name in the database storing the critical
    threshold value for the number of sequential calls.
 
    Default value is “sequential_calls_critical”.
 
-   Example 1.18. Set “seqcalls_thresh_crit_col” parameter
+   Example 1.19. Set “seqcalls_thresh_crit_col” parameter
 ...
 modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_t
 hresh")

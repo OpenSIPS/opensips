@@ -35,6 +35,9 @@
 #include "frd_load.h"
 #include "frd_events.h"
 
+int mp_use_utc_time;
+struct tm *(*customtime_r)(const time_t *timep, struct tm *result) = localtime_r;
+
 extern str db_url;
 extern str table_name;
 
@@ -176,6 +179,9 @@ static int mod_init(void)
 {
 	LM_INFO("Initializing module\n");
 	init_db_url(db_url, 0);
+
+	if (mp_use_utc_time)
+		customtime_r = gmtime_r;
 
 	if ((frd_data_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init reader/writer lock\n");
@@ -322,9 +328,9 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	/* We lock all the stats values */
 	lock_get(&se->lock);
-	if (gmtime_r(&se->stats.last_matched_time, &then) == NULL
-			|| gmtime_r(&nowt, &now) == NULL) {
-		LM_ERR ("Cannot use gmtime function. Will exit\n");
+	if (customtime_r(&se->stats.last_matched_time, &then) == NULL
+			|| customtime_r(&nowt, &now) == NULL) {
+		LM_ERR("failed to fetch current time\n");
 		lock_release(&se->lock);
 		return rc_ok_thr;
 	}
@@ -334,6 +340,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		se->stats.cpm = 0;
 		se->stats.total_calls = 0;
 		se->stats.concurrent_calls = 0;
+		se->stats.seq_calls = 0;
 	}
 
 	/* Update the stats */
