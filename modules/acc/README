@@ -76,11 +76,11 @@ Irina-Maria Stanescu
               1.6.19. acc_time_column (string)
               1.6.20. acc_created_avp_name (string)
 
-        1.7. Exported Variables
+        1.7. Exported Pseudo-Variables
 
               1.7.1. $acc_extra(tag_name)
               1.7.2. $(acc_leg(tag_name)[leg_index])
-              1.7.3. acc_current_leg - read-only
+              1.7.3. $acc_current_leg (read-only)
 
         1.8. Exported Functions
 
@@ -620,7 +620,7 @@ modparam("acc", "acc_time_column", "time")
    Example 1.20. acc_created_avp_name example
 modparam("acc", "acc_created_avp_name", "call_created_avp")
 
-1.7. Exported Variables
+1.7. Exported Pseudo-Variables
 
 1.7.1. $acc_extra(tag_name)
 
@@ -639,7 +639,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
    do_accounting() function is used. The variable also accepts
    negative indexes, which start from -1(value for the last leg).
 
-1.7.3. acc_current_leg - read-only
+1.7.3. $acc_current_leg (read-only)
 
    Variable holding the value for the current leg. Calling
    acc_new_leg() will increase the value of this variable.

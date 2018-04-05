@@ -780,7 +780,7 @@ modparam("ratelimit", "slot_period", 100)
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 
-		<section id="pv_rl_count" xreflabel="rl_count">
+		<section id="pv_rl_count" xreflabel="$rl_count">
 			<title><varname>$rl_count(name)</varname></title>
 			<para>
 			Returns the counter of a pipe. The variable is read-only.

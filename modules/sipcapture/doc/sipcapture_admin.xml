@@ -941,7 +941,7 @@ route[capture_resume] {
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 
-	<section id="pv_hep_net" xreflabel="hep_net">
+	<section id="pv_hep_net" xreflabel="$hep_net">
 	<title>
 		<function moreinfo="none">$hep_net</function>
 	</title>
@@ -994,7 +994,7 @@ route[capture_resume] {
 	</example>
 	</section>
 
-	<section id="pv_HEPVERSION" xreflabel="HEPVERSION">
+	<section id="pv_HEPVERSION" xreflabel="$HEPVERSION">
 	<title>
 		<function moreinfo="none">HEPVERSION (string, int)</function>
 	</title>

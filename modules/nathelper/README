@@ -43,13 +43,14 @@ Ovidiu Sas
               1.4.7. sipping_bflag (string/integer)
               1.4.8. remove_on_timeout_bflag (string/integer)
               1.4.9. sipping_latency_flag (string/integer)
-              1.4.10. sipping_from (string)
-              1.4.11. sipping_method (string)
-              1.4.12. nortpproxy_str (string)
-              1.4.13. natping_tcp (integer)
-              1.4.14. oldip_skip (string)
-              1.4.15. ping_threshold (int)
-              1.4.16. max_pings_lost (int)
+              1.4.10. sipping_ignore_rpl_codes (CSV string)
+              1.4.11. sipping_from (string)
+              1.4.12. sipping_method (string)
+              1.4.13. nortpproxy_str (string)
+              1.4.14. natping_tcp (integer)
+              1.4.15. oldip_skip (string)
+              1.4.16. ping_threshold (int)
+              1.4.17. max_pings_lost (int)
 
         1.5. Exported Functions
 
@@ -61,7 +62,7 @@ Ovidiu Sas
               1.5.4. fix_nated_register()
               1.5.5. nat_uac_test(flags)
 
-        1.6. MI Commands
+        1.6. Exported MI Functions
 
               1.6.1. nh_enable_ping
 
@@ -78,18 +79,19 @@ Ovidiu Sas
    1.7. Set sipping_bflag parameter
    1.8. Set remove_on_timeout_bflag parameter
    1.9. Set sipping_latency_flag parameter
-   1.10. Set sipping_from parameter
-   1.11. Set sipping_method parameter
-   1.12. Set nortpproxy_str parameter
-   1.13. Set natping_interval parameter
+   1.10. Set sipping_ignore_rpl_codes parameter
+   1.11. Set sipping_from parameter
+   1.12. Set sipping_method parameter
+   1.13. Set nortpproxy_str parameter
    1.14. Set natping_interval parameter
-   1.15. Set ping_threshold parameter
+   1.15. Set natping_interval parameter
    1.16. Set ping_threshold parameter
-   1.17. fix_nated_contact usage
-   1.18. fix_nated_sdp usage
-   1.19. add_rcv_paramer usage
-   1.20. fix_nated_register usage
-   1.21. nh_enable_ping usage
+   1.17. Set ping_threshold parameter
+   1.18. fix_nated_contact usage
+   1.19. fix_nated_sdp usage
+   1.20. add_rcv_paramer usage
+   1.21. fix_nated_register usage
+   1.22. nh_enable_ping usage
 
 Chapter 1. Admin Guide
 
@@ -291,7 +293,24 @@ modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_RTO")
 modparam("nathelper", "sipping_latency_flag", "SIPPING_CALC_LATENCY")
 ...
 
-1.4.10. sipping_from (string)
+1.4.10. sipping_ignore_rpl_codes (CSV string)
+
+   A comma-separated list of SIP reply status codes to contact
+   pings which are to be discarded. This may be useful for
+   "full-sharing" user location topologies, where the location
+   nodes are not directly facing the UAs, hence the intermediary
+   SIP component may generate replies to offline contact ping
+   attempts (e.g. 408 - Request Timeout) -- such ping replies
+   should be ignored.
+
+   Default value is "NULL" (all reply status codes are accepted).
+
+   Example 1.10. Set sipping_ignore_rpl_codes parameter
+...
+modparam("nathelper", "sipping_ignore_rpl_codes", "408, 480, 404")
+...
+
+1.4.11. sipping_from (string)
 
    The parameter sets the SIP URI to be used in generating the SIP
    requests for NAT ping purposes. To enable the SIP request
@@ -300,24 +319,24 @@ modparam("nathelper", "sipping_latency_flag", "SIPPING_CALC_LATENCY")
 
    Default value is “NULL”.
 
-   Example 1.10. Set sipping_from parameter
+   Example 1.11. Set sipping_from parameter
 ...
 modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 ...
 
-1.4.11. sipping_method (string)
+1.4.12. sipping_method (string)
 
    The parameter sets the SIP method to be used in generating the
    SIP requests for NAT ping purposes.
 
    Default value is “OPTIONS”.
 
-   Example 1.11. Set sipping_method parameter
+   Example 1.12. Set sipping_method parameter
 ...
 modparam("nathelper", "sipping_method", "INFO")
 ...
 
-1.4.12. nortpproxy_str (string)
+1.4.13. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by nathelper to mark
    the packet SDP informations have already been mangled.
@@ -331,24 +350,24 @@ Note
 
    Default value is “a=nortpproxy:yes\r\n”.
 
-   Example 1.12. Set nortpproxy_str parameter
+   Example 1.13. Set nortpproxy_str parameter
 ...
 modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.4.13. natping_tcp (integer)
+1.4.14. natping_tcp (integer)
 
    If the flag is set, TCP/TLS clients will also be pinged with
    SIP OPTIONS messages.
 
    Default value is 0 (not set).
 
-   Example 1.13. Set natping_interval parameter
+   Example 1.14. Set natping_interval parameter
 ...
 modparam("nathelper", "natping_tcp", 1)
 ...
 
-1.4.14. oldip_skip (string)
+1.4.15. oldip_skip (string)
 
    Parameter which specifies whether old media ip and old origin
    ip shall be put in the sdp body. The parameter has two values :
@@ -357,12 +376,12 @@ modparam("nathelper", "natping_tcp", 1)
 
    Default value is 0 (not set).
 
-   Example 1.14. Set natping_interval parameter
+   Example 1.15. Set natping_interval parameter
 ...
 modparam("nathelper", "oldip_skip", "oc")
 ...
 
-1.4.15. ping_threshold (int)
+1.4.16. ping_threshold (int)
 
    If a contact does not respond in ping_threshold seconds since
    the ping has been sent, the contact shall be removed after
@@ -370,19 +389,19 @@ modparam("nathelper", "oldip_skip", "oc")
 
    Default value is 3 (seconds).
 
-   Example 1.15. Set ping_threshold parameter
+   Example 1.16. Set ping_threshold parameter
 ...
 modparam("nathelper", "ping_threshold", 10)
 ...
 
-1.4.16. max_pings_lost (int)
+1.4.17. max_pings_lost (int)
 
    Number of unresponded pings after which the contact shall be
    removed from the location table.
 
    Default value is 3 (pings).
 
-   Example 1.16. Set ping_threshold parameter
+   Example 1.17. Set ping_threshold parameter
 ...
 modparam("nathelper", "max_pings_lost", 5)
 ...
@@ -402,7 +421,7 @@ modparam("nathelper", "max_pings_lost", 5)
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.17. fix_nated_contact usage
+   Example 1.18. fix_nated_contact usage
 ...
 if (search("User-Agent: Cisco ATA.*") {
     fix_nated_contact(";ata=cisco");
@@ -445,7 +464,7 @@ if (search("User-Agent: Cisco ATA.*") {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.18. fix_nated_sdp usage
+   Example 1.19. fix_nated_sdp usage
 ...
 # Add "a=direction:active" SDP line
 # Rewrite media IP (c= line)
@@ -473,7 +492,7 @@ if (search("User-Agent: Cisco ATA.*")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.19. add_rcv_paramer usage
+   Example 1.20. add_rcv_paramer usage
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
@@ -489,7 +508,7 @@ add_rcv_param("1"); # add the parameter to the Contact URI
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.20. fix_nated_register usage
+   Example 1.21. fix_nated_register usage
 ...
 fix_nated_register();
 ...
@@ -521,7 +540,7 @@ fix_nated_register();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-1.6. MI Commands
+1.6. Exported MI Functions
 
 1.6.1. nh_enable_ping
 
@@ -532,7 +551,7 @@ fix_nated_register();
    The function may takean optional parameter (for set operations)
    - a number in decimal format.
 
-   Example 1.21. nh_enable_ping usage
+   Example 1.22. nh_enable_ping usage
 ...
 $ opensipsctl fifo nh_enable_ping
 Status:: 1

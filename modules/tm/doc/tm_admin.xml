@@ -1824,13 +1824,12 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 
 	</section>
 
-
-	<section>
-		<title>Exported variables</title>
+	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
+		<title>Exported Pseudo-Variables</title>
 		<para>
 		Exported variables are listed in the next sections.
 		</para>
-		<section>
+		<section id="pv_T_branch_idx" xreflabel="$T_branch_idx">
 		<title>$T_branch_idx</title>
 			<para>
 			<emphasis>$T_branch_idx</emphasis> - the index (starting with 0
@@ -1840,7 +1839,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			routes, the value of this index will be NULL.
 			</para>
 		</section>
-		<section>
+		<section id="pv_T_reply_code" xreflabel="$T_reply_code">
 		<title>$T_reply_code</title>
 			<para>
 			<emphasis>$T_reply_code</emphasis> - the code of the reply, as 
@@ -1850,7 +1849,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			no-reply or error, '0' value is returned.
 			</para>
 		</section>
-		<section>
+		<section id="pv_T_fr_timeout" xreflabel="$T_fr_timeout">
 		<title>$T_fr_timeout</title>
 			<para>
 			<emphasis>$T_fr_timeout (R/W)</emphasis> - the timeout
@@ -1867,7 +1866,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			<emphasis role='bold'><xref linkend="param_fr_timeout"/></emphasis>.
 			</para>
 		</section>
-		<section>
+		<section id="pv_T_fr_inv_timeout" xreflabel="$T_fr_inv_timeout">
 		<title>$T_fr_inv_timeout</title>
 			<para>
 			<emphasis>$T_fr_inv_timeout (R/W)</emphasis> - the timeout
@@ -1885,7 +1884,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			<emphasis role='bold'><xref linkend="param_fr_inv_timeout"/></emphasis>.
 			</para>
 		</section>
-		<section>
+		<section id="pv_T_ruri" xreflabel="$T_ruri">
 		<title>$T_ruri</title>
 			<para>
 			<emphasis>$T_ruri</emphasis> - the ruri of the current branch; this
@@ -1894,7 +1893,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			has a transaction.
 			</para>
 		</section>
-		<section>
+		<section id="pv_bavp" xreflabel="$bavp">
 		<title>$bavp(name)</title>
 			<para>
 			<emphasis>$bavp(name)</emphasis> - a particular type of avp that
@@ -1902,7 +1901,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			BRANCH, REPLY and FAILURE routes. Otherwise NULL value is returned.
 			</para>
 		</section>
-		<section>
+		<section id="pv_T_id" xreflabel="$T_id">
 		<title>$T_id</title>
 			<para>
 			<emphasis>$T_id</emphasis> - returns the ID of the current 

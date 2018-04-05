@@ -18,10 +18,9 @@ Robert-Vladut Patrascu
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
-        1.4. Exported Variables
+        1.4. Exported Pseudo-Variables
 
-              1.4.1. Variable lifetime
-              1.4.2. Accessing the $xml(path) variable
+              1.4.1. $xml(path)
 
         1.5. Exported Functions
 
@@ -60,18 +59,20 @@ Chapter 1. Admin Guide
 
    The module does not export any parameters.
 
-1.4. Exported Variables
+1.4. Exported Pseudo-Variables
+
+1.4.1. $xml(path)
 
    This module exports the $xml(path) variable.
 
-1.4.1. Variable lifetime
+1.4.1.1. Variable lifetime
 
    The xml variables will be available to the process that created
    them from the moment they were initialized. They will not reset
    per message or per transaction. If you want to use them on a
    per message basis you should initialize them each time.
 
-1.4.2. Accessing the $xml(path) variable
+1.4.1.2. Accessing the $xml(path) variable
 
    Accessing elements and attributes is based on the tree
    representation of the XML document thus a complete path from

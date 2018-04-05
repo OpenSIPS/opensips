@@ -39,8 +39,11 @@
 		</para>
 	</section>
 
-	<section>
-		<title>Exported Variables</title>
+	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
+		<title>Exported Pseudo-Variables</title>
+
+	<section id="pv_xml" xreflabel="$xml">
+		<title><varname>$xml(path)</varname></title>
 		<para>
 			This module exports the <emphasis>$xml(path)</emphasis> variable.
 		</para>
@@ -169,6 +172,8 @@ xlog("$xml(my_doc/doc/$var(my_list)/item[$var(my_idx)].attr/$var(my_attr))\n");
 			</example>
 
 		</section>
+	</section>
+
 
 	</section>
 

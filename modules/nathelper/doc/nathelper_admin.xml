@@ -114,6 +114,7 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
+
 	<section id="param_natping_interval" xreflabel="natping_interval">
 		<title><varname>natping_interval</varname> (integer)</title>
 		<para>
@@ -139,6 +140,7 @@ modparam("nathelper", "natping_interval", 10)
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_ping_nated_only" xreflabel="ping_nated_only">
 		<title><varname>ping_nated_only</varname> (integer)</title>
 		<para>
@@ -160,6 +162,7 @@ modparam("nathelper", "ping_nated_only", 1)
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_natping_partitions" xreflabel="natping_partitions">
 		<title><varname>natping_partitions</varname> (integer)</title>
 		<para>
@@ -181,6 +184,7 @@ modparam("nathelper", "natping_partitions", 4)
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_natping_socket" xreflabel="natping_socket">
 		<title><varname>natping_socket</varname> (string)</title>
 		<para>
@@ -200,6 +204,7 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_received_avp" xreflabel="received_avp">
 		<title><varname>received_avp</varname> (str)</title>
 		<para>
@@ -231,6 +236,7 @@ modparam("nathelper", "received_avp", "$avp(received)")
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_force_socket" xreflabel="force_socket">
 		<title><varname>force_socket</varname> (string)</title>
 		<para>
@@ -328,6 +334,31 @@ modparam("nathelper", "sipping_latency_flag", "SIPPING_CALC_LATENCY")
 		</example>
 	</section>
 
+	<section id="param_sipping_ignore_rpl_codes" xreflabel="sipping_ignore_rpl_codes">
+		<title><varname>sipping_ignore_rpl_codes</varname> (CSV string)</title>
+		<para>
+		A comma-separated list of SIP reply status codes to contact pings which
+		are to be discarded. This may be useful for "full-sharing" user
+		location topologies, where the location nodes are not directly facing
+		the UAs, hence the intermediary SIP component may generate replies to
+		offline contact ping attempts (e.g. 408 - Request Timeout) -- such ping
+		replies should be ignored.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "NULL" (all reply status codes are accepted).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sipping_ignore_rpl_codes</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "sipping_ignore_rpl_codes", "408, 480, 404")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_sipping_from" xreflabel="sipping_from">
 		<title><varname>sipping_from</varname> (string)</title>
 		<para>
@@ -350,6 +381,7 @@ modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_sipping_method" xreflabel="sipping_method">
 		<title><varname>sipping_method</varname> (string)</title>
 		<para>
@@ -370,6 +402,7 @@ modparam("nathelper", "sipping_method", "INFO")
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_nortpproxy_str" xreflabel="nortpproxy_str">
 		<title><varname>nortpproxy_str</varname> (string)</title>
 		<para>
@@ -396,6 +429,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 </programlisting>
 		</example>
 	</section>
+
 	<section id="param_natping_tcp" xreflabel="natping_tcp">
 		<title><varname>natping_tcp</varname> (integer)</title>
 		<para>
@@ -416,7 +450,6 @@ modparam("nathelper", "natping_tcp", 1)
 </programlisting>
 		</example>
 	</section>
-
 
 	<section id="param_oldip_skip" xreflabel="oldip_skip">
 		<title><varname>oldip_skip</varname> (string)</title>
@@ -484,11 +517,7 @@ modparam("nathelper", "max_pings_lost", 5)
 		</example>
 	</section>
 
-
-
-
 </section>
-
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
@@ -708,9 +737,9 @@ fix_nated_register();
 	</section>
 	</section>
 
-	<section>
-	<title><acronym>MI</acronym> Commands</title>
-		<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_nh_enable_ping" xreflabel="nh_enable_ping">
 			<title><function moreinfo="none">nh_enable_ping</function></title>
 			<para>
 			Enables natping if parameter value greater than 0.

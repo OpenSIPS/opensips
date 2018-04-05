@@ -261,7 +261,7 @@ bm_log_timer("test");
 		<para>
 		Exported pseudo-variables are listed in the next sections.
 		</para>
-		<section id="pv_BM_time_diff" xreflabel="BM_time_diff">
+		<section id="pv_BM_time_diff" xreflabel="$BM_time_diff">
 		<title>$BM_time_diff</title>
 			<para>
 			<emphasis>$BM_time_diff</emphasis> - the time difference

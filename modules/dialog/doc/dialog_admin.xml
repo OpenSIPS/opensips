@@ -2452,7 +2452,7 @@ set_dlg_sharing_tag("vip1");
 
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
-		<section id="pv_DLG_count" xreflabel="DLG_count">
+		<section id="pv_DLG_count" xreflabel="$DLG_count">
 			<title><varname>$DLG_count</varname></title>
 			<para>
 			Returns the number of current active dialogs (may be confirmed or
@@ -2460,7 +2460,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_DLG_status" xreflabel="DLG_status">
+		<section id="pv_DLG_status" xreflabel="$DLG_status">
 			<title><varname>$DLG_status</varname></title>
 			<para>
 			Returns the status of the dialog corresponding to the processed
@@ -2497,7 +2497,7 @@ set_dlg_sharing_tag("vip1");
 			</itemizedlist>
 		</section>
 
-		<section id="pv_DLG_lifetime" xreflabel="DLG_lifetime">
+		<section id="pv_DLG_lifetime" xreflabel="$DLG_lifetime">
 			<title><varname>$DLG_lifetime</varname></title>
 			<para>
 			Returns the duration (in seconds) of the dialog corresponding to
@@ -2510,7 +2510,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_DLG_flags" xreflabel="DLG_flags">
+		<section id="pv_DLG_flags" xreflabel="$DLG_flags">
 			<title><varname>$DLG_flags</varname></title>
 			<para>
 			Returns the dialog flags array (as a single integer value)
@@ -2523,7 +2523,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_DLG_dir" xreflabel="DLG_dir">
+		<section id="pv_DLG_dir" xreflabel="$DLG_dir">
 			<title><varname>$DLG_dir</varname></title>
 			<para>
 			Returns the direction of the request in dialog (as "UPSTREAM" or
@@ -2536,7 +2536,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_DLG_did" xreflabel="DLG_did">
+		<section id="pv_DLG_did" xreflabel="$DLG_did">
 			<title><varname>$DLG_did</varname></title>
 			<para>
 			Returns the id of the dialog corresponding to
@@ -2549,7 +2549,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_DLG_end_reason" xreflabel="DLG_end_reason">
+		<section id="pv_DLG_end_reason" xreflabel="$DLG_end_reason">
 			<title><varname>$DLG_end_reason</varname></title>
 			<para>
 				Returns the reason for the dialog termination. It can be
@@ -2588,7 +2588,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_DLG_timeout" xreflabel="DLG_timeout">
+		<section id="pv_DLG_timeout" xreflabel="$DLG_timeout">
 			<title><varname>$DLG_timeout</varname></title>
 			<para>
 				Used to set the dialog lifetime (in seconds). When read, the variable
@@ -2604,7 +2604,7 @@ set_dlg_sharing_tag("vip1");
 			</para>
 		</section>
 
-		<section id="pv_dlg_val" xreflabel="dlg_val">
+		<section id="pv_dlg_val" xreflabel="$dlg_val">
 			<title><varname>$dlg_val(name)</varname></title>
 			<para>
 			This is a read/write variable that allows access to the dialog

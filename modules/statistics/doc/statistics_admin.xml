@@ -261,7 +261,7 @@ while (stat_iter_next("$var(k)", "$var(v)", "iter")) {
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 
-		<section id="pv_stat" xreflabel="stat">
+		<section id="pv_stat" xreflabel="$stat">
 			<title><varname>$stat</varname></title>
 			<para>
 			Allows "get" or "reset" operations on the given statistics.

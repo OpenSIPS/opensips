@@ -76,7 +76,7 @@ Razvan Crainea
               1.6.9. rtpproxy_all_stats(stats_avp [, set_id [,
                       sock_pvar]])
 
-        1.7. MI Commands
+        1.7. Exported MI Functions
 
               1.7.1. rtpproxy_enable
               1.7.2. rtpproxy_show
@@ -771,7 +771,7 @@ rtpproxy_all_stats("$avp(stats)");
 xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 ...
 
-1.7. MI Commands
+1.7. Exported MI Functions
 
 1.7.1. rtpproxy_enable
 

@@ -82,7 +82,7 @@ Richard Fuchs
               1.6.2. $rtpstat(STAT)[index]
               1.6.3. $rtpquery
 
-        1.7. MI Commands
+        1.7. Exported MI Functions
 
               1.7.1. rtpengine_enable
               1.7.2. rtpengine_show
@@ -755,7 +755,7 @@ pstat(MOS-min-at)[$ft])\r\n");
         xlog("Total RTP Stats: $json(reply/totals)\n");
 ...
 
-1.7. MI Commands
+1.7. Exported MI Functions
 
 1.7.1. rtpengine_enable
 

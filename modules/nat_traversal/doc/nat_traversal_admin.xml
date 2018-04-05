@@ -644,7 +644,7 @@ if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
 
   <section id="exported_pseudo_variables">
   <title>Exported Pseudo-Variables</title>
-    <section id="pv_keepalive.socket" xreflabel="keepalive.socket">
+    <section id="pv_keepalive.socket" xreflabel="$keepalive.socket">
     <title><varname>$keepalive.socket(nat_endpoint)</varname></title>
       <para>
         Returns the local socket used to send messages to the given NAT
@@ -695,7 +695,7 @@ if ($rm=="INVITE" &amp;&amp; $hdr(X-Scope)=="nat-relay") {
       </example>
     </section>
 
-    <section id="pv_source_uri" xreflabel="source_uri">
+    <section id="pv_source_uri" xreflabel="$source_uri">
     <title><varname>$source_uri</varname></title>
       <para>
         Returns the URI specification from where a request was received in the
@@ -779,7 +779,7 @@ if ($rm=="REGISTER") {
       </example>
 
     </section>
-    <section id="pv_nat_traversal.track_dialog" xreflabel="nat_traversal.track_dialog">
+    <section id="pv_nat_traversal.track_dialog" xreflabel="$nat_traversal.track_dialog">
     <title><varname>$nat_traversal.track_dialog</varname></title>
       <para>
         Returns a boolean value (0 or 1) indicating if dialog tracking will

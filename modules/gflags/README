@@ -35,7 +35,7 @@ Daniel-Constantin Mierla
               1.4.2. reset_gflag(flag)
               1.4.3. is_gflag(flag)
 
-        1.5. MI Commands
+        1.5. Exported MI Functions
 
               1.5.1. set_gflag
               1.5.2. reset_gflag
@@ -140,7 +140,7 @@ if(is_gflag("4"))
 };
 ...
 
-1.5. MI Commands
+1.5. Exported MI Functions
 
    Functions that check or change some flags accepts one parameter
    which is the flag bitmap/mask specifing the corresponding
