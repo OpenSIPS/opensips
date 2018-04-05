@@ -1122,13 +1122,13 @@ cr_tree_rewrite_uri(tree, domain)
 	</section>
     </section>
 
-    <section>
-	    <title><acronym>MI</acronym> Commands</title>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
 		<para>All commands understand the "-?" parameter to print a short help message.
 		The options have to be quoted as one string to be passed to MI interface.
 		Each option except host and new host can be wildcarded by * (but only * and not things
 		like "-d prox*").</para>
-	<section>
+	<section id="mi_cr_reload_routes" xreflabel="cr_reload_routes">
 	    <title><function moreinfo="none">cr_reload_routes</function></title>
 	    <para>
 		This command reloads the routing data from the data source.
@@ -1177,7 +1177,7 @@ opensipsctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 		</programlisting>
 	    </example>
 	</section>
-	<section>
+	<section id="mi_cr_deactivate_host" xreflabel="cr_deactivate_host">
 	    <title><function moreinfo="none">cr_deactivate_host</function></title>
 	    <para>
 		    This command deactivates the specified host, i.e. it sets its status to 0.
@@ -1238,7 +1238,7 @@ opensipsctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
 	    </example>
 	</section>
 
-	<section>
+	<section id="mi_cr_add_host" xreflabel="cr_add_host">
 	    <title><function moreinfo="none">cr_add_host</function></title>
 	    <para>
 		    This command adds a route rule, it is only usable in file mode. Following options
@@ -1281,7 +1281,7 @@ opensipsctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 	    </example>
 	</section>
 
-	<section>
+	<section id="mi_cr_delete_host" xreflabel="cr_delete_host">
 	    <title><function moreinfo="none">cr_delete_host</function></title>
 	    <para>
 		    This command delete the specified hosts or rules, i.e. remove 

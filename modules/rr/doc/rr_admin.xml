@@ -447,7 +447,7 @@ if (is_direction("upstream")) {
 		<para>
 		Exported pseudo-variables are listed in the next sections.
 		</para>
-		<section id="pv_rr_params" xreflabel="rr_params">
+		<section id="pv_rr_params" xreflabel="$rr_params">
 		<title>$rr_params</title>
 			<para>
 			<emphasis>$rr_params</emphasis> - the whole string of the Route

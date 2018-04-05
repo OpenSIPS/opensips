@@ -24,7 +24,7 @@ Andrei Dragus
               1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
-        1.4. Exported Variables
+        1.4. Exported Pseudo-Variables
 
               1.4.1. $json(id)
               1.4.2. $json_pretty(id)
@@ -82,7 +82,7 @@ Chapter 1. Admin Guide
 
    The module does not export any parameters.
 
-1.4. Exported Variables
+1.4. Exported Pseudo-Variables
 
 1.4.1. $json(id)
 
@@ -236,7 +236,6 @@ $json(array1[]) := "false";
 $json(array) := "[1,2,3]";
 $json(object) := "{}";
 $json(object/array) := $json(array) ;
-
 ...
 
 1.4.2. $json_pretty(id)

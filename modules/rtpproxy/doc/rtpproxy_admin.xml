@@ -1019,10 +1019,9 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 	</section>
 
 
-	<section>
-		<title><acronym>MI</acronym> Commands</title>
-
-		<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_rtpproxy_enable" xreflabel="rtpproxy_enable">
 			<title><function moreinfo="none">rtpproxy_enable</function></title>
 			<para>
 			Enables a rtp proxy if parameter value is greater than 0.
@@ -1060,7 +1059,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 			</example>
 		</section>
 				
-			<section>
+			<section id="mi_rtpproxy_show" xreflabel="rtpproxy_show">
 			<title><function moreinfo="none">rtpproxy_show</function></title>
 			<para>
 			Displays all the rtp proxies and their information: set and 
@@ -1080,7 +1079,7 @@ $ opensipsctl fifo rtpproxy_show
 			</example>
 		</section>
 
-		<section>
+		<section id="mi_rtpproxy_reload" xreflabel="rtpproxy_reload">
 			<title><function moreinfo="none">rtpproxy_reload</function></title>
 			<para>
 			Reload rtp proxies sets from database. The function will delete all

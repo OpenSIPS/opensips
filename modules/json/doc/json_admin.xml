@@ -63,10 +63,10 @@
 	</section>
 
 
-	<section>
-	<title>Exported Variables</title>
+	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
+	<title>Exported Pseudo-Variables</title>
 
-	<section>
+	<section id="pv_json" xreflabel="$json">
 		<title><varname>$json(id)</varname></title>
 		<para>
 			The <varname>json</varname> variable provides
@@ -84,7 +84,6 @@
 			transaction. If you want to use the on a per message
 			basis you should initialize them each time.
 		</para>
-
 
 
 		</section>
@@ -319,18 +318,15 @@ $json(array1[]) := "false";
 $json(array) := "[1,2,3]";
 $json(object) := "{}";
 $json(object/array) := $json(array) ;
-
 ...
 			</programlisting>
 			</example>
 
-
 			</section>
-
 
 		</section>
 	</section>
-	<section>
+	<section id="pv_json_pretty" xreflabel="$json_pretty">
 		<title><varname>$json_pretty(id)</varname></title>
 		<para>
 			The <varname>json_pretty</varname> variable has the
@@ -339,7 +335,7 @@ $json(object/array) := $json(array) ;
 			spaces and tabs to make the output more readable.
 		</para>
 	</section>
-	<section>
+	<section id="pv_json_compact" xreflabel="$json_compact">
 		<title><varname>$json_compact(id)</varname></title>
 		<para>
 			The <varname>json_compact</varname> variable has the

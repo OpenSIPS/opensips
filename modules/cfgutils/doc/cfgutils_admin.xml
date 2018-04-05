@@ -853,12 +853,9 @@ route[after_usleep] {
 
 	</section>
 
-
-
-
-	<section>
-		<title><acronym>MI</acronym> Commands</title>
-		<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+		<section id="mi_rand_set_prop" xreflabel="rand_set_prop">
 			<title><function moreinfo="none">rand_set_prop</function></title>
 			<para>
 				Set the probability value to the given parameter.
@@ -877,7 +874,7 @@ $ opensipsctl fifo rand_set_prob 10
 			</example>
 			
 		</section>
-		<section>
+		<section id="mi_rand_reset_prob" xreflabel="rand_reset_prob">
 			<title><function moreinfo="none">rand_reset_prob</function></title>
 			<para>
 				Reset the probability value to the inital start value.
@@ -895,7 +892,7 @@ $ opensipsctl fifo rand_reset_prob
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_rand_get_prob" xreflabel="rand_get_prob">
 			<title><function moreinfo="none">rand_get_prob</function></title>
 			<para>
 				Return the actual probability setting.
@@ -913,7 +910,7 @@ The actual probability is 50 percent.
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_check_config_hash" xreflabel="check_config_hash">
 			<title><function moreinfo="none">check_config_hash</function></title>
 			<para>
 				Check if the actual config file hash is identical to the stored one.
@@ -933,7 +930,7 @@ The actual config file hash is identical to the stored one.
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_get_config_hash" xreflabel="get_config_hash">
 			<title><function moreinfo="none">get_config_hash</function></title>
 			<para>
 				Return the stored config file hash.
@@ -952,7 +949,7 @@ $ opensipsctl fifo get_config_hash
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_shv_set" xreflabel="shv_set">
 			<title><function moreinfo="none">shv_set</function></title>
 			<para>
 				Set the value of a shared variable ($shv(name)).
@@ -989,7 +986,7 @@ $ opensipsctl fifo shv_set debug int 0
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_shv_get" xreflabel="shv_get">
 			<title><function moreinfo="none">shv_get</function></title>
 			<para>
 				Get the value of a shared variable ($shv(name)).
@@ -1021,7 +1018,7 @@ $ opensipsctl fifo shv_get
 	
 <section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
-		<section id="pv_env" xreflabel="env">
+		<section id="pv_env" xreflabel="$env">
 			<title><varname>$env(name)</varname></title>
 			<para>
 				This PV provides access to the environment variable 'name'.
@@ -1035,7 +1032,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 				 </programlisting>
 			</example>
 	</section>
-	<section id="pv_RANDOM" xreflabel="RANDOM">
+	<section id="pv_RANDOM" xreflabel="$RANDOM">
 			<title><varname>$RANDOM</varname></title>
 			<para>
 				Returns a random value from the [0 - 2^31) range.
@@ -1056,7 +1053,7 @@ exit;
 				 </programlisting>
 			</example>
 	</section>
-	<section id="pv_ctime" xreflabel="ctime">
+	<section id="pv_ctime" xreflabel="$ctime">
 			<title><varname>$ctime(name)</varname></title>
 			<para>
 			The PV provides access to broken-down time attributes.
@@ -1104,7 +1101,7 @@ if ($ctime(year) == 2008) {
 				 </programlisting>
 			</example>
 	</section>
-	<section id="pv_shv" xreflabel="shv">
+	<section id="pv_shv" xreflabel="$shv">
 			<title><varname>$shv(name)</varname></title>
 			<para>
 				It is a class of pseudo-variables stored in shared memory. The

@@ -169,9 +169,9 @@ if (!check_blacklist("global_blacklist")))
 	</section>
 </section>
 
-<section>
-	    <title><acronym>MI</acronym> Commands</title>
-		<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+		<section id="mi_reload_blacklist" xreflabel="reload_blacklist">
 	    <title>
 		<function moreinfo="none">reload_blacklist</function>
 	    </title>

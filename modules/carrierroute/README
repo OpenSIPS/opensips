@@ -80,7 +80,7 @@ Henning Westerholt
               1.4.4. cr_next_domain(carrier, domain,
                       prefix_matching, host, reply_code, dstavp)
 
-        1.5. MI Commands
+        1.5. Exported MI Functions
 
               1.5.1. cr_reload_routes
               1.5.2. cr_dump_routes
@@ -838,7 +838,7 @@ reply_code, dstavp)
      * dstavp - Name of the AVP where to store the next routing
        domain.
 
-1.5. MI Commands
+1.5. Exported MI Functions
 
    All commands understand the "-?" parameter to print a short
    help message. The options have to be quoted as one string to be

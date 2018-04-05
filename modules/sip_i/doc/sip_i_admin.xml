@@ -341,7 +341,7 @@ if ($rs == "183") {
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 
-	<section id="pv_isup_param" xreflabel="isup_param">
+	<section id="pv_isup_param" xreflabel="$isup_param">
 	<title>
 		<varname>$(isup_param(param_name{sep}subfield_name)[byte_index])</varname>
 	</title>
@@ -404,7 +404,7 @@ if ($rs == "183") {
 	</example>
 	</section>
 
-	<section id="pv_isup_param_str" xreflabel="isup_param_str">
+	<section id="pv_isup_param_str" xreflabel="$isup_param_str">
 	<title>
 		<varname>$isup_param_str(param_name{sep}subfield_name)</varname>
 	</title>
@@ -439,7 +439,7 @@ if ($rs == "183") {
 	</example>
 	</section>
 
-	<section id="pv_isup_msg_type" xreflabel="isup_msg_type">
+	<section id="pv_isup_msg_type" xreflabel="$isup_msg_type">
 	<title>
 		<varname>$isup_msg_type</varname>
 	</title>

@@ -93,7 +93,7 @@ Ovidiu Sas
               1.4.21. t_flush_flags()
               1.4.22. t_anycast_replicate()
 
-        1.5. Exported variables
+        1.5. Exported Pseudo-Variables
 
               1.5.1. $T_branch_idx
               1.5.2. $T_reply_code
@@ -1339,7 +1339,7 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
 }
 ...
 
-1.5. Exported variables
+1.5. Exported Pseudo-Variables
 
    Exported variables are listed in the next sections.
 

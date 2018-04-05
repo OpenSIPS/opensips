@@ -315,7 +315,7 @@ if (has_totag())
 
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
-		<section id="pv_TH_callee_callid" xreflabel="TH_callee_callid">
+		<section id="pv_TH_callee_callid" xreflabel="$TH_callee_callid">
 			<title><varname>$TH_callee_callid</varname></title>
 			<para>
 				Read only variable that will contain the callid as it is propagated towards the callee side, in case topology_hiding("C") is called.

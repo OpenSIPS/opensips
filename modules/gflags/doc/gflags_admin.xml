@@ -139,15 +139,15 @@ if(is_gflag("4"))
 
 	</section>
 
-	<section>
-		<title><acronym>MI</acronym> Commands</title>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
 		<para>Functions that check or change some flags accepts one parameter 
 			which is the flag bitmap/mask specifing the corresponding flags.
 			It is not possible to specify directly the flag position that 
 			should be changed as in the functions available in the routing 
 			script.
 		</para>
-		<section>
+		<section id="mi_set_gflag" xreflabel="set_gflag">
 			<title><function moreinfo="none">set_gflag</function></title>
 			<para>
 			Set the value of some flags (specified by bitmask) to 1.
@@ -167,7 +167,7 @@ $ opensipsctl fifo set_gflag 0x3
 			</example>
 
 		</section>
-		<section>
+		<section id="mi_reset_gflag" xreflabel="reset_gflag">
 			<title><function moreinfo="none">reset_gflag</function></title>
 			<para>
 			Reset the value of some flags to 0.
@@ -187,7 +187,7 @@ $ opensipsctl fifo reset_gflag 0x3
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_is_gflag" xreflabel="is_gflag">
 			<title><function moreinfo="none">is_gflag</function></title>
 			<para>
 			Returns true if the all the flags from the bitmask are set.
@@ -222,7 +222,7 @@ TRUE
 </programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="mi_get_gflags" xreflabel="get_gflags">
 			<title><function moreinfo="none">get_gflags</function></title>
 			<para>
 			Return the bitmap with all flags. The function gets no 

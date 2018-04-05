@@ -260,9 +260,9 @@ modparam("sql_cacher", "reload_interval", 5)
 		</para>
 </section>
 
-<section>
-	<title><acronym>MI</acronym> Commands</title>
-	<section>
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+	<section id="mi_sql_cacher_reload" xreflabel="sql_cacher_reload">
 		<title><function moreinfo="none">sql_cacher_reload</function></title>
 		<para>
 			Reloads the entire SQL table in cache in <emphasis>full caching</emphasis> mode.

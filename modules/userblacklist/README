@@ -39,7 +39,7 @@ Henning Westerholt
 
               1.4.2. check_blacklist (string table)
 
-        1.5. MI Commands
+        1.5. Exported MI Functions
 
               1.5.1. reload_blacklist
 
@@ -171,7 +171,7 @@ if (!check_blacklist("global_blacklist")))
 }
 ...
 
-1.5. MI Commands
+1.5. Exported MI Functions
 
 1.5.1.  reload_blacklist
 

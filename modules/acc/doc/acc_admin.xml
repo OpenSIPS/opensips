@@ -754,9 +754,9 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 	</section>
 	</section>
 
-	<section>
-	<title>Exported Variables</title>
-	<section>
+	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
+	<title>Exported Pseudo-Variables</title>
+	<section id="pv_acc_extra" xreflabel="$acc_extra">
 		<title>$acc_extra(tag_name)</title>
 		<para> This variable can addresed with the tag names defined
 			using <emphasis>extra_fields</emphasis> parameter. If
@@ -769,7 +769,7 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		</para>
 	</section>
 
-	<section>
+	<section id="pv_acc_leg" xreflabel="$acc_leg">
 		<title>$(acc_leg(tag_name)[leg_index])</title>
 		<para> This variable can be addressed with the tag names defined
 			using <emphasis>leg_fields</emphasis> parameter and  a valid
@@ -780,8 +780,8 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 		</para>
 	</section>
 
-	<section>
-		<title>acc_current_leg - read-only</title>
+	<section id="pv_acc_current_leg" xreflabel="$acc_current_leg">
+		<title>$acc_current_leg (read-only)</title>
 		<para> Variable holding the value for the current leg. Calling
 			<emphasis>acc_new_leg()</emphasis> will increase the value
 			of this variable.
