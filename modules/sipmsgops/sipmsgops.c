@@ -449,7 +449,11 @@ static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* regex_or_
 		tmp = *(hf->name.s+hf->name.len);
 		*(hf->name.s+hf->name.len) = 0;
 		if( matchtype == 'g' ) { /* GLOB */
+			#ifdef FNM_CASEFOLD
+			if(fnmatch(pat->s, hf->name.s, FNM_CASEFOLD) !=0 ){
+			#else
 			if(fnmatch(pat->s, hf->name.s, 0) !=0 ){
+			#endif
 				*(hf->name.s+hf->name.len) = tmp;
 				continue;
 			}
