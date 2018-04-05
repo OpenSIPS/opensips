@@ -611,32 +611,19 @@ struct hostent* rev_resolvehost(struct ip_addr *ip)
 int check_ip_address(struct ip_addr* ip, str *name,
 				unsigned short port, unsigned short proto, int resolver)
 {
+	struct ip_addr *ip2;
 	struct hostent* he;
-	int i, len;
-	char* s;
+	int i;
 
-	/* maybe we are lucky and name it's an ip */
-	s=ip_addr2a(ip);
-	if (s==NULL) {
-		LM_CRIT("could not convert ip address\n");
+	/* maybe we are lucky and host (name) is an IP */
+	if ( (ip2=str2ip(name))!=NULL || (ip2=str2ip6(name))!=NULL ) {
+		/* It's an IP :D */
+		if (ip_addr_cmp(ip, ip2))
+			return 0;
 		return -1;
 	}
 
-	LM_DBG("params %s, %.*s, %d\n", s, name->len, name->s, resolver);
-	len=strlen(s);
-
-	/* force first a full matching (v4 and v6) */
-	if ( (len==name->len) && (strncasecmp(name->s, s, name->len)==0) )
-		return 0;
-
-	/* check if name->s is an ipv6 address ref. */
-	if (ip->af==AF_INET6 &&
-		((len==(name->len-2))&&(name->s[0]=='[')&&
-			(name->s[name->len-1]==']')&&
-			(strncasecmp(name->s+1, s, len)==0))
-	)
-		return 0;
-
+	/* host is not an IP, do the DNS lookups on it :(*/
 	if (port==0) port=SIP_PORT;
 	if (resolver&DO_DNS){
 		LM_DBG("doing dns lookup\n");
