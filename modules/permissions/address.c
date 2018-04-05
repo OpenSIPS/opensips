@@ -135,17 +135,19 @@ int reload_address_table(struct pm_part_struct *part_struct)
 			LM_ERR("invalid IP column type on row %d, skipping..\n", i);
 			continue;
 		}
-		if ((VAL_TYPE(val + 1) != DB_INT && VAL_TYPE(val + 1) != DB_BIGINT) || VAL_NULL(val + 1) ||
+		if ((VAL_TYPE(val + 1) != DB_INT && VAL_TYPE(val + 1) != DB_BIGINT) ||
+		VAL_NULL(val + 1) ||
 					VAL_INT(val + 1) < 0) {
 			LM_ERR("invalid group column type on row %d, skipping..\n", i);
 			continue;
 		}
-		if ((VAL_TYPE(val + 2) != DB_INT && VAL_TYPE(val + 2) != DB_BIGINT) || VAL_NULL(val + 2) ||
-					VAL_INT(val + 2) < 0 || VAL_INT(val + 2) > 32) {
+		if ((VAL_TYPE(val + 2) != DB_INT && VAL_TYPE(val + 2) != DB_BIGINT) ||
+		VAL_NULL(val + 2) || VAL_INT(val + 2) < 0) {
 			LM_ERR("invalid mask column type on row %d, skipping..\n", i);
 			continue;
 		}
-		if ((VAL_TYPE(val + 3) != DB_INT && VAL_TYPE(val + 3) != DB_BIGINT) || VAL_NULL(val + 3)) {
+		if ((VAL_TYPE(val + 3) != DB_INT && VAL_TYPE(val + 3) != DB_BIGINT) ||
+		VAL_NULL(val + 3)) {
 			LM_ERR("invalid port column type on row %d, skipping..\n", i);
 			continue;
 		}
@@ -181,6 +183,14 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		(ip_addr=str2ip6(&str_src_ip))==NULL ) {
 			LM_DBG("invalid ip <%.*s> in address table, ignoring entry "
 				"with id %d\n", str_src_ip.len, str_src_ip.s, id);
+			continue;
+		}
+
+		/* now that we know the AF family, we can validate the mask len */
+		if ( (ip_addr->af==AF_INET && VAL_INT(val + 2)>32) ||
+		(ip_addr->af==AF_INET6 && VAL_INT(val + 2)>128) ) {
+			LM_DBG("netmask size %d too large of IP's AF %d, ignoring entry"
+				" number %d\n", VAL_INT(val + 2), ip_addr->af, i);
 			continue;
 		}
 
@@ -235,7 +245,8 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		port = (unsigned int) VAL_INT(val + 3);
 		mask = (unsigned int) VAL_INT(val + 2);
 
-		if (mask == 32) {
+		if ( (mask == 32 && ip_addr->af==AF_INET) ||
+		(mask == 128 && ip_addr->af==AF_INET6) ) {
 			if (hash_insert(new_hash_table, ip_addr, group, port, proto,
 				&str_pattern, &str_info) == -1) {
 					LM_ERR("hash table insert error\n");

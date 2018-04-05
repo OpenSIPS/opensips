@@ -249,9 +249,9 @@ int find_group_in_hash_table(struct address_list** table,
 int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 		struct pm_part_struct *pm) {
 	int i;
-    struct address_list *node;
+	struct address_list *node;
 
-    for (i = 0; i < PERM_HASH_SIZE; i++) {
+	for (i = 0; i < PERM_HASH_SIZE; i++) {
 		for (node = table[i]; node; node=node->next) {
 			if (addf_mi_node_child(rpl, 0, "dest", 4,
 				   "%d <%s,%u, %u, %d, %s, %s>",
