@@ -1881,7 +1881,6 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 {
 	struct dlg_cell *dlg;
 	int timeout, db_update = 0, timer_update = 0;
-	int do_actions = 1;
 
 	if (val==NULL || val->flags & PV_VAL_NULL) {
 		LM_ERR("cannot assign dialog timeout to NULL\n");
@@ -1917,12 +1916,9 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 
 		dlg_unlock_dlg(dlg);
 
-		if (dialog_repl_cluster)
-			do_actions = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
-
-		if (do_actions && db_update)
+		if (db_update)
 			update_dialog_timeout_info(dlg);
-		if (dialog_repl_cluster && do_actions)
+		if (dialog_repl_cluster && get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
 			replicate_dialog_updated(dlg);
 
 		if (timer_update) {

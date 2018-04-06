@@ -202,7 +202,11 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	DLG_BIN_POP(str, packet, profiles, pre_linking_error);
 	DLG_BIN_POP(int, packet, dlg->user_flags, pre_linking_error);
 	DLG_BIN_POP(int, packet, dlg->mod_flags, pre_linking_error);
+
 	DLG_BIN_POP(int, packet, dlg->flags, pre_linking_error);
+	/* also save the dialog into the DB on this instance */
+	dlg->flags |= DLG_FLAG_NEW;
+
 	DLG_BIN_POP(int, packet, dlg->tl.timeout, pre_linking_error);
 	DLG_BIN_POP(int, packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq, pre_linking_error);
 	DLG_BIN_POP(int, packet, dlg->legs[callee_idx(dlg)].last_gen_cseq, pre_linking_error);
@@ -291,6 +295,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 	int timeout, h_entry;
 	str st;
 	struct dlg_entry *d_entry;
+	int rcv_flags, save_new_flag;
 
 	bin_pop_str(packet, &call_id);
 	bin_pop_str(packet, &from_tag);
@@ -343,7 +348,13 @@ int dlg_replicated_update(bin_packet_t *packet)
 	bin_pop_str(packet, &profiles);
 	bin_pop_int(packet, &dlg->user_flags);
 	bin_pop_int(packet, &dlg->mod_flags);
-	bin_pop_int(packet, &dlg->flags);
+
+	bin_pop_int(packet, &rcv_flags);
+	/* make sure an update received immediately after a create can't
+	 * incorrectly erase the DLG_FLAG_NEW before locally writing to DB */
+	save_new_flag = dlg->flags & DLG_FLAG_NEW;
+	dlg->flags = rcv_flags;
+	dlg->flags |= ((save_new_flag ? DLG_FLAG_NEW : 0) | DLG_FLAG_CHANGED);
 
 	bin_pop_int(packet, &timeout);
 	bin_skip_int(packet, 2);
@@ -371,6 +382,8 @@ int dlg_replicated_update(bin_packet_t *packet)
 
 	if (vars.s && vars.len != 0)
 		read_dialog_vars(vars.s, vars.len, dlg);
+
+	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
 	dlg_unlock(d_table, d_entry);
 
