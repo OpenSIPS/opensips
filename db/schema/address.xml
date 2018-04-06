@@ -47,7 +47,7 @@
 		<name>mask</name>
 		<type>char</type>
 		<default>32</default>
-		<description>Network mask, a number from 0 to 32</description>
+		<description>Network mask, a number from 0 to 128; It should be up to 32 if the IP is v4 and up to 128 if the IP is v6</description>
 	</column>
 
 	<column>
