@@ -1323,21 +1323,6 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 			dlg_lock( d_table, entry);
 
 		for (cell = entry->first; cell != NULL; ) {
-			if (dialog_repl_cluster &&
-				get_shtag_state(cell) == SHTAG_STATE_BACKUP) {
-				next_cell = cell->next;
-				if ((cell->flags & DLG_FLAG_NEW) != 0 &&
-					cell->state == DLG_STATE_DELETED &&
-					!(cell->flags & DLG_FLAG_DB_DELETED)) {
-					/* mark it as deleted so as we don't deal with it later */
-					cell->flags |= DLG_FLAG_DB_DELETED;
-					/* timer is done with this dialog */
-					unref_dlg_unsafe(cell,1,entry);
-				}
-				cell = next_cell;
-				continue;
-			}
-
 			callee_leg = callee_idx(cell);
 
 			if( (cell->flags & DLG_FLAG_NEW) != 0 ) {

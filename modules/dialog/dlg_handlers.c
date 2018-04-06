@@ -539,7 +539,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		 * if realtime saving mode configured- save dialog now
 		 * else: the next time the timer will fire the update*/
 		dlg->flags |= DLG_FLAG_NEW;
-		if (do_actions && dlg_db_mode == DB_MODE_REALTIME)
+		if (dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
 		/* dialog confirmed */
@@ -1632,7 +1632,7 @@ after_unlock5:
 			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, NULL, 0);
 
 		/* delete the dialog from DB */
-		if (is_active && should_remove_dlg_db())
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		/* destroy dialog */
@@ -1751,7 +1751,7 @@ after_unlock5:
 
 			if (ok) {
 				dlg->flags |= DLG_FLAG_CHANGED;
-				if (is_active && dlg_db_mode==DB_MODE_REALTIME )
+				if (dlg_db_mode==DB_MODE_REALTIME)
 					update_dialog_dbinfo(dlg);
 
 				if (dialog_repl_cluster && is_active)
@@ -1864,7 +1864,7 @@ early_check:
 
 	if(new_state==DLG_STATE_CONFIRMED && old_state==DLG_STATE_CONFIRMED_NA){
 		dlg->flags |= DLG_FLAG_CHANGED;
-		if (is_active && dlg_db_mode == DB_MODE_REALTIME)
+		if (dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 
 		if (dialog_repl_cluster && is_active)
@@ -1987,7 +1987,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		}
 
 		/* delete the dialog from DB */
-		if (do_expire_actions && should_remove_dlg_db())
+		if (should_remove_dlg_db())
 			remove_dialog_from_db(dlg);
 
 		unref_dlg(dlg, unref + 1 /*timer list*/);
