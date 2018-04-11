@@ -1555,26 +1555,15 @@ int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
 				return -1;
 			}
 		}
-	}
+	} else
+		type = DO_ACC_LOG | DO_ACC_AAA | DO_ACC_DB | DO_ACC_EVI;
 
-	if (flags_p != NULL) {
+	if (flags_p != NULL)
 		flags= *(unsigned long long*)flags_p;
-	}
 
 	flag_mask = type * flags;
 
-	/* reset all flags */
-	if (flag_mask == 0) {
-		/*
-		 * we use this flag in order make the difference between
-		 * 0 value (do_accounting never called, callbacks never registered) and
-		 * ACC_FLAGS_RESET (do_accounting called, callbacks registered, flag value
-		 * changing during script execution)
-		 */
-		acc_ctx->flags = ACC_FLAGS_RESET;
-	} else {
-		reset_flags(acc_ctx->flags, flag_mask);
-	}
+	reset_flags(acc_ctx->flags, flag_mask);
 
 	return 1;
 }
