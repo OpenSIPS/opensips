@@ -71,11 +71,6 @@
 /* flag to signal the processing context no to free the accounting context
  * the accounting context shall be freed by upper layers(TM, DIALOG) */
 #define ACC_PROCESSING_CTX_NO_FREE (((unsigned long long)1<<(8*6)) * (1<<2))
-/* flag to help make the difference between context created, but do_accounting
- * never called(flags value is 0) and do_accounting called, but value of the
- * flags changed using drop_accounting meaning that all callbacks are
- * registered and we don't have to register them twice */
-#define ACC_FLAGS_RESET    (((unsigned long long)1<<(8*6)) * (1<<3))
 /*
  * this flag will help to know if we entered at least once
  * in the dialog callbacks
