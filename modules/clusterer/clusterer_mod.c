@@ -130,7 +130,7 @@ static param_export_t params[] = {
 	{"url_col",				STR_PARAM,	&url_col.s			},
 	{"state_col",			STR_PARAM,	&state_col.s		},
 	{"no_ping_retries_col",	STR_PARAM,	&no_ping_retries_col.s	},
-	{"priority_col",		STR_PARAM,  &priority_col		},
+	{"priority_col",		STR_PARAM,  &priority_col.s		},
 	{"sip_addr_col",		STR_PARAM,	&sip_addr_col.s		},
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
@@ -262,6 +262,18 @@ static int mod_init(void)
 	int heartbeats_timer_interval;
 
 	LM_INFO("Clusterer module - initializing\n");
+
+	db_table.len = strlen(db_table.s);
+	id_col.len = strlen(id_col.s);
+	cluster_id_col.len = strlen(cluster_id_col.s);
+	node_id_col.len = strlen(node_id_col.s);
+	url_col.len = strlen(url_col.s);
+	state_col.len = strlen(state_col.s);
+	no_ping_retries_col.len = strlen(no_ping_retries_col.s);
+	priority_col.len = strlen(priority_col.s);
+	sip_addr_col.len = strlen(sip_addr_col.s);
+	flags_col.len = strlen(flags_col.s);
+	description_col.len = strlen(description_col.s);
 
 	/* only allow the DB URL to be skipped in "P2P discovery" mode */
 	init_db_url(clusterer_db_url, db_mode == 0);
