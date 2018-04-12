@@ -2711,12 +2711,13 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	if ((flags & DR_PARAM_ONLY_CHECK) == 0) {
 		destroy_avps( 0, current_partition->ruri_avp, 1);
 		destroy_avps( 0, current_partition->gw_id_avp, 1);
-		destroy_avps( 0, current_partition->carrier_id_avp, 1);
 		destroy_avps( 0, current_partition->gw_sock_avp, 1);
 		destroy_avps( 0, current_partition->rule_attrs_avp, 1);
 		destroy_avps( 0, current_partition->gw_attrs_avp, 1);
 		destroy_avps( 0, current_partition->carrier_attrs_avp, 1);
 
+		if ((current_partition->carrier_id_avp)!=-1)
+			destroy_avps( 0, current_partition->carrier_id_avp, 1);
 		if ((current_partition->gw_priprefix_avp)!=-1)
 			destroy_avps( 0, current_partition->gw_priprefix_avp, 1);
 		if ((current_partition->rule_id_avp)!=-1)
@@ -3198,12 +3199,13 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	/* do some cleanup first */
 	destroy_avps( 0, current_partition->ruri_avp, 1);
 	destroy_avps( 0, current_partition->gw_id_avp, 1);
-	destroy_avps( 0, current_partition->carrier_id_avp, 1);
 	destroy_avps( 0, current_partition->gw_sock_avp, 1);
 	destroy_avps( 0, current_partition->gw_attrs_avp, 1);
 	destroy_avps( 0, current_partition->rule_attrs_avp, 1);
 	destroy_avps( 0, current_partition->carrier_attrs_avp, 1);
 
+	if (current_partition->carrier_id_avp!=-1)
+		destroy_avps( 0, current_partition->carrier_id_avp, 1);
 	if (current_partition->gw_priprefix_avp!=-1)
 		destroy_avps( 0, current_partition->gw_priprefix_avp, 1);
 	if (current_partition->rule_id_avp!=-1)
