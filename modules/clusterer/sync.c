@@ -399,6 +399,9 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		cap->flags &= ~CAP_PKT_BUFFERING;
 		cap->flags |= CAP_STATE_OK;
 
+		/* inform module that sync is finished */
+		cap->reg.event_cb(SYNC_DONE, source_id);
+
 		/* send update about the state of this capability */
 		send_single_cap_update(cluster, cap, 1);
 
