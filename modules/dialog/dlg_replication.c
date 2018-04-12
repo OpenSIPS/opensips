@@ -92,7 +92,8 @@ static struct socket_info * fetch_socket_info(str *addr)
  * replicates a confirmed dialog from another OpenSIPS instance
  * by reading the relevant information using the Binary Packet Interface
  */
-int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag, str *ttag, int safe)
+int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag,
+							str *ttag, int safe)
 {
 	int h_entry;
 	unsigned int dir, dst_leg;
@@ -123,6 +124,9 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 			LM_DBG("Dialog with ci '%.*s' is already created\n",
 				callid.len, callid.s);
 			unref_dlg_unsafe(dlg, 1, d_entry);
+			/* unmark dlg as loaded from DB (otherwise it would have been
+			 * dropped later when syncing from cluster is done) */
+			dlg->flags &= ~DLG_FLAG_FROM_DB;
 			dlg_unlock(d_table, d_entry);
 			return 0;
 		}
@@ -514,7 +518,7 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_int(packet, dlg->user_flags);
 	bin_push_int(packet, dlg->mod_flags);
 	bin_push_int(packet, dlg->flags &
-			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
+			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_FROM_DB));
 	bin_push_int(packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(packet, dlg->legs[callee_leg].last_gen_cseq);
@@ -588,8 +592,7 @@ no_send:
 }
 
 /**
- * replicates a local dialog update to all the destinations
- * specified with the 'replicate_dialogs' modparam
+ * replicates a local dialog update in the cluster
  */
 void replicate_dialog_updated(struct dlg_cell *dlg)
 {
@@ -891,10 +894,64 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 	struct dlg_sharing_tag *tag;
 	struct n_send_info *ni;
 	int lock_old_flag;
+	struct dlg_cell *dlg, *next_dlg;
+	int i;
+	int ret;
+	int unref;
 
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
-	else if (ev == CLUSTER_NODE_UP) {
+	else if (ev == SYNC_DONE) {
+		if (dlg_db_mode == DB_MODE_NONE)
+			return;
+		/* drop dialogs loaded from DB which have not been reconfirmed
+		 * through syncing or SIP(updates) */
+		for (i = 0; i < d_table->size; i++) {
+			dlg_lock(d_table, &d_table->entries[i]);
+			dlg = d_table->entries[i].first;
+			while (dlg) {
+				if (!(dlg->flags & DLG_FLAG_FROM_DB)) {
+					dlg = dlg->next;
+					continue;
+				}
+				LM_DBG("Drop DB loaded dialog ID=%lld\n",
+					((long long)dlg->h_entry << 32) | (dlg->h_id));
+
+				unref = 1;  /* unref from hash */
+				dlg->state = DLG_STATE_DELETED;
+
+				destroy_linkers(dlg->profile_links, 0);
+				dlg->profile_links = NULL;
+
+				/* remove from timer */
+				ret = remove_dlg_timer(&dlg->tl);
+				if (ret < 0) {
+					LM_ERR("unable to unlink the timer on dlg %p [%u:%u] "
+						"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+						dlg, dlg->h_entry, dlg->h_id,
+						dlg->callid.len, dlg->callid.s,
+						dlg_leg_print_info(dlg, DLG_CALLER_LEG, tag),
+						dlg_leg_print_info(dlg, callee_idx(dlg), tag));
+				} else if (ret == 0)
+					/* successfully removed from timer list */
+					unref++;
+
+				if (dlg_db_mode != DB_MODE_SHUTDOWN) {
+					dlg->flags &= ~DLG_FLAG_NEW;
+					remove_dialog_from_db(dlg);
+					dlg->flags |= DLG_FLAG_DB_DELETED;
+				}
+
+				if (dlg_db_mode == DB_MODE_DELAYED)
+					unref++;
+
+				next_dlg = dlg->next;
+				unref_dlg_unsafe(dlg, unref, &d_table->entries[i]);
+				dlg = next_dlg;
+			}
+			dlg_unlock(d_table, &d_table->entries[i]);
+		}
+	} else if (ev == CLUSTER_NODE_UP) {
 		lock_start_sw_read(shtags_lock);
 		for (tag = *shtags_list; tag; tag = tag->next) {
 			if (!tag->send_active_msg)

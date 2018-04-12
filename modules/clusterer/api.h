@@ -58,7 +58,9 @@ enum clusterer_send_ret {
 enum clusterer_event {
 	CLUSTER_NODE_UP,	/* node became reachable */
 	CLUSTER_NODE_DOWN,	/* node became unreachable */
-	SYNC_REQ_RCV		/* received a data sync request */
+	SYNC_REQ_RCV,		/* received a data sync request */
+	SYNC_DONE			/* sync finished - all sync packets received and
+						 * all packets buffered during sync delivered */
 };
 
 enum cl_node_match_op {

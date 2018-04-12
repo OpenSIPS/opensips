@@ -639,10 +639,14 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				dlg->mod_flags = VAL_INT(values+25);
 			}
 
-			/* top hiding */
+			/* dialog flags */
 			dlg->flags = VAL_INT(values+22);
 			if (dlg_db_mode==DB_MODE_SHUTDOWN)
 				dlg->flags |= DLG_FLAG_NEW;
+
+			/* mark this dialog as loaded from DB in order to drop it when
+			 * syncing from cluster is finished */
+			dlg->flags |= DLG_FLAG_FROM_DB;
 
 			/* calculcate timeout */
 			dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + get_ticks();
@@ -837,7 +841,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	db_key_t match_keys[1] = { &dlg_id_column };
 
 	/*if the dialog hasn 't been yet inserted in the database*/
-	LM_DBG("trying to remove a dialog, update_flag is %i\n", cell->flags);
+	LM_DBG("trying to remove a dialog, flags are %u\n", cell->flags);
 	if (cell->flags & DLG_FLAG_NEW)
 		return 0;
 
