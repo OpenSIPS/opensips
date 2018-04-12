@@ -72,6 +72,7 @@ int max_contentid_len = 128;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
 str rls_displayname_table= str_init("rls_displayname");
+int reduce_notify_size = 0;
 
 int hash_size= 512;
 shtable_t rls_table;
@@ -184,6 +185,7 @@ static param_export_t params[]={
 	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
 	{ "rlpres_table",           STR_PARAM, &rlpres_table.s             },
 	{ "rls_displayname_table",  STR_PARAM, &rls_displayname_table.s    },
+	{ "reduce_notify_size",     INT_PARAM, &reduce_notify_size         },
 	{ "waitn_time",             INT_PARAM, &waitn_time                 },
 	{ "max_contentid_len",      INT_PARAM, &max_contentid_len          },
 	{ "clean_period",           INT_PARAM, &clean_period               },
