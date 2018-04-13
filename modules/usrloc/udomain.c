@@ -1149,7 +1149,7 @@ cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
 	cdb_res_t res;
 	cdb_row_t *row;
 	cdb_pair_t *pair;
-	ucontact_t *ct, *remote_pops = NULL /* Points of Presence */;
+	ucontact_t *ct;
 	str my_sip_addr;
 
 	if (clusterer_api.get_my_sip_addr(location_cluster, &my_sip_addr) != 0) {
@@ -1212,12 +1212,9 @@ cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
 		ct->received.len = 4 + pair->val.val.st.len;
 
 		ct->flags = FL_EXTRA_HOP;
-		ct->next = remote_pops;
-		remote_pops = ct;
+		ct->next = _r->remote_aors;
+		_r->remote_aors = ct;
 	}
-
-	if (remote_pops)
-		add_last(remote_pops, _r->contacts);
 
 out:
 	cdb_free_rows(&res);
@@ -1227,7 +1224,7 @@ out:
 out_err:
 	cdb_free_rows(&res);
 	cdb_free_filters(aor_filter);
-	shm_free_all(remote_pops);
+	shm_free_all(_r->remote_aors);
 	return -1;
 }
 
@@ -1712,6 +1709,10 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 				goto out;
 		}
 
+		/* static, empty record -> return "not found" instead */
+		if (r->is_static && !r->remote_aors)
+			goto out;
+
 		*_r = r;
 		return 0;
 	case CM_FULL_SHARING_CACHEDB:
@@ -1771,8 +1772,6 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		if (!is_replicated && cdb_update_urecord_metadata(&_r->aor, 1) != 0)
 			LM_ERR("failed to delete metadata, aor: %.*s\n",
 			       _r->aor.len, _r->aor.s);
-
-		free_fake_contacts(_r);
 		break;
 
 	default:
