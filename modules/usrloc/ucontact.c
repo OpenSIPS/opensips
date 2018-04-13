@@ -198,6 +198,10 @@ out_free:
 void free_ucontact(ucontact_t* _c)
 {
 	if (!_c) return;
+
+	if (_c->flags & FL_EXTRA_HOP)
+		goto skip_fields;
+
 	if (_c->path.s) shm_free(_c->path.s);
 	if (_c->received.s) shm_free(_c->received.s);
 	if (_c->instance.s) shm_free(_c->instance.s);
@@ -206,6 +210,8 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
+
+skip_fields:
 	shm_free( _c );
 }
 

@@ -56,6 +56,7 @@ typedef struct urecord {
 	unsigned int label;            /*!< Labels over AVL tree */
 	unsigned short next_clabel;    /*!< Labels to be assigned to contacts */
 	ucontact_t* contacts;          /*!< One or more contact fields */
+	ucontact_t* remote_aors;       /*!< AoRs present in remote POPs */
 
 	struct hslot* slot;            /*!< Collision slot in the hash table
                                     * array we belong to */
@@ -73,9 +74,6 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r);
 
 /* Free all memory associated with the element */
 void free_urecord(urecord_t* _r);
-
-/* Federation clustering: Free any fake (remote) contacts within this record */
-void free_fake_contacts(urecord_t *_r);
 
 /*
  * Add a new contact
