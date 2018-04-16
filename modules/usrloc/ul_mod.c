@@ -874,5 +874,8 @@ int check_runtime_config(void)
 		break;
 	}
 
+	LM_DBG("ul config: db_mode=%d, cluster_mode=%d, rrp=%d, sql_wm=%d\n",
+	       db_mode, cluster_mode, rr_persist, sql_wmode);
+
 	return 0;
 }

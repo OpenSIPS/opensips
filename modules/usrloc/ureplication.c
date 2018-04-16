@@ -49,7 +49,11 @@ void replicate_urecord_insert(urecord_t *r)
 	bin_push_str(&packet, r->domain);
 	bin_push_str(&packet, &r->aor);
 
-	rc = clusterer_api.send_all(&packet, location_cluster);
+	if (cluster_mode == CM_FEDERATION_CACHEDB)
+		rc = clusterer_api.send_all_having(&packet, location_cluster,
+		                                   NODE_CMP_EQ_SIP_ADDR);
+	else
+		rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
@@ -84,7 +88,11 @@ void replicate_urecord_delete(urecord_t *r)
 	bin_push_str(&packet, r->domain);
 	bin_push_str(&packet, &r->aor);
 
-	rc = clusterer_api.send_all(&packet, location_cluster);
+	if (cluster_mode == CM_FEDERATION_CACHEDB)
+		rc = clusterer_api.send_all_having(&packet, location_cluster,
+		                                   NODE_CMP_EQ_SIP_ADDR);
+	else
+		rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
@@ -145,7 +153,11 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&packet, &st);
 
-	rc = clusterer_api.send_all(&packet, location_cluster);
+	if (cluster_mode == CM_FEDERATION_CACHEDB)
+		rc = clusterer_api.send_all_having(&packet, location_cluster,
+		                                   NODE_CMP_EQ_SIP_ADDR);
+	else
+		rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
@@ -206,7 +218,11 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 	st.len = sizeof ci->last_modified;
 	bin_push_str(&packet, &st);
 
-	rc = clusterer_api.send_all(&packet, location_cluster);
+	if (cluster_mode == CM_FEDERATION_CACHEDB)
+		rc = clusterer_api.send_all_having(&packet, location_cluster,
+		                                   NODE_CMP_EQ_SIP_ADDR);
+	else
+		rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
@@ -244,7 +260,11 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	bin_push_str(&packet, &c->callid);
 	bin_push_int(&packet, c->cseq);
 
-	rc = clusterer_api.send_all(&packet, location_cluster);
+	if (cluster_mode == CM_FEDERATION_CACHEDB)
+		rc = clusterer_api.send_all_having(&packet, location_cluster,
+		                                   NODE_CMP_EQ_SIP_ADDR);
+	else
+		rc = clusterer_api.send_all(&packet, location_cluster);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
 		LM_INFO("Current node is disabled in cluster: %d\n", location_cluster);
