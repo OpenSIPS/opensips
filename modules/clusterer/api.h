@@ -64,6 +64,7 @@ enum clusterer_event {
 };
 
 enum cl_node_match_op {
+	NODE_CMP_ANY,
 	NODE_CMP_EQ_SIP_ADDR,
 	NODE_CMP_NEQ_SIP_ADDR,
 };
@@ -152,11 +153,14 @@ typedef void (*cl_event_cb_f)(enum clusterer_event ev, int node_id);
  * Register a capability(grouping of BIN packets/cluster events used to
  * achieve a certain functionality).
  *
- * @require_sync - 1 - if successful data sync is required in order for
+ * @require_sync: 1 - if successful data sync is required in order for
  * this capability to be in the OK state, 0 - otherwise
+ * @sync_cond: only sync with certain types of nodes
+ *             (useful for federated usrloc)
  */
 typedef int (*register_capability_f)(str *cap, cl_packet_cb_f packet_cb,
-					cl_event_cb_f event_cb, int cluster_id, int require_sync);
+					cl_event_cb_f event_cb, int cluster_id, int require_sync,
+					enum cl_node_match_op sync_cond);
 
 /*
  * Request to synchronize data for a given capability from another node.

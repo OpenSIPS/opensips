@@ -860,14 +860,15 @@ static int mod_init(void)
 	}
 
 	if (profile_repl_cluster && clusterer_api.register_capability(
-		&prof_repl_cap, receive_prof_repl, NULL, profile_repl_cluster, 0) < 0) {
+		&prof_repl_cap, receive_prof_repl, NULL, profile_repl_cluster, 0,
+		NODE_CMP_ANY) < 0) {
 		LM_ERR("Cannot register clusterer callback for profile replication!\n");
 		return -1;
 	}
 
 	if (dialog_repl_cluster) {
 		if (clusterer_api.register_capability(&dlg_repl_cap, receive_dlg_repl,
-								rcv_cluster_event, dialog_repl_cluster, 1) < 0) {
+				rcv_cluster_event, dialog_repl_cluster, 1, NODE_CMP_ANY) < 0) {
 			LM_ERR("Cannot register clusterer callback for dialog replication!\n");
 			return -1;
 		}

@@ -190,7 +190,7 @@ int tm_init_cluster(void)
 		return -1;
 	}
 	if (cluster_api.register_capability(&tm_repl_cap, receive_tm_repl, NULL,
-			tm_repl_cluster, 0) < 0) {
+			tm_repl_cluster, 0, NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register tm bin processing function\n");
 		/* overwrite structure to disable clusterer */
 		goto cluster_error;
