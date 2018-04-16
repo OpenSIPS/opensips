@@ -445,7 +445,9 @@ void free_udomain(udomain_t* _d)
 static inline void
 get_static_urecord(const udomain_t* _d, const str* _aor, struct urecord** _r)
 {
-	static struct urecord r;
+	static struct urecord r = {
+		.is_static = 1,
+	};
 
 	free_urecord(&r);
 	memset(&r, 0, sizeof r);
@@ -1219,12 +1221,14 @@ cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
 out:
 	cdb_free_rows(&res);
 	cdb_free_filters(aor_filter);
+	pkg_free(my_sip_addr.s);
 	return 0;
 
 out_err:
 	cdb_free_rows(&res);
 	cdb_free_filters(aor_filter);
 	shm_free_all(_r->remote_aors);
+	pkg_free(my_sip_addr.s);
 	return -1;
 }
 
@@ -1696,24 +1700,9 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 	switch (cluster_mode) {
 	case CM_NONE:
 	case CM_FULL_SHARING:
-		r = find_mem_urecord(_d, _aor);
-		if (!r)
-			goto out;
-
-		*_r = r;
-		return 0;
 	case CM_FEDERATION_CACHEDB:
 		r = find_mem_urecord(_d, _aor);
 		if (!r)
-			get_static_urecord(_d, _aor, &r);
-
-		if (cdb_load_urecord_locations(_d, _aor, r) != 0) {
-			if (r->is_static)
-				goto out;
-		}
-
-		/* static, empty record -> return "not found" instead */
-		if (r->is_static && !r->remote_aors)
 			goto out;
 
 		*_r = r;
@@ -1733,6 +1722,44 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 			return 0;
 		}
 		break;
+	default:
+		abort();
+	}
+
+out:
+	*_r = NULL;
+	return 1;   /* Nothing found */
+}
+
+/*! \brief
+ * Only relevant in a federation @cluster_mode.
+ * Obtain urecord pointer if AoR exists in at least one location.
+ *
+ * This function performs two lookups:
+ *  - mem lookup, thus providing @_r->contacts
+ *  - cachedb query, populating @_r->remote_aors
+ */
+int get_global_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
+{
+	urecord_t* r;
+
+	switch (cluster_mode) {
+	case CM_FEDERATION_CACHEDB:
+		r = find_mem_urecord(_d, _aor);
+		if (!r)
+			get_static_urecord(_d, _aor, &r);
+
+		if (cdb_load_urecord_locations(_d, _aor, r) != 0) {
+			if (r->is_static)
+				goto out;
+		}
+
+		/* static, empty record -> return "not found" instead */
+		if (r->is_static && !r->remote_aors)
+			goto out;
+
+		*_r = r;
+		return 0;
 	default:
 		abort();
 	}

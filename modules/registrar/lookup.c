@@ -431,7 +431,11 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 fetch_urecord:
 	ul.lock_udomain((udomain_t*)_t, &aor);
-	rc = ul.get_urecord((udomain_t*)_t, &aor, &r);
+	if (ul.cluster_mode == CM_FEDERATION_CACHEDB)
+		rc = ul.get_global_urecord((udomain_t*)_t, &aor, &r);
+	else
+		rc = ul.get_urecord((udomain_t*)_t, &aor, &r);
+
 	if (rc > 0) {
 		LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
 		ul.unlock_udomain((udomain_t*)_t, &aor);
@@ -456,7 +460,8 @@ fetch_urecord:
 			goto done;
 	}
 
-	if (!(flags & REG_LOOKUP_LOCAL_ONLY_FLAG)) {
+	if (ul.cluster_mode == CM_FEDERATION_CACHEDB
+	        && !(flags & REG_LOOKUP_LOCAL_ONLY_FLAG)) {
 		for (ct = r->remote_aors; ct; ct = ct->next) {
 			rc = push_branch(_m, ct, &ruri_is_pushed);
 			if (rc == 0 && (flags & REG_LOOKUP_NOBRANCH_FLAG))

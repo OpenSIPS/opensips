@@ -170,6 +170,14 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 typedef int  (*get_urecord_t)(udomain_t* _d, str* _a, struct urecord** _r);
 int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 
+/*! \brief
+ * Only relevant in a federation @cluster_mode.
+ * Obtain urecord pointer if AoR exists in at least one location.
+ */
+typedef int
+(*get_global_urecord_t)(udomain_t* _d, str* _a, struct urecord** _r);
+int get_global_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
+
 
 /*! \brief
  * Delete a urecord from domain
