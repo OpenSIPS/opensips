@@ -643,8 +643,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			if (dlg_db_mode==DB_MODE_SHUTDOWN)
 				dlg->flags |= DLG_FLAG_NEW;
 
-			/* calculcate timeout */
-			dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + get_ticks();
+			/* calculate timeout */
+			dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
 			if (dlg->tl.timeout<=(unsigned int)time(0))
 				dlg->tl.timeout = 0;
 			else
@@ -1668,8 +1668,8 @@ static int sync_dlg_db_mem(void)
 				if (dlg_db_mode==DB_MODE_SHUTDOWN)
 					dlg->flags |= DLG_FLAG_NEW;
 
-				/* calculcate timeout */
-				dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + get_ticks();
+				/* calculate timeout */
+				dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
 				if (dlg->tl.timeout<=(unsigned int)time(0))
 					dlg->tl.timeout = 0;
 				else
@@ -1731,12 +1731,12 @@ static int sync_dlg_db_mem(void)
 					/* same state :-( no way to tell which is newer */
 
 					/* play nice and store longest timeout, although not always correct*/
-					db_timeout = (unsigned int)(VAL_INT(values+8)) +
-						get_ticks();
+					db_timeout = (unsigned int)(VAL_INT(values+8));
 					if (db_timeout<=(unsigned int)time(0))
 						db_timeout = 0;
 					else
 						db_timeout -= (unsigned int)time(0);
+					db_timeout += get_ticks();
 
 					if (known_dlg->tl.timeout < db_timeout)
 						known_dlg->tl.timeout = db_timeout;
@@ -1841,12 +1841,12 @@ static int sync_dlg_db_mem(void)
 					known_dlg->state = VAL_INT(values+7);
 
 					/* update timeout */
-					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) +
-						get_ticks();
+					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
 					if (known_dlg->tl.timeout<=(unsigned int)time(0))
 						known_dlg->tl.timeout = 0;
 					else
 						known_dlg->tl.timeout -= (unsigned int)time(0);
+					known_dlg->tl.timeout += get_ticks();
 
 					/* update cseqs */
 					if (!VAL_NULL(values+9)) {
