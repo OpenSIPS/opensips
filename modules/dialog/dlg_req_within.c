@@ -311,7 +311,7 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
 		return;
 	}
 
-	LM_CRIT("receiving a final reply %d for transaction %p, dialog %p\n",
+	LM_DBG("receiving a final reply %d for transaction %p, dialog %p\n",
 		ps->code, t, (*(ps->param)));
 	/* mark the transaction as belonging to this dialog */
 	t->dialog_ctx = *(ps->param);
@@ -380,8 +380,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		goto err;
 	}
 
-	LM_DBG("sending BYE to %s (%d)\n",
-		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
+	LM_DBG("sending BYE on dialog %p to %s (%d)\n",
+		cell, (dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
 	/* set new processing context */
 	if (push_new_processing_context( cell, &old_ctx, &new_ctx, NULL)!=0)
