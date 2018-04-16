@@ -1568,6 +1568,9 @@ int cdb_update_urecord_metadata(const str *_aor, int unpublish)
 	cdb_dict_t my_pop_info;
 	str sip_addr;
 
+	LM_DBG("%spublishing metadata for AoR %.*s\n", unpublish ? "un" : "",
+	       _aor->len, _aor->s);
+
 	cdb_dict_init(&my_pop_info);
 
 	if (clusterer_api.get_my_sip_addr(location_cluster, &sip_addr) != 0) {
@@ -1778,7 +1781,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		break;
 	}
 
-	if (_r==0) {
+	if (!_r) {
 		if (get_urecord(_d, _aor, &_r) > 0) {
 			return 0;
 		}
