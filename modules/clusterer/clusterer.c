@@ -656,66 +656,14 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	return CLUSTERER_SEND_ERR;
 }
 
-static enum clusterer_send_ret clusterer_bcast_msg(bin_packet_t *packet, int cluster_id)
-{
-	node_info_t *node;
-	int rc, sent = 0, down = 1;
-	cluster_info_t *cl;
-	int ev_actions_required = 0;
-
-	if (!cl_list_lock) {
-		LM_ERR("cluster shutdown - cannot send new messages!\n");
-		return CLUSTERER_CURR_DISABLED;
-	}
-	lock_start_read(cl_list_lock);
-
-	cl = get_cluster_by_id(cluster_id);
-	if (!cl) {
-		LM_ERR("Unknown cluster, id [%d]\n", cluster_id);
-		lock_stop_read(cl_list_lock);
-		return CLUSTERER_SEND_ERR;
-	}
-
-	lock_get(cl->current_node->lock);
-	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
-		lock_release(cl->current_node->lock);
-		lock_stop_read(cl_list_lock);
-		return CLUSTERER_CURR_DISABLED;
-	}
-	lock_release(cl->current_node->lock);
-
-	for (node = cl->node_list; node; node = node->next) {
-		rc = msg_send_retry(packet, node, 1, &ev_actions_required);
-		if (rc != -2)	/* at least one node is up */
-			down = 0;
-		if (rc == 0)	/* at least one message is sent successfuly*/
-			sent = 1;
-	}
-
-	bin_remove_int_buffer_end(packet, 3);
-
-	if (ev_actions_required)
-		do_actions_node_ev(cl, &ev_actions_required, 1);
-
-	lock_stop_read(cl_list_lock);
-
-	if (down)
-		return CLUSTERER_DEST_DOWN;
-	if (sent)
-		return CLUSTERER_SEND_SUCCES;
-	else
-		return CLUSTERER_SEND_ERR;
-}
-
 static enum clusterer_send_ret
-clusterer_bcast_msg_having(bin_packet_t *packet, int dst_cid,
-                           enum cl_node_match_op match_op)
+clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
+                    enum cl_node_match_op match_op)
 {
 	node_info_t *node;
 	int rc, sent = 0, down = 1;
 	cluster_info_t *dst_cl;
 	int ev_actions_required = 0;
-	str my_sip_addr;
 
 	if (!cl_list_lock) {
 		LM_ERR("cluster shutdown - cannot send new messages!\n");
@@ -736,30 +684,11 @@ clusterer_bcast_msg_having(bin_packet_t *packet, int dst_cid,
 		lock_stop_read(cl_list_lock);
 		return CLUSTERER_CURR_DISABLED;
 	}
-
-	/* TODO: review this, seems susceptible to reload issues? */
-	my_sip_addr = dst_cl->current_node->sip_addr;
 	lock_release(dst_cl->current_node->lock);
 
 	for (node = dst_cl->node_list; node; node = node->next) {
-		switch (match_op) {
-		case NODE_CMP_EQ_SIP_ADDR:
-			if (str_strcmp(&my_sip_addr, &node->sip_addr)) {
-				LM_DBG("skipping node with different SIP addr %.*s\n",
-				       my_sip_addr.len, my_sip_addr.s);
-				continue;
-			}
-			break;
-		case NODE_CMP_NEQ_SIP_ADDR:
-			if (!str_strcmp(&my_sip_addr, &node->sip_addr)) {
-				LM_DBG("skipping node with equal SIP addr %.*s\n",
-				       my_sip_addr.len, my_sip_addr.s);
-				continue;
-			}
-			break;
-		default:
-			LM_BUG("unknown match_op: %d\n", match_op);
-		}
+		if (!match_node(dst_cl->current_node, node, match_op))
+			continue;
 
 		rc = msg_send_retry(packet, node, 1, &ev_actions_required);
 		if (rc != -2)	/* at least one node is up */
@@ -837,7 +766,7 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_bcast_msg(packet, cluster_id);
+	return clusterer_bcast_msg(packet, cluster_id, NODE_CMP_ANY);
 }
 
 enum clusterer_send_ret
@@ -849,7 +778,7 @@ cl_send_all_having(bin_packet_t *packet, int dst_cluster_id,
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_bcast_msg_having(packet, dst_cluster_id, match_op);
+	return clusterer_bcast_msg(packet, dst_cluster_id, match_op);
 }
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
@@ -881,7 +810,7 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_bcast_msg(&packet, cluster_id);
+	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
 
 	bin_free_packet(&packet);
 
@@ -915,7 +844,7 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 	if (dst_id)
 		return clusterer_send_msg(&packet, cluster_id, dst_id);
 	else
-		return clusterer_bcast_msg(&packet, cluster_id);
+		return clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
 }
 
 static inline int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
