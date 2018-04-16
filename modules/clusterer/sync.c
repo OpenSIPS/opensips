@@ -53,25 +53,33 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 	return rc;
 }
 
-static int get_sync_source(cluster_info_t *cluster, str *capability)
+static int get_sync_source(cluster_info_t *cluster, str *capability,
+                           enum cl_node_match_op match_cond)
 {
 	node_info_t *node;
 	struct remote_cap *cap;
 
-	for (node = cluster->node_list; node; node = node->next)
-		if (get_next_hop(node) > 0) {
-			for (cap = node->capabilities; cap; cap = cap->next)
-				if (!str_strcmp(capability, &cap->name))
-					break;
-			/* if the node does have the capability and it's in the OK state
-			 * then it can be a source for syncing */
-			lock_get(node->lock);
-			if (cap && cap->flags & CAP_STATE_OK) {
-				lock_release(node->lock);
-				return node->node_id;
-			} else
-				lock_release(node->lock);
+	for (node = cluster->node_list; node; node = node->next) {
+		if (get_next_hop(node) <= 0)
+			continue;
+
+		if (!match_node(cluster->current_node, node, match_cond))
+			continue;
+
+		lock_get(node->lock);
+		for (cap = node->capabilities; cap; cap = cap->next)
+			if (!str_strcmp(capability, &cap->name))
+				break;
+
+		/* if the node does have the capability and it's in the OK state
+		 * then it can be a source for syncing */
+		if (cap && cap->flags & CAP_STATE_OK) {
+			lock_release(node->lock);
+			return node->node_id;
 		}
+
+		lock_release(node->lock);
+	}
 
 	return 0;
 }
@@ -122,13 +130,15 @@ int cl_request_sync(str *capability, int cluster_id)
 	} else
 		lock_release(cluster->lock);
 
-	source_id = get_sync_source(cluster, capability);
+	source_id = get_sync_source(cluster, capability, lcap->reg.sync_cond);
 	if (source_id == 0) {	/* we didn't find any node ready to sync from */
+		LM_DBG("failed to find sync source\n");
 		/* send requst later */
 		lock_get(cluster->lock);
 		lcap->flags |= CAP_SYNC_PENDING;
 		lock_release(cluster->lock);
 	} else {
+		LM_DBG("found sync source: %d\n", source_id);
 		rc = send_sync_req(capability, cluster_id, source_id);
 		if (rc == CLUSTERER_DEST_DOWN || rc == CLUSTERER_CURR_DISABLED) {
 			/* node was up and ready but in the meantime got disabled or down */

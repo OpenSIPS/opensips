@@ -871,3 +871,34 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 	(*nr_nodes)++;
 	return i;
 }
+
+int match_node(const node_info_t *a, const node_info_t *b,
+               enum cl_node_match_op match_op)
+{
+	switch (match_op) {
+	case NODE_CMP_ANY:
+		break;
+	case NODE_CMP_EQ_SIP_ADDR:
+		lock_get(a->lock);
+		if (str_strcmp(&a->sip_addr, &b->sip_addr)) {
+			lock_release(a->lock);
+			return 0;
+		}
+		lock_release(a->lock);
+		break;
+	case NODE_CMP_NEQ_SIP_ADDR:
+		lock_get(a->lock);
+		if (!str_strcmp(&a->sip_addr, &b->sip_addr)) {
+			lock_release(a->lock);
+			return 0;
+		}
+		lock_release(a->lock);
+		break;
+	default:
+		LM_BUG("unknown match_op: %d\n", match_op);
+		return 0;
+	}
+
+	LM_DBG("matched node %d\n", b->node_id);
+	return 1;
+}

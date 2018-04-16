@@ -126,6 +126,8 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id);
 void free_clusterer_nodes(clusterer_node_t *nodes);
 clusterer_node_t *api_get_next_hop(int cluster_id, int node_id);
 void api_free_next_hop(clusterer_node_t *next_hop);
+int match_node(const node_info_t *a, const node_info_t *b,
+               enum cl_node_match_op match_op);
 
 static inline cluster_info_t *get_cluster_by_id(int cluster_id)
 {

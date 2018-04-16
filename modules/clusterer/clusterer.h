@@ -73,9 +73,10 @@ typedef enum {
 } clusterer_link_state;
 
 struct capability_reg {
-   str name;
-   cl_packet_cb_f packet_cb;
-   cl_event_cb_f event_cb;
+	str name;
+	enum cl_node_match_op sync_cond;
+	cl_packet_cb_f packet_cb;
+	cl_event_cb_f event_cb;
 };
 
 struct buf_bin_pkt {
@@ -150,8 +151,8 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
 enum clusterer_send_ret
 cl_send_all_having(bin_packet_t *packet, int dst_cluster_id,
                    enum cl_node_match_op match_op);
-int cl_register_cap(str *cap, cl_packet_cb_f packet_cb,
-					cl_event_cb_f event_cb, int cluster_id, int require_sync);
+int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
+            int cluster_id, int require_sync, enum cl_node_match_op sync_cond);
 
 struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params);
 

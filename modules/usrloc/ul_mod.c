@@ -492,7 +492,8 @@ static int mod_init(void)
 
 		/* register handler for processing usrloc packets to the clusterer module */
 		if (clusterer_api.register_capability(&contact_repl_cap,
-			receive_binary_packets, receive_cluster_event, location_cluster, 1) < 0) {
+			receive_binary_packets, receive_cluster_event, location_cluster, 1,
+			NODE_CMP_EQ_SIP_ADDR) < 0) {
 			LM_ERR("cannot register callbacks to clusterer module!\n");
 			return -1;
 		}

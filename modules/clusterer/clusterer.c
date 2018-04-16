@@ -1341,6 +1341,12 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 					if (lcap->flags & CAP_SYNC_PENDING) {
 						lock_release(source->cluster->lock);
 
+						if (!match_node(source->cluster->current_node, node,
+						                lcap->reg.sync_cond)) {
+							LM_DBG("no match for node id %d\n", node->node_id);
+							continue;
+						}
+
 						rc = send_sync_req(&cap, source->cluster->cluster_id,
 											node_id);
 						if (rc == CLUSTERER_SEND_SUCCES) {
@@ -2346,6 +2352,12 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					if (cap_it->flags & CAP_SYNC_PENDING) {
 						lock_release(cl->lock);
 
+						if (!match_node(cl->current_node, node,
+						                cap_it->reg.sync_cond)) {
+							LM_DBG("no match for node id %d\n", node->node_id);
+							continue;
+						}
+
 						for (n_cap = node->capabilities; n_cap;
 							n_cap = n_cap->next) {
 							if (!str_strcmp(&cap_it->reg.name, &n_cap->name)) {
@@ -2572,7 +2584,7 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 }
 
 int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
-						int cluster_id, int require_sync)
+             int cluster_id, int require_sync, enum cl_node_match_op sync_cond)
 {
 	struct local_cap *new_cl_cap = NULL;
 	cluster_info_t *cluster;
@@ -2592,6 +2604,7 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 	new_cl_cap->reg.name.len = cap->len;
 	new_cl_cap->reg.name.s = cap->s;
+	new_cl_cap->reg.sync_cond = sync_cond;
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
 
