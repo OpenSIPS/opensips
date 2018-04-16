@@ -333,7 +333,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 {
 	struct retr_buf *rb;
 	unsigned int buf_len;
-	branch_bm_t cancel_bitmap;
+	branch_bm_t cancel_bitmap = 0;
 	str cb_s;
 
 	if (!buf)
@@ -349,14 +349,14 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 		goto error;
 	}
 
-	cancel_bitmap=0;
 	if (lock) LOCK_REPLIES( trans );
-	if ( is_invite(trans) ) which_cancel(trans, &cancel_bitmap );
 	if (trans->uas.status>=200) {
 		LM_ERR("failed to generate %d reply when a final %d was sent out\n",
 				code, trans->uas.status);
 		goto error2;
 	}
+	if ( is_invite(trans) && code>=200 )
+		which_cancel(trans, &cancel_bitmap );
 
 
 	rb = & trans->uas.response;
