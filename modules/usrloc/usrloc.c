@@ -59,6 +59,7 @@ int bind_usrloc(usrloc_api_t* api)
 	api->insert_urecord          = insert_urecord;
 	api->delete_urecord          = delete_urecord;
 	api->get_urecord             = get_urecord;
+	api->get_global_urecord      = get_global_urecord;
 	api->lock_udomain            = lock_udomain;
 	api->unlock_udomain          = unlock_udomain;
 	api->lock_ulslot             = lock_ulslot;

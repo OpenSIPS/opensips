@@ -68,6 +68,7 @@ typedef struct usrloc_api {
 	insert_urecord_t          insert_urecord;
 	delete_urecord_t          delete_urecord;
 	get_urecord_t             get_urecord;
+	get_global_urecord_t      get_global_urecord;
 	release_urecord_t         release_urecord;
 	lock_udomain_t            lock_udomain;
 	unlock_udomain_t          unlock_udomain;
