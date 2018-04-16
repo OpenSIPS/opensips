@@ -217,7 +217,7 @@ error:
 
 
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
-							int extra_unref, int is_active)
+																int is_active)
 {
 	int event, old_state, new_state, unref, ret;
 	struct sip_msg *fake_msg=NULL;
@@ -227,7 +227,6 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 	event = DLG_EVENT_REQBYE;
 	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
 			&unref, dlg->legs_no[DLG_LEG_200OK], is_active);
-	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
 
@@ -315,11 +314,18 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
 		return;
 	}
 
-	LM_DBG("receiving a final reply %d\n",ps->code);
+	LM_CRIT("receiving a final reply %d for transaction %p, dialog %p\n",
+		ps->code, t, (*(ps->param)));
 	/* mark the transaction as belonging to this dialog */
 	t->dialog_ctx = *(ps->param);
 
-	dual_bye_event((struct dlg_cell *)(*(ps->param)), ps->req, 1, 1);
+	dual_bye_event((struct dlg_cell *)(*(ps->param)), ps->req, 1);
+}
+
+
+void bye_reply_cb_release(void *param)
+{
+	unref_dlg( (struct dlg_cell *)(param), 1);
 }
 
 
@@ -388,6 +394,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 
 	ref_dlg(cell, 1);
 
+	LM_CRIT("sending BYE for dialog %p\n", cell);
+
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
 		extra_hdrs,    /* extra headers*/
@@ -395,7 +403,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		dialog_info,   /* dialog structure*/
 		bye_reply_cb,  /* callback function*/
 		(void*)cell,   /* callback parameter*/
-		NULL);         /* release function*/
+		bye_reply_cb_release);         /* release function*/
 
 	/* reset the processing contect */
 	if (current_processing_ctx == NULL)
@@ -467,11 +475,11 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 	}
 
 	if (!send_byes) {
-		dual_bye_event(dlg, NULL, 0, 0);
-		dual_bye_event(dlg, NULL, 0, 0);
+		dual_bye_event(dlg, NULL, 0);
+		dual_bye_event(dlg, NULL, 0);
 	} else
 		for(i=res ; i<0 ; i++)
-			dual_bye_event(dlg, NULL, 0, 1);
+			dual_bye_event(dlg, NULL, 1);
 
 	if (str_hdr.s)
 		pkg_free(str_hdr.s);
