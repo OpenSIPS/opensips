@@ -263,7 +263,7 @@ void destroy_dlg(struct dlg_cell *dlg);
 		}\
 		if ((_dlg)->ref<=0) { \
 			unlink_unsafe_dlg( _d_entry, _dlg);\
-			LM_DBG("ref <=0 for dialog %p\n",_dlg);\
+			LM_CRIT("ref <=0 for dialog %p, destroying it\n",_dlg);\
 			destroy_dlg(_dlg);\
 		}\
 	}while(0)
