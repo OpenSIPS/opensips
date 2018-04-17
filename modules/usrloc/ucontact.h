@@ -42,6 +42,7 @@
 #include "../../qvalue.h"
 #include "../../str.h"
 #include "../../proxy.h"
+#include "../../socket_info.h"
 #include "../../db/db_insertq.h"
 
 

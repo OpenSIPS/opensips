@@ -32,6 +32,7 @@
 #include <string.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
+#include "../../socket_info.h"
 #include "../../str.h"
 #include "../../parser/msg_parser.h"
 

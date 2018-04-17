@@ -52,6 +52,7 @@
 
 #include "parser/msg_parser.h"
 #include "ip_addr.h"
+#include "socket_info.h"
 #include "context.h"
 #include "globals.h"
 
