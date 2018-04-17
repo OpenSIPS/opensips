@@ -269,9 +269,6 @@ ucontact_t **select_contacts(struct sip_msg *msg, ucontact_t *contacts,
 			goto skip_remaining;
 	}
 
-	if (count == 0)
-		return NULL;
-
 skip_remaining:
 	selected_cts[count] = NULL;
 
