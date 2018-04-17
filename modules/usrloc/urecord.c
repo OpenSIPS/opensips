@@ -113,6 +113,7 @@ void free_urecord(urecord_t* _r)
 		free_ucontact(ptr);
 	}
 
+	shm_free_all(_r->remote_aors);
 	store_destroy(_r->kv_storage);
 
 	if (have_mem_storage() && !_r->is_static) {
@@ -736,19 +737,20 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		free_urecord(_r);
 		break;
 	default:
-		if (cluster_mode == CM_FEDERATION_CACHEDB) {
-			shm_free_all(_r->remote_aors);
-			_r->remote_aors = NULL;
-		}
-
 		if (_r->is_static || _r->contacts || _r->no_clear_ref > 0)
 			return;
 
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
-		if (!is_replicated && location_cluster)
+		if (!is_replicated) {
+			if (cluster_mode == CM_FEDERATION_CACHEDB &&
+			    cdb_update_urecord_metadata(&_r->aor, 1) != 0)
+				LM_ERR("failed to delete metadata, aor: %.*s\n",
+				       _r->aor.len, _r->aor.s);
+
 			replicate_urecord_delete(_r);
+		}
 
 		mem_delete_urecord(_r->slot->d, _r);
 	}

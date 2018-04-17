@@ -1154,6 +1154,9 @@ cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
 	ucontact_t *ct;
 	str my_sip_addr;
 
+	shm_free_all(_r->remote_aors);
+	_r->remote_aors = NULL;
+
 	if (clusterer_api.get_my_sip_addr(location_cluster, &my_sip_addr) != 0) {
 		LM_ERR("failed to get local PoP SIP addr\n");
 		return -1;

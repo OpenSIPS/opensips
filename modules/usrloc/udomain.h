@@ -178,6 +178,8 @@ typedef int
 (*get_global_urecord_t)(udomain_t* _d, str* _a, struct urecord** _r);
 int get_global_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 
+int cdb_update_urecord_metadata(const str *_aor, int unpublish);
+
 
 /*! \brief
  * Delete a urecord from domain
