@@ -427,8 +427,7 @@ error:
 				shm_free(htable[i].entries);
 			if(htable[i].cq_entries)
 				shm_free(htable[i].cq_entries);
-			if (htable[i].lock)
-				lock_destroy(&htable[i].lock);
+			lock_destroy(&htable[i].lock);
 		}
 		shm_free(htable);
 	}
