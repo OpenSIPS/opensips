@@ -292,7 +292,7 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
 		switch (input->s[i]) {
 		case 'm': *flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 		case 'b': *flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
-		case 'l': *flags |= REG_LOOKUP_LOCAL_ONLY_FLAG; break;
+		case 'g': *flags |= REG_LOOKUP_GLOBAL_FLAG; break;
 		case 'r': *flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 		case 'u':
 			if (input->s[i+1] != '/') {
@@ -461,7 +461,7 @@ fetch_urecord:
 	}
 
 	if (ul.cluster_mode == CM_FEDERATION_CACHEDB
-	        && !(flags & REG_LOOKUP_LOCAL_ONLY_FLAG)) {
+	        && (flags & REG_LOOKUP_GLOBAL_FLAG)) {
 		for (ct = r->remote_aors; ct; ct = ct->next) {
 			rc = push_branch(_m, ct, &ruri_is_pushed);
 			if (rc == 0 && (flags & REG_LOOKUP_NOBRANCH_FLAG))

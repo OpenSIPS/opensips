@@ -625,13 +625,24 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
             insensitive filtering for the 'u' flag.
           + 'e' (Use extended regexp) - this flag enables using of
             extended regexp format for the 'u' flag.
-          + 'l' (Local-only contacts) - this flag is only relevant
-            with federated user location clustering. Its purpose
-            is to prevent the local registrar from re-interpreting
-            the AoR metadata and further appending (incorrect)
-            branches for the call. Only the direct (local)
-            contacts behind the AoR will be routed to if this flag
-            is enabled.
+          + 'g' (Global lookup) - this flag is only relevant with
+            federated user location clustering. If set, the
+            lookup() function will not only perform the classic
+            in-memory "search-AoR-and-push-branches" operation,
+            but will also perform a metadata lookup and append an
+            additional branch for each returned result. The
+            "in-memory branches" correspond to local contacts
+            (current location), while the "metadata branches"
+            correspond to contacts available on one or more of the
+            remaining locations of the platform.
+            The AoR metadata consists of the minimally required
+            information in order for one of the VoIP platform's
+            locations (data centers) to advertise the presence of
+            a locally registered AoR for the global platform.
+            Specifically, this consists of two pieces of
+            information:
+               o the AoR (e.g. "vladimir@federation-cluster")
+               o the home IP (e.g. "10.0.0.223")
           + 'yXXXXX' (Max pinging latency) - maximally accepted
             contact pinging latency (microseconds). Contacts of an
             AoR with a higher latency will be discarded during the
