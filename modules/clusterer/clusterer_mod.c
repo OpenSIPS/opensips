@@ -574,7 +574,9 @@ static struct mi_root * clusterer_list_cap(struct mi_root *cmd_tree, void *param
 			   MI_SSTR("Capability"), val.s, val.len);
 			if (!node_s) goto error;
 
+			lock_get(cl->lock);
 			val.s = int2str((cap->flags & CAP_STATE_OK) ? 1 : 0, &val.len);
+			lock_release(cl->lock);
 			attr = add_mi_attr(node_s, MI_DUP_VALUE, MI_SSTR("State"),
 				(cap->flags & CAP_STATE_OK) ? str_ok.s : str_not_synced.s,
 				(cap->flags & CAP_STATE_OK) ? str_ok.len : str_not_synced.len);

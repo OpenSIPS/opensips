@@ -846,11 +846,11 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 	*nr_nodes = 0;
 	for (node = cl->node_list; node; node = node->next)
 		if (get_next_hop(node) > 0) {
+			lock_get(node->lock);
 			for (cap = node->capabilities; cap; cap = cap->next)
 				if (!str_strcmp(capability, &cap->name))
 					break;
 
-			lock_get(node->lock);
 			if (cap && cap->flags & CAP_STATE_OK)
 				sorted[(*nr_nodes)++] = node->node_id;
 			lock_release(node->lock);
