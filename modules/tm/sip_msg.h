@@ -111,7 +111,7 @@ static inline void clean_msg_clone(struct sip_msg *msg,void *min, void *max)
 		if ( hdr->parsed && hdr_allocs_parse(hdr) &&
 		(hdr->parsed<min || hdr->parsed>=max)) {
 			/* header parsed filed doesn't point inside uas.request memory
-			 * chunck -> it was added by failure funcs.-> free it as pkg */
+			 * chunk -> it was added by failure funcs.-> free it as pkg */
 			LM_DBG("removing hdr->parsed %d\n",	hdr->type);
 			clean_hdr_field(hdr);
 			hdr->parsed = 0;

@@ -542,7 +542,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			calls a given <emphasis>number</emphasis>. It will try to match a fraud rule
 			within de given fraud profile and update the stats (see above). Furthermore,
 			the stats will be checked against the rule's thresholds. If any of the stats
-			is above it's threhsold value the appropriate event will also be raised
+			is above it's threshold value the appropriate event will also be raised
 			(see further details below).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -583,13 +583,13 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>-1</emphasis> - there is a parameter above the warning threhsold value.
+					<emphasis>-1</emphasis> - there is a parameter above the warning threshold value.
 					Check the raised event for more info
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>-2</emphasis> - there is a parameter above the critical threhsold value.
+					<emphasis>-2</emphasis> - there is a parameter above the critical threshold value.
 					Check the raised event for more info
 				</para>
 			</listitem>
@@ -649,7 +649,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		</title>
 		<para>
 			This event is raised whenever one of the 5 monitored parameters
-			is above the warning threhsold value</para>
+			is above the warning threshold value</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
@@ -679,7 +679,7 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		</title>
 		<para>
 			This event is raised whenever one of the 5 monitored parameters
-			is above the warning threhsold value</para>
+			is above the warning threshold value</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>

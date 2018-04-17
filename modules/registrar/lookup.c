@@ -379,7 +379,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 		if (parse_lookup_flags(&flags_s, &flags, &ua_re, &regexp_flags,
 		                       &max_latency) != 0) {
-			LM_ERR("failed to flags: %.*s\n", flags_s.len, flags_s.s);
+			LM_ERR("failed to parse flags: %.*s\n", flags_s.len, flags_s.s);
 			return -1;
 		}
 	}

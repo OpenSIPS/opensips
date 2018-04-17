@@ -225,7 +225,7 @@
 	<section  id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-	<section id="param_mode" xreflabel="param_mode">
+	<section id="param_mode" xreflabel="mode">
 		<title><varname>mode</varname> (integer)</title>
 
 		<para>

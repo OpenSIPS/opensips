@@ -391,7 +391,7 @@ hresh")
    given number. It will try to match a fraud rule within de given
    fraud profile and update the stats (see above). Furthermore,
    the stats will be checked against the rule's thresholds. If any
-   of the stats is above it's threhsold value the appropriate
+   of the stats is above it's threshold value the appropriate
    event will also be raised (see further details below).
 
    Meaning of the parameters is as follows:
@@ -407,9 +407,9 @@ hresh")
      * 2 - no matching fraud rule was found
      * 1 - a matching rule was found, but there is no parameter
        above the rule's threshlod, i.e - everything is ok
-     * -1 - there is a parameter above the warning threhsold
+     * -1 - there is a parameter above the warning threshold
        value. Check the raised event for more info
-     * -2 - there is a parameter above the critical threhsold
+     * -2 - there is a parameter above the critical threshold
        value. Check the raised event for more info
      * -3 - something went wrong (internal mechanism failed)
 
@@ -442,7 +442,7 @@ hresh")
 1.6.1.  E_FRD_WARNING
 
    This event is raised whenever one of the 5 monitored parameters
-   is above the warning threhsold value
+   is above the warning threshold value
 
    Parameters:
      * param - the name of the parameter.
@@ -456,7 +456,7 @@ hresh")
 1.6.2.  E_FRD_CRITICAL
 
    This event is raised whenever one of the 5 monitored parameters
-   is above the warning threhsold value
+   is above the warning threshold value
 
    Parameters:
      * param - the name of the parameter.
