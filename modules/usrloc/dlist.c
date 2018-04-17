@@ -639,7 +639,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	int needed;
 	int count;
 	int i = 0;
-	int cur_node_idx, nr_nodes;
+	int cur_node_idx = 0, nr_nodes = 0;
 
 	cp = buf;
 	shortage = 0;
@@ -647,9 +647,14 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	if (zero_end)
 		*len -= sizeof(c->c.len);
 
-#ifdef EXTRA_DEBUG
-	LM_DBG("part_idx: %d, part_max: %d\n", part_idx, part_max);
-#endif
+	if (cluster_mode == CM_FULL_SHARING
+	    || cluster_mode == CM_FULL_SHARING_CACHEDB) {
+		cur_node_idx = clusterer_api.get_my_index(
+		         location_cluster, &contact_repl_cap, &nr_nodes);
+	}
+
+	LM_DBG("part/max: %d/%d, idx/nodes: %d/%d\n",
+	       part_idx, part_max, cur_node_idx, nr_nodes);
 
 	for(i=0; i<d->size; i++) {
 
@@ -677,13 +682,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			r =( urecord_t * ) *dest;
 
 			/* distribute ping workload across cluster nodes */
-			if (cluster_mode == CM_FULL_SHARING
-			    || cluster_mode == CM_FULL_SHARING_CACHEDB) {
-				cur_node_idx = clusterer_api.get_my_index(
-				         location_cluster, &contact_repl_cap, &nr_nodes);
-				if (r->aorhash % nr_nodes != cur_node_idx)
-					continue;
-			}
+			if (nr_nodes && r->aorhash % nr_nodes != cur_node_idx)
+				continue;
 
 			for (c = r->contacts; c != NULL; c = c->next) {
 				if (c->c.len <= 0)
