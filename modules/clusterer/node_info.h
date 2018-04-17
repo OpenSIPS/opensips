@@ -63,41 +63,54 @@ enum db_str_vals_idx {
 struct cluster_info;
 
 struct node_info {
-	int id;                             /* DB id (PK) */
+	/* read-only fields */
+	int id;                         /* DB id (PK) */
 	int node_id;
-	clusterer_link_state link_state;    /* state of the "link" with this node */
 	str description;
 	str url;
+	union sockaddr_union addr;
 	str sip_addr;
 	int priority;                   /* priority to be chosen as next hop for same length paths */
-	union sockaddr_union addr;
-	struct timeval last_pong;       /* last pong received from this node */
-	struct timeval last_ping;       /* last ping sent to this node */
 	int no_ping_retries;            /* maximum number of ping retries */
+
+	/* fields accessed only by timer */
 	int curr_no_retries;
-	struct cluster_info *cluster;       /* containing cluster */
-	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
+	struct timeval last_ping;       	/* last ping sent to this node */
+
+	/* fields protected by cluster lock */
 	int sp_top_version;                 /* last topology version for which shortest path was computed */
+	struct node_search_info *sp_info;   /* shortest path info */
+
+	gen_lock_t *lock;
+
+	/* fields protected by node lock */
+	clusterer_link_state link_state;	/* state of the "link" with this node */
+	struct timeval last_pong;       	/* last pong received from this node */
+	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
 	int ls_seq_no;                      /* sequence number of the last link state update */
 	int top_seq_no;                     /* sequence number of the last topology update message */
 	int ls_timestamp;
 	int top_timestamp;
 	struct node_info *next_hop;         /* next hop from the shortest path */
-	struct node_search_info *sp_info;   /* shortest path info */
 	struct remote_cap *capabilities;	/* known capabilities of this node */
 	int flags;
-	gen_lock_t *lock;
+
+	/* list linkers */
+	struct cluster_info *cluster;       /* containing cluster */
 	struct node_info *next;
 };
 
 struct cluster_info {
 	int cluster_id;
-	struct local_cap *capabilities;	/* capabilities registered for this cluster */
-	struct node_info *node_list;
 	int no_nodes;                   /* number of nodes in the cluster */
+	struct node_info *node_list;
 	struct node_info *current_node; /* current node's info in this cluster */
-	int top_version;        		/* topology version */
+
 	gen_lock_t *lock;
+
+	int top_version;        		/* topology version */
+	struct local_cap *capabilities;	/* capabilities registered for this cluster */
+
 	struct cluster_info *next;
 };
 

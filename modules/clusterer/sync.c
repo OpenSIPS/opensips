@@ -303,15 +303,18 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 	if (nhop > 0) {
 		send_sync_repl(cluster, source->node_id, &cap_name);
 	} else {
+		lock_get(source->lock);
+
 		for (cap = source->capabilities; cap; cap = cap->next)
 			if (!str_strcmp(&cap_name, &cap->name))
 				break;
 		if (!cap) {
 			LM_ERR("Requesting node does not appear to have capability: %.*s\n",
 				cap_name.len, cap_name.s);
+			lock_release(source->lock);
 			return;
 		}
-		lock_get(source->lock);
+
 		/* reply to sync later when the node is up */
 		cap->flags |= CAP_SYNC_PENDING;
 		lock_release(source->lock);
