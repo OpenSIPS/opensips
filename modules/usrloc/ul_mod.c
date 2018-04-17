@@ -818,7 +818,7 @@ int check_runtime_config(void)
 		}
 
 		if (!cdb_url.s) {
-			LM_ERR("no cache database URL defined! ('cdb_url')\n");
+			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
 		}
 		break;
@@ -849,7 +849,7 @@ int check_runtime_config(void)
 		}
 
 		if (!cdb_url.s) {
-			LM_ERR("no cache database URL defined! ('cdb_url')\n");
+			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
 		}
 		break;

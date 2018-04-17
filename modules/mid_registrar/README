@@ -220,10 +220,10 @@ Chapter 1. Admin Guide
    the platform's layers and automatically insert itself on the
    call flows which follow successful registrations.
 
-   Regardless of its configured working param_mode, the
-   mid-registrar will mangle the Contact header field URIs of all
-   forwarded REGISTER requests and replace the original "hostname"
-   and "port" parts of a Contact URI with one of its listening
+   Regardless of its configured working mode, the mid-registrar
+   will mangle the Contact header field URIs of all forwarded
+   REGISTER requests and replace the original "hostname" and
+   "port" parts of a Contact URI with one of its listening
    interfaces.
 
    Additionally, in modes "0" and "1", each Contact will be
@@ -301,12 +301,11 @@ modparam("mid_registrar", "mode", 2)
 
 1.5.2. contact_id_insertion (integer)
 
-   Only relevant in a "mirroring" or "contact throttling"
-   param_mode. Controls where the additional unique Contact
-   identification information (64-bit, hex-encoded integer) will
-   be placed within outgoing Contact header field URIs. Refer to
-   Section 1.3, “Auto-Insertion Into Future SIP Flows” for more
-   details.
+   Only relevant in a "mirroring" or "contact throttling" mode.
+   Controls where the additional unique Contact identification
+   information (64-bit, hex-encoded integer) will be placed within
+   outgoing Contact header field URIs. Refer to Section 1.3,
+   “Auto-Insertion Into Future SIP Flows” for more details.
 
    Possible values are:
      * "ct-param" (default) - the contact IDs shall be appended to
@@ -319,10 +318,10 @@ modparam("mid_registrar", "contact_id_insertion", "ct-username")
 
 1.5.3. contact_id_param (string)
 
-   Only relevant in a "mirroring" or "contact throttling"
-   param_mode. Specifies the name of the Contact URI parameter
-   which is used by the module in order to match contacts and
-   route SIP requests.
+   Only relevant in a "mirroring" or "contact throttling" mode.
+   Specifies the name of the Contact URI parameter which is used
+   by the module in order to match contacts and route SIP
+   requests.
 
    Default value is “ctid”
 
@@ -557,10 +556,9 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
    REGISTER request has been answered with 200 OK (absorbed at
    mid-registrar level).
 
-   Depending on the current working param_mode and
-   contact_id_insertion, the function may additionally perform the
-   following series of transformations when relaying REGISTER
-   requests:
+   Depending on the current working mode and contact_id_insertion,
+   the function may additionally perform the following series of
+   transformations when relaying REGISTER requests:
 
      * in "Contact throttling" mode
           + change the value of the Expires header field to the
@@ -653,8 +651,8 @@ if (is_method("REGISTER")) {
    contacts (note that multiple branches/destinations may result
    after the lookup).
 
-   Depending on the current working param_mode, the function will
-   behave as follows:
+   Depending on the current working mode, the function will behave
+   as follows:
 
      * in "mirror" mode
           + extract the username (Address-of-Record) from the
