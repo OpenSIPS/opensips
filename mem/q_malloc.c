@@ -718,6 +718,9 @@ void qm_status(struct qm_block* qm)
 			}
 
 	LM_GEN1(memdump, " dumping summary of all alloc'ed. fragments:\n");
+	LM_GEN1(memdump, "----------------------------------------------------\n");
+	LM_GEN1(memdump, "total_bytes : num_allocations x [file: func, line]\n");
+	LM_GEN1(memdump, "----------------------------------------------------\n");
 	for(i=0; i < DBG_HASH_SIZE; i++) {
 		it = allocd[i];
 		while (it) {
@@ -726,6 +729,7 @@ void qm_status(struct qm_block* qm)
 			it = it->next;
 		}
 	}
+	LM_GEN1(memdump, "----------------------------------------------------\n");
 
 	dbg_ht_free(allocd);
 #endif
