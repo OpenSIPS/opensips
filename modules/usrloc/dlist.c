@@ -677,7 +677,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			r =( urecord_t * ) *dest;
 
 			/* distribute ping workload across cluster nodes */
-			if (location_cluster) {
+			if (cluster_mode == CM_FULL_SHARING
+			    || cluster_mode == CM_FULL_SHARING_CACHEDB) {
 				cur_node_idx = clusterer_api.get_my_index(
 				         location_cluster, &contact_repl_cap, &nr_nodes);
 				if (r->aorhash % nr_nodes != cur_node_idx)
