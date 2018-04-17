@@ -1002,6 +1002,7 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 		str_vals[STR_VALS_SIP_ADDR_COL].s, str_vals[STR_VALS_SIP_ADDR_COL].len);
 	char_str_vals[STR_VALS_SIP_ADDR_COL][str_vals[STR_VALS_SIP_ADDR_COL].len] = 0;
 
+	char_str_vals[STR_VALS_FLAGS_COL] = 0;
 	char_str_vals[STR_VALS_DESCRIPTION_COL] = 0;
 
 	int_vals[INT_VALS_ID_COL] = -1;	/* no DB id */
