@@ -68,7 +68,6 @@ struct ip_addr{
 };
 
 
-
 struct net{
 	struct ip_addr ip;
 	struct ip_addr mask;
@@ -84,28 +83,6 @@ union sockaddr_union{
 
 enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4,
 	SI_IS_ANYCAST=8 };
-
-struct socket_info {
-	int socket;
-	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
-	struct ip_addr address; /*!< ip address */
-	str address_str;        /*!< ip address converted to string -- optimization*/
-	unsigned short port_no;  /*!< port number */
-	str port_no_str; /*!< port number converted to string -- optimization*/
-	enum si_flags flags; /*!< SI_IS_IP | SI_IS_LO | SI_IS_MCAST | SI_IS_ANYCAST */
-	union sockaddr_union su;
-	int proto; /*!< tcp or udp*/
-	str sock_str;
-	str adv_sock_str;
-	str adv_name_str; /* Advertised name of this interface */
-	str adv_port_str; /* Advertised port of this interface */
-	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
-	unsigned short adv_port;    /* optimization for grep_sock_info() */
-	unsigned short children;
-	struct socket_info* next;
-	struct socket_info* prev;
-};
-
 
 struct receive_info {
 	struct ip_addr src_ip;

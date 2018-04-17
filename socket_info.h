@@ -36,7 +36,27 @@
 #include "globals.h"
 #include "net/trans.h"
 #include "ut.h"
-/* struct socket_info is defined in ip_addr.h */
+
+struct socket_info {
+	int socket;
+	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
+	struct ip_addr address; /*!< ip address */
+	str address_str;        /*!< ip address converted to string -- optimization*/
+	unsigned short port_no;  /*!< port number */
+	str port_no_str; /*!< port number converted to string -- optimization*/
+	enum si_flags flags; /*!< SI_IS_IP | SI_IS_LO | SI_IS_MCAST | SI_IS_ANYCAST */
+	union sockaddr_union su;
+	int proto; /*!< tcp or udp*/
+	str sock_str;
+	str adv_sock_str;
+	str adv_name_str; /* Advertised name of this interface */
+	str adv_port_str; /* Advertised port of this interface */
+	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
+	unsigned short adv_port;    /* optimization for grep_sock_info() */
+	unsigned short children;
+	struct socket_info* next;
+	struct socket_info* prev;
+};
 
 #define NUM_IP_OCTETS	4
 #define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
