@@ -1145,7 +1145,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
         /* extract the contact address */
 	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
 		LM_ERR("No outgoing contact in the initial INVITE \n");
-        } else {
+	} else {
 		contact.s = msg->contact->name.s;
 		contact.len = msg->contact->len;
 
@@ -1239,6 +1239,18 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	s = get_to(req)->tag_value;
 	if (s.s!=0 && s.len!=0)
 		return -1;
+
+	dlg = get_current_dialog();
+	if (dlg) {
+		/* a dialog is already created - just update flags, if provisioned */
+		if (flags) {
+			dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE |
+			DLG_FLAG_BYEONTIMEOUT | DLG_FLAG_REINVITE_PING_CALLER | DLG_FLAG_REINVITE_PING_CALLEE);
+			dlg->flags |= flags;
+			dlg_setup_reinvite_callbacks(t, req, dlg);
+		}
+		return 0;
+	}
 
 	if ( parse_from_header(req)) {
 		LM_ERR("bad request or missing FROM hdr :-/\n");
