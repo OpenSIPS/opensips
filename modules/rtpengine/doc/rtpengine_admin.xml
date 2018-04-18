@@ -378,6 +378,10 @@ rtpengine_offer();
 				message is received, support symmetric RTP must be forced.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>loop-protect</emphasis> - flag that instructs &rtp; to
+				avoid rewriting the SDP when looping the same message.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>repacketize=NN</emphasis> - requests the &rtp; proxy to perform
 				re-packetization of RTP traffic coming from the UA which
 				has sent the current message to increase or decrease payload

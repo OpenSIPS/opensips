@@ -1068,6 +1068,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 					bencode_list_add_string(ng_flags->direction, "external");
 				else if (str_eq(&key, "RTP/AVPF"))
 					ng_flags->transport = 0x102;
+				else if (str_eq(&key, "SDES-off"))
+					bencode_dictionary_add_str(ng_flags->dict, "SDES-off", &val);
 				else if (str_eq(&key, "RTP/SAVP"))
 					ng_flags->transport = 0x101;
 				else
@@ -1133,6 +1135,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg, enu
 						goto error;
 					*op = OP_ANSWER;
 				}
+				else if (str_eq(&key, "loop-protect"))
+					bencode_list_add_string(ng_flags->flags, "loop-protect");
 				else
 					goto error;
 				break;
