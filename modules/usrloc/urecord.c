@@ -743,7 +743,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
-		if (!is_replicated) {
+		if (!is_replicated && location_cluster) {
 			if (cluster_mode == CM_FEDERATION_CACHEDB &&
 			    cdb_update_urecord_metadata(&_r->aor, 1) != 0)
 				LM_ERR("failed to delete metadata, aor: %.*s\n",
