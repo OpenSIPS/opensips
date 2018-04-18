@@ -472,6 +472,10 @@ rtpengine_offer();
 				Not supported by Sipwise rtpengine.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>loop-protect</emphasis> - flag that instructs &rtp; to
+				avoid rewriting the SDP when looping the same message.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>ICE=...</emphasis> - controls the &rtp; proxy's behaviour
 				regarding ICE attributes within the &sdp; body. Possible values
 				are: <quote>force</quote> - 
