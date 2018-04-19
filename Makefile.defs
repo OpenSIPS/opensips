@@ -61,8 +61,8 @@ export makefile_defs
 MAIN_NAME=opensips
 
 #version number
-VERSION_MAJOR = 2
-VERSION_MINOR = 4
+VERSION_MAJOR = 3
+VERSION_MINOR = 0
 VERSION_SUBMINOR = 0
 VERSION_BUILD = dev
 
