@@ -714,7 +714,7 @@ int check_src_addr_1(struct sip_msg* msg,
 int get_source_group(struct sip_msg* msg, char *arg) {
 	int group = -1;
 	struct ip_addr *ip;
-	str str_ip, partition;
+	str partition;
 	pv_value_t pvt;
 	struct part_pvar *ppv;
 	struct pm_part_struct *ps;
@@ -759,8 +759,8 @@ int get_source_group(struct sip_msg* msg, char *arg) {
 				ip,
 				msg->rcv.src_port);
 		if (group == -1) {
-			LM_DBG("IP <%.*s:%u> not found in any group\n",
-					str_ip.len, str_ip.s, msg->rcv.src_port);
+			LM_DBG("IP <%s:%u> not found in any group\n",
+					ip_addr2a(ip), msg->rcv.src_port);
 			return -1;
 		}
 	}
