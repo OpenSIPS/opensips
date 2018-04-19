@@ -1209,9 +1209,9 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 	if (bytes<(int)sizeof(response)){
 		if (bytes==0){
 			/* EOF -> bad, child has died */
-			LM_DBG("dead tcp worker %d (pid %d)"
-					" (shutting down?)\n", (int)(tcp_c-&tcp_children[0]),
-					tcp_c->pid );
+			if (get_osips_state()!=STATE_TERMINATING)
+				LM_CRIT("dead tcp worker %d (EOF received), pid %d\n",
+					(int)(tcp_c-&tcp_children[0]), tcp_c->pid );
 			/* don't listen on it any more */
 			reactor_del_reader( tcp_c->unix_sock, fd_i, 0/*flags*/);
 			/* eof. so no more io here, it's ok to return error */
@@ -1349,8 +1349,9 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 		/* too few bytes read */
 		if (bytes==0){
 			/* EOF -> bad, child has died */
-			LM_DBG("dead child %d, pid %d"
-					" (shutting down?)\n", (int)(p-&pt[0]), p->pid);
+			if (get_osips_state()!=STATE_TERMINATING)
+				LM_CRIT("dead child %d (EOF received), pid %d\n",
+					(int)(p-&pt[0]), p->pid);
 			/* don't listen on it any more */
 			reactor_del_reader( p->unix_sock, fd_i, 0/*flags*/);
 			goto error; /* child dead => no further io events from it */
