@@ -92,6 +92,7 @@ static cmd_export_t cmds[]={
 
 static param_export_t params[]={
 	{"db_url",                      STR_PARAM, &db_url.s},
+	{"use_local_time",              INT_PARAM, &mp_use_local_time},
 	{"table_name",                  STR_PARAM, &table_name.s},
 	{"rid_col",                     STR_PARAM, &rid_col.s},
 	{"pid_col",                     STR_PARAM, &pid_col.s},
