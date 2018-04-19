@@ -1356,7 +1356,7 @@ static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 	}
 
 	if (parse_from_header(msg)<0 || msg->from==NULL || get_from(msg)==NULL) {
-		LM_ERR("cannot parse TO header\n");
+		LM_ERR("cannot parse FROM header\n");
 		goto error;
 	}
 
