@@ -315,12 +315,15 @@ modparam("presence", "max_expires_publish", 3600)
 
 1.4.10. server_address (str)
 
-   The optional presence server address which will become the
+   The optional presence server URI address which will become the
    value of Contact header filed for 200OK replies to Subscribe
    and Publish and in Notify messages.
 
+   NOTE: this must be a fully formated SIP URI, with port and
+   transport parameter if the case.
+
    If not set (as it is by default), OpenSIPS will generate the
-   Conact URI based on the interface it received the SIP traffic.
+   Contact URI based on the interface it received the SIP traffic.
 
    Example 1.10. Set server_address parameter
 ...
