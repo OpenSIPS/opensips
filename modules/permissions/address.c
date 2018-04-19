@@ -74,7 +74,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	struct address_list **new_hash_table;
 	struct subnet *new_subnet_table;
 	int i, mask, proto, group, port, id;
-    struct ip_addr *ip_addr;
+	struct ip_addr *ip_addr;
 	struct net *subnet;
 	str str_pattern = {NULL,0}, str_info={NULL,0};
 	str str_src_ip, str_proto;
