@@ -457,6 +457,8 @@ static void shutdown_opensips( int status )
 	int chld_status;
 	const unsigned int shutdown_time = 60; /* one minute close timeout */
 
+	set_osips_state( STATE_TERMINATING );
+
 	/* terminate all processes */
 
 	/* first we try to terminate the processes via the IPC channel */
@@ -793,6 +795,8 @@ static int main_loop(void)
 		shm_free(startup_done);
 	}
 
+	set_osips_state( STATE_RUNNING );
+
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
@@ -1121,6 +1125,8 @@ try_again:
 	 * --andrei */
 	if (init_shm_mallocs()==-1)
 		goto error;
+
+	set_osips_state( STATE_STARTING );
 
 	if (init_stats_collector() < 0) {
 		LM_ERR("failed to initialize statistics\n");
