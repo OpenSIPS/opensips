@@ -145,7 +145,8 @@ int gen_rcv_evs_init(void);
 void gen_rcv_evs_destroy(void);
 
 int cl_set_state(int cluster_id, enum cl_node_state state);
-int clusterer_check_addr(int cluster_id, union sockaddr_union *su);
+int clusterer_check_addr(int cluster_id, str *ip_str,
+							enum node_addr_type check_type);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);
 enum clusterer_send_ret cl_send_all(bin_packet_t *, int cluster_id);
 enum clusterer_send_ret

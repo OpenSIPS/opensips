@@ -612,11 +612,25 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 
 			<section id="func_cluster_check_addr" xreflabel="cluster_check_addr()">
 				<title>
-				<function moreinfo="none">cluster_check_addr(cluster_id, ip)</function>
+				<function moreinfo="none">cluster_check_addr(cluster_id, ip, addr_type)</function>
 				</title>
 				<para>
-					This function checks whether the given IP address belongs to one of the nodes in the cluster. Note that the comparison is made against the addresses of the BIN listeners of the instances.
+					This function checks whether the given IP address belongs
+					to one of the nodes in the cluster.
 				</para>
+				<para>The <emphasis>addr_type</emphasis> parameter can be set
+				to in order to select the address of the node that the comparison
+				is made against, with the possible values of:</para>
+				<itemizedlist>
+					<listitem>
+						<para><emphasis>bin</emphasis> - node's BIN interface listener;</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>sip</emphasis> - node's DB provisioned SIP address.</para>
+					</listitem>
+				</itemizedlist>
+				<para>The <emphasis>addr_type</emphasis> parameter is optional
+				and the default behaviour is to compare against the SIP address.</para>
 				<para>
 					This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 				</para>
