@@ -70,7 +70,7 @@ static int set_link_w_neigh_adv(clusterer_link_state new_ls, node_info_t *neigh)
 static int set_link_w_neigh_up(node_info_t *neigh, int nr_nodes, int *node_list);
 static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 								int no_clusters);
-
+static int send_cap_update(node_info_t *dest_node, int require_reply);
 
 static int send_ping(node_info_t *node, int req_node_list)
 {
@@ -891,7 +891,7 @@ int clusterer_check_addr(int cluster_id, union sockaddr_union *su)
 }
 
 static int flood_message(bin_packet_t *packet, cluster_info_t *cluster,
-							int source_id)
+							int source_id, int rst_req_repl)
 {
 	int path_len;
 	int path_nodes[UPDATE_MAX_PATH_LEN];
@@ -922,6 +922,13 @@ static int flood_message(bin_packet_t *packet, cluster_info_t *cluster,
 			continue;
 		}
 		skip_nodes[no_skip_nodes++] = tmp_path_node->node_id;
+	}
+
+	if (rst_req_repl) {
+		/* message has a require_reply field and it should be reset */
+		bin_remove_int_buffer_end(packet, path_len + 2);
+		bin_push_int(packet, 0);
+		bin_skip_int_packet_end(packet, path_len + 1);
 	}
 
 	lock_get(cluster->current_node->lock);
@@ -1194,7 +1201,7 @@ static void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		}
 	}
 
-	flood_message(packet, source->cluster, source->node_id);
+	flood_message(packet, source->cluster, source->node_id, 0);
 }
 
 static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
@@ -1208,6 +1215,7 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 	node_info_t *node;
 	int cap_state;
 	int rc;
+	int require_reply;
 
 	bin_pop_int(packet, &nr_nodes);
 
@@ -1295,7 +1303,13 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 		}
 	}
 
-	flood_message(packet, source->cluster, source->node_id);
+	bin_pop_int(packet, &require_reply);
+	if (require_reply)
+		/* also send current node's capabilities information to source node */
+		send_cap_update(source, 0);
+
+	/* flood to other neighbours */
+	flood_message(packet, source->cluster, source->node_id, require_reply);
 }
 
 static void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
@@ -1338,7 +1352,7 @@ static void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *
 		bin_pop_int(received, &int_vals[INT_VALS_NO_PING_RETRIES_COL]);
 		add_node(received, cl, src_node_id, str_vals, int_vals);
 
-		flood_message(received, cl, src_node_id);
+		flood_message(received, cl, src_node_id, 0);
 		break;
 	default:
 		LM_DBG("Ignoring message, type: %d from unknown source, id [%d]\n",
@@ -1398,7 +1412,7 @@ static void handle_ls_update(bin_packet_t *received, node_info_t *src_node,
 		*ev_actions_required = 1;
 	}
 
-	flood_message(received, src_node->cluster, src_node->node_id);
+	flood_message(received, src_node->cluster, src_node->node_id, 0);
 }
 
 static inline void bin_push_node_info(bin_packet_t *packet, node_info_t *node)
@@ -2141,6 +2155,8 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 	bin_push_str(&packet, &cap->reg.name);
 	bin_push_int(&packet, cap_state);
 
+	bin_push_int(&packet, 0);  /* don't require reply */
+
 	bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
 	bin_push_int(&packet, current_id);
 	bin_get_buffer(&packet, &bin_buffer);
@@ -2160,7 +2176,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 	return 0;
 }
 
-static int send_cap_update(node_info_t *dest_node)
+static int send_cap_update(node_info_t *dest_node, int require_reply)
 {
 	bin_packet_t packet;
 	str bin_buffer;
@@ -2222,6 +2238,8 @@ static int send_cap_update(node_info_t *dest_node)
 		}
 		lock_release(node->lock);
 	}
+
+	bin_push_int(&packet, require_reply);
 
 	bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
 	bin_push_int(&packet, current_id);
@@ -2446,7 +2464,7 @@ static int set_link_w_neigh_up(node_info_t *neigh, int nr_nodes, int *node_list)
 	if (send_full_top_update(neigh, nr_nodes, node_list) < 0)
 		return -1;
 	/* send capabilities update to neighbour */
-	send_cap_update(neigh);
+	send_cap_update(neigh, 1);
 
 	return 0;
 }
