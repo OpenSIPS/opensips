@@ -203,16 +203,16 @@ static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 		return -1;
 
 	if (!cgre_compat_mode) {
+		json_object *jorig = jobj;
 		if (json_object_get_type(jobj) != json_type_object) {
 			LM_ERR("CGRateS did not return an object in InitiateSession reply: %d %s\n",
 					json_object_get_type(jobj), json_object_to_json_string(jobj));
 			return -4;
 		}
 		/* we are only interested in the MaxUsage token */
-		jobj = json_object_object_get(jobj, "MaxUsage");
-		if (!jobj) {
+		if (!json_object_object_get_ex(jorig, "MaxUsage", &jobj)) {
 			LM_ERR("CGRateS did not return an MaxUsage in InitiateSession reply: %d %s\n",
-					json_object_get_type(jobj), json_object_to_json_string(jobj));
+					json_object_get_type(jorig), json_object_to_json_string(jorig));
 			return -4;
 		}
 		if (json_object_get_type(jobj) != json_type_int) {
