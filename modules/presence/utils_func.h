@@ -33,6 +33,7 @@
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../str.h"
+#include "../../socket_info.h"
 #include "../../parser/msg_parser.h"
 
 #define BAD_EVENT_CODE 489
