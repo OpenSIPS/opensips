@@ -53,7 +53,7 @@ Robert-Vladut Patrascu
 
               1.4.3. cluster_broadcast_req(cluster_id, msg[, tag])
 
-              1.4.4. cluster_check_addr(cluster_id, ip)
+              1.4.4. cluster_check_addr(cluster_id, ip, addr_type)
 
         1.5. Exported MI Functions
 
@@ -544,12 +544,19 @@ p(rcv_tag)");
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 ...
 
-1.4.4.  cluster_check_addr(cluster_id, ip)
+1.4.4.  cluster_check_addr(cluster_id, ip, addr_type)
 
    This function checks whether the given IP address belongs to
-   one of the nodes in the cluster. Note that the comparison is
-   made against the addresses of the BIN listeners of the
-   instances.
+   one of the nodes in the cluster.
+
+   The addr_type parameter can be set to in order to select the
+   address of the node that the comparison is made against, with
+   the possible values of:
+     * bin - node's BIN interface listener;
+     * sip - node's DB provisioned SIP address.
+
+   The addr_type parameter is optional and the default behaviour
+   is to compare against the SIP address.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.

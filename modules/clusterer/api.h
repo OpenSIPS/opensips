@@ -66,7 +66,12 @@ enum clusterer_event {
 enum cl_node_match_op {
 	NODE_CMP_ANY,
 	NODE_CMP_EQ_SIP_ADDR,
-	NODE_CMP_NEQ_SIP_ADDR,
+	NODE_CMP_NEQ_SIP_ADDR
+};
+
+enum node_addr_type {
+	NODE_BIN_ADDR,
+	NODE_SIP_ADDR
 };
 
 /*
@@ -85,8 +90,11 @@ typedef int (*set_state_f)(int cluster_id, enum cl_node_state state);
 
 /*
  * Check if the given address belongs to one of the nodes in the cluster.
+ * The address to be checked can be the node's bin connector or the provisioned
+ * sip_addr in the clusterer table.
  */
-typedef int (*check_addr_f)(int cluster_id, union sockaddr_union *su);
+typedef int (*check_addr_f)(int cluster_id, str *ip_str,
+							enum node_addr_type check_type);
 
 /*
  * Get the node id of the current node.

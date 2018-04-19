@@ -87,7 +87,8 @@ int cmd_send_req(struct sip_msg *msg, char *param_cluster, char *param_node,
 								char *param_msg, char *param_tag);
 int cmd_send_rpl(struct sip_msg *msg, char *param_cluster, char *param_node,
 								char *param_msg, char *param_tag);
-int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip);
+int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip,
+					char *param_addr_type);
 
 static int fixup_broadcast(void ** param, int param_no);
 static int fixup_send(void ** param, int param_no);
@@ -110,6 +111,8 @@ static cmd_export_t cmds[] = {
 	{"cluster_send_rpl", (cmd_function)cmd_send_rpl, 4, fixup_send, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
 	{"cluster_check_addr", (cmd_function)cmd_check_addr, 2, fixup_check_addr, 0,
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
+	{"cluster_check_addr", (cmd_function)cmd_check_addr, 3, fixup_check_addr, 0,
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -904,6 +907,8 @@ static int fixup_check_addr(void ** param, int param_no)
 		return fixup_igp(param);
 	else if (param_no == 2)
 		return fixup_spve(param);
+	else if (param_no == 3)
+		return fixup_spve(param);
 
 	LM_CRIT("Unknown parameter number %d\n", param_no);
 	return E_UNSPEC;
@@ -1072,31 +1077,43 @@ int cmd_send_rpl(struct sip_msg *msg, char *param_cluster, char *param_node,
 	}
 }
 
-int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip)
+int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip,
+					char *param_addr_type)
 {
 	int cluster_id;
 	str ip_str;
-	struct ip_addr ip;
-	union sockaddr_union ip_su;
+	str addr_type_str;
+	static str bin_addr_t = str_init("bin");
+	static str sip_addr_t = str_init("sip");
+	enum node_addr_type check_type;
 
 	if (fixup_get_ivalue(msg, (gparam_p)param_cluster, &cluster_id) < 0) {
 		LM_ERR("Failed to fetch cluster id parameter\n");
 		return -1;
 	}
 	if (fixup_get_svalue(msg, (gparam_p)param_ip, &ip_str) < 0) {
-		LM_ERR("Failed to fetch message parameter\n");
+		LM_ERR("Failed to fetch ip parameter\n");
+		return -1;
+	}
+	if (param_addr_type &&
+		fixup_get_svalue(msg, (gparam_p)param_addr_type, &addr_type_str) < 0) {
+		LM_ERR("Failed to fetch address type parameter\n");
 		return -1;
 	}
 
-	ip.af=AF_INET;
-	ip.len=16;
-	if (inet_pton(AF_INET, ip_str.s, ip.u.addr) <= 0) {
-		LM_ERR("Invalid IP address\n");
-		return -1;
-	}
-	ip_addr2su(&ip_su, &ip, 0);
+	if (param_addr_type) {
+		if (!str_strcasecmp(&addr_type_str, &bin_addr_t))
+			check_type = NODE_BIN_ADDR;
+		else if (!str_strcasecmp(&addr_type_str, &sip_addr_t))
+			check_type = NODE_SIP_ADDR;
+		else {
+			LM_ERR("Bad address type, should be 'bin' or 'sip'\n");
+			return -1;
+		}
+	} else
+		check_type = NODE_SIP_ADDR;
 
-	if (clusterer_check_addr(cluster_id, &ip_su) == 0)
+	if (clusterer_check_addr(cluster_id, &ip_str, check_type) == 0)
 		return -1;
 	else
 		return 1;

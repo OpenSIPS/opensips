@@ -863,28 +863,65 @@ static inline int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 	}
 }
 
-static int ip_check(cluster_info_t *cluster, union sockaddr_union *su)
+static int ip_check(cluster_info_t *cluster, union sockaddr_union *su, str *ip_str)
 {
 	node_info_t *node;
+	str sip_addr;
+	char *p;
 
 	for (node = cluster->node_list; node; node = node->next)
-		if (su_ip_cmp(su, &node->addr))
-			return 1;
+		if (su) {
+			if (su_ip_cmp(su, &node->addr))
+				return 1;
+		} else if (ip_str && ip_str->s) {
+			if ((p = q_memchr(node->sip_addr.s, ':', node->sip_addr.len))) {
+				sip_addr.s = node->sip_addr.s;
+				sip_addr.len = p - node->sip_addr.s;
+			} else
+				sip_addr = node->sip_addr;
+
+			if (!str_strcmp(ip_str, &sip_addr))
+				return 1;
+		} else {
+			LM_ERR("No address to check\n");
+			return -1;
+		}
+
 	return 0;
 }
 
-int clusterer_check_addr(int cluster_id, union sockaddr_union *su)
+int clusterer_check_addr(int cluster_id, str *ip_str,
+							enum node_addr_type check_type)
 {
 	cluster_info_t *cluster;
 	int rc;
+	struct ip_addr ip;
+	union sockaddr_union su;
 
 	lock_start_read(cl_list_lock);
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_WARN("Unknown cluster id [%d]\n", cluster_id);
-		return 0;
+		return -1;
 	}
-	rc = ip_check(cluster, su);
+
+	if (check_type == NODE_BIN_ADDR) {
+		ip.af = AF_INET;
+		ip.len = 16;
+		if (inet_pton(AF_INET, ip_str->s, ip.u.addr) <= 0) {
+			LM_ERR("Invalid IP address\n");
+			return -1;
+		}
+		ip_addr2su(&su, &ip, 0);
+
+		rc = ip_check(cluster, &su, NULL);
+	} else if (check_type == NODE_SIP_ADDR) {
+		rc = ip_check(cluster, NULL, ip_str);
+	} else {
+		LM_ERR("Bad address type\n");
+		rc = -1;
+	}
+
 	lock_stop_read(cl_list_lock);
 
 	return rc;
@@ -1834,7 +1871,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 
-	if (!su_ip_cmp(&ri->src_su, &node->addr) && !ip_check(cl, &ri->src_su)) {
+	if (!su_ip_cmp(&ri->src_su, &node->addr) && !ip_check(cl, &ri->src_su, NULL)) {
 		LM_WARN("Received message from unknown source, addr: %s\n", ip);
 		goto exit;
 	}
