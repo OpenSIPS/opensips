@@ -98,7 +98,7 @@ struct dlg_leg {
 	str contact;
 	str th_sent_contact;	/* topology hiding advertised contact towards this leg - full header */
 	str route_uris[64];
-	str sdp;		/* latest SDP provided by this leg ( full body ), after all OpenSIPS changes */
+	str sdp;		/* latest SDP advertised towards this leg ( full body ), after all OpenSIPS changes */
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
 	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
