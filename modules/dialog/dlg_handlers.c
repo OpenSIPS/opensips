@@ -188,7 +188,7 @@ static inline void get_routing_info(struct sip_msg *msg, int is_req,
  *	for a reply  : get in reverse order, skipping the ones from the request and
  *				   the proxies' own
  */
-static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
+static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 					struct cell* t, str *tag,str *mangled_from,str *mangled_to)
 {
 	unsigned int skip_recs;
@@ -235,9 +235,9 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.len,
 		msg->rcv.bind_address->sock_str.s);
 
-	if (dlg_add_leg_info( dlg, tag, &rr_set, &contact, &cseq,
+	if (dlg_update_leg_info(leg, dlg, tag, &rr_set, &contact, &cseq,
 	msg->rcv.bind_address,mangled_from,mangled_to,0)!=0) {
-		LM_ERR("dlg_add_leg_info failed\n");
+		LM_ERR("dlg_update_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
 	}
@@ -329,26 +329,20 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	str tag,contact,rr_set;
 	unsigned int leg, skip_rrs,cseq_no;
 
-	/* get to tag*/
-	if ( !rpl->to && ((parse_headers(rpl,HDR_TO_F,0)<0) || !rpl->to) ){
-		LM_ERR("bad reply or missing TO hdr :-/\n");
-		tag.s = 0;
-		tag.len = 0;
-	} else {
-		tag = get_to(rpl)->tag_value;
-		if (tag.s==0 || tag.len==0) {
-			/* Don't print error for final replies in DLG_STATE_UNCONFIRMED */
-			if (!(dlg->state == DLG_STATE_UNCONFIRMED &&
-				rpl->first_line.u.reply.statuscode >= 300)) {
-				LM_ERR("[%d] reply in dlg state [%d]: missing TAG param in TO hdr\n",
-					rpl->first_line.u.reply.statuscode, dlg->state);
-			}
-			tag.s = 0;
-			tag.len = 0;
+	get_totag(rpl, &tag);
+	if (ZSTR(tag)) {
+		/* Don't print error for final replies in DLG_STATE_UNCONFIRMED */
+		if (!(dlg->state == DLG_STATE_UNCONFIRMED &&
+			rpl->first_line.u.reply.statuscode >= 300)) {
+			LM_ERR("[%d] reply in dlg state [%d]: missing TAG param in TO hdr\n",
+				rpl->first_line.u.reply.statuscode, dlg->state);
 		}
+		tag.s = NULL;
+		tag.len = 0;
 	}
-	LM_DBG("%p totag in rpl is <%.*s> (%d)\n",
-		dlg, tag.len,tag.s,tag.len);
+
+	LM_DBG("%p totag in rpl %d is <%.*s> (%d)\n",
+		dlg, rpl->REPLY_STATUS, tag.len,tag.s,tag.len);
 
 	/* ignore provisional replies replies without totag */
 	if (tag.len==0 && rpl->REPLY_STATUS<200 )
@@ -364,17 +358,15 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 		}
 	}
 
-	/* coooool :D ....new totag learned !! -> store it */
+	leg = d_tmb.get_branch_index() + 1;
 
 	/* save callee's tag and cseq */
-	LM_DBG("new branch with tag <%.*s>\n",tag.len,tag.s);
-	if (init_leg_info( dlg, rpl, t, &tag,extract_mangled_fromuri(mangled_from),
+	LM_DBG("new branch with tag <%.*s>, leg_idx=%d\n", tag.len, tag.s, leg);
+	if (update_leg_info(leg, dlg, rpl, t, &tag,extract_mangled_fromuri(mangled_from),
 				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		return;
 	}
-	leg = dlg->legs_no[DLG_LEGS_USED] - 1; /* idx of last created leg */
-
 
 routing_info:
 	/* update dlg info only if 2xx reply and if not already done so */
@@ -967,15 +959,12 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			sdp.len = 0;
 		}
 
-		dlg->legs[callee_idx(dlg)].sdp.s = shm_malloc(sdp.len);
-		if (!dlg->legs[callee_idx(dlg)].sdp.s) {
+		if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].sdp, &sdp) != 0) {
 			LM_ERR("No more shm \n");
 			free_sip_msg(msg);
 			pkg_free(msg);
 			return;
 		}
-		dlg->legs[callee_idx(dlg)].sdp.len = sdp.len;
-		memcpy(dlg->legs[callee_idx(dlg)].sdp.s,sdp.s,sdp.len);
 
 		/* extract the contact address */
 		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
@@ -984,15 +973,13 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			contact.s = msg->contact->name.s;
 			contact.len = msg->contact->len;
 
-			dlg->legs[callee_idx(dlg)].th_sent_contact.s = shm_malloc(contact.len);
-			if (!dlg->legs[callee_idx(dlg)].th_sent_contact.s) {
+			if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].th_sent_contact,
+			                  &contact) != 0) {
 				LM_ERR("No more shm mem for outgoing contact hdr\n");
 				free_sip_msg(msg);
 				pkg_free(msg);
 				return;
 			}
-			dlg->legs[callee_idx(dlg)].th_sent_contact.len = contact.len;
-			memcpy(dlg->legs[callee_idx(dlg)].th_sent_contact.s,contact.s,contact.len);
 		}
 
 		free_sip_msg(msg);
@@ -1108,7 +1095,8 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct sip_msg *msg;
 	struct dlg_cell *dlg;
-	str buffer,contact,sdp;
+	struct dlg_leg *leg;
+	str buffer, contact, sdp;
 
 	buffer.s = ((str*)ps->extra1)->s;
 	buffer.len = ((str*)ps->extra1)->len;
@@ -1130,6 +1118,21 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
+	if (msg->REQ_METHOD != METHOD_INVITE) {
+		LM_DBG("skipping method %d\n", msg->REQ_METHOD);
+		pkg_free(msg);
+		return;
+	}
+
+	/* we get called exactly once for each outgoing branch, so we can safely
+	 * start creating each leg */
+
+	if (fix_leg_array(dlg) != 0)
+		return;
+
+	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
+	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
+
 	/* extract SDP */
 	if (get_body(msg,&sdp) < 0) {
 		LM_ERR("Failed to extract SDP from outgoing invite \n");
@@ -1137,15 +1140,14 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		sdp.len = 0;
 	}
 
-	dlg->legs[DLG_CALLER_LEG].sdp.s = shm_malloc(sdp.len);
-	if (!dlg->legs[DLG_CALLER_LEG].sdp.s) {
-		LM_ERR("No more shm \n");
+	/* TODO: fix for late negotiation ... */
+
+	if (shm_str_dup(&leg->sdp, &sdp) != 0) {
+		LM_ERR("No more shm\n");
 		free_sip_msg(msg);
 		pkg_free(msg);
 		return;
 	}
-	dlg->legs[DLG_CALLER_LEG].sdp.len = sdp.len;
-	memcpy(dlg->legs[DLG_CALLER_LEG].sdp.s,sdp.s,sdp.len);
 
         /* extract the contact address */
 	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
@@ -1154,16 +1156,15 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		contact.s = msg->contact->name.s;
 		contact.len = msg->contact->len;
 
-		dlg->legs[DLG_CALLER_LEG].th_sent_contact.s = shm_malloc(contact.len);
-		if (!dlg->legs[DLG_CALLER_LEG].th_sent_contact.s) {
+		if (shm_str_dup(&leg->th_sent_contact, &contact) != 0) {
 			LM_ERR("No more shm for INVITE outgoing contact \n");
 			free_sip_msg(msg);
 			pkg_free(msg);
 			return;
 		}
-		dlg->legs[DLG_CALLER_LEG].th_sent_contact.len = contact.len;
-		memcpy(dlg->legs[DLG_CALLER_LEG].th_sent_contact.s,contact.s,contact.len);
 	}
+
+	dlg->legs_no[DLG_LEGS_USED]++;
 
 	free_sip_msg(msg);
 	pkg_free(msg);
@@ -1310,12 +1311,20 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 
 	dlg->flags |= flags;
 
+	if (fix_leg_array(dlg) != 0) {
+		LM_ERR("oom\n");
+		shm_free(dlg);
+		return -1;
+	}
+
 	/* save caller's tag, cseq, contact and record route*/
-	if (init_leg_info(dlg, req, t, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
+	if (update_leg_info(0, dlg, req, t, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
 		return -1;
 	}
+
+	dlg->legs_no[DLG_LEGS_USED]++;
 
 	/* set current dialog */
 	ctx_dialog_set(dlg);

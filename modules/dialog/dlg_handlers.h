@@ -163,6 +163,19 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 	return 0;
 }
 
+static inline void get_totag(struct sip_msg *msg, str *tag)
+{
+	/* get to tag*/
+	if (!msg->to && (parse_headers(msg, HDR_TO_F, 0) < 0 || !msg->to)) {
+		LM_ERR("bad %s or missing TO hdr\n",
+		       msg->first_line.type == SIP_REQUEST ? "request" : "reply");
+		tag->s = NULL;
+		tag->len = 0;
+	} else {
+		*tag = get_to(msg)->tag_value;
+	}
+}
+
 int test_and_set_dlg_flag(struct dlg_cell *dlg, unsigned long index,
 		unsigned long value);
 #endif
