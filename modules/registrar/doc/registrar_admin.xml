@@ -441,13 +441,15 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 	<section id="param_mcontact_avp" xreflabel="mcontact_avp">
 		<title><varname>mcontact_avp</varname> (string)</title>
 		<para>
-		AVP to store the modified binding that is set during cached
+		AVP to store the modified binding/contact that is set during cached
 		registrations scenario (when REGISTER is forwarded to another
-		registrar).  The AVP will be used to extract the imposed
-		expires from the 200ok reply.
+		registrar).  The AVP will be used to extract the "expires" value
+		returned in the 200 OK by the main registrar.
 		</para>
 		<para>
-		This makes sense only in cached registrations scenario.
+		This makes sense only in cached registrations scenario, where your
+		OpenSIPS is caching registrations before forwarding them to the main
+		registrar.
 		</para>
 		<para>
 		<emphasis>
@@ -458,7 +460,23 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		<title>Set <varname>mcontact_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "mcontact_avp", "$avp(register)")
+modparam("registrar", "mcontact_avp", "$avp(orig_ct)")
+...
+route {
+   ...
+   # before forwarding the REGISTER request, save the outgoing contact.
+   # Be SURE to do it after all the possible changes over the contact,
+   # like fix_nated_contact()
+   $avp(orig_ct) = $ct.fields(uri);
+   t_on_reply("do_save");
+   t_relay("udp:ip:port");
+   ...
+}
+...
+onreply_route[do_save] {
+	if ($rs=="200")
+		save("location");
+}
 ...
 		</programlisting>
 		</example>
@@ -676,6 +694,10 @@ modparam("registrar", "disable_gruu", 0)
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<para>
+		If you plan to use the <quote>save()</quote> function in reply route,
+		please refer to <xref linkend="param_mcontact_avp"/> module parameter.
 		</para>
 		<example>
 		<title><function>save</function> usage</title>
