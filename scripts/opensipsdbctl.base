@@ -129,7 +129,7 @@ credentials()
 # FIXME use the definition from opensipsctl.base
 
 mdbg() {
-	if [ "0$VERBOSE" -ne 0 ] ; then
+	if [ -n "$VERBOSE" ] ; then
 		if [ -t 1 -a -z "$NOHLPRINT" ] ; then
 			echo -e "\033[1m$1\033[0m"
 		else
