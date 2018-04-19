@@ -146,10 +146,10 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
 	}
 	status.len = strlen(status.s);
 
-	len = 7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
-		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
-		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
-		 15/*";transport=xxxx"*/:0) + CRLF_LEN + 20 /*Subscription-State: */ +
+	len = 7 /*Event: */ + subs->event->name.len + 4 /*;id=*/ +
+		subs->event_id.len + CRLF_LEN +
+		10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ + CRLF_LEN +
+		20 /*Subscription-State: */ +
 		status.len + ((subs->status== TERMINATED_STATUS)?(10/*;reason=*/+
 		subs->reason.len):9/*expires=*/ + lexpire_len) + CRLF_LEN + (is_body?
 		(14 /*Content-Type: */+subs->event->content_type.len + CRLF_LEN):0);
@@ -183,33 +183,14 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
  		memcpy(p, subs->event_id.s, subs->event_id.len);
  		p += subs->event_id.len;
  	}
-	memcpy(p, CRLF, CRLF_LEN);
-	p += CRLF_LEN;
 
-	memcpy(p ,"Contact: <", 10);
-	p += 10;
+	memcpy(p ,CRLF "Contact: <", CRLF_LEN+10);
+	p += CRLF_LEN+10;
 	memcpy(p, subs->local_contact.s, subs->local_contact.len);
 	p +=  subs->local_contact.len;
 
-	if (subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)
-	{
-		memcpy(p,";transport=",11);
-		p += 11;
-		p = proto2str(subs->sockinfo->proto, p);
-		if (p == NULL)
-		{
-			LM_ERR("invalid proto\n");
-			pkg_free(hdr->s);
-			return -1;
-		}
-	}
-	*(p++) = '>';
-
-	memcpy(p, CRLF, CRLF_LEN);
-	p += CRLF_LEN;
-
-	memcpy(p, "Subscription-State: ", 20);
-	p+= 20;
+	memcpy(p, ">" CRLF "Subscription-State: " , 1+CRLF_LEN+20);
+	p += 1+CRLF_LEN+20;
 
 	memcpy(p, status.s, status.len);
 	p += status.len;
