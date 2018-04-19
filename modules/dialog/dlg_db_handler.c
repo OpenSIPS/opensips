@@ -602,9 +602,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/* add the 2 legs */
 			/* TODO - store SDP */
-			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
+			if ( (dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
 			&cseq1, caller_sock,0,0,0)!=0) ||
-			(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
+			(dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
 			&cseq2, callee_sock,&mangled_fu,&mangled_tu,0)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
@@ -1639,9 +1639,9 @@ static int sync_dlg_db_mem(void)
 
 				/* add the 2 legs */
 				/* TODO SDP here */
-				if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
+				if ((dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
 				&cseq1, caller_sock,0,0,0)!=0) ||
-				(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
+				(dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
 				&cseq2, callee_sock,&mangled_fu,&mangled_tu,0)!=0) ) {
 					LM_ERR("dlg_set_leg_info failed\n");
 					/* destroy the dialog */

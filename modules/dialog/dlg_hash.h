@@ -210,6 +210,28 @@ struct dlg_cell *get_current_dialog();
 #define dlg_unlock_dlg(_dlg) \
 	dlg_unlock( d_table, &(d_table->entries[_dlg->h_entry]))
 
+static inline int fix_leg_array(struct dlg_cell *dlg)
+{
+	struct dlg_leg *new_legs;
+
+	if ((dlg->legs_no[DLG_LEGS_ALLOCED] - dlg->legs_no[DLG_LEGS_USED]) == 0) {
+		new_legs = shm_realloc(dlg->legs,
+			(dlg->legs_no[DLG_LEGS_ALLOCED] + 2) * sizeof *new_legs);
+		if (!new_legs) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		dlg->legs = new_legs;
+		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
+		memset(dlg->legs + dlg->legs_no[DLG_LEGS_ALLOCED] - 2, 0,
+			2 * sizeof *new_legs);
+	}
+
+	return 0;
+}
+
+
 static inline str* dlg_leg_from_uri(struct dlg_cell *dlg,int leg_no)
 {
 	/* no mangling possible on caller leg */
@@ -318,7 +340,7 @@ void destroy_dlg_table();
 struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 		str *to_uri, str *from_tag);
 
-int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
+int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *sdp);
 
