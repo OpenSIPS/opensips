@@ -364,18 +364,36 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 
 1.3.13. mcontact_avp (string)
 
-   AVP to store the modified binding that is set during cached
-   registrations scenario (when REGISTER is forwarded to another
-   registrar). The AVP will be used to extract the imposed expires
-   from the 200ok reply.
+   AVP to store the modified binding/contact that is set during
+   cached registrations scenario (when REGISTER is forwarded to
+   another registrar). The AVP will be used to extract the
+   "expires" value returned in the 200 OK by the main registrar.
 
-   This makes sense only in cached registrations scenario.
+   This makes sense only in cached registrations scenario, where
+   your OpenSIPS is caching registrations before forwarding them
+   to the main registrar.
 
    Default value is NULL.
 
    Example 1.13. Set mcontact_avp parameter
 ...
-modparam("registrar", "mcontact_avp", "$avp(register)")
+modparam("registrar", "mcontact_avp", "$avp(orig_ct)")
+...
+route {
+   ...
+   # before forwarding the REGISTER request, save the outgoing contact.
+   # Be SURE to do it after all the possible changes over the contact,
+   # like fix_nated_contact()
+   $avp(orig_ct) = $ct.fields(uri);
+   t_on_reply("do_save");
+   t_relay("udp:ip:port");
+   ...
+}
+...
+onreply_route[do_save] {
+        if ($rs=="200")
+                save("location");
+}
 ...
 
 1.3.14. attr_avp (string)
@@ -509,6 +527,9 @@ modparam("registrar", "disable_gruu", 0)
        header URI.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+
+   If you plan to use the “save()” function in reply route, please
+   refer to mcontact_avp module parameter.
 
    Example 1.17. save usage
 ...
