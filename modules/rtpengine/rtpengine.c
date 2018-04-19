@@ -165,6 +165,7 @@ struct rtpe_ctx {
 struct ng_flags_parse {
 	int via, to, packetize, transport;
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
+	str call_id, from_tag, to_tag;
 };
 
 enum rtpe_set_var {
@@ -1492,16 +1493,23 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				continue;
 
 			case 6:
-				if (str_eq(&key, "to-tag"))
+				if (str_eq(&key, "to-tag")) {
+					if (val.s)
+						ng_flags->to_tag = val;
 					ng_flags->to = 1;
-				else
+				} else
 					break;
 				continue;
 
 			case 7:
 				if (str_eq(&key, "RTP/AVP"))
 					ng_flags->transport = 0x100;
-				else
+				else if (str_eq(&key, "call-id")) {
+					err = "missing value";
+					if (!val.s)
+						goto error;
+					ng_flags->call_id = val;
+				} else
 					break;
 				continue;
 
@@ -1516,6 +1524,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					ng_flags->transport = 0x101;
 				else if (str_eq(&key, "in-iface"))
 					iniface = val;
+				else if (str_eq(&key, "from-tag")) {
+					err = "missing value";
+					if (!val.s)
+						goto error;
+					ng_flags->from_tag = val;
+				}
 				else
 					break;
 				continue;
@@ -1710,7 +1724,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 {
 	struct ng_flags_parse ng_flags;
 	bencode_item_t *item, *resp;
-	str callid, from_tag, to_tag, viabranch, error;
+	str viabranch, error;
 	str body = { 0, 0 };
 	int ret;
 	struct rtpe_node *node;
@@ -1722,15 +1736,15 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	memset(&ng_flags, 0, sizeof(ng_flags));
 
-	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
+	if (get_callid(msg, &ng_flags.call_id) == -1 || ng_flags.call_id.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
 		return NULL;
 	}
-	if (get_to_tag(msg, &to_tag) == -1) {
+	if (get_to_tag(msg, &ng_flags.to_tag) == -1) {
 		LM_ERR("can't get To tag\n");
 		return NULL;
 	}
-	if (get_from_tag(msg, &from_tag) == -1 || from_tag.len == 0) {
+	if (get_from_tag(msg, &ng_flags.from_tag) == -1 || ng_flags.from_tag.len == 0) {
 		LM_ERR("can't get From tag\n");
 		return NULL;
 	}
@@ -1773,7 +1787,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	if (ng_flags.rtcp_mux && ng_flags.rtcp_mux->child)
 		bencode_dictionary_add(ng_flags.dict, "rtcp-mux", ng_flags.rtcp_mux);
 
-	bencode_dictionary_add_str(ng_flags.dict, "call-id", &callid);
+	bencode_dictionary_add_str(ng_flags.dict, "call-id", &ng_flags.call_id);
 
 	if (ng_flags.via) {
 		if (ng_flags.via == 1 || ng_flags.via == 2)
@@ -1798,19 +1812,20 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	bencode_list_add_string(item, ip_addr2a(&msg->rcv.src_ip));
 
 	if ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
+		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))
 	{
-		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &from_tag);
-		if (ng_flags.to && to_tag.s && to_tag.len)
-			bencode_dictionary_add_str(ng_flags.dict, "to-tag", &to_tag);
+		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
+		if (ng_flags.to && ng_flags.to_tag.s && ng_flags.to_tag.len)
+			bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
 	}
 	else {
-		if (!to_tag.s || !to_tag.len) {
+		if (!ng_flags.to_tag.s || !ng_flags.to_tag.len) {
 			LM_ERR("No to-tag present\n");
 			goto error;
 		}
-		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &to_tag);
-		bencode_dictionary_add_str(ng_flags.dict, "to-tag", &from_tag);
+		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.to_tag);
+		bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.from_tag);
 	}
 
 	bencode_dictionary_add_string(ng_flags.dict, "command", command_strings[op]);
@@ -1827,7 +1842,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	RTPE_START_READ();
 	do {
-		node = select_rtpe_node(callid, 1, set);
+		node = select_rtpe_node(ng_flags.call_id, 1, set);
 		if (!node) {
 			LM_ERR("no available proxies\n");
 			RTPE_STOP_READ();
