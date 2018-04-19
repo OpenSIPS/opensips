@@ -936,8 +936,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 			&from_cseq_column,   &to_cseq_column,     &from_ping_cseq_column,
 			&to_ping_cseq_column,&flags_column,
 			&vars_column,        &profiles_column,    &sflags_column,
-			&mflags_column,      &from_route_column,
-			&to_route_column,    &from_contact_column,&to_contact_column};
+			&mflags_column,      &from_contact_column,
+			&to_contact_column,    &from_route_column,&to_route_column};
 
 	if(use_dialog_table()!=0)
 		return -1;
@@ -997,10 +997,10 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_INT_VALUE(values+17, cell->flags &
 				~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 		set_final_update_cols(values+18, cell, 0);
-		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].route_set);
-		SET_STR_VALUE(values+23, cell->legs[callee_leg].route_set);
-		SET_STR_VALUE(values+24, cell->legs[DLG_CALLER_LEG].contact);
-		SET_STR_VALUE(values+25, cell->legs[callee_leg].contact);
+		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].contact);
+		SET_STR_VALUE(values+23, cell->legs[callee_leg].contact);
+		SET_STR_VALUE(values+24, cell->legs[DLG_CALLER_LEG].route_set);
+		SET_STR_VALUE(values+25, cell->legs[callee_leg].route_set);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
@@ -1022,7 +1022,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+20) =
 		VAL_TYPE(values+21) = DB_INT;
 
-		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) = DB_STR;
+		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
+		VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
 		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
@@ -1042,11 +1043,13 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_INT_VALUE(values+17, cell->flags &
 				~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 		set_final_update_cols(values+18, cell, 1);
+		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].contact);
+		SET_STR_VALUE(values+23, cell->legs[callee_leg].contact);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
-						(values), (insert_keys+11), (values+11), 1, 11)) !=0){
+						(values), (insert_keys+11), (values+11), 1, 13)) !=0){
 			LM_ERR("could not update database info\n");
 			goto error;
 		}
@@ -1290,8 +1293,8 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 			&dlg_id_column,		&call_id_column,		&from_uri_column,
 			&from_tag_column,	&to_uri_column,			&to_tag_column,
 			&from_sock_column,	&to_sock_column,		&start_time_column,
-			&from_route_column,	&to_route_column, 	&from_contact_column,
-			&to_contact_column, &mangled_fu_column, &mangled_tu_column,
+			&from_route_column,	&to_route_column, 	&mangled_fu_column,
+			&mangled_tu_column, &from_contact_column, &to_contact_column,
 			/*update chunk */
 			&state_column,		&timeout_column,		&from_cseq_column,
 			&to_cseq_column,	&from_ping_cseq_column, &to_ping_cseq_column,
@@ -1372,13 +1375,13 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_STR_VALUE(values+9, cell->legs[DLG_CALLER_LEG].route_set);
 				SET_STR_VALUE(values+10,
 					cell->legs[callee_leg].route_set);
-				SET_STR_VALUE(values+11, cell->legs[DLG_CALLER_LEG].contact);
-				SET_STR_VALUE(values+12,
+
+				SET_STR_VALUE(values+11,cell->legs[callee_leg].from_uri);
+				SET_STR_VALUE(values+12,cell->legs[callee_leg].to_uri);
+
+				SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].contact);
+				SET_STR_VALUE(values+14,
 					cell->legs[callee_leg].contact);
-
-
-				SET_STR_VALUE(values+13,cell->legs[callee_leg].from_uri);
-				SET_STR_VALUE(values+14,cell->legs[callee_leg].to_uri);
 
 				SET_INT_VALUE(values+15, cell->state);
 				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
@@ -1429,6 +1432,9 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
 								 cell->h_id));
 
+				SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].contact);
+				SET_STR_VALUE(values+14,
+					cell->legs[callee_leg].contact);
 				SET_INT_VALUE(values+15, cell->state);
 				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
 					 + cell->tl.timeout - get_ticks()) );
@@ -1443,7 +1449,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
-				(values), (insert_keys+15), (values+15), 1, 11)) !=0) {
+				(values), (insert_keys+13), (values+13), 1, 13)) !=0) {
 					LM_ERR("could not update database info\n");
 					cell = cell->next;
 					continue;
