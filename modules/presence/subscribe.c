@@ -70,9 +70,7 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 	lexpire_s = int2str((unsigned long)lexpire, &lexpire_len);
 
 	len = 9 /*"Expires: "*/ + lexpire_len + CRLF_LEN
-		+ 10 /*"Contact: <"*/ + local_contact->len + 1 /*">"*/
-		+ ((msg->rcv.proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0)
-		+ CRLF_LEN;
+		+ 10 /*"Contact: <"*/ + local_contact->len + 1 /*">"*/ + CRLF_LEN;
 
 	hdr_append = (char *)pkg_malloc( len );
 	if(hdr_append == NULL)
@@ -86,25 +84,13 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 	p += 9;
 	memcpy(p,lexpire_s,lexpire_len);
 	p += lexpire_len;
-	memcpy(p,CRLF,CRLF_LEN);
-	p += CRLF_LEN;
 	/* contact header */
-	memcpy(p,"Contact: <", 10);
-	p += 10;
+	memcpy(p, CRLF "Contact: <", CRLF_LEN+10);
+	p += CRLF_LEN + 10;
 	memcpy(p,local_contact->s,local_contact->len);
 	p += local_contact->len;
-	if (msg->rcv.proto!=PROTO_UDP) {
-		memcpy(p,";transport=",11);
-		p += 11;
-		p = proto2str(msg->rcv.proto, p);
-		if (p==NULL) {
-			LM_ERR("invalid proto\n");
-			goto error;
-		}
-	}
-	*(p++) = '>';
-	memcpy(p, CRLF, CRLF_LEN);
-	p += CRLF_LEN;
+	memcpy(p, ">" CRLF, 1+CRLF_LEN);
+	p += 1+CRLF_LEN;
 
 	if (add_lump_rpl( msg, hdr_append, p-hdr_append, LUMP_RPL_HDR)==0 )
 	{
@@ -753,8 +739,8 @@ error_free:
 }
 
 
-int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_req,
-		str local_address)
+int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp,
+											int* init_req, str local_address)
 {
 	str rec_route= {0, 0};
 	int rt  = 0;
