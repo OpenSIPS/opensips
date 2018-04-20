@@ -55,8 +55,9 @@ Saul Ibarra Corretge
 
         1.5. Exported Functions
 
-              1.5.1. handle_publish(char* sender_uri)
-              1.5.2. handle_subscribe(char* force_active)
+              1.5.1. handle_publish(sender_uri)
+              1.5.2. handle_subscribe([force_active]
+                      [,sharing_tag])
 
         1.6. Exported MI Functions
 
@@ -388,7 +389,7 @@ modparam("presence", "mix_dialog_presence", 1)
    that allows defining a custom uri to be used as presentity uri
    for BLA subscribes. You should set this parameter to the name
    of a pseudovariable and then set this pseudovariable to the
-   desired URI before calling the function handle_subscribe.
+   desired URI before calling the handle_subscribe() function.
 
    Default value is “NULL”.
 
@@ -531,7 +532,7 @@ modparam("presence", "pres_htable_size", 11)
 
 1.5. Exported Functions
 
-1.5.1.  handle_publish(char* sender_uri)
+1.5.1.  handle_publish(sender_uri)
 
    The function handles PUBLISH requests. It stores and updates
    published information in database and calls functions to send
@@ -564,7 +565,7 @@ modparam("presence", "pres_htable_size", 11)
         }
 ...
 
-1.5.2.  handle_subscribe(char* force_active)
+1.5.2.  handle_subscribe([force_active] [,sharing_tag])
 
    This function is to be used for handling SUBSCRIBE requests. It
    stores or updates the watcher/subscriber information in
@@ -573,20 +574,27 @@ modparam("presence", "pres_htable_size", 11)
    also sends back the NOTIFY (with the presence information) to
    the wathcer/subscriber.
 
-   The function may take on parameter that controlls what is the
-   default policy (of the presentity) on accepting new
-   subscriptions (accept or reject) - of course, this parameter
-   makes sense only when using a presence configuration with
-   privacy rules enabled (force_active parameter in presence_xml
-   module is not set).
+   The function may take the following parameters:
+     * force_active - options parameter that controlls what is the
+       default policy (of the presentity) on accepting new
+       subscriptions (accept or reject) - of course, this
+       parameter makes sense only when using a presence
+       configuration with privacy rules enabled (force_active
+       parameter in presence_xml module is not set).
+       There are scenarios where the presentity (the party you
+       subscribe to) can not upload an XCAP document with it's
+       privacy rules (to controll which watchers are allowed to
+       subscribe to it). In such case, from script level, you can
+       force the presence server to consider the current
+       subscription allowed (with Subscription-Status:active) by
+       calling the handle_subscribe() function with the string
+       parameter "1".
+     * sharing_tag - options parameter telling the owner tag (for
+       the subscription) in clusetering scenarios where the
+       subscription data is shared between multiple servers - see
+       the Section 1.2, “Presence clustering” chapter for more
+       details.
 
-   There are scenarios where the presentity (the party you
-   subscribe to) can not upload an XCAP document with it's privacy
-   rules (to controll which watchers are allowed to subscribe to
-   it). In such case, from script level, you can force the
-   presence server to consider the current subscription allowed
-   (with Subscription-Status:active) by calling handle_subscribe()
-   function with the string parameter "1".
    Ex:
         if($ru =~ "kphone@opensips.org")
                 handle_subscribe("1");
