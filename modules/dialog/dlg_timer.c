@@ -1084,10 +1084,10 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					p = extra_headers.s;
 					memcpy(p,CONTACT_STR_START,CONTACT_STR_START_LEN);
 					p += CONTACT_STR_START_LEN;
-					memcpy(p,dlg->legs[DLG_CALLER_LEG].contact.s,
-					dlg->legs[DLG_CALLER_LEG].contact.len);
+					memcpy(p,dlg->legs[callee_idx(dlg)].contact.s,
+					dlg->legs[callee_idx(dlg)].contact.len);
 
-					p += dlg->legs[DLG_CALLER_LEG].contact.len;
+					p += dlg->legs[callee_idx(dlg)].contact.len;
 					memcpy(p,HEADERS_STR_END,HEADERS_STR_END_LEN);
 				}
 				
@@ -1132,10 +1132,10 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					p = extra_headers.s;
 					memcpy(p,CONTACT_STR_START,CONTACT_STR_START_LEN);
 					p += CONTACT_STR_START_LEN;
-					memcpy(p,dlg->legs[callee_idx(dlg)].contact.s,
-					dlg->legs[callee_idx(dlg)].contact.len);
+					memcpy(p,dlg->legs[DLG_CALLER_LEG].contact.s,
+					dlg->legs[DLG_CALLER_LEG].contact.len);
 
-					p += dlg->legs[callee_idx(dlg)].contact.len;
+					p += dlg->legs[DLG_CALLER_LEG].contact.len;
 					memcpy(p,HEADERS_STR_END,HEADERS_STR_END_LEN);
 				}
 
