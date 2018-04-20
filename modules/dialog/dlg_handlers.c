@@ -1189,12 +1189,12 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		/* if the same contact, don't do anything */
 		if (dlg->legs[leg].contact.len == contact.len &&
 				strncmp(dlg->legs[leg].contact.s, contact.s, contact.len) == 0) {
-			LM_INFO("Using the same contact <%.*s> for dialog %p on leg %d\n",
+			LM_DBG("Using the same contact <%.*s> for dialog %p on leg %d\n",
 					contact.len, contact.s, dlg, leg);
 			return 0;
 		}
 		dlg->flags |= DLG_FLAG_CHANGED;
-		LM_INFO("Replacing old contact <%.*s> for dialog %p on leg %d\n",
+		LM_DBG("Replacing old contact <%.*s> for dialog %p on leg %d\n",
 				dlg->legs[leg].contact.len, dlg->legs[leg].contact.s, dlg, leg);
 		tmp = shm_realloc(dlg->legs[leg].contact.s, contact.len);
 	} else
@@ -1206,7 +1206,7 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 	dlg->legs[leg].contact.s = tmp;
 	dlg->legs[leg].contact.len = contact.len;
 	memcpy(dlg->legs[leg].contact.s, contact.s, contact.len);
-	LM_INFO("Updated contact to <%.*s> for dialog %p on leg %d\n",
+	LM_DBG("Updated contact to <%.*s> for dialog %p on leg %d\n",
 			contact.len, contact.s, dlg, leg);
 	return 1;
 }
