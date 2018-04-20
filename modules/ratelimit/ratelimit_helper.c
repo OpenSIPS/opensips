@@ -770,6 +770,8 @@ int w_rl_set_count(str key, int val)
 			LM_ERR("cannot decrease counter\n");
 			goto release;
 		}
+	} else if ((*pipe)->algo == PIPE_ALGO_HISTORY) {
+		hist_set_count(*pipe, val);
 	} else {
 		if (val && (val + (*pipe)->counter >= 0)) {
 			(*pipe)->counter += val;
@@ -1148,8 +1150,10 @@ int rl_get_counter_value(str *key)
 			LM_ERR("cannot get the counter's value\n");
 			goto release;
 		}
-	}
-	ret = rl_get_all_counters(*pipe);
+	} else if ((*pipe)->algo == PIPE_ALGO_HISTORY)
+		ret = hist_get_count(*pipe);
+	else
+		ret = rl_get_all_counters(*pipe);
 
 release:
 	RL_RELEASE_LOCK(hash_idx);

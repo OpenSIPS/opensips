@@ -145,6 +145,9 @@ int rl_get_all_counters(rl_pipe_t *pipe);
 int rl_add_repl_dst(modparam_t type, void *val);
 int rl_bin_status(struct mi_root *);
 
+void hist_set_count(rl_pipe_t *pipe, long int value);
+int hist_get_count(rl_pipe_t *pipe);
+
 #define RL_PIPE_COUNTER		0
 #define RL_EXPIRE_TIMER		10
 #define RL_BUF_THRESHOLD	1400
