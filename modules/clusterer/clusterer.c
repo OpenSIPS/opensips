@@ -1697,6 +1697,11 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	LM_DBG("received clusterer message from: %s:%hu with source id: %d and"
 			" cluster id: %d\n", ip, port, source_id, cluster_id);
 
+	if (source_id == current_id) {
+		LM_ERR("Received message with bad source - same node id as current instance\n");
+		return;
+	}
+
 	lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
@@ -1795,6 +1800,11 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	LM_DBG("received clusterer message from: %s:%hu with source id: %d and "
 		"cluster id: %d\n", ip, port, source_id, cl_id);
 
+	if (source_id == current_id) {
+		LM_ERR("Received message with bad source - same node id as current instance\n");
+		return;
+	}
+
 	lock_start_sw_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cl_id);
@@ -1846,6 +1856,11 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	get_su_info(&ri->src_su.s, ip, port);
 	LM_DBG("received bin packet from: %s:%hu with source id: %d and cluster id: %d\n",
 			ip, port, source_id, cluster_id);
+
+	if (source_id == current_id) {
+		LM_ERR("Received message with bad source - same node id as current instance\n");
+		return;
+	}
 
 	cap = (struct capability_reg *)ptr;
 
