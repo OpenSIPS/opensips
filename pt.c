@@ -33,6 +33,7 @@
 #include "dprint.h"
 #include "pt.h"
 #include "bin_interface.h"
+#include "ipc.h"
 
 
 /* array with children pids, 0= main proc,
@@ -85,6 +86,12 @@ int init_multi_proc_support(void)
 
 	counted_processes = proc_no;
 
+	/* create the IPC pipes */
+	if (create_ipc_pipes( proc_no )<0) {
+		LM_ERR("failed to create IPC pipes, aborting\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -126,13 +133,6 @@ pid_t internal_fork(char *proc_desc)
 	if (tcp_pre_connect_proc_to_tcp_main(process_counter)<0){
 		LM_ERR("failed to connect future proc %d to TCP main\n",
 			process_no);
-		return -1;
-	}
-
-	/* create the IPC pipe */
-	if (pipe(pt[process_counter].ipc_pipe)<0) {
-		LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
-			process_counter, errno, strerror(errno));
 		return -1;
 	}
 

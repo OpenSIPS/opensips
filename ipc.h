@@ -47,5 +47,7 @@ int ipc_send_job(int dst_proc, int type, void *payload);
 
 void ipc_handle_job(void);
 
+int create_ipc_pipes(int proc_no);
+
 #endif
 
