@@ -491,12 +491,11 @@ int hash[100] = {18, 50, 51, 39, 49, 68, 8, 78, 61, 75, 53, 32, 45, 77, 31,
  * @param update whether or not to inc call number
  * @return number of calls in the window
  */
-static inline int hist_check(rl_pipe_t *pipe)
+static inline int hist_check(rl_pipe_t *pipe, int update)
 {
 	#define U2MILI(__usec__) (__usec__/1000)
 	#define S2MILI(__sec__)  (__sec__ *1000)
 	int i;
-	int count;
 	int first_good_index;
 	int rl_win_ms = rl_window_size * 1000;
 
@@ -508,8 +507,8 @@ static inline int hist_check(rl_pipe_t *pipe)
 	/* first get values from our beloved replicated friends
 	 * current pipe counter will be calculated after this
 	 * iteration; no need for the old one */
-	pipe->counter=0;
-	count = rl_get_all_counters(pipe);
+	pipe->counter = 0;
+	pipe->counter = rl_get_all_counters(pipe);
 
 	gettimeofday(&tv, NULL);
 	if (pipe->rwin.start_time.tv_sec == 0) {
@@ -518,7 +517,7 @@ static inline int hist_check(rl_pipe_t *pipe)
 		pipe->rwin.start_index = 0;
 
 		/* we know it starts from 0 because we did memset when created*/
-		pipe->rwin.window[pipe->rwin.start_index]++;
+		pipe->rwin.window[pipe->rwin.start_index] += update;
 	} else {
 		start_total = S2MILI(pipe->rwin.start_time.tv_sec)
 							+ U2MILI(pipe->rwin.start_time.tv_usec);
@@ -534,7 +533,7 @@ static inline int hist_check(rl_pipe_t *pipe)
 
 			pipe->rwin.start_index = 0;
 			pipe->rwin.start_time = tv;
-			pipe->rwin.window[pipe->rwin.start_index]++;
+			pipe->rwin.window[pipe->rwin.start_index] += update;
 		} else if (now_total - start_total >= rl_win_ms) {
 			/* current time in interval [window_size; 2*window_size)
 			 * all the elements in [start_time; (ctime-window_size+1) are
@@ -562,13 +561,13 @@ static inline int hist_check(rl_pipe_t *pipe)
 
 			/* count current call; it will be the last element in the window */
 			pipe->rwin.window[((pipe->rwin.start_index)
-					+ (pipe->rwin.window_size-1)) % pipe->rwin.window_size]++;
+					+ (pipe->rwin.window_size-1)) % pipe->rwin.window_size] += update;
 
 		} else { /* now_total - start_total < rl_win_ms  */
 			/* no need to modify the window, the value is inside it;
 			 * we just need to increment the number of calls for
 			 * the current slot*/
-			pipe->rwin.window[(now_total-start_total)/rl_slot_period]++;
+			pipe->rwin.window[(now_total-start_total)/rl_slot_period] += update;
 		}
 	}
 
@@ -576,13 +575,31 @@ static inline int hist_check(rl_pipe_t *pipe)
 	for (i=0; i < pipe->rwin.window_size; i++)
 		pipe->counter += pipe->rwin.window[i];
 
-	count += pipe->counter;
-
-	return count > pipe->limit ? -1 : 1;
+	return pipe->counter > pipe->limit ? -1 : 1;
 
 	#undef U2MILI
 	#undef S2MILI
 }
+
+int hist_get_count(rl_pipe_t *pipe)
+{
+	/* do a NOP to validate the interval, then return the unchanged counter */
+	hist_check(pipe, 0);
+
+	return pipe->counter;
+}
+
+void hist_set_count(rl_pipe_t *pipe, long int value)
+{
+	if (value == 0) {
+		/* if 0, we need to clear all counters */
+		memset(pipe->rwin.window, 0,
+				pipe->rwin.window_size * sizeof(long int));
+		pipe->rwin.start_time.tv_sec = 0; /* force init */
+	} else
+		hist_check(pipe, value);
+}
+
 
 /**
  * runs the pipe's algorithm
@@ -609,7 +626,7 @@ int rl_pipe_check(rl_pipe_t *pipe)
 		case PIPE_ALGO_FEEDBACK:
 			return (hash[counter % 100] < *drop_rate) ? -1 : 1;
 		case PIPE_ALGO_HISTORY:
-			return hist_check(pipe);
+			return hist_check(pipe, 1);
 		default:
 			LM_ERR("ratelimit algorithm %d not implemented\n", pipe->algo);
 	}
