@@ -335,7 +335,12 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 	struct dlg_leg *leg;
 	rr_t *head = NULL, *rrp;
 
-	if (fix_leg_array(dlg) != 0)
+	if (leg_idx >= MAX_BRANCHES) {
+		LM_WARN("invalid callee leg index (branch id part): %d\n", leg_idx);
+		return -1;
+	}
+
+	if (ensure_leg_array(leg_idx + 1, dlg) != 0)
 		return -1;
 
 	leg = &dlg->legs[leg_idx];
@@ -453,6 +458,10 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		leg->r_cseq.len = cseq->len;
 		memcpy( leg->r_cseq.s, cseq->s, cseq->len);
 	}
+
+	/* make leg visible for searchers */
+	if (leg_idx >= dlg->legs_no[DLG_LEGS_USED])
+		dlg->legs_no[DLG_LEGS_USED] = leg_idx + 1;
 
 	LM_DBG("set leg %d for %p: tag=<%.*s> rcseq=<%.*s>\n",
 		dlg->legs_no[DLG_LEGS_USED]-1, dlg,

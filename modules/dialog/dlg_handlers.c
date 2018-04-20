@@ -1122,13 +1122,12 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	/* we get called exactly once for each outgoing branch, so we can safely
 	 * start creating each leg */
 
-	if (fix_leg_array(dlg) != 0)
+	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
 		return;
 
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
 
-	/* extract SDP */
 	if (get_body(msg,&sdp) < 0) {
 		LM_ERR("Failed to extract SDP from outgoing invite \n");
 		sdp.s = NULL;
@@ -1306,20 +1305,12 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 
 	dlg->flags |= flags;
 
-	if (fix_leg_array(dlg) != 0) {
-		LM_ERR("oom\n");
-		shm_free(dlg);
-		return -1;
-	}
-
 	/* save caller's tag, cseq, contact and record route*/
 	if (update_leg_info(0, dlg, req, t, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
 		return -1;
 	}
-
-	dlg->legs_no[DLG_LEGS_USED]++;
 
 	/* set current dialog */
 	ctx_dialog_set(dlg);
