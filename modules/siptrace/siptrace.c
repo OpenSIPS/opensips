@@ -1037,7 +1037,8 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 		return -1;
 	}
 
-	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT, trace_tm_out, info, 0) <=0) {
+	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT, trace_tm_out,
+			info, dlg_tran?0:free_trace_info_shm) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
 		return -1;
 	}
