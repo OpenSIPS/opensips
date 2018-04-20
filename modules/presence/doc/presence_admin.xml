@@ -401,8 +401,8 @@ modparam("presence", "mix_dialog_presence", 1)
 			contact). So we added this parameter that allows defining a custom 
 			uri to be used as presentity uri for BLA subscribes. You should 
 			set this parameter to the name of a pseudovariable and then set 
-			this pseudovariable to the desired URI before calling the function
-			handle_subscribe.
+			this pseudovariable to the desired URI before calling the
+			<xref linkend="func_handle_subscribe"/> function.
 		</para>
 		<para>
 			<emphasis>Default value is <quote>NULL</quote>.
@@ -636,7 +636,7 @@ modparam("presence", "pres_htable_size", 11)
 	<title>Exported Functions</title>
 	<section id="func_handle_publish" xreflabel="handle_publish()">
 		<title>
-		<function moreinfo="none">handle_publish(char* sender_uri)</function>
+		<function moreinfo="none">handle_publish(sender_uri)</function>
 		</title>
 		<para>
 		The function handles PUBLISH requests. It stores and updates 
@@ -692,35 +692,53 @@ modparam("presence", "pres_htable_size", 11)
 
 	<section id="func_handle_subscribe" xreflabel="handle_subscribe()">
 		<title>
-		<function moreinfo="none">handle_subscribe(char* force_active)</function>
+		<function moreinfo="none">handle_subscribe([force_active] [,sharing_tag])</function>
 		</title>
 		<para>
-		This function is to be used for handling SUBSCRIBE requests. It stores or 
-		updates the watcher/subscriber information in database. Additionally, in
-		response to initial SUBSCRIBE requests (creating a new subscription session),
-		the function also sends back the NOTIFY (with the presence information) to 
-		the wathcer/subscriber.
+		This function is to be used for handling SUBSCRIBE requests. It stores
+		or updates the watcher/subscriber information in database. 
+		Additionally, in response to initial SUBSCRIBE requests (creating a 
+		new subscription session), the function also sends back the NOTIFY 
+		(with the presence information) to the wathcer/subscriber.
 		</para>
 		<para>
-		The function may take on parameter that controlls what is the default 
-		policy (of the presentity) on accepting new subscriptions (accept or reject)
-		 - of course, this parameter makes sense only when using
-		a presence configuration with privacy rules enabled (force_active parameter
-		in presence_xml module is not set).
+		The function may take the following parameters:
 		</para>
-		<para>
-		There are scenarios where the presentity (the party you subscribe to) can not 
-		upload an XCAP document with it's privacy rules (to controll which watchers are
-		allowed to subscribe to it). In such case, from script level, you can
-		force the presence server to consider the current subscription allowed 
-		(with Subscription-Status:active) by calling handle_subscribe() function with
-		the string parameter "1".
+		<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>force_active</emphasis> - options parameter that 
+				controlls what is the default policy (of the presentity) on 
+				accepting new subscriptions (accept or reject) - of course, 
+				this parameter makes sense only when using a presence 
+				configuration with privacy rules enabled (force_active 
+				parameter in presence_xml module is not set).
+				</para>
+				<para>
+				There are scenarios where the presentity (the party you 
+				subscribe to) can not upload an XCAP document with it's 
+				privacy rules (to controll which watchers are allowed to 
+				subscribe to it). In such case, from script level, you can
+				force the presence server to consider the current subscription
+				allowed (with Subscription-Status:active) by calling the 
+				handle_subscribe() function with the string parameter "1".
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>sharing_tag</emphasis> - options parameter telling
+				the owner tag (for the subscription) in clusetering scenarios 
+				where the subscription data is shared between multiple 
+				servers - see the <xref linkend="presence_clustering"/>
+				chapter for more details.
+				</para>
+			</listitem>
+		</itemizedlist>
 		<programlisting format="linespecific">
    Ex: 
 	if($ru =~ "kphone@opensips.org")
 		handle_subscribe("1");
 		</programlisting>
-		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
