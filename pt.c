@@ -33,6 +33,7 @@
 #include "dprint.h"
 #include "pt.h"
 #include "bin_interface.h"
+#include "ipc.h"
 
 
 /* array with children pids, 0= main proc,
@@ -80,10 +81,17 @@ int init_multi_proc_support(void)
 		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 	}
 
+
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
 
 	counted_processes = proc_no;
+
+	/* create the IPC pipes */
+	if (create_ipc_pipes( proc_no )<0) {
+		LM_ERR("failed to create IPC pipes, aborting\n");
+		return -1;
+	}
 
 	/* register the stats for the global load */
 	if ( register_stat2( "load", "load", (stat_var**)pt_get_rt_load,
@@ -179,13 +187,15 @@ pid_t internal_fork(char *proc_desc, unsigned int flags)
 		return -1;
 	}
 
-	/* create the IPC pipe */
-	if ( (flags & OSS_FORK_NO_IPC)==0 ) {
-		if (pipe(pt[process_counter].ipc_pipe)<0) {
-			LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
-				process_counter, errno, strerror(errno));
-			return -1;
-		}
+	/* check the IPC pipe */
+	if ( (flags & OSS_FORK_NO_IPC) ) {
+		/* close the listening end */
+		close(pt[process_counter].ipc_pipe[0]);
+		/* advertise no IPC to the rest of the procs */
+		pt[process_counter].ipc_pipe[0] = -1;
+		pt[process_counter].ipc_pipe[1] = -1;
+		/* NOTE: the IPC fds will remain open in the other processes,
+		 * but they will not be known */
 	}
 
 	if (register_process_stats(process_counter)<0) {

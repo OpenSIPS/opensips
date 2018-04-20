@@ -96,6 +96,21 @@ int init_ipc(void)
 }
 
 
+int create_ipc_pipes( int proc_no )
+{
+	int i;
+
+	for( i=0 ; i<proc_no ; i++ ) {
+		if (pipe(pt[i].ipc_pipe)<0) {
+			LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
+				i, errno, strerror(errno));
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
 ipc_handler_type ipc_register_handler( ipc_handler_f *hdl, char *name)
 {
 	ipc_handler *new;

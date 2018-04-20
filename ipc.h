@@ -96,4 +96,6 @@ void ipc_handle_job(int fd);
 /* internal functions */
 int init_ipc(void);
 
+int create_ipc_pipes(int proc_no);
+
 #endif
