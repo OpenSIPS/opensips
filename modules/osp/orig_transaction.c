@@ -36,6 +36,7 @@
 #include "../../dset.h"
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
+#include "../../socket_info.h"
 #include "../auth/api.h"
 #include "orig_transaction.h"
 #include "destination.h"
@@ -878,7 +879,7 @@ static int ospSetCalling(
 {
     str rpid;
     int_str val;
-    char buffer[OSP_STRBUF_SIZE];
+    char buffer[2 * sizeof dest->calling + sizeof inbound->source + 11];
     int result;
 
     if (strcmp(inbound->calling, dest->calling) == 0) {
