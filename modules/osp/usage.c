@@ -34,6 +34,7 @@
 
 #include <osp/osp.h>
 #include "../rr/api.h"
+#include "../../socket_info.h"
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
 #include "destination.h"
