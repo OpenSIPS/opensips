@@ -653,16 +653,27 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 /* restore callbacks */
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params) {
-		str flags_s, ctx_s, table_s;
+		str flags_s, ctx_s, table_s, created_s;
 		acc_ctx_t* ctx;
+		time_t created;
+		unsigned long long flags;
 
 		if (!dlg) {
 			LM_ERR("null dialog - cannot fetch message flags\n");
 			return;
 		}
 
-		if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 0) < 0) {
+		flags_s.s = (char *)&flags;
+		flags_s.len = sizeof(flags);
+		if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 1) < 0) {
 			LM_DBG("flags were not saved in dialog\n");
+			return;
+		}
+
+		created_s.s = (char *)&created;
+		created_s.len = sizeof(created);
+		if (dlg_api.fetch_dlg_value(dlg, &created_str, &created_s, 1) < 0) {
+			LM_DBG("created time was not saved in dialog\n");
 			return;
 		}
 
@@ -675,7 +686,10 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 		}
 
 		/* copy flags value into the context */
-		memcpy(&ctx->flags, flags_s.s, flags_s.len);
+		ctx->flags = flags;
+
+		/* copy created value into the context */
+		ctx->created = created;
 
 		/* restore accounting table if db accounting is used */
 		if (is_db_acc_on(ctx->flags)) {
