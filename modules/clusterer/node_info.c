@@ -283,6 +283,22 @@ error:
         } \
     } while (0)
 
+static void check_seed_flag(cluster_info_t **cl_list)
+{
+	cluster_info_t *cl;
+	node_info_t *n;
+
+	for (cl = *cl_list; cl; cl = cl->next) {
+		for (n = cl->node_list; n; n = n->next)
+			if (n->flags & NODE_IS_SEED)
+				break;
+		if (!n && !(cl->current_node->flags & NODE_IS_SEED)) {
+			LM_NOTICE("No seed node defined in cluster: %d! Some clustering "
+			"capabilities may not work or have broken behaviour\n", cl->cluster_id);
+		}
+	}
+}
+
 /* loads info from the db */
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 					cluster_info_t **cl_list)
@@ -433,6 +449,9 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 				return 2;
 		}
 	}
+
+	/* warn if no seed node is defined in a cluster */
+	check_seed_flag(cl_list);
 
 	if (RES_ROW_N(res) == 1)
 		LM_INFO("The current node is the only one in the cluster\n");
