@@ -92,8 +92,16 @@ static int send_ping(node_info_t *node, int req_node_list)
 	bin_push_int(&packet, req_node_list);	/* request list of known nodes ? */
 	bin_get_buffer(&packet, &send_buffer);
 
+	#ifndef CLUSTERER_EXTRA_BIN_DBG
+	set_proc_log_level(L_INFO);
+	#endif
+
 	rc = msg_send(NULL, clusterer_proto, &node->addr, 0, send_buffer.s,
 		send_buffer.len, 0);
+
+	#ifndef CLUSTERER_EXTRA_BIN_DBG
+	reset_proc_log_level();
+	#endif
 
 	bin_free_packet(&packet);
 
@@ -1552,8 +1560,16 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 
 		bin_get_buffer(&packet, &bin_buffer);
 
+		#ifndef CLUSTERER_EXTRA_BIN_DBG
+		set_proc_log_level(L_INFO);
+		#endif
+
 		send_rc = msg_send(NULL, clusterer_proto, &src_node->addr, 0, bin_buffer.s,
 			bin_buffer.len, 0);
+
+		#ifndef CLUSTERER_EXTRA_BIN_DBG
+		reset_proc_log_level();
+		#endif
 
 		lock_get(src_node->lock);
 
