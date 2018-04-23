@@ -576,16 +576,11 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 			org_msg->first_line.u.request.version.s );
 		if(new_msg->parsed_orig_ruri_ok)
 			uri_trans(new_msg->buf, org_msg->buf, &new_msg->parsed_orig_ruri);
-		if(new_msg->parsed_uri_ok) {
-			if (new_msg->new_uri.s) {
-				/* uri string in a separate buffer */
-				uri_trans(new_msg->new_uri.s, org_msg->new_uri.s,
-					&new_msg->parsed_uri);
-			} else {
-				/* uri string still in buf */
-				uri_trans(new_msg->buf, org_msg->buf, &new_msg->parsed_uri);
-			}
-		}
+		if(new_msg->parsed_uri_ok && new_msg->new_uri.s==NULL) {
+			/* uri string still in buf */
+			uri_trans(new_msg->buf, org_msg->buf, &new_msg->parsed_uri);
+		} /* if parsed_uri_ok and RURI is in new_uri, we will translate it
+		   * later when setting the new_uri to the final value */
 	}
 	else if ( org_msg->first_line.type==SIP_REPLY )
 	{
@@ -973,6 +968,10 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 			new_msg->new_uri.s = p;
 			memcpy( p , org_msg->new_uri.s , org_msg->new_uri.len);
 			p += ROUND4(org_msg->new_uri.len);
+			/* if RURI was parsed, translate to new_uri buffer*/
+			if (new_msg->parsed_uri_ok)
+				uri_trans(new_msg->new_uri.s, org_msg->new_uri.s,
+					&new_msg->parsed_uri);
 		}
 		/* dst_uri to zero */
 		new_msg->dst_uri.s = 0;
@@ -1037,8 +1036,14 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 			return 0;
 		}
 		/* copy data */
-		if (org_msg->new_uri.len)
-			memcpy( new_msg->new_uri.s, org_msg->new_uri.s, org_msg->new_uri.len);
+		if (org_msg->new_uri.len) {
+			memcpy( new_msg->new_uri.s, org_msg->new_uri.s,
+				org_msg->new_uri.len);
+			/* if RURI was parsed, translate to new_uri buffer*/
+			if (new_msg->parsed_uri_ok)
+				uri_trans(new_msg->new_uri.s, org_msg->new_uri.s,
+					&new_msg->parsed_uri);
+		}
 		if (org_msg->dst_uri.len)
 			memcpy( new_msg->dst_uri.s, org_msg->dst_uri.s, org_msg->dst_uri.len);
 		if (org_msg->path_vec.len)
@@ -1059,6 +1064,8 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	case 2: /* updatable, but no cloning now */
 		new_msg->msg_flags |= FL_SHM_UPDATABLE;
 		/* new_uri to zero */
+		if (new_msg->parsed_uri_ok && new_msg->new_uri.s)
+			new_msg->parsed_uri_ok = 0;
 		new_msg->new_uri.s = 0;
 		new_msg->new_uri.len = 0;
 		/* dst_uri to zero */
@@ -1230,6 +1237,8 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	c_msg->msg_flags = msg->msg_flags|(FL_SHM_UPDATABLE|FL_SHM_CLONE);
 	c_msg->ruri_q = msg->ruri_q;
 	c_msg->ruri_bflags = msg->ruri_bflags;
+	/* reset this just it case, maybe the new_uri was updated */
+	c_msg->parsed_uri_ok = 0;
 
 	if (!(msg->msg_flags & FL_TM_FAKE_REQ)) {
 		/* if not a fake request, we should free old values right now, otherwise we leak
