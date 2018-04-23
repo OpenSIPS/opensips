@@ -1108,22 +1108,18 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
         msg->buf=buffer.s;
         msg->len=buffer.len;
 
-	if (parse_msg(buffer.s,buffer.len, msg)!=0) {
-		pkg_free(msg);
-		return;
-	}
+	if (parse_msg(buffer.s,buffer.len, msg) != 0)
+		goto out_free;
 
-	if (msg->REQ_METHOD != METHOD_INVITE) {
+	if (msg->REQ_METHOD != METHOD_INVITE)
 		LM_DBG("skipping method %d\n", msg->REQ_METHOD);
-		pkg_free(msg);
-		return;
-	}
+		goto out_free;
 
 	/* we get called exactly once for each outgoing branch, so we can safely
 	 * start creating each leg */
 
 	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
-		return;
+		goto out_free;
 
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
@@ -1138,9 +1134,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 
 	if (shm_str_dup(&leg->sdp, &sdp) != 0) {
 		LM_ERR("No more shm\n");
-		free_sip_msg(msg);
-		pkg_free(msg);
-		return;
+		goto out_free;
 	}
 
         /* extract the contact address */
@@ -1152,14 +1146,13 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 
 		if (shm_str_dup(&leg->th_sent_contact, &contact) != 0) {
 			LM_ERR("No more shm for INVITE outgoing contact \n");
-			free_sip_msg(msg);
-			pkg_free(msg);
-			return;
+			goto out_free;
 		}
 	}
 
 	dlg->legs_no[DLG_LEGS_USED]++;
 
+out_free:
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
