@@ -646,10 +646,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			if (dlg_db_mode==DB_MODE_SHUTDOWN)
 				dlg->flags |= DLG_FLAG_NEW;
 
-			/* re-populate Re-INVITE pinging fields */
-			if (restore_reinvite_pinging(dlg) != 0)
-				LM_ERR("failed to fetch some Re-INVITE pinging data\n");
-
 			/* mark this dialog as loaded from DB in order to drop it when
 			 * syncing from cluster is finished */
 			dlg->flags |= DLG_FLAG_FROM_DB;
@@ -698,7 +694,10 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
 			    dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-				if (0 != insert_reinvite_ping_timer(dlg))
+				/* re-populate Re-INVITE pinging fields */
+				if (restore_reinvite_pinging(dlg) != 0)
+					LM_ERR("failed to fetch some Re-INVITE pinging data\n");
+				else if (0 != insert_reinvite_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into reinvite"
 					        "ping timer\n", dlg);
 				else {
@@ -1838,7 +1837,10 @@ static int sync_dlg_db_mem(void)
 
 				if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
 				    dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-					if (0 != insert_reinvite_ping_timer(dlg))
+					/* re-populate Re-INVITE pinging fields */
+					if (restore_reinvite_pinging(dlg) != 0)
+						LM_ERR("failed to fetch some Re-INVITE pinging data\n");
+					else if (0 != insert_reinvite_ping_timer(dlg))
 						LM_CRIT("Unable to insert dlg %p into reinvite"
 						        "ping timer\n", dlg);
 					else {
