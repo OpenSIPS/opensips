@@ -142,11 +142,12 @@ static int parse_branch(str branch)
 	    (timeval_st.tv_sec - p_cell->last_send_time.tv_sec) * 1000000 +
 		(timeval_st.tv_usec - p_cell->last_send_time.tv_usec);
 
-	LM_DBG("update_sipping_latency with %d us\n", sipping_latency);
-	if (ul.update_sipping_latency &&
-	    ul.update_sipping_latency(p_cell->d, ct_coords, sipping_latency) < 0) {
-		/* we keep going since it might work for other contacts */
-		LM_ERR("failed to update ucontact sipping_latency\n");
+	if (p_cell->ct_flags & sipping_latency_flag) {
+		LM_DBG("update_sipping_latency with %d us\n", sipping_latency);
+		if(ul.update_sipping_latency(p_cell->d, ct_coords, sipping_latency)<0){
+			/* we keep going since it might work for other contacts */
+			LM_ERR("failed to update ucontact sipping_latency\n");
+		}
 	}
 	/* when we receive answer to a ping we consider all pings sent
 	 * confirmed, because what we want to know is that the contact
@@ -225,7 +226,7 @@ error:
  */
 static inline int
 build_branch(char *branch, int *size,
-		str *curi, udomain_t *d, ucontact_coords ct_coords, int match_ctid)
+		str *curi, udomain_t *d, ucontact_coords ct_coords, int ct_flags)
 {
 	int hash_id, ret, label;
 	time_t timestamp;
@@ -234,11 +235,16 @@ build_branch(char *branch, int *size,
 	struct timeval timeval_st;
 	int dangling_coords = 0;
 	int old_state;
+	int reply_matching;
 
 	/* we want all contact pings from a contact in one bucket*/
 	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
 
-	if (match_ctid) {
+	/* do we need to track and match the replies for this ping?
+	 * We do if latency or remove on timeout flags are set for the contact */
+	reply_matching = ((ct_flags) & (rm_on_to_flag | sipping_latency_flag));
+
+	if (reply_matching) {
 		/* get the time before the lock - we may wait a little bit
 		 * on this lock */
 		timestamp=now;
@@ -260,6 +266,7 @@ build_branch(char *branch, int *size,
 
 		old_state = p_cell->state;
 		p_cell->state = PING_CELL_STATE_PINGING;
+		p_cell->ct_flags = ct_flags;
 		p_cell->timestamp = timestamp;
 		p_cell->last_send_time = timeval_st;
 
@@ -289,7 +296,7 @@ build_branch(char *branch, int *size,
 
 	branch += BMAGIC_LEN;
 
-	if (match_ctid) {
+	if (reply_matching) {
 		ret=int2reverse_hex(&branch, size, hash_id);
 		if (ret < 0)
 			goto out_nospace;
@@ -326,7 +333,7 @@ out_nospace:
 /* build the buffer of a SIP ping request */
 static inline char*
 build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
-		int *len_p, ucontact_coords ct_coords, int match_ctid)
+		int *len_p, ucontact_coords ct_coords, int ct_flags)
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
@@ -344,7 +351,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	bbuild += sizeof(BSTART) - 1;
 	bsize -= (bbuild - branch);
 
-	build_branch( bbuild, &bsize, curi, d, ct_coords, match_ctid);
+	build_branch( bbuild, &bsize, curi, d, ct_coords, ct_flags);
 
 	sbranch.s = branch;
 	sbranch.len = strlen(branch);

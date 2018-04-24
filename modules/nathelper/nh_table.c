@@ -73,10 +73,18 @@ error:
 
 void free_hash_table(void)
 {
+	struct ping_cell *cell,*next_cell;
 	int i;
 
-	for (i=0; i < NH_TABLE_ENTRIES; i++)
+	for (i=0; i < NH_TABLE_ENTRIES; i++) {
+		cell=n_table->entries[i].first;
+		while(cell) {
+			next_cell = cell->next;
+			shm_free(cell);
+			cell = next_cell;
+		}
 		lock_destroy(&n_table->entries[i].mutex);
+	}
 
 	lock_destroy(&n_table->timer_list.mutex);
 
