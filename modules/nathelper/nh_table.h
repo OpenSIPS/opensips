@@ -31,6 +31,7 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../locking.h"
+#include "../../lib/list.h"
 #include "../usrloc/udomain.h"
 
 
@@ -40,6 +41,11 @@
 /* current time */
 #define now (time(NULL))
 
+#define PING_CELL_STATE_NONE     0
+#define PING_CELL_STATE_PINGING  1
+#define PING_CELL_STATE_ANSWERED 2
+#define PING_CELL_STATE_WAITING  3
+
 struct ping_cell {
 	int hash_id;
 
@@ -48,14 +54,14 @@ struct ping_cell {
 	ucontact_coords ct_coords; /* !< helps locate the associated contact */
 
 	unsigned int timestamp; /* !< timestamp when ping was sent */
-	char not_responded; /* !< number of pings not responded to */
+	unsigned short not_responded; /* !< number of pings not responded to */
+	unsigned short state;
 	struct timeval last_send_time; /* !< last ping time */
 	/* hash table links */
 	struct ping_cell* next;
 	struct ping_cell* prev;
 
-	/* timer list link */
-	struct ping_cell* tnext;
+	struct list_head t_linker;
 };
 
 struct nh_entry
@@ -72,8 +78,11 @@ struct nh_entry
 /* timer list */
 typedef struct nh_tlist
 {
-	struct ping_cell *first;
-	struct ping_cell *last;
+	/* the head of the waiting list*/
+	struct list_head wt_timer;
+
+	/* the pinging list */
+	struct list_head pg_timer;
 
 	gen_lock_t mutex;
 } nh_tlist;
@@ -81,7 +90,7 @@ typedef struct nh_tlist
 
 struct nh_table
 {
-	/* the queue and its mutex */
+	/* the queuing and its mutex */
 	nh_tlist   timer_list;
 
 	/* the hash table */

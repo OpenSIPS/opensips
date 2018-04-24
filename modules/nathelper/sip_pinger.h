@@ -47,9 +47,6 @@
 
 #define BSTART ";branch="
 
-#define LIST_END_CELL ((struct ping_cell*)-1) /* this cell is the end of the list */
-#define FREE_CELL NULL /* this cell is not in the timer list */
-
 /* helping macros for building SIP PING ping request */
 #define append_str( _p, _s) \
 	do {\
@@ -139,6 +136,7 @@ static int parse_branch(str branch)
 		unlock_hash(hash_id);
 		return 0;
 	}
+	LM_DBG("ping received for %lu\n", ct_coords);
 
 	sipping_latency =
 	    (timeval_st.tv_sec - p_cell->last_send_time.tv_sec) * 1000000 +
@@ -156,6 +154,7 @@ static int parse_branch(str branch)
 	 * completely removed when the timer will be up */
 	p_cell->not_responded = 0;
 	/* mark for removal */
+	p_cell->state = PING_CELL_STATE_ANSWERED;
 	p_cell->timestamp = 0;
 
 	remove_from_hash(p_cell);
@@ -224,7 +223,6 @@ error:
 
 /*
  */
-
 static inline int
 build_branch(char *branch, int *size,
 		str *curi, udomain_t *d, ucontact_coords ct_coords, int match_ctid)
@@ -235,6 +233,7 @@ build_branch(char *branch, int *size,
 	struct nh_table *htable;
 	struct timeval timeval_st;
 	int dangling_coords = 0;
+	int old_state;
 
 	/* we want all contact pings from a contact in one bucket*/
 	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
@@ -245,7 +244,10 @@ build_branch(char *branch, int *size,
 		timestamp=now;
 		gettimeofday(&timeval_st, NULL);
 
+		htable = get_htable();
+
 		lock_hash(hash_id);
+
 		if ((p_cell=get_cell(hash_id, ct_coords))==NULL) {
 			if (0 == (p_cell = build_p_cell(hash_id, d, ct_coords))) {
 				unlock_hash(hash_id);
@@ -256,29 +258,29 @@ build_branch(char *branch, int *size,
 			dangling_coords = 1;
 		}
 
+		old_state = p_cell->state;
+		p_cell->state = PING_CELL_STATE_PINGING;
 		p_cell->timestamp = timestamp;
 		p_cell->last_send_time = timeval_st;
-		unlock_hash(hash_id);
-
-		htable = get_htable();
-
-		/* put the cell in timer list */
-		lock_get(&htable->timer_list.mutex);
-
-		if (p_cell->tnext == FREE_CELL) {
-			if (!htable->timer_list.first) {
-				htable->timer_list.first = htable->timer_list.last = p_cell;
-			} else {
-				htable->timer_list.last->tnext = p_cell;
-				htable->timer_list.last = p_cell;
-			}
-			/* this cell will be the end of the list */
-			p_cell->tnext = LIST_END_CELL;
-		}
 
 		/* we get the label that assures us that the via is unique */
 		label = htable->entries[hash_id].next_via_label++;
+
+		unlock_hash(hash_id);
+
+		/* put the cell in timer list */
+		lock_get(&htable->timer_list.mutex);
+		/* if record found in WAIT (and moved into PINGING), remove first
+		 * from old timer list */
+		if (old_state==PING_CELL_STATE_WAITING)
+			list_del(&p_cell->t_linker);
+		/* add to pinging list*/
+		list_add_tail( &p_cell->t_linker, &htable->timer_list.pg_timer);
+
 		lock_release(&htable->timer_list.mutex);
+
+		LM_DBG("ping cell aquired (new=%d, old_state=%d) for %lu\n",
+			(old_state==PING_CELL_STATE_NONE)?1:0, old_state, ct_coords);
 	} else {
 		label = sipping_callid_cnt;
 	}
