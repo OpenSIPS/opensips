@@ -139,6 +139,9 @@ static int val_buf_size;
 /**
  * fetch_dlg_value - search for @name in @dlg, write results to @out_val
  *
+ * If @val_has_buf is true, @out_val may contain a user-supplied pkg buffer
+ * which will be realloc'ed as necessary in order to hold the value.
+ *
  * If @val_has_buf is false, the returned @out_val string must not be freed!
  *
  * @return:
