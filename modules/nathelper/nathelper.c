@@ -1640,79 +1640,45 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 {
 	time_t ctime;
 	uint64_t _contact_id;
-
+	struct list_head *it, *itx;
 	udomain_t *_d;
 	struct nh_table *table;
-	struct ping_cell *cell, *first, *last, *prev;
+	struct ping_cell *cell;
 
 	table = get_htable();
 	ctime=now;
 
-	/* detect cells for which threshold has been exceeded */
-
-	/* something very fishy here */
 	lock_get(&table->timer_list.mutex);
-	first = last = table->timer_list.first;
 
-	if (table->timer_list.first == NULL || table->timer_list.last == NULL) {
+	/* first check the pinging timeouts */
+
+	if (list_empty(&table->timer_list.pg_timer)) {
 		/* nothing to do here - empty list */
-		goto out_release_lock;
+		goto check_wait_timer;
 	}
 
-	/* only valid elements */
-	if (table->timer_list.first == table->timer_list.last
-			&& ((ctime-last->timestamp) < ping_threshold)) {
-		goto out_release_lock;
-	}
+	/* iterate the timeout'ed pings */
+	list_for_each_safe( it, itx , &table->timer_list.pg_timer) {
 
-	/* at least one invalid element
-	 *
-	 */
-	prev=NULL;
-	while (last != LIST_END_CELL
-			&& ((ctime-last->timestamp)>ping_threshold)) {
-		prev = last;
-		last = last->tnext;
-	}
+		cell = list_entry( it, struct ping_cell, t_linker);
+		if (cell->timestamp+ping_threshold > ctime)
+			break;
 
-
-	if (prev != NULL) {
-		/* have at least 1 element to remove */
-		if (last == LIST_END_CELL) {
-			/* all the list contains expired elements */
-			table->timer_list.first = table->timer_list.last = NULL;
-		} else {
-			/* still have non expired elements
-			 * move list start to first valid one */
-			table->timer_list.first = last;
-		}
-
-		last = prev;
-		last->tnext = LIST_END_CELL;
-	} else {
-		/* nothing to remove - timer list remains the same */
-		goto out_release_lock;;
-	}
-
-	lock_release(&table->timer_list.mutex);
-
-	/*
-	 * getting here means we have at least one element in the list to remove
-	 */
-	cell = first;
-	do {
-		if (cell->timestamp == 0) {
-			/* ping confirmed and unlinked from hash; only free the cell */
-			prev = cell;
-			cell = cell->tnext;
-			shm_free(prev);
-			continue;
-		}
-
+		list_del(&cell->t_linker);
 
 		/* we need lock since we don't know whether we will remove this
 		 * cell from the list or not */
 		lock_hash(cell->hash_id);
+
+		LM_DBG("ping expiring ping cell %lu state=%d\n",
+			cell->contact_id, cell->state);
+
+		if (cell->state == PING_CELL_STATE_ANSWERED) {
+			unlock_hash(cell->hash_id);
+			/* ping confirmed and unlinked from hash; only free the cell */
+			shm_free(cell);
+			continue;
+		}
 
 		/* for these cells threshold has been exceeded */
 		LM_DBG("cell with cid %llu has %d unresponded pings\n",
@@ -1727,33 +1693,68 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 
 			remove_given_cell(cell, &table->entries[cell->hash_id]);
 
-			/* we put the lock on cell which now moved into prev */
 			unlock_hash(cell->hash_id);
 
-			prev = cell;
-			cell = cell->tnext;
-
-			shm_free(prev);
+			shm_free(cell);
 
 			if (ul.delete_ucontact_from_id &&
 				ul.delete_ucontact_from_id(_d, _contact_id, 0) < 0) {
 				/* we keep going since it might work for other contacts */
 				LM_ERR("failed to remove ucontact from db\n");
 			}
+
 		} else {
-			prev = cell;
-			cell = cell->tnext;
 
-			/* allow cell to be reintroduced in timer list */
-			prev->tnext = FREE_CELL;
+			cell->state = PING_CELL_STATE_WAITING;
 
-			/* we put the lock on cell which now moved into prev */
-			unlock_hash(prev->hash_id);
+			LM_DBG("moving ping cell %lu into WAIT timer with state=%d\n",
+				cell->contact_id, cell->state);
+
+			/* insert into waiting time */
+			list_add_tail( &cell->t_linker, &table->timer_list.wt_timer);
+
+			unlock_hash(cell->hash_id);
+
 		}
-	} while (cell != LIST_END_CELL);
 
-out_release_lock:
+	} /* end for_each */
+
+	/* check the wait timer too */
+check_wait_timer:
+
+	if (list_empty(&table->timer_list.wt_timer)) {
+		lock_release(&table->timer_list.mutex);
+		return;
+	}
+
+	list_for_each_safe( it, itx , &table->timer_list.wt_timer) {
+
+		cell = list_entry( it, struct ping_cell, t_linker);
+		if (cell->timestamp+natping_interval*2 > ctime)
+			break;
+
+		lock_hash(cell->hash_id);
+
+		LM_DBG("wait expiring ping cell %lu state=%d\n",
+			cell->contact_id, cell->state);
+
+		/* if not found in the mean while (via hash), delete it */
+		if (cell->state==PING_CELL_STATE_WAITING) {
+			list_del(&cell->t_linker);
+			remove_given_cell(cell, &table->entries[cell->hash_id]);
+			unlock_hash(cell->hash_id);
+			shm_free(cell);
+		} else {
+			/* do nothing, the cell was probably found again by the probing
+			 * handler */
+			unlock_hash(cell->hash_id);
+		}
+
+	}
+
 	lock_release(&table->timer_list.mutex);
+
+	return;
 }
 
 

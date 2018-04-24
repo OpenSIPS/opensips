@@ -60,8 +60,10 @@ struct nh_table* init_hash_table(void)
 		n_table->entries[i].next_via_label = rand();
 		n_table->entries[i].first = n_table->entries[i].last = 0;
 	}
-	lock_init(&n_table->timer_list.mutex);
 
+	lock_init(&n_table->timer_list.mutex);
+	INIT_LIST_HEAD(&n_table->timer_list.wt_timer);
+	INIT_LIST_HEAD(&n_table->timer_list.pg_timer);
 
 	return n_table;
 
