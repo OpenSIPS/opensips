@@ -70,10 +70,14 @@
 #include "../registrar/sip_msg.h"
 #include "../usrloc/usrloc.h"
 #include "../usrloc/ul_mod.h"
-#include "sip_pinger.h"
 #include "../../parser/parse_content.h"
 #include "../../sr_module.h"
 #include "../../lib/csv.h"
+
+
+static int rm_on_to_flag = -1;         /* these variables are required */
+static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
+#include "sip_pinger.h"
 
 #include "nh_table.h"
 
@@ -93,14 +97,15 @@
 #define MI_PING_DISABLED			"NATping disabled from script"
 #define MI_PING_DISABLED_LEN		(sizeof(MI_PING_DISABLED)-1)
 
+/* reported latency (in us) if the ping times out - 30 mins; be careful and
+ * do not set large values that might overflow an signed integer */
+#define LATENCY_ON_TIMEOUT (1800*1000000)
+
 #define SKIP_OLDORIGIP		(1<<0)
 #define SKIP_OLDMEDIAIP		(1<<1)
 
 #define STORE_BRANCH_CTID \
 	(sipping_flag && (rm_on_to_flag || sipping_latency_flag))
-
-#define ctid_match_enabled(flags) \
-	((flags) & (rm_on_to_flag | sipping_latency_flag))
 
 static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
 static int fix_nated_contact_f(struct sip_msg *, char *, char *);
@@ -197,9 +202,7 @@ static const char sbuf[4] = {0, 0, 0, 0};
 static char *force_socket_str = 0;
 static int sipping_flag = -1;
 static char *sipping_flag_str = 0;
-static int rm_on_to_flag = -1;
 static char *rm_on_to_flag_str = 0;
-static int sipping_latency_flag = -1;
 static char *sipping_latency_flag_str = 0;
 static int natping_tcp = 0;
 static int natping_partitions = 1;
@@ -1473,7 +1476,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 			if ((flags & sipping_flag) &&
 			    (opt.s = build_sipping(d, &c, send_sock, &path, &opt.len,
-			                         ct_coords, ctid_match_enabled(flags)))) {
+			                         ct_coords, flags))) {
 				if (msg_send(send_sock, next_hop.proto, &to, 0, opt.s, opt.len, NULL) < 0) {
 					LM_ERR("sip msg_send failed\n");
 				}
@@ -1723,6 +1726,23 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 			continue;
 		}
 
+		if ( (cell->ct_flags & sipping_latency_flag)!=0) {
+			/* set a big value to reflect the timeout */
+			LM_DBG("update_sipping_latency for timeout\n");
+			if (ul.update_sipping_latency(cell->d, cell->ct_coords,
+			LATENCY_ON_TIMEOUT)<0)
+				LM_ERR("failed to update ucontact sipping_latency\n");
+		}
+
+		if ( (cell->ct_flags & rm_on_to_flag)==0) {
+			/* no timeout + removal handling, so simple discard everything */
+			remove_from_hash(cell);
+			unlock_hash(cell->hash_id);
+			ul.free_ucontact_coords(cell->ct_coords);
+			shm_free(cell);
+			continue;
+		}
+
 		/* for these cells threshold has been exceeded */
 		cell->not_responded++;
 		LM_DBG("cell with ucoords %llu has %d unresponded pings\n",
@@ -1742,8 +1762,7 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 			ul.free_ucontact_coords(cell->ct_coords);
 			shm_free(cell);
 
-			if (rm_on_to_flag && ul.delete_ucontact_from_coords &&
-				ul.delete_ucontact_from_coords(_d, ct_coords, 0) < 0) {
+			if (ul.delete_ucontact_from_coords(_d, ct_coords, 0) < 0) {
 				/* we keep going since it might work for other contacts */
 				LM_ERR("failed to remove ucontact from db\n");
 			}

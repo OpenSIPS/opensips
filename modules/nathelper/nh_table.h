@@ -55,7 +55,8 @@ struct ping_cell {
 
 	unsigned int timestamp; /* !< timestamp when ping was sent */
 	unsigned short not_responded; /* !< number of pings not responded to */
-	unsigned short state;
+	unsigned short state; /* !< the pinging state */
+	unsigned int ct_flags;  /* !< the branch flags bitmask of the contact */
 	struct timeval last_send_time; /* !< last ping time */
 	/* hash table links */
 	struct ping_cell* next;
