@@ -84,6 +84,8 @@ extern stat_var *early_dlgs;
 extern int dlg_bulk_del_no;
 
 static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
+static int persist_reinvite_pinging(struct dlg_cell *dlg);
+static int restore_reinvite_pinging(struct dlg_cell *dlg);
 
 #define SET_BIGINT_VALUE(_val, _bigint)\
 	do{\
@@ -643,6 +645,10 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			if (dlg_db_mode==DB_MODE_SHUTDOWN)
 				dlg->flags |= DLG_FLAG_NEW;
 
+			/* re-populate Re-INVITE pinging fields */
+			if (restore_reinvite_pinging(dlg) != 0)
+				LM_ERR("failed to fetch some Re-INVITE pinging data\n");
+
 			/* calculate timeout */
 			dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
 			if (dlg->tl.timeout<=(unsigned int)time(0))
@@ -681,6 +687,17 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
 					/* reference dialog as kept in ping timer list */
+					ref_dlg(dlg,1);
+				}
+			}
+
+			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+			    dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+				if (0 != insert_reinvite_ping_timer(dlg))
+					LM_CRIT("Unable to insert dlg %p into reinvite"
+					        "ping timer\n", dlg);
+				else {
+					/* reference dialog as kept in reinvite ping timer list */
 					ref_dlg(dlg,1);
 				}
 			}
@@ -1220,6 +1237,96 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 	return &o;
 }
 
+/* duplicate the SDPs/Contacts of caller/callee(s) into dlg val storage */
+static int persist_reinvite_pinging(struct dlg_cell *dlg)
+{
+	str caller_adv_sdp = str_init("CSDP"), callee_adv_sdp = str_init("cSDP");
+	str caller_adv_ct = str_init("Cct"), callee_adv_ct = str_init("cct");
+
+	if (dlg->legs_no[DLG_LEG_200OK] == 0) {
+		LM_DBG("non-confirmed dialogs are not DB persistent!\n");
+		return 0;
+	}
+
+	if (store_dlg_value_unsafe(dlg, &caller_adv_sdp,
+	                    &dlg->legs[DLG_CALLER_LEG].sdp) != 0) {
+		LM_ERR("failed to persist caller advertised SDP\n");
+		return -1;
+	}
+
+	if (store_dlg_value_unsafe(dlg, &caller_adv_ct,
+	                    &dlg->legs[DLG_CALLER_LEG].th_sent_contact) != 0) {
+		LM_ERR("failed to persist caller advertised Contact\n");
+		return -1;
+	}
+
+	if (store_dlg_value_unsafe(dlg, &callee_adv_sdp,
+	                       &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].sdp) != 0) {
+		LM_ERR("failed to persist callee advertised SDP\n");
+		return -1;
+	}
+
+	if (store_dlg_value_unsafe(dlg, &callee_adv_ct,
+	           &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].th_sent_contact) != 0) {
+		LM_ERR("failed to persist callee advertised Contact\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* re-populate the SDPs/Contacts of caller/callee(s) from dlg val storage */
+static int restore_reinvite_pinging(struct dlg_cell *dlg)
+{
+	str caller_adv_sdp = str_init("CSDP"), callee_adv_sdp = str_init("cSDP");
+	str caller_adv_ct = str_init("Cct"), callee_adv_ct = str_init("cct");
+	str out_buf;
+	int ret = 0;
+
+	if (fetch_dlg_value(dlg, &caller_adv_sdp, &out_buf, 0) != 0) {
+		LM_ERR("failed to fetch caller advertised SDP\n");
+		ret = -1;
+	} else {
+		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].sdp, &out_buf) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+		}
+	}
+
+	if (fetch_dlg_value(dlg, &caller_adv_ct, &out_buf, 0) != 0) {
+		LM_ERR("failed to fetch caller advertised Contact\n");
+		ret = -1;
+	} else {
+		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].th_sent_contact,
+		                &out_buf) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+		}
+	}
+
+	if (fetch_dlg_value(dlg, &callee_adv_sdp, &out_buf, 0) != 0) {
+		LM_ERR("failed to fetch callee advertised SDP\n");
+		ret = -1;
+	} else {
+		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].sdp, &out_buf) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+		}
+	}
+
+	if (fetch_dlg_value(dlg, &callee_adv_ct, &out_buf, 0) != 0) {
+		LM_ERR("failed to fetch callee advertised Contact\n");
+		ret = -1;
+	} else {
+		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].th_sent_contact,
+		                &out_buf) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+		}
+	}
+
+	return ret;
+}
 
 static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		int on_shutdown)
@@ -1235,6 +1342,12 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		 * callback to see if other modules may want to add more vals/profiles
 		 before the actual writting */
 		run_dlg_callbacks( DLGCB_WRITE_VP, cell, 0, DLG_DIR_NONE, NULL, 1);
+	}
+
+	if (cell->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+	    cell->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+		if (persist_reinvite_pinging(cell) != 0)
+			LM_ERR("failed to persist some Re-INVITE pinging info\n");
 	}
 
 	if (on_shutdown || (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED))) {
@@ -1712,6 +1825,17 @@ static int sync_dlg_db_mem(void)
 						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 					else {
 						/* reference dialog as kept in ping timer list */
+						ref_dlg(dlg,1);
+					}
+				}
+
+				if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
+				    dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+					if (0 != insert_reinvite_ping_timer(dlg))
+						LM_CRIT("Unable to insert dlg %p into reinvite"
+						        "ping timer\n", dlg);
+					else {
+						/* reference dialog as kept in reinvite ping timer list */
 						ref_dlg(dlg,1);
 					}
 				}

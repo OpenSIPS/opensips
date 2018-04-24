@@ -1111,9 +1111,10 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	if (parse_msg(buffer.s,buffer.len, msg) != 0)
 		goto out_free;
 
-	if (msg->REQ_METHOD != METHOD_INVITE)
+	if (msg->REQ_METHOD != METHOD_INVITE) {
 		LM_DBG("skipping method %d\n", msg->REQ_METHOD);
 		goto out_free;
+	}
 
 	/* we get called exactly once for each outgoing branch, so we can safely
 	 * start creating each leg */
