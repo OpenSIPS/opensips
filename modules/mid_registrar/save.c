@@ -615,24 +615,20 @@ err_free:
 	return -1;
 }
 
+/* called exactly once per outgoing branch */
 void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 {
 	struct sip_msg *req = params->req;
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	str *next_hop = NULL;
 
-	if (mri->sip_state == SIP_REQ_OUT) {
-		LM_ERR("mid-registrar does not support forked REGISTERs (ci: %.*s)!\n",
-		       mri->callid.len, mri->callid.s);
-		return;
-	}
+	lock_start_write(mri->tm_lock);
 
-	/* can reach this state on either an initial request or a REGISTER retry */
-	mri->sip_state = SIP_REQ_OUT;
+	mri->reply_processed = 0;
 
 	if (parse_reg_headers(req) != 0) {
 		LM_ERR("failed to parse req headers\n");
-		return;
+		goto out;
 	}
 
 	if (req->expires)
@@ -640,7 +636,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	if (shm_str_sync(&mri->main_reg_uri, GET_RURI(req)) != 0) {
 		LM_ERR("oom\n");
-		return;
+		goto out;
 	}
 
 	if (GET_RURI(req) != GET_NEXT_HOP(req))
@@ -648,7 +644,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	if (shm_str_sync(&mri->main_reg_next_hop, next_hop) != 0) {
 		LM_ERR("oom\n");
-		return;
+		goto out;
 	}
 
 	if (mri->star)
@@ -661,7 +657,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 		LM_DBG("trimming all Contact URIs into one...\n");
 		if (trim_to_single_contact(req, &mri->aor)) {
 			LM_ERR("failed to overwrite Contact URI\n");
-			return;
+			goto out;
 		}
 	}
 
@@ -676,14 +672,14 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	 */
 	if (dup_req_info(req, mri) != 0) {
 		LM_ERR("oom\n");
-		return;
+		goto out;
 	}
 
 	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
 		LM_DBG("fixing Contact URI ...\n");
 		if (overwrite_req_contacts(req, mri)) {
 			LM_ERR("failed to overwrite Contact URIs\n");
-			return;
+			goto out;
 		}
 	}
 
@@ -692,6 +688,8 @@ out:
 	       mri->main_reg_uri.len, mri->main_reg_uri.s,
 	       mri->main_reg_next_hop.len, mri->main_reg_next_hop.s,
 	       mri->expires_out);
+
+	lock_stop_write(mri->tm_lock);
 }
 
 static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
@@ -1499,11 +1497,9 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	LM_DBG("reply: %d -------------- \n%s\n", code, rpl->buf);
 
 	lock_start_write(mri->tm_lock);
-	if (mri->sip_state != SIP_RESP_IN_RETRANS)
-		mri->sip_state = SIP_RESP_IN;
 
 	/* no processing on replies with missing Contact headers or retransmits */
-	if (code < 200 || code >= 300 || mri->sip_state == SIP_RESP_IN_RETRANS)
+	if (code < 200 || code >= 300 || mri->reply_processed)
 		goto out;
 
 	update_act_time();
@@ -1530,7 +1526,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
-	mri->sip_state = SIP_RESP_IN_RETRANS;
+	mri->reply_processed = 1;
 out:
 	lock_stop_write(mri->tm_lock);
 

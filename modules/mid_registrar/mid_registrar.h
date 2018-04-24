@@ -71,13 +71,6 @@ struct ct_mapping {
 	struct list_head list;
 };
 
-enum mid_reg_sip_state {
-	SIP_REQ_IN,
-	SIP_REQ_OUT,
-	SIP_RESP_IN,
-	SIP_RESP_IN_RETRANS,
-};
-
 /* fields marked with [NEW] must be persisted into usrloc */
 struct mid_reg_info {
 	str main_reg_uri;      /* [NEW] De-REGISTER URI */
@@ -113,7 +106,7 @@ struct mid_reg_info {
 	unsigned int ul_flags;
 	unsigned int cflags;
 
-	enum mid_reg_sip_state sip_state;
+	int reply_processed;
 	rw_lock_t *tm_lock;
 };
 
