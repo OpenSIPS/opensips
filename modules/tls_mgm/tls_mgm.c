@@ -71,6 +71,13 @@
 #include "tls.h"
 #include "api.h"
 
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L && defined __OS_linux)
+#include <features.h>
+#if defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 2)
+#define __OPENSSL_ON_EXIT
+#endif
+#endif
+
 #define DB_CAP DB_CAP_QUERY | DB_CAP_UPDATE
 #define len(s)	s == NULL?0:strlen(s)
 
@@ -1577,6 +1584,22 @@ static struct mi_root* tls_reload(struct mi_root* root, void *param)
 	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
 
+#ifdef __OPENSSL_ON_EXIT
+/* This is used to exit _without_ running the remaining onexit callbacks,
+ * we do this because openssl 1.1.x does not properly support multi-process
+ * applications, and it tries to release an existing connection from each
+ * process, resulting in multiple frees of the same chunk.
+ *
+ * We are sure that this callback is called _before_ the openssl onexit()
+ * because glibc guarantees that the callbacks are called in the reversed
+ * order they are armed, and since we are only registering this function in
+ * the child init code, we are the last ones that register it.
+ */
+static void openssl_on_exit(int status, void *param)
+{
+	_exit(status);
+}
+#endif
 
 static int mod_init(void) {
 	str s;
@@ -1811,6 +1834,10 @@ static int mod_init(void) {
 		return -1;
 	if (init_tls_domains(tls_client_domains) < 0)
 		return -1;
+
+#ifdef __OPENSSL_ON_EXIT
+	on_exit(openssl_on_exit, NULL);
+#endif
 
 	return 0;
 }
