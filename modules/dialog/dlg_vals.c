@@ -30,7 +30,7 @@
 
 
 
-static inline unsigned int _get_name_id(str *name)
+static inline unsigned int _get_name_id(const str *name)
 {
 	char *p;
 	unsigned short id;
@@ -136,12 +136,18 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 static str val_buf = { NULL, 0};
 static int val_buf_size;
 
-
-/* return:
- *  0 - succes
+/**
+ * fetch_dlg_value - search for @name in @dlg, write results to @out_val
+ *
+ * If @val_has_buf is false, the returned @out_val string must not be freed!
+ *
+ * @return:
+ *  0 - success
  * -1 - error
- * -2 - not found */
-int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
+ * -2 - not found
+ */
+int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
+                    str *out_val, int val_has_buf)
 {
 	struct dlg_val *dv;
 	unsigned int id;
@@ -155,7 +161,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 		val = &val_buf;
 		val->len = val_buf_size;
 	} else
-		val = ival;
+		val = out_val;
 
 	/* lock dialog (if not already locked via a callback triggering)*/
 	if (dlg->locked_by!=process_no)
@@ -184,7 +190,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 			}
 			memcpy( val->s, dv->val.s, dv->val.len );
 			val->len = dv->val.len;
-			*ival = *val;
+			*out_val = *val;
 
 			/* unlock dialog */
 			if (dlg->locked_by!=process_no)

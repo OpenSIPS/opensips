@@ -52,13 +52,14 @@ typedef int (*store_dlg_value_f)(struct dlg_cell *dlg,
 		str *name, str *val);
 
 typedef int (*fetch_dlg_value_f)(struct dlg_cell *dlg,
-		str *name, str *val, int val_has_buf);
+		const str *name, str *out_val, int val_has_buf);
 
 
 int store_dlg_value(struct dlg_cell *dlg, str *name, str *val);
 int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val);
 
-int fetch_dlg_value(struct dlg_cell *dlg, str *name, str *val,int val_has_buf);
+int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
+                    str *out_val, int val_has_buf);
 
 int check_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val);
 
