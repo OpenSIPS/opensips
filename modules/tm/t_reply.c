@@ -768,6 +768,12 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 	cancelled = was_cancelled(t);
 	*do_cancel = 0;
 	for ( b=t->first_branch; b<t->nr_of_outgoings ; b++ ) {
+		/* skip PHONY branches if the transaction was canceled by UAC;
+		 * a phony branch is used just to force the transaction to wait for
+		 * more branches, but if canceled, it makes no sense to wait anymore */
+		if ( (t->uac[b].flags & T_UAC_IS_PHONY) &&
+		(t->flags & T_WAS_CANCELLED_FLAG) )
+			continue;
 		/* skip 'empty branches' */
 		if (!t->uac[b].request.buffer.s) continue;
 		/* there is still an unfinished UAC transaction; wait now! */
