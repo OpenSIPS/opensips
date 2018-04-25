@@ -523,6 +523,7 @@ int add_phony_uac( struct cell *t)
 
 	t->uac[branch].request.my_T = t;
 	t->uac[branch].request.branch = branch;
+	t->uac[branch].flags = T_UAC_IS_PHONY;
 
 	/* in invalid proto will prevent adding this retransmission buffer
 	 * to the retransmission timer (there is nothing to retransmit here :P */
@@ -741,8 +742,15 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* branches added */
 	added_branches=0;
 	/* branch to begin with */
-	if (reset_bcounter)
+	if (reset_bcounter) {
 		t->first_branch=t->nr_of_outgoings;
+		/* check if the previous branch is a PHONY one and if yes
+		 * keep it in the set of active branches; that means the 
+		 * transaction had a t_wait_for_new_branches() call prior to relay() */
+		if ( t->first_branch>0 &&
+		(t->uac[t->first_branch-1].flags & T_UAC_IS_PHONY) )
+			t->first_branch--;
+	}
 
 	/* as first branch, use current uri */
 	current_uri = *GET_RURI(p_msg);
