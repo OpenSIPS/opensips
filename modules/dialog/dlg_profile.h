@@ -54,12 +54,16 @@ struct dlg_profile_link {
 
 struct repl_prof_novalue;
 
+struct prof_local_count {
+	int n;
+	struct dlg_cell *dlg;
+};
+
 enum repl_types {REPL_NONE=0, REPL_CACHEDB=1, REPL_PROTOBIN};
 struct dlg_profile_table {
 	str name;
 	unsigned int has_value;
 	enum repl_types repl_type;
-
 
 	unsigned int size;
 	gen_lock_set_t * locks;
@@ -74,12 +78,12 @@ struct dlg_profile_table {
 	 * information for profiles without values
 	 */
 
-	int * counts;
+	struct prof_local_count *noval_local_counters;
 
 	/*
 	 * information used for profile replication without values
 	 */
-	struct repl_prof_novalue *repl;
+	struct repl_prof_novalue *noval_repl_info;
 
 	struct dlg_profile_table *next;
 };
@@ -126,6 +130,8 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 
 int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 		str *value);
+
+int noval_get_local_count(struct dlg_profile_table *profile);
 
 unsigned int get_profile_size(struct dlg_profile_table *profile, str *value);
 

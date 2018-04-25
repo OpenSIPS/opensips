@@ -981,25 +981,6 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 	}
 }
 
-/**
- * From now on, we only have replication for dialog profiles
- */
-
-typedef struct repl_prof_repl_dst {
-	int id;
-	str dst;
-	time_t *last_msg;
-	union sockaddr_union to;
-} repl_prof_repl_dst_t;
-
-typedef struct repl_prof_repl_dst_new {
-	int id;
-	str dst;
-	time_t *last_msg;
-} repl_prof_repl_dst_new_t;
-
-
-
 int repl_prof_buffer_th = DLG_REPL_PROF_BUF_THRESHOLD;
 int repl_prof_utimer = DLG_REPL_PROF_TIMER;
 int repl_prof_timer_check = DLG_REPL_PROF_TIMER;
@@ -1082,13 +1063,13 @@ error:
 	LM_ERR("Failed to replicate dialog profile\n");
 }
 
-static repl_prof_count_t* find_destination(repl_prof_novalue_t *noval, int machine_id)
+static repl_prof_count_t* find_destination(repl_prof_novalue_t *noval, int node_id)
 {
 	repl_prof_count_t *head;
 
 	head = noval->dsts;
 	while(head != NULL){
-		if( head->machine_id ==  machine_id )
+		if( head->node_id ==  node_id )
 			break;
 		head=head->next;
 	}
@@ -1099,7 +1080,7 @@ static repl_prof_count_t* find_destination(repl_prof_novalue_t *noval, int machi
 			LM_ERR("no more shm memory\n");
 			goto error;
 		}
-		head->machine_id = machine_id;
+		head->node_id = node_id;
 		head->next = noval->dsts;
 		noval->dsts = head;
 	}
@@ -1120,7 +1101,7 @@ void receive_prof_repl(bin_packet_t *packet)
 	int has_value;
 	int i;
 	void **dst;
-	repl_prof_value_t *rp;
+	prof_value_info_t *rp;
 	repl_prof_count_t *destination;
 
 	/* optimize profile search */
@@ -1179,15 +1160,15 @@ void receive_prof_repl(bin_packet_t *packet)
 
 		if (profile) {
 			if (!profile->has_value) {
-				lock_get(&profile->repl->lock);
-				destination = find_destination(profile->repl, packet->src_id);
+				lock_get(&profile->noval_repl_info->lock);
+				destination = find_destination(profile->noval_repl_info, packet->src_id);
 				if(destination == NULL){
-					lock_release(&profile->repl->lock);
+					lock_release(&profile->noval_repl_info->lock);
 					return;
 				}
 				destination->counter = counter;
 				destination->update = now;
-				lock_release(&profile->repl->lock);
+				lock_release(&profile->noval_repl_info->lock);
 			} else {
 				/* XXX: hack to make sure we find the proper index */
 				i = core_hash(&value, NULL, profile->size);
@@ -1201,15 +1182,15 @@ void receive_prof_repl(bin_packet_t *packet)
 					dst = map_get(profile->entries[i], value);
 				}
 				if (!*dst) {
-					rp = shm_malloc(sizeof(repl_prof_value_t));
+					rp = shm_malloc(sizeof(prof_value_info_t));
 					if (!rp) {
 						LM_ERR("no more shm memory to allocate repl_prof_value\n");
 						goto release;
 					}
-					memset(rp, 0, sizeof(repl_prof_value_t));
+					memset(rp, 0, sizeof(prof_value_info_t));
 					*dst = rp;
 				} else {
-					rp = (repl_prof_value_t *) * dst;
+					rp = (prof_value_info_t *) * dst;
 				}
 				if (!rp->noval)
 					rp->noval = repl_prof_allocate();
@@ -1297,7 +1278,7 @@ static void clean_profiles(unsigned int ticks, void *param)
 	map_iterator_t it, del;
 	unsigned int count;
 	struct dlg_profile_table *profile;
-	repl_prof_value_t *rp;
+	prof_value_info_t *rp;
 	void **dst;
 	int i;
 
@@ -1316,12 +1297,12 @@ static void clean_profiles(unsigned int ticks, void *param)
 					LM_ERR("[BUG] bogus map[%d] state\n", i);
 					goto next_val;
 				}
-				count = repl_prof_get_all(dst);
+				count = prof_val_get_count(dst);
 				if (!count) {
 					del = it;
 					if (iterator_next(&it) < 0)
 						LM_DBG("cannot find next iterator\n");
-					rp = (repl_prof_value_t *) iterator_delete(&del);
+					rp = (prof_value_info_t *) iterator_delete(&del);
 					if (rp) {
 						free_profile_val_t(rp);
 						/*if (rp->noval)
@@ -1375,11 +1356,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 
 		count = 0;
 		if (!profile->has_value) {
-			for (i = 0; i < profile->size; i++) {
-				lock_set_get(profile->locks, i);
-				count += profile->counts[i];
-				lock_set_release(profile->locks, i);
-			}
+			count = noval_get_local_count(profile);
 
 			if ((ret = repl_prof_add(&packet, &profile->name, 0, NULL, count)) < 0)
 				goto error;
@@ -1403,7 +1380,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 						LM_ERR("cannot retrieve profile's key\n");
 						goto next_val;
 					}
-					count = repl_prof_get(dst);
+					count = prof_val_get_local_count(dst);
 					if ((ret = repl_prof_add(&packet, &profile->name, 1, value, count)) < 0)
 						goto error;
 					/* check if the profile should be sent */
