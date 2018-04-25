@@ -465,7 +465,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	len = sizeof(struct dlg_profile_table) + name->len + 1;
 	/* anything else than only CACHEDB */
 	if (repl_type !=  REPL_CACHEDB)
-		len += size * ((has_value==0) ? sizeof(int):sizeof(map_t));
+		len += size * ((has_value==0) ? sizeof(struct prof_local_count):sizeof(map_t));
 
 	profile = (struct dlg_profile_table *)shm_malloc(len);
 
@@ -476,7 +476,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	memset( profile , 0 , len);
 
 	if (!has_value)
-		profile->repl = repl_prof_allocate();
+		profile->noval_repl_info = repl_prof_allocate();
 
 	profile->size = size;
 	profile->has_value = (has_value==0)?0:1;
@@ -519,8 +519,8 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 			size*sizeof( map_t );
 	} else {
 
-		profile->counts = ( int *)(profile + 1);
-		profile->name.s = (char*) (profile->counts) + size*sizeof( int ) ;
+		profile->noval_local_counters = (struct prof_local_count *)(profile + 1);
+		profile->name.s = (char*) (profile->noval_local_counters) + size*sizeof(struct prof_local_count);
 
 	}
 
@@ -595,7 +595,7 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 				dest = map_find( entry, l->value );
 				if( dest )
 				{
-					repl_prof_dec(dest);
+					prof_val_local_dec(dest);
 
 					if( *dest == 0 )
 					{
@@ -607,7 +607,7 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 				}
 			}
 			else
-				l->profile->counts[l->hash_idx]--;
+				l->profile->noval_local_counters[l->hash_idx].n--;
 
 			lock_set_release( l->profile->locks, l->hash_idx  );
 		} else if (!is_replicated) {
@@ -698,7 +698,6 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 		hash = calc_hash_profile(&linker->value, dlg, linker->profile);
 		linker->hash_idx = hash;
 
-
 		lock_set_get( linker->profile->locks, hash );
 
 		LM_DBG("Entered here with hash = %d \n",hash);
@@ -708,10 +707,12 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 			dest = map_get( p_entry, linker->value );
 			/* if we accept replicated stuff, we have to allocate the
 			 * structure for it and treat the counter differently */
-			repl_prof_inc(dest);
+			prof_val_local_inc(dest, dlg);
 		}
-		else
-			linker->profile->counts[hash]++;
+		else {
+			linker->profile->noval_local_counters[hash].dlg = dlg;
+			linker->profile->noval_local_counters[hash].n++;
+		}
 
 		lock_set_release( linker->profile->locks,hash );
 	} else if (!is_replicated) {
@@ -887,6 +888,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 	map_t entry ;
 	void ** dest;
 	int ret;
+	map_iterator_t it;
 
 	if (profile->has_value==0)
 	{
@@ -904,21 +906,10 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				goto failed;
 			}
 
-		} else {
+		} else
+			n += noval_get_local_count(profile);
 
-			for( i=0; i<profile->size; i++ )
-			{
-
-				lock_set_get( profile->locks, i);
-
-				n += profile->counts[i];
-
-				lock_set_release( profile->locks, i);
-
-			}
-
-		}
-		n += replicate_profiles_count(profile->repl);
+		n += replicate_profiles_count(profile->noval_repl_info);
 
 	} else {
 
@@ -940,16 +931,29 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 
 				for( i=0; i<profile->size; i++ )
 				{
-
 					lock_set_get( profile->locks, i);
 
-					n += map_size(profile->entries[i]);
+					if (map_first(profile->entries[i], &it) < 0) {
+						LM_ERR("map does not exist\n");
+						lock_set_release( profile->locks, i);
+						continue;
+					}
+					while (iterator_is_valid(&it)) {
+						dest = iterator_val(&it);
+						if (!dest || !*dest) {
+							LM_ERR("[BUG] bogus map[%d] state\n", i);
+							goto next_val;
+						}
+
+						n += prof_val_get_count(dest);
+next_val:
+						if (iterator_next(&it) < 0)
+							break;
+					}
 
 					lock_set_release( profile->locks, i);
-
 				}
 			}
-
 
 		}
 		else
@@ -976,7 +980,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 
 				dest = map_find(entry,*value);
 				if( dest )
-					n = repl_prof_get_all(dest);
+					n = prof_val_get_count(dest);
 
 				lock_set_release( profile->locks, i);
 
@@ -990,6 +994,30 @@ failed:
 	return 0;
 }
 
+int noval_get_local_count(struct dlg_profile_table *profile)
+{
+	int i;
+	int n = 0;
+
+	for (i = 0; i < profile->size; i++) {
+		lock_set_get(profile->locks, i);
+
+		if (profile->noval_local_counters[i].n == 0) {
+			lock_set_release(profile->locks, i);
+			continue;
+		}
+		if (profile_repl_cluster && dialog_repl_cluster) {
+			/* don't count dialogs for which we have a backup role */
+			if (get_shtag_state(profile->noval_local_counters[i].dlg) != SHTAG_STATE_BACKUP)
+				n += profile->noval_local_counters[i].n;
+		} else
+			n += profile->noval_local_counters[i].n;
+
+		lock_set_release(profile->locks, i);
+	}
+
+	return n;
+}
 
 /****************************** MI commands *********************************/
 
@@ -1103,7 +1131,7 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 	if( node == NULL )
 		return -1;
 
-	counter = repl_prof_get_all(&val);
+	counter = prof_val_get_count(&val);
 	p= int2str((unsigned long)counter, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
 
@@ -1184,15 +1212,10 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	{
 		n = 0;
 
-		for( i=0; i<profile->size; i++ )
-		{
-			lock_set_get( profile->locks, i);
-			n += profile->counts[i];
-			lock_set_release( profile->locks, i);
-		}
+		n += noval_get_local_count(profile);
 
 		if (profile->repl_type != REPL_CACHEDB)
-			n += replicate_profiles_count(profile->repl);
+			n += replicate_profiles_count(profile->noval_repl_info);
 
 		ret = add_counter_no_val_to_rpl(rpl, n);
 	}

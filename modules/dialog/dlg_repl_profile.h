@@ -37,8 +37,8 @@
 typedef struct repl_prof_count {
 	int counter;
 	time_t update;
-        int machine_id;
-        struct repl_prof_count *next;
+    int node_id;
+    struct repl_prof_count *next;
 } repl_prof_count_t;
 
 typedef struct repl_prof_novalue {
@@ -46,10 +46,12 @@ typedef struct repl_prof_novalue {
 	struct repl_prof_count *dsts;
 } repl_prof_novalue_t;
 
+struct prof_local_count;
+
 typedef struct repl_prof_value {
-	int counter;
-	repl_prof_novalue_t *noval;
-} repl_prof_value_t;
+	struct prof_local_count local_counter;
+	repl_prof_novalue_t *noval;  /* info about received counters */
+} prof_value_info_t;
 
 extern int repl_prof_buffer_th;
 extern int repl_prof_utimer;
@@ -68,7 +70,7 @@ void receive_prof_repl(bin_packet_t *packet);
 #define DLG_REPL_PROF_EXPIRE_TIMER	10
 #define DLG_REPL_PROF_BUF_THRESHOLD	1400
 
-static void free_profile_val_t (repl_prof_value_t *val){
+static void free_profile_val_t (prof_value_info_t *val){
     repl_prof_count_t *head = val->noval->dsts;
     repl_prof_count_t *tmp;
     while(head){
@@ -80,7 +82,7 @@ static void free_profile_val_t (repl_prof_value_t *val){
 }
 
 static inline void free_profile_val(void *val){
-    free_profile_val_t(( repl_prof_value_t*) val);
+    free_profile_val_t(( prof_value_info_t*) val);
 }
 
 
@@ -102,52 +104,62 @@ static inline repl_prof_novalue_t *repl_prof_allocate(void)
 	return rp;
 }
 
-static inline void repl_prof_inc(void **dst)
+static inline void prof_val_local_inc(void **dst, struct dlg_cell *dlg)
 {
-	repl_prof_value_t *rp;
+	prof_value_info_t *rp;
 
 	if (profile_repl_cluster) {
 		/* if the destination does not exist, create it */
 		if (!*dst) {
-			rp = shm_malloc(sizeof(repl_prof_value_t));
+			rp = shm_malloc(sizeof(prof_value_info_t));
 			if (!rp) {
 				LM_ERR("no more shm memory to allocate repl_prof_value\n");
 				return;
 			}
-			memset(rp, 0, sizeof(repl_prof_value_t));
+			memset(rp, 0, sizeof(prof_value_info_t));
+			rp->local_counter.dlg = dlg;
 			*dst = rp;
 		} else {
-			rp = (repl_prof_value_t *)(*dst);
+			rp = (prof_value_info_t *)(*dst);
 		}
-		rp->counter++;
+		rp->local_counter.n++;
 	} else {
 		(*dst) = (void*)((long)(*dst) + 1);
 	}
 }
 
-static inline int repl_prof_get_all(void **dst)
+static inline int prof_val_get_count(void **dst)
 {
-	repl_prof_value_t *rp;
+	prof_value_info_t *rp;
 	if (profile_repl_cluster) {
-		rp = (repl_prof_value_t *)(*dst);
-		if (!rp->noval)
-			return rp->counter;
-		return rp->counter + replicate_profiles_count(rp->noval);
+		rp = (prof_value_info_t *)(*dst);
+		if (dialog_repl_cluster) {
+			if (get_shtag_state(rp->local_counter.dlg) != SHTAG_STATE_BACKUP) {
+				if (!rp->noval)
+					return rp->local_counter.n;
+				return rp->local_counter.n + replicate_profiles_count(rp->noval);
+			} else /* don't count dialogs for which we have a backup role */
+				return replicate_profiles_count(rp->noval); /* only received counters */
+		} else {
+			if (!rp->noval)
+				return rp->local_counter.n;
+			return rp->local_counter.n + replicate_profiles_count(rp->noval);
+		}
 	} else {
 		return (int)(long)(*dst);
 	}
 }
 
-static inline void repl_prof_dec(void **dst)
+static inline void prof_val_local_dec(void **dst)
 {
-	repl_prof_value_t *rp;
+	prof_value_info_t *rp;
 	int counter;
 
 	if (profile_repl_cluster) {
-		rp = (repl_prof_value_t *)(*dst);
-		rp->counter--;
+		rp = (prof_value_info_t *)(*dst);
+		rp->local_counter.n--;
 		/* check all the others to see if we should delete the profile */
-		counter = repl_prof_get_all(dst);
+		counter = prof_val_get_count(dst);
 		if (counter == 0) {
 			if (rp->noval)
 				shm_free(rp->noval);
@@ -159,17 +171,22 @@ static inline void repl_prof_dec(void **dst)
 	}
 }
 
-static inline int repl_prof_get(void **dst)
+static inline int prof_val_get_local_count(void **dst)
 {
-	repl_prof_value_t *rp;
+	prof_value_info_t *rp;
 
 	if (profile_repl_cluster) {
-		rp = (repl_prof_value_t *)(*dst);
-		return rp->counter;
+		rp = (prof_value_info_t *)(*dst);
+		if (dialog_repl_cluster) {
+			if (get_shtag_state(rp->local_counter.dlg) != SHTAG_STATE_BACKUP)
+				return rp->local_counter.n;
+			else /* don't count dialogs for which we have a backup role */
+				return 0;
+		} else
+			return rp->local_counter.n;
 	} else {
 		return (int)(long)(*dst);
 	}
 }
-
 
 #endif /* _DIALOG_DLG_PROFILE_REPLICATION_H_ */
