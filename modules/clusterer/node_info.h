@@ -39,8 +39,8 @@
 
 #define CLUSTERER_TABLE_VERSION 4
 
-#define MAX_NO_NODES 16
-#define MAX_NO_CLUSTERS 16
+#define MAX_NO_NODES 128
+#define MAX_NO_CLUSTERS 64
 
 #define SEED_NODE_FLAG_STR "seed"
 

@@ -232,6 +232,12 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		(*new_info)->next = cluster->node_list;
 		cluster->node_list = *new_info;
 		cluster->no_nodes++;
+		if (cluster->no_nodes > MAX_NO_NODES) {
+			LM_ERR("Defined: %d nodes for cluster: %d, maximum number of nodes "
+				"supported(%d) exceeded\n", cluster->no_nodes,
+				cluster->cluster_id, MAX_NO_NODES);
+			goto error;
+		}
 	} else {
 		(*new_info)->next = NULL;
 		cluster->current_node = *new_info;
@@ -357,6 +363,12 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	LM_DBG("%d rows found in %.*s\n",
 		RES_ROW_N(res), db_table->len, db_table->s);
 
+	if (RES_ROW_N(res) > MAX_NO_CLUSTERS) {
+		LM_ERR("Defined: %d clusters for current node, maximum number of clusters "
+			"supported(%d) exceeded\n", RES_ROW_N(res), MAX_NO_CLUSTERS);
+		goto error;
+	}
+
 	if (RES_ROW_N(res) == 0) {
 		LM_WARN("No nodes found in cluster\n");
 		return 1;
@@ -406,6 +418,12 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 	LM_DBG("%d rows found in %.*s\n",
 		RES_ROW_N(res), db_table->len, db_table->s);
+
+	if (RES_ROW_N(res) > MAX_NO_NODES) {
+		LM_ERR("Defined: %d nodes in current node's clusters, maximum number of nodes "
+			"supported(%d) exceeded\n", RES_ROW_N(res), MAX_NO_NODES);
+		goto error;
+	}
 
 	for (i = 0; i < RES_ROW_N(res); i++) {
 		row = RES_ROWS(res) + i;
