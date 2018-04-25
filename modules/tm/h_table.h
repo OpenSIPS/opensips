@@ -204,6 +204,8 @@ struct totag_elem {
 #define T_UAC_TO_CANCEL_FLAG  (1<<0)
 /* have the UAC received any replies?  */
 #define T_UAC_HAS_RECV_REPLY  (1<<1)
+/* is is a phony UAC, with no signaling at all */
+#define T_UAC_IS_PHONY        (1<<2)
 
 
 
