@@ -1164,52 +1164,12 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	pkg_free(msg);
 }
 
-/*
- * Updates the contact of a specific leg
- * Returns:
- * -1: if an error occured
- *  0: if contact did not change
- *  1: if contact has changed
- */
-static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
-											unsigned int leg)
-{
-	str contact;
-	char *tmp;
-	if (!msg->contact || !msg->contact->parsed ||
-			!((contact_body_t *)msg->contact->parsed)->contacts)
-		return 0; /* contact not updated */
-	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
-	if (dlg->legs[leg].contact.s) {
-		/* if the same contact, don't do anything */
-		if (dlg->legs[leg].contact.len == contact.len &&
-				strncmp(dlg->legs[leg].contact.s, contact.s, contact.len) == 0) {
-			LM_INFO("Using the same contact <%.*s> for dialog %p on leg %d\n",
-					contact.len, contact.s, dlg, leg);
-			return 0;
-		}
-		dlg->flags |= DLG_FLAG_CHANGED;
-		LM_INFO("Replacing old contact <%.*s> for dialog %p on leg %d\n",
-				dlg->legs[leg].contact.len, dlg->legs[leg].contact.s, dlg, leg);
-		tmp = shm_realloc(dlg->legs[leg].contact.s, contact.len);
-	} else
-		tmp = shm_malloc(contact.len);
-	if (!tmp) {
-		LM_ERR("not enough memory for new contact!\n");
-		return -1;
-	}
-	dlg->legs[leg].contact.s = tmp;
-	dlg->legs[leg].contact.len = contact.len;
-	memcpy(dlg->legs[leg].contact.s, contact.s, contact.len);
-	LM_INFO("Updated contact to <%.*s> for dialog %p on leg %d\n",
-			contact.len, contact.s, dlg, leg);
-	return 1;
-}
-
-static void dlg_update_contact_req(struct cell* t, int type, struct tmcb_params *ps)
+static void dlg_update_contact(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct sip_msg *msg;
 	struct dlg_cell *dlg;
+	str contact;
+	char *tmp;
 
 	dlg = (struct dlg_cell *)(*ps->param);
 	msg = ps->req;
@@ -1219,7 +1179,22 @@ static void dlg_update_contact_req(struct cell* t, int type, struct tmcb_params 
 		return;
 	}
 
-	dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
+	if (!msg->contact || !msg->contact->parsed ||
+			!((contact_body_t *)msg->contact->parsed)->contacts)
+		return; /* contact not updated */
+	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+	if (dlg->legs[DLG_CALLER_LEG].contact.s)
+		tmp = shm_realloc(dlg->legs[DLG_CALLER_LEG].contact.s, contact.len);
+	else
+		tmp = shm_malloc(contact.len);
+	if (!tmp) {
+		LM_ERR("not enough memory for new contact!\n");
+		return;
+	}
+	dlg->legs[DLG_CALLER_LEG].contact.s = tmp;
+	dlg->legs[DLG_CALLER_LEG].contact.len = contact.len;
+	memcpy(dlg->legs[DLG_CALLER_LEG].contact.s, contact.s, contact.len);
+	LM_DBG("Updated dialog %p contact to <%.*s>\n", dlg, contact.len, contact.s);
 }
 
 static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
@@ -1355,7 +1330,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 
 	_dlg_setup_reinvite_callbacks(t, req, dlg);
 
-	if(d_tmb.register_tmcb(req, 0, TMCB_REQUEST_FWDED, dlg_update_contact_req,
+	if(d_tmb.register_tmcb(req, 0, TMCB_REQUEST_FWDED, dlg_update_contact,
 			(void *)dlg, 0) <=0) {
 		LM_ERR("can't register dlg_update_contact\n");
 		return -1;
@@ -1369,34 +1344,6 @@ error:
 	dialog_cleanup( req, NULL);
 	if_update_stat(dlg_enable_stats, failed_dlgs, 1);
 	return -1;
-}
-
-static inline void update_contact(struct dlg_cell *dlg, struct sip_msg *req,
-		unsigned int leg)
-{
-	int ret;
-	if (req->first_line.u.request.method_value != METHOD_INVITE &&
-			req->first_line.u.request.method_value != METHOD_UPDATE)
-		return;
-
-	/* make sure contact is parsed */
-	if (!req->contact &&
-		(parse_headers(req, HDR_CONTACT_F, 0) < 0 || !req->contact)) {
-		LM_INFO("INVITE or UPDATE without a contact - not updating!\n");
-		return;
-	}
-	if (!req->contact->parsed && parse_contact(req->contact) < 0) {
-		LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
-		return;
-	}
-	dlg_lock_dlg(dlg);
-	ret = dlg_update_contact(dlg, req, leg);
-	dlg_unlock_dlg(dlg);
-
-	/* if anything has changed in the meantime, also update replicas */
-	if (ret > 0 && dialog_repl_cluster &&
-			get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
-		replicate_dialog_updated(dlg);
 }
 
 /* update inv_cseq field if update_field=1
@@ -1581,8 +1528,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			return;
 		}
 	}
-	update_contact(dlg, req,
-			dst_leg == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG);
 
 	/* run state machine */
 	switch ( req->first_line.u.request.method_value ) {
