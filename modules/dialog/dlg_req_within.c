@@ -389,8 +389,6 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 
 	ref_dlg(cell, 1);
 
-	LM_CRIT("sending BYE for dialog %p\n", cell);
-
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
 		extra_hdrs,    /* extra headers*/
