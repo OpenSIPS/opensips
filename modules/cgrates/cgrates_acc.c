@@ -220,7 +220,9 @@ static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 					json_object_get_type(jobj), json_object_to_json_string(jobj));
 			return -4;
 		}
-		val.n = json_object_get_int64(jobj) / 1000000000;
+		val.n = json_object_get_int64(jobj);
+		if (val.n != 0 && val.n != -1)
+			val.n /= 1000000000;
 	} else {
 		if (json_object_get_type(jobj) != json_type_int) {
 			LM_ERR("CGRateS returned a non-int type for InitiateSession reply: %d %s\n",
