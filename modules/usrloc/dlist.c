@@ -143,7 +143,8 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		return -1;
 	}
 
-	LM_DBG("buf: %p. flags: %d\n", buf, flags);
+	/* this is a very noisy log :(  */
+	//LM_DBG("buf: %p. flags: %d\n", buf, flags);
 
 	/* read the destinations */
 	if (ul_dbf.use_table(ul_dbh, d->name) < 0) {
@@ -653,8 +654,9 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 		         location_cluster, &contact_repl_cap, &nr_nodes);
 	}
 
-	LM_DBG("part/max: %d/%d, idx/nodes: %d/%d\n",
-	       part_idx, part_max, cur_node_idx, nr_nodes);
+	/* this is a very noisy log :( */
+	//LM_DBG("part/max: %d/%d, idx/nodes: %d/%d\n",
+	//       part_idx, part_max, cur_node_idx, nr_nodes);
 
 	for(i=0; i<d->size; i++) {
 
