@@ -506,6 +506,8 @@ static void shutdown_opensips( int status )
 		}
 	}
 
+	alarm(shutdown_time);
+
 	if (i==0 && n!=0) {
 		/* whatever processes are still running are to be brutally 
 		 * terminated via SIGTERM */
@@ -517,7 +519,6 @@ static void shutdown_opensips( int status )
 			 * alarm is installed which is exactly what we want */
 		}
 		LM_DBG("waiting for all processes\n");
-		alarm(shutdown_time);
 		/* wait for all the children to terminate*/
 		while(wait(&chld_status) > 0)
 			status |= chld_status;
