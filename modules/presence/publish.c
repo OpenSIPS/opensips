@@ -171,7 +171,7 @@ static inline void build_extra_hdrs(struct sip_msg* msg, const str* map, str* ex
 void msg_presentity_clean(unsigned int ticks,void *interval)
 {
 	static db_ps_t my_ps_delete = NULL;
-	static db_ps_t my_ps_select = NULL;
+	//static db_ps_t my_ps_select = NULL;
 	static unsigned int last_expire_check = 0;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
@@ -221,7 +221,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 	result_cols[etag_col=n_result_cols++] = &str_etag_col;
 	result_cols[event_col=n_result_cols++] = &str_event_col;
 
-	CON_PS_REFERENCE(pa_db) = &my_ps_select;
+	//CON_PS_REFERENCE(pa_db) = &my_ps_select;
 	if(pa_dbf.query(pa_db, db_keys, db_ops, db_vals, result_cols,
 						2, n_result_cols, &query_str, &result )< 0)
 	{
