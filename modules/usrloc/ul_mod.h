@@ -78,8 +78,7 @@ static inline int have_mem_storage(void)
 }
 
 #define have_data_replication() \
-	((cluster_mode == CM_FEDERATION_CACHEDB \
-	  && rr_persist == RRP_SYNC_FROM_CLUSTER) || \
+	(cluster_mode == CM_FEDERATION_CACHEDB || \
 	 cluster_mode == CM_FEDERATION || \
 	 cluster_mode == CM_FULL_SHARING)
 
