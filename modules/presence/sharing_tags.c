@@ -157,11 +157,14 @@ struct sharing_tag *get_shtag(str *tag_name, int set, int new_state)
 			lock_stop_sw_read(shtags_lock);
 			return NULL;
 		}
-		if (set)
-			tag->state = new_state;
-		lock_switch_read(shtags_lock, lock_old_flag);
+	} else {
+		lock_switch_write(shtags_lock, lock_old_flag);
 	}
 
+	if (set)
+		tag->state = new_state;
+
+	lock_switch_read(shtags_lock, lock_old_flag);
 	lock_stop_sw_read(shtags_lock);
 
 	return tag;
