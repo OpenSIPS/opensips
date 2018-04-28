@@ -1475,6 +1475,25 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		</itemizedlist>
 	</section>
 
+	<section id="mi_ul_cluster_sync" xreflabel="ul_cluster_sync">
+		<title>
+		<function moreinfo="none">ul_cluster_sync</function>
+		</title>
+		<para>
+		This command will only take effect if the module is running under a
+		cluster-enabled <xref linkend="param_working_mode_preset"/>.
+		</para>
+		<para>
+		The current node will locate a healthy donor node within the
+		<xref linkend="param_location_cluster"/> and issue a sync request to
+		it. The donor node will then proceed to push all of its user location
+		data over to the current node, via the binary interface. The received
+		data will be merged with existing data. Conflicting contacts (matched
+		according to <xref linkend="param_matching_mode"/>) are overwritten
+		only if the sync data is newer than the current data.
+		</para>
+	</section>
+
 	</section>
 
 

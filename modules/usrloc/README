@@ -97,6 +97,7 @@ Liviu Chircu
               1.7.5. ul_add
               1.7.6. ul_show_contact
               1.7.7. ul_sync
+              1.7.8. ul_cluster_sync
 
         1.8. Exported Statistics
 
@@ -1055,6 +1056,19 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
      * table name - table where the AOR resides (Ex: location).
      * AOR (optional) - user AOR in username[@domain] format
        (domain must be supplied only if use_domain option is on).
+
+1.7.8.  ul_cluster_sync
+
+   This command will only take effect if the module is running
+   under a cluster-enabled working_mode_preset.
+
+   The current node will locate a healthy donor node within the
+   location_cluster and issue a sync request to it. The donor node
+   will then proceed to push all of its user location data over to
+   the current node, via the binary interface. The received data
+   will be merged with existing data. Conflicting contacts
+   (matched according to matching_mode) are overwritten only if
+   the sync data is newer than the current data.
 
 1.8. Exported Statistics
 
