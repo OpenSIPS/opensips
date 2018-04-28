@@ -364,7 +364,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
-	int port, proto;
+	int rc, port, proto;
 
 	memset(&ci, 0, sizeof ci);
 
@@ -440,14 +440,31 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		}
 	}
 
-	if (insert_ucontact(record, &contact_str, &ci, &contact, 1) != 0) {
-		LM_ERR("failed to insert ucontact (ci: '%.*s')\n", callid.len, callid.s);
-		unlock_udomain(domain, &aor);
-		goto error;
+	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &contact);
+	switch (rc) {
+	case -2:
+		/* received data is consistent with what we have */
+	case -1:
+		/* received data is older than what we have */
+		break;
+	case 0:
+		/* received data is newer than what we have */
+		if (update_ucontact(record, contact, &ci, 1) != 0) {
+			LM_ERR("failed to update ucontact (ci: '%.*s')\n", callid.len, callid.s);
+			unlock_udomain(domain, &aor);
+			goto error;
+		}
+		break;
+	case 1:
+		if (insert_ucontact(record, &contact_str, &ci, &contact, 1) != 0) {
+			LM_ERR("failed to insert ucontact (ci: '%.*s')\n", callid.len, callid.s);
+			unlock_udomain(domain, &aor);
+			goto error;
+		}
+		break;
 	}
 
 	unlock_udomain(domain, &aor);
-
 	return 0;
 
 error:
