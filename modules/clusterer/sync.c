@@ -84,7 +84,7 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 	return 0;
 }
 
-int cl_request_sync(str *capability, int cluster_id)
+int cl_request_sync(str *capability, int cluster_id, int ignore_seed)
 {
 	cluster_info_t *cluster;
 	struct local_cap *lcap;
@@ -110,7 +110,7 @@ int cl_request_sync(str *capability, int cluster_id)
 	}
 
 	/* the seed node is already considered synchronized */
-	if (cluster->current_node->flags & NODE_IS_SEED) {
+	if (!ignore_seed && (cluster->current_node->flags & NODE_IS_SEED)) {
 		LM_DBG("we are a seed node - sync is not required\n");
 		return 0;
 	}

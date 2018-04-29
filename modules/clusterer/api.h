@@ -173,7 +173,7 @@ typedef int (*register_capability_f)(str *cap, cl_packet_cb_f packet_cb,
 /*
  * Request to synchronize data for a given capability from another node.
  */
-typedef int (*request_sync_f)(str * capability, int cluster_id);
+typedef int (*request_sync_f)(str * capability, int cluster_id, int ignore_seed);
 /*
  * Returns a BIN packet in which to include a distinct "chunk" of data
  * (e.g. info about a single usrloc contact) to sync.
