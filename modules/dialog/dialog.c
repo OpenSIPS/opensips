@@ -873,7 +873,7 @@ static int mod_init(void)
 			return -1;
 		}
 
-		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
+		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 0) < 0)
 			LM_ERR("Sync request failed\n");
 
 		if (!shtags_list) {

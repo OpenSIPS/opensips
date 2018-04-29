@@ -1411,7 +1411,7 @@ done:
 
 struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
 {
-	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
+	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 1) < 0)
 		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_tree(200, MI_SSTR(MI_OK));

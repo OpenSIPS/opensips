@@ -502,7 +502,7 @@ static int mod_init(void)
 		}
 
 		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
-		    clusterer_api.request_sync(&contact_repl_cap, location_cluster) < 0)
+		    clusterer_api.request_sync(&contact_repl_cap, location_cluster, 0) < 0)
 			LM_ERR("Sync request failed\n");
 	}
 

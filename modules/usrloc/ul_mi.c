@@ -775,7 +775,7 @@ struct mi_root* mi_usrloc_cl_sync(struct mi_root *cmd, void *param)
 	if (!location_cluster)
 		return init_mi_tree(400, MI_SSTR("Clustering not enabled"));
 
-	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster) < 0)
+	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster, 1) < 0)
 		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_tree(200, MI_SSTR(MI_OK));
