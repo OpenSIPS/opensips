@@ -1374,7 +1374,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	struct socket_info* send_sock;
 	unsigned int flags;
 	struct proxy_l next_hop;
-	ucontact_coords ct_coords;
+	ucontact_coords ct_coords = 0;
 
 	udomain_t *d;
 
