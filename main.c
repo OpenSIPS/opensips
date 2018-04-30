@@ -849,7 +849,7 @@ int main(int argc, char** argv)
 {
 	/* configure by default logging to syslog */
 	int cfg_log_stderr = 1;
-	FILE* cfg_stream;
+	FILE* cfg_stream = NULL;
 	int c,r;
 	char *tmp;
 	int tmp_len;
