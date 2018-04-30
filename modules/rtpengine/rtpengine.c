@@ -2638,7 +2638,7 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 
 	bencode_item_t *c, *i, *m, *tag = NULL;
 	int mos, mos_no, mos_max, mos_min, mos_at;
-	time_t created;
+	time_t created = 0;
 	str tmp;
 	char *key;
 
