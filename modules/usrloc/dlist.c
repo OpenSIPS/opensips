@@ -379,10 +379,10 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	cdb_pair_t *pair;
 	struct sip_uri puri;
 	struct list_head *_;
-	unsigned int cflags;
+	unsigned int cflags = 0;
 	struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
-	str ct_uri, received, path, next_hop_uri;
+	str ct_uri, received = STR_NULL, path, next_hop_uri;
 	int needed;
 	char *cp = *cpos;
 	int cols_needed = COL_CONTACT | COL_RECEIVED | COL_PATH | COL_CFLAGS;
