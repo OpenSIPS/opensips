@@ -1,5 +1,39 @@
 =========================== Release 2.4.0 ==============================
 
+2018-04-30  Razvan Crainea  <razvan at opensips dot org>
+	* [57483fcac] :
+
+	update compile flags for final release
+
+2018-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [7bb0dba89] :
+
+	usrloc: Fix uninitialized variables
+
+
+2018-04-30  wuhanck  <wuhanck at hotmail dot com>
+	* [ba99a4f32] :
+
+	Use ip_addr2a. Remove unused str_ip.
+	(cherry picked from commit c60b4b5ffd39082ec1563852912daeac42ab5f69)
+
+
+2018-04-30  wuhanck  <wuhanck at hotmail dot com>
+	* [b31656829] :
+
+	Use json_object_object_get_ex.
+	(cherry picked from commit 8490397f5de665b79f6e207b6930f0618fccaccf)
+
+
+2018-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [48093886b] :
+
+	core: Fix $branch(flags) manipulation
+	It now accepts and prints a space-separated list of branch flags.
+
+	Fixes #1341
+	(cherry picked from commit e2fd262f368928c8d71ec386c724de7025d6191a)
+
 2018-03-28  Razvan Crainea  <razvan at opensips dot org>
 	* [6fcc108be] :
 
