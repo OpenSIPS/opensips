@@ -327,7 +327,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 	str cap_name;
 	struct local_cap *cap;
 	struct buf_bin_pkt *buf_pkt, *buf_tmp, *cutpos_next;
-	bin_packet_t *bin_pkt_list, *bin_pkt, *bin_tmp;
+	bin_packet_t *bin_pkt_list = NULL, *bin_pkt, *bin_tmp;
 
 	bin_pop_str(packet, &cap_name);
 	for (cap = cluster->capabilities; cap; cap = cap->next)
