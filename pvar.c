@@ -50,6 +50,7 @@
 #include "transformations.h"
 #include "script_var.h"
 #include "pvar.h"
+#include "flags.h"
 #include "xlog.h"
 
 #include "parser/parse_from.h"
@@ -1884,9 +1885,8 @@ static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 			res->flags = PV_VAL_STR;
 			break;
 		case BR_FLAGS_ID: /* return FLAGS */
-			res->rs.s = int2str( flags, &res->rs.len);
-			res->ri = flags;
-			res->flags = PV_VAL_STR|PV_VAL_INT;
+			res->rs = bitmask_to_flag_list(FLAG_TYPE_BRANCH, flags);
+			res->flags = PV_VAL_STR;
 			break;
 		case BR_SOCKET_ID: /* return SOCKET */
 			if ( !si )
@@ -2964,11 +2964,12 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 			return update_branch( idx, NULL, NULL,
 				&s, NULL, NULL, NULL);
 		case BR_FLAGS_ID: /* set FLAGS */
-			if ( val && !(val->flags&PV_VAL_INT) ) {
-				LM_ERR("INT value required to set the branch FLAGS\n");
+			if ( val && !(val->flags&PV_VAL_STR) ) {
+				LM_ERR("string value required to set the branch FLAGS\n");
 				return -1;
 			}
-			flags = (!val||val->flags&PV_VAL_NULL)? 0 : val->ri;
+			flags = (!val||val->flags&PV_VAL_NULL)?
+				0 : flag_list_to_bitmask(&val->rs, FLAG_TYPE_BRANCH, FLAG_DELIM);
 			return update_branch( idx, NULL, NULL,
 				NULL, NULL, &flags, NULL);
 		case BR_SOCKET_ID: /* set SOCKET */
