@@ -693,7 +693,7 @@ int cdb_flush_urecord(urecord_t *_r)
 	}
 
 	val.is_str = 1;
-	val.s = *ct->aor;
+	val.s = _r->aor;
 	aor_filter = cdb_append_filter(NULL, &aor_key, CDB_OP_EQ, &val);
 	if (!aor_filter) {
 		LM_ERR("oom\n");
