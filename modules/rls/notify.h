@@ -31,8 +31,9 @@
 #include <libxml/parser.h>
 #include "../../str.h"
 #include "../presence/subscribe.h"
+#include "rls.h"
 
-#define BOUNDARY_STRING_LEN    24
+#define BOUNDARY_STRING_LEN    10
 #define BUF_REALLOC_SIZE       2048
 #define MAX_FORWARD 70
 
@@ -56,7 +57,10 @@ static inline int append_multipart_body(char **buf, int *buf_len, int *size, str
 		}
 
 		remain_size = *size - *buf_len;
-		ret = snprintf(*buf + *buf_len, remain_size, "--%.*s\r\nContent-Transfer-Encoding: binary\r\n", bstr->len, bstr->s);
+        if (reduce_notify_size)
+		    ret = snprintf(*buf + *buf_len, remain_size, "--%.*s\r\n", bstr->len, bstr->s);
+        else
+		    ret = snprintf(*buf + *buf_len, remain_size, "--%.*s\r\nContent-Transfer-Encoding: binary\r\n", bstr->len, bstr->s);
 		if (ret < 0 || ret >= remain_size) {
 			LM_ERR("append_multipart_body : snprintf exceeds size\n");
 			return -1;

@@ -88,6 +88,7 @@ extern int max_contentid_len;
 extern str rlsubs_table;
 extern str rlpres_table;
 extern str rls_displayname_table;
+extern int reduce_notify_size;
 extern int hash_size;
 extern shtable_t rls_table;
 extern int pid;

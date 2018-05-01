@@ -47,7 +47,7 @@
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
 
-char* global_instance_id = "Scf8UhwQ";
+char* global_instance_id = "Sc8";
 
 typedef struct res_param
 {
@@ -1078,7 +1078,10 @@ char* generate_cid(char* uri, int uri_len)
 		return NULL;
 	}
 
-	len= snprintf(cid, max_contentid_len, "%d.%.*s.%d", (int)time(NULL), uri_len, uri, rand());
+    if (reduce_notify_size)
+	    len= snprintf(cid, max_contentid_len, "%.*s", uri_len, uri);
+    else
+	    len= snprintf(cid, max_contentid_len, "%d.%.*s.%d", (int)time(NULL), uri_len, uri, rand());
 	if (len > max_contentid_len) 
 	{
 		LM_DBG("generate_cid : snprintf exceeds size. But it is protected and fixed. uri_len = %d, len = %d, max_contentid_len = %d\n", uri_len, len, max_contentid_len);
@@ -1352,7 +1355,10 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 						xmlFree(display.s);
 					}
 					char buf[1024];
-					snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\" direction=\"receiver\"><state>terminated</state><remote><local><identity display=\"%s\">%s</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
+                    if (reduce_notify_size)
+					    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"9\" state=\"full\" entity=\"%s\"><dialog id=\"zx3\"><state>terminated</state><remote><identity display=\"%s\">%s</identity></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
+                    else 
+					    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\"><state>terminated</state><remote><local><identity display=\"%s\">%s</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
 					val = &(ROW_VALUES(row)[pres_state_col]);
 					VAL_TYPE(val) = DB_STRING;
 					VAL_NULL(val) = 0;
