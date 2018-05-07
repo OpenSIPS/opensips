@@ -1203,7 +1203,7 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 {
 	pv_value_t val;
 	str *ruri;
-	char number[16]; /* E.164 number - max 15 digits */
+	char number[MAX_NUM_LEN];
 	char intl_num = 0;
 	char *p;
 	int i = 0;
@@ -1264,15 +1264,22 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 		intl_num = 1;
 
 	/* get number from RURI */
-	for (p = ruri->s + (intl_num?5:4); *p != '@' && *p != ';' && p - ruri->s < ruri->len; p++)
+	for (p = ruri->s + (intl_num?5:4);
+		 i < MAX_NUM_LEN && *p != '@' && *p != ';' && p - ruri->s < ruri->len;
+		 p++)
 		if ((*p >= '0' && *p <= '9') || char2digit(*p)) /* phone or dtmf digit */
 			number[i++] = *p;
-		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') { /* not a visual separator */
+		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') {
+			/* not a visual separator */
 			LM_DBG("Unknown char <%c> in R-URI number\n", *p);
 			goto cpn_err;
 		}
 	if (i < 3) {
 		LM_DBG("R-URI number to short\n");
+		goto cpn_err;
+	}
+	if (i == MAX_NUM_LEN && *p != '@' && *p != ';' && p - ruri->s < ruri->len) {
+		LM_DBG("R-URI number to long should have max 15 digits (E.164)\n");
 		goto cpn_err;
 	}
 
@@ -1371,7 +1378,9 @@ set_cgpn:
 
 	/* Address signal */
 	i = 0;
-	for (p = pai->parsed_uri.user.s + 1; *p != ';' && p - pai->parsed_uri.user.s < pai->parsed_uri.user.len; p++)
+	for (p = pai->parsed_uri.user.s + 1;
+		 i < MAX_NUM_LEN && *p != ';' && p - pai->parsed_uri.user.s < pai->parsed_uri.user.len;
+		 p++)
 		if ((*p >= '0' && *p <= '9') || char2digit(*p)) /* phone or dtmf digit */
 			number[i++] = *p;
 		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') { /* not a visual separator */
@@ -1382,6 +1391,11 @@ set_cgpn:
 		LM_DBG("P-Asserted-Identity number to short, only <%d> digits\n", i);
 		goto cgpn_err;
 	}
+	if (i == MAX_NUM_LEN && *p != ';' && p - pai->parsed_uri.user.s < pai->parsed_uri.user.len) {
+		LM_DBG("R-URI number to long should have max 15 digits (E.164)\n");
+		goto cpn_err;
+	}
+
 	val.flags = PV_VAL_STR;
 	val.rs.s = intl_num ? number : number + country_code.len - 1;
 	val.rs.len = intl_num ? i : i - country_code.len + 1;
