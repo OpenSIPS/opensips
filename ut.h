@@ -91,6 +91,10 @@ struct sip_msg;
 #define  translate_pointer( _new_buf , _org_buf , _p) \
 	( (_p)?(_new_buf + (_p-_org_buf)):(0) )
 
+#define TIMEVAL_MS_DIFF(_tva, _tvb) \
+	((((_tvb).tv_sec * 1000000UL + (_tvb).tv_usec) - \
+	 ((_tva).tv_sec * 1000000UL + (_tva).tv_usec)) / 1000UL)
+
 #define via_len(_via) \
 	((_via)->bsize-((_via)->name.s-\
 		((_via)->hdr.s+(_via)->hdr.len)))
