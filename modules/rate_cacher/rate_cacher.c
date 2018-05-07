@@ -37,9 +37,6 @@ static struct mi_root * mi_delete_client(struct mi_root *cmd_tree, void *param )
 static struct mi_root * mi_delete_client_rate(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_eu_client_rate(struct mi_root *cmd_tree, void *param );
 
-static struct mi_root * mi_update_currency_rate(struct mi_root *cmd_tree, void *param );
-static int reload_currency(void);
-
 static int fixup_cost_based_routing(void** param, int param_no);
 static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws, char *s_iseu, 
 		char *s_carrierlist,char *s_ani,char *s_dnis);
@@ -56,9 +53,6 @@ static db_con_t *accounts_db_hdl=0;
 static db_func_t accounts_dbf;   
 static db_con_t *rates_db_hdl=0;
 static db_func_t rates_dbf;   
-
-/* currency conversion - we default to USD */
-static double *eur_usd;
 
 static int rc_reply_avp = -1;
 static str rc_reply_avp_spec = str_init("$avp(rc_reply)");
@@ -260,8 +254,6 @@ static mi_export_t mi_cmds [] = {
 	{ "deleteClient",           0, mi_delete_client,          0,  0,  0},
 	{ "deleteClientRate",       0, mi_delete_client_rate,     0,  0,  0},
 	{ "deleteClientEuRate",     0, mi_delete_eu_client_rate,  0,  0,  0},
-	/* currency methods */
-	{ "updateCurrencyRates",    0, mi_update_currency_rate,   0,  0,  0},
 	{0,0,0,0,0,0}
 };
 
@@ -378,17 +370,6 @@ static int mod_init(void)
 
 	if (rate_cacher_load_all_info() < 0) {
 		LM_ERR("Failed to load all data from the DB\n");
-		return -1;
-	}
-
-	eur_usd = (double *)shm_malloc(sizeof(double));
-	if (eur_usd == NULL) {
-		LM_ERR("Failed to alloc mem for eur usd currencies \n");
-		return -1;
-	}
-
-	if (reload_currency() < 0) {
-		LM_ERR("Failed to reload currency rate \n");
 		return -1;
 	}
 
@@ -3585,66 +3566,6 @@ error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 }
 
-static str currency_db_table = str_init("currency_rates");
-static str curr_rate_id_col = str_init("rate");
-static str curr_from_id_col = str_init("from_currency");
-static str curr_from_val = str_init("EUR");
-static str curr_to_id_col = str_init("to_currency");
-static str curr_to_val = str_init("USD");
-
-static int reload_currency(void)
-{
-	db_key_t columns[1];
-	db_res_t* res;
-	db_row_t* row;
-	db_key_t key_cmp[2];
-	db_val_t val_cmp[2];
-
-	if (rates_dbf.use_table( rates_db_hdl, &currency_db_table) < 0) {
-		LM_ERR("cannot use currency table \n");
-		return -1;
-	}
-
-	columns[0] = &curr_rate_id_col;
-
-	key_cmp[0] = &curr_from_id_col;
-	key_cmp[1] = &curr_to_id_col;
-
-	val_cmp[0].type = DB_STR;
-	val_cmp[0].nul  = 0;
-	val_cmp[0].val.str_val = curr_from_val;
-	val_cmp[1].type = DB_STR;
-	val_cmp[1].nul  = 0;
-	val_cmp[1].val.str_val = curr_to_val;
-
-	if ( rates_dbf.query( rates_db_hdl, key_cmp, 0, val_cmp, columns, 2, 1, 0, &res) < 0) {
-		LM_ERR("Currency DB query failed\n");
-		return -1;
-	}
-
-	LM_DBG("%d records found in currency table \n",RES_ROW_N(res));
-	if (RES_ROW_N(res) != 1) {
-		LM_ERR("Found %d records in currency table \n",RES_ROW_N(res));
-		return -1;
-	} 
-
-	row = RES_ROWS(res);
-	*eur_usd = VAL_DOUBLE(ROW_VALUES(row));
-
-	LM_INFO("Current eur -> usd rate is %f\n",*eur_usd);
-	return 0;
-}
-
-static struct mi_root * mi_update_currency_rate(struct mi_root *cmd_tree, void *param )
-{
-
-	if (reload_currency() < 0) {
-		return init_mi_tree( 401, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
-	}
-
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
-}
-
 static int fixup_cost_based_routing(void** param, int param_no)
 {
 	return fixup_sgp(param);
@@ -3664,7 +3585,6 @@ static char* cost_based_routing(str *clientid,int isws,int iseu,
 	str carrier;
 	struct carrier_cell *carr_it;
 	struct carrier_entry *carr_entry;
-	str client_currency,vendor_currency;
 	
 	bucket = core_hash(clientid,0,acc_table->size);
 	entry = &(acc_table->entries[bucket]);
@@ -3689,10 +3609,8 @@ static char* cost_based_routing(str *clientid,int isws,int iseu,
 		src_matched_len = 0;
 
 		if (isws) {
-			client_currency = it->ws_rate_currency;
 			rc = get_eu_rate_price_prefix(it->eu_ws_ratesheet,it->ws_trie,it->eu_ws_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
 		} else {
-			client_currency = it->rt_rate_currency;
 			rc = get_eu_rate_price_prefix(it->eu_rt_ratesheet,it->rt_trie,it->eu_rt_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
 		}
 
@@ -3708,10 +3626,8 @@ static char* cost_based_routing(str *clientid,int isws,int iseu,
 	} else {
 eu_fallback:
 		if (isws) {
-			client_currency = it->ws_rate_currency;
 			ret = get_rate_price_prefix(it->ws_trie,dnis,&dst_matched_len);
 		} else {
-			client_currency = it->rt_rate_currency;
 			ret = get_rate_price_prefix(it->rt_trie,dnis,&dst_matched_len);
 		}
 
@@ -3723,9 +3639,6 @@ eu_fallback:
 
 		client_price = ret->price;
 	} 
-
-	if (memcpy(client_currency.s,"USD",3) != 0)
-		client_price = client_price * *eur_usd; 
 
 	unlock_bucket_read( entry->lock );
 	LM_INFO("Client price is %f\n",client_price);
@@ -3758,8 +3671,6 @@ eu_fallback:
 			continue;
 		}
 
-		vendor_currency = carr_it->rate_currency;
-
 		eu_ret.regular = NULL;
 		eu_ret.ani_based = NULL;
 
@@ -3788,8 +3699,6 @@ carr_eu_fallback:
 			vendor_price = ret->price;
 		}
 
-		if (memcpy(vendor_currency.s,"USD",3) != 0)
-			vendor_price = vendor_price * *eur_usd;
 		LM_INFO("Vendor %.*s price is %f\n",carrier.len,carrier.s,vendor_price);
 		
 		unlock_bucket_read( carr_entry->lock );
