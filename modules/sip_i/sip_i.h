@@ -29,8 +29,13 @@
 #define DEFAULT_PARAM_SUBF_SEP "|"
 
 #define ISUP_MIME_S "application/ISUP;version=itu-t92+"
-
 #define DEFAULT_COUNTRY_CODE "+1"
+#define DEFAULT_PART_HEADERS "Content-Disposition:signal;handling=optional" CRLF
+#define MAX_NUM_LEN 15  /* E.164 number - max 15 digits */
+
+enum tr_isup_subtype {
+	TR_ISUP_PARAM, TR_ISUP_PARAM_STR
+};
 
 struct isup_parse_fixup {
 	int isup_params_idx;
