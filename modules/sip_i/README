@@ -457,7 +457,7 @@ ators)");
      * Optional Backward Call Indicators
           + In-band information indicator
                o no indication- 0
-               o available - 2
+               o available - 1
           + Call diversion may occur indicator
                o no indication - 0
                o call diversion - 1

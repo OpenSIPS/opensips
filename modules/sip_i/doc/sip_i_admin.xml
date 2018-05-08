@@ -946,7 +946,7 @@ if ($rs == "183") {
 							<para><emphasis>no indication</emphasis>- 0</para>
 						</listitem>
 						<listitem>
-							<para><emphasis>available</emphasis> - 2</para>
+							<para><emphasis>available</emphasis> - 1</para>
 						</listitem>
 					</itemizedlist>
 				</listitem>
