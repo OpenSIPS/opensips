@@ -242,8 +242,7 @@ if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
    Parameters: none
 
    MI FIFO Command Format:
-                :domain_reload:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo domain_reload
 
 1.5.2. domain_dump
 
@@ -255,8 +254,7 @@ if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
    Parameters: none
 
    MI FIFO Command Format:
-                :domain_dump:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo domain_dump
 
 1.6. Known Limitations
 

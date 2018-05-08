@@ -472,12 +472,8 @@ route[b2b_request]
        are scenario parameters
 
    MI FIFO Command Format:
-        :b2b_trigger_scenario:fifo_reply
-        marketing
-        sip:bob@opensips.org
-        sip:322@opensips.org:5070
-        sip:alice@opensips.org
-        _empty_line_
+        opensipsctl fifo b2b_trigger_scenario marketing sip:bob@opensips
+.org sip:322@opensips.org:5070 sip:alice@opensips.org
 
 1.5.2.  b2b_bridge
 
@@ -506,10 +502,7 @@ route[b2b_request]
        scenario
 
    MI FIFO Command Format:
-        :b2b_bridge:fifo_reply
-        1020.30
-        sip:alice@opensips.org
-        _empty_line_
+        opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org
 
    opensipsctl Command Format:
         opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
@@ -524,10 +517,6 @@ route[b2b_request]
    Parameters: none
 
    MI FIFO Command Format:
-        :b2b_list:_reply_fifo_file_
-        _empty_line_
-
-   opensipsctl Command Format:
         opensipsctl fifo b2b_list
 
 Chapter 2. Developer Guide

@@ -1955,9 +1955,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dr_reload:fifo_reply
-		partition_name (optional)
-		_empty_line_
+		opensipsctl fifo dr_reload _partition_name_
 		</programlisting>
 	</section>
 
@@ -1991,16 +1989,6 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 			</listitem>
 		</itemizedlist>
 		</para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:dr_gw_status:_reply_fifo_file_
-		partition_name (mandatory if <varname>use_partitions</varname> is 1, otherwise will be omitted altogether)
-		GW_id
-		status (optional)
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>dr_gw_status</function> usage when <varname>use_partitions</varname> is set to 0</title>
 		<programlisting format="linespecific">
@@ -2058,16 +2046,6 @@ Enabled:: Inactive
 				</para>
 			</listitem>
 		</itemizedlist>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:dr_carrier_status:_reply_fifo_file_
-		partition_name (mandatory if <varname>use_partition</varname> is 1, otherwise it will be omitted)
-		carrier_id
-		status (optional)
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>dr_carrier_status</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
@@ -2114,15 +2092,6 @@ Enabled:: yes
 				</para>
 			</listitem>
 		</itemizedlist>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:dr_reload_status:_reply_fifo_file_
-		partition_name (if <varname>use_partition</varname> is 1 it may be omitted, but if <varname>use_partition</varname>
-is 0 it must be omitted)
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>dr_reload_status</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">

@@ -724,8 +724,7 @@ if (cluster_check_addr("1", "$si")) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:clusterer_reload
-		_empty_line_
+		opensipsctl fifo clusterer_reload
 		</programlisting>
 	</section>
 
@@ -740,13 +739,6 @@ if (cluster_check_addr("1", "$si")) {
 		Name: <emphasis>clusterer_list</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
- 		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:clusterer_list
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>clusterer_list</function> usage</title>
 		<programlisting format="linespecific">
@@ -775,13 +767,6 @@ Cluster:: 2
 		Name: <emphasis>clusterer_list_topology</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:clusterer_list_topology
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>clusterer_list_topology</function> usage</title>
 		<programlisting format="linespecific">
@@ -821,10 +806,7 @@ Cluster:: 2
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:clusterer_set_status:
-		1
-		0
-		_empty_line_
+		opensipsctl fifo clusterer_set_status 1 0
 		</programlisting>
 	</section>
 
@@ -857,11 +839,7 @@ Cluster:: 2
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:cluster_mi:
-		1
-		3
-		lb_reload
-		_empty_line_
+		opensipsctl fifo cluster_mi 1 3 lb_reload
 		</programlisting>
 		</section>
 
@@ -891,11 +869,7 @@ Cluster:: 2
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:cluster_mi:
-		1
-		dr_reload_status
-		partition_5
-		_empty_line_
+		opensipsctl fifocluster_mi 1 dr_reload_status partition_5
 		</programlisting>
 		</section>
 
@@ -910,13 +884,6 @@ Cluster:: 2
 		Name: <emphasis>clusterer_list</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:clusterer_list_cap
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>clusterer_list_cap</function> usage</title>
 		<programlisting format="linespecific">

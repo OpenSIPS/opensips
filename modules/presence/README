@@ -635,11 +635,7 @@ if($rm=="SUBSCRIBE")
             is set): refresh type!= 0.
 
    MI FIFO Command Format:
-:refreshWatchers:fifo_reply
-sip:11@192.168.2.132
-presence
-1
-_empty_line_
+opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
 
 1.6.2.  cleanup
 
@@ -652,8 +648,7 @@ _empty_line_
    Parameters:none.emphasis>
 
    MI FIFO Command Format:
-:cleanup:fifo_reply
-_empty_line_
+opensipsctl fifo cleanup
 
 1.6.3.  pres_phtable_list
 
@@ -664,8 +659,7 @@ _empty_line_
    Parameters:none.
 
    MI FIFO Command Format:
-:pres_phtable_list:fifo_reply
-_empty_line_
+opensipsctl fifo pres_phtable_list
 
 1.6.4.  subs_phtable_list
 
@@ -679,10 +673,8 @@ _empty_line_
      * to(optional) - wildcard for "To" URI
 
    MI FIFO Command Format:
-:subs_phtable_list:fifo_reply
-sip:222@domain2.com
-sip:user_1@example.com
-_empty_line_
+opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@exampl
+e.com
 
 1.6.5.  pres_expose
 
@@ -700,8 +692,7 @@ _empty_line_
        all presentities for that event are exposed.
 
    MI FIFO Command Format:
-:pres_expose:fifo_reply
-_empty_line_
+opensipsctl fifo pres_expose
 
 1.7. Exported Events
 

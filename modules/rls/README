@@ -322,9 +322,7 @@ if($rm=="NOTIFY")
        and whose subscriptions should be updated
 
    MI FIFO Command Format:
-:rls_update_subscriptions:fifo_reply
-sip:alice@atlanta.com
-_empty_line_
+opensipsctl fifo rls_update_subscriptions sip:alice@atlanta.com
 
 1.6. Installation
 

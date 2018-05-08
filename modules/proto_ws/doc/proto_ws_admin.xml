@@ -314,9 +314,7 @@ route[ws_filter] {
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			:ws_trace:_reply_fifo_file_
-			trace_mode
-			_empty_line_
+			opensipsctl fifo ws_trace on
 			</programlisting>
 		</section>
 	</section>

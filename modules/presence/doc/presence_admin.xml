@@ -821,11 +821,7 @@ if($rm=="SUBSCRIBE")
 		MI FIFO Command Format:
 		</para>
 	<programlisting  format="linespecific">
-:refreshWatchers:fifo_reply
-sip:11@192.168.2.132
-presence
-1
-_empty_line_
+opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
 	</programlisting>
 	</section>
 
@@ -846,8 +842,7 @@ _empty_line_
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-:cleanup:fifo_reply
-_empty_line_
+opensipsctl fifo cleanup
 	  </programlisting>
 	</section>
 
@@ -867,8 +862,7 @@ _empty_line_
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-:pres_phtable_list:fifo_reply
-_empty_line_
+opensipsctl fifo pres_phtable_list
 	  </programlisting>
 	</section>
 
@@ -895,10 +889,7 @@ _empty_line_
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-:subs_phtable_list:fifo_reply
-sip:222@domain2.com
-sip:user_1@example.com
-_empty_line_
+opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 	  </programlisting>
 	</section>
 
@@ -934,8 +925,7 @@ _empty_line_
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-:pres_expose:fifo_reply
-_empty_line_
+opensipsctl fifo pres_expose
 	  </programlisting>
 	</section>
 </section>

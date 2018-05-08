@@ -1353,9 +1353,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
    If use_partitions is 0 it takes no parameter.
 
    MI FIFO Command Format:
-                :dr_reload:fifo_reply
-                partition_name (optional)
-                _empty_line_
+                opensipsctl fifo dr_reload _partition_name_
 
 1.5.2. dr_gw_status
 
@@ -1377,14 +1375,6 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        provided, the first must be the partition, the second must
        be the gateway and the third will be the new status to be
        forced for tat GW (0 - disable, 1 - enable)
-
-   MI FIFO Command Format:
-                :dr_gw_status:_reply_fifo_file_
-                partition_name (mandatory if use_partitions is 1, otherw
-ise will be omitted altogether)
-                GW_id
-                status (optional)
-                _empty_line_
 
    Example 1.48. dr_gw_status usage when use_partitions is set to
    0
@@ -1427,14 +1417,6 @@ Enabled:: Inactive
        while the third parameter will be the new status to be
        forced for that carrier.
 
-   MI FIFO Command Format:
-                :dr_carrier_status:_reply_fifo_file_
-                partition_name (mandatory if use_partition is 1, otherwi
-se it will be omitted)
-                carrier_id
-                status (optional)
-                _empty_line_
-
    Example 1.50. dr_carrier_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
@@ -1461,13 +1443,6 @@ Enabled:: yes
        partition. If one parameter is supplied, then this must be
        the partition name, and the function will list the time of
        the last reload for that given partition.
-
-   MI FIFO Command Format:
-                :dr_reload_status:_reply_fifo_file_
-                partition_name (if use_partition is 1 it may be omitted,
- but if use_partition
-is 0 it must be omitted)
-                _empty_line_
 
    Example 1.52. dr_reload_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_reload_status

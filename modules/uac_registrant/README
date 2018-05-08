@@ -325,8 +325,7 @@ modparam("uac_registrant", "forced_socket_column", "fs")
    Parameters: none
 
    MI FIFO Command Format:
-:reg_list:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo reg_list
 
 1.5.2. reg_reload
 
@@ -337,5 +336,4 @@ _empty_line_
    Parameters: none
 
    MI FIFO Command Format:
-:reg_reload:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo reg_reload

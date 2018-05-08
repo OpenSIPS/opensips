@@ -554,12 +554,9 @@ m
        listed. Otherwise only the one specified.
 
    MI FIFO Command Format:
-                :rl_list:_reply_fifo_file_
-                gw_10.0.0.1
-                _empty_line_
+                opensipsctl fifo rl_list gw_10.0.0.1
 
-                :rl_list:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo rl_list
 
 1.8.2.  rl_reset_pipe
 
@@ -572,9 +569,7 @@ m
        be reset.
 
    MI FIFO Command Format:
-                :rl_reset_pipe:_reply_fifo_file_
-                gw_10.0.0.1
-                _empty_line_
+                opensipsctl fifo rl_reset_pipe gw_10.0.0.1
 
 1.8.3.  rl_set_pid
 
@@ -588,11 +583,7 @@ m
      * kd - the derivative parameter.
 
    MI FIFO Command Format:
-                :rl_set_pid:_reply_fifo_file_
-                0.5
-                0.5
-                0.5
-                _empty_line_
+                opensipsctl fifo rl_set_pid 0.5 0.5 0.5
 
 1.8.4.  rl_get_pid
 
@@ -603,8 +594,7 @@ m
    Parameters: none
 
    MI FIFO Command Format:
-                :rl_get_pid:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo rl_get_pid
 
 1.8.5.  rl_bin_status
 
@@ -616,8 +606,7 @@ m
    Parameters: none
 
    MI FIFO Command Format:
-                :rl_bin_status:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo rl_bin_status
 
 1.9. Exported Pseudo-Variables
 

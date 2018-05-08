@@ -261,8 +261,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 		MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-				db_get
-				_empty_line_
+				opensipsctl fifo db_get
 			</programlisting>
 		</section>
 
@@ -298,8 +297,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 		MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-				db_set 3 2 0 1
-				_empty_line_
+				opensipsctl fifo db_set 3 2 0 1
 			</programlisting>
 		</section>
 	</section>

@@ -220,8 +220,7 @@ modparam("db_flatstore", "single_file", 1)
    Parameters: none
 
    MI FIFO Command Format:
-                :flat_rotate:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo flat_rotate
 
 Chapter 2. Developer Guide
 

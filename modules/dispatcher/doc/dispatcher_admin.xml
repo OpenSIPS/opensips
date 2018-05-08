@@ -1286,11 +1286,7 @@ if (ds_is_in_list("$rd", "$rp", "part2:2")) {
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-:ds_set_state:_reply_fifo_file_
-_state_
-_group_
-_address_
-_empty_line_
+opensipsctl fifo ds_set_state _state_ _group_ _address_ _empty_line_
 </programlisting>
 	</section>
 	<section id="mi_ds_list" xreflabel="ds_list">
@@ -1314,8 +1310,7 @@ _empty_line_
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-:ds_list:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo ds_list
 </programlisting>
 	</section>
 	<section id="mi_ds_reload" xreflabel="ds_reload">
@@ -1337,10 +1332,10 @@ _empty_line_
 			</para></listitem>
 		</itemizedlist>
 		<para>
-		MI DATAGRAM Command Format:
+		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-":ds_reload:\n."
+opensipsctl fifo ds_reload
 </programlisting>
 	</section>
 

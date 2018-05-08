@@ -451,5 +451,4 @@ modparam("b2b_sca",
    Parameters: none
 
    MI FIFO Command Format:
-        :sca_list:_reply_fifo_file_
-        _empty_line_
+        opensipsctl fifo sca_list

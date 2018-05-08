@@ -418,8 +418,7 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-:reg_list:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo reg_list
 		</programlisting>
 	</section>
 	<section id="mi_reg_reload" xreflabel="reg_reload">
@@ -429,8 +428,7 @@ _empty_line_
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-:reg_reload:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo reg_reload
 		</programlisting>
 	</section>
 	</section>

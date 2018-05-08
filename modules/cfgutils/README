@@ -771,13 +771,6 @@ $ opensipsctl fifo get_config_hash
           + “str”: string value
      * _value_: value to be set
 
-   MI FIFO Command Format:
-                :shv_set:_reply_fifo_file_
-                _name_
-                _type_
-                _value_
-                _empty_line_
-
    Example 1.31. shv_set usage
 ...
 $ opensipsctl fifo shv_set debug int 0
@@ -790,11 +783,6 @@ $ opensipsctl fifo shv_set debug int 0
    Parameters:
      * _name_: shared variable name. If this parameter is missing,
        all shared variables are returned.
-
-   MI FIFO Command Format:
-                :shv_get:_reply_fifo_file_
-                _name_
-                _empty_line_
 
    Example 1.32. shv_get usage
 ...

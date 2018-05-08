@@ -136,5 +136,4 @@ modparam("event_flatstore", "file_permissions", "664")
    Parameters: path_to_file
 
    MI FIFO Command Format:
-                :evi_flat_rotate:_path_to_log_file_
-                _empty_line_
+                opensipsctl fifo evi_flat_rotate _path_to_log_file_

@@ -554,12 +554,7 @@ route[b2b_request]
 		MI FIFO Command Format:
 		</para>
 	<programlisting  format="linespecific">
-	:b2b_trigger_scenario:fifo_reply
-	marketing
-	sip:bob@opensips.org
-	sip:322@opensips.org:5070
-	sip:alice@opensips.org
-	_empty_line_
+	opensipsctl fifo b2b_trigger_scenario marketing sip:bob@opensips.org sip:322@opensips.org:5070 sip:alice@opensips.org
 		</programlisting>
 	</section>
 
@@ -600,10 +595,7 @@ route[b2b_request]
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-	:b2b_bridge:fifo_reply
-	1020.30
-	sip:alice@opensips.org
-	_empty_line_
+	opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org
 	</programlisting>
 		<para>opensipsctl Command Format:</para>
 	<programlisting  format="linespecific">
@@ -625,11 +617,6 @@ route[b2b_request]
 		<itemizedlist>
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
-	<programlisting  format="linespecific">
-	:b2b_list:_reply_fifo_file_
-	_empty_line_
-	</programlisting>
-		<para>opensipsctl Command Format:</para>
 	<programlisting  format="linespecific">
 	opensipsctl fifo b2b_list
 	</programlisting>

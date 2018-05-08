@@ -631,8 +631,7 @@ if (cluster_check_addr("1", "$si")) {
    Parameters:none
 
    MI FIFO Command Format:
-                :clusterer_reload
-                _empty_line_
+                opensipsctl fifo clusterer_reload
 
 1.6.2.  clusterer_list
 
@@ -642,10 +641,6 @@ if (cluster_check_addr("1", "$si")) {
    Name: clusterer_list
 
    Parameters:none
-
-   MI FIFO Command Format:
-                :clusterer_list
-                _empty_line_
 
    Example 1.25. clusterer_list usage
 $ ./opensipsctl fifo clusterer_list
@@ -674,10 +669,6 @@ Cluster:: 2
 
    Parameters:none
 
-   MI FIFO Command Format:
-                :clusterer_list_topology
-                _empty_line_
-
    Example 1.26. clusterer_list_topology usage
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
@@ -704,10 +695,7 @@ Cluster:: 2
        Enabled).
 
    MI FIFO Command Format:
-                :clusterer_set_status:
-                1
-                0
-                _empty_line_
+                opensipsctl fifo clusterer_set_status 1 0
 
 1.6.5.  cluster_send_mi
 
@@ -724,11 +712,7 @@ Cluster:: 2
        required, depending on the command
 
    MI FIFO Command Format:
-                :cluster_mi:
-                1
-                3
-                lb_reload
-                _empty_line_
+                opensipsctl fifo cluster_mi 1 3 lb_reload
 
 1.6.6.  cluster_broadcast_mi
 
@@ -744,11 +728,8 @@ Cluster:: 2
        required, depending on the command
 
    MI FIFO Command Format:
-                :cluster_mi:
-                1
-                dr_reload_status
-                partition_5
-                _empty_line_
+                opensipsctl fifocluster_mi 1 dr_reload_status partition_
+5
 
 1.6.7.  clusterer_list_cap
 
@@ -757,10 +738,6 @@ Cluster:: 2
    Name: clusterer_list
 
    Parameters:none
-
-   MI FIFO Command Format:
-                :clusterer_list_cap
-                _empty_line_
 
    Example 1.27. clusterer_list_cap usage
 $ ./opensipsctl fifo clusterer_list

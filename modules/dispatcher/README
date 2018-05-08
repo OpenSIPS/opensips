@@ -958,11 +958,7 @@ the partition called 'part2'
      * _address_: address of the destination in the _group_
 
    MI FIFO Command Format:
-:ds_set_state:_reply_fifo_file_
-_state_
-_group_
-_address_
-_empty_line_
+opensipsctl fifo ds_set_state _state_ _group_ _address_ _empty_line_
 
 1.5.2.  ds_list
 
@@ -976,8 +972,7 @@ _empty_line_
        fields to the listing
 
    MI FIFO Command Format:
-:ds_list:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo ds_list
 
 1.5.3.  ds_reload
 
@@ -990,8 +985,8 @@ _empty_line_
      * partition (optional) - name of the partition to be
        reloaded.
 
-   MI DATAGRAM Command Format:
-":ds_reload:\n."
+   MI FIFO Command Format:
+opensipsctl fifo ds_reload
 
 1.6. Exported Events
 

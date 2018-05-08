@@ -384,9 +384,7 @@ route[tls_filter] {
           + off
 
    MI FIFO Command Format:
-                        :tls_trace:_reply_fifo_file_
-                        trace_mode
-                        _empty_line_
+                        opensipsctl fifo tls_trace on
 
 Chapter 2. Frequently Asked Questions
 

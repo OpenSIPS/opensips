@@ -1061,9 +1061,7 @@ route[capture_resume] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:sip_capture:_reply_fifo_file_
-		capture_mode
-		_empty_line_
+		opensipsctl fifo sip_capture _capture_mode_
 		</programlisting>
 	</section>
 	</section>

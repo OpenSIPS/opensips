@@ -377,10 +377,7 @@ modparam("siptrace", "trace_id",
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:sip_trace:_reply_fifo_file_
-		trace_id/trace_mode
-		trace_mode
-		_empty_line_
+		opensipsctl fifo sip_trace _trace_id/trace_mode_ trace_mode
 		</programlisting>
 	</section>
 

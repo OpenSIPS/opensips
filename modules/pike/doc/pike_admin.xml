@@ -283,18 +283,12 @@ if (!pike_check_req()) { exit; };
 		<para>
 		Name: <emphasis>pike_list</emphasis>
 		</para>
-		<para>Parameters: </para>
-                <itemizedlist>
-                        <listitem><para>
-                                <emphasis>IP</emphasis> - IP address currently blocked.
-                        </para></listitem>
-                </itemizedlist>
+		<para>Parameters: <emphasis>none</emphasis></para>
  		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:pike_list:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo pike_list
 		</programlisting>
 	</section>
 	<section id="mi_pike_rm" xreflabel="pike_rm">
@@ -307,13 +301,17 @@ if (!pike_check_req()) { exit; };
 		<para>
 		Name: <emphasis>pike_rm</emphasis>
 		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters: </para>
+                <itemizedlist>
+                        <listitem><para>
+                                <emphasis>IP</emphasis> - IP address currently blocked.
+                        </para></listitem>
+                </itemizedlist>
  		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:pike_list:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo pike_rm _ip_
 		</programlisting>
 	</section>
 	</section>

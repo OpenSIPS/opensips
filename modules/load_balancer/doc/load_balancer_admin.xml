@@ -844,8 +844,7 @@ if (lb_is_destination("$si","$sp") ) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:lb_reload:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo lb_reload
 		</programlisting>
 		</section>
 
@@ -860,11 +859,7 @@ if (lb_is_destination("$si","$sp") ) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:lb_resize:_reply_fifo_file_
-		11   /*dstination id*/
-		voicemail  /*resource name*/
-		56   /* new resource capacity*/
-		_empty_line_
+		opensipsctl fifo lb_resize 11 voicemail 56
 		</programlisting>
 		</section>
 
@@ -874,13 +869,6 @@ if (lb_is_destination("$si","$sp") ) {
 		Lists all the destinations and the maximum and current load for each 
 		resource of the destination.
 		</para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:lb_list:_reply_fifo_file_
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>lb_list</function> usage</title>
 		<programlisting format="linespecific">
@@ -907,15 +895,6 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 		(0 - disable, 1 - enable), this status will be forced for the 
 		destination.
 		</para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		:lb_status:_reply_fifo_file_
-		id
-		status (optional)
-		_empty_line_
-		</programlisting>
 		<example>
 		<title><function>lb_status</function> usage</title>
 		<programlisting format="linespecific">

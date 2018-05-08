@@ -359,8 +359,7 @@ if (pcre_match_group("$rU", "2")) {
 			</para>
 
 <programlisting  format="linespecific">
-:regex_reload:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo regex_reload
 </programlisting>
 
 		</section>

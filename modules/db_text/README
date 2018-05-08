@@ -205,8 +205,7 @@ modparam("db_text", "db_mode", 1)
    Parameters: none
 
    MI FIFO Command Format:
-:dbt_dump:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo dbt_dump
 
 1.5.2. dbt_reload
 
@@ -224,17 +223,11 @@ _empty_line_
        db_name parameter) - specific table to reload.
 
    MI FIFO Command Format:
-:dbt_reload:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo dbt_reload
 
-:dbt_reload:_reply_fifo_file_
-/path/to/dbtext/database
-_empty_line_
+opensipsctl fifo dbt_reload /path/to/dbtext/database
 
-:dbt_reload:_reply_fifo_file_
-/path/to/dbtext/database
-table_name
-_empty_line_
+opensipsctl fifo dbt_reload /path/to/dbtext/database table_name
 
 1.6. Installation and Running
 

@@ -967,19 +967,9 @@ $ opensipsctl fifo get_config_hash
 
 			<listitem><para>_value_: value to be set</para></listitem>
 		</itemizedlist>
-		<para>
-		MI FIFO Command Format:
-		</para>
-        <programlisting  format="linespecific">
-		:shv_set:_reply_fifo_file_
-		_name_
-		_type_
-		_value_
-		_empty_line_
-		</programlisting>
-			<example>
-			<title><function moreinfo="none">shv_set</function> usage</title>
-			<programlisting format="linespecific">
+		<example>
+		<title><function moreinfo="none">shv_set</function> usage</title>
+		<programlisting format="linespecific">
 ...
 $ opensipsctl fifo shv_set debug int 0
 ...
@@ -996,17 +986,9 @@ $ opensipsctl fifo shv_set debug int 0
 			<listitem><para>_name_: shared variable name. If this parameter
 			is missing, all shared variables are returned.</para></listitem>
 		</itemizedlist>
-		<para>
-		MI FIFO Command Format:
-		</para>
-        <programlisting  format="linespecific">
-		:shv_get:_reply_fifo_file_
-		_name_
-		_empty_line_
-		</programlisting>
-			<example>
-			<title><function moreinfo="none">shv_get</function> usage</title>
-			<programlisting format="linespecific">
+		<example>
+		<title><function moreinfo="none">shv_get</function> usage</title>
+		<programlisting format="linespecific">
 ...
 $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get

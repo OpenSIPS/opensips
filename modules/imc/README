@@ -199,8 +199,7 @@ if(is_method("MESSAGE)
    Parameters: none
 
    MI FIFO Command Format:
-                :imc_list_rooms:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo imc_list_rooms
 
 1.5.2.  imc_list_members
 
@@ -212,9 +211,7 @@ if(is_method("MESSAGE)
      * _room_ : the room for which you want to list the members
 
    MI FIFO Command Format:
-                :imc_list_members:_reply_fifo_file_
-                _room_
-                _empty_line_
+                opensipsctl fifo imc_list_members _room_
 
 1.6. Exported Statistics
 

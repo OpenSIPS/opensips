@@ -230,8 +230,7 @@ if(is_method("MESSAGE)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		:imc_list_rooms:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo imc_list_rooms
 		</programlisting>
 	</section>
 
@@ -254,9 +253,7 @@ if(is_method("MESSAGE)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		:imc_list_members:_reply_fifo_file_
-		_room_
-		_empty_line_
+		opensipsctl fifo imc_list_members _room_
 		</programlisting>
 	</section>
 	</section>

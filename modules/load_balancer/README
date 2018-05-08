@@ -604,8 +604,7 @@ if (lb_is_destination("$si","$sp") ) {
    Trigers the reload of the load balancing data from the DB.
 
    MI FIFO Command Format:
-                :lb_reload:_reply_fifo_file_
-                _empty_line_
+                opensipsctl fifo lb_reload
 
 1.7.2. lb_resize
 
@@ -615,20 +614,12 @@ if (lb_is_destination("$si","$sp") ) {
    resize.
 
    MI FIFO Command Format:
-                :lb_resize:_reply_fifo_file_
-                11   /*dstination id*/
-                voicemail  /*resource name*/
-                56   /* new resource capacity*/
-                _empty_line_
+                opensipsctl fifo lb_resize 11 voicemail 56
 
 1.7.3. lb_list
 
    Lists all the destinations and the maximum and current load for
    each resource of the destination.
-
-   MI FIFO Command Format:
-                :lb_list:_reply_fifo_file_
-                _empty_line_
 
    Example 1.18. lb_list usage
 $ ./opensipsctl fifo lb_list
@@ -649,12 +640,6 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
    status is given, the function will return the current status.
    If a new status is given (0 - disable, 1 - enable), this status
    will be forced for the destination.
-
-   MI FIFO Command Format:
-                :lb_status:_reply_fifo_file_
-                id
-                status (optional)
-                _empty_line_
 
    Example 1.19. lb_status usage
 $ ./opensipsctl fifo lb_status 2

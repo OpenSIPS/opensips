@@ -594,10 +594,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 :LOAD_CPL:_reply_fifo_file_
-                 username
-                 cpl_filename
-                 _empty_line_
+                 opensipsctl fifo LOAD_CPL username cpl_filename
 </programlisting>
 		</section>
 
@@ -621,9 +618,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 :REMOVE_CPL:_reply_fifo_file_
-                 username
-                 _empty_line_
+                 opensipsctl fifo REMOVE_CPL username
 </programlisting>
 		</section>
 
@@ -645,9 +640,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 :GET_CPL:_reply_fifo_file_
-                 username
-                 _empty_line_
+                 opensipsctl fifo GET_CPL username
 </programlisting>
 		</section>
 	</section>

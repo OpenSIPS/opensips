@@ -313,10 +313,8 @@ var(user)");
        the first parameter.
 
    MI FIFO Command Format:
-                :sip_trace:_reply_fifo_file_
-                trace_id/trace_mode
-                trace_mode
-                _empty_line_
+                opensipsctl fifo sip_trace _trace_id/trace_mode_ trace_m
+ode
 
 1.6. Database setup
 

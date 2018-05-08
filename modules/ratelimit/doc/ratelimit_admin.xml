@@ -668,13 +668,10 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:rl_list:_reply_fifo_file_
-		gw_10.0.0.1
-		_empty_line_
+		opensipsctl fifo rl_list gw_10.0.0.1
 		</programlisting>
 		<programlisting  format="linespecific">
-		:rl_list:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo rl_list
 		</programlisting>
 	</section>
 	<section id="mi_rl_reset_pipe" xreflabel="rl_reset_pipe">
@@ -698,9 +695,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:rl_reset_pipe:_reply_fifo_file_
-		gw_10.0.0.1
-		_empty_line_
+		opensipsctl fifo rl_reset_pipe gw_10.0.0.1
 		</programlisting>
 	</section>
 	<section id="mi_rl_set_pid" xreflabel="rl_set_pid">
@@ -729,11 +724,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:rl_set_pid:_reply_fifo_file_
-		0.5
-		0.5
-		0.5
-		_empty_line_
+		opensipsctl fifo rl_set_pid 0.5 0.5 0.5
 		</programlisting>
 	</section>
 	<section id="mi_rl_get_pid" xreflabel="rl_get_pid">
@@ -751,8 +742,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:rl_get_pid:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo rl_get_pid
 		</programlisting>
 	</section>
 	<section id="mi_rl_bin_status" xreflabel="rl_bin_status">
@@ -771,8 +761,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:rl_bin_status:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo rl_bin_status
 		</programlisting>
 	</section>
 	</section>

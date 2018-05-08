@@ -268,9 +268,7 @@ route[wss_filter] {
           + off
 
    MI FIFO Command Format:
-                        :wss_trace:_reply_fifo_file_
-                        trace_mode
-                        _empty_line_
+                        opensipsctl fifo wss_trace on
 
 Chapter 2. Frequently Asked Questions
 

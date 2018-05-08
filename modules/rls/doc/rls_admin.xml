@@ -430,9 +430,7 @@ if($rm=="NOTIFY")
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-:rls_update_subscriptions:fifo_reply
-sip:alice@atlanta.com
-_empty_line_
+opensipsctl fifo rls_update_subscriptions sip:alice@atlanta.com
 	</programlisting>
 	</section>
 

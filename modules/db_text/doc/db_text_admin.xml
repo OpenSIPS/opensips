@@ -277,8 +277,7 @@ modparam("db_text", "db_mode", 1)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-:dbt_dump:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo dbt_dump
 		</programlisting>
 	</section>
 	<section id="mi_dbt_reload" xreflabel="dbt_reload">
@@ -307,19 +306,13 @@ _empty_line_
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-:dbt_reload:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo dbt_reload
 		</programlisting>
 		<programlisting  format="linespecific">
-:dbt_reload:_reply_fifo_file_
-/path/to/dbtext/database
-_empty_line_
+opensipsctl fifo dbt_reload /path/to/dbtext/database
 		</programlisting>
 		<programlisting  format="linespecific">
-:dbt_reload:_reply_fifo_file_
-/path/to/dbtext/database
-table_name
-_empty_line_
+opensipsctl fifo dbt_reload /path/to/dbtext/database table_name
 		</programlisting>
 	</section>
 	</section>

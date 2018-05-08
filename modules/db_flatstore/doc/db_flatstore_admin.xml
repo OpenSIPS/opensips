@@ -273,8 +273,7 @@ modparam("db_flatstore", "single_file", 1)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		:flat_rotate:_reply_fifo_file_
-		_empty_line_
+		opensipsctl fifo flat_rotate
 		</programlisting>
 	</section>	
     </section>

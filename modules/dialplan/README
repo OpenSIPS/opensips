@@ -483,8 +483,7 @@ xlog("translate to var $var(y) partition $var(partition)")
        (default "default") will be reloaded.
 
    MI DATAGRAM Command Format:
-                :dp_reload:
-                _empty_line_
+                opensipsctl fifo dp_reload
 
 1.8.2. dp_translate
 
@@ -500,10 +499,7 @@ xlog("translate to var $var(y) partition $var(partition)")
      * Input String
 
    MI DATAGRAM Command Format:
-        :dp_translate:
-        dpid
-        input
-        _empty_line_
+        opensipsctl fifo dp_translate dpid input
 
 1.8.3. dp_show_partiton
 
@@ -516,9 +512,7 @@ xlog("translate to var $var(y) partition $var(partition)")
        specified, all known partitions will be listed.
 
    MI DATAGRAM Command Format:
-        :dp_translate:
-        default
-        _empty_line_
+        opensipsctl fifo dp_translate default
 
 1.9. Installation
 

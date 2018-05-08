@@ -139,10 +139,8 @@ modparam("xcap_client", "query_period", 50)
 
    MI FIFO Command Format:
 ...
-:refreshXcapDoc:fifo_reply
-/xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml
-8000
-_empty_line_
+opensipsctl fifo refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/
+buddies-resource-list.xml 8000
 ...
 
 Chapter 2. Developer Guide

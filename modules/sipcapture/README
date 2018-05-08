@@ -718,9 +718,7 @@ route[capture_resume] {
        “on” or “off” ) without changing anything.
 
    MI FIFO Command Format:
-                :sip_capture:_reply_fifo_file_
-                capture_mode
-                _empty_line_
+                opensipsctl fifo sip_capture _capture_mode_
 
 1.8. Database setup
 

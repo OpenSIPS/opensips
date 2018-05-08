@@ -209,8 +209,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
      * None.
 
    MI FIFO Command Format:
-                                db_get
-                                _empty_line_
+                                opensipsctl fifo db_get
 
 1.4.2.  db_set
 
@@ -233,5 +232,4 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
      * 1 - reset and suppress db_max_consec_retrys
 
    MI FIFO Command Format:
-                                db_set 3 2 0 1
-                                _empty_line_
+                                opensipsctl fifo db_set 3 2 0 1

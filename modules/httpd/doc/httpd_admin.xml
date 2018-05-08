@@ -148,8 +148,7 @@ modparam("httpd", "post_buf_size", 4096)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-:httpd_list_root_path:_reply_fifo_file_
-_empty_line_
+opensipsctl fifo httpd_list_root_path
 		</programlisting>
 	</section>
 	</section>
