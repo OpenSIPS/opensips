@@ -326,7 +326,7 @@ static int xmpp_send_pipe_cmd(enum xmpp_pipe_cmd_type type, str *from, str *to,
 		str *body, str *id)
 {
 	struct xmpp_pipe_cmd *cmd;
-	str ret;
+	str ret = {0,0};
 
 	/* todo: make shm allocation for one big chunk to include all fields */
 	cmd = (struct xmpp_pipe_cmd *) shm_malloc(sizeof(struct xmpp_pipe_cmd));
