@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="rc_ratesheets" xmlns:db="http://docbook.org/ns/docbook">
+	<name>rc_ratesheets</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Rate Cacher module to keep track of the
+		ratesheets.
+		More information can be found at: &OPENSIPS_MOD_DOC;rate_cacher.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Table primary key, used by the module to get the currency and table name
+		</description>
+	</column>
+
+	<column id="ratesheet_table">
+		<name>ratesheet_table</name>
+		<type>string</type>
+		<size>64</size>
+		<description>Table name for the ratesheet with the above ID 
+		</description>
+	</column>
+
+	<column id="currency">
+		<name>currency</name>
+		<type>string</type>
+		<size>64</size>
+		<description>Currency for the current ratesheet 
+		</description>
+	</column>
+
+	<index>
+		<name>table_idx</name>
+		<colref linkend="ratesheet_table"/>
+		<unique/>
+	</index>
+
+</table>

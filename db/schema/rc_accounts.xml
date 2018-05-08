@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="rc_accounts" xmlns:db="http://docbook.org/ns/docbook">
+	<name>rc_accounts</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Rate Cacher module to keep track of the
+		accounts - the inbound side of the traffic.
+		More information can be found at: &OPENSIPS_MOD_DOC;rate_cacher.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Table primary key, not used by module
+		</description>
+	</column>
+
+	<column id="account_id">
+		<name>account_id</name>
+		<type>string</type>
+		<size>64</size>
+		<description>Account unique ID - used to link the GW from 
+		</description>
+	</column>
+
+	<column id="wholesale_rate">
+		<name>wholesale_rate</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Wholesale Rate used for this account</description>
+	</column>
+
+	<column id="retail_rate">
+		<name>retail_rate</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Retail Rate used for this account</description>
+	</column>
+
+	<column id="eu_wholesale_rate">
+		<name>eu_wholesale_rate</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Europe Wholesale Rate used for this account</description>
+	</column>
+
+	<column id="ws_retail_rate">
+		<name>ws_retail_rate</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Europe Retail Rate used for this account</description>
+	</column>
+
+	<index>
+		<name>account_id_idx</name>
+		<colref linkend="account_id"/>
+		<unique/>
+	</index>
+
+</table>

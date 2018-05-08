@@ -1,0 +1,1 @@
+id(int,auto) ani_prefix(string) ani_dst_name(string) destination(string) destination_id(int) price(double) minimum(int) increment(int) 

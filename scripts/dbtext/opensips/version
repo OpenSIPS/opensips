@@ -39,6 +39,11 @@ location:1013
 missed_calls:5
 presentity:5
 pua:8
+rc_accounts:1
+rc_demo_eu_ratesheet:1
+rc_demo_ratesheet:1
+rc_ratesheets:1
+rc_vendors:1
 re_grp:2
 registrant:1
 rls_presentity:1

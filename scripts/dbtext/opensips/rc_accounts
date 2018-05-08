@@ -1,0 +1,1 @@
+id(int,auto) account_id(string) wholesale_rate(int) retail_rate(int) eu_wholesale_rate(int) ws_retail_rate(int) 
