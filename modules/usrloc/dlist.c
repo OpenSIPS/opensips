@@ -134,7 +134,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	/* Reserve space for terminating 0000 */
 	if (zero_end)
-		*len -= sizeof p_len;
+		*len -= (int)sizeof p_len;
 
 	/* get the current time in DB format */
 	now_len = 25;
@@ -345,7 +345,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	ul_dbf.free_result(ul_dbh, res);
 
 	/* len < 0 is possible, if size of the buffer < sizeof c->c.len */
-	if (zero_end && *len >= (int)sizeof p_len)
+	if (zero_end && *len >= 0)
 		memset(buf, 0, sizeof p_len);
 
 	/* Shouldn't happen */
@@ -575,7 +575,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 
 	/* Reserve space for terminating 0000 */
 	if (zero_end)
-		*len -= sizeof ((ucontact_t *)0)->c.len;
+		*len -= (int)sizeof ((ucontact_t *)0)->c.len;
 
 	cpos = buf;
 	shortage = 0;
@@ -615,10 +615,8 @@ pack_data:
 	cdb_free_rows(&res);
 	cdb_free_filters(aorh_filter);
 
-	if (zero_end && *len >= (int)sizeof ((ucontact_t *)0)->c.len) {
+	if (zero_end && *len >= 0)
 		memset(cpos, 0, sizeof ((ucontact_t *)0)->c.len);
-		*len -= sizeof ((ucontact_t *)0)->c.len;
-	}
 
 	if (shortage)
 		return shortage - *len;
@@ -646,7 +644,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	shortage = 0;
 	/* Reserve space for terminating 0000 */
 	if (zero_end)
-		*len -= sizeof(c->c.len);
+		*len -= (int)sizeof(c->c.len);
 
 	if (cluster_mode == CM_FULL_SHARING
 	    || cluster_mode == CM_FULL_SHARING_CACHEDB) {
@@ -773,10 +771,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 		unlock_ulslot(d, i);
 	}
 	/* len < 0 is possible, if size of the buffer < sizeof(c->c.len) */
-	if (zero_end && *len >= (int)sizeof(c->c.len)) {
+	if (zero_end && *len >= 0)
 		memset(cp, 0, sizeof(c->c.len));
-		*len -= sizeof(c->c.len);
-	}
 
 	/* Shouldn't happen */
 	if (shortage > 0 && *len > shortage) {
