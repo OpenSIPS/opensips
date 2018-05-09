@@ -713,7 +713,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -767,7 +767,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -1008,7 +1008,7 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+	dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1039,7 +1039,7 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+	dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
