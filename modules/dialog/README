@@ -492,7 +492,8 @@ modparam("dialog", "db_update_period", 120)
 1.6.11. options_ping_interval (integer)
 
    The interval (seconds) at which OpenSIPS will generate
-   in-dialog OPTIONS pings for dialogs.
+   in-dialog OPTIONS pings for one or both of the involved
+   parties.
 
    Default value is “30”.
 
@@ -504,7 +505,18 @@ modparam("dialog", "options_ping_interval", 20)
 1.6.12. reinvite_ping_interval (integer)
 
    The interval (seconds) at which OpenSIPS will generate
-   in-dialog Re-INVITE pings for dialogs.
+   in-dialog Re-INVITE pings for one or both of the involved
+   parties.
+
+   Important: the ping timeout detection is performed every time
+   this interval ticks, not when the re-INVITE transaction times
+   out! Consequently, please make sure that the timeouts for
+   re-INVITE transactions (e.g. the "fr_timeout" modparam of the
+   "tm" module or its $T_fr_timeout variable) are always lower
+   than the value of this parameter! Failing to ensure this
+   ordering of timeouts may possibly lead to re-INVITE pings never
+   ending a disconnected dialog due to pings getting retried
+   before getting a chance to properly time out.
 
    Default value is “300”.
 
