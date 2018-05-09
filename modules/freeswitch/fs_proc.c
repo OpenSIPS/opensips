@@ -169,6 +169,27 @@ int fs_raise_event(fs_evs *sock, const char *name, const char *body)
 	return 0;
 }
 
+void prepare_reconnect(fs_evs *sock)
+{
+	struct list_head *_;
+	struct fs_event *ev;
+
+	/* force a resubscribe for each event */
+	list_for_each (_, &sock->events) {
+		ev = list_entry(_, struct fs_event, list);
+		ev->action = FS_EVENT_SUB;
+	}
+
+	lock_start_write(sockets_esl_lock);
+	if (list_empty(&sock->esl_cmd_list))
+		list_add_tail(&sock->esl_cmd_list, fs_sockets_esl);
+	lock_stop_write(sockets_esl_lock);
+
+	lock_start_write(sockets_down_lock);
+	list_add_tail(&sock->reconnect_list, fs_sockets_down);
+	lock_stop_write(sockets_down_lock);
+}
+
 /*
  * FS socket I/O is easy, since it's read-only. So either:
  *   - the TCP connection is kaput
@@ -216,10 +237,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 					return 0;
 				}
 
-				/* queue up a reconnect for this socket */
-				lock_start_write(sockets_down_lock);
-				list_add_tail(&sock->reconnect_list, fs_sockets_down);
-				lock_stop_write(sockets_down_lock);
+				prepare_reconnect(sock);
 				return 0;
 			}
 
