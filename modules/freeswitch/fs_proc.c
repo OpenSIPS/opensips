@@ -442,7 +442,9 @@ int update_event_subscriptions(fs_evs *sock)
 	return ret;
 }
 
+/* referenced by 1+ modules or has performed at least one ESL command */
 #define SHOULD_KEEP_EVS(sock) ((sock)->ref > 0 || (sock)->esl_reply_id > 1)
+
 void handle_reconnects(void)
 {
 	struct list_head *_, *__;
@@ -476,9 +478,9 @@ void handle_reconnects(void)
 				LM_ERR("failed to create FS handle!\n");
 				continue;
 			}
+			memset(sock->handle, 0, sizeof *sock->handle);
 		}
 
-		memset(sock->handle, 0, sizeof *sock->handle);
 		LM_DBG("reconnecting to FS sock '%s:%d'\n", sock->host.s, sock->port);
 
 		if (esl_connect_timeout(sock->handle, sock->host.s, sock->port,
@@ -492,6 +494,7 @@ void handle_reconnects(void)
 
 		if (!sock->handle->connected) {
 			LM_BUG("FS bad connect to %s:%d", sock->host.s, sock->port);
+			esl_disconnect(sock->handle);
 			continue;
 		}
 
@@ -499,7 +502,7 @@ void handle_reconnects(void)
 		                       RCT_PRIO_TIMER, sock) < 0) {
 			LM_ERR("failed to add FS socket %s:%d to reactor\n",
 			       sock->host.s, sock->port);
-			sock->handle->connected = 0;
+			esl_disconnect(sock->handle);
 			continue;
 		}
 
