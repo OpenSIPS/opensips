@@ -1987,8 +1987,8 @@ int restore_db_subs(void)
 			{
 				if(subs_process_insert_status(&s)< 0)
 				{
-					LM_ERR("Failed to extract and insert status\n");
-					goto error;
+					LM_ERR("Failed to extract and insert status, skipping record\n");
+					continue;
 				}
 			}
 
@@ -2007,17 +2007,19 @@ int restore_db_subs(void)
 				s.record_route.len= strlen(s.record_route.s);
 
 			sockinfo_str.s = (char*)row_vals[sockinfo_col].val.string_val;
-			if (sockinfo_str.s)
+			if (sockinfo_str.s && (sockinfo_str.len=strlen(sockinfo_str.s))!=0)
 			{
-				sockinfo_str.len = strlen(sockinfo_str.s);
 				if (parse_phostport (sockinfo_str.s, sockinfo_str.len, &host.s,
 						&host.len, &port, &proto )< 0)
 				{
-					LM_ERR("bad format for stored sockinfo string\n");
-					goto error;
-				}
-				s.sockinfo = grep_sock_info(&host, (unsigned short) port,
+					LM_ERR("bad format <%.*s> for stored sockinfo string,"
+						" ignoring record\n", sockinfo_str.len,sockinfo_str.s);
+					/* let it be NULL */
+				} else {
+					s.sockinfo = grep_sock_info(&host, (unsigned short) port,
 						(unsigned short) proto);
+					/* if not found, it will be NULL */
+				}
 			}
 
 			if (row_vals[sharing_tag_col].nul==0) {
@@ -2028,8 +2030,8 @@ int restore_db_subs(void)
 			hash_code= core_hash(&s.pres_uri, &s.event->name, shtable_size);
 			if(insert_shtable(subs_htable, hash_code, &s)< 0)
 			{
-				LM_ERR("adding new record in hash table\n");
-				goto error;
+				LM_ERR("adding new record in hash table, skipping record\n");
+				continue;
 			}
 		}
 
