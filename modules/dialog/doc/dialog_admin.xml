@@ -1424,7 +1424,7 @@ create_dialog("B");
 
 	<section>
 		<title>
-		<function moreinfo="none">match_dialog()</function>
+		<function moreinfo="none">match_dialog([dlg_match_mode])</function>
 		</title>
 		<para>
 		This function is to be used to match a sequential (in-dialog) request
@@ -1432,8 +1432,11 @@ create_dialog("B");
 		the current request to an known ongoing dialog.
 		</para>
 		<para>
-		The function tries to use (for dialog matching) the DID (Dialog ID)
-		from Route header and also falls back to SIP-wise matching.
+		By default, the function tries to use (for dialog matching) the DID
+		(Dialog ID) from Route header and also falls back to SIP-wise matching. 
+		This behavior may be changed by providing it with a given matching mode
+		string (see <xref linkend="param_dlg_match_mode"/> for possible values of
+		the parameter).
 		</para>
 		<para>
 		As sequential requests are automatically matched to the dialog when

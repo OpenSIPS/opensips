@@ -1116,7 +1116,7 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 
 static int w_match_dialog(struct sip_msg *msg, char *seq_match_mode_gp)
 {
-	str res = STR_NULL;
+	str res = {NULL, 0};
 	gparam_p mm_gp = (gparam_p)seq_match_mode_gp;
 	int mm;
 

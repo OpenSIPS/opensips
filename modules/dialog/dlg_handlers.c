@@ -330,7 +330,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	unsigned int leg, skip_rrs,cseq_no;
 
 	get_totag(rpl, &tag);
-	if (ZSTR(tag)) {
+	if (!tag.s || tag.len == 0) {
 		/* Don't print error for final replies in DLG_STATE_UNCONFIRMED */
 		if (!(dlg->state == DLG_STATE_UNCONFIRMED &&
 			rpl->first_line.u.reply.statuscode >= 300)) {

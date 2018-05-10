@@ -38,7 +38,7 @@ Vlad Paiu
         1.4. Exported Functions
 
               1.4.1. topology_hiding()
-              1.4.2. topology_hiding_match()
+              1.4.2. topology_hiding_match([dlg_match_mode])
 
         1.5. Exported pseudo-variables
 
@@ -261,10 +261,15 @@ ogy hiding dialog\n");
 }
 ...
 
-1.4.2.  topology_hiding_match()
+1.4.2.  topology_hiding_match([dlg_match_mode])
 
    This function is to be used to match and fix a sequential
    request belong to an existing topology hiding dialog.
+
+   With regards to dialog matching (including the optional
+   parameter), this function behaves identically to
+   match_dialog(). Please see the dialog module documentation for
+   further details regarding dialog matching options.
 
    The function returns true if a topology hiding dialog exists
    for the request and the request has been successfully fixed.

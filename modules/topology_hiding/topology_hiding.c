@@ -247,7 +247,7 @@ int w_topology_hiding1(struct sip_msg *req,char *param)
 
 int w_topology_hiding_match(struct sip_msg *req, char *seq_match_mode_gp)
 {
-	str res = STR_NULL;
+	str res = {NULL, 0};
 	gparam_p mm_gp = (gparam_p)seq_match_mode_gp;
 	int mm;
 
