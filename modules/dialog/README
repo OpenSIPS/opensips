@@ -83,7 +83,7 @@ Vladut-Stefan Paiu
         1.7. Exported Functions
 
               1.7.1. create_dialog()
-              1.7.2. match_dialog()
+              1.7.2. match_dialog([dlg_match_mode])
               1.7.3. validate_dialog()
               1.7.4. fix_route_dialog()
               1.7.5. get_dialog_info(attr,var,key,key_val)
@@ -1055,15 +1055,18 @@ create_dialog("Pp");
 create_dialog("B");
 ...
 
-1.7.2.  match_dialog()
+1.7.2.  match_dialog([dlg_match_mode])
 
    This function is to be used to match a sequential (in-dialog)
    request to an existing dialog. In other words, the function
    will try to match the current request to an known ongoing
    dialog.
 
-   The function tries to use (for dialog matching) the DID (Dialog
-   ID) from Route header and also falls back to SIP-wise matching.
+   By default, the function tries to use (for dialog matching) the
+   DID (Dialog ID) from Route header and also falls back to
+   SIP-wise matching. This behavior may be changed by providing it
+   with a given matching mode string (see dlg_match_mode for
+   possible values of the parameter).
 
    As sequential requests are automatically matched to the dialog
    when doing "loose_route()" from script, this function is
