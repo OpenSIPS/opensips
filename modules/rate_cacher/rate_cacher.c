@@ -35,6 +35,26 @@ static int fixup_cost_based_routing(void** param, int param_no);
 static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws, char *s_iseu, 
 		char *s_carrierlist,char *s_ani,char *s_dnis);
 
+/* table names */
+static str carr_db_table = str_init("rc_vendors");
+static str carr_id_col = str_init("vendor_id");
+static str carr_rateid_col = str_init("vendor_rate");
+
+static str acc_db_table = str_init("rc_accounts");
+static str acc_id_col = str_init("id");
+static str acc_ws_rateid_col = str_init("wholesale_rate");
+static str acc_rt_rateid_col = str_init("retail_rate");
+
+static str ratesheets_db_table = str_init("rc_ratesheets");
+static str rs_currency_col = str_init("currency");
+static str rs_table_col = str_init("ratesheettable");
+
+static str rs_rateid_col = str_init("id");
+static str rs_destination_col = str_init("destination");
+static str rs_cc_col = str_init("prefix");
+static str rs_price_col = str_init("price");
+static str rs_minimum_col = str_init("minimum");
+static str rs_increment_col = str_init("increment");
 
 /* db connectors */
 static str carriers_db_url = {NULL,0};
@@ -166,11 +186,14 @@ static int add_carrier(str *carrier,int safe);
 static int add_client(str *accountid,int safe);
 
 static param_export_t params[] = {
-	{ "carriers_db_url",		STR_PARAM,				&carriers_db_url.s},
-	{ "accounts_db_url",		STR_PARAM,				&accounts_db_url.s},
-	{ "rates_db_url",		STR_PARAM,				&rates_db_url.s},
-	{ "carrier_hash_size",		INT_PARAM,				&carr_hash_size},
-	{ "accounts_hash_size",		INT_PARAM,				&acc_hash_size},
+	{ "carriers_db_url",		STR_PARAM,	&carriers_db_url.s},
+	{ "carriers_db_table",		STR_PARAM,	&carr_db_table.s},
+	{ "accounts_db_url",		STR_PARAM,	&accounts_db_url.s},
+	{ "accounts_db_table",		STR_PARAM,	&acc_db_table.s},
+	{ "rates_db_url",		STR_PARAM,	&rates_db_url.s},
+	{ "rates_db_table",		STR_PARAM,	&ratesheets_db_table.s},
+	{ "carrier_hash_size",		INT_PARAM,	&carr_hash_size},
+	{ "accounts_hash_size",		INT_PARAM,	&acc_hash_size},
 	{ 0,				0,					0}
 };
 
@@ -226,6 +249,10 @@ static int mod_init(void)
 	unsigned short dummy;
 
 	LM_INFO("Rate_Cacher module - initializing ...\n");
+
+	carr_db_table.len=strlen(carr_db_table.s);
+	acc_db_table.len=strlen(acc_db_table.s);
+	ratesheets_db_table.len=strlen(ratesheets_db_table.s);
 
 	/* init carriers hash */
 	carr_table = (struct carrier_table*)shm_malloc(
@@ -529,15 +556,6 @@ static void unlock_bucket_write(rw_lock_t *lock)
 	lock_stop_write(lock);
 }
 
-static str ratesheets_db_table = str_init("ratesheets");
-static str rs_currency_col = str_init("currency");
-static str rs_table_col = str_init("ratesheettable");
-static str rs_rateid_col = str_init("id");
-static str rs_destination_col = str_init("destination");
-static str rs_cc_col = str_init("prefix");
-static str rs_price_col = str_init("price");
-static str rs_minimum_col = str_init("minimum");
-static str rs_increment_col = str_init("increment");
 static int reload_carrier_rate(str *carrierid, int rate_id)
 {
 	struct carrier_entry *entry;
@@ -1009,13 +1027,6 @@ err_unlock_pending:
 	return -1;
 }
 
-static str carr_db_table = str_init("dr_carriers");
-static str carr_id_col = str_init("carrierid");
-static str carr_rateid_col = str_init("rate_id");
-static str acc_db_table = str_init("accounts");
-static str acc_id_col = str_init("id");
-static str acc_ws_rateid_col = str_init("wholesale_rate");
-static str acc_rt_rateid_col = str_init("retail_rate");
 static int rate_cacher_load_all_info(void) 
 {
 	db_key_t columns[6];

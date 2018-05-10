@@ -6,8 +6,6 @@
 		<column><field>account_id</field><type>DB_STR</type></column>
 		<column><field>wholesale_rate</field><type>DB_INT</type></column>
 		<column><field>retail_rate</field><type>DB_INT</type></column>
-		<column><field>eu_wholesale_rate</field><type>DB_INT</type></column>
-		<column><field>ws_retail_rate</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of rc_vendors table-->
 	<db_table id="rc_vendors">
@@ -16,7 +14,6 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>vendor_id</field><type>DB_STR</type></column>
 		<column><field>vendor_rate</field><type>DB_INT</type></column>
-		<column><field>eu_vendor_rate</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of rc_ratesheets table-->
 	<db_table id="rc_ratesheets">
@@ -24,15 +21,6 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>ratesheet_table</field><type>DB_STR</type></column>
-		<column><field>currency</field><type>DB_STR</type></column>
-	</db_table>
-	<!-- Declaration of rc_ratesheets table-->
-	<db_table id="rc_ratesheets">
-		<table_name>rc_ratesheets</table_name>
-		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>ratesheet_table</field><type>DB_STR</type></column>
-		<column><field>eu_rate_format</field><type>DB_INT</type></column>
 		<column><field>currency</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of rc_demo_ratesheet table-->

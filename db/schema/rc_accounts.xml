@@ -54,22 +54,6 @@
 		<description>Retail Rate used for this account</description>
 	</column>
 
-	<column id="eu_wholesale_rate">
-		<name>eu_wholesale_rate</name>
-		<type>unsigned int</type>
-		<size>11</size>
-		<default>0</default>
-		<description>Europe Wholesale Rate used for this account</description>
-	</column>
-
-	<column id="ws_retail_rate">
-		<name>ws_retail_rate</name>
-		<type>unsigned int</type>
-		<size>11</size>
-		<default>0</default>
-		<description>Europe Retail Rate used for this account</description>
-	</column>
-
 	<index>
 		<name>account_id_idx</name>
 		<colref linkend="account_id"/>

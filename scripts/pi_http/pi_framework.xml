@@ -764,8 +764,6 @@
 		<column><field>account_id</field><type>DB_STR</type></column>
 		<column><field>wholesale_rate</field><type>DB_INT</type></column>
 		<column><field>retail_rate</field><type>DB_INT</type></column>
-		<column><field>eu_wholesale_rate</field><type>DB_INT</type></column>
-		<column><field>ws_retail_rate</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of rc_vendors table-->
 	<db_table id="rc_vendors">
@@ -774,7 +772,6 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>vendor_id</field><type>DB_STR</type></column>
 		<column><field>vendor_rate</field><type>DB_INT</type></column>
-		<column><field>eu_vendor_rate</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of rc_ratesheets table-->
 	<db_table id="rc_ratesheets">
@@ -782,15 +779,6 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>ratesheet_table</field><type>DB_STR</type></column>
-		<column><field>currency</field><type>DB_STR</type></column>
-	</db_table>
-	<!-- Declaration of rc_ratesheets table-->
-	<db_table id="rc_ratesheets">
-		<table_name>rc_ratesheets</table_name>
-		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>ratesheet_table</field><type>DB_STR</type></column>
-		<column><field>eu_rate_format</field><type>DB_INT</type></column>
 		<column><field>currency</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of rc_demo_ratesheet table-->
@@ -3868,8 +3856,6 @@
 				<col><field>account_id</field></col>
 				<col><field>wholesale_rate</field></col>
 				<col><field>retail_rate</field></col>
-				<col><field>eu_wholesale_rate</field></col>
-				<col><field>ws_retail_rate</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -3879,8 +3865,6 @@
 				<col><field>account_id</field></col>
 				<col><field>wholesale_rate</field></col>
 				<col><field>retail_rate</field></col>
-				<col><field>eu_wholesale_rate</field></col>
-				<col><field>ws_retail_rate</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -3893,8 +3877,6 @@
 				<col><field>account_id</field></col>
 				<col><field>wholesale_rate</field></col>
 				<col><field>retail_rate</field></col>
-				<col><field>eu_wholesale_rate</field></col>
-				<col><field>ws_retail_rate</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -3914,7 +3896,6 @@
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>vendor_id</field></col>
 				<col><field>vendor_rate</field></col>
-				<col><field>eu_vendor_rate</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -3923,7 +3904,6 @@
 			<query_cols>
 				<col><field>vendor_id</field></col>
 				<col><field>vendor_rate</field></col>
-				<col><field>eu_vendor_rate</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -3935,7 +3915,6 @@
 			<query_cols>
 				<col><field>vendor_id</field></col>
 				<col><field>vendor_rate</field></col>
-				<col><field>eu_vendor_rate</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -3973,47 +3952,6 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>ratesheet_table</field></col>
-				<col><field>currency</field></col>
-			</query_cols>
-		</cmd>
-		<cmd><cmd_name>delete</cmd_name>
-			<db_table_id>rc_ratesheets</db_table_id>
-			<cmd_type>DB_DELETE</cmd_type>
-			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
-			</clause_cols>
-		</cmd>
-	</mod>
-	<!-- rc_ratesheets provisionning -->
-	<mod><mod_name>rc_ratesheets</mod_name>
-		<cmd><cmd_name>show</cmd_name>
-			<db_table_id>rc_ratesheets</db_table_id>
-			<cmd_type>DB_QUERY</cmd_type>
-			<query_cols>
-				<col><field>id</field><link_cmd>update</link_cmd></col>
-				<col><field>ratesheet_table</field></col>
-				<col><field>eu_rate_format</field></col>
-				<col><field>currency</field></col>
-			</query_cols>
-		</cmd>
-		<cmd><cmd_name>add</cmd_name>
-			<db_table_id>rc_ratesheets</db_table_id>
-			<cmd_type>DB_INSERT</cmd_type>
-			<query_cols>
-				<col><field>ratesheet_table</field></col>
-				<col><field>eu_rate_format</field></col>
-				<col><field>currency</field></col>
-			</query_cols>
-		</cmd>
-		<cmd><cmd_name>update</cmd_name>
-			<db_table_id>rc_ratesheets</db_table_id>
-			<cmd_type>DB_UPDATE</cmd_type>
-			<clause_cols>
-				<col><field>id</field><operator>=</operator></col>
-			</clause_cols>
-			<query_cols>
-				<col><field>ratesheet_table</field></col>
-				<col><field>eu_rate_format</field></col>
 				<col><field>currency</field></col>
 			</query_cols>
 		</cmd>

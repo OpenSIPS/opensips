@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) account_id(str) wholesale_rate(int) retail_rate(int) eu_wholesale_rate(int) ws_retail_rate(int)
+id(int) account_id(str) wholesale_rate(int) retail_rate(int)
 METADATA_KEY
 0 
 METADATA_READONLY
@@ -7,4 +7,4 @@ METADATA_READONLY
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|NIL|0|0|0|0
+NIL|NIL|0|0

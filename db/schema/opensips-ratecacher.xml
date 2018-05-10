@@ -12,6 +12,5 @@
 	<xi:include href="rc_accounts.xml"/>
 	<xi:include href="rc_vendors.xml"/>
 	<xi:include href="rc_ratesheets.xml"/>
-	<xi:include href="rc_eu_ratesheets.xml"/>
 	<xi:include href="rc_demo_ratesheet.xml"/>
 </database>

@@ -1,1 +1,1 @@
-id(int,auto) ratesheet_table(string) eu_rate_format(int) currency(string) 
+id(int,auto) ratesheet_table(string) currency(string) 

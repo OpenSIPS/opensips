@@ -4,8 +4,6 @@ CREATE TABLE rc_accounts (
     account_id CHAR(64) NOT NULL,
     wholesale_rate INTEGER DEFAULT 0 NOT NULL,
     retail_rate INTEGER DEFAULT 0 NOT NULL,
-    eu_wholesale_rate INTEGER DEFAULT 0 NOT NULL,
-    ws_retail_rate INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT rc_accounts_account_id_idx  UNIQUE (account_id)
 );
 
@@ -14,7 +12,6 @@ CREATE TABLE rc_vendors (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     vendor_id CHAR(64) NOT NULL,
     vendor_rate INTEGER DEFAULT 0 NOT NULL,
-    eu_vendor_rate INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT rc_vendors_vendor_id_idx  UNIQUE (vendor_id)
 );
 
@@ -22,15 +19,6 @@ INSERT INTO version (table_name, table_version) values ('rc_ratesheets','1');
 CREATE TABLE rc_ratesheets (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     ratesheet_table CHAR(64) NOT NULL,
-    currency CHAR(64) NOT NULL,
-    CONSTRAINT rc_ratesheets_table_idx  UNIQUE (ratesheet_table)
-);
-
-INSERT INTO version (table_name, table_version) values ('rc_ratesheets','1');
-CREATE TABLE rc_ratesheets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    ratesheet_table CHAR(64) NOT NULL,
-    eu_rate_format INTEGER NOT NULL,
     currency CHAR(64) NOT NULL,
     CONSTRAINT rc_ratesheets_table_idx  UNIQUE (ratesheet_table)
 );

@@ -46,14 +46,6 @@
 		<description>Rate used for this vendor</description>
 	</column>
 
-	<column id="eu_vendor_rate">
-		<name>eu_vendor_rate</name>
-		<type>unsigned int</type>
-		<size>11</size>
-		<default>0</default>
-		<description>Europe Rate used for this vendor</description>
-	</column>
-
 	<index>
 		<name>vendor_id_idx</name>
 		<colref linkend="vendor_id"/>
