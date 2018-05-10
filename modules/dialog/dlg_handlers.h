@@ -43,6 +43,26 @@
 #define SEQ_MATCH_STRICT_ID  0
 #define SEQ_MATCH_FALLBACK   1
 #define SEQ_MATCH_NO_ID      2
+static inline int dlg_match_mode_str_to_int(const str *in)
+{
+	str did_only = str_init("did_only"),
+	    did_fallback = str_init("did_fallback"),
+	    did_none = str_init("did_none");
+
+	if (!str_strcasecmp(in, &did_only))
+		return SEQ_MATCH_STRICT_ID;
+
+	if (!str_strcasecmp(in, &did_fallback))
+		return SEQ_MATCH_FALLBACK;
+
+	if (!str_strcasecmp(in, &did_none))
+		return SEQ_MATCH_NO_ID;
+
+	return SEQ_MATCH_FALLBACK;
+}
+#define SEQ_MATCH_STRICT_ID_ST  "did_only"
+#define SEQ_MATCH_FALLBACK_ST   "did_fallback"
+#define SEQ_MATCH_NO_ID_ST      "did_none"
 
 #define RR_DLG_PARAM_SIZE  (2*2*sizeof(int)+3+MAX_DLG_RR_PARAM_NAME)
 #define DLG_SEPARATOR      '.'
