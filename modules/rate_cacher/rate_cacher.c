@@ -47,7 +47,7 @@ static str acc_rt_rateid_col = str_init("retail_rate");
 
 static str ratesheets_db_table = str_init("rc_ratesheets");
 static str rs_currency_col = str_init("currency");
-static str rs_table_col = str_init("ratesheettable");
+static str rs_table_col = str_init("ratesheet_table");
 
 static str rs_rateid_col = str_init("id");
 static str rs_destination_col = str_init("destination");
