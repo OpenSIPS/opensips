@@ -34,7 +34,7 @@
 #include "../../sr_module.h"
 
 typedef struct dlg_cell *(*get_dlg_f) (void);
-typedef int (*match_dialog_f) (struct sip_msg *);
+typedef int (*match_dialog_f) (struct sip_msg *msg, int _seq_match_mode);
 
 struct dlg_binds {
 	register_dlgcb_f     register_dlgcb;

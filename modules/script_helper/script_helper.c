@@ -175,7 +175,7 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 		if (rr_api.loose_route(msg) < 0) {
 
 			/* attempt a full dialog search (not the usual quick did lookup) */
-			if (use_dialog && dlg_api.match_dialog(msg) < 0)
+			if (use_dialog && dlg_api.match_dialog(msg, SEQ_MATCH_FALLBACK) < 0)
 				LM_DBG("failed to match dialog for <%.*s>, ci '%.*s'\n",
 				       msg->first_line.u.request.method.len,
 				       msg->first_line.u.request.method.s,
