@@ -45,14 +45,6 @@
 		<description>Plain-Text description of current entry in the ratesheet</description>
 	</column>
 
-	<column id="destination_id">
-		<name>destination_id</name>
-		<type>unsigned int</type>
-		<size>11</size>
-		<default>0</default>
-		<description>Destination ID of the current entry in the ratesheet</description>
-	</column>
-
 	<column id="price">
 		<name>price</name>
 		<type>float</type>

@@ -1,1 +1,1 @@
-id(int,auto) prefix(string) destination(string) destination_id(int) price(double) minimum(int) increment(int) 
+id(int,auto) prefix(string) destination(string) price(double) minimum(int) increment(int) 

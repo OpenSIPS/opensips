@@ -40,23 +40,9 @@ CREATE TABLE rc_demo_ratesheet (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     prefix CHAR(64) NOT NULL,
     destination CHAR(128) NOT NULL,
-    destination_id INTEGER DEFAULT 0 NOT NULL,
     price FLOAT DEFAULT 0 NOT NULL,
     minimum INTEGER DEFAULT 0 NOT NULL,
     increment INTEGER DEFAULT 1 NOT NULL,
     CONSTRAINT rc_demo_ratesheet_prefix_idx  UNIQUE (prefix)
-);
-
-INSERT INTO version (table_name, table_version) values ('rc_demo_eu_ratesheet','1');
-CREATE TABLE rc_demo_eu_ratesheet (
-    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    ani_prefix CHAR(64) NOT NULL,
-    ani_dst_name CHAR(128) NOT NULL,
-    destination CHAR(128) NOT NULL,
-    destination_id INTEGER DEFAULT 0 NOT NULL,
-    price FLOAT DEFAULT 0 NOT NULL,
-    minimum INTEGER DEFAULT 0 NOT NULL,
-    increment INTEGER DEFAULT 1 NOT NULL,
-    CONSTRAINT ORA_eu_rate_idx  UNIQUE (ani_prefix, destination_id)
 );
 

@@ -40,23 +40,9 @@ CREATE TABLE rc_demo_ratesheet (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     prefix CHAR(64) NOT NULL,
     destination CHAR(128) NOT NULL,
-    destination_id INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     price FLOAT DEFAULT 0 NOT NULL,
     minimum INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     increment INT(11) UNSIGNED DEFAULT 1 NOT NULL,
     CONSTRAINT prefix_idx UNIQUE (prefix)
-) ENGINE=InnoDB;
-
-INSERT INTO version (table_name, table_version) values ('rc_demo_eu_ratesheet','1');
-CREATE TABLE rc_demo_eu_ratesheet (
-    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    ani_prefix CHAR(64) NOT NULL,
-    ani_dst_name CHAR(128) NOT NULL,
-    destination CHAR(128) NOT NULL,
-    destination_id INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    price FLOAT DEFAULT 0 NOT NULL,
-    minimum INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    increment INT(11) UNSIGNED DEFAULT 1 NOT NULL,
-    CONSTRAINT eu_rate_idx UNIQUE (ani_prefix, destination_id)
 ) ENGINE=InnoDB;
 

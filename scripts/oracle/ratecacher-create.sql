@@ -72,7 +72,6 @@ CREATE TABLE rc_demo_ratesheet (
     id NUMBER(10) PRIMARY KEY,
     prefix VARCHAR2(64),
     destination VARCHAR2(128),
-    destination_id NUMBER(10) DEFAULT 0 NOT NULL,
     price NUMBER DEFAULT 0 NOT NULL,
     minimum NUMBER(10) DEFAULT 0 NOT NULL,
     increment NUMBER(10) DEFAULT 1 NOT NULL,
@@ -86,25 +85,4 @@ BEGIN
 END rc_demo_ratesheet_tr;
 /
 BEGIN map2users('rc_demo_ratesheet'); END;
-/
-INSERT INTO version (table_name, table_version) values ('rc_demo_eu_ratesheet','1');
-CREATE TABLE rc_demo_eu_ratesheet (
-    id NUMBER(10) PRIMARY KEY,
-    ani_prefix VARCHAR2(64),
-    ani_dst_name VARCHAR2(128),
-    destination VARCHAR2(128),
-    destination_id NUMBER(10) DEFAULT 0 NOT NULL,
-    price NUMBER DEFAULT 0 NOT NULL,
-    minimum NUMBER(10) DEFAULT 0 NOT NULL,
-    increment NUMBER(10) DEFAULT 1 NOT NULL,
-    CONSTRAINT ORA_eu_rate_idx  UNIQUE (ani_prefix, destination_id)
-);
-
-CREATE OR REPLACE TRIGGER rc_demo_eu_ratesheet_tr
-before insert on rc_demo_eu_ratesheet FOR EACH ROW
-BEGIN
-  auto_id(:NEW.id);
-END rc_demo_eu_ratesheet_tr;
-/
-BEGIN map2users('rc_demo_eu_ratesheet'); END;
 /

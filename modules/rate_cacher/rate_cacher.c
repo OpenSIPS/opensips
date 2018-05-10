@@ -18,24 +18,18 @@ static int mod_child(int);
 static void mod_destroy(void);
 static int rate_cacher_load_all_info(void); 
 static struct mi_root * mi_get_carrier_price(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_get_carrier_eu_price(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_get_bulk_carrier_price(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_reload_carrier_rate(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_reload_eu_carrier_rate(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_add_carrier(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_carrier(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_carrier_rate(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_delete_carrier_eu_rate(struct mi_root *cmd_tree, void *param );
 
 static struct mi_root * mi_get_client_price(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_get_eu_client_price(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_get_bulk_client_price(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_reload_client(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_reload_eu_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_add_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_client_rate(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_delete_eu_client_rate(struct mi_root *cmd_tree, void *param );
 
 static int fixup_cost_based_routing(void** param, int param_no);
 static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws, char *s_iseu, 
@@ -110,20 +104,6 @@ struct ratesheet_cell_entry {
 	double price;
 	int minimum;
 	int increment;
-	int destination_id;
-};
-
-struct eu_ratesheet_cell_entry {
-	str destination;
-	double price;
-	int minimum;
-	int increment;
-	str source_name;
-};
-
-struct eu_rate_lookup_rpl {
-	struct ratesheet_cell_entry *regular;
-	struct eu_ratesheet_cell_entry *ani_based;
 };
 
 /* carriers hash */
@@ -141,16 +121,10 @@ struct carrier_entry {
 struct carrier_cell {
 	str carrierid;
 	unsigned int rateid;
-	unsigned int eu_rateid;
-	unsigned int eu_type;
 	str rate_table;
-	str eu_rate_table;
 	str rate_currency;
-	str eu_rate_currency;
 	ptree_t *trie;
-	void *eu_ratesheet;
 	int reload_pending;
-	int eu_reload_pending;
 	struct carrier_cell *next;
 	struct carrier_cell *prev;
 };
@@ -171,48 +145,16 @@ struct account_cell {
 	str accountid;
 	unsigned int ws_rateid;
 	unsigned int rt_rateid;
-	unsigned int eu_ws_rateid;
-	unsigned int eu_rt_rateid;
 	str ws_rate_table;
 	str rt_rate_table;
-	str eu_ws_rate_table;
-	str eu_rt_rate_table;
 	str ws_rate_currency;
 	str rt_rate_currency;
-	str eu_ws_rate_currency;
-	str eu_rt_rate_currency;
-	unsigned int eu_ws_rate_type;
-	unsigned int eu_rt_rate_type;
 	ptree_t *ws_trie;
 	ptree_t *rt_trie;
-	/* below we'll either have a regular trie, for regular EU ratesheets
-	or a hash of tries, for the extended EU format */
-	void *eu_ws_ratesheet;
-	void *eu_rt_ratesheet;
 	int ws_reload_pending;
 	int rt_reload_pending;
-	int eu_ws_reload_pending;
-	int eu_rt_reload_pending;
 	struct account_cell *next;
 	struct account_cell *prev;
-};
-
-/* eu extended rate hash */
-struct eu_extended_table{
-	unsigned int       size;
-	struct eu_extended_entry   *entries;
-};
-
-struct eu_extended_entry {
-	struct eu_extended_cell *first;
-	struct eu_extended_cell *last;
-};
-
-struct eu_extended_cell {
-	int breakout_id;
-	ptree_t *trie;
-	struct eu_extended_cell *next;
-	struct eu_extended_cell *prev;
 };
 
 static struct carrier_table *carr_table = NULL;
@@ -220,7 +162,6 @@ static struct accounts_table *acc_table = NULL;
 
 static int carr_hash_size = 256;
 static int acc_hash_size = 256;
-static int eu_extended_hash_size=256;
 static int add_carrier(str *carrier,int safe);
 static int add_client(str *accountid,int safe);
 
@@ -236,24 +177,18 @@ static param_export_t params[] = {
 static mi_export_t mi_cmds [] = {
 	/* carrier methods */
 	{ "getCarrierPrice",        0, mi_get_carrier_price,      0,  0,  0},
-	{ "getCarrierEuPrice",      0, mi_get_carrier_eu_price,   0,  0,  0},
 	{ "getBulkCarrierPrice",    0, mi_get_bulk_carrier_price, 0,  0,  0},
 	{ "reloadCarrierRate",      0, mi_reload_carrier_rate,    0,  0,  0},
-	{ "reloadCarrierEuRate",    0, mi_reload_eu_carrier_rate, 0,  0,  0},
 	{ "addCarrier",             0, mi_add_carrier,            0,  0,  0},
 	{ "deleteCarrierRate",      0, mi_delete_carrier_rate,    0,  0,  0},
-	{ "deleteCarrierEuRate",    0, mi_delete_carrier_eu_rate, 0,  0,  0},
 	{ "deleteCarrier",          0, mi_delete_carrier,         0,  0,  0},
 	/* client methods */
 	{ "getClientPrice",         0, mi_get_client_price,       0,  0,  0},
-	{ "getClientEuPrice",       0, mi_get_eu_client_price,    0,  0,  0},
 	{ "getBulkClientPrice",     0, mi_get_bulk_client_price,  0,  0,  0},
 	{ "reloadClientRate",       0, mi_reload_client,          0,  0,  0},
-	{ "reloadClientEuRate",     0, mi_reload_eu_client,       0,  0,  0},
 	{ "addClient",              0, mi_add_client,             0,  0,  0},
 	{ "deleteClient",           0, mi_delete_client,          0,  0,  0},
 	{ "deleteClientRate",       0, mi_delete_client_rate,     0,  0,  0},
-	{ "deleteClientEuRate",     0, mi_delete_eu_client_rate,  0,  0,  0},
 	{0,0,0,0,0,0}
 };
 
@@ -411,32 +346,8 @@ void mod_destroy(void)
 	/* FIXME - cleanup here ? too lazy to do it now :D */
 }
 
-struct eu_ratesheet_cell_entry* build_eu_rate_prefix_entry(str *destination,double price,
-	int minimum,int increment, str *source)
-{
-	struct eu_ratesheet_cell_entry* new_cell = shm_malloc(sizeof(struct eu_ratesheet_cell_entry)+
-		destination->len+source->len);
-	if (new_cell == NULL) {
-		LM_ERR("No more SHM for prefix entry\n");
-		return NULL;
-	}
-
-	memset(new_cell,0,sizeof(struct eu_ratesheet_cell_entry));
-	new_cell->price = price;
-	new_cell->minimum = minimum;
-	new_cell->increment = increment;
-	new_cell->destination.s = (char *)(new_cell+1);
-	new_cell->destination.len = destination->len;
-	memcpy(new_cell->destination.s,destination->s,destination->len);
-	new_cell->source_name.s = new_cell->destination.s + destination->len;
-	new_cell->source_name.len = source->len;
-	memcpy(new_cell->source_name.s,source->s,source->len);
-
-	return new_cell; 
-}
-
 struct ratesheet_cell_entry* build_rate_prefix_entry(str *destination,double price,
-	int minimum,int increment, int destination_id)
+	int minimum,int increment)
 {
 
 	struct ratesheet_cell_entry* new_cell = shm_malloc(sizeof(struct ratesheet_cell_entry)+
@@ -450,7 +361,6 @@ struct ratesheet_cell_entry* build_rate_prefix_entry(str *destination,double pri
 	new_cell->price = price;
 	new_cell->minimum = minimum;
 	new_cell->increment = increment;
-	new_cell->destination_id = destination_id;
 	new_cell->destination.s = (char *)(new_cell+1);
 	new_cell->destination.len = destination->len;
 	memcpy(new_cell->destination.s,destination->s,destination->len);
@@ -495,38 +405,31 @@ struct ratesheet_cell_entry* get_rate_price_prefix(ptree_t *ptree,str* in_prefix
 		if(NULL == tmp)
 			goto err_exit;
 		local=*tmp;
-		//LM_INFO("XXX %c\n",*tmp);
 		if( tmp == (prefix.s+prefix.len-1) || *tmp == 'x' ) {
-			//LM_INFO("PPP - last digit \n");
 			/* last digit in the prefix string */
 			break;
 		}
 		idx = local -'0';
 		if( NULL == ptree->ptnode[idx].next) {
 			/* this is a leaf */
-			//LM_INFO("LLL - leaf \n");
 			break;
 		}
 		ptree = ptree->ptnode[idx].next;
-		//LM_INFO("CCC - advancing ptree to %p \n",ptree);
 		tmp++;
 	}
 	/* go in the tree up to the root trying to match the
 	 * prefix */
 	if (*tmp == 'x')
 		tmp--;
-	//LM_INFO("KKK - at start tmp = %c, ptree = %p\n",*tmp,ptree);
 
 	while(ptree !=NULL ) {
 		if(NULL == tmp)
 			goto err_exit;
 		/* is it a real node or an intermediate one */
 		idx = *tmp-'0';
-		//LM_INFO("YYY %c %d\n",*tmp,idx);
 		if(NULL != ptree->ptnode[idx].re) {
 			/* real node */
 			rt = ptree->ptnode[idx].re;
-			//LM_INFO("ZZZ - returning %p \n",rt);
 			break;
 		}
 		tmp--;
@@ -538,216 +441,6 @@ struct ratesheet_cell_entry* get_rate_price_prefix(ptree_t *ptree,str* in_prefix
 
 err_exit:
 	return NULL;
-}
-
-int get_eu_rate_price_prefix(void *eu_tree,ptree_t* reg_tree,unsigned int type,str *src,str *dst,unsigned int *dst_matched_len,unsigned int *src_matched_len,struct eu_rate_lookup_rpl *ret)
-{
-	struct ratesheet_cell_entry *rt = NULL;
-	char *tmp=NULL;
-	char local=0;
-	int idx=0,dst_id,eu_bucket;
-	str sprefix,dprefix,prefix,str_br_id;
-	ptree_t *ptree;
-	struct eu_extended_entry *eu_entry;
-	struct eu_extended_cell *eu_cell;
-	struct eu_extended_table *extended_hash;
-
-	if(NULL == eu_tree)
-		goto err_exit;
-	if(NULL == dst)
-		goto err_exit;
-
-	if (dst->len == 1 && (dst->s[0] == 'x' || dst->s[0] == 'X'))
-		goto err_exit;
-
-	sprefix = *src;
-	if (sprefix.s[sprefix.len-1] == 'x' || sprefix.s[sprefix.len-1] == 'X')
-		sprefix.len--;
-
-	dprefix = *dst;
-	if (dprefix.s[dprefix.len-1] == 'x' || dprefix.s[dprefix.len-1] == 'X')
-		dprefix.len--;
-
-	if (type == 0) {
-		/* destination only matching, make sure it's just digits */
-		tmp = dprefix.s;
-	        while(tmp < (dprefix.s+dprefix.len)) {
-                	if( !IS_DECIMAL_DIGIT(*tmp) ) {
-				LM_ERR("DST [%.*s] is not digit only \n",dprefix.len,dprefix.s);
-				return -1;
-			}
-			tmp++;
-		}
-
-		/* regular EU format, just lookup the dst number in the regular ratesheet trie */
-		prefix = dprefix;
-		ptree = (ptree_t*) eu_tree;
-		
-		/* no ANI matching at all */
-		if (*src_matched_len)
-			src_matched_len = 0;
-	} else {
-		/* extended format, first lookup the destination in the regular trie,
-		in order to get the dst breakout */
-
-		tmp = dprefix.s;
-		/* src & dst matching, make sure it's all digits */
-	        while(tmp < (dprefix.s+dprefix.len)) {
-                	if( !IS_DECIMAL_DIGIT(*tmp) ) {
-				LM_ERR("DST [%.*s] is not digit only \n",dprefix.len,dprefix.s);
-				return -1;
-			}
-			tmp++;
-		}
-		tmp = sprefix.s;
-	        while(tmp < (sprefix.s+sprefix.len)) {
-                	if( !IS_DECIMAL_DIGIT(*tmp) ) {
-				LM_ERR("SRC [%.*s] is not digit only \n",sprefix.len,sprefix.s);
-				return -1;
-			}
-			tmp++;
-		}
-
-		prefix = dprefix;
-		ptree = reg_tree;
-
-		if (ptree == NULL)
-			return -1;
-
-		tmp = prefix.s;
-		/* go the tree down to the last digit in the
-		 * prefix string or down to a leaf */
-		while(tmp< (prefix.s+prefix.len)) {
-			if(NULL == tmp)
-				goto err_exit;
-			local=*tmp;
-			if( tmp == (prefix.s+prefix.len-1) || *tmp == 'x' ) {
-				/* last digit in the prefix string */
-				break;
-			}
-			idx = local -'0';
-			if( NULL == ptree->ptnode[idx].next) {
-				/* this is a leaf */
-				break;
-			}
-			ptree = ptree->ptnode[idx].next;
-			tmp++;
-		}
-
-		/* go in the tree up to the root trying to match the
-		 * prefix */
-		if (*tmp == 'x')
-			tmp--;
-
-		while(ptree !=NULL ) {
-			if(NULL == tmp)
-				goto err_exit;
-			/* is it a real node or an intermediate one */
-			idx = *tmp-'0';
-			if(NULL != ptree->ptnode[idx].re) {
-				/* real node */
-				rt = ptree->ptnode[idx].re;
-				break;
-			}
-			tmp--;
-			ptree = ptree->bp;
-		}
-
-		if (rt==NULL) {
-			return -1;
-		}
-
-		if (ret) {
-			ret->regular = rt;
-		}
-
-		if (dst_matched_len) 
-			*dst_matched_len = tmp + 1 - prefix.s ;
-
-		/* find the bucket containing the breakout id, and lookup the ANI in the respective trie */
-		extended_hash = (struct eu_extended_table *)eu_tree;
-		dst_id = rt->destination_id;
-		str_br_id.s = int2str(dst_id,&str_br_id.len);
-		eu_bucket = core_hash(&str_br_id,0,extended_hash->size);
-		eu_entry = &(extended_hash->entries[eu_bucket]);
-
-		for (eu_cell=eu_entry->first;eu_cell;eu_cell=eu_cell->next) {
-			if (eu_cell->breakout_id == dst_id)
-				break;
-		}
-
-		if (eu_cell == NULL)
-			return -1;
-
-		/* found our trie .yay !
-		failover below where we lookup the ANI */
-		
-		prefix = sprefix;
-		ptree = eu_cell->trie;
-
-		rt = NULL;
-	} 
-
-	tmp = prefix.s;
-	/* go the tree down to the last digit in the
-	 * prefix string or down to a leaf */
-	while(tmp< (prefix.s+prefix.len)) {
-		if(NULL == tmp)
-			goto err_exit;
-		local=*tmp;
-		if( tmp == (prefix.s+prefix.len-1) || *tmp == 'x' ) {
-			/* last digit in the prefix string */
-			break;
-		}
-		idx = local -'0';
-		if( NULL == ptree->ptnode[idx].next) {
-			/* this is a leaf */
-			break;
-		}
-		ptree = ptree->ptnode[idx].next;
-		tmp++;
-	}
-	/* go in the tree up to the root trying to match the
-	 * prefix */
-	if (*tmp == 'x')
-		tmp--;
-
-	while(ptree !=NULL ) {
-		if(NULL == tmp)
-			goto err_exit;
-		/* is it a real node or an intermediate one */
-		idx = *tmp-'0';
-		if(NULL != ptree->ptnode[idx].re) {
-			/* real node */
-			rt = ptree->ptnode[idx].re;
-			break;
-		}
-		tmp--;
-		ptree = ptree->bp;
-	}
-
-	if (rt == NULL)
-		return -1;
-
-	if (type == 0) {
-		if (dst_matched_len) 
-			*dst_matched_len = tmp + 1 - prefix.s;
-		if (ret) {
-			ret->regular = rt;	
-			ret->ani_based = NULL;	
-		}
-	} else {
-		if (src_matched_len) 
-			*src_matched_len = tmp + 1 - prefix.s;
-
-		if (ret)
-			ret->ani_based = (struct eu_ratesheet_cell_entry*) rt;
-	}
-
-	return 1;
-
-err_exit:
-	return -1;
 }
 
 int add_price_prefix(ptree_t *ptree,str* prefix,struct ratesheet_cell_entry *value)
@@ -805,26 +498,6 @@ static void free_trie(ptree_t* t)
 	shm_free(t);    
 }               
 
-static void free_extended_hash(struct eu_extended_table *hash)
-{
-	int i;
-	struct eu_extended_entry *eu_entry;
-	struct eu_extended_cell *eu_cell,*next;
-	
-	for (i=0;i<eu_extended_hash_size;i++) {
-		eu_entry=&hash->entries[i];
-		eu_cell=eu_entry->first;
-		while (eu_cell) {
-			next = eu_cell->next;
-			free_trie(eu_cell->trie);	
-			shm_free(eu_cell);
-			eu_cell=next;
-		}
-	}
-
-	shm_free(hash);	
-}
-
 static void free_carrier_cell(struct carrier_cell *carr)
 {
 	if (carr->rate_table.s)
@@ -832,17 +505,6 @@ static void free_carrier_cell(struct carrier_cell *carr)
 	if (carr->rate_currency.s)
 		shm_free(carr->rate_currency.s);
 	free_trie(carr->trie);
-
-	if (carr->eu_rate_table.s)
-		shm_free(carr->eu_rate_table.s);
-	if (carr->eu_rate_currency.s)
-		shm_free(carr->eu_rate_currency.s);
-	if (carr->eu_ratesheet) {
-		if (carr->eu_type == 0)
-			free_trie((ptree_t*)carr->eu_ratesheet);
-		else
-			free_extended_hash((struct eu_extended_table *)carr->eu_ratesheet);
-	}
 
 	shm_free(carr);
 }
@@ -868,18 +530,14 @@ static void unlock_bucket_write(rw_lock_t *lock)
 }
 
 static str ratesheets_db_table = str_init("ratesheets");
-static str eu_ratesheets_db_table = str_init("eu_ratesheets");
 static str rs_currency_col = str_init("currency");
 static str rs_table_col = str_init("ratesheettable");
 static str rs_rateid_col = str_init("id");
 static str rs_destination_col = str_init("destination");
-static str rs_cc_col = str_init("cc");
+static str rs_cc_col = str_init("prefix");
 static str rs_price_col = str_init("price");
 static str rs_minimum_col = str_init("minimum");
 static str rs_increment_col = str_init("increment");
-static str rs_dst_id_col = str_init("destination_id");
-static str rs_source_col = str_init("source");
-static str eu_rs_format_col = str_init("eu_rate_format");
 static int reload_carrier_rate(str *carrierid, int rate_id)
 {
 	struct carrier_entry *entry;
@@ -887,7 +545,7 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 	struct carrier_cell *it=NULL;
 	str currency,rate_table,destination,prefix;
 	int bucket,i,no_rows=10;
-	db_key_t columns[6];
+	db_key_t columns[5];
 	db_res_t* res=NULL;
 	db_row_t* row;
 	db_key_t key_cmp;
@@ -989,10 +647,9 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 	columns[2] = &rs_price_col;
 	columns[3] = &rs_minimum_col;
 	columns[4] = &rs_increment_col;
-	columns[5] = &rs_dst_id_col;
 
 	if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, 0) < 0) {
+		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 5, 0, 0) < 0) {
 			LM_ERR("Ratesheets DB query failed\n");
 			goto err_carr_free;
 		}
@@ -1004,7 +661,7 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 			goto err_carr_free;
 		}	
 	} else {
-		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
+		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 5, 0, &res) < 0) {
 			LM_ERR("Ratesheets DB query failed\n");
 			goto err_carr_free;
 		}
@@ -1017,7 +674,7 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 			row = RES_ROWS(res) + i;
 			destination.s = (char *)VAL_STRING(ROW_VALUES(row));
 			destination.len = strlen(destination.s);
-			rs_entry = build_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4),VAL_INT(ROW_VALUES(row)+5));
+			rs_entry = build_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4));
 			if (rs_entry == NULL) {
 				LM_ERR("Failed to build prefix rule \n");
 				goto err_carr_free;
@@ -1079,413 +736,9 @@ err_unlock_pending:
 	return -1;
 }
 
-static int reload_carrier_eu_rate(str *carrierid, int in_eu_type, int rate_id,int trust_type)
-{
-	struct carrier_entry *entry;
-	struct ratesheet_cell_entry* rs_entry;
-	struct eu_ratesheet_cell_entry* eu_rs_entry;
-	struct carrier_cell *it=NULL;
-	str currency,rate_table,destination,prefix,source,str_br_id;
-	int bucket,eu_bucket,i,no_rows=10,prev_breakout_id,curr_breakout_id,eu_type=0;
-	db_key_t columns[7];
-	db_key_t order;
-	db_res_t* res=NULL;
-	db_row_t* row;
-	db_key_t key_cmp;
-	db_val_t val_cmp;
-	ptree_t* new_trie=NULL;
-	struct eu_extended_table *extended_hash=NULL;
-	struct eu_extended_entry *eu_entry;
-	struct eu_extended_cell *eu_cell;
-
-	if (rate_id == 0)
-		return -1;
-
-	currency.s = NULL;
-	rate_table.s = NULL;
-
-	bucket = core_hash(carrierid,0,carr_table->size);
-	entry = &(carr_table->entries[bucket]);
-
-	/* quickly lookup the carrier to see if it exists */
-	lock_bucket_write( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->carrierid.len == carrierid->len &&
-		memcmp(it->carrierid.s,carrierid->s,carrierid->len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		unlock_bucket_write( entry->lock );
-		LM_ERR("Could not find carrier %.*s - cannot reload \n",carrierid->len,carrierid->s);
-		return -1;
-	}
-
-	if (it->eu_reload_pending == 1) {
-		LM_WARN("Reload EU already triggered for carrier %.*s - aborting this attempt\n",carrierid->len,carrierid->s);
-		unlock_bucket_write( entry->lock );
-		return 1;
-	}
-		
-	it->eu_reload_pending = 1;
-	unlock_bucket_write( entry->lock );
-
-	/* load the ratesheet */
-	if (rates_dbf.use_table( rates_db_hdl, &ratesheets_db_table) < 0) {
-		LM_ERR("cannot use carriers table \n");
-		goto err_unlock_pending;
-	}
-
-	columns[0] = &rs_currency_col;
-	columns[1] = &rs_table_col;
-
-	key_cmp = &rs_rateid_col;
-	val_cmp.type = DB_INT;
-	val_cmp.nul  = 0;
-	val_cmp.val.int_val = rate_id;
-
-	if ( rates_dbf.query( rates_db_hdl, &key_cmp, 0, &val_cmp, columns, 1, 2, 0, &res) < 0) {
-		LM_ERR("Ratesheets DB query failed\n");
-		goto err_unlock_pending;
-	}
-
-	if (RES_ROW_N(res) != 1) {
-		LM_ERR("%d Rows returned for the rate of carrier %.*s\n",RES_ROW_N(res),carrierid->len,carrierid->s);
-		goto err_carr_free;
-	}
-
-	row = RES_ROWS(res);
-
-	/* duplicate to SHM now, we'll do another query to the rates DB */
-	currency.s = (char *)(VAL_STRING(ROW_VALUES(row))); 
-
-	currency.len = strlen(VAL_STRING(ROW_VALUES(row)));
-	currency.s = shm_malloc(currency.len);
-	if (currency.s == NULL) {
-		LM_ERR("No more shm memory for currency\n");
-		goto err_carr_free;
-	}
-	memcpy(currency.s,VAL_STRING(ROW_VALUES(row)),currency.len);
-
-	rate_table.len = strlen(VAL_STRING(ROW_VALUES(row)+1));
-	rate_table.s = shm_malloc(rate_table.len);
-	if (rate_table.s == NULL) {
-		LM_ERR("No more shm memory for rate table \n");
-		goto err_carr_free;
-	}
-	memcpy(rate_table.s,VAL_STRING(ROW_VALUES(row)+1),rate_table.len);
-
-	rates_dbf.free_result(rates_db_hdl, res);
-	res = NULL;
-
-	if (!trust_type) {
-		/* load the ratesheet type */
-		if (rates_dbf.use_table( rates_db_hdl, &eu_ratesheets_db_table) < 0) {
-			LM_ERR("cannot use carriers table \n");
-			goto err_carr_free;
-		}
-
-		columns[0] = &eu_rs_format_col;
-
-		key_cmp = &rs_rateid_col;
-		val_cmp.type = DB_INT;
-		val_cmp.nul  = 0;
-		val_cmp.val.int_val = rate_id;
-
-		if ( rates_dbf.query( rates_db_hdl, &key_cmp, 0, &val_cmp, columns, 1, 1, 0, &res) < 0) {
-			LM_ERR("EU Ratesheets DB query failed\n");
-			goto err_carr_free;
-		}
-
-		if (RES_ROW_N(res) != 1) {
-			LM_ERR("%d Rows returned for the EU rate of carrier %.*s\n",RES_ROW_N(res),carrierid->len,carrierid->s);
-			rates_dbf.free_result(rates_db_hdl, res);
-			goto err_carr_free;
-		}
-
-		row = RES_ROWS(res);
-		eu_type = VAL_INT(ROW_VALUES(row));
-
-		rates_dbf.free_result(rates_db_hdl, res);
-		res = NULL;
-	} else
-		eu_type = in_eu_type;
-	
-	LM_INFO("Got rate in table %.*s with currency %.*s\n",rate_table.len,rate_table.s,currency.len,currency.s);
-
-	if (rates_dbf.use_table( rates_db_hdl, &rate_table) < 0) {
-		LM_ERR("cannot use carriers table \n");
-		goto err_carr_free;
-	}
-
-	if (eu_type == 0) {
-		INIT_PTREE_NODE(NULL, new_trie);
-
-		/* regular ratesheet */
-		columns[0] = &rs_destination_col;
-		columns[1] = &rs_cc_col;
-		columns[2] = &rs_price_col;
-		columns[3] = &rs_minimum_col;
-		columns[4] = &rs_increment_col;
-		columns[5] = &rs_dst_id_col;
-
-		if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, 0) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_carr_free;
-			}
-			no_rows=10000;
-			if (no_rows==0)
-				no_rows=10;
-			if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-				LM_ERR("Failed to fetch %d rows\n",no_rows);	
-				goto err_carr_free;
-			}	
-		} else {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_carr_free;
-			}
-		}
-
-		LM_INFO("%d records found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-
-		do {
-			for(i=0; i < RES_ROW_N(res); i++) {
-				row = RES_ROWS(res) + i;
-				destination.s = (char *)VAL_STRING(ROW_VALUES(row));
-				destination.len = strlen(destination.s);
-				rs_entry = build_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4),VAL_INT(ROW_VALUES(row)+5));
-				if (rs_entry == NULL) {
-					LM_ERR("Failed to build prefix rule \n");
-					goto err_carr_free;
-				}
-
-				prefix.s = (char *)VAL_STRING(ROW_VALUES(row)+1);
-				prefix.len = strlen(prefix.s);
-
-				if (add_price_prefix(new_trie,&prefix,rs_entry)<0) {
-					LM_ERR("Failed to add prefix to carrier trie\n");
-					goto err_carr_free;
-				}
-			}
-			if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-				if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-					LM_ERR("Failed to fetch %d rows\n",no_rows);	
-					goto err_carr_free;
-				}	
-				LM_INFO("%d records more found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-			} else {
-				break;
-			}
-		} while(RES_ROW_N(res)>0);
-
-		rates_dbf.free_result(rates_db_hdl, res);
-	} else {
-		/* extended ratesheet */
-		columns[0] = &rs_destination_col;
-		columns[1] = &rs_cc_col;
-		columns[2] = &rs_price_col;
-		columns[3] = &rs_minimum_col;
-		columns[4] = &rs_increment_col;
-		columns[5] = &rs_dst_id_col;
-		columns[6] = &rs_source_col;
-
-		order = &rs_dst_id_col;
-
-		if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 7, order, 0) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_carr_free;
-			}
-			no_rows=10000;
-			if (no_rows==0)
-				no_rows=10;
-			if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-				LM_ERR("Failed to fetch %d rows\n",no_rows);	
-				goto err_carr_free;
-			}	
-		} else {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 7, order, &res) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_carr_free;
-			}
-		}
-
-		LM_INFO("%d records found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-
-		/* init extended trie hash */
-		extended_hash = (struct eu_extended_table*)shm_malloc(
-			(sizeof(struct eu_extended_table) + eu_extended_hash_size*sizeof(struct eu_extended_entry)));
-		if (extended_hash == NULL) {
-			LM_ERR("No SHM for EU extended trie hash \n");
-			goto err_carr_free;
-		}
-
-		extended_hash->size = eu_extended_hash_size;
-		extended_hash->entries = (struct eu_extended_entry*)(extended_hash+1);
-		for( i=0 ; i<eu_extended_hash_size; i++ ) {
-			memset( &(extended_hash->entries[i]), 0, sizeof(struct eu_extended_entry));
-		}
-
-		/* store a trie for each breakout_id found in the ratesheet */
-		prev_breakout_id = -1;
-		new_trie = NULL;
-
-		do {
-			for(i=0; i < RES_ROW_N(res); i++) {
-				row = RES_ROWS(res) + i;
-				curr_breakout_id = VAL_INT(ROW_VALUES(row)+5);
-
-				if (curr_breakout_id != prev_breakout_id) {
-					if (new_trie != NULL && prev_breakout_id != -1) {
-						/* finished a new breakout */
-						str_br_id.s = int2str(prev_breakout_id,&str_br_id.len);
-						eu_bucket = core_hash(&str_br_id,0,extended_hash->size);
-						eu_entry = &(extended_hash->entries[eu_bucket]);
-
-						eu_cell = (struct eu_extended_cell*)shm_malloc(sizeof(struct eu_extended_cell));
-						if (eu_cell == NULL) {
-							LM_ERR("Failed to allocate a new EU hash entry \n");
-							goto err_carr_free;
-						}
-
-						memset(eu_cell,0,sizeof(struct eu_extended_cell));
-					
-						eu_cell->breakout_id = prev_breakout_id;
-						eu_cell->trie = new_trie;
-
-						/* link it to the hash */
-						if (eu_entry->first == NULL) {
-							eu_entry->first=eu_entry->last=eu_cell;
-						} else {
-							eu_entry->last->next = eu_cell;
-							eu_cell->prev = eu_entry->last;
-							eu_entry->last = eu_cell;
-						}	
-					}
-
-					/* init a new trie for the following breakout id */
-					new_trie = NULL;
-					INIT_PTREE_NODE(NULL, new_trie);
-				}
-
-				prev_breakout_id = curr_breakout_id;
-
-				destination.s = (char *)VAL_STRING(ROW_VALUES(row));
-				destination.len = strlen(destination.s);
-				source.s = (char *)VAL_STRING(ROW_VALUES(row)+6);
-				source.len = strlen(source.s);
-				eu_rs_entry = build_eu_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4),&source);
-				if (eu_rs_entry == NULL) {
-					LM_ERR("Failed to build prefix rule \n");
-					goto err_carr_free;
-				}
-
-				prefix.s = (char *)VAL_STRING(ROW_VALUES(row)+1);
-				prefix.len = strlen(prefix.s);
-
-				/* hack here, cast it to a regular rs entry, will cast it back when fetching it */
-				if (add_price_prefix(new_trie,&prefix,(struct ratesheet_cell_entry *)eu_rs_entry)<0) {
-					LM_ERR("Failed to add prefix to eu extended trie\n");
-					goto err_carr_free;
-				}
-			}
-			if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-				if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-					LM_ERR("Failed to fetch %d rows\n",no_rows);	
-					goto err_carr_free;
-				}	
-				LM_INFO("%d records more found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-			} else {
-				break;
-			}
-		} while(RES_ROW_N(res)>0);
-
-		/* final breakout handling here */
-		if (new_trie != NULL && prev_breakout_id != -1) {
-			/* finished a new breakout */
-			str_br_id.s = int2str(prev_breakout_id,&str_br_id.len);
-			eu_bucket = core_hash(&str_br_id,0,extended_hash->size);
-			eu_entry = &(extended_hash->entries[eu_bucket]);
-
-			eu_cell = (struct eu_extended_cell*)shm_malloc(sizeof(struct eu_extended_cell));
-			if (eu_cell == NULL) {
-				LM_ERR("Failed to allocate a new EU hash entry \n");
-				goto err_carr_free;
-			}
-
-			memset(eu_cell,0,sizeof(struct eu_extended_cell));
-		
-			eu_cell->breakout_id = prev_breakout_id;
-			eu_cell->trie = new_trie;
-
-			/* link it to the hash */
-			if (eu_entry->first == NULL) {
-				eu_entry->first=eu_entry->last=eu_cell;
-			} else {
-				eu_entry->last->next = eu_cell;
-				eu_cell->prev = eu_entry->last;
-				eu_entry->last = eu_cell;
-			}	
-		}
-
-		rates_dbf.free_result(rates_db_hdl, res);
-	}
-
-	/* loaded everything, perform the changes */
-	lock_bucket_write( entry->lock );
-
-	if (it->eu_rate_table.s)
-		shm_free(it->eu_rate_table.s);
-	if (it->eu_rate_currency.s)
-		shm_free(it->eu_rate_currency.s);
-	if (it->eu_ratesheet) {
-		if (it->eu_type == 0)
-			free_trie((ptree_t*)it->eu_ratesheet);
-		else
-			free_extended_hash((struct eu_extended_table *)it->eu_ratesheet);
-	}
-
-	it->eu_rate_table = rate_table;
-	it->eu_rate_currency = currency;
-	it->eu_rateid = rate_id;
-	it->eu_type = eu_type;	
-	if (eu_type == 0)
-		it->eu_ratesheet = new_trie;
-	else
-		it->eu_ratesheet = extended_hash;
-
-	it->eu_reload_pending = 0;
-	unlock_bucket_write( entry->lock );
-
-	return 0;
-
-err_carr_free:
-	if (res)
-		rates_dbf.free_result(rates_db_hdl, res);
-	if (rate_table.s)
-		shm_free(rate_table.s);
-	if (currency.s)
-		shm_free(currency.s);
-	if (eu_type == 0) {
-		if (new_trie)
-			free_trie(new_trie);
-	} else {
-		if (extended_hash)
-			free_extended_hash(extended_hash);
-	}
-err_unlock_pending:
-	lock_bucket_write( entry->lock );
-	it->eu_reload_pending = 0;
-	unlock_bucket_write( entry->lock );
-	return -1;
-}
-
 static int reload_client_rate(str *accountid, int wholesale,int rate_id,int startup)
 {
-	db_key_t columns[6];
+	db_key_t columns[5];
 	db_res_t* res=NULL;
 	db_row_t* row;
 	db_key_t key_cmp;
@@ -1615,10 +868,9 @@ static int reload_client_rate(str *accountid, int wholesale,int rate_id,int star
 	columns[2] = &rs_price_col;
 	columns[3] = &rs_minimum_col;
 	columns[4] = &rs_increment_col;
-	columns[5] = &rs_dst_id_col;
 
 	if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, 0) < 0) {
+		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 5, 0, 0) < 0) {
 			LM_ERR("Ratesheets DB query failed\n");
 			goto err_account_free;
 		}
@@ -1630,7 +882,7 @@ static int reload_client_rate(str *accountid, int wholesale,int rate_id,int star
 			goto err_account_free;
 		}	
 	} else {
-		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
+		if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 5, 0, &res) < 0) {
 			LM_ERR("Ratesheets DB query failed\n");
 			goto err_account_free;
 		}
@@ -1643,7 +895,7 @@ static int reload_client_rate(str *accountid, int wholesale,int rate_id,int star
 			row = RES_ROWS(res) + i;
 			destination.s = (char *)VAL_STRING(ROW_VALUES(row));
 			destination.len = strlen(destination.s);
-			rs_entry = build_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4),VAL_INT(ROW_VALUES(row)+5));
+			rs_entry = build_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4));
 			if (rs_entry == NULL) {
 				LM_ERR("Failed to build prefix rule \n");
 				goto err_account_free;
@@ -1757,483 +1009,13 @@ err_unlock_pending:
 	return -1;
 }
 
-static int reload_eu_client_rate(str *accountid, int wholesale,int eu_type,int rate_id,int startup)
-{
-	db_key_t columns[7];
-	db_key_t order;
-	db_res_t* res=NULL;
-	db_row_t* row;
-	db_key_t key_cmp;
-	db_val_t val_cmp;
-	str currency,rate_table,destination,prefix,source,str_br_id;
-	int bucket,eu_bucket,i,no_rows=10,prev_breakout_id,curr_breakout_id;
-	struct account_entry *entry;
-	struct account_cell *it;
-	struct ratesheet_cell_entry* rs_entry;
-	struct eu_ratesheet_cell_entry* eu_rs_entry;
-	ptree_t* new_trie=NULL;
-	struct eu_extended_table *extended_hash=NULL;
-	struct eu_extended_entry *eu_entry;
-	struct eu_extended_cell *eu_cell;
-
-	if (rate_id == 0)
-		return -1;
-
-	rate_table.s = NULL;
-	currency.s = NULL;
-
-	bucket = core_hash(accountid,0,acc_table->size);
-	entry = &(acc_table->entries[bucket]);
-
-	lock_bucket_write( entry->lock );
-	
-	for (it=entry->first;it;it=it->next) {
-		if (it->accountid.len == accountid->len &&
-		memcmp(it->accountid.s,accountid->s,accountid->len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		LM_ERR("No such account %.*s\n",accountid->len,accountid->s);
-		unlock_bucket_write( entry->lock );
-		return -2;
-	}
-
-	if (wholesale) {
-		if (it->eu_ws_reload_pending) {
-			LM_WARN("Reload already triggered for account %.*s on EU wholesale - aborting this attempt\n",accountid->len,accountid->s);
-			unlock_bucket_write( entry->lock );
-			return 1;
-		}
-		it->eu_ws_reload_pending = 1;
-	} else {
-		if (it->eu_rt_reload_pending) {
-			LM_WARN("Reload already triggered for account %.*s on EU retail - aborting this attempt\n",accountid->len,accountid->s);
-			unlock_bucket_write( entry->lock );
-			return 1;
-		}
-		it->eu_rt_reload_pending = 1;
-	}
-
-	unlock_bucket_write( entry->lock );
-
-	if (startup) {
-		/* at startup we always load wholesale first, and then retail */
-		/* just set the pointers for retail to the wholesale trie, if the rates are the same */
-		if (wholesale==0 && it->eu_ws_rateid == rate_id) { 
-			it->eu_rt_rate_table = it->eu_ws_rate_table;
-			it->eu_rt_rate_currency = it->eu_ws_rate_currency;
-			it->eu_rt_ratesheet = it->eu_ws_ratesheet;
-			it->eu_rt_rateid = rate_id;
-			it->eu_rt_rate_type = eu_type;
-			it->eu_rt_reload_pending = 0;
-			return 1;
-		}
-	}
-
-	/* load the ratesheet */
-	if (rates_dbf.use_table( rates_db_hdl, &ratesheets_db_table) < 0) {
-		LM_ERR("cannot use ratesheets table \n");
-		goto err_unlock_pending;
-	}
-
-	columns[0] = &rs_currency_col;
-	columns[1] = &rs_table_col;
-
-	key_cmp = &rs_rateid_col;
-	val_cmp.type = DB_INT;
-	val_cmp.nul  = 0;
-	val_cmp.val.int_val = rate_id;
-
-	if ( rates_dbf.query( rates_db_hdl, &key_cmp, 0, &val_cmp, columns, 1, 2, 0, &res) < 0) {
-		LM_ERR("Ratesheets DB query failed\n");
-		goto err_unlock_pending;
-	}
-
-	if (RES_ROW_N(res) != 1) {
-		LM_ERR("%d Rows returned for the rate ( type %d ) of client %.*s\n",RES_ROW_N(res),wholesale,accountid->len,accountid->s);
-		goto err_account_free;
-	}
-
-	row = RES_ROWS(res);
-
-	/* duplicate to SHM now, we'll do another query to the rates DB */
-	currency.s = (char *)(VAL_STRING(ROW_VALUES(row))); 
-
-	currency.len = strlen(VAL_STRING(ROW_VALUES(row)));
-	currency.s = shm_malloc(currency.len);
-	if (currency.s == NULL) {
-		LM_ERR("No more shm memory for currency \n");
-		goto err_account_free;
-	}
-	memcpy(currency.s,VAL_STRING(ROW_VALUES(row)),currency.len);
-
-	rate_table.len = strlen(VAL_STRING(ROW_VALUES(row)+1));
-	rate_table.s = shm_malloc(rate_table.len);
-	if (rate_table.s == NULL) {
-		LM_ERR("No more shm memory for rate table \n");
-		goto err_account_free;
-	}
-	memcpy(rate_table.s,VAL_STRING(ROW_VALUES(row)+1),rate_table.len);
-
-	rates_dbf.free_result(rates_db_hdl, res);
-	res = NULL;
-
-	LM_INFO("Got rate in table %.*s with currency %.*s\n",rate_table.len,rate_table.s,currency.len,currency.s);
-
-	if (rates_dbf.use_table( rates_db_hdl, &rate_table) < 0) {
-		LM_ERR("cannot use carriers table \n");
-		goto err_account_free;
-	}
-
-	if (eu_type == 0) {
-		INIT_PTREE_NODE(NULL, new_trie);
-
-		/* regular ratesheet */
-		columns[0] = &rs_destination_col;
-		columns[1] = &rs_cc_col;
-		columns[2] = &rs_price_col;
-		columns[3] = &rs_minimum_col;
-		columns[4] = &rs_increment_col;
-		columns[5] = &rs_dst_id_col;
-
-		if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, 0) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_account_free;
-			}
-			//no_rows=estimate_available_rows( 40 + 20 + 8 + 4 + 4 + 4 , 6);
-			no_rows=10000;
-			if (no_rows==0)
-				no_rows=10;
-			if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-				LM_ERR("Failed to fetch %d rows\n",no_rows);	
-				goto err_account_free;
-			}	
-		} else {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_account_free;
-			}
-		}
-
-		LM_INFO("%d records found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-
-		do {
-			for(i=0; i < RES_ROW_N(res); i++) {
-				row = RES_ROWS(res) + i;
-				destination.s = (char *)VAL_STRING(ROW_VALUES(row));
-				destination.len = strlen(destination.s);
-				rs_entry = build_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4),VAL_INT(ROW_VALUES(row)+5));
-				if (rs_entry == NULL) {
-					LM_ERR("Failed to build prefix rule \n");
-					goto err_account_free;
-				}
-
-				prefix.s = (char *)VAL_STRING(ROW_VALUES(row)+1);
-				prefix.len = strlen(prefix.s);
-
-				if (add_price_prefix(new_trie,&prefix,rs_entry)<0) {
-					LM_ERR("Failed to add prefix to carrier trie\n");
-					goto err_account_free;
-				}
-			}
-			if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-				if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-					LM_ERR("Failed to fetch %d rows\n",no_rows);	
-					goto err_account_free;
-				}	
-				LM_INFO("%d records more found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-			} else {
-				break;
-			}
-		} while(RES_ROW_N(res)>0);
-		rates_dbf.free_result(rates_db_hdl, res);
-	} else {
-		/* extended ratesheet */
-		columns[0] = &rs_destination_col;
-		columns[1] = &rs_cc_col;
-		columns[2] = &rs_price_col;
-		columns[3] = &rs_minimum_col;
-		columns[4] = &rs_increment_col;
-		columns[5] = &rs_dst_id_col;
-		columns[6] = &rs_source_col;
-
-		order = &rs_dst_id_col;
-
-		if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 7, order, 0) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_account_free;
-			}
-			//no_rows=estimate_available_rows( 40 + 20 + 8 + 4 + 4 + 4 + 40 , 7);
-			no_rows=10000;
-			if (no_rows==0)
-				no_rows=10;
-			if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-				LM_ERR("Failed to fetch %d rows\n",no_rows);	
-				goto err_account_free;
-			}	
-		} else {
-			if ( rates_dbf.query( rates_db_hdl, 0, 0, 0, columns, 0, 7, order, &res) < 0) {
-				LM_ERR("Ratesheets DB query failed\n");
-				goto err_account_free;
-			}
-		}
-
-		LM_INFO("%d records found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-
-		/* init extended trie hash */
-		extended_hash = (struct eu_extended_table*)shm_malloc(
-			(sizeof(struct eu_extended_table) + eu_extended_hash_size*sizeof(struct eu_extended_entry)));
-		if (extended_hash == NULL) {
-			LM_ERR("No SHM for EU extended trie hash \n");
-			goto err_account_free;
-		}
-
-		extended_hash->size = eu_extended_hash_size;
-		extended_hash->entries = (struct eu_extended_entry*)(extended_hash+1);
-		for( i=0 ; i<eu_extended_hash_size; i++ ) {
-			memset( &(extended_hash->entries[i]), 0, sizeof(struct eu_extended_entry));
-		}
-
-		/* store a trie for each breakout_id found in the ratesheet */
-		prev_breakout_id = -1;
-		new_trie = NULL;
-
-		do {
-			for(i=0; i < RES_ROW_N(res); i++) {
-				row = RES_ROWS(res) + i;
-				curr_breakout_id = VAL_INT(ROW_VALUES(row)+5);
-
-				if (curr_breakout_id != prev_breakout_id) {
-					if (new_trie != NULL && prev_breakout_id != -1) {
-						/* finished a new breakout */
-						str_br_id.s = int2str(prev_breakout_id,&str_br_id.len);
-						eu_bucket = core_hash(&str_br_id,0,extended_hash->size);
-						eu_entry = &(extended_hash->entries[eu_bucket]);
-
-						eu_cell = (struct eu_extended_cell*)shm_malloc(sizeof(struct eu_extended_cell));
-						if (eu_cell == NULL) {
-							LM_ERR("Failed to allocate a new EU hash entry \n");
-							goto err_account_free;
-						}
-
-						memset(eu_cell,0,sizeof(struct eu_extended_cell));
-					
-						eu_cell->breakout_id = prev_breakout_id;
-						eu_cell->trie = new_trie;
-
-						/* link it to the hash */
-						if (eu_entry->first == NULL) {
-							eu_entry->first=eu_entry->last=eu_cell;
-						} else {
-							eu_entry->last->next = eu_cell;
-							eu_cell->prev = eu_entry->last;
-							eu_entry->last = eu_cell;
-						}	
-					}
-
-					/* init a new trie for the following breakout id */
-					new_trie = NULL;
-					INIT_PTREE_NODE(NULL, new_trie);
-				}
-
-				prev_breakout_id = curr_breakout_id;
-
-				destination.s = (char *)VAL_STRING(ROW_VALUES(row));
-				destination.len = strlen(destination.s);
-				source.s = (char *)VAL_STRING(ROW_VALUES(row)+6);
-				source.len = strlen(source.s);
-				eu_rs_entry = build_eu_rate_prefix_entry(&destination,VAL_DOUBLE(ROW_VALUES(row)+2),VAL_INT(ROW_VALUES(row)+3),VAL_INT(ROW_VALUES(row)+4),&source);
-				if (eu_rs_entry == NULL) {
-					LM_ERR("Failed to build prefix rule \n");
-					goto err_account_free;
-				}
-
-				prefix.s = (char *)VAL_STRING(ROW_VALUES(row)+1);
-				prefix.len = strlen(prefix.s);
-
-				/* hack here, cast it to a regular rs entry, will cast it back when fetching it */
-				if (add_price_prefix(new_trie,&prefix,(struct ratesheet_cell_entry *)eu_rs_entry)<0) {
-					LM_ERR("Failed to add prefix to eu extended trie\n");
-					goto err_account_free;
-				}
-			}
-			if (DB_CAPABILITY(rates_dbf, DB_CAP_FETCH)) {
-				if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
-					LM_ERR("Failed to fetch %d rows\n",no_rows);	
-					goto err_account_free;
-				}	
-				LM_INFO("%d records more found in %.*s table \n",RES_ROW_N(res),rate_table.len,rate_table.s);
-			} else {
-				break;
-			}
-		} while(RES_ROW_N(res)>0);
-
-		/* final breakout handling here */
-		if (new_trie != NULL && prev_breakout_id != -1) {
-			/* finished a new breakout */
-			str_br_id.s = int2str(prev_breakout_id,&str_br_id.len);
-			eu_bucket = core_hash(&str_br_id,0,extended_hash->size);
-			eu_entry = &(extended_hash->entries[eu_bucket]);
-
-			eu_cell = (struct eu_extended_cell*)shm_malloc(sizeof(struct eu_extended_cell));
-			if (eu_cell == NULL) {
-				LM_ERR("Failed to allocate a new EU hash entry \n");
-				goto err_account_free;
-			}
-
-			memset(eu_cell,0,sizeof(struct eu_extended_cell));
-		
-			eu_cell->breakout_id = prev_breakout_id;
-			eu_cell->trie = new_trie;
-
-			/* link it to the hash */
-			if (eu_entry->first == NULL) {
-				eu_entry->first=eu_entry->last=eu_cell;
-			} else {
-				eu_entry->last->next = eu_cell;
-				eu_cell->prev = eu_entry->last;
-				eu_entry->last = eu_cell;
-			}	
-		}
-
-		rates_dbf.free_result(rates_db_hdl, res);
-	}
-
-	/* loaded everything, perform the changes */
-
-	lock_bucket_write( entry->lock );
-
-	if (wholesale ) {
-		if (it->eu_ws_rateid != it->eu_rt_rateid) {
-			/* free old info only if it wasn't shared */
-			if (it->eu_ws_rate_table.s)
-				shm_free(it->eu_ws_rate_table.s);
-			if (it->eu_ws_rate_currency.s)
-				shm_free(it->eu_ws_rate_currency.s);
-			if (it->eu_ws_ratesheet) {
-				if (it->eu_ws_rate_type == 0)
-					free_trie((ptree_t*)it->eu_ws_ratesheet);
-				else
-					free_extended_hash((struct eu_extended_table *)it->eu_ws_ratesheet);
-			}
-					
-		}
-
-		it->eu_ws_rate_table = rate_table;
-		it->eu_ws_rate_currency = currency;
-		it->eu_ws_rateid = rate_id;
-		it->eu_ws_rate_type = eu_type;
-		if (eu_type == 0)
-			it->eu_ws_ratesheet = new_trie;
-		else
-			it->eu_ws_ratesheet = extended_hash;
-
-		if (it->eu_rt_rateid == rate_id) {
-			/* retail used the same rate that we've assigned now for retail - free retail info and link it here */
-			if (it->eu_rt_rate_table.s)
-				shm_free(it->eu_rt_rate_table.s);
-			if (it->eu_rt_rate_currency.s)
-				shm_free(it->eu_rt_rate_currency.s);
-			if (it->eu_rt_ratesheet) {
-				if (it->eu_rt_rate_type == 0)
-					free_trie((ptree_t*)it->eu_rt_ratesheet);
-				else
-					free_extended_hash((struct eu_extended_table *)it->eu_rt_ratesheet);
-			}
-
-			it->eu_rt_rate_table = it->eu_ws_rate_table;
-			it->eu_rt_rate_currency = it->eu_ws_rate_currency;
-			it->eu_rt_rate_type = eu_type;
-			it->eu_rt_ratesheet = it->eu_ws_ratesheet;
-		}
-		it->eu_ws_reload_pending = 0;
-	} else {
-		if (it->eu_ws_rateid != it->eu_rt_rateid) {
-			/* free old info only if it wasn't shared */
-			if (it->eu_rt_rate_table.s)
-				shm_free(it->eu_rt_rate_table.s);
-			if (it->eu_rt_rate_currency.s)
-				shm_free(it->eu_rt_rate_currency.s);
-			if (it->eu_rt_ratesheet) {
-				if (it->eu_rt_rate_type == 0)
-					free_trie((ptree_t*)it->eu_rt_ratesheet);
-				else
-					free_extended_hash((struct eu_extended_table *)it->eu_rt_ratesheet);
-			}
-		}
-		it->eu_rt_rate_table = rate_table;
-		it->eu_rt_rate_currency = currency;
-		it->eu_rt_rateid = rate_id;
-		it->eu_rt_rate_type = eu_type;
-		if (eu_type == 0)
-			it->eu_rt_ratesheet = new_trie;
-		else
-			it->eu_rt_ratesheet = extended_hash;
-
-		if (it->eu_ws_rateid == rate_id) {
-			/* wholesale used the same rate that we've assigned now for retail - free wholesale info and link it here */
-			if (it->eu_ws_rate_table.s)
-				shm_free(it->eu_ws_rate_table.s);
-			if (it->eu_ws_rate_currency.s)
-				shm_free(it->eu_ws_rate_currency.s);
-			if (it->eu_ws_ratesheet) {
-				if (it->eu_ws_rate_type == 0)
-					free_trie((ptree_t*)it->eu_ws_ratesheet);
-				else
-					free_extended_hash((struct eu_extended_table *)it->eu_ws_ratesheet);
-			}
-			
-			it->eu_ws_rate_table = it->eu_rt_rate_table;
-			it->eu_ws_rate_currency = it->eu_rt_rate_currency;
-			it->eu_ws_rate_type = eu_type;
-			it->eu_ws_ratesheet = it->eu_rt_ratesheet;
-		}
-		it->eu_rt_reload_pending = 0;
-	}
-	unlock_bucket_write( entry->lock );
-
-	return 0;
-
-err_account_free:
-	if (res)
-		rates_dbf.free_result(rates_db_hdl, res);
-	if (rate_table.s)
-		shm_free(rate_table.s);
-	if (currency.s)
-		shm_free(currency.s);
-	if (eu_type == 0) {
-		if (new_trie)
-			free_trie(new_trie);
-	} else {
-		if (extended_hash)
-			free_extended_hash(extended_hash);
-	}
-err_unlock_pending:
-	lock_bucket_write( entry->lock );
-	if (wholesale) {
-		it->eu_ws_reload_pending = 0;
-	} else {
-		it->eu_rt_reload_pending = 0;
-	}
-	unlock_bucket_write( entry->lock );
-	return -1;
-}
-
 static str carr_db_table = str_init("dr_carriers");
 static str carr_id_col = str_init("carrierid");
 static str carr_rateid_col = str_init("rate_id");
-static str carr_eurateid_col = str_init("eu_rate_id");
 static str acc_db_table = str_init("accounts");
 static str acc_id_col = str_init("id");
 static str acc_ws_rateid_col = str_init("wholesale_rate");
 static str acc_rt_rateid_col = str_init("retail_rate");
-static str acc_eu_ws_rateid_col = str_init("eu_wholesale_rate");
-static str acc_eu_rt_rateid_col = str_init("eu_retail_rate");
-static str acc_eu_rate_format_col = str_init("eu_rate_format");
 static int rate_cacher_load_all_info(void) 
 {
 	db_key_t columns[6];
@@ -2250,9 +1032,8 @@ static int rate_cacher_load_all_info(void)
 
 	columns[0] = &carr_id_col;
 	columns[1] = &carr_rateid_col;
-	columns[2] = &carr_eurateid_col;
 
-	if ( carriers_dbf.query( carriers_db_hdl, 0, 0, 0, columns, 0, 3, 0, &res) < 0) {
+	if ( carriers_dbf.query( carriers_db_hdl, 0, 0, 0, columns, 0, 2, 0, &res) < 0) {
 		LM_ERR("Carriers DB query failed\n");
 		return -1;
 	}
@@ -2274,15 +1055,6 @@ static int rate_cacher_load_all_info(void)
 		} else
 			LM_INFO("Loaded carrier %s with rateid %d\n",
 			VAL_STRING(ROW_VALUES(row)),VAL_INT(ROW_VALUES(row)+1));
-
-		if (reload_carrier_eu_rate(&carrierid,0,VAL_NULL(ROW_VALUES(row)+2)?0:VAL_INT(ROW_VALUES(row)+2),0) < 0) {
-			if (!VAL_NULL(ROW_VALUES(row)+2) && VAL_INT(ROW_VALUES(row)+2) != 0)
-				LM_ERR("Failed to load carrier %s with EU rateid %d\n",
-				VAL_STRING(ROW_VALUES(row)),VAL_NULL(ROW_VALUES(row)+2)?0:VAL_INT(ROW_VALUES(row)+2));
-		} else {
-			LM_INFO("Loaded carrier %s with EU rateid %d\n",
-			VAL_STRING(ROW_VALUES(row)),VAL_INT(ROW_VALUES(row)+2));
-		}
 	}
 
 	carriers_dbf.free_result(carriers_db_hdl, res);
@@ -2295,11 +1067,8 @@ static int rate_cacher_load_all_info(void)
 	columns[0] = &acc_id_col;
 	columns[1] = &acc_ws_rateid_col;
 	columns[2] = &acc_rt_rateid_col;
-	columns[3] = &acc_eu_ws_rateid_col;
-	columns[4] = &acc_eu_rt_rateid_col;
-	columns[5] = &acc_eu_rate_format_col;
 
-	if ( accounts_dbf.query( accounts_db_hdl, 0, 0, 0, columns, 0, 6, 0, &res) < 0) {
+	if ( accounts_dbf.query( accounts_db_hdl, 0, 0, 0, columns, 0, 3, 0, &res) < 0) {
 		LM_ERR("Accounts DB query failed\n");
 		return -1;
 	}
@@ -2326,18 +1095,6 @@ static int rate_cacher_load_all_info(void)
 				LM_ERR("Failed to load rt rate %d for account %.*s\n",VAL_INT(ROW_VALUES(row)+2),accountid.len,accountid.s);
 		} else
 			LM_INFO("Loaded rt rate %d for account %.*s\n",VAL_INT(ROW_VALUES(row)+2),accountid.len,accountid.s);
-
-		if (reload_eu_client_rate(&accountid,1,VAL_INT(ROW_VALUES(row)+5),VAL_INT(ROW_VALUES(row)+3),1) < 0) {
-			if (VAL_INT(ROW_VALUES(row)+3) != 0)
-				LM_ERR("Failed to load eu ws rate %d for account %.*s\n",VAL_INT(ROW_VALUES(row)+3),accountid.len,accountid.s);
-		} else
-			LM_INFO("Loaded eu ws rate %d for account %.*s\n",VAL_INT(ROW_VALUES(row)+3),accountid.len,accountid.s);
-
-		if (reload_eu_client_rate(&accountid,0,VAL_INT(ROW_VALUES(row)+5),VAL_INT(ROW_VALUES(row)+4),1) < 0) {
-			if (VAL_INT(ROW_VALUES(row)+4) != 0)
-				LM_ERR("Failed to load eu rt rate %d for account %.*s\n",VAL_INT(ROW_VALUES(row)+4),accountid.len,accountid.s);
-		} else
-			LM_INFO("Loaded eu rt rate %d for account %.*s\n",VAL_INT(ROW_VALUES(row)+4),accountid.len,accountid.s);
 	}
 
 	accounts_dbf.free_result(accounts_db_hdl, res);
@@ -2407,92 +1164,6 @@ static struct mi_root * mi_get_carrier_price(struct mi_root *cmd_tree, void *par
 		"[\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",matched_len,prefix.s,
 		ret->destination.len,ret->destination.s,ret->price,
 		ret->minimum,ret->increment,it->rate_currency.len,it->rate_currency.s);
-
-	unlock_bucket_read( entry->lock );
-	return rpl_tree;
-
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-
-}
-
-static struct mi_root * mi_get_carrier_eu_price(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node,*rpl;
-	struct carrier_cell *it;
-	struct carrier_entry *entry;
-	int bucket;
-	unsigned int dst_matched_len,src_matched_len;
-	str carrier;
-	str src,dst;
-	struct mi_root *rpl_tree;
-	struct eu_rate_lookup_rpl ret; 
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL || node->next->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	carrier = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len )
-		goto error;
-
-	src = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len )
-		goto error;
-
-	dst = node->value;
-
-	bucket = core_hash(&carrier,0,carr_table->size);
-	entry = &(carr_table->entries[bucket]);
-
-	lock_bucket_read( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->carrierid.len == carrier.len &&
-		memcmp(it->carrierid.s,carrier.s,carrier.len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		unlock_bucket_read( entry->lock );
-		return init_mi_tree( 401, "No such carrier", sizeof("No such carrier")-1);
-	}
-
-	if (get_eu_rate_price_prefix(it->eu_ratesheet,it->trie,it->eu_type,&src,&dst,&dst_matched_len,&src_matched_len,&ret) < 0) {
-		unlock_bucket_read( entry->lock );
-		return init_mi_tree( 401, "No prefix match", sizeof("No prefix match")-1);
-	}
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==NULL) {
-		unlock_bucket_read( entry->lock );
-		return NULL;
-	}
-
-	rpl = &rpl_tree->node;
-	if (ret.ani_based == NULL) {
-		node = addf_mi_node_child( rpl, 0, MI_SSTR("Result"),
-			"[\"%.*s\",\"%.*s\",\"\",\"\",%f,%d,%d,\"%.*s\"]",dst_matched_len,dst.s,
-			ret.regular->destination.len,ret.regular->destination.s,ret.regular->price,
-			ret.regular->minimum,ret.regular->increment,
-			it->rate_currency.len,it->rate_currency.s);
-	} else {
-		node = addf_mi_node_child( rpl, 0, MI_SSTR("Result"),
-			"[\"%.*s\",\"%.*s\",\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",dst_matched_len,dst.s,
-			ret.regular->destination.len,ret.regular->destination.s,
-			src_matched_len,src.s,ret.ani_based->source_name.len,ret.ani_based->source_name.s,
-			ret.ani_based->price,
-			ret.ani_based->minimum,ret.ani_based->increment,
-			it->rate_currency.len,it->rate_currency.s);
-	}
 
 	unlock_bucket_read( entry->lock );
 	return rpl_tree;
@@ -2595,40 +1266,6 @@ static struct mi_root * mi_reload_carrier_rate(struct mi_root *cmd_tree, void *p
 	LM_INFO("XXX - reloadCarrierRate %.*s %d\n",carrier.len,carrier.s,rate_id); 
 
 	if (reload_carrier_rate(&carrier,rate_id) < 0)
-		return init_mi_tree( 500, "Failed to reload", sizeof("Failed to reload")-1);
-	else
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-}
-
-static struct mi_root * mi_reload_eu_carrier_rate(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node;
-	int eu_type,rate_id;
-	str carrier;
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL || node->next->next == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	carrier = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&eu_type)<0)
-		goto error;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&rate_id)<0)
-		goto error;
-
-	LM_INFO("XXX - reloadCarrierEuRate %.*s %d %d\n",carrier.len,carrier.s,eu_type,rate_id); 
-
-	if (reload_carrier_eu_rate(&carrier,eu_type,rate_id,1) < 0)
 		return init_mi_tree( 500, "Failed to reload", sizeof("Failed to reload")-1);
 	else
 		return init_mi_tree( 200, MI_SSTR(MI_OK));
@@ -2827,64 +1464,6 @@ static struct mi_root * mi_delete_carrier_rate(struct mi_root *cmd_tree, void *p
 	return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
 
-static struct mi_root * mi_delete_carrier_eu_rate(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node;
-	struct carrier_entry *entry;
-	struct carrier_cell *it;
-	int bucket;
-	str carrier;
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	carrier = node->value;
-
-	LM_INFO("XXX - deleteCarrierEuRate %.*s\n",carrier.len,carrier.s);
-
-	bucket = core_hash(&carrier,0,carr_table->size);
-	entry = &(carr_table->entries[bucket]);
-	
-	lock_bucket_write( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->carrierid.len == carrier.len &&
-		memcmp(it->carrierid.s,carrier.s,carrier.len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		unlock_bucket_write( entry->lock );
-		return init_mi_tree( 401, "No such carrier", sizeof("No such carrier")-1);
-	}
-
-	if (it->reload_pending) {
-		unlock_bucket_write( entry->lock );
-		return init_mi_tree( 401, "Pending Reload", sizeof("Pending Reload")-1);
-	}
-
-	if (it->eu_rate_table.s)
-		shm_free(it->eu_rate_table.s);
-	if (it->eu_rate_currency.s)
-		shm_free(it->eu_rate_currency.s);
-	it->eu_rateid = 0;
-	if (it->eu_ratesheet) {
-		if (it->eu_type == 0)
-			free_trie((ptree_t*)it->eu_ratesheet);
-		else
-			free_extended_hash((struct eu_extended_table *)it->eu_ratesheet);
-	}
-	it->eu_ratesheet = NULL;
-
-	unlock_bucket_write( entry->lock );
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
-}
-
 static struct mi_root * mi_delete_carrier(struct mi_root *cmd_tree, void *param )
 {
 	struct mi_node* node;
@@ -3018,108 +1597,6 @@ error:
 
 }
 
-static struct mi_root * mi_get_eu_client_price(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node,*rpl;
-	struct account_cell *it;
-	struct account_entry *entry;
-	int bucket,is_wholesale,rc;
-	unsigned int dst_matched_len,src_matched_len;
-	str accountid;
-	str src,dst;
-	struct mi_root *rpl_tree;
-	struct eu_rate_lookup_rpl ret; 
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL || node->next->next==NULL || node->next->next->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	accountid = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&is_wholesale)<0 )
-		goto error;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len )
-		goto error;
-
-	src = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len )
-		goto error;
-
-	dst = node->value;
-
-	bucket = core_hash(&accountid,0,acc_table->size);
-	entry = &(acc_table->entries[bucket]);
-
-	lock_bucket_read( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->accountid.len == accountid.len &&
-		memcmp(it->accountid.s,accountid.s,accountid.len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		unlock_bucket_read( entry->lock );
-		return init_mi_tree( 401, "No such client", sizeof("No such client")-1);
-	}
-
-	ret.regular = NULL;
-	ret.ani_based = NULL;
-	dst_matched_len = 0;
-	src_matched_len = 0;
-
-	if (is_wholesale)
-		rc = get_eu_rate_price_prefix(it->eu_ws_ratesheet,it->ws_trie,it->eu_ws_rate_type,&src,&dst,&dst_matched_len,&src_matched_len,&ret);
-	else
-		rc = get_eu_rate_price_prefix(it->eu_rt_ratesheet,it->rt_trie,it->eu_rt_rate_type,&src,&dst,&dst_matched_len,&src_matched_len,&ret);
-
-	if (rc < 0) {
-		unlock_bucket_read( entry->lock );
-		return init_mi_tree( 401, "No prefix match", sizeof("No prefix match")-1);
-	}
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==NULL) {
-		unlock_bucket_read( entry->lock );
-		return NULL;
-	}
-
-	rpl = &rpl_tree->node;
-
-	if (ret.ani_based == NULL) {
-		node = addf_mi_node_child( rpl, 0, MI_SSTR("Result"),
-			"[\"%.*s\",\"%.*s\",\"\",\"\",%f,%d,%d,\"%.*s\"]",dst_matched_len,dst.s,
-			ret.regular->destination.len,ret.regular->destination.s,ret.regular->price,
-			ret.regular->minimum,ret.regular->increment,
-			is_wholesale?it->ws_rate_currency.len:it->rt_rate_currency.len,
-			is_wholesale?it->ws_rate_currency.s:it->rt_rate_currency.s);
-	} else {
-		node = addf_mi_node_child( rpl, 0, MI_SSTR("Result"),
-			"[\"%.*s\",\"%.*s\",\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",dst_matched_len,dst.s,
-			ret.regular->destination.len,ret.regular->destination.s,
-			src_matched_len,src.s,ret.ani_based->source_name.len,ret.ani_based->source_name.s,
-			ret.ani_based->price,
-			ret.ani_based->minimum,ret.ani_based->increment,
-			is_wholesale?it->ws_rate_currency.len:it->rt_rate_currency.len,
-			is_wholesale?it->ws_rate_currency.s:it->rt_rate_currency.s);
-	}
-
-	unlock_bucket_read( entry->lock );
-	return rpl_tree;
-
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-}
-
 static struct mi_root * mi_get_bulk_client_price(struct mi_root *cmd_tree, void *param )
 {
 	struct mi_node* node,*rpl,*node_ret;
@@ -3224,47 +1701,6 @@ static struct mi_root * mi_reload_client(struct mi_root *cmd_tree, void *param )
 	LM_INFO("XXX - reloadClientRate %.*s %d %d\n",accountid.len,accountid.s,is_wholesale,rate_id);
 
 	ret = reload_client_rate(&accountid,is_wholesale,rate_id,0);
-	if (ret == -2)
-		return init_mi_tree( 401, "No such client", sizeof("No such client")-1);
-	else if (ret < 0)
-		return init_mi_tree( 500, "Failed to reload", sizeof("Failed to reload")-1);
-	else
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-}
-
-static struct mi_root * mi_reload_eu_client(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node;
-	int rate_id,is_wholesale,eu_type,ret;
-	str accountid;
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL || node->next->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	accountid = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&is_wholesale)<0)
-		goto error;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&eu_type)<0)
-		goto error;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&rate_id)<0)
-		goto error;
-
-	LM_INFO("XXX - reloadEuClientRate %.*s %d %d %d\n",accountid.len,accountid.s,is_wholesale,eu_type,rate_id);
-
-	ret = reload_eu_client_rate(&accountid,is_wholesale,eu_type,rate_id,0);
 	if (ret == -2)
 		return init_mi_tree( 401, "No such client", sizeof("No such client")-1);
 	else if (ret < 0)
@@ -3465,107 +1901,6 @@ error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 }
 
-static struct mi_root * mi_delete_eu_client_rate(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node;
-	str accountid;
-	int bucket,wholesale;
-	struct account_entry* entry;
-	struct account_cell* it;
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	accountid = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&wholesale)<0)
-		goto error;
-
-	LM_INFO("XXX - deleteEuClientRate %.*s %d\n",accountid.len,accountid.s,wholesale);
-
-	bucket = core_hash(&accountid,0,acc_table->size);
-	entry = &(acc_table->entries[bucket]);
-
-	lock_bucket_write( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->accountid.len == accountid.len &&
-		memcmp(it->accountid.s,accountid.s,accountid.len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		LM_ERR("Client %.*s does not exist \n",accountid.len,accountid.s);
-		unlock_bucket_write( entry->lock );
-		return init_mi_tree( 401, "No such client", sizeof("No such client")-1);
-	}
-
-	if (wholesale) {
-		it->eu_ws_rateid = 0;
-		if (it->eu_ws_rate_table.s) {
-			if (it->eu_ws_rate_table.s != it->eu_rt_rate_table.s) {
-				shm_free(it->eu_ws_rate_table.s);
-			}
-			it->eu_ws_rate_table.s = NULL;
-			it->eu_ws_rate_table.len = 0;
-		}
-
-		if (it->eu_ws_rate_currency.s) {
-			if (it->eu_ws_rate_currency.s != it->eu_rt_rate_currency.s) {
-				shm_free(it->eu_ws_rate_currency.s);
-			}
-			it->eu_ws_rate_currency.s = NULL;
-			it->eu_ws_rate_currency.len = 0;
-		}
-		if (it->eu_ws_ratesheet) {
-			if (it->eu_ws_ratesheet != it->eu_rt_ratesheet) {
-				if (it->eu_ws_rate_type == 0)
-					free_trie((ptree_t*)it->eu_ws_ratesheet);
-				else
-					free_extended_hash((struct eu_extended_table *)it->eu_ws_ratesheet);
-			}
-			it->eu_ws_ratesheet = NULL;
-		}
-	} else {
-		it->eu_rt_rateid = 0;
-		if (it->eu_rt_rate_table.s) {
-			if (it->eu_rt_rate_table.s != it->eu_ws_rate_table.s) {
-				shm_free(it->eu_rt_rate_table.s);
-			}
-			it->eu_rt_rate_table.s = NULL;
-			it->eu_rt_rate_table.len = 0;
-		}
-
-		if (it->eu_rt_rate_currency.s) {
-			if (it->eu_rt_rate_currency.s != it->eu_ws_rate_currency.s) {
-				shm_free(it->eu_rt_rate_currency.s);
-			}
-			it->eu_rt_rate_currency.s = NULL;
-			it->eu_rt_rate_currency.len = 0;
-		}
-		if (it->eu_rt_ratesheet) {
-			if (it->eu_rt_ratesheet != it->eu_ws_ratesheet) {
-				if (it->eu_rt_rate_type == 0)
-					free_trie((ptree_t*)it->eu_rt_ratesheet);
-				else
-					free_extended_hash((struct eu_extended_table *)it->eu_rt_ratesheet);
-			}
-			it->eu_rt_ratesheet = NULL;
-		}
-	}
-
-	unlock_bucket_write( entry->lock );
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-}
-
 static int fixup_cost_based_routing(void** param, int param_no)
 {
 	return fixup_sgp(param);
@@ -3574,275 +1909,276 @@ static int fixup_cost_based_routing(void** param, int param_no)
 static char* cost_based_routing(str *clientid,int isws,int iseu,
 	str *carrierlist,int carr_no,str *ani,str *dnis,double *profit_margin) 
 {
-	int bucket,rc,i;
-	char *result;
-	struct account_entry *entry;
-	struct account_cell *it;
-	struct eu_rate_lookup_rpl eu_ret; 
-	struct ratesheet_cell_entry *ret;
-	unsigned int dst_matched_len,src_matched_len;
-	double client_price,vendor_price;
-	str carrier;
-	struct carrier_cell *carr_it;
-	struct carrier_entry *carr_entry;
-	
-	bucket = core_hash(clientid,0,acc_table->size);
-	entry = &(acc_table->entries[bucket]);
-
-	lock_bucket_read( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->accountid.len == clientid->len &&
-		memcmp(it->accountid.s,clientid->s,clientid->len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		unlock_bucket_read( entry->lock );
-		return NULL;
-	}
-
-	if (iseu) {
-		eu_ret.regular = NULL;
-		eu_ret.ani_based = NULL;
-		dst_matched_len = 0;
-		src_matched_len = 0;
-
-		if (isws) {
-			rc = get_eu_rate_price_prefix(it->eu_ws_ratesheet,it->ws_trie,it->eu_ws_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
-		} else {
-			rc = get_eu_rate_price_prefix(it->eu_rt_ratesheet,it->rt_trie,it->eu_rt_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
-		}
-
-		if (rc < 0)
-			goto eu_fallback;
-		if (eu_ret.ani_based == NULL) {
-			client_price = eu_ret.regular->price;
-		} else {
-			client_price = eu_ret.ani_based->price;
-		}
-
-		/* found our price, fall through to carrier lookup */
-	} else {
-eu_fallback:
-		if (isws) {
-			ret = get_rate_price_prefix(it->ws_trie,dnis,&dst_matched_len);
-		} else {
-			ret = get_rate_price_prefix(it->rt_trie,dnis,&dst_matched_len);
-		}
-
-		if (ret == NULL) {
-			LM_ERR("Failed to get client price \n");
-			unlock_bucket_read( entry->lock );
-			return NULL;
-		}
-
-		client_price = ret->price;
-	} 
-
-	unlock_bucket_read( entry->lock );
-	LM_INFO("Client price is %f\n",client_price);
-
-	result = (char *)pkg_malloc(carr_no);
-	if (result == NULL) {
-		LM_ERR("No more mem \n");
-		return NULL;
-	}
-	memset(result,0,carr_no);
-
-	for (i=0;i<carr_no;i++) {
-		carrier = carrierlist[i];
-
-		bucket = core_hash(&carrier,0,carr_table->size);
-		carr_entry = &(carr_table->entries[bucket]);
-
-		lock_bucket_read( carr_entry->lock );
-		for (carr_it=carr_entry->first;carr_it;carr_it=carr_it->next) {
-			if (carr_it->carrierid.len == carrier.len &&
-			memcmp(carr_it->carrierid.s,carrier.s,carrier.len) == 0) {
-				break;
-			}
-		}
-
-		if (carr_it == NULL) {
-			unlock_bucket_read( carr_entry->lock );
-			/* we did not find the carrier - do not use it */
-			result[i] = 0;
-			continue;
-		}
-
-		eu_ret.regular = NULL;
-		eu_ret.ani_based = NULL;
-
-		if (iseu) {
-			if (get_eu_rate_price_prefix(carr_it->eu_ratesheet,carr_it->trie,
-			carr_it->eu_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret) < 0)
-				goto carr_eu_fallback;
-
-			if (eu_ret.ani_based == NULL) {
-				vendor_price = eu_ret.regular->price;
-			} else {
-				vendor_price = eu_ret.ani_based->price;
-			}
-
-			/* found our price, fall through to price comparison */
-		} else {
-carr_eu_fallback:
-			ret = get_rate_price_prefix(carr_it->trie,dnis,&dst_matched_len);
-			if (ret == NULL) {
-				/* no price found for carrier, do not use it */
-				unlock_bucket_read( carr_entry->lock );
-				result[i] = 0;
-				continue;
-			}
-
-			vendor_price = ret->price;
-		}
-
-		LM_INFO("Vendor %.*s price is %f\n",carrier.len,carrier.s,vendor_price);
-		
-		unlock_bucket_read( carr_entry->lock );
-
-		if (((client_price / vendor_price)*100-100) >= *profit_margin)
-			result[i] = 1;
-		else
-			result[i] = 0;
-
-		LM_INFO("%d\n",result[i]);
-	}
-
-	return result;
+//	int bucket,rc,i;
+//	char *result;
+//	struct account_entry *entry;
+//	struct account_cell *it;
+//	struct eu_rate_lookup_rpl eu_ret; 
+//	struct ratesheet_cell_entry *ret;
+//	unsigned int dst_matched_len,src_matched_len;
+//	double client_price,vendor_price;
+//	str carrier;
+//	struct carrier_cell *carr_it;
+//	struct carrier_entry *carr_entry;
+//	
+//	bucket = core_hash(clientid,0,acc_table->size);
+//	entry = &(acc_table->entries[bucket]);
+//
+//	lock_bucket_read( entry->lock );
+//	for (it=entry->first;it;it=it->next) {
+//		if (it->accountid.len == clientid->len &&
+//		memcmp(it->accountid.s,clientid->s,clientid->len) == 0) {
+//			break;
+//		}
+//	}
+//
+//	if (it == NULL) {
+//		unlock_bucket_read( entry->lock );
+//		return NULL;
+//	}
+//
+//	if (iseu) {
+//		eu_ret.regular = NULL;
+//		eu_ret.ani_based = NULL;
+//		dst_matched_len = 0;
+//		src_matched_len = 0;
+//
+//		if (isws) {
+//			rc = get_eu_rate_price_prefix(it->eu_ws_ratesheet,it->ws_trie,it->eu_ws_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
+//		} else {
+//			rc = get_eu_rate_price_prefix(it->eu_rt_ratesheet,it->rt_trie,it->eu_rt_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
+//		}
+//
+//		if (rc < 0)
+//			goto eu_fallback;
+//		if (eu_ret.ani_based == NULL) {
+//			client_price = eu_ret.regular->price;
+//		} else {
+//			client_price = eu_ret.ani_based->price;
+//		}
+//
+//		/* found our price, fall through to carrier lookup */
+//	} else {
+//eu_fallback:
+//		if (isws) {
+//			ret = get_rate_price_prefix(it->ws_trie,dnis,&dst_matched_len);
+//		} else {
+//			ret = get_rate_price_prefix(it->rt_trie,dnis,&dst_matched_len);
+//		}
+//
+//		if (ret == NULL) {
+//			LM_ERR("Failed to get client price \n");
+//			unlock_bucket_read( entry->lock );
+//			return NULL;
+//		}
+//
+//		client_price = ret->price;
+//	} 
+//
+//	unlock_bucket_read( entry->lock );
+//	LM_INFO("Client price is %f\n",client_price);
+//
+//	result = (char *)pkg_malloc(carr_no);
+//	if (result == NULL) {
+//		LM_ERR("No more mem \n");
+//		return NULL;
+//	}
+//	memset(result,0,carr_no);
+//
+//	for (i=0;i<carr_no;i++) {
+//		carrier = carrierlist[i];
+//
+//		bucket = core_hash(&carrier,0,carr_table->size);
+//		carr_entry = &(carr_table->entries[bucket]);
+//
+//		lock_bucket_read( carr_entry->lock );
+//		for (carr_it=carr_entry->first;carr_it;carr_it=carr_it->next) {
+//			if (carr_it->carrierid.len == carrier.len &&
+//			memcmp(carr_it->carrierid.s,carrier.s,carrier.len) == 0) {
+//				break;
+//			}
+//		}
+//
+//		if (carr_it == NULL) {
+//			unlock_bucket_read( carr_entry->lock );
+//			/* we did not find the carrier - do not use it */
+//			result[i] = 0;
+//			continue;
+//		}
+//
+//		eu_ret.regular = NULL;
+//		eu_ret.ani_based = NULL;
+//
+//		if (iseu) {
+//			if (get_eu_rate_price_prefix(carr_it->eu_ratesheet,carr_it->trie,
+//			carr_it->eu_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret) < 0)
+//				goto carr_eu_fallback;
+//
+//			if (eu_ret.ani_based == NULL) {
+//				vendor_price = eu_ret.regular->price;
+//			} else {
+//				vendor_price = eu_ret.ani_based->price;
+//			}
+//
+//			/* found our price, fall through to price comparison */
+//		} else {
+//carr_eu_fallback:
+//			ret = get_rate_price_prefix(carr_it->trie,dnis,&dst_matched_len);
+//			if (ret == NULL) {
+//				/* no price found for carrier, do not use it */
+//				unlock_bucket_read( carr_entry->lock );
+//				result[i] = 0;
+//				continue;
+//			}
+//
+//			vendor_price = ret->price;
+//		}
+//
+//		LM_INFO("Vendor %.*s price is %f\n",carrier.len,carrier.s,vendor_price);
+//		
+//		unlock_bucket_read( carr_entry->lock );
+//
+//		if (((client_price / vendor_price)*100-100) >= *profit_margin)
+//			result[i] = 1;
+//		else
+//			result[i] = 0;
+//
+//		LM_INFO("%d\n",result[i]);
+//	}
+//
+//	return result;
+	return NULL;
 }
 
 static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws, char *s_iseu, 
 		char *s_carrierlist,char *s_ani,char *s_dnis)
 {
-	str clientid = {0,0};
-	int isws=0,iseu=0,i;
-        str carrierlist = {0,0};
-        str ani = {0,0};
-        str dnis = {0,0};
-	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*result=NULL,*avp_result=NULL;
-	str carrier_array[100];
-	int carrier_array_len=0;
-	int_str val;
-	str profit_margin_s;
-	double profit_margin;
-
-        if (fixup_get_svalue(msg, (gparam_p)s_clientid, &clientid) != 0) {
-                LM_ERR("failed to extract clientid\n");
-                return -1;
-        }
-
-        if (fixup_get_ivalue(msg, (gparam_p)s_isws, &isws) != 0) {
-                LM_ERR("failed to isws\n");
-                return -1;
-        }
-
-        if (fixup_get_ivalue(msg, (gparam_p)s_iseu, &iseu) != 0) {
-                LM_ERR("failed to iseu\n");
-                return -1;
-        }
-
-        if (fixup_get_svalue(msg, (gparam_p)s_carrierlist, &carrierlist) != 0) {
-                LM_ERR("failed to extract carrierlist\n");
-                return -1;
-        }
-
-        if (fixup_get_svalue(msg, (gparam_p)s_ani, &ani) != 0) {
-                LM_ERR("failed to extract ani\n");
-                return -1;
-        }
-
-        if (fixup_get_svalue(msg, (gparam_p)s_dnis, &dnis) != 0) {
-                LM_ERR("failed to extract dnis\n");
-                return -1;
-        }
-
-	if (search_first_avp(0, rc_profit_margin_avp, &val, 0)
-	&& val.s.len > 0) {
-		profit_margin_s.s = pkg_malloc(val.s.len+1);
-		if (!profit_margin_s.s) {
-			LM_ERR("No more pkg\n");
-			return -1;
-		}
-
-		memcpy(profit_margin_s.s,val.s.s,val.s.len);
-		profit_margin_s.s[val.s.len] = 0;
-		
-		profit_margin = atof(profit_margin_s.s);
-		pkg_free(profit_margin_s.s);
-	} else 
-		profit_margin = 0;
-
-	nts_carrierlist = (char *)pkg_malloc(carrierlist.len+1);
-	if (nts_carrierlist == NULL) {
-		LM_ERR("Failed to alloc mem\n");
-		return -1;
-	}
-	memcpy(nts_carrierlist,carrierlist.s,carrierlist.len);
-	nts_carrierlist[carrierlist.len]=0;
-
-	for (token = strtok_r(nts_carrierlist, ",", &tmp);
-	token;
-	token = strtok_r(NULL, ",", &tmp))
-	{
-		carrier_array[carrier_array_len].len = strlen(token);
-		carrier_array[carrier_array_len].s = pkg_malloc(carrier_array[carrier_array_len].len);
-		if (carrier_array[carrier_array_len].s == NULL) {
-			LM_ERR("Failed to alloc mem\n");
-			return -1;
-		}
-		
-		memcpy(carrier_array[carrier_array_len].s,token,carrier_array[carrier_array_len].len);
-		carrier_array_len++;
-	}
-
-	result = cost_based_routing(&clientid,isws,iseu,carrier_array,carrier_array_len,&ani,&dnis,&profit_margin);
-	if (result == NULL) {
-		LM_ERR("Failed to do CBR\n");
-		goto err_free;
-	}
-
-	destroy_avps( 0, rc_reply_avp, 1);	
-	avp_result = (char *)pkg_malloc(2*carrier_array_len);
-	if (!avp_result) 
-		goto err_free;
-
-	memset(avp_result,0,2*carrier_array_len);
-	for (i=0,tmp=avp_result;i<carrier_array_len;i++) {
-		if (i == 0) {
-			*tmp++ = result[i] + '0';
-		} else {
-			*tmp++ = ',';
-			*tmp++ = result[i] + '0';
-		}
-	}
-
-	val.s.s = avp_result;
-	val.s.len = strlen(avp_result);
-
-	if (add_avp_last( AVP_VAL_STR, rc_reply_avp, val)!=0 ) {
-		LM_ERR("failed to insert ruri avp\n");
-		goto err_free;
-	}
-
-	if (result)
-		pkg_free(result);
-	if (avp_result)
-		pkg_free(avp_result);
-	for (i=0;i<carrier_array_len;i++)
-		pkg_free(carrier_array[i].s);
-	
-	return 1;
-
-err_free:
-	if (result)
-		pkg_free(result);
-	if (avp_result)
-		pkg_free(avp_result);
-	for (i=0;i<carrier_array_len;i++)
-		pkg_free(carrier_array[i].s);
+//	str clientid = {0,0};
+//	int isws=0,iseu=0,i;
+//        str carrierlist = {0,0};
+//        str ani = {0,0};
+//        str dnis = {0,0};
+//	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*result=NULL,*avp_result=NULL;
+//	str carrier_array[100];
+//	int carrier_array_len=0;
+//	int_str val;
+//	str profit_margin_s;
+//	double profit_margin;
+//
+//        if (fixup_get_svalue(msg, (gparam_p)s_clientid, &clientid) != 0) {
+//                LM_ERR("failed to extract clientid\n");
+//                return -1;
+//        }
+//
+//        if (fixup_get_ivalue(msg, (gparam_p)s_isws, &isws) != 0) {
+//                LM_ERR("failed to isws\n");
+//                return -1;
+//        }
+//
+//        if (fixup_get_ivalue(msg, (gparam_p)s_iseu, &iseu) != 0) {
+//                LM_ERR("failed to iseu\n");
+//                return -1;
+//        }
+//
+//        if (fixup_get_svalue(msg, (gparam_p)s_carrierlist, &carrierlist) != 0) {
+//                LM_ERR("failed to extract carrierlist\n");
+//                return -1;
+//        }
+//
+//        if (fixup_get_svalue(msg, (gparam_p)s_ani, &ani) != 0) {
+//                LM_ERR("failed to extract ani\n");
+//                return -1;
+//        }
+//
+//        if (fixup_get_svalue(msg, (gparam_p)s_dnis, &dnis) != 0) {
+//                LM_ERR("failed to extract dnis\n");
+//                return -1;
+//        }
+//
+//	if (search_first_avp(0, rc_profit_margin_avp, &val, 0)
+//	&& val.s.len > 0) {
+//		profit_margin_s.s = pkg_malloc(val.s.len+1);
+//		if (!profit_margin_s.s) {
+//			LM_ERR("No more pkg\n");
+//			return -1;
+//		}
+//
+//		memcpy(profit_margin_s.s,val.s.s,val.s.len);
+//		profit_margin_s.s[val.s.len] = 0;
+//		
+//		profit_margin = atof(profit_margin_s.s);
+//		pkg_free(profit_margin_s.s);
+//	} else 
+//		profit_margin = 0;
+//
+//	nts_carrierlist = (char *)pkg_malloc(carrierlist.len+1);
+//	if (nts_carrierlist == NULL) {
+//		LM_ERR("Failed to alloc mem\n");
+//		return -1;
+//	}
+//	memcpy(nts_carrierlist,carrierlist.s,carrierlist.len);
+//	nts_carrierlist[carrierlist.len]=0;
+//
+//	for (token = strtok_r(nts_carrierlist, ",", &tmp);
+//	token;
+//	token = strtok_r(NULL, ",", &tmp))
+//	{
+//		carrier_array[carrier_array_len].len = strlen(token);
+//		carrier_array[carrier_array_len].s = pkg_malloc(carrier_array[carrier_array_len].len);
+//		if (carrier_array[carrier_array_len].s == NULL) {
+//			LM_ERR("Failed to alloc mem\n");
+//			return -1;
+//		}
+//		
+//		memcpy(carrier_array[carrier_array_len].s,token,carrier_array[carrier_array_len].len);
+//		carrier_array_len++;
+//	}
+//
+//	result = cost_based_routing(&clientid,isws,iseu,carrier_array,carrier_array_len,&ani,&dnis,&profit_margin);
+//	if (result == NULL) {
+//		LM_ERR("Failed to do CBR\n");
+//		goto err_free;
+//	}
+//
+//	destroy_avps( 0, rc_reply_avp, 1);	
+//	avp_result = (char *)pkg_malloc(2*carrier_array_len);
+//	if (!avp_result) 
+//		goto err_free;
+//
+//	memset(avp_result,0,2*carrier_array_len);
+//	for (i=0,tmp=avp_result;i<carrier_array_len;i++) {
+//		if (i == 0) {
+//			*tmp++ = result[i] + '0';
+//		} else {
+//			*tmp++ = ',';
+//			*tmp++ = result[i] + '0';
+//		}
+//	}
+//
+//	val.s.s = avp_result;
+//	val.s.len = strlen(avp_result);
+//
+//	if (add_avp_last( AVP_VAL_STR, rc_reply_avp, val)!=0 ) {
+//		LM_ERR("failed to insert ruri avp\n");
+//		goto err_free;
+//	}
+//
+//	if (result)
+//		pkg_free(result);
+//	if (avp_result)
+//		pkg_free(avp_result);
+//	for (i=0;i<carrier_array_len;i++)
+//		pkg_free(carrier_array[i].s);
+//	
+//	return 1;
+//
+//err_free:
+//	if (result)
+//		pkg_free(result);
+//	if (avp_result)
+//		pkg_free(avp_result);
+//	for (i=0;i<carrier_array_len;i++)
+//		pkg_free(carrier_array[i].s);
 
 	return -1;
 }

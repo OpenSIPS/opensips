@@ -96,8 +96,8 @@ pua|
 pua|8
 rc_accounts|
 rc_accounts|1
-rc_demo_eu_ratesheet|
-rc_demo_eu_ratesheet|1
+METADATA_DEFAULTS
+NIL|NIL|NIL|NIL|0|0|0|1
 rc_demo_ratesheet|
 rc_demo_ratesheet|1
 rc_ratesheets|
