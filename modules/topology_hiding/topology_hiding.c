@@ -43,10 +43,11 @@ str th_contact_encode_param = str_init("thinfo");
 
 static int mod_init(void);
 static void mod_destroy(void);
+static int fixup_mmode(void **param, int param_no);
 static int fixup_topo_hiding(void **param, int param_no);
 int w_topology_hiding1(struct sip_msg *req,char *param);
 int w_topology_hiding(struct sip_msg *req);
-int w_topology_hiding_match(struct sip_msg *req);
+int w_topology_hiding_match(struct sip_msg *req, char *seq_match_mode);
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 /* Exported functions */
@@ -56,6 +57,8 @@ static cmd_export_t cmds[]={
 	{"topology_hiding",(cmd_function)w_topology_hiding1,1,fixup_topo_hiding,
 			0, REQUEST_ROUTE},
 	{"topology_hiding_match",(cmd_function)w_topology_hiding_match,0,NULL,
+			0, REQUEST_ROUTE},
+	{"topology_hiding_match",(cmd_function)w_topology_hiding_match,1,fixup_mmode,
 			0, REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -178,6 +181,24 @@ static void mod_destroy(void)
 	return;
 }
 
+static int fixup_mmode(void **param, int param_no)
+{
+	int rc;
+	gparam_p gp;
+
+	rc = fixup_sgp(param);
+	if (rc != 0)
+		return rc;
+
+	gp = (gparam_p)*param;
+	if (gp->type != GPARAM_TYPE_STR)
+		return 0;
+
+	gp->v.sval.len = dlg_match_mode_str_to_int(&gp->v.sval);
+
+	return 0;
+}
+
 static int fixup_topo_hiding(void **param, int param_no)
 {
 	return fixup_sgp(param);
@@ -224,9 +245,30 @@ int w_topology_hiding1(struct sip_msg *req,char *param)
 	return topology_hiding(req,flags);
 }
 
-int w_topology_hiding_match(struct sip_msg *req)
+int w_topology_hiding_match(struct sip_msg *req, char *seq_match_mode_gp)
 {
-	if (dlg_api.match_dialog==NULL ||  dlg_api.match_dialog(req) < 0)
+	str res = STR_NULL;
+	gparam_p mm_gp = (gparam_p)seq_match_mode_gp;
+	int mm;
+
+	/* copy-paste from w_match_dialog() */
+	if (!seq_match_mode_gp) {
+		mm = SEQ_MATCH_FALLBACK;
+	} else {
+		if (mm_gp->type == GPARAM_TYPE_STR) {
+			mm = mm_gp->v.sval.len;
+		} else {
+			if (fixup_get_svalue(req, mm_gp, &res) != 0) {
+				LM_ERR("failed to extract matching mode pv! "
+				       "using 'DID_FALLBACK'\n");
+				mm = SEQ_MATCH_FALLBACK;
+			} else {
+				mm = dlg_match_mode_str_to_int(&res);
+			}
+		}
+	}
+
+	if (!dlg_api.match_dialog || dlg_api.match_dialog(req, mm) < 0)
 		return topology_hiding_match(req);
 	else
 		/* we went to the dlg module, which triggered us back, all good */
