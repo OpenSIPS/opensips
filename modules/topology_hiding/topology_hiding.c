@@ -254,7 +254,7 @@ int w_topology_hiding_match(struct sip_msg *req, char *seq_match_mode_gp)
 
 	/* copy-paste from w_match_dialog() */
 	if (!seq_match_mode_gp) {
-		mm = SEQ_MATCH_FALLBACK;
+		mm = SEQ_MATCH_DEFAULT;
 	} else {
 		if (mm_gp->type == GPARAM_TYPE_STR) {
 			mm = mm_gp->v.sval.len;

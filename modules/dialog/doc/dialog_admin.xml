@@ -1383,11 +1383,11 @@ create_dialog("B");
 		the current request to an known ongoing dialog.
 		</para>
 		<para>
-		By default, the function tries to use (for dialog matching) the DID
-		(Dialog ID) from Route header and also falls back to SIP-wise matching. 
-		This behavior may be changed by providing it with a given matching mode
-		string (see <xref linkend="param_dlg_match_mode"/> for possible values of
-		the parameter).
+		By default, dialog matching is performed according to the
+		<xref linkend="param_dlg_match_mode"/> module parameter. A specific
+		matching mode may be enforced by specifying the optional
+		"dlg_match_mode" parameter. Possible values for this parameter are
+		"DID_ONLY", "DID_FALLBACK" and "DID_NONE".
 		</para>
 		<para>
 		As sequential requests are automatically matched to the dialog when

@@ -1107,7 +1107,7 @@ static int w_match_dialog(struct sip_msg *msg, char *seq_match_mode_gp)
 	int mm;
 
 	if (!seq_match_mode_gp) {
-		mm = SEQ_MATCH_FALLBACK;
+		mm = SEQ_MATCH_DEFAULT;
 	} else {
 		if (mm_gp->type == GPARAM_TYPE_STR) {
 			mm = mm_gp->v.sval.len;
@@ -1138,7 +1138,8 @@ static int api_match_dialog(struct sip_msg *msg, int _seq_match_mode)
 		return 1;
 
 	backup = seq_match_mode;
-	seq_match_mode = _seq_match_mode;
+	if (_seq_match_mode != SEQ_MATCH_DEFAULT)
+		seq_match_mode = _seq_match_mode;
 
 	/* See if we can force DID matching, for the case of topo
 	 * hiding, where we have the DID as param of the contact */
