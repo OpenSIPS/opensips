@@ -518,6 +518,12 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 				completed (reply in non-swap or ACK in swap mode).
 				</para></listitem>
 				<listitem><para>
+				<emphasis>k</emphasis> - only create RTPProxy session, but do
+				not modify the SDP body. This is useful when you only want to
+				inject some media, but do not want to engage RTPProxy in the
+				entire call.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>i/e</emphasis> - when RTPProxy is used in bridge mode,
 				these flags are used to indicate the direction of the media flow
 				for the current request/reply. 'i' refers to the LAN (internal

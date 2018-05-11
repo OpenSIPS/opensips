@@ -12,9 +12,9 @@ Bogdan-Andrei Iancu
 
 Razvan Crainea
 
-   Copyright © 2003-2008 Sippy Software, Inc.
+   Copyright � 2003-2008 Sippy Software, Inc.
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL
      __________________________________________________________
 
    Table of Contents
@@ -135,7 +135,7 @@ Chapter 1. Admin Guide
    - load-balancing will be performed over a set and the user has
    the ability to choose what set should be used. The set is
    selected via its id - the id being defined along with the set.
-   Refer to the “rtpproxy_sock” module parameter definition for
+   Refer to the "rtpproxy_sock" module parameter definition for
    syntax description.
 
    The balancing inside a set is done automatically by the module
@@ -165,7 +165,7 @@ Chapter 1. Admin Guide
 
    In our tests with RTPProxy we observed some limitations and
    also provide a patch for it against git commit
-   “600c80493793bafd2d69427bc22fcb43faad98c5”. It contains an
+   "600c80493793bafd2d69427bc22fcb43faad98c5". It contains an
    addition and implements separate timeout parameters for the
    phases of session establishment and ongoing sessions. In the
    official code a single timeout parameter controls both session
@@ -181,23 +181,23 @@ Chapter 1. Admin Guide
    must follow:
 
    Start OpenSIPS timeout detection by setting the
-   “rtpp_notify_socket” module parameter in your configuration
+   "rtpp_notify_socket" module parameter in your configuration
    script. This is the socket where further notification will be
    received from rtpproxies. This socket must be a TCP or UNIX
    socket. Also, for all the calls that require notification, the
    rtpproxy_engage(), rtpproxy_offer() and rtpproxy_answer()
-   functions must be called with the “n” flag.
+   functions must be called with the "n" flag.
 
    Configure RTPProxy to use timeout notification by adding the
    following command line parameters:
-     * “ -n timeout_socket” - specifies where the notifications
+     * " -n timeout_socket" - specifies where the notifications
        will be sent. This socket must be the same as
-       “rtpp_notify_socket” OpenSIPS module parameter. This
+       "rtpp_notify_socket" OpenSIPS module parameter. This
        parameter is mandatory.
-     * “ -T ttl” - limits the rtp session timeout to “ttl”. This
+     * " -T ttl" - limits the rtp session timeout to "ttl". This
        parameter is optional and the default value is 60 seconds.
-     * “ -W ttl” - limits the session establishment timeout to
-       “ttl”. This parameter is optional and the default value is
+     * " -W ttl" - limits the session establishment timeout to
+       "ttl". This parameter is optional and the default value is
        60 seconds.
 
    All of the previous parameters can be used with the offical
@@ -208,11 +208,11 @@ Chapter 1. Admin Guide
 
    To get the patched version from git you must follow theese
    steps:
-     * Get the latest source code: “git clone
-       git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy”
-     * Make a branch from the commit: “git checkout -b branch_name
-       600c80493793bafd2d69427bc22fcb43faad98c5”
-     * Patch RTPProxy: “patch < path_to_rtpproxy_patch”
+     * Get the latest source code: "git clone
+       git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy"
+     * Make a branch from the commit: "git checkout -b branch_name
+       600c80493793bafd2d69427bc22fcb43faad98c5"
+     * Patch RTPProxy: "patch < path_to_rtpproxy_patch"
 
    The patched version can also be found at:
    http://opensips.org/pub/rtpproxy/
@@ -240,7 +240,7 @@ Chapter 1. Admin Guide
    Definition of socket(s) used to connect to (a set) RTPProxy. It
    may specify a UNIX socket or an IPv4/IPv6 UDP socket.
 
-   Default value is “NONE” (disabled).
+   Default value is "NONE" (disabled).
 
    Example 1.1. Set rtpproxy_sock parameter
 ...
@@ -262,7 +262,7 @@ modparam("rtpproxy", "rtpproxy_sock",
    rtpproxy will not attempt to establish communication to
    RTPProxy for rtpproxy_disable_tout seconds.
 
-   Default value is “60”.
+   Default value is "60".
 
    Example 1.2. Set rtpproxy_disable_tout parameter
 ...
@@ -273,7 +273,7 @@ modparam("rtpproxy", "rtpproxy_disable_tout", 20)
 
    Timeout value in waiting for reply from RTPProxy.
 
-   Default value is “1”.
+   Default value is "1".
 
    Example 1.3. Set rtpproxy_timeout parameter to 200ms
 ...
@@ -285,7 +285,7 @@ modparam("rtpproxy", "rtpproxy_timeout", "0.2")
    Enable auto-bridging feature. Does not properly function when
    doing serial/parallel forking!
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.4. Enable auto-bridging feature
 ...
@@ -301,7 +301,7 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
    How many times rtpproxy should retry to send and receive after
    timeout was generated.
 
-   Default value is “5”.
+   Default value is "5".
 
    Example 1.5. Set rtpproxy_retr parameter
 ...
@@ -315,7 +315,7 @@ modparam("rtpproxy", "rtpproxy_retr", 2)
    explicit set, or when calling one of the rtpproxy_*() functions
    without an explicit set.
 
-   Default value is set “0”.
+   Default value is set "0".
 
    Example 1.6. Set default_set parameter
 ...
@@ -334,7 +334,7 @@ Note
    The string must be a complete SDP line, including the EOH
    (\r\n).
 
-   Default value is “a=nortpproxy:yes\r\n”.
+   Default value is "a=nortpproxy:yes\r\n".
 
    Example 1.7. Set nortpproxy_str parameter
 ...
@@ -351,7 +351,7 @@ modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
    the MI command rtpproxy_reload is issued(the definitions will
    be replaced with the ones from the database table).
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.8. Set db_url parameter
 ...
@@ -365,7 +365,7 @@ modparam("rtpproxy", "db_url",
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
 
-   Default value is “rtpproxy_sockets”.
+   Default value is "rtpproxy_sockets".
 
    Example 1.9. Set db_table parameter
 ...
@@ -377,7 +377,7 @@ modparam("rtpproxy", "db_table", "nh_sockets")
 
    The name rtpp socket column in the database table.
 
-   Default value is “rtpproxy_sock”.
+   Default value is "rtpproxy_sock".
 
    Example 1.10. Set rtpp_socket_col parameter
 ...
@@ -389,7 +389,7 @@ modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket")
 
    The name set id column in the database table.
 
-   Default value is “set_id”.
+   Default value is "set_id".
 
    Example 1.11. Set set_id parameter
 ...
@@ -401,7 +401,7 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 
    The socket used by OpenSIPS to receive timeout notifications.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.12. Set rtpp_notify_socket parameter
 ...
@@ -432,10 +432,14 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
      * flags(optional) - flags to turn on some features.
           + a - flags that UA from which message is received
             doesn't support symmetric RTP.
-          + l - force “lookup”, that is, only rewrite SDP when
+          + l - force "lookup", that is, only rewrite SDP when
             corresponding session is already exists in the RTP
             proxy. By default is on when the session is to be
             completed (reply in non-swap or ACK in swap mode).
+          + k - only create RTPProxy session, but do not modify
+            the SDP body. This is useful when you only want to
+            inject some media, but do not want to engage RTPProxy
+            in the entire call.
           + i/e - when RTPProxy is used in bridge mode, these
             flags are used to indicate the direction of the media
             flow for the current request/reply. 'i' refers to the
@@ -842,9 +846,9 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   What happened with “rtpproxy_disable” parameter?
+   What happened with "rtpproxy_disable" parameter?
 
-   It was removed as it became obsolete - now “rtpproxy_sock” can
+   It was removed as it became obsolete - now "rtpproxy_sock" can
    take empty value to disable the rtpproxy functionality.
 
    2.2.

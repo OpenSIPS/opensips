@@ -3442,7 +3442,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	str body1, oldport, oldip, newport, newip ,nextport;
 	str from_tag, to_tag, tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
-	int orgip, commip, enable_notification;
+	int orgip, commip, enable_notification, keep_body;
 	int pf, pf1, force, err, locked = 0;
 	struct options opts, rep_opts, pt_opts, m_opts, t_opts;
 	char *cp, *cp1;
@@ -3492,7 +3492,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		LM_ERR("out of pkg memory\n");
 		FORCE_RTP_PROXY_RET (-1);
 	}
-	asymmetric = flookup = force = real = orgip = commip = enable_notification = 0;
+	asymmetric = flookup = force = real = orgip = commip = enable_notification = keep_body = 0;
 	for (cp = args->arg1; cp != NULL && *cp != '\0'; cp++) {
 		switch (*cp) {
 		case 'a':
@@ -3526,6 +3526,11 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			if (args->offer != 0) {
 				flookup = 1;
 			}
+			break;
+
+		case 'k':
+		case 'K':
+			keep_body = 1;
 			break;
 
 		case 'f':
@@ -3994,7 +3999,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			 *   by returning also 0
 			 * - or by not sending to rtpproxy the old port if 0
 			 */
-			if(oldport.len!=1 || oldport.s[0]!='0')
+			if(keep_body == 0 && (oldport.len!=1 || oldport.s[0]!='0'))
 			{
 				if (alter_mediaport(msg, &body1, &oldport, &newport, 0) == -1)
 					goto error;
@@ -4002,7 +4007,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 
 			nextport.s = int2str(port+1, &nextport.len);
 
-			if( r2p )
+			if( r2p && keep_body == 0)
 				if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
 					goto error;
 
@@ -4013,7 +4018,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			if (c2p != NULL || !c1p_altered) {
 				body1.s = c2p ? c2p : c1p;
 				body1.len = bodylimit - body1.s;
-				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+				if (keep_body == 0 && alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
 					goto error;
 				if (!c2p)
 					c1p_altered = 1;
@@ -4054,7 +4059,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	} /* Iterate sessions */
 	free_opts(&opts, &rep_opts, &pt_opts);
 
-	if (proxied == 0 && nortpproxy_str.len) {
+	if (proxied == 0 && nortpproxy_str.len && keep_body == 0) {
 		cp = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
 		if (cp == NULL) {
 			LM_ERR("out of pkg memory\n");
