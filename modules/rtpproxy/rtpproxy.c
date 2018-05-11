@@ -2669,10 +2669,6 @@ rtpproxy_answer5_f(struct sip_msg *msg,
 {
 	str aux_str;
 
-	if (msg->first_line.type == SIP_REQUEST)
-		if (msg->first_line.u.request.method_value != METHOD_ACK)
-			return -1;
-
 	if (param1) {
 		if (rtpp_get_var_svalue(msg, (gparam_p)param1, &aux_str, 0)<0) {
 			LM_ERR("bogus flags parameter\n");
@@ -3523,9 +3519,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 
 		case 'l':
 		case 'L':
-			if (args->offer != 0) {
-				flookup = 1;
-			}
+			flookup=1;
 			break;
 
 		case 'k':
@@ -3632,10 +3626,11 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	}
 	if (flookup != 0) {
 		if (to_tag.len == 0) {
-			FORCE_RTP_PROXY_RET (-1);
+			to_tag.s = "dummy";
+			to_tag.len = strlen(to_tag.s);
 		}
 		create = 0;
-		if (msg->first_line.type==SIP_REQUEST) {
+		if (args->offer != 0) {
 			tmp = from_tag;
 			from_tag = to_tag;
 			to_tag = tmp;
