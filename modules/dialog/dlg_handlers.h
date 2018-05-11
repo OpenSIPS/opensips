@@ -40,6 +40,7 @@
 #define MAX_DLG_RR_PARAM_NAME 32
 
 /* values for the sequential match mode */
+#define SEQ_MATCH_DEFAULT   -1
 #define SEQ_MATCH_STRICT_ID  0
 #define SEQ_MATCH_FALLBACK   1
 #define SEQ_MATCH_NO_ID      2
@@ -58,11 +59,8 @@ static inline int dlg_match_mode_str_to_int(const str *in)
 	if (!str_strcasecmp(in, &did_none))
 		return SEQ_MATCH_NO_ID;
 
-	return SEQ_MATCH_FALLBACK;
+	return SEQ_MATCH_DEFAULT;
 }
-#define SEQ_MATCH_STRICT_ID_ST  "did_only"
-#define SEQ_MATCH_FALLBACK_ST   "did_fallback"
-#define SEQ_MATCH_NO_ID_ST      "did_none"
 
 #define RR_DLG_PARAM_SIZE  (2*2*sizeof(int)+3+MAX_DLG_RR_PARAM_NAME)
 #define DLG_SEPARATOR      '.'
