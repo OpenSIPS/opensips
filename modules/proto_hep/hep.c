@@ -1358,6 +1358,9 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 			/* can't get the correlation length from header since it's in htons form */
 			memcpy(buf + *len, correlation.data, corr_len);
 			UPDATE_CHECK_REMAINING(rem, *len, corr_len);
+
+			/* just dumped the string - no need to keep it further on */
+			cJSON_PurgeString((char *)correlation.data);
 		}
 	}
 
@@ -1470,6 +1473,10 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 	if (hep_chunk == NULL) {
 		LM_DBG("Chunk with (id=%d; vendor=%d) not found! Creating!\n", data_id, vendor);
 		hep_chunk = pkg_malloc(sizeof(generic_chunk_t) + len);
+		if (!hep_chunk) {
+			LM_ERR("cannot allocate hep_chunk in pkg mem!\n");
+			return -1;
+		}
 		memset(hep_chunk, 0, sizeof(generic_chunk_t));
 
 		hep_chunk->data = (void *)(hep_chunk+1);
@@ -1480,6 +1487,10 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 		/* only check if we need to allocate more memory for this chunk */
 		if ((hep_chunk->chunk.length - sizeof(hep_chunk_t)) < len) {
 			hep_chunk = pkg_realloc(hep_chunk, sizeof(generic_chunk_t) + len);
+			if (!hep_chunk) {
+				LM_ERR("cannot re-alloc hep_chunk in pkg mem!\n");
+				return -1;
+			}
 			hep_chunk->data = (void *)(hep_chunk + 1);
 		}
 	}
@@ -1721,7 +1732,6 @@ void free_hep_message(trace_message message)
 		/* free JSON correlation if there */
 		if ( hep_msg->correlation ) {
 			if ( !homer5_on ) {
-				cJSON_PurgeString(((generic_chunk_t *)hep_msg->correlation)->data);
 				JSON_free( hep_msg->correlation );
 			} else {
 				pkg_free( hep_msg->correlation );
