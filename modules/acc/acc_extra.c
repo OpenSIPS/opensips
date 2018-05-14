@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include "../../dprint.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../usr_avp.h"
 #include "../../socket_info.h"
 #include "../../mem/mem.h"
@@ -329,6 +330,7 @@ static int parse_acc_list_generic(void* val, str2bkend str2bk,
 
 	char* end;
 
+	trim(&sent);
 
 	if ((end=q_memchr(sent.s, ':', sent.len)) == NULL) {
 		LM_ERR("Missing backend separator ':'!\n");
