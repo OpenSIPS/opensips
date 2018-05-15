@@ -2387,6 +2387,85 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 
 }
 
+static int pv_get_hdr_name(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	int idx, idx_f;
+	struct hdr_field *hf;
+	char *p;
+	int n;
+
+	if(msg==NULL || res==NULL || param==NULL)
+		return -1;
+
+	/* get the index */
+	if (pv_get_spec_index(msg, param, &idx, &idx_f) != 0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	/* make sure we have parsed all the headers */
+	if (parse_headers(msg, HDR_EOH_F, 0) <0 ) {
+		LM_ERR("error parsing headers\n");
+		return pv_get_null(msg, param, res);
+	}
+
+	res->flags = PV_VAL_STR;
+
+	if (idx_f == PV_IDX_ALL) {
+		/* return all header names, separated by ',' */
+
+		p = pv_local_buf;
+		hf = msg->headers;
+		do {
+			if (p != pv_local_buf) {
+				if (p - pv_local_buf + PV_FIELD_DELIM_LEN + 1 > PV_LOCAL_BUF_SIZE) {
+					LM_ERR("local buffer length exceeded\n");
+					return pv_get_null(msg, param, res);
+				}
+				memcpy(p, PV_FIELD_DELIM, PV_FIELD_DELIM_LEN);
+				p += PV_FIELD_DELIM_LEN;
+			}
+
+			if (p - pv_local_buf + hf->name.len + 1 > PV_LOCAL_BUF_SIZE) {
+				LM_ERR("local buffer length exceeded!\n");
+				return pv_get_null(msg, param, res);
+			}
+			memcpy(p, hf->name.s, hf->name.len);
+			p += hf->name.len;
+
+			hf = hf->next;
+		} while (hf);
+
+		*p = 0;
+		res->rs.s = pv_local_buf;
+		res->rs.len = p - pv_local_buf;
+		return 0;
+	}
+
+	if (idx < 0) {
+		/* negative index, translate it to a positive one */
+
+		n = 0;
+		for (hf = msg->headers; hf; hf = hf->next, n++) ;
+		idx = -idx;
+		if(idx > n) {
+			LM_DBG("index [%d] out of range\n", -idx);
+			return pv_get_null(msg, param, res);
+		}
+		idx = n - idx;
+	}
+
+	for (hf = msg->headers, n = 0; hf && n != idx; hf = hf->next, n++) ;
+
+	if (!hf) {
+		LM_DBG("index [%d] out of range\n", idx);
+		return pv_get_null(msg, param, res);
+	}
+
+	res->rs = hf->name;
+	return 0;
+}
+
 static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 		pv_value_t *res)
 {
@@ -3372,6 +3451,8 @@ static pv_export_t _pv_names_table[] = {
 	{{"avp", (sizeof("avp")-1)}, PVT_AVP, pv_get_avp, pv_set_avp,
 		pv_parse_avp_name, pv_parse_avp_index, 0, 0},
 	{{"hdr", (sizeof("hdr")-1)}, PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
+		pv_parse_index, 0, 0},
+	{{"hdr_name", (sizeof("hdr_name")-1)}, PVT_HDR_NAME, pv_get_hdr_name, 0, 0,
 		pv_parse_index, 0, 0},
 	{{"hdrcnt", (sizeof("hdrcnt")-1)}, PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name, 0, 0, 0},
 	{{"var", (sizeof("var")-1)}, PVT_SCRIPTVAR, pv_get_scriptvar,
