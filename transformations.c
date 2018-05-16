@@ -2361,7 +2361,7 @@ char* parse_transformation(str *in, trans_t **tr)
 	str s;
 	trans_export_t *tr_export;
 	trans_extra_t *tr_extra;
-	int i;
+	int i, nesting_level = 0;
 
 	if(in==NULL || in->s==NULL || tr==NULL)
 		return NULL;
@@ -2425,7 +2425,16 @@ char* parse_transformation(str *in, trans_t **tr)
 		t->trf = tr_export->eval_func;
 
 		s.s = p;
-		while(is_in_str(p, in) && *p != TR_RBRACKET) p++;
+		/* allow nested transformations! */
+		while(is_in_str(p, in) && (nesting_level > 0 || *p != TR_RBRACKET)) {
+			if (*p == TR_LBRACKET)
+				nesting_level++;
+
+			if (*p == TR_RBRACKET)
+				nesting_level--;
+			p++;
+		}
+
 		if(*p == '\0') {
 			LM_ERR("invalid transformation: %.*s\n", in->len, in->s);
 			goto error;
