@@ -741,7 +741,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	/* trace rest request */
 	if ( rest_trace_enabled() ) {
 		memset( &tparam, 0, sizeof tparam);
-		tparam.callid = msg->callid->body;
+		if (msg->callid)
+			tparam.callid = msg->callid->body;
 
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGFUNCTION, trace_rest_request_cb);
 		w_curl_easy_setopt(sync_handle, CURLOPT_DEBUGDATA, &tparam);
