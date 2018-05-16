@@ -2645,7 +2645,7 @@ static int is_id_traced(int id, trace_info_p info)
 	int trace_types;
 
 	if (info==NULL || (trace_types=info->trace_types)==-1)
-		return -1;
+		return 0;
 
 	if (!(*trace_on_flag)) {
 		LM_DBG("trace is off!\n");
