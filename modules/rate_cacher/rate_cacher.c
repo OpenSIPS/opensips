@@ -32,8 +32,8 @@ static struct mi_root * mi_delete_client(struct mi_root *cmd_tree, void *param )
 static struct mi_root * mi_delete_client_rate(struct mi_root *cmd_tree, void *param );
 
 static int fixup_cost_based_routing(void** param, int param_no);
-static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws, char *s_iseu, 
-		char *s_carrierlist,char *s_ani,char *s_dnis);
+static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws,
+		char *s_carrierlist,char *s_dnis,char *profit_margin,char *out_result);
 
 /* table names */
 static str carr_db_table = str_init("rc_vendors");
@@ -41,7 +41,7 @@ static str carr_id_col = str_init("vendor_id");
 static str carr_rateid_col = str_init("vendor_rate");
 
 static str acc_db_table = str_init("rc_accounts");
-static str acc_id_col = str_init("id");
+static str acc_id_col = str_init("account_id");
 static str acc_ws_rateid_col = str_init("wholesale_rate");
 static str acc_rt_rateid_col = str_init("retail_rate");
 
@@ -67,28 +67,6 @@ static db_con_t *accounts_db_hdl=0;
 static db_func_t accounts_dbf;   
 static db_con_t *rates_db_hdl=0;
 static db_func_t rates_dbf;   
-
-static int rc_reply_avp = -1;
-static str rc_reply_avp_spec = str_init("$avp(rc_reply)");
-
-static int rc_profit_margin_avp = -1;
-static str rc_profit_margin_spec = str_init("$avp(profit_margin)");
-
-#define rc_fix_avp_definition( _pv_spec, _avp_id, _name) \
-        do { \
-                _pv_spec.len = strlen(_pv_spec.s); \
-                if (pv_parse_spec( &_pv_spec, &avp_spec)==0 \
-                || avp_spec.type!=PVT_AVP) { \
-                        LM_ERR("malformed or non AVP [%.*s] for %s AVP definition\n",\
-                                _pv_spec.len, _pv_spec.s, _name); \
-                        return E_CFG; \
-                } \
-                if( pv_get_avp_name(0, &(avp_spec.pvp), &_avp_id, &dummy )!=0) { \
-                        LM_ERR("[%.*s]- invalid AVP definition for %s AVP\n", \
-                                _pv_spec.len, _pv_spec.s, _name); \
-                        return E_CFG; \
-                } \
-        } while(0)
 
 /* ratesheet description */
 
@@ -217,7 +195,7 @@ static mi_export_t mi_cmds [] = {
 
 static cmd_export_t cmds[]={
 	{"cost_based_routing",(cmd_function)script_cost_based_routing, 6,
-		fixup_cost_based_routing,0,REQUEST_ROUTE},
+		fixup_cost_based_routing,0,REQUEST_ROUTE | FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -245,8 +223,6 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	int i;
-	pv_spec_t avp_spec;
-	unsigned short dummy;
 
 	LM_INFO("Rate_Cacher module - initializing ...\n");
 
@@ -330,13 +306,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* FIXME - loading maybe on child_init */
 	if (rate_cacher_load_all_info() < 0) {
 		LM_ERR("Failed to load all data from the DB\n");
 		return -1;
 	}
-
-	rc_fix_avp_definition( rc_reply_avp_spec, rc_reply_avp, "RC REPLY");
-	rc_fix_avp_definition( rc_profit_margin_spec, rc_profit_margin_avp, "RC Profit Margin");
 
 	carriers_dbf.close(carriers_db_hdl);
 	carriers_db_hdl = NULL;
@@ -1088,8 +1062,9 @@ static int rate_cacher_load_all_info(void)
 
 	for(i=0; i < RES_ROW_N(res); i++) {
 		row = RES_ROWS(res) + i;
-		accountid.s = int2str(VAL_INT(ROW_VALUES(row)),&accountid.len);
-	
+		accountid.s = (char *)VAL_STRING(ROW_VALUES(row));
+		accountid.len = strlen(VAL_STRING(ROW_VALUES(row)));
+
 		if (add_client(&accountid,0) != 0) {
 			LM_ERR("Failed to add account %.*s\n",accountid.len,accountid.s);
 			continue;
@@ -1914,282 +1889,240 @@ error:
 
 static int fixup_cost_based_routing(void** param, int param_no)
 {
-	return fixup_sgp(param);
+	switch (param_no) {
+		case 1:
+			return fixup_sgp(param);
+		case 2:
+			return fixup_igp(param);
+		case 3:
+			return fixup_sgp(param);
+		case 4:
+			return fixup_sgp(param);
+		case 5:
+			return fixup_igp(param);
+		case 6:
+			return fixup_pvar(param);
+	}
+
+	return -1;
 }
 
-static char* cost_based_routing(str *clientid,int isws,int iseu,
-	str *carrierlist,int carr_no,str *ani,str *dnis,double *profit_margin) 
+
+static char* cost_based_routing(str *clientid,int isws, str *carrierlist,int carr_no,str *dnis,int profit_margin) 
 {
-//	int bucket,rc,i;
-//	char *result;
-//	struct account_entry *entry;
-//	struct account_cell *it;
-//	struct eu_rate_lookup_rpl eu_ret; 
-//	struct ratesheet_cell_entry *ret;
-//	unsigned int dst_matched_len,src_matched_len;
-//	double client_price,vendor_price;
-//	str carrier;
-//	struct carrier_cell *carr_it;
-//	struct carrier_entry *carr_entry;
-//	
-//	bucket = core_hash(clientid,0,acc_table->size);
-//	entry = &(acc_table->entries[bucket]);
-//
-//	lock_bucket_read( entry->lock );
-//	for (it=entry->first;it;it=it->next) {
-//		if (it->accountid.len == clientid->len &&
-//		memcmp(it->accountid.s,clientid->s,clientid->len) == 0) {
-//			break;
-//		}
-//	}
-//
-//	if (it == NULL) {
-//		unlock_bucket_read( entry->lock );
-//		return NULL;
-//	}
-//
-//	if (iseu) {
-//		eu_ret.regular = NULL;
-//		eu_ret.ani_based = NULL;
-//		dst_matched_len = 0;
-//		src_matched_len = 0;
-//
-//		if (isws) {
-//			rc = get_eu_rate_price_prefix(it->eu_ws_ratesheet,it->ws_trie,it->eu_ws_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
-//		} else {
-//			rc = get_eu_rate_price_prefix(it->eu_rt_ratesheet,it->rt_trie,it->eu_rt_rate_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret);
-//		}
-//
-//		if (rc < 0)
-//			goto eu_fallback;
-//		if (eu_ret.ani_based == NULL) {
-//			client_price = eu_ret.regular->price;
-//		} else {
-//			client_price = eu_ret.ani_based->price;
-//		}
-//
-//		/* found our price, fall through to carrier lookup */
-//	} else {
-//eu_fallback:
-//		if (isws) {
-//			ret = get_rate_price_prefix(it->ws_trie,dnis,&dst_matched_len);
-//		} else {
-//			ret = get_rate_price_prefix(it->rt_trie,dnis,&dst_matched_len);
-//		}
-//
-//		if (ret == NULL) {
-//			LM_ERR("Failed to get client price \n");
-//			unlock_bucket_read( entry->lock );
-//			return NULL;
-//		}
-//
-//		client_price = ret->price;
-//	} 
-//
-//	unlock_bucket_read( entry->lock );
-//	LM_INFO("Client price is %f\n",client_price);
-//
-//	result = (char *)pkg_malloc(carr_no);
-//	if (result == NULL) {
-//		LM_ERR("No more mem \n");
-//		return NULL;
-//	}
-//	memset(result,0,carr_no);
-//
-//	for (i=0;i<carr_no;i++) {
-//		carrier = carrierlist[i];
-//
-//		bucket = core_hash(&carrier,0,carr_table->size);
-//		carr_entry = &(carr_table->entries[bucket]);
-//
-//		lock_bucket_read( carr_entry->lock );
-//		for (carr_it=carr_entry->first;carr_it;carr_it=carr_it->next) {
-//			if (carr_it->carrierid.len == carrier.len &&
-//			memcmp(carr_it->carrierid.s,carrier.s,carrier.len) == 0) {
-//				break;
-//			}
-//		}
-//
-//		if (carr_it == NULL) {
-//			unlock_bucket_read( carr_entry->lock );
-//			/* we did not find the carrier - do not use it */
-//			result[i] = 0;
-//			continue;
-//		}
-//
-//		eu_ret.regular = NULL;
-//		eu_ret.ani_based = NULL;
-//
-//		if (iseu) {
-//			if (get_eu_rate_price_prefix(carr_it->eu_ratesheet,carr_it->trie,
-//			carr_it->eu_type,ani,dnis,&dst_matched_len,&src_matched_len,&eu_ret) < 0)
-//				goto carr_eu_fallback;
-//
-//			if (eu_ret.ani_based == NULL) {
-//				vendor_price = eu_ret.regular->price;
-//			} else {
-//				vendor_price = eu_ret.ani_based->price;
-//			}
-//
-//			/* found our price, fall through to price comparison */
-//		} else {
-//carr_eu_fallback:
-//			ret = get_rate_price_prefix(carr_it->trie,dnis,&dst_matched_len);
-//			if (ret == NULL) {
-//				/* no price found for carrier, do not use it */
-//				unlock_bucket_read( carr_entry->lock );
-//				result[i] = 0;
-//				continue;
-//			}
-//
-//			vendor_price = ret->price;
-//		}
-//
-//		LM_INFO("Vendor %.*s price is %f\n",carrier.len,carrier.s,vendor_price);
-//		
-//		unlock_bucket_read( carr_entry->lock );
-//
-//		if (((client_price / vendor_price)*100-100) >= *profit_margin)
-//			result[i] = 1;
-//		else
-//			result[i] = 0;
-//
-//		LM_INFO("%d\n",result[i]);
-//	}
-//
-//	return result;
-	return NULL;
+	int bucket,i;
+	char *result;
+	struct account_entry *entry;
+	struct account_cell *it;
+	struct ratesheet_cell_entry *ret;
+	unsigned int dst_matched_len;
+	double client_price,vendor_price;
+	str carrier;
+	struct carrier_cell *carr_it;
+	struct carrier_entry *carr_entry;
+	
+	bucket = core_hash(clientid,0,acc_table->size);
+	entry = &(acc_table->entries[bucket]);
+
+	lock_bucket_read( entry->lock );
+	for (it=entry->first;it;it=it->next) {
+		if (it->accountid.len == clientid->len &&
+		memcmp(it->accountid.s,clientid->s,clientid->len) == 0) {
+			break;
+		}
+	}
+
+	if (it == NULL) {
+		unlock_bucket_read( entry->lock );
+		return NULL;
+	}
+
+	if (isws) {
+		ret = get_rate_price_prefix(it->ws_trie,dnis,&dst_matched_len);
+	} else {
+		ret = get_rate_price_prefix(it->rt_trie,dnis,&dst_matched_len);
+	}
+
+	if (ret == NULL) {
+		LM_ERR("Failed to get client price \n");
+		unlock_bucket_read( entry->lock );
+		return NULL;
+	}
+
+	client_price = ret->price;
+	unlock_bucket_read( entry->lock );
+
+	LM_INFO("Client price is %f\n",client_price);
+
+	result = (char *)pkg_malloc(carr_no);
+	if (result == NULL) {
+		LM_ERR("No more mem \n");
+		return NULL;
+	}
+	memset(result,0,carr_no);
+
+	for (i=0;i<carr_no;i++) {
+		carrier = carrierlist[i];
+
+		bucket = core_hash(&carrier,0,carr_table->size);
+		carr_entry = &(carr_table->entries[bucket]);
+
+		lock_bucket_read( carr_entry->lock );
+		for (carr_it=carr_entry->first;carr_it;carr_it=carr_it->next) {
+			if (carr_it->carrierid.len == carrier.len &&
+			memcmp(carr_it->carrierid.s,carrier.s,carrier.len) == 0) {
+				break;
+			}
+		}
+
+		if (carr_it == NULL) {
+			unlock_bucket_read( carr_entry->lock );
+			/* we did not find the carrier - do not use it */
+			result[i] = 0;
+			continue;
+		}
+
+		ret = get_rate_price_prefix(carr_it->trie,dnis,&dst_matched_len);
+		if (ret == NULL) {
+			/* no price found for carrier, do not use it */
+			unlock_bucket_read( carr_entry->lock );
+			result[i] = 0;
+			continue;
+		}
+
+		vendor_price = ret->price;
+		unlock_bucket_read( carr_entry->lock );
+
+		LM_INFO("Vendor %.*s price is %f\n",carrier.len,carrier.s,vendor_price);
+
+                if (client_price == 0)
+                        result[i] = 0;
+                else {
+                        if (((client_price - vendor_price)*100/client_price) >= profit_margin)
+                                result[i] = 1;
+                        else
+                                result[i] = 0;
+                }
+
+		LM_INFO("%d\n",result[i]);
+	}
+
+	return result;
 }
 
-static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws, char *s_iseu, 
-		char *s_carrierlist,char *s_ani,char *s_dnis)
+static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws,
+		char *s_carrierlist,char *s_dnis,char *s_profit_margin,char *s_out_result)
 {
-//	str clientid = {0,0};
-//	int isws=0,iseu=0,i;
-//        str carrierlist = {0,0};
-//        str ani = {0,0};
-//        str dnis = {0,0};
-//	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*result=NULL,*avp_result=NULL;
-//	str carrier_array[100];
-//	int carrier_array_len=0;
-//	int_str val;
-//	str profit_margin_s;
-//	double profit_margin;
-//
-//        if (fixup_get_svalue(msg, (gparam_p)s_clientid, &clientid) != 0) {
-//                LM_ERR("failed to extract clientid\n");
-//                return -1;
-//        }
-//
-//        if (fixup_get_ivalue(msg, (gparam_p)s_isws, &isws) != 0) {
-//                LM_ERR("failed to isws\n");
-//                return -1;
-//        }
-//
-//        if (fixup_get_ivalue(msg, (gparam_p)s_iseu, &iseu) != 0) {
-//                LM_ERR("failed to iseu\n");
-//                return -1;
-//        }
-//
-//        if (fixup_get_svalue(msg, (gparam_p)s_carrierlist, &carrierlist) != 0) {
-//                LM_ERR("failed to extract carrierlist\n");
-//                return -1;
-//        }
-//
-//        if (fixup_get_svalue(msg, (gparam_p)s_ani, &ani) != 0) {
-//                LM_ERR("failed to extract ani\n");
-//                return -1;
-//        }
-//
-//        if (fixup_get_svalue(msg, (gparam_p)s_dnis, &dnis) != 0) {
-//                LM_ERR("failed to extract dnis\n");
-//                return -1;
-//        }
-//
-//	if (search_first_avp(0, rc_profit_margin_avp, &val, 0)
-//	&& val.s.len > 0) {
-//		profit_margin_s.s = pkg_malloc(val.s.len+1);
-//		if (!profit_margin_s.s) {
-//			LM_ERR("No more pkg\n");
-//			return -1;
-//		}
-//
-//		memcpy(profit_margin_s.s,val.s.s,val.s.len);
-//		profit_margin_s.s[val.s.len] = 0;
-//		
-//		profit_margin = atof(profit_margin_s.s);
-//		pkg_free(profit_margin_s.s);
-//	} else 
-//		profit_margin = 0;
-//
-//	nts_carrierlist = (char *)pkg_malloc(carrierlist.len+1);
-//	if (nts_carrierlist == NULL) {
-//		LM_ERR("Failed to alloc mem\n");
-//		return -1;
-//	}
-//	memcpy(nts_carrierlist,carrierlist.s,carrierlist.len);
-//	nts_carrierlist[carrierlist.len]=0;
-//
-//	for (token = strtok_r(nts_carrierlist, ",", &tmp);
-//	token;
-//	token = strtok_r(NULL, ",", &tmp))
-//	{
-//		carrier_array[carrier_array_len].len = strlen(token);
-//		carrier_array[carrier_array_len].s = pkg_malloc(carrier_array[carrier_array_len].len);
-//		if (carrier_array[carrier_array_len].s == NULL) {
-//			LM_ERR("Failed to alloc mem\n");
-//			return -1;
-//		}
-//		
-//		memcpy(carrier_array[carrier_array_len].s,token,carrier_array[carrier_array_len].len);
-//		carrier_array_len++;
-//	}
-//
-//	result = cost_based_routing(&clientid,isws,iseu,carrier_array,carrier_array_len,&ani,&dnis,&profit_margin);
-//	if (result == NULL) {
-//		LM_ERR("Failed to do CBR\n");
-//		goto err_free;
-//	}
-//
-//	destroy_avps( 0, rc_reply_avp, 1);	
-//	avp_result = (char *)pkg_malloc(2*carrier_array_len);
-//	if (!avp_result) 
-//		goto err_free;
-//
-//	memset(avp_result,0,2*carrier_array_len);
-//	for (i=0,tmp=avp_result;i<carrier_array_len;i++) {
-//		if (i == 0) {
-//			*tmp++ = result[i] + '0';
-//		} else {
-//			*tmp++ = ',';
-//			*tmp++ = result[i] + '0';
-//		}
-//	}
-//
-//	val.s.s = avp_result;
-//	val.s.len = strlen(avp_result);
-//
-//	if (add_avp_last( AVP_VAL_STR, rc_reply_avp, val)!=0 ) {
-//		LM_ERR("failed to insert ruri avp\n");
-//		goto err_free;
-//	}
-//
-//	if (result)
-//		pkg_free(result);
-//	if (avp_result)
-//		pkg_free(avp_result);
-//	for (i=0;i<carrier_array_len;i++)
-//		pkg_free(carrier_array[i].s);
-//	
-//	return 1;
-//
-//err_free:
-//	if (result)
-//		pkg_free(result);
-//	if (avp_result)
-//		pkg_free(avp_result);
-//	for (i=0;i<carrier_array_len;i++)
-//		pkg_free(carrier_array[i].s);
+	str clientid = {0,0};
+	int isws=0,i,profit_margin=0;
+	str carrierlist = {0,0};
+	str dnis = {0,0};
+	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*result=NULL,*avp_result=NULL;
+	/* TODO - remove 100 here */
+	str carrier_array[100];
+	int carrier_array_len=0;
+	pv_value_t pv_val;
+	static pv_spec_p out_spec;
+
+	if (fixup_get_svalue(msg, (gparam_p)s_clientid, &clientid) != 0) {
+		LM_ERR("failed to extract clientid\n");
+		return -1;
+	}
+
+	if (fixup_get_ivalue(msg, (gparam_p)s_isws, &isws) != 0) {
+		LM_ERR("failed to isws\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)s_carrierlist, &carrierlist) != 0) {
+		LM_ERR("failed to extract carrierlist\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)s_dnis, &dnis) != 0) {
+		LM_ERR("failed to extract dnis\n");
+		return -1;
+	}
+
+	if (fixup_get_ivalue(msg, (gparam_p)s_profit_margin, &profit_margin) != 0) {
+		LM_ERR("failed to extract dnis\n");
+		return -1;
+	}
+
+	out_spec = (pv_spec_p)s_out_result;
+	if (out_spec == NULL) {
+		LM_ERR("No out PVAR provided \n");
+		return -1;
+	}
+
+	nts_carrierlist = (char *)pkg_malloc(carrierlist.len+1);
+	if (nts_carrierlist == NULL) {
+		LM_ERR("Failed to alloc mem\n");
+		return -1;
+	}
+	memcpy(nts_carrierlist,carrierlist.s,carrierlist.len);
+	nts_carrierlist[carrierlist.len]=0;
+
+	for (token = strtok_r(nts_carrierlist, ",", &tmp);
+	token;
+	token = strtok_r(NULL, ",", &tmp))
+	{
+		carrier_array[carrier_array_len].len = strlen(token);
+		carrier_array[carrier_array_len].s = pkg_malloc(carrier_array[carrier_array_len].len);
+		if (carrier_array[carrier_array_len].s == NULL) {
+			LM_ERR("Failed to alloc mem\n");
+			return -1;
+		}
+		
+		memcpy(carrier_array[carrier_array_len].s,token,carrier_array[carrier_array_len].len);
+		carrier_array_len++;
+	}
+
+	result = cost_based_routing(&clientid,isws,carrier_array,carrier_array_len,&dnis,profit_margin);
+	if (result == NULL) {
+		LM_ERR("Failed to do CBR\n");
+		goto err_free;
+	}
+
+	avp_result = (char *)pkg_malloc(2*carrier_array_len);
+	if (!avp_result) 
+		goto err_free;
+
+	memset(avp_result,0,2*carrier_array_len);
+	for (i=0,tmp=avp_result;i<carrier_array_len;i++) {
+		if (i == 0) {
+			*tmp++ = result[i] + '0';
+		} else {
+			*tmp++ = ',';
+			*tmp++ = result[i] + '0';
+		}
+	}
+
+	pv_val.flags = PV_VAL_STR;
+	pv_val.rs.s = avp_result;
+	pv_val.rs.len = strlen(avp_result);
+
+	if (pv_set_value(msg, out_spec, 0,&pv_val) != 0) {
+		LM_ERR("failed to set value for rule attrs pvar\n");
+		goto err_free;
+	}
+
+	if (result)
+		pkg_free(result);
+	if (avp_result)
+		pkg_free(avp_result);
+	for (i=0;i<carrier_array_len;i++)
+		pkg_free(carrier_array[i].s);
+	
+	return 1;
+
+err_free:
+	if (result)
+		pkg_free(result);
+	if (avp_result)
+		pkg_free(avp_result);
+	for (i=0;i<carrier_array_len;i++)
+		pkg_free(carrier_array[i].s);
 
 	return -1;
 }
