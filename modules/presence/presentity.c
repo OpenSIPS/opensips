@@ -853,9 +853,6 @@ error:
 	if (p)
 		next_turn_phtable( p, hash_code);
 
-	if(result)
-		pa_dbf.free_result(pa_db, result);
-
 	if (notify_body.s)
 		xmlFree(notify_body.s);
 
