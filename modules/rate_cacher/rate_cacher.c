@@ -31,8 +31,12 @@ static struct mi_root * mi_add_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_client_rate(struct mi_root *cmd_tree, void *param );
 
-static int fixup_cost_based_routing(void** param, int param_no);
-static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws,
+static int fixup_cost_based_filtering(void** param, int param_no);
+static int script_cost_based_filtering(struct sip_msg *msg, char *s_clientid, char *s_isws,
+		char *s_carrierlist,char *s_dnis,char *profit_margin,char *out_result);
+
+static int fixup_cost_based_ordering(void** param, int param_no);
+static int script_cost_based_ordering(struct sip_msg *msg, char *s_clientid, char *s_isws,
 		char *s_carrierlist,char *s_dnis,char *profit_margin,char *out_result);
 
 /* table names */
@@ -194,8 +198,10 @@ static mi_export_t mi_cmds [] = {
 };
 
 static cmd_export_t cmds[]={
-	{"cost_based_routing",(cmd_function)script_cost_based_routing, 6,
-		fixup_cost_based_routing,0,REQUEST_ROUTE | FAILURE_ROUTE},
+	{"cost_based_filtering",(cmd_function)script_cost_based_filtering, 6,
+		fixup_cost_based_filtering,0,REQUEST_ROUTE | FAILURE_ROUTE},
+	{"cost_based_ordering",(cmd_function)script_cost_based_ordering, 6,
+		fixup_cost_based_ordering,0,REQUEST_ROUTE | FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -1887,7 +1893,7 @@ error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 }
 
-static int fixup_cost_based_routing(void** param, int param_no)
+static int fixup_cost_based_filtering(void** param, int param_no)
 {
 	switch (param_no) {
 		case 1:
@@ -1907,20 +1913,42 @@ static int fixup_cost_based_routing(void** param, int param_no)
 	return -1;
 }
 
+static int fixup_cost_based_ordering(void** param, int param_no)
+{
+	switch (param_no) {
+		case 1:
+			return fixup_sgp(param);
+		case 2:
+			return fixup_igp(param);
+		case 3:
+			return fixup_sgp(param);
+		case 4:
+			return fixup_sgp(param);
+		case 5:
+			return fixup_igp(param);
+		case 6:
+			return fixup_pvar(param);
+	}
 
-static char* cost_based_routing(str *clientid,int isws, str *carrierlist,int carr_no,str *dnis,int profit_margin) 
+	return -1;
+}
+
+static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist,int carr_no,str *dnis,double *client_price) 
 {
 	int bucket,i;
-	char *result;
+	double *result;
 	struct account_entry *entry;
 	struct account_cell *it;
 	struct ratesheet_cell_entry *ret;
 	unsigned int dst_matched_len;
-	double client_price,vendor_price;
+	double vendor_price;
 	str carrier;
 	struct carrier_cell *carr_it;
 	struct carrier_entry *carr_entry;
 	
+	if (client_price == NULL)
+		return NULL;
+
 	bucket = core_hash(clientid,0,acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
@@ -1949,12 +1977,12 @@ static char* cost_based_routing(str *clientid,int isws, str *carrierlist,int car
 		return NULL;
 	}
 
-	client_price = ret->price;
+	*client_price = ret->price;
 	unlock_bucket_read( entry->lock );
 
-	LM_INFO("Client price is %f\n",client_price);
+	LM_INFO("Client price is %f\n",*client_price);
 
-	result = (char *)pkg_malloc(carr_no);
+	result = (double *)pkg_malloc(carr_no * sizeof(double));
 	if (result == NULL) {
 		LM_ERR("No more mem \n");
 		return NULL;
@@ -1994,30 +2022,201 @@ static char* cost_based_routing(str *clientid,int isws, str *carrierlist,int car
 		unlock_bucket_read( carr_entry->lock );
 
 		LM_INFO("Vendor %.*s price is %f\n",carrier.len,carrier.s,vendor_price);
-
-                if (client_price == 0)
-                        result[i] = 0;
-                else {
-                        if (((client_price - vendor_price)*100/client_price) >= profit_margin)
-                                result[i] = 1;
-                        else
-                                result[i] = 0;
-                }
-
-		LM_INFO("%d\n",result[i]);
+		result[i] = vendor_price;
 	}
 
 	return result;
 }
 
-static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char *s_isws,
+typedef struct str_price_s {
+	str vendor_name;
+	double price;
+} name_price_t;
+	
+static int script_cost_based_ordering(struct sip_msg *msg, char *s_clientid, char *s_isws,
 		char *s_carrierlist,char *s_dnis,char *s_profit_margin,char *s_out_result)
 {
 	str clientid = {0,0};
-	int isws=0,i,profit_margin=0;
+	int isws=0,profit_margin=0,i,j,len,matched_margin=0;
 	str carrierlist = {0,0};
 	str dnis = {0,0};
-	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*result=NULL,*avp_result=NULL;
+	double *results=NULL,client_price=-1;
+	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*avp_result=NULL;
+	/* TODO - remove 100 here */
+	str carrier_array[100];
+	int carrier_array_len=0;
+	pv_value_t pv_val;
+	static pv_spec_p out_spec;
+	name_price_t *sort_arr=NULL,aux;
+
+	if (fixup_get_svalue(msg, (gparam_p)s_clientid, &clientid) != 0) {
+		LM_ERR("failed to extract clientid\n");
+		return -1;
+	}
+
+	if (fixup_get_ivalue(msg, (gparam_p)s_isws, &isws) != 0) {
+		LM_ERR("failed to isws\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)s_carrierlist, &carrierlist) != 0) {
+		LM_ERR("failed to extract carrierlist\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)s_dnis, &dnis) != 0) {
+		LM_ERR("failed to extract dnis\n");
+		return -1;
+	}
+
+	if (fixup_get_ivalue(msg, (gparam_p)s_profit_margin, &profit_margin) != 0) {
+		LM_ERR("failed to extract dnis\n");
+		return -1;
+	}
+
+	out_spec = (pv_spec_p)s_out_result;
+	if (out_spec == NULL) {
+		LM_ERR("No out PVAR provided \n");
+		return -1;
+	}
+
+	nts_carrierlist = (char *)pkg_malloc(carrierlist.len+1);
+	if (nts_carrierlist == NULL) {
+		LM_ERR("Failed to alloc mem\n");
+		return -1;
+	}
+	memcpy(nts_carrierlist,carrierlist.s,carrierlist.len);
+	nts_carrierlist[carrierlist.len]=0;
+
+	for (token = strtok_r(nts_carrierlist, ",", &tmp);
+	token;
+	token = strtok_r(NULL, ",", &tmp))
+	{
+		carrier_array[carrier_array_len].len = strlen(token);
+		carrier_array[carrier_array_len].s = pkg_malloc(carrier_array[carrier_array_len].len);
+		if (carrier_array[carrier_array_len].s == NULL) {
+			LM_ERR("Failed to alloc mem\n");
+			return -1;
+		}
+		
+		memcpy(carrier_array[carrier_array_len].s,token,carrier_array[carrier_array_len].len);
+		carrier_array_len++;
+	}
+
+	results = bulk_cost_based_fetching(&clientid,isws,carrier_array,carrier_array_len,&dnis,&client_price);
+	if (results == NULL) {
+		LM_ERR("Failed to do CBR\n");
+		goto err_free;
+	}
+
+	matched_margin = 0;
+	for (i=0;i<carrier_array_len;i++) {
+		if (client_price > 0) {
+                        if (((client_price - results[i])*100/client_price) >= profit_margin) {
+				matched_margin++;
+			}
+		}
+	}
+
+	if (matched_margin == 0) {
+		pv_val.rs.s = "";
+		pv_val.rs.len = 0;
+		goto set_and_return;
+	}
+
+	
+	sort_arr = (name_price_t *) pkg_malloc(matched_margin * sizeof(name_price_t));
+	if (sort_arr == NULL) {
+		LM_ERR("No more pkg\n");
+		goto err_free;
+	}
+
+	matched_margin=0;
+	len=0;
+	for (i=0;i<carrier_array_len;i++) {
+		if (client_price > 0) {
+                        if (((client_price - results[i])*100/client_price) >= profit_margin) {
+				sort_arr[matched_margin].vendor_name = carrier_array[i];
+				sort_arr[matched_margin].price = results[i];
+				matched_margin++;
+				
+				if (len == 0) {
+					len+=carrier_array[i].len; /* carr_name */
+				} else {
+					len+=1 /* , */ + carrier_array[i].len;
+				}
+			}
+		}
+	}
+
+	/* bubbly sort :( */
+	for (i=0;i<matched_margin-1;++i) {
+		for (j=0;j<matched_margin-1-i;++j) {
+			if (sort_arr[j].price > sort_arr[j+1].price) {
+				aux=sort_arr[j];
+				sort_arr[j]=sort_arr[j+1];
+				sort_arr[j+1]=aux;
+			}
+		}
+	}
+
+	avp_result = (char *)pkg_malloc(len+1);
+	if (!avp_result) 
+		goto err_free;
+
+	memset(avp_result,0,len+1);
+	for (i=0,tmp=avp_result;i<matched_margin;i++) {
+		if (tmp == avp_result) {
+			memcpy(tmp,sort_arr[i].vendor_name.s,sort_arr[i].vendor_name.len);
+			tmp+=sort_arr[i].vendor_name.len;
+		} else {
+			*tmp++ = ',';
+			memcpy(tmp,sort_arr[i].vendor_name.s,sort_arr[i].vendor_name.len);
+			tmp+=sort_arr[i].vendor_name.len;
+		}
+	}
+	pv_val.rs.s=avp_result;
+	pv_val.rs.len=len;
+	
+set_and_return:
+	if (pv_set_value(msg, out_spec, 0,&pv_val) != 0) {
+		LM_ERR("failed to set value for rule attrs pvar\n");
+		goto err_free;
+	}
+
+	if (sort_arr)
+		pkg_free(sort_arr);
+	if (results)
+		pkg_free(results);
+	if (avp_result)
+		pkg_free(avp_result);
+	for (i=0;i<carrier_array_len;i++)
+		pkg_free(carrier_array[i].s);
+	
+	return 1;
+
+err_free:
+	if (sort_arr)
+		pkg_free(sort_arr);
+	if (results)
+		pkg_free(results);
+	if (avp_result)
+		pkg_free(avp_result);
+	for (i=0;i<carrier_array_len;i++)
+		pkg_free(carrier_array[i].s);
+
+	return -1;
+}
+
+static int script_cost_based_filtering(struct sip_msg *msg, char *s_clientid, char *s_isws,
+		char *s_carrierlist,char *s_dnis,char *s_profit_margin,char *s_out_result)
+{
+	str clientid = {0,0};
+	int isws=0,profit_margin=0,i,len;
+	str carrierlist = {0,0};
+	str dnis = {0,0};
+	double *results=NULL,client_price=-1;
+	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*avp_result=NULL;
 	/* TODO - remove 100 here */
 	str carrier_array[100];
 	int carrier_array_len=0;
@@ -2078,37 +2277,59 @@ static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char
 		carrier_array_len++;
 	}
 
-	result = cost_based_routing(&clientid,isws,carrier_array,carrier_array_len,&dnis,profit_margin);
-	if (result == NULL) {
+	results = bulk_cost_based_fetching(&clientid,isws,carrier_array,carrier_array_len,&dnis,&client_price);
+	if (results == NULL) {
 		LM_ERR("Failed to do CBR\n");
 		goto err_free;
 	}
 
-	avp_result = (char *)pkg_malloc(2*carrier_array_len);
-	if (!avp_result) 
-		goto err_free;
-
-	memset(avp_result,0,2*carrier_array_len);
-	for (i=0,tmp=avp_result;i<carrier_array_len;i++) {
-		if (i == 0) {
-			*tmp++ = result[i] + '0';
-		} else {
-			*tmp++ = ',';
-			*tmp++ = result[i] + '0';
+	len=0;
+	for (i=0;i<carrier_array_len;i++) {
+		if (client_price > 0) {
+                        if (((client_price - results[i])*100/client_price) >= profit_margin) {
+				if (len == 0) {
+					len+=carrier_array[i].len; /* carr_name */
+				} else {
+					len+=1 /* , */ + carrier_array[i].len;
+				}
+			}
 		}
 	}
-
-	pv_val.flags = PV_VAL_STR;
-	pv_val.rs.s = avp_result;
-	pv_val.rs.len = strlen(avp_result);
-
+	
+	if (len == 0) {
+		pv_val.rs.s = "";
+		pv_val.rs.len = 0;
+	} else {
+		avp_result = (char *)pkg_malloc(len+1);
+		if (!avp_result) 
+			goto err_free;
+	
+		memset(avp_result,0,len+1);
+		for (i=0,tmp=avp_result;i<carrier_array_len;i++) {
+			if (client_price > 0) {
+                        	if (((client_price - results[i])*100/client_price) >= profit_margin) {
+					if (tmp == avp_result) {
+						memcpy(tmp,carrier_array[i].s,carrier_array[i].len);
+						tmp+=carrier_array[i].len;
+					} else {
+						*tmp++ = ',';
+						memcpy(tmp,carrier_array[i].s,carrier_array[i].len);
+						tmp+=carrier_array[i].len;
+					}
+				}
+			}
+		}
+		pv_val.rs.s=avp_result;
+		pv_val.rs.len=len;
+	}
+	
 	if (pv_set_value(msg, out_spec, 0,&pv_val) != 0) {
 		LM_ERR("failed to set value for rule attrs pvar\n");
 		goto err_free;
 	}
 
-	if (result)
-		pkg_free(result);
+	if (results)
+		pkg_free(results);
 	if (avp_result)
 		pkg_free(avp_result);
 	for (i=0;i<carrier_array_len;i++)
@@ -2117,8 +2338,8 @@ static int script_cost_based_routing(struct sip_msg *msg, char *s_clientid, char
 	return 1;
 
 err_free:
-	if (result)
-		pkg_free(result);
+	if (results)
+		pkg_free(results);
 	if (avp_result)
 		pkg_free(avp_result);
 	for (i=0;i<carrier_array_len;i++)
