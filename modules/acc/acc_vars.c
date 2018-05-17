@@ -137,8 +137,9 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 {
 	str s;
 
-	if (pvt == NULL || pvt->flags&PV_VAL_NULL || pvt->rs.len == 0) {
-		/* treat 0-length values as NULL now */
+	if (pvt == NULL || pvt->flags&PV_VAL_NULL
+	    || (pvt->flags & PV_VAL_STR && pvt->rs.len == 0)) {
+		/* also treat empty strings as NULL */
 		if (extra->value.s) {
 			shm_free(extra->value.s);
 			extra->shm_buf_len = 0;
