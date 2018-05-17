@@ -274,6 +274,7 @@ void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
 		}
 	}
 
-	dlg->locked_by = 0;
+	if (locked)
+		dlg->locked_by = 0;
 	return;
 }
