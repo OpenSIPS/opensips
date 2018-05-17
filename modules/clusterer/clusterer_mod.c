@@ -215,7 +215,8 @@ do { \
 	p = str_strstr(descr, &col_name);	\
 	if (p) {	\
 		p = p + col_name.len;	\
-		if (*p != '=') {	\
+		p = q_memchr(p, '=', descr->s + descr->len - p); \
+		if (!p) {	\
 			LM_ERR("Expected '=' after <%.*s>\n", col_name.len,	\
 				col_name.s);	\
 			return -1;	\
@@ -228,6 +229,7 @@ do { \
 				col_name.s);	\
 			return -1;	\
 		}	\
+		str_trim_spaces_lr(aux); \
 		if ((_type) == 0) {	\
 			if (str2int(&aux, (unsigned int*)&int_vals[(_col_idx)])) {	\
 				LM_ERR("Bad value for <%.*s>\n", col_name.len,	\
