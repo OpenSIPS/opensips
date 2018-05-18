@@ -651,6 +651,10 @@ static void sig_usr(int signo)
 			case SIGINT:
 					break;
 			case SIGTERM:
+					/* ignore any SIGTERM if not in shutdown sequance (this 
+					 * is marked by the attendent process) */
+					if (get_osips_state()!=STATE_TERMINATING)
+						return;
 					/* if some shutdown already in progress, ignore this one */
 					if (sig_flag==0) sig_flag=signo;
 					else return;
