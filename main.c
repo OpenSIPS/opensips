@@ -440,7 +440,7 @@ static void rpc_process_terminate(int sender_id, void *code)
 	#endif
 
 	/* simply terminate the process */
-	LM_INFO("Process %d exiting with code %d...\n",
+	LM_DBG("Process %d exiting with code %d...\n",
 		process_no, (int)(long)code);
 
 	exit( (int)(long)code );
