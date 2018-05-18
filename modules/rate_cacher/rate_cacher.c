@@ -44,8 +44,8 @@ static str carr_db_table = str_init("rc_vendors");
 static str carr_id_col = str_init("vendor_id");
 static str carr_rateid_col = str_init("vendor_rate");
 
-static str acc_db_table = str_init("rc_accounts");
-static str acc_id_col = str_init("account_id");
+static str acc_db_table = str_init("rc_clients");
+static str acc_id_col = str_init("client_id");
 static str acc_ws_rateid_col = str_init("wholesale_rate");
 static str acc_rt_rateid_col = str_init("retail_rate");
 
@@ -71,6 +71,9 @@ static db_con_t *accounts_db_hdl=0;
 static db_func_t accounts_dbf;   
 static db_con_t *rates_db_hdl=0;
 static db_func_t rates_dbf;   
+
+/* FIXME - might not want to have this static :( */
+#define MAX_CARR_IN_SIZE 32
 
 /* ratesheet description */
 
@@ -168,31 +171,31 @@ static int add_carrier(str *carrier,int safe);
 static int add_client(str *accountid,int safe);
 
 static param_export_t params[] = {
-	{ "carriers_db_url",		STR_PARAM,	&carriers_db_url.s},
-	{ "carriers_db_table",		STR_PARAM,	&carr_db_table.s},
-	{ "accounts_db_url",		STR_PARAM,	&accounts_db_url.s},
-	{ "accounts_db_table",		STR_PARAM,	&acc_db_table.s},
+	{ "vendors_db_url",		STR_PARAM,	&carriers_db_url.s},
+	{ "vendors_db_table",		STR_PARAM,	&carr_db_table.s},
+	{ "vendors_hash_size",		INT_PARAM,	&carr_hash_size},
+	{ "clients_db_url",		STR_PARAM,	&accounts_db_url.s},
+	{ "clients_db_table",		STR_PARAM,	&acc_db_table.s},
+	{ "cients_hash_size",		INT_PARAM,	&acc_hash_size},
 	{ "rates_db_url",		STR_PARAM,	&rates_db_url.s},
 	{ "rates_db_table",		STR_PARAM,	&ratesheets_db_table.s},
-	{ "carrier_hash_size",		INT_PARAM,	&carr_hash_size},
-	{ "accounts_hash_size",		INT_PARAM,	&acc_hash_size},
-	{ 0,				0,					0}
+	{ 0,				0,		0}
 };
 
 static mi_export_t mi_cmds [] = {
 	/* carrier methods */
-	{ "getCarrierPrice",        0, mi_get_carrier_price,      0,  0,  0},
-	{ "getBulkCarrierPrice",    0, mi_get_bulk_carrier_price, 0,  0,  0},
-	{ "reloadCarrierRate",      0, mi_reload_carrier_rate,    0,  0,  0},
-	{ "addCarrier",             0, mi_add_carrier,            0,  0,  0},
-	{ "deleteCarrierRate",      0, mi_delete_carrier_rate,    0,  0,  0},
-	{ "deleteCarrier",          0, mi_delete_carrier,         0,  0,  0},
+	{ "addVendor",             0, mi_add_carrier,            0,  0,  0},
+	{ "deleteVendor",          0, mi_delete_carrier,         0,  0,  0},
+	{ "getVendorPrice",        0, mi_get_carrier_price,      0,  0,  0},
+	{ "getBulkVendorPrice",    0, mi_get_bulk_carrier_price, 0,  0,  0},
+	{ "reloadVendorRate",      0, mi_reload_carrier_rate,    0,  0,  0},
+	{ "deleteVendorRate",      0, mi_delete_carrier_rate,    0,  0,  0},
 	/* client methods */
+	{ "addClient",              0, mi_add_client,             0,  0,  0},
+	{ "deleteClient",           0, mi_delete_client,          0,  0,  0},
 	{ "getClientPrice",         0, mi_get_client_price,       0,  0,  0},
 	{ "getBulkClientPrice",     0, mi_get_bulk_client_price,  0,  0,  0},
 	{ "reloadClientRate",       0, mi_reload_client,          0,  0,  0},
-	{ "addClient",              0, mi_add_client,             0,  0,  0},
-	{ "deleteClient",           0, mi_delete_client,          0,  0,  0},
 	{ "deleteClientRate",       0, mi_delete_client_rate,     0,  0,  0},
 	{0,0,0,0,0,0}
 };
@@ -2042,8 +2045,7 @@ static int script_cost_based_ordering(struct sip_msg *msg, char *s_clientid, cha
 	str dnis = {0,0};
 	double *results=NULL,client_price=-1;
 	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*avp_result=NULL;
-	/* TODO - remove 100 here */
-	str carrier_array[100];
+	str carrier_array[MAX_CARR_IN_SIZE];
 	int carrier_array_len=0;
 	pv_value_t pv_val;
 	static pv_spec_p out_spec;
@@ -2101,6 +2103,11 @@ static int script_cost_based_ordering(struct sip_msg *msg, char *s_clientid, cha
 		
 		memcpy(carrier_array[carrier_array_len].s,token,carrier_array[carrier_array_len].len);
 		carrier_array_len++;
+
+		if (carrier_array_len == MAX_CARR_IN_SIZE) {
+			LM_ERR("TOo many IN Vendors \n");
+			return -1;
+		}
 	}
 
 	results = bulk_cost_based_fetching(&clientid,isws,carrier_array,carrier_array_len,&dnis,&client_price);
@@ -2179,7 +2186,8 @@ static int script_cost_based_ordering(struct sip_msg *msg, char *s_clientid, cha
 	pv_val.rs.len=len;
 	
 set_and_return:
-	if (pv_set_value(msg, out_spec, 0,&pv_val) != 0) {
+	pv_val.flags = PV_VAL_STR;
+	if (pv_set_value(msg, out_spec, (int)EQ_T ,&pv_val) != 0) {
 		LM_ERR("failed to set value for rule attrs pvar\n");
 		goto err_free;
 	}
@@ -2217,8 +2225,7 @@ static int script_cost_based_filtering(struct sip_msg *msg, char *s_clientid, ch
 	str dnis = {0,0};
 	double *results=NULL,client_price=-1;
 	char *tmp=NULL,*token=NULL,*nts_carrierlist=NULL,*avp_result=NULL;
-	/* TODO - remove 100 here */
-	str carrier_array[100];
+	str carrier_array[MAX_CARR_IN_SIZE];
 	int carrier_array_len=0;
 	pv_value_t pv_val;
 	static pv_spec_p out_spec;
@@ -2323,7 +2330,8 @@ static int script_cost_based_filtering(struct sip_msg *msg, char *s_clientid, ch
 		pv_val.rs.len=len;
 	}
 	
-	if (pv_set_value(msg, out_spec, 0,&pv_val) != 0) {
+	pv_val.flags = PV_VAL_STR;
+	if (pv_set_value(msg, out_spec, (int)EQ_T ,&pv_val) != 0) {
 		LM_ERR("failed to set value for rule attrs pvar\n");
 		goto err_free;
 	}

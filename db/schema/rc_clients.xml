@@ -7,13 +7,13 @@
 
 ]>
 
-<table id="rc_accounts" xmlns:db="http://docbook.org/ns/docbook">
-	<name>rc_accounts</name>
+<table id="rc_clients" xmlns:db="http://docbook.org/ns/docbook">
+	<name>rc_clients</name>
 	<version>1</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Rate Cacher module to keep track of the
-		accounts - the inbound side of the traffic.
+		clients - the inbound side of the traffic.
 		More information can be found at: &OPENSIPS_MOD_DOC;rate_cacher.html.
 		</db:para>
 	</description>
@@ -30,11 +30,11 @@
 		</description>
 	</column>
 
-	<column id="account_id">
-		<name>account_id</name>
+	<column id="client_id">
+		<name>client_id</name>
 		<type>string</type>
 		<size>64</size>
-		<description>Account unique ID - used to link the GW from 
+		<description>Client unique ID
 		</description>
 	</column>
 
@@ -43,7 +43,7 @@
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>
-		<description>Wholesale Rate used for this account</description>
+		<description>Wholesale Rate used for this clients</description>
 	</column>
 
 	<column id="retail_rate">
@@ -51,12 +51,12 @@
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>
-		<description>Retail Rate used for this account</description>
+		<description>Retail Rate used for this client</description>
 	</column>
 
 	<index>
-		<name>account_id_idx</name>
-		<colref linkend="account_id"/>
+		<name>client_id_idx</name>
+		<colref linkend="client_id"/>
 		<unique/>
 	</index>
 

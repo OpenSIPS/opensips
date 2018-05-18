@@ -1,9 +1,9 @@
-	<!-- Declaration of rc_accounts table-->
-	<db_table id="rc_accounts">
-		<table_name>rc_accounts</table_name>
+	<!-- Declaration of rc_clients table-->
+	<db_table id="rc_clients">
+		<table_name>rc_clients</table_name>
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>account_id</field><type>DB_STR</type></column>
+		<column><field>client_id</field><type>DB_STR</type></column>
 		<column><field>wholesale_rate</field><type>DB_INT</type></column>
 		<column><field>retail_rate</field><type>DB_INT</type></column>
 	</db_table>

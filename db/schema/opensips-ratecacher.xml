@@ -9,7 +9,7 @@
 
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
 	<name>Rate Cacher</name>
-	<xi:include href="rc_accounts.xml"/>
+	<xi:include href="rc_clients.xml"/>
 	<xi:include href="rc_vendors.xml"/>
 	<xi:include href="rc_ratesheets.xml"/>
 	<xi:include href="rc_demo_ratesheet.xml"/>

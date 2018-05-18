@@ -1,10 +1,10 @@
-INSERT INTO version (table_name, table_version) values ('rc_accounts','1');
-CREATE TABLE rc_accounts (
+INSERT INTO version (table_name, table_version) values ('rc_clients','1');
+CREATE TABLE rc_clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    account_id CHAR(64) NOT NULL,
+    client_id CHAR(64) NOT NULL,
     wholesale_rate INTEGER DEFAULT 0 NOT NULL,
     retail_rate INTEGER DEFAULT 0 NOT NULL,
-    CONSTRAINT rc_accounts_account_id_idx  UNIQUE (account_id)
+    CONSTRAINT rc_clients_client_id_idx  UNIQUE (client_id)
 );
 
 INSERT INTO version (table_name, table_version) values ('rc_vendors','1');

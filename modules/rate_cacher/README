@@ -1,0 +1,311 @@
+rate_cacher Module
+
+Vlad Paiu
+
+   <vladpaiu@opensips.org>
+
+Edited by
+
+Vlad Paiu
+
+   Copyright © 2018 www.opensips-solutions.com
+   Revision History
+   Revision $Revision$ $Date$
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+
+        1.3. Exported Parameters
+
+              1.3.1. vendors_db_url (str)
+              1.3.2. vendors_db_table (str)
+              1.3.3. vendors_hash_size (str)
+              1.3.4. clients_db_url (str)
+              1.3.5. clients_db_table (str)
+              1.3.6. clients_hash_size (str)
+              1.3.7. rates_db_url (str)
+              1.3.8. rates_db_table (str)
+
+        1.4. Exported Functions
+
+              1.4.1.
+                      cost_based_filtering(client_id,is_wholesale,ve
+                      ndors_csv,dialled_no,desired_margin,out_vend
+                      or_csv)
+
+              1.4.2.
+                      cost_based_ordering(client_id,is_wholesale,ven
+                      dors_csv,dialled_no,desired_margin,out_vendo
+                      r_csv)
+
+   List of Examples
+
+   1.1. Setting the vendors_db_url parameter
+   1.2. Setting the vendors_db_table parameter
+   1.3. Setting the vendors_hash_size parameter
+   1.4. Setting the clients_db_url parameter
+   1.5. Setting the clients_db_table parameter
+   1.6. Setting the vendors_hash_size parameter
+   1.7. Setting the rates_db_url parameter
+   1.8. Setting the rates_db_table parameter
+   1.9. rest_get usage
+   1.10. rest_get usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The rate_cacher module provides a means of caching and
+   real-time querying of the ratesheets assigned to your clients
+   and / or vendors. It also allows for real-time cost-based
+   routing and cost-based filtering.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules..
+
+1.3. Exported Parameters
+
+1.3.1. vendors_db_url (str)
+
+   The DB URL for querying the Vendors used by the module
+
+   Default value is “NULL”.
+
+   Example 1.1. Setting the vendors_db_url parameter
+...
+modparam("rate_cacher", "vendors_db_url", "mysql://opensips:opensipsrw@l
+ocalhost/opensips")
+...
+
+1.3.2. vendors_db_table (str)
+
+   The DB Table for querying the Vendors used by the module
+
+   Default value is “rc_vendors”.
+
+   Example 1.2. Setting the vendors_db_table parameter
+...
+modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
+...
+
+1.3.3. vendors_hash_size (str)
+
+   The size of the hash table internally used to keep the vendors.
+   A larger table is much faster but consumes more memory. The
+   hash size must be a power of 2 number.
+
+   Default value is “256”.
+
+   Example 1.3. Setting the vendors_hash_size parameter
+...
+modparam("rate_cacher", "vendors_hash_size", 1024)
+...
+
+1.3.4. clients_db_url (str)
+
+   The DB URL for querying the Clients used by the module
+
+   Default value is “NULL”.
+
+   Example 1.4. Setting the clients_db_url parameter
+...
+modparam("rate_cacher", "clients_db_url", "mysql://opensips:opensipsrw@l
+ocalhost/opensips")
+...
+
+1.3.5. clients_db_table (str)
+
+   The DB Table for querying the Clients used by the module
+
+   Default value is “rc_clients”.
+
+   Example 1.5. Setting the clients_db_table parameter
+...
+modparam("rate_cacher", "clients_db_table", "my_clients_view")
+...
+
+1.3.6. clients_hash_size (str)
+
+   The size of the hash table internally used to keep the clients.
+   A larger table is much faster but consumes more memory. The
+   hash size must be a power of 2 number.
+
+   Default value is “256”.
+
+   Example 1.6. Setting the vendors_hash_size parameter
+...
+modparam("rate_cacher", "clients_hash_size", 1024)
+...
+
+1.3.7. rates_db_url (str)
+
+   The DB URL for querying the Ratesheets used by the module
+
+   Default value is “NULL”.
+
+   Example 1.7. Setting the rates_db_url parameter
+...
+modparam("rate_cacher", "rates_db_url", "mysql://opensips:opensipsrw@loc
+alhost/opensips")
+...
+
+1.3.8. rates_db_table (str)
+
+   The DB Table for querying the Ratesheets used by the module
+
+   Default value is “rc_ratesheets”.
+
+   Example 1.8. Setting the rates_db_table parameter
+...
+modparam("rate_cacher", "rates_db_table", "my_clients_view")
+...
+
+1.4. Exported Functions
+
+1.4.1.
+cost_based_filtering(client_id,is_wholesale,vendors_csv,dialled_no,de
+sired_margin,out_vendor_csv)
+
+   For a call originating from the provided Client ID, on a
+   wholesale or retail quality, going to dialled_no, the function
+   removes the Vendors ( from the vendor_csv list ) which do not
+   pass the desired_margin condition, and sets the out_vendor_csv
+   variable to the list of Vendor that meet the margin condition,
+   while maintaining the initial order provided in the vendor_csv
+   variable.
+
+   The client_id pseudo-var will hold the client_id originating
+   this call
+
+   The is_wholesale pseudo-var will contain either a 1 or a 0,
+   depending on whether the call is wholesale or retail ( see
+   client ratesheet provisioning ).
+
+   The vendors_csv pseudo-var contains a list of Vendors that need
+   to be filtered based on the desired margin ( keep just those
+   that match your desired percentage margin for this call )
+
+   The dialled_no pseudo-var contains the DNIS - the dialled
+   number for the current call. It needs to be in E164 format,
+   without the leading +
+
+   The desired_margin pseudo-var contains the minimum Integer
+   margin that the script writer wants to achieve, based on the
+   Client sell and Vendor buy prices. The formula used is :
+   vendor_margin=(client_price - results[i])*100/client_price) .
+   If the vendor_margin is higher than the desired_margin, then
+   the Vendor is ok to use. The desired margin can be positive (
+   call will be profitable ) or negative ( the call will cause a
+   loss ).
+
+   The out_vendors_csv pseudo-var is an output parameter, and the
+   pvar will get populated with the CSV list of Vendors that meet
+   the desired margin condition
+
+   Possible parameter types
+     * ALL Parameters - String/Integer or pseudo-variables
+
+   This function can be used from a REQUEST or FAILURE route.
+
+   Example 1.9. rest_get usage
+...
+
+
+# If we get a call from testClient on it's wholesale quality,
+# going to number 40720018124, and we have to pick from the list
+# of vendors 'testVendor,testVendor2' based on a a profit margin
+# of 0 ( we do not want to lose money on this call ),
+# then $avp(out_vendor_csv) will have the vendors that we need
+# to use based on the above call characteristics, the order of the
+# vendors that was provided in $avp(carrierlist) and the desired margin
+$avp(client_id)="testClient";
+$avp(is_ws)=1;
+$avp(carrierlist)="testVendor,testVendor2";
+$avp(dnis)="40720018124";
+$avp(profit_margin)=0;
+
+if (cost_based_filtering("$avp(client_id)","$avp(is_ws)","$avp(carrierli
+st)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
+        xlog("XXX - Out of the $avp(carrierlist) carriers, we should onl
+y use $avp(out_vendor_result) \n");
+...
+
+1.4.2.
+cost_based_ordering(client_id,is_wholesale,vendors_csv,dialled_no,des
+ired_margin,out_vendor_csv)
+
+   For a call originating from the provided Client ID, on a
+   wholesale or retail quality, going to dialled_no, the function
+   removes the Vendors ( from the vendor_csv list ) which do not
+   pass the desired_margin condition, and sets th out_vendor_csv
+   variable to the list of Vendor that meet the margin condition,
+   in descending order of their margin ( from most profitable
+   Vendor to least profitable Vendor that still meets the margin
+   condition )
+
+   The client_id pseudo-var will hold the client_id originating
+   this call
+
+   The is_wholesale pseudo-var will contain either a 1 or a 0,
+   depending on whether the call is wholesale or retail ( see
+   client ratesheet provisioning ).
+
+   The vendors_csv pseudo-var contains a list of Vendors that need
+   to be filtered based on the desired margin ( keep just those
+   that match your desired percentage margin for this call )
+
+   The dialled_no pseudo-var contains the DNIS - the dialled
+   number for the current call. It needs to be in E164 format,
+   without the leading +
+
+   The desired_margin pseudo-var contains the minimum Integer
+   margin that the script writer wants to achieve, based on the
+   Client sell and Vendor buy prices. The formula used is :
+   vendor_margin=(client_price - results[i])*100/client_price) .
+   If the vendor_margin is higher than the desired_margin, then
+   the Vendor is ok to use. The desired margin can be positive (
+   call will be profitable ) or negative ( the call will cause a
+   loss ).
+
+   The out_vendors_csv pseudo-var is an output parameter, and the
+   pvar will get populated with the CSV list of Vendors that meet
+   the desired margin condition
+
+   Possible parameter types
+     * ALL Parameters - String/Integer or pseudo-variables
+
+   This function can be used from any route.
+
+   Example 1.10. rest_get usage
+...
+# If we get a call from testClient on it's wholesale quality,
+# going to number 40720018124, and we have to pick from the list
+# of vendors 'testVendor,testVendor2' based on a a profit margin
+# of 0 ( we do not want to lose money on this call ),
+# then $avp(out_vendor_csv) will have the vendors that we need
+# to use based on the above call characteristics, and the desired margin
+# The order in $avp(carrierlist) does not matter, the vendors will be
+# ordered from most profitable to least profitable
+$avp(client_id)="testClient";
+$avp(is_ws)=1;
+$avp(carrierlist)="testVendor,testVendor2";
+$avp(dnis)="40720018124";
+$avp(profit_margin)=0;
+
+if (cost_based_filtering("$avp(client_id)","$avp(is_ws)","$avp(carrierli
+st)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
+        xlog("XXX - Out of the $avp(carrierlist) carriers, we should onl
+y use $avp(out_vendor_result) \n");
+
+...

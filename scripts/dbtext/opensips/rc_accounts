@@ -1,1 +1,0 @@
-id(int,auto) account_id(string) wholesale_rate(int) retail_rate(int) 

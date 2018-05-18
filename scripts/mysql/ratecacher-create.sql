@@ -1,10 +1,10 @@
-INSERT INTO version (table_name, table_version) values ('rc_accounts','1');
-CREATE TABLE rc_accounts (
+INSERT INTO version (table_name, table_version) values ('rc_clients','1');
+CREATE TABLE rc_clients (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    account_id CHAR(64) NOT NULL,
+    client_id CHAR(64) NOT NULL,
     wholesale_rate INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     retail_rate INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    CONSTRAINT account_id_idx UNIQUE (account_id)
+    CONSTRAINT client_id_idx UNIQUE (client_id)
 ) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('rc_vendors','1');

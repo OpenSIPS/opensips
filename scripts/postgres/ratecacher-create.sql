@@ -1,13 +1,13 @@
-INSERT INTO version (table_name, table_version) values ('rc_accounts','1');
-CREATE TABLE rc_accounts (
+INSERT INTO version (table_name, table_version) values ('rc_clients','1');
+CREATE TABLE rc_clients (
     id SERIAL PRIMARY KEY NOT NULL,
-    account_id VARCHAR(64) NOT NULL,
+    client_id VARCHAR(64) NOT NULL,
     wholesale_rate INTEGER DEFAULT 0 NOT NULL,
     retail_rate INTEGER DEFAULT 0 NOT NULL,
-    CONSTRAINT rc_accounts_account_id_idx UNIQUE (account_id)
+    CONSTRAINT rc_clients_client_id_idx UNIQUE (client_id)
 );
 
-ALTER SEQUENCE rc_accounts_id_seq MAXVALUE 2147483647 CYCLE;
+ALTER SEQUENCE rc_clients_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('rc_vendors','1');
 CREATE TABLE rc_vendors (
     id SERIAL PRIMARY KEY NOT NULL,

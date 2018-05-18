@@ -1,19 +1,19 @@
-INSERT INTO version (table_name, table_version) values ('rc_accounts','1');
-CREATE TABLE rc_accounts (
+INSERT INTO version (table_name, table_version) values ('rc_clients','1');
+CREATE TABLE rc_clients (
     id NUMBER(10) PRIMARY KEY,
-    account_id VARCHAR2(64),
+    client_id VARCHAR2(64),
     wholesale_rate NUMBER(10) DEFAULT 0 NOT NULL,
     retail_rate NUMBER(10) DEFAULT 0 NOT NULL,
-    CONSTRAINT rc_accounts_account_id_idx  UNIQUE (account_id)
+    CONSTRAINT rc_clients_client_id_idx  UNIQUE (client_id)
 );
 
-CREATE OR REPLACE TRIGGER rc_accounts_tr
-before insert on rc_accounts FOR EACH ROW
+CREATE OR REPLACE TRIGGER rc_clients_tr
+before insert on rc_clients FOR EACH ROW
 BEGIN
   auto_id(:NEW.id);
-END rc_accounts_tr;
+END rc_clients_tr;
 /
-BEGIN map2users('rc_accounts'); END;
+BEGIN map2users('rc_clients'); END;
 /
 INSERT INTO version (table_name, table_version) values ('rc_vendors','1');
 CREATE TABLE rc_vendors (
