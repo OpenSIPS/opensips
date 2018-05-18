@@ -510,9 +510,9 @@ static void shutdown_opensips( int status )
 
 	if (i==0 && n!=0) {
 		/* whatever processes are still running are to be brutally 
-		 * terminated via SIGTERM */
+		 * terminated via SIGKILL */
 		LM_DBG("force termination for all processes\n");
-		kill_all_children(SIGTERM);
+		kill_all_children(SIGKILL);
 		if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
 			LM_ERR("could not install SIGALARM handler\n");
 			/* continue, the process will die anyway if no
