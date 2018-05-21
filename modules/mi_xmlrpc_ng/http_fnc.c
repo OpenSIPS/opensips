@@ -480,7 +480,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	xmlNodePtr param_node;
 	xmlNodePtr value_node;
 	xmlNodePtr string_node;
-	str val, esc_val = {NULL, 0};
+	str val = {NULL, 0}, esc_val = {NULL, 0};
 
 	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
 	doc = xmlParseMemory(arg->s, arg->len);
@@ -608,6 +608,9 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 						esc_val.len = unescape_xml(esc_val.s, val.s, val.len);
 						LM_DBG("got escaped string param [%.*s]\n", esc_val.len, esc_val.s);
 
+						xmlFree(val.s);
+						val.s = NULL;
+
 						node = &mi_cmd->node;
 						if(!add_mi_node_child(node,MI_DUP_VALUE,NULL,0,esc_val.s,esc_val.len)){
 							xml_errcode = ERR_INTERNAL;
@@ -644,10 +647,14 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		trace_xml_request( cl_socket, miCmd.s, mi_cmd );
 	}
 
+	xmlFree(miCmd.s);
+	miCmd.s = NULL;
+
 	*async_hdl = hdl;
 
 	if (mi_cmd) free_mi_tree(mi_cmd);
-	if(doc) xmlFree(doc);
+	if (doc)
+		xmlFreeDoc(doc);
 	doc=NULL;
 	return mi_rpl;
 
@@ -658,10 +665,16 @@ xml_error:
 	/* trace all errors */
 	*is_traced= 1;
 
+	if (miCmd.s)
+		xmlFree(miCmd.s);
+	if (val.s)
+		xmlFree(val.s);
+
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	if (hdl) shm_free(hdl);
 	*async_hdl = NULL;
-	if(doc) xmlFree(doc);
+	if(doc)
+		xmlFreeDoc(doc);
 	doc=NULL;
 	return NULL;
 }
