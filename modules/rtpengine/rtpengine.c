@@ -1645,6 +1645,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 			case 16:
 				if (str_eq(&key, "UDP/TLS/RTP/SAVP"))
 					ng_flags->transport = 0x104;
+				else if (str_eq(&key, "rtcp-mux-require"))
+					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "require"));
 				else
 					break;
 				continue;
