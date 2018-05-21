@@ -21,6 +21,7 @@ Vlad Paiu
         1.2. Dependencies
 
               1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
 
         1.3. Exported Parameters
 
@@ -44,6 +45,19 @@ Vlad Paiu
                       cost_based_ordering(client_id,is_wholesale,ven
                       dors_csv,dialled_no,desired_margin,out_vendo
                       r_csv)
+
+        1.5. Exported MI Functions
+
+              1.5.1. rc_addVendor
+              1.5.2. rc_deleteVendor
+              1.5.3. rc_reloadVendorRate
+              1.5.4. rc_deleteVendorRate
+              1.5.5. rc_getVendorPrice
+              1.5.6. rc_addClient
+              1.5.7. rc_deleteClient
+              1.5.8. rc_reloadClientRate
+              1.5.9. rc_deleteClientRate
+              1.5.10. rc_getClientPrice
 
    List of Examples
 
@@ -73,6 +87,12 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * No dependencies on other OpenSIPS modules..
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
 
 1.3. Exported Parameters
 
@@ -309,3 +329,168 @@ st)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
 y use $avp(out_vendor_result) \n");
 
 ...
+
+1.5. Exported MI Functions
+
+1.5.1.  rc_addVendor
+
+   Adds a new Vendor, without assigning any ratesheet to it.
+
+   Name: rc_addVendor
+
+   Parameters :
+     * vendorName - name of the Vendor to be added
+
+   MI FIFO Command Format:
+## Add a new Vendor
+# opensipsctl fifo rc_addVendor myNewVendor
+
+1.5.2.  rc_deleteVendor
+
+   Removes a vendor from memory, along with the ratesheet asigned
+   with it ( if any )
+
+   Name: rc_deleteVendor
+
+   Parameters :
+     * vendorName - name of the Vendor to be deleted
+
+   MI FIFO Command Format:
+## Delete a Vendor
+# opensipsctl fifo rc_deleteVendor myNewVendor
+
+1.5.3.  rc_reloadVendorRate
+
+   Reloads the provided ratesheet and assigns it to the Vendor
+
+   Name: rc_reloadVendorRate
+
+   Parameters :
+     * vendorName - name of the Vendor
+     * ratesheet_id - ID of the ratesheet to be reloaded and
+       assigned
+
+   MI FIFO Command Format:
+## Reloads a Vendor Ratesheet
+# opensipsctl fifo rc_reloadVendorRate myVendor 3
+
+1.5.4.  rc_deleteVendorRate
+
+   Deletes the assigned ratesheet from the Vendor
+
+   Name: rc_deleteVendorRate
+
+   Parameters :
+     * vendorName - name of the Vendor
+
+   MI FIFO Command Format:
+## Reloads a Vendor Ratesheet
+# opensipsctl fifo rc_deleteVendorRate myVendor
+
+1.5.5.  rc_getVendorPrice
+
+   Fetches all the ratesheet information ( destination name,
+   price, minimum, increment ) for the provided Vendor and dialled
+   number
+
+   Name: rc_getVendorPrice
+
+   Parameters :
+     * vendorName - name of the Vendor
+     * dialledNumber - number to match in the above Vendor's
+       ratesheet
+
+   MI FIFO Command Format:
+## Query for the price of myVendor for the 40727318251 number
+# opensipsctl fifo rc_getVendorPrice myVendor 40727318251
+query:: myVendor-40727318251
+        prefix:: 40727
+        destination:: ROMANIA MOBILE VODAFONE
+        price:: 0.500000
+        minimum:: 0
+        increment:: 1
+        currency:: USD
+
+1.5.6.  rc_addClient
+
+   Adds a new Client, without assigning any ratesheet to it.
+
+   Name: rc_addClient
+
+   Parameters :
+     * clientName - name of the Client to be added
+
+   MI FIFO Command Format:
+## Add a new Client
+# opensipsctl fifo rc_addClient myNewClient
+
+1.5.7.  rc_deleteClient
+
+   Removes a Client from memory, along with the ratesheet asigned
+   with it ( if any )
+
+   Name: rc_deleteClient
+
+   Parameters :
+     * clientName - name of the Client to be deleted
+
+   MI FIFO Command Format:
+## Delete a Client
+# opensipsctl fifo rc_deleteClient myClient
+
+1.5.8.  rc_reloadClientRate
+
+   Reloads the provided ratesheet and assigns it to the Client
+
+   Name: rc_reloadClientRate
+
+   Parameters :
+     * clientName - name of the Cient
+     * isWholesale - is the ratesheet assigned on the wholesale or
+       retail quality
+     * ratesheet_id - ID of the ratesheet to be reloaded and
+       assigned
+
+   MI FIFO Command Format:
+## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
+# opensipsctl fifo rc_reloadClientRate myClient 1 3
+
+1.5.9.  rc_deleteClientRate
+
+   Deletes the assigned ratesheet from the Client
+
+   Name: rc_deleteClientRate
+
+   Parameters :
+     * ClientName - name of the Client
+     * isWholesale - delete the wholesale or retail ratesheet
+
+   MI FIFO Command Format:
+## Reloads a Vendor Ratesheet
+# opensipsctl fifo rc_deleteVendorRate myVendor
+
+1.5.10.  rc_getClientPrice
+
+   Fetches all the ratesheet information ( destination name,
+   price, minimum, increment ) for the provided Client, on the
+   specified quality ( wholesale vs retail ) and dialled number
+
+   Name: rc_getClientPrice
+
+   Parameters :
+     * ClientName - name of the Client
+     * isWholesale - wholesale = 1, retail = 0
+     * dialledNumber - number to match in the above Client's
+       ratesheet
+
+   MI FIFO Command Format:
+## Query for the price of myClient, on the retail quality, for the 40727
+318251 number
+# opensipsctl fifo rc_getClientPrice myClient 0 40727318251
+query:: myClient-0-40727318251
+        prefix:: 4072
+        destination:: ROMANIA MOBILA VODAFONE
+        price:: 1.050000
+        minimum:: 0
+        increment:: 6
+        currency:: USD

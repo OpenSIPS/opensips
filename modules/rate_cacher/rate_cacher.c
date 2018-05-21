@@ -20,14 +20,12 @@ static int mod_child(int);
 static void mod_destroy(void);
 static int rate_cacher_load_all_info(void); 
 static struct mi_root * mi_get_carrier_price(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_get_bulk_carrier_price(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_reload_carrier_rate(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_add_carrier(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_carrier(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_carrier_rate(struct mi_root *cmd_tree, void *param );
 
 static struct mi_root * mi_get_client_price(struct mi_root *cmd_tree, void *param );
-static struct mi_root * mi_get_bulk_client_price(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_reload_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_add_client(struct mi_root *cmd_tree, void *param );
 static struct mi_root * mi_delete_client(struct mi_root *cmd_tree, void *param );
@@ -97,19 +95,17 @@ static param_export_t params[] = {
 
 static mi_export_t mi_cmds [] = {
 	/* carrier methods */
-	{ "addVendor",             0, mi_add_carrier,            0,  0,  0},
-	{ "deleteVendor",          0, mi_delete_carrier,         0,  0,  0},
-	{ "getVendorPrice",        0, mi_get_carrier_price,      0,  0,  0},
-	{ "getBulkVendorPrice",    0, mi_get_bulk_carrier_price, 0,  0,  0},
-	{ "reloadVendorRate",      0, mi_reload_carrier_rate,    0,  0,  0},
-	{ "deleteVendorRate",      0, mi_delete_carrier_rate,    0,  0,  0},
+	{ "rc_addVendor",             0, mi_add_carrier,            0,  0,  0},
+	{ "rc_deleteVendor",          0, mi_delete_carrier,         0,  0,  0},
+	{ "rc_getVendorPrice",        0, mi_get_carrier_price,      0,  0,  0},
+	{ "rc_reloadVendorRate",      0, mi_reload_carrier_rate,    0,  0,  0},
+	{ "rc_deleteVendorRate",      0, mi_delete_carrier_rate,    0,  0,  0},
 	/* client methods */
-	{ "addClient",              0, mi_add_client,             0,  0,  0},
-	{ "deleteClient",           0, mi_delete_client,          0,  0,  0},
-	{ "getClientPrice",         0, mi_get_client_price,       0,  0,  0},
-	{ "getBulkClientPrice",     0, mi_get_bulk_client_price,  0,  0,  0},
-	{ "reloadClientRate",       0, mi_reload_client,          0,  0,  0},
-	{ "deleteClientRate",       0, mi_delete_client_rate,     0,  0,  0},
+	{ "rc_addClient",              0, mi_add_client,             0,  0,  0},
+	{ "rc_deleteClient",           0, mi_delete_client,          0,  0,  0},
+	{ "rc_getClientPrice",         0, mi_get_client_price,       0,  0,  0},
+	{ "rc_reloadClientRate",       0, mi_reload_client,          0,  0,  0},
+	{ "rc_deleteClientRate",       0, mi_delete_client_rate,     0,  0,  0},
 	{0,0,0,0,0,0}
 };
 
@@ -1013,7 +1009,7 @@ static int rate_cacher_load_all_info(void)
 
 static struct mi_root * mi_get_carrier_price(struct mi_root *cmd_tree, void *param )
 {
-	struct mi_node* node,*rpl;
+	struct mi_node *node,*node1,*rpl;
 	struct carrier_cell *it;
 	struct carrier_entry *entry;
 	int bucket;
@@ -1029,13 +1025,13 @@ static struct mi_root * mi_get_carrier_price(struct mi_root *cmd_tree, void *par
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
 	if (!node->value.s|| !node->value.len)
-		goto error;
+		goto error_param;
 
 	carrier = node->value;
 
 	node = node->next;
 	if ( !node->value.s || !node->value.len)
-		goto error;
+		goto error_param;
 
 	prefix = node->value;
 
@@ -1063,92 +1059,42 @@ static struct mi_root * mi_get_carrier_price(struct mi_root *cmd_tree, void *par
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==NULL) {
-		unlock_bucket_read( entry->lock );
-		return NULL;
+		goto error_internal_unlock;
 	}
 
 	rpl = &rpl_tree->node;
-	node = addf_mi_node_child( rpl, 0, MI_SSTR("Result"),
-		"[\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",matched_len,prefix.s,
-		ret->destination.len,ret->destination.s,ret->price,
-		ret->minimum,ret->increment,it->rate_currency.len,it->rate_currency.s);
-
+	node1 = addf_mi_node_child(rpl, MI_DUP_VALUE, "query",5,"%.*s-%.*s",
+		carrier.len,carrier.s,prefix.len,prefix.s);	
+	node = add_mi_node_child(node1, MI_DUP_VALUE, "prefix", 6, prefix.s, matched_len);
+	if (node==0)
+		goto error_internal_unlock;
+	node = add_mi_node_child(node1, MI_DUP_VALUE, "destination", 11, 
+		ret->destination.s,ret->destination.len);
+	if (node==0)
+		goto error_internal_unlock;
+	node = addf_mi_node_child(node1, MI_DUP_VALUE, "price", 5,"%f",ret->price);
+	if (node==0)
+		goto error_internal_unlock;
+	node = addf_mi_node_child(node1, MI_DUP_VALUE, "minimum", 7,"%d",ret->minimum);
+	if (node==0)
+		goto error_internal_unlock;
+	node = addf_mi_node_child(node1, MI_DUP_VALUE, "increment", 9,"%d",ret->increment);
+	if (node==0)
+		goto error_internal_unlock;
+	node = add_mi_node_child(node1, MI_DUP_VALUE, "currency", 8, 
+		it->rate_currency.s,it->rate_currency.len);
+	if (node==0)
+		goto error_internal_unlock;
+	
 	unlock_bucket_read( entry->lock );
 	return rpl_tree;
 
-error:
+error_internal_unlock:
+	unlock_bucket_read( entry->lock );
+	return init_mi_tree( 400, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+error_param:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
-}
-
-static struct mi_root * mi_get_bulk_carrier_price(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node,*rpl,*node_ret;
-	struct carrier_cell *it;
-	struct carrier_entry *entry;
-	int bucket;
-	unsigned int matched_len;
-	str carrier;
-	str prefix;
-	struct ratesheet_cell_entry *ret;
-	struct mi_root *rpl_tree;
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==NULL) {
-		return NULL;
-	}
-
-	rpl = &rpl_tree->node;
-	node_ret = add_mi_node_child(rpl,0,MI_SSTR("RESULT"),MI_SSTR(""));
-
-	while (node && node->next && node->value.s && node->value.len && node->next->value.s && node->next->value.len) {
-		carrier = node->value;
-		prefix = node->next->value;
-
-		bucket = core_hash(&carrier,0,carr_table->size);
-		entry = &(carr_table->entries[bucket]);
-
-		lock_bucket_read( entry->lock );
-
-		for (it=entry->first;it;it=it->next) {
-			if (it->carrierid.len == carrier.len &&
-			memcmp(it->carrierid.s,carrier.s,carrier.len) == 0) {
-				break;
-			}
-		}
-
-		if (it == NULL) {
-			unlock_bucket_read( entry->lock );
-			addf_mi_node_child( node_ret, 0, MI_SSTR(""),"[\"%.*s-%.*s\",False]",carrier.len,carrier.s,prefix.len,prefix.s);
-			node = node->next->next;
-			continue;
-		}
-
-		ret = get_rate_price_prefix(it->trie,&prefix,&matched_len);
-		if (ret == NULL) {
-			addf_mi_node_child( node_ret, 0, MI_SSTR(""),"[\"%.*s-%.*s\",False]",carrier.len,carrier.s,prefix.len,prefix.s);
-		} else
-			addf_mi_node_child( node_ret, 0, MI_SSTR(""),
-			"[\"%.*s-%.*s\",\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",carrier.len,carrier.s,prefix.len,prefix.s,matched_len,prefix.s,
-			ret->destination.len,ret->destination.s,ret->price,
-			ret->minimum,ret->increment,it->rate_currency.len,it->rate_currency.s);
-
-		unlock_bucket_read( entry->lock );
-		node = node->next->next;
-	}
-
-	return rpl_tree;
-
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 }
 
 static struct mi_root * mi_reload_carrier_rate(struct mi_root *cmd_tree, void *param )
@@ -1427,7 +1373,7 @@ error:
 
 static struct mi_root * mi_get_client_price(struct mi_root *cmd_tree, void *param )
 {
-	struct mi_node* node,*rpl;
+	struct mi_node *node,*node1,*rpl;
 	struct account_cell *it;
 	struct account_entry *entry;
 	int bucket,is_wholesale;
@@ -1440,20 +1386,20 @@ static struct mi_root * mi_get_client_price(struct mi_root *cmd_tree, void *para
 	node = cmd_tree->node.kids;
 
 	if (node==NULL || node->next==NULL || node->next->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		goto error_param;
 
 	if (!node->value.s|| !node->value.len)
-		goto error;
+		goto error_param;
 
 	accountid = node->value;
 
 	node = node->next;
 	if ( !node->value.s || !node->value.len || str2sint(&node->value,&is_wholesale)<0 )
-		goto error;
+		goto error_param;
 
 	node = node->next;
 	if ( !node->value.s || !node->value.len )
-		goto error;
+		goto error_param;
 
 	prefix = node->value;
 
@@ -1485,101 +1431,43 @@ static struct mi_root * mi_get_client_price(struct mi_root *cmd_tree, void *para
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==NULL) {
-		unlock_bucket_read( entry->lock );
-		return NULL;
+		goto error_internal_unlock;
 	}
 
 	rpl = &rpl_tree->node;
-	node = addf_mi_node_child( rpl, 0, MI_SSTR("Result"),
-		"[\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",matched_len,prefix.s,
-		ret->destination.len,ret->destination.s,ret->price,
-		ret->minimum,ret->increment,
-		is_wholesale?it->ws_rate_currency.len:it->rt_rate_currency.len,
-		is_wholesale?it->ws_rate_currency.s:it->rt_rate_currency.s);
+	node1 = addf_mi_node_child(rpl, MI_DUP_VALUE, "query",5,"%.*s-%d-%.*s",
+		accountid.len,accountid.s,is_wholesale,prefix.len,prefix.s);	
+	node = add_mi_node_child(node1, MI_DUP_VALUE, "prefix", 6, prefix.s, matched_len);
+	if (node==0)
+		goto error_internal_unlock;
+	node = add_mi_node_child(node1, MI_DUP_VALUE, "destination", 11, 
+		ret->destination.s,ret->destination.len);
+	if (node==0)
+		goto error_internal_unlock;
+	node = addf_mi_node_child(node1, MI_DUP_VALUE, "price", 5,"%f",ret->price);
+	if (node==0)
+		goto error_internal_unlock;
+	node = addf_mi_node_child(node1, MI_DUP_VALUE, "minimum", 7,"%d",ret->minimum);
+	if (node==0)
+		goto error_internal_unlock;
+	node = addf_mi_node_child(node1, MI_DUP_VALUE, "increment", 9,"%d",ret->increment);
+	if (node==0)
+		goto error_internal_unlock;
+	node = add_mi_node_child(node1, MI_DUP_VALUE, "currency", 8, 
+	is_wholesale?it->ws_rate_currency.s:it->rt_rate_currency.s,
+	is_wholesale?it->ws_rate_currency.len:it->rt_rate_currency.len);
+	
+	if (node==0)
+		goto error_internal_unlock;
 
 	unlock_bucket_read( entry->lock );
 	return rpl_tree;
 
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-
-}
-
-static struct mi_root * mi_get_bulk_client_price(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_node* node,*rpl,*node_ret;
-	struct account_cell *it;
-	struct account_entry *entry;
-	int bucket,is_wholesale;
-	unsigned int matched_len;
-	str accountid;
-	str prefix;
-	struct ratesheet_cell_entry *ret;
-	struct mi_root *rpl_tree;
-
-	node = cmd_tree->node.kids;
-
-	if (node==NULL || node->next==NULL || node->next->next==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (!node->value.s|| !node->value.len)
-		goto error;
-
-	accountid = node->value;
-
-	node = node->next;
-	if ( !node->value.s || !node->value.len || str2sint(&node->value,&is_wholesale)<0 )
-		goto error;
-
-	bucket = core_hash(&accountid,0,acc_table->size);
-	entry = &(acc_table->entries[bucket]);
-
-	lock_bucket_read( entry->lock );
-	for (it=entry->first;it;it=it->next) {
-		if (it->accountid.len == accountid.len &&
-		memcmp(it->accountid.s,accountid.s,accountid.len) == 0) {
-			break;
-		}
-	}
-
-	if (it == NULL) {
-		unlock_bucket_read( entry->lock );
-		return init_mi_tree( 401, "No such client", sizeof("No such client")-1);
-	}
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==NULL) {
-		unlock_bucket_read( entry->lock );
-		return NULL;
-	}
-
-	rpl = &rpl_tree->node;
-	node_ret = add_mi_node_child(rpl,0,MI_SSTR("RESULT"),MI_SSTR(""));
-
-	while ((node = node->next) && (node->value.s && node->value.len)) {
-		prefix = node->value;
-		if (is_wholesale)
-			ret = get_rate_price_prefix(it->ws_trie,&prefix,&matched_len);
-		else
-			ret = get_rate_price_prefix(it->rt_trie,&prefix,&matched_len);
-
-		if (ret == NULL) {
-			add_mi_node_child( node_ret, 0, MI_SSTR(""),MI_SSTR("[False]"));
-		} else
-			addf_mi_node_child( node_ret, 0, MI_SSTR(""),
-				"[\"%.*s\",\"%.*s\",%f,%d,%d,\"%.*s\"]",matched_len,prefix.s,
-				ret->destination.len,ret->destination.s,ret->price,
-				ret->minimum,ret->increment,
-				is_wholesale?it->ws_rate_currency.len:it->rt_rate_currency.len,
-				is_wholesale?it->ws_rate_currency.s:it->rt_rate_currency.s);
-	}
-
+error_internal_unlock:
 	unlock_bucket_read( entry->lock );
-	return rpl_tree;
-
-error:
+	return init_mi_tree( 400, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+error_param:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-
 }
 
 static struct mi_root * mi_reload_client(struct mi_root *cmd_tree, void *param )
