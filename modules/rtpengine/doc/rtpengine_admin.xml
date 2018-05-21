@@ -451,6 +451,11 @@ rtpengine_offer();
 				originally or not.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>rtcp-mux-require</emphasis> - Similar to offer but pretends that
+				the client has accepted rtcp-mux. This breaks RFC 5761 and will not advertise
+				seperate RTCP ports. This option is necessary for WebRTC clients.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>rtcp-mux-accept</emphasis> - if rtcp-mux was offered, make the
 				&rtp; proxy accept the offer and also offer it to the recipient of this
 				message. Can be combined with <quote>rtcp-mux-offer</quote> to always offer it.
