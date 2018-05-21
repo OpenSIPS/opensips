@@ -437,27 +437,6 @@ get_str_tokens(str *string, str *tokens, int limit)
 //
 
 static Bool
-get_callid(struct sip_msg* msg, str *cid)
-{
-    if (msg->callid == NULL) {
-        if (parse_headers(msg, HDR_CALLID_F, 0) == -1) {
-            LM_ERR("cannot parse Call-ID header\n");
-            return False;
-        }
-        if (msg->callid == NULL) {
-            LM_ERR("missing Call-ID header\n");
-            return False;
-        }
-    }
-
-    *cid = msg->callid->body;
-
-    trim(cid);
-
-    return True;
-}
-
-static Bool
 get_cseq_number(struct sip_msg *msg, str *cseq)
 {
     struct cell *trans = tm_api.t_gett();
@@ -1491,7 +1470,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
         return -1;
     }
 
-    if (!get_callid(msg, &callid)) {
+    if (get_callid(msg, &callid) < 0) {
         LM_ERR("failed to get Call-ID\n");
         return -1;
     }
@@ -1946,7 +1925,7 @@ EndMediaSession(struct sip_msg *msg)
     if (mediaproxy_disabled)
         return -1;
 
-    if (!get_callid(msg, &callid)) {
+    if (get_callid(msg, &callid) < 0) {
         LM_ERR("failed to get Call-ID\n");
         return -1;
     }
