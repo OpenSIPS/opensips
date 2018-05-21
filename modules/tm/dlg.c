@@ -309,24 +309,6 @@ static inline int get_from_tag(struct sip_msg* _m, str* _tag)
 
 
 /*
- * Extract Call-ID value
- * Doesn't parse headers !!
- */
-static inline int get_callid(struct sip_msg* _m, str* _cid)
-{
-	if (_m->callid == 0) {
-		LM_ERR("Call-ID not found\n");
-		return -1;
-	}
-
-	_cid->s = _m->callid->body.s;
-	_cid->len = _m->callid->body.len;
-	trim(_cid);
-	return 0;
-}
-
-
-/*
  * Create a copy of route set either in normal or reverse order
  */
 static inline int get_route_set(struct sip_msg* _m, rr_t** _rs, unsigned char _order)
