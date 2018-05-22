@@ -148,12 +148,17 @@ int unescape_user(str *sin, str *sout)
 {
 	char *at, *p, c;
 
-	if(sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL
-			|| sin->len<0 || sout->len < sin->len+1)
+	if(sin==NULL || sout==NULL || sout->s==NULL
+			|| sin->len<0 || sout->len < sin->len+1) {
 		return -1;
+	}
 
 	at = sout->s;
+	if (sin->s==NULL || sin->len==0)
+		goto done;
+
 	p  = sin->s;
+
 	while(p < sin->s+sin->len)
 	{
 		if (*p == '%')
@@ -240,6 +245,7 @@ int unescape_user(str *sin, str *sout)
 		p++;
 	}
 
+done:
 	*at = 0;
 	sout->len = at - sout->s;
 
