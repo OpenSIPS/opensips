@@ -76,8 +76,6 @@ extern stat_var* bad_msg_hdr;
 
 #ifdef PKG_MALLOC
 int init_pkg_stats(int no_procs);
-
-pkg_status_holder* get_pkg_status_holder(int proc_id);
 #endif
 
 #endif /*STATISTICS*/

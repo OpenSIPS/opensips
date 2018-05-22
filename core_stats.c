@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "socket_info.h"
+#include "ipc.h"
 
 
 #ifdef STATISTICS
@@ -108,18 +109,34 @@ static pkg_status_holder *pkg_status = NULL;
 static time_t *marker_t = NULL;
 static int no_pkg_status = 0;
 
-pkg_status_holder * get_pkg_status_holder(int proc_id)
+static void rpc_get_pkg_stats(int sender_id, void *foo)
 {
-	return (pkg_status && proc_id<no_pkg_status)?&(pkg_status[proc_id]):NULL;
+#ifdef PKG_MALLOC
+	pkg_status_holder *holder;
+
+	holder = (pkg_status && process_no<no_pkg_status)?
+		&(pkg_status[process_no]) : NULL ;
+
+	set_pkg_stats( holder );
+#endif
+	return;
 }
 
 static inline void signal_pkg_status(unsigned long proc_id)
 {
 	time_t t;
 
+	if (IPC_FD_WRITE(proc_id)<=0)
+		return;
+
 	t = time(NULL);
 	if (t>marker_t[proc_id]+1) {
-		if (pt[proc_id].pid) kill(pt[proc_id].pid, SIGUSR2);
+
+		if (ipc_send_rpc( proc_id, rpc_get_pkg_stats, NULL)<0) {
+			LM_ERR("failed to trigger pkg stats for process %ld\n", proc_id );
+			return;
+		}
+
 		marker_t[proc_id] = t;
 		usleep(20);
 	}
