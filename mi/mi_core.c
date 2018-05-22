@@ -48,6 +48,7 @@
 #include "../mem/mem.h"
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
+#include "../ipc.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -571,6 +572,97 @@ static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 }
 
 
+/* RPC function send by an MI process to force a pkg mem dump into
+ * a certain process
+ */
+static void rpc_do_pkg_dump(int sender_id, void *llevel)
+{
+	#ifdef PKG_MALLOC
+	int bk;
+
+	bk = memdump;
+	if ( llevel!=0)
+		memdump = (int)(long)llevel;
+	LM_GEN1(memdump, "Memory status (pkg):\n");
+	pkg_status();
+	memdump = bk;
+	#endif
+
+	return;
+}
+
+static struct mi_root *mi_mem_pkg_dump(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *node;
+	int llevel = 0;
+	int i;
+	pid_t pid = 0;
+
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree==0)
+		return 0;
+
+	node = cmd->node.kids;
+	if (node==NULL)
+		return init_mi_tree(404, MI_SSTR("Missing PID argument"));
+
+	if (str2sint( &node->value, &pid) < 0)
+		return init_mi_tree(400, MI_SSTR("Bad PID argument"));
+
+	if ( (node=node->next)!=NULL ) {
+		if (str2sint( &node->value, &llevel) < 0)
+			return init_mi_tree(400, MI_SSTR("Bad log level argument"));
+		if (node->next!=NULL)
+			return init_mi_tree(400, MI_SSTR("Too many arguments"));
+	}
+
+	/* convert pid to OpenSIPS id */
+	i = get_process_ID_by_PID(pid);
+	if (i == -1)
+		return init_mi_tree(404, MI_SSTR("Process not found"));
+
+	if (IPC_FD_WRITE(i)<=0)
+		return init_mi_tree(500, MI_SSTR("Process does not support mem dump"));
+
+	if (ipc_send_rpc( i, rpc_do_pkg_dump, (void*)(long)llevel)<0) {
+		LM_ERR("failed to trigger pkg dump for process %d\n", i );
+		return init_mi_tree(500, MI_SSTR("Internal error"));
+	}
+
+	return init_mi_tree(200, MI_SSTR(MI_OK));
+}
+
+
+static struct mi_root *mi_mem_shm_dump(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *node;
+	int llevel = 0;
+	int bk;
+
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree==0)
+		return 0;
+
+	node = cmd->node.kids;
+	if (node!=NULL) {
+		if (str2sint( &node->value, &llevel) < 0)
+			return init_mi_tree(400, MI_SSTR("Bad log level argument"));
+		if (node->next!=NULL)
+			return init_mi_tree(400, MI_SSTR("Too many arguments"));
+	}
+
+	bk = memdump;
+	if (llevel!=0)
+		memdump = llevel;
+	LM_GEN1(memdump, "Memory status (shm):\n");
+	shm_status();
+	memdump = bk;
+
+	return init_mi_tree(200, MI_SSTR(MI_OK));
+}
+
 
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
@@ -611,6 +703,10 @@ static mi_export_t mi_core_cmds[] = {
 		mi_subscribers_list,          0,  0,  0 },
 	{ "list_tcp_conns", "list all ongoing TCP based connections",
 		mi_tcp_list_conns,MI_NO_INPUT_FLAG,0, 0 },
+	{ "mem_pkg_dump", "forces a status dump of the pkg memory (per process)",
+		mi_mem_pkg_dump,              0,  0,  0 },
+	{ "mem_shm_dump", "forces a status dump of the shm memory",
+		mi_mem_shm_dump,              0,  0,  0 },
 	{ "help", "prints information about MI commands usage",
 		mi_help,                      0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}

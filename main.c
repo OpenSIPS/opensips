@@ -550,7 +550,10 @@ void handle_sigs(void)
 				/* SIGPIPE might be rarely received on use of
 				   exec module; simply ignore it
 				 */
-				LM_WARN("SIGPIPE received and ignored\n");
+		case SIGUSR1:
+		case SIGUSR2:
+		case SIGHUP:
+				/* ignoring it*/
 				break;
 		case SIGINT:
 		case SIGTERM:
@@ -561,21 +564,6 @@ void handle_sigs(void)
 				LM_DBG("SIGTERM received, program terminates\n");
 
 			shutdown_opensips( 0/*status*/ );
-			break;
-
-		case SIGUSR1:
-#ifdef PKG_MALLOC
-			LM_GEN1(memdump, "Memory status (pkg):\n");
-			pkg_status();
-#endif
-			LM_GEN1(memdump, "Memory status (shm):\n");
-			shm_status();
-			break;
-
-		case SIGUSR2:
-#ifdef PKG_MALLOC
-			set_pkg_stats( get_pkg_status_holder(process_no) );
-#endif
 			break;
 
 		case SIGCHLD:
@@ -617,9 +605,6 @@ void handle_sigs(void)
 			shutdown_opensips( overall_status );
 			break;
 
-		case SIGHUP: /* ignoring it*/
-			LM_DBG("SIGHUP received, ignoring it\n");
-			break;
 		default:
 			LM_CRIT("unhandled signal %d\n", sig_flag);
 	}
@@ -649,6 +634,10 @@ static void sig_usr(int signo)
 		switch(signo){
 			case SIGPIPE:
 			case SIGINT:
+			case SIGUSR1:
+			case SIGUSR2:
+			case SIGHUP:
+					/* ignored*/
 					break;
 			case SIGTERM:
 					/* ignore any SIGTERM if not in shutdown sequance (this 
@@ -666,21 +655,6 @@ static void sig_usr(int signo)
 					pkg_status();
 					#endif
 					exit(0);
-					break;
-			case SIGUSR1:
-					/* statistics -> show only pkg mem */
-					#ifdef PKG_MALLOC
-					LM_GEN1(memdump, "Memory status (pkg):\n");
-					pkg_status();
-					#endif
-					break;
-			case SIGUSR2:
-					#ifdef PKG_MALLOC
-					set_pkg_stats( get_pkg_status_holder(process_no) );
-					#endif
-					break;
-			case SIGHUP:
-					/* ignored*/
 					break;
 			case SIGCHLD:
 					pid = waitpid(-1, &status, WNOHANG);
