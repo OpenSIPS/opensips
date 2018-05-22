@@ -1605,7 +1605,6 @@ int cdb_update_urecord_metadata(const str *_aor, int unpublish)
 	val.s.len = _aor->len + sip_addr.len;
 
 	if (unpublish) {
-		/* TODO: refactor; this looks incompatible with Cassandra */
 		if (cdbf.remove(cdbc, &val.s) < 0) {
 			LM_ERR("fail to del metadata, AoR %.*s\n", _aor->len, _aor->s);
 			return -1;

@@ -83,7 +83,7 @@
 
 static int mod_init(void);        /*!< Module initialization */
 static void destroy(void);        /*!< Module destroy */
-static void update_db_state(unsigned int ticks, void* param); /*!< Timer */
+static void _synchronize_all_udomains(unsigned int ticks, void* param);
 static int child_init(int rank);  /*!< Per-child init function */
 static int mi_child_init(void);
 int check_runtime_config(void);
@@ -428,7 +428,7 @@ static int mod_init(void)
 	}
 
 	/* Register cache timer */
-	register_timer( "ul-timer", update_db_state, 0, timer_interval,
+	register_timer( "ul-timer", _synchronize_all_udomains, 0, timer_interval,
 		TIMER_FLAG_DELAY_ON_DELAY);
 
 	/* init the callbacks list */
@@ -631,7 +631,7 @@ static void destroy(void)
 /*! \brief
  * Timer handler
  */
-static void update_db_state(unsigned int ticks, void* param)
+static void _synchronize_all_udomains(unsigned int ticks, void* param)
 {
 	if (sync_lock)
 		lock_start_read(sync_lock);
