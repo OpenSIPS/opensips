@@ -394,6 +394,18 @@ modparam("clusterer", "db_mode", 0)
             <para>
 			This parameter is mandatory if <emphasis>db_mode</emphasis> is set to <quote>0</quote>.
             </para>
+            <para>
+			If no DB is being used, be sure to include one node with a seed flag set.
+            </para>
+            <example>
+		<title>Set <varname>current_info</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566, flags=seed")
+...
+		</programlisting>
+		</example>
+
             <example>
 		<title>Set <varname>current_info</varname> parameter</title>
 		<programlisting format="linespecific">
