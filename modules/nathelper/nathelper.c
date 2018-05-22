@@ -317,7 +317,7 @@ struct module_exports exports = {
 	0,			 /* exported transformations */
 	0,           /* extra processes */
 	mod_init,
-	0,           /* reply processing */
+	0,           /* sipping_rpl_filter() - optional reply processing */
 	mod_destroy, /* destroy function */
 	0
 };

@@ -1046,7 +1046,12 @@ unsigned long get_number_of_users(void* foo)
 
 
 /*! \brief
- * Run timer handler of all domains
+ * Run through each udomain and:
+ *  - on SQL_ONLY:
+ *		* delete any expired contacts
+ *  - on mem storage:
+ *		* update DB state (bulk inserts/updates/deletes)
+ *		* clean up any in-memory expired contacts or empty records
  */
 int synchronize_all_udomains(void)
 {
