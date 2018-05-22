@@ -1474,6 +1474,13 @@ int mem_timer_udomain(udomain_t* _d)
 				if (exists_ulcb_type(UL_AOR_EXPIRE))
 					run_ul_callbacks(UL_AOR_EXPIRE, ptr);
 
+				if (location_cluster) {
+					if (cluster_mode == CM_FEDERATION_CACHEDB &&
+					    cdb_update_urecord_metadata(&ptr->aor, 1) != 0)
+						LM_ERR("failed to delete metadata, aor: %.*s\n",
+						       ptr->aor.len, ptr->aor.s);
+				}
+
 				iterator_delete(&prev);
 				mem_delete_urecord(_d, ptr);
 			}
