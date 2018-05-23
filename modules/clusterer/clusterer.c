@@ -730,7 +730,7 @@ enum clusterer_send_ret cl_send_to(bin_packet_t *packet, int cluster_id, int nod
 enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 {
 	node_info_t *node;
-	int rc, sent = 0, down = 1;
+	int rc, sent = 0, down = 1, no_neighbours = 1;
 	cluster_info_t *cl;
 	int check_call_cbs_event = 0;
 
@@ -760,6 +760,7 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 	bin_push_int(packet, -1);	/* dummy value */
 
 	for (node = cl->node_list; node; node = node->next) {
+		no_neighbours = 0;
 		rc = clusterer_send_msg(packet, node, 1, &check_call_cbs_event);
 		if (rc != -2)	/* at least one node is up */
 			down = 0;
@@ -771,6 +772,9 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 		call_cbs_event(packet, cl, &check_call_cbs_event, 1);
 
 	lock_stop_read(cl_list_lock);
+
+	if (no_neighbours)
+		return CLUSTERER_SEND_SUCCES;
 
 	if (down)
 		return CLUSTERER_DEST_DOWN;
