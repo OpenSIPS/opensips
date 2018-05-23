@@ -722,7 +722,7 @@ save("location","mr", "$avp(aor)");
 
 	<section id="func_remove" xreflabel="remove()">
 		<title>
-		<function moreinfo="none">remove(domain, AOR[, [contact], ip])</function>
+		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop]]])</function>
 		</title>
 		<para>
 		Explicitly remove contacts behind a given address-of-record.
@@ -731,42 +731,59 @@ save("location","mr", "$avp(aor)");
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Logical domain within registrar.
-			If database is used then this must be name of the table which
-			stores the contacts;
+			<emphasis>domain</emphasis> - (string) - Logical domain within the registrar.
+			If a database is used, then this must be name of the table which
+			stores the contacts.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI);
+			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI)
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>contact (optional)</emphasis> - sip uri for the contact
-				to be removed;
+				<emphasis>contact (optional filter)</emphasis> - SIP URI filter
+				for the contact to be removed. Only the "username", "hostname"
+				and "port" parts of the URI are relevant for the matching.
+				Hostnames are resolved before matching.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>ip (optional)</emphasis> - source IP/hostname of the endpoint that
-				registered this contact; it matches the <emphasis>PATH</emphasis> header if the registration
-				had one, the ip from where the registration request came from if the request came
-				from behind nat(if nathelper module used) or the actual ip of the contact;
+				<emphasis>next_hop (optional filter)</emphasis> - the next
+				SIP IP address/hostname on the way back to this contact. See
+				the section below for details on how the next hop is
+				computed. Hostnames are resolved before matching.
 			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-			<emphasis role='bold'>IMPORTANT: </emphasis>Contact parameter can be used without
-			defining the ip parameter, that is the function can have 3 arguments. On the other
-			side, if only the ip parameter is desired to be used, without the contact, the third
-			parameter has to be set to NULL( see more in the examples).
-		</para>
-		<para>
-			<emphasis role='bold'>IMPORTANT#2: </emphasis> If both contact and ip are defined,
-			only the contact that will match both the contact and the IP will be removed,
-			that is a logical AND between the two. If none defined, all the contacts from
-			the specfied AOR shall be removed.
+			<emphasis role='bold'>IMPORTANT: </emphasis>the IP address of each
+			contact (for matching purposes) is computed as follows:
+			<itemizedlist>
+			<listitem>
+				<para>
+					a. if a Path header is present, the hostname part of the
+					Path URI will be resolved as the contact's IP address.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					b. otherwise, if by using nathelper, the "Received" value
+					(source IP of the next hop) is set for a contact, this
+					becomes the chosen hostname to be resolved as the contact's
+					IP address.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					c. otherwise, the "hostname" part of the Contact header
+					field URI is chosen to be resolved as the contact's IP
+					address.
+				</para>
+			</listitem>
+			</itemizedlist>
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -784,10 +801,9 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 # remove all bob's phones which are behind "50.60.50.60"
 # note that "contact" parameter has to be specified with NULL value even though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com",, "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com", , "$var(next_hop)");
 ...
-# remove bob's phone with the contact "sip:bob@46.50.64.78" that is behind "50.60.50.60"
-$var(next_hop) = "50.60.50.60"
+# remove bob's phone with contact "sip:bob@46.50.64.78" that is behind "50.60.50.60"
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.50.60");
 ...
 </programlisting>
