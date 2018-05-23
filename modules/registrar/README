@@ -51,7 +51,9 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. remove(domain, AOR[, [contact], ip])
+              1.4.2. remove(domain, AOR[, [contact][,
+                      [next_hop]]])
+
               1.4.3. lookup(domain [, flags [, aor]])
               1.4.4. is_registered(domain ,[AOR])
               1.4.5. is_contact_registered(domain
@@ -547,33 +549,35 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  remove(domain, AOR[, [contact], ip])
+1.4.2.  remove(domain, AOR[, [contact][, [next_hop]]])
 
    Explicitly remove contacts behind a given address-of-record.
 
    Meaning of the parameters is as follows:
-     * domain - Logical domain within registrar. If database is
-       used then this must be name of the table which stores the
-       contacts;
-     * AOR - address-of-record to be searched (SIP URI);
-     * contact (optional) - sip uri for the contact to be removed;
-     * ip (optional) - source IP/hostname of the endpoint that
-       registered this contact; it matches the PATH header if the
-       registration had one, the ip from where the registration
-       request came from if the request came from behind nat(if
-       nathelper module used) or the actual ip of the contact;
+     * domain - (string) - Logical domain within the registrar. If
+       a database is used, then this must be name of the table
+       which stores the contacts.
+     * AOR - address-of-record to be searched (SIP URI)
+     * contact (optional filter) - SIP URI filter for the contact
+       to be removed. Only the "username", "hostname" and "port"
+       parts of the URI are relevant for the matching. Hostnames
+       are resolved before matching.
+     * next_hop (optional filter) - the next SIP IP
+       address/hostname on the way back to this contact. See the
+       section below for details on how the next hop is computed.
+       Hostnames are resolved before matching.
 
-   IMPORTANT: Contact parameter can be used without defining the
-   ip parameter, that is the function can have 3 arguments. On the
-   other side, if only the ip parameter is desired to be used,
-   without the contact, the third parameter has to be set to NULL(
-   see more in the examples).
-
-   IMPORTANT#2: If both contact and ip are defined, only the
-   contact that will match both the contact and the IP will be
-   removed, that is a logical AND between the two. If none
-   defined, all the contacts from the specfied AOR shall be
-   removed.
+   IMPORTANT: the IP address of each contact (for matching
+   purposes) is computed as follows:
+     * a. if a Path header is present, the hostname part of the
+       Path URI will be resolved as the contact's IP address.
+     * b. otherwise, if by using nathelper, the "Received" value
+       (source IP of the next hop) is set for a contact, this
+       becomes the chosen hostname to be resolved as the contact's
+       IP address.
+     * c. otherwise, the "hostname" part of the Contact header
+       field URI is chosen to be resolved as the contact's IP
+       address.
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -589,11 +593,10 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 # note that "contact" parameter has to be specified with NULL value even
  though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com",, "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com", , "$var(next_hop)");
 ...
-# remove bob's phone with the contact "sip:bob@46.50.64.78" that is behi
-nd "50.60.50.60"
-$var(next_hop) = "50.60.50.60"
+# remove bob's phone with contact "sip:bob@46.50.64.78" that is behind "
+50.60.50.60"
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
 50.60");
 ...

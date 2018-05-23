@@ -154,7 +154,7 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"remove",       (cmd_function)w_remove_3,   3,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)_remove,      4,  fixup_remove,     0,
+	{"remove",       (cmd_function)_remove,   4,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
@@ -412,7 +412,7 @@ static int domain_fixup(void** param)
 }
 
 /*! \brief
- * @params: domain, AOR, contact/domain
+ * @params: domain, AOR, contact, next_hop, sip_instance
  */
 static int fixup_remove(void** param, int param_no)
 {
@@ -425,9 +425,11 @@ static int fixup_remove(void** param, int param_no)
 		return fixup_spve(param);
 	case 4:
 		return fixup_spve(param);
+	case 5:
+		return fixup_spve(param);
 
 	default:
-		LM_ERR("maximum 3 params! given at least %d\n", param_no);
+		LM_ERR("maximum 5 params! given at least %d\n", param_no);
 		return E_INVALID_PARAMS;
 	}
 }
