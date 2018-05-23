@@ -661,6 +661,22 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 }
 
+static void acc_dlg_ctx_cb(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	acc_ctx_t *ctx;
+	/* set the acc context from dialog into the
+	 * current processing context */
+
+	/* if there is already a acc context in the processing
+	 * context, be sure to destroy it for now */
+	if ( (ctx=ACC_GET_CTX)!=NULL) {
+		free_acc_ctx(ctx);
+	}
+
+	ACC_PUT_CTX( (acc_ctx_t *)(*_params->param) );
+}
+
 
 /* restore callbacks */
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
@@ -735,6 +751,14 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			LM_ERR("cannot register callback for database accounting\n");
 			return;
 		}
+
+		/* register dlg callbacks for ctx management */
+		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
+				acc_dlg_ctx_cb, ctx, NULL) != 0) {
+			LM_ERR("cannot register callback ctx management\n");
+			return;
+		}
+
 }
 
 /* initiate a report if we previously enabled accounting for this t */
@@ -818,6 +842,14 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			LM_ERR("cannot register callback for database accounting\n");
 			goto restore;
 		}
+
+		/* register dlg callbacks for ctx management */
+		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
+								acc_dlg_ctx_cb, ctx, NULL) != 0) {
+			LM_ERR("cannot register callback ctx management\n");
+			goto restore;
+		}
+
 	} else {
 		/* do old accounting */
 		if ( is_evi_acc_on(*flags) ) {
@@ -856,6 +888,12 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	if (!_params) {
 		LM_ERR("not enough info\n");
 		return;
+	}
+
+	/* if there is already a acc context in the processing
+	 * context, be sure to destroy it for now */
+	if ( (ctx=ACC_GET_CTX)!=NULL) {
+		free_acc_ctx(ctx);
 	}
 
 	ctx = *_params->param;
