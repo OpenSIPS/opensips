@@ -886,13 +886,19 @@ done:
 
 int w_remove_2(struct sip_msg *msg, char *udomain, char *aor_gp)
 {
-	return _remove( msg, udomain, aor_gp, NULL, NULL);
+	return _remove( msg, udomain, aor_gp, NULL, NULL, NULL);
 }
 
 int w_remove_3(struct sip_msg *msg, char *udomain, char *aor_gp,
                char *contact_gp)
 {
-	return _remove( msg, udomain, aor_gp, contact_gp, NULL);
+	return _remove( msg, udomain, aor_gp, contact_gp, NULL, NULL);
+}
+
+int w_remove_4(struct sip_msg *msg, char *udomain, char *aor_gp,
+               char *contact_gp, char *next_hop_gp)
+{
+	return _remove( msg, udomain, aor_gp, contact_gp, next_hop_gp, NULL);
 }
 
 /**
@@ -902,17 +908,18 @@ int w_remove_3(struct sip_msg *msg, char *udomain, char *aor_gp,
  * @aor_gp:          address-of-record as a SIP URI (plain string or pvar)
  * @contact_gp:      contact URI to be deleted
  * @next_hop_gp:     IP/domain in front of contacts to be deleted
+ * @sip_instance_gp: delete contacts with given "+sip_instance"
  *
  * @return:      1 on success, negative on failure
  */
 int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
-            char *next_hop_gp)
+            char *next_hop_gp, char *sip_instance_gp)
 {
 	struct sip_uri puri;
 	struct hostent delete_ct_he, delete_nh_he, *he;
 	urecord_t *record;
 	ucontact_t *contact, *it;
-	str match_ct = STR_NULL, match_next_hop = STR_NULL;
+	str match_ct = STR_NULL, match_next_hop = STR_NULL, match_sin = STR_NULL;
 	str aor_uri, aor_user, delete_user = STR_NULL;
 	int ret = 1;
 	unsigned short delete_port = 0;
@@ -935,7 +942,7 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
 	}
 
 	/* without any additional filtering, delete the whole urecord entry */
-	if (!contact_gp && !next_hop_gp) {
+	if (!contact_gp && !next_hop_gp && !sip_instance_gp) {
 		if (ul.delete_urecord((udomain_t *)udomain, &aor_user, record, 0) != 0) {
 			LM_ERR("failed to delete urecord for aor '%.*s'\n",
 			        aor_user.len, aor_user.s);
@@ -957,6 +964,14 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
 	if (next_hop_gp) {
 		if (fixup_get_svalue(msg, (gparam_p)next_hop_gp, &match_next_hop) != 0) {
 			LM_ERR("failed to retrieve value of the next_hop pv\n");
+			ret = E_UNSPEC;
+			goto out_unlock;
+		}
+	}
+
+	if (sip_instance_gp) {
+		if (fixup_get_svalue(msg, (gparam_p)sip_instance_gp, &match_sin) != 0) {
+			LM_ERR("failed to retrieve value of the sip_instance pv\n");
 			ret = E_UNSPEC;
 			goto out_unlock;
 		}
@@ -1016,6 +1031,9 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
 		}
 	}
 
+	if (match_sin.s)
+		LM_DBG("Delete by sip_instance: %.*s\n", match_sin.len, match_sin.s);
+
 	for (it = record->contacts; it; ) {
 		contact = it;
 		it = it->next;
@@ -1039,10 +1057,11 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
 			continue;
 		}
 
-		LM_DBG("Contact: [ User %.*s | Next Hop %s | Port %d ]\n",
+		LM_DBG("Contact: [ User %.*s | Next Hop %s | "
+		       "Port %d | sip_instance %.*s ]\n",
 		        puri.user.len, puri.user.s,
 		        inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])),
-				puri.port_no);
+				puri.port_no, contact->instance.len, contact->instance.s);
 
 		if (match_next_hop.s) {
 			if (memcmp(delete_nh_he.h_addr_list[0],
@@ -1056,6 +1075,11 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
 			        memcmp(delete_ct_he.h_addr_list[0],
 			               he->h_addr_list[0], he->h_length) ||
 				    memcmp(delete_user.s, puri.user.s, puri.user.len))
+				continue;
+		}
+
+		if (match_sin.s) {
+			if (str_strcmp(&match_sin, &contact->instance))
 				continue;
 		}
 

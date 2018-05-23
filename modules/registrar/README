@@ -51,8 +51,8 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. remove(domain, AOR[, [contact][,
-                      [next_hop]]])
+              1.4.2. remove(domain, AOR[, [contact][, [next_hop][,
+                      [sip_instance]]]])
 
               1.4.3. lookup(domain [, flags [, aor]])
               1.4.4. is_registered(domain ,[AOR])
@@ -549,7 +549,8 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  remove(domain, AOR[, [contact][, [next_hop]]])
+1.4.2.  remove(domain, AOR[, [contact][, [next_hop][,
+[sip_instance]]]])
 
    Explicitly remove contacts behind a given address-of-record.
 
@@ -566,6 +567,8 @@ save("location","mr", "$avp(aor)");
        address/hostname on the way back to this contact. See the
        section below for details on how the next hop is computed.
        Hostnames are resolved before matching.
+     * sip_instance (optional filter) - string or pvar containing
+       a "+sip_instance" value to be used for filtering purposes.
 
    IMPORTANT: the IP address of each contact (for matching
    purposes) is computed as follows:
@@ -600,6 +603,9 @@ remove("location", "sip:bob@atlanta.com", , "$var(next_hop)");
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
 50.60");
 ...
+# remove all contact's behind bob's mobile device X
+remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
+600-b82e-ff4d5d8c1a8f>")
 
 1.4.3.  lookup(domain [, flags [, aor]])
 

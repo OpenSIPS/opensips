@@ -47,8 +47,10 @@ int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s);
 int w_remove_2(struct sip_msg *msg, char *udomain, char *aor_gp);
 int w_remove_3(struct sip_msg *msg, char *udomain, char *aor_gp,
                char *contact_gp);
+int w_remove_4(struct sip_msg *msg, char *udomain, char *aor_gp,
+               char *contact_gp, char *next_hop_gp);
 
 int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
-            char *next_hop_gp);
+            char *next_hop_gp, char *sip_instance_gp);
 
 #endif /* SAVE_H */
