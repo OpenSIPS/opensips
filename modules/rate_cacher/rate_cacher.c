@@ -39,6 +39,9 @@ static int fixup_cost_based_ordering(void** param, int param_no);
 static int script_cost_based_ordering(struct sip_msg *msg, char *s_clientid, char *s_isws,
 		char *s_carrierlist,char *s_dnis,char *profit_margin,char *out_result);
 
+static void free_carrier_cell(struct carrier_cell *carr);
+static void free_trie(ptree_t* t);
+
 /* table names */
 static str carr_db_table = str_init("rc_vendors");
 static str carr_id_col = str_init("vendor_id");
@@ -224,7 +227,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* FIXME - loading maybe on child_init */
 	if (rate_cacher_load_all_info() < 0) {
 		LM_ERR("Failed to load all data from the DB\n");
 		return -1;
@@ -262,7 +264,40 @@ static int mod_child(int rank)
 
 void mod_destroy(void)
 {
-	/* FIXME - cleanup here ? too lazy to do it now :D */
+	struct carrier_entry *carr_entry;
+	struct carrier_cell *carr_it,*next_carr;
+	struct account_entry* cl_entry;
+	struct account_cell* cl_it,*next_cl;
+	int bucket;
+
+	for (bucket=0;bucket<carr_table->size;bucket++) {
+		carr_entry = &(carr_table->entries[bucket]);
+		for (carr_it=carr_entry->first;carr_it;carr_it=next_carr) {
+			next_carr = carr_it->next;
+			free_carrier_cell(carr_it);
+		}
+	}
+
+
+	for (bucket=0;bucket<acc_table->size;bucket++) {
+		cl_entry = &(acc_table->entries[bucket]);
+		for (cl_it=cl_entry->first;cl_it;cl_it=next_cl) {
+			next_cl=cl_it->next;
+			if (cl_it->ws_rate_table.s)
+				shm_free(cl_it->ws_rate_table.s);
+			if (cl_it->rt_rate_table.s && cl_it->rt_rate_table.s != cl_it->ws_rate_table.s)
+				shm_free(cl_it->rt_rate_table.s);
+			if (cl_it->ws_rate_currency.s)
+				shm_free(cl_it->ws_rate_currency.s);
+			if (cl_it->rt_rate_currency.s && cl_it->rt_rate_currency.s != cl_it->ws_rate_currency.s)
+				shm_free(cl_it->rt_rate_currency.s);
+			if (cl_it->ws_trie)
+				free_trie(cl_it->ws_trie);
+			if (cl_it->rt_trie && cl_it->rt_trie != cl_it->ws_trie)
+				free_trie(cl_it->rt_trie);
+			shm_free(cl_it);
+		}
+	}
 }
 
 struct ratesheet_cell_entry* build_rate_prefix_entry(str *destination,double price,
@@ -2001,7 +2036,8 @@ set_and_return:
 		pkg_free(avp_result);
 	for (i=0;i<carrier_array_len;i++)
 		pkg_free(carrier_array[i].s);
-	
+
+	pkg_free(nts_carrierlist);
 	return 1;
 
 err_free:
@@ -2014,6 +2050,7 @@ err_free:
 	for (i=0;i<carrier_array_len;i++)
 		pkg_free(carrier_array[i].s);
 
+	pkg_free(nts_carrierlist);
 	return -1;
 }
 
