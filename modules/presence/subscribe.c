@@ -449,11 +449,9 @@ error:
 
 void msg_watchers_clean(unsigned int ticks,void *param)
 {
-	db_key_t db_keys[3];
-	db_val_t db_vals[3];
-	db_op_t  db_ops[3] ;
-	str **tags=NULL;
-	unsigned int n=0;
+	db_key_t db_keys[2];
+	db_val_t db_vals[2];
+	db_op_t  db_ops[2] ;
 
 	LM_DBG("cleaning pending subscriptions\n");
 
@@ -469,35 +467,15 @@ void msg_watchers_clean(unsigned int ticks,void *param)
 	db_vals[1].nul = 0;
 	db_vals[1].val.int_val = PENDING_STATUS;
 
-	if (is_presence_cluster_enabled()) {
-		tags = get_all_active_shtags();
-		db_keys[2] = &str_sharing_tag_col;
-		db_ops [2] = OP_EQ;
-		db_vals[2].type = DB_STR;
-		db_vals[2].nul = 0;
-	}
-
 	if (pa_dbf.use_table(pa_db, &watchers_table) < 0)
 	{
 		LM_ERR("unsuccessful use_table sql operation\n");
 		return;
 	}
 
-	if (tags==NULL) {
+	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 2) < 0)
+		LM_ERR("cleaning pending subscriptions\n");
 
-		if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 2) < 0)
-			LM_ERR("cleaning pending subscriptions\n");
-
-	} else {
-
-		while(tags[n]!=NULL) {
-			db_vals[2].val.str_val = *tags[n];
-			if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 3) < 0)
-				LM_ERR("cleaning pending subscriptions\n");
-			n++;
-		}
-
-	}
 }
 
 /*
