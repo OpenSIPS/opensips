@@ -669,7 +669,7 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
                     enum cl_node_match_op match_op)
 {
 	node_info_t *node;
-	int rc, sent = 0, down = 1;
+	int rc, sent = 0, down = 1, matched_once = 0;
 	cluster_info_t *dst_cl;
 	int ev_actions_required = 0;
 
@@ -698,6 +698,8 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		if (!match_node(dst_cl->current_node, node, match_op))
 			continue;
 
+		matched_once = 1;
+
 		rc = msg_send_retry(packet, node, 1, &ev_actions_required);
 		if (rc != -2)	/* at least one node is up */
 			down = 0;
@@ -711,6 +713,9 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		do_actions_node_ev(dst_cl, &ev_actions_required, 1);
 
 	lock_stop_read(cl_list_lock);
+
+	if (!matched_once)
+		return CLUSTERER_SEND_SUCCES;
 
 	if (down)
 		return CLUSTERER_DEST_DOWN;
