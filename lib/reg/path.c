@@ -24,6 +24,8 @@
 #include "../../data_lump.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
+#include "../../ut.h"
+#include "../../strcommon.h"
 
 #include "path.h"
 #include "config.h"
@@ -35,6 +37,8 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 														unsigned int flags)
 {
 	static char buf[MAX_PATH_SIZE];
+	static str unescape_buf;
+
 	char *p;
 	struct hdr_field *hdr;
 	struct sip_uri puri;
@@ -86,14 +90,25 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 				LM_ERR("failed to parse parameters of first hop\n");
 				goto error;
 			}
-			if (hooks.contact.received)
-				*received = hooks.contact.received->body;
-			/*for (;params; params = params->next) {
-				if (params->type == P_RECEIVED) {
-					*received = hooks.contact.received->body;
-					break;
+
+			if (hooks.contact.received) {
+				if (pkg_str_extend(&unescape_buf,
+				                  hooks.contact.received->body.len + 1) != 0) {
+					LM_ERR("oom\n");
+					goto error;
 				}
-			}*/
+
+				LM_DBG("extended to %d %p\n", unescape_buf.len, unescape_buf.s);
+
+				if (unescape_param(&hooks.contact.received->body,
+				                           &unescape_buf) != 0)
+					LM_ERR("failed to unescape received=%.*s\n",
+					       hooks.contact.received->body.len,
+					       hooks.contact.received->body.s);
+				else
+					*received = unescape_buf;
+			}
+
 			free_params(params);
 		}
 		free_rr(&route);
