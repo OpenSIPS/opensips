@@ -16,61 +16,63 @@ Robert-Vladut Patrascu
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Capabilities layer
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. db_url
-              1.3.2. db_table
-              1.3.3. id_col
-              1.3.4. cluster_id_col
-              1.3.5. node_id_col
-              1.3.6. url_col
-              1.3.7. state_col
-              1.3.8. no_ping_retries_col
-              1.3.9. priority_col
-              1.3.10. sip_addr_col
-              1.3.11. description_col
-              1.3.12. current_id
-              1.3.13. ping_interval
-              1.3.14. ping_timeout
-              1.3.15. node_timeout
-              1.3.16. db_mode
-              1.3.17. current_info
-              1.3.18. neighbor_info
-              1.3.19. sync_packet_max_size
+              1.4.1. db_url
+              1.4.2. db_table
+              1.4.3. id_col
+              1.4.4. cluster_id_col
+              1.4.5. node_id_col
+              1.4.6. url_col
+              1.4.7. state_col
+              1.4.8. no_ping_retries_col
+              1.4.9. priority_col
+              1.4.10. sip_addr_col
+              1.4.11. flags_col
+              1.4.12. description_col
+              1.4.13. current_id
+              1.4.14. ping_interval
+              1.4.15. ping_timeout
+              1.4.16. node_timeout
+              1.4.17. db_mode
+              1.4.18. current_info
+              1.4.19. neighbor_info
+              1.4.20. sync_packet_max_size
 
-        1.4. Exported Functions
+        1.5. Exported Functions
 
-              1.4.1. cluster_send_req(cluster_id, dst_id, msg[,
+              1.5.1. cluster_send_req(cluster_id, dst_id, msg[,
                       tag])
 
-              1.4.2. cluster_send_rpl(cluster_id, dst_id, msg,
+              1.5.2. cluster_send_rpl(cluster_id, dst_id, msg,
                       tag)
 
-              1.4.3. cluster_broadcast_req(cluster_id, msg[, tag])
+              1.5.3. cluster_broadcast_req(cluster_id, msg[, tag])
 
-              1.4.4. cluster_check_addr(cluster_id, ip, addr_type)
+              1.5.4. cluster_check_addr(cluster_id, ip, addr_type)
 
-        1.5. Exported MI Functions
+        1.6. Exported MI Functions
 
-              1.5.1. clusterer_reload
-              1.5.2. clusterer_list
-              1.5.3. clusterer_list_topology
-              1.5.4. clusterer_set_status
-              1.5.5. cluster_send_mi
-              1.5.6. cluster_broadcast_mi
-              1.5.7. clusterer_list_cap
+              1.6.1. clusterer_reload
+              1.6.2. clusterer_list
+              1.6.3. clusterer_list_topology
+              1.6.4. clusterer_set_status
+              1.6.5. cluster_send_mi
+              1.6.6. cluster_broadcast_mi
+              1.6.7. clusterer_list_cap
 
-        1.6. Exported Events
+        1.7. Exported Events
 
-              1.6.1. E_CLUSTERER_REQ_RECEIVED
-              1.6.2. E_CLUSTERER_RPL_RECEIVED
+              1.7.1. E_CLUSTERER_REQ_RECEIVED
+              1.7.2. E_CLUSTERER_RPL_RECEIVED
 
-        1.7. Usage Example
+        1.8. Usage Example
 
    2. Developer Guide
 
@@ -100,25 +102,26 @@ Robert-Vladut Patrascu
    1.8. Set no_ping_retries_col parameter
    1.9. Set priority_col parameter
    1.10. Set sip_addr_col parameter
-   1.11. Set description_col parameter
-   1.12. Set current_id parameter
-   1.13. Set ping_interval parameter
-   1.14. Set ping_timeout parameter
-   1.15. Set node_timeout parameter
-   1.16. Set db_mode parameter
-   1.17. Set current_info parameter
-   1.18. Set neighbor_info parameter
-   1.19. Set sync_packet_max_size parameter
-   1.20. cluster_send_req() usage
-   1.21. cluster_send_rpl() usage
-   1.22. cluster_broadcast_req() usage
-   1.23. cluster_check_addr() usage
-   1.24. clusterer_list usage
-   1.25. clusterer_list_topology usage
-   1.26. clusterer_list_cap usage
-   1.27. Example database content - clusterer table
-   1.28. Node A configuration
-   1.29. Node B configuration
+   1.11. Set flags_col parameter
+   1.12. Set description_col parameter
+   1.13. Set current_id parameter
+   1.14. Set ping_interval parameter
+   1.15. Set ping_timeout parameter
+   1.16. Set node_timeout parameter
+   1.17. Set db_mode parameter
+   1.18. Set current_info parameter
+   1.19. Set neighbor_info parameter
+   1.20. Set sync_packet_max_size parameter
+   1.21. cluster_send_req() usage
+   1.22. cluster_send_rpl() usage
+   1.23. cluster_broadcast_req() usage
+   1.24. cluster_check_addr() usage
+   1.25. clusterer_list usage
+   1.26. clusterer_list_topology usage
+   1.27. clusterer_list_cap usage
+   1.28. Example database content - clusterer table
+   1.29. Node A configuration
+   1.30. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -164,23 +167,51 @@ Chapter 1. Admin Guide
    define at least one neigbour in the script in order to discover
    all the cluster components.
 
-1.2. Dependencies
+1.2. Capabilities layer
 
-1.2.1. OpenSIPS Modules
+   The clusterer module also keeps track of the state of the nodes
+   in terms of data synchronization for the functionalities (or
+   "capabilities") implemented on top by other modules. Some
+   capabilities require a full data sync(at OpenSIPS startup or at
+   runtime via MI) from a valid "donor" node in the cluster that
+   has the full data set. Furthermore, a capability can query the
+   clusterer module in order to partition some distributed logic
+   only over the synchronized nodes in the cluster.
+
+   When the nodes in the cluster start for the first time(or all
+   nodes are restarted), all of them are empty and try to find a
+   suitable node to pull data from. In order to help
+   "bootstrapping" the cluster a "seed" node (considered to be
+   already synchronized from startup) should be defined. This is
+   done by setting the value seed for the flags column in the
+   clusterer table(or the property with the same name in the
+   current_info parameter). Note that this mechanism is required
+   only for capabilities that synchronize data at startup so check
+   the corresponding modules documentation.
+
+   The clusterer module transparently exposes the sip_addr column
+   from the clusterer table(or the property with the same name in
+   the current_info parameter) to the modules on top so check the
+   corresponding modules documentation for the use of this node
+   related information.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * a database module.
+     * a database module - if db_mode is 1.
      * proto_bin module.
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. db_url
+1.4.1. db_url
 
    The database url.
 
@@ -192,7 +223,7 @@ modparam("clusterer", "db_url",
         "mysql://opensips:opensipsrw@localhost/opensips")
 ...
 
-1.3.2. db_table
+1.4.2. db_table
 
    The name of the table storing the clustering information.
 
@@ -203,7 +234,7 @@ modparam("clusterer", "db_url",
 modparam("clusterer", "db_table", "clusterer")
 ...
 
-1.3.3. id_col
+1.4.3. id_col
 
    The name of the column storing an id for the table rows.
 
@@ -214,7 +245,7 @@ modparam("clusterer", "db_table", "clusterer")
 modparam("clusterer", "id_col", "id")
 ...
 
-1.3.4. cluster_id_col
+1.4.4. cluster_id_col
 
    The name of the column to store the id of a cluster.
 
@@ -225,7 +256,7 @@ modparam("clusterer", "id_col", "id")
 modparam("clusterer", "cluster_id_col", "cluster_id")
 ...
 
-1.3.5. node_id_col
+1.4.5. node_id_col
 
    The name of the column to store the id of an instance. The
    values must be greater than 0.
@@ -237,7 +268,7 @@ modparam("clusterer", "cluster_id_col", "cluster_id")
 modparam("clusterer", "node_id_col", "node_id")
 ...
 
-1.3.6. url_col
+1.4.6. url_col
 
    The name of the column containing the instance url. The values
    must be greater than 0.
@@ -249,7 +280,7 @@ modparam("clusterer", "node_id_col", "node_id")
 modparam("clusterer", "url_col", "url")
 ...
 
-1.3.7. state_col
+1.4.7. state_col
 
    The name of the column storing the state of the
    node(enabled/disabled).
@@ -261,7 +292,7 @@ modparam("clusterer", "url_col", "url")
 modparam("clusterer", "state_col", "state")
 ...
 
-1.3.8. no_ping_retries_col
+1.4.8. no_ping_retries_col
 
    The name of the column containing the maximum number of ping
    retries before the link with the neighbour node is considered
@@ -274,7 +305,7 @@ modparam("clusterer", "state_col", "state")
 modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 ...
 
-1.3.9. priority_col
+1.4.9. priority_col
 
    The name of the column storing the node priority to be chosen
    as next hop in case of same length(number of hops) paths when
@@ -287,7 +318,7 @@ modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 modparam("clusterer", "priority_col", "priority")
 ...
 
-1.3.10. sip_addr_col
+1.4.10. sip_addr_col
 
    The name of the column containing a SIP address for the node.
 
@@ -298,18 +329,29 @@ modparam("clusterer", "priority_col", "priority")
 modparam("clusterer", "sip_addr_col", "sip_addr")
 ...
 
-1.3.11. description_col
+1.4.11. flags_col
+
+   The name of the column containing the node flags.
+
+   Default value is “flags”.
+
+   Example 1.11. Set flags_col parameter
+...
+modparam("clusterer", "flags_col", "flags")
+...
+
+1.4.12. description_col
 
    The name of the column containing a node description.
 
    Default value is “description”.
 
-   Example 1.11. Set description_col parameter
+   Example 1.12. Set description_col parameter
 ...
 modparam("clusterer", "description_col", "description")
 ...
 
-1.3.12. current_id
+1.4.13. current_id
 
    The id of the current instance. This parameter must be equal
    with one of the node_id fields in the database.
@@ -317,24 +359,24 @@ modparam("clusterer", "description_col", "description")
    No default value. This parameter must be explicitly set to a
    value greater than zero.
 
-   Example 1.12. Set current_id parameter
+   Example 1.13. Set current_id parameter
 ...
 modparam("clusterer", "current_id", 1)
 ...
 
-1.3.13. ping_interval
+1.4.14. ping_interval
 
    The interval in seconds between regular pings sent to a
    neighbour node.
 
    Default value is “4”
 
-   Example 1.13. Set ping_interval parameter
+   Example 1.14. Set ping_interval parameter
 ...
 modparam("clusterer", "ping_interval", 1)
 ...
 
-1.3.14. ping_timeout
+1.4.15. ping_timeout
 
    The time in milliseconds to wait for a reply to a previously
    sent ping before retrying or considering the link with the
@@ -343,80 +385,88 @@ modparam("clusterer", "ping_interval", 1)
 
    Default value is “1000”
 
-   Example 1.14. Set ping_timeout parameter
+   Example 1.15. Set ping_timeout parameter
 ...
 modparam("clusterer", "ping_timeout", 500)
 ...
 
-1.3.15. node_timeout
+1.4.16. node_timeout
 
    The time in seconds to wait before pinging is restarted for a
    failed node.
 
    Default value is “60”
 
-   Example 1.15. Set node_timeout parameter
+   Example 1.16. Set node_timeout parameter
 ...
 modparam("clusterer", "node_timeout", 10)
 ...
 
-1.3.16. db_mode
+1.4.17. db_mode
 
-   Specifies whether the node specifciation information for the
-   current instance, as well as the other instances in the
-   cluster, should be loaded from the database or configured in
-   the script. A value of “0” means that the DB is not used.
+   Specifies whether the node information for the current
+   instance, as well as other instances in the cluster, should be
+   loaded from the database or configured in the script(see
+   current_info and neighbor_info). A value of “0” means that DB
+   is not used and the cluster topology in terms of node
+   information will be discovered dynamically at runtime.
 
    Default value is “1”
 
-   Example 1.16. Set db_mode parameter
+   Example 1.17. Set db_mode parameter
 ...
 modparam("clusterer", "db_mode", 0)
 ...
 
-1.3.17. current_info
+1.4.18. current_info
 
    Node specification similar to the information provided by a row
    in the clusterer DB table corresponding to the current
-   instance. At least the cluster_id and url propreties should be
-   defined. This parameter can be set multiple times in order to
+   instance. This parameter can be set multiple times in order to
    include the current node in multiple clusters.
 
    Parameter format: multiple "prop=value" property definitions
    separated by ',' where the name of the properties is the same
-   as the DB column names.
+   as the DB column names. At least the cluster_id and url
+   propreties must be defined.
 
-   This parameter is mandatory if db_mode is set to “0”.
+   This parameter is required if db_mode is set to “0” in order to
+   properly advertise information about the current instance in
+   the dynamic node learning process.
 
-   Example 1.17. Set current_info parameter
+   Example 1.18. Set current_info parameter
 ...
 modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
 :5566")
 ...
 
-1.3.18. neighbor_info
+1.4.19. neighbor_info
 
    Node specification similar to the information provided by a row
    in the clusterer DB table corresponding to another instance in
-   the current cluster. At least the cluster_id, node_id and url
-   propreties should be defined. This parameter can be set
-   multiple times.
+   the cluster. This node will be the entry point in the cluster
+   for the current instance in the dynamic node learning process.
+   This parameter can be set multiple times to define multiple
+   neigbors to connect to (or the same neighbor but in different
+   clusters).
 
    Parameter format: multiple "prop=value" property definitions
    separated by ',' where the name of the properties is the same
-   as the DB column names.
+   as the DB column names. At least the cluster_id, node_id and
+   url propreties must be defined.
 
    This parameter should be set at least once if db_mode is set to
-   0 in order to properly learn and advertise the cluster
-   topology.
+   0 in order to properly learn the cluster topology. If not set,
+   the only way to learn the node topology is by other nodes
+   connecting to the current instance.
 
-   Example 1.18. Set neighbor_info parameter
+   Example 1.19. Set neighbor_info parameter
 ...
 modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
 92.168.0.6:5566")
 ...
 
-1.3.19. sync_packet_max_size
+1.4.20. sync_packet_max_size
 
    The maximum size of the BIN packets sent while doing data
    synchronization. This is only a suggested value as the actual
@@ -424,14 +474,14 @@ modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
 
    Default value is “65535”.
 
-   Example 1.19. Set sync_packet_max_size parameter
+   Example 1.20. Set sync_packet_max_size parameter
 ...
 modparam("clusterer", "sync_packet_max_size", 32765)
 ...
 
-1.4. Exported Functions
+1.5. Exported Functions
 
-1.4.1.  cluster_send_req(cluster_id, dst_id, msg[, tag])
+1.5.1.  cluster_send_req(cluster_id, dst_id, msg[, tag])
 
    This function is used to send a generic, request-like message,
    containing custom data, to a specific node in a cluster,
@@ -463,7 +513,7 @@ modparam("clusterer", "sync_packet_max_size", 32765)
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.20. cluster_send_req() usage
+   Example 1.21. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
@@ -478,7 +528,7 @@ route[rpl_resume] {
 }
 ...
 
-1.4.2.  cluster_send_rpl(cluster_id, dst_id, msg, tag)
+1.5.2.  cluster_send_rpl(cluster_id, dst_id, msg, tag)
 
    This function is used to send a generic, reply-like message,
    containing custom data, to a specific node in a cluster,
@@ -508,7 +558,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.21. cluster_send_rpl() usage
+   Example 1.22. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_ta
@@ -519,7 +569,7 @@ p(rcv_tag)");
 }
 ...
 
-1.4.3.  cluster_broadcast_req(cluster_id, msg[, tag])
+1.5.3.  cluster_broadcast_req(cluster_id, msg[, tag])
 
    This function has a similar behaviour to the cluster_send_req()
    function with the exception that the message is sent to all the
@@ -539,12 +589,12 @@ p(rcv_tag)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.22. cluster_broadcast_req() usage
+   Example 1.23. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 ...
 
-1.4.4.  cluster_check_addr(cluster_id, ip, addr_type)
+1.5.4.  cluster_check_addr(cluster_id, ip, addr_type)
 
    This function checks whether the given IP address belongs to
    one of the nodes in the cluster.
@@ -561,16 +611,16 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.23. cluster_check_addr() usage
+   Example 1.24. cluster_check_addr() usage
 ...
 if (cluster_check_addr("1", "$si")) {
         ...
 }
 ...
 
-1.5. Exported MI Functions
+1.6. Exported MI Functions
 
-1.5.1.  clusterer_reload
+1.6.1.  clusterer_reload
 
    Reloads data from the clusterer database. The currently
    established topology will be lost and the node will rediscover
@@ -584,7 +634,7 @@ if (cluster_check_addr("1", "$si")) {
                 :clusterer_reload
                 _empty_line_
 
-1.5.2.  clusterer_list
+1.6.2.  clusterer_list
 
    Lists information(node id, URL, link state with that node etc.)
    about the other nodes in each cluster.
@@ -597,7 +647,7 @@ if (cluster_check_addr("1", "$si")) {
                 :clusterer_list
                 _empty_line_
 
-   Example 1.24. clusterer_list usage
+   Example 1.25. clusterer_list usage
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
         Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
@@ -610,7 +660,7 @@ Cluster:: 2
         Node:: 5 DB_ID=5 URL=bin:127.0.0.4:7775 Enabled=1 Link_state=Up
      Next_hop=5 Description=none
 
-1.5.3.  clusterer_list_topology
+1.6.3.  clusterer_list_topology
 
    Lists each cluster's topology from the current node's
    perspective as an adjacency list. A node appears as a neighbour
@@ -628,7 +678,7 @@ Cluster:: 2
                 :clusterer_list_topology
                 _empty_line_
 
-   Example 1.25. clusterer_list_topology usage
+   Example 1.26. clusterer_list_topology usage
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
         Node:: 1 Neighbours=4
@@ -639,7 +689,7 @@ Cluster:: 2
         Node:: 1 Neighbours=5
         Node:: 5 Neighbours=1
 
-1.5.4.  clusterer_set_status
+1.6.4.  clusterer_set_status
 
    Sets the status(Enabled/Disabled) of the current node in a
    specified cluster. A disabled node does not send any messages
@@ -659,7 +709,7 @@ Cluster:: 2
                 0
                 _empty_line_
 
-1.5.5.  cluster_send_mi
+1.6.5.  cluster_send_mi
 
    Dispatches a given MI command to be run on a specific node in
    the cluster.
@@ -680,7 +730,7 @@ Cluster:: 2
                 lb_reload
                 _empty_line_
 
-1.5.6.  cluster_broadcast_mi
+1.6.6.  cluster_broadcast_mi
 
    Dispatches a given MI command to be run on all the nodes in a
    cluster. The command is also executed locally.
@@ -700,7 +750,7 @@ Cluster:: 2
                 partition_5
                 _empty_line_
 
-1.5.7.  clusterer_list_cap
+1.6.7.  clusterer_list_cap
 
    Lists the registered capabilities and their states.
 
@@ -712,15 +762,15 @@ Cluster:: 2
                 :clusterer_list_cap
                 _empty_line_
 
-   Example 1.26. clusterer_list_cap usage
+   Example 1.27. clusterer_list_cap usage
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
         Capability:: dialog-dlg-repl State=Ok
         Capability:: usrloc-contact-repl State=not synced
 
-1.6. Exported Events
+1.7. Exported Events
 
-1.6.1.  E_CLUSTERER_REQ_RECEIVED
+1.7.1.  E_CLUSTERER_REQ_RECEIVED
 
    This event is raised when a generic, request-like, clusterer
    message is received. This type of message is sent directly from
@@ -735,7 +785,7 @@ Cluster:: 1
        corresponding to the received message by providing the tag
        to the cluster_send_rpl() function.
 
-1.6.2.  E_CLUSTERER_RPL_RECEIVED
+1.7.2.  E_CLUSTERER_RPL_RECEIVED
 
    This event is raised when a generic, reply-like, clusterer
    message is received. This type of message is sent directly from
@@ -750,75 +800,66 @@ Cluster:: 1
        the cluster_send_req() or cluster_broadcast_req()
        functions.
 
-1.7. Usage Example
+1.8. Usage Example
 
    This section provides an usage example for replicating
    ratelimit pipes between two OpenSIPS instances. It uses the
-   clusterer module to manage the replicating nodes, and the
-   proto_bin modules to send the replicated information.
+   clusterer module to manage the replicating nodes, and along
+   with the proto_bin module, to send the replicated information.
 
    The setup topology is simple: we have two OpenSIPS nodes
    running on two separate machines (although they could run on
    the same machine as well): Node A has IP 192.168.0.5 and Node B
    has IP 192.168.0.6. Both have, besides the traffic listeners
-   (UDP, TCP, etc.), bin listeners bound on port 5566. These
-   listeners will be used by the ratelimit module to replicate the
-   pipes. Therefore, we have to provision them in the clusterer
-   table.
+   (UDP, TCP, etc.), BIN listeners bound on port 5566. These
+   listeners will be used for the binary communication.
 
-   Example 1.27. Example database content - clusterer table
+   We insert in the the clusterer table the following:
+
+   Example 1.28. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+------------
------+----------+------------------------+
+-----+----------+----------+-------+-------------+
 | id | cluster_id | node_id | url                  | state | no_ping_ret
-ries | priority | sip_addr | description |
-+----+------------+---------+----------------------+-------+-----------+
-------------+-----------------+----------+
-|  1 |          1 |       1 | bin:192.168.0.5:5566 |     1 |
-   3 |       50 | NULL     | Node A      |
-|  2 |          1 |       2 | bin:192.168.0.6:5566 |     1 |
-   3 |       50 | NULL     | Node B      |
-+----+------------+---------+----------------------+-------+-----------+
-------------+-----------------+----------+
+ries | priority | sip_addr | flags | description |
++----+------------+---------+----------------------+-------+------------
+-----+----------+----------+-------+-------------+
+| 10 |          1 |       1 | bin:192.168.0.5:5566 |     1 |
+    3|       50 | NULL     | NULL  | Node A      |
+| 20 |          1 |       2 | bin:192.168.0.6:5566 |     1 |
+    3|       50 | NULL     | NULL  | Node B      |
++----+------------+---------+----------------------+-------+------------
+-----+----------+----------+-------+-------------+
 
-     * “cluster_id” - this column represents the identifier of the
-       cluster. All nodes within a group/cluster should have the
-       same id (in our example, both nodes have ID 1). The values
-       must be greater than 0.
-     * “node_id” - this represents the identifier of the
-       machine/node, and each instance within a cluster should
-       have a different ID. The values must be greater than 0. In
-       our example, Node A will have ID 1, and Node B ID 2.
-     * “url” - this indicates the URL where the instance will
-       receive the replication information. In our example, each
-       node will receive the date over the bin protocol
-     * “state” - this is the state of the machine: 1 means
-       Enabled, 0 means Disabled; if we had a third machine that
-       we didn't want to use for the moment, we would have set the
-       state to 0
-     * “ls_seq_no” and “top_seq_no” are fields used for the
-       probing and topology discovery mechanisms, and should be
-       set to 0 by default; they are automatically updated by the
-       clusterer module and you shouldn't change them even if a
-       node fails or you disable it
-     * “no_ping_retries” - is used to specify the maximum number
-       of ping retries before the link with a node is considered
-       down
-     * “priority” - is used to specify the node priority to be
-       chosen as next hop in case of same length(number of hops)
-       paths when rerouting messages; it is not relevant for this
-       two-node topology example
-     * “sip_addr” - is a SIP address for the node with currently
-       no application in replication scenarios; reserved for
-       further development of other modules which might use the
-       clusterer module for communication
-     * “description” - is an opaque value used to identify the
-       node
+     * “cluster_id” - identifier of the cluster. All nodes within
+       a group/cluster should have the same id (in our example,
+       both nodes have ID 1). The values must be greater than 0.
+     * “node_id” - identifier of the machine/node so each instance
+       within a cluster should have a different ID. The values
+       must be greater than 0. In our example, Node A will have ID
+       1, and Node B ID 2.
+     * “url” - address where all the BIN packets for that instance
+       will be sent to.
+     * “state” - state of the node: 1 means Enabled, 0 means
+       Disabled. A disabled node will not send any BIN packets and
+       will drop received ones.
+     * “no_ping_retries” - maximum number of ping retries before
+       the link with a node is considered down.
+     * “priority” - the priority of a node to be chosen as next
+       hop in case of same length(number of hops) paths when
+       rerouting messages; it is not relevant for this two-node
+       topology example.
+     * “sip_addr” - SIP address for the node that is transparently
+       provided to modules; it has no use for the ratelimit module
+       in our example.
+     * “flags” - used to define a seed node; it has no use in our
+       example.
+     * “description” - an opaque value used to describe the node
 
    After provisioning the two nodes in the database, we have to
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.28. Node A configuration
+   Example 1.29. Node A configuration
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -829,15 +870,12 @@ modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
 modparam("clusterer", "current_id", 1) # node_id for Node A
 
 loadmodule "ratelimit.so"
-# replicate pipes to cluster id 1
-modparam("ratelimit", "replicate_pipes_to", 1)
-# accept replicated data from nodes within cluster 1
-modparam("ratelimit", "accept_pipes_from", 1)
+modparam("ratelimit", "pipe_replication_cluster", 1)
 ...
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.29. Node B configuration
+   Example 1.30. Node B configuration
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 
@@ -849,16 +887,12 @@ modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
 modparam("clusterer", "current_id", 2) # node_id for Node B
 
 loadmodule "ratelimit.so"
-# replicate pipes to cluster id 1
-modparam("ratelimit", "replicate_pipes_to", 1)
-# accept replicated data from nodes within cluster 1
-modparam("ratelimit", "accept_pipes_from", 1)
+modparam("ratelimit", "pipe_replication_cluster", 1)
 ...
 
-   Note that the node_id parameter for Node B is 2. Starting the
-   two OpenSIPS instances with the above configurations provides
-   your platform the ability to used shared ratelimit pipes in a
-   very efficient and scalable way.
+   Starting the two OpenSIPS instances with the above
+   configurations provides your platform the ability to used
+   shared ratelimit pipes in a very efficient and scalable way.
 
 Chapter 2. Developer Guide
 
