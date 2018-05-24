@@ -104,19 +104,23 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 			LM_ERR("no pkg memory left for receive-address\n");
 			goto out4;
 		}
-		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6, "sip:%s:%u", src_ip, _m->rcv.src_port);
+		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6,
+		                        "sip:%s:%u", src_ip, _m->rcv.src_port);
 		switch (_m->rcv.proto) {
 			case PROTO_TCP:
-				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "tcp",PATH_TRANS_PARAM_LEN+3);
-				rcv_addr.len += PATH_TRANS_PARAM_LEN + 3;
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tcp",
+				       PATH_ESC_TRANS_PARAM_LEN+3);
+				rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 3;
 				break;
 			case PROTO_TLS:
-				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "tls",PATH_TRANS_PARAM_LEN+3);
-				rcv_addr.len += PATH_TRANS_PARAM_LEN + 3;
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tls",
+				       PATH_ESC_TRANS_PARAM_LEN+3);
+				rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 3;
 				break;
 			case PROTO_SCTP:
-				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "sctp",PATH_TRANS_PARAM_LEN+4);
-				rcv_addr.len += PATH_TRANS_PARAM_LEN + 4;
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "sctp",
+				       PATH_ESC_TRANS_PARAM_LEN+4);
+				rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 4;
 				break;
 		}
 		l2 = insert_new_lump_before(l2, rcv_addr.s, rcv_addr.len, 0);

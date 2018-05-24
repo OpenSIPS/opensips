@@ -27,6 +27,8 @@
 
 #include "../../mem/mem.h"
 #include "../../lib/path.h"
+#include "../../strcommon.h"
+#include "../../ut.h"
 
 #include "path_mod.h"
 
@@ -85,12 +87,16 @@ int add_path_received_usr(struct sip_msg* _msg, char* _usr, char* _b)
  */
 void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 {
+	static char _unescape_buf[MAX_PATH_SIZE];
+
 	param_hooks_t hooks;
 	param_t *params;
 	param_t *first_param;
 	str received = {0, 0};
 	str transport = {0, 0};
 	str dst_uri = {0, 0};
+	str unescape_buf = {_unescape_buf, MAX_PATH_SIZE};
+	char *p;
 
 	if (parse_params(r_param, CLASS_ANY, &hooks, &params) != 0) {
 		LM_ERR("failed to parse route parameters\n");
@@ -101,14 +107,35 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 
 	while(params)
 	{
-		if ( params->name.len == 9 && !strncasecmp(params->name.s, "transport", params->name.len) )
-			transport = params->body;
+		if (params->name.len == 8 &&
+		    !strncasecmp(params->name.s, "received", params->name.len)) {
 
-		if ( params->name.len == 8 && !strncasecmp(params->name.s,"received", params->name.len) )
 			received = params->body;
+			unescape_buf.len = MAX_PATH_SIZE;
+			if (unescape_param(&received, &unescape_buf) != 0) {
+				LM_ERR("failed to unescape received=%.*s\n",
+				       received.len, received.s);
+				goto out1;
+			}
+
+			/* if there's a param here, it has to be ;transport= */
+			if ((p = q_memchr(unescape_buf.s, ';', unescape_buf.len))) {
+				received.len = p - unescape_buf.s;
+
+				if ((p = q_memchr(p, '=', unescape_buf.len))) {
+					transport.s = p + 1;
+					transport.len = unescape_buf.s + unescape_buf.len - transport.s;
+				}
+			}
+
+			break;
+		}
 
 		params = params->next;
 	}
+
+	LM_DBG("extracted received=%.*s, transport=%.*s\n",
+	       received.len, received.s, transport.len, transport.s);
 
 	if (received.len > 0) {
 		if (transport.len > 0) {
