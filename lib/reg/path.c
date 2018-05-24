@@ -96,6 +96,7 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 				if (parse_uri(route->next->nameaddr.uri.s,
 				              route->next->nameaddr.uri.len, &puri) < 0) {
 					LM_ERR("failed to parse the 2nd Path URI\n");
+					free_params(params);
 					goto error;
 				}
 			}
