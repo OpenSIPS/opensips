@@ -1,3 +1,10 @@
+opensips (2.4.1-1) stable; urgency=low
+
+  * Minor Public Release.
+
+ -- Razvan Crainea <razvan@opensips.org>  Thu, 24 May 2018 19:20:04 +0300
+
+
 opensips (2.4.0-1) unstable; urgency=medium
 
   * New upstream release.
