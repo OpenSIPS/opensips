@@ -1,3 +1,770 @@
+=========================== Release 2.2.7 ==============================
+
+2018-05-24  ionutrazvanionita  <ionutionita at opensips dot org>
+	* [0d4823fef] :
+
+	[siptrace] use bitwise and instead of logical end
+	(cherry picked from commit 0e8baf4a602af76d30ea5084529f660aaf298fc3)
+
+
+2018-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [798e9edf4] :
+
+	Bump version to 2.2.7
+
+
+2018-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e125b4080] :
+
+	Fixed URI comparing when usernames are empty
+	(cherry picked from commit a69c8541b08eb171f24eca55444e777a3b527509)
+
+
+2018-05-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [ef6da267a] :
+
+	mi_xmlrpc_ng: fix system memory leaks when parsing xml
+	Closes #1359
+	(cherry picked from commit 06a1b186c9d8eba35e3f7bbff83f41325c60ac24)
+
+
+2018-05-21  Răzvan Crainea  <razvancrainea at users.noreply.github dot com>
+	* [c26cab4c6] :
+
+	Merge pull request #1366 from ryan-esty/2.3
+	added rtcp-mux-require
+
+	Close #1364
+	(cherry picked from commit c9a7552ce3c9f0dfd9b80c242a03ce27a744cfe5)
+
+
+2018-05-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [eabb4a872] :
+
+	Fixed wrong DB result free in case of error.
+	(cherry picked from commit bcad20098f92587ef465e3c634bd362ae3908522)
+
+
+2018-05-07  Liviu Chircu  <liviu at opensips dot org>
+	* [6a07d588f] :
+
+	acc: Fix "ms_duration" computation
+	Reported by John Quick
+
+	(cherry picked from commit f2c86ed3fa19d256c1a2c5ae5b246871ccc8b312)
+	(cherry picked from commit 88b3cb65e746d2402b69d5bd41651f418c968db7)
+
+
+2018-05-02  Liviu Chircu  <liviu at opensips dot org>
+	* [053f1feed] :
+
+	registrar: Fix expires handling on 200 OK save()
+	Silently use the default_expires, similarly to the behavior during a
+	standard save() on a REGISTER, without throwing warnings.
+
+	Credits to Norman Brandinger for providing the patch.
+	(cherry picked from commit bbfdbaf9d69ef39160459b6f5f81e5a2e9344cdc)
+
+
+2018-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [91a82aff7] :
+
+	core: Fix $branch(flags) manipulation
+	It now accepts and prints a space-separated list of branch flags.
+
+	Fixes #1341
+	(cherry picked from commit e2fd262f368928c8d71ec386c724de7025d6191a)
+
+
+2018-04-26  Razvan Crainea  <razvan at opensips dot org>
+	* [3dcebdb42] :
+
+	dlg: suppress info for updating contact
+	(cherry picked from commit 07ea9b686ec72d7155a2207f398a43e67026ea74)
+
+
+2018-04-26  Razvan Crainea  <razvan at opensips dot org>
+	* [4af577a03] :
+
+	dialog: update contact on re-INVITEs and UPDATEs
+	Closes ticket #964
+
+	(cherry picked from commit 125a1dc5327cf1ae9d056c64f679abf03c7a6890)
+	(cherry picked from commit 461b8f82007c0b8320c88c998764587a7b35a987)
+
+
+2018-04-26  Razvan Crainea  <razvan at opensips dot org>
+	* [d19a2611d] :
+
+	dialog: remove debugging CRIT message
+	(cherry picked from commit ecb29ab2db8d95e291467c0fcd932167fbdf8bc6)
+
+
+2018-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [345fbbbd7] :
+
+	Fixed proper handling of IPv6 net masks
+	Reported by Pasan Meemaduma.
+	Fixes #1336
+	(cherry picked from commit 86d3b84de04cd072a0d1eb2ecf34bcb8d121d2d0)
+
+
+2018-04-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [03e24c2e5] :
+
+	Fixed wrong triggering of post script callbacks.
+	If the async() statement translates into a sync/inline operation as triggered from a non request route, do not trigger the post script callbacks.
+	Fix for #1312
+	(cherry picked from commit 7a821af654b11c51a171a7454b99ebf757becdbd)
+
+
+2018-04-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a11ef084a] :
+
+	Fixed cloning of parsed_uri and parsed_uri_ok.
+	Translate the parsed_uri pointers after setting the new new_uri buffer. Also take care and properly update the parsed_uri_ok flag.
+
+	Reported by @ankurgupta001 - many thanks for the testing.
+	Credits also to Razvan Crainea (@razvancrainea) for troubleshooting.
+	Closes #1300
+	(cherry picked from commit 4a78508bbfc4c4f888399d8bf47b8c0a658ef9c3)
+
+
+2018-04-20  Razvan Crainea  <razvan at opensips dot org>
+	* [8df79b68d] :
+
+	ratelimit: fix count dec and reset for SBT algo
+	also fix counter var for SBT algo
+	(cherry picked from commit a5ee8aa1df49a1c7703959396ab12cdca34b5291)
+
+
+2018-04-19  Razvan Crainea  <razvan at opensips dot org>
+	* [5d229f5bf] :
+
+	rtpengine: prevent from reversing tags on DELETE
+	When a delete is used on a reply route, do not reverse the tags,
+	otherwise rtpengine will not match the proper session. More details on
+	github, ticket #1339.
+	(cherry picked from commit 818a74c9924f754bee0cd1d976c955ce7fe17e95)
+
+
+2018-04-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [45a3a83d7] :
+
+	Fixed missing include.
+	Reported by Nick Altmann
+
+
+2018-04-19  Liviu Chircu  <liviu at opensips dot org>
+	* [42609bcdf] :
+
+	fraud_detection: Complete commit 904e66b8
+	Reported by Denis
+
+	(cherry picked from commit 581ca5c8c188d349525cd718560669849bacde15)
+	(cherry picked from commit 7c26ec86cd6641cef8e26a2e43f58f005aee5cbf)
+
+
+2018-04-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [46531052c] :
+
+	updated README file
+
+
+2018-04-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [32e14f9ba] :
+
+	Fix function get_local_contact() to add transport
+	to have consistency over b2b and presence module, fix the get_local_contact() to also add the transport indication in the URI it builds. This will simplify the code in presence (as we do not have to add the transport param later, from several parts of the code) and also fixes the b2b code where the transport was not added at all in the URIs.
+
+	Credits go to @arttemk for identifing the problem and suggesting the fix.
+	Fix for  #1275
+
+	(cherry picked from commit eb50b9b1516599316752ad5a4d037d10f625bc60)
+	(cherry picked from commit fe542451142930d695b6b9cac447b4e04dbd4b16)
+
+
+2018-04-19  Liviu Chircu  <liviu at opensips dot org>
+	* [cd6497505] :
+
+	ctl tools: Fix errors in verbose mode
+	(cherry picked from commit a1332cbbd061adc3c0f56de2f08e0b13fbf40adb)
+
+
+2018-04-18  Razvan Crainea  <razvan at opensips dot org>
+	* [f439585a4] :
+
+	dialog: always check if create dialog was called on initial INVITE
+	(cherry picked from commit 2a2027a6e99ae20d6b3580950cfe39b81d46f087)
+
+
+2018-04-18  Razvan Crainea  <razvan at opensips dot org>
+	* [16f086011] :
+
+	rtpengine: prevent SDP from being rewritten
+
+
+2018-04-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [88607dbe1] :
+
+	Fix branch cancelation after a t_reply()
+	Be sure and call which_cancel() only when cancel_uac() is also called, otherwise the cancelling markers may prevent further canceling acttions on the transaction
+	Credits go to Stepan Pologov @sisoftrg
+	Fix for #1337
+	(cherry picked from commit d8ef9f1264f33469340b5961aaf8a76310f5e258)
+
+
+2018-04-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c22f6ab32] :
+
+	Fix CRIT logs back to DBG.
+	(cherry picked from commit ee7db82ae39eb13fa3675dd05112731af36dfbfc)
+	(cherry picked from commit dd8fc985ac0c52a3b01055d2b82e6f51ce847b82)
+
+
+2018-04-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c01855467] :
+
+	Fix dialog unref for local BYEs.
+	Instead of unref-ing the dialog when a final reply is received for the local BYE, better wait until the BYE transaction is destroyed. IF not, we will end up with a dangling dailog pointer in the BYE transaction.
+	Fix for #1330 where a local BYE retransmission in combination with TH ends up acessing the dangling dialog pointer.
+	Many thanks to Nick Altmann for the support in investigating this issue.
+
+	(cherry picked from commit ec52613da12d43299edf0dab26ae80e5d2153854)
+	(cherry picked from commit 2d02ffba4890457ee2f3e0a49b59bea2c7872c7f)
+
+
+2018-04-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [439990c22] :
+
+	Fix bogus delete on undefined AVPs.
+	Reported by John Quick.
+	(cherry picked from commit 5df9679c09ea8a247baac9e9ffdaff8e238feb4a)
+
+
+2018-04-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [164f0732d] :
+
+	Also flush carrier id AVPs when initiating a new routing
+	Fixed cases where do_routing() followed by route_to_carrier() would report the wrong carrier id
+	(cherry picked from commit 7844aaba9400e6480d341c18ac41dcc17b403070)
+
+
+2018-04-12  Liviu Chircu  <liviu at opensips dot org>
+	* [b2d71e1e8] :
+
+	OpenSIPS ViM syntax: Allow "." in pvar names
+	Reported by John Quick
+	(cherry picked from commit 7f1407baa80dd8383deb8fe11d52dbcb3631f354)
+
+
+2018-04-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6d576b650] :
+
+	Fix is_ip_registered() to use IP-wise matching.
+	Instead of doing string comp, better convert to ip_addr both IPs and do the comp as ip_addrs. This fixes the comp for IPv6, as IPv6 does not have a unique string representation.
+	(cherry picked from commit dc6fa00e6c7d25f296d25b727c1074a5abefdf5d)
+
+
+2018-04-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b37a70ba7] :
+
+	README updated
+
+
+2018-04-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [28d584b9c] :
+
+	Updated description of the mask_col.
+	Reported by Pasan Meemaduma
+	Part of #1336
+	(cherry picked from commit d4f83db42e10ffd6b4ebe74f61507fa0e135aa39)
+
+
+2018-04-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1ffebe92e] :
+
+	updated description of make field (according to ipv6)
+	(cherry picked from commit 4c8b3488d3b37f71470f9b5e81eeb1723e837441)
+
+
+2018-04-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4aa150e34] :
+
+	Fixed checking IP addr against host/name
+	Instead of coverting an IP addr to string and to string matching, it is more sane to try to covert the host/name to IP addr (anyhow in 99% it will be an IP as it is taken from VIA hdr). The old string matching fails for IPv6 as the string representation of an IPv6 is not unique (like for IPv4) - you may have compact format for IPv6.
+
+	Reported by Pasan Meemaduma
+	(cherry picked from commit a69f6de764cefab7cb7179b2f439780e74082461)
+
+
+2018-04-05  Liviu Chircu  <liviu at opensips dot org>
+	* [0f8cd9fad] :
+
+	fraud_detection: Fix a couple of limitations
+	    * reset the "sequential calls" stats similarly to the other ones
+	    * add a new modparam ("use_local_time")
+
+	Reported by Denis via mailing list.
+
+	(cherry picked from commit 904e66b83488f5153133bb2068c4802754ab2aba)
+	(cherry picked from commit 35b3681a513ba72f26dacda5aadc8fe64d035ada)
+
+
+2018-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3f952c25d] :
+
+	Force case insensitive matching via fnmatch
+	remove_hf(,'g') uses fnmatch with FNM_CASEFOLD if available (as it is a GNU extension)
+	Closes #1333
+	Reported by Nick Altmann
+	(cherry picked from commit 19a869148c98a1d7b13bac7e19a23a3e8d37fe3f)
+
+
+2018-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a0a155326] :
+
+	Fix previous backport
+	(cherry picked from commit cad377ed6aee8d878bcd8e674e84fcfea6096f25)
+
+
+2018-04-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [37b486a3c] :
+
+	Fix IPv6 support for check[_source]_address functions
+	Try to parse the string IP as both IPv4 and IPv6.
+	Closes #1334
+	(cherry picked from commit bb6b210294bba23ee22b9961fa5c8e764001d48c)
+
+
+2018-04-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ecef11381] :
+
+	Fix output of bm_poll_results using mi_json.
+	Missing ARRAY flag in a node with a list on nodes without names.
+	Reported by Nick Altmann
+	Fixes #1332
+	(cherry picked from commit 0070cbb130d525708f4c50d0ba6fbaa31209e655)
+
+
+2018-04-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [060f3f037] :
+
+	Fix multiple int2str coversion in function parameters
+	While evaluating the parameters of the module funtions (which can be up to 6) some of them can internally use pvar evaluation with conversion from int to str.
+	Shortly, multiple int2str may be before in a row. To avoid data overlapping, the int2str uses now a set of 7 rotating buffers (instead of a single one).
+	(cherry picked from commit 304d1554914302363915aa06db91bcffff27d07c)
+
+
+2018-03-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bcefec3b7] :
+
+	Fix typo in command name
+	This is the correct fix for  #1305
+	(cherry picked from commit 5740fff644f82c5115d0f831e579c62178436eb9)
+
+
+2018-03-30  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [2b83c6455] :
+
+	Merge pull request #1322 from nikbyte/master
+	Allow ds_select_dst and ds_select_domain in branch route
+	(cherry picked from commit 2168cfa3614a9c3c6c377c47e35c33342e96da25)
+
+
+2018-03-22  Dan Pascu  <dan at ag-projects dot com>
+	* [dc87f8326] :
+
+	Fixed building release dependent debian packages on debian unstable/sid
+
+
+2018-03-22  Dan Pascu  <dan at ag-projects dot com>
+	* [c91a740d7] :
+
+	Strip PATH from opensipsdbctl too for debian package
+
+
+2018-03-22  Dan Pascu  <dan at ag-projects dot com>
+	* [ed60db7a4] :
+
+	Fixed typo in debian rules
+
+
+2018-03-22  Dan Pascu  <dan at ag-projects dot com>
+	* [3543353d5] :
+
+	rtpengine: Fixed compilation when PKG_MALLOC is not defined
+
+
+2018-03-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [216373825] :
+
+	Removed bogus debug log
+	(cherry picked from commit 5cd8e0eceb7c76e649d0558968a6f97396265ede)
+
+
+2018-03-06  Razvan Crainea  <razvan at opensips dot org>
+	* [6a921f19d] :
+
+	ratelimit: fix documentation
+	Properly document which routes the functions are allowed to run into.
+	(cherry picked from commit 06aa1ed8c2575029adb031fc3ceae31aaa4c0a27)
+
+
+2018-03-06  Razvan Crainea  <razvan at opensips dot org>
+	* [25a0dc14d] :
+
+	httpd: make buffer a quarter of the pkg memory
+	Exactly as it is described in the documentation.
+	(cherry picked from commit 0c0679bd22943aef3f59591daffab4e8e24fba74)
+
+
+2018-03-06  Razvan Crainea  <razvan at opensips dot org>
+	* [3379a23c1] :
+
+	topo_hiding: do not delete shm lumps from add_rm list
+	These lumps can point somewhere in the middle of a shm lumps chunk, thus
+	will result in a memory corruption error.
+
+	Many thanks to Jonathan Hulme for providing testing environment!
+	(cherry picked from commit 28254a2aa55520f1381862c3c5744699231aeab7)
+
+
+2018-03-06  Razvan Crainea  <razvan at opensips dot org>
+	* [52384fbc6] :
+
+	dialog: fix previous commit warning
+	(cherry picked from commit ff86066ea02fc4f90d445df89d0654e0cef777be)
+
+
+2018-03-06  Razvan Crainea  <razvan at opensips dot org>
+	* [e23d77fdb] :
+
+	dialog: fix reinvite pinging
+	make sure that pinging is properly engaged
+
+	Credits go to Jonathan Hulme
+	Closes #1082
+	(cherry picked from commit 552bd4e7a7770e8e23768b35cc00226bc4863cbe)
+
+
+2018-03-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [988341567] :
+
+	Removed wrong error message.
+	If the counter does not exist, simply print NULL, do not throw an error
+	(cherry picked from commit aa61326000c940dbc172d317b4c558536753f143)
+
+
+2018-03-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b955d6751] :
+
+	Fixed DB URL escaping.
+	The ability to escape/encode DB URLs using %xy became a must with the auto generated user and passwords in the cloud envs.
+	(cherry picked from commit 5b0bc1e30ebfc1e67f4967c3e66cfa7577ee5b58)
+
+
+2018-03-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6f1d51d38] :
+
+	Fix extra 1 byte being copied after removing param.
+	I have no clue why that "+1" was there :-|. Makes no sense.
+	Reported by Ben Newlin <Ben.Newlin@genesys.com>
+	(cherry picked from commit f1ec655b053962edb5afe9a57ecd9cf81dc52f6d)
+
+
+2018-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [f4ee1c761] :
+
+	F_MALLOC: Fix "last free" line reports when debugging
+	If -DBG_MALLOC is in use, double free operations would report the
+	"first free" to actually be the malloc operation, which is incorrect.
+	(cherry picked from commit 234cf3967c7f6adf138a5b873e5f6d7040eba4df)
+
+
+2018-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [d10a6e782] :
+
+	F_MALLOC: Improve double free error reporting
+	(cherry picked from commit 9e9221802d51abe6fcb5bfadc51cbd75cbbf3658)
+
+
+2018-03-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [98fb6fb6a] :
+
+	Remove some heavy log (instroduced with the prev commit).
+	(cherry picked from commit ef89e181ff7cb8274b12d0a34aff74e0ae5a3a4a)
+
+
+2018-03-01  Vlad Patrascu  <vladp at opensips dot org>
+	* [9f3464a68] :
+
+	sql_cacher: fix supported column types to include blob
+	(cherry picked from commit 1378b51bc9111233b5ed95d490235aae435127a3)
+
+
+2018-02-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e68044a78] :
+
+	Extend the test for re-using pre-compiled regexp.
+	A failure in compiling a regexp may lead to an inconsistent state, where the buffer is correctly populated, but the regexp pointer is NULL -> on next usage, the code will attempt to directly used (as the regexp buffer matches) the NULL pointer and crash.
+	Reported by Ben Newlin <Ben.Newlin@genesys.com>
+	(cherry picked from commit b77c1823ead3b61875e9f0dae1d57c9a6455135b)
+
+
+2018-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b9641f69d] :
+
+	Fix dangerous \0 adding outside the str buffer.
+	It is bogus to write a 0 outside the str buffer as (1) the buffer may be in data zone (so read-only) or (2) it may be in shm memory and an overflow may corrupt the memory manager
+	Reported by Ben Newlin <Ben.Newlin@genesys.com>
+
+	(cherry picked from commit 93cc348717f91ad3c31775b99e0d1863ffce84ae)
+	(cherry picked from commit ab8488b7090d32c47b49d916efe271e599ea69b4)
+
+
+2018-02-27  Razvan Crainea  <razvan at opensips dot org>
+	* [1cc8c6129] :
+
+	net: only start TCP workers if there are listeners
+	Credits goes to Xaled for reporting this on mailing list
+	(cherry picked from commit bdeb8ff131d23e38cbac68a65ce2f48dfe8c572d)
+
+
+2018-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [69230e445] :
+
+	Fix displaying the usrloc domains.
+	Dropped the "records" parameters as there is no way to count in advance how many records we may have in a dynamic shared hash table.
+	Renamed "table" attribute into "hash_size" as this what it display :P
+
+	Related to #1265
+	(cherry picked from commit c9e7db08eab37f50814e57519de3ffd57fc20e8d)
+
+
+2018-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9494087a2] :
+
+	Update the help messge.
+	'-D' is not "do not fork" anymore, but enbles the "debug mode"
+	Reported in #1295
+	(cherry picked from commit e472e528685d09f065bf0712838878ad1a1d5c72)
+
+
+2018-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [71356c2b3] :
+
+	Added docs for the probing_verbose module parameter.
+	Reported via #1280
+
+	(cherry picked from commit ffa51f822516c813d3580b4c10f13debfe3ddc52)
+	(cherry picked from commit 734bb9a03e1f24830259a306e77ccf3da8878c14)
+
+
+2018-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a54435633] :
+
+	Added doc node about usage across differen top routes.
+	Related to #1277 report
+	(cherry picked from commit fefc33f107882f45b23b77013e8a9d3a21531da0)
+
+
+2018-02-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [996aaf643] :
+
+	Fixed return code in del_uri_param() function.
+	Avoid returning 0 if the param is not found, as 0 terminates the whole script execution.
+	Reported by Ben Newlin <Ben.Newlin@genesys.com>
+	(cherry picked from commit 6bd6d7128f4412fec2c038f9aa65f3005d4cc688)
+
+
+2018-02-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [878d96bed] :
+
+	Remove any capability constraints because of the used MODE.
+	As we are not aware of the relation (if any) between the real DB URLs from the set, it is not correct to restrict DB capabilities based on the used MODE. Like if it is Round Robin, do not do UPDATE ever. Maybe the URLs point to the nodes of the same cluster.
+	(cherry picked from commit 305a570f7dc48a8bb4ffd60f33b0df3438fd0246)
+
+
+2018-02-21  Razvan Crainea  <razvan at opensips dot org>
+	* [5531b1d37] :
+
+	Revert "rtpengine: allow specifying 15 length options"
+	This reverts commit d9625d5dc8bbf3a288ce79b36b96afb69ffb3fb4.
+
+
+2018-02-21  Razvan Crainea  <razvan at opensips dot org>
+	* [d9625d5dc] :
+
+	rtpengine: allow specifying 15 length options
+	(cherry picked from commit baf4af90f249258bb8355630ca8b0c0ac46f6fd1)
+
+
+2018-02-16  Liviu Chircu  <liviu at opensips dot org>
+	* [81196e176] :
+
+	F_MALLOC: Recover from double pointer free
+	This patch makes F_MALLOC more robust in production by avoiding memory
+	corruption in case of double free operations. Previously, the hash state
+	would immediately get corrupted on such operations, and it would only be
+	a matter of time before the allocator would crash in some random place
+	with a useless backtrace resembling:
+
+	\#0  0x0000000000507209 in fm_remove_free (qm=0x7f7d578d2010, size=56) at
+	mem/f_malloc.c:200
+	200          *pf=n->u.nxt_free;
+
+	When DBG_MALLOC is defined, F_MALLOC will now abort() on a double free,
+	similar to QM_MALLOC.
+
+	(cherry picked from commit 2254d0011535d37d8aa05387d4d967d074d7b9d5)
+	(cherry picked from commit cabb4c0824662a2261f4aa4e577ead6cc789e4c6)
+
+
+2018-02-15  Liviu Chircu  <liviu at opensips dot org>
+	* [fea96eb07] :
+
+	rest_client: Fix a string handling bug in append_hf()
+	Issue reported by Pasan Meemaduma
+	(cherry picked from commit 888d5e9b3f99423288a20065a2b90d28a9bb030e)
+
+
+2018-02-14  Dan Pascu  <dan at ag-projects dot com>
+	* [e4738b9d7] :
+
+	permissions: Handle integer columns of different sizes in tables/views
+
+
+2018-02-13  Razvan Crainea  <razvan at opensips dot org>
+	* [af686b991] :
+
+	fix passing NULL values for route param
+	(cherry picked from commit 25d6396eac8bd0bc96eab5d983c0d40f217cea72)
+
+
+2018-02-07  Razvan Crainea  <razvan at opensips dot org>
+	* [0f780de66] :
+
+	ratelimit: create pipe in a generic manner
+	Fix pipe init by merging the pipe create in a single, common function.
+
+	(cherry picked from commit d6933ad99ccfa20edbd375155a4b8e06b4e495a5)
+	(cherry picked from commit 4b29ec62eff1af6e4a2222d40bfa5cee8c43a64f)
+
+
+2018-02-05  Ovidiu Sas  <osas at voipembedded dot com>
+	* [926efd43d] :
+
+	rtpproxy: revert commit ee2731212303eb7055b3bd165464fe44fae05e7b  - add comments to better explain logic behind code
+	(cherry picked from commit ebbe49c50ce045a41b390198e3ee731450aaf600)
+
+
+2018-02-05  Ovidiu Sas  <osas at voipembedded dot com>
+	* [6a312d48c] :
+
+	nathelper: revert commit a45d4dcaf046bb273cfe5905ac035845a6867945  - add comments to better explain logic behind code
+	(cherry picked from commit 1e36fa1afafb90fcffcd88fdecc5c74e24ceb990)
+
+
+2018-02-05  Ovidiu Sas  <osas at voipembedded dot com>
+	* [dc258b09d] :
+
+	nathelper: manual backport for 3c39167e333a8801772f49f8561a015bfa1836f1  - fix test condition for updateing IP for fix_nated_sdp()
+	(cherry picked from commit a45d4dcaf046bb273cfe5905ac035845a6867945)
+
+
+2018-02-05  Ovidiu Sas  <osas at voipembedded dot com>
+	* [fda88d51d] :
+
+	rtpproxy: fix test condition for altering IP in SDP while forcing RTP
+	(cherry picked from commit 55e9479b32c2d01a12a3278afb75b0fa520605c4)
+
+
+2018-02-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bfec5afe2] :
+
+	Fix reverse_hex2int64() prototype
+	As the computed value is an unsigned (as data size), it cannot be returned as int as it will overflow and get converted to a negative value. This will colide with the negative error ret code -1
+	(cherry picked from commit ed12eb97c06a23491c8b831124600361b0b63f2f)
+
+
+2018-02-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1004b73bb] :
+
+	Explicit reset of conn ID on error
+	if reverse_hex2int fails, be sure the conn id stays 0.
+	(cherry picked from commit a61fa8646e6f865b347b3e725c6362dc15d4e57b)
+
+
+2018-02-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c584715b5] :
+
+	Fix reverse_hex2int() prototype
+	As the computed value is an unsigned (as data size), it cannot be returned as int as it will overflow and get converted to a negative value. This will colide with the negative error ret code -1
+	Reported by Daniel Zanutti.
+	(cherry picked from commit 095dc57300b9665b090e999a540db8b391f8d22e)
+
+
+2018-02-02  Vlad Patrascu  <vladp at opensips dot org>
+	* [2a3c1c8b2] :
+
+	event_flatstore: return proper error message for evi_flat_rotate
+	(cherry picked from commit 47aa5f7a464f6c70e803f10e17eb8d841a5dffd3)
+
+
+2018-02-02  Vlad Patrascu  <vladp at opensips dot org>
+	* [0c4786a2b] :
+
+	event_flatstore: fix some locking issues
+	(cherry picked from commit e340e70cfaf0762e81b94b896144cb636398022e)
+
+
+2018-02-02  Vlad Patrascu  <vladp at opensips dot org>
+	* [3442c57e6] :
+
+	event_flatstore: fix possible crash when subscribing
+	(cherry picked from commit c4d113a927890bc09b00e5263f44329c4d71099a)
+
+
+2018-02-01  Razvan Crainea  <razvan at opensips dot org>
+	* [e90b75a19] :
+
+	cfg: fix error reporting for unenclosed scriptvars
+	(cherry picked from commit adfc62b55cc2ada7ccac78bdaeab3bbdd47e5abf)
+
+
+2018-02-01  Razvan Crainea  <razvan at opensips dot org>
+	* [d16689a29] :
+
+	ratelimit: replicate the current counter for SBT
+	(cherry picked from commit 08bc17915bc113ee045f8a6d37257450a199c753)
+
+
+2018-01-31  Razvan Crainea  <razvan at opensips dot org>
+	* [1802e9cbe] :
+
+	pvar: fix $hdr() to allow variable headers
+	(cherry picked from commit b7862ccdd5290ebd8d41e2f5b0aadc6e93f1e8dd)
+
+
+2018-01-31  Razvan Crainea  <razvan at opensips dot org>
+	* [654a7a3f9] :
+
+	tls_mgm: fix doc for client_domain_avp
+
+
+2018-01-30  Razvan Crainea  <razvan at opensips dot org>
+	* [7a99d7e96] :
+
+	dialog: fix README to reflect actual event params
+	(cherry picked from commit 6243d57bab3918b2714cdfd1ff509a89fa324f5a)
+
+
+2018-01-17  Razvan Crainea  <razvan at opensips dot org>
+	* [24507b1ce] :
+
+	Bump version to 2.2.6
+
 =========================== Release 2.2.6 ==============================
 
 2018-01-17  Razvan Crainea  <razvan at opensips dot org>
