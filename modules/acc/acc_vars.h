@@ -45,4 +45,6 @@ int pv_get_acc_leg(struct sip_msg *msg, pv_param_t *param,
 int pv_set_acc_leg(struct sip_msg *msg, pv_param_t *param, int flag,
 		pv_value_t *val);
 
+void push_ctx_to_ctx(acc_ctx_t *src, acc_ctx_t *dst);
+
 #endif
