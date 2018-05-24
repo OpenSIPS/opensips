@@ -55,14 +55,17 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 		memcpy(prefix + prefix_len - 1, "@", 1);
 	}
 
-	suffix_len = PATH_LR_PARAM_LEN + (recv ? PATH_RC_PARAM_LEN : 0);
+	suffix_len = PATH_LR_PARAM_LEN +
+		((recv && (!double_path || _inbound == INBOUND)) ?
+			PATH_RC_PARAM_LEN : 0);
+
 	suffix = pkg_malloc(suffix_len);
 	if (!suffix) {
 		LM_ERR("no pkg memory left for suffix\n");
 		goto out1;
 	}
 	memcpy(suffix, PATH_LR_PARAM, PATH_LR_PARAM_LEN);
-	if(recv)
+	if (recv && (!double_path || _inbound == INBOUND))
 		memcpy(suffix+PATH_LR_PARAM_LEN, PATH_RC_PARAM, PATH_RC_PARAM_LEN);
 
 	crlf = pkg_malloc(PATH_CRLF_LEN);
@@ -95,7 +98,7 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 	}
 	l2 = insert_new_lump_before(l2, suffix, suffix_len, 0);
 	if (!l) goto out3;
-	if (recv) {
+	if (recv && (!double_path || _inbound == INBOUND)) {
 		/* TODO: agranig: optimize this one! */
 		src_ip = ip_addr2a(&_m->rcv.src_ip);
 		rcv_addr.s = pkg_malloc(4 + IP_ADDR_MAX_STR_SIZE + 7 +
@@ -206,7 +209,7 @@ int prepend_path(struct sip_msg* _m, str *user, int recv, int double_path)
 			LM_ERR("failed to insert conditional lump\n");
 			return -5;
 		}
-		if (build_path(_m, l, l2, user, 0, INBOUND, double_path) < 0) {
+		if (build_path(_m, l, l2, user, recv, INBOUND, double_path) < 0) {
 			LM_ERR("failed to insert inbound Path");
 			return -6;
 		}
