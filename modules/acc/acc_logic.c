@@ -45,6 +45,7 @@
 #include "acc_mod.h"
 #include "acc_logic.h"
 #include "acc_extra.h"
+#include "acc_vars.h"
 
 extern struct tm_binds tmb;
 extern struct rr_binds rrb;
@@ -649,6 +650,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 }
 
+
 static void acc_dlg_ctx_cb(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
@@ -659,6 +661,7 @@ static void acc_dlg_ctx_cb(struct dlg_cell *dlg, int type,
 	/* if there is already a acc context in the processing
 	 * context, be sure to destroy it for now */
 	if ( (ctx=ACC_GET_CTX)!=NULL) {
+		push_ctx_to_ctx( ctx, (acc_ctx_t *)(*_params->param));
 		free_acc_ctx(ctx);
 	}
 
@@ -881,6 +884,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	/* if there is already a acc context in the processing
 	 * context, be sure to destroy it for now */
 	if ( (ctx=ACC_GET_CTX)!=NULL) {
+		push_ctx_to_ctx( ctx, (acc_ctx_t *)(*_params->param));
 		free_acc_ctx(ctx);
 	}
 
