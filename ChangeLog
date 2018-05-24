@@ -1,3 +1,532 @@
+=========================== Release 2.4.1 ==============================
+
+2018-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [adc93740e] :
+
+	Bump version to 2.4.1
+
+
+2018-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [0d75d93ed] :
+
+	path: Fix leak-on-error
+	(cherry picked from commit 7911d636171f251b18a7d735d8baa9e15474b696)
+
+
+2018-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [045eea09b] :
+
+	path: Fix "use_path_received" in double-Path scenarios
+	Due to the fact that run_rr_callbacks() returns the 2nd Route (Path)
+	header field value when previously having done protocol switching (thus
+	having inserted two Path headers), the "use_path_received" feature of
+	the path module would not work -- it wouldn't set the $du at all.
+
+	The reason for this is that add_path_received() appends its ";received="
+	to inside Path #1 (the outbound path of the registration / the inbound
+	path of future requests) when doing double-Path recording.
+
+	This patch simply moves the ";received=" append operation performed by
+	add_path_received() into Path #2 (inbound path of registration /
+	outbound path of future requests), and adapts other code that needs it
+	(e.g. save("location", "p1v")) to properly be able to fetch it.
+
+	Reported by @futsystems
+
+	Fixes #1358
+	(cherry picked from commit 71c7d75f66c8f0dc4ce411fd97d2dc867b39ce8d)
+
+
+2018-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [0e60448cb] :
+
+	path: Add escaping logic for add_path_received()
+	Simply dumping a SIP URI as a ";received=" Path header field parameter
+	value is problematic and leads to two kinds of issues:
+
+	a. invalid SIP URIs, where the ";transport=" is specified twice:
+
+	Path: <sip:127.0.0.1:5061;transport=tcp;lr; ...
+	       ... received=sip:127.0.0.1:51959;transport=tcp>
+
+	b. in double Path scenarios (e.g. when switching protocols from, say,
+	TCP -> UDP), since the ";received=" is inserted as the
+	inbound Path header field value, this can lead to a strange
+	"protocol conversion" effect:
+
+	Path: <sip:127.0.0.1:5061;r2=on;lr ...
+	       ... ;received=sip:127.0.0.1:42917;transport=tcp>
+	Path: <sip:127.0.0.1:5061;transport=tcp;r2=on;lr>
+
+	^ notice how the inbound Path intended to advertise an UDP URI, but the
+	add_path_received() managed to "convert" it into a TCP URI because of
+	its inability to escape its token. nathelper is an easy first victim of
+	this conversion, as it will attempt to send pings using the incorrect
+	transport after reading the topmost Path (Route) header.
+
+	This patch adds escaping/unescaping logic for the ";received=" feature
+	of add_path_received() along with any code that makes use of this
+	feature. Example resulting URI for the above example:
+
+	Path: <sip:127.0.0.1:5061;r2=on;lr ...
+	       ... ;received=sip:127.0.0.1:42917%3dtransport%3btcp>
+	(cherry picked from commit b3bf15646affe981d4b266381d59f210e6e882fd)
+
+
+2018-05-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9a46432a0] :
+
+	Fixed replication of sharing TAGS.
+	Reported by Ognjen Seslija (sekil on IRC)
+	Thanks to Vlad Patrascu in troubleshooting
+	(cherry picked from commit 9059325241658c56cb759f17160c869b4e9def2b)
+
+
+2018-05-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [93c2cea6c] :
+
+	Fix consistency of extra/leg values in acc module.
+	If values are set before the dialog is matched, rather than simply discarding the setings done on the extra/leg values, better migrate the changes over the acc set stored in dialog.
+	(cherry picked from commit 60b1e7005b22eedd1ed604ffc21054e91b7f404b)
+
+
+2018-05-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bdac5e61a] :
+
+	Fix memory leak in using extra accounting.
+	If setting $acc_extra() for a sequential request, before being matched against the dialog, the values will result in a leak.
+	Ideally, the acc_extra set in the processing context should be merged with the acc_extra fetched after dialog matching.
+	(cherry picked from commit 19305deaa6f89d3c3030f67e68f79c69116501f2)
+
+
+2018-05-24  Vlad Patrascu  <vladp at opensips dot org>
+	* [40222f493] :
+
+	clusterer: several doc fixes and improvements
+
+
+2018-05-24  Liviu Chircu  <liviu at opensips dot org>
+	* [6c5b6e44d] :
+
+	registrar: Fix pkg leak / broken logic in remove()
+	Also enhance its documentation
+	(cherry picked from commit 62bf36dac2f0f90ad58b60f6fc1036934276fc9c)
+
+
+2018-05-23  Liviu Chircu  <liviu at opensips dot org>
+	* [98de68dac] :
+
+	clusterer: Do not log errors when broadcasting to 0 nodes
+	Reported by Xiao Huang
+
+	Fixes #1369
+	(cherry picked from commit c7cae9be6ad812f1a686e7529275f92194515ab1)
+
+
+2018-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e5f3b79cd] :
+
+	Fix delete query in watchers table.
+	The watcher's table has no sharing tags.
+	Reported by Ognjen Seslija (sekil on IRC)
+	(cherry picked from commit 2b28b213167dcfa132d1a3045a3a1b532874e4d9)
+
+
+2018-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cd3134187] :
+
+	Fixed URI comparing when usernames are empty
+	(cherry picked from commit a69c8541b08eb171f24eca55444e777a3b527509)
+
+
+2018-05-22  Liviu Chircu  <liviu at opensips dot org>
+	* [15fb59f8a] :
+
+	usrloc/nathelper: Improve function naming/docs
+	(cherry picked from commit 45ea9087d74cd8db5f8d27829296ede1d8b74e09)
+
+
+2018-05-22  Liviu Chircu  <liviu at opensips dot org>
+	* [21301982e] :
+
+	usrloc: Make the timer cleanup routine cluster-aware
+	Reported by Xiao Huang
+
+	Fixes #1367
+	(cherry picked from commit fa4bf3c67fe7d8f3fcf88bcca12fa5fa09a4ebe0)
+
+
+2018-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4ee26e325] :
+
+	A worker process wil ignore any SIGTERM if not in shutdwon sequance.
+	(cherry picked from commit 41f3fd580b86dea700185b76f7c60ad4590e1e02)
+
+
+2018-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c00e9282f] :
+
+	Downgrade log from INFO to DBG
+	(cherry picked from commit f39174c6bed6f636e658dc254d7457062ddff291)
+
+
+2018-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [602089bbc] :
+
+	Avoid signal "leaking" and use KILL instead of TERM.
+	When we want to force the termination of the unresponsive processes, better use Kill than TERM - TERM, if previosly delivered may be queued and lost.
+	(cherry picked from commit 8073d4de8edfab88a60c869b24df0cd3e74342d6)
+
+
+2018-05-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [0d1580702] :
+
+	mi_xmlrpc_ng: fix system memory leaks when parsing xml
+	Closes #1359
+	(cherry picked from commit 06a1b186c9d8eba35e3f7bbff83f41325c60ac24)
+
+
+2018-05-21  Răzvan Crainea  <razvancrainea at users.noreply.github dot com>
+	* [13489b996] :
+
+	Merge pull request #1366 from ryan-esty/2.3
+	added rtcp-mux-require
+
+	Close #1364
+	(cherry picked from commit c9a7552ce3c9f0dfd9b80c242a03ce27a744cfe5)
+
+
+2018-05-18  Liviu Chircu  <liviu at opensips dot org>
+	* [2020d6078] :
+
+	acc: Fix $acc_extra so it accepts integer constants
+	(cherry picked from commit 5f42814228cf52414a65bf859dffe10fb45ff94f)
+
+
+2018-05-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bcad20098] :
+
+	Fixed wrong DB result free in case of error.
+
+
+2018-05-17  Razvan Crainea  <razvan at opensips dot org>
+	* [c19f0f0c6] :
+
+	dialog: reset locked process only if you locked it
+	Make sure that when callbacks are run only the proces that has the
+	callbacks locked resets the locked_by field - if someone else does it,
+	it might run into a deadlock.
+
+	Thanks go to 46Labs for reporting this!
+	(cherry picked from commit e35595e8596e6dd0bedb0b96cadd226c52417243)
+
+
+2018-05-17  Vlad Patrascu  <vladp at opensips dot org>
+	* [d2c626166] :
+
+	clusterer: allow spaces in the format of "current_info" and "neighbor_info"
+	(cherry picked from commit b10f0e3f96a2173a868b395b6267646ef7c3f13c)
+
+
+2018-05-16  Liviu Chircu  <liviu at opensips dot org>
+	* [e7c4de709] :
+
+	rest_client: Improve tracing robustness at startup
+	Even if we're somehow called from startup route with a fake SIP
+	message, deal with it and do not segfault.
+	(cherry picked from commit 5f83153c6eac1042221e9b2bc48d11f8be148ea8)
+
+
+2018-05-16  Liviu Chircu  <liviu at opensips dot org>
+	* [436c68957] :
+
+	siptrace: Fix broken trace tests during startup_route
+	(cherry picked from commit 1c07c9254d6840e4d8a10226bd196661b6a667b4)
+
+
+2018-05-16  Liviu Chircu  <liviu at opensips dot org>
+	* [a8ee28c46] :
+
+	transformations: Fix parsing of nested transformations
+	We once again allow multiple levels of nested transformations, e.g.:
+
+	$(var(tu){s.substr,$(var(tu){s.substr,$(var(idx){s.int}),1}{s.int}),0})
+	    (example of three-level nesting of tranformations)
+	(cherry picked from commit 61dec8937bd65f0848413e988b0f77cd924b362f)
+
+
+2018-05-16  Liviu Chircu  <liviu at opensips dot org>
+	* [c0bf5a059] :
+
+	acc: Eat leading whitespace in "extra_fields"
+	This allows readable formatting such as:
+
+	modparam("acc", "extra_fields", "
+	    db:
+	        account_id;
+	        provider_id;
+	        account_card_id;
+	")
+	(cherry picked from commit f757ce4143cc7943adc872e6a7fc0bd3b3cc2a38)
+
+
+2018-05-14  Razvan Crainea  <razvan at opensips dot org>
+	* [467df134f] :
+
+	proto_hep: prevent memleak when using correlation
+	when not using homer5 and adding correlation to rest and xlog queries,
+	the correlation string was never freed, generating a memory leak.
+
+	also prevent opensips from crashing when running out of pkg memory.
+	(cherry picked from commit 8904319909cd6618d4ce06148a25937738a90a37)
+
+
+2018-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [bfac3e854] :
+
+	dialog: Always match dialogs using dlg_match_mode
+	This patch changes the default behavior of match_dialog() and
+	topology_hiding_match(), where they would both forcibly use DID_FALLBACK
+	matching, regardless of the value of the "dlg_match_mode" modparam.
+
+	Starting with 2.4, we change this behavior such that they default
+	to simply playing along with "dlg_match_mode", which is a lot
+	more intuitive from a script writing perspective.
+
+	If need be, a specific dialog matching behavior may be enforced for
+	certain types of traffic using the newly added optional parameters of
+	match_dialog() and topology_hiding_match().
+	(cherry picked from commit 61829d66321e8c37dbfeff36a25bfb95fcead866)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [718cf732c] :
+
+	dialog/topology_hiding: Update docs
+	(cherry picked from commit 362e65d28ac6409d66d48bea4a735c1558dd6993)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [2ddb4d10c] :
+
+	dialog: Fix dialog matching bugs in looping + TH scenarios
+	This patch adds an extra control parameter to topology_hiding_match()
+	and match_dialog() which allows the script writer to disable the current
+	behavior of forcefully imposing the "DID_FALLBACK" dialog matching mode.
+
+	In looping scenarios, performing SIP-wise dialog matching may be out of
+	the question, as we may randomly match one of multiple dialogs with
+	identical SIP coordinates.
+	(cherry picked from commit deb3ee457b1f64a169b61751e6490c7049f1493e)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [44af51b1a] :
+
+	dialog: Document re-INVITE pinging interval restrictions
+	(cherry picked from commit 4b59ffc0c65dca11a043faf61eb2987555192603)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [430039fd8] :
+
+	dialog: Fix re-INVITE pinging SDPs after on-hold/resume
+	(cherry picked from commit 1d1f3d04d75b3c2a46444d7a6d57348ce85543a9)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [123255c3e] :
+
+	dialog: Fix unnecessary errors on DB load
+	Affects DB-persistent dialogs w/o reinvite pinging. This regression was
+	introduced by commit 9521770e.
+	(cherry picked from commit 200a5563b227fc8c231e82f3d42e3c8528358fa2)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [fd854b778] :
+
+	dialog: Improve fetch_dlg_value() signature & docs
+	(cherry picked from commit f2626d471d6c1d1b58c2d4a27eee13f96203c24f)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [7d0f6bc0e] :
+
+	dialog: Fix Re-INVITE pinging after restarts
+	The current solution is to persist the SDPs/Contacts of the caller side and
+	the winning callee side into dialog var storage, which is restart
+	persistent ("vars" column).
+
+	Fixes #1342
+	(cherry picked from commit 9521770efccd385fafdb2c58ff365627e0d65fef)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [7d887fb4e] :
+
+	dialog: Fix pkg memleak in commit a03ed4e1a3
+	The auto-generated CANCEL messages were leaking the parsed Via header.
+
+	Reported by Nick Altmann
+	(cherry picked from commit 34960b140f81adca25bf9ad84ac2bc078732421e)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [67b2bf382] :
+
+	dialog: Fix regression in commit a03ed4e1a3
+	Commit a03ed4e1a3 may have fixed the create_dialog("Rr") scenarios,
+	but it also broke the simpler ones, which rely on create_dialog().
+
+	Reported by Nick Altmann
+	(cherry picked from commit b45ee74f5994ffdca12ccc8b6df0bcb33ca4c0b5)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [6fa390bde] :
+
+	dialog: Clarify the new meaning of dlg_leg.sdp
+	(cherry picked from commit bf2ae315609b1224338273a059b5f760b961b89f)
+
+
+2018-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [fba65033e] :
+
+	dialog: Fix Re-INVITE pinging issues with parallel forking
+	The Re-INVITE pinging code would always leak both SDP and contact buffers
+	when parallel forking. Moreover, depending on which branch answered
+	the call, in some cases OpenSIPS would only Re-INVITE ping one of the
+	parties involved, even if both "Rr" create_dialog() flags are set.
+
+	This patch fixes the above issues by storing the SDPs of each forked
+	branch into the "callee" leg array. Each call leg gets created before
+	the INVITE branch is sent out, rather than only getting created upon
+	matching a 200 OK reply. When matching a reply, the corresponding leg
+	becomes 1 + the Via branch idx, which added by tm. (0, 1, 2, ...)
+
+	Remaining issue:
+	Proper handling for the multi-200 OK scenario, as we currently still
+	overwrite the callee SDP at each 200 OK.
+	(cherry picked from commit a03ed4e1a366807df3a89efada59df0d07f4d361)
+
+
+2018-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [ea3559717] :
+
+	freeswitch: Force event re-subscribes after a disconnect
+	Credits to Ken Rice for reporting this issue
+	(cherry picked from commit a2934c79ed80401387e0e889293ab89d106922ef)
+
+
+2018-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [aa37c2caf] :
+
+	freeswitch: Fix ESL handle and file descriptor leaks
+	Thanks to Ken Rice for reporting, providing a testing environment and
+	helping troubleshoot these bugs.
+	(cherry picked from commit 9fe0201819653bd47f3638e8c161a946fa71b738)
+
+
+2018-05-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [187f7d08e] :
+
+	Fixed empty socket info in DB during reload
+	The insert subscription code may push an empty string for the socket info, so the DB reload code must cope with this without error.
+	Also relax the reloading sequence - ignore broken subscription records rather than stopping the entire reload and breaking the startup sequence.
+	(cherry picked from commit ea647c59aeaea6c8abfc910a8c6bbb31e0f552eb)
+
+
+2018-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [31fba7d0f] :
+
+	usrloc: Fix possible crash during contact pinging
+	This patch fixes a bug introduced in commit 02e6a641292, where the
+	output buffer does not contain a leading "0000" marker despite the
+	"ul.get_all_contacts()" function returning a 0 ("all contacts have been
+	dumped, the buffer is properly formatted").
+
+	Reported by @thesipguy
+
+	Credits to Răzvan Crainea for spotting the bug
+
+	Fixes #1352
+	(cherry picked from commit 2bb11c599095fbef90706bad9e314feba80d107f)
+
+
+2018-05-08  Vlad Patrascu  <vladp at opensips dot org>
+	* [4592fde0f] :
+
+	xmpp: fix uninitialized warning
+
+
+2018-05-08  Vlad Patrascu  <vladp at opensips dot org>
+	* [1b69af067] :
+
+	sip_i docs: fix subfield value
+
+
+2018-05-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [1ee6c85b6] :
+
+	sip_i: fix crash for numbers longer than 15 digits
+	Mapping the Called Party number or Calling Party number for IAM by default
+	could cause a stack smashing for numbers longer than 15 digits (E.164 limit).
+
+	Fixes #1348
+	(cherry picked from commit 47e5c47d3bb2ad7999a14b80d6412866d90493c9)
+
+
+2018-05-07  Liviu Chircu  <liviu at opensips dot org>
+	* [e0e927cae] :
+
+	acc: Fix "ms_duration" computation
+	Reported by John Quick
+	(cherry picked from commit f2c86ed3fa19d256c1a2c5ae5b246871ccc8b312)
+
+
+2018-05-02  Liviu Chircu  <liviu at opensips dot org>
+	* [ba005ae89] :
+
+	registrar: Fix expires handling on 200 OK save()
+	Silently use the default_expires, similarly to the behavior during a
+	standard save() on a REGISTER, without throwing warnings.
+
+	Credits to Norman Brandinger for providing the patch.
+	(cherry picked from commit bbfdbaf9d69ef39160459b6f5f81e5a2e9344cdc)
+
+
+2018-04-30  Razvan Crainea  <razvan at opensips dot org>
+	* [048b54559] :
+
+	rtpengine: fix created missing initializer
+
+
+2018-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [c9c4d3d80] :
+
+	nathelper: Fix uninitialized warning
+
+
+2018-04-30  Vlad Patrascu  <vladp at opensips dot org>
+	* [811e360c7] :
+
+	clusterer: fix uninitialized warning
+	(cherry picked from commit 5ad8600be1f547b303ba71c7ff270535e7b9a317)
+
+
+2018-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [2f828f9e4] :
+
+	Fix compile warning on older gcc (4.8.4)
+	(cherry picked from commit 2faf78c318e19052835e01ea6bc4f1ce2d3ad07f)
+
+
+2018-04-30  Razvan Crainea  <razvan at opensips dot org>
+	* [5ed57b4ed] :
+
+	Update ChangeLog for 2.4 final release
+
 =========================== Release 2.4.0 ==============================
 
 2018-04-30  Razvan Crainea  <razvan at opensips dot org>
