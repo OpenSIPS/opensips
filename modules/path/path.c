@@ -28,6 +28,8 @@
 #include "../../mem/mem.h"
 #include "../../data_lump.h"
 #include "../../parser/parse_param.h"
+#include "../../strcommon.h"
+#include "../../ut.h"
 
 #include "path.h"
 #include "path_mod.h"
@@ -43,6 +45,9 @@
 
 #define PATH_TRANS_PARAM	";transport="
 #define PATH_TRANS_PARAM_LEN	(sizeof(PATH_TRANS_PARAM)-1)
+
+#define PATH_ESC_TRANS_PARAM	"\%3btransport\%3d"
+#define PATH_ESC_TRANS_PARAM_LEN	(sizeof(PATH_ESC_TRANS_PARAM)-1)
 
 #define	PATH_CRLF		">\r\n"
 #define PATH_CRLF_LEN		(sizeof(PATH_CRLF)-1)
@@ -127,16 +132,16 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6, "sip:%s:%u", src_ip, _m->rcv.src_port);
 		switch (_m->rcv.proto) {
 			case PROTO_TCP:
-				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "tcp",PATH_TRANS_PARAM_LEN+3);
-				rcv_addr.len += PATH_TRANS_PARAM_LEN + 3;
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tcp",PATH_ESC_TRANS_PARAM_LEN+3);
+				rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 3;
 				break;
 			case PROTO_TLS:
-				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "tls",PATH_TRANS_PARAM_LEN+3);
-				rcv_addr.len += PATH_TRANS_PARAM_LEN + 3;
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tls",PATH_ESC_TRANS_PARAM_LEN+3);
+				rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 3;
 				break;
 			case PROTO_SCTP:
-				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "sctp",PATH_TRANS_PARAM_LEN+4);
-				rcv_addr.len += PATH_TRANS_PARAM_LEN + 4;
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "sctp",PATH_ESC_TRANS_PARAM_LEN+4);
+				rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 4;
 				break;
 		}
 		l2 = insert_new_lump_before(l2, rcv_addr.s, rcv_addr.len, 0);
@@ -273,12 +278,16 @@ int add_path_received_usr(struct sip_msg* _msg, char* _usr, char* _b)
  */
 void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 {
+	static char _unescape_buf[MAX_PATH_SIZE];
+
 	param_hooks_t hooks;
 	param_t *params;
 	param_t *first_param;
 	str received = {0, 0};
 	str transport = {0, 0};
 	str dst_uri = {0, 0};
+	str unescape_buf = {_unescape_buf, MAX_PATH_SIZE};
+	char *p;
 
 	if (parse_params(r_param, CLASS_ANY, &hooks, &params) != 0) {
 		LM_ERR("failed to parse route parameters\n");
@@ -289,14 +298,35 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 
 	while(params)
 	{
-		if ( params->name.len == 9 && !strncasecmp(params->name.s, "transport", params->name.len) )
-			transport = params->body;
+		if (params->name.len == 8 &&
+		    !strncasecmp(params->name.s, "received", params->name.len)) {
 
-		if ( params->name.len == 8 && !strncasecmp(params->name.s,"received", params->name.len) )
 			received = params->body;
+			unescape_buf.len = MAX_PATH_SIZE;
+			if (unescape_param(&received, &unescape_buf) != 0) {
+				LM_ERR("failed to unescape received=%.*s\n",
+				       received.len, received.s);
+				goto out1;
+			}
+
+			/* if there's a param here, it has to be ;transport= */
+			if ((p = q_memchr(unescape_buf.s, ';', unescape_buf.len))) {
+				received.len = p - unescape_buf.s;
+
+				if ((p = q_memchr(p, '=', unescape_buf.len))) {
+					transport.s = p + 1;
+					transport.len = unescape_buf.s + unescape_buf.len - transport.s;
+				}
+			}
+
+			break;
+		}
 
 		params = params->next;
 	}
+
+	LM_DBG("extracted received=%.*s, transport=%.*s\n",
+	       received.len, received.s, transport.len, transport.s);
 
 	if (received.len > 0) {
 		if (transport.len > 0) {
