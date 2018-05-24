@@ -585,7 +585,7 @@ static void bin_packet_handler(bin_packet_t *packet)
 			handle_presentity_query(packet);
 			break;
 		case SHTAG_IS_ACTIVE:
-			//rc = receive_repltag_active_msg(pkt);
+			handle_repltag_active_msg(packet);
 			break;
 		default:
 			LM_ERR("Unknown binary packet %d received from node %d in "

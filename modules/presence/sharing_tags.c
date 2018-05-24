@@ -261,6 +261,48 @@ void shlist_flush_state(struct clusterer_binds *c_api, int c_id, str *cap,
 }
 
 
+static void free_active_msgs_info(struct sharing_tag *tag)
+{
+	struct n_send_info *it, *tmp;
+
+	it = tag->active_msgs_sent;
+	while (it) {
+		tmp = it;
+		it = it->next;
+		shm_free(tmp);
+	}
+	tag->active_msgs_sent = NULL;
+}
+
+
+int handle_repltag_active_msg(bin_packet_t *packet)
+{
+	str tag_name;
+	struct sharing_tag *tag;
+
+	bin_pop_str(packet, &tag_name);
+
+	lock_start_write(shtags_lock);
+
+	if ((tag = get_shtag_unsafe(&tag_name)) == NULL) {
+		LM_ERR("Unable to fetch sharing tag\n");
+		lock_stop_write(shtags_lock);
+		return -1;
+	}
+
+	/* directly go to backup state when another
+	 * node in the cluster is to active */
+	tag->state = SHTAG_STATE_BACKUP;
+
+	tag->send_active_msg = 0;
+	free_active_msgs_info(tag);
+
+	lock_stop_write(shtags_lock);
+
+	return 0;
+}
+
+
 int list_shtags(struct mi_node *rpl)
 {
 	struct sharing_tag *tag;
