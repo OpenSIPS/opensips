@@ -93,6 +93,22 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 			param_hooks_t hooks;
 			param_t *params;
 
+			if (parse_params(&(puri.params),CLASS_URI,&hooks,&params)!=0){
+				LM_ERR("failed to parse parameters of first hop\n");
+				goto error;
+			}
+
+			/* we have a double-Path OpenSIPS in front of us - skip 1st Path */
+			if (hooks.uri.r2 && route->next) {
+				if (parse_uri(route->next->nameaddr.uri.s,
+				              route->next->nameaddr.uri.len, &puri) < 0) {
+					LM_ERR("failed to parse the 2nd Path URI\n");
+					goto error;
+				}
+			}
+
+			free_params(params);
+
 			if (parse_params(&(puri.params),CLASS_CONTACT,&hooks,&params)!=0){
 				LM_ERR("failed to parse parameters of first hop\n");
 				goto error;
