@@ -704,6 +704,46 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 	return(pre_verify_ok);
 }
 
+/* This callback is called during Client Hello processing in order to
+ * inspect if a servername extension is present. If the client
+ * indicated which hostname is attempting to connect to, we should present
+ * the appropriate certificate for that domain.
+ */
+int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
+{
+	str srvname;
+	struct tls_domain *dom;
+
+	if (!ssl) {
+		LM_ERR("Bad parameter in servername callback\n");
+		return SSL_TLSEXT_ERR_NOACK;
+	}
+
+	srvname.s = (char *)SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+	if (!srvname.s) {
+		LM_DBG("No servername extension in Client Hello\n");
+		return SSL_TLSEXT_ERR_OK;
+	}
+	srvname.len = strlen(srvname.s);
+	if (!srvname.len) {
+		LM_ERR("Empty Servername extension in Client Hello\n");
+		return SSL_TLSEXT_ERR_NOACK;
+	}
+
+	if (str_strcmp(&(((struct tls_domain *)arg)->name), &srvname)) {
+		dom = tls_find_server_domain_name(&srvname);
+		if (dom)
+			/* switch SSL context to the one with the proper certificate
+			 * for the indicated hostname */
+			SSL_set_SSL_CTX(ssl, dom->ctx);
+		else /* fallback to already identified tls domain */
+			LM_INFO("No domain found matching host: %.*s in servername extension\n",
+				srvname.len, srvname.s);
+	}
+
+	return SSL_TLSEXT_ERR_OK;
+}
+
 
 /*
  * Setup default SSL_CTX (and SSL * ) behavior:
@@ -850,6 +890,12 @@ static int init_ssl_ctx_behavior(struct tls_domain *d) {
 	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
 	SSL_CTX_set_session_id_context( d->ctx, OS_SSL_SESS_ID,
 			OS_SSL_SESS_ID_LEN );
+
+	/* install callback for SNI */
+	if (d->type & TLS_DOMAIN_SRV) {
+		SSL_CTX_set_tlsext_servername_callback(d->ctx, ssl_servername_cb);
+		SSL_CTX_set_tlsext_servername_arg(d->ctx, d);
+	}
 
 	return 0;
 }

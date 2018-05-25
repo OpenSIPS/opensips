@@ -242,6 +242,26 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	return 0;
 }
 
+/*
+ * Find server domain by name
+ */
+struct tls_domain *
+tls_find_server_domain_name(str *name)
+{
+	struct tls_domain *d = NULL;
+
+	if (dom_lock)
+		lock_start_read(dom_lock);
+
+	for (d = *tls_server_domains; d; d = d->next)
+		if (!str_strcmp(&d->name, name))
+			break;
+
+	if (dom_lock)
+		lock_stop_read(dom_lock);
+
+	return d;
+}
 
 /*
  * find server domain with given ip and port

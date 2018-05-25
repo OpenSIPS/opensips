@@ -110,6 +110,11 @@ struct tls_domain *tls_find_domain_by_name(str *name, struct tls_domain **dom_li
 struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
 				   unsigned short port);
 
+/*
+ * find server domain with given name
+ */
+struct tls_domain *tls_find_server_domain_name(str *name);
+
 /* find client domain */
 struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
 				   unsigned short port);
