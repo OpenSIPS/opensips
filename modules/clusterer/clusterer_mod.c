@@ -265,6 +265,7 @@ int parse_param_node_info(str *descr, int *int_vals, char **str_vals)
 static int mod_init(void)
 {
 	int heartbeats_timer_interval;
+	cluster_info_t *cl;
 
 	LM_INFO("Clusterer module - initializing\n");
 
@@ -314,6 +315,14 @@ static int mod_init(void)
 			goto error;
 		}
 		*cluster_list = NULL;
+	} else {
+		/* sanity check of current_id if node_id also set in a current_info param */
+		for (cl = *cluster_list; cl; cl = cl->next)
+			if (cl->current_node->node_id != current_id) {
+				LM_ERR("Bad current_id parameter, value: %d different than"
+					" the node_id property in the current_info parameter\n", current_id);
+				goto error;
+			}
 	}
 
 	if (db_mode) {

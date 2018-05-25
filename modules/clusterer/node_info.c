@@ -562,7 +562,23 @@ int provision_current(modparam_t type, void *val)
 		LM_ERR("At least the cluster id and url are required for the current node\n");
 		return -1;
 	}
-	int_vals[INT_VALS_NODE_ID_COL] = current_id;
+
+	if (int_vals[INT_VALS_NODE_ID_COL] == -1 && current_id == -1) {
+		LM_ERR("Node ID not defined. Set either the value of the node_id proprety"
+			" of current_info or set the current_id parameter before current_info!\n");
+		return -1;
+	}
+	if (current_id != -1 && int_vals[INT_VALS_NODE_ID_COL] != -1 &&
+		int_vals[INT_VALS_NODE_ID_COL] != current_id) {
+		LM_ERR("Bad value in current_info parameter, node_id: %d different"
+			" than current_id parameter\n", int_vals[INT_VALS_NODE_ID_COL]);
+		return -1;
+	}
+	if (int_vals[INT_VALS_NODE_ID_COL] != -1)
+		current_id = int_vals[INT_VALS_NODE_ID_COL];
+	else
+		int_vals[INT_VALS_NODE_ID_COL] = current_id;
+
 	int_vals[INT_VALS_STATE_COL] = 1;
 	if (int_vals[INT_VALS_NO_PING_RETRIES_COL] == -1)
 		int_vals[INT_VALS_NO_PING_RETRIES_COL] = DEFAULT_NO_PING_RETRIES;
