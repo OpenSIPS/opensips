@@ -24,26 +24,26 @@ Robert-Vladut Patrascu
 
         1.4. Exported Parameters
 
-              1.4.1. db_url
-              1.4.2. db_table
-              1.4.3. id_col
-              1.4.4. cluster_id_col
-              1.4.5. node_id_col
-              1.4.6. url_col
-              1.4.7. state_col
-              1.4.8. no_ping_retries_col
-              1.4.9. priority_col
-              1.4.10. sip_addr_col
-              1.4.11. flags_col
-              1.4.12. description_col
-              1.4.13. current_id
-              1.4.14. ping_interval
-              1.4.15. ping_timeout
-              1.4.16. node_timeout
-              1.4.17. db_mode
-              1.4.18. current_info
-              1.4.19. neighbor_info
-              1.4.20. sync_packet_max_size
+              1.4.1. current_id
+              1.4.2. db_mode
+              1.4.3. db_url
+              1.4.4. db_table
+              1.4.5. current_info
+              1.4.6. neighbor_info
+              1.4.7. ping_interval
+              1.4.8. ping_timeout
+              1.4.9. node_timeout
+              1.4.10. sync_packet_max_size
+              1.4.11. id_col
+              1.4.12. cluster_id_col
+              1.4.13. node_id_col
+              1.4.14. url_col
+              1.4.15. state_col
+              1.4.16. no_ping_retries_col
+              1.4.17. priority_col
+              1.4.18. sip_addr_col
+              1.4.19. flags_col
+              1.4.20. description_col
 
         1.5. Exported Functions
 
@@ -92,26 +92,26 @@ Robert-Vladut Patrascu
 
    List of Examples
 
-   1.1. Set db_url parameter
-   1.2. Set db_table parameter
-   1.3. Set id_col parameter
-   1.4. Set cluster_id_col parameter
-   1.5. Set node_id_col parameter
-   1.6. Set url_col parameter
-   1.7. Set state_col parameter
-   1.8. Set no_ping_retries_col parameter
-   1.9. Set priority_col parameter
-   1.10. Set sip_addr_col parameter
-   1.11. Set flags_col parameter
-   1.12. Set description_col parameter
-   1.13. Set current_id parameter
-   1.14. Set ping_interval parameter
-   1.15. Set ping_timeout parameter
-   1.16. Set node_timeout parameter
-   1.17. Set db_mode parameter
-   1.18. Set current_info parameter
-   1.19. Set neighbor_info parameter
-   1.20. Set sync_packet_max_size parameter
+   1.1. Set current_id parameter
+   1.2. Set db_mode parameter
+   1.3. Set db_url parameter
+   1.4. Set db_table parameter
+   1.5. Set current_info parameter
+   1.6. Set neighbor_info parameter
+   1.7. Set ping_interval parameter
+   1.8. Set ping_timeout parameter
+   1.9. Set node_timeout parameter
+   1.10. Set sync_packet_max_size parameter
+   1.11. Set id_col parameter
+   1.12. Set cluster_id_col parameter
+   1.13. Set node_id_col parameter
+   1.14. Set url_col parameter
+   1.15. Set state_col parameter
+   1.16. Set no_ping_retries_col parameter
+   1.17. Set priority_col parameter
+   1.18. Set sip_addr_col parameter
+   1.19. Set flags_col parameter
+   1.20. Set description_col parameter
    1.21. cluster_send_req() usage
    1.22. cluster_send_rpl() usage
    1.23. cluster_broadcast_req() usage
@@ -211,147 +211,7 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-1.4.1. db_url
-
-   The database url.
-
-   Default value is “NULL”.
-
-   Example 1.1. Set db_url parameter
-...
-modparam("clusterer", "db_url",
-        "mysql://opensips:opensipsrw@localhost/opensips")
-...
-
-1.4.2. db_table
-
-   The name of the table storing the clustering information.
-
-   Default value is “clusterer”.
-
-   Example 1.2. Set db_table parameter
-...
-modparam("clusterer", "db_table", "clusterer")
-...
-
-1.4.3. id_col
-
-   The name of the column storing an id for the table rows.
-
-   Default value is “id”.
-
-   Example 1.3. Set id_col parameter
-...
-modparam("clusterer", "id_col", "id")
-...
-
-1.4.4. cluster_id_col
-
-   The name of the column to store the id of a cluster.
-
-   Default value is “cluster_id”.
-
-   Example 1.4. Set cluster_id_col parameter
-...
-modparam("clusterer", "cluster_id_col", "cluster_id")
-...
-
-1.4.5. node_id_col
-
-   The name of the column to store the id of an instance. The
-   values must be greater than 0.
-
-   Default value is “node_id”.
-
-   Example 1.5. Set node_id_col parameter
-...
-modparam("clusterer", "node_id_col", "node_id")
-...
-
-1.4.6. url_col
-
-   The name of the column containing the instance url. The values
-   must be greater than 0.
-
-   Default value is “url”.
-
-   Example 1.6. Set url_col parameter
-...
-modparam("clusterer", "url_col", "url")
-...
-
-1.4.7. state_col
-
-   The name of the column storing the state of the
-   node(enabled/disabled).
-
-   Default value is “state”.
-
-   Example 1.7. Set state_col parameter
-...
-modparam("clusterer", "state_col", "state")
-...
-
-1.4.8. no_ping_retries_col
-
-   The name of the column containing the maximum number of ping
-   retries before the link with the neighbour node is considered
-   down.
-
-   Default value is “no_ping_retries”.
-
-   Example 1.8. Set no_ping_retries_col parameter
-...
-modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
-...
-
-1.4.9. priority_col
-
-   The name of the column storing the node priority to be chosen
-   as next hop in case of same length(number of hops) paths when
-   rerouting messages.
-
-   Default value is “priority”.
-
-   Example 1.9. Set priority_col parameter
-...
-modparam("clusterer", "priority_col", "priority")
-...
-
-1.4.10. sip_addr_col
-
-   The name of the column containing a SIP address for the node.
-
-   Default value is “sip_addr”.
-
-   Example 1.10. Set sip_addr_col parameter
-...
-modparam("clusterer", "sip_addr_col", "sip_addr")
-...
-
-1.4.11. flags_col
-
-   The name of the column containing the node flags.
-
-   Default value is “flags”.
-
-   Example 1.11. Set flags_col parameter
-...
-modparam("clusterer", "flags_col", "flags")
-...
-
-1.4.12. description_col
-
-   The name of the column containing a node description.
-
-   Default value is “description”.
-
-   Example 1.12. Set description_col parameter
-...
-modparam("clusterer", "description_col", "description")
-...
-
-1.4.13. current_id
+1.4.1. current_id
 
    The id of the current instance. This parameter must be equal
    with one of the node_id fields in the database.
@@ -359,50 +219,12 @@ modparam("clusterer", "description_col", "description")
    No default value. This parameter must be explicitly set to a
    value greater than zero.
 
-   Example 1.13. Set current_id parameter
+   Example 1.1. Set current_id parameter
 ...
 modparam("clusterer", "current_id", 1)
 ...
 
-1.4.14. ping_interval
-
-   The interval in seconds between regular pings sent to a
-   neighbour node.
-
-   Default value is “4”
-
-   Example 1.14. Set ping_interval parameter
-...
-modparam("clusterer", "ping_interval", 1)
-...
-
-1.4.15. ping_timeout
-
-   The time in milliseconds to wait for a reply to a previously
-   sent ping before retrying or considering the link with the
-   neighbour node down. This is also the interval between
-   successive retries if the send fails.
-
-   Default value is “1000”
-
-   Example 1.15. Set ping_timeout parameter
-...
-modparam("clusterer", "ping_timeout", 500)
-...
-
-1.4.16. node_timeout
-
-   The time in seconds to wait before pinging is restarted for a
-   failed node.
-
-   Default value is “60”
-
-   Example 1.16. Set node_timeout parameter
-...
-modparam("clusterer", "node_timeout", 10)
-...
-
-1.4.17. db_mode
+1.4.2. db_mode
 
    Specifies whether the node information for the current
    instance, as well as other instances in the cluster, should be
@@ -413,12 +235,35 @@ modparam("clusterer", "node_timeout", 10)
 
    Default value is “1”
 
-   Example 1.17. Set db_mode parameter
+   Example 1.2. Set db_mode parameter
 ...
 modparam("clusterer", "db_mode", 0)
 ...
 
-1.4.18. current_info
+1.4.3. db_url
+
+   The database url.
+
+   Default value is “NULL”.
+
+   Example 1.3. Set db_url parameter
+...
+modparam("clusterer", "db_url",
+        "mysql://opensips:opensipsrw@localhost/opensips")
+...
+
+1.4.4. db_table
+
+   The name of the table storing the clustering information.
+
+   Default value is “clusterer”.
+
+   Example 1.4. Set db_table parameter
+...
+modparam("clusterer", "db_table", "clusterer")
+...
+
+1.4.5. current_info
 
    Node specification similar to the information provided by a row
    in the clusterer DB table corresponding to the current
@@ -434,13 +279,13 @@ modparam("clusterer", "db_mode", 0)
    properly advertise information about the current instance in
    the dynamic node learning process.
 
-   Example 1.18. Set current_info parameter
+   Example 1.5. Set current_info parameter
 ...
 modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
 :5566")
 ...
 
-1.4.19. neighbor_info
+1.4.6. neighbor_info
 
    Node specification similar to the information provided by a row
    in the clusterer DB table corresponding to another instance in
@@ -460,13 +305,51 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
    the only way to learn the node topology is by other nodes
    connecting to the current instance.
 
-   Example 1.19. Set neighbor_info parameter
+   Example 1.6. Set neighbor_info parameter
 ...
 modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
 92.168.0.6:5566")
 ...
 
-1.4.20. sync_packet_max_size
+1.4.7. ping_interval
+
+   The interval in seconds between regular pings sent to a
+   neighbour node.
+
+   Default value is “4”
+
+   Example 1.7. Set ping_interval parameter
+...
+modparam("clusterer", "ping_interval", 1)
+...
+
+1.4.8. ping_timeout
+
+   The time in milliseconds to wait for a reply to a previously
+   sent ping before retrying or considering the link with the
+   neighbour node down. This is also the interval between
+   successive retries if the send fails.
+
+   Default value is “1000”
+
+   Example 1.8. Set ping_timeout parameter
+...
+modparam("clusterer", "ping_timeout", 500)
+...
+
+1.4.9. node_timeout
+
+   The time in seconds to wait before pinging is restarted for a
+   failed node.
+
+   Default value is “60”
+
+   Example 1.9. Set node_timeout parameter
+...
+modparam("clusterer", "node_timeout", 10)
+...
+
+1.4.10. sync_packet_max_size
 
    The maximum size of the BIN packets sent while doing data
    synchronization. This is only a suggested value as the actual
@@ -474,9 +357,126 @@ modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
 
    Default value is “65535”.
 
-   Example 1.20. Set sync_packet_max_size parameter
+   Example 1.10. Set sync_packet_max_size parameter
 ...
 modparam("clusterer", "sync_packet_max_size", 32765)
+...
+
+1.4.11. id_col
+
+   The name of the column storing an id for the table rows.
+
+   Default value is “id”.
+
+   Example 1.11. Set id_col parameter
+...
+modparam("clusterer", "id_col", "id")
+...
+
+1.4.12. cluster_id_col
+
+   The name of the column to store the id of a cluster.
+
+   Default value is “cluster_id”.
+
+   Example 1.12. Set cluster_id_col parameter
+...
+modparam("clusterer", "cluster_id_col", "cluster_id")
+...
+
+1.4.13. node_id_col
+
+   The name of the column to store the id of an instance. The
+   values must be greater than 0.
+
+   Default value is “node_id”.
+
+   Example 1.13. Set node_id_col parameter
+...
+modparam("clusterer", "node_id_col", "node_id")
+...
+
+1.4.14. url_col
+
+   The name of the column containing the instance url. The values
+   must be greater than 0.
+
+   Default value is “url”.
+
+   Example 1.14. Set url_col parameter
+...
+modparam("clusterer", "url_col", "url")
+...
+
+1.4.15. state_col
+
+   The name of the column storing the state of the
+   node(enabled/disabled).
+
+   Default value is “state”.
+
+   Example 1.15. Set state_col parameter
+...
+modparam("clusterer", "state_col", "state")
+...
+
+1.4.16. no_ping_retries_col
+
+   The name of the column containing the maximum number of ping
+   retries before the link with the neighbour node is considered
+   down.
+
+   Default value is “no_ping_retries”.
+
+   Example 1.16. Set no_ping_retries_col parameter
+...
+modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
+...
+
+1.4.17. priority_col
+
+   The name of the column storing the node priority to be chosen
+   as next hop in case of same length(number of hops) paths when
+   rerouting messages.
+
+   Default value is “priority”.
+
+   Example 1.17. Set priority_col parameter
+...
+modparam("clusterer", "priority_col", "priority")
+...
+
+1.4.18. sip_addr_col
+
+   The name of the column containing a SIP address for the node.
+
+   Default value is “sip_addr”.
+
+   Example 1.18. Set sip_addr_col parameter
+...
+modparam("clusterer", "sip_addr_col", "sip_addr")
+...
+
+1.4.19. flags_col
+
+   The name of the column containing the node flags.
+
+   Default value is “flags”.
+
+   Example 1.19. Set flags_col parameter
+...
+modparam("clusterer", "flags_col", "flags")
+...
+
+1.4.20. description_col
+
+   The name of the column containing a node description.
+
+   Default value is “description”.
+
+   Example 1.20. Set description_col parameter
+...
+modparam("clusterer", "description_col", "description")
 ...
 
 1.5. Exported Functions

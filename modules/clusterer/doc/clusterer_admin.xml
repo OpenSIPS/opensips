@@ -75,6 +75,52 @@
     <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
+		<section id="param_current_id" xreflabel="current_id">
+            <title><varname>current_id</varname></title>
+            <para>
+				The id of the current instance. This parameter must be equal with one of the
+				<emphasis>node_id</emphasis> fields in the database.
+			</para>
+            <para>
+		<emphasis>
+			No default value. This parameter must be explicitly set to a value greater than zero.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>current_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "current_id", 1)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_db_mode" xreflabel="db_mode">
+            <title><varname>db_mode</varname></title>
+            <para>
+				Specifies whether the node information for the current instance,
+				as well as other instances in the cluster, should be loaded from
+				the database or configured in the script(see <xref linkend="param_current_info"/>
+				and <xref linkend="param_neighbor_info"/>). A value of <quote>0</quote>
+				means that DB is not used and the cluster topology in terms of node
+				information will be discovered dynamically at runtime.
+			</para>
+            <para>
+		<emphasis>
+			Default value is <quote>1</quote>
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>db_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "db_mode", 0)
+...
+		</programlisting>
+		</example>
+        </section>
+
 		<section id="param_db_url" xreflabel="db_url">
             <title><varname>db_url</varname></title>
 		<para>
@@ -111,6 +157,149 @@ modparam("clusterer", "db_url",
 		<programlisting format="linespecific">
 ...
 modparam("clusterer", "db_table", "clusterer")
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_current_info" xreflabel="current_info">
+            <title><varname>current_info</varname></title>
+            <para>
+				Node specification similar to the information provided by a row in
+				the clusterer DB table corresponding to the current instance. This
+				parameter can be set multiple times in order to include the current
+				node in multiple clusters.
+			</para>
+			<para>
+				Parameter format: multiple "<emphasis>prop=value</emphasis>" property
+				definitions separated by '<emphasis>,</emphasis>' where the name of the
+				properties is the same as the DB column names. At least the
+				<emphasis>cluster_id</emphasis> and <emphasis>url</emphasis>
+				propreties must be defined.
+			</para>
+            <para>
+			This parameter is required if <xref linkend="param_db_mode"/> is set
+			to <quote>0</quote> in order to properly advertise information about
+			the current instance in the dynamic node learning process.
+            </para>
+            <example>
+		<title>Set <varname>current_info</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_neighbor_info" xreflabel="neighbor_info">
+            <title><varname>neighbor_info</varname></title>
+            <para>
+				Node specification similar to the information provided by a row in
+				the clusterer DB table corresponding to another instance in the
+				cluster. This node will be the entry point in the cluster for the
+				current instance in the dynamic node learning process. This parameter
+				can be set multiple times to define multiple neigbors to connect to (or
+				the same neighbor but in different clusters).
+			</para>
+			<para>
+				Parameter format: multiple "<emphasis>prop=value</emphasis>" property
+				definitions separated by '<emphasis>,</emphasis>' where the name of
+				the properties is the same as the DB column names. At least the
+				<emphasis>cluster_id</emphasis>, <emphasis>node_id</emphasis>
+				and <emphasis>url</emphasis> propreties must be defined.
+			</para>
+            <para>
+			This parameter should be set at least once if
+			<xref linkend="param_db_mode"/> is set to <emphasis>0</emphasis> in order
+			to properly learn the cluster topology. If not set, the only way to learn
+			the node topology is by other nodes connecting to the current instance.
+            </para>
+            <example>
+		<title>Set <varname>neighbor_info</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:192.168.0.6:5566")
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_ping_interval" xreflabel="ping_interval">
+            <title><varname>ping_interval</varname></title>
+            <para>
+				The interval in seconds between regular pings sent to a neighbour node.
+			</para>
+            <para>
+		<emphasis>
+			Default value is <quote>4</quote>
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>ping_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "ping_interval", 1)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_ping_timeout" xreflabel="ping_timeout">
+            <title><varname>ping_timeout</varname></title>
+            <para>
+				The time in milliseconds to wait for a reply to a previously sent ping before retrying or considering the link with the neighbour node down. This is also the interval between successive retries if the send fails.
+			</para>
+            <para>
+		<emphasis>
+			Default value is <quote>1000</quote>
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>ping_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "ping_timeout", 500)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_node_timeout" xreflabel="node_timeout">
+            <title><varname>node_timeout</varname></title>
+            <para>
+				The time in seconds to wait before pinging is restarted for a failed node.
+			</para>
+            <para>
+		<emphasis>
+			Default value is <quote>60</quote>
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>node_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "node_timeout", 10)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_sync_packet_max_size" xreflabel="sync_packet_max_size">
+            <title><varname>sync_packet_max_size</varname></title>
+            <para>
+                The maximum size of the BIN packets sent while doing data synchronization. This is only a suggested value as the actual size of the packets may be slightly larger.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>65535</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>sync_packet_max_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "sync_packet_max_size", 32765)
 ...
 		</programlisting>
 		</example>
@@ -311,195 +500,6 @@ modparam("clusterer", "flags_col", "flags")
 		<programlisting format="linespecific">
 ...
 modparam("clusterer", "description_col", "description")
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_current_id" xreflabel="current_id">
-            <title><varname>current_id</varname></title>
-            <para>
-				The id of the current instance. This parameter must be equal with one of the
-				<emphasis>node_id</emphasis> fields in the database.
-			</para>
-            <para>
-		<emphasis>
-			No default value. This parameter must be explicitly set to a value greater than zero.
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>current_id</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "current_id", 1)
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_ping_interval" xreflabel="ping_interval">
-            <title><varname>ping_interval</varname></title>
-            <para>
-				The interval in seconds between regular pings sent to a neighbour node.
-			</para>
-            <para>
-		<emphasis>
-			Default value is <quote>4</quote>
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>ping_interval</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "ping_interval", 1)
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_ping_timeout" xreflabel="ping_timeout">
-            <title><varname>ping_timeout</varname></title>
-            <para>
-				The time in milliseconds to wait for a reply to a previously sent ping before retrying or considering the link with the neighbour node down. This is also the interval between successive retries if the send fails.
-			</para>
-            <para>
-		<emphasis>
-			Default value is <quote>1000</quote>
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>ping_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "ping_timeout", 500)
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_node_timeout" xreflabel="node_timeout">
-            <title><varname>node_timeout</varname></title>
-            <para>
-				The time in seconds to wait before pinging is restarted for a failed node.
-			</para>
-            <para>
-		<emphasis>
-			Default value is <quote>60</quote>
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>node_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "node_timeout", 10)
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_db_mode" xreflabel="db_mode">
-            <title><varname>db_mode</varname></title>
-            <para>
-				Specifies whether the node information for the current instance,
-				as well as other instances in the cluster, should be loaded from
-				the database or configured in the script(see <xref linkend="param_current_info"/>
-				and <xref linkend="param_neighbor_info"/>). A value of <quote>0</quote>
-				means that DB is not used and the cluster topology in terms of node
-				information will be discovered dynamically at runtime.
-			</para>
-            <para>
-		<emphasis>
-			Default value is <quote>1</quote>
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>db_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "db_mode", 0)
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_current_info" xreflabel="current_info">
-            <title><varname>current_info</varname></title>
-            <para>
-				Node specification similar to the information provided by a row in
-				the clusterer DB table corresponding to the current instance. This
-				parameter can be set multiple times in order to include the current
-				node in multiple clusters.
-			</para>
-			<para>
-				Parameter format: multiple "<emphasis>prop=value</emphasis>" property
-				definitions separated by '<emphasis>,</emphasis>' where the name of the
-				properties is the same as the DB column names. At least the
-				<emphasis>cluster_id</emphasis> and <emphasis>url</emphasis>
-				propreties must be defined.
-			</para>
-            <para>
-			This parameter is required if <xref linkend="param_db_mode"/> is set
-			to <quote>0</quote> in order to properly advertise information about
-			the current instance in the dynamic node learning process.
-            </para>
-            <example>
-		<title>Set <varname>current_info</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_neighbor_info" xreflabel="neighbor_info">
-            <title><varname>neighbor_info</varname></title>
-            <para>
-				Node specification similar to the information provided by a row in
-				the clusterer DB table corresponding to another instance in the
-				cluster. This node will be the entry point in the cluster for the
-				current instance in the dynamic node learning process. This parameter
-				can be set multiple times to define multiple neigbors to connect to (or
-				the same neighbor but in different clusters).
-			</para>
-			<para>
-				Parameter format: multiple "<emphasis>prop=value</emphasis>" property
-				definitions separated by '<emphasis>,</emphasis>' where the name of
-				the properties is the same as the DB column names. At least the
-				<emphasis>cluster_id</emphasis>, <emphasis>node_id</emphasis>
-				and <emphasis>url</emphasis> propreties must be defined.
-			</para>
-            <para>
-			This parameter should be set at least once if
-			<xref linkend="param_db_mode"/> is set to <emphasis>0</emphasis> in order
-			to properly learn the cluster topology. If not set, the only way to learn
-			the node topology is by other nodes connecting to the current instance.
-            </para>
-            <example>
-		<title>Set <varname>neighbor_info</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:192.168.0.6:5566")
-...
-		</programlisting>
-		</example>
-        </section>
-
-        <section id="param_sync_packet_max_size" xreflabel="sync_packet_max_size">
-            <title><varname>sync_packet_max_size</varname></title>
-            <para>
-                The maximum size of the BIN packets sent while doing data synchronization. This is only a suggested value as the actual size of the packets may be slightly larger.
-            </para>
-            <para>
-		<emphasis>
-			Default value is <quote>65535</quote>.
-		</emphasis>
-            </para>
-            <example>
-		<title>Set <varname>sync_packet_max_size</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("clusterer", "sync_packet_max_size", 32765)
 ...
 		</programlisting>
 		</example>
