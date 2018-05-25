@@ -126,7 +126,7 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 		/* TODO: agranig: optimize this one! */
 		src_ip = ip_addr2a(&_m->rcv.src_ip);
 		rcv_addr.s = pkg_malloc(4 + IP_ADDR_MAX_STR_SIZE + 7 +
-			PATH_TRANS_PARAM_LEN + 4); /* sip:<ip>:<port>[;transport=xxxx]\0 */
+			PATH_ESC_TRANS_PARAM_LEN + 4); /* sip:<ip>:<port>(\0|[%3btransport%3dxxxx]) */
 		if(!rcv_addr.s) {
 			LM_ERR("no pkg memory left for receive-address\n");
 			goto out4;
