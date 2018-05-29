@@ -24,12 +24,12 @@ Robert-Vladut Patrascu
 
         1.4. Exported Parameters
 
-              1.4.1. current_id
+              1.4.1. my_node_id
               1.4.2. db_mode
               1.4.3. db_url
               1.4.4. db_table
-              1.4.5. current_info
-              1.4.6. neighbor_info
+              1.4.5. my_node_info
+              1.4.6. neighbor_node_info
               1.4.7. ping_interval
               1.4.8. ping_timeout
               1.4.9. node_timeout
@@ -92,12 +92,12 @@ Robert-Vladut Patrascu
 
    List of Examples
 
-   1.1. Set current_id parameter
+   1.1. Set my_node_id parameter
    1.2. Set db_mode parameter
    1.3. Set db_url parameter
    1.4. Set db_table parameter
-   1.5. Set current_info parameter
-   1.6. Set neighbor_info parameter
+   1.5. Set my_node_info parameter
+   1.6. Set neighbor_node_info parameter
    1.7. Set ping_interval parameter
    1.8. Set ping_timeout parameter
    1.9. Set node_timeout parameter
@@ -185,13 +185,13 @@ Chapter 1. Admin Guide
    already synchronized from startup) should be defined. This is
    done by setting the value seed for the flags column in the
    clusterer table(or the property with the same name in the
-   current_info parameter). Note that this mechanism is required
+   my_node_info parameter). Note that this mechanism is required
    only for capabilities that synchronize data at startup so check
    the corresponding modules documentation.
 
    The clusterer module transparently exposes the sip_addr column
    from the clusterer table(or the property with the same name in
-   the current_info parameter) to the modules on top so check the
+   the my_node_info parameter) to the modules on top so check the
    corresponding modules documentation for the use of this node
    related information.
 
@@ -211,27 +211,27 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-1.4.1. current_id
+1.4.1. my_node_id
 
-   The id of the current instance. This parameter must be equal
-   with one of the node_id fields in the database.
+   The id of the local instance. This parameter must be equal with
+   one of the node_id fields in the database.
 
    No default value. This parameter must be explicitly set to a
    value greater than zero.
 
-   Example 1.1. Set current_id parameter
+   Example 1.1. Set my_node_id parameter
 ...
-modparam("clusterer", "current_id", 1)
+modparam("clusterer", "my_node_id", 1)
 ...
 
 1.4.2. db_mode
 
-   Specifies whether the node information for the current
-   instance, as well as other instances in the cluster, should be
-   loaded from the database or configured in the script(see
-   current_info and neighbor_info). A value of “0” means that DB
-   is not used and the cluster topology in terms of node
-   information will be discovered dynamically at runtime.
+   Specifies whether the node information for the local instance,
+   as well as other instances in the cluster, should be loaded
+   from the database or configured in the script(see my_node_info
+   and neighbor_node_info). A value of “0” means that DB is not
+   used and the cluster topology in terms of node information will
+   be discovered dynamically at runtime.
 
    Default value is “1”
 
@@ -263,12 +263,12 @@ modparam("clusterer", "db_url",
 modparam("clusterer", "db_table", "clusterer")
 ...
 
-1.4.5. current_info
+1.4.5. my_node_info
 
    Node specification similar to the information provided by a row
-   in the clusterer DB table corresponding to the current
-   instance. This parameter can be set multiple times in order to
-   include the current node in multiple clusters.
+   in the clusterer DB table corresponding to the local instance.
+   This parameter can be set multiple times in order to include
+   the local node in multiple clusters.
 
    Parameter format: multiple "prop=value" property definitions
    separated by ',' where the name of the properties is the same
@@ -276,21 +276,21 @@ modparam("clusterer", "db_table", "clusterer")
    propreties must be defined.
 
    This parameter is required if db_mode is set to “0” in order to
-   properly advertise information about the current instance in
-   the dynamic node learning process.
+   properly advertise information about the local instance in the
+   dynamic node learning process.
 
-   Example 1.5. Set current_info parameter
+   Example 1.5. Set my_node_info parameter
 ...
-modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
+modparam("clusterer", "my_node_info", "cluster_id=1, url=bin:192.168.0.5
 :5566")
 ...
 
-1.4.6. neighbor_info
+1.4.6. neighbor_node_info
 
    Node specification similar to the information provided by a row
    in the clusterer DB table corresponding to another instance in
    the cluster. This node will be the entry point in the cluster
-   for the current instance in the dynamic node learning process.
+   for the local instance in the dynamic node learning process.
    This parameter can be set multiple times to define multiple
    neigbors to connect to (or the same neighbor but in different
    clusters).
@@ -303,12 +303,12 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
    This parameter should be set at least once if db_mode is set to
    0 in order to properly learn the cluster topology. If not set,
    the only way to learn the node topology is by other nodes
-   connecting to the current instance.
+   connecting to the local instance.
 
-   Example 1.6. Set neighbor_info parameter
+   Example 1.6. Set neighbor_node_info parameter
 ...
-modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:1
-92.168.0.6:5566")
+modparam("clusterer", "neighbor_node_info", "cluster_id=1,node_id=2,url=
+bin:192.168.0.6:5566")
 ...
 
 1.4.7. ping_interval
@@ -504,7 +504,7 @@ modparam("clusterer", "description_col", "description")
    The function can return the following values:
      * 1 - successfuly sent message to destination node or a valid
        next hop
-     * -1 - current node is disabled so sending is impossbile
+     * -1 - local node is disabled so sending is impossbile
      * -2 - destination node is not reachable through any path
        according to the discovered topology
      * -3 - destination node or valid next hop appear to be
@@ -549,7 +549,7 @@ route[rpl_resume] {
    The function can return the following values:
      * 1 - successfuly sent message to destination node or a valid
        next hop
-     * -1 - current node is disabled so sending is impossbile
+     * -1 - local node is disabled so sending is impossbile
      * -2 - destination node is not reachable through any path
        according to the discovered topology
      * -3 - destination node or valid next hop appear to be
@@ -577,7 +577,7 @@ p(rcv_tag)");
 
    The function can return the following values:
      * 1 - successfuly sent message to at least one node;
-     * -1 - current node is disabled so sending is impossbile;
+     * -1 - local node is disabled so sending is impossbile;
      * -2 - all nodes in the cluster are unreachable according to
        the discovered topology;
      * -3 - send failed for all nodes in the cluster or other
@@ -662,9 +662,9 @@ Cluster:: 2
 
 1.6.3.  clusterer_list_topology
 
-   Lists each cluster's topology from the current node's
-   perspective as an adjacency list. A node appears as a neighbour
-   if the link with that node is up.
+   Lists each cluster's topology from the local node's perspective
+   as an adjacency list. A node appears as a neighbour if the link
+   with that node is up.
 
    Note that if a node id appears in multiple clusters, it refers
    to the same instance that belongs to different clusters, for
@@ -691,7 +691,7 @@ Cluster:: 2
 
 1.6.4.  clusterer_set_status
 
-   Sets the status(Enabled/Disabled) of the current node in a
+   Sets the status(Enabled/Disabled) of the local node in a
    specified cluster. A disabled node does not send any messages
    and ignores received ones thus appearing as a failed node in
    the topology.
@@ -867,7 +867,7 @@ loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
-modparam("clusterer", "current_id", 1) # node_id for Node A
+modparam("clusterer", "my_node_id", 1) # node_id for Node A
 
 loadmodule "ratelimit.so"
 modparam("ratelimit", "pipe_replication_cluster", 1)
@@ -884,7 +884,7 @@ loadmodule "proto_bin.so"
 loadmodule "clusterer.so"
 # ideally, use the same database for both nodes
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
-modparam("clusterer", "current_id", 2) # node_id for Node B
+modparam("clusterer", "my_node_id", 2) # node_id for Node B
 
 loadmodule "ratelimit.so"
 modparam("ratelimit", "pipe_replication_cluster", 1)

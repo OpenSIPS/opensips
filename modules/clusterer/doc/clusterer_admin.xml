@@ -27,10 +27,10 @@
 		The clusterer module also keeps track of the state of the nodes in terms of data synchronization for the functionalities (or "capabilities") implemented on top by other modules. Some capabilities require a full data sync(at &osips; startup or at runtime via MI) from a valid "donor" node in the cluster that has the full data set. Furthermore, a capability can query the clusterer module in order to partition some distributed logic only over the synchronized nodes in the cluster.
 	</para>
 	<para>
-		When the nodes in the cluster start for the first time(or all nodes are restarted), all of them are empty and try to find a suitable node to pull data from. In order to help "bootstrapping" the cluster a "seed" node (considered to be already synchronized from startup) should be defined. This is done by setting the value <emphasis>seed</emphasis> for the <emphasis role="bold">flags</emphasis> column in the clusterer table(or the property with the same name in the <emphasis>current_info</emphasis> parameter). Note that this mechanism is required only for capabilities that synchronize data at startup so check the corresponding modules documentation.
+		When the nodes in the cluster start for the first time(or all nodes are restarted), all of them are empty and try to find a suitable node to pull data from. In order to help "bootstrapping" the cluster a "seed" node (considered to be already synchronized from startup) should be defined. This is done by setting the value <emphasis>seed</emphasis> for the <emphasis role="bold">flags</emphasis> column in the clusterer table(or the property with the same name in the <emphasis>my_node_info</emphasis> parameter). Note that this mechanism is required only for capabilities that synchronize data at startup so check the corresponding modules documentation.
 	</para>
 	<para>
-		The clusterer module transparently exposes the <emphasis>sip_addr</emphasis> column from the clusterer table(or the property with the same name in the <emphasis>current_info</emphasis> parameter) to the modules on top so check the corresponding modules documentation for the use of this node related information.
+		The clusterer module transparently exposes the <emphasis>sip_addr</emphasis> column from the clusterer table(or the property with the same name in the <emphasis>my_node_info</emphasis> parameter) to the modules on top so check the corresponding modules documentation for the use of this node related information.
 	</para>
 	</section>
 
@@ -75,10 +75,10 @@
     <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 
-		<section id="param_current_id" xreflabel="current_id">
-            <title><varname>current_id</varname></title>
+		<section id="param_my_node_id" xreflabel="my_node_id">
+            <title><varname>my_node_id</varname></title>
             <para>
-				The id of the current instance. This parameter must be equal with one of the
+				The id of the local instance. This parameter must be equal with one of the
 				<emphasis>node_id</emphasis> fields in the database.
 			</para>
             <para>
@@ -87,10 +87,10 @@
 		</emphasis>
             </para>
             <example>
-		<title>Set <varname>current_id</varname> parameter</title>
+		<title>Set <varname>my_node_id</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "current_id", 1)
+modparam("clusterer", "my_node_id", 1)
 ...
 		</programlisting>
 		</example>
@@ -99,10 +99,10 @@ modparam("clusterer", "current_id", 1)
         <section id="param_db_mode" xreflabel="db_mode">
             <title><varname>db_mode</varname></title>
             <para>
-				Specifies whether the node information for the current instance,
+				Specifies whether the node information for the local instance,
 				as well as other instances in the cluster, should be loaded from
-				the database or configured in the script(see <xref linkend="param_current_info"/>
-				and <xref linkend="param_neighbor_info"/>). A value of <quote>0</quote>
+				the database or configured in the script(see <xref linkend="param_my_node_info"/>
+				and <xref linkend="param_neighbor_node_info"/>). A value of <quote>0</quote>
 				means that DB is not used and the cluster topology in terms of node
 				information will be discovered dynamically at runtime.
 			</para>
@@ -162,12 +162,12 @@ modparam("clusterer", "db_table", "clusterer")
 		</example>
         </section>
 
-        <section id="param_current_info" xreflabel="current_info">
-            <title><varname>current_info</varname></title>
+        <section id="param_my_node_info" xreflabel="my_node_info">
+            <title><varname>my_node_info</varname></title>
             <para>
 				Node specification similar to the information provided by a row in
-				the clusterer DB table corresponding to the current instance. This
-				parameter can be set multiple times in order to include the current
+				the clusterer DB table corresponding to the local instance. This
+				parameter can be set multiple times in order to include the local
 				node in multiple clusters.
 			</para>
 			<para>
@@ -180,25 +180,25 @@ modparam("clusterer", "db_table", "clusterer")
             <para>
 			This parameter is required if <xref linkend="param_db_mode"/> is set
 			to <quote>0</quote> in order to properly advertise information about
-			the current instance in the dynamic node learning process.
+			the local instance in the dynamic node learning process.
             </para>
             <example>
-		<title>Set <varname>current_info</varname> parameter</title>
+		<title>Set <varname>my_node_info</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
+modparam("clusterer", "my_node_info", "cluster_id=1, url=bin:192.168.0.5:5566")
 ...
 		</programlisting>
 		</example>
         </section>
 
-        <section id="param_neighbor_info" xreflabel="neighbor_info">
-            <title><varname>neighbor_info</varname></title>
+        <section id="param_neighbor_node_info" xreflabel="neighbor_node_info">
+            <title><varname>neighbor_node_info</varname></title>
             <para>
 				Node specification similar to the information provided by a row in
 				the clusterer DB table corresponding to another instance in the
 				cluster. This node will be the entry point in the cluster for the
-				current instance in the dynamic node learning process. This parameter
+				local instance in the dynamic node learning process. This parameter
 				can be set multiple times to define multiple neigbors to connect to (or
 				the same neighbor but in different clusters).
 			</para>
@@ -213,13 +213,13 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
 			This parameter should be set at least once if
 			<xref linkend="param_db_mode"/> is set to <emphasis>0</emphasis> in order
 			to properly learn the cluster topology. If not set, the only way to learn
-			the node topology is by other nodes connecting to the current instance.
+			the node topology is by other nodes connecting to the local instance.
             </para>
             <example>
-		<title>Set <varname>neighbor_info</varname> parameter</title>
+		<title>Set <varname>neighbor_node_info</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "neighbor_info", "cluster_id=1,node_id=2,url=bin:192.168.0.6:5566")
+modparam("clusterer", "neighbor_node_info", "cluster_id=1,node_id=2,url=bin:192.168.0.6:5566")
 ...
 		</programlisting>
 		</example>
@@ -540,7 +540,7 @@ modparam("clusterer", "description_col", "description")
 							<para><emphasis>1</emphasis> - successfuly sent message to destination node or a valid next hop</para>
 						</listitem>
 						<listitem>
-							<para><emphasis>-1</emphasis> - current node is disabled so sending is impossbile</para>
+							<para><emphasis>-1</emphasis> - local node is disabled so sending is impossbile</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>-2</emphasis> - destination node is not reachable through any path according to the discovered topology</para>
@@ -603,7 +603,7 @@ route[rpl_resume] {
 							<para><emphasis>1</emphasis> - successfuly sent message to destination node or a valid next hop</para>
 						</listitem>
 						<listitem>
-							<para><emphasis>-1</emphasis> - current node is disabled so sending is impossbile</para>
+							<para><emphasis>-1</emphasis> - local node is disabled so sending is impossbile</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>-2</emphasis> - destination node is not reachable through any path according to the discovered topology</para>
@@ -644,7 +644,7 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 							<para><emphasis>1</emphasis> - successfuly sent message to at least one node;</para>
 						</listitem>
 						<listitem>
-							<para><emphasis>-1</emphasis> - current node is disabled so sending is impossbile;</para>
+							<para><emphasis>-1</emphasis> - local node is disabled so sending is impossbile;</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>-2</emphasis> - all nodes in the cluster are unreachable according to the discovered topology;</para>
@@ -766,7 +766,7 @@ Cluster:: 2
 		<function moreinfo="none">clusterer_list_topology</function>
 		</title>
 		<para>
-			Lists each cluster's topology from the current node's perspective as an adjacency list. A node appears as a neighbour if the link with that node is up.
+			Lists each cluster's topology from the local node's perspective as an adjacency list. A node appears as a neighbour if the link with that node is up.
 		</para>
 		<para>
 			Note that if a node id appears in multiple clusters, it refers to the same instance that belongs to different clusters, for which it has a different topology.
@@ -803,7 +803,7 @@ Cluster:: 2
 		<function moreinfo="none">clusterer_set_status</function>
 		</title>
 		<para>
-                Sets the status(Enabled/Disabled) of the current node in a specified cluster. A disabled node does not send any messages and ignores received ones thus appearing as a failed node in the topology.
+                Sets the status(Enabled/Disabled) of the local node in a specified cluster. A disabled node does not send any messages and ignores received ones thus appearing as a failed node in the topology.
                 </para>
 		<para>
 		Name: <emphasis>clusterer_set_status</emphasis>
@@ -1078,7 +1078,7 @@ loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
-modparam("clusterer", "current_id", 1) # node_id for Node A
+modparam("clusterer", "my_node_id", 1) # node_id for Node A
 
 loadmodule "ratelimit.so"
 modparam("ratelimit", "pipe_replication_cluster", 1)
@@ -1099,7 +1099,7 @@ loadmodule "proto_bin.so"
 loadmodule "clusterer.so"
 # ideally, use the same database for both nodes
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
-modparam("clusterer", "current_id", 2) # node_id for Node B
+modparam("clusterer", "my_node_id", 2) # node_id for Node B
 
 loadmodule "ratelimit.so"
 modparam("ratelimit", "pipe_replication_cluster", 1)

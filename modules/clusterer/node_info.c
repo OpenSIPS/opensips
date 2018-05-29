@@ -348,15 +348,15 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	}
 
 	LM_DBG("DB query - retrieve the list of clusters"
-		" in which the current node runs\n");
+		" in which the local node runs\n");
 
 	VAL_INT(&clusterer_node_id_value) = current_id;
 
-	/* first we see in which clusters the current node runs*/
+	/* first we see in which clusters the local node runs*/
 	if (dr_dbf->query(db_hdl, &clusterer_node_id_key, &op_eq,
 		&clusterer_node_id_value, columns+1, 1, 1, 0, &res) < 0) {
 		LM_ERR("DB query failed - cannot retrieve the list of clusters in which"
-			" the current node runs\n");
+			" the local node runs\n");
 		goto error;
 	}
 
@@ -364,7 +364,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 		RES_ROW_N(res), db_table->len, db_table->s);
 
 	if (RES_ROW_N(res) > MAX_NO_CLUSTERS) {
-		LM_ERR("Defined: %d clusters for current node, maximum number of clusters "
+		LM_ERR("Defined: %d clusters for local node, maximum number of clusters "
 			"supported(%d) exceeded\n", RES_ROW_N(res), MAX_NO_CLUSTERS);
 		goto error;
 	}
@@ -420,7 +420,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 		RES_ROW_N(res), db_table->len, db_table->s);
 
 	if (RES_ROW_N(res) > MAX_NO_NODES) {
-		LM_ERR("Defined: %d nodes in current node's clusters, maximum number of nodes "
+		LM_ERR("Defined: %d nodes in local node's clusters, maximum number of nodes "
 			"supported(%d) exceeded\n", RES_ROW_N(res), MAX_NO_NODES);
 		goto error;
 	}
@@ -472,7 +472,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	check_seed_flag(cl_list);
 
 	if (RES_ROW_N(res) == 1)
-		LM_INFO("The current node is the only one in the cluster\n");
+		LM_INFO("The local node is the only one in the cluster\n");
 
 	dr_dbf->free_result(db_hdl, res);
 
@@ -494,7 +494,7 @@ int provision_neighbor(modparam_t type, void *val)
 	node_info_t *new_info;
 
 	if (db_mode) {
-		LM_INFO("Runnin in db mode, neighbor provisioning from the script is ignored\n");
+		LM_INFO("Running in db mode, provisioning from the script is ignored\n");
 		return 0;
 	}
 
@@ -546,7 +546,7 @@ int provision_current(modparam_t type, void *val)
 	str prov_str;
 
 	if (db_mode) {
-		LM_INFO("Runnin in db mode, current node provisioning from the script is ignored\n");
+		LM_INFO("Running in db mode, provisioning from the script is ignored\n");
 		return 0;
 	}
 
@@ -554,24 +554,24 @@ int provision_current(modparam_t type, void *val)
 	prov_str.len = strlen(prov_str.s);
 
 	if (parse_param_node_info(&prov_str, int_vals, str_vals) < 0) {
-		LM_ERR("Unable to define current node\n");
+		LM_ERR("Unable to define local node\n");
 		return -1;
 	}
 
 	if (int_vals[INT_VALS_CLUSTER_ID_COL] == -1 || str_vals[STR_VALS_URL_COL] == NULL) {
-		LM_ERR("At least the cluster id and url are required for the current node\n");
+		LM_ERR("At least the cluster ID and url are required for the local node\n");
 		return -1;
 	}
 
 	if (int_vals[INT_VALS_NODE_ID_COL] == -1 && current_id == -1) {
-		LM_ERR("Node ID not defined. Set either the value of the node_id proprety"
-			" of current_info or set the current_id parameter before current_info!\n");
+		LM_ERR("Node ID not defined. Set either the value of the 'node_id' proprety"
+			" of 'my_node_info' or set 'my_node_id' parameter before 'my_node_info'!\n");
 		return -1;
 	}
 	if (current_id != -1 && int_vals[INT_VALS_NODE_ID_COL] != -1 &&
 		int_vals[INT_VALS_NODE_ID_COL] != current_id) {
-		LM_ERR("Bad value in current_info parameter, node_id: %d different"
-			" than current_id parameter\n", int_vals[INT_VALS_NODE_ID_COL]);
+		LM_ERR("Bad value in 'my_node_info' parameter, node_id: %d different"
+			" than 'my_node_id' parameter\n", int_vals[INT_VALS_NODE_ID_COL]);
 		return -1;
 	}
 	if (int_vals[INT_VALS_NODE_ID_COL] != -1)

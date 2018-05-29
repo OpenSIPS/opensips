@@ -398,7 +398,7 @@ int cl_set_state(int cluster_id, enum cl_node_state state)
 
 	lock_stop_read(cl_list_lock);
 
-	LM_INFO("Set state: %s for current node in cluster: %d\n",
+	LM_INFO("Set state: %s for local node in cluster: %d\n",
 			state ? "enabled" : "disabled", cluster_id);
 
 	if (db_mode && update_db_state(state) < 0)
@@ -1719,7 +1719,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 			" cluster id: %d\n", ip, port, source_id, cluster_id);
 
 	if (source_id == current_id) {
-		LM_ERR("Received message with bad source - same node id as current instance\n");
+		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
 
@@ -1822,7 +1822,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		"cluster id: %d\n", ip, port, source_id, cl_id);
 
 	if (source_id == current_id) {
-		LM_ERR("Received message with bad source - same node id as current instance\n");
+		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
 
@@ -1879,7 +1879,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			ip, port, source_id, cluster_id);
 
 	if (source_id == current_id) {
-		LM_ERR("Received message with bad source - same node id as current instance\n");
+		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
 

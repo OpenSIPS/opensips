@@ -123,7 +123,7 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"db_url",				STR_PARAM,	&clusterer_db_url.s	},
 	{"db_table",			STR_PARAM,	&db_table.s			},
-	{"current_id",			INT_PARAM,	&current_id			},
+	{"my_node_id",			INT_PARAM,	&current_id			},
 	{"ping_interval",		INT_PARAM,	&ping_interval		},
 	{"node_timeout",		INT_PARAM,	&node_timeout		},
 	{"ping_timeout",		INT_PARAM,	&ping_timeout		},
@@ -138,8 +138,8 @@ static param_export_t params[] = {
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
-	{"neighbor_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
-	{"current_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
+	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
+	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
 	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
 	{0, 0, 0}
 };
@@ -285,7 +285,7 @@ static int mod_init(void)
 	init_db_url(clusterer_db_url, db_mode == 0);
 
 	if (current_id < 1) {
-		LM_CRIT("Invalid current_id parameter\n");
+		LM_CRIT("Invalid 'my_node_id' parameter\n");
 		return -1;
 	}
 	if (ping_interval <= 0) {
@@ -316,11 +316,11 @@ static int mod_init(void)
 		}
 		*cluster_list = NULL;
 	} else {
-		/* sanity check of current_id if node_id also set in a current_info param */
+		/* sanity check of my_node_id if node_id also set in a my_node_info param */
 		for (cl = *cluster_list; cl; cl = cl->next)
 			if (cl->current_node->node_id != current_id) {
-				LM_ERR("Bad current_id parameter, value: %d different than"
-					" the node_id property in the current_info parameter\n", current_id);
+				LM_ERR("Bad 'my_node_id' parameter, value: %d different than"
+					" the node_id property in the 'my_node_info' parameter\n", current_id);
 				goto error;
 			}
 	}
@@ -807,7 +807,7 @@ static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param)
 			LM_DBG("MI command <%.*s> sent\n", cl_cmd_name.len, cl_cmd_name.s);
 			break;
 		case CLUSTERER_CURR_DISABLED:
-			LM_INFO("Current node disabled, MI command <%.*s> not sent\n",
+			LM_INFO("Local node disabled, MI command <%.*s> not sent\n",
 				cl_cmd_name.len, cl_cmd_name.s);
 			break;
 		case CLUSTERER_DEST_DOWN:
@@ -859,7 +859,7 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
 			LM_DBG("MI command <%.*s> sent\n", cl_cmd_name.len, cl_cmd_name.s);
 			break;
 		case CLUSTERER_CURR_DISABLED:
-			LM_INFO("Current node disabled, MI command <%.*s> not sent\n",
+			LM_INFO("Local node disabled, MI command <%.*s> not sent\n",
 				cl_cmd_name.len, cl_cmd_name.s);
 			break;
 		case CLUSTERER_DEST_DOWN:
