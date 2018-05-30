@@ -1226,6 +1226,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 			if(evi_param_set_str(evi_params[i],
 						&ctx->extra_values[extra->tag_idx].value) < 0) {
 				LM_ERR("cannot set acc extra parameter\n");
+				accX_unlock(&ctx->lock);
 				return -1;
 			}
 
