@@ -535,7 +535,7 @@ route[b2b_request]
 		<function moreinfo="none">b2b_trigger_scenario</function>
 		</title>
 		<para>
-		This command instantiated a B2B scenario.
+		This command instantiates a B2B scenario.
 		</para>
 		<para>
 		Name: <emphasis>b2b_trigger_scenario</emphasis>
@@ -543,11 +543,11 @@ route[b2b_request]
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem>
-				<para>senario_id : the id of the scenario to be instantiated.
+				<para><emphasis>senario_id</emphasis> : the id of the scenario to be instantiated.
 				</para>
 			</listitem>
 			<listitem>
-				<para>scenario parameters - it can take 4 more parameters that are scenario parameters</para>
+				<para>scenario parameters - it can take 4 more parameters that are the scenario parameters</para>
 			</listitem>
 		</itemizedlist>
 		<para>
@@ -574,20 +574,19 @@ route[b2b_request]
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem>
-				<para>dialog-id : the id of the dialog. If you set the module parameter dialog-id
+				<para><emphasis>dialog_id</emphasis> : the id of the dialog. If you set the module parameter dialog-id
 				the server will include the dialogid in the generated Invites as the content of a
 				header with name 'Dialog-ID'.
 				</para>
 			</listitem>
 			<listitem>
-				<para>new uri - the uri of the new destination</para>
+				<para><emphasis>new_uri</emphasis> - the uri of the new destination</para>
 			</listitem>
 			<listitem>
-				<para>flag to specify that the callee must be bridged to the new destination.
-					It is optional. If not present the caller will be bridged.</para>
+				<para><emphasis>flag</emphasis> (optional) - used to specify that the callee must be bridged to the new destination. If not present the caller will be bridged.</para>
 			</listitem>
 			<listitem>
-				<para>provisional media uri - the uri of a media server able to play 
+				<para><emphasis>prov_media_uri</emphasis> (optional) - the uri of a media server able to play 
 					provisional media starting from the beginning of the bridging scenario
 					to the end of it. It is optional. If not present, no other entity will be
 					envolved in the bridging scenario</para>

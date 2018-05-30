@@ -939,16 +939,18 @@ rtpengine_start_recording();
 		<section id="mi_rtpengine_enable" xreflabel="rtpengine_enable">
 			<title><function moreinfo="none">rtpengine_enable</function></title>
 			<para>
-			Enables a &rtp; proxy if parameter value is greater than 0.
-			Disables it if a zero value is given.
+			Enables/disables a &rtp; proxy.
 			</para>
-			<para>
-			The first parameter is the &rtp; proxy url (exactly as defined in
-			the config file).
-			</para>
-			<para>
-			The second parameter value must be a number in decimal.
-			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>url</emphasis> - the &rtp; proxy url (exactly as
+					defined in the config file).
+				</para></listitem>
+				<listitem><para>
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy.
+				</para></listitem>
+			</itemizedlist>
 			<para>
 			NOTE: if a &rtp; proxy is defined multiple times (in the same or
 			different set), all of its instances will be enables/disabled.
@@ -1009,6 +1011,12 @@ $ opensipsctl fifo rtpengine_reload
 			<para>
 			Terminates the SIP dialog by the SIP Call-ID given as parameter.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>callid</emphasis> - SIP Call-ID.
+				</para></listitem>
+			</itemizedlist>
 			<para>
 			Note this is a just a wrapper function over the 
 			<quote>dlg_end_dlg</quote> MI function provided by the

@@ -311,7 +311,7 @@ if (!pike_check_req()) { exit; };
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo pike_rm _ip_
+		opensipsctl fifo pike_rm 10.0.0.106
 		</programlisting>
 	</section>
 	</section>

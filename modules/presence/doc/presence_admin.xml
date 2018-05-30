@@ -836,7 +836,7 @@ opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
 	  <para>
 		Name: <emphasis>cleanup</emphasis>
 	  </para>
-	  <para>Parameters:<emphasis>none.</emphasis>emphasis></para>
+	  <para>Parameters: <emphasis>none</emphasis></para>
 
 	  <para>
 		MI FIFO Command Format:
@@ -856,7 +856,7 @@ opensipsctl fifo cleanup
 	  <para>
 		Name: <emphasis>pres_phtable_list</emphasis>
 	  </para>
-	  <para>Parameters:<emphasis>none.</emphasis></para>
+	  <para>Parameters: <emphasis>none</emphasis></para>
 
 	  <para>
 		MI FIFO Command Format:
@@ -909,7 +909,7 @@ opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 	  <para>Parameters:</para>
 	  <itemizedlist>
 		<listitem><para>
-			<emphasis>event</emphasis> - the interesting presence
+			<emphasis>event</emphasis> - the desired presence
 			event.
 		</para></listitem>
 		<listitem><para>
@@ -925,7 +925,7 @@ opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensipsctl fifo pres_expose
+opensipsctl fifo pres_expose presence ^sip:10\.0\.5\.[0-9]*
 	  </programlisting>
 	</section>
 </section>

@@ -1693,10 +1693,11 @@ wZjAzNGM1ZDY
 
 1.9.8. dlg_db_sync
 
-   Will synchronize the information about the dialogs from the
-   database with the OpenSIPS internal memory. To be used mainly
-   for transferring OpenSIPS dialog information from one server to
-   another.
+   Will load all the information about the dialogs from the
+   database in the OpenSIPS internal memory. If a dialog is
+   already found in memory and has the same/an older state, it
+   will be updated with the values from DB. Otherwise, the newer
+   in-memory version will not be changed.
 
    Name: dlg_db_sync
 

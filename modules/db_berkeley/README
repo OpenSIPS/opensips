@@ -143,10 +143,14 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 
    Name: bdb_reload
 
-   Parameters: tablename (or db_path); to reload a particular
-   table provide the tablename as the arguement (eg subscriber);
-   to reload all tables provide the db_path to the db files. The
-   path can be found in opensipsctlrc DB_PATH variable.
+   Parameters:
+     * table/path - to reload a particular table provide the
+       tablename as the arguement; to reload all tables provide
+       the db_path to the db files. The path can be found in
+       opensipsctlrc DB_PATH variable.
+
+   MI FIFO Command Format:
+                opensipsctl fifo bdb_reload subscriber
 
 1.6. Installation and Running
 

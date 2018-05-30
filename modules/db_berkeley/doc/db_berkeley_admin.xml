@@ -130,7 +130,6 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 	<title>Exported MI Functions</title>
 	<section id="mi_bdb_reload" xreflabel="bdb_reload">
 		<title><function moreinfo="none">bdb_reload</function></title>
-		
 		<para>
 		Causes db_berkeley module to re-read the contents of specified table (or dbenv).
 		The db_berkeley DB actually loads each table on demand, as opposed to loading all
@@ -138,15 +137,24 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		Note- bdb_reload will fail if a table has not been accessed before (because the close 
 		will fail).
 		</para>
-		
 		<para>
 		Name: <emphasis>bdb_reload</emphasis>
 		</para>
-		
-		<para>Parameters: <emphasis>tablename (or db_path); to reload a particular table 
-		provide the tablename as the arguement (eg subscriber); to reload all tables provide the db_path to
-		the db files. The path can be found in opensipsctlrc DB_PATH variable. 
-		</emphasis></para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>table/path</emphasis> - to reload a particular table 
+				provide the tablename as the arguement; to reload
+				all tables provide the db_path to the db files. The path can be found
+				in opensipsctlrc DB_PATH variable.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo bdb_reload subscriber
+		</programlisting>
 	</section>
 	</section>
 	

@@ -851,10 +851,20 @@ if (lb_is_destination("$si","$sp") ) {
 		<section id="mi_lb_resize" xreflabel="lb_resize">
 		<title><function moreinfo="none">lb_resize</function></title>
 		<para>
-		Changes the capacity for a resource of a destination. The function 
-		receives as parameters the ID (as per DB) of the destination along 
-		with the name of the resource you want to resize.
+		Changes the capacity for a resource of a destination.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>destination_id</emphasis> - the ID (as per DB) of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>res_name</emphasis> - name of the resource you want to resize.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>new_capacity</emphasis> - new resource capacity.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
@@ -888,13 +898,20 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 		<section id="mi_lb_status" xreflabel="lb_status">
 		<title><function moreinfo="none">lb_status</function></title>
 		<para>
-		Gets or sets the status (enabled or disabled) of a destination. The 
-		function takes 2 parameters, first mandatory, the id of the destiantion
-		and second, optional, the new status. If no new status is given, the
-		function will return the current status. If a new status is given 
-		(0 - disable, 1 - enable), this status will be forced for the 
-		destination.
+		Gets or sets the status (enabled or disabled) of a destination.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>destination_id</emphasis> - the ID (as per DB) of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>new_status</emphasis> (optional) - If no new status is given, the
+				function will return the current status. If a new status is given 
+				(0 - disable, 1 - enable), this status will be forced for the 
+				destination.
+			</para></listitem>
+		</itemizedlist>
 		<example>
 		<title><function>lb_status</function> usage</title>
 		<programlisting format="linespecific">

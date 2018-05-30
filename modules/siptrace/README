@@ -289,32 +289,33 @@ var(user)");
 
 1.5.1.  sip_trace
 
+   Enable/disable tracing(globally or for a specific trace id) or
+   dump info about trace ids.
+
    Name: sip_trace
 
    Parameters:
-     * trace_id/trace_mode : if it is a trace_id name it dumps
-       info about that trace id if the second parameter is not set
-       to on/off or it turns tracing on/off for a certain trace id
-       if it is set, else if it's on/off it turns on/off tracing
-       for all the trace ids. If you turn global trace on but some
-       of the trace ids had trace to off, then they shall not do
-       tracing. In order to do that you have to set the trace_on
-       parameter for each trace_id. Possible values are:
-          + on
-          + off
-          + trace_id name
-       The parameter is optional - if missing, the command will
-       return the status of the SIP message tracing (as string
-       “on” or “off”) marked with global and the status for each
-       trace id without changing anything.
-     * trace_mode : this parameter has the same meaning as the
-       trace_mode in the first parameter, but this time it
-       enables/disables tracing for a certain trace id given in
-       the first parameter.
+     * trace_id (optional) - a trace_id name. If this parameter is
+       missing the command will either dump info for all tace
+       ids(and return the global tracing state) or set the global
+       tracing state.
+     * trace_mode (optional) - possible values are:
+          + "on" - enable tracing
+          + "off" - disable tracing
+       If the first parameter is missing, the command wil set the
+       global tracing state, otherwise it will set the state for a
+       specific trace id. If you turn global trace on but some of
+       the trace ids had tracing set to off, then they shall not
+       do tracing. If you want to turn the tracing on for all
+       trace ids you will have to set it separately for each of
+       them.
+       If this parameter is missing but the first is set, the
+       command will only dump info about that specific trace id.
+       If both parameters are missing, the command will return the
+       global tracing state and dump info for each trace_id.
 
    MI FIFO Command Format:
-                opensipsctl fifo sip_trace _trace_id/trace_mode_ trace_m
-ode
+                opensipsctl fifo sip_trace tid2 on
 
 1.6. Database setup
 

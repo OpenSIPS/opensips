@@ -948,17 +948,17 @@ the partition called 'part2'
    Name: ds_set_state
 
    Parameters:
-     * _state_ : state of the destination address
+     * state : state of the destination address
           + “a”: active
           + “i”: inactive
           + “p”: probing
-     * _group_: partition name followed by colon and destination
+     * group: partition name followed by colon and destination
        group id. If the partition name is omitted, the default
        partition will be used
-     * _address_: address of the destination in the _group_
+     * address: address of the destination in the group
 
    MI FIFO Command Format:
-opensipsctl fifo ds_set_state _state_ _group_ _address_ _empty_line_
+opensipsctl fifo ds_set_state a 2 sip:10.0.0.202
 
 1.5.2.  ds_list
 

@@ -1030,22 +1030,24 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 		<section id="mi_rtpproxy_enable" xreflabel="rtpproxy_enable">
 			<title><function moreinfo="none">rtpproxy_enable</function></title>
 			<para>
-			Enables a rtp proxy if parameter value is greater than 0.
-			Disables it if a zero value is given.
+			Enables/Disables a rtp proxy.
 			</para>
-			<para>
-			The first parameter is the rtp proxy url (exactly as defined in 
-			the config file).
-			</para>
-			<para>
-			The next parameter (optional) is the rtpproxy set ID (used for better
-			indentification of the rtpproxy instance to be enabled, for example
-			when a rtpproxy is used in multiple sets).
-			</para>
-			<para>
-			The last parameter must be a number in decimal representing the new
-			enabled/disabled state.
-			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>url</emphasis> - the rtp proxy url (exactly as defined in 
+					the config file).
+				</para></listitem>
+				<listitem><para>
+					<emphasis>setid</emphasis> (optional) - the rtpproxy set ID (used
+					for better indentification of the rtpproxy instance to be enabled,
+					for example when a rtpproxy is used in multiple sets).
+				</para></listitem>
+				<listitem><para>
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable.
+					the config file).
+				</para></listitem>
+			</itemizedlist>
 			<para>
 			NOTE: if a rtpproxy is defined multiple times (in the same or
 			different set), all its instances will be enables/disabled IF

@@ -270,20 +270,23 @@ modparam("sql_cacher", "reload_interval", 5)
 		<para>
 			Reloads the given key or invalidates all the keys in cache in <emphasis>on demand</emphasis> mode.
 		</para>
-		<para>
-			The first parameter is the caching entry's id.
-		</para>
-		<para>
-			The second parameter is the key.
-			This parameter is optional and only makes sense in <emphasis>on demand</emphasis> mode.
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>id</emphasis> (optional) - the caching entry's id
+			</para></listitem>
+			<listitem><para>
+				<emphasis>key</emphasis> (optional) - the specific key to be reloaded, 
+				only makes sense in <emphasis>on demand</emphasis> mode.
+			</para></listitem>
+		</itemizedlist>
 		<example>
 			<title><function moreinfo="none">sql_cacher_reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo sql_cacher_reload caching_name
+$ opensipsctl fifo sql_cacher_reload subs_caching
 ...
-$ opensipsctl fifo sql_cacher_reload caching_name key
+$ opensipsctl fifo sql_cacher_reload subs_caching alice@domain.com
 ...
 </programlisting>
 			</example>	

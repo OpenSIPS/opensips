@@ -1943,48 +1943,72 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<function moreinfo="none">dr_reload</function>
 		</title>
 		<para>
-		Command to reload routing rules from database. If <varname>use_partitions</varname> is set to 1
-		you can reload just a partition given a parameter, if no parameter is supplied then all the
-		partitions will be reloaded.
+		Command to reload routing rules from database.
 		</para>
-		<para>
-			If <varname>use_partitions</varname> is 0 it takes no parameter.
-		</para>
-
+		<itemizedlist>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 0 - all routing rules will be reloaded.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					if <varname>use_partition</varname> is set to 1, the parameters are:
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>partition_name</emphasis> (optional) - if not provided
+							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
+						</para></listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dr_reload _partition_name_
+		opensipsctl fifo dr_reload part_1
 		</programlisting>
 	</section>
 
 	<section>
 		<title><varname>dr_gw_status</varname></title>
 		<para>
-		Gets or sets the status (enabled or disabled) of a gateway. The
-		function may take from 0 to 3 parameters.
+		Gets the status (enabled or disabled) of one or multiple gateways. The function
+		can also be used to set the status of a single gateway.
 		<itemizedlist>
 			<listitem>
 				<para>
-				if <varname>use_partitions</varname> is set to 0 - if no parameter
-				is provided, it will list all
-				gateways along with their status. If one parameter is provided, that
-				must be the id of a gateway and the function will return the status
-				of that gateway. If 2 parameters are provided, first must be the ID of
-				the ID of a GW and the second must be the new status to be forced for
-				that GW (0 - disable, 1 - enable).
+				if <varname>use_partitions</varname> is set to 0, the parameters are:
+				<itemizedlist>
+					<listitem><para><emphasis>gw_id</emphasis> (optional) - the id of
+					a gateway. If provided, the function will return/set (depnding if the second
+					paremeter is given) the status of that gateway, otherwise it will list all
+					gateways along with their statuses.
+					</para></listitem>
+					<listitem><para><emphasis>status</emphasis> (optional) - the new status
+					to be forced for a GW (0 - disable, 1 - enable). Only makes sense if
+					<emphasis>gw_id</emphasis> is provided.
+					</para></listitem>
+				</itemizedlist>
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				if <varname>use_partitions</varname> is set to 1 - the first parameter
-				must be the partition (the partition is mandatory). If just one parameter
-				is provided it will the display the statuses of all the gateways in the
-				given partition. If two parameters are provided,
-				the first must be the partition, and the second must be the gateway Id. If three
-				parameters are provided, the first must be the partition, the second must be the gateway
-				and the third will be the new status to be forced for tat GW (0 - disable, 1 - enable)
+				if <varname>use_partitions</varname> is set to 1, the parameters are:
+				<itemizedlist>
+					<listitem><para><emphasis>partition_name</emphasis>
+					</para></listitem>
+					<listitem><para><emphasis>gw_id</emphasis> (optional) - the id of
+					a gateway. If provided, the function will return/set (depnding if the third
+					paremeter is given) the status of that gateway, otherwise it will list all
+					gateways in the given partition along with their statuses.
+					</para></listitem>
+					<listitem><para><emphasis>status</emphasis> (optional) - the new status
+					to be forced for a GW (0 - disable, 1 - enable). Only makes sense if
+					<emphasis>gw_id</emphasis> is provided.
+					</para></listitem>
+				</itemizedlist>
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -2007,10 +2031,10 @@ Enabled:: Inactive
 		<programlisting format="linespecific">
 $ ./opensipsctl fifo dr_gw_status part_1 my_gw
 State:: Active
-$ ./opensipsctl fifo dr_gw_status my_partition 3 0
-$ ./opensipsctl fifo dr_gw_status partition7 dsbl_gw 2
+$ ./opensipsctl fifo dr_gw_status part_1 my_gw 0
+$ ./opensipsctl fifo dr_gw_status part_1 my_gw
 Enabled:: Disabled MI
-$ ./opensipsctl fifo dr_gw_status partition8 gw3
+$ ./opensipsctl fifo dr_gw_status partition8 3
 Enabled:: Inactive
 </programlisting>
 		</example>
@@ -2019,30 +2043,42 @@ Enabled:: Inactive
 	<section>
 		<title><varname>dr_carrier_status</varname></title>
 		<para>
-		Gets or sets the status (enabled or disabled) of a carrier. The
-		function may take from 0 to 3 parameters.
+		Gets the status (enabled or disabled) of one or multiple carriers. The function
+		can also be used to set the status of a single carrier.
 		</para>
 		<itemizedlist>
 			<listitem>
 				<para>
-					if <varname>use_partition</varname> is set to 0 - if no parameter
-					is provided it will list all the carriers along with their status. If
-					one parameter is provided, that must be the id of carrier and the function
-					will return the status of that carrier. If 2 parameters are provided, first
-					must be the Id of a carrier and the second must be the new status to be
-					forced for that carrier
+				if <varname>use_partitions</varname> is set to 0, the parameters are:
+				<itemizedlist>
+					<listitem><para><emphasis>carrier_id</emphasis> (optional) - the id of
+					a carrier. If provided, the function will return/set (depnding if the second
+					paremeter is given) the status of that carrier, otherwise it will list all
+					carriers along with their statuses.
+					</para></listitem>
+					<listitem><para><emphasis>status</emphasis> (optional) - the new status
+					to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if
+					<emphasis>carrier_id</emphasis> is provided.
+					</para></listitem>
+				</itemizedlist>
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-					if <varname>use_partition</varname> is set to 1 - the first parameter
-					must be the partition (the partition becomes mandatory). If one parameter
-					is supplied, it will be the partition, and it will display the statuses
-					of the carriers contained in that partition. If two parameters are supplied,
-					the second must be the carrierId, and the command will display the status
-					of the selected carrier. If three parameters are supplied, the first two
-					will be the partition name and the carrierId while the third parameter will be
-					the new status to be forced for that carrier.
+				if <varname>use_partitions</varname> is set to 1, the parameters are:
+				<itemizedlist>
+					<listitem><para><emphasis>partition_name</emphasis>
+					</para></listitem>
+					<listitem><para><emphasis>carrier_id</emphasis> (optional) - the id of
+					a carrier. If provided, the function will return/set (depnding if the third
+					paremeter is given) the status of that carrier, otherwise it will list all
+					carriers contained in the given partition along with their statuses.
+					</para></listitem>
+					<listitem><para><emphasis>status</emphasis> (optional) - the new status
+					to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if
+					<emphasis>carrier_id</emphasis> is provided.
+					</para></listitem>
+				</itemizedlist>
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -2071,8 +2107,7 @@ Enabled:: yes
 	<section>
 		<title><varname>dr_reload_status</varname></title>
 		<para>
-			Gets the time of the last reload for any partition. The function
-			may take at most one parameter.
+			Gets the time of the last reload for any partition.
 		</para>
 		<itemizedlist>
 			<listitem>
@@ -2084,11 +2119,15 @@ Enabled:: yes
 			</listitem>
 			<listitem>
 				<para>
-					if <varname>use_partition</varname> is set to 1 - if no parameter
-					is supplied it will list the time of the last update for every
-					partition. If one parameter is supplied, then this must be the
-					partition name, and the function will list the time of the last
-					reload for that given partition.
+					if <varname>use_partition</varname> is set to 1, the parameters are:
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>partition_name</emphasis> (optional) - if not provided
+							the function will list the time of the last update for every
+							partition. Otherwise, the function will list the time of the last
+							reload for the given partition.
+						</para></listitem>
+					</itemizedlist>
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -2114,8 +2153,8 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 	<section>
 		<title><varname>dr_number_routing</varname></title>
 		<para>
-			Gets the matched prefix along with the  list of the gateways / carriers to which a number
-			would be routed when using the do_routing function
+			Gets the matched prefix along with the list of the gateways / carriers to which a number
+			would be routed when using the do_routing function.
 		</para>
 		<itemizedlist>
 			<listitem>
@@ -2124,13 +2163,14 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 					will have 3 parameters:
 					<itemizedlist>
 						<listitem>
-							partition name
+							<para><emphasis>partition name</emphasis></para>
 						</listitem>
 						<listitem>
-							group id - the group id of the rules to check against
+							<para><emphasis>group id</emphasis> (optional) - the group id of the rules to
+								check against </para>
 						</listitem>
 						<listitem>
-							number - the number to test against
+							<para><emphasis>number</emphasis> - the number to test against</para>
 						</listitem>
 					</itemizedlist>
 				</para>
@@ -2139,17 +2179,22 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 				<para>
 					if <varname>use_partition</varname> is set to 0 the function will have 2 parameters:
 					<itemizedlist>
-						<listitem>
-							group id - the group id of the rules to check against
-						</listitem>
-						<listitem>
-							number - the number to test against
-						</listitem>
+						<listitem><para>
+							<emphasis>group id</emphasis> (optional) - the group id of the rules to check against
+						</para></listitem>
+						<listitem><para>
+							<emphasis>number</emphasis> - the number to test against
+						</para></listitem>
 					</itemizedlist>
 				</para>
 			</listitem>
 		</itemizedlist>
-		<para> Note: The group id may be omitted - just as with the do_routing function.</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo dr_number_routing part1 3 012340987
+		</programlisting>
 	</section>
 
 </section>

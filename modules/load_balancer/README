@@ -608,10 +608,12 @@ if (lb_is_destination("$si","$sp") ) {
 
 1.7.2. lb_resize
 
-   Changes the capacity for a resource of a destination. The
-   function receives as parameters the ID (as per DB) of the
-   destination along with the name of the resource you want to
-   resize.
+   Changes the capacity for a resource of a destination.
+
+   Parameters:
+     * destination_id - the ID (as per DB) of the destination.
+     * res_name - name of the resource you want to resize.
+     * new_capacity - new resource capacity.
 
    MI FIFO Command Format:
                 opensipsctl fifo lb_resize 11 voicemail 56
@@ -635,11 +637,13 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 1.7.4. lb_status
 
    Gets or sets the status (enabled or disabled) of a destination.
-   The function takes 2 parameters, first mandatory, the id of the
-   destiantion and second, optional, the new status. If no new
-   status is given, the function will return the current status.
-   If a new status is given (0 - disable, 1 - enable), this status
-   will be forced for the destination.
+
+   Parameters:
+     * destination_id - the ID (as per DB) of the destination.
+     * new_status (optional) - If no new status is given, the
+       function will return the current status. If a new status is
+       given (0 - disable, 1 - enable), this status will be forced
+       for the destination.
 
    Example 1.19. lb_status usage
 $ ./opensipsctl fifo lb_status 2

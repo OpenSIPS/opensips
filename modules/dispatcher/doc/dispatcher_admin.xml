@@ -1268,7 +1268,7 @@ if (ds_is_in_list("$rd", "$rp", "part2:2")) {
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
-			<listitem><para>_state_ : state of the destination address</para>
+			<listitem><para><emphasis>state</emphasis> : state of the destination address</para>
 				<itemizedlist>
 					<listitem><para> <quote>a</quote>: active </para></listitem>
 					<listitem><para> <quote>i</quote>: inactive </para></listitem>
@@ -1276,17 +1276,17 @@ if (ds_is_in_list("$rd", "$rp", "part2:2")) {
 				</itemizedlist>
 			</listitem>
 
-			<listitem><para>_group_: partition name followed by colon
+			<listitem><para><emphasis>group</emphasis>: partition name followed by colon
 			and destination group id. If the partition name is omitted,
 			the default partition will be used</para></listitem>
 
-			<listitem><para>_address_: address of the destination in the _group_</para></listitem>
+			<listitem><para><emphasis>address</emphasis>: address of the destination in the group</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensipsctl fifo ds_set_state _state_ _group_ _address_ _empty_line_
+opensipsctl fifo ds_set_state a 2 sip:10.0.0.202
 </programlisting>
 	</section>
 	<section id="mi_ds_list" xreflabel="ds_list">

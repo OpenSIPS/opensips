@@ -659,8 +659,8 @@ modparam("ratelimit", "slot_period", 100)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>pipe</emphasis> - indicates the name of the pipe. This
-			parameter is optional. If it doesn't exist, all the active pipes
+			<emphasis>pipe</emphasis> (optional) - indicates the name of the pipe.
+			If the parameter doesn't exist, all the active pipes
 			are listed. Otherwise only the one specified.
 			</para></listitem>
 		</itemizedlist>
@@ -669,9 +669,6 @@ modparam("ratelimit", "slot_period", 100)
 		</para>
 		<programlisting  format="linespecific">
 		opensipsctl fifo rl_list gw_10.0.0.1
-		</programlisting>
-		<programlisting  format="linespecific">
-		opensipsctl fifo rl_list
 		</programlisting>
 	</section>
 	<section id="mi_rl_reset_pipe" xreflabel="rl_reset_pipe">

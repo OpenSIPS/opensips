@@ -1044,13 +1044,13 @@ route[capture_resume] {
 		</para>
 		<para>Parameters: </para>
 		<itemizedlist>
-			<listitem><para>capture_mode : turns on/off SIP message capturing.
-			Possible values are:</para>
+			<listitem><para><emphasis>capture_mode</emphasis> (optional) - 
+			turns on/off SIP message capturing. Possible values are:</para>
 			<itemizedlist>
 				<listitem><para> on </para></listitem>
 				<listitem><para> off </para></listitem>
 			</itemizedlist>
-			<para>The parameter is optional - if missing, the command will
+			<para>if the paremeter is missing, the command will
 			return the status of the SIP message capturing (as string
 			<quote>on</quote> or <quote>off</quote> ) without changing
 			anything.</para>
@@ -1061,7 +1061,7 @@ route[capture_resume] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo sip_capture _capture_mode_
+		opensipsctl fifo sip_capture off
 		</programlisting>
 	</section>
 	</section>

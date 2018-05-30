@@ -2372,9 +2372,10 @@ set_dlg_sharing_tag("vip1");
 		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
 		<title><function moreinfo="none">dlg_db_sync</function></title>
 		<para>
-		Will synchronize the information about the dialogs from the database
-		with the OpenSIPS internal memory. To be used mainly for transferring
-		OpenSIPS dialog information from one server to another.
+		Will load all the information about the dialogs from the database
+		in the OpenSIPS internal memory. If a dialog is already found in memory
+		and has the same/an older state, it will be updated with the values from
+		DB. Otherwise, the newer in-memory version will not be changed.
 		</para>
 		<para>
 		Name: <emphasis>dlg_db_sync</emphasis>

@@ -569,10 +569,15 @@ opensipsctl fifo cc_reload
 		<para>
 		Command to login an agent into the Call Center engine.
 		</para>
-		<para>
-		It takes two mandatory parameters, the ID of the agent and the 
-		new login state (0 - log off, 1 - log in)
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>agent_id</emphasis> - ID of the agent
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - the new login state (0 - log off, 1 - log in)
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command usage:
 		</para>

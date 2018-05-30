@@ -487,8 +487,8 @@ xlog("translate to var $var(y) partition $var(partition)")
 
 1.8.2. dp_translate
 
-   It will apply a translation rule identified by a dialplan id
-   and an input string.
+   It will apply a translation rule identified by a dialplan id on
+   an input string.
 
    Name: dp_translate
 
@@ -499,7 +499,7 @@ xlog("translate to var $var(y) partition $var(partition)")
      * Input String
 
    MI DATAGRAM Command Format:
-        opensipsctl fifo dp_translate dpid input
+        opensipsctl fifo dp_translate 10 +40123456789
 
 1.8.3. dp_show_partiton
 

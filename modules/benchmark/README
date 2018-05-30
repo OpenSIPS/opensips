@@ -231,13 +231,24 @@ bm_log_timer("test");
 
 1.6.1. bm_enable_global
 
-   Enables/disables the module. Parameter may be -1, 0 or 1. See
-   discription of "enable" parameter.
+   Enables/disables the module.
+
+   Parameters:
+     * enable - value may be -1, 0 or 1. See discription of
+       "enable" parameter.
+
+   MI FIFO Command Format:
+                        opensipsctl fifo bm_enable_global 1
 
 1.6.2. bm_enable_timer
 
-   Enable or disable a single timer. The following example enables
-   timer "test" (the second parameter must be 0 to disable):
+   Enable or disable a single timer.
+
+   Parameters:
+     * timer - timer name
+     * enable - enable (1) or disable (0) timer
+
+   MI FIFO Command Format:
 
    Example 1.6. Enabling a timer
 ...
@@ -246,12 +257,23 @@ opensipsctl fifo bm_enable_timer test 1
 
 1.6.3. bm_granularity
 
-   Modifies the benchmarking granularity. See "granularity"
-   variable.
+   Modifies the benchmarking granularity.
+
+   Parameters:
+     * granularity - See discription of "granularity" parameter.
+
+   MI FIFO Command Format:
+                        opensipsctl fifo bm_granularity 300
 
 1.6.4. bm_loglevel
 
-   Modifies the module log level. See "loglevel" variable.
+   Modifies the module log level.
+
+   Parameters:
+     * log_level - See discription of "loglevel" parameter.
+
+   MI FIFO Command Format:
+                        opensipsctl fifo bm_loglevel 4
 
 1.6.5. bm_poll_results
 

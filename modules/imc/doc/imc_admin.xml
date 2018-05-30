@@ -246,14 +246,14 @@ if(is_method("MESSAGE)
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
-			<listitem><para>_room_ : the room for which you want to list the members</para></listitem>
+			<listitem><para><emphasis>room</emphasis> : the room for which you want to list the members</para></listitem>
         </itemizedlist>
 
         <para>
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo imc_list_members _room_
+		opensipsctl fifo imc_list_members sip:chat-000@opensips.org
 		</programlisting>
 	</section>
 	</section>

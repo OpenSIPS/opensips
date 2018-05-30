@@ -462,14 +462,14 @@ route[b2b_request]
 
 1.5.1.  b2b_trigger_scenario
 
-   This command instantiated a B2B scenario.
+   This command instantiates a B2B scenario.
 
    Name: b2b_trigger_scenario
 
    Parameters:
      * senario_id : the id of the scenario to be instantiated.
      * scenario parameters - it can take 4 more parameters that
-       are scenario parameters
+       are the scenario parameters
 
    MI FIFO Command Format:
         opensipsctl fifo b2b_trigger_scenario marketing sip:bob@opensips
@@ -487,19 +487,19 @@ route[b2b_request]
    Name: b2b_bridge
 
    Parameters:
-     * dialog-id : the id of the dialog. If you set the module
+     * dialog_id : the id of the dialog. If you set the module
        parameter dialog-id the server will include the dialogid in
        the generated Invites as the content of a header with name
        'Dialog-ID'.
-     * new uri - the uri of the new destination
-     * flag to specify that the callee must be bridged to the new
-       destination. It is optional. If not present the caller will
-       be bridged.
-     * provisional media uri - the uri of a media server able to
-       play provisional media starting from the beginning of the
-       bridging scenario to the end of it. It is optional. If not
-       present, no other entity will be envolved in the bridging
-       scenario
+     * new_uri - the uri of the new destination
+     * flag (optional) - used to specify that the callee must be
+       bridged to the new destination. If not present the caller
+       will be bridged.
+     * prov_media_uri (optional) - the uri of a media server able
+       to play provisional media starting from the beginning of
+       the bridging scenario to the end of it. It is optional. If
+       not present, no other entity will be envolved in the
+       bridging scenario
 
    MI FIFO Command Format:
         opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org

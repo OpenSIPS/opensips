@@ -773,13 +773,12 @@ pstat(MOS-min-at)[$ft])\r\n");
 
 1.7.1. rtpengine_enable
 
-   Enables a RTP proxy if parameter value is greater than 0.
-   Disables it if a zero value is given.
+   Enables/disables a RTP proxy.
 
-   The first parameter is the RTP proxy url (exactly as defined in
-   the config file).
-
-   The second parameter value must be a number in decimal.
+   Parameters:
+     * url - the RTP proxy url (exactly as defined in the config
+       file).
+     * enable - 1 - enable, 0 - disable the RTP proxy.
 
    NOTE: if a RTP proxy is defined multiple times (in the same or
    different set), all of its instances will be enables/disabled.
@@ -817,6 +816,9 @@ $ opensipsctl fifo rtpengine_reload
 
    Terminates the SIP dialog by the SIP Call-ID given as
    parameter.
+
+   Parameters:
+     * callid - SIP Call-ID.
 
    Note this is a just a wrapper function over the “dlg_end_dlg”
    MI function provided by the “dialog” module. This wrapping is

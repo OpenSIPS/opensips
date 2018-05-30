@@ -208,10 +208,11 @@ if(is_method("MESSAGE)
    Name: imc_list_members
 
    Parameters:
-     * _room_ : the room for which you want to list the members
+     * room : the room for which you want to list the members
 
    MI FIFO Command Format:
-                opensipsctl fifo imc_list_members _room_
+                opensipsctl fifo imc_list_members sip:chat-000@opensips.
+org
 
 1.6. Exported Statistics
 

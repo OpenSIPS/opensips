@@ -277,15 +277,38 @@ bm_log_timer("test");
 		<section id="mi_bm_enable_global" xreflabel="bm_enable_global">
 			<title><function moreinfo="none">bm_enable_global</function></title>
 			<para>
-				Enables/disables the module. Parameter may be -1, 0 or 1. See
-				discription of "enable" parameter.
+				Enables/disables the module.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>enable</emphasis> - value may be -1, 0 or 1. See
+					discription of "enable" parameter.
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting  format="linespecific">
+			opensipsctl fifo bm_enable_global 1
+			</programlisting>
 		</section>
 		<section id="mi_bm_enable_timer" xreflabel="bm_enable_timer">
 			<title><function moreinfo="none">bm_enable_timer</function></title>
 			<para>
-				Enable or disable a single timer. The following example enables
-				timer "test" (the second parameter must be 0 to disable):
+				Enable or disable a single timer.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>timer</emphasis> - timer name
+				</para></listitem>
+				<listitem><para>
+					<emphasis>enable</emphasis> - enable (1) or disable (0) timer
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			MI FIFO Command Format:
 			</para>
 			<example>
 				<title>Enabling a timer</title>
@@ -299,14 +322,40 @@ opensipsctl fifo bm_enable_timer test 1
 		<section id="mi_bm_granularity" xreflabel="bm_granularity">
 			<title><function moreinfo="none">bm_granularity</function></title>
 			<para>
-				Modifies the benchmarking granularity. See "granularity" variable.
+				Modifies the benchmarking granularity.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>granularity</emphasis> - See
+					discription of "granularity" parameter.
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting  format="linespecific">
+			opensipsctl fifo bm_granularity 300
+			</programlisting>
 		</section>
 		<section id="mi_bm_loglevel" xreflabel="bm_loglevel">
 			<title><function moreinfo="none">bm_loglevel</function></title>
 			<para>
-				Modifies the module log level. See "loglevel" variable.
+				Modifies the module log level.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>log_level</emphasis> - See
+					discription of "loglevel" parameter.
+				</para></listitem>
+			</itemizedlist>
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting  format="linespecific">
+			opensipsctl fifo bm_loglevel 4
+			</programlisting>
 		</section>
 		<section id="mi_bm_poll_results" xreflabel="bm_poll_results">
 			<title><function moreinfo="none">bm_poll_results</function></title>

@@ -698,10 +698,11 @@ route[after_usleep] {
 
 1.6.1. rand_set_prop
 
-   Set the probability value to the given parameter. The parameter
-   should be a percent value.
+   Set the probability value to the given parameter.
 
-   The parameter value must be a number from 0 to 99.
+   Parameters:
+     * prob_proc - the parameter should be a percent value (number
+       from 0 to 99).
 
    Example 1.26. rand_set_prob usage
 ...
@@ -765,11 +766,11 @@ $ opensipsctl fifo get_config_hash
    Set the value of a shared variable ($shv(name)).
 
    Parameters:
-     * _name_: shared variable name
-     * _type_: type of the value
+     * name : shared variable name
+     * type : type of the value
           + “int”: integer value
           + “str”: string value
-     * _value_: value to be set
+     * value : value to be set
 
    Example 1.31. shv_set usage
 ...
@@ -781,7 +782,7 @@ $ opensipsctl fifo shv_set debug int 0
    Get the value of a shared variable ($shv(name)).
 
    Parameters:
-     * _name_: shared variable name. If this parameter is missing,
+     * name : shared variable name. If this parameter is missing,
        all shared variables are returned.
 
    Example 1.32. shv_get usage

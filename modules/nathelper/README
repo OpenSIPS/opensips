@@ -544,12 +544,13 @@ fix_nated_register();
 
 1.6.1. nh_enable_ping
 
-   Enables natping if parameter value greater than 0. Disables
-   natping if parameter value is 0. With no parameter, it returns
-   the current natping status.
+   Gets or sets the natpinging status.
 
-   The function may takean optional parameter (for set operations)
-   - a number in decimal format.
+   Parameters:
+     * status (optional) - if not provided the function returns
+       the current natping status. Otherwise, enables natping if
+       parameter value greater than 0 or disables natping if
+       parameter value is 0.
 
    Example 1.22. nh_enable_ping usage
 ...

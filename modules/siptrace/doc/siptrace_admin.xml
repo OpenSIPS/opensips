@@ -339,45 +339,54 @@ modparam("siptrace", "trace_id",
 		<function moreinfo="none">sip_trace</function>
 		</title>
 		<para>
-
+			Enable/disable tracing(globally or for a specific trace id) or dump
+			info about trace ids.
 		</para>
 		<para>
-		Name: <emphasis>sip_trace</emphasis>
+			Name: <emphasis>sip_trace</emphasis>
 		</para>
-		<para>Parameters: </para>
+		<para>
+			Parameters:
+		</para>
 		<itemizedlist>
-			<listitem><para>trace_id/trace_mode : if it is a trace_id name
-			it dumps info about that trace id if the second parameter is
-			not set to on/off or it turns tracing on/off for a certain
-			trace id if it is set, else if it's on/off
-			it turns on/off tracing for all the trace ids. If you turn
-			global trace on but some of the trace ids had trace to off,
-			then they shall not do tracing. In order to do that you
-			have to set the trace_on parameter for each trace_id.
-			Possible values are:</para>
+		<listitem>
+			<para>
+				<emphasis>trace_id</emphasis> (optional) - 
+				a trace_id name. If this parameter is missing the command will
+				either dump info for all tace ids(and return the global tracing state)
+				or set the global tracing state.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>trace_mode</emphasis> (optional) - 
+				possible values are:
+			</para>
 			<itemizedlist>
-				<listitem><para> on </para></listitem>
-				<listitem><para> off </para></listitem>
-				<listitem><para> trace_id name </para></listitem>
+				<listitem><para> "on" - enable tracing </para></listitem>
+				<listitem><para> "off" - disable tracing </para></listitem>
 			</itemizedlist>
-			<para>The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string
-			<quote>on</quote> or <quote>off</quote>) marked with
-			<emphasis>global</emphasis> and the status for each trace id
-			without changing anything.</para>
-			</listitem>
-			<listitem><para>trace_mode : this parameter has the same
-			meaning as the trace_mode in the first parameter, but this time
-			it enables/disables tracing for a certain trace id given in the
-			first parameter.</para>
-			</listitem>
+			<para>
+				If the first parameter is missing, the command wil set the global
+				tracing state, otherwise it will set the state for a specific trace id.
+				If you turn global trace on but some of the trace ids had tracing set to
+				off, then they shall not do tracing. If you want to turn the tracing on
+				for all trace ids you will have to set it separately for each of them.
+			</para>
+			<para>
+				If this parameter is missing but the first is set, the command will
+				only dump info about that specific trace id. If both parameters are
+				missing, the command will return the global tracing state and dump
+				info for each trace_id.
+			</para>
+		</listitem>
 		</itemizedlist>
 
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo sip_trace _trace_id/trace_mode_ trace_mode
+		opensipsctl fifo sip_trace tid2 on
 		</programlisting>
 	</section>
 

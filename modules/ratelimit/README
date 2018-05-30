@@ -549,14 +549,12 @@ m
    Name: rl_list
 
    Parameters:
-     * pipe - indicates the name of the pipe. This parameter is
-       optional. If it doesn't exist, all the active pipes are
-       listed. Otherwise only the one specified.
+     * pipe (optional) - indicates the name of the pipe. If the
+       parameter doesn't exist, all the active pipes are listed.
+       Otherwise only the one specified.
 
    MI FIFO Command Format:
                 opensipsctl fifo rl_list gw_10.0.0.1
-
-                opensipsctl fifo rl_list
 
 1.8.2.  rl_reset_pipe
 

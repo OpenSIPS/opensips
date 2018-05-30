@@ -438,7 +438,8 @@ if ($rm=="REGISTER") {
      * cpl_filename: file name
 
    MI FIFO Command format:
-                 opensipsctl fifo LOAD_CPL username cpl_filename
+                 opensipsctl fifo LOAD_CPL sip:bob@domain.com cpl_script
+.xml
 
 1.5.2.  REMOVE_CPL
 
@@ -451,7 +452,7 @@ if ($rm=="REGISTER") {
      * username : name of the user
 
    MI FIFO Command format:
-                 opensipsctl fifo REMOVE_CPL username
+                 opensipsctl fifo REMOVE_CPL sip:bob@domain.com
 
 1.5.3.  GET_CPL
 
@@ -463,7 +464,7 @@ if ($rm=="REGISTER") {
      * username : name of the user
 
    MI FIFO Command format:
-                 opensipsctl fifo GET_CPL username
+                 opensipsctl fifo GET_CPL sip:bob@domain.com
 
 1.6. Installation and Running
 

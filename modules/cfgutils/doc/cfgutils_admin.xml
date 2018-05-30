@@ -859,11 +859,14 @@ route[after_usleep] {
 			<title><function moreinfo="none">rand_set_prop</function></title>
 			<para>
 				Set the probability value to the given parameter.
-				The parameter should be a percent value.
 			</para>
-			<para>
-				The parameter value must be a number from 0 to 99.
-			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>prob_proc</emphasis> - the parameter should be
+					a percent value (number from 0 to 99).
+				</para></listitem>
+			</itemizedlist>
 			<example>
 				<title><function moreinfo="none">rand_set_prob</function> usage</title>
 				<programlisting format="linespecific">
@@ -956,16 +959,16 @@ $ opensipsctl fifo get_config_hash
 			</para>
 		<para>Parameters:</para>
 		<itemizedlist>
-			<listitem><para>_name_: shared variable name</para></listitem>
+			<listitem><para><emphasis>name</emphasis> : shared variable name</para></listitem>
 			
-			<listitem><para>_type_: type of the value</para>
+			<listitem><para><emphasis>type</emphasis> : type of the value</para>
 			      <itemizedlist>
 	                 <listitem><para> <quote>int</quote>: integer value </para></listitem> 
 			         <listitem><para> <quote>str</quote>: string value </para></listitem>	
 				  </itemizedlist>
 			</listitem>	  
 
-			<listitem><para>_value_: value to be set</para></listitem>
+			<listitem><para><emphasis>value</emphasis> : value to be set</para></listitem>
 		</itemizedlist>
 		<example>
 		<title><function moreinfo="none">shv_set</function> usage</title>
@@ -983,7 +986,7 @@ $ opensipsctl fifo shv_set debug int 0
 			</para>
 		<para>Parameters:</para>
 		<itemizedlist>
-			<listitem><para>_name_: shared variable name. If this parameter
+			<listitem><para><emphasis>name</emphasis> : shared variable name. If this parameter
 			is missing, all shared variables are returned.</para></listitem>
 		</itemizedlist>
 		<example>

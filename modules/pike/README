@@ -247,7 +247,7 @@ if (!pike_check_req()) { exit; };
      * IP - IP address currently blocked.
 
    MI FIFO Command Format:
-                opensipsctl fifo pike_rm _ip_
+                opensipsctl fifo pike_rm 10.0.0.106
 
 1.7. Exported Events
 

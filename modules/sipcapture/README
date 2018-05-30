@@ -709,16 +709,16 @@ route[capture_resume] {
    Name: sip_capture
 
    Parameters:
-     * capture_mode : turns on/off SIP message capturing. Possible
-       values are:
+     * capture_mode (optional) - turns on/off SIP message
+       capturing. Possible values are:
           + on
           + off
-       The parameter is optional - if missing, the command will
-       return the status of the SIP message capturing (as string
-       “on” or “off” ) without changing anything.
+       if the paremeter is missing, the command will return the
+       status of the SIP message capturing (as string “on” or
+       “off” ) without changing anything.
 
    MI FIFO Command Format:
-                opensipsctl fifo sip_capture _capture_mode_
+                opensipsctl fifo sip_capture off
 
 1.8. Database setup
 

@@ -645,7 +645,7 @@ opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
 
    Name: cleanup
 
-   Parameters:none.emphasis>
+   Parameters: none
 
    MI FIFO Command Format:
 opensipsctl fifo cleanup
@@ -656,7 +656,7 @@ opensipsctl fifo cleanup
 
    Name: pres_phtable_list
 
-   Parameters:none.
+   Parameters: none
 
    MI FIFO Command Format:
 opensipsctl fifo pres_phtable_list
@@ -685,14 +685,14 @@ e.com
    Name: pres_expose
 
    Parameters:
-     * event - the interesting presence event.
+     * event - the desired presence event.
      * filter(optional) - a regular expression (REGEXP) used for
        filtering the presentities for that event. Only the
        presentities that match will be exposed. If not specified,
        all presentities for that event are exposed.
 
    MI FIFO Command Format:
-opensipsctl fifo pres_expose
+opensipsctl fifo pres_expose presence ^sip:10\.0\.5\.[0-9]*
 
 1.7. Exported Events
 
