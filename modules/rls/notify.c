@@ -1356,7 +1356,7 @@ db_res_t * build_db_result(xmlNodePtr list_node, int n_result_cols)
 					}
 					char buf[1024];
                     if (reduce_notify_size)
-					    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"9\" state=\"full\" entity=\"%s\"><dialog id=\"zx3\"><state>terminated</state><remote><identity display=\"%s\">%s</identity></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
+					    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"9\" state=\"full\" entity=\"%s\"><dialog id=\"zx3\"><state>terminated</state><remote><local><identity display=\"%s\">%s</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
                     else 
 					    snprintf(buf, 1023, "<?xml version=\"1.0\"?><dialog-info xmlns=\"urn:ietf:params:xml:ns:dialog-info\" version=\"169\" state=\"full\" entity=\"%s\"><dialog id=\"zxcnm3\"><state>terminated</state><remote><local><identity display=\"%s\">%s</identity></local></remote></dialog></dialog-info>", normalized_uri->s, username, normalized_uri->s);
 					val = &(ROW_VALUES(row)[pres_state_col]);
