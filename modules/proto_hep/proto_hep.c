@@ -435,7 +435,7 @@ poll_loop:
 		}
 	}
 
-	if (pf.events&POLLOUT)
+	if (pf.revents&POLLOUT)
 		goto again;
 
 	/* some other events triggered by poll - treat as errors */
