@@ -61,6 +61,9 @@ int _async_resume_retr_itv = 100; /* us */
 int ssl_verifypeer = 1;
 int ssl_verifyhost = 1;
 
+/* see curl.h or https://curl.haxx.se/libcurl/c/CURLOPT_HTTP_VERSION.html */
+int curl_http_version = CURL_HTTP_VERSION_NONE;
+
 /* tls_mgm module specific identifier for a TLS client cert/key */
 char *tls_client_domain;
 struct tls_mgm_binds tls_api;
@@ -105,6 +108,7 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 
 static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
 static int w_rest_init_client_tls(struct sip_msg *msg, char *gp_tls_dom);
+int validate_curl_http_version(const int *http_version);
 
 static module_dependency_t *get_deps_tls_mgm(param_export_t *param)
 {
@@ -172,6 +176,7 @@ static param_export_t params[] = {
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
+	{ "curl_http_version",	INT_PARAM, &curl_http_version	},
 	{ 0, 0, 0 }
 };
 
@@ -317,6 +322,9 @@ static int mod_init(void)
 		}
 	}
 
+	if (!validate_curl_http_version(&curl_http_version))
+		return -1;
+
 	LM_INFO("Module initialized!\n");
 
 	return 0;
@@ -380,6 +388,34 @@ static int fixup_rest_put(void **param, int param_no)
 		LM_ERR("Too many parameters!\n");
 		return -1;
 	}
+}
+
+int validate_curl_http_version(const int *http_version)
+{
+	switch (*http_version) {
+	case CURL_HTTP_VERSION_NONE:
+	case CURL_HTTP_VERSION_1_0:
+	case CURL_HTTP_VERSION_1_1:
+		break;
+#if (LIBCURL_VERSION_NUM >= 0x072100)
+	case CURL_HTTP_VERSION_2_0:
+		break;
+#endif
+#if (LIBCURL_VERSION_NUM >= 0x072f00)
+	case CURL_HTTP_VERSION_2TLS:
+		break;
+#endif
+#if (LIBCURL_VERSION_NUM >= 0x073100)
+	case CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE:
+		break;
+#endif
+	default:
+		LM_ERR("invalid or unsupported libcurl http version (%d)\n",
+		       *http_version);
+		return 0;
+	}
+
+	return 1;
 }
 
 /**************************** Module functions *******************************/

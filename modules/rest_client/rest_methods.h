@@ -47,6 +47,8 @@ extern char *ssl_capath;
 extern int ssl_verifypeer;
 extern int ssl_verifyhost;
 
+extern int curl_http_version;
+
 /* Currently supported HTTP verbs */
 enum rest_client_method {
 	REST_CLIENT_GET,

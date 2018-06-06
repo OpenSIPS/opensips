@@ -189,6 +189,59 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		</example>
 	</section>
 
+	<section id="param_curl_http_version" xreflabel="curl_http_version">
+		<title><varname>curl_http_version</varname> (integer)</title>
+		<para>
+		Use a specific HTTP version for all requests. Possible values:
+		</para>
+		<para>
+		<itemizedlist>
+		<listitem>
+			<para>0 (default) - use whatever is deemed fit by libcurl</para>
+		</listitem>
+		<listitem>
+			<para>1 - enforce HTTP 1.0 requests</para>
+		</listitem>
+		<listitem>
+			<para>2 - enforce HTTP 1.1 requests</para>
+		</listitem>
+		<listitem>
+			<para>3 - attempt HTTP 2 requests. Fall back to HTTP 1.1 if HTTP 2
+				cannot be negotiated with the server. Requires libcurl 7.33.0+.
+			</para>
+		</listitem>
+		<listitem>
+			<para>4 - attempt HTTP 2 over TLS (HTTPS) only. Fall back to HTTP
+				1.1 if HTTP 2 cannot be negotiated with the HTTPS server.
+				For clear text HTTP servers, use HTTP 1.1.
+				Requires libcurl 7.47.0+.
+			</para>
+		</listitem>
+		<listitem>
+			<para>5 - Issue non-TLS HTTP requests using HTTP 2 without HTTP 1.1
+				Upgrade. It requires prior knowledge that the server supports
+				HTTP 2 straight away. HTTPS requests will still do HTTP/2 the
+				standard way with negotiated protocol version in the TLS
+				handshake. Requires libcurl 7.49.0+.
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+			<emphasis>more details <ulink url="https://curl.haxx.se/libcurl/c/CURLOPT_HTTP_VERSION.html">
+				<citetitle>here</citetitle></ulink>, where the documentation for
+			this setting was inspired (read: pilfered) from</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>curl_http_version</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "curl_http_version", 3)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

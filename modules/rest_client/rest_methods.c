@@ -365,6 +365,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	}
 
 	w_curl_easy_setopt(handle, CURLOPT_URL, url);
+	if (curl_http_version != CURL_HTTP_VERSION_NONE)
+		w_curl_easy_setopt(handle, CURLOPT_HTTP_VERSION, curl_http_version);
 
 	if (tls_dom) {
 		w_curl_easy_setopt(handle, CURLOPT_SSLCERT, tls_dom->cert.s);
@@ -713,6 +715,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		w_curl_easy_setopt(sync_handle, CURLOPT_HTTPHEADER, header_list);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
+	if (curl_http_version != CURL_HTTP_VERSION_NONE)
+		w_curl_easy_setopt(sync_handle, CURLOPT_HTTP_VERSION, curl_http_version);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
@@ -859,6 +863,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		w_curl_easy_setopt(sync_handle, CURLOPT_HTTPHEADER, header_list);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
+	if (curl_http_version != CURL_HTTP_VERSION_NONE)
+		w_curl_easy_setopt(sync_handle, CURLOPT_HTTP_VERSION, curl_http_version);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_POST, 1);
 	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body);
@@ -1001,6 +1007,9 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 		w_curl_easy_setopt(sync_handle, CURLOPT_HTTPHEADER, header_list);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
+	if (curl_http_version != CURL_HTTP_VERSION_NONE)
+		w_curl_easy_setopt(sync_handle, CURLOPT_HTTP_VERSION, curl_http_version);
+
 	w_curl_easy_setopt(sync_handle, CURLOPT_CUSTOMREQUEST, "PUT");
 	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body);
 
