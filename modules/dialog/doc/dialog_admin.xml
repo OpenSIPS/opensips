@@ -26,8 +26,8 @@
 	<section>
 	<title>How it works</title>
 	<para>
-	To create the dialog associated to an initial request, you must call
-	the create_dialog() function, with or without parameter..
+	To create the dialog associated with an initial request, you must call
+	the create_dialog() function, with or without parameter.
 	</para>
 	<para>
 	The dialog is automatically destroyed when a <quote>BYE</quote> is
@@ -38,7 +38,7 @@
 	</para>
 	</section>
 
-	<section>
+	<section id="dialog-profiling" xreflabel="Dialog profiling">
 	<title>Dialog profiling</title>
 	<para>
 	Dialog profiling is a mechanism that helps in classifying, sorting and
@@ -91,30 +91,56 @@
 	</para>
 	</section>
 
-	<section>
-	<title>Dialog replication</title>
+	<section id="dialog-clustering" xreflabel="Dialog clustering">
+	<title>Dialog clustering</title>
 	<para>
 	<emphasis role='bold'>Dialog replication</emphasis> is a mechanism used to
 	mirror all dialog changes taking place in one OpenSIPS instance to one or
-	more other instances. The logic is simplified by using the
-	<emphasis>clusterer</emphasis> module to send the replication-related BIN packets.
+	multiple other instances. The process is simplified by using the
+	<emphasis>clusterer</emphasis> module which facilitates the management of a
+	cluster of OpenSIPS nodes and the sending of replication-related BIN packets
+	(binary-encoded, using <emphasis>proto_bin</emphasis>). This feature
+	is useful in achieving High Availability and/or Load Balancing for ongoing calls.
 	</para>
 	<para>
-		The feature is especially useful when dealing with very large systems,
-	where failover through a database backend is no longer feasible, due to the
-	high amount of time required for the backup instance to load the dialog
-	information stored in a typical <emphasis>dialog</emphasis> table by the
-	crashed instance.
+	Configuring both receival and sending of dialog replication packets is trivial
+	and can be done by using the
+	<emphasis role='bold'>dialog_replication_cluster</emphasis> parameter. But in
+	addition to just sharing data, in order to properly cluster dialogs you will
+	need to manage which node in the cluster is doing certain actions on certain
+	dialogs using the <emphasis role='bold'>sharing tags</emphasis> mechanism.
+	For details and configuration examples on how this would work
+	in different usage scenarios, see 
+	<ulink url="https://blog.opensips.org/2018/03/23/clustering-ongoing-calls-with-opensips-2-4/">this article</ulink>.
 	</para>
 	<para>
-		Configuring both receival and sending of dialog replication packets is
-	trivial and can be done by using the
-	<emphasis role='bold'>dialog_replication_cluster</emphasis> parameter of the
-	module. In addition to this, the module also exports several statistics
-	regarding the number of replication packets sent/received.
+	The following actions will <emphasis role='bold'>not</emphasis> be performed for a dialog
+	that is marked with a sharing tag that is in the "<emphasis role='bold'>backup</emphasis>" state:
+	<itemizedlist>
+		<listitem><para>sending Re-Invite or OPTIONS pings to end-points</para></listitem>
+		<listitem><para>generating BYE requests or any other actions(like producing CDRs)
+			upon dialog expiration</para></listitem>
+		<listitem><para>sending replication packets on dialog events(update, delete)</para></listitem>
+	</itemizedlist>
 	</para>
 	<para>
-		Also configuring profiles replication via the
+	In addition to the event-driven replication, an OpenSIPS instance will first
+	try to learn all the dialog information from antoher node in the cluster at startup.
+	The data synchronization mechanism requires defining one of the nodes in the cluster
+	as a "<emphasis role='bold'>seed</emphasis>" node.
+	See the <ulink url="http://www.opensips.org/html/docs/modules/3.0.x/clusterer.html#capabilities">clusterer</ulink> 
+	module for details on how to do this and why is it needed.
+	</para>
+	<para>
+	In the context of dialog replication, using a database as a failsafe for obtaining
+	restart persistency for dialog data is useful in case all nodes in the cluster are down.
+	This approach makes the most sense if a separate, local DB is used for each node in the
+	cluster. In consequence dialogs loaded from the database at startup are dropped and also
+	deleted from the DB once the sync from cluster is complete. This is done for dialogs that
+	are not reconfirmed as being active in the meantime (SIP updates, received in sync data).
+	</para>
+	<para>
+	Also configuring profiles replication via the
 	<emphasis>profile_replication_cluster</emphasis> parameter is
 	<emphasis>not</emphasis> necessary when dialog replication is already configured,
 	as profile information is included in the dialog updates. The profiles must still
@@ -1297,14 +1323,18 @@ modparam("dialog", "replicate_profiles_expire", 10)
 		<title><varname>dlg_sharing_tag</varname> (string)</title>
 		<para>
 		This parameter can be set(mutiple times) in order to define a sharing tag,
-		along with its initial state, useful for partitioning actions when sharing dialogs.
+		along with its initial state, that is useful when replicating dialogs.
 		</para>
 		<para>
 		Format: "<emphasis>tag_name</emphasis>=<emphasis>state</emphasis>" where
 		<emphasis>state</emphasis> may have the "active" or "backup" values.
 		</para>
-		<para>If this parameter is not defined for a specific tag, and that tag is
-		encountered at runtime, it will have  the initial state of <emphasis>backup</emphasis>.
+		<para>If this parameter is not defined for a specific tag 
+		encountered at runtime (local or replicated dialog marked with that tag),
+		it will have  the initial state of <emphasis>backup</emphasis>.
+		</para>
+		<para>
+		For more details see the <xref linkend="dialog-clustering"/> chapter.
 		</para>
 		<example>
 		<title>Set <varname>dlg_sharing_tag</varname> parameter</title>
@@ -2017,12 +2047,18 @@ $var(account) = $dlg_val(account_type);
 		</title>
 		<para>
 		Marks the current dialog with the sharing tag <emphasis>tag_name</emphasis>.
-		From now on, actions like in-dialog pinging, DB updates etc. will depend on the tag state.
+		From this point on, actions like in-dialog pinging, BYEs on timeout etc.
+		will depend on the tag state(no action in "backup" state, normal operation
+		in "active" state).
 		</para>
 		<para>
-		If the tag is not already defined through the <xref linkend="param_dlg_sharing_tag"/> param and/or
-		have it's state changed by the <xref linkend="mi_dlg_set_sharing_tag_active"/> MI command, the
-		initial state will be <emphasis>backup</emphasis>.
+		If the tag is not already defined through the
+		<xref linkend="param_dlg_sharing_tag"/> parameter and/or have it's state
+		changed by the <xref linkend="mi_dlg_set_sharing_tag_active"/> MI command,
+		the initial state will be <emphasis>backup</emphasis>.
+		</para>
+		<para>
+		For more details see the <xref linkend="dialog-clustering"/> chapter.
 		</para>
 		<para>
 		NOTE: the dialog must be created before using this function (use
@@ -2429,9 +2465,12 @@ set_dlg_sharing_tag("vip1");
 		<section id='mi_dlg_set_sharing_tag_active' xreflabel="dlg_set_sharing_tag_active">
 		<title><function moreinfo="none">dlg_set_sharing_tag_active</function></title>
 		<para>
-		Sets the given sharing tag to the <emphasis>active</emphasis> state.
+		Set the given sharing tag to the <emphasis>active</emphasis> state.
 		The information about this change is also broadcasted in the cluster in order
-		to force any other node that may be active on this tag to go backup.
+		to force any other node that may be active on this tag to step down to backup.
+		</para>
+		<para>
+		For more details see the <xref linkend="dialog-clustering"/> chapter.
 		</para>
 		<para>
 		Name: <emphasis>dlg_set_sharing_tag_active</emphasis>
@@ -2450,6 +2489,9 @@ set_dlg_sharing_tag("vip1");
 		<title><function moreinfo="none">dlg_list_sharing_tags</function></title>
 		<para>
 		Lists all known sharing tags and their states.
+		</para>
+		<para>
+		For more details on sharing tags see the <xref linkend="dialog-clustering"/> chapter.
 		</para>
 		<para>
 		Name: <emphasis>dlg_list_sharing_tags</emphasis>

@@ -20,7 +20,7 @@ Vladut-Stefan Paiu
         1.1. Overview
         1.2. How it works
         1.3. Dialog profiling
-        1.4. Dialog replication
+        1.4. Dialog clustering
         1.5. Dependencies
 
               1.5.1. OpenSIPS Modules
@@ -245,8 +245,9 @@ Chapter 1. Admin Guide
 
 1.2. How it works
 
-   To create the dialog associated to an initial request, you must
-   call the create_dialog() function, with or without parameter..
+   To create the dialog associated with an initial request, you
+   must call the create_dialog() function, with or without
+   parameter.
 
    The dialog is automatically destroyed when a “BYE” is received.
    In case of no “BYE”, the dialog lifetime is controlled via the
@@ -289,24 +290,50 @@ Chapter 1. Admin Guide
    one of the '/s' or '/b' suffixes to the name of the profile in
    the profiles_with_value or profiles_no_value parameters.
 
-1.4. Dialog replication
+1.4. Dialog clustering
 
    Dialog replication is a mechanism used to mirror all dialog
-   changes taking place in one OpenSIPS instance to one or more
-   other instances. The logic is simplified by using the clusterer
-   module to send the replication-related BIN packets.
-
-   The feature is especially useful when dealing with very large
-   systems, where failover through a database backend is no longer
-   feasible, due to the high amount of time required for the
-   backup instance to load the dialog information stored in a
-   typical dialog table by the crashed instance.
+   changes taking place in one OpenSIPS instance to one or
+   multiple other instances. The process is simplified by using
+   the clusterer module which facilitates the management of a
+   cluster of OpenSIPS nodes and the sending of
+   replication-related BIN packets (binary-encoded, using
+   proto_bin). This feature is useful in achieving High
+   Availability and/or Load Balancing for ongoing calls.
 
    Configuring both receival and sending of dialog replication
    packets is trivial and can be done by using the
-   dialog_replication_cluster parameter of the module. In addition
-   to this, the module also exports several statistics regarding
-   the number of replication packets sent/received.
+   dialog_replication_cluster parameter. But in addition to just
+   sharing data, in order to properly cluster dialogs you will
+   need to manage which node in the cluster is doing certain
+   actions on certain dialogs using the sharing tags mechanism.
+   For details and configuration examples on how this would work
+   in different usage scenarios, see this article.
+
+   The following actions will not be performed for a dialog that
+   is marked with a sharing tag that is in the "backup" state:
+     * sending Re-Invite or OPTIONS pings to end-points
+     * generating BYE requests or any other actions(like producing
+       CDRs) upon dialog expiration
+     * sending replication packets on dialog events(update,
+       delete)
+
+   In addition to the event-driven replication, an OpenSIPS
+   instance will first try to learn all the dialog information
+   from antoher node in the cluster at startup. The data
+   synchronization mechanism requires defining one of the nodes in
+   the cluster as a "seed" node. See the clusterer module for
+   details on how to do this and why is it needed.
+
+   In the context of dialog replication, using a database as a
+   failsafe for obtaining restart persistency for dialog data is
+   useful in case all nodes in the cluster are down. This approach
+   makes the most sense if a separate, local DB is used for each
+   node in the cluster. In consequence dialogs loaded from the
+   database at startup are dropped and also deleted from the DB
+   once the sync from cluster is complete. This is done for
+   dialogs that are not reconfirmed as being active in the
+   meantime (SIP updates, received in sync data).
 
    Also configuring profiles replication via the
    profile_replication_cluster parameter is not necessary when
@@ -1000,15 +1027,17 @@ modparam("dialog", "replicate_profiles_expire", 10)
 1.6.51. dlg_sharing_tag (string)
 
    This parameter can be set(mutiple times) in order to define a
-   sharing tag, along with its initial state, useful for
-   partitioning actions when sharing dialogs.
+   sharing tag, along with its initial state, that is useful when
+   replicating dialogs.
 
    Format: "tag_name=state" where state may have the "active" or
    "backup" values.
 
-   If this parameter is not defined for a specific tag, and that
-   tag is encountered at runtime, it will have the initial state
-   of backup.
+   If this parameter is not defined for a specific tag encountered
+   at runtime (local or replicated dialog marked with that tag),
+   it will have the initial state of backup.
+
+   For more details see the Dialog clustering chapter.
 
    Example 1.51. Set dlg_sharing_tag parameter
 ...
@@ -1468,13 +1497,16 @@ $var(account) = $dlg_val(account_type);
 1.7.17.  set_dlg_sharing_tag(tag_name)
 
    Marks the current dialog with the sharing tag tag_name. From
-   now on, actions like in-dialog pinging, DB updates etc. will
-   depend on the tag state.
+   this point on, actions like in-dialog pinging, BYEs on timeout
+   etc. will depend on the tag state(no action in "backup" state,
+   normal operation in "active" state).
 
    If the tag is not already defined through the dlg_sharing_tag
-   param and/or have it's state changed by the
+   parameter and/or have it's state changed by the
    dlg_set_sharing_tag_active MI command, the initial state will
    be backup.
+
+   For more details see the Dialog clustering chapter.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1733,10 +1765,12 @@ wZjAzNGM1ZDY
 
 1.9.11. dlg_set_sharing_tag_active
 
-   Sets the given sharing tag to the active state. The information
+   Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
-   to force any other node that may be active on this tag to go
-   backup.
+   to force any other node that may be active on this tag to step
+   down to backup.
+
+   For more details see the Dialog clustering chapter.
 
    Name: dlg_set_sharing_tag_active
 
@@ -1748,6 +1782,9 @@ wZjAzNGM1ZDY
 1.9.12. dlg_list_sharing_tags
 
    Lists all known sharing tags and their states.
+
+   For more details on sharing tags see the Dialog clustering
+   chapter.
 
    Name: dlg_list_sharing_tags
 
