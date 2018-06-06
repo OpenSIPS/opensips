@@ -296,37 +296,41 @@ static inline void timer_ticker(struct os_timer *timer_list)
 	j = *jiffies;
 
 	for (t=timer_list;t; t=t->next){
-		if (j>=t->expires){
-			if (t->trigger_time) {
-				LM_WARN("timer task <%s> already scheduled for %lld ms"
-					" (now %lld ms), it may overlap..\n",
-					t->label, (utime_t)(t->trigger_time/1000),
-					((utime_t)*ijiffies/1000) );
-				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
-					/* skip this execution of the timer handler */
-					t->expires = j + t->interval;
-					continue;
-				} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
-					/* delay the execution of the timer handler
-					   until the prev one is done */
-					continue;
-				} else {
-					/* launch the task now, even if overlapping with the
-					   already running one */
-				}
+		if (j < t->expires)
+			continue;
+
+		if (t->trigger_time) {
+			LM_WARN("timer task <%s> already scheduled %lld ms ago"
+				" (now %lld ms), %s\n", t->label, ((utime_t)*ijiffies/1000) -
+				(utime_t)(t->trigger_time/1000), ((utime_t)*ijiffies/1000),
+				t->flags&TIMER_FLAG_SKIP_ON_DELAY ? "skipping execution" :
+				t->flags&TIMER_FLAG_DELAY_ON_DELAY ? "delaying execution" :
+				"pushing a new one");
+
+			if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
+				/* skip this execution of the timer handler */
+				t->expires = j + t->interval;
+				continue;
+			} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
+				/* delay and merge the executions of the timer handler
+				   until the prev one is done */
+				continue;
+			} else {
+				/* launch the task now, even if overlapping with the
+				   already running one */
 			}
-			t->expires = j + t->interval;
-			t->trigger_time = *ijiffies;
-			t->time = j;
-			/* push the jobs for execution */
+		}
+		t->expires = j + t->interval;
+		t->trigger_time = *ijiffies;
+		t->time = j;
+		/* push the jobs for execution */
 again:
-			l = write( timer_pipe[1], &t, sizeof(t));
-			if (l==-1) {
-				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
-					goto again;
-				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %d s\n",
-					errno, strerror(errno),t->label, j);
-			}
+		l = write( timer_pipe[1], &t, sizeof(t));
+		if (l==-1) {
+			if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+				goto again;
+			LM_ERR("writing failed:[%d] %s, skipping job <%s> at %d s\n",
+				errno, strerror(errno),t->label, j);
 		}
 	}
 }
@@ -343,37 +347,41 @@ static inline void utimer_ticker(struct os_timer *utimer_list)
 	uj = *ujiffies;
 
 	for ( t=utimer_list ; t ; t=t->next){
-		if (uj>=t->expires){
-			if (t->trigger_time) {
-				LM_WARN("utimer task <%s> already scheduled for %lld ms"
-					" (now %lld ms), it may overlap..\n",
-					t->label, (utime_t)(t->trigger_time/1000),
-					((utime_t)*ijiffies/1000) );
-				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
-					/* skip this execution of the timer handler */
-					t->expires = uj + t->interval;
-					continue;
-				} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
-					/* delay the execution of the timer handler
-					   until the prev one is done */
-					continue;
-				} else {
-					/* launch the task now, even if overlapping with the
-					   already running one */
-				}
+		if (uj < t->expires)
+			continue;
+
+		if (t->trigger_time) {
+			LM_WARN("utimer task <%s> already scheduled %lld ms ago"
+				" (now %lld ms), %s\n", t->label, ((utime_t)*ijiffies/1000) -
+				(utime_t)(t->trigger_time/1000), ((utime_t)*ijiffies/1000),
+				t->flags&TIMER_FLAG_SKIP_ON_DELAY ? "skipping execution" :
+				t->flags&TIMER_FLAG_DELAY_ON_DELAY ? "delaying execution" :
+				"pushing a new one");
+
+			if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
+				/* skip this execution of the timer handler */
+				t->expires = uj + t->interval;
+				continue;
+			} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
+				/* delay the execution of the timer handler
+				   until the prev one is done */
+				continue;
+			} else {
+				/* launch the task now, even if overlapping with the
+				   already running one */
 			}
-			t->expires = uj + t->interval;
-			t->trigger_time = *ijiffies;
-			t->time = uj;
-			/* push the jobs for execution */
+		}
+		t->expires = uj + t->interval;
+		t->trigger_time = *ijiffies;
+		t->time = uj;
+		/* push the jobs for execution */
 again:
-			l = write( timer_pipe[1], &t, sizeof(t));
-			if (l==-1) {
-				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
-					goto again;
-				LM_ERR("writing failed:[%d] %s, skipping job <%s> at %lld us\n",
-					errno, strerror(errno),t->label, uj);
-			}
+		l = write( timer_pipe[1], &t, sizeof(t));
+		if (l==-1) {
+			if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+				goto again;
+			LM_ERR("writing failed:[%d] %s, skipping job <%s> at %lld us\n",
+				errno, strerror(errno),t->label, uj);
 		}
 	}
 }
