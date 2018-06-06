@@ -238,7 +238,8 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 	case DB_STRING:
 		l = strlen(VAL_STRING(_v));
 		if (*_len < (l * 2 + 3)) {
-			LM_ERR("destination buffer too short for string\n");
+			LM_ERR("destination STRING buffer too short (have %d, need %d)\n",
+			       *_len, l * 2 + 3);
 			return -4;
 		} else {
 			old_s = _s;
@@ -263,7 +264,8 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 	case DB_STR:
 		l = VAL_STR(_v).len;
 		if (*_len < (l * 2 + 3)) {
-			LM_ERR("destination buffer too short for str\n");
+			LM_ERR("destination STR buffer too short (have %d, need %d)\n",
+			       *_len, l * 2 + 3);
 			return -5;
 		} else {
 			old_s = _s;
@@ -297,7 +299,8 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 		l = VAL_BLOB(_v).len;
 		/* this estimation is not always correct, thus we need to check later again */
 		if (*_len < (l * 2 + 3)) {
-			LM_ERR("destination buffer too short for blob\n");
+			LM_ERR("destination BLOB buffer too short (have %d, need %d)\n",
+			       *_len, l * 2 + 3);
 			return -7;
 		} else {
 			*_s++ = '\'';

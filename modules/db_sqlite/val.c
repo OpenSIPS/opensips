@@ -94,7 +94,9 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 	case DB_STRING:
 		l = strlen(VAL_STRING(_v));
 		if (*_len < l )
-		{	LM_ERR("Destination buffer too short for string\n");
+		{
+			LM_ERR("destination STRING buffer too short (have %d, need %d)\n",
+			       *_len, l);
 			return -4;
 		}
 		else
@@ -112,7 +114,8 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		l = VAL_STR(_v).len;
 		if (*_len < l)
 		{
-			LM_ERR("Destination buffer too short for str\n");
+			LM_ERR("destination STR buffer too short (have %d, need %d)\n",
+			       *_len, l);
 			return -5;
 		}
 		else
@@ -139,7 +142,8 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 		l = VAL_BLOB(_v).len;
 		if (*_len < l)
 		{
-			LM_ERR("Destination buffer too short for blob\n");
+			LM_ERR("destination BLOB buffer too short (have %d, need %d)\n",
+			       *_len, l);
 			return -7;
 		}
 		else
