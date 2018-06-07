@@ -363,7 +363,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	urecord_t* r;
 	str aor, uri;
 	ucontact_t *ct, **ptr;
-	int max_latency, ruri_is_pushed = 0, regexp_flags = 0;
+	int max_latency = 0, ruri_is_pushed = 0, regexp_flags = 0;
 	unsigned int flags;
 	int rc, ret = -1;
 	str flags_s, sip_instance = STR_NULL, call_id = STR_NULL;
