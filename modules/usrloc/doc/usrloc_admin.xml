@@ -96,6 +96,12 @@
 		MongoDB and Cassandra. Of these two, only the MongoDB OpenSIPS driver
 		has been so far extended to implement the required NoSQL API endpoints.
 		</para>
+		<para>
+		The <ulink url="http://www.opensips.org/Documentation/Tutorials-Distributed-User-Location-Federation">
+			<citetitle>federated user location tutorial</citetitle></ulink>
+		contains precise details on how to achieve this setup (including High
+		Availability support).
+		</para>
 	</section>
 	<section id="full-sharing-topology" xreflabel="Full Sharing Topology">
 		<title>"Full Sharing" Topology</title>
@@ -133,6 +139,12 @@
 		writing are MongoDB and Cassandra. Of these two, only the MongoDB
 		OpenSIPS driver has been so far extended to implement the required
 		NoSQL API endpoints.
+		</para>
+		<para>
+		The <ulink url="http://www.opensips.org/Documentation/Tutorials-Distributed-User-Location-Full-Sharing">
+			<citetitle>"full sharing" user location tutorial</citetitle></ulink>
+		contains precise details on how to achieve this setup (including full
+		NoSQL storage support).
 		</para>
 	</section>
 	<section id="n-contact-pings-problem" xreflabel="N contact pings problem">
