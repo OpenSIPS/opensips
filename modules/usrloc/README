@@ -269,6 +269,10 @@ Chapter 1. Admin Guide
    Of these two, only the MongoDB OpenSIPS driver has been so far
    extended to implement the required NoSQL API endpoints.
 
+   The federated user location tutorial contains precise details
+   on how to achieve this setup (including High Availability
+   support).
+
 1.2.2. "Full Sharing" Topology
 
    A fully sharing user location propagates (broadcasts) contact
@@ -302,6 +306,10 @@ Chapter 1. Admin Guide
    abstractions at the time of writing are MongoDB and Cassandra.
    Of these two, only the MongoDB OpenSIPS driver has been so far
    extended to implement the required NoSQL API endpoints.
+
+   The "full sharing" user location tutorial contains precise
+   details on how to achieve this setup (including full NoSQL
+   storage support).
 
 1.2.3. "N Contact Pings" Problem
 
