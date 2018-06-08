@@ -1,6 +1,6 @@
 [Unit]
 Description=OpenSIPS SIP Server
-After=network.target mysqld.service postgresql.service rtpproxy.service
+After=network.target
 
 [Service]
 Type=forking
@@ -8,13 +8,17 @@ User=opensips
 Group=opensips
 RuntimeDirectory=opensips
 RuntimeDirectoryMode=775
-Environment=P_MEMORY=32 S_MEMORY=32
+Environment=P_MEMORY=128 S_MEMORY=2048
 EnvironmentFile=-/etc/default/opensips
 PIDFile=%t/opensips/opensips.pid
-ExecStart=/usr/sbin/opensips -P %t/opensips/opensips.pid -f /etc/opensips/opensips.cfg -m $S_MEMORY -M $P_MEMORY $OPTIONS
+ExecStart=/usr/sbin/opensips -P %t/opensips/opensips.pid -f /etc/opensips/opensips.cfg -m $S_MEMORY -M $P_MEMORY -w /tmp/ $OPTIONS
 ExecStartPre=/usr/sbin/opensips -c -f /etc/opensips/opensips.cfg
 Restart=always
-TimeoutStopSec=30s
+RestartSec=10
+TimeoutStartSec=60
+TimeoutStopSec=30
+LimitCORE=infinity
+LimitNOFILE=100000
 
 [Install]
 WantedBy=multi-user.target
