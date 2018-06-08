@@ -122,17 +122,26 @@ sudo yum install json-c-devel mongo-c-driver-devel
 
    Example 1.3. Set cachedb_url parameter
 ...
-modparam("cachedb_mongodb", "cachedb_url","mongodb:instance1://localhost
-:27017/db.collection")
-modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4
-:27017,2.3.4.5:27017,3.4.5.6:27017/db.collection?replicaSet=test")
+# Connecting to a local mongod instance (single instance)
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:instance1://localhost:27017/opensipsDB.dialog")
+
+# Connecting to a local mongos instance (routes to a MongoDB cluster)
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost:27017/opensipsDB.dialog")
+
+# Connecting to a local mongos instance with failover to an alternate bo
+x
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost:27017,10.0.0.10:27017/opensipsDB.d
+ialog")
 ...
 
    Example 1.4. Use MongoDB servers
 ...
-cache_store("mongodb:group1", "key", "$ru value");
-cache_fetch("mongodb:replicaset1", "key", $avp(10));
-cache_remove("mongodb:cluster1", "key");
+cache_store("mongodb:instance1", "key", "$ru value");
+cache_fetch("mongodb:instance2", "key", $avp(10));
+cache_remove("mongodb:cluster", "key");
 ...
 
 1.5.2. exec_threshold (int)

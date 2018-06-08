@@ -164,8 +164,17 @@ sudo yum install json-c-devel mongo-c-driver-devel
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_mongodb", "cachedb_url","mongodb:instance1://localhost:27017/db.collection")
-modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2.3.4.5:27017,3.4.5.6:27017/db.collection?replicaSet=test")
+# Connecting to a local <emphasis>mongod</emphasis> instance (single instance)
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:instance1://localhost:27017/opensipsDB.dialog")
+
+# Connecting to a local <emphasis>mongos</emphasis> instance (routes to a MongoDB cluster)
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost:27017/opensipsDB.dialog")
+
+# Connecting to a local <emphasis>mongos</emphasis> instance with failover to an alternate box
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost:27017,10.0.0.10:27017/opensipsDB.dialog")
 ...
 	</programlisting>
 		</example>
@@ -174,9 +183,9 @@ modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2
 		<title>Use MongoDB servers </title>
 		<programlisting format="linespecific">
 ...
-cache_store("mongodb:group1", "key", "$ru value");
-cache_fetch("mongodb:replicaset1", "key", $avp(10));
-cache_remove("mongodb:cluster1", "key");
+cache_store("mongodb:instance1", "key", "$ru value");
+cache_fetch("mongodb:instance2", "key", $avp(10));
+cache_remove("mongodb:cluster", "key");
 ...
 	</programlisting>
 		</example>
