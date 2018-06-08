@@ -382,7 +382,7 @@ static void kill_all_children(int signum)
 		return;
 
 	for (r = 1; r < counted_processes; r++) {
-		if (pt[r].pid == -1)
+		if (pt[r].pid == -1 || (pt[r].flags & OSS_TAKING_A_DUMP))
 			continue;
 
 		/* as the PIDs are filled in by child processes, a 0 PID means
@@ -404,7 +404,7 @@ static void kill_all_children(int signum)
 static void sig_alarm_abort(int signo)
 {
 	/* LOG is not signal safe, but who cares, we are abort-ing anyway :-) */
-	LM_CRIT("BUG - shutdown timeout triggered, dying...");
+	LM_CRIT("BUG - shutdown timeout triggered, dying...\n");
 	abort();
 }
 
@@ -435,7 +435,6 @@ static void shutdown_opensips( int status )
 	pid_t  proc;
 	int i, n, p;
 	int chld_status;
-	const unsigned int shutdown_time = 60; /* one minute close timeout */
 
 	set_osips_state( STATE_TERMINATING );
 
@@ -465,7 +464,7 @@ static void shutdown_opensips( int status )
 	}
 
 	/* now wait for the processes to finish */
-	i = 500; /* max 1000 iterations of 10 miliseconds -> 5 secs */
+	i = GRACEFUL_SHUTDOWN_TIMEOUT * 100;
 	while( i && n ) {
 		proc = waitpid( -1, &chld_status, WNOHANG);
 		if (proc<=0) {
@@ -493,7 +492,7 @@ static void shutdown_opensips( int status )
 
 	/* Only one process is running now. Clean up and return overall status */
 	signal(SIGALRM, sig_alarm_abort);
-	alarm(shutdown_time);
+	alarm(SHUTDOWN_TIMEOUT - i / 100);
 	cleanup(1);
 	alarm(0);
 	signal(SIGALRM, SIG_IGN);
@@ -580,7 +579,26 @@ void handle_sigs(void)
 	sig_flag=0;
 }
 
+/* the initial SIGSEGV handler, provided by the OS */
+static struct sigaction sa_sys_segv;
+static char sa_sys_is_valid;
 
+static inline int restore_segv_handler(void)
+{
+	LM_DBG("restoring SIGSEGV handler...\n");
+
+	if (!sa_sys_is_valid)
+		return 1;
+
+	if (sigaction(SIGSEGV, &sa_sys_segv, NULL) < 0) {
+		LM_ERR("failed to restore system SIGSEGV handler\n");
+		return -1;
+	}
+
+	LM_DBG("successfully restored system SIGSEGV handler\n");
+
+	return 0;
+}
 
 /**
  * Exit regulary on a specific signal.
@@ -629,6 +647,12 @@ static void sig_usr(int signo)
 					pid = waitpid(-1, &status, WNOHANG);
 					LM_DBG("SIGCHLD received from %ld (status=%d), ignoring\n",
 						(long)pid,status);
+					break;
+			case SIGSEGV:
+					/* looks like we ate some spicy SIP */
+					pt[process_no].flags |= OSS_TAKING_A_DUMP;
+					if (restore_segv_handler() != 0)
+						exit(-1);
 		}
 	}
 }
@@ -641,7 +665,20 @@ static void sig_usr(int signo)
  */
 int install_sigs(void)
 {
-	/* added by jku: add exit handler */
+	struct sigaction act;
+
+	memset(&act, 0, sizeof act);
+
+	act.sa_handler = sig_usr;
+	if (sigaction(SIGSEGV, &act, &sa_sys_segv) < 0) {
+		LM_INFO("failed to install custom SIGSEGV handler -- corefiles must "
+		        "now be written within %d sec to avoid truncation!\n",
+		        GRACEFUL_SHUTDOWN_TIMEOUT);
+	} else {
+		LM_DBG("override SIGSEGV handler: success\n");
+		sa_sys_is_valid = 1;
+	}
+
 	if (signal(SIGINT, sig_usr) == SIG_ERR ) {
 		LM_ERR("no SIGINT signal handler can be installed\n");
 		goto error;
@@ -767,6 +804,10 @@ static int main_loop(void)
 	}
 
 	report_conditional_status( (!no_daemon_mode), 0);
+
+	/* no need to intercept SIGSEGV in attendant */
+	if (restore_segv_handler() < 0)
+		goto error;
 
 	for(;;){
 			handle_sigs();

@@ -76,6 +76,7 @@ int   count_init_children(int flags);
 #define OSS_FORK_NO_IPC        (1<<0)
 #define OSS_FORK_NO_LOAD       (1<<1)
 #define OSS_FORK_IS_EXTRA      (1<<2)
+#define OSS_TAKING_A_DUMP      (1<<3) /* this process is writing a corefile */
 
 pid_t internal_fork(char *proc_desc, unsigned int flags);
 
