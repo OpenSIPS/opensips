@@ -377,49 +377,29 @@ void cleanup(int show_status)
 static void kill_all_children(int signum)
 {
 	int r;
-	if (own_pgid) {
-		/* check that all processes initialized properly */
-		for (r=1; r<counted_processes; r++) {
-			while (pt[r].pid==0){
-				usleep(1000);
-			}
-		}
-		kill(0, signum);
-	} else if (pt)
-		for (r=1; r<counted_processes; r++) {
-			if (pt[r].pid==-1) continue;
-			/* as the PIDs are filled in by child processes, a 0 PID means
-			 * an un-initalized procees; killing an uninitialized proc is
-			 * very dangerous, so better wait for it to finish its init
-			 * sequance by checking when the pid is populated */
-			while (pt[r].pid==0) usleep(1000);
-			kill(pt[r].pid, signum);
-		}
+
+	if (!pt)
+		return;
+
+	for (r = 1; r < counted_processes; r++) {
+		if (pt[r].pid == -1)
+			continue;
+
+		/* as the PIDs are filled in by child processes, a 0 PID means
+		 * an un-initalized procees; killing an uninitialized proc is
+		 * very dangerous, so better wait for it to finish its init
+		 * sequence by blocking until the pid is populated */
+		while (pt[r].pid == 0)
+			usleep(1000);
+
+		kill(pt[r].pid, signum);
+	}
 }
 
 
 /**
- * Timeout handler during wait for children exit.
- * If this handler is called, a critical timeout has occurred while
- * waiting for the children to finish => we should kill everything and exit
- * \param signo signal for killing the children
- */
-static void sig_alarm_kill(int signo)
-{
-	kill_all_children(SIGKILL); /* this will kill the whole group
-								  including "this" process;
-								  for debugging replace with SIGABRT
-								  (but warning: it might generate lots
-								   of cores) */
-}
-
-
-/**
- * Timeout handler during wait for children exit.
- * like sig_alarm_kill, but the timeout has occurred when cleaning up,
- * try to leave a core for future diagnostics
- * \param signo signal for killing the children
- * \see sig_alarm_kill
+ * SIGALRM "timeout" handler during the attendant's final cleanup,
+ * try to leave a core for future diagnostics.
  */
 static void sig_alarm_abort(int signo)
 {
@@ -506,29 +486,18 @@ static void shutdown_opensips( int status )
 		}
 	}
 
-	alarm(shutdown_time);
-
 	if (i==0 && n!=0) {
-		/* whatever processes are still running are to be brutally 
-		 * terminated via SIGKILL */
 		LM_DBG("force termination for all processes\n");
 		kill_all_children(SIGKILL);
-		if (signal(SIGALRM, sig_alarm_kill) == SIG_ERR ) {
-			LM_ERR("could not install SIGALARM handler\n");
-			/* continue, the process will die anyway if no
-			 * alarm is installed which is exactly what we want */
-		}
-		LM_DBG("waiting for all processes\n");
-		/* wait for all the children to terminate*/
-		while(wait(&chld_status) > 0)
-			status |= chld_status;
 	}
 
-	/* cleanup & show status*/
+	/* Only one process is running now. Clean up and return overall status */
 	signal(SIGALRM, sig_alarm_abort);
+	alarm(shutdown_time);
 	cleanup(1);
 	alarm(0);
 	signal(SIGALRM, SIG_IGN);
+
 	dprint("Thank you for running " NAME "\n");
 	exit( status );
 }
