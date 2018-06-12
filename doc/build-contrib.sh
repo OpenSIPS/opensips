@@ -20,11 +20,22 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
 
-REBUILD_GLOBALS_ITV=20 # commits
-CACHE_FILE=/var/tmp/.opensips-build-contrib.cache
+### global OpenSIPS commit stats, self-generated on each "rebuild-proj-stats"
+__PROJ_COMMITS=15681
+__PROJ_LINES_ADD=1978534
+__PROJ_LINES_DEL=880641
+__LAST_REBUILD_SHA=84e02496e5f04bff4c98e3470e47215ba1a910a9
+
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 
+# be more verbose
 DEBUG=
+
+# display author emails in the resulting HTML
+SHOW_AUTHOR_EMAIL=
+
+# process all arguments (modules) supplied to build-contrib.sh in parallel
+PARALLEL_BUILD=
 
 # Update the display name of an author, create a name-only referencing shortcut
 # or link multiple emails of an author under a single identity
@@ -459,7 +470,7 @@ fix_authors=(
 
   # siptrace
   ["3d39c0b6fcc2ae698dd7ee7f3cd2646f07fcd4af"]="Sergio Gutierrez"
- 
+
   # sl
   ["86a3afd75396c3ce3e748c8d1e316115c9503317"]="Andreas Heise"
 
@@ -517,8 +528,8 @@ fix_authors=(
   ["eae1d5a75118f919e4d0f707a8272e5301552a42"]="Romanov Vladimir <VRomanov@yota.ru>"
 )
 
-# "Maintenance" commits which should be ignored: merge commits, auto-generated
-# files, etc.
+# Commits which should be ignored: merge commits, auto-generated
+# files, copy-pasted libraries, etc.
 declare -A skip_commits
 skip_commits=(
   ["d88a1e2f6df5e591dd4162e2fa2e6e08d93e1c96"]=1 # 13 Jun 2005, initial import
@@ -529,6 +540,8 @@ skip_commits=(
   ["d41d30a8af8b79f00947dfc9600699f62b210d4d"]=1 # 16 Jun 2005, merge w/ SER
   ["d55ce8ffc86dd433f4860d5867d03d484312d954"]=1 # 16 Jun 2005, merge w/ SER
   ["442a83e55bb475637e75fc904f998e6d585bd437"]=1 # 16 Jun 2005, merge w/ SER
+  ["8fe24ec1990a1c468fcf8490228c2fcd42a15121"]=1 # Jan 2017, import FS ESL
+  ["c3e4da1206aa80b30eb8c3c7e2a6440c6b20fd3f"]=1 # Jun 2018, contributors.xml
 )
 
 mk_git_handle() {
@@ -545,23 +558,49 @@ normalize_arrays() {
     auth_name=$(grep -oE "^[^<]*" <<< "$author" | sed 's/\s\+$//g')
     [[ ! "$auth_name" =~ ^(root|NAME)$ ]] && \
       author_aliases["$auth_name"]=${author_aliases["$author"]}
-  
+
     auth_name_rhs=$(grep -oE "^[^<]*" <<< "${author_aliases["$author"]}" | sed 's/\s\+$//g')
     [[ ! "$auth_name_rhs" =~ ^(root|NAME)$ ]] && \
       author_aliases["$auth_name_rhs"]=${author_aliases["$author"]}
   done
-  
+
   # normalize the "github_handles" array (include aliases)
   for author in "${!github_handles[@]}"; do
     [ -n "${author_aliases[$author]}" ] && \
       github_handles["${author_aliases[$author]}"]="${github_handles[$author]}"
   done
-  
-  [ -n "$DEBUG" ] && {
+
+  if [ -n "$DEBUG" ]; then
     for author in "${!author_aliases[@]}"; do
       echo "$author: ${author_aliases["$author"]}"
     done | sort
-  }
+  fi
+}
+
+rebuild_proj_commit_stats() {
+  __PROJ_COMMITS=0
+  __PROJ_LINES_ADD=0
+  __PROJ_LINES_DEL=0
+
+  echo "Summing up all OpenSIPS commits! :-O"
+
+  for sha in $(git log --reverse --format=%H); do
+    [ -n "${skip_commits[$sha]}" ] && continue
+
+    lines=($(git show $sha --format= --numstat \
+		| awk '{a+=$1; r+=$2}END{print a" "r}'))
+    [ -z "${lines[0]}" ] && continue
+
+    __PROJ_COMMITS=$((__PROJ_COMMITS + 1))
+    __PROJ_LINES_ADD=$(($__PROJ_LINES_ADD + ${lines[0]}))
+    __PROJ_LINES_DEL=$(($__PROJ_LINES_DEL + ${lines[1]}))
+	echo -en "\rProcessing commit #$__PROJ_COMMITS"
+  done
+
+  sed -i "s/^__PROJ_COMMITS.*/__PROJ_COMMITS=$__PROJ_COMMITS/" $0
+  sed -i "s/^__PROJ_LINES_ADD=.*/__PROJ_LINES_ADD=$__PROJ_LINES_ADD/" $0
+  sed -i "s/^__PROJ_LINES_DEL=.*/__PROJ_LINES_DEL=$__PROJ_LINES_DEL/" $0
+  sed -i "s/^__LAST_REBUILD_SHA=.*/__LAST_REBUILD_SHA=$(git log -1 --format=%H)/" $0
 }
 
 # $1 - module name, e.g.: "tm", "cachedb_mongodb"
@@ -582,9 +621,9 @@ declare -A last_commit
 
 for sha in $(git log --reverse --format=%H modules/$1); do
   [ -n "${skip_commits[$sha]}" ] && continue
+  tmp_file=$(mktemp $TMP_FILE.XXXXXXX)
 
-  #show="$(git show $sha -b --numstat)"
-  show="$(git show $sha -b --format="$(echo -e "%an <%ae>\n%ai")" --numstat)"
+  show="$(git show $sha -b --format="$(echo -e "%an <%ae>")" --numstat | grep -v "modules/.*README")"
 
   # grab the overrided author or just the commit author
   if [ -n "${fix_authors[$sha]}" ]; then
@@ -593,26 +632,26 @@ for sha in $(git log --reverse --format=%H modules/$1); do
     author=$(echo "$show" | head -1)
   fi
 
-  date=$(sed -n '2p' <<< "$show")
-
   # convert any author aliases
   [ -n "${author_aliases[$author]}" ] && author="${author_aliases[$author]}"
 
-  echo "$1: $sha - $date - $author"
-  added="$(echo "$show" | grep -E "modules/.*$1" | awk '{s+=$1}END{print s}')"
-  deleted="$(echo "$show" | grep -E "modules/.*$1" | awk '{s+=$2}END{print s}')"
+  commit_date=$(git show --format=%aD --no-patch $sha | awk '{print $2","$3","$4}')
+
+  added="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$1}END{print s}')"
+  deleted="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$2}END{print s}')"
+
+  echo "$1: $sha - ${commit_date//,/ } - $author - ${added:-0}++ ${deleted:-0}--"
 
   commits["$author"]=$((${commits["$author"]:-0} + 1))
-  add["$author"]=$((${add["$author"]:-0} + $added))
-  del["$author"]=$((${del["$author"]:-0} + $deleted))
-  commit_date=$(git show --format=%aD --no-patch $sha | awk '{print $2","$3","$4}')
+  add["$author"]=$((${add["$author"]:-0} + ${added:-0}))
+  del["$author"]=$((${del["$author"]:-0} + ${deleted:-0}))
 
   [ -z "${first_commit["$author"]}" ] && first_commit["$author"]="$commit_date"
   last_commit["$author"]="$commit_date"
 done
 
 for i in "${!commits[@]}"; do
-  score[$i]=$(python -c "from math import ceil; print(int(${commits[$i]} + ceil(${add[$i]} / ($ta/float($tcommits))) + ceil(${del[$i]} / ($td/float($tcommits)))))")
+  score[$i]=$(python -c "from math import ceil; print(int(${commits[$i]} + ceil(${add[$i]} / ($__PROJ_LINES_ADD/float($__PROJ_COMMITS))) + ceil(${del[$i]} / ($__PROJ_LINES_DEL/float($__PROJ_COMMITS)))))")
 done
 
 declare -A sorted_scores
@@ -620,7 +659,7 @@ declare -A sorted_scores
 lc_bak=$LC_ALL; export LC_ALL=C
 for i in "${!score[@]}"; do
   echo "$i,${score[$i]},${commits[$i]},${add[$i]},${del[$i]},${first_commit[$i]},${last_commit[$i]}"
-done | sort -t, -k2nr -k3nr -k4nr -k5nr >$TMP_FILE
+done | sort -t, -k2nr -k3nr -k4nr -k5nr >$tmp_file
 export LC_ALL=$lc_bak
 
 # Generate table #1 (by commit statistics)
@@ -654,7 +693,7 @@ while read line; do
   gh=$(mk_git_handle "$author")
   [[ "$author" =~ ^@ ]] && author=
 
-  if [ -n "$DEBUG" ]; then
+  if [ -n "$SHOW_AUTHOR_EMAIL" ]; then
     author_line="<entry>$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh</entry>"
   else
     author_line="<entry>$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh</entry>"
@@ -671,17 +710,17 @@ while read line; do
 	</row>
 EOF
   index=$(($index+1))
-done < $TMP_FILE
+done < $tmp_file
 
 cat <<EOF >>modules/$1/doc/contributors.xml
 	</tbody>
 	</tgroup>
 	</table>
 	<para>
-	    <emphasis>(1) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we try our best to count the work on behalf of the proper owner, as per the "fix_authors" array in opensips/build-contrib.sh. If you identify any patches/commits which should be counted towards your email address, rather than the importers' email address, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends the "fix_authors" array.
+	    <emphasis>(1) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we try our best to count the work on behalf of the proper owner, as per the "fix_authors" array in opensips/doc/build-contrib.sh. If you identify any patches/commits which should be counted towards your email address, rather than the importers' email address, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends the "fix_authors" array.
 	</para>
 	<para>
-	    <emphasis>(2) ignoring whitespace fixes</emphasis>
+	    <emphasis>(2) ignoring whitespace fixes and auto-generated files</emphasis>
 	</para>
 	<para>
 	    <emphasis>(3) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
@@ -710,7 +749,7 @@ EOF
 lc_bak=$LC_ALL; export LC_ALL=C
 for i in "${!score[@]}"; do
   echo "$i,${first_commit[$i]},${last_commit[$i]}"
-done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n >$TMP_FILE
+done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n >$tmp_file
 export LC_ALL=$lc_bak
 
 
@@ -720,7 +759,7 @@ while read line; do
   gh=$(mk_git_handle "$author")
   [[ "$author" =~ ^@ ]] && author=
 
-  if [ -n "$DEBUG" ]; then
+  if [ -n "$SHOW_AUTHOR_EMAIL" ]; then
     author_line="<entry>$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh</entry>"
   else
     author_line="<entry>$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh</entry>"
@@ -734,7 +773,7 @@ while read line; do
 	</row>
 EOF
   index=$(($index+1))
-done < $TMP_FILE
+done < $tmp_file
 
 cat <<EOF >>modules/$1/doc/contributors.xml
 	</tbody>
@@ -747,47 +786,46 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 
 </chapter>
 EOF
+
+rm $tmp_file
 }
 
 ###############################################################################
 
-normalize_arrays
+set -e
 
-do_rebuild=true
-if [ -r $CACHE_FILE ]; then
-  read sha tcommits ta td < $CACHE_FILE
-  last_build_age=$(git log --pretty=oneline $sha..HEAD | wc -l)
-  [ $last_build_age -le $REBUILD_GLOBALS_ITV ] && do_rebuild=false
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 (<module>[, <module>[, ...]] | rebuild-proj-stats)"
+  exit 0
 fi
 
-if $do_rebuild; then
-  tcommits=0
-  ta=0
-  td=0
+normalize_arrays
 
-  for sha in $(git log --reverse --format=%H); do
-    lines=($(git show $sha --format= --numstat \
-		| awk '{a+=$1; r+=$2}END{print a" "r}'))
-    [ -z "${lines[0]}" ] && continue
+# if not already done, graft the entire git history of the SER project
+if ! git cat-file -e f06ade585363de30dc33d37e909c0d7444092d74; then
+  remote=$(git remote -v | grep -i "OpenSIPS/opensips.git.*fetch" | awk '{print $1}')
+  git fetch ${remote:-origin} 'refs/replace/*:refs/replace/*'
+fi
 
-    tcommits=$((tcommits + 1))
-    ta=$(($ta + ${lines[0]}))
-    td=$(($td + ${lines[1]}))
-  done
-
-  unset sha
+if [[ "$1" =~ rebuild-proj-stats ]]; then
+  rebuild_proj_commit_stats
+  exit 0
 fi
 
 while [ -n "$1" ]; do
-  gen_module_contributors $1
+  if [ -n "$PARALLEL_BUILD" ]; then
+    gen_module_contributors "$(basename $1)" &
+  else
+    gen_module_contributors "$(basename $1)"
+  fi
+
   if [ -n "$DEBUG" ]; then
     make modules-docbook-html modules=modules/$1
-    chromium-browser "file:///home/liviu/src/opensips-liviuchircu/modules/$1/doc/$1.html#contributors"
+    xdg-open "file://$(pwd)/modules/$1/doc/$1.html#contributors"
   fi
   shift
 done
 
-echo "Total: $tcommits commits. $ta++, ${td}--"
-echo "$(git log -1 --format=%H) $tcommits $ta $td" >$CACHE_FILE
-
-exit 0
+if [ -n "$DEBUG" ]; then
+  echo "Total: $__PROJ_COMMITS commits. $__PROJ_LINES_ADD++, ${__PROJ_LINES_DEL}--"
+fi

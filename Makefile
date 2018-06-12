@@ -248,12 +248,7 @@ git-dir:
 
 .PHONY: modules-contrib
 modules-contrib: git-dir
-	for mod in $(modules); do \
-	  NM=`basename $$mod`; \
-	  echo "Building contributor statistics for $$NM..."; \
-	  $(shell ./doc/build-contrib.sh $(NM)) \
-	  echo "DONE!"; \
-	done
+	@set -e; ./doc/build-contrib.sh $(modules)
 
 .PHONY: modules-readme
 modules-readme: tool-lynx tool-xsltproc
