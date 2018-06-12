@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "xmpp_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY cfg SYSTEM "opensips-xmpp.cfg">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,32 +18,14 @@
     <bookinfo>
 	<title>xmpp Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Andreea</firstname>
-		<surname>Spirea</surname>
-			<email>team@voice-system.ro</email>
-	    </author>
-	    <editor>
-		<firstname>Andreea</firstname>
-		<surname>Spirea</surname>
-			<email>team@voice-system.ro</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006-2008</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006-2008 &voicesystem;</para>
     
 </book>

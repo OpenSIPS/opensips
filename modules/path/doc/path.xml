@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "path_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,37 +17,14 @@
     <bookinfo>
 	<title>path Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Andreas</firstname>
-		<surname>Granig</surname>
-		<affiliation><orgname>Inode GmbH</orgname></affiliation>
-		<address>
-		    <email>andreas.granig@inode.info</email>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Andreas</firstname>
-		<surname>Granig</surname>
-		<address>
-		    <email>andreas.granig@inode.info</email>
-		</address>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006</year>
-	    <holder>Inode GmbH</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006 Inode GmbH</para>
     
 </book>

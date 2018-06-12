@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "jsonrpc_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,30 +17,13 @@
 	<bookinfo>
 	<title>JSON-RPC Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Razvan</firstname>
-		<surname>Crainea</surname>
-		<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-		<address>
-		<email>razvan@opensips.org</email>
-		<otheraddr>
-			&osipssol;
-		</otheraddr>
-		</address>
-		</author>
-		<editor>
-		<firstname>Razvan</firstname>
-		<surname>Crainea</surname>
-		<address>
-			<email>razvan@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&faq;
-	
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2018 &osipssol;</para>
 </book>

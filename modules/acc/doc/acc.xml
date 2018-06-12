@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "acc_admin.xml">
 <!ENTITY faq SYSTEM "acc_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -15,51 +16,15 @@
 	<bookinfo>
 	<title>Acc Module</title>
 	<productname class="trade">&osips;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Jiri</firstname>
-		<surname>Kuthan</surname>
-		</author>
-		<author>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		</author>
-		<author>
-		<firstname>Ramona-Elena</firstname>
-		<surname>Modroiu</surname>
-		</author>
-		<editor>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		</editor>
-		<editor>
-		<firstname>Irina-Maria</firstname>
-		<surname>Stanescu</surname>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2002-2003</year>
-		<year>2003</year>
-		<holder>FhG FOKUS</holder>
-	</copyright>
-	<copyright>
-		<year>2004-2009</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<copyright>
-		<year>2009-2013</year>
-		<holder>&osipssolname;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
-	
+
 	&admin;
 	&faq;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2009-2013 &osipssolname;</para>
+	<para>&copyright; 2004-2009 &voicesystem;</para>
+	<para>&copyright; 2002-2003 &fhg;</para>
 </book>

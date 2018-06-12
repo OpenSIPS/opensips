@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "cachedb_sql_admin.xml">
 <!ENTITY faq SYSTEM "cachedb_sql_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -13,39 +14,17 @@
 ]>
 
 <book>
-<bookinfo>
-<title>cachedb_sql Module</title>
-<productname class="trade">&osipsname;</productname>
-<authorgroup>
-<author>
-<firstname>Vladut-Stefan</firstname>
-<surname>Paiu</surname>
-<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-<address>
-<email>vladpaiu@opensips.org</email>
-<otheraddr>
-<ulink url="http://www.opensips.org">http://www.opensips.org</ulink>
-</otheraddr>
-</address>
-</author>
-<editor>
-<firstname>Vladut-Stefan</firstname>
-<surname>Paiu</surname>
-<address>
-<email>vladpaiu@opensips.org</email>
-</address>
-</editor>
-</authorgroup>
-<copyright>
-<year>2013</year>
-<holder>&osipssol;</holder>
-</copyright>
-</bookinfo>
-<toc></toc>
+	<bookinfo>
+	<title>cachedb_sql Module</title>
+	<productname class="trade">&osipsname;</productname>
+	</bookinfo>
+	<toc></toc>
 
-&admin;
-&faq;
+	&admin;
+	&faq;
+	&contrib;
 
-
+	&docCopyrights;
+	<para>&copyright; 2013 &osipssol;</para>
 </book>
 

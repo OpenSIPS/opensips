@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "usrloc_admin.xml">
 <!ENTITY devel SYSTEM "usrloc_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,71 +18,17 @@
 	<bookinfo>
 	<title>usrloc Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-			<firstname>Jan</firstname>
-			<surname>Janak</surname>
-			<affiliation><orgname>&fhg;</orgname></affiliation>
-				<email>jan@iptel.org</email>
-		</author>
-		<author>
-			<firstname>Liviu</firstname>
-			<surname>Chircu</surname>
-			<email>liviu@opensips.org</email>
-			<affiliation><orgname>&osipssolname;</orgname></affiliation>
-		</author>
-		<editor>
-			<firstname>Jan</firstname>
-			<surname>Janak</surname>
-			<address>
-				<email>jan@iptel.org</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Bogdan-Andrei</firstname>
-			<surname>Iancu</surname>
-			<address>
-				<email>bogdan@opensips.org</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Ovidiu</firstname>
-			<surname>Sas</surname>
-			<address>
-				<email>osas@voipembedded.com</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Liviu</firstname>
-			<surname>Chircu</surname>
-			<address>
-				<email>liviu@opensips.org</email>
-			</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2003</year>
-		<holder>&fhg;</holder>
-	</copyright>
-	<copyright>
-		<year>2005-2008</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<copyright>
-	    <year>2018</year>
-	    <holder>&osipssol;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&devel;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2018 &osipssol;</para>
+	<para>&copyright; 2005-2008 &voicesystem;</para>
+	<para>&copyright; 2003 &fhg;</para>
 	
 </book>

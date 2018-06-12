@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "rr_admin.xml">
 <!ENTITY devel SYSTEM "rr_devel.xml">
 <!ENTITY faq SYSTEM "rr_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,56 +18,16 @@
 	<bookinfo>
 	<title>rr Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Jan</firstname>
-		<surname>Janak</surname>
-		<affiliation><orgname>&fhg;</orgname></affiliation>
-		<address>
-			<email>jan@iptel.org</email>
-		</address>
-		</author>
-		<author>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Jan</firstname>
-		<surname>Janak</surname>
-		<address>
-			<email>jan@iptel.org</email>
-		</address>
-		</editor>
-		<editor>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2003</year>
-		<holder>&fhg;</holder>
-	</copyright>
-	<copyright>
-		<year>2005</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&devel;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2005 &voicesystem;</para>
+	<para>&copyright; 2003 &fhg;</para>
 	
 </book>

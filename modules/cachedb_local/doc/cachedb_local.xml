@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "cachedb_local_admin.xml">
 <!ENTITY faq SYSTEM "cachedb_local_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -13,55 +14,18 @@
 ]>
 
 <book>
-    <bookinfo>
-	<title>LOCALCACHE</title>
+	<bookinfo>
+	<title>cachedb_local Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-		<affiliation><orgname>&osips;</orgname></affiliation>
-		<address>
-		<email>anca@opensips.org</email>
-		<otheraddr>
-		<ulink url="http://www.opensips.org">http://opensips.org</ulink>
-		</otheraddr>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-		<address>
-		    <email>anca@opensips.org</email>
-		</address>
-	    </editor>
-	    <editor>
-		<firstname>Vladut-Stefan</firstname>
-		<surname>Paiu</surname>
-		<address>
-		    <email>vladpaiu@opensips.org</email>
-		</address>
-	    </editor>
-	  	</authorgroup>
-	<copyright>
-		<year>2009</year>
-		<holder>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
-  </bookinfo>
-    <toc></toc>
-    
-    &admin;
-    &faq;
-    
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2009 Anca-Maria Vamanu</para>
 </book>
 
 

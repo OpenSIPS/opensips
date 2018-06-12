@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "xml_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 
 <!-- Include general documentation entities -->
@@ -13,25 +14,15 @@
 ]>
 
 <book>
-    <bookinfo>
+	<bookinfo>
 	<title>XML Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Robert-Vladut</firstname>
-		<surname>Patrascu</surname>
-		<email>vladp@opensips.org</email>
-	    </author>
-	</authorgroup>
-	<copyright>
-		<year>2017</year>
-		<holder>&osips; Solutions</holder>
-	</copyright>
-  </bookinfo>
-    <toc></toc>
-    
-    &admin;
-       
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2017 &osipssol;</para>
 </book>
-
-

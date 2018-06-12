@@ -8,6 +8,7 @@
 
 <!ENTITY speeddialsql SYSTEM "speeddial.sql">
 <!ENTITY speeddialcfg SYSTEM "speeddial.cfg">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -19,37 +20,14 @@
     <bookinfo>
 	<title>SpeedDial Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Elena-Ramona</firstname>
-		<surname>Modroiu</surname>
-		<email>ramona@rosdev.ro</email>
-		<address>
-		<otheraddr>
-		<ulink url="http://www.rosdev.ro">http://www.rosdev.ro</ulink>
-		</otheraddr>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Elena-Ramona</firstname>
-		<surname>Modroiu</surname>
-		    <email>ramona@rosdev.ro</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2004</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2004 &voicesystem;</para>
     
 </book>
