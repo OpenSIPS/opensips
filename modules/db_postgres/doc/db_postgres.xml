@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "db_postgres_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,39 +15,16 @@
 
 <book>
     <bookinfo>
-	<title>postgres Module</title>
+	<title>db_postgres Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Greg</firstname>
-		<surname>Fausak</surname>
-		<affiliation><orgname>August.net</orgname></affiliation>
-		<address>
-		    <email>greg@august.net</email>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Greg</firstname>
-		<surname>Fausak</surname>
-		<address>
-		    <email>greg@august.net</email>
-		</address>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2003</year>
-	    <holder>Greg Fausak</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5898 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2003 Greg Fausak</para>
     
 </book>

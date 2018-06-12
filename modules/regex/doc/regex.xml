@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "regex_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,33 +17,15 @@
 	<bookinfo>
 		<title>Regex Module</title>
 		<productname class="trade">&osipsname;</productname>
-		<authorgroup>
-			<author>
-				<firstname>Iñaki</firstname>
-				<surname>Baz Castillo</surname>
-				<email>ibc@aliax.net</email>
-			</author>
-			<editor>
-				<firstname>Iñaki</firstname>
-				<surname>Baz Castillo</surname>
-				<email>ibc@aliax.net</email>
-			</editor>
-		</authorgroup>
-		<copyright>
-			<year>2009</year>
-			<holder>Iñaki Baz Castillo</holder>
-		</copyright>
-		<revhistory>
-			<revision>
-				<revnumber>$Revision: 5901 $</revnumber>
-				<date>$Date$</date>
-			</revision>
-		</revhistory>
 	</bookinfo>
 	<toc></toc>
 
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2009 Iñaki Baz Castillo</para>
 
 </book>
 

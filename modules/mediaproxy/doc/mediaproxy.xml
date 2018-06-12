@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "mediaproxy_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -12,34 +13,15 @@
 ]>
 
 <book>
-  <bookinfo>
-  <title>Mediaproxy Module</title>
-  <authorgroup>
-    <author>
-    <firstname>Dan</firstname>
-    <surname>Pascu</surname>
-    <email>dan@ag-projects.com</email>
-    </author>
-    <editor>
-    <firstname>Dan</firstname>
-    <surname>Pascu</surname>
-    <email>dan@ag-projects.com</email>
-    </editor>
-  </authorgroup>
-  <copyright>
-    <year>2004</year>
-    <holder>Dan Pascu</holder>
-  </copyright>
-  <revhistory>
-    <revision>
-    <revnumber>$Revision: 5901 $</revnumber>
-    <date>$Date$</date>
-    </revision>
-  </revhistory>
-  </bookinfo>
-  <toc></toc>
+	<bookinfo>
+	<title>Mediaproxy Module</title>
+	</bookinfo>
+	<toc></toc>
 
-  &admin;
-  &faq;
+	&admin;
+	&faq;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2004 Dan Pascu</para>
 </book>

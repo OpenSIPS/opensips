@@ -33,10 +33,14 @@
 <!ENTITY adminguide "Admin Guide">
 <!ENTITY develguide "Developer Guide">
 <!ENTITY faqguide "Frequently Asked Questions">
+<!ENTITY contributors "Contributors">
 
 <!ENTITY defaultdb "mysql://opensips:opensipsrw@localhost/opensips">
 <!ENTITY defaultrodb "mysql://opensipsro:opensipsro@localhost/opensips">
 <!ENTITY exampledb "dbdriver://username:password@dbhost/dbname">
+
+<!ENTITY docCopyrights '<para><emphasis>doc copyrights:</emphasis></para>'>
+<!ENTITY copyright "Copyright ©">
 
 <!-- Often used acronyms -->
 

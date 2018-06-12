@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "options_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,37 +17,14 @@
     <bookinfo>
 	<title>Options Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Nils</firstname>
-		<surname>Ohlmeier</surname>
-		<affiliation><orgname>FhG Fokus</orgname></affiliation>
-		<address>
-		    <email>nils@iptel.org</email>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Nils</firstname>
-		<surname>Ohlmeier</surname>
-		<address>
-		    <email>nils@iptel.org</email>
-		</address>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2003</year>
-	    <holder>FhG Fokus</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2003 &fhg;</para>
     
 </book>

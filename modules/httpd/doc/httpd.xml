@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "httpd_admin.xml">
 <!ENTITY devel SYSTEM "httpd_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,36 +18,16 @@
     <bookinfo>
 	<title>httpd Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-		<email>osas@voipembedded.com</email>
-	    </author>
-	    <editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2012-2013</year>
-	    <holder>
-		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
-	    </holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Rev: 8580 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
-    
+
     &admin;
     &devel;
     &faq;
-    
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2012-2013 <ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink></para>
 </book>
 
 

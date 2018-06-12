@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "pua_dialoginfo_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -13,61 +14,20 @@
 ]>
 
 <book>
-    <bookinfo>
+	<bookinfo>
 	<title>pua dialoginfo</title>
 	<productname class="trade">&osips;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </author>
-	    <editor>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </editor>
-	    <author>
-		<firstname>Klaus</firstname>
-		<surname>Darilion</surname>
-	    </author>
-	    <editor>
-		<firstname>Klaus</firstname>
-		<surname>Darilion</surname>
-	    </editor>
-	    <author>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-	    </author>
-	    <editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<copyright>
-	    <year>2008</year>
-	    <holder>Klaus Darilion IPCom</holder>
-	</copyright>
-	<copyright>
-	    <year>2014</year>
-	    <holder>
-		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
-	    </holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
-  </bookinfo>
-    <toc></toc>
-    
-    &admin;
-    &faq;
-    
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2014 <ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink></para>
+	<para>&copyright; 2008 Klaus Darilion IPCom</para>
+	<para>&copyright; 2006 &voicesystem;</para>
 </book>
 
 
