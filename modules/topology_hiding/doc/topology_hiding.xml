@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "topology_hiding_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,32 +17,14 @@
     <bookinfo>
 	<title>topology_hiding Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Vlad</firstname>
-		<surname>Paiu</surname>
-		<email>vladpaiu@opensips.org</email>
-	    </author>
-	    <editor>
-		<firstname>Vlad</firstname>
-		<surname>Paiu</surname>
-		    <email>vladpaiu@opensips.org</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2015</year>
-	    <holder>OpenSIPs Foundation</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 1 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2015 OpenSIPS Foundation</para>
     
 </book>

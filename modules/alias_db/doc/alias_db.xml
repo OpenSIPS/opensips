@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "alias_db_admin.xml">
 <!ENTITY faq SYSTEM "alias_db_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!ENTITY aliasdbsql SYSTEM "alias_db.sql">
 
@@ -17,30 +18,13 @@
 	<bookinfo>
 	<title>ALIAS_DB Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-			<firstname>Daniel-Constantin</firstname>
-			<surname>Mierla</surname>
-			<email>team@voice-system.ro</email>
-		</author>
-		<author>
-			<firstname>Elena-Ramona</firstname>
-			<surname>Modroiu</surname>
-			<email>team@voice-system.ro</email>
-		</author>
-		<editor>
-			<firstname>Daniel-Constantin</firstname>
-			<surname>Mierla</surname>
-			<email>team@voice-system.ro</email>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2005-2009</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2005-2009 &voicesystem;</para>
 </book>

@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "gflags_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,37 +15,14 @@
 <book>
 	<bookinfo>
 	<title>gflags Module</title>
-	<authorgroup>
-		<author>
-		<firstname>Jiri</firstname>
-		<surname>Kuthan</surname>
-		<email>jiri@iptel.org</email>
-		</author>
-		<author>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<email>bogdan@opensips.org</email>
-		</author>
-		<editor>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-		<email>miconda@gmail.com</email>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2004</year>
-		<holder>&fhg;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2004 &fhg;</para>
 
 </book>

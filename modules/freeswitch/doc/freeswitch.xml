@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "freeswitch_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,28 +15,12 @@
 <book>
     <bookinfo>
 	<title>freeswitch Module</title>
-	<authorgroup>
-	    <author>
-			<firstname>Liviu</firstname>
-			<surname>Chircu</surname>
-			<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-			<email>liviu@opensips.org</email>
-	    </author>
-		<editor>
-			<firstname>Liviu</firstname>
-			<surname>Chircu</surname>
-			<address>
-			<email>liviu@opensips.org</email>
-			</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-	    <year>2017</year>
-	    <holder>&osipssol;</holder>
-	</copyright>
     </bookinfo>
     <toc></toc>
 
-    &admin;
+	&admin;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2017 &osipssol;</para>
 </book>

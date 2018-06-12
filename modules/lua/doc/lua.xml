@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "lua_admin.xml">
 <!ENTITY api SYSTEM "lua_api.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -13,46 +14,16 @@
 ]>
 
 <book>
-    <bookinfo>
+	<bookinfo>
 	<title>lua Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Arnaud</firstname>
-		<surname>Chong</surname>
-		<address>
-		    <email>shine@achamo.net</email>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Eric</firstname>
-		<surname>Gouyer</surname>
-		<address>
-		    <email>folays@folays.net</email>
-		</address>
-	    </editor>
-	    <author>
-		<firstname>Eric</firstname>
-		<surname>Gouyer</surname>
-		<address>
-		    <email>folays@folays.net</email>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Arnaud</firstname>
-		<surname>Chong</surname>
-		<address>
-		    <email>shine@achamo.net</email>
-		</address>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006-2011</year>
-	</copyright>
     </bookinfo>
     <toc></toc>
-    
+
     &admin;
     &api;
-    
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006-2011 Arnaud Chong, Eric Gouyer</para>
 </book>

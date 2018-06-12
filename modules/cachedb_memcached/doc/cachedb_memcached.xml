@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "cachedb_memcached_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,58 +15,18 @@
 
 <book>
     <bookinfo>
-	<title>MEMCACHED</title>
+	<title>cachedb_memcached Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Andrei</firstname>
-		<surname>Dragus</surname>
-		<affiliation><orgname>&osips;</orgname></affiliation>
-		<address>
-		<email>andreidragus@yahoo.com</email>
-		<otheraddr>
-		<ulink url="http://www.opensips.org">http://opensips.org</ulink>
-		</otheraddr>
-		</address>
-	    </author>
-	    <editor>
-		<firstname>Andrei</firstname>
-		<surname>Dragus</surname>
-		<address>
-		    <email>andreidragus@yahoo.com</email>
-		</address>
-	    </editor>
-	    <editor>
-		<firstname>Vladut-Stefan</firstname>
-		<surname>Paiu</surname>
-		<address>
-		    <email>vladpaiu@opensips.org</email>
-		</address>
-	    </editor>
-	  	</authorgroup>
-	<copyright>
-		<year>2009</year>
-		<holder>
-		<firstname>Voice System </firstname>
-		</holder>
-	</copyright>
-	<copyright>
-		<year>2009</year>
-		<holder>
-		<firstname>Andrei Dragus </firstname>
-		</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2009 Andrei Dragus</para>
+	<para>&copyright; 2009 &voicesystem;</para>
     
 </book>
 

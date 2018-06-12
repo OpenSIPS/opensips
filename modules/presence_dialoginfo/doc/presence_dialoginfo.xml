@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "presence_dialoginfo_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY sql SYSTEM "presence_dialoginfo.sql">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,48 +18,14 @@
     <bookinfo>
 	<title>presence_dialoginfo Module</title>
 	<productname class="trade">&osips;</productname>
-	<authorgroup>
-		<author>
-			<firstname>Juha</firstname>
-			<surname>Heinanen</surname>
-			<email>jh@tutpro.com</email>
-		</author>
-			<firstname>Klaus</firstname>
-			<surname>Darilion</surname>
-			<email>klaus.darilion@mailinglists@pernau.at</email>
-		<author>
-		</author>
-		<editor>
-			<firstname>Juha</firstname>
-			<surname>Heinanen</surname>
-			<email>jh@tutpro.com</email>
-		</editor>
-		<editor>
-			<firstname>Klaus</firstname>
-			<surname>Darilion</surname>
-			<email>klaus.darilion@mailinglists@pernau.at</email>
-		</editor>
-	</authorgroup>
-	<copyright>
-	    <year>2007</year>
-	    <holder>Juha Heinanen</holder>
-	</copyright>
-	<copyright>
-	    <year>2008</year>
-	    <holder>Klaus Darilion, IPCom (Module implementation was partly sponsored by Silver Server (www.sil.at))</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
-  </bookinfo>
+	</bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
-    
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2008 Klaus Darilion, IPCom (Module implementation was partly sponsored by Silver Server (www.sil.at))</para>
+	<para>&copyright; 2007 Juha Heinanen</para>
 </book>
-
-

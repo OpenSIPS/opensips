@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "dns_cache_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -12,34 +13,17 @@
 ]>
 
 <book>
-<bookinfo>
-<title>dns_cache Module</title>
-<productname class="trade">&osipsname;</productname>
-<authorgroup>
-<author>
-<firstname>Vladut-Stefan</firstname>
-<surname>Paiu</surname>
-<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-<address>
-<email>vladpaiu@opensips.org</email>
-</address>
-</author>
-<editor>
-<firstname>Vladut-Stefan</firstname>
-<surname>Paiu</surname>
-<address>
-<email>vladpaiu@opensips.org</email>
-</address>
-</editor>
-</authorgroup>
-<copyright>
-<year>2012</year>
-<holder>&osipssol;</holder>
-</copyright>
-</bookinfo>
-<toc></toc>
+	<bookinfo>
+	<title>dns_cache Module</title>
+	<productname class="trade">&osipsname;</productname>
+	</bookinfo>
+	<toc></toc>
 
-&admin;
+	&admin;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2012 &osipssol;</para>
 
 </book>
 

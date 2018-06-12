@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "mi_fifo_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,31 +17,14 @@
 	<bookinfo>
 	<title>mi_fifo Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<affiliation><orgname>&osipssolname;</orgname></affiliation>
-		</author>
-		<editor>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2006</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006 &voicesystem;</para>
 	
 </book>

@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "event_rabbitmq_admin.xml">
 <!ENTITY faq SYSTEM "event_rabbitmq_faq.xml">
 <!ENTITY rabbitmqcfg SYSTEM "event_rabbitmq.cfg">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,34 +18,14 @@
 	<bookinfo>
 	<title>event_rabbitmq Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Razvan</firstname>
-		<surname>Crainea</surname>
-		<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-		<address>
-		<email>razvancrainea@opensips.org</email>
-		<otheraddr>
-			&osipssol;
-		</otheraddr>
-		</address>
-		</author>
-		<editor>
-		<firstname>Razvan</firstname>
-		<surname>Crainea</surname>
-		<address>
-			<email>razvancrainea@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2011</year>
-		<holder>&osipssol;</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2011 &osipssol;</para>
 	
 </book>

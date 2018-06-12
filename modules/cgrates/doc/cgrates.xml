@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "cgrates_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -15,23 +16,12 @@
 	<bookinfo>
 	<title>CGRateS Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Răzvan</firstname>
-		<surname>Crainea</surname>
-		<affiliation><orgname>OpenSIPS Project</orgname></affiliation>
-		<address>
-		<email>razvan@opensips.org</email>
-		</address>
-		</author>
-	</authorgroup>
-	<copyright>
-		<year>2017</year>
-		<holder>Răzvan Crainea</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
-	
+
 	&admin;
-	
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2017 Răzvan Crainea</para>
 </book>

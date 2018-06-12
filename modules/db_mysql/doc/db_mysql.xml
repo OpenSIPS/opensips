@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "db_mysql_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,32 +17,14 @@
     <bookinfo>
 	<title>mysql Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Jan</firstname>
-		<surname>Janak</surname>
-		<email>jan@iptel.org</email>
-	    </author>
-	    <editor>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-		    <email>miconda@gmail.com</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006 &voicesystem;</para>
     
 </book>

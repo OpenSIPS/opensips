@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "pua_usrloc_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,31 +17,15 @@
     <bookinfo>
 	<title>PUA Usrloc</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </author>
-	    <editor>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006 &voicesystem;</para>
     
 </book>
 

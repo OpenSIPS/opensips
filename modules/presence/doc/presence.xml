@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "presence_admin.xml">
 <!ENTITY devel SYSTEM "presence_devel.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,39 +17,15 @@
     <bookinfo>
 	<title>Presence Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </author>
-	    <editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-	    </editor>
-	    <editor>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </editor>
-	    <editor>
-		<firstname>Saul</firstname>
-		<surname>Ibarra Corretge</surname>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2006</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 9371 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
     
     &admin;
     &devel;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006 &voicesystem;</para>
     
 </book>
 
