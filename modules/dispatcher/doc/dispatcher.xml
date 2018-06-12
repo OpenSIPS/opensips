@@ -7,6 +7,7 @@
 
 <!ENTITY dispatcherlist SYSTEM "dispatcher.list">
 <!ENTITY dispatchercfg SYSTEM "dispatcher.cfg">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,51 +17,17 @@
 
 <book>
 	<bookinfo>
-	<title>DISPATCHER Module</title>
+	<title>dispatcher Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-			<firstname>Daniel-Constantin</firstname>
-			<surname>Mierla</surname>
-			<email>team@voice-system.ro</email>
-		</author>
-		<editor>
-			<firstname>Ovidiu</firstname>
-			<surname>Sas</surname>
-			<email>osas@voipembedded.com</email>
-		</editor>
-		<editor>
-			<firstname>Daniel-Constantin</firstname>
-			<surname>Mierla</surname>
-			<email>team@voice-system.ro</email>
-		</editor>
-		<editor>
-			<firstname>Carsten</firstname>
-			<surname>Bock</surname>
-			<affiliation><orgname>BASIS AudioNet GmbH</orgname></affiliation>
-			<address>
-			<email>bock@basis-audionet.de</email>
-			</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2004</year>
-		<holder>&fhg;</holder>
-	</copyright>
-	<copyright>
-		<year>2005-2010</year>
-		<holder>Voice-System.RO</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 6771 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2005-2010 &voicesystem;</para>
+	<para>&copyright; 2004 &fhg;</para>
 
 </book>

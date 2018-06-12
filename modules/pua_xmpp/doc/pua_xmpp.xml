@@ -7,6 +7,7 @@
 <!ENTITY devel SYSTEM "pua_xmpp_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY sql SYSTEM "pua_xmpp.sql">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -18,32 +19,16 @@
     <bookinfo>
 	<title>Presence User Agent for XMPP (Presence gateway between SIP and XMPP)</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </author>
-	    <editor>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2007</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
     
     &admin;
     &devel;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2007 &voicesystem;</para>
     
 </book>
 

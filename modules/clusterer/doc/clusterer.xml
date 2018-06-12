@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "clusterer_admin.xml">
 <!ENTITY devel SYSTEM "clusterer_devel.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -15,34 +16,13 @@
 	<bookinfo>
 	<title>CLUSTERER Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Marius Cristian</firstname>
-		<surname>Eseanu</surname>
-		<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-		<address>
-		<email>eseanu.cristian@gmail.com</email>
-		<otheraddr>
-		<ulink url="http://www.opensips.org">http://www.opensips.org</ulink>
-		</otheraddr>
-		</address>
-		</author>
-		<editor>
-		<firstname>Robert-Vladut</firstname>
-		<surname>Patrascu</surname>
-		<address>
-			<email>vladp@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2015 - 2017</year>
-		<holder>&osipssol;</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
-        &devel;
-	
+	&devel;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2015-2017 &osipssol;</para>
 </book>

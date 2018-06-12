@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "cachedb_cassandra_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -12,37 +13,16 @@
 ]>
 
 <book>
-<bookinfo>
-<title>cachedb_cassandra Module</title>
-<productname class="trade">&osipsname;</productname>
-<authorgroup>
-<author>
-<firstname>Vladut-Stefan</firstname>
-<surname>Paiu</surname>
-<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-<address>
-<email>vladpaiu@opensips.org</email>
-<otheraddr>
-	&osipssol;
-</otheraddr>
-</address>
-</author>
-<editor>
-<firstname>Vladut-Stefan</firstname>
-<surname>Paiu</surname>
-<address>
-<email>vladpaiu@opensips.org</email>
-</address>
-</editor>
-</authorgroup>
-<copyright>
-<year>2011</year>
-<holder>&osipssol;</holder>
-</copyright>
-</bookinfo>
-<toc></toc>
+	<bookinfo>
+	<title>cachedb_cassandra Module</title>
+	<productname class="trade">&osipsname;</productname>
+	</bookinfo>
+	<toc></toc>
 
-&admin;
+	&admin;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2011 &osipssol;</para>
 </book>
 

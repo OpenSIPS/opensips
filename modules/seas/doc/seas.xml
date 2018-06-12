@@ -4,44 +4,24 @@
 <!ENTITY admin SYSTEM "seas_admin.xml">
 <!ENTITY devel SYSTEM "seas_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
 %docentities;
 ]>
 <book>
-  <bookinfo>
-    <title>Seas Module</title>
+	<bookinfo>
+		<title>Seas Module</title>
+		<productname class="trade">Seas Module</productname>
+	</bookinfo>
 
-    <productname class="trade">Seas Module</productname>
+	<toc></toc>
 
-    <authorgroup>
-      <author>
-        <firstname>Elias</firstname>
+	<!-- External Entity Refs -->
+	&admin;
+	&devel;
+	&faq;
+	&contrib;
 
-        <surname>Baixas</surname>
-
-        <affiliation>
-          <orgname>VozTelecom Sistemas</orgname>
-          <orgdiv><ulink url="http://www.wesip.eu">www.wesip.eu</ulink></orgdiv>
-          <address>Ronda Can Fatjo, 9, 1p Parc Tecnologic del Valles Cerdanyola, 08520 (SPAIN) 
-	  Phone:+34 933968800 
-	  www.voztele.com
-	  <email>elias.baixas@voztele.com</email>
-	  </address>
-        </affiliation>
-      </author>
-    </authorgroup>
-
-    <copyright>
-      <year>2006</year>
-
-      <holder>VozTelecom Sistemas</holder>
-    </copyright>
-  </bookinfo>
-
-  <toc></toc>
-
-  <!-- External Entity Refs -->
-  &admin;
-  &devel;
-  &faq;
+	&docCopyrights;
+	<para>&copyright; 2006 VozTelecom Sistemas</para>
 </book>

@@ -7,6 +7,7 @@
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 
 <!ENTITY dbtextsercfg SYSTEM "db_text.cfg">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,41 +17,16 @@
 
 <book>
     <bookinfo>
-	<title>DBTEXT Module</title>
+	<title>db_text Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-		<email>miconda@gmail.com</email>
-	    </author>
-	    <editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-		<email>osas@voipembedded.com</email>
-	    </editor>
-	    <editor>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-		<email>miconda@gmail.com</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2003</year>
-	    <year>2004</year>
-	    <holder>&fhg;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 9528 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
-    
+
     &admin;
     &devel;
     &faq;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2003-2004 &fhg;</para>
 </book>

@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "db_http_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 
 <!-- Include general documentation entities -->
@@ -16,31 +17,14 @@
     <bookinfo>
 	<title>DB_HTTP Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Andrei</firstname>
-		<surname>Dragus</surname>
-		<affiliation><orgname>&osipssolname;</orgname></affiliation>
-	    </author>
-	    <editor>
-		<firstname>Andrei</firstname>
-		<surname>Dragus</surname>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2009</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
     
     &admin;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2009 &voicesystem;</para>
        
 </book>
 

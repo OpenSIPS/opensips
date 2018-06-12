@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "benchmark_admin.xml">
 <!ENTITY devel SYSTEM "benchmark_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,46 +15,18 @@
 ]>
 
 <book>
-    <bookinfo>
+	<bookinfo>
 	<title>Benchmark Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Bastian</firstname>
-		<surname>Friedrich</surname>
-		<affiliation><orgname>Collax GmbH</orgname></affiliation>
-		    <email>bastian.friedrich@collax.com</email>
-	    </author>
-	    <author>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-		    <email>miconda@gmail.com</email>
-	    </author>
-	    <editor>
-		<firstname>Bastian</firstname>
-		<surname>Friedrich</surname>
-		    <email>bastian.friedrich@collax.com</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2007</year>
-	    <holder>Collax GmbH</holder>
-	</copyright>
-	<copyright>
-	    <year>2007</year>
-	    <holder>Voice System SRL</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
-    </bookinfo>
-    <toc></toc>
-    
-    &admin;
-    &devel;
-    &faq;
-    
+	</bookinfo>
+	<toc></toc>
+
+	&admin;
+	&devel;
+	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2007 Collax GmbH</para>
+	<para>&copyright; 2007 &voicesystem;</para>
 </book>

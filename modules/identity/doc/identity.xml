@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "identity_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -15,38 +16,15 @@
 	<bookinfo>
 	<title>Identity Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Alexander</firstname>
-		<surname>Christ</surname>
-		<affiliation><orgname>Cologne University of Applied Sciences</orgname></affiliation>
-		<address>
-			<email>Alexander.Christ386_AT_web.de</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Alexander</firstname>
-		<surname>Christ</surname>
-		<address>
-			<email>Alexander.Christ386_AT_web.de</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2007</year>
-		<holder>Alexander Christ, Cologne University of Applied Sciences</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date: 2007-03-29$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2007 Alexander Christ, Cologne University of Applied Sciences</para>
 	
 </book>
 

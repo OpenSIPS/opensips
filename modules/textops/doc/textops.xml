@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "textops_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,43 +17,14 @@
 	<bookinfo>
 	<title>textops Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Andrei</firstname>
-		<surname>Pelinescu-Onciul</surname>
-		<affiliation><orgname>&fhg;</orgname></affiliation>
-			<email>pelinescu-onciul@fokus.fraunhofer.de</email>
-		</author>
-		<editor>
-		<firstname>Andrei</firstname>
-		<surname>Pelinescu-Onciul</surname>
-			<email>pelinescu-onciul@fokus.fraunhofer.de</email>
-		</editor>
-		<editor>
-		<firstname>Daniel-Constantin</firstname>
-		<surname>Mierla</surname>
-			<email>miconda@gmail.com</email>
-		</editor>
-		<editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-			<email>osas@voipembedded.com</email>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2003</year>
-		<holder>&fhg;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 7480 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2003 &fhg;</para>
 	
 </book>

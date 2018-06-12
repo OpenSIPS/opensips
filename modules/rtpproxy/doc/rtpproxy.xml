@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "rtpproxy_admin.xml">
 <!ENTITY faq SYSTEM "rtpproxy_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,49 +17,14 @@
 	<bookinfo>
 	<title>rtpproxy Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Maxim</firstname>
-		<surname>Sobolev</surname>
-		<affiliation><orgname>Sippy Software, Inc.</orgname></affiliation>
-		<address>
-			<email>sobomax@sippysoft.com</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Maxim</firstname>
-		<surname>Sobolev</surname>
-		<address>
-			<email>sobomax@sippysoft.com</email>
-		</address>
-		</editor>
-		<editor>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
-		</editor>
-		<editor>
-		<firstname>Razvan</firstname>
-		<surname>Crainea</surname>
-		<address>
-			<email>razvan@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2003-2008</year>
-		<holder>Sippy Software, Inc.</holder>
-	</copyright>
-	<copyright>
-		<year>2005</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
-	
+
 	&admin;
 	&faq;
-	
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2005 &voicesystem;</para>
+	<para>&copyright; 2003-2008 Sippy Software, Inc.</para>
 </book>

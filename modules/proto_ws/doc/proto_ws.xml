@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "proto_ws_admin.xml">
 <!ENTITY faq SYSTEM   "proto_ws_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,30 +17,14 @@
 	<bookinfo>
 	<title>proto_ws Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>&osips;</firstname>
-		<surname>Project</surname>
-		<address>
-			<email>support@opensips.org</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Razvan</firstname>
-		<surname>Crainea</surname>
-		<address>
-			<email>razvan@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2015</year>
-		<holder>&osips; Project</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2015 &osipssol;</para>
 
 </book>

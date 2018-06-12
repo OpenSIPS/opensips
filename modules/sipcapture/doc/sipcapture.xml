@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "sipcapture_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,30 +18,13 @@
     <bookinfo>
 	<title>SipCapture Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Alexandr</firstname>
-		<surname>Dubovikov</surname>
-		<email>alexandr.dubovikov@gmail.com</email>
-	    </author>
-	    <editor>
-		<firstname>Alexandr</firstname>
-		<surname>Dubovikov</surname>
-		    <email>alexandr.dubovikov@gmail.com</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2011</year>
-	    <holder>QSC AG</holder>
-	</copyright>
-	<copyright>
-	    <year>2011</year>
-	    <holder>http://www.qsc.de</holder>
-	</copyright>
     </bookinfo>
     <toc></toc>
-    
+ 
     &admin;
     &faq;        
-    
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2011 <ulink url="http://www.qsc.de">QSC AG</ulink></para>
 </book>

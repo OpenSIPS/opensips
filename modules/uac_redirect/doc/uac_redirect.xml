@@ -5,10 +5,11 @@
 
 <!ENTITY admin SYSTEM "uac_redirect_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general SER documentation entities -->
-<!ENTITY % serentities SYSTEM "../../../doc/entities.xml">
-%serentities;
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
 
 ]>
 
@@ -16,37 +17,14 @@
 	<bookinfo>
 	<title>UAC_REDIRECT Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-			<firstname>Bogdan-Andrei</firstname>
-			<surname>Iancu</surname>
-			<email>bogdan@opensips.org</email>
-		</author>
-		<editor>
-			<firstname>Bogdan-Andrei</firstname>
-			<surname>Iancu</surname>
-			<email>bogdan@opensips.org</email>
-		</editor>
-		<editor>
-			<firstname>Robert</firstname>
-			<surname>Gagnon</surname>
-			<affiliation><orgname>Telepoint Global Hosting Services, LLC</orgname></affiliation>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2005</year>
-		<holder>Voice Sistem</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-			<revnumber>$Revision: 8740 $</revnumber>
-			<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2005 &voicesystem;</para>
 
 </book>

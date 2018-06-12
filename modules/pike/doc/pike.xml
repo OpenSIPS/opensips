@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "pike_admin.xml">
 <!ENTITY devel SYSTEM "pike_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,41 +18,16 @@
 	<bookinfo>
 	<title>pike Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2003</year>
-		<holder>&fhg;</holder>
-	</copyright>
-	<copyright>
-		<year>2005-2009</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8740 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&devel;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2005-2009 &voicesystem;</para>
+	<para>&copyright; 2003 &fhg;</para>
 	
 </book>

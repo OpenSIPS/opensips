@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "proto_hep_admin.xml">
 <!ENTITY devel SYSTEM "proto_hep_devel.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,27 +17,14 @@
 	<bookinfo>
 	<title>proto_hep Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Ionut-Razvan</firstname>
-		<surname>Ionita</surname>
-		<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-		<address>
-		<email>ionutionita@opensips.org</email>
-		<otheraddr>
-		<ulink url="http://www.opensips.org">http://www.opensips.org</ulink>
-		</otheraddr>
-		</address>
-		</author>
-	</authorgroup>
-	<copyright>
-		<year>2015</year>
-		<holder>&osips; Project</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&devel;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2015 &osipssol;</para>
 
 </book>

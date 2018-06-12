@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "drouting_admin.xml">
 <!ENTITY devel SYSTEM "drouting_devel.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,44 +17,16 @@
 	<bookinfo>
 	<title>Dynamic Routing Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<affiliation><orgname>&osipssol;</orgname></affiliation>
-		</author>
-		<editor>
-		<firstname>Bogdan-Andrei</firstname>
-		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
-		</editor>
-		<editor>
-		<firstname>Anca-Maria</firstname>
-		<surname>Vamanu</surname>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2005-2008</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<copyright>
-		<year>2009-2012</year>
-		<holder>&osipssol;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 8834 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	&devel;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2009-2012 &osipssol;</para>
+	<para>&copyright; 2005-2008 &voicesystem;</para>
 </book>
 
 

@@ -240,6 +240,21 @@ tool-xsltproc:
 		echo "error: docbook.xsl not found (docbook-xsl)"; exit 1; \
 	fi
 
+.PHONY: git-dir
+git-dir:
+	@if [ ! -r .git ]; then \
+		echo "error: Not a git repo! (.git dir not found)"; exit 1; \
+	fi
+
+.PHONY: modules-contrib
+modules-contrib: git-dir
+	for mod in $(modules); do \
+	  NM=`basename $$mod`; \
+	  echo "Building contributor statistics for $$NM..."; \
+	  $(shell ./doc/build-contrib.sh $(NM)) \
+	  echo "DONE!"; \
+	done
+
 .PHONY: modules-readme
 modules-readme: tool-lynx tool-xsltproc
 	@set -e; \

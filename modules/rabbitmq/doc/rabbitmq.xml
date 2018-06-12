@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "rabbitmq_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -12,34 +13,15 @@
 ]>
 
 <book>
-<bookinfo>
-<title>RabbitMQ Module</title>
-<productname class="trade">&osipsname;</productname>
-<authorgroup>
-<author>
-<firstname>Răzvan</firstname>
-<surname>Crainea</surname>
-<affiliation><orgname>OpenSIPS Project</orgname></affiliation>
-<address>
-<email>razvan@opensips.org</email>
-</address>
-</author>
-<editor>
-<firstname>Răzvan</firstname>
-<surname>Crainea</surname>
-<address>
-<email>razvan@opensips.org</email>
-</address>
-</editor>
-</authorgroup>
-<copyright>
-<year>2017</year>
-<holder>&osipssol;</holder>
-</copyright>
-</bookinfo>
-<toc></toc>
+	<bookinfo>
+	<title>RabbitMQ Module</title>
+	<productname class="trade">&osipsname;</productname>
+	</bookinfo>
+	<toc></toc>
 
-&admin;
+	&admin;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2017 &osipssol;</para>
 </book>
-

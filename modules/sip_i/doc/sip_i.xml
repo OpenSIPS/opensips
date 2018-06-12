@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "sip_i_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -15,20 +16,12 @@
     <bookinfo>
 	<title>SIP-I Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Robert-Vladut</firstname>
-		<surname>Patrascu</surname>
-		<email>vladp@opensips.org</email>
-	    </author>
-	</authorgroup>
-	<copyright>
-		<year>2016</year>
-		<holder>&osips; Project</holder>
-	</copyright>
     </bookinfo>
     <toc></toc>
 
     &admin;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2016 &osipssol;</para>
 </book>

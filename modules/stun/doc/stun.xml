@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "stun_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,32 +17,14 @@
     <bookinfo>
 	<title>Stun Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Razvan</firstname>
-		<surname>Pistolea</surname>
-		<email>razvy000@yahoo.com</email>
-	    </author>
-	    <editor>
-		<firstname>Razvan</firstname>
-		<surname>Pistolea</surname>
-		    <email>razvy000@yahoo.com</email>
-	    </editor>
-	</authorgroup>
-	<copyright>
-	    <year>2009</year>
-	    <holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision:$</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
     &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2009 &voicesystem;</para>
     
 </book>

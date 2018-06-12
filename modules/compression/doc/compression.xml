@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "compression_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -15,29 +16,12 @@
 	<bookinfo>
 	<title>compression Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Ionut-Razvan</firstname>
-		<surname>Ionita</surname>
-		</author>
-		<editor>
-		<firstname>Ionut-Razvan</firstname>
-		<surname>Ionita</surname>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2014</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 5895 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
-	
+
 	&admin;
-	
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2014 &voicesystem;</para>
 </book>

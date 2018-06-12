@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "call_control_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,37 +15,13 @@
 <book>
   <bookinfo>
   <title>Call Control Module</title>
-  <authorgroup>
-    <author>
-    <firstname>Dan</firstname>
-    <surname>Pascu</surname>
-    <email>dan@ag-projects.com</email>
-    </author>
-    <editor>
-    <firstname>Dan</firstname>
-    <surname>Pascu</surname>
-    <email>dan@ag-projects.com</email>
-    </editor>
-     <editor>
-    <firstname>Irina-Maria</firstname>
-    <surname>Stanescu</surname>
-    <email>ironmissy@gmail.com</email>
-    </editor>
-  </authorgroup>
-  <copyright>
-    <year>2005-2008</year>
-    <holder>Dan Pascu</holder>
-  </copyright>
-  <revhistory>
-    <revision>
-    <revnumber>$Revision: 6149 $</revnumber>
-    <date>$Date$</date>
-    </revision>
-  </revhistory>
   </bookinfo>
   <toc></toc>
 
-  &admin;
-  &faq;
+	&admin;
+	&faq;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2005-2008 Dan Pascu</para>
 </book>

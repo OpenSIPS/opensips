@@ -5,6 +5,7 @@
 <!ENTITY admin SYSTEM "qos_admin.xml">
 <!ENTITY devel SYSTEM "qos_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general opensips documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,38 +17,15 @@
 	<bookinfo>
 	<title>QOS Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-		<affiliation><orgname>SOMA Networks, Inc.</orgname></affiliation>
-		<address>
-			<email>ronw@somanetworks.com</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Ovidiu</firstname>
-		<surname>Sas</surname>
-		<address>
-			<email>osas@somanetworks.com</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2008</year>
-		<holder>SOMA Networks, Inc.</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&devel;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2008 SOMA Networks, Inc.</para>
 	
 </book>

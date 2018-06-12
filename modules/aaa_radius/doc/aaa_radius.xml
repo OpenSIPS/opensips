@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "aaa_radius_admin.xml">
 <!ENTITY tutorial SYSTEM "aaa_radius_tutorial.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,39 +17,14 @@
     <bookinfo>
 	<title>AAA RADIUS MODULE</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-	    <author>
-		<firstname>Irina-Maria</firstname>
-		<surname>Stanescu</surname>
-		<affiliation><orgname>&osipssolname;</orgname></affiliation>
-	    </author>
-	    <editor>
-		<firstname>Irina-Maria</firstname>
-		<surname>Stanescu</surname>
-	    </editor>
-	  	</authorgroup>
-	<copyright>
-		<year>2009</year>
-		<holder>
-		<firstname>Irina-Maria</firstname>
-		<surname>Stanescu</surname>
-	    </holder>
-	</copyright>
-	<copyright>
-		<year>2009</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision: 5908 $</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
   </bookinfo>
     <toc></toc>
-    
+
     &admin;
 	&tutorial;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2009 Irina-Maria Stanescu</para>
+	<para>&copyright; 2009 &voicesystem;</para>
 </book>
-
-

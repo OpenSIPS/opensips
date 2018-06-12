@@ -7,6 +7,7 @@
 <!ENTITY admin SYSTEM "proto_tls_admin.xml">
 <!ENTITY faq SYSTEM "proto_tls_faq.xml">
 <!ENTITY devel SYSTEM "proto_tls_devel.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -16,94 +17,20 @@
 
 <book>
 	<bookinfo>
-	<title>TLS module</title>
+	<title>proto_tls module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-			<firstname>Peter</firstname>
-			<surname>Griffiths</surname>
-			<affiliation><orgname>unknown</orgname></affiliation>
-			<address>
-				<email>peter_grf@yahoo.com</email>
-			</address>
-		</author>
-		<author>
-			<firstname>Klaus</firstname>
-			<surname>Darilion</surname>
-			<affiliation><orgname>enum.at</orgname></affiliation>
-			<address>
-				<email>klaus.darilion@enum.at</email>
-			</address>
-		</author>
-		<editor>
-			<firstname>Klaus</firstname>
-			<surname>Darilion</surname>
-			<address>
-				<email>klaus.darilion@enum.at</email>
-			</address>
-		</editor>
-
-		<editor>
-			<firstname>Bogdan-Andrei</firstname>
-			<surname>Iancu</surname>
-			<address>
-				<email>bogdan@opensips.org</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Cesc</firstname>
-			<surname>Santasusana</surname>
-			<address>
-				<email>cesc.santa@gmail.com</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Klaus</firstname>
-			<surname>Darilion</surname>
-			<address>
-				<email>klaus.darilion@nic.at</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Christian</firstname>
-			<surname>Lahme</surname>
-			<address>
-				<email>christian.lahme@secusmart.com</email>
-			</address>
-		</editor>
-		<editor>
-			<firstname>Ionut-Razvan</firstname>
-			<surname>Ionita</surname>
-			<address>
-				<email>ionutionita@opensips.org</email>
-			</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2005</year>
-		<holder>&voicesystem;</holder>
-	</copyright>
-	<copyright>
-		<year>2005</year>
-		<holder>Cesc Santasusana</holder>
-	</copyright>
-	<copyright>
-		<year>2006</year>
-		<holder>enum.at</holder>
-	</copyright>
-	<copyright>
-		<year>2013</year>
-		<holder>Secusmart GmbH</holder>
-	</copyright>
-	<copyright>
-		<year>2015</year>
-		<holder>&osipssolname;</holder>
-	</copyright>
 	</bookinfo>
 	<toc></toc>
 
 	&admin;
 	<!-- &devel; -->
 	&faq;
+	&contrib;
 
+	&docCopyrights;
+	<para>&copyright; 2015 &osipssol;</para>
+	<para>&copyright; 2013 Secusmart GmbH</para>
+	<para>&copyright; 2006 enum.at</para>
+	<para>&copyright; 2005 &voicesystem;</para>
+	<para>&copyright; 2005 Cesc Santasusana</para>
 </book>

@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "db_flatstore_admin.xml">
 <!ENTITY devel SYSTEM "db_flatstore_devel.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -17,39 +18,15 @@
 	<bookinfo>
 	<title>Flatstore Module</title>
 	<productname class="trade">&osipsname;</productname>
-	<authorgroup>
-		<author>
-		<firstname>Jan</firstname>
-		<surname>Janak</surname>
-		<affiliation><orgname>FhG FOKUS</orgname></affiliation>
-		<address>
-			<email>jan@iptel.org</email>
-		</address>
-		</author>
-		<editor>
-		<firstname>Jan</firstname>
-		<surname>Janak</surname>
-		<address>
-			<email>jan@iptel.org</email>
-		</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-		<year>2004</year>
-		<year>2005</year>
-		<holder>FhG FOKUS</holder>
-	</copyright>
-	<revhistory>
-		<revision>
-		<revnumber>$Revision: 5901 $</revnumber>
-		<date>$Date$</date>
-		</revision>
-	</revhistory>
 	</bookinfo>
 	<toc></toc>
 	
 	&admin;
 	&devel;
 	&faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2004-2005 &fhg;</para>
 	
 </book>

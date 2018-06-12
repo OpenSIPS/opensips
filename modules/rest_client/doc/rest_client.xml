@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "rest_client_admin.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -14,34 +15,13 @@
 <book>
     <bookinfo>
 	<title>rest_client Module</title>
-	<authorgroup>
-	    <author>
-			<firstname>Liviu</firstname>
-			<surname>Chircu</surname>
-			<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
-			<email>liviu@opensips.org</email>
-	    </author>
-		<editor>
-			<firstname>Liviu</firstname>
-			<surname>Chircu</surname>
-			<address>
-			<email>liviu@opensips.org</email>
-			</address>
-		</editor>
-	</authorgroup>
-	<copyright>
-	    <year>2013</year>
-	    <holder>&osipssol;</holder>
-	</copyright>
-	<revhistory>
-	    <revision>
-		<revnumber>$Revision$</revnumber>
-		<date>$Date$</date>
-	    </revision>
-	</revhistory>
     </bookinfo>
     <toc></toc>
     
     &admin;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2013 &osipssol;</para>
 
 </book>
