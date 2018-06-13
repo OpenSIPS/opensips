@@ -4032,7 +4032,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 	free_opts(&opts, &rep_opts, &pt_opts);
 
 	if (proxied == 0 && nortpproxy_str.len) {
-		cp = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
+		cp = pkg_malloc((1 + nortpproxy_str.len + CRLF_LEN) * sizeof(char));
 		if (cp == NULL) {
 			LM_ERR("out of pkg memory\n");
 			return -1;
@@ -4042,15 +4042,19 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 		while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
 		if (cp1==args->body.s) cp1=args->body.s + args->body.len;
 
-		anchor = anchor_lump(msg, cp1 - msg->buf, 0);
+		/* XXX: ugly hack to add a string _after_ the end of the body:
+		 * remove the last char and then add it in the new buffer */
+		cp1--;
+		cp[0] = *cp1;
+		anchor = del_lump(msg, cp1 - msg->buf, 1, 0);
 		if (anchor == NULL) {
-			LM_ERR("anchor_lump failed\n");
+			LM_ERR("del_lump failed\n");
 			pkg_free(cp);
 			return -1;
 		}
-		memcpy(cp, nortpproxy_str.s, nortpproxy_str.len);
-		memcpy(cp+nortpproxy_str.len , CRLF, CRLF_LEN);
-		if (insert_new_lump_before(anchor, cp, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
+		memcpy(cp+1, nortpproxy_str.s, nortpproxy_str.len);
+		memcpy(cp+1+nortpproxy_str.len , CRLF, CRLF_LEN);
+		if (insert_new_lump_before(anchor, cp, 1 + nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
 			LM_ERR("insert_new_lump_after failed\n");
 			pkg_free(cp);
 			return -1;
