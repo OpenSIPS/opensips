@@ -279,6 +279,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	unsigned int pid;
 	frd_dlg_param *param;
 	extern unsigned int frd_data_rev;
+	int rc = rc_ok_thr;
 
 	if (*dr_head == NULL) {
 		/* No data, probably still loading */
@@ -321,6 +322,10 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	prefix.len = matched_len;
 	str shm_user;
 	frd_stats_entry_t *se = get_stats(user, prefix, &shm_user);
+	if (!se) {
+		rc = rc_error;
+		goto out;
+	}
 
 	/* Check if we need to reset the stats */
 
@@ -333,7 +338,8 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 			|| customtime_r(&nowt, &now) == NULL) {
 		LM_ERR("failed to fetch current time\n");
 		lock_release(&se->lock);
-		return rc_ok_thr;
+		rc = rc_error;
+		goto out;
 	}
 
 	if (se->stats.last_matched_time == 0 || se->stats.last_matched_rule != rule->id
@@ -403,7 +409,6 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	++se->stats.concurrent_calls;
 
 	/* Check the thresholds */
-	int rc = rc_ok_thr;
 
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
 
@@ -433,15 +438,18 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		if (dlgb.create_dlg(msg, 0) < 0) {
 			LM_ERR ("cannot create new_dlg\n");
 			rc = rc_error;
+			goto out;
 		} else if ( (dlgc = dlgb.get_dlg()) == NULL) {
 			LM_ERR("cannot get the new dlg\n");
 			rc = rc_error;
+			goto out;
 		}
 	}
 
 	param = shm_malloc(sizeof(frd_dlg_param));
 	if (!param) {
 		LM_ERR("no more shm memory");
+		rc = rc_error;
 	} else if (shm_str_dup(&param->number, &number) == 0) {
 		param->stats = se;
 		param->thr = thr;
@@ -452,15 +460,14 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED|DLGCB_FAILED|DLGCB_EXPIRED,
 					dialog_terminate_CB, param, free_dialog_CB_param) != 0) {
 			LM_ERR("failed to register dialog terminated callback\n");
-			lock_stop_read(frd_data_lock);
 			shm_free(param->number.s);
 			shm_free(param);
-			return rc_error;
 		}
 	} else {
 		shm_free(param);
 	}
 
+out:
 	lock_stop_read(frd_data_lock);
 	return rc;
 }
@@ -507,6 +514,11 @@ static struct mi_root* mi_show_stats(struct mi_root *cmd_tree, void *param)
 	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	frd_stats_entry_t *se = get_stats(user, prefix, NULL);
+	if (!se) {
+		LM_ERR("oom\n");
+		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR_S));
+	}
+
 	lock_get(&se->lock);
 
 #define ADD_STAT_CHILD(pname, pval) do {\
