@@ -623,7 +623,7 @@ tmp_file=$(mktemp $TMP_FILE.XXXXXXXXXXX)
 for sha in $(git log --reverse --format=%H modules/$1); do
   [ -n "${skip_commits[$sha]}" ] && continue
 
-  show="$(git show $sha -b --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors.xml)$")"
+  show="$(git show $sha -b --find-renames --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors.xml)")"
 
   # grab the overrided author or just the commit author
   if [ -n "${fix_authors[$sha]}" ]; then
@@ -660,7 +660,7 @@ declare -A sorted_scores
 lc_bak=$LC_ALL; export LC_ALL=C
 for i in "${!score[@]}"; do
   echo "$i,${score[$i]},${commits[$i]},${add[$i]},${del[$i]},${first_commit[$i]},${last_commit[$i]}"
-done | sort -t, -k2nr -k3nr -k4nr -k5nr >$tmp_file
+done | sort -t, -k2nr -k3nr -k4nr -k5nr -k1 >$tmp_file
 export LC_ALL=$lc_bak
 
 # Generate table #1 (by commit statistics)
@@ -750,7 +750,7 @@ EOF
 lc_bak=$LC_ALL; export LC_ALL=C
 for i in "${!score[@]}"; do
   echo "$i,${first_commit[$i]},${last_commit[$i]}"
-done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n >$tmp_file
+done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n -k1 >$tmp_file
 export LC_ALL=$lc_bak
 
 
@@ -797,6 +797,7 @@ set -e
 
 if [ $# -eq 0 ]; then
   echo "Usage: $0 (<module>[, <module>[, ...]] | rebuild-proj-stats)"
+  echo "For best results, please run with git 2.7.4+"
   exit 0
 fi
 
