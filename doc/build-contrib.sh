@@ -541,7 +541,6 @@ skip_commits=(
   ["d55ce8ffc86dd433f4860d5867d03d484312d954"]=1 # 16 Jun 2005, merge w/ SER
   ["442a83e55bb475637e75fc904f998e6d585bd437"]=1 # 16 Jun 2005, merge w/ SER
   ["8fe24ec1990a1c468fcf8490228c2fcd42a15121"]=1 # Jan 2017, import FS ESL
-  ["c3e4da1206aa80b30eb8c3c7e2a6440c6b20fd3f"]=1 # Jun 2018, contributors.xml
 )
 
 mk_git_handle() {
@@ -624,7 +623,7 @@ tmp_file=$(mktemp $TMP_FILE.XXXXXXXXXXX)
 for sha in $(git log --reverse --format=%H modules/$1); do
   [ -n "${skip_commits[$sha]}" ] && continue
 
-  show="$(git show $sha -b --format="$(echo -e "%an <%ae>")" --numstat | grep -v "modules/.*README")"
+  show="$(git show $sha -b --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors.xml)$")"
 
   # grab the overrided author or just the commit author
   if [ -n "${fix_authors[$sha]}" ]; then
@@ -640,6 +639,7 @@ for sha in $(git log --reverse --format=%H modules/$1); do
 
   added="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$1}END{print s}')"
   deleted="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$2}END{print s}')"
+  [ -z "$added" -a -z "$deleted" ] && continue
 
   echo "$1: $sha - ${commit_date//,/ } - $author - ${added:-0}++ ${deleted:-0}--"
 
