@@ -2279,7 +2279,7 @@ build_msg:
 	/* apply changes over SIP hdrs and body */
 	apply_msg_changes( msg, new_buf, &offset, &s_offset, send_sock);
 	if (offset!=new_len) {
-		LM_BUG("len mistmatch : calculated %d, written %d\n", new_len, offset);
+		LM_BUG("len mismatch : calculated %d, written %d\n", new_len, offset);
 		abort();
 	}
 
@@ -2358,7 +2358,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	/* apply changes over SIP hdrs and body */
 	apply_msg_changes( msg, new_buf, &offset, &s_offset, sock);
 	if (offset!=new_len) {
-		LM_BUG("len mistmatch : calculated %d, written %d\n", new_len, offset);
+		LM_BUG("len mismatch : calculated %d, written %d\n", new_len, offset);
 		abort();
 	}
 
