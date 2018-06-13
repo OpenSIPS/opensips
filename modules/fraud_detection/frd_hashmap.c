@@ -74,12 +74,13 @@ void** get_item (hash_map_t *hm, str key)
 void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *))
 {
 	unsigned int i;
+
+	/* no need for locking -- if there were, the readers would insta-die */
 	for (i = 0; i < hm->size; ++i) {
-		lock_start_write(hm->buckets[i].lock);
 		map_destroy(hm->buckets[i].items, value_destroy_func);
-		lock_stop_write(hm->buckets[i].lock);
 		lock_destroy_rw(hm->buckets[i].lock);
 	}
+
 	shm_free(hm->buckets);
 }
 
