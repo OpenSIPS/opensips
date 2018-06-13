@@ -627,7 +627,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 
-	for (t = lumps; t && t->u.offset<=(unsigned int)max_offset ; t = t->next) {
+	for (t = lumps; t && t->u.offset<(unsigned int)max_offset ; t = t->next) {
 		/* is this lump still valid? (it must not be anchored in a deleted area */
 		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
@@ -1041,7 +1041,7 @@ void process_lumps(	struct sip_msg* msg,
 	s_offset=*orig_offs;
 	last_del=0;
 
-	for (t = lumps; t && t->u.offset<=(unsigned int)max_offset ; t = t->next) {
+	for (t = lumps; t && t->u.offset<(unsigned int)max_offset ; t = t->next) {
 		/* skip this lump if the "offset" is still in a "deleted" area */
 		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
@@ -1307,7 +1307,7 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 				 * inside this part */
 				orig_offs = part->body.s - msg->buf;
 				lump = msg->body_lumps;
-				while ( lump && lump->u.offset<orig_offs )
+				while ( lump && lump->u.offset<(part->body.s-msg->buf) )
 					lump=lump->next;
 				if (lump) {
 					LM_DBG("lumps found in the part, applying...\n");
