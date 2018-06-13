@@ -175,12 +175,14 @@ struct hp_frag_lnk {
 
 	struct hp_frag *first;
 
+#ifdef HP_MALLOC_FAST_STATS
 	/*
 	 * no - current number of free fragments in this bucket
 	 * total_no - (no + allocated) free fragments in this bucket
 	 */
 	long no;
 	long total_no;
+#endif
 };
 
 struct hp_block {
