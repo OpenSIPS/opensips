@@ -43,6 +43,7 @@ typedef struct {
 } frd_users_map_item_t;
 
 static hash_map_t stats_table;
+static void destroy_stats_entry(void *e);
 
 /*
  * Function to init the stats hash table
@@ -77,6 +78,7 @@ frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 		}
 
 		if (shm_str_dup(&(*hm)->user, &user) != 0) {
+			free_hash_map(&(*hm)->numbers_hm, destroy_stats_entry);
 			shm_free(*hm);
 			return NULL;
 		}
