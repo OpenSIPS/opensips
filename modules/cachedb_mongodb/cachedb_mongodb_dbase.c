@@ -50,7 +50,7 @@ char *hex_oid_id;
 static char *build_mongodb_connect_string(struct cachedb_id *id)
 {
 	char *ret, *p;
-	int len;
+	int len, db_len;
 
 	len =
 	      strlen(id->scheme) + 3 +
@@ -68,23 +68,26 @@ static char *build_mongodb_connect_string(struct cachedb_id *id)
 	}
 
 	p = memchr(id->database, '.', strlen(id->database));
+	if (p)
+		db_len = p - id->database;
+	else
+		db_len = strlen(id->database);
 
 	if (id->username && id->password) {
 		if (id->port == 0) {
-			sprintf(ret, "mongodb://%s:%s@%s/%s", id->username, id->password,
-			        id->host, id->database);
+			sprintf(ret, "mongodb://%s:%s@%s/%.*s", id->username, id->password,
+			        id->host, db_len, id->database);
 		} else {
-			sprintf(ret, "mongodb://%s:%s@%s:%d/%s", id->username, id->password,
-			        id->host, id->port, id->database);
+			sprintf(ret, "mongodb://%s:%s@%s:%d/%.*s", id->username, id->password,
+			        id->host, id->port, db_len, id->database);
 		}
 
 	} else {
 		if (id->port == 0) {
-			sprintf(ret, "mongodb://%s/%.*s", id->host,
-			        (int)(p ? p - id->database : strlen(id->database)), id->database);
+			sprintf(ret, "mongodb://%s/%.*s", id->host, db_len, id->database);
 		} else {
 			sprintf(ret, "mongodb://%s:%d/%.*s", id->host, id->port,
-			        (int)(p ? p - id->database : strlen(id->database)), id->database);
+			        db_len, id->database);
 		}
 	}
 
