@@ -35,7 +35,7 @@ DEBUG=
 SHOW_AUTHOR_EMAIL=
 
 # process all arguments (modules) supplied to build-contrib.sh in parallel
-PARALLEL_BUILD=
+PARALLEL_BUILD=1
 
 # Update the display name of an author, create a name-only referencing shortcut
 # or link multiple emails of an author under a single identity
@@ -619,9 +619,10 @@ declare -A del
 declare -A first_commit
 declare -A last_commit
 
+tmp_file=$(mktemp $TMP_FILE.XXXXXXXXXXX)
+
 for sha in $(git log --reverse --format=%H modules/$1); do
   [ -n "${skip_commits[$sha]}" ] && continue
-  tmp_file=$(mktemp $TMP_FILE.XXXXXXX)
 
   show="$(git show $sha -b --format="$(echo -e "%an <%ae>")" --numstat | grep -v "modules/.*README")"
 
@@ -812,9 +813,11 @@ if [[ "$1" =~ rebuild-proj-stats ]]; then
   exit 0
 fi
 
+pids=()
 while [ -n "$1" ]; do
   if [ -n "$PARALLEL_BUILD" ]; then
     gen_module_contributors "$(basename $1)" &
+    pids[${#pids[@]}]=$!
   else
     gen_module_contributors "$(basename $1)"
   fi
@@ -823,8 +826,15 @@ while [ -n "$1" ]; do
     make modules-docbook-html modules=modules/$1
     xdg-open "file://$(pwd)/modules/$1/doc/$1.html#contributors"
   fi
+
   shift
 done
+
+if [ -n "$PARALLEL_BUILD" ]; then
+  for pid in ${pids[@]}; do
+    wait $pid
+  done
+fi
 
 if [ -n "$DEBUG" ]; then
   echo "Total: $__PROJ_COMMITS commits. $__PROJ_LINES_ADD++, ${__PROJ_LINES_DEL}--"
