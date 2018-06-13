@@ -964,7 +964,7 @@ static struct mi_root* mi_show_rtpengines(struct mi_root* cmd_tree,
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
 						crt_rtpe = crt_rtpe->rn_next){
 
-			if(!(crt_node = add_mi_node_child(node, MI_DUP_VALUE,
+			if(!(crt_node = add_mi_node_child(set_node, MI_DUP_VALUE,
 					MI_NODE, MI_NODE_LEN,
 					crt_rtpe->rn_url.s, crt_rtpe->rn_url.len)) ) {
 				LM_ERR("cannot add the child node to the tree\n");
