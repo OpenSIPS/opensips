@@ -327,6 +327,10 @@ struct body_part* add_body_part(struct sip_msg *msg, str *mime_s,
 		msg->body = (struct sip_msg_body*)pkg_malloc(
 			sizeof(struct sip_msg_body) + (body?body->len:0) +
 			(hdrs?hdrs->len:0) + mime_s->len );
+		if (!msg->body) {
+			LM_ERR("No more pkg memory!\n");
+			return NULL;
+		}
 		memset(msg->body, 0, sizeof(struct sip_msg_body));
 
 		msg->body->part_count = 0;
