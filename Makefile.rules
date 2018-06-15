@@ -53,7 +53,7 @@ generate-mem-stats:
 	@echo "/* You should NOT edit this file manually */" >> mem/mem_stats.c
 	@echo "#ifdef SHM_EXTRA_STATS" >> mem/mem_stats.c
 	@echo "unsigned long core_mem_stat; /* core statistic */" >> mem/mem_stats.c
-	@find modules/ -name "[Mm]akefile" -exec grep NAME= {} \; \
+	@find modules/ -name "[Mm]akefile" -exec grep "NAME\s*=" {} \; \
 	| awk 'BEGIN { FS = "[=\\. ]" } {print "unsigned long " $$(NF-1) "_mem_stat;"}' >> mem/mem_stats.c
 	@echo "#endif" >> mem/mem_stats.c
 	-@rm -f mem/mem_stats.h
@@ -63,7 +63,7 @@ generate-mem-stats:
 	@echo "#ifndef __MEM_STAT_H_" >> mem/mem_stats.h
 	@echo "#define __MEM_STAT_H_"  >> mem/mem_stats.h
 	@echo "extern unsigned long core_mem_stat; /* core statistic */" >> mem/mem_stats.h
-	@find modules/ -name "[Mm]akefile" -exec grep NAME= {} \; \
+	@find modules/ -name "[Mm]akefile" -exec grep "NAME\s*=" {} \; \
 	| awk 'BEGIN { FS = "[=\\. ]" } {print "extern unsigned long " $$(NF-1) "_mem_stat;"}' >> mem/mem_stats.h
 	@echo -e "#endif\n#endif" >> mem/mem_stats.h
 
