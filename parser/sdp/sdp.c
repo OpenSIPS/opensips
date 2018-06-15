@@ -601,11 +601,7 @@ sdp_info_t* parse_sdp(struct sip_msg* _m)
 	return ret;
 }
 
-
-/**
- * Free all memory.
- */
-void free_sdp(sdp_info_t* sdp)
+void free_sdp_content(sdp_info_t* sdp)
 {
 	sdp_session_cell_t *session, *l_session;
 	sdp_stream_cell_t *stream, *l_stream;
@@ -636,7 +632,6 @@ void free_sdp(sdp_info_t* sdp)
 		}
 		pkg_free(l_session);
 	}
-	pkg_free(sdp);
 }
 
 void print_sdp_stream(sdp_stream_cell_t *stream, int level)
