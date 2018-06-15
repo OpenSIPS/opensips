@@ -32,6 +32,7 @@
 #define SDP_H
 
 #include "../msg_parser.h"
+#include "../../mem/mem.h"
 
 typedef struct sdp_payload_attr {
 	struct sdp_payload_attr *next;
