@@ -30,7 +30,7 @@
 #include "../../locking.h"
 
 #define SDP_CONTENT_TYPE_LEN (sizeof("Content-Type: application/sdp\r\n") - 1)
-#define A_LINE_PREFIX_LEN    (sizeof("a=rtpmap:" - 1))
+#define A_LINE_PREFIX_LEN    (sizeof("a=rtpmap:") - 1)
 #define C_LINE_LEN           (sizeof("c=IN IP4 xxx.xxx.xxx.xxx\r\n") - 1)
 #define SDP_BUFFER_SIZE      4096
 #define MAX_STREAMS          30

@@ -32,6 +32,7 @@
 #define SDP_H
 
 #include "../msg_parser.h"
+#include "../../mem/mem.h"
 
 #define      NO_HOLD 0
 #define RFC2543_HOLD 1
