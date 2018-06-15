@@ -7,9 +7,11 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		The <emphasis role='bold'>Sangoma transcoding module</emphasis> offers the possibility of performing
-	voice transcoding with the D-series transcoding cards manufactured by
-	Sangoma. The module makes use of the Sangoma Transcoding API in order to 
+	The <emphasis role='bold'>Sangoma transcoding module</emphasis> offers the
+	possibility of performing voice transcoding with the
+	<ulink url="https://wiki.sangoma.com/display/MTC/Media+Transcoding">D-series
+		transcoding cards manufactured by Sangoma</ulink>. The module makes use
+	of the Sangoma Transcoding API in order to
 	manage transcoding sessions on the dedicated equipment. For the cards
 	in the network to be detected, the Sangoma SOAP server must be up and
 	running (<emphasis>sngtc_server</emphasis> daemon).
@@ -76,12 +78,14 @@
 			<itemizedlist>
 			<listitem>
 				<para>
-					<emphasis>sngtc_node library - <ulink url="http://wiki.sangoma.com/media-transcoding-download">download from Sangoma</ulink>, compile and install </emphasis>.
+					<emphasis>sngtc_node library - <ulink url="https://wiki.freepbx.org/display/MTC/Media+Transcoding+Download">download from Sangoma</ulink>,
+					unpack, make, make install (required in order to compile this module)</emphasis>.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis>sngtc_server up and running</emphasis>.
+					<emphasis>sngtc_server up and running (required in order for
+					this module to properly work)</emphasis>.
 				</para>
 			</listitem>
 			</itemizedlist>
