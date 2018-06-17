@@ -21,10 +21,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
 
 ### global OpenSIPS commit stats, self-generated on each "rebuild-proj-stats"
-__PROJ_COMMITS=15681
-__PROJ_LINES_ADD=1978534
-__PROJ_LINES_DEL=880641
-__LAST_REBUILD_SHA=84e02496e5f04bff4c98e3470e47215ba1a910a9
+__PROJ_COMMITS=15686
+__PROJ_LINES_ADD=2001541
+__PROJ_LINES_DEL=877383
+__LAST_REBUILD_SHA=736315e5c7f005d645883f2e968471fdaec9dda1
 
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 
@@ -36,6 +36,10 @@ SHOW_AUTHOR_EMAIL=
 
 # process all arguments (modules) supplied to build-contrib.sh in parallel
 PARALLEL_BUILD=1
+
+# formatting settings
+TABLE_SIZE_COMMITS=10
+TABLE_SIZE_ACTIVITY=10
 
 # Update the display name of an author, create a name-only referencing shortcut
 # or link multiple emails of an author under a single identity
@@ -54,6 +58,7 @@ author_aliases=(
   ["Christophe Sollet"]="Christophe Sollet <csollet-git@keyyo.com>"
   ["Daniel-Constantin Mierla <daniel@opensips.org>"]="Daniel-Constantin Mierla <miconda@gmail.com>"
   ["Daniel-Constantin Mierla <daniel@voice-system.ro>"]="Daniel-Constantin Mierla <miconda@gmail.com>"
+  ["davesidwell <davesidwell@users.noreply.github.com>"]="Dave Sidwell <davesidwell@users.noreply.github.com>"
   ["Eric Tamme <eric@uphreak.com>"]="Eric Tamme <eric.tamme@onsip.com>"
   ["Henning Westerholt"]="Henning Westerholt <henning.westerholt@1und1.de>"
   ["Ionut Ionita <ionutrazvan.ionita@gmail.com>"]="Ionut Ionita <ionutionita@opensips.org>"
@@ -114,6 +119,7 @@ github_handles=(
   ["Damien Sandras <dsandras@beip.be>"]="dsandras"
   ["Daniel-Constantin Mierla"]="miconda"
   ["Dan Pascu <dan@ag-projects.com>"]="danpascu"
+  ["Dave Sidwell"]="davesidwell"
   ["Di-Shi Sun <di-shi@transnexus.com>"]="di-shi"
   ["Eric Tamme"]="etamme"
   ["Eseanu Marius Cristian <eseanu.cristian@gmail.com>"]="eseanucristian"
@@ -181,6 +187,7 @@ fix_authors=(
   ["ee0221187d8f3d57b63e3cbd615c448a5a508667"]="Marcus Hunger <hunger@sipgate.de>"
   ["45e4b0bc8b1d4198f72859d02c3ccb5f9c2cadd2"]="Marcus Hunger <hunger@sipgate.de>"
   ["0ddde446698a62566fa94d9da74549f3acd5a9ae"]="Juha Heinanen"
+  ["baa5e19b90931b3d84813e4c585c4361e9fd69ca"]="Klaus Darilion"
 
   # aaa_radius
   ["2296c4953ce85b9cffab3a74e2c98ce3186c96db"]="Boris Ratner"
@@ -250,6 +257,7 @@ fix_authors=(
   ["4a4c9535f8b08b88d242e83c0bccce1298eb9dc8"]="Mauro Davi"
 
   # carrierroute
+  ["84041cb08d95061da268d303342946b3e6f29f96"]="Jonas Appel <jonas.appel@schlund.de>"
   ["fb3e4e46d9f884aa4d2371e4b767c728305f27c1"]="Henning Westerholt"
   ["38ecf98329ecfddfd3dbc3c8a4879139e8e602ac"]="Henning Westerholt"
   ["7817142c27a5a59bb2403dd4b6390231b8c35881"]="Sergio Gutierrez"
@@ -261,6 +269,7 @@ fix_authors=(
   ["3bdc5208ea7503205fc0b353ce37f537383ccad3"]="Carsten Bock"
 
   # db_berkeley
+  ["cf8c99620c843cf8dfca76dc3dbc2c5928c968a1"]="William Quan"
   ["2b52b8d594680488f77e9d511c7bf9937797a42d"]="Jan Janak"
 
   # db_mysql
@@ -280,6 +289,7 @@ fix_authors=(
   ["9391890a8123bc5c7fef594163e0179d334d5bde"]="Chris Heiser"
 
   # db_unixodbc
+  ["659d79da476ef7eed6d39a3bc8f5ec995930afe7"]="Marco Lorrai <marco.lorrai@abbeynet.it>"
   ["09134cc7343b21ac9c7e06d8d202dc55be1433b0"]="Alex Massover"
   ["a3eca3ca69531a6bd00dca2f921c32262a17fae3"]="Carsten Bock"
 
@@ -328,6 +338,7 @@ fix_authors=(
   ["42e1a8a845af64d6cce226bb8278425ce9e1508a"]="Carsten Bock"
 
   # domain
+  ["6a6a595095d8983561b1b36357f4d47ccb13bf81"]="Juha Heinanen"
   ["f62684327c13f29f273ac8a97e0041f79d97621c"]="@coxx"
 
   # drouting
@@ -338,6 +349,7 @@ fix_authors=(
   ["e1bbbe5ea4b87b6c127a1200e50d56f2ff0947d4"]="Evandro Villaron"
 
   # enum
+  ["2bbf6364bf30a2aaaef3259ede8bf90c44036d8c"]="Juha Heinanen"
   ["f089ca434dc5416d0a86ad663aab1fbe879b9eae"]="Greg Fausak <lgfausak@gmail.com>"
   ["85b05c11d3390bb00e6cc096d329eeb24571f774"]="Klaus Darilion"
 
@@ -351,13 +363,16 @@ fix_authors=(
   ["5a2468d1c38a8459cee1c0e923ebfd1c3972d77c"]="Richard Revels"
 
   # identity
-  ["3cbf9b62a88738da14a367a64896308b5878e622"]="Alexander Christ" # TODO: is this ok?
+  ["3cbf9b62a88738da14a367a64896308b5878e622"]="Alexander Christ"
 
   # jabber
   ["e9f3bbf62c7adabad87a209653885a12eba6a596"]="Peter Lemenkov"
 
   # json
   ["596271ae13bb28669a4d907885c0303165b708fb"]="Nick Altmann"
+
+  # ldap
+  ["faea9a5e2025b5f10d147888fcf380a6cb1ebe64"]="Christian Schlatter"
 
   # load_balancer
   ["df5956eb76347611ec50a98e64a3c6c138ea94b6"]="James Van Vleet"
@@ -455,6 +470,7 @@ fix_authors=(
   ["ec83f6af09176aef1e09aaa969067b87e175e915"]="Ovidiu Sas"
 
   # rtpproxy
+  ["1e5a965fc10f3fb7016d929d661e11c6484a2e62"]="Maxim Sobolev"
   ["d4b0b7e31fa9dd602751c372ca3557536982e540"]="Ryan Bullock"
   ["643ac134a0b8f0cf4e6f24215dce1356f68ad792"]="Peter Lemenkov"
   ["7d6e628a49f4c0348ab84cda9f4baffcbb5f0701"]="Peter Lemenkov"
@@ -543,6 +559,25 @@ skip_commits=(
   ["8fe24ec1990a1c468fcf8490228c2fcd42a15121"]=1 # Jan 2017, import FS ESL
 )
 
+# "git log" cannot properly follow an entire directory throughout all its
+# historical renames, so we use this array in order to solve the problem
+#
+# [<new_dir>]=<old_dir>   provision such an entry for each rename
+#                         (if a -> b -> c, then you need 2 entries)
+declare -A mod_renames
+mod_renames=(
+  [db_mysql]=mysql
+  [db_postgres]=postgres
+  [db_text]=dbtext
+  [db_flatstore]=flatstore
+  [db_unixodbc]=unixodbc
+  [db_perlvdb]=perlvdb
+  [cpl_c]=cpl-c
+  [auth_aaa]=auth_radius
+  [cachedb_local]=localcache
+  [uac_registrant]=registrant
+)
+
 mk_git_handle() {
   if [[ "$1" =~ ^@ ]]; then
     echo "<ulink url=\"https://github.com/$(echo "$1" | tr -d '@')\">$1</ulink>"
@@ -602,6 +637,52 @@ rebuild_proj_commit_stats() {
   sed -i "s/^__LAST_REBUILD_SHA=.*/__LAST_REBUILD_SHA=$(git log -1 --format=%H)/" $0
 }
 
+count_dir_changes() {
+  for sha in $(git log --reverse --format=%H modules/$1); do
+    [ -n "${skip_commits[$sha]}" ] && continue
+
+    show="$(git show $sha -b --find-renames --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors\.xml|\.html|\.sw[po])")"
+
+    # grab the overrided author or just the commit author
+    if [ -n "${fix_authors[$sha]}" ]; then
+      author=${fix_authors[$sha]}
+    else
+      author=$(echo "$show" | head -1)
+    fi
+
+    # convert any author aliases
+    [ -n "${author_aliases[$author]}" ] && author="${author_aliases[$author]}"
+
+    commit_date=$(git show --format=%aD --no-patch $sha | awk '{print $2","$3","$4}')
+
+    added="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$1}END{print s}')"
+    deleted="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$2}END{print s}')"
+    [ -z "$added" -a -z "$deleted" ] && continue
+
+    echo "$1: $sha - ${commit_date//,/ } - $author - ${added:-0}++ ${deleted:-0}--"
+
+    commits["$author"]=$((${commits["$author"]:-0} + 1))
+    add["$author"]=$((${add["$author"]:-0} + ${added:-0}))
+    del["$author"]=$((${del["$author"]:-0} + ${deleted:-0}))
+
+    [ -z "${first_commit["$author"]}" ] && first_commit["$author"]="$commit_date"
+    last_commit["$author"]="$commit_date"
+  done
+}
+
+count_module_changes() {
+  count_dir_changes "$1"
+
+  mod_name="${mod_renames[$1]}"
+  while [ -n "$mod_name" ]; do
+    mkdir -p modules/"$mod_name"
+    count_dir_changes "$mod_name"
+    rm -r modules/"$mod_name"
+
+    mod_name="${mod_renames[$mod_name]}"
+  done
+}
+
 # $1 - module name, e.g.: "tm", "cachedb_mongodb"
 gen_module_contributors() {
 unset score
@@ -620,36 +701,7 @@ declare -A last_commit
 
 tmp_file=$(mktemp $TMP_FILE.XXXXXXXXXXX)
 
-for sha in $(git log --reverse --format=%H modules/$1); do
-  [ -n "${skip_commits[$sha]}" ] && continue
-
-  show="$(git show $sha -b --find-renames --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors.xml)")"
-
-  # grab the overrided author or just the commit author
-  if [ -n "${fix_authors[$sha]}" ]; then
-    author=${fix_authors[$sha]}
-  else
-    author=$(echo "$show" | head -1)
-  fi
-
-  # convert any author aliases
-  [ -n "${author_aliases[$author]}" ] && author="${author_aliases[$author]}"
-
-  commit_date=$(git show --format=%aD --no-patch $sha | awk '{print $2","$3","$4}')
-
-  added="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$1}END{print s}')"
-  deleted="$(echo "$show" | grep -E "modules/$1" | awk '{s+=$2}END{print s}')"
-  [ -z "$added" -a -z "$deleted" ] && continue
-
-  echo "$1: $sha - ${commit_date//,/ } - $author - ${added:-0}++ ${deleted:-0}--"
-
-  commits["$author"]=$((${commits["$author"]:-0} + 1))
-  add["$author"]=$((${add["$author"]:-0} + ${added:-0}))
-  del["$author"]=$((${del["$author"]:-0} + ${deleted:-0}))
-
-  [ -z "${first_commit["$author"]}" ] && first_commit["$author"]="$commit_date"
-  last_commit["$author"]="$commit_date"
-done
+count_module_changes $1
 
 for i in "${!commits[@]}"; do
   score[$i]=$(python -c "from math import ceil; print(int(${commits[$i]} + ceil(${add[$i]} / ($__PROJ_LINES_ADD/float($__PROJ_COMMITS))) + ceil(${del[$i]} / ($__PROJ_LINES_DEL/float($__PROJ_COMMITS)))))")
@@ -673,13 +725,13 @@ cat <<EOF >modules/$1/doc/contributors.xml
 <section id="contrib_commit_statistics" xreflabel="contrib_commit_statistics">
 	<title>By Commit Statistics</title>
 
-	<table frame='all'><title>Contributors by number of authored commits<superscript>(1)</superscript>, lines added/removed<superscript>(2)</superscript></title>
+	<table frame='all'><title>Top contributors by DevScore<superscript>(1)</superscript>, authored commits<superscript>(2)</superscript> and lines added/removed<superscript>(3)</superscript></title>
 	<tgroup cols='6' align='left' colsep='1' rowsep='1'>
 	<thead>
 	<row>
 	    <entry align="center"></entry>
 	    <entry align="center">Name</entry>
-	    <entry align="center">DevScore<superscript>(3)</superscript></entry>
+	    <entry align="center">DevScore</entry>
 	    <entry align="center">Commits</entry>
 	    <entry align="center">Lines ++</entry>
 	    <entry align="center">Lines --</entry>
@@ -689,21 +741,27 @@ cat <<EOF >modules/$1/doc/contributors.xml
 EOF
 
 index=1
+side_authors=
 while read line; do
   author=$(echo $line | awk -F'[,]' '{print $1}')
   gh=$(mk_git_handle "$author")
   [[ "$author" =~ ^@ ]] && author=
 
   if [ -n "$SHOW_AUTHOR_EMAIL" ]; then
-    author_line="<entry>$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh</entry>"
+    author_str="$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh"
   else
-    author_line="<entry>$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh</entry>"
+    author_str="$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh"
+  fi
+
+  if [ $index -gt $TABLE_SIZE_COMMITS ]; then
+    side_authors+="$author_str, "
+    continue
   fi
 
   cat <<EOF >>modules/$1/doc/contributors.xml
 	<row>
 		<entry>$index. </entry>
-		$author_line
+		<entry>$author_str</entry>
 		<entry align="center">$(echo $line | awk -F, '{print $2}')</entry>
 		<entry align="center">$(echo $line | awk -F, '{print $3}')</entry>
 		<entry align="center">$(echo $line | awk -F, '{print $4}')</entry>
@@ -713,18 +771,25 @@ EOF
   index=$(($index+1))
 done < $tmp_file
 
+if [ -n "$side_authors" ]; then
+  side_authors_para="<para><emphasis role='bold'>All remaining contributors</emphasis>: ${side_authors::-2}.</para>"
+else
+  side_authors_para=
+fi
+
 cat <<EOF >>modules/$1/doc/contributors.xml
 	</tbody>
 	</tgroup>
 	</table>
+	$side_authors_para
 	<para>
-	    <emphasis>(1) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we try our best to count the work on behalf of the proper owner, as per the "fix_authors" array in opensips/doc/build-contrib.sh. If you identify any patches/commits which should be counted towards your email address, rather than the importers' email address, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends the "fix_authors" array.
+	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
 	<para>
-	    <emphasis>(2) ignoring whitespace fixes and auto-generated files</emphasis>
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
 	</para>
 	<para>
-	    <emphasis>(3) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
+	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
 	</para>
 </section>
 
@@ -735,7 +800,7 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 <section id="contrib_commit_activity" xreflabel="contrib_commit_activity">
 	<title>By Commit Activity</title>
 
-	<table frame='all'><title>Contributors by first/last commits<superscript>(1)</superscript> into this module</title>
+	<table frame='all'><title>Top contributors by first and last commits<superscript>(1)</superscript> into this module</title>
 	<tgroup cols='3' align='left' colsep='1' rowsep='1'>
 	<thead>
 	<row>
@@ -755,31 +820,44 @@ export LC_ALL=$lc_bak
 
 
 index=1
+side_authors=
 while read line; do
   author=$(echo $line | awk -F'[,]' '{print $1}')
   gh=$(mk_git_handle "$author")
   [[ "$author" =~ ^@ ]] && author=
 
   if [ -n "$SHOW_AUTHOR_EMAIL" ]; then
-    author_line="<entry>$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh</entry>"
+    author_str="$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh"
   else
-    author_line="<entry>$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh</entry>"
+    author_str="$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh"
+  fi
+
+  if [ $index -gt $TABLE_SIZE_ACTIVITY ]; then
+	side_authors+="$author_str, "
+    continue
   fi
 
   cat <<EOF >>modules/$1/doc/contributors.xml
 	<row>
 		<entry>$index. </entry>
-		$author_line
+		<entry>$author_str</entry>
 		<entry align="center">$(echo $line | awk -F, '{print $3" "$4" - "$6" "$7}')</entry>
 	</row>
 EOF
   index=$(($index+1))
 done < $tmp_file
 
+if [ -n "$side_authors" ]; then
+  side_authors_para="<para><emphasis role='bold'>All remaining contributors</emphasis>: ${side_authors::-2}.</para>"
+else
+  side_authors_para=
+fi
+
 cat <<EOF >>modules/$1/doc/contributors.xml
 	</tbody>
 	</tgroup>
 	</table>
+	$side_authors_para
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
@@ -795,6 +873,11 @@ rm $tmp_file
 
 set -e
 
+if [ ! -r .git ]; then
+  echo "Please run this script from the root opensips directory!"
+  exit 1
+fi
+
 if [ $# -eq 0 ]; then
   echo "Usage: $0 (<module>[, <module>[, ...]] | rebuild-proj-stats)"
   echo "For best results, please run with git 2.7.4+"
@@ -804,7 +887,7 @@ fi
 normalize_arrays
 
 # if not already done, graft the entire git history of the SER project
-if ! git cat-file -e f06ade585363de30dc33d37e909c0d7444092d74; then
+if [[ ! $(git log --reverse --format=%H | head -1) =~ ^f06ade ]]; then
   remote=$(git remote -v | grep -i "OpenSIPS/opensips.git.*fetch" | awk '{print $1}')
   git fetch ${remote:-origin} 'refs/replace/*:refs/replace/*'
 fi
@@ -816,16 +899,19 @@ fi
 
 pids=()
 while [ -n "$1" ]; do
-  if [ -n "$PARALLEL_BUILD" ]; then
-    gen_module_contributors "$(basename $1)" &
-    pids[${#pids[@]}]=$!
-  else
-    gen_module_contributors "$(basename $1)"
-  fi
+  mod="$(basename $1)"
 
-  if [ -n "$DEBUG" ]; then
-    make modules-docbook-html modules=modules/$1
-    xdg-open "file://$(pwd)/modules/$1/doc/$1.html#contributors"
+  if [ -n "$PARALLEL_BUILD" ]; then
+    gen_module_contributors "$mod" &
+	pids+=($!)
+	echo -en "\rForked job #${#pids[@]}"
+  else
+    gen_module_contributors "$mod"
+
+    if [ -n "$DEBUG" ]; then
+      make modules-docbook-html modules=modules/$mod
+      xdg-open "file://$(pwd)/modules/$mod/doc/$mod.html#contributors"
+    fi
   fi
 
   shift
