@@ -622,13 +622,13 @@ rebuild_proj_commit_stats() {
     [ -n "${skip_commits[$sha]}" ] && continue
 
     lines=($(git show $sha --format= --numstat \
-		| awk '{a+=$1; r+=$2}END{print a" "r}'))
+         | awk '{a+=$1; r+=$2}END{print a" "r}'))
     [ -z "${lines[0]}" ] && continue
 
     __PROJ_COMMITS=$((__PROJ_COMMITS + 1))
     __PROJ_LINES_ADD=$(($__PROJ_LINES_ADD + ${lines[0]}))
     __PROJ_LINES_DEL=$(($__PROJ_LINES_DEL + ${lines[1]}))
-	echo -en "\rProcessing commit #$__PROJ_COMMITS"
+    echo -en "\rProcessing commit #$__PROJ_COMMITS"
   done
 
   sed -i "s/^__PROJ_COMMITS.*/__PROJ_COMMITS=$__PROJ_COMMITS/" $0
@@ -833,7 +833,7 @@ while read line; do
   fi
 
   if [ $index -gt $TABLE_SIZE_ACTIVITY ]; then
-	side_authors+="$author_str, "
+    side_authors+="$author_str, "
     continue
   fi
 
@@ -869,6 +869,20 @@ EOF
 rm $tmp_file
 }
 
+graceful_exit() {
+  set +e
+  # stop all jobs
+  if [ -n "$PARALLEL_BUILD" ]; then
+    for pid in ${pids[@]}; do
+      killall -q $pid
+      wait $pid
+    done
+  fi
+
+  rm $TMP_FILE*
+  exit 1
+}
+
 ###############################################################################
 
 set -e
@@ -897,14 +911,16 @@ if [[ "$1" =~ rebuild-proj-stats ]]; then
   exit 0
 fi
 
+trap graceful_exit INT TERM
+
 pids=()
 while [ -n "$1" ]; do
   mod="$(basename $1)"
 
   if [ -n "$PARALLEL_BUILD" ]; then
     gen_module_contributors "$mod" &
-	pids+=($!)
-	echo -en "\rForked job #${#pids[@]}"
+    pids+=($!)
+    echo -en "\rForked job #${#pids[@]}"
   else
     gen_module_contributors "$mod"
 
