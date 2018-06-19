@@ -41,7 +41,7 @@
 <!ENTITY exampledb "dbdriver://username:password@dbhost/dbname">
 <!ENTITY examplecdb "mongodb://10.0.0.4:27017/opensipsDB.userlocation">
 
-<!ENTITY docCopyrights '<para><emphasis>doc copyrights:</emphasis></para>'>
+<!ENTITY docCopyrights '<para><emphasis>Documentation Copyrights:</emphasis></para>'>
 <!ENTITY copyright "Copyright ©">
 
 <!-- Often used acronyms -->

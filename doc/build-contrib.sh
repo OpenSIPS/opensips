@@ -285,7 +285,7 @@ fix_authors=(
   ["9e6730ec4d2e876f6b2372f1b5fb5703112079fc"]="Ruslan Bukin"
 
   # db_text
-  ["e8c8262d23b26bdb45b8074c6e518825ea0ca6de"]="Henning Westherholt"
+  ["e8c8262d23b26bdb45b8074c6e518825ea0ca6de"]="Henning Westerholt"
   ["9391890a8123bc5c7fef594163e0179d334d5bde"]="Chris Heiser"
 
   # db_unixodbc
@@ -671,16 +671,13 @@ count_dir_changes() {
 }
 
 count_module_changes() {
+  [ -n "${mod_renames[$1]}" ] && count_module_changes "${mod_renames[$1]}" "rec"
+
+  mkdir -p modules/$1
   count_dir_changes "$1"
-
-  mod_name="${mod_renames[$1]}"
-  while [ -n "$mod_name" ]; do
-    mkdir -p modules/"$mod_name"
-    count_dir_changes "$mod_name"
-    rm -r modules/"$mod_name"
-
-    mod_name="${mod_renames[$mod_name]}"
-  done
+  if [ "$2" == "rec" ]; then
+    rm -r modules/$1
+  fi
 }
 
 # $1 - module name, e.g.: "tm", "cachedb_mongodb"
@@ -715,7 +712,7 @@ for i in "${!score[@]}"; do
 done | sort -t, -k2nr -k3nr -k4nr -k5nr -k1 >$tmp_file
 export LC_ALL=$lc_bak
 
-# Generate table #1 (by commit statistics)
+#######  Generate table #1 (by commit statistics)
 
 cat <<EOF >modules/$1/doc/contributors.xml
 <!-- THIS IS AN AUTO-GENERATED FILE -->
@@ -740,18 +737,22 @@ cat <<EOF >modules/$1/doc/contributors.xml
 	<tbody>
 EOF
 
-index=1
-side_authors=
-while read line; do
-  author=$(echo $line | awk -F'[,]' '{print $1}')
+mk_author_xml_str() {
+  author="$1"
   gh=$(mk_git_handle "$author")
   [[ "$author" =~ ^@ ]] && author=
 
   if [ -n "$SHOW_AUTHOR_EMAIL" ]; then
-    author_str="$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh"
+    echo "$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh"
   else
-    author_str="$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh"
+    echo "$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh"
   fi
+}
+
+index=1
+side_authors=
+while read line; do
+  author_str=$(mk_author_xml_str "$(echo $line | awk -F'[,]' '{print $1}')")
 
   if [ $index -gt $TABLE_SIZE_COMMITS ]; then
     side_authors+="$author_str, "
@@ -795,12 +796,12 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 
 EOF
 
-# Generate table #2 (by commit activity)
+####### Generate table #2 (by commit activity)
 cat <<EOF >>modules/$1/doc/contributors.xml
 <section id="contrib_commit_activity" xreflabel="contrib_commit_activity">
 	<title>By Commit Activity</title>
 
-	<table frame='all'><title>Top contributors by first and last commits<superscript>(1)</superscript> into this module</title>
+	<table frame='all'><title>Most recently active contributors<superscript>(1)</superscript> to this module</title>
 	<tgroup cols='3' align='left' colsep='1' rowsep='1'>
 	<thead>
 	<row>
@@ -822,15 +823,7 @@ export LC_ALL=$lc_bak
 index=1
 side_authors=
 while read line; do
-  author=$(echo $line | awk -F'[,]' '{print $1}')
-  gh=$(mk_git_handle "$author")
-  [[ "$author" =~ ^@ ]] && author=
-
-  if [ -n "$SHOW_AUTHOR_EMAIL" ]; then
-    author_str="$(echo "$author" | sed 's/</\&lt;/g; s/>/\&gt;/g')$gh"
-  else
-    author_str="$(echo "$author" | grep -oE "^[^<]*" | sed 's/\s\+$//')$gh"
-  fi
+  author_str=$(mk_author_xml_str "$(echo $line | awk -F'[,]' '{print $1}')")
 
   if [ $index -gt $TABLE_SIZE_ACTIVITY ]; then
     side_authors+="$author_str, "
@@ -861,6 +854,37 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
+</section>
+
+</chapter>
+EOF
+
+####### Generate "documentation authors" list
+
+unset first_commit
+unset last_commit
+declare -A first_commit
+declare -A last_commit
+
+count_module_changes $1/doc
+
+lc_bak=$LC_ALL; export LC_ALL=C
+for i in "${!first_commit[@]}"; do
+  echo "$i,${first_commit[$i]},${last_commit[$i]}"
+done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n -k1 >$tmp_file
+export LC_ALL=$lc_bak
+
+doc_authors=
+while read line; do
+  doc_authors+="$(mk_author_xml_str "$(echo $line | awk -F'[,]' '{print $1}')"), "
+done < $tmp_file
+
+cat <<EOF >>modules/$1/doc/contributors.xml
+<chapter id="documentation" xreflabel="documentation">
+	<title>Documentation</title>
+<section id="documentation_contributors" xreflabel="documentation_contributors">
+	<title>Contributors</title>
+	<para><emphasis role='bold'>Last edited by:</emphasis> ${doc_authors::-2}.</para>
 </section>
 
 </chapter>
