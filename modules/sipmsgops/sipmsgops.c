@@ -1264,7 +1264,7 @@ static int fixup_sip_validate(void** param, int param_no)
 static int sip_validate_hdrs(struct sip_msg *msg)
 {
 	struct disposition *disp;
-	struct hdr_field* hf;
+	struct hdr_field* hf, *hf2;
 	struct to_body *to;
 	content_t * cont;
 	struct via_body *via_b;
@@ -1272,7 +1272,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 	char *s_aux, *e_aux;
 	unsigned u_aux;
 	int i_aux;
-	struct sip_uri uri;
+	struct sip_uri uri, uri2;
 
 #define CHECK_HDR_EMPTY() \
 	do { \
@@ -1423,34 +1423,49 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 							hf->name.len, hf->name.s);
 						goto failed;
 					}
-					if (uri.type!=SIP_URI_T && uri.type!=SIPS_URI_T) {
-						LM_ERR("invalid uri type [[%.*s] in first [%.*s] "
-							"value (SIP or SIPS expected) \n",
-							to->uri.len, to->uri.s,
-							hf->name.len, hf->name.s);
-						goto failed;
-					}
 					/* a second value ? */
-					if (to->next) {
-						to = to->next;
-						if (parse_uri( to->uri.s, to->uri.len, &uri)<0) {
+					if (to->next || hf->sibling) {
+						if (to->next) {
+							hf2 = hf;
+							to = to->next;
+						} else {
+							hf2 = hf->sibling;
+							if (!(to = pkg_malloc(sizeof(struct to_body)))) {
+								LM_ERR("out of pkg_memory\n");
+								goto failed;
+							}
+							parse_multi_to( hf2->body.s,
+								hf2->body.s + hf2->body.len +1, to);
+							if (to->error == PARSE_ERROR) {
+								LM_DBG("bad '%.*s' header\n",
+										hf2->name.len, hf2->name.s);
+								pkg_free(to);
+								goto failed;
+							}
+							hf2->parsed = to;
+						}
+						if (parse_uri( to->uri.s, to->uri.len, &uri2)<0) {
 							LM_ERR("invalid uri [%.*s] in second [%.*s] "
 								"value\n", to->uri.len, to->uri.s,
-								hf->name.len, hf->name.s);
+								hf2->name.len, hf2->name.s);
 							goto failed;
 						}
-						if (uri.type!=TEL_URI_T && uri.type!=TELS_URI_T) {
-							LM_ERR("invalid uri type [%.*s] in second [%.*s] "
-								"value (expected TEL or TELS)\n",
-								to->uri.len,to->uri.s,
-								hf->name.len, hf->name.s);
+						if (!(((uri.type==SIP_URI_T || uri.type==SIPS_URI_T) &&
+						(uri2.type==TEL_URI_T || uri2.type==TELS_URI_T))
+						||
+						((uri2.type==SIP_URI_T || uri2.type==SIPS_URI_T) &&
+						(uri.type==TEL_URI_T || uri.type==TELS_URI_T))) ) {
+							LM_ERR("invalid uri type combination in "
+								"first [%d] and second [%d] hdrs [%.*s]\n",
+								uri.type, uri2.type,
+								hf2->name.len, hf2->name.s);
 							goto failed;
 						}
-					}
-					if (to->next) {
-						LM_ERR("too many values (max=2) in hdr [%.*s]\n",
-							hf->name.len, hf->name.s);
-						goto failed;
+						if (to->next || hf2->sibling) {
+							LM_ERR("too many values (max=2) for hdr [%.*s]\n",
+								hf2->name.len, hf2->name.s);
+							goto failed;
+						}
 					}
 				}
 				break;
