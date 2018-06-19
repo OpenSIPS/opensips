@@ -1,24 +1,4 @@
 nathelper Module
-
-Maxim Sobolev
-
-   Sippy Software, Inc.
-
-Edited by
-
-Maxim Sobolev
-
-Bogdan-Andrei Iancu
-
-Ovidiu Sas
-
-   Copyright © 2003-2008 Sippy Software, Inc.
-
-   Copyright © 2005 Voice Sistem SRL
-
-   Copyright © 2018 VoIP Embedded, Inc.
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -67,6 +47,21 @@ Ovidiu Sas
               1.6.1. nh_enable_ping
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -596,3 +591,96 @@ Chapter 2. Frequently Asked Questions
 
    Please follow the guidelines provided at:
    https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Maksym Sobolyev (@sobomax) 153 39 3533 4766
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 140 111 1815 783
+   3. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
+   4. Liviu Chircu (@liviuchircu) 35 26 385 248
+   5. Razvan Crainea (@razvancrainea) 28 21 142 235
+   6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
+   7. Jan Janak (@janakj) 21 11 780 129
+   8. Anca Vamanu 21 4 1602 185
+   9. Andrei Pelinescu-Onciul 20 17 121 110
+   10. Ovidiu Sas (@ovidiusas) 18 13 110 173
+
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Ancuta Onofrei, Andrei Dragus, Vlad Paiu (@vladpaiu), Vlad
+   Patrascu (@rvlad-patrascu), Henning Westerholt (@henningw),
+   Christophe Sollet (@csollet), Marcus Hunger, Klaus Darilion,
+   Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock,
+   Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer,
+   Konstantin Bokarius, John Riordan, Walter Doekes (@wdoekes),
+   Elena-Ramona Modroiu, Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2018
+   4.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   5.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   6.  Razvan Crainea (@razvancrainea)     Dec 2010 - Apr 2017
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   9.  Christophe Sollet (@csollet)        Dec 2009 - Oct 2013
+   10. Vlad Paiu (@vladpaiu)               Aug 2010 - Jun 2012
+
+   All remaining contributors: Maksym Sobolyev (@sobomax), Anca
+   Vamanu, John Riordan, Emmanuel Buu, Andrei Dragus, Sergio
+   Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
+   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita), Razvan
+   Crainea (@razvancrainea), Walter Doekes (@wdoekes), Christophe
+   Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym Sobolyev
+   (@sobomax), Anca Vamanu, Andrei Dragus, Sergio Gutierrez, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Carsten Bock, Ancuta Onofrei,
+   Marcus Hunger, Jeremie Le Hen, Bayan Towfiq, Elena-Ramona
+   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+
+   Documentation Copyrights:
+
+   Copyright © 2018 VoIP Embedded, Inc.
+
+   Copyright © 2003-2008 Sippy Software, Inc.
+
+   Copyright © 2005 Voice Sistem SRL

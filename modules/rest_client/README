@@ -1,17 +1,4 @@
 rest_client Module
-
-Liviu Chircu
-
-   OpenSIPS Solutions
-   <liviu@opensips.org>
-
-Edited by
-
-Liviu Chircu
-
-   Copyright © 2013 www.opensips-solutions.com
-   Revision History
-   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -63,6 +50,22 @@ Liviu Chircu
               1.5.3. rest_put(url, send_body_pv, [send_ctype_pv],
                       recv_body_pv[, [recv_ctype_pv][,
                       [retcode_pv]]])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -514,3 +517,65 @@ route [resume] {
 
         ...
 }
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu) 77 47 2538 508
+   2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
+   3. Razvan Crainea (@razvancrainea) 9 7 26 11
+   4. Jarrod Baumann (@jarrodb) 6 3 131 32
+   5. Agalya Ramachandran (@AgalyaR) 6 2 354 1
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 94 46
+   7. Ryan Bullock (@rrb3942) 5 2 91 77
+   8. Andrey Vorobiev (@andrey-vorobiev) 2 1 4 0
+   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2018
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2017
+   6. Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
+   7. Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
+   8. Agalya Ramachandran (@AgalyaR)      Oct 2016 - Oct 2016
+   9. Jarrod Baumann (@jarrodb)           Apr 2015 - May 2015
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Agalya Ramachandran (@AgalyaR), Jarrod
+   Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
+
+   Documentation Copyrights:
+
+   Copyright © 2013 www.opensips-solutions.com

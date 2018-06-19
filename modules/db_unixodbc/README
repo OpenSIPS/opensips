@@ -1,16 +1,4 @@
 unixodbc Module
-
-Marco Lorrai
-
-   abbeynet.it
-
-Edited by
-
-Marco Lorrai
-
-   Copyright © 2005, 2006 Marco Lorrai
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -35,6 +23,21 @@ Marco Lorrai
               1.5.2. Configuring and Running
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -148,3 +151,76 @@ Chapter 2. Developer Guide
 
    The module implements the OpenSIPS DB API, in order to be used
    by other modules.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Henning Westerholt (@henningw) 47 22 385 1129
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 43 30 615 417
+   3. Marco Lorrai 22 1 2660 0
+   4. Daniel-Constantin Mierla (@miconda) 20 15 221 140
+   5. Liviu Chircu (@liviuchircu) 18 10 136 313
+   6. Razvan Crainea (@razvancrainea) 5 3 48 13
+   7. Anca Vamanu 4 1 89 103
+   8. Elena-Ramona Modroiu 3 1 37 1
+   9. Anonymous 3 1 4 3
+   10. Konstantin Bokarius 3 1 3 5
+
+   All remaining contributors: Alex Massover, Razvan Pistolea,
+   Norman Brandinger (@NormB), Edson Gellert Schubert, Vlad Paiu
+   (@vladpaiu), Carsten Bock, Vlad Patrascu (@rvlad-patrascu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Apr 2017
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2005 - Oct 2014
+   5.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jul 2011
+   6.  Razvan Pistolea                     Jul 2009 - Jul 2009
+   7.  Alex Massover                       Mar 2009 - Mar 2009
+   8.  Carsten Bock                        May 2008 - May 2008
+   9.  Henning Westerholt (@henningw)      May 2007 - May 2008
+   10. Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
+
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Anca Vamanu, Elena-Ramona Modroiu, Norman Brandinger
+   (@NormB), Anonymous, Marco Lorrai.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
+
+   Documentation Copyrights:
+
+   Copyright © 2005-2006 Marco Lorrai

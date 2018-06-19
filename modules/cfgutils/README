@@ -1,27 +1,4 @@
 cfgutils Module
-
-Henning Westerholt
-
-   1und1 Internet AG
-   <henning.westerholt@1und1.de>
-
-Carsten Bock
-
-   BASIS AudioNet GmbH
-
-Elena-Ramona Modroiu
-
-   rosdev.ro
-   <ramona@rosdev.ro>
-
-Sergio Gutierrez
-
-   <saguti@gmail.com>
-
-   Copyright © 2007, 2008 1und1 Internet AG, BASIS AudioNet GmbH,
-   Elena-Ramona Modroiu
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -82,6 +59,22 @@ Sergio Gutierrez
               1.7.2. $RANDOM
               1.7.3. $ctime(name)
               1.7.4. $shv(name)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -858,3 +851,82 @@ if ($shv(debug) == 1) {
         xlog("request: $rm from $fu to $ru\n");
 }
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Henning Westerholt (@henningw) 29 18 1088 86
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 20 372 263
+   3. Liviu Chircu (@liviuchircu) 24 14 780 121
+   4. Razvan Crainea (@razvancrainea) 16 11 273 67
+   5. Elena-Ramona Modroiu 14 3 1183 7
+   6. Daniel-Constantin Mierla (@miconda) 12 10 84 32
+   7. Anca Vamanu 6 3 220 14
+   8. Vlad Patrascu (@rvlad-patrascu) 5 3 12 26
+   9. Ionel Cerghit (@ionel-cerghit) 5 1 18 161
+   10. Vlad Paiu (@vladpaiu) 3 2 3 0
+
+   All remaining contributors: Sergio Gutierrez, Konstantin
+   Bokarius, Walter Doekes (@wdoekes), Edson Gellert Schubert,
+   Maksym Sobolyev (@sobomax).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2017
+   4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Nov 2016
+   5.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
+   6.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015
+   7.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015
+   8.  Vlad Paiu (@vladpaiu)               Jan 2013 - Jul 2014
+   9.  Anca Vamanu                         Aug 2009 - Sep 2009
+   10. Sergio Gutierrez                    Dec 2008 - Dec 2008
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,
+   Konstantin Bokarius, Edson Gellert Schubert.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Anca Vamanu, Sergio Gutierrez,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Elena-Ramona Modroiu, Konstantin Bokarius, Edson
+   Gellert Schubert.
+
+   Documentation Copyrights:
+
+   Copyright © 2007-2008 1und1 Internet AG
+
+   Copyright © 2007-2008 BASIS AudioNet GmbH
+
+   Copyright © 2007-2008 Elena-Ramona Modroiu

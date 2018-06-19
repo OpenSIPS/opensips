@@ -1,20 +1,4 @@
 Dynamic Routing Module
-
-Bogdan-Andrei Iancu
-
-   www.opensips-solutions.com
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-Anca-Maria Vamanu
-
-   Copyright © 2005-2008 Voice Sistem SRL
-
-   Copyright © 2009-2012 www.opensips-solutions.com
-   Revision History
-   Revision $Revision: 8834 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -109,6 +93,21 @@ Anca-Maria Vamanu
         1.7. Installation
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -1513,3 +1512,82 @@ Chapter 2. Developer Guide
 
    The module provides no function to be used by other OpenSIPS
    modules.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 299 140 11669 3747
+   2. Mihai Tiganus (@tallicamike) 80 12 5958 1170
+   3. Razvan Crainea (@razvancrainea) 62 31 278 1523
+   4. Liviu Chircu (@liviuchircu) 46 30 817 496
+   5. Vlad Paiu (@vladpaiu) 21 18 227 46
+   6. Andrei Datcu (@andrei-datcu) 20 12 551 134
+   7. Vlad Patrascu (@rvlad-patrascu) 17 10 241 249
+   8. Ovidiu Sas (@ovidiusas) 15 11 132 70
+   9. Ionut Ionita (@ionutrazvanionita) 14 9 370 108
+   10. Andrei Dragus 10 3 657 40
+
+   All remaining contributors: Anca Vamanu, Jeremy Martinez, Dusan
+   Klinec, Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez, Le
+   Roy Christophe, Nick Altmann (@nikbyte), Ozzyboshi, Walter
+   Doekes (@wdoekes).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - May 2018
+   4.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2018
+   5.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2017
+   6.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
+   7.  Jeremy Martinez                     Feb 2017 - Feb 2017
+   8.  Le Roy Christophe                   Feb 2017 - Feb 2017
+   9.  Ionut Ionita (@ionutrazvanionita)   Mar 2016 - Nov 2016
+   10. Ozzyboshi                           Jul 2016 - Jul 2016
+
+   All remaining contributors: Julián Moreno Patiño, Dusan Klinec,
+   Andrei Datcu (@andrei-datcu), Mihai Tiganus (@tallicamike),
+   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Matt Lehner,
+   Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
+   Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
+   Vlad Paiu (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei
+   Datcu (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
+   Sergio Gutierrez.
+
+   Documentation Copyrights:
+
+   Copyright © 2009-2012 www.opensips-solutions.com
+
+   Copyright © 2005-2008 Voice Sistem SRL

@@ -1,18 +1,4 @@
 SipTrace Module
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-Edited by
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-   Copyright © 2006 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -42,6 +28,22 @@ Daniel-Constantin Mierla
 
         1.6. Database setup
         1.7. Known issues
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -335,3 +337,81 @@ var(user)");
    function. Fixing it would mean to register a fwdcb callback
    that would be called for all the messages but would be used
    only by ACKs, which would be highly ineffective.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Ionut Ionita (@ionutrazvanionita) 115 53 3058 2109
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 90 70 799 680
+   3. Daniel-Constantin Mierla (@miconda) 48 26 2215 191
+   4. Razvan Crainea (@razvancrainea) 22 19 126 87
+   5. Vlad Paiu (@vladpaiu) 21 8 335 528
+   6. Liviu Chircu (@liviuchircu) 18 15 53 62
+   7. Henning Westerholt (@henningw) 11 6 146 155
+   8. Andrei Datcu (@andrei-datcu) 11 5 284 135
+   9. Vlad Patrascu (@rvlad-patrascu) 7 4 66 59
+   10. Alexandr Dubovikov (@adubovikov) 6 1 500 4
+
+   All remaining contributors: Dusan Klinec, Andreas Heise, Sergio
+   Gutierrez, Dan Pascu (@danpascu), Konstantin Bokarius, Iouri
+   Kharon, Edson Gellert Schubert, Elena-Ramona Modroiu, Eric
+   Tamme (@etamme).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jan 2018
+   5.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Andrei Datcu (@andrei-datcu)        Jun 2014 - Jul 2014
+   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Nov 2013
+   10. Alexandr Dubovikov (@adubovikov)    Nov 2011 - Nov 2011
+
+   All remaining contributors: Sergio Gutierrez, Dan Pascu
+   (@danpascu), Daniel-Constantin Mierla (@miconda), Iouri Kharon,
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Andrei
+   Datcu (@andrei-datcu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Razvan Crainea (@razvancrainea), Alexandr Dubovikov
+   (@adubovikov), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Elena-Ramona Modroiu.
+
+   Documentation Copyrights:
+
+   Copyright © 2006 Voice Sistem SRL

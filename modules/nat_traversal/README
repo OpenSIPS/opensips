@@ -1,18 +1,4 @@
 NAT Traversal Module
-
-Dan Pascu
-
-   <dan@ag-projects.com>
-
-Edited by
-
-Dan Pascu
-
-   <dan@ag-projects.com>
-
-   Copyright © 2008 Dan Pascu
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -64,6 +50,22 @@ Dan Pascu
               1.8.2. Registration in multi-proxy environments
               1.8.3. Subscription in multi-proxy environments
               1.8.4. Outgoing INVITEs in multi-proxy environments
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -803,3 +805,72 @@ if ($rm=="REGISTER") {
    respectively UA2. All the proxies that have used record_route()
    during the first INVITE should also call record_route() during
    further in-dialog requests to keep staying in the path.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Dan Pascu (@danpascu) 43 17 3061 81
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 25 107 85
+   3. Liviu Chircu (@liviuchircu) 15 12 57 79
+   4. Saúl Ibarra Corretgé (@saghul) 9 5 188 102
+   5. Razvan Crainea (@razvancrainea) 6 4 8 5
+   6. Vlad Paiu (@vladpaiu) 5 3 12 14
+   7. Vlad Patrascu (@rvlad-patrascu) 5 3 8 7
+   8. Anca Vamanu 4 2 12 1
+   9. David Sanders 3 1 8 6
+   10. Stéphane Alnet (@shimaore) 3 1 6 1
+
+   All remaining contributors: Sergio Gutierrez.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   2.  Dan Pascu (@danpascu)               May 2008 - Feb 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2017
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Feb 2016
+   6.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
+   7.  David Sanders                       Oct 2014 - Oct 2014
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2012
+   9.  Anca Vamanu                         Feb 2010 - Nov 2011
+   10. Stéphane Alnet (@shimaore)          Jun 2011 - Jun 2011
+
+   All remaining contributors: Sergio Gutierrez.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Saúl Ibarra Corretgé
+   (@saghul), Dan Pascu (@danpascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2008 Dan Pascu

@@ -1,19 +1,4 @@
 B2B_ENTITIES
-
-Anca-Maria Vamanu
-
-   OpenSIPS
-
-Edited by
-
-Anca-Maria Vamanu
-
-Ovidiu Sas
-
-   Copyright © 2009 Anca-Maria
-   Vamanu
-   Revision History
-   Revision $Revision: 8103 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -51,6 +36,22 @@ Ovidiu Sas
         2.6. entity_delete
         2.7. restore_logic_info
         2.8. update_b2bl_param
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -418,3 +419,75 @@ ey,
    This function can be used to change the logic param stored for
    an entity ( useful in case an entity is moved between logic
    records).
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Anca Vamanu 182 94 6839 1860
+   2. Ovidiu Sas (@ovidiusas) 52 39 853 291
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 39 34 292 110
+   4. Razvan Crainea (@razvancrainea) 17 15 65 53
+   5. Liviu Chircu (@liviuchircu) 12 9 69 111
+   6. Vlad Paiu (@vladpaiu) 6 4 74 47
+   7. Stanislaw Pitucha 4 2 6 6
+   8. Nick Altmann (@nikbyte) 4 1 157 26
+   9. Ionut Ionita (@ionutrazvanionita) 3 1 31 3
+   10. @DMOsipov 3 1 5 3
+
+   All remaining contributors: Stéphane Alnet (@shimaore), Henk
+   Hesselink, Ryan Bullock (@rrb3942), Vlad Patrascu
+   (@rvlad-patrascu), Walter Doekes (@wdoekes).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2017
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  @DMOsipov                           Mar 2016 - Mar 2016
+   6.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
+   7.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2015
+   8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Apr 2014
+   10. Ryan Bullock (@rrb3942)             Feb 2014 - Feb 2014
+
+   All remaining contributors: Nick Altmann (@nikbyte), Stéphane
+   Alnet (@shimaore), Anca Vamanu, Henk Hesselink, Stanislaw
+   Pitucha.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
+   (@ovidiusas), Anca Vamanu.
+
+   Documentation Copyrights:
+
+   Copyright © 2009 Anca-Maria Vamanu

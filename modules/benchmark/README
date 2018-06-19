@@ -1,25 +1,4 @@
 Benchmark Module
-
-Bastian Friedrich
-
-   Collax GmbH
-   <bastian.friedrich@collax.com>
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-Edited by
-
-Bastian Friedrich
-
-   <bastian.friedrich@collax.com>
-
-   Copyright © 2007 Collax GmbH
-
-   Copyright © 2007 Voice System SRL
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -66,6 +45,22 @@ Bastian Friedrich
               2.1.3. bm_log(id)
 
         2.2. Benchmark API Example
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -364,3 +359,75 @@ bmb.bm_start(id);
 do_something();
 bmb.bm_log(id);
 ...
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Daniel-Constantin Mierla (@miconda) 22 10 1391 50
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 20 18 86 52
+   3. Liviu Chircu (@liviuchircu) 11 8 26 57
+   4. Razvan Crainea (@razvancrainea) 7 5 15 15
+   5. Stanislaw Pitucha 7 3 170 65
+   6. Henning Westerholt (@henningw) 6 4 11 10
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 55 5
+   8. David Sanders 4 2 8 1
+   9. Anca Vamanu 3 1 5 2
+   10. Konstantin Bokarius 3 1 3 5
+
+   All remaining contributors: Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2018
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   5.  David Sanders                       Aug 2012 - Jan 2013
+   6.  Anca Vamanu                         Sep 2009 - Sep 2009
+   7.  Stanislaw Pitucha                   Aug 2009 - Sep 2009
+   8.  Daniel-Constantin Mierla (@miconda) Jul 2007 - Mar 2008
+   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+
+   All remaining contributors: Henning Westerholt (@henningw).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Stanislaw Pitucha, Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
+
+   Documentation Copyrights:
+
+   Copyright © 2007 Collax GmbH
+
+   Copyright © 2007 Voice Sistem SRL

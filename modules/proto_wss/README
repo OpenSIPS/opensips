@@ -1,12 +1,4 @@
 proto_wss Module
-
-OpenSIPS Project
-
-Edited by
-
-Razvan Crainea
-
-   Copyright © 2016 OpenSIPS Project
      __________________________________________________________
 
    Table of Contents
@@ -35,6 +27,21 @@ Razvan Crainea
               1.4.1. wss_trace
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -277,3 +284,59 @@ Chapter 2. Frequently Asked Questions
    Does OpenSIPS support fragmented Secure WebSocket messages?
 
    No, the WebSocket fragmentation mechanism is not supported.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea) 16 9 697 34
+   2. Ionut Ionita (@ionutrazvanionita) 14 10 362 19
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 10 7 175 9
+   4. Liviu Chircu (@liviuchircu) 7 5 30 45
+   5. Vlad Patrascu (@rvlad-patrascu) 4 2 2 3
+   6. Maksym Sobolyev (@sobomax) 2 1 1 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Oct 2017
+   4. Razvan Crainea (@razvancrainea)     Jan 2016 - Sep 2017
+   5. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
+   6. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
+   Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea).
+
+   Documentation Copyrights:
+
+   Copyright © 2015 www.opensips-solutions.com

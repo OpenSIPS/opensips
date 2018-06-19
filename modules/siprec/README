@@ -1,16 +1,4 @@
 SIPREC Module
-
-Răzvan Crainea
-
-   OpenSIPS Solutions
-
-Edited by
-
-Răzvan Crainea
-
-   Copyright © 2017 www.opensips-solutions.com
-
-   Copyright © 2017 Module sponsored by OrecX
      __________________________________________________________
 
    Table of Contents
@@ -37,6 +25,22 @@ Răzvan Crainea
 
               1.8.1. siprec_start_recording(srs [, group [, caller
                       [, callee [, rtpproxy_set [, media_ip] ]]]])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -281,3 +285,52 @@ for $ci in inbound group\n");
         $xml(caller_xml/nameID) = "<name>test</name>";
         siprec_start_recording("$var(srs)",,"$xml(caller_xml/nameID)");
         ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea)    67      29      3397     613
+   2. Vlad Patrascu (@rvlad-patrascu)    5        3      124       50
+   3. Liviu Chircu (@liviuchircu)        5        3       20       43
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Liviu Chircu (@liviuchircu)     Apr 2018 - Jun 2018
+   2. Vlad Patrascu (@rvlad-patrascu) Feb 2018 - Apr 2018
+   3. Razvan Crainea (@razvancrainea) Jun 2017 - Feb 2018
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea).
+
+   Documentation Copyrights:
+
+   Copyright © 2017 www.opensips-solutions.com

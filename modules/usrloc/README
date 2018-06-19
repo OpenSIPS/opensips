@@ -1,32 +1,4 @@
 usrloc Module
-
-Jan Janak
-
-   FhG FOKUS
-   <jan@iptel.org>
-
-Liviu Chircu
-
-   OpenSIPS Solutions
-   <liviu@opensips.org>
-
-Edited by
-
-Jan Janak
-
-Bogdan-Andrei Iancu
-
-Ovidiu Sas
-
-Liviu Chircu
-
-   Copyright © 2003 FhG FOKUS
-
-   Copyright © 2005-2008 Voice Sistem SRL
-
-   Copyright © 2018 www.opensips-solutions.com
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -149,6 +121,22 @@ Liviu Chircu
               2.1.15. ul_bind_ursloc( api )
               2.1.16. ul_register_ulcb(type ,callback, param)
               2.1.17. ul_get_num_users()
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -1413,3 +1401,100 @@ is_replicated)
 
    The function loops through all domains summing up the number of
    users.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Jan Janak (@janakj) 421 117 15689 10095
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 233 137 4042 3549
+   3. Liviu Chircu (@liviuchircu) 196 112 6171 1926
+   4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
+   5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
+   6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
+   7. Vlad Patrascu (@rvlad-patrascu) 32 14 1087 496
+   8. Henning Westerholt (@henningw) 22 11 462 356
+   9. Razvan Crainea (@razvancrainea) 19 14 328 68
+   10. Andrei Pelinescu-Onciul 17 13 151 91
+
+   All remaining contributors: Vlad Paiu (@vladpaiu), Nils
+   Ohlmeier, Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
+   (@ovidiusas), Ionel Cerghit (@ionel-cerghit), Maksym Sobolyev
+   (@sobomax), Andrei Dragus, Dusan Klinec, Andrei Datcu
+   (@andrei-datcu), Juha Heinanen (@juha-h), Anca Vamanu, Marcus
+   Hunger, Jamey Hicks, Andreas Granig, Shlomi Gutman, @jalung,
+   Jeffrey Magder, Phil D'Amore, Norman Brandinger (@NormB), David
+   Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon,
+   Matthew M. Boedicker, UnixDev, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Stephane Alnet.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Apr 2018
+   4.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   5.  Razvan Crainea (@razvancrainea)     Jul 2011 - Dec 2017
+   6.  @jalung                             Aug 2017 - Aug 2017
+   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2017
+   8.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
+   9.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
+   10. Ovidiu Sas (@ovidiusas)             Apr 2008 - Mar 2016
+
+   All remaining contributors: Dusan Klinec, Eseanu Marius
+   Cristian (@eseanucristian), David Sanders, Andrei Datcu
+   (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
+   UnixDev, Daniel-Constantin Mierla (@miconda), Henning
+   Westerholt (@henningw), Iouri Kharon, Konstantin Bokarius,
+   Edson Gellert Schubert, Anca Vamanu, Matthew M. Boedicker,
+   Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman
+   Brandinger (@NormB), Andreas Granig, Juha Heinanen (@juha-h),
+   Klaus Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
+   Jiri Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax),
+   Jamey Hicks, Nils Ohlmeier.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
+   (@ovidiusas), Andrei Datcu (@andrei-datcu), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Marcus Hunger, Elena-Ramona
+   Modroiu, Juha Heinanen (@juha-h), Jan Janak (@janakj), Maksym
+   Sobolyev (@sobomax), Nils Ohlmeier.
+
+   Documentation Copyrights:
+
+   Copyright © 2018 www.opensips-solutions.com
+
+   Copyright © 2005-2008 Voice Sistem SRL
+
+   Copyright © 2003 FhG FOKUS

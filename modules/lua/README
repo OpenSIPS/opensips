@@ -1,16 +1,4 @@
 lua Module
-
-Arnaud Chong
-
-Edited by
-
-Eric Gouyer
-
-Eric Gouyer
-
-Arnaud Chong
-
-   Copyright © 2006-2011
      __________________________________________________________
 
    Table of Contents
@@ -65,6 +53,22 @@ Arnaud Chong
               2.1.21. AVP_destroy(msg, name)
               2.1.22. pseudoVar(msg, variable)
               2.1.23. add_lump_rpl
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -303,3 +307,61 @@ Chapter 2. OpenSIPS Lua API
 2.1.23. add_lump_rpl
 
    Add header to the reply.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Arnaud Chong + Eric Gouyer 35 1 4335 0
+   2. Razvan Crainea (@razvancrainea) 20 15 144 136
+   3. Liviu Chircu (@liviuchircu) 11 8 13 61
+   4. Vlad Paiu (@vladpaiu) 5 3 7 9
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
+   6. Julián Moreno Patiño 3 1 1 1
+   7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   3. Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   4. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Nov 2014
+   6. Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2012
+   7. Arnaud Chong + Eric Gouyer          Dec 2011 - Dec 2011
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Paiu (@vladpaiu), Arnaud Chong + Eric
+   Gouyer.
+
+   Documentation Copyrights:
+
+   Copyright © 2006-2011 Arnaud Chong, Eric Gouyer

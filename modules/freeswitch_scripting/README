@@ -1,20 +1,4 @@
 freeswitch_scripting Module
-
-Liviu Chircu
-
-   OpenSIPS Solutions
-   <liviu@opensips.org>
-
-Giovanni Maruzzelli
-
-   OpenTelecom.IT
-   <gmaruzz@opentelecom.it>
-
-Edited by
-
-Liviu Chircu
-
-   Copyright © 2017 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -53,6 +37,22 @@ Liviu Chircu
         1.6. Exported Events
 
               1.6.1. E_FREESWITCH
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -315,3 +315,47 @@ sponse)");
      * body - the full JSON-encoded body of the event, as sent by
        FreeSWITCH. Use the json module ($json variable) to easily
        interpret it.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                 Name             DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)    39      19      1906     254
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                 Name               Commit Activity
+   1. Liviu Chircu (@liviuchircu) Dec 2017 - Jun 2018
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu).
+
+   Documentation Copyrights:
+
+   Copyright © 2017 www.opensips-solutions.com

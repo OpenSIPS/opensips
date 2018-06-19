@@ -1,40 +1,4 @@
 TLS_MGM module
-
-Peter Griffiths
-
-   unknown
-
-Klaus Darilion
-
-   enum.at
-
-Edited by
-
-Klaus Darilion
-
-Bogdan-Andrei Iancu
-
-Cesc Santasusana
-
-Klaus Darilion
-
-Christian Lahme
-
-Ionut-Razvan Ionita
-
-Marius Cristian Eseanu
-
-Robert-Vladut Patrascu
-
-   Copyright © 2005 Voice Sistem SRL
-
-   Copyright © 2005 Cesc Santasusana
-
-   Copyright © 2006 enum.at
-
-   Copyright © 2013 Secusmart GmbH
-
-   Copyright © 2015 OpenSIPS Solutions
      __________________________________________________________
 
    Table of Contents
@@ -151,6 +115,22 @@ Robert-Vladut Patrascu
               2.4.8. tls_new_client_domain
               2.4.9. tls_new_client_domain_name
               2.4.10. tls_free_domains
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -1405,3 +1385,74 @@ Chapter 2. Developer Guide
    void tls_free_domains(void);
 
    Cleans up the entire domain lists.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
+   2. Vlad Patrascu (@rvlad-patrascu) 45 11 1653 1129
+   3. Razvan Crainea (@razvancrainea) 37 27 525 236
+   4. Liviu Chircu (@liviuchircu) 19 13 129 208
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 19 8 267 446
+   6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
+   7. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
+   8. Ovidiu Sas (@ovidiusas) 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 2 1 3 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                        Name                     Commit Activity
+   1. Liviu Chircu (@liviuchircu)              Oct 2015 - Jun 2018
+   2. Razvan Crainea (@razvancrainea)          Sep 2015 - Apr 2018
+   3. Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2017
+   4. Ovidiu Sas (@ovidiusas)                  Jun 2017 - Jun 2017
+   5. Ionut Ionita (@ionutrazvanionita)        Apr 2016 - Apr 2017
+   6. Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2016 - Mar 2017
+   7. Ionel Cerghit (@ionel-cerghit)           Aug 2016 - Aug 2016
+   8. Maksym Sobolyev (@sobomax)               Mar 2016 - Mar 2016
+   9. Eseanu Marius Cristian (@eseanucristian) Sep 2015 - Sep 2015
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Eseanu Marius Cristian
+   (@eseanucristian).
+
+   Documentation Copyrights:
+
+   Copyright © 2015 www.opensips-solutions.com
+
+   Copyright © 2013 Secusmart GmbH
+
+   Copyright © 2006 enum.at
+
+   Copyright © 2005 Cesc Santasusana
+
+   Copyright © 2005 Voice Sistem SRL

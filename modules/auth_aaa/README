@@ -1,36 +1,4 @@
 Auth_aaa Module
-
-Jan Janak
-
-   FhG Fokus
-   <jan@iptel.org>
-
-Juha Heinanen
-
-   Song Networks
-   <jh@song.fi>
-
-Stelios Sidiroglou-Douskos
-
-Bogdan-Andrei Iancu
-
-   <bogdan@opensips.org>
-
-Edited by
-
-Jan Janak
-
-   <jan@iptel.org>
-
-Irina-Maria Stanescu
-
-   <ironmissy@gmail.com>
-
-   Copyright © 2002, 2003 FhG FOKUS
-
-   Copyright © 2005, 2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -54,6 +22,22 @@ Irina-Maria Stanescu
 
               1.5.1. aaa_www_authorize(realm[, uri_user])
               1.5.2. aaa_proxy_authorize(realm [, uri_user])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -265,3 +249,80 @@ if (!aaa_proxy_authorize("$pd", "$pU")) { # Realm and URI user are taken
         proxy_challenge("$pd", "1");         # from P-Preferred-Identity
 };                                           # header field
 ...
+
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Jan Janak (@janakj) 90 24 3294 2182
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 35 27 358 224
+   3. Irina-Maria Stanescu 16 8 185 299
+   4. Daniel-Constantin Mierla (@miconda) 15 13 67 55
+   5. Liviu Chircu (@liviuchircu) 13 10 42 81
+   6. Maksym Sobolyev (@sobomax) 12 6 167 171
+   7. Juha Heinanen (@juha-h) 8 5 142 53
+   8. Andrei Pelinescu-Onciul 7 5 8 2
+   9. Razvan Crainea (@razvancrainea) 6 4 9 13
+   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 3 1
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Konstantin
+   Bokarius, Edson Gellert Schubert, Vlad Patrascu
+   (@rvlad-patrascu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Oct 2014
+   5.  Irina-Maria Stanescu                Aug 2009 - Apr 2010
+   6.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
+   7.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   8.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   9.  Maksym Sobolyev (@sobomax)          Dec 2003 - Feb 2008
+   10. Juha Heinanen (@juha-h)             May 2003 - Dec 2007
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Jan Janak
+   (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea),
+   Irina-Maria Stanescu.
+
+   Documentation Copyrights:
+
+   Copyright © 2005-2009 Voice Sistem SRL
+
+   Copyright © 2002-2003 FhG FOKUS

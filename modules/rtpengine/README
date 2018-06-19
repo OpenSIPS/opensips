@@ -1,40 +1,4 @@
 rtpengine Module
-
-Maxim Sobolev
-
-   Sippy Software, Inc.
-
-Juha Heinanen
-
-   TuTPro, Inc.
-
-Edited by
-
-Maxim Sobolev
-
-Bogdan-Andrei Iancu
-
-Juha Heinanen
-
-Sas Ovidiu
-
-Carsten Bock
-
-   ng-voice GmbH
-
-Richard Fuchs
-
-   Sipwise GmbH
-
-   Copyright © 2003-2008 Sippy Software, Inc.
-
-   Copyright © 2005 Voice Sistem SRL
-
-   Copyright © 2009-2014 TuTPro Inc.
-
-   Copyright © 2010 VoIPEmbedded Inc.
-
-   Copyright © 2013-2014 Sipwise GmbH
      __________________________________________________________
 
    Table of Contents
@@ -90,6 +54,21 @@ Richard Fuchs
               1.7.4. teardown
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -511,8 +490,8 @@ rtpengine_offer();
             it was offered originally or not.
           + rtcp-mux-require - Similar to offer but pretends that
             the client has accepted rtcp-mux. This breaks RFC 5761
-            and will not advertise seperate RTCP ports. This option
-            is necessary for WebRTC clients.
+            and will not advertise seperate RTCP ports. This
+            option is necessary for WebRTC clients.
           + rtcp-mux-accept - if rtcp-mux was offered, make the
             RTP proxy accept the offer and also offer it to the
             recipient of this message. Can be combined with
@@ -892,3 +871,73 @@ ssion-connection ICE=force RTP/SAVPF");
 
    Please follow the guidelines provided at:
    https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea) 111 35 3842 2481
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 419 593
+   3. Richard Fuchs 21 2 640 723
+   4. Liviu Chircu (@liviuchircu) 12 8 60 124
+   5. Eric Tamme (@etamme) 7 5 42 19
+   6. Vlad Patrascu (@rvlad-patrascu) 4 2 18 9
+   7. Rob Gagnon (@rgagnon24) 3 1 22 22
+   8. Dan Pascu (@danpascu) 3 1 3 13
+   9. Oliver Severin Mulelid-Tynes (@olivermt) 3 1 1 1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                        Name                     Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)              Jul 2014 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2018
+   4. Razvan Crainea (@razvancrainea)          Jun 2014 - May 2018
+   5. Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
+   6. Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
+   7. Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
+   8. Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
+   9. Richard Fuchs                            Mar 2014 - Mar 2014
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
+
+   Documentation Copyrights:
+
+   Copyright © 2013-2014 Sipwise GmbH
+
+   Copyright © 2010 VoIPEmbedded Inc.
+
+   Copyright © 2009-2014 TuTPro Inc.
+
+   Copyright © 2005 Voice Sistem SRL
+
+   Copyright © 2003-2008 Sippy Software, Inc.
