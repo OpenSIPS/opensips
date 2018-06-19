@@ -475,11 +475,11 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 				msg->parsed_flag |= HDR_MIN_EXPIRES_F;
 				break;
 			case HDR_PPI_T:
-				if (msg->ppi==0) msg->ppi = hf;
+				link_sibling_hdr(ppi,hf);
 				msg->parsed_flag|=HDR_PPI_F;
 				break;
 			case HDR_PAI_T:
-				if (msg->pai==0) msg->pai = hf;
+				link_sibling_hdr(pai,hf);
 				msg->parsed_flag|=HDR_PAI_F;
 				break;
 			case HDR_PRIVACY_T:
