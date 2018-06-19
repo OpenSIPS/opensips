@@ -4123,6 +4123,8 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 		}
 	}
 
+	lock_start_read( current_partition->ref_lock );
+
 	if(current_partition->rdata!=NULL && *current_partition->rdata!=NULL) {
 		for (map_first((*current_partition->rdata)->pgw_tree, &gw_it);
 			iterator_is_valid(&gw_it); iterator_next(&gw_it)) {
@@ -4194,11 +4196,13 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 					}
 				}
 end:
+				lock_stop_read( current_partition->ref_lock );
 				return 1;
 			}
 		}
 	}
 
+	lock_stop_read( current_partition->ref_lock );
 
 	return -1;
 }
