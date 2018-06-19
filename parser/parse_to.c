@@ -592,8 +592,19 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 				switch (status)
 				{
 					case DISPLAY_QUOTED:
+					case URI_ENCLOSED:
 						break;
 					case URI_OR_TOKEN:
+						/* the next transition cannot be determined here. The
+						 * ',' maybe part of the username inside URI, or 
+						 * it can be separator between 2 hdr parts. As this
+						 * parsed is not URI aware (we do not actually parse
+						 * the URI, but we simply skip it), we have no idea
+						 * in which care we are..... For the moment, if the
+						 * header is marked as single part, at least let's
+						 * consider the ',' as part of the URI */
+						if (multi==0)
+							break;
 					case MAYBE_URI_END:
 						to_b->uri.len = tmp - to_b->uri.s;
 					case END:
