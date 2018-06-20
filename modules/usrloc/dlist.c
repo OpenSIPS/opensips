@@ -522,7 +522,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 {
 	static const cdb_key_t aorhash_key = {str_init("aorhash"), 0}; /* TODO */
 	struct list_head *_, *__;
-	int cur_node_idx, nr_nodes, min, max;
+	int cur_node_idx = 0, nr_nodes = 1, min, max;
 	char *cpos;
 	double unit;
 	cdb_filter_t *aorh_filter;
@@ -536,8 +536,9 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 	enum cdb_filter_op rhs_op;
 	int shortage;
 
-	cur_node_idx = clusterer_api.get_my_index(
-	         location_cluster, &contact_repl_cap, &nr_nodes);
+	if (shared_pinging)
+		cur_node_idx = clusterer_api.get_my_index(
+		                 location_cluster, &contact_repl_cap, &nr_nodes);
 
 	unit = MAX_DB_AOR_HASH / (double)(part_max * nr_nodes);
 	min = (int)(unit * part_max * cur_node_idx + unit * part_idx);
@@ -646,8 +647,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	if (zero_end)
 		*len -= (int)sizeof(c->c.len);
 
-	if (cluster_mode == CM_FULL_SHARING
-	    || cluster_mode == CM_FULL_SHARING_CACHEDB) {
+	if (shared_pinging && (cluster_mode == CM_FULL_SHARING
+	    || cluster_mode == CM_FULL_SHARING_CACHEDB)) {
 		cur_node_idx = clusterer_api.get_my_index(
 		         location_cluster, &contact_repl_cap, &nr_nodes);
 	}

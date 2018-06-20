@@ -120,6 +120,7 @@ extern int cseq_delay;
 extern int ul_hash_size;
 extern int latency_event_min_us_delta;
 extern int latency_event_min_us;
+extern int shared_pinging;
 
 extern db_con_t* ul_dbh;   /* Database connection handle */
 extern db_func_t ul_dbf;

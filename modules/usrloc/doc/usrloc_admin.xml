@@ -1308,6 +1308,36 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		</example>
 	</section>
 
+	<section id="param_shared_pinging" xreflabel="shared_pinging">
+		<title><varname>shared_pinging</varname> (integer)</title>
+		<para>
+		Only relevant in a "full sharing" or "full sharing cachedb"
+		<xref linkend="param_cluster_mode"/>.  If set to non-zero, the overall
+		pinging workload will be equally spread across cluster nodes with the
+		help of the clustering layer that keeps track of the current number of
+		active nodes.
+		</para>
+		<para>
+		Disabling this parameter may be useful in simple active/backup
+		setups, where only the active node must perform the pinging.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>1 (enabled)</quote>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>shared_pinging</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# do not partition the pinging workload across cluster nodes
+modparam("usrloc", "shared_pinging", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
