@@ -851,6 +851,10 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 
 	if (!p) {	/* param not found in parsed struct so it should be a new optional param */
 		opt_p = pkg_malloc(sizeof *opt_p);
+		if (!opt_p) {
+			LM_ERR("No more pkg memory!\n");
+			return -1;
+		}
 		opt_p->next = isup_struct->opt_params_list;
 		memset(&opt_p->param, 0, sizeof(struct param_parsed_struct));
 		opt_p->param.param_code = isup_params[fix->isup_params_idx].param_code;
