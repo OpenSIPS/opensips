@@ -1338,6 +1338,31 @@ modparam("usrloc", "shared_pinging", 0)
 		</example>
 	</section>
 
+	<section id="param_mi_dump_kv_store" xreflabel="mi_dump_kv_store">
+		<title><varname>mi_dump_kv_store</varname> (integer)</title>
+		<para>
+		Enable in order to include the "KV-Store" field in all usrloc MI
+		commands which output AoR or Contact representations.  This verbose
+		field contains custom data attached to each of these two entities.
+		mid_registrar makes use of both of these holders, for example.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>0 (disabled)</quote>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>mi_dump_kv_store</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# include the "KV-Store" key in all usrloc MI output
+modparam("usrloc", "mi_dump_kv_store", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
