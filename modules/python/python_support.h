@@ -22,6 +22,6 @@
 #ifndef _PYTHON_SUPPORT_H
 #define  _PYTHON_SUPPORT_H
 
-void python_handle_exception(const char *);
+void python_handle_exception(const char *, const char *);
 
 #endif
