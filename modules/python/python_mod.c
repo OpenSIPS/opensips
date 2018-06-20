@@ -19,6 +19,7 @@
  *
 */
 
+#include <signal.h>
 #include <Python.h>
 
 #include "../../str.h"
@@ -90,6 +91,7 @@ mod_init(void)
 {
     char *dname, *bname;
     int i;
+    sig_t sig_save;
     PyObject *sys_path, *pDir, *pModule, *pFunc, *pArgs;
     PyThreadState *mainThreadState;
 
@@ -118,6 +120,7 @@ mod_init(void)
     if (strlen(dname) == 0)
         dname = ".";
 
+    sig_save = signal(SIGCHLD, SIG_DFL);
     Py_Initialize();
     PyEval_InitThreads();
     mainThreadState = PyThreadState_Get();
@@ -127,6 +130,7 @@ mod_init(void)
     if (python_msgobj_init() != 0) {
         LM_ERR("python_msgobj_init() has failed\n");
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -136,6 +140,7 @@ mod_init(void)
         PyErr_Print();
         LM_ERR("cannot import sys.path\n");
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -144,6 +149,7 @@ mod_init(void)
         PyErr_Print();
         LM_ERR("PyString_FromString() has filed\n");
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
     PyList_Insert(sys_path, 0, pDir);
@@ -154,6 +160,7 @@ mod_init(void)
         PyErr_Print();
         LM_ERR("cannot import %s\n", bname);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -166,6 +173,7 @@ mod_init(void)
           mod_init_fname.s, script_name.s);
         Py_XDECREF(pFunc);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -175,6 +183,7 @@ mod_init(void)
         LM_ERR("cannot import traceback module\n");
         Py_DECREF(pFunc);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -187,6 +196,7 @@ mod_init(void)
         Py_XDECREF(format_exc_obj);
         Py_DECREF(pFunc);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -197,6 +207,7 @@ mod_init(void)
         Py_DECREF(pFunc);
         Py_DECREF(format_exc_obj);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -210,6 +221,7 @@ mod_init(void)
         Py_XDECREF(handler_obj);
         Py_DECREF(format_exc_obj);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
@@ -219,11 +231,13 @@ mod_init(void)
           mod_init_fname.s);
         Py_DECREF(format_exc_obj);
         PyEval_ReleaseLock();
+        signal(SIGCHLD, sig_save);
         return -1;
     }
 
     myThreadState = PyThreadState_New(mainThreadState->interp);
     PyEval_ReleaseLock();
+    signal(SIGCHLD, sig_save);
 
     return 0;
 }
