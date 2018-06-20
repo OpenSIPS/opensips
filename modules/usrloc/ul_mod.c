@@ -146,6 +146,7 @@ char *rr_persist_str;
 /*!< SQL write mode */
 enum ul_sql_write_mode sql_wmode = SQL_NO_WRITE;
 char *sql_wmode_str;
+int shared_pinging;
 
 int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
@@ -214,6 +215,7 @@ static param_export_t params[] = {
 	{"cluster_mode",       STR_PARAM, &cluster_mode_str  },
 	{"restart_persistency",STR_PARAM, &rr_persist_str    },
 	{"sql_write_mode",     STR_PARAM, &sql_wmode_str     },
+	{"shared_pinging",     INT_PARAM, &shared_pinging    },
 
 	{"use_domain",         INT_PARAM, &use_domain        },
 	{"desc_time_order",    INT_PARAM, &desc_time_order   },
