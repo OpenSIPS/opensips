@@ -288,6 +288,17 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	_c->flags = _ci->flags;
 	_c->cflags = _ci->cflags;
 
+	if (have_mem_storage()) {
+		if (!ZSTRP(_ci->packed_kv_storage)) {
+			if (_c->kv_storage)
+				store_destroy(_c->kv_storage);
+
+			_c->kv_storage = store_deserialize(_ci->packed_kv_storage);
+			if (!_c->kv_storage)
+				LM_ERR("oom\n");
+		}
+	}
+
 	if (compute_next_hop(_c) != 0)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
 		        _c->next_hop.name.len, _c->next_hop.name.s);
@@ -926,7 +937,7 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 															char is_replicated)
 {
-	int ret;
+	int ret, persist_kv_store = 1;
 
 	/* we have to update memory in any case, but database directly
 	 * only in sql_wmode SQL_WRITE_THROUGH */
@@ -935,8 +946,17 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		return -1;
 	}
 
-	if (!is_replicated && have_data_replication())
-		replicate_ucontact_update(_r, &_c->c, _ci);
+	if (is_replicated && _c->kv_storage)
+		restore_urecord_kv_store(_r, _c);
+
+	if (!is_replicated && have_data_replication()) {
+		if (persist_urecord_kv_store(_r) != 0)
+			LM_ERR("failed to persist latest urecord K/V storage\n");
+		else
+			persist_kv_store = 0;
+
+		replicate_ucontact_update(_r, _c);
+	}
 
 	/* run callbacks for UPDATE event */
 	if (exists_ulcb_type(UL_CONTACT_UPDATE))
@@ -951,7 +971,7 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 	st_update_ucontact(_c);
 
 	if (sql_wmode == SQL_WRITE_THROUGH) {
-		if (persist_urecord_kv_store(_r) != 0)
+		if (persist_kv_store && persist_urecord_kv_store(_r) != 0)
 			LM_ERR("failed to persist latest urecord K/V storage\n");
 
 		ret = db_update_ucontact(_c) ;

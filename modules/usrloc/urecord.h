@@ -158,9 +158,14 @@ uint64_t next_contact_id(urecord_t* _r);
 /*
  * Prepares the K/V store of an urecord_t to be persisted to DB by serializing
  * it and storing it in one of the contact's K/V store using an internal key
- * ("_urec_kvs").
+ * ("urec_store_key").
  */
 int persist_urecord_kv_store(urecord_t* _r);
+/*
+ * Attempts to set the K/V store of an urecord_t using the contact's K/V store
+ * data under the "urec_store_key" key.
+ */
+void restore_urecord_kv_store(urecord_t *_r, ucontact_t *_c);
 
 /*! \brief
  * Fetch a key from the record-level storage

@@ -1212,7 +1212,8 @@ update_usrloc:
 			LM_DBG("UPDATING .....\n");
 
 			if (reg_mode == MID_REG_THROTTLE_CT &&
-			    update_ucontact_data(c, ctmap->expires, e_out, ci->cseq) != 0) {
+				store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
+				                    get_act_time(), ci->cseq) != 0) {
 				LM_ERR("failed to update ucontact data - oom?\n");
 				goto error;
 			}
@@ -1315,7 +1316,10 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 			LM_ERR("failed to insert new record structure\n");
 			goto out_err;
 		}
+	}
 
+	/* replicated AoRs will have an empty k/v store */
+	if (!ul_api.get_urecord_key(r, &ul_key_callid)) {
 		if (store_urecord_data(r, mri, &_c->uri, e_out, get_act_time(),
 		                       cseq) != 0) {
 			LM_ERR("failed to attach urecord data - oom?\n");

@@ -29,6 +29,7 @@
 #include "ureplication.h"
 #include "ul_mod.h"
 #include "dlist.h"
+#include "kv_store.h"
 
 str contact_repl_cap = str_init("usrloc-contact-repl");
 
@@ -128,6 +129,11 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 	bin_push_str(&packet, r->domain);
 	bin_push_str(&packet, &r->aor);
 	bin_push_str(&packet, contact);
+
+	st.s = (char *)&ci->contact_id;
+	st.len = sizeof ci->contact_id;
+	bin_push_str(&packet, &st);
+
 	bin_push_str(&packet, ci->callid);
 	bin_push_str(&packet, ci->user_agent);
 	bin_push_str(&packet, ci->path);
@@ -179,7 +185,7 @@ error:
 	bin_free_packet(&packet);
 }
 
-void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
+void replicate_ucontact_update(urecord_t *r, ucontact_t *ct)
 {
 	str st;
 	int rc;
@@ -192,31 +198,37 @@ void replicate_ucontact_update(urecord_t *r, str *contact, ucontact_info_t *ci)
 
 	bin_push_str(&packet, r->domain);
 	bin_push_str(&packet, &r->aor);
-	bin_push_str(&packet, contact);
-	bin_push_str(&packet, ci->callid);
-	bin_push_str(&packet, ci->user_agent);
-	bin_push_str(&packet, ci->path);
-	bin_push_str(&packet, ci->attr);
-	bin_push_str(&packet, &ci->received);
-	bin_push_str(&packet, &ci->instance);
+	bin_push_str(&packet, &ct->c);
+	bin_push_str(&packet, &ct->callid);
+	bin_push_str(&packet, &ct->user_agent);
+	bin_push_str(&packet, &ct->path);
+	bin_push_str(&packet, &ct->attr);
+	bin_push_str(&packet, &ct->received);
+	bin_push_str(&packet, &ct->instance);
 
-	st.s = (char *) &ci->expires;
-	st.len = sizeof ci->expires;
+	st.s = (char *) &ct->expires;
+	st.len = sizeof ct->expires;
 	bin_push_str(&packet, &st);
 
-	st.s = (char *) &ci->q;
-	st.len = sizeof ci->q;
+	st.s = (char *) &ct->q;
+	st.len = sizeof ct->q;
 	bin_push_str(&packet, &st);
 
-	bin_push_str(&packet, ci->sock?&ci->sock->sock_str:NULL);
-	bin_push_int(&packet, ci->cseq);
-	bin_push_int(&packet, ci->flags);
-	bin_push_int(&packet, ci->cflags);
-	bin_push_int(&packet, ci->methods);
+	bin_push_str(&packet, ct->sock?&ct->sock->sock_str:NULL);
+	bin_push_int(&packet, ct->cseq);
+	bin_push_int(&packet, ct->flags);
+	bin_push_int(&packet, ct->cflags);
+	bin_push_int(&packet, ct->methods);
 
-	st.s   = (char *)&ci->last_modified;
-	st.len = sizeof ci->last_modified;
+	st.s   = (char *)&ct->last_modified;
+	st.len = sizeof ct->last_modified;
 	bin_push_str(&packet, &st);
+
+	st = store_serialize(ct->kv_storage);
+	if (ZSTR(st))
+		LM_ERR("oom\n");
+	bin_push_str(&packet, &st);
+	store_free_buffer(&st);
 
 	if (cluster_mode == CM_FEDERATION_CACHEDB)
 		rc = clusterer_api.send_all_having(&packet, location_cluster,
@@ -377,6 +389,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	}
 
 	bin_pop_str(packet, &contact_str);
+
+	bin_pop_str(packet, &st);
+	memcpy(&ci.contact_id, st.s, sizeof ci.contact_id);
 
 	bin_pop_str(packet, &callid);
 	ci.callid = &callid;
@@ -541,6 +556,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	bin_pop_str(packet, &st);
 	memcpy(&ci.last_modified, st.s, sizeof ci.last_modified);
+
+	bin_pop_str(packet, &st);
+	ci.packed_kv_storage = &st;
 
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;

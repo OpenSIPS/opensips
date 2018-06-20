@@ -124,6 +124,16 @@ void free_urecord(urecord_t* _r)
 	}
 }
 
+void restore_urecord_kv_store(urecord_t *_r, ucontact_t *_c)
+{
+	int_str_t **urec_kv_store;
+
+	urec_kv_store = (int_str_t **)map_find(_c->kv_storage, urec_store_key);
+	if (urec_kv_store) {
+		store_destroy(_r->kv_storage);
+		_r->kv_storage = store_deserialize(&(*urec_kv_store)->s);
+	}
+}
 
 /*! \brief
  * Add a new contact
@@ -136,7 +146,6 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 {
 	ucontact_t* ptr, *prev = 0;
 	ucontact_t* c;
-	int_str_t **urec_kv_store;
 
 	if ( (c=new_ucontact(_r->domain, &_r->aor, _c, _ci)) == 0) {
 		LM_ERR("failed to create new contact\n");
@@ -145,16 +154,8 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 
 	if_update_stat( _r->slot, _r->slot->d->contacts, 1);
 
-	if (c->kv_storage) {
-		urec_kv_store = (int_str_t **)map_find(c->kv_storage, urec_store_key);
-		if (urec_kv_store) {
-			if (map_size(_r->kv_storage) != 0)
-				LM_BUG("urec key in 2 contacts");
-
-			store_destroy(_r->kv_storage);
-			_r->kv_storage = store_deserialize(&(*urec_kv_store)->s);
-		}
-	}
+	if (c->kv_storage)
+		restore_urecord_kv_store(_r, c);
 
 	ptr = _r->contacts;
 
