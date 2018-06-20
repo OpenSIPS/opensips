@@ -134,7 +134,7 @@ str store_serialize(map_t _store)
 	if (map_for_each(_store, push_kv_to_json, flat_map) != 0)
 		LM_ERR("oom - serialized map is incomplete!\n");
 
-	ret.s = cJSON_Print(flat_map);
+	ret.s = cJSON_PrintUnformatted(flat_map);
 	if (!ret.s) {
 		LM_ERR("oom\n");
 		goto out;
