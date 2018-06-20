@@ -1947,15 +1947,15 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 			valuep = ul_api.get_ucontact_key(c, &ul_key_last_reg_ts);
 			if (!valuep) {
-				LM_ERR("'last_reg_ts' key not found!\n");
-				return -1;
+				LM_DBG("'last_reg_ts' key not found! Forwarding request...\n");
+				return 1;
 			}
 			last_reg_ts = valuep->i;
 
 			valuep = ul_api.get_ucontact_key(c, &ul_key_expires_out);
 			if (!valuep) {
-				LM_ERR("'expires_out' key not found!\n");
-				return -1;
+				LM_DBG("'expires_out' key not found! Forwarding request...\n");
+				return 1;
 			}
 			expires_out = valuep->i;
 
@@ -2066,15 +2066,15 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	value = ul_api.get_urecord_key(urec, &ul_key_last_reg_ts);
 	if (!value) {
-		LM_ERR("'last_reg_ts' key not found!\n");
-		return -1;
+		LM_DBG("'last_reg_ts' key not found! Forwarding request\n");
+		return 1;
 	}
 	last_reg_ts = value->i;
 
 	value = ul_api.get_urecord_key(urec, &ul_key_expires_out);
 	if (!value) {
-		LM_ERR("'expires_out' key not found!\n");
-		return -1;
+		LM_DBG("'expires_out' key not found! Forwarding request\n");
+		return 1;
 	}
 	e_out = value->i;
 
