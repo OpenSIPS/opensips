@@ -2005,14 +2005,14 @@ static int calc_max_ct_diff(urecord_t *urec)
 	for (ct = urec->contacts; ct; ct = ct->next) {
 		valuep = ul_api.get_ucontact_key(ct, &ul_key_expires);
 		if (!valuep) {
-			LM_ERR("'expires' key not found!\n");
+			LM_DBG("'expires' key not found!\n");
 			return -1;
 		}
 		expires = valuep->i;
 
 		valuep = ul_api.get_ucontact_key(ct, &ul_key_expires_out);
 		if (!valuep) {
-			LM_ERR("'expires_out' key not found!\n");
+			LM_DBG("'expires_out' key not found!\n");
 			return -1;
 		}
 		expires_out = valuep->i;
@@ -2174,9 +2174,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
 	       max_diff, last_reg_ts + max_diff, get_act_time());
-	if (max_diff >= 0 && last_reg_ts + max_diff <= get_act_time()) {
+	if (max_diff < 0 || last_reg_ts + max_diff <= get_act_time())
 		return 1;
-	}
 
 	return 2;
 }
