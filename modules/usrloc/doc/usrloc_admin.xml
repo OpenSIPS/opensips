@@ -925,6 +925,13 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 				<xref linkend="param_location_cluster"/> parameter is mandatory.
 				</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>"sql-only"</emphasis> -
+				Multiple OpenSIPS boxes using a common
+				<xref linkend="param_db_url"/> without necessarily being aware
+				of each other.
+				</para>
+			</listitem>
 		</itemizedlist>
 		<para>
 		<emphasis>
