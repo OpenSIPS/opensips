@@ -705,11 +705,10 @@ int check_runtime_config(void)
 			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
-		/* TODO: update CM_SQL_ONLY to work in clusterized environments
-		} else if (!strcasecmp(runtime_preset, "full-sharing-sql-cluster")) {
+		} else if (!strcasecmp(runtime_preset, "sql-only")) {
 			cluster_mode = CM_SQL_ONLY;
 			rr_persist = RRP_NONE;
-			sql_wmode = SQL_NO_WRITE;*/
+			sql_wmode = SQL_NO_WRITE;
 		} else {
 			LM_ERR("unrecognized preset: %s, defaulting to "
 			       "'single-instance-no-db'\n", runtime_preset);
@@ -729,9 +728,8 @@ int check_runtime_config(void)
 				cluster_mode = CM_FULL_SHARING;
 			else if (!strcasecmp(cluster_mode_str, "full-sharing-cachedb"))
 				cluster_mode = CM_FULL_SHARING_CACHEDB;
-			/* TODO: same as above
-			else if (!strcasecmp(cluster_mode_str, "full-sharing-sql"))
-				cluster_mode = CM_SQL_ONLY;*/
+			else if (!strcasecmp(cluster_mode_str, "sql-only"))
+				cluster_mode = CM_SQL_ONLY;
 			else
 				LM_ERR("unknown 'cluster_mode' value: %s, using 'none'\n",
 				       cluster_mode_str);
