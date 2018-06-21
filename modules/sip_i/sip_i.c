@@ -1148,17 +1148,17 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	/* check RURI */
 	ruri = GET_RURI(sip_msg);
 	if (!ruri->s || ruri->len < 7) {
-		LM_DBG("invalid R-URI length\n");
+		LM_INFO("invalid R-URI length\n");
 		goto cpn_err;
 	}
 	/* sip: URI required */
 	if (memcmp(ruri->s, "sip:", 4)) {
-		LM_DBG("\"sip:\" URI required for the R-URI\n");
+		LM_INFO("\"sip:\" URI required for the R-URI\n");
 		goto cpn_err;
 	}
 	/* user=phone parameter required for RURI */
 	if (!l_memmem(ruri->s, "user=phone", ruri->len, 10)) {
-		LM_DBG("\"user=phone\" parameter required for R-URI\n");
+		LM_INFO("\"user=phone\" parameter required for R-URI\n");
 		goto cpn_err;
 	}
 	/* if "+" prefix is present it is an international call */
@@ -1173,15 +1173,15 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 			number[i++] = *p;
 		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') {
 			/* not a visual separator */
-			LM_DBG("Unknown char <%c> in R-URI number\n", *p);
+			LM_INFO("Unknown char <%c> in R-URI number\n", *p);
 			goto cpn_err;
 		}
 	if (i < 3) {
-		LM_DBG("R-URI number to short\n");
+		LM_INFO("R-URI number to short\n");
 		goto cpn_err;
 	}
 	if (i == MAX_NUM_LEN && *p != '@' && *p != ';' && p - ruri->s < ruri->len) {
-		LM_DBG("R-URI number to long should have max 15 digits (E.164)\n");
+		LM_INFO("R-URI number to long should have max 15 digits (E.164)\n");
 		goto cpn_err;
 	}
 
@@ -1195,7 +1195,7 @@ static int init_iam_default(struct sip_msg *sip_msg, struct isup_parsed_struct *
 	val.rs.len = i;
 	isup_params[PARM_CALLED_PARTY_NUM_IDX].write_func(PARM_CALLED_PARTY_NUM_IDX,
 							4, isup_struct->mand_var_params[0].val, &new_len, &val);
-	LM_DBG("Called party number set to: %.*s\n", i, number);
+	LM_INFO("Called party number set to: %.*s\n", i, number);
 
 	isup_struct->mand_var_params[0].len = new_len;
 	isup_struct->total_len += new_len;
@@ -1228,11 +1228,11 @@ set_cgpn:
 
 	/* P-Asserted-Identity should be a sip: or tel: URI with a global number in the form: "+"CC + NDC + SN */
 	if (pai->parsed_uri.type != SIP_URI_T && pai->parsed_uri.type != TEL_URI_T) {
-		LM_DBG("\"sip:\" URI required for P-Asserted-Identity\n");
+		LM_INFO("\"sip:\" URI required for P-Asserted-Identity\n");
 		goto cgpn_err;
 	}
 	if (pai->parsed_uri.user.s[0] != '+') {
-		LM_DBG("P-Asserted-Identity number should start with \"+\" sign\n");
+		LM_INFO("P-Asserted-Identity number should start with \"+\" sign\n");
 		goto cgpn_err;
 	}
 
@@ -1286,16 +1286,16 @@ set_cgpn:
 		if ((*p >= '0' && *p <= '9') || char2digit(*p)) /* phone or dtmf digit */
 			number[i++] = *p;
 		else if (*p != '-' && *p != '.' && *p != '(' && *p != ')') { /* not a visual separator */
-			LM_DBG("Unknown char <%c> in P-Asserted-Identity number\n", *p);
+			LM_INFO("Unknown char <%c> in P-Asserted-Identity number\n", *p);
 			goto cgpn_err;
 		}
 	if (i < 3) {
-		LM_DBG("P-Asserted-Identity number to short, only <%d> digits\n", i);
+		LM_INFO("P-Asserted-Identity number to short, only <%d> digits\n", i);
 		goto cgpn_err;
 	}
 	if (i == MAX_NUM_LEN && *p != ';' && p - pai->parsed_uri.user.s < pai->parsed_uri.user.len) {
-		LM_DBG("R-URI number to long should have max 15 digits (E.164)\n");
-		goto cpn_err;
+		LM_INFO("P-Asserted-Identity number to long, should have max 15 digits (E.164)\n");
+		goto cgpn_err;
 	}
 
 	val.flags = PV_VAL_STR;
@@ -1303,7 +1303,7 @@ set_cgpn:
 	val.rs.len = intl_num ? i : i - country_code.len + 1;
 	isup_params[PARM_CALLING_PARTY_NUM_IDX].write_func(PARM_CALLING_PARTY_NUM_IDX,
 												6, cgpn->param.val, &new_len, &val);
-	LM_DBG("Calling party number set to: %.*s\n", val.rs.len, val.rs.s);
+	LM_INFO("Calling party number set to: %.*s\n", val.rs.len, val.rs.s);
 
 	link_new_opt_param(isup_struct, cgpn, new_len);
 
@@ -1659,7 +1659,7 @@ static int add_isup_part_cmd(struct sip_msg *msg, char *param)
 	}
 
 	if (rc < 0)
-		LM_INFO("Unable to set %.*s message parameters by default\n",
+		LM_INFO("Unable to set all %.*s message parameters by default\n",
 			isup_messages[isup_msg_idx].name.len, isup_messages[isup_msg_idx].name.s);
 	else if (rc == 0)
 		LM_DBG("%.*s message parameters set by default\n",
