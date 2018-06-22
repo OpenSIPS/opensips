@@ -1253,25 +1253,25 @@ static int persist_reinvite_pinging(struct dlg_cell *dlg)
 	}
 
 	if (store_dlg_value_unsafe(dlg, &caller_adv_sdp,
-	                    &dlg->legs[DLG_CALLER_LEG].sdp) != 0) {
+	                    &dlg->legs[DLG_CALLER_LEG].adv_sdp) != 0) {
 		LM_ERR("failed to persist caller advertised SDP\n");
 		return -1;
 	}
 
 	if (store_dlg_value_unsafe(dlg, &caller_adv_ct,
-	                    &dlg->legs[DLG_CALLER_LEG].th_sent_contact) != 0) {
+	                    &dlg->legs[DLG_CALLER_LEG].adv_contact) != 0) {
 		LM_ERR("failed to persist caller advertised Contact\n");
 		return -1;
 	}
 
 	if (store_dlg_value_unsafe(dlg, &callee_adv_sdp,
-	                       &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].sdp) != 0) {
+	                       &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].adv_sdp) != 0) {
 		LM_ERR("failed to persist callee advertised SDP\n");
 		return -1;
 	}
 
 	if (store_dlg_value_unsafe(dlg, &callee_adv_ct,
-	           &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].th_sent_contact) != 0) {
+	           &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].adv_contact) != 0) {
 		LM_ERR("failed to persist callee advertised Contact\n");
 		return -1;
 	}
@@ -1291,7 +1291,7 @@ static int restore_reinvite_pinging(struct dlg_cell *dlg)
 		LM_ERR("failed to fetch caller advertised SDP\n");
 		ret = -1;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].sdp, &out_buf) != 0) {
+		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].adv_sdp, &out_buf) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
@@ -1301,7 +1301,7 @@ static int restore_reinvite_pinging(struct dlg_cell *dlg)
 		LM_ERR("failed to fetch caller advertised Contact\n");
 		ret = -1;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].th_sent_contact,
+		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].adv_contact,
 		                &out_buf) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
@@ -1312,7 +1312,7 @@ static int restore_reinvite_pinging(struct dlg_cell *dlg)
 		LM_ERR("failed to fetch callee advertised SDP\n");
 		ret = -1;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].sdp, &out_buf) != 0) {
+		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].adv_sdp, &out_buf) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
@@ -1322,7 +1322,7 @@ static int restore_reinvite_pinging(struct dlg_cell *dlg)
 		LM_ERR("failed to fetch callee advertised Contact\n");
 		ret = -1;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].th_sent_contact,
+		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].adv_contact,
 		                &out_buf) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;

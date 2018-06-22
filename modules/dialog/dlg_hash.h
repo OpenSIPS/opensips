@@ -95,10 +95,10 @@ struct dlg_leg {
 	str from_uri;	/* FROM URI for this leg, in case of FROM URI mangling*/
 	str to_uri;		/* TO URI for this leg, in case of TO URI mangling */
 	str route_set;
-	str contact;
-	str th_sent_contact;	/* topology hiding advertised contact towards this leg - full header */
+	str contact;    /* this leg's Contact URI (most recent version) */
+	str adv_contact;	/* topology hiding advertised contact towards this leg - full header */
+	str adv_sdp;		/* latest SDP advertised towards this leg ( full body ), after all OpenSIPS changes */
 	str route_uris[64];
-	str sdp;		/* latest SDP advertised towards this leg ( full body ), after all OpenSIPS changes */
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
 	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
