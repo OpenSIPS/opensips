@@ -78,6 +78,10 @@
 #define DLG_FLAG_REINVITE_PING_ENGAGED_REQ	(1<<13)
 #define DLG_FLAG_REINVITE_PING_ENGAGED_REPL	(1<<14)
 
+#define dlg_has_reinvite_pinging(dlg) \
+	(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || \
+	 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE)
+
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
 
@@ -107,6 +111,7 @@ struct dlg_leg {
 	struct socket_info *bind_addr;
 };
 
+#define leg_is_answered(dlg_leg) ((dlg_leg)->tag.s)
 
 #define DLG_LEGS_USED      0
 #define DLG_LEGS_ALLOCED   1
@@ -339,6 +344,12 @@ void destroy_dlg_table();
 
 struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 		str *to_uri, str *from_tag);
+
+/**
+ * dlg_clone_callee_leg - Clone a callee leg and only fill in shared leg data
+ * @return: index of the new leg or -1 on error
+ */
+int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx);
 
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,

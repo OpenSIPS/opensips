@@ -327,6 +327,31 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 	return dlg;
 }
 
+int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
+{
+	struct dlg_leg *leg, *src_leg = &dlg->legs[cloned_leg_idx];
+
+	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
+		return -1;
+	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
+
+	if (dlg_has_reinvite_pinging(dlg)) {
+		if (shm_str_dup(&leg->adv_sdp, &src_leg->adv_sdp) != 0) {
+			LM_ERR("oom sdp\n");
+			return -1;
+		}
+
+		if (shm_str_dup(&leg->adv_contact, &src_leg->adv_contact) != 0) {
+			LM_ERR("oom contact\n");
+			shm_free(leg->adv_sdp.s);
+			memset(&leg->adv_sdp, 0, sizeof leg->adv_sdp);
+			return -1;
+		}
+	}
+
+	return dlg->legs_no[DLG_LEGS_USED]++;
+}
+
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */

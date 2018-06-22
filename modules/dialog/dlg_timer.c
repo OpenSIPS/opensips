@@ -1064,7 +1064,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					HEADERS_STR_END_NOCRLF_LEN;
 				else
 					extra_headers.len = CONTACT_STR_START_LEN +
-						dlg->legs[DLG_CALLER_LEG].contact.len +
+						dlg->legs[callee_idx(dlg)].contact.len +
 						HEADERS_STR_END_LEN;
 				extra_headers.s = pkg_malloc(extra_headers.len);
 				if (!extra_headers.s) {
@@ -1111,7 +1111,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					HEADERS_STR_END_NOCRLF_LEN;
 				else
 					extra_headers.len = CONTACT_STR_START_LEN +
-							dlg->legs[callee_idx(dlg)].contact.len +
+							dlg->legs[DLG_CALLER_LEG].contact.len +
 							HEADERS_STR_END_LEN;
 				extra_headers.s = pkg_malloc(extra_headers.len);
 				if (!extra_headers.s) {

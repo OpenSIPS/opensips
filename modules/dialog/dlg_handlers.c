@@ -360,6 +360,16 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 
 	leg = d_tmb.get_branch_index() + 1;
 
+	/* has the downstream element forked an extra branch starting from ours?
+	 * Treat these extra branches exactly the same (a callee leg) */
+	if (leg_is_answered(&dlg->legs[leg])) {
+		leg = dlg_clone_callee_leg(dlg, leg);
+		if (leg < 0) {
+			LM_ERR("failed to add callee leg!\n");
+			return;
+		}
+	}
+
 	/* save callee's tag and cseq */
 	LM_DBG("new branch with tag <%.*s>, leg_idx=%d\n", tag.len, tag.s, leg);
 	if (update_leg_info(leg, dlg, rpl, t, &tag,extract_mangled_fromuri(mangled_from),
