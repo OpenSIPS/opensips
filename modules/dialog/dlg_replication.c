@@ -1411,6 +1411,9 @@ done:
 
 struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
 {
+	if (!dialog_repl_cluster)
+		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
+
 	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 1) < 0)
 		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
 	else
@@ -1436,6 +1439,9 @@ struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_node* node;
 	struct dlg_sharing_tag *tag;
+
+	if (!dialog_repl_cluster)
+		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
 
 	node = cmd_tree->node.kids;
 	if (node == NULL || !node->value.s || !node->value.len)
@@ -1554,6 +1560,9 @@ struct mi_root *mi_list_sharing_tags(struct mi_root *cmd_tree, void *param)
     struct mi_attr *attr;
     struct dlg_sharing_tag *tag;
     str val;
+
+    if (!dialog_repl_cluster)
+		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
 
     rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
     if (rpl_tree==0)
