@@ -196,14 +196,14 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].contact.s);
 			if (dlg->legs[i].route_set.s)
 				shm_free(dlg->legs[i].route_set.s);
-			if (dlg->legs[i].th_sent_contact.s)
-				shm_free(dlg->legs[i].th_sent_contact.s);
+			if (dlg->legs[i].adv_contact.s)
+				shm_free(dlg->legs[i].adv_contact.s);
 			if (dlg->legs[i].from_uri.s)
 				shm_free(dlg->legs[i].from_uri.s);
 			if (dlg->legs[i].to_uri.s)
 				shm_free(dlg->legs[i].to_uri.s);
-			if (dlg->legs[i].sdp.s)
-				shm_free(dlg->legs[i].sdp.s);
+			if (dlg->legs[i].adv_sdp.s)
+				shm_free(dlg->legs[i].adv_sdp.s);
 		}
 		shm_free(dlg->legs);
 	}
@@ -422,14 +422,14 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 	}
 
 	if (sdp && sdp->s && sdp->len) {
-		leg->sdp.s = shm_malloc(sdp->len);
-		if (!leg->sdp.s) {
+		leg->adv_sdp.s = shm_malloc(sdp->len);
+		if (!leg->adv_sdp.s) {
 			LM_ERR("no more shm\n");
 			goto error_all;
 		}
 
-		leg->sdp.len = sdp->len;
-		memcpy(leg->sdp.s,sdp->s,sdp->len);
+		leg->adv_sdp.len = sdp->len;
+		memcpy(leg->adv_sdp.s,sdp->s,sdp->len);
 	}
 
 	/* tag */
@@ -1209,8 +1209,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 			goto error;
 
 		node1 = add_mi_node_child(node, MI_DUP_VALUE,"caller_sdp",10,
-				dlg->legs[DLG_CALLER_LEG].sdp.s,
-				dlg->legs[DLG_CALLER_LEG].sdp.len);
+				dlg->legs[DLG_CALLER_LEG].adv_sdp.s,
+				dlg->legs[DLG_CALLER_LEG].adv_sdp.len);
 		if(node1 == 0)
 			goto error;
 	}
@@ -1258,8 +1258,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 			goto error;
 		
 		node3 = add_mi_node_child(node2, MI_DUP_VALUE,"callee_sdp",10,
-				dlg->legs[i].sdp.s,
-				dlg->legs[i].sdp.len);
+				dlg->legs[i].adv_sdp.s,
+				dlg->legs[i].adv_sdp.len);
 		if(node3 == 0)
 			goto error;
 	}
