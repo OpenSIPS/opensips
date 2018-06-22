@@ -193,7 +193,7 @@ static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 {
 	unsigned int skip_recs;
 	str cseq;
-	str contact;
+	str contact = STR_NULL;
 	str rr_set;
 	int is_req;
 
@@ -327,7 +327,8 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
 	str tag,contact,rr_set;
-	unsigned int leg, skip_rrs,cseq_no;
+	unsigned int skip_rrs, cseq_no;
+	int leg;
 
 	get_totag(rpl, &tag);
 	if (ZSTR(tag)) {
@@ -1235,8 +1236,7 @@ static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 		struct dlg_cell *dlg)
 {
 	if (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REQ) &&
-			(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-			 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE)) {
+	    dlg_has_reinvite_pinging(dlg)) {
 		/* register out callback in order to save SDP */
 		if (d_tmb.register_tmcb(req, 0, TMCB_REQUEST_BUILT,
 				dlg_onreq_out, (void *)dlg, 0) <= 0)
@@ -1246,8 +1246,7 @@ static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 	}
 
 	if (t && (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REPL) &&
-			(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-			 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE))) {
+	          dlg_has_reinvite_pinging(dlg))) {
 		if (d_tmb.register_tmcb(0, t, TMCB_RESPONSE_OUT,
 				dlg_onreply_out, (void *)dlg, 0) <= 0)
 			LM_ERR("can't register trace_onreply_out\n");
@@ -1384,8 +1383,8 @@ static inline void update_contact(struct dlg_cell *dlg, struct sip_msg *req,
 		unsigned int leg)
 {
 	int ret;
-	if (req->first_line.u.request.method_value != METHOD_INVITE &&
-			req->first_line.u.request.method_value != METHOD_UPDATE)
+
+	if (req->REQ_METHOD != METHOD_INVITE && req->REQ_METHOD != METHOD_UPDATE)
 		return;
 
 	/* make sure contact is parsed */
@@ -1638,8 +1637,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		LM_DBG("BYE successfully processed - dst_leg = %d\n",dst_leg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE ||
-		dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
-		dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
+		    dlg_has_reinvite_pinging(dlg) || dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 			dlg_lock (d_table,d_entry);
 
 			if (dlg->legs[dst_leg].last_gen_cseq) {
@@ -1762,8 +1760,7 @@ after_unlock5:
 					LM_ERR("failed to update inv cseq on leg %d\n",src_leg);
 				}
 
-				if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-					dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ) {
+				if (dlg_has_reinvite_pinging(dlg)) {
 					/* we need to update the SDP for this leg
 					and involve TM to update the SDP for the other side as well */
 					if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT,
@@ -1787,8 +1784,7 @@ after_unlock5:
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-			dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
+			dlg_has_reinvite_pinging(dlg) ||
 			dlg->flags & DLG_FLAG_CSEQ_ENFORCE ) {
 
 				dlg_lock (d_table, d_entry);
@@ -1834,8 +1830,7 @@ after_unlock5:
 		} else {
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-			dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
+			dlg_has_reinvite_pinging(dlg) ||
 			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 
 				dlg_lock (d_table, d_entry);
@@ -1861,8 +1856,7 @@ after_unlock5:
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER ||
 			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-			dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE ||
+			dlg_has_reinvite_pinging(dlg) ||
 			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 				dlg_lock( d_table, d_entry);
 				if (dlg->legs[dst_leg].last_gen_cseq) {
@@ -1964,8 +1958,7 @@ early_check:
 			}
 		}
 
-		if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-		dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+		if (dlg_has_reinvite_pinging(dlg)) {
 			if (0 != insert_reinvite_ping_timer( dlg)) {
 				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d "
 					"[%d->%d] with clid '%.*s' and tags '%.*s' '%.*s'\n",
