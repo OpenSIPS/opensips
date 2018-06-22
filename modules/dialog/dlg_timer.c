@@ -1058,9 +1058,9 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 		if (dlg->state != DLG_STATE_DELETED && it->timeout <= current_ticks) {
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER) {
 
-				if (dlg->legs[DLG_CALLER_LEG].th_sent_contact.len)
+				if (dlg->legs[DLG_CALLER_LEG].adv_contact.len)
 					extra_headers.len = 
-					dlg->legs[DLG_CALLER_LEG].th_sent_contact.len +
+					dlg->legs[DLG_CALLER_LEG].adv_contact.len +
 					HEADERS_STR_END_NOCRLF_LEN;
 				else
 					extra_headers.len = CONTACT_STR_START_LEN +
@@ -1073,12 +1073,12 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					return;
 				}
 
-				if (dlg->legs[DLG_CALLER_LEG].th_sent_contact.len) {
+				if (dlg->legs[DLG_CALLER_LEG].adv_contact.len) {
 					p = extra_headers.s;
-					memcpy(p,dlg->legs[DLG_CALLER_LEG].th_sent_contact.s,
-					dlg->legs[DLG_CALLER_LEG].th_sent_contact.len);
+					memcpy(p,dlg->legs[DLG_CALLER_LEG].adv_contact.s,
+					dlg->legs[DLG_CALLER_LEG].adv_contact.len);
 
-					p+= dlg->legs[DLG_CALLER_LEG].th_sent_contact.len;
+					p+= dlg->legs[DLG_CALLER_LEG].adv_contact.len;
 					memcpy(p,HEADERS_STR_END_NOCRLF,HEADERS_STR_END_NOCRLF_LEN);
 				} else {
 					p = extra_headers.s;
@@ -1093,7 +1093,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 				
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&invite_str,callee_idx(dlg),
-				DLG_CALLER_LEG,&extra_headers,&dlg->legs[DLG_CALLER_LEG].sdp,
+				DLG_CALLER_LEG,&extra_headers,&dlg->legs[DLG_CALLER_LEG].adv_sdp,
 				reinvite_reply_from_caller,dlg,unref_dlg_cb,
 				&dlg->legs[DLG_CALLER_LEG].reinvite_confirmed) < 0) {
 					LM_ERR("failed to ping caller\n");
@@ -1105,9 +1105,9 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-				if (dlg->legs[callee_idx(dlg)].th_sent_contact.len)
+				if (dlg->legs[callee_idx(dlg)].adv_contact.len)
 					extra_headers.len = 
-					dlg->legs[callee_idx(dlg)].th_sent_contact.len +
+					dlg->legs[callee_idx(dlg)].adv_contact.len +
 					HEADERS_STR_END_NOCRLF_LEN;
 				else
 					extra_headers.len = CONTACT_STR_START_LEN +
@@ -1120,13 +1120,13 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 					return ;
 				}
 						
-				if (dlg->legs[callee_idx(dlg)].th_sent_contact.len) {
+				if (dlg->legs[callee_idx(dlg)].adv_contact.len) {
 					p = extra_headers.s;
 					memcpy(extra_headers.s,
-					dlg->legs[callee_idx(dlg)].th_sent_contact.s,
-					dlg->legs[callee_idx(dlg)].th_sent_contact.len);
+					dlg->legs[callee_idx(dlg)].adv_contact.s,
+					dlg->legs[callee_idx(dlg)].adv_contact.len);
 
-					p+= dlg->legs[callee_idx(dlg)].th_sent_contact.len;
+					p+= dlg->legs[callee_idx(dlg)].adv_contact.len;
 					memcpy(p,HEADERS_STR_END_NOCRLF,HEADERS_STR_END_NOCRLF_LEN);
 				} else {
 					p = extra_headers.s;
@@ -1141,7 +1141,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&invite_str,DLG_CALLER_LEG,
-				callee_idx(dlg),&extra_headers,&dlg->legs[callee_idx(dlg)].sdp,reinvite_reply_from_callee,
+				callee_idx(dlg),&extra_headers,&dlg->legs[callee_idx(dlg)].adv_sdp,reinvite_reply_from_callee,
 				dlg,unref_dlg_cb,&dlg->legs[callee_idx(dlg)].reinvite_confirmed) < 0) {
 					LM_ERR("failed to ping callee\n");
 					unref_dlg(dlg,1);
