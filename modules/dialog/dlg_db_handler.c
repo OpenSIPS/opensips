@@ -602,7 +602,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			GET_STR_VALUE(mangled_tu, values, 24,0,1);
 
 			/* add the 2 legs */
-			/* TODO - store SDP */
 			if ( (dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
 			&cseq1, caller_sock,0,0,0)!=0) ||
 			(dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
@@ -691,8 +690,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				}
 			}
 
-			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-			    dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+			if (dlg_has_reinvite_pinging(dlg)) {
 				/* re-populate Re-INVITE pinging fields */
 				if (restore_reinvite_pinging(dlg) != 0)
 					LM_ERR("failed to fetch some Re-INVITE pinging data\n");
@@ -1347,8 +1345,7 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		run_dlg_callbacks( DLGCB_WRITE_VP, cell, 0, DLG_DIR_NONE, NULL, 1);
 	}
 
-	if (cell->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-	    cell->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+	if (dlg_has_reinvite_pinging(cell)) {
 		if (persist_reinvite_pinging(cell) != 0)
 			LM_ERR("failed to persist some Re-INVITE pinging info\n");
 	}
@@ -1747,7 +1744,6 @@ static int sync_dlg_db_mem(void)
 				GET_STR_VALUE(mangled_tu, values, 24,0,1);
 
 				/* add the 2 legs */
-				/* TODO SDP here */
 				if ((dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
 				&cseq1, caller_sock,0,0,0)!=0) ||
 				(dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
@@ -1832,8 +1828,7 @@ static int sync_dlg_db_mem(void)
 					}
 				}
 
-				if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER ||
-				    dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+				if (dlg_has_reinvite_pinging(dlg)) {
 					/* re-populate Re-INVITE pinging fields */
 					if (restore_reinvite_pinging(dlg) != 0)
 						LM_ERR("failed to fetch some Re-INVITE pinging data\n");
