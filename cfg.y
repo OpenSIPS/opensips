@@ -302,6 +302,7 @@ static struct multi_str *tmp_mod;
 %token XLOG_BUF_SIZE
 %token XLOG_FORCE_COLOR
 %token XLOG_DEFAULT_LEVEL
+%token PV_PRINT_BUF_SIZE
 %token RAISE_EVENT
 %token SUBSCRIBE_EVENT
 %token CONSTRUCT_URI
@@ -936,6 +937,8 @@ assign_stm: DEBUG EQUAL snumber
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
 		| XLOG_DEFAULT_LEVEL EQUAL error { yyerror("number expected"); }
+		| PV_PRINT_BUF_SIZE EQUAL NUMBER { pv_print_buf_size = $3; }
+		| PV_PRINT_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| LISTEN EQUAL listen_def {
 							if (add_listener($3, 0)!=0){
 								LM_CRIT("cfg. parser: failed"
