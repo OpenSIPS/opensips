@@ -489,7 +489,7 @@ cat <<EOF
  dr addrule <groupid> <prefix> <timerec> <priority> <routeid>
             <gwlist> <attrs> <description>
     ................................. add rule
- dr rmrule <ruleid> ................. delete rule
+ dr rmgrule <ruleid> ................. delete rule
  dr reload .......................... reload dr tables
  dr gw_status ....................... show gateway status
  dr carrier_status .................. show carrier status
