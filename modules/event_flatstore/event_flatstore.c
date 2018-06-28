@@ -465,10 +465,10 @@ static void rotating(struct flat_socket *fs){
 	int index = fs->file_index_process;
 	int rc;
 
-	lock_get(global_lock);
-
 	if (!fs)
 		return;
+
+	lock_get(global_lock);
 
 	if (opened_fds[index] == -1) {
 		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
