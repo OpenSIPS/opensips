@@ -1845,6 +1845,8 @@ next_avp:
 					}
 					if(aitem->elem[2].u.number==1)
 						break;
+					else if (!aitem->next)
+						cmatch = 0;
 				}
 				aitem = aitem->next;
 			}
