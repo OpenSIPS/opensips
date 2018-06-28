@@ -4413,7 +4413,7 @@ void pv_value_destroy(pv_value_t *val)
 	memset(val, 0, sizeof(pv_value_t));
 }
 
-int pv_print_buf_size = 1024;
+#define PV_PRINT_BUF_SIZE 2048
 #define PV_PRINT_BUF_NO    7
 /*IMPORTANT NOTE - even if the function prints and returns a static buffer, it
  * has built-in support for 3 levels of nesting (or concurrent usage).
@@ -4422,14 +4422,14 @@ int pv_print_buf_size = 1024;
 int pv_printf_s(struct sip_msg* msg, pv_elem_p list, str *s)
 {
 	static int buf_itr = 0;
-	char buf[PV_PRINT_BUF_NO][pv_print_buf_size];
+	static char buf[PV_PRINT_BUF_NO][PV_PRINT_BUF_SIZE];
 
 	if (list->next==0 && list->spec.getf==0) {
 		*s = list->text;
 		return 0;
 	} else {
 		s->s = buf[buf_itr];
-		s->len = pv_print_buf_size;
+		s->len = PV_PRINT_BUF_SIZE;
 		buf_itr = (buf_itr+1)%PV_PRINT_BUF_NO;
 		return pv_printf( msg, list, s->s, &s->len);
 	}

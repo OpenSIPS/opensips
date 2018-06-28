@@ -206,7 +206,6 @@ XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG_DEFAULT_LEVEL	"xlog_default_level"
 XLOG			"xlog"
-PV_PRINT_BUF_SIZE 	"pv_print_buf_size"
 RAISE_EVENT		"raise_event"
 SUBSCRIBE_EVENT	"subscribe_event"
 CONSTRUCT_URI	"construct_uri"
@@ -521,8 +520,6 @@ IMPORTFILE      "import_file"
 									return XLOG_FORCE_COLOR;}
 <INITIAL>{XLOG_DEFAULT_LEVEL}	{	count(); yylval.strval=yytext;
 									return XLOG_DEFAULT_LEVEL;}
-<INITIAL>{PV_PRINT_BUF_SIZE}    {   count(); yylval.strval=yytext;
-                                    return PV_PRINT_BUF_SIZE;}
 <INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
 									return RAISE_EVENT;}
 <INITIAL>{SUBSCRIBE_EVENT}		{	count(); yylval.strval=yytext;

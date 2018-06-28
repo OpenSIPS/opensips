@@ -208,8 +208,6 @@ typedef struct _pv_elem
 	struct _pv_elem *next;
 } pv_elem_t, *pv_elem_p;
 
-extern int pv_print_buf_size;
-
 char* pv_parse_spec(str *in, pv_spec_p sp);
 int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value);
 int pv_print_spec(struct sip_msg* msg, pv_spec_p sp, char *buf, int *len);
