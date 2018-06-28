@@ -1576,7 +1576,7 @@ dr() {
 		rmrule)
 			shift
 			if [ $# -ne 1 ] ; then
-				merr "missing gateway id to be removed"
+				merr "missing rule id to be removed"
 				exit 1
 			fi
 
