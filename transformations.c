@@ -1375,9 +1375,12 @@ static int parse_csv(str *s,csv_t **list)
 			aux = string+1;
 search:
 			/* find coresponding quote */
-			while (*aux != '\"') aux++;
+			while (*aux != '\"' && aux+1 < limit-1) aux++;
 			if ( *(aux+1) != '\"')
 			{
+				if (aux+1 >= limit-1 )
+					 aux  = strchr(string,',')-1;
+
 				/* end of current token, also skip the following comma */
 				len = aux-string+1;
 				if (init_csv(&t,string,len) < 0)
@@ -1396,9 +1399,22 @@ search:
 			else
 			{
 				/* quoted string inside token */
-				aux +=2;
-				/* keep searching for final double quote*/
-				goto search;
+				if (aux+2 < limit) {
+					/* keep searching for final double quote*/
+					aux +=2;
+					goto search;
+				} else {
+					len = aux-string+2;
+					if (init_csv(&t,string,len) < 0)
+					{
+						LM_ERR("no more memory");
+						goto error;
+					}
+
+					/* should be end of string ! */
+					if (last) { last->next = t;} else {*list = t;}
+					return 0;
+				}
 			}
 		}
 		else
