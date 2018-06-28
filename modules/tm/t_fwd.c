@@ -1027,11 +1027,24 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 			goto error;
 		}
 	} else {
-		/* use the dset array, but fetch the first branch for script msg 
-		 * into the faked msg (that will be used by inject function) */
-		if (dst_to_msg( msg, &faked_req )<0) {
-			LM_ERR("failed to grab new branch from Event\n");
-			goto error;
+		/* use the RURI+dset array as destinations to be injected */
+		if (msg->first_line.type==SIP_REQUEST) {
+			/* take the RURI branch from the script msg and move it
+			 * into the faked msg (that will be used by t_fwd function) */
+			if (dst_to_msg( msg, &faked_req )<0) {
+				LM_ERR("failed to grab new branch from Event\n");
+				goto error;
+			}
+		} else {
+			/* current message is a reply, so take the first branch from dset
+			 * and move it into the faked msg (that will be used by t_fwd 
+			 * function)*/
+			if (move_branch_to_ruri( 0, &faked_req)<0) {
+				LM_ERR("no branch found to be moved as new destination\n");
+				goto error;
+			}
+			/* remove it from set */
+			remove_branch(0);
 		}
 	}
 
