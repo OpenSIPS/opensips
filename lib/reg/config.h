@@ -54,5 +54,6 @@
 #define REG_LOOKUP_MAX_LATENCY_FLAG    (1<<4)
 #define REG_LOOKUP_LATENCY_SORT_FLAG   (1<<5)
 #define REG_BRANCH_AOR_LOOKUP_FLAG     (1<<6)
+#define REG_LOOKUP_NO_RURI_FLAG        (1<<7)
 
 #endif /* __LIB_REG_CONFIG__ */

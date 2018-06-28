@@ -291,6 +291,7 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
 		case 'b': *flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
 		case 'g': *flags |= REG_LOOKUP_GLOBAL_FLAG; break;
 		case 'r': *flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
+		case 'B': *flags |= REG_LOOKUP_NO_RURI_FLAG; break;
 		case 'u':
 			if (input->s[i+1] != '/') {
 				LM_ERR("no regexp start after 'u' flag");
@@ -445,6 +446,10 @@ fetch_urecord:
 
 	ptr = select_contacts(_m, r->contacts, flags, &sip_instance, &call_id,
 	                      &ua_re, max_latency, &ret);
+
+	/* do not attempt to push anything to RURI if the flags say so */
+	if (flags&REG_LOOKUP_NO_RURI_FLAG)
+		ruri_is_pushed = 1;
 
 	for (; *ptr; ptr++) {
 		rc = push_branch(_m, *ptr, &ruri_is_pushed);
