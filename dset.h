@@ -107,4 +107,9 @@ int isbflagset(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
+/*! \brief
+ * Moves the branch index idx into the SIP request msg.
+ */
+int move_branch_to_ruri(int idx, struct sip_msg *msg);
+
 #endif /* _DSET_H */

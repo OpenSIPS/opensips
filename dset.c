@@ -599,3 +599,61 @@ int branch_uri2dset( str *new_uri )
 
 	return 0;
 }
+
+
+int move_branch_to_ruri(int idx, struct sip_msg *msg)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+	struct branch *branch;
+	str s;
+
+	/* no branches have been added yet */
+	if (!dsct) {
+		LM_DBG("no branches found\n");
+		return -1;
+	}
+
+	/* */
+	if (idx >= dsct->nr_branches) {
+		LM_DBG("trying to move inexisting branch idx %d, out of %d\n",
+			idx, dsct->nr_branches);
+		return -1;
+	}
+
+	branch = &dsct->branches[idx];
+
+	/* move RURI */
+	s.s = branch->uri;
+	s.len = branch->len;
+	if (set_ruri( msg, &s)<0) {
+		LM_ERR("failed to set new RURI\n");
+		return -1;
+	}
+
+	/* move DURI (empty is accepted as reset) */
+	s.s = branch->dst_uri;
+	s.len = branch->dst_uri_len;
+	if (set_dst_uri( msg, &s)<0) {
+		LM_ERR("failed to set DST URI\n");
+		return -1;
+	}
+
+	/* move PATH  (empty is accepted as reset) */
+	s.s = branch->path;
+	s.len = branch->path_len;
+	if (set_path_vector( msg, &s)<0) {
+		LM_ERR("failed to set PATH\n");
+		return -1;
+	}
+
+	/* Qval */
+	set_ruri_q( msg, branch->q );
+
+	/* BFLAGS */
+	setb0flags( msg, branch->flags );
+
+	/* socket info */
+	msg->force_send_socket = branch->force_send_socket;
+
+	return 0;
+}
