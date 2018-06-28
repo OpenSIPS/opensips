@@ -462,13 +462,15 @@ static evi_reply_sock* flat_parse(str socket){
 	is different from the global version, if it is different reopen the file
 */
 static void rotating(struct flat_socket *fs){
-	int index = fs->file_index_process;
+	int index;
 	int rc;
 
 	if (!fs)
 		return;
 
 	lock_get(global_lock);
+
+	index = fs->file_index_process;
 
 	if (opened_fds[index] == -1) {
 		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
