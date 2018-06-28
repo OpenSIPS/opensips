@@ -482,7 +482,7 @@ cat <<EOF
    *           dr addcr 'cr_1' '10' 0 'CARRIER_1' 'first_carrier'
    *           dr rmcr 1
    *           dr addrule '10,20' '+1' '20040101T083000' 0 0 '1,2' 'NA_RULE' 'NA routing'
-   *           dr rmgrule 1
+   *           dr rmrule 1
  dr show ............................ show dr tables
  dr addgw <gwid> <type> <address> <strip> <pri_prefix>
           <attrs> <probe_mode> <description>
