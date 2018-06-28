@@ -633,6 +633,11 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
             tm for forking. If the flag is set, only Request-URI
             will be overwritten with the highest-q rated contact
             and the rest will be left unprocessed.
+          + 'B' (to Branches only) - this flags forces all found
+            contacts to be uploaded only as branches (in the
+            destination set) and not at all in the RURI of the
+            current message. With this option, the lookup() can be
+            also used in the context of a SIP reply.
           + 'r' (bRanch lookup) - this flag enables searching
             through existing branches for aor's and expanding them
             to contacts. For example, you have got AOR A in your
