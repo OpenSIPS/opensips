@@ -572,13 +572,23 @@ void destroy_dlg_profiles(void)
 	return;
 }
 
+void destroy_linkers(struct dlg_cell *dlg, char is_replicated)
+{
+	dlg_lock_dlg(dlg);
+	dlg->locked_by = (unsigned short)process_no;
 
+	destroy_linkers_unsafe(dlg, is_replicated);
 
-void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
+	dlg->locked_by = 0;
+	dlg_unlock_dlg(dlg);
+}
+
+void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 {
 	map_t entry;
 	struct dlg_profile_link *l;
 	void ** dest;
+	struct dlg_profile_link *linker = dlg->profile_links;
 
 	while(linker) {
 		l = linker;
@@ -651,6 +661,8 @@ skip_and_continue:
 		/* free memory */
 		shm_free(l);
 	}
+
+	dlg->profile_links = NULL;
 }
 
 
@@ -810,8 +822,10 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 	/* check the dialog linkers */
 	d_entry = &d_table->entries[dlg->h_entry];
 	/* lock dialog (if not already locked via a callback triggering)*/
-	if (dlg->locked_by!=process_no)
+	if (dlg->locked_by!=process_no) {
 		dlg_lock( d_table, d_entry);
+		dlg->locked_by = (unsigned short)process_no;
+	}
 	linker = dlg->profile_links;
 	linker_prev = NULL;
 	for( ; linker ; linker_prev=linker,linker=linker->next) {
@@ -827,8 +841,10 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 			 */
 		}
 	}
-	if (dlg->locked_by!=process_no)
+	if (dlg->locked_by!=process_no) {
+		dlg->locked_by = 0;
 		dlg_unlock( d_table, d_entry);
+	}
 	return -1;
 
 found:
@@ -841,10 +857,15 @@ found:
 	}
 	linker->next = NULL;
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
-	if (dlg->locked_by!=process_no)
-		dlg_unlock( d_table, d_entry);
+
 	/* remove linker from profile table and free it */
-	destroy_linkers(linker, 0);
+	destroy_linkers_unsafe(dlg, 0);
+
+	if (dlg->locked_by!=process_no) {
+		dlg->locked_by = 0;
+		dlg_unlock( d_table, d_entry);
+	}
+
 	return 1;
 }
 

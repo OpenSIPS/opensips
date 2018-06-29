@@ -184,7 +184,7 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 		destroy_dlg_callbacks_list(dlg->cbs.first);
 
 	if (dlg->profile_links)
-		destroy_linkers(dlg->profile_links, 0);
+		destroy_linkers_unsafe(dlg, 0);
 
 	if (dlg->legs) {
 		for( i=0 ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
