@@ -148,6 +148,8 @@ void ** map_get( map_t tree, str key)
 	if( !( tree->flags & AVLMAP_NO_DUPLICATE ) )
 	{
 		avl_malloc(key_copy.s, key.len, tree->flags );
+		if (!key_copy.s)
+			return NULL;
 
 		memcpy(key_copy.s,key.s,key.len);
 		key_copy.len = key.len;
