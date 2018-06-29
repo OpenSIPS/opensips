@@ -720,6 +720,11 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 		{
 			p_entry = linker->profile->entries[hash];
 			dest = map_get( p_entry, linker->value );
+			if (!dest) {
+				LM_ERR("No more shm memory\n");
+				lock_set_release( linker->profile->locks,hash );
+				return;
+			}
 			/* if we accept replicated stuff, we have to allocate the
 			 * structure for it and treat the counter differently */
 			prof_val_local_inc(dest, dlg);
