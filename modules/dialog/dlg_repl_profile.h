@@ -134,17 +134,13 @@ static inline int prof_val_get_count(void **dst)
 	if (profile_repl_cluster) {
 		rp = (prof_value_info_t *)(*dst);
 		if (dialog_repl_cluster) {
-			if (get_shtag_state(rp->local_counter.dlg) != SHTAG_STATE_BACKUP) {
-				if (!rp->noval)
-					return rp->local_counter.n;
+			if (rp->local_counter.dlg &&
+				(get_shtag_state(rp->local_counter.dlg) != SHTAG_STATE_BACKUP))
 				return rp->local_counter.n + replicate_profiles_count(rp->noval);
-			} else /* don't count dialogs for which we have a backup role */
+			else  /* don't count dialogs for which we have a backup role */
 				return replicate_profiles_count(rp->noval); /* only received counters */
-		} else {
-			if (!rp->noval)
-				return rp->local_counter.n;
+		} else
 			return rp->local_counter.n + replicate_profiles_count(rp->noval);
-		}
 	} else {
 		return (int)(long)(*dst);
 	}
@@ -158,6 +154,8 @@ static inline void prof_val_local_dec(void **dst)
 	if (profile_repl_cluster) {
 		rp = (prof_value_info_t *)(*dst);
 		rp->local_counter.n--;
+		if (rp->local_counter.n == 0)
+			rp->local_counter.dlg = NULL;
 		/* check all the others to see if we should delete the profile */
 		counter = prof_val_get_count(dst);
 		if (counter == 0) {
@@ -178,7 +176,8 @@ static inline int prof_val_get_local_count(void **dst)
 	if (profile_repl_cluster) {
 		rp = (prof_value_info_t *)(*dst);
 		if (dialog_repl_cluster) {
-			if (get_shtag_state(rp->local_counter.dlg) != SHTAG_STATE_BACKUP)
+			if (rp->local_counter.dlg &&
+				(get_shtag_state(rp->local_counter.dlg) != SHTAG_STATE_BACKUP))
 				return rp->local_counter.n;
 			else /* don't count dialogs for which we have a backup role */
 				return 0;

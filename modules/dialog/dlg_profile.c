@@ -616,8 +616,11 @@ void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 					}
 				}
 			}
-			else
+			else {
 				l->profile->noval_local_counters[l->hash_idx].n--;
+				if (l->profile->noval_local_counters[l->hash_idx].n == 0)
+					l->profile->noval_local_counters[l->hash_idx].dlg = NULL;
+			}
 
 			lock_set_release( l->profile->locks, l->hash_idx  );
 		} else if (!is_replicated) {
