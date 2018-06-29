@@ -221,7 +221,7 @@
 	<quote>dr_rules</quote>.
 	</para>
 	<para>
-	In DR, a carrier is defined by:
+	In DR, a routing rule is defined by:
 	</para>
 	<itemizedlist>
 	<listitem><para>group (list of numbers) - rules can be grouped (a rule may
