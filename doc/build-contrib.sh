@@ -641,7 +641,7 @@ count_dir_changes() {
   for sha in $(git log --reverse --format=%H modules/$1); do
     [ -n "${skip_commits[$sha]}" ] && continue
 
-    show="$(git show $sha -b --find-renames --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors\.xml|\.html|\.sw[po])")"
+    show="$(git log $sha -b --no-walk --find-renames --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors\.xml|\.html|\.sw[po])")"
 
     # grab the overrided author or just the commit author
     if [ -n "${fix_authors[$sha]}" ]; then
