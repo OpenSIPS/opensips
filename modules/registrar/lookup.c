@@ -429,7 +429,8 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 
 fetch_urecord:
 	ul.lock_udomain((udomain_t*)_t, &aor);
-	if (ul.cluster_mode == CM_FEDERATION_CACHEDB)
+	if (ul.cluster_mode == CM_FEDERATION_CACHEDB
+	        && (flags & REG_LOOKUP_GLOBAL_FLAG))
 		rc = ul.get_global_urecord((udomain_t*)_t, &aor, &r);
 	else
 		rc = ul.get_urecord((udomain_t*)_t, &aor, &r);
