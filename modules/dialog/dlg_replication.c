@@ -426,10 +426,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 		return 0;
 	}
 
-	dlg_lock_dlg(dlg);
-	destroy_linkers(dlg->profile_links, 1);
-	dlg->profile_links = NULL;
-	dlg_unlock_dlg(dlg);
+	destroy_linkers(dlg, 1);
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
@@ -920,8 +917,9 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				unref = 1;  /* unref from hash */
 				dlg->state = DLG_STATE_DELETED;
 
-				destroy_linkers(dlg->profile_links, 0);
-				dlg->profile_links = NULL;
+				dlg->locked_by = (unsigned short)process_no;
+				destroy_linkers_unsafe(dlg, 0);
+				dlg->locked_by = 0;
 
 				/* remove from timer */
 				ret = remove_dlg_timer(&dlg->tl);
