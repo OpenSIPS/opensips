@@ -1275,12 +1275,13 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 
 	<section id="func_route_to_carrier" xreflabel="route_to_carrier()">
 		<title>
-		<function moreinfo="none">route_to_carrier(part_and_or_carrier_id, [gw_attrs_pvar], [carrier_attrs_pvar])</function>
+		<function moreinfo="none">route_to_carrier( carriers, [gw_attrs_pvar], [carrier_attrs_pvar])</function>
 		</title>
 		<para>
-		Function to trigger the direct routing to a given carrier. In this case
-		the routing is not done prefix based, but carrier based (call will be
-		sent to the GWs of that carrier, based on carrier policy).
+		Function to trigger the direct routing to a given set carriers (one 
+		or more). So, the routing is not done prefix based, but carrier based 
+		(call will be sent to the GWs of that carrier, based on carrier 
+		policy).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE..
@@ -1293,19 +1294,20 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 		<itemizedlist>
 				<listitem>
 					<para>
-					<emphasis role='bold'>part_and_or_carrier_id </emphasis> (mandatory):
+					<emphasis role='bold'>carriers</emphasis> (mandatory):
 					</para>
 					<itemizedlist>
 						<listitem>
 							<para>
-								the ID (name) of the carrier to be used, if <varname>use_partitions</varname>
+								the list of carrier IDs (names), if <varname>use_partitions</varname>
 								parameter is 0; variables are accepted.
 							</para>
 						</listitem>
 						<listitem>
 							<para>
-								the partition and carrier to be used, if <varname>use_partitions</varname> parameter
-								is 1. The format is "partition_name':'carrierId"; variables are accepted.
+								the partition and the list of carrier IDs, 
+								if <varname>use_partitions</varname> parameter
+								is 1. The format is "partition_name : carrierID, carrierID"; variables are accepted.
 							</para>
 						</listitem>
 					</itemizedlist>
@@ -1332,8 +1334,15 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 		parameter is 0</title>
 		<programlisting format="linespecific">
 ...
-if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
+if ( route_to_carrier("my_top_carrier, def_carrier", , "$var(carrier_att)") ) {
 	xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
+	t_on_failure("next_gw");
+	t_relay();
+	exit;
+}
+...
+if ( route_to_carrier("part1: carrier1, carrier2", , "$var(carrier_att)") ) {
+	xlog("Routing to $var(carrier_att)\n");
 	t_on_failure("next_gw");
 	t_relay();
 	exit;
