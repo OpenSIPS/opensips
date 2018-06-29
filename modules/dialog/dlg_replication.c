@@ -1258,6 +1258,9 @@ int replicate_profiles_count(repl_prof_novalue_t *rp)
 	time_t now = time(0);
 	repl_prof_count_t *head;
 
+	if (!rp)
+		return 0;
+
 	lock_get(&rp->lock);
 	head = rp->dsts;
 	while (head != NULL) {
@@ -1472,6 +1475,9 @@ int get_shtag_state(struct dlg_cell *dlg)
 	str tag_name;
 	struct dlg_sharing_tag *tag;
 	int rc;
+
+	if (!dlg)
+		return -1;
 
 	rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0);
 	if (rc == -1) {
