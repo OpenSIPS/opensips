@@ -3157,13 +3157,13 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	pgw_list_t *cdst;
 	pcr_t *cr;
 	pv_value_t pv_val;
-	str ruri, id;
+	str ruri, id, ids;
 	str next_carrier_attrs = {NULL, 0};
 	str next_gw_attrs = {NULL, 0};
 	int j,n;
 	dr_part_old_t * part_cr;
 	struct head_db * current_partition = 0;
-	char *ruri_buf=NULL;
+	char *ruri_buf=NULL, *p;
 
 	part_cr = (dr_part_old_t*)part_carrier;
 	if(use_partitions) {
@@ -3188,7 +3188,7 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	}
 
 	/* get the carrier ID */
-	if (fixup_get_svalue(msg, (gparam_p)part_cr->gw_or_cr, &id) != 0) {
+	if (fixup_get_svalue(msg, (gparam_p)part_cr->gw_or_cr, &ids) != 0) {
 		LM_ERR("failed to get string value for carrier ID\n");
 		return -1;
 	}
@@ -3232,96 +3232,120 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	/* ref the data for reading */
 	lock_start_read( current_partition->ref_lock );
 
-	cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, &id );
-	if (cr==NULL) {
-		LM_ERR("carrier <%.*s> was not found\n", id.len, id.s );
-		goto error;
-	}
+	/* how many gws will be added */
+	n = 0;
 
-	/* is carrier turned off ? */
-	if( cr->flags & DR_CR_FLAG_IS_OFF ) {
-		LM_NOTICE("routing to disabled carrier <%.*s> failed\n",
+	while (ids.len>0) {
+
+		/* extract a new carrier ID */
+		id.s = ids.s;
+		p = q_memchr( ids.s, ',', ids.len);
+		id.len = (p==NULL)?ids.len:(p-ids.s);
+
+		/* adjust remaing 'ids' buffer */
+		ids.len -= id.len + (p?1:0);
+		ids.s += id.len + (p?1:0);
+
+		str_trim_spaces_lr( id );
+		if (id.len==0) {
+			/* empty value */
+			continue;
+		}
+
+		LM_DBG("found and looking for carrier id <%.*s>,len=%d\n",id.len, id.s, id.len);
+		cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, &id );
+		if (cr==NULL) {
+			LM_ERR("carrier <%.*s> was not found, skipping...\n", id.len, id.s );
+			continue;
+		}
+
+		/* is carrier turned off ? */
+		if( cr->flags & DR_CR_FLAG_IS_OFF ) {
+			LM_DBG("carrier <%.*s> is disabled, skipping..,\n",
 				cr->id.len, cr->id.s);
-		goto error;
-	}
+			continue;
+		}
 
-	/* any GWs for the carrier? */
-	if (cr->pgwl==NULL)
-		goto no_gws;
+		/* any GWs for the carrier? */
+		if (cr->pgwl==NULL)
+			continue;
 
-	/* sort the gws of the carrier */
-	j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
-			carrier_idx);
-	if (j!=0) {
-		LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
-				cr->id.len, cr->id.s);
-		goto error;
-	}
+		/* sort the gws of the carrier */
+		j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
+				carrier_idx);
+		if (j!=0) {
+			LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
+					cr->id.len, cr->id.s);
+			continue;
+		}
 
-	/* iterate through the list of GWs provided by carrier */
-	for ( j=0,n=0 ; j<cr->pgwa_len ; j++ ) {
+		/* iterate through the list of GWs provided by carrier */
+		for ( j=0 ; j<cr->pgwa_len ; j++ ) {
 
-		cdst = &cr->pgwl[carrier_idx[j]];
+			cdst = &cr->pgwl[carrier_idx[j]];
 
-		/* is gateway disabled ? */
-		if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
-			/*ignore it*/
-		} else {
-			/* add gateway to usage list */
-			if ( push_gw_for_usage(msg, current_partition, &uri, cdst->dst.gw,
-						&cr->id, &cr->attrs, n ) ) {
-				LM_ERR("failed to use gw <%.*s>, skipping\n",
-						cdst->dst.gw->id.len, cdst->dst.gw->id.s);
+			/* is gateway disabled ? */
+			if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
+				/*ignore it*/
 			} else {
-				n++;
+				/* add gateway to usage list */
+				if ( push_gw_for_usage(msg, current_partition, &uri, cdst->dst.gw,
+						&cr->id, &cr->attrs, n ) ) {
+					LM_ERR("failed to use gw <%.*s>, skipping\n",
+						cdst->dst.gw->id.len, cdst->dst.gw->id.s);
+				} else {
+					n++;
 
-				/* only export the top-most carrier/gw
-				 * attributes in the script */
-				if (n == 1) {
-					next_carrier_attrs = cr->attrs;
-					next_gw_attrs = cdst->dst.gw->attrs;
+					/* only export the top-most carrier/gw
+					 * attributes in the script */
+					if (n == 1) {
+						next_carrier_attrs = cr->attrs;
+						next_gw_attrs = cdst->dst.gw->attrs;
+					}
+
+					/* use only first valid GW */
+					if (cr->flags&DR_CR_FLAG_FIRST)
+						break;
 				}
-
-				/* use only first valid GW */
-				if (cr->flags&DR_CR_FLAG_FIRST)
-					break;
 			}
+
 		}
 
 	}
 
 	if( n < 1) {
-		LM_ERR("All the gateways are disabled\n");
-		goto error;
-	}
 
-	pv_val.flags = PV_VAL_STR;
+		LM_DBG("No GW added (not found or found disabled)\n");
 
-	if (gw_attrs_spec) {
+	} else {
+
 		pv_val.flags = PV_VAL_STR;
-		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
-		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
-			LM_ERR("failed to set value for gateway attrs pvar\n");
-			goto error;
-		}
-	}
 
-	if (carrier_attrs_spec) {
-		pv_val.flags = PV_VAL_STR;
-		pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
-		if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0) {
-			LM_ERR("failed to set value for carrier attrs pvar\n");
-			goto error;
+		if (gw_attrs_spec) {
+			pv_val.flags = PV_VAL_STR;
+			pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
+			if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
+				LM_ERR("failed to set value for gateway attrs pvar\n");
+				goto error;
+			}
 		}
-	}
 
-no_gws:
+		if (carrier_attrs_spec) {
+			pv_val.flags = PV_VAL_STR;
+			pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
+			if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0) {
+				LM_ERR("failed to set value for carrier attrs pvar\n");
+				goto error;
+			}
+		}
+
+	}
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( current_partition->ref_lock );
 	if (ruri_buf) pkg_free(ruri_buf);
 
-	return 1;
+	return (n==0)?-1:1;
 error:
 	/* we are done reading -> unref the data */
 	lock_stop_read( current_partition->ref_lock );
