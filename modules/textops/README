@@ -103,7 +103,11 @@ From: medabeda
    Searches for the re in the message.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -118,7 +122,11 @@ if ( search("[Ss][Ii][Pp]") ) { /*....*/ };
    Searches for the re in the body of the message.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+   * re - Regular expression. The
+     re parameter can have the following types:
+        + string - Static regular expression
+        + pvar - regular expression is given as a pseudo-variable
+          (as string value)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -133,7 +141,11 @@ if ( search_body("[Ss][Ii][Pp]") ) { /*....*/ };
    Searches for the first match of re and appends txt after it.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String to be appended.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -150,7 +162,11 @@ search_append("[Oo]pen[Ss]er", " SIP Proxy");
    and appends txt after it.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String to be appended.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -166,7 +182,11 @@ search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
    Replaces the first occurrence of re with txt.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -183,7 +203,11 @@ replace("opensips", "Open SIP Server");
    with txt.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -199,7 +223,11 @@ replace_body("opensips", "Open SIP Server");
    Replaces all occurrence of re with txt.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -216,7 +244,11 @@ replace_all("opensips", "Open SIP Server");
    txt. Matching is done on a per-line basis.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -233,7 +265,11 @@ replace_body_all("opensips", "Open SIP Server");
    txt. Matching is done over the whole body.
 
    Meaning of the parameters is as follows:
-     * re - Regular expression.
+     * re - Regular expression. The
+       re parameter can have the following types:
+          + string - Static regular expression
+          + pvar - regular expression is given as a pseudo-variable
+            (as string value)
      * txt - String.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -258,6 +294,10 @@ if(has_body() && replace_body_atonce("^.+$", ""))
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
+       The parameter can have the following types:
+            + string - Static regular expression
+            + pvar - regular expression is given as a pseudo-variable
+              (as string value)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -287,6 +327,11 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
+       The parameter can have the following types:
+            + string - Static regular expression
+            + pvar - regular expression is given as a pseudo-variable
+              (as string value)
+
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -318,6 +363,11 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
+       The parameter can have the following types:
+            + string - Static regular expression
+            + pvar - regular expression is given as a pseudo-variable
+              (as string value)
+
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -346,6 +396,11 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
        'repl' - is replacement string - may contain
        pseudo-variables
        'flags' - substitution flags (i - ignore case, g - global)
+       The parameter can have the following types:
+            + string - Static regular expression
+            + pvar - regular expression is given as a pseudo-variable
+              (as string value)
+
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.

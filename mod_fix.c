@@ -385,7 +385,7 @@ int fixup_regexp_null(void** param, int param_no)
 
 /*! \brief
  * fixup for functions that get one parameter
- * - first parameter is converted to regular expression structure   - accepts non-plaintext input
+ * - first parameter is converted to regular expression structure - accepts non-plaintext input
  */
 int fixup_regexp_dynamic_null(void** param, int param_no)
 {
@@ -395,6 +395,23 @@ int fixup_regexp_dynamic_null(void** param, int param_no)
 		return E_UNSPEC;
 	}
 	return fixup_regexp_dynamic(param, 0);
+}
+
+/*! \brief
+ * fixup for functions that get two parameters
+ * - first parameter is converted to regular expression structure - accepts non-plaintext input
+ * - second parameter is not converted
+ */
+int fixup_regexp_dynamic_none(void** param, int param_no)
+{
+	if(param_no != 1 && param_no != 2)
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_regexp_dynamic(param, 0);
+	return 0;
 }
 
 static char *re_buff=NULL;
@@ -454,7 +471,7 @@ build_re:
 		LM_ERR("bad re %s\n", re_buff);
 		return NULL;
 	}
-	
+
 	if (do_free)
 		*do_free=1;
 	return ret_re;
@@ -523,6 +540,25 @@ int fixup_regexpNL_none(void** param, int param_no)
 		return fixup_regexp(param, REG_NEWLINE);
 	return 0;
 }
+
+/*! \brief
+ * fixup for functions that get two parameters
+ * - first parameter is converted to regular expression structure
+ *   where "match-any-character" operators also match a newline - accepts non-plaintext input
+ * - second parameter is not converted
+ */
+int fixup_regexpNL_dynamic_none(void** param, int param_no)
+{
+	if (param_no != 1 && param_no != 2 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	if (param_no == 1)
+		return fixup_regexp_dynamic(param, REG_NEWLINE);
+	return 0;
+}
+
 
 /**
  * fixup free for functions that get two parameters

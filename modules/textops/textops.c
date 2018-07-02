@@ -87,31 +87,31 @@ static int mod_init(void);
 
 static cmd_export_t cmds[]={
 	{"search",           (cmd_function)search_f,          1,
-		fixup_regexp_null, fixup_free_regexp_null,
+		fixup_regexp_dynamic_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"search_body",      (cmd_function)search_body_f,     1,
-		fixup_regexp_null, fixup_free_regexp_null,
+		fixup_regexp_dynamic_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"search_append",    (cmd_function)search_append_f,   2,
-		fixup_regexp_none,fixup_free_regexp_none,
+		fixup_regexp_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"search_append_body", (cmd_function)search_append_body_f,   2,
-		fixup_regexp_none, fixup_free_regexp_none,
+		fixup_regexp_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"replace",          (cmd_function)replace_f,         2,
-		fixup_regexp_none, fixup_free_regexp_none,
+		fixup_regexp_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"replace_body",     (cmd_function)replace_body_f,    2,
-		fixup_regexp_none, fixup_free_regexp_none,
+		fixup_regexp_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"replace_all",      (cmd_function)replace_all_f,     2,
-		fixup_regexp_none, fixup_free_regexp_none,
+		fixup_regexp_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"replace_body_all", (cmd_function)replace_body_all_f,2,
-		fixup_regexp_none, fixup_free_regexp_none,
+		fixup_regexp_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"replace_body_atonce", (cmd_function)replace_body_atonce_f,2,
-		fixup_regexpNL_none, fixup_free_regexp_none,
+		fixup_regexpNL_dynamic_none, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"subst",            (cmd_function)subst_f,           1,
 		fixup_substre, 0,
@@ -165,18 +165,37 @@ static char *get_header(struct sip_msg *msg)
 
 static int search_f(struct sip_msg* msg, char* key, char* str2)
 {
-	/*we registered only 1 param, so we ignore str2*/
+	int ret;
+	int do_free;
+	regex_t* re;
 	regmatch_t pmatch;
 
-	if (regexec((regex_t*) key, msg->buf, 1, &pmatch, 0)!=0) return -1;
-	return 1;
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+                LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+                return -1;
+        }
+
+	if (regexec(re, msg->buf, 1, &pmatch, 0)!=0)
+		ret = -1;
+	else
+		ret = 1;
+
+	if (do_free)
+		fixup_free_regexp((void **)&re);
+
+	return ret;
 }
 
 
 static int search_body_f(struct sip_msg* msg, char* key, char* str2)
 {
+	int ret;
+	int do_free;
 	str body;
 	/*we registered only 1 param, so we ignore str2*/
+	regex_t* re;
 	regmatch_t pmatch;
 
 	if ( get_body(msg,&body)!=0 || body.len==0) {
@@ -184,24 +203,50 @@ static int search_body_f(struct sip_msg* msg, char* key, char* str2)
 		return -1;
 	}
 
-	if (regexec((regex_t*) key, body.s, 1, &pmatch, 0)!=0) return -1;
-	return 1;
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (regexec(re, body.s, 1, &pmatch, 0)!=0)
+		ret = -1;
+	else
+		ret = 1;
+	if (do_free)
+		fixup_free_regexp((void **)&re);
+
+	return ret;
 }
 
 
 static int search_append_f(struct sip_msg* msg, char* key, char* str2)
 {
 	struct lump* l;
+	regex_t* re;
 	regmatch_t pmatch;
 	char* s;
 	int len;
 	char *begin;
 	int off;
+	int do_free;
 
 	begin=get_header(msg); /* msg->orig/buf previously .. uri problems */
 	off=begin-msg->buf;
 
-	if (regexec((regex_t*) key, begin, 1, &pmatch, 0)!=0) return -1;
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (regexec(re, begin, 1, &pmatch, 0)!=0) {
+		if (do_free) fixup_free_regexp((void **)&re);
+	 	return -1;
+ 	}
+
 	if (pmatch.rm_so!=-1){
 		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
@@ -209,26 +254,32 @@ static int search_append_f(struct sip_msg* msg, char* key, char* str2)
 		s=pkg_malloc(len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			pkg_free(s);
 			return -1;
 		}
+		if (do_free) fixup_free_regexp((void **)&re);
 		return 1;
 	}
+	if (do_free) fixup_free_regexp((void **)&re);
 	return -1;
 }
 
 static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 {
 	struct lump* l;
+	regex_t* re;
 	regmatch_t pmatch;
 	char* s;
 	int len;
 	int off;
+	int do_free;
 	str body;
 
 	if ( get_body(msg,&body)!=0 || body.len==0) {
@@ -238,7 +289,17 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 
 	off=body.s-msg->buf;
 
-	if (regexec((regex_t*) key, body.s, 1, &pmatch, 0)!=0) return -1;
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (regexec(re, body.s, 1, &pmatch, 0)!=0) {
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
 	if (pmatch.rm_so!=-1){
 		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
@@ -246,16 +307,20 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 		s=pkg_malloc(len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
+		if (do_free) fixup_free_regexp((void **)&re);
 		return 1;
 	}
+	if (do_free) fixup_free_regexp((void **)&re);
 	return -1;
 }
 
@@ -263,6 +328,7 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 {
 	struct lump* l;
+	regex_t* re;
 	regmatch_t pmatch;
 	char* s;
 	int len;
@@ -270,37 +336,50 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 	int off;
 	int ret;
 	int eflags;
+	int do_free;
 
 	begin = get_header(msg);
 	ret=-1; /* pessimist: we will not find any */
 	len=strlen(str2);
 	eflags=0; /* match ^ at the beginning of the string*/
 
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
 	while (begin<msg->buf+msg->len
-				&& regexec((regex_t*) key, begin, 1, &pmatch, eflags)==0) {
+				&& regexec(re, begin, 1, &pmatch, eflags)==0) {
 		off=begin-msg->buf;
 		if (pmatch.rm_so==-1){
 			LM_ERR("offset unknown\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		if (pmatch.rm_so==pmatch.rm_eo){
 			LM_ERR("matched string is empty... invalid regexp?\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		if ((l=del_lump(msg, pmatch.rm_so+off,
 						pmatch.rm_eo-pmatch.rm_so, 0))==0) {
 			LM_ERR("del_lump failed\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		s=pkg_malloc(len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		/* new cycle */
@@ -312,12 +391,14 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 			eflags|=REG_NOTBOL;
 		ret=1;
 	} /* while found ... */
+	if (do_free) fixup_free_regexp((void **)&re);
 	return ret;
 }
 
 static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nobol)
 {
 	struct lump* l;
+	regex_t* re;
 	regmatch_t pmatch;
 	char* s;
 	int len;
@@ -325,6 +406,7 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 	int off;
 	int ret;
 	int eflags;
+	int do_free;
 	str body;
 
 	if ( get_body(msg,&body)!=0 || body.len==0) {
@@ -337,31 +419,43 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 	len=strlen(str2);
 	eflags=0; /* match ^ at the beginning of the string*/
 
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
 	while (begin<msg->buf+msg->len
-				&& regexec((regex_t*) key, begin, 1, &pmatch, eflags)==0) {
+				&& regexec(re, begin, 1, &pmatch, eflags)==0) {
 		off=begin-msg->buf;
 		if (pmatch.rm_so==-1){
 			LM_ERR("offset unknown\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		if (pmatch.rm_so==pmatch.rm_eo){
 			LM_ERR("matched string is empty... invalid regexp?\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		if ((l=del_lump(msg, pmatch.rm_so+off,
 						pmatch.rm_eo-pmatch.rm_so, 0))==0) {
 			LM_ERR("del_lump failed\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		s=pkg_malloc(len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		/* new cycle */
@@ -373,6 +467,7 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 			eflags|=REG_NOTBOL;
 		ret=1;
 	} /* while found ... */
+	if (do_free) fixup_free_regexp((void **)&re);
 	return ret;
 }
 
@@ -389,36 +484,53 @@ static int replace_body_atonce_f(struct sip_msg* msg, char* key, char* str2)
 static int replace_f(struct sip_msg* msg, char* key, char* str2)
 {
 	struct lump* l;
+	regex_t* re;
 	regmatch_t pmatch;
 	char* s;
 	int len;
 	char* begin;
 	int off;
+	int do_free;
 
 	begin=get_header(msg); /* msg->orig previously .. uri problems */
 
-	if (regexec((regex_t*) key, begin, 1, &pmatch, 0)!=0) return -1;
+	re = fixup_get_regex(msg,(gparam_p)key, &do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression\n");
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (regexec(re, begin, 1, &pmatch, 0)!=0) {
+		if (do_free) fixup_free_regexp((void **)&re);
+		return -1;
+	}
 	off=begin-msg->buf;
 
 	if (pmatch.rm_so!=-1){
 		if ((l=del_lump(msg, pmatch.rm_so+off,
-						pmatch.rm_eo-pmatch.rm_so, 0))==0)
+						pmatch.rm_eo-pmatch.rm_so, 0))==0) {
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
+		}
 		len=strlen(str2);
 		s=pkg_malloc(len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
 		memcpy(s, str2, len);
 		if (insert_new_lump_after(l, s, len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
+			if (do_free) fixup_free_regexp((void **)&re);
 			return -1;
 		}
-
+		if (do_free) fixup_free_regexp((void **)&re);
 		return 1;
 	}
+	if (do_free) fixup_free_regexp((void **)&re);
 	return -1;
 }
 
@@ -476,8 +588,32 @@ static int subst_f(struct sip_msg* msg, char*  subst, char* ignored)
 	int off;
 	int ret;
 	int nmatches;
+	pv_spec_p spec;
+	pv_value_t spec_value;
+	str sub;
 
-	se=(struct subst_expr*)subst;
+	if (((gparam_p)subst)->type == GPARAM_TYPE_PVS) {
+		spec = ((gparam_p)subst)->v.pvs;
+		if (spec) {
+			if (pv_get_spec_value(msg, spec, &spec_value) != 0 ) {
+				LM_ERR("Cannnot get spec value\n");
+				return -1;
+			}
+			if (!(spec_value.flags & PV_VAL_STR)) {
+				LM_ERR("Value is not a sting\n");
+				return -1;
+			}
+			sub = spec_value.rs;
+		}
+		se=subst_parser(&sub);
+		if (se==0){
+			LM_ERR("%s: bad subst. re %s\n", exports.name, sub.s);
+			return E_BAD_RE;
+		}
+	} else {
+		se=(struct subst_expr*)subst;
+	}
+
 	begin=get_header(msg);  /* start after first line to avoid replacing
 							   the uri */
 	off=begin-msg->buf;
@@ -522,8 +658,32 @@ static int subst_uri_f(struct sip_msg* msg, char*  subst, char* ignored)
 	char c;
 	struct subst_expr* se;
 	str* result;
+	pv_spec_p spec;
+	pv_value_t spec_value;
+	str sub;
 
-	se=(struct subst_expr*)subst;
+	if (((gparam_p)subst)->type == GPARAM_TYPE_PVS) {
+		spec = ((gparam_p)subst)->v.pvs;
+		if (spec) {
+			if (pv_get_spec_value(msg, spec, &spec_value) != 0 ) {
+				LM_ERR("Cannnot get spec value\n");
+				return -1;
+			}
+			if (!(spec_value.flags & PV_VAL_STR)) {
+				LM_ERR("Value is not a sting\n");
+				return -1;
+			}
+			sub = spec_value.rs;
+		}
+		se=subst_parser(&sub);
+		if (se==0){
+			LM_ERR("%s: bad subst. re %s\n", exports.name, sub.s);
+			return E_BAD_RE;
+		}
+	} else {
+		se=(struct subst_expr*)subst;
+	}
+
 	if (msg->new_uri.s){
 		len=msg->new_uri.len;
 		tmp=msg->new_uri.s;
@@ -565,6 +725,9 @@ static int subst_user_f(struct sip_msg* msg, char*  subst, char* ignored)
 	str user;
 	char c;
 	int nmatches;
+	pv_spec_p spec;
+	pv_value_t spec_value;
+	str sub;
 
 	c=0;
 	if (parse_sip_msg_uri(msg)<0){
@@ -579,7 +742,29 @@ static int subst_user_f(struct sip_msg* msg, char*  subst, char* ignored)
 		c=user.s[user.len];
 		user.s[user.len]=0;
 	}
-	se=(struct subst_expr*)subst;
+
+	if (((gparam_p)subst)->type == GPARAM_TYPE_PVS) {
+		spec = ((gparam_p)subst)->v.pvs;
+		if (spec) {
+			if (pv_get_spec_value(msg, spec, &spec_value) != 0 ) {
+				LM_ERR("Cannnot get spec value\n");
+				return -1;
+			}
+			if (!(spec_value.flags & PV_VAL_STR)) {
+				LM_ERR("Value is not a sting\n");
+				return -1;
+			}
+			sub = spec_value.rs;
+		}
+		se=subst_parser(&sub);
+		if (se==0){
+			LM_ERR("%s: bad subst. re %s\n", exports.name, sub.s);
+			return E_BAD_RE;
+		}
+	} else {
+		se=(struct subst_expr*)subst;
+	}
+
 	result=subst_str(user.s, msg, se, &nmatches);/* pkg malloc'ed result */
 	if (c)	user.s[user.len]=c;
 	if (result == NULL) {
@@ -611,13 +796,37 @@ static int subst_body_f(struct sip_msg* msg, char*  subst, char* ignored)
 	int ret;
 	int nmatches;
 	str body;
+	pv_spec_p spec;
+	pv_value_t spec_value;
+	str sub;
 
 	if ( get_body(msg,&body)!=0 || body.len==0) {
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
 
-	se=(struct subst_expr*)subst;
+	if (((gparam_p)subst)->type == GPARAM_TYPE_PVS) {
+		spec = ((gparam_p)subst)->v.pvs;
+		if (spec) {
+			if (pv_get_spec_value(msg, spec, &spec_value) != 0 ) {
+				LM_ERR("Cannnot get spec value\n");
+				return -1;
+			}
+			if (!(spec_value.flags & PV_VAL_STR)) {
+				LM_ERR("Value is not a sting\n");
+				return -1;
+			}
+			sub = spec_value.rs;
+		}
+		se=subst_parser(&sub);
+		if (se==0){
+			LM_ERR("%s: bad subst. re %s\n", exports.name, sub.s);
+			return E_BAD_RE;
+		}
+	} else {
+		se=(struct subst_expr*)subst;
+	}
+
 	begin=body.s;
 
 	off=begin-msg->buf;
@@ -657,20 +866,24 @@ static int fixup_substre(void** param, int param_no)
 	struct subst_expr* se;
 	str subst;
 
+
 	LM_DBG("%s module -- fixing %s\n", exports.name, (char*)(*param));
 	if (param_no!=1) return 0;
-	subst.s=*param;
-	subst.len=strlen(*param);
-	se=subst_parser(&subst);
-	if (se==0){
-		LM_ERR("%s: bad subst. re %s\n", exports.name,
-				(char*)*param);
-		return E_BAD_RE;
+
+	fixup_sgp(param);
+	if (((gparam_p)param)->type == GPARAM_TYPE_STR) {
+		subst = ((gparam_p)param)->v.sval;
+
+		se=subst_parser(&subst);
+		if (se==0){
+			LM_ERR("%s: bad subst. re %s\n", exports.name,
+					(char*)*param);
+			return E_BAD_RE;
+		}
+		/* don't free string -- needed for specifiers */
+		/* pkg_free(*param); */
+		/* replace it with the compiled subst. re */
+		*param=se;
 	}
-	/* don't free string -- needed for specifiers */
-	/* pkg_free(*param); */
-	/* replace it with the compiled subst. re */
-	*param=se;
 	return 0;
 }
-

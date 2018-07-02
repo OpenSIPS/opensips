@@ -73,10 +73,12 @@ int fixup_uint_sint(void** param, int param_no);
 
 int fixup_regexp_null(void** param, int param_no);
 int fixup_regexp_dynamic_null(void** param, int param_no);
+int fixup_regexp_dynamic_none(void** param, int param_no);
 int fixup_regexpNL_null(void** param, int param_no);
 int fixup_free_regexp_null(void** param, int param_no);
 int fixup_regexp_none(void** param, int param_no);
 int fixup_regexpNL_none(void** param, int param_no);
+int fixup_regexpNL_dynamic_none(void** param, int param_no);
 int fixup_free_regexp_none(void** param, int param_no);
 int fixup_free_regexp(void** param);
 
