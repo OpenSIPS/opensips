@@ -57,6 +57,7 @@ struct repl_prof_novalue;
 struct prof_local_count {
 	int n;
 	struct dlg_cell *dlg;
+	struct prof_local_count *next;
 };
 
 enum repl_types {REPL_NONE=0, REPL_CACHEDB=1, REPL_PROTOBIN};
@@ -71,18 +72,12 @@ struct dlg_profile_table {
 	/*
 	 * information for profiles with values
 	 */
-
 	map_t * entries;
 
 	/*
 	 * information for profiles without values
 	 */
-
-	struct prof_local_count *noval_local_counters;
-
-	/*
-	 * information used for profile replication without values
-	 */
+	struct prof_local_count **noval_local_counters;
 	struct repl_prof_novalue *noval_repl_info;
 
 	struct dlg_profile_table *next;

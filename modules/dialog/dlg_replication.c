@@ -1298,18 +1298,15 @@ static void clean_profiles(unsigned int ticks, void *param)
 					LM_ERR("[BUG] bogus map[%d] state\n", i);
 					goto next_val;
 				}
-				count = prof_val_get_count(dst);
+				count = prof_val_get_count(dst, 1);
 				if (!count) {
 					del = it;
 					if (iterator_next(&it) < 0)
 						LM_DBG("cannot find next iterator\n");
 					rp = (prof_value_info_t *) iterator_delete(&del);
-					if (rp) {
+					if (rp)
 						free_profile_val_t(rp);
-						/*if (rp->noval)
-							shm_free(rp->noval);
-						shm_free(rp);*/
-					}
+
 					continue;
 				}
 next_val:
@@ -1381,7 +1378,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 						LM_ERR("cannot retrieve profile's key\n");
 						goto next_val;
 					}
-					count = prof_val_get_local_count(dst);
+					count = prof_val_get_local_count(dst, 0);
 					if ((ret = repl_prof_add(&packet, &profile->name, 1, value, count)) < 0)
 						goto error;
 					/* check if the profile should be sent */
