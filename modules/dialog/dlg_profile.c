@@ -572,23 +572,80 @@ void destroy_dlg_profiles(void)
 	return;
 }
 
-void destroy_linkers(struct dlg_cell *dlg, char is_replicated)
+/* array of temporary copies of the dialog profile linkers */
+static struct dlg_profile_link *tmp_linkers;
+static int n_tmp_linkers, tmp_linkers_size;
+
+static int init_tmp_linkers(struct dlg_cell *dlg)
 {
-	dlg_lock_dlg(dlg);
-	dlg->locked_by = (unsigned short)process_no;
+	struct dlg_profile_link *l;
+	int i;
 
-	destroy_linkers_unsafe(dlg, is_replicated);
+	for (l = dlg->profile_links, i = 0; l; l = l->next, i++) {
+		if (i == n_tmp_linkers) {
+			if (n_tmp_linkers == 0) {
+				tmp_linkers_size = sizeof *l;
+				n_tmp_linkers = 1;
+			} else {
+				tmp_linkers_size *= 2;
+				n_tmp_linkers *= 2;
+			}
+			tmp_linkers = pkg_realloc(tmp_linkers, tmp_linkers_size);
+			if (!tmp_linkers) {
+				LM_ERR("No more pkg memory\n");
+				return -1;
+			}
+		}
 
-	dlg->locked_by = 0;
-	dlg_unlock_dlg(dlg);
+		memcpy(&tmp_linkers[i], l, sizeof *l);
+		if (i != 0)
+			tmp_linkers[i-1].next = &tmp_linkers[i];
+	}
+
+	if (dlg->profile_links)
+		tmp_linkers[i].next = NULL;
+
+	return 0;
 }
 
 void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 {
+	struct dlg_profile_link *l, *linker = dlg->profile_links;
+
+	/* temporarily save a copy of the dialog profile links in order to remove the
+	 * dialog from the profile table structures _after_ actually distroying the
+	 * links from the dlg_cell; this is useful for avoiding deadlocks */
+	if (init_tmp_linkers(dlg) < 0) {
+		LM_ERR("Failed to destroy profile linkers\n");
+		return;
+	}
+
+	while (linker) {
+		l = linker;
+		linker = linker->next;
+		shm_free(l);
+	}
+
+	dlg->profile_links = NULL;
+}
+
+void destroy_linkers(struct dlg_cell *dlg, char is_replicated)
+{
+	dlg_lock_dlg(dlg);
+
+	destroy_linkers_unsafe(dlg, is_replicated);
+
+	dlg_unlock_dlg(dlg);
+}
+
+/* this function should be called after destroy_linkers() and
+ * with the dialog unlocked(can cause a deadlock otherwise) */
+void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated)
+{
 	map_t entry;
 	struct dlg_profile_link *l;
 	void ** dest;
-	struct dlg_profile_link *linker = dlg->profile_links;
+	struct dlg_profile_link *linker = &tmp_linkers[0];
 
 	while(linker) {
 		l = linker;
@@ -624,47 +681,40 @@ void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 			if (!cdbc) {
 				LM_WARN("CacheDB not initialized - some information might"
 						" not be deleted from the cachedb engine\n");
-				goto skip_and_continue;
+				continue;
 			}
 
 			/* prepare buffers */
 			if( l->profile->has_value) {
 
 				if (dlg_fill_value(&l->profile->name, &l->value) < 0)
-					goto skip_and_continue;
+					continue;
 				if (dlg_fill_size(&l->profile->name) < 0)
-					goto skip_and_continue;
+					continue;
 				/* not really interested in the new val */
 				if (cdbf.sub(cdbc, &dlg_prof_val_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove profile from CacheDB\n");
-					goto skip_and_continue;
+					continue;
 				}
 				/* fill size into name */
 				if (cdbf.sub(cdbc, &dlg_prof_size_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove size profile from CacheDB\n");
-					goto skip_and_continue;
+					continue;
 				}
 			} else {
 				if (dlg_fill_name(&l->profile->name) < 0)
-					goto skip_and_continue;
+					continue;
 				if (cdbf.sub(cdbc, &dlg_prof_noval_buf, 1,
 							profile_timeout, NULL) < 0) {
 					LM_ERR("cannot remove profile from CacheDB\n");
-					goto skip_and_continue;
+					continue;
 				}
 			}
 		}
-
-skip_and_continue:
-		/* free memory */
-		shm_free(l);
 	}
-
-	dlg->profile_links = NULL;
 }
-
 
 inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 										struct dlg_profile_table *profile )
@@ -834,10 +884,8 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 	/* check the dialog linkers */
 	d_entry = &d_table->entries[dlg->h_entry];
 	/* lock dialog (if not already locked via a callback triggering)*/
-	if (dlg->locked_by!=process_no) {
+	if (dlg->locked_by!=process_no)
 		dlg_lock( d_table, d_entry);
-		dlg->locked_by = (unsigned short)process_no;
-	}
 	linker = dlg->profile_links;
 	linker_prev = NULL;
 	for( ; linker ; linker_prev=linker,linker=linker->next) {
@@ -870,13 +918,13 @@ found:
 	linker->next = NULL;
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
-	/* remove linker from profile table and free it */
+	/* remove linkers from dialog */
 	destroy_linkers_unsafe(dlg, 0);
 
-	if (dlg->locked_by!=process_no) {
-		dlg->locked_by = 0;
+	if (dlg->locked_by!=process_no)
 		dlg_unlock( d_table, d_entry);
-	}
+
+	remove_dlg_prof_table(dlg, 0);
 
 	return 1;
 }

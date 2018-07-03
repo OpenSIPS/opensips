@@ -427,6 +427,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	}
 
 	destroy_linkers(dlg, 1);
+	remove_dlg_prof_table(dlg,0);
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
@@ -917,9 +918,16 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				unref = 1;  /* unref from hash */
 				dlg->state = DLG_STATE_DELETED;
 
-				dlg->locked_by = (unsigned short)process_no;
 				destroy_linkers_unsafe(dlg, 0);
-				dlg->locked_by = 0;
+
+				/* make sure dialog is not freed while we don't hold the lock */
+				ref_dlg_unsafe(dlg, unref);
+				dlg_unlock(d_table, &d_table->entries[i]);
+
+				remove_dlg_prof_table(dlg, 0);
+
+				dlg_lock(d_table, &d_table->entries[i]);
+				unref++;
 
 				/* remove from timer */
 				ret = remove_dlg_timer(&dlg->tl);
