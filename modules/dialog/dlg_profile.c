@@ -465,7 +465,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	len = sizeof(struct dlg_profile_table) + name->len + 1;
 	/* anything else than only CACHEDB */
 	if (repl_type !=  REPL_CACHEDB)
-		len += size * ((has_value==0) ? sizeof(struct prof_local_count):sizeof(map_t));
+		len += size * ((has_value==0) ? sizeof(struct prof_local_count*):sizeof(map_t));
 
 	profile = (struct dlg_profile_table *)shm_malloc(len);
 
@@ -519,7 +519,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 			size*sizeof( map_t );
 	} else {
 
-		profile->noval_local_counters = (struct prof_local_count *)(profile + 1);
+		profile->noval_local_counters = (struct prof_local_count **)(profile + 1);
 		profile->name.s = (char*) (profile->noval_local_counters) + size*sizeof(struct prof_local_count);
 
 	}
@@ -595,7 +595,6 @@ void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 		linker = linker->next;
 		/* unlink from profile table */
 
-
 		if (!(l->profile->repl_type==REPL_CACHEDB)) {
 			lock_set_get( l->profile->locks, l->hash_idx);
 
@@ -605,7 +604,7 @@ void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 				dest = map_find( entry, l->value );
 				if( dest )
 				{
-					prof_val_local_dec(dest);
+					prof_val_local_dec(dest, dlg);
 
 					if( *dest == 0 )
 					{
@@ -617,9 +616,7 @@ void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 				}
 			}
 			else {
-				l->profile->noval_local_counters[l->hash_idx].n--;
-				if (l->profile->noval_local_counters[l->hash_idx].n == 0)
-					l->profile->noval_local_counters[l->hash_idx].dlg = NULL;
+				remove_local_counter(&l->profile->noval_local_counters[l->hash_idx], dlg);
 			}
 
 			lock_set_release( l->profile->locks, l->hash_idx  );
@@ -689,6 +686,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 	map_t p_entry;
 	struct dlg_entry *d_entry;
 	void ** dest;
+	struct prof_local_count *cnt;
 
 	/* add the linker to the dialog */
 	/* FIXME zero h_id is not 100% for testing if the dialog is inserted
@@ -730,8 +728,14 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 			prof_val_local_inc(dest, dlg);
 		}
 		else {
-			linker->profile->noval_local_counters[hash].dlg = dlg;
-			linker->profile->noval_local_counters[hash].n++;
+			cnt = get_local_counter(&linker->profile->noval_local_counters[hash], dlg);
+			if (!cnt) {
+				lock_set_release(linker->profile->locks, hash);
+				return;
+			}
+
+			cnt->dlg = dlg;
+			cnt->n++;
 		}
 
 		lock_set_release( linker->profile->locks,hash );
@@ -974,7 +978,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 							goto next_val;
 						}
 
-						n += prof_val_get_count(dest);
+						n += prof_val_get_count(dest, 0);
 next_val:
 						if (iterator_next(&it) < 0)
 							break;
@@ -1009,7 +1013,7 @@ next_val:
 
 				dest = map_find(entry,*value);
 				if( dest )
-					n = prof_val_get_count(dest);
+					n = prof_val_get_count(dest, 0);
 
 				lock_set_release( profile->locks, i);
 
@@ -1027,20 +1031,24 @@ int noval_get_local_count(struct dlg_profile_table *profile)
 {
 	int i;
 	int n = 0;
+	struct prof_local_count *cnt;
 
 	for (i = 0; i < profile->size; i++) {
 		lock_set_get(profile->locks, i);
 
-		if (profile->noval_local_counters[i].n == 0) {
+		if (profile->noval_local_counters[i] == NULL) {
 			lock_set_release(profile->locks, i);
 			continue;
 		}
-		if (profile_repl_cluster && dialog_repl_cluster) {
-			/* don't count dialogs for which we have a backup role */
-			if (get_shtag_state(profile->noval_local_counters[i].dlg) != SHTAG_STATE_BACKUP)
-				n += profile->noval_local_counters[i].n;
-		} else
-			n += profile->noval_local_counters[i].n;
+
+		for (cnt = profile->noval_local_counters[i]; cnt; cnt = cnt->next) {
+			if (profile_repl_cluster && dialog_repl_cluster) {
+				/* don't count dialogs for which we have a backup role */
+				if (cnt->dlg && get_shtag_state(cnt->dlg) != SHTAG_STATE_BACKUP)
+					n += cnt->n;
+			} else
+				n += cnt->n;
+		}
 
 		lock_set_release(profile->locks, i);
 	}
@@ -1160,7 +1168,7 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 	if( node == NULL )
 		return -1;
 
-	counter = prof_val_get_count(&val);
+	counter = prof_val_get_count(&val, 0);
 	p= int2str((unsigned long)counter, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
 
