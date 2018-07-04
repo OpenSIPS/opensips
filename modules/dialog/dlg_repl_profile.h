@@ -41,16 +41,16 @@ typedef struct repl_prof_count {
     struct repl_prof_count *next;
 } repl_prof_count_t;
 
-typedef struct repl_prof_novalue {
+typedef struct prof_rcv_count {
 	gen_lock_t lock;
 	struct repl_prof_count *dsts;
-} repl_prof_novalue_t;
+} prof_rcv_count_t;
 
 struct prof_local_count;
 
 typedef struct prof_value_info {
-	struct prof_local_count *local_counter;
-	repl_prof_novalue_t *noval;  /* info about received counters */
+	struct prof_local_count *local_counters;
+	prof_rcv_count_t *rcv_counters;
 } prof_value_info_t;
 
 extern int repl_prof_buffer_th;
@@ -62,7 +62,7 @@ extern int repl_prof_timer_expire;
 int repl_prof_init(void);
 int repl_prof_remove(str *name, str *value);
 int repl_prof_dest(modparam_t type, void *val);
-int replicate_profiles_count(repl_prof_novalue_t *rp);
+int replicate_profiles_count(prof_rcv_count_t *rp);
 void receive_prof_repl(bin_packet_t *packet);
 
 #define REPLICATION_DLG_PROFILE		4
@@ -73,16 +73,16 @@ void receive_prof_repl(bin_packet_t *packet);
 static void free_profile_val_t (prof_value_info_t *val){
     repl_prof_count_t *head = NULL, *tmp;
 
-    if (val->noval)
-		head = val->noval->dsts;
+    if (val->rcv_counters)
+		head = val->rcv_counters->dsts;
     while (head){
         tmp = head;
         head = head->next;
         shm_free(tmp);
     }
 
-	if (val->noval)
-		shm_free(val->noval);
+	if (val->rcv_counters)
+		shm_free(val->rcv_counters);
 
     shm_free(val);
 }
@@ -92,11 +92,11 @@ static inline void free_profile_val(void *val){
 }
 
 
-static inline repl_prof_novalue_t *repl_prof_allocate(void)
+static inline prof_rcv_count_t *repl_prof_allocate(void)
 {
-	repl_prof_novalue_t *rp;
+	prof_rcv_count_t *rp;
 
-	rp = shm_malloc(sizeof(repl_prof_novalue_t));
+	rp = shm_malloc(sizeof(prof_rcv_count_t));
 	if (!rp) {
 		/* if there is no more shm memory, there's not much that you can do
 		 * anyway */
@@ -104,7 +104,7 @@ static inline repl_prof_novalue_t *repl_prof_allocate(void)
 		return NULL;
 	}
 
-	memset(rp, 0, sizeof(repl_prof_novalue_t));
+	memset(rp, 0, sizeof(prof_rcv_count_t));
 	lock_init(&rp->lock);
 
 	return rp;
@@ -163,12 +163,12 @@ static inline void prof_val_local_inc(void **pv_info, struct dlg_cell *dlg)
 			memset(pvi, 0, sizeof(prof_value_info_t));
 			*pv_info = pvi;
 
-			cnt = get_local_counter(&pvi->local_counter, dlg);
+			cnt = get_local_counter(&pvi->local_counters, dlg);
 			if (!cnt)
 				return;
 		} else {
 			pvi = (prof_value_info_t *)(*pv_info);
-			cnt = get_local_counter(&pvi->local_counter, dlg);
+			cnt = get_local_counter(&pvi->local_counters, dlg);
 			if (!cnt)
 				return;
 		}
@@ -189,7 +189,7 @@ static inline int prof_val_get_local_count(void **pv_info, int all)
 
 	if (profile_repl_cluster) {
 		pvi = (prof_value_info_t *)(*pv_info);
-		for (cnt = pvi->local_counter; cnt; cnt = cnt->next)
+		for (cnt = pvi->local_counters; cnt; cnt = cnt->next)
 			if (!all && dialog_repl_cluster) {
 				/* don't count dialogs for which we have a backup role */
 				if (cnt->dlg && (get_shtag_state(cnt->dlg) != SHTAG_STATE_BACKUP))
@@ -209,7 +209,7 @@ static inline int prof_val_get_count(void **pv_info, int all)
 	if (profile_repl_cluster) {
 		pvi = (prof_value_info_t *)(*pv_info);
 		return prof_val_get_local_count(pv_info, all) +
-				replicate_profiles_count(pvi->noval);
+				replicate_profiles_count(pvi->rcv_counters);
 	} else {
 		return (int)(long)(*pv_info);
 	}
@@ -222,7 +222,7 @@ static inline void prof_val_local_dec(void **pv_info, struct dlg_cell *dlg)
 	if (profile_repl_cluster) {
 		pvi = (prof_value_info_t *)(*pv_info);
 
-		remove_local_counter(&pvi->local_counter, dlg);
+		remove_local_counter(&pvi->local_counters, dlg);
 
 		/* check all the other counters(local + received) to see if we should
 		 * delete the profile */
