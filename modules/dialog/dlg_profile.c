@@ -602,7 +602,7 @@ static int init_tmp_linkers(struct dlg_cell *dlg)
 	}
 
 	if (dlg->profile_links)
-		tmp_linkers[i].next = NULL;
+		tmp_linkers[i-1].next = NULL;
 
 	return 0;
 }
