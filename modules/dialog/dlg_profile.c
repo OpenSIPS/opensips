@@ -518,10 +518,9 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		profile->name.s = ((char*)profile->entries) +
 			size*sizeof( map_t );
 	} else {
-
 		profile->noval_local_counters = (struct prof_local_count **)(profile + 1);
-		profile->name.s = (char*) (profile->noval_local_counters) + size*sizeof(struct prof_local_count);
-
+		profile->name.s = ((char*)(profile->noval_local_counters)) +
+								size*sizeof(struct prof_local_count*);
 	}
 
 	/* copy the name of the profile */
