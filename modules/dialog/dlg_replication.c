@@ -1069,7 +1069,7 @@ error:
 	LM_ERR("Failed to replicate dialog profile\n");
 }
 
-static repl_prof_count_t* find_destination(repl_prof_novalue_t *noval, int node_id)
+static repl_prof_count_t* find_destination(prof_rcv_count_t *noval, int node_id)
 {
 	repl_prof_count_t *head;
 
@@ -1166,15 +1166,15 @@ void receive_prof_repl(bin_packet_t *packet)
 
 		if (profile) {
 			if (!profile->has_value) {
-				lock_get(&profile->noval_repl_info->lock);
-				destination = find_destination(profile->noval_repl_info, packet->src_id);
+				lock_get(&profile->noval_rcv_counters->lock);
+				destination = find_destination(profile->noval_rcv_counters, packet->src_id);
 				if(destination == NULL){
-					lock_release(&profile->noval_repl_info->lock);
+					lock_release(&profile->noval_rcv_counters->lock);
 					return;
 				}
 				destination->counter = counter;
 				destination->update = now;
-				lock_release(&profile->noval_repl_info->lock);
+				lock_release(&profile->noval_rcv_counters->lock);
 			} else {
 				/* XXX: hack to make sure we find the proper index */
 				i = core_hash(&value, NULL, profile->size);
@@ -1198,19 +1198,19 @@ void receive_prof_repl(bin_packet_t *packet)
 				} else {
 					rp = (prof_value_info_t *) * dst;
 				}
-				if (!rp->noval)
-					rp->noval = repl_prof_allocate();
-				if (rp->noval) {
-					lock_release(&rp->noval->lock);
-					destination = find_destination(rp->noval, packet->src_id);
+				if (!rp->rcv_counters)
+					rp->rcv_counters = repl_prof_allocate();
+				if (rp->rcv_counters) {
+					lock_release(&rp->rcv_counters->lock);
+					destination = find_destination(rp->rcv_counters, packet->src_id);
 					if (destination == NULL) {
-						lock_release(&rp->noval->lock);
+						lock_release(&rp->rcv_counters->lock);
 						lock_set_release(profile->locks, i);
 						return;
 					}
 					destination->counter = counter;
 					destination ->update = now;
-					lock_release(&rp->noval->lock);
+					lock_release(&rp->rcv_counters->lock);
 				}
 release:
 				lock_set_release(profile->locks, i);
@@ -1260,7 +1260,7 @@ int repl_prof_remove(str *name, str *value)
 }
 
 
-int replicate_profiles_count(repl_prof_novalue_t *rp)
+int replicate_profiles_count(prof_rcv_count_t *rp)
 {
 	int counter = 0;
 	time_t now = time(0);

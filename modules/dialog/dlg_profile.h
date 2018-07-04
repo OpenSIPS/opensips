@@ -50,9 +50,7 @@ struct dlg_profile_link {
 	struct dlg_profile_table *profile;
 };
 
-
-
-struct repl_prof_novalue;
+struct prof_rcv_count;
 
 struct prof_local_count {
 	int n;
@@ -78,7 +76,7 @@ struct dlg_profile_table {
 	 * information for profiles without values
 	 */
 	struct prof_local_count **noval_local_counters;
-	struct repl_prof_novalue *noval_repl_info;
+	struct prof_rcv_count *noval_rcv_counters;
 
 	struct dlg_profile_table *next;
 };

@@ -476,7 +476,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	memset( profile , 0 , len);
 
 	if (!has_value)
-		profile->noval_repl_info = repl_prof_allocate();
+		profile->noval_rcv_counters = repl_prof_allocate();
 
 	profile->size = size;
 	profile->has_value = (has_value==0)?0:1;
@@ -989,7 +989,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 		} else
 			n += noval_get_local_count(profile);
 
-		n += replicate_profiles_count(profile->noval_repl_info);
+		n += replicate_profiles_count(profile->noval_rcv_counters);
 
 	} else {
 
@@ -1299,7 +1299,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 		n += noval_get_local_count(profile);
 
 		if (profile->repl_type != REPL_CACHEDB)
-			n += replicate_profiles_count(profile->noval_repl_info);
+			n += replicate_profiles_count(profile->noval_rcv_counters);
 
 		ret = add_counter_no_val_to_rpl(rpl, n);
 	}
