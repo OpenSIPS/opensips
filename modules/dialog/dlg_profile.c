@@ -572,7 +572,7 @@ void destroy_dlg_profiles(void)
 }
 
 /* array of temporary copies of the dialog profile linkers */
-static struct dlg_profile_link *tmp_linkers;
+static struct dlg_profile_link *tmp_linkers_arr, *tmp_linkers;
 static int n_tmp_linkers, tmp_linkers_size;
 
 static int init_tmp_linkers(struct dlg_cell *dlg)
@@ -589,20 +589,24 @@ static int init_tmp_linkers(struct dlg_cell *dlg)
 				tmp_linkers_size *= 2;
 				n_tmp_linkers *= 2;
 			}
-			tmp_linkers = pkg_realloc(tmp_linkers, tmp_linkers_size);
-			if (!tmp_linkers) {
+			tmp_linkers_arr = pkg_realloc(tmp_linkers_arr, tmp_linkers_size);
+			if (!tmp_linkers_arr) {
 				LM_ERR("No more pkg memory\n");
+				tmp_linkers = NULL;
 				return -1;
 			}
 		}
 
-		memcpy(&tmp_linkers[i], l, sizeof *l);
+		memcpy(&tmp_linkers_arr[i], l, sizeof *l);
 		if (i != 0)
-			tmp_linkers[i-1].next = &tmp_linkers[i];
+			tmp_linkers_arr[i-1].next = &tmp_linkers_arr[i];
 	}
 
-	if (dlg->profile_links)
-		tmp_linkers[i-1].next = NULL;
+	if (dlg->profile_links) {
+		tmp_linkers_arr[i-1].next = NULL;
+		tmp_linkers = &tmp_linkers_arr[0];
+	} else
+		tmp_linkers = NULL;
 
 	return 0;
 }
@@ -644,7 +648,7 @@ void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated)
 	map_t entry;
 	struct dlg_profile_link *l;
 	void ** dest;
-	struct dlg_profile_link *linker = &tmp_linkers[0];
+	struct dlg_profile_link *linker = tmp_linkers;
 
 	while(linker) {
 		l = linker;
