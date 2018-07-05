@@ -761,10 +761,27 @@ modparam("usrloc", "cachedb_url", "&examplecdb;")
 	<section id="param_db_mode" xreflabel="db_mode">
 		<title><varname>db_mode</varname> (integer, deprecated)</title>
 		<para>
-		<emphasis role='bold'>Although it is backwards-compatible, this
-		parameter has been deprecated in favour of the more complete
-		<xref linkend="param_working_mode_preset"/>, which it conflicts with.
-		</emphasis>
+		This parameter has been kept for backwards compatibility.  It acts as a
+		<xref linkend="param_working_mode_preset"/> (which it also conflicts with),
+		overriding any <xref linkend="param_cluster_mode"/>,
+		<xref linkend="param_restart_persistency"/> and
+		<xref linkend="param_sql_write_mode"/> settings.  Possible values are:
+		</para>
+		<para>
+		<itemizedlist>
+		<listitem>
+			<para>0, corresponding to "single-instance-no-db" (see below)</para>
+		</listitem>
+		<listitem>
+			<para>1, corresponding to "single-instance-sql-write-through"</para>
+		</listitem>
+		<listitem>
+			<para>2, corresponding to "single-instance-sql-write-back"</para>
+		</listitem>
+		<listitem>
+			<para>3, corresponding to "sql-only"</para>
+		</listitem>
+		</itemizedlist>
 		</para>
 		<para>
 		<emphasis>
@@ -783,6 +800,12 @@ modparam("usrloc", "db_mode", 2)
 
 	<section id="param_working_mode_preset" xreflabel="working_mode_preset">
 		<title><varname>working_mode_preset</varname> (string)</title>
+		<para>
+		A pre-defined working mode for the usrloc module.  Setting this
+		parameter will override any <xref linkend="param_cluster_mode"/>,
+		<xref linkend="param_restart_persistency"/> and
+		<xref linkend="param_sql_write_mode"/> settings.
+		</para>
 		<para>
 		<itemizedlist>
 		<listitem>
@@ -882,8 +905,9 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 	<section id="param_cluster_mode" xreflabel="cluster_mode">
 		<title><varname>cluster_mode</varname> (string)</title>
 		<para>
-			<emphasis role='bold'>This parameter is automatically set by
-				<xref linkend='param_working_mode_preset'/>.</emphasis>
+			<emphasis role='bold'>This parameter will get overridden if either
+			<xref linkend='param_working_mode_preset'/> or
+			<xref linkend='param_db_mode'/> are set.</emphasis>
 		</para>
 		<para>
 		The behavior of the global OpenSIPS user location cluster. Refer to
@@ -951,8 +975,9 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 	<section id="param_restart_persistency" xreflabel="restart_persistency">
 		<title><varname>restart_persistency</varname> (string)</title>
 		<para>
-			<emphasis role='bold'>This parameter is automatically set by
-				<xref linkend='param_working_mode_preset'/>.</emphasis>
+			<emphasis role='bold'>This parameter will get overridden if either
+			<xref linkend='param_working_mode_preset'/> or
+			<xref linkend='param_db_mode'/> are set.</emphasis>
 		</para>
 		<para>
 		Controls the behavior of OpenSIPS user location instance following a
@@ -1010,8 +1035,9 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 	<section id="param_sql_write_mode" xreflabel="sql_write_mode">
 		<title><varname>sql_write_mode</varname> (string)</title>
 		<para>
-			<emphasis role='bold'>This parameter is automatically set by
-				<xref linkend='param_working_mode_preset'/>.</emphasis>
+			<emphasis role='bold'>This parameter will get overridden if either
+			<xref linkend='param_working_mode_preset'/> or
+			<xref linkend='param_db_mode'/> are set.</emphasis>
 		</para>
 		<para>
 		Only valid if <xref linkend="param_restart_persistency"/> is enabled.
