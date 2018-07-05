@@ -101,8 +101,9 @@ modparam("db_mysql", "timeout_interval", 2)
 
 1.3.3. max_db_queries (integer)
 
-   The maximum number of database queries to be executed. If this
-   parameter is set improperly, it is set to default value.
+   The maximum number of reties to execute a failed query due to
+   connections problems. If this parameter is set improperly, it
+   is set to default value.
 
    Default value is 2.
 
