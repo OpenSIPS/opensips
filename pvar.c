@@ -2951,9 +2951,6 @@ int pv_set_branch(struct sip_msg* msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (msg->first_line.type == SIP_REPLY)
-		return -1;
-
 	if (!val || !(val->flags&PV_VAL_STR) || val->flags&(PV_VAL_NULL) ||
 	val->rs.len==0 ) {
 		LM_ERR("str value required to create a new branch\n");
