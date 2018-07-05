@@ -225,8 +225,6 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct)
 	bin_push_str(&packet, &st);
 
 	st = store_serialize(ct->kv_storage);
-	if (ZSTR(st))
-		LM_ERR("oom\n");
 	bin_push_str(&packet, &st);
 	store_free_buffer(&st);
 

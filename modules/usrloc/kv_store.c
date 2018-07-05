@@ -149,9 +149,11 @@ out:
 
 void store_free_buffer(str *serialized)
 {
-	cJSON_InitHooks(&shm_hooks);
-	cJSON_PurgeString(serialized->s);
-	cJSON_InitHooks(NULL);
+	if (serialized->s) {
+		cJSON_InitHooks(&shm_hooks);
+		cJSON_PurgeString(serialized->s);
+		cJSON_InitHooks(NULL);
+	}
 }
 
 map_t store_deserialize(const str *input)
