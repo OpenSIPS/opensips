@@ -184,12 +184,14 @@ void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who)
 	ctx->ref_no += how;
 	CGR_REF_DBG(ctx, who);
 
-	if (ctx->ref_no == 0)
+	if (ctx->ref_no == 0) {
+		lock_release(&ctx->ref_lock);
 		cgr_free_acc_ctx(ctx);
-	else if (ctx->ref_no < 0)
-		LM_BUG("ref=%d ctx=%p gone negative!\n", ctx->ref_no, ctx);
-
-	lock_release(&ctx->ref_lock);
+	} else {
+		if (ctx->ref_no < 0)
+			LM_BUG("ref=%d ctx=%p gone negative!\n", ctx->ref_no, ctx);
+		lock_release(&ctx->ref_lock);
+	}
 }
 
 static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
