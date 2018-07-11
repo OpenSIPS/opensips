@@ -708,8 +708,10 @@ static inline int shm_str_dup(str* dst, const str* src)
  */
 static inline int shm_nt_str_dup(str* dst, const str* src)
 {
-	if (!src || !src->s)
-		return -1;
+	if (!src->s) {
+		memset(dst, 0, sizeof *dst);
+		return 0;
+	}
 
 	dst->s = shm_malloc(src->len + 1);
 	if (!dst->s) {
