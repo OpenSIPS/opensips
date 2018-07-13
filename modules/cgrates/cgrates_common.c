@@ -210,6 +210,11 @@ int cgrates_set_reply_with_values(json_object *jobj)
 		return -1;
 	}
 
+	if (json_object_get_type(jobj) != json_type_object) {
+		LM_ERR("reply is not an object - return will not be set!\n");
+		return -1;
+	}
+
 	json_object_object_foreach(jobj, k, v) {
 		switch (json_object_get_type(v)) {
 		case json_type_null:
