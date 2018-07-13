@@ -115,9 +115,46 @@ error:
 	bin_free_packet(&packet);
 }
 
-void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
+void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c)
 {
 	str st;
+
+	bin_push_str(packet, r->domain);
+	bin_push_str(packet, &r->aor);
+	bin_push_str(packet, &c->c);
+
+	st.s = (char *)&c->contact_id;
+	st.len = sizeof c->contact_id;
+	bin_push_str(packet, &st);
+
+	bin_push_str(packet, &c->callid);
+	bin_push_str(packet, &c->user_agent);
+	bin_push_str(packet, &c->path);
+	bin_push_str(packet, &c->attr);
+	bin_push_str(packet, &c->received);
+	bin_push_str(packet, &c->instance);
+
+	st.s = (char *) &c->expires;
+	st.len = sizeof c->expires;
+	bin_push_str(packet, &st);
+
+	st.s = (char *) &c->q;
+	st.len = sizeof c->q;
+	bin_push_str(packet, &st);
+
+	bin_push_str(packet, c->sock?&c->sock->sock_str:NULL);
+	bin_push_int(packet, c->cseq);
+	bin_push_int(packet, c->flags);
+	bin_push_int(packet, c->cflags);
+	bin_push_int(packet, c->methods);
+
+	st.s   = (char *)&c->last_modified;
+	st.len = sizeof c->last_modified;
+	bin_push_str(packet, &st);
+}
+
+void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c)
+{
 	int rc;
 	bin_packet_t packet;
 
@@ -126,38 +163,7 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci)
 		return;
 	}
 
-	bin_push_str(&packet, r->domain);
-	bin_push_str(&packet, &r->aor);
-	bin_push_str(&packet, contact);
-
-	st.s = (char *)&ci->contact_id;
-	st.len = sizeof ci->contact_id;
-	bin_push_str(&packet, &st);
-
-	bin_push_str(&packet, ci->callid);
-	bin_push_str(&packet, ci->user_agent);
-	bin_push_str(&packet, ci->path);
-	bin_push_str(&packet, ci->attr);
-	bin_push_str(&packet, &ci->received);
-	bin_push_str(&packet, &ci->instance);
-
-	st.s = (char *) &ci->expires;
-	st.len = sizeof ci->expires;
-	bin_push_str(&packet, &st);
-
-	st.s = (char *) &ci->q;
-	st.len = sizeof ci->q;
-	bin_push_str(&packet, &st);
-
-	bin_push_str(&packet, ci->sock?&ci->sock->sock_str:NULL);
-	bin_push_int(&packet, ci->cseq);
-	bin_push_int(&packet, ci->flags);
-	bin_push_int(&packet, ci->cflags);
-	bin_push_int(&packet, ci->methods);
-
-	st.s   = (char *)&ci->last_modified;
-	st.len = sizeof ci->last_modified;
-	bin_push_str(&packet, &st);
+	bin_push_contact(&packet, r, c);
 
 	if (cluster_mode == CM_FEDERATION_CACHEDB)
 		rc = clusterer_api.send_all_having(&packet, location_cluster,
@@ -736,7 +742,6 @@ static int receive_sync_request(int node_id)
 	map_iterator_t it;
 	struct urecord *r;
 	ucontact_t* c;
-	str st;
 	void **p;
 	int i;
 
@@ -770,36 +775,10 @@ static int receive_sync_request(int node_id)
 					if (!sync_packet)
 						goto error_unlock;
 
-					/* contact in this chunk */
+					/* ucontact in this chunk */
 					bin_push_int(sync_packet, 1);
 
-					bin_push_str(sync_packet, r->domain);
-					bin_push_str(sync_packet, &r->aor);
-					bin_push_str(sync_packet, &c->c);
-					bin_push_str(sync_packet, &c->callid);
-					bin_push_str(sync_packet, &c->user_agent);
-					bin_push_str(sync_packet, &c->path);
-					bin_push_str(sync_packet, &c->attr);
-					bin_push_str(sync_packet, &c->received);
-					bin_push_str(sync_packet, &c->instance);
-
-					st.s = (char *)&c->expires;
-					st.len = sizeof c->expires;
-					bin_push_str(sync_packet, &st);
-
-					st.s = (char *)&c->q;
-					st.len = sizeof c->q;
-					bin_push_str(sync_packet, &st);
-
-					bin_push_str(sync_packet, c->sock?&c->sock->sock_str:NULL);
-					bin_push_int(sync_packet, c->cseq);
-					bin_push_int(sync_packet, c->flags);
-					bin_push_int(sync_packet, c->cflags);
-					bin_push_int(sync_packet, c->methods);
-
-					st.s = (char *)&c->last_modified;
-					st.len = sizeof c->last_modified;
-					bin_push_str(sync_packet, &st);
+					bin_push_contact(sync_packet, r, c);
 				}
 			}
 			unlock_ulslot(dom, i);
