@@ -46,16 +46,18 @@
 #include "../../usr_avp.h"
 #include "../../ut.h"
 #include "../../rw_locking.h"
+#include "../../map.h"
 
-#define NO_STR_VALS 7
+#define NO_STR_VALS 8
 
 #define STR_VALS_DOMAIN_COL         0
-#define STR_VALS_ADDRESS_COL        1
-#define STR_VALS_METHOD_COL         2
-#define STR_VALS_CRL_DIR_COL        3
-#define STR_VALS_CADIR_COL          4
-#define STR_VALS_CPLIST_COL         5
-#define STR_VALS_ECCURVE_COL        6
+#define STR_VALS_MATCH_ADDRESS_COL  1
+#define STR_VALS_MATCH_DOMAIN_COL   2
+#define STR_VALS_METHOD_COL         3
+#define STR_VALS_CRL_DIR_COL        4
+#define STR_VALS_CADIR_COL          5
+#define STR_VALS_CPLIST_COL         6
+#define STR_VALS_ECCURVE_COL        7
 
 #define NO_INT_VALS 5
 
@@ -72,105 +74,83 @@
 #define BLOB_VALS_CALIST_COL         2
 #define BLOB_VALS_DHPARAMS_COL       3
 
-#define NO_DB_COLS 16
+#define NO_DB_COLS 17
 
-#define DEFAULT_DOM_BOTH    0
-#define CLIENT_DOMAIN       1
-#define SERVER_DOMAIN       2
+#define CLIENT_DOMAIN_TYPE       1
+#define SERVER_DOMAIN_TYPE       2
 
-#define DEFAULT_DOM_NAME_S "default"
-#define DEFAULT_DOM_NAME_LEN 7
+#define MATCH_ANY_VAL		'*'
+#define MATCH_NO_SNI_VAL	"none"
 
-/*
- * TLS configuration domain type
- */
-enum tls_domain_type {
-	TLS_DOMAIN_SRV = (1 << 0), /* Server domain */
-	TLS_DOMAIN_CLI = (1 << 1), /* Client domain */
-	TLS_DOMAIN_DB  = (1 << 2)  /* DB defined domain */
+#define DOM_FILT_ARR_MAX	64
+
+struct domain_filter {
+	struct str_list *hostname;
+	struct tls_domain *dom_link;
 };
+
+struct dom_filt_array {
+	struct domain_filter arr[DOM_FILT_ARR_MAX];
+	int size;
+};
+
+#define ref_tls_dom(_d)  \
+	do {  \
+		if ((_d)->flags & DOM_FLAG_DB) {  \
+			lock_get((_d)->lock);  \
+			(_d)->refs++;  \
+			lock_release((_d)->lock);  \
+		}  \
+	} while (0)
 
 extern struct tls_domain **tls_server_domains;
 extern struct tls_domain **tls_client_domains;
-extern struct tls_domain **tls_default_server_domain;
-extern struct tls_domain **tls_default_client_domain;
-extern struct tls_domain *tls_def_srv_dom_orig, *tls_def_cli_dom_orig;
+
+extern map_t server_dom_matching;
+extern map_t client_dom_matching;
 
 extern rw_lock_t *dom_lock;
 
-
-/*
- * find domain with given name
- */
 struct tls_domain *tls_find_domain_by_name(str *name, struct tls_domain **dom_list);
+struct tls_domain *tls_find_domain_by_filters(struct ip_addr *ip,
+							unsigned short port, str *domain_filter, int type);
 
 /*
- * find domain with given ip and port
+ * find a server domain with given ip and port
  */
 struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
 				   unsigned short port);
 
-/*
- * find server domain with given name
- */
-struct tls_domain *tls_find_server_domain_name(str *name);
-
 /* find client domain */
-struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
-				   unsigned short port);
-
-/*
- * find client with given ip and port
- */
-struct tls_domain *tls_find_client_domain_addr(struct ip_addr *ip,
-				   unsigned short port);
-
-/*
- * find domain with given name
- */
-struct tls_domain *tls_find_client_domain_name(str name);
-
-/*
- * create a new server domain
- */
-int tls_new_server_domain(str *name, struct ip_addr *ip, unsigned short port,
-							struct tls_domain **dom);
-
-/*
- * create a new client domain
- */
-int tls_new_client_domain(str *name, struct ip_addr *ip, unsigned short port,
-							struct tls_domain **dom);
+struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short port);
+struct tls_domain *tls_find_client_domain_name(str *name);
 
 /*
  * allocate memory and set default values for
  * TLS domain structure
  */
-struct tls_domain *tls_new_domain(str *id, int type);
-
-/*
- * clean up
- */
-void  tls_free_domains(void);
+int tls_new_domain(str *name, int type, struct tls_domain **dom);
 
 void tls_release_domain(struct tls_domain* dom);
 
-void tls_release_domain_aux(struct tls_domain *dom);
+void tls_free_domain(struct tls_domain *dom);
 
-void tls_release_db_domains(struct tls_domain* dom);
+void tls_free_db_domains(struct tls_domain* dom);
 
 struct tls_domain *find_first_script_dom(struct tls_domain *dom);
 
 int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 							str* blob_vals);
 
-int aloc_default_doms_ptr(void);
-
-int tls_new_default_domain(int type, struct tls_domain **dom);
-
 int db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
 			struct tls_domain **serv_dom, struct tls_domain **cli_dom,
-			struct tls_domain **def_serv_dom, struct tls_domain **def_cli_dom,
 			struct tls_domain *script_srv_doms, struct tls_domain *script_cli_doms);
+
+int parse_match_domains(struct tls_domain *tls_dom, str *domains_s);
+int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s);
+
+int update_matching_map(struct tls_domain *tls_dom);
+int sort_map_dom_arrays(map_t matching_map);
+void map_free_node(void *val);
 
 #endif

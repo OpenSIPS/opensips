@@ -98,10 +98,6 @@ struct module_exports exports = {
 
 static int mysql_mod_init(void)
 {
-	struct ip_addr *ip;
-	unsigned int port = 0;
-	str domain;
-
 	LM_DBG("mysql: MySQL client version is %s\n", mysql_get_client_info());
 	/* also register the event */
 	if (mysql_register_event() < 0) {
@@ -124,18 +120,13 @@ static int mysql_mod_init(void)
 		        tls_client_domain.s);
 
 		tls_client_domain.len = strlen(tls_client_domain.s);
-		if (parse_domain_def(&tls_client_domain, &domain, &ip, &port) < 0) {
-			LM_ERR("failed to parse tls_client_domain '%s'\n",
-			       tls_client_domain.s);
-			return -1;
-		}
 
 		if (load_tls_mgm_api(&tls_api) != 0) {
 			LM_ERR("failed to load tls_mgm API! Is the \"tls_mgm\" module loaded?\n");
 			return -1;
 		}
 
-		tls_dom = tls_api.find_client_domain(ip, port);
+		tls_dom = tls_api.find_client_domain_name(&tls_client_domain);
 		if (!tls_dom) {
 			LM_ERR("failed to match tls_client_domain '%s'!\n",
 			       tls_client_domain.s);

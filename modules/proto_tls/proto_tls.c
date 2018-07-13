@@ -32,9 +32,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
- * History:
- * -------
- *  2015-02-12  first version (bogdan)
  */
 
 #include <openssl/ui.h>
@@ -348,7 +345,7 @@ static void proto_tls_conn_clean(struct tcp_connection* c)
 		c->proto_data = NULL;
 	}
 
-	tls_conn_clean(c);
+	tls_conn_clean(c, &tls_mgm_api);
 }
 
 

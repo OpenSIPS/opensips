@@ -1134,17 +1134,7 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
  */
 int rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
 {
-	struct ip_addr *ip;
-	unsigned int port = 0;
-	str domain;
-
-	if (parse_domain_def(tls_client_dom, &domain, &ip, &port) < 0) {
-		LM_ERR("failed to parse TLS client domain '%.*s'\n",
-		       tls_client_dom->len, tls_client_dom->s);
-		return -1;
-	}
-
-	tls_dom = tls_api.find_client_domain(ip, port);
+	tls_dom = tls_api.find_client_domain_name(tls_client_dom);
 	if (!tls_dom) {
 		LM_ERR("failed to match TLS client domain '%.*s'!\n",
 		       tls_client_dom->len, tls_client_dom->s);

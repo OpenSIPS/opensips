@@ -62,13 +62,15 @@ char           *tls_ciphers_list = 0;
 /* TLS timeouts (in ms); should be low to detect problems fast */
 int             tls_handshake_timeout = 100;
 int             tls_send_timeout      = 100;
-/* per default, the TLS domains do not have a name */
+/* AVPs used to enforce client domain matching from the script */
 int             tls_client_domain_avp = -1;
+int             sip_client_domain_avp = -1;
 
 str    id_col = str_init("id");
 str    domain_col = str_init("domain");
 str    type_col = str_init("type");
-str    address_col = str_init("address");
+str    match_address_col = str_init("match_ip_address");
+str    match_domain_col = str_init("match_sip_domain");
 str    method_col = str_init("method");
 str    verify_cert_col = str_init("verify_cert");
 str    require_cert_col = str_init("require_cert");

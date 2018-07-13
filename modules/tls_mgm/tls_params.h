@@ -47,6 +47,10 @@ int tlsp_add_srv_domain(modparam_t type, void *val);
 
 int tlsp_add_cli_domain(modparam_t type, void *val);
 
+int tlsp_set_match_addr(modparam_t type, void *val);
+
+int tlsp_set_match_dom(modparam_t type, void *val);
+
 int tlsp_set_method(modparam_t type, void *val);
 
 int tlsp_set_verify(modparam_t type, void *val);

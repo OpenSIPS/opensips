@@ -31,9 +31,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
- * History:
- * -------
- *  2015-09-03  first version (cristi)
  */
 
 #ifndef TLS_HELPER_H
@@ -43,28 +40,33 @@
 #define F_TLS_DO_CONNECT  (1<<1)
 #define F_TLS_TRACE_READY (1<<2)
 
+#define DOM_FLAG_SRV			(1<<0)
+#define DOM_FLAG_CLI			(1<<1)
+#define DOM_FLAG_DB				(1<<2)
+
 #include "tls_config_helper.h"
 #include "../../locking.h"
 
 struct tls_domain {
-	str				name;
-	int             type;
-	struct ip_addr  addr;
-	unsigned short  port;
-	void           *ctx; /* libssl's SSL_CTX  */
-	int             verify_cert;
-	int             require_client_cert;
-	int             crl_check_all;
-	str            cert;
-	str            pkey;
-	char           *crl_directory;
-	str            ca;
-	str            dh_param;
-	char           *tls_ec_curve;
-	char           *ca_directory;
-	char           *ciphers_list;
-	int             refs;
-	gen_lock_t     *lock;
+	str name;
+	int flags;
+	struct str_list *match_domains;
+	struct str_list *match_addresses;
+	int ssl_ex_index;
+	void *ctx;  /* libssl's SSL_CTX  */
+	int verify_cert;
+	int require_client_cert;
+	int crl_check_all;
+	str cert;
+	str pkey;
+	char *crl_directory;
+	str ca;
+	str dh_param;
+	char *tls_ec_curve;
+	char *ca_directory;
+	char *ciphers_list;
+	int refs;
+	gen_lock_t *lock;
 	enum tls_method method;
 	struct tls_domain *next;
 };

@@ -56,7 +56,8 @@ extern str     tls_db_table;
 extern str     id_col;
 extern str     domain_col;
 extern str     type_col;
-extern str     address_col;
+extern str     match_address_col;
+extern str     match_domain_col;
 extern str     method_col;
 extern str     verify_cert_col;
 extern str     require_cert_col;
@@ -73,5 +74,6 @@ extern str     eccurve_col;
 extern int      tls_handshake_timeout;
 extern int      tls_send_timeout;
 extern int      tls_client_domain_avp;
+extern int      sip_client_domain_avp;
 
 #endif

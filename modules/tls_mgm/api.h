@@ -31,9 +31,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
- * History:
- * -------
- *  2015-09-01  first version (cristi)
  */
 
 
@@ -46,6 +43,7 @@
 
 typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsigned short);
 typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsigned short);
+typedef struct tls_domain * (*tls_find_client_domain_name_f) (str *);
 typedef int (*get_send_timeout_f) (void);
 typedef int (*get_handshake_timeout_f) (void);
 typedef void (*tls_release_domain_f) (struct tls_domain *);
@@ -55,77 +53,12 @@ struct tls_mgm_binds {
     get_handshake_timeout_f get_handshake_timeout;
     tls_find_server_domain_f find_server_domain;
     tls_find_client_domain_f find_client_domain;
+    tls_find_client_domain_name_f find_client_domain_name;
     tls_release_domain_f release_domain;
 };
 
 
 typedef int(*load_tls_mgm_f)(struct tls_mgm_binds *binds);
-
-static int parse_domain_address(char *val, unsigned int len, struct ip_addr **ip,
-								unsigned int *port)
-{
-	char *p = val;
-	str s;
-
-	/* get the IP */
-	s.s = p;
-	if ((p = q_memchr(p, ':', len)) == NULL) {
-		LM_ERR("Domain address has to be in [IP:port] format\n");
-		goto parse_err;
-	}
-	s.len = p - s.s;
-	p++;
-	if ((*ip = str2ip(&s)) == NULL) {
-		LM_ERR("[%.*s] is not an ip\n", s.len, s.s);
-		goto parse_err;
-	}
-
-	/* what is left should be a port */
-	s.s = p;
-	s.len = val + len - p;
-	if (str2int(&s, port) < 0) {
-		LM_ERR("[%.*s] is not a port\n", s.len, s.s);
-		goto parse_err;
-	}
-
-	return 0;
-
-parse_err:
-	LM_ERR("invalid TLS domain address [%s]\n", val);
-	return -1;
-}
-
-static inline int
-parse_domain_def(const str *val, str *out_name,
-                 struct ip_addr **ip, unsigned int *port)
-{
-	char *p;
-	int len;
-
-	if (ZSTRP(val)) {
-		LM_ERR("Empty domain definition\n");
-		return -1;
-	}
-
-	p = val->s;
-	len = val->len;
-
-	/* get the domain name and optionally the address */
-	out_name->s = p;
-	if ((p = strchr(p, '=')) == NULL) {
-		out_name->len = len;
-		return 0;
-	} else {
-		if ((out_name->len = p - out_name->s) == 0) {
-			LM_ERR("Empty domain name\n");
-			return -1;
-		}
-
-		p++;
-		len = strlen(p);
-		return parse_domain_address(p, len, ip, port);
-	}
-}
 
 static inline int load_tls_mgm_api(struct tls_mgm_binds *binds) {
     load_tls_mgm_f load_tls;

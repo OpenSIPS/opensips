@@ -298,7 +298,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 
 	}
 
-	tls_conn_clean(c);
+	tls_conn_clean(c, &tls_mgm_api);
 }
 
 

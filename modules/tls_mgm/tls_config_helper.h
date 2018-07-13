@@ -30,10 +30,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
- *
- * History:
- * -------
- *  2015-09-03  first version (cristi)
  */
 
 #ifndef TLS_CONFIG_HELPER_H
@@ -51,6 +47,10 @@ enum tls_method {
 	TLS_USE_TLSv1_2_srv,
 	TLS_USE_TLSv1_2
 };
+
+/* SSL extra data indexes */
+#define SSL_EX_CONN_IDX 0
+#define SSL_EX_DOM_IDX 1
 
 #endif	/* TLS_CONFIG_HELPER_H */
 

@@ -480,20 +480,12 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 		<function moreinfo="none">rest_init_client_tls(tls_client_domain)</function>
 		</title>
 		<para>
-		Force a specific TLS certificate and private key pair to be eventually
-		used during the next request. Refer to the tls_mgm module for
-		additional info regarding TLS client domains.
+		Force a specific TLS domain to be eventually used during the next request.
+		Refer to the tls_mgm module for additional info regarding TLS client domains.
 		</para>
 		<para>
 		If using this parameter, you must also ensure that tls_mgm is loaded
 		and properly configured.
-		</para>
-		<para>
-		Note that if you want to use this feature, the certificate must be
-		provisioned in the configuration file, NOT in the database. In case you
-		are loading TLS certificates from the database, you must at least
-		define the default domain in the configuration script, where is
-		currently the only place you can define it.
 		</para>
 		<para>Parameter types</para>
 		<itemizedlist>
@@ -510,7 +502,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 		<title><function moreinfo="none">rest_init_client_tls</function> usage</title>
 		<programlisting format="linespecific">
 ...
-rest_init_client_tls("1=10.11.12.13:3306");
+rest_init_client_tls("dom1");
 if (!rest_get("https://example.com"))
     xlog("query failed\n");
 ...

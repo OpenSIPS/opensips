@@ -6,7 +6,8 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>domain</field></col>
-				<col><field>address</field></col>
+				<col><field>match_ip_address</field></col>
+				<col><field>match_sip_domain</field></col>
 				<col><field>type</field></col>
 				<col><field>method</field></col>
 				<col><field>verify_cert</field></col>
@@ -27,7 +28,8 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>domain</field></col>
-				<col><field>address</field></col>
+				<col><field>match_ip_address</field></col>
+				<col><field>match_sip_domain</field></col>
 				<col><field>type</field></col>
 				<col><field>method</field></col>
 				<col><field>verify_cert</field></col>
@@ -51,7 +53,8 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>domain</field></col>
-				<col><field>address</field></col>
+				<col><field>match_ip_address</field></col>
+				<col><field>match_sip_domain</field></col>
 				<col><field>type</field></col>
 				<col><field>method</field></col>
 				<col><field>verify_cert</field></col>

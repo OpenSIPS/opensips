@@ -49,18 +49,10 @@
 
 int tlsp_add_srv_domain(modparam_t type, void *val)
 {
-	struct ip_addr *ip = NULL;
-	unsigned int port;
-	str name, dom_str;
+	str name;
 
-	init_str(&dom_str, val);
-	if (parse_domain_def(&dom_str, &name, &ip, &port) < 0)
-		return -1;
-
-	if (ip == NULL) {
-		LM_ERR("server domains must have an address\n");
-		return -1;
-	}
+	name.s = (char *)val;
+	name.len = strlen(name.s);
 
 	if (tls_server_domains == NULL) {
 		tls_server_domains = shm_malloc(sizeof *tls_server_domains);
@@ -77,7 +69,7 @@ int tlsp_add_srv_domain(modparam_t type, void *val)
 	}
 
 	/* add domain */
-	if (tls_new_server_domain(&name, ip, port, tls_server_domains) < 0) {
+	if (tls_new_domain(&name, DOM_FLAG_SRV, tls_server_domains) < 0) {
 		LM_ERR("failed to add new server domain [%.*s]\n", name.len, name.s);
 		return -1;
 	}
@@ -88,13 +80,10 @@ int tlsp_add_srv_domain(modparam_t type, void *val)
 
 int tlsp_add_cli_domain(modparam_t type, void *val)
 {
-	struct ip_addr *ip = NULL;
-	unsigned int port = 0;
-	str name, dom_str;
+	str name;
 
-	init_str(&dom_str, val);
-	if (parse_domain_def(&dom_str, &name, &ip, &port) < 0)
-		return -1;
+	name.s = (char *)val;
+	name.len = strlen(name.s);
 
 	if (tls_client_domains == NULL) {
 		tls_client_domains = shm_malloc(sizeof *tls_client_domains);
@@ -111,7 +100,7 @@ int tlsp_add_cli_domain(modparam_t type, void *val)
 	}
 
 	/* add domain */
-	if (tls_new_client_domain(&name, ip, port, tls_client_domains) < 0) {
+	if (tls_new_domain(&name, DOM_FLAG_CLI, tls_client_domains) < 0) {
 		LM_ERR("failed to add new client domain [%.*s]\n", name.len, name.s);
 		return -1;
 	}
@@ -124,26 +113,28 @@ static int split_param_val(char *in, str *name, str *val)
 {
 	char *p = (char*)in;
 
-	/* format is '[name]value' or 'value' */
+	/* format is '[name]value' */
 
 	/* trim spaces at the beginning */
 	while (*p && isspace(*p)) p++;
 
-	/* first try to get the name */
+	/* get the domain name */
 	name->s = p;
-	if (*p != '[')
-		goto just_value;
-
-	p++;
-
-	if ((p = strchr(p, ']')) == NULL) {
-		LM_ERR("Invalid domain name, no mathcing ']' character\n");
+	if (*p != '[') {
+		LM_ERR("No TLS domain name\n");
 		return -1;
 	}
-
-	/* name found */
+	p++;
+	if ((p = strchr(p, ']')) == NULL) {
+		LM_ERR("Invalid TLS domain name, no mathcing ']' character\n");
+		return -1;
+	}
 	name->s++; /* skip '[' */
 	name->len = p - name->s;
+	if (name->len == 0) {
+		LM_ERR("Empty TLS domain name\n");
+		return -1;
+	}
 	p++; /* skip ']' */
 
 	/* what is left should be the value */
@@ -155,62 +146,68 @@ static int split_param_val(char *in, str *name, str *val)
 	}
 
 	return 0;
-
-just_value:
-	val->s = name->s;
-	val->len = strlen(val->s);
-	if (val->len == 0) {
-		LM_ERR("Empty value\n");
-		return -1;
-	}
-
-	name->s = NULL;
-	name->len = 0;
-
-	return 0;
 }
 
 
 #define set_domain_attr( _name, _field, _val) \
 	do { \
 		struct tls_domain *_d; \
-		if ((_name).s) { \
-			/* specific TLS domain */ \
-			_d = tls_find_domain_by_name(&(_name), tls_server_domains); \
-			if (!_d && (_d = tls_find_domain_by_name(&(_name), tls_client_domains)) == NULL) { \
-				LM_ERR("TLS domain [%.*s] not defined in '%s'\n", \
-					(_name).len, (_name).s, (char*)in); \
-				return -1; \
-			} \
-			_d->_field = _val; \
-		} else { \
-			/* set default domains */ \
-			(*tls_default_server_domain)->_field = _val; \
-			(*tls_default_client_domain)->_field = _val; \
+		_d = tls_find_domain_by_name(&(_name), tls_server_domains); \
+		if (!_d && (_d = tls_find_domain_by_name(&(_name), tls_client_domains)) == NULL) { \
+			LM_ERR("TLS domain [%.*s] not defined in '%s'\n", \
+				(_name).len, (_name).s, (char*)in); \
+			return -1; \
 		} \
+		_d->_field = _val; \
 	} while(0)
 
-static int set_up_default_doms(void) {
-	int no_cli = 0, no_srv = 0;
 
-	if (!tls_default_server_domain)
-		no_srv = 1;
-	if (!tls_default_client_domain)
-		no_cli = 1;
+int tlsp_set_match_addr(modparam_t type, void *in)
+{
+	str name;
+	str val;
+	struct tls_domain *d;
 
-	if (aloc_default_doms_ptr() < 0)
+	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (no_srv && tls_new_default_domain(TLS_DOMAIN_SRV, tls_default_server_domain) < 0) {
-		LM_ERR("Failed to add default server domain\n");
-		return -1;
-	}
-	if (no_cli && tls_new_default_domain(TLS_DOMAIN_CLI, tls_default_client_domain) < 0) {
-		LM_ERR("Failed to add default client domain\n");
+	d = tls_find_domain_by_name(&name, tls_server_domains);
+	if (!d && (d = tls_find_domain_by_name(&name, tls_client_domains)) == NULL) {
+		LM_ERR("TLS domain [%.*s] not defined\n", name.len, name.s);
 		return -1;
 	}
 
-	return 0;
+	if (parse_match_addresses(d, &val) < 0) {
+		LM_ERR("Failed to parse domain matching filters for domain [%.*s]\n",
+			d->name.len, d->name.s);
+		return -1;
+	}
+
+	return 1;
+}
+
+int tlsp_set_match_dom(modparam_t type, void *in)
+{
+	str name;
+	str val;
+	struct tls_domain *d;
+
+	if (split_param_val((char*)in, &name, &val) < 0)
+		return -1;
+
+	d = tls_find_domain_by_name(&name, tls_server_domains);
+	if (!d && (d = tls_find_domain_by_name(&name, tls_client_domains)) == NULL) {
+		LM_ERR("TLS domain [%.*s] not defined\n", name.len, name.s);
+		return -1;
+	}
+
+	if (parse_match_domains(d, &val) < 0) {
+		LM_ERR("Failed to parse domain matching filters for domain [%.*s]\n",
+			d->name.len, d->name.s);
+		return -1;
+	}
+
+	return 1;
 }
 
 int tlsp_set_method(modparam_t type, void *in)
@@ -220,9 +217,6 @@ int tlsp_set_method(modparam_t type, void *in)
 	int method;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
-		return -1;
-
-	if (!name.s && set_up_default_doms() < 0)
 		return -1;
 
 	if (strcasecmp(val.s, "SSLV23")==0 || strcasecmp(val.s, "TLSany")==0 )
@@ -251,9 +245,6 @@ int tlsp_set_verify(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (!name.s && set_up_default_doms() < 0)
-		return -1;
-
 	if (str2int(&val, &verify)!=0) {
 		LM_ERR("option is not a number [%s]\n",val.s);
 		return -1;
@@ -274,9 +265,6 @@ int tlsp_set_require(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (!name.s && set_up_default_doms() < 0)
-		return -1;
-
 	if (str2int(&val, &req)!=0) {
 		LM_ERR("option is not a number [%s]\n",val.s);
 		return -1;
@@ -293,9 +281,6 @@ int tlsp_set_crl_check(modparam_t type, void *in)
 	unsigned int check;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
-		return -1;
-
-	if (!name.s && set_up_default_doms() < 0)
 		return -1;
 
 	if (str2int(&val, &check)!=0) {
@@ -315,9 +300,6 @@ int tlsp_set_crldir(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (!name.s && set_up_default_doms() < 0)
-		return -1;
-
 	set_domain_attr(name, crl_directory, val.s);
 	return 1;
 }
@@ -328,9 +310,6 @@ int tlsp_set_certificate(modparam_t type, void *in)
 	str val;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
-		return -1;
-
-	if (!name.s && set_up_default_doms() < 0)
 		return -1;
 	
 	set_domain_attr(name, cert, val);
@@ -346,9 +325,6 @@ int tlsp_set_pk(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (!name.s && set_up_default_doms() < 0)
-		return -1;
-
 	set_domain_attr(name, pkey, val);
 	return 1;
 }
@@ -360,9 +336,6 @@ int tlsp_set_calist(modparam_t type, void *in)
 	str val;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
-		return -1;
-
-	if (!name.s && set_up_default_doms() < 0)
 		return -1;
 
 	set_domain_attr(name, ca, val);
@@ -378,9 +351,6 @@ int tlsp_set_cadir(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (!name.s && set_up_default_doms() < 0)
-		return -1;
-
 	set_domain_attr(name, ca_directory, val.s);
 	return 1;
 }
@@ -392,9 +362,6 @@ int tlsp_set_cplist(modparam_t type, void *in)
 	str val;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
-		return -1;
-
-	if (!name.s && set_up_default_doms() < 0)
 		return -1;
 
 	set_domain_attr(name, ciphers_list, val.s);
@@ -410,9 +377,6 @@ int tlsp_set_dhparams(modparam_t type, void *in)
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (!name.s && set_up_default_doms() < 0)
-		return -1;
-
 	set_domain_attr(name, dh_param, val);
 	return 1;
 }
@@ -424,9 +388,6 @@ int tlsp_set_eccurve(modparam_t type, void *in)
 	str val;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
-		return -1;
-
-	if (!name.s && set_up_default_doms() < 0)
 		return -1;
 
 	set_domain_attr(name, tls_ec_curve, val.s);

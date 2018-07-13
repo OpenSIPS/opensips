@@ -1,8 +1,9 @@
-INSERT INTO version (table_name, table_version) values ('tls_mgm','2');
+INSERT INTO version (table_name, table_version) values ('tls_mgm','3');
 CREATE TABLE tls_mgm (
     id SERIAL PRIMARY KEY NOT NULL,
     domain VARCHAR(64) NOT NULL,
-    address VARCHAR(64) DEFAULT NULL,
+    match_ip_address VARCHAR(255) DEFAULT NULL,
+    match_sip_domain VARCHAR(255) DEFAULT NULL,
     type INTEGER DEFAULT 1 NOT NULL,
     method VARCHAR(16) DEFAULT 'SSLv23',
     verify_cert INTEGER DEFAULT 1,

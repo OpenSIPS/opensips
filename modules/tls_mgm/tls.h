@@ -32,9 +32,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  *
- * History:
- * -------
- *  2015-02-12  first version (bogdan)
  */
 
 #ifndef _PROTO_TLS_H_

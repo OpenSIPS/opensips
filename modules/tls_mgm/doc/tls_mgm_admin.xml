@@ -7,9 +7,8 @@
 		<title>Overview</title>
 		<para>
 			This module is a management module for TLS certificates and
-			parameters. It provides an interfaces for all the modules that
-			use the TLS protocol. It also implements TLS related functions
-			to use in the routing script, and exports pseudo variables with
+			parameters. It provides an interface for all the modules that
+			use the TLS protocol. It also exports pseudo variables with
 			certificate and TLS parameters.
 		</para>
 	</section>
@@ -41,54 +40,32 @@
 		The wording 'TLS domain' means that this TLS connection will have different
 		parameters than another TLS connection (from another TLS domain). Thus, TLS
 		domains are not directly related to different SIP domains, although they
-		are often used in common. Depending on the direction of the TLS handshake, a
-		TLS domain is called 'client domain' (=outgouing TLS connection) or 'server domain'
+		are often used in conjunction. Depending on the direction of the TLS handshake, a
+		TLS domain is called 'client domain' (=outgoing TLS connection) or 'server domain'
 		(= incoming TLS connection).
 		</para>
 		<para>
-		If you only run one domain, a default domain is enough. If you
-		are running several TLS servers (that is, you have more than
-		one listen=tls:ip:port entry in the config file), you can
-		specify some parameters for each of them separately (not all
-		the above).
+		If you run several SIP domains you can specify some parameters for each of them
+		separately (regardless if you have only one or multiple listen=tls:ip:port entries
+		in the config file).
 		</para>
 		<para>
 		For example, TLS domains can be used in virtual hosting scenarios with TLS.
 		&osips; offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
-		both domains will be hosted a single SIP proxy, the SIP proxy needs 2 certificates: One
+		both domains will be hosted on a single SIP proxy, the SIP proxy needs 2 certificates: One
 		for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
 		has to present the respective certificate during the TLS handshake. As the SIP proxy
 		does not have a received SIP message yet (this is done after the TLS handshake), the SIP
-		proxy can not retrieve the target domain (which will be usually retrieved from the domain in
-		the request URI). Thus, distinction for these domains must be done by using multiple sockets.
-		The socket on which the TLS connection is received, identifies the respective domain. Thus
-		the SIP proxy is able to present the proper certificate.
+		proxy can not retrieve the target domain from SIP (which would have been usually retrieved 
+		from the domain in the request URI). Thus, distinction for these domains must be done by using multiple listening sockets or by having clients that send the Servername TLS extension(SNI) in the
+		handshake process.
 		</para>
 		<para>
-		For outgoing TLS connections, the SIP proxy usually has to provide a client certificate. In
-		this scenario, socket based distinction is not preferable as there is no dedicated outgoing socket.
-		Thus, the certificate selection (selection of the proper TLS client domain) can be name based.
-		If the SIP proxy establishes a new outgoing TLS connection, it checks
-		for the TLS client domain AVP (parameter client_domain_avp). If this AVP is set (e.g.
-		in &osips;.cfg), &osips; searches for a TLS client domain with the same name as the AVP value and uses the associated certificates.
-		</para>
-		<para>
-		TLS client domains can also be matched by socket. If no TLS client domain AVP is found, &osips; searches for a TLS client domain based on the destination socket of the underlying outgoing TCP connection that must match with the defined address for a client domain.
-		</para>
-		<para>
-		Note: If there is already an existing TLS connection to the remote target, it will be reused
-		wether the TLS client domain AVP matches or not.
-		</para>
-		<para>
-		NOTE: Make sure to also configure &osips; to listen on the specified
-		IP:port.
+		For outgoing TLS connections, the TLS domain is chosen based on the destination socket of the underlying outgoing TCP connection and/or by taking a decision at script level via an AVP. For example, you can inspect headers like RURI or From and match the domain in the SIP header with filters that you have set up for the TLS domains.
 		</para>
 		<para>
 		NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set
-		per TLS domain. If a parameter is not explicit set, the default value will be used.
-		</para>
-		<para>
-		It's usable only if TLS support was compiled.
+		per TLS domain.
 		</para>
 	</section>
 
@@ -102,15 +79,9 @@
 				<listitem><para>by provisioning in DB</para></listitem>
 			</itemizedlist>
 		</para>
-		<para>For the domains defined in the DB, the certificate, private key, list of trusted CAs and Diffie-Hellman parameters are provisioned as BLOB values whether for script defined domains you must provide path to files.</para>
+		<para>For the domains defined in the DB, the certificate, private key, list of trusted CAs and Diffie-Hellman parameters are provisioned as BLOB values while for script defined domains you must provide path to files.</para>
 		<para>
-			When a TLS domain can't be chosen for an outgoing or incoming TLS connection the default client or server domain is used. A default domain is automatically created (with default settings) but you can also set the certificate, private key etc. in the same way as for other domains (through the module parameters or by DB).
-		</para>
-		<para>
-			The default domains from the DB (provisioned with the domain name <emphasis>default</emphasis>) overwrite the standard default domains even if you have set ceratain parameters (certificate, ca_list etc.) for the default domain through the script. When defining default domains in the DB you can specificy a default client or server domain separately or a single specification to be used for both scenarios.
-		</para>
-		<para>
-			You can define domains both in the DB and script at the same time (even default domains).
+			You can define domains both in the DB and script at the same time.
 		</para>
 		<para>
 			For any TLS domain (defined through script or DB, default or virtual) if not specified otherwise, the default settings are:
@@ -549,24 +520,52 @@ modparam("tls_mgm", "tls_send_timeout", 200) # number of milliseconds
 			</example>
 		</section>
 
-		<section id="param_client_domain_avp" xreflabel="client_domain_avp">
-			<title><varname>client_domain_avp</varname> (integer)</title>
+		<section id="param_client_tls_domain_avp" xreflabel="client_tls_domain_avp">
+			<title><varname>client_tls_domain_avp</varname> (string)</title>
 			<para>
-			This sets the AVP used for name based TLS client
-			domain matching (please see <xref linkend="domains-param"/> for more details). Setting 
-			the value to 0 disables name based TLS client domain matching.
+			Name of the AVP used for enforcing the selection of a specific TLS
+			client domain. Setting this AVP to the name of a TLS client domain will
+			result in using that specific domain regardless of the standard matching
+			mechanism.
 			</para>
 			<para>
-			It's usable only if TLS support was compiled.
+			Note: If there is already an existing TLS connection to the remote target,
+			it will be reused and setting this AVP has no effect.
 			</para>
 			<para><emphasis>
-				Default value is 0.
+				No default value.
 			</emphasis></para>
 			<example>
-				<title>Set <varname>client_domain_avp</varname> variable</title>
+				<title>Set <varname>client_tls_domain_avp</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "client_domain_avp", "tls_cli_dom")
+modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_client_sip_domain_avp" xreflabel="client_sip_domain_avp">
+			<title><varname>client_sip_domain_avp</varname> (string)</title>
+			<para>
+			Name of the AVP that sets the SIP domain used in the TLS client
+			domain mathcing process.
+			</para>
+			<para>
+			Note: If there is already an existing TLS connection to the remote target,
+			it will be reused and setting this AVP has no effect.
+			</para>
+			<para>
+			For the AVP usage example, refer to  <xref linkend="domains-param"/>.
+			</para>
+			<para><emphasis>
+				No default value.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>client_sip_domain_avp</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_sip_domain_avp", "sip_match_dom")
 ...
 				</programlisting>
 			</example>
@@ -608,7 +607,7 @@ modparam("tls_mgm", "db_table", "tls_mgm")
                         <varname>domain_col</varname> (string)
                     </title>
                     <para>
-                        Sets the name.for the TLS domain column.
+                        Sets the name for the TLS domain column.
                     </para>
                     <para>Default value is "domain".</para>
                     <example>
@@ -622,17 +621,34 @@ modparam("tls_mgm", "domain_col", "tls_domain")
 
                 <section>
                     <title>
-                        <varname>address_col</varname> (string)
+                        <varname>match_ip_address_col</varname> (string)
                     </title>
                     <para>
-                        Sets the address column name.
+                        Sets the IP address matching column name.
                     </para>
-                    <para>Default value is "address".</para>
+                    <para>Default value is "match_ip_address".</para>
                     <example>
-				<title>Usage of <varname>address_col</varname> block
+				<title>Usage of <varname>match_ip_address_col</varname> block
 					</title>
 				<programlisting format="linespecific">
-modparam("tls_mgm", "address_col", "addr")
+modparam("tls_mgm", "match_ip_address_col", "addr")
+                                </programlisting>
+                    </example>
+                </section>
+
+                <section>
+                    <title>
+                        <varname>match_sip_domain_col</varname> (string)
+                    </title>
+                    <para>
+                        Sets the SIP domain matching column name.
+                    </para>
+                    <para>Default value is "match_sip_domain".</para>
+                    <example>
+				<title>Usage of <varname>match_sip_domain_col</varname> block
+					</title>
+				<programlisting format="linespecific">
+modparam("tls_mgm", "match_sip_domain_col", "addr")
                                 </programlisting>
                     </example>
                 </section>
@@ -844,13 +860,82 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
                     </example>
                 </section>
 
+        <section id="param_match_ip_address" xreflabel="match_ip_address">
+			<title><varname>match_ip_address</varname> (string)</title>
+			<para>
+			The IP addresses and ports used to match a TLS connection with a
+			virtual TLS domain. For TLS server domains, these values will be
+			mathced against the socket on which the connection is received. For
+			TLS client domains, the values will be compared with the destination
+			socket of the connection.
+			</para>
+			<para>
+				The parameter accepts a list of values, and the special value "*"
+				means: match any address.
+			</para>
+			<para><emphasis>
+				Default value is "*" (match any address).
+			</emphasis></para>
+			<example>
+				<title>Set <varname>match_ip_address</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "match_ip_address", "[dom1]10.0.0.10:5061, 10.0.0.11:5061")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_match_sip_domain" xreflabel="match_sip_domain">
+			<title><varname>match_sip_domain</varname> (string)</title>
+			<para>
+			The SIP domains used to match a TLS connection with a
+			virtual TLS domain. For TLS server domains, these values will be
+			matched against the hostname provided in the TLS Servername extension(SNI).
+			For TLS client domains, the values will be compared with the value of
+			the <xref linkend="param_client_sip_domain_avp"/> AVP.
+			</para>
+			<para>
+				The parameter accepts a list of FQDNs or the special values:
+				<itemizedlist>
+					<listitem><para><emphasis>*</emphasis> - match any sip domain(
+					including no SNI provided, in case of TLS server domains);
+					</para></listitem>
+					<listitem><para><emphasis>none</emphasis> - match the TLS domain
+					when there is no SNI provided (make sense only for TLS server
+					domains). Note that if a SNI is provided, but does not match any
+					other SIP domain filter, the connection will be rejected.
+					</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				The FQDNs can be specified as with Unix shell-style wildcards. If
+				there are multiple potential matches, the most specific domain will
+				be selected(eg. a request for "foo.bar.com" is matched with the domain
+				specified with "foo.bar.com" versus the one with "*.bar.com").
+			</para>
+			<para><emphasis>
+				Default value is "*" (match any sip domain).
+			</emphasis></para>
+			<example>
+				<title>Set <varname>match_sip_domain</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "match_sip_domain", "[dom1]foo.com, bar.com, *.baz.com")
+modparam("tls_mgm", "match_sip_domain", "[default_dom]*")
+...
+				</programlisting>
+			</example>
+		</section>
+
 		<section id="domains-param">
 			<title><varname>server_domain, client_domain</varname> (string)</title>
 			<para>
 				You can define virtual TLS domains through these parameters.
 			</para>
 			<para>
-				The syntax for defining a domain is "domain=IP:port" where the 'domain' is the domain name and the address part is optional for client domains.
+				The value of these parameters represents the virtual tls domain's
+				name which is only used for identification.
 			</para>
 			<example>
 				<title>Usage of <varname>tls_client_domain</varname> and
@@ -858,15 +943,16 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 					</title>
 				<programlisting format="linespecific">
 ...
-listen=tls:IP_2:port2
-listen=tls:IP_3:port3
+listen=tls:10.0.0.10:5061
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "client_domain_avp", "tls_cli_dom")
+modparam("tls_mgm", "client_sip_domain_avp", "tls_sip_dom")
 ...
 
 # 'atlanta' server domain
-modparam("tls_mgm", "server_domain", "dom1=IP_2:port2")
+modparam("tls_mgm", "server_domain", "dom1")
+modparam("tls_mgm", "match_ip_address", "[dom1]10.0.0.10:5061")
+modparam("tls_mgm", "match_sip_domain", "[dom1]atlanta.com")
 
 modparam("tls_mgm", "certificate", "[dom1]/certs/atlanta.com/cert.pem")
 modparam("tls_mgm", "private_key", "[dom1]/certs/atlanta.com/privkey.pem")
@@ -876,8 +962,9 @@ modparam("tls_mgm", "verify_cert", "[dom1]1")
 modparam("tls_mgm", "require_cert", "[dom1]1")
 
 #'biloxy' server domain
-
-modparam("tls_mgm", "server_domain", "dom2=IP_3:port3")
+modparam("tls_mgm", "server_domain", "dom2")
+modparam("tls_mgm", "match_ip_address", "[dom2]10.0.0.10:5061")
+modparam("tls_mgm", "match_sip_domain", "[dom2]biloxy.com")
 
 modparam("tls_mgm", "certificate", "[dom2]/certs/biloxy.com/cert.pem")
 modparam("tls_mgm", "private_key", "[dom2]/certs/biloxy.com/privkey.pem")
@@ -886,42 +973,50 @@ modparam("tls_mgm", "tls_method", "[dom2]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom2]1")
 modparam("tls_mgm", "require_cert", "[dom2]1")
 
-# 'atlanta' client domain
-modparam("tls_mgm", "client_domain", "dom3")
+# generic TLS server domain, if the client does not provide SNI
+modparam("tls_mgm", "server_domain", "dom3")
+modparam("tls_mgm", "match_ip_address", "[dom3]10.0.0.10:5061")
+modparam("tls_mgm", "match_sip_domain", "[dom3]none")
 
-modparam("tls_mgm", "certificate", "[dom3]/certs/atlanta.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom3]/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom3]/certs/generic/cert.pem")
+modparam("tls_mgm", "private_key", "[dom3]/certs/generic/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom3]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom3]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom3]1")
 modparam("tls_mgm", "require_cert", "[dom3]1")
 
-#'biloxy' client domain
+# 'atlanta' client domain
 modparam("tls_mgm", "client_domain", "dom4")
+modparam("tls_mgm", "match_ip_address", "[dom4]*")
+modparam("tls_mgm", "match_sip_domain", "[dom4]atlanta.com")
 
-modparam("tls_mgm", "certificate", "[dom4]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom4]/certs/biloxy.com/privkey.pem")
+
+modparam("tls_mgm", "certificate", "[dom4]/certs/atlanta.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom4]/certs/atlanta.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom4]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom4]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom4]1")
 modparam("tls_mgm", "require_cert", "[dom4]1")
 
+# 'biloxy' client domain
+modparam("tls_mgm", "client_domain", "dom5")
+modparam("tls_mgm", "match_ip_address", "[dom5]*")
+modparam("tls_mgm", "match_sip_domain", "[dom5]biloxy.com")
 
-# socket based TLS server domains (for TLS based downstream from GW provider)
-modparam("tls_mgm", "client_domain", "dom5=IP_5:port5")
-
-modparam("tls_mgm", "certificate", "[dom5]/certs/atlanta.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom5]/certs/atlanta.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom5]/certs/biloxy.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom5]/certs/biloxy.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom5]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom5]tlsv1")
-modparam("tls_mgm", "verify_cert", "[dom5]0")
+modparam("tls_mgm", "verify_cert", "[dom5]1")
+modparam("tls_mgm", "require_cert", "[dom5]1")
 
-# socket based TLS client domains (for TLS based upstream to GW provider)
-# GW IP: 1.2.3.4, GW port: 6677
-modparam("tls_mgm", "client_domain", "dom6=1.2.3.4:6677")
+# TLS client domain for GW provider
+modparam("tls_mgm", "client_domain", "dom6")
+modparam("tls_mgm", "match_ip_address", "[dom6]1.2.3.4:6677")
+modparam("tls_mgm", "match_sip_domain", "[dom6]*")
 
-modparam("tls_mgm", "certificate", "[dom6]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom6]/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom6]/certs/gw/cert.pem")
+modparam("tls_mgm", "private_key", "[dom6]/certs/gw/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom6]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom6]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom6]0")
@@ -929,18 +1024,12 @@ modparam("tls_mgm", "verify_cert", "[dom6]0")
 ...
 route{
 ...
-    # for biloxy or atlanta domains we set the TLS client domain AVP
-    if ($rd == "atlanta.com")
-        $avp(tls_cli_dom) = "dom3";
-    else if ($rd == "biloxy.com")
-        $avp(tls_cli_dom) = "dom4";
-...
-    # calls to other SIP domains
-    # set the proper SSL context (certificate) for local hosted domains
-    t_relay(); # uses NAPTR and SRV lookups
+    # we match the TLS client domain using the SIP domain in the RURI
+    $avp(tls_sip_dom) = $rd;
+    t_relay();
     exit;
 ...
-    # calls to the PSTN GW
+    # calls to the PSTN GW, will match the correct TLS domain by IP
     t_relay("tls:1.2.3.4:6677");
     exit;
 ...
