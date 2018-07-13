@@ -782,7 +782,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	}
 
 	if (!is_replicated && have_data_replication())
-		replicate_ucontact_insert(_r, _contact, _ci);
+		replicate_ucontact_insert(_r, _contact, *_c);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT))
 		run_ul_callbacks(UL_CONTACT_INSERT, *_c);

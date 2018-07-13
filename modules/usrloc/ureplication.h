@@ -51,7 +51,7 @@ extern str contact_repl_cap;
 /* duplicate local events to other OpenSIPS instances */
 void replicate_urecord_insert(urecord_t *r);
 void replicate_urecord_delete(urecord_t *r);
-void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_info_t *ci);
+void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c);
 void replicate_ucontact_update(urecord_t *r, ucontact_t *ct);
 void replicate_ucontact_delete(urecord_t *r, ucontact_t *c);
 
