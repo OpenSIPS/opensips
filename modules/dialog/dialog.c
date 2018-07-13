@@ -245,7 +245,7 @@ static param_export_t mod_params[]={
 	{ "dlg_match_mode",        INT_PARAM, &seq_match_mode           },
 	{ "db_url",                STR_PARAM, &db_url.s                 },
 	{ "db_mode",               INT_PARAM, &dlg_db_mode              },
-	{ "table_name",            STR_PARAM, &dialog_table_name        },
+	{ "table_name",            STR_PARAM, &dialog_table_name.s      },
 	{ "dlg_id_column",         STR_PARAM, &dlg_id_column.s          },
 	{ "call_id_column",        STR_PARAM, &call_id_column.s         },
 	{ "from_uri_column",       STR_PARAM, &from_uri_column.s        },
