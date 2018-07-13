@@ -61,8 +61,6 @@ int _async_resume_retr_itv = 100; /* us */
 int ssl_verifypeer = 1;
 int ssl_verifyhost = 1;
 
-/* tls_mgm module specific identifier for a TLS client cert/key */
-char *tls_client_domain;
 struct tls_mgm_binds tls_api;
 
 /* trace parameters for this module */
@@ -106,14 +104,6 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
 static int w_rest_init_client_tls(struct sip_msg *msg, char *gp_tls_dom);
 
-static module_dependency_t *get_deps_tls_mgm(param_export_t *param)
-{
-	if (!*(char **)param->param_pointer)
-		return NULL;
-
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
-}
-
 /* module dependencies */
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -121,7 +111,6 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 }
 	},
 	{ /* modparam dependencies */
-		{ "tls_client_domain", get_deps_tls_mgm },
 		{ NULL, NULL}
 	}
 };
@@ -168,7 +157,6 @@ static param_export_t params[] = {
 	{ "connect_poll_interval", INT_PARAM, &connect_poll_interval },
 	{ "max_async_transfers", INT_PARAM, &max_async_transfers },
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
-	{ "tls_client_domain",	STR_PARAM, &tls_client_domain	},
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
