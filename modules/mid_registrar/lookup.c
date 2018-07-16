@@ -187,6 +187,12 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	}
 
 	if (reg_mode != MID_REG_THROTTLE_AOR) {
+
+		if ( (!req->callid && parse_headers(req, HDR_CALLID_F,0)<0) || !req->callid ) {
+			LM_ERR("bad request or missing Call-ID hdr\n");
+			return -1;
+		}
+
 		if (parse_uri(uri.s, uri.len, &puri) < 0) {
 			LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri.len,
 			       uri.s, req->callid->body.len, req->callid->body.s);
