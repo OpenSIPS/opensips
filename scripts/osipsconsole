@@ -6346,7 +6346,7 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 }
 
 
-sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_cols)
+sub mysql_migrate_table(){ # 4 parameters (dst_table, dst_cols, src_table, src_cols)
 
 	my $X;
 	

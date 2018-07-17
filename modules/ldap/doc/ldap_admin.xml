@@ -671,7 +671,7 @@ ldap_result("telephoneNumber/$avp(tel_number)");
         part of an attribute value should be stored as AVP.</para>
 
 		<para>
-			An AVP can either be of type string or integer. As default, <varname>ldap_result</varname> stores LDAP attribute values as AVP of type string. The optional <varname>avp_type</varname> parameter can be used to explicitly specify the type of the AVP. It can be either <varname>str</varname> for string, or <varname>int</varname> for integer. If <varname>avp_type</varname> is specified as <varname>int</varname> then <varname>ldap_result</varname> tries to convert the LDAP attribute values to integer. In this case, the values are only stored as AVP if the conversion to integer is succesfull.
+			An AVP can either be of type string or integer. As default, <varname>ldap_result</varname> stores LDAP attribute values as AVP of type string. The optional <varname>avp_type</varname> parameter can be used to explicitly specify the type of the AVP. It can be either <varname>str</varname> for string, or <varname>int</varname> for integer. If <varname>avp_type</varname> is specified as <varname>int</varname> then <varname>ldap_result</varname> tries to convert the LDAP attribute values to integer. In this case, the values are only stored as AVP if the conversion to integer is successful.
 		</para>
 
         <variablelist>
