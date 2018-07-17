@@ -1,1 +1,1 @@
-V	160316130736Z		01	unknown	/C=IP/ST=opensips.org/O=OpenSIPS project/OU=OpenSIPS TLS tester/CN=OpenSIPS/emailAddress=team@opensips.org
+V	190717104226Z		01	unknown	/C=IP/ST=opensips.org/O=OpenSIPS project/OU=OpenSIPS TLS tester/CN=OpenSIPS/emailAddress=team@opensips.org
