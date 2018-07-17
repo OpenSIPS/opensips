@@ -362,7 +362,7 @@ override_dh_strip:
 	dh_strip --dbg-package=opensips-dbg
 
 override_dh_installinit:
-	dh_installinit
+	dh_installinit --no-start # do not start until configured
 ifneq ($(INSTALL_PREFIX),)
 	sed -i -e "s#PATH_EXTRA=#PATH_EXTRA=$(BIN_PREFIX)/sbin:$(BIN_PREFIX)/bin#g" \
 		   $(CURDIR)/debian/opensips/etc/init.d/opensips
@@ -370,6 +370,9 @@ endif
 
 override_dh_auto_test:
 	#Disable tests, too old and they are obsolete
+
+override_dh_systemd_start:
+	dh_systemd_start --no-start # do not start until configured
 
 print-version:
 	@@echo "Debian version:          $(DEBVERSION)"
