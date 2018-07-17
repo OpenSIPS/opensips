@@ -109,8 +109,6 @@ void tls_free_domain(struct tls_domain *dom)
 {
 	struct str_list *m_it, *m_tmp;
 
-	LM_DBG("DOM=%.*s refs=%d\n", dom->name.len, dom->name.s, dom->refs);
-
 	dom->refs--;
 	if (dom->refs == 0) {
 		if (dom->ctx)

@@ -38,6 +38,8 @@
 #include "tls_config_helper.h"
 #include "../../str.h"
 
+#define TLS_TABLE_VERSION 3
+
 extern int      tls_default_method;
 
 extern int      tls_verify_client_cert;
