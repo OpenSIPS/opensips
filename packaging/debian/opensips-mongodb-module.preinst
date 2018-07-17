@@ -1,5 +1,8 @@
 #!/bin/sh
 
+#DEBHELPER#
+set -e
+
 LIBMONGOC_NAME=libmongoc-1.0-0
 
 # check if libmongoc is installed
