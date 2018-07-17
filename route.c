@@ -900,7 +900,7 @@ static int fix_actions(struct action* a)
 						return E_BUG;
 					}
 					if (pv_parse_spec(&s, sp) == NULL) {
-						LM_ERR("Unable to parse port paremeter var\n");
+						LM_ERR("Unable to parse port parameter var\n");
 						return E_BUG;
 					}
 					t->elem[1].u.data = (void*)sp;

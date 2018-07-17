@@ -217,7 +217,7 @@ static inline struct lump* _push_changes_into_lumps(struct sip_msg *msg,
  * Input:
  *    - gp_hdr - the hdr name (ID or string/spec)
  *    - val - the option value (string/spec)
- * Returns true upon succesfully insertion.
+ * Returns true upon successfully insertion.
  */
 int list_hdr_add_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
 {

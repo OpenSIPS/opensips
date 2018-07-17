@@ -1992,7 +1992,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 				<itemizedlist>
 					<listitem><para><emphasis>gw_id</emphasis> (optional) - the id of
 					a gateway. If provided, the function will return/set (depnding if the second
-					paremeter is given) the status of that gateway, otherwise it will list all
+					parameter is given) the status of that gateway, otherwise it will list all
 					gateways along with their statuses.
 					</para></listitem>
 					<listitem><para><emphasis>status</emphasis> (optional) - the new status
@@ -2010,7 +2010,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 					</para></listitem>
 					<listitem><para><emphasis>gw_id</emphasis> (optional) - the id of
 					a gateway. If provided, the function will return/set (depnding if the third
-					paremeter is given) the status of that gateway, otherwise it will list all
+					parameter is given) the status of that gateway, otherwise it will list all
 					gateways in the given partition along with their statuses.
 					</para></listitem>
 					<listitem><para><emphasis>status</emphasis> (optional) - the new status
@@ -2062,7 +2062,7 @@ Enabled:: Inactive
 				<itemizedlist>
 					<listitem><para><emphasis>carrier_id</emphasis> (optional) - the id of
 					a carrier. If provided, the function will return/set (depnding if the second
-					paremeter is given) the status of that carrier, otherwise it will list all
+					parameter is given) the status of that carrier, otherwise it will list all
 					carriers along with their statuses.
 					</para></listitem>
 					<listitem><para><emphasis>status</emphasis> (optional) - the new status
@@ -2080,7 +2080,7 @@ Enabled:: Inactive
 					</para></listitem>
 					<listitem><para><emphasis>carrier_id</emphasis> (optional) - the id of
 					a carrier. If provided, the function will return/set (depnding if the third
-					paremeter is given) the status of that carrier, otherwise it will list all
+					parameter is given) the status of that carrier, otherwise it will list all
 					carriers contained in the given partition along with their statuses.
 					</para></listitem>
 					<listitem><para><emphasis>status</emphasis> (optional) - the new status

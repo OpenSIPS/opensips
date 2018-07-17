@@ -286,7 +286,7 @@ build_branch(char *branch, int *size,
 
 		lock_release(&htable->timer_list.mutex);
 
-		LM_DBG("ping cell aquired (new=%d, old_state=%d) for %lu\n",
+		LM_DBG("ping cell acquired (new=%d, old_state=%d) for %lu\n",
 			(old_state==PING_CELL_STATE_NONE)?1:0, old_state, ct_coords);
 	} else {
 		label = sipping_callid_cnt;

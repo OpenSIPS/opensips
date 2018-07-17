@@ -574,7 +574,7 @@ check_io_again:
 	//fd_array_print;
 	check_io_data();
 	if (check_error) {
-		LM_CRIT("[%s] check failed after succesfull fd add "
+		LM_CRIT("[%s] check failed after successful fd add "
 			"(fd=%d,type=%d,data=%p,flags=%x) already=%d\n",h->name,
 			fd, type, data, flags, already);
 	}
@@ -792,7 +792,7 @@ again_devpoll:
 
 	check_io_data();
 	if (check_error) {
-		LM_CRIT("[%s] check failed after succesfull fd del "
+		LM_CRIT("[%s] check failed after successful fd del "
 			"(fd=%d,flags=%d, sflags=%d) over map "
 			"(fd=%d,type=%d,data=%p,flags=%d) erase=%d\n",h->name,
 			fd, flags, sock_flags,

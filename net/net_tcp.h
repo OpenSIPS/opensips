@@ -97,7 +97,7 @@ struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
 /* sends a connected connection to the master */
 int tcp_conn_send(struct tcp_connection *con);
 
-/* release a connection aquired via tcp_conn_get() or tcp_conn_create() */
+/* release a connection acquired via tcp_conn_get() or tcp_conn_create() */
 void tcp_conn_release(struct tcp_connection* c, int pending_data);
 
 /* destroys a connection before sending it to main */

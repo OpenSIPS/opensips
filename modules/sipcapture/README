@@ -715,7 +715,7 @@ route[capture_resume] {
        capturing. Possible values are:
           + on
           + off
-       if the paremeter is missing, the command will return the
+       if the parameter is missing, the command will return the
        status of the SIP message capturing (as string “on” or
        “off” ) without changing anything.
 

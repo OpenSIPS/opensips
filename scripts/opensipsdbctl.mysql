@@ -262,7 +262,7 @@ minfo "Extra tables successfully created."
 }  # end extra_create
 
 
-migrate_table () # 4 paremeters (dst_table, dst_cols, src_table, src_cols)
+migrate_table () # 4 parameters (dst_table, dst_cols, src_table, src_cols)
 {
 if [ $# -ne 4 ] ; then
 	echo "param1=$1 param2=$2 param3=$3 param4=$4" 
