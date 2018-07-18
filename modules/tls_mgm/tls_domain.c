@@ -400,13 +400,17 @@ tls_find_domain_by_filters(struct ip_addr *ip, unsigned short port,
  */
 struct tls_domain *tls_find_client_domain_name(str *name)
 {
+	struct tls_domain *d;
+
 	if (dom_lock)
 		lock_start_read(dom_lock);
 
-	return tls_find_domain_by_name(name, tls_client_domains);
+	d = tls_find_domain_by_name(name, tls_client_domains);
 
 	if (dom_lock)
 		lock_stop_read(dom_lock);
+
+	return d;
 }
 
 /*
