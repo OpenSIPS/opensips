@@ -406,6 +406,8 @@ struct tls_domain *tls_find_client_domain_name(str *name)
 		lock_start_read(dom_lock);
 
 	d = tls_find_domain_by_name(name, tls_client_domains);
+	if (d)
+		ref_tls_dom(d);
 
 	if (dom_lock)
 		lock_stop_read(dom_lock);
