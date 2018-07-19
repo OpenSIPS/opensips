@@ -61,7 +61,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 /**
  * Parse a database URL of form
- * scheme://[username[:password]@]hostname[:port]/database
+ * scheme://[username[:password]@]hostname[:port]/database[?parameters]
  *
  * \param id filled id struct
  * \param url parsed URL
@@ -80,7 +80,8 @@ static int parse_db_url(struct db_id* id, const str* url)
 		ST_PASS_PORT,  /* Password or port part */
 		ST_HOST,       /* Hostname part */
 		ST_PORT,       /* Port part */
-		ST_DB          /* Database part */
+		ST_DB,         /* Database part */
+		ST_PARAMS       /* Parameters part */
 	};
 
 	enum state st;
@@ -152,9 +153,9 @@ static int parse_db_url(struct db_id* id, const str* url)
 				break;
 
 			case '/':
+				st = ST_DB;
 				if (dupl_string(&id->host, begin, url->s + i) < 0) goto err;
-				if (dupl_string(&id->database, url->s + i + 1, url->s + len) < 0) goto err;
-				return 0;
+				begin = url->s + i + 1;
 			}
 			break;
 
@@ -170,8 +171,8 @@ static int parse_db_url(struct db_id* id, const str* url)
 			case '/':
 				id->host = prev_token;
 				id->port = str2s(begin, url->s + i - begin, 0);
-				if (dupl_string(&id->database, url->s + i + 1, url->s + len) < 0) goto err;
-				return 0;
+				st = ST_DB;
+				begin = url->s + i + 1;
 			}
 			break;
 
@@ -185,8 +186,8 @@ static int parse_db_url(struct db_id* id, const str* url)
 
 			case '/':
 				if (dupl_string(&id->host, begin, url->s + i) < 0) goto err;
-				if (dupl_string(&id->database, url->s + i + 1, url->s + len) < 0) goto err;
-				return 0;
+				st = ST_DB;
+				begin = url->s + i + 1;
 			}
 			break;
 
@@ -194,17 +195,33 @@ static int parse_db_url(struct db_id* id, const str* url)
 			switch(url->s[i]) {
 			case '/':
 				id->port = str2s(begin, url->s + i - begin, 0);
-				if (dupl_string(&id->database, url->s + i + 1, url->s + len) < 0) goto err;
-				return 0;
+				st = ST_DB;
+				begin = url->s + i + 1;
 			}
 			break;
 
 		case ST_DB:
+			switch(url->s[i]) {
+			case '?':
+				st = ST_PARAMS;
+				if (dupl_string(&id->database, begin, url->s + i) < 0) goto err;
+				begin = url->s + i + 1;
+			}
+			break;
+
+		case ST_PARAMS:
 			break;
 		}
 	}
 
-	if (st != ST_DB) goto err;
+	if (st != ST_DB && st != ST_PARAMS) goto err;
+
+	if (st == ST_DB) {
+		if (dupl_string(&id->database, begin, url->s + len) < 0) goto err;
+	} else {
+		if (dupl_string(&id->parameters, begin, url->s + len) < 0) goto err;
+	}
+
 	return 0;
 
  err:
@@ -266,21 +283,33 @@ struct db_id* new_db_id(const str* url)
 unsigned char cmp_db_id(const struct db_id* id1, const struct db_id* id2)
 {
 	if (!id1 || !id2) return 0;
+
 	if (id1->port != id2->port) return 0;
 
 	if (strcmp(id1->scheme, id2->scheme)) return 0;
+
 	if (id1->username != 0 && id2->username != 0) {
 		if (strcmp(id1->username, id2->username)) return 0;
 	} else {
 		if (id1->username!=0 || id2->username!=0) return 0;
 	}
+
 	if (id1->password!=0 && id2->password!=0) {
 		if(strcmp(id1->password, id2->password)) return 0;
 	} else {
 		if (id1->password!=0 || id2->password!=0) return 0;
 	}
+
 	if (strcasecmp(id1->host, id2->host)) return 0;
+
 	if (strcmp(id1->database, id2->database)) return 0;
+
+	if (id1->parameters != 0 && id2->parameters != 0) {
+		if(strcmp(id1->parameters, id2->parameters)) return 0;
+	} else {
+		if (id1->parameters!=0 || id2->parameters!=0) return 0;
+	}
+
 	return 1;
 }
 
@@ -298,5 +327,6 @@ void free_db_id(struct db_id* id)
 	if (id->password) pkg_free(id->password);
 	if (id->host) pkg_free(id->host);
 	if (id->database) pkg_free(id->database);
+	if (id->parameters) pkg_free(id->parameters);
 	pkg_free(id);
 }

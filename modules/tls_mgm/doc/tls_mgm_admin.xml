@@ -576,6 +576,10 @@ modparam("tls_mgm", "client_sip_domain_avp", "sip_match_dom")
 			<para>
 			The database url. It cannot be NULL.
 			</para>
+			<para>
+			You cannot use the "tls_domain=<emphasis>dom_name</emphasis>" URL parameter
+			for a TLS connection to the database for the tls_mgm module itself.
+			</para>
 			<example>
 				<title>Usage of <varname>db_url</varname> block
 					</title>

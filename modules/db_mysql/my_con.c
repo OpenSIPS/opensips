@@ -25,16 +25,41 @@
 #include "dbase.h"
 #include <mysql/mysql.h>
 
-#include "../tls_mgm/tls_helper.h"
+#include "../tls_mgm/api.h"
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 
-/* if defined, it will be used to secure all MySQL connections */
-extern struct tls_domain *tls_dom;
+static str *get_mysql_tls_dom(struct db_id* id)
+{
+	static str dom = {0,0};
+
+	if (!id->parameters)
+		return NULL;
+
+	if (!strcmp(id->parameters, DB_TLS_DOMAIN_PARAM)) {
+		LM_ERR("Invalid URL parameter: %s\n", id->parameters);
+		return NULL;
+	}
+	if (!(dom.s = strchr(id->parameters, '='))) {
+		LM_ERR("'=' expected before the TLS domain name\n");
+		return NULL;
+	}
+
+	dom.s = dom.s + 1;
+	dom.len = strlen(dom.s);
+	if (!dom.len) {
+		LM_ERR("Empty TLS domain name\n");
+		return NULL;
+	}
+
+	return &dom;
+}
 
 int db_mysql_connect(struct my_con* ptr)
 {
+	str *tls_domain_name;
+
 	my_bool reconnect = 0;
 	/* if connection already in use, close it first*/
 	if (ptr->init)
@@ -43,16 +68,28 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_init(ptr->con);
 	ptr->init = 1;
 
-	if (tls_dom) {
-		LM_DBG("TLS key file: %.*s\n", tls_dom->pkey.len, tls_dom->pkey.s);
-		LM_DBG("TLS cert file: %.*s\n", tls_dom->cert.len, tls_dom->cert.s);
-		LM_DBG("TLS ca file: %.*s\n", tls_dom->ca.len, tls_dom->ca.s);
-		LM_DBG("TLS ca dir: %s\n", tls_dom->ca_directory);
-		LM_DBG("TLS ciphers: %s\n", tls_dom->ciphers_list);
+	tls_domain_name = get_mysql_tls_dom(ptr->id);
+	if (use_tls && tls_domain_name) {
+		/* the connection should use TLS */
+		if (!ptr->tls_dom) {
+			ptr->tls_dom = tls_api.find_client_domain_name(tls_domain_name);
+			if (!ptr->tls_dom) {
+				LM_ERR("TLS domain: %.*s not found\n",
+					tls_domain_name->len, tls_domain_name->s);
+				mysql_close(ptr->con);
+				return -1;
+			}
+		}
 
-		mysql_ssl_set(ptr->con, tls_dom->pkey.s, tls_dom->cert.s,
-		              tls_dom->ca.s, tls_dom->ca_directory,
-		              tls_dom->ciphers_list);
+		LM_DBG("TLS key file: %.*s\n", ptr->tls_dom->pkey.len, ptr->tls_dom->pkey.s);
+		LM_DBG("TLS cert file: %.*s\n", ptr->tls_dom->cert.len, ptr->tls_dom->cert.s);
+		LM_DBG("TLS ca file: %.*s\n", ptr->tls_dom->ca.len, ptr->tls_dom->ca.s);
+		LM_DBG("TLS ca dir: %s\n", ptr->tls_dom->ca_directory);
+		LM_DBG("TLS ciphers: %s\n", ptr->tls_dom->ciphers_list);
+
+		mysql_ssl_set(ptr->con, ptr->tls_dom->pkey.s, ptr->tls_dom->cert.s,
+		              ptr->tls_dom->ca.s, ptr->tls_dom->ca_directory,
+		              ptr->tls_dom->ciphers_list);
 	}
 
 	/* set connect, read and write timeout, the value counts three times */
@@ -151,6 +188,11 @@ void db_mysql_free_connection(struct pool_con* con)
 
 	struct my_con * _c;
 	_c = (struct my_con*) con;
+
+	if (_c->tls_dom) {
+		tls_api.release_domain(_c->tls_dom);
+		_c->tls_dom = NULL;
+	}
 
 	if (_c->ps_list) db_mysql_free_stmt_list(_c->ps_list);
 	if (_c->res) mysql_free_result(_c->res);

@@ -1658,6 +1658,7 @@ static void openssl_on_exit(int status, void *param)
 
 static int mod_init(void) {
 	str s;
+	str tls_db_param = str_init(DB_URL_TLS_DOM);
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	int n;
 #endif
@@ -1676,6 +1677,12 @@ static int mod_init(void) {
 		}
 
 		init_db_url(tls_db_url, 0 /*cannot be null*/);
+
+		if (str_strstr(&tls_db_url, &tls_db_param)) {
+			/* this would cause a circular dependency between the DB module and tls_mgm */
+			LM_CRIT("Cannot use a TLS connection to DB for the tls_mgm module itself\n");
+			return -1;
+		}
 
 		tls_db_table.len = strlen(tls_db_table.s);
 
