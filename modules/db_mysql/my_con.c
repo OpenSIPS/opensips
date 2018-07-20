@@ -37,16 +37,13 @@ static str *get_mysql_tls_dom(struct db_id* id)
 	if (!id->parameters)
 		return NULL;
 
-	if (!strcmp(id->parameters, DB_TLS_DOMAIN_PARAM)) {
+	if (strncmp(id->parameters, DB_TLS_DOMAIN_PARAM_EQ,
+			strlen(DB_TLS_DOMAIN_PARAM_EQ))) {
 		LM_ERR("Invalid URL parameter: %s\n", id->parameters);
 		return NULL;
 	}
-	if (!(dom.s = strchr(id->parameters, '='))) {
-		LM_ERR("'=' expected before the TLS domain name\n");
-		return NULL;
-	}
 
-	dom.s = dom.s + 1;
+	dom.s = id->parameters + strlen(DB_TLS_DOMAIN_PARAM_EQ);
 	dom.len = strlen(dom.s);
 	if (!dom.len) {
 		LM_ERR("Empty TLS domain name\n");

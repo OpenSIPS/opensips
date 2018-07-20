@@ -1658,7 +1658,7 @@ static void openssl_on_exit(int status, void *param)
 
 static int mod_init(void) {
 	str s;
-	str tls_db_param = str_init(DB_URL_TLS_DOM);
+	str tls_db_param = str_init(DB_TLS_DOMAIN_PARAM_EQ);
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
 	int n;
 #endif

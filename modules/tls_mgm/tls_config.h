@@ -40,8 +40,6 @@
 
 #define TLS_TABLE_VERSION 3
 
-#define DB_URL_TLS_DOM DB_TLS_DOMAIN_PARAM "="
-
 extern int      tls_default_method;
 
 extern int      tls_verify_client_cert;
