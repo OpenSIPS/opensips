@@ -371,6 +371,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	if (tls_dom) {
 		w_curl_easy_setopt(handle, CURLOPT_SSLCERT, tls_dom->cert.s);
 		w_curl_easy_setopt(handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_api.release_domain(tls_dom);
 		tls_dom = NULL;
 	}
 
@@ -554,7 +555,10 @@ error:
 
 cleanup:
 	clean_header_list;
-	tls_dom = NULL;
+	if (tls_dom) {
+		tls_api.release_domain(tls_dom);
+		tls_dom = NULL;
+	}
 	return ASYNC_NO_IO;
 }
 
@@ -708,6 +712,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	if (tls_dom) {
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSLCERT, tls_dom->cert.s);
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_api.release_domain(tls_dom);
 		tls_dom = NULL;
 	}
 
@@ -807,7 +812,10 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 cleanup:
 	clean_header_list;
-	tls_dom = NULL;
+	if (tls_dom) {
+		tls_api.release_domain(tls_dom);
+		tls_dom = NULL;
+	}
 	return -1;
 }
 
@@ -856,6 +864,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	if (tls_dom) {
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSLCERT, tls_dom->cert.s);
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_api.release_domain(tls_dom);
 		tls_dom = NULL;
 	}
 
@@ -956,7 +965,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 cleanup:
 	clean_header_list;
-	tls_dom = NULL;
+	if (tls_dom) {
+		tls_api.release_domain(tls_dom);
+		tls_dom = NULL;
+	}
 	return -1;
 }
 
@@ -1000,6 +1012,7 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	if (tls_dom) {
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSLCERT, tls_dom->cert.s);
 		w_curl_easy_setopt(sync_handle, CURLOPT_SSLKEY, tls_dom->pkey.s);
+		tls_api.release_domain(tls_dom);
 		tls_dom = NULL;
 	}
 
@@ -1099,7 +1112,10 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 cleanup:
 	clean_header_list;
-	tls_dom = NULL;
+	if (tls_dom) {
+		tls_api.release_domain(tls_dom);
+		tls_dom = NULL;
+	}
 	return -1;
 }
 
