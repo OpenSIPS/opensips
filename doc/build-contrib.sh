@@ -29,17 +29,17 @@ __LAST_REBUILD_SHA=736315e5c7f005d645883f2e968471fdaec9dda1
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 
 # be more verbose
-DEBUG=
+DEBUG=${DEBUG-}
 
 # display author emails in the resulting HTML
-SHOW_AUTHOR_EMAIL=
+SHOW_AUTHOR_EMAIL=${SHOW_AUTHOR_EMAIL-}
 
 # process all arguments (modules) supplied to build-contrib.sh in parallel
-PARALLEL_BUILD=1
+PARALLEL_BUILD=${PARALLEL_BUILD-yes}
 
 # formatting settings
-TABLE_SIZE_COMMITS=10
-TABLE_SIZE_ACTIVITY=10
+TABLE_SIZE_COMMITS=${TABLE_SIZE_COMMITS:-10}
+TABLE_SIZE_ACTIVITY=${TABLE_SIZE_ACTIVITY:-10}
 
 # Update the display name of an author, create a name-only referencing shortcut
 # or link multiple emails of an author under a single identity
