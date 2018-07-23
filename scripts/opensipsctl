@@ -2611,23 +2611,56 @@ opensips_trap() {
 		merr "'gdb' tool not found: set GDB variable to correct tool path"
 		exit
 	fi
-	DATE=`/bin/date +%Y%m%d_%H%M%S`
-	LOG_FILE=/tmp/gdb_opensips_$DATE
-	minfo "Trap file: $LOG_FILE"
-	$CTLCMD ps > $LOG_FILE
-	echo -n "Trapping OpenSIPS with gdb: "
-	PID_TIMESTAMP_VECTOR=`sed -e 's/.*PID=\([0-9]*\).*/\1/' $LOG_FILE`
-	minfo "$PID_TIMESTAMP_VECTOR"
-	for pid in $PID_TIMESTAMP_VECTOR
-	do
-		echo -n "."
-		PID=`echo $pid | cut -d '-' -f 1`
-		echo "" >> $LOG_FILE
-		echo "---start $PID -----------------------------------------------------" >> $LOG_FILE
-		$GDB opensips $PID -batch --eval-command="bt full" 2>&1 >> $LOG_FILE
-		echo "---end $PID -------------------------------------------------------" >> $LOG_FILE
+	DATE=$(/bin/date +%Y%m%d_%H%M%S)
+	LOG_PATH=/tmp
+	LOG_FILE=$LOG_PATH/gdb_opensips_$DATE
+	PID_FILE=$LOG_PATH/gdb_opensips_pid
+	>$LOG_FILE
+
+	if [ -z "$TRAP_PIDS" ]; then
+		# we cannot timeout a shell function -- run it as a subshell
+		($CTLCMD ps >$LOG_FILE; rm $PID_FILE) &
+		ctlpid=$!
+		echo $ctlpid >$PID_FILE
+		(sleep 1.5; if [ -e $PID_FILE ]; then pkill -P $ctlpid; fi) &>/dev/null &
+		killerpid=$!
+		wait $ctlpid
+		pkill -P $killerpid
+
+		if [ $(stat -c %s $LOG_FILE) -eq 0 ]; then
+			# all failed - one last desperate attempt at obtaining the pids
+			echo "opensipsctl 'ps' command timed out!"
+			osips_pids=($(pidof opensips | xargs -n1 | sort -n))
+		else
+			osips_pids=($(sed -e 's/.*PID=\([0-9]*\).*/\1/' $LOG_FILE))
+		fi
+	else
+		osips_pids=($(echo $TRAP_PIDS | xargs -n1 | sort -n))
+	fi
+
+	minfo "Trapping OpenSIPS with gdb: "
+
+	jobs=()
+	for pid in ${osips_pids[@]}; do
+		[ ! -r /proc/$pid ] && echo -n "(Bad pid: $pid) " && continue
+		BIN=$(readlink -f /proc/$pid/exe)
+
+		procline=$(ps --no-headers -ww -fp $pid)
+		echo -n "$pid "
+		echo "---start $pid ($procline)" >$LOG_FILE.$pid
+		$GDB $BIN $pid -batch --eval-command="bt full" 2>&1 >>$LOG_FILE.$pid &
+		jobs+=($!)
+	done; echo
+
+	for job in ${jobs[@]}; do wait $job; done
+
+	for file in $(find $LOG_PATH -name $(basename $LOG_FILE).* | sort -t. -k2n); do
+		cat $file >>$LOG_FILE
+		echo >>$LOG_FILE
+		rm $file
 	done
-	echo "."
+
+	minfo "Success! Trap file: $LOG_FILE"
 }
 
 #
