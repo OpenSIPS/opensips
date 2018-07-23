@@ -52,6 +52,15 @@
 
 #define CHILD_NO    8		/*!< default number of child processes started */
 
+/*! \brief maximum allowed execution time of a high-priority, graceful
+ *    shutdown job broadcast before the attendant process SIGKILLs any
+ *    remaining workers
+ */
+#define GRACEFUL_SHUTDOWN_TIMEOUT    5 /* sec */
+
+/*! \brief overall maximum shutdown time (graceful shutdown + all cleanups) */
+#define SHUTDOWN_TIMEOUT    60 /* sec */
+
 #define RT_NO 100 		/*!< routing tables number */
 #define FAILURE_RT_NO RT_NO	/*!< on_failure routing tables number */
 #define ONREPLY_RT_NO RT_NO	/*!< on_reply routing tables number */
