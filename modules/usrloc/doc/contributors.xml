@@ -1,0 +1,196 @@
+<!-- THIS IS AN AUTO-GENERATED FILE -->
+<chapter id="contributors" xreflabel="contributors">
+    <title>&contributors;</title>
+
+<section id="contrib_commit_statistics" xreflabel="contrib_commit_statistics">
+	<title>By Commit Statistics</title>
+
+	<table frame='all'><title>Top contributors by DevScore<superscript>(1)</superscript>, authored commits<superscript>(2)</superscript> and lines added/removed<superscript>(3)</superscript></title>
+	<tgroup cols='6' align='left' colsep='1' rowsep='1'>
+	<thead>
+	<row>
+	    <entry align="center"></entry>
+	    <entry align="center">Name</entry>
+	    <entry align="center">DevScore</entry>
+	    <entry align="center">Commits</entry>
+	    <entry align="center">Lines ++</entry>
+	    <entry align="center">Lines --</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>1. </entry>
+		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
+		<entry align="center">421</entry>
+		<entry align="center">117</entry>
+		<entry align="center">15689</entry>
+		<entry align="center">10095</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">215</entry>
+		<entry align="center">124</entry>
+		<entry align="center">3733</entry>
+		<entry align="center">3379</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">47</entry>
+		<entry align="center">27</entry>
+		<entry align="center">1461</entry>
+		<entry align="center">426</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
+		<entry align="center">41</entry>
+		<entry align="center">24</entry>
+		<entry align="center">1099</entry>
+		<entry align="center">413</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
+		<entry align="center">40</entry>
+		<entry align="center">29</entry>
+		<entry align="center">544</entry>
+		<entry align="center">308</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>)</entry>
+		<entry align="center">36</entry>
+		<entry align="center">25</entry>
+		<entry align="center">975</entry>
+		<entry align="center">120</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
+		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
+		<entry align="center">22</entry>
+		<entry align="center">11</entry>
+		<entry align="center">462</entry>
+		<entry align="center">356</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
+		<entry>Andrei Pelinescu-Onciul</entry>
+		<entry align="center">17</entry>
+		<entry align="center">13</entry>
+		<entry align="center">151</entry>
+		<entry align="center">91</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">17</entry>
+		<entry align="center">12</entry>
+		<entry align="center">324</entry>
+		<entry align="center">56</entry>
+	</row>
+	<row>
+		<entry>10. </entry>
+		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry align="center">12</entry>
+		<entry align="center">10</entry>
+		<entry align="center">112</entry>
+		<entry align="center">42</entry>
+	</row>
+	</tbody>
+	</tgroup>
+	</table>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Nils Ohlmeier, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Dragus, Dusan Klinec, Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Anca Vamanu, Marcus Hunger, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Jamey Hicks, Andreas Granig, Jeffrey Magder, Phil D'Amore, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), David Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon, Matthew M. Boedicker, UnixDev, Edson Gellert Schubert, Elena-Ramona Modroiu, Stephane Alnet.</para>
+	<para>
+	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
+	</para>
+	<para>
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
+	</para>
+	<para>
+	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
+	</para>
+</section>
+
+<section id="contrib_commit_activity" xreflabel="contrib_commit_activity">
+	<title>By Commit Activity</title>
+
+	<table frame='all'><title>Most recently active contributors<superscript>(1)</superscript> to this module</title>
+	<tgroup cols='3' align='left' colsep='1' rowsep='1'>
+	<thead>
+	<row>
+	    <entry align="center"></entry>
+	    <entry align="center">Name</entry>
+	    <entry align="center">Commit Activity</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Mar 2002 - Jun 2018</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jan 2013 - Jun 2018</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
+		<entry align="center">Jul 2015 - Apr 2017</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jul 2011 - Feb 2017</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">Apr 2008 - Mar 2016</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Dusan Klinec</entry>
+		<entry align="center">Dec 2015 - Dec 2015</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
+		<entry>Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>)</entry>
+		<entry align="center">Aug 2015 - Sep 2015</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
+		<entry>Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>)</entry>
+		<entry align="center">Jul 2015 - Jul 2015</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
+		<entry>David Sanders</entry>
+		<entry align="center">Oct 2014 - Oct 2014</entry>
+	</row>
+	<row>
+		<entry>10. </entry>
+		<entry>Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>)</entry>
+		<entry align="center">Aug 2014 - Aug 2014</entry>
+	</row>
+	</tbody>
+	</tgroup>
+	</table>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Stephane Alnet, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andrei Dragus, Phil D'Amore, UnixDev, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Iouri Kharon, Konstantin Bokarius, Edson Gellert Schubert, Anca Vamanu, Matthew M. Boedicker, Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Klaus Darilion, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Jamey Hicks, Nils Ohlmeier.</para>
+	<para>
+	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
+	</para>
+</section>
+
+</chapter>
+<chapter id="documentation" xreflabel="documentation">
+	<title>Documentation</title>
+<section id="documentation_contributors" xreflabel="documentation_contributors">
+	<title>Contributors</title>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Nils Ohlmeier.</para>
+</section>
+
+</chapter>
