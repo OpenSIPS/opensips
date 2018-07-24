@@ -1,0 +1,157 @@
+<!-- THIS IS AN AUTO-GENERATED FILE -->
+<chapter id="contributors" xreflabel="contributors">
+    <title>&contributors;</title>
+
+<section id="contrib_commit_statistics" xreflabel="contrib_commit_statistics">
+	<title>By Commit Statistics</title>
+
+	<table frame='all'><title>Top contributors by DevScore<superscript>(1)</superscript>, authored commits<superscript>(2)</superscript> and lines added/removed<superscript>(3)</superscript></title>
+	<tgroup cols='6' align='left' colsep='1' rowsep='1'>
+	<thead>
+	<row>
+	    <entry align="center"></entry>
+	    <entry align="center">Name</entry>
+	    <entry align="center">DevScore</entry>
+	    <entry align="center">Commits</entry>
+	    <entry align="center">Lines ++</entry>
+	    <entry align="center">Lines --</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>1. </entry>
+		<entry>Christian Schlatter</entry>
+		<entry align="center">20</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1993</entry>
+		<entry align="center">1</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">14</entry>
+		<entry align="center">12</entry>
+		<entry align="center">51</entry>
+		<entry align="center">44</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
+		<entry align="center">12</entry>
+		<entry align="center">9</entry>
+		<entry align="center">79</entry>
+		<entry align="center">83</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">8</entry>
+		<entry align="center">6</entry>
+		<entry align="center">18</entry>
+		<entry align="center">30</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">2</entry>
+		<entry align="center">47</entry>
+		<entry align="center">58</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Konstantin Bokarius</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
+		<entry>Edson Gellert Schubert</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">0</entry>
+		<entry align="center">85</entry>
+	</row>
+	</tbody>
+	</tgroup>
+	</table>
+	
+	<para>
+	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
+	</para>
+	<para>
+	    <emphasis>(2) including any documentation-related commits, excluding merge commits. Regarding imported patches/code, we do our best to count the work on behalf of the proper owner, as per the "fix_authors" and "mod_renames" arrays in opensips/doc/build-contrib.sh. If you identify any patches/commits which do not get properly attributed to you, please <ulink url="https://github.com/OpenSIPS/opensips/pulls"><citetitle>submit a pull request</citetitle></ulink></emphasis> which extends "fix_authors" and/or "mod_renames".
+	</para>
+	<para>
+	    <emphasis>(3) ignoring whitespace edits, renamed files and auto-generated files</emphasis>
+	</para>
+</section>
+
+<section id="contrib_commit_activity" xreflabel="contrib_commit_activity">
+	<title>By Commit Activity</title>
+
+	<table frame='all'><title>Most recently active contributors<superscript>(1)</superscript> to this module</title>
+	<tgroup cols='3' align='left' colsep='1' rowsep='1'>
+	<thead>
+	<row>
+	    <entry align="center"></entry>
+	    <entry align="center">Name</entry>
+	    <entry align="center">Commit Activity</entry>
+	</row>
+	</thead>
+	<tbody>
+	<row>
+		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Jan 2008 - Jun 2018</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - Jun 2018</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - Aug 2015</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
+		<entry align="center">Sep 2007 - Mar 2008</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Konstantin Bokarius</entry>
+		<entry align="center">Mar 2008 - Mar 2008</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Edson Gellert Schubert</entry>
+		<entry align="center">Feb 2008 - Feb 2008</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
+		<entry>Christian Schlatter</entry>
+		<entry align="center">Aug 2007 - Dec 2007</entry>
+	</row>
+	</tbody>
+	</tgroup>
+	</table>
+	
+	<para>
+	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
+	</para>
+</section>
+
+</chapter>
+<chapter id="documentation" xreflabel="documentation">
+	<title>Documentation</title>
+<section id="documentation_contributors" xreflabel="documentation_contributors">
+	<title>Contributors</title>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Christian Schlatter.</para>
+</section>
+
+</chapter>
