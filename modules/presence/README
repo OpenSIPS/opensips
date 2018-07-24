@@ -1,18 +1,4 @@
 Presence Module
-
-Anca-Maria Vamanu
-
-Edited by
-
-Ovidiu Sas
-
-Anca-Maria Vamanu
-
-Saul Ibarra Corretge
-
-   Copyright © 2006 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 9371 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -86,6 +72,22 @@ Saul Ibarra Corretge
         2.14. update_watchers_status
         2.15. get_sphere
         2.16. contains_presence
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -923,3 +925,88 @@ typedef int (*pres_contains_presence_t)(str* pres_uri);
    This function searches is a presence uri has published any
    presence information. It return 1 if a record is found, -1
    otherwise.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Anca Vamanu 663 247 24146 12623
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 80 59 741 790
+   3. Ovidiu Sas (@ovidiusas) 27 19 615 167
+   4. Daniel-Constantin Mierla (@miconda) 24 19 174 165
+   5. Razvan Crainea (@razvancrainea) 23 17 364 127
+   6. Henning Westerholt (@henningw) 15 6 340 302
+   7. Liviu Chircu (@liviuchircu) 13 6 147 275
+   8. Dan Pascu (@danpascu) 9 7 13 32
+   9. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
+   10. Walter Doekes (@wdoekes) 7 4 67 62
+
+   All remaining contributors: Edson Gellert Schubert, Vlad Paiu
+   (@vladpaiu), Juha Heinanen (@juha-h), Stanislaw Pitucha, Damien
+   Sandras (@dsandras), Kobi Eshun (@ekobi), Dusan Klinec, Angel
+   Marin, Klaus Darilion, Carlos Oliva, Sergio Gutierrez, Kennard
+   White, Elena-Ramona Modroiu, Vasil Kolev, Benny Prijono, James
+   Criscuolo, Vallimamod Abdullah, UnixDev, Denis Bilenko, Julián
+   Moreno Patiño, John Riordan, Julien Blache.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
+   4.  James Criscuolo                     Mar 2016 - Mar 2016
+   5.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Carlos Oliva                        Mar 2015 - Mar 2015
+   9.  Damien Sandras (@dsandras)          Aug 2013 - Jul 2013
+   10. Vlad Paiu (@vladpaiu)               Aug 2011 - May 2013
+
+   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
+   Anca Vamanu, Walter Doekes (@wdoekes), Vallimamod Abdullah,
+   Kennard White, Stanislaw Pitucha, Angel Marin, John Riordan,
+   Vasil Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi),
+   Klaus Darilion, Denis Bilenko, Henning Westerholt (@henningw),
+   Juha Heinanen (@juha-h), Dan Pascu (@danpascu),
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Julien Blache, Benny Prijono, Elena-Ramona Modroiu.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Saúl
+   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
+   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
+   Darilion, Henning Westerholt (@henningw), Dan Pascu
+   (@danpascu), Daniel-Constantin Mierla (@miconda), Edson Gellert
+   Schubert, Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
+
+   doc copyrights:
+
+   Copyright © 2006 Voice Sistem SRL

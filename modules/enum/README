@@ -1,16 +1,4 @@
 Enum Module
-
-Juha Heinanen
-
-   <jh@song.fi>
-
-Otmar Lendl
-
-   <lendl@nic.at>
-
-   Copyright © 2002, 2003 Juha Heinanen
-   Revision History
-   Revision $Revision: 5907 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -35,6 +23,22 @@ Otmar Lendl
               1.4.3. i_enum_query(["suffix"[,"service"]])
               1.4.4. isn_query(["suffix"[,"service"]])
               1.4.5. is_from_user_enum()
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -373,3 +377,77 @@ if (is_from_user_enum()) {
         ....
 };
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Juha Heinanen (@juha-h) 36 14 1681 396
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 301 96
+   3. Jan Janak (@janakj) 19 14 345 75
+   4. Daniel-Constantin Mierla (@miconda) 14 12 46 55
+   5. Liviu Chircu (@liviuchircu) 8 6 96 41
+   6. Henning Westerholt (@henningw) 8 3 14 190
+   7. Greg Fausak 6 1 493 30
+   8. Razvan Crainea (@razvancrainea) 5 3 16 16
+   9. Andrei Pelinescu-Onciul 5 3 11 7
+   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 4 29
+
+   All remaining contributors: Klaus Darilion, Konstantin
+   Bokarius, Klaus Darilion, Andreas Granig, Edson Gellert
+   Schubert, Dusan Klinec.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
+   4.  Dusan Klinec                        Dec 2015 - Dec 2015
+   5.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
+   6.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
+   7.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   8.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   9.  Henning Westerholt (@henningw)      Apr 2007 - Dec 2007
+   10. Klaus Darilion                      Sep 2007 - Sep 2007
+
+   All remaining contributors: Greg Fausak, Andreas Granig, Klaus
+   Darilion, Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Juha
+   Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Greg Fausak, Klaus
+   Darilion, Jan Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2002-2003 Juha Heinanen

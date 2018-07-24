@@ -1,22 +1,4 @@
 OSP Module for Secure, Multi-Lateral Peering
-
-Ulrich Abend
-
-   FhG FOKUS
-
-   <ullstar@iptel.org>
-
-Edited by
-
-Di-Shi Sun
-
-   TransNexus, Inc.
-
-   <support@transnexus.com>
-
-   Copyright © 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -85,6 +67,21 @@ Di-Shi Sun
               1.4.12. processsubscribe()
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -928,3 +925,77 @@ Chapter 2. Developer Guide
 
    The functions of the OSP modules are not used by other OpenSIPS
    modules.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Di-Shi Sun (@di-shi) 280 101 10368 5372
+   2. Dmitry Isakbayev 41 5 4120 159
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 30 24 217 209
+   4. Daniel-Constantin Mierla (@miconda) 15 13 81 48
+   5. Liviu Chircu (@liviuchircu) 9 7 26 37
+   6. Ancuta Onofrei 9 1 206 318
+   7. Razvan Crainea (@razvancrainea) 6 4 69 51
+   8. Henning Westerholt (@henningw) 4 2 3 3
+   9. Ovidiu Sas (@ovidiusas) 3 1 20 1
+   10. Vlad Paiu (@vladpaiu) 3 1 7 2
+
+   All remaining contributors: Konstantin Bokarius, Dan Pascu
+   (@danpascu), fabriziopicconi, Andreas Granig, Ezequiel Lovelle,
+   Julián Moreno Patiño, Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
+   4.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   7.  fabriziopicconi                     Aug 2013 - Aug 2013
+   8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   9.  Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
+   10. Dan Pascu (@danpascu)               Nov 2008 - Nov 2008
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Ancuta Onofrei, Dmitry Isakbayev, Andreas
+   Granig.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Di-Shi Sun (@di-shi), Razvan Crainea
+   (@razvancrainea), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Dmitry Isakbayev.
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

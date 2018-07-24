@@ -1,18 +1,4 @@
 UAC Registrant Module
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-Edited by
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-   Copyright © 2011-2014 VoIP Embedded, Inc.
-   Revision History
-   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -47,6 +33,22 @@ Ovidiu Sas
 
               1.5.1. reg_list
               1.5.2. reg_reload
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -339,3 +341,58 @@ _empty_line_
    MI FIFO Command Format:
 :reg_reload:_reply_fifo_file_
 _empty_line_
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Ovidiu Sas (@ovidiusas) 133 32 5468 3244
+   2. Liviu Chircu (@liviuchircu) 10 8 24 41
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 8 4
+   4. Razvan Crainea (@razvancrainea) 5 3 11 11
+   5. Nick Altmann (@nikbyte) 4 2 35 4
+   6. Vlad Paiu (@vladpaiu) 4 2 6 3
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2016
+   4. Ovidiu Sas (@ovidiusas)             Feb 2011 - Jan 2016
+   5. Nick Altmann (@nikbyte)             Nov 2015 - Dec 2015
+   6. Vlad Paiu (@vladpaiu)               Jul 2011 - Sep 2011
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas).
+
+   doc copyrights:
+
+   Copyright © 2011-2014 VoIP Embedded, Inc.

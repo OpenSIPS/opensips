@@ -1,24 +1,4 @@
 permissions Module
-
-Miklos Tirpak
-
-Edited by
-
-Miklos Tirpak
-
-Bogdan-Andrei Iancu
-
-Juha Heinanen
-
-Irina-Maria Stanescu
-
-   Copyright © 2003 Miklos Tirpak
-
-   Copyright © 2006-2008 Juha Heinanen
-
-   Copyright © 2009 Irina-Maria Stanescu
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -77,6 +57,22 @@ Irina-Maria Stanescu
               1.5.2. address_dump
               1.5.3. subnet_dump
               1.5.4. allow_uri
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -799,3 +795,89 @@ if ( get_source_group("$var(group)") ) {
        deny_suffix parameters.
      * URI - URI to be tested
      * Contact - Contact to be tested
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 97 70 668 1122
+   2. Juha Heinanen (@juha-h) 62 21 3406 729
+   3. Jan Janak (@janakj) 56 21 2871 621
+   4. Irina-Maria Stanescu 54 9 1218 1908
+   5. Razvan Crainea (@razvancrainea) 21 16 169 113
+   6. Daniel-Constantin Mierla (@miconda) 16 11 126 221
+   7. Ionut Ionita (@ionutrazvanionita) 16 4 970 175
+   8. Henning Westerholt (@henningw) 15 10 136 148
+   9. Liviu Chircu (@liviuchircu) 14 9 184 113
+   10. Andrei Pelinescu-Onciul 11 7 136 107
+
+   All remaining contributors: Miklos Tirpak, Dan Pascu
+   (@danpascu), Ancuta Onofrei, Saúl Ibarra Corretgé (@saghul),
+   Jiri Kuthan (@jiriatipteldotorg), Elena-Ramona Modroiu, Dusan
+   Klinec, Anca Vamanu, Konstantin Bokarius, Norman Brandinger
+   (@NormB), UnixDev, Andreas Granig, Baptiste Cholley, Julián
+   Moreno Patiño, Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
+   4.  Razvan Crainea (@razvancrainea)     Jan 2011 - Nov 2016
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Dusan Klinec                        Dec 2015 - Dec 2015
+   7.  Ionut Ionita (@ionutrazvanionita)   May 2015 - Nov 2015
+   8.  Baptiste Cholley                    Nov 2013 - Nov 2013
+   9.  Saúl Ibarra Corretgé (@saghul)      Nov 2011 - Jan 2012
+   10. Irina-Maria Stanescu                Sep 2009 - Dec 2009
+
+   All remaining contributors: Anca Vamanu, UnixDev, Henning
+   Westerholt (@henningw), Juha Heinanen (@juha-h),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Ancuta Onofrei, Elena-Ramona Modroiu, Norman
+   Brandinger (@NormB), Andreas Granig, Andrei Pelinescu-Onciul,
+   Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Miklos
+   Tirpak.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Razvan Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
+   Westerholt (@henningw), Juha Heinanen (@juha-h),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2009 Irina-Maria Stanescu
+
+   Copyright © 2006-2008 Juha Heinanen
+
+   Copyright © 2003 Miklos Tirpak

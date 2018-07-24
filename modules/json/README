@@ -1,16 +1,4 @@
 JSON Module
-
-Andrei Dragus
-
-   OpenSIPS Solutions
-
-Edited by
-
-Andrei Dragus
-
-   Copyright © 2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -35,6 +23,22 @@ Andrei Dragus
 
               1.5.1. json_link("$json(dest_id)",
                       "$json(source_id)")
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -328,3 +332,65 @@ xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
 
 
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Andrei Dragus 18 4 1556 12
+   2. Razvan Crainea (@razvancrainea) 11 8 42 74
+   3. Liviu Chircu (@liviuchircu) 10 8 15 34
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 24 29
+   5. Vlad Paiu (@vladpaiu) 5 3 29 11
+   6. Björn Esser 4 2 124 44
+   7. Ovidiu Sas (@ovidiusas) 4 2 17 4
+   8. Anca Vamanu 3 1 3 1
+   9. Julián Moreno Patiño 3 1 1 1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   3. Björn Esser                         Dec 2017 - Dec 2017
+   4. Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2017
+   5. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6. Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
+   7. Ovidiu Sas (@ovidiusas)             Mar 2013 - Mar 2013
+   8. Anca Vamanu                         Sep 2009 - Sep 2009
+   9. Andrei Dragus                       Sep 2009 - Sep 2009
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Andrei
+   Dragus.
+
+   doc copyrights:
+
+   Copyright © 2009 Voice Sistem SRL

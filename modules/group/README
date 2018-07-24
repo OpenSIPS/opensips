@@ -1,26 +1,4 @@
 group Module
-
-Jan Janak
-
-   FhG FOKUS
-
-Edited by
-
-Jan Janak
-
-Edited by
-
-Sergio Gutierrez
-
-Edited by
-
-Irina-Maria Stanescu
-
-   Copyright © 2003 FhG FOKUS
-
-   Copyright © 2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 5969 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -56,6 +34,22 @@ Irina-Maria Stanescu
               1.4.1. db_is_user_in(URI, group)
               1.4.2. db_get_user_group(URI, AVP)
               1.4.3. aaa_is_user_in(URI, group)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -360,3 +354,80 @@ if (aaa_is_user_in("Request-URI", "ld")) {
         ...
 };
 ...
+
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 30 847 395
+   2. Jan Janak (@janakj) 34 20 1370 148
+   3. Daniel-Constantin Mierla (@miconda) 25 18 176 226
+   4. Irina-Maria Stanescu 10 4 466 59
+   5. Liviu Chircu (@liviuchircu) 9 6 21 60
+   6. Andrei Pelinescu-Onciul 7 5 101 40
+   7. Henning Westerholt (@henningw) 7 5 27 46
+   8. Razvan Crainea (@razvancrainea) 5 3 13 11
+   9. Edson Gellert Schubert 5 1 0 206
+   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 5 1
+
+   All remaining contributors: Sergio Gutierrez, Konstantin
+   Bokarius, Norman Brandinger (@NormB), UnixDev, Anca Vamanu, Dan
+   Pascu (@danpascu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
+   4.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
+   5.  Anca Vamanu                         Sep 2009 - Sep 2009
+   6.  UnixDev                             Feb 2009 - Feb 2009
+   7.  Sergio Gutierrez                    Dec 2008 - Dec 2008
+   8.  Henning Westerholt (@henningw)      Aug 2007 - May 2008
+   9.  Daniel-Constantin Mierla (@miconda) Jul 2005 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+
+   All remaining contributors: Edson Gellert Schubert, Dan Pascu
+   (@danpascu), Norman Brandinger (@NormB), Jan Janak (@janakj),
+   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
+   Irina-Maria Stanescu, Sergio Gutierrez, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Dan Pascu (@danpascu), Jan Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2009 Voice Sistem SRL
+
+   Copyright © 2003 FhG FOKUS

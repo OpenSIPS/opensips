@@ -1,31 +1,4 @@
 textops Module
-
-Andrei Pelinescu-Onciul
-
-   FhG FOKUS
-   <pelinescu-onciul@fokus.fraunhofer.de>
-
-Edited by
-
-Andrei Pelinescu-Onciul
-
-   <pelinescu-onciul@fokus.fraunhofer.de>
-
-Edited by
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-Edited by
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-   Copyright © 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 7480 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -56,6 +29,22 @@ Ovidiu Sas
               1.3.11. subst_uri('/re/repl/flags')
               1.3.12. subst_user('/re/repl/flags')
               1.3.13. subst_body('/re/repl/flags')
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -366,3 +355,86 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 if ( subst_body('/^o=(.*) /o=$fU ') ) {};
 
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 43 440 476
+   2. Daniel-Constantin Mierla (@miconda) 40 28 938 201
+   3. Razvan Crainea (@razvancrainea) 39 3 13 1951
+   4. Andrei Dragus 32 15 1540 196
+   5. Andrei Pelinescu-Onciul 28 21 446 134
+   6. Jiri Kuthan (@jiriatipteldotorg) 18 14 293 45
+   7. Jan Janak (@janakj) 11 6 496 27
+   8. Liviu Chircu (@liviuchircu) 8 6 14 41
+   9. Juha Heinanen (@juha-h) 8 5 210 8
+   10. Elena-Ramona Modroiu 6 3 197 6
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Ovidiu Sas (@ovidiusas), Anca Vamanu, Marc Haisenko, Andreas
+   Heise, Klaus Darilion, Vlad Paiu (@vladpaiu), Andreas Granig,
+   Hugues Mitonneau, Konstantin Bokarius, Saúl Ibarra Corretgé
+   (@saghul), Edson Gellert Schubert, Maksym Sobolyev (@sobomax),
+   Christophe Sollet (@csollet).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
+   4.  Anca Vamanu                         Oct 2008 - May 2011
+   5.  Ovidiu Sas (@ovidiusas)             Dec 2010 - Jan 2011
+   6.  Christophe Sollet (@csollet)        Dec 2010 - Dec 2010
+   7.  Vlad Paiu (@vladpaiu)               Oct 2010 - Oct 2010
+   8.  Andrei Dragus                       Jul 2009 - Aug 2010
+   9.  Saúl Ibarra Corretgé (@saghul)      Apr 2010 - Apr 2010
+   10. Hugues Mitonneau                    Feb 2009 - Feb 2009
+
+   All remaining contributors: Andreas Granig, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Juha Heinanen (@juha-h),
+   Andreas Heise, Klaus Darilion, Marc Haisenko, Elena-Ramona
+   Modroiu, Andrei Pelinescu-Onciul, Jan Janak (@janakj), Maksym
+   Sobolyev (@sobomax), Jiri Kuthan (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu
+   Sas (@ovidiusas), Andrei Dragus, Anca Vamanu, Andreas Granig,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Juha Heinanen (@juha-h), Klaus Darilion, Marc
+   Haisenko, Elena-Ramona Modroiu, Jan Janak (@janakj), Maksym
+   Sobolyev (@sobomax), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul.
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

@@ -1,20 +1,4 @@
 Diversion Module
-
-Jan Janak
-
-   FhG FOKUS
-
-Edited by
-
-Jan Janak
-
-Edited by
-
-Saul Ibarra Corretge
-
-   Copyright © 2004 FhG FOKUS
-   Revision History
-   Revision $Revision: 9064 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -38,6 +22,21 @@ Saul Ibarra Corretge
         1.5. Diversion Example
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -177,3 +176,72 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
     }
 ...
 }
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 17 15 61 32
+   2. Daniel-Constantin Mierla (@miconda) 15 13 28 20
+   3. Jan Janak (@janakj) 10 4 528 13
+   4. Liviu Chircu (@liviuchircu) 7 5 8 37
+   5. Henning Westerholt (@henningw) 5 3 3 27
+   6. Saúl Ibarra Corretgé (@saghul) 4 2 74 11
+   7. Konstantin Bokarius 3 1 3 5
+   8. Razvan Crainea (@razvancrainea) 3 1 1 1
+   9. Edson Gellert Schubert 3 1 0 92
+   10. Andreas Heise 2 1 1 0
+
+   All remaining contributors: Vlad Paiu (@vladpaiu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2015
+   4.  Vlad Paiu (@vladpaiu)               Jun 2012 - Jun 2012
+   5.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Jun 2012
+   6.  Henning Westerholt (@henningw)      Apr 2007 - May 2008
+   7.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
+   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   10. Andreas Heise                       Oct 2007 - Oct 2007
+
+   All remaining contributors: Jan Janak (@janakj).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Saúl Ibarra Corretgé (@saghul),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jan Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2004 FhG FOKUS

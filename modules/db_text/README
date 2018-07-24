@@ -1,24 +1,4 @@
-DBTEXT Module
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-Edited by
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-Edited by
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-   Copyright © 2003, 2004 FhG FOKUS
-   Revision History
-   Revision $Revision: 9528 $ $Date$
+db_text Module
      __________________________________________________________
 
    Table of Contents
@@ -52,6 +32,21 @@ Daniel-Constantin Mierla
                       configuration
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -436,3 +431,78 @@ Chapter 2. Developer Guide
 
    Once you have the module loaded, you can use the API specified
    by OpenSIPS DB interface.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Daniel-Constantin Mierla (@miconda) 134 59 6126 1441
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 30 307 307
+   3. Henning Westerholt (@henningw) 25 15 252 410
+   4. Liviu Chircu (@liviuchircu) 11 8 28 65
+   5. Razvan Crainea (@razvancrainea) 10 8 99 33
+   6. Jan Janak (@janakj) 10 7 124 106
+   7. Ovidiu Sas (@ovidiusas) 6 4 51 8
+   8. Sergey Khripchenko 5 2 185 2
+   9. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
+   10. Ionut Ionita (@ionutrazvanionita) 4 2 4 2
+
+   All remaining contributors: Konstantin Bokarius, Razvan
+   Pistolea, Chris Heiser, Norman Brandinger (@NormB), Edson
+   Gellert Schubert, Dusan Klinec, Andrei Pelinescu-Onciul.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Jan 2017
+   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2016
+   5.  Dusan Klinec                        Dec 2015 - Dec 2015
+   6.  Sergey Khripchenko                  Aug 2015 - Aug 2015
+   7.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
+   8.  Razvan Pistolea                     Jul 2009 - Jul 2009
+   9.  Henning Westerholt (@henningw)      Aug 2007 - Mar 2009
+   10. Daniel-Constantin Mierla (@miconda) Feb 2003 - May 2008
+
+   All remaining contributors: Konstantin Bokarius, Chris Heiser,
+   Edson Gellert Schubert, Norman Brandinger (@NormB), Jan Janak
+   (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Sergey Khripchenko, Ovidiu Sas
+   (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
+
+   doc copyrights:
+
+   Copyright © 2003-2004 FhG FOKUS

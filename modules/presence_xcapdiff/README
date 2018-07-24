@@ -1,18 +1,4 @@
 Presence_XCAPDiff Module
-
-Denis Bilenko
-
-   <denis@ag-projects.com>
-
-Edited by
-
-Denis Bilenko
-
-   <denis@ag-projects.com>
-
-   Copyright © 2008 AG Projects
-   Revision History
-   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -24,6 +10,22 @@ Denis Bilenko
 
               1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
 Chapter 1. Admin Guide
 
@@ -68,3 +70,58 @@ Chapter 1. Admin Guide
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 6 7
+   2. Liviu Chircu (@liviuchircu) 7 5 24 29
+   3. Denis Bilenko 7 3 300 4
+   4. Dan Pascu (@danpascu) 5 1 76 120
+   5. Anca Vamanu 4 2 2 11
+   6. Razvan Crainea (@razvancrainea) 3 1 1 1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2015
+   4. Anca Vamanu                         Sep 2010 - Dec 2010
+   5. Dan Pascu (@danpascu)               Sep 2008 - Sep 2008
+   6. Denis Bilenko                       Sep 2008 - Sep 2008
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Dan Pascu (@danpascu), Denis Bilenko.
+
+   doc copyrights:
+
+   Copyright © 2008 AG Projects

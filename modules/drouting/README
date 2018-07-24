@@ -1,22 +1,4 @@
 Dynamic Routing Module
-
-Bogdan-Andrei Iancu
-
-   www.opensips-solutions.com
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-Edited by
-
-Anca-Maria Vamanu
-
-   Copyright © 2005-2008 Voice Sistem SRL
-
-   Copyright © 2009-2012 www.opensips-solutions.com
-   Revision History
-   Revision $Revision: 8834 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -78,8 +60,8 @@ Anca-Maria Vamanu
                       [gw_whitelist], [rule_attrs_pvar],
                       [gw_attrs_pvar], [carrier_attrs_pvar])
 
-              1.4.2. route_to_carrier( carriers, [gw_attrs_pvar],
-                      [carrier_attrs_pvar])
+              1.4.2. route_to_carrier(part_and_or_carrier_id,
+                      [gw_attrs_pvar], [carrier_attrs_pvar])
 
               1.4.3. route_to_gw(gw_id, [gw_attrs_pvar])
               1.4.4. use_next_gw([partition','] [rule_attrs_pvar],
@@ -112,6 +94,21 @@ Anca-Maria Vamanu
         1.7. Installation
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -270,8 +267,8 @@ Chapter 1. Admin Guide
    In DR, a gateway is defined by:
      * id (string)
      * SIP address (SIP URI)
-     * type (number to allow to group GW based on purpose, like
-       inbound, outbound, etc)
+     * type (positive integer which allows GWs to be grouped by
+       purpose, e.g. inbound, outbound, etc.)
      * strip value (number of digits) from dialled number
      * prefix (string) to be added to dialled number
      * attributes (not used by DR engine, but only pushed to
@@ -975,13 +972,13 @@ ttributes
 do_routing("2", "F", , , "$var(gw_attributes)");
 ...
 
-1.4.2.  route_to_carrier( carriers, [gw_attrs_pvar],
+1.4.2.  route_to_carrier(part_and_or_carrier_id, [gw_attrs_pvar],
 [carrier_attrs_pvar])
 
-   Function to trigger the direct routing to a given set carriers
-   (one or more). So, the routing is not done prefix based, but
-   carrier based (call will be sent to the GWs of that carrier,
-   based on carrier policy).
+   Function to trigger the direct routing to a given carrier. In
+   this case the routing is not done prefix based, but carrier
+   based (call will be sent to the GWs of that carrier, based on
+   carrier policy).
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE..
@@ -989,13 +986,12 @@ do_routing("2", "F", , , "$var(gw_attributes)");
    If you set use_partitions parameter to 1 you must supply the
    partition in which the carrier has been defined.
 
-     * carriers (mandatory):
-          + the list of carrier IDs (names), if use_partitions
-            parameter is 0; variables are accepted.
-          + the partition and the list of carrier IDs, if
+     * part_and_or_carrier_id (mandatory):
+          + the ID (name) of the carrier to be used, if
+            use_partitions parameter is 0; variables are accepted.
+          + the partition and carrier to be used, if
             use_partitions parameter is 1. The format is
-            "partition_name : carrierID, carrierID"; variables are
-            accepted.
+            "partition_name':'carrierId"; variables are accepted.
      * gw_attrs_pvar (output, optional) - a writable variable
        which will be populated with the attributes of the
        currently matched gateway of this carrier.
@@ -1006,17 +1002,8 @@ do_routing("2", "F", , , "$var(gw_attributes)");
    Example 1.34. route_to_carrier usage when use_partitions
    parameter is 0
 ...
-if ( route_to_carrier("my_top_carrier, def_carrier", , "$var(carrier_att
-)") ) {
+if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
         xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
-        t_on_failure("next_gw");
-        t_relay();
-        exit;
-}
-...
-if ( route_to_carrier("part1: carrier1, carrier2", , "$var(carrier_att)"
-) ) {
-        xlog("Routing to $var(carrier_att)\n");
         t_on_failure("next_gw");
         t_relay();
         exit;
@@ -1194,9 +1181,9 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
        otherwise it will be omitted altogether) - the name of the
        partition containing the gateway/destination to be checked.
      * type (optional) - GW/destination type to be checked; when
-       omitting this parameter or specifying a negative value i.e.
-       "-1", matching will be done against all groups (in a given
-       partition if use_partition parameter is 1; if
+       omitting this parameter or specifying a special value ("-1"
+       or "0"), matching will be done against all groups (in a
+       given partition if use_partition parameter is 1; if
        use_partitions is 1 the partition being mandatory at this
        point, it is not possible to do matching against all the
        partitions)
@@ -1254,8 +1241,8 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
        containing the destination/gw to be checked. If *(wildcard)
        operator is used all partitions shall be checked.
      * type (optional) - GW/destination type to be checked; when
-       omitting this parameter or specifying a negative value i.e.
-       "-1", matching will be done against all groups
+       omitting this parameter or specifying a special value ("-1"
+       or "0"), matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -1305,8 +1292,8 @@ if (is_from_gw("my_partition","3","1") {
      * src_avp (mandatory) - avp containing a SIP URI. Does not
        support other OpenSIPS variables.
      * type (optional) - GW/destination type to be checked; when
-       omitting this parameter or specifying a negative value i.e.
-       "-1", matching will be done against all groups
+       omitting this parameter or specifying a special value ("-1"
+       or "0"), matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -1557,3 +1544,82 @@ Chapter 2. Developer Guide
 
    The module provides no function to be used by other OpenSIPS
    modules.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 297 140 11481 3747
+   2. Razvan Crainea (@razvancrainea) 61 30 278 1516
+   3. Mihai Tiganus (@tallicamike) 48 10 3130 710
+   4. Liviu Chircu (@liviuchircu) 37 23 758 437
+   5. Vlad Paiu (@vladpaiu) 21 18 227 46
+   6. Andrei Datcu (@andrei-datcu) 20 12 551 134
+   7. Ovidiu Sas (@ovidiusas) 15 11 132 70
+   8. Ionut Ionita (@ionutrazvanionita) 14 9 370 108
+   9. Andrei Dragus 10 3 657 40
+   10. Anca Vamanu 6 4 26 12
+
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Jeremy Martinez, Dusan Klinec, Matt Lehner, Julián Moreno
+   Patiño, Sergio Gutierrez, Le Roy Christophe, Nick Altmann
+   (@nikbyte), Ozzyboshi, Walter Doekes (@wdoekes).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jul 2018
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2018
+   3.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2018
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jul 2017
+   5.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
+   6.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2017
+   7.  Jeremy Martinez                     Feb 2017 - Feb 2017
+   8.  Le Roy Christophe                   Feb 2017 - Feb 2017
+   9.  Ionut Ionita (@ionutrazvanionita)   Mar 2016 - Nov 2016
+   10. Ozzyboshi                           Jul 2016 - Jul 2016
+
+   All remaining contributors: Julián Moreno Patiño, Dusan Klinec,
+   Andrei Datcu (@andrei-datcu), Mihai Tiganus (@tallicamike),
+   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Matt Lehner,
+   Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut
+   Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
+   Vlad Paiu (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei
+   Datcu (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
+   Sergio Gutierrez.
+
+   doc copyrights:
+
+   Copyright © 2009-2012 www.opensips-solutions.com
+
+   Copyright © 2005-2008 Voice Sistem SRL

@@ -1,18 +1,4 @@
 registrar Module
-
-Jan Janak
-
-   FhG FOKUS
-
-Edited by
-
-Jan Janak
-
-Bogdan-Andrei Iancu
-
-   Copyright � 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -69,6 +55,21 @@ Bogdan-Andrei Iancu
               1.5.5. rejected_regs
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -114,9 +115,9 @@ Chapter 1. Admin Guide
      * off - stores the value of the Path headers into usrloc
        without passing it back to the UAC in the reply.
      * lazy - stores the Path header and passes it back to the UAC
-       if Path-support is indicated by the "path" param in the
+       if Path-support is indicated by the “path” param in the
        Supported HF.
-     * strict - rejects the registration with "420 Bad Extension"
+     * strict - rejects the registration with “420 Bad Extension”
        if there's a Path header but no support for it is indicated
        by the UAC. Otherwise it's stored and passed back to the
        UAC.
@@ -130,7 +131,7 @@ Chapter 1. Admin Guide
 
    The whole process is transparent to the user, so no config
    changes are required beside setting the registrar-parameters
-   "use_path" and "path_mode".
+   “use_path” and “path_mode”.
 
 1.1.2. GRUU support
 
@@ -234,7 +235,7 @@ modparam("registrar", "default_q", 1000)
    The parameter specifies the message flag to be used to control
    the module behaviour regarding TCP connections. If the flag is
    set for a REGISTER via TCP containing a TCP contact, the
-   module, via the "save()" function, will set the lifetime of the
+   module, via the “save()” function, will set the lifetime of the
    TCP connection to the contact expire value. By doing this, the
    TCP connection will stay on as long as the contact is valid.
 
@@ -487,22 +488,22 @@ modparam("registrar", "disable_gruu", 0)
           + 'p1' (Path support - lazy mode) The Path header is
             saved into usrloc, but is only included in the reply
             if path support is indicated in the registration
-            request by the "path" option of the "Supported"
+            request by the “path” option of the “Supported”
             header.
           + 'p2' (Path support - strict mode) The path header is
             only saved into usrloc, if path support is indicated
-            in the registration request by the "path" option of
-            the "Supported" header. If no path support is
-            indicated, the request is rejected with "420 - Bad
-            Extension" and the header "Unsupported: path" is
-            included in the reply along with the received "Path"
+            in the registration request by the “path” option of
+            the “Supported” header. If no path support is
+            indicated, the request is rejected with “420 - Bad
+            Extension” and the header “Unsupported: path” is
+            included in the reply along with the received “Path”
             header. This mode is the one recommended by RFC-3327.
-          + 'v' (path receiVed) if set, the "received" parameter
+          + 'v' (path receiVed) if set, the “received” parameter
             of the first Path URI of a registration is set as
             received-uri and the NAT branch flag is set for this
             contact. This is useful if the registrar is placed
             behind a SIP loadbalancer, which passes the nat'ed UAC
-            address as "received" parameter in it's Path uri.
+            address as “received” parameter in it's Path uri.
        This parameter is a string composed of a set of flags.
      * aor (optional) - Variable contain a custom AOR; if missing,
        the AOR will be taken from the default place - the TO
@@ -773,7 +774,7 @@ if (is_method("REGISTER")) {
 1.4.7.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
-   "hdr_name" which contains the description of the received
+   “hdr_name” which contains the description of the received
    socket (proto:ip:port)
 
    This makes sense only in multiple replicated servers scenarios.
@@ -814,67 +815,67 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   What happened with the old "append_branch" module parameter?
+   What happened with the old “append_branch” module parameter?
 
-   It was removed as global option, as the "lookup" function takes
+   It was removed as global option, as the “lookup” function takes
    this option via the flag "b" (append Branches) See the
-   documentation of the "lookup" function.
+   documentation of the “lookup” function.
 
    2.2.
 
-   What happened with the old "method_filtering" module parameter?
+   What happened with the old “method_filtering” module parameter?
 
-   It was removed as global option, as the "lookup" function takes
+   It was removed as global option, as the “lookup” function takes
    this option via the flag "m" (Method filtering) See the
-   documentation of the "lookup" function.
+   documentation of the “lookup” function.
 
    2.3.
 
-   What happened with the old "sock_flag" module parameter?
+   What happened with the old “sock_flag” module parameter?
 
-   It was removed as global option, as the "save" function takes
+   It was removed as global option, as the “save” function takes
    this option via the flag "s" (Socket header) See the
-   documentation of the "save" function.
+   documentation of the “save” function.
 
    2.4.
 
-   What happened with the old "use_path" and "path_mode" module
+   What happened with the old “use_path” and “path_mode” module
    parameters?
 
-   They were removed as global option, as the "save" function
+   They were removed as global option, as the “save” function
    takes these options via the flag "px" (path support) See the
-   documentation of the "save" function.
+   documentation of the “save” function.
 
    2.5.
 
-   What happened with the old "path_use_received" module
+   What happened with the old “path_use_received” module
    parameter?
 
-   It was removed as global option, as the "save" function takes
+   It was removed as global option, as the “save” function takes
    this option via the flag "v" (path receiVed) See the
-   documentation of the "save" function.
+   documentation of the “save” function.
 
    2.6.
 
-   What happened with the old "nat_flag" module parameter?
+   What happened with the old “nat_flag” module parameter?
 
    It was removed, as the module internally loads this value from
-   the "USRLOC" module (see the "nat_bflag" USRLOC parameter).
+   the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.7.
 
-   What happened with the old "use_domain" module parameter?
+   What happened with the old “use_domain” module parameter?
 
    It was removed, as the module internally loads this option from
-   the "USRLOC" module. This was done in order to simplify the
+   the “USRLOC” module. This was done in order to simplify the
    configuration.
 
    2.8.
 
-   What happened with the old "save_noreply" and "save_memory"
+   What happened with the old “save_noreply” and “save_memory”
    functions?
 
-   There functions were merged into the new "save(domain,flags)"
+   There functions were merged into the new “save(domain,flags)”
    functions. If a reply should be sent or if the DB should be
    updated also is controlled via the flags.
 
@@ -915,3 +916,94 @@ Chapter 2. Frequently Asked Questions
 
    It was removed, as its functionality was mmigrate into usrloc
    module, were there is a parameter with the same name.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 151 99 2230 1877
+   2. Jan Janak (@janakj) 121 73 3465 1102
+   3. Liviu Chircu (@liviuchircu) 44 24 615 823
+   4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
+   5. Vlad Paiu (@vladpaiu) 16 10 489 81
+   6. Razvan Crainea (@razvancrainea) 15 10 260 71
+   7. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
+   8. Ionut Ionita (@ionutrazvanionita) 15 4 763 248
+   9. Andreas Granig 13 7 527 36
+   10. Henning Westerholt (@henningw) 12 7 212 147
+
+   All remaining contributors: Andrei Pelinescu-Onciul, Ovidiu Sas
+   (@ovidiusas), Juha Heinanen (@juha-h), Nick Altmann (@nikbyte),
+   Ancuta Onofrei, Elena-Ramona Modroiu, Maksym Sobolyev
+   (@sobomax), Dan Pascu (@danpascu), Sergio Gutierrez, Carsten
+   Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus Hunger,
+   Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria
+   Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus
+   Rodrigues, Dusan Klinec, Ruslan Bukin, Saúl Ibarra Corretgé
+   (@saghul), Tolga Tarhan, Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2017
+   4.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
+   5.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Nick Altmann (@nikbyte)             Aug 2012 - Mar 2015
+   9.  Vlad Paiu (@vladpaiu)               Sep 2011 - May 2013
+   10. Tolga Tarhan                        Apr 2013 - Apr 2013
+
+   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
+   Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil
+   D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu
+   (@danpascu), Ancuta Onofrei, Marcus Hunger, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock,
+   Andreas Granig, Dmitry Semyonov, Maksym Sobolyev (@sobomax),
+   Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
+   (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
+   Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio Gutierrez,
+   Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus
+   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Carsten
+   Bock, Andreas Granig, Jan Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

@@ -1,18 +1,4 @@
 Presence_XML Module
-
-Anca-Maria Vamanu
-
-Edited by
-
-Anca-Maria Vamanu
-
-Edited by
-
-Saul Ibarra Corretge
-
-   Copyright © 2007 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 9037 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -38,6 +24,21 @@ Saul Ibarra Corretge
         1.5. Installation
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -186,3 +187,77 @@ Chapter 2. Developer Guide
 
    The module exports no function to be used in other OpenSIPS
    modules.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Anca Vamanu 124 54 4745 1776
+   2. Saúl Ibarra Corretgé (@saghul) 30 9 1499 471
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 26 22 77 126
+   4. Razvan Crainea (@razvancrainea) 10 8 28 27
+   5. Liviu Chircu (@liviuchircu) 8 6 25 51
+   6. Daniel-Constantin Mierla (@miconda) 8 6 15 14
+   7. Henning Westerholt (@henningw) 6 4 45 50
+   8. Ovidiu Sas (@ovidiusas) 3 2 6 0
+   9. Kennard White 3 1 27 11
+   10. Vlad Paiu (@vladpaiu) 3 1 20 1
+
+   All remaining contributors: Walter Doekes (@wdoekes),
+   Konstantin Bokarius, Dan Pascu (@danpascu), UnixDev, Edson
+   Gellert Schubert, Denis Bilenko.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   4.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Mar 2013
+   5.  Anca Vamanu                         Apr 2007 - Jun 2012
+   6.  Vlad Paiu (@vladpaiu)               Oct 2011 - Oct 2011
+   7.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Mar 2011
+   8.  Kennard White                       Jul 2010 - Jul 2010
+   9.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
+   10. UnixDev                             Feb 2009 - Feb 2009
+
+   All remaining contributors: Denis Bilenko, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Saúl Ibarra Corretgé (@saghul), Razvan
+   Crainea (@razvancrainea), Anca Vamanu, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu).
+
+   doc copyrights:
+
+   Copyright © 2007 Voice Sistem SRL

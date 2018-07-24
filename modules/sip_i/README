@@ -1,10 +1,4 @@
 SIP-I Module
-
-Robert-Vladut Patrascu
-
-   <vladp@opensips.org>
-
-   Copyright © 2016 OpenSIPS Project
      __________________________________________________________
 
    Table of Contents
@@ -39,6 +33,22 @@ Robert-Vladut Patrascu
 
         1.6. ISUP parameter subfields and string aliases
         1.7. Mandatory ISUP parameters
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -626,3 +636,55 @@ ators)");
           + Subsequent number
      * User-to-user information
           + User-to-user information
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 110 35 6136 1429
+   2. Razvan Crainea (@razvancrainea) 5 3 7 7
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 8 2
+   4. Liviu Chircu (@liviuchircu) 3 1 4 11
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu)     Oct 2016 - Jun 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2018 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Jun 2018 - Jun 2018
+   4. Razvan Crainea (@razvancrainea)     Feb 2017 - Apr 2017
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea).
+
+   doc copyrights:
+
+   Copyright © 2016 www.opensips-solutions.com
