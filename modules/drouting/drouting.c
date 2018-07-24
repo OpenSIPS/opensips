@@ -4977,15 +4977,19 @@ static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param
 			}
 			/* display just for given partition */
 			lock_start_read(partition->ref_lock);
+			/* take care as ctime puts an '\n' at the end of the
+			 * returned string - we will get rid of it by len-1 later */
 			ch_time = ctime(&partition->time_last_update);
 			if((ans = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
-						MI_PART_NAME_S, MI_PART_NAME_LEN, partition->partition.s,
+						MI_PART_NAME_S, MI_PART_NAME_LEN,
+						partition->partition.s,
 						partition->partition.len)) == NULL) {
 				LM_ERR("failed to add mi_node\n");
 				goto error;
 			}
-			if(add_mi_attr(ans, MI_DUP_VALUE, MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
-						ch_time, strlen(ch_time)) == NULL) {
+			if(add_mi_attr(ans, MI_DUP_VALUE,
+						MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
+						ch_time, strlen(ch_time)-1) == NULL) {
 				LM_ERR("failed to add mi_attr\n");
 				goto error;
 			}
@@ -5010,8 +5014,9 @@ static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param
 				LM_ERR("failed to add mi_node\n");
 				goto error;
 			}
-			if(add_mi_attr(ans, MI_DUP_VALUE, MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
-						ch_time, strlen(ch_time)) == NULL) {
+			if(add_mi_attr(ans, MI_DUP_VALUE,
+						MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
+						ch_time, strlen(ch_time)-1) == NULL) {
 				LM_ERR("failed to add attr to mi_node\n");
 				goto error;
 			}
@@ -5024,8 +5029,9 @@ static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param
 
 		lock_start_read(partition->ref_lock);
 		ch_time = ctime(&partition->time_last_update);
-		if((ans = add_mi_node_child(&rpl_tree->node, 0, MI_LAST_UPDATE_S,
-						MI_LAST_UPDATE_LEN, ch_time, strlen(ch_time))) == NULL) {
+		if((ans = add_mi_node_child(&rpl_tree->node, 0,
+						MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
+						ch_time, strlen(ch_time)-1)) == NULL) {
 			LM_ERR("failed to add mi_node\n");
 			goto error;
 		}
