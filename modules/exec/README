@@ -1,16 +1,4 @@
 exec Module
-
-Jiri Kuthan
-
-   FhG FOKUS
-
-Edited by
-
-Jan Janak
-
-   Copyright © 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -44,6 +32,22 @@ Jan Janak
               1.5.1. exec(command[,input[,output[,error[,env]]]])
 
         1.6. Known Issues
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -361,3 +365,82 @@ route[resume] {
    rather its parent shell, while the job is silently inherited by
    "init" and will continue to run. "/bin/dash" is one of these
    troublesome shell environments.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 43 28 633 526
+   2. Liviu Chircu (@liviuchircu) 28 19 316 303
+   3. Jiri Kuthan (@jiriatipteldotorg) 27 11 1579 152
+   4. Daniel-Constantin Mierla (@miconda) 26 19 440 131
+   5. Razvan Crainea (@razvancrainea) 16 12 306 48
+   6. Jan Janak (@janakj) 16 10 463 111
+   7. Ionut Ionita (@ionutrazvanionita) 15 7 612 117
+   8. Andrei Pelinescu-Onciul 11 8 29 105
+   9. Henning Westerholt (@henningw) 4 2 8 8
+   10. Walter Doekes (@wdoekes) 4 2 8 8
+
+   All remaining contributors: Anca Vamanu, Dan Pascu (@danpascu),
+   Elena-Ramona Modroiu, Konstantin Bokarius, Vlad Paiu
+   (@vladpaiu), Andreas Granig, Julián Moreno Patiño, Octavian
+   Cerna, Edson Gellert Schubert, Dror Wald, Vlad Patrascu
+   (@rvlad-patrascu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Feb 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
+   5.  Octavian Cerna                      Oct 2016 - Oct 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
+   8.  Walter Doekes (@wdoekes)            Mar 2014 - Sep 2015
+   9.  Vlad Paiu (@vladpaiu)               Mar 2015 - Mar 2015
+   10. Anca Vamanu                         Jan 2011 - Jan 2011
+
+   All remaining contributors: Dror Wald, Dan Pascu (@danpascu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
+   Modroiu, Andreas Granig, Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Walter Doekes (@wdoekes), Ionut Ionita
+   (@ionutrazvanionita), Razvan Crainea (@razvancrainea), Anca
+   Vamanu, Dror Wald, Dan Pascu (@danpascu), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Jan Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

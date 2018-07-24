@@ -1,14 +1,4 @@
 cpl_c Module
-
-Bogdan-Andrei Iancu
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-   Copyright © 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -54,6 +44,22 @@ Bogdan-Andrei Iancu
         1.6. Installation and Running
 
               1.6.1. Database setup
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -487,3 +493,81 @@ if ($rm=="REGISTER") {
    You can also find the complete database documentation on the
    project webpage,
    http://www.opensips.org/html/docs/db/db-schema-devel.html.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 408 169 15542 6541
+   2. Daniel-Constantin Mierla (@miconda) 18 15 80 73
+   3. Jan Janak (@janakj) 18 10 463 219
+   4. Henning Westerholt (@henningw) 16 12 108 132
+   5. Razvan Crainea (@razvancrainea) 15 9 247 213
+   6. Liviu Chircu (@liviuchircu) 12 9 59 106
+   7. Andrei Pelinescu-Onciul 10 7 107 60
+   8. Jiri Kuthan (@jiriatipteldotorg) 6 2 372 25
+   9. Elena-Ramona Modroiu 5 3 105 15
+   10. Eric Tamme (@etamme) 4 2 4 1
+
+   All remaining contributors: Dan Pascu (@danpascu), Vlad
+   Patrascu (@rvlad-patrascu), Nick Altmann (@nikbyte), Ovidiu Sas
+   (@ovidiusas), Konstantin Bokarius, Jesus Rodrigues, Norman
+   Brandinger (@NormB), Andreas Granig, Ionel Cerghit
+   (@ionel-cerghit), Julián Moreno Patiño, UnixDev, Edson Gellert
+   Schubert, Maksym Sobolyev (@sobomax).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   5.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
+   9.  Ionel Cerghit (@ionel-cerghit)      Oct 2015 - Oct 2015
+   10. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+
+   All remaining contributors: UnixDev, Dan Pascu (@danpascu),
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
+   Rodrigues, Elena-Ramona Modroiu, Norman Brandinger (@NormB),
+   Andreas Granig, Andrei Pelinescu-Onciul, Jan Janak (@janakj),
+   Jiri Kuthan (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Nick
+   Altmann (@nikbyte).
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

@@ -1,18 +1,4 @@
 Stun Module
-
-Razvan Pistolea
-
-   <razvy000@yahoo.com>
-
-Edited by
-
-Razvan Pistolea
-
-   <razvy000@yahoo.com>
-
-   Copyright © 2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision:$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -36,6 +22,22 @@ Razvan Pistolea
               1.3.2. primary_port (str)
               1.3.3. alternate_ip (str)
               1.3.4. alternate_port (str)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -188,3 +190,58 @@ modparam("stun","alternate_port","3479")
 # Listening on an alternate port, but advertising a different one
 modparam("stun", "alternate_port", "5060 / 5062")
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Razvan Pistolea 19 3 1891 19
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 13 136 128
+   3. Liviu Chircu (@liviuchircu) 17 11 257 112
+   4. Razvan Crainea (@razvancrainea) 10 8 22 17
+   5. Vlad Paiu (@vladpaiu) 6 4 21 4
+   6. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2009 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4. Razvan Crainea (@razvancrainea)     Oct 2011 - Dec 2016
+   5. Vlad Paiu (@vladpaiu)               Sep 2011 - Mar 2015
+   6. Razvan Pistolea                     Sep 2009 - Sep 2009
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Pistolea.
+
+   doc copyrights:
+
+   Copyright © 2009 Voice Sistem SRL

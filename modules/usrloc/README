@@ -1,32 +1,4 @@
 usrloc Module
-
-Jan Janak
-
-   FhG FOKUS
-   <jan@iptel.org>
-
-Liviu Chircu
-
-   OpenSIPS Solutions
-   <liviu@opensips.org>
-
-Edited by
-
-Jan Janak
-
-Bogdan-Andrei Iancu
-
-Ovidiu Sas
-
-Liviu Chircu
-
-   Copyright © 2003 FhG FOKUS
-
-   Copyright © 2005-2008 Voice Sistem SRL
-
-   Copyright © 2018 www.opensips-solutions.com
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -86,6 +58,8 @@ Liviu Chircu
               1.5.36. regen_broken_contactid (integer)
               1.5.37. latency_event_min_us (integer)
               1.5.38. latency_event_min_us_delta (integer)
+              1.5.39. shared_pinging (integer)
+              1.5.40. mi_dump_kv_store (integer)
 
         1.6. Exported Functions
         1.7. Exported MI Functions
@@ -150,6 +124,22 @@ Liviu Chircu
               2.1.16. ul_register_ulcb(type ,callback, param)
               2.1.17. ul_get_num_users()
 
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
+
    List of Examples
 
    1.1. Set nat_bflag parameter
@@ -190,6 +180,8 @@ Liviu Chircu
    1.36. Set regen_broken_contactid parameter
    1.37. Set latency_event_min_us parameter
    1.38. Set latency_event_min_us_delta parameter
+   1.39. Set shared_pinging parameter
+   1.40. Set mi_dump_kv_store parameter
 
 Chapter 1. Admin Guide
 
@@ -667,9 +659,15 @@ serlocation")
 
 1.5.25. db_mode (integer, deprecated)
 
-   Although it is backwards-compatible, this parameter has been
-   deprecated in favour of the more complete working_mode_preset,
-   which it conflicts with.
+   This parameter has been kept for backwards compatibility. It
+   acts as a working_mode_preset (which it also conflicts with),
+   overriding any cluster_mode, restart_persistency and
+   sql_write_mode settings. Possible values are:
+
+     * 0, corresponding to "single-instance-no-db" (see below)
+     * 1, corresponding to "single-instance-sql-write-through"
+     * 2, corresponding to "single-instance-sql-write-back"
+     * 3, corresponding to "sql-only"
 
    Default value is "not set".
 
@@ -679,6 +677,10 @@ modparam("usrloc", "db_mode", 2)
 ...
 
 1.5.26. working_mode_preset (string)
+
+   A pre-defined working mode for the usrloc module. Setting this
+   parameter will override any cluster_mode, restart_persistency
+   and sql_write_mode settings.
 
      * "single-instance-no-db" - This disables database
        completely. Only memory will be used. Contacts will not
@@ -734,7 +736,8 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
 
 1.5.27. cluster_mode (string)
 
-   This parameter is automatically set by working_mode_preset.
+   This parameter will get overridden if either
+   working_mode_preset or db_mode are set.
 
    The behavior of the global OpenSIPS user location cluster.
    Refer to section Distributed SIP User Location for details.
@@ -757,6 +760,8 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
        in order to be able to partition and spread the pinging
        workload evenly among participating OpenSIPS nodes.
        Consequently, the location_cluster parameter is mandatory.
+     * "sql-only" - Multiple OpenSIPS boxes using a common db_url
+       without necessarily being aware of each other.
 
    Default value is none (single instance mode).
 
@@ -767,7 +772,8 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 
 1.5.28. restart_persistency (string)
 
-   This parameter is automatically set by working_mode_preset.
+   This parameter will get overridden if either
+   working_mode_preset or db_mode are set.
 
    Controls the behavior of OpenSIPS user location instance
    following a restart. This parameter has no effect in some
@@ -801,7 +807,8 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 
 1.5.29. sql_write_mode (string)
 
-   This parameter is automatically set by working_mode_preset.
+   This parameter will get overridden if either
+   working_mode_preset or db_mode are set.
 
    Only valid if restart_persistency is enabled. Controls the
    runtime behavior of OpenSIPS writes to the SQL database.
@@ -983,6 +990,41 @@ modparam("usrloc", "latency_event_min_us", 425000)
 ...
 # raise an event only if a contact has pinging latency swings of 300+ ms
 modparam("usrloc", "latency_event_min_us_delta", 300000)
+...
+
+1.5.39. shared_pinging (integer)
+
+   Only relevant in a "full sharing" or "full sharing cachedb"
+   cluster_mode. If set to non-zero, the overall pinging workload
+   will be equally spread across cluster nodes with the help of
+   the clustering layer that keeps track of the current number of
+   active nodes.
+
+   Disabling this parameter may be useful in simple active/backup
+   setups, where only the active node must perform the pinging.
+
+   Default value is “1 (enabled)”.
+
+   Example 1.39. Set shared_pinging parameter
+...
+# do not partition the pinging workload across cluster nodes
+modparam("usrloc", "shared_pinging", 0)
+...
+
+1.5.40. mi_dump_kv_store (integer)
+
+   Enable in order to include the "KV-Store" field in all usrloc
+   MI commands which output AoR or Contact representations. This
+   verbose field contains custom data attached to each of these
+   two entities. mid_registrar makes use of both of these holders,
+   for example.
+
+   Default value is “0 (disabled)”.
+
+   Example 1.40. Set mi_dump_kv_store parameter
+...
+# include the "KV-Store" key in all usrloc MI output
+modparam("usrloc", "mi_dump_kv_store", 1)
 ...
 
 1.6. Exported Functions
@@ -1413,3 +1455,100 @@ is_replicated)
 
    The function loops through all domains summing up the number of
    users.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Jan Janak (@janakj) 421 117 15689 10095
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 229 135 3955 3484
+   3. Liviu Chircu (@liviuchircu) 195 117 5740 1823
+   4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
+   5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
+   6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
+   7. Vlad Patrascu (@rvlad-patrascu) 22 13 396 269
+   8. Henning Westerholt (@henningw) 22 11 462 356
+   9. Razvan Crainea (@razvancrainea) 20 15 330 70
+   10. Andrei Pelinescu-Onciul 17 13 151 91
+
+   All remaining contributors: Vlad Paiu (@vladpaiu), Nils
+   Ohlmeier, Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
+   (@ovidiusas), Ionel Cerghit (@ionel-cerghit), Maksym Sobolyev
+   (@sobomax), Andrei Dragus, Dusan Klinec, Andrei Datcu
+   (@andrei-datcu), Juha Heinanen (@juha-h), Anca Vamanu, Marcus
+   Hunger, Jamey Hicks, Andreas Granig, Shlomi Gutman, @jalung,
+   Jeffrey Magder, Phil D'Amore, Norman Brandinger (@NormB), David
+   Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon,
+   Matthew M. Boedicker, UnixDev, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Stephane Alnet.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   5.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   6.  @jalung                             Aug 2017 - Aug 2017
+   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2017
+   8.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
+   9.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
+   10. Ovidiu Sas (@ovidiusas)             Apr 2008 - Mar 2016
+
+   All remaining contributors: Dusan Klinec, Eseanu Marius
+   Cristian (@eseanucristian), David Sanders, Andrei Datcu
+   (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
+   UnixDev, Daniel-Constantin Mierla (@miconda), Henning
+   Westerholt (@henningw), Iouri Kharon, Konstantin Bokarius,
+   Edson Gellert Schubert, Anca Vamanu, Matthew M. Boedicker,
+   Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman
+   Brandinger (@NormB), Andreas Granig, Juha Heinanen (@juha-h),
+   Klaus Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
+   Jiri Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax),
+   Jamey Hicks, Nils Ohlmeier.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
+   (@ovidiusas), Andrei Datcu (@andrei-datcu), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Marcus Hunger, Elena-Ramona
+   Modroiu, Juha Heinanen (@juha-h), Jan Janak (@janakj), Maksym
+   Sobolyev (@sobomax), Nils Ohlmeier.
+
+   doc copyrights:
+
+   Copyright © 2018 www.opensips-solutions.com
+
+   Copyright © 2005-2008 Voice Sistem SRL
+
+   Copyright © 2003 FhG FOKUS

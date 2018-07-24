@@ -1,26 +1,4 @@
 pua dialoginfo
-
-Anca-Maria Vamanu
-
-Edited by
-
-Anca-Maria Vamanu
-
-Klaus Darilion
-
-Klaus Darilion
-
-Ovidiu Sas
-
-Ovidiu Sas
-
-   Copyright © 2006 Voice Sistem SRL
-
-   Copyright © 2008 Klaus Darilion IPCom
-
-   Copyright © 2014 VoIP Embedded, Inc.
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -49,6 +27,22 @@ Ovidiu Sas
         1.4. Exported Functions
 
               1.4.1. dialoginfo_set([side])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -467,3 +461,79 @@ modparam("pua_dialoginfo", "osips_ps", 0)
                 if($ru =~ "opensips.org")
                         dialoginfo_set();
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Anca Vamanu 27 16 713 231
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 17 14 93 83
+   3. Liviu Chircu (@liviuchircu) 11 8 42 74
+   4. Klaus Darilion 10 1 1109 0
+   5. Razvan Crainea (@razvancrainea) 8 6 11 15
+   6. Ovidiu Sas (@ovidiusas) 7 5 104 9
+   7. Vallimamod Abdullah 5 2 97 75
+   8. Damien Sandras (@dsandras) 4 2 93 1
+   9. Vlad Paiu (@vladpaiu) 4 2 29 15
+   10. Walter Doekes (@wdoekes) 4 2 19 8
+
+   All remaining contributors: Stanislaw Pitucha, Vlad Patrascu
+   (@rvlad-patrascu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   5.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
+   6.  Damien Sandras (@dsandras)          Jul 2013 - Aug 2013
+   7.  Vlad Paiu (@vladpaiu)               Aug 2011 - Aug 2011
+   8.  Anca Vamanu                         Jul 2009 - Mar 2011
+   9.  Vallimamod Abdullah                 Oct 2010 - Jan 2011
+   10. Stanislaw Pitucha                   Jul 2010 - Jul 2010
+
+   All remaining contributors: Walter Doekes (@wdoekes), Klaus
+   Darilion.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea), Ovidiu Sas (@ovidiusas), Damien
+   Sandras (@dsandras), Vallimamod Abdullah, Anca Vamanu, Walter
+   Doekes (@wdoekes), Klaus Darilion.
+
+   doc copyrights:
+
+   Copyright © 2014 VoIP Embedded, Inc.
+
+   Copyright © 2008 Klaus Darilion IPCom
+
+   Copyright © 2006 Voice Sistem SRL

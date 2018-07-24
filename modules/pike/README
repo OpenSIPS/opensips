@@ -1,16 +1,4 @@
 pike Module
-
-Bogdan-Andrei Iancu
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-   Copyright © 2003 FhG FOKUS
-
-   Copyright © 2005-2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -46,6 +34,21 @@ Bogdan-Andrei Iancu
               1.7.1. E_PIKE_BLOCKED
 
    2. Developer Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -307,3 +310,82 @@ tree root /                  \ 142
 
    So, for IPv4 (n = 4) will be 3x and for IPv6 (n = 16) will be
    9x. The minimum number of hits to turn an address red is x.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 136 55 4148 2663
+   2. Andrei Pelinescu-Onciul 16 8 120 336
+   3. Daniel-Constantin Mierla (@miconda) 11 9 24 20
+   4. Liviu Chircu (@liviuchircu) 11 8 28 66
+   5. Razvan Crainea (@razvancrainea) 9 7 89 15
+   6. Jan Janak (@janakj) 9 4 386 34
+   7. Jiri Kuthan (@jiriatipteldotorg) 6 3 257 0
+   8. Jarrod Baumann (@jarrodb) 5 3 111 22
+   9. Henning Westerholt (@henningw) 4 2 2 2
+   10. Vlad Patrascu (@rvlad-patrascu) 4 2 2 1
+
+   All remaining contributors: Elena-Ramona Modroiu, Ancuta
+   Onofrei, Konstantin Bokarius, Julián Moreno Patiño, Jesus
+   Rodrigues, Norman Brandinger (@NormB), Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     May 2011 - Jan 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2015
+   7.  Norman Brandinger (@NormB)          Aug 2013 - Aug 2013
+   8.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
+   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Jesus Rodrigues, Ancuta Onofrei, Elena-Ramona Modroiu, Andrei
+   Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
+   (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
+   Patrascu (@rvlad-patrascu), Julián Moreno Patiño, Jarrod
+   Baumann (@jarrodb), Norman Brandinger (@NormB),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Elena-Ramona Modroiu, Jan
+   Janak (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2005-2009 Voice Sistem SRL
+
+   Copyright © 2003 FhG FOKUS

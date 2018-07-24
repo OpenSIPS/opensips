@@ -1,18 +1,4 @@
 event_flatstore Module
-
-Ionel Cerghit
-
-   OpenSIPS Solutions
-
-Marius Cristian Eseanu
-
-   OpenSIPS Solutions
-
-Robert-Vladut Patrascu
-
-   OpenSIPS Solutions
-
-   Copyright © 2015 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -36,6 +22,22 @@ Robert-Vladut Patrascu
         1.7. Exported MI Functions
 
               1.7.1. evi_flat_rotate
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -138,3 +140,60 @@ modparam("event_flatstore", "file_permissions", "664")
    MI FIFO Command Format:
                 :evi_flat_rotate:_path_to_log_file_
                 _empty_line_
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Ionel Cerghit (@ionel-cerghit) 23 13 770 135
+   2. Vlad Patrascu (@rvlad-patrascu) 15 10 238 120
+   3. Liviu Chircu (@liviuchircu) 11 8 30 62
+   4. Eseanu Marius Cristian (@eseanucristian) 6 3 254 9
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 6 4
+   6. Razvan Crainea (@razvancrainea) 4 2 8 2
+   7. Maksym Sobolyev (@sobomax) 2 1 1 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                        Name                     Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)              Jan 2016 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - Feb 2018
+   4. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2017
+   5. Razvan Crainea (@razvancrainea)          Aug 2015 - Jan 2016
+   6. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
+   7. Eseanu Marius Cristian (@eseanucristian) Jun 2015 - Jul 2015
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionel Cerghit (@ionel-cerghit).
+
+   doc copyrights:
+
+   Copyright © 2015 www.opensips-solutions.com

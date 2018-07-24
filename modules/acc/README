@@ -1,24 +1,4 @@
 Acc Module
-
-Jiri Kuthan
-
-Bogdan-Andrei Iancu
-
-Ramona-Elena Modroiu
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-Irina-Maria Stanescu
-
-   Copyright © 2002-2003, 2003 FhG FOKUS
-
-   Copyright © 2004-2009 Voice Sistem SRL
-
-   Copyright © 2009-2013 OpenSIPS Solutions
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -99,6 +79,21 @@ Irina-Maria Stanescu
               1.10.3. E_ACC_MISSED_EVENT
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -996,3 +991,95 @@ Chapter 2. Frequently Asked Questions
 
    Please follow the guidelines provided at:
    https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 218 103 4144 4534
+   2. Jan Janak (@janakj) 151 16 5587 5074
+   3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
+   4. Razvan Crainea (@razvancrainea) 73 48 2390 300
+   5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
+   6. Liviu Chircu (@liviuchircu) 33 24 347 301
+   7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
+   8. Elena-Ramona Modroiu 23 4 2267 5
+   9. Henning Westerholt (@henningw) 20 15 184 131
+   10. Vlad Paiu (@vladpaiu) 17 11 129 208
+
+   All remaining contributors: Irina-Maria Stanescu, Maksym
+   Sobolyev (@sobomax), Karel Kozlik, Andrei Pelinescu-Onciul,
+   Vlad Patrascu (@rvlad-patrascu), Juha Heinanen (@juha-h),
+   Elena-Ramona Modroiu, Dan Pascu (@danpascu), Ryan Bullock
+   (@rrb3942), Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter
+   Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus
+   Rodrigues, Julien Blache, Julián Moreno Patiño, Dusan Klinec,
+   Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2018
+   5.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
+   9.  Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
+   10. Irina-Maria Stanescu                Aug 2009 - Sep 2009
+
+   All remaining contributors: Alex Massover, Sergio Gutierrez,
+   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Jesus Rodrigues, Julien Blache, Peter Nixon, Maksym
+   Sobolyev (@sobomax), Juha Heinanen (@juha-h), Jan Janak
+   (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel
+   Kozlik.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut
+   Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
+   Ryan Bullock (@rrb3942), Irina-Maria Stanescu, Sergio
+   Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Jan Janak (@janakj), Maksym Sobolyev
+   (@sobomax), Elena-Ramona Modroiu.
+
+   doc copyrights:
+
+   Copyright © 2009-2013 OpenSIPS Solutions
+
+   Copyright © 2004-2009 Voice Sistem SRL
+
+   Copyright © 2002-2003 FhG FOKUS

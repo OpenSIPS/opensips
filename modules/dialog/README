@@ -1,16 +1,4 @@
 dialog Module
-
-Bogdan-Andrei Iancu
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-Vladut-Stefan Paiu
-
-   Copyright © 2006-2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8771 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -153,6 +141,21 @@ Vladut-Stefan Paiu
                       free_param_cb)
 
    3. Frequently Asked Questions
+   4. Contributors
+
+        4.1. By Commit Statistics
+        4.2. By Commit Activity
+
+   5. Documentation
+
+        5.1. Contributors
+
+   List of Tables
+
+   4.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   4.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -2018,3 +2021,99 @@ Chapter 3. Frequently Asked Questions
 
    Please follow the guidelines provided at:
    https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 4. Contributors
+
+4.1. By Commit Statistics
+
+   Table 4.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 390 245 11733 2926
+   2. Vlad Paiu (@vladpaiu) 236 134 6171 2950
+   3. Razvan Crainea (@razvancrainea) 123 92 2621 551
+   4. Liviu Chircu (@liviuchircu) 85 58 2039 607
+   5. Vlad Patrascu (@rvlad-patrascu) 84 44 2105 1235
+   6. Ovidiu Sas (@ovidiusas) 27 21 482 107
+   7. Dan Pascu (@danpascu) 26 22 160 106
+   8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
+   9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
+   10. Henning Westerholt (@henningw) 16 10 172 187
+
+   All remaining contributors: Anca Vamanu, Ionut Ionita
+   (@ionutrazvanionita), Andrei Dragus, Ionel Cerghit
+   (@ionel-cerghit), Walter Doekes (@wdoekes), John Riordan,
+   Hugues Mitonneau, Carsten Bock, Jerome Martin, Klaus Darilion,
+   Jarrod Baumann (@jarrodb), Michel Bensoussan, Richard Revels,
+   Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
+   (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy Pyles,
+   Julián Moreno Patiño, Konstantin Bokarius, Alex Massover,
+   Damien Sandras (@dsandras), Alex Hermann, Dusan Klinec, Norman
+   Brandinger (@NormB), UnixDev, Eliot Gable, Ryan Bullock
+   (@rrb3942), Nick Altmann (@nikbyte), Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+4.2. By Commit Activity
+
+   Table 4.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jun 2018
+   5.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
+   6.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
+   7.  Vlad Paiu (@vladpaiu)               Oct 2010 - Aug 2016
+   8.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2016
+   9.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2016
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+
+   All remaining contributors: Dusan Klinec, Walter Doekes
+   (@wdoekes), Eseanu Marius Cristian (@eseanucristian), Andrei
+   Datcu (@andrei-datcu), Nick Altmann (@nikbyte), Norman
+   Brandinger (@NormB), Damien Sandras (@dsandras), Ryan Bullock
+   (@rrb3942), Anca Vamanu, Alex Massover, Andrei Dragus, John
+   Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Dan Pascu
+   (@danpascu), Alex Hermann, Henning Westerholt (@henningw),
+   Carsten Bock, Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jerome
+   Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable, Andy
+   Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 5. Documentation
+
+5.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Ionel Cerghit
+   (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
+   Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
+   Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
+   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Dan Pascu (@danpascu), Michel Bensoussan,
+   Andy Pyles, Elena-Ramona Modroiu.
+
+   doc copyrights:
+
+   Copyright © 2006-2009 Voice Sistem SRL

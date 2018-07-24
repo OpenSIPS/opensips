@@ -1,19 +1,4 @@
-LOCALCACHE
-
-Anca-Maria Vamanu
-
-   OpenSIPS
-
-Edited by
-
-Anca-Maria Vamanu
-
-Vladut-Stefan Paiu
-
-   Copyright © 2009 Anca-Maria
-   Vamanu
-   Revision History
-   Revision $Revision: 5901 $ $Date$
+cachedb_local Module
      __________________________________________________________
 
    Table of Contents
@@ -35,6 +20,21 @@ Vladut-Stefan Paiu
               1.3.5. Exported MI Functions
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -188,3 +188,71 @@ Chapter 2. Frequently Asked Questions
    it has a default size of 512. The size can be changed by
    setting the default collection size using cache_collections
    paramter.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu) 33 10 1155 693
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 40 46
+   3. Anca Vamanu 12 5 739 54
+   4. Liviu Chircu (@liviuchircu) 11 8 23 61
+   5. Andrei Dragus 10 4 182 181
+   6. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
+   7. Razvan Crainea (@razvancrainea) 4 2 5 5
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
+   9. Dusan Klinec 3 1 4 4
+   10. Ryan Bullock (@rrb3942) 3 1 2 4
+
+   All remaining contributors: Julián Moreno Patiño.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
+   5.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Ryan Bullock (@rrb3942)             Jan 2014 - Jan 2014
+   9.  Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2013
+   10. Andrei Dragus                       Jul 2009 - Jul 2009
+
+   All remaining contributors: Anca Vamanu.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Vlad
+   Paiu (@vladpaiu).
+
+   doc copyrights:
+
+   Copyright © 2009 Anca-Maria Vamanu

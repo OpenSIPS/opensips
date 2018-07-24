@@ -1,26 +1,4 @@
 oracle Module
-
-Iouri Kharon
-
-   <yjh@styx.cabel.net>
-
-Yury Skandarov
-
-   <kandman@trunkmobile.com>
-
-Iakov Kharon
-
-   <jyh@trunkmobile.com>
-
-Edited by
-
-Iouri Kharon
-
-   <yjh@styx.cabel.net>
-
-   Copyright © 2007,2008 TRUNK MOBILE, INC.
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -41,6 +19,22 @@ Iouri Kharon
         1.4. Exported Functions
         1.5. Installation
         1.6. Utility opensips_orasel
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -138,3 +132,73 @@ modparam("db_oracle", "reconnect", 0.5)
    addition, this utility known about the "agreements and types"
    in DB that are used in OpenSIPS for the work with Oracle and
    formats printing taking these into account.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Iouri Kharon 20 1 2363 0
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 11 63 68
+   3. Liviu Chircu (@liviuchircu) 10 7 22 64
+   4. Razvan Crainea (@razvancrainea) 6 4 100 31
+   5. Peter Lemenkov (@lemenkov) 6 4 40 4
+   6. Henning Westerholt (@henningw) 5 3 19 7
+   7. fabriziopicconi 3 1 18 2
+   8. Ovidiu Sas (@ovidiusas) 3 1 12 12
+   9. Sergio Gutierrez 3 1 4 1
+   10. Julián Moreno Patiño 3 1 2 2
+
+   All remaining contributors: Razvan Pistolea, Vlad Patrascu
+   (@rvlad-patrascu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
+   6.  fabriziopicconi                     Jun 2013 - Jun 2013
+   7.  Peter Lemenkov (@lemenkov)          Aug 2012 - Aug 2012
+   8.  Ovidiu Sas (@ovidiusas)             Jun 2012 - Jun 2012
+   9.  Razvan Pistolea                     Jul 2009 - Jul 2009
+   10. Sergio Gutierrez                    Feb 2009 - Feb 2009
+
+   All remaining contributors: Henning Westerholt (@henningw),
+   Iouri Kharon.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Henning Westerholt (@henningw), Iouri
+   Kharon.
+
+   doc copyrights:
+
+   Copyright © 2007-2008 TRUNK MOBILE, INC.
