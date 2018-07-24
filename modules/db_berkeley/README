@@ -1,16 +1,4 @@
 Berkeley DB Module
-
-Will Quan
-
-   Cisco Systems
-
-Edited by
-
-Will Quan
-
-   Copyright © 2007 Cisco Systems
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -43,6 +31,22 @@ Will Quan
         1.12. DB Maintaince Script : opensipsdbctl
         1.13. DB Recovery : bdb_recover
         1.14. Known Limitations
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -472,3 +476,75 @@ possible
    sequence) mechanism. Consequently, this version does not
    support surragate keys in dbschema. These are the id columns in
    the tables.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. William Quan 38 1 4682 0
+   2. Henning Westerholt (@henningw) 26 10 381 688
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 19 148 170
+   4. Anonymous 17 4 681 341
+   5. Daniel-Constantin Mierla (@miconda) 10 8 47 30
+   6. Razvan Crainea (@razvancrainea) 9 7 87 27
+   7. Liviu Chircu (@liviuchircu) 6 4 7 54
+   8. Andrei Dragus 5 1 135 103
+   9. Jan Janak (@janakj) 3 1 4 2
+   10. Konstantin Bokarius 3 1 2 5
+
+   All remaining contributors: Razvan Pistolea, Walter Doekes
+   (@wdoekes), Edson Gellert Schubert, Ovidiu Sas (@ovidiusas).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2016
+   4.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   5.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Oct 2010
+   6.  Andrei Dragus                       Oct 2009 - Oct 2009
+   7.  Razvan Pistolea                     Jul 2009 - Jul 2009
+   8.  Jan Janak (@janakj)                 Feb 2009 - Feb 2009
+   9.  Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
+   10. Henning Westerholt (@henningw)      Oct 2007 - Mar 2008
+
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Anonymous, William Quan.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Anonymous,
+   William Quan.
+
+   doc copyrights:
+
+   Copyright © 2007 Cisco Systems

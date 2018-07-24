@@ -1,16 +1,4 @@
 mmgeoip Module
-
-Kobi Eshun
-
-   SightSpeed, Inc.
-
-Edited by
-
-Kobi Eshun
-
-   Copyright © 2008 SightSpeed, Inc.
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -33,6 +21,22 @@ Kobi Eshun
               1.4.1. mmg_lookup([fields,]src,dst)
 
         1.5. Known Issues
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -139,3 +143,61 @@ if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
 
    It is not currently possible to load an updated location
    database without first stalling the server.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 31 24
+   2. Kobi Eshun (@ekobi) 8 3 480 4
+   3. Liviu Chircu (@liviuchircu) 6 4 7 28
+   4. Razvan Crainea (@razvancrainea) 5 3 6 5
+   5. Sergio Gutierrez 4 2 5 3
+   6. Ionut Ionita (@ionutrazvanionita) 3 1 84 1
+   7. Anca Vamanu 3 1 6 2
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Ionut Ionita (@ionutrazvanionita)   May 2016 - May 2016
+   4. Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
+   5. Kobi Eshun (@ekobi)                 Nov 2008 - Dec 2009
+   6. Anca Vamanu                         Sep 2009 - Sep 2009
+   7. Sergio Gutierrez                    Nov 2008 - Nov 2008
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Kobi
+   Eshun (@ekobi).
+
+   doc copyrights:
+
+   Copyright © 2008 SightSpeed, Inc.

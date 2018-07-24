@@ -1,17 +1,4 @@
 Seas Module
-
-Elias Baixas
-
-   VozTelecom Sistemas
-   www.wesip.eu
-
-   Ronda Can Fatjo, 9, 1p Parc Tecnologic del Valles Cerdanyola, 0
-   8520 (SPAIN)
-     Phone:+34 933968800
-     www.voztele.com
-     <elias.baixas@voztele.com>
-
-   Copyright © 2006 VozTelecom Sistemas
      __________________________________________________________
 
    Table of Contents
@@ -44,6 +31,15 @@ Elias Baixas
               2.2.1. The SEAS protocol
               2.2.2. General codification of a header
 
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
    List of Figures
 
    1.1. SipServlet UML diagram
@@ -61,6 +57,13 @@ Elias Baixas
    2.12. SEAS Headers Index section overview
    2.13. SEAS SIP-Message codification
    2.14. Different kinds of SEAS codified Events and Actions
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -1371,3 +1374,76 @@ Chapter 2. Developer Guide
    JAIN SIP Stack by passing it a Seas Incoming Response with a
    flag called Faked Reply, and a Response code number 408
    (Request Timeout).
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Elias Baixas 123 12 12255 736
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 54 36 719 663
+   3. Daniel-Constantin Mierla (@miconda) 49 8 1085 1773
+   4. Razvan Crainea (@razvancrainea) 14 9 138 133
+   5. Liviu Chircu (@liviuchircu) 12 8 67 121
+   6. Anca Vamanu 11 2 332 302
+   7. Henning Westerholt (@henningw) 10 6 25 115
+   8. Andrei Pisau 4 2 45 4
+   9. Stephane Alnet 3 1 6 3
+   10. Vlad Paiu (@vladpaiu) 3 1 6 3
+
+   All remaining contributors: Konstantin Bokarius, Dan Pascu
+   (@danpascu), Ionut Ionita (@ionutrazvanionita), John Riordan,
+   Sergio Gutierrez, Edson Gellert Schubert, Stanislaw Pitucha.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2016
+   4.  Stephane Alnet                      Nov 2016 - Nov 2016
+   5.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
+   6.  Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
+   7.  Stanislaw Pitucha                   Jul 2010 - Jul 2010
+   8.  Anca Vamanu                         Oct 2007 - Sep 2009
+   9.  John Riordan                        May 2009 - May 2009
+   10. Sergio Gutierrez                    Mar 2009 - Mar 2009
+
+   All remaining contributors: Dan Pascu (@danpascu), Andrei
+   Pisau, Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Elias
+   Baixas.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elias Baixas.
+
+   doc copyrights:
+
+   Copyright © 2006 VozTelecom Sistemas

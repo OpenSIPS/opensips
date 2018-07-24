@@ -1,13 +1,4 @@
 LDAP Module
-
-Christian Schlatter
-
-   University of North Carolina
-   <cs@unc.edu>
-
-   Copyright © 2007 University of North Carolina
-   Revision History
-   Revision 0.9 05-17-2007
      __________________________________________________________
 
    Table of Contents
@@ -75,11 +66,23 @@ Christian Schlatter
         2.3. Example Usage
 
    Resources
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
 
    List of Tables
 
    1.1. RFC 4515 Escaping Rules
    1.2. ldap_filter_url_encode() escaping rules
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -1343,3 +1346,75 @@ Resources
 
    [H.350.4] Directory services architecture for SIP. August 2003.
    ITU-T.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Christian Schlatter 57 6 5764 237
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 22 17 130 125
+   3. Ionut Ionita (@ionutrazvanionita) 21 5 1359 252
+   4. Daniel-Constantin Mierla (@miconda) 12 9 84 83
+   5. Razvan Crainea (@razvancrainea) 8 5 48 67
+   6. Liviu Chircu (@liviuchircu) 7 5 9 50
+   7. Razvan Pistolea 4 1 39 66
+   8. Anca Vamanu 3 1 14 14
+   9. Dusan Klinec 3 1 6 3
+   10. Henning Westerholt (@henningw) 3 1 4 2
+
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Jan 2017
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
+   5.  Dusan Klinec                        Dec 2015 - Dec 2015
+   6.  Anca Vamanu                         Sep 2009 - Sep 2009
+   7.  Razvan Pistolea                     Sep 2009 - Sep 2009
+   8.  Henning Westerholt (@henningw)      Jun 2008 - Jun 2008
+   9.  Daniel-Constantin Mierla (@miconda) Sep 2007 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+
+   All remaining contributors: Edson Gellert Schubert, Christian
+   Schlatter.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Razvan Crainea (@razvancrainea), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Christian Schlatter.
+
+   doc copyrights:
+
+   Copyright © 2007 University of North Carolina

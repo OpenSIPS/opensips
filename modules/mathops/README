@@ -1,21 +1,4 @@
 mathops Module
-
-Liviu Chircu
-
-   OpenSIPS Solutions
-   <liviu@opensips.org>
-
-Edited by
-
-Liviu Chircu
-
-Edited by
-
-Stephane Alnet
-
-   Copyright © 2013 www.opensips-solutions.com
-   Revision History
-   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -41,6 +24,22 @@ Stephane Alnet
               1.4.5. math_ceil(number, result_pvar)
               1.4.6. math_round(number, result_pvar[, decimals])
               1.4.7. math_round_sf(number, result_pvar, figures)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -357,3 +356,59 @@ if (math_round_sf("$avp(1)", "$avp(result)", "4")) {
 }
 
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu) 21 9 1340 52
+   2. Ryan Bullock (@rrb3942) 9 1 552 160
+   3. Stephane Alnet 6 2 327 36
+   4. Razvan Crainea (@razvancrainea) 5 3 28 28
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
+   6. Julián Moreno Patiño 3 1 3 3
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Feb 2013 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2016
+   4. Ryan Bullock (@rrb3942)             Feb 2016 - Feb 2016
+   5. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6. Stephane Alnet                      Nov 2013 - Nov 2013
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ryan Bullock (@rrb3942), Julián Moreno
+   Patiño, Stephane Alnet.
+
+   doc copyrights:
+
+   Copyright © 2013 www.opensips-solutions.com

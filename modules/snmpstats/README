@@ -1,17 +1,5 @@
 SNMPStats Module (Simple Network Management Protocal Statistic
 Module)
-
-Jeffrey Magder
-
-   SOMA Networks, Inc.
-
-Edited by
-
-Jeffrey Magder
-
-   Copyright © 2006 SOMA Networks, Inc.
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -58,6 +46,21 @@ Jeffrey Magder
               1.6.4. Testing for a proper Configuration
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -681,3 +684,78 @@ theTableName
 
    Please follow the guidelines provided at:
    https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Jeffrey Magder 110 4 13157 64
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 51 36 518 526
+   3. Ovidiu Sas (@ovidiusas) 14 3 6 505
+   4. Daniel-Constantin Mierla (@miconda) 12 10 48 41
+   5. Liviu Chircu (@liviuchircu) 9 6 22 96
+   6. Razvan Crainea (@razvancrainea) 8 6 59 43
+   7. Anca Vamanu 6 2 161 111
+   8. Henning Westerholt (@henningw) 5 3 5 5
+   9. Jesus Rodrigues 3 1 7 7
+   10. Julián Moreno Patiño 3 1 6 6
+
+   All remaining contributors: Klaus Darilion, Konstantin
+   Bokarius, Ionut Ionita (@ionutrazvanionita), Sergio Gutierrez,
+   Edson Gellert Schubert, Walter Doekes (@wdoekes).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2017
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
+   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   7.  Ovidiu Sas (@ovidiusas)             Feb 2007 - Mar 2009
+   8.  Sergio Gutierrez                    Aug 2008 - Aug 2008
+   9.  Henning Westerholt (@henningw)      Aug 2007 - Jul 2008
+   10. Klaus Darilion                      Jul 2008 - Jul 2008
+
+   All remaining contributors: Anca Vamanu, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jesus Rodrigues, Jeffrey Magder.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Razvan Crainea (@razvancrainea), Henning
+   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jeffrey Magder.
+
+   doc copyrights:
+
+   Copyright © 2006 SOMA Networks, Inc.

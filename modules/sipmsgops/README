@@ -1,37 +1,4 @@
 sipmsgops Module
-
-Andrei Pelinescu-Onciul
-
-   FhG FOKUS
-   <pelinescu-onciul@fokus.fraunhofer.de>
-
-Edited by
-
-Andrei Pelinescu-Onciul
-
-   <pelinescu-onciul@fokus.fraunhofer.de>
-
-Edited by
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-Edited by
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-Edited by
-
-Razvan Crainea
-
-   <razvancrainea@opensips.org>
-
-   Copyright © 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 7480 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -77,6 +44,22 @@ Razvan Crainea
               1.3.29. stream_delete(regexp)
 
         1.4. Known Limitations
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -830,3 +813,74 @@ stream_delete("video");
    codec_exists functions( e.g. after calling
    codec_delete("speex") , codec_exists("speex") will return false
    ).
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea) 32 8 2873 27
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 26 18 596 150
+   3. Liviu Chircu (@liviuchircu) 15 10 193 142
+   4. Vlad Paiu (@vladpaiu) 9 4 281 68
+   5. Mihai Tiganus (@tallicamike) 6 3 155 28
+   6. Boris Ratner 4 1 129 46
+   7. Julián Moreno Patiño 3 1 8 8
+   8. Jarrod Baumann (@jarrodb) 3 1 2 2
+   9. Ezequiel Lovelle 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+
+   All remaining contributors: Walter Doekes (@wdoekes), Nick
+   Altmann (@nikbyte), Ionut Ionita (@ionutrazvanionita).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2016
+   4.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Ionut Ionita (@ionutrazvanionita)   Dec 2015 - Dec 2015
+   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   8.  Vlad Paiu (@vladpaiu)               Feb 2012 - Aug 2014
+   9.  Mihai Tiganus (@tallicamike)        Aug 2014 - Aug 2014
+   10. Boris Ratner                        Jan 2013 - Jan 2013
+
+   All remaining contributors: Nick Altmann (@nikbyte), Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Julián Moreno Patiño, Razvan Crainea
+   (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
+   (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

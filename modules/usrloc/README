@@ -1,22 +1,4 @@
 usrloc Module
-
-Jan Janak
-
-   FhG FOKUS
-
-Edited by
-
-Jan Janak
-
-Bogdan-Andrei Iancu
-
-Ovidiu Sas
-
-   Copyright � 2003 FhG FOKUS
-
-   Copyright � 2005-2008 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -127,6 +109,22 @@ Ovidiu Sas
               2.1.16. ul_register_ulcb(type ,callback, param)
               2.1.17. ul_get_num_users()
 
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
+
    List of Examples
 
    1.1. Set nat_bflag parameter
@@ -195,7 +193,7 @@ Chapter 1. Admin Guide
 
    For more details on how to control/select the contact matching
    algorithm, please see the module parameter matching_mode at
-   Section 1.3.23, "matching_mode (integer)".
+   Section 1.3.23, “matching_mode (integer)”.
 
 1.1.2. Contact replication
 
@@ -260,7 +258,7 @@ Chapter 1. Admin Guide
    module.
 
    WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead! Default value is "NULL" (not set).
+   instead! Default value is “NULL” (not set).
 
    Example 1.1. Set nat_bflag parameter
 ...
@@ -271,7 +269,7 @@ modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 
    Name of column containing usernames.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.2. Set user_column parameter
 ...
@@ -282,7 +280,7 @@ modparam("usrloc", "user_column", "username")
 
    Name of column containing domains.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.3. Set user_column parameter
 ...
@@ -293,7 +291,7 @@ modparam("usrloc", "domain_column", "domain")
 
    Name of column containing contacts.
 
-   Default value is "contact".
+   Default value is “contact”.
 
    Example 1.4. Set contact_column parameter
 ...
@@ -304,7 +302,7 @@ modparam("usrloc", "contact_column", "contact")
 
    Name of column containing expires value.
 
-   Default value is "expires".
+   Default value is “expires”.
 
    Example 1.5. Set expires_column parameter
 ...
@@ -315,7 +313,7 @@ modparam("usrloc", "expires_column", "expires")
 
    Name of column containing q values.
 
-   Default value is "q".
+   Default value is “q”.
 
    Example 1.6. Set q_column parameter
 ...
@@ -326,7 +324,7 @@ modparam("usrloc", "q_column", "q")
 
    Name of column containing callid values.
 
-   Default value is "callid".
+   Default value is “callid”.
 
    Example 1.7. Set callid_column parameter
 ...
@@ -337,7 +335,7 @@ modparam("usrloc", "callid_column", "callid")
 
    Name of column containing cseq numbers.
 
-   Default value is "cseq".
+   Default value is “cseq”.
 
    Example 1.8. Set cseq_column parameter
 ...
@@ -348,7 +346,7 @@ modparam("usrloc", "cseq_column", "cseq")
 
    Name of column containing supported methods.
 
-   Default value is "methods".
+   Default value is “methods”.
 
    Example 1.9. Set methods_column parameter
 ...
@@ -359,7 +357,7 @@ modparam("usrloc", "methods_column", "methods")
 
    Name of column to save the internal flags of the record.
 
-   Default value is "flags".
+   Default value is “flags”.
 
    Example 1.10. Set flags_column parameter
 ...
@@ -370,7 +368,7 @@ modparam("usrloc", "flags_column", "flags")
 
    Name of column to save the branch/contact flags of the record.
 
-   Default value is "cflags".
+   Default value is “cflags”.
 
    Example 1.11. Set cflags_column parameter
 ...
@@ -381,7 +379,7 @@ modparam("usrloc", "cflags_column", "cflags")
 
    Name of column containing user-agent values.
 
-   Default value is "user_agent".
+   Default value is “user_agent”.
 
    Example 1.12. Set user_agent_column parameter
 ...
@@ -393,7 +391,7 @@ modparam("usrloc", "user_agent_column", "user_agent")
    Name of column containing the source IP, port, and protocol
    from the REGISTER message.
 
-   Default value is "received".
+   Default value is “received”.
 
    Example 1.13. Set received_column parameter
 ...
@@ -405,7 +403,7 @@ modparam("usrloc", "received_column", "received")
    Name of column containing the received socket information
    (IP:port) for the REGISTER message.
 
-   Default value is "socket".
+   Default value is “socket”.
 
    Example 1.14. Set socket_column parameter
 ...
@@ -416,7 +414,7 @@ modparam("usrloc", "socket_column", "socket")
 
    Name of column containing the Path header.
 
-   Default value is "path".
+   Default value is “path”.
 
    Example 1.15. Set path_column parameter
 ...
@@ -427,7 +425,7 @@ modparam("usrloc", "path_column", "path")
 
    Name of column containing the SIP instance.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.16. Set sip_instance_column parameter
 ...
@@ -439,7 +437,7 @@ modparam("usrloc", "sip_instance_column", "sip_instance")
    Name of column containing additional registration-related
    information.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.17. Set attr_column parameter
 ...
@@ -452,7 +450,7 @@ modparam("usrloc", "attr_column", "attr")
    for identifing the user (along with the username part). Useful
    in multi domain scenarios. Non 0 value means true.
 
-   Default value is "0 (false)".
+   Default value is “0 (false)”.
 
    Example 1.18. Set use_domain parameter
 ...
@@ -465,7 +463,7 @@ modparam("usrloc", "use_domain", 1)
    otherwise the contact will be ordered based on q value. Non 0
    value means true.
 
-   Default value is "0 (false)".
+   Default value is “0 (false)”.
 
    Example 1.19. Set desc_time_order parameter
 ...
@@ -490,7 +488,7 @@ modparam("usrloc", "timer_interval", 120)
    URL of the database that should be used.
 
    Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.21. Set db_url parameter
 ...
@@ -550,7 +548,7 @@ modparam("usrloc", "db_mode", 2)
 1.3.23. matching_mode (integer)
 
    What contact matching algorithm to be used. Refer to section
-   Section 1.1.1, "Contact matching" for the description of the
+   Section 1.1.1, “Contact matching” for the description of the
    algorithms.
 
    The parameter may take the following values:
@@ -577,7 +575,7 @@ modparam("usrloc", "matching_mode", 1)
 
    A value of 0 disable the retransmission detection.
 
-   Default value is "20 seconds".
+   Default value is “20 seconds”.
 
    Example 1.24. Set cseq_delay parameter
 ...
@@ -591,12 +589,12 @@ modparam("usrloc", "cseq_delay", 5)
    instances, that belong to the specified cluster id, through the
    Binary Interface.
 
-   Default value is "0" (no cluster id specified) - Binary
+   Default value is “0” (no cluster id specified) - Binary
    Interface listeners (if any) will simply ignore any
    usrloc-related packets
 
    More details on the user location replication mechanism are
-   available in Section 1.1.2, "Contact replication"
+   available in Section 1.1.2, “Contact replication”
 
    Example 1.25. Setting the accept_replicated_contacts parameter
 ...
@@ -613,7 +611,7 @@ modparam("usrloc", "accept_replicated_contacts", 1)
    Default value is 0 (no cluster id specified)
 
    More details on the user location replication mechanism are
-   available in Section 1.1.2, "Contact replication"
+   available in Section 1.1.2, “Contact replication”
 
    Example 1.26. Setting the replicate_contacts_to parameter
 ...
@@ -630,7 +628,7 @@ modparam("usrloc", "replicate_contacts_to", 1)
    Interface events, DB queries may be freely performed)
 
    More details on the user location replication mechanism are
-   available in Section 1.1.2, "Contact replication"
+   available in Section 1.1.2, “Contact replication”
 
    Example 1.27. Setting the skip_replicated_db_ops parameter
 ...
@@ -659,7 +657,7 @@ modparam("usrloc", "max_contact_delete", 10)
    the maximu size of this parameter is 16, meaning that the hash
    supports maximum 65536 entries.
 
-   Default value is "9".
+   Default value is “9”.
 
    Example 1.29. Set hash_size parameter
 ...
@@ -676,7 +674,7 @@ modparam("usrloc", "hash_size", 10)
    parameter is changed. Enabling this parameter will regenerate
    broken contact id's based on current configurations.
 
-   Default value is "0(not enabled)"
+   Default value is “0(not enabled)”
 
    Example 1.30. Set regen_broken_contactid parameter
 ...
@@ -716,7 +714,7 @@ modparam("usrloc", "regen_broken_contactid", 1)
 
    Parameters:
      * brief - (optional, may not be present); if equals to string
-       "brief", a brief dump will be done (only AOR and contacts,
+       “brief”, a brief dump will be done (only AOR and contacts,
        with no other details)
 
 1.5.4.  ul_flush
@@ -1006,7 +1004,7 @@ is_replicated)
    buffer. If the buffer is too small, the function returns
    positive value indicating how much additional space would be
    necessary to accommodate all of them. Please note that the
-   positive return value should be used only as a "hint", as there
+   positive return value should be used only as a “hint”, as there
    is no guarantee that during the time between two subsequent
    calls number of registered contacts will remain the same.
 
@@ -1030,7 +1028,7 @@ is_replicated)
    too small, the function returns positive value indicating how
    much additional space would be necessary to accommodate all of
    them. Please note that the positive return value should be used
-   only as a "hint", as there is no guarantee that during the time
+   only as a “hint”, as there is no guarantee that during the time
    between two subsequent calls number of registered contacts will
    remain the same.
 
@@ -1087,3 +1085,96 @@ is_replicated)
 
    The function loops through all domains summing up the number of
    users.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Jan Janak (@janakj) 421 117 15689 10095
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 215 124 3733 3379
+   3. Liviu Chircu (@liviuchircu) 47 27 1461 426
+   4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
+   5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
+   6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
+   7. Henning Westerholt (@henningw) 22 11 462 356
+   8. Andrei Pelinescu-Onciul 17 13 151 91
+   9. Razvan Crainea (@razvancrainea) 17 12 324 56
+   10. Vlad Paiu (@vladpaiu) 12 10 112 42
+
+   All remaining contributors: Nils Ohlmeier, Eseanu Marius
+   Cristian (@eseanucristian), Ovidiu Sas (@ovidiusas), Maksym
+   Sobolyev (@sobomax), Andrei Dragus, Dusan Klinec, Andrei Datcu
+   (@andrei-datcu), Juha Heinanen (@juha-h), Anca Vamanu, Marcus
+   Hunger, Ionel Cerghit (@ionel-cerghit), Jamey Hicks, Andreas
+   Granig, Jeffrey Magder, Phil D'Amore, Norman Brandinger
+   (@NormB), David Sanders, Konstantin Bokarius, Klaus Darilion,
+   Iouri Kharon, Matthew M. Boedicker, UnixDev, Edson Gellert
+   Schubert, Elena-Ramona Modroiu, Stephane Alnet.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                         Name                     Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2002 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)              Jan 2013 - Jun 2018
+   3.  Ionut Ionita (@ionutrazvanionita)        Jul 2015 - Apr 2017
+   4.  Razvan Crainea (@razvancrainea)          Jul 2011 - Feb 2017
+   5.  Ovidiu Sas (@ovidiusas)                  Apr 2008 - Mar 2016
+   6.  Dusan Klinec                             Dec 2015 - Dec 2015
+   7.  Eseanu Marius Cristian (@eseanucristian) Aug 2015 - Sep 2015
+   8.  Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Jul 2015
+   9.  David Sanders                            Oct 2014 - Oct 2014
+   10. Andrei Datcu (@andrei-datcu)             Aug 2014 - Aug 2014
+
+   All remaining contributors: Stephane Alnet, Vlad Paiu
+   (@vladpaiu), Andrei Dragus, Phil D'Amore, UnixDev,
+   Daniel-Constantin Mierla (@miconda), Henning Westerholt
+   (@henningw), Iouri Kharon, Konstantin Bokarius, Edson Gellert
+   Schubert, Anca Vamanu, Matthew M. Boedicker, Marcus Hunger,
+   Elena-Ramona Modroiu, Jeffrey Magder, Norman Brandinger
+   (@NormB), Andreas Granig, Juha Heinanen (@juha-h), Klaus
+   Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri
+   Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax), Jamey
+   Hicks, Nils Ohlmeier.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
+   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
+   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
+   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
+   Nils Ohlmeier.
+
+   doc copyrights:
+
+   Copyright © 2005-2008 Voice Sistem SRL
+
+   Copyright © 2003 FhG FOKUS

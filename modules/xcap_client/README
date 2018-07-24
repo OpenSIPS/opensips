@@ -1,18 +1,4 @@
 XCAP_Client Module
-
-Anca-Maria Vamanu
-
-Edited by
-
-Anca-Maria Vamanu
-
-Edited by
-
-Saul Ibarra Corretge
-
-   Copyright © 2007 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 9442 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -40,6 +26,22 @@ Saul Ibarra Corretge
         2.1. bind_xcap_client_api(xcap_client_api_t* api)
         2.2. get_elem
         2.3. register_xcb
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -263,3 +265,76 @@ typedef int (*register_xcapcb_t)(int types, xcap_cb f);
 ...
 typedef int (xcap_cb)(int doc_type, str xid, char* doc);
 ...
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Anca Vamanu 35 14 2155 193
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 15 55 63
+   3. Daniel-Constantin Mierla (@miconda) 9 7 22 19
+   4. Henning Westerholt (@henningw) 8 6 60 49
+   5. Liviu Chircu (@liviuchircu) 8 6 22 40
+   6. Razvan Crainea (@razvancrainea) 6 4 11 13
+   7. Saúl Ibarra Corretgé (@saghul) 6 3 55 89
+   8. Dan Pascu (@danpascu) 4 2 8 9
+   9. Romanov Vladimir 3 1 29 21
+   10. Ovidiu Sas (@ovidiusas) 3 1 27 2
+
+   All remaining contributors: Vlad Paiu (@vladpaiu), Konstantin
+   Bokarius, UnixDev, Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   4.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+   5.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   6.  Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
+   7.  Anca Vamanu                         Aug 2007 - Feb 2010
+   8.  Romanov Vladimir                    Mar 2009 - Mar 2009
+   9.  UnixDev                             Feb 2009 - Feb 2009
+   10. Henning Westerholt (@henningw)      Jan 2008 - Jul 2008
+
+   All remaining contributors: Dan Pascu (@danpascu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Saúl Ibarra Corretgé (@saghul), Razvan
+   Crainea (@razvancrainea), Anca Vamanu, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
+
+   doc copyrights:
+
+   Copyright © 2007 Voice Sistem SRL

@@ -1,14 +1,4 @@
 dialplan Module
-
-Andreea-Ancuta Onofrei
-
-Edited by
-
-Andreea-Ancuta Onofrei
-
-   Copyright © 2007-2008 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 5895 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -57,6 +47,21 @@ Andreea-Ancuta Onofrei
         1.9. Installation
 
    2. Developer's Guide
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -536,3 +541,76 @@ Chapter 2. Developer's Guide
 
    The module does not provide any API to use in other OpenSIPS
    modules.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 46 35 454 390
+   2. Ionut Ionita (@ionutrazvanionita) 41 20 1149 579
+   3. Liviu Chircu (@liviuchircu) 39 24 697 481
+   4. Anca Vamanu 32 5 3263 19
+   5. Andrei Dragus 25 3 382 1029
+   6. Ovidiu Sas (@ovidiusas) 16 13 144 37
+   7. Razvan Crainea (@razvancrainea) 12 8 77 123
+   8. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
+   9. Henning Westerholt (@henningw) 5 3 5 14
+   10. Parantido Julius De Rica (@Parantido) 5 2 203 23
+
+   All remaining contributors: Paul Wise, Sergio Gutierrez, Vlad
+   Paiu (@vladpaiu), Rudy Pedraza, Juha Heinanen (@juha-h),
+   UnixDev, David Sanders.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                         Name                     Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)              Jul 2012 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)          Dec 2010 - Jan 2016
+   4.  Ovidiu Sas (@ovidiusas)                  Sep 2008 - Nov 2015
+   5.  Ionut Ionita (@ionutrazvanionita)        Jul 2014 - Nov 2015
+   6.  David Sanders                            Sep 2015 - Sep 2015
+   7.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
+   8.  Parantido Julius De Rica (@Parantido)    Sep 2014 - Sep 2014
+   9.  Vlad Paiu (@vladpaiu)                    Dec 2013 - Dec 2013
+   10. Rudy Pedraza                             Mar 2012 - Mar 2012
+
+   All remaining contributors: Sergio Gutierrez, Paul Wise, Anca
+   Vamanu, Andrei Dragus, UnixDev, Juha Heinanen (@juha-h),
+   Henning Westerholt (@henningw).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu
+   Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei
+   Dragus, Anca Vamanu.
+
+   doc copyrights:
+
+   Copyright © 2007-2008 Voice Sistem SRL

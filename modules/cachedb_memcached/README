@@ -1,22 +1,4 @@
-MEMCACHED
-
-Andrei Dragus
-
-   OpenSIPS
-
-Edited by
-
-Andrei Dragus
-
-Edited by
-
-Vladut-Stefan Paiu
-
-   Copyright © 2009 Voice System
-
-   Copyright © 2009 Andrei Dragus
-   Revision History
-   Revision $Revision: 5901 $ $Date$
+cachedb_memcached Module
      __________________________________________________________
 
    Table of Contents
@@ -36,6 +18,22 @@ Vladut-Stefan Paiu
               1.5.1. cachedb_url (string)
               1.5.2. exec_threshold (int)
               1.5.3. Exported Functions
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -136,3 +134,59 @@ modparam("cachedb_memcached", "exec_threshold", 100000)
 
    The module does not export functions to be used in
    configuration script.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu) 22 13 859 63
+   2. Liviu Chircu (@liviuchircu) 7 5 10 49
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 4 3
+   4. Razvan Crainea (@razvancrainea) 4 2 3 3
+   5. Julián Moreno Patiño 3 1 1 1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   4. Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2015
+   5. Vlad Paiu (@vladpaiu)               Oct 2011 - May 2014
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Julián Moreno Patiño, Vlad Paiu
+   (@vladpaiu).
+
+   doc copyrights:
+
+   Copyright © 2009 Andrei Dragus
+
+   Copyright © 2009 Voice Sistem SRL

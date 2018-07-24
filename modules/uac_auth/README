@@ -1,30 +1,4 @@
 UAC AUTH Module
-
-Bogdan-Andrei Iancu
-
-   <bogdan@opensips.org>
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-Edited by
-
-Ovidiu Sas
-
-   <osas@voipembedded.com>
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-   <bogdan@opensips.org>
-
-   Copyright © 2011 VoIP Embedded, Inc.
-
-   Copyright © 2013 www.opensips-solutions.com
-   Revision History
-   Revision $Revision: 8101 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -43,6 +17,22 @@ Bogdan-Andrei Iancu
               1.3.2. auth_realm_avp (string)
               1.3.3. auth_username_avp (string)
               1.3.4. auth_password_avp (string)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -145,3 +135,56 @@ modparam("uac_auth","auth_username_avp","$avp(11)")
 ...
 modparam("uac_auth","auth_password_avp","$avp(12)")
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Ovidiu Sas (@ovidiusas) 15 7 869 15
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 10 7 228 9
+   3. Liviu Chircu (@liviuchircu) 6 4 10 44
+   4. Razvan Crainea (@razvancrainea) 4 2 4 9
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2012 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   4. Ovidiu Sas (@ovidiusas)             Jun 2011 - Oct 2013
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas).
+
+   doc copyrights:
+
+   Copyright © 2013 www.opensips-solutions.com
+
+   Copyright © 2011 VoIP Embedded, Inc.

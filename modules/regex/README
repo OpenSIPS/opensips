@@ -1,18 +1,4 @@
 Regex Module
-
-Iñaki Baz Castillo
-
-   <ibc@aliax.net>
-
-Edited by
-
-Iñaki Baz Castillo
-
-   <ibc@aliax.net>
-
-   Copyright © 2009 Iñaki Baz Castillo
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -47,6 +33,22 @@ Iñaki Baz Castillo
         1.6. Installation and Running
 
               1.6.1. File format
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -374,3 +376,62 @@ group 1: ((^ccc)|(^ddd))
 ([0-9]{9})
 ( #abcde)
 ( qwerty)
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Iñaki Baz Castillo 14 3 1242 2
+   2. Razvan Crainea (@razvancrainea) 8 6 12 9
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 10 6
+   4. Liviu Chircu (@liviuchircu) 7 5 8 24
+   5. Sergio Gutierrez 3 1 19 1
+   6. Ovidiu Sas (@ovidiusas) 3 1 13 11
+   7. Anca Vamanu 3 1 6 3
+   8. Marius Zbihlei 2 1 2 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   2. Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2016
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Oct 2014
+   4. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   5. Marius Zbihlei                      Sep 2010 - Sep 2010
+   6. Iñaki Baz Castillo                  Feb 2009 - Jul 2010
+   7. Anca Vamanu                         Sep 2009 - Sep 2009
+   8. Sergio Gutierrez                    Feb 2009 - Feb 2009
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Iñaki Baz Castillo.
+
+   doc copyrights:
+
+   Copyright © 2009 Iñaki Baz Castillo

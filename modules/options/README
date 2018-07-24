@@ -1,16 +1,4 @@
 Options Module
-
-Nils Ohlmeier
-
-   FhG Fokus
-
-Edited by
-
-Nils Ohlmeier
-
-   Copyright © 2003 FhG Fokus
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -33,6 +21,22 @@ Nils Ohlmeier
         1.4. Exported Functions
 
               1.4.1. options_reply()
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -161,3 +165,69 @@ if (uri==myself) {
         }
 }
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 19 17 50 34
+   2. Daniel-Constantin Mierla (@miconda) 14 12 41 31
+   3. Nils Ohlmeier 9 3 630 4
+   4. Liviu Chircu (@liviuchircu) 7 5 20 34
+   5. Razvan Crainea (@razvancrainea) 5 2 82 87
+   6. Elena-Ramona Modroiu 4 2 4 4
+   7. Ancuta Onofrei 3 1 10 11
+   8. Jan Janak (@janakj) 3 1 7 7
+   9. Konstantin Bokarius 3 1 2 5
+   10. Edson Gellert Schubert 3 1 0 103
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Nov 2012 - Aug 2015
+   4.  Daniel-Constantin Mierla (@miconda) Jul 2006 - Mar 2008
+   5.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   6.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   7.  Ancuta Onofrei                      Sep 2007 - Sep 2007
+   8.  Elena-Ramona Modroiu                Jul 2005 - Oct 2005
+   9.  Jan Janak (@janakj)                 Aug 2004 - Aug 2004
+   10. Nils Ohlmeier                       Oct 2003 - Oct 2003
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj),
+   Nils Ohlmeier.
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

@@ -1,19 +1,4 @@
 userblacklist Module
-
-Hardy Kahl
-
-   1&1 Internet AG
-
-Edited by
-
-Henning Westerholt
-
-   1&1 Internet AG
-   <henning.westerholt@1und1.de>
-
-   Copyright © 2008 1&1 Internet AG
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -46,6 +31,22 @@ Henning Westerholt
         1.6. Installation and Running
 
               1.6.1. Database setup
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -237,3 +238,72 @@ opensipsctl fifo reload_blacklist
    “1234” will be not allowed, but the number “123456788” is
    allowed. Additionally a domain could be specified that is used
    for username matching if the “use_domain” parameter is set.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 34 46
+   2. Hardy Kahl 11 1 1191 0
+   3. Henning Westerholt (@henningw) 9 5 204 72
+   4. Liviu Chircu (@liviuchircu) 8 6 19 36
+   5. Daniel-Constantin Mierla (@miconda) 8 6 17 12
+   6. Razvan Crainea (@razvancrainea) 6 4 13 10
+   7. Ruslan Bukin 3 1 21 10
+   8. Julián Moreno Patiño 3 1 1 1
+   9. UnixDev 3 1 1 1
+   10. Edson Gellert Schubert 3 1 0 60
+
+   All remaining contributors: Vlad Paiu (@vladpaiu).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2016
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Vlad Paiu (@vladpaiu)               Apr 2011 - Apr 2011
+   6.  Ruslan Bukin                        Oct 2009 - Oct 2009
+   7.  UnixDev                             Feb 2009 - Feb 2009
+   8.  Henning Westerholt (@henningw)      Feb 2008 - May 2008
+   9.  Daniel-Constantin Mierla (@miconda) Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+
+   All remaining contributors: Hardy Kahl.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Edson Gellert Schubert, Hardy Kahl.
+
+   doc copyrights:
+
+   Copyright © 2008 1&1 Internet AG

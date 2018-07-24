@@ -1,19 +1,4 @@
 AAA RADIUS MODULE
-
-Irina-Maria Stanescu
-
-   OpenSIPS Solutions
-
-Edited by
-
-Irina-Maria Stanescu
-
-   Copyright © 2009 Irina-Maria
-   Stanescu
-
-   Copyright © 2009 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 5908 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -51,6 +36,22 @@ Irina-Maria Stanescu
 
         2.1. Downloading radius-client library
         2.2. Applying the patch
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -369,3 +370,75 @@ tch
 make
 sudo make install
 ........
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Irina-Maria Stanescu 24 10 1432 60
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 11 91 70
+   3. Ionut Ionita (@ionutrazvanionita) 14 4 1135 12
+   4. Razvan Crainea (@razvancrainea) 11 9 46 39
+   5. Liviu Chircu (@liviuchircu) 6 4 8 36
+   6. Boris Ratner 4 2 38 5
+   7. Anca Vamanu 4 2 5 3
+   8. Matt Lehner 3 1 32 3
+   9. Авдиенко Михаил 3 1 7 17
+   10. Alex Massover 3 1 6 1
+
+   All remaining contributors: Julián Moreno Patiño, Walter Doekes
+   (@wdoekes).
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Jan 2017
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Feb 2016
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
+   7.  Boris Ratner                        Mar 2012 - Jan 2013
+   8.  Matt Lehner                         Aug 2010 - Aug 2010
+   9.  Irina-Maria Stanescu                Jul 2009 - Jul 2010
+   10. Авдиенко Михаил                     Nov 2009 - Nov 2009
+
+   All remaining contributors: Alex Massover, Anca Vamanu.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Walter Doekes (@wdoekes), Boris Ratner, Razvan Crainea
+   (@razvancrainea), Irina-Maria Stanescu.
+
+   doc copyrights:
+
+   Copyright © 2009 Irina-Maria Stanescu
+
+   Copyright © 2009 Voice Sistem SRL

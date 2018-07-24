@@ -1,16 +1,4 @@
 XCAP Module
-
-Saul Ibarra Corretge
-
-   AG Projects
-
-Edited by
-
-Saul Ibarra Corretge
-
-   Copyright © 2012 AG Projects
-   Revision History
-   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -40,6 +28,22 @@ Saul Ibarra Corretge
         2.5. db_url
         2.6. xcap_table
         2.7. integrated_server
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -202,3 +206,56 @@ typedef struct {
 
    Boolean flag indicating if the XCAP server has access to the
    local database or xcap_client will be used to fetch documents.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Saúl Ibarra Corretgé (@saghul) 14 3 1260 53
+   2. Liviu Chircu (@liviuchircu) 8 5 42 89
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 4 2
+   4. Razvan Crainea (@razvancrainea) 3 1 15 15
+   5. Ovidiu Sas (@ovidiusas) 3 1 13 3
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2015
+   4. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   5. Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Saúl Ibarra Corretgé (@saghul).
+
+   doc copyrights:
+
+   Copyright © 2012 AG Projects

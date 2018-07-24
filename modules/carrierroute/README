@@ -1,20 +1,4 @@
 carrierroute
-
-Jonas Appel
-
-   1&1 Internet AG
-
-Hardy Kahl
-
-   1&1 Internet AG
-
-Henning Westerholt
-
-   1&1 Internet AG
-
-   Copyright © 2007 1&1 Internet AG
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -94,6 +78,22 @@ Henning Westerholt
         1.7. Installation and Running
 
               1.7.1. Database setup
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -1226,3 +1226,77 @@ domain register {
 ...
 ALTER TABLE subscriber ADD cr_preferred_carrier int(10) default NULL;
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Henning Westerholt (@henningw) 126 80 2085 1607
+   2. Hardy Kahl 50 3 2713 1360
+   3. Jonas Appel 50 1 6240 0
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 130 154
+   5. Liviu Chircu (@liviuchircu) 10 7 22 82
+   6. Daniel-Constantin Mierla (@miconda) 9 7 34 30
+   7. Razvan Crainea (@razvancrainea) 7 5 41 40
+   8. Carsten Bock 3 1 64 15
+   9. Bob Atkins 3 1 29 1
+   10. Julián Moreno Patiño 3 1 24 24
+
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Sergio
+   Gutierrez, Iouri Kharon, UnixDev, Walter Doekes (@wdoekes),
+   Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   7.  UnixDev                             Feb 2009 - Feb 2009
+   8.  Henning Westerholt (@henningw)      Aug 2007 - Dec 2008
+   9.  Sergio Gutierrez                    Aug 2008 - Aug 2008
+   10. Iouri Kharon                        Apr 2008 - Apr 2008
+
+   All remaining contributors: Hardy Kahl, Daniel-Constantin
+   Mierla (@miconda), Edson Gellert Schubert, Bob Atkins, Carsten
+   Bock, Jonas Appel.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Julián Moreno Patiño, Razvan Crainea
+   (@razvancrainea), Henning Westerholt (@henningw), Iouri Kharon,
+   Hardy Kahl, Daniel-Constantin Mierla (@miconda), Edson Gellert
+   Schubert, Carsten Bock, Jonas Appel.
+
+   doc copyrights:
+
+   Copyright © 2007 1&1 Internet AG

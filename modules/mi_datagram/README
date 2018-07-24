@@ -1,14 +1,4 @@
 mi_datagram Module
-
-Andreea-Ancuta Onofrei
-
-Edited by
-
-Andreea-Ancuta Onofrei
-
-   Copyright © 2007 Voice Sistem SRL
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -40,6 +30,21 @@ Andreea-Ancuta Onofrei
         1.6. Example
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -194,46 +199,118 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Both UNIX and UDP type of socket can be created simultaneusly?
+   Both UNIX and UDP type of socket can be created simultaneusly?
 
-       This version supports only one kind of socket at a time. If
-       there are more than one value set for socket_name the last one
-       will take effect.
+   This version supports only one kind of socket at a time. If
+   there are more than one value set for socket_name the last one
+   will take effect.
 
    2.2.
 
-       Is there a limit in the datagram request's size?
+   Is there a limit in the datagram request's size?
 
-       The maximum length of a datagram request or reply is 65457
-       bytes.
+   The maximum length of a datagram request or reply is 65457
+   bytes.
 
    2.3.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.4.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.5.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 40 31 314 294
+   2. Ancuta Onofrei 26 2 2423 252
+   3. Daniel-Constantin Mierla (@miconda) 9 7 18 16
+   4. Razvan Crainea (@razvancrainea) 6 4 10 14
+   5. Liviu Chircu (@liviuchircu) 6 4 7 36
+   6. Henning Westerholt (@henningw) 5 3 9 11
+   7. Klaus Darilion 3 1 4 4
+   8. Walter Doekes (@wdoekes) 3 1 4 4
+   9. Julián Moreno Patiño 3 1 3 3
+   10. Konstantin Bokarius 3 1 2 6
+
+   All remaining contributors: Dusan Klinec, Edson Gellert
+   Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2007 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Dusan Klinec                        Dec 2015 - Dec 2015
+   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   7.  Henning Westerholt (@henningw)      Aug 2007 - Jul 2008
+   8.  Klaus Darilion                      Jul 2008 - Jul 2008
+   9.  Daniel-Constantin Mierla (@miconda) Mar 2008 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+
+   All remaining contributors: Edson Gellert Schubert, Ancuta
+   Onofrei.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Julián Moreno Patiño, Razvan Crainea
+   (@razvancrainea), Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Ancuta
+   Onofrei.
+
+   doc copyrights:
+
+   Copyright © 2007 Voice Sistem SRL

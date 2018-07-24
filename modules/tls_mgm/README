@@ -1,38 +1,4 @@
 TLS_MGM module
-
-Peter Griffiths
-
-   unknown
-
-Klaus Darilion
-
-   enum.at
-
-Edited by
-
-Klaus Darilion
-
-Bogdan-Andrei Iancu
-
-Cesc Santasusana
-
-Klaus Darilion
-
-Christian Lahme
-
-Ionut-Razvan Ionita
-
-Marius Cristian Eseanu
-
-   Copyright � 2005 Voice Sistem SRL
-
-   Copyright � 2005 Cesc Santasusana
-
-   Copyright � 2006 enum.at
-
-   Copyright � 2013 Secusmart GmbH
-
-   Copyright � 2015 OpenSIPS Solutions
      __________________________________________________________
 
    Table of Contents
@@ -66,29 +32,28 @@ Marius Cristian Eseanu
               1.7.10. verify_cert [(string):](string) and
                       require_cert[(string):](string)
 
-              1.7.11. tls_handshake_timeout (integer) and
-                      tls_send_timeout (integer)
-
-              1.7.12. client_domain_avp (integer)
-              1.7.13. db_mode (integer)
-              1.7.14. db_url (string)
-              1.7.15. db_table (string)
-              1.7.16. id_col (string)
-              1.7.17. address_col (string)
+              1.7.11. tls_handshake_timeout (integer)
+              1.7.12. tls_send_timeout (integer)
+              1.7.13. client_domain_avp (integer)
+              1.7.14. db_mode (integer)
+              1.7.15. db_url (string)
+              1.7.16. db_table (string)
+              1.7.17. id_col (string)
               1.7.18. address_col (string)
-              1.7.19. tls_method_col (string)
-              1.7.20. verify_cert_col (string)
-              1.7.21. require_cert_col (string)
-              1.7.22. certificate_col (string)
-              1.7.23. private_key_col (string)
-              1.7.24. crl_check_all_col (string)
-              1.7.25. crl_dir_col (string)
-              1.7.26. ca_list_col (string)
-              1.7.27. ca_dir_col (string)
-              1.7.28. cipher_list_col (string)
-              1.7.29. dh_params_col (string)
-              1.7.30. ec_curve_col (string)
-              1.7.31. server_domain, client_domain (string)
+              1.7.19. address_col (string)
+              1.7.20. tls_method_col (string)
+              1.7.21. verify_cert_col (string)
+              1.7.22. require_cert_col (string)
+              1.7.23. certificate_col (string)
+              1.7.24. private_key_col (string)
+              1.7.25. crl_check_all_col (string)
+              1.7.26. crl_dir_col (string)
+              1.7.27. ca_list_col (string)
+              1.7.28. ca_dir_col (string)
+              1.7.29. cipher_list_col (string)
+              1.7.30. dh_params_col (string)
+              1.7.31. ec_curve_col (string)
+              1.7.32. server_domain, client_domain (string)
 
         1.8. Pseudo-Variables
 
@@ -151,6 +116,22 @@ Marius Cristian Eseanu
               2.4.9. tls_new_client_domain_name
               2.4.10. tls_free_domains
 
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
+
    List of Examples
 
    1.1. is_peer_verified usage
@@ -163,30 +144,31 @@ Marius Cristian Eseanu
    1.8. Set ciphers_list variable
    1.9. Set dh_params variable
    1.10. Set verify_cert & require_cert variable
-   1.11. Set tls_handshake_timeout & tls_send_timeout variable
-   1.12. Set client_domain_avp variable
-   1.13. Usage of db_mode block
-   1.14. Usage of db_url block
-   1.15. Usage of db_table block
-   1.16. Usage of id_col block
-   1.17. Usage of address_col block
+   1.11. Set tls_handshake_timeout variable
+   1.12. Set tls_send_timeout variable
+   1.13. Set client_domain_avp variable
+   1.14. Usage of db_mode block
+   1.15. Usage of db_url block
+   1.16. Usage of db_table block
+   1.17. Usage of id_col block
    1.18. Usage of address_col block
-   1.19. Usage of tls_method_col block
-   1.20. Usage of vertify_cert_col block
-   1.21. Usage of require_cert_col block
-   1.22. Usage of certificate_col block
-   1.23. Usage of private_key_col block
-   1.24. Usage of crl_check_all block
-   1.25. Usage of crl_dir_col block
-   1.26. Usage of ca_list_col block
-   1.27. Usage of ca_dir_col block
-   1.28. Usage of cipher_list_col block
-   1.29. Usage of dh_params_col block
-   1.30. Usage of ec_curve_col block
-   1.31. Usage of tls_client_domain and tls_server_domain block
-   1.32. Example of $tls_[peer|my]_[subject|issuer]
-   1.33. Script with TLS support
-   1.34. Example of TLS logging
+   1.19. Usage of address_col block
+   1.20. Usage of tls_method_col block
+   1.21. Usage of vertify_cert_col block
+   1.22. Usage of require_cert_col block
+   1.23. Usage of certificate_col block
+   1.24. Usage of private_key_col block
+   1.25. Usage of crl_check_all block
+   1.26. Usage of crl_dir_col block
+   1.27. Usage of ca_list_col block
+   1.28. Usage of ca_dir_col block
+   1.29. Usage of cipher_list_col block
+   1.30. Usage of dh_params_col block
+   1.31. Usage of ec_curve_col block
+   1.32. Usage of tls_client_domain and tls_server_domain block
+   1.33. Example of $tls_[peer|my]_[subject|issuer]
+   1.34. Script with TLS support
+   1.35. Example of TLS logging
 
 Chapter 1. Admin Guide
 
@@ -206,7 +188,7 @@ Chapter 1. Admin Guide
    improvements were added.
 
    The TLS support was simultaneously added in both projects. In
-   SER, the support was committed in a separate "experimental" CVS
+   SER, the support was committed in a separate “experimental” CVS
    tree, as patch to the main CVS tree. In OpenSIPS, the support
    was integrated directly into the CVS tree, as a built-in
    component, and is part of stable OpenSIPS since release
@@ -229,7 +211,7 @@ Chapter 1. Admin Guide
    domains.
 
    A script example which details this module's usage can be found
-   in Section 1.9, "OpenSIPS with TLS - script example".
+   in Section 1.9, “OpenSIPS with TLS - script example”.
 
 1.4. Dependencies of external libraries
 
@@ -461,21 +443,41 @@ modparam("tls_mgm", "verify_cert", "0")
 modparam("tls_mgm", "verify_cert", "1:1")
 ...
 
-1.7.11. tls_handshake_timeout (integer) and tls_send_timeout
-(integer)
+1.7.11. tls_handshake_timeout (integer)
 
-   Timeouts ... advanced users only
+   Sets the timeout (in milliseconds) for the handshake sequence
+   to complete. It may be necessary to increase this value when
+   using a CPU intensive cipher for the connection to allow time
+   for keys to be generated and processed.
 
-   Default value for both is 30.
+   The timeout is invoked during acceptance of a new connection
+   (inbound) and during the wait period when a new session is
+   being initiated (outbound).
 
-   Example 1.11. Set tls_handshake_timeout & tls_send_timeout
-   variable
+   Default value is 100.
+
+   Example 1.11. Set tls_handshake_timeout variable
 ...
-modparam("tls_mgm", "tls_handshake_timeout", 119) # number of seconds
-modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
+modparam("tls_mgm", "tls_handshake_timeout", 200) # number of millisecon
+ds
 ...
 
-1.7.12. client_domain_avp (integer)
+1.7.12. tls_send_timeout (integer)
+
+   Sets the timeout (in milliseconds) for the send operations to
+   complete
+
+   The send timeout is invoked for all TLS write operations,
+   excluding the handshake process (see: tls_handshake_timeout)
+
+   Default value is 100.
+
+   Example 1.12. Set tls_send_timeout variable
+...
+modparam("tls_mgm", "tls_send_timeout", 200) # number of milliseconds
+...
+
+1.7.13. client_domain_avp (integer)
 
    This sets the interger AVP used for name based TLS server
    domains (please see tls_client_domain for more details).
@@ -485,54 +487,45 @@ modparam("tls_mgm", "tls_send_timeout", 121) # number of seconds
 
    Default value is 0.
 
-   Example 1.12. Set client_domain_avp variable
+   Example 1.13. Set client_domain_avp variable
 ...
 modparam("tls_mgm", "client_domain_avp", "400")
 ...
 
-1.7.13.  db_mode (integer)
+1.7.14.  db_mode (integer)
 
    When db_mode is enabled (1), this module cannot accept new
    domains configuration from the script.
 
    Default value is 0. (not enabled)
 
-   Example 1.13. Usage of db_mode block
+   Example 1.14. Usage of db_mode block
 modparam("tls_mgm", "db_mode", 1)
 
-1.7.14.  db_url (string)
+1.7.15.  db_url (string)
 
    The database url. It cannot be NULL.
 
-   Example 1.14. Usage of db_url block
+   Example 1.15. Usage of db_url block
 modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
 
-1.7.15.  db_table (string)
+1.7.16.  db_table (string)
 
    Sets the database table name.
 
    Default value is "tls_mgm".
 
-   Example 1.15. Usage of db_table block
+   Example 1.16. Usage of db_table block
 modparam("tls_mgm", "db_table", "tls_mgm")
 
-1.7.16.  id_col (string)
+1.7.17.  id_col (string)
 
    Sets the id column name.
 
    Default value is "id".
 
-   Example 1.16. Usage of id_col block
+   Example 1.17. Usage of id_col block
 modparam("tls_mgm", "id_col", "id")
-
-1.7.17.  address_col (string)
-
-   Sets the address column name.
-
-   Default value is "address".
-
-   Example 1.17. Usage of address_col block
-modparam("tls_mgm", "address_col", "addr")
 
 1.7.18.  address_col (string)
 
@@ -543,115 +536,124 @@ modparam("tls_mgm", "address_col", "addr")
    Example 1.18. Usage of address_col block
 modparam("tls_mgm", "address_col", "addr")
 
-1.7.19.  tls_method_col (string)
+1.7.19.  address_col (string)
+
+   Sets the address column name.
+
+   Default value is "address".
+
+   Example 1.19. Usage of address_col block
+modparam("tls_mgm", "address_col", "addr")
+
+1.7.20.  tls_method_col (string)
 
    Sets the method column name.
 
    Default value is "method".
 
-   Example 1.19. Usage of tls_method_col block
+   Example 1.20. Usage of tls_method_col block
 modparam("tls_mgm", "tls_method_col", "method")
 
-1.7.20.  verify_cert_col (string)
+1.7.21.  verify_cert_col (string)
 
    Sets the verrify certificate column name.
 
    Default value is "verify_cert".
 
-   Example 1.20. Usage of vertify_cert_col block
+   Example 1.21. Usage of vertify_cert_col block
 modparam("tls_mgm", "verify_cert_col", "verify_cert")
 
-1.7.21.  require_cert_col (string)
+1.7.22.  require_cert_col (string)
 
    Sets the require certificate column name.
 
    Default value is "require_cert".
 
-   Example 1.21. Usage of require_cert_col block
+   Example 1.22. Usage of require_cert_col block
 modparam("tls_mgm", "require_cert_col", "req")
 
-1.7.22.  certificate_col (string)
+1.7.23.  certificate_col (string)
 
    Sets the certificate column name.
 
    Default value is "certificate".
 
-   Example 1.22. Usage of certificate_col block
+   Example 1.23. Usage of certificate_col block
 modparam("tls_mgm", "certificate_col", "certificate")
 
-1.7.23.  private_key_col (string)
+1.7.24.  private_key_col (string)
 
    Sets the private key column name.
 
    Default value is "private_key".
 
-   Example 1.23. Usage of private_key_col block
+   Example 1.24. Usage of private_key_col block
 modparam("tls_mgm", "private_key_col", "pk")
 
-1.7.24.  crl_check_all_col (string)
+1.7.25.  crl_check_all_col (string)
 
    Sets the crl_check_all column name.
 
    Default value is "crl_check_all".
 
-   Example 1.24. Usage of crl_check_all block
+   Example 1.25. Usage of crl_check_all block
 modparam("tls_mgm", "crl_check_all_col", "crl_check")
 
-1.7.25.  crl_dir_col (string)
+1.7.26.  crl_dir_col (string)
 
    Sets the crl directory column name.
 
    Default value is "crl_dir".
 
-   Example 1.25. Usage of crl_dir_col block
+   Example 1.26. Usage of crl_dir_col block
 modparam("tls_mgm", "crl_dir_col", "crl_dir")
 
-1.7.26.  ca_list_col (string)
+1.7.27.  ca_list_col (string)
 
    Sets the CA list column name.
 
    Default value is "ca_list".
 
-   Example 1.26. Usage of ca_list_col block
+   Example 1.27. Usage of ca_list_col block
 modparam("tls_mgm", "ca_list_col", "ca_list")
 
-1.7.27.  ca_dir_col (string)
+1.7.28.  ca_dir_col (string)
 
    Sets the CA directory column name.
 
    Default value is "ca_dir".
 
-   Example 1.27. Usage of ca_dir_col block
+   Example 1.28. Usage of ca_dir_col block
 modparam("tls_mgm", "ca_dir_col", "ca_dir")
 
-1.7.28.  cipher_list_col (string)
+1.7.29.  cipher_list_col (string)
 
    Sets the cipher list column name.
 
    Default value is "cipher_list".
 
-   Example 1.28. Usage of cipher_list_col block
+   Example 1.29. Usage of cipher_list_col block
 modparam("tls_mgm", "cipher_list_col", "cipher_list")
 
-1.7.29.  dh_params_col (string)
+1.7.30.  dh_params_col (string)
 
    Sets the Diffie-Hellmann parameters column name.
 
    Default value is "dh_params".
 
-   Example 1.29. Usage of dh_params_col block
+   Example 1.30. Usage of dh_params_col block
 modparam("tls_mgm", "dh_params_col", "dh_parms")
 
-1.7.30.  ec_curve_col (string)
+1.7.31.  ec_curve_col (string)
 
    Sets the ec_curve column name.
 
    Default value is "ec_curve".
 
-   Example 1.30. Usage of ec_curve_col block
+   Example 1.31. Usage of ec_curve_col block
 modparam("tls_mgm", "ec_curve_col", "ec_curve")
 
-1.7.31. server_domain, client_domain (string)
+1.7.32. server_domain, client_domain (string)
 
    If you only run one domain, the main one is enough. If you are
    running several TLS servers (that is, you have more than one
@@ -714,7 +716,7 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 
    It's usable only if TLS support was compiled.
 
-   Example 1.31. Usage of tls_client_domain and tls_server_domain
+   Example 1.32. Usage of tls_client_domain and tls_server_domain
    block
 ...
 listen=tls:IP_2:port2
@@ -809,7 +811,7 @@ route{
 
    Some pseudo variables are available for both, the peer'S
    certificate and the local certificate. Further, some parameters
-   can be read from the "Subject" field or the "Issuer" field.
+   can be read from the “Subject” field or the “Issuer” field.
 
 1.8.1. $tls_version
 
@@ -847,7 +849,7 @@ route{
    $tls_[peer|my]_[subject|issuer] - ASCII dump of the fields in
    the issuer/subject section of the certificate. String type.
 
-   Example 1.32. Example of $tls_[peer|my]_[subject|issuer]
+   Example 1.33. Example of $tls_[peer|my]_[subject|issuer]
 /C=AT/ST=Vienna/L=Vienna/O=enum.at/CN=enum.at
 
 1.8.8. $tls_[peer|my]_[subject|issuer]_cn
@@ -882,23 +884,23 @@ route{
 
 1.8.14. $tls_[peer|my]_san_email
 
-   $tls_[peer|my]_san_email - email address in the "subject
-   alternative name" extension. String type.
+   $tls_[peer|my]_san_email - email address in the “subject
+   alternative name” extension. String type.
 
 1.8.15. $tls_[peer|my]_san_hostname
 
-   $tls_[peer|my]_san_hostname - hostname (DNS) in the "subject
-   alternative name" extension. String type.
+   $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
+   alternative name” extension. String type.
 
 1.8.16. $tls_[peer|my]_san_uri
 
-   $tls_[peer|my]_san_uri - URI in the "subject alternative name"
+   $tls_[peer|my]_san_uri - URI in the “subject alternative name”
    extension. String type.
 
 1.8.17. $tls_[peer|my]_san_ip
 
-   $tls_[peer|my]_san_ip - ip address in the "subject alternative
-   name" extension. String type.
+   $tls_[peer|my]_san_ip - ip address in the “subject alternative
+   name” extension. String type.
 
 1.8.18. $tls_peer_verified
 
@@ -942,7 +944,7 @@ route{
    for more details).
      * fork = yes
 
-   Example 1.33. Script with TLS support
+   Example 1.34. Script with TLS support
   # ----------- global configuration parameters ------------------------
   log_level=3
   log_stderror=no
@@ -1118,7 +1120,7 @@ route{
    statements into your OpenSIPS.cfg. This will dump all available
    TLS pseudo variables.
 
-   Example 1.34. Example of TLS logging
+   Example 1.35. Example of TLS logging
 xlog("L_INFO","================= start TLS pseudo variables ============
 ===\n");
 xlog("L_INFO","$$tls_version                   = '$tls_version'\n");
@@ -1377,3 +1379,71 @@ Chapter 2. Developer Guide
    void tls_free_domains(void);
 
    Cleans up the entire domain lists.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
+   2. Razvan Crainea (@razvancrainea) 22 15 370 175
+   3. Liviu Chircu (@liviuchircu) 9 6 20 103
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 9 4
+   5. Vlad Patrascu (@rvlad-patrascu) 4 2 121 44
+   6. Callum Guy 3 1 34 9
+   7. Maksym Sobolyev (@sobomax) 2 1 3 0
+   8. Ionut Ionita (@ionutrazvanionita) 2 1 2 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                        Name                     Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2016 - Jun 2018
+   2. Callum Guy                               Jun 2018 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)              Oct 2015 - Jun 2018
+   4. Razvan Crainea (@razvancrainea)          Sep 2015 - Jan 2018
+   5. Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jun 2017
+   6. Ionut Ionita (@ionutrazvanionita)        Apr 2016 - Apr 2016
+   7. Maksym Sobolyev (@sobomax)               Mar 2016 - Mar 2016
+   8. Eseanu Marius Cristian (@eseanucristian) Sep 2015 - Sep 2015
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Callum
+   Guy, Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Eseanu Marius Cristian (@eseanucristian).
+
+   doc copyrights:
+
+   Copyright © 2015 www.opensips-solutions.com
+
+   Copyright © 2013 Secusmart GmbH
+
+   Copyright © 2006 enum.at
+
+   Copyright © 2005 Cesc Santasusana
+
+   Copyright © 2005 Voice Sistem SRL

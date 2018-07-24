@@ -1,16 +1,4 @@
 QOS Module
-
-Ovidiu Sas
-
-   SOMA Networks, Inc.
-
-Edited by
-
-Ovidiu Sas
-
-   Copyright © 2008 SOMA Networks, Inc.
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -39,6 +27,22 @@ Ovidiu Sas
         2.1. Available Functions
 
               2.1.1. register_qoscb (qos, type, cb, param)
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -180,3 +184,59 @@ Chapter 2. Developer Guide
        qos_cb_params *params); ”
      * void *param - parameter to be passed to the callback
        function.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Ovidiu Sas (@ovidiusas) 21 3 2152 13
+   2. Liviu Chircu (@liviuchircu) 10 8 32 54
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 20 14
+   4. Razvan Crainea (@razvancrainea) 4 2 12 13
+   5. Vlad Paiu (@vladpaiu) 3 1 5 6
+   6. Ezequiel Lovelle 3 1 1 1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Oct 2011 - Aug 2015
+   4. Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   5. Ovidiu Sas (@ovidiusas)             Dec 2008 - May 2012
+   6. Vlad Paiu (@vladpaiu)               Jun 2011 - Jun 2011
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Paiu (@vladpaiu), Ovidiu Sas
+   (@ovidiusas).
+
+   doc copyrights:
+
+   Copyright © 2008 SOMA Networks, Inc.

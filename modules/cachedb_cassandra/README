@@ -1,14 +1,4 @@
 cachedb_cassandra Module
-
-Vladut-Stefan Paiu
-
-   OpenSIPS Solutions
-
-Edited by
-
-Vladut-Stefan Paiu
-
-   Copyright © 2011 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -35,6 +25,22 @@ Vladut-Stefan Paiu
 
         1.6. Exported Functions
         1.7. Known issues
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -214,3 +220,61 @@ modparam("cachedb_cassandra", "exec_threshold", 100000)
    Also, the module does not currently support Authentication.
 
    Future realeases of this module will address this issue.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu) 177 7 21444 38
+   2. Liviu Chircu (@liviuchircu) 5 3 13 31
+   3. Razvan Crainea (@razvancrainea) 4 2 12 12
+   4. fabriziopicconi 4 2 5 5
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
+   6. Julián Moreno Patiño 3 1 1 1
+   7. Jarrod Baumann (@jarrodb) 2 1 2 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   4. Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
+   5. Jarrod Baumann (@jarrodb)           May 2015 - May 2015
+   6. fabriziopicconi                     Apr 2014 - Apr 2014
+   7. Vlad Paiu (@vladpaiu)               Dec 2011 - Nov 2013
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Julián Moreno Patiño, Vlad Paiu
+   (@vladpaiu), Razvan Crainea (@razvancrainea).
+
+   doc copyrights:
+
+   Copyright © 2011 www.opensips-solutions.com

@@ -1,18 +1,4 @@
-Domain Module
-
-Juha Heinanen
-
-   <jh@tutpro.com>
-
-Edited by
-
-Juha Heinanen
-
-   <jh@tutpro.com>
-
-   Copyright © 2002-2008 Juha Heinanen
-   Revision History
-   Revision $Revision: 5901 $ $Date$
+domain Module
      __________________________________________________________
 
    Table of Contents
@@ -48,6 +34,22 @@ Juha Heinanen
         2.1. Available Functions
 
               2.1.1. is_domain_local(domain)
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -278,3 +280,80 @@ Chapter 2. Developer Guide
 
    The function returns 1 if domain is local and -1 if domain is
    not local or if an error occurred.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 53 39 417 531
+   2. Jan Janak (@janakj) 32 21 999 113
+   3. Juha Heinanen (@juha-h) 31 20 700 233
+   4. Daniel-Constantin Mierla (@miconda) 19 16 92 79
+   5. Razvan Crainea (@razvancrainea) 15 8 278 216
+   6. Andrei Pelinescu-Onciul 9 4 186 121
+   7. Dan Pascu (@danpascu) 8 4 232 101
+   8. Henning Westerholt (@henningw) 7 5 44 48
+   9. Liviu Chircu (@liviuchircu) 7 4 15 79
+   10. Edson Gellert Schubert 5 1 0 195
+
+   All remaining contributors: Elena-Ramona Modroiu, Jiri Kuthan
+   (@jiriatipteldotorg), @coxx, Konstantin Bokarius, Klaus
+   Darilion, Anca Vamanu, Norman Brandinger (@NormB), UnixDev,
+   Andreas Granig.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
+   4.  @coxx                               Mar 2010 - Mar 2010
+   5.  Anca Vamanu                         Sep 2009 - Sep 2009
+   6.  UnixDev                             Feb 2009 - Feb 2009
+   7.  Juha Heinanen (@juha-h)             Jan 2003 - May 2008
+   8.  Henning Westerholt (@henningw)      May 2007 - May 2008
+   9.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+
+   All remaining contributors: Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Dan Pascu (@danpascu), Norman Brandinger
+   (@NormB), Andreas Granig, Klaus Darilion, Jan Janak (@janakj),
+   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Juha Heinanen (@juha-h), Elena-Ramona
+   Modroiu, Dan Pascu (@danpascu), Klaus Darilion, Jan Janak
+   (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2002-2008 Juha Heinanen

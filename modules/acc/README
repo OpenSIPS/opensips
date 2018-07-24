@@ -1,24 +1,4 @@
 Acc Module
-
-Jiri Kuthan
-
-Bogdan-Andrei Iancu
-
-Ramona-Elena Modroiu
-
-Edited by
-
-Bogdan-Andrei Iancu
-
-Irina-Maria Stanescu
-
-   Copyright � 2002-2003, 2003 FhG FOKUS
-
-   Copyright � 2004-2009 Voice Sistem SRL
-
-   Copyright � 2009-2013 OpenSIPS Solutions
-   Revision History
-   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -104,6 +84,21 @@ Irina-Maria Stanescu
               1.8.3. E_ACC_MISSED_EVENT
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -156,8 +151,8 @@ Chapter 1. Admin Guide
 
    To account a transaction and to choose which set of backends to
    be used, the script writer just has to use mark the transaction
-   for accouting by using the Section 1.7.1, " do_accounting(type,
-   flags, table) " script function. Note that the function is not
+   for accouting by using the Section 1.7.1, “ do_accounting(type,
+   flags, table) ” script function. Note that the function is not
    actually doing the accounting at that very process, it is just
    setting a marker - the actual accouting will be done later when
    the transaction or dialog will be completed.
@@ -169,8 +164,8 @@ Chapter 1. Admin Guide
    The accounting module will log by default a fixed set of
    attributes for the transaction - if you customize your
    accounting by adding more information to be logged, please see
-   the next chapter about extra accounting - Section 1.2, "Extra
-   accounting".
+   the next chapter about extra accounting - Section 1.2, “Extra
+   accounting”.
 
    The fixed minimal accounting information is:
      * Request Method name
@@ -258,7 +253,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
    the request message (to access info from it) or in the context
    of the reply message (final reply for the request).
 
-   Using "/reply" marker, the PV will be evaluated in the context
+   Using “/reply” marker, the PV will be evaluated in the context
    of the reply; by default (without the marker), the evaluation
    is done in the contect of the request. This will allow you to
    automatically account information (message or network related)
@@ -390,8 +385,8 @@ Note
 1.4.2. Configuration
 
    In order to have CDRs accounting, first you need to set the cdr
-   flag when calling Section 1.7.1, " do_accounting(type, flags,
-   table) " script function for the initial INVITE of the dialog.
+   flag when calling Section 1.7.1, “ do_accounting(type, flags,
+   table) ” script function for the initial INVITE of the dialog.
 
 1.4.3. How it works
 
@@ -411,10 +406,10 @@ Note
    the listed modules must be loaded before this module):
      * tm -- Transaction Manager
      * a database module -- If SQL support is used.
-     * rr -- Record Route, if "detect_direction" module parameter
+     * rr -- Record Route, if “detect_direction” module parameter
        is enabled.
      * an aaa module
-     * dialog -- Dialog, if "cdr" option is used
+     * dialog -- Dialog, if “cdr” option is used
 
 1.5.2. External Libraries or Applications
 
@@ -464,7 +459,7 @@ modparam("acc", "detect_direction", 1)
 1.6.4. multi_leg_info (string)
 
    Defines the AVP set to be used in per-call-leg accounting. See
-   Section 1.3, "Multi Call-Legs accounting" for a detailed
+   Section 1.3, “Multi Call-Legs accounting” for a detailed
    description of the Multi Call-Legs accounting.
 
    If empty, the multi-leg accounting support will be disabled.
@@ -488,7 +483,7 @@ modparam("acc", "multi_leg_info",
 1.6.5. multi_leg_bye_info (string)
 
    Defines the AVP set to be used in per-call-leg accounting. See
-   Section 1.3, "Multi Call-Legs accounting" for a detailed
+   Section 1.3, “Multi Call-Legs accounting” for a detailed
    description of the Multi Call-Legs accounting. This parameter
    evaluates the AVPs set for BYE requests. It makes sense only
    when the CDRs are automatically generated, using the dialog
@@ -563,7 +558,7 @@ modparam("acc", "log_extra_bye",
    If the parameter is set to empty string, the AAA accounting
    support will be disabled.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.10. Set aaa_url parameter
 ...
@@ -611,7 +606,7 @@ modparam("acc", "aaa_extra_bye",
    Table name of accounting successfull calls -- database
    specific.
 
-   Default value is "acc"
+   Default value is “acc”
 
    Example 1.14. db_table_acc example
 modparam("acc", "db_table_acc", "myacc_table")
@@ -620,7 +615,7 @@ modparam("acc", "db_table_acc", "myacc_table")
 
    Table name for accounting missed calls -- database specific.
 
-   Default value is "missed_calls"
+   Default value is “missed_calls”
 
    Example 1.15. db_table_missed_calls example
 modparam("acc", "db_table_missed_calls", "myMC_table")
@@ -630,7 +625,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
    SQL address -- database specific. If is set to NULL or empty
    string, the SQL support is disabled.
 
-   Default value is "NULL" (SQL disabled).
+   Default value is “NULL” (SQL disabled).
 
    Example 1.16. db_url example
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
@@ -640,7 +635,7 @@ modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
    Column name in accounting table to store the request's method
    name as string.
 
-   Default value is "method".
+   Default value is “method”.
 
    Example 1.17. acc_method_column example
 modparam("acc", "acc_method_column", "method")
@@ -650,7 +645,7 @@ modparam("acc", "acc_method_column", "method")
    Column name in accounting table to store the From header TAG
    parameter.
 
-   Default value is "from_tag".
+   Default value is “from_tag”.
 
    Example 1.18. acc_from_tag_column example
 modparam("acc", "acc_from_tag_column", "from_tag")
@@ -660,7 +655,7 @@ modparam("acc", "acc_from_tag_column", "from_tag")
    Column name in accounting table to store the To header TAG
    parameter.
 
-   Default value is "to_tag".
+   Default value is “to_tag”.
 
    Example 1.19. acc_to_tag_column example
 modparam("acc", "acc_to_tag_column", "to_tag")
@@ -670,7 +665,7 @@ modparam("acc", "acc_to_tag_column", "to_tag")
    Column name in accounting table to store the request's Callid
    value.
 
-   Default value is "callid".
+   Default value is “callid”.
 
    Example 1.20. acc_callid_column example
 modparam("acc", "acc_callid_column", "callid")
@@ -680,7 +675,7 @@ modparam("acc", "acc_callid_column", "callid")
    Column name in accounting table to store the final reply's
    numeric code value in string format.
 
-   Default value is "sip_code".
+   Default value is “sip_code”.
 
    Example 1.21. acc_sip_code_column example
 modparam("acc", "acc_sip_code_column", "sip_code")
@@ -690,7 +685,7 @@ modparam("acc", "acc_sip_code_column", "sip_code")
    Column name in accounting table to store the final reply's
    reason phrase value.
 
-   Default value is "sip_reason".
+   Default value is “sip_reason”.
 
    Example 1.22. acc_sip_reason_column example
 modparam("acc", "acc_sip_reason_column", "sip_reason")
@@ -700,7 +695,7 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
    Column name in accounting table to store the time stamp of the
    transaction completion in date-time format.
 
-   Default value is "time".
+   Default value is “time”.
 
    Example 1.23. acc_time_column example
 modparam("acc", "acc_time_column", "time")
@@ -734,7 +729,7 @@ modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email
    Hostname of the machine where the DIAMETER Client is running --
    DIAMETER specific.
 
-   Default value is "localhost".
+   Default value is “localhost”.
 
    Example 1.26. diameter_client_host example
 modparam("acc", "diameter_client_host", "3a_server.net")
@@ -744,7 +739,7 @@ modparam("acc", "diameter_client_host", "3a_server.net")
    Port number where the Diameter Client is listening -- DIAMETER
    specific.
 
-   Default value is "3000".
+   Default value is “3000”.
 
    Example 1.27. diameter_client_host example
 modparam("acc", "diameter_client_port", 3000)
@@ -926,7 +921,7 @@ acc_log_request("403 Destination not allowed");
 1.7.4.  acc_db_request(comment, table)
 
    Like acc_log_request, acc_db_request reports on a request. The
-   report is sent to database at "db_url", in the table referred
+   report is sent to database at “db_url”, in the table referred
    to in the second action parameter.
 
    Meaning of the parameters is as follows:
@@ -948,7 +943,7 @@ acc_db_request("$T_reply_code $(<reply>rr)","acc");
 1.7.5.  acc_aaa_request(comment)
 
    Like acc_log_request, acc_aaa_request reports on a request. It
-   reports to aaa server as configured in "aaa_url".
+   reports to aaa server as configured in “aaa_url”.
 
    Meaning of the parameters is as follows:
      * comment - Comment describing how the request completed -
@@ -989,8 +984,8 @@ acc_diam_request("403 Destination not allowed");
    report is packed as an event sent through the OpenSIPS Event
    Interface as E_ACC_EVENT if the reply code is a positive one
    (lower than 300), or E_ACC_MISSED_EVENT for negative or no
-   codes. More information on this in Section 1.8, "Exported
-   Events".
+   codes. More information on this in Section 1.8, “Exported
+   Events”.
 
    Meaning of the parameters is as follows:
      * comment - Comment describing how the request completed -
@@ -1145,3 +1140,95 @@ Chapter 2. Frequently Asked Questions
 
    Please follow the guidelines provided at:
    https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 213 100 4078 4526
+   2. Jan Janak (@janakj) 151 16 5587 5074
+   3. Ionut Ionita (@ionutrazvanionita) 87 27 2684 2080
+   4. Razvan Crainea (@razvancrainea) 62 38 2349 270
+   5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
+   6. Daniel-Constantin Mierla (@miconda) 26 23 115 88
+   7. Elena-Ramona Modroiu 23 4 2267 5
+   8. Henning Westerholt (@henningw) 20 15 184 131
+   9. Liviu Chircu (@liviuchircu) 19 14 227 150
+   10. Vlad Paiu (@vladpaiu) 17 11 129 208
+
+   All remaining contributors: Irina-Maria Stanescu, Maksym
+   Sobolyev (@sobomax), Karel Kozlik, Andrei Pelinescu-Onciul,
+   Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Dan Pascu
+   (@danpascu), Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas),
+   Sergio Gutierrez, Peter Nixon, Vlad Patrascu (@rvlad-patrascu),
+   Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus
+   Rodrigues, Julien Blache, Julián Moreno Patiño, Dusan Klinec,
+   Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2017
+   5.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
+   9.  Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
+   10. Irina-Maria Stanescu                Aug 2009 - Sep 2009
+
+   All remaining contributors: Alex Massover, Sergio Gutierrez,
+   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Jesus Rodrigues, Julien Blache, Peter Nixon, Maksym
+   Sobolyev (@sobomax), Juha Heinanen (@juha-h), Jan Janak
+   (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel
+   Kozlik.
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Ryan Bullock (@rrb3942),
+   Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Elena-Ramona
+   Modroiu.
+
+   doc copyrights:
+
+   Copyright © 2009-2013 OpenSIPS Solutions
+
+   Copyright © 2004-2009 Voice Sistem SRL
+
+   Copyright © 2002-2003 FhG FOKUS

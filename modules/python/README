@@ -1,14 +1,4 @@
 Python Module
-
-Maxim Sobolev
-
-   Sippy Software, Inc.
-
-Edited by
-
-Razvan Crainea
-
-   Copyright © 2009 Sippy Software, Inc.
      __________________________________________________________
 
    Table of Contents
@@ -30,6 +20,22 @@ Razvan Crainea
         1.4. Exported Functions
 
               1.4.1. python_exec(method_name [, extra_args])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -167,3 +173,54 @@ modparam("python", "child_init_method", "child_initializer")
      * method_name - name of the method called
      * extra_args(optional) - extra arguments that can be passed
        from the script to the python function.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Maksym Sobolyev (@sobomax) 16 4 1290 4
+   2. Razvan Crainea (@razvancrainea) 9 5 328 15
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 37 49
+   4. Liviu Chircu (@liviuchircu) 5 3 16 41
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2016
+   4. Maksym Sobolyev (@sobomax)          Dec 2009 - Jan 2010
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea).
+
+   doc copyrights:
+
+   Copyright © 2009 Sippy Software, Inc.

@@ -1,18 +1,4 @@
 jabber Module
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-Edited by
-
-Daniel-Constantin Mierla
-
-   <miconda@gmail.com>
-
-   Copyright © 2003 FhG FOKUS
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -54,6 +40,22 @@ Daniel-Constantin Mierla
               1.6.3. jab_exit_jconf()
               1.6.4. jab_go_online()
               1.6.5. jab_go_offline()
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -491,3 +493,78 @@ jab_go_online();
 ...
 jab_go_offline();
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Daniel-Constantin Mierla (@miconda) 381 80 19649 8172
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 50 29 1376 548
+   3. Jan Janak (@janakj) 32 15 1007 498
+   4. Andrei Pelinescu-Onciul 20 12 101 336
+   5. Liviu Chircu (@liviuchircu) 9 6 21 83
+   6. Jiri Kuthan (@jiriatipteldotorg) 6 3 313 0
+   7. Razvan Crainea (@razvancrainea) 5 3 29 27
+   8. Henning Westerholt (@henningw) 4 2 29 23
+   9. Peter Lemenkov (@lemenkov) 3 1 32 7
+   10. Elena-Ramona Modroiu 3 1 13 14
+
+   All remaining contributors: Jamey Hicks, Konstantin Bokarius,
+   John Riordan, Vlad Paiu (@vladpaiu), Julián Moreno Patiño,
+   Klaus Darilion, Edson Gellert Schubert.
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2016
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
+   6.  John Riordan                        May 2009 - May 2009
+   7.  Klaus Darilion                      Jul 2008 - Jul 2008
+   8.  Henning Westerholt (@henningw)      Jan 2008 - Jun 2008
+   9.  Daniel-Constantin Mierla (@miconda) Jul 2002 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+
+   All remaining contributors: Edson Gellert Schubert, Peter
+   Lemenkov (@lemenkov), Elena-Ramona Modroiu, Jan Janak
+   (@janakj), Andrei Pelinescu-Onciul, Jamey Hicks, Jiri Kuthan
+   (@jiriatipteldotorg).
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Peter
+   Lemenkov (@lemenkov), Elena-Ramona Modroiu, Jan Janak
+   (@janakj).
+
+   doc copyrights:
+
+   Copyright © 2003 FhG FOKUS

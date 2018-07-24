@@ -1,16 +1,4 @@
 path Module
-
-Andreas Granig
-
-   Inode GmbH
-
-Edited by
-
-Andreas Granig
-
-   Copyright © 2006 Inode GmbH
-   Revision History
-   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -38,6 +26,22 @@ Andreas Granig
               1.4.2. add_path(user)
               1.4.3. add_path_received()
               1.4.4. add_path_received(user)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -207,3 +211,68 @@ if (!add_path_received("inbound")) {
         ...
 };
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 19 15 237 78
+   2. Liviu Chircu (@liviuchircu) 13 10 81 60
+   3. Daniel-Constantin Mierla (@miconda) 12 10 25 21
+   4. Andreas Granig 12 4 863 22
+   5. Razvan Crainea (@razvancrainea) 6 4 7 7
+   6. Henning Westerholt (@henningw) 4 2 5 32
+   7. Ancuta Onofrei 3 1 12 12
+   8. Konstantin Bokarius 3 1 2 5
+   9. Edson Gellert Schubert 3 1 0 103
+   10. Elena-Ramona Modroiu 2 1 26 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2016
+   4.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
+   5.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   6.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   7.  Henning Westerholt (@henningw)      Apr 2007 - Dec 2007
+   8.  Ancuta Onofrei                      Sep 2007 - Sep 2007
+   9.  Andreas Granig                      Mar 2006 - Aug 2007
+   10. Elena-Ramona Modroiu                Jan 2007 - Jan 2007
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Andreas Granig.
+
+   doc copyrights:
+
+   Copyright © 2006 Inode GmbH

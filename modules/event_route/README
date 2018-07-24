@@ -1,18 +1,4 @@
 event_route Module
-
-Razvan Crainea
-
-   OpenSIPS Solutions
-
-Edited by
-
-Razvan Crainea
-
-Edited by
-
-Ovidiu Sas
-
-   Copyright © 2012 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -34,6 +20,21 @@ Ovidiu Sas
               1.7.1. fetch_event_params(pvar_list)
 
    2. Frequently Asked Questions
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
+
+   List of Tables
+
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -151,38 +152,98 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Can I declare more routes for handling the same event?
+   Can I declare more routes for handling the same event?
 
-       No, only a single event_route can be used for a particular
-       event.
+   No, only a single event_route can be used for a particular
+   event.
 
    2.2.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.3.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.4.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea) 22 14 842 28
+   2. Liviu Chircu (@liviuchircu) 8 6 14 36
+   3. Ionut Ionita (@ionutrazvanionita) 8 5 138 51
+   4. Ovidiu Sas (@ovidiusas) 7 2 384 9
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 4 2
+   6. Ionel Cerghit (@ionel-cerghit) 3 1 5 6
+   7. Vlad Paiu (@vladpaiu) 2 1 1 0
+   8. Walter Doekes (@wdoekes) 1 1 0 0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+3.2. By Commit Activity
+
+   Table 3.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Vlad Paiu (@vladpaiu)               Jun 2016 - Jun 2016
+   4. Razvan Crainea (@razvancrainea)     Dec 2012 - Feb 2016
+   5. Ionel Cerghit (@ionel-cerghit)      Jun 2015 - Jun 2015
+   6. Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Oct 2014
+   7. Ovidiu Sas (@ovidiusas)             Jul 2014 - Jul 2014
+   8. Walter Doekes (@wdoekes)            May 2014 - May 2014
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 4. Documentation
+
+4.1. Contributors
+
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Ovidiu Sas (@ovidiusas), Razvan Crainea (@razvancrainea).
+
+   doc copyrights:
+
+   Copyright © 2012 www.opensips-solutions.com
