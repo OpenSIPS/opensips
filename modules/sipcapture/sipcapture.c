@@ -4863,7 +4863,7 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	db_vals[10].type = DB_STR;
 	db_vals[10].val.str_val = sco.node;
 
-	db_vals[11].type = DB_BLOB;
+	db_vals[11].type = DB_STR;
 
 
 	/* we can have other pyload than sip only for hepv3 */
