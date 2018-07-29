@@ -74,19 +74,28 @@ dialog Module
               1.7.2. match_dialog([dlg_match_mode])
               1.7.3. validate_dialog()
               1.7.4. fix_route_dialog()
-              1.7.5. get_dialog_info(attr,var,key,key_val)
+              1.7.5. get_dialog_info(attr,avp,key,key_val,no_dlgs)
+
               1.7.6. get_dialog_vals(names,vals,callid)
-              1.7.7. set_dlg_profile(profile,[value])
-              1.7.8. unset_dlg_profile(profile,[value])
-              1.7.9. is_in_profile(profile,[value])
-              1.7.10. get_profile_size(profile,[value],size)
-              1.7.11. set_dlg_flag(idx)
-              1.7.12. test_and_set_dlg_flag(idx, value)
-              1.7.13. reset_dlg_flag(idx)
-              1.7.14. is_dlg_flag_set(idx)
-              1.7.15. store_dlg_value(name,val)
-              1.7.16. fetch_dlg_value(name,pvar)
-              1.7.17. set_dlg_sharing_tag(tag_name)
+              1.7.7.
+                      get_dialogs_by_val(name,value,out_avp,out_dlg_
+                      no)
+
+              1.7.8.
+                      get_dialogs_by_profile(name,value,out_avp,out_
+                      dlg_no)
+
+              1.7.9. set_dlg_profile(profile,[value])
+              1.7.10. unset_dlg_profile(profile,[value])
+              1.7.11. is_in_profile(profile,[value])
+              1.7.12. get_profile_size(profile,[value],size)
+              1.7.13. set_dlg_flag(idx)
+              1.7.14. test_and_set_dlg_flag(idx, value)
+              1.7.15. reset_dlg_flag(idx)
+              1.7.16. is_dlg_flag_set(idx)
+              1.7.17. store_dlg_value(name,val)
+              1.7.18. fetch_dlg_value(name,pvar)
+              1.7.19. set_dlg_sharing_tag(tag_name)
 
         1.8. Exported Statistics
 
@@ -114,8 +123,9 @@ dialog Module
               1.9.8. dlg_db_sync
               1.9.9. dlg_restore_db
               1.9.10. list_all_profiles
-              1.9.11. dlg_set_sharing_tag_active
-              1.9.12. dlg_list_sharing_tags
+              1.9.11. dlg_push_var
+              1.9.12. dlg_set_sharing_tag_active
+              1.9.13. dlg_list_sharing_tags
 
         1.10. Exported Pseudo-Variables
 
@@ -127,7 +137,9 @@ dialog Module
               1.10.6. $DLG_did
               1.10.7. $DLG_end_reason
               1.10.8. $DLG_timeout
-              1.10.9. $dlg_val(name)
+              1.10.9. $DLG_json
+              1.10.10. $DLG_ctx_json
+              1.10.11. $dlg_val(name)
 
         1.11. Exported Events
 
@@ -216,17 +228,19 @@ dialog Module
    1.55. fix_route_dialog() usage
    1.56. get_dialog_info usage
    1.57. get_dialog_vals usage
-   1.58. set_dlg_profile usage
-   1.59. unset_dlg_profile usage
-   1.60. is_in_profile usage
-   1.61. get_profile_size usage
-   1.62. set_dlg_flag usage
-   1.63. test_and_set_dlg_flag usage
-   1.64. reset_dlg_flag usage
-   1.65. is_dlg_flag_set usage
-   1.66. store_dlg_value usage
-   1.67. fetch_dlg_value usage
-   1.68. set_dlg_sharing_tag usage
+   1.58. get_dialog_vals usage
+   1.59. get_dialog_vals usage
+   1.60. set_dlg_profile usage
+   1.61. unset_dlg_profile usage
+   1.62. is_in_profile usage
+   1.63. get_profile_size usage
+   1.64. set_dlg_flag usage
+   1.65. test_and_set_dlg_flag usage
+   1.66. reset_dlg_flag usage
+   1.67. is_dlg_flag_set usage
+   1.68. store_dlg_value usage
+   1.69. fetch_dlg_value usage
+   1.70. set_dlg_sharing_tag usage
 
 Chapter 1. Admin Guide
 
@@ -1173,15 +1187,15 @@ create_dialog("B");
     }
 ...
 
-1.7.5.  get_dialog_info(attr,var,key,key_val)
+1.7.5.  get_dialog_info(attr,avp,key,key_val,no_dlgs)
 
    The function extracts a dialog value from another dialog. It
-   first searches through all existing (ongoing) dialogs for a
-   dialog that has a dialog variable named "key" with the value
+   first searches through all existing (ongoing) dialogs for all
+   dialogs that have a dialog variable named "key" with the value
    "key_val" (so a dialog where $dlg_val(key)=="key_val"). If
    found, it returns the value of the dialog variable "attr" from
-   the found dialog in the "var" pseudo-variable, otherwise
-   nothing is written in "var", and a negative error code is
+   all the founds dialog in the "avp" pseudo-variable, otherwise
+   nothing is written in "avp", and a negative error code is
    returned.
 
    NOTE: the function does not require to be called in the context
@@ -1191,21 +1205,33 @@ create_dialog("B");
    Meaning of the parameters is as follows:
      * attr - the name of the dialog variable (from the found
        dialog) to be returned;
-     * var - a pvar where to store the value of the "attr" dialog
-       variable
+     * avp - an avp where to store the values of the "attr" dialog
+       variable. Since the function checks through all dialogs,
+       this needs to be an actual AVP in order to support pushing
+       values from all matched dialogs.
      * key - name of a dialog variable to be used a search key
        (when looking after the target dialog)
      * key_val - the value of the dialog variable that is used as
        key in searching the target dialog.
+     * no_dlgs - the total number of dialogs containing the key
+       variable
 
-   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-   REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
+   This function can be used from ALL ROUTES.
 
    Example 1.56. get_dialog_info usage
 ...
-if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
-        xlog("caller $fU has another ongoing, talking to callee $var(x)\
-n")
+if ( get_dialog_info("callee","$avp(callee_array)","caller","$fu","$var(
+dlg_no)) ) {
+        xlog("caller $fu has $var(dlg_no) other ongoing calls, talking w
+ith :");
+        $var(it) = 0;
+        while ($var(it) < $var(dlg_no)) {
+                $var(current_callee) = $(avp(callee_array)[$var(it)]);
+                xlog(" $var(current_callee) ");
+                $var(it) = $var(it) + 1;
+        }
+
+        xlog("\n");
 }
 
 # create dialog for current call and place the caller and callee attribu
@@ -1251,7 +1277,81 @@ als)[$var(i)])'\n");
 }
 ...
 
-1.7.7.  set_dlg_profile(profile,[value])
+1.7.7.  get_dialogs_by_val(name,value,out_avp,out_dlg_no)
+
+   The function looks up through the whole dialog table for
+   dialogs containing a $dlg_val with the provided name and value,
+   and returns all the $DLG_ctx_json variables for the matched
+   dialogs, storing them in the provided out_avp. The total number
+   of matched dialogs is returned in the out_dlgs_no variable
+
+   NOTE: the function does not require to be called in the context
+   of a dialog - you can use it whenever / whereever for searching
+   for other dialogs.
+
+   Meaning of the parameters is as follows:
+     * name - the name of the dialog variable used for the lookup
+     * value - the value of the above dialog val
+     * out_avp - the AVP which will be populated will the dialog
+       JSONs for all the matched calls
+     * dlg_no - the out var which will contain the total number of
+       matched dialogs
+
+   This function can be used from any type of route.
+
+   Example 1.58. get_dialog_vals usage
+...
+if ( get_dialogs_by_val("caller","$fU","$avp(dlg_jsons)","$avp(dlg_no)")
+ ) {
+        xlog("Caller $fU has $avp(dlg_no) other calls \n);
+        $var(i) = 0;
+        while ( $(avp(dlg_jsons)[$var(i)])!=NULL ) {
+                $json(dlg_info) := $(avp(dlg_jsons)[$var(i)]);
+                # fetch any info for the above call and process it
+                $var(i) = $var(i) + 1;
+        }
+}
+...
+
+1.7.8.  get_dialogs_by_profile(name,value,out_avp,out_dlg_no)
+
+   The function looks up through the whole dialog table for
+   dialogs configured to be within the provided dialog profile
+   name, and optionally with the provided profile value. The
+   function returns all the $DLG_ctx_json variables for the
+   matched dialogs, storing them in the provided out_avp. The
+   total number of matched dialogs is returned in the out_dlgs_no
+   variable
+
+   NOTE: the function does not require to be called in the context
+   of a dialog - you can use it whenever / whereever for searching
+   for other dialogs.
+
+   Meaning of the parameters is as follows:
+     * name - the name of the dialog profile used for the lookup
+     * value - the value of the above dialog profile ( optional )
+     * out_avp - the AVP which will be populated will the dialog
+       JSONs for all the matched calls
+     * dlg_no - the out var which will contain the total number of
+       matched dialogs
+
+   This function can be used from any type of route.
+
+   Example 1.59. get_dialog_vals usage
+...
+if ( get_dialogs_by_profile("caller","$fU","$avp(dlg_jsons)","$avp(dlg_n
+o)") ) {
+        xlog("Caller $fU has $avp(dlg_no) other calls \n);
+        $var(i) = 0;
+        while ( $(avp(dlg_jsons)[$var(i)])!=NULL ) {
+                $json(dlg_info) := $(avp(dlg_jsons)[$var(i)]);
+                # fetch any info for the above call and process it
+                $var(i) = $var(i) + 1;
+        }
+}
+...
+
+1.7.9.  set_dlg_profile(profile,[value])
 
    Inserts the current dialog into a profile. Note that if the
    profile does not support values, this will be silently
@@ -1271,13 +1371,13 @@ als)[$var(i)])'\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.58. set_dlg_profile usage
+   Example 1.60. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
 ...
 
-1.7.8.  unset_dlg_profile(profile,[value])
+1.7.10.  unset_dlg_profile(profile,[value])
 
    Removes the current dialog from a profile.
 
@@ -1294,13 +1394,13 @@ set_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.59. unset_dlg_profile usage
+   Example 1.61. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
 ...
 
-1.7.9.  is_in_profile(profile,[value])
+1.7.11.  is_in_profile(profile,[value])
 
    Checks if the current dialog belongs to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -1322,7 +1422,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.60. is_in_profile usage
+   Example 1.62. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1333,7 +1433,7 @@ if (is_in_profile("caller","XX")) {
 }
 ...
 
-1.7.10.  get_profile_size(profile,[value],size)
+1.7.12.  get_profile_size(profile,[value],size)
 
    Returns the number of dialogs belonging to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -1354,7 +1454,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. get_profile_size usage
+   Example 1.63. get_profile_size usage
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1365,7 +1465,7 @@ get_profile_size("caller", "$fu", "$var(size)");
 xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ...
 
-1.7.11.  set_dlg_flag(idx)
+1.7.13.  set_dlg_flag(idx)
 
    Sets the dialog flag index idx to true. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1379,12 +1479,12 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. set_dlg_flag usage
+   Example 1.64. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
 
-1.7.12.  test_and_set_dlg_flag(idx, value)
+1.7.14.  test_and_set_dlg_flag(idx, value)
 
    Atomically checks if the dialog flag index idx is equal to
    value. If true, changes the value with the opposite one. This
@@ -1400,12 +1500,12 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. test_and_set_dlg_flag usage
+   Example 1.65. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
 
-1.7.13.  reset_dlg_flag(idx)
+1.7.15.  reset_dlg_flag(idx)
 
    Resets the dialog flag index idx to false. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1419,12 +1519,12 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. reset_dlg_flag usage
+   Example 1.66. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
 
-1.7.14.  is_dlg_flag_set(idx)
+1.7.16.  is_dlg_flag_set(idx)
 
    Returns true if the dialog flag index idx is set. The dialog
    flags are dialog persistent and they can be accessed (set and
@@ -1438,14 +1538,14 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. is_dlg_flag_set usage
+   Example 1.67. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
 }
 ...
 
-1.7.15.  store_dlg_value(name,val)
+1.7.17.  store_dlg_value(name,val)
 
    Attaches to the dialog the value val under the name name. The
    values attached to dialogs are dialog persistent and they can
@@ -1463,7 +1563,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. store_dlg_value usage
+   Example 1.68. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1471,7 +1571,7 @@ store_dlg_value("account type","prepaid");
 $dlg_val(account_type) = "prepaid";
 ...
 
-1.7.16.  fetch_dlg_value(name,pvar)
+1.7.18.  fetch_dlg_value(name,pvar)
 
    Fetches from the dialog the value of attribute named name. The
    values attached to dialogs are dialog persistent and they can
@@ -1489,7 +1589,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. fetch_dlg_value usage
+   Example 1.69. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
@@ -1497,7 +1597,7 @@ fetch_dlg_value("account type","$var(account)");
 $var(account) = $dlg_val(account_type);
 ...
 
-1.7.17.  set_dlg_sharing_tag(tag_name)
+1.7.19.  set_dlg_sharing_tag(tag_name)
 
    Marks the current dialog with the sharing tag tag_name. From
    this point on, actions like in-dialog pinging, BYEs on timeout
@@ -1517,7 +1617,7 @@ $var(account) = $dlg_val(account_type);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. set_dlg_sharing_tag usage
+   Example 1.70. set_dlg_sharing_tag usage
 ...
 set_dlg_sharing_tag("vip1");
 ...
@@ -1766,7 +1866,25 @@ wZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensipsctl fifo list_all_profiles
 
-1.9.11. dlg_set_sharing_tag_active
+1.9.11. dlg_push_var
+
+   Push or update a dialog value for the given list of dialog IDs
+   / Call-IDs.
+
+   Name: dlg_push_var
+
+   Parameters: It takes 3 or more parameters
+     * dlg_val_name - name of the dialog value that needs to be
+       inserted/updated
+     * dlg_val_value - value to be inserted/updated
+     * DID - dialog identifier. Can be either the $DLG_did or the
+       actual Call-ID.
+
+   MI FIFO Command Format:
+                opensipsctl fifo dlg_push_var var_name var_value DID1 [
+DID2 DID3 ...  DIDN ]
+
+1.9.12. dlg_set_sharing_tag_active
 
    Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
@@ -1782,7 +1900,7 @@ wZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensipsctl fifo dlg_set_sharing_tag_active vip1
 
-1.9.12. dlg_list_sharing_tags
+1.9.13. dlg_list_sharing_tags
 
    Lists all known sharing tags and their states.
 
@@ -1886,7 +2004,27 @@ wZjAzNGM1ZDY
    NULL will be returned if there is no dialog for the request,
    otherwise the number of seconds until the dialog expiration.
 
-1.10.9. $dlg_val(name)
+1.10.9. $DLG_json
+
+   The variable is read-only and exposes a JSON variable
+   containing all the information that the dlg_list MI function
+   contains
+
+   NULL will be returned if there is no dialog for the request,
+   otherwise the JSON will be returned.
+
+1.10.10. $DLG_ctx_json
+
+   The variable is read-only and exposes a JSON variable
+   containing all the information that the dlg_list_ctx MI
+   function contains ( on top of $DLG_json, this will expose the
+   full list of dialog vars and profile links for the current
+   dialog )
+
+   NULL will be returned if there is no dialog for the request,
+   otherwise the JSON will be returned.
+
+1.10.11. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
    attribute named name. This PV will be available only for

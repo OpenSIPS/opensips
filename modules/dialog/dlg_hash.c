@@ -57,14 +57,12 @@
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 #include "dlg_replication.h"
+#include "dlg_req_within.h"
 #include "../../evi/evi_params.h"
 #include "../../evi/evi_modules.h"
 
 #define MAX_LDG_LOCKS  2048
 #define MIN_LDG_LOCKS  2
-
-
-extern struct tm_binds d_tmb;
 
 
 struct dlg_table *d_table = NULL;
@@ -1598,4 +1596,109 @@ error:
 }
 
 
+struct mi_root * mi_push_dlg_var(struct mi_root *cmd_tree, void *param )
+{
+	struct mi_node* node;
+	unsigned int h_entry, h_id;
+	unsigned long long d_id;
+	str dlg_var_name,dlg_var_value,dialog_id;
+	char bkp, *end;
+	struct dlg_cell * dlg = NULL;
+	int shtag_state = 1;
 
+	if ( d_table == NULL)
+		goto not_found;	
+
+	node = cmd_tree->node.kids;
+	h_entry = h_id = 0;
+
+	/* min 3 params : dlg_var_name dlg_var_value dialog_id */
+	if (node==NULL || node->next == NULL || node->next->next == NULL)
+		goto bad_param; 
+
+	/* first param is the dialog var name */
+	if ( node->value.s==NULL || node->value.len==0 )
+		goto bad_param;
+	dlg_var_name = node->value;
+
+	/* second param is the dialog var value */
+	node = node->next;
+	if ( node->value.s==NULL || node->value.len==0 )
+		goto bad_param;
+	dlg_var_value = node->value;
+
+	/* third param is the dlg identifier */
+	
+	node = node->next;
+	while (node && node->value.s !=NULL && node->value.len!=0) {
+		dialog_id = node->value;
+
+		/* Get the dialog based of the dialog_id. This may be a
+		 * numerical DID or a string SIP Call-ID */
+
+		/* make value null terminated (in an ugly way) */
+		bkp = dialog_id.s[dialog_id.len];
+		dialog_id.s[dialog_id.len] = 0;
+
+		/* conver to long long */
+		d_id = strtoll( dialog_id.s, &end, 10);
+		dialog_id.s[dialog_id.len] = bkp;
+		if (end-dialog_id.s==dialog_id.len) {
+			/* the ID is numeric, so let's consider it DID */
+			h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
+			h_id = (unsigned int)(d_id &
+				(((unsigned long long)1<<(8*sizeof(int)))-1) );
+			LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
+			dlg = lookup_dlg(h_entry, h_id);
+			if (dlg == NULL) {
+				LM_DBG("Faiure to match the ID as DLG_ID \n");
+				goto callid_lookup;
+			}
+		} else {
+callid_lookup:
+			/* the ID is not a number, so let's consider
+			 * the value a SIP call-id */
+			LM_DBG("Call-ID: <%.*s>\n", dialog_id.len, dialog_id.s);
+			dlg = get_dlg_by_callid( &dialog_id );
+		}
+
+		if (dlg == NULL) {
+			/* XXX - not_found or loop_end here ? */
+			goto loop_end;
+		}
+
+		if (dialog_repl_cluster) {
+			shtag_state = get_shtag_state(dlg);
+			if (shtag_state < 0) {
+				unref_dlg(dlg, 1);
+				goto dlg_error;
+			} else if (shtag_state == 0) {
+				/* editing dlg vars on backup servers - no no */
+				unref_dlg(dlg, 1);
+				return init_mi_tree(403, MI_DIALOG_BACKUP_ERR,
+				MI_DIALOG_BACKUP_ERR_LEN);
+			}
+		}
+
+		if (store_dlg_value( dlg, &dlg_var_name, &dlg_var_value)!=0) {
+			LM_ERR("failed to store dialog values <%.*s>:<%.*s>\n",
+			dlg_var_name.len,dlg_var_name.s,
+			dlg_var_value.len,dlg_var_value.s);
+
+			unref_dlg(dlg, 1);
+			goto dlg_error;
+		}
+			
+		unref_dlg(dlg, 1);
+loop_end:
+		node = node->next;
+	}
+	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+
+not_found:
+	return init_mi_tree(404, MI_DIALOG_NOT_FOUND, MI_DIALOG_NOT_FOUND_LEN);
+bad_param:
+	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+dlg_error:
+	return init_mi_tree(403, MI_DLG_OPERATION_ERR, MI_DLG_OPERATION_ERR_LEN);
+}

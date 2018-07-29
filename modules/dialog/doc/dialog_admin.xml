@@ -1537,16 +1537,16 @@ create_dialog("B");
 
 	<section id="func_get_dialog_info" xreflabel="get_dialog_info()">
 		<title>
-		<function moreinfo="none">get_dialog_info(attr,var,key,key_val)</function>
+		<function moreinfo="none">get_dialog_info(attr,avp,key,key_val,no_dlgs)</function>
 		</title>
 		<para>
 		The function extracts a dialog value from another dialog. It first searches
-		through all existing (ongoing) dialogs for a dialog that has a dialog
+		through all existing (ongoing) dialogs for all dialogs that have a dialog
 		variable named "key" with the value "key_val"
 		(so a dialog where $dlg_val(key)=="key_val"). If found, it returns
-		the value of the dialog variable "attr" from the
-		found dialog in the "var" pseudo-variable, otherwise nothing is written
-		in "var", and a negative error code is returned.
+		the value of the dialog variable "attr" from all the
+		founds dialog in the "avp" pseudo-variable, otherwise nothing is written
+		in "avp", and a negative error code is returned.
 		</para>
 		<para>
 		NOTE: the function does not require to be called in the context of
@@ -1561,8 +1561,9 @@ create_dialog("B");
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>var</emphasis> - a pvar where to store the value of
-			the "attr" dialog variable
+			<para><emphasis>avp</emphasis> - an avp where to store the values of
+			the "attr" dialog variable.
+			Since the function checks through all dialogs, this needs to be an actual AVP in order to support pushing values from all matched dialogs.
 			</para>
 		</listitem>
 		<listitem>
@@ -1575,17 +1576,28 @@ create_dialog("B");
 			variable that is used as key in searching the target dialog.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>no_dlgs</emphasis> - the total number of dialogs containing the key variable
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
+		This function can be used from ALL ROUTES.
 		</para>
 		<example>
 		<title><function>get_dialog_info</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
-	xlog("caller $fU has another ongoing, talking to callee $var(x)\n")
+if ( get_dialog_info("callee","$avp(callee_array)","caller","$fu","$var(dlg_no)) ) {
+	xlog("caller $fu has $var(dlg_no) other ongoing calls, talking with :");	
+	$var(it) = 0;
+	while ($var(it) &lt; $var(dlg_no)) {
+		$var(current_callee) = $(avp(callee_array)[$var(it)]);
+		xlog(" $var(current_callee) ");
+		$var(it) = $var(it) + 1;
+	}
+
+	xlog("\n");
 }
 
 # create dialog for current call and place the caller and callee attributes
@@ -1653,6 +1665,109 @@ if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
 		</example>
 	</section>
 
+	<section id="func_get_dialog_by_val" xreflabel="get_dialogs_by_val()">
+		<title>
+		<function moreinfo="none">get_dialogs_by_val(name,value,out_avp,out_dlg_no)</function>
+		</title>
+		<para>
+		The function looks up through the whole dialog table for dialogs containing a $dlg_val with the provided name and value, and returns all the $DLG_ctx_json variables for the matched dialogs, storing them in the provided out_avp. The total number of matched dialogs is returned in the out_dlgs_no variable
+		</para>
+		<para>
+		NOTE: the function does not require to be called in the context of
+		a dialog - you can use it whenever / whereever for searching for other
+		dialogs.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>name</emphasis> - the name of the dialog variable used for the lookup
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>value</emphasis> - the value of the above dialog val
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_avp</emphasis> - the AVP which will be populated will the dialog JSONs for all the matched calls
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>dlg_no</emphasis> - the out var which will contain the total number of matched dialogs
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<example>
+		<title><function>get_dialog_vals</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( get_dialogs_by_val("caller","$fU","$avp(dlg_jsons)","$avp(dlg_no)") ) {
+	xlog("Caller $fU has $avp(dlg_no) other calls \n);
+	$var(i) = 0;
+	while ( $(avp(dlg_jsons)[$var(i)])!=NULL ) {
+		$json(dlg_info) := $(avp(dlg_jsons)[$var(i)]); 
+		# fetch any info for the above call and process it
+		$var(i) = $var(i) + 1;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_get_dialog_by_profile" xreflabel="get_dialogs_by_profile()">
+		<title>
+		<function moreinfo="none">get_dialogs_by_profile(name,value,out_avp,out_dlg_no)</function>
+		</title>
+		<para>
+		The function looks up through the whole dialog table for dialogs configured to be within the provided dialog profile name, and optionally with the provided profile value. The function returns all the $DLG_ctx_json variables for the matched dialogs, storing them in the provided out_avp. The total number of matched dialogs is returned in the out_dlgs_no variable
+		</para>
+		<para>
+		NOTE: the function does not require to be called in the context of
+		a dialog - you can use it whenever / whereever for searching for other
+		dialogs.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>name</emphasis> - the name of the dialog profile used for the lookup
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>value</emphasis> - the value of the above dialog profile ( optional )
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_avp</emphasis> - the AVP which will be populated will the dialog JSONs for all the matched calls
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>dlg_no</emphasis> - the out var which will contain the total number of matched dialogs
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<example>
+		<title><function>get_dialog_vals</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( get_dialogs_by_profile("caller","$fU","$avp(dlg_jsons)","$avp(dlg_no)") ) {
+	xlog("Caller $fU has $avp(dlg_no) other calls \n);
+	$var(i) = 0;
+	while ( $(avp(dlg_jsons)[$var(i)])!=NULL ) {
+		$json(dlg_info) := $(avp(dlg_jsons)[$var(i)]); 
+		# fetch any info for the above call and process it
+		$var(i) = $var(i) + 1;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section id="func_set_dlg_profile" xreflabel="set_dlg_profile()">
 		<title>
@@ -2462,6 +2577,35 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
+		<section id="dlg_push_var" xreflabel="dlg_push_var">
+		<title><function moreinfo="none">dlg_push_var</function></title>
+		<para>
+		Push or update a dialog value for the given list of dialog IDs / Call-IDs.
+		</para>
+		<para>
+		Name: <emphasis>dlg_push_var</emphasis>
+		</para>
+		<para>Parameters: <emphasis>It takes 3 or more parameters</emphasis>
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>dlg_val_name</emphasis> - name of the dialog value that needs to be inserted/updated
+			</para></listitem>
+			<listitem><para>
+				<emphasis>dlg_val_value</emphasis> - value to be inserted/updated
+			</para></listitem>
+			<listitem><para>
+				<emphasis>DID</emphasis> - dialog identifier. Can be either the $DLG_did or the actual Call-ID. 
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
+		</programlisting>
+		</section>
+
 		<section id='mi_dlg_set_sharing_tag_active' xreflabel="dlg_set_sharing_tag_active">
 		<title><function moreinfo="none">dlg_set_sharing_tag_active</function></title>
 		<para>
@@ -2660,6 +2804,26 @@ set_dlg_sharing_tag("vip1");
 			<para>
 				NULL will be returned if there is no dialog for the request, otherwise the
 				number of seconds until the dialog expiration.
+			</para>
+		</section>
+
+		<section id="pv_DLG_json" xreflabel="$DLG_json">
+			<title><varname>$DLG_json</varname></title>
+			<para>
+			The variable is read-only and exposes a JSON variable containing all the information that the dlg_list MI function contains
+			</para>
+			<para>
+				NULL will be returned if there is no dialog for the request, otherwise the JSON will be returned.
+			</para>
+		</section>
+
+		<section id="pv_DLG_ctx_json" xreflabel="$DLG_ctx_json">
+			<title><varname>$DLG_ctx_json</varname></title>
+			<para>
+			The variable is read-only and exposes a JSON variable containing all the information that the dlg_list_ctx MI function contains ( on top of $DLG_json, this will expose the full list of dialog vars and profile links for the current dialog )
+			</para>
+			<para>
+				NULL will be returned if there is no dialog for the request, otherwise the JSON will be returned.
 			</para>
 		</section>
 

@@ -380,6 +380,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 
 struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
 struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
+struct mi_root * mi_push_dlg_var(struct mi_root *cmd_tree, void *param );
 
 static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt)
 {
