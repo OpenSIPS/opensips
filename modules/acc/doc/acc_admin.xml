@@ -1114,7 +1114,6 @@ acc_evi_request("403 Destination not allowed");
 </programlisting>
 		</example>
 	</section>
-	</section>
 
 	<section>
 		<title>
@@ -1137,6 +1136,7 @@ acc_evi_request("403 Destination not allowed");
 ...
 </programlisting>
 		</example>
+	</section>
 	</section>
 
 
