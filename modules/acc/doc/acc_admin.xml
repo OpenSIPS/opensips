@@ -1114,7 +1114,6 @@ acc_evi_request("403 Destination not allowed");
 </programlisting>
 		</example>
 	</section>
-	</section>
 
 	<section id="func_acc_new_leg" xreflabel="acc_new_leg()">
 		<title>
@@ -1137,6 +1136,7 @@ acc_evi_request("403 Destination not allowed");
 ...
 </programlisting>
 		</example>
+	</section>
 	</section>
 
 
