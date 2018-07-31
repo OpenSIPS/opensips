@@ -115,12 +115,14 @@
 	</para>
 	<para>
 	The following actions will <emphasis role='bold'>not</emphasis> be performed for a dialog
-	that is marked with a sharing tag that is in the "<emphasis role='bold'>backup</emphasis>" state:
+	marked with a sharing tag that is in the "<emphasis role='bold'>backup</emphasis>" state:
 	<itemizedlist>
 		<listitem><para>sending Re-Invite or OPTIONS pings to end-points</para></listitem>
 		<listitem><para>generating BYE requests or any other actions(like producing CDRs)
 			upon dialog expiration</para></listitem>
 		<listitem><para>sending replication packets on dialog events(update, delete)</para></listitem>
+		<listitem><para>counting the dialog in the profiles that it belongs; only if profile replication
+			is also enabled</para></listitem>
 	</itemizedlist>
 	</para>
 	<para>
@@ -140,12 +142,18 @@
 	are not reconfirmed as being active in the meantime (SIP updates, received in sync data).
 	</para>
 	<para>
-	Also configuring profiles replication via the
-	<emphasis>profile_replication_cluster</emphasis> parameter is
-	<emphasis>not</emphasis> necessary when dialog replication is already configured,
-	as profile information is included in the dialog updates. The profiles must still
+	Also configuring profile replication via the <emphasis>profile_replication_cluster</emphasis>
+	parameter is not necessary when dialog replication is already configured. The profile information
+	is included in the dialog updates sent in the dialog replication cluster. The profiles must still
 	be marked for sharing though in the <emphasis>profiles_with_value</emphasis> or
 	<emphasis>profiles_no_value</emphasis> parameters.
+	</para>
+	<para>
+	A scenario were both profile and dialog replication should be configured is when a platform has
+	multiple POPs, where separate dialog replication clusters are configured for HA purposes, and a
+	cluster for globally shared profiles is also required. In this case, proper counting for dialogs
+	is ensured by using the sharing tags mechanism(in order to avoid counting each dialog twice,
+	both on the active and backup node for that dialog).
 	</para>
 	</section>
 
