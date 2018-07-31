@@ -36,9 +36,10 @@
 #include "../../parser/parse_param.h"
 #include "../../db/db.h"                /* Database API */
 #include "../../dset.h"
+#include "../../mod_fix.h"
 #include "../../pvar.h"
-#include "checks.h"
 
+#include "checks.h"
 
 /*
  * Checks if From includes a To-tag -- good to identify
@@ -181,7 +182,7 @@ ok:
  */
 int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 {
-	str *param;
+	str param;
 	str params;
 
 	char  *tok_end;
@@ -192,11 +193,13 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 
 	int begin_len, end_len;
 
-	param = (str*)_param;
-
-	if (param->len == 0) {
-		return 1;
+	if (fixup_get_svalue(_msg, (gparam_p)_param, &param) < 0) {
+		LM_ERR("failed to fetch parameter\n");
+		return -1;
 	}
+
+	if (param.len == 0)
+		return 1;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("ruri parsing failed\n");
@@ -232,7 +235,7 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 			key.len   = tok_end - param_tok.s;
 		}
 
-		if (!str_strcmp(param, &key)) {
+		if (!str_strcmp(&param, &key)) {
 			/* found the param to remove */
 			/* include the leading ';' */
 			param_tok.s--;
@@ -272,15 +275,17 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
  */
 int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 {
-	str *param, *cur_uri, new_uri;
+	str param, *cur_uri, new_uri;
 	struct sip_uri *parsed_uri;
 	char *at;
 
-	param = (str*)_param;
-
-	if (param->len == 0) {
-		return 1;
+	if (fixup_get_svalue(_msg, (gparam_p)_param, &param) < 0) {
+		LM_ERR("failed to fetch parameter\n");
+		return -1;
 	}
+
+	if (param.len == 0)
+		return 1;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 	        LM_ERR("ruri parsing failed\n");
@@ -292,7 +297,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 	/* if current ruri has no headers, pad param at the end */
 	if (parsed_uri->headers.len == 0) {
 		cur_uri =  GET_RURI(_msg);
-		new_uri.len = cur_uri->len + param->len + 1;
+		new_uri.len = cur_uri->len + param.len + 1;
 		if (new_uri.len > MAX_URI_SIZE) {
 			LM_ERR("new ruri too long\n");
 			return -1;
@@ -304,7 +309,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 		}
 		memcpy(new_uri.s, cur_uri->s, cur_uri->len);
 		*(new_uri.s + cur_uri->len) = ';';
-		memcpy(new_uri.s + cur_uri->len + 1, param->s, param->len);
+		memcpy(new_uri.s + cur_uri->len + 1, param.s, param.len);
 		if (set_ruri(_msg, &new_uri ) == 1) {
 			goto ok;
 		} else {
@@ -318,7 +323,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 		(parsed_uri->passwd.len ? parsed_uri->passwd.len + 1 : 0) +
 		parsed_uri->host.len +
 		(parsed_uri->port.len ? parsed_uri->port.len + 1 : 0) +
-		parsed_uri->params.len + param->len + 1 +
+		parsed_uri->params.len + param.len + 1 +
 		parsed_uri->headers.len + 1;
 	if (new_uri.len > MAX_URI_SIZE) {
 	        LM_ERR("new ruri too long\n");
@@ -357,8 +362,8 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 	at = at + parsed_uri->params.len;
 	*at = ';';
 	at = at + 1;
-	memcpy(at, param->s, param->len);
-	at = at + param->len;
+	memcpy(at, param.s, param.len);
+	at = at + param.len;
 	*at = '?';
 	at = at + 1;
 	memcpy(at, parsed_uri->headers.s, parsed_uri->headers.len);
