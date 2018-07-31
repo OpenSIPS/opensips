@@ -2548,6 +2548,31 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
+		<section id="mi_dlg_cluster_sync" xreflabel="dlg_cluster_sync">
+		<title><function moreinfo="none">dlg_cluster_sync</function></title>
+		<para>
+		This command will only take effect if dialog replication is enabled.
+		</para>
+		<para>
+		The current node will locate a suitable donor node within the
+		<xref linkend="param_dialog_replication_cluster"/> and issue a sync
+		request to it. The donor node will then push all the dialog information
+		to the current node, via the the binary interface. For dialogs that
+		already exist in memory, the information will be not be treated as an update
+		but discarded instead.
+		</para>
+		<para>
+		Name: <emphasis>dlg_cluster_sync</emphasis>
+		</para>
+		<para>It takes no parameters</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo dlg_cluster_sync
+		</programlisting>
+		</section>
+
 		<section id="mi_dlg_restore_db" xreflabel="dlg_restore_db">
 		<title><function moreinfo="none">dlg_restore_db</function></title>
 		<para>
