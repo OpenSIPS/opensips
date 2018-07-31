@@ -216,10 +216,12 @@ Chapter 2. Contributors
    4. jalung 5 1 144 61
    5. Ezequiel Lovelle 3 1 11 4
    6. Julián Moreno Patiño 3 1 1 1
-   7. Jarrod Baumann (@jarrodb) 2 1 12 0
-   8. Kristian Høgh 2 1 12 0
-   9. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
-   10. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Jarrod Baumann (@jarrodb) 2 1 12 0
+   9. Kristian Høgh 2 1 12 0
+   10. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
+
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -241,16 +243,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
-   4.  Kristian Høgh                       Apr 2016 - Apr 2016
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Jarrod Baumann (@jarrodb)           May 2015 - May 2015
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
-   8.  jalung                              Jun 2014 - Jun 2014
-   9.  Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2013
-   10. Ezequiel Lovelle                    May 2013 - May 2013
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   5.  Kristian Høgh                       Apr 2016 - Apr 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Jarrod Baumann (@jarrodb)           May 2015 - May 2015
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
+   9.  jalung                              Jun 2014 - Jun 2014
+   10. Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2013
+
+   All remaining contributors: Ezequiel Lovelle.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -259,8 +263,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Julián Moreno
-   Patiño, Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Julián Moreno Patiño, Razvan Crainea
+   (@razvancrainea), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

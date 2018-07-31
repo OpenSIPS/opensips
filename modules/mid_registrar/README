@@ -753,11 +753,13 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 379 102 15019 8863
+   1. Liviu Chircu (@liviuchircu) 374 104 14485 8679
    2. Chad Attermann (@attermann) 7 5 19 5
    3. Razvan Crainea (@razvancrainea) 5 3 16 13
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 2
-   5. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   5. Peter Lemenkov (@lemenkov) 3 1 1 1
+   6. Italo Rossi 2 1 6 0
+   7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -779,11 +781,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2016 - Jun 2018
-   2. Razvan Crainea (@razvancrainea)     Mar 2017 - Nov 2017
-   3. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Apr 2017
+   1. Italo Rossi                         Jul 2018 - Jul 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2016 - Jun 2018
+   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4. Razvan Crainea (@razvancrainea)     Mar 2017 - Nov 2017
+   5. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Apr 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -792,7 +796,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

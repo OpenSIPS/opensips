@@ -283,8 +283,8 @@ Chapter 3. Contributors
    10. Romanov Vladimir 3 1 29 21
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Konstantin Bokarius, UnixDev, Edson Gellert
-   Schubert.
+   (@vladpaiu), Konstantin Bokarius, Peter Lemenkov (@lemenkov),
+   UnixDev, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -306,20 +306,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2014
-   5.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
-   6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   7.  Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
-   8.  Anca Vamanu                         Aug 2007 - Feb 2010
-   9.  Romanov Vladimir                    Mar 2009 - Mar 2009
-   10. UnixDev                             Feb 2009 - Feb 2009
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2014
+   6.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+   7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   8.  Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
+   9.  Anca Vamanu                         Aug 2007 - Feb 2010
+   10. Romanov Vladimir                    Mar 2009 - Mar 2009
 
-   All remaining contributors: Henning Westerholt (@henningw), Dan
-   Pascu (@danpascu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert.
+   All remaining contributors: UnixDev, Henning Westerholt
+   (@henningw), Dan Pascu (@danpascu), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -328,11 +328,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl
-   Ibarra Corretgé (@saghul), Razvan Crainea (@razvancrainea),
-   Anca Vamanu, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan
+   Crainea (@razvancrainea), Anca Vamanu, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

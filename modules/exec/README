@@ -387,8 +387,8 @@ Chapter 2. Contributors
    All remaining contributors: Anca Vamanu, Dan Pascu (@danpascu),
    Elena-Ramona Modroiu, Konstantin Bokarius, Vlad Paiu
    (@vladpaiu), Andreas Granig, Julián Moreno Patiño, Octavian
-   Cerna, Edson Gellert Schubert, Dror Wald, Vlad Patrascu
-   (@rvlad-patrascu).
+   Cerna, Peter Lemenkov (@lemenkov), Edson Gellert Schubert, Dror
+   Wald, Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -410,22 +410,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Feb 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Mar 2017
-   4.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
-   5.  Octavian Cerna                      Oct 2016 - Oct 2016
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
-   8.  Walter Doekes (@wdoekes)            Mar 2014 - Sep 2015
-   9.  Vlad Paiu (@vladpaiu)               Mar 2015 - Mar 2015
-   10. Anca Vamanu                         Jan 2011 - Jan 2011
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Feb 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Mar 2017
+   5.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
+   6.  Octavian Cerna                      Oct 2016 - Oct 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
+   9.  Walter Doekes (@wdoekes)            Mar 2014 - Sep 2015
+   10. Vlad Paiu (@vladpaiu)               Mar 2015 - Mar 2015
 
-   All remaining contributors: Dror Wald, Dan Pascu (@danpascu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
-   Modroiu, Andreas Granig, Jan Janak (@janakj), Andrei
-   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Anca Vamanu, Dror Wald, Dan Pascu
+   (@danpascu), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Elena-Ramona Modroiu, Andreas Granig, Jan Janak
+   (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -434,12 +435,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Walter Doekes
-   (@wdoekes), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut Ionita
-   (@ionutrazvanionita), Razvan Crainea (@razvancrainea), Anca
-   Vamanu, Dror Wald, Dan Pascu (@danpascu), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Jan Janak (@janakj).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Walter Doekes (@wdoekes), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita), Razvan
+   Crainea (@razvancrainea), Anca Vamanu, Dror Wald, Dan Pascu
+   (@danpascu), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
+   Janak (@janakj).
 
    Documentation Copyrights:
 

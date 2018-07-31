@@ -354,6 +354,7 @@ Chapter 2. Contributors
    5. Nick Altmann (@nikbyte) 4 2 35 4
    6. Vlad Paiu (@vladpaiu) 4 2 6 3
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 3 4
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -375,13 +376,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3. Ovidiu Sas (@ovidiusas)             Feb 2011 - May 2017
-   4. Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2016
-   5. Nick Altmann (@nikbyte)             Nov 2015 - Dec 2015
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Oct 2014
-   7. Vlad Paiu (@vladpaiu)               Jul 2011 - Sep 2011
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4. Ovidiu Sas (@ovidiusas)             Feb 2011 - May 2017
+   5. Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2016
+   6. Nick Altmann (@nikbyte)             Nov 2015 - Dec 2015
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Oct 2014
+   8. Vlad Paiu (@vladpaiu)               Jul 2011 - Sep 2011
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -390,8 +392,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
+   (@ovidiusas).
 
    Documentation Copyrights:
 

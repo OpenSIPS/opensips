@@ -519,15 +519,16 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 77 47 2538 508
+   1. Liviu Chircu (@liviuchircu) 78 48 2538 520
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Razvan Crainea (@razvancrainea) 9 7 26 11
    4. Jarrod Baumann (@jarrodb) 6 3 131 32
    5. Agalya Ramachandran (@AgalyaR) 6 2 354 1
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 94 46
-   7. Ryan Bullock (@rrb3942) 5 2 91 77
-   8. Andrey Vorobiev (@andrey-vorobiev) 2 1 4 0
-   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   7. Vlad Patrascu (@rvlad-patrascu) 5 3 21 22
+   8. Ryan Bullock (@rrb3942) 5 2 91 77
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Andrey Vorobiev (@andrey-vorobiev) 2 1 4 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -548,16 +549,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2018
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2017
-   6. Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
-   7. Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
-   8. Agalya Ramachandran (@AgalyaR)      Oct 2016 - Oct 2016
-   9. Jarrod Baumann (@jarrodb)           Apr 2015 - May 2015
+                      Name                   Commit Activity
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jul 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
+   5.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2017
+   7.  Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
+   8.  Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
+   9.  Agalya Ramachandran (@AgalyaR)      Oct 2016 - Oct 2016
+   10. Jarrod Baumann (@jarrodb)           Apr 2015 - May 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -566,7 +568,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
    (@razvancrainea), Agalya Ramachandran (@AgalyaR), Jarrod
    Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
 

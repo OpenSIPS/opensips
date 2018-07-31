@@ -339,34 +339,34 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    3.2.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    3.3.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -378,7 +378,8 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 17 3 1600 11
    2. Liviu Chircu (@liviuchircu) 9 7 22 35
    3. Razvan Crainea (@razvancrainea) 3 1 3 3
-   4. Vlad Patrascu (@rvlad-patrascu) 2 1 2 0
+   4. Peter Lemenkov (@lemenkov) 3 1 1 1
+   5. Vlad Patrascu (@rvlad-patrascu) 2 1 2 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -400,10 +401,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Sep 2017 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3. Razvan Crainea (@razvancrainea)     Apr 2017 - Apr 2017
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2017
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Sep 2017 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4. Razvan Crainea (@razvancrainea)     Apr 2017 - Apr 2017
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -412,8 +414,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

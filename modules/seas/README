@@ -1383,7 +1383,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Elias Baixas 123 12 12255 736
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 54 36 719 662
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 53 35 718 662
    3. Daniel-Constantin Mierla (@miconda) 49 8 1085 1773
    4. Razvan Crainea (@razvancrainea) 25 19 219 174
    5. Liviu Chircu (@liviuchircu) 16 12 76 130
@@ -1395,7 +1395,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Konstantin Bokarius, Dan Pascu
    (@danpascu), Ionut Ionita (@ionutrazvanionita), John Riordan,
-   Sergio Gutierrez, Edson Gellert Schubert, Stanislaw Pitucha.
+   Peter Lemenkov (@lemenkov), Sergio Gutierrez, Edson Gellert
+   Schubert, Stanislaw Pitucha.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1417,21 +1418,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2017
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2016
-   5.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
-   6.  Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
-   7.  Stanislaw Pitucha                   Jul 2010 - Jul 2010
-   8.  Anca Vamanu                         Oct 2007 - Sep 2009
-   9.  John Riordan                        May 2009 - May 2009
-   10. Sergio Gutierrez                    Mar 2009 - Mar 2009
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2017
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2016
+   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
+   7.  Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
+   8.  Stanislaw Pitucha                   Jul 2010 - Jul 2010
+   9.  Anca Vamanu                         Oct 2007 - Sep 2009
+   10. John Riordan                        May 2009 - May 2009
 
-   All remaining contributors: Dan Pascu (@danpascu), Andrei
-   Pisau, Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Elias
-   Baixas.
+   All remaining contributors: Sergio Gutierrez, Dan Pascu
+   (@danpascu), Andrei Pisau, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elias Baixas.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1440,10 +1441,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elias Baixas.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elias Baixas.
 
    Documentation Copyrights:
 

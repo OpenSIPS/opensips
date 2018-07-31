@@ -143,8 +143,8 @@ Chapter 2. Contributors
    1. Iouri Kharon 20 1 2363 0
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 13 10 62 67
    3. Liviu Chircu (@liviuchircu) 10 7 22 64
-   4. Razvan Crainea (@razvancrainea) 6 4 100 31
-   5. Peter Lemenkov (@lemenkov) 6 4 40 4
+   4. Peter Lemenkov (@lemenkov) 7 5 41 5
+   5. Razvan Crainea (@razvancrainea) 6 4 100 31
    6. Henning Westerholt (@henningw) 5 3 19 7
    7. fabriziopicconi 3 1 18 2
    8. Ovidiu Sas (@ovidiusas) 3 1 12 12
@@ -174,13 +174,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Oct 2014
-   6.  fabriziopicconi                     Jun 2013 - Jun 2013
-   7.  Peter Lemenkov (@lemenkov)          Aug 2012 - Aug 2012
+   1.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Oct 2014
+   7.  fabriziopicconi                     Jun 2013 - Jun 2013
    8.  Ovidiu Sas (@ovidiusas)             Jun 2012 - Jun 2012
    9.  Razvan Pistolea                     Jul 2009 - Jul 2009
    10. Sergio Gutierrez                    Feb 2009 - Feb 2009
@@ -195,9 +195,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Henning Westerholt (@henningw), Iouri
-   Kharon.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
+   Westerholt (@henningw), Iouri Kharon.
 
    Documentation Copyrights:
 

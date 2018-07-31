@@ -230,8 +230,9 @@ Chapter 2. Contributors
    9. Konstantin Bokarius 3 1 2 5
    10. Andrei Pelinescu-Onciul 3 1 2 2
 
-   All remaining contributors: Edson Gellert Schubert, Klaus
-   Darilion, Ancuta Onofrei, Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert, Klaus Darilion, Ancuta Onofrei, Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -253,19 +254,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2014
-   5.  Anca Vamanu                         Sep 2009 - Sep 2009
-   6.  Richard Revels                      Aug 2008 - Aug 2008
-   7.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Jun 2008
-   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
-   10. Henning Westerholt (@henningw)      May 2007 - Dec 2007
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2014
+   6.  Anca Vamanu                         Sep 2009 - Sep 2009
+   7.  Richard Revels                      Aug 2008 - Aug 2008
+   8.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Jun 2008
+   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
 
-   All remaining contributors: Ancuta Onofrei, Klaus Darilion,
-   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Henning Westerholt (@henningw),
+   Ancuta Onofrei, Klaus Darilion, Andrei Pelinescu-Onciul, Jiri
+   Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -274,11 +276,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Richard
-   Revels, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Klaus Darilion.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Richard Revels, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Klaus Darilion.
 
    Documentation Copyrights:
 

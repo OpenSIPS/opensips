@@ -197,7 +197,7 @@ Chapter 2. Contributors
    4. Liviu Chircu (@liviuchircu) 9 7 30 36
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 99 35
    6. Vlad Paiu (@vladpaiu) 5 3 8 3
-   7. vladpaiu 3 1 3 3
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
    8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -220,14 +220,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2014 - Apr 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4. Razvan Crainea (@razvancrainea)     Dec 2013 - Apr 2017
-   5. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
-   6. Vlad Paiu (@vladpaiu)               Nov 2013 - Jan 2016
-   7. Stephane Alnet                      Oct 2013 - Nov 2013
-   8. vladpaiu                            Nov 2013 - Nov 2013
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2014 - Apr 2018
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5. Razvan Crainea (@razvancrainea)     Dec 2013 - Apr 2017
+   6. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
+   7. Vlad Paiu (@vladpaiu)               Nov 2013 - Jan 2016
+   8. Stephane Alnet                      Oct 2013 - Nov 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -236,9 +236,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Stephane Alnet.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Stephane Alnet.
 
    Documentation Copyrights:
 

@@ -171,9 +171,10 @@ Chapter 2. Contributors
    9. Konstantin Bokarius 3 1 2 5
    10. Andreas Heise 3 1 1 1
 
-   All remaining contributors: Edson Gellert Schubert, Nils
-   Ohlmeier, Elena-Ramona Modroiu, Klaus Darilion, Vlad Patrascu
-   (@rvlad-patrascu), Walter Doekes (@wdoekes).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert, Nils Ohlmeier, Elena-Ramona Modroiu, Klaus
+   Darilion, Vlad Patrascu (@rvlad-patrascu), Walter Doekes
+   (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -195,20 +196,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Oct 2014
-   5.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   6.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
-   7.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   8.  Edson Gellert Schubert              Feb 2008 - Feb 2008
-   9.  Henning Westerholt (@henningw)      Nov 2007 - Dec 2007
-   10. Klaus Darilion                      Nov 2007 - Nov 2007
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Jan 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Oct 2014
+   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   7.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
+   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   10. Henning Westerholt (@henningw)      Nov 2007 - Dec 2007
 
-   All remaining contributors: Andreas Heise, Elena-Ramona
-   Modroiu, Jan Janak (@janakj), Andrei Pelinescu-Onciul, Nils
-   Ohlmeier, Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Klaus Darilion, Andreas Heise,
+   Elena-Ramona Modroiu, Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Nils Ohlmeier, Jiri Kuthan
+   (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -217,10 +219,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Klaus Darilion, Elena-Ramona Modroiu.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Klaus Darilion,
+   Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

@@ -70,13 +70,13 @@ Acc Module
               1.8.4. acc_db_request(comment, table)
               1.8.5. acc_aaa_request(comment)
               1.8.6. acc_evi_request(comment)
+              1.8.7. acc_new_leg()
 
-        1.9. acc_new_leg()
-        1.10. Exported Events
+        1.9. Exported Events
 
-              1.10.1. E_ACC_CDR
-              1.10.2. E_ACC_EVENT
-              1.10.3. E_ACC_MISSED_EVENT
+              1.9.1. E_ACC_CDR
+              1.9.2. E_ACC_EVENT
+              1.9.3. E_ACC_MISSED_EVENT
 
    2. Frequently Asked Questions
    3. Contributors
@@ -838,7 +838,7 @@ acc_aaa_request("403 Destination not allowed");
 acc_evi_request("403 Destination not allowed");
 ...
 
-1.9.  acc_new_leg()
+1.8.7.  acc_new_leg()
 
    Creates a new leg only if multi-leg accounting is used. The
    value of acc_current_leg variable is incremented. All the
@@ -852,9 +852,9 @@ acc_evi_request("403 Destination not allowed");
         acc_new_leg();
 ...
 
-1.10. Exported Events
+1.9. Exported Events
 
-1.10.1.  E_ACC_CDR
+1.9.1.  E_ACC_CDR
 
    The event raised when a CDR is generated. Note that this event
    will only be triggered if the auto CDR accounting is used.
@@ -880,7 +880,7 @@ acc_evi_request("403 Destination not allowed");
      * created - The timestamp when the call was created (the
        initial Invite was received)
 
-1.10.2.  E_ACC_EVENT
+1.9.2.  E_ACC_EVENT
 
    This event is triggered when old-style accounting is used. It
    is generated when the requests (INVITE and BYE) transaction
@@ -900,7 +900,7 @@ acc_evi_request("403 Destination not allowed");
      * multi_leg_info* - Extra parameters added by the
        multi_leg_info parameter
 
-1.10.3.  E_ACC_MISSED_EVENT
+1.9.3.  E_ACC_MISSED_EVENT
 
    This event is triggered when old-style accounting is used. It
    is generated when the requests (INVITE and BYE) transaction
@@ -926,71 +926,71 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   What happened with old report_ack parameter
+       What happened with old report_ack parameter
 
-   The parameter is considered obsolete. It was removed as acc
-   module is doing SIP transaction based accouting and according
-   to SIP RFC, end2end ACKs are a different transaction (still
-   part of the same dialog). ACKs can be individually accouted as
-   any other sequential (in-dialog) request.
-   $
+       The parameter is considered obsolete. It was removed as acc
+       module is doing SIP transaction based accouting and according
+       to SIP RFC, end2end ACKs are a different transaction (still
+       part of the same dialog). ACKs can be individually accouted as
+       any other sequential (in-dialog) request.
+       $
 
    2.2.
 
-   What happened with old log_fmt parameter
+       What happened with old log_fmt parameter
 
-   The parameter became obsolete with the restructure of the data
-   logged by ACC module (refer to the Overview chapter). For
-   similar behaviour you can use the extra accouting (see the
-   corresponding chapter).
+       The parameter became obsolete with the restructure of the data
+       logged by ACC module (refer to the Overview chapter). For
+       similar behaviour you can use the extra accouting (see the
+       corresponding chapter).
 
    2.3.
 
-   What happened with old multi_leg_enabled parameter
+       What happened with old multi_leg_enabled parameter
 
-   The parameter became obsolete by the addition of the new
-   multi_leg_info parameter. The multi-leg accouting is
-   automatically enabled when multi_leg_info is defined.
+       The parameter became obsolete by the addition of the new
+       multi_leg_info parameter. The multi-leg accouting is
+       automatically enabled when multi_leg_info is defined.
 
    2.4.
 
-   What happened with old src_leg_avp_id and dst_leg_avp_id
-   parameters
+       What happened with old src_leg_avp_id and dst_leg_avp_id
+       parameters
 
-   The parameter was replaced by the more generic new parameter
-   multi_leg_info. This allows logging (per-leg) of more
-   information than just dst and src.
+       The parameter was replaced by the more generic new parameter
+       multi_leg_info. This allows logging (per-leg) of more
+       information than just dst and src.
 
    2.5.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    2.6.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    2.7.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -999,7 +999,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 218 103 4145 4551
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 218 103 4144 4534
    2. Jan Janak (@janakj) 151 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 73 48 2390 300
@@ -1016,8 +1016,8 @@ Chapter 3. Contributors
    Elena-Ramona Modroiu, Dan Pascu (@danpascu), Ryan Bullock
    (@rrb3942), Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter
    Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus
-   Rodrigues, Julien Blache, Julián Moreno Patiño, Dusan Klinec,
-   Edson Gellert Schubert.
+   Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov
+   (@lemenkov), Dusan Klinec, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1039,24 +1039,24 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2018
-   5.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
-   9.  Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
-   10. Irina-Maria Stanescu                Aug 2009 - Sep 2009
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2018
+   6.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
+   10. Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
 
-   All remaining contributors: Alex Massover, Sergio Gutierrez,
-   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu), Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Jesus Rodrigues, Julien Blache, Peter Nixon, Maksym
-   Sobolyev (@sobomax), Juha Heinanen (@juha-h), Jan Janak
-   (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   All remaining contributors: Irina-Maria Stanescu, Alex
+   Massover, Sergio Gutierrez, Ovidiu Sas (@ovidiusas), Dan Pascu
+   (@danpascu), Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Jesus Rodrigues, Julien Blache, Peter
+   Nixon, Maksym Sobolyev (@sobomax), Juha Heinanen (@juha-h), Jan
+   Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
    Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel
    Kozlik.
 
@@ -1067,14 +1067,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Ryan Bullock (@rrb3942), Irina-Maria
-   Stanescu, Sergio Gutierrez, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj),
-   Maksym Sobolyev (@sobomax), Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
+   Razvan Crainea (@razvancrainea), Ryan Bullock (@rrb3942),
+   Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

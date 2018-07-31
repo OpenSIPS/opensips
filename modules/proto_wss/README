@@ -281,9 +281,9 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Does OpenSIPS support fragmented Secure WebSocket messages?
+       Does OpenSIPS support fragmented Secure WebSocket messages?
 
-   No, the WebSocket fragmentation mechanism is not supported.
+       No, the WebSocket fragmentation mechanism is not supported.
 
 Chapter 3. Contributors
 
@@ -296,8 +296,9 @@ Chapter 3. Contributors
    2. Ionut Ionita (@ionutrazvanionita) 14 10 362 19
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 10 7 175 9
    4. Liviu Chircu (@liviuchircu) 7 5 30 45
-   5. Vlad Patrascu (@rvlad-patrascu) 4 2 2 3
-   6. Maksym Sobolyev (@sobomax) 2 1 1 0
+   5. Vlad Patrascu (@rvlad-patrascu) 5 3 3 4
+   6. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Maksym Sobolyev (@sobomax) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -319,12 +320,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Oct 2017
-   4. Razvan Crainea (@razvancrainea)     Jan 2016 - Sep 2017
-   5. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
-   6. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
+   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Oct 2017
+   5. Razvan Crainea (@razvancrainea)     Jan 2016 - Sep 2017
+   6. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
+   7. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -333,9 +335,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
-   Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
+   Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

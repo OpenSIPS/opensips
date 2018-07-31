@@ -500,8 +500,8 @@ Chapter 2. Contributors
    10. Jan Janak (@janakj) 3 1 4 2
 
    All remaining contributors: Konstantin Bokarius, Razvan
-   Pistolea, Walter Doekes (@wdoekes), Edson Gellert Schubert,
-   Ovidiu Sas (@ovidiusas).
+   Pistolea, Walter Doekes (@wdoekes), Peter Lemenkov (@lemenkov),
+   Edson Gellert Schubert, Ovidiu Sas (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -523,20 +523,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Oct 2014
-   5.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   6.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Oct 2010
-   7.  Andrei Dragus                       Oct 2009 - Oct 2009
-   8.  Razvan Pistolea                     Jul 2009 - Jul 2009
-   9.  Jan Janak (@janakj)                 Feb 2009 - Feb 2009
-   10. Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Oct 2014
+   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   7.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Oct 2010
+   8.  Andrei Dragus                       Oct 2009 - Oct 2009
+   9.  Razvan Pistolea                     Jul 2009 - Jul 2009
+   10. Jan Janak (@janakj)                 Feb 2009 - Feb 2009
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Konstantin Bokarius, Edson Gellert Schubert, Anonymous, William
-   Quan.
+   All remaining contributors: Daniel-Constantin Mierla
+   (@miconda), Henning Westerholt (@henningw), Konstantin
+   Bokarius, Edson Gellert Schubert, Anonymous, William Quan.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -545,11 +545,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu
-   Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Anonymous, William Quan.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Anonymous,
+   William Quan.
 
    Documentation Copyrights:
 

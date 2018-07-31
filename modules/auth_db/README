@@ -333,8 +333,8 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 50 29 1610 424
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 38 30 331 231
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
-   4. Henning Westerholt (@henningw) 11 9 83 49
-   5. Liviu Chircu (@liviuchircu) 11 8 36 67
+   4. Liviu Chircu (@liviuchircu) 12 9 37 68
+   5. Henning Westerholt (@henningw) 11 9 83 49
    6. Sergio Gutierrez 7 5 13 13
    7. Andrei Pelinescu-Onciul 6 4 81 33
    8. Razvan Crainea (@razvancrainea) 6 4 26 46
@@ -343,9 +343,9 @@ Chapter 2. Contributors
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Anatoly
    Pidruchny, Kennard White, Konstantin Bokarius, Richard Revels,
-   Julián Moreno Patiño, Norman Brandinger (@NormB), Edson Gellert
-   Schubert, Ionut Ionita (@ionutrazvanionita), Vlad Patrascu
-   (@rvlad-patrascu).
+   Julián Moreno Patiño, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Ionut Ionita
+   (@ionutrazvanionita), Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -367,22 +367,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Sep 2016
-   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
-   6.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
-   7.  Richard Revels                      Sep 2011 - Sep 2011
-   8.  Kennard White                       Jun 2011 - Jun 2011
-   9.  Dan Pascu (@danpascu)               Feb 2006 - Jul 2010
-   10. Sergio Gutierrez                    Nov 2008 - Mar 2009
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Sep 2016
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
+   7.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
+   8.  Richard Revels                      Sep 2011 - Sep 2011
+   9.  Kennard White                       Jun 2011 - Jun 2011
+   10. Dan Pascu (@danpascu)               Feb 2006 - Jul 2010
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Anatoly Pidruchny, Norman Brandinger
-   (@NormB), Jan Janak (@janakj), Andrei Pelinescu-Onciul, Maksym
-   Sobolyev (@sobomax), Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Sergio Gutierrez, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Anatoly Pidruchny,
+   Norman Brandinger (@NormB), Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Maksym Sobolyev (@sobomax), Jiri Kuthan
+   (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -391,11 +392,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Kennard
-   White, Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Anatoly Pidruchny, Jan Janak (@janakj).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Kennard White, Sergio Gutierrez,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Anatoly
+   Pidruchny, Jan Janak (@janakj).
 
    Documentation Copyrights:
 

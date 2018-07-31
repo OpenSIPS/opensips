@@ -334,93 +334,93 @@ failure_route[1] {
 
 Chapter 2. Frequently Asked Questions
 
-   2.1.
+2.1.
 
-   What is the maximum lenght of a AMQP message?
+    What is the maximum lenght of a AMQP message?
 
-   The maximum length of a datagram event is 16384 bytes.
+    The maximum length of a datagram event is 16384 bytes.
 
-   2.2.
+2.2.
 
-   Where can I find more about OpenSIPS?
+    Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+    Take a look at http://www.opensips.org/.
 
-   2.3.
+2.3.
 
-   What is the vhost used by the AMQP server?
+    What is the vhost used by the AMQP server?
 
-   Currently, the only vhost supported is '/'.
+    Currently, the only vhost supported is '/'.
 
-   2.4.
+2.4.
 
-   How can I set a vhost in the socket?
+    How can I set a vhost in the socket?
 
-   This version doesn't support a different vhost.
+    This version doesn't support a different vhost.
 
-   2.5.
+2.5.
 
-   How can I send an event to my RabbitMQ server?
+    How can I send an event to my RabbitMQ server?
 
-   This module acts as a transport module for the OpenSIPS Event
-   Interface. Therefore, this module should follow the Event
-   Interface behavior:
+       This module acts as a transport module for the OpenSIPS Event
+       Interface. Therefore, this module should follow the Event
+       Interface behavior:
 
-   The first step is to subscribe the RabbitMQ server to the
-   OpenSIPS Event Interface. This can be done using the
-   subscribe_event core function:
+       The first step is to subscribe the RabbitMQ server to the
+       OpenSIPS Event Interface. This can be done using the
+       subscribe_event core function:
 
-   Example 2.1. Event subscription
-startup_route {
-        subscribe_event("E_RABBITMQ_EVENT", "rabbitmq:127.0.0.1/queue");
-}
+       Example 2.1. Event subscription
+    startup_route {
+            subscribe_event("E_RABBITMQ_EVENT", "rabbitmq:127.0.0.1/queue");
+    }
 
-   The next step is to raise the event from the script, using the
-   raise_event core function:
+       The next step is to raise the event from the script, using the
+       raise_event core function:
 
-   Example 2.2. Event subscription
-route {
-        ...
-        /* decided that an event should be raised */
-        raise_event("E_RABBITMQ_EVENT");
-        ...
-}
+       Example 2.2. Event subscription
+    route {
+            ...
+            /* decided that an event should be raised */
+            raise_event("E_RABBITMQ_EVENT");
+            ...
+    }
 
-   NOTE that the event used above is only to exemplify the usage
-   from the script. Any event published through the OpenSIPS Event
-   Interface can be raised using this module.
+       NOTE that the event used above is only to exemplify the usage
+       from the script. Any event published through the OpenSIPS Event
+       Interface can be raised using this module.
 
-   2.6.
+2.6.
 
-   Where can I find more information about RabbitMQ?
+    Where can I find more information about RabbitMQ?
 
-   You can find more information about RabbitMQ on their official
-   website ( http://www.rabbitmq.com/).
+    You can find more information about RabbitMQ on their official
+    website ( http://www.rabbitmq.com/).
 
-   2.7.
+2.7.
 
-   Where can I post a question about this module?
+    Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+    First at all check if your question was already answered on one
+    of our mailing lists:
+      * User Mailing List -
+        http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+      * Developer Mailing List -
+        http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+    E-mails regarding any stable OpenSIPS release should be sent to
+    <users@lists.opensips.org> and e-mails regarding development
+    versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+    If you want to keep the mail private, send it to
+    <users@lists.opensips.org>.
 
-   2.8.
+2.8.
 
-   How can I report a bug?
+    How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+    Please follow the guidelines provided at:
+    https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -438,10 +438,10 @@ Chapter 3. Contributors
 7.  Jarrod Baumann (@jarrodb)            4        2       2        2
 8.  Eric Tamme (@etamme)                 3        1       1        2
 9.  Julián Moreno Patiño                 3        1       1        1
-10. Vlad Paiu (@vladpaiu)                2        1       7        0
+10. Peter Lemenkov (@lemenkov)           3        1       1        1
 
-   All remaining contributors: Bogdan-Andrei Iancu
-   (@bogdan-iancu).
+   All remaining contributors: Vlad Paiu (@vladpaiu),
+   Bogdan-Andrei Iancu (@bogdan-iancu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -463,18 +463,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2017
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
-   4.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Ovidiu Sas (@ovidiusas)             Jun 2015 - Jun 2015
-   7.  Eric Tamme (@etamme)                May 2015 - May 2015
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
-   9.  Ionut Ionita (@ionutrazvanionita)   Jun 2014 - Jun 2014
-   10. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2017
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
+   5.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Ovidiu Sas (@ovidiusas)             Jun 2015 - Jun 2015
+   8.  Eric Tamme (@etamme)                May 2015 - May 2015
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
+   10. Ionut Ionita (@ionutrazvanionita)   Jun 2014 - Jun 2014
 
-   All remaining contributors: franklyfox.
+   All remaining contributors: Vlad Paiu (@vladpaiu), franklyfox.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -483,9 +483,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
+   (@ionutrazvanionita), Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

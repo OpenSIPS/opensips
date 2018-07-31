@@ -218,13 +218,14 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 28 15 1375 101
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 17 9 564 149
-   3. Ionut Ionita (@ionutrazvanionita) 15 9 383 68
-   4. Liviu Chircu (@liviuchircu) 12 10 41 49
-   5. Razvan Crainea (@razvancrainea) 11 9 46 32
-   6. Ionel Cerghit (@ionel-cerghit) 11 3 515 166
+   2. Ionut Ionita (@ionutrazvanionita) 15 9 383 68
+   3. Liviu Chircu (@liviuchircu) 12 10 41 49
+   4. Razvan Crainea (@razvancrainea) 11 9 46 32
+   5. Ionel Cerghit (@ionel-cerghit) 11 3 515 166
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 119 54
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 17 3
    8. Vlad Paiu (@vladpaiu) 3 2 0 6
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -246,14 +247,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2018
-   4. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
-   5. Razvan Crainea (@razvancrainea)     Nov 2014 - Dec 2016
-   6. Vlad Paiu (@vladpaiu)               Mar 2014 - Jan 2016
-   7. Ionel Cerghit (@ionel-cerghit)      Aug 2015 - Aug 2015
-   8. Ovidiu Sas (@ovidiusas)             Mar 2013 - Jun 2015
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2018
+   5. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
+   6. Razvan Crainea (@razvancrainea)     Nov 2014 - Dec 2016
+   7. Vlad Paiu (@vladpaiu)               Mar 2014 - Jan 2016
+   8. Ionel Cerghit (@ionel-cerghit)      Aug 2015 - Aug 2015
+   9. Ovidiu Sas (@ovidiusas)             Mar 2013 - Jun 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -262,9 +264,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Ionel Cerghit (@ionel-cerghit), Ovidiu Sas (@ovidiusas).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Ionel Cerghit
+   (@ionel-cerghit), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

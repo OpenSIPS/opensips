@@ -933,7 +933,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Di-Shi Sun (@di-shi) 281 102 10370 5374
+   1. Di-Shi Sun (@di-shi) 280 101 10368 5372
    2. Dmitry Isakbayev 41 5 4120 159
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 29 23 216 208
    4. Daniel-Constantin Mierla (@miconda) 15 13 81 48
@@ -946,8 +946,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Konstantin
    Bokarius, Dan Pascu (@danpascu), fabriziopicconi, Andreas
-   Granig, Ezequiel Lovelle, Julián Moreno Patiño, Edson Gellert
-   Schubert.
+   Granig, Ezequiel Lovelle, Julián Moreno Patiño, Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -969,21 +969,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
-   4.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Mar 2016
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   8.  fabriziopicconi                     Aug 2013 - Aug 2013
-   9.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   10. Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
+   5.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Mar 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   9.  fabriziopicconi                     Aug 2013 - Aug 2013
+   10. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
 
-   All remaining contributors: Dan Pascu (@danpascu), Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei,
-   Dmitry Isakbayev, Andreas Granig.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Dan Pascu
+   (@danpascu), Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Ancuta Onofrei, Dmitry Isakbayev, Andreas Granig.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -992,11 +992,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Di-Shi Sun (@di-shi), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Dmitry Isakbayev.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Di-Shi Sun
+   (@di-shi), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
+   (@razvancrainea), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Dmitry Isakbayev.
 
    Documentation Copyrights:
 

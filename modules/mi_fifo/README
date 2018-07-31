@@ -252,9 +252,9 @@ Chapter 2. Contributors
    9. Ovidiu Sas (@ovidiusas) 3 1 2 2
    10. Julián Moreno Patiño 3 1 1 1
 
-   All remaining contributors: Edson Gellert Schubert, Dusan
-   Klinec, Vlad Patrascu (@rvlad-patrascu), Walter Doekes
-   (@wdoekes).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert, Dusan Klinec, Vlad Patrascu
+   (@rvlad-patrascu), Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -276,19 +276,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2016
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   9.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
-   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   10. Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
 
-   All remaining contributors: Edson Gellert Schubert, Ovidiu Sas
-   (@ovidiusas), Henning Westerholt (@henningw), Jerome Martin.
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Ovidiu Sas (@ovidiusas), Henning Westerholt
+   (@henningw), Jerome Martin.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -297,11 +298,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jerome
-   Martin.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Razvan
+   Crainea (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jerome Martin.
 
    Documentation Copyrights:
 

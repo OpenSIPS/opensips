@@ -244,7 +244,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Pistolea 31 7 2244 297
-   2. Liviu Chircu (@liviuchircu) 19 13 310 143
+   2. Liviu Chircu (@liviuchircu) 16 12 105 140
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 12 68 98
    4. Razvan Crainea (@razvancrainea) 9 7 13 13
    5. Ionut Ionita (@ionutrazvanionita) 6 3 232 9
@@ -252,6 +252,7 @@ Chapter 2. Contributors
    7. Anca Vamanu 3 1 3 3
    8. Walter Doekes (@wdoekes) 3 1 2 2
    9. Julián Moreno Patiño 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -272,16 +273,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Feb 2018
-   4. Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2017
-   5. Ionut Ionita (@ionutrazvanionita)   Feb 2016 - Mar 2017
-   6. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7. Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
-   8. Anca Vamanu                         Jan 2011 - Jan 2011
-   9. Razvan Pistolea                     Jul 2009 - Aug 2009
+                      Name                   Commit Activity
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Feb 2018
+   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2017
+   6.  Ionut Ionita (@ionutrazvanionita)   Feb 2016 - Mar 2017
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
+   9.  Anca Vamanu                         Jan 2011 - Jan 2011
+   10. Razvan Pistolea                     Jul 2009 - Aug 2009
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -290,10 +292,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Julián
-   Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Razvan
-   Pistolea.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Razvan Pistolea.
 
    Documentation Copyrights:
 

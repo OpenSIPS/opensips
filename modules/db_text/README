@@ -433,7 +433,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 134 59 6126 1441
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 40 30 487 306
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 38 29 306 306
    3. Henning Westerholt (@henningw) 25 15 252 410
    4. Liviu Chircu (@liviuchircu) 14 11 38 75
    5. Razvan Crainea (@razvancrainea) 10 8 99 33
@@ -445,8 +445,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
-   Brandinger (@NormB), Edson Gellert Schubert, Dusan Klinec,
-   Andrei Pelinescu-Onciul.
+   Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Dusan Klinec, Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -468,21 +468,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Jan 2017
-   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Mar 2016
-   6.  Dusan Klinec                        Dec 2015 - Dec 2015
-   7.  Sergey Khripchenko                  Aug 2015 - Aug 2015
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
-   9.  Razvan Pistolea                     Jul 2009 - Jul 2009
-   10. Henning Westerholt (@henningw)      Aug 2007 - Mar 2009
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Jan 2017
+   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2016
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Mar 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Sergey Khripchenko                  Aug 2015 - Aug 2015
+   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
+   10. Razvan Pistolea                     Jul 2009 - Jul 2009
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Chris Heiser, Edson Gellert
-   Schubert, Norman Brandinger (@NormB), Jan Janak (@janakj), Jiri
-   Kuthan (@jiriatipteldotorg), Andrei Pelinescu-Onciul.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Chris
+   Heiser, Edson Gellert Schubert, Norman Brandinger (@NormB), Jan
+   Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -491,11 +492,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Sergey
-   Khripchenko, Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Sergey Khripchenko, Ovidiu Sas
+   (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
 
    Documentation Copyrights:
 

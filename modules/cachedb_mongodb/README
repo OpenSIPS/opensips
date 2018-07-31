@@ -261,8 +261,9 @@ Chapter 2. Contributors
    4. Razvan Crainea (@razvancrainea) 7 5 24 23
    5. @jalung 4 1 97 56
    6. Julián Moreno Patiño 3 1 1 1
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
-   8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
+   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -284,14 +285,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2018
-   3. @jalung                             Aug 2017 - Aug 2017
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2015
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
-   8. Ovidiu Sas (@ovidiusas)             Mar 2013 - Feb 2014
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2018
+   4. @jalung                             Aug 2017 - Aug 2017
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   6. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2015
+   8. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
+   9. Ovidiu Sas (@ovidiusas)             Mar 2013 - Feb 2014
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -300,8 +302,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Julián Moreno
-   Patiño, Vlad Paiu (@vladpaiu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Julián Moreno Patiño, Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

@@ -879,8 +879,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 111 35 3842 2481
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 419 593
+   1. Razvan Crainea (@razvancrainea) 112 36 3845 2484
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 13 418 591
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 12 8 60 124
    5. Eric Tamme (@etamme) 7 5 42 19
@@ -888,6 +888,7 @@ Chapter 3. Contributors
    7. Rob Gagnon (@rgagnon24) 3 1 22 22
    8. Dan Pascu (@danpascu) 3 1 3 13
    9. Oliver Severin Mulelid-Tynes (@olivermt) 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -908,16 +909,17 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                        Name                     Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)              Jul 2014 - Jun 2018
-   3. Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2018
-   4. Razvan Crainea (@razvancrainea)          Jun 2014 - May 2018
-   5. Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
-   6. Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
-   7. Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
-   8. Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
-   9. Richard Fuchs                            Mar 2014 - Mar 2014
+                         Name                     Commit Activity
+   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Jun 2018
+   2.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)              Jul 2014 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2018
+   6.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
+   7.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
+   8.  Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
+   9.  Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
+   10. Richard Fuchs                            Mar 2014 - Mar 2014
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -926,9 +928,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
+   Fuchs.
 
    Documentation Copyrights:
 

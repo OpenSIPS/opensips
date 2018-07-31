@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">151</entry>
-		<entry align="center">65</entry>
-		<entry align="center">6876</entry>
-		<entry align="center">1753</entry>
+		<entry align="center">152</entry>
+		<entry align="center">66</entry>
+		<entry align="center">6880</entry>
+		<entry align="center">1756</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">17</entry>
-		<entry align="center">19</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">16</entry>
+		<entry align="center">18</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -104,13 +104,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Nov 2017 - Jun 2018</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Dec 2016 - Jul 2018</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Dec 2016 - Apr 2018</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Nov 2017 - Jun 2018</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -124,18 +124,18 @@
 	</row>
 	<row>
 		<entry>5. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Mar 2017 - Sep 2017</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jul 2017 - Jul 2017</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>6. </entry>
 		<entry>Bradley Jokinen</entry>
 		<entry align="center">Jul 2017 - Jul 2017</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Mar 2017 - Jun 2017</entry>
 	</row>
 	</tbody>
 	</tgroup>

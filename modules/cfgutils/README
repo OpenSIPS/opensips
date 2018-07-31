@@ -860,9 +860,9 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Henning Westerholt (@henningw) 29 18 1088 86
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 20 372 263
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 354 102
    3. Liviu Chircu (@liviuchircu) 24 14 780 121
-   4. Razvan Crainea (@razvancrainea) 16 11 273 67
+   4. Razvan Crainea (@razvancrainea) 15 10 271 66
    5. Elena-Ramona Modroiu 14 3 1183 7
    6. Daniel-Constantin Mierla (@miconda) 12 10 84 32
    7. Anca Vamanu 6 3 220 14
@@ -871,8 +871,8 @@ Chapter 2. Contributors
    10. Vlad Paiu (@vladpaiu) 3 2 3 0
 
    All remaining contributors: Sergio Gutierrez, Konstantin
-   Bokarius, Walter Doekes (@wdoekes), Edson Gellert Schubert,
-   Maksym Sobolyev (@sobomax).
+   Bokarius, Walter Doekes (@wdoekes), Peter Lemenkov (@lemenkov),
+   Edson Gellert Schubert, Maksym Sobolyev (@sobomax).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -894,20 +894,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2017
-   4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Nov 2016
-   5.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
-   6.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015
-   7.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015
-   8.  Vlad Paiu (@vladpaiu)               Jan 2013 - Jul 2014
-   9.  Anca Vamanu                         Aug 2009 - Sep 2009
-   10. Sergio Gutierrez                    Dec 2008 - Dec 2008
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2017
+   5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Nov 2016
+   6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
+   7.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015
+   8.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015
+   9.  Vlad Paiu (@vladpaiu)               Jan 2013 - Jul 2014
+   10. Anca Vamanu                         Aug 2009 - Sep 2009
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,
-   Konstantin Bokarius, Edson Gellert Schubert.
+   All remaining contributors: Sergio Gutierrez, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Elena-Ramona Modroiu, Konstantin Bokarius, Edson Gellert
+   Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -916,12 +917,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Anca Vamanu, Sergio Gutierrez,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Elena-Ramona Modroiu, Konstantin Bokarius, Edson
-   Gellert Schubert.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Anca
+   Vamanu, Sergio Gutierrez, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,
+   Konstantin Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

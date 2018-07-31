@@ -254,11 +254,11 @@ Chapter 2. Contributors
    6. Razvan Crainea (@razvancrainea) 6 4 13 10
    7. Ruslan Bukin 3 1 21 10
    8. Julián Moreno Patiño 3 1 1 1
-   9. UnixDev 3 1 1 1
-   10. Edson Gellert Schubert 3 1 0 60
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. UnixDev 3 1 1 1
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Edson Gellert Schubert, Vlad Paiu
+   (@vladpaiu), Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -280,18 +280,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2016
-   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2014
-   6.  Vlad Paiu (@vladpaiu)               Apr 2011 - Apr 2011
-   7.  Ruslan Bukin                        Oct 2009 - Oct 2009
-   8.  UnixDev                             Feb 2009 - Feb 2009
-   9.  Henning Westerholt (@henningw)      Feb 2008 - May 2008
-   10. Daniel-Constantin Mierla (@miconda) Mar 2008 - Mar 2008
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2016
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2014
+   7.  Vlad Paiu (@vladpaiu)               Apr 2011 - Apr 2011
+   8.  Ruslan Bukin                        Oct 2009 - Oct 2009
+   9.  UnixDev                             Feb 2009 - Feb 2009
+   10. Henning Westerholt (@henningw)      Feb 2008 - May 2008
 
-   All remaining contributors: Edson Gellert Schubert, Hardy Kahl.
+   All remaining contributors: Daniel-Constantin Mierla
+   (@miconda), Edson Gellert Schubert, Hardy Kahl.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -300,10 +301,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Edson Gellert Schubert, Hardy Kahl.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Hardy Kahl.
 
    Documentation Copyrights:
 

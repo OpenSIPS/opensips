@@ -1510,17 +1510,17 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   What happened with old cancel_call() function
+       What happened with old cancel_call() function
 
-   The function was replace (as functionality) by
-   cancel_branch("a") - cancel all braches.
+       The function was replace (as functionality) by
+       cancel_branch("a") - cancel all braches.
 
    3.2.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -1529,12 +1529,12 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1024 567 21342 16112
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1009 566 20456 15762
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
    5. Razvan Crainea (@razvancrainea) 80 61 1509 345
-   6. Liviu Chircu (@liviuchircu) 73 52 1027 640
+   6. Liviu Chircu (@liviuchircu) 70 50 958 616
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
    9. Vlad Paiu (@vladpaiu) 25 22 169 55
@@ -1549,8 +1549,9 @@ Chapter 4. Contributors
    Saúl Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John
    Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
    Konstantin Bokarius, Anonymous, Dusan Klinec, Mark Dalby,
-   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Edson
-   Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.
+   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Ingo Wolfsberger,
+   Daniel Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1572,21 +1573,21 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
-   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
-   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
-   9.  Ovidiu Sas (@ovidiusas)             Apr 2008 - Jan 2016
-   10. Dusan Klinec                        Dec 2015 - Dec 2015
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jun 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   4.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
+   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
+   10. Ovidiu Sas (@ovidiusas)             Apr 2008 - Jan 2016
 
-   All remaining contributors: Ezequiel Lovelle, Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Maksym Sobolyev
-   (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
-   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Dan Pascu
+   All remaining contributors: Dusan Klinec, Ezequiel Lovelle,
+   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Maksym
+   Sobolyev (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous,
+   Mark Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Dan Pascu
    (@danpascu), Henning Westerholt (@henningw), Klaus Darilion,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
@@ -1602,14 +1603,15 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Vlad
-   Patrascu (@rvlad-patrascu), Nick Altmann (@nikbyte), Ovidiu Sas
-   (@ovidiusas), Vlad Paiu (@vladpaiu), Anca Vamanu, Henning
-   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Dan Pascu (@danpascu), Juha Heinanen (@juha-h), Elena-Ramona
-   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
+   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
+   Jiri Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

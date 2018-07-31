@@ -351,11 +351,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 164 67 9128 1386
-   2. Razvan Crainea (@razvancrainea) 16 14 45 28
+   1. Ionut Ionita (@ionutrazvanionita) 148 66 8047 998
+   2. Razvan Crainea (@razvancrainea) 17 15 48 30
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 11 9 42 13
    4. Liviu Chircu (@liviuchircu) 9 7 38 48
-   5. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   5. Peter Lemenkov (@lemenkov) 3 1 1 1
+   6. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -377,11 +378,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
-   2. Razvan Crainea (@razvancrainea)     Nov 2015 - Jun 2018
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2018
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
+   1. Razvan Crainea (@razvancrainea)     Nov 2015 - Jul 2018
+   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2018
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   6. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -390,8 +392,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

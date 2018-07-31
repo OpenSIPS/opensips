@@ -118,8 +118,8 @@ Chapter 2. Contributors
    (@sobomax), Andrei Pelinescu-Onciul, Dusan Klinec, Eseanu
    Marius Cristian (@eseanucristian), Ruslan Bukin, Konstantin
    Bokarius, Razvan Pistolea, Aron Podrigal, Norman Brandinger
-   (@NormB), Edson Gellert Schubert, Jarrod Baumann (@jarrodb),
-   Vlad Patrascu (@rvlad-patrascu).
+   (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
+   Jarrod Baumann (@jarrodb), Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -141,23 +141,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Sep 2012 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Nov 2016
-   4.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
-   5.  Dusan Klinec                             Dec 2015 - Dec 2015
-   6.  Aron Podrigal                            Jul 2015 - Jul 2015
-   7.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Oct 2014
-   9.  Vlad Paiu (@vladpaiu)                    Jan 2011 - Mar 2012
-   10. Razvan Pistolea                          Jul 2009 - Jul 2009
+   1.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)              Sep 2012 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)          Oct 2011 - Nov 2016
+   5.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
+   6.  Dusan Klinec                             Dec 2015 - Dec 2015
+   7.  Aron Podrigal                            Jul 2015 - Jul 2015
+   8.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Oct 2014
+   10. Vlad Paiu (@vladpaiu)                    Jan 2011 - Mar 2012
 
-   All remaining contributors: Ruslan Bukin, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Ancuta Onofrei, Klaus
-   Darilion, Norman Brandinger, Norman Brandinger (@NormB), Maksym
-   Sobolyev (@sobomax), Jan Janak (@janakj), Greg Fausak, Andrei
-   Pelinescu-Onciul.
+   All remaining contributors: Razvan Pistolea, Ruslan Bukin,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Ancuta
+   Onofrei, Klaus Darilion, Norman Brandinger, Norman Brandinger
+   (@NormB), Maksym Sobolyev (@sobomax), Jan Janak (@janakj), Greg
+   Fausak, Andrei Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -166,11 +166,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Aron Podrigal,
-   Eseanu Marius Cristian (@eseanucristian), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Vlad Paiu (@vladpaiu), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Aron Podrigal, Eseanu Marius Cristian
+   (@eseanucristian), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Paiu (@vladpaiu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
 
    Documentation Copyrights:
 

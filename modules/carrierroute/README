@@ -1237,7 +1237,7 @@ Chapter 2. Contributors
    1. Henning Westerholt (@henningw) 126 80 2085 1607
    2. Hardy Kahl 50 3 2713 1360
    3. Jonas Appel 50 1 6240 0
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 130 154
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 129 153
    5. Razvan Crainea (@razvancrainea) 15 12 82 74
    6. Liviu Chircu (@liviuchircu) 14 10 73 133
    7. Daniel-Constantin Mierla (@miconda) 9 7 34 30
@@ -1246,8 +1246,9 @@ Chapter 2. Contributors
    10. Julián Moreno Patiño 3 1 24 24
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), Sergio
-   Gutierrez, Iouri Kharon, UnixDev, Walter Doekes (@wdoekes),
-   Edson Gellert Schubert, Vlad Patrascu (@rvlad-patrascu).
+   Gutierrez, Iouri Kharon, UnixDev, Peter Lemenkov (@lemenkov),
+   Walter Doekes (@wdoekes), Edson Gellert Schubert, Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1269,20 +1270,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2017
-   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Oct 2014
-   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   8.  UnixDev                             Feb 2009 - Feb 2009
-   9.  Henning Westerholt (@henningw)      Aug 2007 - Dec 2008
-   10. Sergio Gutierrez                    Aug 2008 - Aug 2008
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2017
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Oct 2014
+   7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   9.  UnixDev                             Feb 2009 - Feb 2009
+   10. Henning Westerholt (@henningw)      Aug 2007 - Dec 2008
 
-   All remaining contributors: Iouri Kharon, Hardy Kahl,
-   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
-   Bob Atkins, Carsten Bock, Jonas Appel.
+   All remaining contributors: Sergio Gutierrez, Iouri Kharon,
+   Hardy Kahl, Daniel-Constantin Mierla (@miconda), Edson Gellert
+   Schubert, Bob Atkins, Carsten Bock, Jonas Appel.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1291,11 +1292,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Julián Moreno
-   Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Henning Westerholt (@henningw), Iouri Kharon,
-   Hardy Kahl, Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Carsten Bock, Jonas Appel.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Julián Moreno Patiño, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Henning
+   Westerholt (@henningw), Iouri Kharon, Hardy Kahl,
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Carsten Bock, Jonas Appel.
 
    Documentation Copyrights:
 

@@ -370,7 +370,8 @@ Chapter 2. Contributors
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 44 24
    6. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
    7. Julián Moreno Patiño 3 1 1 1
-   8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -392,14 +393,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3. Razvan Crainea (@razvancrainea)     Jul 2015 - Apr 2017
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Oct 2016
-   5. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6. Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
-   7. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Mar 2015
-   8. Robison Tesini (@rtesini)           Feb 2015 - Feb 2015
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4. Razvan Crainea (@razvancrainea)     Jul 2015 - Apr 2017
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Oct 2016
+   6. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7. Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
+   8. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Mar 2015
+   9. Robison Tesini (@rtesini)           Feb 2015 - Feb 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -408,8 +410,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Julián Moreno
-   Patiño, Evandro Villaron (@evillaron).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Julián Moreno Patiño, Evandro Villaron
+   (@evillaron).
 
    Documentation Copyrights:
 

@@ -345,8 +345,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 115 53 3058 2109
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 90 70 799 680
+   1. Ionut Ionita (@ionutrazvanionita) 107 52 2676 1887
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 87 68 769 638
    3. Daniel-Constantin Mierla (@miconda) 48 26 2215 191
    4. Razvan Crainea (@razvancrainea) 22 19 126 87
    5. Vlad Paiu (@vladpaiu) 21 8 335 528
@@ -358,8 +358,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Dusan Klinec, Andreas Heise, Sergio
    Gutierrez, Dan Pascu (@danpascu), Konstantin Bokarius, Iouri
-   Kharon, Edson Gellert Schubert, Elena-Ramona Modroiu, Eric
-   Tamme (@etamme).
+   Kharon, Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -381,21 +381,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jan 2018
-   5.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
-   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Andrei Datcu (@andrei-datcu)        Jun 2014 - Jul 2014
-   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Nov 2013
-   10. Alexandr Dubovikov (@adubovikov)    Nov 2011 - Nov 2011
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jan 2018
+   6.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
+   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Andrei Datcu (@andrei-datcu)        Jun 2014 - Jul 2014
+   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Nov 2013
 
-   All remaining contributors: Sergio Gutierrez, Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Iouri Kharon,
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Alexandr Dubovikov (@adubovikov),
+   Sergio Gutierrez, Dan Pascu (@danpascu), Daniel-Constantin
+   Mierla (@miconda), Iouri Kharon, Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Andreas
+   Heise, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -404,13 +405,14 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Andrei
-   Datcu (@andrei-datcu), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Razvan Crainea (@razvancrainea), Alexandr Dubovikov
-   (@adubovikov), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Elena-Ramona Modroiu.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
+   (@razvancrainea), Alexandr Dubovikov (@adubovikov),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

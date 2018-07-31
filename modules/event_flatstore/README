@@ -147,12 +147,14 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionel Cerghit (@ionel-cerghit) 30 17 1138 213
+   1. Ionel Cerghit (@ionel-cerghit) 23 13 770 135
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 239 122
    3. Liviu Chircu (@liviuchircu) 11 8 30 62
-   4. Eseanu Marius Cristian (@eseanucristian) 9 5 342 18
+   4. Eseanu Marius Cristian (@eseanucristian) 6 3 254 9
    5. Razvan Crainea (@razvancrainea) 4 2 8 2
-   6. Maksym Sobolyev (@sobomax) 2 1 1 0
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 5 3
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Maksym Sobolyev (@sobomax) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -174,12 +176,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Liviu Chircu (@liviuchircu)              Jan 2016 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - May 2018
-   3. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2017
-   4. Razvan Crainea (@razvancrainea)          Aug 2015 - Jan 2016
-   5. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
-   6. Eseanu Marius Cristian (@eseanucristian) Jun 2015 - Jul 2015
+   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2018 - Jun 2018
+   2. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)              Jan 2016 - Jun 2018
+   4. Vlad Patrascu (@rvlad-patrascu)          Jun 2015 - May 2018
+   5. Maksym Sobolyev (@sobomax)               Feb 2017 - Feb 2017
+   6. Razvan Crainea (@razvancrainea)          Aug 2015 - Jan 2016
+   7. Ionel Cerghit (@ionel-cerghit)           Jun 2015 - Jul 2015
+   8. Eseanu Marius Cristian (@eseanucristian) Jun 2015 - Jul 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -188,8 +192,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ionel Cerghit (@ionel-cerghit).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionel Cerghit
+   (@ionel-cerghit).
 
    Documentation Copyrights:
 

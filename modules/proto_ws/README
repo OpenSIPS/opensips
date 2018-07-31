@@ -256,16 +256,16 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Can OpenSIPS act as a WebSocket client?
+       Can OpenSIPS act as a WebSocket client?
 
-   Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
-   client.
+       Yes, starting with OpenSIPS 2.2, it can act as a WebSocket
+       client.
 
    2.2.
 
-   Does OpenSIPS support WebSocket message fragmentation?
+       Does OpenSIPS support WebSocket message fragmentation?
 
-   No, WebSocket fragmentation mechanism is not supported.
+       No, WebSocket fragmentation mechanism is not supported.
 
 Chapter 3. Contributors
 
@@ -280,8 +280,9 @@ Chapter 3. Contributors
    4. Liviu Chircu (@liviuchircu) 9 6 58 88
    5. Vlad Patrascu (@rvlad-patrascu) 4 2 4 6
    6. Vlad Paiu (@vladpaiu) 4 2 3 1
-   7. Julián Moreno Patiño 3 1 1 1
-   8. Maksym Sobolyev (@sobomax) 2 1 3 0
+   7. Peter Lemenkov (@lemenkov) 3 1 2 2
+   8. Julián Moreno Patiño 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 2 1 3 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -303,14 +304,15 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   3. Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2018
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Feb 2018
-   5. Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
-   6. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
-   7. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8. Vlad Paiu (@vladpaiu)               Mar 2015 - May 2015
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   4. Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2018
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Feb 2018
+   6. Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
+   7. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   8. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9. Vlad Paiu (@vladpaiu)               Mar 2015 - May 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -319,9 +321,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
-   Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
+   Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

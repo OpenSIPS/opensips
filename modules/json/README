@@ -359,9 +359,10 @@ Chapter 2. Contributors
    7. Ovidiu Sas (@ovidiusas) 4 2 17 4
    8. Nick Altmann (@nikbyte) 3 1 47 15
    9. Anca Vamanu 3 1 3 1
-   10. Julián Moreno Patiño 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 2 2
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Julián Moreno Patiño, Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -383,18 +384,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
-   2.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
-   3.  Björn Esser                         Dec 2017 - Dec 2017
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2017
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Oct 2014
-   9.  Ovidiu Sas (@ovidiusas)             Mar 2013 - Mar 2013
-   10. Anca Vamanu                         Sep 2009 - Sep 2009
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   3.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
+   4.  Björn Esser                         Dec 2017 - Dec 2017
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2017
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Oct 2014
+   10. Ovidiu Sas (@ovidiusas)             Mar 2013 - Mar 2013
 
-   All remaining contributors: Andrei Dragus.
+   All remaining contributors: Anca Vamanu, Andrei Dragus.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -403,9 +404,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Nick Altmann
-   (@nikbyte), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Andrei Dragus.
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Andrei
+   Dragus.
 
    Documentation Copyrights:
 

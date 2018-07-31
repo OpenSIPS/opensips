@@ -324,6 +324,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                  Name             DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu)    39      19      1906     254
+   2. Peter Lemenkov (@lemenkov)     3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -345,7 +346,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                  Name               Commit Activity
-   1. Liviu Chircu (@liviuchircu) Dec 2017 - Jun 2018
+   1. Peter Lemenkov (@lemenkov)  Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu) Dec 2017 - Jun 2018
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -354,7 +356,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

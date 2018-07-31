@@ -89,8 +89,8 @@ Chapter 2. Contributors
    9. Ancuta Onofrei 3 1 10 13
    10. Konstantin Bokarius 3 1 2 5
 
-   All remaining contributors: Edson Gellert Schubert, Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert, Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -112,19 +112,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2014
-   5.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Mar 2011
-   6.  Anca Vamanu                         Jul 2007 - Sep 2010
-   7.  Sergio Gutierrez                    Nov 2008 - Nov 2008
-   8.  Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
-   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2014
+   6.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Mar 2011
+   7.  Anca Vamanu                         Jul 2007 - Sep 2010
+   8.  Sergio Gutierrez                    Nov 2008 - Nov 2008
+   9.  Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
 
-   All remaining contributors: Juha Heinanen (@juha-h), Ancuta
-   Onofrei.
+   All remaining contributors: Edson Gellert Schubert, Juha
+   Heinanen (@juha-h), Ancuta Onofrei.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -133,10 +133,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Juha Heinanen
-   (@juha-h).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Juha Heinanen (@juha-h).
 
    Documentation Copyrights:
 

@@ -172,9 +172,10 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 8 6 62 30
    3. Vlad Patrascu (@rvlad-patrascu) 6 3 153 10
    4. Ionut Ionita (@ionutrazvanionita) 3 1 103 28
-   5. Ryan Bullock (@rrb3942) 2 1 8 0
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
-   7. Maksym Sobolyev (@sobomax) 2 1 1 0
+   5. Peter Lemenkov (@lemenkov) 3 1 1 1
+   6. Ryan Bullock (@rrb3942) 2 1 8 0
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
+   8. Maksym Sobolyev (@sobomax) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -196,13 +197,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
-   2. Razvan Crainea (@razvancrainea)     May 2012 - Aug 2017
-   3. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - May 2017
-   4. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
-   5. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
-   7. Ryan Bullock (@rrb3942)             Jan 2013 - Jan 2013
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   3. Razvan Crainea (@razvancrainea)     May 2012 - Aug 2017
+   4. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - May 2017
+   5. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   6. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
+   8. Ryan Bullock (@rrb3942)             Jan 2013 - Jan 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -211,8 +213,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 

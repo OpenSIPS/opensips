@@ -167,8 +167,9 @@ Chapter 2. Contributors
    3. Ionut Ionita (@ionutrazvanionita) 8 5 217 10
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 107 43
    5. Razvan Crainea (@razvancrainea) 4 2 18 6
-   6. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
-   7. Vlad Paiu (@vladpaiu) 2 1 0 1
+   6. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   8. Vlad Paiu (@vladpaiu) 2 1 0 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -190,13 +191,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2011 - Apr 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   5. Vlad Paiu (@vladpaiu)               Jan 2016 - Jan 2016
-   6. Razvan Crainea (@razvancrainea)     Mar 2015 - Aug 2015
-   7. Ovidiu Sas (@ovidiusas)             Oct 2011 - Mar 2015
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2011 - Apr 2018
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   6. Vlad Paiu (@vladpaiu)               Jan 2016 - Jan 2016
+   7. Razvan Crainea (@razvancrainea)     Mar 2015 - Aug 2015
+   8. Ovidiu Sas (@ovidiusas)             Oct 2011 - Mar 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -205,9 +207,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Ovidiu Sas (@ovidiusas), Bogdan-Andrei
-   Iancu (@bogdan-iancu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Ovidiu Sas
+   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

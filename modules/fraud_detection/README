@@ -488,6 +488,7 @@ Chapter 2. Contributors
    4. Razvan Crainea (@razvancrainea) 4 2 10 9
    5. Vlad Patrascu (@rvlad-patrascu) 4 2 10 4
    6. Ionut Ionita (@ionutrazvanionita) 3 1 21 6
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -509,12 +510,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - May 2016
-   4. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
-   5. Razvan Crainea (@razvancrainea)     Feb 2015 - Aug 2015
-   6. Andrei Datcu (@andrei-datcu)        Aug 2014 - Sep 2014
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - May 2016
+   5. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
+   6. Razvan Crainea (@razvancrainea)     Feb 2015 - Aug 2015
+   7. Andrei Datcu (@andrei-datcu)        Aug 2014 - Sep 2014
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -523,8 +525,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Andrei Datcu (@andrei-datcu).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Andrei
+   Datcu (@andrei-datcu).
 
    Documentation Copyrights:
 

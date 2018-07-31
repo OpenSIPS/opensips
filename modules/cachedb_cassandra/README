@@ -233,9 +233,10 @@ Chapter 2. Contributors
    3. Razvan Crainea (@razvancrainea) 4 2 12 12
    4. fabriziopicconi 4 2 5 5
    5. Julián Moreno Patiño 3 1 1 1
-   6. Jarrod Baumann (@jarrodb) 2 1 2 0
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
-   8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   6. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Jarrod Baumann (@jarrodb) 2 1 2 0
+   8. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
+   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -257,14 +258,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   3. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   4. Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
-   5. Jarrod Baumann (@jarrodb)           May 2015 - May 2015
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
-   7. fabriziopicconi                     Apr 2014 - Apr 2014
-   8. Vlad Paiu (@vladpaiu)               Dec 2011 - Nov 2013
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5. Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
+   6. Jarrod Baumann (@jarrodb)           May 2015 - May 2015
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
+   8. fabriziopicconi                     Apr 2014 - Apr 2014
+   9. Vlad Paiu (@vladpaiu)               Dec 2011 - Nov 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -273,8 +275,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Julián Moreno
-   Patiño, Vlad Paiu (@vladpaiu), Razvan Crainea (@razvancrainea).
+   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Julián Moreno Patiño, Vlad Paiu (@vladpaiu),
+   Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

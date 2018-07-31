@@ -1465,15 +1465,18 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
-   2. Vlad Patrascu (@rvlad-patrascu) 45 11 1653 1129
+   1. Vlad Patrascu (@rvlad-patrascu) 77 18 2824 2008
+   2. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    3. Razvan Crainea (@razvancrainea) 37 27 525 236
    4. Liviu Chircu (@liviuchircu) 19 13 129 208
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 19 8 267 446
    6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
    7. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
-   8. Ovidiu Sas (@ovidiusas) 3 1 1 1
-   9. Maksym Sobolyev (@sobomax) 2 1 3 0
+   8. Callum Guy 3 1 33 8
+   9. Ovidiu Sas (@ovidiusas) 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+
+   All remaining contributors: Maksym Sobolyev (@sobomax).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1494,16 +1497,20 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                        Name                     Commit Activity
-   1. Liviu Chircu (@liviuchircu)              Oct 2015 - Jun 2018
-   2. Razvan Crainea (@razvancrainea)          Sep 2015 - Apr 2018
-   3. Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2017
-   4. Ovidiu Sas (@ovidiusas)                  Jun 2017 - Jun 2017
-   5. Ionut Ionita (@ionutrazvanionita)        Apr 2016 - Apr 2017
-   6. Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2016 - Mar 2017
-   7. Ionel Cerghit (@ionel-cerghit)           Aug 2016 - Aug 2016
-   8. Maksym Sobolyev (@sobomax)               Mar 2016 - Mar 2016
-   9. Eseanu Marius Cristian (@eseanucristian) Sep 2015 - Sep 2015
+                      Name                   Commit Activity
+   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Jul 2018
+   2.  Callum Guy                          Jun 2018 - Jun 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2018
+   6.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
+   7.  Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Mar 2017
+   9.  Ionel Cerghit (@ionel-cerghit)      Aug 2016 - Aug 2016
+   10. Maksym Sobolyev (@sobomax)          Mar 2016 - Mar 2016
+
+   All remaining contributors: Eseanu Marius Cristian
+   (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1512,10 +1519,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Eseanu Marius Cristian
-   (@eseanucristian).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Callum Guy,
+   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Crainea (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 
