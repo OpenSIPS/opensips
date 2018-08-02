@@ -73,6 +73,7 @@
 #define pv_has_sname(pv) ((pv)->pvp.pvn.type==PV_NAME_INTSTR \
 							&& (pv)->pvp.pvn.u.isname.type&AVP_NAME_STR)
 #define pv_is_w(pv)	((pv)->setf!=NULL)
+#define pv_type(type) (type < PVT_EXTRA ? type : type - PVT_EXTRA)
 
 enum _pv_type {
 	PVT_NONE=0,           PVT_EMPTY,             PVT_NULL,
