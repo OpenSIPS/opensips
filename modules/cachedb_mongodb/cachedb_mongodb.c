@@ -66,6 +66,7 @@ static param_export_t params[]={
 	{ "slave_ok",      INT_PARAM, &mongo_slave_ok},
 	{ "write_concern", STR_PARAM, &mongo_write_concern_str },
 	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
+	{ "exec_threshold", INT_PARAM, &mongo_exec_threshold },
 	{0,0,0}
 };
 
