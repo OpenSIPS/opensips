@@ -55,7 +55,7 @@ int set_connection(unsigned int type, void *val)
 
 static param_export_t params[]={
 	{ "cachedb_url",   STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
-	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
+	{ "exec_threshold", INT_PARAM, &mongo_exec_threshold },
 	{ "compat_mode_3.0", INT_PARAM, &compat_mode_30 },
 	{ "compat_mode_2.4", INT_PARAM, &compat_mode_24 },
 	{0,0,0}
