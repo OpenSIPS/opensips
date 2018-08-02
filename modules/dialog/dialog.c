@@ -494,8 +494,9 @@ static int fixup_get_profile3(void** param, int param_no)
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
-		if (sp->type!=PVT_AVP && sp->type!=PVT_SCRIPTVAR) {
-			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+		if (!pv_is_w(sp)) {
+			LM_ERR("'size' must be a writable pvar! (given: %d)\n",
+			       pv_type(sp->type));
 			return E_SCRIPT;
 		}
 
