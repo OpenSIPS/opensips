@@ -10,7 +10,7 @@ PATH=$PATH:/usr/local/sbin/
 
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
-TEST="false"
+TEST=${TEST:-"false"}
 
 ### include resource files, if any
 if [ -n "$osipsctlrc" -a -f "$osipsctlrc" ]; then
