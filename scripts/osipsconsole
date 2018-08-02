@@ -132,7 +132,7 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
 	'permissions', 'usrloc', 'msilo', 'alias_db', 'uri_db',
 	'speeddial', 'avpops', 'auth_db', 'dialog', 'dispatcher', 
-	'dialplan','drouting','rtpproxy','load_balancer' );
+	'dialplan','drouting','rtpproxy','rtpengine','load_balancer' );
 
 my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 
 	'domainpolicy', 'carrierroute', 'route_tree', 'carrierfailureroute', 

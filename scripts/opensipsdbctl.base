@@ -138,6 +138,7 @@ STANDARD_MODULES=${STANDARD_MODULES:-
 	msilo
 	permissions
 	rtpproxy
+	rtpengine
 	speeddial
 	tls_mgm
 	uri_db
