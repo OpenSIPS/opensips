@@ -706,11 +706,12 @@ done
 
 declare -A sorted_scores
 
-lc_bak=$LC_ALL; export LC_ALL=C
-for i in "${!score[@]}"; do
-  echo "$i,${score[$i]},${commits[$i]},${add[$i]},${del[$i]},${first_commit[$i]},${last_commit[$i]}"
-done | sort -t, -k2nr -k3nr -k4nr -k5nr -k1 >$tmp_file
-export LC_ALL=$lc_bak
+(
+  export LC_ALL=C
+  for i in "${!score[@]}"; do
+    echo "$i,${score[$i]},${commits[$i]},${add[$i]},${del[$i]},${first_commit[$i]},${last_commit[$i]}"
+  done | sort -t, -k2nr -k3nr -k4nr -k5nr -k1 >$tmp_file
+)
 
 #######  Generate table #1 (by commit statistics)
 
@@ -813,12 +814,12 @@ cat <<EOF >>modules/$1/doc/contributors.xml
 	<tbody>
 EOF
 
-lc_bak=$LC_ALL; export LC_ALL=C
-for i in "${!score[@]}"; do
-  echo "$i,${first_commit[$i]},${last_commit[$i]}"
-done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n -k1 >$tmp_file
-export LC_ALL=$lc_bak
-
+(
+  export LC_ALL=C
+  for i in "${!score[@]}"; do
+    echo "$i,${first_commit[$i]},${last_commit[$i]}"
+  done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n -k1 >$tmp_file
+)
 
 index=1
 side_authors=
@@ -868,11 +869,12 @@ declare -A last_commit
 
 count_module_changes $1/doc
 
-lc_bak=$LC_ALL; export LC_ALL=C
-for i in "${!first_commit[@]}"; do
-  echo "$i,${first_commit[$i]},${last_commit[$i]}"
-done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n -k1 >$tmp_file
-export LC_ALL=$lc_bak
+(
+  export LC_ALL=C
+  for i in "${!first_commit[@]}"; do
+    echo "$i,${first_commit[$i]},${last_commit[$i]}"
+  done | sort -s -t, -k7.1,7.4nr -k6.1,6.3fMr -k5nr -k4.1,4.4n -k3.1,3.3fM -k2n -k1 >$tmp_file
+)
 
 doc_authors=
 while read line; do
