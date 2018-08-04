@@ -147,7 +147,7 @@ heartbeat = 5")
 
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<section>
+		<section id="func_rabbitmq_publish" xreflabel="rabbitmq_publish()">
 			<title>
 				<function moreinfo="none">rabbitmq_publish(server_id, routing_key, message 
 					[, [content_type [, headers, headers_vals]]])</function>

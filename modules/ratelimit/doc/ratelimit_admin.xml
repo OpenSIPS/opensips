@@ -490,7 +490,7 @@ modparam("ratelimit", "slot_period", 100)
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-	<section>
+	<section id="func_rl_check" xreflabel="rl_check()">
 		<title>
 			<function moreinfo="none">rl_check(name, limit[, algorithm])
 			</function>

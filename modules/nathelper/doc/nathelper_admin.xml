@@ -688,7 +688,7 @@ fix_nated_register();
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id="func_nat_uac_test" xreflabel="nat_uac_test()">
 		<title>
 			<function>nat_uac_test(flags)</function>
 		</title>
