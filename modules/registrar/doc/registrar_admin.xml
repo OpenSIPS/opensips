@@ -515,9 +515,9 @@ if (is_method("REGISTER")) {
 }
 ...
 lookup("location");
-t_on_branch("branch_route_1");
+t_on_branch("parallel_fork");
 ...
-branch_route[branch_route_1] {
+branch_route [parallel_fork] {
 	xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch_idx])\n");
 }
 

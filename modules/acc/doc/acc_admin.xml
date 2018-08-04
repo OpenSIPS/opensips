@@ -782,9 +782,8 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 	<section id="pv_acc_current_leg" xreflabel="$acc_current_leg">
 		<title>$acc_current_leg (read-only)</title>
-		<para> Variable holding the value for the current leg. Calling
-			<emphasis>acc_new_leg()</emphasis> will increase the value
-			of this variable.
+		<para> Holds the index of the current leg, starting from 0.  Calling
+			<xref linkend="func_acc_new_leg"/> will increment this index.
 		</para>
 	</section>
 
@@ -1120,9 +1119,9 @@ acc_evi_request("403 Destination not allowed");
 			<function moreinfo="none">acc_new_leg()</function>
 		</title>
 		<para>
-			Creates a new leg only if multi-leg accounting is used. The value of
-			<emphasis>acc_current_leg</emphasis> variable is incremented. All the
-			values of the new leg will be initialised with null.
+			Creates a new leg and increments <xref linkend="pv_acc_current_leg"/>
+			only if multi-leg accounting is used.  All values of the new leg
+			will be initialized to null.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,

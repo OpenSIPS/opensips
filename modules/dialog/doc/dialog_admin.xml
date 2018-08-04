@@ -1417,8 +1417,7 @@ create_dialog("B");
 		</title>
 		<para>
 		This function is to be used to match a sequential (in-dialog) request
-		to an existing dialog. In other words, the function will try to match
-		the current request to an known ongoing dialog.
+		to an ongoing dialog.
 		</para>
 		<para>
 		By default, dialog matching is performed according to the
@@ -1446,9 +1445,14 @@ create_dialog("B");
 ...
     if (has_totag()) {
         loose_route();
-        if ($DLG_status==NULL &amp;&amp; !match_dialog() ) {
-            xlog(" cannot match request to a dialog \n");
-        }
+
+        # example 1: match according to <xref linkend="param_dlg_match_mode"/>
+        if ($DLG_status == NULL &amp;&amp; !match_dialog())
+            xlog("cannot match request to a dialog\n");
+
+        # example 2: override <xref linkend="param_dlg_match_mode"/>
+        if ($DLG_status == NULL &amp;&amp; !match_dialog("DID_FALLBACK"))
+            xlog("cannot match request to a dialog\n");
     }
 ...
 </programlisting>
