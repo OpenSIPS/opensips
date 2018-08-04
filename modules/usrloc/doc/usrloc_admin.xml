@@ -28,9 +28,9 @@
 		The OpenSIPS user location implementation is cluster-enabled. On top of
 		supporting traditional "single instance" setups, it also allows multiple
 		OpenSIPS user location nodes to form a single, global user location cluster.
-		This allows high-level features such as startup synchronization (data tunneling)
-		from a random, healthy "donor" node, and evenly distributed contact
-		pinging workloads (a mandatory requirement of NAT'ed endpoints).
+		This allows high-level features such as startup synchronization (data
+		tunneling) from a random, healthy "donor" node and evenly distributed
+		NAT pinging workloads.
 	</para>
 	</section>
 
@@ -980,7 +980,7 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 			<xref linkend='param_db_mode'/> are set.</emphasis>
 		</para>
 		<para>
-		Controls the behavior of OpenSIPS user location instance following a
+		Controls the behavior of the OpenSIPS user location following a
 		restart. This parameter has no effect in some database-only working
 		mode presets, where restart persistency is naturally ensured.
 		</para>

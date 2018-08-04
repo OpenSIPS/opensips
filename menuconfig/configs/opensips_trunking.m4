@@ -33,7 +33,7 @@ children=4
 #dns_try_ipv6=yes
 
 /* comment the next line to enable the auto discovery of local aliases
-   based on revers DNS on IPs */
+   based on reverse DNS on IPs */
 auto_aliases=no
 
 

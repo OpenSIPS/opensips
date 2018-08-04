@@ -94,7 +94,7 @@ modparam("db_mysql", "timeout_interval", 2)
         <section id="param_max_db_queries" xreflabel="max_db_queries">
 		<title><varname>max_db_queries</varname> (integer)</title>
 		<para>
-            The maximum number of reties to execute a failed query due to connections problems.
+            The maximum number of retries to execute a failed query due to connections problems.
             If this parameter is set improperly, it is set to default value.
 		</para>
 		<para>

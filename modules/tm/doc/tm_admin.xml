@@ -1108,7 +1108,7 @@ t_reply("404", "Use $rU not found");
 		<programlisting format="linespecific">
 ...
 t_newtran();  # 100 Trying is fired here
-xlog("doing my complicated routing logic");
+xlog("doing my complicated routing logic\n");
 ....
 t_relay(); # send the call further
 ...
@@ -1807,7 +1807,7 @@ t_flush_flags();
 		for whom there are no local transactions found. The function
 		broadcasts the message to all the other nodes in the cluster,
 		but only the <quote>owner</quote> of the transaction will be
-		albe to handle it.
+		able to handle it.
 		</para>
 		<example>
 		<title><function>t_anycast_replicate</function> usage</title>

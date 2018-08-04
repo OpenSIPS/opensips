@@ -302,11 +302,11 @@ modparam("siptrace", "trace_id",
 /* Example 2: how to trace initial INVITE and BYE, sip and rest */
 	if (has_totag()) {
 		if (is_method("BYE")) {
-			sip_trace("$var(trace_id)", "m", "sip|rest", ""$var(user)")
+			sip_trace("$var(trace_id)", "m", "sip|rest", "$var(user)");
 		}
 	} else {
 		if (is_method("INVITE")) {
-			sip_trace("$var(trace_id)", "m", "sip|rest", "$var(user)")
+			sip_trace("$var(trace_id)", "m", "sip|rest", "$var(user)");
 		}
 	}
 

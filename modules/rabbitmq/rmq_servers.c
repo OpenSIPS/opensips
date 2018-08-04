@@ -435,7 +435,7 @@ no_value:
 			break;
 		case RMQP_RETRY:
 			if (str2int(&param, (unsigned int *)&retries) < 0) {
-				LM_ERR("[%.*s] reties must be a number, not %.*s\n",
+				LM_ERR("[%.*s] retries must be a number, not %.*s\n",
 						cid.len, cid.s, param.len, param.s);
 				return -1;
 			}

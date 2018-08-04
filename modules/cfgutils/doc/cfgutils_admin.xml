@@ -216,7 +216,7 @@ if (rand_event()) {
 	</section>
 	
 	<section id="func_rand_set_prob" xreflabel="rand_set_prob()">
-	    <title><function moreinfo="none">rand_set_prob(probabiltiy)</function></title>
+	    <title><function moreinfo="none">rand_set_prob(probability)</function></title>
 	    <para>
 		Set the <quote>probability</quote> of the decision.
 	    </para>
