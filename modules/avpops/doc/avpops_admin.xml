@@ -331,7 +331,7 @@ modparam("avpops", "buf_size", 1024)
 
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<section>
+		<section id="func_avp_db_load" xreflabel="avp_db_load()">
 			<title>
 				<function moreinfo="none">avp_db_load(source, name[, db_id[, prefix]])
 				</function>
@@ -546,7 +546,7 @@ avp_db_query("delete from subscriber","","$avp(id)");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_delete" xreflabel="avp_delete()">
 			<title>
 				<function moreinfo="none">avp_delete(name)
 				</function>
@@ -591,7 +591,7 @@ avp_delete("a3");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_pushto" xreflabel="avp_pushto()">
 			<title>
 				<function moreinfo="none">avp_pushto(destination,name)
 				</function>
@@ -657,7 +657,7 @@ avp_pushto("$br","$avp(680)");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_check" xreflabel="avp_check()">
 			<title>
 				<function moreinfo="none">avp_check(name,op_value)
 				</function>
@@ -753,7 +753,7 @@ avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_copy" xreflabel="avp_copy()">
 			<title>
 				<function moreinfo="none">avp_copy(old_name,new_name)
 				</function>
@@ -884,7 +884,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 			processing will use it.
 			</para>
 		</section>
-		<section>
+		<section id="func_avp_op" xreflabel="avp_op()">
 			<title>
 				<function moreinfo="none">avp_op(name,op_value)
 				</function>
@@ -961,7 +961,7 @@ avp_op("$avp(number)","sub/$avp(number2)/d");
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_is_avp_set" xreflabel="is_avp_set()">
 			<title>
 				<function moreinfo="none">is_avp_set(name)
 				</function>
@@ -1000,7 +1000,7 @@ if(is_avp_set("$avp(678)"))
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_print" xreflabel="avp_print()">
 			<title>
 				<function moreinfo="none">avp_print()
 				</function>
@@ -1022,7 +1022,7 @@ avp_print();
 				</programlisting>
 			</example>
 		</section>
-		<section>
+		<section id="func_avp_insert" xreflabel="avp_insert()">
 			<title>
 				<function moreinfo="none">avp_insert(avp_name, value, index)
 				</function>

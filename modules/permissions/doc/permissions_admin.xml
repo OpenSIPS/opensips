@@ -821,7 +821,7 @@ if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(uri)
 		</example>
 	</section>
 
-	<section>
+	<section id="func_check_address" xreflabel="check_address()">
 		<title>
 		<function moreinfo="none">check_address([partition:]group_id, ip,
 		port, proto [, context_info [, pattern]])</function>

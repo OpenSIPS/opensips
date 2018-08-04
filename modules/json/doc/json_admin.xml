@@ -349,7 +349,7 @@ $json(object/array) := $json(array) ;
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-		<section>
+		<section id="func_json_link" xreflabel="json_link()">
 			<title>
 			<function moreinfo="none">
 				json_link("$json(dest_id)", "$json(source_id)")
