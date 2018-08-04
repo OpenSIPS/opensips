@@ -579,7 +579,7 @@ static mi_export_t mi_core_cmds[] = {
 		mi_pwd,        MI_NO_INPUT_FLAG,  0,  0 },
 	{ "arg", "returns the full list of arguments used at startup",
 		mi_arg,        MI_NO_INPUT_FLAG,  0,  0 },
-	{ "which", "lists all avaialbe MI commands",
+	{ "which", "lists all available MI commands",
 		mi_which,      MI_NO_INPUT_FLAG,  0,  0 },
 	{ "ps", "lists all processes used by OpenSIPS",
 		mi_ps,         MI_NO_INPUT_FLAG,  0,  0 },

@@ -1253,7 +1253,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	str s;
 	int extra_ref,types;
 
-	/* module is stricly designed for dialog calls */
+	/* module is strictly designed for dialog calls */
 	if (req->first_line.u.request.method_value!=METHOD_INVITE)
 		return -1;
 
