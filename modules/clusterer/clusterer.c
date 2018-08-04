@@ -2615,7 +2615,8 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
-		LM_ERR("Cluster id: %d not found\n", cluster_id);
+		LM_ERR("cluster id %d is not defined in the %s\n", cluster_id,
+		       db_mode ? "DB" : "script");
 		return -1;
 	}
 
