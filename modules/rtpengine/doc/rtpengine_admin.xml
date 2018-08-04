@@ -98,7 +98,7 @@
 	</section>
 
 	<section>
-	<title>Parameters</title>
+	<title>Exported Parameters</title>
 	<section id="param_rtpengine_sock" xreflabel="rtpengine_sock">
 		<title><varname>rtpengine_sock</varname> (string)</title>
 		<para>
@@ -310,7 +310,7 @@ modparam("rtpengine", "set_column", "set_new")
 	</section>
 
 	<section>
-	<title>Functions</title>
+	<title>Exported Functions</title>
 	<section id="func_rtpengine_use_set" xreflabel="rtpengine_use_set()">
 		<title>
 		<function moreinfo="none">rtpengine_use_set(setid)</function>

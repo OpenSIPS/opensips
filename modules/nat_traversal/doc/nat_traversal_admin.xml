@@ -345,7 +345,7 @@
   </section>
   
   <section>
-  <title>Exported parameters</title>
+  <title>Exported Parameters</title>
     <section id="param_keepalive_interval" xreflabel="keepalive_interval">
     <title><varname>keepalive_interval</varname> (integer)</title>
       <para>
@@ -490,7 +490,7 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/keepalive_s
   </section>
 
   <section>
-  <title>Exported functions</title>
+  <title>Exported Functions</title>
     <section id="func_client_nat_test" xreflabel="client_nat_test()">
     <title>
       <function moreinfo="none">client_nat_test(type)</function>
