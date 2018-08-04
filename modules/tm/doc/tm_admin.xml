@@ -761,14 +761,22 @@ modparam("tm", "auto_100trying", 0)
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>0x02</emphasis> - do not internally send a 
-				negative reply in case of forward failure (due internal error,
-				bad RURI, bad message, etc).  When a forward failure occurs, no
-				SIP request is relayed and therefore no negative reply or
-				timeout will show up on the failure_route (if one is set).
-				It applies only when the transaction is created.
-				By default one negative reply is sent.
-				Useful if you want to implement a serial forking in case of failure.
+				<para><emphasis>0x02</emphasis> - do not internally generate
+				and send a "477 Send failed (477/TM)" SIP reply in case of a
+				global forwarding failure (i.e. forwarding for each branch has
+				failed due to internal errors, bad R-URI, bad message, lack of
+				network reachability, etc.).
+				<para>
+				</para>
+				This flag only applies if the transaction was
+				not previously created by <xref linkend="func_t_newtran"/>.
+				When a global forwarding failure occurs, no SIP request is
+				relayed and therefore no negative SIP reply or timeout will
+				show up on the failure_route, if one is set.
+				</para>
+				<para>
+				Useful if you want to implement a failover logic for when none
+				of the currently created branches can be forwarded to.
 				</para>
 			</listitem>
 			<listitem>
@@ -953,10 +961,13 @@ t_reply("404", "Use $rU not found");
 		<function moreinfo="none">t_newtran()</function>
 		</title>
 		<para>
-		Creates the SIP transaction for the currently processed SIP requests.
-		Basically you switch to a stateful processing from this point furhter,
-		with automatic detection of retransmission and auto sending of
-		100 Trying reply on INVITEs.
+		Creates the SIP transaction for the currently processed SIP request,
+		thus switching to stateful processing.  For INVITE requests, a 100
+		Trying reply will be immediately sent, unless
+		<xref linkend="param_auto_100trying"/> is disabled.  Once a SIP
+		transaction is created, calling <xref linkend="func_t_newtran"/> for
+		retransmitted requests will end the OpenSIPS script execution, with the
+		lastly sent reply being retransmitted upstream.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
