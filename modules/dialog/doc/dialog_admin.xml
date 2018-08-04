@@ -298,7 +298,7 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 		</example>
 	</section>
 
-	<section>
+	<section id="param_dlg_match_mode" xreflabel="dlg_match_mode">
 		<title><varname>dlg_match_mode</varname> (integer)</title>
 		<para>
 		How the seqential requests should be matched against the known dialogs.
@@ -1415,8 +1415,7 @@ create_dialog("B");
 		</title>
 		<para>
 		This function is to be used to match a sequential (in-dialog) request
-		to an existing dialog. In other words, the function will try to match
-		the current request to an known ongoing dialog.
+		to an ongoing dialog.
 		</para>
 		<para>
 		The function tries to use (for dialog matching) the DID (Dialog ID)
@@ -1441,9 +1440,14 @@ create_dialog("B");
 ...
     if (has_totag()) {
         loose_route();
-        if ($DLG_status==NULL &amp;&amp; !match_dialog() ) {
-            xlog(" cannot match request to a dialog \n");
-        }
+
+        # example 1: attempt dialog ID matching, followed by SIP-wise matching
+        if ($DLG_status == NULL &amp;&amp; !match_dialog())
+            xlog("cannot match request to a dialog\n");
+
+        # example 2: override the default behavior; only do dialog ID matching
+        if ($DLG_status == NULL &amp;&amp; !match_dialog("DID_ONLY"))
+            xlog("cannot match request to a dialog\n");
     }
 ...
 </programlisting>
