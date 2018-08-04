@@ -1114,7 +1114,7 @@ acc_evi_request("403 Destination not allowed");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_acc_new_leg" xreflabel="acc_new_leg()">
 		<title>
 			<function moreinfo="none">acc_new_leg()</function>
 		</title>

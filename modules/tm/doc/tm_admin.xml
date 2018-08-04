@@ -703,7 +703,7 @@ modparam("tm", "timer_partitions", 2)
 		</example>
 	</section>
 
-	<section>
+	<section id="param_auto_100trying" xreflabel="auto_100trying">
 		<title><varname>auto_100trying</varname> (integer)</title>
 		<para>
 		This parameter controls if the TM module should automatically 
@@ -956,7 +956,7 @@ t_reply("404", "Use $rU not found");
 		</example>
 	</section>
 
-	<section>
+	<section id="func_t_newtran" xreflabel="t_newtran()">
 		<title>
 		<function moreinfo="none">t_newtran()</function>
 		</title>
