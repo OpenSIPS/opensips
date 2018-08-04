@@ -364,14 +364,7 @@ void cleanup(int show_status)
 
 
 /**
- * Tries to send a signal to all our processes
- * If daemonized  is ok to send the signal to all the process group,
- * however if not daemonized we might end up sending the signal also
- * to the shell which launched us => most signals will kill it if
- * it's not in interactive mode and we don't want this. The non-daemonized
- * case can occur when an error is encountered before daemonize is called
- * (e.g. when parsing the config file) or when opensips is started in
- * "don't-fork" mode.
+ * Send a signal to all child processes
  * \param signum signal for killing the children
  */
 static void kill_all_children(int signum)
