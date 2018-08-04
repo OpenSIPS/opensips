@@ -156,7 +156,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			<para>
 				Extra values are consistent during the whole call. Setting a
 			value during a request, will cause it to remain visible during all replies. Also,
-			concerning CDR logging, setting a value on the initial INVITIE will
+			concerning CDR logging, setting a value on the initial INVITE will
 			result in having that value throughout the dialog.
 			</para>
 			<para>
@@ -194,7 +194,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 modparam("acc", "extra_fields", "log: a -> test_a")
 </programlisting>
 				will enable you to set the value for <emphasis>test_a</emphasis> field
-				of the log only by setting <emphasis>$acc_etra(a)</emphasis> variable.
+				of the log only by setting <emphasis>$acc_extra(a)</emphasis> variable.
 				Otherwise, the field shall be logged with no value(null).
 			</para>
 		</section>
@@ -229,7 +229,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 			<para>
 				First how it works: The idea is to have a variable to store
 			a set of values for each leg. The meaning of
-			the variable content is stricly decided by the script writer - it can
+			the variable content is strictly decided by the script writer - it can
 			be the origin and source of the leg, its status or any other
 			related information. By default there is defined only one leg. Script
 			writer has to decide when is the time to create a new leg, by using
@@ -491,10 +491,10 @@ modparam("acc", "extra_fields","a->2345;b->2346")
 		<programlisting format="linespecific">
 # for syslog-based accounting, use any text you want to be printed
 # if setting $(acc_leg(a)[0]) you will see "My_a_Field=&lt;value&gt; in logs
-# if setting $(acc_extra(b)[0]) you will see "b=&lt;value&gt; in logs
+# if setting $(acc_leg(b)[0]) you will see "b=&lt;value&gt; in logs
 modparam("acc", "leg_fields", "log: a->My_a_Field; b")
 # for mysql-based accounting, use the names of the columns
-# $acc_extra(a) = &lt;value&gt;  results in setting col_a with &lt;value&gt; in db
+# $acc_leg(a) = &lt;value&gt;  results in setting col_a with &lt;value&gt; in db
 modparam("acc", "leg_fields", "db: a->col_a; col_b")
 # for AAA-based accounting, use the names of the AAA AVPs
 modparam("acc", "leg_fields","aaa:a->AAA_LEG_SRC;b->AAA_LEG_DST")
