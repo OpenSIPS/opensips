@@ -78,7 +78,7 @@
 		<section id="param_current_id" xreflabel="current_id">
             <title><varname>current_id</varname></title>
             <para>
-				The id of the current instance. This parameter must be equal with one of the
+				The id of the current instance. This parameter must be equal to one of the
 				<emphasis>node_id</emphasis> fields in the database.
 			</para>
             <para>
@@ -175,7 +175,7 @@ modparam("clusterer", "db_table", "clusterer")
 				definitions separated by '<emphasis>,</emphasis>' where the name of the
 				properties is the same as the DB column names. At least the
 				<emphasis>cluster_id</emphasis> and <emphasis>url</emphasis>
-				propreties must be defined.
+				properties must be defined.
 			</para>
             <para>
 			This parameter is required if <xref linkend="param_db_mode"/> is set
@@ -207,7 +207,7 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
 				definitions separated by '<emphasis>,</emphasis>' where the name of
 				the properties is the same as the DB column names. At least the
 				<emphasis>cluster_id</emphasis>, <emphasis>node_id</emphasis>
-				and <emphasis>url</emphasis> propreties must be defined.
+				and <emphasis>url</emphasis> properties must be defined.
 			</para>
             <para>
 			This parameter should be set at least once if
