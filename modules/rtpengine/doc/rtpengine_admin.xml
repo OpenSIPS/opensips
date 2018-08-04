@@ -98,7 +98,7 @@
 	</section>
 
 	<section>
-	<title>Parameters</title>
+	<title>Exported Parameters</title>
 	<section id="rtpengine.p.rtpengine_sock">
 		<title><varname>rtpengine_sock</varname> (string)</title>
 		<para>
@@ -232,7 +232,7 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 	</section>
 
 	<section>
-	<title>Functions</title>
+	<title>Exported Functions</title>
 	<section id="rtpengine.f.rtpengine_use_set">
 		<title>
 		<function moreinfo="none">rtpengine_use_set(setid)</function>
