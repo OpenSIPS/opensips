@@ -160,8 +160,8 @@ proper realclean distclean: clean
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
 	-@if [ -d utils/db_oracle ]; then $(MAKE) -C utils/db_oracle proper; fi
 
-.PHONY: mantainer-clean
-mantainer-clean: distclean
+.PHONY: maintainer-clean
+maintainer-clean: distclean
 	-rm -f TAGS tags *.dbg .*.swp
 	find . -type f \( -iname tags -o -name "*.dbg" -o -name "*.swp" \) -delete
 
@@ -175,7 +175,7 @@ TAGS:
 ifeq (,$(MAKECMDGOALS))
 -include $(depends)
 endif
-ifneq (,$(filter-out clean proper distclean realclean mantainer-clean \
+ifneq (,$(filter-out clean proper distclean realclean maintainer-clean \
 		bin-clean TAGS tar deb deb-orig-tar modules, $(MAKECMDGOALS)))
 -include $(depends)
 endif

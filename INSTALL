@@ -151,7 +151,7 @@ Clean:
 make clean   (clean the modules too)
 make proper  (clean also the dependencies)
 make distclean (the same as proper)
-make mantainer-clean (clean everything, including auto generated files,
+make maintainer-clean (clean everything, including auto generated files,
  tags, *.dbg a.s.o)
 
 Compile:
