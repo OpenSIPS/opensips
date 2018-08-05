@@ -174,6 +174,7 @@ Chapter 2. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
    5. Ionut Ionita (@ionutrazvanionita) 3 1 103 28
    6. Ryan Bullock (@rrb3942) 2 1 8 0
+   7. Maksym Sobolyev (@sobomax) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -198,9 +199,10 @@ Chapter 2. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    2. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
    3. Razvan Crainea (@razvancrainea)     May 2012 - Aug 2017
-   4. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
-   5. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2015
-   6. Ryan Bullock (@rrb3942)             Jan 2013 - Jan 2013
+   4. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   5. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
+   6. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2015
+   7. Ryan Bullock (@rrb3942)             Jan 2013 - Jan 2013
 
    (1) including any documentation-related commits, excluding
    merge commits

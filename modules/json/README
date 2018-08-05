@@ -346,8 +346,9 @@ Chapter 2. Contributors
    4. Razvan Crainea (@razvancrainea) 8 6 11 8
    5. Vlad Paiu (@vladpaiu) 5 3 29 11
    6. Ovidiu Sas (@ovidiusas) 4 2 17 4
-   7. Anca Vamanu 3 1 3 1
-   8. Julián Moreno Patiño 3 1 1 1
+   7. Björn Esser 3 1 109 24
+   8. Anca Vamanu 3 1 3 1
+   9. Julián Moreno Patiño 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -371,12 +372,13 @@ Chapter 2. Contributors
                      Name                   Commit Activity
    1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Jun 2018
    2. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
-   3. Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2016
-   4. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   5. Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
-   6. Ovidiu Sas (@ovidiusas)             Mar 2013 - Mar 2013
-   7. Anca Vamanu                         Sep 2009 - Sep 2009
-   8. Andrei Dragus                       Sep 2009 - Sep 2009
+   3. Björn Esser                         Dec 2017 - Dec 2017
+   4. Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2016
+   5. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6. Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
+   7. Ovidiu Sas (@ovidiusas)             Mar 2013 - Mar 2013
+   8. Anca Vamanu                         Sep 2009 - Sep 2009
+   9. Andrei Dragus                       Sep 2009 - Sep 2009
 
    (1) including any documentation-related commits, excluding
    merge commits

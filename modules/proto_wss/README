@@ -173,9 +173,9 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Does OpenSIPS support fragmented Secure WebSocket messages?
+       Does OpenSIPS support fragmented Secure WebSocket messages?
 
-   No, the WebSocket fragmentation mechanism is not supported.
+       No, the WebSocket fragmentation mechanism is not supported.
 
 Chapter 3. Contributors
 
@@ -187,6 +187,7 @@ Chapter 3. Contributors
    1. Razvan Crainea (@razvancrainea) 15 8 696 33
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 7 4 161 4
    3. Liviu Chircu (@liviuchircu) 5 3 12 27
+   4. Maksym Sobolyev (@sobomax) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -211,6 +212,7 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Jun 2018
    2. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
    3. Razvan Crainea (@razvancrainea)     Jan 2016 - Sep 2017
+   4. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
 
    (1) including any documentation-related commits, excluding
    merge commits

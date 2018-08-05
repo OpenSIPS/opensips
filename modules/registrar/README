@@ -411,9 +411,9 @@ if (is_method("REGISTER")) {
 }
 ...
 lookup("location");
-t_on_branch("branch_route_1");
+t_on_branch("parallel_fork");
 ...
-branch_route[branch_route_1] {
+branch_route [parallel_fork] {
         xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch
 _idx])\n");
 }
@@ -966,7 +966,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 149 99 2227 1734
    2. Jan Janak (@janakj) 121 73 3465 1102
-   3. Liviu Chircu (@liviuchircu) 27 20 476 119
+   3. Liviu Chircu (@liviuchircu) 28 21 478 121
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Vlad Paiu (@vladpaiu) 16 10 489 81
    6. Razvan Crainea (@razvancrainea) 15 10 260 71
@@ -1005,8 +1005,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jun 2018
    3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2017
    4.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1034,8 +1034,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Julián
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Julián
    Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Nick Altmann
    (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
    Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio Gutierrez,

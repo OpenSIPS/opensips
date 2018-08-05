@@ -1078,9 +1078,7 @@ create_dialog("B");
 1.7.2.  match_dialog()
 
    This function is to be used to match a sequential (in-dialog)
-   request to an existing dialog. In other words, the function
-   will try to match the current request to an known ongoing
-   dialog.
+   request to an ongoing dialog.
 
    The function tries to use (for dialog matching) the DID (Dialog
    ID) from Route header and also falls back to SIP-wise matching.
@@ -1100,9 +1098,16 @@ create_dialog("B");
 ...
     if (has_totag()) {
         loose_route();
-        if ($DLG_status==NULL && !match_dialog() ) {
-            xlog(" cannot match request to a dialog \n");
-        }
+
+        # example 1: attempt dialog ID matching, followed by SIP-wise ma
+tching
+        if ($DLG_status == NULL && !match_dialog())
+            xlog("cannot match request to a dialog\n");
+
+        # example 2: override the default behavior; only do dialog ID ma
+tching
+        if ($DLG_status == NULL && !match_dialog("DID_ONLY"))
+            xlog("cannot match request to a dialog\n");
     }
 ...
 
@@ -1870,81 +1875,81 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   Can I define both the replicate_dialogs_to and
-   replicate_profiles_to module parameters?
+       Can I define both the replicate_dialogs_to and
+       replicate_profiles_to module parameters?
 
-   No! This is a known design issue of the OpenSIPS 2.2 clusterer
-   module. If you really need this feature (see below), then you
-   should upgrade to a 2.3+ OpenSIPS, where this is taken care of.
+       No! This is a known design issue of the OpenSIPS 2.2 clusterer
+       module. If you really need this feature (see below), then you
+       should upgrade to a 2.3+ OpenSIPS, where this is taken care of.
 
    3.2.
 
-   Does dialog replication also update the profile values for the
-   receiving servers?
+       Does dialog replication also update the profile values for the
+       receiving servers?
 
-   Yes! In other words: "when replicating to the same cluster,
-   dialog replication is inclusive of profile replication".
+       Yes! In other words: "when replicating to the same cluster,
+       dialog replication is inclusive of profile replication".
 
    3.3.
 
-   What happened with “topology_hiding()” function?
+       What happened with “topology_hiding()” function?
 
-   The respective functionality was moved into the topology_hiding
-   module. Function prototype has remained the same.
+       The respective functionality was moved into the topology_hiding
+       module. Function prototype has remained the same.
 
    3.4.
 
-   What happened with “use_tight_match” parameter?
+       What happened with “use_tight_match” parameter?
 
-   The parameter was removed with version 1.3 as the option of
-   tight matching became mandatory and not configurable. Now, the
-   tight matching is done all the time (when using DID matching).
+       The parameter was removed with version 1.3 as the option of
+       tight matching became mandatory and not configurable. Now, the
+       tight matching is done all the time (when using DID matching).
 
    3.5.
 
-   What happened with “bye_on_timeout_flag” parameter?
+       What happened with “bye_on_timeout_flag” parameter?
 
-   The parameter was removed in a dialog module parameter
-   restructuring. To keep the bye on timeout behavior, you need to
-   provide a "B" string parameter to the create_dialog() function.
+       The parameter was removed in a dialog module parameter
+       restructuring. To keep the bye on timeout behavior, you need to
+       provide a "B" string parameter to the create_dialog() function.
 
    3.6.
 
-   What happened with “dlg_flag” parameter?
+       What happened with “dlg_flag” parameter?
 
-   The parameter is considered obsolete. The only way to create a
-   dialog is to call the create_dialog() function
+       The parameter is considered obsolete. The only way to create a
+       dialog is to call the create_dialog() function
 
    3.7.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    3.8.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    3.9.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -1956,7 +1961,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 373 233 11402 2779
    2. Vlad Paiu (@vladpaiu) 233 133 6005 2907
    3. Razvan Crainea (@razvancrainea) 111 82 2537 475
-   4. Liviu Chircu (@liviuchircu) 47 32 1388 200
+   4. Liviu Chircu (@liviuchircu) 50 35 1402 209
    5. Ovidiu Sas (@ovidiusas) 27 21 482 107
    6. Dan Pascu (@danpascu) 26 22 160 106
    7. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
@@ -1997,9 +2002,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2018
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
    5.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
    6.  Stephane Alnet                      Nov 2016 - Nov 2016
@@ -2028,8 +2033,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Julián
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Julián
    Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Ionel Cerghit (@ionel-cerghit), Walter Doekes
    (@wdoekes), Eseanu Marius Cristian (@eseanucristian), Norman

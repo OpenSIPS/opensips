@@ -254,11 +254,11 @@ modparam("siptrace", "trace_id",
 /* Example 2: how to trace initial INVITE and BYE */
         if (has_totag()) {
                 if (is_method("BYE")) {
-                        sip_trace("$var(trace_id)", "m", "$var(user)")
+                        sip_trace("$var(trace_id)", "m", "$var(user)");
                 }
         } else {
                 if (is_method("INVITE")) {
-                        sip_trace("$var(trace_id)", "m", "$var(user)")
+                        sip_trace("$var(trace_id)", "m", "$var(user)");
                 }
         }
 
@@ -348,7 +348,7 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 48 26 2215 191
    4. Vlad Paiu (@vladpaiu) 21 8 335 528
    5. Razvan Crainea (@razvancrainea) 19 16 124 85
-   6. Liviu Chircu (@liviuchircu) 12 10 41 36
+   6. Liviu Chircu (@liviuchircu) 13 11 43 38
    7. Henning Westerholt (@henningw) 11 6 146 155
    8. Andrei Datcu (@andrei-datcu) 11 5 284 135
    9. Alexandr Dubovikov (@adubovikov) 6 1 500 4
@@ -379,8 +379,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jun 2018
    3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2017
    4.  Vlad Patrascu (@rvlad-patrascu)     Aug 2017 - Aug 2017
    5.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Feb 2017
@@ -402,8 +402,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
    Andrei Datcu (@andrei-datcu), Razvan Crainea (@razvancrainea),
    Alexandr Dubovikov (@adubovikov), Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,

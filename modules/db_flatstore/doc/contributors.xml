@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -138,48 +138,48 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2017 - Feb 2017</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Sep 2011 - Aug 2015</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Razvan Pistolea</entry>
 		<entry align="center">Jul 2009 - Jul 2009</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
 		<entry align="center">Nov 2006 - Mar 2008</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Konstantin Bokarius</entry>
 		<entry align="center">Mar 2008 - Mar 2008</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Edson Gellert Schubert</entry>
 		<entry align="center">Feb 2008 - Feb 2008</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
 		<entry align="center">May 2007 - Feb 2008</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Elena-Ramona Modroiu</entry>
 		<entry align="center">Jan 2007 - Jan 2007</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Andrei Pelinescu-Onciul</entry>
-		<entry align="center">Dec 2004 - Dec 2004</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

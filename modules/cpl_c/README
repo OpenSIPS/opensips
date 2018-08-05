@@ -516,7 +516,7 @@ Chapter 2. Contributors
    (@ovidiusas), Konstantin Bokarius, Jesus Rodrigues, Norman
    Brandinger (@NormB), Andreas Granig, Ionel Cerghit
    (@ionel-cerghit), Julián Moreno Patiño, UnixDev, Edson Gellert
-   Schubert.
+   Schubert, Maksym Sobolyev (@sobomax).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -540,20 +540,20 @@ Chapter 2. Contributors
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Jun 2018
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   4.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
-   5.  Ionel Cerghit (@ionel-cerghit)      Oct 2015 - Oct 2015
-   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Aug 2015
-   7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   8.  UnixDev                             Feb 2009 - Feb 2009
-   9.  Dan Pascu (@danpascu)               Feb 2006 - Nov 2008
-   10. Henning Westerholt (@henningw)      May 2007 - May 2008
+   3.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
+   6.  Ionel Cerghit (@ionel-cerghit)      Oct 2015 - Oct 2015
+   7.  Razvan Crainea (@razvancrainea)     Sep 2010 - Aug 2015
+   8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   9.  UnixDev                             Feb 2009 - Feb 2009
+   10. Dan Pascu (@danpascu)               Feb 2006 - Nov 2008
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
-   Rodrigues, Elena-Ramona Modroiu, Norman Brandinger (@NormB),
-   Andreas Granig, Andrei Pelinescu-Onciul, Jan Janak (@janakj),
-   Jiri Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Elena-Ramona Modroiu, Norman
+   Brandinger (@NormB), Andreas Granig, Andrei Pelinescu-Onciul,
+   Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

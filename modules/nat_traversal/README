@@ -17,7 +17,7 @@ NAT Traversal Module
               1.3.1. OpenSIPS Modules
               1.3.2. External Libraries or Applications
 
-        1.4. Exported parameters
+        1.4. Exported Parameters
 
               1.4.1. keepalive_interval (integer)
               1.4.2. keepalive_method (string)
@@ -25,7 +25,7 @@ NAT Traversal Module
               1.4.4. keepalive_extra_headers (string)
               1.4.5. keepalive_state_file (string)
 
-        1.5. Exported functions
+        1.5. Exported Functions
 
               1.5.1. client_nat_test(type)
               1.5.2. fix_contact()
@@ -372,7 +372,7 @@ Chapter 1. Admin Guide
    before running OpenSIPS with this module loaded:
      * None.
 
-1.4. Exported parameters
+1.4. Exported Parameters
 
 1.4.1. keepalive_interval (integer)
 
@@ -477,7 +477,7 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/kee
 palive_state")
 ...
 
-1.5. Exported functions
+1.5. Exported Functions
 
 1.5.1.  client_nat_test(type)
 
@@ -815,8 +815,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Dan Pascu (@danpascu) 40 14 3044 66
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 26 108 86
-   3. Saúl Ibarra Corretgé (@saghul) 9 5 188 102
-   4. Liviu Chircu (@liviuchircu) 8 6 30 34
+   3. Liviu Chircu (@liviuchircu) 9 7 32 36
+   4. Saúl Ibarra Corretgé (@saghul) 9 5 188 102
    5. Razvan Crainea (@razvancrainea) 6 4 8 5
    6. Vlad Paiu (@vladpaiu) 5 3 12 14
    7. Anca Vamanu 4 2 12 1
@@ -844,8 +844,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Jun 2018
    3.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2017
    4.  Dan Pascu (@danpascu)               May 2008 - Apr 2017
    5.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
@@ -862,8 +862,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Saúl
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Saúl
    Ibarra Corretgé (@saghul), Dan Pascu (@danpascu).
 
    doc copyrights:
