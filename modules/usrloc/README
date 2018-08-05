@@ -207,9 +207,8 @@ Chapter 1. Admin Guide
    also allows multiple OpenSIPS user location nodes to form a
    single, global user location cluster. This allows high-level
    features such as startup synchronization (data tunneling) from
-   a random, healthy "donor" node, and evenly distributed contact
-   pinging workloads (a mandatory requirement of NAT'ed
-   endpoints).
+   a random, healthy "donor" node and evenly distributed NAT
+   pinging workloads.
 
 1.2. Distributed SIP User Location
 
@@ -775,10 +774,10 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
    This parameter will get overridden if either
    working_mode_preset or db_mode are set.
 
-   Controls the behavior of OpenSIPS user location instance
-   following a restart. This parameter has no effect in some
-   database-only working mode presets, where restart persistency
-   is naturally ensured.
+   Controls the behavior of the OpenSIPS user location following a
+   restart. This parameter has no effect in some database-only
+   working mode presets, where restart persistency is naturally
+   ensured.
 
    This parameter may take the following values:
      * "none" - no explicit data synchronization following a
@@ -1465,7 +1464,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 229 135 3955 3484
-   3. Liviu Chircu (@liviuchircu) 195 117 5740 1823
+   3. Liviu Chircu (@liviuchircu) 197 118 5744 1827
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
@@ -1505,10 +1504,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
-   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jul 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jul 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jun 2018
    5.  Shlomi Gutman                       Mar 2018 - Mar 2018
    6.  @jalung                             Aug 2017 - Aug 2017
    7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2017
@@ -1535,8 +1534,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Razvan
    Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
    Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
    (@ovidiusas), Andrei Datcu (@andrei-datcu), Daniel-Constantin

@@ -562,34 +562,34 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    2.2.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    2.3.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -601,7 +601,7 @@ Chapter 3. Contributors
    1. Maksym Sobolyev (@sobomax) 153 39 3533 4766
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 141 111 1815 784
    3. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
-   4. Liviu Chircu (@liviuchircu) 35 26 385 248
+   4. Liviu Chircu (@liviuchircu) 36 27 386 249
    5. Razvan Crainea (@razvancrainea) 29 22 143 236
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
    7. Jan Janak (@janakj) 21 11 780 129
@@ -638,9 +638,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jul 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
    4.  Shlomi Gutman                       Mar 2018 - Mar 2018
    5.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
@@ -665,8 +665,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Razvan Crainea (@razvancrainea), Walter
    Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
    (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, Andrei

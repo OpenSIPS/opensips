@@ -219,8 +219,8 @@ Chapter 1. Admin Guide
 
 1.4.1. current_id
 
-   The id of the current instance. This parameter must be equal
-   with one of the node_id fields in the database.
+   The id of the current instance. This parameter must be equal to
+   one of the node_id fields in the database.
 
    No default value. This parameter must be explicitly set to a
    value greater than zero.
@@ -279,7 +279,7 @@ modparam("clusterer", "db_table", "clusterer")
    Parameter format: multiple "prop=value" property definitions
    separated by ',' where the name of the properties is the same
    as the DB column names. At least the cluster_id and url
-   propreties must be defined.
+   properties must be defined.
 
    This parameter is required if db_mode is set to “0” in order to
    properly advertise information about the current instance in
@@ -304,7 +304,7 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5
    Parameter format: multiple "prop=value" property definitions
    separated by ',' where the name of the properties is the same
    as the DB column names. At least the cluster_id, node_id and
-   url propreties must be defined.
+   url properties must be defined.
 
    This parameter should be set at least once if db_mode is set to
    0 in order to properly learn the cluster topology. If not set,
@@ -1064,7 +1064,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 207 61 8712 4285
    2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
-   3. Liviu Chircu (@liviuchircu) 30 19 471 369
+   3. Liviu Chircu (@liviuchircu) 32 21 477 373
    4. Razvan Crainea (@razvancrainea) 16 10 297 131
    5. Ionel Cerghit (@ionel-cerghit) 8 2 250 212
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 47 47
@@ -1089,8 +1089,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Jun 2018
+   1. Liviu Chircu (@liviuchircu)              Mar 2016 - Aug 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Jun 2018
    3. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - May 2018
    4. Razvan Crainea (@razvancrainea)          Nov 2015 - Dec 2017
    5. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016
@@ -1103,8 +1103,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Razvan
    Crainea (@razvancrainea), Eseanu Marius Cristian
    (@eseanucristian).
 

@@ -256,7 +256,7 @@ if ($var(rcode) >= 300) {
 
    The optional retcode_pv pseudo-var parameter can be given in
    order to retrieve the HTTP status code of the response message.
-   Since the module based on libcurl, a 0 value means no HTTP
+   Since the module is based on libcurl, a 0 value means no HTTP
    reply arrived at all.
 
    Possible parameter types
@@ -306,7 +306,7 @@ if ($var(rcode) >= 300) {
 
    The optional retcode_pv pseudo-var parameter can be given in
    order to retrieve the HTTP status code of the response message.
-   Since the module based on libcurl, a 0 value means no HTTP
+   Since the module is based on libcurl, a 0 value means no HTTP
    reply arrived at all.
 
    Possible parameter types
@@ -495,7 +495,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 77 47 2438 520
+   1. Liviu Chircu (@liviuchircu) 78 48 2440 522
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Razvan Crainea (@razvancrainea) 9 7 26 11
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 95 47
@@ -525,8 +525,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    3. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
    4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
@@ -542,8 +542,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Agalya
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Agalya
    Ramachandran (@AgalyaR), Jarrod Baumann (@jarrodb).
 
    doc copyrights:

@@ -808,7 +808,7 @@ Chapter 2. Contributors
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 54 9 1218 1908
    5. Razvan Crainea (@razvancrainea) 21 16 169 113
-   6. Liviu Chircu (@liviuchircu) 17 12 216 145
+   6. Liviu Chircu (@liviuchircu) 18 13 217 146
    7. Daniel-Constantin Mierla (@miconda) 16 11 126 221
    8. Ionut Ionita (@ionutrazvanionita) 16 4 970 175
    9. Henning Westerholt (@henningw) 15 10 136 148
@@ -842,8 +842,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Jun 2018
    3.  wuhanck                             Apr 2018 - Apr 2018
    4.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
@@ -868,8 +868,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Ionut
    Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
    Irina-Maria Stanescu, Henning Westerholt (@henningw), Juha
    Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda),
