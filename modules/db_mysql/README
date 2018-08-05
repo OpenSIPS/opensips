@@ -106,7 +106,7 @@ modparam("db_mysql", "timeout_interval", 2)
 
 1.3.3. max_db_queries (integer)
 
-   The maximum number of reties to execute a failed query due to
+   The maximum number of retries to execute a failed query due to
    connections problems. If this parameter is set improperly, it
    is set to default value.
 
@@ -206,8 +206,8 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 153 53 5336 3190
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 98 70 1571 791
    3. Henning Westerholt (@henningw) 59 30 693 1239
-   4. Daniel-Constantin Mierla (@miconda) 28 20 571 154
-   5. Liviu Chircu (@liviuchircu) 27 20 391 128
+   4. Liviu Chircu (@liviuchircu) 28 21 392 129
+   5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
    6. Andrei Pelinescu-Onciul 16 14 52 49
    7. Razvan Crainea (@razvancrainea) 11 8 195 31
    8. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
@@ -242,10 +242,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2018
-   2.  Razvan Crainea (@razvancrainea)          Oct 2011 - Jul 2018
-   3.  Peter Lemenkov (@lemenkov)               Nov 2017 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)              Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)              Mar 2014 - Aug 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2018
+   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Jul 2018
+   4.  Peter Lemenkov (@lemenkov)               Nov 2017 - Jun 2018
    5.  Augusto Caringi                          Jul 2017 - Jul 2017
    6.  Ovidiu Sas (@ovidiusas)                  Mar 2017 - Mar 2017
    7.  Ionut Ionita (@ionutrazvanionita)        Feb 2016 - Feb 2016
@@ -268,9 +268,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Eseanu Marius Cristian (@eseanucristian),
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw).

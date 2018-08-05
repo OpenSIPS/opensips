@@ -427,9 +427,9 @@ if (is_method("REGISTER")) {
 }
 ...
 lookup("location");
-t_on_branch("branch_route_1");
+t_on_branch("parallel_fork");
 ...
-branch_route[branch_route_1] {
+branch_route [parallel_fork] {
         xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch
 _idx])\n");
 }
@@ -569,7 +569,7 @@ save("location","mr", "$avp(aor)");
        section below for details on how the next hop is computed.
        Hostnames are resolved before matching.
      * sip_instance (optional filter) - string or pvar containing
-       a "+sip_instance" value to be used for filtering purposes.
+       a "+sip.instance" value to be used for filtering purposes.
 
    IMPORTANT: the IP address of each contact (for matching
    purposes) is computed as follows:
@@ -604,7 +604,7 @@ remove("location", "sip:bob@atlanta.com", , "$var(next_hop)");
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
 50.60");
 ...
-# remove all contact's behind bob's mobile device X
+# remove all contacts behind bob's mobile device X
 remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 600-b82e-ff4d5d8c1a8f>")
 
@@ -987,7 +987,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 101 2273 1882
    2. Jan Janak (@janakj) 121 73 3465 1102
-   3. Liviu Chircu (@liviuchircu) 83 44 1417 1472
+   3. Liviu Chircu (@liviuchircu) 85 46 1421 1476
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Vlad Paiu (@vladpaiu) 16 10 489 81
    6. Razvan Crainea (@razvancrainea) 15 10 260 71
@@ -1027,7 +1027,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2018
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jun 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  @jalung                             Aug 2017 - Aug 2017
@@ -1057,8 +1057,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Razvan
    Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
    Julián Moreno Patiño, Nick Altmann (@nikbyte), Vlad Paiu
    (@vladpaiu), Ovidiu Sas (@ovidiusas), Irina-Maria Stanescu,

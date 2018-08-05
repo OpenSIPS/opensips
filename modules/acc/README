@@ -229,7 +229,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
    Extra values are consistent during the whole call. Setting a
    value during a request, will cause it to remain visible during
    all replies. Also, concerning CDR logging, setting a value on
-   the initial INVITIE will result in having that value throughout
+   the initial INVITE will result in having that value throughout
    the dialog.
 
    Via log_name you define how/where the data will be logged. Its
@@ -252,7 +252,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
 modparam("acc", "extra_fields", "log: a -> test_a")
 
    will enable you to set the value for test_a field of the log
-   only by setting $acc_etra(a) variable. Otherwise, the field
+   only by setting $acc_extra(a) variable. Otherwise, the field
    shall be logged with no value(null).
 
 1.2.4. Radius accounting dependencies
@@ -280,7 +280,7 @@ modparam("acc", "extra_fields", "log: a -> test_a")
 
    First how it works: The idea is to have a variable to store a
    set of values for each leg. The meaning of the variable content
-   is stricly decided by the script writer - it can be the origin
+   is strictly decided by the script writer - it can be the origin
    and source of the leg, its status or any other related
    information. By default there is defined only one leg. Script
    writer has to decide when is the time to create a new leg, by
@@ -449,10 +449,10 @@ modparam("acc", "extra_fields","a->2345;b->2346")
    Example 1.5. Setting leg_fields example:
 # for syslog-based accounting, use any text you want to be printed
 # if setting $(acc_leg(a)[0]) you will see "My_a_Field=<value> in logs
-# if setting $(acc_extra(b)[0]) you will see "b=<value> in logs
+# if setting $(acc_leg(b)[0]) you will see "b=<value> in logs
 modparam("acc", "leg_fields", "log: a->My_a_Field; b")
 # for mysql-based accounting, use the names of the columns
-# $acc_extra(a) = <value>  results in setting col_a with <value> in db
+# $acc_leg(a) = <value>  results in setting col_a with <value> in db
 modparam("acc", "leg_fields", "db: a->col_a; col_b")
 # for AAA-based accounting, use the names of the AAA AVPs
 modparam("acc", "leg_fields","aaa:a->AAA_LEG_SRC;b->AAA_LEG_DST")
@@ -636,8 +636,8 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 
 1.7.3. $acc_current_leg (read-only)
 
-   Variable holding the value for the current leg. Calling
-   acc_new_leg() will increase the value of this variable.
+   Holds the index of the current leg, starting from 0. Calling
+   acc_new_leg() will increment this index.
 
 1.8. Exported Functions
 
@@ -840,9 +840,9 @@ acc_evi_request("403 Destination not allowed");
 
 1.8.7.  acc_new_leg()
 
-   Creates a new leg only if multi-leg accounting is used. The
-   value of acc_current_leg variable is incremented. All the
-   values of the new leg will be initialised with null.
+   Creates a new leg and increments $acc_current_leg only if
+   multi-leg accounting is used. All values of the new leg will be
+   initialized to null.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
@@ -1004,7 +1004,7 @@ Chapter 3. Contributors
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 73 48 2390 300
    5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
-   6. Liviu Chircu (@liviuchircu) 33 24 347 301
+   6. Liviu Chircu (@liviuchircu) 35 26 357 312
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    8. Elena-Ramona Modroiu 23 4 2267 5
    9. Henning Westerholt (@henningw) 20 15 184 131
@@ -1039,9 +1039,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
@@ -1067,8 +1067,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Vlad
    Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Ryan Bullock (@rrb3942),
    Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt

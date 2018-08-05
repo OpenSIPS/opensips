@@ -255,13 +255,13 @@ ar(user)");
 /* Example 2: how to trace initial INVITE and BYE, sip and rest */
         if (has_totag()) {
                 if (is_method("BYE")) {
-                        sip_trace("$var(trace_id)", "m", "sip|rest", ""$
-var(user)")
+                        sip_trace("$var(trace_id)", "m", "sip|rest", "$v
+ar(user)");
                 }
         } else {
                 if (is_method("INVITE")) {
                         sip_trace("$var(trace_id)", "m", "sip|rest", "$v
-ar(user)")
+ar(user)");
                 }
         }
 
@@ -350,7 +350,7 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 48 26 2215 191
    4. Razvan Crainea (@razvancrainea) 22 19 126 87
    5. Vlad Paiu (@vladpaiu) 21 8 335 528
-   6. Liviu Chircu (@liviuchircu) 18 15 53 62
+   6. Liviu Chircu (@liviuchircu) 19 16 55 64
    7. Henning Westerholt (@henningw) 11 6 146 155
    8. Andrei Datcu (@andrei-datcu) 11 5 284 135
    9. Vlad Patrascu (@rvlad-patrascu) 7 4 66 59
@@ -381,8 +381,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jan 2018
@@ -405,8 +405,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
    (@razvancrainea), Alexandr Dubovikov (@adubovikov),

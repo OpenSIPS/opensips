@@ -752,14 +752,18 @@ modparam("tm", "cluster_auto_cancel", no)
    controlling the internal behaviour. The flags may be given in
    decimal or hexa format; supported flags are:
      * 0x01 - deprecated, not used any more
-     * 0x02 - do not internally send a negative reply in case of
-       forward failure (due internal error, bad RURI, bad message,
-       etc). When a forward failure occurs, no SIP request is
-       relayed and therefore no negative reply or timeout will
-       show up on the failure_route (if one is set). It applies
-       only when the transaction is created. By default one
-       negative reply is sent. Useful if you want to implement a
-       serial forking in case of failure.
+     * 0x02 - do not internally generate and send a "477 Send
+       failed (477/TM)" SIP reply in case of a global forwarding
+       failure (i.e. forwarding for each branch has failed due to
+       internal errors, bad R-URI, bad message, lack of network
+       reachability, etc.).
+       This flag only applies if the transaction was not
+       previously created by t_newtran(). When a global forwarding
+       failure occurs, no SIP request is relayed and therefore no
+       negative SIP reply or timeout will show up on the
+       failure_route, if one is set.
+       Useful if you want to implement a failover logic for when
+       none of the currently created branches can be forwarded to.
      * 0x04 - disable the DNS failover for the transaction. Only
        first IP will be used. It disables the failover both at
        transport and transaction level.
@@ -864,16 +868,19 @@ t_reply("404", "Use $rU not found");
 1.4.5.  t_newtran()
 
    Creates the SIP transaction for the currently processed SIP
-   requests. Basically you switch to a stateful processing from
-   this point furhter, with automatic detection of retransmission
-   and auto sending of 100 Trying reply on INVITEs.
+   request, thus switching to stateful processing. For INVITE
+   requests, a 100 Trying reply will be immediately sent, unless
+   auto_100trying is disabled. Once a SIP transaction is created,
+   calling t_newtran() for retransmitted requests will end the
+   OpenSIPS script execution, with the lastly sent reply being
+   retransmitted upstream.
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.27. t_newtran usage
 ...
 t_newtran();  # 100 Trying is fired here
-xlog("doing my complicated routing logic");
+xlog("doing my complicated routing logic\n");
 ....
 t_relay(); # send the call further
 ...
@@ -1324,7 +1331,7 @@ t_flush_flags();
    or ACK method for whom there are no local transactions found.
    The function broadcasts the message to all the other nodes in
    the cluster, but only the “owner” of the transaction will be
-   albe to handle it.
+   able to handle it.
 
    Example 1.44. t_anycast_replicate usage
 ...
@@ -1411,6 +1418,11 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
        present, requires the “Content-Type” and “Content-length”
        headers)
 
+   MI FIFO Command Format:
+                opensipsctl fifo t_uac_dlg INVITE "sip:123456@127.0.0.1:
+5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:te
+st@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
+
 1.6.2.  t_uac_cancel
 
    Generates and sends a CANCEL for an existing SIP request.
@@ -1419,12 +1431,19 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
      * callid - callid of the INVITE request to be cancelled.
      * cseq - cseq of the INVITE request to be cancelled.
 
+   MI FIFO Command Format:
+                opensipsctl fifo t_uac_cancel "1-23454@127.0.0.1" "1 INV
+ITE"
+
 1.6.3.  t_hash
 
    Gets information about the load of TM internal hash table.
 
    Parameters:
      * none
+
+   MI FIFO Command Format:
+                opensipsctl fifo t_hash
 
 1.6.4.  t_reply
 
@@ -1442,6 +1461,10 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
      * body - (optional, may not be present) reply body (if
        present, requires the “Content-Type” and “Content-length”
        headers)
+
+   MI FIFO Command Format:
+                opensipsctl fifo t_reply 403 Forbidden 46961:1279687637
+abcde .
 
 1.7. Exported Statistics
 
@@ -1534,7 +1557,7 @@ Chapter 4. Contributors
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
    5. Razvan Crainea (@razvancrainea) 80 61 1509 345
-   6. Liviu Chircu (@liviuchircu) 70 50 958 616
+   6. Liviu Chircu (@liviuchircu) 72 52 983 630
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
    9. Vlad Paiu (@vladpaiu) 25 22 169 55
@@ -1543,8 +1566,8 @@ Chapter 4. Contributors
    All remaining contributors: Dan Pascu (@danpascu), Ovidiu Sas
    (@ovidiusas), Juha Heinanen (@juha-h), Ionut Ionita
    (@ionutrazvanionita), Maksym Sobolyev (@sobomax), Raphael
-   Coeffic, Nils Ohlmeier, Klaus Darilion, Vlad Patrascu
-   (@rvlad-patrascu), Andreas Granig, Elias Baixas, Marcus Hunger,
+   Coeffic, Vlad Patrascu (@rvlad-patrascu), Nils Ohlmeier, Klaus
+   Darilion, Andreas Granig, Elias Baixas, Marcus Hunger,
    Christophe Sollet (@csollet), Jeffrey Magder, Ezequiel Lovelle,
    Saúl Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John
    Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
@@ -1573,11 +1596,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jun 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jun 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2018
    6.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
    7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1603,9 +1626,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Nick
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Nick
    Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
    (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
    Darilion, Daniel-Constantin Mierla (@miconda), Konstantin

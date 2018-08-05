@@ -129,8 +129,8 @@ if (!mf_process_maxfwd_header("10") && $retcode==-1) {
    new inserted header (if locally added).
 
    Retuning codes:
-     * 1 (true) - header was found or set and its value is stricly
-       less than “max_value”.
+     * 1 (true) - header was found or set and its value is
+       strictly less than “max_value”.
      * -1 (false) - the header was found or set and its value is
        greater or equal to “max_value”.
      * -2 (false) - header was not found or not set.
@@ -163,8 +163,8 @@ Chapter 2. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 29 862 483
    2. Jan Janak (@janakj) 11 9 58 38
    3. Daniel-Constantin Mierla (@miconda) 11 9 23 19
-   4. Andrei Pelinescu-Onciul 10 8 31 26
-   5. Liviu Chircu (@liviuchircu) 10 8 16 41
+   4. Liviu Chircu (@liviuchircu) 11 9 17 42
+   5. Andrei Pelinescu-Onciul 10 8 31 26
    6. Jiri Kuthan (@jiriatipteldotorg) 9 7 93 7
    7. Razvan Crainea (@razvancrainea) 5 3 6 7
    8. Henning Westerholt (@henningw) 4 2 3 3
@@ -196,8 +196,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2014 - Aug 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Oct 2014
@@ -219,8 +219,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Klaus Darilion,
    Elena-Ramona Modroiu.

@@ -121,11 +121,12 @@ dialog Module
               1.9.6. profile_get_values
               1.9.7. profile_end_dlgs
               1.9.8. dlg_db_sync
-              1.9.9. dlg_restore_db
-              1.9.10. list_all_profiles
-              1.9.11. dlg_push_var
-              1.9.12. dlg_set_sharing_tag_active
-              1.9.13. dlg_list_sharing_tags
+              1.9.9. dlg_cluster_sync
+              1.9.10. dlg_restore_db
+              1.9.11. list_all_profiles
+              1.9.12. dlg_push_var
+              1.9.13. dlg_set_sharing_tag_active
+              1.9.14. dlg_list_sharing_tags
 
         1.10. Exported Pseudo-Variables
 
@@ -327,13 +328,15 @@ Chapter 1. Admin Guide
    For details and configuration examples on how this would work
    in different usage scenarios, see this article.
 
-   The following actions will not be performed for a dialog that
-   is marked with a sharing tag that is in the "backup" state:
+   The following actions will not be performed for a dialog marked
+   with a sharing tag that is in the "backup" state:
      * sending Re-Invite or OPTIONS pings to end-points
      * generating BYE requests or any other actions(like producing
        CDRs) upon dialog expiration
      * sending replication packets on dialog events(update,
        delete)
+     * counting the dialog in the profiles that it belongs; only
+       if profile replication is also enabled
 
    In addition to the event-driven replication, an OpenSIPS
    instance will first try to learn all the dialog information
@@ -352,12 +355,21 @@ Chapter 1. Admin Guide
    dialogs that are not reconfirmed as being active in the
    meantime (SIP updates, received in sync data).
 
-   Also configuring profiles replication via the
+   Also configuring profile replication via the
    profile_replication_cluster parameter is not necessary when
-   dialog replication is already configured, as profile
-   information is included in the dialog updates. The profiles
-   must still be marked for sharing though in the
-   profiles_with_value or profiles_no_value parameters.
+   dialog replication is already configured. The profile
+   information is included in the dialog updates sent in the
+   dialog replication cluster. The profiles must still be marked
+   for sharing though in the profiles_with_value or
+   profiles_no_value parameters.
+
+   A scenario were both profile and dialog replication should be
+   configured is when a platform has multiple POPs, where separate
+   dialog replication clusters are configured for HA purposes, and
+   a cluster for globally shared profiles is also required. In
+   this case, proper counting for dialogs is ensured by using the
+   sharing tags mechanism(in order to avoid counting each dialog
+   twice, both on the active and backup node for that dialog).
 
 1.5. Dependencies
 
@@ -1104,9 +1116,7 @@ create_dialog("B");
 1.7.2.  match_dialog([dlg_match_mode])
 
    This function is to be used to match a sequential (in-dialog)
-   request to an existing dialog. In other words, the function
-   will try to match the current request to an known ongoing
-   dialog.
+   request to an ongoing dialog.
 
    By default, dialog matching is performed according to the
    dlg_match_mode module parameter. A specific matching mode may
@@ -1129,9 +1139,14 @@ create_dialog("B");
 ...
     if (has_totag()) {
         loose_route();
-        if ($DLG_status==NULL && !match_dialog() ) {
-            xlog(" cannot match request to a dialog \n");
-        }
+
+        # example 1: match according to dlg_match_mode
+        if ($DLG_status == NULL && !match_dialog())
+            xlog("cannot match request to a dialog\n");
+
+        # example 2: override dlg_match_mode
+        if ($DLG_status == NULL && !match_dialog("DID_FALLBACK"))
+            xlog("cannot match request to a dialog\n");
     }
 ...
 
@@ -1841,7 +1856,26 @@ wZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensipsctl fifo dlg_db_sync
 
-1.9.9. dlg_restore_db
+1.9.9. dlg_cluster_sync
+
+   This command will only take effect if dialog replication is
+   enabled.
+
+   The current node will locate a suitable donor node within the
+   dialog_replication_cluster and issue a sync request to it. The
+   donor node will then push all the dialog information to the
+   current node, via the the binary interface. For dialogs that
+   already exist in memory, the information will be not be treated
+   as an update but discarded instead.
+
+   Name: dlg_cluster_sync
+
+   It takes no parameters
+
+   MI FIFO Command Format:
+                opensipsctl fifo dlg_cluster_sync
+
+1.9.10. dlg_restore_db
 
    Restores the dialog table after a potential desynchronization
    event. The table is truncated, then populated with CONFIRMED
@@ -1854,7 +1888,7 @@ wZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensipsctl fifo dlg_restore_db
 
-1.9.10. list_all_profiles
+1.9.11. list_all_profiles
 
    Lists all the dialog profiles, along with 1 or 0 if the given
    profile has/does not have an associated value.
@@ -1866,7 +1900,7 @@ wZjAzNGM1ZDY
    MI FIFO Command Format:
                 opensipsctl fifo list_all_profiles
 
-1.9.11. dlg_push_var
+1.9.12. dlg_push_var
 
    Push or update a dialog value for the given list of dialog IDs
    / Call-IDs.
@@ -1884,7 +1918,7 @@ wZjAzNGM1ZDY
                 opensipsctl fifo dlg_push_var var_name var_value DID1 [
 DID2 DID3 ...  DIDN ]
 
-1.9.12. dlg_set_sharing_tag_active
+1.9.13. dlg_set_sharing_tag_active
 
    Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
@@ -1900,7 +1934,7 @@ DID2 DID3 ...  DIDN ]
    MI FIFO Command Format:
                 opensipsctl fifo dlg_set_sharing_tag_active vip1
 
-1.9.13. dlg_list_sharing_tags
+1.9.14. dlg_list_sharing_tags
 
    Lists all known sharing tags and their states.
 
@@ -2171,8 +2205,8 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 389 244 11732 2925
    2. Vlad Paiu (@vladpaiu) 244 135 6952 2986
    3. Razvan Crainea (@razvancrainea) 124 93 2625 556
-   4. Liviu Chircu (@liviuchircu) 85 58 2039 607
-   5. Vlad Patrascu (@rvlad-patrascu) 85 45 2109 1238
+   4. Liviu Chircu (@liviuchircu) 89 61 2052 615
+   5. Vlad Patrascu (@rvlad-patrascu) 87 47 2147 1243
    6. Ovidiu Sas (@ovidiusas) 27 21 482 107
    7. Dan Pascu (@danpascu) 26 22 160 106
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
@@ -2212,10 +2246,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jul 2018
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2018
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jul 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Jul 2018
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2018
    7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
@@ -2243,18 +2277,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Julián Moreno Patiño,
-   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
-   (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
-   Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
-   Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
-   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Dan Pascu (@danpascu), Michel Bensoussan,
-   Andy Pyles, Elena-Ramona Modroiu.
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Vlad Paiu (@vladpaiu), Peter Lemenkov
+   (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
+   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
+   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
+   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
+   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Dan Pascu
+   (@danpascu), Michel Bensoussan, Andy Pyles, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 
