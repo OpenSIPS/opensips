@@ -125,36 +125,27 @@ dosetrev:
 
 .PHONY: docbook-clean
 docbook-clean:
-	-@for r in $(modules) $(static_modules_path) "" ; do \
-		if [ -d "$$r" ]; then \
-			if [ -d "$$r"/doc ]; then \
-				rm -f "$$r"/doc/*.txt ; \
-				rm -f "$$r"/doc/*.html ; \
-				rm -f "$$r"/doc/*.pdf ; \
-			fi ; \
-		fi ; \
+	-@for r in $(modules) $(static_modules_path); do \
+		rm -f "$$r"/doc/*.{txt,html,pdf}; \
 	done
 
 .PHONY: dbschema-docbook-clean
 dbschema-docbook-clean:
 	-@if [ -d doc/database ] ; then \
-		rm -f doc/database/*.txt ; \
-		rm -f doc/database/*.html ; \
-		rm -f doc/database/*.pdf ; \
+		rm -f doc/database/*.{txt,html,pdf}; \
 		$(MAKE) -C db/schema docbook_clean; \
 	fi
 
+.PHONY: bin-clean
+bin-clean:
+	rm -f $(NAME)
+
 .PHONY: clean
-clean: docbook-clean dbschema-docbook-clean
-	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
-	-@for r in $(all_modules) "" ; do \
-		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
-			$(MAKE) -C $$r clean ; \
-		fi ; \
-	done
+clean: docbook-clean dbschema-docbook-clean bin-clean
+	find . -type f \( -name "*.o" -o -name "*.so" \) -delete
 	-@for r in $(all_utils) "" ; do \
 		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
-			$(MAKE) -C $$r clean ; \
+			$(MAKE) -C $$r bin-clean ; \
 		fi ; \
 	done
 
@@ -162,13 +153,8 @@ clean: docbook-clean dbschema-docbook-clean
 .PHONY: distclean
 .PHONY: realclean
 proper realclean distclean: clean
-	-@rm -f $(depends) $(deps_gen) $(auto_gen) 2>/dev/null
-	-@rm -f cfg.tab.h 2>/dev/null
-	-@for r in $(all_nostatic_modules) "" ; do \
-		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
-			 $(MAKE) -C $$r proper ; \
-		fi ; \
-	done
+	rm -f $(deps_gen) $(auto_gen) cfg.tab.h 2>/dev/null
+	find . -type f \( -name "*.d" \) -delete
 	-@if [ -d menuconfig ]; then $(MAKE) -C menuconfig proper; fi
 	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix proper; fi
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
@@ -177,13 +163,7 @@ proper realclean distclean: clean
 .PHONY: mantainer-clean
 mantainer-clean: distclean
 	-rm -f TAGS tags *.dbg .*.swp
-	-@for r in $(modules) "" ; do \
-		if [ -d "$$r" ]; then \
-			$(MAKE) -C $$r mantainer-clean; \
-		fi ; \
-	 done
-	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix mantainer-clean; fi
-
+	find . -type f \( -iname tags -o -name "*.dbg" -o -name "*.swp" \) -delete
 
 .PHONY: install_module_custom
 
@@ -195,7 +175,7 @@ TAGS:
 ifeq (,$(MAKECMDGOALS))
 -include $(depends)
 endif
-ifneq (,$(filter-out clean proper distclean realclean mantainer-clean TAGS \
-		tar modules, $(MAKECMDGOALS)))
+ifneq (,$(filter-out clean proper distclean realclean mantainer-clean \
+		bin-clean TAGS tar deb deb-orig-tar modules, $(MAKECMDGOALS)))
 -include $(depends)
 endif
