@@ -53,13 +53,34 @@ static int parse_flat_url(const str* url, str* path)
 
 	/* check if the directory exists */
 	if (stat(path->s, &st_buf) < 0) {
-		LM_ERR("cannot stat %s: %s [%d]\n", path->s, strerror(errno), errno);
+		LM_DBG("cannot stat %s (%d, %s)\n", path->s, errno, strerror(errno));
+
+		if (mkdir(path->s, S_IRWXU|S_IRWXG|S_IROTH|S_IXOTH) < 0) {
+			LM_ERR("failed to create %s directory (%d, %s)\n", path->s,
+			       errno, strerror(errno));
+			return -1;
+		}
+
+		return 0;
+	}
+
+	if (!S_ISDIR(st_buf.st_mode)) {
+		LM_ERR("not a directory: %s\n", path->s);
 		return -1;
 	}
-	if (!S_ISDIR (st_buf.st_mode)) {
-		LM_ERR("%s is not a directory\n", path->s);
+
+	if (access(path->s, R_OK) < 0) {
+		LM_ERR("no read permission on %s (%d, %s)\n", path->s,
+		       errno, strerror(errno));
 		return -1;
 	}
+
+	if (access(path->s, W_OK|X_OK) < 0) {
+		LM_ERR("no write/search permission on %s (%d, %s)\n", path->s,
+		       errno, strerror(errno));
+		return -1;
+	}
+
 	return 0;
 }
 
