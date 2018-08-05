@@ -1443,18 +1443,18 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-     Name Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Jun 2018
-   2. Callum Guy Jun 2018 - Jun 2018
-   3. Liviu Chircu (@liviuchircu) Oct 2015 - Jun 2018
-   4. Razvan Crainea (@razvancrainea) Sep 2015 - Apr 2018
-   5. Ovidiu Sas (@ovidiusas) Jun 2017 - Jun 2017
-   6. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Jun 2017
-   7. Ionut Ionita (@ionutrazvanionita) Apr 2016 - Apr 2017
-   8. Ionel Cerghit (@ionel-cerghit) Aug 2016 - Aug 2016
-   9. Maksym Sobolyev (@sobomax) Mar 2016 - Mar 2016
-   10. Eseanu Marius Cristian (@eseanucristian) Sep 2015 - Sep
-   2015
+                         Name                     Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2016 - Jun 2018
+   2.  Callum Guy                               Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)              Oct 2015 - Jun 2018
+   4.  Razvan Crainea (@razvancrainea)          Sep 2015 - Apr 2018
+   5.  Ovidiu Sas (@ovidiusas)                  Jun 2017 - Jun 2017
+   6.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jun 2017
+   7.  Ionut Ionita (@ionutrazvanionita)        Apr 2016 - Apr 2017
+   8.  Ionel Cerghit (@ionel-cerghit)           Aug 2016 - Aug 2016
+   9.  Maksym Sobolyev (@sobomax)               Mar 2016 - Mar 2016
+   10. Eseanu Marius Cristian (@eseanucristian)   Sep 2015 - Sep
+                                                2015
 
    (1) including any documentation-related commits, excluding
    merge commits

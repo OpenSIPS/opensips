@@ -106,7 +106,7 @@ modparam("db_mysql", "timeout_interval", 2)
 
 1.3.3. max_db_queries (integer)
 
-   The maximum number of reties to execute a failed query due to
+   The maximum number of retries to execute a failed query due to
    connections problems. If this parameter is set improperly, it
    is set to default value.
 
@@ -197,7 +197,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 100 72 1577 792
    3. Henning Westerholt (@henningw) 59 30 693 1239
    4. Daniel-Constantin Mierla (@miconda) 28 20 571 154
-   5. Liviu Chircu (@liviuchircu) 20 15 360 101
+   5. Liviu Chircu (@liviuchircu) 21 16 361 102
    6. Andrei Pelinescu-Onciul 16 14 52 49
    7. Razvan Crainea (@razvancrainea) 12 9 196 33
    8. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
@@ -231,9 +231,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Oct 2011 - Jul 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Aug 2002 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)              Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)              Mar 2014 - Aug 2018
+   2.  Razvan Crainea (@razvancrainea)          Oct 2011 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Aug 2002 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Apr 2017
    5.  Ovidiu Sas (@ovidiusas)                  Mar 2017 - Mar 2017
    6.  Ionut Ionita (@ionutrazvanionita)        Feb 2016 - Feb 2016
@@ -256,8 +256,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Eseanu
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Eseanu
    Marius Cristian (@eseanucristian), Vlad Paiu (@vladpaiu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw).

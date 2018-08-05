@@ -129,8 +129,8 @@ if (!mf_process_maxfwd_header("10") && $retcode==-1) {
    new inserted header (if locally added).
 
    Retuning codes:
-     * 1 (true) - header was found or set and its value is stricly
-       less than “max_value”.
+     * 1 (true) - header was found or set and its value is
+       strictly less than “max_value”.
      * -1 (false) - the header was found or set and its value is
        greater or equal to “max_value”.
      * -2 (false) - header was not found or not set.
@@ -165,7 +165,7 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 11 9 23 19
    4. Andrei Pelinescu-Onciul 10 8 31 26
    5. Jiri Kuthan (@jiriatipteldotorg) 9 7 93 7
-   6. Liviu Chircu (@liviuchircu) 8 6 9 34
+   6. Liviu Chircu (@liviuchircu) 9 7 10 35
    7. Razvan Crainea (@razvancrainea) 5 3 6 7
    8. Henning Westerholt (@henningw) 4 2 3 3
    9. Konstantin Bokarius 3 1 2 5
@@ -195,8 +195,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2014 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Jun 2018
    3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
    4.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    5.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
@@ -217,8 +217,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Klaus Darilion, Elena-Ramona Modroiu.
 

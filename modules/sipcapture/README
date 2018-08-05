@@ -770,6 +770,8 @@ Chapter 2. Contributors
    9. Julián Moreno Patiño 3 1 1 1
    10. Walter Doekes (@wdoekes) 3 1 1 1
 
+   All remaining contributors: pasandev.
+
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
    / (project_lines_deleted / project_commits)
@@ -790,16 +792,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
-   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Dec 2016
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Dusan Klinec                        Dec 2015 - Dec 2015
-   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   9.  Vlad Paiu (@vladpaiu)               Mar 2013 - Mar 2013
-   10. Alexandr Dubovikov (@adubovikov)    Nov 2011 - Nov 2011
+   1.  pasandev                            Jul 2018 - Jul 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
+   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Dec 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   10. Vlad Paiu (@vladpaiu)               Mar 2013 - Mar 2013
+
+   All remaining contributors: Alexandr Dubovikov (@adubovikov).
 
    (1) including any documentation-related commits, excluding
    merge commits
