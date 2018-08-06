@@ -443,8 +443,8 @@ static int mod_init( void )
 		return -1;
 	}
 
-	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, free_processing_acc_ctx);
-	acc_tm_flags_ctx_idx = tmb.t_ctx_register_ptr(NULL);
+	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, unref_acc_ctx);
+	acc_tm_flags_ctx_idx = tmb.t_ctx_register_ptr(unref_acc_ctx);
 
 	return 0;
 }
