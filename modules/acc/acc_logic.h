@@ -58,19 +58,12 @@
 #define DO_ACC_MISSED_STR "missed"
 #define DO_ACC_FAILED_STR "failed"
 
-/* flags on the seventh byte - generic flags for all accounting types */
-/* this flag signals to the transaction that the context was moved
- * into dialog and shall be freed from there; tm should never free it */
-#define ACC_DIALOG_CONTEXT (((unsigned long long)1<<(8*6)) * (1<<0))
 /* if cdr engine is used then we have some extra work to do in
  * do_accounting function, and we need to do this only once; since
  * it is not necessary that the user
  * sets the cdr flag from first do_accounting call, we need to know
  * when cdr engine is activated */
 #define ACC_CDR_REGISTERED (((unsigned long long)1<<(8*6)) * (1<<1))
-/* flag to signal the processing context no to free the accounting context
- * the accounting context shall be freed by upper layers(TM, DIALOG) */
-#define ACC_PROCESSING_CTX_NO_FREE (((unsigned long long)1<<(8*6)) * (1<<2))
 /*
  * this flag will help to know if we entered at least once
  * in the dialog callbacks
@@ -160,6 +153,7 @@ typedef struct extra_value {
 
 typedef struct acc_ctx {
 	gen_lock_t lock;
+	int ref_no;
 
 	/* array of values; will have the same length as tags array */
 	extra_value_t* extra_values;
@@ -212,6 +206,7 @@ int w_new_leg(struct sip_msg* msg);
  * transaction context
  */
 acc_ctx_t* try_fetch_ctx(void);
+void unref_acc_ctx(void *);
 void free_global_acc_ctx(acc_ctx_t* ctx);
 void free_processing_acc_ctx(void* param);
 
