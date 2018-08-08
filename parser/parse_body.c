@@ -236,6 +236,7 @@ int parse_sip_body(struct sip_msg * msg)
 
 	if ((type >> 16) == TYPE_MULTIPART)
 	{
+		msg->body->flags |= SIP_BODY_RCV_MULTIPART;
 		delimiter = ((content_t*) msg->content_type->parsed)->boundary;
 
 		LM_DBG("Starting parsing with boundary = [%.*s]\n",

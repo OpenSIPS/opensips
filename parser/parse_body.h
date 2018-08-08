@@ -85,8 +85,9 @@ struct body_part{
 	(((_part)->flags&SIP_BODY_PART_FLAG_DELETED)!=0)
 
 
-#define SIP_BODY_FLAG_NEW  (1<<0)
-#define SIP_BODY_FLAG_SHM  (1<<1)
+#define SIP_BODY_FLAG_NEW       (1<<0)
+#define SIP_BODY_FLAG_SHM       (1<<1)
+#define SIP_BODY_RCV_MULTIPART  (1<<2)
 
 struct sip_msg_body {
 	/* original number of parts in the SIP body */
