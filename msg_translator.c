@@ -1319,9 +1319,11 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 			}
 		}
 
-		/* if the part was the only one received -> nothing to do */
-		if ( !((part->flags & SIP_BODY_PART_FLAG_NEW)==0
-		&& msg->body->part_count==1) ) {
+		/* if the part is new (0->1 addition or 1->1 replacement) or
+		 * if the part is kept from a stipped multi-part  (n->1)
+		 *   =>  replace the msg content-type with the new one */
+		if ( (part->flags & SIP_BODY_PART_FLAG_NEW)
+		|| msg->body->part_count>1 ) {
 			/* replace the Content-Type hdr */
 			if (msg->content_type)
 				ct = del_lump(msg, msg->content_type->name.s-msg->buf,
@@ -1367,6 +1369,15 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 					}
 				}
 			}
+		} else
+		/* if it is an 1->1 keeping a non-text part, try to preserve the
+		 * the packing (multi-part or not) of this part */
+		if ( (part->flags & SIP_BODY_PART_FLAG_NEW)==0 &&
+		msg->body->part_count==1 && part->dump_f &&
+		msg->body->flags & SIP_BODY_RCV_MULTIPART) {
+			/* preserve the original multi-part packing by preserving
+			 * the before and after padding between part and body */
+			len += msg->body->body.len - part->body.len;
 		}
 
 	} else if (msg->body->part_count<2) {
@@ -1587,8 +1598,32 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 			/* the dump function was triggered when the length was computed
 			 * and the resulting buffer was linked as 'dump' (and we need
 			 * to free it now) */
-			memcpy(new_buf+*new_offs, part->dump.s, part->dump.len );
-			*new_offs += part->dump.len;
+			/* handle the special case of preserving a single part which was
+			 * received packed as multipart -> copy the boundries as
+			 * received */
+			if ( msg->body->flags & SIP_BODY_RCV_MULTIPART &&
+			msg->body->part_count==1 &&
+			(part->flags & SIP_BODY_PART_FLAG_NEW)==0 ) {
+				/* copy whatever is between the beginning of the msg body 
+				 * and the part body*/
+				memcpy(new_buf+*new_offs, msg->body->body.s,
+					part->body.s-msg->body->body.s );
+				*new_offs += part->body.s-msg->body->body.s;
+				/* copy the new body of the part */
+				memcpy(new_buf+*new_offs, part->dump.s, part->dump.len );
+				*new_offs += part->dump.len;
+				/* copy whatever is between the end of the part body 
+				 * and the end of the msg body*/
+				memcpy(new_buf+*new_offs, part->body.s+part->body.len,
+					(msg->body->body.s+msg->body->body.len)-
+					(part->body.s+part->body.len) );
+				*new_offs += (msg->body->body.s+msg->body->body.len)-
+					(part->body.s+part->body.len);
+			} else {
+				/* copy the new body of the part */
+				memcpy(new_buf+*new_offs, part->dump.s, part->dump.len );
+				*new_offs += part->dump.len;
+			}
 			pkg_free(part->dump.s);
 			part->dump.s = NULL;
 			part->dump.len = 0;
@@ -1827,7 +1862,11 @@ static inline int calculate_body_diff(struct sip_msg *msg,
 {
 	int initial_body;
 
-	if (msg->body==NULL) {
+	if (msg->body==NULL ||  /* if body was not parsed */
+	/* or there is only one received part (none added, none del) which is handled as text */
+	(msg->body->part_count==1 && msg->body->updated_part_count==1 &&
+	(msg->body->first.flags & SIP_BODY_PART_FLAG_NEW)==0 && 
+	msg->body->first.dump_f==NULL) ) {
 		return lumps_len(msg, msg->body_lumps, sock, -1);
 	} else {
 		/* prep_reassemble_body_parts() computes the total length of the
@@ -1859,8 +1898,12 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 
 	/* apply changes over the SIP headers */
 	process_lumps(msg, msg->add_rm, new_buf, new_offs, orig_offs, sock, -1);
-	if (msg->body==NULL) {
-		/* no parsed body, no advanced ops done, just dummy lumps over body */
+	if (msg->body==NULL ||  /* if body was not parsed */
+	/* or there is only one received part (none added, none del) which is handled as text */
+	(msg->body->part_count==1 && msg->body->updated_part_count==1 &&
+	(msg->body->first.flags & SIP_BODY_PART_FLAG_NEW)==0 && 
+	msg->body->first.dump_f==NULL) ) {
+		/* -> no advanced ops done, just dummy lumps over body */
 		process_lumps(msg, msg->body_lumps, new_buf, new_offs,
 			orig_offs, sock, -1);
 		/* copy the rest of the message */
