@@ -165,13 +165,23 @@ static mi_export_t mi_cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_db_mode(param_export_t *param)
+{
+	int db_mode = *(int *)param->param_pointer;
+
+	if (db_mode == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "proto_bin", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "db_mode",			get_deps_db_mode },
 		{ NULL, NULL },
 	},
 };
