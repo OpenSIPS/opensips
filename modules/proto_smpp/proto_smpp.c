@@ -77,38 +77,38 @@ static param_export_t params[] = {
 };
 
 struct module_exports exports = {
-	PROTO_PREFIX "smpp",  /* module name*/
-	MOD_TYPE_DEFAULT,/* class of this module */
+	PROTO_PREFIX "smpp",	/* module name*/
+	MOD_TYPE_DEFAULT,	/* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
-	cmds,       /* exported functions */
-	0,          /* exported async functions */
-	params,     /* module parameters */
-	0,          /* exported statistics */
-	0,          /* exported MI functions */
-	0,          /* exported pseudo-variables */
+	DEFAULT_DLFLAGS,	/* dlopen flags */
+	NULL,			/* OpenSIPS module dependencies */
+	cmds,			/* exported functions */
+	0,			/* exported async functions */
+	params,			/* module parameters */
+	0,			/* exported statistics */
+	0,			/* exported MI functions */
+	0,			/* exported pseudo-variables */
 	0,			/* exported transformations */
-	0,          /* extra processes */
-	mod_init,   /* module initialization function */
-	0,          /* response function */
-	0,          /* destroy function */
-	child_init,	/* per-child init function */
+	0,			/* extra processes */
+	mod_init,		/* module initialization function */
+	0,			/* response function */
+	0,			/* destroy function */
+	child_init,		/* per-child init function */
 };
 
 static int smpp_init(struct proto_info *pi)
 {
-	pi->id					= PROTO_SMPP;
-	pi->name				= "smpp";
-	pi->default_port		= smpp_port;
+	pi->id			= PROTO_SMPP;
+	pi->name		= "smpp";
+	pi->default_port	= smpp_port;
 
 	pi->tran.init_listener	= smpp_init_listener;
-	pi->tran.send			= smpp_send;
-	pi->tran.dst_attr		= tcp_conn_fcntl;
+	pi->tran.send		= smpp_send;
+	pi->tran.dst_attr	= tcp_conn_fcntl;
 
-	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)smpp_read_req;
-	pi->net.write			= (proto_net_write_f)smpp_write_async_req;
+	pi->net.flags		= PROTO_NET_USE_TCP;
+	pi->net.read		= (proto_net_read_f)smpp_read_req;
+	pi->net.write		= (proto_net_write_f)smpp_write_async_req;
 
 	pi->net.conn_init	= smpp_conn_init;
 	pi->net.conn_clean	= smpp_conn_clean;
