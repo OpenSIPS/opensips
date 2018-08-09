@@ -861,6 +861,10 @@ modparam("usrloc", "db_mode", 2)
 			OpenSIPS will run with a "federation-cachedb"
 			<xref linkend="param_cluster_mode"/> and
 			"sync-from-cluster" <xref linkend="param_restart_persistency"/>.
+			This will require the configuration of multiple "seed" nodes in
+			the cluster. Refer to the <ulink url="http://www.opensips.org/Documentation/Tutorials-Distributed-User-Location-Federation">
+			<citetitle>federated user location tutorial</citetitle></ulink> for more
+			details.
 			</para>
 		</listitem>
 		<listitem>
@@ -869,6 +873,8 @@ modparam("usrloc", "db_mode", 2)
 			OpenSIPS will run with a "full-sharing"
 			<xref linkend="param_cluster_mode"/> and
 			"sync-from-cluster" <xref linkend="param_restart_persistency"/>.
+			This will require the configuration of one of the nodes in the cluster
+			as a "seed" node in order to bootstrap the syncing process.
 			</para>
 		</listitem>
 		<listitem>
@@ -1010,7 +1016,9 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 				cluster-based restart persistency. Following a restart,
 				an OpenSIPS cluster node will search for a healthy "donor" node
 				from which to mirror the entire user location dataset via
-				direct cluster sync (TCP-based, binary-encoded data transfer).
+				direct cluster sync (TCP-based, binary-encoded data transfer). 
+				Depending on the clustering mode and cluster topology, this will
+				require the configuration of one or multiple "seed" nodes in the cluster.
 				Choosing this value will make the
 				<xref linkend='param_location_cluster'/> parameter mandatory.
 				</para>
