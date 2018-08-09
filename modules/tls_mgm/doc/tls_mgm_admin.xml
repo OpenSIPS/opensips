@@ -212,8 +212,8 @@ listen = tls:1.2.3.4:5061
 		<section id="param_tls_method" xreflabel="tls_method">
 			<title><varname>tls_method</varname> ([domain]string)</title>
 			<para>
-				Sets the TLS protocol. The domain, if set, represents
-				the name of the TLS domain. TLS method which can be:
+				Sets the TLS protocol. The domain part represents the name of
+				the TLS domain. The supported TLS methods are:
 			</para>
 			<itemizedlist>
 				<listitem>
@@ -280,8 +280,8 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 			<para>
 			Public certificate file for &osips;. It will be used as
 			server-side certificate for incoming TLS connections, and as
-			a client-side certificate for outgoing TLS connections. The domain,
-			if set, represents the name of the TLS domain.
+			a client-side certificate for outgoing TLS connections. The domain
+			part represents the name of the TLS domain.
 			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/tls/cert.pem".
@@ -291,7 +291,6 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "certificate", "/mycerts/certs/opensips_server_cert.pem")
 modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem")
 ...
 				</programlisting>
@@ -302,7 +301,7 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 			<title><varname>private_key</varname> ([domain](string)</title>
 			<para>
 			Private key of the above certificate. I must be kept in a
-			safe place with tight permissions! The domain, if set,
+			safe place with tight permissions! The domain part
 			represents the name of the TLS omain.
 			</para>
 			<para><emphasis>
@@ -313,7 +312,6 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "private_key", "/mycerts/private/prik.pem")
 modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 ...
 				</programlisting>
@@ -325,7 +323,7 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 			<para>
 			List of trusted CAs. The file contains the certificates
 			accepted, one after the other. It MUST be a file, not
-			a folder. The domain, if set, represents the name
+			a folder. The domain part represents the name
 			of the TLS domain.
 			</para>
 			<para><emphasis>
@@ -335,7 +333,6 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 				<title>Set <varname>ca_list</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "ca_list", "/mycerts/certs/ca_list.pem")
 modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 ...
 				</programlisting>
@@ -347,7 +344,7 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 			<para>
 			Directory storing trusted CAs. The path contains the
 			certificates accepted, each as hash which is linked to
-			certificate file. The domain, if set, represents
+			certificate file. The domain part represents
 			the name of the TLS domain.
 			</para>
 			<para><emphasis>
@@ -357,7 +354,6 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 				<title>Set <varname>ca_dir</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "ca_dir", "/mycerts/certs")
 modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 ...
 				</programlisting>
@@ -368,7 +364,7 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 			<title><varname>ciphers_list</varname> ([domain](string)</title>
 			<para>
 			You can specify the list of algorithms for authentication
-			and encryption that you allow. The domain, if set,
+			and encryption that you allow. The domain part
 			represents the name of the TLS domain. To obtain a list of ciphers
 			and then choose, use the openssl application:
 			</para>
@@ -388,7 +384,6 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "ciphers_list", "NULL")
 modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 ...
 				</programlisting>
@@ -401,7 +396,7 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 			You can specify a file which contains Diffie-Hellman
 			parameters as a PEM-file. This is needed if you would like
 			to specify ciphers including Diffie-Hellman mode. The 
-			domain, if set, represents the name of the TLS domain.
+			domain part represents the name of the TLS domain.
 			</para>
 			<para><emphasis>
 				It defaults to not set a dh param file.
@@ -411,7 +406,6 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 					</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "dh_params", "/etc/pki/CA/dh1024.pem")
 modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 ...
 				</programlisting>
@@ -422,8 +416,8 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			<title><varname>ec_curve</varname> ([domain](string)</title>
 			<para>
 			You can specify an elliptic curve which should be used for
-			ciphers which demand an elliptic curve. The domain,
-			if set, represents the name of the TLS domain.
+			ciphers which demand an elliptic curve. The domain part
+			represents the name of the TLS domain.
 			</para>
 			<para>
 			It's usable only if TLS v1.1/1.2 support was compiled.
@@ -445,9 +439,8 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			ssl_context. 'require_cert' does the same with
 			SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
 			SSL_VERIFY_PEER is also turned on. Since version 2.1, these 
-			parameters act have been reduced to only one. They act both on 
-			client side and server side if no domain specified, elseway 
-			they act on a specific domain, depending on the first parameter.
+			parameters act have been reduced to only one. The domain part
+			represents the name of the TLS domain.
 			</para>
 			<para>
 			These two parameters are used for incoming TLS connections, where
@@ -465,10 +458,8 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 				<programlisting format="linespecific">
 ...
 # turn on the strictest and strongest authentication possible
-modparam("tls_mgm", "require_cert", "1")
-modparam("tls_mgm", "require_cert", "[dom]1")
-modparam("tls_mgm", "verify_cert", "0")
-modparam("tls_mgm", "verify_cert", "[dom]1")
+modparam("tls_mgm", "require_cert", "[dom]0")
+modparam("tls_mgm", "verify_cert", "[dom]0")
 ...
 				</programlisting>
 			</example>
