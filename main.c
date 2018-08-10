@@ -606,9 +606,17 @@ static void sig_usr(int signo)
 	UNUSED(pid);
 
 	if (is_main){
-		if (sig_flag==0) sig_flag=signo;
+		if (signo == SIGSEGV) {
+			LM_CRIT("segfault in attendant (starter) process!\n");
+			if (restore_segv_handler() != 0)
+				exit(-1);
+			return;
+		}
+
+		if (sig_flag == 0)
+			sig_flag = signo;
 		else /*  previous sig. not processed yet, ignoring? */
-			return; ;
+			return;
 	}else{
 		/* process the important signals */
 		switch(signo){
@@ -643,6 +651,8 @@ static void sig_usr(int signo)
 					break;
 			case SIGSEGV:
 					/* looks like we ate some spicy SIP */
+					LM_CRIT("segfault in process pid: %d, id: %d\n",
+					        pt[process_no].pid, process_no);
 					pt[process_no].flags |= OSS_TAKING_A_DUMP;
 					if (restore_segv_handler() != 0)
 						exit(-1);
@@ -797,10 +807,6 @@ static int main_loop(void)
 	}
 
 	report_conditional_status( (!no_daemon_mode), 0);
-
-	/* no need to intercept SIGSEGV in attendant */
-	if (restore_segv_handler() < 0)
-		goto error;
 
 	for(;;){
 			handle_sigs();
