@@ -1210,7 +1210,7 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 			if (phase==1) break;
 			else { phase=1; optval >>=1; continue; }
 		}
-		LM_DBG("trying : %d\n", optval );
+		/* LM_DBG("trying : %d\n", optval ); */
 		if (setsockopt( sock, SOL_SOCKET, buff_opt,
 			(void*)&optval, sizeof(optval)) ==-1){
 			/* Solaris returns -1 if asked size too big; Linux ignores */
@@ -1231,10 +1231,10 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 			LM_ERR("getsockopt: %s\n", strerror(errno));
 			return -1;
 		} else {
-			LM_DBG("setting %s: set=%d,verify=%d\n",info,
-				optval, voptval);
+			/*LM_DBG("setting %s: set=%d,verify=%d\n",info,
+				optval, voptval);*/
 			if (voptval<optval) {
-				LM_DBG("setting buf has no effect\n");
+				LM_DBG("setting %s buf to %d had no effect\n",info,optval);
 				/* if setting buffer size failed and still in the aggressive
 				phase, try less aggressively; otherwise give up */
 				if (phase==0) { phase=1; optval >>=1 ; continue; }
