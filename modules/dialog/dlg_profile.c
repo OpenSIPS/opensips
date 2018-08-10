@@ -1432,5 +1432,5 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 		deleted = NULL;
 	}
 
-	return init_mi_tree(400, MI_SSTR(MI_OK));
+	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
