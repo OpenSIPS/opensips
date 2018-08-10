@@ -435,12 +435,19 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
      */
     s.s = strchr(mod->s, '/');
     s.s +=2;
+    s.len = mod->len - (s.s - mod->s);
 
 
     for(i=0; i< global->size; i++){
-        if(strncmp(s.s, global->set_list[i].set_name.s,
+        if ( (s.len==global->set_list[i].set_name.len) &&
+            strncmp(s.s, global->set_list[i].set_name.s,
                 global->set_list[i].set_name.len) == 0)
             break;
+    }
+    if (i==global->size) {
+        LM_ERR("virtual set <%.*s> was not found. Did you define it?\n",
+            s.len, s.s);
+        return -1;
     }
 
     dbb->cap = global->set_list[i].db_list[0].dbf.cap;
