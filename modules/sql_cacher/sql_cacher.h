@@ -85,11 +85,6 @@ typedef struct _db_handlers {
 	struct _db_handlers *next;
 } db_handlers_t;
 
-struct parse_entry {
-	str to_parse_str;
-	struct parse_entry *next;
-};
-
 struct queried_key {
 	str key;
 	int nr_waiting_procs;
