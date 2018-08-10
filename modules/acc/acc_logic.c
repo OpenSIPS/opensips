@@ -211,7 +211,7 @@ static inline void free_acc_ctx(acc_ctx_t* ctx)
 	ctx = 0;
 	ctxstr.len = sizeof(ctx);
 	ctxstr.s = (char *)&ctx;
-	dlg = dlg_api.get_dlg();
+	dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
 	if (dlg && dlg_api.store_dlg_value(dlg, &acc_ctx_str, &ctxstr) < 0)
 		LM_ERR("cannot reset context in dialog %p!\n", dlg);
 }
