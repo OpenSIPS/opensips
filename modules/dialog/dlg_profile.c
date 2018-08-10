@@ -1522,15 +1522,13 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 			if (dialog_repl_cluster) {
 				shtag_state = get_shtag_state(delete_entry->dlg);
 				if (shtag_state < 0) {
-					while(delete_entry){
-						deleted = delete_entry;
-						delete_entry = delete_entry->next;
-						pkg_free(deleted);
-					}
-					LM_ERR("error while checking replication tag\n");
-					return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
-				} else if (shtag_state == 0)
-					continue;
+					LM_ERR("error while checking replication tag for dlg %.*s\n",
+					delete_entry->dlg->callid.len,
+					delete_entry->dlg->callid.s);
+					goto next_dlg;
+				} else if (shtag_state == 0) {
+					goto next_dlg;
+				}
 			}
 
 			init_dlg_term_reason(delete_entry->dlg, "MI Termination",
@@ -1544,6 +1542,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 				also making sure we don't leak anything */
 			}
 
+next_dlg:
 			unref_dlg(delete_entry->dlg, 1);
 			deleted = delete_entry;
 			delete_entry = delete_entry->next;
