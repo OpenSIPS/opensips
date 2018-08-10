@@ -1537,13 +1537,11 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 									sizeof("MI Termination") - 1);
 
 			if (dlg_end_dlg( delete_entry->dlg, NULL, 1) ) {
-				while(delete_entry){
-					deleted = delete_entry;
-					delete_entry = delete_entry->next;
-					pkg_free(deleted);
-				}
-				LM_ERR("error while terminating dlg\n");
-				return init_mi_tree( 400, MI_SSTR("Dialog internal error"));
+				LM_ERR("error while terminating dlg %.*s\n",
+					delete_entry->dlg->callid.len,
+					delete_entry->dlg->callid.s);
+				/* XXX - continue to kill all calls on a best effort basis,
+				also making sure we don't leak anything */
 			}
 
 			unref_dlg(delete_entry->dlg, 1);
