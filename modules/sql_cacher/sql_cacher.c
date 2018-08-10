@@ -871,7 +871,7 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key, db_
 		return -2;
 
 	} else if (RES_ROW_N(*sql_res) > 1) {
-		LM_ERR("To many columns returned\n");
+		LM_ERR("SQL query returned multiple rows\n");
 		goto sql_error;
 	}
 
