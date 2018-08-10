@@ -895,26 +895,24 @@ sql_error:
 
 void reload_timer(unsigned int ticks, void *param)
 {
-	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	str rld_vers_key;
 	int rld_vers = 0;
 
-	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry;
-		c_entry = c_entry->next, db_hdls = db_hdls->next) {
-		if (c_entry->on_demand)
+	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next) {
+		if (db_hdls->c_entry->on_demand)
 			continue;
 
-		rld_vers_key.len = c_entry->id.len + 23;
+		rld_vers_key.len = db_hdls->c_entry->id.len + 23;
 		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
 		if (!rld_vers_key.s) {
 			LM_ERR("No more pkg memory\n");
 			return;
 		}
-		memcpy(rld_vers_key.s, c_entry->id.s, c_entry->id.len);
-		memcpy(rld_vers_key.s + c_entry->id.len, "_sql_cacher_reload_vers", 23);
+		memcpy(rld_vers_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
+		memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
 
-		lock_start_write(c_entry->ref_lock);
+		lock_start_write(db_hdls->c_entry->ref_lock);
 
 		if(db_hdls->cdbf.get_counter(db_hdls->cdbcon,
 			&rld_vers_key, &rld_vers) < 0) {
@@ -923,10 +921,10 @@ void reload_timer(unsigned int ticks, void *param)
 			continue;
 		}
 
-		if (load_entire_table(c_entry, db_hdls, rld_vers) < 0)
-			LM_ERR("Failed to reload table %.*s\n", c_entry->table.len, c_entry->table.s);
+		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0)
+			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len, db_hdls->c_entry->table.s);
 
-		lock_stop_write(c_entry->ref_lock);
+		lock_stop_write(db_hdls->c_entry->ref_lock);
 
 		pkg_free(rld_vers_key.s);
 	}
@@ -935,7 +933,6 @@ void reload_timer(unsigned int ticks, void *param)
 static struct mi_root* mi_reload(struct mi_root *root, void *param)
 {
 	struct mi_node *node;
-	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	db_val_t *values;
 	db_res_t *sql_res = NULL;
@@ -952,18 +949,17 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 	}
 	entry_id = node->value;
 
-	for (c_entry = *entry_list, db_hdls = db_hdls_list; c_entry;
-		c_entry = c_entry->next, db_hdls = db_hdls->next)
-		if (!memcmp(entry_id.s, c_entry->id.s, entry_id.len))
+	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next)
+		if (!memcmp(entry_id.s, db_hdls->c_entry->id.s, entry_id.len))
 			break;
-	if (!c_entry) {
+	if (!db_hdls) {
 		LM_ERR("Entry %.*s not found\n", entry_id.len, entry_id.s);
 		return init_mi_tree(500, MI_SSTR("ERROR Cache entry not found\n"));
 	}
 
 	/* key */
 	node = node->next;
-	if (c_entry->on_demand) {
+	if (db_hdls->c_entry->on_demand) {
 		if (!node || !node->value.len || !node->value.s) {
 			LM_ERR("missing key parameter\n");
 			return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
@@ -971,15 +967,15 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 		key = node->value;
 	}
 
-	if (c_entry->on_demand) {
-		src_key.len = c_entry->id.len + key.len;
+	if (db_hdls->c_entry->on_demand) {
+		src_key.len = db_hdls->c_entry->id.len + key.len;
 		src_key.s = pkg_malloc(src_key.len);
 		if (!src_key.s) {
 			LM_ERR("No more shm memory\n");
 			return NULL;
 		}
-		memcpy(src_key.s, c_entry->id.s, c_entry->id.len);
-		memcpy(src_key.s + c_entry->id.len, key.s, key.len);
+		memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
+		memcpy(src_key.s + db_hdls->c_entry->id.len, key.s, key.len);
 
 		lock_get(queries_lock);
 
@@ -992,7 +988,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 			lock_get(it->wait_sql_query);
 		}
 
-		rc = load_key(c_entry, db_hdls, key, &values, &sql_res);
+		rc = load_key(db_hdls->c_entry, db_hdls, key, &values, &sql_res);
 		if (rc == 0)
 			db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
 
@@ -1007,16 +1003,16 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 			return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL database, key not found\n"));
 
 	} else {
-		rld_vers_key.len = c_entry->id.len + 23;
+		rld_vers_key.len = db_hdls->c_entry->id.len + 23;
 		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
 		if (!rld_vers_key.s) {
 			LM_ERR("No more pkg memory\n");
 			return NULL;
 		}
-		memcpy(rld_vers_key.s, c_entry->id.s, c_entry->id.len);
-		memcpy(rld_vers_key.s + c_entry->id.len, "_sql_cacher_reload_vers", 23);
+		memcpy(rld_vers_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
+		memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
 
-		lock_start_write(c_entry->ref_lock);
+		lock_start_write(db_hdls->c_entry->ref_lock);
 
 		if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
 			LM_DBG("Failed to increment reload version integer from cachedb\n");
@@ -1024,12 +1020,12 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 		}
 		pkg_free(rld_vers_key.s);
 
-		if (load_entire_table(c_entry, db_hdls, rld_vers) < 0) {
+		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0) {
 			LM_DBG("Failed to reload table\n");
 			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
 		}
 
-		lock_stop_write(c_entry->ref_lock);
+		lock_stop_write(db_hdls->c_entry->ref_lock);
 	}
 
 	return init_mi_tree(200, MI_SSTR(MI_OK_S));
@@ -1140,17 +1136,19 @@ static int mod_init(void)
 static int child_init(int rank)
 {
 	db_handlers_t *db_hdls;
-	cache_entry_t *c_entry;
 
-	for (db_hdls = db_hdls_list, c_entry = *entry_list; db_hdls;
-		db_hdls = db_hdls->next, c_entry = c_entry->next) {
-		db_hdls->cdbcon = db_hdls->cdbf.init(&c_entry->cachedb_url);
+	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next) {
+		db_hdls->cdbcon = db_hdls->cdbf.init(&db_hdls->c_entry->cachedb_url);
 		if (!db_hdls->cdbcon) {
 			LM_ERR("Cannot connect to cachedb from child\n");
 			return -1;
 		}
 
-		if ((db_hdls->db_con = db_hdls->db_funcs.init(&c_entry->db_url)) == 0) {
+		// LM_DBG("DDD Connecting to DB for c_entry id=%.*s url=%.*s\n backpointer to c_entry id=%.*s\n",
+		// 	c_entry->id.len, c_entry->id.s, c_entry->db_url.len, c_entry->db_url.s,
+		// 	db_hdls->c_entry->id.len, db_hdls->c_entry->id.s);
+
+		if ((db_hdls->db_con = db_hdls->db_funcs.init(&db_hdls->c_entry->db_url)) == 0) {
 			LM_ERR("Cannot connect to SQL DB from child\n");
 			return -1;
 		}
@@ -1591,7 +1589,6 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 {
 	pv_name_fix_t *pv_name;
 	str name_s;
-	cache_entry_t *it_entries;
 	db_handlers_t *it_db;
 	int rc, rc2, int_res = 0, l = 0;
 	char *ch = NULL;
@@ -1622,14 +1619,13 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	}
 
 	if (!pv_name->c_entry) {
-		for (it_entries = *entry_list, it_db = db_hdls_list; it_entries;
-			it_entries = it_entries->next, it_db = it_db->next)
-			if (!memcmp(it_entries->id.s, pv_name->id.s, pv_name->id.len)) {
-				pv_name->c_entry = it_entries;
+		for (it_db = db_hdls_list; it_db; it_db = it_db->next)
+			if (!memcmp(it_db->c_entry->id.s, pv_name->id.s, pv_name->id.len)) {
+				pv_name->c_entry = it_db->c_entry;
 				pv_name->db_hdls = it_db;
 				break;
 			}
-		if (!it_entries) {
+		if (!it_db) {
 			LM_WARN("Unknown caching id %.*s\n", pv_name->id.len, pv_name->id.s);
 			return pv_get_null(msg, param, res);
 		}
