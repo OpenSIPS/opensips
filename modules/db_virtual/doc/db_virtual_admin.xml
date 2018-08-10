@@ -154,14 +154,14 @@
 		<title>Exported Parameters</title>
 		<section>
 			<title>
-				<varname>db_URLs</varname> (str)
+				<varname>db_urls</varname> (str)
 			</title>
 			<para>
 		Multiple value parameter used for virtual DB URLs declaration.
 			</para>
 			<example>
 				<title>Set
-					<varname>db_URLs</varname> parameter
+					<varname>db_urls</varname> parameter
 				</title>
 				<programlisting format="linespecific">
 ...
@@ -169,12 +169,12 @@
 modparam("group","db_URL","virtual://set1")
 modparam("presence|presence_xml", "db_URL","virtual://set2")
 
-modparam("db_virtual", "db_URLs", "define set1 PARALLEL")
-modparam("db_virtual", "db_URLs", "mysql://opensips:opensipsrw@localhost/testa")
-modparam("db_virtual", "db_URLs", "postgres://opensips:opensipsrw@localhost/opensips")
+modparam("db_virtual", "db_urls", "define set1 PARALLEL")
+modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
+modparam("db_virtual", "db_urls", "postgres://opensips:opensipsrw@localhost/opensips")
 
-modparam("db_virtual", "db_URLs", "define set2 FAILOVER")
-modparam("db_virtual", "db_URLs", "mysql://opensips:opensipsrw@localhost/testa")
+modparam("db_virtual", "db_urls", "define set2 FAILOVER")
+modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
 ...
 				</programlisting>
 			</example>
