@@ -329,8 +329,8 @@ listen = tls:1.2.3.4:5061
 
 1.8.2. tls_method ([domain]string)
 
-   Sets the TLS protocol. The domain, if set, represents the name
-   of the TLS domain. TLS method which can be:
+   Sets the TLS protocol. The domain part represents the name of
+   the TLS domain. The supported TLS methods are:
      * TLSv1_2 - means OpenSIPS will accept only TLSv1.2
        connections (rfc3261 conformant).
      * TLSv1 - means OpenSIPS will accept only TLSv1 connections
@@ -371,14 +371,12 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
    Public certificate file for OpenSIPS. It will be used as
    server-side certificate for incoming TLS connections, and as a
    client-side certificate for outgoing TLS connections. The
-   domain, if set, represents the name of the TLS domain.
+   domain part represents the name of the TLS domain.
 
    Default value is "CFG_DIR/tls/cert.pem".
 
    Example 1.4. Set certificate variable
 ...
-modparam("tls_mgm", "certificate", "/mycerts/certs/opensips_server_cert.
-pem")
 modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_
 cert.pem")
 ...
@@ -386,14 +384,13 @@ cert.pem")
 1.8.4. private_key ([domain](string)
 
    Private key of the above certificate. I must be kept in a safe
-   place with tight permissions! The domain, if set, represents
-   the name of the TLS omain.
+   place with tight permissions! The domain part represents the
+   name of the TLS omain.
 
    Default value is "CFG_DIR/tls/ckey.pem".
 
    Example 1.5. Set private_key variable
 ...
-modparam("tls_mgm", "private_key", "/mycerts/private/prik.pem")
 modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 ...
 
@@ -401,13 +398,12 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 
    List of trusted CAs. The file contains the certificates
    accepted, one after the other. It MUST be a file, not a folder.
-   The domain, if set, represents the name of the TLS domain.
+   The domain part represents the name of the TLS domain.
 
    Default value is "".
 
    Example 1.6. Set ca_list variable
 ...
-modparam("tls_mgm", "ca_list", "/mycerts/certs/ca_list.pem")
 modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 ...
 
@@ -415,23 +411,22 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 
    Directory storing trusted CAs. The path contains the
    certificates accepted, each as hash which is linked to
-   certificate file. The domain, if set, represents the name of
-   the TLS domain.
+   certificate file. The domain part represents the name of the
+   TLS domain.
 
    Default value is "/etc/pki/CA/".
 
    Example 1.7. Set ca_dir variable
 ...
-modparam("tls_mgm", "ca_dir", "/mycerts/certs")
 modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 ...
 
 1.8.7. ciphers_list ([domain](string)
 
    You can specify the list of algorithms for authentication and
-   encryption that you allow. The domain, if set, represents the
-   name of the TLS domain. To obtain a list of ciphers and then
-   choose, use the openssl application:
+   encryption that you allow. The domain part represents the name
+   of the TLS domain. To obtain a list of ciphers and then choose,
+   use the openssl application:
      * openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'
 
 Warning
@@ -443,7 +438,6 @@ Warning
 
    Example 1.8. Set ciphers_list variable
 ...
-modparam("tls_mgm", "ciphers_list", "NULL")
 modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 ...
 
@@ -451,21 +445,20 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 
    You can specify a file which contains Diffie-Hellman parameters
    as a PEM-file. This is needed if you would like to specify
-   ciphers including Diffie-Hellman mode. The domain, if set,
+   ciphers including Diffie-Hellman mode. The domain part
    represents the name of the TLS domain.
 
    It defaults to not set a dh param file.
 
    Example 1.9. Set dh_params variable
 ...
-modparam("tls_mgm", "dh_params", "/etc/pki/CA/dh1024.pem")
 modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 ...
 
 1.8.9. ec_curve ([domain](string)
 
    You can specify an elliptic curve which should be used for
-   ciphers which demand an elliptic curve. The domain, if set,
+   ciphers which demand an elliptic curve. The domain part
    represents the name of the TLS domain.
 
    It's usable only if TLS v1.1/1.2 support was compiled. A list
@@ -481,10 +474,8 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
    ssl_context. 'require_cert' does the same with
    SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
    SSL_VERIFY_PEER is also turned on. Since version 2.1, these
-   parameters act have been reduced to only one. They act both on
-   client side and server side if no domain specified, elseway
-   they act on a specific domain, depending on the first
-   parameter.
+   parameters act have been reduced to only one. The domain part
+   represents the name of the TLS domain.
 
    These two parameters are used for incoming TLS connections,
    where OpenSIPS acts as server.
@@ -496,10 +487,8 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
    Example 1.10. Set verify_cert & require_cert variable
 ...
 # turn on the strictest and strongest authentication possible
-modparam("tls_mgm", "require_cert", "1")
-modparam("tls_mgm", "require_cert", "[dom]1")
-modparam("tls_mgm", "verify_cert", "0")
-modparam("tls_mgm", "verify_cert", "[dom]1")
+modparam("tls_mgm", "require_cert", "[dom]0")
+modparam("tls_mgm", "verify_cert", "[dom]0")
 ...
 
 1.8.11. tls_handshake_timeout (integer)
@@ -1465,7 +1454,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 77 18 2824 2008
+   1. Vlad Patrascu (@rvlad-patrascu) 79 19 2839 2032
    2. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    3. Razvan Crainea (@razvancrainea) 37 27 525 236
    4. Liviu Chircu (@liviuchircu) 19 13 129 208
@@ -1498,7 +1487,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Jul 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Aug 2018
    2.  Callum Guy                          Jun 2018 - Jun 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2018

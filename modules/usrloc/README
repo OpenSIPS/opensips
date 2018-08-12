@@ -713,10 +713,14 @@ modparam("usrloc", "db_mode", 2)
        caching also disable the statistics exports.
      * "federation-cachedb-cluster" - OpenSIPS will run with a
        "federation-cachedb" cluster_mode and "sync-from-cluster"
-       restart_persistency.
+       restart_persistency. This will require the configuration of
+       multiple "seed" nodes in the cluster. Refer to the
+       federated user location tutorial for more details.
      * "full-sharing-cluster" - OpenSIPS will run with a
        "full-sharing" cluster_mode and "sync-from-cluster"
-       restart_persistency.
+       restart_persistency. This will require the configuration of
+       one of the nodes in the cluster as a "seed" node in order
+       to bootstrap the syncing process.
      * "full-sharing-cachedb-cluster" - OpenSIPS will run with a
        "full-sharing-cachedb" cluster_mode, where all location
        data strictly resides in a NoSQL database, thus it will
@@ -794,8 +798,11 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
        persistency. Following a restart, an OpenSIPS cluster node
        will search for a healthy "donor" node from which to mirror
        the entire user location dataset via direct cluster sync
-       (TCP-based, binary-encoded data transfer). Choosing this
-       value will make the location_cluster parameter mandatory.
+       (TCP-based, binary-encoded data transfer). Depending on the
+       clustering mode and cluster topology, this will require the
+       configuration of one or multiple "seed" nodes in the
+       cluster. Choosing this value will make the location_cluster
+       parameter mandatory.
 
    Default value is "none" (no restart persistency).
 
@@ -1468,7 +1475,7 @@ Chapter 3. Contributors
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   7. Vlad Patrascu (@rvlad-patrascu) 22 13 396 269
+   7. Vlad Patrascu (@rvlad-patrascu) 23 14 404 269
    8. Henning Westerholt (@henningw) 22 11 462 356
    9. Razvan Crainea (@razvancrainea) 20 15 330 70
    10. Andrei Pelinescu-Onciul 17 13 151 91
@@ -1504,8 +1511,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Aug 2018
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
    3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jul 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Apr 2018
@@ -1534,16 +1541,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
-   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
-   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
-   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
-   Nils Ohlmeier.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   (@ionutrazvanionita), Eseanu Marius Cristian (@eseanucristian),
+   Ovidiu Sas (@ovidiusas), Andrei Datcu (@andrei-datcu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Marcus
+   Hunger, Elena-Ramona Modroiu, Juha Heinanen (@juha-h), Jan
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Nils Ohlmeier.
 
    Documentation Copyrights:
 
