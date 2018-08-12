@@ -69,9 +69,9 @@
 	<row>
 		<entry>7. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">22</entry>
-		<entry align="center">13</entry>
-		<entry align="center">396</entry>
+		<entry align="center">23</entry>
+		<entry align="center">14</entry>
+		<entry align="center">404</entry>
 		<entry align="center">269</entry>
 	</row>
 	<row>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2013 - Aug 2018</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Jul 2016 - Aug 2018</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Jul 2016 - Jul 2018</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jan 2013 - Aug 2018</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Nils Ohlmeier.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Nils Ohlmeier.</para>
 </section>
 
 </chapter>

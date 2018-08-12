@@ -20,7 +20,7 @@ db_virtual Module
 
         1.3. Exported Parameters
 
-              1.3.1. db_URLs (str)
+              1.3.1. db_urls (str)
               1.3.2. db_probe_time (integer)
               1.3.3. db_max_consec_retrys (integer)
 
@@ -47,7 +47,7 @@ db_virtual Module
 
    List of Examples
 
-   1.1. Set db_URLs parameter
+   1.1. Set db_urls parameter
    1.2. Set db_probe_time parameter
    1.3. Set db_max_consec_retrys parameter
 
@@ -147,24 +147,24 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1.  db_URLs (str)
+1.3.1.  db_urls (str)
 
    Multiple value parameter used for virtual DB URLs declaration.
 
-   Example 1.1. Set db_URLs parameter
+   Example 1.1. Set db_urls parameter
 ...
 
 modparam("group","db_URL","virtual://set1")
 modparam("presence|presence_xml", "db_URL","virtual://set2")
 
-modparam("db_virtual", "db_URLs", "define set1 PARALLEL")
-modparam("db_virtual", "db_URLs", "mysql://opensips:opensipsrw@localhost
+modparam("db_virtual", "db_urls", "define set1 PARALLEL")
+modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost
 /testa")
-modparam("db_virtual", "db_URLs", "postgres://opensips:opensipsrw@localh
+modparam("db_virtual", "db_urls", "postgres://opensips:opensipsrw@localh
 ost/opensips")
 
-modparam("db_virtual", "db_URLs", "define set2 FAILOVER")
-modparam("db_virtual", "db_URLs", "mysql://opensips:opensipsrw@localhost
+modparam("db_virtual", "db_urls", "define set2 FAILOVER")
+modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost
 /testa")
 ...
 
@@ -246,7 +246,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Pistolea 31 7 2244 297
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 13 69 99
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 15 84 107
    3. Liviu Chircu (@liviuchircu) 16 12 105 140
    4. Razvan Crainea (@razvancrainea) 9 7 13 13
    5. Ionut Ionita (@ionutrazvanionita) 6 3 232 9
@@ -275,7 +275,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2018
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Aug 2018
    2. Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
    3. Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2017
    4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
