@@ -166,8 +166,8 @@
 				<programlisting format="linespecific">
 ...
 
-modparam("group","db_URL","virtual://set1")
-modparam("presence|presence_xml", "db_URL","virtual://set2")
+modparam("group","db_url","virtual://set1")
+modparam("presence|presence_xml", "db_url","virtual://set2")
 
 modparam("db_virtual", "db_urls", "define set1 PARALLEL")
 modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
@@ -280,7 +280,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 			<para>Parameters:</para>
 			<itemizedlist>
 				<listitem>set_index [int]</listitem>
-				<listitem>db_URL_index [int]</listitem>
+				<listitem>db_url_index [int]</listitem>
 				<listitem>may_use_db_flag [boolean]</listitem>
 				<listitem>ignore db_max_consec_retrys[boolean](optional)</listitem>
 			</itemizedlist>
