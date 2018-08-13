@@ -477,12 +477,12 @@ static void bind_session(smpp_session_t *session)
 	}
 	struct socket_info *send_socket = get_send_socket(NULL, &to, PROTO_SMPP);
 	if (!send_socket) {
-		LM_ERR("error getting send socket");
+		LM_ERR("error getting send socket\n");
 		goto free_req;
 	}
 	union sockaddr_union server;
 	if (init_su(&server, session->ip, session->port)) {
-		LM_ERR("error creating su from ipaddr and port");
+		LM_ERR("error creating su from ipaddr and port\n");
 		goto free_req;
 	}
 	int fd;
