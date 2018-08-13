@@ -62,6 +62,9 @@ static int send_smpp_msg(struct sip_msg* msg);
 static void send_enquire_link_request(void);
 
 static void build_smpp_sessions_from_db(void);
+static int register_enquire_link_timer(void);
+
+void enquire_link(unsigned int ticks, void *param);
 
 
 static int smpp_port = 2775;
@@ -147,6 +150,11 @@ static int mod_init(void)
 	build_smpp_sessions_from_db();
 
 	smpp_db_close();
+
+	if (register_enquire_link_timer() < 0) {
+	    LM_ERR("could not register timer\n");
+	    return -1;
+	}
 
 	return 0;
 }
@@ -582,6 +590,21 @@ static void build_smpp_sessions_from_db(void)
 	}
 	*g_sessions = sessions;
 	smpp_free_results(res);
+}
+
+static int register_enquire_link_timer(void)
+{
+	if (register_timer("enquire-link-timer", enquire_link, NULL, 5,
+	TIMER_FLAG_DELAY_ON_DELAY)<0 ) {
+		return -1;
+	}
+	return 0;
+}
+
+void enquire_link(unsigned int ticks, void *params)
+{
+	LM_INFO("%u ticks\n", ticks);
+	send_enquire_link_request();
 }
 
 static int smpp_conn_init(struct tcp_connection* c)
