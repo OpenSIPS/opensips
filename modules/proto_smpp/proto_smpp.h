@@ -16,6 +16,7 @@
 #define BIND_RECEIVER_BODY_MAX_SZ 82
 #define SUBMIT_SM_BODY_MAX_SZ 348
 #define DELIVER_SM_RESP_BODY_MAX_SZ 1
+#define ENQUIRE_LINK_BODY_MAX_SZ 0
 #define REQ_MAX_SZ(_name) (HEADER_SZ + _name ## _BODY_MAX_SZ)
 
 
@@ -158,12 +159,20 @@ typedef struct { \
 	str payload; \
 } _name ## _req_t
 
+#define TYPEDEF_SIMPLE_SMPP_REQUEST(_name) \
+typedef struct { \
+	smpp_header_t *header; \
+	str payload; \
+} _name ## _req_t
+
 TYPEDEF_SMPP_REQUEST(smpp_bind_receiver);
 TYPEDEF_SMPP_REQUEST(smpp_bind_transmitter);
 TYPEDEF_SMPP_REQUEST(smpp_bind_transceiver);
 TYPEDEF_SMPP_REQUEST(smpp_deliver_sm);
 TYPEDEF_SMPP_REQUEST(smpp_deliver_sm_resp);
 TYPEDEF_SMPP_REQUEST(smpp_submit_sm);
+TYPEDEF_SIMPLE_SMPP_REQUEST(smpp_enquire_link);
+TYPEDEF_SIMPLE_SMPP_REQUEST(smpp_enquire_link_resp);
 
 typedef struct smpp_session {
 	uint32_t id;

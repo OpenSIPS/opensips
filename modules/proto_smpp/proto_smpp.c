@@ -59,6 +59,7 @@ static int smpp_write_async_req(struct tcp_connection* con,int fd);
 static int smpp_conn_init(struct tcp_connection* c);
 static void smpp_conn_clean(struct tcp_connection* c);
 static int send_smpp_msg(struct sip_msg* msg);
+static void send_enquire_link_request(void);
 
 static void build_smpp_sessions_from_db(void);
 
@@ -807,6 +808,16 @@ void handle_data_sm_resp_cmd(smpp_header_t *header, char *buffer, struct receive
 	LM_DBG("Received data_sm_resp command\n");
 }
 
+void handle_enquire_link_cmd(smpp_header_t *header, char *buffer, struct receive_info *rcv)
+{
+	LM_DBG("Received enquire_link command\n");
+}
+
+void handle_enquire_link_resp_cmd(smpp_header_t *header, char *buffer, struct receive_info *rcv)
+{
+	LM_DBG("Received enquire_link_resp command\n");
+}
+
 static void handle_smpp_msg(char* buffer, struct receive_info *rcv)
 {
 	smpp_header_t header;
@@ -842,6 +853,12 @@ static void handle_smpp_msg(char* buffer, struct receive_info *rcv)
 			break;
 		case DATA_SM_RESP_CID:
 			handle_data_sm_resp_cmd(&header, buffer, rcv);
+			break;
+		case ENQUIRE_LINK_CID:
+			handle_enquire_link_cmd(&header, buffer, rcv);
+			break;
+		case ENQUIRE_LINK_RESP_CID:
+			handle_enquire_link_resp_cmd(&header, buffer, rcv);
 			break;
 		default:
 			LM_WARN("Unknown or unsupported command received %08X\n", header.command_id);
@@ -993,6 +1010,76 @@ void send_submit_sm_request(str *msg)
 		LM_ERR("error creating submit_sm request\n");
 		return;
 	}
+	struct tcp_connection *conn;
+	int fd;
+	int ret = tcp_conn_get(0, (*g_sessions)->ip, (*g_sessions)->port, PROTO_SMPP, &conn, &fd);
+	if (ret < 0) {
+		LM_ERR("return code %d\n", ret);
+		goto free_req;
+	}
+	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	LM_INFO("send %d bytes\n", n);
+
+free_req:
+	pkg_free(req);
+}
+
+static int build_enquire_link_request(smpp_enquire_link_req_t **preq, int32_t sequence_number)
+{
+	if (!preq) {
+		LM_ERR("NULL param");
+		goto err;
+	}
+
+	/* request allocations */
+	smpp_enquire_link_req_t *req = pkg_malloc(sizeof(*req));
+	*preq = req;
+	if (!req) {
+		LM_ERR("malloc error for request");
+		goto err;
+	}
+
+	smpp_header_t *header = pkg_malloc(sizeof(*header));
+	if (!header) {
+		LM_ERR("malloc error for header");
+		goto header_err;
+	}
+
+	req->payload.s = pkg_malloc(REQ_MAX_SZ(ENQUIRE_LINK));
+	if (!req->payload.s) {
+		LM_ERR("malloc error for payload");
+		goto payload_err;
+	}
+
+	req->header = header;
+
+	header->command_length = HEADER_SZ;
+	header->command_id = ENQUIRE_LINK_CID;
+	header->command_status = 0;
+	header->sequence_number = sequence_number;
+
+	get_payload_from_header(req->payload.s, header);
+
+	req->payload.len = header->command_length;
+
+	return 0;
+
+payload_err:
+	pkg_free(header);
+header_err:
+	pkg_free(req);
+err:
+	return -1;
+}
+
+static void send_enquire_link_request(void)
+{
+	smpp_enquire_link_req_t *req;
+	if (build_enquire_link_request(&req, 0)) {
+		LM_ERR("error creating enquire_link_sm request\n");
+		return;
+	}
+
 	struct tcp_connection *conn;
 	int fd;
 	int ret = tcp_conn_get(0, (*g_sessions)->ip, (*g_sessions)->port, PROTO_SMPP, &conn, &fd);
