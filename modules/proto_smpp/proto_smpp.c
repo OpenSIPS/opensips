@@ -422,6 +422,8 @@ static int build_deliver_sm_resp_request(smpp_deliver_sm_resp_req_t **preq, uint
 
 	req->payload.len = header->command_length;
 
+	return 0;
+
 payload_err:
 	pkg_free(body);
 body_err:
