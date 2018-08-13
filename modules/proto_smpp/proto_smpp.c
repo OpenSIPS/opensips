@@ -40,6 +40,7 @@
 #include "../../ut.h"
 #include "../../resolve.h"
 #include "../../forward.h"
+#include "../../ipc.h"
 #include "../../db/db.h"
 
 #include "db.h"
@@ -62,6 +63,8 @@ static int send_smpp_msg(struct sip_msg* msg);
 static void send_enquire_link_request(void);
 
 static void build_smpp_sessions_from_db(void);
+static void rpc_bind_sessions(int sender_id, void *param);
+static void bind_session(smpp_session_t *session);
 static int register_enquire_link_timer(void);
 
 void enquire_link(unsigned int ticks, void *param);
@@ -491,6 +494,17 @@ static uint32_t increment_sequence_number(smpp_session_t *session)
 	return seq_no;
 }
 
+static void rpc_bind_sessions(int sender_id, void *param)
+{
+	smpp_session_t *session_it = (smpp_session_t*)param;
+	while (session_it) {
+		LM_INFO("bindin session with system_id \"%s\"\n",
+				session_it->bind.transceiver.system_id);
+		bind_session(session_it);
+		session_it = session_it->next;
+	}
+}
+
 static void bind_session(smpp_session_t *session)
 {
 	if (!session)
@@ -532,6 +546,11 @@ free_req:
 static int child_init(int rank)
 {
 	LM_INFO("initializing child #%d\n", rank);
+
+	if ((rank == 1) && ipc_dispatch_rpc(rpc_bind_sessions, *g_sessions) < 0) {
+		LM_CRIT("failed to RPC the data loading\n");
+		return -1;
+	}
 
 	return 0;
 }
