@@ -40,7 +40,9 @@
 #include "../../ut.h"
 #include "../../resolve.h"
 #include "../../forward.h"
+#include "../../db/db.h"
 
+#include "db.h"
 #include "proto_smpp.h"
 #include "utils.h"
 
@@ -65,6 +67,17 @@ static int smpp_port = 2775;
 static smpp_session_t *g_sessions = NULL;
 static struct tcp_req smpp_current_req;
 
+str db_url = {NULL, 0};
+int db_mode = 0;			/* Database usage mode: 0 = no cache, 1 = cache */
+str smpp_table = {"smpp", 4}; /* Name of smpp table */
+str ip_col = {"ip", 2};       /* Name of domain column */
+str port_col = {"port", 4}; /* Name of attributes column */
+str system_id_col = {"system_id", 9};
+str password_col = {"password", 8};
+str system_type_col = {"system_type", 11};
+str ton_col = {"ton", 3};
+str npi_col = {"npi", 3};
+
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)smpp_init, 0, 0, 0, 0},
 	{"send_smpp_message", (cmd_function)send_smpp_msg, 0, 0, 0, REQUEST_ROUTE},
@@ -73,6 +86,7 @@ static cmd_export_t cmds[] = {
 
 static param_export_t params[] = {
 	{"smpp_port", INT_PARAM, &smpp_port},
+	{"db_url", STR_PARAM, &db_url},
 	{0, 0, 0}
 };
 
@@ -120,7 +134,18 @@ static int mod_init(void)
 {
 	LM_INFO("initializing SMPP protocol\n");
 
+	db_url.len = strlen(db_url.s);
+
+	if (smpp_db_bind(&db_url) < 0) {
+		return -1;
+	}
+	if (smpp_db_init(&db_url) < 0) {
+		return -1;
+	}
+
 	build_smpp_sessions_from_db();
+
+	smpp_db_close();
 
 	return 0;
 }
@@ -504,24 +529,58 @@ static int child_init(int rank)
 
 static void build_smpp_sessions_from_db(void)
 {
-	smpp_session_t *session1 = shm_malloc(sizeof(smpp_session_t));
-	if (!session1)
+	db_key_t cols[7];
+	db_res_t* res = NULL;
+	db_row_t* row;
+	db_val_t* val;
+
+	int i;
+
+	cols[0] = &ip_col;
+	cols[1] = &port_col;
+	cols[2] = &system_id_col;
+	cols[3] = &password_col;
+	cols[4] = &system_type_col;
+	cols[5] = &ton_col;
+	cols[6] = &npi_col;
+
+	if (smpp_query(&smpp_table, cols, 7, &res) < 0) {
 		return;
-	memset(session1, 0, sizeof(smpp_session_t));
-	session1->session_status = SMPP_CLOSED;
-	session1->session_type = BIND_TRANSCEIVER;
-	str ip_str = str_init("176.9.57.208");
-	session1->ip = str2ip(&ip_str);
-	session1->port = 2775;
-	memcpy(session1->bind.transceiver.system_id, "siphub", 6);
-	memcpy(session1->bind.transceiver.password, "johgh4I", 8);
-	memcpy(session1->bind.transceiver.system_type, "", 0);
-	session1->bind.transceiver.interface_version = SMPP_VERSION;
-	session1->bind.transceiver.addr_ton = 0x01;
-	session1->bind.transceiver.addr_npi = 0x01;
-	lock_init(&session1->sequence_number_lock);
-	session1->next = g_sessions;
-	g_sessions = session1;
+	}
+
+	row = RES_ROWS(res);
+
+	LM_DBG("Number of rows in domain table: %d\n", RES_ROW_N(res));
+
+	g_sessions = shm_malloc(sizeof(smpp_session_t*));
+	if (!g_sessions) {
+		LM_CRIT("failed to allocate shared memory for sessions pointer\n");
+		return;
+	}
+	smpp_session_t *sessions = shm_malloc(RES_ROW_N(res) * sizeof(smpp_session_t));
+	if (!sessions) {
+		LM_CRIT("failed to allocate shared memory for session\n");
+		return;
+	}
+	memset(sessions, 0, RES_ROW_N(res) * sizeof(smpp_session_t));
+	for (i = 0; i < RES_ROW_N(res); i++) {
+		val = ROW_VALUES(row + i);
+		sessions[i].session_status = SMPP_CLOSED;
+		sessions[i].session_type = BIND_TRANSCEIVER;
+		char *ip = strdup(VAL_STRING(val));
+		str ip_str = {ip, strlen(ip)};
+		sessions[i].ip = str2ip(&ip_str);
+		sessions[i].port = VAL_INT(val + 1);
+		strncpy(sessions[i].bind.transceiver.system_id, VAL_STRING(val + 2), 16);
+		strncpy(sessions[i].bind.transceiver.password, VAL_STRING(val + 3), 16);
+		strncpy(sessions[i].bind.transceiver.system_type, VAL_STRING(val + 4), 16);
+		sessions[i].bind.transceiver.interface_version = SMPP_VERSION;
+		sessions[i].bind.transceiver.addr_ton = VAL_INT(val + 5);
+		sessions[i].bind.transceiver.addr_npi = VAL_INT(val + 6);
+		lock_init(&sessions[i].sequence_number_lock);
+	}
+	*g_sessions = sessions;
+	smpp_free_results(res);
 }
 
 static int smpp_conn_init(struct tcp_connection* c)
