@@ -1204,10 +1204,6 @@ static int child_init(int rank)
 			return -1;
 		}
 
-		// LM_DBG("DDD Connecting to DB for c_entry id=%.*s url=%.*s\n backpointer to c_entry id=%.*s\n",
-		// 	c_entry->id.len, c_entry->id.s, c_entry->db_url.len, c_entry->db_url.s,
-		// 	db_hdls->c_entry->id.len, db_hdls->c_entry->id.s);
-
 		if ((db_hdls->db_con = db_hdls->db_funcs.init(&db_hdls->c_entry->db_url)) == 0) {
 			LM_ERR("Cannot connect to SQL DB from child\n");
 			return -1;
@@ -1741,7 +1737,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 				goto out_free_null;
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
-				LM_ERR("Cache fetch result should not be empty\n");
+				LM_DBG("key: %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
 				return pv_get_null(msg, param, res);
 			}
 
