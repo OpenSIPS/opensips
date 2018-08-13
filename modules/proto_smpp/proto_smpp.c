@@ -64,7 +64,7 @@ static void build_smpp_sessions_from_db(void);
 
 
 static int smpp_port = 2775;
-static smpp_session_t *g_sessions = NULL;
+static smpp_session_t **g_sessions = NULL;
 static struct tcp_req smpp_current_req;
 
 str db_url = {NULL, 0};
@@ -995,7 +995,7 @@ void send_submit_sm_request(str *msg)
 	}
 	struct tcp_connection *conn;
 	int fd;
-	int ret = tcp_conn_get(0, g_sessions->ip, g_sessions->port, PROTO_SMPP, &conn, &fd);
+	int ret = tcp_conn_get(0, (*g_sessions)->ip, (*g_sessions)->port, PROTO_SMPP, &conn, &fd);
 	if (ret < 0) {
 		LM_ERR("return code %d\n", ret);
 		goto free_req;
