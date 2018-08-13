@@ -950,13 +950,6 @@ free_req:
 
 static int send_smpp_msg(struct sip_msg *msg)
 {
-	smpp_session_t *session_it = g_sessions;
-	while (session_it) {
-		LM_INFO("bindin session with system_id \"%s\"\n",
-				session_it->bind.transceiver.system_id);
-		bind_session(session_it);
-		session_it = session_it->next;
-	}
 	LM_INFO("send_smpp_msg called\n");
 	str body;
 	get_body(msg, &body);
