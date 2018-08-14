@@ -1826,24 +1826,11 @@ void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
 static inline int calculate_body_diff(struct sip_msg *msg,
 													struct socket_info *sock )
 {
-	int initial_body;
-
 	if (msg->body==NULL) {
 		/* no body parsed, no advanced ops done, just dummy lumps over body */
 		return lumps_len(msg, msg->body_lumps, sock, -1);
 	} else {
-		/* prep_reassemble_body_parts() computes the total length of the
-		 * generated body, but only considers each valid body part. However,
-		 * when we receive a body larger than the Content-Length, we need to
-		 * also drop those extra bytes. Therefore the body diff should be
-		 * computed against the entire body received (msg->len - headers),
-		 * not to what the Content-Length indicates (msg->body->len) - razvanc
-		 */
-		if (msg->body->body.len != 0 && msg->body->body.s)
-			initial_body = msg->buf + msg->len - msg->body->body.s;
-		else
-			initial_body = 0;
-		return ((int)prep_reassemble_body_parts( msg, sock) - initial_body);
+		return ((int)prep_reassemble_body_parts( msg, sock) - msg->body->body.len);
 	}
 }
 
