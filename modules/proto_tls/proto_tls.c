@@ -115,13 +115,15 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 static struct mi_root* tls_trace_mi(struct mi_root* cmd, void* param );
 
 
+trace_dest t_dst;
+
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
 {
 	int ret;
 
 	lock_get(&c->write_lock);
-	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst);
 	lock_release(&c->write_lock);
 	return ret;
 }
@@ -140,7 +142,6 @@ static struct tcp_req tls_current_req;
 #define TLS_TRACE_PROTO "proto_hep"
 
 static str trace_destination_name = {NULL, 0};
-trace_dest t_dst;
 trace_proto_t tprot;
 
 /* module  tracing parameters */
@@ -425,8 +426,6 @@ static int proto_tls_send(struct socket_info* send_sock,
 	int port;
 	int fd, n;
 
-	struct tls_data* data;
-
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
@@ -468,29 +467,10 @@ static int proto_tls_send(struct socket_info* send_sock,
 	}
 
 send_it:
-	/* if there is pending tracing data on a connection startet by us
-	 * (connected) -> flush it
-	 * As this is a write op, we look only for connected conns, not to conflict
-	 * with accepted conns (flushed on read op) */
-	if ( (c->flags&F_CONN_ACCEPTED)==0 && c->proto_flags & F_TLS_TRACE_READY ) {
-		data = c->proto_data;
-		/* send the message if set from tls_mgm */
-		if ( data->message ) {
-			send_trace_message( data->message, t_dst);
-			data->message = NULL;
-		}
-
-		/* don't allow future traces for this connection */
-		data->tprot = 0;
-		data->dest  = 0;
-
-		c->proto_flags &= ~( F_TLS_TRACE_READY );
-	}
-
 	LM_DBG("sending via fd %d...\n",fd);
 
 	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api);
+	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst);
 	lock_release(&c->write_lock);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
@@ -539,7 +519,7 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	}
 
 	/* do this trick in order to trace whether if it's an error or not */
-	ret=tls_fix_read_conn(con);
+	ret=tls_fix_read_conn(con, t_dst);
 
 	/* if there is pending tracing data on an accepted connection, flush it
 	 * As this is a read op, we look only for accepted conns, not to conflict

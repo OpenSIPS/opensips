@@ -541,7 +541,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	struct ws_data* d;
 
 	/* we need to fix the SSL connection before doing anything */
-	if (tls_fix_read_conn(con) < 0) {
+	if (tls_fix_read_conn(con, t_dst) < 0) {
 		LM_ERR("cannot fix read connection\n");
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
@@ -610,7 +610,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #ifndef TLS_DONT_WRITE_FRAGMENTS
 	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
-		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len, &tls_mgm_api);
+		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len, &tls_mgm_api, t_dst);
 		if (n < 0) {
 			ret = -1;
 			goto end;
