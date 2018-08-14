@@ -180,20 +180,22 @@ do{                                                                             
                         /* set local can not use flag*/                         \
                         handle->flags &= NOT_CAN_USE;                           \
                                                                                 \
-                                                                                \
                         /* close connection*/                                   \
                         f->close(handle->con);                                  \
+                                                                                \
+                        /* move to the next conn */                             \
+                        p->curent_con = (p->curent_con+1)%p->size;              \
                     }                                                           \
                     set_update_flags(p->curent_con, p);                         \
                 }else{                                                          \
                     LM_DBG("flags2 = %i\n", p->con_list[p->curent_con].flags);  \
                                                                                 \
                     /* try next*/                                               \
-                    rc = 1;                                                     \
+                    rc = -1;                                                    \
                     p->curent_con = (p->curent_con+1)%p->size;                  \
                 }                                                               \
                 LM_DBG("curent_con = %i\n", p->curent_con);                     \
-            }while((rc && use_rc) && max_loop--);                               \
+            }while((rc && use_rc) && --max_loop);                               \
                                                                                 \
             rc2=rc;                                                             \
          break;                                                                 \
@@ -205,13 +207,10 @@ do{                                                                             
                     f = &global->set_list[p->set_index].db_list[i].dbf;         \
                     if((handle->flags & CAN_USE) && (handle->flags & MAY_USE)){ \
                                                                                 \
-                                                                                \
                         rc = f->FUNCTION_WITH_PARAMS;                           \
                         if((rc && use_rc)){                                     \
                             LM_DBG("parallel call failed\n");                   \
                             handle->flags &= NOT_CAN_USE;                       \
-                                                                                \
-                                                                                \
                                                                                 \
                             f->close(handle->con);                              \
                         }                                                       \
@@ -226,19 +225,15 @@ do{                                                                             
                     else                                                        \
                         rc2 = rc;                                               \
                                                                                 \
-                                                                                \
-                                                                                \
                 }                                                               \
             }else{                                                              \
-                do{                                                             \
+            do{                                                                 \
                 /* get next valid handle*/                                      \
                 handle = &p->con_list[p->curent_con];                           \
                 f = &global->set_list[p->set_index].db_list[p->curent_con].dbf; \
                                                                                 \
                 if((handle->flags & CAN_USE) && (handle->flags & MAY_USE)){     \
                     LM_DBG("flags1 = %i\n", p->con_list[p->curent_con].flags);  \
-                                                                                \
-                                                                                \
                                                                                 \
                     /* call f*/                                                 \
                     rc = f->FUNCTION_WITH_PARAMS;                               \
@@ -251,16 +246,19 @@ do{                                                                             
                                                                                 \
                         /* close connection*/                                   \
                         f->close(handle->con);                                  \
+                                                                                \
+                        /* move to the next conn */                             \
+                        p->curent_con = (p->curent_con+1)%p->size;              \
                     }                                                           \
                 }else{                                                          \
                     LM_DBG("flags2 = %i\n", p->con_list[p->curent_con].flags);  \
                                                                                 \
                     /* try next*/                                               \
-                    rc = 1;                                                     \
+                    rc = -1;                                                    \
                     p->curent_con = (p->curent_con+1)%p->size;                  \
                 }                                                               \
                 LM_DBG("curent_con = %i\n", p->curent_con);                     \
-            }while((rc && use_rc) && max_loop--);                               \
+            }while((rc && use_rc) && --max_loop);                               \
                                                                                 \
                 rc2=rc ;                                                        \
             }                                                                   \
