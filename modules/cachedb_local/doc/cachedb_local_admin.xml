@@ -98,6 +98,7 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 	</programlisting>
 		</example>
 	</section>
+	</section>
 
 	<section>
 		<title>Exported Functions</title>
@@ -150,7 +151,6 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 		</programlisting>
 		</section>
 	</section>
-</section>
 
 </chapter>
 
