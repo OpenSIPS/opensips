@@ -309,6 +309,7 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
 		val->s = NULL;
 		val->len = 0;
+		freeReplyObject(reply);
 		return -2;
 	}
 
