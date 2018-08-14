@@ -137,7 +137,8 @@ int redis_connect(redis_con *con)
 		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to auth to redis - %.*s\n",
 				rpl?rpl->len:7,rpl?rpl->str:"FAILURE");
-			freeReplyObject(rpl);
+			if (rpl!=NULL)
+				freeReplyObject(rpl);
 			redisFree(ctx);
 			return -1;
 		}
@@ -153,7 +154,8 @@ int redis_connect(redis_con *con)
 		con->nodes = pkg_malloc(sizeof(cluster_node) + len + 1);
 		if (con->nodes == NULL) {
 			LM_ERR("no more pkg\n");
-			freeReplyObject(rpl);
+			if (rpl!=NULL)
+				freeReplyObject(rpl);
 			redisFree(ctx);
 			return -1;
 		}
@@ -179,7 +181,8 @@ int redis_connect(redis_con *con)
 		}
 	}
 
-	freeReplyObject(rpl);
+	if (rpl!=NULL)
+		freeReplyObject(rpl);
 	redisFree(ctx);
 
 	con->flags |= REDIS_INIT_NODES;
