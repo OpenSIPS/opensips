@@ -40,6 +40,7 @@
 #include "../../dset.h"
 
 #include "../../mod_fix.h"
+#include "../../strcommon.h"
 
 #include "../usrloc/usrloc.h"
 #include "../usrloc/urecord.h"
@@ -68,12 +69,13 @@ static str branch_uris[MAX_BRANCHES-1];
 
 int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 {
+	static str unescape_buf;
 	unsigned int flags;
 	urecord_t* r;
-	str aor, uri;
+	str aor, uri, unesc_aor;
 	ucontact_t* ptr,*it;
 	int res, pos;
-	int ret;
+	int ret, bak;
 	str path_dst;
 	str flags_s;
 	char* ua = NULL;
@@ -160,7 +162,6 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		idx=0;
 	}
 
-
 	if (_s) {
 		if (pv_get_spec_value(req, (pv_spec_p)_s, &val)!=0) {
 			LM_ERR("failed to get PV value\n");
@@ -235,9 +236,28 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		goto have_contact;
 	}
 
-	if (extract_aor(&uri, &aor,&sip_instance,&call_id) < 0) {
+	bak = reg_use_domain;
+	reg_use_domain = 0;
+	if (extract_aor(&uri, &aor, &sip_instance, &call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
+		reg_use_domain = bak;
 		return -3;
+	}
+	reg_use_domain = bak;
+
+	if (reg_use_domain) {
+		if (pkg_str_extend(&unescape_buf, aor.len + 1) != 0) {
+			LM_ERR("oom\n");
+			return -3;
+		}
+
+		unesc_aor = unescape_buf;
+		if (unescape_param(&aor, &unesc_aor) != 0) {
+			LM_ERR("failed to unescape aor: %.*s\n", aor.len, aor.s);
+			return -3;
+		}
+
+		aor = unesc_aor;
 	}
 
 	update_act_time();

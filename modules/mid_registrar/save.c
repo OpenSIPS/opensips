@@ -56,6 +56,7 @@
 #include "../../lib/reg/regtime.h"
 
 #include "../../trim.h"
+#include "../../strcommon.h"
 
 #include "../usrloc/usrloc.h"
 #include "../usrloc/urecord.h"
@@ -142,6 +143,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int beha
 
 static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 {
+	static str escape_buf;
 	contact_t *c = NULL;
 	struct socket_info *adv_sock;
 	struct lump *anchor = NULL;
@@ -149,7 +151,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 	int e, is_dereg = 1, len, len1;
 	struct hdr_field *ct;
 	union sockaddr_union _;
-	str extra_ct_params;
+	str extra_ct_params, esc_aor;
 
 	/* get the source socket on the way to the next hop */
 	adv_sock = uri2sock(msg, GET_NEXT_HOP(msg), &_, PROTO_NONE);
@@ -189,8 +191,23 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 
 	extra_ct_params = get_extra_ct_params(msg);
 
-	/*   <   sip:            @                                 :ddddd */
-	len = 1 + 4 + aor->len + 1 + strlen(adv_sock->address_str.s) + 6 +
+	if (!reg_use_domain) {
+		esc_aor = *aor;
+	} else {
+		if (pkg_str_extend(&escape_buf, 3 * aor->len + 1) != 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		esc_aor = escape_buf;
+		if (escape_param(aor, &esc_aor) != 0) {
+			LM_ERR("failed to escape AoR string: %.*s\n", aor->len, aor->s);
+			return -1;
+		}
+	}
+
+	/*    <   sip:               @                                 :ddddd */
+	len = 1 + 4 + esc_aor.len + 1 + strlen(adv_sock->address_str.s) + 6 +
 	      extra_ct_params.len + 1 + 9 + 10 + 1;
 	                   /* > ;expires=<integer> \0 */
 
@@ -200,7 +217,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 		return -1;
 	}
 
-	len1 = sprintf(buf, "<sip:%.*s@%s:%s%.*s>", aor->len, aor->s,
+	len1 = sprintf(buf, "<sip:%.*s@%s:%s%.*s>", esc_aor.len, esc_aor.s,
 	               adv_sock->address_str.s, adv_sock->port_no_str.s,
 	               extra_ct_params.len, extra_ct_params.s);
 
