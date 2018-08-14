@@ -1842,7 +1842,8 @@ static inline int calculate_body_diff(struct sip_msg *msg,
  */
 static inline void apply_msg_changes(struct sip_msg *msg,
 							char *new_buf, unsigned int *new_offs,
-							unsigned int *orig_offs, struct socket_info *sock)
+							unsigned int *orig_offs, struct socket_info *sock,
+							unsigned int max_offset)
 {
 	unsigned int size;
 
@@ -1851,10 +1852,10 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 	if (msg->body==NULL) {
 		/* no body parsed, no advanced ops done, just dummy lumps over body */
 		process_lumps(msg, msg->body_lumps, new_buf, new_offs,
-			orig_offs, sock, -1);
+			orig_offs, sock, max_offset);
 		/* copy the rest of the message */
-		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, msg->len-*orig_offs);
-		*new_offs += msg->len-*orig_offs;
+		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, max_offset-*orig_offs);
+		*new_offs += max_offset-*orig_offs;
 	} else {
 		/* copy whatever is left in the original buffer (up to the body) */
 		size = (msg->body->part_count) ?
@@ -2050,7 +2051,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	char *line_buf, *received_buf, *rport_buf, *new_buf, *buf, *id_buf;
 	unsigned int offset, s_offset, size, id_len;
 	struct lump *anchor, *via_insert_param;
-	str branch, extra_params;
+	str branch, extra_params, body;
 	struct hostport hp;
 
 	id_buf=0;
@@ -2213,6 +2214,10 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	}
 
 build_msg:
+	/* adjust len to the useful part of the message */
+	if (get_body(msg, &body) == 0 && body.len)
+		len -= (msg->buf + msg->len - body.s - body.len);
+
 	/* compute new msg len and fix overlapping zones*/
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, send_sock,-1);
 #ifdef XL_DEBUG
@@ -2247,7 +2252,7 @@ build_msg:
 	}
 
 	/* apply changes over SIP hdrs and body */
-	apply_msg_changes( msg, new_buf, &offset, &s_offset, send_sock);
+	apply_msg_changes( msg, new_buf, &offset, &s_offset, send_sock, len);
 	if (offset!=new_len) {
 		LM_BUG("len mistmatch : calculated %d, written %d\n", new_len, offset);
 		abort();
@@ -2281,6 +2286,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	unsigned int new_len, body_delta, len;
 	char *new_buf, *buf;
 	unsigned int offset, s_offset;
+	str body;
 
 	buf=msg->buf;
 	len=msg->len;
@@ -2314,6 +2320,9 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		}
 	}
 
+	/* adjust len to the useful part of the message */
+	if (get_body(msg, &body) == 0 && body.len)
+		len -= (msg->buf + msg->len - body.s - body.len);
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock, -1);
 
 	LM_DBG(" old size: %d, new size: %d\n", len, new_len);
@@ -2326,7 +2335,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	offset=s_offset=0;
 
 	/* apply changes over SIP hdrs and body */
-	apply_msg_changes( msg, new_buf, &offset, &s_offset, sock);
+	apply_msg_changes( msg, new_buf, &offset, &s_offset, sock, len);
 	if (offset!=new_len) {
 		LM_BUG("len mistmatch : calculated %d, written %d\n", new_len, offset);
 		abort();
