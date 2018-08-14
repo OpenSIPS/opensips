@@ -61,6 +61,7 @@
 #define REG_LOOKUP_NOBRANCH_FLAG       (1<<1)
 #define REG_LOOKUP_UAFILTER_FLAG       (1<<2)
 #define REG_BRANCH_AOR_LOOKUP_FLAG     (1<<3)
+#define REG_LOOKUP_GLOBAL_FLAG         (1<<4)
 
 char uri_buf[MAX_URI_SIZE];
 unsigned int nbranches;
@@ -74,7 +75,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	urecord_t* r;
 	str aor, uri, unesc_aor;
 	ucontact_t* ptr,*it;
-	int res, pos;
+	int res, pos, remote_cts_done = 0;
 	int ret, bak;
 	str path_dst;
 	str flags_s;
@@ -112,6 +113,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 			switch (flags_s.s[res]) {
 				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
+				case 'g': flags |= REG_LOOKUP_GLOBAL_FLAG; break;
 				case 'r': flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 				case 'u':
 					if (flags_s.s[res+1] != '/') {
@@ -263,7 +265,12 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	update_act_time();
 
 	ul_api.lock_udomain((udomain_t*)_t, &aor);
-	res = ul_api.get_urecord((udomain_t*)_t, &aor, &r);
+	if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB
+	        && (flags & REG_LOOKUP_GLOBAL_FLAG))
+		res = ul_api.get_global_urecord((udomain_t*)_t, &aor, &r);
+	else
+		res = ul_api.get_urecord((udomain_t*)_t, &aor, &r);
+
 	if (res > 0) {
 		LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
 		ul_api.unlock_udomain((udomain_t*)_t, &aor);
@@ -278,6 +285,12 @@ search_valid_contact:
 	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(req,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
+		if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB &&
+		    (flags & REG_LOOKUP_GLOBAL_FLAG) && !remote_cts_done) {
+			ptr = r->remote_aors;
+			remote_cts_done = 1;
+			goto search_valid_contact;
+		}
 		/* nothing found */
 		LM_DBG("nothing found !\n");
 		goto done;
@@ -342,57 +355,56 @@ search_valid_contact:
 
 have_contact:
 	ret = 1;
-	if (ptr) {
-		LM_DBG("setting as ruri <%.*s>\n",ptr->c.len,ptr->c.s);
-		if (set_ruri(req, &ptr->c) < 0) {
-			LM_ERR("unable to rewrite Request-URI\n");
+
+	LM_DBG("setting as ruri <%.*s>\n",ptr->c.len,ptr->c.s);
+	if (set_ruri(req, &ptr->c) < 0) {
+		LM_ERR("unable to rewrite Request-URI\n");
+		ret = -3;
+		goto done;
+	}
+
+	/* If a Path is present, use first path-uri in favour of
+	 * received-uri because in that case the last hop towards the uac
+	 * has to handle NAT. - agranig */
+	if (ptr->path.s && ptr->path.len) {
+		if (get_path_dst_uri(&ptr->path, &path_dst) < 0) {
+			LM_ERR("failed to get dst_uri for Path\n");
 			ret = -3;
 			goto done;
 		}
-
-		/* If a Path is present, use first path-uri in favour of
-		 * received-uri because in that case the last hop towards the uac
-		 * has to handle NAT. - agranig */
-		if (ptr->path.s && ptr->path.len) {
-			if (get_path_dst_uri(&ptr->path, &path_dst) < 0) {
-				LM_ERR("failed to get dst_uri for Path\n");
-				ret = -3;
-				goto done;
-			}
-			if (set_path_vector(req, &ptr->path) < 0) {
-				LM_ERR("failed to set path vector\n");
-				ret = -3;
-				goto done;
-			}
-			if (set_dst_uri(req, &path_dst) < 0) {
-				LM_ERR("failed to set dst_uri of Path\n");
-				ret = -3;
-				goto done;
-			}
-		} else if (ptr->received.s && ptr->received.len) {
-			if (set_dst_uri(req, &ptr->received) < 0) {
-				ret = -3;
-				goto done;
-			}
+		if (set_path_vector(req, &ptr->path) < 0) {
+			LM_ERR("failed to set path vector\n");
+			ret = -3;
+			goto done;
 		}
-
-		set_ruri_q(req, ptr->q);
-
-		setbflag(req, 0, ptr->cflags);
-
-		if (ptr->sock)
-			req->force_send_socket = ptr->sock;
-
-		/* populate the 'attributes' avp */
-		if (attr_avp_name != -1) {
-			istr.s = ptr->attr;
-			if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
-				LM_ERR("Failed to populate attr avp!\n");
-			}
+		if (set_dst_uri(req, &path_dst) < 0) {
+			LM_ERR("failed to set dst_uri of Path\n");
+			ret = -3;
+			goto done;
 		}
-
-		ptr = ptr->next;
+	} else if (ptr->received.s && ptr->received.len) {
+		if (set_dst_uri(req, &ptr->received) < 0) {
+			ret = -3;
+			goto done;
+		}
 	}
+
+	set_ruri_q(req, ptr->q);
+
+	setbflag(req, 0, ptr->cflags);
+
+	if (ptr->sock)
+		req->force_send_socket = ptr->sock;
+
+	/* populate the 'attributes' avp */
+	if (attr_avp_name != -1) {
+		istr.s = ptr->attr;
+		if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
+			LM_ERR("Failed to populate attr avp!\n");
+		}
+	}
+
+	ptr = ptr->next;
 
 	/* Append branches if enabled */
 	/* If we got to this point and the URI had a ;gr parameter and it was matched
@@ -401,6 +413,7 @@ have_contact:
 	LM_DBG("looking for branches\n");
 
 	do {
+cts_to_branches:
 		for( ; ptr ; ptr = ptr->next ) {
 			if (VALID_CONTACT(ptr, get_act_time()) && allowed_method(req,ptr,flags)) {
 				path_dst.len = 0;
@@ -431,6 +444,14 @@ have_contact:
 				}
 			}
 		}
+
+		if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB &&
+		    (flags & REG_LOOKUP_GLOBAL_FLAG) && !remote_cts_done) {
+			ptr = r->remote_aors;
+			remote_cts_done = 1;
+			goto cts_to_branches;
+		}
+
 		/* 0 branches condition also filled; idx initially -1*/
 		if (!(flags&REG_BRANCH_AOR_LOOKUP_FLAG) || idx == nbranches)
 			goto done;
@@ -453,13 +474,18 @@ have_contact:
 		LM_DBG("getting contacts from aor [%.*s]"
 					"in branch %d\n", aor.len, aor.s, idx);
 		ul_api.lock_udomain((udomain_t*)_t, &aor);
-		res = ul_api.get_urecord((udomain_t*)_t, &aor, &r);
+		if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB
+		        && (flags & REG_LOOKUP_GLOBAL_FLAG))
+			res = ul_api.get_global_urecord((udomain_t*)_t, &aor, &r);
+		else
+			res = ul_api.get_urecord((udomain_t*)_t, &aor, &r);
 
 		if (res > 0) {
 			LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
 			goto done;
 		}
 		idx++;
+		remote_cts_done = 0;
 		ptr = r->contacts;
 	} while (1);
 
