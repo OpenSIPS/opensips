@@ -554,8 +554,9 @@ static int fixup_dlg_fval(void** param, int param_no)
 		ret = fixup_pvar(param);
 		if (ret<0) return ret;
 		sp = (pv_spec_t*)(*param);
-		if (sp->type!=PVT_AVP && sp->type!=PVT_SCRIPTVAR) {
-			LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+		if (!pv_is_w(sp)) {
+			LM_ERR("output pvar must be writable! (given: %d)\n",
+			       pv_type(sp->type));
 			return E_SCRIPT;
 		}
 	}
@@ -1371,11 +1372,7 @@ static int w_get_profile_size(struct sip_msg *msg, char *prof_name,
 	pv_elem_t *pve;
 	str val_s;
 	pv_spec_t *sp_dest;
-	unsigned int size;
-	int_str res;
-	int avp_name;
-	unsigned short avp_type;
-	script_var_t * sc_var;
+	pv_value_t size;
 	str prof_name_s;
 	struct dlg_profile_table *profile;
 
@@ -1400,41 +1397,15 @@ static int w_get_profile_size(struct sip_msg *msg, char *prof_name,
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		size = get_profile_size(profile, &val_s);
+		size.ri = get_profile_size(profile, &val_s);
 	} else {
-		size = get_profile_size(profile, NULL);
+		size.ri = get_profile_size(profile, NULL);
 	}
 
-	switch (sp_dest->type) {
-		case PVT_AVP:
-			if (pv_get_avp_name( msg, &(sp_dest->pvp), &avp_name,
-			&avp_type)!=0){
-				LM_CRIT("BUG in getting AVP name\n");
-				return -1;
-			}
-			res.n = size;
-			if (add_avp(avp_type, avp_name, res)<0){
-				LM_ERR("cannot add AVP\n");
-				return -1;
-			}
-			break;
-
-		case PVT_SCRIPTVAR:
-			if(sp_dest->pvp.pvn.u.dname == 0){
-				LM_ERR("cannot find svar name\n");
-				return -1;
-			}
-			res.n = size;
-			sc_var = (script_var_t *)sp_dest->pvp.pvn.u.dname;
-			if(!set_var_value(sc_var, &res, 0)){
-				LM_ERR("cannot set svar\n");
-				return -1;
-			}
-			break;
-
-		default:
-			LM_CRIT("BUG: invalid pvar type\n");
-			return -1;
+	size.flags = PV_TYPE_INT|PV_VAL_INT;
+	if (pv_set_value(msg, sp_dest, 0, &size) != 0) {
+		LM_ERR("failed to set the output profile size!\n");
+		return -1;
 	}
 
 	return 1;
@@ -1510,55 +1481,25 @@ int w_store_dlg_value(struct sip_msg *msg, char *name, char *val)
 int w_fetch_dlg_value(struct sip_msg *msg, char *name, char *result)
 {
 	struct dlg_cell *dlg;
-	str val;
 
 	pv_spec_t *sp_dest;
-	int_str res;
-	int avp_name;
-	unsigned short avp_type;
-	script_var_t * sc_var;
+	pv_value_t value;
 
 	sp_dest = (pv_spec_t *)result;
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
 
-	if (fetch_dlg_value( dlg, (str*)name, &val, 0) ) {
+	if (fetch_dlg_value( dlg, (str*)name, &value.rs, 0) ) {
 		LM_DBG("failed to fetch dialog value <%.*s>\n",
 			((str*)name)->len, ((str*)name)->s);
 		return -1;
 	}
 
-	switch (sp_dest->type) {
-		case PVT_AVP:
-			if (pv_get_avp_name( msg, &(sp_dest->pvp), &avp_name,
-			&avp_type)!=0){
-				LM_CRIT("BUG in getting AVP name\n");
-				return -1;
-			}
-			res.s = val;
-			if (add_avp(avp_type|AVP_VAL_STR, avp_name, res)<0){
-				LM_ERR("cannot add AVP\n");
-				return -1;
-			}
-			break;
-
-		case PVT_SCRIPTVAR:
-			if(sp_dest->pvp.pvn.u.dname == 0){
-				LM_ERR("cannot find svar name\n");
-				return -1;
-			}
-			res.s = val;
-			sc_var = (script_var_t *)sp_dest->pvp.pvn.u.dname;
-			if(!set_var_value(sc_var, &res, VAR_VAL_STR)){
-				LM_ERR("cannot set svar\n");
-				return -1;
-			}
-			break;
-
-		default:
-			LM_CRIT("BUG: invalid pvar type\n");
-			return -1;
+	value.flags = PV_VAL_STR;
+	if (pv_set_value(msg, sp_dest, 0, &value) != 0) {
+		LM_ERR("failed to set the fetched dlg value!\n");
+		return -1;
 	}
 
 	return 1;
