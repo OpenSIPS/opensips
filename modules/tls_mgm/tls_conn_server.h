@@ -368,11 +368,30 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 	return -1;
 }
 
+void tls_send_trace_data(struct tcp_connection *c, trace_dest t_dst) {
+	struct tls_data* data;
+
+	if ( (c->flags&F_CONN_ACCEPTED)==0 && c->proto_flags & F_TLS_TRACE_READY ) {
+		data = c->proto_data;
+
+		/* send the message if set from tls_mgm */
+		if ( data->message ) {
+			send_trace_message( data->message, t_dst);
+			data->message = NULL;
+		}
+
+		/* don't allow future traces for this connection */
+		data->tprot = 0;
+		data->dest  = 0;
+
+		c->proto_flags &= ~( F_TLS_TRACE_READY );
+	}
+}
 
 /*
  * wrapper around SSL_connect, returns 0 on success, -1 on error
  */
-static int tls_connect(struct tcp_connection *c, short *poll_events)
+static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest t_dst)
 {
 	int ret, err;
 	SSL *ssl;
@@ -393,6 +412,8 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 		trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
 				TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+
+		tls_send_trace_data(c, t_dst);
 
 		c->proto_flags &= ~F_TLS_DO_CONNECT;
 		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
@@ -433,6 +454,8 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 				trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
 						TRANS_TRACE_FAILURE, &CONNECT_FAIL);
 
+				tls_send_trace_data(c, t_dst);
+
 				c->state = S_CONN_BAD;
 				return -1;
 			case SSL_ERROR_WANT_READ:
@@ -463,6 +486,8 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 					tls_err_s.s = tls_err_buf;
 					trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
 							TRANS_TRACE_FAILURE, &tls_err_s);
+
+					tls_send_trace_data(c, t_dst);
 				} else {
 					tls_print_errstack();
 				}
@@ -482,7 +507,7 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
  * does not transit a connection into S_CONN_OK then tcp layer would not
  * call tcp_read
  */
-static int tls_fix_read_conn(struct tcp_connection *c)
+static int tls_fix_read_conn(struct tcp_connection *c, trace_dest t_dst)
 {
 	/*
 	* no lock acquired
@@ -505,7 +530,7 @@ static int tls_fix_read_conn(struct tcp_connection *c)
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
 		ret = tls_update_fd(c, c->fd);
 		if (!ret)
-			ret = tls_connect(c, NULL);
+			ret = tls_connect(c, NULL, t_dst);
 	}
 
 	lock_release(&c->write_lock);
@@ -570,7 +595,7 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
  * fixme: probably does not work correctly
  */
 static int tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-										size_t len, struct tls_mgm_binds *api)
+										size_t len, struct tls_mgm_binds *api, trace_dest t_dst)
 {
 	#define MAX_SSL_RETRIES 32
 	int             written, n;
@@ -599,7 +624,7 @@ again:
 			goto error;
 		timeout = api->get_handshake_timeout();
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
-		if (tls_connect(c, &(pf.events)) < 0)
+		if (tls_connect(c, &(pf.events), t_dst) < 0)
 			goto error;
 		timeout = api->get_handshake_timeout();
 	} else {
