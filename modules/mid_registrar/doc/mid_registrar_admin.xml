@@ -1036,6 +1036,39 @@ if (is_method("REGISTER")) {
 				enables using of extended regexp format for the 'u' flag.
 				</para>
 			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'g' (Global lookup)</emphasis> - this flag
+				is only relevant with federated user location clustering. If
+				set, the <xref linkend="func_mid_registrar_lookup"/> function
+				will not only perform the classic
+				in-memory "search-AoR-and-push-branches" operation, but will
+				also perform a metadata lookup and append an additional branch
+				for each returned result. The "in-memory branches" correspond
+				to local contacts (current location), while the "metadata
+				branches" correspond to contacts available on one or more of
+				the remaining locations of the platform.
+				</para>
+				<para>
+				The AoR metadata consists of the minimally required information
+				in order for one of the VoIP platform's locations (data
+				centers) to advertise the presence of a locally registered AoR
+				for the global platform. Specifically, this consists of two
+				pieces of information:
+				<itemizedlist>
+				<listitem>
+					<para>
+						the AoR (e.g. "vladimir@federation-cluster")
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						the home IP (e.g. "10.0.0.223")
+					</para>
+				</listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
