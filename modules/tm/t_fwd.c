@@ -634,7 +634,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	else
 		t_reply( t_cancel, cancel_msg, 200, &reason );
 
-	get_cancel_reason(cancel_msg, cancel_msg->flags, &reason);
+	get_cancel_reason(cancel_msg, t_cancel->flags, &reason);
 
 	/* generate local cancels for all branches */
 	which_cancel(t_invite, &cancel_bitmap );
