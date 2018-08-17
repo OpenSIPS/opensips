@@ -399,7 +399,11 @@ int add_interfaces(char* if_name, unsigned short port,
 		LM_ERR("cannot get interfaces list: %s(%d)\n", strerror(errno), errno);
 		return -1;
 	}
-	for (it = addrs; it; it = it->ifa_next)
+
+	for (it = addrs; it; it = it->ifa_next) {
+		if (!it->ifa_addr)
+			continue;
+
 		if ((if_name == 0) || (strcmp(if_name, it->ifa_name) == 0)) {
 			if (it->ifa_addr->sa_family != AF_INET &&
 					it->ifa_addr->sa_family != AF_INET6)
@@ -423,6 +427,7 @@ int add_interfaces(char* if_name, unsigned short port,
 			}
 			ret = 0;
 		}
+	}
 end:
 	freeifaddrs(addrs);
 	return ret;
