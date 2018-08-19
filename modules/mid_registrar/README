@@ -718,6 +718,24 @@ if (is_method("REGISTER")) {
             insensitive filtering for the 'u' flag.
           + 'e' (Use extended regexp) - this flag enables using of
             extended regexp format for the 'u' flag.
+          + 'g' (Global lookup) - this flag is only relevant with
+            federated user location clustering. If set, the
+            mid_registrar_lookup() function will not only perform
+            the classic in-memory "search-AoR-and-push-branches"
+            operation, but will also perform a metadata lookup and
+            append an additional branch for each returned result.
+            The "in-memory branches" correspond to local contacts
+            (current location), while the "metadata branches"
+            correspond to contacts available on one or more of the
+            remaining locations of the platform.
+            The AoR metadata consists of the minimally required
+            information in order for one of the VoIP platform's
+            locations (data centers) to advertise the presence of
+            a locally registered AoR for the global platform.
+            Specifically, this consists of two pieces of
+            information:
+               o the AoR (e.g. "vladimir@federation-cluster")
+               o the home IP (e.g. "10.0.0.223")
      * aor (optional) - variable holding a custom
        Address-of-Record. If not given, the AOR will be taken from
        the Request-URI
@@ -753,7 +771,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 374 104 14485 8679
+   1. Liviu Chircu (@liviuchircu) 378 107 14591 8689
    2. Chad Attermann (@attermann) 7 5 19 5
    3. Razvan Crainea (@razvancrainea) 5 3 16 13
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 2
@@ -781,8 +799,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Italo Rossi                         Jul 2018 - Jul 2018
-   2. Liviu Chircu (@liviuchircu)         Jul 2016 - Jun 2018
+   1. Liviu Chircu (@liviuchircu)         Jul 2016 - Aug 2018
+   2. Italo Rossi                         Jul 2018 - Jul 2018
    3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4. Razvan Crainea (@razvancrainea)     Mar 2017 - Nov 2017
    5. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
@@ -796,8 +814,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov).
 
    Documentation Copyrights:
 
