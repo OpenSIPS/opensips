@@ -462,9 +462,9 @@ Chapter 3. Contributors
    5. Liviu Chircu (@liviuchircu) 9 6 27 102
    6. Bogdan Chifor 5 2 141 1
    7. Vlad Paiu (@vladpaiu) 4 2 84 3
-   8. Julián Moreno Patiño 3 1 1 1
-   9. Maksym Sobolyev (@sobomax) 2 1 2 0
-   10. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 6 25
+   9. Julián Moreno Patiño 3 1 1 1
+   10. Maksym Sobolyev (@sobomax) 2 1 2 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -486,11 +486,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2015 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)              Mar 2015 - Jun 2018
-   3.  Razvan Crainea (@razvancrainea)          Feb 2015 - Sep 2017
-   4.  Maksym Sobolyev (@sobomax)               Jul 2017 - Jul 2017
-   5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Aug 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2015 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)              Mar 2015 - Jun 2018
+   4.  Razvan Crainea (@razvancrainea)          Feb 2015 - Sep 2017
+   5.  Maksym Sobolyev (@sobomax)               Jul 2017 - Jul 2017
    6.  Ionut Ionita (@ionutrazvanionita)        Mar 2015 - Apr 2017
    7.  Julián Moreno Patiño                     Feb 2016 - Feb 2016
    8.  Eseanu Marius Cristian (@eseanucristian) Sep 2015 - Sep 2015

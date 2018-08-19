@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">374</entry>
-		<entry align="center">104</entry>
-		<entry align="center">14485</entry>
-		<entry align="center">8679</entry>
+		<entry align="center">378</entry>
+		<entry align="center">107</entry>
+		<entry align="center">14591</entry>
+		<entry align="center">8689</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -96,18 +96,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jul 2016 - Aug 2018</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Italo Rossi</entry>
 		<entry align="center">Jul 2018 - Jul 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2017 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jul 2016 - Jun 2018</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -138,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>).</para>
 </section>
 
 </chapter>
