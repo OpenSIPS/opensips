@@ -300,7 +300,8 @@ Chapter 3. Contributors
    2. Ionut Ionita (@ionutrazvanionita) 14 10 362 19
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 11 8 176 10
    4. Liviu Chircu (@liviuchircu) 5 3 12 27
-   5. Maksym Sobolyev (@sobomax) 2 1 1 0
+   5. Vlad Patrascu (@rvlad-patrascu) 3 1 2 2
+   6. Maksym Sobolyev (@sobomax) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -322,11 +323,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
-   3. Razvan Crainea (@razvancrainea)     Jan 2016 - Sep 2017
-   4. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
-   5. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     Aug 2018 - Aug 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2016 - Jun 2018
+   4. Razvan Crainea (@razvancrainea)     Jan 2016 - Sep 2017
+   5. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
+   6. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
 
    (1) including any documentation-related commits, excluding
    merge commits

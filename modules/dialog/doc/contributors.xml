@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">73</entry>
-		<entry align="center">50</entry>
-		<entry align="center">1891</entry>
-		<entry align="center">437</entry>
+		<entry align="center">76</entry>
+		<entry align="center">51</entry>
+		<entry align="center">1905</entry>
+		<entry align="center">506</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Andrei Dragus, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), John Riordan, Hugues Mitonneau, Carsten Bock, Jerome Martin, Klaus Darilion, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Michel Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Jeffrey Magder, Ron Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin Bokarius, Alex Massover, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Alex Hermann, Dusan Klinec, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), UnixDev, Eliot Gable, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Andrei Dragus, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), John Riordan, Hugues Mitonneau, Carsten Bock, Jerome Martin, Klaus Darilion, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Michel Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Jeffrey Magder, Ron Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin Bokarius, Alex Massover, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Alex Hermann, Dusan Klinec, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), UnixDev, Eliot Gable, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2010 - Aug 2018</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Aug 2012 - Aug 2018</entry>
 	</row>
 	<row>
+		<entry>2. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Jul 2016 - Aug 2018</entry>
+	</row>
+	<row>
 		<entry>3. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Apr 2006 - Jun 2018</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2010 - Aug 2018</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Jul 2016 - Apr 2018</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Apr 2006 - Jun 2018</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

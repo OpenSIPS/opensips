@@ -154,8 +154,8 @@ Chapter 1. Admin Guide
    Example 1.1. Set db_urls parameter
 ...
 
-modparam("group","db_URL","virtual://set1")
-modparam("presence|presence_xml", "db_URL","virtual://set2")
+modparam("group","db_url","virtual://set1")
+modparam("presence|presence_xml", "db_url","virtual://set2")
 
 modparam("db_virtual", "db_urls", "define set1 PARALLEL")
 modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost
@@ -224,7 +224,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 
    Parameters:
      * set_index [int]
-     * db_URL_index [int]
+     * db_url_index [int]
      * may_use_db_flag [boolean]
      * ignore db_max_consec_retrys[boolean](optional)
 
@@ -246,7 +246,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Pistolea 31 7 2244 297
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 15 84 107
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 21 17 97 122
    3. Liviu Chircu (@liviuchircu) 14 10 99 134
    4. Razvan Crainea (@razvancrainea) 9 7 13 13
    5. Ionut Ionita (@ionutrazvanionita) 6 3 232 9

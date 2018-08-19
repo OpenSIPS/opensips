@@ -16,8 +16,14 @@ cachedb_local Module
               1.3.1. cachedb_url (string)
               1.3.2. cache_collections (string)
               1.3.3. cache_clean_period (int)
-              1.3.4. Exported Functions
-              1.3.5. Exported MI Functions
+
+        1.4. Exported Functions
+
+              1.4.1. cache_remove_chunk([collection,] glob)
+
+        1.5. Exported MI Functions
+
+              1.5.1. cache_remove_chunk
 
    2. Frequently Asked Questions
    3. Contributors
@@ -139,9 +145,9 @@ modparam("cachedb_local", "cache_collections", "collection1; collection2
 modparam("cachedb_local", "cache_clean_period", 1200)
 ...
 
-1.3.4. Exported Functions
+1.4. Exported Functions
 
-1.3.4.1.  cache_remove_chunk([collection,] glob)
+1.4.1.  cache_remove_chunk([collection,] glob)
 
    Remove all keys from local cache that match the glob pattern
    corresponding to a certain collection or the 'default'
@@ -157,9 +163,9 @@ modparam("cachedb_local", "cache_clean_period", 1200)
         cache_remove_chunk("collection1", "myinfo_*");
         ...
 
-1.3.5. Exported MI Functions
+1.5. Exported MI Functions
 
-1.3.5.1. cache_remove_chunk
+1.5.1. cache_remove_chunk
 
    Removes all local cache entries that match the provided glob
    param.
@@ -197,7 +203,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 33 10 1155 693
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 40 46
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 41 47
    3. Anca Vamanu 12 5 739 54
    4. Andrei Dragus 10 4 182 181
    5. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
@@ -229,7 +235,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Aug 2018
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
    4.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Jan 2017
