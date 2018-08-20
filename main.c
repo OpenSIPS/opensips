@@ -753,6 +753,7 @@ static int main_loop(void)
 {
 	static int chd_rank;
 	int* startup_done = NULL;
+	int rc;
 
 	chd_rank=0;
 
@@ -823,7 +824,8 @@ static int main_loop(void)
 			goto error;
 		}
 
-		return run_unit_tests();
+		rc = run_unit_tests();
+		shutdown_opensips(rc);
 	}
 
 	if (init_child(PROC_MAIN) < 0) {
