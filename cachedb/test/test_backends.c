@@ -373,9 +373,20 @@ void init_cachedb_tests(void)
 		exit(-1);
 	}
 
+	if (load_module("cachedb_cassandra.so") != 0) {
+		printf("failed to load cassandra\n");
+		exit(-1);
+	}
+
 	if (set_mod_param_regex("cachedb_mongodb", "cachedb_url", STR_PARAM,
 	    "mongodb://10.0.0.4:27017/OpensipsTests.OpensipsTests") != 0) {
 		printf("failed to set mongo url\n");
+		exit(-1);
+	}
+
+	if (set_mod_param_regex("cachedb_cassandra", "cachedb_url", STR_PARAM,
+	    "cassandra_ng://10.0.0.178/testcass1_osstest1_osscnttest1") != 0) {
+		printf("failed to set cassandra url\n");
 		exit(-1);
 	}
 }
@@ -383,7 +394,9 @@ void init_cachedb_tests(void)
 void test_cachedb_backends(void)
 {
 	test_cachedb_api("mongodb");
-	todo();
 	test_cachedb_api("cassandra");
-	end_todo;
+
+	// todo();
+	// skip tests here
+	// end_todo;
 }
