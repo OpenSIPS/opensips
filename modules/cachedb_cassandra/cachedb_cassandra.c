@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2018 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,40 +17,35 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- *
- * history:
- * ---------
- *  2011-12-xx  created (vlad-paiu)
  */
 
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <time.h>
+#include <cassandra.h>
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
-#include "../../error.h"
-#include "../../pt.h"
+#include "../../mem/mem.h"
 #include "../../cachedb/cachedb.h"
 
+#include "cachedb_cassandra.h"
 #include "cachedb_cassandra_dbase.h"
-
-int conn_timeout=1000; /* ms */
-int send_timeout=2000; /* ms */
-int recv_timeout=2000; /* ms */
-int rd_consistency_level=1;
-int wr_consistency_level=1;
-/* TODO - implement */
-int cassandra_exec_threshold = 0;
 
 static int mod_init(void);
 static int child_init(int);
-static void destroy(void);
+static void mod_destroy(void);
+
+int cassandra_conn_timeout = CASS_DEFAULT_CONN_TIMEOUT;
+int cassandra_query_timeout = CASS_DEFAULT_QUERY_TIMEOUT;
+int cassandra_exec_threshold = CASS_DEFAULT_EXEC_THRESH;
+int cassandra_query_retries = CASS_DEFAULT_QUERY_RETRIES;
+
+static str cassandra_rd_consistency = str_init(CASS_DEFAULT_CONSISTENCY_STR);
+static str cassandra_wr_consistency = str_init(CASS_DEFAULT_CONSISTENCY_STR);
+
+/* the index of each consistency level name in the array corresponds to the
+ * actual value of the CassConsistency enum */
+static char *consistency_str_table[] = {"any", "one", "two", "three", "quorum", "all",
+		"local_quorum", "each_quorum", "serial", "local_serial", "local_one", NULL};
 
 static str cache_mod_name = str_init("cassandra");
 struct cachedb_url *cassandra_script_urls = NULL;
@@ -61,22 +56,21 @@ int set_connection(unsigned int type, void *val)
 }
 
 static param_export_t params[]={
-	{ "cachedb_url",                 STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
-	{ "connection_timeout",          INT_PARAM, &conn_timeout},
-	{ "send_timeout",                INT_PARAM, &send_timeout},
-	{ "receive_timeout",             INT_PARAM, &recv_timeout},
-	{ "rd_consistency_level",        INT_PARAM, &rd_consistency_level},
-	{ "wr_consistency_level",        INT_PARAM, &wr_consistency_level},
-	{ "exec_threshold",		 INT_PARAM, &cassandra_exec_threshold},
-	{0,0,0}
+	{"connect_timeout", INT_PARAM, &cassandra_conn_timeout},
+	{"query_timeout", INT_PARAM, &cassandra_query_timeout},
+	{"exec_threshold", INT_PARAM, &cassandra_exec_threshold},
+	{"query_retries", INT_PARAM, &cassandra_query_retries},
+	{"rd_consistency_level", STR_PARAM, &cassandra_rd_consistency},
+	{"wr_consistency_level", STR_PARAM, &cassandra_wr_consistency},
+	{"cachedb_url", STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
+	{0,0,0},
 };
 
-/** module exports */
 struct module_exports exports= {
-	"cachedb_cassandra",
+	"cachedb_cassandra",        	 /* module's name */
 	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,
+	DEFAULT_DLFLAGS, /* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
 	0,
 	0,
@@ -86,24 +80,41 @@ struct module_exports exports= {
 	0,
 	0,
 	mod_init,
-	(response_function) 0,
-	(destroy_function)destroy,
+	0,
+	(destroy_function)mod_destroy,
 	child_init
 };
 
 
-/**
- * init module function
- */
 static int mod_init(void)
 {
 	cachedb_engine cde;
+	int i;
 
-	LM_NOTICE("initializing module cachedb_cassandra ...\n");
-	if (rd_consistency_level<1 || rd_consistency_level > 8)
-		rd_consistency_level=1;
-	if (wr_consistency_level<1 || wr_consistency_level > 8)
-		wr_consistency_level=1;
+	LM_NOTICE("initializing module cachedb_cassandra\n");
+
+	cassandra_rd_consistency.len = strlen(cassandra_rd_consistency.s);
+	cassandra_wr_consistency.len = strlen(cassandra_wr_consistency.s);
+
+	/* translate from the consistency levels string modparams to actual 
+	 * CassConsistency enum values */
+	for (i = 0; consistency_str_table[i]; i++)
+		if (!strncasecmp(consistency_str_table[i], cassandra_rd_consistency.s,
+			cassandra_rd_consistency.len))
+			rd_consistency = i;
+	for (i = 0; consistency_str_table[i]; i++)
+		if (!strncasecmp(consistency_str_table[i], cassandra_wr_consistency.s,
+			cassandra_wr_consistency.len))
+			wr_consistency = i;
+
+	if (rd_consistency == CASS_CONSISTENCY_UNKNOWN) {
+		LM_ERR("Bad value for rd_consistency_level\n");
+		return -1;
+	}
+	if (wr_consistency == CASS_CONSISTENCY_UNKNOWN) {
+		LM_ERR("Bad value for wr_consistency_level\n");
+		return -1;
+	}
 
 	memset(&cde, 0, sizeof(cachedb_engine));
 
@@ -118,8 +129,6 @@ static int mod_init(void)
 	cde.cdb_func.add = cassandra_add;
 	cde.cdb_func.sub = cassandra_sub;
 
-	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
-
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_cassandra\n");
 		return -1;
@@ -133,28 +142,26 @@ static int child_init(int rank)
 	struct cachedb_url *it;
 	cachedb_con *con;
 
-	for (it = cassandra_script_urls;it;it=it->next) {
-		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);
+	for (it = cassandra_script_urls; it; it = it->next) {
+		LM_DBG("iterating through conns - [%.*s]\n", it->url.len, it->url.s);
 		con = cassandra_init(&it->url);
 		if (con == NULL) {
 			LM_ERR("failed to open connection\n");
 			return -1;
 		}
-		if (cachedb_put_connection(&cache_mod_name,con) < 0) {
+		if (cachedb_put_connection(&cache_mod_name, con) < 0) {
 			LM_ERR("failed to insert connection\n");
 			return -1;
 		}
 	}
 	cachedb_free_url(cassandra_script_urls);
+
 	return 0;
 }
 
-/*
- * destroy function
- */
-static void destroy(void)
+static void mod_destroy(void)
 {
-	LM_NOTICE("destroy module cachedb_cassandra ...\n");
 	cachedb_end_connections(&cache_mod_name);
+
 	return;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2018 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,20 +17,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- *
- * history:
- * ---------
- *  2011-12-xx  created (vlad-paiu)
  */
 
 #ifndef CACHEDBCASSANDRA_H
 #define CACHEDBCASSANDRA_H
 
-extern int conn_timeout;
-extern int send_timeout;
-extern int recv_timeout;
-extern int rd_consistency_level;
-extern int wr_consistency_level;
+#define CASS_DEFAULT_CONN_TIMEOUT 5000 /* ms */
+#define CASS_DEFAULT_QUERY_TIMEOUT 5000 /* ms */
+#define CASS_DEFAULT_EXEC_THRESH  0
+#define CASS_DEFAULT_CONSISTENCY_STR "one"
+#define CASS_DEFAULT_QUERY_RETRIES 2
+
+extern int cassandra_conn_timeout;
+extern int cassandra_query_timeout;
 extern int cassandra_exec_threshold;
+extern int cassandra_query_retries;
 
 #endif

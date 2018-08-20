@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2018 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,52 +17,41 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- *
- * history:
- * ---------
- *  2011-12-xx  created (vlad-paiu)
  */
 
 #ifndef CACHEDBCASSANDRA_DBASE_H
 #define CACHEDBCASSANDRA_DBASE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-/* give up on ut.h, don't need it anyway. Also give up on inline stuff */
-#define ut_h
-#ifdef __cplusplus
-#define inline
-#endif
-#include "../../str.h"
-#include "../../dprint.h"
-#include "../../mem/mem.h"
+#include <cassandra.h>
 #include "../../cachedb/cachedb.h"
-#include "../../cachedb/cachedb_cap.h"
-#ifdef __cplusplus
-#undef inline
-#endif
+
+#define CQL_BUF_LEN 512
+
+#define CASS_OSS_KEY_COL "opensipskey"
+#define CASS_OSS_VAL_COL "opensipsval"
 
 typedef struct {
 	struct cachedb_id *id;
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
 
-	void *cass_con;
+	str keyspace;
+	str table;
+	str cnt_table;
+	CassCluster *cluster;
+	CassSession *session;
 } cassandra_con;
+
+extern CassConsistency rd_consistency;
+extern CassConsistency wr_consistency;
 
 cachedb_con* cassandra_init(str *url);
 void cassandra_destroy(cachedb_con *con);
-int cassandra_get(cachedb_con *con,str *attr,str *val);
-int cassandra_get_counter(cachedb_con *con,str *attr,int *val);
-int cassandra_set(cachedb_con *con,str *attr,str *val,int expires);
-int cassandra_remove(cachedb_con *con,str *attr);
-int cassandra_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val);
-int cassandra_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val);
+int cassandra_set(cachedb_con *con, str *attr, str *val, int expires);
+int cassandra_get(cachedb_con *con, str *attr, str *val);
+int cassandra_get_counter(cachedb_con *con, str *attr, int *val);
+int cassandra_remove(cachedb_con *con, str *attr);
+int cassandra_add(cachedb_con *con, str *attr, int val, int expires, int *new_val);
+int cassandra_sub(cachedb_con *con, str *attr, int val, int expires, int *new_val);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* CACHEDBREDIS_DBASE_H */
-
