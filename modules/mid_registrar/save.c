@@ -641,7 +641,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	lock_start_write(mri->tm_lock);
 
-	mri->reply_processed = 0;
+	mri->pending_replies++;
 
 	if (parse_reg_headers(req) != 0) {
 		LM_ERR("failed to parse req headers\n");
@@ -1520,7 +1520,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	lock_start_write(mri->tm_lock);
 
 	/* no processing on replies with missing Contact headers or retransmits */
-	if (code < 200 || code >= 300 || mri->reply_processed)
+	if (code < 200 || code >= 300 || mri->pending_replies == 0)
 		goto out;
 
 	update_act_time();
@@ -1547,7 +1547,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 		}
 	}
 
-	mri->reply_processed = 1;
+	mri->pending_replies--;
 out:
 	lock_stop_write(mri->tm_lock);
 
@@ -1557,7 +1557,27 @@ out:
 
 void mid_reg_tmcb_deleted(struct cell *t, int type, struct tmcb_params *params)
 {
-	mri_free(*(struct mid_reg_info **)(params->param));
+	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
+	urecord_t *r;
+
+	/* no response from downstream - clear up any lingering refs! */
+	if (mri->pending_replies && (reg_mode != MID_REG_THROTTLE_AOR)) {
+		ul_api.lock_udomain(mri->dom, &mri->aor);
+		ul_api.get_urecord(mri->dom, &mri->aor, &r);
+		if (!r) {
+			LM_ERR("failed to retrieve urecord, ci: %.*s\n",
+			       mri->callid.len, mri->callid.s);
+			ul_api.unlock_udomain(mri->dom, &mri->aor);
+			goto out_free;
+		}
+
+		r->no_clear_ref -= mri->pending_replies;
+		ul_api.release_urecord(r, 0);
+		ul_api.unlock_udomain(mri->dom, &mri->aor);
+	}
+
+out_free:
+	mri_free(mri);
 }
 
 /* !! retcodes: 1 or -1 !! */

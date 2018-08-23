@@ -106,7 +106,7 @@ struct mid_reg_info {
 	unsigned int ul_flags;
 	unsigned int cflags;
 
-	int reply_processed;
+	int pending_replies;
 	rw_lock_t *tm_lock;
 };
 
