@@ -120,6 +120,11 @@ typedef smpp_bind_receiver_t smpp_bind_transceiver_t;
 typedef smpp_bind_receiver_resp_t smpp_bind_transceiver_resp_t;
 
 typedef struct {
+	char system_id[16];
+	char password[9];
+} smpp_outbind_t;
+
+typedef struct {
 	char service_type[6];
 	uint8_t source_addr_ton;
 	uint8_t source_addr_npi;
@@ -189,10 +194,15 @@ typedef struct smpp_session {
 		smpp_bind_receiver_t receiver;
 		smpp_bind_transmitter_t trasmitter;
 		smpp_bind_transceiver_t transceiver;
+		smpp_outbind_t outbind;
 	} bind;
 
-	struct smpp_session *next;
+	uint8_t source_addr_ton;
+	uint8_t source_addr_npi;
+	uint8_t dest_addr_ton;
+	uint8_t dest_addr_npi;
 
+	struct smpp_session *next;
 } smpp_session_t;
 
 #endif
