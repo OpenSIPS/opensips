@@ -86,6 +86,13 @@ typedef struct {
 	uint32_t sequence_number;
 } smpp_header_t;
 
+typedef struct smpp_optional{
+	uint16_t parameter_tag;
+	uint16_t length;
+	void *value;
+	struct smpp_optional *next;
+} smpp_optional_t;
+
 typedef struct {
 	char system_id[16];
 	char password[9];
@@ -159,12 +166,14 @@ typedef struct {
 typedef struct { \
 	smpp_header_t *header; \
 	_name ## _t *body; \
+	smpp_optional_t *optionals; \
 	str payload; \
 } _name ## _req_t
 
 #define TYPEDEF_SIMPLE_SMPP_REQUEST(_name) \
 typedef struct { \
 	smpp_header_t *header; \
+	smpp_optional_t *optionals; \
 	str payload; \
 } _name ## _req_t
 
