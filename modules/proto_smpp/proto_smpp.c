@@ -42,6 +42,9 @@
 #include "../../forward.h"
 #include "../../ipc.h"
 #include "../../db/db.h"
+#include "../../receive.h"
+#include "../tm/tm_load.h"
+#include "../../parser/parse_from.h"
 
 #include "db.h"
 #include "proto_smpp.h"
@@ -59,20 +62,31 @@ static int smpp_read_req(struct tcp_connection* conn, int* bytes_read);
 static int smpp_write_async_req(struct tcp_connection* con,int fd);
 static int smpp_conn_init(struct tcp_connection* c);
 static void smpp_conn_clean(struct tcp_connection* c);
+static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn);
 static int send_smpp_msg(struct sip_msg* msg);
-static void send_enquire_link_request(void);
+static void send_enquire_link_request(smpp_session_t *session);
 
 static void build_smpp_sessions_from_db(void);
 static void rpc_bind_sessions(int sender_id, void *param);
-static void bind_session(smpp_session_t *session);
 static int register_enquire_link_timer(void);
+
+static uint32_t increment_sequence_number(smpp_session_t *session);
 
 void enquire_link(unsigned int ticks, void *param);
 
+/** TM bind */
+struct tm_binds tmb;
 
-static int smpp_port = 2775;
+static unsigned smpp_port = 2775;
 static smpp_session_t **g_sessions = NULL;
 static struct tcp_req smpp_current_req;
+
+char _ip_addr_A_buff[IP_ADDR_MAX_STR_SIZE];
+
+str msg_type = str_init("MESSAGE");
+
+str outbound_uri;
+
 
 str db_url = {NULL, 0};
 int db_mode = 0;			/* Database usage mode: 0 = no cache, 1 = cache */
@@ -94,6 +108,7 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"smpp_port", INT_PARAM, &smpp_port},
 	{"db_url", STR_PARAM, &db_url},
+	{"outbound_uri", STR_PARAM, &outbound_uri},
 	{0, 0, 0}
 };
 
@@ -142,6 +157,7 @@ static int mod_init(void)
 	LM_INFO("initializing SMPP protocol\n");
 
 	db_url.len = strlen(db_url.s);
+	outbound_uri.len = strlen(outbound_uri.s);
 
 	if (smpp_db_bind(&db_url) < 0) {
 		return -1;
@@ -158,6 +174,13 @@ static int mod_init(void)
 	    LM_ERR("could not register timer\n");
 	    return -1;
 	}
+
+	/* load the TM API */
+	if (load_tm_api(&tmb)!=0) {
+		LM_ERR("can't load TM API\n");
+		return -1;
+	}
+
 
 	return 0;
 }
@@ -1141,9 +1164,52 @@ free_req:
 static int send_smpp_msg(struct sip_msg *msg)
 {
 	LM_INFO("send_smpp_msg called\n");
+	if(msg->parsed_uri_ok==0)
+	    parse_sip_msg_uri(msg);
+
 	str body;
 	get_body(msg, &body);
-	LM_INFO("Header %.*s\n", msg->from->body.len, msg->from->body.s);
-	send_submit_sm_request(&body);
+	send_submit_or_deliver_request(&body, &parse_from_uri(msg)->user, &msg->parsed_uri.user, *g_sessions);
+	return 0;
+}
+
+static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn)
+{
+	char hdrs[1024];
+	char *p = hdrs;
+	char src[128];
+	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
+	char dst[128];
+	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
+	p += sprintf(p, "Content-Type:text/plain\r\n");
+
+	str hdr_str;
+	hdr_str.s = hdrs;
+	hdr_str.len = p - hdrs;
+
+	str src_str;
+	src_str.s = src;
+	src_str.len = strlen(src);
+
+	str dst_str;
+	dst_str.s = dst;
+	dst_str.len = strlen(dst);
+
+	str body_str;
+	body_str.s = body->short_message;
+	body_str.len = body->sm_length;
+
+	tmb.t_request(&msg_type, /* Type of the message */
+		      &dst_str,            /* Request-URI */
+		      &dst_str,            /* To */
+		      &src_str,     /* From */
+		      &hdr_str,         /* Optional headers including CRLF */
+		      &body_str, /* Message body */
+		      &outbound_uri,
+		      /* outbound uri */
+		      NULL,
+		      NULL,
+		      NULL
+		     );
 	return 0;
 }
