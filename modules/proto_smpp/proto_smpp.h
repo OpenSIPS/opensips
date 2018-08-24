@@ -168,8 +168,11 @@ typedef struct { \
 } _name ## _req_t
 
 TYPEDEF_SMPP_REQUEST(smpp_bind_receiver);
+TYPEDEF_SMPP_REQUEST(smpp_bind_receiver_resp);
 TYPEDEF_SMPP_REQUEST(smpp_bind_transmitter);
+TYPEDEF_SMPP_REQUEST(smpp_bind_transmitter_resp);
 TYPEDEF_SMPP_REQUEST(smpp_bind_transceiver);
+TYPEDEF_SMPP_REQUEST(smpp_bind_transceiver_resp);
 TYPEDEF_SMPP_REQUEST(smpp_deliver_sm);
 TYPEDEF_SMPP_REQUEST(smpp_deliver_sm_resp);
 TYPEDEF_SMPP_REQUEST(smpp_submit_sm);
