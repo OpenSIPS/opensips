@@ -17,11 +17,18 @@
 
 #define HEADER_SZ 16
 #define BIND_RECEIVER_BODY_MAX_SZ 82
+#define BIND_TRANSMITTER_BODY_MAZ_SZ BIND_RECEIVER_RESP_BODY_MAX_SZ
+#define BIND_TRANSCEIVER_BODY_MAZ_SZ BIND_RECEIVER_RESP_BODY_MAX_SZ
+#define BIND_RECEIVER_RESP_BODY_MAX_SZ 16
+#define BIND_TRANSMITTER_RESP_BODY_MAX_SZ BIND_RECEIVER_RESP_BODY_MAX_SZ
+#define BIND_TRANSCEIVER_RESP_BODY_MAX_SZ BIND_RECEIVER_RESP_BODY_MAX_SZ
 #define SUBMIT_SM_BODY_MAX_SZ 348
 #define DELIVER_SM_RESP_BODY_MAX_SZ 1
+#define SUBMIT_SM_RESP_BODY_MAX_SZ 1
 #define ENQUIRE_LINK_BODY_MAX_SZ 0
 #define REQ_MAX_SZ(_name) (HEADER_SZ + _name ## _BODY_MAX_SZ)
 
+#define ESME_ROK	0x00000000
 
 #define GENERIC_NACK_CID			0x80000000
 #define BIND_RECEIVER_CID			0x00000001
@@ -131,36 +138,14 @@ typedef struct {
 	uint8_t sm_default_msg_id;
 	uint8_t sm_length;
 	char short_message[254];
-} smpp_deliver_sm_t;
-
-typedef struct {
-	char message_id[1];
-} smpp_deliver_sm_resp_t;
-
-typedef struct {
-	char service_type[6];
-	uint8_t source_addr_ton;
-	uint8_t source_addr_npi;
-	char source_addr[21];
-	uint8_t dest_addr_ton;
-	uint8_t dest_addr_npi;
-	char destination_addr[21];
-	uint8_t esm_class;
-	uint8_t protocol_id;
-	uint8_t protocol_flag;
-	char schedule_delivery_time[17];
-	char validity_period[17];
-	uint8_t registered_delivery;
-	uint8_t replace_if_present_flag;
-	uint8_t data_coding;
-	uint8_t sm_default_msg_id;
-	uint8_t sm_length;
-	char short_message[254];
 } smpp_submit_sm_t;
 
 typedef struct {
 	char message_id[65];
 } smpp_submit_sm_resp_t;
+
+typedef smpp_submit_sm_t smpp_deliver_sm_t;
+typedef smpp_submit_sm_resp_t smpp_deliver_sm_resp_t;
 
 #define TYPEDEF_SMPP_REQUEST(_name) \
 typedef struct { \
@@ -183,6 +168,7 @@ TYPEDEF_SMPP_REQUEST(smpp_bind_transceiver);
 TYPEDEF_SMPP_REQUEST(smpp_deliver_sm);
 TYPEDEF_SMPP_REQUEST(smpp_deliver_sm_resp);
 TYPEDEF_SMPP_REQUEST(smpp_submit_sm);
+TYPEDEF_SMPP_REQUEST(smpp_submit_sm_resp);
 TYPEDEF_SIMPLE_SMPP_REQUEST(smpp_enquire_link);
 TYPEDEF_SIMPLE_SMPP_REQUEST(smpp_enquire_link_resp);
 
