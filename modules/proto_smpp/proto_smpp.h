@@ -3,8 +3,10 @@
 
 #define SMPP_UNKNOWN 0
 #define SMPP_OPEN 1
-#define SMPP_DOWN 2
-#define SMPP_CLOSED 3
+#define SMPP_BOUND_TX 2
+#define SMPP_BOUND_RX 4
+#define SMPP_BOUND_TRX 6
+#define SMPP_CLOSED 7
 
 #define BIND_RECEIVER 0
 #define BIND_TRANSMITTER 1
