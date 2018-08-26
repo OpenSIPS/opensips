@@ -228,15 +228,15 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu) 177 7 21444 38
-   2. Liviu Chircu (@liviuchircu) 7 5 24 42
-   3. Razvan Crainea (@razvancrainea) 4 2 12 12
-   4. fabriziopicconi 4 2 5 5
-   5. Julián Moreno Patiño 3 1 1 1
-   6. Peter Lemenkov (@lemenkov) 3 1 1 1
-   7. Jarrod Baumann (@jarrodb) 2 1 2 0
-   8. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
-   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   1. Vlad Patrascu (@rvlad-patrascu) 383 2 798 20882
+   2. Vlad Paiu (@vladpaiu) 177 7 21444 38
+   3. Liviu Chircu (@liviuchircu) 7 5 24 42
+   4. Razvan Crainea (@razvancrainea) 4 2 12 12
+   5. fabriziopicconi 4 2 5 5
+   6. Julián Moreno Patiño 3 1 1 1
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Jarrod Baumann (@jarrodb) 2 1 2 0
+   9. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -258,9 +258,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2018
+   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4. Julián Moreno Patiño                Feb 2016 - Feb 2016
    5. Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
    6. Jarrod Baumann (@jarrodb)           May 2015 - May 2015
