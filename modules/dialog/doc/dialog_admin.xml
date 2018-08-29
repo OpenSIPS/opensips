@@ -1086,6 +1086,26 @@ modparam("dialog", "timer_bulk_del_no", 10)
 		</example>
 	</section>
 
+	<section id="race_condition_timeout" xreflabel="race_condition_timeout">
+		<title><varname>race_condition_timeout</varname> (int)</title>
+		<para>
+		If dialog is created using the 'E' flag, and a 200OK with CANCEL race condition occurs, then the dialog will be terminated after 'race_condition_timeout' seconds.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5</quote> seconds.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>race_condition_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "race_condition_timeout", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>

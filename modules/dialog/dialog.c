@@ -88,6 +88,8 @@ int seq_match_mode = SEQ_MATCH_STRICT_ID;
 int options_ping_interval = 30;      /* seconds */
 int reinvite_ping_interval = 300;    /* seconds */
 str dlg_extra_hdrs = {NULL,0};
+int race_condition_timeout = 5; /* seconds until call termination is triggered,
+					after 200OK -> CANCEL race detection */
 
 /* statistic variables */
 int dlg_enable_stats = 1;
@@ -283,6 +285,7 @@ static param_export_t mod_params[]={
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
 	{ "db_flush_vals_profiles",INT_PARAM, &db_flush_vp              },
 	{ "timer_bulk_del_no",     INT_PARAM, &dlg_bulk_del_no          },
+	{ "race_condition_timeout",INT_PARAM, &race_condition_timeout	},
 	/* distributed profiles stuff */
 	{ "cachedb_url",           	 STR_PARAM, &cdb_url.s              },
 	{ "profile_value_prefix",    STR_PARAM, &cdb_val_prefix.s       },
@@ -1981,38 +1984,45 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		LM_ERR("cannot set a negative timeout\n");
 		return -1;
 	}
+
 	if ((dlg = get_current_dialog()) != NULL) {
-		dlg_lock_dlg(dlg);
-		dlg->lifetime = timeout;
-		/* update now only if realtime and the dialog is confirmed */
-		if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME)
-			db_update = 1;
-		else
-			dlg->flags |= DLG_FLAG_CHANGED;
+		if (!(dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION) ||
+		!(dlg->flags & DLG_FLAG_WAS_CANCELLED)) {
+			dlg_lock_dlg(dlg);
+			dlg->lifetime = timeout;
+			/* update now only if realtime and the dialog is confirmed */
+			if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME)
+				db_update = 1;
+			else
+				dlg->flags |= DLG_FLAG_CHANGED;
 
-		if (dlg->state == DLG_STATE_CONFIRMED_NA ||
-		dlg->state == DLG_STATE_CONFIRMED)
-			timer_update = 1;
+			if (dlg->state == DLG_STATE_CONFIRMED_NA ||
+			dlg->state == DLG_STATE_CONFIRMED)
+				timer_update = 1;
 
-		dlg_unlock_dlg(dlg);
+			dlg_unlock_dlg(dlg);
 
-		if (db_update)
-			update_dialog_timeout_info(dlg);
-		if (dialog_repl_cluster && get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
-			replicate_dialog_updated(dlg);
+			if (db_update)
+				update_dialog_timeout_info(dlg);
+			if (dialog_repl_cluster && get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
+				replicate_dialog_updated(dlg);
 
-		if (timer_update) {
-			switch ( update_dlg_timer(&dlg->tl, timeout) ) {
-			case -1:
-				LM_ERR("failed to update timer\n");
-				return -1;
-			case 1:
-				/* dlg inserted in timer list with new expire (reference it)*/
-				ref_dlg(dlg,1);
-			case 0:
-				/* timeout value was updated */
-				break;
+			if (timer_update) {
+				switch ( update_dlg_timer(&dlg->tl, timeout) ) {
+				case -1:
+					LM_ERR("failed to update timer\n");
+					return -1;
+				case 1:
+					/* dlg inserted in timer list with new expire (reference it)*/
+					ref_dlg(dlg,1);
+				case 0:
+					/* timeout value was updated */
+					break;
+				}
 			}
+		} else {
+			LM_DBG("Set timeout for race condition dlg %.*s - ignoring\n",
+			dlg->callid.len,dlg->callid.s);
 		}
 
 	} else if (current_processing_ctx) {

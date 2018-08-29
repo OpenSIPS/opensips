@@ -77,6 +77,7 @@ static int       shutdown_done = 0;
 
 extern int       seq_match_mode;
 extern struct rr_binds d_rrb;
+extern int race_condition_timeout;
 
 /* statistic variables */
 extern stat_var *early_dlgs;
@@ -481,6 +482,32 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	if (type==TMCB_TRANS_CANCELLED) {
 		/* only if we did force match the Cancel to the
 		 * dialog before ( from the script ) */
+		dlg->flags |= DLG_FLAG_WAS_CANCELLED;
+
+		if (dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION &&
+		dlg->state>= DLG_STATE_CONFIRMED_NA) {
+			dlg->lifetime_dirty = 1;
+
+			/* XXX - end dialog in 5 seconds, to let nomal flow occur
+			Make this configurable ? A good UA should end the
+			call anyway by then  */
+			LM_DBG("Received CANCEL for a 200 OK'ed call call %.*s - terminating\n",
+			dlg->callid.len,dlg->callid.s);
+
+			dlg->lifetime = race_condition_timeout; 
+
+			switch ( update_dlg_timer( &dlg->tl, dlg->lifetime ) ) {
+			case -1:
+				LM_ERR("failed to update dialog lifetime\n");
+			case 0:
+				/* timeout value was updated */
+				break;
+			case 1:
+				/* dlg inserted in timer list with new expire (reference it)*/
+				ref_dlg(dlg,1);
+			}
+		}
+
 		if ( ctx_dialog_get()==NULL) {
 			/* reference and attached to script */
 			ref_dlg(dlg,1);
@@ -520,6 +547,14 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	if (new_state==DLG_STATE_CONFIRMED_NA &&
 	old_state!=DLG_STATE_CONFIRMED_NA && old_state!=DLG_STATE_CONFIRMED ) {
 		LM_DBG("dialog %p confirmed\n",dlg);
+		
+		if (dlg->flags & DLG_FLAG_WAS_CANCELLED &&
+		dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION) {
+			LM_DBG("Received 200OK for Cancelled call %.*s - terminating\n",
+			dlg->callid.len,dlg->callid.s);
+			
+			dlg->lifetime = race_condition_timeout;
+		}
 
 		/* set start time */
 		dlg->start_ts = (unsigned int)(time(0));
