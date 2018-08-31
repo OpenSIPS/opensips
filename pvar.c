@@ -4377,7 +4377,6 @@ int pv_set_value(struct sip_msg* msg, pv_spec_p sp,
 
 int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value)
 {
-	int ret = 0;
 	struct sip_msg* pv_msg;
 
 	if(msg==NULL || sp==NULL || sp->getf==NULL || value==NULL
@@ -4401,12 +4400,12 @@ int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value)
 	} else {
 		pv_msg = msg;
 	}
-	ret = (*sp->getf)(pv_msg, &(sp->pvp), value);
-	if(ret!=0)
-		return ret;
+	if((*sp->getf)(pv_msg, &(sp->pvp), value)!=0)
+		return pv_get_null( NULL, NULL, value);
 	if(sp->trans)
-		return run_transformations(pv_msg, (trans_t*)sp->trans, value);
-	return ret;
+		if (run_transformations(pv_msg, (trans_t*)sp->trans, value)!=0)
+			return pv_get_null( NULL, NULL, value);
+	return 0;
 }
 
 int pv_print_spec(struct sip_msg* msg, pv_spec_p sp, char *buf, int *len)
