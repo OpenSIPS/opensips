@@ -30,6 +30,8 @@
 #define CASS_OSS_KEY_COL "opensipskey"
 #define CASS_OSS_VAL_COL "opensipsval"
 
+#define CASS_COLL_APROX_COUNT 32
+
 typedef struct {
 	struct cachedb_id *id;
 	unsigned int ref;
@@ -40,6 +42,8 @@ typedef struct {
 	str cnt_table;
 	CassCluster *cluster;
 	CassSession *session;
+	const CassSchemaMeta *schema_meta;
+	const CassTableMeta *table_meta;
 } cassandra_con;
 
 extern CassConsistency rd_consistency;
@@ -53,5 +57,10 @@ int cassandra_get_counter(cachedb_con *con, str *attr, int *val);
 int cassandra_remove(cachedb_con *con, str *attr);
 int cassandra_add(cachedb_con *con, str *attr, int val, int expires, int *new_val);
 int cassandra_sub(cachedb_con *con, str *attr, int val, int expires, int *new_val);
+int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
+						const cdb_dict_t *pairs);
+int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
+						cdb_res_t *res);
+
 
 #endif

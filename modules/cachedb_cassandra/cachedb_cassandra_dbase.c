@@ -24,6 +24,7 @@
 #include <cassandra.h>
 #include "cachedb_cassandra.h"
 #include "cachedb_cassandra_dbase.h"
+#include "../../lib/osips_malloc.h"
 
 CassConsistency rd_consistency = CASS_CONSISTENCY_UNKNOWN;
 CassConsistency wr_consistency = CASS_CONSISTENCY_UNKNOWN;
@@ -42,6 +43,7 @@ static char cql_buf[CQL_BUF_LEN];
 int cassandra_open(cassandra_con *cass_con)
 {
 	CassFuture *conn_future = NULL;
+	const CassKeyspaceMeta *keyspace_meta;
 
 	conn_future = cass_session_connect(cass_con->session, cass_con->cluster);
 	if (!conn_future) {
@@ -55,6 +57,29 @@ int cassandra_open(cassandra_con *cass_con)
 	}
 	if (cass_future_error_code(conn_future) != CASS_OK) {
 		CASS_PRINT_FUTURE_ERR(conn_future);
+		goto error;
+	}
+
+	cass_con->schema_meta = cass_session_get_schema_meta(cass_con->session);
+	if (!cass_con->schema_meta) {
+		LM_ERR("Failed to get schema metadata\n");
+		goto error;
+	}
+
+	keyspace_meta = cass_schema_meta_keyspace_by_name_n(cass_con->schema_meta,
+		cass_con->keyspace.s, cass_con->keyspace.len);
+	if (!keyspace_meta) {
+		LM_ERR("Failed to get keyspace: %.*s metadata (might not exist)\n",
+			cass_con->keyspace.len, cass_con->keyspace.s);
+		cass_schema_meta_free(cass_con->schema_meta);
+		goto error;
+	}
+	cass_con->table_meta = cass_keyspace_meta_table_by_name_n(keyspace_meta,
+		cass_con->table.s, cass_con->table.len);
+	if (!cass_con->table_meta) {
+		LM_ERR("Failed to get table: %.*s metadata (might not exist)\n",
+			cass_con->table.len, cass_con->table.s);
+		cass_schema_meta_free(cass_con->schema_meta);
 		goto error;
 	}
 
@@ -85,6 +110,8 @@ int cassandra_close(cassandra_con *cass_con)
 		CASS_PRINT_FUTURE_ERR(close_future);
 		goto error;
 	}
+
+	cass_schema_meta_free(cass_con->schema_meta);
 
 	cass_future_free(close_future);
 
@@ -213,15 +240,15 @@ void *cassandra_init_connection(struct cachedb_id *id)
 	con->id = id;
 	con->ref = 1;
 
+	con->keyspace = keyspace;
+	con->table = table;
+	con->cnt_table = cnt_table;
+
 	if (cassandra_new_connection(con, id->host, id->port) < 0) {
 		LM_ERR("failed to create new connection to Cassandra\n");
 		pkg_free(con);
 		return NULL;
 	}
-
-	con->keyspace = keyspace;
-	con->table = table;
-	con->cnt_table = cnt_table;
 
 	return con;
 }
@@ -683,4 +710,621 @@ int cassandra_sub(cachedb_con *con, str *attr, int val, int expires, int *new_va
 		return -1;
 	else
 		return basic_get_counter(con, attr, new_val);
+}
+
+static int where_clause_from_filter(const cdb_filter_t *row_filter, char *buf,
+									int *no_bind_params)
+{
+	char *p = buf;
+	str op;
+	const cdb_filter_t *filter;
+	int len;
+
+	for (filter = row_filter; filter; filter = filter->next) {
+		if (!filter->key.name.s )
+			continue;
+
+		(*no_bind_params)++;
+
+		switch (filter->op) {
+		case CDB_OP_EQ:
+			init_str(&op, "=");
+			break;
+		case CDB_OP_LT:
+			init_str(&op, "<");
+			break;
+		case CDB_OP_LTE:
+			init_str(&op, "<=");
+			break;
+		case CDB_OP_GT:
+			init_str(&op, ">");
+			break;
+		case CDB_OP_GTE:
+			init_str(&op, ">=");
+			break;
+		default:
+			LM_BUG("unsupported operator: %d\n", filter->op);
+			return -1;
+		}
+
+		len = sprintf(p, "%.*s %.*s ? AND ", filter->key.name.len,
+				filter->key.name.s, op.len, op.s);
+		if (len < 0)
+			return -1;
+
+		p += len;
+	}
+
+	*(p-5) = 0;
+
+	return 0;
+}
+
+static int bind_where_clause_params(CassStatement *statement,
+								const cdb_filter_t *row_filter, int start_idx)
+{
+	const cdb_filter_t *filter;
+	int idx = start_idx;
+
+	for (filter = row_filter; filter; filter = filter->next) {
+		if (!filter->key.name.s )
+			continue;
+
+		if (filter->val.is_str) {
+			if (cass_statement_bind_string_n(statement, idx, filter->val.s.s,
+				filter->val.s.len) != CASS_OK) {
+				LM_ERR("Failed to bind string value to Cassandra statement\n");
+				return -1;
+			}
+		} else {
+			if (cass_statement_bind_int32(statement, idx, filter->val.i)
+				!= CASS_OK) {
+				LM_ERR("Failed to bind integer value to Cassandra statement\n");
+				return -1;
+			}
+		}
+
+		idx++;
+	}
+
+	return 0;
+}
+
+static int dict_to_cass_collection(cdb_dict_t *dict, CassCollection *collection)
+{
+	cdb_pair_t *pair;
+	struct list_head *_;
+	CassCollection *sub_collection;
+
+	list_for_each (_, dict) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (!pair->key.name.s)
+			continue;
+
+		if (pair->subkey.s) {
+			LM_ERR("Updating a key for a nested map is not supported\n");
+			return -1;
+		}
+		if (pair->unset) {
+			LM_ERR("Unsetting a key when updating an entire map is not supported\n");
+			return -1;
+		}
+
+		if (cass_collection_append_string_n(collection, pair->key.name.s,
+			pair->key.name.len) < 0) {
+			LM_ERR("Failed to append key to collection\n");
+			return -1;
+		}
+
+		switch (pair->val.type) {
+		case CDB_NULL:
+			LM_ERR("Setting a null value for a key when updating an entire map"
+				" is not supported\n");
+			return -1;
+		case CDB_INT32:
+			if (cass_collection_append_int32(collection, pair->val.val.i32)
+				!= CASS_OK) {
+				LM_ERR("Failed to append int32 value to collection\n");
+				return -1;
+			}
+			break;
+		case CDB_INT64:
+			if (cass_collection_append_int64(collection, pair->val.val.i64)
+				!= CASS_OK) {
+				LM_ERR("Failed to append int64 value to collection\n");
+				return -1;
+			}
+			break;
+		case CDB_STR:
+			if (cass_collection_append_string_n(collection, pair->val.val.st.s,
+				pair->val.val.st.len) != CASS_OK) {
+				LM_ERR("Failed to append string value to collection\n");
+				return -1;
+			}
+			break;
+		case CDB_DICT:
+			sub_collection = cass_collection_new(CASS_COLLECTION_TYPE_MAP,
+												CASS_COLL_APROX_COUNT);
+			if (!sub_collection) {
+				LM_ERR("Failed to create Cassandra Collection object\n");
+				return -1;
+			}
+
+			if (dict_to_cass_collection(&pair->val.val.dict, sub_collection) < 0) {
+				LM_ERR("Failed to build collection value\n");
+				cass_collection_free(sub_collection);
+				return -1;
+			}
+
+			if (cass_collection_append_collection(collection, sub_collection) != CASS_OK) {
+				LM_ERR("Failed to append collection value to collection\n");
+				cass_collection_free(sub_collection);
+				return -1;
+			}
+
+			cass_collection_free(sub_collection);
+
+			break;
+		default:
+			LM_ERR("unsupported type %d for key %.*s\n", pair->val.type,
+			       pair->key.name.len, pair->key.name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int bind_set_clause_params(CassStatement *statement,
+								const cdb_dict_t *pairs, int *end_idx)
+{
+	struct list_head *_;
+	cdb_pair_t *pair;
+	CassCollection *collection;
+
+	list_for_each (_, pairs) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (!pair->key.name.s)
+			continue;
+
+		if (pair->unset) {
+			if (cass_statement_bind_null(statement, *end_idx) != CASS_OK) {
+				LM_ERR("Failed to bind null value to Cassandra statement\n");
+				return -1;
+			}
+			(*end_idx)++;
+			continue;
+		}
+
+		switch (pair->val.type) {
+		case CDB_NULL:
+			if (cass_statement_bind_null(statement, *end_idx) != CASS_OK) {
+				LM_ERR("Failed to bind null value to Cassandra statement\n");
+				return -1;
+			}
+			(*end_idx)++;
+			break;
+		case CDB_INT32:
+			if (cass_statement_bind_int32(statement, *end_idx, pair->val.val.i32)
+				!= CASS_OK) {
+				LM_ERR("Failed to bind integer value to Cassandra statement\n");
+				return -1;
+			}
+			(*end_idx)++;
+			break;
+		case CDB_INT64:
+			if (cass_statement_bind_int64(statement, *end_idx, pair->val.val.i64)
+				!= CASS_OK) {
+				LM_ERR("Failed to bind integer value to Cassandra statement\n");
+				return -1;
+			}
+			(*end_idx)++;
+			break;
+		case CDB_STR:
+			if (cass_statement_bind_string_n(statement, *end_idx,
+				pair->val.val.st.s, pair->val.val.st.len) != CASS_OK) {
+				LM_ERR("Failed to bind string value to Cassandra statement\n");
+				return -1;
+			}
+			(*end_idx)++;
+			break;
+		case CDB_DICT:
+			collection = cass_collection_new(CASS_COLLECTION_TYPE_MAP,
+											CASS_COLL_APROX_COUNT);
+			if (!collection) {
+				LM_ERR("Failed to create Cassandra Collection object\n");
+				return -1;
+			}
+
+			if (dict_to_cass_collection(&pair->val.val.dict, collection) < 0) {
+				LM_ERR("Failed to build collection value\n");
+				cass_collection_free(collection);
+				return -1;
+			}
+
+			if (cass_statement_bind_collection(statement, *end_idx, collection)
+				!= CASS_OK) {
+				LM_ERR("Failed to bind collection value to Cassandra statement\n");
+				cass_collection_free(collection);
+				return -1;
+			}
+			cass_collection_free(collection);
+
+			(*end_idx)++;
+			break;
+		default:
+			LM_ERR("unsupported type %d for key %.*s\n", pair->val.type,
+			       pair->key.name.len, pair->key.name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
+						const cdb_dict_t *pairs)
+{
+	cassandra_con *cass_con;
+	CassStatement *statement = NULL;
+	const CassResult *result;
+	cdb_pair_t *pair;
+	struct list_head *_;
+	static char buf1[CQL_BUF_LEN/2], buf2[CQL_BUF_LEN/2];
+	char *p;
+	int len;
+	int bind_idx = 0, no_bind_params = 0;
+	int max_ttl = 0;
+
+	if (!row_filter) {
+		LM_ERR("Updating all the rows at once is not supported\n");
+		return -1;
+	}
+
+	if (!con) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+	cass_con = (cassandra_con *)con->data;
+
+	/* build update query's SET clause */
+	p = buf1;
+
+	list_for_each (_, pairs) {
+		pair = list_entry(_, cdb_pair_t, list);
+		if (!pair->key.name.s)
+			continue;
+
+		no_bind_params++;
+
+		if (pair->ttl > max_ttl)
+			max_ttl = pair->ttl;
+
+		if (pair->subkey.s)
+			len = sprintf(p, "%.*s['%.*s'] = ?, ", pair->key.name.len,
+					pair->key.name.s, pair->subkey.len, pair->subkey.s);
+		else
+			len = sprintf(p, "%.*s = ?, ", pair->key.name.len, pair->key.name.s);
+
+		if (len < 0) {
+			LM_ERR("Failed to build SET clause for query\n");
+			goto error;
+		}
+		p += len;
+	}
+
+	if (no_bind_params == 0) {
+		LM_DBG("No update to be done\n");
+		return 0;
+	}
+	*(p-2) = 0;
+
+	/* build update query's WHERE clause */
+	if (where_clause_from_filter(row_filter, buf2, &no_bind_params) < 0) {
+		LM_ERR("Failed to build WHERE caluse for query\n");
+		goto error;
+	}
+
+	len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE %.*s.%.*s USING TTL %d "
+				"SET %s WHERE %s", cass_con->keyspace.len, cass_con->keyspace.s,
+				cass_con->table.len, cass_con->table.s, max_ttl, buf1, buf2);
+	if (len < 0) {
+		LM_ERR("Failed to build query string for Cassandra 'update'\n");
+		goto error;
+	}
+
+	statement = cass_statement_new_n(cql_buf, len, no_bind_params);
+	if (!statement) {
+		LM_ERR("Failed to create Cassandra Statement object\n");
+		goto error;
+	}
+
+	if (cass_statement_set_consistency(statement, wr_consistency) != CASS_OK) {
+		LM_ERR("Failed to set statement's consistency level\n");
+		goto error;
+	}
+
+	/* bind values to statement */
+	if (bind_set_clause_params(statement, pairs, &bind_idx) < 0) {
+		LM_ERR("Failed to bind 'SET' clause parameters\n");
+		goto error;
+	}
+	if (bind_where_clause_params(statement, row_filter, bind_idx) < 0) {
+		LM_ERR("Failed to bind 'WHERE' clause parameters\n");
+		goto error;
+	}
+
+	cassandra_do_query("Cassandra 'update'");
+
+process_result:
+	cass_statement_free(statement);
+	cass_result_free(result);
+	return 0;
+
+error:
+	LM_ERR("Cassandra 'update' failed\n");
+	if (statement)
+		cass_statement_free(statement);
+	return -1;
+}
+
+static int append_cass_val_to_dict(const CassValue *cass_val, cdb_dict_t *cdb_dict,
+									cdb_key_t *cdb_key)
+{
+	cdb_pair_t *pair;
+	str strval;
+	CassIterator *map_iter = NULL;
+	cdb_key_t map_cdb_key;
+	const CassValue *map_cass_val;
+
+	pair = cdb_mk_pair(cdb_key, NULL);
+	if (!pair) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (cass_value_is_null(cass_val)) {
+		pair->val.type = CDB_NULL;
+		cdb_dict_add(pair, cdb_dict);
+		return 0;
+	}
+
+	switch (cass_value_type(cass_val)) {
+		case CASS_VALUE_TYPE_ASCII:
+		case CASS_VALUE_TYPE_TEXT:
+		case CASS_VALUE_TYPE_VARCHAR:
+			pair->val.type = CDB_STR;
+			if (cass_value_get_string(cass_val, (const char **)&strval.s,
+				(size_t *)&strval.len) != CASS_OK) {
+				LM_ERR("Failed to get string from Cassandra Value object\n");
+				goto error;
+			}
+			pair->val.val.st.len = strval.len;
+			pair->val.val.st.s = pkg_malloc(strval.len);
+			if (!pair->val.val.st.s) {
+				LM_ERR("oom\n");
+				goto error;
+			}
+			memcpy(pair->val.val.st.s, strval.s, strval.len);
+			break;
+		case CASS_VALUE_TYPE_TINY_INT:
+		case CASS_VALUE_TYPE_SMALL_INT:
+		case CASS_VALUE_TYPE_INT:
+			pair->val.type = CDB_INT32;
+			if (cass_value_get_int32(cass_val, &pair->val.val.i32) != CASS_OK) {
+				LM_ERR("Failed to get integer from Cassandra Value object\n");
+				goto error;
+			}
+			break;
+		case CASS_VALUE_TYPE_BIGINT:
+			pair->val.type = CDB_INT64;
+			if (cass_value_get_int64(cass_val, &pair->val.val.i64) != CASS_OK) {
+				LM_ERR("Failed to get integer from Cassandra Value object\n");
+				goto error;
+			}
+			break;
+		case CASS_VALUE_TYPE_MAP:
+			pair->val.type = CDB_DICT;
+			INIT_LIST_HEAD(&pair->val.val.dict);
+
+			map_iter = cass_iterator_from_map(cass_val);
+			while (cass_iterator_next(map_iter)) {
+				map_cass_val = cass_iterator_get_map_key(map_iter);
+				if (!map_cass_val) {
+					LM_ERR("Failed to get Cassandra Value object\n");
+					goto error;
+				}
+				switch (cass_value_type(map_cass_val)) {
+					case CASS_VALUE_TYPE_ASCII:
+					case CASS_VALUE_TYPE_TEXT:
+					case CASS_VALUE_TYPE_VARCHAR:
+						break;
+					default:
+						LM_ERR("Only string values are supported as map keys\n");
+						goto error;
+				}
+				if (cass_value_get_string(map_cass_val,
+					(const char **)&map_cdb_key.name.s,
+					(size_t *)&map_cdb_key.name.len) != CASS_OK) {
+					LM_ERR("Failed to get string from Cassandra Value object\n");
+					goto error;
+				}
+				map_cdb_key.is_pk = 0;
+
+				map_cass_val = cass_iterator_get_map_value(map_iter);
+				if (!map_cass_val) {
+					LM_ERR("Failed to get Cassandra Value object\n");
+					goto error;
+				}
+
+				if (append_cass_val_to_dict(map_cass_val, &pair->val.val.dict,
+					&map_cdb_key) < 0) {
+					LM_ERR("Failed to add map to cdb result\n");
+					goto error;
+				}
+			}
+			cass_iterator_free(map_iter);
+			break;
+		default:
+		LM_ERR("Unsupported Cassandra data type: %d\n", cass_value_type(cass_val));
+		 return -1;
+	}
+
+	cdb_dict_add(pair, cdb_dict);
+
+	return 0;
+
+error:
+	if (map_iter)
+		cass_iterator_free(map_iter);
+	pkg_free(pair);
+	return -1;
+}
+
+int cass_result_to_cdb_res(const CassResult *cass_result, cdb_res_t *cdb_res,
+							const CassTableMeta *table_meta)
+{
+	CassIterator *rows_iter;
+	const CassRow *cass_row;
+	const CassValue *cass_val;
+	cdb_row_t *cdb_row = NULL;
+	cdb_key_t cdb_key;
+	const CassColumnMeta *col_meta;
+	int col_idx, cols_count;
+
+	cdb_res_init(cdb_res);
+
+	cols_count = cass_result_column_count(cass_result);
+
+	rows_iter = cass_iterator_from_result(cass_result);
+	while (cass_iterator_next(rows_iter)) {
+		cass_row = cass_iterator_get_row(rows_iter);
+		if (!cass_row) {
+			LM_ERR("Failed to get Cassandra Row object\n");
+			goto error;
+		}
+
+		cdb_row = pkg_malloc(sizeof *cdb_row);
+		if (!cdb_row) {
+			LM_ERR("oom\n");
+			goto error;
+		}
+
+		INIT_LIST_HEAD(&cdb_row->dict);
+
+		for (col_idx = 0; col_idx < cols_count; col_idx++) {
+			if (cass_result_column_name(cass_result, col_idx,
+				(const char **)&cdb_key.name.s, (size_t *)&cdb_key.name.len)
+				!= CASS_OK) {
+				LM_ERR("Failed to get column name\n");
+				goto error;
+			}
+
+			col_meta = cass_table_meta_column_by_name_n(table_meta,
+						(const char *)cdb_key.name.s, (size_t)cdb_key.name.len);
+			if (!col_meta) {
+				LM_ERR("Failed to get column metadata\n");
+				goto error;
+			}
+			if (cass_column_meta_type(col_meta) == CASS_COLUMN_TYPE_PARTITION_KEY)
+				cdb_key.is_pk = 1;
+			else
+				cdb_key.is_pk = 0;
+
+			cass_val = cass_row_get_column(cass_row, col_idx);
+			if (!cass_val) {
+				LM_ERR("Failed to get Cassandra Value object\n");
+				goto error;
+			}
+			if (append_cass_val_to_dict(cass_val, &cdb_row->dict, &cdb_key) < 0) {
+				LM_ERR("Failed to add column to cdb result\n");
+				cdb_free_entries(&cdb_row->dict, osips_pkg_free);
+				goto error;
+			}
+		}
+
+		cdb_res->count++;
+		list_add_tail(&cdb_row->list, &cdb_res->rows);
+	}
+
+	cass_iterator_free(rows_iter);
+	return 0;
+
+error:
+	if (cdb_row)
+		pkg_free(cdb_row);
+	cass_iterator_free(rows_iter);
+	return -1;
+}
+
+int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
+						cdb_res_t *res)
+{
+	cassandra_con *cass_con;
+	CassStatement *statement;
+	const CassResult *result;
+	static char buf[CQL_BUF_LEN/2];
+	int cql_buf_len;
+	int no_bind_params = 0;
+
+	if (!con) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+	cass_con = (cassandra_con *)con->data;
+
+	/* build select query */
+	if (filter) {
+		/* build query's WHERE clause */
+		if (where_clause_from_filter(filter, buf, &no_bind_params) < 0) {
+			LM_ERR("Failed to build WHERE caluse for query\n");
+			goto error;
+		}
+
+		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM %.*s.%.*s "
+			"WHERE %s ALLOW FILTERING", cass_con->keyspace.len,
+			cass_con->keyspace.s, cass_con->table.len, cass_con->table.s, buf);
+	} else {
+		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM %.*s.%.*s",
+							cass_con->keyspace.len, cass_con->keyspace.s,
+							cass_con->table.len, cass_con->table.s);
+	}
+	if (cql_buf_len < 0) {
+		LM_ERR("Failed to build query string for Cassandra 'query'\n");
+		return -1;
+	}
+
+	statement = cass_statement_new_n(cql_buf, cql_buf_len, no_bind_params);
+	if (!statement) {
+		LM_ERR("Failed to create Cassandra Statement object\n");
+		return -1;
+	}
+
+	if (cass_statement_set_consistency(statement, rd_consistency) != CASS_OK) {
+		LM_ERR("Failed to set statement's consistency level\n");
+		goto error;
+	}
+
+	if (bind_where_clause_params(statement, filter, 0) < 0) {
+		LM_ERR("Failed to bind where clause parameters\n");
+		goto error;
+	}
+
+	cassandra_do_query("Cassandra 'query'");
+
+process_result:
+	if (cass_result_to_cdb_res(result, res, cass_con->table_meta) < 0) {
+		LM_ERR("Failed to process Cassandra result\n");
+		cass_result_free(result);
+		goto error;
+	}
+
+	cass_statement_free(statement);
+	cass_result_free(result);
+	return 0;
+
+error:
+	LM_ERR("Cassandra 'query' failed\n");
+	cass_statement_free(statement);
+	return -1;
 }
