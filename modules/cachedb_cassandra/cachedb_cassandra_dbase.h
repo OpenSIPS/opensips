@@ -61,6 +61,7 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 						const cdb_dict_t *pairs);
 int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
 						cdb_res_t *res);
+int cassandra_truncate(cachedb_con *con);
 
 
 #endif

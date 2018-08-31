@@ -1328,3 +1328,52 @@ error:
 	cass_statement_free(statement);
 	return -1;
 }
+
+int cassandra_truncate(cachedb_con *con)
+{
+	cassandra_con *cass_con;
+	CassStatement *statement;
+	const CassResult *result;
+	int cql_buf_len;
+
+	if (!con) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	cass_con = (cassandra_con *)con->data;
+
+	cql_buf_len = sprintf(cql_buf, "TRUNCATE %.*s.%.*s",
+		cass_con->keyspace.len, cass_con->keyspace.s,
+		cass_con->table.len, cass_con->table.s);
+
+	if (cql_buf_len < 0) {
+		LM_ERR("Failed to build query string for Cassandra 'truncate'\n");
+		return -1;
+	}
+
+	statement = cass_statement_new_n(cql_buf, cql_buf_len, 0);
+	if (!statement) {
+		LM_ERR("Failed to create Cassandra Statement object\n");
+		return -1;
+	}
+
+	/* "ALL" consistency is required by Cassandra for a truncate operation */
+	if (cass_statement_set_consistency(statement, CASS_CONSISTENCY_ALL)
+		!= CASS_OK) {
+		LM_ERR("Failed to set statement's consistency level\n");
+		goto error;
+	}
+
+	cassandra_do_query("Cassandra 'truncate'");
+
+process_result:
+	cass_statement_free(statement);
+	cass_result_free(result);
+	return 0;
+
+error:
+	LM_ERR("Cassandra 'truncate' failed\n");
+	cass_statement_free(statement);
+	return -1;
+}

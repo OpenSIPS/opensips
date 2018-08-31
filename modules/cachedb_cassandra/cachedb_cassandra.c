@@ -131,6 +131,7 @@ static int mod_init(void)
 	cde.cdb_func.sub = cassandra_sub;
 	cde.cdb_func.query = cassandra_col_query;
 	cde.cdb_func.update = cassandra_col_update;
+	cde.cdb_func.truncate = cassandra_truncate;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 
