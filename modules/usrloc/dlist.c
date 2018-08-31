@@ -123,8 +123,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	db_val_t *val;
 	str uri, host, flag_list;
 	int i, no_rows = 10;
-	int now_len;
-	char now_s[25];
+	time_t now;
 	char *p, *p1;
 	int port, proto, p_len, p1_len;
 	unsigned int dbflags;
@@ -137,11 +136,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		*len -= (int)sizeof p_len;
 
 	/* get the current time in DB format */
-	now_len = 25;
-	if (db_time2str(time(NULL), now_s, &now_len) != 0) {
-		LM_ERR("failed to print now time\n");
-		return -1;
-	}
+	now = time(NULL);
 
 	/* this is a very noisy log :(  */
 	//LM_DBG("buf: %p. flags: %d\n", buf, flags);
@@ -155,9 +150,9 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-	" %.*s, %.*s, %.*s from %s where %.*s > %.*s and mod(contact_id, %u) = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %lu and mod(contact_id, %u) = %u",
 #else
-	" %.*s, %.*s, %.*s from %s where %.*s > %.*s and contact_id %% %u = %u",
+	" %.*s, %.*s, %.*s from %s where %.*s > %lu and contact_id %% %u = %u",
 #endif
 		received_col.len, received_col.s,
 		contact_col.len, contact_col.s,
@@ -167,7 +162,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		contactid_col.len, contactid_col.s,
 		d->name->s,
 		expires_col.len, expires_col.s,
-		now_len, now_s,
+		now,
 		part_max, part_idx);
 
 	LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
