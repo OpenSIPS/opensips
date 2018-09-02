@@ -2151,64 +2151,64 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-   What happened with “topology_hiding()” function?
+       What happened with “topology_hiding()” function?
 
-   The respective functionality was moved into the topology_hiding
-   module. Function prototype has remained the same.
+       The respective functionality was moved into the topology_hiding
+       module. Function prototype has remained the same.
 
    3.2.
 
-   What happened with “use_tight_match” parameter?
+       What happened with “use_tight_match” parameter?
 
-   The parameter was removed with version 1.3 as the option of
-   tight matching became mandatory and not configurable. Now, the
-   tight matching is done all the time (when using DID matching).
+       The parameter was removed with version 1.3 as the option of
+       tight matching became mandatory and not configurable. Now, the
+       tight matching is done all the time (when using DID matching).
 
    3.3.
 
-   What happened with “bye_on_timeout_flag” parameter?
+       What happened with “bye_on_timeout_flag” parameter?
 
-   The parameter was removed in a dialog module parameter
-   restructuring. To keep the bye on timeout behavior, you need to
-   provide a "B" string parameter to the create_dialog() function.
+       The parameter was removed in a dialog module parameter
+       restructuring. To keep the bye on timeout behavior, you need to
+       provide a "B" string parameter to the create_dialog() function.
 
    3.4.
 
-   What happened with “dlg_flag” parameter?
+       What happened with “dlg_flag” parameter?
 
-   The parameter is considered obsolete. The only way to create a
-   dialog is to call the create_dialog() function
+       The parameter is considered obsolete. The only way to create a
+       dialog is to call the create_dialog() function
 
    3.5.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    3.6.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    3.7.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   https://github.com/OpenSIPS/opensips/issues.
+       Please follow the guidelines provided at:
+       https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -2218,8 +2218,8 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 389 244 11732 2925
-   2. Vlad Paiu (@vladpaiu) 246 137 6964 3001
-   3. Razvan Crainea (@razvancrainea) 125 94 2626 557
+   2. Vlad Paiu (@vladpaiu) 248 138 7035 3001
+   3. Razvan Crainea (@razvancrainea) 128 95 2684 602
    4. Liviu Chircu (@liviuchircu) 92 62 2066 688
    5. Vlad Patrascu (@rvlad-patrascu) 87 47 2147 1243
    6. Ovidiu Sas (@ovidiusas) 27 21 482 107
@@ -2261,9 +2261,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2018
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2018
-   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Aug 2018
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2018
+   2.  Vlad Paiu (@vladpaiu)               Oct 2010 - Aug 2018
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2018
@@ -2292,8 +2292,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Vlad Paiu (@vladpaiu), Peter Lemenkov
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
    (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
