@@ -570,6 +570,11 @@ static int basic_get_counter(cachedb_con *con, str *attr, int *val)
 
 	cass_con = (cassandra_con *)con->data;
 
+	if (!cass_con->cnt_table.s) {
+		LM_ERR("No counters table defined\n");
+		return -1;
+	}
+
 	/* build select query */
 	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT \"%s\" FROM \"%.*s\".\"%.*s\""
 		" WHERE \"%s\" = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len, cass_con->keyspace.s,
@@ -652,6 +657,11 @@ static int basic_update_counter(cachedb_con *con, str *attr, int val, char op,
 	}
 
 	cass_con = (cassandra_con *)con->data;
+
+	if (!cass_con->cnt_table.s) {
+		LM_ERR("No counters table defined\n");
+		return -1;
+	}
 
 	/* build update query */
 	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE \"%.*s\".\"%.*s\" SET "
