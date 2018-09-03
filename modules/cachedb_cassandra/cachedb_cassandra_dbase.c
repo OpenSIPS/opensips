@@ -334,6 +334,7 @@ do {  \
 		if (reopen_conn && cassandra_reopen(cass_con) < 0)  \
 			goto error;  \
 		reopen_conn = 0;  \
+		LM_DBG("executing query: %.*s\n", cql_buf_len, cql_buf);  \
 		result = execute_query(cass_con->session, statement, (_op_name),  \
 			&reopen_conn);  \
 		if (result)  \
@@ -357,9 +358,9 @@ int cassandra_set(cachedb_con *con, str *attr, str *val, int expires)
 	cass_con = (cassandra_con *)con->data;
 
 	/* build insert query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "INSERT INTO %.*s.%.*s (%s, %s) "
-		"VALUES (?, ?) USING TTL %d", cass_con->keyspace.len, cass_con->keyspace.s,
-		cass_con->table.len, cass_con->table.s,
+	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "INSERT INTO \"%.*s\".\"%.*s\""
+		" (\"%s\", \"%s\") VALUES (?, ?) USING TTL %d", cass_con->keyspace.len,
+		cass_con->keyspace.s, cass_con->table.len, cass_con->table.s,
 		CASS_OSS_KEY_COL, CASS_OSS_VAL_COL, expires);
 
 	if (cql_buf_len < 0) {
@@ -420,9 +421,9 @@ int cassandra_get(cachedb_con *con, str *attr, str *val)
 	cass_con = (cassandra_con *)con->data;
 
 	/* build select query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT %s FROM %.*s.%.*s WHERE "
-		"%s = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len, cass_con->keyspace.s,
-		cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL);
+	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT \"%s\" FROM "
+		"\"%.*s\".\"%.*s\" WHERE \"%s\" = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len,
+		cass_con->keyspace.s, cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'get'\n");
@@ -513,8 +514,8 @@ int cassandra_remove(cachedb_con *con, str *attr)
 	cass_con = (cassandra_con *)con->data;
 
 	/* build delete query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "DELETE FROM %.*s.%.*s "
-		"WHERE %s = ?", cass_con->keyspace.len, cass_con->keyspace.s,
+	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "DELETE FROM \"%.*s\".\"%.*s\" "
+		"WHERE \"%s\" = ?", cass_con->keyspace.len, cass_con->keyspace.s,
 		cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL);
 
 	if (cql_buf_len < 0) {
@@ -570,8 +571,8 @@ static int basic_get_counter(cachedb_con *con, str *attr, int *val)
 	cass_con = (cassandra_con *)con->data;
 
 	/* build select query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT %s FROM %.*s.%.*s WHERE "
-		"%s = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len, cass_con->keyspace.s,
+	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT \"%s\" FROM \"%.*s\".\"%.*s\""
+		" WHERE \"%s\" = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len, cass_con->keyspace.s,
 		cass_con->cnt_table.len, cass_con->cnt_table.s, CASS_OSS_KEY_COL);
 
 	if (cql_buf_len < 0) {
@@ -653,8 +654,8 @@ static int basic_update_counter(cachedb_con *con, str *attr, int val, char op,
 	cass_con = (cassandra_con *)con->data;
 
 	/* build update query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE %.*s.%.*s SET "
-		"%s = %s %c ? WHERE %s = ?", cass_con->keyspace.len, cass_con->keyspace.s,
+	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE \"%.*s\".\"%.*s\" SET "
+		"\"%s\" = \"%s\" %c ? WHERE \"%s\" = ?", cass_con->keyspace.len, cass_con->keyspace.s,
 		cass_con->cnt_table.len, cass_con->cnt_table.s, CASS_OSS_VAL_COL, CASS_OSS_VAL_COL,
 		op, CASS_OSS_KEY_COL);
 
@@ -747,7 +748,7 @@ static int where_clause_from_filter(const cdb_filter_t *row_filter, char *buf,
 			return -1;
 		}
 
-		len = sprintf(p, "%.*s %.*s ? AND ", filter->key.name.len,
+		len = sprintf(p, "\"%.*s\" %.*s ? AND ", filter->key.name.len,
 				filter->key.name.s, op.len, op.s);
 		if (len < 0)
 			return -1;
@@ -973,6 +974,7 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	static char buf1[CQL_BUF_LEN/2], buf2[CQL_BUF_LEN/2];
 	char *p;
 	int len;
+	int cql_buf_len;
 	int bind_idx = 0, no_bind_params = 0;
 	int max_ttl = 0;
 
@@ -1001,10 +1003,10 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 			max_ttl = pair->ttl;
 
 		if (pair->subkey.s)
-			len = sprintf(p, "%.*s['%.*s'] = ?, ", pair->key.name.len,
+			len = sprintf(p, "\"%.*s\"['%.*s'] = ?, ", pair->key.name.len,
 					pair->key.name.s, pair->subkey.len, pair->subkey.s);
 		else
-			len = sprintf(p, "%.*s = ?, ", pair->key.name.len, pair->key.name.s);
+			len = sprintf(p, "\"%.*s\" = ?, ", pair->key.name.len, pair->key.name.s);
 
 		if (len < 0) {
 			LM_ERR("Failed to build SET clause for query\n");
@@ -1025,15 +1027,15 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 		goto error;
 	}
 
-	len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE %.*s.%.*s USING TTL %d "
+	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE \"%.*s\".\"%.*s\" USING TTL %d "
 				"SET %s WHERE %s", cass_con->keyspace.len, cass_con->keyspace.s,
 				cass_con->table.len, cass_con->table.s, max_ttl, buf1, buf2);
-	if (len < 0) {
+	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'update'\n");
 		goto error;
 	}
 
-	statement = cass_statement_new_n(cql_buf, len, no_bind_params);
+	statement = cass_statement_new_n(cql_buf, cql_buf_len, no_bind_params);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		goto error;
@@ -1281,11 +1283,11 @@ int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
 			goto error;
 		}
 
-		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM %.*s.%.*s "
-			"WHERE %s ALLOW FILTERING", cass_con->keyspace.len,
+		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM \"%.*s\".\"%.*s\""
+			" WHERE %s ALLOW FILTERING", cass_con->keyspace.len,
 			cass_con->keyspace.s, cass_con->table.len, cass_con->table.s, buf);
 	} else {
-		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM %.*s.%.*s",
+		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM \"%.*s\".\"%.*s\"",
 							cass_con->keyspace.len, cass_con->keyspace.s,
 							cass_con->table.len, cass_con->table.s);
 	}
@@ -1343,7 +1345,7 @@ int cassandra_truncate(cachedb_con *con)
 
 	cass_con = (cassandra_con *)con->data;
 
-	cql_buf_len = sprintf(cql_buf, "TRUNCATE %.*s.%.*s",
+	cql_buf_len = sprintf(cql_buf, "TRUNCATE \"%.*s\".\"%.*s\"",
 		cass_con->keyspace.len, cass_con->keyspace.s,
 		cass_con->table.len, cass_con->table.s);
 
