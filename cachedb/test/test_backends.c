@@ -452,14 +452,14 @@ void init_cachedb_tests(void)
 	}
 
 	if (set_mod_param_regex("cachedb_cassandra", "cachedb_url", STR_PARAM,
-	    "cassandra:test1://10.0.0.178/testcass1_osstest1_osscnttest1") != 0) {
+	    "cassandra:test1://10.0.0.178/testcass1.osstest1.osscnttest1") != 0) {
 		printf("failed to set cassandra url\n");
 		exit(-1);
 	}
 
 	/* for Cassandra we need a different table schema for the col-oriented ops tests */
 	if (set_mod_param_regex("cachedb_cassandra", "cachedb_url", STR_PARAM,
-	    "cassandra:test2://10.0.0.178/testcass1_osstest2_osscnttest1") != 0) {
+	    "cassandra:test2://10.0.0.178/testcass1.osstest2.osscnttest1") != 0) {
 		printf("failed to set cassandra url\n");
 		exit(-1);
 	}

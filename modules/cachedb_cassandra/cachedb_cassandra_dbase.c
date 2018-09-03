@@ -195,9 +195,9 @@ void *cassandra_init_connection(struct cachedb_id *id)
 
 	db_len = strlen(id->database);
 
-	p = (char *)memchr(id->database, '_', db_len);
+	p = (char *)memchr(id->database, '.', db_len);
 	if (!p) {
-		LM_ERR("Invalid database. Should be 'Keyspace_Table[_CountersTable]'\n");
+		LM_ERR("Invalid database. Should be 'Keyspace.Table[.CountersTable]'\n");
 		return NULL;
 	}
 
@@ -210,7 +210,7 @@ void *cassandra_init_connection(struct cachedb_id *id)
 
 	table.s = p + 1;
 
-	p = (char *)memchr(table.s, '_', id->database + db_len - p - 1);
+	p = (char *)memchr(table.s, '.', id->database + db_len - p - 1);
 	if (!p)
 		table.len = db_len - keyspace.len - 1;
 	else
@@ -226,7 +226,7 @@ void *cassandra_init_connection(struct cachedb_id *id)
 		cnt_table.len = db_len - keyspace.len - 1 - table.len - 1;
 	}
 
-	LM_INFO("Keyspace = [%.*s]. Table = [%.*s]. CountersTable = [%.*s]\n",
+	LM_INFO("Keyspace = [%.*s] Table = [%.*s] CountersTable = [%.*s]\n",
 		keyspace.len, keyspace.s, table.len, table.s,
 		cnt_table.len, cnt_table.s);
 
