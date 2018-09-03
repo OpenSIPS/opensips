@@ -8,9 +8,9 @@
 #define SMPP_BOUND_TRX 6
 #define SMPP_CLOSED 7
 
-#define SMPP_BIND_RECEIVER 0
+#define SMPP_BIND_TRANSCEIVER 0
 #define SMPP_BIND_TRANSMITTER 1
-#define SMPP_BIND_TRANSCEIVER 2
+#define SMPP_BIND_RECEIVER 2
 #define SMPP_OUTBIND 3
 
 #define SMPP_VERSION 0x34
@@ -29,6 +29,7 @@
 #define REQ_MAX_SZ(_name) (HEADER_SZ + _name ## _BODY_MAX_SZ)
 
 #define ESME_ROK	0x00000000
+#define ESME_RBINDFAIL	0x0000000D
 
 #define GENERIC_NACK_CID			0x80000000
 #define BIND_RECEIVER_CID			0x00000001
@@ -100,18 +101,23 @@ typedef struct smpp_optional{
 	struct smpp_optional *next;
 } smpp_optional_t;
 
+#define MAX_SYSTEM_ID_LEN 16
+#define MAX_PASSWORD_LEN 9
+#define MAX_SYSTEM_TYPE_LEN 13
+#define MAX_ADDRESS_RANGE_LEN 41
+
 typedef struct {
-	char system_id[16];
-	char password[9];
-	char system_type[13];
+	char system_id[MAX_SYSTEM_ID_LEN];
+	char password[MAX_PASSWORD_LEN];
+	char system_type[MAX_SYSTEM_TYPE_LEN];
 	uint8_t interface_version;
 	uint8_t addr_ton;
 	uint8_t addr_npi;
-	char address_range[41];
+	char address_range[MAX_ADDRESS_RANGE_LEN];
 } smpp_bind_receiver_t;
 
 typedef struct {
-	char system_id[16];
+	char system_id[MAX_SYSTEM_ID_LEN];
 } smpp_bind_receiver_resp_t;
 
 typedef smpp_bind_receiver_t smpp_bind_transmitter_t;
@@ -120,8 +126,8 @@ typedef smpp_bind_receiver_t smpp_bind_transceiver_t;
 typedef smpp_bind_receiver_resp_t smpp_bind_transceiver_resp_t;
 
 typedef struct {
-	char system_id[16];
-	char password[9];
+	char system_id[MAX_SYSTEM_ID_LEN];
+	char password[MAX_PASSWORD_LEN];
 } smpp_outbind_t;
 
 typedef struct {
