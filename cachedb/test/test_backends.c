@@ -28,6 +28,7 @@
 #include "../../modparam.h"
 
 extern cachedb_engine* lookup_cachedb(str *name);
+extern cachedb_con *cachedb_get_connection(cachedb_engine *cde,str *group_name);
 
 int res_has_kv(const cdb_res_t *res, const cdb_pair_t *pair)
 {
@@ -58,7 +59,8 @@ static inline cdb_dict_t *nth_dict(const cdb_res_t *res, int nth)
 	return NULL;
 }
 
-static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
+static int test_query_filters(cachedb_funcs *api, cachedb_con *con,
+								const char *cachedb_name)
 {
 	cdb_key_t key;
 	str sa = str_init("A"), sb = str_init("B"), sc = str_init("C"),
@@ -67,8 +69,6 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 	cdb_filter_t *filter;
 	cdb_res_t res;
 	cdb_pair_t pair;
-
-	memset(&pair, 0, sizeof pair);
 
 	init_str(&key.name, "tgr_1");
 	ok(api->set(con, &key.name, &sa, 0) == 0, "test_query: set A");
@@ -83,18 +83,32 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 	ok(api->set(con, &key.name, &sd, 0) == 0, "test_query: set D");
 
 	memset(&key, 0, sizeof key);
-	init_str(&key.name, "opensips");
+
+	if (!strcmp(cachedb_name, "mongodb"))
+		init_str(&key.name, "opensips");
+	else if (!strcmp(cachedb_name, "cassandra"))
+		init_str(&key.name, "opensipsval");
+	else
+		return 0;
 
 	isv.is_str = 1;
 	isv.s = sd;
-	pair.val.type = CDB_STR;
 
 	/* single filter tests */
 
 	filter = cdb_append_filter(NULL, &key, CDB_OP_LTE, &isv);
 	ok(api->query(con, filter, &res) == 0, "test_query: get 4 items");
 	ok(res.count == 4, "test_query: have 4 items");
-	init_str(&pair.key.name, "opensips");
+
+	memset(&pair, 0, sizeof pair);
+	pair.val.type = CDB_STR;
+	if (!strcmp(cachedb_name, "mongodb"))
+		init_str(&pair.key.name, "opensips");
+	else if (!strcmp(cachedb_name, "cassandra"))
+		init_str(&pair.key.name, "opensipsval");
+	else
+		return 0;
+
 	pair.val.val.st = sa; ok(res_has_kv(&res, &pair), "has A");
 	pair.val.val.st = sb; ok(res_has_kv(&res, &pair), "has B");
 	pair.val.val.st = sc; ok(res_has_kv(&res, &pair), "has C");
@@ -141,14 +155,6 @@ static int test_query_filters(cachedb_funcs *api, cachedb_con *con)
 	filter = cdb_append_filter(filter, &key, CDB_OP_GTE, &isv);
 	ok(api->query(con, filter, &res) == 0, "test_query: get 3 items");
 	ok(res.count == 3, "test_query: have 3 items");
-	init_str(&isv.s, "B");
-	filter = cdb_append_filter(filter, &key, CDB_OP_GT, &isv);
-	ok(api->query(con, filter, &res) == 0, "test_query: get 1 item");
-	ok(res.count == 1, "test_query: have 1 item");
-	init_str(&isv.s, "C");
-	filter = cdb_append_filter(filter, &key, CDB_OP_EQ, &isv);
-	ok(api->query(con, filter, &res) == 0, "test_query: get 1 item");
-	ok(res.count == 1, "test_query: have 1 item");
 	cdb_free_rows(&res);
 	cdb_free_filters(filter);
 
@@ -190,39 +196,38 @@ static int test_update(cachedb_funcs *api, cachedb_con *con,
 
 	cdb_dict_init(out_pairs);
 
-	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-null");
-	pair = cdb_mk_pair(&key, &subkey);
+	cdb_key_init(&key, "key_null");
+	pair = cdb_mk_pair(&key, NULL);
 	pair->val.type = CDB_NULL;
 	cdb_dict_add(pair, out_pairs);
 
-	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-32bit");
-	pair = cdb_mk_pair(&key, &subkey);
+	cdb_key_init(&key, "key_32bit");
+	pair = cdb_mk_pair(&key, NULL);
 	pair->val.type = CDB_INT32;
 	pair->val.val.i32 = 2147483647;
 	cdb_dict_add(pair, out_pairs);
 
-	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-64bit");
-	pair = cdb_mk_pair(&key, &subkey);
+	cdb_key_init(&key, "key_64bit");
+	pair = cdb_mk_pair(&key, NULL);
 	pair->val.type = CDB_INT64;
 	pair->val.val.i64 = 9223372036854775807;
 	cdb_dict_add(pair, out_pairs);
 
-	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-str");
-	pair = cdb_mk_pair(&key, &subkey);
+	cdb_key_init(&key, "key_str");
+	pair = cdb_mk_pair(&key, NULL);
 	pair->val.type = CDB_STR;
 	init_str(&pair->val.val.st, pkg_strdup("31337"));
 	cdb_dict_add(pair, out_pairs);
 
 	/* set a dict subkey which contains a dict */
-
-	cdb_key_init(&key, "key"); init_str(&subkey, "subkey-dict");
+	cdb_key_init(&key, "key_dict"); init_str(&subkey, "subkey_dict");
 	dict_pair = cdb_mk_pair(&key, &subkey);
 	dict_pair->val.type = CDB_DICT;
 	cdb_dict_init(&dict_pair->val.val.dict);
 	cdb_key_init(&key, "foo");
 	pair = cdb_mk_pair(&key, NULL);
-	pair->val.type = CDB_INT32;
-	pair->val.val.i32 = 373333337;
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("373333337"));
 	cdb_dict_add(pair, &dict_pair->val.val.dict);
 	cdb_key_init(&key, "bar");
 	pair = cdb_mk_pair(&key, NULL);
@@ -250,24 +255,50 @@ static int test_update_unset(cachedb_funcs *api, cachedb_con *con,
 {
 	struct list_head *_;
 	cdb_pair_t *pair;
+	cdb_filter_t *filter;
+	cdb_key_t key;
+	int_str_t isv;
 
 	list_for_each (_, out_pairs) {
 		pair = list_entry(_, cdb_pair_t, list);
 		pair->unset = 1;
 	}
 
-	ok(api->update(con, NULL, out_pairs) == 0, "test_update_unset ALL");
+	cdb_pkey_init(&key, "aor");
+	init_str(&isv.s, "foo@opensips.org"); isv.is_str = 1;
+	filter = cdb_append_filter(NULL, &key, CDB_OP_EQ, &isv);
+
+	ok(api->update(con, filter, out_pairs) == 0, "test_update_unset foo key");
+
+	cdb_free_filters(filter);
+
+	cdb_pkey_init(&key, "aor");
+	init_str(&isv.s, "bar@opensips.org"); isv.is_str = 1;
+	filter = cdb_append_filter(NULL, &key, CDB_OP_EQ, &isv);
+
+	ok(api->update(con, filter, out_pairs) == 0, "test_update_unset bar key");
+
+	cdb_free_filters(filter);
 
 	return 1;
 }
 
 static int test_query_unset(cachedb_funcs *api, cachedb_con *con,
-                            const cdb_dict_t *pairs)
+                            const cdb_dict_t *pairs, const char *cachedb_name)
 {
 	cdb_res_t res;
 	cdb_dict_t *dict1, *dict2;
 	cdb_pair_t *pair;
 	cdb_key_t key = CDB_KEY_INITIALIZER;
+
+	if (!strcmp(cachedb_name, "cassandra")) {
+		if (!ok(api->query(con, NULL, &res) == 0, "query: NULL filter"))
+			return 0;
+
+		ok(res.count == 0, "query: 0 results");
+
+		return 1;
+	}
 
 	if (!ok(api->query(con, NULL, &res) == 0, "query: NULL filter"))
 		return 0;
@@ -302,15 +333,16 @@ static int test_query_unset(cachedb_funcs *api, cachedb_con *con,
 	return 1;
 }
 
-static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
+static int test_column_ops(cachedb_funcs *api, cachedb_con *con1,
+						cachedb_con *con2, const char *cachedb_name)
 {
 	cdb_dict_t cols;
+	cachedb_con *con;
 
-	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
-		ok(api->truncate(con) == 0, "truncate");
-
-	if (!ok(test_query_filters(api, con), "test query filters"))
-		return 0;
+	if (con2)
+		con = con2;
+	else
+		con = con1;
 
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");
@@ -318,10 +350,22 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 	if (!ok(test_update(api, con, &cols), "test update-set")
 	    || !ok(test_query(api, con, &cols), "test query-set")
 	    || !ok(test_update_unset(api, con, &cols), "test update-unset")
-	    || !ok(test_query_unset(api, con, &cols), "test query-unset"))
+	    || !ok(test_query_unset(api, con, &cols, cachedb_name), "test query-unset"))
 		return 0;
 
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
+
 	cdb_free_entries(&cols, osips_pkg_free);
+
+	if (con2)
+		con = con1;
+
+	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
+		ok(api->truncate(con) == 0, "truncate");
+
+	if (!ok(test_query_filters(api, con, cachedb_name), "test query filters"))
+		return 0;
 
 	if (CACHEDB_CAPABILITY(api, CACHEDB_CAP_TRUNCATE))
 		ok(api->truncate(con) == 0, "truncate");
@@ -329,28 +373,40 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con)
 	return 1;
 }
 
-static void test_cachedb_api(const char *cachedb_name)
+static void test_cachedb_api(const char *cachedb_name, const char *group1,
+								const char *group2)
 {
 	str key = str_init("foo"),
-	    val = str_init("bar"), cdb_str;
+	    val = str_init("bar");
+	str cdb_str, cdb_gr1, str_gr1, str_gr2 = {0,0};
 	cachedb_engine *cde;
-	cachedb_con *con;
+	cachedb_con *con1 = NULL, *con2 = NULL;
 
 	init_str(&cdb_str, cachedb_name);
+
+	if (group1) {
+		cdb_gr1.len = strlen(cachedb_name) + strlen(group1) + 1;
+		cdb_gr1.s = pkg_malloc(cdb_gr1.len);
+		snprintf(cdb_gr1.s, cdb_gr1.len+1, "%s:%s", cachedb_name, group1);
+
+		init_str(&str_gr1, group1);
+		init_str(&str_gr2, group2);
+	} else
+		init_str(&cdb_gr1, cachedb_name);
 
 	/* high-level cachedb API (called by script, MI) */
 
 	/* TODO: write tests for signed integers (may be broken in current Mongo) */
 
-	ok(cachedb_store(&cdb_str, &key, &val, 0) == 1, "store key");
+	ok(cachedb_store(&cdb_gr1, &key, &val, 0) == 1, "store key");
 
 	memset(&val, 0, sizeof val);
-	ok(cachedb_fetch(&cdb_str, &key, &val) == 1, "fetch key");
+	ok(cachedb_fetch(&cdb_gr1, &key, &val) == 1, "fetch key");
 	cmp_mem(val.s, "bar", 3, "check fetched value");
 
-	ok(cachedb_remove(&cdb_str, &key) == 1, "remove key");
+	ok(cachedb_remove(&cdb_gr1, &key) == 1, "remove key");
 
-	ok(cachedb_fetch(&cdb_str, &key, &val) == -2, "fetch non-existing key");
+	ok(cachedb_fetch(&cdb_gr1, &key, &val) == -2, "fetch non-existing key");
 
 	/* low-level cachedb API (called by core and modules) */
 
@@ -358,12 +414,23 @@ static void test_cachedb_api(const char *cachedb_name)
 	if (!ok(cde != NULL, "have cachedb engine"))
 		return;
 
-	con = cde->default_connection;
-	if (!ok(con != NULL, "engine has con"))
-		return;
+	if (group1) {
+		con1 = cachedb_get_connection(cde, &str_gr1);
+		if (!ok(con1 != NULL, "engine has con"))
+				return;
+
+		con2 = cachedb_get_connection(cde, &str_gr2);
+		if (!ok(con2 != NULL, "engine has con"))
+				return;
+	} else {
+		con1 = cachedb_get_connection(cde, NULL);
+		if (!ok(con1 != NULL, "engine has con"))
+				return;
+	}
 
 	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_COL_ORIENTED))
-		ok(test_column_ops(&cde->cdb_func, con), "column-oriented tests");
+		ok(test_column_ops(&cde->cdb_func, con1, con2, cachedb_name),
+			"column-oriented tests");
 }
 
 void init_cachedb_tests(void)
@@ -379,22 +446,42 @@ void init_cachedb_tests(void)
 	}
 
 	if (set_mod_param_regex("cachedb_mongodb", "cachedb_url", STR_PARAM,
-	    "mongodb://10.0.0.4:27017/OpensipsTests.OpensipsTests") != 0) {
+	    "mongodb://10.0.0.177:27017/OpensipsTests.OpensipsTests") != 0) {
 		printf("failed to set mongo url\n");
 		exit(-1);
 	}
 
 	if (set_mod_param_regex("cachedb_cassandra", "cachedb_url", STR_PARAM,
-	    "cassandra_ng://10.0.0.178/testcass1_osstest1_osscnttest1") != 0) {
+	    "cassandra:test1://10.0.0.178/testcass1_osstest1_osscnttest1") != 0) {
+		printf("failed to set cassandra url\n");
+		exit(-1);
+	}
+
+	/* for Cassandra we need a different table schema for the col-oriented ops tests */
+	if (set_mod_param_regex("cachedb_cassandra", "cachedb_url", STR_PARAM,
+	    "cassandra:test2://10.0.0.178/testcass1_osstest2_osscnttest1") != 0) {
 		printf("failed to set cassandra url\n");
 		exit(-1);
 	}
 }
 
+/*
+ * For Cassandra make sure to create the following tables:
+ *  CREATE TABLE osstest1 (opensipskey text PRIMARY KEY, opensipsval text);
+ *	CREATE TABLE osstest2 (
+ *		aor text PRIMARY KEY,
+ *		key_32bit int,
+ *		key_64bit bigint,
+ *		key_dict map<text, frozen<map<text, text>>>,
+ *		key_null text,
+ *		key_str text
+ *	);
+ */
+
 void test_cachedb_backends(void)
 {
-	test_cachedb_api("mongodb");
-	test_cachedb_api("cassandra");
+	test_cachedb_api("mongodb", NULL, NULL);
+	test_cachedb_api("cassandra", "test1", "test2");
 
 	// todo();
 	// skip tests here
