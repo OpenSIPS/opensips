@@ -12,6 +12,7 @@
 		It uses the Key-Value interface exported from the core.
 	</para>
 	<para>
+		The underlying client library is compatible with Cassandra versions 2.1+.
 	</para>
 	</section>
 
@@ -98,17 +99,16 @@
 		</para>
 			<itemizedlist>
 			<listitem>
-			<para>
-				<emphasis>thrift 0.6.1</emphasis>
-			</para>
-			
-			<para>
-				Thrift 0.6.1 can be downloaded from http://archive.apache.org/dist/thrift/
-				Download the archive, extract sources, run ./configure,make,sudo make install.
-			</para>
-			
+			<para> <emphasis>libuv</emphasis></para>
+			</listitem>
+			<listitem>
+			<para><emphasis>cassandra-cpp-driver</emphasis></para>
 			</listitem>
 			</itemizedlist>
+			<para>
+				The DataStax C/C++ driver for Cassandra and the libuv dependency
+				can be downloaded from: <ulink url="http://downloads.datastax.com/cpp-driver/"/>.
+			</para>
 	</section>
 	</section>
 	
@@ -122,16 +122,28 @@
 			It can be set more than one time.
 			The prefix part of the URL will be the identifier that will be used
 			from the script.
-
-			The database part of the URL needs to be in the format Keyspace_ColumnFamily_CounterFamily
 		</para>
-		
+		<para>
+		Cassandra does not support regular columns in a table that contains any
+		counter columns so in order to use the add()/sub()/get_counter() methods
+		in the Key-Value Interface you can specify an extra table reserved
+		only for counters.
+		</para>
+		<para>
+		The database part of the URL needs to be in the format <emphasis>
+		Keyspace.Table[.CountersTable]</emphasis>.
+		</para>
+
 		<example>
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_cassandra", "cachedb_url","cassandra:group1://localhost:9061/Keyspace1_Users_Counters");
-modparam("cachedb_cassandra", "cachedb_url","cassandra:cluster1://random_url:8888/Keyspace2_Keys_CounterF");
+modparam("cachedb_cassandra", "cachedb_url",
+	"cassandra:group1://localhost:9042/keyspace1.users.counters");
+
+# Defining multiple contact points for a Cassandra cluster
+modparam("cachedb_cassandra", "cachedb_url",
+	"cassandra:cluster1://10.0.0.10,10.0.0.15/keyspace2.keys.counters");
 ...
 	</programlisting>
 		</example>
@@ -147,52 +159,38 @@ cache_remove("cassandra:cluster1","key");
 	</programlisting>
 		</example>
 	</section>
-	
-		<section>
-		<title><varname>connection_timeout</varname> (int)</title>
+		<section id="param_connect_timeout" xreflabel="connect_timeout">
+		<title><varname>connect_timeout</varname> (int)</title>
 		<para>
 			The timeout in ms that will be triggered in case a connection attempt fails.
 		</para>
+		<para>
+		<emphasis>Default value is <quote>5000</quote>.</emphasis>
+		</para>
 		
 		<example>
-		<title>Set <varname>connection_timeout</varname> parameter</title>
+		<title>Set <varname>connect_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_cassandra", "connection_timeout",1000);
+modparam("cachedb_cassandra", "connect_timeout",1000);
 ...
 	</programlisting>
 		</example>
 		
 	</section>
-
-		<section>
-		<title><varname>send_timeout</varname> (int)</title>
+		<section id="param_query_timeout" xreflabel="query_timeout">
+		<title><varname>query_timeout</varname> (int)</title>
 		<para>
-			The timeout in ms that will be triggered in case a Cassandra write takes too long
+			The timeout in ms that will be triggered in case a Cassandra query takes too long.
 		</para>
-		
+		<para>
+		<emphasis>Default value is <quote>5000</quote>.</emphasis>
+		</para>
 		<example>
-		<title>Set <varname>send_timeout</varname> parameter</title>
+		<title>Set <varname>query_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_cassandra", "send_timeout",1000);
-...
-	</programlisting>
-		</example>
-		
-	</section>
-
-		<section>
-		<title><varname>receive_timeout</varname> (int)</title>
-		<para>
-			The timeout in ms that will be triggered in case a Cassandra read takes too long
-		</para>
-		
-		<example>
-		<title>Set <varname>receive_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("cachedb_cassandra", "receive_timeout",1000);
+modparam("cachedb_cassandra", "query_timeout",1000);
 ...
 	</programlisting>
 		</example>
@@ -206,47 +204,51 @@ modparam("cachedb_cassandra", "receive_timeout",1000);
 			Options are :
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>1</emphasis> - Ensure that the write has been written to at least 1 replica's commit log and memory table before responding to the client.
+			<para><emphasis>all</emphasis> - A write must be written to the commit log and memtable on all replica nodes in the cluster for that partition.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>2</emphasis> - Ensure that the write has been written to N / 2 + 1 replicas before responding to the client.
+			<para><emphasis>each_quorum</emphasis> - Strong consistency. A write must be written to the commit log and memtable on a quorum of replica nodes in each datacenter.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>3</emphasis> - Ensure that the write has been written to ReplicationFactor / 2 + 1 nodes, within the local datacenter (requires NetworkTopologyStrategy)
+			<para><emphasis>quorum</emphasis> - A write must be written to the commit log and memtable on a quorum of replica nodes across all datacenters.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>4</emphasis> - Ensure that the write has been written to ReplicationFactor / 2 + 1 nodes in each datacenter (requires NetworkTopologyStrategy)
+			<para><emphasis>local_quorum</emphasis> - Strong consistency. A write must be written to the commit log and memtable on a quorum of replica nodes in the same datacenter as the coordinator. Avoids latency of inter-datacenter communication.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>5</emphasis> - Ensure that the write is written to all N replicas before responding to the client. Any unresponsive replicas will fail the operation. 
+			<para><emphasis>one</emphasis> - A write must be written to the commit log and memtable of at least one replica node.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>6</emphasis> - Ensure that the write has been written to at least 1 node, including HintedHandoff recipients. 
+			<para><emphasis>two</emphasis> - A write must be written to the commit log and memtable of at least two replica node. 
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>7</emphasis> - Ensure that the write has been written to at least 2 replica's before responding to the client.
+			<para><emphasis>three</emphasis> - A write must be written to the commit log and memtable of at least three replica node.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>8</emphasis> - Ensure that the write has been written to at least 3 replica's before responding to the client.
+			<para><emphasis>local_one</emphasis> - A write must be sent to, and successfully acknowledged by, at least one replica node in the local datacenter.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>any</emphasis> - A write must be written to at least one node. If all replica nodes for the given partition key are down, the write can still succeed after a hinted handoff has been written. If all replica nodes are down at write time, an ANY write is not readable until the replica nodes for that partition have recovered.
 			</para>
 		</listitem>
 		</itemizedlist>
 
-		Default is 1
+		Default value is <emphasis>one</emphasis>.
 		</para>
 		
 		<example>
 		<title>Set <varname>wr_consistency_level</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_cassandra", "wr_consistency_level",7);
+modparam("cachedb_cassandra", "wr_consistency_level", "each_quorum");
 ...
 	</programlisting>
 		</example>
@@ -256,15 +258,55 @@ modparam("cachedb_cassandra", "wr_consistency_level",7);
 		<section>
 		<title><varname>rd_consistency_level</varname> (int)</title>
 		<para>
-			The consistency level desired for read operations.
-			Options are the same as for write consistency level.
+			The consistency level desired for write operations.
+			Options are :
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>all</emphasis> - Returns the record after all replicas have responded. The read operation will fail if a replica does not respond.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>quorum</emphasis> - Returns the record after a quorum of replicas from all datacenters has responded.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>local_quorum</emphasis> - Returns the record after a quorum of replicas in the current datacenter as the coordinator has reported. Avoids latency of inter-datacenter communication.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>one</emphasis> - Returns a response from the closest replica, as determined by the snitch. By default, a read repair runs in the background to make the other replicas consistent.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>two</emphasis> - Returns the most recent data from two of the closest replicas.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>three</emphasis> - Returns the most recent data from three of the closest replicas.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>local_one</emphasis> - Returns a response from the closest replica in the local datacenter.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>serial</emphasis> - Allows reading the current (and possibly uncommitted) state of data without proposing a new addition or update. If a SERIAL read finds an uncommitted transaction in progress, it will commit the transaction as part of the read. Similar to QUORUM.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>local_serial</emphasis> - Same as SERIAL, but confined to the datacenter. Similar to LOCAL_QUORUM.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		Default value is <emphasis>one</emphasis>.
 		</para>
 		
 		<example>
 		<title>Set <varname>rd_consistency_level</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_cassandra", "rd_consistency_level",7);
+modparam("cachedb_cassandra", "rd_consistency_level", "quorum");
 ...
 	</programlisting>
 		</example>
@@ -274,8 +316,13 @@ modparam("cachedb_cassandra", "rd_consistency_level",7);
 		<section>
 		<title><varname>exec_threshold</varname> (int)</title>
 		<para>
-			The maximum number of microseconds that a cassandra cache query can last.
-			Anything above the threshold will trigger a warning message to the log
+			A cassandra cache query that lasts more than this threshold will
+			trigger a warning message to the log.
+		</para>
+		<para>
+			This value, if set, only makes sense to be lower than the
+			<xref linkend="param_query_timeout"/> since any query taking longer
+			than that value will be dropped anyway.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>0 ( unlimited - no warnings )</quote>.
@@ -296,20 +343,34 @@ modparam("cachedb_cassandra", "exec_threshold", 100000)
 		<title>Exported Functions</title>
 		<para>The module does not export functions to be used
 		in configuration script.</para>
-	</section>	
-
+	</section>
 
 	<section>
-	<title>Known issues</title>
-		<para>
-		Due to the fact that Cassandra cannot store counters and regular columns in the same ColumnFamily, add() and sub() methods are not exported through the Key-Value interface. 
-		</para>
-		<para>
-		Also, the module does not currently support Authentication.
-		</para>
-		<para>
-		Future realeases of this module will address this issue.
-		</para>
+	<title>Table Schema</title>
+	<para>
+		The table required for supporting the cache_store()/cache_fetch()/cache_remove()
+		functions of the Key-Value interface needs to have at least the following columns:
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>opensipskey</emphasis> - as the primary key with type "text"</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>opensipsval</emphasis> - with type "text"</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		The table required for supporting the cache_add()/cache_sub()/cache_counter_fetch()
+		functions of the Key-Value interface needs to have at least the following columns:
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>opensipskey</emphasis> - as the primary key with type "text"</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>opensipsval</emphasis> - with type "counter"</para>
+		</listitem>
+		</itemizedlist>
+	</para>
 	</section>
 
 </chapter>
