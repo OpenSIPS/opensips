@@ -268,7 +268,6 @@ listen = tls:1.2.3.4:5061
 				<title>Set <varname>tls_method</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "tls_method", "TLSv1")
 modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 ...
 				</programlisting>
