@@ -1281,19 +1281,23 @@ urecord_t* cdb_load_urecord(const udomain_t* _d, const str *_aor)
 	if (res.count != 1)
 		LM_BUG("more than 1 result for AoR %.*s\n", _aor->len, _aor->s);
 
+	r = NULL;
+
 	row = list_entry(res.rows.next, cdb_row_t, list);
 	list_for_each (_, &row->dict) {
 		contacts = list_entry(_, cdb_pair_t, list);
-		if (!str_strcmp(&contacts->key.name, &contacts_key))
+		if (!str_strcmp(&contacts->key.name, &contacts_key)) {
+			if (contacts->val.type == CDB_NULL)
+				goto done_loading;
+
 			goto have_contacts;
+		}
 	}
 
 	LM_ERR("no 'contacts' field for AoR %.*s\n", _aor->len, _aor->s);
 	goto out_null;
 
 have_contacts:
-	r = NULL;
-
 	list_for_each (_, &contacts->val.val.dict) {
 		pair = list_entry(_, cdb_pair_t, list);
 
@@ -1318,6 +1322,7 @@ have_contacts:
 		c->state = CS_SYNC;
 	}
 
+done_loading:
 	cdb_free_rows(&res);
 	cdb_free_filters(aor_filter);
 	return r;

@@ -590,6 +590,9 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 					goto pack_data;
 			} else {
 				if (!str_strcmp(&pair->key.name, &contacts_key)) {
+					if (pair->val.type == CDB_NULL)
+						goto done_packing;
+
 					contacts = &pair->val.val.dict;
 					if (aor)
 						goto pack_data;
@@ -608,6 +611,7 @@ pack_data:
 		}
 	}
 
+done_packing:
 	cdb_free_rows(&res);
 	cdb_free_filters(aorh_filter);
 
