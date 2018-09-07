@@ -1392,7 +1392,7 @@ int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
 		/* build query's WHERE clause */
 		if (where_clause_from_filter(filter, buf, &no_bind_params) < 0) {
 			LM_ERR("Failed to build WHERE caluse for query\n");
-			goto error;
+			return -1;
 		}
 
 		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM \"%.*s\".\"%.*s\""
