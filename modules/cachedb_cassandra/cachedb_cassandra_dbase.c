@@ -885,7 +885,7 @@ static int dict_to_cass_collection(cdb_dict_t *dict, CassCollection *collection)
 		}
 
 		if (cass_collection_append_string_n(collection, pair->key.name.s,
-			pair->key.name.len) < 0) {
+			pair->key.name.len) != CASS_OK) {
 			LM_ERR("Failed to append key to collection\n");
 			return -1;
 		}
