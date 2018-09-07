@@ -32,6 +32,11 @@
 
 #define CASS_COLL_APROX_COUNT 32
 
+#define MAP_VAL_TYPE_NULL   '0'
+#define MAP_VAL_TYPE_STR    '1'
+#define MAP_VAL_TYPE_INT32  '2'
+#define MAP_VAL_TYPE_INT64  '3'
+
 typedef struct {
 	struct cachedb_id *id;
 	unsigned int ref;

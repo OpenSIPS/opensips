@@ -220,14 +220,14 @@ static int test_update(cachedb_funcs *api, cachedb_con *con,
 	cdb_dict_add(pair, out_pairs);
 
 	/* set a dict subkey which contains a dict */
-	cdb_key_init(&key, "key_dict"); init_str(&subkey, "subkey_dict");
+	cdb_key_init(&key, "key_dict"); init_str(&subkey, "subkey-dict");
 	dict_pair = cdb_mk_pair(&key, &subkey);
 	dict_pair->val.type = CDB_DICT;
 	cdb_dict_init(&dict_pair->val.val.dict);
 	cdb_key_init(&key, "foo");
 	pair = cdb_mk_pair(&key, NULL);
-	pair->val.type = CDB_STR;
-	init_str(&pair->val.val.st, pkg_strdup("373333337"));
+	pair->val.type = CDB_INT64;
+	pair->val.val.i64 = 9223372036854775807;
 	cdb_dict_add(pair, &dict_pair->val.val.dict);
 	cdb_key_init(&key, "bar");
 	pair = cdb_mk_pair(&key, NULL);

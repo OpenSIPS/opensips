@@ -20,6 +20,7 @@
  */
 
 #include <string.h> 
+#include <inttypes.h>
 
 #include <cassandra.h>
 #include "cachedb_cassandra.h"
@@ -801,11 +802,73 @@ static int bind_where_clause_params(CassStatement *statement,
 	return 0;
 }
 
+static int cdb_val_to_string(cdb_val_t *cdb_val, str *valbuf, int *val_len)
+{
+	char *i = NULL;
+	static char ibuf[INT2STR_MAX_LEN+1];
+
+	switch (cdb_val->type) {
+	case CDB_NULL:
+		*val_len = 0;
+		break;
+	case CDB_INT32:
+		i = sint2str((long)cdb_val->val.i32, val_len);
+		break;
+	case CDB_INT64:
+		*val_len = snprintf(ibuf, INT2STR_MAX_LEN, "%lld",
+					(long long)cdb_val->val.i64);
+		i = ibuf;
+		if (*val_len < 0) {
+			LM_ERR("Failed to covert int64 to string\n");
+			return -1;
+		}
+		break;
+	case CDB_STR:
+		*val_len = cdb_val->val.st.len;
+		break;
+	default:
+		LM_ERR("Bad cdb value type");
+		return -1;
+	}
+
+	if (pkg_str_extend(valbuf, *val_len+1) < 0)
+		return -1;
+
+	switch (cdb_val->type) {
+	case CDB_NULL:
+		valbuf->s[0] = MAP_VAL_TYPE_NULL;
+		(*val_len)++;
+		break;
+	case CDB_INT32:
+		valbuf->s[0] = MAP_VAL_TYPE_INT32;
+		memcpy(valbuf->s+1, i, *val_len);
+		(*val_len)++;
+		break;
+	case CDB_INT64:
+		valbuf->s[0] = MAP_VAL_TYPE_INT64;
+		memcpy(valbuf->s+1, i, *val_len);
+		(*val_len)++;
+		break;
+	case CDB_STR:
+		valbuf->s[0] = MAP_VAL_TYPE_STR;
+		memcpy(valbuf->s+1, cdb_val->val.st.s, *val_len);
+		(*val_len)++;
+		break;
+	default:
+		LM_ERR("Bad cdb value type");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int dict_to_cass_collection(cdb_dict_t *dict, CassCollection *collection)
 {
 	cdb_pair_t *pair;
 	struct list_head *_;
 	CassCollection *sub_collection;
+	static str valbuf = {0,0};
+	int val_len;
 
 	list_for_each (_, dict) {
 		pair = list_entry(_, cdb_pair_t, list);
@@ -829,29 +892,22 @@ static int dict_to_cass_collection(cdb_dict_t *dict, CassCollection *collection)
 
 		switch (pair->val.type) {
 		case CDB_NULL:
-			LM_ERR("Setting a null value for a key when updating an entire map"
-				" is not supported\n");
-			return -1;
 		case CDB_INT32:
-			if (cass_collection_append_int32(collection, pair->val.val.i32)
-				!= CASS_OK) {
-				LM_ERR("Failed to append int32 value to collection\n");
-				return -1;
-			}
-			break;
 		case CDB_INT64:
-			if (cass_collection_append_int64(collection, pair->val.val.i64)
-				!= CASS_OK) {
-				LM_ERR("Failed to append int64 value to collection\n");
-				return -1;
-			}
-			break;
 		case CDB_STR:
-			if (cass_collection_append_string_n(collection, pair->val.val.st.s,
-				pair->val.val.st.len) != CASS_OK) {
-				LM_ERR("Failed to append string value to collection\n");
+			/* also store other types (null, integers) as strings in order to
+			 * support heterogeneous types as map values */
+			if (cdb_val_to_string(&pair->val, &valbuf, &val_len) < 0) {
+				LM_ERR("Failed to encode map value as string\n");
 				return -1;
 			}
+
+			if (cass_collection_append_string_n(collection, valbuf.s,
+				val_len) != CASS_OK) {
+				LM_ERR("Failed to append value to collection\n");
+				return -1;
+			}
+
 			break;
 		case CDB_DICT:
 			sub_collection = cass_collection_new(CASS_COLLECTION_TYPE_MAP,
@@ -867,7 +923,8 @@ static int dict_to_cass_collection(cdb_dict_t *dict, CassCollection *collection)
 				return -1;
 			}
 
-			if (cass_collection_append_collection(collection, sub_collection) != CASS_OK) {
+			if (cass_collection_append_collection(collection, sub_collection)
+				!= CASS_OK) {
 				LM_ERR("Failed to append collection value to collection\n");
 				cass_collection_free(sub_collection);
 				return -1;
@@ -1080,8 +1137,48 @@ error:
 	return -1;
 }
 
+static int get_cdb_val_from_string(str *strval, cdb_val_t *cdb_val)
+{
+	switch (strval->s[0]) {
+	case MAP_VAL_TYPE_NULL:
+		cdb_val->type = CDB_NULL;
+		break;
+	case MAP_VAL_TYPE_INT32:
+		cdb_val->type = CDB_INT32;
+		strval->s = strval->s + 1;
+		strval->len--;
+		if (str2sint(strval, (int *)&cdb_val->val.i32) < 0) {
+			LM_ERR("Failed to convert string to integer\n");
+			return -1;
+		}
+		break;
+	case MAP_VAL_TYPE_INT64:
+		cdb_val->type = CDB_INT64;
+		strval->s = strval->s + 1;
+		if (sscanf(strval->s, "%lld", (long long *)&cdb_val->val.i64) < 0) {
+			LM_ERR("Failed to convert string to integer\n");
+			return -1;
+		}
+		break;
+	case MAP_VAL_TYPE_STR:
+		cdb_val->type = CDB_STR;
+		strval->s = strval->s + 1;
+		strval->len--;
+		if (pkg_str_dup(&cdb_val->val.st, strval) < 0)
+			return -1;
+		break;
+	default:
+		/* maybe we can treat this as a regular string, in case the
+		 * value was not stored by a col api update() */
+		LM_ERR("Unknown type encoding\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int append_cass_val_to_dict(const CassValue *cass_val, cdb_dict_t *cdb_dict,
-									cdb_key_t *cdb_key)
+									cdb_key_t *cdb_key, int is_map_val)
 {
 	cdb_pair_t *pair;
 	str strval;
@@ -1102,84 +1199,89 @@ static int append_cass_val_to_dict(const CassValue *cass_val, cdb_dict_t *cdb_di
 	}
 
 	switch (cass_value_type(cass_val)) {
-		case CASS_VALUE_TYPE_ASCII:
-		case CASS_VALUE_TYPE_TEXT:
-		case CASS_VALUE_TYPE_VARCHAR:
+	case CASS_VALUE_TYPE_ASCII:
+	case CASS_VALUE_TYPE_TEXT:
+	case CASS_VALUE_TYPE_VARCHAR:
+		if (cass_value_get_string(cass_val, (const char **)&strval.s,
+			(size_t *)&strval.len) != CASS_OK) {
+			LM_ERR("Failed to get string from Cassandra Value object\n");
+			goto error;
+		}
+
+		if (is_map_val) {
+			/* for map values, we have encoded other types (null, integers)
+			 * as string so we should decode them accordingly */
+			if (get_cdb_val_from_string(&strval, &pair->val) < 0) {
+				LM_ERR("Failed to decode map value from string\n");
+				goto error;
+			}
+		} else {
 			pair->val.type = CDB_STR;
-			if (cass_value_get_string(cass_val, (const char **)&strval.s,
-				(size_t *)&strval.len) != CASS_OK) {
+			if (pkg_str_dup(&pair->val.val.st, &strval) < 0)
+				goto error;
+		}
+		break;
+	case CASS_VALUE_TYPE_TINY_INT:
+	case CASS_VALUE_TYPE_SMALL_INT:
+	case CASS_VALUE_TYPE_INT:
+		pair->val.type = CDB_INT32;
+		if (cass_value_get_int32(cass_val, &pair->val.val.i32) != CASS_OK) {
+			LM_ERR("Failed to get integer from Cassandra Value object\n");
+			goto error;
+		}
+		break;
+	case CASS_VALUE_TYPE_BIGINT:
+		pair->val.type = CDB_INT64;
+		if (cass_value_get_int64(cass_val, &pair->val.val.i64) != CASS_OK) {
+			LM_ERR("Failed to get integer from Cassandra Value object\n");
+			goto error;
+		}
+		break;
+	case CASS_VALUE_TYPE_MAP:
+		pair->val.type = CDB_DICT;
+		INIT_LIST_HEAD(&pair->val.val.dict);
+
+		map_iter = cass_iterator_from_map(cass_val);
+		while (cass_iterator_next(map_iter)) {
+			map_cass_val = cass_iterator_get_map_key(map_iter);
+			if (!map_cass_val) {
+				LM_ERR("Failed to get Cassandra Value object\n");
+				goto error;
+			}
+			switch (cass_value_type(map_cass_val)) {
+				case CASS_VALUE_TYPE_ASCII:
+				case CASS_VALUE_TYPE_TEXT:
+				case CASS_VALUE_TYPE_VARCHAR:
+					break;
+				default:
+					LM_ERR("Only string values are supported as map keys\n");
+					goto error;
+			}
+			if (cass_value_get_string(map_cass_val,
+				(const char **)&map_cdb_key.name.s,
+				(size_t *)&map_cdb_key.name.len) != CASS_OK) {
 				LM_ERR("Failed to get string from Cassandra Value object\n");
 				goto error;
 			}
-			pair->val.val.st.len = strval.len;
-			pair->val.val.st.s = pkg_malloc(strval.len);
-			if (!pair->val.val.st.s) {
-				LM_ERR("oom\n");
+			map_cdb_key.is_pk = 0;
+
+			map_cass_val = cass_iterator_get_map_value(map_iter);
+			if (!map_cass_val) {
+				LM_ERR("Failed to get Cassandra Value object\n");
 				goto error;
 			}
-			memcpy(pair->val.val.st.s, strval.s, strval.len);
-			break;
-		case CASS_VALUE_TYPE_TINY_INT:
-		case CASS_VALUE_TYPE_SMALL_INT:
-		case CASS_VALUE_TYPE_INT:
-			pair->val.type = CDB_INT32;
-			if (cass_value_get_int32(cass_val, &pair->val.val.i32) != CASS_OK) {
-				LM_ERR("Failed to get integer from Cassandra Value object\n");
+
+			if (append_cass_val_to_dict(map_cass_val, &pair->val.val.dict,
+				&map_cdb_key, 1) < 0) {
+				LM_ERR("Failed to add map to cdb result\n");
 				goto error;
 			}
-			break;
-		case CASS_VALUE_TYPE_BIGINT:
-			pair->val.type = CDB_INT64;
-			if (cass_value_get_int64(cass_val, &pair->val.val.i64) != CASS_OK) {
-				LM_ERR("Failed to get integer from Cassandra Value object\n");
-				goto error;
-			}
-			break;
-		case CASS_VALUE_TYPE_MAP:
-			pair->val.type = CDB_DICT;
-			INIT_LIST_HEAD(&pair->val.val.dict);
-
-			map_iter = cass_iterator_from_map(cass_val);
-			while (cass_iterator_next(map_iter)) {
-				map_cass_val = cass_iterator_get_map_key(map_iter);
-				if (!map_cass_val) {
-					LM_ERR("Failed to get Cassandra Value object\n");
-					goto error;
-				}
-				switch (cass_value_type(map_cass_val)) {
-					case CASS_VALUE_TYPE_ASCII:
-					case CASS_VALUE_TYPE_TEXT:
-					case CASS_VALUE_TYPE_VARCHAR:
-						break;
-					default:
-						LM_ERR("Only string values are supported as map keys\n");
-						goto error;
-				}
-				if (cass_value_get_string(map_cass_val,
-					(const char **)&map_cdb_key.name.s,
-					(size_t *)&map_cdb_key.name.len) != CASS_OK) {
-					LM_ERR("Failed to get string from Cassandra Value object\n");
-					goto error;
-				}
-				map_cdb_key.is_pk = 0;
-
-				map_cass_val = cass_iterator_get_map_value(map_iter);
-				if (!map_cass_val) {
-					LM_ERR("Failed to get Cassandra Value object\n");
-					goto error;
-				}
-
-				if (append_cass_val_to_dict(map_cass_val, &pair->val.val.dict,
-					&map_cdb_key) < 0) {
-					LM_ERR("Failed to add map to cdb result\n");
-					goto error;
-				}
-			}
-			cass_iterator_free(map_iter);
-			break;
-		default:
+		}
+		cass_iterator_free(map_iter);
+		break;
+	default:
 		LM_ERR("Unsupported Cassandra data type: %d\n", cass_value_type(cass_val));
-		 return -1;
+		return -1;
 	}
 
 	cdb_dict_add(pair, cdb_dict);
@@ -1248,7 +1350,7 @@ int cass_result_to_cdb_res(const CassResult *cass_result, cdb_res_t *cdb_res,
 				LM_ERR("Failed to get Cassandra Value object\n");
 				goto error;
 			}
-			if (append_cass_val_to_dict(cass_val, &cdb_row->dict, &cdb_key) < 0) {
+			if (append_cass_val_to_dict(cass_val, &cdb_row->dict, &cdb_key, 0) < 0) {
 				LM_ERR("Failed to add column to cdb result\n");
 				cdb_free_entries(&cdb_row->dict, osips_pkg_free);
 				goto error;
