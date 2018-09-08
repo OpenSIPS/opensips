@@ -1673,7 +1673,7 @@ callid_lookup:
 			if (shtag_state < 0) {
 				unref_dlg(dlg, 1);
 				goto dlg_error;
-			} else if (shtag_state == 0) {
+			} else if (shtag_state == SHTAG_STATE_BACKUP) {
 				/* editing dlg vars on backup servers - no no */
 				unref_dlg(dlg, 1);
 				return init_mi_tree(403, MI_DIALOG_BACKUP_ERR,
@@ -1699,7 +1699,7 @@ callid_lookup:
 
 		if (db_update)
 			update_dialog_timeout_info(dlg);
-		if (dialog_repl_cluster && get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
+		if (dialog_repl_cluster && shtag_state != SHTAG_STATE_BACKUP)
 			replicate_dialog_updated(dlg);
 			
 		unref_dlg(dlg, 1);
