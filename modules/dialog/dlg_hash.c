@@ -58,6 +58,7 @@
 #include "dlg_profile.h"
 #include "dlg_replication.h"
 #include "dlg_req_within.h"
+#include "dlg_db_handler.h"
 #include "../../evi/evi_params.h"
 #include "../../evi/evi_modules.h"
 
@@ -1604,7 +1605,7 @@ struct mi_root * mi_push_dlg_var(struct mi_root *cmd_tree, void *param )
 	str dlg_var_name,dlg_var_value,dialog_id;
 	char bkp, *end;
 	struct dlg_cell * dlg = NULL;
-	int shtag_state = 1;
+	int shtag_state = 1, db_update = 0;
 
 	if ( d_table == NULL)
 		goto not_found;	
@@ -1688,6 +1689,18 @@ callid_lookup:
 			unref_dlg(dlg, 1);
 			goto dlg_error;
 		}
+
+		if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME) {
+			db_update = 1;
+		} else {
+			dlg->flags |= DLG_FLAG_CHANGED;
+			db_update = 0;
+		}
+
+		if (db_update)
+			update_dialog_timeout_info(dlg);
+		if (dialog_repl_cluster && get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
+			replicate_dialog_updated(dlg);
 			
 		unref_dlg(dlg, 1);
 loop_end:
