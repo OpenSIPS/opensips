@@ -362,7 +362,6 @@ Warning
 
    Example 1.3. Set tls_method variable
 ...
-modparam("tls_mgm", "tls_method", "TLSv1")
 modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 ...
 
@@ -1454,7 +1453,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 80 20 2869 2037
+   1. Vlad Patrascu (@rvlad-patrascu) 81 21 2869 2038
    2. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    3. Razvan Crainea (@razvancrainea) 37 27 525 236
    4. Liviu Chircu (@liviuchircu) 19 13 129 208
@@ -1487,7 +1486,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Aug 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Sep 2018
    2.  Callum Guy                          Jun 2018 - Jun 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2018

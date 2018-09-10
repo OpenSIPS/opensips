@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">383</entry>
-		<entry align="center">2</entry>
-		<entry align="center">798</entry>
-		<entry align="center">20882</entry>
+		<entry align="center">402</entry>
+		<entry align="center">11</entry>
+		<entry align="center">1805</entry>
+		<entry align="center">21001</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -121,7 +121,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Aug 2018</entry>
+		<entry align="center">May 2017 - Sep 2018</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -177,7 +177,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Julián Moreno Patiño, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Julián Moreno Patiño, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
 </section>
 
 </chapter>

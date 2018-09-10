@@ -16,15 +16,14 @@ cachedb_cassandra Module
         1.5. Exported Parameters
 
               1.5.1. cachedb_url (string)
-              1.5.2. connection_timeout (int)
-              1.5.3. send_timeout (int)
-              1.5.4. receive_timeout (int)
-              1.5.5. wr_consistency_level (int)
-              1.5.6. rd_consistency_level (int)
-              1.5.7. exec_threshold (int)
+              1.5.2. connect_timeout (int)
+              1.5.3. query_timeout (int)
+              1.5.4. wr_consistency_level (int)
+              1.5.5. rd_consistency_level (int)
+              1.5.6. exec_threshold (int)
 
         1.6. Exported Functions
-        1.7. Known issues
+        1.7. Table Schema
 
    2. Contributors
 
@@ -46,12 +45,11 @@ cachedb_cassandra Module
 
    1.1. Set cachedb_url parameter
    1.2. Use Cassandra servers
-   1.3. Set connection_timeout parameter
-   1.4. Set send_timeout parameter
-   1.5. Set receive_timeout parameter
-   1.6. Set wr_consistency_level parameter
-   1.7. Set rd_consistency_level parameter
-   1.8. Set exec_threshold parameter
+   1.3. Set connect_timeout parameter
+   1.4. Set query_timeout parameter
+   1.5. Set wr_consistency_level parameter
+   1.6. Set rd_consistency_level parameter
+   1.7. Set exec_threshold parameter
 
 Chapter 1. Admin Guide
 
@@ -60,6 +58,9 @@ Chapter 1. Admin Guide
    This module is an implementation of a cache system designed to
    work with Cassandra servers. It uses the Key-Value interface
    exported from the core.
+
+   The underlying client library is compatible with Cassandra
+   versions 2.1+.
 
 1.2. Advantages
 
@@ -89,11 +90,12 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * thrift 0.6.1
-       Thrift 0.6.1 can be downloaded from
-       http://archive.apache.org/dist/thrift/ Download the
-       archive, extract sources, run ./configure,make,sudo make
-       install.
+     * libuv
+     * cassandra-cpp-driver
+
+   The DataStax C/C++ driver for Cassandra and the libuv
+   dependency can be downloaded from:
+   http://downloads.datastax.com/cpp-driver/.
 
 1.5. Exported Parameters
 
@@ -103,15 +105,25 @@ Chapter 1. Admin Guide
    order to use the from script cache_store,cache_fetch, etc
    operations. It can be set more than one time. The prefix part
    of the URL will be the identifier that will be used from the
-   script. The database part of the URL needs to be in the format
-   Keyspace_ColumnFamily_CounterFamily
+   script.
+
+   Cassandra does not support regular columns in a table that
+   contains any counter columns so in order to use the
+   add()/sub()/get_counter() methods in the Key-Value Interface
+   you can specify an extra table reserved only for counters.
+
+   The database part of the URL needs to be in the format
+   Keyspace.Table[.CountersTable].
 
    Example 1.1. Set cachedb_url parameter
 ...
-modparam("cachedb_cassandra", "cachedb_url","cassandra:group1://localhos
-t:9061/Keyspace1_Users_Counters");
-modparam("cachedb_cassandra", "cachedb_url","cassandra:cluster1://random
-_url:8888/Keyspace2_Keys_CounterF");
+modparam("cachedb_cassandra", "cachedb_url",
+        "cassandra:group1://localhost:9042/keyspace1.users.counters");
+
+# Defining multiple contact points for a Cassandra cluster
+modparam("cachedb_cassandra", "cachedb_url",
+        "cassandra:cluster1://10.0.0.10,10.0.0.15/keyspace2.keys.counter
+s");
 ...
 
    Example 1.2. Use Cassandra servers
@@ -121,87 +133,117 @@ cache_fetch("cassandra:cluster1","key",$avp(10));
 cache_remove("cassandra:cluster1","key");
 ...
 
-1.5.2. connection_timeout (int)
+1.5.2. connect_timeout (int)
 
    The timeout in ms that will be triggered in case a connection
    attempt fails.
 
-   Example 1.3. Set connection_timeout parameter
+   Default value is “5000”.
+
+   Example 1.3. Set connect_timeout parameter
 ...
-modparam("cachedb_cassandra", "connection_timeout",1000);
+modparam("cachedb_cassandra", "connect_timeout",1000);
 ...
 
-1.5.3. send_timeout (int)
+1.5.3. query_timeout (int)
 
    The timeout in ms that will be triggered in case a Cassandra
-   write takes too long
+   query takes too long.
 
-   Example 1.4. Set send_timeout parameter
+   Default value is “5000”.
+
+   Example 1.4. Set query_timeout parameter
 ...
-modparam("cachedb_cassandra", "send_timeout",1000);
-...
-
-1.5.4. receive_timeout (int)
-
-   The timeout in ms that will be triggered in case a Cassandra
-   read takes too long
-
-   Example 1.5. Set receive_timeout parameter
-...
-modparam("cachedb_cassandra", "receive_timeout",1000);
+modparam("cachedb_cassandra", "query_timeout",1000);
 ...
 
-1.5.5. wr_consistency_level (int)
+1.5.4. wr_consistency_level (int)
 
    The consistency level desired for write operations. Options are
    :
-     * 1 - Ensure that the write has been written to at least 1
-       replica's commit log and memory table before responding to
-       the client.
-     * 2 - Ensure that the write has been written to N / 2 + 1
-       replicas before responding to the client.
-     * 3 - Ensure that the write has been written to
-       ReplicationFactor / 2 + 1 nodes, within the local
-       datacenter (requires NetworkTopologyStrategy)
-     * 4 - Ensure that the write has been written to
-       ReplicationFactor / 2 + 1 nodes in each datacenter
-       (requires NetworkTopologyStrategy)
-     * 5 - Ensure that the write is written to all N replicas
-       before responding to the client. Any unresponsive replicas
-       will fail the operation.
-     * 6 - Ensure that the write has been written to at least 1
-       node, including HintedHandoff recipients.
-     * 7 - Ensure that the write has been written to at least 2
-       replica's before responding to the client.
-     * 8 - Ensure that the write has been written to at least 3
-       replica's before responding to the client.
+     * all - A write must be written to the commit log and
+       memtable on all replica nodes in the cluster for that
+       partition.
+     * each_quorum - Strong consistency. A write must be written
+       to the commit log and memtable on a quorum of replica nodes
+       in each datacenter.
+     * quorum - A write must be written to the commit log and
+       memtable on a quorum of replica nodes across all
+       datacenters.
+     * local_quorum - Strong consistency. A write must be written
+       to the commit log and memtable on a quorum of replica nodes
+       in the same datacenter as the coordinator. Avoids latency
+       of inter-datacenter communication.
+     * one - A write must be written to the commit log and
+       memtable of at least one replica node.
+     * two - A write must be written to the commit log and
+       memtable of at least two replica node.
+     * three - A write must be written to the commit log and
+       memtable of at least three replica node.
+     * local_one - A write must be sent to, and successfully
+       acknowledged by, at least one replica node in the local
+       datacenter.
+     * any - A write must be written to at least one node. If all
+       replica nodes for the given partition key are down, the
+       write can still succeed after a hinted handoff has been
+       written. If all replica nodes are down at write time, an
+       ANY write is not readable until the replica nodes for that
+       partition have recovered.
 
-   Default is 1
+   Default value is one.
 
-   Example 1.6. Set wr_consistency_level parameter
+   Example 1.5. Set wr_consistency_level parameter
 ...
-modparam("cachedb_cassandra", "wr_consistency_level",7);
-...
-
-1.5.6. rd_consistency_level (int)
-
-   The consistency level desired for read operations. Options are
-   the same as for write consistency level.
-
-   Example 1.7. Set rd_consistency_level parameter
-...
-modparam("cachedb_cassandra", "rd_consistency_level",7);
+modparam("cachedb_cassandra", "wr_consistency_level", "each_quorum");
 ...
 
-1.5.7. exec_threshold (int)
+1.5.5. rd_consistency_level (int)
 
-   The maximum number of microseconds that a cassandra cache query
-   can last. Anything above the threshold will trigger a warning
-   message to the log
+   The consistency level desired for write operations. Options are
+   :
+     * all - Returns the record after all replicas have responded.
+       The read operation will fail if a replica does not respond.
+     * quorum - Returns the record after a quorum of replicas from
+       all datacenters has responded.
+     * local_quorum - Returns the record after a quorum of
+       replicas in the current datacenter as the coordinator has
+       reported. Avoids latency of inter-datacenter communication.
+     * one - Returns a response from the closest replica, as
+       determined by the snitch. By default, a read repair runs in
+       the background to make the other replicas consistent.
+     * two - Returns the most recent data from two of the closest
+       replicas.
+     * three - Returns the most recent data from three of the
+       closest replicas.
+     * local_one - Returns a response from the closest replica in
+       the local datacenter.
+     * serial - Allows reading the current (and possibly
+       uncommitted) state of data without proposing a new addition
+       or update. If a SERIAL read finds an uncommitted
+       transaction in progress, it will commit the transaction as
+       part of the read. Similar to QUORUM.
+     * local_serial - Same as SERIAL, but confined to the
+       datacenter. Similar to LOCAL_QUORUM.
+
+   Default value is one.
+
+   Example 1.6. Set rd_consistency_level parameter
+...
+modparam("cachedb_cassandra", "rd_consistency_level", "quorum");
+...
+
+1.5.6. exec_threshold (int)
+
+   A cassandra cache query that lasts more than this threshold
+   will trigger a warning message to the log.
+
+   This value, if set, only makes sense to be lower than the
+   query_timeout since any query taking longer than that value
+   will be dropped anyway.
 
    Default value is “0 ( unlimited - no warnings )”.
 
-   Example 1.8. Set exec_threshold parameter
+   Example 1.7. Set exec_threshold parameter
 ...
 modparam("cachedb_cassandra", "exec_threshold", 100000)
 ...
@@ -211,15 +253,21 @@ modparam("cachedb_cassandra", "exec_threshold", 100000)
    The module does not export functions to be used in
    configuration script.
 
-1.7. Known issues
+1.7. Table Schema
 
-   Due to the fact that Cassandra cannot store counters and
-   regular columns in the same ColumnFamily, add() and sub()
-   methods are not exported through the Key-Value interface.
+   The table required for supporting the
+   cache_store()/cache_fetch()/cache_remove() functions of the
+   Key-Value interface needs to have at least the following
+   columns:
+     * opensipskey - as the primary key with type "text"
+     * opensipsval - with type "text"
 
-   Also, the module does not currently support Authentication.
-
-   Future realeases of this module will address this issue.
+   The table required for supporting the
+   cache_add()/cache_sub()/cache_counter_fetch() functions of the
+   Key-Value interface needs to have at least the following
+   columns:
+     * opensipskey - as the primary key with type "text"
+     * opensipsval - with type "counter"
 
 Chapter 2. Contributors
 
@@ -228,7 +276,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 383 2 798 20882
+   1. Vlad Patrascu (@rvlad-patrascu) 402 11 1805 21001
    2. Vlad Paiu (@vladpaiu) 177 7 21444 38
    3. Liviu Chircu (@liviuchircu) 7 5 24 42
    4. Razvan Crainea (@razvancrainea) 4 2 12 12
@@ -258,7 +306,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2018
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2018
    2. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    3. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4. Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -275,9 +323,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Julián Moreno Patiño, Vlad Paiu (@vladpaiu),
-   Razvan Crainea (@razvancrainea).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Julián Moreno Patiño,
+   Vlad Paiu (@vladpaiu), Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 
