@@ -608,9 +608,12 @@ int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s)
 	unsigned int port;
 
 	if (addresses_s->s) {
-		if (addresses_s->s[0] == MATCH_ANY_VAL)
+		if (addresses_s->s[0] == MATCH_ANY_VAL) {
 			if (add_match_filt_to_dom(&match_any_s, &tls_dom->match_addresses) < 0)
 				return -1;
+
+			return 0;
+		}
 
 		list = _parse_csv_record(addresses_s, CSV_SIMPLE);
 		if (!list) {
