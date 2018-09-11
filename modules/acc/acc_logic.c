@@ -1186,9 +1186,10 @@ int do_acc_fixup(void** param, int param_no)
 		memset(acc_param, 0, sizeof(acc_type_param_t));
 
 		if (el->next == 0 && el->spec.getf == 0) {
+			str text = el->text;
 			pv_elem_free_all(el);
-			if ( (ival=do_acc_parse(&el->text, parser)) == DO_ACC_ERR) {
-				LM_ERR("Invalid value <%.*s>!\n", el->text.len, el->text.s);
+			if ((ival = do_acc_parse(&text, parser)) == DO_ACC_ERR) {
+				LM_ERR("Invalid value <%.*s>!\n", text.len, text.s);
 				return -1;
 			}
 
