@@ -51,14 +51,14 @@ int init_reactor_size(void)
 		if (pc>=80) {
 			LM_ERR("required memory for a %d files reactor is over 80%% of"
 				" the configured pkg mem (%luMb)\n",
-				open_files_limit, pkg_mem_size);
+				open_files_limit, pkg_mem_size/1024/1024);
 			LM_ERR("Please consider increasing the pkg memory or reduce the"
 				" limit of open files...Exiting\n");
 			return -1;
 		} else if (pc>=50) {
 			LM_WARN("required memory for a %d files reactor is over 50%% of"
 				" the configured pkg mem (%luMb)\n",
-				open_files_limit, pkg_mem_size);
+				open_files_limit, pkg_mem_size/1024/1024);
 			LM_WARN("PKG memory may not be enough at runtime (consider "
 				"increasing it), still continuing\n");
 		}
@@ -80,7 +80,7 @@ int init_reactor_size(void)
 		if (reactor_size<lim.rlim_cur) {
 			LM_WARN("shrinking reactor size from %lu (autodetected via rlimit)"
 				" to %d (limited by memory of %d%% from %luMb)\n",
-				lim.rlim_cur,reactor_size,FD_MEM_PERCENT,pkg_mem_size);
+				lim.rlim_cur,reactor_size,FD_MEM_PERCENT,pkg_mem_size/1024/1024);
 			LM_WARN("use 'open_files_limit' to enforce other limit or "
 				"increase PKG memory\n");
 		} else {
