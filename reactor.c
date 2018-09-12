@@ -99,7 +99,7 @@ int init_reactor_size(void)
 		}
 	}
 
-	LM_INFO("reactor size %d (can use up to %.2fMb of memory)\n",
+	LM_INFO("reactor size %d (using up to %.2fMb of memory per process)\n",
 			reactor_size, 1.0 * n * reactor_size / 1024 / 1024);
 
 	return 0;
