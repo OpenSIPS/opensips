@@ -784,7 +784,7 @@ static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 		LM_ERR("IP PV val is not string\n");
 		return -1;
 	}
-	if ( (ipa=str2ip( &val.rs ))==NULL ) {
+	if ( (ipa=str2ip( &val.rs ))==NULL && (ipa=str2ip6( &val.rs ))==NULL) {
 		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
 		return -1;
 	}
