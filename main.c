@@ -1294,9 +1294,14 @@ try_again:
 	LM_NOTICE("version: %s\n", version);
 
 	/* print some data about the configuration */
-	LM_INFO("using %ld Mb shared memory\n", ((shm_mem_size/1024)/1024));
-	LM_INFO("using %ld Mb private memory per process\n",
-		((pkg_mem_size/1024)/1024));
+	LM_INFO("using %ld Mb of shared memory\n", shm_mem_size/1024/1024);
+#if defined(PKG_MALLOC)
+	LM_INFO("using %ld Mb of private process memory\n", pkg_mem_size/1024/1024);
+#elif defined(USE_SHM_MEM)
+	LM_INFO("using shared memory for private process memory\n");
+#else
+	LM_INFO("using system memory for private process memory\n");
+#endif
 
 	/* init async reactor */
 	if (init_reactor_size()<0) {
