@@ -1125,7 +1125,7 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
  */
 int rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
 {
-	struct ip_addr *ip;
+	struct ip_addr *ip = NULL;
 	unsigned int port = 0;
 	str domain;
 
