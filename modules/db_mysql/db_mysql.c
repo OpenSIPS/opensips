@@ -98,7 +98,7 @@ struct module_exports exports = {
 
 static int mysql_mod_init(void)
 {
-	struct ip_addr *ip;
+	struct ip_addr *ip = NULL;
 	unsigned int port = 0;
 	str domain;
 
