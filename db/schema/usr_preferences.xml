@@ -37,7 +37,7 @@
     <column id="username">
         <name>&USERCOL;</name>
         <type>string</type>
-        <size>&uri_len;</size>
+        <size>&user_len;</size>
         <default>0</default>
         <description>Username / phone number</description>
         <natural/>
