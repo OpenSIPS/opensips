@@ -6,7 +6,7 @@ CREATE TABLE closeddial (
     cd_username VARCHAR(64) DEFAULT '' NOT NULL,
     cd_domain VARCHAR(64) DEFAULT '' NOT NULL,
     group_id VARCHAR(64) DEFAULT '' NOT NULL,
-    new_uri VARCHAR(128) DEFAULT '' NOT NULL,
+    new_uri VARCHAR(256) DEFAULT '' NOT NULL,
     CONSTRAINT closeddial_cd_idx1 UNIQUE (username, domain, cd_domain, cd_username, group_id)
 );
 

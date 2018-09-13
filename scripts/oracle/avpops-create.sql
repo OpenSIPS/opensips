@@ -2,7 +2,7 @@ INSERT INTO version (table_name, table_version) values ('usr_preferences','3');
 CREATE TABLE usr_preferences (
     id NUMBER(10) PRIMARY KEY,
     uuid VARCHAR2(64) DEFAULT '',
-    username VARCHAR2(128) DEFAULT 0 NOT NULL,
+    username VARCHAR2(64) DEFAULT 0 NOT NULL,
     domain VARCHAR2(64) DEFAULT '',
     attribute VARCHAR2(32) DEFAULT '',
     type NUMBER(10) DEFAULT 0 NOT NULL,

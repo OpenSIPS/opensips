@@ -9,7 +9,7 @@ CREATE TABLE presentity (
     received_time INTEGER NOT NULL,
     body BYTEA DEFAULT NULL,
     extra_hdrs BYTEA DEFAULT NULL,
-    sender VARCHAR(128) DEFAULT NULL,
+    sender VARCHAR(256) DEFAULT NULL,
     CONSTRAINT presentity_presentity_idx UNIQUE (username, domain, event, etag)
 );
 
@@ -17,7 +17,7 @@ ALTER SEQUENCE presentity_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('active_watchers','11');
 CREATE TABLE active_watchers (
     id SERIAL PRIMARY KEY NOT NULL,
-    presentity_uri VARCHAR(128) NOT NULL,
+    presentity_uri VARCHAR(256) NOT NULL,
     watcher_username VARCHAR(64) NOT NULL,
     watcher_domain VARCHAR(64) NOT NULL,
     to_user VARCHAR(64) NOT NULL,
@@ -29,14 +29,14 @@ CREATE TABLE active_watchers (
     callid VARCHAR(64) NOT NULL,
     local_cseq INTEGER NOT NULL,
     remote_cseq INTEGER NOT NULL,
-    contact VARCHAR(128) NOT NULL,
+    contact VARCHAR(256) NOT NULL,
     record_route TEXT,
     expires INTEGER NOT NULL,
     status INTEGER DEFAULT 2 NOT NULL,
     reason VARCHAR(64),
     version INTEGER DEFAULT 0 NOT NULL,
     socket_info VARCHAR(64) NOT NULL,
-    local_contact VARCHAR(128) NOT NULL,
+    local_contact VARCHAR(256) NOT NULL,
     CONSTRAINT active_watchers_active_watchers_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 
@@ -44,7 +44,7 @@ ALTER SEQUENCE active_watchers_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
     id SERIAL PRIMARY KEY NOT NULL,
-    presentity_uri VARCHAR(128) NOT NULL,
+    presentity_uri VARCHAR(256) NOT NULL,
     watcher_username VARCHAR(64) NOT NULL,
     watcher_domain VARCHAR(64) NOT NULL,
     event VARCHAR(64) DEFAULT 'presence' NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE xcap (
     doc_type INTEGER NOT NULL,
     etag VARCHAR(64) NOT NULL,
     source INTEGER NOT NULL,
-    doc_uri VARCHAR(128) NOT NULL,
+    doc_uri VARCHAR(256) NOT NULL,
     port INTEGER NOT NULL,
     CONSTRAINT xcap_account_doc_type_idx UNIQUE (username, domain, doc_type, doc_uri)
 );
@@ -75,7 +75,7 @@ CREATE INDEX xcap_source_idx ON xcap (source);
 INSERT INTO version (table_name, table_version) values ('pua','8');
 CREATE TABLE pua (
     id SERIAL PRIMARY KEY NOT NULL,
-    pres_uri VARCHAR(128) NOT NULL,
+    pres_uri VARCHAR(256) NOT NULL,
     pres_id VARCHAR(255) NOT NULL,
     event INTEGER NOT NULL,
     expires INTEGER NOT NULL,
@@ -83,15 +83,15 @@ CREATE TABLE pua (
     flag INTEGER NOT NULL,
     etag VARCHAR(64),
     tuple_id VARCHAR(64),
-    watcher_uri VARCHAR(128),
-    to_uri VARCHAR(128),
+    watcher_uri VARCHAR(256),
+    to_uri VARCHAR(256),
     call_id VARCHAR(64),
     to_tag VARCHAR(64),
     from_tag VARCHAR(64),
     cseq INTEGER,
     record_route TEXT,
-    contact VARCHAR(128),
-    remote_contact VARCHAR(128),
+    contact VARCHAR(256),
+    remote_contact VARCHAR(256),
     version INTEGER,
     extra_headers TEXT
 );
