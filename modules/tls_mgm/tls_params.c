@@ -57,7 +57,7 @@ static int parse_domain_address(char *val, struct ip_addr **ip,
 		goto has_domain;
 	s.len = p-s.s;
 	p++;
-	if ( (*ip=str2ip( &s ))==NULL ) {
+	if ( (*ip=str2ip( &s ))==NULL && (*ip=str2ip6( &s ))==NULL) {
 		LM_ERR("[%.*s] is not an ip\n", s.len, s.s);
 		goto parse_err;
 	}
