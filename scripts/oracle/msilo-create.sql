@@ -1,8 +1,8 @@
 INSERT INTO version (table_name, table_version) values ('silo','6');
 CREATE TABLE silo (
     id NUMBER(10) PRIMARY KEY,
-    src_addr VARCHAR2(128) DEFAULT '',
-    dst_addr VARCHAR2(128) DEFAULT '',
+    src_addr VARCHAR2(256) DEFAULT '',
+    dst_addr VARCHAR2(256) DEFAULT '',
     username VARCHAR2(64) DEFAULT '',
     domain VARCHAR2(64) DEFAULT '',
     inc_time NUMBER(10) DEFAULT 0 NOT NULL,
