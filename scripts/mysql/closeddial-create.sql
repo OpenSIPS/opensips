@@ -6,7 +6,7 @@ CREATE TABLE closeddial (
     cd_username CHAR(64) DEFAULT '' NOT NULL,
     cd_domain CHAR(64) DEFAULT '' NOT NULL,
     group_id CHAR(64) DEFAULT '' NOT NULL,
-    new_uri CHAR(128) DEFAULT '' NOT NULL,
+    new_uri CHAR(256) DEFAULT '' NOT NULL,
     CONSTRAINT cd_idx1 UNIQUE (username, domain, cd_domain, cd_username, group_id)
 ) ENGINE=InnoDB;
 

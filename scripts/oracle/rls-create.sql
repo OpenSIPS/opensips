@@ -2,7 +2,7 @@ INSERT INTO version (table_name, table_version) values ('rls_presentity','1');
 CREATE TABLE rls_presentity (
     id NUMBER(10) PRIMARY KEY,
     rlsubs_did VARCHAR2(255),
-    resource_uri VARCHAR2(128),
+    resource_uri VARCHAR2(256),
     content_type VARCHAR2(255),
     presence_state BLOB,
     expires NUMBER(10),
@@ -25,7 +25,7 @@ CREATE INDEX rls_presentity_updated_idx  ON rls_presentity (updated);
 INSERT INTO version (table_name, table_version) values ('rls_watchers','2');
 CREATE TABLE rls_watchers (
     id NUMBER(10) PRIMARY KEY,
-    presentity_uri VARCHAR2(128),
+    presentity_uri VARCHAR2(256),
     to_user VARCHAR2(64),
     to_domain VARCHAR2(64),
     watcher_username VARCHAR2(64),
@@ -44,7 +44,7 @@ CREATE TABLE rls_watchers (
     reason VARCHAR2(64),
     version NUMBER(10) DEFAULT 0 NOT NULL,
     socket_info VARCHAR2(64),
-    local_contact VARCHAR2(128),
+    local_contact VARCHAR2(256),
     CONSTRAINT rls_watchers_rls_watcher_idx  UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 

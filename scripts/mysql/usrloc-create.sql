@@ -4,7 +4,7 @@ CREATE TABLE location (
     username CHAR(64) DEFAULT '' NOT NULL,
     domain CHAR(64) DEFAULT NULL,
     contact CHAR(255) DEFAULT '' NOT NULL,
-    received CHAR(128) DEFAULT NULL,
+    received CHAR(256) DEFAULT NULL,
     path CHAR(255) DEFAULT NULL,
     expires INT(10) UNSIGNED NOT NULL,
     q FLOAT(10,2) DEFAULT 1.0 NOT NULL,
