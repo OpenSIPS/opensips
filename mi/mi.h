@@ -34,7 +34,7 @@
 #define _MI_MI_H_
 
 #include "../str.h"
-#include "tree.h"
+#include "item.h"
 
 #define MI_ASYNC_RPL_FLAG   (1<<0)
 #define MI_NO_INPUT_FLAG    (1<<1)

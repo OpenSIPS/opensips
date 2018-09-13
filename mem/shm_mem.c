@@ -33,7 +33,7 @@
 #include "shm_mem.h"
 #include "../config.h"
 #include "../globals.h"
-#include "../mi/tree.h"
+#include "../mi/item.h"
 
 #ifdef  SHM_MMAP
 
