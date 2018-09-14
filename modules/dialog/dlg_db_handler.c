@@ -1435,6 +1435,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 		/* lock the whole entry */
 		entry = &((d_table->entries)[index]);
 		dlg_lock( d_table, entry);
+		cell->locked_by = process_no;
 
 		for(cell = entry->first; cell != NULL;){
 			callee_leg = callee_idx(cell);
@@ -1588,6 +1589,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 			}
 			cell = cell->next;
 		}
+		cell->locked_by = 0;
 		dlg_unlock( d_table, entry);
 
 	}
