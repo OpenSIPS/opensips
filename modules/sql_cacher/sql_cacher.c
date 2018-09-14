@@ -476,14 +476,14 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 {
 	unsigned int i, offset = 0, strs_offset = 0;
 	int int_val;
-	int int_key_len = 0;
+	int int_key_len = 0, rc = 0;
 	char int_buf[4], int_enc_buf[INT_B64_ENC_LEN];
 	char *int_key_buf = NULL;
 	str str_val;
 	db_type_t val_type;
-	str str_key = {NULL, 0};
+	str str_key = STR_NULL;
 	str cdb_val;
-	str cdb_key;
+	str cdb_key = STR_NULL;
 
 	cdb_val.len = get_cdb_val_size(c_entry, values, nr_columns);
 	cdb_val.s = pkg_malloc(cdb_val.len);
@@ -587,7 +587,8 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			break;
 		default:
 			LM_ERR("Unsupported type for SQL DB key column\n");
-			return -1;
+			rc = -1;
+			goto out;
 	}
 	if (int_key_len) {
 		str_key.s = int_key_buf;
@@ -598,7 +599,8 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	cdb_key.s = pkg_malloc(cdb_key.len);
 	if (!cdb_key.s) {
 		LM_ERR("No more pkg memory\n");
-		return -1;
+		rc = -1;
+		goto out;
 	}
 	memcpy(cdb_key.s, c_entry->id.s, c_entry->id.len);
 	memcpy(cdb_key.s + c_entry->id.len, str_key.s, str_key.len);
@@ -606,12 +608,13 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	if (db_hdls->cdbf.set(db_hdls->cdbcon, &cdb_key, &cdb_val, c_entry->expire) < 0) {
 		LM_ERR("Failed to insert the values for key: %.*s in cachedb\n",
 			str_key.len, str_key.s);
-		return -1;
+		rc = -1;
 	}
+
+out:
 	pkg_free(cdb_key.s);
 	pkg_free(cdb_val.s);
-
-	return 0;
+	return rc;
 }
 
 static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
@@ -853,8 +856,9 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 		LM_ERR("Invalid table name: %.*s\n", c_entry->table.len, c_entry->table.s);
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
-		return -1;
+		goto out_error;
 	}
+
 	CON_PS_REFERENCE(db_hdls->db_con) = &db_hdls->query_ps;
 	if (db_hdls->db_funcs.query(db_hdls->db_con,
 		&key_col, 0, &key_val, c_entry->columns, 1,
@@ -870,11 +874,10 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 		null_val.s = NULL;
 		if (db_hdls->cdbf.set(db_hdls->cdbcon, &src_key, &null_val, c_entry->expire) < 0) {
 			LM_ERR("Failed to insert null in cachedb\n");
-			pkg_free(src_key.s);
 			goto sql_error;
 		}
-		pkg_free(src_key.s);
 
+		pkg_free(src_key.s);
 		db_hdls->db_funcs.free_result(db_hdls->db_con, *sql_res);
 		return -2;
 
@@ -891,13 +894,16 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 		goto sql_error;
 
 	if (insert_in_cachedb(c_entry, db_hdls, &key_val, *values, rld_vers, ROW_N(row)) < 0)
-		return -1;
+		goto sql_error;
 
+	pkg_free(src_key.s);
 	return 0;
 
 sql_error:
 	if (*sql_res)
 		db_hdls->db_funcs.free_result(db_hdls->db_con, *sql_res);
+out_error:
+	pkg_free(src_key.s);
 	return -1;
 }
 
@@ -1058,8 +1064,10 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 
 		if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
 			LM_DBG("Failed to increment reload version integer from cachedb\n");
+			pkg_free(rld_vers_key.s);
 			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
 		}
+
 		pkg_free(rld_vers_key.s);
 
 		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0) {
