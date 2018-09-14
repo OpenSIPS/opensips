@@ -582,6 +582,11 @@ static int init_tmp_linkers(struct dlg_cell *dlg)
 
 	len = 0;
 
+	if (!dlg->profile_links) {
+		tmp_linkers = NULL;
+		return 0;
+	}
+
 	/* count the size we need to alocate */
 	for (l = dlg->profile_links, i = 0; l; l = l->next) {
 		len += sizeof *l;
@@ -608,10 +613,7 @@ static int init_tmp_linkers(struct dlg_cell *dlg)
 		}
 	}
 
-	if (dlg->profile_links)
-		tmp_linkers[i-1].next = NULL;
-	else
-		tmp_linkers = NULL;
+	tmp_linkers[i-1].next = NULL;
 
 	return 0;
 }
