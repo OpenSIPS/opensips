@@ -977,7 +977,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 		src_key.len = db_hdls->c_entry->id.len + key.len;
 		src_key.s = pkg_malloc(src_key.len);
 		if (!src_key.s) {
-			LM_ERR("No more shm memory\n");
+			LM_ERR("No more pkg memory\n");
 			return NULL;
 		}
 		memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
@@ -1370,133 +1370,132 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res,
 
 	lock_get(queries_lock);
 
-	it = *queries_in_progress;
-	while (it) {
-		if (!memcmp(it->key.s, src_key.s, src_key.len)) { /* key is in list */
-			it->nr_waiting_procs++;
-			lock_release(queries_lock);
-			/* wait for the query to complete */
-			lock_get(it->wait_sql_query);
-			lock_get(queries_lock);
-			shm_free(src_key.s);
-			if (it->nr_waiting_procs == 1) {
-				lock_release(it->wait_sql_query);
-				lock_destroy(it->wait_sql_query);
-				lock_dealloc(it->wait_sql_query);
-				/* if this is the last process waiting, delete key from list */
-				unlink_from_query_list(it);
-				tmp = it;
-				it = it->next;
-				shm_free(tmp->key.s);
-				shm_free(tmp);
-			} else if (it->nr_waiting_procs > 1) {
-				it->nr_waiting_procs--;
-				lock_release(it->wait_sql_query);
-			}
-			lock_release(queries_lock);
+	for (it = *queries_in_progress; it; it = it->next) {
+		if (memcmp(it->key.s, src_key.s, src_key.len))
+			continue;
 
-			/* reload key from cachedb */
-			if (cdb_fetch(pv_name, cdb_res, &rld_vers_dummy) < 0) {
-				LM_ERR("Error or missing value on retrying fetch from cachedb\n");
-				return -1;
-			}
-
-			if (pv_name->last_str == -1)
-				optimize_cdb_decode(pv_name);
-
-			return cdb_val_decode(pv_name, cdb_res, 0, str_res, int_res);
-		} else
-			it = it->next;
-	}
-
-	if (!it) {	/* if key not found in list */
-		/* insert key in list */
-		new_key = shm_malloc(sizeof(struct queried_key));
-		if (!new_key) {
-			LM_ERR("No more shm memory\n");
-			lock_release(queries_lock);
-			return -1;
-		}
-		new_key->key = src_key;
-		new_key->nr_waiting_procs = 0;
-		new_key->wait_sql_query = lock_alloc();
-		if (!new_key->wait_sql_query) {
-			LM_ERR("No more memory for wait_sql_query lock\n");
-			shm_free(new_key);
-			lock_release(queries_lock);
-			return -1;
-		}
-		if (!lock_init(new_key->wait_sql_query)) {
-			LM_ERR("Failed to init wait_sql_query lock\n");
-			lock_dealloc(new_key->wait_sql_query);
-			shm_free(new_key);
-			lock_release(queries_lock);
-			return -1;
-		}
-
-		new_key->next = *queries_in_progress;
-		*queries_in_progress = new_key;
-
-		lock_get(new_key->wait_sql_query);
-
+		it->nr_waiting_procs++; /* key is in list! */
 		lock_release(queries_lock);
-
-		rc = load_key(pv_name->c_entry, pv_name->db_hdls, pv_name->key, &values,
-				&sql_res);
-
+		/* wait for the query to complete */
+		lock_get(it->wait_sql_query);
 		lock_get(queries_lock);
-
-		lock_release(new_key->wait_sql_query);
-
-		/* delete key from list */
-		if (new_key->nr_waiting_procs == 0) {
-			lock_destroy(new_key->wait_sql_query);
-			lock_dealloc(new_key->wait_sql_query);
-			unlink_from_query_list(new_key);
-			shm_free(new_key->key.s);
-			shm_free(new_key);
+		shm_free(src_key.s);
+		if (it->nr_waiting_procs == 1) {
+			lock_release(it->wait_sql_query);
+			lock_destroy(it->wait_sql_query);
+			lock_dealloc(it->wait_sql_query);
+			/* if this is the last process waiting, delete key from list */
+			unlink_from_query_list(it);
+			tmp = it;
+			it = it->next;
+			shm_free(tmp->key.s);
+			shm_free(tmp);
+		} else if (it->nr_waiting_procs > 1) {
+			it->nr_waiting_procs--;
+			lock_release(it->wait_sql_query);
 		}
-
 		lock_release(queries_lock);
 
-		if (rc < 0)
-			return rc;
-
-		if (VAL_NULL(values + pv_name->col_nr))
-			return 1;
-
-		val_type = VAL_TYPE(values + pv_name->col_nr);
-		switch (val_type) {
-			case DB_STRING:
-				str_res->s = (char *)VAL_STRING(values + pv_name->col_nr);
-				str_res->len = strlen(str_res->s);
-				break;
-			case DB_STR:
-				str_res = &(VAL_STR(values + pv_name->col_nr));
-				break;
-			case DB_BLOB:
-				str_res = &(VAL_BLOB(values + pv_name->col_nr));
-				break;
-			case DB_INT:
-				*int_res = VAL_INT(values + pv_name->col_nr);
-				break;
-			case DB_BIGINT:
-				*int_res = (int)VAL_BIGINT(values + pv_name->col_nr);
-				break;
-			case DB_DOUBLE:
-				*int_res = (int)VAL_DOUBLE(values + pv_name->col_nr);
-				break;
-			default:
-				LM_ERR("Unsupported type for SQL column\n");
-				return -1;
+		/* reload key from cachedb */
+		if (cdb_fetch(pv_name, cdb_res, &rld_vers_dummy) < 0) {
+			LM_ERR("Error or missing value on retrying fetch from cachedb\n");
+			return -1;
 		}
 
-		pv_name->db_hdls->db_funcs.free_result(pv_name->db_hdls->db_con, sql_res);
+		if (pv_name->last_str == -1)
+			optimize_cdb_decode(pv_name);
 
-		return 0;
+		return cdb_val_decode(pv_name, cdb_res, 0, str_res, int_res);
 	}
 
-	return -1;
+	/* key not found in list -> insert it */
+	new_key = shm_malloc(sizeof(struct queried_key));
+	if (!new_key) {
+		LM_ERR("No more shm memory\n");
+		lock_release(queries_lock);
+		return -1;
+	}
+	new_key->key = src_key;
+	new_key->nr_waiting_procs = 0;
+	new_key->wait_sql_query = lock_alloc();
+	if (!new_key->wait_sql_query) {
+		LM_ERR("No more memory for wait_sql_query lock\n");
+		shm_free(new_key);
+		lock_release(queries_lock);
+		return -1;
+	}
+	if (!lock_init(new_key->wait_sql_query)) {
+		LM_ERR("Failed to init wait_sql_query lock\n");
+		lock_dealloc(new_key->wait_sql_query);
+		shm_free(new_key);
+		lock_release(queries_lock);
+		return -1;
+	}
+
+	new_key->next = *queries_in_progress;
+	*queries_in_progress = new_key;
+
+	lock_get(new_key->wait_sql_query);
+
+	lock_release(queries_lock);
+
+	rc = load_key(pv_name->c_entry, pv_name->db_hdls, pv_name->key, &values,
+			&sql_res);
+
+	lock_get(queries_lock);
+
+	lock_release(new_key->wait_sql_query);
+
+	/* delete key from list */
+	if (new_key->nr_waiting_procs == 0) {
+		lock_destroy(new_key->wait_sql_query);
+		lock_dealloc(new_key->wait_sql_query);
+		unlink_from_query_list(new_key);
+		shm_free(new_key->key.s);
+		shm_free(new_key);
+	}
+
+	lock_release(queries_lock);
+
+	if (rc < 0)
+		return rc;
+
+	if (VAL_NULL(values + pv_name->col_nr)) {
+		rc = 1;
+		goto out_free_res;
+	}
+
+	rc = 0;
+	val_type = VAL_TYPE(values + pv_name->col_nr);
+	switch (val_type) {
+		case DB_STRING:
+			str_res->s = (char *)VAL_STRING(values + pv_name->col_nr);
+			str_res->len = strlen(str_res->s);
+			break;
+		case DB_STR:
+			str_res = &(VAL_STR(values + pv_name->col_nr));
+			break;
+		case DB_BLOB:
+			str_res = &(VAL_BLOB(values + pv_name->col_nr));
+			break;
+		case DB_INT:
+			*int_res = VAL_INT(values + pv_name->col_nr);
+			break;
+		case DB_BIGINT:
+			*int_res = (int)VAL_BIGINT(values + pv_name->col_nr);
+			break;
+		case DB_DOUBLE:
+			*int_res = (int)VAL_DOUBLE(values + pv_name->col_nr);
+			break;
+		default:
+			LM_ERR("Unsupported type for SQL column\n");
+			rc = -1;
+			goto out_free_res;
+	}
+
+out_free_res:
+	pv_name->db_hdls->db_funcs.free_result(pv_name->db_hdls->db_con, sql_res);
+	return rc;
 }
 
 static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s)
@@ -1559,14 +1558,8 @@ int pv_parse_name(pv_spec_p sp, str *in)
 		LM_ERR("No more pkg memory\n");
 		return -1;
 	}
-	pv_name->id.s = NULL;
-	pv_name->id.len = 0;
-	pv_name->col.s = NULL;
-	pv_name->col.len = 0;
-	pv_name->key.s = NULL;
-	pv_name->key.len = 0;
-	pv_name->c_entry = NULL;
-	pv_name->pv_elem_list = NULL;
+	memset(pv_name, 0, sizeof *pv_name);
+
 	pv_name->col_offset = -1;
 	pv_name->last_str = -1;
 
