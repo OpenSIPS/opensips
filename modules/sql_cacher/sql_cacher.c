@@ -1217,7 +1217,6 @@ error:
  */
 static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_version, str *str_res, int *int_res)
 {
-	long long one = 1;
 	int int_val, next_str_off, i, rc;
 	char int_buf[4];
 	const char zeroes[INT_B64_ENC_LEN] = {0};
@@ -1248,7 +1247,7 @@ static int cdb_val_decode(pv_name_fix_t *pv_name, str *cdb_val, int reload_versi
 		goto error;
 	memcpy(&int_val, int_buf, 4);
 
-	if ((pv_name->c_entry->column_types & (one << pv_name->col_nr)) != 0) {
+	if (is_str_column(pv_name)) {
 		/* null string value in db */
 		if (int_val == 0)
 			return 1;
@@ -1342,7 +1341,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res,
 							int *int_res)
 {
 	struct queried_key *it, *tmp, *new_key;
-	str src_key;
+	str src_key, st;
 	db_res_t *sql_res = NULL;
 	db_val_t *values;
 	db_type_t val_type;
@@ -1469,14 +1468,27 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *cdb_res, str *str_res,
 	val_type = VAL_TYPE(values + pv_name->col_nr);
 	switch (val_type) {
 		case DB_STRING:
-			str_res->s = (char *)VAL_STRING(values + pv_name->col_nr);
-			str_res->len = strlen(str_res->s);
+			st.s = (char *)VAL_STRING(values + pv_name->col_nr);
+			st.len = strlen(st.s);
+			if (pkg_str_dup(str_res, &st) != 0) {
+				LM_ERR("oom\n");
+				rc = -1;
+				goto out_free_res;
+			}
 			break;
 		case DB_STR:
-			str_res = &(VAL_STR(values + pv_name->col_nr));
+			if (pkg_str_dup(str_res, &(VAL_STR(values + pv_name->col_nr))) != 0) {
+				LM_ERR("oom\n");
+				rc = -1;
+				goto out_free_res;
+			}
 			break;
 		case DB_BLOB:
-			str_res = &(VAL_BLOB(values + pv_name->col_nr));
+			if (pkg_str_dup(str_res, &(VAL_BLOB(values + pv_name->col_nr))) != 0) {
+				LM_ERR("oom\n");
+				rc = -1;
+				goto out_free_res;
+			}
 			break;
 		case DB_INT:
 			*int_res = VAL_INT(values + pv_name->col_nr);
@@ -1594,7 +1606,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	int rc, rc2, int_res = 0, l = 0;
 	char *ch = NULL;
 	str str_res = {NULL, 0}, cdb_res = {NULL, 0};
-	int entry_rld_vers;
+	int entry_rld_vers, free_str_res = 0;
 
 	if (!param || param->pvn.type != PV_NAME_PVAR ||
 		!param->pvn.u.dname) {
@@ -1678,6 +1690,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 				LM_DBG("NULL value in SQL db\n");
 				goto out_free_null;
 			}
+
+			free_str_res = 1;
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_DBG("key %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
@@ -1697,14 +1711,19 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		}
 	}
 
-	if ((pv_name->c_entry->column_types & (1LL << pv_name->col_nr)) != 0) {
+	if (is_str_column(pv_name)) {
 		if (pkg_str_resize(&valbuff, str_res.len) != 0) {
 			LM_ERR("failed to alloc buffer\n");
+			if (free_str_res)
+				pkg_free(str_res.s);
 			goto out_free_null;
 		}
 
 		memcpy(valbuff.s, str_res.s, str_res.len);
 		valbuff.len = str_res.len;
+
+		if (free_str_res)
+			pkg_free(str_res.s);
 
 		res->flags = PV_VAL_STR;
 		res->rs.s = valbuff.s;
