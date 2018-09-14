@@ -1790,7 +1790,6 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		}
 
 		memcpy(valbuff.s, str_res.s, str_res.len);
-		valbuff.len = str_res.len;
 
 		if (free_str_res)
 			pkg_free(str_res.s);
