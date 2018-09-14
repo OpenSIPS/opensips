@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/OpenSIPS/opensips.svg?branch=master)](https://travis-ci.org/OpenSIPS/opensips)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/7580/badge.svg)](https://scan.coverity.com/projects/opensips-opensips)
+[![Code Quality: Cpp](https://img.shields.io/lgtm/grade/cpp/g/OpenSIPS/opensips.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/OpenSIPS/opensips/context:cpp)
+[![Total Alerts](https://img.shields.io/lgtm/alerts/g/OpenSIPS/opensips.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/OpenSIPS/opensips/alerts)
 
 # Welcome to OpenSIPS Project
 
