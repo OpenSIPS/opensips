@@ -1160,9 +1160,9 @@ Chapter 3. Contributors
    10. Vlad Paiu (@vladpaiu) 17 11 129 208
 
    All remaining contributors: Irina-Maria Stanescu, Maksym
-   Sobolyev (@sobomax), Karel Kozlik, Andrei Pelinescu-Onciul,
-   Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Dan Pascu
-   (@danpascu), Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas),
+   Sobolyev (@sobomax), Karel Kozlik, Andrei Pelinescu-Onciul, Dan
+   Pascu (@danpascu), Juha Heinanen (@juha-h), Elena-Ramona
+   Modroiu, Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas),
    Sergio Gutierrez, Peter Nixon, Vlad Patrascu (@rvlad-patrascu),
    Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus
    Rodrigues, Julien Blache, Julián Moreno Patiño, Dusan Klinec,
@@ -1188,19 +1188,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
-   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2017
-   5.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2017
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
-   9.  Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
-   10. Irina-Maria Stanescu                Aug 2009 - Sep 2009
+   1.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
+   5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2017
+   6.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2017
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
+   10. Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
 
-   All remaining contributors: Alex Massover, Sergio Gutierrez,
-   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu), Henning
+   All remaining contributors: Irina-Maria Stanescu, Alex
+   Massover, Sergio Gutierrez, Ovidiu Sas (@ovidiusas), Henning
    Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
    Modroiu, Jesus Rodrigues, Julien Blache, Peter Nixon, Maksym
