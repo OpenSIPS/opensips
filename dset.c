@@ -279,7 +279,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 {
 	str luri;
 	int nr_branches;
-	struct branch *branches;
+	struct branch *branches, *new_br;
 	struct dset_ctx *dsct = get_dset_ctx();
 
 	if (dsct && !dsct->enabled)
@@ -288,7 +288,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	if (!dsct) {
 		dsct = pkg_malloc(sizeof *dsct);
 		if (!dsct) {
-			LM_ERR("no more pkg mem!\n");
+			LM_ERR("oom 1\n");
 			return E_OUT_OF_MEM;
 		}
 		memset(dsct, 0, sizeof *dsct);
@@ -308,14 +308,14 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 	}
 
 	if (nr_branches % DSET_INCREMENT == 0) {
-		dsct->branches = pkg_realloc(dsct->branches,
-		                             (nr_branches + DSET_INCREMENT) *
-		                             sizeof *dsct->branches);
-		if (!dsct->branches) {
-			LM_ERR("no more pkg mem!\n");
-			pkg_free(dsct);
+		new_br = pkg_realloc(dsct->branches,
+                      (nr_branches + DSET_INCREMENT) * sizeof *dsct->branches);
+		if (!new_br) {
+			LM_ERR("oom 2\n");
 			return E_OUT_OF_MEM;
 		}
+
+		dsct->branches = new_br;
 	}
 
 	/* if not parameterized, take current uri */
