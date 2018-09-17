@@ -1378,7 +1378,7 @@ static void unlink_from_query_list(struct queried_key *pos)
 }
 
 /*  return:
- *  0 - succes
+ *  0 - succes => if str column, @str_res->s must be pkg_free()'d
  *  1 - succes, null value in db
  * -1 - error
  * -2 - not found in sql db
@@ -1458,6 +1458,15 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 		if (pv_name->last_str == -1)
 			optimize_cdb_decode(pv_name);
 		rc = cdb_val_decode(pv_name, &cdb_res, rld_vers_retry, str_res, int_res);
+		if (is_str_column(pv_name) && rc == 0) {
+			if (pkg_str_dup(&st, str_res) != 0) {
+				LM_ERR("oom\n");
+				rc = -1;
+				memset(str_res, 0, sizeof *str_res);
+			} else {
+				*str_res = st;
+			}
+		}
 
 		pkg_free(cdb_res.s);
 
