@@ -1263,8 +1263,8 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 
    Example 1.40. t_add_cancel_reason usage
 ...
-t_add_cancel_reason('Reason: SIP ;cause=200;text="Call completed elsewhe
-re"\r\n');
+t_add_cancel_reason("Reason: SIP ;cause=200 ;text=\"Call completed elsew
+here\"\r\n");
 t_relay();
 ...
 
@@ -1572,8 +1572,9 @@ Chapter 4. Contributors
    Saúl Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John
    Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
    Konstantin Bokarius, Anonymous, Dusan Klinec, Mark Dalby,
-   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Edson
-   Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.
+   Walter Doekes (@wdoekes), Alexey Vasilyev, Nick Altmann
+   (@nikbyte), Edson Gellert Schubert, Ingo Wolfsberger, Daniel
+   Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1595,21 +1596,21 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Aug 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jun 2018
-   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
-   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
-   9.  Ovidiu Sas (@ovidiusas)             Apr 2008 - Jan 2016
-   10. Dusan Klinec                        Dec 2015 - Dec 2015
+   1.  Alexey Vasilyev                     Sep 2018 - Sep 2018
+   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Aug 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jun 2018
+   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
+   10. Ovidiu Sas (@ovidiusas)             Apr 2008 - Jan 2016
 
-   All remaining contributors: Ezequiel Lovelle, Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Maksym Sobolyev
-   (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
-   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Dan Pascu
+   All remaining contributors: Dusan Klinec, Ezequiel Lovelle,
+   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Maksym
+   Sobolyev (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous,
+   Mark Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Dan Pascu
    (@danpascu), Henning Westerholt (@henningw), Klaus Darilion,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
@@ -1625,14 +1626,15 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Nick Altmann (@nikbyte), Ovidiu Sas
-   (@ovidiusas), Vlad Paiu (@vladpaiu), Anca Vamanu, Henning
-   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Dan Pascu (@danpascu), Juha Heinanen (@juha-h), Elena-Ramona
-   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Alexey Vasilyev, Liviu Chircu (@liviuchircu),
+   Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Nick Altmann
+   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
+   Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Dan Pascu (@danpascu), Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg).
 
    doc copyrights:
 

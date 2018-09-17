@@ -502,8 +502,8 @@ Chapter 2. Contributors
    5. Jarrod Baumann (@jarrodb) 6 3 131 32
    6. Agalya Ramachandran (@AgalyaR) 6 2 354 1
    7. Ryan Bullock (@rrb3942) 5 2 91 77
-   8. Andrey Vorobiev (@andrey-vorobiev) 2 1 4 0
-   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 2 1
+   9. Andrey Vorobiev (@andrey-vorobiev) 2 1 4 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -525,10 +525,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2018
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
-   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2018
+   2. Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2018
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   4. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
    5. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
    6. Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
    7. Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
