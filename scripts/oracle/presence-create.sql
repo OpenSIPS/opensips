@@ -9,7 +9,7 @@ CREATE TABLE presentity (
     received_time NUMBER(10),
     body BLOB DEFAULT NULL,
     extra_hdrs BLOB DEFAULT NULL,
-    sender VARCHAR2(256) DEFAULT NULL,
+    sender VARCHAR2(255) DEFAULT NULL,
     CONSTRAINT presentity_presentity_idx  UNIQUE (username, domain, event, etag)
 );
 
@@ -24,7 +24,7 @@ BEGIN map2users('presentity'); END;
 INSERT INTO version (table_name, table_version) values ('active_watchers','11');
 CREATE TABLE active_watchers (
     id NUMBER(10) PRIMARY KEY,
-    presentity_uri VARCHAR2(256),
+    presentity_uri VARCHAR2(255),
     watcher_username VARCHAR2(64),
     watcher_domain VARCHAR2(64),
     to_user VARCHAR2(64),
@@ -36,14 +36,14 @@ CREATE TABLE active_watchers (
     callid VARCHAR2(64),
     local_cseq NUMBER(10),
     remote_cseq NUMBER(10),
-    contact VARCHAR2(256),
+    contact VARCHAR2(255),
     record_route CLOB,
     expires NUMBER(10),
     status NUMBER(10) DEFAULT 2 NOT NULL,
     reason VARCHAR2(64),
     version NUMBER(10) DEFAULT 0 NOT NULL,
     socket_info VARCHAR2(64),
-    local_contact VARCHAR2(256),
+    local_contact VARCHAR2(255),
     CONSTRAINT ORA_active_watchers_idx  UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
 
@@ -58,7 +58,7 @@ BEGIN map2users('active_watchers'); END;
 INSERT INTO version (table_name, table_version) values ('watchers','4');
 CREATE TABLE watchers (
     id NUMBER(10) PRIMARY KEY,
-    presentity_uri VARCHAR2(256),
+    presentity_uri VARCHAR2(255),
     watcher_username VARCHAR2(64),
     watcher_domain VARCHAR2(64),
     event VARCHAR2(64) DEFAULT 'presence',
@@ -85,7 +85,7 @@ CREATE TABLE xcap (
     doc_type NUMBER(10),
     etag VARCHAR2(64),
     source NUMBER(10),
-    doc_uri VARCHAR2(256),
+    doc_uri VARCHAR2(255),
     port NUMBER(10),
     CONSTRAINT xcap_account_doc_type_idx  UNIQUE (username, domain, doc_type, doc_uri)
 );
@@ -103,7 +103,7 @@ CREATE INDEX xcap_source_idx  ON xcap (source);
 INSERT INTO version (table_name, table_version) values ('pua','8');
 CREATE TABLE pua (
     id NUMBER(10) PRIMARY KEY,
-    pres_uri VARCHAR2(256),
+    pres_uri VARCHAR2(255),
     pres_id VARCHAR2(255),
     event NUMBER(10),
     expires NUMBER(10),
@@ -111,15 +111,15 @@ CREATE TABLE pua (
     flag NUMBER(10),
     etag VARCHAR2(64),
     tuple_id VARCHAR2(64),
-    watcher_uri VARCHAR2(256),
-    to_uri VARCHAR2(256),
+    watcher_uri VARCHAR2(255),
+    to_uri VARCHAR2(255),
     call_id VARCHAR2(64),
     to_tag VARCHAR2(64),
     from_tag VARCHAR2(64),
     cseq NUMBER(10),
     record_route CLOB,
-    contact VARCHAR2(256),
-    remote_contact VARCHAR2(256),
+    contact VARCHAR2(255),
+    remote_contact VARCHAR2(255),
     version NUMBER(10),
     extra_headers CLOB
 );
