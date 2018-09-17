@@ -53,6 +53,12 @@ int stats_are_expired(struct hp_block *hpb)
 	       > SHM_STATS_SAMPLING_PERIOD;
 }
 
+unsigned long hp_shm_get_size(struct hp_block *hpb)
+{
+	return hpb->size;
+}
+
+#ifdef HP_MALLOC_FAST_STATS
 void update_shm_stats(struct hp_block *hpb)
 {
 	struct hp_frag_lnk *bucket, *it;
@@ -103,12 +109,6 @@ void update_shm_stats(struct hp_block *hpb)
 	lock_release(hp_stats_lock);
 }
 
-unsigned long hp_shm_get_size(struct hp_block *hpb)
-{
-	return hpb->size;
-}
-
-#ifdef HP_MALLOC_FAST_STATS
 unsigned long hp_shm_get_used(struct hp_block *hpb)
 {
 	if (stats_are_expired(hpb))
