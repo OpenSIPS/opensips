@@ -5,7 +5,7 @@ CREATE TABLE speed_dial (
     domain VARCHAR2(64) DEFAULT '',
     sd_username VARCHAR2(64) DEFAULT '',
     sd_domain VARCHAR2(64) DEFAULT '',
-    new_uri VARCHAR2(256) DEFAULT '',
+    new_uri VARCHAR2(255) DEFAULT '',
     fname VARCHAR2(64) DEFAULT '',
     lname VARCHAR2(64) DEFAULT '',
     description VARCHAR2(64) DEFAULT '',

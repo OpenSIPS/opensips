@@ -4,7 +4,7 @@ CREATE TABLE aliases (
     username VARCHAR2(64) DEFAULT '',
     domain VARCHAR2(64) DEFAULT '',
     contact VARCHAR2(255) DEFAULT '',
-    received VARCHAR2(256) DEFAULT NULL,
+    received VARCHAR2(255) DEFAULT NULL,
     path VARCHAR2(255) DEFAULT NULL,
     expires DATE DEFAULT to_date('2020-05-28 21:32:15','yyyy-mm-dd hh24:mi:ss'),
     q NUMBER(10,2) DEFAULT 1.0 NOT NULL,

@@ -2,7 +2,7 @@ INSERT INTO version (table_name, table_version) values ('rls_presentity','1');
 CREATE TABLE rls_presentity (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     rlsubs_did CHAR(255) NOT NULL,
-    resource_uri CHAR(256) NOT NULL,
+    resource_uri CHAR(255) NOT NULL,
     content_type CHAR(255) NOT NULL,
     presence_state BLOB NOT NULL,
     expires INT(11) NOT NULL,
@@ -17,7 +17,7 @@ CREATE INDEX updated_idx ON rls_presentity (updated);
 INSERT INTO version (table_name, table_version) values ('rls_watchers','2');
 CREATE TABLE rls_watchers (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    presentity_uri CHAR(256) NOT NULL,
+    presentity_uri CHAR(255) NOT NULL,
     to_user CHAR(64) NOT NULL,
     to_domain CHAR(64) NOT NULL,
     watcher_username CHAR(64) NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE rls_watchers (
     reason CHAR(64) NOT NULL,
     version INT(11) DEFAULT 0 NOT NULL,
     socket_info CHAR(64) NOT NULL,
-    local_contact CHAR(256) NOT NULL,
+    local_contact CHAR(255) NOT NULL,
     CONSTRAINT rls_watcher_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
 ) ENGINE=InnoDB;
 
