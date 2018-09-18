@@ -4969,7 +4969,9 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	unsigned int i;
 	static const str gw_str = str_init("GATEWAY");
 	static const str carrier_str = str_init("CARRIER");
+	static const str attrs_str = str_init("ATTRS");
 	static const str matched_str = str_init("Matched Prefix");
+	
 	str chosen_desc;
 	str chosen_id;
 	if ((prefix_node = add_mi_node_child(&rpl_tree->node, 0, matched_str.s,
@@ -5001,11 +5003,21 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 			return 0;
 		}
 	}
+
+	if (route->attrs.s != NULL && route->attrs.len > 0) {
+		if (add_mi_node_child(prefix_node, 0,attrs_str.s,attrs_str.len,
+		route->attrs.s,route->attrs.len) == NULL) {
+			LM_ERR("Failed to add attrs\n");
+			lock_stop_read( partition->ref_lock );
+			free_mi_tree(rpl_tree);
+			return 0;
+		}
+	}
+
 	lock_stop_read( partition->ref_lock );
 
 	return rpl_tree;
 }
-
 
 static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param) {
 	struct mi_node *node = cmd_tree->node.kids;
