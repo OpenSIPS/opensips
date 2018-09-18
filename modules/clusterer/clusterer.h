@@ -142,7 +142,9 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 										str *cmd_params, int no_params);
 
 int gen_rcv_evs_init(void);
+int node_state_ev_init(void);
 void gen_rcv_evs_destroy(void);
+void node_state_ev_destroy(void);
 
 int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, str *ip_str,

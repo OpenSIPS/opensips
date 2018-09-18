@@ -946,6 +946,29 @@ Cluster:: 1
 			</para></listitem>
 		</itemizedlist>
 	</section>
+
+	<section id="event_E_CLUSTERER_NODE_STATE_CHANGED" xreflabel="E_CLUSTERER_NODE_STATE_CHANGED">
+		<title>
+		<function moreinfo="none">E_CLUSTERER_NODE_STATE_CHANGED</function>
+		</title>
+		<para>
+			This event is raised when the state of a node changes in terms of
+			availability.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>cluster_id</emphasis> - The cluster ID.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>node_id</emphasis> - The ID of the node.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>new_state</emphasis> - The new state of the node, with
+				the possible values: 0 - down, 1 - up.
+			</para></listitem>
+		</itemizedlist>
+	</section>
 </section>
 
 <section>

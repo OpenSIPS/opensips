@@ -53,8 +53,10 @@ extern int ping_timeout;
 
 static event_id_t ei_req_rcv_id = EVI_ERROR;
 static event_id_t ei_rpl_rcv_id = EVI_ERROR;
+static event_id_t ei_node_state_id = EVI_ERROR;
 static str ei_req_rcv_name = str_init("E_CLUSTERER_REQ_RECEIVED");
 static str ei_rpl_rcv_name = str_init("E_CLUSTERER_RPL_RECEIVED");
+static str ei_node_state_name = str_init("E_CLUSTERER_NODE_STATE_CHANGED");
 
 static evi_params_p ei_event_params;
 static evi_param_p ei_clid_p, ei_srcid_p, ei_msg_p, ei_tag_p;
@@ -62,6 +64,13 @@ static str ei_clid_pname = str_init("cluster_id");
 static str ei_srcid_pname = str_init("src_id");
 static str ei_msg_pname = str_init("msg");
 static str ei_tag_pname = str_init("tag");
+
+static evi_params_p ei_node_event_params;
+static evi_param_p ei_clusterid_p, ei_nodeid_p, ei_newstate_p;
+static str ei_clusterid_pname = str_init("cluster_id");
+static str ei_nodeid_pname = str_init("node_id");
+static str ei_newstate_pname = str_init("new_state");
+
 
 static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 						node_info_t *node_b);
@@ -2330,6 +2339,31 @@ static int send_cap_update(node_info_t *dest_node, int require_reply)
 	return 0;
 }
 
+static int raise_node_state_ev(enum clusterer_event ev, int cluster_id, int node_id)
+{
+	int new_state = ev == CLUSTER_NODE_DOWN ? 0 : 1;
+
+	if (evi_param_set_int(ei_clusterid_p, &cluster_id) < 0) {
+		LM_ERR("cannot set cluster_id event parameter\n");
+		return -1;
+	}
+	if (evi_param_set_int(ei_nodeid_p, &node_id) < 0) {
+		LM_ERR("cannot set node_id event parameter\n");
+		return -1;
+	}
+	if (evi_param_set_int(ei_newstate_p, &new_state) < 0) {
+		LM_ERR("cannot set new_state event parameter\n");
+		return -1;
+	}
+
+	if (evi_raise_event(ei_node_state_id, ei_node_event_params) < 0) {
+		LM_ERR("cannot raise event\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 								int no_clusters)
 {
@@ -2351,9 +2385,16 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 				node->flags &= ~NODE_EVENT_DOWN;
 				lock_release(node->lock);
 
-				for (cap_it = cl->capabilities; cap_it; cap_it = cap_it->next)
+				for (cap_it = cl->capabilities; cap_it; cap_it = cap_it->next) {
 					if (cap_it->reg.event_cb)
 						cap_it->reg.event_cb(CLUSTER_NODE_DOWN, node->node_id);
+
+					if (raise_node_state_ev(cl->cluster_id, CLUSTER_NODE_DOWN,
+						node->node_id) < 0)
+						LM_ERR("Failed to raise node state changed event for: "
+							"cluster_id=%d node_id=%d, new_state=node down\n",
+							cl->cluster_id, node->node_id);
+				}
 
 			} else if (node->flags & NODE_EVENT_UP) {
 				node->flags &= ~NODE_EVENT_UP;
@@ -2407,6 +2448,12 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 
 					if (cap_it->reg.event_cb)
 						cap_it->reg.event_cb(CLUSTER_NODE_UP, node->node_id);
+
+					if (raise_node_state_ev(cl->cluster_id, CLUSTER_NODE_UP,
+						node->node_id) < 0)
+						LM_ERR("Failed to raise node state changed event for: "
+							"cluster_id=%d node_id=%d, new_state=node up\n",
+							cl->cluster_id, node->node_id);
 				}
 			} else
 				lock_release(node->lock);
@@ -2687,7 +2734,45 @@ create_error:
 	return -1;
 }
 
+int node_state_ev_init(void)
+{
+	/* publish the events */
+	ei_node_state_id = evi_publish_event(ei_node_state_name);
+	if (ei_req_rcv_id == EVI_ERROR) {
+		LM_ERR("cannot register message received event\n");
+		return -1;
+	}
+
+	ei_node_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (ei_node_event_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(ei_node_event_params, 0, sizeof(evi_params_t));
+
+	ei_clusterid_p = evi_param_create(ei_node_event_params, &ei_clusterid_pname);
+	if (ei_nodeid_p == NULL)
+		goto create_error;
+	ei_nodeid_p = evi_param_create(ei_node_event_params, &ei_nodeid_pname);
+	if (ei_nodeid_p == NULL)
+		goto create_error;
+	ei_newstate_p = evi_param_create(ei_node_event_params, &ei_newstate_pname);
+	if (ei_newstate_p == NULL)
+		goto create_error;
+
+	return 0;
+
+create_error:
+	LM_ERR("cannot create event parameter\n");
+	return -1;
+}
+
 void gen_rcv_evs_destroy(void)
 {
 	evi_free_params(ei_event_params);
+}
+
+void node_state_ev_destroy(void)
+{
+	evi_free_params(ei_node_event_params);
 }

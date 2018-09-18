@@ -390,6 +390,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* create node state event */
+	if (node_state_ev_init() < 0) {
+		LM_ERR("cannot create cluster message received event\n");
+		return -1;
+	}
+
 	return 0;
 error:
 	lock_destroy_rw(cl_list_lock);
@@ -1162,8 +1168,9 @@ static void destroy(void)
 		cl_list_lock = NULL;
 	}
 
-	/* free generic message receiving events events */
+	/* free evi events */
 	gen_rcv_evs_destroy();
+	node_state_ev_destroy();
 }
 
 int load_clusterer(struct clusterer_binds *binds)
