@@ -1435,10 +1435,8 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 		/* lock the whole entry */
 		entry = &((d_table->entries)[index]);
-		if (do_lock) {
+		if (do_lock)
 			dlg_lock( d_table, entry);
-			cell->locked_by = process_no;
-		}
 
 		for (cell = entry->first; cell != NULL; ) {
 			callee_leg = callee_idx(cell);
@@ -1452,7 +1450,9 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 						/* mark it as deleted so as we don't deal with it later */
 						cell->flags |= DLG_FLAG_DB_DELETED;
 						/* timer is done with this dialog */
+						cell->locked_by = process_no;
 						unref_dlg_unsafe(cell,1,entry);
+						cell->locked_by = 0;
 						cell=next_cell;
 						continue;
 					}
@@ -1525,7 +1525,9 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 					ins_done=1;
 
 				/* dialog saved */
+				cell->locked_by = process_no;
 				run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1);
+				cell->locked_by = 0;
 
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 
@@ -1567,7 +1569,9 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				}
 
 				/* dialog saved */
+				cell->locked_by = process_no;
 				run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1);
+				cell->locked_by = 0;
 
 				cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 			} else if (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) {
@@ -1586,17 +1590,16 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 					continue;
 				}
 
+				cell->locked_by = process_no;
 				run_dlg_callbacks( DLGCB_DB_SAVED, cell, 0, DLG_DIR_NONE, NULL,1);
+				cell->locked_by = 0;
 
 				cell->flags &= ~DLG_FLAG_VP_CHANGED;
 			}
 			cell = cell->next;
 		}
-		if (do_lock) {
-			cell->locked_by = 0;
+		if (do_lock)
 			dlg_unlock( d_table, entry);
-		}
-
 	}
 
 	if (ins_done) {
