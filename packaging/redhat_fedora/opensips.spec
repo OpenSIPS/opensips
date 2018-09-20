@@ -1170,6 +1170,7 @@ fi
 %{_libdir}/opensips/modules/b2b_logic.so
 %{_libdir}/opensips/modules/b2b_sca.so
 %{_libdir}/opensips/modules/call_center.so
+%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/scenario_callcenter.xml
 %doc docdir/README.b2b_entities
 %doc docdir/README.b2b_logic
 %doc docdir/README.b2b_sca
