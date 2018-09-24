@@ -366,11 +366,11 @@ Chapter 2. Contributors
    1. Evandro Villaron (@evillaron) 149 9 10947 3011
    2. Robison Tesini (@rtesini) 63 1 3116 2038
    3. Razvan Crainea (@razvancrainea) 20 11 311 320
-   4. Liviu Chircu (@liviuchircu) 8 5 26 81
+   4. Liviu Chircu (@liviuchircu) 9 6 26 81
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 44 24
-   6. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
-   7. Julián Moreno Patiño 3 1 1 1
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   6. Peter Lemenkov (@lemenkov) 4 2 1 1
+   7. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
+   8. Julián Moreno Patiño 3 1 1 1
    9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -393,8 +393,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Jun 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Sep 2018
+   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    4. Razvan Crainea (@razvancrainea)     Jul 2015 - Apr 2017
    5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Oct 2016

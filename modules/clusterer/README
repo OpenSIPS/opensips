@@ -61,6 +61,7 @@ CLUSTERER Module
 
               1.7.1. E_CLUSTERER_REQ_RECEIVED
               1.7.2. E_CLUSTERER_RPL_RECEIVED
+              1.7.3. E_CLUSTERER_NODE_STATE_CHANGED
 
         1.8. Usage Example
 
@@ -783,6 +784,17 @@ Cluster:: 1
        the cluster_send_req() or cluster_broadcast_req()
        functions.
 
+1.7.3.  E_CLUSTERER_NODE_STATE_CHANGED
+
+   This event is raised when the state of a node changes in terms
+   of availability.
+
+   Parameters:
+     * cluster_id - The cluster ID.
+     * node_id - The ID of the node.
+     * new_state - The new state of the node, with the possible
+       values: 0 - down, 1 - up.
+
 1.8. Usage Example
 
    This section provides an usage example for replicating
@@ -1039,7 +1051,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 211 63 8773 4379
+   1. Vlad Patrascu (@rvlad-patrascu) 213 64 8892 4381
    2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    3. Liviu Chircu (@liviuchircu) 32 21 477 373
    4. Razvan Crainea (@razvancrainea) 16 10 297 131
@@ -1067,10 +1079,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Aug 2018
-   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Aug 2018
-   3. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   4. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - May 2018
+   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Aug 2018
+   3. Liviu Chircu (@liviuchircu)              Mar 2016 - Aug 2018
+   4. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    5. Razvan Crainea (@razvancrainea)          Nov 2015 - Dec 2017
    6. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016
    7. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Sep 2015
@@ -1082,8 +1094,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Razvan Crainea
    (@razvancrainea), Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:

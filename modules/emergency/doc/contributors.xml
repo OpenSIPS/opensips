@@ -45,8 +45,8 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">5</entry>
+		<entry align="center">9</entry>
+		<entry align="center">6</entry>
 		<entry align="center">26</entry>
 		<entry align="center">81</entry>
 	</row>
@@ -60,6 +60,14 @@
 	</row>
 	<row>
 		<entry>6. </entry>
+		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -67,16 +75,8 @@
 		<entry align="center">13</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
-		<entry>Julián Moreno Patiño</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-	</row>
-	<row>
 		<entry>8. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry>Julián Moreno Patiño</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
@@ -120,13 +120,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
-		<entry align="center">Jun 2018 - Jun 2018</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2015 - Sep 2018</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2015 - Jun 2018</entry>
+		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry align="center">Jun 2018 - Sep 2018</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
