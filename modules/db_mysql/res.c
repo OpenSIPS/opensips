@@ -112,7 +112,7 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 
 			case MYSQL_TYPE_STRING:
 			case MYSQL_TYPE_VAR_STRING:
-			#if MYSQL_VERSION_ID > 50700
+			#if (defined LIBMYSQL_VERSION_ID) && (MYSQL_VERSION_ID > 50700)
 			case MYSQL_TYPE_JSON:
 			#endif
 				LM_DBG("use DB_STRING result type\n");
