@@ -1939,66 +1939,64 @@ int tcp_has_async_write(void)
 
 /***************************** MI functions **********************************/
 
-struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
+mi_response_t *mi_tcp_list_conns(const mi_param_t *params,
+						struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node* node;
-	struct mi_attr *attr;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *conns_arr, *conn_item;
 	struct tcp_connection *conn;
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
-	unsigned int i,n,part;
+	unsigned int i,part;
 	char proto[PROTO_NAME_MAX_SIZE];
 	char *p;
-	int len;
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==NULL)
-		return 0;
 
 	if (tcp_disabled)
-		return rpl_tree;
+		return init_mi_result_null();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	conns_arr = add_mi_array(resp_obj, MI_SSTR("Connections"));
+	if (conns_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++) {
 		TCPCONN_LOCK(part);
-		for( i=0,n=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
+		for( i=0; i<TCP_ID_HASH_SIZE ; i++ ) {
 			for(conn=TCP_PART(part).tcpconn_id_hash[i];conn;conn=conn->id_next){
-				/* add one node for each conn */
-				node = add_mi_node_child(&rpl_tree->node, 0,
-					MI_SSTR("Connection"), 0, 0 );
-				if (node==0)
+				/* add one object fo each conn */
+				conn_item = add_mi_object(conns_arr, 0, 0);
+				if (!conn_item)
 					goto error;
 
 				/* add ID */
-				p = int2str((unsigned long)conn->id, &len);
-				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("ID"), p, len);
-				if (attr==0)
+				if (add_mi_int(conn_item, MI_SSTR("ID"), conn->id) < 0)
 					goto error;
 
 				/* add type/proto */
 				p = proto2str(conn->type, proto);
-				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Type"),
-					proto, (int)(long)(p-proto));
-				if (attr==0)
+				if (add_mi_string(conn_item, MI_SSTR("Type"), proto,
+					(int)(long)(p-proto)) > 0)
 					goto error;
 
 				/* add state */
-				p = sint2str((long)conn->state, &len);
-				attr = add_mi_attr( node, MI_DUP_VALUE,MI_SSTR("State"),p,len);
-				if (attr==0)
+				if (add_mi_int(conn_item, MI_SSTR("State"), conn->state) < 0)
 					goto error;
 
 				/* add Source */
-				attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Source"),
-					"%s:%d",ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
-				if (attr==0)
+				if (add_mi_string_fmt(conn_item, MI_SSTR("Source"), "%s:%d",
+					ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port) < 0)
 					goto error;
 
 				/* add Destination */
-				attr = addf_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Destination"),
-					"%s:%d",ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
-				if (attr==0)
+				if (add_mi_string_fmt(conn_item, MI_SSTR("Destination"), "%s:%d",
+					ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port) < 0)
 					goto error;
 
 				/* add lifetime */
@@ -2006,32 +2004,25 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 				date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 										"%Y-%m-%d %H:%M:%S", localtime(&_ts));
 				if (date_buf_len != 0) {
-					attr = add_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Lifetime"),
-										date_buf, date_buf_len);
+					if (add_mi_string(conn_item, MI_SSTR("Lifetime"),
+						date_buf, date_buf_len) < 0)
+						goto error;
 				} else {
-					p = int2str((unsigned long)_ts, &len);
-					attr = add_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Lifetime"),
-						p,len);
+					if (add_mi_int(conn_item, MI_SSTR("Lifetime"), _ts) < 0)
+						goto error;
 				}
-				if (attr==0)
-					goto error;
-
-				n++;
-				/* at each 50 conns, flush the tree */
-				if ( (n % 50) == 0 )
-					flush_mi_tree(rpl_tree);
-
 			}
 		}
 
 		TCPCONN_UNLOCK(part);
 	}
 
-	return rpl_tree;
+	return resp;
+
 error:
 	TCPCONN_UNLOCK(part);
-	LM_ERR("failed to add node\n");
-	free_mi_tree(rpl_tree);
+	LM_ERR("failed to add MI item\n");
+	free_mi_response(resp);
 	return 0;
 }
 

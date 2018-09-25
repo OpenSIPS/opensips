@@ -70,77 +70,68 @@ static int init_mi_uptime(void)
 	return 0;
 }
 
-
-static struct mi_root *mi_uptime(struct mi_root *cmd, void *param)
+static mi_response_t *mi_uptime(const mi_param_t *params,
+							struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	time_t now;
-	char   *p;
+	char *p;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
 
 	time(&now);
 	p = ctime(&now);
-	node = add_mi_node_child( rpl, MI_DUP_VALUE, MI_SSTR("Now"),
-		p, strlen(p)-1);
-	if (node==0)
+	if (add_mi_string(resp_obj, MI_SSTR("Now"), p, strlen(p)-1) < 0)
 		goto error;
 
-	node = add_mi_node_child( rpl, 0, MI_SSTR("Up since"),
-		up_since_ctime.s, up_since_ctime.len);
-	if (node==0)
+	if (add_mi_string(resp_obj, MI_SSTR("Up since"),
+		up_since_ctime.s, up_since_ctime.len) < 0)
 		goto error;
 
-	node = addf_mi_node_child( rpl, 0, MI_SSTR("Up time"),
-		"%lu [sec]", (unsigned long)difftime(now, startup_time) );
-	if (node==0)
+	if (add_mi_string_fmt(resp, MI_SSTR("Up time"), "%lu [sec]",
+		(unsigned long)difftime(now, startup_time)) < 0)
 		goto error;
 
-	return rpl_tree;
+	return resp;
+
 error:
-	LM_ERR("failed to add node\n");
-	free_mi_tree(rpl_tree);
+	LM_ERR("failed to add mi item\n");
+	free_mi_response(resp);
 	return 0;
 }
 
 
-
-static struct mi_root *mi_version(struct mi_root *cmd, void *param)
+static mi_response_t *mi_version(const mi_param_t *params,
+							struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
 
-	node = add_mi_node_child( rpl, 0, MI_SSTR("Server"), SERVER_HDR+8,
-		SERVER_HDR_LEN-8);
-	if (node==0) {
-		LM_ERR("failed to add node\n");
-		free_mi_tree(rpl_tree);
+	if (add_mi_string(resp_obj, MI_SSTR("Server"), SERVER_HDR+8,
+		SERVER_HDR_LEN-8) < 0) {
+		LM_ERR("failed to add mi item\n");
+		free_mi_response(resp);
 		return 0;
 	}
 
-	return rpl_tree;
+	return resp;
 }
 
 
-
-static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
+static mi_response_t *mi_pwd(const mi_param_t *params,
+						struct mi_handler *async_hdl)
 {
 	static int max_len = 0;
 	static char *cwd_buf = 0;
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 
 	if (cwd_buf==NULL) {
 		max_len = pathmax();
@@ -151,424 +142,381 @@ static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
 		}
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
 
 	if (getcwd(cwd_buf, max_len)==0) {
 		LM_ERR("getcwd failed = %s\n",strerror(errno));
 		goto error;
 	}
 
-	node = add_mi_node_child( rpl, 0, MI_SSTR("WD"), cwd_buf,strlen(cwd_buf));
-	if (node==0) {
-		LM_ERR("failed to add node\n");
+	if (add_mi_string(resp_obj, MI_SSTR("WD"), cwd_buf, strlen(cwd_buf)) < 0) {
+		LM_ERR("failed to mi item\n");
 		goto error;
 	}
 
-	return rpl_tree;
+	return resp;
+
 error:
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }
 
 
-
-static struct mi_root *mi_arg(struct mi_root *cmd, void *param)
+static mi_response_t *mi_arg(const mi_param_t *params,
+						struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
+	mi_response_t *resp;
+	mi_item_t *resp_arr;
 	int n;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
 
 	for ( n=0; n<my_argc ; n++ ) {
-		node = add_mi_node_child(rpl, 0, 0, 0, my_argv[n], strlen(my_argv[n]));
-		if (node==0) {
-			LM_ERR("failed to add node\n");
-			free_mi_tree(rpl_tree);
+		if (add_mi_string(resp_arr, 0, 0, my_argv[n], strlen(my_argv[n])) < 0) {
+			LM_ERR("failed to add mi item\n");
+			free_mi_response(resp);
 			return 0;
 		}
 	}
 
-	return rpl_tree;
+	return resp;
 }
 
 
-
-static struct mi_root *mi_which(struct mi_root *cmd, void *param)
+static mi_response_t *mi_which(const mi_param_t *params,
+							struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
+	mi_response_t *resp;
+	mi_item_t *resp_arr;
 	struct mi_cmd  *cmds;
-	struct mi_node *rpl;
-	struct mi_node *node;
 	int size;
 	int i;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
 
 	get_mi_cmds( &cmds, &size);
 	for ( i=0 ; i<size ; i++ ) {
-		node = add_mi_node_child( rpl, 0, 0, 0, cmds[i].name.s,
-			cmds[i].name.len);
-		if (node==0) {
-			LM_ERR("failed to add node\n");
-			free_mi_tree(rpl_tree);
+		if (add_mi_string(resp_arr, 0, 0,
+			cmds[i].name.s, cmds[i].name.len) < 0) {
+			LM_ERR("failed to add mi item\n");
+			free_mi_response(resp);
 			return 0;
 		}
 	}
 
-	return rpl_tree;
+	return resp;
 }
 
 
-
-static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
+static mi_response_t *mi_ps(const mi_param_t *params,
+						struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
-	struct mi_attr *attr;
-	char *p;
-	int len;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *procs_arr, *proc_item;
 	int i;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+
+	procs_arr = add_mi_array(resp_obj, MI_SSTR("Processes"));
+	if (procs_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	for ( i=0 ; i<counted_processes ; i++ ) {
-		node = add_mi_node_child(rpl, 0, MI_SSTR("Process"), 0, 0 );
-		if (node==0)
+		proc_item = add_mi_object(procs_arr, 0, 0);
+		if (!proc_item)
 			goto error;
 
-		p = int2str((unsigned long)i, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("ID"), p, len);
-		if (attr==0)
+		if (add_mi_int(proc_item, MI_SSTR("ID"), i) < 0)
 			goto error;
 
-		p = int2str((unsigned long)pt[i].pid, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("PID"), p, len);
-		if (attr==0)
+		if (add_mi_int(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
 			goto error;
 
-		attr = add_mi_attr( node, 0, MI_SSTR("Type"),
-			pt[i].desc, strlen(pt[i].desc));
-		if (attr==0)
+		if (add_mi_string(proc_item, MI_SSTR("Type"),
+			pt[i].desc, strlen(pt[i].desc)) < 0)
 			goto error;
 	}
 
-	return rpl_tree;
+	return resp;
+
 error:
-	LM_ERR("failed to add node\n");
-	free_mi_tree(rpl_tree);
+	LM_ERR("failed to add mi item\n");
+	free_mi_response(resp);
 	return 0;
 }
 
 
-
-static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
+static mi_response_t *mi_kill(const mi_param_t *params,
+							struct mi_handler *async_hdl)
 {
 	kill(0, SIGTERM);
 
-	return 0;
+	return init_mi_result_ok();
 }
 
 
-
-static struct mi_root *mi_log_level(struct mi_root *cmd, void *param)
+mi_response_t *mi_log_level(const mi_param_t *params, pid_t pid)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *node;
-	char *p;
-	int len;
-	int new_level, i;
-	pid_t pid = 0;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	int i;
+	int new_level;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	if (get_mi_int_param(params, "level", &new_level) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
 
-	node = cmd->node.kids;
-	if (node!=NULL) {
-		if (str2sint( &node->value, &new_level) < 0)
-			goto out_bad_param;
-
-		node = node->next;
-		if (node && str2sint( &node->value, &pid) < 0)
-			goto out_bad_param;
-
-	/* if called without arguments, print the table and exit */
+	if (pid) {
+		if (add_mi_int(resp_obj, MI_SSTR("Log level"), new_level) < 0)
+			goto error;
 	} else {
-		rpl_tree->node.flags |= MI_IS_ARRAY;
-
-		for (i = 0; i < counted_processes; i++) {
-			node = add_mi_node_child(&rpl_tree->node, 0, MI_SSTR("Process"), 0, 0);
-			if (node==0)
-				goto out;
-
-			p = int2str((unsigned long)pt[i].pid, &len);
-			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("PID"), p, len))
-				goto out;
-
-			p = sint2str((unsigned long)pt[i].log_level, &len);
-			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Log level"), p,len))
-				goto out;
-
-			if (!add_mi_attr( node, 0, MI_SSTR("Type"), pt[i].desc,
-							  strlen(pt[i].desc)))
-				goto out;
-		}
-
-		return rpl_tree;
+		if (add_mi_int(resp_obj, MI_SSTR("New global log level"), new_level) < 0)
+			goto error;
 	}
-
-	p = sint2str((long)new_level, &len);
-	if (pid)
-		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-			MI_SSTR("New log level"), p, len);
-	else
-		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-			MI_SSTR("New global log level"), p, len);
-
-	if (node==0)
-		goto out;
 
 	if (pid) {
 		/* convert pid to OpenSIPS id */
 		i = get_process_ID_by_PID(pid);
-		if (i == -1)
-			goto out_bad_param;
+		if (i == -1) {
+			free_mi_response(resp);
+			return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), MI_SSTR("Bad PID"));
+		}
 
 		__set_proc_default_log_level(i, new_level);
 		__set_proc_log_level(i, new_level);
 	} else
 		set_global_log_level(new_level);
 
-	return rpl_tree;
+	return resp;
 
-out_bad_param:
-	free_mi_tree(rpl_tree);
-	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+error:
+	free_mi_response(resp);
+	return 0;
+}
 
-out:
-	free_mi_tree(rpl_tree);
-	return NULL;
+static mi_response_t *w_log_level(const mi_param_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *procs_arr, *proc_item;
+	int i;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	procs_arr = add_mi_array(resp_obj, MI_SSTR("Processes"));
+	if (procs_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	for (i = 0; i < counted_processes; i++) {
+		proc_item = add_mi_object(procs_arr, NULL, 0);
+		if (!proc_item)
+			goto error;
+
+		if (add_mi_int(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
+			goto error;
+
+		if (add_mi_int(proc_item, MI_SSTR("Log level"), pt[i].log_level) < 0)
+			goto error;
+
+		if (add_mi_string(proc_item, MI_SSTR("Type"),
+			pt[i].desc, strlen(pt[i].desc)) < 0)
+			goto error;
+	}
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *w_log_level_1(const mi_param_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_log_level(params, 0);
+}
+
+static mi_response_t *w_log_level_2(const mi_param_t *params,
+								struct mi_handler *async_hdl)
+{
+	int pid;
+
+	if (get_mi_int_param(params, "pid", &pid) < 0)
+		return init_mi_param_error();
+
+	return mi_log_level(params, pid);
 }
 
 
-static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
+static mi_response_t *mi_cachestore(const 	mi_param_t *params, unsigned int expire)
 {
 	str mc_system;
 	str attr;
 	str value;
-	unsigned int expires = 0;
-	struct mi_node* node= NULL;
-	str expires_str;
 
-	if(cmd == NULL)
-	{
-		LM_ERR("NULL command\n");
-		return init_mi_tree(404, MI_SSTR("NULL command"));
-	}
+	if (get_mi_string_param(params, "system", &mc_system.s, &mc_system.len) < 0)
+		return init_mi_param_error();
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
+	if (!mc_system.s || mc_system.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty memory cache id"));
 
-	mc_system = node->value;
-	if(mc_system.s == NULL || mc_system.len== 0)
-	{
-		LM_ERR( "empty memory cache system parameter\n");
-		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
-	}
+	if (get_mi_string_param(params, "attr", &attr.s, &attr.len) < 0)
+		return init_mi_param_error();
 
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
+	if (!attr.s || attr.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty attribute name"));
 
-	attr = node->value;
-	if(attr.s == NULL || attr.len== 0)
-	{
-		LM_ERR( "empty attribute name parameter\n");
-		return init_mi_tree(404, MI_SSTR("Empty attribute name"));
-	}
+	if (get_mi_string_param(params, "value", &value.s, &value.len) < 0)
+		return init_mi_param_error();
 
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
+	if (!value.s || value.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty value"));
 
-	value = node->value;
-	if(value.s == NULL || value.len== 0)
-	{
-		LM_ERR( "empty value parameter\n");
-		return init_mi_tree(404, MI_SSTR("Empty value argument"));
-	}
-
-	/* expires parameter is not compulsory */
-	node = node->next;
-	if(node!= NULL)
-	{
-		expires_str = node->value;
-		if(expires_str.s == NULL || expires_str.len == 0)
-		{
-			LM_ERR( "empty expires parameter\n");
-			return init_mi_tree(404, MI_SSTR("Empty expires argument"));
-		}
-		if(str2int(&expires_str, &expires)< 0)
-		{
-			LM_ERR("wrong format for expires argument- needed int\n");
-			return init_mi_tree(404,
-				MI_SSTR("Bad format for expires argument"));
-		}
-
-		node = node->next;
-		if(node!= NULL)
-			return init_mi_tree(404, MI_SSTR("Too many parameters"));
-	}
-
-	if(cachedb_store(&mc_system, &attr, &value,expires)< 0)
-	{
+	if (cachedb_store(&mc_system, &attr, &value, expire) < 0) {
 		LM_ERR("cachedb_store command failed\n");
-		return init_mi_tree(500, MI_SSTR("Cache store command failed"));
+		return init_mi_error(500, MI_SSTR("Cache store command failed"), 0, 0);
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
+}
+
+static mi_response_t *w_cachestore(const mi_param_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_cachestore(params, 0);
+}
+
+static mi_response_t *w_cachestore_1(const mi_param_t *params,
+								struct mi_handler *async_hdl)
+{
+	int expire;
+
+	if (get_mi_int_param(params, "expire", &expire) < 0)
+		return init_mi_param_error();
+
+	if (expire < 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Negative expire value"));
+
+	return mi_cachestore(params, expire);
 }
 
 
-static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
+static mi_response_t *mi_cachefetch(const mi_param_t *params,
+								struct mi_handler *async_hdl)
 {
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	str mc_system;
 	str attr;
 	str value;
-	struct mi_node* node= NULL;
-	struct mi_root *rpl_tree= NULL;
 	int ret;
 
-	if(cmd == NULL)
-	{
-		LM_ERR("NULL command\n");
-		return init_mi_tree(404, MI_SSTR("NULL command"));
-	}
+	if (get_mi_string_param(params, "system", &mc_system.s, &mc_system.len) < 0)
+		return init_mi_param_error();
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
+	if (!mc_system.s || mc_system.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty memory cache id"));
 
-	mc_system = node->value;
-	if(mc_system.s == NULL || mc_system.len== 0)
-	{
-		LM_ERR( "empty memory cache system parameter\n");
-		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
-	}
+	if (get_mi_string_param(params, "attr", &attr.s, &attr.len) < 0)
+		return init_mi_param_error();
 
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
-
-	attr = node->value;
-	if(attr.s == NULL || attr.len== 0)
-	{
-		LM_ERR( "empty attribute name parameter\n");
-		return init_mi_tree(404,MI_SSTR( "Empty attribute name"));
-	}
-
-	node = node->next;
-	if(node != NULL)
-		return init_mi_tree(404, MI_SSTR("Too many arguments"));
+	if (!attr.s || attr.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty attribute name"));
 
 	ret = cachedb_fetch(&mc_system, &attr, &value);
 	if(ret== -1)
 	{
 		LM_ERR("cachedb_fetch command failed\n");
-		return init_mi_tree(500, MI_SSTR("Cache fetch command failed"));
-	}
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-	{
-		if(value.s)
-			pkg_free(value.s);
-		return 0;
+		return init_mi_error(500, MI_SSTR("Cache fetch command failed"), 0, 0);
 	}
 
 	if(ret == -2 || value.s == 0 || value.len == 0)
-	{
-		add_mi_node_child( &rpl_tree->node, 0, 0, 0,
-			MI_SSTR("Value not found") );
-		goto done;
+		return init_mi_result_string(MI_SSTR("Value not found"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp) {
+		pkg_free(value.s);
+		return 0;
 	}
 
-	addf_mi_node_child(&rpl_tree->node, 0, "key", 3, "%.*s",
-	                   attr.len, attr.s);
-	addf_mi_node_child(&rpl_tree->node, 0, "value", 5, "%.*s",
-	                   value.len, value.s);
+	if (add_mi_string(resp_obj, MI_SSTR("key"), attr.s, attr.len) < 0)
+		goto error;
+
+	if (add_mi_string(resp_obj, MI_SSTR("value"), value.s, value.len) < 0)
+		goto error;
 
 	pkg_free(value.s);
 
-done:
-	return rpl_tree;
+	return resp;
+
+error:
+	pkg_free(value.s);
+	free_mi_response(resp);
+	return 0;
 }
 
 
-static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
+static mi_response_t *mi_cacheremove(const mi_param_t *params,
+								struct mi_handler *async_hdl)
 {
 	str mc_system;
 	str attr;
-	struct mi_node* node= NULL;
 
-	if(cmd == NULL)
-	{
-		LM_ERR("NULL command\n");
-		return init_mi_tree(404, MI_SSTR("NULL command"));
-	}
+	if (get_mi_string_param(params, "system", &mc_system.s, &mc_system.len) < 0)
+		return init_mi_param_error();
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
+	if (!mc_system.s || mc_system.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty memory cache id"));
 
-	mc_system = node->value;
-	if(mc_system.s == NULL || mc_system.len== 0)
-	{
-		LM_ERR( "empty memory cache system parameter\n");
-		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
-	}
+	if (get_mi_string_param(params, "attr", &attr.s, &attr.len) < 0)
+		return init_mi_param_error();
 
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree(404, MI_SSTR("Too few arguments"));
-
-	attr = node->value;
-	if(attr.s == NULL || attr.len== 0)
-	{
-		LM_ERR( "empty attribute name parameter\n");
-		return init_mi_tree(404, MI_SSTR("Empty attribute name"));
-	}
-
-	node = node->next;
-	if(node != NULL)
-		return init_mi_tree(404, MI_SSTR("Too many parameters"));
+	if (!attr.s || attr.len == 0)
+		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+			MI_SSTR("Empty attribute name"));
 
 	if(cachedb_remove(&mc_system, &attr)< 0)
 	{
 		LM_ERR("cachedb_remove command failed\n");
-		return init_mi_tree(500, MI_SSTR("Cache remove command failed"));
+		return init_mi_error(500, MI_SSTR("Cache remove command failed"), 0, 0);
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
 
@@ -591,67 +539,51 @@ static void rpc_do_pkg_dump(int sender_id, void *llevel)
 	return;
 }
 
-static struct mi_root *mi_mem_pkg_dump(struct mi_root *cmd, void *param)
+static mi_response_t *mi_mem_pkg_dump(const mi_param_t *params, int llevel)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *node;
-	int llevel = 0;
 	int i;
 	pid_t pid = 0;
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		return 0;
-
-	node = cmd->node.kids;
-	if (node==NULL)
-		return init_mi_tree(404, MI_SSTR("Missing PID argument"));
-
-	if (str2sint( &node->value, &pid) < 0)
-		return init_mi_tree(400, MI_SSTR("Bad PID argument"));
-
-	if ( (node=node->next)!=NULL ) {
-		if (str2sint( &node->value, &llevel) < 0)
-			return init_mi_tree(400, MI_SSTR("Bad log level argument"));
-		if (node->next!=NULL)
-			return init_mi_tree(400, MI_SSTR("Too many arguments"));
-	}
+	if (get_mi_int_param(params, "pid", &pid) < 0)
+		return init_mi_param_error();
 
 	/* convert pid to OpenSIPS id */
 	i = get_process_ID_by_PID(pid);
 	if (i == -1)
-		return init_mi_tree(404, MI_SSTR("Process not found"));
+		return init_mi_error(404, MI_SSTR("Process not found"), 0, 0);
 
 	if (IPC_FD_WRITE(i)<=0)
-		return init_mi_tree(500, MI_SSTR("Process does not support mem dump"));
+		return init_mi_error(500, MI_SSTR("Process does not support mem dump"),0,0);
 
 	if (ipc_send_rpc( i, rpc_do_pkg_dump, (void*)(long)llevel)<0) {
-		LM_ERR("failed to trigger pkg dump for process %d\n", i );
-		return init_mi_tree(500, MI_SSTR("Internal error"));
+		LM_ERR("failed to trigger pkg dump for process %d\n", i);
+		return init_mi_error(500, MI_SSTR("Internal error"),0,0);
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
+}
+
+static mi_response_t *w_mem_pkg_dump_1(const mi_param_t *params,
+									struct mi_handler *async_hdl)
+{
+	return mi_mem_pkg_dump(params, 0);
+}
+
+static mi_response_t *w_mem_pkg_dump_2(const mi_param_t *params,
+									struct mi_handler *async_hdl)
+{
+	int llevel;
+
+	if (get_mi_int_param(params, "log_level", &llevel) < 0)
+		return init_mi_param_error();
+
+	return mi_mem_pkg_dump(params, llevel);
 }
 
 
-static struct mi_root *mi_mem_shm_dump(struct mi_root *cmd, void *param)
+static mi_response_t *mi_mem_shm_dump(int llevel)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *node;
-	int llevel = 0;
 	int bk;
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		return 0;
-
-	node = cmd->node.kids;
-	if (node!=NULL) {
-		if (str2sint( &node->value, &llevel) < 0)
-			return init_mi_tree(400, MI_SSTR("Bad log level argument"));
-		if (node->next!=NULL)
-			return init_mi_tree(400, MI_SSTR("Too many arguments"));
-	}
 
 	bk = memdump;
 	if (llevel!=0)
@@ -660,56 +592,139 @@ static struct mi_root *mi_mem_shm_dump(struct mi_root *cmd, void *param)
 	shm_status();
 	memdump = bk;
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
+}
+
+static mi_response_t *w_mem_shm_dump(const mi_param_t *params,
+									struct mi_handler *async_hdl)
+{
+	return mi_mem_shm_dump(0);
+}
+
+static mi_response_t *w_mem_shm_dump_1(const mi_param_t *params,
+									struct mi_handler *async_hdl)
+{
+	int llevel;
+
+	if (get_mi_int_param(params, "log_level", &llevel) < 0)
+		return init_mi_param_error();
+
+	return mi_mem_shm_dump(llevel);
 }
 
 
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
-		"when it started to run, for how long it runs",
-		mi_uptime,     MI_NO_INPUT_FLAG,  0,  init_mi_uptime },
-	{ "version", "prints the version string of a runningOpenSIPS",
-		mi_version,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ "pwd", "prints the working directory of OpenSIPS",
-		mi_pwd,        MI_NO_INPUT_FLAG,  0,  0 },
-	{ "arg", "returns the full list of arguments used at startup",
-		mi_arg,        MI_NO_INPUT_FLAG,  0,  0 },
-	{ "which", "lists all available MI commands",
-		mi_which,      MI_NO_INPUT_FLAG,  0,  0 },
-	{ "ps", "lists all processes used by OpenSIPS",
-		mi_ps,         MI_NO_INPUT_FLAG,  0,  0 },
-	{ "kill", "terminates OpenSIPS",
-		mi_kill,       MI_NO_INPUT_FLAG,  0,  0 },
+		"when it started to run, for how long it runs", 0, init_mi_uptime, {
+		{mi_uptime, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "version", "prints the version string of a runningOpenSIPS", 0, 0, {
+		{mi_version, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "pwd", "prints the working directory of OpenSIPS", 0, 0, {
+		{mi_pwd, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "arg", "returns the full list of arguments used at startup", 0, 0, {
+		{mi_arg, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "which", "lists all available MI commands", 0, 0, {
+		{mi_which, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "ps", "lists all processes used by OpenSIPS", 0, 0, {
+		{mi_ps, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "kill", "terminates OpenSIPS", 0, 0, {
+		{mi_kill, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 	{ "log_level", "gets/sets the per process or global log level in OpenSIPS",
-		mi_log_level,                 0,  0,  0 },
+		0, 0, {
+		{w_log_level, 	{0}},
+		{w_log_level_1, {"level", 0}},
+		{w_log_level_2, {"level", "pid", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 #if defined(QM_MALLOC) && defined(DBG_MALLOC)
 	{ "shm_check", "complete scan of the shared memory pool "
-		"(if any error is found, OpenSIPS will abort!)",
-		mi_shm_check, MI_NO_INPUT_FLAG, 0,  0 },
+		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
+		{mi_shm_check, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 #endif
-	{ "cache_store", "stores in a cache system a string value",
-		mi_cachestore,                0,  0,  0 },
-	{ "cache_fetch", "queries for a cache stored value",
-		mi_cachefetch,                0,  0,  0 },
-	{ "cache_remove", "removes a record from the cache system",
-		mi_cacheremove,               0,  0,  0 },
-	{ "event_subscribe", "subscribes an event to the Event Interface",
-		mi_event_subscribe,           0,  0,  0 },
+	{ "cache_store", "stores in a cache system a string value", 0, 0, {
+		{w_cachestore, {"system", "attr", "value", 0}},
+		{w_cachestore_1, {"system", "attr", "value", "expire", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "cache_fetch", "queries for a cache stored value", 0, 0, {
+		{mi_cachefetch, {"system", "attr", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "cache_remove", "removes a record from the cache system", 0, 0, {
+		{mi_cacheremove, {"system", "attr", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "event_subscribe", "subscribes an event to the Event Interface", 0, 0, {
+		{w_mi_event_subscribe, {"event", "socket", 0}},
+		{w_mi_event_subscribe_1, {"event", "socket", "expire", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 	{ "events_list", "lists all the events advertised through the "
-		"Event Interface",
-		mi_events_list,MI_NO_INPUT_FLAG,  0,  0 },
+		"Event Interface", 0, 0, {
+		{mi_events_list, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 	{ "subscribers_list", "lists all the Event Interface subscribers; "
-		"Params: [ event [ subscriber ]]",
-		mi_subscribers_list,          0,  0,  0 },
-	{ "list_tcp_conns", "list all ongoing TCP based connections",
-		mi_tcp_list_conns,MI_NO_INPUT_FLAG,0, 0 },
-	{ "mem_pkg_dump", "forces a status dump of the pkg memory (per process)",
-		mi_mem_pkg_dump,              0,  0,  0 },
-	{ "mem_shm_dump", "forces a status dump of the shm memory",
-		mi_mem_shm_dump,              0,  0,  0 },
-	{ "help", "prints information about MI commands usage",
-		mi_help,                      0,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+		"Params: [ event [ subscriber ]]", 0, 0, {
+		{w_mi_subscribers_list, {0}},
+		{w_mi_subscribers_list_1, {"event", 0}},
+		{w_mi_subscribers_list_2, {"event", "socket", 0}},
+		}
+	},
+	{ "list_tcp_conns", "list all ongoing TCP based connections", 0, 0, {
+		{mi_tcp_list_conns, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "mem_pkg_dump", "forces a status dump of the pkg memory (per process)", 0, 0, {
+		{w_mem_pkg_dump_1, {"pid", 0}},
+		{w_mem_pkg_dump_2, {"pid", "log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "mem_shm_dump", "forces a status dump of the shm memory", 0, 0, {
+		{w_mem_shm_dump, {0}},
+		{w_mem_shm_dump_1, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "help", "prints information about MI commands usage", 0, 0, {
+		{w_mi_help, {0}},
+		{w_mi_help_1, {"mi_cmd", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 

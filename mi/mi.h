@@ -18,17 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
- * History:
- * ---------
- *  2006-09-08  first version (bogdan)
  */
-
-/*!
- * \file
- * \brief MI :: Management
- * \ingroup mi
- */
-
 
 #ifndef _MI_MI_H_
 #define _MI_MI_H_
@@ -36,17 +26,41 @@
 #include "../str.h"
 #include "item.h"
 
-#define MI_ASYNC_RPL_FLAG   (1<<0)
-#define MI_NO_INPUT_FLAG    (1<<1)
+#define MAX_MI_PARAMS  10
+#define MAX_MI_RECIPES 10
 
-#define MI_ROOT_ASYNC_RPL   ((struct mi_root*)-1)
+#define MI_ASYNC_RPL_FLAG   (1<<0)
+
+#define MI_ASYNC_RPL    ((mi_response_t*)-1)
+#define MI_NO_RPL 		((char*)-1)
+
+#define JSONRPC_ID_S "id"
+#define JSONRPC_METHOD_S "method"
+#define JSONRPC_PARAMS_S "params"
+
+#define JSONRPC_PARSE_ERR_CODE     -32700
+#define JSONRPC_PARSE_ERR_MSG      "Parse error"
+#define JSONRPC_INVAL_REQ_CODE     -32600
+#define JSONRPC_INVAL_REQ_MSG      "Invalid Request"
+#define JSONRPC_NOT_FOUND_CODE     -32601
+#define JSONRPC_NOT_FOUND_MSG      "Method not found"
+#define JSONRPC_INVAL_PARAMS_CODE  -32602
+#define JSONRPC_INVAL_PARAMS_MSG   "Invalid params"
+#define JSONRPC_SERVER_ERR_CODE	   -32000
+#define JSONRPC_SERVER_ERR_MSG     "Server error"
+
+#define ERR_DET_POSIT_PARAMS_S "OpenSIPS MI commands only support named parameters"
+#define ERR_DET_AMBIG_CALL_S "Ambiguous call"
+
 
 struct mi_handler;
 
-typedef struct mi_root* (mi_cmd_f)(struct mi_root*, void *param);
+typedef mi_item_t mi_request_t;
+
+typedef mi_response_t *(mi_cmd_f)(const mi_param_t *params,
+										struct mi_handler *async_hdl);
 typedef int (mi_child_init_f)(void);
-typedef void (mi_handler_f)(struct mi_root *, struct mi_handler *, int);
-typedef int (mi_flush_f)(void *, struct mi_root *);
+typedef void (mi_handler_f)(mi_response_t *, struct mi_handler *, int);
 
 
 struct mi_handler {
@@ -54,6 +68,13 @@ struct mi_handler {
 	void * param;
 };
 
+typedef struct mi_recipe_ {
+	mi_cmd_f *cmd;
+	char *params[MAX_MI_PARAMS];
+} mi_recipe_t;
+
+/* mi_recipe_t array terminator */
+#define EMPTY_MI_RECIPE 0, {0}
 
 struct mi_cmd {
 	int id;
@@ -61,69 +82,63 @@ struct mi_cmd {
 	str name;
 	str help;
 	mi_child_init_f *init_f;
-	mi_cmd_f *f;
 	unsigned int flags;
-	void *param;
+	mi_recipe_t *recipes;
 
 	volatile unsigned char* trace_mask;
 };
 
-
 typedef struct mi_export_ {
 	char *name;
 	char *help;
-	mi_cmd_f *cmd;
 	unsigned int flags;
-	void *param;
 	mi_child_init_f *init_f;
-}mi_export_t;
+	mi_recipe_t recipes[MAX_MI_RECIPES];
+} mi_export_t;
+
+/* mi_export_t array terminator */
+#define EMPTY_MI_EXPORT 0, 0, 0, 0, {{EMPTY_MI_RECIPE}}
 
 
+int register_mi_cmd(char *name, char *help, unsigned int flags,
+		mi_child_init_f in, mi_recipe_t *recipes, char* mod_name);
 
-int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
-		mi_child_init_f in, unsigned int flags, char* mod_name);
-
-int register_mi_mod( char *mod_name, mi_export_t *mis);
+int register_mi_mod(char *mod_name, mi_export_t *mis);
 
 int init_mi_child();
 
-struct mi_cmd* lookup_mi_cmd( char *name, int len);
+struct mi_cmd *lookup_mi_cmd(char *name, int len);
 
-struct mi_root *mi_help(struct mi_root *cmd, void *param);
+mi_response_t *w_mi_help(const mi_param_t *params,
+					struct mi_handler *async_hdl);
+mi_response_t *w_mi_help_1(const mi_param_t *params,
+					struct mi_handler *async_hdl);
 
+void get_mi_cmds(struct mi_cmd **cmds, int *size);
 
-extern mi_flush_f *crt_flush_fnct;
-extern void *crt_flush_param;
+void _init_mi_shm_mem_hooks(void);
+void _init_mi_pkg_mem_hooks(void);
+void _init_mi_sys_mem_hooks(void);  /* stdlib */
 
+/* @req should be null-terminated
+ */
+mi_request_t *parse_mi_request(const char *req, const char **end_ptr);
 
+/* If unable to parse the request’s JSON text with parse_mi_request(),
+ * @req should be NULL and the function will return the standard JSON-RPC error
+ */
+mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl);
 
-static inline struct mi_root* run_mi_cmd(struct mi_cmd *cmd, struct mi_root *t,
-										mi_flush_f *f, void *param)
-{
-	struct mi_root *ret;
+/* If the request is a jsonrpc notification, the function will return MI_NO_RPL
+ */
+char *print_mi_response(mi_response_t *resp, mi_request_t *req);
 
-	/* set the flush function */
-	crt_flush_fnct = f;
-	crt_flush_param = param;
+/* Frees the string returned by print_mi_response()
+ */
+void free_mi_response_str(char *resp_str);
 
-	ret = cmd->f( t, cmd->param);
-
-	/* reset the flush function */
-	crt_flush_fnct = 0;
-	crt_flush_param = 0;
-
-	return ret;
-}
-
-void get_mi_cmds( struct mi_cmd** cmds, int *size);
-
-static inline int flush_mi_tree(struct mi_root *t)
-{
-	if(crt_flush_fnct)
-		return crt_flush_fnct(crt_flush_param, t);
-	else
-		return 0;
-}
+/* Frees a MI Request
+ */
+void free_mi_request(mi_request_t *request);
 
 #endif
-

@@ -18,19 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
- * History:
- * ---------
- *  2006-09-08  first version (bogdan)
  */
 
-/*!
- * \file
- * \brief MI :: Attributes
- * \ingroup mi
- */
-
-/*!
- * \defgroup mi OpenSIPS Management Interface
+/*
+ * OpenSIPS Management Interface
  *
  * The OpenSIPS management interface (MI) is a plugin architecture with a few different
  * handlers that gives access to the management interface over various transports.
@@ -46,15 +37,37 @@
 #include "../dprint.h"
 #include "../mem/mem.h"
 #include "../mem/shm_mem.h"
+#include "../lib/cJSON.h"
+#include "../lib/osips_malloc.h"
 #include "mi.h"
 #include "mi_trace.h"
 
 static struct mi_cmd*  mi_cmds = 0;
 static int mi_cmds_no = 0;
 
-mi_flush_f *crt_flush_fnct = NULL;
-void *crt_flush_param = NULL;
+static cJSON_Hooks sys_mem_hooks = {
+	.malloc_fn = malloc,
+	.free_fn   = free,
+};
+static cJSON_Hooks shm_mem_hooks = {
+	.malloc_fn = osips_shm_malloc,
+	.free_fn   = osips_shm_free,
+};
 
+void _init_mi_sys_mem_hooks(void)
+{
+	cJSON_InitHooks(&sys_mem_hooks);
+}
+
+void _init_mi_shm_mem_hooks(void)
+{
+	cJSON_InitHooks(&shm_mem_hooks);
+}
+
+void _init_mi_pkg_mem_hooks(void)
+{
+	cJSON_InitHooks(NULL);
+}
 
 static inline int get_mi_id( char *name, int len)
 {
@@ -89,8 +102,8 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 		return 0;
 
 	for ( i=0 ; mis[i].name ; i++ ) {
-		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].help,
-				mis[i].param, mis[i].init_f, mis[i].flags, mod_name);
+		ret = register_mi_cmd(mis[i].name, mis[i].help, mis[i].flags,
+				mis[i].init_f, mis[i].recipes, mod_name);
 		if (ret!=0) {
 			LM_ERR("failed to register cmd <%s> for module %s\n",
 					mis[i].name,mod_name);
@@ -117,21 +130,16 @@ int init_mi_child(void)
 
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
-									mi_child_init_f in, unsigned int flags, char* mod_name)
+int register_mi_cmd(char *name, char *help, unsigned int flags,
+		mi_child_init_f in, mi_recipe_t *recipes, char* mod_name)
 {
 	struct mi_cmd *cmds;
 	int id;
 	int len;
 
-	if (f==0 || name==0) {
-		LM_ERR("invalid params f=%p, name=%s\n", f, name);
+	if (recipes==0 || name==0) {
+		LM_ERR("invalid params recipes=%p, name=%s\n", recipes, name);
 		return -1;
-	}
-
-	if (flags&MI_NO_INPUT_FLAG && flags&MI_ASYNC_RPL_FLAG) {
-		LM_ERR("invalids flags for <%s> - "
-			"async functions must take input\n",name);
 	}
 
 	len = strlen(name);
@@ -154,7 +162,6 @@ int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
 
 	cmds = &cmds[mi_cmds_no-1];
 
-	cmds->f = f;
 	cmds->init_f = in;
 	cmds->flags = flags;
 	cmds->name.s = name;
@@ -164,7 +171,7 @@ int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
 	cmds->help.s = help;
 	cmds->help.len = help ? strlen(help) : 0;
 	cmds->id = id;
-	cmds->param = param;
+	cmds->recipes = recipes;
 
 	/**
 	 * FIXME we should check if trace_api is loaded not to lose unnecessary space
@@ -200,63 +207,291 @@ void get_mi_cmds( struct mi_cmd** cmds, int *size)
 	*size = mi_cmds_no;
 }
 
-#define MI_HELP_STR "help mi_cmd - " \
+mi_request_t *parse_mi_request(const char *req, const char **end_ptr)
+{
+	_init_mi_sys_mem_hooks();
+
+	return cJSON_ParseWithOpts(req, end_ptr, 0);
+}
+
+static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
+									int *is_ambiguous)
+{
+	mi_recipe_t *match = NULL;
+	mi_item_t *param;
+	int i, j;
+	int max_recipe_params = 0;
+
+	for (i = 0; recipes[i].cmd; i++) {
+		if (!req_params) {
+			if (recipes[i].params[0] == NULL)
+				return &recipes[i];
+			else
+				continue;
+		} else {
+			if (recipes[i].params[0] == NULL)
+				continue;
+		}
+
+		for (j = 0; recipes[i].params[j]; j++) {
+			for (param = req_params->child; param; param = param->next)
+				if (!strcmp(recipes[i].params[j], param->string))
+					break;
+
+			if (!param)
+				goto next_recipe;
+		}
+
+		if (j > max_recipe_params) {
+			max_recipe_params = j;
+			*is_ambiguous = 0;
+			match = &recipes[i];
+		} else if (j == max_recipe_params)
+			*is_ambiguous = 1;
+
+next_recipe: ;
+	}
+
+	return match;
+}
+
+static mi_response_t *build_err_resp(int code, const char *msg, int msg_len,
+								const char *details, int details_len)
+{
+	mi_response_t *err_resp;
+
+	err_resp = init_mi_error(code, msg, msg_len, details, details_len);
+	if (!err_resp)
+		LM_ERR("Failed to build MI error response object\n");
+
+	return err_resp;
+}
+
+mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *req_id, *req_jsonrpc, *req_method, *req_params;
+	struct mi_cmd *cmd;
+	mi_recipe_t *cmd_recipe;
+	int is_ambiguous;
+
+	if (!req)  /* error parsing the request JSON text */
+		return build_err_resp(JSONRPC_PARSE_ERR_CODE,
+					MI_SSTR(JSONRPC_PARSE_ERR_MSG), NULL, 0);
+
+	/* check if the request is a valid JSON-RPC Request object */
+
+	/* get request id (if absent -> notification) */
+	req_id = cJSON_GetObjectItem(req, JSONRPC_ID_S);
+	if (req_id && !(req_id->type & (cJSON_NULL|cJSON_Number|cJSON_String)))
+		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
+					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
+
+	/* check 'jsonrpc' member */
+	req_jsonrpc = cJSON_GetObjectItem(req, JSONRPC_S);
+	if (!req_jsonrpc || !(req_jsonrpc->type & cJSON_String) ||
+		strcmp(req_jsonrpc->valuestring, JSONRPC_VERS_S))
+		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
+					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
+
+	/* check 'method' member */
+	req_method = cJSON_GetObjectItem(req, JSONRPC_METHOD_S);
+	if (!req_method || !(req_method->type & cJSON_String))
+		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
+					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
+
+	/* check 'params' member */
+	req_params = cJSON_GetObjectItem(req, JSONRPC_PARAMS_S);
+	if (req_params) {
+		if (!(req_params->type & (cJSON_Array|cJSON_Object)) ||
+			!req_params->child)
+			return build_err_resp(JSONRPC_INVAL_REQ_CODE,
+					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
+
+		/* positional parameters are valid for JSON-RPC but
+		 * Opensips will only support named parameters */
+		if (req_params->type & cJSON_Array)
+			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+					MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+					MI_SSTR(ERR_DET_POSIT_PARAMS_S));
+	}
+
+	cmd = lookup_mi_cmd(req_method->valuestring, strlen(req_method->valuestring));
+	if (!cmd)
+		return build_err_resp(JSONRPC_NOT_FOUND_CODE,
+				MI_SSTR(JSONRPC_NOT_FOUND_MSG), NULL, 0);
+
+	/* use the correct 'recipe' of the command based
+	 * on the received parameters */
+	cmd_recipe = get_cmd_recipe(cmd->recipes, req_params, &is_ambiguous);
+	if (!cmd_recipe)
+		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), NULL, 0);
+	else if (is_ambiguous)
+		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+				MI_SSTR(ERR_DET_AMBIG_CALL_S));
+
+	resp = cmd_recipe->cmd(req_params, async_hdl);
+
+	if (resp == NULL)
+		return build_err_resp(JSONRPC_SERVER_ERR_CODE,
+				MI_SSTR(JSONRPC_SERVER_ERR_MSG), NULL, 0);
+	else 
+		return resp;
+}
+
+int add_id_to_response(mi_item_t *id, mi_response_t *resp)
+{
+	if (!id) {
+		if (add_mi_null(resp, MI_SSTR(JSONRPC_ID_S)) < 0) {
+			LM_ERR("Failed to add null value to MI item\n");
+			return -1;
+		}
+
+		return 0;
+	}
+
+	switch ((id->type) & 0xFF) {
+		case cJSON_Number:
+			if (add_mi_int(resp, MI_SSTR(JSONRPC_ID_S), id->valueint) < 0) {
+				LM_ERR("Failed to add int value to MI item\n");
+				return -1;
+			}
+			break;
+		case cJSON_String:
+			if (add_mi_string(resp, MI_SSTR(JSONRPC_ID_S), id->valuestring,
+				strlen(id->valuestring)) < 0) {
+				LM_ERR("Failed to add string value to MI item\n");
+				return -1;
+			}
+			break;
+		case cJSON_NULL:
+			if (add_mi_null(resp, MI_SSTR(JSONRPC_ID_S)) < 0) {
+				LM_ERR("Failed to add null value to MI item\n");
+				return -1;
+			}
+			break;
+		default:
+			LM_ERR("'id' must be a String, Number or Null value\n");
+			return -1;
+	}
+
+	return 0;
+}
+
+char *print_mi_response(mi_response_t *resp, mi_request_t *req)
+{
+	char *resp_str;
+	mi_item_t *req_id;
+	mi_item_t *res_err, *res_err_code = NULL;
+
+	res_err = cJSON_GetObjectItem(resp, JSONRPC_ERROR_S);
+	if (res_err) {
+		res_err_code = cJSON_GetObjectItem(res_err, JSONRPC_ERROR_S);
+		if (!res_err_code) {
+			LM_ERR("no error code for MI error response\n");
+			return NULL;
+		}
+	}
+
+	req_id = cJSON_GetObjectItem(req, JSONRPC_ID_S);
+	if (!req_id) {
+		/* this is a jsonrpc notification (no id but valid request otherwise)
+		 * -> no response */
+		if (!res_err)
+			return MI_NO_RPL;
+
+		if (res_err_code->valueint != JSONRPC_PARSE_ERR_CODE &&
+			res_err_code->valueint != JSONRPC_INVAL_REQ_CODE)
+			return MI_NO_RPL;
+	}
+
+	if (add_id_to_response(req_id, resp) < 0)
+		return NULL;
+
+	_init_mi_sys_mem_hooks();
+	resp_str = cJSON_Print(resp);
+	if (!resp_str)
+		LM_ERR("Failed to build JSON\n");
+	_init_mi_pkg_mem_hooks();
+
+	return resp_str;
+}
+
+void free_mi_request(mi_request_t *request)
+{
+	_init_mi_sys_mem_hooks();
+
+	cJSON_Delete(request);
+
+	_init_mi_pkg_mem_hooks();
+}
+
+void free_mi_response_str(char *resp_str)
+{
+	_init_mi_sys_mem_hooks();
+
+	cJSON_PurgeString(resp_str);
+
+	_init_mi_pkg_mem_hooks();
+}
+
+
+#define MI_HELP_STR "Usage: help mi_cmd - " \
 	"returns information about 'mi_cmd'"
 #define MI_UNKNOWN_CMD "unknown MI command"
 #define MI_NO_HELP "not available for this command"
 #define MI_MODULE_STR "by \"%.*s\" module"
 
-struct mi_root *mi_help(struct mi_root *root, void *param)
+mi_response_t *w_mi_help(const mi_param_t *params,
+							struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree = 0;
-	struct mi_node *node;
-	struct mi_node *rpl;
-	struct mi_cmd *cmd;
+	return init_mi_result_string(MI_SSTR(MI_HELP_STR));
+}
 
-	if (!root) {
-		LM_ERR("invalid MI command\n");
+mi_response_t *w_mi_help_1(const mi_param_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	struct mi_cmd *cmd;
+	str cmd_s;
+
+	if (get_mi_string_param(params, "mi_cmd", &cmd_s.s, &cmd_s.len) < 0)
+		return init_mi_param_error();
+
+	/* search the command */
+	cmd = lookup_mi_cmd(cmd_s.s, cmd_s.len);
+	if (!cmd)
+		return init_mi_error(404, MI_SSTR(MI_UNKNOWN_CMD), 0, 0);
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	}
-	node = root->node.kids;
-	if (!node || !node->value.len || !node->value.s) {
-		rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
-		if (!rpl_tree) {
-			LM_ERR("cannot init mi tree\n");
-			return 0;
-		}
-		rpl = &rpl_tree->node;
-		if (!add_mi_node_child(rpl, 0, "Usage", 5, MI_SSTR(MI_HELP_STR))) {
-			LM_ERR("cannot add new child\n");
+
+	if (cmd->help.s) {
+		if (add_mi_string(resp_obj, MI_SSTR("Help"), cmd->help.s, cmd->help.len)
+			< 0) {
+			LM_ERR("cannot add mi item\n");
 			goto error;
 		}
 	} else {
-		/* search the command */
-		cmd = lookup_mi_cmd(node->value.s, node->value.len);
-		if (!cmd)
-			return init_mi_tree(404, MI_SSTR(MI_UNKNOWN_CMD));
-		rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
-		if (!rpl_tree) {
-			LM_ERR("cannot init mi tree\n");
-			return 0;
-		}
-		rpl = &rpl_tree->node;
-		if (!addf_mi_node_child(rpl, 0, "Help", 4, "%s", cmd->help.s ?
-					cmd->help.s : MI_NO_HELP)) {
-			LM_ERR("cannot add new child\n");
-			goto error;
-		}
-		if (cmd->module.len && cmd->module.s &&
-				!add_mi_node_child(rpl, 0, "Exported by", 11,
-					cmd->module.s, cmd->module.len)) {
-			LM_ERR("cannot add new child\n");
+		if (add_mi_string(resp_obj, MI_SSTR("Help"), MI_SSTR(MI_NO_HELP)) < 0) {
+			LM_ERR("cannot add mi item\n");
 			goto error;
 		}
 	}
 
-	return rpl_tree;
+	if (cmd->module.len && cmd->module.s && add_mi_string(resp_obj,
+		MI_SSTR("Exported by"), cmd->module.s, cmd->module.len) < 0) {
+		LM_ERR("cannot add mi item\n");
+		goto error;
+	}
+
+	return resp;
 
 error:
-	if (rpl_tree)
-		free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }

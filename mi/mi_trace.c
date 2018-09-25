@@ -41,11 +41,6 @@ str correlation_value;
 int correlation_id=-1, correlation_vendor=-1;
 
 
-#if 0
-static char trace_buf[MI_TRACE_BUF_SIZE];
-#endif
-
-
 void try_load_trace_api(void)
 {
 	/* already loaded */
@@ -65,22 +60,11 @@ void try_load_trace_api(void)
 	mi_message_id = mi_trace_api->get_message_id(MI_ID_S);
 }
 
-#if 0
-#define CHECK_OVERFLOW(_len)								\
-	do {													\
-		if ( _len >= MI_TRACE_BUF_SIZE ) {					\
-			LM_ERR("not enough room in command buffer!\n"); \
-			return 0;										\
-		}													\
-	} while (0);
-
-char* build_mi_trace_request( str* cmd, struct mi_root* mi_req, str* backend)
-#endif
 struct mi_trace_req* build_mi_trace_request( str* cmd,
-		struct mi_root* mi_req, str* backend)
+						mi_request_t *mi_req, str* backend)
 {
 	int len=0, new=0;
-	struct mi_node* node;
+	mi_item_t *p;
 
 	if ( !cmd || !backend )
 		return 0;
@@ -89,87 +73,48 @@ struct mi_trace_req* build_mi_trace_request( str* cmd,
 	mi_treq.backend = *backend;
 	memset( mi_treq.params, 0, MAX_TRACE_FIELD);
 
-	if ( mi_req ) {
-		node = mi_req->node.kids;
-		while ( node &&
-			(( new = snprintf( mi_treq.params + len, MAX_TRACE_FIELD - len,
-				"%s%.*s", (node == mi_req->node.kids ? "" : ",")
-							,node->value.len, node->value.s) )
-				< MAX_TRACE_FIELD - len) )  {
-			if ( new < 0) {
-				LM_ERR("snprintf failed!\n");
-				return 0;
-			}
+	if (!mi_req)
+		return 0;
 
-			node = node->next;
-			len += new;
+	p = cJSON_GetObjectItem((const cJSON*)mi_req, JSONRPC_PARAMS_S);
+	if (!p)
+		return 0;
+
+	for(p = p->child; p && new < MAX_TRACE_FIELD - len; p = p->next) {
+		switch ((p->type) & 0xFF) {
+			case cJSON_Number:
+				new = snprintf(mi_treq.params + len, MAX_TRACE_FIELD - len,
+						"%s%d", (p->prev ? "," : ""), p->valueint);
+				if (new < 0) {
+					LM_ERR("snprintf failed!\n");
+					return 0;
+				}
+
+				len += new;
+				break;
+			case cJSON_String:
+				new = snprintf(mi_treq.params + len, MAX_TRACE_FIELD - len,
+						"%s%s", (p->prev ? "," : ""), p->valuestring);
+				if (new < 0) {
+					LM_ERR("snprintf failed!\n");
+					return 0;
+				}
+
+				len += new;
+				break;
+			default:
+				continue;
 		}
 	}
 
 	return &mi_treq;
-#if 0
-	len = snprintf( trace_buf, MI_TRACE_BUF_SIZE,
-			"(%.*s) %.*s\n",
-			backend->len, backend->s,
-			cmd->len, cmd->s);
-
-	CHECK_OVERFLOW(len);
-
-	if ( mi_req ) {
-		node = mi_req->node.kids;
-
-		while ( node ) {
-			/* FIXME should we also put the name here? */
-			new = snprintf( trace_buf+len, MI_TRACE_BUF_SIZE - len,
-					"%.*s ", node->value.len, node->value.s);
-
-			len += new;
-			CHECK_OVERFLOW(len);
-
-			node = node->next;
-		}
-	}
-
-	return trace_buf;
-#endif
 }
 
-struct mi_trace_rpl* build_mi_trace_reply( int code, str* reason, str* rpl_msg )
+str *build_mi_trace_reply(str *rpl_msg)
 {
-#if 0
-	int len, new;
-#endif
-
-	if ( !reason )
-		return 0;
-
-#if 0
-	len = snprintf( trace_buf, MI_TRACE_BUF_SIZE,
-			"(%d:%.*s)\n",
-			code, reason->len, reason->s);
-	CHECK_OVERFLOW(len);
-
-	if ( rpl_msg ) {
-		new = snprintf( trace_buf+len, MI_TRACE_BUF_SIZE,
-				"%.*s...\n",
-				rpl_msg->len > MAX_RPL_CHARS ? MAX_RPL_CHARS : rpl_msg->len,
-				rpl_msg->s);
-		len += new;
-
-		CHECK_OVERFLOW(len);
-	}
-
-	return trace_buf;
-#endif
-	snprintf( mi_trpl.code, MAX_TRACE_FIELD, "%d", code);
-	mi_trpl.reason = *reason;
-	memset( &mi_trpl.rpl, 0, sizeof(str) );
-
-	if ( rpl_msg ) {
-		mi_trpl.rpl.s = rpl_msg->s;
-		mi_trpl.rpl.len = rpl_msg->len > MAX_TRACE_FIELD ?
-							MAX_TRACE_FIELD : rpl_msg->len;
-	}
+	mi_trpl.s = rpl_msg->s;
+	mi_trpl.len = rpl_msg->len > MAX_TRACE_FIELD ?
+					MAX_TRACE_FIELD : rpl_msg->len;
 
 	return &mi_trpl;
 }
@@ -232,15 +177,8 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 			mi_trace_api->add_payload_part(message, "parameters", &tmp_value );
 		}
 	} else {
-		tmp_value.s = pld_param->d.rpl->code;
-		tmp_value.len = strlen( tmp_value.s );
-
-		mi_trace_api->add_payload_part(message, "code", &tmp_value);
-		mi_trace_api->add_payload_part(message, "reason", &pld_param->d.rpl->reason);
-		if ( pld_param->d.rpl->rpl.s ) {
-			mi_trace_api->add_payload_part(message,
-					"reply", &pld_param->d.rpl->rpl);
-		}
+		mi_trace_api->add_payload_part(message,
+				"reply", pld_param->d.rpl);
 	}
 
 	if (mi_trace_api->send_message(message, trace_dst, 0) < 0) {
