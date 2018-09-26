@@ -410,7 +410,7 @@ static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 		return -1;
 	}
 
-	return rest_post_method(msg, url.s, body.s, ctype.s, (pv_spec_p)body_pv,
+	return rest_post_method(msg, url.s, &body, &ctype, (pv_spec_p)body_pv,
 	                        (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
 }
 
@@ -434,7 +434,7 @@ static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
 			return -1;
 	}
 
-	return rest_put_method(msg, url.s, body.s, ctype.s, (pv_spec_p)body_pv,
+	return rest_put_method(msg, url.s, &body, &ctype, (pv_spec_p)body_pv,
 		                       (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
 }
 
@@ -564,7 +564,7 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 	}
 	memset(param, '\0', sizeof *param);
 
-	read_fd = start_async_http_req(msg, REST_CLIENT_POST, url.s, body.s, ctype.s,
+	read_fd = start_async_http_req(msg, REST_CLIENT_POST, url.s, &body, &ctype,
 				param, &param->body, ctype_pv ? &param->ctype : NULL);
 
 	/* error occurred; no transfer done */
@@ -636,7 +636,7 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 	}
 	memset(param, '\0', sizeof *param);
 
-	read_fd = start_async_http_req(msg, REST_CLIENT_PUT, url.s, body.s, ctype.s,
+	read_fd = start_async_http_req(msg, REST_CLIENT_PUT, url.s, &body, &ctype,
 	            param, &param->body, ctype_pv ? &param->ctype : NULL);
 
 	/* error occurred; no transfer done */

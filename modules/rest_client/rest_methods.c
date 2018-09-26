@@ -335,7 +335,7 @@ static void put_multi(OSS_CURLM *multi_list)
  * @ctype:	    will eventually hold the last "Content-Type" header of the reply
  */
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
-					     char *url, char *req_body, char *req_ctype,
+					     char *url, str *req_body, str *req_ctype,
 					     rest_async_param *async_parm, str *body, str *ctype)
 {
 	CURL *handle;
@@ -366,20 +366,39 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	switch (method) {
 	case REST_CLIENT_POST:
 		w_curl_easy_setopt(handle, CURLOPT_POST, 1);
-		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body);
 
+		/* two rare bugs may occur with older curl versions (pre 7.17.1):
+		 *	1. since req_body->s is not dup'ed and may point to a PV buf,
+		 *	   the next SIP message may impact this async transfer by
+		 *	   overriding the value stored in the PV buffer
+		 *
+		 *	2. req_body->s is provided by a PV which does not NULL-terminate
+		 *	   strings (e.g. $du), thus curl's strlen() may overflow or crash
+		 */
+#if (LIBCURL_VERSION_NUM >= 0x071101)
+		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, req_body->len);
+		w_curl_easy_setopt(handle, CURLOPT_COPYPOSTFIELDS, req_body->s);
+#else
+		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body->s);
+#endif
 		if (req_ctype) {
-			snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %s", req_ctype);
+			snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %.*s",
+			         req_ctype->len, req_ctype->s);
 			header_list = curl_slist_append(header_list, print_buff);
 			w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
 		}
 		break;
 	case REST_CLIENT_PUT:
 		w_curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, "PUT");
-		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body);
-
+#if (LIBCURL_VERSION_NUM >= 0x071101)
+		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, req_body->len);
+		w_curl_easy_setopt(handle, CURLOPT_COPYPOSTFIELDS, req_body->s);
+#else
+		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body->s);
+#endif
 		if (req_ctype) {
-			snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %s", req_ctype);
+			snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %.*s",
+			         req_ctype->len, req_ctype->s);
 			header_list = curl_slist_append(header_list, print_buff);
 			w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
 		}
@@ -798,7 +817,7 @@ cleanup:
  * @ctype_pv:	pvar which will hold the result content type
  * @code_pv:	pvar to hold the HTTP return code
  */
-int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
+int rest_post_method(struct sip_msg *msg, char *url, str *body, str *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	CURLcode rc;
@@ -828,7 +847,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (ctype) {
-		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %s", ctype);
+		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %.*s",
+		         ctype->len, ctype->s);
 		header_list = curl_slist_append(header_list, print_buff);
 	}
 
@@ -838,7 +858,12 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_POST, 1);
-	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body);
+#if (LIBCURL_VERSION_NUM >= 0x071101)
+	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDSIZE, body->len);
+	w_curl_easy_setopt(sync_handle, CURLOPT_COPYPOSTFIELDS, body->s);
+#else
+	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body->s);
+#endif
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
@@ -938,7 +963,7 @@ cleanup:
  * @ctype_pv:   pvar which will hold the result content type
  * @code_pv:    pvar to hold the HTTP return code
  */
-int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
+int rest_put_method(struct sip_msg *msg, char *url, str *body, str *ctype,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	CURLcode rc;
@@ -962,7 +987,8 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (ctype) {
-		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %s", ctype);
+		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %.*s",
+		         ctype->len, ctype->s);
 		header_list = curl_slist_append(header_list, print_buff);
 	}
 
@@ -971,7 +997,12 @@ int rest_put_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_URL, url);
 	w_curl_easy_setopt(sync_handle, CURLOPT_CUSTOMREQUEST, "PUT");
-	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body);
+#if (LIBCURL_VERSION_NUM >= 0x071101)
+	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDSIZE, body->len);
+	w_curl_easy_setopt(sync_handle, CURLOPT_COPYPOSTFIELDS, body->s);
+#else
+	w_curl_easy_setopt(sync_handle, CURLOPT_POSTFIELDS, body->s);
+#endif
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
 	w_curl_easy_setopt(sync_handle, CURLOPT_TIMEOUT, curl_timeout);
