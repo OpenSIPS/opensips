@@ -201,7 +201,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, req_body);
 
 		if (req_ctype) {
-			sprintf(print_buff, "Content-Type: %s", req_ctype);
+			snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %s", req_ctype);
 			header_list = curl_slist_append(header_list, print_buff);
 			w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
 		}
@@ -606,7 +606,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *body, char *ctype,
 	}
 
 	if (ctype) {
-		sprintf(print_buff, "Content-Type: %s", ctype);
+		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %s", ctype);
 		header_list = curl_slist_append(header_list, print_buff);
 	}
 
