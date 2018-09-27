@@ -171,7 +171,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>RR</emphasis> - Record-Route module
+				<emphasis>RR</emphasis> - Record-Route module, optional, 
+				if Dialog ID matching is used in non Topo Hiding cases
 			</para>
 			</listitem>
 			<listitem>
@@ -371,14 +372,22 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 		</itemizedlist>
 		<para>
 		<emphasis>
-			Default value is <quote>0 (DID_ONLY)</quote>.
+			Default value is <quote>1 (DID_FALLBACK)</quote>.
 		</emphasis>
+		</para>
+		<para>
+		NOTE that if you have call looping on your OpenSIPS server (passing
+		more than once through the same OpenSIPS instance), it is strongly
+		suggested to use only DID_ONLY mode, as the SIP based matching will
+		have an undefined behavior - from SIP perspective, a sequential
+		dialog will match all the loops of the call, as the Call-ID, To and 
+		From TAGs are the same.
 		</para>
 		<example>
 		<title>Set <varname>dlg_match_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "dlg_match_mode", 1)
+modparam("dialog", "dlg_match_mode", 0)
 ...
 </programlisting>
 		</example>

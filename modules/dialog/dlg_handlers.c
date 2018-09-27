@@ -77,6 +77,7 @@ static int       shutdown_done = 0;
 
 extern int       seq_match_mode;
 extern struct rr_binds d_rrb;
+#define has_rr() (d_rrb.add_rr_param!=NULL)
 extern int race_condition_timeout;
 
 /* statistic variables */
@@ -1362,7 +1363,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		extra_ref++; /* extra ref for the timer to delete the dialog */
 	link_dlg( dlg , extra_ref);
 
-	if ( seq_match_mode!=SEQ_MATCH_NO_ID &&
+	if ( seq_match_mode!=SEQ_MATCH_NO_ID && has_rr() &&
 		add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
 		LM_ERR("failed to add RR param\n");
 		goto error;
@@ -1553,7 +1554,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		val = *((str *)param);
 
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID ) {
-		if( val.s == NULL && d_rrb.get_route_param( req, &rr_param, &val)!=0) {
+		if( val.s == NULL &&
+		(!has_rr() || d_rrb.get_route_param( req, &rr_param, &val)!=0) ) {
 			LM_DBG("Route param '%.*s' not found\n", rr_param.len,rr_param.s);
 			if (seq_match_mode==SEQ_MATCH_STRICT_ID )
 				return;
@@ -2396,7 +2398,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	/* because fix_routing was called on the request */
 
-	if(dlg->mod_flags & TOPOH_ONGOING)
+	if ((dlg->mod_flags & TOPOH_ONGOING) || !has_rr())
 		return 0;
 
 	if (dlg->state <= DLG_STATE_EARLY)

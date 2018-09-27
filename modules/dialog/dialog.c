@@ -84,7 +84,7 @@ static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
 int dlg_bulk_del_no = 1; /* delete one by one */
-int seq_match_mode = SEQ_MATCH_STRICT_ID;
+int seq_match_mode = SEQ_MATCH_FALLBACK;
 int options_ping_interval = 30;      /* seconds */
 int reinvite_ping_interval = 300;    /* seconds */
 str dlg_extra_hdrs = {NULL,0};
@@ -381,7 +381,6 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "rr", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -903,16 +902,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-
 	/* load the TM API */
 	if (load_tm_api(&d_tmb)!=0) {
 		LM_ERR("can't load TM API\n");
-		return -1;
-	}
-
-	/* load RR API also */
-	if (load_rr_api(&d_rrb)!=0) {
-		LM_ERR("can't load RR API\n");
 		return -1;
 	}
 
@@ -923,18 +915,26 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* listen for all routed requests  */
-	if ( d_rrb.register_rrcb( dlg_onroute, 0, 1 ) <0 ) {
-		LM_ERR("cannot register RR callback\n");
-		return -1;
+	/* load RR API */
+	if (load_rr_api(&d_rrb)!=0) {
+		/* make it null to use it as marker for "RR not loaded" */
+		memset( &d_rrb, 0, sizeof(d_rrb));
+	} else {
+		/* listen for all routed requests  */
+		if ( d_rrb.register_rrcb( dlg_onroute, 0, 1 ) <0 ) {
+			LM_ERR("cannot register RR callback\n");
+			return -1;
+		}
 	}
 
-	if (register_script_cb( dialog_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB|RPL_TYPE_CB,0)<0) {
+	if (register_script_cb( dialog_cleanup,
+	POST_SCRIPT_CB|REQ_TYPE_CB|RPL_TYPE_CB,0)<0) {
 		LM_ERR("cannot register script callback");
 		return -1;
 	}
 
-	/* check params and register to clusterer for dialogs and profiles replication */
+	/* check params and register to clusterer for dialogs and
+	 * profiles replication */
 	if (dialog_repl_cluster < 0) {
 		LM_ERR("Invalid dialog_replication_cluster, must be 0 or "
 			"a positive cluster id\n");
