@@ -32,16 +32,8 @@ context_p current_processing_ctx = NULL;
 
 unsigned int context_sizes[CONTEXT_COUNT];
 
-enum osips_context_val {
-	CONTEXT_INT_TYPE,
-	CONTEXT_STR_TYPE,
-	CONTEXT_PTR_TYPE,
-
-	CONTEXT_COUNT_TYPE
-};
-
-static unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
-static unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
+unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
+unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 
 /* vector of destroy functions */
 static context_destroy_f *context_destroy_array[CONTEXT_COUNT];
@@ -158,79 +150,4 @@ int context_register_ptr(enum osips_context type, context_destroy_f f)
 	register_context_destroy(f, type, CONTEXT_PTR_TYPE);
 
 	return type_sizes[type][CONTEXT_PTR_TYPE]++;
-}
-
-void context_put_int(enum osips_context type, context_p ctx,
-									 int pos, int data)
-{
-#ifdef DBG_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][CONTEXT_INT_TYPE]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_INT_TYPE]);
-		abort();
-	}
-#endif
-
-	((int *)ctx)[pos] = data;
-}
-
-void context_put_str(enum osips_context type, context_p ctx,
-									 int pos, str *data)
-{
-#ifdef DBG_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][CONTEXT_STR_TYPE]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_STR_TYPE]);
-		abort();
-	}
-#endif
-
-	((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos] = *data;
-}
-
-void context_put_ptr(enum osips_context type, context_p ctx,
-									 int pos, void *data)
-{
-#ifdef DBG_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][CONTEXT_PTR_TYPE]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_PTR_TYPE]);
-		abort();
-	}
-#endif
-
-	((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos] = data;
-}
-
-int context_get_int(enum osips_context type, context_p ctx, int pos)
-{
-#ifdef DBG_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][CONTEXT_INT_TYPE]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_INT_TYPE]);
-		abort();
-	}
-#endif
-
-	return ((int *)ctx)[pos];
-}
-
-str *context_get_str(enum osips_context type, context_p ctx, int pos)
-{
-#ifdef DBG_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][CONTEXT_STR_TYPE]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_STR_TYPE]);
-		abort();
-	}
-#endif
-
-	return &((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos];
-}
-
-void *context_get_ptr(enum osips_context type, context_p ctx, int pos)
-{
-#ifdef DBG_MALLOC
-	if (pos < 0 || pos >= type_sizes[type][CONTEXT_PTR_TYPE]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[type][CONTEXT_PTR_TYPE]);
-		abort();
-	}
-#endif
-
-	return ((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos];
 }
