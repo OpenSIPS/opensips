@@ -507,7 +507,7 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 
 		default:
 			LM_CRIT("unknown address family %d\n", ip->af);
-			return 0;
+			_ip_addr_A_buff[0] = '\0';
 	}
 
 	return _ip_addr_A_buff;
