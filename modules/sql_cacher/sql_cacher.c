@@ -960,7 +960,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 			break;
 	if (!db_hdls) {
 		LM_ERR("Entry %.*s not found\n", entry_id.len, entry_id.s);
-		return init_mi_tree(500, MI_SSTR("ERROR Cache entry not found\n"));
+		return init_mi_tree(500, MI_SSTR("ERROR Cache entry not found"));
 	}
 
 	/* key */
@@ -1004,9 +1004,9 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 			lock_release(queries_lock);
 
 		if (rc == -1)
-			return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL database\n"));
+			return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL database"));
 		else if (rc == -2)
-			return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL database, key not found\n"));
+			return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL database, key not found"));
 
 	} else {
 		rld_vers_key.len = db_hdls->c_entry->id.len + 23;
@@ -1023,14 +1023,14 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 		if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
 			LM_DBG("Failed to increment reload version integer from cachedb\n");
 			pkg_free(rld_vers_key.s);
-			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
+			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 
 		pkg_free(rld_vers_key.s);
 
 		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0) {
 			LM_DBG("Failed to reload table\n");
-			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
+			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 
 		lock_stop_write(db_hdls->c_entry->ref_lock);

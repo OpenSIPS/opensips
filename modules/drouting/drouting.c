@@ -4370,14 +4370,14 @@ static struct mi_root* mi_w_partition(struct mi_node **node, struct head_db **
 		if( node!=NULL && (*node)!=NULL ) {
 			if( (*current_partition = get_partition(&((*node)->value))) == NULL) {
 				LM_ERR("Partition not found\n");
-				rpl_tree = init_mi_tree( 404, MI_SSTR("Partition not found\n"));
+				rpl_tree = init_mi_tree( 404, MI_SSTR("Partition not found"));
 				return rpl_tree;
 			}
 			*node = (*node)->next; /* advance to next param */
 			return NULL; /* everything is ok */
 		} else {
 			LM_ERR("Partition name mandatory\n");
-			rpl_tree = init_mi_tree(400, MI_SSTR("Partition mandatory\n"));
+			rpl_tree = init_mi_tree(400, MI_SSTR("Partition mandatory"));
 			return rpl_tree;
 		}
 	} else {
@@ -4385,7 +4385,7 @@ static struct mi_root* mi_w_partition(struct mi_node **node, struct head_db **
 		return NULL; /* everything is ok */
 	}
 	rpl_tree = init_mi_tree( 400,
-			MI_SSTR("Unexpected outcome while parsing param for opensisctl\n"));
+			MI_SSTR("Unexpected outcome while parsing param for opensisctl"));
 	return rpl_tree;
 }
 
