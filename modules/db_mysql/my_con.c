@@ -23,7 +23,7 @@
 #include "my_con.h"
 #include "db_mysql.h"
 #include "dbase.h"
-#include <mysql/mysql.h>
+#include <mysql.h>
 
 #include "../tls_mgm/api.h"
 #include "../../mem/mem.h"

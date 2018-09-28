@@ -22,7 +22,7 @@
 #ifndef VAL_H
 #define VAL_H
 
-#include <mysql/mysql.h>
+#include <mysql.h>
 #include "../../db/db_val.h"
 #include "../../db/db.h"
 

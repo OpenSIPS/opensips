@@ -23,7 +23,7 @@
 
 
 #include <string.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 #include "../../db/db_res.h"
 #include "../../mem/mem.h"
 #include "../../dprint.h"
