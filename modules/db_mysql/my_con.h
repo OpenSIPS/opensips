@@ -26,8 +26,11 @@
 #include "../../db/db_id.h"
 
 #include <time.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 
+#if (defined LIBMYSQL_VERSION_ID) && (LIBMYSQL_VERSION_ID >= 80000)
+# define my_bool bool
+#endif
 
 #define PREP_STMT_VAL_LEN	1024
 
