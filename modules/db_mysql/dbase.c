@@ -32,9 +32,9 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <mysql/mysql.h>
-#include <mysql/errmsg.h>
-#include <mysql/mysqld_error.h>
+#include <mysql.h>
+#include <errmsg.h>
+#include <mysqld_error.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../db/db_query.h"

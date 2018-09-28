@@ -33,7 +33,7 @@
 #include "dbase.h"
 #include "db_mysql.h"
 
-#include <mysql/mysql.h>
+#include <mysql.h>
 
 unsigned int db_mysql_timeout_interval = 2;   /* Default is 6 seconds */
 unsigned int db_mysql_exec_query_threshold = 0;   /* Warning in case DB query
