@@ -71,8 +71,8 @@ void init_acc_extra();
 
 int parse_acc_extra(modparam_t type, void* val);
 
-int build_acc_extra_array(tag_t* tags, int tags_len, extra_value_t** array_p);
-int  build_acc_extra_array_pkg(tag_t* tags, int tags_len, extra_value_t** array_p);
+int build_acc_extra_array(int tags_len, extra_value_t** array_p);
+int build_acc_extra_array_pkg(int tags_len, extra_value_t** array_p);
 
 int push_leg(acc_ctx_t* ctx);
 

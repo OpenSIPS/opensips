@@ -50,24 +50,15 @@
 #define ACC_ENDED_LEN (sizeof(ACC_ENDED)-1)
 
 /* syslog attribute names */
-#define A_METHOD "method"
-#define A_METHOD_LEN (sizeof(A_METHOD)-1)
-#define A_FROMTAG "from_tag"
-#define A_FROMTAG_LEN (sizeof(A_FROMTAG)-1)
-#define A_TOTAG "to_tag"
-#define A_TOTAG_LEN (sizeof(A_TOTAG)-1)
-#define A_CALLID "call_id"
-#define A_CALLID_LEN (sizeof(A_CALLID)-1)
-#define A_CODE "code"
-#define A_CODE_LEN (sizeof(A_CODE)-1)
-#define A_STATUS "reason"
-#define A_STATUS_LEN (sizeof(A_STATUS)-1)
-#define A_DURATION "duration"
-#define A_DURATION_LEN (sizeof(A_DURATION)-1)
+#define A_METHOD    "method"
+#define A_FROMTAG   "from_tag"
+#define A_TOTAG     "to_tag"
+#define A_CALLID    "call_id"
+#define A_CODE      "code"
+#define A_STATUS    "reason"
+#define A_DURATION  "duration"
 #define A_SETUPTIME "setuptime"
-#define A_SETUPTIME_LEN (sizeof(A_SETUPTIME)-1)
-#define A_CREATED "created"
-#define A_CREATED_LEN (sizeof(A_CREATED)-1)
+#define A_CREATED   "created"
 
 #define A_SEPARATOR_CHR ';'
 #define A_EQ_CHR '='

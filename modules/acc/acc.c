@@ -192,16 +192,7 @@ static inline int core2strar( struct sip_msg *req, str *c_vals)
 /********************************************
  *        LOG  ACCOUNTING
  ********************************************/
-static str log_attrs[ACC_CORE_LEN+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
-
-#define SET_LOG_ATTR(_n,_atr)  \
-	do { \
-		log_attrs[_n].s=A_##_atr; \
-		log_attrs[_n].len=A_##_atr##_LEN; \
-		n++; \
-	} while(0)
-
-
+static str log_attrs[ACC_CORE_LEN + ACC_DLG_LEN + MAX_ACC_EXTRA + MAX_ACC_LEG];
 void acc_log_init(void)
 {
 	struct acc_extra *extra;
@@ -210,25 +201,25 @@ void acc_log_init(void)
 	n = 0;
 
 	/* fixed core attributes */
-	SET_LOG_ATTR(n,METHOD);
-	SET_LOG_ATTR(n,FROMTAG);
-	SET_LOG_ATTR(n,TOTAG);
-	SET_LOG_ATTR(n,CALLID);
-	SET_LOG_ATTR(n,CODE);
-	SET_LOG_ATTR(n,STATUS);
+	init_str(&log_attrs[n++], A_METHOD);
+	init_str(&log_attrs[n++], A_FROMTAG);
+	init_str(&log_attrs[n++], A_TOTAG);
+	init_str(&log_attrs[n++], A_CALLID);
+	init_str(&log_attrs[n++], A_CODE);
+	init_str(&log_attrs[n++], A_STATUS);
 
 	/* init the extra db keys */
-	for(extra=log_extra_tags; extra ; extra=extra->next)
+	for (extra = log_extra_tags; extra; extra = extra->next)
 		log_attrs[n++] = extra->name;
 
 	/* multi leg call columns */
-	for( extra=log_leg_tags; extra ; extra=extra->next)
+	for (extra = log_leg_tags; extra; extra = extra->next)
 		log_attrs[n++] = extra->name;
 
 	/* cdrs columns */
-	SET_LOG_ATTR(n,DURATION);
-	SET_LOG_ATTR(n,SETUPTIME);
-	SET_LOG_ATTR(n,CREATED);
+	init_str(&log_attrs[n++], A_DURATION);
+	init_str(&log_attrs[n++], A_SETUPTIME);
+	init_str(&log_attrs[n++], A_CREATED);
 }
 
 int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
@@ -1377,6 +1368,12 @@ int set_dlg_value(str *value)
 	if (value->s == NULL)
 		value->len = 0;
 
+	if (value->len > MAX_LEN_VALUE) {
+		LM_WARN("value too long, truncating! (%.*s..., len: %d)\n",
+		        64, value->s, value->len);
+		value->len = MAX_LEN_VALUE;
+	}
+
 	if (cdr_buf.len + value->len + 2 > cdr_len) {
 		if (cdr_len == 0) {
 			cdr_len = STRING_INIT_SIZE;
@@ -1398,10 +1395,6 @@ int set_dlg_value(str *value)
 		}
 	}
 
-	if (value->len > MAX_LEN_VALUE) {
-		value->len = MAX_LEN_VALUE;
-		LM_WARN("Value too log, truncating..\n");
-	}
 	SET_LEN(cdr_buf.s + cdr_buf.len, value->len);
 
 	memcpy(cdr_buf.s + cdr_buf.len + 2, value->s, value->len);
@@ -1608,15 +1601,15 @@ static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *
  *
  *
  */
-static extra_value_t* restore_extra_from_str(tag_t* tags, int tags_len,
-												str* extra_s, int extra_len)
+static extra_value_t* restore_extra_from_str(int tags_len,
+											 str* extra_s, int extra_len)
 {
 	int i;
 
 	pv_value_t value;
 	extra_value_t* values;
 
-	if (build_acc_extra_array(tags, tags_len, &values) < 0) {
+	if (build_acc_extra_array(tags_len, &values) < 0) {
 		LM_ERR("failed to build extra pvar list!\n");
 		return NULL;
 	}
@@ -1662,7 +1655,7 @@ static int restore_extra(struct dlg_cell* dlg,
 	buffer.len -= 2;
 
 	if ((ctx->extra_values =
-		restore_extra_from_str(extra_tags, extra_tgs_len, &buffer, extra_len)) == NULL) {
+		restore_extra_from_str(extra_tgs_len, &buffer, extra_len)) == NULL) {
 		LM_ERR("failed to restore extra values!\n");
 		return -1;
 	}
@@ -1706,7 +1699,7 @@ static int restore_legs(struct dlg_cell* dlg,
 
 	for (i=0; i<ctx->legs_no; i++) {
 		if ((ctx->leg_values[i] =
-			restore_extra_from_str(leg_tags, leg_tgs_len, &buffer, extra_len)) == NULL) {
+			restore_extra_from_str(leg_tgs_len, &buffer, extra_len)) == NULL) {
 			LM_ERR("failed to restore leg values!\n");
 			return -1;
 		}
