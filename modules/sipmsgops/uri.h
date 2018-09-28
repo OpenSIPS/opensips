@@ -19,10 +19,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
- * History:
- * --------
- * 2003-03-26 created by janakj
- * 2004-04-14 uri_param and add_uri_param introduced (jih)
  */
 
 
