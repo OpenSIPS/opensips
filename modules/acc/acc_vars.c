@@ -67,9 +67,8 @@ int pv_parse_acc_extra_name(pv_spec_p sp, str *in)
 
 	str_trim_spaces_lr(*in);
 
-	for (idx=0; idx<extra_tgs_len; idx++) {
-		if (in->len == extra_tags[idx].len &&
-				!memcmp(in->s, extra_tags[idx].s, extra_tags[idx].len)) {
+	for (idx = 0; idx < extra_tgs_len; idx++) {
+		if (!str_strcmp(in, &extra_tags[idx])) {
 			sp->pvp.pvn.u.isname.name.n = idx;
 			return 0;
 		}
@@ -102,8 +101,6 @@ int pv_get_acc_extra(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("failed to create accounting context!\n");
 			return -1;
 		}
-
-		ACC_PUT_CTX(ctx);
 	}
 
 	tag_idx = param->pvn.u.isname.name.n;
@@ -202,10 +199,7 @@ int pv_set_acc_extra(struct sip_msg *msg, pv_param_t *param, int op,
 			LM_ERR("failed to create accounting context!\n");
 			return -1;
 		}
-
-		ACC_PUT_CTX(ctx);
 	}
-
 
 	tag_idx = param->pvn.u.isname.name.n;
 	/* sanity checks for the tag; it should be valid since
@@ -282,8 +276,6 @@ int pv_get_acc_current_leg(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("failed to create accounting context!\n");
 			return -1;
 		}
-
-		ACC_PUT_CTX(ctx);
 	}
 
 	if (ctx->leg_values == NULL) {
@@ -367,8 +359,7 @@ int pv_parse_acc_leg_name(pv_spec_p sp, str *in)
    str_trim_spaces_lr(*in);
 
    for (idx=0; idx<leg_tgs_len; idx++) {
-	   if (in->len == leg_tags[idx].len &&
-			   !memcmp(in->s, leg_tags[idx].s, leg_tags[idx].len)) {
+		if (!str_strcmp(in, &leg_tags[idx])) {
 		   sp->pvp.pvn.u.isname.name.n = idx;
 		   return 0;
 	   }
@@ -394,8 +385,6 @@ int pv_get_acc_leg(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("failed to create accounting context!\n");
 			return -1;
 		}
-
-		ACC_PUT_CTX(ctx);
 	}
 
 	if (ctx->leg_values == NULL) {
@@ -429,7 +418,7 @@ int pv_get_acc_leg(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	if (leg_idx >= ctx->legs_no) {
-		LM_ERR("there aren't that many legs!\n");
+		LM_ERR("bad $acc_leg index: %d\n", leg_idx);
 		return -1;
 	}
 
@@ -478,8 +467,6 @@ int pv_set_acc_leg(struct sip_msg *msg, pv_param_t *param, int flag,
 			LM_ERR("failed to create accounting context!\n");
 			return -1;
 		}
-
-		ACC_PUT_CTX(ctx);
 	}
 
 	if (ctx->leg_values == NULL) {

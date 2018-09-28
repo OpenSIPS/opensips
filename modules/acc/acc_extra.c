@@ -450,7 +450,7 @@ int  build_acc_extra_array_pkg(tag_t* tags, int tags_len, extra_value_t** array_
  * initialize all values in current row with null
  *
  * */
-int expand_legs(acc_ctx_t* ctx)
+int push_leg(acc_ctx_t* ctx)
 {
 	if (ctx == NULL) {
 		LM_ERR("bad usage!\n");
