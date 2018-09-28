@@ -39,6 +39,12 @@
 #include "../../db/db_op.h"
 #include "../../db/db_val.h"
 
+/**
+ * Postgres default timeout
+ */
+#define DEFAULT_POSTGRES_TIMEOUT 5
+extern int pg_timeout;
+
 
 /**
  * Initialize database connection
