@@ -41,13 +41,13 @@ int has_totag(struct sip_msg* _m, char* _foo, char* _bar);
 /*
  * Find if Request URI has a given parameter with no value
  */
-int uri_has_param_1(struct sip_msg* _msg, char* _param, char* _str2);
+int ruri_has_param_1(struct sip_msg* _msg, char* _param, char* _str2);
 
 
 /*
  * Find if Request URI has a given parameter with matching value
  */
-int uri_has_param_2(struct sip_msg* _msg, char* _param, char* _value);
+int ruri_has_param_2(struct sip_msg* _msg, char* _param, char* _value);
 
 /*
  * Removes a given parameter from Request URI

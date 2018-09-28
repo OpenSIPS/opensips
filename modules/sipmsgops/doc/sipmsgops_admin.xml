@@ -488,6 +488,174 @@ remove_hf("^X-g.+[0-9]", "r");
 		</example>
 	</section>
 
+
+
+	<section id="func_has_totag" xreflabel="has_totag()">
+		<title>
+		<function moreinfo="none">has_totag()</function>
+		</title>
+		<para>
+		Check if To header field uri contains tag parameter.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>has_totag</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (has_totag()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_ruri_has_param" xreflabel="ruri_has_param()">
+		<title>
+		<function moreinfo="none">ruri_has_param(param[,value])</function>
+		</title>
+		<para>
+		Find if Request URI has a given parameter. If no value is given,
+		the function will look for the paramter with no value, oherwise it
+		will search for the parameter with the matching value.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>param</emphasis> - parameter name to look for.
+			</para>
+			<para><emphasis>param</emphasis> - paramete value to match.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>ruri_has_param</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (ruri_has_param("user","phone")) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ruri_add_param" xreflabel="ruri_add_param()">
+		<title>
+		<function moreinfo="none">ruri_add_param(param)</function>
+		</title>
+		<para>
+		Add to RURI an URI parameter formated as "name=value".
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>param</emphasis> - parameter to be appended in
+			<quote>name=value</quote> format.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>ruri_add_param</function> usage</title>
+		<programlisting format="linespecific">
+...
+ruri_add_param("nat=yes");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ruri_del_param" xreflabel="ruri_del_param()">
+		<title>
+		<function moreinfo="none">ruri_del_param(param)</function>
+		</title>
+		<para>
+		Delete a parameter from the RURI being given the key(key=value);
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>param</emphasis> - key of the parameter to be removed/
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>ruri_del_param</function> usage</title>
+		<programlisting format="linespecific">
+...
+ruri_del_param("user");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ruri_tel2sip" xreflabel="ruri_tel2sip()">
+		<title>
+		<function moreinfo="none">ruri_tel2sip()</function>
+		</title>
+		<para>
+		Converts RURI, if it is tel URI, to SIP URI.  Returns true, only if
+		conversion succeeded or if no conversion was needed (like RURI
+		was not tel URI.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>ruri_tel2sip</function> usage</title>
+		<programlisting format="linespecific">
+...
+ruri_tel2sip();
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_is_uri_user_e164" xreflabel="is_uri_user_e164()">
+		<title>
+		<function moreinfo="none">is_uri_user_e164(pseudo-variable)</function>
+		</title>
+		<para>
+		Checks if userpart of URI stored in pseudo variable is
+		E164 number.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>is_uri_user_e164</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_uri_user_e164("$fu")) {  # Check From header URI user part
+   ...
+}
+if (is_uri_user_e164("$avp(uri)") {
+   # Check user part of URI stored in avp uri
+   ...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
+
 	<section id="func_has_body_part" xreflabel="has_body_part()">
 		<title>
 		<function moreinfo="none">has_body_part([mime])</function>,
