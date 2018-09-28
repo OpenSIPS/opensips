@@ -35,7 +35,6 @@
 #include "../../mod_fix.h"
 #include "../../aaa/aaa.h"
 #include "uri_mod.h"
-#include "checks.h"
 #include "aaa_checks.h"
 #include "db_checks.h"
 
@@ -98,27 +97,10 @@ static int db_fixup_get_auth_id(void** param, int param_no);
 static int aaa_fixup_0(void** param, int param_no);
 static int aaa_fixup_1(void** param, int param_no);
 
-static int obsolete_fixup_0(void** param, int param_no);
-static int obsolete_fixup_1(void** param, int param_no);
-static int obsolete_fixup_2(void** param, int param_no);
 /*
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"check_to", (cmd_function)NULL, 0, obsolete_fixup_0, 0,
-			REQUEST_ROUTE},
-	{"check_from", (cmd_function)NULL, 0, obsolete_fixup_0, 0,
-			REQUEST_ROUTE},
-	{"does_uri_exist", (cmd_function)NULL, 0, obsolete_fixup_1, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"does_uri_exist", (cmd_function)NULL, 1, obsolete_fixup_1, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"get_auth_id", (cmd_function)NULL, 3, obsolete_fixup_0, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"does_uri_user_exist", (cmd_function)NULL, 0, obsolete_fixup_2, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"does_uri_user_exist", (cmd_function)NULL, 1, obsolete_fixup_2, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
 	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_0, 0,
 			aaa_fixup_0, 0,
 			REQUEST_ROUTE|LOCAL_ROUTE},
@@ -141,28 +123,6 @@ static cmd_export_t cmds[] = {
 	{"db_get_auth_id", (cmd_function) get_auth_id, 3,
 			db_fixup_get_auth_id, 0,
 			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"is_user", (cmd_function)is_user, 1,
-			fixup_str_null, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"has_totag", (cmd_function)has_totag, 0, 0, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"uri_param", (cmd_function)uri_param_1, 1,
-			fixup_str_null, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"uri_param", (cmd_function)uri_param_2, 2,
-			fixup_str_str, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"add_uri_param", (cmd_function)add_uri_param, 1,
-			fixup_spve_null, 0,
-			REQUEST_ROUTE},
-	{"del_uri_param", (cmd_function)del_uri_param, 1,
-			fixup_spve_null, 0,
-			REQUEST_ROUTE},
-	{"tel2sip", (cmd_function)tel2sip, 0, 0, 0,
-			REQUEST_ROUTE},
-	{"is_uri_user_e164", (cmd_function)is_uri_user_e164, 1,
-			fixup_pvar_null, fixup_free_pvar_null,
-			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -380,33 +340,6 @@ static int db_checks_fixup2(void** param, int param_no)
 	return 0;
 }
 
-
-
-static int obsolete_fixup_0(void** param, int param_no) {
-
-	LM_ERR("You are using one of these obsolete functions\
-: \"check_to\", \"check_from\", \"does_uri_exist\",\"get_auth_id\".\
- They have been renamed with the \"db_\" prefix.\n");
-
-	return E_CFG;
-}
-
-static int obsolete_fixup_1(void** param, int param_no) {
-
-	LM_ERR("You are using does_uri_exist function that is now obsolete. \
-If you want to use it with DB support, use db_does_uri_exist. \
-If you want to use it with AAA support, use aaa_does_uri_exist.\n");
-
-	return E_CFG;
-}
-
-static int obsolete_fixup_2(void** param, int param_no) {
-
-	LM_ERR("You are using does_uri_user_exist function that has been renamed\
-into aaa_does_uri_user_exist.\n");
-
-	return E_CFG;
-}
 
 /**
  * Check proper configuration for 'get_auth_id()' and convert function parameters.

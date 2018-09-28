@@ -33,12 +33,6 @@
 
 
 /*
- * Check if given username matches those in digest credentials
- */
-int is_user(struct sip_msg* _msg, char* _user, char* _str2);
-
-
-/*
  * Check if message includes a to-tag
  */
 int has_totag(struct sip_msg* _m, char* _foo, char* _bar);
@@ -47,23 +41,23 @@ int has_totag(struct sip_msg* _m, char* _foo, char* _bar);
 /*
  * Find if Request URI has a given parameter with no value
  */
-int uri_param_1(struct sip_msg* _msg, char* _param, char* _str2);
+int uri_has_param_1(struct sip_msg* _msg, char* _param, char* _str2);
 
 
 /*
  * Find if Request URI has a given parameter with matching value
  */
-int uri_param_2(struct sip_msg* _msg, char* _param, char* _value);
+int uri_has_param_2(struct sip_msg* _msg, char* _param, char* _value);
 
 /*
  * Removes a given parameter from Request URI
  */
-int del_uri_param(struct sip_msg* _msg, char* _param, char* _s);
+int ruri_del_param(struct sip_msg* _msg, char* _param, char* _s);
 
 /*
  * Adds a new parameter to Request URI
  */
-int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2);
+int ruri_add_param(struct sip_msg* _msg, char* _param, char* _s2);
 
 
 /*
@@ -71,7 +65,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2);
  * conversion succeeded or if no conversion was needed, i.e., Request-URI
  * was not tel URI.  Returns -1, if conversion failed.
  */
-int tel2sip(struct sip_msg* _msg, char* _s1, char* _s2);
+int ruri_tel2sip(struct sip_msg* _msg, char* _s1, char* _s2);
 
 
 /*

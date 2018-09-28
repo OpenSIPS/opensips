@@ -84,6 +84,7 @@
 
 #include "codecs.h"
 #include "list_hdr.h"
+#include "uri.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -282,6 +283,25 @@ static cmd_export_t cmds[]={
 	{"list_hdr_remove_option", (cmd_function)list_hdr_remove_option,   2,
 		hl_opt_fixup, NULL,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"has_totag", (cmd_function)has_totag, 0, 0, 0,
+		REQUEST_ROUTE|LOCAL_ROUTE},
+	{"ruri_has_param", (cmd_function)uri_has_param_1, 1,
+		fixup_str_null, 0,
+		REQUEST_ROUTE|LOCAL_ROUTE},
+	{"ruri_has_param", (cmd_function)uri_has_param_2, 2,
+		fixup_str_str, 0,
+		REQUEST_ROUTE|LOCAL_ROUTE},
+	{"ruri_add_param", (cmd_function)ruri_add_param, 1,
+		fixup_spve_null, 0,
+		REQUEST_ROUTE},
+	{"ruri_add_param", (cmd_function)ruri_del_param, 1,
+		fixup_spve_null, 0,
+		REQUEST_ROUTE},
+	{"ruri_tel2sip", (cmd_function)ruri_tel2sip, 0, 0, 0,
+		REQUEST_ROUTE},
+	{"isuri_user_e164", (cmd_function)is_uri_user_e164, 1,
+		fixup_pvar_null, fixup_free_pvar_null,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 };
 

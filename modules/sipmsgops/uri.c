@@ -30,16 +30,15 @@
 #include "../../str.h"
 #include "../../dprint.h"               /* Debugging */
 #include "../../mem/mem.h"
-#include "../../parser/digest/digest.h" /* get_authorized_cred */
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_param.h"
-#include "../../db/db.h"                /* Database API */
 #include "../../dset.h"
 #include "../../mod_fix.h"
 #include "../../pvar.h"
+#include "../../ut.h"
 
-#include "checks.h"
+#include "uri.h"
 
 /*
  * Checks if From includes a To-tag -- good to identify
@@ -68,61 +67,18 @@ int has_totag(struct sip_msg* _m, char* _foo, char* _bar)
 
 
 /*
- * Check if the username matches the username in credentials
- */
-int is_user(struct sip_msg* _m, char* _user, char* _str2)
-{
-	str* s;
-	struct hdr_field* h;
-	auth_body_t* c;
-
-	s = (str*)_user;
-
-	get_authorized_cred(_m->authorization, &h);
-	if (!h) {
-		get_authorized_cred(_m->proxy_auth, &h);
-		if (!h) {
-			LM_ERR("no authorized credentials found (error in scripts)\n");
-			LM_ERR("Call {www,proxy}_authorize before calling is_user function !\n");
-			return -1;
-		}
-	}
-
-	c = (auth_body_t*)(h->parsed);
-
-	if (!c->digest.username.user.len) {
-		LM_DBG("username not found in credentials\n");
-		return -1;
-	}
-
-	if (s->len != c->digest.username.user.len) {
-		LM_DBG("username length does not match\n");
-		return -1;
-	}
-
-	if (!memcmp(s->s, c->digest.username.user.s, s->len)) {
-		LM_DBG("username matches\n");
-		return 1;
-	} else {
-		LM_DBG("username differs\n");
-		return -1;
-	}
-}
-
-
-/*
  * Find if Request URI has a given parameter with no value
  */
-int uri_param_1(struct sip_msg* _msg, char* _param, char* _str2)
+int uri_has_param_1(struct sip_msg* _msg, char* _param, char* _str2)
 {
-	return uri_param_2(_msg, _param, (char*)0);
+	return uri_has_param_2(_msg, _param, (char*)0);
 }
 
 
 /*
  * Find if Request URI has a given parameter with matching value
  */
-int uri_param_2(struct sip_msg* _msg, char* _param, char* _value)
+int uri_has_param_2(struct sip_msg* _msg, char* _param, char* _value)
 {
 	str *param, *value, t;
 
@@ -180,7 +136,7 @@ ok:
 /*
  * Removes a given parameter from Request URI
  */
-int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
+int ruri_del_param(struct sip_msg* _msg, char* _param, char* _s)
 {
 	str param;
 	str params;
@@ -273,7 +229,7 @@ int del_uri_param(struct sip_msg* _msg, char* _param, char* _s)
 /*
  * Adds a new parameter to Request URI
  */
-int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
+int ruri_add_param(struct sip_msg* _msg, char* _param, char* _s2)
 {
 	str param, *cur_uri, new_uri;
 	struct sip_uri *parsed_uri;
@@ -304,7 +260,7 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 		}
 		new_uri.s = pkg_malloc(new_uri.len);
 		if (new_uri.s == 0) {
-			LM_ERR("add_uri_param(): Memory allocation failure\n");
+			LM_ERR("Memory allocation failure\n");
 			return -1;
 		}
 		memcpy(new_uri.s, cur_uri->s, cur_uri->len);
@@ -387,7 +343,7 @@ ok:
  * conversion succeeded or if no conversion was needed, i.e., Request-URI
  * was not tel URI.  Returns -1, if conversion failed.
  */
-int tel2sip(struct sip_msg* _msg, char* _s1, char* _s2)
+int ruri_tel2sip(struct sip_msg* _msg, char* _s1, char* _s2)
 {
 	str *ruri;
 	struct sip_uri *pfuri;
