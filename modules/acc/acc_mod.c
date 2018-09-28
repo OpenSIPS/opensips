@@ -417,7 +417,7 @@ static int mod_init( void )
 		}
 	} else {
 		if (db_extra_tags || db_leg_tags) {
-			LM_ERR("leg and/or extra fields defined but no DB url!\n");
+			LM_ERR("DB leg and/or extra fields defined but no DB url!\n");
 			return -1;
 		}
 	}
@@ -431,7 +431,7 @@ static int mod_init( void )
 		}
 	} else {
 		if (aaa_extra_tags || aaa_leg_tags) {
-			LM_ERR("leg and/or extra fields defined but no AAA url!\n");
+			LM_ERR("AAA leg and/or extra fields defined but no AAA url!\n");
 			return -1;
 		}
 		aaa_proto_url = NULL;

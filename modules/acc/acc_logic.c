@@ -171,7 +171,7 @@ static int is_cdr_enabled=0;
 
 
 static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps );
-static void acc_dlg_callback(struct dlg_cell *dlg, int type,
+static void acc_dlg_ended(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
 static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
@@ -245,9 +245,8 @@ acc_ctx_t* try_fetch_ctx(void)
 		/* search the flags in transaction context */
 		if (t && (ret=ACC_GET_TM_CTX(t))==NULL) {
 			/* try fetching the context from dialog  only if dialog exists */
-			if ( !dlg ||
-				 (dlg &&
-					dlg_api.fetch_dlg_value(dlg, &acc_ctx_str, &ctx_s, 0) < 0)) {
+			if (!dlg ||
+					dlg_api.fetch_dlg_value(dlg, &acc_ctx_str, &ctx_s, 0) < 0) {
 				/* can't find the flags anywhere */
 				return NULL;
 			} else { /* found them in dialog; set in the processing context
@@ -603,13 +602,15 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 }
 
-
-static void acc_dlg_ctx_cb(struct dlg_cell *dlg, int type,
+/*
+ * This mid-dialog request callback ensures that any extra/leg settings done
+ * at script level before dialog matching is performed will get properly
+ * transferred into the dialog context, once the dialog is matched
+ */
+static void acc_merge_contexts(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	acc_ctx_t *ctx;
-	/* set the acc context from dialog into the
-	 * current processing context */
 
 	/* if there is already a acc context in the processing
 	 * context, be sure to destroy it for now */
@@ -694,7 +695,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 		/* register database callbacks */
 		acc_ref_ex(ctx, 2);
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-				DLGCB_EXPIRED, acc_dlg_callback, ctx, unref_acc_ctx)){
+				DLGCB_EXPIRED, acc_dlg_ended, ctx, unref_acc_ctx)){
 			LM_ERR("cannot register callback for database accounting\n");
 			acc_unref_ex(ctx, 2);
 			return;
@@ -702,7 +703,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 
 		/* register dlg callbacks for ctx management */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
-				acc_dlg_ctx_cb, ctx, unref_acc_ctx) != 0) {
+				acc_merge_contexts, ctx, unref_acc_ctx) != 0) {
 			acc_unref(ctx); /* only one, the other one was successful */
 			LM_ERR("cannot register callback ctx management\n");
 			return;
@@ -784,7 +785,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* register database callbacks */
 		acc_ref_ex(ctx, 2);
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
-								acc_dlg_callback, ctx, unref_acc_ctx) != 0) {
+								acc_dlg_ended, ctx, unref_acc_ctx) != 0) {
 			acc_unref_ex(ctx, 2);
 			LM_ERR("cannot register callback for database accounting\n");
 			goto restore;
@@ -792,7 +793,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		/* register dlg callbacks for ctx management */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
-								acc_dlg_ctx_cb, ctx, unref_acc_ctx) != 0) {
+								acc_merge_contexts, ctx, unref_acc_ctx) != 0) {
 			acc_unref(ctx); /* only one, the other one was successful */
 			LM_ERR("cannot register callback ctx management\n");
 			goto restore;
@@ -827,7 +828,7 @@ restore:
 	}
 }
 
-static void acc_dlg_callback(struct dlg_cell *dlg, int type,
+static void acc_dlg_ended(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	struct cell* t;
@@ -839,7 +840,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	}
 
 	/* resolve local/dlg ctx conflict by merging them together */
-	acc_dlg_ctx_cb(dlg, type, _params);
+	acc_merge_contexts(dlg, type, _params);
 	ctx = (acc_ctx_t *)(*_params->param);
 
 	/*
@@ -859,7 +860,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 
 	/* if it's not a local transaction we do the accounting on the tm callbacks */
 	if (((t=tmb.t_gett()) == T_UNDEFINED) || !t ||
-			(t != NULL && !tmb.t_is_local(_params->msg))) {
+			!tmb.t_is_local(_params->msg)) {
 		/* normal dialogs will have to do accounting when the response for
 		 * the bye will come since users should be able to populate extra
 		 * vars and leg vars */
@@ -872,7 +873,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		}
 	/* for local transactions we do the accounting here since all the messages
 	 * have been processed */
-	} else if (t != NULL && tmb.t_is_local(_params->msg)) {
+	} else {
 		/* expired dialogs will be handled here */
 		if (is_log_acc_on(ctx->flags)) {
 			env_set_text( ACC_ENDED, ACC_ENDED_LEN);
@@ -1052,7 +1053,7 @@ static str do_acc_failed_s=str_init(DO_ACC_FAILED_STR);
 static inline
 unsigned long long do_acc_type_parser(str* token)
 {
-	str_trim_spaces_lr(*token);
+	trim(token);
 
 	if (token->len == do_acc_log_s.len &&
 			!strncasecmp(token->s, do_acc_log_s.s, token->len)) {
@@ -1067,7 +1068,7 @@ unsigned long long do_acc_type_parser(str* token)
 			!strncasecmp(token->s, do_acc_evi_s.s, token->len)) {
 		return DO_ACC_EVI;
 	} else {
-		LM_ERR("Invalid token <%.*s>!\n", token->len, token->s);
+		LM_ERR("invalid accounting backend: <%.*s>!\n", token->len, token->s);
 		return DO_ACC_ERR;
 	}
 }
@@ -1080,7 +1081,7 @@ unsigned long long do_acc_type_parser(str* token)
 static inline
 unsigned long long do_acc_flags_parser(str* token)
 {
-	str_trim_spaces_lr(*token);
+	trim(token);
 
 	if (token->len == do_acc_cdr_s.len &&
 			!strncasecmp(token->s, do_acc_cdr_s.s, token->len)) {
@@ -1111,6 +1112,7 @@ unsigned long long do_acc_flags_parser(str* token)
 			!strncasecmp(token->s, do_acc_failed_s.s, token->len)) {
 		return DO_ACC_FAILED;
 	} else {
+		LM_ERR("invalid flag: <%.*s>!\n", token->len, token->s);
 		return DO_ACC_ERR;
 	}
 }
@@ -1119,8 +1121,7 @@ unsigned long long do_acc_flags_parser(str* token)
 static unsigned long long
 do_acc_parse(str* in, do_acc_parser parser)
 {
-
-	char* found=NULL;
+	char *found;
 	str token;
 
 	unsigned long long fret=0, ret;
@@ -1134,7 +1135,7 @@ do_acc_parse(str* in, do_acc_parser parser)
 			token.s = in->s;
 			token.len = found - in->s;
 
-			in->len -= (found - in->s) + 1;
+			in->len -= token.len + 1;
 			in->s = found + 1;
 		} else {
 			token = *in;
@@ -1268,8 +1269,7 @@ int init_acc_ctx(acc_ctx_t** ctx_p)
 
 	/* init extra s array */
 	if (extra_tags != NULL &&
-			build_acc_extra_array(extra_tags, extra_tgs_len,
-									&ctx->extra_values) < 0) {
+			build_acc_extra_array(extra_tgs_len, &ctx->extra_values) < 0) {
 		LM_ERR("failed to build extra values array!\n");
 		return -1;
 	}

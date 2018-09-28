@@ -394,11 +394,10 @@ int parse_acc_leg(modparam_t type, void* val) {
 
 
 /*
- * starting from the given tags array build an array with
- * pv_value_t type variables that will store the extra variables
- *
- * */
-int build_acc_extra_array(tag_t* tags, int tags_len, extra_value_t** array_p)
+ * build an array with pv_value_t type variables
+ * that will store the extra variables
+ */
+int build_acc_extra_array(int array_len, extra_value_t** array_p)
 {
 	extra_value_t* array;
 
@@ -408,13 +407,13 @@ int build_acc_extra_array(tag_t* tags, int tags_len, extra_value_t** array_p)
 	}
 
 
-	array = shm_malloc(tags_len * sizeof(extra_value_t));
+	array = shm_malloc(array_len * sizeof(extra_value_t));
 	if (array == NULL) {
 		LM_ERR("no more shm!\n");
 		return -1;
 	}
 
-	memset(array, 0, tags_len * sizeof(extra_value_t));
+	memset(array, 0, array_len * sizeof(extra_value_t));
 
 	*array_p = array;
 
@@ -422,7 +421,7 @@ int build_acc_extra_array(tag_t* tags, int tags_len, extra_value_t** array_p)
 
 }
 
-int  build_acc_extra_array_pkg(tag_t* tags, int tags_len, extra_value_t** array_p)
+int build_acc_extra_array_pkg(int array_len, extra_value_t** array_p)
 {
 	extra_value_t* array;
 
@@ -432,13 +431,13 @@ int  build_acc_extra_array_pkg(tag_t* tags, int tags_len, extra_value_t** array_
 	}
 
 
-	array = pkg_malloc(tags_len * sizeof(extra_value_t));
+	array = pkg_malloc(array_len * sizeof(extra_value_t));
 	if (array == NULL) {
 		LM_ERR("no more shm!\n");
 		return -1;
 	}
 
-	memset(array, 0, tags_len * sizeof(extra_value_t));
+	memset(array, 0, array_len * sizeof(extra_value_t));
 
 	*array_p = array;
 
@@ -474,8 +473,7 @@ int push_leg(acc_ctx_t* ctx)
 		return -1;
 	}
 
-	return build_acc_extra_array(leg_tags,
-					leg_tgs_len, &ctx->leg_values[ctx->legs_no++]);
+	return build_acc_extra_array(leg_tgs_len, &ctx->leg_values[ctx->legs_no++]);
 }
 
 void destroy_extras( struct acc_extra *extra)
