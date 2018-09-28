@@ -177,12 +177,11 @@ static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
 static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps );
 
-static inline void free_extra_array(tag_t* tags, int tags_len,
-											extra_value_t* array)
+static inline void free_extra_array(extra_value_t* array, int array_len)
 {
 	int i;
 
-	for (i=0; i < tags_len; i++) {
+	for (i=0; i < array_len; i++) {
 		if (array[i].value.s)
 			shm_free(array[i].value.s);
 	}
@@ -196,10 +195,11 @@ static inline void free_acc_ctx(acc_ctx_t* ctx)
 	struct dlg_cell *dlg;
 
 	if (ctx->extra_values)
-		free_extra_array(extra_tags, extra_tgs_len, ctx->extra_values);
+		free_extra_array(ctx->extra_values, extra_tgs_len);
+
 	if (ctx->leg_values) {
 		for (i=0; i<ctx->legs_no; i++) {
-			free_extra_array(leg_tags, leg_tgs_len, ctx->leg_values[i]);
+			free_extra_array(ctx->leg_values[i], leg_tgs_len);
 		}
 		shm_free(ctx->leg_values);
 	}
@@ -237,7 +237,7 @@ acc_ctx_t* try_fetch_ctx(void)
 	t = t==T_UNDEFINED ? NULL : t;
 
 
-	if ((ret=ACC_GET_CTX) == NULL) {
+	if ((ret = ACC_GET_CTX()) == NULL) {
 		t = tmb.t_gett ? tmb.t_gett() : NULL;
 		t = (t==T_UNDEFINED) ? NULL : t;
 		dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
@@ -526,9 +526,12 @@ static inline void acc_onreply_in(struct cell *t, struct sip_msg *req,
 {
 	/* don't parse replies in which we are not interested */
 	/* missed calls enabled ? */
-	if ( (reply && reply!=FAKED_REPLY)
+	if (reply
+			&& reply != FAKED_REPLY
 			&& (should_acc_reply(req,reply,code, &ctx->flags)
-	|| (is_invite(t) && code>=300 && is_mc_acc_on(ctx->flags))) ) {
+				|| (is_invite(t)
+					&& code >= 300
+					&& is_mc_acc_on(ctx->flags)))) {
 		parse_headers(reply, HDR_TO_F, 0 );
 	}
 }
@@ -610,7 +613,7 @@ static void acc_dlg_ctx_cb(struct dlg_cell *dlg, int type,
 
 	/* if there is already a acc context in the processing
 	 * context, be sure to destroy it for now */
-	if ( (ctx=ACC_GET_CTX)!=NULL) {
+	if ((ctx = ACC_GET_CTX())) {
 		push_ctx_to_ctx( ctx, (acc_ctx_t *)(*_params->param));
 		acc_unref(ctx); /* unref it now beause it will disapear from local ctx */
 	}
@@ -1230,32 +1233,19 @@ int do_acc_fixup(void** param, int param_no)
 	return 0;
 }
 
-static inline int store_acc_table(acc_ctx_t* ctx, str* table) {
+static inline int store_acc_table(acc_ctx_t* ctx, str* table)
+{
 	if (ctx == NULL || table == NULL || table->s == NULL || table->len == 0) {
 		LM_ERR("bad usage!\n");
 		return -1;
 	}
 
-	if (ctx->acc_table.s && ctx->acc_table.len) {
-		if (table->len > ctx->acc_table.len) {
-			ctx->acc_table.s = shm_realloc(ctx->acc_table.s, table->len * sizeof(char));
-			if (ctx->acc_table.s == NULL)
-				goto memerr;
-		}
-	} else {
-		ctx->acc_table.s = shm_malloc(table->len * sizeof(char));
-		if (ctx->acc_table.s == NULL)
-			goto memerr;
+	if (shm_str_sync(&ctx->acc_table, table) != 0) {
+		LM_ERR("oom\n");
+		return -1;
 	}
 
-	memcpy(ctx->acc_table.s, table->s, table->len);
-	ctx->acc_table.len = table->len;
-
 	return 0;
-
-memerr:
-	LM_ERR("no more shm!\n");
-	return -1;
 }
 
 int init_acc_ctx(acc_ctx_t** ctx_p)
@@ -1285,7 +1275,7 @@ int init_acc_ctx(acc_ctx_t** ctx_p)
 	}
 
 
-	if (leg_tags != NULL && expand_legs(ctx) < 0) {
+	if (leg_tags != NULL && push_leg(ctx) < 0) {
 		LM_ERR("failed to build extra values array!\n");
 		return -1;
 	}
@@ -1389,8 +1379,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* do_accounting already called once */
 		/* first check if the accounting table changed  */
 		if (is_db_acc_on(flag_mask) &&
-				(table_p != NULL ||
-				(acc_ctx->acc_table.s==NULL && acc_ctx->acc_table.len == 0))) {
+				(table_p != NULL || ZSTR(acc_ctx->acc_table))) {
 			if (table_p == NULL) {
 				table_name = db_table_acc;
 			}
@@ -1579,7 +1568,7 @@ int w_new_leg(struct sip_msg* msg)
 	}
 
 	accX_lock(&ctx->lock);
-	if (expand_legs(ctx) < 0) {
+	if (push_leg(ctx) < 0) {
 		LM_ERR("failed to create new leg!\n");
 		accX_unlock(&ctx->lock);
 		return -1;
