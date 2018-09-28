@@ -19,16 +19,15 @@ endif
 ifeq ($(HAS_MYSQLCFG),YES)
 
 	# use autodetection
-	DEFS += $(shell mysql_config --include | sed 's/\(-I.*\)\/mysql/\1/g' )
+	DEFS += $(shell mysql_config --include)
 	LIBS = $(shell mysql_config --libs)
 
 else
 
 	# use standard know paths
 	# mysql.h locations (freebsd,openbsd  solaris)
-	DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/include/mysql \
-		-I$(LOCALBASE)/mysql/include/mysql -I$(LOCALBASE)/mysql/include \
-		-I$(SYSBASE)/include/mysql
+	DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/mysql/include/mysql \
+		   -I$(LOCALBASE)/mysql/include -I$(SYSBASE)/include
 
 	# libmysqlclient locations on RH/Suse, Solaris /OpenBSD, FreeBSD
 	# (Debian does the right thing and puts it in /usr/lib)
