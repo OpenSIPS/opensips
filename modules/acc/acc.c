@@ -1643,14 +1643,14 @@ static int restore_extra(struct dlg_cell* dlg,
 			str *type_str, acc_ctx_t* ctx)
 {
 	int extra_len;
-	str buffer = {0, 0};
+	str buffer;
 
 	if (ctx == NULL) {
 		LM_ERR("bad call!\n");
 		return -1;
 	}
 
-	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 1) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 0) < 0) {
 		LM_ERR("cannot fetch <%.*s> value from dialog!\n",
 				type_str->len, type_str->s);
 		return -1;
@@ -1674,14 +1674,14 @@ static int restore_legs(struct dlg_cell* dlg,
 			str *type_str, acc_ctx_t* ctx)
 {
 	short extra_len, i;
-	str buffer = {0, 0};
+	str buffer;
 
 	if (ctx == NULL) {
 		LM_ERR("bad call!\n");
 		return -1;
 	}
 
-	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 1) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 0) < 0) {
 		LM_ERR("cannot fetch <%.*s> value from dialog!\n",
 				type_str->len, type_str->s);
 		return -1;
