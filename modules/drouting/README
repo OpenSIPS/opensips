@@ -1297,6 +1297,7 @@ if (is_from_gw("my_partition","3","1") {
           + 'i' (Gateway ID) - return the gateway id into
             gw_id_avp pvar
           + 'n' (Ignore port) - ignores port number
+          + 'r' (Check protocol) - check protocol
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
      * gw_attrs_pvar (output, optional) - a writable variable

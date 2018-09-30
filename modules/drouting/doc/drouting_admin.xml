@@ -1855,6 +1855,11 @@ if (is_from_gw("my_partition","3","1") {
 						</listitem>
 						<listitem>
 							<para>
+							<emphasis role='bold'>'r'</emphasis> (Check protocol) - check protocol
+							</para>
+						</listitem>
+						<listitem>
+							<para>
 							<emphasis role='bold'>'c'</emphasis> (Carrier ID) - return the
 							carrier id into carrier_id_avp AVP
 							</para>
