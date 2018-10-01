@@ -191,7 +191,7 @@ static inline void get_routing_info(struct sip_msg *msg, int is_req,
  *				   the proxies' own
  */
 static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
-					struct cell* t, str *tag,str *mangled_from,str *mangled_to)
+						   str *tag,str *mangled_from,str *mangled_to)
 {
 	unsigned int skip_recs;
 	str cseq;
@@ -375,7 +375,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 
 	/* save callee's tag and cseq */
 	LM_DBG("new branch with tag <%.*s>, leg_idx=%d\n", tag.len, tag.s, leg);
-	if (update_leg_info(leg, dlg, rpl, t, &tag,extract_mangled_fromuri(mangled_from),
+	if (update_leg_info(leg, dlg, rpl, &tag,extract_mangled_fromuri(mangled_from),
 				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		return;
@@ -1348,7 +1348,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	dlg->flags |= flags;
 
 	/* save caller's tag, cseq, contact and record route*/
-	if (update_leg_info(0, dlg, req, t, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
+	if (update_leg_info(0, dlg, req, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
 		return -1;
