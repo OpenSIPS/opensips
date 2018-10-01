@@ -89,6 +89,36 @@ modparam("db_postgres", "max_db_queries", 2)
 	</section>
 	</section>
 	<section>
+        <section id="param_timeout" xreflabel="timeout">
+		<title><varname>timeout</varname> (integer)</title>
+		<para>
+			The number of seconds the PostgreSQL library waits to connect and query
+			the server. If the connection does not succeed within the given timeout,
+			the connection fails.
+		</para>
+		<para>
+			<emphasis>Note:</emphasis>If the timeout is a negative value and
+			connection does not succeed, &osips; will block until the connection
+			becomes back available and gets successfully established. This is the
+			default behavior of the library and is the behavior prior to the
+			adition of this parameter.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 5.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_postgres", "timeout", 2)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 		<para>
 		NONE

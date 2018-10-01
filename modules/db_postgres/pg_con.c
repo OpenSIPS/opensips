@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "db_postgres.h"
 #include "pg_con.h"
 #include "../../mem/mem.h"
 #include "../../dprint.h"
@@ -26,6 +27,7 @@
 #include <string.h>
 #include <time.h>
 
+#define PSQL_PARAMS_MAX 7
 
 /*
  * Create a new connection structure,
@@ -33,8 +35,17 @@
  */
 struct pg_con* db_postgres_new_connection(struct db_id* id)
 {
+#define PSQL_PARAM(_k, _v) \
+	do { \
+		keywords[p] = (_k); \
+		values[p] = (_v); \
+		p++; \
+	} while (0);
 	struct pg_con* ptr;
+	const char *keywords[PSQL_PARAMS_MAX];
+	const char *values[PSQL_PARAMS_MAX];
 	char *ports;
+	int p = 0;
 
 	LM_DBG("db_id = %p\n", id);
 
@@ -58,14 +69,28 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 		ports = int2str(id->port, 0);
 		LM_DBG("opening connection: postgres://xxxx:xxxx@%s:%d/%s\n", ZSW(id->host),
 			id->port, ZSW(id->database));
+		PSQL_PARAM("port", ports);
 	} else {
 		ports = NULL;
 		LM_DBG("opening connection: postgres://xxxx:xxxx@%s/%s\n", ZSW(id->host),
 			ZSW(id->database));
 	}
 
- 	ptr->con = PQsetdbLogin(id->host, ports, NULL, NULL, id->database, id->username, id->password);
-	LM_DBG("PQsetdbLogin(%p)\n", ptr->con);
+	if (id->host)
+		PSQL_PARAM("host", id->host);
+	if (id->username)
+		PSQL_PARAM("user", id->username);
+	if (id->password)
+		PSQL_PARAM("password", id->password);
+
+	PSQL_PARAM("dbname", id->database);
+
+	/* force the default timeout */
+	if (pq_timeout > 0)
+		PSQL_PARAM("connect_timeout", int2str(pq_timeout, 0));
+	PSQL_PARAM(0, 0);
+
+	ptr->con = PQconnectdbParams(keywords, values, 1);
 
 	if( (ptr->con == 0) || (PQstatus(ptr->con) != CONNECTION_OK) )
 	{
@@ -86,6 +111,7 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 		pkg_free(ptr);
 	}
 	return 0;
+#undef PSQL_PARAM
 }
 
 
