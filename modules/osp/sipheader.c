@@ -37,6 +37,7 @@
 #include "../../parser/parse_pai.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
+#include "../../parser/contact/parse_contact.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
 #include "osp_mod.h"
@@ -47,6 +48,7 @@
 extern int _osp_work_mode;
 extern char _osp_in_device[];
 extern int _osp_use_np;
+extern int _osp_export_np;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
@@ -59,8 +61,45 @@ extern unsigned short _osp_srcdev_avptype;
 extern int _osp_reqdate_avpid;
 extern unsigned short _osp_reqdate_avptype;
 
+char* PCHARGEINFO = "P-Charge-Info";
+char* PCHARGINGVECTOR = "P-Charging-Vector";
+char* IDENTITY = "Identity";
+
+static void ospTrim(char* source, char* buffer, int bufsize);
 static void ospSkipUserParam(char* userinfo);
 static int ospAppendHeader(struct sip_msg* msg, str* header);
+
+/*
+ * Trim leading and trailing space
+ * param source Source string
+ * param buffer Destiantion string buffer
+ * param bufsize Destination string buffer size
+ */
+void ospTrim(
+    char* source,
+    char* buffer,
+    int bufsize)
+{
+    char* start = source;
+    char* end = NULL;
+
+    if(bufsize != 0) {
+        while(isspace(*start)) { 
+            start++; 
+        }
+
+        if(*start == 0) {
+          *buffer = '\0';
+        } else {
+            end = start + strlen(start) - 1;
+            while(isspace(*end)) {
+                *end = '\0';
+                end--;
+            }
+            snprintf(buffer, bufsize, "%s", start);
+        }
+    }
+}
 
 /*
  * Get AVP value
@@ -78,14 +117,16 @@ int ospGetAVP(
 {
     struct usr_avp* avp = NULL;
     int_str avpval;
+    char tmp[OSP_STRBUF_SIZE];
     int result = -1;
 
     if ((avpid >= 0) &&
         ((avp = search_first_avp(avptype, avpid, &avpval, 0)) != NULL) &&
         (avp->flags & AVP_VAL_STR) && (avpval.s.s && avpval.s.len))
     {
-        snprintf(avpstr, bufsize, "%.*s", avpval.s.len, avpval.s.s);
+        snprintf(tmp, sizeof(tmp), "%.*s", avpval.s.len, avpval.s.s);
         destroy_avp(avp);
+        ospTrim(tmp, avpstr, bufsize);
         result = 0;
     }
 
@@ -115,8 +156,12 @@ void ospCopyStrToBuffer(
         copybytes = source->len + 1;
     }
 
-    strncpy(buffer, source->s, copybytes);
-    buffer[copybytes - 1] = '\0';
+    if (source->s != NULL) {
+        strncpy(buffer, source->s, copybytes);
+        buffer[copybytes - 1] = '\0';
+    } else {
+        buffer[0] = '\0';
+    }
 }
 
 /*
@@ -213,7 +258,6 @@ int ospGetFromUser(
 
     if ((fromuser != NULL) && (bufsize > 0)) {
         fromuser[0] = '\0';
-
         if (msg->from != NULL) {
             if (parse_from_header(msg) == 0) {
                 from = get_from(msg);
@@ -238,36 +282,29 @@ int ospGetFromUser(
 }
 
 /*
- * Get URI of From header
+ * Get From header
  * param msg SIP message
- * param fromuri URI of From header
- * param bufsize Size of fromuri buffer
+ * param from From header
+ * param bufsize Size of from header buffer
  * return 0 success, -1 failure
  */
-int ospGetFromUri(
+int ospGetFrom(
     struct sip_msg* msg,
-    char* fromuri,
+    char* from,
     int bufsize)
 {
-    struct to_body* from;
     int result = -1;
 
-    if ((fromuri != NULL) && (bufsize > 0)) {
-        fromuri[0] = '\0';
-
+    if ((from!= NULL) && (bufsize > 0)) {
+        from[0] = '\0';
         if (msg->from != NULL) {
-            if (parse_from_header(msg) == 0) {
-                from = get_from(msg);
-                ospCopyStrToBuffer(&from->uri, fromuri, bufsize);
-                result = 0;
-            } else {
-                LM_ERR("failed to parse From header\n");
-            }
+            ospCopyStrToBuffer(&msg->from->body, from, bufsize);
+            result = 0;
         } else {
             LM_ERR("failed to find From header\n");
         }
     } else {
-        LM_ERR("bad parameters to parse URI of From header\n");
+        LM_ERR("bad parameters to parse From header\n");
     }
 
     return result;
@@ -328,7 +365,6 @@ int ospGetToUser(
 
     if ((touser != NULL) && (bufsize > 0)) {
         touser[0] = '\0';
-
         if (msg->to != NULL) {
             if (parse_headers(msg, HDR_TO_F, 0) == 0) {
                 to = get_to(msg);
@@ -370,7 +406,6 @@ int ospGetToHost(
 
     if ((tohost != NULL) && (bufsize > 0)) {
         tohost[0] = '\0';
-
         if (msg->to != NULL) {
             if (parse_headers(msg, HDR_TO_F, 0) == 0) {
                 to = get_to(msg);
@@ -398,36 +433,29 @@ int ospGetToHost(
 }
 
 /*
- * Get URI of To header
+ * Get To header
  * param msg SIP message
- * param touri URI of To header
- * param bufsize Size of touri buffer
+ * param to To header
+ * param bufsize Size of to header buffer
  * return 0 success, -1 failure
  */
-int ospGetToUri(
+int ospGetTo(
     struct sip_msg* msg,
-    char* touri,
+    char* to,
     int bufsize)
 {
-    struct to_body* to;
     int result = -1;
 
-    if ((touri != NULL) && (bufsize > 0)) {
-        touri[0] = '\0';
-
+    if ((to!= NULL) && (bufsize > 0)) {
+        to[0] = '\0';
         if (msg->to != NULL) {
-            if (parse_headers(msg, HDR_TO_F, 0) == 0) {
-                to = get_to(msg);
-                ospCopyStrToBuffer(&to->uri, touri, bufsize);
-                result = 0;
-            } else {
-                LM_ERR("failed to parse To header\n");
-            }
+            ospCopyStrToBuffer(&msg->to->body, to, bufsize);
+            result = 0;
         } else {
             LM_ERR("failed to find To header\n");
         }
     } else {
-        LM_ERR("bad parameters to parse URI of To header\n");
+        LM_ERR("bad parameters to parse To header\n");
     }
 
     return result;
@@ -476,6 +504,77 @@ int ospGetPaiUser(
 }
 
 /*
+ * Get host part from P-Asserted-Identity header
+ * param msg SIP message
+ * param host Host part of P-Asserted-Identity header
+ * param bufsize Size of fromuser buffer
+ * return 0 success, 1 without PAI, -1 failure
+ */
+int ospGetPaiHost(
+    struct sip_msg* msg,
+    char* paihost,
+    int bufsize)
+{
+    struct to_body* pai;
+    struct sip_uri uri;
+    int result = -1;
+
+    if ((paihost != NULL) && (bufsize > 0)) {
+        paihost[0] = '\0';
+        if (msg->pai != NULL) {
+            if (parse_pai_header(msg) == 0) {
+                pai = get_pai(msg);
+                if (parse_uri(pai->uri.s, pai->uri.len, &uri) == 0) {
+                    ospCopyStrToBuffer(&uri.host, paihost, bufsize);
+                    result = 0;
+                } else {
+                    LM_ERR("failed to parse PAI uri\n");
+                }
+            } else {
+                LM_ERR("failed to parse PAI uri\n");
+            }
+        } else {
+            LM_DBG("without PAI header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse host part from PAI\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get P-Asserted-Identity header
+ * param msg SIP message
+ * param pai P-Asserted-Identity header
+ * param bufsize Size of pai header buffer
+ * return 0 success, 1 without PAI, -1 failure
+ */
+int ospGetPai(
+    struct sip_msg* msg,
+    char* pai,
+    int bufsize)
+{
+    int result = -1;
+
+    if ((pai!= NULL) && (bufsize > 0)) {
+        pai[0] = '\0';
+        if (msg->pai != NULL) {
+           ospCopyStrToBuffer(&msg->pai->body, pai, bufsize);
+           result = 0;
+        } else {
+            LM_DBG("without PAI header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse PAI header\n");
+    }
+
+    return result;
+}
+
+/*
  * Get user part from Remote-Party-ID header
  * param msg SIP message
  * param user User part of Remote-Party-ID header
@@ -518,6 +617,47 @@ int ospGetRpidUser(
 }
 
 /*
+ * Get host part from Remote-Party-ID header
+ * param msg SIP message
+ * param host Host part of Remote-Party-ID header
+ * param bufsize Size of fromuser buffer
+ * return 0 success, 1 without RPID, -1 failure
+ */ 
+int ospGetRpidHost(
+    struct sip_msg* msg,
+    char* rpidhost,
+    int bufsize)
+{
+    struct to_body* rpid;
+    struct sip_uri uri;
+    int result = -1;
+
+    if ((rpidhost!= NULL) && (bufsize > 0)) {
+        rpidhost[0] = '\0';
+        if (msg->rpid != NULL) {
+            if (parse_rpid_header(msg) == 0) {
+                rpid = get_rpid(msg);
+                if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
+                    ospCopyStrToBuffer(&uri.host, rpidhost, bufsize);
+                    result = 0;
+                } else {
+                    LM_ERR("failed to parse RPID uri\n");
+                }
+            } else {
+                LM_ERR("failed to parse RPID uri\n");
+            }
+        } else {
+            LM_DBG("without RPID header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse host part from RPID\n");
+    }
+
+    return result;
+}
+
+/*
  * Get user part from P-Charge-Info header
  * param msg SIP message
  * param user User part of P-Charge-Info header
@@ -529,7 +669,6 @@ int ospGetPciUser(
     char* pciuser,
     int bufsize)
 {
-    static const char* header = "P-Charge-Info";
     struct to_body body;
     struct to_body* pci = NULL;
     struct hdr_field* hf;
@@ -539,33 +678,81 @@ int ospGetPciUser(
     if ((pciuser != NULL) && (bufsize > 0)) {
         pciuser[0] = '\0';
         if (parse_headers(msg, HDR_EOH_F, 0) == 0) {
-            for (hf = msg->headers; hf; hf = hf->next) {
-                if ((hf->type == HDR_OTHER_T) &&
-                    (hf->name.len == strlen(header)) &&
-                    (strncasecmp(hf->name.s, header, hf->name.len) == 0))
-                {
-                    if (!(pci = hf->parsed)) {
-                        pci = &body;
-                        parse_to(hf->body.s, hf->body.s + hf->body.len + 1, pci);
-                    }
-                    if (pci->error != PARSE_ERROR) {
-                        if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
-                            ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
-                            ospSkipUserParam(pciuser);
-                            result = 0;
-                        } else {
-                            LM_ERR("failed to parse P-Charge-Info uri\n");
-                        }
-                        if (pci == &body) {
-                            free_to_params(pci);
-                        }
-                    } else {
-                        LM_ERR("bad P-Charge-Info header\n");
-                    }
-                    break;
+            hf = get_header_by_name(msg, PCHARGEINFO, strlen(PCHARGEINFO));
+            if (hf) {
+                if (!(pci = hf->parsed)) {
+                    pci = &body;
+                    parse_to(hf->body.s, hf->body.s + hf->body.len + 1, pci);
                 }
+                if (pci->error != PARSE_ERROR) {
+                    if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
+                        ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
+                        ospSkipUserParam(pciuser);
+                        result = 0;
+                    } else {
+                        LM_ERR("failed to parse P-Charge-Info uri\n");
+                    }
+                    if (pci == &body) {
+                        free_to_params(pci);
+                    }
+                } else {
+                    LM_ERR("bad P-Charge-Info header\n");
+                }
+            } else {
+                LM_DBG("without P-Charge-Info header\n");
+                result = 1;
             }
-            if (!hf) {
+        } else {
+            LM_ERR("failed to parse message\n");
+        }
+    } else {
+        LM_ERR("bad parameters to parse user part from PAI\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get host part from P-Charge-Info header
+ * param msg SIP message
+ * param host Host part of P-Charge-Info header
+ * param bufsize Size of fromuser buffer
+ * return 0 success, 1 without P-Charge-Info, -1 failure
+ */
+int ospGetPciHost(
+    struct sip_msg* msg,
+    char* pcihost,
+    int bufsize)
+{
+    struct to_body body;
+    struct to_body* pci = NULL;
+    struct hdr_field* hf;
+    struct sip_uri uri;
+    int result = -1;
+
+    if ((pcihost != NULL) && (bufsize > 0)) {
+        pcihost[0] = '\0';
+        if (parse_headers(msg, HDR_EOH_F, 0) == 0) {
+            hf = get_header_by_name(msg, PCHARGEINFO, strlen(PCHARGEINFO));
+            if (hf) {
+                if (!(pci = hf->parsed)) {
+                    pci = &body;
+                    parse_to(hf->body.s, hf->body.s + hf->body.len + 1, pci);
+                }
+                if (pci->error != PARSE_ERROR) {
+                    if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
+                        ospCopyStrToBuffer(&uri.host, pcihost, bufsize);
+                        result = 0;
+                    } else {
+                        LM_ERR("failed to parse P-Charge-Info uri\n");
+                    }
+                    if (pci == &body) {
+                        free_to_params(pci);
+                    }
+                } else {
+                    LM_ERR("bad P-Charge-Info header\n");
+                }
+            } else {
                 LM_DBG("without P-Charge-Info header\n");
                 result = 1;
             }
@@ -643,7 +830,6 @@ int ospGetPcvIcid(
     char* pcvicid, 
     int bufsize)
 {
-    static const char* header = "P-Charging-Vector";
     struct hdr_field* hf;
     param_hooks_t phooks;
     param_t* params = NULL;
@@ -653,12 +839,9 @@ int ospGetPcvIcid(
     if ((pcvicid != NULL) && (bufsize > 0)) {
         pcvicid[0] = '\0';
         if (parse_headers(msg, HDR_EOH_F, 0) == 0) {
-            for (hf = msg->headers; hf; hf = hf->next) {
-                if ((hf->type == HDR_OTHER_T) &&
-                    (hf->name.len == strlen(header)) &&
-                    (strncasecmp(hf->name.s, header, hf->name.len) == 0))
-                {
-                    parse_params(&(hf->body), CLASS_ANY, &phooks, &params);
+            hf = get_header_by_name(msg, PCHARGINGVECTOR, strlen(PCHARGINGVECTOR));
+            if (hf) {
+                if (parse_params(&(hf->body), CLASS_ANY, &phooks, &params) == 0) {
                     for (pit = params; pit; pit = pit->next) {
                         if ((pit->name.len == OSP_ICID_SIZE) &&
                             (strncasecmp(pit->name.s, OSP_ICID_NAME, OSP_ICID_SIZE) == 0) &&
@@ -668,10 +851,11 @@ int ospGetPcvIcid(
                             result = 0;
                         }
                     }
-                    break;
+                    if (params != NULL) {
+                        free_params(params);
+                    }
                 }
-            }
-            if (!hf) {
+            } else {
                 LM_DBG("without P-Charging-Vector header\n");
                 result = 1;
             }
@@ -701,7 +885,6 @@ int ospGetUriUser(
 
     if ((uriuser != NULL) && (bufsize > 0)) {
         uriuser[0] = '\0';
-
         if (parse_sip_msg_uri(msg) >= 0) {
             ospCopyStrToBuffer(&msg->parsed_uri.user, uriuser, bufsize);
             ospSkipUserParam(uriuser);
@@ -711,6 +894,83 @@ int ospGetUriUser(
         }
     } else {
         LM_ERR("bad parameters to parse user part from RURI\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get Identity header
+ * param msg SIP message
+ * param identity Identity header
+ * param bufsize Size of identity header buffer
+ * return 0 success, 1 without Identity, -1 failure
+ */
+int ospGetIdentity(
+    struct sip_msg* msg,
+    char* identity,
+    int bufsize)
+{
+    struct hdr_field* hf;
+    int result = -1;
+
+    if ((identity != NULL) && (bufsize > 0)) {
+        identity[0] = '\0';
+        if (parse_headers(msg, HDR_EOH_F, 0) == 0) {
+            hf = get_header_by_name(msg, IDENTITY, strlen(IDENTITY));
+            if (hf) {
+                ospCopyStrToBuffer(&hf->body, identity, bufsize);
+                result = 0;
+            } else {
+                LM_DBG("without Identity header\n");
+                result = 1;
+            }
+        } else {
+            LM_ERR("failed to parse message\n");
+        }
+    } else {
+        LM_ERR("bad parameters to parse Identity header\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get host part from Contact header
+ * param msg SIP message
+ * param host Host part of Contact header
+ * param bufsize Size of fromuser buffer
+ * return 0 success, 1 without Contact, -1 failure
+ */
+int ospGetContactHost(
+    struct sip_msg* msg,
+    char* contacthost,
+    int bufsize)
+{
+    contact_t* contacts;
+    struct sip_uri uri;
+    int result = -1;
+
+    if ((contacthost != NULL) && (bufsize > 0)) {
+        contacthost[0] = '\0';
+        if (msg->contact != NULL) {
+            if (msg->contact->parsed || (parse_contact(msg->contact) >= 0)) {
+                contacts = ((contact_body_t*)msg->contact->parsed)->contacts;
+                if (parse_uri(contacts->uri.s, contacts->uri.len, &uri) == 0) {
+                    ospCopyStrToBuffer(&uri.host, contacthost, bufsize);
+                    result = 0;
+                } else {
+                    LM_ERR("failed to parse Contact uri\n");
+                }
+            } else {
+                LM_ERR("failed to parse Contact uri\n");
+            }
+        } else {
+            LM_DBG("without Contact header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse host part from Contact\n");
     }
 
     return result;
@@ -1128,56 +1388,110 @@ int ospRebuildDestUri(
     memcpy(buffer, dest->called, calledsize);
     buffer += calledsize;
 
-    if (dest->nprn[0]) {
-        count = sprintf(buffer, ";rn=%s", dest->nprn);
-        buffer += count;
-    }
-    if (dest->npcic[0]) {
-        count = sprintf(buffer, ";cic=%s", dest->npcic);
-        buffer += count;
-    }
-    if (dest->npdi) {
-        sprintf(buffer, ";npdi");
-        buffer += 5;
-    }
-    if (dest->opname[OSPC_OPNAME_SPID][0]) {
-        count = sprintf(buffer, ";spid=%s", dest->opname[OSPC_OPNAME_SPID]);
-        buffer += count;
-    }
-    if (dest->opname[OSPC_OPNAME_OCN][0]) {
-        count = sprintf(buffer, ";ocn=%s", dest->opname[OSPC_OPNAME_OCN]);
-        buffer += count;
-    }
-    if (dest->opname[OSPC_OPNAME_SPN][0]) {
-        count = sprintf(buffer, ";spn=%s", dest->opname[OSPC_OPNAME_SPN]);
-        buffer += count;
-    }
-    if (dest->opname[OSPC_OPNAME_ALTSPN][0]) {
-        count = sprintf(buffer, ";altspn=%s", dest->opname[OSPC_OPNAME_ALTSPN]);
-        buffer += count;
-    }
-    if (dest->opname[OSPC_OPNAME_MCC][0]) {
-        count = sprintf(buffer, ";mcc=%s", dest->opname[OSPC_OPNAME_MCC]);
-        buffer += count;
-    }
-    if (dest->opname[OSPC_OPNAME_MNC][0]) {
-        count = sprintf(buffer, ";mnc=%s", dest->opname[OSPC_OPNAME_MNC]);
-        buffer += count;
-    }
-
-    if ((_osp_dnid_location == 1) && (dest->dnid[0] != '\0')) {
-        count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
-        buffer += count;
-    }
-
-    if ((_osp_swid_location == 1) && (dest->swid[0] != '\0')) {
-        count = sprintf(buffer, ";%s=%s", _osp_swid_param, dest->swid);
-        buffer += count;
-    }
-
-    if ((_osp_paramstr_location == 1) && (_osp_paramstr_value[0] != '\0')) {
-        count = sprintf(buffer, ";%s", _osp_paramstr_value);
-        buffer += count;
+    if (_osp_export_np == 0) {
+        if (dest->nprn[0]) {
+            count = sprintf(buffer, ";rn=%s", dest->nprn);
+            buffer += count;
+        }
+        if (dest->npcic[0]) {
+            count = sprintf(buffer, ";cic=%s", dest->npcic);
+            buffer += count;
+        }
+        if (dest->npdi) {
+            sprintf(buffer, ";npdi");
+            buffer += 5;
+        }
+        if (dest->opname[OSPC_OPNAME_SPID][0]) {
+            count = sprintf(buffer, ";spid=%s", dest->opname[OSPC_OPNAME_SPID]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_OCN][0]) {
+            count = sprintf(buffer, ";ocn=%s", dest->opname[OSPC_OPNAME_OCN]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_SPN][0]) {
+            count = sprintf(buffer, ";spn=%s", dest->opname[OSPC_OPNAME_SPN]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_ALTSPN][0]) {
+            count = sprintf(buffer, ";altspn=%s", dest->opname[OSPC_OPNAME_ALTSPN]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_MCC][0]) {
+            count = sprintf(buffer, ";mcc=%s", dest->opname[OSPC_OPNAME_MCC]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_MNC][0]) {
+            count = sprintf(buffer, ";mnc=%s", dest->opname[OSPC_OPNAME_MNC]);
+            buffer += count;
+        }
+    
+        if ((_osp_dnid_location == 1) && (dest->dnid[0] != '\0')) {
+            count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
+            buffer += count;
+        }
+    
+        if ((_osp_swid_location == 1) && (dest->swid[0] != '\0')) {
+            count = sprintf(buffer, ";%s=%s", _osp_swid_param, dest->swid);
+            buffer += count;
+        }
+    
+        if ((_osp_paramstr_location == 1) && (_osp_paramstr_value[0] != '\0')) {
+            count = sprintf(buffer, ";%s", _osp_paramstr_value);
+            buffer += count;
+        }
+    } else {
+        if ((_osp_dnid_location == 1) && (dest->dnid[0] != '\0')) {
+            count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
+            buffer += count;
+        }
+    
+        if ((_osp_swid_location == 1) && (dest->swid[0] != '\0')) {
+            count = sprintf(buffer, ";%s=%s", _osp_swid_param, dest->swid);
+            buffer += count;
+        }
+    
+        if ((_osp_paramstr_location == 1) && (_osp_paramstr_value[0] != '\0')) {
+            count = sprintf(buffer, ";%s", _osp_paramstr_value);
+            buffer += count;
+        }
+    
+        if (dest->opname[OSPC_OPNAME_SPID][0]) {
+            count = sprintf(buffer, ";spid=%s", dest->opname[OSPC_OPNAME_SPID]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_OCN][0]) {
+            count = sprintf(buffer, ";ocn=%s", dest->opname[OSPC_OPNAME_OCN]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_SPN][0]) {
+            count = sprintf(buffer, ";spn=%s", dest->opname[OSPC_OPNAME_SPN]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_ALTSPN][0]) {
+            count = sprintf(buffer, ";altspn=%s", dest->opname[OSPC_OPNAME_ALTSPN]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_MCC][0]) {
+            count = sprintf(buffer, ";mcc=%s", dest->opname[OSPC_OPNAME_MCC]);
+            buffer += count;
+        }
+        if (dest->opname[OSPC_OPNAME_MNC][0]) {
+            count = sprintf(buffer, ";mnc=%s", dest->opname[OSPC_OPNAME_MNC]);
+            buffer += count;
+        }
+        if (dest->npdi) {
+            sprintf(buffer, ";npdi");
+            buffer += 5;
+        }
+        if (dest->npcic[0]) {
+            count = sprintf(buffer, ";cic=%s", dest->npcic);
+            buffer += count;
+        }
+        if (dest->nprn[0]) {
+            count = sprintf(buffer, ";rn=%s", dest->nprn);
+            buffer += count;
+        }
     }
 
     *buffer++ = '@';
@@ -1342,26 +1656,27 @@ int ospGetNpParam(
                     sv = msg->parsed_uri.user;
                     break;
                 }
-                parse_params(&sv, CLASS_ANY, &phooks, &params);
-                for (pit = params; pit; pit = pit->next) {
-                    if ((pit->name.len == OSP_RN_SIZE) &&
-                        (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0) &&
-                        (rn[0] == '\0'))
-                    {
-                        ospCopyStrToBuffer(&pit->body, rn, rnbufsize);
-                    } else if ((pit->name.len == OSP_CIC_SIZE) &&
-                        (strncasecmp(pit->name.s, OSP_CIC_NAME, OSP_CIC_SIZE) == 0) &&
-                        (cic[0] == '\0'))
-                    {
-                        ospCopyStrToBuffer(&pit->body, cic, cicbufsize);
-                    } else if ((pit->name.len == OSP_NPDI_SIZE) &&
-                        (strncasecmp(pit->name.s, OSP_NPDI_NAME, OSP_NPDI_SIZE) == 0))
-                    {
-                        *npdi = 1;
+                if (parse_params(&sv, CLASS_ANY, &phooks, &params) == 0) {
+                    for (pit = params; pit; pit = pit->next) {
+                        if ((pit->name.len == OSP_RN_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_RN_NAME, OSP_RN_SIZE) == 0) &&
+                            (rn[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, rn, rnbufsize);
+                        } else if ((pit->name.len == OSP_CIC_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_CIC_NAME, OSP_CIC_SIZE) == 0) &&
+                            (cic[0] == '\0'))
+                        {
+                            ospCopyStrToBuffer(&pit->body, cic, cicbufsize);
+                        } else if ((pit->name.len == OSP_NPDI_SIZE) &&
+                            (strncasecmp(pit->name.s, OSP_NPDI_NAME, OSP_NPDI_SIZE) == 0))
+                        {
+                            *npdi = 1;
+                        }
                     }
-                }
-                if (params != NULL) {
-                    free_params(params);
+                    if (params != NULL) {
+                        free_params(params);
+                    }
                 }
                 if ((rn[0] != '\0') || (cic[0] != '\0') || (*npdi != 0)) {
                     result = 0;
@@ -1420,63 +1735,64 @@ int ospGetOperatorName(
                     sv = msg->parsed_uri.user;
                     break;
                 }
-                parse_params(&sv, CLASS_ANY, &phooks, &params);
-                for (pit = params; pit; pit = pit->next) {
-                    switch (type) {
-                    case OSPC_OPNAME_SPID:
-                        if ((pit->name.len == OSP_SPID_SIZE) &&
-                            (strncasecmp(pit->name.s, OSP_SPID_NAME, OSP_SPID_SIZE) == 0) &&
-                            (name[0] == '\0'))
-                        {
-                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                if (parse_params(&sv, CLASS_ANY, &phooks, &params) == 0) {
+                    for (pit = params; pit; pit = pit->next) {
+                        switch (type) {
+                        case OSPC_OPNAME_SPID:
+                            if ((pit->name.len == OSP_SPID_SIZE) &&
+                                (strncasecmp(pit->name.s, OSP_SPID_NAME, OSP_SPID_SIZE) == 0) &&
+                                (name[0] == '\0'))
+                            {
+                                ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                            }
+                            break;
+                        case OSPC_OPNAME_OCN:
+                            if ((pit->name.len == OSP_OCN_SIZE) &&
+                                (strncasecmp(pit->name.s, OSP_OCN_NAME, OSP_OCN_SIZE) == 0) &&
+                                (name[0] == '\0'))
+                            {
+                                ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                            }
+                            break;
+                        case OSPC_OPNAME_SPN:
+                            if ((pit->name.len == OSP_SPN_SIZE) &&
+                                (strncasecmp(pit->name.s, OSP_SPN_NAME, OSP_SPN_SIZE) == 0) &&
+                                (name[0] == '\0'))
+                            {
+                                ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                            }
+                            break;
+                        case OSPC_OPNAME_ALTSPN:
+                            if ((pit->name.len == OSP_ALTSPN_SIZE) &&
+                                (strncasecmp(pit->name.s, OSP_ALTSPN_NAME, OSP_ALTSPN_SIZE) == 0) &&
+                                (name[0] == '\0'))
+                            {
+                                ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                            }
+                            break;
+                        case OSPC_OPNAME_MCC:
+                            if ((pit->name.len == OSP_MCC_SIZE) &&
+                                (strncasecmp(pit->name.s, OSP_MCC_NAME, OSP_MCC_SIZE) == 0) &&
+                                (name[0] == '\0'))
+                            {
+                                ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                            }
+                            break;
+                        case OSPC_OPNAME_MNC:
+                            if ((pit->name.len == OSP_MNC_SIZE) &&
+                                (strncasecmp(pit->name.s, OSP_MNC_NAME, OSP_MNC_SIZE) == 0) &&
+                                (name[0] == '\0'))
+                            {
+                                ospCopyStrToBuffer(&pit->body, name, namebufsize);
+                            }
+                            break;
+                        default:
+                            break;
                         }
-                        break;
-                    case OSPC_OPNAME_OCN:
-                        if ((pit->name.len == OSP_OCN_SIZE) &&
-                            (strncasecmp(pit->name.s, OSP_OCN_NAME, OSP_OCN_SIZE) == 0) &&
-                            (name[0] == '\0'))
-                        {
-                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
-                        }
-                        break;
-                    case OSPC_OPNAME_SPN:
-                        if ((pit->name.len == OSP_SPN_SIZE) &&
-                            (strncasecmp(pit->name.s, OSP_SPN_NAME, OSP_SPN_SIZE) == 0) &&
-                            (name[0] == '\0'))
-                        {
-                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
-                        }
-                        break;
-                    case OSPC_OPNAME_ALTSPN:
-                        if ((pit->name.len == OSP_ALTSPN_SIZE) &&
-                            (strncasecmp(pit->name.s, OSP_ALTSPN_NAME, OSP_ALTSPN_SIZE) == 0) &&
-                            (name[0] == '\0'))
-                        {
-                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
-                        }
-                        break;
-                    case OSPC_OPNAME_MCC:
-                        if ((pit->name.len == OSP_MCC_SIZE) &&
-                            (strncasecmp(pit->name.s, OSP_MCC_NAME, OSP_MCC_SIZE) == 0) &&
-                            (name[0] == '\0'))
-                        {
-                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
-                        }
-                        break;
-                    case OSPC_OPNAME_MNC:
-                        if ((pit->name.len == OSP_MNC_SIZE) &&
-                            (strncasecmp(pit->name.s, OSP_MNC_NAME, OSP_MNC_SIZE) == 0) &&
-                            (name[0] == '\0'))
-                        {
-                            ospCopyStrToBuffer(&pit->body, name, namebufsize);
-                        }
-                        break;
-                    default:
-                        break;
                     }
-                }
-                if (params != NULL) {
-                    free_params(params);
+                    if (params != NULL) {
+                        free_params(params);
+                    }
                 }
                 if (name[0] != '\0') {
                     result = 0;

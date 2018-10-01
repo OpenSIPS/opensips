@@ -77,16 +77,22 @@ extern int _osp_reqdate_avpid;
 extern unsigned short _osp_reqdate_avptype;
 extern int _osp_sdpfp_avpid;
 extern unsigned short _osp_sdpfp_avptype;
-extern int _osp_idsign_avpid;
-extern unsigned short _osp_idsign_avptype;
-extern int _osp_idalg_avpid;
-extern unsigned short _osp_idalg_avptype;
-extern int _osp_idinfo_avpid;
-extern unsigned short _osp_idinfo_avptype;
-extern int _osp_idtype_avpid;
-extern unsigned short _osp_idtype_avptype;
-extern int _osp_idcanon_avpid;
-extern unsigned short _osp_idcanon_avptype;
+extern int _osp_identity_avpid;
+extern unsigned short _osp_identity_avptype;
+extern int _osp_sp_avpid;
+extern unsigned short _osp_sp_avptype;
+extern int _osp_usergroup_avpid;
+extern unsigned short _osp_usergroup_avptype;
+extern int _osp_userid_avpid;
+extern unsigned short _osp_userid_avptype;
+extern int _osp_dest_avpid;
+extern unsigned short _osp_dest_avptype;
+extern int _osp_reasontype_avpid;
+extern unsigned short _osp_reasontype_avptype;
+extern int _osp_reasoncause_avpid;
+extern unsigned short _osp_reasoncause_avptype;
+extern int _osp_reasontext_avpid;
+extern unsigned short _osp_reasontext_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 extern auth_api_t osp_auth;
 
@@ -96,7 +102,7 @@ const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 
 static int ospSetIdentity(OSPTTRANHANDLE trans);
-static int ospReportIdentity(OSPTTRANHANDLE trans);
+static int ospSetReason(OSPTTRANHANDLE trans);
 static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, osp_inbound* inbound);
 static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int route, int response, int* rsptype);
 static int ospSetCalling(struct sip_msg* msg, osp_inbound* inbound, osp_dest* dest);
@@ -109,53 +115,16 @@ static int ospSetCalling(struct sip_msg* msg, osp_inbound* inbound, osp_dest* de
 static int ospSetIdentity(
     OSPTTRANHANDLE trans)
 {
-    char encoded[OSP_SIGNBUF_SIZE];
-    unsigned encodedsize = sizeof(encoded);
-    unsigned char sign[OSP_SIGNBUF_SIZE];
-    unsigned signsize = sizeof(sign);
-    char alg[OSP_ALGBUF_SIZE];
-    char info[OSP_STRBUF_SIZE];
-    char type[OSP_STRBUF_SIZE];
-    unsigned char canon[OSP_STRBUF_SIZE];
-    unsigned canonsize = sizeof(canon);
+    char identity[OSP_HEADERBUF_SIZE];
     str value;
     int result = -1;
 
-    if (OSPPTransactionGetIdentity(trans, &signsize, sign, sizeof(alg), alg, sizeof(info), info, sizeof(type), type, &canonsize, canon) == OSPC_ERR_NO_ERROR) {
-        if (signsize != 0) {
-            if (OSPPBase64Encode(sign, signsize, (unsigned char*)encoded, &encodedsize) == OSPC_ERR_NO_ERROR) {
-                value.s = encoded;
-                value.len = encodedsize;
-                add_avp(_osp_idsign_avptype | AVP_VAL_STR, _osp_idsign_avpid, (int_str)value);
-            }
+    if (OSPPTransactionGetIdentity(trans, sizeof(identity), identity) == OSPC_ERR_NO_ERROR) {
+        if (strlen(identity) != 0) {
+            value.s = identity;
+            value.len = strlen(identity);
+            add_avp(_osp_identity_avptype | AVP_VAL_STR, _osp_identity_avpid, (int_str)value);
         }
-
-        if (alg[0] != '\0') {
-            value.s = alg;
-            value.len = strlen(alg);
-            add_avp(_osp_idalg_avptype | AVP_VAL_STR, _osp_idalg_avpid, (int_str)value);
-        }
-
-        if (info[0] != '\0') {
-            value.s = info;
-            value.len = strlen(info);
-            add_avp(_osp_idinfo_avptype | AVP_VAL_STR, _osp_idinfo_avpid, (int_str)value);
-        }
-
-        if (type[0] != '\0') {
-            value.s = type;
-            value.len = strlen(type);
-            add_avp(_osp_idtype_avptype | AVP_VAL_STR, _osp_idtype_avpid, (int_str)value);
-        }
-
-        if (canonsize != 0) {
-            if (OSPPBase64Encode(canon, canonsize, (unsigned char*)encoded, &encodedsize) == OSPC_ERR_NO_ERROR) {
-                value.s = encoded;
-                value.len = encodedsize;
-                add_avp(_osp_idcanon_avptype | AVP_VAL_STR, _osp_idcanon_avpid, (int_str)value);
-            }
-        }
-
         result = 0;
     } 
 
@@ -163,55 +132,35 @@ static int ospSetIdentity(
 }
 
 /*
- * Report Identity header
+ * Set Reason header parameters
  * param trans Transaction handle
  * return 0 success, -1 failure
  */
-static int ospReportIdentity(
+static int ospSetReason(
     OSPTTRANHANDLE trans)
 {
-    char encoded[OSP_SIGNBUF_SIZE];
-    unsigned signsize;
-    unsigned char sign[OSP_SIGNBUF_SIZE];
-    char alg[OSP_ALGBUF_SIZE];
-    char info[OSP_STRBUF_SIZE];
-    char type[OSP_STRBUF_SIZE];
-    unsigned canonsize;
-    unsigned char canon[OSP_STRBUF_SIZE];
-    int result = 0;
+    OSPTBOOL has = OSPC_FALSE;
+    str value;
+    int code = 0;
+    char buffer[OSP_STRBUF_SIZE];
+    int result = -1;
 
-    if (ospGetAVP(_osp_idsign_avpid, _osp_idsign_avptype, encoded, sizeof(encoded)) == 0) {
-        signsize = sizeof(sign);
-        if (OSPPBase64Decode(encoded, strlen(encoded), sign, &signsize) != OSPC_ERR_NO_ERROR) {
-            signsize = 0;
+    if ((OSPPTransactionHasTermCause(trans, OSPC_TCAUSE_SIP, &has) == OSPC_ERR_NO_ERROR) && has) {
+        value.s = "SIP";
+        value.len = strlen(value.s);
+        add_avp(_osp_reasontype_avptype | AVP_VAL_STR, _osp_reasontype_avpid, (int_str)value);
+    
+        if (OSPPTransactionGetTCCode(trans, OSPC_TCAUSE_SIP, (unsigned *)&code) == OSPC_ERR_NO_ERROR) {
+            add_avp(_osp_reasoncause_avptype, _osp_reasoncause_avpid, (int_str)code);
         }
-    } else {
-        signsize = 0;
-    }
-
-    if (ospGetAVP(_osp_idalg_avpid, _osp_idalg_avptype, alg, sizeof(alg)) != 0) {
-        alg[0] = '\0';
-    }
-
-    if (ospGetAVP(_osp_idinfo_avpid, _osp_idinfo_avptype, info, sizeof(info)) != 0) {
-        info[0] = '\0';
-    }
-
-    if (ospGetAVP(_osp_idtype_avpid, _osp_idtype_avptype, type, sizeof(type)) != 0) {
-        type[0] = '\0';
-    }
-
-    if (ospGetAVP(_osp_idcanon_avpid, _osp_idcanon_avptype, encoded, sizeof(encoded)) == 0) {
-        canonsize = sizeof(canon);
-        if (OSPPBase64Decode(encoded, strlen(encoded), canon, &canonsize) != OSPC_ERR_NO_ERROR) {
-            canonsize = 0;
+    
+        if (OSPPTransactionGetTCDesc(trans, OSPC_TCAUSE_SIP, sizeof(buffer), buffer) == OSPC_ERR_NO_ERROR) {
+            value.s = buffer;
+            value.len = strlen(buffer);
+            add_avp(_osp_reasontext_avptype | AVP_VAL_STR, _osp_reasontext_avpid, (int_str)value);
         }
-    } else {
-        canonsize = 0;
-    }
 
-    if (OSPPTransactionSetIdentity(trans, signsize, sign, alg, info, type, canonsize, canon) != OSPC_ERR_NO_ERROR) {
-        result = -1;
+        result = 0;
     }
 
     return result;
@@ -485,6 +434,7 @@ int ospRequestRouting(
     char* ignore2)
 {
     int i, errcode;
+    int service;
     char rn[OSP_STRBUF_SIZE];
     char cic[OSP_STRBUF_SIZE];
     int npdi;
@@ -504,8 +454,8 @@ int ospRequestRouting(
     OSPT_CALL_ID* callids[callidnumber];
     unsigned int logsize = 0;
     char* detaillog = NULL;
-    char tohost[OSP_STRBUF_SIZE];
-    char tohostbuf[OSP_STRBUF_SIZE];
+    char desthost[OSP_STRBUF_SIZE];
+    char desthostbuf[OSP_STRBUF_SIZE];
     const char* preferred[2] = { NULL };
     unsigned int destcount;
     struct timeval ts, te, td;
@@ -543,11 +493,21 @@ int ospRequestRouting(
         switch (_osp_service_type) {
         case 1:
         case 2:
-            OSPPTransactionSetServiceType(trans, (_osp_service_type == 1) ? OSPC_SERVICE_NPQUERY : OSPC_SERVICE_CNAMQUERY);
+        case 3:
+            if (_osp_service_type == 1) {
+                service = OSPC_SERVICE_NPQUERY; 
+            } else if (_osp_service_type == 2) {
+                service = OSPC_SERVICE_CNAMQUERY; 
+            } else if (_osp_service_type == 3) {
+                service = OSPC_SERVICE_STIRQUERY; 
+            }
+            OSPPTransactionSetServiceType(trans, service);
 
-            ospGetToHost(msg, tohost, sizeof(tohost));
-            ospConvertToOutAddress(tohost, tohostbuf, sizeof(tohostbuf));
-            preferred[0] = tohostbuf;
+            if (ospGetAVP(_osp_dest_avpid, _osp_dest_avptype, desthost, sizeof(desthost)) != 0) {
+                ospGetToHost(msg, desthost, sizeof(desthost));
+            }
+            ospConvertToOutAddress(desthost, desthostbuf, sizeof(desthostbuf));
+            preferred[0] = desthostbuf;
 
             destcount = 1;
             break;
@@ -573,24 +533,40 @@ int ospRequestRouting(
             OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_FROM, OSPC_NFORMAT_DISPLAYNAME, inbound.fromdisplay);
         }
 
-        if (ospGetFromUri(msg, inbound.fromuri, sizeof(inbound.fromuri)) == 0) {
-            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_FROM, OSPC_NFORMAT_URL, inbound.fromuri);
+        if (ospGetFrom(msg, inbound.from, sizeof(inbound.from)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_FROM, OSPC_NFORMAT_SIP, inbound.from);
         }
 
-        if (ospGetToUri(msg, inbound.touri, sizeof(inbound.touri)) == 0) {
-            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_TO, OSPC_NFORMAT_URL, inbound.touri);
+        if (ospGetTo(msg, inbound.to, sizeof(inbound.to)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_TO, OSPC_NFORMAT_SIP, inbound.to);
         }
 
         if (ospGetRpidUser(msg, inbound.rpiduser, sizeof(inbound.rpiduser)) == 0) {
             OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_RPID, OSPC_NFORMAT_E164, inbound.rpiduser);
         }
 
+        if (ospGetRpidHost(msg, inbound.rpidhost, sizeof(inbound.rpidhost)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_RPID, OSPC_NFORMAT_TRANSPORT, inbound.rpidhost);
+        }
+
         if (ospGetPaiUser(msg, inbound.paiuser, sizeof(inbound.paiuser)) == 0) {
             OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PAI, OSPC_NFORMAT_E164, inbound.paiuser);
         }
 
+        if (ospGetPaiHost(msg, inbound.paihost, sizeof(inbound.paihost)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PAI, OSPC_NFORMAT_TRANSPORT, inbound.paihost);
+        }
+
+        if (ospGetPai(msg, inbound.pai, sizeof(inbound.pai)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PAI, OSPC_NFORMAT_SIP, inbound.pai);
+        }
+
         if (ospGetPciUser(msg, inbound.pciuser, sizeof(inbound.pciuser)) == 0) {
             OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PCI, OSPC_NFORMAT_E164, inbound.pciuser);
+        }
+
+        if (ospGetPciHost(msg, inbound.pcihost, sizeof(inbound.pcihost)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_PCI, OSPC_NFORMAT_TRANSPORT, inbound.pcihost);
         }
 
         if (ospGetDiversion(msg, inbound.divuser, sizeof(inbound.divuser), inbound.divhost, sizeof(inbound.divhost)) == 0) {
@@ -600,8 +576,16 @@ int ospRequestRouting(
         }
         OSPPTransactionSetDiversion(trans, inbound.divuser, divhostbuf);
 
+        if (ospGetIdentity(msg, inbound.identity, sizeof(inbound.identity)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_IDENTITY, OSPC_NFORMAT_SIP, inbound.identity);
+        }
+
         if (ospGetPcvIcid(msg, inbound.pcvicid, sizeof(inbound.pcvicid)) == 0) {
             OSPPTransactionSetChargingVector(trans, inbound.pcvicid, NULL, NULL, NULL);
+        }
+
+        if (ospGetContactHost(msg, inbound.contacthost, sizeof(inbound.contacthost)) == 0) {
+            OSPPTransactionSetSIPHeader(trans, OSPC_SIPHEADER_CONTACT, OSPC_NFORMAT_TRANSPORT, inbound.contacthost);
         }
 
         if (ospGetUserAgent(msg, useragent, sizeof(useragent)) == 0) {
@@ -676,23 +660,31 @@ int ospRequestRouting(
                 sdpfpstr[i] = sdpfp[sdpfpnum - i - 1];
             }
 
-            OSPPTransactionSetFingerPrint(trans, sdpfpnum, (const char**)sdpfpstr);
+            OSPPTransactionSetFingerprint(trans, sdpfpnum, (const char**)sdpfpstr);
         }
 
-        ospReportIdentity(trans);
+        if (ospGetAVP(_osp_sp_avpid, _osp_sp_avptype, inbound.sp, sizeof(inbound.sp)) == 0) {
+            OSPPTransactionSetSrcServiceProvider(trans, inbound.sp);
+        } else {
+            inbound.sp[0] = '\0';
+        }
+
+        if (ospGetAVP(_osp_usergroup_avpid, _osp_usergroup_avptype, inbound.usergroup, sizeof(inbound.usergroup)) != 0) {
+            inbound.usergroup[0] = '\0';
+        }
+        if (ospGetAVP(_osp_userid_avpid, _osp_userid_avptype, inbound.userid, sizeof(inbound.userid)) != 0) {
+            inbound.userid[0] = '\0';
+        }
+        OSPPTransactionSetCallPartyInfo(trans, OSPC_CPARTY_SOURCE, NULL, inbound.userid, inbound.usergroup);
 
         LM_INFO("request auth and routing for: "
             "service '%d' "
             "source '%s' "
             "srcdev '%s' "
-            "snid '%s' "
-            "swid '%s' "
-            "calling '%s' "
-            "called '%s' "
+            "srcid '%s/%s' "
+            "number '%s/%s' "
             "preferred '%s' "
-            "nprn '%s' "
-            "npcic '%s' "
-            "npdi '%d' "
+            "np '%s/%s/%d' "
             /*
             "spid '%s' "
             "ocn '%s' "
@@ -701,14 +693,16 @@ int ospRequestRouting(
             "mcc '%s' "
             "mnc '%s' "
             */
-            "fromdisplay '%s' "
-            "paiuser '%s' "
-            "rpiduser '%s' "
-            "pciuser '%s' "
-            "divuser '%s' "
-            "divhost '%s' "
+            "display '%s' "
+            "pai '%s/%s' "
+            "rpid '%s/%s' "
+            "pci '%s/%s' "
+            "div '%s/%s' "
             "pcvicid '%s' "
+            "contact '%s' "
             "srcmedia '%s' "
+            "sp '%s' "
+            "user '%s/%s' "
             "callid '%.*s' "
             "destcount '%d' "
             "%s\n",
@@ -720,9 +714,7 @@ int ospRequestRouting(
             inbound.calling,
             inbound.called,
             (preferred[0] == NULL) ? "" : preferred[0],
-            rn,
-            cic,
-            npdi,
+            rn, cic, npdi,
             /*
             opname[OSPC_OPNAME_SPID],
             opname[OSPC_OPNAME_OCN],
@@ -732,15 +724,16 @@ int ospRequestRouting(
             opname[OSPC_OPNAME_MNC],
             */
             inbound.fromdisplay,
-            inbound.paiuser,
-            inbound.rpiduser,
-            inbound.pciuser,
-            inbound.divuser,
-            divhostbuf,
+            inbound.paiuser, inbound.paihost,
+            inbound.rpiduser, inbound.rpidhost,
+            inbound.pciuser, inbound.pcihost,
+            inbound.divuser, divhostbuf,
             inbound.pcvicid,
+            inbound.contacthost,
             inbound.srcmedia,
-            callids[0]->Length,
-            callids[0]->Value,
+            inbound.sp,
+            inbound.usergroup, inbound.userid,
+            callids[0]->Length, callids[0]->Value,
             destcount,
             cinfostr);
 
@@ -777,6 +770,8 @@ int ospRequestRouting(
                 callids[0]->Value);
             result = MODULE_RETURNCODE_TRUE;
         } else {
+            ospSetReason(trans);
+
             LM_ERR("failed to request auth and routing (%d), call_id '%.*s'\n",
                 errcode,
                 callids[0]->Length,
@@ -786,7 +781,11 @@ int ospRequestRouting(
                     result = -4000;
                     break;
                 case OSPC_ERR_TRAN_BAD_REQUEST:
-                    result = -4001;
+                    if (_osp_service_type != 3) {
+                        result = -4001;
+                    } else {
+                        result = -4002;
+                    }
                     break;
                 case OSPC_ERR_HTTP_UNAUTHORIZED:
                     result = -4010;
@@ -814,6 +813,9 @@ int ospRequestRouting(
                     break;
                 case OSPC_ERR_HTTP_SERVER_NOT_READY:
                     result = -4802;
+                    break;
+                case OSPC_ERR_TRAN_CLIENT_ERROR:
+                    result = -4820;
                     break;
                 case OSPC_ERR_TRAN_CALLED_FILTERING:
                     result = -4840;
@@ -987,7 +989,7 @@ static int ospPrepareDestination(
 
                         *rsptype = 380;
                     } else {
-                        /* For default service, voice service or ported number query service */
+                        /* For default service, voice service, ported number query service or STIR query service */
                         ospRebuildDestUri(&newuri, dest);
 
                         LM_INFO("prepare route to URI '%.*s' for call_id '%.*s' transaction_id '%llu'\n",
@@ -997,10 +999,12 @@ static int ospPrepareDestination(
                             dest->callid,
                             dest->transid);
 
+                        int qvalue = MAX_Q * (_osp_max_dests + 1 - dest->destcount) / (_osp_max_dests + 1);
                         if (isfirst == OSP_FIRST_ROUTE) {
                             set_ruri(msg, &newuri);
+                            set_ruri_q(msg, qvalue);
                         } else {
-                            append_branch(msg, &newuri, NULL, NULL, Q_UNSPECIFIED, 0, NULL);
+                            append_branch(msg, &newuri, NULL, NULL, qvalue, 0, NULL);
                         }
 
                         /* Do not add route specific OSP information */

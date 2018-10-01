@@ -37,23 +37,24 @@
 #define MODULE_RETURNCODE_ERROR         -2
 
 #define OSP_DEF_AVP                     -1
-#define OSP_DEF_MODE                    0
-#define OSP_DEF_SERVICE                 0
-#define OSP_DEF_SPS                     16
-#define OSP_DEF_WEIGHT                  1000
 #define OSP_DEF_HW                      0
-#define OSP_DEF_USESEC                  0
 #define OSP_DEF_CALLID                  1   /* Validate call ids, set to 0 to disable */
-#define OSP_DEF_TOKEN                   2
 #define OSP_DEF_SSLLIFE                 300
 #define OSP_DEF_PERSISTENCE             60
 #define OSP_DEF_DELAY                   0
 #define OSP_DEF_RETRY                   2
 #define OSP_DEF_TIMEOUT                 (60 * 1000)
+#define OSP_DEF_MODE                    0
+#define OSP_DEF_SERVICE                 0
+#define OSP_DEF_SPS                     16
+#define OSP_DEF_WEIGHT                  1000
+#define OSP_DEF_USESEC                  0
+#define OSP_DEF_TOKEN                   2
+#define OSP_DEF_NONSIP                  0
 #define OSP_DEF_DESTS                   12
 #define OSP_DEF_REPORTNID               3
-#define OSP_DEF_NONSIP                  0
 #define OSP_DEF_USENP                   1
+#define OSP_DEF_EXPORTNP                0
 #define OSP_DEF_USERPHONE               0
 #define OSP_DEF_DNIDLOC                 2
 #define OSP_DEF_DNIDPARAM               "networkid"
@@ -73,18 +74,19 @@
 #define OSP_DEF_REQDATEAVP              "$avp(_osp_request_date_)"
 #define OSP_DEF_SDPFPNUM                4
 #define OSP_DEF_SDPFPAVP                "$avp(_osp_sdp_fingerprint_)"
-#define OSP_DEF_IDSIGNAVP               "$avp(_osp_identity_signature_)"
-#define OSP_DEF_IDALGAVP                "$avp(_osp_identity_algorithm_)"
-#define OSP_DEF_IDINFOAVP               "$avp(_osp_identity_information_)"
-#define OSP_DEF_IDTYPEAVP               "$avp(_osp_identity_type_)"
-#define OSP_DEF_IDCANONAVP              "$avp(_osp_identity_canon_)"
+#define OSP_DEF_IDENTITYAVP             "$avp(_osp_identity_)"
+#define OSP_DEF_SPAVP                   "$avp(_osp_service_provider_)"
+#define OSP_DEF_USERGROUPAVP            "$avp(_osp_user_group_)"
+#define OSP_DEF_USERIDAVP               "$avp(_osp_user_id_)"
+#define OSP_DEF_DESTAVP                 "$avp(_osp_destination_)"
+#define OSP_DEF_REASONTYPEAVP           "$avp(_osp_reason_type_)"
+#define OSP_DEF_REASONCAUSEAVP          "$avp(_osp_reason_cause_)"
+#define OSP_DEF_REASONTEXTAVP           "$avp(_osp_reason_text_)"
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024
 #define OSP_TOKENBUF_SIZE               2048
-#define OSP_HEADERBUF_SIZE              3072
-#define OSP_ALGBUF_SIZE                 16
-#define OSP_SIGNBUF_SIZE                4096
+#define OSP_HEADERBUF_SIZE              4096
 
 #endif /* _OSP_MOD_H_ */
 

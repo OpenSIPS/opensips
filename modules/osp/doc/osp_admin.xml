@@ -469,6 +469,36 @@ modparam("osp","identity_canon_avp","$avp(idcanon)")
         </programlisting>
       </example>
     </section>
+    <section id="param_service_provider_avp" xreflabel="param_service_provider_avp">
+      <title><varname>service_provider_avp</varname></title>
+      <para>These parameter is used to tell the OSP module which AVP is used to store source service provider information. The default value is "$avp(_osp_service_provider_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the source service provider AVP</title>
+        <programlisting format="linespecific">
+modparam("osp", "service_provider_avp", "$avp(sp)")
+        </programlisting>
+      </example>
+    </section>
+    <section id="param_user_group_avp" xreflablel="param_user_group_avp">
+      <title><varname>user_group_avp</varname></title>
+      <para>These parameter is used to tell the OSP module which AVP is used to store source user group information. The default value is "$avp(_osp_user_group_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the source user group AVP</title>
+        <programlisting format="linespecific">
+modparam("osp", "user_group_avp", "$avp(groupid)")
+        </programlisting>
+      </example>
+    </section>
+    <section id="param_user_id_avp" xreflabel="param_user_id_avp">
+      <title><varname>user_id_avp</varname></title>
+      <para>These parameter is used to tell the OSP module which AVP is used to store source user ID information. The default value is "$avp(_osp_user_id_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <example>
+        <title>Setting the source user ID AVP</title>
+        <programlisting format="linespecific">
+modparam("osp", "user_id_avp", "$avp(userid)")
+        </programlisting>
+      </example>
+    </section>
   </section>
   <section id="exported_functions" xreflabel="exported_functions">
     <title>Exported Functions</title>

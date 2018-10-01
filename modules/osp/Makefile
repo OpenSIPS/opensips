@@ -26,7 +26,7 @@ else
 endif
 
 DEFS+=-D_POSIX_THREADS -I$(LOCALBASE)/include
-LIBS+=-L$(LOCALBASE)/lib -losptk -lpthread -lm
+LIBS+=-L$(LOCALBASE)/lib -losptk -lutf8proc -lpthread -lm
 
 include ../../Makefile.modules
 
@@ -35,5 +35,5 @@ install_module_custom:
 	sed  \
 		-e "s#/usr/local/lib/opensips#$(modules_prefix)/$(lib_dir)#g" \
 		< etc/sample-osp-opensips.cfg \
-		> $(cfg_prefix)/$(cfg_dir)/opensips.cfg
+		> $(cfg_prefix)/$(cfg_dir)/opensips.cfg.sample
 

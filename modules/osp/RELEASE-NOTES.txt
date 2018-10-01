@@ -191,3 +191,55 @@ Added SUBSCRIBE/NOTIFY CNAM support.
 Formatted sample configuration file.
 Updated for OSP Toolkit 4.12.0
 
+2017 April 28
+Fixed memory leak issue for P-Charging-Vector.
+Fixed SDP error messages for without SDP.
+
+2017 May 4
+Added service provider, user group and user ID in routing request.
+
+2017 August 10
+Fixed crash caused by without calling number.
+
+2017 October 31
+Updated STIR implementation.
+Added recommended destination feature.
+
+2017 November 28
+Added SIP headers to calculate processing time.
+
+2017 December 5
+Fixed UTF-8 issue.
+
+2017 December 19
+Fixed memory leak for 6xx.
+
+2018 January 4
+Fixed retcode issue.
+
+2018 February 7
+Updated for response codes of STIR.
+
+2018 April 12
+Updated to support reporting Contact header.
+Added q parameter for Contact in SIP 3xx.
+Note: Works with TK 4.16.0.
+
+2018 May 30
+Added np export order option.
+
+2018 July 26
+Added string trim function.
+
+2018 August 8
+Fixed memory leak for cancel call scenario.
+
+2018 August 20
+Fixed From header URI otg parameter parse issue.
+
+2018 August 31
+Response 482 instead of 503 for loop detected.
+ 
+2018 September 17
+Changed SIP response to "503 Service Not Available - Unspecified" for unspecified server error.
+ 
