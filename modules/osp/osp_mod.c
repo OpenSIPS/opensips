@@ -48,6 +48,13 @@
 #include "sipheader.h"
 #include "cnam.h"
 
+extern int _osp_crypto_hw;
+extern int _osp_validate_callid;
+extern int _osp_ssl_lifetime;
+extern int _osp_persistence;
+extern int _osp_retry_delay;
+extern int _osp_retry_limit;
+extern int _osp_timeout;
 extern int _osp_work_mode;
 extern int _osp_service_type;
 extern unsigned int _osp_sp_number;
@@ -57,21 +64,18 @@ extern char* _osp_device_ip;
 extern char _osp_in_device[OSP_STRBUF_SIZE];
 extern char _osp_out_device[OSP_STRBUF_SIZE];
 extern int _osp_use_security;
+extern int _osp_token_format;
 extern char* _osp_private_key;
 extern char* _osp_local_certificate;
 extern char* _osp_ca_certificate;
-extern int _osp_crypto_hw;
-extern int _osp_validate_callid;
-extern int _osp_token_format;
-extern int _osp_ssl_lifetime;
-extern int _osp_persistence;
-extern int _osp_retry_delay;
-extern int _osp_retry_limit;
-extern int _osp_timeout;
+extern char _osp_PRIVATE_KEY[];
+extern char _osp_LOCAL_CERTIFICATE[];
+extern char _osp_CA_CERTIFICATE[];
 extern int _osp_non_sip;
 extern int _osp_max_dests;
 extern int _osp_report_nid;
 extern int _osp_use_np;
+extern int _osp_export_np;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
@@ -79,9 +83,6 @@ extern int _osp_swid_location;
 extern char* _osp_swid_param;
 extern int _osp_paramstr_location;
 extern char* _osp_paramstr_value;
-extern char _osp_PRIVATE_KEY[];
-extern char _osp_LOCAL_CERTIFICATE[];
-extern char _osp_CA_CERTIFICATE[];
 extern char* _osp_srcdev_avp;
 extern int _osp_srcdev_avpid;
 extern unsigned short _osp_srcdev_avptype;
@@ -110,21 +111,30 @@ extern unsigned short _osp_reqdate_avptype;
 extern char* _osp_sdpfp_avp;
 extern int _osp_sdpfp_avpid;
 extern unsigned short _osp_sdpfp_avptype;
-extern char* _osp_idsign_avp;
-extern int _osp_idsign_avpid;
-extern unsigned short _osp_idsign_avptype;
-extern char* _osp_idalg_avp;
-extern int _osp_idalg_avpid;
-extern unsigned short _osp_idalg_avptype;
-extern char* _osp_idinfo_avp;
-extern int _osp_idinfo_avpid;
-extern unsigned short _osp_idinfo_avptype;
-extern char* _osp_idtype_avp;
-extern int _osp_idtype_avpid;
-extern unsigned short _osp_idtype_avptype;
-extern char* _osp_idcanon_avp;
-extern int _osp_idcanon_avpid;
-extern unsigned short _osp_idcanon_avptype;
+extern char* _osp_identity_avp;
+extern int _osp_identity_avpid;
+extern unsigned short _osp_identity_avptype;
+extern char* _osp_sp_avp;
+extern int _osp_sp_avpid;
+extern unsigned short _osp_sp_avptype;
+extern char* _osp_usergroup_avp;
+extern int _osp_usergroup_avpid;
+extern unsigned short _osp_usergroup_avptype;
+extern char* _osp_userid_avp;
+extern int _osp_userid_avpid;
+extern unsigned short _osp_userid_avptype;
+extern char* _osp_dest_avp;
+extern int _osp_dest_avpid;
+extern unsigned short _osp_dest_avptype;
+extern char* _osp_reasontype_avp;
+extern int _osp_reasontype_avpid;
+extern unsigned short _osp_reasontype_avptype;
+extern char* _osp_reasoncause_avp;
+extern int _osp_reasoncause_avpid;
+extern unsigned short _osp_reasoncause_avptype;
+extern char* _osp_reasontext_avp;
+extern int _osp_reasontext_avpid;
+extern unsigned short _osp_reasontext_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 
 struct rr_binds osp_rr;
@@ -154,6 +164,13 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
+    { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
+    { "validate_callid",                  INT_PARAM, &_osp_validate_callid },
+    { "ssl_lifetime",                     INT_PARAM, &_osp_ssl_lifetime },
+    { "persistence",                      INT_PARAM, &_osp_persistence },
+    { "retry_delay",                      INT_PARAM, &_osp_retry_delay },
+    { "retry_limit",                      INT_PARAM, &_osp_retry_limit },
+    { "timeout",                          INT_PARAM, &_osp_timeout },
     { "work_mode",                        INT_PARAM, &_osp_work_mode },
     { "service_type",                     INT_PARAM, &_osp_service_type },
     { "sp1_uri",                          STR_PARAM, &_osp_sp_uris[0] },
@@ -193,18 +210,12 @@ static param_export_t params[]={
     { "private_key",                      STR_PARAM, &_osp_private_key },
     { "local_certificate",                STR_PARAM, &_osp_local_certificate },
     { "ca_certificates",                  STR_PARAM, &_osp_ca_certificate },
-    { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
-    { "validate_callid",                  INT_PARAM, &_osp_validate_callid },
     { "token_format",                     INT_PARAM, &_osp_token_format },
-    { "ssl_lifetime",                     INT_PARAM, &_osp_ssl_lifetime },
-    { "persistence",                      INT_PARAM, &_osp_persistence },
-    { "retry_delay",                      INT_PARAM, &_osp_retry_delay },
-    { "retry_limit",                      INT_PARAM, &_osp_retry_limit },
-    { "timeout",                          INT_PARAM, &_osp_timeout },
     { "support_nonsip_protocol",          INT_PARAM, &_osp_non_sip },
     { "max_destinations",                 INT_PARAM, &_osp_max_dests },
     { "report_networkid",                 INT_PARAM, &_osp_report_nid },
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
+    { "export_npparameter_order",         INT_PARAM, &_osp_export_np },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
     { "networkid_location",               INT_PARAM, &_osp_dnid_location},
     { "networkid_parameter",              STR_PARAM, &_osp_dnid_param },
@@ -222,11 +233,14 @@ static param_export_t params[]={
     { "destination_media_avp",            STR_PARAM, &_osp_destmedia_avp },
     { "request_date_avp",                 STR_PARAM, &_osp_reqdate_avp },
     { "sdp_fingerprint_avp",              STR_PARAM, &_osp_sdpfp_avp },
-    { "identity_signature_avp",           STR_PARAM, &_osp_idsign_avp },
-    { "identity_algorithm_avp",           STR_PARAM, &_osp_idalg_avp },
-    { "identity_information_avp",         STR_PARAM, &_osp_idinfo_avp },
-    { "identity_type_avp",                STR_PARAM, &_osp_idtype_avp },
-    { "identity_canon_avp",               STR_PARAM, &_osp_idcanon_avp },
+    { "identity_avp",                     STR_PARAM, &_osp_identity_avp },
+    { "service_provider_avp",             STR_PARAM, &_osp_sp_avp },
+    { "user_group_avp",                   STR_PARAM, &_osp_usergroup_avp },
+    { "user_id_avp",                      STR_PARAM, &_osp_userid_avp },
+    { "destination_avp",                  STR_PARAM, &_osp_dest_avp },
+    { "reason_type_avp",                  STR_PARAM, &_osp_reasontype_avp },
+    { "reason_cause_avp",                 STR_PARAM, &_osp_reasoncause_avp },
+    { "reason_text_avp",                  STR_PARAM, &_osp_reasontext_avp },
     { 0,0,0 }
 };
 
@@ -384,10 +398,36 @@ static int ospVerifyParameters(void)
         LM_WARN("work mode is out of range, reset to %d\n", OSP_DEF_MODE);
     }
 
-    if ((_osp_service_type < 0) || (_osp_service_type > 2)) {
+    if ((_osp_service_type < 0) || (_osp_service_type > 3)) {
         _osp_service_type = OSP_DEF_SERVICE;
         LM_WARN("service type is out of range, reset to %d\n", OSP_DEF_SERVICE);
     }
+
+    _osp_sp_number = 0;
+    for (i = 0; i < OSP_DEF_SPS; i++) {
+        if (_osp_sp_uris[i] != NULL) {
+            if (_osp_sp_number != i) {
+                _osp_sp_uris[_osp_sp_number] = _osp_sp_uris[i];
+                _osp_sp_weights[_osp_sp_number] = _osp_sp_weights[i];
+                _osp_sp_uris[i] = NULL;
+                _osp_sp_weights[i] = OSP_DEF_WEIGHT;
+            }
+            osp_index[_osp_sp_number] = i + 1;
+            _osp_sp_number++;
+        }
+    }
+
+    if (_osp_sp_number == 0) {
+        LM_ERR("at least one service point uri must be configured\n");
+        result = -1;
+    }
+
+    if (_osp_device_ip == NULL) {
+        gethostname(hostname, sizeof(hostname));
+        _osp_device_ip = hostname;
+    }
+    ospConvertToOutAddress(_osp_device_ip, _osp_out_device, sizeof(_osp_out_device));
+    ospConvertToInAddress(_osp_device_ip, _osp_in_device, sizeof(_osp_in_device));
 
     /* If use_security_features is 0, ignroe the certificate files */
     if (_osp_use_security != 0) {
@@ -408,12 +448,10 @@ static int ospVerifyParameters(void)
         }
     }
 
-    if (_osp_device_ip == NULL) {
-        gethostname(hostname, sizeof(hostname));
-        _osp_device_ip = hostname;
+    if (_osp_token_format < 0 || _osp_token_format > 2) {
+        _osp_token_format = OSP_DEF_TOKEN;
+        LM_WARN("token_format is out of range, reset to %d\n", OSP_DEF_TOKEN);
     }
-    ospConvertToOutAddress(_osp_device_ip, _osp_out_device, sizeof(_osp_out_device));
-    ospConvertToInAddress(_osp_device_ip, _osp_in_device, sizeof(_osp_in_device));
 
     if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
         _osp_max_dests = OSP_DEF_DESTS;
@@ -425,28 +463,19 @@ static int ospVerifyParameters(void)
         LM_WARN("report_networkid is out of range, reset to %d\n", OSP_DEF_REPORTNID);
     }
 
-    if (_osp_token_format < 0 || _osp_token_format > 2) {
-        _osp_token_format = OSP_DEF_TOKEN;
-        LM_WARN("token_format is out of range, reset to %d\n", OSP_DEF_TOKEN);
+    if (_osp_use_np < 0 || _osp_use_np > 1) {
+        _osp_use_np = OSP_DEF_USENP;
+        LM_WARN("use_number_portability is out of range, reset to %d\n", OSP_DEF_USENP);
     }
 
-    _osp_sp_number = 0;
-    for (i = 0; i < OSP_DEF_SPS; i++) {
-        if (_osp_sp_uris[i] != NULL) {
-            if (_osp_sp_number != i) {
-                _osp_sp_uris[_osp_sp_number] = _osp_sp_uris[i];
-                _osp_sp_weights[_osp_sp_number] = _osp_sp_weights[i];
-                _osp_sp_uris[i] = NULL;
-                _osp_sp_weights[i] = OSP_DEF_WEIGHT;
-            }
-            osp_index[_osp_sp_number] = i + 1;
-            _osp_sp_number++;
-        }
+    if (_osp_export_np < 0 || _osp_export_np > 1) {
+        _osp_export_np = OSP_DEF_EXPORTNP;
+        LM_WARN("export_npparameter_order is out of range, reset to %d\n", OSP_DEF_EXPORTNP);
     }
 
-    if (_osp_sp_number == 0) {
-        LM_ERR("at least one service point uri must be configured\n");
-        result = -1;
+    if (_osp_append_userphone < 0 || _osp_append_userphone > 1) {
+        _osp_append_userphone = OSP_DEF_USERPHONE;
+        LM_WARN("append_userphone is out of range, reset to %d\n", OSP_DEF_USERPHONE);
     }
 
     if ((_osp_dnid_location < 0) || (_osp_dnid_location > 2)) {
@@ -494,14 +523,18 @@ static int ospVerifyParameters(void)
     ospCheckAVP(_osp_destmedia_avp, &_osp_destmedia_avpid, &_osp_destmedia_avptype);
 
     ospCheckAVP(_osp_reqdate_avp, &_osp_reqdate_avpid, &_osp_reqdate_avptype);
-
     ospCheckAVP(_osp_sdpfp_avp, &_osp_sdpfp_avpid, &_osp_sdpfp_avptype);
+    ospCheckAVP(_osp_identity_avp, &_osp_identity_avpid, &_osp_identity_avptype);
 
-    ospCheckAVP(_osp_idsign_avp, &_osp_idsign_avpid, &_osp_idsign_avptype);
-    ospCheckAVP(_osp_idalg_avp, &_osp_idalg_avpid, &_osp_idalg_avptype);
-    ospCheckAVP(_osp_idinfo_avp, &_osp_idinfo_avpid, &_osp_idinfo_avptype);
-    ospCheckAVP(_osp_idtype_avp, &_osp_idtype_avpid, &_osp_idtype_avptype);
-    ospCheckAVP(_osp_idcanon_avp, &_osp_idcanon_avpid, &_osp_idcanon_avptype);
+    ospCheckAVP(_osp_sp_avp, &_osp_sp_avpid, &_osp_sp_avptype);
+    ospCheckAVP(_osp_usergroup_avp, &_osp_usergroup_avpid, &_osp_usergroup_avptype);
+    ospCheckAVP(_osp_userid_avp, &_osp_userid_avpid, &_osp_userid_avptype);
+
+    ospCheckAVP(_osp_dest_avp, &_osp_dest_avpid, &_osp_dest_avptype);
+
+    ospCheckAVP(_osp_reasontype_avp, &_osp_reasontype_avpid, &_osp_reasontype_avptype);
+    ospCheckAVP(_osp_reasoncause_avp, &_osp_reasoncause_avpid, &_osp_reasoncause_avptype);
+    ospCheckAVP(_osp_reasontext_avp, &_osp_reasontext_avpid, &_osp_reasontext_avptype);
 
     ospDumpParameters();
 
@@ -516,48 +549,54 @@ static void ospDumpParameters(void)
     int i;
 
     LM_INFO("module configuration: ");
+    LM_INFO("    enable_crypto_hardware_support '%d'", _osp_crypto_hw);
+    LM_INFO("    validate_call_id '%d'", _osp_validate_callid);
+    LM_INFO("    ssl_lifetime '%d'", _osp_ssl_lifetime);
+    LM_INFO("    persistence '%d'", _osp_persistence);
+    LM_INFO("    retry_delay '%d'", _osp_retry_delay);
+    LM_INFO("    retry_limit '%d'", _osp_retry_limit);
+    LM_INFO("    timeout '%d'", _osp_timeout);
     LM_INFO("    work mode '%d'", _osp_work_mode);
     LM_INFO("    service type '%d'", _osp_service_type);
     LM_INFO("    number of service points '%d'", _osp_sp_number);
     for (i = 0; i < _osp_sp_number; i++) {
-        LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld' ",
+        LM_INFO("    sp%d_uri '%s' sp%d_weight '%ld'",
             osp_index[i], _osp_sp_uris[i], osp_index[i], _osp_sp_weights[i]);
     }
-    LM_INFO("    device_ip '%s' ", _osp_in_device);
-    LM_INFO("    use_security_features '%d' ", _osp_use_security);
+    LM_INFO("    device_ip '%s'", _osp_in_device);
+    LM_INFO("    use_security_features '%d'", _osp_use_security);
     if (_osp_use_security != 0) {
-        LM_INFO("    private_key '%s' ", _osp_private_key);
-        LM_INFO("    local_certificate '%s' ", _osp_local_certificate);
-        LM_INFO("    ca_certificates '%s' ", _osp_ca_certificate);
+        LM_INFO("    private_key '%s'", _osp_private_key);
+        LM_INFO("    local_certificate '%s'", _osp_local_certificate);
+        LM_INFO("    ca_certificates '%s'", _osp_ca_certificate);
     }
-    LM_INFO("    enable_crypto_hardware_support '%d' ", _osp_crypto_hw);
-    LM_INFO("    token_format '%d' ", _osp_token_format);
-    LM_INFO("    ssl_lifetime '%d' ", _osp_ssl_lifetime);
-    LM_INFO("    persistence '%d' ", _osp_persistence);
-    LM_INFO("    retry_delay '%d' ", _osp_retry_delay);
-    LM_INFO("    retry_limit '%d' ", _osp_retry_limit);
-    LM_INFO("    timeout '%d' ", _osp_timeout);
-    LM_INFO("    validate_call_id '%d' ", _osp_validate_callid);
-    LM_INFO("    use_number_portability '%d' ", _osp_use_np);
-    LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
-    LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
-    LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
-    LM_INFO("    switchid_location '%d' ", _osp_swid_location);
-    LM_INFO("    switchid_parameter '%s' ", _osp_swid_param);
-    LM_INFO("    parameterstring_location '%d' ", _osp_paramstr_location);
-    LM_INFO("    parameterstring_value '%s' ", _osp_paramstr_value);
-    LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
-    LM_INFO("    report_networkid '%d'\n", _osp_report_nid);
-    LM_INFO("    support_nonsip_protocol '%d'\n", _osp_non_sip);
-    LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpid);
-    LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpid);
-    LM_INFO("    source switch ID AVP ID '%d'\n", _osp_swid_avpid);
-    LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpid);
-    LM_INFO("    cnam AVP ID '%d'\n", _osp_cnam_avpid);
-    LM_INFO("    extraheaders_value '%s' ", _osp_extraheaders_value);
-    LM_INFO("    meida AVP ID '%d/%d'\n", _osp_srcmedia_avpid, _osp_destmedia_avpid);
-    LM_INFO("    request date AVP ID '%d'\n", _osp_reqdate_avpid);
-    LM_INFO("    sdp fingerprint AVP ID '%d'\n", _osp_sdpfp_avpid);
-    LM_INFO("    identity AVP ID '%d/%d/%d/%d/%d'\n", _osp_idsign_avpid, _osp_idalg_avpid, _osp_idinfo_avpid, _osp_idtype_avpid, _osp_idcanon_avpid);
+    LM_INFO("    token_format '%d'", _osp_token_format);
+    LM_INFO("    support_nonsip_protocol '%d'", _osp_non_sip);
+    LM_INFO("    max_destinations '%d'", _osp_max_dests);
+    LM_INFO("    report_networkid '%d'", _osp_report_nid);
+    LM_INFO("    use_number_portability '%d'", _osp_use_np);
+    LM_INFO("    export_npparameter_order '%d'", _osp_export_np);
+    LM_INFO("    append_userphone '%d'", _osp_append_userphone);
+    LM_INFO("    networkid_location '%d'", _osp_dnid_location);
+    LM_INFO("    networkid_parameter '%s'", _osp_dnid_param);
+    LM_INFO("    switchid_location '%d'", _osp_swid_location);
+    LM_INFO("    switchid_parameter '%s'", _osp_swid_param);
+    LM_INFO("    parameterstring_location '%d'", _osp_paramstr_location);
+    LM_INFO("    parameterstring_value '%s'", _osp_paramstr_value);
+    LM_INFO("    source device IP AVP ID '%d'", _osp_srcdev_avpid);
+    LM_INFO("    source network ID AVP ID '%d'", _osp_snid_avpid);
+    LM_INFO("    source switch ID AVP ID '%d'", _osp_swid_avpid);
+    LM_INFO("    custom info AVP ID '%d'", _osp_cinfo_avpid);
+    LM_INFO("    cnam AVP ID '%d'", _osp_cnam_avpid);
+    LM_INFO("    extraheaders_value '%s'", _osp_extraheaders_value);
+    LM_INFO("    meida AVP ID '%d/%d'", _osp_srcmedia_avpid, _osp_destmedia_avpid);
+    LM_INFO("    request date AVP ID '%d'", _osp_reqdate_avpid);
+    LM_INFO("    sdp fingerprint AVP ID '%d'", _osp_sdpfp_avpid);
+    LM_INFO("    identity AVP ID '%d'", _osp_identity_avpid);
+    LM_INFO("    service provider AVP ID '%d'", _osp_sp_avpid);
+    LM_INFO("    user group AVP ID '%d'", _osp_usergroup_avpid);
+    LM_INFO("    user id AVP ID '%d'", _osp_userid_avpid);
+    LM_INFO("    prefered dest AVP ID '%d'", _osp_dest_avpid);
+    LM_INFO("    reason AVP ID '%d/%d/%d'", _osp_reasontype_avpid, _osp_reasoncause_avpid, _osp_reasontext_avpid);
 }
 
