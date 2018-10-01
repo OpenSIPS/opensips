@@ -333,6 +333,8 @@ static int acc_fixup(void** param, int param_no)
 		*param = (void*)model;
 		return 0;
 	} else if (param_no == 2) {
+		init_db_url(db_url, 1 /* can be null */);
+
 		/* only for db acc - the table name */
 		if (db_url.s==0) {
 			pkg_free(s.s);
@@ -360,8 +362,8 @@ static int mod_init( void )
 {
 	LM_INFO("initializing...\n");
 
-	if (db_url.s)
-		db_url.len = strlen(db_url.s);
+	init_db_url(db_url, 1 /* can be null */);
+
 	db_table_acc.len = strlen(db_table_acc.s);
 	db_table_mc.len = strlen(db_table_mc.s);
 	acc_method_col.len = strlen(acc_method_col.s);
