@@ -32,10 +32,12 @@
 #include "../../db/db.h"
 #include "../../db/db_cap.h"
 #include "dbase.h"
+#include "db_postgres.h"
 
 int db_postgres_exec_query_threshold = 0;   /* Warning in case DB query
 											takes too long disabled by default*/
 int max_db_queries = 2;
+int pq_timeout = DEFAULT_PSQL_TIMEOUT;
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
@@ -56,6 +58,7 @@ static cmd_export_t cmds[]={
 static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_postgres_exec_query_threshold},
 	{"max_db_queries", INT_PARAM, &max_db_queries},
+	{"timeout", INT_PARAM, &pq_timeout},
 	{0, 0, 0}
 };
 
