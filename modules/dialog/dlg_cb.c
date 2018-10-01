@@ -198,19 +198,6 @@ static void run_load_callback(struct dlg_callback *cb)
 	return;
 }
 
-
-void run_load_callbacks( void )
-{
-	struct dlg_callback *cb;
-
-	if (load_cbs && load_cbs!=POINTER_CLOSED_MARKER) {
-		for ( cb=load_cbs->first; cb; cb=cb->next )
-			run_load_callback( cb );
-	}
-
-	return;
-}
-
 void run_load_callback_per_dlg(struct dlg_cell *dlg)
 {
 	struct dlg_callback *cb;
