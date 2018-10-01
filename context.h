@@ -39,6 +39,8 @@
 
 #include <stdlib.h>
 
+#include "dprint.h"
+
 typedef void * context_p;
 enum osips_context {
 	CONTEXT_GLOBAL,
