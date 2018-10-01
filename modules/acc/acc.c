@@ -58,13 +58,9 @@
 
 #define TABLE_VERSION 7
 
-#define GET_LEN(p)	(*((unsigned char*)p) | *((unsigned char*)p+1) << 8)
-#define MAX_LEN_VALUE 65535
-#define SET_LEN(p,n) \
-	do { \
-		*(p) = (n) & 0x00FF; \
-		*(p+1) = (n) >> 8; \
-	} while(0)
+#define GET_LEN(p)     (*(unsigned short *)(p))
+#define MAX_LEN_VALUE  USHRT_MAX
+#define SET_LEN(p, n)  (*(unsigned short *)(p) = (unsigned short)(n))
 
 #define LEG_VALUE( leg, extra, ctx) (ctx->leg_values[leg][extra->tag_idx].value)
 
