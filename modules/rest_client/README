@@ -369,10 +369,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 60 35 2185 378
+   1. Liviu Chircu (@liviuchircu) 61 36 2215 388
    2. Jarrod Baumann (@jarrodb) 6 3 131 32
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 67 18
-   4. Razvan Crainea (@razvancrainea) 4 2 6 6
+   4. Razvan Crainea (@razvancrainea) 5 3 8 8
    5. Andrey Vorobiev (@andrey-vorobiev) 2 1 3 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -395,10 +395,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2018
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
-   3. Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
-   4. Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2015
+   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Sep 2018
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2018
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
+   4. Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
    5. Jarrod Baumann (@jarrodb)           Apr 2015 - May 2015
 
    (1) including any documentation-related commits, excluding
