@@ -379,7 +379,8 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * TM - Transaction module
-     * RR - Record-Route module
+     * RR - Record-Route module, optional, if Dialog ID matching
+       is used in non Topo Hiding cases
      * clusterer - if replication_cluster parameter is set
        (contact replication via clusterer module)
 
@@ -491,11 +492,18 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
      * 2 - DID_NONE - the match is done exclusively based on SIP
        elements; no DID information is added in RR.
 
-   Default value is “0 (DID_ONLY)”.
+   Default value is “1 (DID_FALLBACK)”.
+
+   NOTE that if you have call looping on your OpenSIPS server
+   (passing more than once through the same OpenSIPS instance), it
+   is strongly suggested to use only DID_ONLY mode, as the SIP
+   based matching will have an undefined behavior - from SIP
+   perspective, a sequential dialog will match all the loops of
+   the call, as the Call-ID, To and From TAGs are the same.
 
    Example 1.7. Set dlg_match_mode parameter
 ...
-modparam("dialog", "dlg_match_mode", 1)
+modparam("dialog", "dlg_match_mode", 0)
 ...
 
 1.6.8. db_url (string)
@@ -2217,7 +2225,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 389 244 11732 2925
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 391 245 11760 2942
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
    3. Razvan Crainea (@razvancrainea) 131 98 2705 614
    4. Liviu Chircu (@liviuchircu) 92 62 2066 688
@@ -2261,12 +2269,12 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2018
-   2.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Sep 2018
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2018
+   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2018
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
    8.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
    9.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2016
@@ -2292,10 +2300,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Julián Moreno Patiño, Ionut Ionita
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan Crainea
+   (@razvancrainea), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
    Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
    Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues

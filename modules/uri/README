@@ -32,14 +32,6 @@ uri Module
               1.4.4. db_get_auth_id(string, var, var)
               1.4.5. aaa_does_uri_exist([pvar])
               1.4.6. aaa_does_uri_user_exist([pvar])
-              1.4.7. is_user(username)
-              1.4.8. has_totag()
-              1.4.9. uri_param(param)
-              1.4.10. uri_param(param,value)
-              1.4.11. add_uri_param(param)
-              1.4.12. del_uri_param(param)
-              1.4.13. tel2sip()
-              1.4.14. is_uri_user_e164(pseudo-variable)
 
    2. Contributors
 
@@ -75,14 +67,6 @@ uri Module
    1.14. db_get_auth_id usage
    1.15. aaa_does_uri_exist usage
    1.16. aaa_does_uri_user_exist usage
-   1.17. is_user usage
-   1.18. has_totag usage
-   1.19. uri_param usage
-   1.20. uri_param usage
-   1.21. add_uri_param usage
-   1.22. add_uri_param usage
-   1.23. tel2sip usage
-   1.24. is_uri_user_e164 usage
 
 Chapter 1. Admin Guide
 
@@ -341,129 +325,6 @@ if (aaa_does_uri_user_exist()) {
 };
 ...
 
-1.4.7.  is_user(username)
-
-   Check if the username in credentials matches the given
-   username.
-
-   Meaning of the parameters is as follows:
-     * username - Username string.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.17. is_user usage
-...
-if (is_user("john")) {
-        ...
-};
-...
-
-1.4.8.  has_totag()
-
-   Check if To header field uri contains tag parameter.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.18. has_totag usage
-...
-if (has_totag()) {
-        ...
-};
-...
-
-1.4.9.  uri_param(param)
-
-   Find if Request URI has a given parameter with no value
-
-   Meaning of the parameters is as follows:
-     * param - parameter name to look for.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.19. uri_param usage
-...
-if (uri_param("param1")) {
-        ...
-};
-...
-
-1.4.10.  uri_param(param,value)
-
-   Find if Request URI has a given parameter with matching value
-
-   Meaning of the parameters is as follows:
-     * param - parameter name to look for.
-     * value - parameter value to match.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.20. uri_param usage
-...
-if (uri_param("param1","value1")) {
-        ...
-};
-...
-
-1.4.11.  add_uri_param(param)
-
-   Add to RURI a parameter (name=value);
-
-   Meaning of the parameters is as follows:
-     * param - parameter to be appended in “name=value” format.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.21. add_uri_param usage
-...
-add_uri_param("nat=yes");
-...
-
-1.4.12.  del_uri_param(param)
-
-   Delete a parameter from the RURI being given the
-   key(key=value);
-
-   Meaning of the parameters is as follows:
-     * param - key of the parameter to be removed/
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.22. add_uri_param usage
-...
-del_uri_param("name");
-...
-
-1.4.13.  tel2sip()
-
-   Converts RURI, if it is tel URI, to SIP URI. Returns true, only
-   if conversion succeeded or if no conversion was needed (like
-   RURI was not tel URI.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.23. tel2sip usage
-...
-tel2sip();
-...
-
-1.4.14.  is_uri_user_e164(pseudo-variable)
-
-   Checks if userpart of URI stored in pseudo variable is E164
-   number.
-
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
-
-   Example 1.24. is_uri_user_e164 usage
-...
-if (is_uri_user_e164("$fu")) {  # Check From header URI user part
-   ...
-}
-if (is_uri_user_e164("$avp(uri)") {
-   # Check user part of URI stored in avp uri
-   ...
-};
-...
-
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -472,7 +333,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 48 20 1428 877
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 25 22 123 105
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 32 24 123 383
    3. Irina-Maria Stanescu 21 4 1845 111
    4. Daniel-Constantin Mierla (@miconda) 16 12 167 109
    5. Liviu Chircu (@liviuchircu) 14 10 85 113
@@ -507,9 +368,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jul 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Feb 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Sep 2018
+   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jul 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
    6.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -531,9 +392,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
    Irina-Maria Stanescu, Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj).
