@@ -251,8 +251,6 @@ void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg);
 void run_dlg_callbacks( int type , struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int dir, void *dlg_data, int locked);
 
-void run_load_callbacks( void );
-
 void run_load_callback_per_dlg(struct dlg_cell *dlg);
 
 #endif
