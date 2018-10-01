@@ -1391,7 +1391,8 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* do_accounting already called once */
 		/* first check if the accounting table changed  */
 		if (is_db_acc_on(flag_mask) &&
-				(table_p != NULL || ZSTR(acc_ctx->acc_table))) {
+				(table_p != NULL ||
+				 (acc_ctx->acc_table.s==NULL && acc_ctx->acc_table.len == 0))) {
 			if (table_p == NULL) {
 				table_name = db_table_acc;
 			}
