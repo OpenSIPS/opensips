@@ -2585,7 +2585,6 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	if (extract_aor(&to_uri, &sctx.aor, 0, 0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
-		ul_api.unlock_udomain(ud, &sctx.aor);
 		return -1;
 	}
 
