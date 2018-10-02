@@ -88,7 +88,6 @@ static str fromtag_column     = str_init("fromtag");     /* 12 */
 static str direction_column   = str_init("direction");   /* 13 */
 
 int trace_on   = 1;
-static int callbacks_registered=0;
 
 int *trace_on_flag = NULL;
 
@@ -847,6 +846,43 @@ static int mod_init(void)
 			global_trace_api = &tprot;
 	}
 
+	/* load the module dependencies, best effort for now, as the strict 
+	 * dependency will be checked later in fixup function, according to 
+	 * the sip_trace() flags */
+	load_dlg_api(&dlgb);
+	load_tm_api(&tmb);
+
+	/* statelessly forwarded request callbacks */
+	if (register_slcb(SLCB_REQUEST_OUT, FL_USE_SIPTRACE,
+	trace_slreq_out) != 0) {
+		LM_ERR("can't register callback for statelessly "
+			"forwarded request\n");
+		return -1;
+	}
+
+	if (register_slcb(SLCB_REPLY_OUT, FL_USE_SIPTRACE,
+	trace_slreply_out) != 0) {
+		LM_ERR("can't register callback for statelessly "
+			"forwarded request\n");
+		return -1;
+	}
+
+	/* FIXME find a way to pass the flags and the trace_info_p 
+	 * parameter if there's any*/
+	#if 0
+	if (register_slcb(SLCB_ACK_IN, 0, trace_slack_in) != 0) {
+		LM_ERR("can't register callback for statelessly "
+			"forwarded request\n");
+		return -1;
+	}
+	#endif
+
+	/* register the context index for the tracing context
+	 * set a free function only if no TM, otherwise 
+	 * tm/dialog will free the structure */
+	sl_ctx_idx=context_register_ptr(CONTEXT_GLOBAL,
+			(tmb.t_gett==NULL)?free_trace_info_pkg:0);
+
 	return 0;
 }
 
@@ -1263,8 +1299,8 @@ static int sip_trace_fixup(void **param, int param_no)
 		if (gp->type==GPARAM_TYPE_STR) {
 			tparam->type = TYPE_LIST;
 			if ((tparam->u.lst=get_list_start(&gp->v.sval))==NULL) {
-				LM_ERR("Trace id <%.*s> used in sip_trace() function not defined!\n",
-						gp->v.sval.len, gp->v.sval.s);
+				LM_ERR("Trace id <%.*s> used in sip_trace() function "
+					"not defined!\n", gp->v.sval.len, gp->v.sval.s);
 				return -1;
 			}
 		} else if (gp->type==GPARAM_TYPE_PVS) {
@@ -1290,58 +1326,18 @@ static int sip_trace_fixup(void **param, int param_no)
 		}
 
 		if (_flags==TRACE_DIALOG) {
-			if (load_dlg_api(&dlgb)!=0) {
-				LM_ERR("Requested dialog trace but dialog module not loaded!\n");
+			if (dlgb.create_dlg==NULL) {
+				LM_ERR("Dialog tracing explicitly required, but"
+					"dialog module not loaded\n");
 				return -1;
 			}
-		}
-
-		if (_flags==TRACE_TRANSACTION||_flags==TRACE_DIALOG) {
-			if (load_tm_api(&tmb)!=0) {
-				if (_flags==TRACE_DIALOG) {
-					LM_ERR("Requested dialog trace "
-						"but dialog module not loaded!\n");
-					return -1;
-				} else {
-					LM_INFO("Will do stateless transaction aware tracing!\n");
-					LM_INFO("Siptrace will catch internally generated replies"
-							" and forwarded requests!\n");
-					_flags = TRACE_SL_TRANSACTION;
-				}
+		}else
+		if (_flags==TRACE_TRANSACTION) {
+			if (tmb.t_gett==NULL) {
+				LM_INFO("Will do stateless transaction aware tracing!\n");
+				LM_INFO("Siptrace will catch internally generated replies"
+						" and forwarded requests!\n");
 			}
-		}
-
-		/* register callbacks for forwarded messages and internally generated replies  */
-		if (!callbacks_registered && _flags != TRACE_MESSAGE) {
-			/* statelessly forwarded request callback  and its context index */
-			if (register_slcb(SLCB_REQUEST_OUT, FL_USE_SIPTRACE, trace_slreq_out) != 0) {
-				LM_ERR("can't register callback for statelessly forwarded request\n");
-				return -1;
-			}
-
-			if (register_slcb(SLCB_REPLY_OUT, FL_USE_SIPTRACE, trace_slreply_out) != 0) {
-				LM_ERR("can't register callback for statelessly forwarded request\n");
-				return -1;
-			}
-
-
-		/* FIXME find a way to pass the flags and the trace_info_p parameter
-		 * if there's any*/
-		#if 0
-			if (register_slcb(SLCB_ACK_IN, 0, trace_slack_in) != 0) {
-				LM_ERR("can't register callback for statelessly forwarded request\n");
-				return -1;
-			}
-		#endif
-
-			/* register the free function only in stateless mode
-			 * else tm/dialog will free the structure */
-			sl_ctx_idx=context_register_ptr(CONTEXT_GLOBAL,
-					_flags==TRACE_SL_TRANSACTION?free_trace_info_pkg:0);
-
-
-			/* avoid registering the callbacks mutliple times */
-			callbacks_registered=1;
 		}
 
 		*param = (void *)((unsigned long)_flags);
@@ -1455,10 +1451,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		if (dlgb.get_dlg && msg->first_line.type == SIP_REQUEST &&
 				msg->REQ_METHOD == METHOD_INVITE ) {
 			trace_flags=TRACE_DIALOG;
-		} else if (tmb.t_gett) {
-			trace_flags=TRACE_TRANSACTION;
 		} else {
-			trace_flags=TRACE_SL_TRANSACTION;
+			trace_flags=TRACE_TRANSACTION;
 		}
 	}
 
@@ -1472,21 +1466,11 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 	}
 
 	if (trace_flags == TRACE_TRANSACTION &&
-		tmb.t_gett && msg->first_line.type == SIP_REQUEST &&
+		msg->first_line.type == SIP_REQUEST &&
 		(msg->REQ_METHOD != METHOD_ACK)) {
 		LM_DBG("tracing transaction!\n");
 	} else if (trace_flags == TRACE_TRANSACTION) {
 		LM_DBG("can't trace transaction! Will trace only this message!\n");
-		trace_flags = TRACE_MESSAGE;
-	}
-
-	if (trace_flags == TRACE_SL_TRANSACTION &&
-			msg->first_line.type == SIP_REQUEST &&
-				(msg->REQ_METHOD != METHOD_ACK)) {
-		LM_DBG("tracing stateless transaction!\n");
-	} else if (trace_flags == TRACE_SL_TRANSACTION) {
-		LM_DBG("can't trace stateless transaction! "
-					"Will trace only this message!\n");
 		trace_flags = TRACE_MESSAGE;
 	}
 
@@ -1535,7 +1519,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		}
 	/* for stateful transactions or dialogs
 	 * we need the structure in the shared memory */
-	} else if(trace_flags == TRACE_DIALOG || trace_flags == TRACE_TRANSACTION) {
+	} else if(trace_flags == TRACE_DIALOG ||
+	(trace_flags == TRACE_TRANSACTION && tmb.t_gett)) {
 		info=shm_malloc(sizeof(trace_info_t) + extra_len);
 		if (info==NULL) {
 			LM_ERR("no more shm!\n");
@@ -1551,7 +1536,7 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 			memcpy(info->trace_attrs->s, trace_attrs.s, trace_attrs.len);
 			info->trace_attrs->len = trace_attrs.len;
 		}
-	} else if (trace_flags == TRACE_SL_TRANSACTION) {
+	} else if (trace_flags == TRACE_TRANSACTION && tmb.t_gett==NULL) {
 		/* we need this structure in pkg for stateless replies
 		 * and request out callback */
 		info=pkg_malloc(sizeof(trace_info_t));
@@ -2684,9 +2669,6 @@ static int is_id_traced(int id, trace_info_p info)
 
 static int api_is_id_traced(int id)
 {
-	if (sl_ctx_idx < 0)
-		return -1;
-
 	return is_id_traced( id, GET_SIPTRACE_CONTEXT);
 }
 
@@ -2698,7 +2680,6 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 	tlist_elem_p it;
 	trace_info_p info = GET_SIPTRACE_CONTEXT;
 	int hash;
-
 	trace_message trace_msg;
 
 	if (tprot.send_message == NULL) {
