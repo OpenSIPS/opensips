@@ -9,4 +9,5 @@
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
     <name>Subscriber</name>
     <xi:include href="subscriber.xml"/>
+    <xi:include href="uri.xml"/>
 </database>
