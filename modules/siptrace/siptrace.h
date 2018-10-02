@@ -40,9 +40,9 @@
 #define SET_SIPTRACE_CONTEXT(st_ctx) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx, st_ctx)
 
-enum trace_flags {TRACE_MESSAGE=(1<<0), TRACE_TRANSACTION=(1<<1),
-			TRACE_SL_TRANSACTION=(1<<2), /* transaction aware in stateless mode */
-			TRACE_DIALOG=(1<<3)};
+enum trace_flags {TRACE_MESSAGE=(1<<0),
+				  TRACE_TRANSACTION=(1<<1),
+				  TRACE_DIALOG=(1<<2) };
 
 
 typedef struct st_db_struct {
