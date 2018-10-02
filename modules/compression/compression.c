@@ -705,6 +705,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 				if (append_hf2lst(&hdr_mask[hf->type], hf,
 							&msg_total_len)) {
 					LM_ERR("Cannot append hdr to lst\n");
+					clean_hdr_field(hf);
 					pkg_free(hf);
 					goto free_mem;
 				}
@@ -919,6 +920,7 @@ again:
 
 				goto again;
 			} else {
+				clean_hdr_field(hdr_mask[i]);
 				/* if it is not an OTHER_HDR or it is the last
 					one in OTHER_HDR list */
 				pkg_free(hdr_mask[i]);
