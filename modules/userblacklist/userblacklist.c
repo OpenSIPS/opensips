@@ -34,6 +34,7 @@
 #include "../../ut.h"
 #include "../../mod_fix.h"
 #include "../../db/db.h"
+#include "../../ipc.h"
 
 #include "dt.h"
 #include "db.h"
@@ -560,13 +561,29 @@ static int mod_init(void)
 	return 0;
 }
 
+/* simple wrapper over reload_sources() to make it compatible with ipc_rpc_f,
+ * so triggerable via IPC */
+static void rpc_reload_sources(int sender_id, void *unused)
+{
+	reload_sources();
+}
+
 
 static int child_init(int rank)
 {
+	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
+		return 0;
+
 	if (db_init(&db_url, &db_table) != 0) return -1;
 	if (dt_init(&dt_root) != 0) return -1;
-	/* because we've added new sources during the fixup */
-	if (reload_sources() != 0) return -1;
+
+	/* because we've added new sources during the fixup
+	 * -> if child 1, send a job to itself to run the data loading after
+	 * the init sequance is done */
+	if ( (rank==1) && ipc_send_rpc( process_no, rpc_reload_sources, NULL)<0) {
+		LM_CRIT("failed to RPC the data loading\n");
+		return -1;
+	}
 
 	return 0;
 }
