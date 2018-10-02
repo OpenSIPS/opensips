@@ -737,6 +737,12 @@ static int mod_init(void)
 	}
 	set_default_head_values(&default_db_head);
 
+	if (!ds_db_heads) {
+		LM_ERR("missing default partition, "
+		       "please specify the 'db_url' parameter\n");
+		return -1;
+	}
+
 	ds_set_id_col.len = strlen(ds_set_id_col.s);
 	ds_dest_uri_col.len = strlen(ds_dest_uri_col.s);
 	ds_dest_sock_col.len = strlen(ds_dest_sock_col.s);
