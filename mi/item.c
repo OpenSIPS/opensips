@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2006 Voice Sistem SRL
+ * Copyright (C) 2018 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
