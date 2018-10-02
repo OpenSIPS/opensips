@@ -216,16 +216,10 @@ static inline int authorize(struct sip_msg* _m, gparam_p _realm,
 	struct hdr_field* h;
 	auth_body_t* cred;
 	auth_result_t ret;
-	str domain, table;
+	str domain, *table;
 	db_res_t* result = NULL;
 
-	if(!_table) {
-		LM_ERR("invalid table parameter\n");
-		return -1;
-	}
-
-	table.s = _table;
-	table.len = strlen(_table);
+	table = (str*)_table;
 
 	if(fixup_get_svalue(_m, _realm, &domain)!=0)
 	{
@@ -243,7 +237,7 @@ static inline int authorize(struct sip_msg* _m, gparam_p _realm,
 
 	cred = (auth_body_t*)h->parsed;
 
-	res = get_ha1(&cred->digest.username, &domain, &table, ha1, &result);
+	res = get_ha1(&cred->digest.username, &domain, table, ha1, &result);
 	if (res < 0) {
 		/* Error while accessing the database */
 		if (sigb.reply(_m, 500, &auth_500_err, NULL) == -1) {

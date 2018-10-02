@@ -44,10 +44,11 @@
 #include "../signaling/signaling.h"
 #include "aaa_avps.h"
 #include "authorize.h"
+#include "checks.h"
 
 
-
-#define TABLE_VERSION 7
+#define SUBSCRIBER_TABLE_VERSION 7
+#define URI_TABLE_VERSION        2
 
 /*
  * Module destroy function prototype
@@ -95,6 +96,9 @@ str domain_column           = {DOMAIN_COL, DOMAIN_COL_LEN};
 str pass_column             = {PASS_COL, PASS_COL_LEN};
 str pass_column_2           = {PASS_COL_2, PASS_COL_2_LEN};
 
+str uri_user_column         = str_init("username");
+str uri_domain_column       = str_init("domain");
+str uri_uriuser_column      = str_init("uri_user");
 
 int calc_ha1                = 0;
 int use_domain              = 0; /* Use also domain when looking up in table */
@@ -108,12 +112,27 @@ struct aaa_avp *credentials = 0; /* Parsed list of credentials to load */
 int credentials_n           = 0; /* Number of credentials in the list */
 int skip_version_check      = 0; /* skips version check for custom db */
 
+
+static int uri_fixup(void** param, int param_no);
+static int db_fixup_get_auth_id(void** param, int param_no);
+
 /*
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"www_authorize",   (cmd_function)www_authorize,   2, auth_fixup, 0, REQUEST_ROUTE},
-	{"proxy_authorize", (cmd_function)proxy_authorize, 2, auth_fixup, 0, REQUEST_ROUTE},
+	{"www_authorize",   (cmd_function)www_authorize,   2, auth_fixup, 0,
+			REQUEST_ROUTE},
+	{"proxy_authorize", (cmd_function)proxy_authorize, 2, auth_fixup, 0,
+			REQUEST_ROUTE},
+	{"db_does_uri_exist", (cmd_function)does_uri_exist, 2, auth_fixup, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE },
+	{"db_is_to_authorized", (cmd_function)check_to, 1, uri_fixup, 0,
+			REQUEST_ROUTE},
+	{"db_is_from_authorized", (cmd_function)check_from, 1, uri_fixup, 0,
+			REQUEST_ROUTE},
+	{"db_get_auth_id", (cmd_function) get_auth_id, 4,
+			db_fixup_get_auth_id, 0,
+			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -122,17 +141,21 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"db_url",            STR_PARAM, &db_url.s           },
-	{"user_column",       STR_PARAM, &user_column.s      },
-	{"domain_column",     STR_PARAM, &domain_column.s    },
-	{"password_column",   STR_PARAM, &pass_column.s      },
-	{"password_column_2", STR_PARAM, &pass_column_2.s    },
-	{"calculate_ha1",     INT_PARAM, &calc_ha1           },
-	{"use_domain",        INT_PARAM, &use_domain         },
-	{"load_credentials",  STR_PARAM, &credentials_list   },
-	{"skip_version_check",INT_PARAM, &skip_version_check },
+	{"db_url",            STR_PARAM, &db_url.s            },
+	{"user_column",       STR_PARAM, &user_column.s       },
+	{"domain_column",     STR_PARAM, &domain_column.s     },
+	{"password_column",   STR_PARAM, &pass_column.s       },
+	{"password_column_2", STR_PARAM, &pass_column_2.s     },
+	{"uri_user_column",   STR_PARAM, &uri_user_column.s   },
+	{"uri_domain_column", STR_PARAM, &uri_domain_column.s },
+	{"uri_uriuser_column",STR_PARAM, &uri_uriuser_column.s},
+	{"calculate_ha1",     INT_PARAM, &calc_ha1            },
+	{"use_domain",        INT_PARAM, &use_domain          },
+	{"load_credentials",  STR_PARAM, &credentials_list    },
+	{"skip_version_check",INT_PARAM, &skip_version_check  },
 	{0, 0, 0}
 };
+
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -193,6 +216,10 @@ static int mod_init(void)
 	pass_column.len = strlen(pass_column.s);
 	pass_column_2.len = strlen(pass_column_2.s);
 
+	uri_user_column.len = strlen(uri_user_column.s);
+	uri_domain_column.len = strlen(uri_domain_column.s);
+	uri_uriuser_column.len = strlen(uri_uriuser_column.s);
+
 	/* Find a database module */
 	if (db_bind_mod(&db_url, &auth_dbf) < 0){
 		LM_ERR("unable to bind to a database driver\n");
@@ -202,7 +229,8 @@ static int mod_init(void)
 	/* bind to auth module and import the API */
 	bind_auth = (bind_auth_t)find_export("bind_auth", 0, 0);
 	if (!bind_auth) {
-		LM_ERR("unable to find bind_auth function. Check if you load the auth module.\n");
+		LM_ERR("unable to find bind_auth function."
+			" Check if you load the auth module.\n");
 		return -2;
 	}
 
@@ -247,13 +275,13 @@ static void destroy(void)
 static int auth_fixup(void** param, int param_no)
 {
 	db_con_t* dbh = NULL;
-	str name;
 
 	if (param_no == 1) {
-		return fixup_spve_null(param, 1);
+		return fixup_spve(param);
 	} else if (param_no == 2) {
-		name.s = (char*)*param;
-		name.len = strlen(name.s);
+		/* convert char* to str* */
+		if (fixup_str(param)<0)
+			return -1;
 
 		dbh = auth_dbf.init(&db_url);
 		if (!dbh) {
@@ -261,12 +289,94 @@ static int auth_fixup(void** param, int param_no)
 			return -1;
 		}
 		if(skip_version_check == 0 &&
-			db_check_table_version(&auth_dbf, dbh, &name, TABLE_VERSION) < 0) {
+		db_check_table_version(&auth_dbf, dbh, (str*)*param,
+		SUBSCRIBER_TABLE_VERSION) < 0) {
 			LM_ERR("error during table version check.\n");
 			auth_dbf.close(dbh);
 			return -1;
 		}
+		auth_dbf.close(dbh);
 	}
-	auth_dbf.close(dbh);
 	return 0;
 }
+
+
+static int uri_fixup(void** param, int param_no)
+{
+	db_con_t* dbh = NULL;
+
+	if (param_no == 1) {
+		/* convert char* to str* */
+		if (fixup_str(param)<0)
+			return -1;
+
+		dbh = auth_dbf.init(&db_url);
+		if (!dbh) {
+			LM_ERR("unable to open database connection\n");
+			return -1;
+		}
+		if(skip_version_check == 0 &&
+		db_check_table_version(&auth_dbf, dbh, (str*)*param,
+		URI_TABLE_VERSION) < 0) {
+			LM_ERR("error during table version check.\n");
+			auth_dbf.close(dbh);
+			return -1;
+		}
+		auth_dbf.close(dbh);
+	}
+	return 0;
+}
+
+
+
+
+/**
+ * Check proper configuration for 'get_auth_id()' and
+ * convert function parameters.
+ */
+static int db_fixup_get_auth_id(void** param, int param_no)
+{
+	pv_elem_t *model = NULL;
+	pv_spec_t *sp;
+	str s;
+	int ret;
+
+	if (param_no > 0 && param_no <= 4) {
+		switch (param_no) {
+			case 1:		// name of the URI like table
+				return uri_fixup( param, 1);
+
+			case 2:		// pv which contains the sip id searched for
+				s.s = (char*) (*param);
+				s.len = strlen(s.s);
+				if (s.len == 0) {
+					LM_ERR("param %d is empty string!\n", param_no);
+					return E_CFG;
+				}
+				if(pv_parse_format(&s ,&model) || model == NULL) {
+					LM_ERR("wrong format [%s] for value param!\n", s.s);
+					return E_CFG;
+				}
+				*param = (void*) model;
+				break;
+
+			case 3:		// pv to return the result auth id
+			case 4:		// pv to return the result auth realm
+				ret = fixup_pvar(param);
+				if (ret < 0) return ret;
+				sp = (pv_spec_t*) (*param);
+				if (sp->type != PVT_AVP && sp->type != PVT_SCRIPTVAR) {
+					LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+					return E_SCRIPT;
+				}
+				break;
+		}
+
+	} else {
+		LM_ERR("wrong number of parameters\n");
+		return E_UNSPEC;
+	}
+
+	return 0;
+}
+
