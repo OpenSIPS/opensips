@@ -44,8 +44,6 @@
 #include "authdb_mod.h"
 #include "checks.h"
 
-static db_func_t uridb_dbf;
-
 /* Return codes reference */
 #define OK 		 	 1		/* success */
 #define ERR_INTERNAL		-1		/* Internal Error */
@@ -118,10 +116,10 @@ static inline int check_username(struct sip_msg* _m, str* _table,
 	VAL_STR(vals + 1) = *GET_REALM(&c->digest);
 	VAL_STR(vals + 2) = _uri->user;
 
-	uridb_dbf.use_table(auth_db_handle, _table);
+	auth_dbf.use_table(auth_db_handle, _table);
 	CON_PS_REFERENCE(auth_db_handle) = &my_ps;
 
-	if (uridb_dbf.query(auth_db_handle, keys, 0, vals, cols, 3, 1, 0, &res) < 0)
+	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, 3, 1, 0, &res) < 0)
 	{
 		LM_ERR("Error while querying database\n");
 		return ERR_DBQUERY;
@@ -134,12 +132,12 @@ static inline int check_username(struct sip_msg* _m, str* _table,
 	if (RES_ROW_N(res) == 0) {
 		LM_DBG("From/To user '%.*s' is spoofed\n",
 			   _uri->user.len, ZSW(_uri->user.s));
-		uridb_dbf.free_result(auth_db_handle, res);
+		auth_dbf.free_result(auth_db_handle, res);
 		return ERR_SPOOFEDUSER;
 	} else {
 		LM_DBG("From/To user '%.*s' and auth user match\n",
 			   _uri->user.len, ZSW(_uri->user.s));
-		uridb_dbf.free_result(auth_db_handle, res);
+		auth_dbf.free_result(auth_db_handle, res);
 		return OK;
 	}
 }
@@ -210,7 +208,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _uri, char* _table)
 		return ERR_INTERNAL;
 	}
 
-	uridb_dbf.use_table(auth_db_handle, (str*)_table);
+	auth_dbf.use_table(auth_db_handle, (str*)_table);
 	keys[0] = &user_column;
 	keys[1] = &domain_column;
 	cols[0] = &user_column;
@@ -222,7 +220,7 @@ int does_uri_exist(struct sip_msg* _msg, char* _uri, char* _table)
 
 	CON_PS_REFERENCE(auth_db_handle) = &my_ps;
 
-	if (uridb_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
+	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 				1, 0, &res) < 0) {
 		LM_ERR("Error while querying database\n");
 		return ERR_USERNOTFOUND;
@@ -230,11 +228,11 @@ int does_uri_exist(struct sip_msg* _msg, char* _uri, char* _table)
 
 	if (RES_ROW_N(res) == 0) {
 		LM_DBG("User in request uri does not exist\n");
-		uridb_dbf.free_result(auth_db_handle, res);
+		auth_dbf.free_result(auth_db_handle, res);
 		return ERR_DBEMTPYRES;
 	} else {
 		LM_DBG("User in request uri does exist\n");
-		uridb_dbf.free_result(auth_db_handle, res);
+		auth_dbf.free_result(auth_db_handle, res);
 		return OK;
 	}
 }
@@ -320,7 +318,7 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 		return -1;
 	}
 
-	uridb_dbf.use_table(auth_db_handle, (str*)_table);
+	auth_dbf.use_table(auth_db_handle, (str*)_table);
 	keys[0] = &uri_uriuser_column;
 	keys[1] = &uri_domain_column;
 	cols[0] = &uri_user_column;
@@ -338,7 +336,7 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 
 	/* if use_domain is set also the domain column of the database table will
 	   be honoured in the following query (see sixth parameter) */
-	if (uridb_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
+	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 	2, 0, &dbres) < 0) {
 		LM_ERR("Error while querying database");
 		return ERR_DBQUERY;
@@ -346,7 +344,7 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 
 	if (RES_ROW_N(dbres) == 0) {
 		LM_DBG("User in given uri is not local.");
-		uridb_dbf.free_result(auth_db_handle, dbres);
+		auth_dbf.free_result(auth_db_handle, dbres);
 		return ERR_USERNOTFOUND;
 	}
 
@@ -385,7 +383,7 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 	set_result_pv(_msg, AVP_VAL_STR, ret_authuser, _auth_user);
 	set_result_pv(_msg, AVP_VAL_STR, ret_authrealm, _auth_realm);
 
-	uridb_dbf.free_result(auth_db_handle, dbres);
+	auth_dbf.free_result(auth_db_handle, dbres);
 
 	return OK;
 }
