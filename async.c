@@ -93,7 +93,7 @@ int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 }
 
 
-int async_fd_resume(int *fd, void *param)
+int async_fd_resume(int fd, void *param)
 {
 	int local_fd; /* reactor_del_reader clears the fd - we need to back it up */
 	async_ctx *ctx = (async_ctx *)param;
@@ -102,7 +102,7 @@ int async_fd_resume(int *fd, void *param)
 	async_status = ASYNC_DONE; /* assume default status as done */
 
 	/* call the resume function in order to read and handle data */
-	ret = ((async_resume_fd*)ctx->resume_f)( *fd, ctx->resume_param );
+	ret = ((async_resume_fd*)ctx->resume_f)( fd, ctx->resume_param );
 	if (async_status==ASYNC_CONTINUE) {
 		/* leave the fd into the reactor*/
 		return 0;
@@ -111,7 +111,7 @@ int async_fd_resume(int *fd, void *param)
 			LM_ERR("ASYNC_CHANGE_FD: given file descriptor shall be "
 				"positive!\n");
 			return 0;
-		} else if (ret>0 && ret==*fd) {
+		} else if (ret>0 && ret==fd) {
 			/*trying to add the same fd; shall continue*/
 			LM_CRIT("You are trying to replace the old fd with the same fd!"
 					"Will act as in ASYNC_CONTINUE!\n");
@@ -119,7 +119,7 @@ int async_fd_resume(int *fd, void *param)
 		}
 
 		/* remove the old fd from the reactor */
-		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+		reactor_del_reader(fd, -1, IO_FD_CLOSING);
 		local_fd=ret;
 
 		/* insert the new fd inside the reactor */
@@ -140,8 +140,8 @@ int async_fd_resume(int *fd, void *param)
 	}
 
 	/* remove from reactor, we are done */
-	local_fd=*fd;
-	reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+	local_fd=fd;
+	reactor_del_reader(fd, -1, IO_FD_CLOSING);
 
 done:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
@@ -165,7 +165,7 @@ done:
 		(_req).rcv.dst_ip.af = AF_INET;\
 	} while(0)
 
-int async_launch_resume(int *fd, void *param)
+int async_launch_resume(int fd, void *param)
 {
 	int local_fd; /* reactor_del_reader clears the fd - we need to back it up */
 	struct sip_msg req;
@@ -178,7 +178,7 @@ int async_launch_resume(int *fd, void *param)
 
 	/* call the resume function in order to read and handle data */
 	return_code = ((async_resume_module*)(ctx->async.resume_f))
-		( *fd, &req, ctx->async.resume_param );
+		( fd, &req, ctx->async.resume_param );
 
 	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the report route, leave the fd into the reactor*/
@@ -193,7 +193,7 @@ int async_launch_resume(int *fd, void *param)
 			LM_ERR("ASYNC_CHANGE_FD: given file descriptor must be "
 				"positive!\n");
 			goto restore;
-		} else if (return_code>0 && return_code==*fd) {
+		} else if (return_code>0 && return_code==fd) {
 			/*trying to add the same fd; shall continue*/
 			LM_CRIT("You are trying to replace the old fd with the same fd!"
 					"Will act as in ASYNC_CONTINUE!\n");
@@ -201,7 +201,7 @@ int async_launch_resume(int *fd, void *param)
 		}
 
 		/* remove the old fd from the reactor */
-		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+		reactor_del_reader(fd, -1, IO_FD_CLOSING);
 		local_fd=return_code;
 
 		/* insert the new fd inside the reactor */
@@ -224,8 +224,8 @@ int async_launch_resume(int *fd, void *param)
 	}
 
 	/* remove from reactor, we are done */
-	local_fd = *fd;
-	reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+	local_fd = fd;
+	reactor_del_reader(fd, -1, IO_FD_CLOSING);
 
 run_route:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
