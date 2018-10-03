@@ -708,12 +708,8 @@ static inline char* str_strstr(const str *stra, const str *strb)
 		return NULL;
 	}
 
-	if (strb->len > stra->len) {
-		LM_ERR("string to find should be smaller than the string"
-				"to search into\n");
+	if (strb->len > stra->len)
 		return NULL;
-	}
-
 
 	len=0;
 	while (stra->len-len >= strb->len){
