@@ -1188,6 +1188,11 @@ static int dr_init(void)
 		goto error;
 	}
 
+	drd_table.len = strlen(drd_table.s);
+	drg_table.len = strlen(drg_table.s);
+	drr_table.len = strlen(drr_table.s);
+	drc_table.len = strlen(drc_table.s);
+
 	if( use_partitions == 1 ) { /* loading configurations from db */
 		if( get_config_from_db() == -1 ) {
 			LM_ERR("Failed to get configuration from db_config\n");
@@ -1213,7 +1218,6 @@ static int dr_init(void)
 		add_head_config();
 
 		/* if not empty save to head_config structure */
-		drd_table.len = strlen(drd_table.s);
 		if (drd_table.s[0]==0) {
 			LM_CRIT("mandatory parameter \"DRD_TABLE\" found empty\n");
 			goto error;
@@ -1226,7 +1230,6 @@ static int dr_init(void)
 		memcpy( head_start->drd_table.s, drd_table.s, drd_table.len );
 		head_start->drd_table.len = drd_table.len;
 
-		drr_table.len = strlen(drr_table.s);
 		if (drr_table.s[0]==0) {
 			LM_CRIT("mandatory parameter \"DRR_TABLE\" found empty\n");
 			goto error;
@@ -1239,7 +1242,6 @@ static int dr_init(void)
 		memcpy( head_start->drr_table.s, drr_table.s, drr_table.len);
 		head_start->drr_table.len = drr_table.len;
 
-		drg_table.len = strlen(drg_table.s);
 		if (drg_table.s[0]==0) {
 			LM_CRIT("mandatory parameter \"DRG_TABLE\" found empty\n");
 			goto error;
@@ -1252,7 +1254,6 @@ static int dr_init(void)
 		memcpy( head_start->drg_table.s, drg_table.s, drg_table.len);
 		head_start->drg_table.len = drg_table.len;
 
-		drc_table.len = strlen(drc_table.s);
 		if ( drc_table.s[0]==0 ) {
 			LM_CRIT("mandatory parameter \"DRC_TABLE\" found empty\n");
 			goto error;
