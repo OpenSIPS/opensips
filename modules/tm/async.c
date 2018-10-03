@@ -82,6 +82,7 @@ int t_resume_async(int *fd, void *param)
 	struct socket_info* backup_si;
 	struct cell *t= ctx->t;
 	int route;
+	int local_fd = -1; /* reactor_del_reader clears the fd - we need to back it up */
 
 	if (fd)
 		LM_DBG("resuming on fd %d, transaction %p \n",*fd, t);
@@ -145,21 +146,18 @@ int t_resume_async(int *fd, void *param)
 		}
 
 		/* if there was a file descriptor, remove it from the reactor */
-		if (fd) {
-			/* remove the old fd from the reactor */
-			reactor_del_reader( *fd, -1, IO_FD_CLOSING);
-			*fd=return_code;
-		}
+		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
+		local_fd=return_code;
 
 		/* insert the new fd inside the reactor */
-		if(reactor_add_reader(return_code,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
+		if(reactor_add_reader(local_fd,F_SCRIPT_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
 				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
-					( return_code, &faked_req, ctx->async.resume_param );
-				if (async_status == ASYNC_CHANGE_FD && fd)
-					*fd=return_code;
+					(local_fd, &faked_req, ctx->async.resume_param );
+				if (async_status == ASYNC_CHANGE_FD)
+					local_fd=return_code;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 			goto route;
 		}
@@ -170,12 +168,13 @@ int t_resume_async(int *fd, void *param)
 
 	if (fd) {
 		/* remove from reactor, we are done */
+		local_fd = *fd;
 		reactor_del_reader( *fd, -1, IO_FD_CLOSING);
 	}
 
 route:
-	if (async_status == ASYNC_DONE_CLOSE_FD && fd)
-		close(*fd);
+	if (async_status == ASYNC_DONE_CLOSE_FD && local_fd > 0)
+		close(local_fd);
 
 	/* run the resume_route (some type as the original one) */
 	swap_route_type(route, ctx->route_type);
