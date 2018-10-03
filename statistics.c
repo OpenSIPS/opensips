@@ -54,13 +54,13 @@
 static stats_collector *collector = NULL;
 static int stats_ready;
 
-static mi_response_t *mi_get_stats(const mi_param_t *params,
+static mi_response_t *mi_get_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static mi_response_t *w_mi_list_stats(const mi_param_t *params,
+static mi_response_t *w_mi_list_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static mi_response_t *w_mi_list_stats_1(const mi_param_t *params,
+static mi_response_t *w_mi_list_stats_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static mi_response_t *mi_reset_stats(const mi_param_t *params,
+static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static mi_export_t mi_stat_cmds[] = {
@@ -756,12 +756,12 @@ inline static int mi_list_module_stats(mi_item_t *resp_obj, module_stats *mods)
 }
 
 
-static mi_response_t *mi_get_stats(const mi_param_t *params,
+static mi_response_t *mi_get_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
-	mi_param_t *params_arr;
+	mi_item_t *params_arr;
 	int i, no_params;
 	int found;
 	module_stats *mods;
@@ -825,7 +825,7 @@ error:
 	return 0;
 }
 
-static mi_response_t *w_mi_list_stats(const mi_param_t *params,
+static mi_response_t *w_mi_list_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -846,12 +846,12 @@ static mi_response_t *w_mi_list_stats(const mi_param_t *params,
 	return resp;
 }
 
-static mi_response_t *w_mi_list_stats_1(const mi_param_t *params,
+static mi_response_t *w_mi_list_stats_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
-	mi_param_t *params_arr;
+	mi_item_t *params_arr;
 	int i, no_params;
 	int found;
 	module_stats   *mods;
@@ -907,12 +907,12 @@ error:
 	return 0;
 }
 
-static mi_response_t *mi_reset_stats(const mi_param_t *params,
+static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
-	mi_param_t *params_arr;
+	mi_item_t *params_arr;
 	int i, no_params;
 	str val;
 	stat_var *stat;

@@ -70,7 +70,7 @@ static int init_mi_uptime(void)
 	return 0;
 }
 
-static mi_response_t *mi_uptime(const mi_param_t *params,
+static mi_response_t *mi_uptime(const mi_params_t *params,
 							struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -104,7 +104,7 @@ error:
 }
 
 
-static mi_response_t *mi_version(const mi_param_t *params,
+static mi_response_t *mi_version(const mi_params_t *params,
 							struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -125,7 +125,7 @@ static mi_response_t *mi_version(const mi_param_t *params,
 }
 
 
-static mi_response_t *mi_pwd(const mi_param_t *params,
+static mi_response_t *mi_pwd(const mi_params_t *params,
 						struct mi_handler *async_hdl)
 {
 	static int max_len = 0;
@@ -164,7 +164,7 @@ error:
 }
 
 
-static mi_response_t *mi_arg(const mi_param_t *params,
+static mi_response_t *mi_arg(const mi_params_t *params,
 						struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -187,7 +187,7 @@ static mi_response_t *mi_arg(const mi_param_t *params,
 }
 
 
-static mi_response_t *mi_which(const mi_param_t *params,
+static mi_response_t *mi_which(const mi_params_t *params,
 							struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -214,7 +214,7 @@ static mi_response_t *mi_which(const mi_param_t *params,
 }
 
 
-static mi_response_t *mi_ps(const mi_param_t *params,
+static mi_response_t *mi_ps(const mi_params_t *params,
 						struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -257,7 +257,7 @@ error:
 }
 
 
-static mi_response_t *mi_kill(const mi_param_t *params,
+static mi_response_t *mi_kill(const mi_params_t *params,
 							struct mi_handler *async_hdl)
 {
 	kill(0, SIGTERM);
@@ -266,7 +266,7 @@ static mi_response_t *mi_kill(const mi_param_t *params,
 }
 
 
-mi_response_t *mi_log_level(const mi_param_t *params, pid_t pid)
+mi_response_t *mi_log_level(const mi_params_t *params, pid_t pid)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
@@ -309,7 +309,7 @@ error:
 	return 0;
 }
 
-static mi_response_t *w_log_level(const mi_param_t *params,
+static mi_response_t *w_log_level(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -350,13 +350,13 @@ error:
 	return 0;
 }
 
-static mi_response_t *w_log_level_1(const mi_param_t *params,
+static mi_response_t *w_log_level_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	return mi_log_level(params, 0);
 }
 
-static mi_response_t *w_log_level_2(const mi_param_t *params,
+static mi_response_t *w_log_level_2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	int pid;
@@ -368,7 +368,7 @@ static mi_response_t *w_log_level_2(const mi_param_t *params,
 }
 
 
-static mi_response_t *mi_cachestore(const 	mi_param_t *params, unsigned int expire)
+static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int expire)
 {
 	str mc_system;
 	str attr;
@@ -406,13 +406,13 @@ static mi_response_t *mi_cachestore(const 	mi_param_t *params, unsigned int expi
 	return init_mi_result_ok();
 }
 
-static mi_response_t *w_cachestore(const mi_param_t *params,
+static mi_response_t *w_cachestore(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	return mi_cachestore(params, 0);
 }
 
-static mi_response_t *w_cachestore_1(const mi_param_t *params,
+static mi_response_t *w_cachestore_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	int expire;
@@ -429,7 +429,7 @@ static mi_response_t *w_cachestore_1(const mi_param_t *params,
 }
 
 
-static mi_response_t *mi_cachefetch(const mi_param_t *params,
+static mi_response_t *mi_cachefetch(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -488,7 +488,7 @@ error:
 }
 
 
-static mi_response_t *mi_cacheremove(const mi_param_t *params,
+static mi_response_t *mi_cacheremove(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str mc_system;
@@ -539,7 +539,7 @@ static void rpc_do_pkg_dump(int sender_id, void *llevel)
 	return;
 }
 
-static mi_response_t *mi_mem_pkg_dump(const mi_param_t *params, int llevel)
+static mi_response_t *mi_mem_pkg_dump(const mi_params_t *params, int llevel)
 {
 	int i;
 	pid_t pid = 0;
@@ -563,13 +563,13 @@ static mi_response_t *mi_mem_pkg_dump(const mi_param_t *params, int llevel)
 	return init_mi_result_ok();
 }
 
-static mi_response_t *w_mem_pkg_dump_1(const mi_param_t *params,
+static mi_response_t *w_mem_pkg_dump_1(const mi_params_t *params,
 									struct mi_handler *async_hdl)
 {
 	return mi_mem_pkg_dump(params, 0);
 }
 
-static mi_response_t *w_mem_pkg_dump_2(const mi_param_t *params,
+static mi_response_t *w_mem_pkg_dump_2(const mi_params_t *params,
 									struct mi_handler *async_hdl)
 {
 	int llevel;
@@ -595,13 +595,13 @@ static mi_response_t *mi_mem_shm_dump(int llevel)
 	return init_mi_result_ok();
 }
 
-static mi_response_t *w_mem_shm_dump(const mi_param_t *params,
+static mi_response_t *w_mem_shm_dump(const mi_params_t *params,
 									struct mi_handler *async_hdl)
 {
 	return mi_mem_shm_dump(0);
 }
 
-static mi_response_t *w_mem_shm_dump_1(const mi_param_t *params,
+static mi_response_t *w_mem_shm_dump_1(const mi_params_t *params,
 									struct mi_handler *async_hdl)
 {
 	int llevel;

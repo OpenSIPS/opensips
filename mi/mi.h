@@ -30,7 +30,11 @@
 #define MAX_MI_PARAMS  10
 #define MAX_MI_RECIPES 10
 
-#define MI_ASYNC_RPL_FLAG   (1<<0)
+/* async MI command */
+#define MI_ASYNC_RPL_FLAG    (1<<0)
+/* command only supports named parameters and will return
+ * an error if positional parameters are received */
+#define MI_NAMED_PARAMS_ONLY (1<<1)
 
 #define MI_ASYNC_RPL    ((mi_response_t*)-1)
 #define MI_NO_RPL 		((char*)-1)
@@ -50,15 +54,13 @@
 #define JSONRPC_SERVER_ERR_CODE	   -32000
 #define JSONRPC_SERVER_ERR_MSG     "Server error"
 
-#define ERR_DET_POSIT_PARAMS_S "OpenSIPS MI commands only support named parameters"
+#define ERR_DET_POS_PARAMS_S "Commands only supports named parameters"
 #define ERR_DET_AMBIG_CALL_S "Ambiguous call"
 
 
 struct mi_handler;
 
-typedef mi_item_t mi_request_t;
-
-typedef mi_response_t *(mi_cmd_f)(const mi_param_t *params,
+typedef mi_response_t *(mi_cmd_f)(const mi_params_t *params,
 										struct mi_handler *async_hdl);
 typedef int (mi_child_init_f)(void);
 typedef void (mi_handler_f)(mi_response_t *, struct mi_handler *, int);
@@ -110,9 +112,9 @@ int init_mi_child();
 
 struct mi_cmd *lookup_mi_cmd(char *name, int len);
 
-mi_response_t *w_mi_help(const mi_param_t *params,
+mi_response_t *w_mi_help(const mi_params_t *params,
 					struct mi_handler *async_hdl);
-mi_response_t *w_mi_help_1(const mi_param_t *params,
+mi_response_t *w_mi_help_1(const mi_params_t *params,
 					struct mi_handler *async_hdl);
 
 void get_mi_cmds(struct mi_cmd **cmds, int *size);

@@ -439,7 +439,7 @@ int shm_mem_init(void)
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
-mi_response_t *mi_shm_check(const mi_param_t *params,
+mi_response_t *mi_shm_check(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 #if defined(QM_MALLOC) && defined(DBG_MALLOC)

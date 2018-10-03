@@ -49,7 +49,12 @@
 typedef cJSON mi_item_t;
 
 typedef mi_item_t mi_response_t;
-typedef mi_item_t mi_param_t;
+typedef mi_item_t mi_request_t;
+
+typedef struct mi_params_ {
+	mi_item_t *item;
+	char **list;
+} mi_params_t;
 
 /* The functions below can be used to build a MI Response
  */
@@ -149,24 +154,24 @@ void free_shm_mi_response(mi_response_t *response);
 /* The string provided in @value will be freed along with the MI request
  * so it should be strdup'ed as necessary
  */
-int get_mi_string_param(const mi_param_t *params, const char *name,
+int get_mi_string_param(const mi_params_t *params, const char *name,
 					char **value, int *value_len);
 
-int get_mi_int_param(const mi_param_t *params, const char *name, int *value);
+int get_mi_int_param(const mi_params_t *params, const char *name, int *value);
 
-int get_mi_array_param(const mi_param_t *params, const char *name,
-					mi_param_t **value, int *no_items);
+int get_mi_array_param(const mi_params_t *params, const char *name,
+					mi_item_t **value, int *no_items);
 
 /* get the string item at the index @pos from an array parameter
  * returned by get_mi_array_param()
  */
-int get_mi_arr_param_string(const mi_param_t *array, int pos,
+int get_mi_arr_param_string(const mi_item_t *array, int pos,
 						char **value, int *value_len);
 
 /* get the string item at the index @pos from an array parameter
  * returned by get_mi_array_param()
  */
-int get_mi_arr_param_int(const mi_param_t *array, int pos, int *value);
+int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value);
 
 /* Initializes a standard parameter error MI Response.
  */

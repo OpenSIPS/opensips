@@ -434,7 +434,7 @@ error:
 }
 
 
-static mi_response_t *mi_event_subscribe(const mi_param_t *params, unsigned int expire)
+static mi_response_t *mi_event_subscribe(const mi_params_t *params, unsigned int expire)
 {
 	int ret;
 	str event_name, transport_sock;
@@ -454,13 +454,13 @@ static mi_response_t *mi_event_subscribe(const mi_param_t *params, unsigned int 
 	return ret ? init_mi_result_ok() : 0;
 }
 
-mi_response_t *w_mi_event_subscribe(const mi_param_t *params,
+mi_response_t *w_mi_event_subscribe(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	return mi_event_subscribe(params, DEFAULT_EXPIRE);
 }
 
-mi_response_t *w_mi_event_subscribe_1(const mi_param_t *params,
+mi_response_t *w_mi_event_subscribe_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	int expire;
@@ -478,7 +478,7 @@ mi_response_t *w_mi_event_subscribe_1(const mi_param_t *params,
 
 
 /* used to list all the registered events */
-mi_response_t *mi_events_list(const mi_param_t *params,
+mi_response_t *mi_events_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -669,7 +669,7 @@ error:
 }
 
 /* used to list all subscribers */
-mi_response_t *w_mi_subscribers_list(const mi_param_t *params,
+mi_response_t *w_mi_subscribers_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -704,7 +704,7 @@ error:
 	return 0;
 }
 
-mi_response_t *w_mi_subscribers_list_1(const mi_param_t *params,
+mi_response_t *w_mi_subscribers_list_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str event_s;
@@ -720,7 +720,7 @@ mi_response_t *w_mi_subscribers_list_1(const mi_param_t *params,
 	return mi_subscribers_list(event, NULL);
 }
 
-mi_response_t *w_mi_subscribers_list_2(const mi_param_t *params,
+mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str event_s;

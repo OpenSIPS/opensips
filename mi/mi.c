@@ -215,13 +215,48 @@ mi_request_t *parse_mi_request(const char *req, const char **end_ptr)
 	return cJSON_ParseWithOpts(req, end_ptr, 0);
 }
 
-static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
-									int *is_ambiguous)
+static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params,
+							int *max_params)
 {
-	mi_recipe_t *match = NULL;
+	mi_item_t *param;
+	int i;
+
+	for (i = 0; recipe->params[i]; i++) {
+		for (param = req_params->child; param; param = param->next)
+			if (!strcmp(recipe->params[i], param->string))
+				break;
+
+		if (!param)
+			return 0;
+	}
+
+	if (i > *max_params) {
+		*max_params = i;
+		return 1;
+	} else if (i == *max_params)
+		return -1;
+	else
+		return 0;
+}
+
+static int match_pos_params(mi_recipe_t *recipe, mi_item_t *req_params)
+{
 	mi_item_t *param;
 	int i, j;
-	int max_recipe_params = 0;
+
+	for (i = 0; recipe->params[i]; i++) ;
+
+	for (param = req_params->child, j = 0; param; param = param->next, j++) ;
+
+	return i == j;
+}
+
+static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
+								int pos_params, int *is_ambiguous)
+{
+	mi_recipe_t *match = NULL;
+	int i, max_params = 0;
+	int rc;
 
 	for (i = 0; recipes[i].cmd; i++) {
 		if (!req_params) {
@@ -234,23 +269,24 @@ static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
 				continue;
 		}
 
-		for (j = 0; recipes[i].params[j]; j++) {
-			for (param = req_params->child; param; param = param->next)
-				if (!strcmp(recipes[i].params[j], param->string))
-					break;
-
-			if (!param)
-				goto next_recipe;
+		if (pos_params) {
+			if (match_pos_params(&recipes[i], req_params)) {
+				if (match) {
+					*is_ambiguous = 1;
+					return match;
+				}
+				else
+					match = &recipes[i];
+			}
+		} else {
+			rc = match_named_params(&recipes[i], req_params, &max_params);
+			if (rc == -1)
+				*is_ambiguous = 1;
+			else if (rc == 1) {
+				*is_ambiguous = 0;
+				match = &recipes[i];
+			}
 		}
-
-		if (j > max_recipe_params) {
-			max_recipe_params = j;
-			*is_ambiguous = 0;
-			match = &recipes[i];
-		} else if (j == max_recipe_params)
-			*is_ambiguous = 1;
-
-next_recipe: ;
 	}
 
 	return match;
@@ -274,7 +310,9 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl
 	mi_item_t *req_id, *req_jsonrpc, *req_method, *req_params;
 	struct mi_cmd *cmd;
 	mi_recipe_t *cmd_recipe;
-	int is_ambiguous;
+	mi_params_t cmd_params;
+	int is_ambiguous = 0;
+	int pos_params = 0;
 
 	if (!req)  /* error parsing the request JSON text */
 		return build_err_resp(JSONRPC_PARSE_ERR_CODE,
@@ -309,22 +347,25 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl
 			return build_err_resp(JSONRPC_INVAL_REQ_CODE,
 					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
 
-		/* positional parameters are valid for JSON-RPC but
-		 * Opensips will only support named parameters */
-		if (req_params->type & cJSON_Array)
-			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
-					MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
-					MI_SSTR(ERR_DET_POSIT_PARAMS_S));
+		pos_params = req_params->type & cJSON_Array;
 	}
+
+	cmd_params.item = req_params;
 
 	cmd = lookup_mi_cmd(req_method->valuestring, strlen(req_method->valuestring));
 	if (!cmd)
 		return build_err_resp(JSONRPC_NOT_FOUND_CODE,
 				MI_SSTR(JSONRPC_NOT_FOUND_MSG), NULL, 0);
 
+	if (pos_params && (cmd->flags & MI_NAMED_PARAMS_ONLY))
+		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+				MI_SSTR(ERR_DET_POS_PARAMS_S));
+
 	/* use the correct 'recipe' of the command based
 	 * on the received parameters */
-	cmd_recipe = get_cmd_recipe(cmd->recipes, req_params, &is_ambiguous);
+	cmd_recipe = get_cmd_recipe(cmd->recipes, req_params, pos_params,
+					&is_ambiguous);
 	if (!cmd_recipe)
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), NULL, 0);
@@ -333,7 +374,9 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 				MI_SSTR(ERR_DET_AMBIG_CALL_S));
 
-	resp = cmd_recipe->cmd(req_params, async_hdl);
+	cmd_params.list = cmd_recipe->params;
+
+	resp = cmd_recipe->cmd(&cmd_params, async_hdl);
 
 	if (resp == NULL)
 		return build_err_resp(JSONRPC_SERVER_ERR_CODE,
@@ -445,13 +488,13 @@ void free_mi_response_str(char *resp_str)
 #define MI_NO_HELP "not available for this command"
 #define MI_MODULE_STR "by \"%.*s\" module"
 
-mi_response_t *w_mi_help(const mi_param_t *params,
+mi_response_t *w_mi_help(const mi_params_t *params,
 							struct mi_handler *async_hdl)
 {
 	return init_mi_result_string(MI_SSTR(MI_HELP_STR));
 }
 
-mi_response_t *w_mi_help_1(const mi_param_t *params,
+mi_response_t *w_mi_help_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;

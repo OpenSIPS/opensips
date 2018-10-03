@@ -71,9 +71,9 @@ static int tcp_conn_init(struct tcp_connection* c);
 static void tcp_conn_clean(struct tcp_connection* c);
 static void tcp_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
-static mi_response_t *w_tcp_trace_mi(const mi_param_t *params,
+static mi_response_t *w_tcp_trace_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static mi_response_t *w_tcp_trace_mi_1(const mi_param_t *params,
+static mi_response_t *w_tcp_trace_mi_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 #define TRACE_PROTO "proto_hep"
@@ -1201,7 +1201,7 @@ error:
 	return -1;
 }
 
-static mi_response_t *w_tcp_trace_mi(const mi_param_t *params,
+static mi_response_t *w_tcp_trace_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -1220,7 +1220,7 @@ static mi_response_t *w_tcp_trace_mi(const mi_param_t *params,
 	return resp;
 }
 
-static mi_response_t *w_tcp_trace_mi_1(const mi_param_t *params,
+static mi_response_t *w_tcp_trace_mi_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str new_mode;

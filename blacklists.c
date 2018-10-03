@@ -49,7 +49,7 @@ static unsigned int used_heads;
 static int bl_ctx_idx = -1;
 
 static void delete_expired_routine(unsigned int ticks, void *param);
-static mi_response_t *mi_print_blacklists(const mi_param_t *params,
+static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 											struct mi_handler *async_hdl);
 
 
@@ -631,7 +631,7 @@ int check_against_blacklist(struct ip_addr *ip, str *text,
 
 
 
-static mi_response_t *mi_print_blacklists(const mi_param_t *params,
+static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 											struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;

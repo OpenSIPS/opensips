@@ -1939,7 +1939,7 @@ int tcp_has_async_write(void)
 
 /***************************** MI functions **********************************/
 
-mi_response_t *mi_tcp_list_conns(const mi_param_t *params,
+mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 						struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;

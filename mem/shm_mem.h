@@ -632,7 +632,7 @@ inline static void shm_info(struct mem_info* mi)
 /*
  * performs a full shared memory pool scan for any corruptions or inconsistencies
  */
-mi_response_t *mi_shm_check(const mi_param_t *params,
+mi_response_t *mi_shm_check(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 #ifdef STATISTICS
