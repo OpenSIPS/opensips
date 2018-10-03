@@ -1041,18 +1041,19 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			else ret = 0;
 			break;
 		case MATCH_OP:
-			if ( s2==NULL || s1->len == 0 ) return 0;
+			if ( s2==NULL ) return 0;
 			make_nt_copy( &cp1, s1);
 			ret=(regexec((regex_t*)s2, cp1.s, 0, 0, 0)==0);
 			break;
 		case NOTMATCH_OP:
-			if ( s2==NULL || s1->len == 0 ) return 0;
+			if ( s2==NULL ) return 1;
 			make_nt_copy( &cp1, s1);
 			ret=(regexec((regex_t*)s2, cp1.s, 0, 0, 0)!=0);
 			break;
 		case MATCHD_OP:
 		case NOTMATCHD_OP:
-			if ( s2->s==NULL || s1->len == 0 ) return 0;
+			if ( s2==NULL || s2->s==NULL)
+				return (op == MATCHD_OP? 0 : 1);
 			re=(regex_t*)pkg_malloc(sizeof(regex_t));
 			if (re==0) {
 				LM_CRIT("pkg memory allocation failure\n");
@@ -1256,8 +1257,8 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		}
 		if(rvalue.flags&PV_VAL_NULL || lvalue.flags&PV_VAL_NULL ) {
 			if (rvalue.flags&PV_VAL_NULL && lvalue.flags&PV_VAL_NULL )
-				return (op==EQUAL_OP)?1:0;
-			return (op==DIFF_OP)?1:0;
+				return (op==EQUAL_OP || op==MATCH_OP || op==MATCHD_OP)?1:0;
+			return (op==DIFF_OP || op==NOTMATCH_OP || op==NOTMATCHD_OP)?1:0;
 		}
 
 		if(op==MATCH_OP||op==NOTMATCH_OP)
