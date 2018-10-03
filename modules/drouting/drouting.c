@@ -1298,14 +1298,14 @@ static int dr_init(void)
 
 		if( shm_str_dup( &( head_db_end->db_url ),
 					&(it_head_config->db_url))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url");
+			LM_CRIT("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
 
 		if( shm_str_dup( &( head_db_end->partition ),
 					&(it_head_config->partition))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url");
+			LM_CRIT("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1315,7 +1315,7 @@ static int dr_init(void)
 			head_db_end->drd_table.len = drd_table.len;
 		}else if( shm_str_dup( &( head_db_end->drd_table ),
 					&(it_head_config->drd_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url");
+			LM_CRIT("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1325,7 +1325,7 @@ static int dr_init(void)
 			head_db_end->drr_table.len = drr_table.len;
 		}else if( shm_str_dup( &( head_db_end->drr_table ),
 					&(it_head_config->drr_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url");
+			LM_CRIT("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1335,7 +1335,7 @@ static int dr_init(void)
 			head_db_end->drc_table.len = drc_table.len;
 		} else if( shm_str_dup( &( head_db_end->drc_table ),
 					&(it_head_config->drc_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url");
+			LM_CRIT("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1344,7 +1344,7 @@ static int dr_init(void)
 			head_db_end->drg_table.len = drg_table.len;
 		} else if( shm_str_dup( &( head_db_end->drg_table ),
 					&(it_head_config->drg_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url");
+			LM_CRIT("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1490,51 +1490,51 @@ static int dr_init(void)
 
 		if( (*head_db_end->db_con =
 					head_db_end->db_funcs.init(&head_db_end->db_url)) == 0) {
-			LM_ERR("Cand't load db ulr %.*s", head_db_end->db_url.len,
-					head_db_end->db_url.s);
+			LM_ERR("failed to connect to db url <%.*s>\n",
+				head_db_end->db_url.len, head_db_end->db_url.s);
 			return -1;
 		}
 
 		if (!DB_CAPABILITY( head_db_end->db_funcs, DB_CAP_QUERY)) {
 			LM_CRIT( "database modules does not "
-					"provide QUERY functions needed by DRouting module\n");
+				"provide QUERY functions needed by DRouting module\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
 
 		if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
 					&head_db_end->drd_table, DRD_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_gateways table \'%.*s\',"
-					" for partition \'%.*s\'>\n", head_db_end->drd_table.len,
-					head_db_end->drd_table.s, head_db_end->partition.len,
-					head_db_end->partition.s);
+			LM_ERR("error during table version check<dr_gateways "
+				"table \'%.*s\', for partition \'%.*s\'>\n",
+				head_db_end->drd_table.len, head_db_end->drd_table.s,
+				head_db_end->partition.len, head_db_end->partition.s);
 			return -1;
 		}
 
 		if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
 					&head_db_end->drr_table, DRR_TABLE_VER) < 0) {
 			LM_ERR("error during table version check<dr_rules table \'%.*s\',"
-					" for partition \'%.*s\'>\n", head_db_end->drr_table.len,
-					head_db_end->drr_table.s, head_db_end->partition.len,
-					head_db_end->partition.s);
+				" for partition \'%.*s\'>\n", head_db_end->drr_table.len,
+				head_db_end->drr_table.s, head_db_end->partition.len,
+				head_db_end->partition.s);
 			return -1;
 		}
 
 		if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
 					&head_db_end->drg_table, DRG_TABLE_VER) < 0) {
 			LM_ERR("error during table version check<dr_groups table \'%.*s\',"
-					" for partition \'%.*s\'>\n", head_db_end->drg_table.len,
-					head_db_end->drg_table.s, head_db_end->partition.len,
-					head_db_end->partition.s);
+				" for partition \'%.*s\'>\n", head_db_end->drg_table.len,
+				head_db_end->drg_table.s, head_db_end->partition.len,
+				head_db_end->partition.s);
 			return -1;
 		}
 
 		if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
 					&head_db_end->drc_table, DRC_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_carriers table \'%.*s\',"
-					" for partition \'%.*s\'>\n", head_db_end->drc_table.len,
-					head_db_end->drc_table.s, head_db_end->partition.len,
-					head_db_end->partition.s);
+			LM_ERR("error during table version check<dr_carriers "
+				"table \'%.*s\', for partition \'%.*s\'>\n",
+				head_db_end->drc_table.len, head_db_end->drc_table.s,
+				head_db_end->partition.len, head_db_end->partition.s);
 			return -1;
 		}
 
