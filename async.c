@@ -95,7 +95,6 @@ int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 
 int async_fd_resume(int fd, void *param)
 {
-	int local_fd; /* reactor_del_reader clears the fd - we need to back it up */
 	async_ctx *ctx = (async_ctx *)param;
 	int ret;
 
@@ -120,16 +119,16 @@ int async_fd_resume(int fd, void *param)
 
 		/* remove the old fd from the reactor */
 		reactor_del_reader(fd, -1, IO_FD_CLOSING);
-		local_fd=ret;
+		fd=ret;
 
 		/* insert the new fd inside the reactor */
-		if (reactor_add_reader(local_fd,F_FD_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0 ) {
+		if (reactor_add_reader(fd,F_FD_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0 ) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
 				async_status = ASYNC_DONE;
-				ret = ((async_resume_fd*)ctx->resume_f)(local_fd,ctx->resume_param);
+				ret = ((async_resume_fd*)ctx->resume_f)(fd,ctx->resume_param);
 				if (async_status == ASYNC_CHANGE_FD)
-					local_fd=ret;
+					fd=ret;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 			goto done;
 		} else {
@@ -140,12 +139,11 @@ int async_fd_resume(int fd, void *param)
 	}
 
 	/* remove from reactor, we are done */
-	local_fd=fd;
 	reactor_del_reader(fd, -1, IO_FD_CLOSING);
 
 done:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
-		close(local_fd);
+		close(fd);
 
 	return 0;
 }
@@ -167,7 +165,6 @@ done:
 
 int async_launch_resume(int fd, void *param)
 {
-	int local_fd; /* reactor_del_reader clears the fd - we need to back it up */
 	struct sip_msg req;
 	async_launch_ctx *ctx = (async_launch_ctx *)param;
 
@@ -202,18 +199,18 @@ int async_launch_resume(int fd, void *param)
 
 		/* remove the old fd from the reactor */
 		reactor_del_reader(fd, -1, IO_FD_CLOSING);
-		local_fd=return_code;
+		fd=return_code;
 
 		/* insert the new fd inside the reactor */
-		if (reactor_add_reader(local_fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
+		if (reactor_add_reader(fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
 		(void*)ctx)<0 ) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
 				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
-					(local_fd, &req, ctx->async.resume_param );
+					(fd, &req, ctx->async.resume_param );
 				if (async_status == ASYNC_CHANGE_FD)
-					local_fd=return_code;
+					fd=return_code;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 			goto run_route;
 		} else {
@@ -224,12 +221,11 @@ int async_launch_resume(int fd, void *param)
 	}
 
 	/* remove from reactor, we are done */
-	local_fd = fd;
 	reactor_del_reader(fd, -1, IO_FD_CLOSING);
 
 run_route:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
-		close(local_fd);
+		close(fd);
 
 	if (ctx->report_route!=-1) {
 		LM_DBG("runinng report route for a launch job\n");
