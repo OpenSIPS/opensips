@@ -31,20 +31,7 @@
 #define URI_MOD_H
 
 #include "../../aaa/aaa.h"
-#include "../../db/db.h"
 #include "../../str.h"
-#include "../../statistics.h"
-
-/*
- * Module parameters variables
- */
-extern str db_table;                  /**< Name of URI table */
-extern str uridb_user_col;            /**< Name of username column in URI table */
-extern str uridb_domain_col;          /**< Name of domain column in URI table */
-extern str uridb_uriuser_col;         /**< Name of uri_user column in URI table */
-extern int use_uri_table;             /**< Whether or not should be uri table used */
-extern int use_domain;                /**< Should does_uri_exist honor the domain part ? */
-
 
 extern int use_sip_uri_host;
 extern aaa_map attrs[];
