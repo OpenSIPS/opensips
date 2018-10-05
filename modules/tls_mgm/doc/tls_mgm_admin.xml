@@ -1332,7 +1332,7 @@ route{
               proxy_challenge("domA.net","0"/*no-qop*/);
               exit;
           };
-          if (!db_check_from()) {
+          if ($au!=$fU) {
               xlog("FROM hdr Cheating attempt in INVITE\n");
               send_reply("403",
                   "That is ugly -- use From=id next time (OB)");
@@ -1390,7 +1390,7 @@ route{
               "0" /* no qop -- some phones can't deal with it */);
           exit;
       };
-      if (!db_check_to()) {
+      if ($au!=$tU) {
           xlog("TO hdr Cheating attempt\n");
           send_reply("403", "That is ugly -- use To=id in REGISTERs");
           exit;

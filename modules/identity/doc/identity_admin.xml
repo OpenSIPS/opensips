@@ -233,7 +233,7 @@ if ($rm=="BYE")
 ### Authentication Service ###
 
 # check whether I am authoritative
-if(!$fu=~".*@mysipdomain.de")
+if($fd!="mysipdomain.de")
 {
     route(1); # forward
     exit;
@@ -245,7 +245,7 @@ if(!proxy_authorize("mysipdomain.de","subscriber"))
     exit;
 }
 
-if (!db_check_from())
+if ($au!=$fU)
 {
     sl_send_reply("403", "Use From=ID");
     exit;

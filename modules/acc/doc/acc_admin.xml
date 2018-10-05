@@ -110,7 +110,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
         exit;
     }
 
-    if (is_method("INVITE") &amp;&amp; !db_check_from()) {
+    if (is_method("INVITE") &amp;&amp; $au!=$fU) {
         xlog("FROM URI != digest username\n");
         sl_send_reply("403","Forbidden");
     }

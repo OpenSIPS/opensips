@@ -75,10 +75,6 @@ loadmodule "mi_fifo.so"
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("mi_fifo", "fifo_mode", 0666)
 
-#### URI module
-loadmodule "uri.so"
-modparam("uri", "use_uri_table", 0)
-
 ifelse(USE_DR_PSTN,`yes',`ifelse(HAVE_INBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',HAVE_OUTBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',)',`')dnl
 ifelse(USE_AUTH,`yes',`define(`DB_NEEDED',`yes')',USE_MULTIDOMAIN,`yes',`define(`DB_NEEDED',`yes')',USE_PRESENCE,`yes',`define(`DB_NEEDED',`yes')',USE_DBACC,`yes',`define(`DB_NEEDED',`yes')',USE_DBUSRLOC,`yes',`define(`DB_NEEDED',`yes')',USE_DIALOG,`yes',`define(`DB_NEEDED',`yes')',USE_DIALPLAN,`yes',`define(`DB_NEEDED',`yes')',USE_DR_MODULE,`yes',`define(`DB_NEEDED',`yes')',)dnl
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')',`')dnl
@@ -298,7 +294,7 @@ ifelse(USE_NAT,`yes',`
 				proxy_challenge("", "0");
 				exit;
 			}
-			if (!db_check_from()) {
+			if ($au!=$fU) {
 				send_reply("403","Forbidden auth ID");
 				exit;
 			}
@@ -376,7 +372,7 @@ ifelse(USE_NAT,`yes',`
 			exit;
 		}
 		
-		if (!db_check_to()) {
+		if ($au!=$tU) {
 			send_reply("403","Forbidden auth ID");
 			exit;
 		}',`')dnl
@@ -433,7 +429,7 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 
 	# do lookup with method filtering
 	if (!lookup("location","m")) {
-		ifelse(USE_AUTH,`yes',`if (!db_does_uri_exist()) {
+		ifelse(USE_AUTH,`yes',`if (!db_does_uri_exist("$ru","subscriber")) {
 			send_reply("420","Bad Extension");
 			exit;
 		}',`')
