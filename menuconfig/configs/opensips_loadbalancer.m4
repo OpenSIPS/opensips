@@ -81,10 +81,6 @@ loadmodule "mi_fifo.so"
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("mi_fifo", "fifo_mode", 0666)
 
-#### URI module
-loadmodule "uri.so"
-modparam("uri", "use_uri_table", 0)
-
 #### MYSQL module
 loadmodule "db_mysql.so"
 
