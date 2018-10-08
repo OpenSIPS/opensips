@@ -73,8 +73,18 @@ extern int async_status;
 typedef int (async_script_start_function)
 	(struct sip_msg *msg, struct action* a , int resume_route);
 
+/* Handles periodic progress (data arrival) on behalf of the contained,
+ * module-specific resume function, which it must also call
+ *
+ * Parameters:
+ *   @fd: file to resume on.  If no descriptor is available,
+ *        provide ASYNC_FD_NONE
+ *   @param: private data, stored by (async_script_start_function)
+ */
 typedef int (async_script_resume_function)
-	(int *fd, void *param);
+	(int fd, void *param);
+#define ASYNC_FD_NONE -1
+#define valid_async_fd(fd) (fd >= 0)
 
 /* internal used functions to start (from script) and
  * to continue (from reactor) async I/O ops */
@@ -89,6 +99,7 @@ int register_async_script_handlers(async_script_start_function *f1,
  * functions exported by modules
  *
  * NOTE: This function may be triggered even without any pending data!
+ *       If this is the case, @fd == ASYNC_FD_NONE
  */
 typedef enum async_ret_code (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);
@@ -115,10 +126,10 @@ typedef int (async_resume_fd)
 int register_async_fd(int fd, async_resume_fd *f, void *param);
 
 /* Resume function for the registered async fd. This is internally called
- * by the reactor via the handle_io() routine
-   Function only for internal usage.
+ * by the reactor via the handle_io() routine.  Function only for internal
+ * usage.  @fd is always valid.
  */
-int async_fd_resume(int *fd, void *param);
+int async_fd_resume(int fd, void *param);
 
 
 
@@ -127,7 +138,8 @@ int async_fd_resume(int *fd, void *param);
 int async_script_launch(struct sip_msg *msg, struct action* a,
 		int report_route);
 
-int async_launch_resume(int *fd, void *param);
+/* @fd is always valid */
+int async_launch_resume(int fd, void *param);
 
 
 #endif
