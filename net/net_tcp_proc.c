@@ -119,7 +119,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
-			async_resume_f( &fm->fd, fm->data);
+			async_resume_f( fm->fd, fm->data);
 			return 0;
 		case F_TCPMAIN:
 again:
