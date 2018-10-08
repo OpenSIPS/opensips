@@ -194,9 +194,61 @@ while( $json(ar1[$var(i)]) )
 		</programlisting>
 		</example>
 
+		</section>
 
+		<section>
+		<title>Traversal</title>
+		<para>
+			Dynamic traversal of a JSON object or array is possible by using a
+			for each statement, similarly to the indexed pseudo variables iteration.
+			However, note that indexing the $json variable is not supported in
+			any other statements (this refers to indexing the entire variable
+			and not to the indexes accepted in the grammar of the <emphasis>id</emphasis>).
+		</para>
+		<para>
+			In order to explicitly iterate over a JSON object keys or values, you can use the
+			<emphasis>.keys</emphasis> or <emphasis>.values</emphasis> suffix for the path
+			specified in the <emphasis>id</emphasis>.
+		</para>
 
+		<example>
+		<title>iteration over $json object keys</title>
+		<programlisting format="linespecific">
+...
+$json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
+for ($var(k) in $(json(foo.keys)[*]))
+    xlog("$var(k) ");
+...
+		</programlisting>
+		</example>
 
+		<example>
+		<title>iteration over $json object values</title>
+		<programlisting format="linespecific">
+...
+$json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
+for ($var(v) in $(json(foo.values)[*]))
+    xlog("$var(v) ");
+
+# equivalent to:
+
+$json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
+for ($var(v) in $(json(foo)[*]))
+    xlog("$var(v) ");
+...
+		</programlisting>
+		</example>
+
+		<example>
+		<title>iteration over $json array values</title>
+		<programlisting format="linespecific">
+...
+$json(foo) := "[1, 2, 3]";
+for ($var(v) in $(json(foo)[*]))
+    xlog("$var(v) ");
+...
+		</programlisting>
+		</example>
 		</section>
 
 		<section>

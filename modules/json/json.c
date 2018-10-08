@@ -65,6 +65,13 @@ typedef struct _pv_json
 
 }pv_json_t;
 
+typedef struct json_object_iterator  json_iter_t;
+
+enum {
+	ITER_NONE,
+	ITER_KEYS,
+	ITER_VALUES
+};
 
 typedef struct _tag_list
 {
@@ -78,13 +85,15 @@ typedef struct _tag_list
 
 }json_tag;
 
-
 typedef struct _json_name
 {
 	str name;
 	json_tag * tags;
 	json_tag ** end;
 
+	int iter_type;
+	int iter_prev_idx;
+	json_iter_t iter;
 
 }json_name;
 
@@ -102,8 +111,9 @@ static int pv_get_json_pretty(struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_ext(struct sip_msg*,  pv_param_t*, pv_value_t* , int flags);
 static int json_bind(struct sip_msg* , char* , char* );
 static void print_tag_list( json_tag *, json_tag *, int);
-static json_t * get_object(pv_json_t * , pv_param_t* ,  json_tag **, int  );
+static json_t *get_object(pv_json_t *, pv_param_t *, json_tag **, int, int);
 static int pv_parse_json_name (pv_spec_p , str *);
+static int pv_parse_json_index(pv_spec_p sp, str *in);
 static pv_json_t * get_pv_json (pv_param_t* );
 static int pv_add_json ( pv_param_t* , json_t * );
 static int expand_tag_list( struct sip_msg*, json_tag *);
@@ -121,7 +131,7 @@ static cmd_export_t cmds[]={
 
 static pv_export_t mod_items[] = {
 	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
-		pv_set_json, pv_parse_json_name, 0, 0, 0},
+		pv_set_json, pv_parse_json_name, pv_parse_json_index, 0, 0},
 	{ {"json_compact",  sizeof("json_compact")-1}, PVT_JSON, pv_get_json_compact,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ {"json_pretty",  sizeof("json_pretty")-1}, PVT_JSON, pv_get_json_pretty,
@@ -171,7 +181,7 @@ int json_bind(struct sip_msg* msg, char* s1, char* s2)
 		return -1;
 	}
 
-	obj = get_object(var, pvp, NULL, 1);
+	obj = get_object(var, pvp, NULL, 0, 1);
 
 
 	if( obj == NULL )
@@ -271,20 +281,16 @@ pv_json_t * get_pv_json (pv_param_t* pvp)
 
 
 
-json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
-			int report_err )
+json_t *get_object(pv_json_t *var, pv_param_t *pvp, json_tag **tag,
+				int get_prev_obj, int report_err)
 {
 	json_name * id = (json_name *) pvp->pvn.u.dname;
-
 	json_t * cur_obj, * last_obj = 0;
 	json_tag * cur_tag, * last_tag = 0;
 	int poz;
 
-
-
 	cur_tag = id->tags;
 	cur_obj = var->data;
-
 
 	while( cur_tag  )
 	{
@@ -301,7 +307,7 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 				goto error;
 
 			if (!json_object_object_get_ex( cur_obj,buff, &cur_obj ) &&
-				tag == NULL)
+				!get_prev_obj)
 				goto error;
 		}
 
@@ -331,7 +337,7 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 
 			cur_obj = json_object_array_get_idx( cur_obj, poz );
 
-			if( cur_obj == NULL && tag == NULL)
+			if( cur_obj == NULL && !get_prev_obj)
 				goto error;
 
 		}
@@ -339,15 +345,13 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 		cur_tag = cur_tag->next;
 	}
 
-	if( tag == NULL )
-	{
-		return cur_obj;
-	}
-	else
-	{
+	if (tag)
 		*tag = last_tag;
+
+	if (get_prev_obj)
 		return last_obj;
-	}
+	else
+		return cur_obj;
 
 error:
 
@@ -381,6 +385,53 @@ int pv_get_json_pretty(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_PRETTY);
 }
 
+int pv_json_iterate(json_t **obj, pv_param_t *pvp, json_name *id, pv_value_t *val)
+{
+	json_iter_t iter_end;
+
+	if (json_object_is_type(*obj, json_type_object)) {
+
+		if (pvp->pvi.u.ival != id->iter_prev_idx + 1) {
+			id->iter_prev_idx = 0;
+			id->iter = json_object_iter_begin(*obj);
+		} else
+			id->iter_prev_idx++;
+
+		iter_end = json_object_iter_end(*obj);
+		if (json_object_iter_equal(&id->iter, &iter_end))
+			return pv_get_null(NULL, pvp, val);
+
+		if (id->iter_type == ITER_KEYS) {
+			val->flags = PV_VAL_STR;
+			val->rs.s = (char *)json_object_iter_peek_name(&id->iter);
+			val->rs.len = strlen(val->rs.s);
+		} else
+			*obj = json_object_iter_peek_value(&id->iter);
+
+		json_object_iter_next(&id->iter);	
+
+	} else if (json_object_is_type(*obj, json_type_array)) {
+
+		if (id->iter_type != ITER_NONE) {
+			LM_DBG("Invalid object-like iteration for arrays\n");
+			return -1;
+		}
+
+		if (pvp->pvi.u.ival == json_object_array_length(*obj)) {
+			id->iter_prev_idx = 0;
+			return pv_get_null(NULL, pvp, val);
+		}
+
+		*obj = json_object_array_get_idx(*obj, pvp->pvi.u.ival);
+
+	} else {
+		LM_DBG("Can only iterate over arrays or objects\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int flags)
 {
 
@@ -388,7 +439,6 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 	json_t * obj;
 	json_name * id = (json_name *) pvp->pvn.u.dname;
 	UNUSED(id);
-
 
 	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
 	{
@@ -407,11 +457,27 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 		return pv_get_null( msg, pvp, val);
 	}
 
-	obj = get_object(var, pvp, NULL, 0);
+	obj = get_object(var, pvp, NULL, 0, 0);
+
 	memset(val, 0, sizeof(pv_value_t));
 
 	if( obj == NULL )
 		return pv_get_null( msg, pvp, val);
+
+	if (pvp->pvi.type == PV_IDX_INT) {
+		if (pv_json_iterate(&obj, pvp, id, val) < 0) {
+			LM_DBG("Failed to iterate\n");
+			return pv_get_null(msg, pvp, val);
+		}
+
+		if (val->flags == PV_VAL_STR || val->flags == PV_VAL_NULL)
+			/* val is set */
+			return 0;
+		/* else we got an object */
+	} else if (pvp->pvi.type == PV_IDX_ALL) {
+		LM_ERR("\"[*]\" index only supported in for each statement\n");
+		return pv_get_null(msg, pvp, val);
+	}
 
 	if( json_object_is_type(obj, json_type_int) )
 	{
@@ -491,7 +557,7 @@ int pv_add_json ( pv_param_t* pvp, json_t * obj )
 	}
 
 
-	dest = get_object(var, pvp, &tag, 1);
+	dest = get_object(var, pvp, &tag, 1, 1);
 
 	if( dest == NULL )
 	{
@@ -635,11 +701,14 @@ enum
 	ST_TEST = 1,
 	ST_KEY = 2,
 	ST_IDX = 3,
-	ST_ERR = 4
+	ST_ITER = 4,
+	ST_ERR = 5
 };
 
-int next[4][256];
-int ignore[4][256];
+#define NO_VALID_STATES 5
+
+int next[NO_VALID_STATES][256];
+int ignore[NO_VALID_STATES][256];
 int inited;
 
 int expand_tag_list( struct sip_msg* msg,json_tag * start)
@@ -748,6 +817,8 @@ int get_value(int state, json_name * id, char *start, char * cur)
 	char * i;
 	int empty;
 	str in;
+	static str keys_s = str_init("keys");
+	static str values_s = str_init("values");
 
 	in.s = start;
 	in.len = cur-start;
@@ -773,6 +844,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 
 			memset(node,0,sizeof(json_tag));
 			node->type = TAG_KEY;
+
 			*id->end = node;
 			id->end = &node->next;
 
@@ -843,8 +915,17 @@ int get_value(int state, json_name * id, char *start, char * cur)
 			}
 
 			break;
+		case ST_ITER:
+			if (!str_strcmp(&keys_s, &in))
+				id->iter_type = ITER_KEYS;
+			else if (!str_strcmp(&values_s, &in))
+				id->iter_type = ITER_VALUES;
+			else {
+				LM_ERR("Bad iterator type\n");
+				return -1;
+			}
 
-
+			break;
 	}
 	return 0;
 }
@@ -854,26 +935,31 @@ void init_matrix(void)
 {
 	int i,j;
 
-
 	/* point each state to itself */
-	for( i=0; i<4; i++)
+	for( i=0; i<NO_VALID_STATES; i++)
 		for( j=0; j<256; j++)
 			next[i][j] = i;
 
 	next[ST_NAME][(unsigned int)'/'] = ST_TEST;
 	next[ST_NAME][(unsigned int)'['] = ST_TEST;
+	next[ST_NAME][(unsigned int)'.'] = ST_TEST;
 
 	for( j=0; j<256; j++)
 		next[ST_TEST][j] = ST_ERR;
 
 	next[ST_TEST][(unsigned int)'['] = ST_IDX;
 	next[ST_TEST][(unsigned int)'/'] = ST_KEY;
+	next[ST_TEST][(unsigned int)'.'] = ST_ITER;
 
 	next[ST_IDX][(unsigned int)']'] = ST_TEST;
 
-
 	next[ST_KEY][(unsigned int)'['] = ST_TEST;
 	next[ST_KEY][(unsigned int)'/'] = ST_TEST;
+	next[ST_KEY][(unsigned int)'.'] = ST_TEST;
+
+	next[ST_ITER][(unsigned int)'['] = ST_ERR;
+	next[ST_ITER][(unsigned int)'/'] = ST_ERR;
+	next[ST_ITER][(unsigned int)'.'] = ST_ERR;
 
 	/* set chars that will not be consumed */
 	for( j=0; j<256; j++)
@@ -887,8 +973,9 @@ void init_matrix(void)
 	ignore[ST_TEST][(unsigned int)'['] = 0;
 	ignore[ST_KEY][(unsigned int)'['] = 1;
 
-
-
+	ignore[ST_NAME][(unsigned int)'.'] = 1;
+	ignore[ST_TEST][(unsigned int)'.'] = 0;
+	ignore[ST_KEY][(unsigned int)'.'] = 1;
 }
 
 
@@ -909,8 +996,8 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 		LM_ERR("Out of memory\n");
 		return -1;
 	}
+	memset(id, 0, sizeof *id);
 
-	id->tags = NULL;
 	id->end = &id->tags;
 
 
@@ -962,14 +1049,22 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 	return 0;
 }
 
+static int pv_parse_json_index(pv_spec_p sp, str *in)
+{
+	if (in == NULL || in->s == NULL || sp == NULL)
+		return -1;
 
-
-
-
+	if (*in->s == '*' && in->len == 1) {
+		sp->pvp.pvi.type = PV_IDX_ALL;
+		return 0;
+	} else {
+		LM_ERR("The only index supported is \"[*]\" in for each statements\n");
+		return -1;
+	}
+}
 
 int mod_init(void)
 {
-
 	return 0;
 }
 
@@ -982,4 +1077,3 @@ void mod_destroy(void)
 {
 
 }
-
