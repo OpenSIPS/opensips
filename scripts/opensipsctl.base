@@ -342,6 +342,27 @@ DIALPLAN_SUBST_EXP_COLUMN=subst_exp
 DIALPLAN_REPL_EXP_COLUMN=repl_exp
 DIALPLAN_ATTRS_COLUMN=attrs
 
+# tls_mgm tables  
+if [ -z "$TLS_MGM_TABLE" ] ; then
+        TLS_MGM_TABLE=tls_mgm
+fi
+
+TLS_MGM_MATCH_IP_ADDRESS_COLUMN=match_ip_address
+TLS_MGM_MATCH_SIP_DOMAIN_COLUMN=match_sip_domain
+TLS_MGM_TYPE_COLUMN=type
+TLS_MGM_METHOD_COLUMN=method
+TLS_MGM_VERIFY_CERT_COLUMN=verify_cert
+TLS_MGM_REQUIRE_CERT_COLUMN=require_cert
+TLS_MGM_CERTIFICATE_COLUMN=certificate
+TLS_MGM_PRIVATE_KEY_COLUMN=private_key
+TLS_MGM_CRL_CHECK_ALL_COLUMN=crl_check_all
+TLS_MGM_CRL_DIR_COLUMN=crl_dir
+TLS_MGM_CA_LIST_COLUMN=ca_list
+TLS_MGM_CA_DIR_COLUMN=ca_dir
+TLS_MGM_CIPHER_LIST_COLUMN=cipher_list
+TLS_MGM_DH_PARAMS_COLUMN=dh_params
+TLS_MGM_EC_CURVE_COLUMN=ec_curve
+
 #registrant tables
 if [ -z "$REGISTRANT_TABLE" ] ; then
 	REGISTRANT_TABLE=registrant
@@ -528,6 +549,27 @@ cat <<EOF
  dialplan rm ....................... removes the entire dialplan table
  dialplan rmdpid <dpid> ............ removes all the gived dpid entries
  dialplan rmrule <dpid> <prio> ..... removes all the gived dpid/prio entries
+EOF
+}
+
+USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_tls_mgm"
+
+usage_tls_mgm() {
+        echo
+        mecho " -- command 'tls_mgm' - manage tls_mgm certificate"
+        echo
+cat <<EOF
+ tls_mgm show <domain> .............. show tls_mgm in memeory
+ tls_mgm showdb        .............. show in db tls_mgm tables
+ tls_mgm reload ................... reload tls_mgm tables
+ tls_mgm add <domain> <certificate> <private_key> <ca_list>
+             <method> <ca_dir> <verify_cert> <require_cert>
+             <crl_check_all> <crl_dir> <match_ip_address> <match_sip_domain>
+             <type> <cipher_list> <dh_params> <ec_curve>
+                .................... add a rule
+ tls_mgm rm ....................... removes the entire tls_mgm table
+ tls_mgm rm <domain> ....................... removes per domain tls_mgm table
+ NOTE: min 6 first parameters
 EOF
 }
 

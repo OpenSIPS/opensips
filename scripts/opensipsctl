@@ -6,7 +6,7 @@
 #
 #===================================================================
 
-PATH=$PATH:/usr/local/sbin/
+PATH=$PATH:/usr/sbin//
 
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
@@ -18,8 +18,8 @@ else
 	if [ -f /etc/opensips/opensipsctlrc ]; then
 		. /etc/opensips/opensipsctlrc
 	fi
-	if [ -f /usr/local/etc/opensips/opensipsctlrc ]; then
-		. /usr/local/etc/opensips/opensipsctlrc
+	if [ -f /usr/etc/opensips//opensipsctlrc ]; then
+		. /usr/etc/opensips//opensipsctlrc
 	fi
 	if [ -f ~/.opensipsctlrc ]; then
 		. ~/.opensipsctlrc
@@ -39,7 +39,7 @@ if [ -z $SHELL_TESTED ] && [ -z $NOHLPRINT ] ; then
 	if [ -x /bin/bash ]; then
 		# bash is available
 		export SHELL_TESTED=yes
-		exec /bin/bash "$0" "$@"
+		exec /bin/bash -x "$0" "$@"
 	else
 		NOHLPRINT=yes
 	fi
@@ -50,7 +50,7 @@ fi
 ### force values for variables in this section
 # you better set the variables in ~/.opensipsctlrc
 if [ -z $ETCDIR ] ; then
-	ETCDIR="/usr/local/etc/opensips"
+	ETCDIR="/usr/etc/opensips/"
 else
 	# Fix relative paths
 	[ "${ETCDIR:0:1}" != "/" ] && ETCDIR=$PWD/$ETCDIR
@@ -64,7 +64,7 @@ if [ -z $MYDIR ] ; then
 fi
 
 if [ -z $MYLIBDIR ] ; then
-	MYLIBDIR="/usr/local/lib/opensips/opensipsctl"
+	MYLIBDIR="/usr/lib64/opensips/opensipsctl"
 	if [ ! -d $MYLIBDIR ]; then
 		MYLIBDIR=$MYDIR
 	fi
@@ -1716,6 +1716,153 @@ dialplan() {
 
 #
 ##### ------------------------------------------------ #####
+### TLS MGM management
+#
+tls_mgm() {
+        case $1 in
+                reload)
+                        require_ctlengine
+                        $CTLCMD tls_reload
+                        ;;
+                show)
+                        require_ctlengine
+                        $CTLCMD tls_list
+                        ;;
+                showdb)
+                        require_dbengine
+                        QUERY="SELECT * FROM $TLS_MGM_TABLE"
+                        $DBCMD "$QUERY"
+                        ;;
+                add)
+                        require_dbengine
+                        shift
+                        if [ $# -lt 6 ] ; then
+                               merr "too few parameters"
+                               usage_tls_mgm
+                               exit 1
+                        fi
+
+                        TLS_MGM_DOMAIN=$1
+			TLS_MGM_CERTIFICATE="$2"
+                        TLS_MGM_PRIVATE_KEY="$3"
+			TLS_MGM_CA_LIST="$4"
+                        TLS_MGM_METHOD=$5
+                        TLS_MGM_CA_DIR="$6"
+                        if [ -z $TLS_MGM_VERIFY_CERT ]; then
+			    TLS_MGM_VERIFY_CERT=0	
+			else				
+			    TLS_MGM_VERIFY_CERT=$7
+			fi
+			if [ -z $TLS_MGM_REQUIRE_CERT ]; then
+				TLS_MGM_REQUIRE_CERT=0
+			else
+                                TLS_MGM_REQUIRE_CERT=$8
+			fi
+			if [ -z $TLS_MGM_CRL_CHECK_ALL ]; then
+				TLS_MGM_CRL_CHECK_ALL=0
+			else
+                        	TLS_MGM_CRL_CHECK_ALL=$9
+			fi
+			if [ -z $TLS_MGM_CRL_DIR ]; then
+				TLS_MGM_CRL_DIR=""
+			else
+                        	TLS_MGM_CRL_DIR=$10
+			fi
+			if [ -z $TLS_MGM_MATCH_IP_ADDRESS ]; then
+				TLS_MGM_MATCH_IP_ADDRESS='127.0.0.1:5160'
+			else	
+                              TLS_MGM_MATCH_IP_ADDRESS=$11
+		        fi
+		  	if [ -z $TLS_MGM_MATCH_SIP_DOMAIN ]; then
+				TLS_MGM_MATCH_SIP_DOMAIN='127.0.0.1:5160'
+			else
+                        	TLS_MGM_MATCH_SIP_DOMAIN=$12
+			fi
+			if [ -z $TLS_MGM_TYPE ]; then
+				TLS_MGM_TYPE=1
+			else
+                        	TLS_MGM_TYPE=$13
+			fi
+			if [ -z $TLS_MGM_CIPHER_LIST ]; then
+				TLS_MGM_CIPHER_LIST=""
+			else
+                        	TLS_MGM_CIPHER_LIST=$14
+			fi
+			if [ -z $TLS_MGM_DH_PARAMS ]; then
+				TLS_MGM_DH_PARAMS=""
+			else
+				TLS_MGM_DH_PARAMS=$(cat $15)
+			fi
+			if [ -z $TLS_MGM_EC_CURVE ]; then
+				TLS_MGM_EC_CURVE=""
+			else
+                        	TLS_MGM_EC_CURVE=$16
+			fi
+
+			case "$DBENGINE" in
+				PGSQL|pgsql|postgres|postgresql|POSTGRESQL)
+				  minfo "$TLS_MGM_DOMAIN $TLS_MGM_CERTIFICATE $TLS_MGM_PRIVATE_KEY $TLS_MGM_CA_LIST $TLS_MGM_CA_DIR $TLS_MGM_METHOD"
+			          QUERY="insert into $TLS_MGM_TABLE ($DO_DOMAIN_COLUMN, $TLS_MGM_MATCH_IP_ADDRESS_COLUMN, $TLS_MGM_MATCH_SIP_DOMAIN_COLUMN, \
+                                                     $TLS_MGM_TYPE_COLUMN, $TLS_MGM_METHOD_COLUMN, $TLS_MGM_VERIFY_CERT_COLUMN, $TLS_MGM_REQUIRE_CERT_COLUMN, \
+                                                     $TLS_MGM_CERTIFICATE_COLUMN, $TLS_MGM_PRIVATE_KEY_COLUMN, $TLS_MGM_CRL_CHECK_ALL_COLUMN, $TLS_MGM_CRL_DIR_COLUMN, \
+                                                     $TLS_MGM_CA_LIST_COLUMN, $TLS_MGM_CA_DIR_COLUMN, $TLS_MGM_CIPHER_LIST_COLUMN, $TLS_MGM_DH_PARAMS_COLUMN, \
+						     $TLS_MGM_EC_CURVE_COLUMN) \
+                                                     VALUES('$TLS_MGM_DOMAIN', '$TLS_MGM_MATCH_IP_ADDRESS', '$TLS_MGM_MATCH_SIP_DOMAIN', '$TLS_MGM_TYPE', \
+                                                     '$TLS_MGM_METHOD', '$TLS_MGM_VERIFY_CERT', '$TLS_MGM_REQUIRE_CERT', \
+                                                     '$(cat $TLS_MGM_CERTIFICATE)', '$(cat $TLS_MGM_PRIVATE_KEY)', '$TLS_MGM_CRL_CHECK_ALL', \
+                                                     '$TLS_MGM_CRL_DIR', '$(cat $TLS_MGM_CA_LIST)', '$TLS_MGM_CA_DIR', '$TLS_MGM_CIPHER_LIST', \
+                                                      '$TLS_MGM_DH_PARAMS', '$TLS_MGM_EC_CURVE');"
+                               ;;
+
+		               *)
+                                 QUERY="insert into $TLS_MGM_TABLE ($DO_DOMAIN_COLUMN, $TLS_MGM_MATCH_IP_ADDRESS_COLUMN, $TLS_MGM_MATCH_SIP_DOMAIN_COLUMN,\
+                                                           $TLS_MGM_TYPE_COLUMN, $TLS_MGM_METHOD_COLUMN, $TLS_MGM_VERIFY_CERT_COLUMN, $TLS_MGM_REQUIRE_CERT_COLUMN,\
+                                                           $TLS_MGM_CERTIFICATE_COLUMN, $TLS_MGM_PRIVATE_KEY_COLUMN, $TLS_MGM_CRL_CHECK_ALL_COLUMN, $TLS_MGM_CRL_DIR_COLUMN,\
+                                                           $TLS_MGM_CA_LIST_COLUMN, $TLS_MGM_CIPHER_LIST_COLUMN, $TLS_MGM_DH_PARAMS_COLUMN, $TLS_MGM_EC_CURVE_COLUMN)\
+                                                           VALUES('$TLS_MGM_DOMAIN', '$TLS_MGM_MATCH_IP_ADDRESS', '$TLS_MGM_MATCH_SIP_DOMAIN', '$TLS_MGM_TYPE',\
+                                                           '$TLS_MGM_METHOD', '$TLS_MGM_VERIFY_CERT', '$TLS_MGM_VERIFY_CERT', '$TLS_MGM_REQUIRE_CERT',\
+                                                           LOAD_FILE('$TLS_MGM_CERTIFICATE'), LOAD_FILE('$TLS_MGM_PRIVATE_KEY'), '$TLS_MGM_CRL_CHECK_ALL',\
+                                                           '$TLS_MGM_CRL_DIR', LOAD_FILE('$TLS_MGM_CA_LIST'), '$TLS_MGM_CA_DIR', '$TLS_MGM_CIPHER_LIST',\
+                                                           LOAD_FILE('$TLS_MGM_DH_PARAMS'), '$TLS_MGM_EC_CURVE');"
+		              ;;
+			esac
+                        
+			minfo "$QUERY"
+                        $DBCMD "$QUERY"
+                        if [ $? -ne 0 ] ; then
+                                merr "tls_mgm - SQL Error"
+                                exit 1
+                        fi
+                        minfo "execute '$0 tls_reload' to synchronize cache and database"
+                        ;;
+                rm)
+                        require_dbengine
+                        shift
+                        if [ $# -ne 1 ] ; then
+				QUERY="TRUNCATE TABLE $TLS_MGM_TABLE;"
+                         	$DBCMD "$QUERY"
+                                if [ $? -ne 0 ] ; then
+                                   merr "tls_mgm - SQL Error"
+                                   exit 1
+                            fi
+		        else
+                             QUERY="delete from $TLS_MGM_TABLE where domain='$1';"
+                             $DBCMD "$QUERY"
+                             if [ $? -ne 0 ] ; then
+                                merr "tls_mgm - SQL Error"
+                                exit 1
+                             fi
+			fi
+                        minfo "execute '$0 tls_reload' to synchronize cache and database"
+                        ;;
+                *)
+                        usage_tls_mgm
+                        exit 1
+        esac
+}
+
+#
+##### ------------------------------------------------ #####
 ### REGISTRANT management
 #
 registrant() {
@@ -2750,6 +2897,11 @@ case $1 in
 		shift
 		dialplan "$@"
 		;;
+
+	tls_mgm)
+                shift
+                tls_mgm "$@"
+                ;;
 
 	registrant)
 		shift
