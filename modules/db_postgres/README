@@ -16,8 +16,12 @@ db_postgres Module
               1.3.1. exec_query_threshold (integer)
               1.3.2. max_db_queries (integer)
 
-        1.4. Exported Functions
-        1.5. Installation and Running
+        1.4.
+
+              1.4.1. timeout (integer)
+
+        1.5. Exported Functions
+        1.6. Installation and Running
 
    2. Contributors
 
@@ -39,6 +43,7 @@ db_postgres Module
 
    1.1. Set exec_query_threshold parameter
    1.2. Set max_db_queries parameter
+   1.3. Set timeout parameter
 
 Chapter 1. Admin Guide
 
@@ -88,11 +93,30 @@ modparam("db_postgres", "exec_query_threshold", 60000)
 modparam("db_postgres", "max_db_queries", 2)
 ...
 
-1.4. Exported Functions
+1.4.1. timeout (integer)
+
+   The number of seconds the PostgreSQL library waits to connect
+   and query the server. If the connection does not succeed within
+   the given timeout, the connection fails.
+
+   Note:If the timeout is a negative value and connection does not
+   succeed, OpenSIPS will block until the connection becomes back
+   available and gets successfully established. This is the
+   default behavior of the library and is the behavior prior to
+   the adition of this parameter.
+
+   Default value is 5.
+
+   Example 1.3. Set timeout parameter
+...
+modparam("db_postgres", "timeout", 2)
+...
+
+1.5. Exported Functions
 
    NONE
 
-1.5. Installation and Running
+1.6. Installation and Running
 
    Notes about installation and running.
 
@@ -111,8 +135,8 @@ Chapter 2. Contributors
    6. Klaus Darilion 10 6 139 67
    7. Vlad Paiu (@vladpaiu) 8 6 100 34
    8. Liviu Chircu (@liviuchircu) 8 6 15 52
-   9. Ancuta Onofrei 7 1 186 191
-   10. Razvan Crainea (@razvancrainea) 6 4 66 19
+   9. Razvan Crainea (@razvancrainea) 8 5 165 21
+   10. Ancuta Onofrei 7 1 186 191
 
    All remaining contributors: Norman Brandinger, Maksym Sobolyev
    (@sobomax), Andrei Pelinescu-Onciul, Dusan Klinec, Eseanu
@@ -140,10 +164,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)              Sep 2012 - Jun 2018
-   3.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
-   4.  Razvan Crainea (@razvancrainea)          Oct 2011 - Feb 2016
+   1.  Razvan Crainea (@razvancrainea)          Oct 2011 - Oct 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)              Sep 2012 - Jun 2018
+   4.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
    5.  Dusan Klinec                             Dec 2015 - Dec 2015
    6.  Aron Podrigal                            Jul 2015 - Jul 2015
    7.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
@@ -165,11 +189,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Aron Podrigal, Eseanu Marius Cristian
-   (@eseanucristian), Vlad Paiu (@vladpaiu), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Aron
+   Podrigal, Eseanu Marius Cristian (@eseanucristian), Vlad Paiu
+   (@vladpaiu), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
 
    doc copyrights:
 
