@@ -1,0 +1,11 @@
+--- scripts/opensipsctl	2018-10-08 09:26:42.789870749 -0400
++++ /usr/sbin/opensipsctl	2018-10-08 10:44:07.624673142 -0400
+@@ -39,7 +39,7 @@
+ 	if [ -x /bin/bash ]; then
+ 		# bash is available
+ 		export SHELL_TESTED=yes
+-		exec /bin/bash -x "$0" "$@"
++		exec /bin/bash "$0" "$@"
+ 	else
+ 		NOHLPRINT=yes
+ 	fi
