@@ -342,12 +342,12 @@ static int exec_fixup(void** param, int param_no)
 			}
 
 			out_var = *param;
-			if (out_var->type != GPARAM_TYPE_PVE) {
+			if (out_var->type != GPARAM_TYPE_PVS) {
 				LM_ERR("output var must be a single variable\n");
 				return -1;
 			}
 
-			if (out_var->v.pve->spec.setf == NULL) {
+			if (out_var->v.pvs->setf == NULL) {
 				LM_ERR("output var must be writable\n");
 				return -1;
 			}
@@ -359,12 +359,12 @@ static int exec_fixup(void** param, int param_no)
 				return -1;
 			}
 			out_var = *param;
-			if (out_var->type != GPARAM_TYPE_PVE) {
+			if (out_var->type != GPARAM_TYPE_PVS) {
 				LM_ERR("env var must be a single variable\n");
 				return -1;
 			}
 
-			if (out_var->v.pve->spec.type != PVT_AVP) {
+			if (out_var->v.pvs->type != PVT_AVP) {
 				LM_ERR("env var must be avp typed\n");
 				return -1;
 			}
