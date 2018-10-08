@@ -1622,20 +1622,24 @@ static struct rtpe_set * select_rtpe_set(int id_set ){
 static struct rtpe_node *
 select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 {
-	unsigned sum, sumcut, weight_sum;
+	unsigned sum, weight_sum;
 	struct rtpe_node* node;
-	int was_forced;
+	int was_forced, sumcut, found, constant_weight_sum;
 
 	if(!set){
 		LM_ERR("script error -no valid set selected\n");
 		return NULL;
 	}
+
 	/* Most popular case: 1 proxy, nothing to calculate */
 	if (set->rtpe_node_count == 1) {
 		node = set->rn_first;
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks())
 			node->rn_disabled = rtpe_test(node, 1, 0);
-		return node->rn_disabled ? NULL : node;
+		if (node->rn_disabled)
+			return NULL;
+
+		return node;
 	}
 
 	/* XXX Use quick-and-dirty hashing algo */
@@ -1646,17 +1650,22 @@ select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 	was_forced = 0;
 retry:
 	weight_sum = 0;
+	constant_weight_sum = 0;
+	found = 0;
 	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
 
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks()){
 			/* Try to enable if it's time to try. */
 			node->rn_disabled = rtpe_test(node, 1, 0);
 		}
-		if (!node->rn_disabled)
+		constant_weight_sum += node->rn_weight;
+		if (!node->rn_disabled) {
 			weight_sum += node->rn_weight;
+			found = 1;
+		}
 	}
-	if (weight_sum == 0) {
-		/* No proxies? Force all to be redetected, if not yet */
+	if (found == 0) {
+		/* No proxies? Force all to be re-detected, if not yet */
 		if (was_forced)
 			return NULL;
 		was_forced = 1;
@@ -1665,17 +1674,26 @@ retry:
 		}
 		goto retry;
 	}
-	sumcut = sum % weight_sum;
+	sumcut = weight_sum ? sum % constant_weight_sum : -1;
 	/*
-	 * sumcut here lays from 0 to weight_sum-1.
+	 * sumcut here lays from 0 to constant_weight_sum-1.
 	 * Scan proxy list and decrease until appropriate proxy is found.
 	 */
-	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
-		if (node->rn_disabled)
-			continue;
-		if (sumcut < node->rn_weight)
-			goto found;
+	was_forced = 0;
+	for (node=set->rn_first; node!=NULL;) {
+		if (sumcut < (int)node->rn_weight) {
+			if (!node->rn_disabled)
+				goto found;
+			if (was_forced == 0) {
+				/* appropriate proxy is disabled : redistribute on enabled ones */
+				sumcut = weight_sum ? sum %  weight_sum : -1;
+				node = set->rn_first;
+				was_forced = 1;
+				continue;
+			}
+		}
 		sumcut -= node->rn_weight;
+		node = node->rn_next;
 	}
 	/* No node list */
 	return NULL;
@@ -1685,8 +1703,10 @@ found:
 		if (node->rn_disabled)
 			goto retry;
 	}
+
 	return node;
 }
+
 
 static int
 get_extra_id(struct sip_msg* msg, str *id_str) {
