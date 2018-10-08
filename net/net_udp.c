@@ -264,13 +264,13 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			return 0;
 		case F_SCRIPT_ASYNC:
-			async_script_resume_f( &fm->fd, fm->data);
+			async_script_resume_f( fm->fd, fm->data);
 			return 0;
 		case F_FD_ASYNC:
-			async_fd_resume( &fm->fd, fm->data);
+			async_fd_resume( fm->fd, fm->data);
 			return 0;
 		case F_LAUNCH_ASYNC:
-			async_launch_resume( &fm->fd, fm->data);
+			async_launch_resume( fm->fd, fm->data);
 			return 0;
 		case F_IPC:
 			ipc_handle_job();
