@@ -221,7 +221,7 @@ int fixup_json_bind(void** param, int param_no)
 			return -1;
 		}
 
-		if( var->type != PVT_JSON )
+		if(pv_type(var->type) != PVT_JSON)
 		{
 			LM_ERR("Parameter no: %d must be a json variable\n",param_no);
 			return -1;

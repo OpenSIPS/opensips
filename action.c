@@ -2155,7 +2155,7 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 		 * wants data to be interpreted, rather than not
 		 *    (i.e. ":=" script operator, and not simply "=")
 		 */
-		if (iter->type == PVT_JSON)
+		if (pv_type(iter->type) == PVT_JSON)
 			op = COLONEQ_T;
 
 		for (;;) {
