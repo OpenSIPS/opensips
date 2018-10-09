@@ -78,6 +78,8 @@ static str dr_probe_replies = {NULL,0};
 struct tm_binds dr_tmb;
 str dr_probe_method = str_init("OPTIONS");
 str dr_probe_from = str_init("sip:prober@localhost");
+static char *dr_probe_sock_s = NULL;
+struct socket_info *dr_probe_sock = NULL;
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
@@ -413,6 +415,7 @@ static param_export_t params[] = {
 	{"probing_interval", INT_PARAM, &dr_prob_interval         },
 	{"probing_method",   STR_PARAM, &dr_probe_method.s        },
 	{"probing_from",     STR_PARAM, &dr_probe_from.s          },
+	{"probing_socket",   STR_PARAM, &dr_probe_sock_s          },
 	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
@@ -743,7 +746,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 			/* Execute the Dialog using the "request"-Method of the
 			 * TM-Module.*/
 			if (dr_tmb.new_auto_dlg_uac(&dr_probe_from, &uri, NULL, NULL,
-			    dst->sock, &dlg)!=0) {
+			     dst->sock?dst->sock:dr_probe_sock, &dlg)!=0) {
 				LM_ERR("failed to create new TM dlg\n");
 				continue;
 			}
@@ -1636,10 +1639,30 @@ skip:
 	head_end = 0;
 
 	if (dr_prob_interval) {
+
+		str host;
+		int port,proto;
+
 		/* load TM API */
 		if (load_tm_api(&dr_tmb)!=0) {
 			LM_ERR("can't load TM API\n");
 			return -1;
+		}
+
+		/* parse and look for the socket to ping from */
+		if (dr_probe_sock_s && dr_probe_sock_s[0]!=0 ) {
+			if (parse_phostport( dr_probe_sock_s, strlen(dr_probe_sock_s),
+			&host.s, &host.len, &port, &proto)!=0 ) {
+				LM_ERR("socket description <%s> is not valid\n",
+					dr_probe_sock_s);
+				return -1;
+			}
+			dr_probe_sock = grep_sock_info( &host, port, proto);
+			if (dr_probe_sock==NULL) {
+				LM_ERR("socket <%s> is not local to opensips (we must listen "
+					"on it\n", dr_probe_sock_s);
+				return -1;
+			}
 		}
 
 		/* probing method */
