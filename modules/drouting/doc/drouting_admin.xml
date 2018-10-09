@@ -912,6 +912,35 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 		</example>
 	</section>
 
+	<section id="param_probing_socket" xreflabel="probing_socket">
+		<title><varname>probing_socket</varname> (string)</title>
+		<para>
+		A socket description [proto:]host[:port] of the local socket
+		(which is used by OpenSIPS for SIP traffic) to be used
+		(if multiple) for sending the probing messages from.
+		</para>
+		<para>
+		For probing gateway the highest priority has socket from gateway
+		configuration in dr_gateways table. Then socket from global
+		<varname>probing_socket</varname> parameter and the lowest
+		priority is default behaviour with auto selected socket wich
+		OpenSIPS listens on.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>probing_socket</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_status_replication_cluster" xreflabel="status_replication_cluster">
 		<title><varname>status_replication_cluster</varname> (integer)</title>
 		<para>
