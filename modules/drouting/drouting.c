@@ -72,6 +72,9 @@
 #define MI_LAST_UPDATE_S "Date"
 #define MI_LAST_UPDATE_LEN (strlen(MI_LAST_UPDATE_S))
 
+#define MI_DEFAULT_PROBING_STATE	1
+#define MI_PROBING_DISABLED_S "Gateways probing disabled from script"
+
 /* probing related stuff */
 static unsigned int dr_prob_interval = 30;
 static str dr_probe_replies = {NULL,0};
@@ -287,7 +290,10 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree,
 		void *param);
 static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree,
 		void *param);
+static struct mi_root* mi_dr_enable_probing(struct mi_root *cmd, void *param);
 
+/*0-> disabled, 1 ->enabled*/
+unsigned int *dr_enable_probing_state=0;
 
 /* event */
 static str dr_event = str_init("E_DROUTING_STATUS");
@@ -443,12 +449,16 @@ static param_export_t params[] = {
 	" (load from database) for all partitions if no parameter is supplied, or"\
 " for a partition given as parameter. If use_partitions is 0, you should"\
 " not specify a partition."
+#define HLP6 "Params: [ enable ] ; Enables probing of gateways if parameter "\
+	"value greater than 0. Disables probing of gateways if parameter"\
+"value is 0. With no parameter, returns current probing status"
 static mi_export_t mi_cmds[] = {
 	{ "dr_reload",         HLP1, dr_reload_cmd,    0, 0,  0},
 	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
 	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
 	{ "dr_number_routing", HLP4, mi_dr_number_routing, 0,            0,  0},
 	{ "dr_reload_status", HLP5, mi_dr_reload_status,   0,            0,  0},
+	{ "dr_enable_probing", HLP6, mi_dr_enable_probing,   0,          0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -712,6 +722,10 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	map_iterator_t map_it;
 
 	struct head_db *it = head_db_start;
+
+	if ((*dr_enable_probing_state) == 0)
+		return;
+
 	while( it!=NULL ) {
 		if (it->rdata==NULL || *(it->rdata)==NULL)
 			return;
@@ -1638,6 +1652,13 @@ skip:
 	head_start = 0;
 	head_end = 0;
 
+	dr_enable_probing_state =(unsigned int *) shm_malloc(sizeof(unsigned int));
+	if (!dr_enable_probing_state) {
+		LM_ERR("no shmem left\n");
+		return -1;
+	}
+	*dr_enable_probing_state = MI_DEFAULT_PROBING_STATE;
+
 	if (dr_prob_interval) {
 
 		str host;
@@ -1864,6 +1885,9 @@ static int dr_exit(void)
 			to_clean->ref_lock = 0;
 
 		}
+
+		if (dr_enable_probing_state)
+			shm_free(dr_enable_probing_state);
 
 		/* free table names stored in head_db */
 		if(to_clean->drd_table.s && to_clean->drd_table.s != drd_table.s) {
@@ -5129,4 +5153,39 @@ error:
 	return 0;
 }
 
+static struct mi_root* mi_dr_enable_probing(struct mi_root* cmd_tree, void* param )
+{
+	unsigned int value;
+	struct mi_node* node;
+	struct mi_root* root;
+	char *s;
+	int len;
+
+	if (dr_enable_probing_state==NULL)
+		return init_mi_tree( 400, MI_SSTR(MI_PROBING_DISABLED_S) );
+
+	node = cmd_tree->node.kids;
+	if(node == NULL) {
+		root = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		if (root==NULL)
+			return NULL;
+		node = &root->node;
+		s =  int2str(*dr_enable_probing_state, &len);
+		if (!add_mi_node_child(node, MI_DUP_VALUE, MI_SSTR("Status"), s, len)){
+				LM_ERR("cannot add the child node to the tree\n");
+				goto error;
+			}
+		return root;
+	}
+
+	value = 0;
+	if( strno2int( &node->value, &value) <0)
+		goto error;
+
+	(*dr_enable_probing_state) = value?1:0;
+
+	return  init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+error:
+	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+}
 
