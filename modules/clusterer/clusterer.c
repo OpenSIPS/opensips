@@ -2738,8 +2738,8 @@ int node_state_ev_init(void)
 {
 	/* publish the events */
 	ei_node_state_id = evi_publish_event(ei_node_state_name);
-	if (ei_req_rcv_id == EVI_ERROR) {
-		LM_ERR("cannot register message received event\n");
+	if (ei_node_state_id == EVI_ERROR) {
+		LM_ERR("cannot register node state changed event\n");
 		return -1;
 	}
 
@@ -2751,11 +2751,13 @@ int node_state_ev_init(void)
 	memset(ei_node_event_params, 0, sizeof(evi_params_t));
 
 	ei_clusterid_p = evi_param_create(ei_node_event_params, &ei_clusterid_pname);
-	if (ei_nodeid_p == NULL)
+	if (ei_clusterid_p == NULL)
 		goto create_error;
+
 	ei_nodeid_p = evi_param_create(ei_node_event_params, &ei_nodeid_pname);
 	if (ei_nodeid_p == NULL)
 		goto create_error;
+
 	ei_newstate_p = evi_param_create(ei_node_event_params, &ei_newstate_pname);
 	if (ei_newstate_p == NULL)
 		goto create_error;

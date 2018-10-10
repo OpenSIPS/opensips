@@ -392,7 +392,7 @@ static int mod_init(void)
 
 	/* create node state event */
 	if (node_state_ev_init() < 0) {
-		LM_ERR("cannot create cluster message received event\n");
+		LM_ERR("cannot create node state change event\n");
 		return -1;
 	}
 
