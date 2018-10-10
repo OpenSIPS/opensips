@@ -161,13 +161,18 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	DLG_BIN_POP(str, packet, sock, pre_linking_error);
 
 	caller_sock = fetch_socket_info(&sock);
+	if (!caller_sock) {
+		LM_ERR("Replicated dialog doesn't match caller's listening socket %.*s\n",
+				sock.len, sock.s);
+		goto pre_linking_error;
+	}
 
 	DLG_BIN_POP(str, packet, sock, pre_linking_error);
 
 	callee_sock = fetch_socket_info(&sock);
-
-	if (!caller_sock || !callee_sock) {
-		LM_ERR("Replicated dialog doesn't match any listening sockets\n");
+	if (!callee_sock) {
+		LM_ERR("Replicated dialog doesn't match callee's listening socket %.*s\n",
+				sock.len, sock.s);
 		goto pre_linking_error;
 	}
 
