@@ -1590,7 +1590,11 @@ struct mi_root *mi_list_sharing_tags(struct mi_root *cmd_tree, void *param)
             MI_SSTR("Tag"), tag->name.s, tag->name.len);
         if (!node) goto error;
 
-        val.s = int2str(tag->state, &val.len);
+		if (tag->state == SHTAG_STATE_ACTIVE)
+			val.s = "active";
+		else
+			val.s = "backup";
+		val.len = strlen(val.s); /* or 6, but most likely it will get optimized */
         attr = add_mi_attr(node, MI_DUP_VALUE,
             MI_SSTR("State"), val.s, val.len);
         if (!attr) goto error;
