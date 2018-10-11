@@ -1420,7 +1420,8 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* if it's the first time the missed calls flag was used register the callback */
 		if (is_mc_acc_on(flag_mask) && !failure_cb_registered(acc_ctx->flags)) {
 			acc_ref(acc_ctx);
-			if (tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE, tmcb_func, acc_ctx, 0)<=0) {
+			if (tmb.register_tmcb( msg, 0, TMCB_ON_FAILURE, tmcb_func,
+					acc_ctx, unref_acc_ctx)<=0) {
 				LM_ERR("cannot register missed calls callback\n");
 				acc_unref(acc_ctx);
 				return -1;
