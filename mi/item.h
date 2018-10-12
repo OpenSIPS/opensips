@@ -49,7 +49,6 @@
 typedef cJSON mi_item_t;
 
 typedef mi_item_t mi_response_t;
-typedef mi_item_t mi_request_t;
 
 typedef struct mi_params_ {
 	mi_item_t *item;

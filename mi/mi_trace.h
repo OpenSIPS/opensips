@@ -55,7 +55,7 @@ void try_load_trace_api(void);
 int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 	struct mi_trace_param* pld_param, str* correlation_value, trace_dest trace_dst);
 
-struct mi_trace_req* build_mi_trace_request(str *cmd, mi_request_t* mi_req,
+struct mi_trace_req* build_mi_trace_request(str *cmd, mi_item_t *params,
 										str* backend);
 
 str *build_mi_trace_reply(str *rpl_msg);
@@ -89,14 +89,14 @@ static inline void mi_trace_reply( union sockaddr_union* src, union sockaddr_uni
 
 
 static inline void mi_trace_request( union sockaddr_union* src, union sockaddr_union* dst,
-		char* command, int len, mi_request_t *mi_req, str* backend, trace_dest t_dst )
+		char* command, int len, mi_item_t *params, str* backend, trace_dest t_dst )
 {
 	str comm_s = { command, len };
 
 	if ( !t_dst || !backend )
 		return;
 
-	mi_tparam.d.req = build_mi_trace_request( &comm_s, mi_req, backend);
+	mi_tparam.d.req = build_mi_trace_request( &comm_s, params, backend);
 	if (!mi_tparam.d.req) {
 		LM_ERR("Failed to prepare payload for tracing request\n");
 		return;

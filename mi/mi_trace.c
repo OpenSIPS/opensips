@@ -61,7 +61,7 @@ void try_load_trace_api(void)
 }
 
 struct mi_trace_req* build_mi_trace_request( str* cmd,
-						mi_request_t *mi_req, str* backend)
+						mi_item_t *params, str* backend)
 {
 	int len=0, new=0;
 	mi_item_t *p;
@@ -73,12 +73,9 @@ struct mi_trace_req* build_mi_trace_request( str* cmd,
 	mi_treq.backend = *backend;
 	memset( mi_treq.params, 0, MAX_TRACE_FIELD);
 
-	if (!mi_req)
-		return 0;
-
-	p = cJSON_GetObjectItem((const cJSON*)mi_req, JSONRPC_PARAMS_S);
+	p = params;
 	if (!p)
-		return 0;
+		return &mi_treq;
 
 	for(p = p->child; p && new < MAX_TRACE_FIELD - len; p = p->next) {
 		switch ((p->type) & 0xFF) {

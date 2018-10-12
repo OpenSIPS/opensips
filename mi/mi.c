@@ -208,11 +208,61 @@ void get_mi_cmds( struct mi_cmd** cmds, int *size)
 	*size = mi_cmds_no;
 }
 
-mi_request_t *parse_mi_request(const char *req, const char **end_ptr)
+int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed)
 {
+	int inval = 0;
+	mi_item_t *req_jsonrpc;
+
 	_init_mi_sys_mem_hooks();
 
-	return cJSON_ParseWithOpts(req, end_ptr, 0);
+	memset(parsed, 0, sizeof *parsed);
+
+	parsed->req_obj = cJSON_ParseWithOpts(req, end_ptr, 0);
+	if (!parsed->req_obj) {
+		_init_mi_pkg_mem_hooks();
+		return -1;
+	}
+
+	/* check if the request is a valid JSON-RPC Request object */
+	/* get request id (if absent -> notification) */
+	parsed->id = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_ID_S);
+	if (parsed->id && !(parsed->id->type & (cJSON_NULL|cJSON_Number|cJSON_String)))
+		inval = 1;
+
+	/* check 'jsonrpc' member */
+	req_jsonrpc = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_S);
+	if (!req_jsonrpc || !(req_jsonrpc->type & cJSON_String) ||
+		strcmp(req_jsonrpc->valuestring, JSONRPC_VERS_S))
+		inval = 1;
+
+	/* check 'method' member */
+	parsed->method = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_METHOD_S);
+	if (!parsed->method || !(parsed->method->type & cJSON_String)) {
+		parsed->method = NULL;
+		inval = 1;
+	}
+
+	/* check 'params' member */
+	parsed->params = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_PARAMS_S);
+	if (parsed->params &&
+		(!(parsed->params->type & (cJSON_Array|cJSON_Object)) ||
+		!parsed->params->child))
+		inval = 1;
+
+	if (inval)
+		parsed->req_obj = MI_INVAL_REQ;
+
+	_init_mi_pkg_mem_hooks();
+
+	return 0;
+}
+
+char *mi_get_req_method(mi_request_t *req)
+{
+	if (!req || !req->method)
+		return NULL;
+
+	return req->method->valuestring;
 }
 
 static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params,
@@ -307,56 +357,28 @@ static mi_response_t *build_err_resp(int code, const char *msg, int msg_len,
 mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
-	mi_item_t *req_id, *req_jsonrpc, *req_method, *req_params;
 	struct mi_cmd *cmd;
 	mi_recipe_t *cmd_recipe;
 	mi_params_t cmd_params;
 	int is_ambiguous = 0;
-	int pos_params = 0;
+	int pos_params;
+	char *method;
 
-	if (!req)  /* error parsing the request JSON text */
+	if (!req->req_obj)  /* error parsing the request JSON text */
 		return build_err_resp(JSONRPC_PARSE_ERR_CODE,
 					MI_SSTR(JSONRPC_PARSE_ERR_MSG), NULL, 0);
 
-	/* check if the request is a valid JSON-RPC Request object */
-
-	/* get request id (if absent -> notification) */
-	req_id = cJSON_GetObjectItem(req, JSONRPC_ID_S);
-	if (req_id && !(req_id->type & (cJSON_NULL|cJSON_Number|cJSON_String)))
+	if (req->req_obj == MI_INVAL_REQ)  /* invalid jsonrpc request */
 		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
 					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
 
-	/* check 'jsonrpc' member */
-	req_jsonrpc = cJSON_GetObjectItem(req, JSONRPC_S);
-	if (!req_jsonrpc || !(req_jsonrpc->type & cJSON_String) ||
-		strcmp(req_jsonrpc->valuestring, JSONRPC_VERS_S))
-		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
-					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
-
-	/* check 'method' member */
-	req_method = cJSON_GetObjectItem(req, JSONRPC_METHOD_S);
-	if (!req_method || !(req_method->type & cJSON_String))
-		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
-					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
-
-	/* check 'params' member */
-	req_params = cJSON_GetObjectItem(req, JSONRPC_PARAMS_S);
-	if (req_params) {
-		if (!(req_params->type & (cJSON_Array|cJSON_Object)) ||
-			!req_params->child)
-			return build_err_resp(JSONRPC_INVAL_REQ_CODE,
-					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
-
-		pos_params = req_params->type & cJSON_Array;
-	}
-
-	cmd_params.item = req_params;
-
-	cmd = lookup_mi_cmd(req_method->valuestring, strlen(req_method->valuestring));
+	method = mi_get_req_method(req);
+	cmd = lookup_mi_cmd(method, strlen(method));
 	if (!cmd)
 		return build_err_resp(JSONRPC_NOT_FOUND_CODE,
 				MI_SSTR(JSONRPC_NOT_FOUND_MSG), NULL, 0);
 
+	pos_params = req->params ? req->params->type & cJSON_Array : 0;
 	if (pos_params && (cmd->flags & MI_NAMED_PARAMS_ONLY))
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
@@ -364,7 +386,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl
 
 	/* use the correct 'recipe' of the command based
 	 * on the received parameters */
-	cmd_recipe = get_cmd_recipe(cmd->recipes, req_params, pos_params,
+	cmd_recipe = get_cmd_recipe(cmd->recipes, req->params, pos_params,
 					&is_ambiguous);
 	if (!cmd_recipe)
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
@@ -374,6 +396,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 				MI_SSTR(ERR_DET_AMBIG_CALL_S));
 
+	cmd_params.item = req->params;
 	cmd_params.list = cmd_recipe->params;
 
 	resp = cmd_recipe->cmd(&cmd_params, async_hdl);
@@ -427,7 +450,6 @@ int add_id_to_response(mi_item_t *id, mi_response_t *resp)
 char *print_mi_response(mi_response_t *resp, mi_request_t *req)
 {
 	char *resp_str;
-	mi_item_t *req_id;
 	mi_item_t *res_err, *res_err_code = NULL;
 
 	res_err = cJSON_GetObjectItem(resp, JSONRPC_ERROR_S);
@@ -439,8 +461,7 @@ char *print_mi_response(mi_response_t *resp, mi_request_t *req)
 		}
 	}
 
-	req_id = cJSON_GetObjectItem(req, JSONRPC_ID_S);
-	if (!req_id) {
+	if (!req->id) {
 		/* this is a jsonrpc notification (no id but valid request otherwise)
 		 * -> no response */
 		if (!res_err)
@@ -451,7 +472,7 @@ char *print_mi_response(mi_response_t *resp, mi_request_t *req)
 			return MI_NO_RPL;
 	}
 
-	if (add_id_to_response(req_id, resp) < 0)
+	if (add_id_to_response(req->id, resp) < 0)
 		return NULL;
 
 	_init_mi_sys_mem_hooks();
@@ -463,11 +484,11 @@ char *print_mi_response(mi_response_t *resp, mi_request_t *req)
 	return resp_str;
 }
 
-void free_mi_request(mi_request_t *request)
+void free_mi_request_obj(mi_request_t *request)
 {
 	_init_mi_sys_mem_hooks();
 
-	cJSON_Delete(request);
+	cJSON_Delete(request->req_obj);
 
 	_init_mi_pkg_mem_hooks();
 }
