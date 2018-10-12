@@ -76,6 +76,17 @@ static trans_export_t core_trans[] = {
 	{{0,0}, 0, 0}
 };
 
+static int str2time(str* s, time_t* t)
+{
+	if (sizeof(time_t)==8)
+		return str2int64(s, (uint64_t*)(t));
+	else if (sizeof(time_t)==4)
+		return str2int(s, (unsigned int*)(t));
+	else
+		LM_ERR("unknown sizeof(time_t)\n");
+	return -1;
+}
+
 int tr_add_extra(trans_export_t *e)
 {
 	trans_extra_t *tr_extra;
@@ -278,6 +289,52 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			break;
+		case TR_S_TIME:
+			if (tp!=NULL && tp->type==TR_PARAM_STRING) {
+				time_t tm;
+
+				static str format_str = { 0, 0 };
+				if(format_str.len==0 || format_str.len!=tp->v.s.len ||
+					strncmp(format_str.s, tp->v.s.s, tp->v.s.len)!=0)
+				{
+					if(tp->v.s.len>format_str.len)
+					{
+						if(format_str.s) pkg_free(format_str.s);
+						format_str.s = (char*)pkg_malloc((tp->v.s.len+1));
+						if(format_str.s==NULL)
+						{
+							LM_ERR("no more private memory\n");
+							memset(&format_str, 0, sizeof(str));
+							return -1;
+						}
+					}
+
+					format_str.len = tp->v.s.len;
+					memcpy(format_str.s, tp->v.s.s, tp->v.s.len);
+					format_str.s[format_str.len] = '\0';
+				}
+
+				if (str2time(&val->rs, &tm)==0) {
+					struct tm* gmt = gmtime(&tm);
+
+					memset(val, 0, sizeof(pv_value_t));
+
+					val->flags = PV_VAL_STR;
+					val->rs.s = _tr_buffer;
+					_tr_buffer[TR_BUFFER_SIZE-1]='\0';
+					val->rs.len = strftime(_tr_buffer, TR_BUFFER_SIZE-1, format_str.s, gmt);
+				} else {
+					LM_ERR("time format invalid value\n");
+					val->flags = PV_VAL_STR;
+					val->rs.s = _tr_buffer;
+					_tr_buffer[0]='\0';
+					val->rs.len = 0;
+				}
+			} else {
+				LM_ERR("time format invalid parameter\n");
+				return -1;
+			}
 			break;
 		case TR_S_MD5:
 			if(!(val->flags&PV_VAL_STR))
@@ -2640,6 +2697,20 @@ int tr_parse_string(str* in, trans_t *t)
 		return 0;
 	} else if(name.len==3 && strncasecmp(name.s, "md5", 3)==0) {
 		t->subtype = TR_S_MD5;
+		return 0;
+	} else if(name.len==4 && strncasecmp(name.s, "time", 4)==0) {
+		t->subtype = TR_S_TIME;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid time transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		if (tr_parse_sparam(p, in, &tp, 1) == NULL)
+			goto error;
+		t->params = tp;
+		tp = 0;
+
 		return 0;
 	} else if(name.len==5 && strncasecmp(name.s, "crc32", 5)==0) {
 		t->subtype = TR_S_CRC32;

@@ -238,7 +238,7 @@ static void trim_char(char**);
 static int fixup_dr_disable(void **,int);
 //static struct head_db * get_partition(const str *);
 static int _is_dr_gw_w_part(struct sip_msg* , char * , char* ,
-		int , struct ip_addr* , unsigned int);
+		int , struct ip_addr* , unsigned int, unsigned int);
 static int use_next_gw_w_part( struct sip_msg*, struct head_db *, char *,
 		char *, char *);
 static int dr_disable(struct sip_msg *req, char * current_partition);
@@ -4079,11 +4079,12 @@ static int prefix_username(struct sip_msg* msg, str *pri)
 }
 
 
-static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
+static int gw_matches_ip_proto(pgw_t *pgwa, struct ip_addr *ip, unsigned short port, unsigned short proto)
 {
 	unsigned short j;
 	for ( j=0 ; j<pgwa->ips_no ; j++)
 		if ( (pgwa->ports[j]==0 || port==0 || pgwa->ports[j]==port) &&
+			(pgwa->protos[j]==0 || proto==0 || pgwa->protos[j]==proto) &&
 				ip_addr_cmp( &pgwa->ips[j], ip) ) return 1;
 	return 0;
 }
@@ -4094,11 +4095,12 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 #define DR_IFG_IDS_FLAG        (1<<3)
 #define DR_IFG_IGNOREPORT_FLAG (1<<4)
 #define DR_IFG_CARRIERID_FLAG  (1<<5)
+#define DR_IFG_CHECKPROTO_FLAG (1<<6)
 
 
 static int _is_dr_gw(struct sip_msg* msg, char * part,
 		char * flags_pv, int type, struct ip_addr *ip,
-		unsigned int port) {
+		unsigned int port, unsigned int proto) {
 
 	int ret=-1;
 	pv_value_t pv_val;
@@ -4112,18 +4114,18 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
 
 		if(((dr_partition_t*)part)->type == DR_PTR_PART) {
 			return _is_dr_gw_w_part(msg, (char*)((dr_partition_t*)part)->v.part,
-					flags_pv, type, ip, port);
+					flags_pv, type, ip, port, proto);
 		} else if(((dr_partition_t*)part)->type == DR_GPARAM_PART) {
 			if((ret=to_partition(msg, (dr_partition_t*)part, &it) < 0)) {
 				return -1;
 			} else if (ret == 0) {
-				return _is_dr_gw_w_part(msg, (char*)it,flags_pv, type, ip, port);
+				return _is_dr_gw_w_part(msg, (char*)it,flags_pv, type, ip, port, proto);
 			}
 		}
 
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
-			ret = _is_dr_gw_w_part(msg, (char *)it, flags_pv, type, ip, port);
+			ret = _is_dr_gw_w_part(msg, (char *)it, flags_pv, type, ip, port, proto);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = it->partition;
@@ -4147,7 +4149,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
 			return -1;
 		}
 		return _is_dr_gw_w_part(msg, (char*)head_db_start, flags_pv, (int)type,
-				(struct ip_addr *)ip, (unsigned int)port);
+				(struct ip_addr *)ip, (unsigned int)port, (unsigned int)proto);
 	}
 	return -1;
 }
@@ -4158,7 +4160,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
  * INTERNAL FUNCTION
  */
 static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
-		int type, struct ip_addr *ip, unsigned int port)
+		int type, struct ip_addr *ip, unsigned int port, unsigned int proto)
 {
 	pgw_t *pgwa = NULL;
 	pcr_t *pcr = NULL;
@@ -4188,6 +4190,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 				case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
+				case 'r': flags |= DR_IFG_CHECKPROTO_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
 				default: LM_WARN("unsupported flag %c \n",flags_s.s[i]);
 			}
@@ -4207,7 +4210,10 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 			pgwa = (pgw_t*)*dest;
 
 			if( (type<0 || type==pgwa->type) &&
-			gw_matches_ip( pgwa, ip, (flags&DR_IFG_IGNOREPORT_FLAG)?0:port )) {
+			gw_matches_ip_proto( pgwa, ip,
+					(flags&DR_IFG_IGNOREPORT_FLAG)?0:port,
+					(flags&DR_IFG_CHECKPROTO_FLAG)?proto:0)
+				) {
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 					strip_username(msg, pgwa->strip);
@@ -4280,7 +4286,7 @@ end:
 
 
 static int is_from_gw_0(struct sip_msg* msg) {
-	return _is_dr_gw(msg, NULL, NULL, -1, &msg->rcv.src_ip, msg->rcv.src_port);
+	return _is_dr_gw(msg, NULL, NULL, -1, &msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 }
 /*
  * Checks if a given src IP and PORT is a GW; no TYPE, no FLAGS
@@ -4288,10 +4294,10 @@ static int is_from_gw_0(struct sip_msg* msg) {
 static int is_from_gw_1(struct sip_msg* msg, char * part)
 {
 	if(use_partitions) {
-		return _is_dr_gw( msg, part, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port);
+		return _is_dr_gw( msg, part, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port, msg->rcv.proto);
 	} else {
 		return _is_dr_gw(msg, NULL, NULL, (!part? -1 : *(int *)part), &msg->rcv.src_ip,
-				msg->rcv.src_port);
+				msg->rcv.src_port, msg->rcv.proto);
 	}
 }
 
@@ -4303,10 +4309,10 @@ static int is_from_gw_2(struct sip_msg* msg, char * part, char* type_s)
 {
 	if(use_partitions) {
 		return _is_dr_gw(msg, part, NULL, (!type_s ? -1 : *(int *)type_s),
-				&msg->rcv.src_ip , msg->rcv.src_port);
+				&msg->rcv.src_ip , msg->rcv.src_port, msg->rcv.proto);
 	} else {
 		return _is_dr_gw(msg, NULL, type_s, (!part ? -1: *(int *)part),
-				&msg->rcv.src_ip, msg->rcv.src_port);
+				&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 	}
 }
 
@@ -4315,11 +4321,11 @@ static int is_from_gw_3(struct sip_msg* msg, char * part,char* type_s,
 		char* flags_pv) {
 	if(use_partitions) {
 		return _is_dr_gw(msg, part, flags_pv, (!type_s ? -1:*(int *)type_s),
-				&msg->rcv.src_ip, msg->rcv.src_port);
+				&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 	} else {
 		gw_attrs_spec = (pv_spec_p)flags_pv;
 		return _is_dr_gw(msg, NULL, type_s, (!part ? -1:*(int *)part),
-				&msg->rcv.src_ip, msg->rcv.src_port);
+				&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 	}
 }
 
@@ -4334,7 +4340,7 @@ static int is_from_gw_4(struct sip_msg* msg, char * part,char* type_s, char* fla
 	if(use_partitions) {
 		return _is_dr_gw( msg, part, flags_pv,
 				(!type_s ? -1 : *(int *)type_s), &msg->rcv.src_ip ,
-				msg->rcv.src_port);
+				msg->rcv.src_port, msg->rcv.proto);
 	} else {
 		LM_ERR("Too many parameters\n");
 		return -1;
@@ -4369,7 +4375,7 @@ static int _is_dr_uri_gw(struct sip_msg* msg, char *part, char* flags_pv, int ty
 	memset(&ip,0,sizeof(struct ip_addr));
 	hostent2ip_addr( &ip, he, 0);
 
-	return _is_dr_gw( msg, part, flags_pv, type, &ip , puri.port_no);
+	return _is_dr_gw( msg, part, flags_pv, type, &ip , puri.port_no, puri.proto);
 }
 
 
