@@ -87,7 +87,6 @@ modparam("db_postgres", "max_db_queries", 2)
 </programlisting>
 		</example>
 	</section>
-	</section>
         <section id="param_timeout" xreflabel="timeout">
 		<title><varname>timeout</varname> (integer)</title>
 		<para>
