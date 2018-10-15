@@ -432,7 +432,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	}
 
 	destroy_linkers(dlg, 1);
-	remove_dlg_prof_table(dlg,0);
+	remove_dlg_prof_table(dlg, 1);
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
