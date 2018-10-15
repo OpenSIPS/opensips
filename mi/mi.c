@@ -354,15 +354,14 @@ static mi_response_t *build_err_resp(int code, const char *msg, int msg_len,
 	return err_resp;
 }
 
-mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl)
+mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
+							struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
-	struct mi_cmd *cmd;
 	mi_recipe_t *cmd_recipe;
 	mi_params_t cmd_params;
 	int is_ambiguous = 0;
 	int pos_params;
-	char *method;
 
 	if (!req->req_obj)  /* error parsing the request JSON text */
 		return build_err_resp(JSONRPC_PARSE_ERR_CODE,
@@ -372,8 +371,6 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl
 		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
 					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
 
-	method = mi_get_req_method(req);
-	cmd = lookup_mi_cmd(method, strlen(method));
 	if (!cmd)
 		return build_err_resp(JSONRPC_NOT_FOUND_CODE,
 				MI_SSTR(JSONRPC_NOT_FOUND_MSG), NULL, 0);

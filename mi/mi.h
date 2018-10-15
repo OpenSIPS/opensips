@@ -143,7 +143,8 @@ char *mi_get_req_method(mi_request_t *req);
 /* If unable to parse the request’s JSON text with parse_mi_request(),
  * @req should be NULL and the function will return a standard JSON-RPC error.
  */
-mi_response_t *handle_mi_request(mi_request_t *req, struct mi_handler *async_hdl);
+mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
+							struct mi_handler *async_hdl);
 
 /* If the request is a jsonrpc notification, the function will return MI_NO_RPL
  */
