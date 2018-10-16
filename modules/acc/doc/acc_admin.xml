@@ -97,17 +97,12 @@
 	</para>
 	<para>
 		The SQL, Event Interface and AAA backend support are compiled in the
-		module. For DIAMETER
-		you need to enable it by recompiling the module with properly
-		set defines: uncomment DIAM_ACC line in modules/acc/Makefile.
-		The AAA client needs to be configured properly.
-        </para>
+		module.
+	</para>
 	<para>
-	NOTE: diameter support was developed for DISC (DIameter Server Client
-	project at http://developer.berlios.de/projects/disc/). This project
-	seems to be no longer maintained and DIAMETER specifications were updated
-	in the meantime. Thus, the DIAMETER part in the module is obsolete and
-	needs rework to be usable with opendiameter or other DIAMETER servers.
+	A very comprehensive description of how the accounting module works in 
+	terms accounting scope, accounting events and accounting backends can 
+	be found in this online <ulink url="https://www.opensips.org/Documentation/Tutorials-Advanced-Accounting/">Advanced Accounting Tutorial</ulink>.
 	</para>
 	<section>
 		<title>General Example</title>
