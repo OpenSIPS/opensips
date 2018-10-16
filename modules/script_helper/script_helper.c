@@ -156,8 +156,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	       msg->first_line.u.request.method.len,
 	       msg->first_line.u.request.method.s);
 
-	if (parse_headers(msg, HDR_TO_F|HDR_CALLID_F, 0) == -1) {
-		LM_ERR("failed to parse To header\n");
+	if (parse_headers(msg, HDR_TO_F|HDR_CALLID_F, 0) == -1 ||
+			!msg->to || !msg->callid) {
+		LM_ERR("failed to parse To/Call-ID header\n");
 		return SCB_DROP_MSG;
 	}
 

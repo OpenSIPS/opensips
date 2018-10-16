@@ -1637,6 +1637,12 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info)
 		goto error;
 	}
 
+	if(msg->callid==NULL || msg->callid->body.s==NULL)
+	{
+		LM_ERR("cannot find Call-ID header!\n");
+		goto error;
+	}
+
 	LM_DBG("sip_trace called \n");
 	db_vals[0].val.str_val.s = msg->buf;
 	db_vals[0].val.str_val.len = msg->len;
@@ -1986,7 +1992,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 
 	if(parse_headers(msg, HDR_CALLID_F|HDR_CSEQ_F, 0)!=0)
 	{
-		LM_ERR("cannot parse call-id\n");
+		LM_ERR("cannot parse Call-ID/CSeq\n");
 		return;
 	}
 
@@ -2002,6 +2008,12 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	if(msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("cannot find Call-ID header!\n");
+		goto error;
+	}
+
+	if(msg->cseq==NULL)
+	{
+		LM_ERR("cannot find CSeq header!\n");
 		goto error;
 	}
 
@@ -2102,6 +2114,12 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
+	if(msg->callid==NULL || msg->callid->body.s==NULL)
+	{
+		LM_ERR("cannot find Call-ID header!\n");
+		goto error;
+	}
+
 	sbuf = (str*)ps->extra1;
 	if(faked==0)
 	{
@@ -2129,13 +2147,6 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			db_vals[0].val.str_val.s = t->uas.response.buffer.s;
 			db_vals[0].val.str_val.len = t->uas.response.buffer.len;
 		}
-	}
-
-	/* check Call-ID header */
-	if(msg->callid==NULL || msg->callid->body.s==NULL)
-	{
-		LM_ERR("cannot find Call-ID header!\n");
-		goto error;
 	}
 
 	db_vals[1].val.str_val.s = msg->callid->body.s;
