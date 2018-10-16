@@ -37,8 +37,8 @@
 #define MI_NAMED_PARAMS_ONLY (1<<1)
 
 #define MI_ASYNC_RPL    ((mi_response_t*)-1)
-#define MI_NO_RPL 		((char*)-1)
 #define MI_INVAL_REQ    ((mi_item_t *)-1)
+#define MI_NO_RPL 		1
 
 #define JSONRPC_ID_S "id"
 #define JSONRPC_METHOD_S "method"
@@ -148,11 +148,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 
 /* If the request is a jsonrpc notification, the function will return MI_NO_RPL
  */
-char *print_mi_response(mi_response_t *resp, mi_request_t *req);
-
-/* Frees the string returned by print_mi_response()
- */
-void free_mi_response_str(char *resp_str);
+int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf);
 
 /* Frees the parsed MI Request object from mi_request_t
  */

@@ -444,9 +444,8 @@ int add_id_to_response(mi_item_t *id, mi_response_t *resp)
 	return 0;
 }
 
-char *print_mi_response(mi_response_t *resp, mi_request_t *req)
+int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf)
 {
-	char *resp_str;
 	mi_item_t *res_err, *res_err_code = NULL;
 
 	res_err = cJSON_GetObjectItem(resp, JSONRPC_ERROR_S);
@@ -454,11 +453,11 @@ char *print_mi_response(mi_response_t *resp, mi_request_t *req)
 		res_err_code = cJSON_GetObjectItem(res_err, JSONRPC_ERROR_S);
 		if (!res_err_code) {
 			LM_ERR("no error code for MI error response\n");
-			return NULL;
+			return -1;
 		}
 	}
 
-	if (!req->id) {
+	if (!id) {
 		/* this is a jsonrpc notification (no id but valid request otherwise)
 		 * -> no response */
 		if (!res_err)
@@ -469,16 +468,15 @@ char *print_mi_response(mi_response_t *resp, mi_request_t *req)
 			return MI_NO_RPL;
 	}
 
-	if (add_id_to_response(req->id, resp) < 0)
-		return NULL;
+	if (add_id_to_response(id, resp) < 0)
+		return -1;
 
-	_init_mi_sys_mem_hooks();
-	resp_str = cJSON_Print(resp);
-	if (!resp_str)
-		LM_ERR("Failed to build JSON\n");
-	_init_mi_pkg_mem_hooks();
+	if (cJSON_PrintPreallocated(resp, buf->s, buf->len, 1) == 0) {
+		LM_ERR("Failed to print JSON\n");
+		return -1;
+	}
 
-	return resp_str;
+	return 0;
 }
 
 void free_mi_request_obj(mi_request_t *request)
@@ -486,15 +484,6 @@ void free_mi_request_obj(mi_request_t *request)
 	_init_mi_sys_mem_hooks();
 
 	cJSON_Delete(request->req_obj);
-
-	_init_mi_pkg_mem_hooks();
-}
-
-void free_mi_response_str(char *resp_str)
-{
-	_init_mi_sys_mem_hooks();
-
-	cJSON_PurgeString(resp_str);
 
 	_init_mi_pkg_mem_hooks();
 }
