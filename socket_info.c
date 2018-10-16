@@ -169,10 +169,12 @@ static void free_sock_info(struct socket_info* si)
 {
 	if(si){
 		if(si->name.s) pkg_free(si->name.s);
+		if(si->sock_str.s) pkg_free(si->sock_str.s);
 		if(si->address_str.s) pkg_free(si->address_str.s);
 		if(si->port_no_str.s) pkg_free(si->port_no_str.s);
 		if(si->adv_name_str.s) pkg_free(si->adv_name_str.s);
 		if(si->adv_port_str.s) pkg_free(si->adv_port_str.s);
+		if(si->adv_sock_str.s) pkg_free(si->adv_sock_str.s);
 	}
 }
 
