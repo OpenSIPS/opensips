@@ -37,7 +37,6 @@
 #define MI_NAMED_PARAMS_ONLY (1<<1)
 
 #define MI_ASYNC_RPL    ((mi_response_t*)-1)
-#define MI_INVAL_REQ    ((mi_item_t *)-1)
 #define MI_NO_RPL 		1
 
 #define JSONRPC_ID_S "id"
@@ -108,6 +107,7 @@ typedef struct mi_request_ {
 	mi_item_t *id;
 	mi_item_t *method;
 	mi_item_t *params;
+	int invalid;
 } mi_request_t;
 
 
@@ -131,18 +131,15 @@ void _init_mi_shm_mem_hooks(void);
 void _init_mi_pkg_mem_hooks(void);
 void _init_mi_sys_mem_hooks(void);  /* stdlib */
 
-/* Parses the MI request provided in the @req string (must be
- * null-terminated) and fills the @parsed struct.
+/* Parses the MI request provided in the @in string (must be
+ * null-terminated) and sets the fields of the @req struct.
  * Returns -1 if unable to parse json text.
  */
-int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed);
+int parse_mi_request(const char *in, const char **end_ptr, mi_request_t *req);
 
 /* Get the name of the MI command from the request */
 char *mi_get_req_method(mi_request_t *req);
 
-/* If unable to parse the request’s JSON text with parse_mi_request(),
- * @req should be NULL and the function will return a standard JSON-RPC error.
- */
 mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 							struct mi_handler *async_hdl);
 
@@ -150,8 +147,8 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
  */
 int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf);
 
-/* Frees the parsed MI Request object from mi_request_t
+/* Frees the objects in the struct allocated when parsing the request
  */
-void free_mi_request_obj(mi_request_t *request);
+void free_mi_request_parsed(mi_request_t *request);
 
 #endif

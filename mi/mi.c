@@ -210,12 +210,9 @@ void get_mi_cmds( struct mi_cmd** cmds, int *size)
 
 int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed)
 {
-	int inval = 0;
 	mi_item_t *req_jsonrpc;
 
 	_init_mi_sys_mem_hooks();
-
-	memset(parsed, 0, sizeof *parsed);
 
 	parsed->req_obj = cJSON_ParseWithOpts(req, end_ptr, 0);
 	if (!parsed->req_obj) {
@@ -227,19 +224,19 @@ int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed
 	/* get request id (if absent -> notification) */
 	parsed->id = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_ID_S);
 	if (parsed->id && !(parsed->id->type & (cJSON_NULL|cJSON_Number|cJSON_String)))
-		inval = 1;
+		parsed->invalid = 1;
 
 	/* check 'jsonrpc' member */
 	req_jsonrpc = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_S);
 	if (!req_jsonrpc || !(req_jsonrpc->type & cJSON_String) ||
 		strcmp(req_jsonrpc->valuestring, JSONRPC_VERS_S))
-		inval = 1;
+		parsed->invalid = 1;
 
 	/* check 'method' member */
 	parsed->method = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_METHOD_S);
 	if (!parsed->method || !(parsed->method->type & cJSON_String)) {
 		parsed->method = NULL;
-		inval = 1;
+		parsed->invalid = 1;
 	}
 
 	/* check 'params' member */
@@ -247,10 +244,7 @@ int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed
 	if (parsed->params &&
 		(!(parsed->params->type & (cJSON_Array|cJSON_Object)) ||
 		!parsed->params->child))
-		inval = 1;
-
-	if (inval)
-		parsed->req_obj = MI_INVAL_REQ;
+		parsed->invalid = 1;
 
 	_init_mi_pkg_mem_hooks();
 
@@ -367,7 +361,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 		return build_err_resp(JSONRPC_PARSE_ERR_CODE,
 					MI_SSTR(JSONRPC_PARSE_ERR_MSG), NULL, 0);
 
-	if (req->req_obj == MI_INVAL_REQ)  /* invalid jsonrpc request */
+	if (req->invalid)  /* invalid jsonrpc request */
 		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
 					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
 
@@ -479,11 +473,12 @@ int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf)
 	return 0;
 }
 
-void free_mi_request_obj(mi_request_t *request)
+void free_mi_request_parsed(mi_request_t *request)
 {
 	_init_mi_sys_mem_hooks();
 
-	cJSON_Delete(request->req_obj);
+	if (request->req_obj)
+		cJSON_Delete(request->req_obj);
 
 	_init_mi_pkg_mem_hooks();
 }
