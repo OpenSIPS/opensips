@@ -478,45 +478,37 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				j = v.ri;
 			}
 			LM_DBG("i=%d j=%d\n", i, j);
-			if(j<0)
+
+			/* adjust negative offset */
+			if (i < 0)
 			{
-				LM_ERR("substr negative offset\n");
+				if (-i > val->rs.len)
+				{
+					/* negative start out of range */
+					goto error;
+				} else {
+					i = val->rs.len + i;
+				}
+			}
+			/* start position out of range ? */
+			if (i >= val->rs.len)
+			{
+				/* return NULL output */
 				goto error;
 			}
+
+			/* adjust negative index */
+			if (j < 1)
+				j = val->rs.len + j - i;
+
+			/* cut if length > string */
+			if (i+j > val->rs.len)
+				j = val->rs.len - i;
+
 			val->flags = PV_VAL_STR;
 			val->ri = 0;
-			if(i>=0)
-			{
-				if(i>=val->rs.len)
-				{
-					LM_ERR("substr out of range\n");
-					goto error;
-				}
-				if(i+j>=val->rs.len) j=0;
-				if(j==0)
-				{ /* to end */
-					val->rs.s += i;
-					val->rs.len -= i;
-					break;
-				}
-				val->rs.s += i;
-				val->rs.len = j;
-				break;
-			}
-			i = -i;
-			if(i>val->rs.len)
-			{
-				LM_ERR("substr out of range\n");
-				goto error;
-			}
-			if(i<j) j=0;
-			if(j==0)
-			{ /* to end */
-				val->rs.s += val->rs.len-i;
-				val->rs.len = i;
-				break;
-			}
-			val->rs.s += val->rs.len-i;
+
+			val->rs.s += i;
 			val->rs.len = j;
 			break;
 
@@ -2764,11 +2756,6 @@ int tr_parse_string(str* in, trans_t *t)
 		p++;
 		if (tr_parse_nparam(p, in, &tp) == NULL)
 			goto error;
-		if(tp->type==TR_PARAM_NUMBER && tp->v.n<0)
-		{
-			LM_ERR("substr negative offset\n");
-			goto error;
-		}
 		t->params->next = tp;
 		tp = 0;
 
