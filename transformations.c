@@ -479,27 +479,34 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			LM_DBG("i=%d j=%d\n", i, j);
 
+			/* adjust negative offset */
 			if (i < 0)
 			{
-				if (i*-1 >= val->rs.len)
+				if (-i > val->rs.len)
 				{
-					i = 0;
+					/* negative start out of range */
+					goto error;
 				} else {
 					i = val->rs.len + i;
 				}
 			}
-			if (j < 1) j = val->rs.len + j - i;
-			if (i+j >= val->rs.len) j = val->rs.len-i; // cut if length > string
+			/* start position out of range ? */
+			if (i >= val->rs.len)
+			{
+				/* return NULL output */
+				goto error;
+			}
+
+			/* adjust negative index */
+			if (j < 1)
+				j = val->rs.len + j - i;
+
+			/* cut if length > string */
+			if (i+j > val->rs.len)
+				j = val->rs.len - i;
 
 			val->flags = PV_VAL_STR;
 			val->ri = 0;
-
-			if (i >= val->rs.len) // out of range
-			{
-				val->rs.s += val->rs.len;
-				val->rs.len = 0;
-				break;
-			}
 
 			val->rs.s += i;
 			val->rs.len = j;
