@@ -933,7 +933,8 @@ int match_node(const node_info_t *a, const node_info_t *b,
 		break;
 	case NODE_CMP_EQ_SIP_ADDR:
 		lock_get(a->lock);
-		if (str_strcmp(&a->sip_addr, &b->sip_addr)) {
+		if (ZSTR(a->sip_addr) || ZSTR(b->sip_addr) ||
+				str_strcmp(&a->sip_addr, &b->sip_addr)) {
 			lock_release(a->lock);
 			return 0;
 		}
@@ -941,7 +942,8 @@ int match_node(const node_info_t *a, const node_info_t *b,
 		break;
 	case NODE_CMP_NEQ_SIP_ADDR:
 		lock_get(a->lock);
-		if (!str_strcmp(&a->sip_addr, &b->sip_addr)) {
+		if (ZSTR(a->sip_addr) || ZSTR(b->sip_addr) ||
+				!str_strcmp(&a->sip_addr, &b->sip_addr)) {
 			lock_release(a->lock);
 			return 0;
 		}
