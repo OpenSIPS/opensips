@@ -51,6 +51,10 @@ OSP Module for Secure, Multi-Lateral Peering
                       identity_information_avp, identity_type_avp,
                       identity_canon_avp
 
+              1.3.37. service_provider_avp
+              1.3.38. user_group_avp
+              1.3.39. user_id_avp
+
         1.4. Exported Functions
 
               1.4.1. checkospheader()
@@ -123,18 +127,21 @@ OSP Module for Secure, Multi-Lateral Peering
    1.34. Setting the request date AVP
    1.35. Setting the SDP finger print AVP
    1.36. Setting the Identity related AVPs
-   1.37. checkospheader usage
-   1.38. validateospheader usage
-   1.39. getlocaladress usage
-   1.40. setrequestdate usage
-   1.41. requestosprouting usage
-   1.42. checkosproute usage
-   1.43. prepareosproute usage
-   1.44. prepareospresponse usage
-   1.45. prepareallosproutes usage
-   1.46. checkcallingtranslation usage
-   1.47. reportospusage usage
-   1.48. processsubscribe usage
+   1.37. Setting the source service provider AVP
+   1.38. Setting the source user group AVP
+   1.39. Setting the source user ID AVP
+   1.40. checkospheader usage
+   1.41. validateospheader usage
+   1.42. getlocaladress usage
+   1.43. setrequestdate usage
+   1.44. requestosprouting usage
+   1.45. checkosproute usage
+   1.46. prepareosproute usage
+   1.47. prepareospresponse usage
+   1.48. prepareallosproutes usage
+   1.49. checkcallingtranslation usage
+   1.50. reportospusage usage
+   1.51. processsubscribe usage
 
 Chapter 1. Admin Guide
 
@@ -662,6 +669,36 @@ modparam("osp","identity_information_avp","$avp(idinfo)")
 modparam("osp","identity_type_avp","$avp(idtype)")
 modparam("osp","identity_canon_avp","$avp(idcanon)")
 
+1.3.37. service_provider_avp
+
+   These parameter is used to tell the OSP module which AVP is
+   used to store source service provider information. The default
+   value is "$avp(_osp_service_provider_)". All pseudo variables
+   are described in http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.37. Setting the source service provider AVP
+modparam("osp", "service_provider_avp", "$avp(sp)")
+
+1.3.38. user_group_avp
+
+   These parameter is used to tell the OSP module which AVP is
+   used to store source user group information. The default value
+   is "$avp(_osp_user_group_)". All pseudo variables are described
+   in http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.38. Setting the source user group AVP
+modparam("osp", "user_group_avp", "$avp(groupid)")
+
+1.3.39. user_id_avp
+
+   These parameter is used to tell the OSP module which AVP is
+   used to store source user ID information. The default value is
+   "$avp(_osp_user_id_)". All pseudo variables are described in
+   http://www.opensips.org/Resources/DocsCoreVar.
+
+   Example 1.39. Setting the source user ID AVP
+modparam("osp", "user_id_avp", "$avp(userid)")
+
 1.4. Exported Functions
 
 1.4.1. checkospheader()
@@ -671,7 +708,7 @@ modparam("osp","identity_canon_avp","$avp(idcanon)")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.37. checkospheader usage
+   Example 1.40. checkospheader usage
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -690,7 +727,7 @@ if (checkospheader()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.38. validateospheader usage
+   Example 1.41. validateospheader usage
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -706,7 +743,7 @@ if (validateospheader()) {
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.39. getlocaladress usage
+   Example 1.42. getlocaladress usage
 ...
 if (getlocaladdress()) {
   log(1,"Obtain proxy local egress address\n");
@@ -722,7 +759,7 @@ if (getlocaladdress()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.40. setrequestdate usage
+   Example 1.43. setrequestdate usage
 ...
 if (setrequest()) {
   log(1,"Set request date\n");
@@ -751,7 +788,7 @@ if (setrequest()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.41. requestosprouting usage
+   Example 1.44. requestosprouting usage
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -767,7 +804,7 @@ if (requestosprouting()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.42. checkosproute usage
+   Example 1.45. checkosproute usage
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -790,7 +827,7 @@ if (checkosproute()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.43. prepareosproute usage
+   Example 1.46. prepareosproute usage
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -809,7 +846,7 @@ if (prepareosproute()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.44. prepareospresponse usage
+   Example 1.47. prepareospresponse usage
 ...
 if (prepareospresponse()) {
   log(1,"Response is prepared.\n");
@@ -827,7 +864,7 @@ if (prepareospresponse()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.45. prepareallosproutes usage
+   Example 1.48. prepareallosproutes usage
 ...
 if (prepareallosproutes()) {
   log(1,"Routes are prepared, now forking the call\n");
@@ -849,7 +886,7 @@ if (prepareallosproutes()) {
 
    This function can be used from BRANCH_ROUTE.
 
-   Example 1.46. checkcallingtranslation usage
+   Example 1.49. checkcallingtranslation usage
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -878,7 +915,7 @@ if (checkcallingtranslation()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.47. reportospusage usage
+   Example 1.50. reportospusage usage
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");
@@ -906,7 +943,7 @@ if (is_direction("downstream")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.48. processsubscribe usage
+   Example 1.51. processsubscribe usage
 ...
 if (method == "SUBSCRIBE") {
     if (($var(sevent) == "calling-name") && (is_myself("$rd"))) {
@@ -936,18 +973,18 @@ Chapter 3. Contributors
    1. Di-Shi Sun (@di-shi) 280 101 10368 5372
    2. Dmitry Isakbayev 41 5 4120 159
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 30 24 217 209
-   4. Daniel-Constantin Mierla (@miconda) 15 13 81 48
-   5. Liviu Chircu (@liviuchircu) 13 10 81 90
-   6. Ancuta Onofrei 9 1 206 318
-   7. Razvan Crainea (@razvancrainea) 6 4 69 51
-   8. Vlad Patrascu (@rvlad-patrascu) 5 3 19 24
-   9. Henning Westerholt (@henningw) 4 2 3 3
-   10. Ovidiu Sas (@ovidiusas) 3 1 20 1
+   4. Di-Shi Sun 16 1 1005 385
+   5. Daniel-Constantin Mierla (@miconda) 15 13 81 48
+   6. Liviu Chircu (@liviuchircu) 13 10 81 90
+   7. Ancuta Onofrei 9 1 206 318
+   8. Razvan Crainea (@razvancrainea) 6 4 69 51
+   9. Vlad Patrascu (@rvlad-patrascu) 5 3 19 24
+   10. Henning Westerholt (@henningw) 4 2 3 3
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Konstantin
-   Bokarius, Dan Pascu (@danpascu), fabriziopicconi, Andreas
-   Granig, Ezequiel Lovelle, Julián Moreno Patiño, Edson Gellert
-   Schubert.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
+   (@vladpaiu), Konstantin Bokarius, Dan Pascu (@danpascu),
+   fabriziopicconi, Andreas Granig, Ezequiel Lovelle, Julián
+   Moreno Patiño, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -969,21 +1006,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
-   5.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   8.  fabriziopicconi                     Aug 2013 - Aug 2013
-   9.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   10. Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
+   1.  Di-Shi Sun                          Oct 2018 - Oct 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
+   6.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   9.  fabriziopicconi                     Aug 2013 - Aug 2013
+   10. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
 
-   All remaining contributors: Dan Pascu (@danpascu), Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei,
-   Dmitry Isakbayev, Andreas Granig.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Dan Pascu
+   (@danpascu), Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Ancuta Onofrei, Dmitry Isakbayev, Andreas Granig.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -992,11 +1029,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Di-Shi
-   Sun (@di-shi), Razvan Crainea (@razvancrainea),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Dmitry Isakbayev.
+   Last edited by: Di-Shi Sun, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Di-Shi Sun (@di-shi), Razvan Crainea
+   (@razvancrainea), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Dmitry Isakbayev.
 
    doc copyrights:
 
