@@ -648,8 +648,10 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 		goto error;
 	}
 
+	bin_free_packet(&packet);
 	return;
 error:
+	bin_free_packet(&packet);
 	LM_ERR("Failed to replicate deleted dialog\n");
 }
 
