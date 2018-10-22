@@ -982,8 +982,10 @@ int repl_prof_remove(str *name, str *value)
 		return -1;
 	}
 
-	if (repl_prof_add(&packet, name, value?1:0, value, 0) < 0)
+	if (repl_prof_add(&packet, name, value?1:0, value, 0) < 0) {
+		bin_free_packet(&packet);
 		return -1;
+	}
 	dlg_replicate_profiles(&packet);
 	bin_free_packet(&packet);
 
