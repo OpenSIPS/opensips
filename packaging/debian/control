@@ -35,6 +35,7 @@ Build-Depends: bison,
                libxml2-dev,
                pkg-config,
                python,
+               python-dev,
                unixodbc-dev,
                xsltproc,
                zlib1g-dev
@@ -598,3 +599,14 @@ Description: REST client module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the REST client support for OpenSIPS.
+
+Package: opensips-python-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Python scripting support
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module provides a Python interface to implement your scripting logic.
