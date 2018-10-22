@@ -14,19 +14,26 @@ Auth_db Module
         1.3. Exported Parameters
 
               1.3.1. db_url (string)
-              1.3.2. user_column (string)
-              1.3.3. domain_column (string)
-              1.3.4. password_column (string)
-              1.3.5. password_column_2 (string)
-              1.3.6. calculate_ha1 (integer)
-              1.3.7. use_domain (integer)
-              1.3.8. load_credentials (string)
-              1.3.9. skip_version_check (int)
+              1.3.2. calculate_ha1 (integer)
+              1.3.3. use_domain (integer)
+              1.3.4. load_credentials (string)
+              1.3.5. skip_version_check (int)
+              1.3.6. user_column (string)
+              1.3.7. domain_column (string)
+              1.3.8. password_column (string)
+              1.3.9. password_column_2 (string)
+              1.3.10. uri_user_column (string)
+              1.3.11. uri_domain_column (string)
+              1.3.12. uri_uriuser_column (string)
 
         1.4. Exported Functions
 
               1.4.1. www_authorize(realm, table)
               1.4.2. proxy_authorize(realm, table)
+              1.4.3. db_is_to_authorized(table)
+              1.4.4. db_is_from_authorized(table)
+              1.4.5. db_does_uri_exist(uri,table)
+              1.4.6. db_get_auth_id(table,uri,auth,realm)
 
    2. Contributors
 
@@ -47,16 +54,22 @@ Auth_db Module
    List of Examples
 
    1.1. db_url parameter usage
-   1.2. user_column parameter usage
-   1.3. domain_column parameter usage
-   1.4. password_column parameter usage
-   1.5. password_column_2 parameter usage
-   1.6. calculate_ha1 parameter usage
-   1.7. use_domain parameter usage
-   1.8. load_credentials parameter usage
-   1.9. skip_version_check parameter usage
-   1.10. www_authorize usage
-   1.11. proxy_authorize usage
+   1.2. calculate_ha1 parameter usage
+   1.3. use_domain parameter usage
+   1.4. load_credentials parameter usage
+   1.5. skip_version_check parameter usage
+   1.6. user_column parameter usage
+   1.7. domain_column parameter usage
+   1.8. password_column parameter usage
+   1.9. password_column_2 parameter usage
+   1.10. Set uri_user_column parameter
+   1.11. Set uri_domain_column parameter
+   1.12. Set uriuser_column parameter
+   1.13. www_authorize usage
+   1.14. proxy_authorize usage
+   1.15. db_is_to_authorized usage
+   1.16. db_does_uri_exist usage
+   1.17. db_get_auth_id usage
 
 Chapter 1. Admin Guide
 
@@ -104,56 +117,7 @@ Chapter 1. Admin Guide
 modparam("auth_db", "db_url", "dbdriver://username:password@dbhost/dbnam
 e")
 
-1.3.2. user_column (string)
-
-   This is the name of the column holding usernames. Default value
-   is fine for most people. Use the parameter if you really need
-   to change it.
-
-   Default value is “username”.
-
-   Example 1.2. user_column parameter usage
-modparam("auth_db", "user_column", "user")
-
-1.3.3. domain_column (string)
-
-   This is the name of the column holding domains of users.
-   Default value is fine for most people. Use the parameter if you
-   really need to change it.
-
-   Default value is “domain”.
-
-   Example 1.3. domain_column parameter usage
-modparam("auth_db", "domain_column", "domain")
-
-1.3.4. password_column (string)
-
-   This is the name of the column holding passwords. Passwords can
-   be either stored as plain text or pre-calculated HA1 strings.
-   HA1 strings are MD5 hashes of username, password, and realm.
-   HA1 strings are more safe because the server doesn't need to
-   know plaintext passwords and they cannot be obtained from HA1
-   strings.
-
-   Default value is “ha1”.
-
-   Example 1.4. password_column parameter usage
-modparam("auth_db", "password_column", "password")
-
-1.3.5. password_column_2 (string)
-
-   As described in the previous section this parameter contains
-   name of column holding pre-calculated HA1 string that were
-   calculated including the domain in the username. This parameter
-   is used only when calculate_ha1 is set to 0 and user agent send
-   a credentials containing the domain in the username.
-
-   Default value of the parameter is ha1b.
-
-   Example 1.5. password_column_2 parameter usage
-modparam("auth_db", "password_column_2", "ha1_2")
-
-1.3.6. calculate_ha1 (integer)
+1.3.2. calculate_ha1 (integer)
 
    This parameter tells the server whether it should considered
    the loaded password (for authentification) as plaintext
@@ -189,10 +153,10 @@ modparam("auth_db", "password_column_2", "ha1_2")
 
    Default value of this parameter is 0.
 
-   Example 1.6. calculate_ha1 parameter usage
+   Example 1.2. calculate_ha1 parameter usage
 modparam("auth_db", "calculate_ha1", 1)
 
-1.3.7. use_domain (integer)
+1.3.3. use_domain (integer)
 
    If true (not 0), domain will be also used when looking up in
    the subscriber table. If you have a multi-domain setup, it is
@@ -204,10 +168,10 @@ modparam("auth_db", "calculate_ha1", 1)
 
    Default value is “0 (false)”.
 
-   Example 1.7. use_domain parameter usage
+   Example 1.3. use_domain parameter usage
 modparam("auth_db", "use_domain", 1)
 
-1.3.8. load_credentials (string)
+1.3.4. load_credentials (string)
 
    This parameter specifies credentials to be fetched from
    database when the authentication is performed. The loaded
@@ -223,12 +187,12 @@ modparam("auth_db", "use_domain", 1)
 
    Default value of this parameter is “rpid”.
 
-   Example 1.8. load_credentials parameter usage
+   Example 1.4. load_credentials parameter usage
 # load rpid column into $avp(13) and email_address column
 # into $avp(email_address)
 modparam("auth_db", "load_credentials", "$avp(13)=rpid;email_address")
 
-1.3.9. skip_version_check (int)
+1.3.5. skip_version_check (int)
 
    This parameter specifies not to check the auth table version.
    This parameter should be set when a custom authentication table
@@ -236,20 +200,103 @@ modparam("auth_db", "load_credentials", "$avp(13)=rpid;email_address")
 
    Default value is “0 (false)”.
 
-   Example 1.9. skip_version_check parameter usage
+   Example 1.5. skip_version_check parameter usage
 modparam("auth_db", "skip_version_check", 1)
+
+1.3.6. user_column (string)
+
+   This is the name of the column in a 'SUBSCRIBER' like table
+   holding the usernames. Default value is fine for most people.
+   Use the parameter if you really need to change it.
+
+   Default value is “username”.
+
+   Example 1.6. user_column parameter usage
+modparam("auth_db", "user_column", "user")
+
+1.3.7. domain_column (string)
+
+   This is the name of the column in a 'SUBSCRIBER' like table
+   holding the domains of users. Default value is fine for most
+   people. Use the parameter if you really need to change it.
+
+   Default value is “domain”.
+
+   Example 1.7. domain_column parameter usage
+modparam("auth_db", "domain_column", "domain")
+
+1.3.8. password_column (string)
+
+   This is the name of the column in a 'SUBSCRIBER' like table
+   holding the passwords. Passwords can be either stored as plain
+   text or pre-calculated HA1 strings. HA1 strings are MD5 hashes
+   of username, password, and realm. HA1 strings are more safe
+   because the server doesn't need to know plaintext passwords and
+   they cannot be obtained from HA1 strings.
+
+   Default value is “ha1”.
+
+   Example 1.8. password_column parameter usage
+modparam("auth_db", "password_column", "password")
+
+1.3.9. password_column_2 (string)
+
+   As described in the previous section this parameter contains
+   name of column holding pre-calculated HA1 string that were
+   calculated including the domain in the username. This parameter
+   is used only when calculate_ha1 is set to 0 and user agent send
+   a credentials containing the domain in the username.
+
+   Default value of the parameter is ha1b.
+
+   Example 1.9. password_column_2 parameter usage
+modparam("auth_db", "password_column_2", "ha1_2")
+
+1.3.10. uri_user_column (string)
+
+   Column holding usernames in an 'URI' like table.
+
+   Default value is “username”.
+
+   Example 1.10. Set uri_user_column parameter
+...
+modparam("auth_db", "uri_user_column", "username")
+...
+
+1.3.11. uri_domain_column (string)
+
+   Column holding domain in an 'URI' like table.
+
+   Default value is “domain”.
+
+   Example 1.11. Set uri_domain_column parameter
+...
+modparam("auth_db", "uri_domain_column", "domain")
+...
+
+1.3.12. uri_uriuser_column (string)
+
+   Column holding URI username in an 'URI' like table.
+
+   Default value is “uri_user”.
+
+   Example 1.12. Set uriuser_column parameter
+...
+modparam("auth_db", "uri_uriuser_column", "uri_user")
+...
 
 1.4. Exported Functions
 
 1.4.1.  www_authorize(realm, table)
 
-   The function verifies credentials according to RFC2617. If the
-   credentials are verified successfully then the function will
-   succeed and mark the credentials as authorized (marked
-   credentials can be later used by some other functions). If the
-   function was unable to verify the credentials for some reason
-   then it will fail and the script should call www_challenge
-   which will challenge the user again.
+   The function verifies the received credentials against a
+   "SUBSCRIBER"-like table according to digest authentication as
+   per RFC2617. If the credentials are verified successfully then
+   the function will succeed and mark the credentials as
+   authorized (marked credentials can be later used by some other
+   functions). If the function was unable to verify the
+   credentials for some reason then it will fail and the script
+   should call www_challenge which will challenge the user again.
 
    Negative codes may be interpreted as follows:
      * -5 (generic error) - some generic error occurred and no
@@ -276,7 +323,7 @@ modparam("auth_db", "skip_version_check", 1)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.10. www_authorize usage
+   Example 1.13. www_authorize usage
 ...
 if (!www_authorize("siphub.net", "subscriber")) {
         www_challenge("siphub.net", "1");
@@ -285,13 +332,15 @@ if (!www_authorize("siphub.net", "subscriber")) {
 
 1.4.2.  proxy_authorize(realm, table)
 
-   The function verifies credentials according to RFC2617. If the
-   credentials are verified successfully then the function will
-   succeed and mark the credentials as authorized (marked
-   credentials can be later used by some other functions). If the
-   function was unable to verify the credentials for some reason
-   then it will fail and the script should call proxy_challenge
-   which will challenge the user again.
+   The function verifies the received credentials against a
+   "SUBSCRIBER"-like table according to digest authentication as
+   per RFC2617. If the credentials are verified successfully then
+   the function will succeed and mark the credentials as
+   authorized (marked credentials can be later used by some other
+   functions). If the function was unable to verify the
+   credentials for some reason then it will fail and the script
+   should call proxy_challenge which will challenge the user
+   again.
 
    Negative codes may be interpreted as follows:
      * -5 (generic error) - some generic error occurred and no
@@ -316,10 +365,88 @@ if (!www_authorize("siphub.net", "subscriber")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.11. proxy_authorize usage
+   Example 1.14. proxy_authorize usage
 ...
 if (!proxy_authorize("", "subscriber)) {
         proxy_challenge("", "1");  # Realm will be autogenerated
+};
+...
+
+1.4.3.  db_is_to_authorized(table)
+
+   The function checks against a 'URI' like table to see if the
+   username extracted from the To header URI is allowed/authorized
+   to use the credentials (authentication username) validated by
+   www_authorize().
+
+   The function is part of the mechanism that allows to create
+   mapping between the SIP users (from the FROM/TO headers) and
+   the authentication users (from a SUBSCRIBER-like table) that
+   they use. The mapping is stored into an URI-like table.
+
+   Meaning of the parameters is as follows:
+     * table - Table to be used to lookup for the URI/AUTH
+       mappings (usually the URI table).
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.15. db_is_to_authorized usage
+...
+if (!db_is_to_authorized("uri")) {
+        xlog("User $tu is not authorized to authenticate with $au creden
+tial\n");
+};
+...
+
+1.4.4.  db_is_from_authorized(table)
+
+   Similar to db_is_to_authorized() but instead of checking the TO
+   header URI, the FROM header URI is checked.
+
+1.4.5.  db_does_uri_exist(uri,table)
+
+   Checks if the username@domain from the given URI is an existing
+   user in a 'SUBSCRIBER' like table.
+
+   Meaning of the parameters is as follows:
+     * URI - The SIP URI to be tested. It must hold a username
+       part for a valid check. Variables are allowed.
+       table - Table to be used to search for the URI (usually the
+       SUBSCRIBER table).
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.16. db_does_uri_exist usage
+...
+if (db_does_uri_exist("$ru","subscriber")) {
+        ...
+};
+...
+
+1.4.6.  db_get_auth_id(table,uri,auth,realm)
+
+   Checks given uri-string username against an 'URI' like table.
+   Returns true if the user exists in the database, and sets the
+   given variables to the authentication id and realm
+   corresponding to the given uri.
+
+   Meaning of the parameters is as follows:
+     * table - Table to be used to search for the URI (usually the
+       URI table).
+       uri - The input SIP URI to be tested. It must hold a
+       username part for a valid check. Variables are allowed.
+       auth - an output variable to store the found authentication
+       id matching the given SIP URI.
+       realm - an output variable to store the found
+       authentication realm matching the given SIP URI.
+
+   This function can be used from REQUEST_ROUTE ,FAILURE_ROUTE and
+   LOCAL_ROUTE.
+
+   Example 1.17. db_get_auth_id usage
+...
+if (db_get_auth_id("uri", "$ru", "$avp(auth_id)", "$avp(auth_realm)")) {
+        ...
 };
 ...
 
@@ -331,7 +458,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 50 29 1610 424
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 38 30 331 231
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 48 34 776 370
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
    4. Liviu Chircu (@liviuchircu) 12 9 37 68
    5. Henning Westerholt (@henningw) 11 9 83 49
@@ -367,10 +494,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Sep 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Oct 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
@@ -392,8 +519,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
    Crainea (@razvancrainea), Kennard White, Sergio Gutierrez,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Anatoly

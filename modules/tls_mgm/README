@@ -1086,7 +1086,7 @@ route{
               proxy_challenge("domA.net","0"/*no-qop*/);
               exit;
           };
-          if (!db_check_from()) {
+          if ($au!=$fU) {
               xlog("FROM hdr Cheating attempt in INVITE\n");
               send_reply("403",
                   "That is ugly -- use From=id next time (OB)");
@@ -1144,7 +1144,7 @@ route{
               "0" /* no qop -- some phones can't deal with it */);
           exit;
       };
-      if (!db_check_to()) {
+      if ($au!=$tU) {
           xlog("TO hdr Cheating attempt\n");
           send_reply("403", "That is ugly -- use To=id in REGISTERs");
           exit;
@@ -1456,8 +1456,8 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 83 23 2874 2040
    2. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    3. Razvan Crainea (@razvancrainea) 37 27 525 236
-   4. Liviu Chircu (@liviuchircu) 19 13 129 208
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 19 8 267 446
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 21 9 269 448
+   5. Liviu Chircu (@liviuchircu) 19 13 129 208
    6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
    7. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
    8. Callum Guy 3 1 33 8
@@ -1486,14 +1486,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Sep 2018
-   2.  Callum Guy                          Jun 2018 - Jun 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2018
-   6.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
-   7.  Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Mar 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Oct 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Sep 2018
+   3.  Callum Guy                          Jun 2018 - Jun 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2018
+   6.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2018
+   7.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
+   8.  Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
    9.  Ionel Cerghit (@ionel-cerghit)      Aug 2016 - Aug 2016
    10. Maksym Sobolyev (@sobomax)          Mar 2016 - Mar 2016
 
@@ -1507,10 +1507,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Callum Guy,
-   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
-   Crainea (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Eseanu Marius Cristian (@eseanucristian).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Callum Guy, Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 

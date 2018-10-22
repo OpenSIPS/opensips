@@ -53,10 +53,10 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">12</entry>
-		<entry align="center">9</entry>
+		<entry align="center">13</entry>
+		<entry align="center">10</entry>
 		<entry align="center">27</entry>
-		<entry align="center">61</entry>
+		<entry align="center">62</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">10</entry>
+		<entry align="center">7</entry>
+		<entry align="center">205</entry>
+		<entry align="center">24</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Klaus Darilion</entry>
 		<entry align="center">10</entry>
 		<entry align="center">6</entry>
@@ -75,20 +83,12 @@
 		<entry align="center">67</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">6</entry>
 		<entry align="center">100</entry>
 		<entry align="center">34</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">7</entry>
-		<entry align="center">5</entry>
-		<entry align="center">77</entry>
-		<entry align="center">20</entry>
 	</row>
 	<row>
 		<entry>10. </entry>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Sep 2012 - Oct 2018</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Oct 2011 - Oct 2018</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Sep 2012 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - May 2017</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Oct 2011 - Nov 2016</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Aron Podrigal, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Aron Podrigal, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>).</para>
 </section>
 
 </chapter>

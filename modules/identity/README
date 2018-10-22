@@ -200,7 +200,7 @@ if ($rm=="BYE")
 ### Authentication Service ###
 
 # check whether I am authoritative
-if(!$fu=~".*@mysipdomain.de")
+if($fd!="mysipdomain.de")
 {
     route(1); # forward
     exit;
@@ -212,7 +212,7 @@ if(!proxy_authorize("mysipdomain.de","subscriber"))
     exit;
 }
 
-if (!db_check_from())
+if ($au!=$fU)
 {
     sl_send_reply("403", "Use From=ID");
     exit;
@@ -347,7 +347,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Alexander Christ 22 1 2571 0
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 12 10 24 16
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 13 11 26 18
    3. Liviu Chircu (@liviuchircu) 9 7 21 46
    4. Razvan Crainea (@razvancrainea) 7 5 77 22
    5. Sergio Gutierrez 4 2 7 2
@@ -377,12 +377,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2016
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Oct 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Saúl Ibarra Corretgé (@saghul)      Oct 2014 - Oct 2014
    8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
    9.  Sergio Gutierrez                    Feb 2009 - Feb 2009
@@ -395,9 +395,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Alexander Christ.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Alexander Christ.
 
    Documentation Copyrights:
 

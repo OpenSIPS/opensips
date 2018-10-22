@@ -182,6 +182,11 @@ Chapter 1. Admin Guide
    The SQL, Event Interface and AAA backend support are compiled
    in the module.
 
+   A very comprehensive description of how the accounting module
+   works in terms accounting scope, accounting events and
+   accounting backends can be found in this online Advanced
+   Accounting Tutorial.
+
 1.1.1. General Example
 
 loadmodule "modules/acc/acc.so"
@@ -194,7 +199,7 @@ if ($ru=~"sip:+40") /* calls to Romania */ {
         exit;
     }
 
-    if (is_method("INVITE") && !db_check_from()) {
+    if (is_method("INVITE") && $au!=$fU) {
         xlog("FROM URI != digest username\n");
         sl_send_reply("403","Forbidden");
     }
@@ -999,12 +1004,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 218 103 4144 4534
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 220 105 4150 4535
    2. Jan Janak (@janakj) 151 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
-   4. Razvan Crainea (@razvancrainea) 77 49 2471 447
+   4. Razvan Crainea (@razvancrainea) 79 50 2473 448
    5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
-   6. Liviu Chircu (@liviuchircu) 36 27 358 313
+   6. Liviu Chircu (@liviuchircu) 45 32 456 455
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    8. Elena-Ramona Modroiu 23 4 2267 5
    9. Henning Westerholt (@henningw) 20 15 184 131
@@ -1039,10 +1044,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2018
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Oct 2018
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2018
+   4.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
@@ -1067,8 +1072,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Vlad
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad
    Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Ryan Bullock (@rrb3942),
    Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt

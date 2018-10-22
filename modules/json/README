@@ -43,14 +43,17 @@ JSON Module
 
    1.1. Accessing the $json variable
    1.2. Iterating through an array using variables
-   1.3. Appending integers to arrays
-   1.4. Deleting the last element in an array
-   1.5. Adding a string value to a json object
-   1.6. Initializing an array
-   1.7. Setting a boolean or null value
-   1.8. Adding a json to another json
-   1.9. Creating a reference
-   1.10. [LOGICAL ERROR] Creating a circular reference
+   1.3. iteration over $json object keys
+   1.4. iteration over $json object values
+   1.5. iteration over $json array values
+   1.6. Appending integers to arrays
+   1.7. Deleting the last element in an array
+   1.8. Adding a string value to a json object
+   1.9. Initializing an array
+   1.10. Setting a boolean or null value
+   1.11. Adding a json to another json
+   1.12. Creating a reference
+   1.13. [LOGICAL ERROR] Creating a circular reference
 
 Chapter 1. Admin Guide
 
@@ -173,7 +176,47 @@ while( $json(ar1[$var(i)]) )
 
 ...
 
-1.4.1.3.  Returned values from $json(id)
+1.4.1.3. Traversal
+
+   Dynamic traversal of a JSON object or array is possible by
+   using a for each statement, similarly to the indexed pseudo
+   variables iteration. However, note that indexing the $json
+   variable is not supported in any other statements (this refers
+   to indexing the entire variable and not to the indexes accepted
+   in the grammar of the id).
+
+   In order to explicitly iterate over a JSON object keys or
+   values, you can use the .keys or .values suffix for the path
+   specified in the id.
+
+   Example 1.3. iteration over $json object keys
+...
+$json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
+for ($var(k) in $(json(foo.keys)[*]))
+    xlog("$var(k) ");
+...
+
+   Example 1.4. iteration over $json object values
+...
+$json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
+for ($var(v) in $(json(foo.values)[*]))
+    xlog("$var(v) ");
+
+# equivalent to:
+
+$json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
+for ($var(v) in $(json(foo)[*]))
+    xlog("$var(v) ");
+...
+
+   Example 1.5. iteration over $json array values
+...
+$json(foo) := "[1, 2, 3]";
+for ($var(v) in $(json(foo)[*]))
+    xlog("$var(v) ");
+...
+
+1.4.1.4.  Returned values from $json(id)
 
    If the value specified by the id is an integer it will be
    returned as an integer value.
@@ -190,51 +233,51 @@ while( $json(ar1[$var(i)]) )
 
    If the id does not exist a NULL value will be returned.
 
-1.4.1.4.  Operators for the $json(id) variable
+1.4.1.5.  Operators for the $json(id) variable
 
    There are 2 operators available for this variable.
 
-1.4.1.4.1.  The "=" operator
+1.4.1.5.1.  The "=" operator
 
    This will cause the value to be taken as is and be added to the
    json object ( e.g. string value or integer value ).
 
    Setting a value to NULL will cause it to be deleted.
 
-   Example 1.3. Appending integers to arrays
+   Example 1.6. Appending integers to arrays
 ...
 $json(array1[]) = 1;
 ...
 
-   Example 1.4. Deleting the last element in an array
+   Example 1.7. Deleting the last element in an array
 ...
 $json(array1[-1]) = NULL;
 ...
 
-   Example 1.5. Adding a string value to a json object
+   Example 1.8. Adding a string value to a json object
 ...
 $json(object1/some_key) = "some_value";
 ...
 
-1.4.1.4.2.  The ":=" operator
+1.4.1.5.2.  The ":=" operator
 
    This will cause the value to be taken and interpreted as a json
    object ( e.g. this operator should be used to parse json inputs
    ).
 
-   Example 1.6. Initializing an array
+   Example 1.9. Initializing an array
 ...
 $json(array1) := "[]";
 ...
 
-   Example 1.7. Setting a boolean or null value
+   Example 1.10. Setting a boolean or null value
 ...
 $json(array1[]) := "null";
 $json(array1[]) := "true";
 $json(array1[]) := "false";
 ...
 
-   Example 1.8. Adding a json to another json
+   Example 1.11. Adding a json to another json
 ...
 
 $json(array) := "[1,2,3]";
@@ -281,7 +324,7 @@ $json(object/array) := $json(array) ;
    accidentally create a circular reference and try to get the
    value from the object you will crash OPENSIPS.
 
-   Example 1.9. Creating a reference
+   Example 1.12. Creating a reference
 ...
 
 $json(b) := "[{},{},{}]";
@@ -326,7 +369,7 @@ Test link :
 
 ...
 
-   Example 1.10. [LOGICAL ERROR] Creating a circular reference
+   Example 1.13. [LOGICAL ERROR] Creating a circular reference
 ...
 
 $json(b) := "[1]";
@@ -354,15 +397,15 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 15 12 40 79
    3. Razvan Crainea (@razvancrainea) 11 8 42 74
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 23 28
-   5. Vlad Paiu (@vladpaiu) 5 3 29 11
-   6. Björn Esser 4 2 124 44
-   7. Ovidiu Sas (@ovidiusas) 4 2 17 4
-   8. Nick Altmann (@nikbyte) 3 1 47 15
-   9. Anca Vamanu 3 1 3 1
-   10. Peter Lemenkov (@lemenkov) 3 1 2 2
+   5. Vlad Patrascu (@rvlad-patrascu) 6 3 185 38
+   6. Vlad Paiu (@vladpaiu) 5 3 29 11
+   7. Björn Esser 4 2 124 44
+   8. Ovidiu Sas (@ovidiusas) 4 2 17 4
+   9. Nick Altmann (@nikbyte) 3 1 47 15
+   10. Anca Vamanu 3 1 3 1
 
-   All remaining contributors: Julián Moreno Patiño, Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Julián
+   Moreno Patiño.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -384,12 +427,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Aug 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
-   4.  Björn Esser                         Dec 2017 - Dec 2017
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2017
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2018
+   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Aug 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
+   5.  Björn Esser                         Dec 2017 - Dec 2017
+   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
    9.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Oct 2014
@@ -404,10 +447,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Andrei
-   Dragus.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Nick Altmann
+   (@nikbyte), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
+   (@razvancrainea), Andrei Dragus.
 
    Documentation Copyrights:
 
