@@ -197,17 +197,12 @@ Chapter 1. Admin Guide
        PSTN status in case of the gateway).
 
    The SQL, Event Interface and AAA backend support are compiled
-   in the module. For DIAMETER you need to enable it by
-   recompiling the module with properly set defines: uncomment
-   DIAM_ACC line in modules/acc/Makefile. The AAA client needs to
-   be configured properly.
+   in the module.
 
-   NOTE: diameter support was developed for DISC (DIameter Server
-   Client project at http://developer.berlios.de/projects/disc/).
-   This project seems to be no longer maintained and DIAMETER
-   specifications were updated in the meantime. Thus, the DIAMETER
-   part in the module is obsolete and needs rework to be usable
-   with opendiameter or other DIAMETER servers.
+   A very comprehensive description of how the accounting module
+   works in terms accounting scope, accounting events and
+   accounting backends can be found in this online Advanced
+   Accounting Tutorial.
 
 1.1.1. General Example
 
@@ -1148,7 +1143,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 213 100 4078 4526
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 215 101 4082 4535
    2. Jan Janak (@janakj) 151 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 87 27 2684 2080
    4. Razvan Crainea (@razvancrainea) 62 38 2349 270
@@ -1188,8 +1183,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Oct 2018
+   2.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
    5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2017
