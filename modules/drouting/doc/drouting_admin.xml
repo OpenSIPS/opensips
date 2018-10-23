@@ -1596,7 +1596,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
 					type to be checked; when omitting this parameter or specifying
-					the special value "-1", matching will be done against all groups
+					the special value "-1", matching will be done against all types.
 					(in a given partition if <varname>use_partition</varname> parameter is 1; if
 					<varname>use_partitions</varname> is 1 the partition being mandatory at this
 					point, it is not possible to do matching against all the partitions)
@@ -1678,8 +1678,8 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 		<function moreinfo="none">is_from_gw([partition','] [type], [flag], [gw_attrs_pvar])</function>
 		</title>
 		<para>
-		The function checks if the sender of the message (its source IP)
-		is a gateway from a certain group.
+		The function checks if the sender of the message (source IP + source
+		port) is a gateway from a certain group.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
@@ -1706,7 +1706,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
 					type to be checked; when omitting this parameter or specifying
-					the special value "-1", matching will be done against all groups
+					the special value "-1", matching will be done against all types.
 					</para>
 				</listitem>
 				<listitem>
@@ -1735,8 +1735,8 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 						</listitem>
 						<listitem>
 							<para>
-							<emphasis role='bold'>'n'</emphasis> (Ignore port) - ignores port
-							number during matching
+							<emphasis role='bold'>'n'</emphasis> (Ignore port) - ignore the
+							source port during matching
 							</para>
 						</listitem>
 						<listitem>
@@ -1759,31 +1759,31 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 		<example>
 		<title><function>is_from_gw</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
-...
-if (is_from_gw("3","1") {
+# match the source IP (only) against all gateways
+if (is_from_gw("3", "n")) {
+	...
 }
-...
 </programlisting>
 		</example>
 
 		<example>
 		<title><function>is_from_gw</function> usage when <varname>use_partitions</varname> is 1</title>
 		<programlisting format="linespecific">
-...
-if (is_from_gw("my_partition","3","1") {
+# match the source IP and port against all "outbound" gateways and return its carrier
+if (is_from_gw("outbound", "3", "c")) {
+	...
 }
-...
 </programlisting>
 		</example>
 	</section>
 
 	<section id="func_dr_is_gw" xreflabel="dr_is_gw()">
 		<title>
-		<function moreinfo="none">dr_is_gw([partition,] src_avp, [type], [flag], [gw_attrs_pvar])</function>
+		<function moreinfo="none">dr_is_gw([partition,] src_pv, [type], [flag], [gw_attrs_pvar])</function>
 		</title>
 		<para>
-		The function checks if the ip address in pvar src_pv is a gateway
-		from a certain group.
+		The function checks if the SIP URI hostname part stored inside the
+		"src_pv" pseudo-variable is a gateway from a certain group.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE,
@@ -1805,15 +1805,16 @@ if (is_from_gw("my_partition","3","1") {
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>src_avp</emphasis> (mandatory) - avp containing a SIP URI.
-					Does not support other OpenSIPS variables.
+					<emphasis role='bold'>src_pv</emphasis> (mandatory) -
+					pseudo-variable containing a SIP URI.  If the URI hostname
+					part is a FQDN, it will be resolved prior to matching.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
 					type to be checked; when omitting this parameter or specifying
-					the special value "-1", matching will be done against all groups
+					the special value "-1", matching will be done against all types.
 					</para>
 				</listitem>
 				<listitem>
@@ -1864,19 +1865,19 @@ if (is_from_gw("my_partition","3","1") {
 		<example>
 		<title><function>dr_is_gw</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
-...
-if (dr_is_gw("$avp(uac)","3") {
+# match the SIP URI host within $var(uac) against all gateways
+if (dr_is_gw("$var(uac)", "n")) {
+	...
 }
-...
 </programlisting>
 		</example>
 		<example>
 		<title><function>dr_is_gw</function> usage when <varname>use_partitions</varname> is 1</title>
 		<programlisting format="linespecific">
-...
-if (dr_is_gw("my_partition","$avp(uac)","3") {
+# match the SIP URI host within $var(uac) against all "outbound" gateways
+if (dr_is_gw("outbound", "$avp(uac)", "n")) {
+	...
 }
-...
 </programlisting>
 		</example>
 	</section>
