@@ -788,7 +788,7 @@ void httpd_proc(int rank)
 			}
 		}
 		//LM_DBG("select returned %d\n", status);
-		status = MHD_run(dmn);
+		status = MHD_run_from_select(dmn, &rs, &ws, &es);
 		if (status == MHD_NO) {
 			LM_ERR("unable to run http daemon\n");
 			return;
