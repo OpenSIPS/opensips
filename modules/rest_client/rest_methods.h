@@ -107,12 +107,10 @@ typedef struct rest_async_param_ {
 	pv_spec_p code_pv;
 } rest_async_param;
 
-int rest_get_method(struct sip_msg *msg, char *url,
-                    pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
-int rest_post_method(struct sip_msg *msg, char *url, str *body, str *ctype,
-                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
-int rest_put_method(struct sip_msg *msg, char *url, str *body, str *ctype,
-                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
+int init_sync_handle(void);
+int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
+                       char *url, str *body, str *ctype, pv_spec_p body_pv,
+                       pv_spec_p ctype_pv, pv_spec_p code_pv);
 
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 					     char *url, str *req_body, str *req_ctype,
