@@ -49,11 +49,9 @@ enum HTTPD_CONTENT_TYPE {
  * @param url the requested url after http_root was skipped
  * @param method the HTTP method used ("GET", "PUT", etc.)
  * @param version the HTTP version string (i.e. "HTTP/1.1")
- * @param upload_data the data being uploaded
- * @param upload_data_size set initially to the size of the
- *                         upload_data provided; the method
- *                         must update this value to the
- *                         number of bytes NOT processed;
+ * @param upload_data the data being uploaded (for POST data in
+ *                    key-value format, use lookup_arg() instead)
+ * @param upload_data_size size of the data being uploaded
  * @param con_cls pointer that the callback can set to some
  *                address and that will be preserved by
  *                httpd for future calls for this request
@@ -66,7 +64,7 @@ enum HTTPD_CONTENT_TYPE {
  */
 typedef int (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
 				const char *method, const char *version,
-				const char *upload_data, size_t *upload_data_size,
+				const char *upload_data, size_t upload_data_size,
 				void **con_cls,
 				str *buffer, str *page, union sockaddr_union* cl_socket);
 
