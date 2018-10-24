@@ -76,6 +76,7 @@ static char* rest_id_s = "rest";
  * Module initialization and cleanup
  */
 static int mod_init(void);
+static int child_init(int rank);
 static void mod_destroy(void);
 
 /*
@@ -189,7 +190,7 @@ struct module_exports exports = {
 	mod_init, /* module initialization function */
 	NULL,     /* response function*/
 	mod_destroy,
-	NULL,     /* per-child init function */
+	child_init, /* per-child init function */
 };
 
 /*
@@ -324,6 +325,17 @@ static int mod_init(void)
 	return 0;
 }
 
+static int child_init(int rank)
+{
+	if (init_sync_handle() != 0) {
+		LM_ERR("failed to init sync handle\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static void mod_destroy(void)
 {
 	curl_global_cleanup();
@@ -424,8 +436,9 @@ static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
 		return -1;
 	}
 
-	return rest_get_method(msg, url.s, (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
-	                       (pv_spec_p)code_pv);
+	return rest_sync_transfer(REST_CLIENT_GET, msg, url.s, NULL, NULL,
+	                          (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
+	                          (pv_spec_p)code_pv);
 }
 
 static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
@@ -448,8 +461,9 @@ static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 		return -1;
 	}
 
-	return rest_post_method(msg, url.s, &body, &ctype, (pv_spec_p)body_pv,
-	                        (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
+	return rest_sync_transfer(REST_CLIENT_POST, msg, url.s, &body, &ctype,
+	                          (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
+	                          (pv_spec_p)code_pv);
 }
 
 static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
@@ -472,8 +486,9 @@ static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
 			return -1;
 	}
 
-	return rest_put_method(msg, url.s, &body, &ctype, (pv_spec_p)body_pv,
-		                       (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
+	return rest_sync_transfer(REST_CLIENT_PUT, msg, url.s, &body, &ctype,
+	                          (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
+	                          (pv_spec_p)code_pv);
 }
 
 
@@ -510,19 +525,12 @@ static void set_output_pv_params(struct sip_msg *msg, str *body_in, pv_spec_p bo
 	}
 }
 
-static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx,
-					char *gp_url, char *body_pv, char *ctype_pv, char *code_pv)
+int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
+                      char *url, str *ctype, str *body, async_ctx *ctx,
+                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	rest_async_param *param;
-	str url;
 	int read_fd;
-
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
-	}
-
-	LM_DBG("async rest get %.*s %p %p %p\n", url.len, url.s, body_pv, ctype_pv, code_pv);
 
 	param = pkg_malloc(sizeof *param);
 	if (!param) {
@@ -531,7 +539,7 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx,
 	}
 	memset(param, '\0', sizeof *param);
 
-	read_fd = start_async_http_req(msg, REST_CLIENT_GET, url.s, NULL, NULL,
+	read_fd = start_async_http_req(msg, method, url, body, ctype,
 				param, &param->body, ctype_pv ? &param->ctype : NULL);
 
 	/* error occurred; no transfer done */
@@ -559,24 +567,39 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx,
 
 	ctx->resume_f = resume_async_http_req;
 
-	param->method = REST_CLIENT_GET;
+	param->method = method;
 	param->body_pv = (pv_spec_p)body_pv;
 	param->ctype_pv = (pv_spec_p)ctype_pv;
 	param->code_pv = (pv_spec_p)code_pv;
 	ctx->resume_param = param;
+
 	/* async started with success */
 	async_status = read_fd;
-
 	return 1;
 }
 
-static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
-					 char *gp_url, char *gp_body,
-					 char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
+static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx,
+					char *gp_url, char *body_pv, char *ctype_pv, char *code_pv)
 {
-	rest_async_param *param;
+	str url;
+
+	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
+		LM_ERR("Invalid HTTP URL pseudo variable!\n");
+		return -1;
+	}
+
+	LM_DBG("async rest get %.*s %p %p %p\n", url.len, url.s,
+			body_pv, ctype_pv, code_pv);
+
+	return async_rest_method(REST_CLIENT_GET, msg, url.s, NULL, NULL, ctx,
+				(pv_spec_p)body_pv, (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
+}
+
+static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
+							 char *gp_url, char *gp_body, char *gp_ctype,
+							 char *body_pv, char *ctype_pv, char *code_pv)
+{
 	str url, body, ctype = { NULL, 0 };
-	int read_fd;
 
 	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
 		LM_ERR("Invalid HTTP URL pseudo variable!\n");
@@ -593,61 +616,18 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 		return -1;
 	}
 
-	LM_DBG("async rest post '%.*s' %p %p %p\n", url.len, url.s, body_pv, ctype_pv, code_pv);
+	LM_DBG("async rest post '%.*s' %p %p %p\n", url.len, url.s,
+			body_pv, ctype_pv, code_pv);
 
-	param = pkg_malloc(sizeof *param);
-	if (!param) {
-		LM_ERR("no more shm\n");
-		return -1;
-	}
-	memset(param, '\0', sizeof *param);
-
-	read_fd = start_async_http_req(msg, REST_CLIENT_POST, url.s, &body, &ctype,
-				param, &param->body, ctype_pv ? &param->ctype : NULL);
-
-	/* error occurred; no transfer done */
-	if (read_fd == ASYNC_NO_IO) {
-		ctx->resume_param = NULL;
-		ctx->resume_f = NULL;
-		/* keep default async status of NO_IO */
-		return -1;
-
-	/* no need for async - transfer already completed! */
-	} else if (read_fd == ASYNC_SYNC) {
-		set_output_pv_params(msg, &param->body, (pv_spec_p)body_pv,
-							 &param->ctype, (pv_spec_p)ctype_pv,
-							 param->handle, (pv_spec_p)code_pv);
-
-		pkg_free(param->body.s);
-		if (ctype_pv && param->ctype.s)
-			pkg_free(param->ctype.s);
-		curl_easy_cleanup(param->handle);
-		pkg_free(param);
-
-		async_status = ASYNC_SYNC;
-		return 1;
-	}
-
-	ctx->resume_f = resume_async_http_req;
-
-	param->method = REST_CLIENT_POST;
-	param->body_pv = (pv_spec_p)body_pv;
-	param->ctype_pv = (pv_spec_p)ctype_pv;
-	param->code_pv = (pv_spec_p)code_pv;
-	ctx->resume_param = param;
-	/* async started with success */
-	async_status = read_fd;
-
-	return 1;
+	return async_rest_method(REST_CLIENT_POST, msg, url.s, &body, &ctype, ctx,
+				(pv_spec_p)body_pv, (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
 }
 
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 							char *gp_url, char *gp_body, char *gp_ctype,
 							char *body_pv, char *ctype_pv, char *code_pv)
 {
-	rest_async_param *param;
 	str url, body, ctype = { NULL, 0 };
-	int read_fd;
 
 	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
 		LM_ERR("Invalid HTTP URL pseudo variable!\n");
@@ -667,50 +647,8 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 	LM_DBG("async rest put '%.*s' %p %p %p\n",
 		url.len, url.s, body_pv, ctype_pv, code_pv);
 
-	param = pkg_malloc(sizeof *param);
-	if (!param) {
-		LM_ERR("no more shm\n");
-		return -1;
-	}
-	memset(param, '\0', sizeof *param);
-
-	read_fd = start_async_http_req(msg, REST_CLIENT_PUT, url.s, &body, &ctype,
-	            param, &param->body, ctype_pv ? &param->ctype : NULL);
-
-	/* error occurred; no transfer done */
-	if (read_fd == ASYNC_NO_IO) {
-		ctx->resume_param = NULL;
-		ctx->resume_f = NULL;
-		/* keep default async status of NO_IO */
-		return -1;
-
-	/* no need for async - transfer already completed! */
-	} else if (read_fd == ASYNC_SYNC) {
-		set_output_pv_params(msg, &param->body, (pv_spec_p)body_pv,
-				&param->ctype, (pv_spec_p)ctype_pv,
-				param->handle, (pv_spec_p)code_pv);
-
-		pkg_free(param->body.s);
-		if (ctype_pv && param->ctype.s)
-			pkg_free(param->ctype.s);
-		curl_easy_cleanup(param->handle);
-		pkg_free(param);
-
-		async_status = ASYNC_SYNC;
-		return 1;
-	}
-
-	ctx->resume_f = resume_async_http_req;
-
-	param->method = REST_CLIENT_PUT;
-	param->body_pv = (pv_spec_p)body_pv;
-	param->ctype_pv = (pv_spec_p)ctype_pv;
-	param->code_pv = (pv_spec_p)code_pv;
-	ctx->resume_param = param;
-	/* async started with success */
-	async_status = read_fd;
-
-	return 1;
+	return async_rest_method(REST_CLIENT_PUT, msg, url.s, &body, &ctype, ctx,
+				(pv_spec_p)body_pv, (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
 }
 
 static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv)
