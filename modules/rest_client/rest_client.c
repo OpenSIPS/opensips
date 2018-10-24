@@ -248,6 +248,12 @@ static int mod_init(void)
 		connect_poll_interval = 20;
 	}
 
+	if (connection_timeout > curl_timeout) {
+		LM_WARN("'connection_timeout' must be less than or equal "
+		        "to 'curl_timeout'! setting it to %ld...\n", curl_timeout);
+		connection_timeout = curl_timeout;
+	}
+
 	lock_init(&thread_lock);
 
 	curl_global_init_mem(CURL_GLOBAL_ALL,
