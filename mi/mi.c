@@ -357,45 +357,57 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 	int is_ambiguous = 0;
 	int pos_params;
 
-	if (!req->req_obj)  /* error parsing the request JSON text */
+	if (!req->req_obj) {  /* error parsing the request JSON text */
+		LM_ERR("Failed to parse the request JSON text\n");
 		return build_err_resp(JSONRPC_PARSE_ERR_CODE,
 					MI_SSTR(JSONRPC_PARSE_ERR_MSG), NULL, 0);
+	}
 
-	if (req->invalid)  /* invalid jsonrpc request */
+	if (req->invalid) {  /* invalid jsonrpc request */
+		LM_ERR("Invalid JSON-RPC request\n");
 		return build_err_resp(JSONRPC_INVAL_REQ_CODE,
 					MI_SSTR(JSONRPC_INVAL_REQ_MSG), NULL, 0);
+	}
 
-	if (!cmd)
+	if (!cmd) {
+		LM_ERR("Command not found\n");
 		return build_err_resp(JSONRPC_NOT_FOUND_CODE,
 				MI_SSTR(JSONRPC_NOT_FOUND_MSG), NULL, 0);
+	}
 
 	pos_params = req->params ? req->params->type & cJSON_Array : 0;
-	if (pos_params && (cmd->flags & MI_NAMED_PARAMS_ONLY))
+	if (pos_params && (cmd->flags & MI_NAMED_PARAMS_ONLY)) {
+		LM_ERR("Command only supports named parameters\n");
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 				MI_SSTR(ERR_DET_POS_PARAMS_S));
+	}
 
 	/* use the correct 'recipe' of the command based
 	 * on the received parameters */
 	cmd_recipe = get_cmd_recipe(cmd->recipes, req->params, pos_params,
 					&is_ambiguous);
-	if (!cmd_recipe)
+	if (!cmd_recipe) {
+		LM_ERR("Invalid parameters\n");
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), NULL, 0);
-	else if (is_ambiguous)
+	} else if (is_ambiguous) {
+		LM_ERR("Ambigous call\n");
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 				MI_SSTR(ERR_DET_AMBIG_CALL_S));
+	}
 
 	cmd_params.item = req->params;
 	cmd_params.list = cmd_recipe->params;
 
 	resp = cmd_recipe->cmd(&cmd_params, async_hdl);
 
-	if (resp == NULL)
+	if (resp == NULL) {
+		LM_ERR("Command failed\n");
 		return build_err_resp(JSONRPC_SERVER_ERR_CODE,
 				MI_SSTR(JSONRPC_SERVER_ERR_MSG), NULL, 0);
-	else 
+	} else
 		return resp;
 }
 
@@ -438,13 +450,13 @@ int add_id_to_response(mi_item_t *id, mi_response_t *resp)
 	return 0;
 }
 
-int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf)
+int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf, int pretty)
 {
 	mi_item_t *res_err, *res_err_code = NULL;
 
 	res_err = cJSON_GetObjectItem(resp, JSONRPC_ERROR_S);
 	if (res_err) {
-		res_err_code = cJSON_GetObjectItem(res_err, JSONRPC_ERROR_S);
+		res_err_code = cJSON_GetObjectItem(res_err, JSONRPC_ERR_CODE_S);
 		if (!res_err_code) {
 			LM_ERR("no error code for MI error response\n");
 			return -1;
@@ -465,7 +477,7 @@ int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf)
 	if (add_id_to_response(id, resp) < 0)
 		return -1;
 
-	if (cJSON_PrintPreallocated(resp, buf->s, buf->len, 1) == 0) {
+	if (cJSON_PrintPreallocated(resp, buf->s, buf->len, pretty) == 0) {
 		LM_ERR("Failed to print JSON\n");
 		return -1;
 	}

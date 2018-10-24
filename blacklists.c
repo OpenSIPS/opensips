@@ -647,7 +647,7 @@ static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 		return 0;
 
 	lists_arr = add_mi_array(resp_obj, MI_SSTR("Lists"));
-	if (lists_arr) {
+	if (!lists_arr) {
 		free_mi_response(resp);
 		return 0;
 	}

@@ -1961,7 +1961,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 		return 0;
 
 	conns_arr = add_mi_array(resp_obj, MI_SSTR("Connections"));
-	if (conns_arr) {
+	if (!conns_arr) {
 		free_mi_response(resp);
 		return 0;
 	}

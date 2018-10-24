@@ -19,9 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
  *
- * history:
- * ---------
- *  2006-09-08  first version (bogdan)
  */
 
 
@@ -227,7 +224,7 @@ static mi_response_t *mi_ps(const mi_params_t *params,
 		return 0;
 
 	procs_arr = add_mi_array(resp_obj, MI_SSTR("Processes"));
-	if (procs_arr) {
+	if (!procs_arr) {
 		free_mi_response(resp);
 		return 0;
 	}
@@ -322,7 +319,7 @@ static mi_response_t *w_log_level(const mi_params_t *params,
 		return 0;
 
 	procs_arr = add_mi_array(resp_obj, MI_SSTR("Processes"));
-	if (procs_arr) {
+	if (!procs_arr) {
 		free_mi_response(resp);
 		return 0;
 	}

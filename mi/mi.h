@@ -145,7 +145,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 
 /* If the request is a jsonrpc notification, the function will return MI_NO_RPL
  */
-int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf);
+int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf, int pretty);
 
 /* Frees the objects in the struct allocated when parsing the request
  */

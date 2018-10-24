@@ -491,7 +491,7 @@ mi_response_t *mi_events_list(const mi_params_t *params,
 		return 0;
 
 	events_arr = add_mi_array(resp_obj, MI_SSTR("Events"));
-	if (events_arr) {
+	if (!events_arr) {
 		free_mi_response(resp);
 		return 0;
 	}
@@ -571,7 +571,7 @@ static int evi_print_event(mi_item_t *ev_obj, evi_event_t *ev, evi_subs_p subs)
 
 	if (subs) {
 		subs_item = add_mi_object(ev_obj, MI_SSTR("Subscriber"));
-		if (subs_item)
+		if (!subs_item)
 			goto error;
 
 		if (evi_print_subscriber(subs_item, subs) < 0) {
@@ -580,7 +580,7 @@ static int evi_print_event(mi_item_t *ev_obj, evi_event_t *ev, evi_subs_p subs)
 		}
 	} else {
 		subs_arr = add_mi_array(ev_obj, MI_SSTR("Subscribers"));
-		if (subs_arr)
+		if (!subs_arr)
 			goto error;
 
 		for (subs = ev->subscribers; subs; subs = subs->next) {
@@ -652,7 +652,7 @@ static mi_response_t *mi_subscribers_list(evi_event_p event, evi_subs_p subs)
 		return 0;
 
 	event_obj = add_mi_object(resp_obj, MI_SSTR("Event"));
-	if (event_obj)
+	if (!event_obj)
 		goto error;
 
 	if (evi_print_event(resp_obj, event, subs) < 0) {
