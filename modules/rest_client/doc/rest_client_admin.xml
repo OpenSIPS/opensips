@@ -8,7 +8,7 @@
 	<title>Overview</title>
 	<para>
 	The <emphasis>rest_client</emphasis> module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET,PUT and POST.
+	with an HTTP server by doing RESTful queries, such as GET, POST and PUT.
 	</para>
 	</section>
 
@@ -46,10 +46,33 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
+	<section id="param_curl_timeout" xreflabel="curl_timeout">
+		<title><varname>curl_timeout</varname> (integer)</title>
+		<para>
+		The maximum allowed time for any HTTP(S) transfer to complete.  This
+		interval is inclusive of the initial connect time window, hence the value
+		of this parameter must be greater than or equal to
+		<xref linkend="param_connection_timeout"/>.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>20</quote> seconds.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>curl_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "curl_timeout", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_connection_timeout" xreflabel="connection_timeout">
 		<title><varname>connection_timeout</varname> (integer)</title>
 		<para>
-		Maximum time allowed to establish a connection with the server.
+		The maximum allowed time to establish a connection with the server.
 		</para>
 		<para>
 		<emphasis>
@@ -60,7 +83,7 @@
 		<title>Setting the <varname>connection_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("rest_client", "connection_timeout", 300)
+modparam("rest_client", "connection_timeout", 4)
 ...
 </programlisting>
 		</example>
@@ -106,26 +129,6 @@ modparam("rest_client", "connect_poll_interval", 2)
 		<programlisting format="linespecific">
 ...
 modparam("rest_client", "max_async_transfers", 300)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="param_curl_timeout" xreflabel="curl_timeout">
-		<title><varname>curl_timeout</varname> (integer)</title>
-		<para>
-		Maximum time allowed for the libcurl transfer to complete.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>20</quote> seconds.
-		</emphasis>
-		</para>
-		<example>
-		<title>Setting the <varname>curl_timeout</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rest_client", "curl_timeout", 300)
 ...
 </programlisting>
 		</example>
