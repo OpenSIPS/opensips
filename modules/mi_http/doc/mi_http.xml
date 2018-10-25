@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
-<!ENTITY admin SYSTEM "mi_json_admin.xml">
+<!ENTITY admin SYSTEM "mi_http_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
@@ -14,7 +14,7 @@
 
 <book>
     <bookinfo>
-	<title>mi_json Module</title>
+	<title>mi_http Module</title>
 	<productname class="trade">&osipsname;</productname>
 	</bookinfo>
     <toc></toc>

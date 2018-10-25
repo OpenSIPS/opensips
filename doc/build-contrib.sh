@@ -577,6 +577,7 @@ mod_renames=(
   [cachedb_local]=localcache
   [uac_registrant]=registrant
   [mi_html]=mi_http
+  [mi_http]=mi_json
 )
 
 mk_git_handle() {
