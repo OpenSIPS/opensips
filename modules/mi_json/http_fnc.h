@@ -27,11 +27,6 @@
 #define MI_JSON_ASYNC_FAILED   ((void*)-2)
 #define MI_JSON_ASYNC_EXPIRED  ((void*)-3)
 
-typedef struct mi_json_html_page_data_ {
-  str page;
-  str buffer;
-}mi_json_page_data_t;
-
 typedef struct mi_json_async_resp_data_ {
   gen_lock_t* lock;
 }mi_json_async_resp_data_t;
@@ -40,12 +35,11 @@ typedef struct mi_json_async_resp_data_ {
 int mi_json_init_async_lock(void);
 void mi_json_destroy_async_lock(void);
 
-struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* command,
-      const str* params, str *page, str *buffer, struct mi_handler **async_hdl,
-	  union sockaddr_union* cl_socket);
-int mi_json_build_page(str* page, int max_page_len,
-        struct mi_root* tree);
-void trace_json_request( struct mi_cmd* f, union sockaddr_union* cl_socket, char* url,
-		struct mi_root* mi_req );
+mi_response_t *mi_http_run_mi_cmd(struct mi_cmd *cmd, char *req_method,
+                mi_request_t *request, union sockaddr_union *cl_socket,
+                struct mi_handler **async_hdl);
+
+void trace_json_request(struct mi_cmd* f, char *req_method,
+					union sockaddr_union* cl_socket, mi_item_t *params);
 
 #endif
