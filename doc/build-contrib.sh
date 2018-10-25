@@ -576,6 +576,7 @@ mod_renames=(
   [auth_aaa]=auth_radius
   [cachedb_local]=localcache
   [uac_registrant]=registrant
+  [mi_html]=mi_http
 )
 
 mk_git_handle() {
