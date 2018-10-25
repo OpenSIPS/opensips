@@ -1153,9 +1153,9 @@ t_relay(); # send the call further
 		<listitem>
 			<para><emphasis>ACK request</emphasis> - true if the ACK is a
 			hop-by-hop ACK (to a negative reply) corresponding to an previous
-			INVITE transaction. IMPORTANT: end-to-end ACKs (to 2xx replies) are
-			not detected by this function as end-to-end ACKs form a different
-			transaction.
+			INVITE transaction. IMPORTANT: this function returns false (return
+			code <emphasis>-2</emphasis>) for end-to-end ACKs (to 2xx replies
+			from a different transaction).
 			</para>
 		</listitem>
 		</itemizedlist>
