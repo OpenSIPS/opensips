@@ -1298,14 +1298,14 @@ static int dr_init(void)
 
 		if( shm_str_dup( &( head_db_end->db_url ),
 					&(it_head_config->db_url))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url\n");
+			LM_ERR("shm_str_dup failed for db_url\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
 
 		if( shm_str_dup( &( head_db_end->partition ),
 					&(it_head_config->partition))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url\n");
+			LM_ERR("shm_str_dup failed for partition name\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1315,7 +1315,7 @@ static int dr_init(void)
 			head_db_end->drd_table.len = drd_table.len;
 		}else if( shm_str_dup( &( head_db_end->drd_table ),
 					&(it_head_config->drd_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url\n");
+			LM_ERR("shm_str_dup failed for DRD table\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1325,7 +1325,7 @@ static int dr_init(void)
 			head_db_end->drr_table.len = drr_table.len;
 		}else if( shm_str_dup( &( head_db_end->drr_table ),
 					&(it_head_config->drr_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url\n");
+			LM_ERR("shm_str_dup failed for DRR table\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1335,7 +1335,7 @@ static int dr_init(void)
 			head_db_end->drc_table.len = drc_table.len;
 		} else if( shm_str_dup( &( head_db_end->drc_table ),
 					&(it_head_config->drc_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url\n");
+			LM_ERR("shm_str_dup failed for DRC table\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
@@ -1344,7 +1344,7 @@ static int dr_init(void)
 			head_db_end->drg_table.len = drg_table.len;
 		} else if( shm_str_dup( &( head_db_end->drg_table ),
 					&(it_head_config->drg_table))!=0 ) {
-			LM_CRIT("shm_str_dup failed for db_url\n");
+			LM_ERR("shm_str_dup failed for DRG table\n");
 			head_db_end->db_url.s = 0;
 			goto skip;
 		}
