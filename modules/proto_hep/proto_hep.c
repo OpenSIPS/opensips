@@ -994,6 +994,8 @@ static inline int hep_handle_req(struct tcp_req *req,
 			pkg_free(req);
 		}
 
+		con->msg_attempts = 0;
+
 		if (size) {
 			memmove(req->buf, req->parsed, size);
 			init_tcp_req( req, size);
