@@ -412,12 +412,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			if (receive_msg(msg_buf, msg_len,
 				&local_rcv, NULL) <0)
 					LM_ERR("receive_msg failed \n");
-
-			if (!size && req != &_tcp_common_current_req) {
-				/* if we no longer need this tcp_req
-				 * we can free it now */
-				pkg_free(req);
-			}
 		}
 
 		update_stat( pt[process_no].load, -1 );
@@ -437,6 +431,13 @@ static inline int tcp_handle_req(struct tcp_req *req,
 
 			/* if we still have some unparsed bytes, try to parse them too */
 			return 1;
+		}
+
+		if (req != &_tcp_common_current_req) {
+			/* if we no longer need this tcp_req
+			 * we can free it now */
+			pkg_free(req);
+			con->con_req = NULL;
 		}
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
