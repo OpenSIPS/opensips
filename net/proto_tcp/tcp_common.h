@@ -422,6 +422,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 
 		update_stat( pt[process_no].load, -1 );
+		con->msg_attempts = 0;
 
 		if (size) {
 			/* restoring the char only makes sense if there is something else to
@@ -438,8 +439,6 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			/* if we still have some unparsed bytes, try to parse them too */
 			return 1;
 		}
-
-		con->msg_attempts = 0;
 	} else {
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts==0)
