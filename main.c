@@ -1116,12 +1116,12 @@ try_again:
 	if (init_shm_mallocs()==-1)
 		goto error;
 
-	set_osips_state( STATE_STARTING );
-
 	if (init_stats_collector() < 0) {
 		LM_ERR("failed to initialize statistics\n");
 		goto error;
 	}
+
+	set_osips_state( STATE_STARTING );
 
 	if (!testing_framework) {
 		/* parse the config file, prior to this only default values
