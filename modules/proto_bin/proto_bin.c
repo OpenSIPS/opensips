@@ -677,15 +677,17 @@ static int bin_handle_req(struct tcp_req *req,
 			pkg_free(req);
 		}
 
-		if (size)
-			memmove(req->buf, req->parsed, size);
-
-		init_tcp_req(req, size);
 		con->msg_attempts = 0;
 
-		/* if we still have some unparsed bytes, try to  parse them too*/
-		if (size) 
+		if (size) {
+			memmove(req->buf, req->parsed, size);
+
+			init_tcp_req(req, size);
+
+			/* if we still have some unparsed bytes, try to  parse them too*/
 			return 1;
+		}
+
 	} else {  
 		/* request not complete - check the if the thresholds are exceeded */
 		if (con->msg_attempts==0)
