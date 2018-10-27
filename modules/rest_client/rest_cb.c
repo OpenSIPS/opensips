@@ -40,6 +40,10 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 	int len = size * nmemb;
 	str *buff = (str *)body;
 
+#ifdef EXTRA_DEBUG
+	LM_DBG("got body piece! bs: %lu, blocks: %lu\n", size, nmemb);
+#endif
+
 	if (len == 0)
 		return 0;
 
