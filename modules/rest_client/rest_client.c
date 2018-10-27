@@ -415,6 +415,7 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 		*resume_param = NULL;
 		*resume_f = NULL;
 		/* keep default async status of NO_IO */
+		pkg_free(param);
 		return -1;
 
 	/* no need for async - transfer already completed! */
