@@ -547,6 +547,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		ctx->resume_param = NULL;
 		ctx->resume_f = NULL;
 		/* keep default async status of NO_IO */
+		pkg_free(param);
 		return -1;
 
 	/* no need for async - transfer already completed! */
