@@ -341,15 +341,17 @@ static inline void put_multi(OSS_CURLM *multi_list)
  *
  * @return: negative on "status not found"
  */
-static inline CURLcode get_easy_status(CURL *handle, CURLM *multi)
+static inline int get_easy_status(CURL *handle, CURLM *multi, CURLcode *code)
 {
 	int msgq;
 	struct CURLMsg *m;
 
 	do {
 		m = curl_multi_info_read(multi, &msgq);
-		if (m && m->msg == CURLMSG_DONE && m->easy_handle == handle)
-			return m->data.result;
+		if (m && m->msg == CURLMSG_DONE && m->easy_handle == handle) {
+			*code = m->data.result;
+			return 0;
+		}
 	} while (m);
 
 	return -1;
@@ -732,8 +734,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
 			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-			rc = get_easy_status(handle, multi_handle);
-			if (rc < 0)  {
+			if (get_easy_status(handle, multi_handle, &rc) < 0) {
 				LM_ERR("transfer is done, but no results found!\n");
 				goto error;
 			}
@@ -921,8 +922,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		http_rc = 0;
 	}
 
-	rc = get_easy_status(param->handle, multi_handle);
-	if (rc < 0) {
+	if (get_easy_status(param->handle, multi_handle, &rc) < 0) {
 		LM_ERR("transfer is done, but no results found!\n");
 		goto out;
 	}
