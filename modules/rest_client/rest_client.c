@@ -491,56 +491,24 @@ static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
 	                          (pv_spec_p)code_pv);
 }
 
-
-static void set_output_pv_params(struct sip_msg *msg, str *body_in, pv_spec_p body_pv, str *ctype_in,
-								 pv_spec_p ctype_pv, CURL *handle, pv_spec_p code_pv)
-{
-	pv_value_t val;
-	long http_rc;
-	CURLcode rc;
-
-	val.flags = PV_VAL_STR;
-	val.rs = *body_in;
-
-	if (pv_set_value(msg, (pv_spec_p)body_pv, 0, &val) != 0)
-		LM_ERR("failed to set output body pv\n");
-
-	if (ctype_pv) {
-		val.rs = *ctype_in;
-		if (pv_set_value(msg, (pv_spec_p)ctype_pv, 0, &val) != 0)
-			LM_ERR("failed to set output ctype pv\n");
-	}
-
-	if (code_pv) {
-		rc = curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		if (rc != CURLE_OK)
-			LM_ERR("curl_easy_getinfo: %s\n", curl_easy_strerror(rc));
-
-		LM_DBG("Last response code: %ld\n", http_rc);
-
-		val.flags = PV_VAL_INT|PV_TYPE_INT;
-		val.ri = (int)http_rc;
-		if (pv_set_value(msg, (pv_spec_p)code_pv, 0, &val) != 0)
-			LM_ERR("failed to set output code pv\n");
-	}
-}
-
 int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
                       char *url, str *ctype, str *body, async_ctx *ctx,
                       pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	rest_async_param *param;
-	int read_fd;
+	pv_value_t val;
+	long http_rc;
+	int read_fd, rc;
 
 	param = pkg_malloc(sizeof *param);
 	if (!param) {
 		LM_ERR("no more shm\n");
-		return -1;
+		return RCL_INTERNAL_ERR;
 	}
 	memset(param, '\0', sizeof *param);
 
-	read_fd = start_async_http_req(msg, method, url, body, ctype,
-				param, &param->body, ctype_pv ? &param->ctype : NULL);
+	rc = start_async_http_req(msg, method, url, body, ctype,
+			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd);
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
@@ -548,13 +516,36 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		ctx->resume_f = NULL;
 		/* keep default async status of NO_IO */
 		pkg_free(param);
-		return -1;
+		return rc;
 
 	/* no need for async - transfer already completed! */
 	} else if (read_fd == ASYNC_SYNC) {
-		set_output_pv_params(msg, &param->body, (pv_spec_p)body_pv,
-							 &param->ctype, (pv_spec_p)ctype_pv,
-							 param->handle, (pv_spec_p)code_pv);
+		if (code_pv) {
+			curl_easy_getinfo(param->handle, CURLINFO_RESPONSE_CODE, &http_rc);
+			LM_DBG("HTTP response code: %ld\n", http_rc);
+
+			val.flags = PV_VAL_INT|PV_TYPE_INT;
+			val.ri = (int)http_rc;
+			if (pv_set_value(msg, (pv_spec_p)code_pv, 0, &val) != 0) {
+				LM_ERR("failed to set output code pv\n");
+				return RCL_INTERNAL_ERR;
+			}
+		}
+
+		val.flags = PV_VAL_STR;
+		val.rs = param->body;
+		if (pv_set_value(msg, (pv_spec_p)body_pv, 0, &val) != 0) {
+			LM_ERR("failed to set output body pv\n");
+			return RCL_INTERNAL_ERR;
+		}
+
+		if (ctype_pv) {
+			val.rs = param->ctype;
+			if (pv_set_value(msg, (pv_spec_p)ctype_pv, 0, &val) != 0) {
+				LM_ERR("failed to set output ctype pv\n");
+				return RCL_INTERNAL_ERR;
+			}
+		}
 
 		pkg_free(param->body.s);
 		if (ctype_pv && param->ctype.s)
@@ -563,7 +554,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		pkg_free(param);
 
 		async_status = ASYNC_SYNC;
-		return 1;
+		return rc;
 	}
 
 	ctx->resume_f = resume_async_http_req;

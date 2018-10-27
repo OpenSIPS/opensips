@@ -56,6 +56,12 @@ enum rest_client_method {
 	REST_CLIENT_POST
 };
 
+/* return codes for rest_client script functions */
+#define RCL_OK                1
+#define RCL_CONNECT_REFUSED  -1
+#define RCL_CONNECT_TIMEOUT  -2
+#define RCL_TRANSFER_TIMEOUT -3
+#define RCL_INTERNAL_ERR     -10
 
 typedef struct _rest_trace_param {
 	str callid;
@@ -115,8 +121,9 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
                        pv_spec_p ctype_pv, pv_spec_p code_pv);
 
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
-					     char *url, str *req_body, str *req_ctype,
-					     rest_async_param *async_parm, str *body, str *ctype);
+                         char *url, str *req_body, str *req_ctype,
+                         rest_async_param *async_parm, str *body, str *ctype,
+						 enum async_ret_code *out_fd);
 enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *param);
 
 int rest_append_hf_method(struct sip_msg *msg, str *hfv);

@@ -243,7 +243,7 @@ do_trace:
 
 	if (trace_rest_message( tparam ) < 0) {
 		/* no need to exit; curl worked ok, tracing failed */
-		LM_ERR("failed to trage rest request!\n");
+		LM_ERR("failed to trace rest request!\n");
 	}
 
 	return CURLE_OK;
@@ -309,7 +309,7 @@ static OSS_CURLM *get_multi(void)
 
 	if (list_empty(&multi_pool)) {
 		if (multi_pool_sz == max_async_transfers) {
-			LM_ERR("max async transfers! (%d)\n", max_async_transfers);
+			LM_WARN("max async transfers! (%d)\n", max_async_transfers);
 			return NULL;
 		}
 
@@ -334,6 +334,25 @@ static OSS_CURLM *get_multi(void)
 static inline void put_multi(OSS_CURLM *multi_list)
 {
 	list_add(&multi_list->list, &multi_pool);
+}
+
+/**
+ * get_easy_status - lookup an easy handle in a multi and return its status
+ *
+ * @return: negative on "status not found"
+ */
+static inline CURLcode get_easy_status(CURL *handle, CURLM *multi)
+{
+	int msgq;
+	struct CURLMsg *m;
+
+	do {
+		m = curl_multi_info_read(multi, &msgq);
+		if (m && m->msg == CURLMSG_DONE && m->easy_handle == handle)
+			return m->data.result;
+	} while (m);
+
+	return -1;
 }
 
 static int init_transfer(CURL *handle, char *url)
@@ -395,11 +414,11 @@ static inline int set_upload_opts(CURL *handle, str *ctype, str *body)
 	}
 
 	/* two rare bugs may occur with older curl versions (pre 7.17.1):
-	 *	1. since req_body->s is not dup'ed and may point to a PV buf,
+	 *	1. since body->s is not dup'ed and may point to a PV buf,
 	 *	   the next SIP message may impact this async transfer by
 	 *	   overriding the value stored in the PV buffer
 	 *
-	 *	2. req_body->s is provided by a PV which does not NULL-terminate
+	 *	2. body->s is provided by a PV which does not NULL-terminate
 	 *	   strings (e.g. $du), thus curl's strlen() may overflow or crash
 	 */
 #if (LIBCURL_VERSION_NUM >= 0x071101)
@@ -432,6 +451,47 @@ cleanup:
 		} \
 	} while (0)
 
+static inline char rest_easy_perform(
+			CURL *handle, const char *url, long *out_http_rc)
+{
+	CURLcode rc;
+	long http_rc;
+	double connect_time;
+
+	rc = curl_easy_perform(handle);
+
+	curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+	LM_DBG("CURLcode: %d, HTTP response: %ld\n", rc, http_rc);
+
+	if (out_http_rc)
+		*out_http_rc = http_rc;
+
+	switch (rc) {
+	case CURLE_OK:
+		return RCL_OK;
+
+	case CURLE_COULDNT_CONNECT:
+		LM_ERR("connect refused for %s\n", url);
+		return RCL_CONNECT_REFUSED;
+
+	case CURLE_OPERATION_TIMEDOUT:
+		curl_easy_getinfo(handle, CURLINFO_CONNECT_TIME, &connect_time);
+		if (connect_time == 0) {
+			LM_ERR("connect timeout on %s (%lds)\n", url, connection_timeout);
+			return RCL_CONNECT_TIMEOUT;
+		}
+
+		LM_ERR("connected, but transfer timed out for %s (%lds)\n",
+		       url, curl_timeout);
+		return RCL_TRANSFER_TIMEOUT;
+
+	default:
+		LM_ERR("curl_easy_perform error %d, %s\n",
+				rc, curl_easy_strerror(rc));
+		return RCL_INTERNAL_ERR;
+	}
+}
+
 /**
  * rest_sync_transfer - performs a blocking HTTP request,
  *                      and stores results in pvars
@@ -448,6 +508,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
           /* in */    char *url, str *body, str *ctype,
           /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
+	char ret;
 	CURLcode rc;
 	long http_rc;
 	pv_value_t pv_val;
@@ -487,26 +548,21 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	if (rest_trace_enabled())
 		init_rest_trace(sync_handle, msg, &tparam);
 
-	rc = curl_easy_perform(sync_handle);
+	ret = rest_easy_perform(sync_handle, url, &http_rc);
 	clean_header_list;
 
 	if (code_pv) {
-		curl_easy_getinfo(sync_handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		LM_DBG("Last response code: %ld\n", http_rc);
-
 		pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
 		pv_val.ri = (int)http_rc;
 
 		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set code pv value failed!\n");
-			return -1;
+			return RCL_INTERNAL_ERR;
 		}
 	}
 
-	if (rc != CURLE_OK) {
-		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
-		return -1;
-	}
+	if (ret < 0 && ret != RCL_TRANSFER_TIMEOUT)
+		return ret;
 
 	tbody = res_body;
 	trim(&tbody);
@@ -516,7 +572,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
-		return -1;
+		return RCL_INTERNAL_ERR;
 	}
 
 	if (res_body.s)
@@ -530,14 +586,14 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			return -1;
+			return RCL_INTERNAL_ERR;
 		}
 	}
 
 	if (st.s)
 		pkg_free(st.s);
 
-	return 1;
+	return ret;
 
 cleanup:
 	clean_header_list;
@@ -545,11 +601,12 @@ cleanup:
 		tls_api.release_domain(tls_dom);
 		tls_dom = NULL;
 	}
-	return -1;
+
+	return RCL_INTERNAL_ERR;
 }
 
 /**
- * start_async_http_req - performs an HTTP request, stores results in pvars
+ * start_async_http_req - launch an async HTTP request
  *		- TCP connect phase is synchronous, due to libcurl limitations
  *		- TCP read phase is asynchronous, thanks to the libcurl multi interface
  *
@@ -561,16 +618,20 @@ cleanup:
  * @async_parm: output param, will contain async handles
  * @body:	    reply body; gradually reallocated as data arrives
  * @ctype:	    will eventually hold the last "Content-Type" header of the reply
+ * @out_fd:     the fd to poll on, or a negative error code
+ *
+ * @return: 1 on success, negative on failure
  */
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
-					     char *url, str *req_body, str *req_ctype,
-					     rest_async_param *async_parm, str *body, str *ctype)
+                         char *url, str *req_body, str *req_ctype,
+                         rest_async_param *async_parm, str *body, str *ctype,
+						 enum async_ret_code *out_fd)
 {
 	CURL *handle;
 	CURLcode rc;
 	CURLMcode mrc;
 	fd_set rset, wset, eset;
-	int max_fd, fd;
+	int max_fd, fd, http_rc, ret = RCL_INTERNAL_ERR;
 	long busy_wait, timeout;
 	long retry_time;
 	OSS_CURLM *multi_list;
@@ -607,7 +668,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		break;
 
 	default:
-		LM_ERR("unsupported rest_client_method: %d, defaulting to GET\n", method);
+		LM_ERR("unsupported method: %d, defaulting to GET\n", method);
 	}
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
@@ -621,9 +682,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	if (rest_trace_enabled()) {
 		async_parm->tparam = pkg_malloc(sizeof(rest_trace_param_t));
 		if (!async_parm->tparam) {
-			LM_ERR("no more pkg mem!\n");
-			clean_header_list;
-			return -1;
+			LM_ERR("oom\n");
+			goto cleanup;
 		}
 
 		init_rest_trace(handle, msg, async_parm->tparam);
@@ -631,11 +691,12 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 	multi_list = get_multi();
 	if (!multi_list) {
-		LM_INFO("failed to get a multi handle, doing a blocking transfer\n");
-		rc = curl_easy_perform(handle);
+		LM_WARN("failed to get a multi handle, doing a blocking transfer\n");
+		rc = rest_easy_perform(handle, url, NULL);
 		clean_header_list;
 		async_parm->handle = handle;
-		return ASYNC_SYNC;
+		*out_fd = ASYNC_SYNC;
+		return rc;
 	}
 
 	multi_handle = multi_list->multi_handle;
@@ -651,6 +712,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
 			goto error;
 		}
+
+		LM_DBG("perform code: %d, handles: %d\n", mrc, running_handles);
 
 		mrc = curl_multi_timeout(multi_handle, &retry_time);
 		if (mrc != CURLM_OK) {
@@ -668,18 +731,55 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			goto busy_wait;
 		}
 
-		/* transfer may have already been completed!! */
+		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
+			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
+			rc = get_easy_status(handle, multi_handle);
+			if (rc < 0)  {
+				LM_ERR("transfer is done, but no results found!\n");
+				goto error;
+			}
+
+			LM_DBG("transfer status: %d, %s\n", rc, curl_easy_strerror(rc));
+
+			switch (rc) {
+			case CURLE_OK:
+				break;
+
+			case CURLE_COULDNT_CONNECT:
+				LM_ERR("connect refused for %s\n", url);
+				ret = RCL_CONNECT_REFUSED;
+				goto error;
+
+			case CURLE_OPERATION_TIMEDOUT:
+				if (http_rc == 0) {
+					LM_ERR("connect timeout on %s (%lds)\n", url,
+							connection_timeout);
+					ret = RCL_CONNECT_TIMEOUT;
+					goto error;
+				}
+
+				LM_ERR("connected, but transfer timed out for %s\n", url);
+				ret = RCL_TRANSFER_TIMEOUT;
+				goto error;
+
+			default:
+				LM_ERR("curl_easy_perform error %d, %s\n",
+						rc, curl_easy_strerror(rc));
+				goto error;
+			}
+
 			LM_DBG("done, no need for async!\n");
 
 			clean_header_list;
 			async_parm->handle = handle;
 			mrc = curl_multi_remove_handle(multi_handle, handle);
-			if (mrc != CURLM_OK) {
-				LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
-			}
+			if (mrc != CURLM_OK)
+				LM_ERR("curl_multi_remove_handle: %s\n",
+						curl_multi_strerror(mrc));
 			put_multi(multi_list);
-			return ASYNC_SYNC;
+			*out_fd = ASYNC_SYNC;
+			return RCL_OK;
 		}
 
 		FD_ZERO(&rset);
@@ -716,7 +816,8 @@ busy_wait:
 		usleep(1000UL * busy_wait);
 	}
 
-	LM_ERR("timeout while connecting to '%s' (%ld sec)\n", url, connection_timeout);
+	LM_ERR("connect timeout on %s (%lds)\n", url, connection_timeout);
+	ret = RCL_CONNECT_TIMEOUT;
 	goto error;
 
 success:
@@ -724,7 +825,8 @@ success:
 	async_parm->handle = handle;
 	async_parm->multi_list = multi_list;
 	header_list = NULL;
-	return fd;
+	*out_fd = fd;
+	return RCL_OK;
 
 error:
 	mrc = curl_multi_remove_handle(multi_handle, handle);
@@ -741,7 +843,11 @@ cleanup:
 		tls_api.release_domain(tls_dom);
 		tls_dom = NULL;
 	}
-	return ASYNC_NO_IO;
+	if (rest_trace_enabled() && async_parm->tparam)
+		pkg_free(async_parm->tparam);
+
+	*out_fd = ASYNC_NO_IO;
+	return ret;
 }
 
 enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_param)
@@ -750,10 +856,10 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	CURLMcode mrc;
 	rest_async_param *param = (rest_async_param *)_param;
 	int running = 0, max_fd;
-	long http_rc;
+	long http_rc = 0;
 	fd_set rset, wset, eset;
 	pv_value_t val;
-	int ret = 1, retr;
+	int ret = RCL_INTERNAL_ERR, retr;
 	CURLM *multi_handle;
 
 	multi_handle = param->multi_list->multi_handle;
@@ -770,7 +876,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
-		return -1;
+		goto out;
 	}
 
 	LM_DBG("running handles: %d\n", running);
@@ -782,21 +888,20 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 
 	if (running != 0) {
 		LM_BUG("non-zero running handles!! (%d)", running);
-		abort();
+		goto out;
 	}
 
 	FD_ZERO(&rset);
 	mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
-		ret = -1;
 		goto out;
 	}
 
 	if (max_fd == -1) {
 		if (FD_ISSET(fd, &rset)) {
 			LM_BUG("fd %d is still in rset!", fd);
-			abort();
+			goto out;
 		}
 
 	} else if (FD_ISSET(fd, &rset)) {
@@ -809,44 +914,76 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 
 	if (del_transfer(fd) != 0) {
 		LM_BUG("failed to delete fd %d", fd);
-		abort();
+		goto out;
 	}
 
-	mrc = curl_multi_remove_handle(multi_handle, param->handle);
-	if (mrc != CURLM_OK) {
-		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
-		/* default async status is ASYNC_DONE */
-		return -1;
+	rc = curl_easy_getinfo(param->handle, CURLINFO_RESPONSE_CODE, &http_rc);
+	if (rc != CURLE_OK) {
+		LM_ERR("curl_easy_getinfo: %d, %s\n", rc, curl_easy_strerror(rc));
+		http_rc = 0;
 	}
-	put_multi(param->multi_list);
 
-	val.flags = PV_VAL_STR;
-	val.rs = param->body;
-	if (pv_set_value(msg, param->body_pv, 0, &val) != 0)
-		LM_ERR("failed to set output body pv\n");
-
-	if (param->ctype_pv) {
-		val.rs = param->ctype;
-		if (pv_set_value(msg, param->ctype_pv, 0, &val) != 0)
-			LM_ERR("failed to set output ctype pv\n");
+	rc = get_easy_status(param->handle, multi_handle);
+	if (rc < 0) {
+		LM_ERR("transfer is done, but no results found!\n");
+		goto out;
 	}
 
 	if (param->code_pv) {
-		rc = curl_easy_getinfo(param->handle, CURLINFO_RESPONSE_CODE, &http_rc);
-		if (rc != CURLE_OK) {
-			LM_ERR("curl_easy_getinfo: %s\n", curl_easy_strerror(rc));
-			http_rc = 0;
-		}
-
-		LM_DBG("Last response code: %ld\n", http_rc);
-
 		val.flags = PV_VAL_INT|PV_TYPE_INT;
 		val.ri = (int)http_rc;
-		if (pv_set_value(msg, param->code_pv, 0, &val) != 0)
+		if (pv_set_value(msg, param->code_pv, 0, &val) != 0) {
 			LM_ERR("failed to set output code pv\n");
+			goto out;
+		}
 	}
 
+	switch (rc) {
+	case CURLE_OK:
+		ret = RCL_OK;
+		break;
+
+	case CURLE_COULDNT_CONNECT:
+		LM_ERR("connect refused\n");
+		ret = RCL_CONNECT_REFUSED;
+		goto out;
+
+	case CURLE_OPERATION_TIMEDOUT:
+		LM_ERR("connected, but transfer timed out (%lds)\n", curl_timeout);
+		ret = RCL_TRANSFER_TIMEOUT;
+		break;
+
+	default:
+		LM_ERR("curl_easy_perform error %d, %s\n",
+				rc, curl_easy_strerror(rc));
+		goto out;
+	}
+
+	val.flags = PV_VAL_STR;
+	val.rs = param->body;
+	if (pv_set_value(msg, param->body_pv, 0, &val) != 0) {
+		LM_ERR("failed to set output body pv\n");
+		goto out;
+	}
+
+	if (param->ctype_pv) {
+		val.rs = param->ctype;
+		if (pv_set_value(msg, param->ctype_pv, 0, &val) != 0) {
+			LM_ERR("failed to set output ctype pv\n");
+			goto out;
+		}
+	}
+
+	LM_DBG("HTTP response code: %ld\n", http_rc);
+
 out:
+	mrc = curl_multi_remove_handle(multi_handle, param->handle);
+	if (mrc != CURLM_OK) {
+		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
+		ret = RCL_INTERNAL_ERR;
+	}
+	put_multi(param->multi_list);
+
 	pkg_free(param->body.s);
 	if (param->ctype_pv && param->ctype.s)
 		pkg_free(param->ctype.s);
