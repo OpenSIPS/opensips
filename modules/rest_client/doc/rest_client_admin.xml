@@ -92,9 +92,11 @@ modparam("rest_client", "connection_timeout", 4)
 	<section id="param_connect_poll_interval" xreflabel="connect_poll_interval">
 		<title><varname>connect_poll_interval</varname> (integer)</title>
 		<para>
-		Allows complete control over how quickly we want to detect libcurl's completed
-		TCP handshakes, so the transfers can be started. A lower "connect_poll_interval"
-		will speed up all HTTP transfers, but will also increase CPU usage.
+		Only relevant with async requests.  Allows complete control over how
+		quickly we want to detect libcurl's completed blocking TCP handshakes,
+		so the async transfers can be put in the background.  A lower
+		<xref linkend="param_connect_poll_interval"/> may speed up all async
+		HTTP transfers, but will also increase CPU usage.
 		</para>
 		<para>
 		<emphasis>
@@ -201,8 +203,8 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])</function>
 		</title>
 		<para>
-		Issues an HTTP GET request to the given 'url', and returns a representation
-		of the resource.
+		Perform a blocking HTTP GET on the given <emphasis>url</emphasis> and
+		return a representation of the resource.
 		</para>
 		<para>
 		The <emphasis>body_pv</emphasis> pseudo-var will hold the body of the HTTP
@@ -210,20 +212,19 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		</para>
 		<para>
 		The optional <emphasis>ctype_pv</emphasis> pseudo-var will contain the value
-		of the "Content-Type:" header.
+		of the "Content-Type:" header of the response.
 		</para>
 		<para>
-		The optional <emphasis>retcode_pv</emphasis> pseudo-var is used to retain the
-		HTTP status code of the response message. Since the module is based on libcurl,
-		a <emphasis role='bold'>0</emphasis> value means no HTTP reply arrived at all.
+		The optional <emphasis>retcode_pv</emphasis> pseudo-var will retain the
+		status code of the HTTP response.  A <emphasis role='bold'>0</emphasis>
+		status code value means no HTTP reply arrived at all.
 		</para>
 
-		<para>Possible parameter types</para>
+		<para><emphasis role='bold'>Parameter Types</emphasis></para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>url</emphasis> - String, pseudo-variable, or a String
-				which includes pseudo-variables. (useful for specifying additional
-				attribute-value fields in the URL)
+			<para><emphasis>url</emphasis> - string, pseudo-variable or
+				pseudo-variable format string
 			</para>
 		</listitem>
 		<listitem>
@@ -231,6 +232,9 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 			pseudo-variables</para>
 		</listitem>
 		</itemizedlist>
+
+		&rest_return_codes;
+
 		<para>
 		This function can be used from any route.
 		</para>
@@ -239,14 +243,17 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		<programlisting format="linespecific">
 ...
 # Example of querying a REST service to get the credit of an account
-$var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)", "$var(ct)", "$var(rcode)");
-
+$var(rc) = rest_get("https://getcredit.org/?account=$fU",
+                    "$var(credit)",
+                    "$var(ct)",
+                    "$var(rcode)");
 if ($var(rc) &lt; 0) {
 	xlog("rest_get() failed with $var(rc), acc=$fU\n");
 	send_reply("500", "Server Internal Error");
 	exit;
 }
-if ($var(rcode) >= 300) {
+
+if ($var(rcode) != 200) {
 	xlog("L_INFO", "rest_get() rcode=$var(rcode), acc=$fU\n");
 	send_reply("403", "Forbidden");
 	exit;
@@ -262,14 +269,14 @@ if ($var(rcode) >= 300) {
 		</function>
 		</title>
 		<para>
-			Issues an HTTP POST request to the specified <emphasis>url</emphasis>. The request body will
+		Perform a blocking HTTP POST on the given <emphasis>url</emphasis>.  The request body will
 		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
-		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (default is
+		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (the default is
 		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
 		</para>
 		<para>
 		Note that the <emphasis>send_body_pv</emphasis> parameter can also accept a format-string
-		but it cannot be larger than 1024 bytes. For bigger messages, you must build them in a
+		but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
 		pseudo-variable and pass it to the function.
 		</para>
 		<para>
@@ -278,26 +285,29 @@ if ($var(rcode) >= 300) {
 		</para>
 		<para>
 		The optional <emphasis>recv_ctype_pv</emphasis> parameter will contain
-		the value of the "Content-Type" header of the response message.
+		the value of the "Content-Type" header of the response.
 		</para>
 		<para>
-		The optional <emphasis>retcode_pv</emphasis> pseudo-var parameter can be given
-		in order to retrieve the HTTP status code of the response message. Since
-		the module is based on libcurl, a <emphasis role='bold'>0</emphasis> value
-		means no HTTP reply arrived at all.
+		The optional <emphasis>retcode_pv</emphasis> pseudo-var will retain the
+		status code of the HTTP response.  A <emphasis role='bold'>0</emphasis>
+		status code value means no HTTP reply arrived at all.
 		</para>
-		<para>Possible parameter types</para>
+
+		<para><emphasis role='bold'>Parameter Types</emphasis></para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>url, send_body_pv, send_type_pv</emphasis> -
-			String, pseudo-variable, or a String which includes pseudo-variables.
+				string, pseudo-variable or pseudo-variable format string
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>recv_body_pv, recv_ctype_pv, retcode_pv</emphasis> -
+			<para><emphasis>body_pv, ctype_pv, retcode_pv</emphasis> -
 			pseudo-variables</para>
 		</listitem>
 		</itemizedlist>
+
+		&rest_return_codes;
+
 		<para>
 		This function can be used from any route.
 		</para>
@@ -306,14 +316,15 @@ if ($var(rcode) >= 300) {
 		<programlisting format="linespecific">
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
-$var(rc) = rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)");
-
+$var(rc) = rest_post("https://myserver.org/register_user",
+                     "$fU", , "$var(body)", "$var(ct)", "$var(rcode)");
 if ($var(rc) &lt; 0) {
 	xlog("rest_post() failed with $var(rc), user=$fU\n");
 	send_reply("500", "Server Internal Error 1");
 	exit;
 }
-if ($var(rcode) >= 300) {
+
+if ($var(rcode) != 200) {
 	xlog("rest_post() rcode=$var(rcode), user=$fU\n");
 	send_reply("500", "Server Internal Error 2");
 	exit;
@@ -330,15 +341,15 @@ if ($var(rcode) >= 300) {
 		</function>
 		</title>
 		<para>
-		Issues an HTTP PUT request to the specified <emphasis>url</emphasis>. The request body will
+		Perform a blocking HTTP PUT on the given <emphasis>url</emphasis>.  The request body will
 		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
-		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (default is
+		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (the default is
 		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
 		</para>
 		<para>
-		Similar to the <emphasis>rest_post</emphasis>, the <emphasis>send_body_pv</emphasis>
+		Similar to <xref linkend="func_rest_post"/>, the <emphasis>send_body_pv</emphasis>
 		parameter can also accept a format-string but it cannot be larger than 1024 bytes. For
-		bigger messages, you must build them in a pseudo-variable and pass it to the function.
+		larger messages, you must build them in a pseudo-variable and pass it to the function.
 		</para>
 		<para>
 		The mandatory <emphasis>recv_body_pv</emphasis> pseudo-var will hold the body of the HTTP
@@ -349,23 +360,26 @@ if ($var(rcode) >= 300) {
 		the value of the "Content-Type" header of the response message.
 		</para>
 		<para>
-		The optional <emphasis>retcode_pv</emphasis> pseudo-var parameter can be given
-		in order to retrieve the HTTP status code of the response message. Since
-		the module is based on libcurl, a <emphasis role='bold'>0</emphasis> value
-		means no HTTP reply arrived at all.
+		The optional <emphasis>retcode_pv</emphasis> pseudo-var will retain the
+		status code of the HTTP response.  A <emphasis role='bold'>0</emphasis>
+		status code value means no HTTP reply arrived at all.
 		</para>
-		<para>Possible parameter types</para>
+
+		<para><emphasis role='bold'>Parameter Types</emphasis></para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>url, send_body_pv, send_type_pv</emphasis> -
-			String, pseudo-variable, or a String which includes pseudo-variables.
+				string, pseudo-variable or pseudo-variable format string
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>recv_body_pv, recv_ctype_pv, retcode_pv</emphasis> -
+			<para><emphasis>body_pv, ctype_pv, retcode_pv</emphasis> -
 			pseudo-variables</para>
 		</listitem>
 		</itemizedlist>
+
+		&rest_return_codes;
+
 		<para>
 		This function can be used from any route.
 		</para>
@@ -374,14 +388,15 @@ if ($var(rcode) >= 300) {
 		<programlisting format="linespecific">
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT request
-$var(rc) = rest_put("http://myserver.org/users/$fU", "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(rcode)");
-
+$var(rc) = rest_put("https://myserver.org/users/$fU",
+                    "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(rcode)");
 if ($var(rc) &lt; 0) {
 	xlog("rest_put() failed with $var(rc), user=$fU\n");
 	send_reply("500", "Server Internal Error 3");
 	exit;
 }
-if ($var(rcode) >= 300) {
+
+if ($var(rcode) != 200) {
 	xlog("rest_put() rcode=$var(rcode), user=$fU\n");
 	send_reply("500", "Server Internal Error 4");
 	exit;
@@ -395,13 +410,13 @@ if ($var(rcode) >= 300) {
 		<function moreinfo="none">rest_append_hf(txt)</function>
 		</title>
 		<para>
-		Appends 'txt' to the HTTP headers of the subsequent request.
-                Multiple headers can be appended by making multiple calls
-                before executing a request.
+		Append <emphasis>txt</emphasis> to the HTTP headers of the subsequent request.
+		Multiple headers can be appended by making multiple calls
+		before executing a request.
 		</para>
 		<para>
 		The contents of <emphasis>txt</emphasis> should adhere to the
-                specification for HTTP headers (ex. Field: Value)
+		specification for HTTP headers (ex. Field: Value)
 		</para>
 		<para>Parameter types</para>
 		<itemizedlist>
@@ -435,7 +450,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 		additional info regarding TLS client domains.
 		</para>
 		<para>
-		If using this parameter, you must also ensure that tls_mgm is loaded
+		If using this function, you must also ensure that tls_mgm is loaded
 		and properly configured.
 		</para>
 		<para>
@@ -477,10 +492,10 @@ if (!rest_get("https://example.com"))
 		</function>
 		</title>
 		<para>
-		Sends a GET HTTP request. This function behaves exactly the same as
+		Perform an asynchronous HTTP GET.  This function behaves exactly the same as
 		<emphasis role='bold'><xref linkend="func_rest_get"/></emphasis>
 		(in terms of input, output and processing),
-		but in an asynchronous way. Script execution is suspended until the
+		but in a non-blocking manner.  Script execution is suspended until the
 		entire content of the HTTP response is available.
 		</para>
 		<example>
@@ -488,7 +503,8 @@ if (!rest_get("https://example.com"))
 		<programlisting format="linespecific">
 route {
 	...
-	async(rest_get("http://getcredit.org/?account=$fU", "$var(credit)", , "$var(rcode)"), resume);
+	async(rest_get("http://getcredit.org/?account=$fU",
+	               "$var(credit)", , "$var(rcode)"), resume);
 }
 
 route [resume] {
@@ -499,7 +515,7 @@ route [resume] {
 		exit;
 	}
 
-	if ($var(rcode) >= 300) {
+	if ($var(rcode) != 200) {
 		xlog("L_INFO", "async rest_get() rcode=$var(rcode), acc=$fU\n");
 		send_reply("403", "Forbidden");
 		exit;
@@ -518,17 +534,19 @@ route [resume] {
 		</function>
 		</title>
 		<para>
-		Sends a POST HTTP request. This function behaves exactly the same as
-		<emphasis role='bold'><xref linkend="func_rest_post"/></emphasis> (in terms of input, output and processing),
-		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response is available.
+		Perform an asynchronous HTTP POST.  This function behaves exactly the same as
+		<emphasis role='bold'><xref linkend="func_rest_post"/></emphasis> (in
+		terms of input, output and processing), but in a non-blocking manner.
+		Script execution is suspended until the entire content of the HTTP
+		response is available.
 		</para>
 		<example>
 		<title><function moreinfo="none">async rest_post</function> usage</title>
 		<programlisting format="linespecific">
 route {
 	...
-	async(rest_post("http://myserver.org/register_user", "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+	async(rest_post("http://myserver.org/register_user",
+	                "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
 route [resume] {
@@ -538,7 +556,7 @@ route [resume] {
 		send_reply("500", "Server Internal Error 1");
 		exit;
 	}
-	if ($var(rcode) >= 300) {
+	if ($var(rcode) != 200) {
 		xlog("async rest_post() rcode=$var(rcode), user=$fU\n");
 		send_reply("500", "Server Internal Error 2");
 		exit;
@@ -558,17 +576,19 @@ route [resume] {
 		</function>
 		</title>
 		<para>
-		Sends a PUT HTTP request. This function behaves exactly the same as
-		<emphasis role='bold'><xref linkend="func_rest_put"/></emphasis> (in terms of input, output and processing),
-		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response is available.
+		Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
+		<emphasis role='bold'><xref linkend="func_rest_put"/></emphasis> (in
+		terms of input, output and processing), but in a non-blocking manner.
+		Script execution is suspended until the entire content of the HTTP
+		response is available.
 		</para>
 		<example>
 		<title><function moreinfo="none">async rest_put</function> usage</title>
 		<programlisting format="linespecific">
 route {
 	...
-	async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+	async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)", ,
+	               "$var(body)", "$var(ct)", "$var(rcode)"), resume);
 }
 
 route [resume] {
@@ -578,7 +598,7 @@ route [resume] {
 		send_reply("500", "Server Internal Error 3");
 		exit;
 	}
-	if ($var(rcode) >= 300) {
+	if ($var(rcode) != 200) {
 		xlog("async rest_put() rcode=$var(rcode), user=$fU\n");
 		send_reply("500", "Server Internal Error 4");
 		exit;

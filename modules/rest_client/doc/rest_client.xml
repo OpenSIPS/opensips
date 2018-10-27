@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "rest_client_admin.xml">
+<!ENTITY rest_return_codes SYSTEM "rest_return_codes.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->

@@ -1,0 +1,32 @@
+<para><emphasis role='bold'>Return Codes</emphasis></para>
+<itemizedlist>
+<listitem>
+	<para><emphasis role='bold'>1</emphasis> - Success
+	</para>
+</listitem>
+<listitem>
+	<para><emphasis role='bold'>-1</emphasis> - Connection Refused.
+	</para>
+</listitem>
+<listitem>
+	<para><emphasis role='bold'>-2</emphasis> - Connection Timeout
+	(the <xref linkend="param_connection_timeout"/> was exceeded
+	before a TCP connection could be established)
+	</para>
+</listitem>
+<listitem>
+	<para><emphasis role='bold'>-3</emphasis> - Transfer Timeout
+	(the <xref linkend="param_curl_timeout"/> was exceeded before the
+	last byte was received). The <emphasis>retcode_pv</emphasis> may
+	be set to 200 or 0, depending whether a 200 OK was received or not.
+	If it was, the <emphasis>body_pv</emphasis> will contain partially
+	downloaded data, use at your own risk! (we recommend you only use
+	this data for logging / debugging purposes)
+	</para>
+</listitem>
+<listitem>
+	<para><emphasis role='bold'>-10</emphasis> - Internal Error (out of
+		memory, unexpected libcurl error, etc.)
+	</para>
+</listitem>
+</itemizedlist>
