@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">306</entry>
-		<entry align="center">146</entry>
-		<entry align="center">11627</entry>
-		<entry align="center">3800</entry>
+		<entry align="center">308</entry>
+		<entry align="center">147</entry>
+		<entry align="center">11633</entry>
+		<entry align="center">3806</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -36,19 +36,19 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">49</entry>
+		<entry align="center">32</entry>
+		<entry align="center">845</entry>
+		<entry align="center">523</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>)</entry>
 		<entry align="center">48</entry>
 		<entry align="center">10</entry>
 		<entry align="center">3130</entry>
 		<entry align="center">710</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">47</entry>
-		<entry align="center">31</entry>
-		<entry align="center">820</entry>
-		<entry align="center">499</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Alexey Vasilyev</entry>
-		<entry align="center">Oct 2018 - Oct 2018</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Oct 2008 - Oct 2018</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Nov 2012 - Sep 2018</entry>
+		<entry align="center">Nov 2012 - Oct 2018</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Alexey Vasilyev</entry>
+		<entry align="center">Oct 2018 - Oct 2018</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Alexey Vasilyev, Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Alexey Vasilyev, Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.</para>
 </section>
 
 </chapter>
