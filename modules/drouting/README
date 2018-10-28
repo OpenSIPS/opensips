@@ -72,8 +72,8 @@ Dynamic Routing Module
               1.4.6. is_from_gw([partition','] [type], [flag],
                       [gw_attrs_pvar])
 
-              1.4.7. dr_is_gw([partition,] src_avp, [type],
-                      [flag], [gw_attrs_pvar])
+              1.4.7. dr_is_gw([partition,] src_pv, [type], [flag],
+                      [gw_attrs_pvar])
 
               1.4.8. dr_disable()
 
@@ -1143,7 +1143,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
        partition containing the gateway/destination to be checked.
      * type (optional) - GW/destination type to be checked; when
        omitting this parameter or specifying a special value ("-1"
-       or "0"), matching will be done against all groups (in a
+       or "0"), matching will be done against all types. (in a
        given partition if use_partition parameter is 1; if
        use_partitions is 1 the partition being mandatory at this
        point, it is not possible to do matching against all the
@@ -1184,8 +1184,8 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 
 1.4.6.  is_from_gw([partition','] [type], [flag], [gw_attrs_pvar])
 
-   The function checks if the sender of the message (its source
-   IP) is a gateway from a certain group.
+   The function checks if the sender of the message (source IP +
+   source port) is a gateway from a certain group.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    ONREPLY_ROUTE.
@@ -1203,7 +1203,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
        operator is used all partitions shall be checked.
      * type (optional) - GW/destination type to be checked; when
        omitting this parameter or specifying a special value ("-1"
-       or "0"), matching will be done against all groups
+       or "0"), matching will be done against all types.
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -1212,7 +1212,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
             prefix defined by the GW
           + 'i' (Gateway ID) - return the gateway id into
             gw_id_avp AVP
-          + 'n' (Ignore port) - ignores port number during
+          + 'n' (Ignore port) - ignore the source port during
             matching
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
@@ -1221,22 +1221,23 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
        of the matched gateway.
 
    Example 1.41. is_from_gw usage when use_partitions is 0
-...
-if (is_from_gw("3","1") {
+# match the source IP (only) against all gateways
+if (is_from_gw("3", "n")) {
+        ...
 }
-...
 
    Example 1.42. is_from_gw usage when use_partitions is 1
-...
-if (is_from_gw("my_partition","3","1") {
+# match the source IP and port against all "outbound" gateways and retur
+n its carrier
+if (is_from_gw("outbound", "3", "c")) {
+        ...
 }
-...
 
-1.4.7.  dr_is_gw([partition,] src_avp, [type], [flag],
+1.4.7.  dr_is_gw([partition,] src_pv, [type], [flag],
 [gw_attrs_pvar])
 
-   The function checks if the ip address in pvar src_pv is a
-   gateway from a certain group.
+   The function checks if the SIP URI hostname part stored inside
+   the "src_pv" pseudo-variable is a gateway from a certain group.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -1250,11 +1251,12 @@ if (is_from_gw("my_partition","3","1") {
      * partition (mandatory if use_partitions parameter is 1,
        otherwise it will be omitted altogether) - Partition
        containing the destinations/gateways to be checked.
-     * src_avp (mandatory) - avp containing a SIP URI. Does not
-       support other OpenSIPS pseudo-variables.
+     * src_pv (mandatory) - pseudo-variable containing a SIP URI.
+       If the URI hostname part is a FQDN, it will be resolved
+       prior to matching.
      * type (optional) - GW/destination type to be checked; when
        omitting this parameter or specifying a special value ("-1"
-       or "0"), matching will be done against all groups
+       or "0"), matching will be done against all types.
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -1271,16 +1273,17 @@ if (is_from_gw("my_partition","3","1") {
        of the matched gateway.
 
    Example 1.43. dr_is_gw usage when use_partitions is 0
-...
-if (dr_is_gw("$avp(uac)","3") {
+# match the SIP URI host within $var(uac) against all gateways
+if (dr_is_gw("$var(uac)", "n")) {
+        ...
 }
-...
 
    Example 1.44. dr_is_gw usage when use_partitions is 1
-...
-if (dr_is_gw("my_partition","$avp(uac)","3") {
+# match the SIP URI host within $var(uac) against all "outbound" gateway
+s
+if (dr_is_gw("outbound", "$avp(uac)", "n")) {
+        ...
 }
-...
 
 1.4.8.  dr_disable()
 
@@ -1511,10 +1514,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 287 137 11086 3507
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 288 138 11092 3513
    2. Razvan Crainea (@razvancrainea) 51 21 256 1500
    3. Mihai Tiganus (@tallicamike) 48 10 3130 710
-   4. Liviu Chircu (@liviuchircu) 35 21 757 437
+   4. Liviu Chircu (@liviuchircu) 38 22 782 461
    5. Vlad Paiu (@vladpaiu) 21 18 227 46
    6. Andrei Datcu (@andrei-datcu) 20 12 551 134
    7. Ovidiu Sas (@ovidiusas) 15 11 132 70
@@ -1547,7 +1550,7 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Oct 2018
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Sep 2018
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2018
    3.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2018
    4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jul 2017
    5.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
@@ -1569,8 +1572,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Mihai
    Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
    Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
