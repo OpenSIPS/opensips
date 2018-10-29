@@ -939,10 +939,10 @@ static contact_t *match_contact(ucontact_id ctid, struct sip_msg *msg)
 		if (ctid_insertion == MR_APPEND_PARAM) {
 			idx = get_uri_param_idx(&ctid_param, &puri);
 			if (idx < 0) {
-				LM_ERR("failed to locate our ';%.*s=' param, ci = %.*s!\n",
+				LM_DBG("failed to locate our ';%.*s=' param, ci = %.*s!\n",
 				       ctid_param.len, ctid_param.s,
 				       msg->callid->body.len, msg->callid->body.s);
-				return NULL;
+				continue;
 			}
 
 			if (!str_strcmp(&ctid_str, &puri.u_val[idx]))
