@@ -544,6 +544,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 	}
 	else
 	{
+		query_cols[n_query_cols] = &str_etag_col;
+		query_ops[n_query_cols] = OP_EQ;
+		query_vals[n_query_cols].type = DB_STR;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.str_val = presentity->old_etag;
+		n_query_cols++;
+
 		lock_get(&pres_htable[hash_code].lock);
 		p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
 				&presentity->old_etag, hash_code);
@@ -574,12 +581,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 					LM_ERR("unsuccessful sql use table\n");
 					goto error;
 			}
-			query_cols[n_query_cols] = &str_etag_col;
-			query_ops[n_query_cols] = OP_EQ;
-			query_vals[n_query_cols].type = DB_STR;
-			query_vals[n_query_cols].nul = 0;
-			query_vals[n_query_cols].val.str_val = presentity->old_etag;
-			n_query_cols++;
 
 			if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 					 result_cols, n_query_cols, 1, 0, &result) < 0)
