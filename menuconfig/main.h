@@ -26,6 +26,7 @@
 #ifndef _main_h_
 #define _main_h_
 
+#include <stdio.h>
 #include "commands.h"
 #include "parser.h"
 #include "curses.h"
