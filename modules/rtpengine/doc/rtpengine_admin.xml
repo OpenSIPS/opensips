@@ -337,7 +337,7 @@ rtpengine_offer();
 	</section>
 		<section id="func_rtpengine_offer" xreflabel="rtpengine_offer()">
                 <title>
-                <function moreinfo="none">rtpengine_offer([flags[, sock_pvar[, sdp_pvar]]])</function>
+                <function moreinfo="none">rtpengine_offer([flags[, sock_pvar[, sdp_pvar[, body]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -594,6 +594,12 @@ rtpengine_offer();
 		message body is no longer changed, so you have to manually replace it!.
 		</para></listitem>
 		</itemizedlist>
+		<listitem><para>
+		<emphasis>body(optional)</emphasis> - used to provide a specific body
+		to the rtpengine_* function. If this parameter is missing the body of
+		the current message is used.
+		</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from ANY_ROUTE.
 		</para>
@@ -636,7 +642,7 @@ onreply_route[2]
 		<title><function>rtpengine_offer</function> usage with body replace</title>
 		<programlisting format="linespecific">
 ...
-if (rtpengine_offer(, "$var(socket)", "$var(body)")) {
+if (rtpengine_offer(, "$var(socket)", "$var(body)", "$rb")) {
     xlog("Used rtpengine $var(socket)\n");
     # make all the changes on the resulted SDP in $var(body)
     ...
@@ -681,7 +687,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 	</section>
 		<section id="func_rtpengine_answer" xreflabel="rtpengine_answer()">
                 <title>
-                <function moreinfo="none">rtpengine_answer([flags[, sock_pvar[, sdp_pvar]]])</function>
+                <function moreinfo="none">rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -730,7 +736,7 @@ rtpengine_delete();
 
 	<section id="func_rtpengine_manage" xreflabel="rtpengine_manage()">
         <title>
-        <function moreinfo="none">rtpengine_manage([flags[, sock_pvar[, sdp_pvar]]])</function>
+        <function moreinfo="none">rtpengine_manage([flags[, sock_pvar[, sdp_pvar[, body]]]])</function>
         </title>
 		<para>
 		Manage the RTPProxy session - it combines the functionality of
