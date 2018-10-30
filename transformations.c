@@ -1672,7 +1672,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 
 			break;
 
-		case TR_SDP_MEDIADEL:
+		case TR_SDP_STREAM_DEL:
 			/* determine the media type we are talking about
 			 * either by index or by name */
 			media.s = NULL;
@@ -3453,7 +3453,7 @@ int tr_parse_sdp(str *in, trans_t *t)
 
 		return 0;
 	} else if (name.len==13 && strncasecmp(name.s,"stream-delete",13)==0) {
-		t->subtype = TR_SDP_MEDIADEL;
+		t->subtype = TR_SDP_STREAM_DEL;
 		if(*p!=TR_PARAM_MARKER)
 		{
 			LM_ERR("media delete without type or index: %.*s!\n", in->len, in->s);
