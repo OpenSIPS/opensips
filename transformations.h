@@ -66,7 +66,8 @@ enum _tr_nameaddr_subtype {
 enum _tr_param_type { TR_PARAM_NONE=0, TR_PARAM_STRING, TR_PARAM_NUMBER,
 	TR_PARAM_SPEC };
 enum _tr_csv_subtype {TR_CSV_NONE=0, TR_CSV_COUNT,TR_CSV_VALUEAT};
-enum _tr_sdp_subtype {TR_SDP_NONE=0, TR_SDP_LINEAT, TR_SDP_STREAM_DEL};
+enum _tr_sdp_subtype {TR_SDP_NONE=0, TR_SDP_LINEAT, TR_SDP_STREAM_DEL,
+	TR_SDP_STREAM};
 enum _tr_ip_subtype  {TR_IP_NONE=0,TR_IP_FAMILY,TR_IP_NTOP,TR_IP_RESOLVE,
 	TR_IP_ISIP,TR_IP_PTON};
 enum _tr_re_subtype  {TR_RE_NONE=0,TR_RE_SUBST};

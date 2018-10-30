@@ -1672,6 +1672,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 
 			break;
 
+		case TR_SDP_STREAM:
 		case TR_SDP_STREAM_DEL:
 			/* determine the media type we are talking about
 			 * either by index or by name */
@@ -1711,38 +1712,53 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 					entryNo += sdp.streams_num;
 				} else if (entryNo >= sdp.streams_num)
 					goto parse_sdp_free;
-				LM_DBG("deleting stream index %d\n", entryNo);
+				LM_DBG("stream index %d\n", entryNo);
 			} else
-				LM_DBG("deleting stream type %.*s\n", media.len, media.s);
+				LM_DBG("stream type %.*s\n", media.len, media.s);
 			lenoff = 0;
-			for (session = sdp.sessions; session; session = session->next) {
-				for (stream = session->streams; stream; stream = stream->next) {
-					if ((media.s != NULL && stream->media.len == media.len &&
-							/* hack to update the offset */
-							strncasecmp(stream->media.s, media.s, media.len) == 0) ||
-						(media.s == NULL && entryNo == stream->stream_num)) {
+			if (subtype == TR_SDP_STREAM_DEL) {
+				for (session = sdp.sessions; session; session = session->next) {
+					for (stream = session->streams; stream; stream = stream->next) {
+						if ((media.s != NULL && stream->media.len == media.len &&
+								/* hack to update the offset */
+								strncasecmp(stream->media.s, media.s, media.len) == 0) ||
+							(media.s == NULL && entryNo == stream->stream_num)) {
 
+							memmove(stream->body.s - lenoff, stream->body.s - lenoff + stream->body.len,
+									_tr_sdp_str.s + _tr_sdp_str.len - stream->body.s);
+							_tr_sdp_str.len -= stream->body.len;
 
-						memmove(stream->body.s - lenoff, stream->body.s - lenoff + stream->body.len,
-								_tr_sdp_str.s + _tr_sdp_str.len - stream->body.s);
-						_tr_sdp_str.len -= stream->body.len;
+							if (media.s == NULL)
+								goto success;
 
-						if (media.s == NULL)
-							goto success;
+							lenoff += stream->body.len;
+						}
+					}
+					if (media.s == NULL)
+						entryNo -= session->streams_num;
+				}
+			} else {
+				for (session = sdp.sessions; session; session = session->next) {
+					for (stream = session->streams; stream; stream = stream->next) {
+						if ((media.s != NULL && stream->media.len == media.len &&
+								strncasecmp(stream->media.s, media.s, media.len) == 0) ||
+							(media.s == NULL && entryNo == stream->stream_num)) {
 
-						lenoff += stream->body.len;
+							val->rs.len = stream->body.len;
+							val->rs.s = stream->body.s;
+							goto ret;
+						}
 					}
 				}
-				if (media.s == NULL)
-					entryNo -= session->streams_num;
 			}
 			if (!lenoff) /* no stream found */
 				goto parse_sdp_free;
 success:
-			free_sdp_content(&sdp);
 			val->rs.len = _tr_sdp_str.len - 2;
 			val->rs.s = _tr_sdp_str.s + 2;
+ret:
 			val->flags = PV_VAL_STR;
+			free_sdp_content(&sdp);
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
@@ -3452,8 +3468,12 @@ int tr_parse_sdp(str *in, trans_t *t)
 		tp = 0;
 
 		return 0;
-	} else if (name.len==13 && strncasecmp(name.s,"stream-delete",13)==0) {
-		t->subtype = TR_SDP_STREAM_DEL;
+	} else if ((name.len==13 && strncasecmp(name.s,"stream-delete",13)==0) ||
+				(name.len==6 && strncasecmp(name.s,"stream",6)==0)) {
+		if (name.len == 6)
+			t->subtype = TR_SDP_STREAM;
+		else
+			t->subtype = TR_SDP_STREAM_DEL;
 		if(*p!=TR_PARAM_MARKER)
 		{
 			LM_ERR("media delete without type or index: %.*s!\n", in->len, in->s);
