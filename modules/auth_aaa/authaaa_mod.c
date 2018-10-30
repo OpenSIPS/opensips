@@ -19,7 +19,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
 
@@ -32,12 +32,14 @@
 #include "../../error.h"
 #include "../../dprint.h"
 #include "../../config.h"
+#include "../../mod_fix.h"
 #include "../../pvar.h"
 #include "../../aaa/aaa.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "authaaa_mod.h"
 #include "authorize.h"
+#include "checks.h"
 
 
 aaa_map attrs[A_MAX];
@@ -55,7 +57,8 @@ static int auth_fixup(void** param, int param_no); /* char* -> str* */
  * Module parameter variables
  */
 static char* aaa_proto_url = NULL;
-static int service_type = -1;
+static int auth_service_type = -1;
+static int check_service_type = -1;
 
 int use_ruri_flag = -1;
 char *use_ruri_flag_str = 0;
@@ -64,14 +67,30 @@ char *use_ruri_flag_str = 0;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"aaa_www_authorize", (cmd_function)aaa_www_authorize,   1, auth_fixup,
-			0, REQUEST_ROUTE},
-	{"aaa_www_authorize", (cmd_function)aaa_www_authorize,   2, auth_fixup,
-			0, REQUEST_ROUTE},
-	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_1, 1, auth_fixup,
-			0, REQUEST_ROUTE},
-	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_2, 2, auth_fixup,
-			0, REQUEST_ROUTE},
+	{"aaa_www_authorize", (cmd_function)aaa_www_authorize, 1,
+			auth_fixup, 0,
+			REQUEST_ROUTE},
+	{"aaa_www_authorize", (cmd_function)aaa_www_authorize, 2,
+			auth_fixup, 0,
+			REQUEST_ROUTE},
+	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_1, 1,
+			auth_fixup, 0,
+			REQUEST_ROUTE},
+	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_2, 2,
+			auth_fixup, 0,
+			REQUEST_ROUTE},
+	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_0, 0,
+			0, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_1, 1,
+			fixup_pvar_null, fixup_free_pvar_null,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"aaa_does_uri_user_exist", (cmd_function)aaa_does_uri_user_exist_0, 0,
+			0, 0,
+			REQUEST_ROUTE|LOCAL_ROUTE},
+	{"aaa_does_uri_user_exist", (cmd_function)aaa_does_uri_user_exist_1, 1,
+			fixup_pvar_null, fixup_free_pvar_null,
+			REQUEST_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -80,21 +99,34 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"aaa_url",  	 STR_PARAM, &aaa_proto_url   },
-	{"service_type",     INT_PARAM, &service_type        },
-	{"use_ruri_flag",    STR_PARAM, &use_ruri_flag_str   },
-	{"use_ruri_flag",    INT_PARAM, &use_ruri_flag       },
+	{"aaa_url",            STR_PARAM, &aaa_proto_url       },
+	{"auth_service_type",  INT_PARAM, &auth_service_type   },
+	{"check_service_type", INT_PARAM, &check_service_type  },
+	{"use_ruri_flag",      STR_PARAM, &use_ruri_flag_str   },
+	{"use_ruri_flag",      INT_PARAM, &use_ruri_flag       },
 	{0, 0, 0}
 };
 
+/* create a dependency to "auth" module if any of the digest auth 
+ * functions are used from the script - we do a small trick here and
+ * hook on the 'aaa_url' mandatory  param to run the check, even if the
+ * param value is not involved in the test */
+static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+{
+	if (is_script_func_used("aaa_www_authorize", -1) ||
+	is_script_func_used("aaa_proxy_authorize", -1) )
+		return alloc_module_dep(MOD_TYPE_DEFAULT, "auth", DEP_ABORT);
+
+	return NULL;
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
 		{ MOD_TYPE_AAA,     NULL,   DEP_WARN  },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ NULL, NULL },
+		{ "aaa_url", get_deps_aaa_url },
 	},
 };
 
@@ -113,7 +145,7 @@ struct module_exports exports = {
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
-	0,			/* exported transformations */
+	0,          /* exported transformations */
 	0,          /* extra processes */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
@@ -138,6 +170,7 @@ static int mod_init(void)
 	memset(vals, 0, sizeof(vals));
 	attrs[A_SERVICE_TYPE].name			= "Service-Type";
 	attrs[A_SIP_URI_USER].name			= "Sip-URI-User";
+	attrs[A_SIP_URI_HOST].name			= "SIP-URI-Host";
 	attrs[A_DIGEST_RESPONSE].name		= "Digest-Response";
 	attrs[A_DIGEST_ALGORITHM].name		= "Digest-Algorithm";
 	attrs[A_DIGEST_BODY_DIGEST].name	= "Digest-Body-Digest";
@@ -154,6 +187,7 @@ static int mod_init(void)
 	attrs[A_SIP_AVP].name				= "SIP-AVP";
 	attrs[A_ACCT_SESSION_ID].name		= "Acct-Session-Id";
 	vals[V_SIP_SESSION].name			= "Sip-Session";
+	vals[V_CALL_CHECK].name				= "Call-Check";
 
 	fix_flag_name(use_ruri_flag_str, use_ruri_flag);
 	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str);
@@ -195,9 +229,11 @@ static int mod_init(void)
 
 	INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "auth_aaa", -5, -6);
 
-	if (service_type != -1) {
-		vals[V_SIP_SESSION].value = service_type;
-	}
+	if (auth_service_type != -1)
+		vals[V_SIP_SESSION].value = auth_service_type;
+	if (check_service_type != -1)
+		vals[V_CALL_CHECK].value = check_service_type;
+
 
 	return 0;
 }

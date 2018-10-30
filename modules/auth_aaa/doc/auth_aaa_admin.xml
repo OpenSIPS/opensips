@@ -7,15 +7,15 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module contains functions that are used to perform authentication 
-		using an AAA server. Basically the proxy will pass along the 
+		This module contains functions that are used to perform digest 
+		authentication and some URI checks against an AAA server.
+		In order to perform the authentication, the proxy will pass along the 
 		credentials to the AAA server which will in turn send a reply 
 		containing result of the authentication. So basically the whole
 		authentication is done in the AAA server. Before sending the request 
 		to the AAA server we perform some sanity checks over the 
 		credentials to make sure that only well formed credentials will get to 
-		the server. We have implemented AAA authentication according to 
-		draft-sterman-aaa-sip-00.
+		the server.
 	</para>
 	</section>
 	<section>
@@ -74,11 +74,12 @@
 			the listed modules must be loaded before this module):
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>auth</emphasis> -- Generic authentication 
-				functions</para>
+				<para><emphasis>auth</emphasis> -- Authentication framework,
+				only if the auth functions are used from script</para>
 				</listitem>
 				<listitem>
-				<para><emphasis>an aaa implementing module</emphasis> -- for example aaa_radius</para>
+				<para><emphasis>an aaa implementing module</emphasis> -- for 
+				example aaa_radius</para>
 				</listitem>
 			</itemizedlist>
 			</para>
@@ -109,10 +110,11 @@ modparam("auth_aaa", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		</programlisting>
 		</example>
 	</section>
-	<section id="param_service_type" xreflabel="service_type">
-		<title><varname>service_type</varname> (integer)</title>
+	<section id="param_auth_service_type" xreflabel="auth_service_type">
+		<title><varname>auth_service_type</varname> (integer)</title>
 		<para>
-		This is the value of the Service-Type aaa attribute to be used. 
+		This is the value of the Service-Type aaa attribute to be used when
+		performing an authentication operation.
 		The default should be fine for most people. See your aaa client 
 		include files for numbers to be put in this parameter if you need 
 		to change it.
@@ -121,36 +123,58 @@ modparam("auth_aaa", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		Default value is <quote>15</quote>.
 		</para>
 		<example>
-		<title><varname>service_type</varname> parameter usage</title>
+		<title><varname>auth_service_type</varname> parameter usage</title>
 		<programlisting format="linespecific">
 		
-modparam("auth_aaa", "service_type", 15)
+modparam("auth_aaa", "auth_service_type", 15)
 		</programlisting>
 		</example>
 	</section>
-        <section id="param_use_ruri_flag" xreflabel="use_ruri_flag">
-                <title><varname>use_ruri_flag</varname> (string/integer)</title>
-                <para>
-                When this parameter is set to the value other than "NULL" and the
-                request being authenticated has flag with matching number set
-                via setflag() function, use Request URI instead of uri parameter
-                value from the Authorization / Proxy-Authorization header field
-                to perform AAA authentication.  This is intended to provide
-                workaround for misbehaving NAT / routers / ALGs that alter request
-                in the transit, breaking authentication.  At the time of this
-                writing, certain versions of Linksys WRT54GL are known to do that.
-                </para>
-                <para>
-                Default value is <quote>NULL</quote> (not set).
-                </para>
-                <example>
-                <title><varname>use_ruri_flag</varname> parameter usage</title>
-                <programlisting format="linespecific">
+
+	<section id="param_check_service_type" xreflabel="check_service_type">
+		<title><varname>check_service_type</varname> (integer)</title>
+		<para>
+		AAA service type used by <function>aaa_does_uri_exist</function> and
+		<function>aaa_does_uri_user_exist</function> checks.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 10 (Call-Check).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>check_service_type</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_aaa", "check_service_type", 11)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_use_ruri_flag" xreflabel="use_ruri_flag">
+		<title><varname>use_ruri_flag</varname> (string/integer)</title>
+		<para>
+		When this parameter is set to the value other than "NULL" and the
+		request being authenticated has flag with matching number set
+		via setflag() function, use Request URI instead of uri parameter
+		value from the Authorization / Proxy-Authorization header field
+		to perform AAA authentication.  This is intended to provide
+		workaround for misbehaving NAT / routers / ALGs that alter request
+		in the transit, breaking authentication.  At the time of this
+		writing, certain versions of Linksys WRT54GL are known to do that.
+		</para>
+		<para>
+		Default value is <quote>NULL</quote> (not set).
+		</para>
+		<example>
+		<title><varname>use_ruri_flag</varname> parameter usage</title>
+		<programlisting format="linespecific">
 		
 modparam("auth_aaa", "use_ruri_flag", "USE_RURI_FLAG")
-                </programlisting>
-                </example>
-        </section>
+		</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -299,6 +323,77 @@ if (!aaa_proxy_authorize("$pd", "$pU")) { # Realm and URI user are taken
 </programlisting>
 		</example>
 	</section>
+
+	<section id="func_aaa_does_uri_exist" xreflabel="aaa_does_uri_exist()">
+		<title>
+		<function moreinfo="none">aaa_does_uri_exist([pvar])</function>
+		</title>
+		<para>
+		Checks from Radius if user@host in Request-&uri; or in
+		URI stored in pseudo variable argument belongs
+		to a local user. Can be used to decide if 404 or 480 should
+		be returned after lookup has failed.   If yes, loads AVP
+		based on SIP-AVP reply items returned from Radius.  Each
+		SIP-AVP reply item must have a string value of form:
+		</para>
+		<para>
+		<itemizedlist>
+			<listitem><para><emphasis>
+			value = SIP_AVP_NAME SIP_AVP_VALUE
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			SIP_AVP_NAME = STRING_NAME | '#'ID_NUMBER
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			SIP_AVP_VALUE = ':'STRING_VALUE | '#'NUMBER_VALUE
+			</emphasis></para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Returns 1 if Radius returns Access-Accept, -1 if Radius
+		returns Access-Reject, and -2 in case of internal
+		error.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>aaa_does_uri_exist</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (aaa_does_uri_exist()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_aaa_does_uri_user_exist" xreflabel="aaa_does_uri_user_exist()">
+		<title>
+		<function moreinfo="none">aaa_does_uri_user_exist([pvar])</function>
+		</title>
+		<para>
+		Similar to aaa_does_uri_exist, but check is done
+		based only on Request-URI user part or user stored in
+		pseudo variable argument.  User should thus
+		be unique among all users, such as an E.164 number.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>aaa_does_uri_user_exist</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (aaa_does_uri_user_exist()) {
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 </chapter>
 
