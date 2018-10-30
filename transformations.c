@@ -45,6 +45,7 @@
 #include "parser/parse_via.h"
 #include "parser/parse_to.h"
 #include "parser/sdp/sdp_helpr_funcs.h"
+#include "parser/sdp/sdp.h"
 
 #include "strcommon.h"
 #include "transformations.h"
@@ -1565,12 +1566,17 @@ static str _tr_sdp_str = {0,0};
 int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		pv_value_t *val)
 {
+	str media;
 	char *bodylimit;
 	char *answer;
 	char *answerEnd;
 	char searchLine;
-	int entryNo,i;
+	int entryNo,i,lenoff;
+
 	pv_value_t v;
+	sdp_info_t sdp;
+	sdp_session_cell_t *session;
+	sdp_stream_cell_t *stream;
 
 	if (!val)
 		return -1;
@@ -1581,7 +1587,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
 		goto error;
 
-	if (!tp || !tp->next)
+	if (!tp)
 		goto error;
 
 	if(_tr_sdp_str.len==0 || _tr_sdp_str.len!=val->rs.len ||
@@ -1610,6 +1616,10 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	switch (subtype)
 	{
 		case TR_SDP_LINEAT:
+
+			/* line index is mandatory */
+			if (!tp->next)
+				goto error;
 			bodylimit = _tr_sdp_str.s + _tr_sdp_str.len;
 			searchLine = *(tp->v.s.s);
 			if(tp->next->type==TR_PARAM_NUMBER)
@@ -1661,12 +1671,88 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->rs.len = answerEnd - answer;
 
 			break;
+
+		case TR_SDP_MEDIADEL:
+			/* determine the media type we are talking about
+			 * either by index or by name */
+			media.s = NULL;
+			entryNo = 0;
+			switch (tp->type) {
+				case TR_PARAM_NUMBER:
+					entryNo = tp->v.n;
+					break;
+				case TR_PARAM_STRING:
+					media = tp->v.s;
+					break;
+				case TR_PARAM_SPEC:
+					media.s = NULL;
+					if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0)
+					{
+						LM_ERR("cannot get parameter\n");
+						goto error;
+					}
+					if (v.flags & PV_VAL_INT)
+						entryNo = v.ri;
+					else if (str2sint(&v.rs, &entryNo) < 0)
+						media = v.rs;
+					/* else entryNo has the media index */
+					break;
+			}
+
+			memset(&sdp, 0, sizeof(sdp));
+			if (parse_sdp_session(&_tr_sdp_str, 0, NULL, &sdp) < 0)
+				goto error;
+
+			if (media.s == NULL) {
+				if (entryNo < 0) {
+					if (entryNo + sdp.streams_num < 0)
+						/* out of bounds index */
+						goto parse_sdp_free;
+					entryNo += sdp.streams_num;
+				} else if (entryNo >= sdp.streams_num)
+					goto parse_sdp_free;
+				LM_DBG("deleting stream index %d\n", entryNo);
+			} else
+				LM_DBG("deleting stream type %.*s\n", media.len, media.s);
+			lenoff = 0;
+			for (session = sdp.sessions; session; session = session->next) {
+				for (stream = session->streams; stream; stream = stream->next) {
+					if ((media.s != NULL && stream->media.len == media.len &&
+							/* hack to update the offset */
+							strncasecmp(stream->media.s, media.s, media.len) == 0) ||
+						(media.s == NULL && entryNo == stream->stream_num)) {
+
+
+						memmove(stream->body.s - lenoff, stream->body.s - lenoff + stream->body.len,
+								_tr_sdp_str.s + _tr_sdp_str.len - stream->body.s);
+						_tr_sdp_str.len -= stream->body.len;
+
+						if (media.s == NULL)
+							goto success;
+
+						lenoff += stream->body.len;
+					}
+				}
+				if (media.s == NULL)
+					entryNo -= session->streams_num;
+			}
+			if (!lenoff) /* no stream found */
+				goto parse_sdp_free;
+success:
+			free_sdp_content(&sdp);
+			val->rs.len = _tr_sdp_str.len - 2;
+			val->rs.s = _tr_sdp_str.s + 2;
+			val->flags = PV_VAL_STR;
+			break;
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
 			goto error;
 	}
 
 	return 0;
+
+parse_sdp_free:
+	free_sdp_content(&sdp);
 
 error:
 	val->flags = PV_VAL_NULL;
@@ -3301,6 +3387,7 @@ error:
 
 int tr_parse_sdp(str *in, trans_t *t)
 {
+	int tmp;
 	char *p;
 	str name;
 	tr_param_t *tp = NULL;
@@ -3362,6 +3449,28 @@ int tr_parse_sdp(str *in, trans_t *t)
 			goto error;
 		}
 		t->params->next = tp;
+		tp = 0;
+
+		return 0;
+	} else if (name.len==13 && strncasecmp(name.s,"stream-delete",13)==0) {
+		t->subtype = TR_SDP_MEDIADEL;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("media delete without type or index: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		if ((p = tr_parse_sparam(p, in, &tp, 0)) == NULL)
+			goto error;
+		/* if it is a static numeric, convert it now */
+		if (tp->type == TR_PARAM_STRING) {
+			/* try to convert it now to an int, if possible */
+			if (str2sint(&tp->v.s, &tmp) >= 0) {
+				tp->v.n = tmp;
+				tp->type = TR_PARAM_NUMBER;
+			}
+		}
+		t->params = tp;
 		tp = 0;
 
 		return 0;
