@@ -318,8 +318,8 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
     else if(sockfd == sockfd4)
 	sprintf(s, "%i %s %d", sockfd4, alternate_ip, port2);
     else{
-	sprintf(s, "%i unknown %s %d", sockfd, alternate_ip, port2);
-	LM_DBG("Received: on [%s] from [%s %i]; drop msg\n", s, inet_ntoa(client->sin_addr),
+	LM_DBG("Received: on [%i unknown %s %d] from [%s %i]; drop msg\n",
+		sockfd, alternate_ip, port2, inet_ntoa(client->sin_addr),
 	    ntohs(client->sin_port));
 	return -1;
     }
