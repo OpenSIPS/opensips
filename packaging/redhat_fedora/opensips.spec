@@ -100,7 +100,7 @@ Requires: %{name} = %{version}-%{release}
 BuildRequires:  radiusclient-ng-devel
 
 %description  aaa_radius
-This module provides the RADIUS backend for the AAA API - group, auth, uri
+This module provides the RADIUS backend for the AAA API - group, auth
 module use the AAA API for performing RADIUS ops.
 %endif
 
@@ -1278,7 +1278,6 @@ fi
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/userblacklist.so
-%{_libdir}/opensips/modules/uri.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/uac_auth.so
 %{_libdir}/opensips/modules/uac_registrant.so
@@ -1345,7 +1344,6 @@ fi
 %doc docdir/README.uac_auth
 %doc docdir/README.uac_redirect
 %doc docdir/README.uac_registrant
-%doc docdir/README.uri
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
 
