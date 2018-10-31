@@ -2505,7 +2505,7 @@ rtpengine_offer_answer(struct sip_msg *msg, const char *flags,
 		if(pv_set_value(msg, bpvar, (int)EQ_T, &val)<0)
 			LM_ERR("setting PV failed\n");
 		pkg_free(newbody.s);
-	} else if (!body) {
+	} else if (!body || (extract_body(msg, &oldbody) > 0)) {
 		/* otherise directly set the body of the message */
 		anchor = del_lump(msg, oldbody.s - msg->buf, oldbody.len, 0);
 		if (!anchor) {
@@ -2516,6 +2516,9 @@ rtpengine_offer_answer(struct sip_msg *msg, const char *flags,
 			LM_ERR("insert_new_lump_after failed\n");
 			goto error_free;
 		}
+	} else {
+		LM_ERR("cannot parse old body!\n");
+		goto error_free;
 	}
 
 	bencode_buffer_free(&bencbuf);
