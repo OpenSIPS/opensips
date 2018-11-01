@@ -69,6 +69,7 @@
  * +1 .... end -  size = 2^k, big buckets */
 
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
+#define frag_is_free(_f) ((_f)->prev)
 
 struct fm_frag{
 	unsigned long size;

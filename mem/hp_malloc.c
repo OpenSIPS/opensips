@@ -1086,6 +1086,7 @@ void hp_pkg_free(struct hp_block *hpb, void *p)
 	}
 
 	f = FRAG_OF(p);
+	check_double_free(p, f, hpb);
 
 	/*
 	 * for private memory, coalesce as many consecutive fragments as possible
@@ -1142,6 +1143,7 @@ void hp_shm_free_unsafe(struct hp_block *hpb, void *p)
 	}
 
 	f = FRAG_OF(p);
+	check_double_free(p, f, hpb);
 
 	hp_frag_attach(hpb, f);
 	update_stats_shm_frag_attach(f);
@@ -1168,6 +1170,7 @@ void hp_shm_free(struct hp_block *hpb, void *p)
 	}
 
 	f = FRAG_OF(p);
+	check_double_free(p, f, hpb);
 
 	hash = PEEK_HASH_RR(hpb, f->size);
 

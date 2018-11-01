@@ -59,6 +59,7 @@ extern stat_var *shm_frags;
 	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
 
 #define FRAG_OVERHEAD	(sizeof(struct hp_frag))
+#define frag_is_free(_f) ((_f)->prev)
 
 #define HP_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 #define HP_MALLOC_OPTIMIZE  (1UL << HP_MALLOC_OPTIMIZE_FACTOR)

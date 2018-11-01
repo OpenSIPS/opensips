@@ -52,6 +52,27 @@
 #		error "no memory allocator selected"
 #	endif
 
+#ifdef DBG_MALLOC
+#define check_double_free(ptr, frag, block) \
+	do { \
+		if (frag_is_free(frag)) { \
+			LM_CRIT("freeing already freed %s pointer (%p), first free: " \
+			        "%s: %s(%ld) - aborting!\n", (block)->name, ptr, \
+			        (frag)->file, (frag)->func, (frag)->line); \
+			abort(); \
+		} \
+	} while (0)
+#else
+#define check_double_free(ptr, frag, block) \
+	do { \
+		if (frag_is_free(frag)) { \
+			LM_CRIT("freeing already freed %s pointer (%p) - skipping!\n", \
+			        (block)->name, ptr); \
+			return; \
+		} \
+	} while (0)
+#endif
+
 extern int mem_warming_enabled;
 extern char *mem_warming_pattern_file;
 extern int mem_warming_percentage;
