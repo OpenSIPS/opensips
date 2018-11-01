@@ -360,9 +360,14 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 	 * than 3 times the timer cycle */
 	db_vals[1].val.int_val -= 3 * ((int)(long)interval);
 
-	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
-	if (pa_dbf.delete(pa_db, db_keys+1, db_ops+1, db_vals+1, 1) < 0)
-		LM_ERR("cleaning expired messages\n");
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
+	{
+		LM_ERR("in use_table\n");
+	} else {
+		CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+		if (pa_dbf.delete(pa_db, db_keys+1, db_ops+1, db_vals+1, 1) < 0)
+			LM_ERR("cleaning expired messages\n");
+	}
 
 	if(p)
 	{
