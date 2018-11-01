@@ -234,6 +234,10 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct)
 	bin_push_str(&packet, &st);
 	store_free_buffer(&st);
 
+	st.s = (char *)&ct->contact_id;
+	st.len = sizeof ct->contact_id;
+	bin_push_str(&packet, &st);
+
 	if (cluster_mode == CM_FEDERATION_CACHEDB)
 		rc = clusterer_api.send_all_having(&packet, location_cluster,
 		                                   NODE_CMP_EQ_SIP_ADDR);
@@ -566,6 +570,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;
+
+	bin_pop_str(packet, &st);
+	memcpy(&ci.contact_id, st.s, sizeof ci.contact_id);
 
 	lock_udomain(domain, &aor);
 
