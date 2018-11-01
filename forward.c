@@ -96,7 +96,7 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 	socklen_t len;
 	union sockaddr_union from;
 	struct socket_info* si;
-	struct ip_addr ip;
+	struct ip_addr ip, ip_dst;
 
 	if (proto!=PROTO_UDP) {
 		LM_CRIT("can only be called for UDP\n");
@@ -119,12 +119,16 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 	}
 	su2ip_addr(&ip, &from);
 	si=find_si(&ip, 0, proto);
-	if (si==0) goto error;
+	if (si==0) {
+		LM_ERR("outbound IP %s not found as listener\n", ip_addr2a(&ip));
+		goto error;
+	}
 	close(temp_sock);
 	LM_DBG("socket determined: %p\n", si );
 	return si;
 error:
-	LM_ERR("no socket found\n");
+	su2ip_addr( &ip_dst, to);
+	LM_ERR("failed to find route to %s\n", ip_addr2a(&ip_dst));
 	close(temp_sock);
 	return 0;
 }
