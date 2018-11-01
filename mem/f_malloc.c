@@ -495,19 +495,9 @@ void fm_free(struct fm_block* qm, void* p)
 	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
 
 #ifndef F_MALLOC_OPTIMIZATIONS
-	if (frag_is_free(f)) {
-	#ifdef DBG_MALLOC
-		LM_CRIT("freeing already freed %s pointer (%p), first free: "
-		        "%s: %s(%ld) - aborting\n", qm->name, p,
-		        f->file, f->func, f->line);
-		abort();
-	#else
-		LM_CRIT("freeing already freed %s pointer (%p) - skipping!\n",
-		        qm->name, p);
-		return;
-	#endif
-	}
+	check_double_free(p, f, qm);
 #endif
+
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "freeing block alloc'ed from %s: %s(%ld)\n", f->file, f->func,
 			f->line);
