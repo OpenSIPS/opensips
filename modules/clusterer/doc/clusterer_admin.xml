@@ -562,7 +562,7 @@ modparam("clusterer", "description_col", "description")
 cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
 # wait for reply
 $avp(filter) = "tag=" + $var(req_tag);
-async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", "$avp(filter"), "5"), rpl_resume);
+async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", "$avp(filter)", "5"), rpl_resume);
 # done
 ...
 route[rpl_resume] {
