@@ -2030,8 +2030,9 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 		/* dialog timeout */
 		if (push_new_processing_context(dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
-			run_dlg_callbacks(DLGCB_EXPIRED, dlg, fake_msg,
-				DLG_DIR_NONE, NULL, 0, do_expire_actions);
+			if (do_expire_actions)
+				run_dlg_callbacks(DLGCB_EXPIRED, dlg, fake_msg,
+					DLG_DIR_NONE, NULL, 0, do_expire_actions);
 
 			if (current_processing_ctx == NULL)
 				*new_ctx = NULL;
