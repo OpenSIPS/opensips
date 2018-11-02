@@ -27,7 +27,9 @@
 			DLG_CREATED must be register alone. Possible types:
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>DLGCB_LOADED</emphasis>
+				<para><emphasis>DLGCB_LOADED</emphasis> - called when a dialog
+				is loaded from the database, or received by a node using the
+				cluster replication.
 				</para>
 			</listitem>
 			<listitem>
@@ -57,13 +59,15 @@
 			</listitem>
 			<listitem>
 				<para><emphasis>DLG_TERMINATED</emphasis> - called when the 
-				dialog is terminated via BYE - it's a per dialog type.
+				dialog is terminated via BYE, or by the mi dlg_end_dlg command
+				- it's a per dialog type.
 				</para>
 			</listitem>
 			<listitem>
 				<para><emphasis>DLG_EXPIRED</emphasis> - called when the 
 				dialog expires without receiving a BYE - it's a per dialog 
-				type.
+				type. Note that when using replication sharing tags, this
+				callback is only executed by the node that has the Active tag.
 				</para>
 			</listitem>
 			<listitem>

@@ -131,7 +131,8 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
  *
  * SIP signaling: confirmed and acknowledged dialog with exceeded max lifetime
  * Registration:  per-dialog, "dlg" must be given
- * Trigger count: once per dialog
+ * Trigger count: once per dialog; if using replication sharing tags, this
+ *                callback is ran only by the node that has the Active tag.
  */
 #define DLGCB_EXPIRED         (1<<6)
 
