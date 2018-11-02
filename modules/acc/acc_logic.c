@@ -839,6 +839,10 @@ static void acc_dlg_ended(struct dlg_cell *dlg, int type,
 		return;
 	}
 
+	/* skip accounting if the node has a backup state for this dialog */
+	if (!_params->is_active)
+		return;
+
 	/* resolve local/dlg ctx conflict by merging them together */
 	acc_merge_contexts(dlg, type, _params);
 	ctx = (acc_ctx_t *)(*_params->param);

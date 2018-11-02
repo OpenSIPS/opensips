@@ -1237,6 +1237,11 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 		LM_ERR("no parameter specified to dlg callback!\n");
 		return;
 	}
+
+	/* skip accounting if the node has a backup state for this dialog */
+	if (!_params->is_active)
+		return;
+
 	ctx = *_params->param;
 
 	/* stop every session started */

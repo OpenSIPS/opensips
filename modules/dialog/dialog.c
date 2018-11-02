@@ -1890,7 +1890,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 
 		if (db_update)
 			update_dialog_timeout_info(dlg);
-		if (dialog_repl_cluster && get_shtag_state(dlg) != SHTAG_STATE_BACKUP)
+		if (dialog_repl_cluster)
 			replicate_dialog_updated(dlg);
 
 		if (timer_update) {
