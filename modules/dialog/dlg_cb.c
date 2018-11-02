@@ -38,7 +38,7 @@ static struct dlg_head_cbl* create_cbs = 0;
 
 static struct dlg_head_cbl* load_cbs = 0;
 
-static struct dlg_cb_params params = {NULL, DLG_DIR_NONE, NULL, NULL};
+static struct dlg_cb_params params = {NULL, DLG_DIR_NONE, 1, NULL, NULL};
 
 
 #define POINTER_CLOSED_MARKER  ((void *)(-1))
@@ -239,12 +239,14 @@ void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg)
 
 
 void run_dlg_callbacks(int type , struct dlg_cell *dlg, struct sip_msg *msg,
-								unsigned int dir, void *dlg_data, int locked)
+								unsigned int dir, void *dlg_data, int locked,
+								unsigned int is_active)
 {
 	struct dlg_callback *cb;
 
 	params.msg = msg;
 	params.direction = dir;
+	params.is_active = is_active;
 	params.dlg_data = dlg_data;
 
 	if (dlg->cbs.first==0 || ((dlg->cbs.types)&type)==0 )
