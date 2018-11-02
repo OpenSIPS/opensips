@@ -434,14 +434,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	str mangled_from = {0,0};
 	str mangled_to = {0,0};
 	str *req_out_buff;
-	int do_actions = 1;
 
 	dlg = (struct dlg_cell *)(*param->param);
 	if (shutdown_done || dlg==0)
 		return;
-
-	if (dialog_repl_cluster)
-		do_actions = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
 
 	rpl = param->rpl;
 	req = param->req;
