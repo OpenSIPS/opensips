@@ -205,7 +205,7 @@ Chapter 2. Contributors
    1. Razvan Pistolea 19 3 1891 19
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 13 136 128
    3. Liviu Chircu (@liviuchircu) 13 9 254 104
-   4. Razvan Crainea (@razvancrainea) 8 6 13 10
+   4. Razvan Crainea (@razvancrainea) 9 7 15 12
    5. Vlad Paiu (@vladpaiu) 6 4 21 4
 
    (1) DevScore = author_commits + author_lines_added /
@@ -228,9 +228,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2009 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3. Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
+   1. Razvan Crainea (@razvancrainea)     Oct 2011 - Oct 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2009 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4. Vlad Paiu (@vladpaiu)               Sep 2011 - Mar 2015
    5. Razvan Pistolea                     Sep 2009 - Sep 2009
 
