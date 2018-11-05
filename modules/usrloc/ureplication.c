@@ -500,7 +500,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
-		user_agent, path, attr, st, sock;
+		user_agent, path, attr, st, kv_str, sock;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
@@ -565,8 +565,8 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	bin_pop_str(packet, &st);
 	memcpy(&ci.last_modified, st.s, sizeof ci.last_modified);
 
-	bin_pop_str(packet, &st);
-	ci.packed_kv_storage = &st;
+	bin_pop_str(packet, &kv_str);
+	ci.packed_kv_storage = &kv_str;
 
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;
