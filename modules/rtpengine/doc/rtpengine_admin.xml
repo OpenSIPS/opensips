@@ -593,7 +593,6 @@ rtpengine_offer();
 		string. <emphasis>Important: </emphasis> when providing this variable, the
 		message body is no longer changed, so you have to manually replace it!.
 		</para></listitem>
-		</itemizedlist>
 		<listitem><para>
 		<emphasis>body(optional)</emphasis> - used to provide a specific body
 		to the rtpengine_* function. If this parameter is missing the body of
