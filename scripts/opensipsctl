@@ -2638,6 +2638,8 @@ opensips_trap() {
 		osips_pids=($(echo $TRAP_PIDS | xargs -n1 | sort -n))
 	fi
 
+	[ ${#osips_pids[@]} -eq 0 ] && echo "No PIDs to trap!" && exit 1
+
 	minfo "Trapping OpenSIPS with gdb: "
 
 	jobs=()
