@@ -1813,9 +1813,9 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		return 0;
 
 	case CM_FEDERATION_CACHEDB:
-		if (!is_replicated && cdb_update_urecord_metadata(&_r->aor, 1) != 0)
+		if (!is_replicated && cdb_update_urecord_metadata(_aor, 1) != 0)
 			LM_ERR("failed to delete metadata, aor: %.*s\n",
-			       _r->aor.len, _r->aor.s);
+			       _aor->len, _aor->s);
 		break;
 
 	default:
