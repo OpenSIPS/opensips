@@ -493,6 +493,7 @@ again:
 
 			/* release the connextion */
 			con->state = S_CONN_EOF;
+			update_stat( pt[process_no].load, -1 );
 			goto done;
 
 		case WS_OP_PING:
@@ -540,6 +541,7 @@ again:
 
 			default:
 				LM_BUG("Can't handle %d\n", req->op);
+				update_stat( pt[process_no].load, -1 );
 				goto error;
 			}
 
