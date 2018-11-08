@@ -1184,12 +1184,29 @@ static int init_tls_dom(struct tls_domain *d)
 	/*
 	 * create context
 	 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	d->ctx = SSL_CTX_new(TLS_method());
+#else
 	d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+#endif
 	if (d->ctx == NULL) {
 		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
 			d->name.len, ZSW(d->name.s));
 		return -1;
 	}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	if (d->method != TLS_USE_SSLv23) {
+		if (!SSL_CTX_set_min_proto_version(d->ctx,
+				ssl_versions[d->method - 1]) ||
+			!SSL_CTX_set_max_proto_version(d->ctx,
+				ssl_versions[d->method - 1])) {
+			LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
+				d->name.len, ZSW(d->name.s));
+			return -1;
+		}
+	}
+#endif
 
 	if (init_ssl_ctx_behavior(d) < 0)
 		return -1;
@@ -1436,30 +1453,28 @@ static void
 init_ssl_methods(void)
 {
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLS_client_method();
-	ssl_methods[TLS_USE_TLSv1_srv-1] = (SSL_METHOD*)TLS_server_method();
-	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLS_method();
-#else
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLSv1_client_method();
 	ssl_methods[TLS_USE_TLSv1_srv-1] = (SSL_METHOD*)TLSv1_server_method();
 	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLSv1_method();
-#endif
 
 	ssl_methods[TLS_USE_SSLv23_cli-1] = (SSL_METHOD*)SSLv23_client_method();
 	ssl_methods[TLS_USE_SSLv23_srv-1] = (SSL_METHOD*)SSLv23_server_method();
 	ssl_methods[TLS_USE_SSLv23-1] = (SSL_METHOD*)SSLv23_method();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-	ssl_methods[TLS_USE_TLSv1_2_cli-1] = (SSL_METHOD*)TLS_client_method();
-	ssl_methods[TLS_USE_TLSv1_2_srv-1] = (SSL_METHOD*)TLS_server_method();
-	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLS_method();
-#else
 	ssl_methods[TLS_USE_TLSv1_2_cli-1] = (SSL_METHOD*)TLSv1_2_client_method();
 	ssl_methods[TLS_USE_TLSv1_2_srv-1] = (SSL_METHOD*)TLSv1_2_server_method();
 	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLSv1_2_method();
 #endif
+#else
+	ssl_versions[TLS_USE_TLSv1_2_cli-1] = TLS1_2_VERSION;
+	ssl_versions[TLS_USE_TLSv1_2_srv-1] = TLS1_2_VERSION;
+	ssl_versions[TLS_USE_TLSv1_2-1] = TLS1_2_VERSION;
+
+	ssl_versions[TLS_USE_TLSv1_cli-1] = TLS1_VERSION;
+	ssl_versions[TLS_USE_TLSv1_srv-1] = TLS1_VERSION;
+	ssl_versions[TLS_USE_TLSv1-1] = TLS1_VERSION;
 #endif
 }
 
