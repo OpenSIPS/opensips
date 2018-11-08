@@ -251,7 +251,8 @@ ucontact_t **select_contacts(struct sip_msg *msg, ucontact_t *contacts,
 		*ret = 1;
 
 		if (count == selected_cts_sz - 1) {
-			doubled = pkg_realloc(selected_cts, 2 * selected_cts_sz);
+			doubled = pkg_realloc(selected_cts,
+					2 * selected_cts_sz * sizeof *selected_cts);
 			if (!doubled) {
 				LM_ERR("oom\n");
 				return NULL;
