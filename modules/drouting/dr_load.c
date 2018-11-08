@@ -49,10 +49,28 @@
 #include "dr_db_def.h"
 
 
+#define check_val2( _col, _val, _type1, _type2, _not_null, _is_empty_str) \
+	do{\
+		if ((_val)->type!=_type1 && (_val)->type!=_type2) { \
+			LM_ERR("column %.*s has a bad type [%d], accepting only [%d,%d]\n",\
+				_col.len, _col.s, (_val)->type, _type1, _type2); \
+			goto error;\
+		} \
+		if (_not_null && (_val)->nul) { \
+			LM_ERR("column %.*s is null\n", _col.len, _col.s); \
+			goto error;\
+		} \
+		if (_is_empty_str && VAL_STRING(_val)==0) { \
+			LM_ERR("column %.*s (str) is empty\n", _col.len, _col.s); \
+			goto error;\
+		} \
+	}while(0)
+
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
 		if ((_val)->type!=_type) { \
-			LM_ERR("column %.*s has a bad type\n", _col.len, _col.s); \
+			LM_ERR("column %.*s has a bad type [%d], accepting only [%d]\n",\
+				_col.len, _col.s, (_val)->type, _type); \
 			goto error;\
 		} \
 		if (_not_null && (_val)->nul) { \
@@ -312,21 +330,21 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			check_val( address_drd_col, ROW_VALUES(row)+2, DB_STRING, 1, 1);
 			str_vals[STR_VALS_ADDRESS_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+2);
 			/* STRIP column */
-			check_val( strip_drd_col, ROW_VALUES(row)+3, DB_INT, 1, 0);
+			check_val2( strip_drd_col, ROW_VALUES(row)+3, DB_INT, DB_BIGINT, 1, 0);
 			int_vals[INT_VALS_STRIP_DRD_COL] = VAL_INT   (ROW_VALUES(row)+3);
 			/* PREFIX column */
 			check_val( prefix_drd_col, ROW_VALUES(row)+4, DB_STRING, 0, 0);
 			str_vals[STR_VALS_PREFIX_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 			/* TYPE column */
-			check_val( type_drd_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
+			check_val2( type_drd_col, ROW_VALUES(row)+5, DB_INT, DB_BIGINT, 1, 0);
 			int_vals[INT_VALS_TYPE_DRD_COL] = VAL_INT(ROW_VALUES(row)+5);
 			/* ATTRS column */
 			check_val( attrs_drd_col, ROW_VALUES(row)+6, DB_STRING, 0, 0);
 			str_vals[STR_VALS_ATTRS_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+6);
-			/*PROBE_MODE column */
-			check_val( probe_drd_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
+			/* PROBE_MODE column */
+			check_val2( probe_drd_col, ROW_VALUES(row)+7, DB_INT, DB_BIGINT, 1, 0);
 			int_vals[INT_VALS_PROBE_DRD_COL] = VAL_INT(ROW_VALUES(row)+7);
-			/*SOCKET column */
+			/* SOCKET column */
 			check_val( sock_drd_col, ROW_VALUES(row)+8, DB_STRING, 0, 0);
 			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
 					(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
@@ -352,7 +370,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			}
 			/*STATE column */
 			if (persistent_state) {
-				check_val( state_drd_col, ROW_VALUES(row)+9, DB_INT, 1, 0);
+				check_val2( state_drd_col, ROW_VALUES(row)+9, DB_INT,
+					DB_BIGINT, 1, 0);
 				int_vals[INT_VALS_STATE_DRD_COL] = VAL_INT(ROW_VALUES(row)+9);
 			} else {
 				int_vals[INT_VALS_STATE_DRD_COL] = 0; /* by default enabled */
@@ -449,7 +468,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				check_val( cid_drc_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 				str_vals[STR_VALS_CID_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 				/* flags column */
-				check_val( flags_drc_col, ROW_VALUES(row)+2, DB_INT, 1, 0);
+				check_val2( flags_drc_col, ROW_VALUES(row)+2, DB_INT, DB_BIGINT, 1, 0);
 				int_vals[INT_VALS_FLAGS_DRC_COL] = VAL_INT(ROW_VALUES(row)+2);
 				/* GWLIST column */
 				check_val( gwlist_drc_col, ROW_VALUES(row)+3, DB_STRING, 1, 1);
@@ -459,7 +478,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 				/* STATE column */
 				if (persistent_state) {
-					check_val( state_drc_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
+					check_val2( state_drc_col, ROW_VALUES(row)+5, DB_INT, DB_BIGINT, 1, 0);
 					int_vals[INT_VALS_STATE_DRC_COL] = VAL_INT(ROW_VALUES(row)+5);
 				} else {
 					/* by default enabled */
@@ -555,7 +574,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			check_val( time_drr_col, ROW_VALUES(row)+3, DB_STRING, 0, 0);
 			str_vals[STR_VALS_TIME_DRR_COL] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 			/* PRIORITY column */
-			check_val( priority_drr_col, ROW_VALUES(row)+4, DB_INT, 1, 0);
+			check_val2( priority_drr_col, ROW_VALUES(row)+4, DB_INT, DB_BIGINT, 1, 0);
 			int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT   (ROW_VALUES(row)+4);
 			/* ROUTE_ID column */
 			check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
