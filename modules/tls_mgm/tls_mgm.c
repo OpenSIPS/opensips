@@ -1537,26 +1537,14 @@ init_ssl_methods(void)
 {
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-	ssl_methods[TLS_USE_TLSv1_cli-1] = (SSL_METHOD*)TLSv1_client_method();
-	ssl_methods[TLS_USE_TLSv1_srv-1] = (SSL_METHOD*)TLSv1_server_method();
 	ssl_methods[TLS_USE_TLSv1-1] = (SSL_METHOD*)TLSv1_method();
-
-	ssl_methods[TLS_USE_SSLv23_cli-1] = (SSL_METHOD*)SSLv23_client_method();
-	ssl_methods[TLS_USE_SSLv23_srv-1] = (SSL_METHOD*)SSLv23_server_method();
 	ssl_methods[TLS_USE_SSLv23-1] = (SSL_METHOD*)SSLv23_method();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L
-	ssl_methods[TLS_USE_TLSv1_2_cli-1] = (SSL_METHOD*)TLSv1_2_client_method();
-	ssl_methods[TLS_USE_TLSv1_2_srv-1] = (SSL_METHOD*)TLSv1_2_server_method();
 	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLSv1_2_method();
 #endif
 #else
-	ssl_versions[TLS_USE_TLSv1_2_cli-1] = TLS1_2_VERSION;
-	ssl_versions[TLS_USE_TLSv1_2_srv-1] = TLS1_2_VERSION;
 	ssl_versions[TLS_USE_TLSv1_2-1] = TLS1_2_VERSION;
-
-	ssl_versions[TLS_USE_TLSv1_cli-1] = TLS1_VERSION;
-	ssl_versions[TLS_USE_TLSv1_srv-1] = TLS1_VERSION;
 	ssl_versions[TLS_USE_TLSv1-1] = TLS1_VERSION;
 #endif
 }
@@ -2085,18 +2073,12 @@ static int list_domain(struct mi_node *root, struct tls_domain *d)
 		}
 
 		switch (d->method) {
-		case TLS_USE_TLSv1_cli:
-		case TLS_USE_TLSv1_srv:
 		case TLS_USE_TLSv1:
 			child = add_mi_node_child(node, 0, "METHOD", 6, "TLSv1", 5);
 			break;
-		case TLS_USE_SSLv23_cli:
-		case TLS_USE_SSLv23_srv:
 		case TLS_USE_SSLv23:
 			child = add_mi_node_child(node, 0, "METHOD", 6, "SSLv23", 6);
 			break;
-		case TLS_USE_TLSv1_2_cli:
-		case TLS_USE_TLSv1_2_srv:
 		case TLS_USE_TLSv1_2:
 			child = add_mi_node_child(node, 0, "METHOD", 6, "TLSv1_2", 7);
 			break;
