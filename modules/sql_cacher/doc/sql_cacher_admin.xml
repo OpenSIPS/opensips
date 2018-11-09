@@ -65,8 +65,9 @@
 		</para>
 		<para>
 		The caching entry is specified via this parameter that has it's own
-		subparameters. Each of those parameters are separted by a configurable
-		delimiter and have the following format:
+		subparameters. Each of those parameters are separted a
+		delimiter configured by <xref linkend="param_spec_delimiter"/>
+		and have the following format:
 		<para><emphasis>param_name=param_value</emphasis></para>
 		The parameters are:
 		<itemizedlist>
@@ -87,7 +88,8 @@
 			</para></listitem>
 			<listitem><para>
 			<emphasis>columns</emphasis> : names of the columns to be cached from the
-			SQL database, separated by a configurable delimiter
+			SQL database, separated by a delimiter configured by
+			<xref linkend="param_columns_delimiter"/>.
 			<para>If not present, all the columns from the table will be cached</para>
 			</para></listitem>
 			<listitem><para>
@@ -298,7 +300,7 @@ $ opensipsctl fifo sql_cacher_reload caching_name key
 				<itemizedlist>
 					<listitem><para>
 					<emphasis>sep</emphasis> : separator configured by
-					<quote>pvar_delimiter</quote> parameter
+					<xref linkend="param_pvar_delimiter"/>
 					</para></listitem>
 					<listitem><para>
 					<emphasis>id</emphasis>  : cache entry id
