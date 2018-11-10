@@ -764,11 +764,11 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 	<section id="pv_acc_extra" xreflabel="$acc_extra">
 		<title>$acc_extra(tag_name)</title>
 		<para> This variable can addresed with the tag names defined
-			using <emphasis>extra_fields</emphasis> parameter. If
-			<emphasis>do_accounting()</emphasis> isn't called, this
+			using <xref linkend="param_extra_fields"/>. If
+			<xref linkend="func_do_accounting"/> isn't called, this
 			variable is visible during the whole processing of one message,
 			enabling calling <emphasis>acc_XXX_request()</emphasis>.
-			If <emphasis>do_accounting()</emphasis> is called, the variable
+			If <xref linkend="func_do_accounting"/> is called, the variable
 			will be visible from the first call of this function until the
 			actual accounting is being made.
 		</para>
@@ -777,11 +777,25 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 	<section id="pv_acc_leg" xreflabel="$acc_leg">
 		<title>$(acc_leg(tag_name)[leg_index])</title>
 		<para> This variable can be addressed with the tag names defined
-			using <emphasis>leg_fields</emphasis> parameter and  a valid
-			leg index( &lt;= <emphasis>acc_current_leg</emphasis>).
-			This variable can't be used unless <emphasis>do_accounting()
-			</emphasis> function is used. The variable also accepts negative
-			indexes, which start from -1(value for the last leg).
+			using <xref linkend="param_leg_fields"/> and  a valid leg index
+			(&lt;= <xref linkend="pv_acc_current_leg"/>). This variable cannot
+			be used unless <xref linkend="func_do_accounting"/> is used. The
+			variable also accepts negative indexes, which start from -1
+			(the lastly added leg).
+		</para>
+		<para>
+<programlisting>
+# the "caller" value of the current leg
+$acc_leg(caller)
+
+# the "caller" value of the lastly added leg
+$(acc_leg(caller)[-1]) # equivalent to $acc_leg(caller)
+                       # equivalent to $(acc_leg(caller)[$acc_current_leg])
+
+# the "caller" value of the next-to-last leg
+$(acc_leg(caller)[-2])
+
+</programlisting>
 		</para>
 	</section>
 

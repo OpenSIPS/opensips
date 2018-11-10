@@ -65,7 +65,7 @@
 		</para>
 		<para>
 		The caching entry is specified via this parameter that has it's own
-		subparameters. Each of those parameters are separted a
+		subparameters. Each of those parameters are separated by a
 		delimiter configured by <xref linkend="param_spec_delimiter"/>
 		and have the following format:
 		<para><emphasis>param_name=param_value</emphasis></para>
@@ -239,7 +239,7 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 		<title><varname>reload_interval</varname> (integer)</title>
 		<para>
 		This parameter represents how many seconds before the data expires (for full caching) the
-		automatic reloading is triggerd.
+		automatic reloading is triggered.
 		</para>
 		<para>
 		The default value is <quote>60 s</quote>.

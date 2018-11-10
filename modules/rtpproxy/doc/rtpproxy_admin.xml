@@ -487,7 +487,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 	<title>Exported Functions</title>
 	<section id="func_rtpproxy_engage" xreflabel="rtpproxy_engage()">
 		<title>
-			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar [, ret_pvar]]]]])</function>
+			<function moreinfo="none">rtpproxy_engage([[flags][, [ip_address][, [set_id][, [sock_pvar][, ret_pvar]]]]])</function>
 		</title>
 
 		<para>
@@ -633,7 +633,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
         <section id="func_rtpproxy_offer" xreflabel="rtpproxy_offer()">
                 <title>
-                <function moreinfo="none">rtpproxy_offer([flags [, ip_address [, set_id [, sock_pvar [, ret_pvar]]]]])</function>
+                <function moreinfo="none">rtpproxy_offer([[flags][, [ip_address][, [set_id][, [sock_pvar][, ret_pvar]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -687,7 +687,7 @@ onreply_route[2]
 	</section>
         <section id="func_rtpproxy_answer" xreflabel="rtpproxy_answer()">
                 <title>
-                <function moreinfo="none">rtpproxy_answer([flags [, ip_address [, set_id [, sock_pvar [, ret_pvar]]]]])</function>
+                <function moreinfo="none">rtpproxy_answer([[flags][, [ip_address][, [set_id][, [sock_pvar][, ret_pvar]]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -712,7 +712,7 @@ onreply_route[2]
         </section>
 	<section id="func_rtpproxy_unforce" xreflabel="rtpproxy_unforce()">
 		<title>
-		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
+		<function moreinfo="none">rtpproxy_unforce([[set_id][, sock_pvar]])</function>
 		</title>
 		<para>
 		Tears down the RTPProxy session for the current call.
@@ -741,8 +741,8 @@ rtpproxy_unforce();
 	</section>
 	<section id="rtpproxy_stream2xxx">
 	<title>
-	    <function>rtpproxy_stream2uac(prompt_name, count [, set_id [, sock_pvar]])</function>,
-	    <function>rtpproxy_stream2uas(prompt_name, count [, set_id [, sock_pvar]])</function>
+	    <function>rtpproxy_stream2uac(prompt_name, count[, [set_id][, sock_pvar]])</function>,
+	    <function>rtpproxy_stream2uas(prompt_name, count[, [set_id][, sock_pvar]])</function>
 	</title>
 	<para>
 	    Instruct the RTPproxy to stream prompt/announcement pre-encoded with
@@ -813,8 +813,8 @@ rtpproxy_unforce();
 	</section>
 	<section id="rtpproxy_stop_stream2xxx">
 	<title>
-	    <function>rtpproxy_stop_stream2uac([set_id [, sock_pvar]])</function>,
-	    <function>rtpproxy_stop_stream2uas([set_id [, sock_pvar]])</function>
+	    <function>rtpproxy_stop_stream2uac([[set_id][, sock_pvar]])</function>,
+	    <function>rtpproxy_stop_stream2uas([[set_id][, sock_pvar]])</function>
 	</title>
 	<para>
 	    Stop streaming of announcement/prompt/MOH started previously by the
@@ -838,7 +838,7 @@ rtpproxy_unforce();
 	</section>
 	<section id="func_rtpproxy_start_recording" xreflabel="rtpproxy_start_recording()">
 		<title>
-		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar [, flags [, destination [, mediastream]]]]])</function>
+		<function moreinfo="none">rtpproxy_start_recording([[set_id][, [sock_pvar][, [flags][, [destination][, mediastream]]]]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
@@ -894,7 +894,7 @@ rtpproxy_start_recording(,,,"udp:127.0.0.1:60000", "1");
 	</section>
 	<section id="func_rtpproxy_stats" xreflabel="rtpproxy_stats()">
 		<title>
-		<function moreinfo="none">rtpproxy_stats(up_pvar, down_pvar, sent_pvar, fail_pvar [, set_id [, sock_pvar]])</function>
+		<function moreinfo="none">rtpproxy_stats(up_pvar, down_pvar, sent_pvar, fail_pvar[, [set_id][, sock_pvar]])</function>
 		</title>
 		<para>
 		This command gathers call RTP statistics from RTP-Proxy.
@@ -941,7 +941,7 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent) fail=$
 	</section>
 	<section id="func_rtpproxy_all_stats" xreflabel="rtpproxy_all_stats()">
 		<title>
-		<function moreinfo="none">rtpproxy_all_stats(stats_avp [, set_id [, sock_pvar]])</function>
+		<function moreinfo="none">rtpproxy_all_stats(stats_avp[, [set_id][, sock_pvar]])</function>
 		</title>
 		<para>
 			This command gathers all RTP statistics available from RTP-Proxy.
