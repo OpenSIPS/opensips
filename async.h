@@ -31,7 +31,7 @@
 #include "parser/msg_parser.h"
 
 
-/* The possible values of the status of async operatations (as reported by
+/* The possible values of the status of async operations (as reported by
  * module functions, at start and resume)
  * NOTE: all values in this enum must be negative
  */

@@ -56,7 +56,7 @@
 		order to share the reachability of these contacts with the global
 		OpenSIPS user location cluster, registrar nodes will only publish some
 		light "metadata" entries for any new Addresses-of-Record which are
-		reachable from it. These entries will cause other nodes to also fork
+		reachable from them. These entries will cause other nodes to also fork
 		additional SIP branches pointing to the above-mentioned registrar upon
 		receiving a call for the above-mentioned Addresses-of-Record.
 		</para>
@@ -106,8 +106,8 @@
 	<section id="full-sharing-topology" xreflabel="Full Sharing Topology">
 		<title>"Full Sharing" Topology</title>
 		<para>
-		A <emphasis>fully sharing</emphasis> user location propagates
-		(broadcasts) contact information to all data nodes (OpenSIPS or NoSQL).
+		A <emphasis>fully sharing</emphasis> user location broadcasts contact
+		information to all data nodes (OpenSIPS or NoSQL).
 		The main assumption behind this mode is that any routing
 		restrictions have been alleviated beforehand. Consequently, either SIP
 		traffic egressing from a "full sharing"
@@ -135,10 +135,11 @@
 		<para>
 		Currently, registrations may optionally be fully managed inside NoSQL
 		databases which support key/multi-value column-like associations.
-		Example known backends to support these abstractions at the time of
-		writing are MongoDB and Cassandra. Of these two, only the MongoDB
-		OpenSIPS driver has been so far extended to implement the required
-		NoSQL API endpoints.
+		Example known backends to support these abstractions are MongoDB and
+		Apache Cassandra.  In OpenSIPS 2.4, the MongoDB OpenSIPS driver is the
+		only cache DB driver to implement the required capabilities.  The
+		equivalent support for Apache Cassandra 3.x was added for the 3.0
+		OpenSIPS release.
 		</para>
 		<para>
 		The <ulink url="http://www.opensips.org/Documentation/Tutorials-Distributed-User-Location-Full-Sharing">
@@ -157,7 +158,7 @@
 		each other, they will each scan the entire contact dataset, thus
 		periodically sending "N pings" instead of "1 ping" for each contact.
 		This difference directly affects service scalability, as well as the
-		amount of consumed cloud compute resources such as CPU and network
+		amount of consumed resources such as CPU and network
 		bandwidth, both on the service and client side.
 		</para>
 		<para>
@@ -913,7 +914,7 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 		<para>
 			<emphasis role='bold'>This parameter will get overridden if either
 			<xref linkend='param_working_mode_preset'/> or
-			<xref linkend='param_db_mode'/> are set.</emphasis>
+			<xref linkend='param_db_mode'/> is set.</emphasis>
 		</para>
 		<para>
 		The behavior of the global OpenSIPS user location cluster. Refer to
