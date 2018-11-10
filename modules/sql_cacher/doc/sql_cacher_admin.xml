@@ -65,7 +65,7 @@
 		</para>
 		<para>
 		The caching entry is specified via this parameter that has it's own
-		subparameters. Each of those parameters are separted a
+		subparameters. Each of those parameters are separated by a
 		delimiter configured by <xref linkend="param_spec_delimiter"/>
 		and have the following format:
 		<para><emphasis>param_name=param_value</emphasis></para>
@@ -135,7 +135,7 @@ on_demand=0")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_spec_delimiter" xreflabel="spec_delimiter">
 		<title><varname>spec_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the caching entry specification provided in the
@@ -155,7 +155,7 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_pvar_delimiter" xreflabel="pvar_delimiter">
 		<title><varname>pvar_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the <quote>$sql_cached_value</quote>
@@ -175,7 +175,7 @@ modparam("sql_cacher", "pvar_delimiter", " ")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_columns_delimiter" xreflabel="columns_delimiter">
 		<title><varname>columns_delimiter</varname> (string)</title>
 		<para>
 		The delimiter to be used in the <emphasis>columns</emphasis> subparameter of
@@ -239,7 +239,7 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 		<title><varname>reload_interval</varname> (integer)</title>
 		<para>
 		This parameter represents how many seconds before the data expires (for full caching) the
-		automatic reloading is triggerd.
+		automatic reloading is triggered.
 		</para>
 		<para>
 		The default value is <quote>60 s</quote>.

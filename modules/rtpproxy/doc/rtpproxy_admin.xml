@@ -469,8 +469,8 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>,
-			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+			<function moreinfo="none">engage_rtp_proxy([[flags][, [ip_address][, [set_id][, sock_pvar]]]]) - deprecated</function>,
+			<function moreinfo="none">rtpproxy_engage([[flags][, [ip_address][, [set_id][, sock_pvar]]]])</function>
 		</title>
 
 		<para>
@@ -599,7 +599,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_offer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+                <function moreinfo="none">rtpproxy_offer([[flags][, [ip_address][, [set_id][, sock_pvar]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -653,7 +653,7 @@ onreply_route[2]
 	</section>
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_answer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+                <function moreinfo="none">rtpproxy_answer([[flags][, [ip_address][, [set_id][, sock_pvar]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -678,8 +678,8 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated</function>,
-		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
+		<function moreinfo="none">unforce_rtp_proxy([[set_id][, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">rtpproxy_unforce([[set_id][, sock_pvar]])</function>
 		</title>
 		<para>
 		Tears down the RTPProxy session for the current call.
@@ -708,8 +708,8 @@ rtpproxy_unforce();
 	</section>
 	<section id="rtpproxy_stream2xxx">
 	<title>
-	    <function>rtpproxy_stream2uac(prompt_name, count [, set_id [, sock_pvar]])</function>,
-	    <function>rtpproxy_stream2uas(prompt_name, count [, set_id [, sock_pvar]])</function>
+	    <function>rtpproxy_stream2uac(prompt_name, count[, [set_id][, sock_pvar]])</function>,
+	    <function>rtpproxy_stream2uas(prompt_name, count[, [set_id][, sock_pvar]])</function>
 	</title>
 	<para>
 	    Instruct the RTPproxy to stream prompt/announcement pre-encoded with
@@ -780,8 +780,8 @@ rtpproxy_unforce();
 	</section>
 	<section id="rtpproxy_stop_stream2xxx">
 	<title>
-	    <function>rtpproxy_stop_stream2uac([set_id [, sock_pvar]])</function>,
-	    <function>rtpproxy_stop_stream2uas([set_id [, sock_pvar]])</function>
+	    <function>rtpproxy_stop_stream2uac([[set_id][, sock_pvar]])</function>,
+	    <function>rtpproxy_stop_stream2uas([[set_id][, sock_pvar]])</function>
 	</title>
 	<para>
 	    Stop streaming of announcement/prompt/MOH started previously by the
@@ -805,8 +805,8 @@ rtpproxy_unforce();
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">start_recording([set_id [, sock_pvar]]) - deprecated</function>,
-		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar]])</function>
+		<function moreinfo="none">start_recording([[set_id][, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">rtpproxy_start_recording([[set_id][, sock_pvar]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
