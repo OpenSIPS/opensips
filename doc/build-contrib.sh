@@ -670,15 +670,18 @@ count_dir_changes() {
   done
 }
 
-count_module_changes() {
+_count_module_changes() {
   [ -n "${mod_renames[$1]}" ] && count_module_changes "${mod_renames[$1]}" "rec"
 
-  mkdir -p modules/$1
-  count_dir_changes "$1"
+  mkdir -p modules/$1$2
+  count_dir_changes "$1$2"
   if [ "$2" == "rec" ]; then
     rm -r modules/$1
   fi
 }
+
+count_module_changes() { _count_module_changes "$1" ""; }
+count_module_doc_changes() { _count_module_changes "$1" "/doc"; }
 
 # $1 - module name, e.g.: "tm", "cachedb_mongodb"
 gen_module_contributors() {
@@ -867,7 +870,7 @@ unset last_commit
 declare -A first_commit
 declare -A last_commit
 
-count_module_changes $1/doc
+count_module_doc_changes $1
 
 (
   export LC_ALL=C
