@@ -576,6 +576,8 @@ mod_renames=(
   [auth_aaa]=auth_radius
   [cachedb_local]=localcache
   [uac_registrant]=registrant
+  [mi_http]=mi_json:1540473075:  # old_module:new_module_since:old_module_until
+  [mi_html]=mi_http::1540473075
 )
 
 mk_git_handle() {
@@ -638,7 +640,7 @@ rebuild_proj_commit_stats() {
 }
 
 count_dir_changes() {
-  for sha in $(git log --reverse --format=%H modules/$1); do
+  for sha in $(git log --reverse --format=%H $2 modules/$1); do
     [ -n "${skip_commits[$sha]}" ] && continue
 
     show="$(git log $sha -b --no-walk --find-renames --format="$(echo -e "%an <%ae>")" --numstat | grep -vE "modules/.*(README|contributors\.xml|\.html|\.sw[po])")"
@@ -670,15 +672,34 @@ count_dir_changes() {
   done
 }
 
-count_module_changes() {
-  [ -n "${mod_renames[$1]}" ] && count_module_changes "${mod_renames[$1]}" "rec"
+_count_module_changes() {
+  if [ -n "${mod_renames[$1]}" ]; then
+    IFS=':'; local arr=(${mod_renames[$1]})
+    local old_mod="${arr[0]}"; local since="${arr[1]}"; local until="${arr[2]}"
+    unset IFS
 
-  mkdir -p modules/$1
-  count_dir_changes "$1"
-  if [ "$2" == "rec" ]; then
+    # this trick helps deal with the mi_html->mi_http, mi_http->mi_json rename
+    [ -z "$3" -o -z "$since" ] && \
+        _count_module_changes "$old_mod" "$2" "recurse" "$until"
+  fi
+
+  if [ -n "$4" ]; then
+    time_cond="--until $4"
+  elif [ -z "$3" -a -n "$since" ]; then
+    time_cond="--since $since"
+  else
+    time_cond=
+  fi
+
+  mkdir -p modules/$1$2
+  count_dir_changes "$1$2" "$time_cond"
+  if [ "$3" == "recurse" -a -z "$time_cond" ]; then
     rm -r modules/$1
   fi
 }
+
+count_module_changes() { _count_module_changes "$1" ""; }
+count_module_doc_changes() { _count_module_changes "$1" "/doc"; }
 
 # $1 - module name, e.g.: "tm", "cachedb_mongodb"
 gen_module_contributors() {
@@ -867,7 +888,7 @@ unset last_commit
 declare -A first_commit
 declare -A last_commit
 
-count_module_changes $1/doc
+count_module_doc_changes $1
 
 (
   export LC_ALL=C
