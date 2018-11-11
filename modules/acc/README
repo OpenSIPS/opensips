@@ -625,19 +625,31 @@ modparam("acc", "acc_created_avp_name", "call_created_avp")
 1.7.1. $acc_extra(tag_name)
 
    This variable can addresed with the tag names defined using
-   extra_fields parameter. If do_accounting() isn't called, this
-   variable is visible during the whole processing of one message,
-   enabling calling acc_XXX_request(). If do_accounting() is
-   called, the variable will be visible from the first call of
-   this function until the actual accounting is being made.
+   extra_fields. If do_accounting() isn't called, this variable is
+   visible during the whole processing of one message, enabling
+   calling acc_XXX_request(). If do_accounting() is called, the
+   variable will be visible from the first call of this function
+   until the actual accounting is being made.
 
 1.7.2. $(acc_leg(tag_name)[leg_index])
 
    This variable can be addressed with the tag names defined using
-   leg_fields parameter and a valid leg index( <=
-   acc_current_leg). This variable can't be used unless
-   do_accounting() function is used. The variable also accepts
-   negative indexes, which start from -1(value for the last leg).
+   leg_fields and a valid leg index (<= $acc_current_leg). This
+   variable cannot be used unless do_accounting() is used. The
+   variable also accepts negative indexes, which start from -1
+   (the lastly added leg).
+
+# the "caller" value of the current leg
+$acc_leg(caller)
+
+# the "caller" value of the lastly added leg
+$(acc_leg(caller)[-1]) # equivalent to $acc_leg(caller)
+                       # equivalent to $(acc_leg(caller)[$acc_current_le
+g])
+
+# the "caller" value of the next-to-last leg
+$(acc_leg(caller)[-2])
+
 
 1.7.3. $acc_current_leg (read-only)
 
@@ -1009,7 +1021,7 @@ Chapter 3. Contributors
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 79 50 2473 448
    5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
-   6. Liviu Chircu (@liviuchircu) 45 32 456 455
+   6. Liviu Chircu (@liviuchircu) 46 33 478 463
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    8. Elena-Ramona Modroiu 23 4 2267 5
    9. Henning Westerholt (@henningw) 20 15 184 131
@@ -1044,12 +1056,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Oct 2018
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2018
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2018
-   4.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Oct 2018
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2018
+   5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -1072,8 +1084,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Vlad
    Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Ryan Bullock (@rrb3942),
    Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt

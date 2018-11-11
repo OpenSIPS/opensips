@@ -108,8 +108,9 @@ Chapter 1. Admin Guide
    by an “id” string.
 
    The caching entry is specified via this parameter that has it's
-   own subparameters. Each of those parameters are separted by a
-   configurable delimiter and have the following format:
+   own subparameters. Each of those parameters are separated by a
+   delimiter configured by spec_delimiter and have the following
+   format:
 
    param_name=param_value
 
@@ -120,7 +121,8 @@ Chapter 1. Admin Guide
      * table : SQL database table name
      * key : SQL database column name of the “key” column
      * columns : names of the columns to be cached from the SQL
-       database, separated by a configurable delimiter
+       database, separated by a delimiter configured by
+       columns_delimiter.
        If not present, all the columns from the table will be
        cached
      * on_demand : specifies the type of caching:
@@ -219,7 +221,8 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 1.3.7. reload_interval (integer)
 
    This parameter represents how many seconds before the data
-   expires (for full caching) the automatic reloading is triggerd.
+   expires (for full caching) the automatic reloading is
+   triggered.
 
    The default value is “60 s”.
 
@@ -259,7 +262,7 @@ $ opensipsctl fifo sql_cacher_reload subs_caching alice@domain.com
 
    The cached data is available through this read-only PV.The
    format is the following:
-     * sep : separator configured by “pvar_delimiter” parameter
+     * sep : separator configured by pvar_delimiter
      * id : cache entry id
      * col : name of the required column
      * key : value of the “key” column
@@ -327,8 +330,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 72 27 3354 960
-   2. Liviu Chircu (@liviuchircu) 19 15 157 105
+   1. Vlad Patrascu (@rvlad-patrascu) 73 28 3360 964
+   2. Liviu Chircu (@liviuchircu) 20 16 159 107
    3. Razvan Crainea (@razvancrainea) 9 7 15 9
    4. Ionel Cerghit (@ionel-cerghit) 4 1 50 92
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 3 3
@@ -355,8 +358,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2018
-   2. Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Aug 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2016 - Nov 2018
+   2. Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Nov 2018
    3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4. Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - May 2017
    5. Razvan Crainea (@razvancrainea)     Feb 2016 - Apr 2017
@@ -370,8 +373,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
    Iancu (@bogdan-iancu).
 
    Documentation Copyrights:

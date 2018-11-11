@@ -229,10 +229,10 @@ Chapter 1. Admin Guide
    order to share the reachability of these contacts with the
    global OpenSIPS user location cluster, registrar nodes will
    only publish some light "metadata" entries for any new
-   Addresses-of-Record which are reachable from it. These entries
-   will cause other nodes to also fork additional SIP branches
-   pointing to the above-mentioned registrar upon receiving a call
-   for the above-mentioned Addresses-of-Record.
+   Addresses-of-Record which are reachable from them. These
+   entries will cause other nodes to also fork additional SIP
+   branches pointing to the above-mentioned registrar upon
+   receiving a call for the above-mentioned Addresses-of-Record.
 
    The federation topology is an optimized solution for the
    following core problems:
@@ -266,17 +266,17 @@ Chapter 1. Admin Guide
 
 1.2.2. "Full Sharing" Topology
 
-   A fully sharing user location propagates (broadcasts) contact
-   information to all data nodes (OpenSIPS or NoSQL). The main
-   assumption behind this mode is that any routing restrictions
-   have been alleviated beforehand. Consequently, either SIP
-   traffic egressing from a "full sharing" OpenSIPS user location
-   topology is being intermediated by an additional SIP edge
-   endpoint of our platform, or there are no egress IP
-   restrictions at all (for example, if all SIP UAs have public
-   IPs). In this setup, all OpenSIPS user location nodes are
-   equivalent to one another, as they each have access to the same
-   dataset and have no routing restrictions.
+   A fully sharing user location broadcasts contact information to
+   all data nodes (OpenSIPS or NoSQL). The main assumption behind
+   this mode is that any routing restrictions have been alleviated
+   beforehand. Consequently, either SIP traffic egressing from a
+   "full sharing" OpenSIPS user location topology is being
+   intermediated by an additional SIP edge endpoint of our
+   platform, or there are no egress IP restrictions at all (for
+   example, if all SIP UAs have public IPs). In this setup, all
+   OpenSIPS user location nodes are equivalent to one another, as
+   they each have access to the same dataset and have no routing
+   restrictions.
 
    The full sharing topology is an appropriate solution for
    multi-layer VoIP platforms, where the OpenSIPS registrar nodes
@@ -294,9 +294,10 @@ Chapter 1. Admin Guide
    Currently, registrations may optionally be fully managed inside
    NoSQL databases which support key/multi-value column-like
    associations. Example known backends to support these
-   abstractions at the time of writing are MongoDB and Cassandra.
-   Of these two, only the MongoDB OpenSIPS driver has been so far
-   extended to implement the required NoSQL API endpoints.
+   abstractions are MongoDB and Apache Cassandra. In OpenSIPS 2.4,
+   the MongoDB OpenSIPS driver is the only cache DB driver to
+   implement the required capabilities. The equivalent support for
+   Apache Cassandra 3.x was added for the 3.0 OpenSIPS release.
 
    The "full sharing" user location tutorial contains precise
    details on how to achieve this setup (including full NoSQL
@@ -311,9 +312,9 @@ Chapter 1. Admin Guide
    aware of each other, they will each scan the entire contact
    dataset, thus periodically sending "N pings" instead of "1
    ping" for each contact. This difference directly affects
-   service scalability, as well as the amount of consumed cloud
-   compute resources such as CPU and network bandwidth, both on
-   the service and client side.
+   service scalability, as well as the amount of consumed
+   resources such as CPU and network bandwidth, both on the
+   service and client side.
 
    This problem is solved with the help of the OpenSIPS cluster
    layer, which makes all nodes aware of each others' presence.
@@ -740,7 +741,7 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
 1.5.27. cluster_mode (string)
 
    This parameter will get overridden if either
-   working_mode_preset or db_mode are set.
+   working_mode_preset or db_mode is set.
 
    The behavior of the global OpenSIPS user location cluster.
    Refer to section Distributed SIP User Location for details.
@@ -1471,13 +1472,13 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 230 135 3959 3493
-   3. Liviu Chircu (@liviuchircu) 198 119 5756 1830
+   3. Liviu Chircu (@liviuchircu) 201 122 5771 1844
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
    7. Vlad Patrascu (@rvlad-patrascu) 23 14 404 269
    8. Henning Westerholt (@henningw) 22 11 462 356
-   9. Razvan Crainea (@razvancrainea) 20 15 330 70
+   9. Razvan Crainea (@razvancrainea) 21 16 337 70
    10. Andrei Pelinescu-Onciul 17 13 151 91
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Nils
@@ -1511,10 +1512,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Aug 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Aug 2018
-   4.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jul 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Nov 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Aug 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Aug 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Shlomi Gutman                       Mar 2018 - Mar 2018
    7.  @jalung                             Aug 2017 - Aug 2017
@@ -1541,15 +1542,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut Ionita
-   (@ionutrazvanionita), Eseanu Marius Cristian (@eseanucristian),
-   Ovidiu Sas (@ovidiusas), Andrei Datcu (@andrei-datcu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Marcus
-   Hunger, Elena-Ramona Modroiu, Juha Heinanen (@juha-h), Jan
-   Janak (@janakj), Maksym Sobolyev (@sobomax), Nils Ohlmeier.
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
+   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
+   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
+   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
+   Nils Ohlmeier.
 
    Documentation Copyrights:
 

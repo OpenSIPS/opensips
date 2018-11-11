@@ -319,7 +319,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 90 24 3294 2182
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 35 27 358 224
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 40 28 864 251
    3. Irina-Maria Stanescu 16 8 185 299
    4. Daniel-Constantin Mierla (@miconda) 15 13 67 55
    5. Liviu Chircu (@liviuchircu) 13 10 42 81
@@ -354,11 +354,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Oct 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
    6.  Irina-Maria Stanescu                Aug 2009 - Apr 2010
    7.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
    8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
@@ -377,9 +377,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Irina-Maria Stanescu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Crainea (@razvancrainea), Irina-Maria Stanescu,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Maksym Sobolyev (@sobomax), Henning
+   Westerholt (@henningw), Anatoly Pidruchny, Juha Heinanen
+   (@juha-h), Jan Janak (@janakj).
 
    Documentation Copyrights:
 

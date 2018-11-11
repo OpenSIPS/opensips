@@ -29,14 +29,14 @@ rtpengine Module
 
               1.5.1. rtpengine_use_set(setid)
               1.5.2. rtpengine_offer([flags[, sock_pvar[,
-                      sdp_pvar]]])
+                      sdp_pvar[, body]]]])
 
               1.5.3. rtpengine_answer([flags[, sock_pvar[,
-                      sdp_pvar]]])
+                      sdp_pvar[, body]]]])
 
               1.5.4. rtpengine_delete([flags[, sock_pvar]])
               1.5.5. rtpengine_manage([flags[, sock_pvar[,
-                      sdp_pvar]]])
+                      sdp_pvar[, body]]]])
 
               1.5.6. rtpengine_start_recording([sock_pvar])
 
@@ -316,7 +316,7 @@ rtpengine_use_set("2");
 rtpengine_offer();
 ...
 
-1.5.2.  rtpengine_offer([flags[, sock_pvar[, sdp_pvar]]])
+1.5.2.  rtpengine_offer([flags[, sock_pvar[, sdp_pvar[, body]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on INVITE for the cases the SDPs are in
@@ -523,6 +523,9 @@ rtpengine_offer();
        changes on this string. Important: when providing this
        variable, the message body is no longer changed, so you
        have to manually replace it!.
+     * body(optional) - used to provide a specific body to the
+       rtpengine_* function. If this parameter is missing the body
+       of the current message is used.
 
    This function can be used from ANY_ROUTE.
 
@@ -560,7 +563,7 @@ onreply_route[2]
 
    Example 1.13. rtpengine_offer usage with body replace
 ...
-if (rtpengine_offer(, "$var(socket)", "$var(body)")) {
+if (rtpengine_offer(, "$var(socket)", "$var(body)", "$rb")) {
     xlog("Used rtpengine $var(socket)\n");
     # make all the changes on the resulted SDP in $var(body)
     ...
@@ -596,7 +599,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 ");
 ...
 
-1.5.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar]]])
+1.5.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
@@ -627,7 +630,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 rtpengine_delete();
 ...
 
-1.5.5.  rtpengine_manage([flags[, sock_pvar[, sdp_pvar]]])
+1.5.5.  rtpengine_manage([flags[, sock_pvar[, sdp_pvar[, body]]]])
 
    Manage the RTPProxy session - it combines the functionality of
    rtpengine_offer(), rtpengine_answer() and rtpengine_delete(),
@@ -879,10 +882,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 113 37 3849 2486
+   1. Razvan Crainea (@razvancrainea) 116 39 3927 2525
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 13 418 591
    3. Richard Fuchs 21 2 640 723
-   4. Liviu Chircu (@liviuchircu) 13 9 62 126
+   4. Liviu Chircu (@liviuchircu) 14 10 62 127
    5. Eric Tamme (@etamme) 7 5 42 19
    6. Vlad Patrascu (@rvlad-patrascu) 4 2 18 9
    7. Rob Gagnon (@rgagnon24) 3 1 22 22
@@ -910,8 +913,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Oct 2018
-   2.  Liviu Chircu (@liviuchircu)              Jul 2014 - Aug 2018
+   1.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
+   2.  Razvan Crainea (@razvancrainea)          Jun 2014 - Oct 2018
    3.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
    5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2018
@@ -928,9 +931,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
    Fuchs.
 
    Documentation Copyrights:
