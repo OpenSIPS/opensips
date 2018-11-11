@@ -21,18 +21,18 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">71</entry>
-		<entry align="center">26</entry>
-		<entry align="center">3342</entry>
-		<entry align="center">951</entry>
+		<entry align="center">72</entry>
+		<entry align="center">27</entry>
+		<entry align="center">3348</entry>
+		<entry align="center">955</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">19</entry>
-		<entry align="center">15</entry>
-		<entry align="center">157</entry>
-		<entry align="center">105</entry>
+		<entry align="center">20</entry>
+		<entry align="center">16</entry>
+		<entry align="center">159</entry>
+		<entry align="center">107</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -97,12 +97,12 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2016 - Sep 2018</entry>
+		<entry align="center">Mar 2016 - Nov 2018</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Aug 2015 - Aug 2018</entry>
+		<entry align="center">Aug 2015 - Nov 2018</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -138,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>).</para>
 </section>
 
 </chapter>
