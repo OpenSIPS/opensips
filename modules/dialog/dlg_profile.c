@@ -194,7 +194,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 					type = REPL_PROTOBIN;
 				} else {
 					LM_WARN("profile %.*s configured to be replicated over BIN, "
-							"but replicate_profiles_to param is not defined\n",
+							"but 'profile_replication_cluster' is not defined\n",
 							name.len, name.s);
 				}
 			} else if (isalnum(*p)) {
