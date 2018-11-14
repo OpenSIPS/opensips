@@ -500,8 +500,8 @@ static inline char rest_easy_perform(
  * @method:    HTTP verb to be used
  * @msg:       SIP message struct
  * @url:       HTTP(S) URL to be queried
- * @ctype:     Value for the "Content-Type: " header of the request
  * @body:      Body of the request
+ * @ctype:     Value for the "Content-Type: " header of the request
  * @body_pv:   pseudo var which will hold the result body
  * @ctype_pv:  pvar which will hold the result content type
  * @code_pv:   pvar to hold the HTTP return code
