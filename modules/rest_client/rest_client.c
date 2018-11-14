@@ -456,7 +456,7 @@ static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
 }
 
 int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
-                      char *url, str *ctype, str *body, async_ctx *ctx,
+                      char *url, str *body, str *ctype, async_ctx *ctx,
                       pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
 	rest_async_param *param;
