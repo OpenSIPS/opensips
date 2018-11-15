@@ -453,17 +453,9 @@ error01:
 		/* destroy all the bavps added, the path vector and the destination,
 		 * since this branch will never be properly added to
 		 * the UAC list, otherwise we'll have memory leaks - razvanc */
-		if (t->uac[branch].user_avps)
-			destroy_avp_list(&t->uac[branch].user_avps);
-		if (t->uac[branch].path_vec.s)
-			shm_free(t->uac[branch].path_vec.s);
-		if (t->uac[branch].adv_address.s)
-			shm_free(t->uac[branch].adv_address.s);
-		if (t->uac[branch].adv_port.s)
-			shm_free(t->uac[branch].adv_port.s);
-		if (t->uac[branch].duri.s)
-			shm_free(t->uac[branch].duri.s);
-		memset(&t->uac[branch],0,sizeof(t->uac[branch]));
+		clean_branch(t->uac[branch]);
+		memset(&t->uac[branch], 0, sizeof(t->uac[branch]));
+		init_branch(&t->uac[branch], branch, t->wait_tl.set, t);
 	}
 error:
 	return ret;

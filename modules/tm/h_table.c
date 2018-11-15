@@ -160,21 +160,9 @@ void free_cell( struct cell* dead_cell )
 			}
 			tm_shm_free_unsafe(p);
 		}
-		if (dead_cell->uac[i].path_vec.s) {
-			tm_shm_free_unsafe(dead_cell->uac[i].path_vec.s);
-		}
-		if (dead_cell->uac[i].adv_address.s) {
-			tm_shm_free_unsafe(dead_cell->uac[i].adv_address.s);
-		}
-		if (dead_cell->uac[i].adv_port.s) {
-			tm_shm_free_unsafe(dead_cell->uac[i].adv_port.s);
-		}
-		if (dead_cell->uac[i].duri.s) {
-			tm_shm_free_unsafe(dead_cell->uac[i].duri.s);
-		}
-		if (dead_cell->uac[i].user_avps) {
-			tm_destroy_avp_list_unsafe( &dead_cell->uac[i].user_avps);
-		}
+
+		_clean_branch(dead_cell->uac[i],
+					tm_shm_free_unsafe, tm_destroy_avp_list_unsafe);
 	}
 
 	/* collected to tags */
@@ -236,23 +224,9 @@ static inline void init_synonym_id( struct cell *t )
 static inline void init_branches(struct cell *t, unsigned int set)
 {
 	unsigned int i;
-	struct ua_client *uac;
 
-	for(i=0;i<MAX_BRANCHES;i++)
-	{
-		uac=&t->uac[i];
-		uac->request.my_T = t;
-		uac->request.branch = i;
-#ifdef EXTRA_DEBUG
-		uac->request.fr_timer.tg = TG_FR;
-		uac->request.retr_timer.tg = TG_RT;
-#endif
-		uac->request.fr_timer.set = set;
-		uac->request.retr_timer.set = set;
-		uac->local_cancel.fr_timer.set = set;
-		uac->local_cancel.retr_timer.set = set;
-		uac->local_cancel=uac->request;
-	}
+	for (i=0; i<MAX_BRANCHES; i++)
+		init_branch(&t->uac[i], i, set, t);
 }
 
 

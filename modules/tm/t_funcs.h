@@ -157,6 +157,39 @@ static inline void force_retr(struct retr_buf *rb)
 	_set_fr_retr(rb, 1);
 }
 
+#define _clean_branch(br, free_f, avp_destr_f) \
+	do { \
+		if ((br).path_vec.s) \
+			free_f((br).path_vec.s); \
+		if ((br).adv_address.s) \
+			free_f((br).adv_address.s); \
+		if ((br).adv_port.s) \
+			free_f((br).adv_port.s); \
+		if ((br).duri.s) \
+			free_f((br).duri.s); \
+		if ((br).user_avps) \
+			avp_destr_f(&(br).user_avps); \
+	} while (0)
+
+#define clean_branch(br) \
+	_clean_branch(br, shm_free, destroy_avp_list)
+
+static inline void init_branch(struct ua_client *uac, unsigned int branch_idx,
+								unsigned int timer_set, struct cell *t)
+{
+	uac->request.my_T = t;
+	uac->request.branch = branch_idx;
+#ifdef EXTRA_DEBUG
+	uac->request.fr_timer.tg = TG_FR;
+	uac->request.retr_timer.tg = TG_RT;
+#endif
+	uac->request.fr_timer.set = timer_set;
+	uac->request.retr_timer.set = timer_set;
+	uac->local_cancel.fr_timer.set = timer_set;
+	uac->local_cancel.retr_timer.set = timer_set;
+	uac->local_cancel=uac->request;
+}
+
 void tm_shutdown();
 
 /* function returns:
