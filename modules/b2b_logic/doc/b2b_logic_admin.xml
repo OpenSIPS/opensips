@@ -566,7 +566,7 @@ route[b2b_request]
 			This command can be used by an external application to tell B2BUA to bridge a
 			call party from an on going dialog to another destination. By default the caller
 			is bridged to the new uri and BYE is set to the callee. You can instead bridge
-			the callee if you send 1 as the third parameter. Also, if a fourth parameter is 
+			the callee if you send 1 as the third parameter.
 		</para>
 		<para>
 		Name: <emphasis>b2b_bridge</emphasis>
