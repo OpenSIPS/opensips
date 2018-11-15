@@ -435,21 +435,20 @@ static int fixup_broute(void** param, int param_no)
 }
 
 
-static int flag_fixup(void** param, int param_no)
+static int flag_fixup(void** param)
 {
 	unsigned int flags;
 	str s;
 
-	if (param_no == 1) {
-		s.s = (char*)*param;
-		s.len = strlen(s.s);
-		flags = 0;
-		if ( strno2int(&s, &flags )<0 ) {
-			return -1;
-		}
-		pkg_free(*param);
-		*param = (void*)(unsigned long int)(flags<<1);
+	s.s = (char*)*param;
+	s.len = strlen(s.s);
+	flags = 0;
+	if ( strno2int(&s, &flags )<0 ) {
+		return -1;
 	}
+	pkg_free(*param);
+	*param = (void*)(unsigned long int)(flags<<1);
+
 	return 0;
 }
 
@@ -472,7 +471,7 @@ static int fixup_t_replicate(void** param, int param_no)
 		*param = (void*)model;
 	} else {
 		/* flags */
-		if (flag_fixup( param, 1)!=0) {
+		if (flag_fixup(param)!=0) {
 			LM_ERR("bad flags <%s>\n", (char *)(*param));
 			return E_CFG;
 		}
@@ -517,7 +516,7 @@ static int fixup_phostport2proxy(void** param, int param_no)
 
 static int fixup_t_relay1(void** param, int param_no)
 {
-	if (flag_fixup( param, 1)==0) {
+	if (flag_fixup(param)==0) {
 		/* param is flag -> move it as second param */
 		*((void**)(((char*)param)+sizeof(action_elem_t))) = *param;
 		*param = 0;
@@ -537,7 +536,7 @@ static int fixup_t_relay2(void** param, int param_no)
 	if (param_no==1) {
 		return fixup_phostport2proxy( param, param_no);
 	} else if (param_no==2) {
-		if (flag_fixup( param, 1)!=0) {
+		if (flag_fixup(param)!=0) {
 			LM_ERR("bad flags <%s>\n", (char *)(*param));
 			return E_CFG;
 		}
