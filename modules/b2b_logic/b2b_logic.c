@@ -1244,6 +1244,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	str ok= str_init("ok");
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
+	int ret;
 
 	node = cmd->node.kids;
 	if(node == NULL)
@@ -1316,9 +1317,15 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		}
 	}
 
-	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
+	ret = b2bl_get_tuple_key(&key, &hash_index, &local_index);
+	if(ret < 0)
 	{
-		LM_ERR("Failed to parse key '%.*s'\n", key.len, key.s);
+		if (ret == -1)
+			LM_ERR("Failed to parse key or find an entity [%.*s]\n",
+					key.len, key.s);
+		else
+			LM_ERR("Could not find entity [%.*s]\n",
+					key.len, key.s);
 		goto free;
 	}
 
@@ -1338,6 +1345,14 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
+	if (!tuple->bridge_entities[entity_no] ||
+	tuple->bridge_entities[entity_no]->disconnected)
+	{
+		LM_ERR("Can not bridge requested entity [%p]\n",
+			tuple->bridge_entities[entity_no]);
+		goto error;
+	}
+
 	bridging_entity = tuple->bridge_entities[entity_no];
 	old_entity = tuple->bridge_entities[(entity_no?0:1)];
 
@@ -1353,6 +1368,16 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		b2bl_print_tuple(tuple, L_ERR);
 		goto error;
 	}
+
+	if(bridging_entity->state != B2BL_ENT_CONFIRMED)
+	{
+		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",
+			bridging_entity->key.len,bridging_entity->key.s,
+			tuple->key->len, tuple->key->s);
+		goto error;
+	}
+
+	b2bl_print_tuple(tuple, L_DBG);
 
 	/* send BYE to old client */
 	if(old_entity->disconnected)

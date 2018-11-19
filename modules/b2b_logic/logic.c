@@ -4128,6 +4128,43 @@ error:
 	return -1;
 }
 
+int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
+		unsigned int *local_index)
+{
+	char tuple_buffer[B2BL_MAX_KEY_LEN];
+	str callid, from_tag, to_tag, tuple;
+
+	/* check to see if the key is specified as callid;from_tag;to_tag */
+	from_tag.s = q_memchr(key->s, ';', key->len);
+	if (!from_tag.s) {
+		LM_DBG("there's no tuple separator: must be plain key: %.*s\n",
+				key->len, key->s);
+		goto end;
+	}
+	callid.s = key->s;
+	callid.len = from_tag.s - callid.s;
+	from_tag.s++;
+	to_tag.s = q_memchr(from_tag.s, ';', key->len - callid.len - 1);
+	if (!to_tag.s) {
+		LM_DBG("invalid key format: %.*s\n", key->len, key->s);
+		return -1;
+	}
+	from_tag.len = to_tag.s - from_tag.s;
+	to_tag.s++;
+	to_tag.len = key->s + key->len - to_tag.s;
+
+	/* we've got the entity's coordinates, try to find the entity now */
+	tuple.s = tuple_buffer;
+	tuple.len = B2BL_MAX_KEY_LEN;
+	if(b2b_api.get_b2bl_key(&callid, &from_tag, &to_tag, NULL, &tuple)) {
+		LM_DBG("cannot find entity [%.*s]\n", key->len, key->s);
+		return -2;
+	}
+	key = &tuple;
+end:
+	return b2bl_parse_key(key, hash_index, local_index);
+}
+
 
 /* Bridge an initial Invite with an existing dialog */
 /* key and entity_no identity the existing call and the which entity from the call
@@ -4144,6 +4181,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	str to_uri={NULL,0}, from_uri, from_dname;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
+	int ret;
 
 	if(!msg || !key)
 	{
@@ -4151,9 +4189,15 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		return -1;
 	}
 
-	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
+	ret = b2bl_get_tuple_key(key, &hash_index, &local_index);
+	if(ret < 0)
 	{
-		LM_ERR("Failed to parse key [%.*s]\n", key->len, key->s);
+		if (ret == -1)
+			LM_ERR("Failed to parse key or find an entity [%.*s]\n",
+					key->len, key->s);
+		else
+			LM_ERR("Could not find entity [%.*s]\n",
+					key->len, key->s);
 		return -1;
 	}
 
@@ -4191,8 +4235,9 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 	if(bridging_entity->state != B2BL_ENT_CONFIRMED)
 	{
-		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",
-			bridging_entity->key.len,bridging_entity->key.s, key->len, key->s);
+		LM_ERR("Wrong state for entity ek=[%.*s], tk=[%.*s] state=%d\n",
+			bridging_entity->key.len,bridging_entity->key.s, key->len, key->s,
+			bridging_entity->state);
 		goto error;
 	}
 

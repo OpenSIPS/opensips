@@ -494,7 +494,8 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>b2bl_key</emphasis> - a pseudo-variable that
-				contains the b2b_logic key
+				contains the b2b_logic key. The key can also be in the form
+				of <emphasis>callid;from-tag;to-tag</emphasis>.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>entity_no</emphasis> - a pseudo-variable that
@@ -574,9 +575,8 @@ route[b2b_request]
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>dialog_id</emphasis> : the id of the dialog. If you set the module parameter dialog-id
-				the server will include the dialogid in the generated Invites as the content of a
-				header with name 'Dialog-ID'.
+				<para><emphasis>dialog_id</emphasis> : the <emphasis>b2b_logic key<emphasis>, or the
+				<emphasis>callid;from-tag;to-tag</emphasis> of the ongoing dialog.
 				</para>
 			</listitem>
 			<listitem>

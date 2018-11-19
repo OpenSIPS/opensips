@@ -463,26 +463,37 @@ int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, s
 	}
 	/* check if the to tag has the b2b key format
 	 * -> meaning that it is a server request */
-	if(b2b_parse_key(to_tag, &hash_index, &local_index)>=0) {
+	if(b2b_parse_key(to_tag, &hash_index, &local_index)>=0)
 		table = server_htable;
-		lock_get(&table[hash_index].lock);
-		dlg=b2b_search_htable_dlg(table, hash_index, local_index,
-						to_tag, from_tag, callid);
-		if(dlg){
-			memcpy(tuple_key->s, dlg->param.s, dlg->param.len);
-			tuple_key->len = dlg->param.len;
-			entity_key->s = to_tag->s;
-			entity_key->len = to_tag->len;
-			LM_DBG("got tuple [%.*s] for entity [%.*s]\n",
-				tuple_key->len, tuple_key->s, entity_key->len, entity_key->s);
-			ret = 0;
-		} else {
-			ret = -1;
+	else if (b2b_parse_key(callid, &hash_index, &local_index)>=0)
+		table = client_htable;
+	else
+		return -1; /* to tag and/or callid are not part of this B2B */
+	lock_get(&table[hash_index].lock);
+	dlg=b2b_search_htable_dlg(table, hash_index, local_index,
+					to_tag, from_tag, callid);
+	if(dlg){
+		memcpy(tuple_key->s, dlg->param.s, dlg->param.len);
+		tuple_key->len = dlg->param.len;
+		if (entity_key) {
+			if (table == server_htable) {
+				entity_key->s = to_tag->s;
+				entity_key->len = to_tag->len;
+			} else {
+				entity_key->s = callid->s;
+				entity_key->len = callid->len;
+			}
 		}
-		lock_release(&table[hash_index].lock);
-		return ret;
+		LM_DBG("got tuple [%.*s] for entity [%.*s]\n",
+			tuple_key->len, tuple_key->s,
+			(entity_key?entity_key->len:0),
+			(entity_key?entity_key->s:NULL));
+		ret = 0;
+	} else {
+		ret = -1;
 	}
-	return -1;
+	lock_release(&table[hash_index].lock);
+	return ret;
 }
 
 
