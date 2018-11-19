@@ -1592,8 +1592,8 @@ static int w_t_new_request(struct sip_msg* msg, char *p_method,
 		}
 		LM_DBG("setting CTX AVP to <%.*s>\n", ctx.s.len, ctx.s.s);
 		avp_list = set_avp_list( &dlg.avps );
-		if (!add_avp( AVP_VAL_STR, uac_ctx_avp_id, ctx))
-			LM_ERR("failed to add ctx AVP, ignorring...\n");
+		if (add_avp( AVP_VAL_STR, uac_ctx_avp_id, ctx) < 0)
+			LM_ERR("failed to add ctx ADP, ignoring...\n");
 		set_avp_list( avp_list );
 	}
 
