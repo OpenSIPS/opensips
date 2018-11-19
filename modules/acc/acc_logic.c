@@ -253,6 +253,8 @@ acc_ctx_t* try_fetch_ctx(void)
 					  * and in the transaction */
 				/* set the flags in transaction and processing context */
 				memcpy(&ret, ctx_s.s, sizeof(acc_ctx_t *));
+				if (!ret)
+					return NULL;
 
 				acc_ref_ex(ret, 2);
 				ACC_PUT_TM_CTX(t, ret);
@@ -273,6 +275,8 @@ acc_ctx_t* try_fetch_ctx(void)
 			} else {
 				/* found them in dialog; set in processing context */
 				memcpy(&ret, ctx_s.s, sizeof(acc_ctx_t *));
+				if (!ret)
+					return NULL;
 
 				if (t) {
 					acc_ref_ex(ret, 2); /* ref twice - for local and tm ctx */
