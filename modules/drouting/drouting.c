@@ -4930,6 +4930,10 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 		node = node->next;
 	}
 
+	if (*(partition->rdata)==0) {
+		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	}
+
 	lock_start_read( partition->ref_lock );
 	route = find_rule_by_prefix_unsafe((*(partition->rdata))->pt,
 			&(*(partition->rdata))->noprefix, node->value, grp_id, &matched_len);
