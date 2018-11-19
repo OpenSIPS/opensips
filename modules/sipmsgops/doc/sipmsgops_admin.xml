@@ -380,8 +380,8 @@ append_time();
 		must be only methods defined in &osips; with ID (invite, cancel, ack,
 		bye, options, info, update, register, message, subscribe, notify,
 		refer, prack, publish; for more see:
-		<ulink url="http://www.iana.org/assignments/sip-parameters">
-			http://www.iana.org/assignments/sip-parameters</ulink>).
+		<ulink url="https://www.iana.org/assignments/sip-parameters">
+			https://www.iana.org/assignments/sip-parameters</ulink>).
 		</para>
 		<para>
 		If used for replies, the function tests the value of method field from
@@ -569,8 +569,8 @@ if(is_audio_on_hold())
 		The function returns <emphasis>true</emphasis> if 
                 the SIP message has a Privacy header field that includes
                 the given privacy_type among its privacy values.  See
-				<ulink url="http://www.iana.org/assignments/sip-priv-values">
-                http://www.iana.org/assignments/sip-priv-values</ulink>
+				<ulink url="https://www.iana.org/assignments/sip-parameters/sip-parameters.xhtml#sip-parameters-8">
+                https://www.iana.org/assignments/sip-parameters/sip-parameters.xhtml#sip-parameters-8</ulink>
                 for possible privacy type values.
 		</para>
    		<para>
