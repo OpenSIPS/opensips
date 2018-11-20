@@ -160,6 +160,7 @@
 			<emphasis>timeout</emphasis> - for how long the subscription is
 			active before expiring (integer in seconds). Note: during its 
 			lifetime, a subscription may be notified several or zero times.
+			This can be a pseudo-variable.
 			</para></listitem>
 		</itemizedlist>
 		<example>

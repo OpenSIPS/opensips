@@ -165,7 +165,7 @@ static int mod_init(void)
 	/* try binding to TM if needed and if available */
 	memset( &ebr_tmb, 0, sizeof(ebr_tmb) );
 	if ( is_script_func_used("notify_on_event",-1) ) {
-		/* TM may be used passing the transaction context to the 
+		/* TM may be used passing the transaction context to the
 		 * notification routes */
 		LM_DBG("trying to load TM API, if available\n");
 		if (load_tm_api(&ebr_tmb)<0) {
@@ -249,7 +249,7 @@ int fixup_notify(void** param, int param_no)
 	} else
 	if (param_no==4) {
 		/* timeout */
-		return fixup_uint(param);
+		return fixup_igp(param);
 	}
 
 	return -1;
@@ -278,7 +278,7 @@ int fixup_wait(void** param, int param_no)
 	} else
 	if (param_no==3) {
 		/* timeout */
-		return fixup_uint(param);
+		return fixup_igp(param);
 	}
 
 	return -1;
@@ -288,6 +288,16 @@ int fixup_wait(void** param, int param_no)
 static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 									void *route, void *timeout)
 {
+	int t = 0;
+
+	if (timeout) {
+		gparam_p gp;
+		gp = (gparam_p)timeout;
+		if (fixup_get_ivalue(msg, gp, &t) < 0) {
+			LM_ERR("can't get timeout!\n");
+		}
+	}
+
 	ebr_event* event=(ebr_event*)ev;
 
 	if (event->event_id==-1) {
@@ -300,7 +310,7 @@ static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 
 	/* we have a valid EBR event here, let's subscribe on it */
 	if (add_ebr_subscription( msg, event, (int)(long)avp_filter,
-	    timeout ? (int)*(unsigned int *)timeout : 0, route,
+	    t, route,
 	    EBR_SUBS_TYPE_NOTY ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
@@ -314,6 +324,16 @@ static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 								char *ev, char* avp_filter, char* timeout)
 {
+	int t = 0; /* timeout */
+
+	if (timeout) {
+		gparam_p gp;
+		gp = (gparam_p)timeout;
+		if (fixup_get_ivalue(msg, gp, &t) < 0) {
+			LM_ERR("can't get timeout!\n");
+		}
+	}
+
 	ebr_event* event=(ebr_event*)ev;
 
 	if (event->event_id==-1) {
@@ -326,7 +346,7 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 
 	/* we have a valid EBR event here, let's subscribe on it */
 	if (add_ebr_subscription( msg, event, (int)(long)avp_filter,
-	    (int)*(unsigned int *)timeout, (void*)ctx,
+	    t, (void*)ctx,
 	    EBR_SUBS_TYPE_WAIT ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
@@ -411,4 +431,3 @@ static int ebr_raise(struct sip_msg *msg, str* ev_name,
 
 	return 0;
 }
-
