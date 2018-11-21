@@ -142,12 +142,27 @@ enum rtpe_operation {
 };
 
 enum rtpe_stat {
-	STAT_MOS_AVERAGE,
-	STAT_MOS_MIN,
-	STAT_MOS_MIN_AT,
-	STAT_MOS_MAX,
-	STAT_MOS_MAX_AT,
+	STAT_MOS_AVERAGE,   STAT_JITTER_AVERAGE,    STAT_ROUNDTRIP_AVERAGE,    STAT_PACKETLOSS_AVERAGE,
+	STAT_MOS_MIN,       STAT_JITTER_MIN,        STAT_ROUNDTRIP_MIN,        STAT_PACKETLOSS_MIN,
+	STAT_MOS_MIN_AT,    STAT_JITTER_MIN_AT,     STAT_ROUNDTRIP_MIN_AT,     STAT_PACKETLOSS_MIN_AT,
+	STAT_MOS_MAX,       STAT_JITTER_MAX,        STAT_ROUNDTRIP_MAX,        STAT_PACKETLOSS_MAX,
+	STAT_MOS_MAX_AT,    STAT_JITTER_MAX_AT,     STAT_ROUNDTRIP_MAX_AT,     STAT_PACKETLOSS_MAX_AT,
 	STAT_UNKNOWN /* always keep last */
+};
+
+enum rtpe_stat_type {
+    STAT_AVERAGE,
+    STAT_MAX,
+    STAT_MAX_AT,
+    STAT_MIN,
+    STAT_MIN_AT
+};
+
+enum rtpe_stat_dict {
+    STAT_MOS,
+    STAT_JITTER,
+    STAT_ROUNDTRIP,
+    STAT_PACKETLOSS
 };
 
 struct rtpe_stats {
@@ -189,11 +204,26 @@ static const char *command_strings[] = {
 };
 
 static const str stat_maps[] = {
-	[STAT_MOS_AVERAGE]	= str_init("mos-average"),
-	[STAT_MOS_MIN]		= str_init("mos-min"),
-	[STAT_MOS_MIN_AT]	= str_init("mos-min-at"),
-	[STAT_MOS_MAX]		= str_init("mos-max"),
-	[STAT_MOS_MAX_AT]	= str_init("mos-max-at"),
+	[STAT_MOS_AVERAGE]	        = str_init("mos-average"),
+	[STAT_MOS_MIN]		        = str_init("mos-min"),
+	[STAT_MOS_MIN_AT]	        = str_init("mos-min-at"),
+	[STAT_MOS_MAX]		        = str_init("mos-max"),
+	[STAT_MOS_MAX_AT]	        = str_init("mos-max-at"),
+	[STAT_JITTER_AVERAGE]	    = str_init("jitter-average"),
+	[STAT_JITTER_MIN]		    = str_init("jitter-min"),
+	[STAT_JITTER_MIN_AT]	    = str_init("jitter-min-at"),
+	[STAT_JITTER_MAX]		    = str_init("jitter-max"),
+	[STAT_JITTER_MAX_AT]	    = str_init("jitter-max-at"),
+    [STAT_ROUNDTRIP_AVERAGE]	= str_init("roundtrip-average"),
+    [STAT_ROUNDTRIP_MIN]		= str_init("roundtrip-min"),
+    [STAT_ROUNDTRIP_MIN_AT]	    = str_init("roundtrip-min-at"),
+    [STAT_ROUNDTRIP_MAX]		= str_init("roundtrip-max"),
+    [STAT_ROUNDTRIP_MAX_AT]	    = str_init("roundtrip-max-at"),
+    [STAT_PACKETLOSS_AVERAGE]	= str_init("packetloss-average"),
+    [STAT_PACKETLOSS_MIN]		= str_init("packetloss-min"),
+    [STAT_PACKETLOSS_MIN_AT]	= str_init("packetloss-min-at"),
+    [STAT_PACKETLOSS_MAX]		= str_init("packetloss-max"),
+    [STAT_PACKETLOSS_MAX_AT]	= str_init("packetloss-max-at")
 };
 
 static char *gencookie();
@@ -359,6 +389,95 @@ static inline enum rtpe_stat rtpe_get_stat_by_name(str *name)
 			return s;
 	}
 	return STAT_UNKNOWN;
+}
+
+static inline enum rtpe_stat_type rtpe_get_stat_by_type(enum rtpe_stat s)
+{
+    enum rtpe_stat_type t;
+    switch (s) {
+        case STAT_MOS_AVERAGE:
+        case STAT_JITTER_AVERAGE:
+        case STAT_ROUNDTRIP_AVERAGE:
+        case STAT_PACKETLOSS_AVERAGE:
+            t = STAT_AVERAGE;
+            break;
+
+        case STAT_MOS_MAX:
+        case STAT_JITTER_MAX:
+        case STAT_ROUNDTRIP_MAX:
+        case STAT_PACKETLOSS_MAX:
+            t = STAT_MAX;
+            break;
+
+        case STAT_MOS_MAX_AT:
+        case STAT_JITTER_MAX_AT:
+        case STAT_ROUNDTRIP_MAX_AT:
+        case STAT_PACKETLOSS_MAX_AT:
+            t = STAT_MAX_AT;
+            break;
+
+        case STAT_MOS_MIN:
+        case STAT_JITTER_MIN:
+        case STAT_ROUNDTRIP_MIN:
+        case STAT_PACKETLOSS_MIN:
+            t = STAT_MIN;
+            break;
+
+        case STAT_MOS_MIN_AT:
+        case STAT_JITTER_MIN_AT:
+        case STAT_ROUNDTRIP_MIN_AT:
+        case STAT_PACKETLOSS_MIN_AT:
+            t = STAT_MIN_AT;
+            break;
+
+        default:
+            LM_BUG("unknown stat type %d\n", s);
+            t = TYPE_UNKNOWN;
+    }
+    return t;
+}
+
+static inline enum rtpe_stat_dict rtpe_get_stat_by_dict(enum rtpe_stat s)
+{
+    enum rtpe_stat_dict d;
+    switch (s) {
+        case STAT_MOS_AVERAGE:
+        case STAT_MOS_MAX:
+        case STAT_MOS_MAX_AT:
+        case STAT_MOS_MIN:
+        case STAT_MOS_MIN_AT:
+            d = STAT_MOS;
+            break;
+
+        case STAT_JITTER_AVERAGE:
+        case STAT_JITTER_MAX:
+        case STAT_JITTER_MAX_AT:
+        case STAT_JITTER_MIN:
+        case STAT_JITTER_MIN_AT:
+            d = STAT_JITTER;
+            break;
+
+        case STAT_ROUNDTRIP_AVERAGE:
+        case STAT_ROUNDTRIP_MAX:
+        case STAT_ROUNDTRIP_MAX_AT:
+        case STAT_ROUNDTRIP_MIN:
+        case STAT_ROUNDTRIP_MIN_AT:
+            d = STAT_ROUNDTRIP;
+            break;
+
+        case STAT_PACKETLOSS_AVERAGE:
+        case STAT_PACKETLOSS_MAX:
+        case STAT_PACKETLOSS_MAX_AT:
+        case STAT_PACKETLOSS_MIN:
+        case STAT_PACKETLOSS_MIN_AT:
+            d = STAT_PACKETLOSS;
+            break;
+
+        default:
+            LM_BUG("unknown stat dictionary %d\n", s);
+            d = TYPE_UNKNOWN;
+    }
+    return d;
 }
 
 #define PVE_NAME_NONE		0
@@ -2672,11 +2791,13 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 	time_t created = 0;
 	str tmp;
 	char *key;
+	enum rtpe_stat_type t = rtpe_get_stat_by_type(s);
+	enum rtpe_stat_dict d = rtpe_get_stat_by_dict(s);
 
 	/* init to null */
 	pv_get_null(NULL, NULL, res);
 
-	if (s == STAT_MOS_MIN_AT || s == STAT_MOS_MAX_AT) {
+	if (t == STAT_MIN_AT || t == STAT_MAX_AT) {
 		/* for min and max, store when the session was created */
 		c = bencode_dictionary_get_expect(dict, "created", BENCODE_INTEGER);
 		if (!c) {
@@ -2703,7 +2824,7 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 	mos = 0;
 	mos_no = 0;
 	mos_max = -1;
-	mos_min = 101;
+	mos_min = INT_MAX;
 	mos_at = -1;
 	for (c = dict->child; c; c = c->sibling) {
 		/* if a tag exists, check if this SSRC belongs to it */
@@ -2724,49 +2845,69 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 		if (c->type != BENCODE_DICTIONARY)
 			continue;
 
-		switch (s) {
-			case STAT_MOS_AVERAGE:
+		switch (t) {
+			case STAT_AVERAGE:
 				key = "average MOS";
 				break;
 
-			case STAT_MOS_MAX:
-			case STAT_MOS_MAX_AT:
+			case STAT_MAX:
+			case STAT_MAX_AT:
 				key = "highest MOS";
 				break;
 
-			case STAT_MOS_MIN:
-			case STAT_MOS_MIN_AT:
+			case STAT_MIN:
+			case STAT_MIN_AT:
 				key = "lowest MOS";
 				break;
 
 			default:
-				LM_BUG("unknown command %d\n", s);
+				LM_BUG("unknown command %d\n", t);
 				return;
 		}
 		m = bencode_dictionary_get_expect(c, key, BENCODE_DICTIONARY);
 		if (!m)
 			continue;
 
-		i = bencode_dictionary_get_expect(m, "MOS", BENCODE_INTEGER);
+        switch (d) {
+            case STAT_MOS:
+                i = bencode_dictionary_get_expect(m, "MOS", BENCODE_INTEGER);
+                break;
+
+            case STAT_JITTER:
+                i = bencode_dictionary_get_expect(m, "jitter", BENCODE_INTEGER);
+                break;
+
+            case STAT_ROUNDTRIP:
+                i = bencode_dictionary_get_expect(m, "round-trip time", BENCODE_INTEGER);
+                break;
+
+            case STAT_PACKETLOSS:
+                i = bencode_dictionary_get_expect(m, "packet loss", BENCODE_INTEGER);
+                break;
+
+            default:
+                LM_BUG("unknown command %d\n", d);
+                return;
+        }
 		if (!i)
 			continue;
 
-		switch (s) {
-			case STAT_MOS_AVERAGE:
+		switch (t) {
+			case STAT_AVERAGE:
 				mos += i->value;
 				mos_no++;
 				break;
 
-			case STAT_MOS_MAX:
-			case STAT_MOS_MAX_AT:
+			case STAT_MAX:
+            case STAT_MAX_AT:
 				if (i->value > mos_max) {
 					mos_max = i->value;
 					mos_at = -2; /* force update mos_at */
 				}
 				break;
 
-			case STAT_MOS_MIN:
-			case STAT_MOS_MIN_AT:
+			case STAT_MIN:
+            case STAT_MIN_AT:
 				if (i->value < mos_min) {
 					mos_min = i->value;
 					mos_at = -2; /* force update mos_at */
@@ -2774,10 +2915,10 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 				break;
 
 			default:
-				LM_BUG("unknown command %d\n", s);
+				LM_BUG("unknown command %d\n", t);
 				return;
 		}
-		if (mos_at == -2 && (s == STAT_MOS_MIN_AT || s == STAT_MOS_MAX_AT)) {
+		if (mos_at == -2 && (t == STAT_MIN_AT || t == STAT_MAX_AT)) {
 			i = bencode_dictionary_get_expect(m, "reported at", BENCODE_INTEGER);
 			if (!i)
 				continue;
@@ -2785,16 +2926,16 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 		}
 	}
 	/* wrap them up */
-	switch (s) {
-		case STAT_MOS_AVERAGE:
-			if (mos == 0) {
+	switch (t) {
+		case STAT_AVERAGE:
+		    if (mos_no == 0) {
 				LM_DBG("no MOS found!\n");
 				return;
 			}
 			mos = mos / mos_no;
 			break;
 
-		case STAT_MOS_MAX:
+		case STAT_MAX:
 			if (mos_max < 0) {
 				LM_DBG("max MOS not found!\n");
 				return;
@@ -2802,16 +2943,16 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 			mos = mos_max;
 			break;
 
-		case STAT_MOS_MIN:
-			if (mos_min > 100) {
+		case STAT_MIN:
+			if (mos_min == INT_MAX) {
 				LM_DBG("min MOS not found!\n");
 				return;
 			}
 			mos = mos_min;
 			break;
 
-		case STAT_MOS_MAX_AT:
-		case STAT_MOS_MIN_AT:
+		case STAT_MAX_AT:
+		case STAT_MIN_AT:
 			if (mos_at < 0) {
 				LM_DBG("MOS at not found!\n");
 				return;
@@ -2820,7 +2961,7 @@ static inline void pv_handle_rtpstat(enum rtpe_stat s, str *index,
 			break;
 
 		default:
-			LM_BUG("unknown command %d\n", s);
+			LM_BUG("unknown command %d\n", t);
 			return;
 	}
 	pv_get_sintval(NULL, NULL, res, mos);
