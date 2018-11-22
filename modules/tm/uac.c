@@ -170,7 +170,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	struct cell *new_cell;
 	struct cell *backup_cell;
 	struct retr_buf *request;
-	static struct sip_msg *req;
+	struct sip_msg *req;
 	struct usr_avp **backup;
 	char *buf, *buf1;
 	int buf_len, buf_len1;
