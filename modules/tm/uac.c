@@ -448,6 +448,7 @@ abort_update:
 			/* no parallel support in UAC transactions */
 			new_cell->on_branch = 0;
 			free_sip_msg(req);
+			pkg_free(req);
 		}
 	}
 

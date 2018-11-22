@@ -85,43 +85,51 @@ char* print_cseq_mini(char* target, str* cseq, str* method);
 static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 															dlg_t *dialog)
 {
-	static struct sip_msg req;
+	struct sip_msg *req;
 
-	memset( &req, 0, sizeof(req) );
-	req.id = get_next_msg_no();
-	req.buf = buf;
-	req.len = len;
-	if (parse_msg(buf, len, &req)!=0) {
-		LM_CRIT("BUG - buffer parsing failed!");
+	req = (struct sip_msg*)pkg_malloc( sizeof(struct sip_msg));
+	if (req==NULL) {
+		LM_ERR("no more pkg mem, needed %lu\n",sizeof(struct sip_msg));
 		return NULL;
+	}
+	memset( req, 0, sizeof(struct sip_msg) );
+	req->id = get_next_msg_no();
+	req->buf = buf;
+	req->len = len;
+	if (parse_msg(buf, len, req)!=0) {
+		LM_CRIT("BUG - buffer parsing failed!");
+		goto error;
 	}
 	/* parse all headers, to be sure they get cloned in shm */
-	if (parse_headers(&req, HDR_EOH_F, 0 )<0) {
+	if (parse_headers(req, HDR_EOH_F, 0 )<0) {
 		LM_ERR("parse_headers failed\n");
-		free_sip_msg(&req);
-		return NULL;
+		goto error1;
 	}
 	/* check if we have all necessary headers */
-	if (check_transaction_quadruple(&req)==0) {
+	if (check_transaction_quadruple(req)==0) {
 		LM_ERR("too few headers\n");
-		free_sip_msg(&req);
 		/* stop processing */
-		return NULL;
+		goto error1;
 	}
 
 	/* populate some special fields in sip_msg */
-	req.force_send_socket = dialog->send_sock;
-	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
+	req->force_send_socket = dialog->send_sock;
+	if (set_dst_uri(req, dialog->hooks.next_hop)) {
 		LM_ERR("failed to set dst_uri\n");
-		free_sip_msg(&req);
-		return NULL;
+		goto error1;
 	}
-	req.rcv.proto = dialog->send_sock->proto;
-	req.rcv.src_ip = req.rcv.dst_ip = dialog->send_sock->address;
-	req.rcv.src_port = req.rcv.dst_port = dialog->send_sock->port_no;
-	req.rcv.bind_address = dialog->send_sock;
+	req->rcv.proto = dialog->send_sock->proto;
+	req->rcv.src_ip = req->rcv.dst_ip = dialog->send_sock->address;
+	req->rcv.src_port = req->rcv.dst_port = dialog->send_sock->port_no;
+	req->rcv.bind_address = dialog->send_sock;
 
-	return &req;
+	return req;
+
+error1:
+	free_sip_msg(req);
+error:
+	pkg_free(req);
+	return NULL;
 }
 
 
