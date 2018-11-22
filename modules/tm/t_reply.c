@@ -657,13 +657,13 @@ static inline int do_dns_failover(struct cell *t)
 		if (t->uas.request==NULL) {
 			LM_ERR("cloning failed\n");
 			free_sip_msg(req);
+			pkg_free(req);
 			return -1;
 		}
 		t->uas.end_request = ((char*)t->uas.request) + sip_msg_len;
 		/* free the actual SIP message, keep the clone only */
 		free_sip_msg(req);
-		/* the sip_msg structure is static in buf_to_sip_msg,
-		   so no need to free it */
+		pkg_free(req);
 	}
 	shmem_msg = t->uas.request;
 
