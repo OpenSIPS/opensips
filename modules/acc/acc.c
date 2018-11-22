@@ -1687,6 +1687,9 @@ int set_dlg_value(str *value)
 	if (cdr_buf.len + value->len + 2 > cdr_len) {
 		if (cdr_len == 0) {
 			cdr_len = STRING_INIT_SIZE;
+			while (cdr_len < cdr_buf.len + value->len + 2)
+				cdr_len *= 2;
+
 			cdr_buf.s = (char*)pkg_malloc(cdr_len);
 			if (!cdr_buf.s) {
 				LM_ERR("No more memory\n");
