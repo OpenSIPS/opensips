@@ -1360,8 +1360,8 @@ end:
 
 /* Functions used to store values into dlg */
 
-static str cdr_buf = {NULL, 0};
-int cdr_len = 0;
+static str cdr_buf;
+int cdr_data_len;
 
 int set_dlg_value(str *value)
 {
@@ -1374,31 +1374,15 @@ int set_dlg_value(str *value)
 		value->len = MAX_LEN_VALUE;
 	}
 
-	if (cdr_buf.len + value->len + 2 > cdr_len) {
-		if (cdr_len == 0) {
-			cdr_len = STRING_INIT_SIZE;
-			cdr_buf.s = (char*)pkg_malloc(cdr_len);
-			if (!cdr_buf.s) {
-				LM_ERR("No more memory\n");
-				return -1;
-			}
-		} else {
-			do {
-				/* realloc until memory is large enough  */
-				cdr_len *= 2;
-			} while (cdr_len < cdr_buf.len + value->len + 2);
-			cdr_buf.s = pkg_realloc(cdr_buf.s, cdr_len);
-			if (cdr_buf.s == NULL) {
-				LM_ERR("No more memory\n");
-				return -1;
-			}
-		}
+	if (pkg_str_extend(&cdr_buf, cdr_data_len + value->len + 2) != 0) {
+		LM_ERR("oom\n");
+		return -1;
 	}
 
-	SET_LEN(cdr_buf.s + cdr_buf.len, value->len);
+	SET_LEN(cdr_buf.s + cdr_data_len, value->len);
 
-	memcpy(cdr_buf.s + cdr_buf.len + 2, value->s, value->len);
-	cdr_buf.len += value->len + 2;
+	memcpy(cdr_buf.s + cdr_data_len + 2, value->s, value->len);
+	cdr_data_len += value->len + 2;
 
 	return 1;
 }
@@ -1423,12 +1407,16 @@ static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals)
 /* stores core values and leg values into dlg */
 int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 {
+	str bytes;
+
 	if ( build_core_dlg_values(dlg, req) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
 
-	if ( dlg_api.store_dlg_value(dlg, &core_str, &cdr_buf) < 0) {
+	bytes.s = cdr_buf.s;
+	bytes.len = cdr_data_len;
+	if ( dlg_api.store_dlg_value(dlg, &core_str, &bytes) < 0) {
 		LM_ERR("cannot store core values into dialog\n");
 		return -1;
 	}
@@ -1441,12 +1429,16 @@ int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 int store_extra_values(extra_value_t* values, str *values_str,
 		struct dlg_cell *dlg)
 {
+	str bytes;
+
 	if ( build_extra_dlg_values(values) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
 
-	if ( dlg_api.store_dlg_value(dlg, values_str, &cdr_buf) < 0) {
+	bytes.s = cdr_buf.s;
+	bytes.len = cdr_data_len;
+	if ( dlg_api.store_dlg_value(dlg, values_str, &bytes) < 0) {
 		LM_ERR("cannot store core values into dialog\n");
 		return -1;
 	}
@@ -1456,6 +1448,8 @@ int store_extra_values(extra_value_t* values, str *values_str,
 
 int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
 {
+	str bytes;
+
 	if (ctx == NULL || values_str == NULL) {
 		LM_ERR("bad usage!\n");
 		return -1;
@@ -1466,7 +1460,9 @@ int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
 		return -1;
 	}
 
-	if (dlg_api.store_dlg_value(dlg, values_str,&cdr_buf) < 0) {
+	bytes.s = cdr_buf.s;
+	bytes.len = cdr_data_len;
+	if (dlg_api.store_dlg_value(dlg, values_str, &bytes) < 0) {
 		LM_ERR("cannot store dialog string\n");
 		return -1;
 	}
@@ -1480,7 +1476,7 @@ static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req)
 	str value;
 	int i, count;
 
-	cdr_buf.len = 0;
+	cdr_data_len = 0;
 	count = core2strar( req, val_arr);
 	for (i=0; i<count; i++)
 		if (set_dlg_value(&val_arr[i]) < 0)
@@ -1500,7 +1496,13 @@ static int build_extra_dlg_values(extra_value_t* values)
 	str val_arr[MAX_ACC_EXTRA];
 	int nr, i;
 
-	cdr_buf.len = 2;
+	/* init cdr buf before doing SET_LEN on it */
+	if (pkg_str_extend(&cdr_buf, STRING_INIT_SIZE) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	cdr_data_len = 2;
 	nr = extra2strar(values, val_arr, 0);
 
 	for (i=0; i<nr; i++)
@@ -1517,17 +1519,12 @@ static int build_leg_dlg_values(acc_ctx_t* ctx)
 	int i, j;
 
 	/* init cdr buf before doing SET_LEN on it */
-	if (cdr_len==0) {
-		cdr_buf.s = pkg_malloc(STRING_INIT_SIZE);
-		if (cdr_buf.s == NULL) {
-			LM_ERR(" no more pkg mem\n");
-			return -1;
-		}
-
-		cdr_len = STRING_INIT_SIZE;
+	if (pkg_str_extend(&cdr_buf, STRING_INIT_SIZE) != 0) {
+		LM_ERR("oom\n");
+		return -1;
 	}
 
-	cdr_buf.len = 4;
+	cdr_data_len = 4;
 	if (!ctx->leg_values)
 		SET_LEN(cdr_buf.s,0);
 	else {
