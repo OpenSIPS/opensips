@@ -1403,12 +1403,16 @@ static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals)
 /* stores core values and leg values into dlg */
 int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 {
+	str bytes;
+
 	if ( build_core_dlg_values(dlg, req) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
 
-	if ( dlg_api.store_dlg_value(dlg, &core_str, &cdr_buf) < 0) {
+	bytes.s = cdr_buf.s;
+	bytes.len = cdr_data_len;
+	if ( dlg_api.store_dlg_value(dlg, &core_str, &bytes) < 0) {
 		LM_ERR("cannot store core values into dialog\n");
 		return -1;
 	}
@@ -1421,12 +1425,16 @@ int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 int store_extra_values(extra_value_t* values, str *values_str,
 		struct dlg_cell *dlg)
 {
+	str bytes;
+
 	if ( build_extra_dlg_values(values) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
 
-	if ( dlg_api.store_dlg_value(dlg, values_str, &cdr_buf) < 0) {
+	bytes.s = cdr_buf.s;
+	bytes.len = cdr_data_len;
+	if ( dlg_api.store_dlg_value(dlg, values_str, &bytes) < 0) {
 		LM_ERR("cannot store core values into dialog\n");
 		return -1;
 	}
@@ -1436,6 +1444,8 @@ int store_extra_values(extra_value_t* values, str *values_str,
 
 int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
 {
+	str bytes;
+
 	if (ctx == NULL || values_str == NULL) {
 		LM_ERR("bad usage!\n");
 		return -1;
@@ -1446,7 +1456,9 @@ int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
 		return -1;
 	}
 
-	if (dlg_api.store_dlg_value(dlg, values_str,&cdr_buf) < 0) {
+	bytes.s = cdr_buf.s;
+	bytes.len = cdr_data_len;
+	if (dlg_api.store_dlg_value(dlg, values_str, &bytes) < 0) {
 		LM_ERR("cannot store dialog string\n");
 		return -1;
 	}
