@@ -1390,7 +1390,7 @@ int set_dlg_value(str *value)
 static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals)
 {
 	short i;
-	char *p = stored_values->s + stored_values->len;
+	char *p = stored_values->s;
 	short len;
 
 	for (i=0;i<nr_vals;i++)
@@ -1400,8 +1400,6 @@ static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals)
 		val_arr[i].s = p+2;
 		p = p + len + 2;
 	}
-
-	stored_values->len = p - stored_values->s;
 }
 
 /* stores core values and leg values into dlg */
@@ -1585,7 +1583,7 @@ static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *
 		LM_ERR("cannot fetch core string value\n");
 		return -1;
 	}
-	buffer->len = 0;
+
 	complete_dlg_values(buffer, val_arr, ACC_CORE_LEN+1);
 	memcpy(start, val_arr[ACC_CORE_LEN].s, val_arr[ACC_CORE_LEN].len);
 

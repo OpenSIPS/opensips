@@ -78,7 +78,7 @@ int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val)
 		return -1;
 	}
 
-	id = _get_name_id(name);
+	id = val ? dv->id : _get_name_id(name);
 
 	/* iterate the list */
 	for( it_prev=NULL, it=dlg->vals ; it ; it_prev=it,it=it->next) {
