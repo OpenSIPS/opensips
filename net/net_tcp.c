@@ -1147,6 +1147,11 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			tcpconn->state = S_CONN_OK;
 			LM_DBG("Successfully completed previous async connect\n");
 
+			/* now that we completed the async connection, we also need to
+			 * listen for READ events, otherwise these will get lost */
+			if (tcpconn->flags & F_CONN_REMOVED_READ)
+				reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+
 			goto async_write;
 		} else {
 			/* we're coming from an async write -
