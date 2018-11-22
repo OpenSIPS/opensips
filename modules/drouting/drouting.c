@@ -2854,6 +2854,7 @@ search_again:
 			goto error2;
 		}
 		prefix_len = 0;
+		rule_idx = 0;
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
