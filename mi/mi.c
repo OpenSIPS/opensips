@@ -341,7 +341,7 @@ static mi_response_t *build_err_resp(int code, const char *msg, int msg_len,
 {
 	mi_response_t *err_resp;
 
-	err_resp = init_mi_error(code, msg, msg_len, details, details_len);
+	err_resp = init_mi_error_extra(code, msg, msg_len, details, details_len);
 	if (!err_resp)
 		LM_ERR("Failed to build MI error response object\n");
 
@@ -548,7 +548,7 @@ mi_response_t *w_mi_help_1(const mi_params_t *params,
 	/* search the command */
 	cmd = lookup_mi_cmd(cmd_s.s, cmd_s.len);
 	if (!cmd)
-		return init_mi_error(404, MI_SSTR(MI_UNKNOWN_CMD), 0, 0);
+		return init_mi_error(404, MI_SSTR(MI_UNKNOWN_CMD));
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)

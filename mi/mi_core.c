@@ -290,7 +290,7 @@ mi_response_t *mi_log_level(const mi_params_t *params, pid_t pid)
 		i = get_process_ID_by_PID(pid);
 		if (i == -1) {
 			free_mi_response(resp);
-			return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+			return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), MI_SSTR("Bad PID"));
 		}
 
@@ -375,7 +375,7 @@ static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int exp
 		return init_mi_param_error();
 
 	if (!mc_system.s || mc_system.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty memory cache id"));
 
@@ -383,7 +383,7 @@ static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int exp
 		return init_mi_param_error();
 
 	if (!attr.s || attr.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty attribute name"));
 
@@ -391,13 +391,13 @@ static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int exp
 		return init_mi_param_error();
 
 	if (!value.s || value.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty value"));
 
 	if (cachedb_store(&mc_system, &attr, &value, expire) < 0) {
 		LM_ERR("cachedb_store command failed\n");
-		return init_mi_error(500, MI_SSTR("Cache store command failed"), 0, 0);
+		return init_mi_error(500, MI_SSTR("Cache store command failed"));
 	}
 
 	return init_mi_result_ok();
@@ -418,7 +418,7 @@ static mi_response_t *w_cachestore_1(const mi_params_t *params,
 		return init_mi_param_error();
 
 	if (expire < 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Negative expire value"));
 
@@ -440,7 +440,7 @@ static mi_response_t *mi_cachefetch(const mi_params_t *params,
 		return init_mi_param_error();
 
 	if (!mc_system.s || mc_system.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty memory cache id"));
 
@@ -448,7 +448,7 @@ static mi_response_t *mi_cachefetch(const mi_params_t *params,
 		return init_mi_param_error();
 
 	if (!attr.s || attr.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty attribute name"));
 
@@ -456,7 +456,7 @@ static mi_response_t *mi_cachefetch(const mi_params_t *params,
 	if(ret== -1)
 	{
 		LM_ERR("cachedb_fetch command failed\n");
-		return init_mi_error(500, MI_SSTR("Cache fetch command failed"), 0, 0);
+		return init_mi_error(500, MI_SSTR("Cache fetch command failed"));
 	}
 
 	if(ret == -2 || value.s == 0 || value.len == 0)
@@ -495,7 +495,7 @@ static mi_response_t *mi_cacheremove(const mi_params_t *params,
 		return init_mi_param_error();
 
 	if (!mc_system.s || mc_system.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty memory cache id"));
 
@@ -503,14 +503,14 @@ static mi_response_t *mi_cacheremove(const mi_params_t *params,
 		return init_mi_param_error();
 
 	if (!attr.s || attr.len == 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Empty attribute name"));
 
 	if(cachedb_remove(&mc_system, &attr)< 0)
 	{
 		LM_ERR("cachedb_remove command failed\n");
-		return init_mi_error(500, MI_SSTR("Cache remove command failed"), 0, 0);
+		return init_mi_error(500, MI_SSTR("Cache remove command failed"));
 	}
 
 	return init_mi_result_ok();
@@ -547,14 +547,14 @@ static mi_response_t *mi_mem_pkg_dump(const mi_params_t *params, int llevel)
 	/* convert pid to OpenSIPS id */
 	i = get_process_ID_by_PID(pid);
 	if (i == -1)
-		return init_mi_error(404, MI_SSTR("Process not found"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Process not found"));
 
 	if (IPC_FD_WRITE(i)<=0)
-		return init_mi_error(500, MI_SSTR("Process does not support mem dump"),0,0);
+		return init_mi_error(500, MI_SSTR("Process does not support mem dump"));
 
 	if (ipc_send_rpc( i, rpc_do_pkg_dump, (void*)(long)llevel)<0) {
 		LM_ERR("failed to trigger pkg dump for process %d\n", i);
-		return init_mi_error(500, MI_SSTR("Internal error"),0,0);
+		return init_mi_error(500, MI_SSTR("Internal error"));
 	}
 
 	return init_mi_result_ok();

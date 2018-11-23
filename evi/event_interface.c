@@ -449,7 +449,7 @@ static mi_response_t *mi_event_subscribe(const mi_params_t *params, unsigned int
 
 	ret = evi_event_subscribe(event_name, transport_sock, expire, 1);
 	if (ret < 0)
-		return init_mi_error(400, MI_SSTR("Bad parameter value"), 0, 0);
+		return init_mi_error(400, MI_SSTR("Bad parameter value"));
 
 	return ret ? init_mi_result_ok() : 0;
 }
@@ -469,7 +469,7 @@ mi_response_t *w_mi_event_subscribe_1(const mi_params_t *params,
 		return init_mi_param_error();
 
 	if (expire < 0)
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("Negative expire value"));
 
@@ -715,7 +715,7 @@ mi_response_t *w_mi_subscribers_list_1(const mi_params_t *params,
 
 	event = evi_get_event(&event_s);
 	if (!event)
-		return init_mi_error(404, MI_SSTR("Event not published"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Event not published"));
 
 	return mi_subscribers_list(event, NULL);
 }
@@ -733,14 +733,14 @@ mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
 
 	event = evi_get_event(&event_s);
 	if (!event)
-		return init_mi_error(404, MI_SSTR("Event not published"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Event not published"));
 
 	if (get_mi_string_param(params, "socket", &subs_s.s, &subs_s.len) < 0)
 		return init_mi_param_error();
 
 	subs = evi_get_subscriber(event, subs_s);
 	if (!subs)
-		return init_mi_error(404, MI_SSTR("Subscriber does not exist"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Subscriber does not exist"));
 
 	return mi_subscribers_list(event, subs);
 }

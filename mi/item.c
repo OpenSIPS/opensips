@@ -132,7 +132,7 @@ mi_response_t *init_mi_result_null(void)
 	return _init_mi_result(&item, cJSON_NULL, 0, NULL, 0);
 }
 
-mi_response_t *init_mi_error(int code, const char *msg, int msg_len,
+mi_response_t *init_mi_error_extra(int code, const char *msg, int msg_len,
 								const char *details, int details_len)
 {
 	mi_response_t *res;
@@ -497,10 +497,10 @@ mi_response_t *init_mi_param_error(void)
 	switch (param_err_type) {
 		case -2:
 			return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
-					MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), NULL, 0);
+					MI_SSTR(JSONRPC_INVAL_PARAMS_MSG));
 		case -1:
 		default:
 			return init_mi_error(JSONRPC_SERVER_ERR_CODE,
-					MI_SSTR(JSONRPC_SERVER_ERR_MSG), NULL, 0);
+					MI_SSTR(JSONRPC_SERVER_ERR_MSG));
 	}
 }

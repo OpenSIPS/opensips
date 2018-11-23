@@ -1238,7 +1238,7 @@ static mi_response_t *w_tcp_trace_mi_1(const mi_params_t *params,
 		*trace_is_on = 0;
 		return init_mi_result_ok();
 	} else {
-		return init_mi_error(JSONRPC_INVAL_PARAMS_CODE,
+		return init_mi_error_extra(JSONRPC_INVAL_PARAMS_CODE,
 			MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 			MI_SSTR("trace_mode should be 'on' or 'off'"));
 	}

@@ -815,7 +815,7 @@ static mi_response_t *mi_get_stats(const mi_params_t *params,
 
 	if (!found) {
 		free_mi_response(resp);
-		return init_mi_error(404, MI_SSTR("Statistics Not Found"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Statistics Not Found"));
 	}
 
 	return resp;
@@ -897,7 +897,7 @@ static mi_response_t *w_mi_list_stats_1(const mi_params_t *params,
 
 	if (!found) {
 		free_mi_response(resp);
-		return init_mi_error(404, MI_SSTR("Statistics Not Found"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Statistics Not Found"));
 	}
 
 	return resp;
@@ -943,7 +943,7 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 
 	if (!found) {
 		free_mi_response(resp);
-		return init_mi_error(404, MI_SSTR("Statistics Not Found"), 0, 0);
+		return init_mi_error(404, MI_SSTR("Statistics Not Found"));
 	}
 
 	return resp_obj;

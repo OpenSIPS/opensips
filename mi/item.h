@@ -96,10 +96,18 @@ mi_response_t *init_mi_result_null(void);
 
 /* Initializes an error MI Response
  * with the given error code and message.
- * Additional error details are optional.
+ * Accepts a string of additional error details.
  */
-mi_response_t *init_mi_error(int code, const char *msg, int msg_len,
+mi_response_t *init_mi_error_extra(int code, const char *msg, int msg_len,
 								const char *details, int details_len);
+
+/* Initializes an error MI Response
+ * with the given error code and message.
+ */
+static inline mi_response_t *init_mi_error(int code, const char *msg, int msg_len)
+{
+	return init_mi_error_extra(code, msg, msg_len, NULL, 0);
+}
 
 /* Frees a MI Reponse
  */
