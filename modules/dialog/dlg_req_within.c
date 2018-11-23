@@ -37,7 +37,6 @@
 #include "../../parser/parse_methods.h"
 #include "../tm/dlg.h"
 #include "../tm/tm_load.h"
-#include "../../mi/tree.h"
 #include "dlg_hash.h"
 #include "dlg_req_within.h"
 #include "dlg_db_handler.h"
@@ -484,41 +483,23 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 }
 
 /*parameters from MI: dialog ID of the requested dialog*/
-struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
-
-	struct mi_node* node;
+mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
+{
 	unsigned int h_entry, h_id;
 	unsigned long long d_id;
 	struct dlg_cell * dlg = NULL;
-	str *mi_extra_hdrs = NULL;
 	str dialog_id;
-	int status, msg_len;
-	char *msg;
 	char *end;
 	char bkp;
 	int shtag_state = 1;
 
-
 	if( d_table ==NULL)
-		goto end;
+		return init_mi_error(404, MI_SSTR(MI_DIALOG_NOT_FOUND));
 
-	node = cmd_tree->node.kids;
 	h_entry = h_id = 0;
 
-	if (node==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	/* parse first param as long long (dialog_id ) */
-	if ( node->value.s==NULL || node->value.len==0 )
-		goto error;
-	dialog_id = node->value;
-
-	/* second param (optional) is the extra hdrs */
-	if (node->next) {
-		node = node->next;
-		if (node->value.len && node->value.s)
-			mi_extra_hdrs = &node->value;
-	}
+	if (get_mi_string_param(params, "dialog_id", &dialog_id.s, &dialog_id.len) < 0)
+		return init_mi_param_error();
 
 	/* Get the dialog based of the dialog_id. This may be a
 	 * numerical DID or a string SIP Call-ID */
@@ -548,39 +529,44 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 			shtag_state = get_shtag_state(dlg);
 			if (shtag_state == -1) {
 				unref_dlg(dlg, 1);
-				return init_mi_tree(403, MI_DLG_OPERATION_ERR,
-										MI_DLG_OPERATION_ERR_LEN);
+				return init_mi_error(403, MI_SSTR(MI_DLG_OPERATION_ERR));
 			} else if (shtag_state == 0) {
 				unref_dlg(dlg, 1);
-				return init_mi_tree(403, MI_DIALOG_BACKUP_ERR,
-										MI_DIALOG_BACKUP_ERR_LEN);
+				return init_mi_error(403, MI_SSTR(MI_DIALOG_BACKUP_ERR));
 			}
 		}
 
 		/* lookup_dlg has incremented the reference count !! */
 		init_dlg_term_reason(dlg,"MI Termination",sizeof("MI Termination")-1);
 
-		if (dlg_end_dlg(dlg, mi_extra_hdrs, 1) ) {
-			status = 500;
-			msg = MI_DLG_OPERATION_ERR;
-			msg_len = MI_DLG_OPERATION_ERR_LEN;
+		if (dlg_end_dlg(dlg, extra_hdrs, 1)) {
+			unref_dlg(dlg, 1);
+			return init_mi_error(500, MI_SSTR(MI_DLG_OPERATION_ERR));
 		} else {
-			status = 200;
-			msg = MI_OK_S;
-			msg_len = MI_OK_LEN;
+			unref_dlg(dlg, 1);
+			return init_mi_result_ok();
 		}
-
-		unref_dlg(dlg, 1);
-
-		return init_mi_tree(status, msg, msg_len);
 	}
 
-end:
-	return init_mi_tree(404, MI_DIALOG_NOT_FOUND, MI_DIALOG_NOT_FOUND_LEN);
+	return init_mi_error(404, MI_SSTR(MI_DIALOG_NOT_FOUND));
+}
 
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+mi_response_t *mi_terminate_dlg_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_terminate_dlg(params, 0);
+}
 
+mi_response_t *mi_terminate_dlg_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str extra_hdrs;
+
+	if (get_mi_string_param(params, "extra_hdrs",
+		&extra_hdrs.s, &extra_hdrs.len) < 0)
+		return init_mi_param_error();
+
+	return mi_terminate_dlg(params, &extra_hdrs);
 }
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,

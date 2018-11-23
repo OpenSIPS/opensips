@@ -1415,15 +1415,16 @@ done:
 #undef REPL_PROF_TRYSEND
 }
 
-struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
+mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (!dialog_repl_cluster)
-		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
+		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
 
 	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 1) < 0)
-		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
+		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
 	else
-		return init_mi_tree(200, MI_SSTR(MI_OK));
+		return init_mi_result_ok();
 }
 
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
@@ -1441,32 +1442,34 @@ int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
 	return 0;
 }
 
-struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_set_shtag_active(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node;
 	struct dlg_sharing_tag *tag;
+	str value;
 
 	if (!dialog_repl_cluster)
-		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
+		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
 
-	node = cmd_tree->node.kids;
-	if (node == NULL || !node->value.s || !node->value.len)
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+	if (get_mi_string_param(params, "tag", &value.s, &value.len) < 0)
+		return init_mi_param_error();
 
 	lock_start_write(shtags_lock);
 
-	if ((tag = get_shtag_unsafe(&node->value)) == NULL)
-		return init_mi_tree(500, MI_SSTR("Unable to set sharing tag"));
+	if ((tag = get_shtag_unsafe(&value)) == NULL) {
+		lock_stop_write(shtags_lock);
+		return init_mi_error(500, MI_SSTR("Unable to set sharing tag"));
+	}
 
 	tag->state = SHTAG_STATE_ACTIVE;
 
 	lock_stop_write(shtags_lock);
 
-	if (send_shtag_active_info(&node->value, 0) < 0)
+	if (send_shtag_active_info(&value, 0) < 0)
 		LM_WARN("Failed to broadcast message about tag [%.*s] going active\n",
-			node->value.len, node->value.s);
+			value.len, value.s);
 
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
 /* @return:
@@ -1562,40 +1565,38 @@ int dlg_sharing_tag_paramf(modparam_t type, void *val)
 	return 0;
 }
 
-struct mi_root *mi_list_sharing_tags(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_list_sharing_tags(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-    struct mi_root *rpl_tree= NULL;
-    struct mi_node *node, *rpl = NULL;
-    struct mi_attr *attr;
     struct dlg_sharing_tag *tag;
-    str val;
+    mi_response_t *resp;
+	mi_item_t *resp_arr, *tag_item;
 
     if (!dialog_repl_cluster)
-		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
+		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
 
-    rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
-    if (rpl_tree==0)
-        return NULL;
-    rpl = &rpl_tree->node;
-    rpl->flags |= MI_IS_ARRAY;
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return NULL;
 
     lock_start_read(shtags_lock);
     for (tag = *shtags_list; tag; tag = tag->next) {
-        node = add_mi_node_child(rpl, MI_DUP_VALUE,
-            MI_SSTR("Tag"), tag->name.s, tag->name.len);
-        if (!node) goto error;
+		tag_item = add_mi_object(resp_arr, NULL, 0);
+		if (!tag_item)
+			goto error;
 
-        val.s = int2str(tag->state, &val.len);
-        attr = add_mi_attr(node, MI_DUP_VALUE,
-            MI_SSTR("State"), val.s, val.len);
-        if (!attr) goto error;
+		if (add_mi_string(tag_item, MI_SSTR("Tag"),
+			tag->name.s, tag->name.len) < 0)
+			goto error;
+		if (add_mi_int(tag_item, MI_SSTR("State"), tag->state) < 0)
+			goto error;
     }
     lock_stop_read(shtags_lock);
 
-    return rpl_tree;
+    return resp;
 
 error:
     lock_stop_read(shtags_lock);
-    if (rpl_tree) free_mi_tree(rpl_tree);
+    free_mi_response(resp);
     return NULL;
 }
