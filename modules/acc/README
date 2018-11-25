@@ -1150,8 +1150,8 @@ Chapter 3. Contributors
    5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
    6. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    7. Elena-Ramona Modroiu 23 4 2267 5
-   8. Henning Westerholt (@henningw) 20 15 184 131
-   9. Liviu Chircu (@liviuchircu) 19 14 227 150
+   8. Liviu Chircu (@liviuchircu) 20 15 230 150
+   9. Henning Westerholt (@henningw) 20 15 184 131
    10. Vlad Paiu (@vladpaiu) 17 11 129 208
 
    All remaining contributors: Irina-Maria Stanescu, Maksym
@@ -1183,9 +1183,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Oct 2018
-   2.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Oct 2018
+   3.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
    5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2017
    6.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2017
