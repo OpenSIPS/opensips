@@ -295,7 +295,7 @@ append_time();
    NOTE: in the list must be only methods defined in OpenSIPS with
    ID (invite, cancel, ack, bye, options, info, update, register,
    message, subscribe, notify, refer, prack, publish; for more
-   see: http://www.iana.org/assignments/sip-parameters).
+   see: https://www.iana.org/assignments/sip-parameters).
 
    If used for replies, the function tests the value of method
    field from CSeq header.
@@ -405,8 +405,8 @@ if(is_audio_on_hold())
    The function returns true if the SIP message has a Privacy
    header field that includes the given privacy_type among its
    privacy values. See
-   http://www.iana.org/assignments/sip-priv-values for possible
-   privacy type values.
+   https://www.iana.org/assignments/sip-parameters/sip-parameters.
+   xhtml#sip-parameters-8 for possible privacy type values.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
@@ -915,12 +915,13 @@ Chapter 2. Contributors
    6. Ovidiu Sas (@ovidiusas) 4 2 22 1
    7. Boris Ratner 4 1 129 46
    8. Julián Moreno Patiño 3 1 8 8
-   9. Jarrod Baumann (@jarrodb) 3 1 2 2
-   10. Ezequiel Lovelle 3 1 1 1
+   9. Fabian Gast 3 1 4 4
+   10. Jarrod Baumann (@jarrodb) 3 1 2 2
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Walter
-   Doekes (@wdoekes), Nick Altmann (@nikbyte), Ionut Ionita
-   (@ionutrazvanionita), Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Ezequiel Lovelle, Peter Lemenkov
+   (@lemenkov), Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
+   Ionut Ionita (@ionutrazvanionita), Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -942,20 +943,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2018
-   4.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Ionut Ionita (@ionutrazvanionita)   Dec 2015 - Dec 2015
-   9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   10. Vlad Paiu (@vladpaiu)               Feb 2012 - Aug 2014
+   1.  Fabian Gast                         Nov 2018 - Nov 2018
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2018
+   5.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Ionut Ionita (@ionutrazvanionita)   Dec 2015 - Dec 2015
+   10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
 
-   All remaining contributors: Mihai Tiganus (@tallicamike), Boris
-   Ratner, Nick Altmann (@nikbyte), Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes).
+   All remaining contributors: Vlad Paiu (@vladpaiu), Mihai
+   Tiganus (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte),
+   Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -964,11 +965,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Julián Moreno
-   Patiño, Razvan Crainea (@razvancrainea), Mihai Tiganus
-   (@tallicamike), Vlad Paiu (@vladpaiu), Boris Ratner, Nick
-   Altmann (@nikbyte).
+   Last edited by: Fabian Gast, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ovidiu Sas
+   (@ovidiusas), Julián Moreno Patiño, Razvan Crainea
+   (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
+   (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
 
    doc copyrights:
 

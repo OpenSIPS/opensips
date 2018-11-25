@@ -1552,7 +1552,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1010 567 20440 15760
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1012 568 20471 15782
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
@@ -1571,10 +1571,10 @@ Chapter 4. Contributors
    Christophe Sollet (@csollet), Jeffrey Magder, Ezequiel Lovelle,
    Saúl Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John
    Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
-   Konstantin Bokarius, Anonymous, Dusan Klinec, Mark Dalby,
-   Walter Doekes (@wdoekes), Alexey Vasilyev, Nick Altmann
-   (@nikbyte), Edson Gellert Schubert, Ingo Wolfsberger, Daniel
-   Hsueh.
+   Konstantin Bokarius, Aron Podrigal, Anonymous, Dusan Klinec,
+   Mark Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev, Nick
+   Altmann (@nikbyte), Edson Gellert Schubert, Ingo Wolfsberger,
+   Daniel Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1596,26 +1596,27 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
-   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Oct 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Oct 2018
-   4.  Alexey Vasilyev                     Sep 2018 - Sep 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
-   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
-   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
-   10. Ovidiu Sas (@ovidiusas)             Apr 2008 - Jan 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Nov 2018
+   2.  Aron Podrigal                       Nov 2018 - Nov 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   4.  Razvan Crainea (@razvancrainea)     Jul 2010 - Oct 2018
+   5.  Alexey Vasilyev                     Sep 2018 - Sep 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
+   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
+   8.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
 
-   All remaining contributors: Dusan Klinec, Ezequiel Lovelle,
-   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Maksym
-   Sobolyev (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous,
-   Mark Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Dan Pascu
-   (@danpascu), Henning Westerholt (@henningw), Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
-   (@juha-h), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas
-   Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Dusan
+   Klinec, Ezequiel Lovelle, Walter Doekes (@wdoekes), Christophe
+   Sollet (@csollet), Maksym Sobolyev (@sobomax), Saúl Ibarra
+   Corretgé (@saghul), Anonymous, Mark Dalby, Anca Vamanu, Andrei
+   Dragus, John Riordan, Dan Pascu (@danpascu), Henning Westerholt
+   (@henningw), Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
+   Rodrigues, Marcus Hunger, Juha Heinanen (@juha-h), Jeffrey
+   Magder, Elias Baixas, Daniel Hsueh, Andreas Granig,
+   Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
    Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
    (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
 
