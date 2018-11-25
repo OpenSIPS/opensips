@@ -480,8 +480,7 @@ route[b2b_request]
    B2BUA to bridge a call party from an on going dialog to another
    destination. By default the caller is bridged to the new uri
    and BYE is set to the callee. You can instead bridge the callee
-   if you send 1 as the third parameter. Also, if a fourth
-   parameter is
+   if you send 1 as the third parameter.
 
    Name: b2b_bridge
 
@@ -673,7 +672,7 @@ Chapter 3. Contributors
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 145 101 2915 1129
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 36 30 208 191
-   4. Razvan Crainea (@razvancrainea) 25 16 515 172
+   4. Razvan Crainea (@razvancrainea) 26 17 516 173
    5. Nick Altmann (@nikbyte) 14 6 461 199
    6. Liviu Chircu (@liviuchircu) 12 9 49 96
    7. Vlad Paiu (@vladpaiu) 7 5 35 21
@@ -701,10 +700,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2016
    6.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
    7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
@@ -719,10 +718,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Nick Altmann (@nikbyte), Razvan Crainea
-   (@razvancrainea), Ovidiu Sas (@ovidiusas), Vlad Paiu
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
    (@vladpaiu), Anca Vamanu.
 
    Documentation Copyrights:
