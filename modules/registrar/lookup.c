@@ -314,14 +314,6 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
 			*flags |= REG_LOOKUP_UAFILTER_FLAG;
 			LM_DBG("found regexp /%.*s/", re_len, ua);
 
-			ua[re_len] = '\0';
-			if (regcomp(ua_re, ua, *regexp_flags) != 0) {
-				LM_ERR("bad regexp '%s'\n", ua);
-				ua[re_len] = '/';
-				return -1;
-			}
-			ua[re_len] = '/';
-
 			i += re_len;
 			break;
 		case 'i': *regexp_flags |= REG_ICASE; break;
@@ -344,6 +336,16 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
 	}
 
 	LM_DBG("final flags: %d\n", *flags);
+
+	if (*flags & REG_LOOKUP_UAFILTER_FLAG) {
+		ua[re_len] = '\0';
+		if (regcomp(ua_re, ua, *regexp_flags) != 0) {
+			LM_ERR("bad regexp '%s'\n", ua);
+			ua[re_len] = '/';
+			return -1;
+		}
+		ua[re_len] = '/';
+	}
 
 	return 0;
 }
