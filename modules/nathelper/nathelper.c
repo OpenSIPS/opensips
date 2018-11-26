@@ -123,8 +123,10 @@ static int mod_init(void);
 static void mod_destroy(void);
 
 /*mi commands*/
-static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree,
-		void* param );
+static mi_response_t *mi_enable_natping(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_enable_natping_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 //static
 usrloc_api_t ul;
 static int cblen = 0;
@@ -280,8 +282,12 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{MI_SET_NATPING_STATE, 0, mi_enable_natping,    0,                0, 0},
-	{ 0, 0, 0, 0, 0, 0}
+	{MI_SET_NATPING_STATE, 0, 0, 0, {
+		{mi_enable_natping, {0}},
+		{mi_enable_natping_1, {"status", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static module_dependency_t *get_deps_natping_interval(param_export_t *param)
@@ -385,45 +391,42 @@ static int fixup_fix_nated_register(void** param, int param_no)
 
 
 
-
-static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree,
-											void* param )
+static mi_response_t *mi_enable_natping(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	unsigned int value;
-	struct mi_node* node;
-	struct mi_root* root;
-	char *s;
-	int len;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
 
 	if (natping_state==NULL)
-		return init_mi_tree( 400, MI_PING_DISABLED, MI_PING_DISABLED_LEN);
+		return init_mi_error(400, MI_SSTR(MI_PING_DISABLED));
 
-	node = cmd_tree->node.kids;
-	if(node == NULL) {
-		root = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-		if (root==NULL)
-			return NULL;
-		node = &root->node;
-		s =  int2str(*natping_state, &len);
-		if (!add_mi_node_child(node, MI_DUP_VALUE, MI_SSTR("Status"), s, len)){
-				LM_ERR("cannot add the child node to the tree\n");
-				goto error;
-			}
-		return root;
+	if (add_mi_int(resp_obj, MI_SSTR("Status"), *natping_state) < 0) {
+		free_mi_response(resp);
+		return NULL;
 	}
 
-	value = 0;
-	if( strno2int( &node->value, &value) <0)
-		goto error;
-
-	(*natping_state) = value?1:0;
-
-	return  init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return resp;
 }
 
+static mi_response_t *mi_enable_natping_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int status;
 
+	if (natping_state==NULL)
+		return init_mi_error(400, MI_SSTR(MI_PING_DISABLED));
+
+	if (get_mi_int_param(params, "status", &status) < 0)
+		return init_mi_param_error();
+
+	(*natping_state) = status?1:0;
+
+	return init_mi_result_ok();
+}
 
 static int init_raw_socket(void)
 {
