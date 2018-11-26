@@ -387,6 +387,7 @@ static mi_export_t mi_cmds[] = {
 		{mi_push_dlg_var, {"dlg_val_name", "dlg_val_value", "DID", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{EMPTY_MI_EXPORT}
 };
 
 static pv_export_t mod_items[] = {
