@@ -106,7 +106,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	flags = 0;
 	if (_f && _f[0]!=0) {
 		if (fixup_get_svalue(req, (gparam_p)_f, &flags_s)!=0) {
-			LM_ERR("invalid owner uri parameter");
+			LM_ERR("invalid owner uri parameter\n");
 			return -1;
 		}
 		for( res=0 ; res< flags_s.len ; res++ ) {
@@ -117,18 +117,18 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 				case 'r': flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 				case 'u':
 					if (flags_s.s[res+1] != '/') {
-						LM_ERR("no regexp after 'u' flag");
+						LM_ERR("no regexp after 'u' flag\n");
 						break;
 					}
 					res++;
 					if ((re_end = strrchr(flags_s.s+res+1, '/')) == NULL) {
-						LM_ERR("no regexp after 'u' flag");
+						LM_ERR("no regexp after 'u' flag\n");
 						break;
 					}
 					res++;
 					re_len = re_end-flags_s.s-res;
 					if (re_len == 0) {
-						LM_ERR("empty regexp");
+						LM_ERR("empty regexp\n");
 						break;
 					}
 					ua = flags_s.s+res;

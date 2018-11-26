@@ -374,7 +374,7 @@ static struct mi_root* mi_check_hash(struct mi_root* cmd, void* param )
 		rpl_tree = init_mi_tree(404, "Functionality disabled\n", 23);
 	} else {
 		if (MD5File(tmp, hash_file) != 0) {
-			LM_ERR("could not hash the config file");
+			LM_ERR("could not hash the config file\n");
 			rpl_tree = init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN );
 		}
 
@@ -670,7 +670,7 @@ static int mod_init(void)
 		LM_INFO("no hash_file given, disable hash functionality\n");
 	} else {
 		if (MD5File(config_hash, hash_file) != 0) {
-			LM_ERR("could not hash the config file");
+			LM_ERR("could not hash the config file\n");
 			return -1;
 		}
 		LM_DBG("config file hash is %.*s", MD5_LEN, config_hash);

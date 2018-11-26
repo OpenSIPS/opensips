@@ -1170,7 +1170,7 @@ static int cleanup_head_db( struct head_db *hd) {
 		hd->rule_attrs_avp = -1;
 		hd->carrier_attrs_avp = -1;
 	} else {
-		LM_CRIT(" No head_db to clean supplied");
+		LM_CRIT(" No head_db to clean supplied\n");
 		return -1;
 	}
 	return 0;
@@ -2125,7 +2125,7 @@ static int do_routing_0(struct sip_msg* msg)
 		pack_part_grp(&part_w_no_grp, head_db_start, 0);
 		return do_routing(msg, part_w_no_grp, (int)0, NULL);
 	} else {
-		LM_ERR("Partition name is mandatory");
+		LM_ERR("Partition name is mandatory\n");
 		return -1;
 	}
 	return -1;
@@ -3705,7 +3705,7 @@ static int fixup_do_routing(void** param, int param_no)
 				}
 
 				if(part_param->dr_part->type == DR_NO_PART) {
-					LM_ERR("Partition name is mandatory do_routing");
+					LM_ERR("Partition name is mandatory do_routing\n");
 				}
 			} else {
 				scnd_param = s;
@@ -3885,7 +3885,7 @@ static int fixup_is_gw( void** param, int param_no)
 			case 1:
 				part = pkg_malloc(sizeof(dr_partition_t));
 				if(part == NULL) {
-					LM_CRIT("No more pkg memory!");
+					LM_CRIT("No more pkg memory!\n");
 					return -1;
 				}
 				memset(part, 0, sizeof(dr_partition_t));
@@ -3939,7 +3939,7 @@ static int fixup_route2_carrier( void** param, int param_no)
 		case 1:
 			part_param = pkg_malloc(sizeof(dr_part_old_t));
 			if(part_param == NULL) {
-				LM_ERR("No more pkg memory!");
+				LM_ERR("No more pkg memory!\n");
 				return -1;
 			}
 			memset(part_param, 0, sizeof(dr_part_old_t));
@@ -3997,7 +3997,7 @@ static int fixup_route2_gw( void** param, int param_no)
 		case 1:
 			part_param = pkg_malloc(sizeof(dr_part_old_t));
 			if(part_param == NULL) {
-				LM_ERR("No more pkg memory!");
+				LM_ERR("No more pkg memory!\n");
 				return -1;
 			}
 			memset(part_param, 0, sizeof(dr_part_old_t));
@@ -4144,7 +4144,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
 
 	} else {
 		if( head_db_start == NULL ) {
-			LM_ERR("Error loading config.");
+			LM_ERR("Error loading config\n");
 			return -1;
 		}
 		return _is_dr_gw_w_part(msg, (char*)head_db_start, flags_pv, (int)type,
@@ -4180,7 +4180,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
 
 	if (flags_pv && flags_pv[0]) {
 		if (fixup_get_svalue( msg, (gparam_p)flags_pv, &flags_s)!=0) {
-			LM_ERR("invalid flags parameter");
+			LM_ERR("invalid flags parameter\n");
 			return -1;
 		}
 		for( i=0 ; i < flags_s.len ; i++ ) {
@@ -4939,7 +4939,7 @@ static int get_config_from_db(void) {
 					ans_col.len = strlen(ans_col.s);
 				}
 				if( populate_head_config( head_end, ans_col, j) < 0 )
-					LM_ERR("Column from partition table not recognized; will continue");
+					LM_ERR("Column from partition table not recognized; will continue\n");
 
 			} else {
 				LM_ERR("Result from query is not a string\n");

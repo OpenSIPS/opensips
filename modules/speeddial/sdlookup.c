@@ -58,7 +58,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 
 	if(_table==NULL || fixup_get_svalue(_msg, (gparam_p)_table, &table_s)!=0)
 	{
-		LM_ERR("invalid table parameter");
+		LM_ERR("invalid table parameter\n");
 		return -1;
 	}
 
@@ -71,7 +71,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 		memset(&turi, 0, sizeof(struct sip_uri));
 		if(fixup_get_svalue(_msg, (gparam_p)_owner, &uri_s)!=0)
 		{
-			LM_ERR("invalid owner uri parameter");
+			LM_ERR("invalid owner uri parameter\n");
 			return -1;
 		}
 		if(parse_uri(uri_s.s, uri_s.len, &turi)!=0)

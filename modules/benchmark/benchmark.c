@@ -677,7 +677,7 @@ static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param)
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) {
-		LM_ERR("Could not allocate the reply mi tree");
+		LM_ERR("Could not allocate the reply mi tree\n");
 		return NULL;
 	}
 	rpl_tree->node.flags |= MI_IS_ARRAY;

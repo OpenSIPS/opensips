@@ -175,7 +175,7 @@ int extract_body(struct sip_msg *msg, str *body )
 			break;
 	}
 	if (skip == body->len) {
-		LM_ERR("empty body");
+		LM_ERR("empty body\n");
 		goto error;
 	}
 	body->len -= skip;

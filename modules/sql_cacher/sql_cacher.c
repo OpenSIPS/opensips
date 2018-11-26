@@ -1690,7 +1690,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		/* there are variables in the name which need to be evaluated, then parse */
 		if (pv_printf_s(msg, pv_name->pv_elem_list, &name_s) != 0 ||
 			name_s.len == 0 || !name_s.s) {
-			LM_ERR("Unable to evaluate variables in pv name");
+			LM_ERR("Unable to evaluate variables in pv name\n");
 			return pv_get_null(msg, param, res);
 		}
 		if (parse_pv_name_s(pv_name, &name_s) < 0)

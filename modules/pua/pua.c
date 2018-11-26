@@ -487,7 +487,7 @@ static int db_restore(void)
 			p= (ua_pres_t*)shm_malloc(size);
 			if(p== NULL)
 			{
-				LM_ERR("no more shared memmory");
+				LM_ERR("no more shared memmory\n");
 				goto error;
 			}
 			memset(p, 0, size);
@@ -731,7 +731,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 		td= pua_build_dlg_t(p);
 		if(td== NULL)
 		{
-			LM_ERR("while building tm dlg_t structure");
+			LM_ERR("while building tm dlg_t structure\n");
 			goto error;
 		}
 		LM_DBG("td->rem_uri= %.*s\n", td->rem_uri.len, td->rem_uri.s);

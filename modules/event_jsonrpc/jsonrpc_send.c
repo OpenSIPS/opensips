@@ -843,7 +843,7 @@ void jsonrpc_process(int rank)
 {
 
 	if (init_worker_reactor("JSON-RPC Sender", RCT_PRIO_MAX) != 0) {
-		LM_BUG("failed to init FS reactor");
+		LM_BUG("failed to init JSON-RPC reactor");
 		abort();
 	}
 	jsonrpc_init_reader();

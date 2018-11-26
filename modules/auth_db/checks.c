@@ -251,33 +251,33 @@ static int set_result_pv(struct sip_msg* _msg, unsigned short _avp_type,
 	switch (_avp->type) {
 		case PVT_AVP:
 			if (pv_get_avp_name(_msg, &(_avp->pvp), &avp_name, &avp_type) != 0) {
-				LM_CRIT("BUG in getting AVP name");
+				LM_CRIT("BUG in getting AVP name\n");
 				return -1;
 			}
 
 			avp_type |= _avp_type;
 
 			if (add_avp(avp_type, avp_name, _avp_val) < 0) {
-				LM_ERR("cannot add AVP");
+				LM_ERR("cannot add AVP\n");
 				return -1;
 			}
 			break;
 
 		case PVT_SCRIPTVAR:
 			if(_avp->pvp.pvn.u.dname == 0){
-				LM_ERR("cannot find svar name");
+				LM_ERR("cannot find svar name\n");
 				return -1;
 			}
 
 			if (!set_var_value((script_var_t*) _avp->pvp.pvn.u.dname,
 			&_avp_val, VAR_VAL_STR)) {
-				LM_ERR("cannot set svar");
+				LM_ERR("cannot set svar\n");
 				return -1;
 			}
 			break;
 
 		default:
-			LM_CRIT("BUG: invalid pvar type");
+			LM_CRIT("BUG: invalid pvar type\n");
 			return -1;
 	}
 
@@ -338,12 +338,12 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 	   be honoured in the following query (see sixth parameter) */
 	if (auth_dbf.query(auth_db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1),
 	2, 0, &dbres) < 0) {
-		LM_ERR("Error while querying database");
+		LM_ERR("Error while querying database\n");
 		return ERR_DBQUERY;
 	}
 
 	if (RES_ROW_N(dbres) == 0) {
-		LM_DBG("User in given uri is not local.");
+		LM_DBG("User in given uri is not local.\n");
 		auth_dbf.free_result(auth_db_handle, dbres);
 		return ERR_USERNOTFOUND;
 	}
@@ -356,7 +356,7 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 			"Consider setting the 'use_domain' param.");
 	}
 
-	LM_DBG("User in request uri does exist");
+	LM_DBG("User in request uri does exist\n");
 
 	/* in the case there is more than a single match, the above warning 
 	 * is presented to the user. anyway we continue by just using the 

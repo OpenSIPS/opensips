@@ -852,7 +852,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 			{
 				if(!pv_parse_spec(&in, &node->var))
 				{
-					LM_ERR("Unable to parse variable ");
+					LM_ERR("Unable to parse variable\n");
 					return -1;
 				}
 
@@ -899,7 +899,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 			{
 				if(!pv_parse_spec(&in, &node->var))
 				{
-					LM_ERR("Unable to parse variable ");
+					LM_ERR("Unable to parse variable\n");
 					return -1;
 				}
 

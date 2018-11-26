@@ -263,14 +263,14 @@ int treat_subscribe(struct sip_msg *msg) {
 			callid_event.s = subs_callid;
 			callid_event.len = strlen(subs_callid);
 		}else{
-			LM_ERR("error in Event Header of Subscriber");
+			LM_ERR("error in Event Header of Subscriber\n");
 			return 0;
 		}
 
 		pt_notify = get_subs_cell(msg, callid_event);
 
 		if (pt_notify == NULL){
-			LM_ERR("**** notify cell not found");
+			LM_ERR("**** notify cell not found\n");
 			if(!eme_tm.t_reply(msg,481,&msg481)){
 				LM_ERR("t_reply (481)\n");
 			}
@@ -291,7 +291,7 @@ int treat_subscribe(struct sip_msg *msg) {
 	}else{
 		notify_cell =  build_notify_cell(msg, expires);
 		if (notify_cell == NULL){
-			LM_ERR("**** error in build notify cell");
+			LM_ERR("**** error in build notify cell\n");
 			if(!eme_tm.t_reply(msg,489,&msg489)){
 				LM_ERR("t_reply (489)\n");
 			}

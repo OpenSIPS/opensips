@@ -117,7 +117,7 @@ int aaa_does_uri_exist_0(struct sip_msg* _m, char* _s1, char* _s2)
 
 	if ( _m->callid==NULL &&
 	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
-		LM_ERR("msg parsing failed or callid not present");
+		LM_ERR("msg parsing failed or callid not present\n");
 		return -1;
 	}
 
@@ -160,7 +160,7 @@ int aaa_does_uri_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
 
 	if ( _m->callid == NULL &&
 	(parse_headers(_m, HDR_CALLID_F, 0) == -1 || _m->callid == NULL)) {
-		LM_ERR("msg parsing failed or callid not present");
+		LM_ERR("msg parsing failed or callid not present\n");
 		return -1;
 	}
 
@@ -242,7 +242,7 @@ int aaa_does_uri_user_exist_0(struct sip_msg* _m, char* _s1, char* _s2)
 
 	if ( !_m->callid &&
 			(parse_headers(_m, HDR_CALLID_F, 0) == -1 || !_m->callid)) {
-		LM_ERR("msg parsing failed or callid not present");
+		LM_ERR("msg parsing failed or callid not present\n");
 		return -1;
 	}
 
@@ -279,7 +279,7 @@ int aaa_does_uri_user_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
 
 	if ( !_m->callid &&
 			(parse_headers(_m, HDR_CALLID_F, 0) == -1 || !_m->callid)) {
-		LM_ERR("msg parsing failed or callid not present");
+		LM_ERR("msg parsing failed or callid not present\n");
 		return -1;
 	}
 

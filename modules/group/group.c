@@ -363,7 +363,7 @@ int aaa_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 	if ((parse_headers(_m, HDR_CALLID_F, 0) == -1 || _m->callid == NULL) &&
 		 _m->callid == NULL) {
 		proto.destroy_aaa_message(conn, send);
-		LM_ERR("msg parsing failed or callid not present");
+		LM_ERR("msg parsing failed or callid not present\n");
 		return -10;
 	}
 

@@ -1762,7 +1762,7 @@ static int mod_init(void) {
 		s.s = tls_domain_avp;
 		s.len = strlen(s.s);
 		if (parse_avp_spec( &s, &tls_client_domain_avp)) {
-			LM_ERR("cannot parse client_tls_domain_avp");
+			LM_ERR("cannot parse client_tls_domain_avp\n");
 			return -1;
 		}
 	}
@@ -1771,7 +1771,7 @@ static int mod_init(void) {
 		s.s = sip_domain_avp;
 		s.len = strlen(s.s);
 		if (parse_avp_spec(&s, &sip_client_domain_avp)) {
-			LM_ERR("cannot parse client_sip_domain_avp");
+			LM_ERR("cannot parse client_sip_domain_avp\n");
 			return -1;
 		}
 	}

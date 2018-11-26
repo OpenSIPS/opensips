@@ -274,21 +274,21 @@ static int mod_init(void) {
 
 	db_table = (str *)shm_malloc(sizeof (str));
 	if (!db_table) {
-		LM_ERR("no more memory");
+		LM_ERR("no more memory\n");
 		return -1;
 	}
 	db_table = &table_report;
 
 	db_esrn_esgwri = shm_malloc(sizeof (struct esrn_routing *));
 	if (!db_esrn_esgwri) {
-		LM_ERR("no more memory");
+		LM_ERR("no more memory\n");
 		return -1;
 	}
 	*db_esrn_esgwri = NULL;
 
 	db_service_provider = shm_malloc(sizeof (struct service_provider *));
 	if (!db_service_provider) {
-		LM_ERR("no more memory");
+		LM_ERR("no more memory\n");
 		return -1;
 	}
 	*db_service_provider = NULL;
@@ -884,7 +884,7 @@ static int failure(struct sip_msg *msg) {
 	// find the cell with the callid from the list calls_cell
 	s= search_ehtable(call_htable, callidHeader, from_tag, hash_code, 0);
 	if (s == NULL) {
-		LM_ERR(" ---FAILURE treatment did not find the CALLID");
+		LM_ERR(" ---FAILURE treatment did not find the CALLID\n");
 		goto error;
 	}
 
@@ -909,7 +909,7 @@ static int failure(struct sip_msg *msg) {
 			if(strlen(info_call->esgwri) > 1){
 				LM_DBG ("FAILURE REPLY ESGWRI %s \n",info_call->esgwri);
 				if(new_uri_proxy(msg, info_call->esgwri) == -1){
-					LM_ERR(" ERROR IN NEW_URI_PROXY");
+					LM_ERR(" ERROR IN NEW_URI_PROXY\n");
 					pkg_free(cbn_aux);
 					goto lro;
 				}
@@ -953,7 +953,7 @@ lro:
 	// verifica se a chamada tratada teve o numero de contingencia lro fornecido pelo VPC
 	// caso não tenha, não trata failure
 	if (info_call->lro == empty) {
-		LM_ERR(" ---treat FAILURE not found lro");
+		LM_ERR(" ---treat FAILURE not found lro\n");
 		goto error;
 	}
 
@@ -976,11 +976,11 @@ lro:
 
 		LM_DBG(" ---NEW DESTIN =%s", new_to);
 		if(new_uri_proxy(msg, new_to) == -1){
-			LM_ERR(" ---ERRO EM NEW_URI_PROXY");
+			LM_ERR(" ---ERRO EM NEW_URI_PROXY\n");
 			goto error;
 		}
 	}else{
-		LM_DBG(" ---FAILURE JA TRANSMITIU LRO");
+		LM_DBG(" ---FAILURE JA TRANSMITIU LRO\n");
 		goto error;
 	}
 end:
@@ -1044,7 +1044,7 @@ int is_emergency_call(struct sip_msg *msg) {
 			if (codigo->code.len == msg->parsed_uri.user.len){
 				if (strncmp(codigo->code.s, msg->parsed_uri.user.s , codigo->code.len) == 0) {
 
-					LM_DBG(" ---> CODIGO -- OK %.*s\n\n", codigo->code.len, codigo->code.s);
+					LM_DBG(" ---> CODIGO -- OK %.*s\n", codigo->code.len, codigo->code.s);
 
 					if (check_myself(msg)) {
 						LM_DBG(" --- IT IS ONWER HOST  \n \n");
@@ -1126,10 +1126,10 @@ int send_request_vpc(struct sip_msg *msg) {
 	if (proxy_role == 2) {
 		LM_DBG(" ---role: call server scenario II \n");
 		if (add_hdr_PAI(msg, cbn) == -1) {
-			LM_ERR("FAILURE IN ADD PAI");
+			LM_ERR("FAILURE IN ADD PAI\n");
 		}
 		if (proxy_request(msg,call_server_hostname) == -1) {
-			LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST");
+			LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST\n");
 			return -1;
 		}
 		return 1;
@@ -1139,11 +1139,11 @@ int send_request_vpc(struct sip_msg *msg) {
 		// Call Server SCENARIO III
 		LM_DBG(" ---role: proxy redirect \n");
 		//if (add_hdr_PAI(msg, cbn) == -1) {
-		//    LM_ERR("FAILURE IN ADD PAI");
+		//    LM_ERR("FAILURE IN ADD PAI\n");
 		//}
 		pkg_free(cbn.s);
 		if (proxy_request(msg,call_server_hostname) == -1) {
-			LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST");
+			LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST\n");
 			return -1;
 		}
 		eme_tm.register_tmcb(msg,NULL,TMCB_RESPONSE_IN,reply_in_redirect,0,0);
@@ -1239,7 +1239,7 @@ int send_request_vpc(struct sip_msg *msg) {
 	}
 
 
-	LM_DBG("END EMERGENCY");
+	LM_DBG("END EMERGENCY\n");
 	resp = 1;
 
 end:
@@ -1271,7 +1271,7 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
 
 	unsigned int hash_code;
 
-	LM_DBG(" ---PARSED ");
+	LM_DBG(" ---PARSED \n");
 	if ((parsed->callid == empty || parsed->result == empty || parsed->vpc->nenaid == empty || parsed->vpc->contact == empty)) {
 		LM_ERR("MANDATORY FIELDS ARE BLANK \n");
 		free_parsed(parsed);
@@ -1405,7 +1405,7 @@ int treat_routing(struct sip_msg* msg, struct esct *call_cell, char* callidHeade
 			}
 
 			if(new_uri_proxy(msg,call_cell->esgwri) == -1){
-				LM_ERR(" ---ERROR IN NEW_URI_PROXY");
+				LM_ERR(" ---ERROR IN NEW_URI_PROXY\n");
 				goto error;
 			}
 
@@ -1523,7 +1523,7 @@ int routing_by_ert( struct sip_msg *msg, ESCT *call_cell, int failure) {
 		}
 
 		if(new_uri_proxy(msg, call_cell->esgwri) == -1){
-			LM_ERR(" ---ERROR IN NEW_URI_PROXY");
+			LM_ERR(" ---ERROR IN NEW_URI_PROXY\n");
 			return -1;
 		}
 
@@ -1566,7 +1566,7 @@ int contingency(struct sip_msg *msg, ESCT *call_cell){
 	sprintf(call_cell->esgwri, "sip:%s@%s;user=phone", lro, contingency_hostname);
 
 	if(new_uri_proxy(msg, call_cell->esgwri) == -1){
-		LM_ERR(" ---ERRO EM NEW_URI_PROXY");
+		LM_ERR(" ---ERRO EM NEW_URI_PROXY\n");
 		return -1;
 	}
 
@@ -1665,9 +1665,9 @@ int routing_ack(struct sip_msg *msg) {
 	info_call = s->esct;
 
 	if (strlen(info_call->esgwri) > 0) {
-		LM_DBG(" ---Routing ACK %s \n\n", info_call->esgwri);
+		LM_DBG(" ---Routing ACK %s \n", info_call->esgwri);
 		if(new_uri_proxy(msg, info_call->esgwri) == -1){
-			LM_ERR(" ---ERROR IN NEW_URI_PROXY");
+			LM_ERR(" ---ERROR IN NEW_URI_PROXY\n");
 			resp = -1;
 			goto end;
 		}
@@ -1720,7 +1720,7 @@ int bye(struct sip_msg *msg, int dir) {
 		if (dir == 1) {
 			LM_DBG(" ---role: proxy routing \n");
 			if (proxy_request(msg,call_server_hostname) == -1) {
-				LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST");
+				LM_ERR("ERROR IN ROUTING EMERGENCY REQUEST\n");
 				return -1;
 			}
 			return 1;
@@ -1846,9 +1846,9 @@ int bye(struct sip_msg *msg, int dir) {
 		// routing BYE to same direction that INVITE
 
 		if (strlen(info_call->esct->esgwri) > 0) {
-			LM_DBG(" ---Routing BYE %s \n\n", info_call->esct->esgwri);
+			LM_DBG(" ---Routing BYE %s \n", info_call->esct->esgwri);
 			if(new_uri_proxy(msg, info_call->esct->esgwri) == -1){
-				LM_ERR(" ---ERROR IN NEW_URI_PROXY");
+				LM_ERR(" ---ERROR IN NEW_URI_PROXY\n");
 				shm_free(info_call->esct->esgwri);
 				shm_free(info_call);
 				resp = -1;

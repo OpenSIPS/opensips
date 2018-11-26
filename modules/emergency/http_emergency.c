@@ -190,7 +190,7 @@ int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell, PARSED *parsed
 	call_cell->lro = empty;
 	call_cell->disposition = empty;
 
-	LM_DBG(" --- TREAT PARSE ESRRESPONSE...");
+	LM_DBG(" --- TREAT PARSE ESRRESPONSE...\n");
 
 	call_cell->source->organizationname = parsed->destination->organizationname;
 	call_cell->source->hostname = parsed->destination->hostname;
@@ -563,31 +563,31 @@ void free_call_cell(ESCT *info_call){
 			if(info_call->source->organizationname){
 				if (strlen(info_call->source->organizationname)!= 0){
 					pkg_free (info_call->source->organizationname);
-					LM_DBG(" ---  FREE INFO_CALL->SOURCE->ORG");
+					LM_DBG(" ---  FREE INFO_CALL->SOURCE->ORG\n");
 				}
 			}
 			if(info_call->source->hostname){
 				if (strlen(info_call->source->hostname)!= 0){
 					pkg_free (info_call->source->hostname);
-					LM_DBG(" ---  FREE INFO_CALL->SOURCE->HOST");
+					LM_DBG(" ---  FREE INFO_CALL->SOURCE->HOST\n");
 				}
 			}
 			if(info_call->source->nenaid){
 				if (strlen(info_call->source->nenaid)!= 0){
 					pkg_free (info_call->source->nenaid);
-					LM_DBG(" ---  FREE INFO_CALL->SOURCE->NENA");
+					LM_DBG(" ---  FREE INFO_CALL->SOURCE->NENA\n");
 				}
 			}
 			if(info_call->source->contact){
 				if (strlen(info_call->source->contact)!= 0){
 					pkg_free (info_call->source->contact);
-					LM_DBG(" ---  FREE INFO_CALL->SOURCE->CONTACT");
+					LM_DBG(" ---  FREE INFO_CALL->SOURCE->CONTACT\n");
 				}
 			}
 			if(info_call->source->certuri){
 				if (strlen(info_call->source->certuri)!= 0){
 					pkg_free (info_call->source->certuri);
-					LM_DBG(" ---  FREE INFO_CALL->SOURCE->CERTURI");
+					LM_DBG(" ---  FREE INFO_CALL->SOURCE->CERTURI\n");
 				}
 			}
 			pkg_free (info_call->source);
@@ -597,31 +597,31 @@ void free_call_cell(ESCT *info_call){
 			if(info_call->vpc->organizationname){
 				if (strlen(info_call->vpc->organizationname)!= 0){
 					pkg_free (info_call->vpc->organizationname);
-					LM_DBG(" ---  FREE INFO_CALL->VPC->ORG");
+					LM_DBG(" ---  FREE INFO_CALL->VPC->ORG\n");
 				}
 			}
 			if(info_call->vpc->hostname){
 				if (strlen(info_call->vpc->hostname)!= 0){
 					pkg_free (info_call->vpc->hostname);
-					LM_DBG(" ---  FREE INFO_CALL->VPC->HOST");
+					LM_DBG(" ---  FREE INFO_CALL->VPC->HOST\n");
 				}
 			}
 			if(info_call->vpc->nenaid){
 				if (strlen(info_call->vpc->nenaid)!= 0){
 					pkg_free (info_call->vpc->nenaid);
-					LM_DBG(" ---  FREE INFO_CALL->VPC->NENA");
+					LM_DBG(" ---  FREE INFO_CALL->VPC->NENA\n");
 				}
 			}
 			if(info_call->vpc->contact){
 				if (strlen(info_call->vpc->contact)!= 0){
 					pkg_free (info_call->vpc->contact);
-					LM_DBG(" ---  FREE INFO_CALL->VPC->CONTACT");
+					LM_DBG(" ---  FREE INFO_CALL->VPC->CONTACT\n");
 				}
 			}
 			if(info_call->vpc->certuri){
 				if (strlen(info_call->vpc->certuri)!= 0){
 					pkg_free (info_call->vpc->certuri);
-					LM_DBG(" ---  FREE INFO_CALL->VPC->CERTURI");
+					LM_DBG(" ---  FREE INFO_CALL->VPC->CERTURI\n");
 				}
 			}
 			pkg_free (info_call->vpc);
@@ -630,56 +630,56 @@ void free_call_cell(ESCT *info_call){
 		if (info_call->eme_dlg_id){
 			if(info_call->eme_dlg_id->call_id){
 				pkg_free (info_call->eme_dlg_id->call_id);
-				LM_DBG(" ---  FREE INFO_CALL->CALLID");
+				LM_DBG(" ---  FREE INFO_CALL->CALLID\n");
 			}
 
 			if(info_call->eme_dlg_id->local_tag){
 				pkg_free (info_call->eme_dlg_id->local_tag);
-				LM_DBG(" ---  FREE INFO_CALL->LOCAL_TAG");
+				LM_DBG(" ---  FREE INFO_CALL->LOCAL_TAG\n");
 			}
 			pkg_free (info_call->eme_dlg_id);
 		}
 
 		if((info_call->esqk)&&(strlen(info_call->esqk) > 1)){
 			pkg_free (info_call->esqk);
-			LM_DBG(" ---  FREE INFO_CALL->ESQK");
+			LM_DBG(" ---  FREE INFO_CALL->ESQK\n");
 		}
 
 		if(info_call->callid){
 			pkg_free (info_call->callid);
-			LM_DBG(" ---  FREE INFO_CALL->CALLID");
+			LM_DBG(" ---  FREE INFO_CALL->CALLID\n");
 		}
 
 
 		if((info_call->lro)&&(strlen(info_call->lro) > 1)){
 			pkg_free (info_call->lro);
-			LM_DBG(" ---  FREE INFO_CALL->LRO");
+			LM_DBG(" ---  FREE INFO_CALL->LRO\n");
 		}
 
 
 		if((info_call->esgwri)&&(strlen(info_call->esgwri) > 1)){
 			pkg_free (info_call->esgwri);
-			LM_DBG(" ---  FREE INFO_CALL->ESGWRI");
+			LM_DBG(" ---  FREE INFO_CALL->ESGWRI\n");
 		}
 
 		if((info_call->esgw)&&(strlen(info_call->esgw) > 1)){
 			pkg_free (info_call->esgw);
-			LM_DBG(" ---  FREE INFO_CALL->ESGW");
+			LM_DBG(" ---  FREE INFO_CALL->ESGW\n");
 		}
 
 		if((info_call->ert_srid)&&(strlen(info_call->ert_srid) > 1)){
-			LM_DBG(" ---  FREE INFO_CALL->ERT_SRID");
+			LM_DBG(" ---  FREE INFO_CALL->ERT_SRID\n");
 			pkg_free (info_call->ert_srid);
 		}
 
 		if((info_call->result)&&(strlen(info_call->result) > 1)){
 			pkg_free (info_call->result);
-			LM_DBG(" ---  FREE INFO_CALL->RESULT");
+			LM_DBG(" ---  FREE INFO_CALL->RESULT\n");
 		}
 
 		if((info_call->datetimestamp)&&(strlen(info_call->datetimestamp) > 1)){
 			pkg_free (info_call->datetimestamp);
-			LM_DBG(" ---  FREE INFO_CALL->DATETIMESTAMP");
+			LM_DBG(" ---  FREE INFO_CALL->DATETIMESTAMP\n");
 		}
 
 		pkg_free (info_call);

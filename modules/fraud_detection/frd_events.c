@@ -92,7 +92,7 @@ int frd_event_init(void)
 	return 0;
 
 create_param_err:
-	LM_ERR("cannot create event parameter");
+	LM_ERR("cannot create event parameter\n");
 	return -1;
 }
 

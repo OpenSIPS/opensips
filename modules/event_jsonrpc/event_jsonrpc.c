@@ -307,7 +307,7 @@ static str jsonrpc_print(evi_reply_sock *sock)
 	jsonrpc_print_s.len = 0;
 
 	if (!sock) {
-		LM_DBG("Nothing to print");
+		LM_DBG("Nothing to print\n");
 		goto end;
 	}
 	method = (str *)sock->params;

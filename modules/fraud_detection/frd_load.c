@@ -331,7 +331,7 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 		rows = RES_ROWS(res);
 		fl_it = pkg_malloc(sizeof(free_list_t));
 		if (fl_it == NULL) {
-			LM_ERR ("no more pkg memory");
+			LM_ERR ("no more pkg memory\n");
 			dbf.free_result(db_handle, res);
 			return -1;
 		}

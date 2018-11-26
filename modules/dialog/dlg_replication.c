@@ -869,7 +869,7 @@ int send_shtag_active_info(str *tag_name, int node_id)
 
 	if (bin_init(&packet, &dlg_repl_cap, DLG_SHARING_TAG_ACTIVE, BIN_VERSION,
 		0) < 0) {
-		LM_ERR("Failed to init bin packet");
+		LM_ERR("Failed to init bin packet\n");
 		return -1;
 	}
 	bin_push_str(&packet, tag_name);

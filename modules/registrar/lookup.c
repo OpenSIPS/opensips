@@ -295,19 +295,19 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
 		case 'B': *flags |= REG_LOOKUP_NO_RURI_FLAG; break;
 		case 'u':
 			if (input->s[i+1] != '/') {
-				LM_ERR("no regexp start after 'u' flag");
+				LM_ERR("no regexp start after 'u' flag\n");
 				break;
 			}
 			i++;
 			re_end = q_memchr(input->s + i + 1, '/', input->len - i - 1);
 			if (!re_end) {
-				LM_ERR("no regexp end after 'u' flag");
+				LM_ERR("no regexp end after 'u' flag\n");
 				break;
 			}
 			i++;
 			re_len = re_end - input->s - i;
 			if (re_len == 0) {
-				LM_ERR("empty regexp");
+				LM_ERR("empty regexp\n");
 				break;
 			}
 			ua = input->s + i;
@@ -377,7 +377,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	flags = 0;
 	if (_f && _f[0] != '\0') {
 		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s) != 0) {
-			LM_ERR("invalid owner uri parameter");
+			LM_ERR("invalid flags parameter\n");
 			return -1;
 		}
 

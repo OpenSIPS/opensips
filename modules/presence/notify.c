@@ -342,7 +342,7 @@ str* get_wi_notify_body(subs_t* subs, subs_t* watcher_subs)
 	version_str = int2str(subs->version, &len);
 	if(version_str ==NULL)
 	{
-		LM_ERR("converting int to str\n ");
+		LM_ERR("converting int to str\n");
 		goto error;
 	}
 
@@ -705,7 +705,7 @@ str* build_empty_bla_body(str pres_uri)
 	body = (str*) pkg_malloc(sizeof(str));
 	if(body== NULL)
 	{
-		LM_ERR("no more private memory");
+		LM_ERR("no more private memory\n");
 		pkg_free(entity);
 		goto error;
 	}
@@ -714,7 +714,7 @@ str* build_empty_bla_body(str pres_uri)
 	body->s = (char*) pkg_malloc(len);
 	if(body->s == NULL)
 	{
-		LM_ERR("no more private memory");
+		LM_ERR("no more private memory\n");
 		pkg_free(body);
 		pkg_free(entity);
 		goto error;
@@ -2282,7 +2282,7 @@ c_back_param* shm_dup_cbparam(subs_t* subs)
 	cb_param= (c_back_param*)shm_malloc(size);
 	if(cb_param== NULL)
 	{
-		LM_ERR("no more shared memory");
+		LM_ERR("no more shared memory\n");
 		return 0;
 	}
 	memset(cb_param, 0, size);

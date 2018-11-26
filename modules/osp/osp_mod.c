@@ -548,7 +548,7 @@ static void ospDumpParameters(void)
 {
     int i;
 
-    LM_INFO("module configuration: ");
+    LM_INFO("module configuration: \n");
     LM_INFO("    enable_crypto_hardware_support '%d'", _osp_crypto_hw);
     LM_INFO("    validate_call_id '%d'", _osp_validate_callid);
     LM_INFO("    ssl_lifetime '%d'", _osp_ssl_lifetime);

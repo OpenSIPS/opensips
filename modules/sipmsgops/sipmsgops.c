@@ -454,7 +454,7 @@ static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* regex_or_
 				continue;
 			}
 		} else {
-			LM_ERR("Unknown match type. Supported types are r (regex) and g (glob)");
+			LM_ERR("Unknown match type. Supported types are r (regex) and g (glob)\n");
 			return -1;
 		}
 		*(hf->name.s+hf->name.len) = tmp;

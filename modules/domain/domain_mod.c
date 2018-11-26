@@ -177,7 +177,7 @@ static int fixup_wpvar(void **param)
 	}
 	spec = *(pv_spec_t **)param;
 	if (!spec) {
-		LM_BUG("cannot find spec");
+		LM_BUG("cannot find spec\n");
 		return -1;
 	}
 	if (!spec->setf)

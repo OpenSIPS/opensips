@@ -511,7 +511,7 @@ static inline int get_resource_list(str *username, str *domain, str *filename, s
         xpathCtx = xmlXPathNewContext(*xmldoc);
         if (xpathCtx == NULL)
         {
-                LM_ERR("unable to create new XPath context");
+                LM_ERR("unable to create new XPath context\n");
                 goto error;
         }
 

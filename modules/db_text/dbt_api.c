@@ -57,7 +57,7 @@ static int dbt_get_columns(db_con_t* _h, db_res_t* _r)
 		return -2;
 	}
 	if (db_allocate_columns(_r, RES_COL_N(_r)) != 0) {
-		LM_ERR("could not allocate columns");
+		LM_ERR("could not allocate columns\n");
 		return -3;
 	}
 

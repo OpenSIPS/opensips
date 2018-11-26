@@ -92,7 +92,7 @@ static dr_head_p create_dr_head(void)
 	/* data pointer in shm */
 	new->pt = shm_malloc(sizeof (ptree_t));
 	if (new->pt == NULL) {
-		LM_ERR ("no more shm memory");
+		LM_ERR("no more shm memory\n");
 		shm_free(new);
 		return NULL;
 	}

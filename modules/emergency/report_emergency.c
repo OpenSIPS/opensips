@@ -291,19 +291,19 @@ int collect_data(struct node *current, str db_url, str table_report) {
 	report_eme->disposition.s = (char *) (report_eme + 1) + callid_len + srid_len + esgwri_len + lro_len + vpc_name_len + vpc_host_len + time_len + result_len;
 	memcpy(report_eme->disposition.s, current->esct->disposition, disposition_len);
 
-	LM_DBG(" --- REPORT - CALLID %.*s \n\n", report_eme->callid.len, report_eme->callid.s);
-	LM_DBG(" --- REPORT - ESGWRI %.*s \n\n", report_eme->esgwri.len, report_eme->esgwri.s);
-	LM_DBG(" --- REPORT - ERT-RESN %d \n\n", report_eme->ert_resn);
-	LM_DBG(" --- REPORT - ERT-NPA %d \n\n", report_eme->ert_npa);
-	LM_DBG(" --- REPORT - ERT-SRID %.*s \n\n", report_eme->ert_srid.len, report_eme->ert_srid.s);
-	LM_DBG(" --- REPORT - LRO %.*s \n\n", report_eme->lro.len, report_eme->lro.s);
-	LM_DBG(" --- REPORT - VPC - NAME %.*s \n\n", report_eme->vpc_name.len, report_eme->vpc_name.s);
-	LM_DBG(" --- REPORT - VPC - HOST %.*s \n\n", report_eme->vpc_host.len, report_eme->vpc_host.s);
-	LM_DBG(" --- REPORT - TIMESTAMP %.*s \n\n", report_eme->timestamp.len, report_eme->timestamp.s);
-	LM_DBG(" --- REPORT - RESULT %.*s \n\n", report_eme->result.len, report_eme->result.s);
-	LM_DBG(" --- REPORT - DISPOSITION %.*s \n\n", report_eme->disposition.len, report_eme->disposition.s);
+	LM_DBG(" --- REPORT - CALLID %.*s \n", report_eme->callid.len, report_eme->callid.s);
+	LM_DBG(" --- REPORT - ESGWRI %.*s \n", report_eme->esgwri.len, report_eme->esgwri.s);
+	LM_DBG(" --- REPORT - ERT-RESN %d \n", report_eme->ert_resn);
+	LM_DBG(" --- REPORT - ERT-NPA %d \n", report_eme->ert_npa);
+	LM_DBG(" --- REPORT - ERT-SRID %.*s \n", report_eme->ert_srid.len, report_eme->ert_srid.s);
+	LM_DBG(" --- REPORT - LRO %.*s \n", report_eme->lro.len, report_eme->lro.s);
+	LM_DBG(" --- REPORT - VPC - NAME %.*s \n", report_eme->vpc_name.len, report_eme->vpc_name.s);
+	LM_DBG(" --- REPORT - VPC - HOST %.*s \n", report_eme->vpc_host.len, report_eme->vpc_host.s);
+	LM_DBG(" --- REPORT - TIMESTAMP %.*s \n", report_eme->timestamp.len, report_eme->timestamp.s);
+	LM_DBG(" --- REPORT - RESULT %.*s \n", report_eme->result.len, report_eme->result.s);
+	LM_DBG(" --- REPORT - DISPOSITION %.*s \n", report_eme->disposition.len, report_eme->disposition.s);
 
-	LM_DBG(" --- TABLE_REPORT %.*s \n\n", table_report.len, table_report.s);   
+	LM_DBG(" --- TABLE_REPORT %.*s \n", table_report.len, table_report.s);   
 
 
 	if (report(report_eme, db_url, table_report) != 1) {
@@ -380,7 +380,7 @@ struct service_provider* get_provider(struct sip_msg *msg, int attr, rw_lock_t *
 				vsp_addr_len = strlen(vsp_addr);      
 
 				if ( (provider->nodeIP.len == vsp_addr_len) && (strncmp(vsp_addr, provider->nodeIP.s, vsp_addr_len) == 0)) {
-					LM_DBG(" FOUND IP SOURCE\n ");
+					LM_DBG(" FOUND IP SOURCE\n");
 					lock_stop_read(ref_lock);
 					return provider;       
 				}

@@ -79,7 +79,7 @@ void timeout_listener_process(int rank)
 	int offset = 0;
 
 	if (init_child(PROC_MODULE) != 0) {
-		LM_ERR("cannot init child process");
+		LM_ERR("cannot init child process\n");
 		return;
 	}
 

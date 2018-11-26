@@ -472,7 +472,7 @@ static int jrpc_notify(struct sip_msg *msg, char *_s, char *_m, char *_p)
 	
 	cmd = jsonrpc_build_cmd(&method, &params, NULL);
 	if (!cmd) {
-		LM_ERR("cannot build jsonrpc command");
+		LM_ERR("cannot build jsonrpc command\n");
 		return -1;
 	}
 

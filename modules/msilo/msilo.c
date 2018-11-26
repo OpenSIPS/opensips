@@ -521,7 +521,7 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	{
 		if(fixup_get_svalue(msg, (gparam_p)owner, &owner_s)!=0)
 		{
-			LM_ERR("invalid owner uri parameter");
+			LM_ERR("invalid owner uri parameter\n");
 			return -1;
 		}
 		if(parse_uri(owner_s.s, owner_s.len, &puri)!=0)
@@ -851,7 +851,7 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	{
 		if(fixup_get_svalue(msg, (gparam_p)owner, &owner_s)!=0)
 		{
-			LM_ERR("invalid owner uri parameter");
+			LM_ERR("invalid owner uri parameter\n");
 			return -1;
 		}
 		if(parse_uri(owner_s.s, owner_s.len, &puri)!=0)

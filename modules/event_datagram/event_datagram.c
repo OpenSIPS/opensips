@@ -277,7 +277,7 @@ static str datagram_print(evi_reply_sock *sock)
 	datagram_print_s.len = 0;
 
 	if (!sock) {
-		LM_DBG("Nothing to print");
+		LM_DBG("Nothing to print\n");
 		goto end;
 	}
 

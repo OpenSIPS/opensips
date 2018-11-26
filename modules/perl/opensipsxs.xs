@@ -220,7 +220,7 @@ int moduleFunc(struct sip_msg *m, char *func,
 	action_elem_t elems[MAX_ACTION_ELEMS];
 
 	if (!func) {
-		LM_ERR("moduleFunc called with null function name. Error.");
+		LM_ERR("moduleFunc called with null function name. Error.\n");
 		return -1;
 	}
 
@@ -272,7 +272,7 @@ int moduleFunc(struct sip_msg *m, char *func,
 
 
 	if (!act) {
-		LM_ERR("action structure could not be created. Error.");
+		LM_ERR("action structure could not be created. Error.\n");
 		if (argv[0]) pkg_free(argv[0]);
 		if (argv[1]) pkg_free(argv[1]);
 		return -1;
@@ -1204,7 +1204,7 @@ append_branch(self, branch = NULL, qval = NULL)
 	} else {
 		if (qval) {
 			if (str2q(&q, qval, strlen(qval)) < 0) {
-				LM_ERR("append_branch: Bad q value.");
+				LM_ERR("append_branch: Bad q value.\n");
 			} else { /* branch and qval set */
 				elems[0].type = STR_ST;
 				elems[0].u.data = branch;
@@ -1696,11 +1696,11 @@ get(p_name)
   CODE:
 	if (SvOK(p_name)) {
 		if (!sv2int_str(p_name, &name, &flags, AVP_NAME_STR)) {
-			LM_ERR("AVP:get: Invalid name.");
+			LM_ERR("AVP:get: Invalid name.\n");
 			err = 1;
 		}
 	} else {
-		LM_ERR("AVP:get: Invalid name.");
+		LM_ERR("AVP:get: Invalid name.\n");
 		err = 1;
 	}
 	
@@ -1751,11 +1751,11 @@ destroy(p_name)
 	if (SvOK(p_name)) {
 		if (!sv2int_str(p_name, &name, &flags, AVP_NAME_STR)) {
 			RETVAL = 0;
-			LM_ERR("AVP:destroy: Invalid name.");
+			LM_ERR("AVP:destroy: Invalid name.\n");
 		}
 	} else {
 		RETVAL = 0;
-		LM_ERR("VP:destroy: Invalid name.");
+		LM_ERR("VP:destroy: Invalid name.\n");
 	}
 	
 	if (RETVAL == 1) {

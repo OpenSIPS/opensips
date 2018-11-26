@@ -51,7 +51,7 @@ int srs_init(void)
 		return -1;
 	}
 	if (siprec_port_max < siprec_port_min) {
-		LM_NOTICE("port_max < port_min - swapping their values!");
+		LM_NOTICE("port_max < port_min - swapping their values!\n");
 		tmp = siprec_port_min;
 		siprec_port_min = siprec_port_max;
 		siprec_port_max = tmp;

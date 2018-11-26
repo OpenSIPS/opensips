@@ -827,7 +827,7 @@ static int cdb_val_to_string(cdb_val_t *cdb_val, str *valbuf, int *val_len)
 		*val_len = cdb_val->val.st.len;
 		break;
 	default:
-		LM_ERR("Bad cdb value type");
+		LM_ERR("Bad cdb value type\n");
 		return -1;
 	}
 
@@ -855,7 +855,7 @@ static int cdb_val_to_string(cdb_val_t *cdb_val, str *valbuf, int *val_len)
 		(*val_len)++;
 		break;
 	default:
-		LM_ERR("Bad cdb value type");
+		LM_ERR("Bad cdb value type\n");
 		return -1;
 	}
 

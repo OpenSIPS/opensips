@@ -656,7 +656,7 @@ static inline int ws_parse_req_http_fl(struct tcp_connection *c,
 	tmp.s = spe + 5; /* start of the major */
 	sp = q_memchr(tmp.s, '.', end - tmp.s);
 	if (!sp || sp == tmp.s) {
-		LM_ERR("cannot find DOT");
+		LM_ERR("cannot find DOT\n");
 		goto version_error;
 	}
 	tmp.len = sp - tmp.s;
@@ -717,7 +717,7 @@ static inline int ws_parse_rpl_http_fl(struct tcp_connection *c,
 	tmp.s = p;
 	sp = q_memchr(tmp.s, '.', end - tmp.s);
 	if (!sp || sp == tmp.s) {
-		LM_ERR("cannot find version DOT");
+		LM_ERR("cannot find version DOT\n");
 		goto error;
 	}
 	tmp.len = sp - tmp.s;
@@ -729,7 +729,7 @@ static inline int ws_parse_rpl_http_fl(struct tcp_connection *c,
 	tmp.s = p;
 	sp = q_memchr(tmp.s, ' ', end - tmp.s);
 	if (!sp || sp == tmp.s) {
-		LM_ERR("cannot find version separator");
+		LM_ERR("cannot find version separator\n");
 		goto error;
 	}
 	tmp.len = sp - tmp.s;

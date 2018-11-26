@@ -1289,7 +1289,7 @@ mod_init(void)
 
 		db_connection = db_functions.init(&db_url);
 		if(db_connection == NULL) {
-			LM_ERR("Failed to connect to database");
+			LM_ERR("Failed to connect to database\n");
 			return -1;
 		}
 
@@ -1430,7 +1430,7 @@ static int mi_child_init(void)
 
 	db_connection = db_functions.init(&db_url);
 	if(db_connection == NULL) {
-		LM_ERR("Failed to connect to database");
+		LM_ERR("Failed to connect to database\n");
 		return -1;
 	}
 
@@ -1460,7 +1460,7 @@ static int _add_proxies_from_database(void) {
 
 	if(db_functions.query(db_connection, 0, 0, 0,colsToReturn, 0, 2, 0,
 				&result) < 0) {
-		LM_ERR("Error querying database");
+		LM_ERR("Error querying database\n");
 		if(result)
 			db_functions.free_result(db_connection, result);
 		return -1;
@@ -2996,7 +2996,7 @@ int msg_has_sdp(struct sip_msg *msg)
 	struct body_part *p;
 
 	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
-		LM_ERR("cannot parse cseq header");
+		LM_ERR("cannot parse cseq header\n");
 		return 0;
 	}
 
@@ -3051,13 +3051,13 @@ engage_rtp_proxy5_f(struct sip_msg *msg,
 
 	/* to-tag field is empty*/
 	if (!( pto->tag_value.s==NULL || pto->tag_value.len==0) ) {
-		LM_ERR("function can only be called from the initial invite");
+		LM_ERR("function can only be called from the initial invite\n");
 		return -1;
 	}
 
 	/* create dialog */
 	if (dlg_api.create_dlg(msg,0) < 0) {
-		LM_ERR("error creating dialog");
+		LM_ERR("error creating dialog\n");
 		return -1;
 	}
 
@@ -3087,7 +3087,7 @@ engage_rtp_proxy5_f(struct sip_msg *msg,
 	if (msg_has_sdp(msg)) {
 		LM_DBG("message has sdp body -> forcing rtp proxy\n");
 		if(force_rtp_proxy(msg,param1,param2,param3,param4, param5,1) < 0) {
-			LM_ERR("error forcing rtp proxy");
+			LM_ERR("error forcing rtp proxy\n");
 			return -1;
 		}
 	} else {
@@ -3150,7 +3150,7 @@ engage_rtp_proxy5_f(struct sip_msg *msg,
 			val2.ri = set->id_set;
 
 			if (pv_set_value(msg, &param3_spec, EQ_T, &val2) < 0) {
-				LM_ERR("cannot store set param");
+				LM_ERR("cannot store set param\n");
 				return -1;
 			}
 		}

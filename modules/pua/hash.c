@@ -770,7 +770,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	/* extract the contact */
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
-		LM_ERR("no contact header found in 200 OK reply");
+		LM_ERR("no contact header found in 200 OK reply\n");
 		return -1;
 	}
 	contact= msg->contact->body;

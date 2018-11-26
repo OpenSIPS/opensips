@@ -78,7 +78,7 @@ SV *perlvdb_perlmethod(SV *class,
 		retval = POPs;
 	} else {
 		/* More than one result in Scalar context??? */
-		LM_CRIT("got more than one result from scalar method!");
+		LM_CRIT("got more than one result from scalar method!\n");
 		while (res--) { /* Try to clean stack. This
 				   should never happen anyway.*/
 			retval = POPs;
