@@ -696,6 +696,7 @@ static mi_export_t mi_core_cmds[] = {
 		{w_mi_subscribers_list, {0}},
 		{w_mi_subscribers_list_1, {"event", 0}},
 		{w_mi_subscribers_list_2, {"event", "socket", 0}},
+		{EMPTY_MI_RECIPE}
 		}
 	},
 	{ "list_tcp_conns", "list all ongoing TCP based connections", 0, 0, {

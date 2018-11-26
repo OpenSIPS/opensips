@@ -655,7 +655,7 @@ static mi_response_t *mi_subscribers_list(evi_event_p event, evi_subs_p subs)
 	if (!event_obj)
 		goto error;
 
-	if (evi_print_event(resp_obj, event, subs) < 0) {
+	if (evi_print_event(event_obj, event, subs) < 0) {
 		LM_ERR("cannot print event %.*s info\n",
 			event->name.len, event->name.s);
 		goto error;
@@ -682,7 +682,7 @@ mi_response_t *w_mi_subscribers_list(const mi_params_t *params,
 		return 0;
 
 	events_arr = add_mi_array(resp_obj, MI_SSTR("Events"));
-	if (events_arr)
+	if (!events_arr)
 		goto error;
 
 	for (i = 0; i < events_no; i++) {
