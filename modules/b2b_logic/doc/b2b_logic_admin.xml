@@ -547,7 +547,7 @@ route[b2b_request]
 				</para>
 			</listitem>
 			<listitem>
-				<para>scenario parameters - it can take 4 more parameters that are the scenario parameters</para>
+				<para><emphasis>scenario_params</emphasis> - array of at least 2 scenario parameters</para>
 			</listitem>
 		</itemizedlist>
 		<para>
@@ -583,7 +583,8 @@ route[b2b_request]
 				<para><emphasis>new_uri</emphasis> - the uri of the new destination</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>flag</emphasis> (optional) - used to specify that the callee must be bridged to the new destination. If not present the caller will be bridged.</para>
+				<para><emphasis>flag</emphasis> (optional) - used to specify that the callee must be bridged to the new destination. If not present the caller will be bridged. Possible values are
+				'0' or '1'.</para>
 			</listitem>
 			<listitem>
 				<para><emphasis>prov_media_uri</emphasis> (optional) - the uri of a media server able to play 
