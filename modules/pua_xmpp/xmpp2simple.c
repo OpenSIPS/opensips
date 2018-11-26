@@ -71,7 +71,7 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 		build_publish(pres_node, -1);
 		if(presence_subscribe(pres_node, 3600, XMPP_SUBSCRIBE)< 0)
 		{
-				LM_ERR("when sending subscribe for presence");
+				LM_ERR("when sending subscribe for presence\n");
 				xmlFree(pres_type);
 				goto error;
 		}
@@ -86,7 +86,7 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 		if(presence_subscribe(pres_node, 3600, XMPP_SUBSCRIBE)< 0)
 				/* else subscribe for one hour*/
 		{
-				LM_ERR("when unsubscribing for presence");
+				LM_ERR("when unsubscribing for presence\n");
 				xmlFree(pres_type);
 				goto error;
 		}
@@ -104,7 +104,7 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 			if(presence_subscribe(pres_node, -1,
 						XMPP_INITIAL_SUBS)< 0)
 			{
-				LM_ERR("when sending subscribe for presence");
+				LM_ERR("when sending subscribe for presence\n");
 				xmlFree(pres_type);
 				goto error;
 			}
@@ -114,7 +114,7 @@ void pres_Xmpp2Sip(char *msg, int type, void *param)
 			if(presence_subscribe(pres_node, 0,
 						XMPP_INITIAL_SUBS)< 0)
 			{
-				LM_ERR("when unsubscribing for presence");
+				LM_ERR("when unsubscribing for presence\n");
 				xmlFree(pres_type);
 				goto error;
 			}

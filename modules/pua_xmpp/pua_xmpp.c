@@ -141,7 +141,7 @@ static int mod_init(void)
 	/* check if compulsory parameter server_address is set */
 	if(server_address.s== NULL)
 	{
-		LM_ERR("compulsory 'server_address' parameter not set!");
+		LM_ERR("compulsory 'server_address' parameter not set!\n");
 		return -1;
 	}
 	server_address.len= strlen(server_address.s);

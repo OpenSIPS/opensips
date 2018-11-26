@@ -399,7 +399,7 @@ static int dbcache_add(cachedb_con *con, str *attr, int val, int expires, int *n
 	if(new_val) {
 		str val;
 		if (dbcache_get(con, attr, &val) < 0) {
-			LM_ERR("could not get the new value");
+			LM_ERR("could not get the new value\n");
 			return -1;
 		}
 		*new_val = atoi(val.s);

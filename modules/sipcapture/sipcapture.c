@@ -1736,7 +1736,7 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 
 	ctx = HEP_GET_CONTEXT(hep_api);
 	if (ctx == NULL) {
-		LM_ERR("Hep context not there!");
+		LM_ERR("Hep context not there!\n");
 		return -1;
 	}
 
@@ -1853,7 +1853,7 @@ static int pv_get_hep_version(struct sip_msg *msg, pv_param_t *param,
 
 	ctx = HEP_GET_CONTEXT(hep_api);
 	if (ctx == NULL) {
-		LM_ERR("Hep context not there!");
+		LM_ERR("Hep context not there!\n");
 		return -1;
 	}
 
@@ -4648,7 +4648,7 @@ static int build_hep_buf(str* hep_buf, int* proto)
 
 	ctx = HEP_GET_CONTEXT(hep_api);
 	if (ctx == NULL) {
-		LM_ERR("Hep context not there!");
+		LM_ERR("Hep context not there!\n");
 		return -1;
 	}
 
@@ -5174,7 +5174,7 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		}
 	} else if ( homerV == HOMER6 ) {
 		/* only warn; continue as usual */
-		LM_WARN("using homer6 but hepv2 message received!");
+		LM_WARN("using homer6 but hepv2 message received!\n");
 	}
 
 	/* each query has it's own parameters for the prepared statements */

@@ -218,7 +218,7 @@ int get_cpuload(void)
 	fclose(f);
 
 	if (scan_res <= 0) {
-		LM_ERR("/proc/stat didn't contain expected values");
+		LM_ERR("/proc/stat didn't contain expected values\n");
 		return -1;
 	}
 

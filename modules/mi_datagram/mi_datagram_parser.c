@@ -107,7 +107,7 @@ static inline int mi_datagram_parse_node(datagram_stream * data, str *name,
 				break;
 			}else if (p == (pmax-1)){
 				mark_nsp++; pmax = ++p;
-				LM_DBG("just a value, no new line");
+				LM_DBG("just a value, no new line\n");
 				break;
 			}
 			p++;

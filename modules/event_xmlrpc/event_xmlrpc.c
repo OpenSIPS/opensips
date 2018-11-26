@@ -363,7 +363,7 @@ static str xmlrpc_print(evi_reply_sock *sock)
 	xmlrpc_print_s.len = 0;
 
 	if (!sock) {
-		LM_DBG("Nothing to print");
+		LM_DBG("Nothing to print\n");
 		goto end;
 	}
 	params = sock->params;

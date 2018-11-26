@@ -70,7 +70,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 
 	memset(&dialog, 0, sizeof(ua_pres_t));
 
-	LM_DBG("start...\n\n");
+	LM_DBG("start...\n");
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{

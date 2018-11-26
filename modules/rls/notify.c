@@ -1118,7 +1118,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 		xpathCtx = xmlXPathNewContext(*xmldoc);
 		if (xpathCtx == NULL)
 		{
-			LM_ERR("unable to create new XPath context");
+			LM_ERR("unable to create new XPath context\n");
 			goto error;
 		}
 

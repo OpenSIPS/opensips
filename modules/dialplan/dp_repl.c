@@ -299,7 +299,7 @@ int timerec_print(tmrec_p _trp)
 	LM_DBG("Interval: %d\n", (int)_trp->interval);
 	if(_trp->byday)
 	{
-		LM_DBG("Byday: ");
+		LM_DBG("Byday: \n");
 		for(i=0; i<_trp->byday->nr; i++)
 			LM_DBG(" %d%s", _trp->byday->req[i], _wdays[_trp->byday->xxx[i]]);
 		LM_DBG("\n");
@@ -313,7 +313,7 @@ int timerec_print(tmrec_p _trp)
 	}
 	if(_trp->byyday)
 	{
-		LM_DBG("Byyday:");
+		LM_DBG("Byyday:\n");
 		for(i=0; i<_trp->byyday->nr; i++)
 			LM_DBG(" %d", _trp->byyday->xxx[i]*_trp->byyday->req[i]);
 		LM_DBG("\n");
@@ -327,7 +327,7 @@ int timerec_print(tmrec_p _trp)
 	}
 	if(_trp->byweekno)
 	{
-		LM_DBG("Byweekno: ");
+		LM_DBG("Byweekno: \n");
 		for(i=0; i<_trp->byweekno->nr; i++)
 			LM_DBG(" %d", _trp->byweekno->xxx[i]*_trp->byweekno->req[i]);
 		LM_DBG("\n");

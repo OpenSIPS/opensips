@@ -201,7 +201,7 @@ int send_shtag_active_info(struct clusterer_binds *c_api, int c_id, str *cap,
 	bin_packet_t packet;
 
 	if (bin_init(&packet, cap, SHTAG_IS_ACTIVE, SHTAG_BIN_VERSION, 0) < 0) {
-		LM_ERR("Failed to init bin packet");
+		LM_ERR("Failed to init bin packet\n");
 		return -1;
 	}
 	bin_push_str(&packet, tag_name);

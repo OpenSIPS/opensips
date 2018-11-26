@@ -2439,7 +2439,7 @@ int terminate_dlg(unsigned int h_entry, unsigned int h_id,str *reason)
 	init_dlg_term_reason(dlg,reason->s,reason->len);
 
 	if (dlg_end_dlg(dlg, 0, 1) ) {
-		LM_ERR("Failed to end dialog");
+		LM_ERR("Failed to end dialog\n");
 		ret = -1;
 	}
 

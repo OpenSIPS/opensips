@@ -313,12 +313,12 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 	/* if use_domain is set also the domain column of the database table will
 	   be honoured in the following query (see sixth parameter) */
 	if (uridb_dbf.query(db_handle, keys, 0, vals, cols, (use_domain ? 2 : 1), 2, 0, &dbres) < 0) {
-		LM_ERR("Error while querying database");
+		LM_ERR("Error while querying database\n");
 		return ERR_DBQUERY;
 	}
 
 	if (RES_ROW_N(dbres) == 0) {
-		LM_DBG("User in given uri is not local.");
+		LM_DBG("User in given uri is not local\n");
 		uridb_dbf.free_result(db_handle, dbres);
 		return ERR_USERNOTFOUND;
 	}
@@ -329,7 +329,7 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 		LM_WARN("Multiple entries are matching the given uri. Consider setting the 'use_domain' param.");
 	}
 
-	LM_DBG("User in request uri does exist");
+	LM_DBG("User in request uri does exist\n");
 
 	/* in the case there is more than a single match, the above warning is presented
 	   to the user. anyway we continue by just using the first result row only. */

@@ -232,7 +232,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 	/* Add CALL-ID in Acct-Session-Id Attribute */
 	if ( _msg->callid==NULL &&
 		(parse_headers(_msg, HDR_CALLID_F, 0)==-1 || _msg->callid==NULL)  ) {
-		LM_ERR("msg parsing failed or callid not present");
+		LM_ERR("msg parsing failed or callid not present\n");
 		goto err;
 	}
 	if (proto.avp_add(conn, send, &attrs[A_ACCT_SESSION_ID],

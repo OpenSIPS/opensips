@@ -380,7 +380,7 @@ static int mod_init( void )
 		if (tmp != -1)
 			acc_log_facility = tmp;
 		else {
-			LM_ERR("invalid log facility configured");
+			LM_ERR("invalid log facility configured\n");
 			return -1;
 		}
 	}

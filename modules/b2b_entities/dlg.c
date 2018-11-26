@@ -1883,7 +1883,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 
 	if(new_leg == NULL)
 	{
-		LM_ERR("No more shared memory");
+		LM_ERR("No more shared memory\n");
 		if(route_set.s)
 			pkg_free(route_set.s);
 		goto error;
@@ -2008,7 +2008,7 @@ static int build_extra_headers_from_msg(str buf, str *extra_hdr,
 	req.buf = buf.s;
 	req.len = buf.len;
 	if (parse_msg(buf.s, buf.len, &req)!=0) {
-		LM_CRIT("BUG - buffer parsing failed!");
+		LM_CRIT("BUG - buffer parsing failed!\n");
 		return -1;
 	}
 	/* parse all headers */

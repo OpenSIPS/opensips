@@ -79,7 +79,7 @@ str* build_pidf(ucontact_t* c)
 
 	if(c->expires< (int)time(NULL))
 	{
-		LM_DBG("found expired \n\n");
+		LM_DBG("found expired\n");
 		return NULL;
 	}
 

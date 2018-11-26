@@ -363,7 +363,7 @@ dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type)
 
 	if(new_leg == NULL)
 	{
-		LM_ERR("No more shared memory");
+		LM_ERR("No more shared memory\n");
 		goto error;
 	}
 	memset(new_leg, 0, size);

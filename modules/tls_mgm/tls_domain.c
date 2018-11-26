@@ -149,7 +149,7 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 
 	d = shm_realloc(d, len);
 	if (d == NULL) {
-		LM_ERR("insufficient shm memory");
+		LM_ERR("insufficient shm memory\n");
 		d = *dom;
 		*dom = (*dom)->next;
 		shm_free(d);

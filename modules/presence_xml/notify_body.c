@@ -89,7 +89,7 @@ int dialog_offline_body(str* body, str** offline_body)
 
 	if (!offline_body)
 	{
-		LM_ERR("invalid parameter");
+		LM_ERR("invalid parameter\n");
 		return OFFB_STATUS_ERROR;
 	}
 	*offline_body = NULL;
@@ -104,7 +104,7 @@ int dialog_offline_body(str* body, str** offline_body)
 	node= xmlDocGetNodeByName(doc, "dialog", NULL);
 	if(node== NULL)
 	{
-		LM_DBG("no dialog nodes found");
+		LM_DBG("no dialog nodes found\n");
 		rc = OFFB_STATUS_NO_DIALOG;
 		goto done;
 	}
@@ -119,7 +119,7 @@ int dialog_offline_body(str* body, str** offline_body)
 	new_body = (str*)pkg_malloc(sizeof(str));
 	if(new_body == NULL)
 	{
-		LM_ERR("No more pkg memory");
+		LM_ERR("No more pkg memory\n");
 		goto done;
 	}
 	memset(new_body, 0, sizeof(str));
@@ -223,7 +223,7 @@ int presence_offline_body(str* body, str** offline_body)
 	new_body = (str*)pkg_malloc(sizeof(str));
 	if(new_body == NULL)
 	{
-		LM_ERR("No more pkg memory");
+		LM_ERR("No more pkg memory\n");
 		goto done;
 	}
 	memset(new_body, 0, sizeof(str));
@@ -268,7 +268,7 @@ str* agregate_dialog_xmls(str* pres_user, str* pres_domain, str** body_array, in
 	if(xml_array== NULL)
 	{
 
-		LM_ERR("while allocating memory");
+		LM_ERR("while allocating memory\n");
 		return NULL;
 	}
 	memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;
@@ -485,7 +485,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
     xml_array = (xmlDocPtr*)pkg_malloc( (n+2)*sizeof(xmlDocPtr));
     if(xml_array == NULL)
     {
-        LM_ERR("while allocating memory");
+        LM_ERR("while allocating memory\n");
         return NULL;
     }
     memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;

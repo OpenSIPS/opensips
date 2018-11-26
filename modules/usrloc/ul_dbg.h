@@ -42,7 +42,7 @@ static inline void print_ucontact(ucontact_t* _c)
 	LM_GEN1(L_DBG, "domain    : '%.*s'\n", _c->domain->len, ZSW(_c->domain->s));
 	LM_GEN1(L_DBG, "aor       : '%.*s'\n", _c->aor->len, ZSW(_c->aor->s));
 	LM_GEN1(L_DBG, "Contact   : '%.*s'\n", _c->c.len, ZSW(_c->c.s));
-	LM_GEN1(L_DBG, "Expires   : ");
+	LM_GEN1(L_DBG, "Expires   : \n");
 	if (_c->expires == 0) {
 		LM_GEN1(L_DBG, "Permanent\n");
 	} else if (_c->expires == UL_EXPIRED_TIME) {

@@ -441,7 +441,7 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 	}
 
 	if (!(l2=insert_new_lump_before(l2, term, RR_TERM_LEN, 0))) {
-		LM_ERR("failed to insert term lump");
+		LM_ERR("failed to insert term lump\n");
 		goto error;
 	}
 	term = NULL;

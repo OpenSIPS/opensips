@@ -118,7 +118,7 @@ static int mod_init(void)
 	/* parse the auth AVP spesc, if any */
 	if ( auth_username_avp || auth_password_avp || auth_realm_avp) {
 		if (!auth_username_avp || !auth_password_avp || !auth_realm_avp) {
-			LM_ERR("partial definition of auth AVP!");
+			LM_ERR("partial definition of auth AVP!\n");
 			return -1;
 		}
 		if ( parse_auth_avp(auth_realm_avp, &realm_spec, "realm")<0

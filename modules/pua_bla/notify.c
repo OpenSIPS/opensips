@@ -57,13 +57,13 @@ static int bla_body_is_valid(str *bla_body)
 	node = doc->children;
 	if (!node)
 	{
-		LM_ERR("invalid body: no XML content");
+		LM_ERR("invalid body: no XML content\n");
 		goto done;
 	}
 	if (node->next)
 	{
 		/* may only have one root dialog-info node */
-		LM_ERR("invalid body: multiple root elements");
+		LM_ERR("invalid body: multiple root elements\n");
 		goto done;
 	}
 	if (xmlStrcasecmp(node->name, BAD_CAST "dialog-info") != 0)
@@ -76,7 +76,7 @@ static int bla_body_is_valid(str *bla_body)
 
 	if (!node->children)
 	{
-		LM_DBG("valid blank dialog-info body");
+		LM_DBG("valid blank dialog-info body\n");
 		valid = 1;
 
 		goto done;
@@ -97,7 +97,7 @@ static int bla_body_is_valid(str *bla_body)
 		goto done;
 	}
 
-	LM_DBG("valid body");
+	LM_DBG("valid body\n");
 	valid = 1;
 
 done:
@@ -196,14 +196,14 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 
 		if (!bla_body_is_valid( &body ))
 		{
-			LM_ERR("bad XML body!");
+			LM_ERR("bad XML body!\n");
 			return -1;
 		}
 	}
 
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
-		LM_ERR("no contact header found");
+		LM_ERR("no contact header found\n");
 		return -1;
 	}
 	if( parse_contact(msg->contact) <0 )
@@ -275,7 +275,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 
 	/* +2 for ": " between header name and value */
 	if ((header_name.len + 2 + contact.len + CRLF_LEN) >= sizeof(buf)) {
-		LM_ERR("Sender header too large");
+		LM_ERR("Sender header too large\n");
 		return -1;
 	}
 

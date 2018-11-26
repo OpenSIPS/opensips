@@ -566,7 +566,7 @@ int db_postgres_delete(const db_con_t* _h, const db_key_t* _k,
 		db_postgres_submit_query);
 
 	if (db_postgres_store_result(_h, &_r) != 0)
-		LM_WARN("unexpected result returned");
+		LM_WARN("unexpected result returned\n");
 
 	if (_r)
 		db_free_result(_r);
@@ -597,7 +597,7 @@ int db_postgres_update(const db_con_t* _h, const db_key_t* _k,
 		db_postgres_val2str, db_postgres_submit_query);
 
 	if (db_postgres_store_result(_h, &_r) != 0)
-		LM_WARN("unexpected result returned");
+		LM_WARN("unexpected result returned\n");
 
 	if (_r)
 		db_free_result(_r);

@@ -2642,7 +2642,7 @@ entity_search_done:
 		attr.len = strlen(attr.s);
 		if(str2int(&attr, &tuple->lifetime)< 0)
 		{
-			LM_ERR("Wrong scenario document. The lifetime value is not an integer");
+			LM_ERR("Wrong scenario document. The lifetime value is not an integer\n");
 			xmlFree(attr.s);
 			goto error;
 		}

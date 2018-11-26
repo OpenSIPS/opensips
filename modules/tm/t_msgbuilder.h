@@ -98,7 +98,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 	req->buf = buf;
 	req->len = len;
 	if (parse_msg(buf, len, req)!=0) {
-		LM_CRIT("BUG - buffer parsing failed!");
+		LM_CRIT("BUG - buffer parsing failed!\n");
 		goto error;
 	}
 	/* parse all headers, to be sure they get cloned in shm */

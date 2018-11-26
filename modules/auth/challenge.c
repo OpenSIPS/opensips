@@ -169,7 +169,7 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 
 	if(fixup_get_svalue(_msg, _realm, &realm)!=0)
 	{
-		LM_ERR("invalid realm parameter");
+		LM_ERR("invalid realm parameter\n");
 		if (send_resp(_msg, 500, &auth_500_err, 0, 0)==-1)
 			return -1;
 		else

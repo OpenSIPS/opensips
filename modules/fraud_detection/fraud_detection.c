@@ -448,7 +448,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	param = shm_malloc(sizeof(frd_dlg_param));
 	if (!param) {
-		LM_ERR("no more shm memory");
+		LM_ERR("no more shm memory\n");
 		rc = rc_error;
 	} else if (shm_str_dup(&param->number, &number) == 0) {
 		param->stats = se;

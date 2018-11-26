@@ -108,7 +108,7 @@ hashSlot_t  *createHashTable(int size)
 
 	if (!hashTable)
 	{
-		LM_ERR("no more pkg memory");
+		LM_ERR("no more pkg memory\n");
 		return NULL;
 	}
 

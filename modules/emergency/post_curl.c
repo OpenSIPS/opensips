@@ -76,17 +76,17 @@ size_t write_data(char *ptr, size_t size, size_t nmemb, void *stream) {
 int post(char*  url, char* xml, char** response){
 	CURL *curl;
 	CURLcode res;
-	LM_DBG("INIT CURL");
+	LM_DBG("INIT CURL\n");
 	curl = curl_easy_init();
 	struct url_data data;
 	data.size = 0;
 	data.data = malloc(1024); /* reasonable size initial buffer */
 	if(NULL == data.data) {
-		LM_ERR("NO MEMORY");
+		LM_ERR("NO MEMORY\n");
 		return -1;
 	}
 	memset(data.data, '\0', 1024);
-	LM_DBG("CURL PASSOU MALLOC");
+	LM_DBG("CURL PASSOU MALLOC\n");
 
 	if(curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, url);

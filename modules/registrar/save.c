@@ -585,7 +585,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	sctx.max_expires = max_expires;
 	if ( _f ) {
 		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
-			LM_ERR("invalid flags parameter");
+			LM_ERR("invalid flags parameter\n");
 			return -1;
 		}
 		for( st=0 ; st< flags_s.len ; st++ ) {

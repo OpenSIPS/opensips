@@ -118,7 +118,7 @@ static int siplua_exec(struct sip_msg* _msg, const char *fnc, const char *mystr)
   case SIP_REPLY:
     break;
   default:
-    LM_ERR("invalid firstline");
+    LM_ERR("invalid firstline\n");
     return -1;
   }
   return sipstate_call(_msg, fnc, mystr);

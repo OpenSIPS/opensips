@@ -493,7 +493,7 @@ int msg_has_sdp(struct sip_msg *msg)
 	struct body_part *p;
 
 	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
-		LM_ERR("cannot parse cseq header");
+		LM_ERR("cannot parse cseq header\n");
 		return 0;
 	}
 
@@ -1115,7 +1115,7 @@ mod_init(void)
 
 		db_connection = db_functions.init(&db_url);
 		if(db_connection == NULL) {
-			LM_ERR("Failed to connect to database");
+			LM_ERR("Failed to connect to database\n");
 			return -1;
 		}
 
@@ -1214,7 +1214,7 @@ static int mi_child_init(void)
 
 	db_connection = db_functions.init(&db_url);
 	if(db_connection == NULL) {
-		LM_ERR("Failed to connect to database");
+		LM_ERR("Failed to connect to database\n");
 		return -1;
 	}
 
@@ -3024,7 +3024,7 @@ static int _add_rtpengine_from_database(void)
 
 	if(db_functions.query(db_connection, 0, 0, 0,colsToReturn, 0, 2, 0,
 				&result) < 0) {
-		LM_ERR("Error querying database");
+		LM_ERR("Error querying database\n");
 		if(result)
 			db_functions.free_result(db_connection, result);
 		return -1;

@@ -73,7 +73,7 @@ int generate_ETag(int publ_count, str* etag)
 			prefix, (int)startup_time, pid, counter, publ_count);
 	if( etag->len <0 )
 	{
-		LM_ERR("unsuccessful sprintf\n ");
+		LM_ERR("unsuccessful sprintf\n");
 		return -1;
 	}
 	if(etag->len > ETAG_LEN)
@@ -127,7 +127,7 @@ int publ_send200ok(struct sip_msg *msg, int lexpire, str etag)
 	hdr_append2.len = sprintf(hdr_append2.s, "SIP-ETag: %.*s\r\n", etag.len, etag.s);
 	if(hdr_append2.len < 0)
 	{
-		LM_ERR("unsuccessful sprintf\n ");
+		LM_ERR("unsuccessful sprintf\n");
 		goto error;
 	}
 	if(hdr_append2.len+1 > size)
@@ -1024,7 +1024,7 @@ int pres_htable_restore(void)
 
 			if(insert_phtable(&uri, event, &etag, sphere, 0, 0)== NULL)
 			{
-				LM_ERR("inserting record in presentity hash table");
+				LM_ERR("inserting record in presentity hash table\n");
 				pkg_free(uri.s);
 				if(sphere)
 					pkg_free(sphere);

@@ -397,7 +397,7 @@ static int load_pcres(int action)
 	}
 
 	/* Log the group patterns */
-	LM_NOTICE("num groups = %d\n\n", num_pcres_tmp);
+	LM_NOTICE("num groups = %d\n", num_pcres_tmp);
 	for (i=0; i < num_pcres_tmp; i++) {
 		LM_NOTICE("<group[%d]>%s</group[%d]> (size = %i)\n", i, patterns[i], i, (int)strlen(patterns[i]));
 	}

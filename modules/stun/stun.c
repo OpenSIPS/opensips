@@ -381,9 +381,6 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 			(struct sockaddr *) ctl.dst, ctl.srs_size) < 0)
 		LM_DBG("error sending reply %d\n", errno);
 
-
-    LM_DBG("\n\n\n");
-
 /* free */
 	if (ctl.dst && ctl.dst != client)
 		pkg_free(ctl.dst);
@@ -1337,11 +1334,11 @@ void printStunMsg(StunMsg* msg){
     val = (T16*)msg->id;
 
     if(0x1234 == ntohs(0x3412)){
-	LM_DBG("\tID = %04hX%04hX%04hX%04hX%04hX%04hX%04hX%04hX\n\n",
+	LM_DBG("\tID = %04hX%04hX%04hX%04hX%04hX%04hX%04hX%04hX\n",
 	    ntohs(val[0]),ntohs(val[1]),ntohs(val[2]),ntohs(val[3]),
 	    ntohs(val[4]),ntohs(val[5]),ntohs(val[6]),ntohs(val[7]));
     }else{
-	LM_DBG("\tID = %04hX%04hX%04hX%04hX%04hX%04hX%04hX%04hX\n\n",
+	LM_DBG("\tID = %04hX%04hX%04hX%04hX%04hX%04hX%04hX%04hX\n",
 	    val[0],val[1],val[2],val[3],
 	    val[4],val[5],val[6],val[7]);
     }

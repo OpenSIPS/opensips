@@ -177,7 +177,7 @@ inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo)
 
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
 	{
-		LM_ERR("invalid command parameter");
+		LM_ERR("invalid command parameter\n");
 		return -1;
 	}
 
@@ -211,7 +211,7 @@ inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo)
 
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
 	{
-		LM_ERR("invalid command parameter");
+		LM_ERR("invalid command parameter\n");
 		return -1;
 	}
 
@@ -244,7 +244,7 @@ inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl)
 
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
 	{
-		LM_ERR("invalid command parameter");
+		LM_ERR("invalid command parameter\n");
 		return -1;
 	}
 
@@ -266,7 +266,7 @@ inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl)
 
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
 	{
-		LM_ERR("invalid command parameter");
+		LM_ERR("invalid command parameter\n");
 		return -1;
 	}
 
@@ -475,7 +475,7 @@ inline static int w_exec(struct sip_msg* msg, char* cmd, char* in,
 
 	/* fetch command */
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0) {
-		LM_ERR("invalid command parameter");
+		LM_ERR("invalid command parameter\n");
 		return -1;
 	}
 

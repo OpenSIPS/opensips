@@ -497,7 +497,7 @@ int rad_avp_add(aaa_conn* rh, aaa_message* message, aaa_map* name, void* value,
 			s.s = (char*)value;
 			s.len = val_length;
 			if (str2int( &s, (unsigned int*)(void*)&int4_val) != 0 ) {
-				LM_ERR("error converting string to integer");
+				LM_ERR("error converting string to integer\n");
 				return -1;
 			}
 			value = (void*)&int4_val;

@@ -2288,7 +2288,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	if (flags_gp) {
 		if (fixup_get_svalue(msg, (gparam_p)flags_gp, &flags_str)) {
-			LM_ERR("invalid flags parameter");
+			LM_ERR("invalid flags parameter\n");
 			return -1;
 		}
 
@@ -2303,14 +2303,14 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	if (!to_uri_gp) {
 		to_uri = get_to(msg)->uri;
 	} else if (fixup_get_svalue(msg, (gparam_p)to_uri_gp, &to_uri)) {
-		LM_ERR("invalid AoR parameter");
+		LM_ERR("invalid AoR parameter\n");
 		return -1;
 	}
 
 	if (!expires_gp) {
 		sctx.expires_out = outgoing_expires;
 	} else if (fixup_get_ivalue(msg, (gparam_p)expires_gp, &sctx.expires_out)) {
-		LM_ERR("invalid outgoing_expires parameter");
+		LM_ERR("invalid outgoing_expires parameter\n");
 		return -1;
 	}
 

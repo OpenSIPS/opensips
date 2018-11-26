@@ -1103,7 +1103,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 
 	if(process_bridge_action(0, 0, tuple, xml_node) < 0)
 	{
-		LM_ERR("Failed to process bridge node");
+		LM_ERR("Failed to process bridge node\n");
 		goto error;
 	}
 	lock_release(&b2bl_htable[hash_index].lock);

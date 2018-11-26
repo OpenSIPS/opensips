@@ -55,7 +55,7 @@ int bdb_get_columns(table_p _tp, db_res_t* _res, int* _lres, int _nc)
 	RES_COL_N(_res) = _nc;
 
 	if (db_allocate_columns(_res, RES_COL_N(_res)) != 0) {
-		LM_ERR("could not allocate columns");
+		LM_ERR("could not allocate columns\n");
 		return -2;
 	}
 
@@ -213,7 +213,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 	col = len = i = j = 0;
 
 	if (!_res) {
-		LM_ERR("invalid parameter");
+		LM_ERR("invalid parameter\n");
 		return -1;
 	}
 

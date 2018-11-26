@@ -1883,7 +1883,7 @@ int correlate_fixup(void** param, int param_no)
 	}
 
 	if ( gp->type != GPARAM_TYPE_PVS && gp->type != GPARAM_TYPE_STR ) {
-		LM_ERR("only strings or single variables allowed to this function!");
+		LM_ERR("only strings or single variables allowed to this function!\n");
 		return -1;
 	}
 

@@ -129,7 +129,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 	xml_array = (xmlDocPtr*)pkg_malloc( n*sizeof(xmlDocPtr));
 	if(xml_array== NULL)
 	{
-		LM_ERR("while allocating memory");
+		LM_ERR("while allocating memory\n");
 		return NULL;
 	}
 	memset(xml_array, 0, n*sizeof(xmlDocPtr)) ;

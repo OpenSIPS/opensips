@@ -139,7 +139,7 @@ int mod_init(void)
 
 	if (__register_script_cb(run_helper_logic,
 	                         PRE_SCRIPT_CB|REQ_TYPE_CB, NULL, -1) != 0) {
-		LM_ERR("cannot register script callback");
+		LM_ERR("cannot register script callback\n");
 		return -1;
 	}
 

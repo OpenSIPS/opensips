@@ -1704,7 +1704,7 @@ static int mod_init(void) {
 		s.s = tls_domain_avp;
 		s.len = strlen(s.s);
 		if (parse_avp_spec( &s, &tls_client_domain_avp)) {
-			LM_ERR("cannot parse tls_client_avp");
+			LM_ERR("cannot parse tls_client_avp\n");
 			return -1;
 		}
 	}

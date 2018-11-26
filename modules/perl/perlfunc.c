@@ -211,7 +211,7 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 	case SIP_REPLY:
 		break;
 	default:
-		LM_ERR("invalid firstline");
+		LM_ERR("invalid firstline\n");
 		return -1;
 	}
 

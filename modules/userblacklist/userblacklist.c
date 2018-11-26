@@ -281,11 +281,11 @@ static int check_user_blacklist(struct sip_msg *msg, char* str1, char* str2, cha
 
 	if (dt_longest_match(dt_root, req_number, &whitelist) >= 0) {
 		if (whitelist) {
-			/* LM_ERR("whitelisted"); */
+			/* LM_ERR("whitelisted\n"); */
 			return 1; /* found, but is whitelisted */
 		}
 	} else {
-		/* LM_ERR("not found"); */
+		/* LM_ERR("not found\n"); */
 		return 1; /* not found is ok */
 	}
 
@@ -363,7 +363,7 @@ static int check_blacklist_fixup(void **arg, int arg_no)
 	}
 	/* try to add the table */
 	if (add_source(table) != 0) {
-		LM_ERR("could not add table");
+		LM_ERR("could not add table\n");
 		return -1;
 	}
 
@@ -427,13 +427,13 @@ static int check_blacklist(struct sip_msg *msg, struct check_blacklist_fs_t *arg
 	LM_DBG("check entry %s\n", req_number);
 	if (dt_longest_match(arg1->dt_root, req_number, &whitelist) >= 0) {
 		if (whitelist) {
-			/* LM_DBG("whitelisted"); */
+			/* LM_DBG("whitelisted\n"); */
 			lock_release(lock);
 			return 1; /* found, but is whitelisted */
 		}
 	}
 	else {
-		/* LM_ERR("not found"); */
+		/* LM_ERR("not found\n"); */
 		lock_release(lock);
 		return 1; /* not found is ok */
 	}

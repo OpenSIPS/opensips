@@ -651,7 +651,7 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 			str caller_str;
 			if(tok.rs.len + CRLF_LEN > buf_len)
 			{
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				return -1;
 			}
 			trim(&tok.rs);
@@ -695,7 +695,7 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 		{
 			if(tok.rs.len + CRLF_LEN > buf_len)
 			{
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				goto end;
 			}
 			trim(&tok.rs);

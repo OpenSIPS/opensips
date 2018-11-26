@@ -418,7 +418,7 @@ int ac_cancel(as_p the_as,char *action,int len)
 
 	/* Disabled after CANCEL changes
    if(!(headers.s=pkg_malloc(MAX_HEADER))){
-      LM_ERR("Out of Memory!!");
+      LM_ERR("Out of Memory!!\n");
       goto error;
    }
    headers.len=0;
@@ -432,7 +432,7 @@ int ac_cancel(as_p the_as,char *action,int len)
    LM_DBG("Action UAC Message: uac_id:%d processor_id=%d, message:[%.*s]\n",
 		   uac_id,processor_id,len-4,&action[4]);
    if(parse_msg(action+k,len-k,my_msg)<0){
-      LM_ERR("parsing sip_msg");
+      LM_ERR("parsing sip_msg\n");
       goto error;
    }
    if(my_msg->first_line.type==SIP_REPLY){
@@ -470,7 +470,7 @@ int ac_cancel(as_p the_as,char *action,int len)
    }
    if(body.len!=0){
       if(!(p=pkg_malloc(body.len))){
-          LM_ERR("Out of Memory!");
+          LM_ERR("Out of Memory!\n");
           goto error;
       }
       memcpy(p,body.s,body.len);
@@ -775,7 +775,7 @@ static inline struct sip_msg *parse_ac_msg(hdr_flags_t flags,char *start,int len
    my_msg->len=len;
    LM_DBG("Action Message:[%.*s]\n",len,start);
    if(0>parse_msg(start,len,my_msg)){
-      LM_ERR("parse_ac_msg: parsing sip_msg");
+      LM_ERR("parse_ac_msg: parsing sip_msg\n");
       goto error;
    }
    if(0>parse_headers(my_msg,flags,0)){
@@ -954,7 +954,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
    processor_id=action[k++];
 
    if(!(headers.s=pkg_malloc(MAX_HEADER))){
-      LM_ERR("Out of Memory!!");
+      LM_ERR("Out of Memory!!\n");
       goto error;
    }
    headers.len=0;
@@ -977,13 +977,13 @@ int ac_uac_req(as_p the_as,char *action,int len)
    }
    if(check_transaction_quadruple(my_msg)==0){
       as_action_fail_resp(uac_id,SE_UAC,"Headers missing (to,from,call-id,cseq)?",0);
-      LM_ERR("Headers missing (to,from,call-id,cseq)?");
+      LM_ERR("Headers missing (to,from,call-id,cseq)?\n");
       goto error;
    }
    if(!(get_from(my_msg)) || !(get_from(my_msg)->tag_value.s) ||
 	 !(get_from(my_msg)->tag_value.len)){
       as_action_fail_resp(uac_id,SE_UAC,"From tag missing",0);
-      LM_ERR("From tag missing");
+      LM_ERR("From tag missing\n");
       goto error;
    }
    fb=my_msg->from->parsed;
@@ -1032,7 +1032,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
    }
    if(body.len!=0){
       if(!(p=pkg_malloc(body.len+1))){
-          LM_ERR("Out of Memory!");
+          LM_ERR("Out of Memory!\n");
           goto error;
       }
       memcpy(p,body.s,body.len);

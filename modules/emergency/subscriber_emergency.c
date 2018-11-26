@@ -196,7 +196,7 @@ int extract_reply_headers(struct sip_msg* reply, str* callid, int expires){
 
 	/* get dialog information from reply message: callid, to_tag, from_tag */
 	if(reply == NULL){
-		LM_ERR("no reply message\n ");
+		LM_ERR("no reply message\n");
 		return 0;
 	}
 	if ( parse_headers(reply,HDR_EOH_F, 0) == -1 ){
@@ -527,7 +527,7 @@ void subs_cback_func_II(struct cell *t, int cb_type, struct tmcb_params *params)
 
 
 	}else{
-		LM_ERR("reply to subscribe terminated NOK\n ");
+		LM_ERR("reply to subscribe terminated NOK\n");
 	}
 
 	return;
@@ -971,7 +971,7 @@ int treat_notify(struct sip_msg *msg) {
 	}
 
 	if(cell_subs->version >= version){
-		LM_ERR(" --- ERRO IN VERSION PARAMETER IN NOTIFY BODY");
+		LM_ERR(" --- ERRO IN VERSION PARAMETER IN NOTIFY BODY\n");
 		free_parsed_notify(notify_body);
 		resp = 0;
 		goto end;

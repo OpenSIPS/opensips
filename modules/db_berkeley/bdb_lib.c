@@ -399,7 +399,7 @@ database_p bdblib_get_db(str *_s)
 
 	if ((rc = bdblib_create_dbenv(&(_db_p->dbenv), name)) != 0)
 	{
-		LM_ERR("bdblib_create_dbenv failed");
+		LM_ERR("bdblib_create_dbenv failed\n");
 		pkg_free(_db_p->name.s);
 		pkg_free(_db_p);
 		return NULL;
