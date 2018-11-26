@@ -79,8 +79,10 @@ static int child_init(int rank);
 
 void timer_check(unsigned int ticks, void* hash_counter);
 
-static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param);
-static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param);
+static mi_response_t *mi_reg_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 
 
@@ -144,9 +146,15 @@ static param_export_t params[]= {
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{"reg_list",   0, mi_reg_list,   0, 0, 0},
-	{"reg_reload", 0, mi_reg_reload, 0,	0, 0},
-	{0,            0, 0,             0, 0, 0}
+	{ "reg_list", 0, 0, 0, {
+		{mi_reg_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "reg_reload", 0, 0, 0, {
+		{mi_reg_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -729,110 +737,126 @@ void timer_check(unsigned int ticks, void* hash_counter)
 
 
 /*** MI **/
-
 int run_mi_reg_list(void *e_data, void *data, void *r_data)
 {
-	struct mi_root* rpl_tree = (struct mi_root*)data;
-	struct mi_node *node, *node1;
-	struct mi_attr* attr;
 	reg_record_t *rec = (reg_record_t*)e_data;
 	int len;
 	char* p;
 	struct ip_addr addr;
+	mi_item_t *records_arr = (mi_item_t *)data;
+	mi_item_t *record_item;
 
-	node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE, "AOR", 3,
-							rec->td.rem_uri.s, rec->td.rem_uri.len);
-	if(node == NULL) goto error;
-	p = int2str(rec->expires, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
-	if(attr == NULL) goto error;
+	record_item = add_mi_object(records_arr, NULL, 0);
+	if (!record_item)
+		goto error;
 
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "state", 5,
-							uac_reg_state[rec->state].s, uac_reg_state[rec->state].len);
-	if(node1 == NULL) goto error;
+	if (add_mi_string(record_item, MI_SSTR("AOR"),
+		rec->td.rem_uri.s, rec->td.rem_uri.len) < 0)
+		goto error;
+
+	if (add_mi_int(record_item, MI_SSTR("expires"), rec->expires) < 0)
+		goto error;
+
+	if (add_mi_string(record_item, MI_SSTR("state"),
+		uac_reg_state[rec->state].s, uac_reg_state[rec->state].len) < 0)
+		goto error;
 
 	p = ctime(&rec->last_register_sent);
 	len = strlen(p)-1;
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "last_register_sent", 18, p, len);
-	if(node1 == NULL) goto error;
+	if (add_mi_string(record_item, MI_SSTR("last_register_sent"),
+		p, len) < 0)
+		goto error;
 
 	p = ctime(&rec->registration_timeout);
 	len = strlen(p)-1;
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "registration_t_out", 18, p, len);
-	if(node1 == NULL) goto error;
+	if (add_mi_string(record_item, MI_SSTR("registration_t_out"),
+		p, len) < 0)
+		goto error;
 
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "registrar", 9,
-							rec->td.rem_target.s, rec->td.rem_target.len);
-	if(node1 == NULL) goto error;
+	if (add_mi_string(record_item, MI_SSTR("registrar"),
+		rec->td.rem_target.s, rec->td.rem_target.len) < 0)
+		goto error;
 
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "binding", 7,
-							rec->contact_uri.s, rec->contact_uri.len);
-	if(node1 == NULL) goto error;
+	if (add_mi_string(record_item, MI_SSTR("binding"),
+		rec->contact_uri.s, rec->contact_uri.len) < 0)
+		goto error;
 
-	if(rec->td.loc_uri.s != rec->td.rem_uri.s) {
-		node1 = add_mi_node_child(node, MI_DUP_VALUE,
-								"third_party_registrant", 12,
-								rec->td.loc_uri.s, rec->td.loc_uri.len);
-		if(node1 == NULL) goto error;
-	}
+	if(rec->td.loc_uri.s != rec->td.rem_uri.s)
+		if (add_mi_string(record_item, MI_SSTR("third_party_registrant"),
+			rec->td.loc_uri.s, rec->td.loc_uri.len) < 0)
+			goto error;
 
-	if (rec->td.obp.s && rec->td.obp.len) {
-		node1 = add_mi_node_child(node, MI_DUP_VALUE,
-								"proxy", 5, rec->td.obp.s, rec->td.obp.len);
-		if(node1 == NULL) goto error;
-	}
+	if (rec->td.obp.s && rec->td.obp.len)
+		if (add_mi_string(record_item, MI_SSTR("proxy"),
+			rec->td.obp.s, rec->td.obp.len) < 0)
+			goto error;
 
 	switch(rec->td.forced_to_su.s.sa_family) {
 	case AF_UNSPEC:
 		break;
 	case AF_INET:
 	case AF_INET6:
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "dst_IP", 6,
-			(rec->td.forced_to_su.s.sa_family==AF_INET)?"IPv4":"IPv6", 4);
+		if (add_mi_string(record_item, MI_SSTR("dst_IP"),
+			(rec->td.forced_to_su.s.sa_family==AF_INET)?"IPv4":"IPv6", 4) < 0)
+			goto error;
 		sockaddr2ip_addr(&addr, &rec->td.forced_to_su.s);
 		p = ip_addr2a(&addr);
 		if (p == NULL) goto error;
 		len = strlen(p);
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "ip", 2, p, len);
-		if(attr == NULL) goto error;
+		if (add_mi_string(record_item, MI_SSTR("ip"), p, len) < 0)
+			goto error;
 		break;
 	default:
 		LM_ERR("unexpected sa_family [%d]\n", rec->td.forced_to_su.s.sa_family);
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "dst_IP", 6, "Error", 5);
-		p = int2str(rec->td.forced_to_su.s.sa_family, &len);
-		attr = add_mi_attr(node, MI_DUP_VALUE, "sa_family", 9, p, len);
-		if(attr == NULL) goto error;
+		if (add_mi_string(record_item, MI_SSTR("dst_IP"), "Error", 5) < 0)
+			goto error;
+
+		if (add_mi_int(record_item, MI_SSTR("sa_family"),
+			rec->td.forced_to_su.s.sa_family) < 0)
+			goto error;
 	}
 
 	/* action successfully completed on current list element */
 	return 0; /* continue list traversal */
+
 error:
 	LM_ERR("Unable to create reply\n");
 	return -1; /* exit list traversal */
 }
 
 
-static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
+static mi_response_t *mi_reg_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
 	int i, ret;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *records_arr;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL) return NULL;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
+
+	records_arr = add_mi_array(resp_obj, MI_SSTR("Records"));
+	if (!records_arr)
+		goto error;
 
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
 		ret = slinkedl_traverse(reg_htable[i].p_list,
-						&run_mi_reg_list, (void*)rpl_tree, NULL);
+						&run_mi_reg_list, (void*)records_arr, NULL);
 		lock_release(&reg_htable[i].lock);
 		if (ret<0) {
 			LM_ERR("Unable to create reply\n");
-			free_mi_tree(rpl_tree);
-			return NULL;
+			goto error;
 		}
 	}
-	return rpl_tree;
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return NULL;
 }
 
 int run_compare_rec(void *e_data, void *data, void *r_data)
@@ -863,14 +887,11 @@ int run_find_same_rec(void *e_data, void *data, void *r_data)
 	return 0;
 }
 
-static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
+static mi_response_t *mi_reg_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
 	int i;
 	int err = 0;
-
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL) return NULL;
 
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
@@ -890,7 +911,6 @@ static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
 	/* Load registrants into the secondary list */
 	if(load_reg_info_from_db(1) !=0){
 		LM_ERR("unable to reload the registrant data\n");
-		free_mi_tree(rpl_tree);
 		goto error;
 	}
 	/* Swap the lists: secondary will become primary */
@@ -905,7 +925,7 @@ static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
 		lock_release(&reg_htable[i].lock);
 	}
 
-	return rpl_tree;
+	return init_mi_result_ok();
 
 error:
 	for(i=0; i<reg_hsize; i++) {
