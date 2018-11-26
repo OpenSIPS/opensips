@@ -90,6 +90,7 @@
 #include <grp.h>
 #include <signal.h>
 #include <time.h>
+#include <locale.h>
 
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -908,6 +909,11 @@ int main(int argc, char** argv)
 		goto error00;
 
 	init_route_lists();
+
+	/* we want to be sure that from now on, all the floating numbers are 
+	 * using the dot as separator. This is a real issue when printing the
+	 * floats for SQL ops, where the dot must be used */
+	setlocale( LC_NUMERIC, "POSIX");
 
 	/* process command line (get port no, cfg. file path etc) */
 	/* first reset getopt */
