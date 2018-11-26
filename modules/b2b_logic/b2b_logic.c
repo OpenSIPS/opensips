@@ -1403,6 +1403,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 	bridging_entity->state = 0;
+	bridging_entity->sdp_type = B2BL_SDP_LATE;
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(bridging_entity);
