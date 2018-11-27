@@ -1449,16 +1449,16 @@ static inline int internal_mi_print_b2bl_entity_id(mi_item_t *item, b2bl_entity_
 			c->key.s, c->key.len) < 0)
 			goto error;
 
-	if (add_mi_int(item, MI_SSTR("disconnected"),
+	if (add_mi_number(item, MI_SSTR("disconnected"),
 		c->disconnected) < 0)
 		goto error;
-	if (add_mi_int(item, MI_SSTR("state"),
+	if (add_mi_number(item, MI_SSTR("state"),
 		c->state) < 0)
 		goto error;
-	if (add_mi_int(item, MI_SSTR("no"),
+	if (add_mi_number(item, MI_SSTR("no"),
 		c->no) < 0)
 		goto error;
-	if (add_mi_int(item, MI_SSTR("type"),
+	if (add_mi_number(item, MI_SSTR("type"),
 		c->type) < 0)
 		goto error;
 
@@ -1525,18 +1525,18 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 			if (!tuple_item)
 				goto error;
 
-			if (add_mi_int(tuple_item, MI_SSTR("id"), tuple->id) < 0)
+			if (add_mi_number(tuple_item, MI_SSTR("id"), tuple->id) < 0)
 				goto error;
 			if (add_mi_string(tuple_item, MI_SSTR("key"),
 				tuple->key->s, tuple->key->len) < 0)
 				goto error;
-			if (add_mi_int(tuple_item, MI_SSTR("scenario_state"),
+			if (add_mi_number(tuple_item, MI_SSTR("scenario_state"),
 				tuple->scenario_state) < 0)
 				goto error;
-			if (add_mi_int(tuple_item, MI_SSTR("lifetime"),
+			if (add_mi_number(tuple_item, MI_SSTR("lifetime"),
 				tuple->lifetime) < 0)
 				goto error;
-			if (add_mi_int(tuple_item, MI_SSTR("db_flag"),
+			if (add_mi_number(tuple_item, MI_SSTR("db_flag"),
 				tuple->db_flag) < 0)
 				goto error;
 
@@ -1544,7 +1544,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 				if (add_mi_string(tuple_item, MI_SSTR("scenario"),
 					tuple->scenario->id.s, tuple->scenario->id.len) < 0)
 					goto error;
-				if (add_mi_int(tuple_item, MI_SSTR("next_scenario_state"),
+				if (add_mi_number(tuple_item, MI_SSTR("next_scenario_state"),
 					tuple->next_scenario_state) < 0)
 					goto error;
 			}
@@ -1560,7 +1560,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 					if (!server_item)
 						goto error;
 
-					if (add_mi_int(server_item, MI_SSTR("index"), index) < 0)
+					if (add_mi_number(server_item, MI_SSTR("index"), index) < 0)
 						goto error;
 					if (internal_mi_print_b2bl_entity_id(server_item,
 							tuple->servers[index])!=0)
@@ -1579,7 +1579,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 					if (!clients_item)
 						goto error;
 
-					if (add_mi_int(server_item, MI_SSTR("index"), index) < 0)
+					if (add_mi_number(server_item, MI_SSTR("index"), index) < 0)
 						goto error;
 					if (internal_mi_print_b2bl_entity_id(clients_item,
 							tuple->clients[index])!=0)
@@ -1598,7 +1598,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 					if (!b_entities_item)
 						goto error;
 
-					if (add_mi_int(b_entities_item, MI_SSTR("index"), index) < 0)
+					if (add_mi_number(b_entities_item, MI_SSTR("index"), index) < 0)
 						goto error;
 					if (internal_mi_print_b2bl_entity_id(b_entities_item,
 							tuple->bridge_entities[index])!=0)

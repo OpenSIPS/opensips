@@ -34,7 +34,7 @@
 
 int param_err_type = -2;
 
-static mi_response_t *_init_mi_result(mi_item_t **item_out, int type, int ival,
+static mi_response_t *_init_mi_result(mi_item_t **item_out, int type, int dval,
 										const char *sval, int sval_len)
 {
 	mi_response_t *res = NULL;
@@ -62,7 +62,7 @@ static mi_response_t *_init_mi_result(mi_item_t **item_out, int type, int ival,
 		*item_out = cJSON_CreateStr(sval, sval_len);
 		break;
 	case cJSON_Number:
-		*item_out = cJSON_CreateNumber(ival);
+		*item_out = cJSON_CreateNumber(dval);
 		break;
 	case cJSON_True:
 		*item_out = cJSON_CreateTrue();
@@ -111,7 +111,7 @@ mi_response_t *init_mi_result_string(const char *value, int value_len)
 	return _init_mi_result(&item, cJSON_String, 0, value, value_len);
 }
 
-mi_response_t *init_mi_result_int(int value)
+mi_response_t *init_mi_result_number(double value)
 {
 	mi_item_t *item;
 
@@ -193,7 +193,7 @@ void free_mi_response(mi_response_t *response)
 }
 
 static mi_item_t *_add_mi_item(mi_item_t *to, char *name, int name_len,
-							int type, int ival, const char *sval, int sval_len)
+							int type, int dval, const char *sval, int sval_len)
 {
 	mi_item_t *item = NULL;
 	str name_str;
@@ -211,7 +211,7 @@ static mi_item_t *_add_mi_item(mi_item_t *to, char *name, int name_len,
 		item = cJSON_CreateStr(sval, sval_len);
 		break;
 	case cJSON_Number:
-		item = cJSON_CreateNumber(ival);
+		item = cJSON_CreateNumber(dval);
 		break;
 	case cJSON_True:
 		item = cJSON_CreateTrue();
@@ -278,7 +278,7 @@ int add_mi_string_fmt(mi_item_t *to, char *name, int name_len,
 		0 : -1;
 }
 
-int add_mi_int(mi_item_t *to, char *name, int name_len, int value)
+int add_mi_number(mi_item_t *to, char *name, int name_len, double value)
 {
 	return _add_mi_item(to, name, name_len, cJSON_Number, value, NULL, 0) ?
 		0 : -1;

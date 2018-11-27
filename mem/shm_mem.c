@@ -456,7 +456,7 @@ mi_response_t *mi_shm_check(const mi_params_t *params,
 	if (!resp)
 		return NULL;
 
-	if (add_mi_int(resp, MI_SSTR("total_fragments"), ret) < 0) {
+	if (add_mi_number(resp, MI_SSTR("total_fragments"), ret) < 0) {
 		LM_ERR("failed to add MI item\n");
 		free_mi_response(resp);
 		return NULL;

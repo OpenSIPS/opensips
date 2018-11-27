@@ -424,7 +424,7 @@ int add_id_to_response(mi_item_t *id, mi_response_t *resp)
 
 	switch ((id->type) & 0xFF) {
 		case cJSON_Number:
-			if (add_mi_int(resp, MI_SSTR(JSONRPC_ID_S), id->valueint) < 0) {
+			if (add_mi_number(resp, MI_SSTR(JSONRPC_ID_S), id->valueint) < 0) {
 				LM_ERR("Failed to add int value to MI item\n");
 				return -1;
 			}

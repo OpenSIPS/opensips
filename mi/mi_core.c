@@ -234,10 +234,10 @@ static mi_response_t *mi_ps(const mi_params_t *params,
 		if (!proc_item)
 			goto error;
 
-		if (add_mi_int(proc_item, MI_SSTR("ID"), i) < 0)
+		if (add_mi_number(proc_item, MI_SSTR("ID"), i) < 0)
 			goto error;
 
-		if (add_mi_int(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
+		if (add_mi_number(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
 			goto error;
 
 		if (add_mi_string(proc_item, MI_SSTR("Type"),
@@ -278,10 +278,10 @@ mi_response_t *mi_log_level(const mi_params_t *params, pid_t pid)
 		return 0;
 
 	if (pid) {
-		if (add_mi_int(resp_obj, MI_SSTR("Log level"), new_level) < 0)
+		if (add_mi_number(resp_obj, MI_SSTR("Log level"), new_level) < 0)
 			goto error;
 	} else {
-		if (add_mi_int(resp_obj, MI_SSTR("New global log level"), new_level) < 0)
+		if (add_mi_number(resp_obj, MI_SSTR("New global log level"), new_level) < 0)
 			goto error;
 	}
 
@@ -329,10 +329,10 @@ static mi_response_t *w_log_level(const mi_params_t *params,
 		if (!proc_item)
 			goto error;
 
-		if (add_mi_int(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
+		if (add_mi_number(proc_item, MI_SSTR("PID"), pt[i].pid) < 0)
 			goto error;
 
-		if (add_mi_int(proc_item, MI_SSTR("Log level"), pt[i].log_level) < 0)
+		if (add_mi_number(proc_item, MI_SSTR("Log level"), pt[i].log_level) < 0)
 			goto error;
 
 		if (add_mi_string(proc_item, MI_SSTR("Type"),

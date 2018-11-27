@@ -505,7 +505,7 @@ mi_response_t *mi_events_list(const mi_params_t *params,
 			events[i].name.s, events[i].name.len) < 0)
 			goto error;
 
-		if (add_mi_int(event_item, MI_SSTR("id"), events[i].id) < 0)
+		if (add_mi_number(event_item, MI_SSTR("id"), events[i].id) < 0)
 			goto error;
 	}
 
@@ -544,7 +544,7 @@ static int evi_print_subscriber(mi_item_t *subs_obj, evi_subs_p subs)
 		return -1;
 
 	if (sock->flags & EVI_EXPIRE) {
-		if (add_mi_int(subs_obj, MI_SSTR("expire"), sock->expire) < 0)
+		if (add_mi_number(subs_obj, MI_SSTR("expire"), sock->expire) < 0)
 			return -1;
 	} else {
 		if (add_mi_string(subs_obj, MI_SSTR("expire"), MI_SSTR("never")) < 0)
@@ -566,7 +566,7 @@ static int evi_print_event(mi_item_t *ev_obj, evi_event_t *ev, evi_subs_p subs)
 	if (add_mi_string(ev_obj, MI_SSTR("name"), ev->name.s, ev->name.len) < 0)
 		goto error;
 
-	if (add_mi_int(ev_obj, MI_SSTR("id"), ev->id) < 0)
+	if (add_mi_number(ev_obj, MI_SSTR("id"), ev->id) < 0)
 		goto error;
 
 	if (subs) {

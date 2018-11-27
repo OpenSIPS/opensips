@@ -80,9 +80,9 @@ mi_response_t *init_mi_result_string(const char *value, int value_len);
 #define init_mi_result_ok() init_mi_result_string(MI_SSTR(MI_OK_S))
 
 /* Initializes a successful MI Response
- * with the provided integer.
+ * with the provided double (as a 'number' json type).
  */
-mi_response_t *init_mi_result_int(int value);
+mi_response_t *init_mi_result_number(double value);
 
 /* Initializes a successful MI Response
  * with the provided boolean value.
@@ -135,10 +135,10 @@ int add_mi_string(mi_item_t *to, char *name, int name_len,
 int add_mi_string_fmt(mi_item_t *to, char *name, int name_len,
 						char *fmt_val, ...);
 
-/* Appends an integer to an array or to an object at the given name.
- * When appending to an array, @name and @name_len are ignored.
+/* Appends a double (as a 'number' json type) to an array or to an object at
+ * the given name. When appending to an array, @name and @name_len are ignored.
  */
-int add_mi_int(mi_item_t *to, char *name, int name_len, int value);
+int add_mi_number(mi_item_t *to, char *name, int name_len, double value);
 
 /* Appends a boolean to an array or to an object at the given name.
  * When appending to an array, @name and @name_len are ignored.

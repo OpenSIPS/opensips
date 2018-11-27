@@ -754,7 +754,7 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 		rec->td.rem_uri.s, rec->td.rem_uri.len) < 0)
 		goto error;
 
-	if (add_mi_int(record_item, MI_SSTR("expires"), rec->expires) < 0)
+	if (add_mi_number(record_item, MI_SSTR("expires"), rec->expires) < 0)
 		goto error;
 
 	if (add_mi_string(record_item, MI_SSTR("state"),
@@ -811,7 +811,7 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 		if (add_mi_string(record_item, MI_SSTR("dst_IP"), "Error", 5) < 0)
 			goto error;
 
-		if (add_mi_int(record_item, MI_SSTR("sa_family"),
+		if (add_mi_number(record_item, MI_SSTR("sa_family"),
 			rec->td.forced_to_su.s.sa_family) < 0)
 			goto error;
 	}

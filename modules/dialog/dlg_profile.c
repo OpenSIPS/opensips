@@ -1162,7 +1162,7 @@ mi_response_t *mi_get_profile(const mi_params_t *params, str *value)
 			goto error;
 	}
 
-	if (add_mi_int(profile_obj, MI_SSTR("count"), size) < 0)
+	if (add_mi_number(profile_obj, MI_SSTR("count"), size) < 0)
 		goto error;
 
 	if (profile->repl_type == REPL_CACHEDB) {
@@ -1215,7 +1215,7 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 
 	if (add_mi_string(val_item, MI_SSTR("value"), key.s , key.len) < 0)
 		return -1;
-	if (add_mi_int(val_item, MI_SSTR("count"), prof_val_get_count(&val, 0)) < 0)
+	if (add_mi_number(val_item, MI_SSTR("count"), prof_val_get_count(&val, 0)) < 0)
 		return -1;
 
 	return 0;
@@ -1231,7 +1231,7 @@ static inline int add_counter_no_val_to_rpl(void * param, int counter)
 
 	if (add_mi_null(val_item, MI_SSTR("value")) < 0)
 		return -1;
-	if (add_mi_int(val_item, MI_SSTR("count"), counter) < 0)
+	if (add_mi_number(val_item, MI_SSTR("count"), counter) < 0)
 		return -1;
 
 	return 0;

@@ -1167,23 +1167,23 @@ static mi_response_t *mi_cc_list_flows(const mi_params_t *params,
 			flow->id.s, flow->id.len) < 0)
 			goto error;
 
-		if (add_mi_int(flow_item, MI_SSTR("Avg Call Duration"),
+		if (add_mi_number(flow_item, MI_SSTR("Avg Call Duration"),
 			flow->avg_call_duration) < 0)
 			goto error;
 
-		if (add_mi_int(flow_item, MI_SSTR("Processed Calls"),
+		if (add_mi_number(flow_item, MI_SSTR("Processed Calls"),
 			flow->processed_calls) < 0)
 			goto error;
 
-		if (add_mi_int(flow_item, MI_SSTR("Logged Agents"),
+		if (add_mi_number(flow_item, MI_SSTR("Logged Agents"),
 			flow->logged_agents) < 0)
 			goto error;
 
-		if (add_mi_int(flow_item, MI_SSTR("Ongoing Calls"),
+		if (add_mi_number(flow_item, MI_SSTR("Ongoing Calls"),
 			flow->ongoing_calls) < 0)
 			goto error;
 
-		if (add_mi_int(flow_item, MI_SSTR("Ref Calls"),
+		if (add_mi_number(flow_item, MI_SSTR("Ref Calls"),
 			flow->ref_cnt) < 0)
 			goto error;
 	}
@@ -1234,7 +1234,7 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 				agent->id.s, agent->id.len) < 0)
 				goto error;
 
-			if (add_mi_int(agent_item, MI_SSTR("Ref"),
+			if (add_mi_number(agent_item, MI_SSTR("Ref"),
 				agent->ref_cnt) < 0)
 				goto error;
 
@@ -1305,7 +1305,7 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 			call->b2bua_id.s, call->b2bua_id.len) < 0)
 			goto error;
 
-		if (add_mi_int(call_item, MI_SSTR("Ref"),
+		if (add_mi_number(call_item, MI_SSTR("Ref"),
 			call->ref_cnt) < 0)
 			goto error;
 
@@ -1321,7 +1321,7 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 		LM_DBG("call->recv_time= %d, ticks= %d\n", call->recv_time, get_ticks());
 		if(call->state != CC_CALL_ENDED)
 		{
-			if (add_mi_int(call_item, MI_SSTR("Call Time"),
+			if (add_mi_number(call_item, MI_SSTR("Call Time"),
 				(unsigned long)(call->recv_time?(get_ticks() - call->recv_time):0)) < 0)
 				goto error;
 
@@ -1483,14 +1483,14 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 		if (!call_item)
 			goto error;
 
-		if (add_mi_int(call_item, MI_SSTR("index"), n) < 0)
+		if (add_mi_number(call_item, MI_SSTR("index"), n) < 0)
 			goto error;
 
-		if (add_mi_int(call_item, MI_SSTR("Waiting for"),
+		if (add_mi_number(call_item, MI_SSTR("Waiting for"),
 			now-call->last_start) < 0)
 			goto error;
 
-		if (add_mi_int(call_item, MI_SSTR("ETW"), call->eta) < 0)
+		if (add_mi_number(call_item, MI_SSTR("ETW"), call->eta) < 0)
 			goto error;
 
 		/* flow data */
@@ -1498,7 +1498,7 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 			call->flow->id.s, call->flow->id.len) < 0)
 			goto error;
 
-		if (add_mi_int(call_item, MI_SSTR("Priority"), call->flow->priority) < 0)
+		if (add_mi_number(call_item, MI_SSTR("Priority"), call->flow->priority) < 0)
 			goto error;
 
 		s = get_skill_by_id(data,call->flow->skill);

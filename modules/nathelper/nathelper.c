@@ -404,7 +404,7 @@ static mi_response_t *mi_enable_natping(const mi_params_t *params,
 	if (natping_state==NULL)
 		return init_mi_error(400, MI_SSTR(MI_PING_DISABLED));
 
-	if (add_mi_int(resp_obj, MI_SSTR("Status"), *natping_state) < 0) {
+	if (add_mi_number(resp_obj, MI_SSTR("Status"), *natping_state) < 0) {
 		free_mi_response(resp);
 		return NULL;
 	}

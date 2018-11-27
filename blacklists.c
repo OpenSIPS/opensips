@@ -674,9 +674,9 @@ static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 			blst_heads[i].name.s, blst_heads[i].name.len) < 0)
 			goto error;
 
-		if (add_mi_int(list_item, MI_SSTR("owner"), blst_heads[i].owner) < 0)
+		if (add_mi_number(list_item, MI_SSTR("owner"), blst_heads[i].owner) < 0)
 			goto error;
-		if (add_mi_int(list_item, MI_SSTR("flags"), blst_heads[i].flags) < 0)
+		if (add_mi_number(list_item, MI_SSTR("flags"), blst_heads[i].flags) < 0)
 			goto error;
 
 		rules_arr = add_mi_array(list_item, MI_SSTR("Rules"));
@@ -688,7 +688,7 @@ static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 			if (!rule_item)
 				goto error;
 
-			if (add_mi_int(rule_item, MI_SSTR("flags"), blr->flags) < 0)
+			if (add_mi_number(rule_item, MI_SSTR("flags"), blr->flags) < 0)
 				goto error;
 
 			p = ip_addr2a(&blr->ip_net.ip);
@@ -701,10 +701,10 @@ static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 			if (add_mi_string(rule_item, MI_SSTR("Mask"), p, len) < 0)
 				goto error;
 
-			if (add_mi_int(rule_item, MI_SSTR("Proto"), blr->proto) < 0)
+			if (add_mi_number(rule_item, MI_SSTR("Proto"), blr->proto) < 0)
 				goto error;
 
-			if (add_mi_int(rule_item, MI_SSTR("Port"), blr->port) < 0)
+			if (add_mi_number(rule_item, MI_SSTR("Port"), blr->port) < 0)
 				goto error;
 
 			if (blr->body.s) {
@@ -715,7 +715,7 @@ static mi_response_t *mi_print_blacklists(const mi_params_t *params,
 			}
 
 			if (blst_heads[i].flags&BL_DO_EXPIRE) {
-				if (add_mi_int(rule_item, MI_SSTR("Expire"), blr->expire_end) < 0)
+				if (add_mi_number(rule_item, MI_SSTR("Expire"), blr->expire_end) < 0)
 					goto error;
 			}
 		}

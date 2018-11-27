@@ -1162,13 +1162,13 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 	if (add_mi_string_fmt(dialog_obj, MI_SSTR("ID"), "%llu",
 		(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
 		goto error;
-	if (add_mi_int(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
+	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
-	if (add_mi_int(dialog_obj, MI_SSTR("user_flags"), dlg->user_flags) < 0)
+	if (add_mi_number(dialog_obj, MI_SSTR("user_flags"), dlg->user_flags) < 0)
 		goto error;
 
 	_ts = (time_t)dlg->start_ts;
-	if (add_mi_int(dialog_obj, MI_SSTR("timestart"), _ts) < 0)
+	if (add_mi_number(dialog_obj, MI_SSTR("timestart"), _ts) < 0)
 		goto error;
 	if (_ts) {
 		t = localtime(&_ts);
@@ -1182,7 +1182,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 
 	_ts = (time_t)(dlg->tl.timeout?((unsigned int)time(0) +
                 dlg->tl.timeout - get_ticks()):0);
-	if (add_mi_int(dialog_obj, MI_SSTR("timeout"), _ts) < 0)
+	if (add_mi_number(dialog_obj, MI_SSTR("timeout"), _ts) < 0)
 		goto error;
 	if (_ts) {
 		t = localtime(&_ts);
@@ -1369,7 +1369,7 @@ static mi_response_t *internal_mi_print_dlgs(int with_context,
 	total = 0;
 	if (cnt) {
 		for(i=0;i<d_table->size ; total+=d_table->entries[i++].cnt );
-		if (add_mi_int(resp_obj, MI_SSTR("count"), total) < 0)
+		if (add_mi_number(resp_obj, MI_SSTR("count"), total) < 0)
 			goto error;
 	}
 

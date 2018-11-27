@@ -1588,7 +1588,7 @@ mi_response_t *mi_list_sharing_tags(const mi_params_t *params,
 		if (add_mi_string(tag_item, MI_SSTR("Tag"),
 			tag->name.s, tag->name.len) < 0)
 			goto error;
-		if (add_mi_int(tag_item, MI_SSTR("State"), tag->state) < 0)
+		if (add_mi_number(tag_item, MI_SSTR("State"), tag->state) < 0)
 			goto error;
     }
     lock_stop_read(shtags_lock);

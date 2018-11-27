@@ -1976,7 +1976,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 					goto error;
 
 				/* add ID */
-				if (add_mi_int(conn_item, MI_SSTR("ID"), conn->id) < 0)
+				if (add_mi_number(conn_item, MI_SSTR("ID"), conn->id) < 0)
 					goto error;
 
 				/* add type/proto */
@@ -1986,7 +1986,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 					goto error;
 
 				/* add state */
-				if (add_mi_int(conn_item, MI_SSTR("State"), conn->state) < 0)
+				if (add_mi_number(conn_item, MI_SSTR("State"), conn->state) < 0)
 					goto error;
 
 				/* add Source */
@@ -2008,7 +2008,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 						date_buf, date_buf_len) < 0)
 						goto error;
 				} else {
-					if (add_mi_int(conn_item, MI_SSTR("Lifetime"), _ts) < 0)
+					if (add_mi_number(conn_item, MI_SSTR("Lifetime"), _ts) < 0)
 						goto error;
 				}
 			}
