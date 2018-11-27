@@ -943,6 +943,7 @@ again:
 
 	switch (type) {
 		case TM_CB:
+			shm_free(*buf_p);
 			*buf_p = shm_malloc(new_buf.len);
 			if (*buf_p == NULL) {
 				LM_ERR("no more sh mem\n");
@@ -950,6 +951,7 @@ again:
 			}
 			break;
 		case PROCESSING_CB:
+			pkg_free(*buf_p);
 			*buf_p = pkg_malloc(new_buf.len);
 			if (*buf_p == NULL) {
 				LM_ERR("no more pkg mem\n");
@@ -1650,6 +1652,7 @@ only_body:
 			}
 			break;
 		case PROCESSING_CB:
+			pkg_free(*buf_p);
 			*buf_p = pkg_malloc(buf2send.len+1);
 			if (*buf_p == NULL) {
 				LM_ERR("no more pkg mem\n");
