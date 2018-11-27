@@ -574,7 +574,7 @@ static int parse_domain_address(char *val, unsigned int len, struct ip_addr **ip
 
 	/* get the IP */
 	s.s = p;
-	if ((p = q_memchr(p, ':', len)) == NULL) {
+	if ((p = q_memrchr(p, ':', len)) == NULL) {
 		LM_ERR("TLS domain address has to be in [IP:port] format\n");
 		goto parse_err;
 	}
