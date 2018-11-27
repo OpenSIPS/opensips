@@ -795,6 +795,8 @@ static inline int cgrates_process_req(struct cgr_conn *c, json_object *id,
 	if (strcmp(method, "SMGClientV1.DisconnectSession") == 0 ||
 			strcmp(method, "SessionSv1.DisconnectSession") == 0) {
 		ret = cgr_acc_terminate(param, &jret);
+	} else if (strcmp(method, "SessionSv1.GetActiveSessionIDs") == 0) {
+		ret = cgr_acc_sessions(param, &jret);
 	} else {
 		LM_ERR("cannot handle method %s\n", method);
 		ret = -1;
@@ -934,8 +936,11 @@ void cgr_free_sess(struct cgr_session *s)
 	struct list_head *l;
 	struct list_head *t;
 
-	if (s->acc_info)
+	if (s->acc_info) {
+		if (s->acc_info->originid.s)
+			shm_free(s->acc_info->originid.s);
 		shm_free(s->acc_info);
+	}
 	list_for_each_safe(l, t, &s->event_kvs)
 		cgr_free_kv(list_entry(l, struct cgr_kv, list));
 	list_for_each_safe(l, t, &s->req_kvs)

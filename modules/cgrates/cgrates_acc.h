@@ -44,6 +44,7 @@ struct cgr_acc_sess {
 
 	branch_bm_t branch_mask;
 	unsigned flags;
+	str originid;
 	str acc;
 	str dst;
 	time_t start_time;
@@ -62,13 +63,18 @@ struct cgr_acc_ctx {
 
 	/* variables */
 	struct list_head *sessions;
+
+	/* link to all contexts */
+	struct list_head link;
 };
 
+int cgr_acc_init(void);
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void);
 void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who);
 void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);
 int cgr_acc_terminate(json_object *param, json_object **ret);
+int cgr_acc_sessions(json_object *param, json_object **ret);
 
 #define CGRF_DO_CDR		(1<<0)
 #define CGRF_DO_MISSED	(1<<1)

@@ -265,6 +265,9 @@ static int mod_init(void)
 		}
 	}
 
+	if (cgr_acc_init() < 0)
+		return -2;
+
 	if (cgre_bind_ip.s)
 		cgre_bind_ip.len = strlen(cgre_bind_ip.s);
 
