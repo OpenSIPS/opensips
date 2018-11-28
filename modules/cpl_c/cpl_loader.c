@@ -193,143 +193,126 @@ again:
 
 /**************************** MI ****************************/
 #define FILE_LOAD_ERR_S   "Cannot read CPL file"
-#define FILE_LOAD_ERR_LEN (sizeof(FILE_LOAD_ERR_S)-1)
 #define DB_SAVE_ERR_S     "Cannot save CPL to database"
-#define DB_SAVE_ERR_LEN   (sizeof(DB_SAVE_ERR_S)-1)
 #define CPLFILE_ERR_S     "Bad CPL file"
-#define CPLFILE_ERR_LEN   (sizeof(CPLFILE_ERR_S)-1)
 #define USRHOST_ERR_S     "Bad user@host"
-#define USRHOST_ERR_LEN   (sizeof(USRHOST_ERR_S)-1)
 #define DB_RMV_ERR_S      "Database remove failed"
 #define DB_RMV_ERR_LEN    (sizeof(DB_RMV_ERR_S)-1)
 #define DB_GET_ERR_S      "Database query failed"
-#define DB_GET_ERR_LEN    (sizeof(DB_GET_ERR_S)-1)
 
-struct mi_root* mi_cpl_load(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_cpl_load(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *cmd;
 	struct sip_uri uri;
 	str xml = {0,0};
 	str bin = {0,0};
 	str enc_log = {0,0};
-	str val;
 	char *file;
+	str username, cpl_file;
+	mi_response_t *resp;
 
 	LM_DBG("\"LOAD_CPL\" MI command received!\n");
-	cmd = &cmd_tree->node;
 
-	/* check user+host */
-	if((cmd->kids==NULL) ||(cmd->kids->next==NULL) || (cmd->kids->next->next))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "username", &username.s, &username.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "cpl_filename", &cpl_file.s, &cpl_file.len) < 0)
+		return init_mi_param_error();
 
-	val = cmd->kids->value;
-	if (parse_uri( val.s, val.len, &uri)!=0){
+	if (parse_uri( username.s, username.len, &uri)!=0){
 		LM_ERR("invalid sip URI [%.*s]\n",
-			val.len, val.s);
-		return init_mi_tree( 400, USRHOST_ERR_S, USRHOST_ERR_LEN );
+			username.len, username.s);
+		return init_mi_error(400, MI_SSTR(USRHOST_ERR_S));
 	}
 	LM_DBG("user@host=%.*s@%.*s\n",
 		uri.user.len,uri.user.s,uri.host.len,uri.host.s);
 
 	/* second argument is the cpl file */
-	val = cmd->kids->next->value;
-	file = pkg_malloc(val.len+1);
+	file = pkg_malloc(cpl_file.len+1);
 	if (file==NULL) {
 		LM_ERR("no more pkg mem\n");
 		return 0;
 	}
-	memcpy( file, val.s, val.len);
-	file[val.len]= '\0';
+	memcpy( file, cpl_file.s, cpl_file.len);
+	file[cpl_file.len]= '\0';
 
 	/* load the xml file - this function will allocated a buff for the loading
 	 * the cpl file and attach it to xml.s -> don't forget to free it! */
 	if (load_file( file, &xml)!=1) {
 		pkg_free(file);
-		return init_mi_tree( 500, FILE_LOAD_ERR_S, FILE_LOAD_ERR_LEN );
+		return init_mi_error(500, MI_SSTR(FILE_LOAD_ERR_S));
 	}
 	LM_DBG("cpl file=%s loaded\n",file);
 	pkg_free(file);
 
 	/* get the binary coding for the XML file */
 	if (encodeCPL( &xml, &bin, &enc_log)!=1) {
-		rpl_tree = init_mi_tree( 500, CPLFILE_ERR_S, CPLFILE_ERR_LEN );
+		resp = init_mi_error_extra(500, MI_SSTR(CPLFILE_ERR_S),
+						enc_log.s, enc_log.len);
 		goto error;
 	}
 
 	/* write both the XML and binary formats into database */
 	if (write_to_db( &uri.user,cpl_env.use_domain?&uri.host:0, &xml, &bin)!=1){
-		rpl_tree = init_mi_tree( 500, DB_SAVE_ERR_S, DB_SAVE_ERR_LEN );
+		resp = init_mi_error(500, MI_SSTR(DB_SAVE_ERR_S));
 		goto error;
 	}
 
 	/* everything was OK */
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 
 error:
-	if (rpl_tree && enc_log.len)
-		add_mi_node_child(&rpl_tree->node,MI_DUP_VALUE,"Log",3,enc_log.s,enc_log.len);
 	if (enc_log.s)
 		pkg_free ( enc_log.s );
 	if (xml.s)
 		pkg_free ( xml.s );
-	return rpl_tree;
+	return resp;
 }
 
 
-
-struct mi_root * mi_cpl_remove(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_cpl_remove(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *cmd;
 	struct sip_uri uri;
 	str user;
 
 	LM_DBG("\"REMOVE_CPL\" MI command received!\n");
-	cmd = &cmd_tree->node;
 
-	/* check if there is only one parameter*/
-	if(!(cmd->kids && cmd->kids->next== NULL))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	user = cmd->kids->value;
+	if (get_mi_string_param(params, "username", &user.s, &user.len) < 0)
+		return init_mi_param_error();
 
 	/* check user+host */
 	if (parse_uri( user.s, user.len, &uri)!=0){
 		LM_ERR("invalid SIP uri [%.*s]\n",
 			user.len,user.s);
-		return init_mi_tree( 400, USRHOST_ERR_S, USRHOST_ERR_LEN );
+		return init_mi_error(400, MI_SSTR(USRHOST_ERR_S));
 	}
 	LM_DBG("user@host=%.*s@%.*s\n",
 		uri.user.len,uri.user.s,uri.host.len,uri.host.s);
 
 	if (rmv_from_db( &uri.user, cpl_env.use_domain?&uri.host:0)!=1)
-		return init_mi_tree( 500, DB_RMV_ERR_S, DB_RMV_ERR_LEN );
+		return init_mi_error(500, MI_SSTR(DB_RMV_ERR_S));
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
 
-
-struct mi_root * mi_cpl_get(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_cpl_get(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *cmd;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	struct sip_uri uri;
-	struct mi_root* rpl_tree;
 	str script = {0,0};
 	str user;
 
-	cmd = &cmd_tree->node;
-
-	/* check if there is only one parameter*/
-	if(!(cmd->kids && cmd->kids->next== NULL))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "username", &user.s, &user.len) < 0)
+		return init_mi_param_error();
 
 	/* check user+host */
-	user = cmd->kids->value;
 	if (parse_uri( user.s, user.len, &uri)!=0) {
 		LM_ERR("invalid user@host [%.*s]\n",
 			user.len,user.s);
-		return init_mi_tree( 400, USRHOST_ERR_S, USRHOST_ERR_LEN );
+		return init_mi_error(400, MI_SSTR(USRHOST_ERR_S));
 	}
 	LM_DBG("user@host=%.*s@%.*s\n",
 		uri.user.len,uri.user.s,uri.host.len,uri.host.s);
@@ -338,16 +321,20 @@ struct mi_root * mi_cpl_get(struct mi_root *cmd_tree, void *param)
 	str query_str = str_init("cpl_xml");
 	if (get_user_script( &uri.user, cpl_env.use_domain?&uri.host:0,
 	&script, &query_str)==-1)
-		return init_mi_tree( 500, DB_GET_ERR_S, DB_GET_ERR_LEN );
+		return init_mi_error(500, MI_SSTR(DB_GET_ERR_S));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
 
 	/* write the response into response file - even if script is null */
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree!=NULL)
-		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, 0, 0,
-			script.s, script.len);
+	if (add_mi_string(resp_obj, MI_SSTR("script"), script.s, script.len) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	if (script.s)
 		shm_free( script.s );
 
-	return rpl_tree;
+	return resp;
 }

@@ -27,9 +27,12 @@
 #define _CPL_LOADER_H
 #include "../../mi/mi.h"
 
-struct mi_root *mi_cpl_load(struct mi_root *cmd, void *param);
-struct mi_root *mi_cpl_remove(struct mi_root *cmd, void *param);
-struct mi_root *mi_cpl_get(struct mi_root *cmd, void *param);
+mi_response_t *mi_cpl_load(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_cpl_remove(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_cpl_get(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif
 
