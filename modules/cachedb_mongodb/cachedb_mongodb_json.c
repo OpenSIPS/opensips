@@ -138,7 +138,7 @@ int json_to_bson(char *json, bson_t *doc)
 	LM_DBG("Trying to convert [%s]\n", json);
 
 	obj = json_tokener_parse(json);
-	if (is_error(obj)) {
+	if (!obj) {
 		LM_ERR("Failed to parse JSON: %s\n", json);
 		return -2;
 	}
