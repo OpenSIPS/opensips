@@ -109,9 +109,11 @@ static void mod_destroy(void);
 static int tls_get_handshake_timeout(void);
 static int tls_get_send_timeout(void);
 static int load_tls_mgm(struct tls_mgm_binds *binds);
-static struct mi_root* tls_reload(struct mi_root *cmd, void *param);
-static struct mi_root * tls_list(struct mi_root *root, void *param);
-static int list_domain(struct mi_node *root, struct tls_domain *d);
+static mi_response_t *tls_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *tls_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static int list_domain(mi_item_t *resp_obj, struct tls_domain *d);
 
 /* DB handler */
 static db_con_t *db_hdl = 0;
@@ -173,9 +175,15 @@ static cmd_export_t cmds[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ "tls_reload", "reloads stored data from the database", tls_reload, 0, 0, 0},
-	{ "tls_list", "lists all domains", tls_list, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{ "tls_reload", "reloads stored data from the database", 0, 0, {
+		{tls_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "tls_list", "lists all domains", 0, 0, {
+		{tls_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 /*
@@ -1624,19 +1632,20 @@ static int reload_data(void)
 }
 
 /* reloads data from the db */
-static struct mi_root* tls_reload(struct mi_root* root, void *param)
+static mi_response_t *tls_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	LM_INFO("reload data MI command received!\n");
 
 	if (!tls_db_url.s)
-		return init_mi_tree(500, "DB url not set", 14);
+		return init_mi_error(500, MI_SSTR("DB url not set"));
 
 	if (reload_data() < 0) {
 		LM_ERR("failed to load tls data\n");
-		return init_mi_tree(500, "Failed to reload", 16);
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
 #ifdef __OPENSSL_ON_EXIT
@@ -2032,159 +2041,160 @@ static int tls_get_send_timeout(void)
 }
 
 /* lists client or server domains*/
-static int list_domain(struct mi_node *root, struct tls_domain *d)
+static int list_domain(mi_item_t *resp_obj, struct tls_domain *d)
 {
-	struct mi_node *node = NULL;
-	struct mi_node *child, *child_f;
 	struct str_list *filt;
 
+	mi_item_t *domains_arr, *domain_item;
+	mi_item_t *addrf_arr, *domf_arr;
+
+	domains_arr = add_mi_array(resp_obj, MI_SSTR("Domains"));
+	if (!domains_arr)
+		goto error;
+
 	while (d) {
-		node = add_mi_node_child(root, MI_DUP_VALUE, "Domain", 6,
-			d->name.s, d->name.len);
-		if (node == NULL) goto error;
+		domain_item = add_mi_object(domains_arr, NULL, 0);
+		if (!domain_item)
+			goto error;
 
-		if (d->flags & DOM_FLAG_SRV)
-			child = add_mi_node_child(node, 0, "Type", 4, "TLS_DOMAIN_SRV", 14);
-		else
-			child = add_mi_node_child(node, 0, "Type", 4, "TLS_DOMAIN_CLI", 14);
-		if (child == NULL) goto error;
+		if (add_mi_string(domain_item, MI_SSTR("name"),
+			d->name.s, d->name.len) < 0)
+			goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE|MI_IS_ARRAY,
-			MI_SSTR("IP ADDRESS FILTERS"), 0, 0);
-		if (child == NULL) goto error;
+		if (d->flags & DOM_FLAG_SRV) {
+			if (add_mi_string(domain_item, MI_SSTR("type"),
+				MI_SSTR("TLS_DOMAIN_SRV")) < 0)
+				goto error;
+		} else
+			if (add_mi_string(domain_item, MI_SSTR("type"),
+				MI_SSTR("TLS_DOMAIN_CLI")) < 0)
+				goto error;
 
-		for (filt = d->match_addresses; filt; filt = filt->next) {
-			child_f = add_mi_node_child(child, MI_DUP_VALUE,
-				MI_SSTR("ADDRESS"), filt->s.s, filt->s.len);
-			if (!child_f) goto error;
-		}
+		addrf_arr = add_mi_array(domain_item, MI_SSTR("IP ADDRESS FILTERS"));
+		if (!addrf_arr)
+			goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE|MI_IS_ARRAY,
-			MI_SSTR("SIP DOMAIN FILTERS"), 0, 0);
-		if (child == NULL) goto error;
+		for (filt = d->match_addresses; filt; filt = filt->next)
+			if (add_mi_string(addrf_arr, 0, 0, filt->s.s, filt->s.len) < 0)
+				goto error;
 
-		for (filt = d->match_domains; filt; filt = filt->next) {
-			child_f = add_mi_node_child(child, MI_DUP_VALUE,
-				MI_SSTR("DOMAIN"), filt->s.s, filt->s.len);
-			if (!child_f) goto error;
-		}
+		domf_arr = add_mi_array(domain_item, MI_SSTR("SIP DOMAIN FILTERS"));
+		if (!domf_arr)
+			goto error;
+
+		for (filt = d->match_domains; filt; filt = filt->next)
+			if (add_mi_string(addrf_arr, 0, 0, filt->s.s, filt->s.len) < 0)
+				goto error;
 
 		switch (d->method) {
 		case TLS_USE_TLSv1_cli:
 		case TLS_USE_TLSv1_srv:
 		case TLS_USE_TLSv1:
-			child = add_mi_node_child(node, 0, "METHOD", 6, "TLSv1", 5);
+			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
+				MI_SSTR("TLSv1")) < 0)
+				goto error;
 			break;
 		case TLS_USE_SSLv23_cli:
 		case TLS_USE_SSLv23_srv:
 		case TLS_USE_SSLv23:
-			child = add_mi_node_child(node, 0, "METHOD", 6, "SSLv23", 6);
+			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
+				MI_SSTR("SSLv23")) < 0)
+				goto error;
 			break;
 		case TLS_USE_TLSv1_2_cli:
 		case TLS_USE_TLSv1_2_srv:
 		case TLS_USE_TLSv1_2:
-			child = add_mi_node_child(node, 0, "METHOD", 6, "TLSv1_2", 7);
+			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
+				MI_SSTR("TLSv1_2")) < 0)
+				goto error;
 			break;
 		default: goto error;
 		}
-		if (child == NULL) goto error;
 
-		if (d->verify_cert)
-			child = add_mi_node_child(node, 0, "VERIFY_CERT", 11, "yes", 3);
-		else
-			child = add_mi_node_child(node, 0, "VERIFY_CERT", 11, "no", 2);
-		if (child == NULL) goto error;
+		if (add_mi_bool(domain_item, MI_SSTR("VERIFY_CERT"), d->verify_cert) < 0)
+			goto error;
 
-		if (d->require_client_cert)
-			child = add_mi_node_child(node, 0, "REQ_CLI_CERT", 12, "yes", 3);
-		else
-			child = add_mi_node_child(node, 0, "REQ_CLI_CERT", 12, "no", 2);
-		if (child == NULL) goto error;
+		if (add_mi_bool(domain_item, MI_SSTR("REQ_CLI_CERT"), d->require_client_cert) < 0)
+			goto error;
 
-		if (d->crl_check_all)
-			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "yes", 3);
-		else
-			child = add_mi_node_child(node, 0, "CRL_CHECKALL", 12, "no", 2);
-		if (child == NULL) goto error;
+		if (add_mi_bool(domain_item, MI_SSTR("CRL_CHECKALL"), d->crl_check_all) < 0)
+			goto error;
 
-		if (!(d->flags & DOM_FLAG_DB)) {
-			child = add_mi_node_child(node, MI_DUP_VALUE, "CERT_FILE", 9,
-				d->cert.s, d->cert.len);
-			if (child == NULL) goto error;
-		}
+		if (!(d->flags & DOM_FLAG_DB))
+			if (add_mi_string(domain_item, MI_SSTR("CERT_FILE"),
+				d->cert.s, d->cert.len) < 0)
+				goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE, "CRL_DIR", 7,
-			d->crl_directory, len(d->crl_directory));
-		if (child == NULL) goto error;
+		if (add_mi_string(domain_item, MI_SSTR("CRL_DIR"),
+			d->crl_directory, len(d->crl_directory)) < 0)
+			goto error;
 
-		if (!(d->flags & DOM_FLAG_DB)) {
-			child = add_mi_node_child(node, MI_DUP_VALUE, "CA_FILE", 7,
-				d->ca.s, d->ca.len);
-			if (child == NULL) goto error;
-		}
-		child = add_mi_node_child(node, MI_DUP_VALUE, "CA_DIR", 6,
-			d->ca_directory, len(d->ca_directory));
-		if (child == NULL) goto error;
+		if (!(d->flags & DOM_FLAG_DB))
+			if (add_mi_string(domain_item, MI_SSTR("CA_FILE"),
+				d->ca.s, d->ca.len) < 0)
+				goto error;
 
-		if (!(d->flags & DOM_FLAG_DB)) {
-			child = add_mi_node_child(node, MI_DUP_VALUE, "PKEY_FILE", 9,
-				d->pkey.s, d->pkey.len);
+		if (add_mi_string(domain_item, MI_SSTR("CA_DIR"),
+			d->ca_directory, len(d->ca_directory)) < 0)
+			goto error;
 
-			if (child == NULL) goto error;
-		}
-		child = add_mi_node_child(node, MI_DUP_VALUE, "CIPHER_LIST", 11,
-			d->ciphers_list, len(d->ciphers_list));
+		if (!(d->flags & DOM_FLAG_DB))
+			if (add_mi_string(domain_item, MI_SSTR("PKEY_FILE"),
+				d->pkey.s, d->pkey.len) < 0)
+				goto error;
 
-		if (child == NULL) goto error;
+		if (add_mi_string(domain_item, MI_SSTR("CIPHER_LIST"),
+			d->ciphers_list, len(d->ciphers_list)) < 0)
+			goto error;
 
-		if (!(d->flags & DOM_FLAG_DB)) {
-			child = add_mi_node_child(node, MI_DUP_VALUE, "DH_PARAMS_FILE", 9,
-				d->dh_param.s, d->dh_param.len);
-		}
-		if (child == NULL) goto error;
+		if (!(d->flags & DOM_FLAG_DB))
+			if (add_mi_string(domain_item, MI_SSTR("DH_PARAMS_FILE"),
+				d->dh_param.s, d->dh_param.len) < 0)
+				goto error;
 
-		child = add_mi_node_child(node, MI_DUP_VALUE, "EC_CURVE", 8,
-			d->tls_ec_curve, len(d->tls_ec_curve));
+		if (add_mi_string(domain_item, MI_SSTR("EC_CURVE"),
+			d->tls_ec_curve, len(d->tls_ec_curve)) < 0)
+			goto error;
 
-		if (child == NULL) goto error;
 		d = d->next;
-
 	}
+
 	return 0;
+
 error:
+	LM_ERR("Failed to add mi item\n");
 	return -1;
 }
 
 /* lists all domains */
-static struct mi_root * tls_list(struct mi_root *cmd_tree, void *param)
+static mi_response_t *tls_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *root = NULL;
-	struct mi_root *rpl_tree = NULL;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree == NULL) {
-		return NULL;
-	}
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
 
 	if (dom_lock)
 		lock_start_read(dom_lock);
 
-	root = &rpl_tree->node;
-
-	if (list_domain(root, *tls_client_domains) < 0)
+	if (list_domain(resp_obj, *tls_client_domains) < 0)
 		goto error;
 
-	if (list_domain(root, *tls_server_domains) < 0)
+	if (list_domain(resp_obj, *tls_server_domains) < 0)
 		goto error;
 
 	if (dom_lock)
 		lock_stop_read(dom_lock);
 
-	return rpl_tree;
+	return resp;
+
 error:
 	if (dom_lock)
 		lock_stop_read(dom_lock);
-	if (rpl_tree) free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
