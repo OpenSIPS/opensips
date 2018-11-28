@@ -276,7 +276,10 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip);
 int sipcapture_db_init(const str* db_url);
 void sipcapture_db_close(void);
 
-static struct mi_root* sip_capture_mi(struct mi_root* cmd, void* param );
+static mi_response_t *sip_capture_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *sip_capture_mi_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static int db_sync_store(db_val_t* vals, db_key_t* keys, int num_keys);
 
 typedef int (*append_db_vals_f)(char *buf, int max_len, db_val_t* db_vals);
@@ -641,10 +644,14 @@ static param_export_t params[] = {
  * MI commands
  */
 static mi_export_t mi_cmds[] = {
-	{ "sip_capture", 0, sip_capture_mi,   0,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ "sip_capture", 0, 0, 0, {
+		{sip_capture_mi, {0}},
+		{sip_capture_mi_1, {"capture_mode", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 #ifdef STATISTICS
 stat_var* sipcapture_req;
@@ -5304,43 +5311,55 @@ static int w_report_capture(struct sip_msg* msg, char* table_p, char* cor_id_p,
  * name: sip_capture
  * attribute: name=none, value=[on|off]
  */
-static struct mi_root* sip_capture_mi(struct mi_root* cmd_tree, void* param )
+static mi_response_t *sip_capture_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 
-	struct mi_node *rpl;
-	struct mi_root *rpl_tree ;
+	if (capture_on_flag==NULL)
+		return init_mi_error(500, MI_SSTR("Internal error"));
 
-	node = cmd_tree->node.kids;
-	if(node == NULL) {
-		rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-		if (rpl_tree == 0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if ( *capture_on_flag ) {
+		if (add_mi_string(resp_obj, MI_SSTR("SIP capturing"), MI_SSTR("on")) < 0) {
+			free_mi_response(resp);
 			return 0;
-		rpl = &rpl_tree->node;
-
-		if (*capture_on_flag == 0 ) {
-			node = add_mi_node_child(rpl,0,0,0,MI_SSTR("off"));
-		} else if (*capture_on_flag == 1) {
-			node = add_mi_node_child(rpl,0,0,0,MI_SSTR("on"));
 		}
-		return rpl_tree ;
-	}
-	if(capture_on_flag==NULL)
-		return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
-
-	if ( node->value.len==2 && (node->value.s[0]=='o'
-				|| node->value.s[0]=='O') &&
-			(node->value.s[1]=='n'|| node->value.s[1]=='N')) {
-		*capture_on_flag = 1;
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
-	} else if ( node->value.len==3 && (node->value.s[0]=='o'
-				|| node->value.s[0]=='O')
-			&& (node->value.s[1]=='f'|| node->value.s[1]=='F')
-			&& (node->value.s[2]=='f'|| node->value.s[2]=='F')) {
-		*capture_on_flag = 0;
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
 	} else {
-		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+		if (add_mi_string(resp_obj, MI_SSTR("SIP capturing"), MI_SSTR("off")) < 0) {
+			free_mi_response(resp);
+			return 0;
+		}
+	}
+
+	return resp;
+}
+
+static mi_response_t *sip_capture_mi_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str new_mode;
+
+	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+		return init_mi_param_error();
+
+	if ( (new_mode.s[0] | 0x20) == 'o' &&
+			(new_mode.s[1] | 0x20) == 'n' ) {
+		*capture_on_flag = 1;
+		return init_mi_result_ok();
+	} else
+	if ( (new_mode.s[0] | 0x20) == 'o' &&
+			(new_mode.s[1] | 0x20) == 'f' &&
+			(new_mode.s[2] | 0x20) == 'f' ) {
+		*capture_on_flag = 0;
+		return init_mi_result_ok();
+	} else {
+		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+			MI_SSTR("trace_mode should be 'on' or 'off'"));
 	}
 }
 
