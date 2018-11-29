@@ -23,16 +23,10 @@
 #include "flatstore_mod.h"
 #include "flat_mi.h"
 
-
-struct mi_root*  mi_flat_rotate_cmd(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_flat_rotate_cmd(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if(rpl_tree == NULL)
-		return rpl_tree;
-
 	*flat_rotate = time(0);
 
-	return rpl_tree;
+	return init_mi_result_ok();
 }

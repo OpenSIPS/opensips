@@ -27,7 +27,8 @@
 
 #define MI_FLAT_ROTATE "flat_rotate"
 
-struct mi_root*  mi_flat_rotate_cmd(struct mi_root* cmd, void* param);
+mi_response_t *mi_flat_rotate_cmd(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif /* _FLATSTORE_MI_H_ */
 
