@@ -33,8 +33,10 @@
 #define MI_PIKE_LIST      "pike_list"
 #define MI_PIKE_RM        "pike_rm"
 
-struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param);
-struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param);
+mi_response_t *mi_pike_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pike_rm(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif
 
