@@ -467,7 +467,7 @@ static inline int get_resource_list(str *username, str *domain, str *filename, s
 		return -1;
 	}
 
-        if (xcapDbGetDoc(username, domain, RESOURCE_LISTS, filename, NULL, &doc, &etag) < 0)
+        if (xcapDbGetDoc(username, domain, RESOURCE_LISTS, filename, NULL, &doc, &etag) < 0 || doc == NULL)
         {
 		LM_DBG("No rl document found\n");
                 return -1;
