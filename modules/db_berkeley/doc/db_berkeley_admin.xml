@@ -143,7 +143,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>table/path</emphasis> - to reload a particular table 
+				<emphasis>table_path</emphasis> - to reload a particular table
 				provide the tablename as the arguement; to reload
 				all tables provide the db_path to the db files. The path can be found
 				in opensipsctlrc DB_PATH variable.

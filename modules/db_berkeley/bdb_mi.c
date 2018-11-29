@@ -35,27 +35,21 @@
  * MI function to reload db table or env
  * expects 1 node: the tablename or dbenv name to reload
  */
-struct mi_root* mi_bdb_reload(struct mi_root *cmd, void *param)
+mi_response_t *mi_bdb_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
-	str *db_path;
+	str db_path;
 
-	node = cmd->node.kids;
-	if (node && node->next)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "table_path", &db_path.s, &db_path.len) < 0)
+		return init_mi_param_error();
 
-	db_path = &node->value;
-
-	if (!db_path || db_path->len == 0)
-		return init_mi_tree( 400, "bdb_reload missing db arg", 21);
-
-	if (bdb_reload(db_path->s) == 0)
+	if (bdb_reload(db_path.s) == 0)
 	{
-		return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		return init_mi_result_ok();
 	}
 	else
 	{
-		return init_mi_tree( 500, "db_berkeley Reload Failed", 26);
+		return init_mi_error(500, MI_SSTR("db_berkeley Reload Failed"));
 	}
 }
 
