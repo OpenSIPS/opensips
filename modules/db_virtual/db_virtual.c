@@ -70,8 +70,12 @@ static void destroy(void);
 int db_virtual_bind_api(const str* mod, db_func_t *dbb);
 
 
-struct mi_root *db_get_info(struct mi_root *cmd, void *param);
-struct mi_root* db_set_info(struct mi_root* cmd, void* param);
+mi_response_t *db_get_info(const mi_params_t *params,
+                                struct mi_handler *async_hdl);
+mi_response_t *db_set_info_1(const mi_params_t *params,
+                                struct mi_handler *async_hdl);
+mi_response_t *db_set_info_2(const mi_params_t *params,
+                                struct mi_handler *async_hdl);
 //struct mi_root* db_add_url(struct mi_root* cmd, void* param);
 
 static int store_urls( modparam_t type, void* val);
@@ -99,10 +103,17 @@ static param_export_t params[] = {
  * MI
  */
 static mi_export_t mi_cmds[] = {
-        {"db_get",      0, db_get_info,       MI_NO_INPUT_FLAG,  0,  0 },
-        {"db_set",      0, db_set_info,       0,  0,  0 },
-        //{"db_add",      db_add_url,        0,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+    {"db_get", 0, 0, 0, {
+        {db_get_info, {0}},
+        {EMPTY_MI_RECIPE}}
+    },
+    {"db_set", 0, 0, 0, {
+        {db_set_info_1,   {"set_index", "db_url_index", "may_use_db_flag", 0}},
+        {db_set_info_2,   {"set_index", "db_url_index", "may_use_db_flag",
+                           "ingore_retries", 0}},
+        {EMPTY_MI_RECIPE}}
+    },
+    {EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -480,42 +491,37 @@ int db_virtual_bind_api(const str* mod, db_func_t *dbb)
     return 0;
 }
 
-struct mi_root *db_get_info(struct mi_root *cmd, void *param){
+mi_response_t *db_get_info(const mi_params_t *params,
+                                struct mi_handler *async_hdl)
+{
     int i,j;
-    struct mi_root *rpl_tree;
-    struct mi_node *rpl;
-    struct mi_node *node;
-    struct mi_node *node2;
-    struct mi_attr *attr;
-    char *p;
-    int len;
-
     int can_use;
     int may_use;
     int recon;
     char buf[MAX_BUF];
 
-    rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+    mi_response_t *resp;
+    mi_item_t *resp_obj;
+    mi_item_t *sets_arr, *set_item, *dbs_arr, *db_item;
 
-    if (rpl_tree==0)
-            return 0;
-    rpl = &rpl_tree->node;
-    rpl->flags |= MI_IS_ARRAY;
+    resp = init_mi_result_object(&resp_obj);
+    if (!resp)
+        return 0;
 
+    sets_arr = add_mi_array(resp_obj, MI_SSTR("SETS"));
+    if (!sets_arr)
+        goto error;
 
     for(i=0; i < global->size; i++ ){
-        node = add_mi_node_child(rpl, MI_IS_ARRAY, MI_SSTR("SET"), 0, 0 );
-        if (node==0)
+        set_item = add_mi_object(sets_arr, NULL, 0);
+        if (!set_item)
             goto error;
 
-        p = int2str((unsigned long)i, &len);
-        attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("i"), p, len);
-        if (attr==0)
+        if (add_mi_number(set_item, MI_SSTR("index"), i) < 0)
             goto error;
 
-        attr = add_mi_attr(node, 0, MI_SSTR("name"),
-	    global->set_list[i].set_name.s,global->set_list[i].set_name.len);
-        if (attr==0)
+        if (add_mi_string(set_item, MI_SSTR("name"),
+            global->set_list[i].set_name.s,global->set_list[i].set_name.len) < 0)
             goto error;
 
         switch(global->set_list[i].set_mode){
@@ -530,138 +536,72 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
                 break;
         }
 
-        attr = add_mi_attr(node, MI_DUP_VALUE, MI_SSTR("mode"),
-		buf,strlen(buf));
-        if (attr==0)
+        if (add_mi_string(set_item, MI_SSTR("mode"),
+            buf,strlen(buf)) < 0)
+            goto error;
+
+        dbs_arr = add_mi_array(resp_obj, MI_SSTR("DBS"));
+        if (!dbs_arr)
             goto error;
 
         for(j=0; j< global->set_list[i].size; j++){
-
-            node2 = add_mi_node_child(node, 0, MI_SSTR("DB"), 0, 0);
-            if(node2 == 0)
+            db_item = add_mi_object(dbs_arr, NULL, 0);
+            if (!db_item)
                 goto error;
 
-            p = int2str((unsigned long)j, &len);
-            attr = add_mi_attr(node2, MI_DUP_VALUE, MI_SSTR("j"), p, len);
-            if (attr==0)
-            goto error;
+            if (add_mi_number(set_item, MI_SSTR("index"), i) < 0)
+                goto error;
 
-            attr = add_mi_attr(node2, 0, MI_SSTR("name"),
-		global->set_list[i].db_list[j].db_url.s,
-		global->set_list[i].db_list[j].db_url.len);
-            if (attr==0)
+            if (add_mi_string(set_item, MI_SSTR("name"),
+                global->set_list[i].db_list[j].db_url.s,
+                global->set_list[i].db_list[j].db_url.len) < 0)
                 goto error;
 
             can_use = (global->set_list[i].db_list[j].flags & CAN_USE) ? 1 : 0;
             may_use = (global->set_list[i].db_list[j].flags & MAY_USE) ? 1 : 0;
             recon = (global->set_list[i].db_list[j].flags & RERECONNECT) ? 1 :0;
 
-            p = int2str((unsigned long)can_use, &len);
-            LM_DBG("can flag %.*s\n", len, p);
-            attr = add_mi_attr(node2, MI_DUP_VALUE, MI_SSTR("can"), p, len);
-            if (attr==0)
+            if (add_mi_number(set_item, MI_SSTR("can"), can_use) < 0)
                 goto error;
-
-            p = int2str((unsigned long)may_use, &len);
-            LM_DBG("may flag%.*s\n", len, p);
-            attr = add_mi_attr(node2, MI_DUP_VALUE, MI_SSTR("may"), p, len);
-            if (attr==0)
+            if (add_mi_number(set_item, MI_SSTR("may"), can_use) < 0)
                 goto error;
-
-            p = int2str((unsigned long)recon, &len);
-            LM_DBG("reset_recon flag %.*s\n", len, p);
-            attr = add_mi_attr(node2, MI_DUP_VALUE, MI_SSTR("r_rec"), p, len);
-            if (attr==0)
+            if (add_mi_number(set_item, MI_SSTR("r_rec"), can_use) < 0)
                 goto error;
         }
     }
 
-    return rpl_tree;
+    return resp;
 
 error:
-    LM_ERR("failed to add node\n");
-    free_mi_tree(rpl_tree);
+    LM_ERR("failed to add item\n");
+    free_mi_response(resp);
     return 0;
 }
 
 
-struct mi_root* db_set_info(struct mi_root* cmd, void* param){
-
-    struct mi_node* node= NULL;
-
-
-    str index1 = {0,0};
-    str index2 = {0,0};
-    str state = {0,0};
-    str recon = {0,0};
-
-    unsigned int nindex1;
-    unsigned int nindex2;
-    unsigned int nstate;
-    unsigned int nrecon = 0;
+mi_response_t *db_set_info(const mi_params_t *params, int nrecon) {
+    int nindex1;
+    int nindex2;
+    int nstate;
     int flags;
 
-
-
-    // get index
-    node = cmd->node.kids;
-    if(node == NULL){
-        LM_ERR("no index1\n");
-        return 0;
-    }
-    index1 = node->value;
-    if(index1.s == NULL){
-        LM_ERR("empty index1\n");
-        return 0;
-    }
-    if(str2int(&index1, &nindex1)){
-        LM_ERR("invalid index1(not int)\n");
-        return 0;
-    }
+    if (get_mi_int_param(params, "set_index", &nindex1) < 0)
+        return init_mi_param_error();
     if(nindex1 >= global->size){
         LM_ERR("invalid index1 value\n");
-        // fa un return la rezultat
         return 0;
     }
 
-
-    // get set
-    node = node->next;
-    if(node == NULL){
-        LM_ERR("no index\n");
-        return 0;
-    }
-    index2 = node->value;
-    if(index2.s == NULL){
-        LM_ERR("empty index\n");
-        return 0;
-    }
-    if(str2int(&index2, &nindex2)){
-        LM_ERR("invalid index(not int)\n");
-        return 0;
-    }
+    if (get_mi_int_param(params, "db_url_index", &nindex2) < 0)
+        return init_mi_param_error();
     if(nindex2 >= global->set_list[nindex1].size){
         LM_ERR("invalid index value\n");
-        /* fa un return la rezultat */
         return 0;
     }
-
 
     /* get may state 1=UP 0=DOWN */
-    node = node->next;
-    if(node == NULL){
-        LM_ERR("no state\n");
-        return 0;
-    }
-    state= node->value;
-    if(state.s == NULL){
-            LM_ERR("empty state\n");
-            return 0;
-    }
-    if(str2int(&state, &nstate)){
-        LM_ERR("invalid state(not int)\n");
-        return 0;
-    }
+    if (get_mi_int_param(params, "may_use_db_flag", &nstate) < 0)
+        return init_mi_param_error();
     if(!(nstate==1 || nstate==0)){
         LM_ERR("invalid state value\n");
         return 0;
@@ -669,39 +609,40 @@ struct mi_root* db_set_info(struct mi_root* cmd, void* param){
 
     flags = global->set_list[nindex1].db_list[nindex2].flags;
 
-    /* get possible rerecon state 1=UP 0= DOWN */
-    node = node->next;
-    if(node != NULL){
-        recon= node->value;
-        if(recon.s == NULL){
-                LM_ERR("empty recon\n");
-                return 0;
-        }
-        if(str2int(&recon, &nrecon)){
-            LM_ERR("invalid recon(not int)\n");
-            return 0;
-        }
-        if(!(nrecon==1 || nrecon==0)){
-            LM_ERR("invalid recon value\n");
-            return 0;
-        }
-
-        if(nrecon)
-            flags |= RERECONNECT;
-        else
-            flags &= NOT_RERECONNECT;
+    if(!(nrecon==1 || nrecon==0)){
+        LM_ERR("invalid recon value\n");
+        return 0;
     }
+
+    if(nrecon)
+        flags |= RERECONNECT;
+    else
+        flags &= NOT_RERECONNECT;
 
     if(nstate)
         flags |= MAY_USE;
     else
         flags &=NOT_MAY_USE;
 
-
-
     global->set_list[nindex1].db_list[nindex2].flags = flags;
     /* don't worry about race conditions */
 
-    return init_mi_tree( 200, MI_SSTR(MI_OK));
+    return init_mi_result_ok();
 }
 
+mi_response_t *db_set_info_1(const mi_params_t *params,
+                                struct mi_handler *async_hdl)
+{
+    return db_set_info(params, 0);
+}
+
+mi_response_t *db_set_info_2(const mi_params_t *params,
+                                struct mi_handler *async_hdl)
+{
+    int ingore_retries;
+
+    if (get_mi_int_param(params, "ingore_retries", &ingore_retries) < 0)
+        return init_mi_param_error();
+
+    return db_set_info(params, ingore_retries);
+}
