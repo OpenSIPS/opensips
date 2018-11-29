@@ -44,7 +44,10 @@ int pv_init_param(pv_spec_p sp, int param);
 int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 static int parse_cache_entry(unsigned int type, void *val);
 
-static struct mi_root* mi_reload(struct mi_root *cmd_tree, void *param);
+static mi_response_t *mi_reload_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reload_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static str spec_delimiter = str_init(DEFAULT_SPEC_DELIM);
 static str pvar_delimiter = str_init(DEFAULT_PVAR_DELIM);
@@ -80,8 +83,12 @@ static pv_export_t mod_items[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "sql_cacher_reload", "reload the SQL database into the cache", mi_reload, 0, 0, 0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "sql_cacher_reload", "reload the SQL database into the cache", 0, 0, {
+		{mi_reload_1, {"id", 0}},
+		{mi_reload_2, {"id", "key", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -950,49 +957,37 @@ void reload_timer(unsigned int ticks, void *param)
 	}
 }
 
-static struct mi_root* mi_reload(struct mi_root *root, void *param)
+static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 {
-	struct mi_node *node;
 	db_handlers_t *db_hdls;
 	db_val_t *values;
 	db_res_t *sql_res = NULL;
 	struct queried_key *it;
-	str entry_id, key, src_key;
+	str entry_id, src_key;
 	str rld_vers_key;
 	int rld_vers = 0, rc;
 
-	/* cache entry id */
-	node = root->node.kids;
-	if (!node || !node->value.len || !node->value.s) {
-		LM_ERR("no caching entry id parameter\n");
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
-	}
-	entry_id = node->value;
+	if (get_mi_string_param(params, "id", &entry_id.s, &entry_id.len) < 0)
+		return init_mi_param_error();
 
 	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next)
 		if (!memcmp(entry_id.s, db_hdls->c_entry->id.s, entry_id.len))
 			break;
 	if (!db_hdls) {
 		LM_ERR("Entry %.*s not found\n", entry_id.len, entry_id.s);
-		return init_mi_tree(500, MI_SSTR("ERROR Cache entry not found\n"));
+		return init_mi_error(500, MI_SSTR("ERROR Cache entry not found\n"));
 	}
 
-	/* key */
-	if (!node->next || !node->next->value.len || !node->next->value.s)
-		key.s = NULL;
-	else
-		key = node->next->value;
-
 	if (db_hdls->c_entry->on_demand) {
-		if (key.s) {
-			src_key.len = db_hdls->c_entry->id.len + key.len;
+		if (key) {
+			src_key.len = db_hdls->c_entry->id.len + key->len;
 			src_key.s = pkg_malloc(src_key.len);
 			if (!src_key.s) {
 				LM_ERR("No more shm memory\n");
 				return NULL;
 			}
 			memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
-			memcpy(src_key.s + db_hdls->c_entry->id.len, key.s, key.len);
+			memcpy(src_key.s + db_hdls->c_entry->id.len, key->s, key->len);
 
 			lock_get(queries_lock);
 
@@ -1007,11 +1002,11 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 
 			if ((rld_vers = get_rld_vers_from_cache(db_hdls->c_entry, db_hdls)) < 0) {
 				LM_ERR("Unable to fetch reload version counter\n");
-				return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL"
+				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
 													" database\n"));
 			}
 
-			rc = load_key(db_hdls->c_entry, db_hdls, key, &values, &sql_res, rld_vers);
+			rc = load_key(db_hdls->c_entry, db_hdls, *key, &values, &sql_res, rld_vers);
 			if (rc == 0)
 				db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
 
@@ -1021,10 +1016,10 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 				lock_release(queries_lock);
 
 			if (rc == -1)
-				return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL"
+				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
 													" database\n"));
 			else if (rc == -2)
-				return init_mi_tree(500, MI_SSTR("ERROR Reloading key from SQL"
+				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
 													"database, key not found\n"));
 		} else {
 			/* 'invalidate' all keys by increasing the reload version counter */
@@ -1039,7 +1034,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 
 			if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
 				LM_DBG("Failed to increment reload version integer from cachedb\n");
-				return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
+				return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database\n"));
 			}
 
 			pkg_free(rld_vers_key.s);
@@ -1058,19 +1053,36 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 
 		if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
 			LM_DBG("Failed to increment reload version integer from cachedb\n");
-			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
+			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database\n"));
 		}
 		pkg_free(rld_vers_key.s);
 
 		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0) {
 			LM_DBG("Failed to reload table\n");
-			return init_mi_tree(500, MI_SSTR("ERROR Reloading SQL database\n"));
+			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database\n"));
 		}
 
 		lock_stop_write(db_hdls->c_entry->ref_lock);
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK_S));
+	return init_mi_result_ok();
+}
+
+static mi_response_t *mi_reload_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_reload(params, NULL);
+}
+
+static mi_response_t *mi_reload_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str key;
+
+	if (get_mi_string_param(params, "key", &key.s, &key.len) < 0)
+		return init_mi_param_error();
+
+	return mi_reload(params, &key);
 }
 
 static int init_rld_vers_key(cache_entry_t *c_entry, db_handlers_t *db_hdls)
