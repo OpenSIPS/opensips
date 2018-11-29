@@ -36,7 +36,6 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../mod_fix.h"
-#include "../../mi/tree.h"
 
 #include "cachedb_local.h"
 #include "hash.h"
@@ -59,7 +58,10 @@ url_lst_t* url_list=NULL;
 static int w_remove_chunk_1(struct sip_msg* msg, char* glob);
 static int w_remove_chunk_2(struct sip_msg* msg, char* collection, char* glob);
 static int remove_chunk_f(struct sip_msg* msg, char* collection, char* glob);
-struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param);
+mi_response_t *mi_cache_remove_chunk_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 void localcache_clean(unsigned int ticks,void *param);
 static int parse_collections(unsigned int type, void *val);
 static int store_urls(unsigned int type, void *val);
@@ -83,8 +85,12 @@ static cmd_export_t cmds[]= {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "cache_remove_chunk",           0, mi_cache_remove_chunk,         0,  0,  0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "cache_remove_chunk", 0, 0, 0, {
+		{mi_cache_remove_chunk_1, {"glob", 0}},
+		{mi_cache_remove_chunk_2, {"glob", "collection", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 /** module exports */
@@ -218,41 +224,34 @@ static int remove_chunk_f(struct sip_msg* msg, char* collection, char* glob)
 	return 1;
 }
 
-struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param)
+mi_response_t *mi_cache_remove_chunk(const mi_params_t *params, str *collection)
 {
-	struct mi_node* node;
-	int status, msg_len;
-	char *msg;
+	str glob;
 
-	char* collection;
-	char* glob;
+	if (get_mi_string_param(params, "glob", &glob.s, &glob.len) < 0)
+		return init_mi_param_error();
 
-	node = cmd_tree->node.kids;
-	if (node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (remove_chunk_f(NULL,(collection ? collection->s : NULL),glob.s) < 1)
+		return init_mi_error(500, MI_SSTR("Internal error"));
+	else
+		return init_mi_result_ok();
+}
 
-	if (!node->value.s || !node->value.len)
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+mi_response_t *mi_cache_remove_chunk_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_cache_remove_chunk(params, NULL);
+}
 
-	if ( !node->next ) {
-		collection = NULL;
-		glob = (char *)(&node->value);
-	} else {
-		collection = (char *)(&node->value);
-		glob = (char *)(&node->next->value);
-	}
+mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str col;
 
-	if (remove_chunk_f(NULL,collection,glob) < 1) {
-		status = 500;
-		msg = MI_INTERNAL_ERR_S;
-		msg_len = MI_INTERNAL_ERR_LEN;
-	} else {
-		status = 200;
-		msg = MI_OK_S;
-		msg_len = MI_OK_LEN;
-	}
+	if (get_mi_string_param(params, "collection", &col.s, &col.len) < 0)
+		return init_mi_param_error();
 
-	return init_mi_tree(status,msg,msg_len);
+	return mi_cache_remove_chunk(params, &col);
 }
 
 lcache_con* lcache_new_connection(struct cachedb_id* id)
