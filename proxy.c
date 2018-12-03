@@ -76,7 +76,7 @@ int hostent_shm_cpy(struct hostent *dst, struct hostent* src)
 		p += src->h_length;
 	}
 
-	dst->h_addr = src->h_addr_list[0];
+	dst->h_addr = dst->h_addr_list[0];
 	dst->h_addrtype = src->h_addrtype;
 	dst->h_length = src->h_length;
 	return 0;
