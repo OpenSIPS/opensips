@@ -27,7 +27,7 @@
 #define JSONRPC_STR		{ JSONRPC_NAME, sizeof(JSONRPC_NAME) - 1}
 
 /* module flag */
-#define JSONRPC_FLAG		(1 << 25)
+#define JSONRPC_FLAG		(1 << 23)
 
 #define COLON_C			':'
 #define SLASH_C			'/'
