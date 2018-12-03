@@ -136,11 +136,16 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_DOMAIN_RELOAD, 0, mi_domain_reload, MI_NO_INPUT_FLAG, 0, mi_child_init },
-	{ MI_DOMAIN_DUMP,   0, mi_domain_dump,   MI_NO_INPUT_FLAG, 0, 0             },
-	{ 0, 0, 0, 0, 0, 0}
+	{ MI_DOMAIN_RELOAD, 0, 0, mi_child_init, {
+		{mi_domain_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_DOMAIN_DUMP, 0, 0, 0, {
+		{mi_domain_dump, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 /*
  * Module interface

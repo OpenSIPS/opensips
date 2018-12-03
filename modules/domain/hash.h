@@ -30,7 +30,7 @@
 
 int hash_table_install (struct domain_list **hash_table, str *d, str *a);
 int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv);
-int hash_table_mi_print(struct domain_list **hash_table, struct mi_node* rpl);
+int hash_table_mi_print(struct domain_list **hash_table, mi_item_t *domains_arr);
 void hash_table_free (struct domain_list **hash_table);
 
 #endif

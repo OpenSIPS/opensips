@@ -36,15 +36,16 @@
 /*
  * MI function to reload domain table
  */
-struct mi_root* mi_domain_reload(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_domain_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if(db_mode==0)
-		return init_mi_tree( 500, "command not activated", 21);
+		return init_mi_error( 500, MI_SSTR("command not activated"));
 
 	if (reload_domain_table () == 1) {
-		return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		return init_mi_result_ok();
 	} else {
-		return init_mi_tree( 500, "Domain table reload failed", 26);
+		return init_mi_error( 500, MI_SSTR("Domain table reload failed"));
 	}
 }
 
@@ -52,24 +53,31 @@ struct mi_root* mi_domain_reload(struct mi_root *cmd_tree, void *param)
 /*
  * MI function to print domains from current hash table
  */
-struct mi_root* mi_domain_dump(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_domain_dump(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *domains_arr;
 
 	if(db_mode==0)
-		return init_mi_tree( 500, "command not activated", 21);
+		return init_mi_error(500, MI_SSTR("command not activated"));
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	domains_arr = add_mi_array(resp_obj, MI_SSTR("Domains"));
+	if (!domains_arr)
+		goto error;
 
-	if(hash_table_mi_print(*hash_table, &rpl_tree->node)< 0)
+	if(hash_table_mi_print(*hash_table, domains_arr)< 0)
 	{
-		LM_ERR("Error while adding node\n");
-		free_mi_tree(rpl_tree);
-		return 0;
+		LM_ERR("Error while adding item\n");
+		goto error;
 	}
 
-	return rpl_tree;
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
 }
