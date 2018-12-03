@@ -1568,7 +1568,7 @@ error:
 	return -1;
 }
 
-static str _tr_sdp_str = {0,0};
+static str _tr_sdp_str;
 
 int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		pv_value_t *val)
@@ -1595,16 +1595,10 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	if(_tr_sdp_str.len==0 || _tr_sdp_str.len!=val->rs.len ||
 			strncmp(_tr_sdp_str.s, val->rs.s, val->rs.len)!=0)
 	{
-		if(val->rs.len>_tr_sdp_str.len)
+		if (pkg_str_extend(&_tr_sdp_str, val->rs.len + 3 /* \r\n\0 */) != 0)
 		{
-			if(_tr_sdp_str.s) pkg_free(_tr_sdp_str.s);
-				_tr_sdp_str.s = (char*)pkg_malloc((val->rs.len+1 /* NULL */ + 2 /* \r\n */));
-			if(_tr_sdp_str.s==NULL)
-			{
-				LM_ERR("no more private memory\n");
-				memset(&_tr_sdp_str, 0, sizeof(str));
-				goto error;
-			}
+			LM_ERR("no more private memory\n");
+			goto error;
 		}
 
 		_tr_sdp_str.len = val->rs.len + 2;
