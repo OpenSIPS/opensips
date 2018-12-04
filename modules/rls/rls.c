@@ -165,7 +165,8 @@ int rlsubs_table_restore();
 void rlsubs_table_update(unsigned int ticks,void *param);
 int add_rls_event(modparam_t type, void* val);
 int parse_xcap_root(void);
-static struct mi_root* mi_update_subscriptions(struct mi_root* cmd, void* param);
+mi_response_t *mi_update_subscriptions(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static cmd_export_t cmds[]=
 {
@@ -191,8 +192,11 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "rls_update_subscriptions", 0, mi_update_subscriptions, 0,  0,  0},
-	{  0, 0, 0, 0,  0, 0}
+	{ "rls_update_subscriptions", 0, 0, 0, {
+		{mi_update_subscriptions, {"presentity_uri", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -858,33 +862,21 @@ done:
                 xmlFreeDoc(doc);
 }
 
-
-static struct mi_root* mi_update_subscriptions(struct mi_root* cmd, void* param)
+mi_response_t *mi_update_subscriptions(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node = NULL;
 	struct sip_uri parsed_uri;
 	str uri;
 	int i;
-        subs_t *subs, *subs_copy;
+    subs_t *subs, *subs_copy;
 
-	LM_DBG("start\n");
+	if (get_mi_string_param(params, "presentity_uri", &uri.s, &uri.len) < 0)
+		return init_mi_param_error();
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree(404, "No parameters", 13);
-
-	/* Get presentity URI */
-	uri = node->value;
 	if(uri.s == NULL || uri.len== 0)
 	{
 		LM_ERR( "empty uri\n");
-		return init_mi_tree(404, "Empty presentity URI", 20);
-	}
-
-	if(node->next!= NULL)
-	{
-		LM_ERR( "Too many parameters\n");
-		return init_mi_tree(400, "Too many parameters", 19);
+		return init_mi_error(404, MI_SSTR("Empty presentity URI"));
 	}
 
 	if (parse_uri(uri.s, uri.len, &parsed_uri) < 0)
@@ -937,7 +929,7 @@ static struct mi_root* mi_update_subscriptions(struct mi_root* cmd, void* param)
 		lock_release(&rls_table[i].lock);
 	}
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
 
