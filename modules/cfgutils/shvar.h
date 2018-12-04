@@ -62,8 +62,12 @@ int pv_set_shvar(struct sip_msg* msg, pv_param_t *param, int op,
 int shvar_init_locks(void);
 void shvar_destroy_locks(void);
 
-struct mi_root* mi_shvar_get(struct mi_root* cmd_tree, void* param);
-struct mi_root* mi_shvar_set(struct mi_root* cmd_tree, void* param);
+mi_response_t *mi_shvar_get(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_shvar_get_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_shvar_set(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 int param_set_var( modparam_t type, void* val);
 int param_set_shvar( modparam_t type, void* val);
