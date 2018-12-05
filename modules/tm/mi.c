@@ -52,34 +52,34 @@
 /*
  * check if the request pushed via MI is correctly formed
  */
-static inline struct mi_root* mi_check_msg(struct sip_msg* msg, str* method,
+static inline mi_response_t *mi_check_msg(struct sip_msg* msg, str* method,
 										str* body, int* cseq, str* callid)
 {
 	struct cseq_body *parsed_cseq;
 
 	if (body && body->len && !msg->content_type)
-		return init_mi_tree( 400, MI_SSTR("Content-Type missing"));
+		return init_mi_error( 400, MI_SSTR("Content-Type missing"));
 
 	if (body && body->len && msg->content_length)
-		return init_mi_tree( 400, MI_SSTR("Content-Length disallowed"));
+		return init_mi_error( 400, MI_SSTR("Content-Length disallowed"));
 
 	if (!msg->to)
-		return init_mi_tree( 400, MI_SSTR("To missing"));
+		return init_mi_error( 400, MI_SSTR("To missing"));
 
 	if (!msg->from)
-		return init_mi_tree( 400, MI_SSTR("From missing"));
+		return init_mi_error( 400, MI_SSTR("From missing"));
 
 	/* we also need to know if there is from-tag and add it otherwise */
 	if (parse_from_header(msg) < 0)
-		return init_mi_tree( 400, MI_SSTR("Error in From"));
+		return init_mi_error( 400, MI_SSTR("Error in From"));
 
 	if (msg->cseq && (parsed_cseq = get_cseq(msg))) {
 		if (str2int( &parsed_cseq->number, (unsigned int*)cseq)!=0)
-			return init_mi_tree( 400, MI_SSTR("Bad CSeq number"));
+			return init_mi_error( 400, MI_SSTR("Bad CSeq number"));
 
 		if (parsed_cseq->method.len != method->len
 		|| memcmp(parsed_cseq->method.s, method->s, method->len) !=0 )
-			return init_mi_tree( 400, MI_SSTR("CSeq method mismatch"));
+			return init_mi_error( 400, MI_SSTR("CSeq method mismatch"));
 	} else {
 		*cseq = -1;
 	}
@@ -221,68 +221,39 @@ error:
 }
 
 
-static inline void mi_print_routes( struct mi_node *node, dlg_t* dlg)
+static inline int mi_print_routes(mi_item_t *resp_obj, dlg_t* dlg)
 {
-#define MI_ROUTE_PREFIX_S       "Route: "
-#define MI_ROUTE_PREFIX_LEN     (sizeof(MI_ROUTE_PREFIX_S)-1)
-#define MI_ROUTE_SEPARATOR_S    ", "
-#define MI_ROUTE_SEPARATOR_LEN  (sizeof(MI_ROUTE_SEPARATOR_S)-1)
 	rr_t* ptr;
-	int len;
-	char *p, *s;
+	mi_item_t *routes_arr;
 
 	ptr = dlg->hooks.first_route;
 
-	if (ptr==NULL) {
-		add_mi_node_child( node, 0, 0, 0, ".",1);
-		return;
-	}
+	if (dlg->hooks.first_route==NULL)
+		return 0;
 
-	len = MI_ROUTE_PREFIX_LEN;
-	for( ; ptr ; ptr=ptr->next)
-		len += ptr->len + MI_ROUTE_SEPARATOR_LEN*(ptr->next!=NULL);
+	routes_arr = add_mi_array(resp_obj, MI_SSTR("Routes"));
+	if (!routes_arr)
+		return -1;
+
+	for( ptr = dlg->hooks.first_route ; ptr ; ptr=ptr->next)
+		if (add_mi_string(routes_arr, 0, 0, ptr->nameaddr.name.s, ptr->len) < 0)
+			return -1;
+
 	if (dlg->hooks.last_route)
-		len += dlg->hooks.last_route->len + 2;
+		if (add_mi_string_fmt(routes_arr, 0, 0, "<%.*s>",
+			dlg->hooks.last_route->s, dlg->hooks.last_route->len) < 0)
+			return -1;
 
-
-	s = pkg_malloc( len );
-	if (s==0) {
-		LM_ERR("no more pkg mem\n");
-		return;
-	}
-
-
-	p = s;
-	memcpy( p, MI_ROUTE_PREFIX_S, MI_ROUTE_PREFIX_LEN);
-	p += MI_ROUTE_PREFIX_LEN;
-
-	for( ptr = dlg->hooks.first_route ; ptr ; ptr=ptr->next) {
-		memcpy( p, ptr->nameaddr.name.s, ptr->len);
-		p += ptr->len;
-		if (ptr->next) {
-			memcpy( p, MI_ROUTE_SEPARATOR_S, MI_ROUTE_SEPARATOR_LEN);
-			p += MI_ROUTE_SEPARATOR_LEN;
-		}
-	}
-
-	if (dlg->hooks.last_route) {
-		*(p++) = '<';
-		memcpy( p, dlg->hooks.last_route->s, dlg->hooks.last_route->len);
-		p += dlg->hooks.last_route->len;
-		*(p++) = '>';
-	}
-
-	add_mi_node_child( node, MI_DUP_VALUE, 0, 0, s, len);
-	pkg_free(s);
+	return 0;
 }
 
 
-static inline int mi_print_uris( struct mi_node *node, struct sip_msg* reply)
+static inline int mi_print_uris(mi_item_t *resp_obj, struct sip_msg* reply)
 {
 	dlg_t* dlg;
 
 	if (reply==0)
-		goto empty;
+		return 0;
 
 	dlg = (dlg_t*)shm_malloc(sizeof(dlg_t));
 	if (!dlg) {
@@ -299,30 +270,23 @@ static inline int mi_print_uris( struct mi_node *node, struct sip_msg* reply)
 
 	if (dlg->state != DLG_CONFIRMED) {
 		free_dlg(dlg);
-		goto empty;
+		return 0;
 	}
 
-	if (dlg->hooks.request_uri->s) {
-		add_mi_node_child( node, MI_DUP_VALUE, 0, 0,
-			dlg->hooks.request_uri->s, dlg->hooks.request_uri->len);
-	} else {
-		add_mi_node_child( node, 0, 0, 0, ".",1);
-	}
-	if (dlg->hooks.next_hop->s) {
-		add_mi_node_child( node, MI_DUP_VALUE, 0, 0,
-			dlg->hooks.next_hop->s, dlg->hooks.next_hop->len);
-	} else {
-		add_mi_node_child( node, 0, 0, 0, ".",1);
-	}
+	if (dlg->hooks.request_uri->s)
+		if (add_mi_string(resp_obj, MI_SSTR("RURI"),
+			dlg->hooks.request_uri->s, dlg->hooks.request_uri->len) < 0)
+			return -1;
 
-	mi_print_routes( node, dlg);
+	if (dlg->hooks.next_hop->s)
+		if (add_mi_string(resp_obj, MI_SSTR("next hop"),
+			dlg->hooks.next_hop->s, dlg->hooks.next_hop->len) < 0)
+			return -1;
+
+	if (mi_print_routes(resp_obj, dlg) < 0)
+		return -1;
 
 	free_dlg(dlg);
-	return 0;
-empty:
-	add_mi_node_child( node, 0, 0, 0, ".",1);
-	add_mi_node_child( node, 0, 0, 0, ".",1);
-	add_mi_node_child( node, 0, 0, 0, ".",1);
 	return 0;
 }
 
@@ -330,8 +294,9 @@ empty:
 
 static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 {
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	struct mi_handler *mi_hdl;
-	struct mi_root *rpl_tree;
 	str text;
 
 	LM_DBG("MI UAC generated status %d\n", ps->code);
@@ -340,40 +305,50 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 
 	mi_hdl = (struct mi_handler *)(*ps->param);
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		goto done;
 
 	if (ps->rpl==FAKED_REPLY) {
 		get_reply_status( &text, ps->rpl, ps->code);
 		if (text.s==0) {
 			LM_ERR("get_reply_status failed\n");
-			rpl_tree = 0;
-			goto done;
+			goto error;
 		}
-		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, 0, 0,
-			text.s, text.len);
+		if (add_mi_string(resp_obj, MI_SSTR("reply status"),
+			text.s, text.len) < 0) {
+			goto error;
+		}
 		pkg_free(text.s);
-		mi_print_uris( &rpl_tree->node, 0 );
-		add_mi_node_child( &rpl_tree->node, 0, 0, 0, ".",1);
 	} else {
-		addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
+		if (add_mi_string_fmt(resp_obj, MI_SSTR("reply status"), "%d %.*s",
 			ps->rpl->first_line.u.reply.statuscode,
 			ps->rpl->first_line.u.reply.reason.len,
-			ps->rpl->first_line.u.reply.reason.s);
-		mi_print_uris( &rpl_tree->node, ps->rpl);
-		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, 0, 0,
+			ps->rpl->first_line.u.reply.reason.s) < 0) {
+			goto error;
+		}
+
+		if (mi_print_uris(resp_obj, ps->rpl) < 0)
+			goto error;
+
+		if (add_mi_string(resp_obj, MI_SSTR("headers"),
 			ps->rpl->headers->name.s,
-			ps->rpl->len-(ps->rpl->headers->name.s - ps->rpl->buf));
+			ps->rpl->len-(ps->rpl->headers->name.s - ps->rpl->buf)) < 0)
+			goto error;
 	}
 
 	LM_DBG("mi_callback successfully completed\n");
+	goto done;
+
+error:
+	free_mi_response(resp);
+	resp = 0;
 done:
 	if (ps->code >= 200) {
-		mi_hdl->handler_f( rpl_tree, mi_hdl, 1 /*done*/ );
+		mi_hdl->handler_f( resp, mi_hdl, 1 /*done*/ );
 		*ps->param = 0;
 	} else {
-		mi_hdl->handler_f( rpl_tree, mi_hdl, 0 );
+		mi_hdl->handler_f( resp, mi_hdl, 0 );
 	}
 }
 
@@ -391,22 +366,18 @@ done:
     headers
     [Body]
 */
-struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
+static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
+							str *socket, str *body, struct mi_handler *async_hdl)
 {
 	static char err_buf[MAX_REASON_LEN];
 	static struct sip_msg tmp_msg;
 	static dlg_t dlg;
-	struct mi_root *rpl_tree;
-	struct mi_node *node;
 	struct sip_uri pruri;
 	struct sip_uri pnexthop;
 	struct socket_info* sock;
-	str *method;
-	str *ruri;
-	str *nexthop;
-	str *socket;
-	str *hdrs;
-	str *body;
+	str method;
+	str ruri;
+	str hdrs;
 	str s;
 	str callid = {0,0};
 	int sip_error;
@@ -414,76 +385,47 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 	int port;
 	int cseq = 0;
 	int n;
+	mi_response_t *resp;
 
-	for( n=0,node = cmd_tree->node.kids; n<6 && node ; n++,node=node->next );
-	if ( !(n==5 || n==6) || node!=0)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "method", &method.s, &method.len) < 0)
+		return init_mi_param_error();
 
-	/* method name (param 1) */
-	node = cmd_tree->node.kids;
-	method = &node->value;
+	if (get_mi_string_param(params, "ruri", &ruri.s, &ruri.len) < 0)
+		return init_mi_param_error();
 
-	/* RURI (param 2) */
-	node = node->next;
-	ruri = &node->value;
-	if (parse_uri( ruri->s, ruri->len, &pruri) < 0 )
-		return init_mi_tree( 400, MI_SSTR("Invalid RURI"));
+	if (parse_uri( ruri.s, ruri.len, &pruri) < 0 )
+		return init_mi_error(400, MI_SSTR("Invalid ruri"));
 
-	/* nexthop RURI (param 3) */
-	node = node->next;
-	nexthop = &node->value;
-	if (nexthop->len==1 && nexthop->s[0]=='.') {
-		nexthop = 0;
-	} else {
-		if (parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
-			return init_mi_tree( 400, MI_SSTR("Invalid NEXTHOP"));
-	}
+	if (parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
+		return init_mi_error( 400, MI_SSTR("Invalid next_hop"));
 
-	/* socket (param 4) */
-	node = node->next;
-	socket = &node->value;
-	if (socket->len==1 && socket->s[0]=='.' ) {
-		sock = 0;
-	} else {
-		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
-		&port,&proto)!=0)
-			return init_mi_tree( 404, MI_SSTR("Invalid local socket"));
-		set_sip_defaults( port, proto);
-		sock = grep_sock_info( &s, (unsigned short)port, proto);
-		if (sock==0)
-			return init_mi_tree( 404, MI_SSTR("Local socket not found"));
-	}
+	if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
+	&port,&proto)!=0)
+		return init_mi_error( 404, MI_SSTR("Invalid local socket"));
+	set_sip_defaults( port, proto);
+	sock = grep_sock_info( &s, (unsigned short)port, proto);
+	if (sock==0)
+		return init_mi_error( 404, MI_SSTR("Local socket not found"));
 
-	/* new headers (param 5) */
-	node = node->next;
-	if (node->value.len==1 && node->value.s[0]=='.')
-		hdrs = 0;
-	else {
-		hdrs = &node->value;
-		/* use SIP parser to look at what is in the FIFO request */
-		memset( &tmp_msg, 0, sizeof(struct sip_msg));
-		tmp_msg.len = hdrs->len;
-		tmp_msg.buf = tmp_msg.unparsed = hdrs->s;
-		if (parse_headers( &tmp_msg, HDR_EOH_F, 0) == -1 )
-			return init_mi_tree( 400, MI_SSTR("Bad headers"));
-	}
+	if (get_mi_string_param(params, "headers", &hdrs.s, &hdrs.len) < 0)
+		return init_mi_param_error();
 
-	/* body (param 5 - optional) */
-	node = node->next;
-	if (node)
-		body = &node->value;
-	else
-		body = 0;
+	/* use SIP parser to look at what is in the FIFO request */
+	memset( &tmp_msg, 0, sizeof(struct sip_msg));
+	tmp_msg.len = hdrs.len;
+	tmp_msg.buf = tmp_msg.unparsed = hdrs.s;
+	if (parse_headers( &tmp_msg, HDR_EOH_F, 0) == -1 )
+		return init_mi_error( 400, MI_SSTR("Bad headers"));
 
 	/* at this moment, we collected all the things we got, let's
 	 * verify user has not forgotten something */
-	rpl_tree = mi_check_msg( &tmp_msg, method, body, &cseq, &callid);
-	if (rpl_tree) {
+	resp = mi_check_msg( &tmp_msg, &method, body, &cseq, &callid);
+	if (resp) {
 		if (tmp_msg.headers) free_hdr_field_lst(tmp_msg.headers);
-		return rpl_tree;
+		return resp;
 	}
 
-	s.s = get_hfblock( nexthop ? nexthop : ruri,
+	s.s = get_hfblock( nexthop ? nexthop : &ruri,
 			tmp_msg.headers, &s.len, &sock);
 	if (s.s==0) {
 		if (tmp_msg.headers) free_hdr_field_lst(tmp_msg.headers);
@@ -520,60 +462,145 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 	dlg.rem_uri = get_to(&tmp_msg)->uri;
 	dlg.loc_dname = get_from(&tmp_msg)->display;
 	dlg.rem_dname = get_to(&tmp_msg)->display;
-	dlg.hooks.request_uri = ruri;
-	dlg.hooks.next_hop = (nexthop ? nexthop : ruri);
+	dlg.hooks.request_uri = &ruri;
+	dlg.hooks.next_hop = (nexthop ? nexthop : &ruri);
 	dlg.send_sock = sock;
 
-	if (cmd_tree->async_hdl==NULL)
-		n = t_uac( method, &s, body, &dlg, 0, 0, 0);
+	if (async_hdl==NULL)
+		n = t_uac( &method, &s, body, &dlg, 0, 0, 0);
 	else
-		n = t_uac( method, &s, body, &dlg, mi_uac_dlg_hdl,
-				(void*)cmd_tree->async_hdl, 0);
+		n = t_uac( &method, &s, body, &dlg, mi_uac_dlg_hdl,
+				(void*)async_hdl, 0);
 
 	pkg_free(s.s);
 	if (tmp_msg.headers) free_hdr_field_lst(tmp_msg.headers);
 
 	if (n<=0) {
 		/* error */
-		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-		if (rpl_tree==0)
-			return 0;
-
-		n = err2reason_phrase( n, &sip_error, err_buf, sizeof(err_buf),
-			"MI/UAC") ;
+		n = err2reason_phrase( n, &sip_error, err_buf, sizeof(err_buf), "MI/UAC");
 		if (n > 0 )
-			addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
-				sip_error, n, err_buf);
+			return init_mi_error(sip_error, err_buf, n);
 		else
-			add_mi_node_child( &rpl_tree->node, 0, 0, 0,
-				"500 MI/UAC failed", 17);
-
-		return rpl_tree;
+			return init_mi_error(500, MI_SSTR("MI/UAC failed"));
 	} else {
-		if (cmd_tree->async_hdl==NULL)
-			return init_mi_tree( 202, MI_SSTR("Accepted"));
+		if (async_hdl==NULL)
+			return init_mi_result_string(MI_SSTR("Accepted"));
 		else
-			return MI_ROOT_ASYNC_RPL;
+			return MI_ASYNC_RPL;
 	}
 }
 
+mi_response_t *mi_tm_uac_dlg_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_tm_uac_dlg(params, NULL, NULL, NULL, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str nexthop;
+
+	if (get_mi_string_param(params, "next_hop", &nexthop.s, &nexthop.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, &nexthop, NULL, NULL, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str socket;
+
+	if (get_mi_string_param(params, "socket", &socket.s, &socket.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, NULL, &socket, NULL, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_4(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str body;
+
+	if (get_mi_string_param(params, "body", &body.s, &body.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, NULL, NULL, &body, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_5(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str nexthop, socket;
+
+	if (get_mi_string_param(params, "next_hop", &nexthop.s, &nexthop.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "socket", &socket.s, &socket.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, &nexthop, &socket, NULL, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_6(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str nexthop, body;
+
+	if (get_mi_string_param(params, "next_hop", &nexthop.s, &nexthop.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "body", &body.s, &body.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, &nexthop, NULL, &body, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_7(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str socket, body;
+
+	if (get_mi_string_param(params, "socket", &socket.s, &socket.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "body", &body.s, &body.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, NULL, &socket, &body, async_hdl);
+}
+
+mi_response_t *mi_tm_uac_dlg_8(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str nexthop, socket, body;
+
+	if (get_mi_string_param(params, "next_hop", &nexthop.s, &nexthop.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "socket", &socket.s, &socket.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "body", &body.s, &body.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_uac_dlg(params, &nexthop, &socket, &body, async_hdl);
+}
 
 /*
   Syntax of "t_uac_cancel" :
     callid
     cseq
 */
-struct mi_root* mi_tm_cancel(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_tm_cancel(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
 	struct cell *trans;
+	str callid, cseq;
 
-	node =  cmd_tree->node.kids;
-	if ( !node || !node->next || node->next->next)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "cseq", &cseq.s, &cseq.len) < 0)
+		return init_mi_param_error();
 
-	if( t_lookup_callid( &trans, node->value, node->next->value) < 0 )
-		return init_mi_tree( 481, MI_SSTR("No such transaction"));
+	if( t_lookup_callid( &trans, callid, cseq) < 0 )
+		return init_mi_error( 481, MI_SSTR("No such transaction"));
 
 	/* cancel the call */
 	LM_DBG("cancelling transaction %p\n",trans);
@@ -582,7 +609,7 @@ struct mi_root* mi_tm_cancel(struct mi_root* cmd_tree, void* param)
 
 	UNREF(trans);
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
 
@@ -590,44 +617,41 @@ struct mi_root* mi_tm_cancel(struct mi_root* cmd_tree, void* param)
   Syntax of "t_hash" :
     no nodes
 */
-struct mi_root* mi_tm_hash(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_tm_hash(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl;
-	struct mi_node* node;
-	struct mi_attr* attr;
+	mi_response_t *resp;
+	mi_item_t *resp_arr, *resp_item;
 	struct s_table* tm_t;
-	char *p;
 	int i;
-	int len;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
+
 	tm_t = get_tm_table();
 
 	for (i=0; i<TM_TABLE_ENTRIES; i++) {
-		p = int2str((unsigned long)i, &len );
-		node = add_mi_node_child(rpl, MI_DUP_VALUE , 0, 0, p, len);
-		if(node == NULL)
+		resp_item = add_mi_object(resp_arr, NULL, 0);
+		if (!resp_item)
 			goto error;
 
-		p = int2str((unsigned long)tm_t->entrys[i].cur_entries, &len );
-		attr = add_mi_attr(node, MI_DUP_VALUE, "Current", 7, p, len );
-		if(attr == NULL)
+		if (add_mi_number(resp_item, MI_SSTR("index"), i) < 0)
 			goto error;
 
-		p = int2str((unsigned long)tm_t->entrys[i].acc_entries, &len );
-		attr = add_mi_attr(node, MI_DUP_VALUE, "Total", 5, p, len );
-		if(attr == NULL)
+		if (add_mi_number(resp_item, MI_SSTR("Current"),
+			tm_t->entrys[i].cur_entries) < 0)
+			goto error;
+		if (add_mi_number(resp_item, MI_SSTR("Total"),
+			tm_t->entrys[i].acc_entries) < 0)
 			goto error;
 	}
 
-	return rpl_tree;
+	return resp;
+
 error:
-	free_mi_tree(rpl_tree);
-	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+	free_mi_response(resp);
+	return init_mi_error(500, MI_SSTR("Internal error"));
 }
 
 
@@ -640,80 +664,101 @@ error:
   new headers
   [Body]
 */
-struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_tm_reply(const mi_params_t *params, str *new_hdrs, str *body)
 {
-	struct mi_node* node;
 	unsigned int hash_index;
 	unsigned int hash_label;
-	unsigned int rpl_code;
+	int rpl_code;
 	struct cell *trans;
-	str *reason;
-	str *totag;
-	str *new_hdrs;
-	str *body;
-	str tmp;
+	str reason;
+	str totag;
+	str tmp, trans_id;
 	char *p;
 	int n;
 
-	for( n=0,node = cmd_tree->node.kids; n<6 && node ; n++,node=node->next );
-	if ( !(n==5 || n==6) || node!=0)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
 	/* get all info from the command */
 
-	/* reply code (param 1) */
-	node = cmd_tree->node.kids;
-	if (str2int( &node->value, &rpl_code)!=0 || rpl_code>=700)
-		return init_mi_tree( 400, MI_SSTR("Invalid reply code"));
+	if (get_mi_int_param(params, "code", &rpl_code) < 0)
+		return init_mi_param_error();
+	if (rpl_code>=700)
+		return init_mi_error(400, MI_SSTR("Invalid reply code"));
 
-	/* reason text (param 2) */
-	node = node->next;
-	reason = &node->value;
+	if (get_mi_string_param(params, "reason", &reason.s, &reason.len) < 0)
+		return init_mi_param_error();
 
-	/* trans_id (param 3) */
-	node = node->next;
-	tmp = node->value;
+	if (get_mi_string_param(params, "trans_id", &trans_id.s, &trans_id.len) < 0)
+		return init_mi_param_error();
+
+	tmp = trans_id;
 	p = memchr( tmp.s, ':', tmp.len);
 	if ( p==NULL)
-		return init_mi_tree( 400, MI_SSTR("Invalid trans_id"));
+		return init_mi_error(400, MI_SSTR("Invalid trans_id"));
 
 	tmp.len = p-tmp.s;
 	if( str2int( &tmp, &hash_index)!=0 )
-		return init_mi_tree( 400, MI_SSTR("Invalid index in trans_id"));
+		return init_mi_error(400, MI_SSTR("Invalid index in trans_id"));
 
 	tmp.s = p+1;
-	tmp.len = (node->value.s+node->value.len) - tmp.s;
+	tmp.len = (trans_id.s+trans_id.len) - tmp.s;
 	if( str2int( &tmp, &hash_label)!=0 )
-		return init_mi_tree( 400, MI_SSTR("Invalid label in trans_id"));
+		return init_mi_error(400, MI_SSTR("Invalid label in trans_id"));
 
 	if( t_lookup_ident( &trans, hash_index, hash_label)<0 )
-		return init_mi_tree( 404, MI_SSTR("Transaction not found"));
+		return init_mi_error(404, MI_SSTR("Transaction not found"));
 
-	/* to_tag (param 4) */
-	node = node->next;
-	totag = &node->value;
+	if (get_mi_string_param(params, "to_tag", &totag.s, &totag.len) < 0)
+		return init_mi_param_error();
 
-	/* new headers (param 5) */
-	node = node->next;
-	if (node->value.len==1 && node->value.s[0]=='.')
-		new_hdrs = 0;
-	else
-		new_hdrs = &node->value;
-
-	/* body (param 5 - optional) */
-	node = node->next;
-	if (node)
-		body = &node->value;
-	else
-		body = 0;
-
-	n = t_reply_with_body( trans, rpl_code, reason, body, new_hdrs, totag);
+	n = t_reply_with_body( trans, rpl_code, &reason, body, new_hdrs, &totag);
 
 	UNREF(trans);
 
 	if (n<0)
-		return init_mi_tree( 500, MI_SSTR("Reply failed"));
+		return init_mi_error(500, MI_SSTR("Reply failed"));
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
+mi_response_t *mi_tm_reply_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_tm_reply(params, NULL, NULL);
+}
+
+mi_response_t *mi_tm_reply_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str new_headers;
+
+	if (get_mi_string_param(params, "new_headers",
+		&new_headers.s, &new_headers.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_reply(params, &new_headers, NULL);
+}
+
+mi_response_t *mi_tm_reply_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str body;
+
+	if (get_mi_string_param(params, "body", &body.s, &body.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_reply(params, NULL, &body);
+}
+
+mi_response_t *mi_tm_reply_4(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str new_headers;
+	str body;
+
+	if (get_mi_string_param(params, "new_headers",
+		&new_headers.s, &new_headers.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "body", &body.s, &body.len) < 0)
+		return init_mi_param_error();
+
+	return mi_tm_reply(params, &new_headers, &body);
+}

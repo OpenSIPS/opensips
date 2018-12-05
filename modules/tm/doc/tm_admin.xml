@@ -1941,25 +1941,23 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 				<emphasis>method</emphasis> - request method
 			</para></listitem>
 			<listitem><para>
-				<emphasis>RURI</emphasis> - request SIP URI
-			</para></listitem>
-			<listitem><para>
-				<emphasis>NEXT HOP</emphasis> - next hop SIP URI (OBP);
-				use <quote>.</quote> if no value.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>socket</emphasis> - local socket to be used for
-				sending the request; use <quote>.</quote> if no value.
+				<emphasis>ruri</emphasis> - request SIP URI
 			</para></listitem>
 			<listitem><para>
 				<emphasis>headers</emphasis> - set of additional headers to
 				be added to the request; at least 
 				<quote>From</quote> and <quote>To</quote> headers must be
-				specify)
+				specified)
 			</para></listitem>
 			<listitem><para>
-				<emphasis>body</emphasis> - (optional, may not be present)
-				request body (if present, requires the 
+				<emphasis>next_hop</emphasis> (optional) - next hop SIP URI (OBP).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>socket</emphasis> (optional) - local socket to be used for
+				sending the request.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> (optional) - request body (if present, requires the 
 				<quote>Content-Type</quote> and <quote>Content-length</quote>
 				headers)
 			</para></listitem>
@@ -2042,13 +2040,11 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 				<emphasis>to_tag</emphasis> - To tag to be added to TO header
 			</para></listitem>
 			<listitem><para>
-				<emphasis>new_headers</emphasis> - extra headers to be
-				appended to the reply; use a dot (<quote>.</quote>) char 
-				only if there are no headers;
+				<emphasis>new_headers</emphasis> (optional) - extra headers to be
+				appended to the reply.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>body</emphasis> - (optional, may not be present)
-				reply body (if present, requires the 
+				<emphasis>body</emphasis> - (optional) reply body (if present, requires the
 				<quote>Content-Type</quote> and <quote>Content-length</quote>
 				headers)
 			</para></listitem>

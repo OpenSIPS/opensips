@@ -352,13 +352,38 @@ static pv_export_t mod_items[] = {
 
 
 static mi_export_t mi_cmds [] = {
-	{MI_TM_UAC,     0, mi_tm_uac_dlg,   MI_ASYNC_RPL_FLAG,  0,  0 },
-	{MI_TM_CANCEL,  0, mi_tm_cancel,    0,                  0,  0 },
-	{MI_TM_HASH,    0, mi_tm_hash,      MI_NO_INPUT_FLAG,   0,  0 },
-	{MI_TM_REPLY,   0, mi_tm_reply,     0,                  0,  0 },
-	{0,0,0,0,0,0}
+	{ MI_TM_UAC, 0, MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_tm_uac_dlg_1, {"method", "ruri", "headers", 0}},
+		{mi_tm_uac_dlg_2, {"method", "ruri", "headers", "next_hop", 0}},
+		{mi_tm_uac_dlg_3, {"method", "ruri", "headers", "socket", 0}},
+		{mi_tm_uac_dlg_4, {"method", "ruri", "headers", "body", 0}},
+		{mi_tm_uac_dlg_5, {"method", "ruri", "headers", "next_hop", "socket", 0}},
+		{mi_tm_uac_dlg_6, {"method", "ruri", "headers", "next_hop", "body", 0}},
+		{mi_tm_uac_dlg_7, {"method", "ruri", "headers", "socket", "body", 0}},
+		{mi_tm_uac_dlg_8, {"method", "ruri", "headers", "next_hop", "socket",
+						   "body", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_TM_CANCEL, 0, 0, 0, {
+		{mi_tm_cancel, {"callid", "cseq", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_TM_HASH, 0, 0, 0, {
+		{mi_tm_hash, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_TM_REPLY, 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_tm_reply_1, {"code", "reason", "trans_id", "to_tag", 0}},
+		{mi_tm_reply_2, {"code", "reason", "trans_id", "to_tag",
+						   "new_headers", 0}},
+		{mi_tm_reply_3, {"code", "reason", "trans_id", "to_tag",
+						   "body", 0}},
+		{mi_tm_reply_4, {"code", "reason", "trans_id", "to_tag",
+						   "new_headers", "body", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 #ifdef STATIC_TM
 struct module_exports tm_exports = {
