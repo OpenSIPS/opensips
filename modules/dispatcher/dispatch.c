@@ -2165,99 +2165,98 @@ error:
 }
 
 
-int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags)
+int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full)
 {
 	int len, j;
 	char* p;
 	ds_set_p list;
-	struct mi_node* node = NULL;
-	struct mi_node* node1;
-	struct mi_node* set_node = NULL;
-	struct mi_attr* attr = NULL;
+	mi_item_t *sets_arr, *set_item, *dests_arr, *dest_item;
 
 	if ( (*partition->data)->sets==NULL ) {
 		LM_DBG("empty destination sets\n");
 		return  0;
 	}
 
+	sets_arr = add_mi_array(part_item, MI_SSTR("SETS"));
+	if (!sets_arr)
+		return -1;
+
 	/* access ds data under reader's lock */
 	lock_start_read( partition->lock );
 
 	for(list = (*partition->data)->sets ; list!= NULL; list= list->next) {
-		p = int2str(list->id, &len);
-		set_node= add_mi_node_child(rpl, MI_IS_ARRAY|MI_DUP_VALUE,
-			"SET", 3, p, len);
-		if(set_node == NULL)
+		set_item = add_mi_object(sets_arr, NULL, 0);
+		if (!set_item)
 			goto error;
+
+		if (add_mi_number(set_item, MI_SSTR("id"), list->id) < 0)
+			goto error;
+
+		dests_arr = add_mi_array(set_item, MI_SSTR("Destinations"));
+		if (!dests_arr)
+			return -1;
 
 		for(j=0; j<list->nr; j++)
 		{
-			node= add_mi_node_child(set_node, MI_DUP_VALUE, "URI", 3,
-					list->dlist[j].uri.s, list->dlist[j].uri.len);
-			if(node == NULL)
+			dest_item = add_mi_object(dests_arr, NULL, 0);
+			if (!dest_item)
 				goto error;
 
-			if (list->dlist[j].flags & DS_INACTIVE_DST)
-				attr = add_mi_attr (node, 0, "state",5, "Inactive", 8);
-			else if (list->dlist[j].flags & DS_PROBING_DST)
-				attr = add_mi_attr (node, 0, "state",5, "Probing", 7);
-			else
-				attr = add_mi_attr (node, 0, "state",5, "Active", 6);
-
-			if(attr == NULL)
+			if (add_mi_string(dest_item, MI_SSTR("URI"),
+				list->dlist[j].uri.s, list->dlist[j].uri.len) < 0)
 				goto error;
 
-			p = int2str(list->dlist[j].chosen_count, &len);
-			attr = add_mi_attr (node, MI_DUP_VALUE, "first_hit_counter",
-				17, p, len);
-			if(attr == NULL)
+			if (list->dlist[j].flags & DS_INACTIVE_DST) {
+				if (add_mi_string(dest_item, MI_SSTR("state"),
+					MI_SSTR("Inactive")) < 0)
+					goto error;
+			} else if (list->dlist[j].flags & DS_PROBING_DST) {
+				if (add_mi_string(dest_item, MI_SSTR("state"),
+					MI_SSTR("Probing")) < 0)
+					goto error;
+			} else
+				if (add_mi_string(dest_item, MI_SSTR("state"),
+					MI_SSTR("Active")) < 0)
+					goto error;
+
+			if (add_mi_number(dest_item, MI_SSTR("first_hit_counter"),
+				list->dlist[j].chosen_count) < 0)
 				goto error;
 
 			if (list->dlist[j].sock)
 			{
 				p = socket2str(list->dlist[j].sock, NULL, &len, 0);
 				if (p)
-				{
-					node1= add_mi_node_child(node, MI_DUP_VALUE,
-						"socket", 6, p, len);
-					if(node1 == NULL)
+					if (add_mi_string(dest_item, MI_SSTR("socket"), p, len) < 0)
 						goto error;
-				}
 			}
 
 			if (list->dlist[j].attrs.s)
-			{
-				node1= add_mi_node_child(node, MI_DUP_VALUE, "attr", 4,
-					list->dlist[j].attrs.s, list->dlist[j].attrs.len);
-				if(node1 == NULL)
-					goto error;
-			}
-
-			if (flags &  MI_FULL_LISTING) {
-				p = int2str(list->dlist[j].weight, &len);
-				node1= add_mi_node_child(node, MI_DUP_VALUE, "weight", 6,
-					p, len);
-				if(node1 == NULL)
+				if (add_mi_string(dest_item, MI_SSTR("attr"),
+					list->dlist[j].attrs.s, list->dlist[j].attrs.len) < 0)
 					goto error;
 
-				p = int2str(list->dlist[j].priority, &len);
-				node1 = add_mi_node_child(node, MI_DUP_VALUE, "priority", 8,
-					p, len);
-				if(node1 == NULL)
+			if (full) {
+				if (add_mi_number(dest_item, MI_SSTR("weight"),
+					list->dlist[j].weight) < 0)
 					goto error;
 
-				if (list->dlist[j].description.len) {
-					node1= add_mi_node_child(node, MI_DUP_VALUE, "description", 11,
-						list->dlist[j].description.s, list->dlist[j].description.len);
-					if(node1 == NULL)
+				if (add_mi_number(dest_item, MI_SSTR("priority"),
+					list->dlist[j].priority) < 0)
+					goto error;
+
+				if (list->dlist[j].description.len)
+					if (add_mi_string(dest_item, MI_SSTR("description"),
+						list->dlist[j].description.s,
+						list->dlist[j].description.len) < 0)
 						goto error;
-				}
 			}
 		}
 	}
 
 	lock_stop_read( partition->lock );
 	return 0;
+
 error:
 	lock_stop_read( partition->lock );
 	return -1;

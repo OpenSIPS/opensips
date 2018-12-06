@@ -182,9 +182,16 @@ static int w_ds_is_in_list(struct sip_msg*, char*, char*, char*, char*);
 
 static void destroy(void);
 
-static struct mi_root* ds_mi_set(struct mi_root* cmd, void* param);
-static struct mi_root* ds_mi_list(struct mi_root* cmd, void* param);
-static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param);
+mi_response_t *ds_mi_set(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *w_ds_mi_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *w_ds_mi_list_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *ds_mi_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *ds_mi_reload_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static int mi_child_init(void);
 
 /* Parameters setters */
@@ -295,10 +302,21 @@ static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
 }
 
 static mi_export_t mi_cmds[] = {
-	{ "ds_set_state",   0, ds_mi_set,     0,                0,  0            },
-	{ "ds_list",        0, ds_mi_list,    0,                0,  0            },
-	{ "ds_reload",      0, ds_mi_reload,  0,                0,  mi_child_init},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "ds_set_state", 0, 0, 0, {
+		{ds_mi_set, {"state", "group", "address", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "ds_list", 0, 0, 0, {
+		{w_ds_mi_list, {0}},
+		{w_ds_mi_list_1, {"full", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "ds_reload", 0, 0, mi_child_init, {
+		{ds_mi_reload, {0}},
+		{ds_mi_reload_1, {"partition", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -1307,22 +1325,21 @@ static int w_ds_mark_dst1(struct sip_msg *msg, char *flags)
 #define MI_NOT_SUPPORTED		"DB mode not configured"
 #define MI_UNK_PARTITION		"ERROR Unknown partition"
 
-static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
+mi_response_t *ds_mi_set(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	str sp, partition_name;
 	int ret;
 	unsigned int group, state;
-	struct mi_node* node;
 	ds_partition_t *partition;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-	sp = node->value;
+	if (get_mi_string_param(params, "state", &sp.s, &sp.len) < 0)
+		return init_mi_param_error();
+
 	if(sp.len<=0 || !sp.s)
 	{
 		LM_ERR("bad state value\n");
-		return init_mi_tree( 500, MI_SSTR("Bad state value") );
+		return init_mi_error( 500, MI_SSTR("Bad state value") );
 	}
 
 	if(sp.s[0]=='0' || sp.s[0]=='I' || sp.s[0]=='i')
@@ -1332,42 +1349,39 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 	else if(sp.s[0]=='a' || sp.s[0]=='A' || sp.s[0]=='1')
 		state = 1;
 	else
-		return init_mi_tree( 500, MI_SSTR("Bad state value") );
+		return init_mi_error( 500, MI_SSTR("Bad state value") );
 
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-	sp = node->value;
+	if (get_mi_string_param(params, "group", &sp.s, &sp.len) < 0)
+		return init_mi_param_error();
+
 	if(sp.s == NULL)
 	{
-		return init_mi_tree(500, MI_SSTR("group not found"));
+		return init_mi_error(500, MI_SSTR("group not found"));
 	}
 
 	if (split_partition_argument(&sp, &partition_name) != 0) {
 		LM_ERR("bad group format\n");
-		return init_mi_tree(500, MI_SSTR("bad group format"));
+		return init_mi_error(500, MI_SSTR("bad group format"));
 	}
 
 	partition = find_partition_by_name(&partition_name);
 	if (partition == NULL) {
 		LM_ERR("partition does not exist\n");
-		return init_mi_tree(404, MI_SSTR(MI_UNK_PARTITION) );
+		return init_mi_error(404, MI_SSTR(MI_UNK_PARTITION) );
 	}
 
 	if(str2int(&sp, &group))
 	{
 		LM_ERR("bad group value\n");
-		return init_mi_tree( 500, MI_SSTR("bad group value"));
+		return init_mi_error( 500, MI_SSTR("bad group value"));
 	}
 
-	node= node->next;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "address", &sp.s, &sp.len) < 0)
+		return init_mi_param_error();
 
-	sp = node->value;
 	if(sp.s == NULL)
 	{
-		return init_mi_tree(500, MI_SSTR("address not found"));
+		return init_mi_error(500, MI_SSTR("address not found"));
 	}
 
 	if (state==1) {
@@ -1387,69 +1401,93 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 	}
 
 	if(ret!=0)
-		return init_mi_tree(404, MI_SSTR("destination not found"));
+		return init_mi_error(404, MI_SSTR("destination not found"));
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
-
-static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
+mi_response_t *ds_mi_list(int full)
 {
-	struct mi_root* rpl_tree;
-	struct mi_node* part_node;
-	int flags = 0;
-
-	if (cmd_tree->node.kids){
-		if(cmd_tree->node.kids->value.len == 4 && memcmp(cmd_tree->node.kids->value.s,"full",4)==0)
-			flags  |= MI_FULL_LISTING;
-		else
-			return init_mi_tree(400, MI_SSTR(MI_BAD_PARM_S));
-
-	}
-
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
-		return 0;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
-
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *parts_arr, *part_item;
 	ds_partition_t *part_it;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	parts_arr = add_mi_array(resp_obj, MI_SSTR("PARTITIONS"));
+	if (!parts_arr)
+		goto error;
+
 	for (part_it = partitions; part_it; part_it = part_it->next) {
-		part_node = add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY,"PARTITION",
-				9, part_it->name.s, part_it->name.len);
+		part_item = add_mi_object(parts_arr, NULL, 0);
+		if (!part_item)
+			goto error;
 
-		if (part_node == NULL
-			|| ds_print_mi_list(part_node, part_it, flags) < 0) {
-		LM_ERR("failed to add node\n");
-		free_mi_tree(rpl_tree);
-		return 0;
-		}
+		if (add_mi_string(part_item, MI_SSTR("name"),
+			part_it->name.s, part_it->name.len) < 0)
+			goto error;
+
+		if (ds_print_mi_list(part_item, part_it, full) < 0)
+			goto error;
 	}
 
-	return rpl_tree;
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
-
-static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
+mi_response_t *w_ds_mi_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node = cmd_tree->node.kids;
-	if(node != NULL){
-		ds_partition_t *partition = find_partition_by_name(&node->value);
-		if (partition == NULL)
-			return init_mi_tree(500, MI_SSTR(MI_UNK_PARTITION) );
-		if (ds_reload_db(partition) < 0)
-			return init_mi_tree(500, MI_SSTR(MI_ERR_RELOAD));
-		else
-			return init_mi_tree(200, MI_SSTR(MI_OK_S) );
-	}
+	return ds_mi_list(0);
+}
 
+mi_response_t *w_ds_mi_list_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int full;
+
+	if (get_mi_int_param(params, "full", &full) < 0)
+		return init_mi_param_error();
+
+	return ds_mi_list(full);
+}
+
+mi_response_t *ds_mi_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	ds_partition_t *part_it;
+
 	for (part_it = partitions; part_it; part_it = part_it->next)
 		if (ds_reload_db(part_it)<0)
-			return init_mi_tree(500, MI_SSTR(MI_ERR_RELOAD));
+			return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
 
-	return init_mi_tree(200, MI_SSTR(MI_OK_S));
+	return init_mi_result_ok();
 }
 
+mi_response_t *ds_mi_reload_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	ds_partition_t *partition;
+	str partname;
+
+	if (get_mi_string_param(params, "partition", &partname.s, &partname.len) < 0)
+		return init_mi_param_error();
+
+	partition = find_partition_by_name(&partname);
+
+	if (partition == NULL)
+		return init_mi_error(500, MI_SSTR(MI_UNK_PARTITION));
+	if (ds_reload_db(partition) < 0)
+		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
+	else
+		return init_mi_result_ok();
+}
 
 static int w_ds_is_in_list(struct sip_msg *msg,char *ip,char *port,char *set,
 															char *active_only)
