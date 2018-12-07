@@ -61,11 +61,6 @@
 
 #define MAX_LEN_NAME_W_PART 510 /* max len of variable containing
 								   avp_spec and partition name */
-#define  MI_NO_PART_S "Too many arguments (use_partitions is 0 so no parameter"\
-	" should be supplied to the MI function)"
-
-#define MI_NO_PART_LEN (strlen(MI_NO_PART_S))
-
 #define MI_PART_NAME_S "Partition"
 #define MI_PART_NAME_LEN (strlen(MI_PART_NAME_S))
 
@@ -278,13 +273,50 @@ static int route2_carrier(struct sip_msg* msg, char* cr_str,
 		char* gw_att_pv, char* carr_att_pv);
 static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 
-static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
-static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
-static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
-static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree,
-		void *param);
-static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree,
-		void *param);
+mi_response_t *dr_reload_cmd(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_dr_gw_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_gw_status_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_gw_status_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_gw_status_4(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_gw_status_5(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_gw_status_6(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_dr_cr_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_cr_status_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_cr_status_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_cr_status_4(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_cr_status_5(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_cr_status_6(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_dr_number_routing_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_number_routing_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_number_routing_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_number_routing_4(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_dr_reload_status(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_dr_reload_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 /* event */
@@ -440,13 +472,44 @@ static param_export_t params[] = {
 	" (load from database) for all partitions if no parameter is supplied, or"\
 " for a partition given as parameter. If use_partitions is 0, you should"\
 " not specify a partition."
+
 static mi_export_t mi_cmds[] = {
-	{ "dr_reload",         HLP1, dr_reload_cmd,    0, 0,  0},
-	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
-	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
-	{ "dr_number_routing", HLP4, mi_dr_number_routing, 0,            0,  0},
-	{ "dr_reload_status", HLP5, mi_dr_reload_status,   0,            0,  0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "dr_reload", HLP1, 0, 0, {
+		{dr_reload_cmd, {0}},
+		{dr_reload_cmd_1, {"partition_name", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dr_gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_dr_gw_status_1, {0}},
+		{mi_dr_gw_status_2, {"partition_name", 0}},
+		{mi_dr_gw_status_3, {"gw_id", 0}},
+		{mi_dr_gw_status_4, {"gw_id", "status", 0}},
+		{mi_dr_gw_status_5, {"partition_name", "gw_id", 0}},
+		{mi_dr_gw_status_6, {"partition_name", "gw_id", "status", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dr_carrier_status", HLP3, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_dr_cr_status_1, {0}},
+		{mi_dr_cr_status_2, {"partition_name", 0}},
+		{mi_dr_cr_status_3, {"carrier_id", 0}},
+		{mi_dr_cr_status_4, {"carrier_id", "status", 0}},
+		{mi_dr_cr_status_5, {"partition_name", "carrier_id", 0}},
+		{mi_dr_cr_status_6, {"partition_name", "carrier_id", "status", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dr_number_routing", HLP4, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_dr_number_routing_1, {"number"}},
+		{mi_dr_number_routing_2, {"group_id", "number", 0}},
+		{mi_dr_number_routing_3, {"partition_name", "number"}},
+		{mi_dr_number_routing_4, {"partition_name", "group_id", "number"}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dr_reload_status", HLP5, 0, 0, {
+		{mi_dr_reload_status, {0}},
+		{mi_dr_reload_status_1, {"partition_name", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static module_dependency_t *get_deps_probing_interval(param_export_t *param)
@@ -1870,45 +1933,60 @@ static int dr_exit(void)
 	return 0;
 }
 
-
-
-static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param)
+static mi_response_t *mi_dr_get_partition(const mi_params_t *params,
+									struct head_db **partition)
 {
-	int n;
-	str * part_name;
+	str part_name;
+
+	if (!use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Invalid parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' supported only when 'use_partitions' is set"));
+
+	if (get_mi_string_param(params, "partition_name",
+		&part_name.s, &part_name.len) < 0)
+		return init_mi_param_error();
+
+	if((*partition = get_partition(&part_name)) == NULL) {
+		LM_ERR("Partition not found\n");
+		return init_mi_error(404, MI_SSTR("Partition not found\n"));
+	}
+
+	return NULL;
+}
+
+mi_response_t *dr_reload_cmd(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	LM_INFO("dr_reload MI command received!\n");
+
+	if (dr_reload_data() != 0) {
+		LM_CRIT("failed to load routing data\n");
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
+	}
+
+	return init_mi_result_ok();
+}
+
+mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	struct head_db * part;
-	struct mi_node * node = NULL;
+	mi_response_t *resp;
 
 	LM_INFO("dr_reload MI command received!\n");
 
-	if(cmd_tree!=NULL)
-		node = cmd_tree->node.kids;
+	resp = mi_dr_get_partition(params, &part);
+	if (resp)
+		return resp;
 
-	if(node==NULL || use_partitions==0) {
-		/* no parameter supplied
-		 * -> load the data for all the partitions */
-		if ( (n=dr_reload_data())!=0 ) {
-			LM_CRIT("failed to load routing data\n");
-			goto error;
-		}
-	} else {
-		part_name = &(node->value);
-		if( (part = get_partition(part_name))==NULL) {
-			LM_CRIT("Partition not found\n");
-			goto error;
-		}
-		if( dr_reload_data_head(part)<0 ) {
-			LM_CRIT("Failed to load data head\n");
-			goto error;
-		}
+	if( dr_reload_data_head(part)<0 ) {
+		LM_CRIT("Failed to load data head\n");
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
-
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-error:
-	return init_mi_tree( 500, "Failed to reload",16);
+	return init_mi_result_ok();
 }
-
 
 
 static inline int get_group_id(struct sip_uri *uri, struct head_db *
@@ -4385,154 +4463,113 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv,
 	}
 }
 
-static struct mi_root* mi_w_partition(struct mi_node **node, struct head_db **
-		current_partition) {
-	struct mi_root *rpl_tree;
 
-	if( use_partitions ) {
-		if( node!=NULL && (*node)!=NULL ) {
-			if( (*current_partition = get_partition(&((*node)->value))) == NULL) {
-				LM_ERR("Partition not found\n");
-				rpl_tree = init_mi_tree( 404, MI_SSTR("Partition not found\n"));
-				return rpl_tree;
-			}
-			*node = (*node)->next; /* advance to next param */
-			return NULL; /* everything is ok */
-		} else {
-			LM_ERR("Partition name mandatory\n");
-			rpl_tree = init_mi_tree(400, MI_SSTR("Partition mandatory\n"));
-			return rpl_tree;
-		}
-	} else {
-		*current_partition = head_db_start;
-		return NULL; /* everything is ok */
-	}
-	rpl_tree = init_mi_tree( 400,
-			MI_SSTR("Unexpected outcome while parsing param for opensisctl\n"));
-	return rpl_tree;
+static inline int mi_dr_print_gw_state(pgw_t *gw, mi_item_t *gw_item)
+{
+	if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
+		if (gw->flags&DR_DST_STAT_NOEN_FLAG)
+			return add_mi_string(gw_item, MI_SSTR("State"),
+					MI_SSTR("Disabled MI"));
+		else if (gw->flags&DR_DST_PING_DSBL_FLAG)
+			return add_mi_string(gw_item, MI_SSTR("State"),
+					MI_SSTR("Probing"));
+		else
+			return add_mi_string(gw_item, MI_SSTR("State"),
+					MI_SSTR("Inactive"));
+	} else
+		return add_mi_string(gw_item, MI_SSTR("State"),
+					MI_SSTR("Active"));
 }
 
-
-static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
+static mi_response_t *mi_dr_list_gw(struct head_db *current_partition,
+										str *gw_id)
 {
-
-	struct mi_root *rpl_tree;
-	struct mi_node *node;
-	struct mi_attr *attr;
-	unsigned int stat;
-	struct head_db * current_partition=0;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	pgw_t *gw;
-	str *id;
-	int old_flags;
 
+	gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, gw_id);
+	if (gw==NULL)
+		return init_mi_error( 404, MI_SSTR("GW ID not found"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (mi_dr_print_gw_state(gw, resp_obj) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	return resp;
+}
+
+static mi_response_t *mi_dr_list_all_gw(struct head_db *current_partition)
+{
+	pgw_t *gw;
 	void** dest;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *gws_arr, *gw_item;
 	map_iterator_t it;
-
-	node = cmd->node.kids;
-
-
-	if( (rpl_tree = mi_w_partition(&node, &current_partition))!=NULL )
-		return rpl_tree; /* something went wrong: bad command format */
 
 	lock_start_read( current_partition->ref_lock );
 
 	if (current_partition->rdata==NULL || *current_partition->rdata==NULL) {
-		rpl_tree = init_mi_tree( 404, MI_SSTR("No Data available yet"));
-		goto done;
+		lock_stop_read( current_partition->ref_lock );
+		return init_mi_error( 404, MI_SSTR("No Data available yet"));
 	}
 
-	if (node==NULL) {
-		/* no GW specified, list all of them */
-		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-		if (rpl_tree==NULL)
-			goto error;
-		rpl_tree->node.flags |= MI_IS_ARRAY;
-
-		for (map_first((*current_partition->rdata)->pgw_tree, &it);
-				iterator_is_valid(&it); iterator_next(&it)) {
-
-			dest = iterator_val(&it);
-			if (dest==NULL)
-				return NULL;
-
-			gw = (pgw_t*)*dest;
-
-			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-					"ID", 2, gw->id.s, gw->id.len);
-			if (node==NULL) goto error;
-			attr = add_mi_attr( node, MI_DUP_VALUE, "IP" , 2,
-					gw->ip_str.s, gw->ip_str.len);
-			if (attr==NULL) goto error;
-			if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
-				if (gw->flags&DR_DST_STAT_NOEN_FLAG)
-					attr = add_mi_attr( node, 0, "State", 5,
-							"Disabled MI", 11);
-				else if (gw->flags&DR_DST_PING_DSBL_FLAG)
-					attr = add_mi_attr( node, 0, "State", 5,
-							"Probing", 7);
-				else
-					attr = add_mi_attr( node, 0, "State", 5,
-							"Inactive", 8);
-			} else {
-				attr = add_mi_attr( node, 0, "State", 5,
-						"Active", 6);
-			}
-			if (attr==NULL) goto error;
-		}
-
-		goto done;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp) {
+		lock_stop_read( current_partition->ref_lock );
+		return 0;
 	}
+	gws_arr = add_mi_array(resp_obj, MI_SSTR("Gateways"));
+	if (!gws_arr)
+		goto error;
 
-	/* GW ID (param 1) */
-	id =  &node->value;
+	for (map_first((*current_partition->rdata)->pgw_tree, &it);
+			iterator_is_valid(&it); iterator_next(&it)) {
 
-	/* search for the Gw */
-	gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, id);
-	if (gw==NULL) {
-		rpl_tree = init_mi_tree( 404, MI_SSTR("GW ID not found"));
-		goto done;
-	}
-
-	/* status (param 2) */
-	node = node->next;
-	if (node == NULL) {
-
-		/* no status provided -> return the internal one */
-		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-		if (rpl_tree==NULL)
-			goto error;
-		if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
-			if (gw->flags&DR_DST_STAT_NOEN_FLAG)
-				node = add_mi_node_child( &rpl_tree->node, 0, "State", 5,
-						"Disabled MI", 11);
-			else if (gw->flags&DR_DST_PING_DSBL_FLAG)
-				node = add_mi_node_child( &rpl_tree->node, 0, "State", 5,
-						"Probing", 7);
-			else
-				node = add_mi_node_child( &rpl_tree->node, 0, "State", 5,
-						"Inactive", 8);
-		} else {
-			node = add_mi_node_child( &rpl_tree->node, 0, "State", 5,
-					"Active", 6);
-		}
-		if (node==NULL)
+		dest = iterator_val(&it);
+		if (dest==NULL)
 			goto error;
 
-		goto done;
+		gw = (pgw_t*)*dest;
 
+		gw_item = add_mi_object(gws_arr, NULL, 0);
+		if (!gw_item)
+			goto error;
+
+		if (add_mi_string(gw_item, MI_SSTR("ID"), gw->id.s, gw->id.len) < 0)
+			goto error;
+		if (add_mi_string(gw_item, MI_SSTR("IP"), gw->ip_str.s, gw->ip_str.len) < 0)
+			goto error;
+		if (mi_dr_print_gw_state(gw, gw_item) < 0)
+			goto error;
 	}
 
-	/* set the status */
-	if (node->next) {
-		rpl_tree = init_mi_tree( 400,
-				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-		goto done;
-	}
-	if (str2int( &node->value, &stat) < 0) {
-		rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
-		goto done;
-	}
-	/* set the disable/enable */
+	lock_stop_read( current_partition->ref_lock );
+
+	return resp;
+
+error:
+	lock_stop_read( current_partition->ref_lock );
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *mi_dr_gw_set_status(struct head_db *current_partition,
+										str *gw_id, int stat)
+{
+	pgw_t *gw;
+	int old_flags;
+
+	gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, gw_id);
+	if (gw==NULL)
+		return init_mi_error( 404, MI_SSTR("GW ID not found"));
+
 	old_flags = gw->flags;
 	if (stat) {
 		gw->flags &= ~ (DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG);
@@ -4543,110 +4580,197 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
 		dr_gw_status_changed( current_partition, gw);
 	}
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
-done:
-	lock_stop_read( current_partition->ref_lock );
-	return rpl_tree;
-error:
-	lock_stop_read( current_partition->ref_lock );
-	if(rpl_tree) free_mi_tree(rpl_tree);
-	return NULL;
+	return init_mi_result_ok();
+}
+
+mi_response_t *mi_dr_gw_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	return mi_dr_list_all_gw(head_db_start);
+}
+
+mi_response_t *mi_dr_gw_status_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	return mi_dr_list_all_gw(current_partition);
+}
+
+mi_response_t *mi_dr_gw_status_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	if (get_mi_string_param(params, "gw_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_list_gw(head_db_start, &id);
+}
+
+mi_response_t *mi_dr_gw_status_4(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+	int stat;
+
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	if (get_mi_string_param(params, "gw_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "status", &stat) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_gw_set_status(head_db_start, &id, stat);
+}
+
+mi_response_t *mi_dr_gw_status_5(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	if (get_mi_string_param(params, "gw_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_list_gw(current_partition, &id);
+}
+
+mi_response_t *mi_dr_gw_status_6(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+	int stat;
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	if (get_mi_string_param(params, "gw_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "status", &stat) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_gw_set_status(current_partition, &id, stat);
 }
 
 
-static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
+static mi_response_t *mi_dr_list_cr(struct head_db *current_partition,
+										str *cr_id)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *node;
-	struct mi_attr *attr;
-	unsigned int stat;
-	struct head_db * current_partition = 0;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	pcr_t *cr;
-	str *id;
-	int old_flags;
 
+	cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, cr_id);
+	if (cr==NULL)
+		return init_mi_error( 404, MI_SSTR("Carrier ID not found"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_string(resp_obj, MI_SSTR("Enabled"),
+		MI_SSTR((cr->flags&DR_CR_FLAG_IS_OFF) ? "no " : "yes")) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	return resp;
+}
+
+static mi_response_t *mi_dr_list_all_cr(struct head_db *current_partition)
+{
+	pcr_t *cr;
 	void** dest;
 	map_iterator_t it;
-
-	node = cmd->node.kids;
-
-	if( (rpl_tree = mi_w_partition(&node, &current_partition))
-			!=NULL ) {
-		return rpl_tree;
-	}
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *crs_arr, *cr_item;
 
 	lock_start_read( current_partition->ref_lock );
 
 	if (current_partition->rdata==NULL || *current_partition->rdata==NULL) {
-		rpl_tree = init_mi_tree( 404, MI_SSTR("No Data available yet"));
-		goto done;
+		lock_stop_read( current_partition->ref_lock );
+		return init_mi_error( 404, MI_SSTR("No Data available yet"));
 	}
 
-	if (node==NULL) {
-		/* no carrier specified, list all of them */
-		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-		if (rpl_tree==NULL)
-			goto error;
-		rpl_tree->node.flags |= MI_IS_ARRAY;
-
-		for (map_first((*current_partition->rdata)->carriers_tree, &it);
-				iterator_is_valid(&it); iterator_next(&it)) {
-			dest = iterator_val(&it);
-			if (dest==NULL)
-				return NULL;
-
-			cr = (pcr_t*)*dest;
-
-			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-					"ID", 2, cr->id.s, cr->id.len);
-			if (node==NULL) goto error;
-			attr = add_mi_attr( node, 0, "Enabled", 7,
-					(cr->flags&DR_CR_FLAG_IS_OFF)?"no ":"yes", 3);
-			if (attr==NULL) goto error;
-		}
-
-		goto done;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp) {
+		lock_stop_read( current_partition->ref_lock );
+		return 0;
 	}
+	crs_arr = add_mi_array(resp_obj, MI_SSTR("Carriers"));
+	if (!crs_arr)
+		goto error;
 
-	/* GW ID (param 1) */
-	id =  &node->value;
+	for (map_first((*current_partition->rdata)->carriers_tree, &it);
+			iterator_is_valid(&it); iterator_next(&it)) {
 
-	/* search for the Carrier */
-	cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, id);
-	if (cr==NULL) {
-		rpl_tree = init_mi_tree( 404, MI_SSTR("Carrier ID not found"));
-		goto done;
-	}
-
-	/* status (param 2) */
-	node = node->next;
-	if (node == NULL) {
-
-		/* no status provided -> return the internal one */
-		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-		if (rpl_tree==NULL)
-			goto error;
-		node = add_mi_node_child( &rpl_tree->node, 0, "Enabled", 7,
-				(cr->flags&DR_CR_FLAG_IS_OFF)?"no ":"yes", 3);
-		if (node==NULL)
+		dest = iterator_val(&it);
+		if (dest==NULL)
 			goto error;
 
-		goto done;
+		cr = (pcr_t*)*dest;
 
+		cr_item = add_mi_object(crs_arr, 0, 0);
+		if (!cr_item)
+			goto error;
+
+		if (add_mi_string(cr_item, MI_SSTR("ID"), cr->id.s, cr->id.len) < 0)
+			goto error;
+
+		if (add_mi_string(cr_item, MI_SSTR("Enabled"),
+			MI_SSTR((cr->flags&DR_CR_FLAG_IS_OFF) ? "no " : "yes")) < 0)
+			goto error;
 	}
 
-	/* set the status */
-	if (node->next) {
-		rpl_tree = init_mi_tree( 400,
-				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-		goto done;
-	}
-	if (str2int( &node->value, &stat) < 0) {
-		rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
-		goto done;
-	}
-	/* set the disable/enable */
+	lock_stop_read( current_partition->ref_lock );
+
+	return resp;
+
+error:
+	lock_stop_read( current_partition->ref_lock );
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *mi_dr_cr_set_status(struct head_db *current_partition,
+										str *cr_id, int stat)
+{
+	pcr_t *cr;
+	int old_flags;
+
+	cr = get_carrier_by_id( (*current_partition->rdata)->carriers_tree, cr_id);
+	if (cr==NULL)
+		return init_mi_error( 404, MI_SSTR("Carrier ID not found"));
+
 	old_flags = cr->flags;
 	if (stat) {
 		cr->flags &= ~ (DR_CR_FLAG_IS_OFF);
@@ -4660,15 +4784,103 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 				dr_repl_cluster);
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
+}
 
-done:
-	lock_stop_read( current_partition->ref_lock );
-	return rpl_tree;
-error:
-	lock_stop_read( current_partition->ref_lock );
-	if(rpl_tree) free_mi_tree(rpl_tree);
-	return NULL;
+mi_response_t *mi_dr_cr_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	return mi_dr_list_all_cr(head_db_start);
+}
+
+mi_response_t *mi_dr_cr_status_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	return mi_dr_list_all_cr(current_partition);
+}
+
+mi_response_t *mi_dr_cr_status_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	if (get_mi_string_param(params, "carrier_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_list_cr(head_db_start, &id);
+}
+
+mi_response_t *mi_dr_cr_status_4(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+	int stat;
+
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	if (get_mi_string_param(params, "carrier_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "status", &stat) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_cr_set_status(head_db_start, &id, stat);
+}
+
+mi_response_t *mi_dr_cr_status_5(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	if (get_mi_string_param(params, "carrier_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_list_cr(current_partition, &id);
+}
+
+mi_response_t *mi_dr_cr_status_6(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str id;
+	int stat;
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	if (get_mi_string_param(params, "carrier_id", &id.s, &id.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "status", &stat) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_cr_set_status(current_partition, &id, stat);
 }
 
 int add_head_db(void) {
@@ -4915,72 +5127,39 @@ error:
 	return -1;
 }
 
-static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_dr_number_routing(const mi_params_t *params,
+							struct head_db *partition, int grp_id)
 {
-	struct mi_node *node = cmd_tree->node.kids;
-	struct head_db *partition;
-	str s;
-	int grp_id;
-	unsigned int matched_len;
-	struct mi_node *prefix_node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str number;
 	rt_info_t *route;
-
-	if (node == NULL)
-		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (use_partitions) {
-		s = node->value;
-		if((partition = get_partition(&s)) == NULL) {
-			LM_WARN("Partition <%.*s> was not found.\n", s.len, s.s);
-			return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-		}
-
-		node = node->next;
-	}
-	else partition = head_db_start;
-
-	if (node == NULL)
-		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (node->next == NULL) {
-		grp_id = -1;
-	} else {
-		unsigned int ugrp_id;
-		if (str2int(&node->value, &ugrp_id) != 0)
-			return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-		grp_id = ugrp_id;
-		node = node->next;
-	}
-
-	lock_start_read( partition->ref_lock );
-	route = find_rule_by_prefix_unsafe((*(partition->rdata))->pt,
-			&(*(partition->rdata))->noprefix, node->value, grp_id, &matched_len);
-	if (route == NULL){
-		lock_stop_read( partition->ref_lock );
-		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	}
-
-	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree == NULL){
-		lock_stop_read( partition->ref_lock );
-		return 0;
-	}
-
+	unsigned int matched_len;
 	unsigned int i;
 	static const str gw_str = str_init("GATEWAY");
 	static const str carrier_str = str_init("CARRIER");
-	static const str matched_str = str_init("Matched Prefix");
 	str chosen_desc;
 	str chosen_id;
-	if ((prefix_node = add_mi_node_child(&rpl_tree->node, 0, matched_str.s,
-		matched_str.len, node->value.s, matched_len)) == NULL) {
-		LM_ERR("failed to add node\n");
+
+	if (get_mi_string_param(params, "number", &number.s, &number.len) < 0)
+		return init_mi_param_error();
+
+	lock_start_read( partition->ref_lock );
+
+	route = find_rule_by_prefix_unsafe((*(partition->rdata))->pt,
+			&(*(partition->rdata))->noprefix, number, grp_id, &matched_len);
+	if (route == NULL){
 		lock_stop_read( partition->ref_lock );
-		free_mi_tree(rpl_tree);
-		return 0;
+		return init_mi_result_string(MI_SSTR("No match"));
 	}
 
-	prefix_node->flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_string(resp_obj, MI_SSTR("Matched Prefix"),
+		number.s, matched_len) < 0)
+		goto error;
 
 	for (i = 0; i < route->pgwa_len; ++i){
 		if (route->pgwl[i].is_carrier) {
@@ -4992,105 +5171,163 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 			chosen_id = route->pgwl[i].dst.gw->id;
 		}
 
-		if (add_mi_node_child(prefix_node, 0, chosen_desc.s,
-					chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
-
-			LM_ERR("failed to add node\n");
-			lock_stop_read( partition->ref_lock );
-			free_mi_tree(rpl_tree);
-			return 0;
-		}
+		if (add_mi_string(resp_obj, chosen_desc.s, chosen_desc.len,
+			chosen_id.s, chosen_id.len) < 0)
+			goto error;
 	}
 	lock_stop_read( partition->ref_lock );
 
-	return rpl_tree;
-}
+	return resp;
 
-
-static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param) {
-	struct mi_node *node = cmd_tree->node.kids;
-	struct mi_root *rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	struct mi_node *ans;
-	struct head_db * partition;
-	str part_name;
-	char * ch_time;
-
-	if(node != NULL) {
-		if (use_partitions) {
-			part_name = node->value;
-			if((partition = get_partition(&part_name)) == NULL) {
-				LM_WARN("Partition <%.*s> was not found.\n", part_name.len,
-						part_name.s);
-				return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-			}
-			/* display just for given partition */
-			lock_start_read(partition->ref_lock);
-			/* take care as ctime puts an '\n' at the end of the
-			 * returned string - we will get rid of it by len-1 later */
-			ch_time = ctime(&partition->time_last_update);
-			if((ans = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
-						MI_PART_NAME_S, MI_PART_NAME_LEN,
-						partition->partition.s,
-						partition->partition.len)) == NULL) {
-				LM_ERR("failed to add mi_node\n");
-				goto error;
-			}
-			if(add_mi_attr(ans, MI_DUP_VALUE,
-						MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
-						ch_time, strlen(ch_time)-1) == NULL) {
-				LM_ERR("failed to add mi_attr\n");
-				goto error;
-			}
-			lock_stop_read(partition->ref_lock);
-		} else {
-			return init_mi_tree(400, MI_NO_PART_S, MI_NO_PART_LEN);
-		}
-	}
-	else if(use_partitions){
-		rpl_tree->node.flags |= MI_IS_ARRAY;
-
-		/* display for all partitions */
-		for(partition = head_db_start; partition; partition = partition->next) {
-			lock_start_read(partition->ref_lock);
-			ch_time = ctime(&partition->time_last_update);
-			LM_DBG("partition  %.*s was last updated:%s\n",
-					partition->partition.len, partition->partition.s,
-					ch_time);
-			if((ans = add_mi_node_child(&rpl_tree->node, 0, MI_PART_NAME_S,
-						MI_PART_NAME_LEN, partition->partition.s,
-						partition->partition.len))  == NULL) {
-				LM_ERR("failed to add mi_node\n");
-				goto error;
-			}
-			if(add_mi_attr(ans, MI_DUP_VALUE,
-						MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
-						ch_time, strlen(ch_time)-1) == NULL) {
-				LM_ERR("failed to add attr to mi_node\n");
-				goto error;
-			}
-			lock_stop_read(partition->ref_lock);
-		}
-	}
-	else {
-		/* just one partition */
-		partition = head_db_start;
-
-		lock_start_read(partition->ref_lock);
-		ch_time = ctime(&partition->time_last_update);
-		if((ans = add_mi_node_child(&rpl_tree->node, 0,
-						MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
-						ch_time, strlen(ch_time)-1)) == NULL) {
-			LM_ERR("failed to add mi_node\n");
-			goto error;
-		}
-		lock_stop_read(partition->ref_lock);
-
-	}
-	return rpl_tree;
 error:
-	lock_stop_read(partition->ref_lock);
-	free_mi_tree(rpl_tree);
+	lock_stop_read( partition->ref_lock );
+	free_mi_response(resp);
 	return 0;
 }
 
+mi_response_t *mi_dr_number_routing_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
 
+	return mi_dr_number_routing(params, head_db_start, -1);
+}
+
+mi_response_t *mi_dr_number_routing_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int grp_id;
+
+	if (use_partitions)
+		return init_mi_error_extra(400,
+			MI_SSTR("Missing parameter: 'partition_name'"),
+			MI_SSTR("'partition_name' is required when 'use_partitions' is set"));
+
+	if (get_mi_int_param(params, "group_id", &grp_id) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_number_routing(params, head_db_start, grp_id);
+}
+
+mi_response_t *mi_dr_number_routing_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct head_db * current_partition=0;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	return mi_dr_number_routing(params, current_partition, -1);
+}
+
+mi_response_t *mi_dr_number_routing_4(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct head_db * current_partition=0;
+	int grp_id;
+	mi_response_t *resp;
+
+	resp = mi_dr_get_partition(params, &current_partition);
+	if (resp)
+		return resp;
+
+	if (get_mi_int_param(params, "group_id", &grp_id) < 0)
+		return init_mi_param_error();
+
+	return mi_dr_number_routing(params, current_partition, grp_id);
+}
+
+
+static int mi_dr_print_rld_status(mi_item_t *part_item, struct head_db * partition,
+							int with_name)
+{
+	char *ch_time;
+
+	lock_start_read(partition->ref_lock);
+
+	ch_time = ctime(&partition->time_last_update);
+	LM_DBG("partition  %.*s was last updated:%s\n",
+			partition->partition.len, partition->partition.s,
+			ch_time);
+
+	if (with_name && add_mi_string(part_item, MI_SSTR("name"),
+		partition->partition.s, partition->partition.len) < 0)
+		goto error;
+
+	if (add_mi_string(part_item, MI_SSTR(MI_LAST_UPDATE_S),
+		ch_time, strlen(ch_time)-1) < 0)
+		goto error;
+
+	lock_stop_read(partition->ref_lock);
+
+	return 0;
+
+error:
+	lock_stop_read(partition->ref_lock);
+	return -1;
+}
+
+mi_response_t *mi_dr_reload_status(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct head_db * partition;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *parts_arr, *part_item;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if(use_partitions){
+		/* display for all partitions */
+		parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
+		if (!parts_arr)
+			goto error;
+
+		for(partition = head_db_start; partition; partition = partition->next) {
+			part_item = add_mi_object(parts_arr, NULL, 0);
+			if (!part_item)
+				goto error;
+
+			if (mi_dr_print_rld_status(part_item, partition, 1) < 0)
+				goto error;
+		}
+	} else  /* just one partition */
+		if (mi_dr_print_rld_status(resp_obj, head_db_start, 0) < 0)
+			goto error;
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+mi_response_t *mi_dr_reload_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct head_db * partition;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+
+	resp = mi_dr_get_partition(params, &partition);
+	if (resp)
+		return resp;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (mi_dr_print_rld_status(resp_obj, partition, 1) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	return resp;
+}
