@@ -64,6 +64,7 @@ static struct flat_socket **list_files;
 static struct flat_deleted **list_deleted_files;
 static gen_lock_t *global_lock;
 static int initial_capacity = FLAT_DEFAULT_MAX_FD;
+static int suppress_event_name = 0;
 static str file_permissions;
 static mode_t file_permissions_oct;
 
@@ -76,6 +77,7 @@ static param_export_t mod_params[] = {
 	{"max_open_sockets",INT_PARAM, &initial_capacity},
 	{"delimiter",STR_PARAM, &delimiter.s},
 	{"file_permissions", STR_PARAM, &file_permissions.s},
+	{"suppress_event_name", INT_PARAM, &suppress_event_name},
 	{0,0,0}
 };
 
@@ -536,7 +538,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	if (io_param == NULL)
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
 
-	if (ev_name && ev_name->s) {
+	if (!suppress_event_name && ev_name && ev_name->s) {
 		io_param[idx].iov_base = ev_name->s;
 		io_param[idx].iov_len = ev_name->len;
 		idx++;
@@ -563,9 +565,11 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 				cap_params += 20;
 			}
 
-			io_param[idx].iov_base = delimiter.s;
-			io_param[idx].iov_len = delimiter.len;
-			idx++;
+			if (!suppress_event_name || idx != 0) {
+				io_param[idx].iov_base = delimiter.s;
+				io_param[idx].iov_len = delimiter.len;
+				idx++;
+			}
 
 			if (param->flags & EVI_INT_VAL) {
 				ptr_buff =  sint2str(param->val.n, &len);
