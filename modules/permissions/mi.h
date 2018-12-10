@@ -35,16 +35,22 @@
 
 #define MI_ALLOW_URI "allow_uri"
 
-struct mi_root* mi_address_reload(struct mi_root *cmd, void *param);
+mi_response_t *mi_address_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_address_reload_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_address_dump(struct mi_root *cmd, void *param);
+mi_response_t *mi_address_dump(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_address_dump_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-//struct mi_root* mi_address_reload(struct mi_root *cmd, void *param);
+mi_response_t *mi_subnet_dump(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_subnet_dump_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-//struct mi_root* mi_address_dump(struct mi_root *cmd, void *param);
-
-struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param);
-
-struct mi_root* mi_allow_uri(struct mi_root *cmd, void *param);
+mi_response_t *mi_allow_uri(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif
