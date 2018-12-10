@@ -517,63 +517,36 @@ int fixup_int_list(void **param)
 
 int fixup_flags(str* param)
 {
-
-	#define PV_DELIM ')'
-	#define FLAG_ERR(_flag_msg_)\
-		do{\
-			LM_ERR("Cannot set " #_flag_msg_  " flag\n");\
-			return -1;\
-		} while(0);
-
 	int index, ret=0;
 
-	for(index=0; index < param->len; index++) {
+	for (index=0; index < param->len; index++) {
 		switch (param->s[index]) {
 			case ' ':
 				break;
 			case 'f':
 			case 'F':
-				if (ret & DS_FAILOVER_ON) {
-					FLAG_ERR(failover (F));
-				} else {
-					ret |= DS_FAILOVER_ON;
-				}
-
+				ret |= DS_FAILOVER_ON;
 				break;
 			case 'u':
 			case 'U':
-				if (ret & DS_HASH_USER_ONLY) {
-					FLAG_ERR(hash user (U));
-				} else {
-					ret |= DS_HASH_USER_ONLY;
-				}
-
+				ret |= DS_HASH_USER_ONLY;
 				break;
 			case 'd':
 			case 'D':
-				if (ret & DS_USE_DEFAULT) {
-					FLAG_ERR(use default (D));
-				} else {
-					ret |= DS_USE_DEFAULT;
-				}
+				ret |= DS_USE_DEFAULT;
 				break;
 			case 's':
 			case 'S':
-				if (ret & DS_FORCE_DST) {
-					FLAG_ERR(force dst (S));
-				} else {
-					ret |= DS_FORCE_DST;
-				}
+				ret |= DS_FORCE_DST;
 				break;
-			default :
+
+			default:
 				LM_ERR("Invalid definition\n");
 				return -1;
 		}
 	}
 
 	return ret;
-
-	#undef FLAG_ERR
 }
 
 /*
