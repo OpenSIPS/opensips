@@ -65,10 +65,14 @@ static int set_gflag(struct sip_msg*, char *, char *);
 static int reset_gflag(struct sip_msg*, char *, char *);
 static int is_gflag(struct sip_msg*, char *, char *);
 
-static struct mi_root* mi_set_gflag(struct mi_root* cmd, void* param );
-static struct mi_root* mi_reset_gflag(struct mi_root* cmd, void* param );
-static struct mi_root* mi_is_gflag(struct mi_root* cmd, void* param );
-static struct mi_root* mi_get_gflags(struct mi_root* cmd, void* param );
+mi_response_t *mi_set_gflag(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_reset_gflag(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_is_gflag(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_get_gflags(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int fixup_gflags( void** param, int param_no);
 
@@ -97,11 +101,23 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ FIFO_SET_GFLAG,   0, mi_set_gflag,   0,                 0,  0 },
-	{ FIFO_RESET_GFLAG, 0, mi_reset_gflag, 0,                 0,  0 },
-	{ FIFO_IS_GFLAG,    0, mi_is_gflag,    0,                 0,  0 },
-	{ FIFO_GET_GFLAGS,  0, mi_get_gflags,  MI_NO_INPUT_FLAG,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ FIFO_SET_GFLAG, 0, 0, 0, {
+		{mi_set_gflag, {"bitmask", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_RESET_GFLAG, 0, 0, 0, {
+		{mi_reset_gflag, {"bitmask", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_IS_GFLAG, 0, 0, 0, {
+		{mi_is_gflag, {"bitmask", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_GET_GFLAGS, 0, 0, 0, {
+		{mi_get_gflags, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 struct module_exports exports = {
@@ -185,17 +201,17 @@ static int is_gflag(struct sip_msg *bar, char *flag, char *foo)
 
 /************************* MI functions *******************************/
 
-static struct mi_root* mi_set_gflag(struct mi_root* cmd_tree, void* param )
+mi_response_t *mi_set_gflag(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	unsigned int flag;
-	struct mi_node* node;
+	str bitmask;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "bitmask", &bitmask.s, &bitmask.len) < 0)
+		return init_mi_param_error();
 
 	flag = 0;
-	if( strno2int( &node->value, &flag) <0)
+	if( strno2int( &bitmask, &flag) <0)
 		goto error;
 	if (!flag) {
 		LM_ERR("incorrect flag\n");
@@ -204,24 +220,24 @@ static struct mi_root* mi_set_gflag(struct mi_root* cmd_tree, void* param )
 
 	(*gflags) |= flag;
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
+
 error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return init_mi_error(400, MI_SSTR("Bad parameter value"));
 }
 
 
-
-static struct mi_root*  mi_reset_gflag(struct mi_root* cmd_tree, void* param )
+mi_response_t *mi_reset_gflag(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	unsigned int flag;
-	struct mi_node* node = NULL;
+	str bitmask;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "bitmask", &bitmask.s, &bitmask.len) < 0)
+		return init_mi_param_error();
 
 	flag = 0;
-	if( strno2int( &node->value, &flag) <0)
+	if( strno2int( &bitmask, &flag) <0)
 		goto error;
 	if (!flag) {
 		LM_ERR("incorrect flag\n");
@@ -230,73 +246,59 @@ static struct mi_root*  mi_reset_gflag(struct mi_root* cmd_tree, void* param )
 
 	(*gflags) &= ~ flag;
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
+
 error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return init_mi_error(400, MI_SSTR("Bad parameter value"));
 }
 
 
-
-static struct mi_root* mi_is_gflag(struct mi_root* cmd_tree, void* param )
+mi_response_t *mi_is_gflag(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	unsigned int flag;
-	struct mi_root* rpl_tree = NULL;
-	struct mi_node* node = NULL;
+	str bitmask;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "bitmask", &bitmask.s, &bitmask.len) < 0)
+		return init_mi_param_error();
 
 	flag = 0;
-	if( strno2int( &node->value, &flag) <0)
+	if( strno2int( &bitmask, &flag) <0)
 		goto error_param;
 	if (!flag) {
 		LM_ERR("incorrect flag\n");
 		goto error_param;
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if(rpl_tree ==0)
-		return 0;
-
 	if( ((*gflags) & flag)== flag )
-		node = add_mi_node_child( &rpl_tree->node, 0, 0, 0, "TRUE", 4);
+		return init_mi_result_bool(1);
 	else
-		node = add_mi_node_child( &rpl_tree->node, 0, 0, 0, "FALSE", 5);
+		return init_mi_result_bool(0);
 
-	if(node == NULL)
-	{
-		LM_ERR("failed to add node\n");
-		free_mi_tree(rpl_tree);
-		return 0;
-	}
-
-	return rpl_tree;
 error_param:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return init_mi_error(400, MI_SSTR("Bad parameter value"));
 }
 
 
-static struct mi_root*  mi_get_gflags(struct mi_root* cmd_tree, void* param )
+mi_response_t *mi_get_gflags(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* node= NULL;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;	
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN );
-	if(rpl_tree == NULL)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
 
-	node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "0x%X",(*gflags));
-	if(node == NULL)
+	if (add_mi_string_fmt(resp_obj, MI_SSTR("hex"), "0x%X", (*gflags)) < 0)
+		goto error;
+	if (add_mi_string_fmt(resp_obj, MI_SSTR("dec"), "%u", (*gflags)) < 0)
 		goto error;
 
-	node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%u",(*gflags));
-	if(node == NULL)
-		goto error;
+	return resp;
 
-	return rpl_tree;
 error:
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }
 
