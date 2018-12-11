@@ -43,6 +43,9 @@
 #include "prefix_tree.h"
 #include "parse.h"
 
+#define is_valid_gw_char(_c) \
+	(isalpha(_c) || isdigit(_c) || (_c)=='_' || (_c)=='-' || (_c)=='.')
+
 
 extern int dr_force_dns;
 
@@ -129,7 +132,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 
 		/* eat the destination ID (alphanumerical) */
 		id.s = tmp;
-		while( *tmp && (isalpha(*tmp) || isdigit(*tmp) || (*tmp)=='_' || (*tmp)=='-') )
+		while( *tmp && is_valid_gw_char(*tmp))
 			tmp++;
 		if (id.s == tmp) {
 			LM_ERR("bad id '%c' (%d)[%s]\n",
@@ -458,6 +461,7 @@ add_dst(
 	int l_ip,l_pri,l_attrs,l_id;
 #define GWABUF_MAX_SIZE	512
 	char gwabuf[GWABUF_MAX_SIZE];
+	char *p;
 	union sockaddr_union sau;
 	struct proxy_l *proxy;
 	unsigned int sip_prefix;
@@ -473,6 +477,13 @@ add_dst(
 	l_ip = strlen(ip);
 	l_pri = pri?strlen(pri):0;
 	l_attrs = attrs?strlen(attrs):0;
+
+	/* check the ID of the gateway */
+	for (p = id + l_id - 1; p >= id; p--)
+		if (!is_valid_gw_char(*p)) {
+			LM_ERR("invalid char in gateway's name [%c]\n", *p);
+			goto err_exit;
+		}
 
 	/* check if GW address starts with 'sip' or 'sips' */
 	if (l_ip>5) {
