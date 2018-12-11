@@ -396,11 +396,11 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 			cancel_branch(t, r_buf->branch );
 			set_cancel_extra_hdrs( NULL, 0);
 		}
+		/* lock reply processing to determine how to proceed reliably */
+		LOCK_REPLIES( t );
+		LM_DBG("Cancel sent out, sending 408 (%p)\n", t);
+		fake_reply(t, r_buf->branch, 408 );
 	}
-	/* lock reply processing to determine how to proceed reliably */
-	LOCK_REPLIES( t );
-	LM_DBG("Cancel sent out, sending 408 (%p)\n", t);
-	fake_reply(t, r_buf->branch, 408 );
 
 	/* flush the context */
 	if (current_processing_ctx==NULL)
