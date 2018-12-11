@@ -37,6 +37,7 @@
 #include "../../mem/shm_mem.h" /*shm_malloc*/
 #include "../../dprint.h" /*LM_**/
 #include "../../locking.h"
+#include "../../pt.h"
 
 #include "seas.h"
 #include "ha.h"
