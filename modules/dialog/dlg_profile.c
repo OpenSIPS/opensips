@@ -32,6 +32,7 @@
 #include "../../hash_func.h"
 #include "../../dprint.h"
 #include "../../ut.h"
+#include "../../pt.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 #include "dlg_repl_profile.h"
