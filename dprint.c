@@ -117,3 +117,37 @@ void reset_proc_log_level(void)
 {
 	*log_level = *default_log_level;
 }
+
+/*
+ * set the (default) log level of a given process
+ *
+ * Note: the index param is not validated!
+ */
+void __set_proc_log_level(int proc_idx, int level)
+{
+	pt[proc_idx].log_level = level;
+}
+
+void __set_proc_default_log_level(int proc_idx, int level)
+{
+	pt[proc_idx].default_log_level = level;
+}
+
+/* set the current and default log levels for all OpenSIPS processes */
+void set_global_log_level(int level)
+{
+	int i;
+
+	for (i = 0; i < counted_processes; i++) {
+		__set_proc_default_log_level(i, level);
+		__set_proc_log_level(i, level);
+	}
+}
+
+/* set the log level of the current process */
+void set_proc_log_level(int level)
+{
+	__set_proc_log_level(process_no, level);
+}
+
+
