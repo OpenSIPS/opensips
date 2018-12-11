@@ -52,8 +52,6 @@
 #include <syslog.h>
 #include <time.h>
 
-#include "pt.h"
-
 #define L_ALERT -3	/*!< Alert level */
 #define L_CRIT  -2	/*!< Critical level */
 #define L_ERR   -1	/*!< Error level */
@@ -118,38 +116,15 @@ void dprint (char* format, ...);
 
 int str2facility(char *s);
 
-/*
- * set the (default) log level of a given process
- *
- * Note: the index param is not validated!
- */
-static inline void __set_proc_log_level(int proc_idx, int level)
-{
-	pt[proc_idx].log_level = level;
-}
+void __set_proc_log_level(int proc_idx, int level);
 
-static inline void __set_proc_default_log_level(int proc_idx, int level)
-{
-	pt[proc_idx].default_log_level = level;
-}
+void __set_proc_default_log_level(int proc_idx, int level);
 
 /* set the current and default log levels for all OpenSIPS processes */
-static inline void set_global_log_level(int level)
-{
-	int i;
-
-	for (i = 0; i < counted_processes; i++) {
-		__set_proc_default_log_level(i, level);
-		__set_proc_log_level(i, level);
-	}
-}
+void set_global_log_level(int level);
 
 /* set the log level of the current process */
-static inline void set_proc_log_level(int level)
-{
-	__set_proc_log_level(process_no, level);
-}
-
+void set_proc_log_level(int level);
 
 /* changes the logging level to the default value for the current process */
 void reset_proc_log_level(void);
