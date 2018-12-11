@@ -25,6 +25,7 @@
  */
 
 #include "../../mem/shm_mem.h"
+#include "../../pt.h"
 #include "dlg_vals.h"
 #include "dlg_hash.h"
 

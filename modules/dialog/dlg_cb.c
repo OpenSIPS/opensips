@@ -30,6 +30,7 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../dprint.h"
+#include "../../pt.h"
 #include "dlg_hash.h"
 #include "dlg_cb.h"
 

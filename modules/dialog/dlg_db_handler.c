@@ -38,6 +38,7 @@
 #include "../../db/db_insertq.h"
 #include "../../str.h"
 #include "../../socket_info.h"
+#include "../../pt.h"
 #include "dlg_hash.h"
 #include "dlg_db_handler.h"
 #include "dlg_cb.h"
