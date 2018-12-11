@@ -29,6 +29,7 @@
 #include "../../tsend.h"
 #include "../../trim.h"
 #include "../../ut.h"
+#include "../../pt.h"
 #include "jsonrpc.h"
 #include <sys/poll.h>
 #include <fcntl.h>
