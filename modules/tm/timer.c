@@ -329,7 +329,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	static context_p my_ctx = NULL;
 	context_p old_ctx;
 	struct retr_buf* r_buf;
-	struct cell *t;
+	struct cell *t = NULL;
 
 	if (fr_tl==0){
 		/* or BUG?, ignoring it for now */
@@ -387,11 +387,15 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	/* set the T context too */
 	set_t( t );
 
-	/* out-of-lock do the cancel I/O */
-	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) ) {
-		set_cancel_extra_hdrs( CANCEL_REASON_SIP_480, sizeof(CANCEL_REASON_SIP_480)-1);
-		cancel_branch(t, r_buf->branch );
-		set_cancel_extra_hdrs( NULL, 0);
+	if (!t) {
+		LM_BUG("Empty timer cell - preventing a crash\n");
+	} else {
+		/* out-of-lock do the cancel I/O */
+		if (is_invite(t) && should_cancel_branch(t, r_buf->branch) ) {
+			set_cancel_extra_hdrs( CANCEL_REASON_SIP_480, sizeof(CANCEL_REASON_SIP_480)-1);
+			cancel_branch(t, r_buf->branch );
+			set_cancel_extra_hdrs( NULL, 0);
+		}
 	}
 	/* lock reply processing to determine how to proceed reliably */
 	LOCK_REPLIES( t );
