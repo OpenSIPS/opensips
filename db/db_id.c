@@ -86,7 +86,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 	};
 
 	enum state st;
-	unsigned int len, i, ipv6_flag;
+	unsigned int len, i, ipv6_flag = 0;
 	const char* begin;
 	char* prev_token;
 
