@@ -415,6 +415,8 @@ get_via_branch(struct sip_msg* msg, int vianum, str* _branch)
 		return -1;
 
 	via = (vianum == 1) ? msg->via1 : msg->via2;
+	if (!via)
+		return -1;
 	for (p = via->param_lst; p; p = p->next)
 	{
 		if (p->name.len == strlen("branch")
