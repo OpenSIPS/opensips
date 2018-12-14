@@ -843,7 +843,7 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 										str *cmd_params, int no_params)
 {
 	bin_packet_t packet;
-	int i;
+	int i, rc;
 
 	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_MI_CMD, BIN_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin send buffer\n");
@@ -864,9 +864,13 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 	}
 
 	if (dst_id)
-		return clusterer_send_msg(&packet, cluster_id, dst_id);
+		rc = clusterer_send_msg(&packet, cluster_id, dst_id);
 	else
-		return clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
+		rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
+
+	bin_free_packet(&packet);
+
+	return rc;
 }
 
 static inline int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
