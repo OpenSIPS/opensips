@@ -39,6 +39,7 @@
 #include "node_info.h"
 #include "clusterer.h"
 #include "sync.h"
+#include "sharing_tags.h"
 
 struct clusterer_binds clusterer_api;
 
@@ -1800,6 +1801,8 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 			handle_cl_gen_msg(packet, cluster_id, source_id);
 		else if (packet_type == CLUSTERER_MI_CMD)
 			handle_cl_mi_msg(packet);
+		else if (packet_type == CLUSTERER_SHTAG_ACTIVE)
+			handle_shtag_active(packet, cluster_id);
 		else if (packet_type == CLUSTERER_SYNC_REQ)
 			handle_sync_request(packet, cl, node);
 		else if (packet_type == CLUSTERER_SYNC || packet_type == CLUSTERER_SYNC_END)
@@ -2399,6 +2402,9 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 						"cluster_id=%d node_id=%d, new_state=node down\n",
 						cl->cluster_id, node->node_id);
 
+				shtag_event_handler(cl->cluster_id, CLUSTER_NODE_DOWN,
+					node->node_id);
+
 			} else if (node->flags & NODE_EVENT_UP) {
 				node->flags &= ~NODE_EVENT_UP;
 
@@ -2458,6 +2464,10 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					LM_ERR("Failed to raise node state changed event for: "
 						"cluster_id=%d node_id=%d, new_state=node up\n",
 						cl->cluster_id, node->node_id);
+
+				shtag_event_handler(cl->cluster_id, CLUSTER_NODE_UP,
+					node->node_id);
+
 			} else
 				lock_release(node->lock);
 		}

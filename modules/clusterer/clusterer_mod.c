@@ -41,6 +41,7 @@
 #include "node_info.h"
 #include "clusterer.h"
 #include "sync.h"
+#include "sharing_tags.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
@@ -138,8 +139,12 @@ static param_export_t params[] = {
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
-	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_neighbor},
-	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,	(void*)&provision_current},
+	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,
+		(void*)&provision_neighbor},
+	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,
+		(void*)&provision_current},
+	{"sharing_tag",			STR_PARAM|USE_FUNC_PARAM,
+		(void*)&shtag_modparam_func},
 	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
 	{0, 0, 0}
 };
@@ -149,19 +154,23 @@ static param_export_t params[] = {
  */	
 static mi_export_t mi_cmds[] = {
 	{ "clusterer_reload", "reloads stored data from the database",
-	clusterer_reload, 0, 0, 0},
+		clusterer_reload, 0, 0, 0},
 	{ "clusterer_set_status", "sets the status for a specified connection",
-	clusterer_set_status, 0, 0, 0},
+		clusterer_set_status, 0, 0, 0},
 	{ "clusterer_list", "lists the available connections for the specified server",
-	clusterer_list, 0, 0, 0},
+		clusterer_list, 0, 0, 0},
 	{ "clusterer_list_topology", "lists the topology as known by the current node",
-	clusterer_list_topology, 0, 0, 0},
+		clusterer_list_topology, 0, 0, 0},
 	{ "cluster_send_mi", "sends an MI command to be run on a specific node in a cluster",
-	cluster_send_mi, MI_ASYNC_RPL_FLAG, 0, 0},
+		cluster_send_mi, MI_ASYNC_RPL_FLAG, 0, 0},
 	{ "cluster_broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster",
-	cluster_bcast_mi, MI_ASYNC_RPL_FLAG, 0, 0},
+		cluster_bcast_mi, MI_ASYNC_RPL_FLAG, 0, 0},
 	{ "clusterer_list_cap", "lists registered capabilities and their states",
-	clusterer_list_cap, 0, 0, 0},
+		clusterer_list_cap, 0, 0, 0},
+	{ "clusterer_list_shtags", "lists the sharing tags and their states",
+		shtag_mi_list, 0, 0, 0},
+	{ "clusterer_shtag_set_active", "switch the status of the give sharing tag to active",
+		shtag_mi_set_active, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -396,6 +405,10 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* check if the cluster IDs in the the sharing tag list are valid */
+	shtag_init_list();
+	shtag_validate_list();
+
 	return 0;
 error:
 	lock_destroy_rw(cl_list_lock);
@@ -437,6 +450,9 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 		free_info(old_info);
 
 	LM_INFO("Reloaded DB info\n");
+
+	/* check if the cluster IDs in the the sharing tag list are valid */
+	shtag_validate_list();
 
 	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
@@ -1193,6 +1209,9 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->request_sync = cl_request_sync;
 	binds->sync_chunk_start = cl_sync_chunk_start;
 	binds->sync_chunk_iter = cl_sync_chunk_iter;
+	binds->shtag_get = shtag_get;
+	binds->shtag_set = shtag_set;
+	binds->shtag_get_all_active = shtag_get_all_active;
 
 	return 1;
 }

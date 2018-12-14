@@ -162,6 +162,35 @@ modparam("clusterer", "db_table", "clusterer")
 		</example>
         </section>
 
+		<section id="param_sharing_tag" xreflabel="sharing_tag">
+			<title><varname>sharing_tag</varname></title>
+			<para>
+			The definition of a sharing tag. The sharing tag is 
+			managed by the clusterer module, but can be used (in terms
+			of reading its state) by any module build on top of 
+			clusterer engine, like dialog or presence.
+			</para>
+			<para>
+			Note that ohter tags may be dynamically learned during runtime via 
+			clustering communication with other nodes.
+			</para>
+			<para>
+			The format for this value is <quote>tag_name / cluster_id = active/backup</quote>.
+			</para>
+			<para>
+			 Multiple definitions of this parameter are allowed. The default value is <quote>none</quote>.
+			</para>
+ 			<example>
+			<title>Set <varname>sharing_tag</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("clusterer", "sharing_tag", "vip1/2=active")
+modparam("clusterer", "sharing_tag", "node/10=backup")
+...
+</programlisting>
+			</example>
+		</section>
+
         <section id="param_my_node_info" xreflabel="my_node_info">
             <title><varname>my_node_info</varname></title>
             <para>
@@ -893,6 +922,46 @@ Cluster:: 1
 	Capability:: usrloc-contact-repl State=not synced
 </programlisting>
 		</example>
+		</section>
+
+		<section id='mi_clusterer_shtag_set_active' xreflabel="clusterer_shtag_set_active">
+		<title><function moreinfo="none">clusterer_shtag_set_active</function></title>
+		<para>
+		Set the given sharing tag to the <emphasis>active</emphasis> state.
+		The information about this change is also broadcasted in the cluster 
+		in order to force any other node that may be active on this tag to 
+		step down to backup.
+		</para>
+		<para>
+		Name: <emphasis>clusterer_shtag_set_active</emphasis>
+		</para>
+		<para>Parameters: <emphasis>tag/cluster_id</emphasis> - the name of 
+		the tag to be set active and the cluster it belogs to.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo clusterer_shtag_set_active vip1/3
+		</programlisting>
+		</section>
+
+		<section id="mi_clusterer_list_shtags" xreflabel="clusterer_list_shtags">
+		<title><function moreinfo="none">clusterer_list_shtags</function></title>
+		<para>
+		Lists all known sharing tags and their states.
+		</para>
+		<para>
+		Name: <emphasis>clusterer_list_shtags</emphasis>
+		</para>
+		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensipsctl fifo clusterer_list_shtags
+		</programlisting>
 		</section>
 
         </section>

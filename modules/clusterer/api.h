@@ -191,6 +191,27 @@ typedef bin_packet_t* (*sync_chunk_start_f)(str *capability, int cluster_id, int
  */
 typedef int (*sync_chunk_iter_f)(bin_packet_t *packet);
 
+/*
+ * Gets the state of a sharing tag by name and cluster ID
+ *
+ * Returns -1 if error or the status of the tag (>=0)
+ */
+typedef int (*shtag_get_f)(str *tag, int cluster_id);
+
+/*
+ * Sets the state of a sharing tag by name and cluster ID
+ *
+ * Returns -1 if error or the new status of the tag (>=0)
+ */
+typedef int (*shtag_set_f)(str *tag, int cluster_id, int new_state);
+
+/*
+ * Gets a list with all the active tags from a cluster
+ *
+ * Returns NULL if none or a list of pointers to the tag names
+ */
+typedef str** (*shtag_get_all_active_f)(int cluster_id);
+
 
 struct clusterer_binds {
 	get_nodes_f get_nodes;
@@ -209,6 +230,9 @@ struct clusterer_binds {
 	request_sync_f request_sync;
 	sync_chunk_start_f sync_chunk_start;
 	sync_chunk_iter_f sync_chunk_iter;
+	shtag_get_f shtag_get;
+	shtag_set_f shtag_set;
+	shtag_get_all_active_f shtag_get_all_active;
 };
 
 typedef int (*load_clusterer_f)(struct clusterer_binds *binds);
