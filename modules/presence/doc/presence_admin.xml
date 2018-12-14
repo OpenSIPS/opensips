@@ -207,36 +207,6 @@ modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, message-summa
 		</example>
 	</section>
 
-	<section id="param_cluster_sharing_tags" xreflabel="cluster_sharing_tags">
-		<title><varname>cluster_sharing_tags</varname> (str)</title>
-		<para>
-		Definition of a sharing tag (and its value) to be known by OpenSIPS 
-		from the startup. Note that tags may be dynamically learned during
-		runtime.
-		</para>
-		<para>
-		Use this option if you want to force a certain value ("active" or 
-		"inactive") from the very beginning.
-		</para>
-		<para>
-		For more on presence clustering see the 
-		<xref linkend="presence_clustering"/> chapter.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>empty</quote> (none).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>cluster_sharing_tags</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence", "cluster_pres_events" ,"vip1=active")
-modparam("presence", "cluster_pres_events" ,"vip2=backup")
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section id="param_expires_offset" xreflabel="expires_offset">
 		<title><varname>expires_offset</varname> (int)</title>
 		<para>

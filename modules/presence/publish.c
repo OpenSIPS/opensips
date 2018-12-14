@@ -198,7 +198,8 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		return ;
 	}
 
-	sh_tags = is_presence_cluster_enabled() ? get_all_active_shtags() : NULL;
+	sh_tags = is_presence_cluster_enabled() ?
+		c_api.shtag_get_all_active(pres_cluster_id) : NULL;
 
 	LM_DBG("cleaning expired presentity information\n");
 

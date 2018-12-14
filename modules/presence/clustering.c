@@ -34,7 +34,7 @@ str clustering_events = {NULL,0};
 
 static unsigned char clustered_events[EVENT_LINE_SEIZE];
 
-static struct clusterer_binds c_api;
+struct clusterer_binds c_api;
 
 static str presence_capability = str_init("presence");
 
@@ -46,19 +46,12 @@ static str empty_val = str_init(" ");
 #define BIN_VERSION    1
 
 static void bin_packet_handler(bin_packet_t *packet);
-static void event_handler(enum clusterer_event ev, int node_id);
 
 
 int init_pres_clustering(void)
 {
 	csv_record *list, *it;
 	event_t e;
-
-	/* init the sharing tags */
-	if (init_shtag_list()<0) {
-		LM_ERR("failed to init the sharing tags list\n");
-		return -1;
-	}
 
 	/* is clustering needed ? */
 	if (!is_presence_cluster_enabled())
@@ -72,7 +65,7 @@ int init_pres_clustering(void)
 
 	/* register handler for receiving packets from the clusterer module */
 	if (c_api.register_capability( &presence_capability,
-	bin_packet_handler, event_handler, pres_cluster_id, 0, NODE_CMP_ANY) < 0) {
+	bin_packet_handler, NULL, pres_cluster_id, 0, NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}
@@ -584,9 +577,6 @@ static void bin_packet_handler(bin_packet_t *packet)
 		case CL_PRESENCE_PRES_QUERY:
 			handle_presentity_query(packet);
 			break;
-		case SHTAG_IS_ACTIVE:
-			handle_repltag_active_msg(packet);
-			break;
 		default:
 			LM_ERR("Unknown binary packet %d received from node %d in "
 				"presence cluster %d)\n", packet->type,
@@ -596,50 +586,3 @@ static void bin_packet_handler(bin_packet_t *packet)
 }
 
 
-void event_handler(enum clusterer_event ev, int node_id)
-{
-	if (ev == CLUSTER_NODE_UP) {
-		shlist_flush_state(&c_api, pres_cluster_id,
-			&presence_capability, node_id);
-	}
-}
-
-
-struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param)
-{
-	struct mi_node* node;
-
-	node = cmd_tree->node.kids;
-
-	if (!is_presence_cluster_enabled())
-		return init_mi_tree(500, MI_SSTR("Clustering not enabled"));
-
-	if (node == NULL || !node->value.s || !node->value.len)
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
-
-	if (get_shtag(&node->value, 1, SHTAG_STATE_ACTIVE) == NULL)
-		return init_mi_tree(500, MI_SSTR("Unable to set replication tag"));
-
-	if (send_shtag_active_info(&c_api, pres_cluster_id,
-	&presence_capability, &node->value, 0) < 0)
-		LM_WARN("Failed to broadcast message about tag [%.*s] going active\n",
-			node->value.len, node->value.s);
-
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
-}
-
-
-struct mi_root *mi_list_shtags(struct mi_root *cmd_tree, void *param)
-{
-	struct mi_root *rpl_tree= NULL;
-
-	rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		return NULL;
-
-	if (list_shtags(&rpl_tree->node)<0) {
-		LM_ERR("failed to list sharing tags\n");
-	}
-
-	return rpl_tree;
-}

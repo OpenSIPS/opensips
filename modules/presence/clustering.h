@@ -25,7 +25,6 @@
 #include "../../mi/mi.h"
 #include "../clusterer/api.h"
 #include "presentity.h"
-#include "sharing_tags.h"
 
 #define is_presence_cluster_enabled() (pres_cluster_id>0)
 
@@ -41,6 +40,9 @@ extern int cluster_federation;
 /* events to be replicated via the sharding cluster */
 extern str clustering_events;
 
+/* the clusterer api / functions */
+extern struct clusterer_binds c_api;
+
 int init_pres_clustering(void);
 
 int is_event_clustered( int event_parsed );
@@ -48,9 +50,5 @@ int is_event_clustered( int event_parsed );
 void replicate_publish_on_cluster(presentity_t *pres);
 
 void query_cluster_for_presentity(str *pres_uri, event_t *evp);
-
-struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param);
-
-struct mi_root *mi_list_shtags(struct mi_root *cmd_tree, void *param);
 
 #endif

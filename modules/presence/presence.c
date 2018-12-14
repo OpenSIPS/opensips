@@ -180,7 +180,6 @@ static param_export_t params[]={
 	{ "cluster_id",             INT_PARAM, &pres_cluster_id},
 	{ "cluster_federation_mode",INT_PARAM, &cluster_federation},
 	{ "cluster_pres_events",    STR_PARAM, &clustering_events.s},
-	{ "cluster_sharing_tags",   STR_PARAM|USE_FUNC_PARAM, &sharing_tag_func},
 	{0,0,0}
 };
 
@@ -190,8 +189,6 @@ static mi_export_t mi_cmds[] = {
 	{ "pres_expose",                0, mi_pres_expose,        0,  0,  0},
 	{ "pres_phtable_list",          0, mi_list_phtable,       0,  0,  0},
 	{ "subs_phtable_list" ,         0, mi_list_shtable,       0,  0,  0},
-	{ "pres_set_sharing_tag_active",0, mi_set_shtag_active,   0,  0,  0},
-	{ "pres_list_sharing_tags",     0, mi_list_shtags,        0,  0,  0},
 	{  0,                           0, 0,                     0,  0,  0}
 };
 

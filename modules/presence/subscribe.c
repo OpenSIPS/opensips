@@ -578,7 +578,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* tag)
 			LM_ERR("failed to get value from sh tag param\n");
 			goto error;
 		}
-		if (get_shtag( &subs.sh_tag, 0, 0)==NULL) {
+		if (c_api.shtag_get( &subs.sh_tag, pres_cluster_id)<0) {
 			LM_ERR("failed to lookup the <%.*s> sharing tag\n",
 				subs.sh_tag.len, subs.sh_tag.s);
 			goto error;
