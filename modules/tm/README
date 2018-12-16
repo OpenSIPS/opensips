@@ -899,9 +899,9 @@ t_relay(); # send the call further
        exists.
      * ACK request - true if the ACK is a hop-by-hop ACK (to a
        negative reply) corresponding to an previous INVITE
-       transaction. IMPORTANT: end-to-end ACKs (to 2xx replies)
-       are not detected by this function as end-to-end ACKs form a
-       different transaction.
+       transaction. IMPORTANT: this function returns false (return
+       code -2) for end-to-end ACKs (to 2xx replies from a
+       different transaction).
 
    Note: To detect retransmissions using this function you have to
    make sure that the initial request has already created a
@@ -1556,7 +1556,7 @@ Chapter 4. Contributors
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 81 62 1526 347
+   5. Razvan Crainea (@razvancrainea) 82 63 1530 351
    6. Liviu Chircu (@liviuchircu) 76 54 1026 673
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
@@ -1627,15 +1627,15 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Alexey Vasilyev, Liviu Chircu (@liviuchircu),
-   Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
-   Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Dan Pascu (@danpascu), Juha Heinanen
-   (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
-   Kuthan (@jiriatipteldotorg).
+   Last edited by: Razvan Crainea (@razvancrainea), Alexey
+   Vasilyev, Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
+   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
+   Jiri Kuthan (@jiriatipteldotorg).
 
    doc copyrights:
 
