@@ -653,7 +653,7 @@ if (is_avp_set("$avp(805)")) {
     $avp(billing_party_domain) = $fd;
 }
 
-if (method==INVITE &amp;&amp; !has_totag() &amp;&amp;
+if (is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp;
     is_domain_local("$avp(billing_party_domain)")) {
     call_control();
     switch ($retcode) {
