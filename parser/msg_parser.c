@@ -862,7 +862,8 @@ int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq,str *cal
 			case '\r':
 				switch (state) {
 					case 4: state=5;break;
-					case 5: case 6: state=6;break;
+					case 5: state=6;break;
+					case 6: if(!(*p=='\n' && *(p-1)=='\r')) SET_FOUND(1);break;
 					default : state=2;break;
 				}
 				break;
