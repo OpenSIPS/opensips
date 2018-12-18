@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef _DROUTING_REPLICATION_H_
-#define _DROUTING_REPLICATION_H_
+#ifndef _DROUTING_CLUSTERING_H_
+#define _DROUTING_CLUSTERING_H_
 
 #include "../../sr_module.h"
 #include "../../bin_interface.h"
@@ -31,19 +31,21 @@
 #define REPL_GW_STATUS_UPDATE 1
 #define REPL_CR_STATUS_UPDATE 2
 
-extern int dr_repl_cluster;
+extern int dr_cluster_id;
+extern str dr_cluster_shtag;
 
-extern str repl_dr_module_name;
-extern struct clusterer_binds clusterer_api;
+struct clusterer_binds clusterer_api;
 
-extern str status_repl_cap;
+int dr_init_cluster(void);
+
+/* checks if the sharing tag is on active */
+int dr_cluster_shtag_is_active(void);
 
 /* replicate the GW status via BIN */
-void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster);
+void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw);
 
 /* replicate the Carrier status via BIN */
-void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
-																int cluster);
+void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr);
 
 /* handler for incoming BIN packets */
 void receive_dr_binary_packet(bin_packet_t *packet);

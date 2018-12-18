@@ -21,16 +21,18 @@
 
 #include "../../ip_addr.h"
 #include "../../ut.h"
+#include "../clusterer/sharing_tags.h"
 #include "prefix_tree.h"
 #include "dr_partitions.h"
-#include "dr_replication.h"
+#include "dr_clustering.h"
 
+/* the cluster ID  */
+int dr_cluster_id = 0;
 
-/* module parameter to control the replication */
-int dr_repl_cluster = 0;
+str dr_cluster_shtag = {NULL,0};
 
-str status_repl_cap = str_init("drouting-status-repl");
-struct clusterer_binds clusterer_api;
+static str status_repl_cap = str_init("drouting-status-repl");
+static struct clusterer_binds c_api;
 
 /* implemented in drouting.c */
 void dr_raise_event(struct head_db *p, pgw_t *gw);
@@ -38,12 +40,61 @@ void dr_raise_event(struct head_db *p, pgw_t *gw);
 extern struct head_db * head_db_start;
 
 
-void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster)
+int dr_init_cluster(void)
+{
+	if (load_clusterer_api(&clusterer_api)!=0) {
+		LM_ERR("failed to find clusterer API - is clusterer "
+			"module loaded?\n");
+		return -1;
+	}
+
+	/* register handler for processing drouting packets 
+	 * to the clusterer module */
+	if (c_api.register_capability( &status_repl_cap,
+	receive_dr_binary_packet, NULL, dr_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		LM_ERR("cannot register binary packet callback to "
+			"clusterer module!\n");
+		return -1;
+	}
+
+	/* "register" the sharing tag */
+	if (dr_cluster_shtag.s) {
+		dr_cluster_shtag.len = strlen(dr_cluster_shtag.s);
+		if (c_api.shtag_get( &dr_cluster_shtag, dr_cluster_id)<0) {
+			LM_ERR("failed to initialized the sharing tag <%.*s>\n",
+				dr_cluster_shtag.len, dr_cluster_shtag.s);
+			return -1;
+		}
+	} else {
+		dr_cluster_shtag.len = 0;
+	}
+
+	return 0;
+}
+
+
+int dr_cluster_shtag_is_active(void)
+{
+	if ( dr_cluster_id<=0 || (dr_cluster_shtag.s &&
+	c_api.shtag_get(&dr_cluster_shtag,dr_cluster_id)!=SHTAG_STATE_ACTIVE) )
+		/* no clustering support or sharing tag found on not-active */
+		return 0;
+
+	return 1;
+}
+
+void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw)
 {
 	bin_packet_t packet;
 	int rc;
 
-	if(bin_init(&packet, &status_repl_cap, REPL_GW_STATUS_UPDATE, BIN_VERSION, 0)!=0){
+	if ( dr_cluster_id<=0 || (dr_cluster_shtag.s &&
+	c_api.shtag_get(&dr_cluster_shtag,dr_cluster_id)!=SHTAG_STATE_ACTIVE) )
+		/* no clustering support or sharing tag found on not-active */
+		return;
+
+	if (bin_init(&packet, &status_repl_cap, REPL_GW_STATUS_UPDATE,
+	BIN_VERSION, 0)!=0){
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -55,17 +106,17 @@ void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster)
 	/* replicate the state-related flags of the gateway */
 	bin_push_int(&packet, gw->flags&DR_DST_STAT_MASK);
 
-	rc = clusterer_api.send_all(&packet, cluster);
+	rc = c_api.send_all(&packet, dr_cluster_id);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", dr_cluster_id);
 		break;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			cluster);
+			dr_cluster_id);
 		break;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", cluster);
+		LM_ERR("Error sending in cluster: %d\n", dr_cluster_id);
 		break;
 	}
 
@@ -73,13 +124,18 @@ void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw, int cluster)
 }
 
 
-void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
-																int cluster)
+void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr)
 {
 	bin_packet_t packet;
 	int rc;
 
-	if(bin_init(&packet, &status_repl_cap, REPL_CR_STATUS_UPDATE, BIN_VERSION, 0)!=0){
+	if ( dr_cluster_id<=0 || (dr_cluster_shtag.s &&
+	c_api.shtag_get(&dr_cluster_shtag,dr_cluster_id)!=SHTAG_STATE_ACTIVE) )
+		/* no clustering support or sharing tag found on not-active */
+		return;
+
+	if (bin_init(&packet, &status_repl_cap, REPL_CR_STATUS_UPDATE,
+	BIN_VERSION, 0)!=0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -91,17 +147,17 @@ void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr,
 	/* replicate the state-related flags of the gateway */
 	bin_push_int(&packet, cr->flags&DR_CR_FLAG_IS_OFF);
 
-	rc = clusterer_api.send_all(&packet, cluster);
+	rc = c_api.send_all(&packet, dr_cluster_id);
 	switch (rc) {
 	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", cluster);
+		LM_INFO("Current node is disabled in cluster: %d\n", dr_cluster_id);
 		break;
 	case CLUSTERER_DEST_DOWN:
 		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			cluster);
+			dr_cluster_id);
 		break;
 	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", cluster);
+		LM_ERR("Error sending in cluster: %d\n", dr_cluster_id);
 		break;
 	}
 
@@ -196,7 +252,8 @@ void receive_dr_binary_packet(bin_packet_t *packet)
 		cr_status_update(packet);
 		break;
 	default:
-		LM_WARN("Invalid drouting binary packet command: %d (from node: %d in cluster: %d)\n",
-			packet->type, packet->src_id, dr_repl_cluster);
+		LM_WARN("Invalid drouting binary packet command: %d "
+			"(from node: %d in cluster: %d)\n",
+			packet->type, packet->src_id, dr_cluster_id);
 	}
 }
