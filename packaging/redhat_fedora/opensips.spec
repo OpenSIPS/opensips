@@ -25,7 +25,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  2.4.3
+Version:  2.4.4
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1772,7 +1772,7 @@ fi
 %doc docdir/README.xmpp
 
 %changelog
-* Wed Mar 28 2018 Nick Altmann <nick.altmann@gmail.com> - 2.4.3-1
+* Wed Mar 28 2018 Nick Altmann <nick.altmann@gmail.com> - 2.4.4-1
 - Specification updated for opensips 2.4
 - New packages: event_jsonrpc, jsonrpc, siprec
 
