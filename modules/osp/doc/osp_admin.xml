@@ -724,7 +724,7 @@ if (is_direction("downstream")) {
         <title>processsubscribe usage</title>
         <programlisting format="linespecific">
 ...
-if (method == "SUBSCRIBE") {
+if (is_method("SUBSCRIBE")) {
     if (($var(sevent) == "calling-name") &amp;&amp; (is_myself("$rd"))) {
         if ($var(cnamrecord) != NULL) {
             processsubscribe("$(var(cnamrecord){s.b64decode})");

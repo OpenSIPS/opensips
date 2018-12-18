@@ -368,7 +368,7 @@ modparam("mediaproxy", "ice_candidate_avp", "$avp(ice_candidate)")
       <title>Using the <function>engage_media_proxy</function> function</title>
         <programlisting format="linespecific">
 ...
-if (method==INVITE &amp;&amp; !has_totag()) {
+if (is_method("INVITE") &amp;&amp; !has_totag()) {
     # We can also use a specific media relay if we need to
     #$avp(media_relay) = "1.2.3.4";
     engage_media_proxy();
@@ -417,7 +417,7 @@ if (method==INVITE &amp;&amp; !has_totag()) {
       <title>Using the <function>use_media_proxy</function> function</title>
         <programlisting format="linespecific">
 ...
-if (method==INVITE) {
+if (is_method("INVITE")) {
     # We can also use a specific media relay if we need to
     #$avp(media_relay) = "1.2.3.4";
     use_media_proxy();
@@ -449,7 +449,7 @@ if (method==INVITE) {
       <title>Using the <function>end_media_session</function> function</title>
         <programlisting format="linespecific">
 ...
-if (method==BYE) {
+if (is_method("BYE") {
     end_media_session();
 }
 ...
