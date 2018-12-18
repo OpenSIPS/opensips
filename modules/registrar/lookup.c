@@ -372,7 +372,6 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	int rc, ret = -1;
 	str flags_s, sip_instance = STR_NULL, call_id = STR_NULL;
 	regex_t ua_re;
-	pv_value_t val;
 
 	flags = 0;
 	if (_f && _f[0] != '\0') {
@@ -409,18 +408,12 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	}
 
 	if (_s) {
-		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
-			LM_ERR("failed to get PV value\n");
+		if (fixup_get_svalue(_m, (gparam_p)_s, &uri) != 0) {
+			LM_ERR("failed to get a string value for the 'AoR' parameter\n");
 			return -1;
 		}
-		if ( (val.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("PV vals is not string\n");
-			return -1;
-		}
-		uri = val.rs;
 	} else {
-		if (_m->new_uri.s) uri = _m->new_uri;
-		else uri = _m->first_line.u.request.uri;
+		uri = *GET_RURI(_m);
 	}
 
 	if (extract_aor(&uri, &aor, &sip_instance, &call_id) < 0) {
