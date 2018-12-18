@@ -29,7 +29,7 @@ typedef GeoIPRecord* lookup_res_t;
 
 int legacy_parse_cache_type(char *val);
 
-int legacy_open_db();
+int legacy_open_db(void);
 void legacy_close_db(void);
 lookup_res_t legacy_lookup_ip(char *ip, int *status);
 void legacy_free_lookup_res(lookup_res_t res);
