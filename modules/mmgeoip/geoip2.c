@@ -30,7 +30,7 @@
 
 MMDB_s mmdb;
 
-int geoip2_open_db()
+int geoip2_open_db(void)
 {
 	int rc;
 
