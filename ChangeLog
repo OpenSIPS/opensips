@@ -1,3 +1,431 @@
+=========================== Release 2.4.4 ==============================
+
+2018-12-18  Razvan Crainea  <razvan at opensips dot org>
+	* [d0252793f] :
+
+	Bump version to 2.4.4
+
+
+2018-12-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4fa79d546] :
+
+	Fix parsing SIP buffer when needed HDR is last.
+	Be sure and not not include the HDR to BODY separator as part of the last hdr.
+	Fixes #1555.
+	(cherry picked from commit 24ebbbe42bb1a888b0a06b08dd5c6a280e4ec2c6)
+
+
+2018-12-18  Liviu Chircu  <liviu at opensips dot org>
+	* [4253767be] :
+
+	registrar / mid_registrar: Fix lookup() with a custom AoR
+	Thanks to Antonis Psaras (@apsaras) for reporting!
+
+	Fixes #1571
+	(cherry picked from commit d2a958dcad300ba4dd9e63e8a4ccbc2da6d60224)
+
+
+2018-12-18  Vlad Patrascu  <vladp at opensips dot org>
+	* [0b7ced846] :
+
+	mmgeoip: fix gcc compile warning
+	(cherry picked from commit 88ef1217067f08998ff4d5f28dcd4aabfc677a23)
+
+
+2018-12-18  Vlad Patrascu  <vladp at opensips dot org>
+	* [6dabe1546] :
+
+	mmgeoip: update driver to support GeoIP2
+	Closes #1362
+	(cherry picked from commit 4272fcee0a18fec577f2e1438909dcfdb1b4418d)
+
+
+2018-12-17  Razvan Crainea  <razvan at opensips dot org>
+	* [3dab82938] :
+
+	cgrates: serialize variables in a different var
+	This prevents ongoing sessions from being overwritten by the serialized
+	value.
+	(cherry picked from commit ae10e1aab24f7d1a3988790c7e5d9a907f2e967b)
+
+
+2018-12-17  Razvan Crainea  <razvan at opensips dot org>
+	* [6d1eda3ed] :
+
+	compression: do not free buf for stateless
+	The callback frees them for you, resulting in a double free.
+	Bug introduced in be3b6036.
+
+	Reported by Ryan Bullock on GitHub.
+	(cherry picked from commit 57f142bdeda5dd7ad4406cab184ab7a2668e32a1)
+
+
+2018-12-16  OpenSIPS  <github at opensips dot org>
+	* [413aa5b7c] :
+
+	Rebuild documentation
+
+
+2018-12-13  Razvan Crainea  <razvan at opensips dot org>
+	* [a2662be82] :
+
+	rtpengine: fix possible crash in via-branch
+	Before this fix, if one was asking for a via branch id that was not
+	available, OpenSIPS was crashing.
+	Fixes #1556
+	(cherry picked from commit 624317765d4ad49e0a3dd31b563b0c3c91657959)
+
+
+2018-12-12  Razvan Crainea  <razvan at opensips dot org>
+	* [13589ff3a] :
+
+	tm: t_check_trans() return -2 for end-to-end ACKs
+	Using this return code we can detect end-to-end ACKs in script.
+	(cherry picked from commit 97dda5bb74f9229063955154ec2cc6bde484bd0c)
+
+
+2018-12-11  Liviu Chircu  <liviu at opensips dot org>
+	* [416a87122] :
+
+	seas: Fix compile error
+
+
+2018-12-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c4578e150] :
+
+	Fixed compile warning (include file missing)
+	Related to b90a34c54bf747958544c66502f406cc4b935fb6
+
+
+2018-12-11  Liviu Chircu  <liviu at opensips dot org>
+	* [99f306a5d] :
+
+	dialog: Fix compile errors
+
+
+2018-12-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b90a34c54] :
+
+	Remove circular include.
+	Reported by Peter Lemenkov (@lemenkov)
+
+	Addresses #1562
+
+
+2018-12-09  OpenSIPS  <github at opensips dot org>
+	* [9b4ee034a] :
+
+	Rebuild documentation
+
+
+2018-12-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5f1ec371b] :
+
+	Fixed cloning of hostend structs.
+	The h_addr is only a #define to h_addr_list[0], leading to overwriting the new h_addr_list[0] with the old (src) value.
+
+	Credits to Dan Pascu (@danpascu) for reporting and assisting with the troubleshooting.
+
+
+2018-12-03  Liviu Chircu  <liviu at opensips dot org>
+	* [c24a099fd] :
+
+	Fix possible pkg buffer overflow in all {sdp.*} transformations
+	Thanks to Bogdan for directing the troubleshooting of this bug.
+	Thanks to 46Labs for providing extensive troubleshooting information.
+	(cherry picked from commit 52e3ada3ab649875e9a8f5e62a2c927ed8858d76)
+
+
+2018-12-03  Razvan Crainea  <razvan at opensips dot org>
+	* [a1fdfcb0e] :
+
+	event_jsonrpc: fix yet busy flag value
+	This time the flag was overlapping with event_flatstore one. More
+	details in #1533
+	(cherry picked from commit 84bf5f3b055de4c849c2406171be55442ca83a7f)
+
+
+2018-12-02  OpenSIPS  <github at opensips dot org>
+	* [f9fc9c905] :
+
+	Rebuild documentation
+
+
+2018-11-29  Dan Pascu  <dan at ag-projects dot com>
+	* [797af7239] :
+
+	Fixed segfault when resource list document is not found
+
+
+2018-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [9d32492f1] :
+
+	mongodb: remove deprecated is_error() in json-c 0.13
+	(cherry picked from commit 0d819747817b90d05610e57a1168ce56b0610c09)
+
+
+2018-11-27  Razvan Crainea  <razvan at opensips dot org>
+	* [5cf1811aa] :
+
+	rtpengine: fix checking "cached" stats
+	Credits go to Nick Altman for reporting this in ticket #1500
+	(cherry picked from commit e7fa92cc2c8124f40240deecdc56ad2f258ff21a)
+
+
+2018-11-27  Razvan Crainea  <razvan at opensips dot org>
+	* [d7f636733] :
+
+	compression: fix leaks when message was rebuilt
+	When the initial buffer had to be changed, the previous one was no
+	longer released, resulting in a memleak.
+
+	Credits go to Jock McKechnie for reporting and providing testing env!
+	(cherry picked from commit be3b60366763c3c0390f20be590420440c834204)
+
+
+2018-11-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7c785fc4d] :
+
+	Correct parsing IPv6 address
+	Manual backport of 7b2a296daa1fee0c9a6c7cd2f0be2bfde25e0e0b
+
+
+2018-11-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e6aead732] :
+
+	Improve docs
+	A bit more details on handling GRUU.
+	Thanks to Robert Dyck for contributing on this.
+	(cherry picked from commit 2fa7389b973360c12c46963ec6cef9bb038e3b0d)
+
+
+2018-11-26  Liviu Chircu  <liviu at opensips dot org>
+	* [4aec0b238] :
+
+	Logging: Fix missing '\n' endings
+	(cherry picked from commit 3f698a26c816d8b14530da65f208f417845d0852)
+
+	Conflicts:
+	      modules/cachedb_cassandra/cachedb_cassandra_dbase.c
+	      modules/dialog/dialog.c
+	      modules/tls_mgm/tls_mgm.c
+	      modules/uri/db_checks.c
+
+
+2018-11-26  Liviu Chircu  <liviu at opensips dot org>
+	* [f82c49eb9] :
+
+	acc/dialog: Drop redundant operations
+	(cherry picked from commit 770ff565f99554dedc606c98f1d31c1947a07470)
+
+
+2018-11-26  Liviu Chircu  <liviu at opensips dot org>
+	* [59667fb08] :
+
+	registrar: Fix a flag parsing limitation
+	Once again allow the "i" and "e" flags to be given before or after the
+	regexp following the "u" flag.
+
+	Many thanks to @ivanoff946 for reporting!
+
+	Fixes #1545
+	(cherry picked from commit 20f13a53d5460ef610bb784734e093cfd43ff218)
+
+
+2018-11-26  Razvan Crainea  <razvan at opensips dot org>
+	* [156cc6f0b] :
+
+	b2b_logic: use late negociation for last ACK using MI bridge
+	(cherry picked from commit 25fb33ee7f562b1f2b7a4001d9c6460ba3199a04)
+
+
+2018-11-26  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [471be6300] :
+
+	Fixed dr_number_routing crash with empty partition
+	(cherry picked from commit b0bf9270729b0de5f7894688411353e1c5738be3)
+
+
+2018-11-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e2d1a67ab] :
+
+	Fix formating floats in SQL queries.
+	Force POSIX locale for LC_NUMERIC to be sure that the dot separater is used when using floats in SQL queries (some locales are using the comma for that, breaking the SQL syntax).
+
+	Closes #1538
+	(cherry picked from commit 0ccda2e249890238f94736dfd8b179c359afa8f0)
+
+
+2018-11-25  OpenSIPS  <github at opensips dot org>
+	* [24dbe1d01] :
+
+	Rebuild documentation
+
+
+2018-11-22  Liviu Chircu  <liviu at opensips dot org>
+	* [405d2889b] :
+
+	acc: Fix buffer overflow
+	The set_dlg_value() code would initialize the buffer to STRING_INIT_SIZE
+	(128) bytes but then immediately proceed to using it without any more
+	length checks, thus corrupting the memory any time it is run with larger
+	than 128-byte acc_extra values.
+
+
+2018-11-22  Aron Podrigal  <aronp at guaranteedplus dot com>
+	* [1d9e1f36d] :
+
+	Fixed what was missed out in 6bc2a94
+	refs #1537
+	(cherry picked from commit 3462e8906c878f779ba696db29b3610606f0d9f5)
+
+
+2018-11-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b4f7ad3a2] :
+
+	Fix nested triggers of local route.
+	Use a dynamically allocated sip_msg struct rather than a static one.
+	Credits go to Aron Podrigal to spot and report the problem.
+	Addresses #1537
+	(cherry picked from commit 6bc2a94c85d61c61f50ed5fc63e626a23a63258e)
+
+
+2018-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [4b5e254a2] :
+
+	net/tcp: listen for read events after async connect
+	After an async connect succeeds, the fd should also be added in reactor
+	for read events, otherwise these will be lost.
+
+	Many thanks go to Pete Kelly for reporting and testing!
+	(cherry picked from commit ca643dee0f8851be7c1756bd270f168e41fb053c)
+
+
+2018-11-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [95bf163ae] :
+
+	Fix setting loop params during fallback.
+	While doing a prefixless rule matching, reset the rule_idx to be sure we break the fallback looping.
+	Addresses #1536
+
+
+2018-11-19  Liviu Chircu  <liviu at opensips dot org>
+	* [e25895624] :
+
+	acc: Do not dereference NULL dialog contexts
+	This bug could be triggered in failover scenarios, where the accounting
+	context would be created and cleaned up at least once before actually
+	calling do_accounting().  One way to trigger it would be:
+
+	    * create_dialog();
+	    * $acc_extra(foo) = "bar"; # create a dialog-stored acc context
+	    * t_relay(); exit; # msg is relayed, but ctx is unused =>
+		the code frees it and leaves a NULL dialog value marker.
+	    * inside failure_route, do: $acc_extra(foo) = "bar".  We fetch the
+	      NULL context stored inside dialog, dereference it and crash.
+
+	Many thanks to 46Labs for reporting this issue, as well as providing
+	extensive troubleshooting information.
+	(cherry picked from commit 6eb14f6a3d23bb6a646aa414907755ea9b381511)
+
+
+2018-11-19  Fabian Gast  <fabian.gast at nfon dot com>
+	* [ce6512a4e] :
+
+	Fix changed iana url
+	(cherry picked from commit 97dbc56a44b0cbfd7321cc03adc9a0f4ba044632)
+
+
+2018-11-18  OpenSIPS  <github at opensips dot org>
+	* [c6d75e7b8] :
+
+	Rebuild documentation
+
+
+2018-11-16  Liviu Chircu  <liviu at opensips dot org>
+	* [0f075233e] :
+
+	tm: Properly re-init branches after t_relay("0x02") fails
+	A t_relay("0x02") failure would do the required t->uac[] array element
+	buffer cleanups (good!) but then have these elements completely zeroized
+	(bad!).  These entries must additionally be initialized afterwards,
+	similarly to how init_branches() leaves them after a new transaction is
+	built.
+
+	Many thanks to Debasis Das from Twilio for reporting this bug.
+	(cherry picked from commit 853755f11d372c29866bed948796320314540084)
+
+
+2018-11-15  Razvan Crainea  <razvan at opensips dot org>
+	* [3fe6c3804] :
+
+	event_jsonrpc: use an unique flag for declaring events
+	(cherry picked from commit 8bbc185888730fc1c49a8b3f3fec1550afbf4a74)
+
+
+2018-11-14  Liviu Chircu  <liviu at opensips dot org>
+	* [fb2aaf65e] :
+
+	rest_client: Fix swapped parameters
+	Affected functions: async rest_post() and async rest_put().
+
+	Reported by Ben Newlin.
+	(cherry picked from commit 8f73149b26a142b2511804b9c7385babc916874b)
+
+
+2018-11-14  Razvan Crainea  <razvan at opensips dot org>
+	* [c940412bb] :
+
+	rtpengine: reconnect socket in case of bad fds
+	(cherry picked from commit 2bee3c6df0a4a1c6ffde7556c95c7ee88b923b6f)
+
+
+2018-11-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bc859828a] :
+
+	Fix annoying bogus error log
+	(cherry picked from commit 42934c42400842a2e72e6766e040037f366643f4)
+
+
+2018-11-12  Liviu Chircu  <liviu at opensips dot org>
+	* [7730f225b] :
+
+	dialog: Fix outdated warning
+	(cherry picked from commit ae32d8e487e37955be7e594dd439eb03f3554dfc)
+
+
+2018-11-11  OpenSIPS  <github at opensips dot org>
+	* [8d3d8b8a4] :
+
+	Rebuild documentation
+
+
+2018-11-11  Liviu Chircu  <liviu at opensips dot org>
+	* [d6a6e8d68] :
+
+	build-contrib.sh: Fix a counting bug with renamed modules
+	The "pre-rename" documentation-related commits were being skipped when
+	dealing with renamed modules.
+
+
+2018-11-10  Liviu Chircu  <liviu at opensips dot org>
+	* [30a7d8773] :
+
+	Improve documentation
+	    * sql_cacher: fix grammar
+	    * usrloc: fix out-of-date explanations; improve wording
+	    * rtpproxy: improve function signatures (each param is optional)
+	    * acc: Add $acc_leg examples (negative index); Add links
+	    * fix typos
+	(cherry picked from commit 03c910bdf36a5740ee0f79b146ad46895d2ecda9)
+
+
+2018-11-09  Vlad Patrascu  <vladp at opensips dot org>
+	* [3d23d0fcf] :
+
+	sql_cacher: small doc improvement regarding delimiter parameters
+	(cherry picked from commit 3b1c13a749328a9f3e341d942ca2a990e95ae877)
+
 =========================== Release 2.4.3 ==============================
 
 2018-11-08  Razvan Crainea  <razvan at opensips dot org>
