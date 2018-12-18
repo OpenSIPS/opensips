@@ -186,7 +186,7 @@ modparam("options", "support", "100rel")
 		<programlisting format="linespecific">
 ...
 if (is_myself("$rd")) {
-	if ((method==OPTIONS) &amp;&amp; (! $ru=~"sip:.*[@]+.*")) {
+	if (is_method("OPTIONS") &amp;&amp; (! $ru=~"sip:.*[@]+.*")) {
 		options_reply();
 	}
 }
