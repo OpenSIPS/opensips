@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include "../../dprint.h"
+#include "../../ut.h"
 
 #include "mmgeoip.h"
 #include "geoip_legacy.h"
@@ -56,7 +57,7 @@ int legacy_parse_cache_type(char *val)
 	return 0;
 }
 
-int legacy_open_db()
+int legacy_open_db(void)
 {
 	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s,
 					legacy_cache_option))){

@@ -28,7 +28,7 @@
 
 typedef MMDB_lookup_result_s lookup_res_t;
 
-int geoip2_open_db();
+int geoip2_open_db(void);
 void geoip2_close_db(void);
 lookup_res_t geoip2_lookup_ip(char *ip, int *status);
 int geoip2_get_field(lookup_res_t ip_data, char *field, char buf[256]);
