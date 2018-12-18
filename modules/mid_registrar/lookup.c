@@ -86,7 +86,6 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	regex_t ua_re;
 	int regexp_flags = 0;
 	regmatch_t ua_match;
-	pv_value_t val;
 	int_str istr;
 	str sip_instance = {0,0},call_id = {0,0};
 	struct sip_uri puri;
@@ -106,7 +105,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	flags = 0;
 	if (_f && _f[0]!=0) {
 		if (fixup_get_svalue(req, (gparam_p)_f, &flags_s)!=0) {
-			LM_ERR("invalid owner uri parameter\n");
+			LM_ERR("failed to get a string value for the 'flags' parameter\n");
 			return -1;
 		}
 		for( res=0 ; res< flags_s.len ; res++ ) {
@@ -165,15 +164,10 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	}
 
 	if (_s) {
-		if (pv_get_spec_value(req, (pv_spec_p)_s, &val)!=0) {
-			LM_ERR("failed to get PV value\n");
+		if (fixup_get_svalue(req, (gparam_p)_s, &uri) != 0) {
+			LM_ERR("failed to get a string value for the 'AoR' parameter\n");
 			return -1;
 		}
-		if ( (val.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("PV vals is not string\n");
-			return -1;
-		}
-		uri = val.rs;
 	} else {
 		uri = *GET_RURI(req);
 	}
