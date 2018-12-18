@@ -17,9 +17,13 @@
 	  compatible. All lookup fields provided by the API are accessible
 	  by the script. Visit the
 	  <ulink
-	  url="http://www.maxmind.com/app/geolitecity"><citetitle>MaxMind
+	  url="https://dev.maxmind.com/geoip/"><citetitle>MaxMind
 	  website</citetitle></ulink> for more information on the location
 	  databases.
+	</para>
+	<para>
+		The module is compatible with both legacy GeoIP and the
+		newer GeoIP2 APIs and databases.
 	</para>
   </section>
   <section>
@@ -45,10 +49,32 @@
 		<itemizedlist>
 		  <listitem>
 			<para>
-			  <emphasis>libGeoIP</emphasis>.
+			  <emphasis>libGeoIP</emphasis> - for the legacy GeoIP API and database;
+			</para>
+		  </listitem>
+		  <listitem>
+			<para>
+			  <emphasis>libmaxminddb</emphasis> - for the GeoIP2 API and database.
 			</para>
 		  </listitem>
 		</itemizedlist>
+	  </para>
+	  <para>
+	  	You can select which GeoIP library to use by setting the GEOIP environment variable,
+	  	before compiling the module, to one of the following values:
+	  	<itemizedlist>
+	  		<listitem>
+	  			<para><emphasis>GEOIPLEGACY  ***</emphasis> libGeoIP library shall be used</para>
+	  		</listitem>
+
+	  		<listitem>
+	  			<para><emphasis>GEOIP2  ***</emphasis> libmaxminddb library shall be used;</para>
+	  		</listitem>
+	  	</itemizedlist>
+
+	  	<para>IMPORTANT: If the selected library is not installed the module won't compile.</para>
+	  	<para>NOTE: If GEOIP env is not set, the module will try to find which GeoIP library is installed,
+	  		prioritizing libmaxminddb.</para>
 	  </para>
 	</section>
   </section>
@@ -113,6 +139,10 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 	  <para>
 		Default value for this parameter is <emphasis>MMAP_CACHE</emphasis>.
 	  </para>
+	  <para>
+	  	NOTE: If libmaxminddb is used, this parameter will be ignored as the library only
+	  	supports loading the database into mmap allocated memory.
+	  </para>
 	  <example>
 		<title>Set <quote>cache_type</quote> parameter</title>
 		<programlisting format="linespecific">
@@ -131,30 +161,44 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 		<function moreinfo="none">mmg_lookup([fields,]src,dst)</function>
 	  </title>
 	  <para>
-		Looks up specified <varname>field</varname>s associated with IP address
-		specified by the <varname>src</varname>. The resulting data are
-		loaded in <emphasis>reverse</emphasis> order into
-		the <varname>dst</varname> AVP.
+		Looks up information specified by <varname>field</varname> associated with
+		the IP address <varname>src</varname>. The resulting data is loaded in
+		<emphasis>reverse</emphasis> order into the <varname>dst</varname> AVP.
 	  </para>
 	  <para>
-		<varname>src</varname> can be a pseudo-variable or AVP;
+		<varname>src</varname> can be a pseudo-variable or AVP
 		and <varname>dst</varname> <emphasis>must</emphasis> be an AVP.
-		<varname>fields</varname> defaults to "lon:lat," and is a
-		colon-delimited list of these elements:
+		The format for <varname>fields</varname> is a list of elements delimited by
+		one of these separators: ':', '|', ',', '/' or ' '(space).
 	  </para>
-
+	  <para>The following tokens are supported in <varname>fields</varname>:
 	  <itemizedlist>
-		<listitem> <para> <varname>lat</varname> Latitude</para></listitem>
-		<listitem> <para> <varname>lon</varname> Longitude</para></listitem>
-		<listitem> <para> <varname>cont</varname> Continent</para></listitem>
-		<listitem> <para> <varname>cc</varname> Country Code</para></listitem>
-		<listitem> <para> <varname>reg</varname> Region</para></listitem>
-		<listitem> <para> <varname>city</varname> City</para></listitem>
-		<listitem> <para> <varname>pc</varname> Postal Code</para></listitem>
-		<listitem> <para> <varname>dma</varname> DMA Code</para></listitem>
-		<listitem> <para> <varname>ac</varname> Area Code</para></listitem>
-		<listitem> <para> <varname>TZ</varname> Time Zone</para></listitem>
+		<listitem> <para> <emphasis>lat</emphasis> - Latitude</para></listitem>
+		<listitem> <para> <emphasis>lon</emphasis> - Longitude</para></listitem>
+		<listitem> <para> <emphasis>cont</emphasis> - Continent</para></listitem>
+		<listitem> <para> <emphasis>cc</emphasis> - Country Code</para></listitem>
+		<listitem> <para> <emphasis>reg</emphasis> - Region</para></listitem>
+		<listitem> <para> <emphasis>city</emphasis> - City</para></listitem>
+		<listitem> <para> <emphasis>pc</emphasis> - Postal Code</para></listitem>
+		<listitem> <para> <emphasis>dma</emphasis> - DMA Code</para></listitem>
+		<listitem> <para> <emphasis>ac</emphasis> - Area Code, only available in the legacy GeoIP
+		database</para></listitem>
+		<listitem> <para> <emphasis>tz</emphasis> - Time Zone</para></listitem>
 	  </itemizedlist>
+	  </para>
+	  <para>
+	  	When using the GeoIP2 library, each token from the list given in the <varname>fields</varname>
+	  	parameter can be provided as a path to a specific key in the data structure associated with an
+	  	IP. Thus, the token format is '<emphasis>key_name</emphasis>.<emphasis>key_name</emphasis>[<emphasis>.key_name</emphasis>]*'. If a key's value is an array, instead of a subkey name, an index should be
+	  	provided in order to select the appropriate value.
+	  </para>
+	  <para>
+	  	Example tokens: '<emphasis>country.names.en</emphasis>', '<emphasis>continent.names.en
+	  	</emphasis>', '<emphasis>subdivisions.0.iso_code</emphasis>'. For more details about
+	  	the available fields in the database and the key names that should be used to
+	  	retrieve them, check the <ulink url="https://dev.maxmind.com/geoip/geoip2/"><citetitle>MaxMind
+		GeoIP2 documentation</citetitle></ulink>.
+	  </para>
 
 	  <para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -168,6 +212,12 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
   xlog("L_INFO","Source IP longitude:$(avp(lat_lon)[1])\n");
+};
+...
+# fields format only supported for GeoIP2
+if(mmg_lookup("continent.names.en:country.iso_code,","$si","$avp(geodata)")) {
+  xlog("L_INFO","Source IP country code:$(avp(geodata)[0])\n");
+  xlog("L_INFO","Source IP continent:$(avp(geodata)[1])\n");
 };
 ...
 		</programlisting>

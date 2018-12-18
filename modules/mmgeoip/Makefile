@@ -27,7 +27,27 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mmgeoip.so
-#LIBS+=-lGeoIP
-LIBS=-L$(LOCALBASE)/lib -lGeoIP
+
+ifeq ($(GEOIP),)
+GEOIP=$(shell if [ -n "`ldconfig -p | grep maxminddb`" ]; then echo "GEOIP2"; \
+	elif [ -n "`ldconfig -p | grep libGeoIP`" ];then echo "GEOIPLEGACY"; fi)
+endif
+
+ifneq ($(GEOIP), GEOIP2)
+ifeq ($(GEOIP), GEOIPLEGACY)
+	DEFS+= -DGEOIP
+	GEOIP_LIB=-lGeoIP
+endif
+else
+	DEFS+= -DMAXMINDDB
+	GEOIP_LIB=-lmaxminddb
+endif
+
+ifeq ($(CROSS_COMPILE),)
+LIBS=$(GEOIP_LIB)
+else
+LIBS=-L$(LOCALBASE)/lib $(GEOIP_LIB)
 DEFS+=-I$(LOCALBASE)/include
+endif
+
 include ../../Makefile.modules

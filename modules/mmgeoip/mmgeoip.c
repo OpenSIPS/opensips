@@ -1,28 +1,21 @@
 /*
- * This file is part of openser, a free SIP server.
+ * Copyright (C) 2018 OpenSIPS Solutions
  *
- * openser is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
  *
- * openser is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301
- * USA
- *
- * History:
- * --------
- * 080511 -- Initial revision, KE
- *
- * XXX -- todo: Add command variant to pull source/dest IP from
- *              current SIP message.
- *
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
 #include <stdio.h>
@@ -34,48 +27,45 @@
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
 #include "../../ut.h"
-#include "GeoIP.h"
-#include "GeoIPCity.h"
 
+#include "mmgeoip.h"
+
+#ifdef GEOIP
+#include "geoip_legacy.h"
+#else
+#include "geoip2.h"
+#endif
+
+#ifdef GEOIP
+	#define geoip_open_db() 			legacy_open_db()
+	#define geoip_close_db() 			legacy_close_db()
+	#define geoip_lookup_ip(ip, status) legacy_lookup_ip((ip), (status))
+	#define geoip_free_lookup_res(res)  legacy_free_lookup_res((res))
+	#define geoip_get_field(ip_data, field, buf) \
+										legacy_get_field((ip_data), (field), (buf))
+#else
+	#define geoip_open_db() 			geoip2_open_db()
+	#define geoip_close_db() 			geoip2_close_db()
+	#define geoip_lookup_ip(ip, status) geoip2_lookup_ip((ip), (status))
+	#define geoip_free_lookup_res(res)  
+	#define geoip_get_field(ip_data, field, buf) \
+										geoip2_get_field((ip_data), (field), (buf))
+#endif
 
 #define MMG_OP_DELIMS ":|,/ "
-static str MMG_city_db_path = {NULL, 0};
-static GeoIP *MMG_gi = NULL;
-
-static int geoip_cache_option = GEOIP_MMAP_CACHE;
-
+str MMG_city_db_path = {NULL, 0};
 
 int parse_mem_option( unsigned int type, void *val)
 {
-	str opt_s;
-
-	static const str opt_STANDARD = str_init("STANDARD");
-	static const str opt_MMAP = str_init("MMAP_CACHE");
-	static const str opt_MEM_CHECK = str_init("MEM_CACHE_CHECK");
-
-	opt_s.s = (char *) val;
-	opt_s.len = strlen(opt_s.s);
-
-
-	if (opt_s.len == opt_STANDARD.len &&
-			!strncasecmp(opt_s.s, opt_STANDARD.s, opt_s.len)) {
-		geoip_cache_option = GEOIP_STANDARD;
-	} else if (opt_s.len == opt_MMAP.len &&
-			!strncasecmp(opt_s.s, opt_MMAP.s, opt_s.len)) {
-		geoip_cache_option = GEOIP_MMAP_CACHE;
-	} else if (opt_s.len == opt_MEM_CHECK.len &&
-			!strncasecmp(opt_s.s, opt_MEM_CHECK.s, opt_s.len)) {
-		geoip_cache_option = GEOIP_MEMORY_CACHE|GEOIP_CHECK_CACHE;
-	} else {
-		LM_ERR("Invalid cache option!\n");
-		return -1;
-	}
-
+	#ifdef GEOIP
+	return legacy_parse_cache_type((char *)val);
+	#else
+	LM_INFO("Parameter only supported for legacy GeoIP, ignoring...");
 	return 0;
+	#endif
 }
 
-static int
-mod_init(void)
+static int mod_init(void)
 {
 	LM_INFO("MM GeoIP module - initializing\n");
 
@@ -84,27 +74,20 @@ mod_init(void)
 		return -1;
 	}
 
-	MMG_city_db_path.len=strlen(MMG_city_db_path.s);
-	if(0==(MMG_gi = GeoIP_open(MMG_city_db_path.s,
-					geoip_cache_option))){
-		LM_ERR("Unable to open City DB at path '%.*s'.\n",
-			MMG_city_db_path.len,MMG_city_db_path.s);
+	if (geoip_open_db() < 0)
 		return -1;
-	}
 
 	LM_INFO("MM GeoIP module - city_db_path:'%s'\n", MMG_city_db_path.s);
+
 	return 0;
 }
 
-static void
-mod_destroy(void)
+static void mod_destroy(void)
 {
-	if(MMG_gi)GeoIP_delete(MMG_gi);
-	return;
+	geoip_close_db();
 }
 
-static int
-fixup_lookup3(void **param, int param_no)
+static int fixup_lookup3(void **param, int param_no)
 {
 	str s;
 
@@ -141,8 +124,7 @@ fixup_lookup3(void **param, int param_no)
 	return 0;
 }
 
-static int
-fixup_lookup2(void **param, int param_no)
+static int fixup_lookup2(void **param, int param_no)
 {
 	if(1==param_no)
 		return fixup_lookup3(param,2);
@@ -153,19 +135,19 @@ fixup_lookup2(void **param, int param_no)
 }
 
 #include <string.h>
-static int
-mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_dst_spec)
+static int mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_dst_spec)
 {
 	pv_elem_t *fields_pv=(pv_elem_t*)_fields_pv, *ipaddr_pv=(pv_elem_t*)_ipaddr_pv;
 	pv_spec_t *dst_spec=(pv_spec_t*)_dst_spec;
-	GeoIPRecord *gir=0;
 	str field_str, ipaddr_str;
 	char rslt_buf[256], ipaddr_buf[256], field_buf[256];
 	char *token=0, *saveptr=0;
-
 	int dst_name=-1;
 	int_str rslt=(int_str)0;
 	unsigned short dstType=0;
+
+	lookup_res_t lookup_res;
+	int rc;
 
 	/* Sanity checks */
 	if(!(ipaddr_pv && fields_pv && dst_spec)) {
@@ -198,69 +180,41 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 		return -1;
 	}
 
-	/* Attempt lookup */
-	if(!(gir=GeoIP_record_by_name (MMG_gi,ipaddr_buf))){
-		LM_DBG("'%s'--> 'Unknown'.\n", *ipaddr_buf?ipaddr_buf:"Undefined");
+	lookup_res = geoip_lookup_ip(ipaddr_buf, &rc);
+	if (rc != 0)
 		return -1;
-	}
 
-	/* Construct return data. Know fields are: */
-	/* 	   lat		- latitude */
-	/* 	   lon		- longitude */
-	/* 	   cont		- continent  */
-	/* 	   cc		- country code */
-	/* 	   reg		- region */
-	/* 	   city		- city */
-	/* 	   pc		- postal code */
-	/* 	   dma		- dma code */
-	/* 	   ac		- area code  */
-	/* 	   tz		- timezone  */
-
-#define MMG_FAIL_EXIT if(gir) GeoIPRecord_delete(gir); return -1
-
-	LM_DBG("ipaddr:'%.*s'; fields:'%.*s'.\n",
+	LM_DBG("ipaddr: '%.*s'; fields: '%.*s'\n",
 		   ipaddr_str.len, ipaddr_str.s, field_str.len, field_str.s);
 	*rslt_buf=0;
 	rslt.s.s=rslt_buf;
 	token=strtok_r(field_buf,MMG_OP_DELIMS,&saveptr);
 	while (token) {
-		if(!strcmp(token,"lat")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->latitude); }
-		else if(!strcmp(token,"lon"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->longitude); }
-		else if(!strcmp(token,"cont")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->continent_code); }
-		else if(!strcmp(token,"cc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->country_code); }
-		else if(!strcmp(token,"reg"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->region); }
-		else if(!strcmp(token,"city")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->city); }
-		else if(!strcmp(token,"pc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->postal_code); }
-		else if(!strcmp(token,"dma"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->dma_code); }
-		else if(!strcmp(token,"ac"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->area_code); }
-		else if(!strcmp(token,"rbc"))  {
-			rslt.s.len=snprintf(
-				rslt_buf,sizeof rslt_buf,"%s",GeoIP_region_name_by_code(gir->country_code, gir->region));
-		}
-		else if(!strcmp(token,"tz"))   {
-			rslt.s.len=snprintf(
-				rslt_buf,sizeof rslt_buf,"%s",GeoIP_time_zone_by_country_and_region(gir->country_code, gir->region));
-		} else {
-			LM_ERR("unknown field:'%s'\n",token);
-			MMG_FAIL_EXIT;
-		}
+		rslt.s.len = geoip_get_field(lookup_res, token, rslt_buf);
+
 		if(rslt.s.len<0 || rslt.s.len>sizeof rslt_buf ||
 		add_avp(dstType|AVP_VAL_STR,dst_name,rslt)==-1 ) {
 			LM_ERR("Internal error processing field/IP '%s/%s'.\n",
 				token,ipaddr_buf);
-			MMG_FAIL_EXIT;
+			geoip_free_lookup_res(lookup_res);
+			return -1;
 		}
-		LM_DBG("field %s[%s] %.*s\n",ipaddr_buf,token,rslt.s.len,rslt.s.s);
+		LM_DBG("field: %s[%s] = %.*s\n",ipaddr_buf,token,rslt.s.len,rslt.s.s);
 		token=strtok_r(0,MMG_OP_DELIMS,&saveptr);
 	}
-	GeoIPRecord_delete(gir);
+
+	geoip_free_lookup_res(lookup_res);
+
 	return 1;
 }
 
-static int
-w_lookup_cmd2(struct sip_msg *m, char *ipaddr, char *dst)
+static int w_lookup_cmd2(struct sip_msg *m, char *ipaddr, char *dst)
 {
-	return mmg_lookup_cmd(m,"lon:lat",ipaddr,dst);
+	#ifdef GEOIP
+	return mmg_lookup_cmd(m,"cc",ipaddr,dst);
+	#else
+	return mmg_lookup_cmd(m,"country.iso_code",ipaddr,dst);
+	#endif
 }
 
 /*
