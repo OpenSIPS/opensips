@@ -27,8 +27,6 @@
 
 #define BIN_VERSION 1
 
-#define REPL_LB_STATUS_UPDATE 1
-
 extern int lb_cluster_id;
 extern str lb_cluster_shtag;
 

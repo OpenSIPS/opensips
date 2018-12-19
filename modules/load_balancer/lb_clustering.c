@@ -26,6 +26,8 @@
 #include "lb_bl.h"
 #include "lb_clustering.h"
 
+#define REPL_LB_STATUS_UPDATE 1
+
 int lb_cluster_id = 0;
 
 str lb_cluster_shtag = {NULL,0};
