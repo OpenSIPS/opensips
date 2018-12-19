@@ -21,7 +21,6 @@
 
 #include "../../ut.h"
 #include "../../rw_locking.h"
-#include "../clusterer/sharing_tags.h"
 #include "lb_data.h"
 #include "lb_bl.h"
 #include "lb_clustering.h"

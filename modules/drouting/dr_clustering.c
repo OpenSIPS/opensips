@@ -21,7 +21,6 @@
 
 #include "../../ip_addr.h"
 #include "../../ut.h"
-#include "../clusterer/sharing_tags.h"
 #include "prefix_tree.h"
 #include "dr_partitions.h"
 #include "dr_clustering.h"

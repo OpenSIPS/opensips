@@ -22,9 +22,6 @@
 #ifndef _CLUSTERER_SHARING_TAGS_H
 #define _CLUSTERER_SHARING_TAGS_H
 
-#define SHTAG_STATE_BACKUP 0
-#define SHTAG_STATE_ACTIVE 1
-
 #include "../../sr_module.h"
 #include "../../mi/mi.h"
 

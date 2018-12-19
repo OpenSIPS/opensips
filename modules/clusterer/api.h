@@ -35,6 +35,10 @@
 /* the type for any sync packet, for any capability */
 #define SYNC_PACKET_TYPE 101
 
+/* values returned by shtag_get_f and shtag_set_f */
+#define SHTAG_STATE_BACKUP 0
+#define SHTAG_STATE_ACTIVE 1
+
 enum cl_node_state {
 	STATE_DISABLED,	/* don't send any messages and drop received ones */
 	STATE_ENABLED
