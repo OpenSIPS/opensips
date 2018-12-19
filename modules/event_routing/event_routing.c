@@ -289,9 +289,9 @@ static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 									void *route, void *timeout)
 {
 	int t = 0;
+	gparam_p gp;
 
 	if (timeout) {
-		gparam_p gp;
 		gp = (gparam_p)timeout;
 		if (fixup_get_ivalue(msg, gp, &t) < 0) {
 			LM_ERR("can't get timeout!\n");
@@ -325,9 +325,9 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 								char *ev, char* avp_filter, char* timeout)
 {
 	int t = 0; /* timeout */
+	gparam_p gp;
 
 	if (timeout) {
-		gparam_p gp;
 		gp = (gparam_p)timeout;
 		if (fixup_get_ivalue(msg, gp, &t) < 0) {
 			LM_ERR("can't get timeout!\n");
