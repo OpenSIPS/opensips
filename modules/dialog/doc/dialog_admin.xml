@@ -1356,33 +1356,6 @@ modparam("dialog", "replicate_profiles_expire", 10)
 </programlisting>
 		</example>
 	</section>
-	<section id="param_dlg_sharing_tag" xreflabel="dlg_sharing_tag">
-		<title><varname>dlg_sharing_tag</varname> (string)</title>
-		<para>
-		This parameter can be set(mutiple times) in order to define a sharing tag,
-		along with its initial state, that is useful when replicating dialogs.
-		</para>
-		<para>
-		Format: "<emphasis>tag_name</emphasis>=<emphasis>state</emphasis>" where
-		<emphasis>state</emphasis> may have the "active" or "backup" values.
-		</para>
-		<para>If this parameter is not defined for a specific tag 
-		encountered at runtime (local or replicated dialog marked with that tag),
-		it will have  the initial state of <emphasis>backup</emphasis>.
-		</para>
-		<para>
-		For more details see the <xref linkend="dialog-clustering"/> chapter.
-		</para>
-		<example>
-		<title>Set <varname>dlg_sharing_tag</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "dlg_sharing_tag", "vip1=active")
-...
-</programlisting>
-		</example>
-	</section>
-
 	</section>
 
 
@@ -2208,12 +2181,6 @@ $var(account) = $dlg_val(account_type);
 		in "active" state).
 		</para>
 		<para>
-		If the tag is not already defined through the
-		<xref linkend="param_dlg_sharing_tag"/> parameter and/or have it's state
-		changed by the <xref linkend="mi_dlg_set_sharing_tag_active"/> MI command,
-		the initial state will be <emphasis>backup</emphasis>.
-		</para>
-		<para>
 		For more details see the <xref linkend="dialog-clustering"/> chapter.
 		</para>
 		<para>
@@ -2669,50 +2636,6 @@ set_dlg_sharing_tag("vip1");
 		</para>
 		<programlisting  format="linespecific">
 		opensipsctl fifo dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
-		</programlisting>
-		</section>
-
-		<section id='mi_dlg_set_sharing_tag_active' xreflabel="dlg_set_sharing_tag_active">
-		<title><function moreinfo="none">dlg_set_sharing_tag_active</function></title>
-		<para>
-		Set the given sharing tag to the <emphasis>active</emphasis> state.
-		The information about this change is also broadcasted in the cluster in order
-		to force any other node that may be active on this tag to step down to backup.
-		</para>
-		<para>
-		For more details see the <xref linkend="dialog-clustering"/> chapter.
-		</para>
-		<para>
-		Name: <emphasis>dlg_set_sharing_tag_active</emphasis>
-		</para>
-		<para>Parameters: <emphasis>tag</emphasis> - name of the tag to be set active
-		</para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_set_sharing_tag_active vip1
-		</programlisting>
-		</section>
-
-		<section id="mi_dlg_list_sharing_tags" xreflabel="dlg_list_sharing_tags">
-		<title><function moreinfo="none">dlg_list_sharing_tags</function></title>
-		<para>
-		Lists all known sharing tags and their states.
-		</para>
-		<para>
-		For more details on sharing tags see the <xref linkend="dialog-clustering"/> chapter.
-		</para>
-		<para>
-		Name: <emphasis>dlg_list_sharing_tags</emphasis>
-		</para>
-		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
-		</para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_list_sharing_tags
 		</programlisting>
 		</section>
 

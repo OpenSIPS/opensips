@@ -300,7 +300,6 @@ static param_export_t mod_params[]={
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
-	{ "dlg_sharing_tag", STR_PARAM|USE_FUNC_PARAM, &dlg_sharing_tag_paramf},
 	{ 0,0,0 }
 };
 
@@ -333,8 +332,6 @@ static mi_export_t mi_cmds[] = {
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
 	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
 	{ "profile_end_dlgs",   0, mi_profile_terminate,  0,  0,  0},
-	{ "dlg_set_sharing_tag_active",0, mi_set_shtag_active, 0,  0,  0},
-	{ "dlg_list_sharing_tags",     0, mi_list_sharing_tags,     0,  0,  0},
 	{ "dlg_push_var",	0, mi_push_dlg_var,	  0,  0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
@@ -969,19 +966,6 @@ static int mod_init(void)
 
 		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 0) < 0)
 			LM_ERR("Sync request failed\n");
-
-		if (!shtags_list) {
-			if ((shtags_list = shm_malloc(sizeof *shtags_list)) == NULL) {
-				LM_CRIT("No more shm memory\n");
-				return -1;
-			}
-			*shtags_list = NULL;
-		}
-
-		if ((shtags_lock = lock_init_rw()) == NULL) {
-			LM_CRIT("Failed to init lock\n");
-			return -1;
-		}
 	}
 
 	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,
@@ -1099,28 +1083,9 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
-	struct dlg_sharing_tag *tag, *tag_tmp;
-
 	if (dlg_db_mode != DB_MODE_NONE) {
 		dialog_update_db(0, 0/*do not do locking*/);
 		destroy_dlg_db();
-	}
-
-	if (shtags_list) {
-		if (*shtags_list) {
-			for (tag = *shtags_list; tag; ) {
-				tag_tmp = tag;
-				tag = tag->next;
-				free_active_msgs_info(tag_tmp);
-				shm_free(tag_tmp);
-			}
-		}
-		shm_free(shtags_list);
-		shtags_list = NULL;
-	}
-	if (shtags_lock) {
-		lock_destroy_rw(shtags_lock);
-		shtags_lock = NULL;
 	}
 
 	/* no DB interaction from now on */

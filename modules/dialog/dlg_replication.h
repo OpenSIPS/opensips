@@ -37,28 +37,8 @@
 #define REPLICATION_DLG_CREATED		1
 #define REPLICATION_DLG_UPDATED		2
 #define REPLICATION_DLG_DELETED		3
-#define DLG_SHARING_TAG_ACTIVE		4
 
 #define BIN_VERSION 1
-
-#define SHTAG_STATE_BACKUP 0
-#define SHTAG_STATE_ACTIVE 1
-
-struct n_send_info {
-	int node_id;
-	struct n_send_info *next;
-};
-
-struct dlg_sharing_tag {
-	str name;
-	int state;
-	int send_active_msg;
-	struct n_send_info *active_msgs_sent;
-	struct dlg_sharing_tag *next;
-};
-
-extern struct dlg_sharing_tag **shtags_list;
-extern rw_lock_t *shtags_lock;
 
 extern int dialog_repl_cluster;
 extern int profile_repl_cluster;
@@ -83,15 +63,9 @@ void receive_dlg_repl(bin_packet_t *packet);
 void rcv_cluster_event(enum clusterer_event ev, int node_id);
 
 struct mi_root *mi_sync_cl_dlg(struct mi_root *cmd, void *param);
-struct mi_root *mi_set_shtag_active(struct mi_root *cmd, void *param);
 
 int get_shtag_state(struct dlg_cell *dlg);
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name);
-void free_active_msgs_info(struct dlg_sharing_tag *tag);
-
-struct mi_root *mi_list_sharing_tags(struct mi_root *cmd_tree, void *param);
-
-int dlg_sharing_tag_paramf(modparam_t type, void *val);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
 
