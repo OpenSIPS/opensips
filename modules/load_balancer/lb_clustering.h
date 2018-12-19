@@ -25,8 +25,6 @@
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
 
-#define BIN_VERSION 1
-
 extern int lb_cluster_id;
 extern str lb_cluster_shtag;
 
@@ -37,8 +35,5 @@ int lb_cluster_shtag_is_active(void);
 
 /* replicate the LB status via BIN */
 void replicate_lb_status(struct lb_dst *dst);
-
-/* handler for incoming BIN packets */
-void receive_lb_binary_packet(bin_packet_t *packet);
 
 #endif

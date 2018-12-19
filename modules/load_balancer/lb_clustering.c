@@ -25,6 +25,8 @@
 #include "lb_bl.h"
 #include "lb_clustering.h"
 
+#define BIN_VERSION 1
+
 #define REPL_LB_STATUS_UPDATE 1
 
 int lb_cluster_id = 0;
@@ -37,38 +39,6 @@ static str status_repl_cap = str_init("load_balancer-status-repl");
 /* implemented in load_balancer.c which has no .h file */
 int lb_update_from_replication( unsigned int group, str *uri,
 		unsigned int flags);
-
-int lb_init_cluster(void)
-{
-	if (load_clusterer_api(&c_api)!=0) {
-		LM_ERR("failed to find clusterer API - is clusterer "
-			"module loaded?\n");
-		return -1;
-	}
-
-	/* register handler for processing drouting packets 
-	 * to the clusterer module */
-	if (c_api.register_capability( &status_repl_cap,
-	receive_lb_binary_packet, NULL, lb_cluster_id, 0, NODE_CMP_ANY) < 0) {
-		LM_ERR("cannot register binary packet callback to "
-			"clusterer module!\n");
-		return -1;
-	}
-
-	/* "register" the sharing tag */
-	if (lb_cluster_shtag.s) {
-		lb_cluster_shtag.len = strlen(lb_cluster_shtag.s);
-		if (c_api.shtag_get( &lb_cluster_shtag, lb_cluster_id)<0) {
-			LM_ERR("failed to initialized the sharing tag <%.*s>\n",
-				lb_cluster_shtag.len, lb_cluster_shtag.s);
-			return -1;
-		}
-	} else {
-		lb_cluster_shtag.len = 0;
-	}
-
-	return 0;
-}
 
 
 int lb_cluster_shtag_is_active(void)
@@ -119,7 +89,7 @@ void replicate_lb_status(struct lb_dst *dst)
 }
 
 
-void receive_lb_binary_packet(bin_packet_t *packet)
+static void receive_lb_binary_packet(bin_packet_t *packet)
 {
 	unsigned int group, flags;
 	str uri;
@@ -141,3 +111,37 @@ void receive_lb_binary_packet(bin_packet_t *packet)
 		LM_ERR("invalid load_balancer binary packet type: %d\n", packet->type);
 	}
 }
+
+
+int lb_init_cluster(void)
+{
+	if (load_clusterer_api(&c_api)!=0) {
+		LM_ERR("failed to find clusterer API - is clusterer "
+			"module loaded?\n");
+		return -1;
+	}
+
+	/* register handler for processing load-balancer  packets 
+	 * to the clusterer module */
+	if (c_api.register_capability( &status_repl_cap,
+	receive_lb_binary_packet, NULL, lb_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		LM_ERR("cannot register binary packet callback to "
+			"clusterer module!\n");
+		return -1;
+	}
+
+	/* "register" the sharing tag */
+	if (lb_cluster_shtag.s) {
+		lb_cluster_shtag.len = strlen(lb_cluster_shtag.s);
+		if (c_api.shtag_get( &lb_cluster_shtag, lb_cluster_id)<0) {
+			LM_ERR("failed to initialized the sharing tag <%.*s>\n",
+				lb_cluster_shtag.len, lb_cluster_shtag.s);
+			return -1;
+		}
+	} else {
+		lb_cluster_shtag.len = 0;
+	}
+
+	return 0;
+}
+
