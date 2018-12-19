@@ -25,6 +25,11 @@
 #include "dr_partitions.h"
 #include "dr_clustering.h"
 
+#define BIN_VERSION 1
+
+#define REPL_GW_STATUS_UPDATE 1
+#define REPL_CR_STATUS_UPDATE 2
+
 /* the cluster ID  */
 int dr_cluster_id = 0;
 
@@ -37,39 +42,6 @@ static struct clusterer_binds c_api;
 void dr_raise_event(struct head_db *p, pgw_t *gw);
 
 extern struct head_db * head_db_start;
-
-
-int dr_init_cluster(void)
-{
-	if (load_clusterer_api(&c_api)!=0) {
-		LM_ERR("failed to find clusterer API - is clusterer "
-			"module loaded?\n");
-		return -1;
-	}
-
-	/* register handler for processing drouting packets 
-	 * to the clusterer module */
-	if (c_api.register_capability( &status_repl_cap,
-	receive_dr_binary_packet, NULL, dr_cluster_id, 0, NODE_CMP_ANY) < 0) {
-		LM_ERR("cannot register binary packet callback to "
-			"clusterer module!\n");
-		return -1;
-	}
-
-	/* "register" the sharing tag */
-	if (dr_cluster_shtag.s) {
-		dr_cluster_shtag.len = strlen(dr_cluster_shtag.s);
-		if (c_api.shtag_get( &dr_cluster_shtag, dr_cluster_id)<0) {
-			LM_ERR("failed to initialized the sharing tag <%.*s>\n",
-				dr_cluster_shtag.len, dr_cluster_shtag.s);
-			return -1;
-		}
-	} else {
-		dr_cluster_shtag.len = 0;
-	}
-
-	return 0;
-}
 
 
 int dr_cluster_shtag_is_active(void)
@@ -234,7 +206,7 @@ static int cr_status_update(bin_packet_t *packet)
 }
 
 
-void receive_dr_binary_packet(bin_packet_t *packet)
+static void receive_dr_binary_packet(bin_packet_t *packet)
 {
 	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
@@ -256,3 +228,38 @@ void receive_dr_binary_packet(bin_packet_t *packet)
 			packet->type, packet->src_id, dr_cluster_id);
 	}
 }
+
+
+int dr_init_cluster(void)
+{
+	if (load_clusterer_api(&c_api)!=0) {
+		LM_ERR("failed to find clusterer API - is clusterer "
+			"module loaded?\n");
+		return -1;
+	}
+
+	/* register handler for processing drouting packets 
+	 * to the clusterer module */
+	if (c_api.register_capability( &status_repl_cap,
+	receive_dr_binary_packet, NULL, dr_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		LM_ERR("cannot register binary packet callback to "
+			"clusterer module!\n");
+		return -1;
+	}
+
+	/* "register" the sharing tag */
+	if (dr_cluster_shtag.s) {
+		dr_cluster_shtag.len = strlen(dr_cluster_shtag.s);
+		if (c_api.shtag_get( &dr_cluster_shtag, dr_cluster_id)<0) {
+			LM_ERR("failed to initialized the sharing tag <%.*s>\n",
+				dr_cluster_shtag.len, dr_cluster_shtag.s);
+			return -1;
+		}
+	} else {
+		dr_cluster_shtag.len = 0;
+	}
+
+	return 0;
+}
+
+
