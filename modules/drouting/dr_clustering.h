@@ -34,8 +34,6 @@
 extern int dr_cluster_id;
 extern str dr_cluster_shtag;
 
-struct clusterer_binds clusterer_api;
-
 int dr_init_cluster(void);
 
 /* checks if the sharing tag is on active */

@@ -42,7 +42,7 @@ extern struct head_db * head_db_start;
 
 int dr_init_cluster(void)
 {
-	if (load_clusterer_api(&clusterer_api)!=0) {
+	if (load_clusterer_api(&c_api)!=0) {
 		LM_ERR("failed to find clusterer API - is clusterer "
 			"module loaded?\n");
 		return -1;
