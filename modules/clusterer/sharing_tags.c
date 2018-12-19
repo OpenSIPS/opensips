@@ -300,7 +300,7 @@ str** shtag_get_all_active(int cluster_id)
 	struct sharing_tag *tag;
 	unsigned int n;
 
-	lock_start_sw_read(shtags_lock);
+	lock_start_read(shtags_lock);
 
 	for ( tag=*shtags_list,n=0 ; tag ; tag = tag->next) {
 		if ( tag->state==SHTAG_STATE_ACTIVE
@@ -310,7 +310,7 @@ str** shtag_get_all_active(int cluster_id)
 		}
 	}
 
-	lock_stop_sw_read(shtags_lock);
+	lock_stop_read(shtags_lock);
 
 	/* set an end marker */
 	tag_name[n] = NULL;
