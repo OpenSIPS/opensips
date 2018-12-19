@@ -17,21 +17,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History
- * -------
- * 2004-07-31  first version, by daniel
- * 2007-01-11  Added a function to check if a specific gateway is in
- *              a group (carsten)
- * 2007-02-09  Added active probing of failed destinations and automatic
- *              re-enabling of destinations
- * 2007-05-08  Ported the changes to SVN-Trunk and renamed ds_is_domain
- *              to ds_is_from_list.
- * 2009-05-18  Added support for weights for the destinations;
- *              added support for custom "attrs" (opaque string) (bogdan)
- * 2013-12-02  Added support state persistency (restart and reload) (bogdan)
- * 2013-12-05  Added a safer reload mechanism based on locking read/writter (bogdan)
  */
 
 #ifndef _DISPATCH_H_
@@ -217,8 +204,10 @@ void ds_destroy_data(ds_partition_t *partition);
 int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode);
 int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags);
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
-int ds_set_state(int group, str *address, int state, int type,
-		ds_partition_t *partition);
+#define ds_set_state(_group, _address, _state, _type, _partition) \
+	ds_set_state_repl(_group, _address, _state, _type, _partition, 1)
+int ds_set_state_repl(int group, str *address, int state, int type,
+		ds_partition_t *partition, int do_repl);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags);
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
@@ -238,6 +227,8 @@ int check_options_rplcode(int code);
 
 /* pvar algorithm pattern parser */
 void ds_pvar_parse_pattern(str);
+
+ds_partition_t* find_partition_by_name (const str *partition_name);
 
 #endif
 

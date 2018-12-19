@@ -57,6 +57,19 @@
 			<para>
 				<emphasis>TM - only if active recovery of failed hosts is required</emphasis>.
 			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clustere</emphasis> - only if "cluster_id"
+				option is enabled.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>database</emphasis> - one of the DB SQL modules
+			</para>
+			</listitem>
+			<listitem>
 			<para>
 				<emphasis>freeswitch - only if "fetch_freeswitch_stats" is enabled.</emphasis>.
 			</para>
@@ -587,30 +600,82 @@ modparam("dispatcher", "persistent_state", 0)
 		</example>
 	</section>
 
-	<section id="param_table_name" xreflabel="table_name">
-		<title><varname>table_name</varname> (string)</title>
+	<section id="param_cluster_id" xreflabel="cluster_id">
+		<title><varname>cluster_id</varname> (integer)</title>
 		<para>
-		If you want to load the sets of gateways from the database you must set
-		this parameter as the database name.
-		Setting this parameter will only change the default partition's
-		table_name. Use the partition parameter to create and alter
-		other partitions.
+		The ID of the cluster the module is part of. The clustering support is 
+		used in dispatcher module for two purposes: for sharing the status 
+		of the destinations and for controlling the pinging to destinations.
+		</para>
+		<para>
+		If clustering enbled, the module will automatically share changes
+		over the status of the destinations with the other 
+		OpenSIPS instances that are part of a cluster. Whenever such a status 
+		changes (following an MI command, a probing result, a script command),
+		the module will replicate this status change to all the nodes in this 
+		given cluster.
+		</para>
+		<para>
+		The clustering with sharing tag support may be used to control which 
+		node in the cluster will perform the pinging/probing to 
+		destinations. See the
+		<xref linkend="param_cluster_sharing_tag"/> option.
+		</para>
+		<para>
+		For more info on how to define and populate a cluster (with OpenSIPS 
+		nodes) see the "clusterer" module.
 		</para>
 		<para>
 		<emphasis>
-			For every partition the default value is <quote>dispatcher</quote>.
+			Default value is <quote>0 (none)</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set the 'default' partition's <quote>table_name</quote> parameter</title>
-<programlisting format="linespecific">
+		<title>Set <varname>cluster_id</varname> parameter</title>
+		<programlisting format="linespecific">
 ...
-modparam("dispatcher", "table_name", "my_dispatcher")
+# replicate destination status with all OpenSIPS in cluster ID 9
+modparam("dispatcher", "cluster_id", 9)
 ...
 </programlisting>
 		</example>
 	</section>
 
+	<section id="param_cluster_sharing_tag" xreflabel="cluster_sharing_tag">
+		<title><varname>cluster_sharing_tag</varname> (string)</title>
+		<para>
+		The name of the sharing tag (as defined per clusterer modules) to 
+		control which node is responsible for perform the self-triggered
+		actions in the module. Such actions may be the destination probing or 
+		sharing the changes in the destination status.
+		If defined, only the node with active status of this tag will 
+		perform the actions (pinging and sharing status).
+		</para>
+		<para>
+		The <xref linkend="param_cluster_id"/> must be defined for this option
+		to work.
+		</para>
+		<para>
+		This is an optional parameter. If not set, all the nodes in the cluster
+		will individually do the probing and share the status changes.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty (none)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_sharing_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# only the node with the active "vip" sharing tag will perform pinging
+# and broadcast the status changes
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_sharing_tag", "vip")
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
@@ -641,6 +706,29 @@ modparam("dispatcher", "partition",
 		</example>
 	</section>
 
+	<section id="param_table_name" xreflabel="table_name">
+		<title><varname>table_name</varname> (string)</title>
+		<para>
+		If you want to load the sets of gateways from the database you must set
+		this parameter as the database name.
+		Setting this parameter will only change the default partition's
+		table_name. Use the partition parameter to create and alter
+		other partitions.
+		</para>
+		<para>
+		<emphasis>
+			For every partition the default value is <quote>dispatcher</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the 'default' partition's <quote>table_name</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "table_name", "my_dispatcher")
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section id="param_setid_col" xreflabel="setid_col">
 		<title><varname>setid_col</varname> (string)</title>

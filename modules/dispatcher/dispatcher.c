@@ -18,23 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History
- * -------
- * 2004-07-31  first version, by daniel
- * 2007-01-11  Added a function to check if a specific gateway is in a group
- *              (carsten - Carsten Bock, BASIS AudioNet GmbH)
- * 2007-02-09  Added active probing of failed destinations and automatic
- *              re-enabling of destinations (carsten)
- * 2007-05-08  Ported the changes to SVN-Trunk and renamed ds_is_domain
- *              to ds_is_from_list.  (carsten)
- * 2007-07-18  Added support for load/reload groups from DB
- *              reload triggered from ds_reload MI_Command (ancuta)
- * 2009-05-18  Added support for weights for the destinations;
- *              added support for custom "attrs" (opaque string) (bogdan)
- * 2013-12-02  Added support state persistency (restart and reload) (bogdan)
- * 2013-12-05  Added a safer reload mechanism based on locking read/writter (bogdan)
  */
 
 #include <stdio.h>
@@ -58,6 +43,7 @@
 #include "dispatch.h"
 #include "ds_bl.h"
 #include "ds_fixups.h"
+#include "ds_clustering.h"
 
 
 #define DS_SET_ID_COL		"setid"
@@ -275,6 +261,9 @@ static param_export_t params[]={
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
 	{"fetch_freeswitch_stats", INT_PARAM, &fetch_freeswitch_stats},
 	{"max_freeswitch_weight", INT_PARAM, &max_freeswitch_weight},
+	{"cluster_id",            INT_PARAM, &ds_cluster_id },
+	{"cluster_sharing_tag",   STR_PARAM, &ds_cluster_shtag },
+
 	{0,0,0}
 };
 
@@ -307,8 +296,9 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "ds_ping_interval",      get_deps_ds_ping_interval },
+		{ "ds_ping_interval", get_deps_ds_ping_interval },
 		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
+		{ "cluster_id", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -456,37 +446,21 @@ static int parse_partition_argument(str *arg, ds_db_head_t **found_head)
 	return 0;
 }
 
-/*
-	Find partition by name. Return null if no partition is matching the name
-*/
-
-static ds_partition_t* find_partition_by_name (const str *partition_name)
-{
-	if (partition_name->len == 0)
-		return default_partition;
-
-	ds_partition_t *part_it;
-
-	for (part_it = partitions; part_it; part_it = part_it->next)
-		if (str_strcmp(&part_it->name, partition_name) == 0)
-			break;
-
-	return part_it; //and NULL if there's no partition matching the name
-}
 
 /* Load setids this proxy is responsible for probing into list */
 static int set_probing_list(unsigned int type, void *val) {
 	str input = {(char*)val, strlen(val)};
 
-        if (set_list_from_string(input, &ds_probing_list) != 0 ||
-            ds_probing_list == NULL)
-        {
-            LM_ERR("Invalid set_probing_list input\n");
-            return -1;
-        }
+	if (set_list_from_string(input, &ds_probing_list) != 0 ||
+		ds_probing_list == NULL)
+	{
+		LM_ERR("Invalid set_probing_list input\n");
+		return -1;
+	}
 
-        return 0;
+	return 0;
 }
+
 
 /* We parse the "partition" argument as: partition_name:arg1=val1; arg2=val2;*/
 
@@ -899,8 +873,15 @@ static int mod_init(void)
 	}
 
 	dispatch_evi_id = evi_publish_event(dispatcher_event);
-	if (dispatch_evi_id == EVI_ERROR)
+	if (dispatch_evi_id == EVI_ERROR) {
 		LM_ERR("cannot register dispatcher event\n");
+		return -1;
+	}
+
+	if (ds_cluster_id>0 && ds_init_cluster()<0) {
+		LM_ERR("failed to initialized the clustering support\n");
+		return -1;
+	}
 
 	return 0;
 }

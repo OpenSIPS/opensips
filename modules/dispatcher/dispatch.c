@@ -19,28 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History
- * -------
- * 2004-07-31  first version, by daniel
- * 2005-04-22  added ruri  & to_uri hashing (andrei)
- * 2005-12-10  added failover support via avp (daniel)
- * 2006-08-15  added support for authorization username hashing (carsten)
- * 2007-01-11  Added a function to check if a specific gateway is in a
- *             group (carsten)
- * 2007-01-12  Added a threshhold for automatic deactivation (carsten)
- * 2007-02-09  Added active probing of failed destinations and automatic
- *             re-enabling of destinations (carsten)
- * 2007-05-08  Ported the changes to SVN-Trunk, renamed ds_is_domain to
- *             ds_is_from_list and modified the function to work with IPv6 adresses.
- * 2007-07-18  removed index stuff
- *             added DB support to load/reload data(ancuta)
- * 2007-09-17  added list-file support for reload data (carstenbock)
- * 2009-05-18  Added support for weights for the destinations;
- *             added support for custom "attrs" (opaque string) (bogdan)
- * 2013-12-02  Added support state persistency (restart and reload) (bogdan)
- * 2013-12-05  Added a safer reload mechanism based on locking read/writter (bogdan)
  */
 
 #include <stdio.h>
@@ -69,6 +49,7 @@
 #include "dispatch.h"
 #include "ds_fixups.h"
 #include "ds_bl.h"
+#include "ds_clustering.h"
 
 #define DS_TABLE_VERSION	8
 
@@ -1954,8 +1935,8 @@ static str status_str = str_init("status");
 static str inactive_str = str_init("inactive");
 static str active_str = str_init("active");
 
-int ds_set_state(int group, str *address, int state, int type,
-		ds_partition_t *partition)
+int ds_set_state_repl(int group, str *address, int state, int type,
+		ds_partition_t *partition, int do_repl)
 {
 	int i=0;
 	ds_set_p idx = NULL;
@@ -2019,57 +2000,63 @@ int ds_set_state(int group, str *address, int state, int type,
 				idx->dlist[i].flags |= state;
 			else
 				idx->dlist[i].flags &= ~state;
+
 			if ( idx->dlist[i].flags != old_flags) {
+
 				/* state actually changed -> do all updates */
 				idx->dlist[i].flags |= DS_STATE_DIRTY_DST;
+
+				/* replicate the change of status */
+				if (do_repl) replicate_ds_status_event( &partition->name,
+					group, address, state, type);
+
 				/* update info on active destinations */
 				if ( ((old_flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) !=
 				((idx->dlist[i].flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) )
 					/* this destination switched state between 
 					 * disabled <> enabled -> update active info */
 					re_calculate_active_dsts( idx );
-			}
 
-			if (dispatch_evi_id == EVI_ERROR) {
-				LM_ERR("event not registered %d\n", dispatch_evi_id);
-			} else if (evi_probe_event(dispatch_evi_id)) {
-				if (!(list = evi_get_params())) {
-					lock_stop_read( partition->lock );
-					return 0;
-				}
-				if (partition != default_partition
-				&& evi_param_add_str(list,&partition_str,&partition->name)){
-					LM_ERR("unable to add partition parameter\n");
-					evi_free_params(list);
-					lock_stop_read( partition->lock );
-					return 0;
-				}
-				if (evi_param_add_int(list, &group_str, &group)) {
-					LM_ERR("unable to add group parameter\n");
-					evi_free_params(list);
-					lock_stop_read( partition->lock );
-					return 0;
-				}
-				if (evi_param_add_str(list, &address_str, address)) {
-					LM_ERR("unable to add address parameter\n");
-					evi_free_params(list);
-					lock_stop_read( partition->lock );
-					return 0;
-				}
-				if (evi_param_add_str(list, &status_str,
-							type ? &inactive_str : &active_str)) {
-					LM_ERR("unable to add status parameter\n");
-					evi_free_params(list);
-					lock_stop_read( partition->lock );
-					return 0;
+				if (evi_probe_event(dispatch_evi_id)) {
+					if (!(list = evi_get_params())) {
+						lock_stop_read( partition->lock );
+						return 0;
+					}
+					if (partition != default_partition &&
+					evi_param_add_str(list,&partition_str,&partition->name)){
+						LM_ERR("unable to add partition parameter\n");
+						evi_free_params(list);
+						lock_stop_read( partition->lock );
+						return 0;
+					}
+					if (evi_param_add_int(list, &group_str, &group)) {
+						LM_ERR("unable to add group parameter\n");
+						evi_free_params(list);
+						lock_stop_read( partition->lock );
+						return 0;
+					}
+					if (evi_param_add_str(list, &address_str, address)) {
+						LM_ERR("unable to add address parameter\n");
+						evi_free_params(list);
+						lock_stop_read( partition->lock );
+						return 0;
+					}
+					if (evi_param_add_str(list, &status_str,
+								type ? &inactive_str : &active_str)) {
+						LM_ERR("unable to add status parameter\n");
+						evi_free_params(list);
+						lock_stop_read( partition->lock );
+						return 0;
+					}
+					if (evi_raise_event(dispatch_evi_id, list)) {
+						LM_ERR("unable to send event\n");
+					}
+				} else {
+					LM_DBG("no event sent\n");
 				}
 
-				if (evi_raise_event(dispatch_evi_id, list)) {
-					LM_ERR("unable to send event\n");
-				}
-			} else {
-				LM_DBG("no event sent\n");
-			}
+			} /* end 'if status changed' */
+
 			lock_stop_read( partition->lock );
 			return 0;
 		}
@@ -2340,11 +2327,13 @@ void shm_free_cb_param(void *param)
  */
 void ds_check_timer(unsigned int ticks, void* param)
 {
+	ds_partition_t *partition;
 	dlg_t *dlg;
 	ds_set_p list;
 	int j;
 
-	ds_partition_t *partition = partitions;
+	if ( ds_cluster_shtag_is_active()!=0 )
+		return;
 
 	for (partition = partitions; partition; partition = partition->next){
 		/* Check for the list. */
@@ -2500,5 +2489,23 @@ int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 	}
 
 	return 1;
+}
+
+
+/*
+ * Find partition by name. Return null if no partition is matching the name
+ */
+ds_partition_t* find_partition_by_name (const str *partition_name)
+{
+	if (partition_name->len == 0)
+		return default_partition;
+
+	ds_partition_t *part_it;
+
+	for (part_it = partitions; part_it; part_it = part_it->next)
+		if (str_strcmp(&part_it->name, partition_name) == 0)
+			break;
+
+	return part_it; //and NULL if there's no partition matching the name
 }
 
