@@ -17,11 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2009-02-01 initial version (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -33,10 +29,10 @@
 #include "../../parser/parse_uri.h"
 #include "../../mem/shm_mem.h"
 #include "../../evi/evi.h"
-#include "lb_parser.h"
 #include "../../rw_locking.h"
+#include "lb_parser.h"
 #include "lb_data.h"
-#include "lb_replication.h"
+#include "lb_clustering.h"
 #include "lb_db.h"
 
 /* dialog stuff */
@@ -1246,8 +1242,7 @@ error:
 void lb_status_changed(struct lb_dst *dst)
 {
 	/* do BIN replication if configured */
-	if (lb_repl_cluster > 0)
-		replicate_lb_status( dst );
+	replicate_lb_status( dst );
 
 	/* raise the event */
 	lb_raise_event(dst);

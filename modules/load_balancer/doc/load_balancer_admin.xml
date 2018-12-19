@@ -106,7 +106,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>clustere</emphasis> - only if "status_replication_cluster"
+				<emphasis>clustere</emphasis> - only if "cluster_id"
 				option is enabled.
 			</para>
 			</listitem>
@@ -396,30 +396,78 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
 		</example>
 	</section>
 
-	<section id="param_status_replication_cluster" xreflabel="status_replication_cluster">
-		<title><varname>status_replication_cluster</varname> (integer)</title>
+	<section id="param_cluster_id" xreflabel="cluster_id">
+		<title><varname>cluster_id</varname> (integer)</title>
 		<para>
-		A cluster ID for sharing any change in the status of the destinations with other
-		OpenSIPS instances that are part of a cluster. Whenever such a status changes
-		(following an MI command, a probing result, a script command), the
-		module will replicate this status change to all the nodes in the
-		given cluster. A value of 0 means that sending replication data is disabled.
+		The ID of the cluster the module is part of. The clustering support is 
+		used in load-balancer module for two purposes: for sharing the status 
+		of the destinations and for controlling the pinging to destinations.
 		</para>
 		<para>
-		For more info on how to define and populate a cluster (with OpenSIPS nodes)
-		see the "clusterer" module.
+		If clustering enbled, the module will automatically share changes
+		over the status of the destinations with the other 
+		OpenSIPS instances that are part of a cluster. Whenever such a status 
+		changes (following an MI command, a probing result, a script command),
+		the module will replicate this status change to all the nodes in this 
+		given cluster.
+		</para>
+		<para>
+		The clustering with sharing tag support may be used to control which 
+		node in the cluster will perform the pinging/probing to 
+		destinations. See the
+		<xref linkend="param_cluster_sharing_tag"/> option.
+		</para>
+		<para>
+		For more info on how to define and populate a cluster (with OpenSIPS 
+		nodes) see the "clusterer" module.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>0</quote>.
+			Default value is <quote>0 (none)</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>status_replication_cluster</varname> parameter</title>
+		<title>Set <varname>cluster_id</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# replicate LB status with all OpenSIPS in cluster ID 9
-modparam("load_balancer", "status_replication_cluster", 9)
+# replicate destination status with all OpenSIPS in cluster ID 9
+modparam("load_balancer", "cluster_id", 9)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cluster_sharing_tag" xreflabel="cluster_sharing_tag">
+		<title><varname>cluster_sharing_tag</varname> (string)</title>
+		<para>
+		The name of the sharing tag (as defined per clusterer modules) to 
+		control which node is responsible for perform the self-triggered
+		actions in the module. Such actions may be the destination probing or 
+		sharing the changes in the destination status.
+		If defined, only the node with active status of this tag will 
+		perform the actions (pinging and sharing status).
+		</para>
+		<para>
+		The <xref linkend="param_cluster_id"/> must be defined for this option
+		to work.
+		</para>
+		<para>
+		This is an optional parameter. If not set, all the nodes in the cluster
+		will individually do the probing and share the status changes.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty (none)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_sharing_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# only the node with the active "vip" sharing tag will perform pinging
+# and broadcast the status changes
+modparam("load_balancer", "cluster_id", 9)
+modparam("load_balancer", "cluster_sharing_tag", "vip")
 ...
 </programlisting>
 		</example>

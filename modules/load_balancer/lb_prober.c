@@ -17,16 +17,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History:
- * --------
- *  2009-07-05 initial version (bogdan)
  */
 
 #include "../../dprint.h"
 #include "../tm/tm_load.h"
 #include "lb_prober.h"
+#include "lb_clustering.h"
 
 
 extern str lb_probe_method;
@@ -59,6 +57,9 @@ static void lb_probing_callback( struct cell *t, int type,
 void lb_do_probing(struct lb_data *data)
 {
 	struct lb_dst *dst;
+
+	if ( lb_cluster_shtag_is_active()!=0 )
+		return;
 
 	/* go through all destinations */
 	for( dst = data->dsts ; dst ; dst=dst->next ) {

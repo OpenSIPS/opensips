@@ -17,11 +17,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History:
- * --------
- *  2009-02-01 initial version (bogdan)
  */
 
 #include "../../sr_module.h"
@@ -40,7 +37,7 @@
 #include "lb_parser.h"
 #include "lb_db.h"
 #include "lb_data.h"
-#include "lb_replication.h"
+#include "lb_clustering.h"
 #include "lb_prober.h"
 #include "lb_bl.h"
 
@@ -161,9 +158,10 @@ static param_export_t mod_params[]={
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
 	{ "lb_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_lb_bl},
-	{ "status_replication_cluster",   INT_PARAM, &lb_repl_cluster 			},
-	{ "fetch_freeswitch_stats",  INT_PARAM, &fetch_freeswitch_stats},
-	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load},
+	{ "cluster_id",            INT_PARAM, &lb_cluster_id            },
+	{ "cluster_sharing_tag",   STR_PARAM, &lb_cluster_shtag         },
+	{ "fetch_freeswitch_stats",  INT_PARAM, &fetch_freeswitch_stats },
+	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load        },
 	{ 0,0,0 }
 };
 
@@ -201,7 +199,7 @@ static dep_export_t deps = {
 	{ /* modparam dependencies */
 		{ "probing_interval", get_deps_probing_interval },
 		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
-		{ "status_replication_cluster", get_deps_clusterer},
+		{ "cluster_id", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -548,22 +546,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (lb_repl_cluster < 0) {
-		LM_ERR("Invalid replication_cluster, must be 0 or "
-			"a positive cluster id\n");
-		return -1;
-	}
-
-	if (lb_repl_cluster && load_clusterer_api(&clusterer_api)!=0) {
-		LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
-		return -1;
-	}
-
-	/* register handler for processing load_balancer replication packets to the clusterer module */
-	if (lb_repl_cluster > 0 &&
-		clusterer_api.register_capability(&status_repl_cap,
-		receive_lb_binary_packet, NULL, lb_repl_cluster, 0, NODE_CMP_ANY) < 0) {
-		LM_ERR("cannot register binary packet callback to clusterer module!\n");
+	if (lb_cluster_id>0 && lb_init_cluster()<0) {
+		LM_ERR("failed to initialized the clustering support\n");
 		return -1;
 	}
 
@@ -1280,20 +1264,31 @@ error:
 }
 
 
-void receive_lb_binary_packet(bin_packet_t *packet)
+int lb_update_from_replication( unsigned int group, str *uri,
+														unsigned int flags)
 {
-	LM_DBG("received a binary packet [%d]!\n", packet->type);
+	struct lb_dst *dst;
 
-	if(get_bin_pkg_version(packet) != BIN_VERSION) {
-		LM_ERR("incompatible bin protocol version\n");
-		return;
+	lock_start_read( ref_lock );
+
+	for( dst=(*curr_data)->dsts; dst; dst=dst->next ) {
+		if ( (dst->group == group) &&
+		(strncmp(dst->uri.s, uri->s, dst->uri.len) == 0)) {
+			if ((dst->flags&LB_DST_STAT_MASK) != flags) {
+				/* import the status flags */
+				dst->flags = ((~LB_DST_STAT_MASK)&dst->flags)|
+					(LB_DST_STAT_MASK&flags);
+				/* raise event of status change */
+				lb_raise_event(dst);
+				lock_stop_read( ref_lock );
+				return 0;
+			}
+		}
 	}
 
-	if (packet->type == REPL_LB_STATUS_UPDATE) {
-		lock_start_read(ref_lock);
-		replicate_lb_status_update(packet, *curr_data);
-		lock_stop_read(ref_lock);
-	} else {
-		LM_ERR("invalid load_balancer binary packet type: %d\n", packet->type);
-	}
+	lock_stop_read( ref_lock );
+
+	return -1;
 }
+
+
