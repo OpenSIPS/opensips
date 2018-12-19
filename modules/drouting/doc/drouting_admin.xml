@@ -942,7 +942,7 @@ modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 	</section>
 
 	<section id="param_cluster_id" xreflabel="cluster_id">
-		<title><varname>status_replication_cluster</varname> (integer)</title>
+		<title><varname>cluster_id</varname> (integer)</title>
 		<para>
 		The ID of the cluster the module is part of. The clustering support is 
 		used in drouting module for two purposes: for sharing the status of 
@@ -958,13 +958,13 @@ modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 		</para>
 		<para>
 		The clustering with sharing tag support may be used to control which 
-		node 		in the cluster will perform the pinging/probing to 
+		node in the cluster will perform the pinging/probing to 
 		gateways. See the
 		<xref linkend="param_cluster_sharing_tag"/> option.
 		</para>
 		<para>
-		For more info on how to define and populate a cluster (with OpenSIPS nodes)
-		see the "clusterer" module.
+		For more info on how to define and populate a cluster (with OpenSIPS 
+		nodes) see the "clusterer" module.
 		</para>
 		<para>
 		<emphasis>
