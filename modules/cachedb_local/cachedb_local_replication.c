@@ -22,6 +22,7 @@
 
 #include "../../cachedb/cachedb.h"
 #include "../../cachedb/cachedb_con.h"
+#include "../../timer.h"
 #include "hash.h"
 #include "cachedb_local.h"
 #include "cachedb_local_replication.h"
