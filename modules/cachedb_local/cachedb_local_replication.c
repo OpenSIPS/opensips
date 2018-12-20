@@ -18,10 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2018-12-06  initial version (Fabian Gast)
  */
 
 #include "../../cachedb/cachedb.h"
@@ -128,17 +124,17 @@ void replicate_cache_insert(str* col, str* attr, str* value, int expires)
         bin_push_str(&packet, value);
         bin_push_int(&packet, expires);
 
-        rc = clusterer_api.send_all(&packet, replication_cluster);
+        rc = clusterer_api.send_all(&packet, cluster_id);
         switch (rc) {
                 case CLUSTERER_CURR_DISABLED:
-                        LM_INFO("Current node is disabled in cluster: %d\n", replication_cluster);
+                        LM_INFO("Current node is disabled in cluster: %d\n", cluster_id);
                         goto error;
                 case CLUSTERER_DEST_DOWN:
                 	LM_INFO("All destinations in cluster: %d are down or probing\n",
-                	replication_cluster);
+                	cluster_id);
                 	goto error;
                 case CLUSTERER_SEND_ERR:
-                	LM_ERR("Error sending in cluster: %d\n", replication_cluster);
+                	LM_ERR("Error sending in cluster: %d\n", cluster_id);
                 	goto error;
         }
         bin_free_packet(&packet);
@@ -162,17 +158,17 @@ void replicate_cache_remove(str* col, str *attr)
         bin_push_str(&packet, col);
         bin_push_str(&packet, attr);
 
-        rc = clusterer_api.send_all(&packet, replication_cluster);
+        rc = clusterer_api.send_all(&packet, cluster_id);
         switch (rc) {
                 case CLUSTERER_CURR_DISABLED:
-                        LM_INFO("Current node is disabled in cluster: %d\n", replication_cluster);
+                        LM_INFO("Current node is disabled in cluster: %d\n", cluster_id);
                         goto error;
                 case CLUSTERER_DEST_DOWN:
                 	LM_INFO("All destinations in cluster: %d are down or probing\n",
-                	replication_cluster);
+                	cluster_id);
                 	goto error;
                 case CLUSTERER_SEND_ERR:
-                	LM_ERR("Error sending in cluster: %d\n", replication_cluster);
+                	LM_ERR("Error sending in cluster: %d\n", cluster_id);
                 	goto error;
         }
         bin_free_packet(&packet);
@@ -199,7 +195,7 @@ int receive_sync_request(int node_id)
                         while(data) {
                                 if (data->expires == 0 || data->expires > get_ticks()) {
                                         sync_packet = clusterer_api.sync_chunk_start(&cache_repl_cap,
-                                                                                      replication_cluster, node_id);
+                                                                                      cluster_id, node_id);
                                         if (!sync_packet) {
                                                 LM_ERR("Can not create sync packet!\n");
                                                 return -1;
@@ -248,7 +244,7 @@ void receive_binary_packet(bin_packet_t *packet)
                         rc = -1;
                         LM_WARN("Invalid cache binary packet command: %d "
                                 "(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
-                                replication_cluster);
+                                cluster_id);
                 }
                 if (rc != 0)
 			LM_ERR("Failed to process a binary packet!\n");

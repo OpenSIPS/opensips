@@ -166,7 +166,7 @@ int _lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires, i
 	"cachedb_local insert",attr->s,attr->len,0);
 
 	/* replicate */
-	if (replication_cluster && isrepl != 1)
+	if (cluster_id && isrepl != 1)
 		replicate_cache_insert(&cache_col->col_name, attr, value, expires);
 
 	return 1;
@@ -232,7 +232,7 @@ int _lcache_htable_remove(cachedb_con *con,str* attr, int isrepl)
 	stop_expire_timer(start,local_exec_threshold,
 	"cachedb_local remove",attr->s,attr->len,0);
 
-	if (replication_cluster && isrepl != 1)
+	if (cluster_id && isrepl != 1)
 		replicate_cache_remove(&cache_col->col_name, attr);
 
 	return 0;

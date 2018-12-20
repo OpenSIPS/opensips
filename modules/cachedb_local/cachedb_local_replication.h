@@ -18,10 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2018-12-06  initial version (Fabian Gast)
  */
 
 #include "../../bin_interface.h"
@@ -36,7 +32,7 @@
 
 extern struct clusterer_binds clusterer_api;
 extern str cache_repl_cap;
-extern int replication_cluster;
+extern int cluster_id;
 
 enum cachedb_rr_persist {
 	RRP_NONE,

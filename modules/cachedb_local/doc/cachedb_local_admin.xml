@@ -16,6 +16,41 @@
 	<para>
 	</para>
 	</section>
+	<section id="clustering" xreflabel="clustering">
+		<title>Clustering</title>
+		<para>
+			Cachedb_local clustering is a mechanism used to mirror local cache changes
+			taking place in one OpenSIPS instance to one or multiple other instances without
+			the need of third party dependencies.
+			The process is simplified by using the clusterer module which facilitates the
+			management of a cluster of OpenSIPS noeds and the sending of replication-related
+			BIN packets (binary-encoded, using proto_bin). This might be usefull for implementing
+			a hot stand-by system, where the stand-by instance can take over without the need
+			of filling the cache by its own.
+		</para>
+		<para>
+			The following cache operations will be distributet within the cluster:
+			<itemizedlist>
+				<listitem><para>cache_store</para></listitem>
+				<listitem><para>cache_remove</para></listitem>
+				<listitem><para>cache_add</para></listitem>
+				<listitem><para>cache_sub</para></listitem>
+			<itemizedlist>
+		</para>
+		<para>
+			In addition to the event-driven replication, an OpenSIPS instance will first
+			try to learn all the local cache information from antoher node in the cluster at startup.
+			The data synchronization mechanism requires defining one of the nodes in the cluster
+			as a "<emphasis role='bold'>seed</emphasis>" node.
+			See the <ulink url="http://www.opensips.org/html/docs/modules/3.0.x/clusterer.html#capabilities">clusterer</ulink>
+			module for details on how to do this and why is it needed.
+		</para>
+		<para>
+			<emphasis role='bold'>Limitations:</emphasis> The clustering operations are not atomic
+			and constistency over the cluster nodes is not guaranteed.
+		</para>
+
+	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
@@ -26,7 +61,7 @@
 			<itemizedlist>
 				<listitem>
 				<para>
-					<emphasis>clusterer, if <xref linkend="replication_cluster"/>
+					<emphasis>clusterer, if <xref linkend="cluster_id"/>
 					is set.</emphasis>
 				</para>
 				</listitem>
@@ -140,8 +175,8 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 		</example>
 	</section>
 
-	<section id="param_replication_cluster" xreflabel="replication_cluster">
-		<title><varname>replication_cluster</varname> (int)</title>
+	<section id="param_cluster_id" xreflabel="cluster_id">
+		<title><varname>cluster_id</varname> (int)</title>
 		<para>
 		Specifies the cluster ID which this instance will send to and receive
 		cache data.
@@ -150,16 +185,16 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 			Default value is 0 (replication disabled).
 		</para>
 		<example>
-		<title>Setting the <varname>replication_cluster</varname> parameter</title>
+		<title>Setting the <varname>cluster_id</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_local", "replication_cluster", 1)
+modparam("cachedb_local", "cluster_id", 1)
 ...
 		</programlisting>
 		</example>
 	</section>
-	<section id="param_restart_persistency" xreflabel="restart_persistency">
-		<title><varname>restart_persistency</varname> (string)</title>
+	<section id="param_cluster_persistency" xreflabel="cluster_persistency">
+		<title><varname>cluster_persistency</varname> (string)</title>
 		<para>
 		Controls the behavior of the OpenSIPS local cachedb clustering following a restart.
 		</para>
@@ -190,10 +225,10 @@ modparam("cachedb_local", "replication_cluster", 1)
 			</emphasis>
 		</para>
 		<example>
-			title>Set <varname>restart_persistency</varname> parameter</title>
+			title>Set <varname>cluster_persistency</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_local", "restart_persistency", "sync-from-cluster")
+modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 ...
 		</example>
 	</section>

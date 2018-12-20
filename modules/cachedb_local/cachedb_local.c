@@ -58,9 +58,9 @@ lcache_col_t* lcache_collection = NULL;
 url_lst_t* url_list=NULL;
 
 str cache_repl_cap = str_init("cachedb-local-repl");
-int replication_cluster = 0;
+int cluster_id = 0;
 enum cachedb_rr_persist rr_persist = RRP_SYNC_FROM_CLUSTER;
-char *restart_persist;
+char *cluster_persist;
 
 static int w_remove_chunk_1(struct sip_msg* msg, char* glob);
 static int w_remove_chunk_2(struct sip_msg* msg, char* collection, char* glob);
@@ -75,8 +75,8 @@ static param_export_t params[]={
 	{ "exec_threshold",     INT_PARAM, &local_exec_threshold },
 	{ "cache_collections",  STR_PARAM|USE_FUNC_PARAM, (void *)parse_collections },
 	{ "cachedb_url",        STR_PARAM|USE_FUNC_PARAM, (void *)store_urls },
-	{ "replication_cluster",INT_PARAM, &replication_cluster },
-	{ "restart_persistency",STR_PARAM, &restart_persist },
+	{ "cluster_id",INT_PARAM, &cluster_id },
+	{ "cluster_persistency",STR_PARAM, &cluster_persist },
 	{0,0,0}
 };
 
@@ -100,7 +100,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0},
 	},
 	{ /* modparam dependencies */
-		{"replication_cluster", get_deps_clusterer},
+		{"cluster_id", get_deps_clusterer},
 	},
 };
 
@@ -450,15 +450,15 @@ static int mod_init(void)
 		cache_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
 
 	/* register clusterer module */
-	if (replication_cluster) {
-		if (restart_persist) {
-			if (!strcasecmp(restart_persist, "none"))
+	if (cluster_id) {
+		if (cluster_persist) {
+			if (!strcasecmp(cluster_persist, "none"))
 				rr_persist = RRP_NONE;
-			else if (!strcasecmp(restart_persist, "sync-from-cluster"))
+			else if (!strcasecmp(cluster_persist, "sync-from-cluster"))
 				rr_persist = RRP_SYNC_FROM_CLUSTER;
 			else
-				LM_ERR("unknown 'restart_persistency' value: %s, "
-				       "using 'sync-from-cluster'\n", restart_persist);
+				LM_ERR("unknown 'cluster_persistency' value: %s, "
+				       "using 'sync-from-cluster'\n", cluster_persist);
 		}
 
 		if (load_clusterer_api(&clusterer_api) < 0) {
@@ -467,7 +467,7 @@ static int mod_init(void)
 		}
 
 		if (clusterer_api.register_capability(&cache_repl_cap, receive_binary_packet,
-		    receive_cluster_event, replication_cluster,
+		    receive_cluster_event, cluster_id,
 		    rr_persist == RRP_SYNC_FROM_CLUSTER? 1 : 0,
 		    NODE_CMP_ANY) < 0 ) {
 			LM_ERR("Cannot register clusterer callback for cache replication!\n");
@@ -475,7 +475,7 @@ static int mod_init(void)
 		}
 
 		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
-		    clusterer_api.request_sync(&cache_repl_cap, replication_cluster, 0) < 0)
+		    clusterer_api.request_sync(&cache_repl_cap, cluster_id, 0) < 0)
 			LM_ERR("cachedb sync request failed\n");
 
 	}
