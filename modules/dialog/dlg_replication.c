@@ -602,6 +602,11 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 
 	dlg_lock_dlg(dlg);
+	if (dlg->state < DLG_STATE_CONFIRMED_NA) {
+		LM_DBG("not replicating update in state %d (%.*s)\n", dlg->state,
+				dlg->callid.len, dlg->callid.s);
+		goto end;
+	}
 	if (dlg->state == DLG_STATE_DELETED) {
 		/* we no longer need to update anything */
 		LM_WARN("not replicating dlg update message due to bad state %d (%.*s)\n",
