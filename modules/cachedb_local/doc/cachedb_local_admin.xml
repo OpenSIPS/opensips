@@ -16,13 +16,56 @@
 	<para>
 	</para>
 	</section>
+	<section id="clustering" xreflabel="clustering">
+		<title>Clustering</title>
+		<para>
+			Cachedb_local clustering is a mechanism used to mirror local cache changes
+			taking place in one OpenSIPS instance to one or multiple other instances without
+			the need of third party dependencies.
+			The process is simplified by using the clusterer module which facilitates the
+			management of a cluster of OpenSIPS noeds and the sending of replication-related
+			BIN packets (binary-encoded, using proto_bin). This might be usefull for implementing
+			a hot stand-by system, where the stand-by instance can take over without the need
+			of filling the cache by its own.
+		</para>
+		<para>
+			The following cache operations will be distributet within the cluster:
+			<itemizedlist>
+				<listitem><para>cache_store</para></listitem>
+				<listitem><para>cache_remove</para></listitem>
+				<listitem><para>cache_add</para></listitem>
+				<listitem><para>cache_sub</para></listitem>
+			<itemizedlist>
+		</para>
+		<para>
+			In addition to the event-driven replication, an OpenSIPS instance will first
+			try to learn all the local cache information from antoher node in the cluster at startup.
+			The data synchronization mechanism requires defining one of the nodes in the cluster
+			as a "<emphasis role='bold'>seed</emphasis>" node.
+			See the <ulink url="http://www.opensips.org/html/docs/modules/3.0.x/clusterer.html#capabilities">clusterer</ulink>
+			module for details on how to do this and why is it needed.
+		</para>
+		<para>
+			<emphasis role='bold'>Limitations:</emphasis> The clustering operations are not atomic
+			and constistency over the cluster nodes is not guaranteed.
+		</para>
+
+	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
 		<para>
-		None.
+		The following modules must be loaded before this module:
+			<itemizedlist>
+				<listitem>
+				<para>
+					<emphasis>clusterer, if <xref linkend="cluster_id"/>
+					is set.</emphasis>
+				</para>
+				</listitem>
+			</itemizedlist>
 		</para>
 	</section>
 
@@ -131,6 +174,64 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 	</programlisting>
 		</example>
 	</section>
+
+	<section id="param_cluster_id" xreflabel="cluster_id">
+		<title><varname>cluster_id</varname> (int)</title>
+		<para>
+		Specifies the cluster ID which this instance will send to and receive
+		cache data.
+		</para>
+		<para>
+			Default value is 0 (replication disabled).
+		</para>
+		<example>
+		<title>Setting the <varname>cluster_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "cluster_id", 1)
+...
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_cluster_persistency" xreflabel="cluster_persistency">
+		<title><varname>cluster_persistency</varname> (string)</title>
+		<para>
+		Controls the behavior of the OpenSIPS local cachedb clustering following a restart.
+		</para>
+		<para>
+		This parameter may take the following values:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>"none"</emphasis> - no explicit data
+				synchronization following a restart. The node starts empty.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>"sync-from-cluster"</emphasis> - enable
+				cluster-based restart persistency. Following a restart,
+				an OpenSIPS cluster node will search for a healthy "donor" node
+				from which to mirror the entire user location dataset via
+				direct cluster sync (TCP-based, binary-encoded data transfer).
+				This will require the configuration of one or multiple "seed"
+				nodes in the cluster.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+			<emphasis>
+				Default value is
+				<emphasis>"sync-from-cluster"</emphasis>.
+			</emphasis>
+		</para>
+		<example>
+			title>Set <varname>cluster_persistency</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
+...
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -197,4 +298,3 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 	</section>
 
 </chapter>
-

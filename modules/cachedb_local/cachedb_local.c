@@ -37,8 +37,10 @@
 #include "../../mem/shm_mem.h"
 #include "../../mod_fix.h"
 #include "../../mi/tree.h"
+#include "../clusterer/api.h"
 
 #include "cachedb_local.h"
+#include "cachedb_local_replication.h"
 #include "hash.h"
 
 #include <fnmatch.h>
@@ -55,6 +57,10 @@ int local_exec_threshold = 0;
 lcache_col_t* lcache_collection = NULL;
 url_lst_t* url_list=NULL;
 
+str cache_repl_cap = str_init("cachedb-local-repl");
+int cluster_id = 0;
+enum cachedb_rr_persist rr_persist = RRP_SYNC_FROM_CLUSTER;
+char *cluster_persist;
 
 static int w_remove_chunk_1(struct sip_msg* msg, char* glob);
 static int w_remove_chunk_2(struct sip_msg* msg, char* collection, char* glob);
@@ -69,6 +75,8 @@ static param_export_t params[]={
 	{ "exec_threshold",     INT_PARAM, &local_exec_threshold },
 	{ "cache_collections",  STR_PARAM|USE_FUNC_PARAM, (void *)parse_collections },
 	{ "cachedb_url",        STR_PARAM|USE_FUNC_PARAM, (void *)store_urls },
+	{ "cluster_id",INT_PARAM, &cluster_id },
+	{ "cluster_persistency",STR_PARAM, &cluster_persist },
 	{0,0,0}
 };
 
@@ -87,13 +95,22 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0},
+	},
+	{ /* modparam dependencies */
+		{"cluster_id", get_deps_clusterer},
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"cachedb_local",               /* module name */
 	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
 	0,                          /* exported async functions */
 	params,                     /* exported parameters */
@@ -432,6 +449,37 @@ static int mod_init(void)
 	register_timer("localcache-expire",localcache_clean, 0,
 		cache_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
 
+	/* register clusterer module */
+	if (cluster_id) {
+		if (cluster_persist) {
+			if (!strcasecmp(cluster_persist, "none"))
+				rr_persist = RRP_NONE;
+			else if (!strcasecmp(cluster_persist, "sync-from-cluster"))
+				rr_persist = RRP_SYNC_FROM_CLUSTER;
+			else
+				LM_ERR("unknown 'cluster_persistency' value: %s, "
+				       "using 'sync-from-cluster'\n", cluster_persist);
+		}
+
+		if (load_clusterer_api(&clusterer_api) < 0) {
+			LM_DBG("failed to load clusterer API - is clusterer module loaded?\n");
+			return -1;
+		}
+
+		if (clusterer_api.register_capability(&cache_repl_cap, receive_binary_packet,
+		    receive_cluster_event, cluster_id,
+		    rr_persist == RRP_SYNC_FROM_CLUSTER? 1 : 0,
+		    NODE_CMP_ANY) < 0 ) {
+			LM_ERR("Cannot register clusterer callback for cache replication!\n");
+			return -1;
+		}
+
+		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
+		    clusterer_api.request_sync(&cache_repl_cap, cluster_id, 0) < 0)
+			LM_ERR("cachedb sync request failed\n");
+
+	}
+
 	return 0;
 }
 
@@ -662,4 +710,3 @@ static int store_urls(unsigned int type, void *val)
 
 	return 0;
 }
-

@@ -33,6 +33,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "cachedb_local.h"
+#include "cachedb_local_replication.h"
 #include "hash.h"
 
 void lcache_htable_remove_safe(str attr, lcache_entry_t** it);
@@ -104,6 +105,11 @@ void lcache_htable_destroy(lcache_t** cache_htable_p, int size)
 
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
 {
+	return _lcache_htable_insert(con, attr, value, expires, 0);
+}
+
+int _lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires, int isrepl)
+{
 	lcache_entry_t* me, *it;
 	int hash_code;
 	int size;
@@ -158,6 +164,11 @@ int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
 
 	stop_expire_timer(start,local_exec_threshold,
 	"cachedb_local insert",attr->s,attr->len,0);
+
+	/* replicate */
+	if (cluster_id && isrepl != 1)
+		replicate_cache_insert(&cache_col->col_name, attr, value, expires);
+
 	return 1;
 }
 
@@ -188,6 +199,11 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 
 int lcache_htable_remove(cachedb_con *con,str* attr)
 {
+	return _lcache_htable_remove(con, attr, 0);
+}
+
+int _lcache_htable_remove(cachedb_con *con,str* attr, int isrepl)
+{
 	int hash_code;
 	struct timeval start;
 
@@ -215,6 +231,9 @@ int lcache_htable_remove(cachedb_con *con,str* attr)
 
 	stop_expire_timer(start,local_exec_threshold,
 	"cachedb_local remove",attr->s,attr->len,0);
+
+	if (cluster_id && isrepl != 1)
+		replicate_cache_remove(&cache_col->col_name, attr);
 
 	return 0;
 }
