@@ -605,6 +605,10 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 	str buf;
 	char *p;
 
+	/* no need to dump variables for deleted, since these have already been processed */
+	if (dlg->state == DLG_STATE_DELETED)
+		return;
+
 	ctx = *_params->param;
 	LM_DBG("storing in dialog acc ctx=%p\n", ctx);
 
