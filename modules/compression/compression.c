@@ -311,6 +311,9 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 
 	t->uac[p->code].request.buffer.s = buf;
 	t->uac[p->code].request.buffer.len = olen;
+	/* we also need to compute the uri so that it points within the new buffer */
+	t->uac[p->code].uri.s = buf + t->method.len + 1;
+	/* uri.len should be the same, since it is not changed by compression */
 }
 
 int wrap_msg_compress(str* buf, struct sip_msg* p_msg) {
