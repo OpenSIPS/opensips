@@ -459,7 +459,7 @@ if (is_avp_set("$avp(805)")) {
     $avp(billing_party_domain) = $fd;
 }
 
-if (method==INVITE && !has_totag() &&
+if (is_method("INVITE") && !has_totag() &&
     is_domain_local("$avp(billing_party_domain)")) {
     call_control();
     switch ($retcode) {
@@ -511,7 +511,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Saúl Ibarra Corretgé (@saghul) 15 9 320 124
    2. Dan Pascu (@danpascu) 14 2 1446 0
-   3. Liviu Chircu (@liviuchircu) 11 9 53 54
+   3. Liviu Chircu (@liviuchircu) 12 10 54 55
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 15 47
    5. Razvan Crainea (@razvancrainea) 8 6 54 32
    6. Irina-Maria Stanescu 6 2 356 17
@@ -540,8 +540,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Dec 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    4.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2017
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -558,8 +558,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Saúl Ibarra Corretgé (@saghul), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan
    Crainea (@razvancrainea), Irina-Maria Stanescu, Dan Pascu
    (@danpascu).
 

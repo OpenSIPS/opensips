@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">152</entry>
-		<entry align="center">66</entry>
-		<entry align="center">6880</entry>
-		<entry align="center">1756</entry>
+		<entry align="center">153</entry>
+		<entry align="center">67</entry>
+		<entry align="center">6883</entry>
+		<entry align="center">1758</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -74,6 +74,14 @@
 		<entry align="center">6</entry>
 		<entry align="center">0</entry>
 	</row>
+	<row>
+		<entry>8. </entry>
+		<entry>Razvan</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">4</entry>
+		<entry align="center">0</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -104,36 +112,41 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Nov 2018</entry>
+		<entry>Razvan</entry>
+		<entry align="center">Dec 2018 - Dec 2018</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Dec 2016 - Jul 2018</entry>
+		<entry align="center">Dec 2016 - Dec 2018</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Nov 2018</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Nov 2017 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>wuhanck</entry>
 		<entry align="center">Apr 2018 - Apr 2018</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jul 2017 - Jul 2017</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Bradley Jokinen</entry>
 		<entry align="center">Jul 2017 - Jul 2017</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Mar 2017 - Jun 2017</entry>
 	</row>

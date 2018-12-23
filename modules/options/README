@@ -160,7 +160,7 @@ modparam("options", "support", "100rel")
    Example 1.5. options_reply usage
 ...
 if (is_myself("$rd")) {
-        if ((method==OPTIONS) && (! $ru=~"sip:.*[@]+.*")) {
+        if (is_method("OPTIONS") && (! $ru=~"sip:.*[@]+.*")) {
                 options_reply();
         }
 }
@@ -173,7 +173,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 19 17 50 34
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 20 18 51 35
    2. Daniel-Constantin Mierla (@miconda) 14 12 41 31
    3. Liviu Chircu (@liviuchircu) 9 7 29 43
    4. Nils Ohlmeier 9 3 630 4
@@ -206,7 +206,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Dec 2018
    2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
    4.  Razvan Crainea (@razvancrainea)     Nov 2012 - Aug 2015

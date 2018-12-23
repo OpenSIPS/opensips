@@ -288,7 +288,7 @@ modparam("mediaproxy", "ice_candidate_avp", "$avp(ice_candidate)")
 
    Example 1.8. Using the engage_media_proxy function
 ...
-if (method==INVITE && !has_totag()) {
+if (is_method("INVITE") && !has_totag()) {
     # We can also use a specific media relay if we need to
     #$avp(media_relay) = "1.2.3.4";
     engage_media_proxy();
@@ -318,7 +318,7 @@ if (method==INVITE && !has_totag()) {
 
    Example 1.9. Using the use_media_proxy function
 ...
-if (method==INVITE) {
+if (is_method("INVITE")) {
     # We can also use a specific media relay if we need to
     #$avp(media_relay) = "1.2.3.4";
     use_media_proxy();
@@ -340,7 +340,7 @@ if (method==INVITE) {
 
    Example 1.10. Using the end_media_session function
 ...
-if (method==BYE) {
+if (is_method("BYE") {
     end_media_session();
 }
 ...
@@ -356,7 +356,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 687 88
    3. Saúl Ibarra Corretgé (@saghul) 20 14 504 71
    4. Daniel-Constantin Mierla (@miconda) 13 11 37 33
-   5. Liviu Chircu (@liviuchircu) 11 9 37 43
+   5. Liviu Chircu (@liviuchircu) 12 10 40 46
    6. Razvan Crainea (@razvancrainea) 5 3 17 17
    7. Vlad Paiu (@vladpaiu) 4 2 7 12
    8. Henning Westerholt (@henningw) 4 2 6 31
@@ -389,8 +389,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
@@ -413,8 +413,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Saúl
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Saúl
    Ibarra Corretgé (@saghul), Dan Pascu (@danpascu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu.

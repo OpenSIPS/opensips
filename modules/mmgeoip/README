@@ -58,6 +58,9 @@ Chapter 1. Admin Guide
    accessible by the script. Visit the MaxMind website for more
    information on the location databases.
 
+   The module is compatible with both legacy GeoIP and the newer
+   GeoIP2 APIs and databases.
+
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules
@@ -69,7 +72,20 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * libGeoIP.
+     * libGeoIP - for the legacy GeoIP API and database;
+     * libmaxminddb - for the GeoIP2 API and database.
+
+   You can select which GeoIP library to use by setting the GEOIP
+   environment variable, before compiling the module, to one of
+   the following values:
+     * GEOIPLEGACY *** libGeoIP library shall be used
+     * GEOIP2 *** libmaxminddb library shall be used;
+
+   IMPORTANT: If the selected library is not installed the module
+   won't compile.
+
+   NOTE: If GEOIP env is not set, the module will try to find
+   which GeoIP library is installed, prioritizing libmaxminddb.
 
 1.3. Exported Parameters
 
@@ -101,6 +117,10 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 
    Default value for this parameter is MMAP_CACHE.
 
+   NOTE: If libmaxminddb is used, this parameter will be ignored
+   as the library only supports loading the database into mmap
+   allocated memory.
+
    Example 1.2. Set “cache_type” parameter
 ...
 modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
@@ -110,23 +130,37 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 
 1.4.1.  mmg_lookup([fields,]src,dst)
 
-   Looks up specified fields associated with IP address specified
-   by the src. The resulting data are loaded in reverse order into
+   Looks up information specified by field associated with the IP
+   address src. The resulting data is loaded in reverse order into
    the dst AVP.
 
-   src can be a pseudo-variable or AVP; and dst must be an AVP.
-   fields defaults to "lon:lat," and is a colon-delimited list of
-   these elements:
-     * lat Latitude
-     * lon Longitude
-     * cont Continent
-     * cc Country Code
-     * reg Region
-     * city City
-     * pc Postal Code
-     * dma DMA Code
-     * ac Area Code
-     * TZ Time Zone
+   src can be a pseudo-variable or AVP and dst must be an AVP. The
+   format for fields is a list of elements delimited by one of
+   these separators: ':', '|', ',', '/' or ' '(space).
+
+   The following tokens are supported in fields:
+     * lat - Latitude
+     * lon - Longitude
+     * cont - Continent
+     * cc - Country Code
+     * reg - Region
+     * city - City
+     * pc - Postal Code
+     * dma - DMA Code
+     * ac - Area Code, only available in the legacy GeoIP database
+     * tz - Time Zone
+
+   When using the GeoIP2 library, each token from the list given
+   in the fields parameter can be provided as a path to a specific
+   key in the data structure associated with an IP. Thus, the
+   token format is 'key_name.key_name[.key_name]*'. If a key's
+   value is an array, instead of a subkey name, an index should be
+   provided in order to select the appropriate value.
+
+   Example tokens: 'country.names.en', 'continent.names.en ',
+   'subdivisions.0.iso_code'. For more details about the available
+   fields in the database and the key names that should be used to
+   retrieve them, check the MaxMind GeoIP2 documentation.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE,ERROR_ROUTE, and LOCAL_ROUTE.
@@ -136,6 +170,13 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
   xlog("L_INFO","Source IP longitude:$(avp(lat_lon)[1])\n");
+};
+...
+# fields format only supported for GeoIP2
+if(mmg_lookup("continent.names.en:country.iso_code,","$si","$avp(geodata
+)")) {
+  xlog("L_INFO","Source IP country code:$(avp(geodata)[0])\n");
+  xlog("L_INFO","Source IP continent:$(avp(geodata)[1])\n");
 };
 ...
 
@@ -151,14 +192,14 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 31 24
-   2. Liviu Chircu (@liviuchircu) 8 6 14 35
-   3. Kobi Eshun (@ekobi) 8 3 480 4
-   4. Razvan Crainea (@razvancrainea) 6 4 12 6
-   5. Sergio Gutierrez 4 2 5 3
-   6. Ionut Ionita (@ionutrazvanionita) 3 1 84 1
-   7. Anca Vamanu 3 1 6 2
-   8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   1. Vlad Patrascu (@rvlad-patrascu) 11 3 611 139
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 31 24
+   3. Liviu Chircu (@liviuchircu) 8 6 14 35
+   4. Kobi Eshun (@ekobi) 8 3 480 4
+   5. Razvan Crainea (@razvancrainea) 6 4 12 6
+   6. Sergio Gutierrez 4 2 5 3
+   7. Ionut Ionita (@ionutrazvanionita) 3 1 84 1
+   8. Anca Vamanu 3 1 6 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -180,9 +221,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Jun 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4. Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2017
    5. Ionut Ionita (@ionutrazvanionita)   May 2016 - May 2016
    6. Kobi Eshun (@ekobi)                 Nov 2008 - Dec 2009
@@ -196,9 +237,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Kobi
-   Eshun (@ekobi).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ionut
+   Ionita (@ionutrazvanionita), Kobi Eshun (@ekobi).
 
    doc copyrights:
 
