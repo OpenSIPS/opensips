@@ -327,6 +327,12 @@
               and keeping alive INVITE dialogs is needed.
             </para>
           </listitem>
+          <listitem>
+            <para>
+              <emphasis>clusterer</emphasis> - only if "cluster_id"
+              option is enabled.
+            </para>
+          </listitem>
         </itemizedlist>
       </para>
     </section>
@@ -486,7 +492,75 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/keepalive_s
         </programlisting>
       </example>
     </section>
-  
+
+    <section id="param_cluster_id" xreflabel="cluster_id">
+    <title><varname>cluster_id</varname> (integer)</title>
+      <para>
+      The ID of the cluster the module is part of. The clustering support is 
+      used by the nat_traversal module for controlling the pinging process.
+      When part of a cluster of multiple nodes, the nodes can agree upon which
+      node is the one responsible for pinging.
+      </para>
+      <para>
+      The clustering with sharing tag support may be used to control which 
+      node in the cluster will perform the pinging/probing to the
+      contacts. See the
+      <xref linkend="param_cluster_sharing_tag"/> option.
+      </para>
+      <para>
+      For more info on how to define and populate a cluster (with OpenSIPS 
+      nodes) see the "clusterer" module.
+      </para>
+      <para>
+      <emphasis>
+        Default value is <quote>0 (none)</quote>.
+      </emphasis>
+      </para>
+      <example>
+      <title>Set <varname>cluster_id</varname> parameter</title>
+      <programlisting format="linespecific">
+...
+# Be part of cluster ID 9
+modparam("nat_traversal", "cluster_id", 9)
+...
+</programlisting>
+      </example>
+    </section>
+
+    <section id="param_cluster_sharing_tag" xreflabel="cluster_sharing_tag">
+    <title><varname>cluster_sharing_tag</varname> (string)</title>
+      <para>
+      The name of the sharing tag (as defined per clusterer modules) to 
+      control which node is responsible for perform pinging of the 
+      contacts.
+      If defined, only the node with active status of this tag will 
+      perform the pinging.
+      </para>
+      <para>
+      The <xref linkend="param_cluster_id"/> must be defined for this option
+      to work.
+      </para>
+      <para>
+      This is an optional parameter. If not set, all the nodes in the cluster
+      will individually do the pinging.
+      </para>
+      <para>
+      <emphasis>
+        Default value is <quote>empty (none)</quote>.
+      </emphasis>
+      </para>
+      <example>
+      <title>Set <varname>cluster_sharing_tag</varname> parameter</title>
+      <programlisting format="linespecific">
+...
+# only the node with the active "vip" sharing tag will perform pinging
+modparam("nat_traversal", "cluster_id", 9)
+modparam("nat_traversal", "cluster_sharing_tag", "vip")
+...
+</programlisting>
+      </example>
+    </section>
+
   </section>
 
   <section>

@@ -50,7 +50,7 @@
 #include "../../parser/contact/parse_contact.h"
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
-
+#include "clustering.h"
 
 
 
@@ -246,6 +246,8 @@ static param_export_t parameters[] = {
     {"keepalive_from",           STR_PARAM, &keepalive_params.from},
     {"keepalive_extra_headers",  STR_PARAM, &keepalive_params.extra_headers},
     {"keepalive_state_file",     STR_PARAM, &keepalive_state_file},
+    {"cluster_id",               INT_PARAM, &nt_cluster_id},
+    {"cluster_sharing_tag",      STR_PARAM, &nt_cluster_shtag},
     {0, 0, 0}
 };
 
@@ -1650,6 +1652,9 @@ keepalive_timer(unsigned int ticks, void *counter)
     time_t now;
     int i;
 
+    if ( nt_cluster_shtag_is_active()!=0 )
+        return;
+
     now = time(NULL);
 
     for (i=0; i<nat_table->size; i++) {
@@ -1881,6 +1886,11 @@ mod_init(void)
 
     if (register_timer( "nt-pinger", keepalive_timer, (void*)(long)param, 1, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
         LM_ERR("failed to register keepalive timer\n");
+        return -1;
+    }
+
+    if (nt_cluster_id>0 && nt_init_cluster()<0) {
+        LM_ERR("failed to initialized the clustering support\n");
         return -1;
     }
 
