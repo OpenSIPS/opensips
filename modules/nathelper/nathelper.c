@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2003-2008 Sippy Software, Inc., http://www.sippysoft.com
+ * Copyright (C) 2005-2019 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -80,6 +81,8 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #include "sip_pinger.h"
 
 #include "nh_table.h"
+
+#include "nh_clustering.h"
 
 
 /* NAT UAC test constants */
@@ -273,9 +276,11 @@ static param_export_t params[] = {
 	{"natping_partitions",       INT_PARAM, &natping_partitions    },
 	{"natping_socket",           STR_PARAM, &natping_socket        },
 	{"oldip_skip",			     STR_PARAM|USE_FUNC_PARAM,
-								   (void*)get_oldip_fields_value},
-	{"ping_threshold",		     INT_PARAM, &ping_threshold		},
-	{"max_pings_lost",		     INT_PARAM, &max_pings_lost		},
+								   (void*)get_oldip_fields_value   },
+	{"ping_threshold",		     INT_PARAM, &ping_threshold        },
+	{"max_pings_lost",		     INT_PARAM, &max_pings_lost        },
+	{"cluster_id",               INT_PARAM, &nh_cluster_id         },
+	{"cluster_sharing_tag",      STR_PARAM, &nh_cluster_shtag      },
 	{0, 0, 0}
 };
 
@@ -647,6 +652,10 @@ mod_init(void)
 		nets_1918[i].netaddr = ntohl(addr.s_addr) & nets_1918[i].mask;
 	}
 
+	if (nh_cluster_id>0 && nh_init_cluster()<0) {
+		LM_ERR("failed to initialized the clustering support\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -1378,7 +1387,8 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 	udomain_t *d;
 
-	if ((*natping_state) == 0)
+	if ( (*natping_state) == 0 
+	|| nh_cluster_shtag_is_active()!=0 )
 		goto done;
 
 	if (cblen > 0) {
