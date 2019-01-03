@@ -5,6 +5,7 @@
  * Copyright (C) 2003 August.Net Services, LLC
  * Copyright (C) 2006 Norman Brandinger
  * Copyright (C) 2008 1&1 Internet AG
+ * Copyright (C) 2019 OpenSIPS project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -71,6 +72,7 @@
 #include "../../db/db_ut.h"
 #include "../../db/db_query.h"
 #include "../../db/db_insertq.h"
+#include "../../db/db_async.h"
 #include "dbase.h"
 #include "pg_con.h"
 #include "val.h"
@@ -198,6 +200,86 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		} else {
 reconnect:
 			/*  reconnection attempt - if this is the case */
+			LM_DBG("%p PQsendQuery failed: %s Query: %.*s\n", _con,
+			PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+			if(PQstatus(CON_CONNECTION(_con))!=CONNECTION_OK) {
+				LM_DBG("connection reset\n");
+				PQreset(CON_CONNECTION(_con));
+			} else {
+				/* failure not due to connection loss - no point in retrying */
+				if(CON_RESULT(_con)) {
+					free_query(_con);
+				}
+				break;
+			}
+		}
+	}
+
+	LM_ERR("%p PQsendQuery Error: %s Query: %.*s\n", _con,
+	PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+	return -1;
+}
+
+/*
+** run an async query
+**
+**	Arguments :
+**		db_con_t *	as previously supplied by pg_init()
+**		char *_s	the text query to run
+**
+**	Returns :
+**		0 upon success
+**		negative number upon failure
+*/
+
+static int db_postgres_submit_async_query(const db_con_t* _con, const str* _s)
+{
+	int i,ret=0;
+	struct timeval start;
+
+	if(! _con || !_s || !_s->s)
+	{
+		LM_ERR("invalid parameter value\n");
+		return(-1);
+	}
+
+	submit_func_called = 1;
+
+	/* this bit of nonsense in case our connection get screwed up */
+	switch(PQstatus(CON_CONNECTION(_con)))
+	{
+		case CONNECTION_OK:
+			break;
+		case CONNECTION_BAD:
+			LM_DBG("connection reset\n");
+			PQreset(CON_CONNECTION(_con));
+			break;
+		case CONNECTION_STARTED:
+		case CONNECTION_MADE:
+		case CONNECTION_AWAITING_RESPONSE:
+		case CONNECTION_AUTH_OK:
+		case CONNECTION_SETENV:
+		case CONNECTION_SSL_STARTUP:
+		case CONNECTION_NEEDED:
+		default:
+			LM_ERR("%p PQstatus(%s) invalid: %.*s\n", _con,
+				PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+			return -1;
+	}
+
+	for (i=0;i<max_db_queries;i++) {
+		/* free any previous query that is laying about */
+		if(CON_RESULT(_con)) {
+			free_query(_con);
+		}
+		start_expire_timer(start,db_postgres_exec_query_threshold);
+		ret = PQsendQuery(CON_CONNECTION(_con), _s->s);
+		stop_expire_timer(start,db_postgres_exec_query_threshold,"pgsql query",_s->s,_s->len,0);
+		/* exec the query */
+		if (ret) {
+			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
+			return 0;
+		} else {
 			LM_DBG("%p PQsendQuery failed: %s Query: %.*s\n", _con,
 			PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
 			if(PQstatus(CON_CONNECTION(_con))!=CONNECTION_OK) {
@@ -613,4 +695,139 @@ int db_postgres_update(const db_con_t* _h, const db_key_t* _k,
 int db_postgres_use_table(db_con_t* _con, const str* _t)
 {
 	return db_use_table(_con, _t);
+}
+
+static inline int db_postgres_get_con_fd(void *con)
+{
+	return PQsocket(((struct pg_con *)con)->con);
+}
+
+/**
+ * Begins execution of a raw SQL query. Returns immediately.
+ *
+ * \param _h handle for the database
+ * \param _s raw query string
+ * \param _priv internal parameter; holds the conn that the query is bound to
+ * \return
+ *		success: Unix FD for polling
+ *		failure: negative error code
+ */
+int db_postgres_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
+{
+	int *fd_ref;
+	int code;
+	struct timeval start;
+	struct my_con *con;
+
+	if (!_h || !_s || !_s->s) {
+		LM_ERR("invalid parameter value\n");
+		return -1;
+	}
+
+	con = (struct my_con *)db_init_async(_h, db_postgres_get_con_fd,
+	                           &fd_ref, (void *)db_postgres_new_async_connection);
+	*_priv = con;
+	if (!con)
+		LM_INFO("Failed to open new connection (current: 1 + %d). Running "
+				"in sync mode!\n", ((struct pool_con *)_h->tail)->no_transfers);
+
+	/* no prepared statements support */
+	CON_RESET_CURR_PS(_h);
+	start_expire_timer(start, db_postgres_exec_query_threshold);
+
+	/* async mode */
+	if (con) {
+		code = db_postgres_submit_async_query(_h, _s);
+	/* sync mode */
+	} else {
+		code = db_postgres_submit_query(_h, _s);
+	}
+	stop_expire_timer(start, db_postgres_exec_query_threshold,
+		"postgres async query", _s->s, _s->len, 0);
+	if (code < 0) {
+		LM_ERR("failed to send postgres query %.*s",_s->len,_s->s);
+		goto out;
+	} else {
+		/* success */
+		if (!con)
+			return -1;
+
+		*fd_ref = db_postgres_get_con_fd(con);
+		db_switch_to_sync(_h);
+		return *fd_ref;
+	}
+
+out:
+	if (!con)
+		return -1;
+
+	db_switch_to_sync(_h);
+	db_store_async_con(_h, (struct pool_con *)con);
+
+	return -2;
+}
+
+int db_postgres_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
+{
+	struct pool_con *con = (struct pool_con *)_priv;
+	PGresult *res = NULL;
+
+#ifdef EXTRA_DEBUG
+	if (!db_match_async_con(fd, _h)) {
+		LM_BUG("no conn match for fd %d", fd);
+		abort();
+	}
+#endif
+
+
+	db_switch_to_async(_h, con);
+
+	if( PQconsumeInput(CON_CONNECTION(_h)) == 0) {
+		LM_ERR("Unable to consume input\n");
+		db_switch_to_sync(_h);
+		db_store_async_con(_h, con);
+		return -1;
+	}
+
+	if(PQisBusy(CON_CONNECTION(_h))) {
+		async_status = ASYNC_CONTINUE;
+
+		db_switch_to_sync(_h);
+		return 1;
+	}
+
+	while (1) {
+		if ((res = PQgetResult(CON_CONNECTION(_h)))) {
+			CON_RESULT(_h) = res;
+		} else {
+			break;
+		}
+	}
+
+	if (_r) {
+		if (db_postgres_store_result(_h, _r) != 0) {
+			LM_ERR("failed to store result\n");
+			db_switch_to_sync(_h);
+			db_store_async_con(_h, con);
+			return -2;
+		}
+	}
+
+	db_switch_to_sync(_h);
+	db_store_async_con(_h, con);
+
+	return 0;
+}
+
+int db_postgres_async_free_result(db_con_t *_h, db_res_t *_r, void *_priv)
+{
+	struct pg_con *con = (struct pg_con *)_priv;
+
+	if (_r && db_free_result(_r) < 0) {
+		LM_ERR("error while freeing result structure\n");
+	}
+
+	PQclear(con->res);
+	con->res = NULL;
+	return 0;
 }

@@ -142,6 +142,17 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 #undef PSQL_PARAM
 }
 
+/*
+ * Create a new async connection structure,
+ * open the PostgreSQL connection and set reference count to 1
+ */
+struct pg_con* db_postgres_new_async_connection(struct db_id* id)
+{
+	struct pg_con * ret = db_postgres_new_connection(id);
+	PQsetnonblocking(ret->con, 1);
+
+	return ret;
+}
 
 /*
  * Close the connection and release memory
