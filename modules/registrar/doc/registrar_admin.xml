@@ -752,9 +752,8 @@ save("location","mr", "$avp(aor)");
 		<listitem>
 			<para>
 				<emphasis>contact (optional filter)</emphasis> - SIP URI filter
-				for the contact to be removed. Only the "username", "hostname"
-				and "port" parts of the URI are relevant for the matching.
-				Hostnames are resolved before matching.
+				for the contact to be removed. This must be the full SIP URI
+				as used during registered.
 			</para>
 		</listitem>
 		<listitem>
