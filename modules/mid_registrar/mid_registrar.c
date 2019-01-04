@@ -552,6 +552,9 @@ str get_extra_ct_params(struct sip_msg *msg)
 		return null_str;
 	}
 
+	if (extra_params.flags & PV_VAL_NULL)
+		return null_str;
+
 	if (!(extra_params.flags & PV_VAL_STR)) {
 		LM_ERR("skipping extra Contact params with int value (%d)\n",
 		       extra_params.ri);
