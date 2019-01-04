@@ -119,6 +119,7 @@ static int mod_init(void)
 	httpd_api.register_httpdcb(exports.name, &http_root,
 				&mi_json_answer_to_connection,
 				&mi_json_flush_data,
+				HTTPD_APPLICATION_JSON_CNT_TYPE,
 				&proc_init);
 
 	return 0;

@@ -168,6 +168,7 @@ static int mod_init(void)
 	httpd_api.register_httpdcb(exports.name, &http_root,
 				&ph_answer_to_connection,
 				&ph_flush_data,
+				HTTPD_TEXT_HTML_TYPE,
 				&proc_init);
 
 	/* Build a cache of all provisionning commands */

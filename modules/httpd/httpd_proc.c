@@ -404,8 +404,6 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	struct post_request *pr;
 	str_str_t *kv;
 	char *p;
-	int cnt_type = HTTPD_STD_CNT_TYPE;
-	int accept_type = HTTPD_STD_CNT_TYPE;
 	int ret_code = MHD_HTTP_OK;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
@@ -492,10 +490,6 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		} else {
 			if (pr->pp==NULL) {
 				if (*upload_data_size == 0) {
-					if (pr->content_type==HTTPD_TEXT_XML_CNT_TYPE)
-						cnt_type = HTTPD_TEXT_XML_CNT_TYPE;
-					if (pr->content_type==HTTPD_APPLICATION_JSON_CNT_TYPE)
-						cnt_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
 					*con_cls = pr->p_list;
 					cb = get_httpd_cb(url);
 					if (cb) {
@@ -604,9 +598,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		pr = *con_cls;
 		MHD_get_connection_values(connection, MHD_HEADER_KIND,
 								&getConnectionHeader, pr);
-		accept_type = pr->accept_type;
 		pkg_free(pr); *con_cls = pr = NULL;
-		LM_DBG("accept_type=[%d]\n", accept_type);
 		cb = get_httpd_cb(url);
 		if (cb) {
 			normalised_url = &url[cb->http_root->len+1];
@@ -640,14 +632,24 @@ send_response:
 							(void*)async_data,
 							NULL);
 	}
-	if (cnt_type==HTTPD_TEXT_XML_CNT_TYPE || accept_type==HTTPD_TEXT_XML_CNT_TYPE)
-		MHD_add_response_header(response,
-								MHD_HTTP_HEADER_CONTENT_TYPE,
-								"text/xml; charset=utf-8");
-	if (cnt_type==HTTPD_APPLICATION_JSON_CNT_TYPE || accept_type==HTTPD_APPLICATION_JSON_CNT_TYPE)
-		MHD_add_response_header(response,
-								MHD_HTTP_HEADER_CONTENT_TYPE,
-								"application/json");
+
+	if (cb && cb->type>0) {
+		if (cb->type==HTTPD_TEXT_XML_CNT_TYPE)
+			MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+				"text/xml; charset=utf-8");
+		else if (cb->type==HTTPD_APPLICATION_JSON_CNT_TYPE)
+			MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+				"application/json");
+		else if (cb->type==HTTPD_TEXT_HTML_TYPE)
+			MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+				"text/html");
+		else
+			LM_BUG("unhandled content type %d\n",cb->type);
+	} else {
+		/* 'page' for sure contains some HTML error we pushed */
+		MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+				"text/html");
+	}
 	ret = MHD_queue_response (connection, ret_code, response);
 	MHD_destroy_response (response);
 

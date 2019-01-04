@@ -126,6 +126,7 @@ static int mod_init(void)
 	httpd_api.register_httpdcb(exports.name, &http_root,
 				&mi_http_answer_to_connection,
 				&mi_http_flush_data,
+				HTTPD_TEXT_HTML_TYPE,
 				&proc_init);
 
 	return 0;
