@@ -32,6 +32,7 @@
 enum HTTPD_CONTENT_TYPE {
 	HTTPD_UNKNOWN_CNT_TYPE = -1,
 	HTTPD_STD_CNT_TYPE = 0,
+	HTTPD_TEXT_HTML_TYPE,
 	HTTPD_TEXT_XML_CNT_TYPE,
 	HTTPD_APPLICATION_JSON_CNT_TYPE
 };
@@ -114,6 +115,7 @@ struct httpd_cb {
 	httpd_acces_handler_cb *callback;
 	httpd_flush_data_cb *flush_data_callback;
 	httpd_init_proc_cb *init_proc_callback;
+	enum HTTPD_CONTENT_TYPE type;
 	struct httpd_cb *next;
 };
 
@@ -131,6 +133,7 @@ int register_httpdcb(const char *mod, str *root_path,
 typedef int (*register_httpdcb_f)(const char *mod, str *root_path,
 			httpd_acces_handler_cb f1,
 			httpd_flush_data_cb f2,
+			enum HTTPD_CONTENT_TYPE type,
 			httpd_init_proc_cb f3);
 
 union sockaddr_union* httpd_get_server_info(void);

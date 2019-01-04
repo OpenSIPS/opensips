@@ -155,6 +155,7 @@ int destroy(void)
 int httpd_register_httpdcb(const char *module, str *http_root,
 			httpd_acces_handler_cb f1,
 			httpd_flush_data_cb f2,
+			enum HTTPD_CONTENT_TYPE type,
 			httpd_init_proc_cb f3)
 {
 	int i;
@@ -193,6 +194,7 @@ int httpd_register_httpdcb(const char *module, str *http_root,
 	}
 
 	cb->module = module;
+	cb->type = type;
 	cb->http_root = http_root;
 	cb->callback = f1;
 	cb->flush_data_callback = f2;
