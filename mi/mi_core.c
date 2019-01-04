@@ -283,7 +283,7 @@ static struct mi_root *mi_kill(struct mi_root *cmd, void *param)
 {
 	kill(0, SIGTERM);
 
-	return 0;
+	return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
 
 
