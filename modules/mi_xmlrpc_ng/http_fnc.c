@@ -800,6 +800,7 @@ static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_pa
 		LM_DBG("Treated as an array\n");
 
 		if(object_flags & MI_XMLRPC_START_OBJECT){
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_START);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_START);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_NAME_START);
@@ -836,10 +837,12 @@ static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_pa
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_MEMBER_END);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
 		}
 	} else {
 		LM_DBG("Treated as an hash\n");
 		if (object_flags & MI_XMLRPC_START_OBJECT) {
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_START);
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_START);
 		}
 		prev = NULL;
@@ -861,6 +864,7 @@ static int mi_xmlrpc_http_recur_write_tree(char** pointer, char *buf, int max_pa
 		}
 		if (object_flags & MI_XMLRPC_END_OBJECT) {
 			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_STRUCT_END);
+			MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_VALUE_END);
 		}
 	}
 
