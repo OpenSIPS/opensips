@@ -962,9 +962,46 @@ Cluster:: 1
 		<programlisting  format="linespecific">
 		opensipsctl fifo clusterer_list_shtags
 		</programlisting>
-		</section>
+	</section>
 
-        </section>
+</section>
+
+
+	<section id="exported_variables">
+	<title>Exported Script Variables</title>
+		<section id="var_cluster_sh_tag" xreflabel="$cluster.sh_tag">
+			<title><varname>$cluster.sh_tag</varname></title>
+			<para>
+			This is a read/write variable that allows access to the
+			sharing tags managed by the clusterer module.
+			</para>
+			<para>
+			When setting, a sharing tag may be only switched to active by
+			assigned it:
+			<itemizedlist>
+				<listitem>
+					<emphasis>"active"</emphasis> string value
+				</listitem>
+				<listitem>
+					<emphasis>1</emphasis> or higher numerical value
+				</listitem>
+			</itemizedlist>
+			</para>
+			<para>
+			When reading it value, a sharing tag returns:
+			<itemizedlist>
+				<listitem>
+					<emphasis>"active" or 1</emphasis> if active
+				</listitem>
+				<listitem>
+					<emphasis>"backup" or 0</emphasis> if backup
+				</listitem>
+			</itemizedlist>
+			A NULL value may returned only as a result of an internal error
+			(like memory errors).
+			</para>
+		</section>
+	</section>
 
 <section id="exported_events" xreflabel="Exported Events">
 <title>Exported Events</title>

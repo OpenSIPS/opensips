@@ -53,6 +53,13 @@ int shtag_set(str *tag_name, int cluster_id, int new_state);
 
 str** shtag_get_all_active(int c_id);
 
+/* script vars related functions */
+int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
+
+int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
+		pv_value_t *val);
+
+int var_parse_sh_tag_name(pv_spec_p sp, str *in);
 
 
 #endif

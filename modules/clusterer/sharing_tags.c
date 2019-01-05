@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 OpenSIPS Solutions
+ * Copyright (C) 2018-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -533,3 +533,136 @@ struct mi_root *shtag_mi_set_active(struct mi_root *cmd, void *param)
 	return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
 
+
+struct shtag_var_name {
+	str shtag;
+	int cluster_id;
+};
+
+int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	struct shtag_var_name *v_name;
+	int ret;
+
+	if (param==NULL || param->pvn.type!=PV_NAME_PVAR ||
+	param->pvn.u.dname==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	v_name = (struct shtag_var_name *)param->pvn.u.dname;
+
+	ret = shtag_get( &v_name->shtag, v_name->cluster_id);
+	if (ret==-1)
+		return pv_get_null(msg, param, res);
+
+	if (ret==SHTAG_STATE_ACTIVE) {
+		res->rs.s = "active";
+		res->rs.len = 6;
+		res->ri = 1;
+	} else {
+		res->rs.s = "backup";
+		res->rs.len = 6;
+		res->ri = 0;
+	}
+
+	res->flags = PV_VAL_STR|PV_VAL_INT;
+
+	return 0;
+}
+
+
+int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	struct shtag_var_name *v_name;
+	int state;
+
+	if (param==NULL || param->pvn.type!=PV_NAME_PVAR ||
+	param->pvn.u.dname==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	v_name = (struct shtag_var_name *)param->pvn.u.dname;
+
+	if (val==NULL || val->flags&(PV_VAL_NONE|PV_VAL_NULL|PV_VAL_EMPTY)) {
+		/* NULL/empty is a NOP */
+		return 0;
+	}
+
+	if ( val->flags&PV_VAL_STR ) {
+		/* val is string */
+		if (val->rs.len==6 && strncasecmp(val->rs.s,"active",6)==0)
+			state = SHTAG_STATE_ACTIVE;
+		else if (val->rs.len==6 && strncasecmp(val->rs.s,"backup",6)==0)
+			state = SHTAG_STATE_BACKUP;
+		else {
+			LM_ERR("unknown value <%.*s> while setting tag <%.*s/%d>\n",
+				val->rs.len, val->rs.s,
+				v_name->shtag.len, v_name->shtag.s, v_name->cluster_id);
+			return -1;
+		}
+	} else {
+		/* val is integer */
+		state = (val->ri>0)?SHTAG_STATE_ACTIVE:SHTAG_STATE_BACKUP;
+	}
+
+	if (state!=SHTAG_STATE_ACTIVE) {
+		LM_WARN("cannot set tag <%.*s/%d> to backup, operation not allowed\n",
+			v_name->shtag.len, v_name->shtag.s, v_name->cluster_id);
+		return 0;
+	}
+
+	if (shtag_set( &v_name->shtag, v_name->cluster_id, state)==-1) {
+		LM_ERR("failed to set sharing tag <%.*s/%d> to new state %d\n",
+			v_name->shtag.len, v_name->shtag.s, v_name->cluster_id, state);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int var_parse_sh_tag_name(pv_spec_p sp, str *in)
+{
+	struct shtag_var_name *v_name;
+	str s;
+	char *p;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+
+	v_name = (struct shtag_var_name*)pkg_malloc(sizeof(struct shtag_var_name));
+	if (v_name==NULL) {
+		LM_ERR("failed to allocate name for a shtag var\n");
+		return -1;
+	}
+	memset(v_name, 0, sizeof(struct shtag_var_name));
+
+	/* now split the shtag in tag name and cluster ID */
+	p = memchr(in->s, '/', in->len);
+	if (!p) {
+		LM_ERR("Bad naming for sharing tag var <%.*s>, <name/cluster_id> "
+			"expected\n", in->len, in->s);
+		return -1;
+	}
+	s.s = p + 1;
+	s.len = in->s + in->len - s.s;
+	trim_spaces_lr( s );
+	v_name->shtag.len = p - in->s;
+	v_name->shtag.s = in->s;
+	trim_spaces_lr( v_name->shtag );
+
+	/* get the cluster ID */
+	if (str2int( &s, (unsigned int*)&v_name->cluster_id)<0) {
+		LM_ERR("Invalid cluster id <%.*s> for sharing tag var <%.*s> \n",
+			s.len, s.s, in->len, in->s);
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_PVAR;
+	sp->pvp.pvn.u.dname = (void*)v_name;
+
+	return 0;
+}

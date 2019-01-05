@@ -15,12 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  *
- *
- * history:
- * ---------
- *	2016-07-xx split from clusterer.c (rvlad-patrascu)
  */
 
 
@@ -174,6 +170,14 @@ static mi_export_t mi_cmds[] = {
 	{0, 0, 0, 0, 0, 0}
 };
 
+
+static pv_export_t mod_vars[] = {
+	{ {"cluster.sh_tag", sizeof("cluster.sh_tag")-1}, 1000, var_get_sh_tag,
+		var_set_sh_tag,  var_parse_sh_tag_name , 0, 0, 0 },
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+
 static module_dependency_t *get_deps_db_mode(param_export_t *param)
 {
 	int db_mode = *(int *)param->param_pointer;
@@ -209,7 +213,7 @@ struct module_exports exports = {
 	params,					/* exported parameters */
 	0,						/* exported statistics */
 	mi_cmds,				/* exported MI functions */
-	0,						/* exported pseudo-variables */
+	mod_vars,				/* exported variables */
 	0,						/* exported transformations */
 	0,						/* extra processes */
 	mod_init,				/* module initialization function */
