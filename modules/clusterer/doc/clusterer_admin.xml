@@ -976,6 +976,12 @@ Cluster:: 1
 			sharing tags managed by the clusterer module.
 			</para>
 			<para>
+			The name of such a variable has the format of 
+			<emphasis>tag_name/cluster_id</emphasis>, like 
+			<emphasis>$cluster.sh_tag(vip/3)</emphasis> accessing the
+			sharing tag "vip" from cluster ID 3.
+			</para>
+			<para>
 			When setting, a sharing tag may be only switched to active by
 			assigned it:
 			<itemizedlist>

@@ -815,6 +815,10 @@ Cluster:: 1
    This is a read/write variable that allows access to the sharing
    tags managed by the clusterer module.
 
+   The name of such a variable has the format of
+   tag_name/cluster_id, like $cluster.sh_tag(vip/3) accessing the
+   sharing tag "vip" from cluster ID 3.
+
    When setting, a sharing tag may be only switched to active by
    assigned it:
      * "active" string value
