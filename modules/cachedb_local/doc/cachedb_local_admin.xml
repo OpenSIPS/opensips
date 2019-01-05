@@ -35,7 +35,7 @@
 				<listitem><para>cache_remove</para></listitem>
 				<listitem><para>cache_add</para></listitem>
 				<listitem><para>cache_sub</para></listitem>
-			<itemizedlist>
+			</itemizedlist>
 		</para>
 		<para>
 			In addition to the event-driven replication, an OpenSIPS instance will first
@@ -61,7 +61,7 @@
 			<itemizedlist>
 				<listitem>
 				<para>
-					<emphasis>clusterer, if <xref linkend="cluster_id"/>
+					<emphasis>clusterer, if <xref linkend="param_cluster_id"/>
 					is set.</emphasis>
 				</para>
 				</listitem>
@@ -225,11 +225,12 @@ modparam("cachedb_local", "cluster_id", 1)
 			</emphasis>
 		</para>
 		<example>
-			title>Set <varname>cluster_persistency</varname> parameter</title>
+			<title>Set <varname>cluster_persistency</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 ...
+		</programlisting>
 		</example>
 	</section>
 	</section>
