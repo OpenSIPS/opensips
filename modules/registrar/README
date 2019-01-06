@@ -567,9 +567,8 @@ save("location","mr", "$avp(aor)");
        which stores the contacts.
      * AOR - address-of-record to be searched (SIP URI)
      * contact (optional filter) - SIP URI filter for the contact
-       to be removed. Only the "username", "hostname" and "port"
-       parts of the URI are relevant for the matching. Hostnames
-       are resolved before matching.
+       to be removed. This must be the full SIP URI as used during
+       registered.
      * next_hop (optional filter) - the next SIP IP
        address/hostname on the way back to this contact. See the
        section below for details on how the next hop is computed.
@@ -981,7 +980,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 101 2267 1884
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 155 102 2279 1945
    2. Jan Janak (@janakj) 121 73 3465 1102
    3. Liviu Chircu (@liviuchircu) 85 47 1390 1487
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
@@ -1023,8 +1022,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Dec 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Nov 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jan 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Dec 2018
    3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Nov 2018
    4.  @jalung                             Aug 2017 - Aug 2017
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
