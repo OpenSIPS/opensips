@@ -575,7 +575,7 @@ route[b2b_request]
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>dialog_id</emphasis> : the <emphasis>b2b_logic key<emphasis>, or the
+				<para><emphasis>dialog_id</emphasis> : the <emphasis>b2b_logic key</emphasis>, or the
 				<emphasis>callid;from-tag;to-tag</emphasis> of the ongoing dialog.
 				</para>
 			</listitem>
