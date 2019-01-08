@@ -1263,8 +1263,8 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 
 		if (si->flags & CGRF_DO_CDR) {
 			/* if it's not a local transaction we do the accounting on the tm callbacks */
-			if (((t = cgr_tmb.t_gett()) == T_UNDEFINED) || !t ||
-					(t != NULL && !cgr_tmb.t_is_local(_params->msg))) {
+			if (type == DLGCB_TERMINATED && (((t=cgr_tmb.t_gett()) == T_UNDEFINED) ||
+					!t || !cgr_tmb.t_is_local(_params->msg))) {
 				/* normal dialogs will have to do accounting when the response for
 				 * the bye will come because users should be able to populate extra
 				 * vars and leg vars */
@@ -1274,7 +1274,7 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 						LM_ERR("failed to register cdr callback!\n");
 					registered = 1;
 				}
-			} else if (t != NULL && cgr_tmb.t_is_local(_params->msg)) {
+			} else {
 				/* for local transactions we generate CDRs here, since all the messages
 				 * have been processed */
 				cgr_cdr(_params->msg, ctx, s, &dlg->callid);
