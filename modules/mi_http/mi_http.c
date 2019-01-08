@@ -89,7 +89,7 @@ static dep_export_t deps = {
 
 /* module exports */
 struct module_exports exports = {
-	"mi_html",					/* module name */
+	"mi_http",					/* module name */
 	MOD_TYPE_DEFAULT,			/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
