@@ -249,25 +249,43 @@ static stat_export_t mod_stats[] = {
 	{0,0,0}
 };
 
-
 static mi_export_t mi_cmds[] = {
-	{ MI_USRLOC_RM,           0, mi_usrloc_rm_aor,       0,                 0,
-				mi_child_init },
-	{ MI_USRLOC_RM_CONTACT,   0, mi_usrloc_rm_contact,   0,                 0,
-				mi_child_init },
-	{ MI_USRLOC_DUMP,         0, mi_usrloc_dump,         0,                 0,
-				0             },
-	{ MI_USRLOC_FLUSH,        0, mi_usrloc_flush,        MI_NO_INPUT_FLAG,  0,
-				mi_child_init },
-	{ MI_USRLOC_ADD,          0, mi_usrloc_add,          0,                 0,
-				mi_child_init },
-	{ MI_USRLOC_SHOW_CONTACT, 0, mi_usrloc_show_contact, 0,                 0,
-				mi_child_init },
-	{ MI_USRLOC_SYNC,         0, mi_usrloc_sync,         0,                 0,
-				mi_child_init },
-	{ MI_USRLOC_CL_SYNC,      0, mi_usrloc_cl_sync,      MI_NO_INPUT_FLAG,  0,
-				mi_child_init },
-	{ 0, 0, 0, 0, 0, 0}
+	{ MI_USRLOC_RM, 0, 0, mi_child_init, {
+		{mi_usrloc_rm_aor, {"table_name", "aor", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_RM_CONTACT, 0, 0, mi_child_init, {
+		{mi_usrloc_rm_contact, {"table_name", "aor", "contact", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_DUMP, 0, 0, 0, {
+		{w_mi_usrloc_dump, {0}},
+		{w_mi_usrloc_dump_1, {"brief", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_FLUSH, 0, 0, mi_child_init, {
+		{mi_usrloc_flush, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_ADD, 0, 0, mi_child_init, {
+		{mi_usrloc_add, {"table_name", "aor", "contact", "expires", "q",
+						 "unsused", "flags", "cflags", "methods", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_SHOW_CONTACT, 0, 0, mi_child_init, {
+		{mi_usrloc_show_contact, {"table_name", "aor", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_SYNC, 0, 0, mi_child_init, {
+		{mi_usrloc_sync_1, {"table_name", 0}},
+		{mi_usrloc_sync_2, {"table_name", "aor", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_USRLOC_CL_SYNC, 0, 0, mi_child_init, {
+		{mi_usrloc_cl_sync, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static module_dependency_t *get_deps_db_mode(param_export_t *param)

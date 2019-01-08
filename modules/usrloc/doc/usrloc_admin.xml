@@ -1427,11 +1427,11 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<para>Parameters: </para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>table name</emphasis> - table where the AOR
+				<emphasis>table_name</emphasis> - table where the AOR
 				is removed from (Ex: location).
 			</para></listitem>
 			<listitem><para>
-				<emphasis>AOR</emphasis> - user AOR in username[@domain]
+				<emphasis>aor</emphasis> - user AOR in username[@domain]
 				format (domain must be supplied only if use_domain option
 				is on).
 			</para></listitem>
@@ -1502,7 +1502,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 				will be added (Ex: location).
 			</para></listitem>
 			<listitem><para>
-				<emphasis>AOR</emphasis> - user AOR in username[@domain]
+				<emphasis>aor</emphasis> - user AOR in username[@domain]
 				format (domain must be supplied only if use_domain option
 				is on).
 			</para></listitem>
@@ -1513,7 +1513,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 				<emphasis>expires</emphasis> - expires value of the contact
 			</para></listitem>
 			<listitem><para>
-				<emphasis>Q</emphasis> - Q value of the contact
+				<emphasis>q</emphasis> - Q value of the contact
 			</para></listitem>
 			<listitem><para>
 				<emphasis>unused</emphasis> - unused attribute (kept for
@@ -1544,11 +1544,11 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<para>Parameters: </para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>table name</emphasis> - table where the AOR
+				<emphasis>table_name</emphasis> - table where the AOR
 				resides (Ex: location).
 			</para></listitem>
 			<listitem><para>
-				<emphasis>AOR</emphasis> - user AOR in username[@domain]
+				<emphasis>aor</emphasis> - user AOR in username[@domain]
 				format (domain must be supplied only if use_domain option
 				is on).
 			</para></listitem>
