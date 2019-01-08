@@ -322,8 +322,12 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 			pr->content_type = HTTPD_TEXT_XML_CNT_TYPE;
 		else if (strncasecmp("application/json", value, 16) == 0)
 			pr->content_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
-		else
+		else if (strncasecmp("text/html", value, 9) == 0)
+			pr->content_type = HTTPD_TEXT_HTML_TYPE;
+		else {
 			pr->content_type = HTTPD_UNKNOWN_CNT_TYPE;
+			LM_ERR("Unexpected Content-Type=[%s]\n", value);
+		}
 		if (p) *p = bk;
 		goto done;
 	}
@@ -339,6 +343,7 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 		goto done;
 	}
 
+	LM_DBG("key=[%s] value=[%s]\n", key, value);
 	return MHD_YES;
 
 done:
@@ -438,7 +443,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 											pr);
 			if(pr->pp==NULL) {
 				if (*upload_data_size == 0) {
-					/* We need to wait for morte data before
+					/* We need to wait for more data before
 					 * handling the POST request */
 					return MHD_YES;
 				}
@@ -446,8 +451,13 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				if (pr->content_type==0 && pr->content_len==0)
 					MHD_get_connection_values(connection, MHD_HEADER_KIND,
 											&getConnectionHeader, pr);
-				if (pr->content_type<=0 || pr->content_len<=0) {
-					LM_ERR("got a bogus request\n");
+				if (pr->content_type==0) {
+					LM_ERR("missing Content-Type header\n");
+					return MHD_NO;
+				}
+				if (pr->content_type<0) {
+					/* Unexpected Content-Type header:
+					err log printed in getConnectionHeader() */
 					return MHD_NO;
 				}
 				if (*upload_data_size != pr->content_len) {
@@ -514,8 +524,13 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				if (pr->content_type==0 && pr->content_len==0)
 					MHD_get_connection_values(connection, MHD_HEADER_KIND,
 											&getConnectionHeader, pr);
-				if (pr->content_type<=0 || pr->content_len<=0) {
-					LM_ERR("got a bogus request\n");
+				if (pr->content_type==0) {
+					LM_ERR("missing Content-Type header\n");
+					return MHD_NO;
+				}
+				if (pr->content_type<0) {
+					/* Unexpected Content-Type header:
+					err log printed in getConnectionHeader() */
 					return MHD_NO;
 				}
 				if (*upload_data_size != pr->content_len) {
