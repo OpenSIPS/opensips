@@ -366,6 +366,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 	struct cgr_kv *kv;
 	str stime;
 	str static_callid;
+	str originhost = str_init("");
 	str *callid = NULL;
 	str *cmd = (cgre_compat_mode ? &cmd_compat: &cmd_ng);
 
@@ -405,14 +406,22 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 		}
 	}
 
+	if (ctx && (kv = cgr_get_const_kv(&s->event_kvs, "OriginHost")) &&
+			kv->flags & CGR_KVF_TYPE_STR)
+		originhost = kv->value.s;
+
 	/* figured out the OriginID - now store it in session */
-	si->originid.s = shm_malloc(callid->len);
+	si->originid.s = shm_malloc(callid->len + originhost.len);
 	if (!si->originid.s) {
 		LM_ERR("no more memory for callid!\n");
 		goto error;
 	}
 	memcpy(si->originid.s, callid->s, callid->len);
 	si->originid.len = callid->len;
+	/* originhost now */
+	si->originhost.s = si->originid.s + callid->len;
+	si->originhost.len = originhost.len;
+	memcpy(si->originhost.s, originhost.s, originhost.len);
 
 	if (ctx && !cgr_get_const_kv(&s->event_kvs, "DialogID") &&
 			cgr_obj_push_int(cmsg->params, "DialogID", dlg->h_id) < 0) {
@@ -1413,13 +1422,6 @@ int cgr_acc_sessions(json_object *param, json_object **ret)
 		LM_ERR("cannot return result's array!\n");
 		goto error;
 	}
-	hoststr = json_object_new_string("");
-	if (!hoststr) {
-		LM_ERR("cannot create constant OriginHost string\n");
-		json_object_put(*ret);
-		goto error;
-	}
-
 	lock_get(cgrates_contexts_lock);
 	list_for_each(lc, cgrates_contexts) {
 		ctx = list_entry(lc, struct cgr_acc_ctx, link);
@@ -1433,7 +1435,13 @@ int cgr_acc_sessions(json_object *param, json_object **ret)
 				LM_ERR("cannot allocate all data - flushing!\n");
 				goto partial;
 			}
+			hoststr = json_object_new_string_len(si->originhost.s, si->originhost.len);
+			if (!hoststr) {
+				LM_ERR("cannot allocate all data for originstr - flushing!\n");
+				goto partial;
+			}
 			json_object_object_add(obj, "OriginHost", hoststr);
+
 			originstr = json_object_new_string_len(si->originid.s, si->originid.len);
 			if (!originstr) {
 				LM_ERR("cannot allocate all data for originstr - flushing!\n");

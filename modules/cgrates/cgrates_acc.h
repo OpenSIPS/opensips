@@ -45,6 +45,7 @@ struct cgr_acc_sess {
 	branch_bm_t branch_mask;
 	unsigned flags;
 	str originid;
+	str originhost;
 	str acc;
 	str dst;
 	time_t start_time;
