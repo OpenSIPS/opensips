@@ -49,9 +49,12 @@ struct mi_root *shtag_mi_set_active(struct mi_root *cmd, void *param);
 /* API functions */
 int shtag_get(str *tag_name, int cluster_id);
 
-int shtag_set(str *tag_name, int cluster_id, int new_state);
+int shtag_activate(str *tag_name, int cluster_id);
 
 str** shtag_get_all_active(int c_id);
+
+int shtag_register_callback(str *tag_name, int c_id, void *param,
+		shtag_cb_f func);
 
 /* script vars related functions */
 int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);

@@ -42,9 +42,69 @@ struct sharing_tag {
 	struct sharing_tag *next;
 };
 
+struct shtag_cb {
+	str tag_name;
+	int cluster_id;
+	void *param;
+	shtag_cb_f func;
+	struct shtag_cb *next;
+};
+
 
 static struct sharing_tag **shtags_list = NULL;
 static rw_lock_t *shtags_lock = NULL;
+
+static struct shtag_cb *shtag_cb_list=NULL;
+
+
+int shtag_register_callback(str *tag_name, int c_id, void *param,
+															shtag_cb_f func)
+{
+	struct shtag_cb *cb;
+
+	cb = (struct shtag_cb*)pkg_malloc
+		(sizeof(struct shtag_cb) + tag_name?tag_name->len:0);
+	if (cb==NULL) {
+		LM_ERR("failed to allocate pkg mem for a new shtag callback\n");
+		return -1;
+	}
+
+	cb->cluster_id = c_id;
+	cb->param = param;
+	cb->func = func;
+
+	if (tag_name && tag_name->len) {
+		cb->tag_name.s =(char*) (cb + 1);
+		cb->tag_name.len = tag_name->len;
+		memcpy(cb->tag_name.s , tag_name->s, tag_name->len);
+	} else {
+		cb->tag_name.s = NULL;
+		cb->tag_name.len = 0;
+	}
+
+	cb->next = shtag_cb_list;
+	shtag_cb_list = cb;
+
+	return 0;
+}
+
+
+static void shtag_run_callbacks(str *tag_name, int state, int c_id)
+{
+	struct shtag_cb *cb;
+
+	LM_DBG("running callbacks for tag <%.*s>/%d becoming active\n",
+		tag_name->len, tag_name->s, c_id);
+
+	for (cb = shtag_cb_list ; cb ; cb=cb->next ) {
+		if ( (cb->cluster_id<0 || cb->cluster_id==c_id)
+		&& (cb->tag_name.s==NULL || (cb->tag_name.len==tag_name->len &&
+			memcmp(cb->tag_name.s, tag_name->s, tag_name->len)==0))
+		) {
+			cb->func( tag_name, state, c_id, cb->param);
+		}
+	}
+}
 
 
 void shtag_validate_list(void)
@@ -273,21 +333,64 @@ int shtag_get(str *tag_name, int cluster_id)
 }
 
 
-int shtag_set(str *tag_name, int cluster_id, int new_state)
+static int shtag_send_active_info(int c_id, str *tag_name, int node_id)
+{
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_SHTAG_ACTIVE,
+	BIN_VERSION, 0) < 0) {
+		LM_ERR("Failed to init bin packet\n");
+		return CLUSTERER_SEND_ERR;
+	}
+
+	if (bin_push_str(&packet, tag_name) < 0)
+		return CLUSTERER_SEND_ERR;
+
+	if (node_id) {
+		if (cl_send_to(&packet, c_id, node_id) != CLUSTERER_SEND_SUCCES) {
+			bin_free_packet(&packet);
+			return CLUSTERER_SEND_ERR;
+		}
+	} else
+		if (cl_send_all(&packet, c_id) != CLUSTERER_SEND_SUCCES) {
+			bin_free_packet(&packet);
+			return -1;
+		}
+
+	bin_free_packet(&packet);
+
+	return 0;
+}
+
+
+int shtag_activate(str *tag_name, int cluster_id)
 {
 	struct sharing_tag *tag;
 	int lock_old_flag;
-	int ret;
+	int ret, old_state;
 
 	lock_start_sw_read(shtags_lock);
 	tag = __shtag_get_safe( tag_name, cluster_id);
 	if (tag!=NULL) {
 		lock_switch_write(shtags_lock, lock_old_flag);
-		tag->state = new_state;
+		old_state = tag->state;
+		tag->state = SHTAG_STATE_ACTIVE;
 		lock_switch_read(shtags_lock, lock_old_flag);
 	}
 	ret = (tag==NULL)? -1 : tag->state ;
 	lock_stop_sw_read(shtags_lock);
+
+	/* do we have a transition from BACKUP to ACTIVE? */
+	if (ret==SHTAG_STATE_ACTIVE && old_state!=SHTAG_STATE_ACTIVE) {
+
+		/* inform the other nodes that we are active now */
+		if (shtag_send_active_info(cluster_id, tag_name, 0) < 0)
+		LM_ERR("Failed to broadcast message about tag [%.*s/%d] "
+			"going active\n", tag_name->len, tag_name->s, cluster_id);
+
+		/* run the callbacks */
+		shtag_run_callbacks( tag_name, SHTAG_STATE_ACTIVE, cluster_id);
+	}
 
 	return ret;
 }
@@ -316,36 +419,6 @@ str** shtag_get_all_active(int cluster_id)
 	tag_name[n] = NULL;
 
 	return tag_name;
-}
-
-
-int shtag_send_active_info(int c_id, str *tag_name, int node_id)
-{
-	bin_packet_t packet;
-
-	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_SHTAG_ACTIVE,
-	BIN_VERSION, 0) < 0) {
-		LM_ERR("Failed to init bin packet\n");
-		return CLUSTERER_SEND_ERR;
-	}
-
-	if (bin_push_str(&packet, tag_name) < 0)
-		return CLUSTERER_SEND_ERR;
-
-	if (node_id) {
-		if (cl_send_to(&packet, c_id, node_id) != CLUSTERER_SEND_SUCCES) {
-			bin_free_packet(&packet);
-			return CLUSTERER_SEND_ERR;
-		}
-	} else
-		if (cl_send_all(&packet, c_id) != CLUSTERER_SEND_SUCCES) {
-			bin_free_packet(&packet);
-			return -1;
-		}
-
-	bin_free_packet(&packet);
-
-	return 0;
 }
 
 
@@ -402,6 +475,7 @@ int handle_shtag_active(bin_packet_t *packet, int cluster_id)
 {
 	str tag_name;
 	struct sharing_tag *tag;
+	int old_state;
 
 	bin_pop_str(packet, &tag_name);
 
@@ -417,12 +491,16 @@ int handle_shtag_active(bin_packet_t *packet, int cluster_id)
 
 	/* directly go to backup state when another
 	 * node in the cluster is to active */
+	old_state = tag->state;
 	tag->state = SHTAG_STATE_BACKUP;
 
 	tag->send_active_msg = 0;
 	free_active_msgs_info(tag);
 
 	lock_stop_write(shtags_lock);
+
+	if (old_state!=SHTAG_STATE_BACKUP)
+		shtag_run_callbacks( &tag_name, SHTAG_STATE_BACKUP, cluster_id);
 
 	return 0;
 }
@@ -519,16 +597,12 @@ struct mi_root *shtag_mi_set_active(struct mi_root *cmd, void *param)
 	}
 	lock_stop_read(cl_list_lock);
 
-	if (shtag_set( &tag, c_id, SHTAG_STATE_ACTIVE)<0) {
+	if (shtag_activate( &tag, c_id)<0) {
 		LM_ERR("Failed set active the tag [%.*s/%d] \n",
 			tag.len, tag.s, c_id);
 		return init_mi_tree(500, MI_SSTR("Internal failure when activating "
 			"tag"));
 	}
-
-	if (shtag_send_active_info(c_id, &tag, 0) < 0)
-		LM_ERR("Failed to broadcast message about tag [%.*s/%d] "
-			"going active\n", tag.len, tag.s, c_id);
 
 	return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
@@ -614,7 +688,7 @@ int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 		return 0;
 	}
 
-	if (shtag_set( &v_name->shtag, v_name->cluster_id, state)==-1) {
+	if (shtag_activate( &v_name->shtag, v_name->cluster_id)==-1) {
 		LM_ERR("failed to set sharing tag <%.*s/%d> to new state %d\n",
 			v_name->shtag.len, v_name->shtag.s, v_name->cluster_id, state);
 		return -1;

@@ -203,11 +203,11 @@ typedef int (*sync_chunk_iter_f)(bin_packet_t *packet);
 typedef int (*shtag_get_f)(str *tag, int cluster_id);
 
 /*
- * Sets the state of a sharing tag by name and cluster ID
+ * Activates an sharing tag by name and cluster ID
  *
  * Returns -1 if error or the new status of the tag (>=0)
  */
-typedef int (*shtag_set_f)(str *tag, int cluster_id, int new_state);
+typedef int (*shtag_activate_f)(str *tag, int cluster_id);
 
 /*
  * Gets a list with all the active tags from a cluster
@@ -215,6 +215,23 @@ typedef int (*shtag_set_f)(str *tag, int cluster_id, int new_state);
  * Returns NULL if none or a list of pointers to the tag names
  */
 typedef str** (*shtag_get_all_active_f)(int cluster_id);
+
+/*
+ * Callback function for monitoring the changes in the state of shtag
+ */
+
+typedef void (*shtag_cb_f)(str *tag_name, int state, int c_id, void *param);
+
+/*
+ * Registers a callback to notify upon changes in a sharing tag state
+ * If the tag_name is NULL or empty, the callback will be triggered for
+ * all the tags in the given cluster. If the cluster ID is negative, the
+ * callback will be triggered for tags in all clusters.
+ *
+ * Returns -1 if error, 0 if success
+ */
+typedef int (*shtag_register_callback_f)(str *tag_name, int c_id,
+		void *param, shtag_cb_f func);
 
 
 struct clusterer_binds {
@@ -235,8 +252,9 @@ struct clusterer_binds {
 	sync_chunk_start_f sync_chunk_start;
 	sync_chunk_iter_f sync_chunk_iter;
 	shtag_get_f shtag_get;
-	shtag_set_f shtag_set;
+	shtag_activate_f shtag_activate;
 	shtag_get_all_active_f shtag_get_all_active;
+	shtag_register_callback_f shtag_register_callback;
 };
 
 typedef int (*load_clusterer_f)(struct clusterer_binds *binds);

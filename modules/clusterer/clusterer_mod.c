@@ -1214,8 +1214,9 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->sync_chunk_start = cl_sync_chunk_start;
 	binds->sync_chunk_iter = cl_sync_chunk_iter;
 	binds->shtag_get = shtag_get;
-	binds->shtag_set = shtag_set;
+	binds->shtag_activate = shtag_activate;
 	binds->shtag_get_all_active = shtag_get_all_active;
+	binds->shtag_register_callback = shtag_register_callback;
 
 	return 1;
 }
