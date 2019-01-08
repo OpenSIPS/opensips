@@ -173,7 +173,7 @@ static int mod_init(void)
 
 	smpp_db_close();
 
-	if (0 ) {// register_enquire_link_timer() < 0) {
+	if (register_enquire_link_timer() < 0) {
 	    LM_ERR("could not register timer\n");
 	    return -1;
 	}
@@ -639,15 +639,6 @@ error:
 	/* close the opened socket */
 	if (s!=-1) close(s);
 	return 0;
-}
-
-static uint32_t get_sequence_number(smpp_session_t *session)
-{
-	uint32_t seq_no;
-	lock_get(&session->sequence_number_lock);
-	seq_no = session->sequence_number;
-	lock_release(&session->sequence_number_lock);
-	return seq_no;
 }
 
 static uint32_t increment_sequence_number(smpp_session_t *session)
