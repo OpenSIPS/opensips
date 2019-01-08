@@ -38,6 +38,7 @@
 #include "../uac_auth/uac_auth.h"
 #include "reg_records.h"
 #include "reg_db_handler.h"
+#include "clustering.h"
 
 
 #define UAC_REGISTRAR_URI_PARAM              1
@@ -78,6 +79,7 @@ static void mod_destroy(void);
 static int child_init(int rank);
 
 void timer_check(unsigned int ticks, void* hash_counter);
+void handle_shtag_change(str *tag_name, int state, int c_id, void *param);
 
 static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param);
 static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param);
@@ -126,6 +128,7 @@ static param_export_t params[]= {
 	{"hash_size",		INT_PARAM,			&reg_hsize},
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
+	{"enable_clustering",	INT_PARAM,			&enable_clustering},
 	{"db_url",		STR_PARAM,			&db_url.s},
 	{"table_name",		STR_PARAM,			&reg_table_name},
 	{"registrar_column",	STR_PARAM,			&registrar_column.s},
@@ -138,6 +141,7 @@ static param_export_t params[]= {
 	{"binding_params_column",	STR_PARAM,	&binding_params_column.s},
 	{"expiry_column",	STR_PARAM,		&expiry_column.s},
 	{"forced_socket_column",	STR_PARAM,	&forced_socket_column.s},
+	{"cluster_shtag_column",	STR_PARAM,	&cluster_shtag_column.s},
 	{0,0,0}
 };
 
@@ -156,6 +160,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "enable_clustering", get_deps_clusterer},
 		{ NULL, NULL },
 	},
 };
@@ -199,6 +204,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (enable_clustering && ureg_init_cluster( handle_shtag_change )<0) {
+		LM_ERR("failed to initialized clustering support\n");
+		return -1;
+	}
+
 	if(default_expires<15){
 		LM_ERR("default_expires to short: [%d]<15\n", default_expires);
 		return -1;
@@ -229,6 +239,7 @@ static int mod_init(void)
 	binding_params_column.len = strlen(binding_params_column.s);
 	expiry_column.len = strlen(expiry_column.s);
 	forced_socket_column.len = strlen(forced_socket_column.s);
+	cluster_shtag_column.len = strlen(cluster_shtag_column.s);
 	init_db_url(db_url , 0 /*cannot be null*/);
 	if (init_reg_db(&db_url) != 0) {
 		LM_ERR("failed to initialize the DB support\n");
@@ -646,6 +657,9 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 	str *s_now = t_check_data->s_now;
 	unsigned int i = t_check_data->hash_counter;
 
+	if (!ureg_cluster_shtag_is_active( &rec->cluster_shtag, rec->cluster_id))
+		return 0;
+
 	switch(rec->state){
 	case REGISTERING_STATE:
 	case AUTHENTICATING_STATE:
@@ -725,6 +739,54 @@ void timer_check(unsigned int ticks, void* hash_counter)
 	if (str_now.s) {pkg_free(str_now.s);}
 
 	return;
+}
+
+
+struct shtag_check_data {
+	str *tag;
+	int c_id;
+};
+
+static int cluster_shtag_check(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	struct shtag_check_data *shtag_data = (struct shtag_check_data*)data;
+
+	if ( rec->cluster_id!=shtag_data->c_id ||
+	rec->cluster_shtag.len!=shtag_data->tag->len ||
+	memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len) )
+		return 0;
+
+	/* this record matches the shtag + cluster_id, so we need to active it */
+	// TODO - force first an un-register all (expires 0 + contact *) and
+	// when replied, fire a new registration.
+
+	return 0;
+}
+
+
+void handle_shtag_change(str *tag_name, int state, int c_id, void *param)
+{
+	struct shtag_check_data shtag_data;
+	int ret, i;
+
+	if (state!=SHTAG_STATE_ACTIVE)
+		return;
+
+	/* a shatg in cluster became active on local node-> check if
+	 * one of our uac reg depends on it */
+	LM_DBG("checking for shtag [%.*s] in cluster %d\n",
+		tag_name->len, tag_name->s, c_id);
+
+	for( i=0 ; i<reg_hsize ; i++) {
+
+		lock_get(&reg_htable[i].lock);
+		ret = slinkedl_traverse(reg_htable[i].p_list, &cluster_shtag_check,
+							(void*)&shtag_data, NULL);
+		if (ret<0) LM_CRIT("Unexpected return code %d\n", ret);
+		lock_release(&reg_htable[i].lock);
+
+	}
 }
 
 

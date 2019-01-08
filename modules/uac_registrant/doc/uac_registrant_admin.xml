@@ -124,7 +124,8 @@ modparam("uac_registrant", "hash_size", 2)
 </programlisting>
 		</example>
 	</section>
-        <section id="param_timer_interval" xreflabel="timer_interval">
+
+	<section id="param_timer_interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
 		Defines the periodic timer for checking the registrations status.
@@ -139,6 +140,32 @@ modparam("uac_registrant", "hash_size", 2)
 		<programlisting format="linespecific">
 ...
 modparam("uac_registrant", "timer_interval", 120)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_enable_clustering" xreflabel="enable_clustering">
+		<title><varname>enable_clustering</varname> (integer)</title>
+		<para>
+		This parameter enables the clustering support in the module. This is
+		used to share this registration between all the nodes in the cluster.
+		When using this option, you should define (for each registrant record)
+		a sharing tag - this sharing tag will control at the cluster level
+		which node is entitled to perform the registation (only the node having
+		that tag as active will do the registation, the onther nodes being
+		idle).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 / off.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_clustering</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "enable_clustering", 1)
 ...
 </programlisting>
 		</example>
@@ -402,6 +429,30 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_cluster_shtag_column" xreflabel="cluster_shtag_column">
+		<title><varname>cluster_shtag_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		cluster sharing tag in [tag_name/cluster_id] format (not mandatory).
+		If a cluster sharing tag is provided, the REGISTER requests will
+		be fired out only when the tag is active.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>cluster_shtag</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>cluster_shtag_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "cluster_shtag_column", "sh")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

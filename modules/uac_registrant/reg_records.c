@@ -38,13 +38,15 @@ static char call_id_ftag_buf[MD5_LEN];
 void reg_print_record(reg_record_t *rec) {
 	LM_DBG("checking uac=[%p] state=[%d][%.*s] expires=[%d]"
 			" last_register_sent=[%d] registration_timeout=[%d]"
-			" auth_user[%p][%d]->[%.*s] auth_password=[%p][%d]->[%.*s] sock=[%p]\n",
+			" auth_user[%p][%d]->[%.*s] auth_password=[%p][%d]->[%.*s]"
+			" sock=[%p] clustering=[%.*s/%d]\n",
 		rec, rec->state,
 		uac_reg_state[rec->state].len, uac_reg_state[rec->state].s, rec->expires,
 		(unsigned int)rec->last_register_sent, (unsigned int)rec->registration_timeout,
 		rec->auth_user.s, rec->auth_user.len, rec->auth_user.len, rec->auth_user.s,
 		rec->auth_password.s, rec->auth_password.len,
-		rec->auth_password.len, rec->auth_password.s, rec->td.send_sock);
+		rec->auth_password.len, rec->auth_password.s, rec->td.send_sock,
+		rec->cluster_shtag.len, rec->cluster_shtag.s, rec->cluster_id);
 	LM_DBG("    RURI=[%p][%d]->[%.*s]\n", rec->td.rem_target.s, rec->td.rem_target.len,
 			rec->td.rem_target.len, rec->td.rem_target.s);
 	LM_DBG("      To=[%p][%d]->[%.*s]\n", rec->td.rem_uri.s, rec->td.rem_uri.len,
@@ -117,7 +119,8 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 	size = sizeof(reg_record_t) + MD5_LEN +
 		uac->to_uri.len + uac->from_uri.len + uac->registrar_uri.len +
 		uac->auth_user.len + uac->auth_password.len +
-		uac->contact_uri.len + uac->contact_params.len + uac->proxy_uri.len;
+		uac->contact_uri.len + uac->contact_params.len + uac->proxy_uri.len +
+		uac->cluster_shtag.len;
 
 	if(plist==0) list = reg_htable[uac->hash_code].p_list;
 	else list = reg_htable[uac->hash_code].s_list;
@@ -223,6 +226,15 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 		record->contact_params.len = uac->contact_params.len;
 		memcpy(p, uac->contact_params.s, uac->contact_params.len);
 		p += uac->contact_params.len;
+	}
+
+	/* Setting the clustering options */
+	record->cluster_id = uac->cluster_id;
+	if (record->cluster_shtag.len) {
+		record->cluster_shtag.s = p;
+		record->cluster_shtag.len = uac->cluster_shtag.len;
+		memcpy(p, uac->cluster_shtag.s, uac->cluster_shtag.len);
+		p += uac->cluster_shtag.len;
 	}
 
 	reg_print_record(record);

@@ -40,6 +40,7 @@ str binding_URI_column = str_init(BINDING_URI_COL);
 str binding_params_column = str_init(BINDING_PARAMS_COL);
 str expiry_column = str_init(EXPIRY_COL);
 str forced_socket_column = str_init(FORCED_SOCKET_COL);
+str cluster_shtag_column = str_init(CLUSTER_SHTAG_COL);
 
 str reg_table_name = str_init(REG_TABLE_NAME);
 
@@ -87,13 +88,14 @@ int load_reg_info_from_db(unsigned int plist)
 	unsigned int binding_params_col;
 	unsigned int expiry_col;
 	unsigned int forced_socket_col;
+	unsigned int cluster_shtag_col;
 	db_key_t q_cols[REG_TABLE_TOTAL_COL_NO];
 
 	char *p = NULL;
 	int len = 0;
 	str now = {NULL, 0};
 	struct sip_uri uri;
-	str forced_socket, host;
+	str forced_socket, host, s;
 	int port, proto;
 	uac_reg_map_t uac_param;
 
@@ -120,6 +122,7 @@ int load_reg_info_from_db(unsigned int plist)
 	q_cols[binding_params_col = n_result_cols++] = &binding_params_column;
 	q_cols[expiry_col = n_result_cols++] = &expiry_column;
 	q_cols[forced_socket_col = n_result_cols++] = &forced_socket_column;
+	q_cols[cluster_shtag_col = n_result_cols++] = &cluster_shtag_column;
 
 	/* select the whole tabel and all the columns */
 	if (DB_CAPABILITY(reg_dbf, DB_CAP_FETCH)) {
@@ -317,9 +320,49 @@ int load_reg_info_from_db(unsigned int plist)
 					}
 				}
 			}
+
+			/* Get the sharing tag */
+			if (values[cluster_shtag_col].val.string_val) {
+				uac_param.cluster_shtag.s = (char*)
+					values[cluster_shtag_col].val.string_val;
+				uac_param.cluster_shtag.len =
+					strlen(uac_param.cluster_shtag.s);
+				if (uac_param.cluster_shtag.len==0) {
+					uac_param.cluster_shtag.s = NULL;
+				} else {
+					/* now split the shtag in tag name and cluster ID */
+					p = memchr(uac_param.cluster_shtag.s, '/',
+						uac_param.cluster_shtag.len);
+					if (!p) {
+						LM_ERR("Bad naming for sharing tag <%.*s>, "
+							"<name/cluster_id> expected\n",
+							uac_param.cluster_shtag.len,
+							uac_param.cluster_shtag.s);
+						continue;
+					}
+					s.s = p + 1;
+					s.len = uac_param.cluster_shtag.s + 
+						uac_param.cluster_shtag.len - s.s;
+					trim_spaces_lr( s );
+					uac_param.cluster_shtag.len =
+						p - uac_param.cluster_shtag.s;
+					trim_spaces_lr( uac_param.cluster_shtag );
+					/* get the cluster ID */
+					if (str2int( &s, (unsigned int*)&uac_param.cluster_id)<0) {
+						LM_ERR("Invalid cluster id <%.*s> for sharing tag "
+							" <%.*s> \n",s.len, s.s,
+							uac_param.cluster_shtag.len,
+							uac_param.cluster_shtag.s);
+						return -1;
+					}
+				}
+			}
+
+
 			LM_DBG("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] "
 				"password=[%.*s] expire=[%d] proxy=[%.*s] "
-				"contact=[%.*s] third_party=[%.*s]\n",
+				"contact=[%.*s] third_party=[%.*s] "
+				"cluster_shtag=[%.*s/%d]\n",
 				uac_param.registrar_uri.len, uac_param.registrar_uri.s,
 				uac_param.to_uri.len, uac_param.to_uri.s,
 				uac_param.auth_user.len, uac_param.auth_user.s,
@@ -327,7 +370,9 @@ int load_reg_info_from_db(unsigned int plist)
 				uac_param.expires,
 				uac_param.proxy_uri.len, uac_param.proxy_uri.s,
 				uac_param.contact_uri.len, uac_param.contact_uri.s,
-				uac_param.from_uri.len, uac_param.from_uri.s);
+				uac_param.from_uri.len, uac_param.from_uri.s,
+				uac_param.cluster_shtag.len, uac_param.cluster_shtag.s,
+				uac_param.cluster_id);
 			lock_get(&reg_htable[uac_param.hash_code].lock);
 			ret = add_record(&uac_param, &now, plist);
 			lock_release(&reg_htable[uac_param.hash_code].lock);
