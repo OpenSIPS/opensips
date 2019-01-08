@@ -123,15 +123,23 @@ static struct mi_root *mi_version(struct mi_root *cmd, void *param)
 
 	node = add_mi_node_child( rpl, 0, MI_SSTR("Server"), SERVER_HDR+8,
 		SERVER_HDR_LEN-8);
-	if (node==0) {
-		LM_ERR("failed to add node\n");
-		free_mi_tree(rpl_tree);
-		return 0;
+	if (node==0)
+		goto error;
+#ifdef VERSIONTYPE
+	if (cmd->node.kids && cmd->node.kids->value.len == 3 &&
+			strncmp(cmd->node.kids->value.s, "all", 3) == 0) {
+		node = add_mi_node_child( rpl, 0, MI_SSTR(VERSIONTYPE), MI_SSTR(THISREVISION));
+		if (node==0)
+			goto error;
 	}
+#endif
 
 	return rpl_tree;
+error:
+	LM_ERR("failed to add node\n");
+	free_mi_tree(rpl_tree);
+	return 0;
 }
-
 
 
 static struct mi_root *mi_pwd(struct mi_root *cmd, void *param)
@@ -669,7 +677,7 @@ static mi_export_t mi_core_cmds[] = {
 		"when it started to run, for how long it runs",
 		mi_uptime,     MI_NO_INPUT_FLAG,  0,  init_mi_uptime },
 	{ "version", "prints the version string of a runningOpenSIPS",
-		mi_version,    MI_NO_INPUT_FLAG,  0,  0 },
+		mi_version,    0,  0,  0 },
 	{ "pwd", "prints the working directory of OpenSIPS",
 		mi_pwd,        MI_NO_INPUT_FLAG,  0,  0 },
 	{ "arg", "returns the full list of arguments used at startup",
